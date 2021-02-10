@@ -1,0 +1,69 @@
+#!/bin/sh
+
+# preinst
+# pre-install script for debian package.
+# Creates and configures necessary users and groups for ADU.
+# Runs before installing/unpacking the debian package.
+# See https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+
+echo "******************** Running $0 $1 $2 ***********************"
+
+# Any error should exit the script (sort of)
+# See https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html#The-Set-Builtin
+set -e
+
+# adu_user is the user that the ADU Agent daemon will run as.
+# ADU Agent daemon needs to run as 'adu' to be able to perform high-privilege tasks via adu-shell.
+adu_user=adu
+
+# The adu_group is the group that gives partner users like DO user
+# access to ADU resources like download sandbox folder.
+adu_group=adu
+
+add_adu_user_and_group() {
+    echo "Create the 'adu' group."
+    if ! getent group "$adu_group" > /dev/null; then
+        addgroup --system "$adu_group"
+    else
+        # For security purposes, it's extremely important that there's no existing 'adu' user and 'adu' group.
+        # This ensures the account and group are setup by our package installation process only, 
+        # and no other actor can pre-create the user/group with nefarious intentions.
+        echo "Error: 'adu' group already exists." >&2
+        exit 1
+    fi
+
+    echo "Create the 'adu' user." # With no shell and no login, in 'adu' group.
+    if ! getent passwd "$adu_user" > /dev/null; then
+        adduser --system "$adu_user" --ingroup "$adu_group" --no-create-home --shell /bin/false
+    else
+        # For security purposes, it's extremely important that there's no existing 'adu' user and 'adu' group.
+        # This to ensures the account and group are setup by our package installation process only, 
+        # and no other actor can pre-create the user/group with nefarious intentions.
+        echo "Error: 'adu' user already exists." >&2
+        exit 2
+    fi
+
+    echo "Add the 'adu' user to the 'syslog' group." # To allow ADU to write to /var/log folder
+    usermod -aG "syslog" "$adu_user" 
+}
+
+case "$1" in
+    install)
+        # Try to add user during 'preinst install' step.
+        # If fail, the 'adu' user and group will be removed at 'postrm abort-install' task.
+        add_adu_user_and_group
+    ;;
+
+    upgrade)
+    ;;
+
+    abort-upgrade)
+    ;;
+
+    *)
+        echo "preinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

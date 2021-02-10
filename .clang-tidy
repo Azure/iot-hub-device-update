@@ -1,0 +1,35 @@
+# Exclusion Justifications
+# ========================
+# hicpp-signed-bitwise:
+# generally considered useless. See https://bugs.llvm.org/show_bug.cgi?id=36961
+#
+# llvm-header-guard:
+# LLVM's header guard style is too verbose.
+#
+# hicpp-deprecated-headers:
+# see "modernize-deprecated-headers"
+#
+# modernize-deprecated-headers:
+# for C++ <cstdint> is better than <stdint.h>, but we have C headers being used by C and C++ code.
+#
+# modernize-pass-by-value:
+# It's a stylistic choice to use "const string& s" vs "string s" with "std::move(s)" in a ctor.
+#
+# modernize-use-using:
+# "using" is better than "typedef" for C++, but we have C headers being used by C and C++ code.
+
+Checks: '*,
+    -android-cloexec-fopen,
+    -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+    -cppcoreguidelines-pro-type-vararg,
+    -fuchsia-default-arguments,
+    -fuchsia-overloaded-operator,
+    -hicpp-deprecated-headers,
+    -hicpp-no-array-decay,
+    -hicpp-signed-bitwise,
+    -hicpp-vararg,
+    -llvm-header-guard,
+    -modernize-deprecated-headers,
+    -modernize-pass-by-value,
+    -modernize-use-using
+    '

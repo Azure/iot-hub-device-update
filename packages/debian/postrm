@@ -1,0 +1,138 @@
+#!/bin/sh
+
+# postrm
+# post-remove script for ADU Agent debian package.
+# Cleans up files and directories created by package post-install
+# See https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+#     https://www.debian.org/doc/debian-policy/ap-flowcharts.html
+
+adu_conf_dir=/etc/adu
+adu_log_dir=/var/log/adu
+adu_data_dir=/var/lib/adu
+
+adu_eis_conf_file=adu.toml
+eis_idservice_dir=/etc/aziot/identityd/config.d
+
+# The adu_group is the group that gives admins and partner users like DO user
+# access to ADU resources like sandbox folder.
+adu_group=adu
+# adu_user is the user that the ADU Agent daemon will run as.
+# ADU Agent daemon needs to run as 'adu' user to be able to perform high-privilege tasks via adu-shell.
+adu_user=adu
+
+remove_adu_users_and_group() {
+    echo "Delete 'adu' user."
+    deluser --system --remove-home "$adu_user" > /dev/null
+
+    echo "Delete 'adu' group."
+    delgroup --system "$adu_group" > /dev/null
+}
+
+deregister_eis()
+{
+    rm -f "$eis_idservice_dir/$adu_eis_conf_file"
+
+    echo "Remove 'adu' user from 'aziotid' group."
+    gpasswd -d $adu_user aziotid > /dev/null
+
+    echo "Remove 'adu' user from 'aziotcs' group."
+    gpasswd -d $adu_user aziotcs > /dev/null
+
+    echo "Remove 'adu' user from 'aziotks' group."
+    gpasswd -d $adu_user aziotks > /dev/null
+}
+
+do_remove_tasks() {
+        deregister_eis
+        
+        # The adu-agent unit file is removed after 'prerm remove' step.
+        # We just need to reload the daemon here.
+        systemctl daemon-reload
+
+        remove_adu_users_and_group
+        
+        rm -rf "$adu_data_dir"
+        rm -rf "$adu_log_dir"
+}
+
+case "$1" in
+    remove)
+        do_remove_tasks
+    ;;
+
+    purge)
+        do_remove_tasks
+        rm -rf "$adu_conf_dir"
+    ;;
+
+    abort-install)
+        # The 'preinst install' task failed, removing the 'adu' user and group.
+        echo "Installation failed."
+        remove_adu_users_and_group
+    ;;
+    
+    #
+    # Note: (see https://www.debian.org/doc/debian-policy/ap-flowcharts.html)
+    #
+    # '[old] postrm upgrade new-ver#' is invoked after the new package is unpacked.
+    # We will call the ADU Agent to validate its health ('AducIotAgent --health-check')
+    #
+    # If succeeded, we'll resume the upgrade (return 0)
+    # If failed, we'll roll-back the upgrade (return 1)
+    upgrade)
+        echo "[postrm upgrade $2] Perform new ADU agent health validation." >&2
+        echo "AducIotAgent version:" >&2
+        /usr/bin/AducIotAgent --version >&2
+        if (/usr/bin/AducIotAgent --enable-iothub-tracing --health-check --log-level 0) then
+            echo "[postrm upgrade $2] ADU Agent (/usr/binAducIotAgent) is healthy. Resuming the upgrade." >&2
+            exit 0
+        fi
+
+        # The (new) ADU Agent is not good. Abort the upgrade.
+        echo "[postrm upgrade $2] ERROR: ADU Agent (/usr/bin/AducIotAgent) validation failed. Aborting the upgrade." >&2
+        exit 1
+    ;;
+
+    #
+    # Note: (see https://www.debian.org/doc/debian-policy/ap-flowcharts.html)
+    #
+    # When '[old] postrm upgrade new-ver#' returned an error code, 
+    # the '[new] postrm failed-upgrade new-ver#' will be invoked.
+    #
+    # In [new] postrm context:
+    #   - We have another chance to verify whether the new adu-agent can function properly. 
+    #   - If yes, we will return 0 to tell APT to continue the upgrade with '[new] postinst configure old-ver#'.
+    #   - If no, we will return 1 to tell APT to abort the upgrade. 
+    #     In order to restore the old package, the following maintainer scripts must return ok (exit 0):
+    #          a. '[old] preinst abort-upgrade new-ver#'
+    #          b. '[new] postrm aboard-upgrade old-ver#'
+    #          c. '[old] postinst aboard-upgrade new-ver#'
+    #
+    failed-upgrade)
+        echo "[postrm failed-upgrade $2] Perform new ADU Agent health validation." >&2
+        echo "AducIotAgent version:" >&2
+        /usr/bin/AducIotAgent --version >&2
+        if (/usr/bin/AducIotAgent --enable-iothub-tracing --health-check --log-level 0) then
+            echo "[postrm failed-upgrade $2] ADU Agent (/usr/binAducIotAgent) is healthy. Resuming the upgrade." >&2
+            exit 0
+        fi
+
+        # The (new) ADU Agent is not good. Abort the upgrade.
+        echo "[postrm failed-upgrade $2] ERROR: ADU Agent (/usr/bin/AducIotAgent) validation failed. Aborting the upgrade." >&2
+        exit 1
+    ;;
+
+    abort-upgrade)
+        exit 0
+    ;;
+
+    abort-install|disappear)
+    ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

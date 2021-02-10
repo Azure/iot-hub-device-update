@@ -1,0 +1,176 @@
+#!/bin/sh
+
+# postinst
+# post-install script for debian package.
+# Creates and configures necessary directories and files and registers daemon.
+# Runs post installing/unpacking of the debian package.
+# See https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+#     https://www.debian.org/doc/debian-policy/ap-flowcharts.html
+
+# Any error should exit the script (sort of)
+# See https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html#The-Set-Builtin
+set -e
+
+adu_conf_dir=/etc/adu
+adu_conf_file=adu-conf.txt
+adu_log_dir=/var/log/adu
+adu_data_dir=/var/lib/adu
+adu_shell_dir=/usr/lib/adu
+adu_shell_file=adu-shell
+
+adu_eis_conf_file=adu.toml
+adu_eis_idtype=device
+eis_idservice_dir=/etc/aziot/identityd/config.d
+
+# adu_user is the user that the ADU Agent daemon will run as.
+# ADU Agent daemon needs to run as 'adu' user to be able to perform high-privilege tasks via adu-shell.
+adu_user=adu
+
+# The adu_group is the group that gives admins and partner users like DO user
+# access to ADU resources like sandbox folder.
+adu_group=adu
+
+# Use getent and cut to get the info for the adu user and parse out the home directory.
+adu_home_dir=$(getent passwd $adu_user | cut -d: -f6)
+
+ms_doclient_lite_service="deliveryoptimization-agent"
+
+setup_dirs_and_files() {
+    # Note on linux permissions
+    # u - The user owner of a file or a directory.
+    # g - The group owner of a file or a directory. A group can contain multiple users.
+    # o - Any other user that has access to the file or directory.
+    # a - All. The combination of user owner, group ownder, and other users.
+    # r - Read access.
+    #   Read access on a file allows a user to open and read the contents of the file.
+    #   Read access on a directory allows a user to list the contents of the directory. e.g with the ls command.
+    # w - Write access.
+    #   Write access on a file allows a user to modify the contents of a file.
+    #   Write access on a directory allows a user to add, remove, rename, or move files in the directory.
+    # x - Execute access.
+    #   Execute access on a file allows a user to execute the contents of the file as a program.
+    #   Execute access on a directory allows a user to enter that directory and possibly gain access to sub-directories. e.g. with the cd command.
+    if id -u "$adu_user" > /dev/null 2>&1; then
+        mkdir -p "$adu_conf_dir"
+
+        # Generate the template configuration file
+        if [ ! -f "$adu_conf_dir/${adu_conf_file}.template" ]; then
+            echo "<Place your Azure IoT device connection string here>" > "$adu_conf_dir/${adu_conf_file}.template"
+            chown "$adu_user:$adu_group" "$adu_conf_dir/${adu_conf_file}.template"
+            chmod u=r "$adu_conf_dir/${adu_conf_file}.template"
+        fi
+
+        # Create configuration file from template
+        if [ ! -f "$adu_conf_dir/$adu_conf_file" ]; then
+            cp -a "$adu_conf_dir/${adu_conf_file}.template" "$adu_conf_dir/$adu_conf_file"
+            chmod u=r "$adu_conf_dir/$adu_conf_file"
+        fi
+
+        # Create home dir
+        if [ ! -d "$adu_home_dir" ]; then
+            mkdir -p "$adu_home_dir"
+            chown "$adu_user:$adu_group" "$adu_home_dir"
+            chmod u=rwx,g=rx "$adu_home_dir"
+        fi
+
+        # Create log dir
+        if [ ! -d "$adu_log_dir" ]; then
+            mkdir -p "$adu_log_dir"
+            chown "$adu_user:$adu_group" "$adu_log_dir"
+            chmod u=rwx,g=rx "$adu_log_dir"
+        fi
+
+        # Create data dir
+        if [ ! -d "$adu_data_dir" ]; then
+            mkdir -p "$adu_data_dir"
+            chown "$adu_user:$adu_group" "$adu_data_dir"
+            chmod u=rwx,g=rx "$adu_data_dir"
+        fi
+
+        #Set adu-agent owner and permission
+        if [ ! -f "$adu_shell_dir/$adu_shell_file" ]; then
+           echo "ERROR! $adu_shell_dir/$adu_shell_file does not exists." >&2
+        else
+           chown "root:$adu_group" "$adu_shell_dir/$adu_shell_file"
+           chmod u=rxs "$adu_shell_dir/$adu_shell_file"
+           setfacl -m "group::---" "$adu_shell_dir/$adu_shell_file"
+           setfacl -m "user::r--" "$adu_shell_dir/$adu_shell_file"
+           setfacl -m "user:adu:r-x" "$adu_shell_dir/$adu_shell_file"
+        fi
+    else
+        echo "ERROR! $adu_user does not exist." >&2
+        return 1
+    fi
+}
+
+register_adu_user_and_process_with_eis() {
+        if getent group "aziotid" > /dev/null; then
+            usermod -aG aziotid $adu_user
+        fi
+
+        if getent group "aziotcs" > /dev/null; then
+            usermod -aG aziotcs $adu_user
+        fi
+
+        if getent group "aziotks" > /dev/null; then
+            usermod -aG aziotks $adu_user
+        fi
+
+        # Register our process with EIS
+        if [ -d "$eis_idservice_dir" ]; then
+
+            if [ ! -f "$eis_idservice_dir/$adu_eis_conf_file" ]; then
+                printf "[[principal]]\n name=\"adu\"\n idtype=[\"$adu_eis_idtype\"]\n uid= $(id -u $adu_user)\n" > "$eis_idservice_dir/$adu_eis_conf_file"
+                chown aziotid:aziotid "$eis_idservice_dir/$adu_eis_conf_file"
+                chmod u=rw "$eis_idservice_dir/$adu_eis_conf_file"
+            fi
+        fi
+}
+
+register_and_enable_daemon()
+{
+    systemctl daemon-reload
+    systemctl enable adu-agent
+}
+
+case "$1" in
+    configure)
+        setup_dirs_and_files
+        register_adu_user_and_process_with_eis
+
+        register_and_enable_daemon
+
+        # Note: DO user and group are created by deliveryoptimization-agent Debian package,
+        # which is one of the dependencies declared in adu-agent control file.
+        # We are assuming that both DO user and group currently exist at this point.
+        # Add 'do' user to 'adu' group to allow DO to write to ADU download sandbox.
+        echo "Add the 'do' user to the 'adu' group."
+        if getent passwd 'do' > /dev/null; then
+            usermod -aG 'adu' 'do'
+
+            # Restart deliveryoptimization-agent service to ensure that the new 'do' user's groups take effect.
+            echo "Restart $ms_doclient_lite_service"
+            systemctl restart "$ms_doclient_lite_service"
+        fi
+
+        # Do not restart the current adu-agent because we want the update workflow
+        # to complete, and reports the agent's state to ADU Management service.
+        echo "============================================================"
+        echo
+        echo "     ADU Agent service must be restarted." >&2
+        echo
+        echo "     Please run 'sudo systemctl restart adu-agent'" >&2
+        echo
+        echo "============================================================"
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

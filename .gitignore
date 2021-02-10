@@ -1,0 +1,31 @@
+### VisualStudio Code
+.vscode/
+
+### VisualStudio 2017
+.vs/
+
+### GDB debugger
+.gdbinit
+.gdb_history
+
+### etags, ctags, gtags (GNU global) and cscope
+TAGS
+.TAGS
+!TAGS/
+tags
+.tags
+!tags/
+gtags.files
+GTAGS
+GRTAGS
+GPATH
+GSYMS
+cscope.files
+cscope.out
+cscope.in.out
+cscope.po.out
+
+### ADU build environment
+out/
+build/
+Testing/

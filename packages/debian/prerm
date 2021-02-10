@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# prerm
+# pre-remove script for ADU Agent debian package.
+# Deregister adu-agent daemon.
+# See https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+
+adu_agent_service=adu-agent.service
+adu_agent_unit_file=/usr/lib/systemd/system/adu-agent.service
+
+deregister_daemon()
+{
+    # Stop and remove adu-agent service from the failed services list. No-op if never failed earlier.
+    systemctl stop $adu_agent_service
+    systemctl reset-failed $adu_agent_service
+}
+
+case "$1" in
+    remove)
+        deregister_daemon
+    ;;
+
+    abort-install|upgrade|failed-upgrade|abort-upgrade|disappear)
+    ;;
+
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0
