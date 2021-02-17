@@ -1,8 +1,8 @@
 variables:
   version.major: 0
-  version.minor: 4
+  version.minor: 6
   version.patch: 0
-  version.pre-release: "private-preview"
+  version.pre-release: "public-preview"
   version.build: $[format('{0:yyyyMMdd}-{0:HHmmss}', pipeline.startTime)]
 
   # TODO(shiyipeng): Bug 30317524: [ADU E2E Testing] Azure Artifacts no longer free - publishing to test feed fails
