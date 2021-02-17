@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.5)
 
 set (CPACK_PACKAGE_NAME "deviceupdate-agent")
-set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Device Update for IoT Hub Agent")
+set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Device update agent")
 set (CPACK_PACKAGE_VENDOR "Microsoft")
 set (CPACK_PACKAGE_CONTACT "aduct@microsoft.com")
 
