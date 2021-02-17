@@ -41,7 +41,7 @@ set_cache_with_env_or_default (
 
 set_cache_with_env_or_default (
     ADUC_VERSION_MINOR
-    "4"
+    "6"
     STRING
     "The minor part of the semantic version")
 
@@ -53,7 +53,7 @@ set_cache_with_env_or_default (
 
 set_cache_with_env_or_default (
     ADUC_VERSION_PRERELEASE
-    "private-preview"
+    "public-preview"
     STRING
     "The pre-release part of the semantic version")
 
