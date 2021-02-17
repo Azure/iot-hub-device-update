@@ -1,10 +1,9 @@
 cmake_minimum_required (VERSION 3.5)
 
-set (CPACK_PACKAGE_NAME "adu-agent")
-set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Azure Device Update Client")
-set (CPACK_PACKAGE_VENDOR "ADU Client Devs")
-# TODO: consider creating an email alias or link to github team
-set (CPACK_PACKAGE_CONTACT "ADU Client Devs")
+set (CPACK_PACKAGE_NAME "deviceupdate-agent")
+set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Device update agent")
+set (CPACK_PACKAGE_VENDOR "Microsoft")
+set (CPACK_PACKAGE_CONTACT "aduct@microsoft.com")
 
 set (CPACK_PACKAGE_VERSION_MAJOR "${ADUC_VERSION_MAJOR}")
 set (CPACK_PACKAGE_VERSION_MINOR "${ADUC_VERSION_MINOR}")
@@ -34,7 +33,7 @@ string (
             CPACK_DEBIAN_PACKAGE_VERSION
             ${ADUC_VERSION})
 
-set (CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/Azure/adu-private-preview")
+set (CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/Azure/iot-hub-device-update")
 set (CPACK_DEBIAN_PACKAGE_PRIORITY "extra")
 set (CPACK_DEBIAN_PACKAGE_SECTION "admin")
 
