@@ -1,8 +1,8 @@
 variables:
   version.major: 0
-  version.minor: 4
+  version.minor: 6
   version.patch: 0
-  version.pre-release: "private-preview"
+  version.pre-release: "public-preview"
   version.build: $[format('{0:yyyyMMdd}-{0:HHmmss}', pipeline.startTime)]
 
   # Environment variables for all client builds:
