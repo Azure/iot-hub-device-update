@@ -692,7 +692,7 @@ _Bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
         goto done;
     }
 
-    if (mallocAndStrcpy_s(&info->certificateString, provInfo.certificateString) != 0)
+    if (provInfo.certificateString != NULL && mallocAndStrcpy_s(&info->certificateString, provInfo.certificateString) != 0)
     {
         Log_Error("Cannot copy certificate string");
         goto done;
