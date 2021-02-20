@@ -134,8 +134,8 @@ jobs:
           arguments: "--clean --build-unit-tests --platform-layer simulator --content-handlers microsoft/swupdate --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
 
       - bash: |
-          cp $(Build.BinariesDirectory)/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgentSim
-        displayName: "Stage build artifacts (AducIotAgent simulator)"
+          cp $(Build.BinariesDirectory)/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgentSim-microsoft-swupdate
+        displayName: "Stage build artifacts (simulator-swupdate-Debug)"
         condition: and(ne(variables['Build.Reason'], 'IndividualCI'), ne(variables['Build.Reason'], 'PullRequest'))
 
       - bash: |
@@ -155,6 +155,18 @@ jobs:
           publishRunAttachments: false # Attachments are not supported for CTest
 
       - task: Bash@3
+        displayName: "Build Client: simulator-apt-Debug"
+        inputs:
+          targetType: "filePath"
+          filePath: $(Build.SourcesDirectory)/scripts/build.sh
+          arguments: "--clean --platform-layer simulator --content-handlers microsoft/apt --log-lib zlog --out-dir $(Build.BinariesDirectory)"
+
+      - bash: |
+          cp $(Build.BinariesDirectory)/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgentSim-microsoft-apt
+        displayName: "Stage build artifacts (simulator-apt-Debug)"
+        condition: and(ne(variables['Build.Reason'], 'IndividualCI'), ne(variables['Build.Reason'], 'PullRequest'))
+
+      - task: Bash@3
         displayName: "Build Client, Unit Tests and Packages: linux-apt-MinSizeRel"
         inputs:
           targetType: "filePath"
@@ -164,7 +176,6 @@ jobs:
       - bash: |
           cp $(Build.BinariesDirectory)/*.deb $(Build.ArtifactStagingDirectory)
           cp $(Build.BinariesDirectory)/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgent
-          cp $(Build.SourcesDirectory)/docs/release-notes.md $(Build.ArtifactStagingDirectory)/release-notes.md
         displayName: "Stage build artifacts (Deb package, agent and docs)"
         condition: and(ne(variables['Build.Reason'], 'IndividualCI'), ne(variables['Build.Reason'], 'PullRequest'))
 
