@@ -95,6 +95,7 @@ jobs:
         displayName: "Install aduc dependencies in container"
 
       - bash: |
+          sudo docker exec -w /iot-hub-device-update arm32container wget https://cmake.org/files/v3.10/cmake-3.10.2.tar.gz && tar xzf cmake-3.10.2.tar.gz && cd cmake-3.10.2 && make && make install
           sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-do-deps
         displayName: "Install DO SDK dependencies in container"
 
