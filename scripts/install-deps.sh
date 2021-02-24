@@ -442,9 +442,6 @@ while [[ $1 != "" ]]; do
     --use-ssh)
         use_ssh=true
         ;;
-    -arm32)
-        arm32=true
-        ;;
     --list-deps)
         do_list_all_deps
         $ret $?
