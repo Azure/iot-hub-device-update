@@ -134,10 +134,10 @@ jobs:
       #   condition: succeededOrFailed()
 
       - bash: |
-          sudo docker exec arm32container curl https://packages.microsoft.com/config/ubuntu/18.04/multiarch/prod.list > ./microsoft-prod.list
-          sudo docker exec arm32container cp ./microsoft-prod.list /etc/apt/sources.list.d/
+          sudo docker exec arm32container curl https://packages.microsoft.com/config/debian/9/multiarch/prod.list > ./microsoft-prod.list
+          sudo docker exec arm32container cp microsoft-prod.list /etc/apt/sources.list.d/
           sudo docker exec arm32container curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-          sudo docker exec arm32container cp ./microsoft.gpg /etc/apt/trusted.gpg.d/
+          sudo docker exec arm32container cp microsoft.gpg /etc/apt/trusted.gpg.d/
           sudo docker exec arm32container apt-get install -y libdeliveryoptimization-dev
         displayName: "Install DO packages"
         
