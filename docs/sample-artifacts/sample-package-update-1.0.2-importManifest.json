@@ -1,0 +1,26 @@
+﻿{
+    "updateId":  {
+                     "provider":  "Contoso",
+                     "name":  "SampleUpdate",
+                     "version":  "1.0.2"
+                 },
+    "updateType":  "microsoft/apt:1",
+    "installedCriteria":  "Sample package update-1.0.2",
+    "compatibility":  [
+                          {
+                              "deviceManufacturer":  "Contoso",
+                              "deviceModel":  "Video"
+                          }
+                      ],
+    "files":  [
+                  {
+                      "filename":  "libcurl4-doc-remove-apt-manifest.json",
+                      "sizeInBytes":  155,
+                      "hashes":  {
+                                     "sha256":  "RL/OBnj5kQ/0VsQ1C+pb7NnUvYCpzFZEkb5buCLoJWU="
+                                 }
+                  }
+              ],
+    "createdDateTime":  "2021-02-23T04:35:22.6533536Z",
+    "manifestVersion":  "2.0"
+}
