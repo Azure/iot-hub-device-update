@@ -507,7 +507,7 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
     else if (
         connInfo->certificateString != NULL
         && (iothubResult = IoTHubDeviceClient_LL_SetOption(
-                g_iotHubClientHandle, SU_OPTION_X509_CERT, connInfo->certificateString))
+                g_iotHubClientHandle, OPTION_TRUSTED_CERT, connInfo->certificateString))
             != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set IotHub certificate, error=%d", iothubResult);
