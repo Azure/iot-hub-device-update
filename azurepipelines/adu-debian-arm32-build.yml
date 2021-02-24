@@ -94,45 +94,53 @@ jobs:
           sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-aduc-deps --install-packages
         displayName: "Install aduc dependencies in container"
 
-      - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container wget https://cmake.org/files/v3.10/cmake-3.10.2.tar.gz && tar xzf cmake-3.10.2.tar.gz && cd cmake-3.10.2 && make && make install
-          sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-do-deps
-        displayName: "Install DO SDK dependencies in container"
+      # - bash: |
+      #     sudo docker exec -w /iot-hub-device-update arm32container wget https://cmake.org/files/v3.10/cmake-3.10.2.tar.gz && tar xzf cmake-3.10.2.tar.gz && cd cmake-3.10.2 && make && make install
+      #     sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-do-deps
+      #   displayName: "Install DO SDK dependencies in container"
 
-        # do_access_token is defined as a secret variable.
-        # This token gives our pipeline access to DO's private github repos.
-        # When DO code is public, we will no longer need to use this access token.
-        # Here we use git configuration to 'hijack' the regular github repo URLs
-        # and replace them with the authenticated URLs.
-        # See https://git-scm.com/docs/git-config#Documentation/git-config.txt-urlltbasegtinsteadOf
-        # Before setting the various url insteadOf sections, we make sure the config is in a clean state.
-        # Any corrupted/invalid entries will prevent the clone from succeeding.
-        # The various git config commands will also fail to remove invalid entries,
-        # so we use sed instead.
-      - bash: |
-          sudo docker exec arm32container cp /etc/.gitconfig /iot-hub-device-update/.gitconfig
-          sudo docker exec arm32container sed -i -e '/^.*url.*https.*@github.com\/Microsoft.*$/d' -e '/^.*insteadOf.*https.*github.com\/Microsoft.*$/d' /iot-hub-device-update/.gitconfig
-          sudo docker exec arm32container cp -f /iot-hub-device-update/.gitconfig /etc/.gitconfig
-          sudo docker exec arm32container git config --global url."https://api:$DO_ACCESS_TOKEN@github.com/Microsoft/do-client.git".insteadOf "https://github.com/Microsoft/do-client.git"
-          sudo docker exec arm32container git config --global url."https://api:$DO_ACCESS_TOKEN@github.com/Microsoft/do-client".insteadOf "https://github.com/Microsoft/do-client"
-        displayName: "Configure git credentials for DO inside container"
-        env:
-          DO_ACCESS_TOKEN: $(do_access_token)
+      #   # do_access_token is defined as a secret variable.
+      #   # This token gives our pipeline access to DO's private github repos.
+      #   # When DO code is public, we will no longer need to use this access token.
+      #   # Here we use git configuration to 'hijack' the regular github repo URLs
+      #   # and replace them with the authenticated URLs.
+      #   # See https://git-scm.com/docs/git-config#Documentation/git-config.txt-urlltbasegtinsteadOf
+      #   # Before setting the various url insteadOf sections, we make sure the config is in a clean state.
+      #   # Any corrupted/invalid entries will prevent the clone from succeeding.
+      #   # The various git config commands will also fail to remove invalid entries,
+      #   # so we use sed instead.
+      # - bash: |
+      #     sudo docker exec arm32container cp /etc/.gitconfig /iot-hub-device-update/.gitconfig
+      #     sudo docker exec arm32container sed -i -e '/^.*url.*https.*@github.com\/Microsoft.*$/d' -e '/^.*insteadOf.*https.*github.com\/Microsoft.*$/d' /iot-hub-device-update/.gitconfig
+      #     sudo docker exec arm32container cp -f /iot-hub-device-update/.gitconfig /etc/.gitconfig
+      #     sudo docker exec arm32container git config --global url."https://api:$DO_ACCESS_TOKEN@github.com/Microsoft/do-client.git".insteadOf "https://github.com/Microsoft/do-client.git"
+      #     sudo docker exec arm32container git config --global url."https://api:$DO_ACCESS_TOKEN@github.com/Microsoft/do-client".insteadOf "https://github.com/Microsoft/do-client"
+      #   displayName: "Configure git credentials for DO inside container"
+      #   env:
+      #     DO_ACCESS_TOKEN: $(do_access_token)
+
+      # - bash: |
+      #     sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-do
+      #   displayName: "Install DO SDK from source in container"
+
+      #   # Cleanup the entries we added to clone private repos.
+      #   # The various git config commands will also fail to remove invalid entries,
+      #   # so we use sed instead.
+      # - bash: |
+      #     sudo docker exec arm32container cp /etc/.gitconfig /iot-hub-device-update/.gitconfig
+      #     sudo docker exec arm32container sed -i -e '/^.*url.*https.*github.com\/Microsoft.*$/d' -e '/^.*insteadOf.*https.*github.com\/Microsoft.*$/d' /iot-hub-device-update/.gitconfig
+      #     sudo docker exec arm32container cp -f /iot-hub-device-update/.gitconfig /etc/.gitconfig
+      #   displayName: "Remove git credentials for DO in container"
+      #   condition: succeededOrFailed()
 
       - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-do
-        displayName: "Install DO SDK from source in container"
-
-        # Cleanup the entries we added to clone private repos.
-        # The various git config commands will also fail to remove invalid entries,
-        # so we use sed instead.
-      - bash: |
-          sudo docker exec arm32container cp /etc/.gitconfig /iot-hub-device-update/.gitconfig
-          sudo docker exec arm32container sed -i -e '/^.*url.*https.*github.com\/Microsoft.*$/d' -e '/^.*insteadOf.*https.*github.com\/Microsoft.*$/d' /iot-hub-device-update/.gitconfig
-          sudo docker exec arm32container cp -f /iot-hub-device-update/.gitconfig /etc/.gitconfig
-        displayName: "Remove git credentials for DO in container"
-        condition: succeededOrFailed()
-
+          sudo docker exec arm32container curl https://packages.microsoft.com/config/ubuntu/18.04/multiarch/prod.list > ./microsoft-prod.list
+          sudo docker exec arm32container cp ./microsoft-prod.list /etc/apt/sources.list.d/
+          sudo docker exec arm32container curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+          sudo docker exec arm32container cp ./microsoft.gpg /etc/apt/trusted.gpg.d/
+          sudo docker exec arm32container apt-get install -y libdeliveryoptimization-dev
+        displayName: "Install DO packages"
+        
       - bash: |
           sudo docker exec -w /iot-hub-device-update arm32container scripts/build.sh --clean --build-unit-tests --platform-layer simulator --content-handlers microsoft/swupdate --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir out-arm32
         displayName: "Build Client and Unit Tests (simulator-swupdate-Debug)"
