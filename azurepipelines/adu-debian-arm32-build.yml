@@ -95,7 +95,6 @@ jobs:
         displayName: "Install aduc dependencies in container"
 
       - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container wget https://cmake.org/files/v3.10/cmake-3.10.2.tar.gz && tar xzf cmake-3.10.2.tar.gz && cd cmake-3.10.2 && make && make install
           sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-do-deps
         displayName: "Install DO SDK dependencies in container"
 
@@ -132,7 +131,7 @@ jobs:
           sudo docker exec arm32container cp -f /iot-hub-device-update/.gitconfig /etc/.gitconfig
         displayName: "Remove git credentials for DO in container"
         condition: succeededOrFailed()
-        
+
       - bash: |
           sudo docker exec -w /iot-hub-device-update arm32container scripts/build.sh --clean --build-unit-tests --platform-layer simulator --content-handlers microsoft/swupdate --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir out-arm32
         displayName: "Build Client and Unit Tests (simulator-swupdate-Debug)"
