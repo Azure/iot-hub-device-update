@@ -23,7 +23,7 @@ resources:
 trigger:
   branches:
     include:
-      - master
+      - main
       - release/*
   paths:
     exclude:
@@ -39,7 +39,7 @@ trigger:
 pr:
   branches:
     include:
-      - master
+      - main
       - release/*
       - feature/*
       # TODO(shiyipeng): Task 27290511: Debian arm32 64 pipeline - improve build time
@@ -97,10 +97,6 @@ jobs:
           sudo docker exec -w /iot-hub-device-update arm64container scripts/install-deps.sh --install-aduc-deps --install-packages
     displayName: 'Install aduc dependencies in container'
 
-  - bash: |
-          sudo docker exec -w /iot-hub-device-update arm64container scripts/install-deps.sh --install-do-deps
-    displayName: 'Install DO SDK dependencies in container'
-
     # do_access_token is defined as a secret variable.
     # This token gives our pipeline access to DO's private github repos.
     # When DO code is public, we will no longer need to use this access token.
@@ -122,7 +118,7 @@ jobs:
       DO_ACCESS_TOKEN: $(do_access_token)
 
   - bash: |
-          sudo docker exec -w /iot-hub-device-update arm64container scripts/install-deps.sh --install-do
+          sudo docker exec -w /iot-hub-device-update arm64container scripts/install-deps.sh --install-do --install-do-deps ubuntu1804
     displayName: 'Install DO SDK from source in container'
 
     # Cleanup the entries we added to clone private repos.

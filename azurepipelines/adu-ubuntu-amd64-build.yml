@@ -33,7 +33,7 @@ resources:
 trigger:
   branches:
     include:
-      - master
+      - main
       - release/*
       - feature/*
       - dev/*
@@ -51,7 +51,7 @@ trigger:
 pr:
   branches:
     include:
-      - master
+      - main
       - release/*
       - feature/*
       - dev/*
