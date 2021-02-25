@@ -56,7 +56,7 @@ default_gsl_ref=v2.0.0
 gsl_ref=$default_gsl_ref
 
 # Dependencies packages
-aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release')
+aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=("gcc-[68]")
 do_packages=('libproxy-dev' 'libssl-dev' 'zlib1g-dev' 'libboost-all-dev')

@@ -86,45 +86,13 @@ jobs:
           filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
           arguments: --install-aduc-deps --install-packages
 
-      - task: Bash@3
-        displayName: "Install DO SDK dependencies"
-        inputs:
-          targetType: "filePath"
-          filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
-          arguments: --install-do-deps
-
-        # do_access_token is defined as a secret variable.
-        # This token gives our pipeline access to DO's private github repos.
-        # When DO code is public, we will no longer need to use this access token.
-        # Here we use git configuration to 'hijack' the regular github repo URLs
-        # and replace them with the authenticated URLs.
-        # See https://git-scm.com/docs/git-config#Documentation/git-config.txt-urlltbasegtinsteadOf
-        # Before setting the various url insteadOf sections, we make sure the config is in a clean state.
-        # Any corrupted/invalid entries will prevent the clone from succeeding.
-        # The various git config commands will also fail to remove invalid entries,
-        # so we use sed instead.
       - bash: |
-          sed -i -e '/^.*url.*https.*@github.com\/Microsoft\/.*$/d' -e '/^.*insteadOf.*https.*github.com\/Microsoft\/.*$/d' ~/.gitconfig
-          git config --global url."https://api:$DO_ACCESS_TOKEN@github.com/Microsoft/do-client.git".insteadOf "https://github.com/Microsoft/do-client.git"
-          git config --global url."https://api:$DO_ACCESS_TOKEN@github.com/Microsoft/do-client".insteadOf "https://github.com/Microsoft/do-client"
-        displayName: "Configure git credentials for DO"
-        env:
-          DO_ACCESS_TOKEN: $(do_access_token)
-
-      - task: Bash@3
-        displayName: "Install DO SDK from source"
-        inputs:
-          targetType: "filePath"
-          filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
-          arguments: --install-do
-
-        # Cleanup the entries we added to clone private repos.
-        # The various git config commands will also fail to remove invalid entries,
-        # so we use sed instead.
-      - bash: |
-          sed -i -e '/^.*url.*https.*github.com\/Microsoft\/.*$/d' -e '/^.*insteadOf.*https.*github.com\/Microsoft\/.*$/d' ~/.gitconfig
-        displayName: "Remove git credentials for DO"
-        condition: succeededOrFailed()
+          curl https://packages.microsoft.com/config/ubuntu/18.04/multiarch/prod.list > ./microsoft-prod.list
+          sudo cp ./microsoft-prod.list /etc/apt/sources.list.d/
+          curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+          sudo cp ./microsoft.gpg /etc/apt/trusted.gpg.d/
+          sudo apt-get install -y libdeliveryoptimization-dev
+        displayName: "Install DO SDK"
 
       - task: Bash@3
         displayName: "Build Client and Unit Tests: simulator-swupdate-Debug"
