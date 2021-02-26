@@ -118,7 +118,7 @@ jobs:
       DO_ACCESS_TOKEN: $(do_access_token)
 
   - bash: |
-          sudo docker exec -w /iot-hub-device-update arm64container scripts/install-deps.sh --install-do --install-do-deps ubuntu1804
+          sudo docker exec -w /iot-hub-device-update arm64container scripts/install-deps.sh --install-do --install-do-deps ubuntu-18.04
     displayName: 'Install DO SDK from source in container'
 
     # Cleanup the entries we added to clone private repos.

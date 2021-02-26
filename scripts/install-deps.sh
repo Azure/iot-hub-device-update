@@ -49,12 +49,6 @@ default_do_ref=v0.6.0
 do_ref=$default_do_ref
 install_do_deps=false
 default_do_deps_distro=ubuntu1804
-install_cpprestsdk=false
-default_cpprestsdk_ref=v2.10.15
-cpprestsdk_ref=$default_cpprestsdk_ref
-install_gsl=false
-default_gsl_ref=v2.0.0
-gsl_ref=$default_gsl_ref
 
 # Dependencies packages
 aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl')
@@ -88,17 +82,8 @@ print_help() {
     echo "--do-commit <commit_sha>  Specific commit to fetch."
     echo "                          Default is the latest commit in that branch."
     echo "-d, --install-do-deps     Indicates that dependencies for DO should be installed."
-    echo "                          This value can be debian9, debian10, ubuntu1804, etc"
+    echo "                          This value can be debian-9, debian-10, ubuntu-18.04, etc"
     echo "                          When used with --install-packages, the DO dependencies that are packages are also installed."
-    echo "--install-cpprestsdk      Install the cpprestsdk from source."
-    echo "--cpprestsdk-ref <ref>    Install the cpprestsdk from this branch or tag."
-    echo "                          This value is passed to git clone as the --branch argument."
-    echo "                          Default is $default_cpprestsdk_ref."
-    echo "--install-gsl             Install Microsoft GSL from source."
-    echo "--gsl-ref <ref>           Install Microsoft GSL from this branch or tag."
-    echo "                          This value is passed to git clone as the --branch argument."
-    echo "                          Default is $default_gsl_ref."
-    echo ""
     echo "-p, --install-packages    Indicates that packages should be installed."
     echo "--install-packages-only   Indicates that only packages should be installed and that dependencies should not be installed from source."
     echo ""
@@ -255,12 +240,10 @@ do_install_do() {
 
     git clone --recursive --single-branch --branch $do_ref --depth 1 $do_url . || return
 
-    if [[ $install_do_deps == "ubuntu1804" ]]; then
-        chmod +x $do_dir/build/bootstrap/bootstrap-ubuntu-18.04.sh || return
-        $SUDO $do_dir/build/bootstrap/bootstrap-ubuntu-18.04.sh || return
-    elif [[ $install_do_deps == "debian9" ]]; then
-        chmod +x $do_dir/build/bootstrap/bootstrap-debian-9.sh || return
-        $SUDO $do_dir/build/bootstrap/bootstrap-debian-9.sh || return
+    if [[ $install_do_deps != "false" ]]; then
+        local bootstrap_file=$do_dir/build/bootstrap/bootstrap-$install_do_deps.sh
+        chmod +x $bootstrap_file || return
+        $SUDO $bootstrap_file || return
     fi
 
     mkdir cmake || return
@@ -349,20 +332,6 @@ while [[ $1 != "" ]]; do
         shift
         install_do_deps=$1
         ;;
-    --install-cpprestsdk)
-        install_cpprestsdk=true
-        ;;
-    --cpprestsdk-ref)
-        shift
-        cpprestsdk_ref=$1
-        ;;
-    --install-gsl)
-        install_gsl=true
-        ;;
-    --gsl-ref)
-        shift
-        gsl_ref=$1
-        ;;
     -p | --install-packages)
         install_packages=true
         ;;
@@ -397,7 +366,7 @@ done
 
 # If there is no install action specified,
 # assume that we want to install all deps.
-if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && $install_do != "true" && $install_do_deps == "false" && $install_cpprestsdk != "true" && $install_gsl != "true" && $install_azure_iot_sdk != "true" && $install_catch2 != "true" ]]; then
+if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && $install_do != "true" && $install_do_deps == "false" && $install_azure_iot_sdk != "true" && $install_catch2 != "true" ]]; then
     install_all_deps=true
 fi
 
@@ -419,8 +388,6 @@ fi
 # Set implied options for packages only.
 if [[ $install_packages_only == "true" ]]; then
     install_packages=true
-    install_cpprestsdk=false
-    install_gsl=false
     install_azure_iot_sdk=false
     install_catch2=false
 fi
@@ -446,14 +413,6 @@ if [[ $install_packages_only == "false" ]]; then
 
     if [[ $install_catch2 == "true" ]]; then
         do_install_catch2 || $ret
-    fi
-
-    if [[ $install_cpprestsdk == "true" ]]; then
-        do_install_cpprestsdk || $ret
-    fi
-
-    if [[ $install_gsl == "true" ]]; then
-        do_install_gsl || $ret
     fi
 
     if [[ $install_do == "true" ]]; then
