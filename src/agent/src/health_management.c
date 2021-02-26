@@ -29,7 +29,7 @@ _Bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs)
 {
     _Bool validInfo = false;
 
-    ADUC_ConnectionInfo info = { NULL, NULL };
+    ADUC_ConnectionInfo info = { NULL, CertificateType_None, NULL, NULL, NULL };
 
     if (launchArgs->connectionString != NULL)
     {

@@ -25,11 +25,22 @@ typedef struct tagADUC_LaunchArguments
 } ADUC_LaunchArguments;
 
 /**
+ * @brief Certificate type for the certificateString within ConnectionInfo
+ */
+typedef enum tagCertificateType
+{
+    CertificateType_None = 0, /**< no type set for the certificateString */
+    CertificateType_x509 = 1, /**< certfiicateString is an x509 certificate*/
+    CertificateType_SymmetricKey = 2, /**< certificateString is a symmetric key  */
+} CertificateType;
+
+/**
  * @brief IoT Hub connection information.
  */
 typedef struct tagConnectionInfo
 {
-    char* connectionString; /**< Device or Module connection string. */
+    char* connectionString; /**< device or module connection string. */
+    CertificateType certType; /**< type of certificateString*/
     char* certificateString; /**< x509 certificate in PEM format for the IoTHubClient to be used for authentication*/
     char* opensslEngine; /**< identifier for the OpenSSL Engine used for the certificate in certificateString*/
     char* opensslPrivateKey; /**< x509 private key in PEM format for the IoTHubClient to be used for authentication */

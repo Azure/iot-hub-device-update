@@ -505,12 +505,21 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
         result = false;
     }
     else if (
-        connInfo->certificateString != NULL
+        connInfo->certificateString != NULL && connInfo->certType == CertificateType_SymmetricKey
+        && (iothubResult = IoTHubDeviceClient_LL_SetOption(
+                g_iotHubClientHandle, OPTION_TRUSTED_CERT, connInfo->certificateString))
+            != IOTHUB_CLIENT_OK)
+    {
+        Log_Error("Unable to set IotHub symmetric key certificate, error=%d", iothubResult);
+        result = false;
+    }
+    else if (
+        connInfo->certificateString != NULL && connInfo->certType == CertificateType_x509
         && (iothubResult = IoTHubDeviceClient_LL_SetOption(
                 g_iotHubClientHandle, SU_OPTION_X509_CERT, connInfo->certificateString))
             != IOTHUB_CLIENT_OK)
     {
-        Log_Error("Unable to set IotHub certificate, error=%d", iothubResult);
+        Log_Error("Unable to set IotHub x509 certificate, error=%d", iothubResult);
         result = false;
     }
     else if (
@@ -644,6 +653,8 @@ _Bool GetConnectionInfoFromADUConfigFile(ADUC_ConnectionInfo* info)
             Log_Error("Failed to copy certificate string.");
             goto done;
         }
+
+        info->certType = CertificateType_SymmetricKey;
     }
 
     succeeded = true;
@@ -698,6 +709,11 @@ _Bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
         goto done;
     }
 
+    if (info->certificateString != NULL)
+    {
+        info->certType = CertificateType_x509;
+    }
+
     if (provInfo.certKeyHandle != NULL)
     {
         if (mallocAndStrcpy_s(&info->opensslPrivateKey, provInfo.certKeyHandle) != 0)
@@ -733,11 +749,11 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 {
     _Bool succeeded = false;
 
-    ADUC_ConnectionInfo info = { NULL, NULL };
+    ADUC_ConnectionInfo info = { NULL, CertificateType_None, NULL, NULL, NULL };
 
     if (launchArgs->connectionString != NULL)
     {
-        ADUC_ConnectionInfo connInfo = { launchArgs->connectionString, NULL, NULL, NULL };
+        ADUC_ConnectionInfo connInfo = { launchArgs->connectionString, CertificateType_None, NULL, NULL, NULL };
         if (!ADUC_DeviceClient_Create(&connInfo, launchArgs))
         {
             Log_Error("ADUC_DeviceClient_Create failed");
