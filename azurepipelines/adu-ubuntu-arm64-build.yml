@@ -59,18 +59,25 @@ pr:
 jobs:
 - job: BuildAduAgent
   displayName: 'Build ADU Agent'
-  timeoutInMinutes: 210
-  cancelTimeoutInMinutes: 210
+  timeoutInMinutes: 360
+  cancelTimeoutInMinutes: 360
   pool: ADUC-Linux
   steps:
   - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
     displayName: 'Component Detection'
     inputs:
       sourceScanPath: src
+  
+  # QEMU must be registered before this pipeline runs, but restarting the build VM will deregister QEMU,
+  # So, we just need to run QEMU before kicking off this pipeline. 
+  # This is only an issue on the arm64 flavor since we aren't able to register QEMU as part of the docker
+  # image for this architecture, which is not the case for arm32.
 
   - bash: |
           echo "Running whoami"
           whoami
+          echo "Register QEMU"
+          sudo docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
           echo "Listing running containers"
           sudo docker ps -a
           echo "Listing current images"
@@ -134,8 +141,8 @@ jobs:
 
     # note, -o param in the dependencies script adds a src/agent to the final location of AducIotAgent
   - bash: |
-          cp out-arm64/src/agent/out-arm64/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgentSim
-    displayName: 'Stage build artifacts (AducIotAgent simulator)'
+          cp out-arm64/src/agent/out-arm64/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgentSim-microsoft-swupdate
+    displayName: 'Stage build artifacts (simulator-swupdate-debug)'
     condition: and(ne(variables['Build.Reason'], 'IndividualCI'), ne(variables['Build.Reason'], 'PullRequest'))
 
   - bash: |
@@ -153,13 +160,22 @@ jobs:
       publishRunAttachments: false # Attachments are not supported for CTest
 
   - bash: |
+          sudo docker exec -w /iot-hub-device-update arm64container scripts/build.sh --clean --platform-layer simulator --content-handlers microsoft/apt --log-lib zlog --out-dir out-arm64
+    displayName: 'Build Client: simulator-apt-Debug'
+
+    # note, -o param in the dependencies script adds a src/agent to the final location of AducIotAgent
+  - bash: |
+          cp out-arm64/src/agent/out-arm64/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgentSim-microsoft-apt
+    displayName: 'Stage build artifacts (simulator-apt-debug)'
+    condition: and(ne(variables['Build.Reason'], 'IndividualCI'), ne(variables['Build.Reason'], 'PullRequest'))
+
+  - bash: |
           sudo docker exec -w /iot-hub-device-update arm64container scripts/build.sh --clean --build-unit-tests --type MinSizeRel --platform-layer linux --content-handlers microsoft/apt --log-lib zlog --build-packages --static-analysis clang-tidy,cppcheck --out-dir out-arm64
     displayName: 'Build Client, Unit Tests and Packages: linux-apt-MinSizeRel'
     
   - bash: |
           cp out-arm64/*.deb $(Build.ArtifactStagingDirectory)
           cp out-arm64/src/agent/out-arm64/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgent
-          cp $(Build.SourcesDirectory)/docs/release-notes.md $(Build.ArtifactStagingDirectory)/release-notes.md
     displayName: 'Stage build artifacts (Deb package, agent and docs)'
     condition: and(ne(variables['Build.Reason'], 'IndividualCI'), ne(variables['Build.Reason'], 'PullRequest'))
 
