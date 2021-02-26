@@ -1,0 +1,26 @@
+﻿{
+    "updateId":  {
+                     "provider":  "Contoso",
+                     "name":  "SampleUpdate1",
+                     "version":  "1.0.1"
+                 },
+    "updateType":  "microsoft/apt:1",
+    "installedCriteria":  "Sample package update-1.0.1",
+    "compatibility":  [
+                          {
+                              "deviceManufacturer":  "Contoso",
+                              "deviceModel":  "Video"
+                          }
+                      ],
+    "files":  [
+                  {
+                      "filename":  "libcurl4-doc-apt-manifest.json",
+                      "sizeInBytes":  154,
+                      "hashes":  {
+                                     "sha256":  "G9gVz4WqTRu/cXfRjNMbpENxEuAXqlT0E1vLOgaMICw="
+                                 }
+                  }
+              ],
+    "createdDateTime":  "2021-02-23T04:35:22.4375560Z",
+    "manifestVersion":  "2.0"
+}

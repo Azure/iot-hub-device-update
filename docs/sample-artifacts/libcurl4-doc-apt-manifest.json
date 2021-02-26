@@ -1,0 +1,9 @@
+﻿{
+    "name": "Sample package update",
+    "version": "1.0.1",
+    "packages": [
+        {
+            "name": "libcurl4-doc"
+        }
+    ]
+}

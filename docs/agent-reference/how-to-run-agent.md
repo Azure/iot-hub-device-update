@@ -1,4 +1,4 @@
-# Running the Azure Device Update Reference Agent
+# Running the Device Update for IoT Hub Reference Agent
 
 ## Command Line
 
@@ -21,7 +21,7 @@ These arguments are specific to the agent simulator.
 #### --simulation_mode=\<mode>
 
 Tells the agent where and if to force a failure. This is useful for evaluating
-and testing how ADU reports errors.
+and testing how Device Update for IoT Hub reports errors.
 
 `mode` can be one of the following options:
 
@@ -54,8 +54,8 @@ DeviceInformation Digital Twin interface.
 
 ## Daemon
 
-When the ADU Agent has been installed as a daemon, it will automatically start
-on boot. The ADU Agent daemon reads the IoT Hub device connection string from a
+When the Device Update Agent has been installed as a daemon, it will automatically start
+on boot. The Device Update Agent daemon reads the IoT Hub device connection string from a
 configuration file. Place your device connection string in /adu/adu-conf.txt.
 
 To manually start the daemon:
