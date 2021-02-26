@@ -99,7 +99,7 @@ jobs:
         inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)/scripts/build.sh
-          arguments: "--clean --build-unit-tests --platform-layer simulator --provision-with-iotedge --content-handlers microsoft/swupdate --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
+          arguments: "--clean --build-unit-tests --platform-layer simulator --content-handlers microsoft/swupdate --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
 
       - bash: |
           cp $(Build.BinariesDirectory)/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgentSim-microsoft-swupdate
@@ -169,7 +169,7 @@ jobs:
         inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)/scripts/build.sh
-          arguments: "--clean --build-unit-tests --platform-layer linux --provision-with-iotedge --content-handlers microsoft/swupdate --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
+          arguments: "--clean --build-unit-tests --platform-layer linux --content-handlers microsoft/swupdate --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
 
         # Run all unit tests.
       - bash: |
