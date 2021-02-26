@@ -1,13 +1,11 @@
-# How To Modify The Azure Device Update Agent Code
+# How To Modify the Device Update for IoT Hub Agent Code
 
-Here are some cases where you might want to modify the ADU Agent code to fit
-your scenarios and devices.
+Here are some cases where you might want to modify the Device Update Agent code to fit your scenarios and devices.
 
 ## Adding additional IoT Plug and Play interfaces
 
 You may want to implement your own Azure IoT PnP interfaces in addition to the
-ones necessary for ADU.  We recommend looking at how the Azure Device Update
-Core and Device Information interfaces are implemented in
+ones necessary for Device Update for IoT Hub.  We recommend looking at how the ADU Core Interface and Device Information interfaces are implemented in
 [src/agent/adu_core_interface](../../src/agent/adu_core_interface). Specifically
 [adu_core_interface.h](../../src/agent/adu_core_interface/inc/aduc/adu_core_interface.h)
 and
@@ -22,4 +20,4 @@ in [src/content_handlers](../../src/content_handlers)
 
 ## Porting to a Different OS or Platform
 
-If you want to use the ADU Agent on an OS or platform that isn't supported out-of-the box, you can provide your own [Platform Layer](../../src/platform_layers) implementation. You may also need to port the [Azure IoT C SDK](https://github.com/Azure/azure-c-shared-utility/blob/public-preview/devdoc/porting_guide.md) to your device.
+If you want to use the Device Update Agent on an OS or platform that isn't supported out-of-the box, you can provide your own [Platform Layer](../../src/platform_layers) implementation. You may also need to port the [Azure IoT C SDK](https://github.com/Azure/azure-c-shared-utility/blob/public-preview/devdoc/porting_guide.md) to your device.

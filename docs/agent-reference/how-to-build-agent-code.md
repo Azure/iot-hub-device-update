@@ -1,6 +1,6 @@
-# How To Build The Azure Device Update Agent
+# How To Build the Device Update for IoT Hub Agent
 
-## Dependencies of ADU Agent
+## Dependencies of Device Update Agent
 
 ### Required Dependencies
 
@@ -19,13 +19,12 @@ The [Delivery Optimization
 SDK](https://github.com/microsoft/do-client)
 SDK provides a robust way for the client to download an update.
 
-## Building the ADU Agent for Linux
+## Building the Device Update Agent for Linux
 
 ### Installing Dependencies
 
 Use the [scripts/install-deps.sh](../../scripts/install-deps.sh) Linux shell
-script for a convenient way to install the dependencies of the Azure Device
-Update agent for most use cases.
+script for a convenient way to install the dependencies of the Device Update for IoT Hub agent for most use cases.
 
 **Note**: You may be prompted for sudo password or GitHub username and password
 when running `install-deps.sh`. If your GitHub account has two factor auth
@@ -52,10 +51,9 @@ dependencies.  To see the usage info:
 ./scripts/install-deps.sh -h
 ```
 
-### ADU Linux Build System
+### Device Update Linux Build System
 
-The Azure Device Update reference agent code utilizes CMake for building. An
-example build script is provided at [scripts/build.sh](../../scripts/build.sh).
+The Device Update for IoT Hub reference agent code utilizes CMake for building. An example build script is provided at [scripts/build.sh](../../scripts/build.sh).
 
 #### Build Using build.sh
 
@@ -105,9 +103,9 @@ cmake -G Ninja ..
 ninja
 ```
 
-## Install the ADU Agent
+## Install the Device Update Agent
 
-To install the ADU Agent after building:
+To install the Device Update Agent after building:
 
 ```shell
 sudo cmake --build out --target install
@@ -121,13 +119,4 @@ sudo ninja install
 popd > /dev/null
 ```
 
-**Note** If the ADU Agent was built as a daemon, the install targets will
-install and register the ADU Agent as a daemon.
-
-## Adding the ADU Agent to a Yocto build
-
-You will need to create a set of Yocto recipes to build the ADU reference agent
-as part of your Yocto build.  In addition, to create Yocto recipes for
-dependencies that are not already part of the standard Open Embedded layers.
-[Learn more](./yocto-configuration.md) about the sample Yocto recipes and the
-configurations that are used for the ADU reference agent.
+**Note** If the Device Update Agent was built as a daemon, the install targets will install and register the Device Update Agent as a daemon.
