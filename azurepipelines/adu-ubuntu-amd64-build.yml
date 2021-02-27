@@ -139,7 +139,7 @@ jobs:
         inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)/scripts/build.sh
-          arguments: "--clean --type MinSizeRel --platform-layer linux --content-handlers microsoft/apt --log-lib zlog --build-packages --build-unit-tests --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
+          arguments: "--clean --type MinSizeRel --platform-layer linux --provision-with-iotedge --content-handlers microsoft/apt --log-lib zlog --build-packages --build-unit-tests --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
 
       - bash: |
           cp $(Build.BinariesDirectory)/*.deb $(Build.ArtifactStagingDirectory)
