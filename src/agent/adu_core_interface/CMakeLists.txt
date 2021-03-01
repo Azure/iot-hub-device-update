@@ -18,7 +18,6 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 target_link_digital_twin_client (${PROJECT_NAME} PUBLIC)
 
 find_package (Parson REQUIRED)
-find_package (deliveryoptimization_sdk CONFIG REQUIRED)
 
 target_link_libraries (
     ${PROJECT_NAME}
@@ -27,8 +26,7 @@ target_link_libraries (
             aduc::pnp_helper
             aduc::logging
             aduc::jws_utils
-            aduc::hash_utils
-            Microsoft::deliveryoptimization)
+            aduc::hash_utils)
 
 target_compile_definitions (
     ${PROJECT_NAME}
@@ -37,6 +35,11 @@ target_compile_definitions (
             ADUC_DEVICEPROPERTIES_MODEL="${ADUC_DEVICEPROPERTIES_MODEL}"
             ADUC_VERSION="${ADUC_VERSION}"
             ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}")
+
+if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
+    find_package (deliveryoptimization_sdk CONFIG REQUIRED)
+    target_link_libraries (${PROJECT_NAME} PRIVATE Microsoft::deliveryoptimization)
+endif ()
 
 if (ADUC_PLATFORM_LAYER STREQUAL "simulator" AND ADUC_BUILD_UNIT_TESTS)
     # Unit tests for this library depend on the simulator being built, so
