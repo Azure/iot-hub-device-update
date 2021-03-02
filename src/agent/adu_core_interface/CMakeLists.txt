@@ -18,7 +18,6 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 target_link_digital_twin_client (${PROJECT_NAME} PUBLIC)
 
 find_package (Parson REQUIRED)
-find_package (deliveryoptimization_sdk CONFIG REQUIRED)
 
 target_link_libraries (
     ${PROJECT_NAME}
@@ -27,8 +26,7 @@ target_link_libraries (
             aduc::pnp_helper
             aduc::logging
             aduc::jws_utils
-            aduc::hash_utils
-            Microsoft::deliveryoptimization)
+            aduc::hash_utils)
 
 target_compile_definitions (
     ${PROJECT_NAME}
@@ -38,18 +36,24 @@ target_compile_definitions (
             ADUC_VERSION="${ADUC_VERSION}"
             ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}")
 
-if (ADUC_PLATFORM_LAYER STREQUAL "simulator" AND ADUC_BUILD_UNIT_TESTS)
-    # Unit tests for this library depend on the simulator being built, so
-    # only build associated UT if we're building simulator.
-    find_package (umock_c REQUIRED CONFIG)
-    target_link_libraries (${PROJECT_NAME} PRIVATE umock_c)
+if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
+    target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_PLATFORM_SIMULATOR)
+    if (ADUC_BUILD_UNIT_TESTS)
+        # Unit tests for this library depend on the simulator being built, so
+        # only build associated UT if we're building simulator.
+        find_package (umock_c REQUIRED CONFIG)
+        target_link_libraries (${PROJECT_NAME} PRIVATE umock_c)
 
-    add_definitions (-DENABLE_MOCKS=1)
-    add_definitions (-DUMOCK_STATIC=static)
-    add_definitions (-DENABLE_MOCK_FILTERING)
-    # Methods to mock:
-    add_definitions (-Dplease_mock_IoTHubDeviceClient_LL_SendReportedState=MOCK_ENABLED)
-    add_subdirectory (tests)
+        add_definitions (-DENABLE_MOCKS=1)
+        add_definitions (-DUMOCK_STATIC=static)
+        add_definitions (-DENABLE_MOCK_FILTERING)
+        # Methods to mock:
+        add_definitions (-Dplease_mock_IoTHubDeviceClient_LL_SendReportedState=MOCK_ENABLED)
+        add_subdirectory (tests)
+    endif()
+else ()
+    find_package (deliveryoptimization_sdk CONFIG REQUIRED)
+    target_link_libraries (${PROJECT_NAME} PRIVATE Microsoft::deliveryoptimization)
 endif ()
 
 if (ENABLE_ADU_TELEMETRY_REPORTING)
