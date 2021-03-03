@@ -70,11 +70,11 @@ downloads but still mocks the `Install` and `Apply` actions:
 ./scripts/build.sh -c -p linux
 ```
 
-To build the agent package for package based updating via Desired State
-Manifest (DSM):
+To build the agent package for package based updating via APT
+Manifest:
 
 ```shell
-./scripts/build.sh -c -p linux --content-handlers dsm --build-packages
+./scripts/build.sh -c -p linux --content-handlers microsoft/apt --build-packages
 ```
 
 To see additional build options with build.sh:
@@ -90,17 +90,19 @@ for ADUC_DEVICEINFO_MANUFACTURER and ADUC_DEVICEINFO_MODEL in the top-level
 [CMakeLists.txt](../../CMakeLists.txt) before building.  Optional CMake values can be found there as well.
 
 ```shell
-mkdir -b build && cd build
+mkdir -p build && pushd build
 cmake ..
 cmake --build .
+popd > /dev/null
 ```
 
 or using Ninja
 
 ```shell
-mkdir -b build && cd build
+mkdir -p build && pushd build
 cmake -G Ninja ..
 ninja
+popd > /dev/null
 ```
 
 ## Install the Device Update Agent
