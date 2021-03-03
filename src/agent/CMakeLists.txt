@@ -57,7 +57,6 @@ target_compile_definitions (
 find_package (azure_c_shared_utility REQUIRED)
 find_package (IotHubClient REQUIRED)
 find_package (umqtt REQUIRED)
-find_package (deliveryoptimization_sdk CONFIG REQUIRED)
 find_package (Parson REQUIRED)
 
 target_link_digital_twin_client (${target_name} PRIVATE)
@@ -68,7 +67,6 @@ target_link_libraries (
             IotHubClient::iothub_client
             iothub_client_mqtt_transport
             umqtt
-            Microsoft::deliveryoptimization
             aduc::pnp_helper
             aduc::adu_core_interface
             aduc::c_utils
@@ -91,6 +89,9 @@ target_compile_definitions (
 
 if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
     target_compile_definitions (${target_name} PRIVATE ADUC_PLATFORM_SIMULATOR)
+else ()
+    find_package (deliveryoptimization_sdk CONFIG REQUIRED)
+    target_link_libraries (${target_name} PRIVATE Microsoft::deliveryoptimization)
 endif ()
 
 if (ADUC_PROVISION_WITH_EIS)
