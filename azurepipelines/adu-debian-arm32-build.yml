@@ -12,7 +12,7 @@ variables:
   ADUC_VERSION_PRERELEASE: $(version.pre-release)
   ADUC_VERSION_BUILD: $(version.build)
   ENABLE_ADU_TELEMETRY_REPORTING: true
-  # aducBuilderIdentifier will be set to "DU" short for Device Update by default, for ADUC-sourced builder
+  # aducBuilderIdentifier will be set to "DU" short for Device Update by default, for Devcie Update-sourced builder
   ADUC_BUILDER_IDENTIFIER: DU
   # DO requires gcc greater than 6 for c++17 support.
   # gcc-8 matches what is built with poky warrior.
@@ -27,7 +27,7 @@ resources:
 trigger:
   branches:
     include:
-      - master
+      - main
       - release/*
   paths:
     exclude:
@@ -39,11 +39,12 @@ trigger:
       - tools/*
       - docker/*
       - scripts/*
+      - licenses/*
 
 pr:
   branches:
     include:
-      - master
+      - main
       - release/*
       - feature/*
       # TODO(shiyipeng): Task 27290511: Debian arm32 64 pipeline - improve build time
