@@ -27,17 +27,16 @@ void ADUC_ConnectionInfoDeAlloc(ADUC_ConnectionInfo* info)
     info->connType = ADUC_ConnType_NotSet;
 }
 
-
 ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
 {
     ADUC_ConnType result = ADUC_ConnType_NotSet;
 
-    if (strstr(connectionString,"DeviceId=") != NULL)
+    if (strstr(connectionString, "DeviceId=") != NULL)
     {
         result = ADUC_ConnType_Device;
     }
 
-    if (result == ADUC_ConnType_Device && strstr(connectionString,"ModuleId=") != NULL)
+    if (result == ADUC_ConnType_Device && strstr(connectionString, "ModuleId=") != NULL)
     {
         result = ADUC_ConnType_Module;
     }

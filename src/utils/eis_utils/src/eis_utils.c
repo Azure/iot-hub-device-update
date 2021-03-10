@@ -629,7 +629,7 @@ done:
 
     if (provisioningInfo->authType == ADUC_AuthType_SASCert && provisioningInfo->certificateString != NULL)
     {
-        if (mallocAndStrcpy_s(&provisioningInfo->opensslEngine,EIS_OPENSSL_KEY_ENGINE_ID) != 0)
+        if (mallocAndStrcpy_s(&provisioningInfo->opensslEngine, EIS_OPENSSL_KEY_ENGINE_ID) != 0)
         {
             success = false;
         }

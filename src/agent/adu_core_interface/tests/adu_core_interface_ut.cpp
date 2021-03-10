@@ -114,7 +114,7 @@ public:
 
         REGISTER_UMOCK_ALIAS_TYPE(ADUC_ClientHandle, void*);
         REGISTER_UMOCK_ALIAS_TYPE(IOTHUB_CLIENT_REPORTED_STATE_CALLBACK, void*);
-        
+
         REGISTER_GLOBAL_MOCK_HOOK(ClientHandle_SendReportedState, mockClientHandle_SendReportedState);
     }
 

@@ -201,7 +201,9 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         REQUIRE(mallocAndStrcpy_s(&g_identityResp, validDeviceSasIdentityResponseStr) == 0);
         REQUIRE(mallocAndStrcpy_s(&g_signatureResp, validSignatureResponseStr) == 0);
 
-        ADUC_ConnectionInfo outInfo = { ADUC_AuthType_NotSet, ADUC_ConnType_NotSet,  nullptr, nullptr, nullptr, nullptr };
+        ADUC_ConnectionInfo outInfo = {
+            ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, nullptr, nullptr, nullptr, nullptr
+        };
 
         EISUtilityResult result = RequestConnectionStringFromEISWithExpiry(expiry, timeout, &outInfo);
 
@@ -237,7 +239,9 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         g_signatureResp = nullptr;
         REQUIRE(mallocAndStrcpy_s(&g_certificateResp, validCertificateResponseStr) == 0);
 
-        ADUC_ConnectionInfo outInfo = { ADUC_AuthType_NotSet, ADUC_ConnType_NotSet,  nullptr, nullptr, nullptr, nullptr };
+        ADUC_ConnectionInfo outInfo = {
+            ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, nullptr, nullptr, nullptr, nullptr
+        };
 
         EISUtilityResult result = RequestConnectionStringFromEISWithExpiry(expiry, timeout, &outInfo);
 
@@ -277,7 +281,9 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         REQUIRE(mallocAndStrcpy_s(&g_identityResp, validModuleSasIdentityResponseStr) == 0);
         REQUIRE(mallocAndStrcpy_s(&g_signatureResp, validSignatureResponseStr) == 0);
 
-        ADUC_ConnectionInfo outInfo = { ADUC_AuthType_NotSet, ADUC_ConnType_NotSet,  nullptr, nullptr, nullptr, nullptr };
+        ADUC_ConnectionInfo outInfo = {
+            ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, nullptr, nullptr, nullptr, nullptr
+        };
 
         EISUtilityResult result = RequestConnectionStringFromEISWithExpiry(expiry, timeout, &outInfo);
 
@@ -314,7 +320,9 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         g_signatureResp = nullptr;
         REQUIRE(mallocAndStrcpy_s(&g_certificateResp, validCertificateResponseStr) == 0);
 
-        ADUC_ConnectionInfo outInfo = { ADUC_AuthType_NotSet, ADUC_ConnType_NotSet,  nullptr, nullptr, nullptr, nullptr };
+        ADUC_ConnectionInfo outInfo = {
+            ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, nullptr, nullptr, nullptr, nullptr
+        };
 
         EISUtilityResult result = RequestConnectionStringFromEISWithExpiry(expiry, timeout, &outInfo);
 
@@ -343,7 +351,9 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         REQUIRE(mallocAndStrcpy_s(&g_identityResp, invalidIdentityResponseStr) == 0);
         REQUIRE(mallocAndStrcpy_s(&g_signatureResp, validSignatureResponseStr) == 0);
 
-        ADUC_ConnectionInfo outInfo = { ADUC_AuthType_NotSet, ADUC_ConnType_NotSet,  nullptr, nullptr, nullptr, nullptr };
+        ADUC_ConnectionInfo outInfo = {
+            ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, nullptr, nullptr, nullptr, nullptr
+        };
 
         EISUtilityResult result = RequestConnectionStringFromEISWithExpiry(expiry, timeout, &outInfo);
 
@@ -366,7 +376,9 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         REQUIRE(mallocAndStrcpy_s(&g_identityResp, validDeviceSasIdentityResponseStr) == 0);
         REQUIRE(mallocAndStrcpy_s(&g_signatureResp, invalidSignatureResponseStr) == 0);
 
-        ADUC_ConnectionInfo outInfo = { ADUC_AuthType_NotSet, ADUC_ConnType_NotSet,  nullptr, nullptr, nullptr, nullptr };
+        ADUC_ConnectionInfo outInfo = {
+            ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, nullptr, nullptr, nullptr, nullptr
+        };
 
         EISUtilityResult result = RequestConnectionStringFromEISWithExpiry(expiry, timeout, &outInfo);
 
@@ -392,7 +404,9 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         g_signatureResp = nullptr;
         REQUIRE(mallocAndStrcpy_s(&g_certificateResp, invalidCertificateResponseStr) == 0);
 
-        ADUC_ConnectionInfo outInfo = { ADUC_AuthType_NotSet, ADUC_ConnType_NotSet,  nullptr, nullptr, nullptr, nullptr };
+        ADUC_ConnectionInfo outInfo = {
+            ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, nullptr, nullptr, nullptr, nullptr
+        };
 
         EISUtilityResult result = RequestConnectionStringFromEISWithExpiry(expiry, timeout, &outInfo);
 
@@ -417,7 +431,9 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         REQUIRE(mallocAndStrcpy_s(&g_identityResp, validDeviceSasIdentityResponseStr) == 0);
         REQUIRE(mallocAndStrcpy_s(&g_signatureResp, validSignatureResponseStr) == 0);
 
-        ADUC_ConnectionInfo outInfo = { ADUC_AuthType_NotSet, ADUC_ConnType_NotSet,  nullptr, nullptr, nullptr, nullptr };
+        ADUC_ConnectionInfo outInfo = {
+            ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, nullptr, nullptr, nullptr, nullptr
+        };
 
         EISUtilityResult result = RequestConnectionStringFromEISWithExpiry(expiry, timeout, &outInfo);
 
@@ -445,7 +461,9 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         REQUIRE(mallocAndStrcpy_s(&g_identityResp, validDeviceSasIdentityResponseStr) == 0);
         REQUIRE(mallocAndStrcpy_s(&g_signatureResp, validSignatureResponseStr) == 0);
 
-        ADUC_ConnectionInfo outInfo = { ADUC_AuthType_NotSet, ADUC_ConnType_NotSet,  nullptr, nullptr, nullptr, nullptr };
+        ADUC_ConnectionInfo outInfo = {
+            ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, nullptr, nullptr, nullptr, nullptr
+        };
 
         EISUtilityResult result = RequestConnectionStringFromEISWithExpiry(expiry, timeout, &outInfo);
 

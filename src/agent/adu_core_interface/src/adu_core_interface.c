@@ -51,7 +51,6 @@ void ClientReportedStateCallback(int statusCode, void* context)
     }
 }
 
-
 static void ReportClientJsonProperty(const char* json_value)
 {
     if (g_iotHubClientHandleForADUComponent == NULL)
@@ -295,11 +294,7 @@ done:
 }
 
 void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
-    ADUC_ClientHandle deviceClient,
-    const char* propertyName,
-    JSON_Value* propertyValue,
-    int version,
-    void* context)
+    ADUC_ClientHandle deviceClient, const char* propertyName, JSON_Value* propertyValue, int version, void* context)
 {
     if (strcmp(propertyName, g_aduPnPComponentOrchestratorPropertyName) == 0)
     {

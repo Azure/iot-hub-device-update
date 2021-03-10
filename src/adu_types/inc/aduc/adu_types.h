@@ -46,7 +46,8 @@ typedef enum tagADUC_AuthType
  */
 typedef struct tagConnectionInfo
 {
-    ADUC_AuthType authType; /**< Indicates certificate or shared access signature token authentication for connectionString */
+    ADUC_AuthType
+        authType; /**< Indicates certificate or shared access signature token authentication for connectionString */
     ADUC_ConnType connType; /**< Indicates whether this connection string is module-id or device-id based */
     char* connectionString; /**< Device or Module connection string. */
     char* certificateString; /**< x509 certificate in PEM format for the IoTHubClient to be used for authentication*/
@@ -57,16 +58,15 @@ typedef struct tagConnectionInfo
 /**
  * @brief DeAllocates the ADUC_ConnectionInfo object
  * @param info the ADUC_ConnectionInfo object to be de-allocated
- */ 
+ */
 void ADUC_ConnectionInfoDeAlloc(ADUC_ConnectionInfo* info);
 
 /**
  * @brief Scans the connection string and returns the connection type related for the string
  * @param connectionString the connection string to scan
  * @returns the connection type for @p connectionString
- */ 
+ */
 ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString);
-
 
 EXTERN_C_END
 

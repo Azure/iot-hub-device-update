@@ -3,7 +3,7 @@
  * @brief Declares the ClientHandle type
  *  
  * @copyright Copyright (c) 2019, Microsoft Corp.
- */ 
+ */
 
 #ifndef CLIENT_HANDLE_H
 #define CLIENT_HANDLE_H
