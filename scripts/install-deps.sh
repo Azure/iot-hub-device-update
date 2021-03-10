@@ -45,7 +45,8 @@ catch2_ref=$default_catch2_ref
 
 # DO Deps
 install_do=false
-default_do_ref=0.6.1
+# TODO(shiyipeng): update default_do_ref on DO's next release
+default_do_ref=main
 do_ref=$default_do_ref
 install_do_deps=false
 default_do_deps_distro=ubuntu1804
@@ -243,7 +244,11 @@ do_install_do() {
     if [[ $install_do_deps != "false" ]]; then
         local bootstrap_file=$do_dir/build/bootstrap/bootstrap-$install_do_deps.sh
         chmod +x $bootstrap_file || return
-        $SUDO $bootstrap_file || return
+        if [[ $install_do_deps == "ubuntu-18.04" ]]; then
+            $SUDO $bootstrap_file --no-tools || return
+        else
+            $SUDO $bootstrap_file || return
+        fi
     fi
 
     mkdir cmake || return
