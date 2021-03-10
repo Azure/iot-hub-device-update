@@ -11,13 +11,13 @@
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
 #include "aduc/hash_utils.h"
+#include "startup_msg_helper.h"
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
 
 #include <iothub_client_version.h>
 #include <parson.h>
 #include <pnp_protocol.h>
-#include "startup_msg_helper.h"
 #include <stdlib.h>
 
 // Name of an Azure Device Update Agent component that this device implements.
