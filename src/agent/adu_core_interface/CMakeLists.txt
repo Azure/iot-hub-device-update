@@ -21,12 +21,15 @@ find_package (Parson REQUIRED)
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC Parson::parson aduc::c_utils
+    PUBLIC  aduc::adu_types
+            aduc::c_utils 
+            aduc::communication_abstraction
+            Parson::parson
     PRIVATE aduc::platform_layer
             aduc::pnp_helper
-            aduc::logging
+            aduc::hash_utils
             aduc::jws_utils
-            aduc::hash_utils)
+            aduc::logging)
 
 target_compile_definitions (
     ${PROJECT_NAME}
@@ -44,11 +47,11 @@ if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
         find_package (umock_c REQUIRED CONFIG)
         target_link_libraries (${PROJECT_NAME} PRIVATE umock_c)
 
-        add_definitions (-DENABLE_MOCKS=1)
-        add_definitions (-DUMOCK_STATIC=static)
-        add_definitions (-DENABLE_MOCK_FILTERING)
-        # Methods to mock:
-        add_definitions (-Dplease_mock_IoTHubDeviceClient_LL_SendReportedState=MOCK_ENABLED)
+        # add_definitions (-DENABLE_MOCKS=1)
+        # add_definitions (-DUMOCK_STATIC=static)
+        # add_definitions (-DENABLE_MOCK_FILTERING)
+        # # Methods to mock:
+        # add_definitions (-Dplease_mock_ClientHandle_SendReportedState=MOCK_ENABLED)
         add_subdirectory (tests)
     endif()
 else ()

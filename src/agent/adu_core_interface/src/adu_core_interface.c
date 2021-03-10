@@ -8,22 +8,17 @@
 #include "aduc/adu_core_interface.h"
 #include "aduc/adu_core_export_helpers.h" // ADUC_SetUpdateStateWithResult
 #include "aduc/agent_workflow.h"
+#include "aduc/c_utils.h"
+#include "aduc/client_handle_helper.h"
 #include "aduc/hash_utils.h"
-#include "startup_msg_helper.h"
-#include <aduc/c_utils.h>
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
+
 #include <iothub_client_version.h>
 #include <parson.h>
-#include <pnp_device_client_ll.h>
 #include <pnp_protocol.h>
+#include "startup_msg_helper.h"
 #include <stdlib.h>
-
-#ifdef ENABLE_MOCKS
-
-#    include <umock_c/umock_c.h>
-
-#endif
 
 // Name of an Azure Device Update Agent component that this device implements.
 static const char g_aduPnPComponentName[] = "azureDeviceUpdateAgent";
@@ -41,7 +36,7 @@ static const char g_aduPnPComponentOrchestratorPropertyName[] = "service";
 /**
  * @brief Handle for Azure Device Update Agent component to communication to service.
  */
-IOTHUB_DEVICE_CLIENT_LL_HANDLE g_iotHubClientHandleForADUComponent;
+ADUC_ClientHandle g_iotHubClientHandleForADUComponent;
 
 void ClientReportedStateCallback(int statusCode, void* context)
 {
@@ -56,32 +51,6 @@ void ClientReportedStateCallback(int statusCode, void* context)
     }
 }
 
-#ifdef ENABLE_MOCKS
-
-static MockIoTHubDeviceClient_LL_SendReportedState g_mockSendReportState = NULL;
-
-void ADUC_UT_SetSendReportedStateMock(MockIoTHubDeviceClient_LL_SendReportedState function)
-{
-    g_mockSendReportState = function;
-}
-
-static IOTHUB_CLIENT_RESULT mockIoTHubDeviceClient_LL_SendReportedState(
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceHandle,
-    const unsigned char* reportedState,
-    size_t reportedStateLen,
-    IOTHUB_CLIENT_REPORTED_STATE_CALLBACK reportedStateCallback,
-    void* context)
-{
-    if (g_mockSendReportState != NULL)
-    {
-        return g_mockSendReportState(deviceHandle, reportedState, reportedStateLen, reportedStateCallback, context);
-    }
-
-    return IoTHubDeviceClient_LL_SendReportedState(
-        deviceHandle, reportedState, reportedStateLen, reportedStateCallback, context);
-}
-
-#endif // ENABLE_MOCKS
 
 static void ReportClientJsonProperty(const char* json_value)
 {
@@ -90,15 +59,6 @@ static void ReportClientJsonProperty(const char* json_value)
         Log_Error("ReportClientJsonProperty called with invalid IoTHub Device Client handle! Can't report!");
         return;
     }
-
-#ifdef ENABLE_MOCKS
-
-    REGISTER_UMOCK_ALIAS_TYPE(IOTHUB_DEVICE_CLIENT_LL_HANDLE, void*);
-    REGISTER_UMOCK_ALIAS_TYPE(IOTHUB_CLIENT_REPORTED_STATE_CALLBACK, void*);
-
-    REGISTER_GLOBAL_MOCK_HOOK(IoTHubDeviceClient_LL_SendReportedState, mockIoTHubDeviceClient_LL_SendReportedState);
-
-#endif
 
     IOTHUB_CLIENT_RESULT iothubClientResult;
     STRING_HANDLE jsonToSend =
@@ -113,7 +73,7 @@ static void ReportClientJsonProperty(const char* json_value)
     const char* jsonToSendStr = STRING_c_str(jsonToSend);
     size_t jsonToSendStrLen = strlen(jsonToSendStr);
 
-    iothubClientResult = IoTHubDeviceClient_LL_SendReportedState(
+    iothubClientResult = ClientHandle_SendReportedState(
         g_iotHubClientHandleForADUComponent,
         (const unsigned char*)jsonToSendStr,
         jsonToSendStrLen,
@@ -135,12 +95,6 @@ done:
     {
         STRING_delete(jsonToSend);
     }
-
-#ifdef ENABLE_MOCKS
-
-    REGISTER_GLOBAL_MOCK_HOOK(IoTHubDeviceClient_LL_SendReportedState, NULL);
-
-#endif
 }
 
 /**
@@ -274,7 +228,7 @@ void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext)
 }
 
 void OrchestratorUpdateCallback(
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceClient, JSON_Value* propertyValue, int propertyVersion, void* context)
+    ADUC_ClientHandle deviceClient, JSON_Value* propertyValue, int propertyVersion, void* context)
 {
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)context;
     STRING_HANDLE jsonToSend = NULL;
@@ -314,7 +268,7 @@ void OrchestratorUpdateCallback(
 
     const char* jsonToSendStr = STRING_c_str(jsonToSend);
     size_t jsonToSendStrLen = strlen(jsonToSendStr);
-    IOTHUB_CLIENT_RESULT iothubClientResult = IoTHubDeviceClient_LL_SendReportedState(
+    IOTHUB_CLIENT_RESULT iothubClientResult = ClientHandle_SendReportedState(
         deviceClient, (const unsigned char*)jsonToSendStr, jsonToSendStrLen, NULL, NULL);
 
     if (iothubClientResult != IOTHUB_CLIENT_OK)
@@ -341,7 +295,7 @@ done:
 }
 
 void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceClient,
+    ADUC_ClientHandle deviceClient,
     const char* propertyName,
     JSON_Value* propertyValue,
     int version,
