@@ -49,7 +49,7 @@ install_do=false
 default_do_ref=main
 do_ref=$default_do_ref
 install_do_deps=false
-default_do_deps_distro=ubuntu1804
+default_do_deps_distro=ubuntu-18.04
 
 # Dependencies packages
 aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl')

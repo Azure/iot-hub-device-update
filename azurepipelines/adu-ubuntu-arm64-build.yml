@@ -27,7 +27,8 @@ trigger:
   branches:
     include:
       - main
-      - release/*
+      # TODO(shiyipeng): Reactivate the pipeline after PM confirm on ubuntu arm support
+      # - release/*
   paths:
     exclude:
       - docs/*
@@ -43,8 +44,9 @@ pr:
   branches:
     include:
       - main
-      - release/*
-      - feature/*
+      # TODO(shiyipeng): Reactivate the pipeline after PM confirm on ubuntu arm support
+      # - release/*
+      # - feature/*
       # TODO(shiyipeng): Task 27290511: Debian arm32 64 pipeline - improve build time
       #- dev/*
   paths:
