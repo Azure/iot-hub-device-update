@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # Ensure that getopt starts from first option if ". <script.sh>" was used.
 OPTIND=1
 
@@ -24,14 +27,13 @@ root_dir=$script_dir/..
 build_clean=false
 build_documentation=false
 build_packages=false
-platform_layer="simulator"
-content_handlers="microsoft/swupdate"
+platform_layer="linux"
+content_handlers="microsoft/swupdate,microsoft/apt,microsoft/simulator"
 build_type=Debug
 adu_log_dir=""
 default_log_dir=/var/log/adu
 output_directory=$root_dir/out
 build_unittests=false
-provision_with_iotedge=false
 declare -a static_analysis_tools=()
 log_lib="zlog"
 install_prefix=/usr/local
@@ -50,15 +52,8 @@ print_help() {
     echo "                                      Tools is a comma delimited list of static analysis tools to run at build time."
     echo "                                      Tools: clang-tidy cppcheck cpplint iwyu lwyu (or all)"
     echo ""
-    echo "-p, --platform-layer <layer>          Specify the platform layer to build/use. Default is simulator."
-    echo "                                      Options: linux simulator"
-    echo "                                      The simulator layer provides mocks of the ADU Core and DeviceInformation PnP interfaces."
-    echo ""
-    echo "--content-handlers <handlers...>      The comma delimited list of content handlers to include in the build. Default is microsoft/swupdate"
-    echo "                                      Options: microsoft/swupdate microsoft/apt"
-    echo ""
-    echo "--provision-with-iotedge              Indicates to the agent to provision its connection string via the Edge Identity Service"
-    echo "                                      instead of reading from the configuration file."
+    echo "-p, --platform-layer <layer>          Specify the platform layer to build/use. Default is linux."
+    echo "                                      Option: linux"
     echo ""
     echo "--log-lib <log_lib>                   Specify the logging library to build/use. Default is zlog."
     echo "                                      Options: zlog xlog"
@@ -100,16 +95,16 @@ install_adu_components() {
     usermod -a -G adu "$USER"
     bullet "Current user info:"
     id
-    
+
     copyfile_exit_if_failed "$output_directory/bin/AducIotAgent" /usr/bin
 
     mkdir -p $adu_lib_dir
-    
+
     copyfile_exit_if_failed "$output_directory/bin/adu-shell" $adu_lib_dir
     copyfile_exit_if_failed "$root_dir/src/adu-shell/scripts/adu-swupdate.sh" "$adu_lib_dir"
 
     # Setup directories owner and/or permissions
-    
+
     # Logs directory
     mkdir -p "$adu_log_dir"
 
@@ -173,7 +168,7 @@ while [[ $1 != "" ]]; do
             $ret 1
         fi
         output_directory=$1
-       
+
         ;;
     -s | --static-analysis)
         shift
@@ -197,17 +192,6 @@ while [[ $1 != "" ]]; do
         fi
         platform_layer=$1
 
-        ;;
-    --provision-with-iotedge)
-        provision_with_iotedge=true
-        ;;
-    --content-handlers)
-        shift
-        if [[ -z $1 || $1 == -* ]]; then
-            error "--content-handlers parameter is mandatory."
-            $ret 1
-        fi
-        content_handlers=$1
         ;;
     --log-lib)
         shift
@@ -305,7 +289,6 @@ CMAKE_OPTIONS=(
     "-DADUC_LOG_FOLDER:STRING=$adu_log_dir"
     "-DADUC_LOGGING_LIBRARY:STRING=$log_lib"
     "-DADUC_PLATFORM_LAYER:STRING=$platform_layer"
-    "-DADUC_PROVISION_WITH_EIS:BOOL=$provision_with_iotedge"
     "-DCMAKE_BUILD_TYPE:STRING=$build_type"
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
@@ -383,6 +366,7 @@ done
 
 if [[ $build_clean == "true" ]]; then
     rm -rf "$output_directory"
+    rm -rf "/tmp/adu/testdata"
 fi
 
 mkdir -p "$output_directory"
@@ -394,14 +378,15 @@ cmake -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
 # Save the return code of ninja so we can $ret with that return code.
 ninja
 ret_val=$?
-if [[ $ret_val && $build_packages == "true" ]]; then
+
+if [[ $ret_val == 0 && $build_packages == "true" ]]; then
     cpack
     ret_val=$?
 fi
 
 popd >/dev/null
 
-if [[ $ret_val == 0 && $install_adu == "true" ]]; then  
+if [[ $ret_val == 0 && $install_adu == "true" ]]; then
     install_adu_components
 fi
 

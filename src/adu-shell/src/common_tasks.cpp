@@ -2,7 +2,8 @@
  * @file common_tasks.cpp
  * @brief Implements set of common tasks for most update type.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "common_tasks.hpp"
 #include "aduc/process_utils.hpp"
@@ -18,7 +19,7 @@ namespace Common
 {
 /**
  * @brief Reboots the system.
- * 
+ *
  * @param launchArgs The adu-shell launch command-line arguments that has been parsed.
  * @return A result from child process.
  */
@@ -45,13 +46,13 @@ ADUShellTaskResult Reboot(const ADUShell_LaunchArguments& /*launchArgs*/)
 ADUShellTaskResult DoCommonTask(const ADUShell_LaunchArguments& launchArgs)
 {
     ADUShellTaskResult taskResult;
-    ADUShellTaskFuncType taskProc = NULL;
+    ADUShellTaskFuncType taskProc = nullptr;
 
     try
     {
         // clang-format off
 
-        const std::unordered_map<ADUShellAction, ADUShellTaskFuncType> actionMap = { 
+        const std::unordered_map<ADUShellAction, ADUShellTaskFuncType> actionMap = {
             { ADUShellAction::Reboot, Reboot }
         };
 

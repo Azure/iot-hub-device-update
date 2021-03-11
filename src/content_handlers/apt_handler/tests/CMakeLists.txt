@@ -14,7 +14,12 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-set (sources main.cpp apt_handler_ut.cpp apt_parser_ut.cpp)
+set (
+    sources
+    main.cpp
+    apt_parser_ut.cpp
+    ../src/apt_handler.cpp
+    ../src/apt_parser.cpp)
 
 find_package (Catch2 REQUIRED)
 
@@ -23,6 +28,7 @@ add_executable (${PROJECT_NAME} ${sources})
 target_include_directories (
     ${PROJECT_NAME}
     PRIVATE ${ADUC_EXPORT_INCLUDES}
+            ${ADU_EXTENSION_INCLUDES}
             ${ADU_SHELL_INCLUDES}
             ${PROJECT_SOURCE_DIR}/inc
             ${PROJECT_SOURCE_DIR}/../../inc
@@ -33,11 +39,14 @@ target_compile_definitions (
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PRIVATE aduc::adu_core_interface
-            aduc::apt_handler
-            aduc::exception_utils
+    PRIVATE aduc::exception_utils
+            aduc::extension_manager
+            aduc::installed_criteria_utils
+            aduc::process_utils
             aduc::string_utils
             aduc::system_utils
+            aduc::workflow_data_utils
+            aduc::workflow_utils
             Catch2::Catch2)
 
 # Ensure that ctest discovers catch2 tests.

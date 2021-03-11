@@ -2,7 +2,8 @@
  * @file eis_utils.c
  * @brief Implements the EIS Utility for connecting to EIS and requesting a provisioned SaS token.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "eis_utils.h"
@@ -22,11 +23,12 @@
 
 /**
  * Example Identity Response:
- * 
+ *
  * {
  *   "type":"aziot",
  *   "spec":{
  *       "hubName":"some-hubname.azure-devices.net",
+ *       "gatewayHost":"parentdevice",
  *       "deviceId":"eis-test-device",
  *       "module-id":"some-module-id",
  *       "auth":{
@@ -36,7 +38,7 @@
  *       }
  *   }
  * }
- * 
+ *
  */
 
 /**
@@ -48,6 +50,11 @@
  * @brief Fieldname for the hubName provisioned to the IdentityService
  */
 #define EIS_IDENTITY_RESP_HUBNAME_FIELD "hubName"
+
+/**
+ * @brief Fieldname for the gatewayHost provisioned to the IdentityService
+ */
+#define EIS_IDENTITY_RESP_GATEWAYHOSTNAME_FIELD "gatewayHost"
 
 /**
  * @brief Fieldname for the deviceId provisioned to the IdentityService
@@ -104,7 +111,7 @@
  * {
  *  "pem":"string"
  * }
- * 
+ *
  */
 
 /**
@@ -233,7 +240,8 @@ done:
  * @param deviceId the device identity for the connection string
  * @param moduleId an optional parameter specifying the module identity to use in the connection string
  * @param connType the connection type being used, if EISConnType_ModuleId then moduleId must not be NULL
- * @param sharedAccessSignature the sharedAccessSignature generated for this connection string 
+ * @param sharedAccessSignature the sharedAccessSignature generated for this connection string
+ * @param gatewayHostName the gatewayHostName for the parent device for MCC and Nested Edge scenarios
  * @param connectionStrPtr the pointer to the buffer which will be allocated for the connection string
  * @returns a value of EISErr
  */
@@ -241,8 +249,9 @@ EISErr BuildSasTokenConnectionString(
     const char* hubName,
     const char* deviceId,
     const char* moduleId,
-    const EISConnType connType,
+    const ADUC_ConnType connType,
     const char* sharedAccessSignature,
+    const char* gatewayHostName,
     char** connectionStrPtr)
 {
     EISErr result = EISErr_Failed;
@@ -250,19 +259,31 @@ EISErr BuildSasTokenConnectionString(
 
     char* connectionStr = NULL;
 
-    if (hubName == NULL || deviceId == NULL || connType == EISConnType_NotSet || sharedAccessSignature == NULL
+    if (hubName == NULL || deviceId == NULL || connType == ADUC_ConnType_NotSet || sharedAccessSignature == NULL
         || connectionStrPtr == NULL)
     {
         result = EISErr_InvalidArg;
         goto done;
     }
 
-    if (connType == EISConnType_Device)
+    if (connType == ADUC_ConnType_Device)
     {
-        connectionStr = ADUC_StringFormat(
-            "HostName=%s;DeviceId=%s;SharedAccessSignature=%s", hubName, deviceId, sharedAccessSignature);
+        if (gatewayHostName != NULL)
+        {
+            connectionStr = ADUC_StringFormat(
+                "HostName=%s;DeviceId=%s;SharedAccessSignature=%s;GatewayHostName=%s",
+                hubName,
+                deviceId,
+                sharedAccessSignature,
+                gatewayHostName);
+        }
+        else
+        {
+            connectionStr = ADUC_StringFormat(
+                "HostName=%s;DeviceId=%s;SharedAccessSignature=%s", hubName, deviceId, sharedAccessSignature);
+        }
     }
-    else if (connType == EISConnType_Module)
+    else if (connType == ADUC_ConnType_Module)
     {
         if (moduleId == NULL)
         {
@@ -270,12 +291,25 @@ EISErr BuildSasTokenConnectionString(
             goto done;
         }
 
-        connectionStr = ADUC_StringFormat(
-            "HostName=%s;DeviceId=%s;ModuleId=%s;SharedAccessSignature=%s",
-            hubName,
-            deviceId,
-            moduleId,
-            sharedAccessSignature);
+        if (gatewayHostName != NULL)
+        {
+            connectionStr = ADUC_StringFormat(
+                "HostName=%s;DeviceId=%s;ModuleId=%s;SharedAccessSignature=%s;GatewayHostName=%s",
+                hubName,
+                deviceId,
+                moduleId,
+                sharedAccessSignature,
+                gatewayHostName);
+        }
+        else
+        {
+            connectionStr = ADUC_StringFormat(
+                "HostName=%s;DeviceId=%s;ModuleId=%s;SharedAccessSignature=%s",
+                hubName,
+                deviceId,
+                moduleId,
+                sharedAccessSignature);
+        }
     }
     else
     {
@@ -304,6 +338,7 @@ done:
  * @param deviceId the device identity for the connection string
  * @param moduleId an optional parameter specifying the module identity to use in the connection string
  * @param connType the connection type being used, if EISConnType_ModuleId then moduleId must not be NULL
+ * @param gatewayHostName the gatewayHostName for the parent device for MCC and Nested Edge scenarios
  * @param connectionStrPtr the pointer to the buffer which will be allocated for the connection string
  * @returns a value of EISErr
  */
@@ -311,7 +346,8 @@ EISErr BuildSasCertConnectionString(
     const char* hubName,
     const char* deviceId,
     const char* moduleId,
-    const EISConnType connType,
+    const ADUC_ConnType connType,
+    const char* gatewayHostName,
     char** connectionStrPtr)
 {
     bool success = false;
@@ -319,17 +355,25 @@ EISErr BuildSasCertConnectionString(
 
     char* connectionStr = NULL;
 
-    if (hubName == NULL || deviceId == NULL || connType == EISConnType_NotSet || connectionStrPtr == NULL)
+    if (hubName == NULL || deviceId == NULL || connType == ADUC_ConnType_NotSet || connectionStrPtr == NULL)
     {
         result = EISErr_InvalidArg;
         goto done;
     }
 
-    if (connType == EISConnType_Device)
+    if (connType == ADUC_ConnType_Device)
     {
-        connectionStr = ADUC_StringFormat("HostName=%s;DeviceId=%s;x509=true", hubName, deviceId);
+        if (gatewayHostName != NULL)
+        {
+            connectionStr = ADUC_StringFormat(
+                "HostName=%s;DeviceId=%s;x509=true;GatewayHostName=%s", hubName, deviceId, gatewayHostName);
+        }
+        else
+        {
+            connectionStr = ADUC_StringFormat("HostName=%s;DeviceId=%s;x509=true", hubName, deviceId);
+        }
     }
-    else if (connType == EISConnType_Module)
+    else if (connType == ADUC_ConnType_Module)
     {
         if (moduleId == NULL)
         {
@@ -337,8 +381,20 @@ EISErr BuildSasCertConnectionString(
             goto done;
         }
 
-        connectionStr =
-            ADUC_StringFormat("HostName=%s;DeviceId=%s;ModuleId=%s;x509=true", hubName, deviceId, moduleId);
+        if (gatewayHostName != NULL)
+        {
+            connectionStr = ADUC_StringFormat(
+                "HostName=%s;DeviceId=%s;ModuleId=%s;x509=true;GatewayHostName=%s",
+                hubName,
+                deviceId,
+                moduleId,
+                gatewayHostName);
+        }
+        else
+        {
+            connectionStr =
+                ADUC_StringFormat("HostName=%s;DeviceId=%s;ModuleId=%s;x509=true", hubName, deviceId, moduleId);
+        }
     }
     else
     {
@@ -367,27 +423,8 @@ done:
 //
 
 /**
- * @brief Helper function that de allocates the members of the EISProvisioningInfo struct
- * @param info the struct who's members shall be de-allocated
- */
-void EISProvisioningInfoDeAlloc(EISProvisioningInfo* info)
-{
-    free(info->connectionString);
-    info->connectionString = NULL;
-
-    free(info->certKeyHandle);
-    info->certKeyHandle = NULL;
-
-    free(info->certificateString);
-    info->certificateString = NULL;
-
-    info->connType = EISConnType_NotSet;
-    info->authType = EISAuthType_NotSet;
-}
-
-/**
  * @brief Creates a connection string using the provisioned data within EIS
- * @details Calls into the EIS Identity and Keyservice to create a SharedAccessSignature which is then used 
+ * @details Calls into the EIS Identity and Keyservice to create a SharedAccessSignature which is then used
  * to create the connection string, Caller is required to call free() to deallocate the connection string
  * @param[in] expirySecsSinceEpoch the expiration time in seconds since the epoch for the token in the connection string
  * @param[in] timeoutMS the timeoutMS in milliseconds for each call to EIS
@@ -395,7 +432,7 @@ void EISProvisioningInfoDeAlloc(EISProvisioningInfo* info)
  * @returns on success a null terminated connection string, otherwise NULL
  */
 EISUtilityResult RequestConnectionStringFromEISWithExpiry(
-    const time_t expirySecsSinceEpoch, uint32_t timeoutMS, EISProvisioningInfo* provisioningInfo)
+    const time_t expirySecsSinceEpoch, uint32_t timeoutMS, ADUC_ConnectionInfo* provisioningInfo)
 {
     EISUtilityResult result = { EISErr_Failed, EISService_Utils };
 
@@ -418,8 +455,8 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
     char* connectionStr = NULL;
 
     char* keyHandlePtr = NULL;
-    EISConnType connType = EISConnType_NotSet;
-    EISAuthType authType = EISAuthType_NotSet;
+    ADUC_ConnType connType = ADUC_ConnType_NotSet;
+    ADUC_AuthType authType = ADUC_AuthType_NotSet;
 
     char* resourceUri = NULL;
     char* sharedSignatureStr = NULL;
@@ -484,21 +521,21 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
         goto done;
     }
 
-    connType = EISConnType_Device;
+    connType = ADUC_ConnType_Device;
 
     const char* moduleId = json_object_get_string(specJson, EIS_IDENTITY_RESP_MODULEID_FIELD);
 
     if (moduleId != NULL)
     {
-        connType = EISConnType_Module;
+        connType = ADUC_ConnType_Module;
     }
 
     // Build request for the signature
-    if (connType == EISConnType_Device)
+    if (connType == ADUC_ConnType_Device)
     {
         resourceUri = ADUC_StringFormat("%s/devices/%s", hubName, deviceId);
     }
-    else if (connType == EISConnType_Module)
+    else if (connType == ADUC_ConnType_Module)
     {
         resourceUri = ADUC_StringFormat("%s/devices/%s/modules/%s", hubName, deviceId, moduleId);
     }
@@ -511,6 +548,8 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
     {
         goto done;
     }
+
+    const char* gatewayHostName = json_object_get_string(specJson, EIS_IDENTITY_RESP_GATEWAYHOSTNAME_FIELD);
 
     const JSON_Object* authJson = json_value_get_object(json_object_get_value(specJson, EIS_IDENTITY_RESP_AUTH_FIELD));
 
@@ -541,7 +580,7 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
 
     if (strcmp(authTypeStr, "sas") == 0)
     {
-        authType = EISAuthType_SASToken;
+        authType = ADUC_AuthType_SASToken;
 
         result =
             BuildSharedAccessSignature(resourceUri, keyHandle, expirySecsSinceEpoch, timeoutMS, &sharedSignatureStr);
@@ -551,8 +590,8 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
             goto done;
         }
 
-        result.err =
-            BuildSasTokenConnectionString(hubName, deviceId, moduleId, connType, sharedSignatureStr, &connectionStr);
+        result.err = BuildSasTokenConnectionString(
+            hubName, deviceId, moduleId, connType, sharedSignatureStr, gatewayHostName, &connectionStr);
 
         if (result.err != EISErr_Ok)
         {
@@ -561,7 +600,7 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
     }
     else if (strcmp(authTypeStr, "x509") == 0)
     {
-        authType = EISAuthType_SASCert;
+        authType = ADUC_AuthType_SASCert;
 
         if (mallocAndStrcpy_s(&keyHandlePtr, keyHandle) != 0)
         {
@@ -613,7 +652,8 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
             goto done;
         }
 
-        result.err = BuildSasCertConnectionString(hubName, deviceId, moduleId, connType, &connectionStr);
+        result.err =
+            BuildSasCertConnectionString(hubName, deviceId, moduleId, connType, gatewayHostName, &connectionStr);
 
         if (result.err != EISErr_Ok)
         {
@@ -642,14 +682,21 @@ done:
 
     provisioningInfo->connectionString = connectionStr;
     provisioningInfo->certificateString = certString;
-    provisioningInfo->certKeyHandle = keyHandlePtr;
-
+    provisioningInfo->opensslPrivateKey = keyHandlePtr;
     provisioningInfo->connType = connType;
     provisioningInfo->authType = authType;
 
+    if (provisioningInfo->authType == ADUC_AuthType_SASCert && provisioningInfo->certificateString != NULL)
+    {
+        if (mallocAndStrcpy_s(&provisioningInfo->opensslEngine, EIS_OPENSSL_KEY_ENGINE_ID) != 0)
+        {
+            success = false;
+        }
+    }
+
     if (!success)
     {
-        EISProvisioningInfoDeAlloc(provisioningInfo);
+        ADUC_ConnectionInfo_DeAlloc(provisioningInfo);
     }
 
     return result;

@@ -2,20 +2,28 @@
 
 ## Required Dependencies
 
-1. Build the Device Update agent and its dependancies using these [instructions](https://github.com/Azure/iot-hub-device-update/blob/main/docs/agent-reference/how-to-build-agent-code.md)
-2. Follow the instructions from [this](https://github.com/microsoft/do-client#delivery-optimization-client) page to build and install the Delivery Optimization agent and plug-in. Note: Delivery Optimization SDK is already installed as part of step 1 above. 
+1. Build the Device Update agent and its dependencies using these [instructions](./how-to-build-agent-code.md)
+2. Follow the instructions from [this](https://github.com/microsoft/do-client#delivery-optimization-client) page to build and install the Delivery Optimization agent and plug-in. Note: Delivery Optimization SDK is already installed as part of step 1 above.
 
 ## Command Line
 
 ```bash
-AducIotAgent '<IoT device connection string>' [options...]
+AducIotAgent [options...] '<IoT device connection string>'
+AducIotAgent [options...] -- [one or more of connection string and simulator or other additional args]
 ```
 
 e.g.
 
 ```bash
-AducIotAgent '<IoT device connection string>' --enable-iothub-tracing --log-level 1
+AducIotAgent --enable-iothub-tracing --log-level 1 '<IoT device connection string>'
+AducIotAgent --enable-iothub-tracing --log-level 1 -- '<IoT device connection string>'
 ```
+
+#### Simulator Update Handler
+
+The Simulator Update Handler can be used for demonstration and testing purposes.
+
+See [how to simulate update result](./how-to-simulate-update-result.md) for more details.
 
 ### Options Details
 
@@ -26,40 +34,17 @@ the Azure IoT C SDK. This option is useful for troubleshooting connection
 issues.
 
 `--health-check` tells the reference agent to turn on Health Check, which performs
-necessary checks to determine whether ADU Agent can function properly.  
-Currently, the script is performing the following:  
-    - Implicitly check that agent process launched successfully.  
+necessary checks to determine whether ADU Agent can function properly.
+Currently, the script is performing the following:
+    - Implicitly check that agent process launched successfully.
     - Check that the agent can obtain the connection info.
 
-`--log-level` (argument required) sets the log level of the reference agent's output.  
-Expected value:  
+`--log-level` (argument required) sets the log level of the reference agent's output.
+Expected value:
     - 0: Debug
     - 1: Info
     - 2: Warning
     - 3: Error
-
-### Simulator Specific Arguments
-
-These arguments are specific to the agent simulator.
-
-#### --simulation_mode=\<mode>
-
-Tells the agent where and if to force a failure. This is useful for evaluating
-and testing how Device Update for IoT Hub reports errors.
-
-`mode` can be one of the following options:
-
-* `downloadfailed`
-* `installationfailed`
-* `applyfailed`
-* `allsuccessful`
-
-If no mode is specified, `allsuccessful` is the default.
-
-#### --perform_download
-
-This option will cause the simulator agent to download and verify the hash of
-the update.
 
 #### --deviceinfo_manufacturer=\<manufacturer>
 
@@ -94,7 +79,7 @@ To manually stop the daemon:
 sudo systemctl stop adu-agent
 ```
 
-## How To Create 'adu' Group and User 
+## How To Create 'adu' Group and User
 IMPORTANT: The Device Update agent must be run as 'adu' user.
 
 Create 'adu' group and 'adu' user by follow these steps:
@@ -116,18 +101,18 @@ Create 'adu' group and 'adu' user by follow these steps:
 
 4. Add 'adu' user to the 'do' group to allow access to Delivery Optimization resources
    ```shell
-   sudo usermod -aG "do" "adu" 
+   sudo usermod -aG "do" "adu"
    ```
 
 5. Add 'do' user to the 'adu' group to allow Delivery Optimization agent to download files to the Device Update sandbox folder
    ```shell
-   sudo usermod -aG "adu" "do" 
+   sudo usermod -aG "adu" "do"
    sudo systemctl restart deliveryoptimization-agent
    ```
 
-6. If using IoT Identity Service, add 'adu' user to the following groups.  
- Learn more about [how to provision Device Update Agent with IoT Identity Service](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-agent-provisioning#how-to-provision-the-device-update-agent-as-a-module-identity)  
- 
+6. If using IoT Identity Service, add 'adu' user to the following groups.
+ Learn more about [how to provision Device Update Agent with IoT Identity Service](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-agent-provisioning#how-to-provision-the-device-update-agent-as-a-module-identity)
+
    ```shell
     sudo usermod -aG "aziotid" "adu"
     sudo usermod -aG "aziotcs" "adu"
@@ -141,10 +126,4 @@ Create 'adu' group and 'adu' user by follow these steps:
    ```shell
 	sudo chown "root:adu" "/usr/lib/adu/adu-shell"
 	sudo chmod u=rxs "/usr/lib/adu/adu-shell"
-    ```
-3. Optional: If 'setfacl' command is available
-   ```shell
-   sudo setfacl -m "group::---" "/usr/lib/adu/adu-shell"
-   sudo setfacl -m "user::r--" "/usr/lib/adu/adu-shell"
-   sudo setfacl -m "user:adu:r-x" "/usr/lib/adu/adu-shell" 
     ```

@@ -1,3 +1,13 @@
+/**
+ * @file zlog-config.c
+ * @brief Config header for Zlog utility
+ * Adapted from the public domain "zlog" by Zhiqiang Ma
+ * https://github.com/zma/zlog/
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #ifndef ZLOG_CONFIG_H
 #define ZLOG_CONFIG_H
 
@@ -8,7 +18,7 @@
 #define ZLOG_BUFFER_LINE_MAXCHARS 3000
 #define ZLOG_BUFFER_MAXLINES 1024
 
-#define ZLOG_FLUSH_INTERVAL_SEC 180
+#define ZLOG_FLUSH_INTERVAL_SEC 30
 #define ZLOG_SLEEP_TIME_SEC 10
 // In practice: flush size < .8 * BUFFER_SIZE
 #define ZLOG_BUFFER_FLUSH_MAXLINES (0.8 * ZLOG_BUFFER_MAXLINES)

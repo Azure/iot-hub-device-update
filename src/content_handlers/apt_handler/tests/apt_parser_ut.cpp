@@ -1,3 +1,11 @@
+/**
+ * @file apt_parser_ut.cpp
+ * @brief APT parser unit tests
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #include "aduc/apt_parser.hpp"
 
 #include <catch2/catch.hpp>
@@ -25,7 +33,7 @@ using Catch::Matchers::Equals;
 
 // clang-format off
 
-const char* aptContentWithThreePackages = 
+const char* aptContentWithThreePackages =
     R"({)"
         R"( "name":"com-microsoft-eds-adu-testapt", )"
         R"( "version":"1.0.0", )"
@@ -45,7 +53,7 @@ const char* aptContentWithThreePackages =
     R"(})";
 
 
-const char* aptContentWithOnePackage = 
+const char* aptContentWithOnePackage =
     R"({)"
         R"( "name":"com-microsoft-eds-adu-testapt", )"
         R"( "version":"1.0.1", )"
@@ -53,6 +61,43 @@ const char* aptContentWithOnePackage =
             R"({)"
                 R"( "name":"moby-engine", )"
                 R"( "version":"1.0.0.0" )"
+            R"(})"
+            R"(])"
+    R"(})";
+
+const char* aptContentWithAgentRestartRequired =
+    R"({)"
+        R"( "name":"com-microsoft-eds-adu-testapt", )"
+        R"( "version":"1.0.1", )"
+        R"( "agentRestartRequired":true, )"
+        R"( "packages": [ )"
+            R"({)"
+                R"( "name":"moby-engine", )"
+                R"( "version":"1.0.0.0" )"
+            R"(})"
+            R"(])"
+    R"(})";
+
+const char* aptContentWithAgentRestartRequiredFalse =
+    R"({)"
+        R"( "name":"com-microsoft-eds-adu-testapt", )"
+        R"( "version":"1.0.1", )"
+        R"( "agentRestartRequired":false, )"
+        R"( "packages": [ )"
+            R"({)"
+                R"( "name":"moby-engine", )"
+                R"( "version":"1.0.0.0" )"
+            R"(})"
+            R"(])"
+    R"(})";
+
+const char* aptContentWithAgentRestartRequiredUsingNameDuAgent =
+    R"({)"
+        R"( "name":"com-microsoft-eds-adu-testapt", )"
+        R"( "version":"1.0.1", )"
+        R"( "packages": [ )"
+            R"({)"
+                R"( "name":"deviceupdate-agent" )"
             R"(})"
             R"(])"
     R"(})";
@@ -76,4 +121,25 @@ TEST_CASE("APT Parser Tests 2")
     CHECK(aptContent->Packages.size() == 1);
     const auto package = aptContent->Packages.front();
     CHECK_THAT(package, Equals("moby-engine=1.0.0.0"));
+    CHECK_FALSE(aptContent->AgentRestartRequired);
+}
+
+TEST_CASE("APT Parser AgentRestartRequired Test")
+{
+    std::unique_ptr<AptContent> aptContent = AptParser::ParseAptContentFromString(aptContentWithAgentRestartRequired);
+    CHECK(aptContent->AgentRestartRequired);
+}
+
+TEST_CASE("APT Parser AgentRestartRequired(false) Test")
+{
+    std::unique_ptr<AptContent> aptContent =
+        AptParser::ParseAptContentFromString(aptContentWithAgentRestartRequiredFalse);
+    CHECK_FALSE(aptContent->AgentRestartRequired);
+}
+
+TEST_CASE("APT Parser AgentRestartRequired(du-agent package name) Test")
+{
+    std::unique_ptr<AptContent> aptContent =
+        AptParser::ParseAptContentFromString(aptContentWithAgentRestartRequiredUsingNameDuAgent);
+    CHECK(aptContent->AgentRestartRequired);
 }

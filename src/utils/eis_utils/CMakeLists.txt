@@ -11,8 +11,10 @@ find_package (Parson REQUIRED)
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PRIVATE aduc::logging
+    PUBLIC  aduc::adu_core_interface
+    PRIVATE aduc::adu_types
             aduc::c_utils
+            aduc::logging
             Parson::parson
             aziotsharedutil
             uhttp)

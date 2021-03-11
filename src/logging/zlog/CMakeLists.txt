@@ -6,6 +6,11 @@ compileasc99 ()
 
 add_library (${PROJECT_NAME} STATIC src/init.c src/zlog.c)
 
+#
+# Turn -fPIC on, in order to use this library in another shared library.
+#
+set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/inc
                                                    ${ADUC_LOGGING_INCLUDES})
 

@@ -15,7 +15,8 @@ add_executable (${PROJECT_NAME} ${sources})
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PRIVATE aduc::c_utils
+    PRIVATE aduc::adu_types
+            aduc::c_utils
             aduc::eis_utils
             aduc::string_utils
             Catch2::Catch2

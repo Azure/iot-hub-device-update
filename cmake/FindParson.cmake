@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # Find cmake module for the parson library and header.
 # Exports Parson::parson target
 

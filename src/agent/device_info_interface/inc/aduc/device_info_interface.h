@@ -3,24 +3,25 @@
  * @brief Methods to communicate with "dtmi:azure:DeviceManagement:DeviceInformation;1" interface.
  *
  *        DeviceInfo only reports properties defining the device and does not accept requested properties or commands.
- * 
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_DEVICE_INFO_INTERFACE_H
 #define ADUC_DEVICE_INFO_INTERFACE_H
 
 #include <aduc/c_utils.h>
+#include <aduc/client_handle.h>
+#include <azureiot/iothub_client_core_common.h>
 
 #include <stdbool.h>
 
 EXTERN_C_BEGIN
 
-#include "pnp_device_client_ll.h"
-
 /**
  * @brief Handle for DeviceInfo component to communicate to service.
  */
-extern IOTHUB_DEVICE_CLIENT_LL_HANDLE g_iotHubClientHandleForDeviceInfoComponent;
+extern ADUC_ClientHandle g_iotHubClientHandleForDeviceInfoComponent;
 //
 // Registration/Unregistration
 //

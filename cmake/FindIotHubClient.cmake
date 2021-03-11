@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # Find cmake module for the iothub_client library and headers
 # Exports IotHubClient::iothub_client target
 

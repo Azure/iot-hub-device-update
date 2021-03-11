@@ -1,7 +1,11 @@
-/*
- * Zlog utility
+/**
+ * @file zlog.c
+ * @brief Zlog utility
  * Adapted from the public domain "zlog" by Zhiqiang Ma
  * https://github.com/zma/zlog/
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include <dirent.h>
@@ -174,6 +178,7 @@ int zlog_init(
         {
             return -1;
         }
+        log_debug("Log file created: %s", zlog_file_log_fullpath);
 
         zlog_ensure_at_most_n_logfiles(ZLOG_MAX_FILE_COUNT);
 
@@ -291,7 +296,7 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
         // Add to zlog buffer.
         char* buffer = zlog_lock_and_get_buffer();
 
-        // "%.400s" avoids error: ‘%s’ directive output may be truncated writing up to 511 bytes into
+        // "%.400s" avoids error: '%s' directive output may be truncated writing up to 511 bytes into
         // a region of size between 444 and 507 [-Werror=format-truncation=]
         (void)snprintf(
             buffer,
@@ -304,11 +309,25 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
 
         zlog_finish_buffer_and_unlock();
     }
+
+    if (msg_level == ZLOG_ERROR)
+    {
+        zlog_request_flush_buffer();
+    }
+
+}
+
+bool g_flushRequested = false;
+
+void zlog_request_flush_buffer(void)
+{
+    g_flushRequested = true;
 }
 
 // Buffer flushing thread
 // Flush the thread every ZLOG_FLUSH_INTERVAL_SEC seconds
 // or when buffer is 80% full
+// or when g_flushRequested is true
 //
 // Caller should NOT hold the lock
 static void* zlog_buffer_flush_thread()
@@ -326,8 +345,9 @@ static void* zlog_buffer_flush_thread()
         sleep(ZLOG_SLEEP_TIME_SEC);
         gettimeofday(&tv, NULL);
         curtime = tv.tv_sec;
-        if ((curtime - lasttime) >= ZLOG_FLUSH_INTERVAL_SEC)
+        if (g_flushRequested || ((curtime - lasttime) >= ZLOG_FLUSH_INTERVAL_SEC))
         {
+            g_flushRequested = false;
             zlog_flush_buffer();
             lasttime = curtime;
         }
@@ -434,11 +454,8 @@ static void _zlog_flush_buffer()
             return;
         }
 
-        if (zlog_is_file_log_open())
-        {
-            // Open the new current log file
-            zlog_fout = fopen(zlog_file_log_fullpath, "a+");
-        }
+        // INVARIANT: zlog_fout == NULL due to zlog_close_file_log() call above.
+        zlog_fout = fopen(zlog_file_log_fullpath, "a");
     }
 }
 

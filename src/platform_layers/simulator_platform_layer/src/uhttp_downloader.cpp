@@ -1,7 +1,8 @@
 /**
  * @file uhttp_downloader.cpp
  * @brief Simple HTTP downloader based on uHTTP
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  *
  * Note that uHTTP is a rudimentary HTTP implementation and may not support production-level requirements.
  */

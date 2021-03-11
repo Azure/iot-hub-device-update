@@ -2,7 +2,8 @@
  * @file eis_coms.c
  * @brief Implements the HTTP communication with EIS over UDS
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "eis_coms.h"
@@ -73,7 +74,7 @@
 #define EIS_SIGN_REQUEST_URI EIS_SIGN_URI "?" EIS_API_VERSION
 
 /**
- * @brief URI for the Certificate Service on the Certificate Service's Unix Domain Socket (UDS) 
+ * @brief URI for the Certificate Service on the Certificate Service's Unix Domain Socket (UDS)
  */
 #define EIS_CERT_URI "http://foo/certificates"
 
@@ -171,7 +172,7 @@ static void on_eis_http_error(void* callbackCtx, HTTP_CALLBACK_REASON error_resu
  * @param contentSize the size of @p content
  * @param statusCode the status code for the HTTP response (e.g. 404, 500, 200, etc.)
  * @param responseHeaders header of the response, used in some calls but not needed here
- * 
+ *
  */
 static void on_eis_http_recv(
     void* callbackCtx,
@@ -425,7 +426,7 @@ done:
  * @details The identity response returns the hub hostname, device id, and key handle
  * Caller must release @p responseBuffer with free()
  * @param timeoutMS max timeoutMS for the request in milliseconds
- * @param responseBuffer the buffer that will be allocated by the function to hold the response 
+ * @param responseBuffer the buffer that will be allocated by the function to hold the response
  * @returns Returns a value of EISErr
  */
 EISErr RequestIdentitiesFromEIS(unsigned int timeoutMS, char** responseBuffer)
@@ -561,6 +562,14 @@ done:
     return result;
 }
 
+/**
+ * @brief Requests the signature related to @p certId from EIS
+ * @details Caller should de-allocate @p responseBuffer using free()
+ * @param[in] certId the identifier associated with the certificate being retrieved
+ * @param[in] timeoutMS the timeout for the call
+ * @param[out] responseBuffer ptr to the buffer which will hold the response from EIS
+ * @returns a value of EISErr
+ */
 EISErr RequestCertificateFromEIS(const char* certId, unsigned int timeoutMS, char** responseBuffer)
 {
     EISErr result = EISErr_Failed;

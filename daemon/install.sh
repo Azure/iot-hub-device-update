@@ -1,4 +1,7 @@
-#!/bin/sh
+#!/bin/bash
+
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 
 # Installs the adu-agent daemon and performs necessary setup/configuration.
 # This script is meant to only be called from CMake as part of the install target.
@@ -33,6 +36,33 @@ adu_group=adu
 # The user that the DO Agent daemon runs as.
 do_user='do'
 
+# The sample du-config.json
+sample_du_config=$(
+    cat << END_OF_JSON
+{
+  "schemaVersion": "1.0",
+  "aduShellTrustedUsers": [
+    "adu",
+    "do"
+  ],
+  "manufacturer": <Place your device info manufacturer here>,
+  "model": <Place your device info model here>,
+  "agents": [
+    {
+      "name": <Place your agent name here>,
+      "runas": "adu",
+      "connectionSource": {
+        "connectionType": "string",
+        "connectionData": <Place your Azure IoT device connection string here>
+      },
+      "manufacturer": <Place your device property manufacturer here>,
+      "model": <Place your device property model here>
+    }
+  ]
+}
+END_OF_JSON
+)
+
 add_adu_user_and_group() {
     echo "Create the 'adu' group."
     if ! getent group "$adu_group" > /dev/null; then
@@ -57,7 +87,9 @@ add_adu_user_and_group() {
     fi
 
     echo "Add the 'adu' user to the 'syslog' group." # To allow ADU to write to /var/log folder
-    usermod -aG "syslog" "$adu_user"
+    if getent group "syslog" > /dev/null; then
+        usermod -aG "syslog" "$adu_user"
+    fi
 
     echo "Add the 'do' user to the 'adu' group." # To allow DO to write to ADU download sandbox.
     if getent passwd "$do_user" > /dev/null; then
@@ -90,9 +122,7 @@ setup_dirs_and_files() {
 
         # Generate the template configuration file
         if [ ! -f "$adu_conf_dir/${adu_conf_file}.template" ]; then
-            echo "#connection_string=<Place your Azure IoT device connection string here>" > "$adu_conf_dir/${adu_conf_file}.template"
-            echo "#aduc_manufacturer=<OPTIONAL - Place your device's manufacturer name here>" >> "$adu_conf_dir/${adu_conf_file}.template"
-            echo "#aduc_model=<OPTIONAL - Place your device's model name here>" >> "$adu_conf_dir/${adu_conf_file}.template"
+            echo "$sample_du_config" > "$adu_conf_dir/${adu_conf_file}.template"
             chown "$adu_user:$adu_group" "$adu_conf_dir/${adu_conf_file}.template"
             chmod u=r "$adu_conf_dir/${adu_conf_file}.template"
         fi
@@ -100,7 +130,7 @@ setup_dirs_and_files() {
         # Create configuration file from template
         if [ ! -f "$adu_conf_dir/$adu_conf_file" ]; then
             cp -a "$adu_conf_dir/${adu_conf_file}.template" "$adu_conf_dir/$adu_conf_file"
-            chmod u=r "$adu_conf_dir/$adu_conf_file"
+            chmod u=rw "$adu_conf_dir/$adu_conf_file"
         fi
 
         # Create home dir

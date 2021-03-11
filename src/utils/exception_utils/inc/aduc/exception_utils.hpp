@@ -2,7 +2,8 @@
  * @file excpetion_utils.hpp
  * @brief Contains utilities for handling C++ exceptions.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_EXCEPTION_UTILS_HPP
 #define ADUC_EXCEPTION_UTILS_HPP

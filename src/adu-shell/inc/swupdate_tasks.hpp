@@ -2,7 +2,8 @@
  * @file swupdate_tasks.hpp
  * @brief Implements functions related to microsoft/swupdate update type.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADU_SHELL_SWUPDATE_TASKS_HPP
 #define ADU_SHELL_SWUPDATE_TASKS_HPP
@@ -51,7 +52,7 @@ ADUShellTaskResult Cancel(const ADUShell_LaunchArguments& launchArgs);
 
 /**
  * @brief Runs appropriate command based on an action and other arguments in launchArgs.
- * 
+ *
  * @param launchArgs An adu-shell launch arguments.
  * @return A result from child process.
  */

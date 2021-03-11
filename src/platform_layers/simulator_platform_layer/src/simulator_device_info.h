@@ -4,7 +4,8 @@
  *
  * These methods are not thread safe.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef SIMULATOR_DEVICE_INFO_H
 #define SIMULATOR_DEVICE_INFO_H

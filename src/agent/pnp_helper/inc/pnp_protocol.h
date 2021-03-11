@@ -1,11 +1,13 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
-//
-// PnP is a convention built on top of existing IoTHub device transport primitives.
-// This header implements functions to aide applications in serializing and deserializing PnP data.
-// Note that actually sending and receiving the data from the underlying IoTHub client is the application's responsibility.
-//
+/**
+ * @file pnp_protocol.h
+ * @brief Header for PNP Protocol helper
+ * PnP is a convention built on top of existing IoTHub device transport primitives.
+ * This header implements functions to aide applications in serializing and deserializing PnP data.
+ * Note that actually sending and receiving the data from the underlying IoTHub client is the application's responsibility.
+ *
+ * @copyright Copyright (c) Microsoft Corp.
+ * Licensed under the MIT License.
+ */
 
 #ifndef PNP_PROTOCOL_H
 #define PNP_PROTOCOL_H
@@ -43,7 +45,7 @@ typedef void (*PnP_PropertyCallbackFunction)(
 // a result code or version.  It is used when sending properties that are NOT marked as <"writable": true> in the DTDL defining
 // the given property.
 //
-// The application itself needs to send this to Device Twin, using a function such as IoTHubDeviceClient_LL_SendReportedState.
+// The application itself needs to send this to Device Twin, using a function such as ClientHandle_SendReportedState.
 //
 STRING_HANDLE
 PnP_CreateReportedProperty(const char* componentName, const char* propertyName, const char* propertyValue);
@@ -55,7 +57,7 @@ PnP_CreateReportedProperty(const char* componentName, const char* propertyName, 
 // For instance, after processing a thermostat's set point the application acknowledges that it has received the request and can indicate
 // whether it will attempt to honor the request or whether the request was unsuccessful.
 //
-// The application itself needs to send this to Device Twin, using a function such as IoTHubDeviceClient_LL_SendReportedState.
+// The application itself needs to send this to Device Twin, using a function such as ClientHandle_SendReportedState.
 //
 STRING_HANDLE PnP_CreateReportedPropertyWithStatus(
     const char* componentName,

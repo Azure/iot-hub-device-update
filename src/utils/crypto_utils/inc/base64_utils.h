@@ -2,7 +2,8 @@
  * @file base64_utils.h
  * @brief Provides an implementation for Base64 encoding and decoding
  *
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <aduc/c_utils.h>
 #include <stddef.h>

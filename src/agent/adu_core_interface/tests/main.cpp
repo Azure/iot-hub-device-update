@@ -2,7 +2,8 @@
  * @file main.cpp
  * @brief Catch2 Unit Test main file.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 // https://github.com/catchorg/Catch2/blob/master/docs/own-main.md
 #define CATCH_CONFIG_RUNNER
@@ -12,12 +13,6 @@
 #include <umock_c/umock_c.h>
 
 #include <ostream>
-
-#ifndef ENABLE_MOCKS
-
-#    error "ENABLE_MOCKS must be defined to build UTs."
-
-#endif
 
 int main(int argc, char* argv[])
 {

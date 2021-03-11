@@ -2,7 +2,8 @@
  * @file mock_do_exceptions.hpp
  * @brief Implements a mock exception class used in unit tests.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #pragma once
 
