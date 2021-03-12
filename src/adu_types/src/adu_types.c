@@ -1,5 +1,5 @@
 /**
- * @file adu_type.c
+ * @file adu_types.c
  * @brief Implements helper functions related to ConnectionInfo
  * @copyright Copyright (c) Microsoft Corporation.
  */
@@ -52,11 +52,13 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
 
     if (strstr(connectionString, "DeviceId=") != NULL)
     {
-        result = ADUC_ConnType_Device;
-
         if (strstr(connectionString, "ModuleId=") != NULL)
         {
             result = ADUC_ConnType_Module;
+        }
+        else
+        {
+            result = ADUC_ConnType_Device;
         }
     }
 
