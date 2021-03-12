@@ -6,6 +6,7 @@
  */
 #include "aduc/device_info_interface.h"
 #include "aduc/c_utils.h"
+#include "aduc/client_handle_helper.h"
 #include "aduc/device_info_exports.h"
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h" // atoint64t
@@ -19,7 +20,7 @@ static const char g_deviceInfoPnPComponentName[] = "deviceInformation";
 /**
  * @brief Handle for DeviceInformation component to communicate to service.
  */
-IOTHUB_DEVICE_CLIENT_LL_HANDLE g_iotHubClientHandleForDeviceInfoComponent;
+ADUC_ClientHandle g_iotHubClientHandleForDeviceInfoComponent;
 
 //
 // DeviceInfoInterfaceData
@@ -190,7 +191,7 @@ void DeviceInfoInterface_Destroy(void** componentContext)
 
 IOTHUB_CLIENT_RESULT ReportChangedProperty(DeviceInfoInterface_Data* data)
 {
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceClientLL = g_iotHubClientHandleForDeviceInfoComponent;
+    ADUC_ClientHandle deviceClientLL = g_iotHubClientHandleForDeviceInfoComponent;
     IOTHUB_CLIENT_RESULT iothubClientResult = IOTHUB_CLIENT_OK;
     STRING_HANDLE jsonToSend = NULL;
 
@@ -219,7 +220,7 @@ IOTHUB_CLIENT_RESULT ReportChangedProperty(DeviceInfoInterface_Data* data)
     const char* jsonToSendStr = STRING_c_str(jsonToSend);
     size_t jsonToSendStrLen = strlen(jsonToSendStr);
 
-    iothubClientResult = IoTHubDeviceClient_LL_SendReportedState(
+    iothubClientResult = ClientHandle_SendReportedState(
         deviceClientLL, (const unsigned char*)jsonToSendStr, jsonToSendStrLen, NULL, NULL);
 
     if (iothubClientResult != IOTHUB_CLIENT_OK)
@@ -293,7 +294,7 @@ IOTHUB_CLIENT_RESULT DeviceInfoInterface_ReportChangedPropertiesAsync()
     const char* jsonToSendStr = STRING_c_str(jsonToSend);
     size_t jsonToSendStrLen = strlen(jsonToSendStr);
 
-    iothubClientResult = IoTHubDeviceClient_LL_SendReportedState(
+    iothubClientResult = ClientHandle_SendReportedState(
         g_iotHubClientHandleForDeviceInfoComponent, (const unsigned char*)jsonToSendStr, jsonToSendStrLen, NULL, NULL);
 
     if (iothubClientResult != IOTHUB_CLIENT_OK)

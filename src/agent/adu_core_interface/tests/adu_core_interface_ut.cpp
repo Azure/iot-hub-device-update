@@ -15,6 +15,12 @@ using Catch::Matchers::Matches;
 #include "aduc/adu_core_interface.h"
 #include "aduc/agent_workflow.h"
 
+#define ENABLE_MOCKS
+#include "aduc/client_handle_helper.h"
+#undef ENABLE_MOCKS
+
+#include "umock_c/umock_c.h"
+
 //
 // Test Helpers
 //
@@ -62,7 +68,7 @@ class ADUC_UT_ReportPropertyAsyncValues
 {
 public:
     void
-    set(IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceHandleIn,
+    set(ADUC_ClientHandle deviceHandleIn,
         const unsigned char* reportedStateIn,
         size_t reportedStateLenIn,
         IOTHUB_CLIENT_REPORTED_STATE_CALLBACK reportedStateCallbackIn,
@@ -77,15 +83,15 @@ public:
         userContextCallback = userContextCallbackIn;
     }
 
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceHandle{ nullptr };
+    ADUC_ClientHandle deviceHandle{ nullptr };
     unsigned char reportedState[1024]{}; /* The API treats this as a blob. */
     size_t reportedStateLen{ 0 };
     IOTHUB_CLIENT_REPORTED_STATE_CALLBACK reportedStateCallback{ nullptr };
     const void* userContextCallback{ nullptr };
 } g_SendReportedStateValues;
 
-static IOTHUB_CLIENT_RESULT mockIoTHubDeviceClient_LL_SendReportedState(
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceHandle,
+static IOTHUB_CLIENT_RESULT mockClientHandle_SendReportedState(
+    ADUC_ClientHandle deviceHandle,
     const unsigned char* reportedState,
     size_t reportedStateLen,
     IOTHUB_CLIENT_REPORTED_STATE_CALLBACK reportedStateCallback,
@@ -104,15 +110,16 @@ public:
     {
         m_previousDeviceHandle = g_iotHubClientHandleForADUComponent;
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        g_iotHubClientHandleForADUComponent = reinterpret_cast<IOTHUB_DEVICE_CLIENT_LL_HANDLE>(42);
+        g_iotHubClientHandleForADUComponent = reinterpret_cast<ADUC_ClientHandle>(42);
 
-        ADUC_UT_SetSendReportedStateMock(mockIoTHubDeviceClient_LL_SendReportedState);
+        REGISTER_UMOCK_ALIAS_TYPE(ADUC_ClientHandle, void*);
+        REGISTER_UMOCK_ALIAS_TYPE(IOTHUB_CLIENT_REPORTED_STATE_CALLBACK, void*);
+
+        REGISTER_GLOBAL_MOCK_HOOK(ClientHandle_SendReportedState, mockClientHandle_SendReportedState);
     }
 
     ~TestCaseFixture()
     {
-        ADUC_UT_SetSendReportedStateMock(nullptr);
-
         CHECK(g_iotHubClientHandleForADUComponent != nullptr);
         g_iotHubClientHandleForADUComponent = m_previousDeviceHandle;
     }
@@ -123,7 +130,7 @@ public:
     TestCaseFixture& operator=(TestCaseFixture&&) = delete;
 
 private:
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE m_previousDeviceHandle;
+    ADUC_ClientHandle m_previousDeviceHandle;
 };
 
 //

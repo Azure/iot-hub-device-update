@@ -43,7 +43,7 @@ typedef void (*PnP_PropertyCallbackFunction)(
 // a result code or version.  It is used when sending properties that are NOT marked as <"writable": true> in the DTDL defining
 // the given property.
 //
-// The application itself needs to send this to Device Twin, using a function such as IoTHubDeviceClient_LL_SendReportedState.
+// The application itself needs to send this to Device Twin, using a function such as ClientHandle_SendReportedState.
 //
 STRING_HANDLE
 PnP_CreateReportedProperty(const char* componentName, const char* propertyName, const char* propertyValue);
@@ -55,7 +55,7 @@ PnP_CreateReportedProperty(const char* componentName, const char* propertyName, 
 // For instance, after processing a thermostat's set point the application acknowledges that it has received the request and can indicate
 // whether it will attempt to honor the request or whether the request was unsuccessful.
 //
-// The application itself needs to send this to Device Twin, using a function such as IoTHubDeviceClient_LL_SendReportedState.
+// The application itself needs to send this to Device Twin, using a function such as ClientHandle_SendReportedState.
 //
 STRING_HANDLE PnP_CreateReportedPropertyWithStatus(
     const char* componentName,

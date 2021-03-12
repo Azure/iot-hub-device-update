@@ -18,8 +18,6 @@ _Bool GetConnectionInfoFromADUConfigFile(ADUC_ConnectionInfo* info);
 _Bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info);
 #endif // ADUC_PROVISION_WITH_EIS
 
-void ADUC_ConnectionInfoDeAlloc(ADUC_ConnectionInfo* info);
-
 /**
  * @brief Checks whether we can obtain a device or module connection string.
  * 
@@ -29,7 +27,7 @@ _Bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs)
 {
     _Bool validInfo = false;
 
-    ADUC_ConnectionInfo info = { NULL, NULL };
+    ADUC_ConnectionInfo info = { ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, NULL, NULL, NULL, NULL };
 
     if (launchArgs->connectionString != NULL)
     {
@@ -42,7 +40,7 @@ _Bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs)
     validInfo = GetConnectionInfoFromIdentityService(&info);
 #endif
 
-    ADUC_ConnectionInfoDeAlloc(&info);
+    ADUC_ConnectionInfo_DeAlloc(&info);
     return validInfo;
 }
 
