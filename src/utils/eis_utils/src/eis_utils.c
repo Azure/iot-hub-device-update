@@ -637,7 +637,7 @@ done:
 
     if (!success)
     {
-        ADUC_ConnectionInfoDeAlloc(provisioningInfo);
+        ADUC_ConnectionInfo_DeAlloc(provisioningInfo);
     }
 
     return result;

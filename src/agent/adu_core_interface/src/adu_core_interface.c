@@ -227,7 +227,7 @@ void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext)
 }
 
 void OrchestratorUpdateCallback(
-    ADUC_ClientHandle deviceClient, JSON_Value* propertyValue, int propertyVersion, void* context)
+    ADUC_ClientHandle clientHandle, JSON_Value* propertyValue, int propertyVersion, void* context)
 {
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)context;
     STRING_HANDLE jsonToSend = NULL;
@@ -268,7 +268,7 @@ void OrchestratorUpdateCallback(
     const char* jsonToSendStr = STRING_c_str(jsonToSend);
     size_t jsonToSendStrLen = strlen(jsonToSendStr);
     IOTHUB_CLIENT_RESULT iothubClientResult = ClientHandle_SendReportedState(
-        deviceClient, (const unsigned char*)jsonToSendStr, jsonToSendStrLen, NULL, NULL);
+        clientHandle, (const unsigned char*)jsonToSendStr, jsonToSendStrLen, NULL, NULL);
 
     if (iothubClientResult != IOTHUB_CLIENT_OK)
     {
@@ -294,11 +294,11 @@ done:
 }
 
 void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
-    ADUC_ClientHandle deviceClient, const char* propertyName, JSON_Value* propertyValue, int version, void* context)
+    ADUC_ClientHandle clientHandle, const char* propertyName, JSON_Value* propertyValue, int version, void* context)
 {
     if (strcmp(propertyName, g_aduPnPComponentOrchestratorPropertyName) == 0)
     {
-        OrchestratorUpdateCallback(deviceClient, propertyValue, version, context);
+        OrchestratorUpdateCallback(clientHandle, propertyValue, version, context);
     }
     else
     {

@@ -27,7 +27,7 @@ _Bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs)
 {
     _Bool validInfo = false;
 
-    ADUC_ConnectionInfo info = { ADUC_AuthType_NotSet,ADUC_ConnType_NotSet, NULL,NULL,NULL,NULL };
+    ADUC_ConnectionInfo info = { ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, NULL, NULL, NULL, NULL };
 
     if (launchArgs->connectionString != NULL)
     {
@@ -40,7 +40,7 @@ _Bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs)
     validInfo = GetConnectionInfoFromIdentityService(&info);
 #endif
 
-    ADUC_ConnectionInfoDeAlloc(&info);
+    ADUC_ConnectionInfo_DeAlloc(&info);
     return validInfo;
 }
 

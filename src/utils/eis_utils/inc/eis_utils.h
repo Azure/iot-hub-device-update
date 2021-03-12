@@ -27,7 +27,7 @@ EXTERN_C_BEGIN
  * to create the connection string, Caller is required to call free() to deallocate the connection string
  * @param[in] expirySecsSinceEpoch the expiration time in seconds since the epoch for the token in the connection string
  * @param[in] timeoutMS the timeoutMS in milliseconds for each call to EIS
- * @param[out] provisioningInfo the pointer to the struct which will be initialized with the information for creating a connection to IotHub using the EIS supported provisioning information
+ * @param[out] provisioningInfo pointer to the struct which will be initialized with the information for creating a connection to IotHub
  * @returns on success a null terminated connection string, otherwise NULL
  */
 EISUtilityResult RequestConnectionStringFromEISWithExpiry(

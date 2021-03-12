@@ -1,15 +1,19 @@
 /**
- * @file adu_type.h
- * @brief Defines common data types used throughout ADU project.
- *
+ * @file adu_type.c
+ * @brief Implements helper functions related to ConnectionInfo
  * @copyright Copyright (c) Microsoft Corporation.
  */
 
 #include <aduc/adu_types.h>
+#include <aduc/logging.h>
 #include <stdlib.h>
 #include <string.h>
 
-void ADUC_ConnectionInfoDeAlloc(ADUC_ConnectionInfo* info)
+/**
+ * @brief DeAllocates the ADUC_ConnectionInfo object
+ * @param info the ADUC_ConnectionInfo object to be de-allocated
+ */
+void ADUC_ConnectionInfo_DeAlloc(ADUC_ConnectionInfo* info)
 {
     free(info->connectionString);
     info->connectionString = NULL;
@@ -27,18 +31,33 @@ void ADUC_ConnectionInfoDeAlloc(ADUC_ConnectionInfo* info)
     info->connType = ADUC_ConnType_NotSet;
 }
 
+/**
+ * @brief Scans the connection string and returns the connection type related for the string
+ * @details The connection string must use the valid, correct format for the DeviceId and/or the ModuleId
+ * e.g.
+ * "DeviceId=some-device-id;ModuleId=some-module-id;"
+ * If the connection string contains the DeviceId it is an ADUC_ConnType_Device
+ * If the connection string contains the DeviceId AND the ModuleId it is an ADUC_ConnType_Module
+ * @param connectionString the connection string to scan
+ * @returns the connection type for @p connectionString
+ */
 ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
 {
     ADUC_ConnType result = ADUC_ConnType_NotSet;
 
+    if (connectionString == NULL)
+    {
+        return ADUC_ConnType_NotSet;
+    }
+
     if (strstr(connectionString, "DeviceId=") != NULL)
     {
         result = ADUC_ConnType_Device;
-    }
 
-    if (result == ADUC_ConnType_Device && strstr(connectionString, "ModuleId=") != NULL)
-    {
-        result = ADUC_ConnType_Module;
+        if (strstr(connectionString, "ModuleId=") != NULL)
+        {
+            result = ADUC_ConnType_Module;
+        }
     }
 
     return result;

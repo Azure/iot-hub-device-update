@@ -25,11 +25,11 @@ target_link_libraries (
            aduc::c_utils
            aduc::communication_abstraction
            Parson::parson
-    PRIVATE aduc::platform_layer
-            aduc::pnp_helper
-            aduc::hash_utils
+    PRIVATE aduc::hash_utils
             aduc::jws_utils
-            aduc::logging)
+            aduc::logging
+            aduc::platform_layer
+            aduc::pnp_helper)
 
 target_compile_definitions (
     ${PROJECT_NAME}

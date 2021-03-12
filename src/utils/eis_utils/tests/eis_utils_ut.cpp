@@ -1,6 +1,6 @@
 /**
- * @file crypto_utils_ut.cpp
- * @brief Unit Tests for c_utils library
+ * @file eis_utils_ut.cpp
+ * @brief Unit Tests for eis_utils library
  *
  * @copyright Copyright (c) 2019, Microsoft Corp.
  */
@@ -217,7 +217,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         CHECK(outInfo.authType == ADUC_AuthType_SASToken);
         CHECK(outInfo.connType == ADUC_ConnType_Device);
 
-        ADUC_ConnectionInfoDeAlloc(&outInfo);
+        ADUC_ConnectionInfo_DeAlloc(&outInfo);
     }
 
     SECTION("RequestConnectionStringFromEISWithExpiry DeviceId , Cert Success Test")
@@ -257,7 +257,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         CHECK(outInfo.authType == ADUC_AuthType_SASCert);
         CHECK(outInfo.connType == ADUC_ConnType_Device);
 
-        ADUC_ConnectionInfoDeAlloc(&outInfo);
+        ADUC_ConnectionInfo_DeAlloc(&outInfo);
     }
 
     SECTION("RequestConnectionStringFromEISWithExpiry ModuleId , SAS Token Success Test")
@@ -297,7 +297,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         CHECK(outInfo.authType == ADUC_AuthType_SASToken);
         CHECK(outInfo.connType == ADUC_ConnType_Module);
 
-        ADUC_ConnectionInfoDeAlloc(&outInfo);
+        ADUC_ConnectionInfo_DeAlloc(&outInfo);
     }
 
     SECTION("RequestConnectionStringFromEISWithExpiry ModuleId , Cert Success Test")
@@ -338,7 +338,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         CHECK(outInfo.authType == ADUC_AuthType_SASCert);
         CHECK(outInfo.connType == ADUC_ConnType_Module);
 
-        ADUC_ConnectionInfoDeAlloc(&outInfo);
+        ADUC_ConnectionInfo_DeAlloc(&outInfo);
     }
 
     SECTION("RequestConnectionStringFromEISWithExpiry with malformed identityResponse")
@@ -390,7 +390,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         CHECK(outInfo.authType == ADUC_AuthType_NotSet);
         CHECK(outInfo.connType == ADUC_ConnType_NotSet);
 
-        ADUC_ConnectionInfoDeAlloc(&outInfo);
+        ADUC_ConnectionInfo_DeAlloc(&outInfo);
     }
 
     SECTION("RequestConnectionStringFromEISWithExpiry with malformed certificate response")
@@ -418,7 +418,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         CHECK(outInfo.authType == ADUC_AuthType_NotSet);
         CHECK(outInfo.connType == ADUC_ConnType_NotSet);
 
-        ADUC_ConnectionInfoDeAlloc(&outInfo);
+        ADUC_ConnectionInfo_DeAlloc(&outInfo);
     }
 
     SECTION("RequestConnectionStringFromEISWithExpiry with valid timeout and invalid expiry")
@@ -448,7 +448,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc): g_signatureResp is a basic C-string so it must be freed by a call to free()
         free(g_signatureResp);
 
-        ADUC_ConnectionInfoDeAlloc(&outInfo);
+        ADUC_ConnectionInfo_DeAlloc(&outInfo);
     }
 
     SECTION("RequestConnectionStringFromEISWithExpiry with invalid timeout and valid expiry")
@@ -478,6 +478,6 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc): g_signatureResp is a basic C-string so it must be freed by a call to free()
         free(g_signatureResp);
 
-        ADUC_ConnectionInfoDeAlloc(&outInfo);
+        ADUC_ConnectionInfo_DeAlloc(&outInfo);
     }
 }

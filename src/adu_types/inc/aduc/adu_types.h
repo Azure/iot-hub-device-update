@@ -1,6 +1,6 @@
 /**
  * @file adu_type.h
- * @brief Defines common data types used throughout ADU project.
+ * @brief Defines launch arguments and the ConnectionInfo struct used for created the connection between ADU and the IotHub
  *
  * @copyright Copyright (c) Microsoft Corporation.
  */
@@ -46,8 +46,7 @@ typedef enum tagADUC_AuthType
  */
 typedef struct tagConnectionInfo
 {
-    ADUC_AuthType
-        authType; /**< Indicates certificate or shared access signature token authentication for connectionString */
+    ADUC_AuthType authType; /**< Indicates the authentication type for connectionString */
     ADUC_ConnType connType; /**< Indicates whether this connection string is module-id or device-id based */
     char* connectionString; /**< Device or Module connection string. */
     char* certificateString; /**< x509 certificate in PEM format for the IoTHubClient to be used for authentication*/
@@ -59,10 +58,15 @@ typedef struct tagConnectionInfo
  * @brief DeAllocates the ADUC_ConnectionInfo object
  * @param info the ADUC_ConnectionInfo object to be de-allocated
  */
-void ADUC_ConnectionInfoDeAlloc(ADUC_ConnectionInfo* info);
+void ADUC_ConnectionInfo_DeAlloc(ADUC_ConnectionInfo* info);
 
 /**
  * @brief Scans the connection string and returns the connection type related for the string
+ * @details The connection string must use the valid, correct format for the DeviceId and/or the ModuleId
+ * e.g.
+ * "DeviceId=some-device-id;ModuleId=some-module-id;"
+ * If the connection string contains the DeviceId it is an ADUC_ConnType_Device
+ * If the connection string contains the DeviceId AND the ModuleId it is an ADUC_ConnType_Module
  * @param connectionString the connection string to scan
  * @returns the connection type for @p connectionString
  */

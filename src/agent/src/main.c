@@ -118,7 +118,7 @@ typedef void (*PnPComponentDestroyFunc)(void** componentContext);
  * @param result Result to report (optional, can be NULL).
  */
 typedef void (*PnPComponentPropertyUpdateCallback)(
-    ADUC_ClientHandle deviceClient,
+    ADUC_ClientHandle clientHandle,
     const char* propertyName,
     JSON_Value* propertyValue,
     int version,
@@ -310,11 +310,11 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
  *
  * @param deviceHandle IoTHub device client handle.
  */
-static void ADUC_DeviceClient_Destroy(ADUC_ClientHandle deviceClientHandle)
+static void ADUC_DeviceClient_Destroy(ADUC_ClientHandle clientHandle)
 {
-    if (deviceClientHandle != NULL)
+    if (clientHandle != NULL)
     {
-        ClientHandle_Destroy(deviceClientHandle);
+        ClientHandle_Destroy(clientHandle);
     }
 }
 
@@ -337,12 +337,12 @@ void ADUC_PnP_Components_Destroy()
 /**
  * @brief Initialize PnP component client that this agent supports.
  *
- * @param deviceClientHandle IoTHub Device handle.
+ * @param clientHandle the ClientHandle for the IotHub connection
  * @param argc Command-line arguments specific to upper-level handlers.
  * @param argv Size of argc.
  * @return _Bool True on success.
  */
-_Bool ADUC_PnP_Components_Create(ADUC_ClientHandle deviceClientHandle, int argc, char** argv)
+_Bool ADUC_PnP_Components_Create(ADUC_ClientHandle clientHandle, int argc, char** argv)
 {
     Log_Info("Initalizing PnP components.");
     _Bool succeeded = false;
@@ -357,7 +357,7 @@ _Bool ADUC_PnP_Components_Create(ADUC_ClientHandle deviceClientHandle, int argc,
             goto done;
         }
 
-        *(entry->clientHandle) = deviceClientHandle;
+        *(entry->clientHandle) = clientHandle;
     }
     succeeded = true;
 
@@ -380,7 +380,7 @@ static void ADUC_PnP_ComponentClient_PropertyUpdate_Callback(
     int version,
     void* userContextCallback)
 {
-    ADUC_ClientHandle deviceClient = (ADUC_ClientHandle)userContextCallback;
+    ADUC_ClientHandle clientHandle = (ADUC_ClientHandle)userContextCallback;
 
     Log_Debug("ComponentName:%s, propertyName:%s", componentName, propertyName);
 
@@ -400,7 +400,7 @@ static void ADUC_PnP_ComponentClient_PropertyUpdate_Callback(
             supported = true;
             if (entry->PnPPropertyUpdateCallback != NULL)
             {
-                entry->PnPPropertyUpdateCallback(deviceClient, propertyName, propertyValue, version, entry->Context);
+                entry->PnPPropertyUpdateCallback(clientHandle, propertyName, propertyValue, version, entry->Context);
             }
             else
             {
@@ -616,6 +616,13 @@ _Bool GetConnectionInfoFromADUConfigFile(ADUC_ConnectionInfo* info)
 
     info->connType = GetConnTypeFromConnectionString(info->connectionString);
 
+    if (info->connType == ADUC_ConnType_NotSet)
+    {
+        Log_Error(
+            "Connection String: %s does not contain a DeviceId or ModuleId value or is NULL", info->connectionString);
+        goto done;
+    }
+
     info->authType = ADUC_AuthType_SASToken;
 
     // Optional: The certificate string is needed for Edge Gateway connection.
@@ -692,6 +699,15 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     if (launchArgs->connectionString != NULL)
     {
         ADUC_ConnType connType = GetConnTypeFromConnectionString(launchArgs->connectionString);
+
+        if (connType == ADUC_ConnType_NotSet)
+        {
+            Log_Error(
+                "Connection String: %s does not contain a DeviceId or ModuleId value or is NULL",
+                launchArgs->connectionString);
+            goto done;
+        }
+
         ADUC_ConnectionInfo connInfo = {
             ADUC_AuthType_NotSet, connType, launchArgs->connectionString, NULL, NULL, NULL
         };
@@ -741,7 +757,7 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 
 done:
 
-    ADUC_ConnectionInfoDeAlloc(&info);
+    ADUC_ConnectionInfo_DeAlloc(&info);
 
     return succeeded;
 }
