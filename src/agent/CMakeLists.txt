@@ -70,6 +70,7 @@ target_link_libraries (
             aduc::pnp_helper
             aduc::adu_core_interface
             aduc::c_utils
+            aduc::communication_abstraction
             aduc::device_info_interface
             aduc::logging
             aduc::eis_utils

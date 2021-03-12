@@ -13,12 +13,6 @@
 
 #include <ostream>
 
-#ifndef ENABLE_MOCKS
-
-#    error "ENABLE_MOCKS must be defined to build UTs."
-
-#endif
-
 int main(int argc, char* argv[])
 {
     int result;
