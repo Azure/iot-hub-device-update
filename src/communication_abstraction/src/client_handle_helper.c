@@ -64,6 +64,12 @@ _Bool ClientHandle_CreateFromConnectionString(
         return false;
     }
 
+    if (connectionString == NULL || iotHubClientHandle == NULL)
+    {
+        Log_Error("ClientHandle_CreateFromConnectionString called with NULL parameters");
+        return false;
+    }
+
     if (type == ADUC_ConnType_Device)
     {
         IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceHandle =
