@@ -5,7 +5,8 @@
         "Type": "git",
         "git": {
           "RepositoryUrl": "https://github.com/Microsoft/do-client",
-          "CommitHash": "22ccf3873bfea20fa97d8386411e8939b3b7fa29"
+          "CommitHash_Comment": "0.6.1",
+          "CommitHash": "807f730432d172c446c41675c66794d6ae95c6f8"
         }
       },
       "DevelopmentDependency": false
@@ -15,6 +16,7 @@
         "Type": "git",
         "git": {
           "RepositoryUrl": "https://github.com/Azure/azure-iot-sdk-c",
+          "CommitHash_Comment": "LTS_01_2021_Ref01",
           "CommitHash": "17b7d536485b5e69555d76074803495b7b18e7ab"
         }
       },
@@ -25,6 +27,7 @@
         "Type": "git",
         "git": {
           "RepositoryUrl": "https://github.com/catchorg/Catch2",
+          "CommitHash_Comment": "v2.11.0",
           "CommitHash": "e1c9d5569dc4135babb9c81891d70a8ba8ed938c"
         }
       },
@@ -35,6 +38,7 @@
         "Type": "git",
         "git": {
           "RepositoryUrl": "https://github.com/Microsoft/GSL",
+          "CommitHash_Comment": "v2.0.0",
           "CommitHash": "1995e86d1ad70519465374fb4876c6ef7c9f8c61"
         }
       },
