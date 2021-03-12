@@ -618,8 +618,7 @@ _Bool GetConnectionInfoFromADUConfigFile(ADUC_ConnectionInfo* info)
 
     if (info->connType == ADUC_ConnType_NotSet)
     {
-        Log_Error(
-            "Connection String: %s does not contain a DeviceId or ModuleId value or is NULL", info->connectionString);
+        Log_Error("Connection string is invalid");
         goto done;
     }
 
@@ -702,9 +701,7 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 
         if (connType == ADUC_ConnType_NotSet)
         {
-            Log_Error(
-                "Connection String: %s does not contain a DeviceId or ModuleId value or is NULL",
-                launchArgs->connectionString);
+            Log_Error("Connection string is invalid");
             goto done;
         }
 

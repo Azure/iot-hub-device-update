@@ -20,12 +20,12 @@ static ADUC_ConnType g_ClientHandleType = ADUC_ConnType_NotSet;
  */
 IOTHUB_DEVICE_CLIENT_LL_HANDLE GetDeviceClientHandle(ADUC_ClientHandle handle)
 {
-    if (handle == NULL)
+    if (handle == NULL || g_ClientHandleType != ADUC_ConnType_Device)
     {
         return NULL;
     }
 
-    return *(IOTHUB_DEVICE_CLIENT_LL_HANDLE*)handle;
+    return (IOTHUB_DEVICE_CLIENT_LL_HANDLE)handle;
 }
 
 /**
@@ -35,12 +35,12 @@ IOTHUB_DEVICE_CLIENT_LL_HANDLE GetDeviceClientHandle(ADUC_ClientHandle handle)
  */
 IOTHUB_MODULE_CLIENT_LL_HANDLE GetModuleClientHandle(ADUC_ClientHandle handle)
 {
-    if (handle == NULL)
+    if (handle == NULL || g_ClientHandleType != ADUC_ConnType_Module)
     {
         return NULL;
     }
 
-    return *(IOTHUB_MODULE_CLIENT_LL_HANDLE*)handle;
+    return (IOTHUB_MODULE_CLIENT_LL_HANDLE)handle;
 }
 
 /**
@@ -57,8 +57,6 @@ _Bool ClientHandle_CreateFromConnectionString(
     const char* connectionString,
     IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol)
 {
-    _Bool success = false;
-
     if (g_ClientHandleType != ADUC_ConnType_NotSet)
     {
         Log_Error(
@@ -71,11 +69,7 @@ _Bool ClientHandle_CreateFromConnectionString(
         IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceHandle =
             IoTHubDeviceClient_LL_CreateFromConnectionString(connectionString, protocol);
 
-        *iotHubClientHandle = (ADUC_ClientHandle)malloc(sizeof(IOTHUB_DEVICE_CLIENT_LL_HANDLE));
-
-        memcpy(*iotHubClientHandle, &deviceHandle, sizeof(IOTHUB_DEVICE_CLIENT_LL_HANDLE));
-
-        success = true;
+        *iotHubClientHandle = (ADUC_ClientHandle)deviceHandle;
         goto done;
     }
     else if (type == ADUC_ConnType_Module)
@@ -83,31 +77,26 @@ _Bool ClientHandle_CreateFromConnectionString(
         IOTHUB_MODULE_CLIENT_LL_HANDLE moduleHandle =
             IoTHubModuleClient_LL_CreateFromConnectionString(connectionString, protocol);
 
-        *iotHubClientHandle = (ADUC_ClientHandle*)malloc(sizeof(IOTHUB_MODULE_CLIENT_LL_HANDLE*));
-
-        memcpy(*iotHubClientHandle, &moduleHandle, sizeof(IOTHUB_MODULE_CLIENT_LL_HANDLE));
-
-        success = true;
+        *iotHubClientHandle = (ADUC_ClientHandle)moduleHandle;
         goto done;
     }
     else
     {
+        *iotHubClientHandle = NULL;
         Log_Error("Invalid call of ClientHandle_CreateFromConnectionString without a valid ADUC_ConnType");
         goto done;
     }
 
 done:
-    if (success)
+
+    if (*iotHubClientHandle == NULL)
     {
-        g_ClientHandleType = type;
-    }
-    else
-    {
-        free(*iotHubClientHandle);
-        *iotHubClientHandle = NULL;
+        Log_Error("Call to CreateFromConnectionString returned NULL");
+        return false;
     }
 
-    return success;
+    g_ClientHandleType = type;
+    return true;
 }
 
 /**

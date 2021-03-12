@@ -32,7 +32,7 @@ void ADUC_ConnectionInfo_DeAlloc(ADUC_ConnectionInfo* info)
 }
 
 /**
- * @brief Scans the connection string and returns the connection type related for the string
+ * @brief Scans the connection string and returns the connection type related to the string
  * @details The connection string must use the valid, correct format for the DeviceId and/or the ModuleId
  * e.g.
  * "DeviceId=some-device-id;ModuleId=some-module-id;"
@@ -47,6 +47,7 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
 
     if (connectionString == NULL)
     {
+        Log_Debug("Connection string passed to GetConnTypeFromConnectionString is NULL");
         return ADUC_ConnType_NotSet;
     }
 
@@ -60,6 +61,11 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
         {
             result = ADUC_ConnType_Device;
         }
+    }
+    else
+    {
+        Log_Debug(
+            "Connection string passed to GetConnTypeFromConnectionString does not contain a DeviceId or ModuleId value");
     }
 
     return result;
