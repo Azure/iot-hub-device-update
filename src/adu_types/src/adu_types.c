@@ -10,6 +10,25 @@
 #include <string.h>
 
 /**
+ * @brief Returns the string associated with @p connType
+ * @param connType ADUC_ConnType to be stringified
+ * @returns if the ADUC_ConnType exists then the string version of the value is returned, "" otherwise
+ */
+const char* ADUC_ConnType_ToString(const ADUC_ConnType connType)
+{
+    switch (connType)
+    {
+    case ADUC_ConnType_NotSet:
+        return "ADUC_ConnType_NotSet";
+    case ADUC_ConnType_Device:
+        return "ADUC_ConnType_Device";
+    case ADUC_ConnType_Module:
+        return "ADUC_ConnType_Module";
+    }
+
+    return "";
+}
+/**
  * @brief DeAllocates the ADUC_ConnectionInfo object
  * @param info the ADUC_ConnectionInfo object to be de-allocated
  */
