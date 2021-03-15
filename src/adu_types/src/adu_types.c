@@ -26,7 +26,7 @@ const char* ADUC_ConnType_ToString(const ADUC_ConnType connType)
         return "ADUC_ConnType_Module";
     }
 
-    return "";
+    return "<Unknown>";
 }
 /**
  * @brief DeAllocates the ADUC_ConnectionInfo object
