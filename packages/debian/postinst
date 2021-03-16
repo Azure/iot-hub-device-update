@@ -19,7 +19,6 @@ adu_shell_dir=/usr/lib/adu
 adu_shell_file=adu-shell
 
 adu_eis_conf_file=adu.toml
-adu_eis_idtype=device
 eis_idservice_dir=/etc/aziot/identityd/config.d
 
 # adu_user is the user that the ADU Agent daemon will run as.
@@ -120,7 +119,7 @@ register_adu_user_and_process_with_eis() {
         if [ -d "$eis_idservice_dir" ]; then
 
             if [ ! -f "$eis_idservice_dir/$adu_eis_conf_file" ]; then
-                printf "[[principal]]\n name=\"adu\"\n idtype=[\"$adu_eis_idtype\"]\n uid= $(id -u $adu_user)\n" > "$eis_idservice_dir/$adu_eis_conf_file"
+                printf "[[principal]]\n name=\"IoTHubDeviceUpdate\"\n idtype=[\"module\"]\n uid= $(id -u $adu_user)\n" > "$eis_idservice_dir/$adu_eis_conf_file"
                 chown aziotid:aziotid "$eis_idservice_dir/$adu_eis_conf_file"
                 chmod u=rw "$eis_idservice_dir/$adu_eis_conf_file"
             fi
