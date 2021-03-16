@@ -119,7 +119,7 @@ register_adu_user_and_process_with_eis() {
         if [ -d "$eis_idservice_dir" ]; then
 
             if [ ! -f "$eis_idservice_dir/$adu_eis_conf_file" ]; then
-                printf "[[principal]]\n name=\"deviceupdate\"\n idtype=[\"module\"]\n uid= $(id -u $adu_user)\n" > "$eis_idservice_dir/$adu_eis_conf_file"
+                printf "[[principal]]\n name=\"IoTHubDeviceUpdate\"\n idtype=[\"module\"]\n uid= $(id -u $adu_user)\n" > "$eis_idservice_dir/$adu_eis_conf_file"
                 chown aziotid:aziotid "$eis_idservice_dir/$adu_eis_conf_file"
                 chmod u=rw "$eis_idservice_dir/$adu_eis_conf_file"
             fi
