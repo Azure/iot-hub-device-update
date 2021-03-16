@@ -61,6 +61,13 @@ typedef struct tagConnectionInfo
 void ADUC_ConnectionInfo_DeAlloc(ADUC_ConnectionInfo* info);
 
 /**
+ * @brief Returns the string associated with @p connType
+ * @param connType ADUC_ConnType to be stringified
+ * @returns if the ADUC_ConnType exists then the string version of the value is returned, "" otherwise
+ */
+const char* ADUC_ConnType_ToString(const ADUC_ConnType connType);
+
+/**
  * @brief Scans the connection string and returns the connection type related to the string
  * @details The connection string must use the valid, correct format for the DeviceId and/or the ModuleId
  * e.g.
