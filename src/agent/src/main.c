@@ -487,6 +487,8 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
     IOTHUB_CLIENT_RESULT iothubResult;
     bool result = true;
 
+    Log_Info("Attempting to create connection to IotHub using type: %s ", ADUC_ConnType_ToString(connInfo->connType));
+
     // Create a connection to IoTHub.
     if (!ClientHandle_CreateFromConnectionString(
             &g_iotHubClientHandle, connInfo->connType, connInfo->connectionString, MQTT_Protocol))
@@ -668,7 +670,7 @@ _Bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
 
     if (eisProvisionResult.err != EISErr_Ok && eisProvisionResult.service != EISService_Utils)
     {
-        Log_Error(
+        Log_Info(
             "Failed to provision a connection string from eis, Failed with error %s on service %s",
             EISErr_ErrToString(eisProvisionResult.err),
             EISService_ServiceToString(eisProvisionResult.service));
@@ -724,7 +726,12 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 #else
         if (!GetConnectionInfoFromIdentityService(&info))
         {
-            goto done;
+            Log_Info("Failed to get connection information from AIS. Defaulting to configuration file");
+
+            if (!GetConnectionInfoFromADUConfigFile(&info))
+            {
+                goto done;
+            }
         }
 #endif
 
