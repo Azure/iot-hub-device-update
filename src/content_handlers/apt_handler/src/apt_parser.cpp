@@ -67,6 +67,10 @@ std::unique_ptr<AptContent> GetAptContentFromRootValue(JSON_Value* rootValue)
     aptContent->Name = aptName;
     aptContent->Version = aptVersion;
 
+    // Note: json_object_get_boolen returns -1 on fail.
+    const int agentRestartRequired = json_object_get_boolean(rootObject, ADU_APT_FIELDNAME_AGENT_RESTART_REQUIRED);
+    aptContent->AgentRestartRequired = (agentRestartRequired > 0);
+
     // Parse package list.
     JSON_Array* packages = json_object_get_array(rootObject, ADU_APT_FIELDNAME_PACKAGES);
     if (packages != nullptr)
@@ -86,6 +90,18 @@ std::unique_ptr<AptContent> GetAptContentFromRootValue(JSON_Value* rootValue)
                 throw AptParser::ParserException(
                     "APT Handler configuration data contains empty package name.",
                     ADUC_ERC_APT_HANDLER_INVALID_PACKAGE_DATA);
+            }
+
+            // Note: For backward compatibility.
+            //
+            // Are we installing adu-agent package?
+            // Currently, we are assuming adu-agent* or du-agent* is an ADU Agent package.
+            if (!aptContent->AgentRestartRequired
+                && ((name.find_first_of("adu-agent") == 0) || (name.find_first_of("deviceupdate-agent") == 0)))
+            {
+                aptContent->AgentRestartRequired = true;
+                Log_Info(
+                    "The ADU Agent restart is required after installation task completed. (package:%s)", name.c_str());
             }
 
             // NOTE: Version is optional.
