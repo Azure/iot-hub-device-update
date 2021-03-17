@@ -28,7 +28,7 @@ trigger:
   branches:
     include:
       - main
-      - release/*
+      # - release/*
   paths:
     exclude:
       - docs/*
@@ -44,8 +44,8 @@ pr:
   branches:
     include:
       - main
-      - release/*
-      - feature/*
+      # - release/*
+      # - feature/*
       # TODO(shiyipeng): Task 27290511: Debian arm32 64 pipeline - improve build time
       #- dev/*
   paths:
@@ -115,7 +115,7 @@ jobs:
           DO_ACCESS_TOKEN: $(do_access_token)
 
       - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-do --install-do-deps debian-9
+          sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-do --install-do-deps-distro debian-9
         displayName: "Install DO SDK from source in container"
 
         # Cleanup the entries we added to clone private repos.
