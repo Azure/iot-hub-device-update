@@ -48,8 +48,8 @@ install_do=false
 # TODO(shiyipeng): update default_do_ref on DO's next release
 default_do_ref=main
 do_ref=$default_do_ref
-install_do_deps=false
-default_do_deps_distro=ubuntu1804
+install_do_deps_distro=""
+default_do_deps_distro=ubuntu-18.04
 
 # Dependencies packages
 aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl')
@@ -76,15 +76,15 @@ print_help() {
     echo "                          Default is $default_catch2_ref."
     echo ""
     echo "--install-do              Install Delivery Optimization from source."
-    echo "                          Use --install-do-deps to also install required dependencies."
+    echo "                          Use --install-do-deps-distro [distro_name] to also install required dependencies."
     echo "--do-ref <ref>            Install the DO source from this branch or tag."
     echo "                          This value is passed to git clone as the --branch argument."
     echo "                          Default is $default_do_ref."
     echo "--do-commit <commit_sha>  Specific commit to fetch."
     echo "                          Default is the latest commit in that branch."
-    echo "-d, --install-do-deps     Indicates that dependencies for DO should be installed."
-    echo "                          This value can be debian-9, debian-10, ubuntu-18.04, etc"
-    echo "                          When used with --install-packages, the DO dependencies that are packages are also installed."
+    echo "-d, --install-do-deps-distro      Indicates that dependencies for DO should be installed."
+    echo "                                  This value can be debian-9, debian-10, ubuntu-18.04, etc"
+    echo "                                  When used with --install-packages, the DO dependencies that are packages are also installed."
     echo "-p, --install-packages    Indicates that packages should be installed."
     echo "--install-packages-only   Indicates that only packages should be installed and that dependencies should not be installed from source."
     echo ""
@@ -241,10 +241,10 @@ do_install_do() {
 
     git clone --recursive --single-branch --branch $do_ref --depth 1 $do_url . || return
 
-    if [[ $install_do_deps != "false" ]]; then
-        local bootstrap_file=$do_dir/build/bootstrap/bootstrap-$install_do_deps.sh
+    if [[ $install_do_deps_distro != "" ]]; then
+        local bootstrap_file=$do_dir/build/bootstrap/bootstrap-$install_do_deps_distro.sh
         chmod +x $bootstrap_file || return
-        if [[ $install_do_deps == "ubuntu-18.04" ]]; then
+        if [[ $install_do_deps_distro == "ubuntu-18.04" ]]; then
             $SUDO $bootstrap_file --no-tools || return
         else
             $SUDO $bootstrap_file || return
@@ -333,9 +333,9 @@ while [[ $1 != "" ]]; do
         shift
         do_ref=$1
         ;;
-    -d | --install-do-deps)
+    -d | --install-do-deps-distro)
         shift
-        install_do_deps=$1
+        install_do_deps_distro=$1
         ;;
     -p | --install-packages)
         install_packages=true
@@ -371,7 +371,7 @@ done
 
 # If there is no install action specified,
 # assume that we want to install all deps.
-if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && $install_do != "true" && $install_do_deps == "false" && $install_azure_iot_sdk != "true" && $install_catch2 != "true" ]]; then
+if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && $install_do != "true" && $install_do_deps_distro == "" && $install_azure_iot_sdk != "true" && $install_catch2 != "true" ]]; then
     install_all_deps=true
 fi
 
@@ -380,7 +380,7 @@ fi
 if [[ $install_all_deps == "true" ]]; then
     install_aduc_deps=true
     install_do=true
-    install_do_deps=$default_do_deps_distro
+    install_do_deps_distro=$default_do_deps_distro
     install_packages=true
 fi
 
@@ -400,7 +400,7 @@ fi
 if [[ $install_packages == "true" ]]; then
     # Check if we need to install any packages
     # before we call apt update.
-    if [[ $install_aduc_deps == "true" || $install_do_deps != "false" ]]; then
+    if [[ $install_aduc_deps == "true" || $install_do_deps_distro != "" ]]; then
         echo "Updating repository list..."
         $SUDO apt-get update --yes --fix-missing --quiet || $ret
     fi
@@ -426,6 +426,6 @@ if [[ $install_packages_only == "false" ]]; then
 fi
 
 # After installation, it prints out the states of dependencies
-if [[ $install_aduc_deps == "true" || $install_do == "true" || $install_do_deps != "false" || $install_packages_only == "true" || $install_packages == "true" ]]; then
+if [[ $install_aduc_deps == "true" || $install_do == "true" || $install_do_deps_distro != "" || $install_packages_only == "true" || $install_packages == "true" ]]; then
     do_list_all_deps || $ret $?
 fi
