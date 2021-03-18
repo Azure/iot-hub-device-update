@@ -67,7 +67,7 @@ std::unique_ptr<AptContent> GetAptContentFromRootValue(JSON_Value* rootValue)
     aptContent->Name = aptName;
     aptContent->Version = aptVersion;
 
-    // Note: json_object_get_boolen returns -1 on fail.
+    // Note: json_object_get_boolean returns -1 on fail.
     const int agentRestartRequired = json_object_get_boolean(rootObject, ADU_APT_FIELDNAME_AGENT_RESTART_REQUIRED);
     aptContent->AgentRestartRequired = (agentRestartRequired > 0);
 
