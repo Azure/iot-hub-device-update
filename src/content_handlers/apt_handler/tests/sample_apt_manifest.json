@@ -1,0 +1,11 @@
+{
+    "name": "du-agent-update",
+    "version": "0.7.0",
+    "packages": [
+        {
+            "name": "deviceupdate-agent",
+            "version": "0.7.0~public~preview"
+        }
+    ],
+    "agentRestartRequired": true
+}

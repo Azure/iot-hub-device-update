@@ -29,9 +29,6 @@
 
 namespace adushconst = Adu::Shell::Const;
 
-// Indicates that the agent should restart when applying the update.
-static bool g_restartRequiredAfterApplied = false;
-
 /**
  * @brief Constructor
  * This function locates and parses APT file using APTParser.
@@ -212,7 +209,6 @@ ADUC_Result AptHandlerImpl::Install()
     _applied = false;
     std::string aptOutput;
     int aptExitCode = -1;
-    bool installingADUAgent = false;
 
     ADUC_Result result = { ADUC_DownloadResult_Success };
     try
@@ -235,17 +231,6 @@ ADUC_Result AptHandlerImpl::Install()
         std::stringstream data;
         for (const std::string& package : _packages)
         {
-            // Are we installing adu-agent package?
-            // Currently, we are assuming adu-agent* is an ADU Agent package.
-            if (!installingADUAgent && (package.find_first_of("adu-agent") == 0))
-            {
-                installingADUAgent = true;
-                Log_Info(
-                    "The ADU Agent restart is required after installation task completed. (package:%s)",
-                    package.c_str());
-                g_restartRequiredAfterApplied = true;
-            }
-
             data << package << " ";
         }
         args.emplace_back(adushconst::target_data_opt);
@@ -288,10 +273,9 @@ ADUC_Result AptHandlerImpl::Apply()
         return ADUC_Result{ ADUC_ApplyResult_Failure, ADUC_ERC_APT_HANDLER_INSTALLCRITERIA_PERSIST_FAILURE };
     }
 
-    if (g_restartRequiredAfterApplied)
+    if (_aptContent->AgentRestartRequired)
     {
-        // Always require a agent restart after self updated.
-        Log_Debug("The install task completed successfully, ADU Agent restart is required for this update.");
+        Log_Debug("The install task completed successfully, DU Agent restart is required for this update.");
         return ADUC_Result{ ADUC_ApplyResult_SuccessAgentRestartRequired };
     }
 
