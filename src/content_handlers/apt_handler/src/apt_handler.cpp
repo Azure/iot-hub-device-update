@@ -275,8 +275,7 @@ ADUC_Result AptHandlerImpl::Apply()
 
     if (_aptContent->AgentRestartRequired)
     {
-        // Always require a agent restart after self updated.
-        Log_Debug("The install task completed successfully, ADU Agent restart is required for this update.");
+        Log_Debug("The install task completed successfully, DU Agent restart is required for this update.");
         return ADUC_Result{ ADUC_ApplyResult_SuccessAgentRestartRequired };
     }
 

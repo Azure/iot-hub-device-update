@@ -83,18 +83,6 @@ const char* aptContentWithAgentRestartRequiredFalse =
             R"(])"
     R"(})";
 
-
-const char* aptContentWithAgentRestartRequiredUsingNameAduAgent = 
-    R"({)"
-        R"( "name":"com-microsoft-eds-adu-testapt", )"
-        R"( "version":"1.0.1", )"
-        R"( "packages": [ )"
-            R"({)"
-                R"( "name":"adu-agent" )"
-            R"(})"
-            R"(])"
-    R"(})";
-
 const char* aptContentWithAgentRestartRequiredUsingNameDuAgent = 
     R"({)"
         R"( "name":"com-microsoft-eds-adu-testapt", )"
@@ -139,13 +127,6 @@ TEST_CASE("APT Parser AgentRestartRequired(false) Test")
     std::unique_ptr<AptContent> aptContent =
         AptParser::ParseAptContentFromString(aptContentWithAgentRestartRequiredFalse);
     CHECK_FALSE(aptContent->AgentRestartRequired);
-}
-
-TEST_CASE("APT Parser AgentRestartRequired(adu-agent package name) Test")
-{
-    std::unique_ptr<AptContent> aptContent =
-        AptParser::ParseAptContentFromString(aptContentWithAgentRestartRequiredUsingNameAduAgent);
-    CHECK(aptContent->AgentRestartRequired);
 }
 
 TEST_CASE("APT Parser AgentRestartRequired(du-agent package name) Test")

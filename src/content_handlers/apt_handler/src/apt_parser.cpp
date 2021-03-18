@@ -92,16 +92,13 @@ std::unique_ptr<AptContent> GetAptContentFromRootValue(JSON_Value* rootValue)
                     ADUC_ERC_APT_HANDLER_INVALID_PACKAGE_DATA);
             }
 
-            // Note: For backward compatibility.
-            //
-            // Are we installing adu-agent package?
-            // Currently, we are assuming adu-agent* or du-agent* is an ADU Agent package.
-            if (!aptContent->AgentRestartRequired
-                && ((name.find_first_of("adu-agent") == 0) || (name.find_first_of("deviceupdate-agent") == 0)))
+            // Are we installing deviceupdate-agent package?
+            // Currently, we are assuming deviceupdate-agent* is a Device Update Agent package.
+            if (!aptContent->AgentRestartRequired && (name.find_first_of("deviceupdate-agent") == 0))
             {
                 aptContent->AgentRestartRequired = true;
                 Log_Info(
-                    "The ADU Agent restart is required after installation task completed. (package:%s)", name.c_str());
+                    "The DU Agent restart is required after installation task completed. (package:%s)", name.c_str());
             }
 
             // NOTE: Version is optional.
