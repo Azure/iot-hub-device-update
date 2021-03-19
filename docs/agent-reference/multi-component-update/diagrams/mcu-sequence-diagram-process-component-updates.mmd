@@ -1,0 +1,58 @@
+flowchart TD
+
+subgraph component_updates_detail["Process All Component Updates"]
+    com_start("start")
+    
+    %% Begin Loop
+    com_start-->entry_begin{"Has more Update\nto process?"}
+    entry_begin-.............->|NO|com_done
+    
+    entry_begin-->|YES|com_chk_preinst{"specified\npreInstall?"}
+    com_pre["RunScript(<component preInstUrl>)\n\nPersist states"]
+    validate_com_man["Validate UpdateManifest content\nand verify that associated\nUpdateHandler is available\non the device"]
+    com_chk_preinst-.->|NO|validate_com_man
+    com_chk_preinst-->|YES|com_pre
+
+    %% Run Pre-Install script
+    com_pre-->|SUCCEEDED|validate_com_man
+    com_pre-.->|FAILED|error_handler
+
+    %% Validate update manifest
+    validate_com_man-->|OK|enum_com
+    validate_com_man-.->|NOT OK|error_handler
+
+    enum_com["Enumerate all\n applicable components"]
+    -.-|"get components list\nfrom enumerator"|com_enumerator_plugin["Components Enumerator\n(Provided by Device Builder)"]
+    
+    subgraph for_each_com["Iterate through all target component"]
+        c_begin("start")-->
+        c_invoke["Invoke UpdateHandler\nfor this UpdateType\n\n(Passing UpdateManifest\nand component context)\n\nPersist per-component result"]
+        c_invoke-->c_done
+        c_done("end")
+    end
+    
+    enum_com-->|"process update\nfor\neach component"|for_each_com
+
+    for_each_com-->|SUCCEEDED|chk_com_pos
+    for_each_com-.->|FAILED|error_handler
+
+    error_handler["Persist error info\n(on the device)"]-->
+    error_next{"Check 'installRule'"}
+    error_next-->|"'continueOnFailure'\nProceed to next Update entry"|entry_done
+    error_next-.->|'abortOnFailure'|com_done
+
+    chk_com_pos{"specified\npostInstall?"}
+    chk_com_pos-.->|NO|entry_done
+    chk_com_pos-->|YES|com_pos["RunScript(<component postInstUrl>)\n\nPersist states"]
+    
+    com_pos-->|SUCCESS|chk-reboot["All targets updated-\nsuccessfully\n\nRequest immediate reboot,\nor queue a reboot request,\nif required."]
+    chk-reboot-->entry_done
+    com_pos-.->|FAILED|error_handler
+
+    
+    entry_done("(done with this Update entry)")
+    entry_done-.->|process next entry|entry_begin
+
+    com_done("done")
+end
+

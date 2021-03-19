@@ -1,0 +1,167 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+
+    "properties": {
+        "$schema" : {
+            "type" : "string"
+        },
+
+        "provider" : {
+            "type": "string"
+        },
+
+        "name" : {
+            "type" : "string"
+        },
+
+        "version" : {
+            "type" : "string"
+        },
+
+        "description" : {
+            "type" : "string"
+        },
+
+        "scriptsBundle" : {
+            "$ref" : "#/definitions/file-info-schema"
+        },
+
+        "updatesBundle" : {
+            "$ref" : "#/definitions/file-info-schema"
+        },
+
+        "preInstall" : {
+            "$ref" : "#/definitions/file-info-schema"
+        },
+
+        "postInstall" : {
+            "$ref" : "#/definitions/file-info-schema"
+        },
+
+        "componentUpdates" : {
+            "type" : "array",
+            "items" : {
+                "$ref" : "#/definitions/component-update-schema"
+            }
+        }
+    },
+
+    "definitions": {
+        "file-info-schema" : {
+            "properties": {
+                "fileUri" : {
+                    "type" : "string"
+                },
+                "fileSize" : {
+                    "type" : "number"
+                },
+                "sha256" : {
+                    "type" : "string"
+                }
+            }
+        },
+
+        "update-info-schema" : {
+            "properties" : {
+                "updateType": {
+                    "type" : "string"
+                },
+                "files" : {
+                    "type" : "array",
+                    "items" : {
+                        "$ref" : "#/definitions/file-info-schema"
+                    }
+                }
+            }
+        },
+
+        "component-update-schema" : {
+            "properties" : {
+                "preInstall" : {
+                    "$ref" : "#/definitions/file-info-schema"
+                },
+        
+                "postInstall" : {
+                    "$ref" : "#/definitions/file-info-schema"
+                },
+
+                "updateInformation" : {
+                    "properties": {
+                        "targetNames" : {
+                            "type" : "array",
+                            "items": {
+                                "type" : "string"
+                            }
+                        },
+        
+                        "targetGroups" : {
+                            "type" : "array",
+                            "items": {
+                                "type" : "string"
+                            }
+                        },
+        
+                        "compatibilities" : {
+                            "type" : "array",
+                            "items": {
+                                "$ref" : "#/definitions/compatibility-info-schema"
+                            }
+                        },
+        
+                        "updateInfo" : {
+                            "type" : "object"
+                        }
+                    }
+                },
+                
+                "updatePolicy" : {
+                    "properties" : {
+                        "maxRetry" : {
+                            "type" : "number"
+                        },
+
+                        "installRule" : {
+                            "$ref" : "#/definitions/install-rule-schema"
+                        },
+
+                        "rebootBehavior" : {
+                            "$ref" : "#/definitions/reboot-behavior-schema"
+                        }
+                    },
+                    
+                    "additionalProperties": false
+                }
+            }
+        },
+
+        "compatibility-info-schema" : {
+            "properties": {
+                "manufacturer" : {
+                    "type" : "string"
+                },
+                "model" : {
+                    "type" : "string"
+                }
+            }
+        },
+
+        "install-rule-schema" : {
+            "enum": [
+                "abortOnFailure",
+                "continueOnNoOp",
+                "continueOnFailure"
+            ]
+        },
+
+        "reboot-behavior-schema" : {
+            "enum": [
+                "none",
+                "immediate",
+                "defer"
+            ]
+        }
+
+    },
+
+    "additionalProperties": false
+}

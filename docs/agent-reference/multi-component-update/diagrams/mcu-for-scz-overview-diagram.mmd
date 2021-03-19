@@ -1,0 +1,61 @@
+flowchart 
+
+    adu-s[ADU Systemd Service]-->|forks|adu-a[ADU Agent Procss]
+    adu-a-..->|"forks\n&\nsends update data"|mpum-handler[MultiCompContentHandler Process]
+    mpum-handler-..->|"requests\ndevice reboot"|adu-a
+    
+    mpum-handler-.->movisoc-h[MoviSocContentHandler Process]
+
+    adu-a<-.->partprop-ext[ComponentEnumerator]
+    movisoc-h-.->|updates|host-fw[Host Firmware]
+
+    mpum-handler-.->swupdate-h[SWUpdateContentHandler Process]
+
+    swupdate-h-.->|updates|host-fw[Host Firmware]
+    swupdate-h-.->|updates|host-rfs[Host RootFS]
+    swupdate-h-.->|updates|host-bfs[Host BootFS]
+
+    mpum-handler-.->devmm-h[DevMMContentHandler Process]
+
+    devmm-h-.->|updates|ear-som[SCZ Ear SoMs]
+    devmm-h-.->|updates|eye-som[SCZ Eye SoMs]
+    devmm-h-.->|updates|exp-kit[Expansion Kit]
+
+    mpum-handler-.->bitcreek-h[BitcreekContentHandler Process]
+
+    bitcreek-h-.->|updates|int-som[Intel SoMs]
+
+    classDef PARTSW fill:#7ff2,stroke:#333,stroke-width:2px,stroke-dasharray: 2 1;
+    classDef PARTHW fill:#f7f2,stroke:#333,stroke-width:2px,stroke-dasharray: 2 1;
+
+    classDef ADU fill:#ffc,stroke:#333,stroke-width:2px;
+    classDef SCZ fill:#0f0,stroke:#333,stroke-width:2px;
+    classDef SCZ-PENDING fill:#0f77,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5;
+
+    class host-fw PARTSW
+    class host-rfs PARTSW
+    class host-bfs PARTSW
+    
+    class ear-som PARTHW
+    class eye-som PARTHW
+    class exp-kit PARTHW
+    class int-som PARTHW
+
+    class devmm-h SCZ
+    class bitcreek-h SCZ
+    class movisoc-h SCZ
+    class partprop-ext SCZ
+
+
+    subgraph Legend
+    a[Implement by SCZ]
+    b[Implement by ADU]
+    hw[Hardware Components]
+    sw[Software Components]
+    %%tbd[Future Support]
+    end
+
+    class a SCZ
+    class hw PARTHW
+    class sw PARTSW
+    class tbd SCZ-PENDING

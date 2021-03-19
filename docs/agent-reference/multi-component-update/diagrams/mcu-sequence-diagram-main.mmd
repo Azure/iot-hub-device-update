@@ -1,0 +1,43 @@
+flowchart TD
+
+subgraph main[Main Workflow]
+     begin(start)-->validate["Validate MCU Manifest"]-->parse["Parse MCU Manifest"]
+     done(end)
+
+     validate-..->|validation_error|done 
+     parse-..->|parse_error|done
+
+     parse-..->|"Check workflow\n persisted state"|puwilo{"update in-progrsss\nand can resume?"}
+
+     puwilo-->|"NO"|chk_host_pre{"preInstall specified?"}
+     puwilo-->|"'YES'\n(resume component updates)"|updates
+     
+     host_pre["RunScript(<host preInstUrl>)"]
+
+     chk_host_pre-->|"YES\nrun host preInstall"|host_pre
+     chk_host_pre-->|NO|updates
+     
+     
+     
+     subgraph updates["Iterate through all update entries"]
+        udpates_inner["Process an update for\neach Component Update entry\n\n(Note: immediate reboot\nmaybe required)"]
+     end
+
+     host_pre-.->|FAILED|host_post
+     host_pre-->|SUCCESS|updates
+     
+     chk_host_post{"postInstall specified?"}
+
+     host_post["RunScript(<host posInstUrl>)"]-->finalize
+     
+     chk_host_post-->|"YES\nrun host preInstall"|host_post
+     chk_host_post-->|NO|finalize
+
+     finalize["Communicate states\nto Agent\n\n(and request reboot\nif needed)"]
+     finalize-->done
+     updates-->chk_host_post
+     updates-.->|"if reboot requested"|reboot["reboot\n(resume after rebooted)"]
+     reboot-->done
+end
+
+

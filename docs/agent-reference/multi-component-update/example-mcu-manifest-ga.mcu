@@ -1,0 +1,165 @@
+{
+    "$schema": "./mcu-manifest-schema.json",
+
+    "provider" : "contoso",
+    "name" : "smart-vacuum-update",
+    "version" : "1.1",
+    "description" : "Updates for host-firmware, bootfs, rootfs, front and rear USB cameras, and USB motors controller.",
+    
+    "scriptsBundle" : {
+        "fileUri" : "maintainer-scripts.gz",
+        "fileSize" : 1234,
+        "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE=",
+    },
+
+    "preInstall" : { 
+        "fileUri": "smart-vacuum-preinstall.sh",
+        "fileSize": 100,
+        "sha256": "abcdefhijklmnopqr1234="
+    },
+
+    "postInstall" : { 
+        "fileUri": "smart-vacuum-postinstall.sh",
+        "fileSize": 100,
+        "sha256": "abcdefhijklmnopqr1234="
+    },
+
+    "updatesBundle" : {
+        "fileUri" : "maintainer-scripts.gz",
+        "fileSize" : 1234,
+        "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE=",
+    },
+
+    "componentUpdates" : [
+        {
+            "preInstall" : { 
+                "fileUri": "host-bootfs-preinstall.sh",
+                "fileSize": 100,
+                "sha256": "abcdefhijklmnopqr1234="
+            },
+        
+            "postInstall" : { 
+                "fileUri": "host-bootfs-postinstall.sh",
+                "fileSize": 100,
+                "sha256": "abcdefhijklmnopqr1234="
+            },
+
+            "targetNames" : [
+                "host-bootfs"
+            ],
+
+            "compatibilities" : [
+                {
+                    "manufacturer":"contoso",
+                    "model":"smart-vacuum"
+                }
+            ],
+                    
+            "updateInfo" : {
+                "updateType":"contoso/swupdate:1",
+                "files" : {
+                    "00000" : {
+                        "fileName" : "smart-vacuum-fw-1.1.swu",
+                        "sizeInBytes" : 2048,
+                        "hashes" : {
+                            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                            }
+                    }
+                }
+            },
+            
+            "updatePolicy" : {
+                "maxRetry" : 4,
+                "installRule" : "abortOnFailure",
+                "rebootBehavior" : "immediate"
+            }
+        },
+        {
+            "preInstall" : { 
+                "fileUri": "usb-camera-preinstall.sh",
+                "fileSize": 100,
+                "sha256": "abcdefhijklmnopqr1234="
+            },
+        
+            "postInstall" : { 
+                "fileUri": "usb-camera-postinstall.sh",
+                "fileSize": 100,
+                "sha256": "abcdefhijklmnopqr1234="
+            },
+
+            "targetNames" : [
+                "forward-usb-camera"
+            ],
+
+            "compatibilities" : [
+                {
+                    "manufacturer":"contoso",
+                    "model":"usb-camera"
+                }
+            ],
+                    
+            "updateInfo": {
+                "updateType":"contoso/usb-camera:1",
+                "files" : {
+                    "00000" : {
+                        "fileName" : "contoso-usb-camera-fw-1.1.swu",
+                        "sizeInBytes" : 2048,
+                        "hashes" : {
+                            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                            }
+                    }
+                }
+            },
+
+            "updatePolicy" : {
+                "maxRetry" : 5,
+                "installRule" : "abortOnFailure",
+                "rebootBehavior" : "none"
+            }
+        },
+        {
+            "preInstall" : { 
+                "fileUri": "usb-motor-controller-preinstall.sh",
+                "fileSize": 100,
+                "sha256": "abcdefhijklmnopqr1234="
+            },
+        
+            "postInstall" : { 
+                "fileUri": "usb-motor-controller-postinstall.sh",
+                "fileSize": 100,
+                "sha256": "abcdefhijklmnopqr1234="
+            },
+
+            "targetGroups" : [
+                "usb-motor-controller"
+            ],
+
+            "compatibilities" : [
+                {
+                    "manufacturer":"contoso",
+                    "model":"usb-motor-controller"
+                }
+            ],
+                    
+            "updateInfo" : {
+                "updateType":"contoso/usb-motor-controller:1",
+                "files" : {
+                    "00000" : {
+                        "fileName" : "contoso-usb-motor-controller-fw-1.1.swu",
+                        "sizeInBytes" : 2048,
+                        "hashes" : {
+                            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                            }
+                    }
+                }
+            },
+
+            "updatePolicy" : {
+                "maxRetry" : 5,
+                "installRule" : "continueOnFailure",
+                "rebootBehavior" : "none"
+            }
+        }
+
+    ]
+}
