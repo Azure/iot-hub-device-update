@@ -446,6 +446,19 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* workflowData)
     else
     {
         Log_Info("The installed criteria is not met. The current update was not installed on the device.");
+
+        if (workflowData->CurrentAction == ADUCITF_UpdateAction_Download)
+        {
+            Log_Info("There's a pending 'download' action request. Continue downloading the update.");
+
+            // There's a pending download requrest.
+            // We need to make sure we don't change our state to 'idle'.
+            workflowData->StartupIdleCallSent = true;
+
+            // Continue processing 'download' action.
+            ADUC_Workflow_HandleUpdateAction(workflowData);
+            goto done;
+        }
     }
 
     ADUC_SetUpdateStateWithResult(workflowData, ADUCITF_State_Idle, result);
