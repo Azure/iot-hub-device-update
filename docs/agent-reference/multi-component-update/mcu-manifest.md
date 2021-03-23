@@ -1,14 +1,22 @@
 # Multi-Component Update Manifest File
 
 ## Quick Jump
-- [Update identification and description](#update-description) 
-- [Maintainer scripts information](#maintainer-scripts-information)
-- [Component Update List](#component-update-list)
-- [Component Update Information](#component-update-information)
-- [File Information](#file-information-property)
-- [Component Class](#component-class)
-- [Update Information](#update-information)
-- [MCU Manifest Example](#mcu-manifest-example)
+
+- [Multi-Component Update Manifest File](#multi-component-update-manifest-file)
+  - [Quick Jump](#quick-jump)
+  - [MCU Manifest Schema](#mcu-manifest-schema)
+    - [Update Identification and Description](#update-identification-and-description)
+    - [Maintainer Scripts Information](#maintainer-scripts-information)
+    - [Component Update List](#component-update-list)
+    - [Component Update Information](#component-update-information)
+    - [File Information Property](#file-information-property)
+  - [Component Class](#component-class)
+  - [Update Information](#update-information)
+  - [Update Policy Property](#update-policy-property)
+    - [MCU Manifest Example](#mcu-manifest-example)
+    - [Update Information Property](#update-information-property)
+      - [Previous](#previous)
+      - [Next](#next)
 
 ## MCU Manifest Schema
 
@@ -18,7 +26,7 @@ The MCU manifest file contain 3 important parts:
 - [Maintainer scripts information](#maintainer-scripts-information) (`scriptsBundle`, `preInstall`, and `postIntall`)
 - Array of [Component-Specific Updates](#component-specific-updates) (`componentUpdates`)
 
-```
+```json
 {
     // Update identification and desription
     "provider" : "privider-name",
@@ -37,6 +45,7 @@ The MCU manifest file contain 3 important parts:
 ```
 
 ### Update Identification and Description
+
 The customer can identify and describe the MCU manifest using the following properties:
 
 Property|Type|Description|
@@ -48,6 +57,7 @@ Property|Type|Description|
 ||||
 
 ### Maintainer Scripts Information
+
 Property|Type|Description|
 |----|----|----|
 |`scriptsBundle`|[fileInfo](#file-information-property)|Information of a compressed file contains one or more script files to be run as part of this update.|
@@ -58,12 +68,11 @@ Property|Type|Description|
 > Note: (optional) to reduce the number of files to be imported to the Device Update Service, all scripts can be packaged into a single archive file (gzip). This file will be downloaded and unpacked into a temporary sandbox directory (on a device) accessible only by the Device Update Agent's trusted users or groups.
 
 ### Component Update List
+
 The `componentUpdates` property in MCU manifest is an array of [Component Update Information](#component-update-information).  
 Each update can be applied to a single component (by name, defined by the Device Builder), a group or groups of components (by group name, defined by the Device Builder), a group or groups of component classes (by `Manufacturer` and `Model` of the hareware component or peripheral).  
   
   See [`Component Enumerator`](./component-enumerator.md) for more info.
-
-
 
 ### Component Update Information
 
@@ -79,13 +88,13 @@ Property|Type|Description|
 ||||
 
 > **Requirement**: At least one target must be sepcified. Either by name, group, or class.
-
+>
 > **Note**: `targetNames`, `targetGroups` and `targetClasses` are union.
 ### File Information Property
 
 This applied to `scriptsBundle`, `preInstall`, and `postInstall` properties.
 
-```
+```json
 {
     "fileUri"  : <string>,
     "fileSize" : <number>,
@@ -105,9 +114,10 @@ Property|Type|Note|
 > If the value begins with `"http://"`, `"https://"`, or `"ftp://"`, the file will be downloaded directly from specified URL. This enables scenario where customers hosts their own update artifacts.
 
 ## Component Class
-A `component` on a device is classified using a combination of `manufacture` and `model`. This is similar to how a hardware or device is classified. 
 
-```
+A `component` on a device is classified using a combination of `manufacture` and `model`. This is similar to how a hardware or device is classified.
+
+```json
 {
     "manufacture"  : <string>,
     "model" : <string>
@@ -159,7 +169,7 @@ This update is intended for a **Smart Vacuum** device built by **Contoso** compa
 **Contoso** implements a Device Update Agent [Component Enumerator Extension](./component-enumerator.md) that enumerates all components in the device and return host device's properties, and a list of all updatable components, and their properties.  
 See example output of the Component Enumerator below:
 
-```
+```json
 {
     "manufacture" : "contoso",
     "model" : "smart-vacuum",
@@ -243,11 +253,11 @@ After the device rebooted, **Device Update Agent** will resume the updates for `
 
 > **Note: For 2021-Q1**, MCU Content Handler will stops the update immediately, as soon as any error occurs.  
   **At GA**, you can specify how to handle an update failure using `installRule` property, and the expected behavior is:  
-*If the update for `wheels-motor-controller` failed, the Agent will proceed with the next component update, which is `vacuum-motor-controller`. In this case, the overall update result will be `'failed'` with the `'resultDetails'` contains detailed information of the failure.* 
+*If the update for `wheels-motor-controller` failed, the Agent will proceed with the next component update, which is `vacuum-motor-controller`. In this case, the overall update result will be `'failed'` with the `'resultDetails'` contains detailed information of the failure.*
 
 The latest example manifest file can be found [here](./example-mcu-manifest.mcu).
 
-```
+```json
 {
     "$schema": "./mcu-manifest-schema.json",
 
@@ -409,12 +419,7 @@ The latest example manifest file can be found [here](./example-mcu-manifest.mcu)
 }
 ```
 
-### MCU Manifest Schema
-
 The MCU manifest schema file can be found [here](./mcu-manifest-schema.json).
-
-
-
 
 ### Update Information Property
 
@@ -426,11 +431,11 @@ targetNames| string | (Optional) One or more names of the target components.
 targetGroups| string | (Optional) One or more names of the target component groups.
 updateInfo| object | An json object that contains a subset of the Device Update Manifest data. This contains an update information (`updateType`) required to determine an UpdateContentHandler to be used for updating the target components, and `files` for the update.
 updatePolicy|| See [Update Policy](#update-policy-property) below.
-|||
-
-
 
 #### Previous
-- [`MCU Update Content Handler Overview`](./mcu-update-handler.md)
+
+- [MCU Update Content Handler Overview](./mcu-update-handler.md)
+
 #### Next
-- [`MCU Script Files`](./mcu-script-files.md)
+
+- [MCU Script Files](./mcu-script-files.md)

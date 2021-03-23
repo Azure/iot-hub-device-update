@@ -1,15 +1,23 @@
 # Multi Component Update Content Handler
+
 A Multi Component Update Content Handler is an [`Update Content Handler`](../agent-core/update-content-handler.md) extension that can process the `microsoft/mcu:1` update type.  
 
 ## Quick Jump
-- [Overview](#overview)
-- [MCU Update Workflow](#mcu-update-workflow)
-- [How MCU Update Content Handler Locates Files](#how-mcu-update-content-handler-locates-files)
+
+- [Multi Component Update Content Handler](#multi-component-update-content-handler)
+  - [Quick Jump](#quick-jump)
+    - [MCU Update Workflow](#mcu-update-workflow)
+    - [MCU Component Update Workflow](#mcu-component-update-workflow)
+    - [How MCU Update Content Handler Locates Files](#how-mcu-update-content-handler-locates-files)
+      - [Previous](#previous)
+      - [Next](#next)
 
 ### MCU Update Workflow
+
 ![MCU Workflow Diagram](./diagrams/mcu-sequence-diagram-main.svg)
 
 ### MCU Component Update Workflow
+
 ![MCU Component Update Workflow Diagram](./diagrams/mcu-sequence-diagram-process-component-updates.svg)
 
 ### How MCU Update Content Handler Locates Files
@@ -21,6 +29,9 @@ The MCU Content Handler locates the file using `fileUri` property. ( See [File I
 - For update files, e.g., `device firmware file`, `bootfs image file`, `rootfs image file`, or other `component's firmware image`, MCU Update Handler will search for the specified file in `ADU Update Manifest` `fileUrls` list. If found, MCU Update Handler will requests ADU Agent to download the file into the `sandbox` folder (via Delivery Optimization Agent)
 
 #### Previous
-- [`MCU Overview`](./overview.md)
+
+- [MCU Overview](./overview.md)
+  
 #### Next
-- [`MCU Manifest File`](./mcu-manifest.md)
+
+- [MCU Manifest File](./mcu-manifest.md)
