@@ -118,14 +118,14 @@ Note: All fields are required.
   ],
   "files": [
     {
-      "filename": "file1.json",
+      "fileName": "file1.json",
       "sizeInBytes": 7,
       "hashes": {
         "sha256": "K2mn97qWmKSaSaM9SFdhC0QIEJ/wluXV7CoTlM8zMUo="
       }
     },
     {
-      "filename": "file2.zip",
+      "fileName": "file2.zip",
       "sizeInBytes": 11,
       "hashes": {
         "sha256": "gbG9pxCr9RMH2Pv57vBxKjm89uhUstD06wvQSioLMgU="

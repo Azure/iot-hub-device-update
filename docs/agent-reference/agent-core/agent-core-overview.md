@@ -28,15 +28,15 @@ This new version contains many new features such as PnP Module Id support, impro
 
 The new Device Update Agent supports multiple child processes where each process communicates to IoT Hub using a separate Module Identity.  
 
-This enables a scenario where multiple updates can be deployed to the same device but targetting different agents. Each agent can be classified differently and belong to a separate targetable group.  
+This enables a scenario where multiple updates can be deployed to the same device but target different agents. Each agent can be classified differently and belongs to a separate targetable group.  
 
-See [Configuration Manager](./configuration-manager.md) for more detail on how to configure child agents.
+See [Configuration Manager](./configuration-manager.md) for more detail.
 
 ### Update Content Handler Extensions
 
 The `Update Content Handler Manager` will dynamically load a Custom Update Content Handler based on the Update Type specified in the `Update Manifest`.  
 
-The two existing Content Handlers, Microsoft APT Update Handler and Microsoft SWUpdate Handler now become the shared libraries.  
+The existing two Content Handlers, Microsoft APT Update Handler and Microsoft SWUpdate Handler now become the shared libraries.  
 
 See [Update Content Handler](./update-content-handler.md) for more detail.
 
@@ -44,7 +44,7 @@ See [Update Content Handler](./update-content-handler.md) for more detail.
 
 With the new extensibility model, Device Builder can implement a customized Update Content Handler that can deliver an update to one or more brown-field devices connected to the hub or host device.  
   
-The following diagram demonstrates a high-level overview of Device Update Agent with the Custome Content Handler that can install updates on four connected devices.  
+The following diagram demonstrates a high-level overview of Device Update Agent with the Custom Content Handler that can install updates on four connected devices.  
 
 The [`Component Enumerator`](../multi-component-update/component-enumerator.md) (shown as Device Properties Provider), developed by Device Builder, can reports additional component information to IoT Hub Module Twin (e.g., per-component update result details)
 ![V7 Diagram](./images/som-update-diagram.png)

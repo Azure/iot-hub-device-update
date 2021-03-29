@@ -6,7 +6,7 @@
 // A config object handle.
 typedef void* CONFIG_HANDLE
 
-// Instancitate a config object from specified file.
+// Instantiate a config object from specified file.
 CONFIG_HANDLE LoadConfig(const char * configFilePath);
 
 // Free all resources allocated for the config object.
@@ -24,7 +24,7 @@ See example `du-config.json` file format below:
 
 ```json
 
-"enabledIoTHubTracing" : true,
+"enableIoTHubTracing" : true,
 "logLevel" : 0,
 
 "aduShellTrustedUsers": ["adu", "do"],
@@ -32,11 +32,10 @@ See example `du-config.json` file format below:
 "agents":[
   {
       "name":"host-update",
-      "runas":"adu",
-      "connectionInfoSource":"AIS",
-      "connectionData":{
-          "connectionType" : "module",
-          "moduleName" : "ioTHubDeviceUpdate"
+      "runas":"adu",      
+      "connectionSource" : {
+          "connectionType" : "AIS",
+          "connectionData" : "iotHubDeviceUpdate"
       },
 
       "aduc_manufacturer" : "Contoso",
@@ -46,9 +45,10 @@ See example `du-config.json` file format below:
   {
       "name":"leaf-update",
       "runas":"adu",
-      "connectionInfoSource":"string",
-      "connectionData":{
-          "connectionString" : "HostName=..."
+
+      "connectionSource" : {
+          "connectionType" : "string",
+          "connectionData" : "HOSTNAME=..."
       },
 
       "aduc_manufacturer" : "Fabrikam",
@@ -59,7 +59,8 @@ See example `du-config.json` file format below:
 "contentHandlers":[
     {
         "updateType":"microsoft/apt:1",
-        "path":"/user/lib/adu/content-handlers.d/microsoft-apt-1/libmicrosoft-apt-1.so",
+        "filePath":"/user/lib/adu/content-handlers.d/microsoft-apt-1/libmicrosoft-apt-1.so",
+
         "sha256":"xAbsdf802x3233="
     },
     {
@@ -77,19 +78,24 @@ See example `du-config.json` file format below:
 
 Property Name | Type | Description
 |----|----|----|
-|enabledIoTHubTracing|boolean|Enable IoT Hub SDK tracing<br>Default is 'false'|
-|logLevel|number|Set log verbosity<br>0 - debug<br>1 - info<br>2 - warning<br>3 - error|
+|enableIoTHubTracing|boolean|(optional) Enable IoT Hub SDK tracing.<br>Default is 'false'|
+|logLevel|number|(optional) Set log verbosity<br>0 - debug<br>1 - info (default)<br>2 - warning<br>3 - error|
 |aduShellTrustedUsers|Array of string|List of users that allowed to launch adu-shell|
-|agents|Array of [Agent Info](#agent-info)| List of child agent's information|
+|agents|Array of [Agent Information](#agent-information)|List of child agent's information|
 
+### Agent Information
 
-
-### Agent Info
 Property Name | Type | Description
 |----|----|----|
 |name|string|Internal name of the agent.<br>This name will appears in logs.|
 |runas|string|The user id for the child agent process|
-|connectionInfoSource|string|Indicates this agent acquire a connection string to IoT Hub.<br>This can be `"string"` or `"AIS"`|
-|connectionData|Json object|Contain data used by specified connection info source|
+|connectionSource|[Connection Source](#connection-source)|Indicates how this agent acquire a connection string to IoT Hub|
 |aduc_manufacturer|string|Manufacturer name|
 |aduc_model|string|Model name|
+
+### Connection Source
+
+Property Name | Type | Description
+|----|----|----|
+|connectionType|string|Indicates how the Agent accuire the connection string to IoT Hub.<br>This can be `"string"` or `"AIS"`|
+|connectionData|string|Connection data.<br><br>If `connectionType` is `"string"`, the `connectionData` must be IoT Hub device connection string, or module connection string.<br><br>If `connectionType` is `"AIS"`, the `connectionData` must be a `module name`.<br><br>See [How To Configure AIS]() for more detail.

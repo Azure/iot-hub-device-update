@@ -7,61 +7,74 @@
     "description" : "Updates for host-firmware, bootfs, rootfs, front and rear USB cameras, and USB motors controller.",
     
     "scriptsBundle" : {
-        "fileUri" : "maintainer-scripts.gz",
-        "fileSize" : 1234,
-        "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+        "fileName" : "maintainer-scripts.gz",
+        "sizeInBytes" : 1234,
+        "hashes": {
+            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+        }
     },
 
     "preInstall" : { 
-        "fileUri": "smart-vacuum-preinstall.sh",
-        "fileSize": 100,
-        "sha256": "abcdefhijklmnopqr1234="
+        "fileName": "smart-vacuum-preinstall.sh",
+        "sizeInBytes": 100,
+        "hashes": {
+            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+        }
     },
 
     "postInstall" : { 
-        "fileUri": "smart-vacuum-postinstall.sh",
-        "fileSize": 100,
-        "sha256": "abcdefhijklmnopqr1234="
+        "fileName": "smart-vacuum-postinstall.sh",
+        "sizeInBytes": 100,
+        "hashes": {
+            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+        }
     },
 
     "updatesBundle" : {
-        "fileUri" : "maintainer-scripts.gz",
-        "fileSize" : 1234,
-        "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+        "fileName" : "maintainer-scripts.gz",
+        "sizeInBytes" : 1234,
+        "hashes": {
+            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+        }
     },
 
     "componentUpdates" : [
         {
             "preInstall" : { 
-                "fileUri": "host-bootfs-preinstall.sh",
-                "fileSize": 100,
-                "sha256": "abcdefhijklmnopqr1234="
+                "fileName": "host-bootfs-preinstall.sh",
+                "sizeInBytes": 100,
+                "hashes": {
+                    "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                }
             },
         
             "postInstall" : { 
-                "fileUri": "host-bootfs-postinstall.sh",
-                "fileSize": 100,
-                "sha256": "abcdefhijklmnopqr1234="
+                "fileName": "host-bootfs-postinstall.sh",
+                "sizeInBytes": 100,
+                "hashes": {
+                    "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                }
             },
 
             "targetNames" : [
                 "host-bootfs"
             ],
-
-            "compatibilities" : [
-                {
-                    "manufacturer":"contoso",
-                    "model":"smart-vacuum"
-                }
-            ],
                     
             "updateInfo" : {
                 "updateType":"contoso/swupdate:1",
+                "compatibility" : [
+                    {
+                        "manufacturer":"contoso",
+                        "model":"smart-vacuum"
+                    }
+                ],
                 "files" : [
                     {
-                        "fileUri": "smart-vacuum-fw-1.1.swu",
-                        "fileSize": 100,
-                        "sha256": "abcdefhijklmnopqr1234="
+                        "fileName": "smart-vacuum-fw-1.1.swu",
+                        "sizeInBytes": 100,
+                        "hashes": {
+                            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                        }
                     }
                 ]
             },
@@ -74,35 +87,40 @@
         },
         {
             "preInstall" : { 
-                "fileUri": "usb-camera-preinstall.sh",
-                "fileSize": 100,
-                "sha256": "abcdefhijklmnopqr1234="
+                "fileName": "usb-camera-preinstall.sh",
+                "sizeInBytes": 100,
+                "hashes": {
+                    "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                }
             },
         
             "postInstall" : { 
-                "fileUri": "usb-camera-postinstall.sh",
-                "fileSize": 100,
-                "sha256": "abcdefhijklmnopqr1234="
+                "fileName": "usb-camera-postinstall.sh",
+                "sizeInBytes": 100,
+                "hashes": {
+                    "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                }
             },
 
             "targetNames" : [
                 "forward-usb-camera"
             ],
-
-            "compatibilities" : [
-                {
-                    "manufacturer":"contoso",
-                    "model":"usb-camera"
-                }
-            ],
                     
             "updateInfo": {
                 "updateType":"contoso/usb-camera:1",
+                "compatibility" : [
+                    {
+                        "manufacturer":"contoso",
+                        "model":"usb-camera"
+                    }
+                ],
                 "files" : [
                     {
-                        "fileUri" : "contoso-usb-camera-fw-1.1.swu",
-                        "sizeSize" : 2048,
-                        "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                        "fileName" : "contoso-usb-camera-fw-1.1.swu",
+                        "sizeInBytes" : 2048,
+                        "hashes": {
+                            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                        }
                     }
                 ]
             },
@@ -115,35 +133,40 @@
         },
         {
             "preInstall" : { 
-                "fileUri": "usb-motor-controller-preinstall.sh",
-                "fileSize": 100,
-                "sha256": "abcdefhijklmnopqr1234="
+                "fileName": "usb-motor-controller-preinstall.sh",
+                "sizeInBytes": 100,
+                "hashes": {
+                    "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                }
             },
         
             "postInstall" : { 
-                "fileUri": "usb-motor-controller-postinstall.sh",
-                "fileSize": 100,
-                "sha256": "abcdefhijklmnopqr1234="
+                "fileName": "usb-motor-controller-postinstall.sh",
+                "sizeInBytes": 100,
+                "hashes": {
+                    "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                }
             },
 
             "targetGroups" : [
                 "usb-motor-controller"
             ],
-
-            "compatibilities" : [
-                {
-                    "manufacturer":"contoso",
-                    "model":"usb-motor-controller"
-                }
-            ],
                     
             "updateInfo" : {
                 "updateType":"contoso/usb-motor-controller:1",
+                "compatibility" : [
+                    {
+                        "manufacturer":"contoso",
+                        "model":"usb-motor-controller"
+                    }
+                ],
                 "files" :  [
                     {
-                        "fileUri": "contoso-usb-motor-controller-fw-1.1.swu",
-                        "fileSize": 2048,
-                        "sha256": "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                        "fileName": "contoso-usb-motor-controller-fw-1.1.swu",
+                        "sizeInBytes": 2048,
+                        "hashes": {
+                            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                        }
                     }
                 ]
             },

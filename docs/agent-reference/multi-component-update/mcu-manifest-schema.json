@@ -49,14 +49,18 @@
     "definitions": {
         "file-info-schema" : {
             "properties": {
-                "fileUri" : {
+                "fileName" : {
                     "type" : "string"
                 },
-                "fileSize" : {
+                "sizeInBytes" : {
                     "type" : "number"
                 },
-                "sha256" : {
-                    "type" : "string"
+                "hashes" : {
+                    "properties" : {
+                        "sha256" : {
+                            "type" : "string"
+                        }
+                    }
                 }
             }
         },
@@ -85,7 +89,7 @@
                     "$ref" : "#/definitions/file-info-schema"
                 },
 
-                "updateInformation" : {
+                "updateInfo" : {
                     "properties": {
                         "targetNames" : {
                             "type" : "array",
@@ -100,16 +104,26 @@
                                 "type" : "string"
                             }
                         },
-        
-                        "compatibilities" : {
+
+                        "targetClasses" : {
                             "type" : "array",
                             "items": {
-                                "$ref" : "#/definitions/compatibility-info-schema"
+                                "type" : "string"
                             }
                         },
         
                         "updateInfo" : {
-                            "type" : "object"
+                            "properties" : {
+                                "updateType" : {
+                                    "type" : "string"
+                                },
+                                "files" : {
+                                    "type" : "array",
+                                    "items" : {
+                                        "$ref" : "#/definitions/file-info-schema"
+                                    }
+                                }
+                            }
                         }
                     }
                 },
@@ -164,4 +178,5 @@
     },
 
     "additionalProperties": false
+    
 }

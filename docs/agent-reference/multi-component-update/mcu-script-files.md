@@ -21,28 +21,55 @@
 ### Script Arguments
 Argument | Type | Description |
 |----|----|----|
-|-c<br>--component| string | A component ID.<br>***Note:** only required for component's pre-install and post-install scripts.*
-|-l<br>--log-file| string | A full path to the log file for this script |
+|`-c`, `--cid`, or `--component-id`| string | A component ID.<br>***Note:** only required for component's pre-install and post-install scripts.*
+|`-l`, or `--log-file`| string | A full path to the log file for this script.<br><br>File name format is :<br>[path]/[workflowid]-[datetime]-[scriptname].log |
 
+If specified, additional `arguments` property can be specified. This string will be passed to the script.  
 
+For example:  
+
+```text
+"preInstall" : {  
+        "fileName" : "smart-vacuum-main-script.sh", 
+        "sizeInBytes" : 1234,  
+        "hashes" : {  
+            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="  
+        }, 
+        "arguments" : "--task preInstall --scope device", 
+        "downloadOnDemand" : false 
+ }, 
+```
 
 ### Script Exit Code and Output
 
-This convention is apply to preInstall and postInstall scripts.
+#### Pre-Install Exit Code
 
 Exit Code| Reason | Comment
 ----|----|----
-0| Success | Continue with the update
--1| Success | The update already installed on the device
--2| Success | The update is not required  
-1-127 | Failed | When failed, reports exit code, and error message "script_xyz.sh failed".
+0| Succeeded | Pre-Install script completed successfully.<br>The Agent should proceed with the component update.
+1| Failure | General errors. The update
+3| Failure | The **device** is not ready
+4| Failure | The **component** is not ready
+5| Failure | Update is incompatible with the targget.
+
+> **NOTE:** When failed, reports exit code, and error message "script_xyz.sh failed".  
 
 > **NOTE:** These error codes are under a pending Design Review
+>  
+> [Open Issue]  How to communicate to the agent that the update can be skipped? (e.g., already installed, an optional target is not available, etc.)
 
-### How MCU Update Handler Locates Files
+#### Post-Install Exit Code
 
-The MCU Content Handler locates the file using `fileUri` property. ( See [File Information Property](./mcu-manifest.md#file-information-property) for detail )
+Exit Code| Reason | Comment
+----|----|----
+0| Succeeded | Post-Install script completed successfully.<br>The Agent should proceeded with the next step.
+1| Failure | General errors. The update
+6| Failure | A fatal clean up error occured.
+7| Failure | A target component is in a bad state.<br>e.g., *The target module cannot be start.*
+8| Failure | Post-install validation failed.
 
-- For script files, if the specified file does not exist, MCU Update Handler will try to download (if needed) and unpack the scripts bundle into the `sandbox` directory. Then, MCU Update Handler will search for the file again. If failed, MCU Update Handler will report `FILE_NOT_FOUND` error.
+> **NOTE:** When failed, reports exit code, and error message "script_xyz.sh failed".  
 
-- For update files, e.g., `device firmware file`, `bootfs image file`, `rootfs image file`, or other `component's firmware image`, MCU Update Handler will search for the specified file in `ADU Update Manifest` `fileUrls` list. If found, MCU Update Handler will requests ADU Agent to download the file into the `sandbox` folder (via Delivery Optimization Agent)
+> **NOTE:** These error codes are under a pending Design Review
+>  
+> [Open Issue]  How to communicate to the agent that the update can be skipped? (e.g., already installed, an optional target is not available, etc.)

@@ -6,7 +6,7 @@
   - [Quick Jump](#quick-jump)
   - [MCU Manifest Schema](#mcu-manifest-schema)
     - [Update Identification and Description](#update-identification-and-description)
-    - [Maintainer Scripts Information](#maintainer-scripts-information)
+    - [Scripts, Scripts Bundle and Updates Bundle Information](#scripts-scripts-bundle-and-updates-bundle-information)
     - [Component Update List](#component-update-list)
     - [Component Update Information](#component-update-information)
     - [File Information Property](#file-information-property)
@@ -14,22 +14,22 @@
   - [Update Information](#update-information)
   - [Update Policy Property](#update-policy-property)
     - [MCU Manifest Example](#mcu-manifest-example)
+      - [Smart Vacuum Component Diagram](#smart-vacuum-component-diagram)
     - [Update Information Property](#update-information-property)
-      - [Previous](#previous)
-      - [Next](#next)
+  - [Links](#links)
 
 ## MCU Manifest Schema
 
 The MCU manifest file contain 3 important parts:
 
-- [Update identification and description](#update-description) (`privider`, `name`, `version`, and `description`)
+- [Update identification and description](#update-description) (`provider`, `name`, `version`, and `description`)
 - [Maintainer scripts information](#maintainer-scripts-information) (`scriptsBundle`, `preInstall`, and `postIntall`)
-- Array of [Component-Specific Updates](#component-specific-updates) (`componentUpdates`)
+- Updates bundle file information, and Array of [Component-Specific Updates](#component-specific-updates) (`componentUpdates`)
 
-```json
+```
 {
     // Update identification and desription
-    "provider" : "privider-name",
+    "provider" : "provider-name",
     "name" : "update-name",
     "version" : "version",
     "description" : "revision-description",
@@ -40,6 +40,7 @@ The MCU manifest file contain 3 important parts:
     "postInstall" : {file-info},
 
     // List of update for one or more components
+    "updatesBundle" : {file-info},
     "componentUpdates" : [array-of-update-info]   
 }
 ```
@@ -53,19 +54,21 @@ Property|Type|Description|
 |`provider`| string |Name of the author of this update.|
 |`name`| string |Name of this update.|
 |`version`| string |Version of this update.|
-|`description`| string | (optional) A short description of this revision of this update.|
+|`description`| string | (optional) A short description of this revision of the update.|
 ||||
 
-### Maintainer Scripts Information
+### Scripts, Scripts Bundle and Updates Bundle Information
 
 Property|Type|Description|
 |----|----|----|
 |`scriptsBundle`|[fileInfo](#file-information-property)|Information of a compressed file contains one or more script files to be run as part of this update.|
 |`preInstall`|[fileInfo](#file-information-property)|A script file to be run before installing component-specific updates.|
 |`postInstall`|[fileInfo](#file-information-property)|A script file to be run after all component-specific updates are completed.|
-|||
+|`updatesBundle`|[fileInfo](#file-information-property)|Information of a compressed file contains one or more update files for the components.|
 
 > Note: (optional) to reduce the number of files to be imported to the Device Update Service, all scripts can be packaged into a single archive file (gzip). This file will be downloaded and unpacked into a temporary sandbox directory (on a device) accessible only by the Device Update Agent's trusted users or groups.
+>  
+> Optinally, multiple small firmware image files can also packaged into a bundle file to reduces to total file number.
 
 ### Component Update List
 
@@ -78,67 +81,68 @@ Each update can be applied to a single component (by name, defined by the Device
 
 Property|Type|Description|
 |----|----|----|
-|`preInstall`|[fileInfo](#file-information-property)| (optional) A script file to be run before installing this component-specific update.|
-|`postInstall`|[fileInfo](#file-information-property)| (optiona) A script file to be run after this component-specific update is completed.|
-|`targetNames`|array of string|List of the component names that this update will be applied.<br><br>The "*" indicates that the update will be applied to every components.<br><br>This allows a Device Builder to target this update to specific component(s).
-|`targetGroups`|array of string|List of the component groups that this update applicable for. <br><br> The "*" indicates that update will be applied to every component groups that match the compatibility criteria.|
-|`targetClasses`|array of component class|One or more component classes that compatible with this update.<br><br>Component class can be identify by a combination of `manufacture` and `model`.<br><br>For example:<br>{<br>"manufacture":"contoso"<br>"model":"usb-camera-1"<br>}|
+|`preInstall`|[fileInfo](#file-information-property)| (optional) A script file to be run before installing this component-specific update.<bt><br>**Note**: For MCU v1, must be bash files.|
+|`postInstall`|[fileInfo](#file-information-property)| (optiona) A script file to be run after this component-specific update is completed.<bt><br>**Note**: For MCU v1, must be bash files.|
+|`targetNames`|array of string|List of the **Device Builder Defined** component names that this update will be applied.<br><br>The "*" indicates that the update will be applied to every components.<br><br>This allows a Device Builder to target this update to specific component(s).
+|`targetGroups`|array of string|List of the **Device Builder Defined** component groups that this update applicable for. <br><br> The "*" indicates that update will be applied to every component groups that match the compatibility criteria.|
+|`targetClasses`|array of component class|One or more component classes that compatible with this update.<br><br>Component class can be identify by a combination of `manufacture` and `model`.<br><br>For example:<br>{<br>"manufacturer":"contoso"<br>"model":"usb-camera-1"<br>}|
 |`updateInfo`|Update Information|The meta-data that specifies the `Update Type`, and update file(s).<br><br>For example:<br>{<br>"updateType":"microsoft/swUpdate;1"<br>"files":["usb-camera-1.swu"]<br>}|
-|`updatePolicy`|[Update Policy](#update-policy)| A customer can specify how to proceed when the update failed, and whether device reboot is required after component is updated.<br><br>See [Update Policy](#update-policy) for details.
-||||
+|`updatePolicy`|[Update Policy](#update-policy)| A customer (`Update Builder`) can specify how to proceed when the update is already installed on the component, when the isntallation failed, and indicate whether device reboot is required after component is updated.<br><br>See [Update Policy](#update-policy) for details.
 
-> **Requirement**: At least one target must be sepcified. Either by name, group, or class.
->
-> **Note**: `targetNames`, `targetGroups` and `targetClasses` are union.
+> **Requirement**: At least one (and no more than one) target must be specified. Either by name, group, or class. If not specified, we assume this is an update for the entire device.
+
 ### File Information Property
 
-This applied to `scriptsBundle`, `preInstall`, and `postInstall` properties.
+This applied to `scriptsBundle`, `updatesBundle`, `preInstall`, and `postInstall` properties.
 
 ```json
 {
-    "fileUri"  : <string>,
-    "fileSize" : <number>,
-    "sha256"   : <string>
+    "fileName"  : <string>,
+    "sizeInBytes" : <number>,
+    "hashes" : {
+        "sha256"   : <string>
+    }
 },
 ```
 
 Property|Type|Note|
 ----|----|----
-`fileUri`|string| A file path, relative to the Device Update `sandbox` directory created for current update. The Device Update agent will search for the file in a `sandbox` directory only.
-`fileSize`|number|File size, in bytes.
+`fileName`|string| A file name, relative to the Device Update `sandbox` directory created for current update workflow.<br><br> The Device Update agent will search for the file in a `sandbox` directory only.
+`sizeInBytes`|number|File size, in bytes.
+`hashes`|number|A JSON value type contains one or more base64-encoded file hashes.
 `sha256`|string| SHA256 hash of the file. This will be used for file security validation.
-|||
-
-> **Note:** Future consideration for `fileUri` property
->  
-> If the value begins with `"http://"`, `"https://"`, or `"ftp://"`, the file will be downloaded directly from specified URL. This enables scenario where customers hosts their own update artifacts.
 
 ## Component Class
 
-A `component` on a device is classified using a combination of `manufacture` and `model`. This is similar to how a hardware or device is classified.
+A `component` on a device is classified using a combination of `manufacture` and `model`. This is identical to how a hardware or device is classified.
 
 ```json
 {
-    "manufacture"  : <string>,
+    "manufacturer"  : <string>,
     "model" : <string>
 },
 ```
 
-> **Note:** Some components can be a `software` units which normally do not have manufacturer and model.
->  
-> If the value begins with `"http://"`, `"https://"`, or `"ftp://"`, the file will be downloaded directly from specified URL. This enables scenario where customers hosts their own update artifacts.
+> **Note:** Some components can be a logical `software` units which normally do not have manufacturer and model.
 
 ## Update Information
+
 For each component, DU Agent will select a child UpdateContentHandler based on the `updateType` property in `UpdateInfo`.  
 The child handler will be initialized with all neccesary data, including a collection of update files. 
 
 See [UpdateContentHandler Extension Architecture](../update-content-handler.md) for details.
 
-```
+```text
 "updateInfo" : {
-                    "updateType":"contoso/swupdate:1",
+                    "updateType" : <string>,
+                    "compatibility" : [
+                        {
+                            "manufacturer" : <string>,
+                            "model" : <string>
+                        }
+                    ]
                     "files" : [
-                        array-of-file-info
+                        <array-of-file-name>
                     ]
                 }
 ```
@@ -152,15 +156,13 @@ Name|Type|Comment
 maxRetry| number | How may time to retry when this update failed. Default is 0.
 installRule| enum | What to do after update completed (skipped, failed, succeeded). Options: `"abortOnFailure"` (default), and `"continueOnFailure"`.
 rebootBehavior| enum | Indicates whether a device reboot is required after a successful update. Options: `"none"` (default), `"immediate"`, and `"defer"`.  
-|||
-
-
 
 ### MCU Manifest Example
   
 The following is an example of a complete MCU Manifest.
 This update is intended for a **Smart Vacuum** device built by **Contoso** company.  
 
+#### Smart Vacuum Component Diagram
 
 ![Smart Vacuum Component Diagram](./diagrams/smart-vacuum.svg)
 
@@ -169,9 +171,9 @@ This update is intended for a **Smart Vacuum** device built by **Contoso** compa
 **Contoso** implements a Device Update Agent [Component Enumerator Extension](./component-enumerator.md) that enumerates all components in the device and return host device's properties, and a list of all updatable components, and their properties.  
 See example output of the Component Enumerator below:
 
-```json
+```text
 {
-    "manufacture" : "contoso",
+    "manufacturer" : "contoso",
     "model" : "smart-vacuum",
 
     "updatableComponents" : [   
@@ -179,34 +181,40 @@ See example output of the Component Enumerator below:
             "id" : "0",
             "name" : "host-firmware",
             "group" : "system",
-            "manufacture" : "contoso",
+            "manufacturer" : "contoso",
             "model" : "smart-vacuum",
             "version" : "1.0.0",
-            "description" : "A host device firmware"
+            "description" : "A host device firmware",
         },
         {
             "id" : "1",
             "name" : "host-rootfs",
             "group" : "system",
-            "manufacture" : "contoso",
+            "manufacturer" : "contoso",
             "model" : "smart-vacuum",
             "version" : "1.0.0",
-            "description" : "A host device root file system."
+            "description" : "A host device root file system.",
+            "updateProperties" : {
+                "partition" : ""
+            }
         },
         {
             "id" : "2",
             "name" : "host-bootfs",
             "group" : "system",
-            "manufacture" : "contoso",
+            "manufacturer" : "contoso",
             "model" : "smart-vacuum",
             "version" : "1.0.0",
-            "description" : "A host device boot file system."
+            "description" : "A host device boot file system.",
+            "updateProperties" : {
+                "partition" : ""
+            }
         },
         {
             "id" : "serial#ABCDE000001",
             "name" : "front-usb-camera",
             "group" : "usb-camera",
-            "manufacture" : "contoso",
+            "manufacturer" : "contoso",
             "model" : "usb-cam-0001",
             "version" : "1.0.0",
             "description" : "Front camera."
@@ -215,7 +223,7 @@ See example output of the Component Enumerator below:
             "id" : "serial#ABCDE000002",
             "name" : "rear-usb-camera",
             "group" : "usb-camera",
-            "manufacture" : "contoso",
+            "manufacturer" : "contoso",
             "model" : "usb-cam-0001",
             "version" : "1.0.0",
             "description" : "Rear camera."
@@ -224,7 +232,7 @@ See example output of the Component Enumerator below:
             "id" : "serial#WXYZ000010",
             "name" : "wheels-motor-controller",
             "group" : "usb-motor-controller",
-            "manufacture" : "contoso",
+            "manufacturer" : "contoso",
             "model" : "usb-mc-0001",
             "version" : "1.0.0",
             "description" : "Primary drive motor controller."
@@ -233,7 +241,7 @@ See example output of the Component Enumerator below:
             "id" : "serial#WXYZ000020",
             "name" : "vacuum-motor-controller",
             "group" : "usb-motor-controller",
-            "manufacture" : "contoso",
+            "manufacturer" : "contoso",
             "model" : "usb-mc-0001",
             "version" : "1.0.0",
             "description" : "Primary vacuum motor controller."
@@ -251,8 +259,9 @@ After the device rebooted, **Device Update Agent** will resume the updates for `
 
 *Note that the order of the updates for motor controllers is determined by the order of components reported by **Contoso's** Component Enumerator plug-in.
 
-> **Note: For 2021-Q1**, MCU Content Handler will stops the update immediately, as soon as any error occurs.  
-  **At GA**, you can specify how to handle an update failure using `installRule` property, and the expected behavior is:  
+> **Note: For MCU v1**, MCU Content Handler will aborts the update immediately, when encountered error occurs.
+>
+> **At MCU v2**, you can specify how to handle an update failure using `installRule` property, and the expected behavior is:  
 *If the update for `wheels-motor-controller` failed, the Agent will proceed with the next component update, which is `vacuum-motor-controller`. In this case, the overall update result will be `'failed'` with the `'resultDetails'` contains detailed information of the failure.*
 
 The latest example manifest file can be found [here](./example-mcu-manifest.mcu).
@@ -267,61 +276,74 @@ The latest example manifest file can be found [here](./example-mcu-manifest.mcu)
     "description" : "Updates for host-firmware, bootfs, rootfs, front and rear USB cameras, and USB motors controller.",
     
     "scriptsBundle" : {
-        "fileUri" : "maintainer-scripts.gz",
-        "fileSize" : 1234,
-        "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+        "fileName" : "maintainer-scripts.gz",
+        "sizeInBytes" : 1234,
+        "hashes": {
+            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+        }
     },
 
     "preInstall" : { 
-        "fileUri": "smart-vacuum-preinstall.sh",
-        "fileSize": 100,
-        "sha256": "abcdefhijklmnopqr1234="
+        "fileName": "smart-vacuum-preinstall.sh",
+        "sizeInBytes": 100,
+        "hashes": {
+            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+        }
     },
 
     "postInstall" : { 
-        "fileUri": "smart-vacuum-postinstall.sh",
-        "fileSize": 100,
-        "sha256": "abcdefhijklmnopqr1234="
+        "fileName": "smart-vacuum-postinstall.sh",
+        "sizeInBytes": 100,
+        "hashes": {
+            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+        }
     },
 
     "updatesBundle" : {
-        "fileUri" : "maintainer-scripts.gz",
-        "fileSize" : 1234,
-        "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+        "fileName" : "maintainer-scripts.gz",
+        "sizeInBytes" : 1234,
+        "hashes": {
+            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+        }
     },
 
     "componentUpdates" : [
         {
             "preInstall" : { 
-                "fileUri": "host-bootfs-preinstall.sh",
-                "fileSize": 100,
-                "sha256": "abcdefhijklmnopqr1234="
+                "fileName": "host-bootfs-preinstall.sh",
+                "sizeInBytes": 100,
+                "hashes": {
+                    "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                }
             },
         
             "postInstall" : { 
-                "fileUri": "host-bootfs-postinstall.sh",
-                "fileSize": 100,
-                "sha256": "abcdefhijklmnopqr1234="
+                "fileName": "host-bootfs-postinstall.sh",
+                "sizeInBytes": 100,
+                "hashes": {
+                    "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                }
             },
 
             "targetNames" : [
                 "host-bootfs"
             ],
-
-            "compatibilities" : [
-                {
-                    "manufacturer":"contoso",
-                    "model":"smart-vacuum"
-                }
-            ],
                     
             "updateInfo" : {
                 "updateType":"contoso/swupdate:1",
+                "compatibility" : [
+                    {
+                        "manufacturer":"contoso",
+                        "model":"smart-vacuum"
+                    }
+                ],
                 "files" : [
                     {
-                        "fileUri": "smart-vacuum-fw-1.1.swu",
-                        "fileSize": 100,
-                        "sha256": "abcdefhijklmnopqr1234="
+                        "fileName": "smart-vacuum-fw-1.1.swu",
+                        "sizeInBytes": 100,
+                        "hashes": {
+                            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                        }
                     }
                 ]
             },
@@ -334,35 +356,40 @@ The latest example manifest file can be found [here](./example-mcu-manifest.mcu)
         },
         {
             "preInstall" : { 
-                "fileUri": "usb-camera-preinstall.sh",
-                "fileSize": 100,
-                "sha256": "abcdefhijklmnopqr1234="
+                "fileName": "usb-camera-preinstall.sh",
+                "sizeInBytes": 100,
+                "hashes": {
+                    "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                }
             },
         
             "postInstall" : { 
-                "fileUri": "usb-camera-postinstall.sh",
-                "fileSize": 100,
-                "sha256": "abcdefhijklmnopqr1234="
+                "fileName": "usb-camera-postinstall.sh",
+                "sizeInBytes": 100,
+                "hashes": {
+                    "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                }
             },
 
             "targetNames" : [
                 "forward-usb-camera"
             ],
-
-            "compatibilities" : [
-                {
-                    "manufacturer":"contoso",
-                    "model":"usb-camera"
-                }
-            ],
                     
             "updateInfo": {
                 "updateType":"contoso/usb-camera:1",
+                "compatibility" : [
+                    {
+                        "manufacturer":"contoso",
+                        "model":"usb-camera"
+                    }
+                ],
                 "files" : [
                     {
-                        "fileUri" : "contoso-usb-camera-fw-1.1.swu",
-                        "sizeSize" : 2048,
-                        "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                        "fileName" : "contoso-usb-camera-fw-1.1.swu",
+                        "sizeInBytes" : 2048,
+                        "hashes": {
+                            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                        }
                     }
                 ]
             },
@@ -375,35 +402,40 @@ The latest example manifest file can be found [here](./example-mcu-manifest.mcu)
         },
         {
             "preInstall" : { 
-                "fileUri": "usb-motor-controller-preinstall.sh",
-                "fileSize": 100,
-                "sha256": "abcdefhijklmnopqr1234="
+                "fileName": "usb-motor-controller-preinstall.sh",
+                "sizeInBytes": 100,
+                "hashes": {
+                    "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                }
             },
         
             "postInstall" : { 
-                "fileUri": "usb-motor-controller-postinstall.sh",
-                "fileSize": 100,
-                "sha256": "abcdefhijklmnopqr1234="
+                "fileName": "usb-motor-controller-postinstall.sh",
+                "sizeInBytes": 100,
+                "hashes": {
+                    "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                }
             },
 
             "targetGroups" : [
                 "usb-motor-controller"
             ],
-
-            "compatibilities" : [
-                {
-                    "manufacturer":"contoso",
-                    "model":"usb-motor-controller"
-                }
-            ],
                     
             "updateInfo" : {
                 "updateType":"contoso/usb-motor-controller:1",
+                "compatibility" : [
+                    {
+                        "manufacturer":"contoso",
+                        "model":"usb-motor-controller"
+                    }
+                ],
                 "files" :  [
                     {
-                        "fileUri": "contoso-usb-motor-controller-fw-1.1.swu",
-                        "fileSize": 2048,
-                        "sha256": "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                        "fileName": "contoso-usb-motor-controller-fw-1.1.swu",
+                        "sizeInBytes": 2048,
+                        "hashes": {
+                            "sha256" : "trVvzUg6f+3CxI6UVtEFyp3BukmtsFOmu5lSPGs0THE="
+                        }
                     }
                 ]
             },
@@ -432,10 +464,7 @@ targetGroups| string | (Optional) One or more names of the target component grou
 updateInfo| object | An json object that contains a subset of the Device Update Manifest data. This contains an update information (`updateType`) required to determine an UpdateContentHandler to be used for updating the target components, and `files` for the update.
 updatePolicy|| See [Update Policy](#update-policy-property) below.
 
-#### Previous
+## Links
 
-- [MCU Update Content Handler Overview](./mcu-update-handler.md)
-
-#### Next
-
-- [MCU Script Files](./mcu-script-files.md)
+- [Previous - MCU Update Content Handler Overview](./mcu-update-handler.md)
+- [Next - MCU Script Files](./mcu-script-files.md)
