@@ -70,6 +70,12 @@ downloads but still mocks the `Install` and `Apply` actions:
 ./scripts/build.sh -c -p linux
 ```
 
+To build the reference agent with support for provisioning using the IoT Identity Service or IoTEdge:
+
+```shell
+./scripts/build.sh -c --provision-with-iotedge
+```
+
 To build the agent package for package based updating via APT
 Manifest:
 
