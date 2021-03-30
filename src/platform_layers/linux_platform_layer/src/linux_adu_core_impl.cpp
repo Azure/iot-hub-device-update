@@ -186,6 +186,35 @@ ADUC_Result LinuxPlatformLayer::Download(const char* workflowId, const char* upd
 
         extendedResultCode = MAKE_ADUC_DELIVERY_OPTIMIZATION_EXTENDEDRESULTCODE(doErrorCode);
     }
+    catch (const std::exception& e)
+    {
+        Log_Error("DO download failed with an unhandled std exception: %s", e.what());
+
+        resultCode = ADUC_DownloadResult_Failure;
+        if (errno != 0)
+        {
+            extendedResultCode = MAKE_ADUC_ERRNO_EXTENDEDRESULTCODE(errno);
+        }
+        else
+        {
+            extendedResultCode = ADUC_ERC_NOTRECOVERABLE;
+        }
+    }
+    catch (...)
+    {
+        Log_Error("DO download failed due to an unknown exception");
+
+        resultCode = ADUC_DownloadResult_Failure;
+
+        if (errno != 0)
+        {
+            extendedResultCode = MAKE_ADUC_ERRNO_EXTENDEDRESULTCODE(errno);
+        }
+        else
+        {
+            extendedResultCode = ADUC_ERC_NOTRECOVERABLE;
+        }
+    }
 
     // If we downloaded successfully, validate the file hash.
     if (resultCode == ADUC_DownloadResult_Success)
