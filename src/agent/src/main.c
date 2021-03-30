@@ -637,7 +637,7 @@ _Bool GetConnectionInfoFromADUConfigFile(ADUC_ConnectionInfo* info)
 
     // Optional: The certificate string is needed for Edge Gateway connection.
     if (ReadDelimitedValueFromFile(
-            ADUC_CONF_FILE_PATH, "certificate_path", certificatePath, ARRAY_SIZE(certificatePath)))
+            ADUC_CONF_FILE_PATH, "edgegateway_cert_path", certificatePath, ARRAY_SIZE(certificatePath)))
     {
         if (!LoadBufferWithFileContents(certificatePath, certificateString, ARRAY_SIZE(certificateString)))
         {
