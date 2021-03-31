@@ -515,6 +515,15 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
         result = false;
     }
     else if (
+        connInfo->certificateString != NULL && connInfo->authType == ADUC_AuthType_NestedEdgeCert
+        && (iothubResult =
+                ClientHandle_SetOption(g_iotHubClientHandle, OPTION_TRUSTED_CERT, connInfo->certificateString))
+            != IOTHUB_CLIENT_OK)
+    {
+        Log_Error("Could not add trusted certificate, error=%d ", iothubResult);
+        result = false;
+    }
+    else if (
         connInfo->opensslEngine != NULL && connInfo->authType == ADUC_AuthType_SASCert
         && (iothubResult =
                 ClientHandle_SetOption(g_iotHubClientHandle, OPTION_OPENSSL_ENGINE, connInfo->opensslEngine))
@@ -628,7 +637,7 @@ _Bool GetConnectionInfoFromADUConfigFile(ADUC_ConnectionInfo* info)
 
     // Optional: The certificate string is needed for Edge Gateway connection.
     if (ReadDelimitedValueFromFile(
-            ADUC_CONF_FILE_PATH, "certificate_path", certificatePath, ARRAY_SIZE(certificatePath)))
+            ADUC_CONF_FILE_PATH, "edgegateway_cert_path", certificatePath, ARRAY_SIZE(certificatePath)))
     {
         if (!LoadBufferWithFileContents(certificatePath, certificateString, ARRAY_SIZE(certificateString)))
         {
@@ -642,7 +651,7 @@ _Bool GetConnectionInfoFromADUConfigFile(ADUC_ConnectionInfo* info)
             goto done;
         }
 
-        info->authType = ADUC_AuthType_SASCert;
+        info->authType = ADUC_AuthType_NestedEdgeCert;
     }
 
     succeeded = true;

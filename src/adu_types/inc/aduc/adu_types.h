@@ -38,7 +38,7 @@ typedef enum tagADUC_AuthType
     ADUC_AuthType_NotSet = 0,
     ADUC_AuthType_SASToken = 1,
     ADUC_AuthType_SASCert = 2,
-
+    ADUC_AuthType_NestedEdgeCert = 3,
 } ADUC_AuthType;
 
 /**
