@@ -100,12 +100,6 @@ static void ApplyDeviceInfoPropertyConstraints(char* value)
             *curr = '\0';
             break;
         }
-
-        if (!(isalnum(*curr) || *curr == '.' || *curr == '-'))
-        {
-            // Replace unsupported characters with '-'
-            *curr = '-';
-        }
         ++curr;
     }
 }
