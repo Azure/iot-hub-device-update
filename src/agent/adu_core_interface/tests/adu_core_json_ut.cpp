@@ -70,7 +70,7 @@ TEST_CASE("ADUC_Json_GetRoot: Invalid")
     "manifestVersion":"1.0",
     "updateId":{
         "provider":"AduTest",
-        "name":"dpokluda",
+        "name":"ADU content team",
         "version":"2020.611.534.16"
     },
     "updateType":null,
@@ -380,7 +380,7 @@ TEST_CASE("ADUC_Json_GetUpdateAction: Invalid")
 {
     unsigned updateAction;
     std::stringstream strm;
-    const JSON_Value* updateActionJsonValue{ ADUC_Json_GetRoot(R"({ "action": "jeff" })") };
+    const JSON_Value* updateActionJsonValue{ ADUC_Json_GetRoot(R"({ "action": "foo" })") };
     INFO(strm.str())
     REQUIRE(updateActionJsonValue != nullptr);
     CHECK(!ADUC_Json_GetUpdateAction(updateActionJsonValue, &updateAction));
