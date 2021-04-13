@@ -6,25 +6,31 @@
 AducIotAgent '<IoT device connection string>' [options...]
 ```
 
-### Additional Arguments
+e.g.
+```bash
+AducIotAgent '<IoT device connection string>' --enable-iothub-tracing --log-level 1
+```
 
-#### --version
+### Options Details
 
-With this option enabled, the reference agent will output the version.
+`--version` tells the reference agent to output the version.
 
-#### --enable-iothub-tracing
-
-With this option enabled, the reference agent will output verbose tracing from
+`--enable-iothub-tracing` tells the reference agent to output verbose tracing from
 the Azure IoT C SDK. This option is useful for troubleshooting connection
 issues.
 
-#### --health-check
+`--health-check` tells the reference agent to turn on Health Check, which performs
+necessary checks to determine whether ADU Agent can function properly.
+Currently, we are performing the following:
+    - Implicitly check that agent process launched successfully.
+    - Check that we can obtain the connection info.
 
-With this option enabled, the reference agent will turn on Health Check Only mode.
-
-#### --log-level (argument required)
-
-This option set the log level of the reference agent's output. Expected value: 0-3.
+`--log-level` (argument required) sets the log level of the reference agent's output.
+Expected value:
+    - ADUC_LOG_DEBUG (0)
+    - ADUC_LOG_INFO (1)
+    - ADUC_LOG_WARN (2)
+    - ADUC_LOG_ERROR (3)
 
 ### Simulator Specific Arguments
 
