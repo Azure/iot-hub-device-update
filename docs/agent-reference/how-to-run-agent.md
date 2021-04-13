@@ -8,11 +8,23 @@ AducIotAgent '<IoT device connection string>' [options...]
 
 ### Additional Arguments
 
-#### --EnableIotHubTracing
+#### --version
+
+With this option enabled, the reference agent will output the version.
+
+#### --enable-iothub-tracing
 
 With this option enabled, the reference agent will output verbose tracing from
 the Azure IoT C SDK. This option is useful for troubleshooting connection
 issues.
+
+#### --health-check
+
+With this option enabled, the reference agent will turn on Health Check Only mode.
+
+#### --log-level (argument required)
+
+This option set the log level of the reference agent's output. Expected value: 0-3.
 
 ### Simulator Specific Arguments
 
