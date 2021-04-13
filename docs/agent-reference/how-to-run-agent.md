@@ -20,16 +20,16 @@ the Azure IoT C SDK. This option is useful for troubleshooting connection
 issues.
 
 `--health-check` tells the reference agent to turn on Health Check, which performs
-necessary checks to determine whether ADU Agent can function properly.
-Currently, we are performing the following:
-    - Implicitly check that agent process launched successfully.
+necessary checks to determine whether ADU Agent can function properly.  
+Currently, we are performing the following:  
+    - Implicitly check that agent process launched successfully.  
     - Check that we can obtain the connection info.
 
-`--log-level` (argument required) sets the log level of the reference agent's output.
-Expected value:
-    - ADUC_LOG_DEBUG (0)
-    - ADUC_LOG_INFO (1)
-    - ADUC_LOG_WARN (2)
+`--log-level` (argument required) sets the log level of the reference agent's output.  
+Expected value:  
+    - ADUC_LOG_DEBUG (0)  
+    - ADUC_LOG_INFO (1)  
+    - ADUC_LOG_WARN (2)  
     - ADUC_LOG_ERROR (3)
 
 ### Simulator Specific Arguments
