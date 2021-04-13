@@ -7,6 +7,7 @@ AducIotAgent '<IoT device connection string>' [options...]
 ```
 
 e.g.
+
 ```bash
 AducIotAgent '<IoT device connection string>' --enable-iothub-tracing --log-level 1
 ```
@@ -21,16 +22,16 @@ issues.
 
 `--health-check` tells the reference agent to turn on Health Check, which performs
 necessary checks to determine whether ADU Agent can function properly.  
-Currently, we are performing the following:  
+Currently, the script is performing the following:  
     - Implicitly check that agent process launched successfully.  
-    - Check that we can obtain the connection info.
+    - Check that the agent can obtain the connection info.
 
 `--log-level` (argument required) sets the log level of the reference agent's output.  
 Expected value:  
-    - ADUC_LOG_DEBUG (0)  
-    - ADUC_LOG_INFO (1)  
-    - ADUC_LOG_WARN (2)  
-    - ADUC_LOG_ERROR (3)
+    - 0: Debug
+    - 1: Info
+    - 2: Warning
+    - 3: Error
 
 ### Simulator Specific Arguments
 
