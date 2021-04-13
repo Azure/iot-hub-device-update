@@ -17,6 +17,14 @@
 EXTERN_C_BEGIN
 
 /**
+ * @brief Generate a unique identifier.
+ *
+ * @param buffer Where to store identifier.
+ * @param buffer_cch Number of characters in @p buffer.
+ */
+void GenerateUniqueId(char* buffer, size_t buffer_cch);
+
+/**
  * @brief Frees each FileEntity's members and the ADUC_FileEntity array
  * @param filecount the total number of files held within files
  * @param files a pointer to an array of ADUC_FileEntity objects

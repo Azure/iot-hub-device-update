@@ -25,7 +25,7 @@
  * @param buffer Where to store identifier.
  * @param buffer_cch Number of characters in @p buffer.
  */
-static void GenerateUniqueId(char* buffer, size_t buffer_cch)
+void GenerateUniqueId(char* buffer, size_t buffer_cch)
 {
     const time_t timer = time(NULL);
     const struct tm* ptm = gmtime(&timer);

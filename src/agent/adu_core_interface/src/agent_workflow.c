@@ -90,6 +90,7 @@
 
 #include "agent_workflow_utils.h"
 
+
 static void DownloadProgressCallback(
     const char* workflowId,
     const char* fileId,
@@ -449,13 +450,16 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* workflowData)
 
         if (workflowData->CurrentAction == ADUCITF_UpdateAction_Download)
         {
-            Log_Info("There's a pending 'download' action request. Continue downloading the update.");
+            Log_Info("There's a pending 'download' action request. Resume downloading the update.");
 
-            // There's a pending download requrest.
+            // There's a pending download request.
             // We need to make sure we don't change our state to 'idle'.
             workflowData->StartupIdleCallSent = true;
 
-            // Continue processing 'download' action.
+            // We need to generate a new workflowId for this scenario then resume processing 'download' action.
+            GenerateUniqueId(workflowData->WorkflowId, sizeof(workflowData->WorkflowId) / sizeof(workflowData->WorkflowId[0]));
+            Log_Info("Resuming workflow with WorkflowId %s", workflowData->WorkflowId);
+            
             ADUC_Workflow_HandleUpdateAction(workflowData);
             goto done;
         }
