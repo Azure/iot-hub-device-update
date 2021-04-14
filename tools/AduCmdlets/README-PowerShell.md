@@ -32,7 +32,7 @@ $importManifestFile = '.\importManifest.json'
 $importManifest | Out-File $importManifestFile -Encoding UTF8
 ```
 
-The sample commands above will produce the following import manifest:
+The sample commands above will produce the following import manifest (note that **sizeInbytes** and **sha256** will vary based on the actual files used):
 
 ```json
 {

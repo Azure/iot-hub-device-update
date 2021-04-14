@@ -10,27 +10,13 @@ To create an import manifest:
 
 ```bash
 # Create an update that will be compatible with devices from two different manufacturers.
-$compatInfo1 = New-AduUpdateCompatibility `
-    -DeviceManufacturer Fabrikam `
-    -DeviceModel Toaster
-$compatInfo2 = New-AduUpdateCompatibility `
-    -DeviceManufacturer Contoso `
-    -DeviceModel Toaster
 
-$importManifest = New-AduImportManifest `
-    -Provider 'Microsoft' `
-    -Name 'Toaster' `
-    -Version '2.0' `
-    -UpdateType 'microsoft/swupdate:1' `
-    -InstalledCriteria '5' `
-    -Compatibility $compatInfo1, $compatInfo2 `
-    -Files '.\file1.json', '.\file2.zip'
+./create-adu-import-manifest.sh -p 'Microsoft' -n 'Toaster' -v '2.0' -t 'microsoft/swupdate:1' -i'5' -c Fabrikam,Toaster -c Contoso,Toaster ./file1.json ./file2.zip
+```
 
-$importManifestFile = '.\importManifest.json'
-$importManifest | Out-File $importManifestFile -Encoding UTF8
+The sample commands above will produce the following import manifest (note that **sizeInbytes** and **sha256** will vary based on the actual files used):
 
-The sample commands above will produce the following import manifest:
-
+```json
 {
   "updateId": {
     "provider": "Microsoft",

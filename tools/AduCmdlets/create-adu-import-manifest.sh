@@ -2,8 +2,6 @@
 
 # Bash script for creating ADU update import manifest.
 
-# ./create-adu-import-manifest.sh -p 'Microsoft' -n 'Toaster' -v '2.0' -t 'microsoft/swupdate:1' -i'5' -c Fabrikam,Toaster -c Contoso,Toaster ./file1.json ./file2.json
-
 ENABLE_VERBOSE=0
 
 # This is the version of the ADU update manifest schema being used.
@@ -54,6 +52,12 @@ OPTIND=1
 
 if [ $# -eq 0 ]; then
     print_usage
+    exit 1
+fi
+
+if ! command -v openssl &> /dev/null
+then
+    write_error "This script requires openssl."
     exit 1
 fi
 
@@ -260,8 +264,7 @@ for idx in "${!UPDATE_FILES[@]}"; do
     UPDATE_FILE="${UPDATE_FILES[$idx]}"
     FILENAME=$(basename "$UPDATE_FILE")
     FILESIZE=$(stat --printf="%s" "$UPDATE_FILE")
-    # TODO: Get sha256 hash w/openssl dgst
-    SHA256HASH="K2mn97qWmKSaSaM9SFdhC0QIEJ/wluXV7CoTlM8zMUo="
+    SHA256HASH=$(openssl dgst -sha256 -binary "$UPDATE_FILE" | openssl base64)
 
     cat <<EOF
     {
