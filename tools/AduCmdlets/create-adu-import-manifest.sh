@@ -205,16 +205,17 @@ if [ ${#COMPAT_INFOS[@]} -eq 0 ]; then
     exit 1
 fi
 
-if [ -z "${#UPDATE_FILES[@]}" -eq 0 ]; then
+if [ ${#UPDATE_FILES[@]} -eq 0 ]; then
     write_error 'Update file(s) not specified.'
     exit 1
 fi
 
-# TODO:
-# UPDATE_ID = Get-UpdateId $Provider $Name $Version
-
-# TODO:
-# FILE_METADATA = Get-FileMetadatas $Files
+for file in "${UPDATE_FILES[@]}"; do
+    if [ ! -f "$file" ]; then
+        write_error "File '$file' not found."
+        exit 1
+    fi
+done
 
 # Match Powershell's .ToString('o') format, e.g. "2021-04-14T18:14:35.5816196Z"
 CREATED_DATETIME=$(date --utc "+%Y-%m-%dT%H:%M:%S.%NZ")
@@ -234,17 +235,20 @@ cat <<EOF
   "compatibility": [
 EOF
 
-for val in "${COMPAT_INFOS[@]}"; do
+for idx in "${!COMPAT_INFOS[@]}"; do
     IFS=','
-    read -ra ARGS <<<"$val"
+    read -ra ARGS <<<"$COMPAT_INFOS[$idx]"
 
     cat <<EOF
     {
       "deviceManufacturer": "${ARGS[0]}",
       "deviceModel": "${ARGS[1]}"
-    }
 EOF
-    # TODO: Add , if not last
+    if [ $(($idx + 1)) -ne ${#COMPAT_INFOS[@]} ]; then
+        echo "    },"
+    else
+        echo "    }"
+    fi
 done
 
 cat <<EOF
@@ -252,10 +256,10 @@ cat <<EOF
   "files": [
 EOF
 
-for file in "${UPDATE_FILES[@]}"; do
-    FILENAME=$(basename "$file")
-    # TODO: Get file size: stat --printf="%s" $file
-    FILESIZE=7
+for idx in "${!UPDATE_FILES[@]}"; do
+    UPDATE_FILE="${UPDATE_FILES[$idx]}"
+    FILENAME=$(basename "$UPDATE_FILE")
+    FILESIZE=$(stat --printf="%s" "$UPDATE_FILE")
     # TODO: Get sha256 hash w/openssl dgst
     SHA256HASH="K2mn97qWmKSaSaM9SFdhC0QIEJ/wluXV7CoTlM8zMUo="
 
@@ -266,9 +270,12 @@ for file in "${UPDATE_FILES[@]}"; do
       "hashes": {
         "sha256": "$SHA256HASH"
       }
-    }
 EOF
-    # TODO: Add , if not last
+    if [ $(($idx + 1)) -ne ${#COMPAT_INFOS[@]} ]; then
+        echo "    },"
+    else
+        echo "    }"
+    fi
 done
 
 cat <<EOF
