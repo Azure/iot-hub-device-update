@@ -17,7 +17,7 @@ Create an import manifest to import an update into Device Update.
 -t TYPE         Update type
 -i CRITERIA     Installed criteria
 -c INFO         Comma separated (manufacturer, model) compatibility information 
-    May be specified multiple times.
+                May be specified multiple times.
 FILE            Path to update file(s)
 "
 }
@@ -221,11 +221,10 @@ for file in "${UPDATE_FILES[@]}"; do
     fi
 done
 
-# Match Powershell's .ToString('o') format, e.g. "2021-04-14T18:14:35.5816196Z"
-CREATED_DATETIME=$(date --utc "+%Y-%m-%dT%H:%M:%S.%NZ")
+CREATED_DATETIME=$(date --utc --iso-8601=seconds)
 
 # Write out JSON.
-# Using "jq" would be better, but trying to eliminate script dependencies.
+# Using "jq" would be better, but trying to reduce script dependencies.
 
 cat <<EOF
 {
@@ -274,7 +273,7 @@ for idx in "${!UPDATE_FILES[@]}"; do
         "sha256": "$SHA256HASH"
       }
 EOF
-    if [ $(($idx + 1)) -ne ${#COMPAT_INFOS[@]} ]; then
+    if [ $(($idx + 1)) -ne ${#UPDATE_FILES[@]} ]; then
         echo "    },"
     else
         echo "    }"

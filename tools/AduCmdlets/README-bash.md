@@ -11,7 +11,7 @@ To create an import manifest:
 ```bash
 # Create an update that will be compatible with devices from two different manufacturers.
 
-./create-adu-import-manifest.sh -p 'Microsoft' -n 'Toaster' -v '2.0' -t 'microsoft/swupdate:1' -i'5' -c Fabrikam,Toaster -c Contoso,Toaster ./file1.json ./file2.zip
+./create-adu-import-manifest.sh -p 'Microsoft' -n 'Toaster' -v '2.0' -t 'microsoft/swupdate:1' -i '5' -c Fabrikam,Toaster -c Contoso,Toaster ./file1.json ./file2.zip
 ```
 
 The sample commands above will produce the following import manifest (note that **sizeInbytes** and **sha256** will vary based on the actual files used):
