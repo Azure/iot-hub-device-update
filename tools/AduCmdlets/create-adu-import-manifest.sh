@@ -240,7 +240,7 @@ EOF
 
 for idx in "${!COMPAT_INFOS[@]}"; do
     IFS=','
-    read -ra ARGS <<<"$COMPAT_INFOS[$idx]"
+    read -ra ARGS <<<"${COMPAT_INFOS[$idx]}"
 
     cat <<EOF
     {
