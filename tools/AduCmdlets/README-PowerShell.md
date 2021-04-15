@@ -2,7 +2,7 @@
 
 ## Overview
 
-PowerShell script module `AduUpdate.psm1` can be used to create an *import manifest* to import an update into Azure Device Update. It requires PowerShell 5 or later.
+PowerShell script module `AduUpdate.psm1` can be used to create an *import manifest* to import an update into Device Update for IoT Hub. It requires PowerShell 5 or later.
 
 ## Usage
 

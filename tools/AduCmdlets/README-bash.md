@@ -2,7 +2,7 @@
 
 ## Overview
 
-Bash script `create-adu-import-manifest.sh` can be used to create an *import manifest* to import an update into Azure Device Update.
+Bash script `create-adu-import-manifest.sh` can be used to create an *import manifest* to import an update into Device Update for IoT Hub.
 
 ## Usage
 

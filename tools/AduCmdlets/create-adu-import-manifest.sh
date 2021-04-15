@@ -11,7 +11,7 @@ print_usage() {
     printf "Usage: create-adu-import-manifest [OPTION]... [FILE]...
 Create an import manifest to import an update into Device Update.
 
--p NAME         Update provider name
+-p NAME         Update provider
 -n NAME         Update name
 -v VERSION      Update version
 -t TYPE         Update type
@@ -62,7 +62,7 @@ then
 fi
 
 # Parse commandline arguments
-PROVIDER_NAME=''
+UPDATE_PROVIDER=''
 UPDATE_NAME=''
 UPDATE_VERSION=''
 UPDATE_TYPE=''
@@ -121,15 +121,15 @@ while getopts "c:f:hi:n:p:t:v:" OPT; do
         fi
         ;;
     p)
-        if [ ! -z "$PROVIDER_NAME" ]; then
-            write_error "Provider name specified twice."
+        if [ ! -z "$UPDATE_PROVIDER" ]; then
+            write_error "Update provider specified twice."
             exit 1
         fi
 
-        PROVIDER_NAME=$OPTARG
+        UPDATE_PROVIDER=$OPTARG
 
-        if ! [[ "$PROVIDER_NAME" =~ ^[a-zA-Z0-9.-]{1,64}$ ]]; then
-            write_error "Invalid provider name specified."
+        if ! [[ "$UPDATE_PROVIDER" =~ ^[a-zA-Z0-9.-]{1,64}$ ]]; then
+            write_error "Invalid update provider specified."
             exit 1
         fi
         ;;
@@ -194,7 +194,7 @@ if [ -z "$INSTALLED_CRITERIA" ]; then
     exit 1
 fi
 
-if [ -z "$PROVIDER_NAME" ]; then
+if [ -z "$UPDATE_PROVIDER" ]; then
     write_error 'Provider name not specified.'
     exit 1
 fi
@@ -229,7 +229,7 @@ CREATED_DATETIME=$(date --utc --iso-8601=seconds)
 cat <<EOF
 {
   "updateId": {
-    "provider": "$PROVIDER_NAME",
+    "provider": "$UPDATE_PROVIDER",
     "name": "$UPDATE_NAME",
     "version": "$UPDATE_VERSION"
   },
