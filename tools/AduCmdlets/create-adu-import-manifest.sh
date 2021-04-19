@@ -30,7 +30,7 @@ write_verbose() {
         YELLOW="$(tput setaf 11)"
         RESET="$(tput sgr0)"
 
-        printf "%sVERBOSE: %s%s\n" "${YELLOW}" "$1" "${RESET}"
+        echo -e "${YELLOW}VERBOSE: $1${RESET}\n"
     fi
 }
 
@@ -41,7 +41,7 @@ write_error() {
     RED="$(tput setaf 9)"
     RESET="$(tput sgr0)"
 
-    printf "%sERROR: %s%s\n" "${RED}" "$1" "${RESET}"
+    echo -e "${RED}ERROR: $1${RESET}\n"
 }
 
 #
