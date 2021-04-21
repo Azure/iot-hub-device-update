@@ -163,7 +163,6 @@ do_install_cpprestsdk() {
     echo -e "Building cpprestsdk ...\n\tBranch: $cpprestsdk_ref\n\tFolder: $cpprest_dir"
     mkdir -p $cpprest_dir || return
     pushd $cpprest_dir > /dev/null
-    echo git clone --recursive --single-branch --branch $cpprestsdk_ref --depth 1 $cpprest_url . || return
     git clone --recursive --single-branch --branch $cpprestsdk_ref --depth 1 $cpprest_url . || return
     mkdir -p cmake || return
     pushd cmake > /dev/null
