@@ -49,7 +49,7 @@ default_do_ref=v0.6.0
 do_ref=$default_do_ref
 install_do_deps=false
 install_cpprestsdk=false
-default_cpprestsdk_ref=v2.10.15
+default_cpprestsdk_ref=v2.10.16
 cpprestsdk_ref=$default_cpprestsdk_ref
 install_gsl=false
 default_gsl_ref=v2.0.0
@@ -163,10 +163,11 @@ do_install_cpprestsdk() {
     echo -e "Building cpprestsdk ...\n\tBranch: $cpprestsdk_ref\n\tFolder: $cpprest_dir"
     mkdir -p $cpprest_dir || return
     pushd $cpprest_dir > /dev/null
+    echo git clone --recursive --single-branch --branch $cpprestsdk_ref --depth 1 $cpprest_url . || return
     git clone --recursive --single-branch --branch $cpprestsdk_ref --depth 1 $cpprest_url . || return
     mkdir -p cmake || return
     pushd cmake > /dev/null
-    cmake -DBUILD_TESTS=OFF -DBUILD_SAMPLES=OFF -Wno-dev -DWERROR=OFF .. || return
+    cmake .. -DCMAKE_BUILD_TYPE=minsizerel -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF -DBUILD_SAMPLES=OFF -Wno-dev -DWERROR=OFF || return
     cmake --build . || return
     $SUDO cmake --build . --target install || return
     popd > /dev/null
