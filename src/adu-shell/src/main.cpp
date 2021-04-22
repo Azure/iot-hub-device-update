@@ -134,7 +134,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
             char* endptr;
             errno = 0; /* To distinguish success/failure after call */
             int64_t logLevel = strtol(optarg, &endptr, 10);
-            if (errno != 0 || endptr == optarg || logLevel < ADUC_LOG_DEBUG || logLevel >= ADUC_LOG_ERROR)
+            if (errno != 0 || endptr == optarg || logLevel < ADUC_LOG_DEBUG || logLevel > ADUC_LOG_ERROR)
             {
                 printf("Invalid log level after '--log-level' or '-l' option. Expected value: 0-3.");
                 result = -1;
