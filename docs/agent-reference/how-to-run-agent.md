@@ -88,3 +88,42 @@ To manually stop the daemon:
 ```shell
 sudo systemctl stop adu-agent
 ```
+
+## How To Create 'adu' Group and User 
+
+Create 'adu' group and 'adu' user by follow these steps:
+
+1. Add 'adu' group
+	```shell
+    sudo addgroup --system "adu"
+    ```
+
+2. Add 'adu' user (with no shell, and no login)
+	```shell
+    sudo adduser --system "adu" --ingroup "adu" --no-create-home --shell /bin/false
+    ```
+
+3. Add 'adu' user to the 'syslog' group to allow the Agent to write to /var/log folder
+	```shell
+    sudo usermod -aG "syslog" "adu"
+    ```
+
+4. Add 'adu' user to the 'do' group to allow access to delivery optimization resources
+   ```shell
+   sudo usermod -aG "do" "adu" 
+   ```
+
+## Set adu-shell file permissions to perform download and install tasks with "root" privilege
+
+1. Install adu-shell to /usr/lib/adu/.
+2. Run following commands
+   ```shell
+	sudo chown "root:adu" "/usr/lib/adu/adu-shell"
+	sudo chmod u=rxs "/usr/lib/adu/adu-shell"
+    ```
+3. Optional: If 'setfacl' command is available
+   ```shell
+   sudo setfacl -m "group::---" "/usr/lib/adu/adu-shell"
+   sudo setfacl -m "user::r--" "/usr/lib/adu/adu-shell"
+   sudo setfacl -m "user:adu:r-x" "/usr/lib/adu/adu-shell" 
+    ```
