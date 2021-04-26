@@ -174,7 +174,7 @@ while getopts "c:f:hi:n:p:t:v:" OPT; do
 done
 
 # Update files are the arguments without switches.
-shift $(( OPTIND - 1))
+shift "$((OPTIND - 1))"
 UPDATE_FILES=($@)
 
 # Verify that all required arguments were specified and correct.
