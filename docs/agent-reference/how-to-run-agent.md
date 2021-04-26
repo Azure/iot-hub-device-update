@@ -112,6 +112,13 @@ Create 'adu' group and 'adu' user by follow these steps:
    ```shell
    sudo usermod -aG "do" "adu" 
    ```
+   
+ 5. [If using IoT Identity Service] Add 'adu' user must be a member of the following groups. Learn more about [how to provision Device Update Agent with IoT Identity Service](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-agent-provisioning#how-to-provision-the-device-update-agent-as-a-module-identity)
+   ```shell
+    sudo usermod -aG "aziotid" "adu"
+    sudo usermod -aG "aziotcs" "adu"
+    sudo usermod -aG "aziotks" "adu"
+   ```
 
 ## Set adu-shell file permissions to perform download and install tasks with "root" privilege
 
