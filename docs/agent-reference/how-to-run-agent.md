@@ -90,6 +90,7 @@ sudo systemctl stop adu-agent
 ```
 
 ## How To Create 'adu' Group and User 
+IMPORTANT: The Device Update agent must be run as 'adu' user.
 
 Create 'adu' group and 'adu' user by follow these steps:
 
