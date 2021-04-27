@@ -30,7 +30,7 @@ write_verbose() {
         YELLOW="$(tput setaf 11)"
         RESET="$(tput sgr0)"
 
-        printf "${YELLOW}VERBOSE: $1${RESET}\n"
+        echo -e "${YELLOW}VERBOSE: $1${RESET}\n"
     fi
 }
 
@@ -41,7 +41,7 @@ write_error() {
     RED="$(tput setaf 9)"
     RESET="$(tput sgr0)"
 
-    printf "${RED}ERROR: $1${RESET}\n"
+    echo -e "${RED}ERROR: $1${RESET}\n"
 }
 
 #
@@ -174,7 +174,7 @@ while getopts "c:f:hi:n:p:t:v:" OPT; do
 done
 
 # Update files are the arguments without switches.
-shift $(expr $OPTIND - 1)
+shift "$((OPTIND - 1))"
 UPDATE_FILES=($@)
 
 # Verify that all required arguments were specified and correct.
@@ -247,7 +247,7 @@ for idx in "${!COMPAT_INFOS[@]}"; do
       "deviceManufacturer": "${ARGS[0]}",
       "deviceModel": "${ARGS[1]}"
 EOF
-    if [ $(($idx + 1)) -ne ${#COMPAT_INFOS[@]} ]; then
+    if [ $((idx + 1)) -ne ${#COMPAT_INFOS[@]} ]; then
         echo "    },"
     else
         echo "    }"
@@ -273,7 +273,7 @@ for idx in "${!UPDATE_FILES[@]}"; do
         "sha256": "$SHA256HASH"
       }
 EOF
-    if [ $(($idx + 1)) -ne ${#UPDATE_FILES[@]} ]; then
+    if [ $((idx + 1)) -ne ${#UPDATE_FILES[@]} ]; then
         echo "    },"
     else
         echo "    }"
