@@ -81,9 +81,8 @@ void DeviceInfoInterfaceData_Free()
 /**
  * @brief Ensure that a DeviceInfo property meets certain constraints.
  *
- * For private preview, Manufacturer and Model have the following limitations:
+ * For public preview, Manufacturer and Model have the following limitations:
  * 1. 1-64 characters in length.
- * 2. alphanumeric, dot and dash only.
  * However, to be safe, apply these constraints to all properties.
  *
  * @param value String value to apply constraints to.
@@ -99,12 +98,6 @@ static void ApplyDeviceInfoPropertyConstraints(char* value)
             // Force truncation at max_cch characters.
             *curr = '\0';
             break;
-        }
-
-        if (!(isalnum(*curr) || *curr == '.' || *curr == '-'))
-        {
-            // Replace unsupported characters with '-'
-            *curr = '-';
         }
         ++curr;
     }
