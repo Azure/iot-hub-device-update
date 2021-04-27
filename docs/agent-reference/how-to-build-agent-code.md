@@ -76,6 +76,12 @@ Manifest:
 ```shell
 ./scripts/build.sh -c -p linux --content-handlers microsoft/apt --build-packages
 ```
+To build the agent that supports provisioning using [IoT Identity Service](https://github.com/Azure/iot-identity-service/blob/main/docs/packaging.md#installing-and-configuring-the-package) specify '--provision-with-iotedge' as shown below:  
+Learn more about [how to provision Device Update agent with IoT Identity Service](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-agent-provisioning#how-to-provision-the-device-update-agent-as-a-module-identity). 
+
+```shell
+./scripts/build.sh -c -p linux --content-handlers microsoft/apt --provision-with-iotedge
+```
 
 To see additional build options with build.sh:
 
