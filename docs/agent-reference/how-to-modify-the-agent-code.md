@@ -20,4 +20,4 @@ in [src/content_handlers](../../src/content_handlers)
 
 ## Porting to a Different OS or Platform
 
-If you want to use the Device Update Agent on an OS or platform that isn't supported out-of-the box, you can provide your own [Platform Layer](../../src/platform_layers) implementation. You may also need to port the [Azure IoT C SDK](https://github.com/Azure/azure-c-shared-utility/blob/public-preview/devdoc/porting_guide.md) to your device.
+If you want to use the Device Update Agent on an OS or platform that isn't supported out-of-the box, you can provide your own [Platform Layer](../../src/platform_layers) implementation. You may also need to port the [Azure IoT C SDK](https://github.com/Azure/azure-c-shared-utility/blob/master/devdoc/porting_guide.md) to your device.
