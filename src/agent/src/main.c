@@ -235,7 +235,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
         {
             unsigned int logLevel = 0;
             _Bool ret = atoui(optarg, &logLevel);
-            if (!ret || logLevel < ADUC_LOG_DEBUG || logLevel >= ADUC_LOG_ERROR)
+            if (!ret || logLevel < ADUC_LOG_DEBUG || logLevel > ADUC_LOG_ERROR)
             {
                 puts("Invalid log level after '--log-level' or '-l' option. Expected value: 0-3.");
                 result = -1;
