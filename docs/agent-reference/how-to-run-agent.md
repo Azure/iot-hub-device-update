@@ -109,12 +109,18 @@ Create 'adu' group and 'adu' user by follow these steps:
     sudo usermod -aG "syslog" "adu"
     ```
 
-4. Add 'adu' user to the 'do' group to allow access to delivery optimization resources
+4. Add 'adu' user to the 'do' group to allow access to Delivery Optimization resources
    ```shell
    sudo usermod -aG "do" "adu" 
    ```
-   
- 5. If using IoT Identity Service, add 'adu' user to the following groups.  
+
+5. Add 'do' user to the 'adu' group to allow Delivery Optimization agent to download files to the Device Update sandbox folder
+   ```shell
+   sudo usermod -aG "adu" "do" 
+   sudo systemctl restart deliveryoptimization-agent
+   ```
+
+6. If using IoT Identity Service, add 'adu' user to the following groups.  
  Learn more about [how to provision Device Update Agent with IoT Identity Service](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-agent-provisioning#how-to-provision-the-device-update-agent-as-a-module-identity)  
  
    ```shell
