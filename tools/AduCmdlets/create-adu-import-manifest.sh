@@ -16,7 +16,7 @@ Create an import manifest to import an update into Device Update.
 -v VERSION      Update version
 -t TYPE         Update type
 -i CRITERIA     Installed criteria
--c INFO         Comma separated (manufacturer, model) compatibility information 
+-c INFO         Comma separated (manufacturer, model) compatibility information
                 May be specified multiple times.
 FILE            Path to update file(s)
 "
@@ -221,7 +221,8 @@ for file in "${UPDATE_FILES[@]}"; do
     fi
 done
 
-CREATED_DATETIME=$(date --utc --iso-8601=seconds)
+# ISO 8601 UTC date time with Z designator.
+CREATED_DATETIME=$(date --utc +%FT%TZ)
 
 # Write out JSON.
 # Using "jq" would be better, but trying to reduce script dependencies.
