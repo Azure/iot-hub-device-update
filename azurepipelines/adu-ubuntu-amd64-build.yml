@@ -62,9 +62,7 @@ pr:
       - LICENSE.md
       - .clang-format
       - .cmake-format.json
-      - tools/*
       - docker/*
-      - scripts/*
       - licenses/*
 
 jobs:
