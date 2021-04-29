@@ -776,9 +776,6 @@ void ADUC_MethodCall_Idle(ADUC_WorkflowData* workflowData)
         workflowData->WorkFolder = NULL;
     }
 
-    // Each time we get to idle, generate a new workflow id.
-    GenerateUniqueId(workflowData->WorkflowId, sizeof(workflowData->WorkflowId) / sizeof(workflowData->WorkflowId[0]));
-
     Log_Info("UpdateAction: Idle. WorkflowId: %s", workflowData->WorkflowId);
 
     // Can reach Idle state from ApplyStarted as there isn't an ApplySucceeded state.
