@@ -2,14 +2,8 @@
 
 ## Required Dependencies
 
-* Install the [Delivery Optimization SDK](https://github.com/microsoft/do-client)
-* Install the [Delivery Optimization components](https://github.com/microsoft/do-client#installing-do-client-components) i.e., the Delivery Optimization agent & Delivery Optimization APT plugin 
-
-Alternatively you can add the Microsoft Repository to your local APT repositories using these (instructions)[https://docs.microsoft.com/windows-server/administration/linux-package-repository-for-microsoft-software]. Then you will be able to install the necessary DO dependencies using
-
-```bash
-sudo apt-get install deliveryoptimization-plugin-apt
-```
+1. Build the Device Update agent and its dependancies using these [instructions](https://github.com/Azure/iot-hub-device-update/blob/main/docs/agent-reference/how-to-build-agent-code.md)
+2.  Follow the instructions from [this](https://github.com/microsoft/do-client#delivery-optimization-client) page to build and install the Delivery Optimization agent and plug-in. Note: Delivery Optimization SDK is already installed as part of step 1 above. 
 
 ## Command Line
 
