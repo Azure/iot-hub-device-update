@@ -5,6 +5,12 @@
 * Install the [Delivery Optimization SDK](https://github.com/microsoft/do-client)
 * Install the [Delivery Optimization components](https://github.com/microsoft/do-client#installing-do-client-components) i.e., the Delivery Optimization agent & Delivery Optimization APT plugin 
 
+Alternatively you can add the Microsoft Repository to your local APT repositories using these (instructions)[https://docs.microsoft.com/windows-server/administration/linux-package-repository-for-microsoft-software]. Then you will be able to install the necessary DO dependencies using
+
+```bash
+sudo apt-get install deliveryoptimization-plugin-apt
+```
+
 ## Command Line
 
 ```bash
