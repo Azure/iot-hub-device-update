@@ -1,5 +1,10 @@
 # Running the Device Update for IoT Hub Reference Agent
 
+## Required Dependencies
+
+* Install the [Delivery Optimization SDK](https://github.com/microsoft/do-client)
+* Install the [Delivery Optimization components](https://github.com/microsoft/do-client#installing-do-client-components) i.e., the Delivery Optimization agent & Delivery Optimization APT plugin 
+
 ## Command Line
 
 ```bash
