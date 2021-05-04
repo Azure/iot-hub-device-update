@@ -81,6 +81,7 @@
 #include <stdlib.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h> // PRIu64
+#include <time.h>
 
 #include "aduc/adu_core_export_helpers.h"
 #include "aduc/adu_core_interface.h"
@@ -89,6 +90,19 @@
 #include "aduc/result.h"
 
 #include "agent_workflow_utils.h"
+
+/**
+ * @brief Generate a unique identifier.
+ *
+ * @param buffer Where to store identifier.
+ * @param buffer_cch Number of characters in @p buffer.
+ */
+void GenerateUniqueId(char* buffer, size_t buffer_cch)
+{
+    const time_t timer = time(NULL);
+    const struct tm* ptm = gmtime(&timer);
+    (void)strftime(buffer, buffer_cch, "%y%m%d%H%M%S", ptm);
+}
 
 static void DownloadProgressCallback(
     const char* workflowId,

@@ -8,7 +8,6 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
-#include <time.h>
 
 #include <parson.h>
 
@@ -18,19 +17,6 @@
 #include <aduc/string_c_utils.h>
 #include <sys/wait.h> // for waitpid
 #include <unistd.h>
-
-/**
- * @brief Generate a unique identifier.
- *
- * @param buffer Where to store identifier.
- * @param buffer_cch Number of characters in @p buffer.
- */
-void GenerateUniqueId(char* buffer, size_t buffer_cch)
-{
-    const time_t timer = time(NULL);
-    const struct tm* ptm = gmtime(&timer);
-    (void)strftime(buffer, buffer_cch, "%y%m%d%H%M%S", ptm);
-}
 
 void ADUC_MethodCall_Idle(ADUC_WorkflowData* workflowData);
 
