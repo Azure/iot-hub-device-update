@@ -776,7 +776,14 @@ void ADUC_MethodCall_Idle(ADUC_WorkflowData* workflowData)
         workflowData->WorkFolder = NULL;
     }
 
-    Log_Info("UpdateAction: Idle. WorkflowId: %s", workflowData->WorkflowId);
+    if (workflowData->WorkflowId != NULL)
+    {
+        Log_Info("UpdateAction: Idle. WorkflowId: %s", workflowData->WorkflowId);
+    }
+    else
+    {
+        Log_Info("UpdateAction: Idle. WorkflowId is not generated yet.");
+    }
 
     // Can reach Idle state from ApplyStarted as there isn't an ApplySucceeded state.
     if (workflowData->LastReportedState != ADUCITF_State_Idle

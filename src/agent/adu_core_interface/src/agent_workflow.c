@@ -90,7 +90,6 @@
 
 #include "agent_workflow_utils.h"
 
-
 static void DownloadProgressCallback(
     const char* workflowId,
     const char* fileId,
@@ -448,18 +447,20 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* workflowData)
     {
         Log_Info("The installed criteria is not met. The current update was not installed on the device.");
 
-        if (workflowData->CurrentAction == ADUCITF_UpdateAction_Download)
+        unsigned int desiredAction;
+        if (!ADUC_Json_GetUpdateAction(workflowData->UpdateActionJson, &desiredAction))
         {
-            Log_Info("There's a pending 'download' action request. Resume downloading the update.");
+            goto done;
+        }
+
+        if (desiredAction == ADUCITF_UpdateAction_Download)
+        {
+            Log_Info("There's a pending 'download' action request.");
 
             // There's a pending download request.
             // We need to make sure we don't change our state to 'idle'.
             workflowData->StartupIdleCallSent = true;
 
-            // We need to generate a new workflowId for this scenario then resume processing 'download' action.
-            GenerateUniqueId(workflowData->WorkflowId, sizeof(workflowData->WorkflowId) / sizeof(workflowData->WorkflowId[0]));
-            Log_Info("Resuming workflow with WorkflowId %s", workflowData->WorkflowId);
-            
             ADUC_Workflow_HandleUpdateAction(workflowData);
             goto done;
         }
@@ -544,16 +545,6 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
 {
     if (workflowData->UpdateActionJson == NULL)
     {
-        goto done;
-    }
-
-    // We can't respond to requests from Orchestrator until we've gotten to Idle state.
-    // If a call was received prior to the client going to Idle state, we'll ignore the request, and send
-    // idle to the orchestrator.  When the orchestrator sees the Idle state returned, it will know that
-    // the client has reset and will re-send the previous workflow request.
-    if (!workflowData->StartupIdleCallSent)
-    {
-        Log_Warn("Ignoring Orchestrator property update as ADUC agent hasn't initialized yet.");
         goto done;
     }
 
@@ -693,6 +684,11 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
 
     if (entry->Action == ADUCITF_UpdateAction_Download)
     {
+        // Generate workflowId when we start downloading.
+        GenerateUniqueId(
+            workflowData->WorkflowId, sizeof(workflowData->WorkflowId) / sizeof(workflowData->WorkflowId[0]));
+        Log_Info("Start the workflow - downloading, with WorkflowId %s", workflowData->WorkflowId);
+
         result = ADUC_MethodCall_Prepare(workflowData);
         shouldCallOperationFunc = IsAducResultCodeSuccess(result.ResultCode);
     }
