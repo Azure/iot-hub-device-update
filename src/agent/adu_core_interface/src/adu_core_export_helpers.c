@@ -8,7 +8,6 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
-#include <time.h>
 
 #include <parson.h>
 
@@ -18,19 +17,6 @@
 #include <aduc/string_c_utils.h>
 #include <sys/wait.h> // for waitpid
 #include <unistd.h>
-
-/**
- * @brief Generate a unique identifier.
- *
- * @param buffer Where to store identifier.
- * @param buffer_cch Number of characters in @p buffer.
- */
-static void GenerateUniqueId(char* buffer, size_t buffer_cch)
-{
-    const time_t timer = time(NULL);
-    const struct tm* ptm = gmtime(&timer);
-    (void)strftime(buffer, buffer_cch, "%y%m%d%H%M%S", ptm);
-}
 
 void ADUC_MethodCall_Idle(ADUC_WorkflowData* workflowData);
 
@@ -774,12 +760,15 @@ void ADUC_MethodCall_Idle(ADUC_WorkflowData* workflowData)
 
         free(workflowData->WorkFolder);
         workflowData->WorkFolder = NULL;
+
+        Log_Info("UpdateAction: Idle. Ending workflow with WorkflowId: %s", workflowData->WorkflowId);
+        workflowData->WorkflowId[0] = 0;
     }
 
-    // Each time we get to idle, generate a new workflow id.
-    GenerateUniqueId(workflowData->WorkflowId, sizeof(workflowData->WorkflowId) / sizeof(workflowData->WorkflowId[0]));
-
-    Log_Info("UpdateAction: Idle. WorkflowId: %s", workflowData->WorkflowId);
+    else
+    {
+        Log_Info("UpdateAction: Idle. WorkflowId is not generated yet.");
+    }
 
     // Can reach Idle state from ApplyStarted as there isn't an ApplySucceeded state.
     if (workflowData->LastReportedState != ADUCITF_State_Idle
