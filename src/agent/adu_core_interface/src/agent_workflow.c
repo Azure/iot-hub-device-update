@@ -699,8 +699,7 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
     if (entry->Action == ADUCITF_UpdateAction_Download)
     {
         // Generate workflowId when we start downloading.
-        GenerateUniqueId(
-            workflowData->WorkflowId, sizeof(workflowData->WorkflowId) / sizeof(workflowData->WorkflowId[0]));
+        GenerateUniqueId(workflowData->WorkflowId, ARRAY_SIZE(workflowData->WorkflowId));
         Log_Info("Start the workflow - downloading, with WorkflowId %s", workflowData->WorkflowId);
 
         result = ADUC_MethodCall_Prepare(workflowData);
