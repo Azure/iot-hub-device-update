@@ -762,7 +762,7 @@ void ADUC_MethodCall_Idle(ADUC_WorkflowData* workflowData)
         workflowData->WorkFolder = NULL;
 
         Log_Info("UpdateAction: Idle. Ending workflow with WorkflowId: %s", workflowData->WorkflowId);
-        memset(workflowData->WorkFolder, 0, sizeof(*(workflowData->WorkFolder)));
+        workflowData->WorkflowId[0] = 0;
     }
 
     else
