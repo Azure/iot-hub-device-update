@@ -1,5 +1,10 @@
 # Running the Device Update for IoT Hub Reference Agent
 
+## Required Dependencies
+
+1. Build the Device Update agent and its dependancies using these [instructions](https://github.com/Azure/iot-hub-device-update/blob/main/docs/agent-reference/how-to-build-agent-code.md)
+2. Follow the instructions from [this](https://github.com/microsoft/do-client#delivery-optimization-client) page to build and install the Delivery Optimization agent and plug-in. Note: Delivery Optimization SDK is already installed as part of step 1 above. 
+
 ## Command Line
 
 ```bash
