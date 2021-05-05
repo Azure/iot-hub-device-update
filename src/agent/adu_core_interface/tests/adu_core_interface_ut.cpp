@@ -157,7 +157,6 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_Connected")
 
     AzureDeviceUpdateCoreInterface_Connected(&workflowData);
 
-    CHECK(workflowData.WorkflowId[0] != '\0');
     CHECK(workflowData.LastReportedState == ADUCITF_State_Idle);
     CHECK(workflowData.StartupIdleCallSent);
     CHECK(!workflowData.OperationInProgress);

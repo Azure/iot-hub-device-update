@@ -290,11 +290,6 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
 
     ADUC_WorkflowData workflowData{};
 
-    const std::string workflowId{ "unit_test" };
-    constexpr size_t workflowIdSize = ARRAY_SIZE(workflowData.WorkflowId);
-    strncpy(workflowData.WorkflowId, workflowId.c_str(), workflowIdSize);
-    workflowData.WorkflowId[workflowIdSize - 1] = '\0';
-
     workflowData.LastReportedState = ADUCITF_State_Idle;
     workflowData.DownloadProgressCallback = DownloadProgressCallback;
 
@@ -333,6 +328,11 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
     methodCallData.MethodSpecificData.DownloadInfo = &downloadInfo;
 
     workflowData.CurrentAction = ADUCITF_UpdateAction_Download;
+
+    const std::string workflowId{ "unit_test" };
+    constexpr size_t workflowIdSize = ARRAY_SIZE(workflowData.WorkflowId);
+    strncpy(workflowData.WorkflowId, workflowId.c_str(), workflowIdSize);
+    workflowData.WorkflowId[workflowIdSize - 1] = '\0';
 
     result = ADUC_MethodCall_Download(&methodCallData);
 
