@@ -152,6 +152,17 @@ case "$1" in
             systemctl restart "$ms_doclient_lite_service"
         fi
 
+        # Note: We must add the 'adu' user to the 'do' group so that we can set the connection_string for
+        # the nested edge scenario. 
+        echo "Add the 'adu' user to the 'do' group"
+        if getent passwd 'adu' > /dev/null; then
+            usermod -aG 'do' 'adu'
+
+            # Restart deliveryoptimization-agent service to ensure that the new 'do' user's permissions take effect.
+            echo "Restart $ms_doclient_lite_service"
+            systemctl restart "$ms_doclient_lite_service"
+        fi
+
         # Do not restart the current adu-agent because we want the update workflow
         # to complete, and reports the agent's state to ADU Management service.
         echo "============================================================"
