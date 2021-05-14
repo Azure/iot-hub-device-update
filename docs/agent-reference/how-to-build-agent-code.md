@@ -128,3 +128,39 @@ popd > /dev/null
 ```
 
 **Note** If the Device Update Agent was built as a daemon, the install targets will install and register the Device Update Agent as a daemon.
+
+# Integrate the Device Update agent in your existing application or solution 
+
+## Pre-concepts
+
+Before integrating the Device Update agent in your existing application or solution review the below concepts.
+
+* Learn how the Device Update service will communicate with the device client using PnP properties to orchestrate over-the-air [update actions](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
+* Understand the update manifest to be able to write code to [respond to update actions from your client](update-manifest.md).
+* Understand how to implement  'ADU Core' interface for the Device Update service to [communicate with your client on the Device](device-update-plug-and-play.md).
+
+## Steps
+
+1. Start from IoT Hub C-SDK PnP client: Your application needs to support IoT Hub Plug and Play as shown in this [example](https://docs.microsoft.com/en-us/azure/iot-pnp/tutorial-multiple-components?pivots=programming-language-ansi-c) to be used by Device Update for over-the-air updating.
+2. Once you have a IoT Hub Plug and Play enabled device, implement the 'ADU Core' interfaces for your application by following this [guidance](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
+3. Here is the Device Update agent implementation that you can reference and modify your application to replicate the same behaviors:
+	<Architecture and code links>
+4. Actions returned from your application should be in this format so that the Device Update service can work with your application. Learn more about [plug and play format](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-plug-and-play), and Device Update agent [workflow](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
+
+## Install the Device Update Agent
+
+To install the Device Update Agent after building:
+
+```shell
+sudo cmake --build out --target install
+```
+
+or using Ninja
+
+```shell
+pushd out > /dev/null
+sudo ninja install
+popd > /dev/null
+```
+
+**Note** If the Device Update Agent was built as a daemon, the install targets will install and register the Device Update Agent as a daemon.
