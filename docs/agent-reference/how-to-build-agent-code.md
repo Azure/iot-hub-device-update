@@ -129,6 +129,10 @@ popd > /dev/null
 
 **Note** If the Device Update Agent was built as a daemon, the install targets will install and register the Device Update Agent as a daemon.
 
+## Run Device Update Agent
+
+Run Device Update Agent by following these [instructions](./how-to-run-agent.md)
+
 # Integrate the Device Update agent in your existing application or solution 
 
 ## Pre-concepts
@@ -164,3 +168,7 @@ popd > /dev/null
 ```
 
 **Note** If the Device Update Agent was built as a daemon, the install targets will install and register the Device Update Agent as a daemon.
+
+## Run Device Update Agent
+
+Run Device Update Agent by following these [instructions](./how-to-run-agent.md)
