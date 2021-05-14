@@ -21,3 +21,14 @@ in [src/content_handlers](../../src/content_handlers)
 ## Porting to a Different OS or Platform
 
 If you want to use the Device Update Agent on an OS or platform that isn't supported out-of-the box, you can provide your own [Platform Layer](../../src/platform_layers) implementation. You may also need to port the [Azure IoT C SDK](https://github.com/Azure/azure-c-shared-utility/blob/master/devdoc/porting_guide.md) to your device.
+
+1. Follow these steps to get the Device Update sample application running on other boards 
+* Implement the Azure IoT device SDK for C, sample for [Arduino](https://github.com/Azure/azure-iot-sdk-c/blob/master/iothub_client/readme.md#arduino).
+* Implement the [IoT Hub Plug and Play Device Client Sample](https://github.com/Azure/azure-iot-sdk-c/tree/master/iothub_client/samples/pnp).
+* Once you have a IoT Hub Plug and Play enabled device, implement the 'ADU core' interfaces for your application by following [this].(https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
+
+2. Once you get a basic IoT Hub Plug and Play Device Client sample up and running on the device, look at our current Device Update Agent implementation on how to process over-the-air ‘Update Actions’ from Device Update Service.  
+* [Understand Device Update for Azure IoT Hub Agent](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/device-update-agent-overview)
+* [Understand how Device Update for IoT Hub uses IoT Plug and Play](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/device-update-plug-and-play)
+* [Source Code] IoT Hub Device Update Public Preview [GitHub Repo](https://github.com/azure/iot-hub-device-update)
+
