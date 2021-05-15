@@ -7,8 +7,8 @@ issues before filing new issues to avoid duplicates.  For new issues, file your 
 feature request as a new Issue.
 
 ## How to contribute to the project 
-We encourage the community to submit a Pull Request and add adu-client as the approver.
+We encourage the community to create your own user branch, submit a Pull Request and add adu-client as the approver.
 
 ## Microsoft Support Policy  
 
-Support for this **PROJECT or PRODUCT** is limited to the resources listed above.
+Support for Device Update for IoT Hub is limited to the resources listed above. 
