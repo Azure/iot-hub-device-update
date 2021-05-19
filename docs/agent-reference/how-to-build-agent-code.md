@@ -1,6 +1,6 @@
 # How To Build the Device Update for IoT Hub Agent
 
-* [How To Build the Device Update for IoT Hub Agent](how-to-build-agent-code.md#as-a-standalone-solution)
+* [As a standalone solution](how-to-build-agent-code.md#as-a-standalone-solution)
 * [Integrate the Device Update agent in your existing application or solution](how-to-build-agent-code.md#integrate-the-device-update-agent-in-your-existing-application-or-solution)
 
 # As a standalone solution
