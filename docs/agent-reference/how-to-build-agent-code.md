@@ -1,5 +1,10 @@
 # How To Build the Device Update for IoT Hub Agent
 
+* [How To Build the Device Update for IoT Hub Agent](how-to-build-agent-code.md#standalone)
+* [Integrate the Device Update agent in your existing application or solution](how-to-build-agent-code.md#integrate-the-device-update-agent-in-your-existing-application-or-solution)
+
+# Standalone
+
 ## Dependencies of Device Update Agent
 
 ### Required Dependencies
@@ -151,24 +156,3 @@ Before integrating the Device Update agent in your existing application or solut
 	<Architecture and code links>
 4. Actions returned from your application should be in this format so that the Device Update service can work with your application. Learn more about [plug and play format](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-plug-and-play), and Device Update agent [workflow](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
 
-## Install the Device Update Agent
-
-To install the Device Update Agent after building:
-
-```shell
-sudo cmake --build out --target install
-```
-
-or using Ninja
-
-```shell
-pushd out > /dev/null
-sudo ninja install
-popd > /dev/null
-```
-
-**Note** If the Device Update Agent was built as a daemon, the install targets will install and register the Device Update Agent as a daemon.
-
-## Run Device Update Agent
-
-Run Device Update Agent by following these [instructions](./how-to-run-agent.md)
