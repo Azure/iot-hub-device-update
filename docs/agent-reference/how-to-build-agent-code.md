@@ -1,24 +1,24 @@
-# How To Build the Device Update for IoT Hub Agent
+# How To Build the Device Update Agent
+
+Take a look at [dependancies](how-to-build-agent-code.md#dependencies-of-device-update-agent) before you get started. You can build the Device Update agent as a standlone solution or integrate it in your existing application or solution. 
 
 * [As a standalone solution](how-to-build-agent-code.md#as-a-standalone-solution)
 * [Integrate the Device Update agent in your existing application or solution](how-to-build-agent-code.md#integrate-the-device-update-agent-in-your-existing-application-or-solution)
 
-# As a standalone solution
+# Dependencies of Device Update Agent
 
-## Dependencies of Device Update Agent
-
-### Required Dependencies
+## Required Dependencies
 
 * Azure IoT C SDK
 * Delivery Optimization SDK
 
-### Azure IoT C SDK
+## Azure IoT C SDK
 
 Use the [Azure IoT C
 SDK](https://github.com/Azure/azure-iot-sdk-c)
 to connect to IoT Hub and call Azure IoT Plug and Play APIs.
 
-### Delivery Optimization
+## Delivery Optimization
 
 The [Delivery Optimization
 SDK](https://github.com/microsoft/do-client)
@@ -55,6 +55,7 @@ dependencies.  To see the usage info:
 ```shell
 ./scripts/install-deps.sh -h
 ```
+# As a standalone solution
 
 ### Device Update Linux Build System
 
