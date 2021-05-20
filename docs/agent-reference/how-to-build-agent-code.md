@@ -141,33 +141,34 @@ popd > /dev/null
 
 Run Device Update Agent by following these [instructions](./how-to-run-agent.md)
 
-# Integrate the Device Update agent in your existing application or solution 
+# Integrate the Device Update agent in your existing application or solution
 
 ## Pre-concepts
 
 Before integrating the Device Update agent in your existing application or solution review the below concepts.
 
-* Learn how the Device Update service will communicate with the device client using PnP properties to orchestrate over-the-air [update actions](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
+* Learn how the Device Update service will communicate with the device client using IoT Hub Plug and Play properties to orchestrate over-the-air update actions from [here](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
 * Understand the update manifest to be able to write code to [respond to update actions from your client](update-manifest.md).
 * Understand how to implement  'ADU Core' interface for the Device Update service to [communicate with your client on the Device](device-update-plug-and-play.md).
 
 ## Steps
 
-1. Start from IoT Hub C-SDK PnP client: Your application needs to support IoT Hub Plug and Play as shown in this [example](https://docs.microsoft.com/en-us/azure/iot-pnp/tutorial-multiple-components?pivots=programming-language-ansi-c) to be used by Device Update for over-the-air updating.
-2. Once you have a IoT Hub Plug and Play enabled device, implement the 'ADU Core' interfaces for your application by following this [guidance](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
-3. Here is the Device Update agent implementation that you can reference and modify your application to replicate the same behaviors:
+1. Create an IoT Hub C-SDK Plug and Play client: Your application needs to support IoT Hub Plug and Play as shown in this [example](https://docs.microsoft.com/en-us/azure/iot-pnp/tutorial-multiple-components?pivots=programming-language-ansi-c) to be used by Device Update for over-the-air updating.
+2. Once you have a IoT Hub Plug and Play enabled device, implement the 'ADU Core' interfaces for your application, see reference code [here](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
+3. Review the below Device Update agent implementation and source code so that you can modify your application to replicate the same behaviors:
 
 * Agent Architecture
 ![Agent Architecture](images/agent-architecture.PNG)
 
-* Workflow:  
-Download phase
+* Workflow phases and source code
+
+Download phase:
 ![Download phase](images/download-phase.PNG)
 
-Install phase
+Install phase:
 ![Install phase](images/install-phase.PNG)
 
-Apply phase
+Apply phase:
 ![Apply phase](images/apply-phase.PNG)
 
 * [Source code](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c)
