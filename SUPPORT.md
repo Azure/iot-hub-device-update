@@ -2,9 +2,21 @@
 
 ## How to file issues and get help  
 
-This project uses GitHub Issues to track bugs and feature requests. Please search the existing issues before filing new issues to avoid duplicates.  For new issues, file your bug or feature request as a new Issue.
+* You can use [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issues) to track bugs and feature requests. Please search the existing issues before filing new issues to avoid duplicates.
 
-For help and questions about using this project, please **REPO MAINTAINER: INSERT INSTRUCTIONS HERE FOR HOW TO ENGAGE REPO OWNERS OR COMMUNITY FOR HELP. COULD BE A STACK OVERFLOW TAG OR OTHER CHANNEL. WHERE WILL YOU HELP PEOPLE?**.
+* You can contact Microsoft Support, see details [here](https://docs.microsoft.com/azure/iot-hub-device-update/troubleshoot-device-update#contact)
+
+## Contributing code or documentation
+
+We require pull-requests for code and documentation to be submitted against a new branch in order to review and run it in our gated build system. We try to maintain a high bar for code quality and maintainability, we insist on having tests associated with the code, and if necessary, additions/modifications to the requirement documents. Please include 'adu-client' as an approver. Also, have you signed the [Contribution License Agreement](https://cla.microsoft.com/) ([CLA](https://cla.microsoft.com/))? A friendly bot will remind you about it when you submit your pull-request.
+
+**If your contribution is going to be a major effort, you should give us a heads-up. We have a lot of items captured in our backlog so before you spend the time, check with us if we already plan to make the update in the upcoming release. Open an issue on github and tag it as "contribution".**
+
+## Review Process
+
+We expect all guidelines to be met before accepting a pull request. As such, we will work with you to address issues we find by leaving comments in your code. Please understand that it may take a few iterations before the code is accepted as we maintain high standards on code quality. Once we feel comfortable with a contribution, we will validate the change and accept the pull request.
+
+Thank you for any contributions!
 
 ## Microsoft Support Policy  
 
