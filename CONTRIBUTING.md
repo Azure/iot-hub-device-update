@@ -2,19 +2,10 @@
 
 Device Update for Iot Hub is looking forward to your contributions and feedback to help us make it better!
 
-- [Contributing Guide](#contributing-guide)
-  - [Need Support?](#need-support)
-  - [Contributing code or documentation](#contributing-code-or-documentation)
-  - [Review Process](#review-process)
+[Contributing Guide](#contributing-guide)
 
-## Need Support?
-
-- Have a technical question?  
-    Ask on Stack Overflow with tag "iot-hub-device-update".
-- Found a bug, or want to request a new feature?  
-    Please thoroughly document it, and file an issue on GitHub. If you feel like taking a stab at fixing the bug/adding the feature, please see the [Contributing code](#contribute-code-or-documentation) or documentation section below.
-- Need support?  
-    Please document the issue thoroughly, attach logs and give repro steps, so that we can help you unblock as soon as possible. Note that currently Device Update for Iot Hub is in public preview stage, so there is no guranteed response time, but we will get back to you as soon as we can.
+* [Contributing code or documentation](#contributing-code-or-documentation)
+* [Review Process](#review-process)
 
 ## Contributing code or documentation
 

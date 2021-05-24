@@ -1,19 +1,24 @@
-# How To Build the Device Update for IoT Hub Agent
+# How To Build the Device Update Agent
 
-## Dependencies of Device Update Agent
+Take a look at [dependancies](how-to-build-agent-code.md#dependencies-of-device-update-agent) before you get started. You can build the Device Update agent as a standlone solution or integrate it in your existing application or solution. 
 
-### Required Dependencies
+* [As a standalone solution](how-to-build-agent-code.md#as-a-standalone-solution)
+* [Integrate the Device Update agent in your existing application or solution](how-to-build-agent-code.md#integrate-the-device-update-agent-in-your-existing-application-or-solution)
+
+# Dependencies of Device Update Agent
+
+## Required Dependencies
 
 * Azure IoT C SDK
 * Delivery Optimization SDK
 
-### Azure IoT C SDK
+## Azure IoT C SDK
 
 Use the [Azure IoT C
 SDK](https://github.com/Azure/azure-iot-sdk-c)
 to connect to IoT Hub and call Azure IoT Plug and Play APIs.
 
-### Delivery Optimization
+## Delivery Optimization
 
 The [Delivery Optimization
 SDK](https://github.com/microsoft/do-client)
@@ -51,6 +56,8 @@ dependencies.  To see the usage info:
 ./scripts/install-deps.sh -h
 ```
 
+# As a standalone solution
+
 ### Device Update Linux Build System
 
 The Device Update for IoT Hub reference agent code utilizes CMake for building. An example build script is provided at [scripts/build.sh](../../scripts/build.sh).
@@ -76,6 +83,7 @@ Manifest:
 ```shell
 ./scripts/build.sh -c -p linux --content-handlers microsoft/apt --build-packages
 ```
+
 To build the agent that supports provisioning using [IoT Identity Service](https://github.com/Azure/iot-identity-service/blob/main/docs/packaging.md#installing-and-configuring-the-package) specify '--provision-with-iotedge' as shown below:  
 Learn more about [how to provision Device Update agent with IoT Identity Service](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-agent-provisioning#how-to-provision-the-device-update-agent-as-a-module-identity). 
 
@@ -128,3 +136,41 @@ popd > /dev/null
 ```
 
 **Note** If the Device Update Agent was built as a daemon, the install targets will install and register the Device Update Agent as a daemon.
+
+## Run Device Update Agent
+
+Run Device Update Agent by following these [instructions](./how-to-run-agent.md)
+
+# Integrate the Device Update agent in your existing application or solution
+
+## Pre-concepts
+
+Before integrating the Device Update agent in your existing application or solution review the below concepts.
+
+* Learn how the Device Update service will communicate with the device client using IoT Hub Plug and Play properties to orchestrate over-the-air update actions from [here](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
+* Understand the update manifest to be able to write code to [respond to update actions from your client](update-manifest.md).
+* Understand how to implement  'ADU Core' interface for the Device Update service to [communicate with your client on the Device](device-update-plug-and-play.md).
+
+## Steps
+
+1. Create an IoT Hub C-SDK Plug and Play client: Your application needs to support IoT Hub Plug and Play as shown in this [example](https://docs.microsoft.com/en-us/azure/iot-pnp/tutorial-multiple-components?pivots=programming-language-ansi-c) to be used by Device Update for over-the-air updating.
+2. Once you have a IoT Hub Plug and Play enabled device, implement the 'ADU Core' interfaces for your application, see reference code [here](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
+3. Review the below Device Update agent implementation and source code so that you can modify your application to replicate the same behaviors:
+
+* Agent Architecture
+![Agent Architecture](images/agent-architecture.PNG)
+
+* Workflow phases and source code
+
+Download phase:
+![Download phase](images/download-phase.PNG)
+
+Install phase:
+![Install phase](images/install-phase.PNG)
+
+Apply phase:
+![Apply phase](images/apply-phase.PNG)
+
+* [Source code](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c)
+
+4.The result reported from your application should be in this format so that the Device Update service can work with your application. Learn more about [plug and play format](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-plug-and-play), and Device Update agent [workflow](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).

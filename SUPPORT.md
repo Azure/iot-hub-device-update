@@ -1,14 +1,18 @@
 # Support
-Guidance on how to troubleshoot and get support is available [here](https://docs.microsoft.com/azure/iot-hub-device-update/troubleshoot-device-update)
 
 ## How to file issues and get help  
-This project uses GitHub Issues to track bugs and feature requests. Please search the existing 
-issues before filing new issues to avoid duplicates.  For new issues, file your bug or 
-feature request as a new Issue.
 
-## How to contribute to the project 
-We encourage the community to create your own user branch, submit a Pull Request and add adu-client as the approver.
+* Have a technical question?  
+Ask on Stack Overflow with tag "iot-hub-device-update".
+
+* Found a bug, or want to request a new feature?  
+You can use [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issues) to track bugs and feature requests. If you feel like taking a stab at fixing the bug/adding the feature, please see the [Contribution guidance here](/CONTRIBUTING.md).
+
+* Need support?  
+Please document your question on [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issues) thoroughly, attach logs and give repro steps, so that we can help you unblock as soon as possible. Note that currently Device Update for Iot Hub is in public preview stage, so there is no guranteed response time, but we will get back to you as soon as we can.
+
+* You can also contact Microsoft Support, see details [here](https://docs.microsoft.com/azure/iot-hub-device-update/troubleshoot-device-update#contact)
 
 ## Microsoft Support Policy  
 
-Support for Device Update for IoT Hub is limited to the resources listed above. 
+Support for IoT Hub Device Update is limited to the resources listed above.
