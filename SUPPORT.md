@@ -1,4 +1,5 @@
 # Support
+Guidance on how to troubleshoot and get support is available [here](https://docs.microsoft.com/azure/iot-hub-device-update/troubleshoot-device-update)
 
 ## How to file issues and get help  
 
@@ -8,4 +9,4 @@
 
 ## Microsoft Support Policy  
 
-Support for this **PROJECT or PRODUCT** is limited to the resources listed above.
+Support for Device Update for IoT Hub is limited to the resources listed above. 
