@@ -158,18 +158,18 @@ Before integrating the Device Update agent in your existing application or solut
 2. Once you have a IoT Hub Plug and Play enabled device, implement the 'ADU Core' interfaces for your application, see reference code [here](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
 3. Review the below Device Update agent implementation and source code so that you can modify your application to replicate the same behaviors:
 
-* Agent Architecture
+* Agent Architecture  
 ![Agent Architecture](images/agent-architecture.png)
 
 * Workflow phases and source code
 
-Download phase:
+Download phase:  
 ![Download phase](images/download-phase.png)
 
-Install phase:
+Install phase:  
 ![Install phase](images/install-phase.png)
 
-Apply phase:
+Apply phase:  
 ![Apply phase](images/apply-phase.png)
 
 * [Source code](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c)
