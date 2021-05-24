@@ -2,6 +2,7 @@
 
 Take a look at [dependancies](how-to-build-agent-code.md#dependencies-of-device-update-agent) before you get started. You can build the Device Update agent as a standlone solution or integrate it in your existing application or solution. 
 
+* [Dependencies](how-to-build-agent-code.md#dependencies-of-device-update-agent)
 * [As a standalone solution](how-to-build-agent-code.md#as-a-standalone-solution)
 * [Integrate the Device Update agent in your existing application or solution](how-to-build-agent-code.md#integrate-the-device-update-agent-in-your-existing-application-or-solution)
 
@@ -158,18 +159,18 @@ Before integrating the Device Update agent in your existing application or solut
 3. Review the below Device Update agent implementation and source code so that you can modify your application to replicate the same behaviors:
 
 * Agent Architecture
-![Agent Architecture](images/agent-architecture.PNG)
+![Agent Architecture](images/agent-architecture.png)
 
 * Workflow phases and source code
 
 Download phase:
-![Download phase](images/download-phase.PNG)
+![Download phase](images/download-phase.png)
 
 Install phase:
-![Install phase](images/install-phase.PNG)
+![Install phase](images/install-phase.png)
 
 Apply phase:
-![Apply phase](images/apply-phase.PNG)
+![Apply phase](images/apply-phase.png)
 
 * [Source code](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c)
 
