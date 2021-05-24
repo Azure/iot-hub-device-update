@@ -1,4 +1,4 @@
-# How To Modify the Device Update for IoT Hub Agent Code
+# How To Modify the Device Update Agent Code
 
 Here are some cases where you might want to modify the Device Update Agent code to fit your scenarios and devices.
 
