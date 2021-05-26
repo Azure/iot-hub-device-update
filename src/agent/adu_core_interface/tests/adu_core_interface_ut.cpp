@@ -9,7 +9,7 @@ using Catch::Matchers::Equals;
 using Catch::Matchers::Matches;
 
 #include <sstream>
-#include <stdexcept>
+#include <string>
 
 #include "aduc/adu_core_export_helpers.h"
 #include "aduc/adu_core_exports.h"
@@ -71,26 +71,21 @@ public:
     void
     set(ADUC_ClientHandle deviceHandleIn,
         const unsigned char* reportedStateIn,
-        size_t reportedStateLenIn,
+        size_t _reportedStateLenIn,
         IOTHUB_CLIENT_REPORTED_STATE_CALLBACK reportedStateCallbackIn,
         void* userContextCallbackIn)
     {
         deviceHandle = deviceHandleIn;
 
-        const size_t maxLen = sizeof(reportedState)/sizeof(reportedState[0]);
-        if (reportedStateLenIn >= maxLen) {
-            throw std::invalid_argument("reportedStateLenIn exceeded max length!");
-        }
-        memcpy(reportedState, reportedStateIn, reportedStateLenIn);
-        reportedState[reportedStateLenIn] = '\0';
+        reportedState = reinterpret_cast<const char*>(reportedStateIn);
+        reportedStateLen = reportedState.length();
 
-        reportedStateLen = reportedStateLenIn;
         reportedStateCallback = reportedStateCallbackIn;
         userContextCallback = userContextCallbackIn;
     }
 
     ADUC_ClientHandle deviceHandle{ nullptr };
-    unsigned char reportedState[1024]{}; /* The API treats this as a blob. */
+    std::string reportedState; /* The API treats this as a blob. */
     size_t reportedStateLen{ 0 };
     IOTHUB_CLIENT_REPORTED_STATE_CALLBACK reportedStateCallback{ nullptr };
     const void* userContextCallback{ nullptr };
@@ -193,8 +188,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
                 << R"(})"
              << R"(})";
         // clang-format on
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        CHECK_THAT(reinterpret_cast<const char*>(g_SendReportedStateValues.reportedState), Equals(strm.str()));
+        CHECK_THAT(g_SendReportedStateValues.reportedState, Equals(strm.str()));
         CHECK(g_SendReportedStateValues.reportedStateLen == strm.str().length());
 #else
         // clang-format off
@@ -209,9 +203,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
                 << R"(})"
              << R"(})";
         // clang-format on
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        CHECK_THAT(
-            reinterpret_cast<const char*>(g_SendReportedStateValues.reportedState), Matches(escaped(strm.str())));
+        CHECK_THAT(g_SendReportedStateValues.reportedState, Matches(escaped(strm.str())));
 #endif
         CHECK(g_SendReportedStateValues.reportedStateCallback != nullptr);
         CHECK(g_SendReportedStateValues.userContextCallback == nullptr);
@@ -240,8 +232,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
                 << R"(})"
              << R"(})";
         // clang-format on
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        CHECK_THAT(reinterpret_cast<const char*>(g_SendReportedStateValues.reportedState), Equals(strm.str()));
+        CHECK_THAT(g_SendReportedStateValues.reportedState), Equals(strm.str()));
         CHECK(g_SendReportedStateValues.reportedStateLen == strm.str().length());
 #else
         // clang-format off
@@ -256,9 +247,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
                 << R"(})"
              << R"(})";
         // clang-format on
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        CHECK_THAT(
-            reinterpret_cast<const char*>(g_SendReportedStateValues.reportedState), Matches(escaped(strm.str())));
+        CHECK_THAT(g_SendReportedStateValues.reportedState, Matches(escaped(strm.str())));
 #endif
         CHECK(g_SendReportedStateValues.reportedStateCallback != nullptr);
         CHECK(g_SendReportedStateValues.userContextCallback == nullptr);
@@ -301,8 +290,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportContentI
             << R"(})"
          << R"(})";
     // clang-format on
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    CHECK_THAT(reinterpret_cast<const char*>(g_SendReportedStateValues.reportedState), Equals(strm.str()));
+    CHECK_THAT(g_SendReportedStateValues.reportedState, Equals(strm.str()));
     CHECK(g_SendReportedStateValues.reportedStateLen == strm.str().length());
     CHECK(g_SendReportedStateValues.reportedStateCallback != nullptr);
     CHECK(g_SendReportedStateValues.userContextCallback == nullptr);
