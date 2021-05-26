@@ -400,7 +400,6 @@ const JSON_Status safe_json_serialize_to_file_pretty(const JSON_Value* value, co
 
 /**
  * @brief Persist specified installedCriteria in a file and mark its state as 'installed'.
- * NOTE: For private preview, only the last installedCriteria is persisted.
  * 
  * @param installedCriteriaFilePath A full path to installed criteria data file.
  * @param installedCriteria An installed criteria string.
@@ -455,6 +454,16 @@ AptHandlerImpl::PersistInstalledCriteria(const char* installedCriteriaFilePath, 
 /**
  * @brief Remove specified installedCriteria from installcriteria data file.
  *
+ * Note: it will remove duplicate installedCriteria entries.<br/>
+ * For example, only the baz array element would remain after a call with "bar" installedCriteria:<br/>
+ * \code
+ * [
+ *   {"installedCriteria": "bar", "state": "installed", "timestamp": "<time 1>"},
+ *   {"installedCriteria": "bar", "state": "installed", "timestamp": "<time 2>"},
+ *   {"installedCriteria": "baz", "state": "installed", "timestamp": "<time 3>"},
+ * ]
+ * \endcode
+ *
  * @param installedCriteriaFilePath A full path to installed criteria data file.
  * @param installedCriteria An installed criteria string.
  *
@@ -496,7 +505,12 @@ AptHandlerImpl::RemoveInstalledCriteria(const char* installedCriteriaFilePath, c
                         // Failed to remove.
                         success = false;
                     }
-                    break;
+
+                    if (!success)
+                    {
+                        break;
+                    }
+                    // otherwise, keep going to remove duplicates
                 }
             }
         }
