@@ -9,6 +9,7 @@ using Catch::Matchers::Equals;
 using Catch::Matchers::Matches;
 
 #include <sstream>
+#include <stdexcept>
 
 #include "aduc/adu_core_export_helpers.h"
 #include "aduc/adu_core_exports.h"
@@ -70,7 +71,12 @@ public:
     {
         deviceHandle = deviceHandleIn;
 
+        const size_t maxLen = sizeof(reportedState)/sizeof(reportedState[0]);
+        if (reportedStateLenIn >= maxLen) {
+            throw std::invalid_argument("reportedStateLenIn exceeded max length!");
+        }
         memcpy(reportedState, reportedStateIn, reportedStateLenIn);
+        reportedState[reportedStateLenIn] = '\0';
 
         reportedStateLen = reportedStateLenIn;
         reportedStateCallback = reportedStateCallbackIn;
