@@ -400,7 +400,6 @@ const JSON_Status safe_json_serialize_to_file_pretty(const JSON_Value* value, co
 
 /**
  * @brief Persist specified installedCriteria in a file and mark its state as 'installed'.
- * NOTE: For private preview, only the last installedCriteria is persisted.
  * 
  * @param installedCriteriaFilePath A full path to installed criteria data file.
  * @param installedCriteria An installed criteria string.
@@ -455,8 +454,18 @@ AptHandlerImpl::PersistInstalledCriteria(const char* installedCriteriaFilePath, 
 /**
  * @brief Remove specified installedCriteria from installcriteria data file.
  *
+ * Note: it will remove duplicate installedCriteria entries.<br/>
+ * For example, only the baz array element would remain after a call with "bar" installedCriteria:<br/>
+ * \code
+ * [
+ *   {"installedCriteria": "bar", "state": "installed", "timestamp": "<time 1>"},
+ *   {"installedCriteria": "bar", "state": "installed", "timestamp": "<time 2>"},
+ *   {"installedCriteria": "baz", "state": "installed", "timestamp": "<time 3>"},
+ * ]
+ * \endcode
+ *
  * @param installedCriteriaFilePath A full path to installed criteria data file.
- * @param installedCriteria An installed criteria string.
+ * @param installedCriteria An installed criteria string. Case-sensitive match is used.
  *
  * @return bool 'True' if the specified installedCriteria doesn't exist, file doesn't exist, or removed successfully.
  */
@@ -464,7 +473,7 @@ const bool
 AptHandlerImpl::RemoveInstalledCriteria(const char* installedCriteriaFilePath, const std::string& installedCriteria)
 {
     bool success = true;
-    JSON_Status status;
+    bool mutated = false;
 
     std::ifstream dataFile(installedCriteriaFilePath);
     if (!dataFile.good())
@@ -486,19 +495,23 @@ AptHandlerImpl::RemoveInstalledCriteria(const char* installedCriteriaFilePath, c
                 if (installedCriteria == id)
                 {
                     JSON_Status deleted = json_array_remove(icArray, i - 1);
-                    if (deleted == JSONSuccess)
-                    {
-                        JSON_Status saved = safe_json_serialize_to_file_pretty(rootValue, installedCriteriaFilePath);
-                        success = (saved == JSONSuccess);
-                    }
-                    else
+                    if (deleted != JSONSuccess)
                     {
                         // Failed to remove.
                         success = false;
+                        break;
                     }
-                    break;
+
+                    // otherwise, keep going to remove duplicates
+                    mutated = true;
                 }
             }
+        }
+
+        if (success && mutated)
+        {
+            JSON_Status saved = safe_json_serialize_to_file_pretty(rootValue, installedCriteriaFilePath);
+            success = (saved == JSONSuccess);
         }
 
         json_value_free(rootValue);
