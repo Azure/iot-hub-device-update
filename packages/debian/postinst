@@ -143,9 +143,11 @@ case "$1" in
         # which is one of the dependencies declared in adu-agent control file.
         # We are assuming that both DO user and group currently exist at this point.
         # Add 'do' user to 'adu' group to allow DO to write to ADU download sandbox.
-        echo "Add the 'do' user to the 'adu' group."
+        echo "Add the 'do' user to the 'adu' group and 'adu' to the 'do' group"
         if getent passwd 'do' > /dev/null; then
             usermod -aG 'adu' 'do'
+            # Note: We must add the 'adu' user to the 'do' group so that we can set the connection_string for DO
+            usermod -aG 'do' 'adu'
 
             # Restart deliveryoptimization-agent service to ensure that the new 'do' user's groups take effect.
             echo "Restart $ms_doclient_lite_service"
