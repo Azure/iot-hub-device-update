@@ -5,6 +5,7 @@
  */
 
 #include <aduc/adu_types.h>
+#include <aduc/connection_string_utils.h>
 #include <aduc/logging.h>
 #include <stdlib.h>
 #include <string.h>
@@ -70,9 +71,9 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
         return ADUC_ConnType_NotSet;
     }
 
-    if (strstr(connectionString, "DeviceId=") != NULL)
+    if (ConnectionStringUtils_DoesKeyExist(connectionString, "DeviceId"))
     {
-        if (strstr(connectionString, "ModuleId=") != NULL)
+        if (ConnectionStringUtils_DoesKeyExist(connectionString, "ModuleId"))
         {
             result = ADUC_ConnType_Module;
         }
@@ -83,8 +84,7 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
     }
     else
     {
-        Log_Debug(
-            "Connection string passed to GetConnTypeFromConnectionString does not contain a DeviceId or ModuleId value");
+        Log_Debug("DeviceId not present in connection string.");
     }
 
     return result;

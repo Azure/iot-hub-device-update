@@ -18,6 +18,7 @@
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
 #ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
+#    include "aduc/connection_string_utils.h"
 #    include <do_config.h>
 #endif
 #include <getopt.h>
@@ -754,14 +755,15 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 #ifndef ADUC_PLATFORM_SIMULATOR
     // The connection string is valid (IoT hub connection successful) and we are ready for further processing.
     // Send connection string to DO SDK for it to discover the Edge gateway if present.
-    // Don't care about failures since we can't do much here - can't report it and
-    // failing the agent startup is not desirable. Impact of failure can be seen
-    // later when the download fails and we can investigate through logs.
+    if (ConnectionStringUtils_IsNestedEdge(info.connectionString))
     {
         const int result = deliveryoptimization_set_iot_connection_string(info.connectionString);
         if (result != 0)
         {
-            Log_Warn("Failed to pass connection string to DO, error: %d", result);
+            // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
+            // fail the startup.
+            Log_Error("Failed to set DO connection string in Nested Edge scenario, result: %d", result);
+            goto done;
         }
     }
 #endif

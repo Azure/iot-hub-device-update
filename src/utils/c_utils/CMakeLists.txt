@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.5)
 
 set (target_name c_utils)
 
-add_library (${target_name} STATIC src/string_c_utils.c)
+add_library (${target_name} STATIC src/string_c_utils.c src/connection_string_utils.c)
 add_library (aduc::${target_name} ALIAS ${target_name})
 
 find_package (azure_c_shared_utility REQUIRED)
