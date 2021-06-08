@@ -39,7 +39,7 @@ $importManifest = New-AduImportManifest `
 $importManifest | Out-File '.\importManifest.json' -Encoding UTF8
 ```
 
-The sample commands above will produce the following import manifest (note that **sizeInbytes** and **sha256** will vary based on the actual files used):
+The sample commands above will produce the following import manifest (note that `sizeInbytes` and `sha256` will vary based on the actual files used):
 
 ```json
 {
@@ -123,7 +123,7 @@ To import an update to ADU using REST API
         -DeviceCode
     ```
 
-    **Note**: `MSAL.PS` cannot be loaded into the same session as `AzPowershell` due to an [unresolved issue](https://github.com/AzureAD/MSAL.PS/issues/32). To workaround that, use them from separate PowerShell sessions.
+    **Note**: `MSAL.PS` cannot be loaded into the same session as `AzPowershell` due to an [unresolved issue](https://github.com/AzureAD/MSAL.PS/issues/32). For workaround, use them in separate PowerShell sessions.
 
 5. `ImportSampleBundleUpdate.ps1` script contains the sample code for creating a bundle update, and importing it to ADU using
 REST API. The update uses this README file as a payload and cannot actually be installed to a device.
@@ -166,7 +166,7 @@ Bash script `create-adu-import-manifest.sh` can be used to create an *import man
 ./create-adu-import-manifest.sh -p 'Microsoft' -n 'Toaster' -v '2.0' -t 'microsoft/swupdate:1' -i '5' -c Fabrikam,Toaster -c Contoso,Toaster ./file1.json ./file2.zip
 ```
 
-The sample commands above will produce the following import manifest (note that **sizeInbytes** and **sha256** will vary based on the actual files used):
+The sample commands above will produce the following import manifest (note that `sizeInbytes` and `sha256` will vary based on the actual files used):
 
 ```json
 {
