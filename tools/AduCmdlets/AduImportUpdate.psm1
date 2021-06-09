@@ -4,10 +4,7 @@
 # Copyright (c) Microsoft Corporation.
 #
 
-# Import classes from AduUpdate module.
-# $scriptBody = "using module $PSScriptRoot\AduUpdate.psm1"
-# $script = [ScriptBlock]::Create($scriptBody)
-# . $script
+#Requires -Version 5.0
 using module .\AduUpdate.psm1
 Import-Module $PSScriptRoot\AduAzStorageBlobHelper.psm1 -ErrorAction Stop
 
