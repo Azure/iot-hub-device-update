@@ -22,7 +22,7 @@ GET https://{account}.api.adu.microsoft.com/deviceupdate/{instance}/v2/updates/p
 
 | Name | Required | Description |
 | --------- | --------- | --------- | --------- | --------- |
-| Authorization | True | OAuth2 header containing the caller’s AAD token. |
+| Authorization | True | OAuth2 header containing the caller's AAD token. |
 
 Permissions </br>
 To call this API, the caller must supply a valid AAD token from the Azure tenant associated with the requested ADU account and instance. The AAD account must be a member of the ADU FullAccessAdmin role.

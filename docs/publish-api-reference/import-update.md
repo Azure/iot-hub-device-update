@@ -20,7 +20,7 @@ POST https://{account}.api.adu.microsoft.com/deviceupdate/{instance}/v2/updates?
 
 | Name | Required | Description |
 | --------- | --------- | --------- |
-| Authorization | True | OAuth2 header containing the caller’s AAD token. |
+| Authorization | True | OAuth2 header containing the caller's AAD token. |
 | If-None-Match | False | ETag of previously returned Update entity, for making conditional request. |
 
 **Permissions** <br/>

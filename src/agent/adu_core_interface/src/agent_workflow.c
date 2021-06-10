@@ -7,74 +7,7 @@
  * If we are, we'll call an upper-level method to do the work.
  * If not, we'll fail the request.
  *
- *                    ┌───┐                                     ┌──────┐
- *                    │CBO│                                     │Client│
- *                    └─┬─┘                                     └──┬───┘
- *                      │          UpdateAction: Download          │
- *                      │ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─>
- *                      │                                          │
- *                      │                                          │────┐
- *                      │                                          │    │ DownloadStarted (Internal Client State)
- *                      │                                          │<───┘
- *                      │                                          │
- *                      │                                          │────┐
- *                      │                                          │    │ Download content
- *                      │                                          │<───┘
- *                      │                                          │
- *                      │                                          │
- *          ╔══════╤════╪══════════════════════════════════════════╪═════════════╗
- *          ║ ALT  │  Successful Download                          │             ║
- *          ╟──────┘    │                                          │             ║
- *          ║           │      UpdateState: DownloadSucceeded      │             ║
- *          ║           │<──────────────────────────────────────────             ║
- *          ╠═══════════╪══════════════════════════════════════════╪═════════════╣
- *          ║ [Failed Download]                                    │             ║
- *          ║           │           UpdateState: Failed            │             ║
- *          ║           │<──────────────────────────────────────────             ║
- *          ║           │                                          │             ║
- *          ║           │           UpdateAction: Cancel           │             ║
- *          ║           │ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─>             ║
- *          ║           │                                          │             ║
- *          ║           │            UpdateState: Idle             │             ║
- *          ║           │<──────────────────────────────────────────             ║
- *          ╠═══════════╪══════════════════════════════════════════╪═════════════╣
- *          ║ [Cancel received during "Download content"]          │             ║
- *          ║           │            UpdateState: Idle             │             ║
- *          ║           │<──────────────────────────────────────────             ║
- *          ╚═══════════╪══════════════════════════════════════════╪═════════════╝
- *                      │                                          │
- *                      │          UpdateAction: Install           │
- *                      │ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─>
- *                      │                                          │
- *                      │                                          │────┐
- *                      │                                          │    │ InstallStarted (Internal Client State)
- *                      │                                          │<───┘
- *                      │                                          │
- *                      │                                          │────┐
- *                      │                                          │    │ Install content
- *                      │                                          │<───┘
- *                      │                                          │
- *                      │UpdateState: InstallSucceeded (on success)│
- *                      │<──────────────────────────────────────────
- *                      │                                          │
- *                      │           UpdateAction: Apply            │
- *                      │ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─>
- *                      │                                          │
- *                      │                                          │────┐
- *                      │                                          │    │ ApplyStarted (Internal Client State)
- *                      │                                          │<───┘
- *                      │                                          │
- *                      │                                          │────┐
- *                      │                                          │    │ Apply content
- *                      │                                          │<───┘
- *                      │                                          │
- *                      │      UpdateState: Idle (on success)      │
- *                      │<──────────────────────────────────────────
- *                    ┌─┴─┐                                     ┌──┴───┐
- *                    │CBO│                                     │Client│
- *                    └───┘                                     └──────┘
- *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) 2021, Microsoft Corp.
  */
 #include "aduc/agent_workflow.h"
 

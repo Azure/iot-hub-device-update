@@ -291,7 +291,7 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
         // Add to zlog buffer.
         char* buffer = zlog_lock_and_get_buffer();
 
-        // "%.400s" avoids error: ‘%s’ directive output may be truncated writing up to 511 bytes into
+        // "%.400s" avoids error: '%s' directive output may be truncated writing up to 511 bytes into
         // a region of size between 444 and 507 [-Werror=format-truncation=]
         (void)snprintf(
             buffer,

@@ -102,9 +102,9 @@ std::unique_ptr<AptContent> GetAptContentFromRootValue(JSON_Value* rootValue)
             }
 
             // NOTE: Version is optional.
-            // We don’t do any parsing of the package version string here.
+            // We don't do any parsing of the package version string here.
             // Customer need to specify exact string that match the version they want.
-            // If we can’t find a package with specified version, we’ll fail during download.
+            // If we can't find a package with specified version, we'll fail during download.
             const char* version = json_object_get_string(package, "version");
             if (version != nullptr)
             {
