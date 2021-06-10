@@ -5,7 +5,6 @@
  * @copyright Copyright (c) 2021, Microsoft Corp.
  */
 #include <catch2/catch.hpp>
-using Catch::Matchers::Equals;
 
 #include "aduc/connection_string_utils.h"
 #include <aduc/c_utils.h> // ARRAY_SIZE
@@ -18,7 +17,7 @@ TEST_CASE("ConnectionStringUtils_DoesKeyExist")
 
 TEST_CASE("ConnectionStringUtils_GetValue_badoutarg")
 {
-    CHECK_FALSE(ConnectionStringUtils_GetValue("a=1;c=2", "b", NULL /*value*/));
+    CHECK_FALSE(ConnectionStringUtils_GetValue("a=1;c=2", "b", nullptr /*value*/));
 }
 
 TEST_CASE("ConnectionStringUtils_GetValue_key_missing")
@@ -26,21 +25,21 @@ TEST_CASE("ConnectionStringUtils_GetValue_key_missing")
     char someChar = 'c';
     char* value = &someChar;
     CHECK(ConnectionStringUtils_GetValue("a=1;c=2", "b", &value));
-    CHECK(value == NULL);
+    CHECK(value == nullptr);
 }
 
 TEST_CASE("ConnectionStringUtils_GetValue_key_exists")
 {
-    char* value = NULL;
-    CHECK(ConnectionStringUtils_GetValue("a=1;c=2", "c", &value));
-    CHECK(value != NULL);
-    CHECK(std::string(value) == "2");
+    char* ptr;
+    CHECK(ConnectionStringUtils_GetValue("a=1;c=2", "c", &ptr));
+    std::unique_ptr<char, decltype(&free)> managed(ptr, free);
+    ptr = nullptr;
 
-    // cleanup
-    free(reinterpret_cast<void*>(value));
+    CHECK(managed != nullptr);
+    CHECK(std::string("2") == std::string(managed.get()));
 }
 
-TEST_CASE("ConnectionStringUtils_IsNestedEdge NULL connection string returns false")
+TEST_CASE("ConnectionStringUtils_IsNestedEdge nullptr connection string returns false")
 {
     // Not included in [generators] test because it will throw basic_string::_M_construct null not valid
     CHECK_FALSE(ConnectionStringUtils_IsNestedEdge(nullptr));

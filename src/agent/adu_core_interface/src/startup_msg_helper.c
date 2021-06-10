@@ -89,10 +89,8 @@ static _Bool DeviceProperties_AddManufacturerAndModel(JSON_Object* devicePropsOb
 {
     bool success = false;
 
-    char* manufacturer = NULL;
     char* model = NULL;
-
-    manufacturer = DeviceProperties_GetManufacturer();
+    char* manufacturer = DeviceProperties_GetManufacturer();
 
     if (manufacturer == NULL)
     {

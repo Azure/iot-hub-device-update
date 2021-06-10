@@ -10,7 +10,8 @@
 #include "mock_do_download.hpp"
 #include "mock_do_download_status.hpp"
 #include "mock_do_exceptions.hpp"
-namespace msdo = microsoft::deliveryoptimization;
+// TODO(shiyipeng): Bug 28605123: Download UT's require DO to download for hash checks
+// namespace msdo = microsoft::deliveryoptimization;
 
 #include <aduc/adu_core_exports.h>
 #include <aduc/system_utils.h>
@@ -182,17 +183,20 @@ TEST_CASE("Download content")
     REQUIRE(pthread_mutex_init(&downloadMutex, nullptr) == 0);
     REQUIRE(pthread_cond_init(&downloadCompletedCond, nullptr) == 0);
 
-    char updateType[] = "microsoft/apt:1";
+    // TODO(shiyipeng): Bug 28605123: Download UT's require DO to download for hash checks
+    // char updateType[] = "microsoft/apt:1";
     const size_t MAX_WORKFLOWID{ 13 };
     char workflowId[MAX_WORKFLOWID];
 
-    ADUC_WorkCompletionData workflowCompletionData = { mockWorkCompletionCallback };
+    // TODO(shiyipeng): Bug 28605123: Download UT's require DO to download for hash checks
+    // ADUC_WorkCompletionData workflowCompletionData = { mockWorkCompletionCallback };
 
     GenerateUniqueId(workflowId, sizeof(workflowId) / sizeof(workflowId[0]));
 
     // Setup test
     ADUC_RegisterData registerData = {};
-    ADUC_DownloadInfo downloadInfo = {};
+    // TODO(shiyipeng): Bug 28605123: Download UT's require DO to download for hash checks
+    // ADUC_DownloadInfo downloadInfo = {};
 
     // Register
     ADUC_Result result = ADUC_Register(&registerData, 0, nullptr);

@@ -473,7 +473,6 @@ const bool
 AptHandlerImpl::RemoveInstalledCriteria(const char* installedCriteriaFilePath, const std::string& installedCriteria)
 {
     bool success = true;
-    bool mutated = false;
 
     std::ifstream dataFile(installedCriteriaFilePath);
     if (!dataFile.good())
@@ -485,6 +484,7 @@ AptHandlerImpl::RemoveInstalledCriteria(const char* installedCriteriaFilePath, c
     JSON_Value* rootValue = json_parse_file(installedCriteriaFilePath);
     if (rootValue != nullptr)
     {
+        bool mutated = false;
         JSON_Array* icArray = json_value_get_array(rootValue);
         for (size_t i = json_array_get_count(icArray); i > 0; i--)
         {

@@ -414,7 +414,7 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char** wor
 
     // Try to delete existing directory.
     int dir_result;
-    struct stat sb;
+    struct stat sb = {};
     if (stat(folderName.str().c_str(), &sb) == 0 && S_ISDIR(sb.st_mode))
     {
         dir_result = ADUC_SystemUtils_RmDirRecursive(folderName.str().c_str());

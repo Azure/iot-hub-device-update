@@ -25,9 +25,19 @@ struct JSONValueDeleter
 class InstalledCriteriaPersistence
 {
 public:
+    InstalledCriteriaPersistence() = default;
+    InstalledCriteriaPersistence(const InstalledCriteriaPersistence&) = delete;
+    InstalledCriteriaPersistence& operator=(const InstalledCriteriaPersistence&) = delete;
+    InstalledCriteriaPersistence(InstalledCriteriaPersistence&&) = delete;
+    InstalledCriteriaPersistence& operator=(InstalledCriteriaPersistence&&) = delete;
     ~InstalledCriteriaPersistence()
     {
         remove(ADUC_INSTALLEDCRITERIA_FILE_PATH);
+    }
+
+    void RemoveAll()
+    {
+        AptHandlerImpl::RemoveAllInstalledCriteria();
     }
 };
 
@@ -253,7 +263,8 @@ TEST_CASE("APT Handler update apt-doc tests", "[!hide][functional_test]")
 TEST_CASE("APT_Handler_IsInstalled_test")
 {
     InstalledCriteriaPersistence persistence; // remove installed criteria file on destruction.
-    AptHandlerImpl::RemoveAllInstalledCriteria();
+    persistence.RemoveAll();
+
     // Persist foo
     const char* installedCriteria_foo = "contoso-iot-edge-6.1.0.19";
     ADUC_Result isInstalled = AptHandlerImpl::GetIsInstalled(ADUC_INSTALLEDCRITERIA_FILE_PATH, installedCriteria_foo);
@@ -294,7 +305,7 @@ TEST_CASE("APT_Handler_IsInstalled_test")
 TEST_CASE("APT_Handler_RemoveIsInstalledWhenEmpty")
 {
     InstalledCriteriaPersistence persistence; // remove installed criteria file on destruction.
-    AptHandlerImpl::RemoveAllInstalledCriteria();
+    persistence.RemoveAll();
 
     // Remove should succeeded despite no elements in json array.
     const char* installedCriteria_foo = "contoso-iot-edge-6.1.0.19";
@@ -305,7 +316,7 @@ TEST_CASE("APT_Handler_RemoveIsInstalledWhenEmpty")
 TEST_CASE("APT_Handler_RemoveIsInstalledWhenNoMatch")
 {
     InstalledCriteriaPersistence persistence; // remove installed criteria file on destruction.
-    AptHandlerImpl::RemoveAllInstalledCriteria();
+    persistence.RemoveAll();
 
     const char* installedCriteria_foo = "contoso-iot-edge-6.1.0.19";
     bool persisted = AptHandlerImpl::PersistInstalledCriteria(ADUC_INSTALLEDCRITERIA_FILE_PATH, installedCriteria_foo);
@@ -320,7 +331,7 @@ TEST_CASE("APT_Handler_RemoveIsInstalledWhenNoMatch")
 TEST_CASE("APT_Handler_RemoveIsInstalledTwice_test")
 {
     InstalledCriteriaPersistence persistence; // remove installed criteria file on destruction.
-    AptHandlerImpl::RemoveAllInstalledCriteria();
+    persistence.RemoveAll();
 
     // Ensure foo doesn't exist.
     const char* installedCriteria_foo = "contoso-iot-edge-6.1.0.19";
@@ -347,7 +358,7 @@ TEST_CASE("APT_Handler_RemoveIsInstalledTwice_test")
 TEST_CASE("APT_Handler_RemoveInstalledCriteriaShouldRemoveDuplicates")
 {
     InstalledCriteriaPersistence persistence; // remove installed criteria file on destruction.
-    AptHandlerImpl::RemoveAllInstalledCriteria();
+    persistence.RemoveAll();
 
     const char* installedCriteria_contoso = "contoso-iot-edge-6.1.0.19";
 
@@ -388,7 +399,7 @@ TEST_CASE("APT_Handler_RemoveInstalledCriteriaShouldRemoveDuplicatesAndSkipNonMa
     const char* installedCriteria_bar = "bar.1.0.1";
 
     InstalledCriteriaPersistence persistence; // remove installed criteria file on destruction.
-    AptHandlerImpl::RemoveAllInstalledCriteria();
+    persistence.RemoveAll();
 
     // Persist foo
     bool persisted = AptHandlerImpl::PersistInstalledCriteria(ADUC_INSTALLEDCRITERIA_FILE_PATH, installedCriteria_foo);

@@ -45,7 +45,7 @@ ADUShellTaskResult Reboot(const ADUShell_LaunchArguments& /*launchArgs*/)
 ADUShellTaskResult DoCommonTask(const ADUShell_LaunchArguments& launchArgs)
 {
     ADUShellTaskResult taskResult;
-    ADUShellTaskFuncType taskProc = NULL;
+    ADUShellTaskFuncType taskProc = nullptr;
 
     try
     {
