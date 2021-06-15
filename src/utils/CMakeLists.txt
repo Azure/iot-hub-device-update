@@ -1,10 +1,12 @@
 cmake_minimum_required (VERSION 3.5)
 
 add_subdirectory (c_utils)
+add_subdirectory (config_utils)
 add_subdirectory (crypto_utils)
 add_subdirectory (eis_utils)
 add_subdirectory (exception_utils)
 add_subdirectory (hash_utils)
+add_subdirectory (parson_json_utils)
 add_subdirectory (jws_utils)
 add_subdirectory (process_utils)
 add_subdirectory (string_utils)

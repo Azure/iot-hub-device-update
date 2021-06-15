@@ -15,10 +15,7 @@
 #include <aduc/c_utils.h>
 #include <aduc/logging.h>
 #include <jws_utils.h>
-
-_Bool ADUC_JSON_GetStringField(const JSON_Value* updateActionJson, const char* jsonFieldName, char** value);
-
-const char* ADUC_JSON_GetStringFieldPtr(const JSON_Value* updateActionJson, const char* jsonFieldName);
+#include <parson_json_utils.h>
 
 _Bool ADUC_JSON_GetUpdateManifestStringField(
     const JSON_Value* updateActionJson, const char* jsonFieldName, char** value);
@@ -398,72 +395,6 @@ done:
 _Bool ADUC_Json_GetUpdateType(const JSON_Value* updateActionJson, char** updateTypeStr)
 {
     return ADUC_JSON_GetUpdateManifestStringField(updateActionJson, ADUCITF_FIELDNAME_UPDATETYPE, updateTypeStr);
-}
-
-/**
- * @brief Gets a string field from the update action JSON.
- *
- * @param updateActionJson The update action JSON.
- * @param jsonFieldName The name of the JSON field to get.
- * @param value The buffer to fill with the value from the JSON field. Caller must call free().
- * @return _Bool true if call succeeded. false otherwise.
- */
-_Bool ADUC_JSON_GetStringField(const JSON_Value* updateActionJson, const char* jsonFieldName, char** value)
-{
-    _Bool succeeded = false;
-
-    *value = NULL;
-
-    JSON_Object* root_object = json_value_get_object(updateActionJson);
-    if (root_object == NULL)
-    {
-        goto done;
-    }
-
-    const char* value_val = json_object_get_string(root_object, jsonFieldName);
-    if (value_val == NULL)
-    {
-        goto done;
-    }
-
-    if (mallocAndStrcpy_s(value, value_val) != 0)
-    {
-        goto done;
-    }
-
-    succeeded = true;
-
-done:
-    if (!succeeded)
-    {
-        if (*value != NULL)
-        {
-            free(*value);
-            *value = NULL;
-        }
-    }
-
-    return succeeded;
-}
-
-/**
- * @brief Returns the pointer to the @p jsonFieldName from the JSON_Value
- * @details if @p updateActionJson is free this value will become invalid
- * @param updateActionJson The update action JSON
- * @param jsonFieldName The name of the JSON field to get
- * @return on success a pointer to the string value of @p jsonFieldName, on failure NULL
- *
- */
-const char* ADUC_JSON_GetStringFieldPtr(const JSON_Value* updateActionJson, const char* jsonFieldName)
-{
-    JSON_Object* object = json_value_get_object(updateActionJson);
-
-    if (object == NULL)
-    {
-        return NULL;
-    }
-
-    return json_object_get_string(object, jsonFieldName);
 }
 
 /**

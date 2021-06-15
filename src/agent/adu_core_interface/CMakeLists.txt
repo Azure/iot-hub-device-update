@@ -25,7 +25,9 @@ target_link_libraries (
            aduc::c_utils
            aduc::communication_abstraction
            Parson::parson
-    PRIVATE aduc::hash_utils
+    PRIVATE aduc::config_utils
+            aduc::hash_utils
+            aduc::parson_json_utils
             aduc::jws_utils
             aduc::logging
             aduc::platform_layer

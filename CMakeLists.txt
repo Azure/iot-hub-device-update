@@ -96,7 +96,7 @@ set (
 
 set (
     ADUC_CONF_FILE
-    "adu-conf.txt"
+    "du-config.json"
     CACHE STRING "Name of the ADU Agent configuration file.")
 
 set (

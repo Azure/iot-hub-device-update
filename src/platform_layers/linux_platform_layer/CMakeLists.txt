@@ -16,13 +16,14 @@ target_include_directories (${target_name} PUBLIC ${ADUC_EXPORT_INCLUDES})
 
 target_link_libraries (
     ${target_name}
-    PRIVATE aduc::content_handlers
-            aduc::c_utils
-            aduc::string_utils
+    PRIVATE aduc::c_utils
+            aduc::config_utils
+            aduc::content_handlers
             aduc::exception_utils
             aduc::hash_utils
             aduc::logging
             aduc::process_utils
+            aduc::string_utils
             aduc::string_utils
             aduc::system_utils)
 

@@ -67,13 +67,14 @@ target_link_libraries (
             IotHubClient::iothub_client
             iothub_client_mqtt_transport
             umqtt
-            aduc::pnp_helper
             aduc::adu_core_interface
             aduc::c_utils
             aduc::communication_abstraction
+            aduc::config_utils
             aduc::device_info_interface
-            aduc::logging
             aduc::eis_utils
+            aduc::logging
+            aduc::pnp_helper
             aduc::system_utils)
 
 get_filename_component (

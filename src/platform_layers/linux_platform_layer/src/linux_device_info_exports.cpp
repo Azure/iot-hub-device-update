@@ -16,6 +16,7 @@
 #include <sys/sysinfo.h> // sysinfo
 #include <sys/utsname.h> // uname
 
+#include <aduc/config_utils.h>
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
 #include <aduc/string_utils.hpp>
@@ -39,11 +40,12 @@ static char* DeviceInfo_GetManufacturer()
     }
 
     char* result = nullptr;
-    char manufacturer[1024];
 
-    if (ReadDelimitedValueFromFile(ADUC_CONF_FILE_PATH, "manufacturer", manufacturer, ARRAY_SIZE(manufacturer)))
+    // TODO(shiyipeng): Bug 33652090: Potential performance improvement on DeviceInfo_GetManufacturer/Model
+    ADUC_ConfigInfo config = {};
+    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.manufacturer != NULL)
     {
-        result = strdup(manufacturer);
+        result = strdup(config.manufacturer);
     }
     else
     {
@@ -52,6 +54,8 @@ static char* DeviceInfo_GetManufacturer()
     }
 
     valueIsDirty = false;
+done:
+    ADUC_ConfigInfo_UnInit(&config);
     return result;
 }
 
@@ -72,11 +76,12 @@ static char* DeviceInfo_GetModel()
     }
 
     char* result = nullptr;
-    char model[1024];
 
-    if (ReadDelimitedValueFromFile(ADUC_CONF_FILE_PATH, "model", model, ARRAY_SIZE(model)))
+    //TODO(shiyipeng): Bug 33652090: Potential performance improvement on DeviceInfo_GetManufacturer/Model
+    ADUC_ConfigInfo config = {};
+    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.model != NULL)
     {
-        result = strdup(model);
+        result = strdup(config.model);
     }
     else
     {
@@ -85,6 +90,8 @@ static char* DeviceInfo_GetModel()
     }
 
     valueIsDirty = false;
+done:
+    ADUC_ConfigInfo_UnInit(&config);
     return result;
 }
 

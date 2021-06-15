@@ -9,6 +9,7 @@
 #include "aduc/adu_types.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
+#include "aduc/config_utils.h"
 #include "aduc/device_info_interface.h"
 #include "aduc/health_management.h"
 #include "aduc/logging.h"
@@ -35,22 +36,18 @@
 
 #include "pnp_protocol.h"
 
-#ifdef ADUC_PROVISION_WITH_EIS
-
-#    include "eis_utils.h"
+#include "eis_utils.h"
 
 /**
  * @brief The timeout for the Edge Identity Service HTTP requests
  */
-#    define EIS_PROVISIONING_TIMEOUT 2000
+#define EIS_PROVISIONING_TIMEOUT 2000
 
-#    define SECONDS_IN_MONTH (30 /* day/mo */ * 24 /* hr/day */ * 60 /* min/hr */ * 60 /*sec/min */)
+#define SECONDS_IN_MONTH (30 /* day/mo */ * 24 /* hr/day */ * 60 /* min/hr */ * 60 /*sec/min */)
 /**
  * @brief Time after startup the connection string will be provisioned for by the Edge Identity Service
  */
-#    define EIS_TOKEN_EXPIRY_TIME (3 * SECONDS_IN_MONTH)
-
-#endif
+#define EIS_TOKEN_EXPIRY_TIME (3 * SECONDS_IN_MONTH)
 
 /**
  * @brief The Device Twin Model Identifier.
@@ -601,25 +598,26 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
     return result;
 }
 
-_Bool GetConnectionInfoFromADUConfigFile(ADUC_ConnectionInfo* info)
+/**
+ * @brief Get the Connection Info from connection string, if a connection string is provided in configuration file
+ * 
+ * @return true if connection info can be obtained
+ */
+_Bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString)
 {
     _Bool succeeded = false;
     if (info == NULL)
     {
         goto done;
     }
-    memset(info, 0, sizeof(*info));
-
-    char connectionString[1024];
-    char certificateString[8192];
-    char certificatePath[1024];
-
-    if (!ReadDelimitedValueFromFile(
-            ADUC_CONF_FILE_PATH, "connection_string", connectionString, ARRAY_SIZE(connectionString)))
+    if (connectionString == NULL)
     {
-        Log_Error("Unable to read connection string from configuration file");
         goto done;
     }
+
+    memset(info, 0, sizeof(*info));
+
+    char certificateString[8192];
 
     if (mallocAndStrcpy_s(&info->connectionString, connectionString) != 0)
     {
@@ -637,12 +635,12 @@ _Bool GetConnectionInfoFromADUConfigFile(ADUC_ConnectionInfo* info)
     info->authType = ADUC_AuthType_SASToken;
 
     // Optional: The certificate string is needed for Edge Gateway connection.
-    if (ReadDelimitedValueFromFile(
-            ADUC_CONF_FILE_PATH, "edgegateway_cert_path", certificatePath, ARRAY_SIZE(certificatePath)))
+    ADUC_ConfigInfo config = {};
+    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.edgegatewayCertPath != NULL)
     {
-        if (!LoadBufferWithFileContents(certificatePath, certificateString, ARRAY_SIZE(certificateString)))
+        if (!LoadBufferWithFileContents(config.edgegatewayCertPath, certificateString, ARRAY_SIZE(certificateString)))
         {
-            Log_Error("Failed to read the certificate from path: %s", certificatePath);
+            Log_Error("Failed to read the certificate from path: %s", config.edgegatewayCertPath);
             goto done;
         }
 
@@ -658,10 +656,15 @@ _Bool GetConnectionInfoFromADUConfigFile(ADUC_ConnectionInfo* info)
     succeeded = true;
 
 done:
+    ADUC_ConfigInfo_UnInit(&config);
     return succeeded;
 }
 
-#ifdef ADUC_PROVISION_WITH_EIS
+/**
+ * @brief Get the Connection Info from Identity Service
+ * 
+ * @return true if connection info can be obtained
+ */
 _Bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
 {
     _Bool succeeded = false;
@@ -692,7 +695,6 @@ done:
 
     return succeeded;
 }
-#endif // ADUC_PROVISION_WITH_EIS
 
 /**
  * @brief Handles the startup of the agent 
@@ -705,7 +707,9 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 {
     _Bool succeeded = false;
 
-    ADUC_ConnectionInfo info = { ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, NULL, NULL, NULL, NULL };
+    ADUC_ConnectionInfo info = {};
+
+    ADUC_ConfigInfo config = {};
 
     if (launchArgs->connectionString != NULL)
     {
@@ -728,22 +732,37 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     }
     else
     {
-#ifndef ADUC_PROVISION_WITH_EIS
-        if (!GetConnectionInfoFromADUConfigFile(&info))
+        if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
         {
+            Log_Error("No connnection string set from launch arguments or configuration file");
             goto done;
         }
-#else
-        if (!GetConnectionInfoFromIdentityService(&info))
+        //TODO(Nox): [MCU work in progress] Currently only supporting one agent (host device), so only reading the first agent
+        //in the configuration file. Later it will fork different processes to process multiple agents.
+        const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(&config, 0);
+        if (agent == NULL)
         {
-            Log_Info("Failed to get connection information from AIS. Defaulting to configuration file");
-
-            if (!GetConnectionInfoFromADUConfigFile(&info))
+            Log_Error("ADUC_ConfigInfo_GetAgent failed to get the agent information.");
+        }
+        if (strcmp(agent->connectionType, "AIS") == 0)
+        {
+            if (!GetConnectionInfoFromIdentityService(&info))
+            {
+                Log_Error("Failed to get connection information from AIS.");
+            }
+        }
+        else if (strcmp(agent->connectionType, "string") == 0)
+        {
+            if (!GetConnectionInfoFromConnectionString(&info, agent->connectionData))
             {
                 goto done;
             }
         }
-#endif
+        else
+        {
+            Log_Error("The connection type %s is not supported", agent->connectionType);
+            goto done;
+        }
 
         if (!ADUC_DeviceClient_Create(&info, launchArgs))
         {
@@ -773,7 +792,7 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 done:
 
     ADUC_ConnectionInfo_DeAlloc(&info);
-
+    ADUC_ConfigInfo_UnInit(&config);
     return succeeded;
 }
 
