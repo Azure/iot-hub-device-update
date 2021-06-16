@@ -53,7 +53,7 @@ function New-AduImportUpdateInput
         # List of compatibility information of devices this update is compatible with, created using New-AduUpdateCompatibility.
         [Parameter(Mandatory=$true)]
         [ValidateCount(1, 10)]
-        [CompatInfo[]] $Compatibility,
+        [hashtable[]] $Compatibility,
 
         # List of full paths to update files.
         [ValidateCount(0, 5)]

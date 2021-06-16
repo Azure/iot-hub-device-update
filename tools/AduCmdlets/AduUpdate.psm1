@@ -10,18 +10,6 @@
 # CLASSES
 # -------------------------------------------------
 
-class CompatInfo
-{
-    [string] $DeviceManufacturer
-    [string] $DeviceModel
-
-    CompatInfo($manufacturer, $model)
-    {
-        $this.DeviceManufacturer = $manufacturer
-        $this.DeviceModel = $model
-    }
-}
-
 class UpdateId
 {
     [string] $Provider
@@ -179,20 +167,33 @@ function New-AduUpdateCompatibility
 #>
     [CmdletBinding()]
     Param(
+        # Compatibility properties.
+        [Parameter(ParameterSetName='CustomProperties', Mandatory=$true)]
+        [hashtable] $Properties,
+
         # Device manufacturer.
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName='BackwardCompat', Mandatory=$true)]
         [ValidateLength(1, 64)]
-        [ValidatePattern("^[a-zA-Z0-9.-]+$")]
         [string] $DeviceManufacturer,
 
         # Device model.
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName='BackwardCompat', Mandatory=$true)]
         [ValidateLength(1, 64)]
-        [ValidatePattern("^[a-zA-Z0-9.-]+$")]
         [string] $DeviceModel
     )
 
-    return [CompatInfo]::New($DeviceManufacturer, $DeviceModel)
+    if ($Properties -eq $null)
+    {
+        # Caller is using BackwardCompat parameter set.
+        return @{
+            DeviceManufacturer = $DeviceManufacturer
+            DeviceModel = $DeviceModel
+        }
+    }
+    else
+    {
+        return $Properties
+    }
 }
 
 function New-AduImportManifest
@@ -204,7 +205,7 @@ function New-AduImportManifest
     .EXAMPLE
         PS > $updateId = New-AduUpdateId -Provider Fabrikam -Name Toaster -Version 2.0
         PS > $compatInfo1 = New-AduUpdateCompatibility -DeviceManufacturer Fabrikam -DeviceModel Toaster
-        PS > $compatInfo2 = New-AduUpdateCompatibility -DeviceManufacturer Contoso -DeviceModel Toaster
+        PS > $compatInfo2 = New-AduUpdateCompatibility -Properties @{ OS = "Linux"; DeviceManufacturer = "Fabrikam" }
         PS >
         PS > New-AduImportManifest -UpdateId $updateId `
                                    -UpdateType microsoft/swupdate:1 -InstalledCriteria 5 `
@@ -256,7 +257,7 @@ function New-AduImportManifest
         # List of compatibility information of devices this update is compatible with, created using New-AduUpdateCompatibility.
         [Parameter(Mandatory=$true)]
         [ValidateCount(1, 10)]
-        [CompatInfo[]] $Compatibility,
+        [hashtable[]] $Compatibility,
 
         # List of full paths to update files.
         [ValidateCount(0, 5)]
