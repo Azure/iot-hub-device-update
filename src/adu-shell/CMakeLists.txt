@@ -51,6 +51,7 @@ target_compile_definitions (
     PRIVATE ADUC_VERSION="${ADUC_VERSION}" 
             ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
             ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}"
+            ADUSHELL_EFFECTIVE_GROUP_NAME="${ADUSHELL_EFFECTIVE_GROUP_NAME}"
             ${adushell_def})
 
 target_link_libraries (

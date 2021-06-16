@@ -187,6 +187,11 @@ set (
     "/etc/adu-version"
     CACHE STRING "Path to the file that contains version info for the image or device.")
 
+set (
+    ADUSHELL_EFFECTIVE_GROUP_NAME
+    "adu"
+    CACHE STRING "The effective group name for adu-shell process.")
+
 option (ADUC_WARNINGS_AS_ERRORS "Treat warnings as errors (-Werror)" ON)
 option (ADUC_BUILD_UNIT_TESTS "Build unit tests and mock some functionality" OFF)
 option (ADUC_BUILD_DOCUMENTATION "Build documentation files" OFF)

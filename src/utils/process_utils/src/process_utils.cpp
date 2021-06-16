@@ -5,6 +5,7 @@
  * @copyright Copyright (c) 2019, Microsoft Corp.
  */
 #include <errno.h>
+#include <grp.h> // for getgrnam, struct group
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +16,7 @@
 #include <aduc/logging.h>
 #include <aduc/string_utils.hpp>
 
+#include <functional> // for std::function
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -139,4 +141,45 @@ int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string>
     close(filedes[READ_END]);
 
     return childExitStatus;
+}
+
+/**
+ * @brief Ensure that the effective group of the process is the given group (or is root).
+ * @remark This function is not thread-safe if called with the defaults for the optional args.
+ * @param groupName The group that process group must match.
+ * @param getegidFunc Optional. The function for getting the effective group id. Default is getegid, which is not thread-safe.
+ * @param getgrnamFunc Optional. The function for getting the group record. Default is getgrnam, which is not thread-safe.
+ * @return int Return value. 0 for success; otherwise, a value from errno.h.
+ */
+int VerifyProcessEffectiveGroup(
+    const char* groupName,
+    const std::function<gid_t()>& getegidFunc /* = getegid */,
+    const std::function<struct group*(const char*)>& getgrnamFunc /* = getgrnam */)
+{
+    const gid_t processEffectiveGroupId = getegidFunc();
+    errno = 0;
+    const struct group* aduGroupEntry = getgrnamFunc(groupName);
+    if (aduGroupEntry == nullptr)
+    {
+        if (errno != 0)
+        {
+            Log_Error("lookup of group %s failed, errno: %d", groupName, errno);
+            return errno;
+        }
+
+        Log_Error("No group entry found for %s.", groupName);
+        return ENOENT;
+    }
+
+    if (processEffectiveGroupId != 0 // root
+        && processEffectiveGroupId != aduGroupEntry->gr_gid)
+    {
+        Log_Error(
+            "effective group id [%d] did not match %s id of %d.",
+            processEffectiveGroupId,
+            groupName,
+            aduGroupEntry->gr_gid);
+        return EPERM;
+    }
+    return 0;
 }

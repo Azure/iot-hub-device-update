@@ -88,3 +88,82 @@ TEST_CASE("Invalid option - cp -1")
 
     CHECK_THAT(output.c_str(), Contains("invalid option -- '1'"));
 }
+
+TEST_CASE("VerifyProcessEffectiveGroup")
+{
+    SECTION("it should return errno when gegrnam returns nullptr and sets errno")
+    {
+        int expectedErrno = EINTR; // signal interrupt
+
+        const std::function<gid_t()> mock_getegid = [&]() { return 101; };
+
+        const std::function<struct group*(const char*)> mock_getgrnam = [expectedErrno](const char*) {
+            errno = expectedErrno;
+            return nullptr;
+        };
+
+        CHECK(
+            expectedErrno
+            == VerifyProcessEffectiveGroup("dontCareGroup" /* groupName */, mock_getegid, mock_getgrnam));
+    }
+
+    SECTION("it should return ENOENT when gegrnam returns nullptr and does not set errno")
+    {
+        const std::function<gid_t()> mock_getegid = [&]() { return 101; };
+
+        const std::function<struct group*(const char*)> mock_getgrnam = [](const char*) {
+            // do not set errno to signify missing entry in /etc/groups database.
+            return nullptr;
+        };
+
+        CHECK(ENOENT == VerifyProcessEffectiveGroup("dontCareGroup" /* groupName */, mock_getegid, mock_getgrnam));
+    }
+
+    SECTION("it should return EPERM when not root and not desired group")
+    {
+        int effectiveProcessGroupId = 100; // not root(0)
+
+        const std::function<gid_t()> mock_getegid = [&]() { return effectiveProcessGroupId; };
+
+        const std::function<struct group*(const char*)> mock_getgrnam = [effectiveProcessGroupId](const char*) {
+            static struct group desiredGroupEntry = {};
+            desiredGroupEntry.gr_gid = effectiveProcessGroupId + 1; // does not match effective process group id
+            return &desiredGroupEntry;
+        };
+
+        CHECK(EPERM == VerifyProcessEffectiveGroup("desiredGroup" /* groupName */, mock_getegid, mock_getgrnam));
+    }
+
+    SECTION("it should return 0(success) when root")
+    {
+        int effectiveProcessGroupId = 0; // root
+
+        const std::function<gid_t()> mock_getegid = [&]() { return effectiveProcessGroupId; };
+
+        const std::function<struct group*(const char*)> mock_getgrnam = [](const char*) {
+            static struct group desiredGroupEntry = {};
+            desiredGroupEntry.gr_gid = 100; // not root
+
+            return &desiredGroupEntry;
+        };
+
+        CHECK(0 == VerifyProcessEffectiveGroup("desiredGroup" /* groupName */, mock_getegid, mock_getgrnam));
+    }
+
+    SECTION("it should return 0 when not root but group matches")
+    {
+        int effectiveProcessGroupId = 100; // not root(0)
+        const gid_t desiredGroupId = 100;
+
+        const std::function<gid_t()> mock_getegid = [&]() { return desiredGroupId; };
+
+        const std::function<struct group*(const char*)> mock_getgrnam = [](const char*) {
+            static struct group desiredGroupEntry = {};
+            desiredGroupEntry.gr_gid = desiredGroupId;
+
+            return &desiredGroupEntry;
+        };
+
+        CHECK(0 == VerifyProcessEffectiveGroup("desiredGroup" /* groupName */, mock_getegid, mock_getgrnam));
+    }
+}

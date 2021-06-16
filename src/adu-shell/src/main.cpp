@@ -2,11 +2,11 @@
  * @file main.cpp
  * @brief Implements the main code for the ADU Shell.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) 2021, Microsoft Corporation.
  */
 #include <getopt.h>
 #include <string.h>
-#include <unistd.h> // for geteuid and setuid.
+#include <unistd.h> // for getegid, geteuid, and setuid.
 #include <unordered_map>
 #include <vector>
 
@@ -62,16 +62,16 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
 
         // "--version"           |   Show adu-shell version number.
         //
-        // "--update-type"       |   An ADU Update Type.  
+        // "--update-type"       |   An ADU Update Type.
         //                             e.g., "microsoft/apt", "microsoft/swupdate", "common".
         //
         // "--update-action"     |   An action to perform.
         //                             e.g., "initialize", "download", "install", "apply", "cancel", "rollback", "reboot".
         //
-        // "--target-data"       |   A string contains data for a target command. 
+        // "--target-data"       |   A string contains data for a target command.
         //                             e.g., for microsoft/apt download action, this is a single-quoted string
         //                             contains space-delimited list of package names.
-        // 
+        //
         // "--target-options"    |   Additional options for a target command.
         //
         // "--target-log-folder" |   Some target command requires specific logs storage.
@@ -289,15 +289,25 @@ int main(int argc, char** argv)
     Log_Debug("Target options: %s", launchArgs.targetOptions);
     Log_Debug("Log level: %d", launchArgs.logLevel);
 
+    ret = VerifyProcessEffectiveGroup(ADUSHELL_EFFECTIVE_GROUP_NAME);
+    if (ret != 0)
+    {
+        return ret;
+    }
+
     // Run as 'root'.
     // Note: this requires the file owner to be 'root'.
-    int defaultUserId = getuid();
-    int effectiveUserId = geteuid();
-
+    uid_t defaultUserId = getuid();
+    uid_t effectiveUserId = geteuid();
     ret = setuid(effectiveUserId);
     if (ret == 0)
     {
-        Log_Info("Run as uid(%d), defaultUid(%d), effectiveUid(%d)", getuid(), defaultUserId, effectiveUserId);
+        Log_Info(
+            "Run as uid(%d), defaultUid(%d), effectiveUid(%d), effectiveGid(%d)",
+            getuid(),
+            defaultUserId,
+            effectiveUserId,
+            getegid());
         return ADUShell_Dowork(launchArgs);
     }
 
