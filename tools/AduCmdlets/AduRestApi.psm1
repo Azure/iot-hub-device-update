@@ -200,7 +200,7 @@ function Wait-AduUpdateOperation
     do
     {
         $responseHeaders = @{}
-        $operation = Get-AduUpdateOperation -AccountEndpoint $AccountEndpoint -InstanceId $InstanceId -AuthorizationToken $token -OperationId $operationId -ResponseHeaders $responseHeaders -ErrorAction Stop
+        $operation = Get-AduUpdateOperation -AccountEndpoint $AccountEndpoint -InstanceId $InstanceId -AuthorizationToken $AuthorizationToken -OperationId $operationId -ResponseHeaders $responseHeaders -ErrorAction Stop
 
         [int] $retryAfterInSecs = $responseHeaders["Retry-After"]
 
