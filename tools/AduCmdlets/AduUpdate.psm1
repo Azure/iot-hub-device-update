@@ -265,7 +265,10 @@ function New-AduImportManifest
 
         # List of bundled updateIds.
         [ValidateCount(0, 10)]
-        [UpdateId[]] $BundledUpdates = @()
+        [UpdateId[]] $BundledUpdates = @(),
+
+        # Whether the update can be deployed on its own to a device. Must be false for a leaf (bundled) update.
+        [bool] $IsDeployable = $true
     )
 
     if (($null -eq $Files -or $Files.Length -eq 0) -and ($null -eq $BundledUpdates -or $BundledUpdates.Length -eq 0))
@@ -289,6 +292,7 @@ function New-AduImportManifest
     # Server will accept any order; preserving order for aesthetics only.
     $importManifest = [ordered] @{
         'updateId' = $id
+        'isDeployable' = $IsDeployable
         'updateType' = $UpdateType
         'installedCriteria' = $InstalledCriteria
         'compatibility' = [array] $Compatibility

@@ -63,13 +63,16 @@ function New-AduImportUpdateInput
         [ValidateCount(0, 10)]
         [UpdateId[]] $BundledUpdates = @(),
 
+        # Whether the update can be deployed on its own to a device. Must be false for a leaf (bundled) update.
+        [bool] $IsDeployable = $true,
+
         # Azure Storage Blob container to host the files.
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
         [Microsoft.WindowsAzure.Commands.Common.Storage.ResourceModel.AzureStorageContainer] $BlobContainer
     )
 
-    $importMan = New-AduImportManifest -UpdateId $UpdateId -Files $Files -BundledUpdates $BundledUpdates `
+    $importMan = New-AduImportManifest -UpdateId $UpdateId -Files $Files -BundledUpdates $BundledUpdates -IsDeployable $IsDeployable `
                                        -Compatibility $Compatibility -UpdateType $UpdateType -InstalledCriteria $InstalledCriteria `
                                        -ErrorAction Stop
 

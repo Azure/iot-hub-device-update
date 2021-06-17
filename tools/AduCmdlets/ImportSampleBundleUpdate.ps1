@@ -64,6 +64,7 @@ $file = "$PSScriptRoot\README.md"
 $leafUpdateId = New-AduUpdateId -Provider Microsoft -Name Microphone -Version $UpdateVersion
 $leafCompat = New-AduUpdateCompatibility -DeviceManufacturer Microsoft -DeviceModel Microphone
 $leafUpdate = New-AduImportUpdateInput -UpdateId $leafUpdateId `
+                                       -IsDeployable $false `
                                        -UpdateType 'microsoft/component:1' -InstalledCriteria 'v1' -Compatibility $leafCompat `
                                        -Files $file `
                                        -BlobContainer $Container -ErrorAction Stop -Verbose:$VerbosePreference
