@@ -743,12 +743,14 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         if (agent == NULL)
         {
             Log_Error("ADUC_ConfigInfo_GetAgent failed to get the agent information.");
+            goto done;
         }
         if (strcmp(agent->connectionType, "AIS") == 0)
         {
             if (!GetConnectionInfoFromIdentityService(&info))
             {
                 Log_Error("Failed to get connection information from AIS.");
+                goto done;
             }
         }
         else if (strcmp(agent->connectionType, "string") == 0)

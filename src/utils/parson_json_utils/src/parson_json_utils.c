@@ -9,8 +9,6 @@
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
-#include <parson_json_utils.h>
-#include <parson.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>

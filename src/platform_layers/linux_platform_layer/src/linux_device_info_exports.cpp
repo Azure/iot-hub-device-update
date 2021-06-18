@@ -43,7 +43,7 @@ static char* DeviceInfo_GetManufacturer()
 
     // TODO(shiyipeng): Bug 33652090: Potential performance improvement on DeviceInfo_GetManufacturer/Model
     ADUC_ConfigInfo config = {};
-    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.manufacturer != NULL)
+    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.manufacturer != nullptr)
     {
         result = strdup(config.manufacturer);
     }
@@ -54,7 +54,6 @@ static char* DeviceInfo_GetManufacturer()
     }
 
     valueIsDirty = false;
-done:
     ADUC_ConfigInfo_UnInit(&config);
     return result;
 }
@@ -79,7 +78,7 @@ static char* DeviceInfo_GetModel()
 
     //TODO(shiyipeng): Bug 33652090: Potential performance improvement on DeviceInfo_GetManufacturer/Model
     ADUC_ConfigInfo config = {};
-    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.model != NULL)
+    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.model != nullptr)
     {
         result = strdup(config.model);
     }
@@ -90,7 +89,6 @@ static char* DeviceInfo_GetModel()
     }
 
     valueIsDirty = false;
-done:
     ADUC_ConfigInfo_UnInit(&config);
     return result;
 }
