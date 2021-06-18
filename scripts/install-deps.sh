@@ -404,10 +404,10 @@ if [[ $install_packages == "true" ]]; then
         echo "Updating repository list..."
         $SUDO apt-get update --yes --fix-missing --quiet || $ret
     fi
+fi
 
-    if [[ $install_aduc_deps == "true" ]]; then
-        do_install_aduc_packages || $ret
-    fi
+if [[ $install_aduc_deps == "true" ]]; then
+    do_install_aduc_packages || $ret
 fi
 
 # Install dependencies from source
