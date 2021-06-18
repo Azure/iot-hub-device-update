@@ -434,11 +434,8 @@ static void _zlog_flush_buffer()
             return;
         }
 
-        if (zlog_is_file_log_open())
-        {
-            // Open the new current log file
-            zlog_fout = fopen(zlog_file_log_fullpath, "a+");
-        }
+        // INVARIANT: zlog_fout == NULL due to zlog_close_file_log() call above.
+        zlog_fout = fopen(zlog_file_log_fullpath, "a");
     }
 }
 
