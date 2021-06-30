@@ -56,13 +56,13 @@ setup_dirs_and_files() {
         if [ ! -f "$adu_conf_dir/${adu_conf_file}.template" ]; then
             echo "<Place your Azure IoT device connection string here>" > "$adu_conf_dir/${adu_conf_file}.template"
             chown "$adu_user:$adu_group" "$adu_conf_dir/${adu_conf_file}.template"
-            chmod u=r "$adu_conf_dir/${adu_conf_file}.template"
+            chmod u=r,g=r,o=r "$adu_conf_dir/${adu_conf_file}.template"
         fi
 
         # Create configuration file from template
         if [ ! -f "$adu_conf_dir/$adu_conf_file" ]; then
             cp -a "$adu_conf_dir/${adu_conf_file}.template" "$adu_conf_dir/$adu_conf_file"
-            chmod u=r "$adu_conf_dir/$adu_conf_file"
+            chmod u=r,g=r,o=r "$adu_conf_dir/$adu_conf_file"
         fi
 
         # Create home dir
@@ -83,7 +83,7 @@ setup_dirs_and_files() {
         if [ ! -d "$adu_data_dir" ]; then
             mkdir -p "$adu_data_dir"
             chown "$adu_user:$adu_group" "$adu_data_dir"
-            chmod u=rwx,g=rx "$adu_data_dir"
+            chmod u=rwx,g=rwx,o= "$adu_data_dir"
         fi
 
         #Set adu-agent owner and permission
@@ -91,10 +91,10 @@ setup_dirs_and_files() {
            echo "ERROR! $adu_shell_dir/$adu_shell_file does not exists." >&2
         else
            chown "root:$adu_group" "$adu_shell_dir/$adu_shell_file"
-           chmod u=rxs "$adu_shell_dir/$adu_shell_file"
            setfacl -m "group::---" "$adu_shell_dir/$adu_shell_file"
            setfacl -m "user::r--" "$adu_shell_dir/$adu_shell_file"
            setfacl -m "user:adu:r-x" "$adu_shell_dir/$adu_shell_file"
+           chmod u=rxs "$adu_shell_dir/$adu_shell_file"
         fi
     else
         echo "ERROR! $adu_user does not exist." >&2

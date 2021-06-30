@@ -188,9 +188,78 @@ set (
     CACHE STRING "Path to the file that contains version info for the image or device.")
 
 set (
+    ADUC_AGENT_FOLDER
+    "/usr/bin"
+    CACHE STRING "Location where ADU Agent binary is located.")
+
+set (
+    ADUC_AGENT_FILENAME
+    "AducIotAgent"
+    CACHE STRING "The filename of the ADU Agent binary.")
+
+get_filename_component (
+    ADUC_AGENT_FILEPATH
+    "${ADUC_AGENT_FOLDER}/${ADUC_AGENT_FILENAME}"
+    ABSOLUTE
+    "/")
+
+set (
+    ADUSHELL_FOLDER
+    "/usr/lib/adu"
+    CACHE STRING "The directory of the adu-shell binary."
+)
+
+set (
+    ADUSHELL_FILENAME
+    "adu-shell"
+    CACHE STRING "Filename of adu-shell."
+)
+
+get_filename_component (
+    ADUSHELL_FILE_PATH
+    "${ADUSHELL_FOLDER}/${ADUSHELL_FILENAME}"
+    ABSOLUTE
+    "/")
+
+set (
+    ADUSHELL_FILE_PATH
+    ${ADUSHELL_FILE_PATH}
+    CACHE STRING "The absolute path to the adu-shell file path.")
+
+set (
     ADUSHELL_EFFECTIVE_GROUP_NAME
     "adu"
     CACHE STRING "The effective group name for adu-shell process.")
+
+set(
+    ADUC_FILE_USER
+    "adu"
+    CACHE STRING "The user for adu file ownership."
+)
+
+set(
+    ADUC_FILE_GROUP
+    "adu"
+    CACHE STRING "The group for adu file ownership."
+)
+
+set(
+    DO_FILE_USER
+    "do"
+    CACHE STRING "The user for do file ownership."
+)
+
+set(
+    DO_FILE_GROUP
+    "do"
+    CACHE STRING "The group for do file ownership."
+)
+
+set(
+    SYSLOG_FILE_GROUP
+    "syslog"
+    CACHE STRING "The syslog group."
+)
 
 option (ADUC_WARNINGS_AS_ERRORS "Treat warnings as errors (-Werror)" ON)
 option (ADUC_BUILD_UNIT_TESTS "Build unit tests and mock some functionality" OFF)

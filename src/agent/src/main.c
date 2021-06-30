@@ -199,11 +199,11 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
         // clang-format off
         static struct option long_options[] =
         {
-            { "version",               no_argument,   0, 'v' },
-            { "enable-iothub-tracing", no_argument,   0, 'e' },
-            { "health-check",          no_argument,   0, 'h' },
-            { "log-level",         required_argument, 0, 'l' },
-            { "connection-string", required_argument, 0, 'c' },
+            { "version",                no_argument,   0, 'v' },
+            { "enable-iothub-tracing",  no_argument,   0, 'e' },
+            { "health-check",           no_argument,   0, 'h' },
+            { "log-level",         required_argument,  0, 'l' },
+            { "connection-string", required_argument,  0, 'c' },
             { 0, 0, 0, 0 }
         };
         // clang-format on
@@ -866,21 +866,25 @@ int main(int argc, char** argv)
 
     ADUC_Logging_Init(launchArgs.logLevel);
 
-    if (launchArgs.healthCheckOnly)
-    {
-        if (HealthCheck(&launchArgs))
-        {
-            return 0;
-        }
-
-        return 1;
-    }
-
     Log_Info("Agent (%s; %s) starting.", ADUC_PLATFORM_LAYER, ADUC_VERSION);
 #ifdef ADUC_GIT_INFO
     Log_Info("Git Info: %s", ADUC_GIT_INFO);
 #endif
     Log_Info("Agent built with handlers: %s.", ADUC_CONTENT_HANDLERS);
+
+    _Bool healthy = HealthCheck(&launchArgs);
+    if (launchArgs.healthCheckOnly || !healthy)
+    {
+        if (healthy)
+        {
+            Log_Info("Agent is healthy.");
+        }
+        else
+        {
+            Log_Error("Agent health check failed.");
+        }
+        return healthy ? 0 : 1;
+    }
 
     // Ensure that the ADU data folder exists.
     // Normally, ADUC_DATA_FOLDER is created by install script.

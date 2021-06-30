@@ -2,7 +2,7 @@
  * @file c_utils.h
  * @brief Helpers and macros for C code.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) 2021, Microsoft Corp.
  */
 #ifndef ADUC_C_UTILS_H
 #define ADUC_C_UTILS_H

@@ -172,7 +172,7 @@ int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t
  * Calls ADUC_SystemUtils_MkDirRecursive with:
  * userId == -1 (system default behavior)
  * groupId == -1 (system default behavior)
- * mode == S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP
+ * mode == S_IRWXU | S_IRWXG
  *
  * @param path Path to create.
  *
@@ -180,8 +180,7 @@ int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t
  */
 int ADUC_SystemUtils_MkDirRecursiveDefault(const char* path)
 {
-    return ADUC_SystemUtils_MkDirRecursive(
-        path, -1 /*userId*/, -1 /*groupId*/, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP /*mode*/);
+    return ADUC_SystemUtils_MkDirRecursive(path, -1 /*userId*/, -1 /*groupId*/, S_IRWXU | S_IRWXG /*mode*/);
 }
 
 /**
@@ -255,7 +254,7 @@ int ADUC_SystemUtils_MkDirRecursive(const char* path, uid_t userId, gid_t groupI
             {
                 stat(path, &st);
                 Log_Warn(
-                    "Failed to set '%s' folder permissions (expected:%d, actual: %d)",
+                    "Failed to set '%s' folder permissions (expected:0%o, actual: 0%o)",
                     mkdirPath,
                     mode,
                     st.st_mode & ~S_IFMT);
@@ -301,3 +300,24 @@ int ADUC_SystemUtils_RmDirRecursive(const char* path)
     return nftw(path, RmDirRecursive_helper, 20 /*nfds*/, FTW_MOUNT | FTW_PHYS | FTW_DEPTH);
 }
 
+/**
+ * @brief Checks if the file object at the given path is a directory.
+ * @param path The path.
+ * @returns true if it is a directory.
+ */
+_Bool SystemUtils_IsDir(const char* path)
+{
+    struct stat st;
+    return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
+}
+
+/**
+ * @brief Checks if the file object at the given path is a file.
+ * @param path The path.
+ * @returns true if it is a file.
+ */
+_Bool SystemUtils_IsFile(const char* path)
+{
+    struct stat st;
+    return stat(path, &st) == 0 && S_ISREG(st.st_mode);
+}
