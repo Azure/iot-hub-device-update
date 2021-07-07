@@ -68,7 +68,7 @@ extern "C"
     }
 }
 
-std::string CreateDownloadUpdateActionJson(const std::map<std::string, std::string>& files)
+std::string CreateSWUpdateDownloadUpdateActionJson(const std::map<std::string, std::string>& files)
 {
     std::stringstream main_json_strm;
     std::stringstream url_json_strm;
@@ -167,7 +167,7 @@ TEST_CASE("ADUC_PrepareInfo_Init")
     };
     // clang-format on
 
-    std::string updateActionJson{ CreateDownloadUpdateActionJson(files) };
+    std::string updateActionJson{ CreateSWUpdateDownloadUpdateActionJson(files) };
 
     workflowData.UpdateActionJson = ADUC_Json_GetRoot(updateActionJson.c_str());
     REQUIRE(workflowData.UpdateActionJson != nullptr);
@@ -206,7 +206,7 @@ TEST_CASE("ADUC_DownloadInfo_Init")
     };
     // clang-format on
 
-    const std::string updateAction{ CreateDownloadUpdateActionJson(files) };
+    const std::string updateAction{ CreateSWUpdateDownloadUpdateActionJson(files) };
 
     INFO(updateAction);
 
@@ -279,6 +279,7 @@ TEST_CASE("ADUC_MethodCall_Register and Unregister: Invalid")
     }
 }
 
+#if ADUC_SWUPDATE_HANDLER
 TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
 {
     std::mutex workCompletionCallbackMTX;
@@ -310,7 +311,7 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
     };
     // clang-format on
 
-    std::string downloadJson{ CreateDownloadUpdateActionJson(files) };
+    std::string downloadJson{ CreateSWUpdateDownloadUpdateActionJson(files) };
 
     workflowData.UpdateActionJson = ADUC_Json_GetRoot(downloadJson.c_str());
     REQUIRE(workflowData.UpdateActionJson != nullptr);
@@ -399,3 +400,4 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
 
     ADUC_MethodCall_Unregister(&workflowData.RegisterData);
 }
+#endif // ADUC_SWUPDATE_HANDLER
