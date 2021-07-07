@@ -50,6 +50,20 @@
 #define EIS_TOKEN_EXPIRY_TIME (3 * SECONDS_IN_MONTH)
 
 /**
+ * @brief Make getopt* stop parsing as soon as non-option argument is encountered.
+ * @remark See GETOPT.3 man page for more details.
+ */
+#define STOP_PARSE_ON_NONOPTION_ARG "+"
+
+/**
+ * @brief Make getopt* return a colon instead of question mark when an option is missing its corresponding option argument, so we can distinguish these scenarios.
+ * Also, this suppresses printing of an error message.
+ * @remark It must come directly after a '+' or '-' first character in the optionstring.
+ * See GETOPT.3 man page for more details.
+ */
+#define RET_COLON_FOR_MISSING_OPTIONARG ":"
+
+/**
  * @brief The Device Twin Model Identifier.
  * This model must contain 'azureDeviceUpdateAgent' and 'deviceInformation' subcomponents.
  * 
@@ -178,7 +192,9 @@ static PnPComponentEntry componentList[] = {
  * @param argv arguments array.
  * @param launchArgs a struct to store the parsed arguments.
  *
- * @return 0 if succeeded.
+ * @return 0 if succeeded without additional non-option args,
+ * -1 on failure,
+ *  or positive index to argv index where additional args start on success with additional args.
  */
 int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* launchArgs)
 {
@@ -211,7 +227,12 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
         /* getopt_long stores the option index here. */
         int option_index = 0;
 
-        int option = getopt_long(argc, argv, "vehc:l:", long_options, &option_index);
+        int option = getopt_long(
+            argc,
+            argv,
+            STOP_PARSE_ON_NONOPTION_ARG RET_COLON_FOR_MISSING_OPTIONARG "vehc:l:",
+            long_options,
+            &option_index);
 
         /* Detect the end of the options. */
         if (option == -1)
@@ -254,7 +275,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             launchArgs->connectionString = optarg;
             break;
 
-        case '?':
+        case ':':
             switch (optopt)
             {
             case 'c':
@@ -270,24 +291,45 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             result = -1;
             break;
 
+        case '?':
+            if (optopt)
+            {
+                printf("Unsupported short argument -%c.\n", optopt);
+            }
+            else
+            {
+                printf(
+                    "Unsupported option '%s'. Try preceding with -- to separate options and additional args.\n",
+                    argv[optind - 1]);
+            }
+            result = -1;
+            break;
         default:
             printf("Unknown argument.");
             result = -1;
         }
     }
 
-    if (optind < argc)
+    if (result != -1 && optind < argc)
     {
         if (launchArgs->connectionString == NULL)
         {
-            // Assuming first unknown option is a connection string.
-            launchArgs->connectionString = argv[optind++];
+            // Assuming first unknown option not starting with '-' is a connection string.
+            for (int i = optind; i < argc; ++i)
+            {
+                if (argv[i][0] != '-')
+                {
+                    launchArgs->connectionString = argv[i];
+                    ++optind;
+                    break;
+                }
+            }
         }
 
         if (optind < argc)
         {
-            // Still have unknown arg(s).
-            result = -1;
+            // Still have unknown arg(s) on the end so return the index in argv where these start.
+            result = optind;
         }
     }
 
@@ -853,7 +895,7 @@ int main(int argc, char** argv)
     ADUC_LaunchArguments launchArgs;
 
     int ret = ParseLaunchArguments(argc, argv, &launchArgs);
-    if (ret != 0)
+    if (ret < 0)
     {
         return ret;
     }
