@@ -524,7 +524,9 @@ JSON_Value* ADUC_JSON_GetUpdateManifestRoot(const JSON_Value* updateActionJson)
         return false;
     }
 
-    return json_parse_string(manifestString);
+    JSON_Value* updateManifestRoot = json_parse_string(manifestString);
+    free(manifestString);
+    return updateManifestRoot;
 }
 
 /**
