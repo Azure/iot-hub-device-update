@@ -140,7 +140,7 @@ function Get-AduUpdateOperation
     $url = "https://$AccountEndpoint/deviceupdate/$InstanceId/updates/operations/$($operationId)?$API_VERSION"
     $headers = Get-AuthorizationHeaders -AccessToken $AuthorizationToken
 
-    $response = Invoke-WebRequest -Uri $url -Method GET -Headers $headers -Verbose:$VerbosePreference
+    $response = Invoke-WebRequest -Uri $url -Method GET -Headers $headers -UseBasicParsing -Verbose:$VerbosePreference
     $operation = $response.Content | ConvertFrom-Json
 
     if ($ResponseHeaders -ne $null)
