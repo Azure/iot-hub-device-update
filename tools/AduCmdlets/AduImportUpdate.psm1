@@ -84,14 +84,18 @@ function New-AduImportUpdateInput
     Write-Verbose "Uploading import manifest to Azure Blob Storage."
     $importManJsonFile = Get-Item $importManJsonFile # refresh file properties
     $importManJsonHash = Get-AduFileHashes -FilePath $importManJsonFile -ErrorAction Stop
-    $importManUrl = Get-AduAzBlobSASToken -FilePath $importManJsonFile -BlobContainer $BlobContainer -ErrorAction Stop
+    $updateIdStr = "$($UpdateId.Provider).$($UpdateId.Name).$($UpdateId.Version)"
+    $importManUrl = Get-AduAzBlobSASToken -FilePath $importManJsonFile -BlobName "$updateIdStr/importmanifest.json" -BlobContainer $BlobContainer -ErrorAction Stop
 
     Write-Verbose "Uploading update file(s) to Azure Blob Storage."
     $fileMetaList = @()
 
     $Files | ForEach-Object {
+        # Place files within updateId subdirectory in case there are filenames conflict.
+        $filename = Split-Path -Leaf $_
+        $blobName = "$updateIdStr/$filename"
 
-        $url = Get-AduAzBlobSASToken -FilePath $_ -BlobContainer $BlobContainer -ErrorAction Stop
+        $url = Get-AduAzBlobSASToken -FilePath $_ -BlobName $blobName -BlobContainer $BlobContainer -ErrorAction Stop
 
         $fileMeta = New-Object PSObject | Select-Object FileName, Url
         $fileMeta.FileName = (Split-Path $_ -Leaf)

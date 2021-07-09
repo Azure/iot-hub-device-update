@@ -65,13 +65,18 @@ function Get-AduAzBlobSASToken
         [ValidateNotNullOrEmpty()]
         $FilePath,
 
+        # Blob name to use.
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        $BlobName,
+
         # Azure Storage Blob container object.
         [Parameter(Mandatory=$true)]
         [ValidateNotNull()]
         [Microsoft.WindowsAzure.Commands.Common.Storage.ResourceModel.AzureStorageContainer] $BlobContainer
     )
 
-    $blob = Set-AzStorageBlobContent -File $FilePath -Container $BlobContainer.Name -Context $BlobContainer.Context -Force -ErrorAction Stop
+    $blob = Set-AzStorageBlobContent -File $FilePath -Blob $BlobName -Container $BlobContainer.Name -Context $BlobContainer.Context -Force -ErrorAction Stop
     $uri = New-AzStorageBlobSASToken -Container $BlobContainer.Name -Blob $blob.Name -Permission r `
                                      -StartTime (Get-Date).AddMinutes(-30) -ExpiryTime (Get-Date).AddHours(6) -Context $blob.Context -FullUri -ErrorAction Stop
     return $uri
