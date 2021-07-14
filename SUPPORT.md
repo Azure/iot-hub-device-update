@@ -1,25 +1,18 @@
-# TODO: The maintainer of this repo has not yet edited this file
-
-**REPO OWNER**: Do you want Customer Service & Support (CSS) support for this product/project?
-
-- **No CSS support:** Fill out this template with information about how to file issues and get help.
-- **Yes CSS support:** Fill out an intake form at [aka.ms/spot](https://aka.ms/spot). CSS will work with/help you to determine next steps. More details also available at [aka.ms/onboardsupport](https://aka.ms/onboardsupport).
-- **Not sure?** Fill out a SPOT intake as though the answer were "Yes". CSS will help you decide.
-
-*Then remove this first heading from this SUPPORT.MD file before publishing your repo.*
-
 # Support
 
 ## How to file issues and get help  
 
-This project uses GitHub Issues to track bugs and feature requests. Please search the existing 
-issues before filing new issues to avoid duplicates.  For new issues, file your bug or 
-feature request as a new Issue.
+* Have a technical question?  
+Ask on Stack Overflow with tag "iot-hub-device-update".
 
-For help and questions about using this project, please **REPO MAINTAINER: INSERT INSTRUCTIONS HERE 
-FOR HOW TO ENGAGE REPO OWNERS OR COMMUNITY FOR HELP. COULD BE A STACK OVERFLOW TAG OR OTHER
-CHANNEL. WHERE WILL YOU HELP PEOPLE?**.
+* Found a bug, or want to request a new feature?  
+You can use [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issues) to track bugs and feature requests. If you feel like taking a stab at fixing the bug/adding the feature, please see the [Contribution guidance here](/CONTRIBUTING.md).
+
+* Need support?  
+Please document your question on [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issues) thoroughly, attach logs and give repro steps, so that we can help you unblock as soon as possible. Note that currently Device Update for Iot Hub is in public preview stage, so there is no guranteed response time, but we will get back to you as soon as we can.
+
+* You can also contact Microsoft Support, see details [here](https://docs.microsoft.com/azure/iot-hub-device-update/troubleshoot-device-update#contact)
 
 ## Microsoft Support Policy  
 
-Support for this **PROJECT or PRODUCT** is limited to the resources listed above.
+Support for IoT Hub Device Update is limited to the resources listed above.
