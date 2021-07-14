@@ -16,7 +16,8 @@ enum class ADUShellAction
     Apply,
     Cancel,
     Rollback,
-    Reboot
+    Reboot,
+    GetStatus
 };
 
 /**

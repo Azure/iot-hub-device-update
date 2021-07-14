@@ -1,0 +1,123 @@
+#!/bin/sh
+
+set -e
+
+usage() {
+	echo "Usage: pvr2adu [-h] -p <PROVIDER> -n <NAME> -m <MANUFACTURER> -d <MODEL> -v <VERSION> -o <OUTPUT>"
+	echo "Creates ADU compatible manifest and tarball from current directory"
+	echo "       options:"
+	echo "              -h      show help"
+	echo "              -p      provider"
+	echo "              -n      name"
+	echo "              -m      manufacturer"
+	echo "              -v      version"
+	echo "              -o      output"
+}
+
+parse_args() {
+	# parse options
+	while [ $# -gt 0 ]; do
+		key="$1"
+		case "$key" in
+			-h)
+				usage; exit 0
+				;;
+			-p)
+				shift
+				PROVIDER="$1"
+				;;
+			-n)
+				shift
+				NAME="$1"
+				;;
+			-m)
+				shift
+				MANUFACTURER="$1"
+				;;
+			-d)
+				shift
+				MODEL="$1"
+				;;
+			-v)
+				shift
+				VERSION="$1"
+				;;
+			-o)
+				shift
+				OUTPUT="$1"
+				;;
+			*)
+				break
+		esac
+		shift
+	done
+}
+
+check_args() {
+	if [ -z "$PROVIDER" ]; then usage; exit 1; fi
+	if [ -z "$NAME" ]; then usage; exit 1; fi
+	if [ -z "$MANUFACTURER" ]; then usage; exit 1; fi
+	if [ -z "$MODEL" ]; then usage; exit 1; fi
+	if [ -z "$VERSION" ]; then usage; exit 1; fi
+	if [ -z "$OUTPUT" ]; then usage; exit 1; fi
+}
+
+create_tarball() {
+	mkdir -p "$OUTPUT"
+	pvr export "$OUTPUT/pvr-export.tgz"
+	SHA=`sha256sum "$OUTPUT/pvr-export.tgz" | cut -d " " -f 1`
+	SHA64=`echo $SHA | xxd -r -p | base64`
+	SIZE=`stat -c%s "$OUTPUT/pvr-export.tgz"`
+	DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
+}
+
+create_manifest() {
+	JSON=`jq -n \
+		--arg pr "$PROVIDER" \
+		--arg na "$NAME" \
+		--arg ve "$VERSION" \
+		--arg ma "$MANUFACTURER" \
+		--arg mo "$MODEL" \
+		--arg sh "$SHA" \
+		--arg si "$SIZE" \
+		--arg sa "$SHA64" \
+		--arg da "$DATE" \
+		'{
+			updateId: {
+				provider: $pr,
+				name: $na,
+				version: $ve
+			},  
+			updateType: "pantacor/pvcontrol:1",
+			installedCriteria: $sh,
+			compatibility: [
+				{   
+					deviceManufacturer: $ma,
+					deviceModel: $mo 
+				}   
+			],  
+			files: [
+				{   
+					filename: "pvr-export.tgz",
+					sizeInBytes: $si,
+					hashes: {
+						sha256: $sa
+					}   
+				}   
+			],  
+			createdDateTime: $da,
+			manifestVersion: "2.0"
+		}'`
+	echo $JSON > "$OUTPUT/manifest.json"
+}
+
+print_output() {
+	ls "$OUTPUT/manifest.json"
+	ls "$OUTPUT/pvr-export.tgz"
+}
+
+parse_args "$@"
+check_args
+create_tarball
+create_manifest
+print_output

@@ -30,6 +30,16 @@
 
 #endif
 
+#if ADUC_PVCONTROL_HANDLER
+
+#    if !ADUC_SIMULATOR_MODE
+#        include "aduc/pvcontrol_handler.hpp"
+#    else
+#        include "aduc/pvcontrol_simulator_handler.hpp"
+#    endif
+
+#endif
+
 typedef std::function<std::unique_ptr<ContentHandler>(const ContentHandlerCreateData&)> CreateFuncType;
 
 typedef struct tagTypeFuncMap
@@ -58,6 +68,9 @@ const TypeFuncMap handlerCreateFuncs[] = {
 #endif
 #if ADUC_SWUPDATE_HANDLER
     FUNCMAPENTRY(microsoft, swupdate),
+#endif
+#if ADUC_PVCONTROL_HANDLER
+    FUNCMAPENTRY(pantacor, pvcontrol),
 #endif
 };
 
