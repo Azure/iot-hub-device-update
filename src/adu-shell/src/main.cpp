@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "aduc/c_utils.h"
+#include "aduc/config_utils.h"
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
 #include "aduc/string_utils.hpp"
@@ -18,6 +19,7 @@
 
 #include "adushell.hpp"
 #include "adushell_const.hpp"
+#include "azure_c_shared_utility/vector.h"
 #include "common_tasks.hpp"
 
 namespace CommonTasks = Adu::Shell::Tasks::Common;
@@ -255,6 +257,41 @@ int ADUShell_Dowork(const ADUShell_LaunchArguments& launchArgs)
 }
 
 /**
+ * @brief Checking if the process has permission to run the adu shell operations
+ *
+ * @return true if the process is either in the trusted Group, or is one of the adu shell trusted users.
+ * @return false otherwise
+ */
+bool ADUShell_PermissionCheck()
+{
+    bool isTrusted = false;
+
+    // If config file is provided, check if user is in trusted user list.
+    ADUC_ConfigInfo config = {};
+    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    {
+        VECTOR_HANDLE aduShellTrustedUsers = ADUC_ConfigInfo_GetAduShellTrustedUsers(&config);
+
+        isTrusted = VerifyProcessEffectiveUser(aduShellTrustedUsers);
+
+        ADUC_ConfigInfo_FreeAduShellTrustedUsers(aduShellTrustedUsers);
+        aduShellTrustedUsers = nullptr;
+        ADUC_ConfigInfo_UnInit(&config);
+    }
+
+    // If config file not provided or user not in the trusted users list, then
+    // check whether the effective user is in the trusted group
+    if (!isTrusted)
+    {
+        isTrusted = VerifyProcessEffectiveGroup(ADUSHELL_EFFECTIVE_GROUP_NAME);
+    }
+
+    // If a trusted user list is provided, the permission check passes if the user is either in trusted group,
+    // or is one of the trusted user.
+    return isTrusted;
+}
+
+/**
  * @brief Main method.
  *
  * @param argc Count of arguments in @p argv.
@@ -267,6 +304,11 @@ int ADUShell_Dowork(const ADUShell_LaunchArguments& launchArgs)
  */
 int main(int argc, char** argv)
 {
+    if (!ADUShell_PermissionCheck())
+    {
+        return EPERM;
+    }
+
     ADUShell_LaunchArguments launchArgs;
 
     int ret = ParseLaunchArguments(argc, argv, &launchArgs);
@@ -288,12 +330,6 @@ int main(int argc, char** argv)
     Log_Debug("Target data: %s", launchArgs.targetData);
     Log_Debug("Target options: %s", launchArgs.targetOptions);
     Log_Debug("Log level: %d", launchArgs.logLevel);
-
-    ret = VerifyProcessEffectiveGroup(ADUSHELL_EFFECTIVE_GROUP_NAME);
-    if (ret != 0)
-    {
-        return ret;
-    }
 
     // Run as 'root'.
     // Note: this requires the file owner to be 'root'.

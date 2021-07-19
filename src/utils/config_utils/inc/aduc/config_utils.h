@@ -8,6 +8,8 @@
 #ifndef CONFIG_UTILS_H
 #define CONFIG_UTILS_H
 
+#include "azure_c_shared_utility/strings.h"
+#include "azure_c_shared_utility/vector.h"
 #include <aduc/c_utils.h>
 #include <parson.h>
 #include <stdbool.h>
@@ -71,12 +73,27 @@ void ADUC_ConfigInfo_UnInit(ADUC_ConfigInfo* config);
 
 /**
  * @brief Get the agent information of the desired index from the ADUC_ConfigInfo object
- * 
- * @param config 
- * @param index 
+ *
+ * @param config
+ * @param index
  * @return const ADUC_AgentInfo*, NULL if failure
  */
 const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(ADUC_ConfigInfo* config, unsigned int index);
+
+/**
+ * @brief Get the adu trusted user list
+ *
+ * @param config A pointer to a const ADUC_ConfigInfo struct
+ * @return VECTOR_HANDLE
+ */
+VECTOR_HANDLE ADUC_ConfigInfo_GetAduShellTrustedUsers(const ADUC_ConfigInfo* config);
+
+/**
+ * @brief Free the VECTOR_HANDLE (adu shell truster users) and all the elements in it
+ *
+ * @param users Object to free. The vector (type VECTOR_HANDLE) containing users (type STRING_HANDLE)
+ */
+void ADUC_ConfigInfo_FreeAduShellTrustedUsers(VECTOR_HANDLE users);
 
 // clang-format off
 // NOLINTNEXTLINE: clang-tidy doesn't like UMock macro expansions

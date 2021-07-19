@@ -7,7 +7,7 @@ add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE aduc::logging aduc::c_utils aduc::string_utils)
+target_link_libraries (${PROJECT_NAME} PRIVATE aduc::logging aduc::c_utils aduc::config_utils aduc::string_utils)
 
 if ((NOT
      ${ADUC_PLATFORM_LAYER}

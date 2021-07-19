@@ -2,8 +2,10 @@
  * @file process_utils_ut.cpp
  * @brief Unit Tests for process_utils library
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) 2021, Microsoft Corp.
  */
+#include <azure_c_shared_utility/strings.h>
+#include <azure_c_shared_utility/vector.h>
 #include <catch2/catch.hpp>
 #include <unistd.h>
 #include <vector>
@@ -91,7 +93,7 @@ TEST_CASE("Invalid option - cp -1")
 
 TEST_CASE("VerifyProcessEffectiveGroup")
 {
-    SECTION("it should return errno when gegrnam returns nullptr and sets errno")
+    SECTION("it should return false when gegrnam returns nullptr and sets errno")
     {
         int expectedErrno = EINTR; // signal interrupt
 
@@ -102,12 +104,10 @@ TEST_CASE("VerifyProcessEffectiveGroup")
             return nullptr;
         };
 
-        CHECK(
-            expectedErrno
-            == VerifyProcessEffectiveGroup("dontCareGroup" /* groupName */, mock_getegid, mock_getgrnam));
+        CHECK(!VerifyProcessEffectiveGroup("dontCareGroup" /* groupName */, mock_getegid, mock_getgrnam));
     }
 
-    SECTION("it should return ENOENT when gegrnam returns nullptr and does not set errno")
+    SECTION("it should return false when gegrnam returns nullptr and does not set errno")
     {
         const std::function<gid_t()> mock_getegid = [&]() { return 101; };
 
@@ -116,10 +116,10 @@ TEST_CASE("VerifyProcessEffectiveGroup")
             return nullptr;
         };
 
-        CHECK(ENOENT == VerifyProcessEffectiveGroup("dontCareGroup" /* groupName */, mock_getegid, mock_getgrnam));
+        CHECK(!VerifyProcessEffectiveGroup("dontCareGroup" /* groupName */, mock_getegid, mock_getgrnam));
     }
 
-    SECTION("it should return EPERM when not root and not desired group")
+    SECTION("it should return false when not root and not desired group")
     {
         int effectiveProcessGroupId = 100; // not root(0)
 
@@ -131,10 +131,10 @@ TEST_CASE("VerifyProcessEffectiveGroup")
             return &desiredGroupEntry;
         };
 
-        CHECK(EPERM == VerifyProcessEffectiveGroup("desiredGroup" /* groupName */, mock_getegid, mock_getgrnam));
+        CHECK(!VerifyProcessEffectiveGroup("desiredGroup" /* groupName */, mock_getegid, mock_getgrnam));
     }
 
-    SECTION("it should return 0(success) when root")
+    SECTION("it should return true(success) when root")
     {
         int effectiveProcessGroupId = 0; // root
 
@@ -147,10 +147,10 @@ TEST_CASE("VerifyProcessEffectiveGroup")
             return &desiredGroupEntry;
         };
 
-        CHECK(0 == VerifyProcessEffectiveGroup("desiredGroup" /* groupName */, mock_getegid, mock_getgrnam));
+        CHECK(VerifyProcessEffectiveGroup("desiredGroup" /* groupName */, mock_getegid, mock_getgrnam));
     }
 
-    SECTION("it should return 0 when not root but group matches")
+    SECTION("it should return true when not root but group matches")
     {
         int effectiveProcessGroupId = 100; // not root(0)
         const gid_t desiredGroupId = 100;
@@ -164,6 +164,80 @@ TEST_CASE("VerifyProcessEffectiveGroup")
             return &desiredGroupEntry;
         };
 
-        CHECK(0 == VerifyProcessEffectiveGroup("desiredGroup" /* groupName */, mock_getegid, mock_getgrnam));
+        CHECK(VerifyProcessEffectiveGroup("desiredGroup" /* groupName */, mock_getegid, mock_getgrnam));
     }
+}
+
+TEST_CASE("VerifyProcessEffectiveUser")
+{
+    VECTOR_HANDLE empty_user_list = VECTOR_create(sizeof(STRING_HANDLE));
+    STRING_HANDLE aduStr = STRING_construct("adu");
+    STRING_HANDLE doStr = STRING_construct("do");
+    VECTOR_HANDLE user_list = VECTOR_create(sizeof(STRING_HANDLE));
+    VECTOR_push_back(user_list, &aduStr, 1);
+    VECTOR_push_back(user_list, &doStr, 1);
+
+    SECTION("it should return EPERM when there is no trusted user provided")
+    {
+        const std::function<uid_t()> mock_geteuid = [&]() { return 101; };
+
+        const std::function<struct passwd*(const char*)> mock_getpwnam = [](const char*) { return nullptr; };
+
+        CHECK(!VerifyProcessEffectiveUser(empty_user_list, mock_geteuid, mock_getpwnam));
+    }
+
+    SECTION("it should return EPERM when not root and not trusted user")
+    {
+        int effectiveProcessUserId = 100; // not root(0)
+
+        const std::function<uid_t()> mock_geteuid = [&]() { return effectiveProcessUserId; };
+
+        const std::function<struct passwd*(const char*)> mock_getpwnam = [effectiveProcessUserId](const char*) {
+            static struct passwd trustedUserEntry = {};
+            trustedUserEntry.pw_uid = effectiveProcessUserId + 1; // does not match effective process user id
+            return &trustedUserEntry;
+        };
+
+        CHECK(!VerifyProcessEffectiveUser(user_list, mock_geteuid, mock_getpwnam));
+    }
+
+    SECTION("it should return 0(success) when root")
+    {
+        int effectiveProcessUserId = 0; // root
+        const std::function<uid_t()> mock_geteuid = [&]() { return effectiveProcessUserId; };
+
+        const std::function<struct passwd*(const char*)> mock_getpwnam = [](const char*) {
+            static struct passwd trustedUserEntry = {};
+            trustedUserEntry.pw_uid = 100; // not root
+
+            return &trustedUserEntry;
+        };
+
+        CHECK(VerifyProcessEffectiveUser(user_list, mock_geteuid, mock_getpwnam));
+    }
+
+    SECTION("it should return 0(success) when the user is one of the trusted Users")
+    {
+        int effectiveProcessUserId = 100; // not root
+        const std::function<uid_t()> mock_geteuid = [&]() { return effectiveProcessUserId; };
+
+        const std::function<struct passwd*(const char*)> mock_getpwnam = [](const char*) {
+            static struct passwd trustedUserEntry = {};
+            trustedUserEntry.pw_uid = 100; // not root
+
+            return &trustedUserEntry;
+        };
+
+        CHECK(VerifyProcessEffectiveUser(user_list, mock_geteuid, mock_getpwnam));
+    }
+
+    // Freeing user_list and empty_user_list
+    for (size_t i = 0; i < VECTOR_size(user_list); i++)
+    {
+        auto user = static_cast<STRING_HANDLE*>(VECTOR_element(user_list, i));
+        STRING_delete(*user);
+    }
+
+    VECTOR_clear(user_list);
+    VECTOR_clear(empty_user_list);
 }

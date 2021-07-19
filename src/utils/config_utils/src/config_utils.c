@@ -11,6 +11,7 @@
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
+#include <azure_c_shared_utility/strings_types.h>
 #include <parson.h>
 #include <parson_json_utils.h>
 #include <stdbool.h>
@@ -336,9 +337,9 @@ void ADUC_ConfigInfo_UnInit(ADUC_ConfigInfo* config)
 
 /**
  * @brief Get the agent information of the desired index from the ADUC_ConfigInfo object
- * 
- * @param config 
- * @param index 
+ *
+ * @param config A pointer to an ADUC_ConfigInfo struct
+ * @param index the index of the Agent array in config that we want to access
  * @return const ADUC_AgentInfo*, NULL if failure
  */
 const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(ADUC_ConfigInfo* config, unsigned int index)
@@ -352,4 +353,73 @@ const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(ADUC_ConfigInfo* config, unsigned
         return NULL;
     }
     return config->agents + index;
+}
+
+/**
+ * @brief Get the adu trusted user list
+ *
+ * @param config A pointer to a const ADUC_ConfigInfo struct
+ * @return VECTOR_HANDLE
+ */
+VECTOR_HANDLE ADUC_ConfigInfo_GetAduShellTrustedUsers(const ADUC_ConfigInfo* config)
+{
+    bool success = false;
+
+    if (config == NULL)
+    {
+        return NULL;
+    }
+
+    VECTOR_HANDLE userVector = VECTOR_create(sizeof(STRING_HANDLE));
+
+    JSON_Array* trustedUsers = config->aduShellTrustedUsers;
+
+    for (size_t i = 0; i < json_array_get_count(trustedUsers); i++)
+    {
+        STRING_HANDLE userString = STRING_construct(json_array_get_string(trustedUsers, i));
+        if (userString == NULL)
+        {
+            Log_Error("Cannot read the %zu index user from adu shell trusted users. ", i);
+            goto done;
+        }
+        // Note that VECTOR_push_back's second parameter is the pointer to the STRING_HANDLE userString
+        if (VECTOR_push_back(userVector, &userString, 1) != 0)
+        {
+            Log_Error("Cannot add user to adu shell trusted user vector.");
+            STRING_delete(userString);
+            goto done;
+        }
+    }
+
+    success = true;
+
+done:
+    if (!success)
+    {
+        Log_Error("Failed to get adu shell trusted users array.");
+        ADUC_ConfigInfo_FreeAduShellTrustedUsers(userVector);
+        userVector = NULL;
+    }
+    return userVector;
+}
+
+/**
+ * @brief Free the VECTOR_HANDLE (adu shell truster users) and all the elements in it
+ *
+ * @param users Object to free. The vector (type VECTOR_HANDLE) containing users (type STRING_HANDLE)
+ */
+void ADUC_ConfigInfo_FreeAduShellTrustedUsers(VECTOR_HANDLE users)
+{
+    if (users == NULL)
+    {
+        return;
+    }
+    for (size_t i = 0; i < VECTOR_size(users); i++)
+    {
+        // VECTOR_element returns the pointer to a STRING_HANDLE
+        STRING_HANDLE* userPtr = VECTOR_element(users, i);
+        STRING_delete(*userPtr);
+    }
+
+    VECTOR_clear(users);
 }
