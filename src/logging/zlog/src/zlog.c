@@ -291,7 +291,7 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
         // Add to zlog buffer.
         char* buffer = zlog_lock_and_get_buffer();
 
-        // "%.400s" avoids error: ‘%s’ directive output may be truncated writing up to 511 bytes into
+        // "%.400s" avoids error: '%s' directive output may be truncated writing up to 511 bytes into
         // a region of size between 444 and 507 [-Werror=format-truncation=]
         (void)snprintf(
             buffer,
@@ -434,11 +434,8 @@ static void _zlog_flush_buffer()
             return;
         }
 
-        if (zlog_is_file_log_open())
-        {
-            // Open the new current log file
-            zlog_fout = fopen(zlog_file_log_fullpath, "a+");
-        }
+        // INVARIANT: zlog_fout == NULL due to zlog_close_file_log() call above.
+        zlog_fout = fopen(zlog_file_log_fullpath, "a");
     }
 }
 

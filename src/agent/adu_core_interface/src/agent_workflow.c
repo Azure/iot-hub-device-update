@@ -7,80 +7,14 @@
  * If we are, we'll call an upper-level method to do the work.
  * If not, we'll fail the request.
  *
- *                    ┌───┐                                     ┌──────┐
- *                    │CBO│                                     │Client│
- *                    └─┬─┘                                     └──┬───┘
- *                      │          UpdateAction: Download          │
- *                      │ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─>
- *                      │                                          │
- *                      │                                          │────┐
- *                      │                                          │    │ DownloadStarted (Internal Client State)
- *                      │                                          │<───┘
- *                      │                                          │
- *                      │                                          │────┐
- *                      │                                          │    │ Download content
- *                      │                                          │<───┘
- *                      │                                          │
- *                      │                                          │
- *          ╔══════╤════╪══════════════════════════════════════════╪═════════════╗
- *          ║ ALT  │  Successful Download                          │             ║
- *          ╟──────┘    │                                          │             ║
- *          ║           │      UpdateState: DownloadSucceeded      │             ║
- *          ║           │<──────────────────────────────────────────             ║
- *          ╠═══════════╪══════════════════════════════════════════╪═════════════╣
- *          ║ [Failed Download]                                    │             ║
- *          ║           │           UpdateState: Failed            │             ║
- *          ║           │<──────────────────────────────────────────             ║
- *          ║           │                                          │             ║
- *          ║           │           UpdateAction: Cancel           │             ║
- *          ║           │ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─>             ║
- *          ║           │                                          │             ║
- *          ║           │            UpdateState: Idle             │             ║
- *          ║           │<──────────────────────────────────────────             ║
- *          ╠═══════════╪══════════════════════════════════════════╪═════════════╣
- *          ║ [Cancel received during "Download content"]          │             ║
- *          ║           │            UpdateState: Idle             │             ║
- *          ║           │<──────────────────────────────────────────             ║
- *          ╚═══════════╪══════════════════════════════════════════╪═════════════╝
- *                      │                                          │
- *                      │          UpdateAction: Install           │
- *                      │ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─>
- *                      │                                          │
- *                      │                                          │────┐
- *                      │                                          │    │ InstallStarted (Internal Client State)
- *                      │                                          │<───┘
- *                      │                                          │
- *                      │                                          │────┐
- *                      │                                          │    │ Install content
- *                      │                                          │<───┘
- *                      │                                          │
- *                      │UpdateState: InstallSucceeded (on success)│
- *                      │<──────────────────────────────────────────
- *                      │                                          │
- *                      │           UpdateAction: Apply            │
- *                      │ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─>
- *                      │                                          │
- *                      │                                          │────┐
- *                      │                                          │    │ ApplyStarted (Internal Client State)
- *                      │                                          │<───┘
- *                      │                                          │
- *                      │                                          │────┐
- *                      │                                          │    │ Apply content
- *                      │                                          │<───┘
- *                      │                                          │
- *                      │      UpdateState: Idle (on success)      │
- *                      │<──────────────────────────────────────────
- *                    ┌─┴─┐                                     ┌──┴───┐
- *                    │CBO│                                     │Client│
- *                    └───┘                                     └──────┘
- *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) 2021, Microsoft Corp.
  */
 #include "aduc/agent_workflow.h"
 
 #include <stdlib.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h> // PRIu64
+#include <time.h>
 
 #include "aduc/adu_core_export_helpers.h"
 #include "aduc/adu_core_interface.h"
@@ -89,6 +23,19 @@
 #include "aduc/result.h"
 
 #include "agent_workflow_utils.h"
+
+/**
+ * @brief Generate a unique identifier.
+ *
+ * @param buffer Where to store identifier.
+ * @param buffer_cch Number of characters in @p buffer.
+ */
+void GenerateUniqueId(char* buffer, size_t buffer_cch)
+{
+    const time_t timer = time(NULL);
+    const struct tm* ptm = gmtime(&timer);
+    (void)strftime(buffer, buffer_cch, "%y%m%d%H%M%S", ptm);
+}
 
 static void DownloadProgressCallback(
     const char* workflowId,
@@ -446,6 +393,24 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* workflowData)
     else
     {
         Log_Info("The installed criteria is not met. The current update was not installed on the device.");
+
+        unsigned int desiredAction;
+        if (!ADUC_Json_GetUpdateAction(workflowData->UpdateActionJson, &desiredAction))
+        {
+            goto done;
+        }
+
+        if (desiredAction == ADUCITF_UpdateAction_Download)
+        {
+            Log_Info("There's a pending 'download' action request.");
+
+            // There's a pending download request.
+            // We need to make sure we don't change our state to 'idle'.
+            workflowData->StartupIdleCallSent = true;
+
+            ADUC_Workflow_HandleUpdateAction(workflowData);
+            goto done;
+        }
     }
 
     ADUC_SetUpdateStateWithResult(workflowData, ADUCITF_State_Idle, result);
@@ -527,16 +492,6 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
 {
     if (workflowData->UpdateActionJson == NULL)
     {
-        goto done;
-    }
-
-    // We can't respond to requests from Orchestrator until we've gotten to Idle state.
-    // If a call was received prior to the client going to Idle state, we'll ignore the request, and send
-    // idle to the orchestrator.  When the orchestrator sees the Idle state returned, it will know that
-    // the client has reset and will re-send the previous workflow request.
-    if (!workflowData->StartupIdleCallSent)
-    {
-        Log_Warn("Ignoring Orchestrator property update as ADUC agent hasn't initialized yet.");
         goto done;
     }
 
@@ -676,6 +631,10 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
 
     if (entry->Action == ADUCITF_UpdateAction_Download)
     {
+        // Generate workflowId when we start downloading.
+        GenerateUniqueId(workflowData->WorkflowId, ARRAY_SIZE(workflowData->WorkflowId));
+        Log_Info("Start the workflow - downloading, with WorkflowId %s", workflowData->WorkflowId);
+
         result = ADUC_MethodCall_Prepare(workflowData);
         shouldCallOperationFunc = IsAducResultCodeSuccess(result.ResultCode);
     }

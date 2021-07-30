@@ -1,6 +1,6 @@
 variables:
   version.major: 0
-  version.minor: 6
+  version.minor: 7
   version.patch: 0
   version.pre-release: "public-preview"
   version.build: $[format('{0:yyyyMMdd}-{0:HHmmss}', pipeline.startTime)]
@@ -12,7 +12,7 @@ variables:
   ADUC_VERSION_PRERELEASE: $(version.pre-release)
   ADUC_VERSION_BUILD: $(version.build)
   ENABLE_ADU_TELEMETRY_REPORTING: true
-  # aducBuilderIdentifier will be set to "DU" short for Device Update by default, for ADUC-sourced builder
+  # ADUC_BUILDER_IDENTIFIER will be set to "DU" short for Device Update by default, for Device Update-sourced builder
   ADUC_BUILDER_IDENTIFIER: DU
   # DO requires gcc greater than 6 for c++17 support.
   # gcc-8 matches what is built with poky warrior.
@@ -27,8 +27,8 @@ resources:
 trigger:
   branches:
     include:
-      - master
-      - release/*
+      - main
+      # - release/*
   paths:
     exclude:
       - docs/*
@@ -36,16 +36,14 @@ trigger:
       - LICENSE.md
       - .clang-format
       - .cmake-format.json
-      - tools/*
       - docker/*
-      - scripts/*
 
 pr:
   branches:
     include:
-      - master
-      - release/*
-      - feature/*
+      - main
+      # - release/*
+      # - feature/*
       # TODO(shiyipeng): Task 27290511: Debian arm32 64 pipeline - improve build time
       #- dev/*
   paths:
@@ -94,10 +92,6 @@ jobs:
           sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-aduc-deps --install-packages
         displayName: "Install aduc dependencies in container"
 
-      - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-do-deps
-        displayName: "Install DO SDK dependencies in container"
-
         # do_access_token is defined as a secret variable.
         # This token gives our pipeline access to DO's private github repos.
         # When DO code is public, we will no longer need to use this access token.
@@ -119,7 +113,7 @@ jobs:
           DO_ACCESS_TOKEN: $(do_access_token)
 
       - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-do
+          sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-do --install-do-deps-distro debian-9
         displayName: "Install DO SDK from source in container"
 
         # Cleanup the entries we added to clone private repos.

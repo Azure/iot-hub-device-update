@@ -87,6 +87,7 @@ int main(int argc, char** argv)
 
         case 's':
         {
+            // NOLINTNEXTLINE(google-readability-casting,cppcoreguidelines-pro-type-cstyle-cast)
             auto foo = (char*)"hello world";
             for (int i = 20; i < 10000; i++)
             {

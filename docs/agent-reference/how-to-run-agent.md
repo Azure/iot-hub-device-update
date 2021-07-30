@@ -8,13 +8,31 @@
 ## Command Line
 
 ```bash
-AducIotAgent '<IoT device connection string>' [options...]
+AducIotAgent [options...] '<IoT device connection string>' [simulator args...]
+AducIotAgent [options...] -- [one or more of connection string and simulator or other additional args]
 ```
 
 e.g.
 
 ```bash
-AducIotAgent '<IoT device connection string>' --enable-iothub-tracing --log-level 1
+AducIotAgent --enable-iothub-tracing --log-level 1 '<IoT device connection string>'
+AducIotAgent --enable-iothub-tracing --log-level 1 -- '<IoT device connection string>'
+```
+
+#### Simulator examples
+
+```bash
+AducIotAgent '<IoT device connection string>' --simulation_mode=allsuccessful
+AducIotAgent --log-level 0 -e '<Iot device connection string> --simulation_mode=downloadfailed
+```
+
+If providing additional args (e.g. simulator args) without a non-option (i.e. -c) connection string, then explicitly separate options from additional args using '--'.
+e.g.
+
+```bash
+AducIotAgent -- --simulation_mode=allsuccessful '<IoT device connection string>' 
+AducIotAgent -- --simulation_mode=allsuccessful
+AducIotAgent --log-level 0 -e -- --simulation_mode=downloadfailed --device_manufacturer=MyContoso
 ```
 
 ### Options Details
@@ -26,13 +44,13 @@ the Azure IoT C SDK. This option is useful for troubleshooting connection
 issues.
 
 `--health-check` tells the reference agent to turn on Health Check, which performs
-necessary checks to determine whether ADU Agent can function properly.  
-Currently, the script is performing the following:  
-    - Implicitly check that agent process launched successfully.  
+necessary checks to determine whether ADU Agent can function properly.
+Currently, the script is performing the following:
+    - Implicitly check that agent process launched successfully.
     - Check that the agent can obtain the connection info.
 
-`--log-level` (argument required) sets the log level of the reference agent's output.  
-Expected value:  
+`--log-level` (argument required) sets the log level of the reference agent's output.
+Expected value:
     - 0: Debug
     - 1: Info
     - 2: Warning

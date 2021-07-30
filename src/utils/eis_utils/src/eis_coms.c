@@ -561,6 +561,14 @@ done:
     return result;
 }
 
+/**
+ * @brief Requests the signature related to @p certId from EIS
+ * @details Caller should de-allocate @p responseBuffer using free()
+ * @param[in] certId the identifier associated with the certificate being retrieved
+ * @param[in] timeoutMS the timeout for the call
+ * @param[out] responseBuffer ptr to the buffer which will hold the response from EIS
+ * @returns a value of EISErr
+ */
 EISErr RequestCertificateFromEIS(const char* certId, unsigned int timeoutMS, char** responseBuffer)
 {
     EISErr result = EISErr_Failed;

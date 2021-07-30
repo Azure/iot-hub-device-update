@@ -44,19 +44,24 @@ endforeach ()
 
 target_include_directories (${target_name} PRIVATE inc ${ADUC_EXPORT_INCLUDES})
 
+find_package (azure_c_shared_utility REQUIRED)
+
 set_target_properties (${target_name} PROPERTIES COMPILE_DEFINITIONS _DEFAULT_SOURCE)
 
 target_compile_definitions (
     ${target_name}
-    PRIVATE ADUC_VERSION="${ADUC_VERSION}" 
+    PRIVATE ADUC_VERSION="${ADUC_VERSION}"
             ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
+            ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
             ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}"
+            ADUSHELL_EFFECTIVE_GROUP_NAME="${ADUSHELL_EFFECTIVE_GROUP_NAME}"
             ${adushell_def})
 
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::logging
             aduc::c_utils
+            aduc::config_utils
             aduc::process_utils
             aduc::string_utils
             aduc::system_utils)

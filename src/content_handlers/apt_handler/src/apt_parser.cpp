@@ -67,6 +67,10 @@ std::unique_ptr<AptContent> GetAptContentFromRootValue(JSON_Value* rootValue)
     aptContent->Name = aptName;
     aptContent->Version = aptVersion;
 
+    // Note: json_object_get_boolean returns -1 on fail.
+    const int agentRestartRequired = json_object_get_boolean(rootObject, ADU_APT_FIELDNAME_AGENT_RESTART_REQUIRED);
+    aptContent->AgentRestartRequired = (agentRestartRequired > 0);
+
     // Parse package list.
     JSON_Array* packages = json_object_get_array(rootObject, ADU_APT_FIELDNAME_PACKAGES);
     if (packages != nullptr)
@@ -88,10 +92,19 @@ std::unique_ptr<AptContent> GetAptContentFromRootValue(JSON_Value* rootValue)
                     ADUC_ERC_APT_HANDLER_INVALID_PACKAGE_DATA);
             }
 
+            // Are we installing deviceupdate-agent package?
+            // Currently, we are assuming deviceupdate-agent* is a Device Update Agent package.
+            if (!aptContent->AgentRestartRequired && (name.find_first_of("deviceupdate-agent") == 0))
+            {
+                aptContent->AgentRestartRequired = true;
+                Log_Info(
+                    "The DU Agent restart is required after installation task completed. (package:%s)", name.c_str());
+            }
+
             // NOTE: Version is optional.
-            // We don’t do any parsing of the package version string here.
+            // We don't do any parsing of the package version string here.
             // Customer need to specify exact string that match the version they want.
-            // If we can’t find a package with specified version, we’ll fail during download.
+            // If we can't find a package with specified version, we'll fail during download.
             const char* version = json_object_get_string(package, "version");
             if (version != nullptr)
             {

@@ -7,10 +7,11 @@
 #ifndef ADUC_ADU_CORE_INTERFACE_H
 #define ADUC_ADU_CORE_INTERFACE_H
 
-#include "aduc/adu_core_json.h" // ADUCITF_State
-#include "aduc/result.h" // ADUC_Result
+#include <aduc/adu_core_json.h> // ADUCITF_State
 #include <aduc/c_utils.h>
-#include <iothub_device_client_ll.h>
+#include <aduc/client_handle.h>
+#include <aduc/result.h> // ADUC_Result
+#include <azureiot/iothub_client_core_common.h>
 #include <stdbool.h>
 
 EXTERN_C_BEGIN
@@ -24,7 +25,7 @@ struct tagADUC_UpdateId;
 /**
  * @brief Handle for communication to service.
  */
-extern IOTHUB_DEVICE_CLIENT_LL_HANDLE g_iotHubClientHandleForADUComponent;
+extern ADUC_ClientHandle g_iotHubClientHandleForADUComponent;
 
 /**
  * @brief Initialize the interface.
@@ -63,11 +64,7 @@ void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext);
  * @brief A callback for an 'azureDeviceUpdateAgent' component's property update events.
  */
 void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceClient,
-    const char* propertyName,
-    JSON_Value* propertyValue,
-    int version,
-    void* context);
+    ADUC_ClientHandle clientHandle, const char* propertyName, JSON_Value* propertyValue, int version, void* context);
 
 //
 // Reporting
@@ -87,30 +84,6 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(ADUCITF_State upda
  * @param updateId Id of and update installed on the device.
  */
 void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(const struct tagADUC_UpdateId* updateId);
-
-//
-// Unit Tests
-//
-
-#ifdef ENABLE_MOCKS
-
-typedef IOTHUB_CLIENT_RESULT (*MockIoTHubDeviceClient_LL_SendReportedState)(
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceHandle,
-    const unsigned char* reportedState,
-    size_t reportedStateLen,
-    IOTHUB_CLIENT_REPORTED_STATE_CALLBACK reportedStateCallback,
-    void* context);
-
-/**
- * @brief Dynamic mocking of IoTHubDeviceClient_LL_SendReportedState.
- *
- * Only available if ENABLE_MOCKS is set.
- *
- * @param function Mock function, or NULL for no mocking.
- */
-void ADUC_UT_SetSendReportedStateMock(MockIoTHubDeviceClient_LL_SendReportedState function);
-
-#endif
 
 EXTERN_C_END
 

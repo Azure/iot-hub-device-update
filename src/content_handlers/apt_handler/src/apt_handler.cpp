@@ -29,9 +29,6 @@
 
 namespace adushconst = Adu::Shell::Const;
 
-// Indicates that the agent should restart when applying the update.
-static bool g_restartRequiredAfterApplied = false;
-
 /**
  * @brief Constructor
  * This function locates and parses APT file using APTParser.
@@ -212,7 +209,6 @@ ADUC_Result AptHandlerImpl::Install()
     _applied = false;
     std::string aptOutput;
     int aptExitCode = -1;
-    bool installingADUAgent = false;
 
     ADUC_Result result = { ADUC_DownloadResult_Success };
     try
@@ -235,17 +231,6 @@ ADUC_Result AptHandlerImpl::Install()
         std::stringstream data;
         for (const std::string& package : _packages)
         {
-            // Are we installing adu-agent package?
-            // Currently, we are assuming adu-agent* is an ADU Agent package.
-            if (!installingADUAgent && (package.find_first_of("adu-agent") == 0))
-            {
-                installingADUAgent = true;
-                Log_Info(
-                    "The ADU Agent restart is required after installation task completed. (package:%s)",
-                    package.c_str());
-                g_restartRequiredAfterApplied = true;
-            }
-
             data << package << " ";
         }
         args.emplace_back(adushconst::target_data_opt);
@@ -288,10 +273,9 @@ ADUC_Result AptHandlerImpl::Apply()
         return ADUC_Result{ ADUC_ApplyResult_Failure, ADUC_ERC_APT_HANDLER_INSTALLCRITERIA_PERSIST_FAILURE };
     }
 
-    if (g_restartRequiredAfterApplied)
+    if (_aptContent->AgentRestartRequired)
     {
-        // Always require a agent restart after self updated.
-        Log_Debug("The install task completed successfully, ADU Agent restart is required for this update.");
+        Log_Debug("The install task completed successfully, DU Agent restart is required for this update.");
         return ADUC_Result{ ADUC_ApplyResult_SuccessAgentRestartRequired };
     }
 
@@ -416,7 +400,6 @@ const JSON_Status safe_json_serialize_to_file_pretty(const JSON_Value* value, co
 
 /**
  * @brief Persist specified installedCriteria in a file and mark its state as 'installed'.
- * NOTE: For private preview, only the last installedCriteria is persisted.
  * 
  * @param installedCriteriaFilePath A full path to installed criteria data file.
  * @param installedCriteria An installed criteria string.
@@ -471,8 +454,18 @@ AptHandlerImpl::PersistInstalledCriteria(const char* installedCriteriaFilePath, 
 /**
  * @brief Remove specified installedCriteria from installcriteria data file.
  *
+ * Note: it will remove duplicate installedCriteria entries.<br/>
+ * For example, only the baz array element would remain after a call with "bar" installedCriteria:<br/>
+ * \code
+ * [
+ *   {"installedCriteria": "bar", "state": "installed", "timestamp": "<time 1>"},
+ *   {"installedCriteria": "bar", "state": "installed", "timestamp": "<time 2>"},
+ *   {"installedCriteria": "baz", "state": "installed", "timestamp": "<time 3>"},
+ * ]
+ * \endcode
+ *
  * @param installedCriteriaFilePath A full path to installed criteria data file.
- * @param installedCriteria An installed criteria string.
+ * @param installedCriteria An installed criteria string. Case-sensitive match is used.
  *
  * @return bool 'True' if the specified installedCriteria doesn't exist, file doesn't exist, or removed successfully.
  */
@@ -480,7 +473,6 @@ const bool
 AptHandlerImpl::RemoveInstalledCriteria(const char* installedCriteriaFilePath, const std::string& installedCriteria)
 {
     bool success = true;
-    JSON_Status status;
 
     std::ifstream dataFile(installedCriteriaFilePath);
     if (!dataFile.good())
@@ -492,6 +484,7 @@ AptHandlerImpl::RemoveInstalledCriteria(const char* installedCriteriaFilePath, c
     JSON_Value* rootValue = json_parse_file(installedCriteriaFilePath);
     if (rootValue != nullptr)
     {
+        bool mutated = false;
         JSON_Array* icArray = json_value_get_array(rootValue);
         for (size_t i = json_array_get_count(icArray); i > 0; i--)
         {
@@ -502,19 +495,23 @@ AptHandlerImpl::RemoveInstalledCriteria(const char* installedCriteriaFilePath, c
                 if (installedCriteria == id)
                 {
                     JSON_Status deleted = json_array_remove(icArray, i - 1);
-                    if (deleted == JSONSuccess)
-                    {
-                        JSON_Status saved = safe_json_serialize_to_file_pretty(rootValue, installedCriteriaFilePath);
-                        success = (saved == JSONSuccess);
-                    }
-                    else
+                    if (deleted != JSONSuccess)
                     {
                         // Failed to remove.
                         success = false;
+                        break;
                     }
-                    break;
+
+                    // otherwise, keep going to remove duplicates
+                    mutated = true;
                 }
             }
+        }
+
+        if (success && mutated)
+        {
+            JSON_Status saved = safe_json_serialize_to_file_pretty(rootValue, installedCriteriaFilePath);
+            success = (saved == JSONSuccess);
         }
 
         json_value_free(rootValue);

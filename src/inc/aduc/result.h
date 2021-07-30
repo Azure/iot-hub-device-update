@@ -55,7 +55,7 @@ typedef enum tagADUC_Facility
     /*indicates errno errors. */
     ADUC_FACILITY_ERRNO = 0xE,
     /*indicates errors from the lower layer*/
-    ADUC_FACILITY_LOWERLAYER = 0x10,
+    ADUC_FACILITY_LOWERLAYER = 0xF,
 } ADUC_Facility;
 
 /**

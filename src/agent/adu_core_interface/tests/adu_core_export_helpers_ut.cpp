@@ -46,6 +46,8 @@ static uint32_t CodeFromExtendedResultCode(ADUC_Result_t extendedResultCode)
 
 std::condition_variable workCompletionCallbackCV;
 
+#define ADUC_ClientHandle_Invalid (-1)
+
 extern "C"
 {
     static void DownloadProgressCallback(
@@ -66,7 +68,7 @@ extern "C"
     }
 }
 
-std::string CreateDownloadUpdateActionJson(const std::map<std::string, std::string>& files)
+std::string CreateSWUpdateDownloadUpdateActionJson(const std::map<std::string, std::string>& files)
 {
     std::stringstream main_json_strm;
     std::stringstream url_json_strm;
@@ -119,7 +121,7 @@ public:
     {
         m_previousDeviceHandle = g_iotHubClientHandleForADUComponent;
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        g_iotHubClientHandleForADUComponent = reinterpret_cast<IOTHUB_DEVICE_CLIENT_LL_HANDLE>(-1);
+        g_iotHubClientHandleForADUComponent = reinterpret_cast<ADUC_ClientHandle>(ADUC_ClientHandle_Invalid);
     }
 
     ~TestCaseFixture()
@@ -133,7 +135,7 @@ public:
     TestCaseFixture& operator=(TestCaseFixture&&) = delete;
 
 private:
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE m_previousDeviceHandle;
+    ADUC_ClientHandle m_previousDeviceHandle;
 };
 
 //
@@ -165,7 +167,7 @@ TEST_CASE("ADUC_PrepareInfo_Init")
     };
     // clang-format on
 
-    std::string updateActionJson{ CreateDownloadUpdateActionJson(files) };
+    std::string updateActionJson{ CreateSWUpdateDownloadUpdateActionJson(files) };
 
     workflowData.UpdateActionJson = ADUC_Json_GetRoot(updateActionJson.c_str());
     REQUIRE(workflowData.UpdateActionJson != nullptr);
@@ -204,7 +206,7 @@ TEST_CASE("ADUC_DownloadInfo_Init")
     };
     // clang-format on
 
-    const std::string updateAction{ CreateDownloadUpdateActionJson(files) };
+    const std::string updateAction{ CreateSWUpdateDownloadUpdateActionJson(files) };
 
     INFO(updateAction);
 
@@ -277,6 +279,7 @@ TEST_CASE("ADUC_MethodCall_Register and Unregister: Invalid")
     }
 }
 
+#if ADUC_SWUPDATE_HANDLER
 TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
 {
     std::mutex workCompletionCallbackMTX;
@@ -287,11 +290,6 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
     //
 
     ADUC_WorkflowData workflowData{};
-
-    const std::string workflowId{ "unit_test" };
-    constexpr size_t workflowIdSize = ARRAY_SIZE(workflowData.WorkflowId);
-    strncpy(workflowData.WorkflowId, workflowId.c_str(), workflowIdSize);
-    workflowData.WorkflowId[workflowIdSize - 1] = '\0';
 
     workflowData.LastReportedState = ADUCITF_State_Idle;
     workflowData.DownloadProgressCallback = DownloadProgressCallback;
@@ -313,7 +311,7 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
     };
     // clang-format on
 
-    std::string downloadJson{ CreateDownloadUpdateActionJson(files) };
+    std::string downloadJson{ CreateSWUpdateDownloadUpdateActionJson(files) };
 
     workflowData.UpdateActionJson = ADUC_Json_GetRoot(downloadJson.c_str());
     REQUIRE(workflowData.UpdateActionJson != nullptr);
@@ -332,6 +330,11 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
 
     workflowData.CurrentAction = ADUCITF_UpdateAction_Download;
 
+    const std::string workflowId{ "unit_test" };
+    constexpr size_t workflowIdSize = ARRAY_SIZE(workflowData.WorkflowId);
+    strncpy(workflowData.WorkflowId, workflowId.c_str(), workflowIdSize);
+    workflowData.WorkflowId[workflowIdSize - 1] = '\0';
+
     result = ADUC_MethodCall_Download(&methodCallData);
 
     CHECK(result.ResultCode == ADUC_DownloadResult_InProgress);
@@ -344,7 +347,7 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
 
     // Wait for async operation completion
     workCompletionCallbackCV.wait(lock);
-    
+
     ADUC_MethodCall_Download_Complete(&methodCallData, result);
 
     //
@@ -397,3 +400,4 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
 
     ADUC_MethodCall_Unregister(&workflowData.RegisterData);
 }
+#endif // ADUC_SWUPDATE_HANDLER

@@ -67,12 +67,15 @@ target_link_libraries (
             IotHubClient::iothub_client
             iothub_client_mqtt_transport
             umqtt
-            aduc::pnp_helper
             aduc::adu_core_interface
             aduc::c_utils
+            aduc::communication_abstraction
+            aduc::config_utils
             aduc::device_info_interface
-            aduc::logging
             aduc::eis_utils
+            aduc::logging
+            aduc::permission_utils
+            aduc::pnp_helper
             aduc::system_utils)
 
 get_filename_component (
@@ -82,10 +85,19 @@ get_filename_component (
     "/")
 target_compile_definitions (
     ${target_name}
-    PRIVATE ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
+    PRIVATE ADUC_AGENT_FILEPATH="${ADUC_AGENT_FILEPATH}"
             ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
+            ADUC_CONF_FOLDER="${ADUC_CONF_FOLDER}"
             ADUC_DATA_FOLDER="${ADUC_DATA_FOLDER}"
-            ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}")
+            ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
+            ADUC_FILE_USER="${ADUC_FILE_USER}"
+            ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}"
+            ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
+            ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}"
+            DO_FILE_GROUP="${DO_FILE_GROUP}"
+            DO_FILE_USER="${DO_FILE_USER}"
+            SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}"
+)
 
 if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
     target_compile_definitions (${target_name} PRIVATE ADUC_PLATFORM_SIMULATOR)

@@ -41,7 +41,7 @@ set (CPACK_DEBIAN_PACKAGE_SECTION "admin")
 # If remove deliveryoptimization-agent from dependencies, preinst script must be updated accordingly.
 
 # See https://www.debian.org/doc/debian-policy/ch-relationships.html#s-binarydeps
-set (CPACK_DEBIAN_PACKAGE_DEPENDS "deliveryoptimization-agent, libdeliveryoptimization, libcpprest")
+set (CPACK_DEBIAN_PACKAGE_DEPENDS "deliveryoptimization-agent, libdeliveryoptimization")
 set (CPACK_DEBIAN_PACKAGE_SUGGESTS "deliveryoptimization-plugin-apt")
 
 # Use dpkg-shlibdeps to generate better package dependency list.

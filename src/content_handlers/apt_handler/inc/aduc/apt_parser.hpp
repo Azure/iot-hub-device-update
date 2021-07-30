@@ -29,12 +29,18 @@
  */
 #define ADU_APT_FIELDNAME_VERSION "version"
 
+/**
+ * @brief JSON field name for agentRestartRequired property
+ */
+#define ADU_APT_FIELDNAME_AGENT_RESTART_REQUIRED "agentRestartRequired"
+
 struct AptContent
 {
     std::string Id;
     std::string Name;
     std::string Version;
     std::list<std::string> Packages;
+    bool AgentRestartRequired;
 };
 
 namespace AptParser

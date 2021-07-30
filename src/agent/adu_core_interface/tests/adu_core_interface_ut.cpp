@@ -5,15 +5,21 @@
  * @copyright Copyright (c) 2019, Microsoft Corp.
  */
 #include <catch2/catch.hpp>
-using Catch::Matchers::Equals;
 using Catch::Matchers::Matches;
 
+#include <algorithm>
 #include <sstream>
 
 #include "aduc/adu_core_export_helpers.h"
 #include "aduc/adu_core_exports.h"
 #include "aduc/adu_core_interface.h"
 #include "aduc/agent_workflow.h"
+
+#define ENABLE_MOCKS
+#include "aduc/client_handle_helper.h"
+#undef ENABLE_MOCKS
+
+#include "umock_c/umock_c.h"
 
 //
 // Test Helpers
@@ -62,7 +68,7 @@ class ADUC_UT_ReportPropertyAsyncValues
 {
 public:
     void
-    set(IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceHandleIn,
+    set(ADUC_ClientHandle deviceHandleIn,
         const unsigned char* reportedStateIn,
         size_t reportedStateLenIn,
         IOTHUB_CLIENT_REPORTED_STATE_CALLBACK reportedStateCallbackIn,
@@ -70,22 +76,26 @@ public:
     {
         deviceHandle = deviceHandleIn;
 
-        memcpy(reportedState, reportedStateIn, reportedStateLenIn);
+        // we interpret the octets to be bytes of a string as it is a json string (utf-8 or ascii is fine).
+        // copy the bytes into the std::string wholesale which is bitwise correct.
+        reportedState.clear();
+        reportedState.reserve(reportedStateLenIn);
+        std::for_each(reportedStateIn, reportedStateIn + reportedStateLenIn, [&](unsigned char c) {
+            reportedState.push_back(c);
+        });
 
-        reportedStateLen = reportedStateLenIn;
         reportedStateCallback = reportedStateCallbackIn;
         userContextCallback = userContextCallbackIn;
     }
 
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceHandle{ nullptr };
-    unsigned char reportedState[1024]{}; /* The API treats this as a blob. */
-    size_t reportedStateLen{ 0 };
+    std::string reportedState;
+    ADUC_ClientHandle deviceHandle{ nullptr };
     IOTHUB_CLIENT_REPORTED_STATE_CALLBACK reportedStateCallback{ nullptr };
     const void* userContextCallback{ nullptr };
 } g_SendReportedStateValues;
 
-static IOTHUB_CLIENT_RESULT mockIoTHubDeviceClient_LL_SendReportedState(
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceHandle,
+static IOTHUB_CLIENT_RESULT mockClientHandle_SendReportedState(
+    ADUC_ClientHandle deviceHandle,
     const unsigned char* reportedState,
     size_t reportedStateLen,
     IOTHUB_CLIENT_REPORTED_STATE_CALLBACK reportedStateCallback,
@@ -104,15 +114,16 @@ public:
     {
         m_previousDeviceHandle = g_iotHubClientHandleForADUComponent;
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        g_iotHubClientHandleForADUComponent = reinterpret_cast<IOTHUB_DEVICE_CLIENT_LL_HANDLE>(42);
+        g_iotHubClientHandleForADUComponent = reinterpret_cast<ADUC_ClientHandle>(42);
 
-        ADUC_UT_SetSendReportedStateMock(mockIoTHubDeviceClient_LL_SendReportedState);
+        REGISTER_UMOCK_ALIAS_TYPE(ADUC_ClientHandle, void*);
+        REGISTER_UMOCK_ALIAS_TYPE(IOTHUB_CLIENT_REPORTED_STATE_CALLBACK, void*);
+
+        REGISTER_GLOBAL_MOCK_HOOK(ClientHandle_SendReportedState, mockClientHandle_SendReportedState);
     }
 
     ~TestCaseFixture()
     {
-        ADUC_UT_SetSendReportedStateMock(nullptr);
-
         CHECK(g_iotHubClientHandleForADUComponent != nullptr);
         g_iotHubClientHandleForADUComponent = m_previousDeviceHandle;
     }
@@ -123,7 +134,7 @@ public:
     TestCaseFixture& operator=(TestCaseFixture&&) = delete;
 
 private:
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE m_previousDeviceHandle;
+    ADUC_ClientHandle m_previousDeviceHandle;
 };
 
 //
@@ -150,7 +161,6 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_Connected")
 
     AzureDeviceUpdateCoreInterface_Connected(&workflowData);
 
-    CHECK(workflowData.WorkflowId[0] != '\0');
     CHECK(workflowData.LastReportedState == ADUCITF_State_Idle);
     CHECK(workflowData.StartupIdleCallSent);
     CHECK(!workflowData.OperationInProgress);
@@ -181,9 +191,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
                 << R"(})"
              << R"(})";
         // clang-format on
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        CHECK_THAT(reinterpret_cast<const char*>(g_SendReportedStateValues.reportedState), Equals(strm.str()));
-        CHECK(g_SendReportedStateValues.reportedStateLen == strm.str().length());
+        CHECK(g_SendReportedStateValues.reportedState == strm.str());
 #else
         // clang-format off
         strm << R"({)"
@@ -197,9 +205,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
                 << R"(})"
              << R"(})";
         // clang-format on
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        CHECK_THAT(
-            reinterpret_cast<const char*>(g_SendReportedStateValues.reportedState), Matches(escaped(strm.str())));
+        CHECK_THAT(g_SendReportedStateValues.reportedState, Matches(escaped(strm.str())));
 #endif
         CHECK(g_SendReportedStateValues.reportedStateCallback != nullptr);
         CHECK(g_SendReportedStateValues.userContextCallback == nullptr);
@@ -228,9 +234,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
                 << R"(})"
              << R"(})";
         // clang-format on
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        CHECK_THAT(reinterpret_cast<const char*>(g_SendReportedStateValues.reportedState), Equals(strm.str()));
-        CHECK(g_SendReportedStateValues.reportedStateLen == strm.str().length());
+        CHECK(g_SendReportedStateValues.reportedState == strm.str());
 #else
         // clang-format off
         strm << R"({)"
@@ -244,9 +248,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
                 << R"(})"
              << R"(})";
         // clang-format on
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        CHECK_THAT(
-            reinterpret_cast<const char*>(g_SendReportedStateValues.reportedState), Matches(escaped(strm.str())));
+        CHECK_THAT(g_SendReportedStateValues.reportedState, Matches(escaped(strm.str())));
 #endif
         CHECK(g_SendReportedStateValues.reportedStateCallback != nullptr);
         CHECK(g_SendReportedStateValues.userContextCallback == nullptr);
@@ -289,9 +291,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportContentI
             << R"(})"
          << R"(})";
     // clang-format on
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    CHECK_THAT(reinterpret_cast<const char*>(g_SendReportedStateValues.reportedState), Equals(strm.str()));
-    CHECK(g_SendReportedStateValues.reportedStateLen == strm.str().length());
+    CHECK(g_SendReportedStateValues.reportedState == strm.str());
     CHECK(g_SendReportedStateValues.reportedStateCallback != nullptr);
     CHECK(g_SendReportedStateValues.userContextCallback == nullptr);
 
