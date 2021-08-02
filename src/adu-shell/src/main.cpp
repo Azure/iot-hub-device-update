@@ -32,6 +32,11 @@ namespace AptGetTasks = Adu::Shell::Tasks::AptGet;
 namespace SWUpdateTasks = Adu::Shell::Tasks::SWUpdate;
 #endif
 
+#ifdef ADUSHELL_PVCONTROL
+#    include "pvcontrol_tasks.hpp"
+namespace PVControlTasks = Adu::Shell::Tasks::PVControl;
+#endif
+
 namespace adushconst = Adu::Shell::Const;
 
 /**
@@ -63,10 +68,10 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
         // "--version"           |   Show adu-shell version number.
         //
         // "--update-type"       |   An ADU Update Type.  
-        //                             e.g., "microsoft/apt", "microsoft/swupdate", "common".
+        //                             e.g., "microsoft/apt", "microsoft/swupdate", "pantacor/pvcontrol", "common".
         //
         // "--update-action"     |   An action to perform.
-        //                             e.g., "initialize", "download", "install", "apply", "cancel", "rollback", "reboot".
+        //                             e.g., "initialize", "download", "install", "apply", "cancel", "rollback", "reboot", "getstatus".
         //
         // "--target-data"       |   A string contains data for a target command. 
         //                             e.g., for microsoft/apt download action, this is a single-quoted string
@@ -236,7 +241,10 @@ int ADUShell_Dowork(const ADUShell_LaunchArguments& launchArgs)
             { adushconst::update_type_microsoft_apt, AptGetTasks::DoAptGetTask },
 #endif
 #ifdef ADUSHELL_SWUPDATE
-            { adushconst::update_type_microsoft_swupdate, SWUpdateTasks::DoSWUpdateTask }
+            { adushconst::update_type_microsoft_swupdate, SWUpdateTasks::DoSWUpdateTask },
+#endif
+#ifdef ADUSHELL_PVCONTROL
+            { adushconst::update_type_pantacor_pvcontrol, PVControlTasks::DoPVControlTask }
 #endif
         };
 

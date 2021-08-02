@@ -173,6 +173,16 @@ set (
     CACHE STRING "Name of the data file containing InstalledCriteria records.")
 
 set (
+    ADUC_PVINSTALLED_FILE
+    "pvinstalled"
+    CACHE STRING "Name of the data file containing latest Pantavisor revision info.")
+
+set (
+    ADUC_PVPROGRESS_FILE
+    "pvprogress"
+    CACHE STRING "Name of the data file containing Pantavisior progress for ongoing update.")
+
+set (
     ADUC_LOGGING_LIBRARY
     "zlog"
     CACHE STRING "The logging library to use. Options: xlog zlog")
