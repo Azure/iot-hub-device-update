@@ -70,7 +70,7 @@ jobs:
     displayName: "Build ADU Agent"
     timeoutInMinutes: 60
     cancelTimeoutInMinutes: 60
-    pool: ADUC-Linux
+    pool: aduc_1es_client_pool
     steps:
       - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
         displayName: "Component Detection"

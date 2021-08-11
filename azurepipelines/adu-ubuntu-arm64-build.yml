@@ -17,9 +17,9 @@ variables:
   # gcc-8 matches what is built with poky warrior.
   CC: gcc-8
   CXX: g++-8
-  
+
 name: $(version.major).$(version.minor).$(version.patch)-$(version.pre-release)+$(version.build)
-  
+
 resources:
 - repo: self
 
@@ -56,21 +56,21 @@ pr:
       - docker/*
       - scripts/*
       - licenses/*
-  
+
 jobs:
 - job: BuildAduAgent
   displayName: 'Build ADU Agent'
   timeoutInMinutes: 360
   cancelTimeoutInMinutes: 360
-  pool: ADUC-Linux
+  pool: aduc_1es_client_pool
   steps:
   - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
     displayName: 'Component Detection'
     inputs:
       sourceScanPath: src
-  
+
   # QEMU must be registered before this pipeline runs, but restarting the build VM will deregister QEMU,
-  # So, we just need to run QEMU before kicking off this pipeline. 
+  # So, we just need to run QEMU before kicking off this pipeline.
   # This is only an issue on the arm64 flavor since we aren't able to register QEMU as part of the docker
   # image for this architecture, which is not the case for arm32.
 
@@ -91,7 +91,7 @@ jobs:
     displayName: 'Build docker image'
 
   - bash: |
-          sudo docker run -d -t --rm -v $(Build.SourcesDirectory):/iot-hub-device-update -v ~/.gitconfig:/etc/.gitconfig --name arm64container adu-arm64-img:latest bash 
+          sudo docker run -d -t --rm -v $(Build.SourcesDirectory):/iot-hub-device-update -v ~/.gitconfig:/etc/.gitconfig --name arm64container adu-arm64-img:latest bash
     displayName: 'Run docker container'
 
   - bash: |
@@ -115,7 +115,7 @@ jobs:
           sudo docker exec arm64container git config --global url."https://api:$DO_ACCESS_TOKEN@github.com/Microsoft/do-client.git".insteadOf "https://github.com/Microsoft/do-client.git"
           sudo docker exec arm64container git config --global url."https://api:$DO_ACCESS_TOKEN@github.com/Microsoft/do-client".insteadOf "https://github.com/Microsoft/do-client"
     displayName: 'Configure git credentials for DO inside container'
-    env: 
+    env:
       DO_ACCESS_TOKEN: $(do_access_token)
 
   - bash: |
@@ -169,7 +169,7 @@ jobs:
   - bash: |
           sudo docker exec -w /iot-hub-device-update arm64container scripts/build.sh --clean --build-unit-tests --provision-with-iotedge --type MinSizeRel --platform-layer linux --content-handlers microsoft/apt --log-lib zlog --build-packages --static-analysis clang-tidy,cppcheck --out-dir out-arm64
     displayName: 'Build Client, Unit Tests and Packages: linux-apt-MinSizeRel'
-    
+
   - bash: |
           cp out-arm64/*.deb $(Build.ArtifactStagingDirectory)
           cp out-arm64/src/agent/out-arm64/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgent
