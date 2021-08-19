@@ -1,8 +1,8 @@
 variables:
   version.major: 0
-  version.minor: 7
+  version.minor: 8
   version.patch: 0
-  version.pre-release: "public-preview"
+  version.pre-release: "rc1-public-preview"
   version.build: $[format('{0:yyyyMMdd}-{0:HHmmss}', pipeline.startTime)]
 
   # TODO(shiyipeng): Bug 30317524: [ADU E2E Testing] Azure Artifacts no longer free - publishing to test feed fails
@@ -70,27 +70,12 @@ jobs:
     displayName: "Build ADU Agent"
     timeoutInMinutes: 60
     cancelTimeoutInMinutes: 60
-    pool: ADUC-Linux
+    pool: aduc_1es_client_pool
     steps:
       - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
         displayName: "Component Detection"
         inputs:
           sourceScanPath: src
-
-      - task: Bash@3
-        displayName: "Install ADUC dependencies"
-        inputs:
-          targetType: "filePath"
-          filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
-          arguments: --install-aduc-deps --install-packages
-
-      - bash: |
-          curl https://packages.microsoft.com/config/ubuntu/18.04/multiarch/prod.list > ./microsoft-prod.list
-          sudo cp ./microsoft-prod.list /etc/apt/sources.list.d/
-          curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-          sudo cp ./microsoft.gpg /etc/apt/trusted.gpg.d/
-          sudo apt-get install -y libdeliveryoptimization-dev
-        displayName: "Install DO SDK"
 
       - task: Bash@3
         displayName: "Build Client and Unit Tests: simulator-swupdate-Debug"
@@ -215,6 +200,7 @@ jobs:
         # Ignore SC2209: Use var=$(command) to assign output (or quote to assign string).
         #   We use 'ret=return' or 'ret=exit' to support dot sourcing.
       - bash: |
+          sudo apt install -y shellcheck
           shellcheck -s bash -e SC2164 -e SC2209 $(find -name "*.sh")
           exit $?
         displayName: "Run ShellCheck"

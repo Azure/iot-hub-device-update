@@ -45,8 +45,7 @@ catch2_ref=$default_catch2_ref
 
 # DO Deps
 install_do=false
-# TODO(shiyipeng): update default_do_ref on DO's next release
-default_do_ref=main
+default_do_ref=v0.7.0
 do_ref=$default_do_ref
 install_do_deps_distro=""
 default_do_deps_distro=ubuntu-18.04
