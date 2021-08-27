@@ -7,6 +7,7 @@
 #include <aduc/hash_utils.h>
 
 #include <catch2/catch.hpp>
+using Catch::Matchers::Equals;
 
 #include <array>
 #include <fstream>
@@ -95,6 +96,31 @@ private:
     };
     // clang-format on
 };
+
+TEST_CASE("ADUC_HashUtils_GetFileHash - SmallFile")
+{
+    SmallFile testFile;
+
+    // clang-format off
+    auto version = GENERATE( // NOLINT(google-build-using-namespace)
+        SHAversion::SHA1,
+        SHAversion::SHA224,
+        SHAversion::SHA256,
+        SHAversion::SHA384,
+        SHAversion::SHA512);
+    // clang-format on
+
+    SECTION("Verify file hash")
+    {
+        INFO("SHAversion: " << version);
+        char* hash = nullptr;
+        REQUIRE(ADUC_HashUtils_GetFileHash(testFile.Filename(), version, &hash));
+        CHECK_THAT(hash, Equals(testFile.GetDataHashBase64(version)));
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc)
+        free(hash);
+        hash = nullptr;
+    }
+}
 
 TEST_CASE("ADUC_HashUtils_IsValidFileHash - SmallFile")
 {
@@ -253,5 +279,30 @@ TEST_CASE("ADUC_HashUtils_IsValidFileHash - LargeFile")
         INFO("SHAversion: " << version);
         REQUIRE_FALSE(ADUC_HashUtils_IsValidFileHash(
             testFile.Filename(), "xxXXXgW/Nr695oSEGijw/UPGmFCj3OX+26aZKO46iZE=", version));
+    }
+}
+
+TEST_CASE("ADUC_HashUtils_GetFileHash - LargeFile")
+{
+    SmallFile testFile;
+
+    // clang-format off
+    auto version = GENERATE( // NOLINT(google-build-using-namespace)
+        SHAversion::SHA1,
+        SHAversion::SHA224,
+        SHAversion::SHA256,
+        SHAversion::SHA384,
+        SHAversion::SHA512);
+    // clang-format on
+
+    SECTION("Verify file hash")
+    {
+        INFO("SHAversion: " << version);
+        char* hash = nullptr;
+        REQUIRE(ADUC_HashUtils_GetFileHash(testFile.Filename(), version, &hash));
+        CHECK_THAT(hash, Equals(testFile.GetDataHashBase64(version)));
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc)
+        free(hash);
+        hash = nullptr;
     }
 }

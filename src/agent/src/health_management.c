@@ -317,33 +317,32 @@ done:
 }
 
 /**
- * @brief Checks the data directory ownerships and permissions.
+ * @brief Checks the user and/or group ownership on a file.
+ * @param path The path of the file object.
+ * @param user The expected user on the file, or NULL to opt out of checking user.
+ * @param group The expected group on the file, or NULL to opt out of checking group.
+ * @param expectedPermissions The expected permissions of the file object.
  * @returns true if everything is correct.
  */
-static _Bool CheckDataDir()
+static _Bool CheckDirOwnershipAndVerifyFilemodeExact(const char* path, const char* user, const char* group, const mode_t expected_permissions)
 {
     _Bool result = false;
 
-    const char* dir = ADUC_DATA_FOLDER;
-
-    if (!SystemUtils_IsDir(dir))
+    if (!SystemUtils_IsDir(path))
     {
-        Log_Error("'%s' does not exist or is not a directory", dir);
+        Log_Error("'%s' does not exist or is not a directory", path);
         goto done;
     }
 
-    if (!PermissionUtils_CheckOwnership(dir, ADUC_FILE_USER, ADUC_FILE_GROUP))
+    if (!PermissionUtils_CheckOwnership(path, user, group))
     {
-        Log_Error("'%s' has incorrect ownership (expected: %s:%s)", dir, ADUC_FILE_USER, ADUC_FILE_GROUP);
+        Log_Error("'%s' has incorrect ownership (expected: %s:%s)", path, user, group);
         goto done;
     }
 
-    // Note: "Other" bits are cleared to align with ADUC_SystemUtils_MkDirRecursiveDefault and packaging.
-    const mode_t expected_permissions = S_IRWXU | S_IRWXG;
-
-    if (!PermissionUtils_VerifyFilemodeExact(dir, expected_permissions))
+    if (!PermissionUtils_VerifyFilemodeExact(path, expected_permissions))
     {
-        Log_Error("Lookup failed or '%s' has incorrect permissions (expected: 0%o)", dir, expected_permissions);
+        Log_Error("Lookup failed or '%s' has incorrect permissions (expected: 0%o)", path, expected_permissions);
         goto done;
     }
 
@@ -352,6 +351,28 @@ static _Bool CheckDataDir()
 done:
 
     return result;
+}
+
+/**
+ * @brief Checks the data directory ownerships and permissions.
+ * @returns true if everything is correct.
+ */
+static _Bool CheckDataDir()
+{
+    // Note: "Other" bits are cleared to align with ADUC_SystemUtils_MkDirRecursiveDefault and packaging.
+    const mode_t expected_permissions = S_IRWXU | S_IRWXG;
+    return CheckDirOwnershipAndVerifyFilemodeExact(ADUC_DATA_FOLDER, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
+}
+
+/**
+ * @brief Checks the downloads directory ownerships and permissions.
+ * @returns true if everything is correct.
+ */
+static _Bool CheckDownloadsDir()
+{
+    // Note: "Other" bits are cleared to align with ADUC_SystemUtils_MkDirRecursiveDefault and packaging.
+    const mode_t expected_permissions = S_IRWXU | S_IRWXG;
+    return CheckDirOwnershipAndVerifyFilemodeExact(ADUC_DOWNLOADS_FOLDER, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
 }
 
 /**
@@ -471,6 +492,11 @@ static _Bool AreDirAndFilePermissionsValid()
     }
 
     if (!CheckDataDir())
+    {
+        result = false; // continue
+    }
+
+    if (!CheckDownloadsDir())
     {
         result = false; // continue
     }

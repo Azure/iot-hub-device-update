@@ -11,13 +11,15 @@
 #include <exception>
 #include <thread>
 
-#include <aduc/adu_core_exports.h>
-#include <aduc/exception_utils.hpp>
-#include <aduc/logging.h>
-#include <aduc/result.h>
+#include "aduc/adu_core_exports.h"
+#include "aduc/exception_utils.hpp"
+#include "aduc/logging.h"
+#include "aduc/result.h"
+#include "aduc/types/workflow.h"
+#include "aduc/workflow_utils.h"
 
-#include <aduc/content_handler.hpp>
-#include <aduc/content_handler_factory.hpp>
+#include "aduc/content_handler.hpp"
+#include "aduc/content_handler_factory.hpp"
 
 namespace ADUC
 {
@@ -29,7 +31,7 @@ class LinuxPlatformLayer
 public:
     static std::unique_ptr<LinuxPlatformLayer> Create();
 
-    ADUC_Result SetRegisterData(ADUC_RegisterData* data);
+    ADUC_Result SetUpdateActionCallbacks(ADUC_UpdateActionCallbacks* data);
 
 private:
     //
@@ -53,27 +55,24 @@ private:
      * @brief Implements Download callback.
      *
      * @param token Opaque token.
-     * @param workflowId Current workflow identifier.
-     * @param info #ADUC_DownloadInfo with information on how to apply.
+     * @param workCompletionData Contains information on what to do when task is completed.
+     * @param info ADUC_WorkflowDataToken with information on how to download.
      * @return ADUC_Result
      */
     static ADUC_Result DownloadCallback(
-        ADUC_Token token,
-        const char* workflowId,
-        const char* updateType,
-        const ADUC_WorkCompletionData* workCompletionData,
-        const ADUC_DownloadInfo* info) noexcept
+        ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken info) noexcept
     {
+        const ADUC_WorkflowData* workflowData = static_cast<const ADUC_WorkflowData*>(info);
+
         try
         {
-            Log_Info("Download thread started");
+            Log_Info("Download thread started.");
 
             // Pointers passed to this method are guaranteed to be valid until WorkCompletionCallback is called.
-            std::thread worker{ [token, workflowId, updateType, workCompletionData, info] {
+            std::thread worker{ [token, workCompletionData, workflowData] {
                 const ADUC_Result result{ ADUC::ExceptionUtils::CallResultMethodAndHandleExceptions(
-                    ADUC_DownloadResult_Failure,
-                    [&token, &workflowId, &updateType, &workCompletionData, &info]() -> ADUC_Result {
-                        return static_cast<LinuxPlatformLayer*>(token)->Download(workflowId, updateType, info);
+                    ADUC_Result_Failure, [&token, &workCompletionData, &workflowData]() -> ADUC_Result {
+                        return static_cast<LinuxPlatformLayer*>(token)->Download(workflowData);
                     }) };
 
                 // Report result to main thread.
@@ -84,21 +83,21 @@ private:
             worker.detach();
 
             // Indicate that we've spun off a thread to do the actual work.
-            return ADUC_Result{ ADUC_DownloadResult_InProgress };
+            return ADUC_Result{ ADUC_Result_Download_InProgress };
         }
         catch (const ADUC::Exception& e)
         {
             Log_Error("Unhandled ADU Agent exception. code: %d, message: %s", e.Code(), e.Message().c_str());
-            return ADUC_Result{ ADUC_DownloadResult_Failure, e.Code() };
+            return ADUC_Result{ ADUC_Result_Failure, e.Code() };
         }
         catch (const std::exception& e)
         {
             Log_Error("Unhandled std exception: %s", e.what());
-            return ADUC_Result{ ADUC_DownloadResult_Failure, ADUC_ERC_NOTRECOVERABLE };
+            return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
         }
         catch (...)
         {
-            return ADUC_Result{ ADUC_DownloadResult_Failure, ADUC_ERC_NOTRECOVERABLE };
+            return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
         };
     }
 
@@ -106,25 +105,24 @@ private:
      * @brief Implements Install callback.
      *
      * @param token Opaque token.
-     * @param workflowId Current workflow identifier.
-     * @param info #ADUC_InstallInfo with information on how to apply.
+     * @param workCompletionData Contains information on what to do when task is completed.
+     * @param info #ADUC_WorkflowData with information on how to install.
      * @return ADUC_Result
      */
     static ADUC_Result InstallCallback(
-        ADUC_Token token,
-        const char* workflowId,
-        const ADUC_WorkCompletionData* workCompletionData,
-        const ADUC_InstallInfo* info) noexcept
+        ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken info) noexcept
     {
+        ADUC_Result result;
+        const ADUC_WorkflowData* workflowData = static_cast<const ADUC_WorkflowData*>(info);
         try
         {
             Log_Info("Install thread started");
 
             // Pointers passed to this method are guaranteed to be valid until WorkCompletionCallback is called.
-            std::thread worker{ [token, workflowId, workCompletionData, info] {
+            std::thread worker{ [token, workCompletionData, workflowData] {
                 const ADUC_Result result{ ADUC::ExceptionUtils::CallResultMethodAndHandleExceptions(
-                    ADUC_InstallResult_Failure, [&token, &workflowId, &workCompletionData, &info]() -> ADUC_Result {
-                        return static_cast<LinuxPlatformLayer*>(token)->Install(workflowId, info);
+                    ADUC_Result_Failure, [&token, &workCompletionData, &workflowData]() -> ADUC_Result {
+                        return static_cast<LinuxPlatformLayer*>(token)->Install(workflowData);
                     }) };
 
                 // Report result to main thread.
@@ -135,47 +133,47 @@ private:
             worker.detach();
 
             // Indicate that we've spun off a thread to do the actual work.
-            return ADUC_Result{ ADUC_InstallResult_InProgress };
+            result = { ADUC_Result_Install_InProgress };
         }
         catch (const ADUC::Exception& e)
         {
             Log_Error("Unhandled ADU Agent exception. code: %d, message: %s", e.Code(), e.Message().c_str());
-            return ADUC_Result{ ADUC_InstallResult_Failure, e.Code() };
+            result = { ADUC_Result_Failure, e.Code() };
         }
         catch (const std::exception& e)
         {
             Log_Error("Unhandled std exception: %s", e.what());
-            return ADUC_Result{ ADUC_InstallResult_Failure, ADUC_ERC_NOTRECOVERABLE };
+            result = ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
         }
         catch (...)
         {
-            return ADUC_Result{ ADUC_InstallResult_Failure, ADUC_ERC_NOTRECOVERABLE };
+            result = ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
         }
+
+        return result;
     }
 
     /**
      * @brief Implements Apply callback.
      *
      * @param token Opaque token.
-     * @param workflowId Current workflow identifier.
-     * @param info #ADUC_ApplyInfo with information on how to apply.
+     * @param workCompletionData Contains information on what to do when task is completed.
+     * @param info #ADUC_WorkflowData with information on how to apply.
      * @return ADUC_Result
      */
     static ADUC_Result ApplyCallback(
-        ADUC_Token token,
-        const char* workflowId,
-        const ADUC_WorkCompletionData* workCompletionData,
-        const ADUC_ApplyInfo* info) noexcept
+        ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken info) noexcept
     {
+        const ADUC_WorkflowData* workflowData = static_cast<const ADUC_WorkflowData*>(info);
         try
         {
             Log_Info("Apply thread started");
 
             // Pointers passed to this method are guaranteed to be valid until WorkCompletionCallback is called.
-            std::thread worker{ [token, workflowId, workCompletionData, info] {
+            std::thread worker{ [token, workCompletionData, workflowData] {
                 const ADUC_Result result{ ADUC::ExceptionUtils::CallResultMethodAndHandleExceptions(
-                    ADUC_ApplyResult_Failure, [&token, &workflowId, &workCompletionData, &info]() -> ADUC_Result {
-                        return static_cast<LinuxPlatformLayer*>(token)->Apply(workflowId, info);
+                    ADUC_Result_Failure, [&token, &workCompletionData, &workflowData]() -> ADUC_Result {
+                        return static_cast<LinuxPlatformLayer*>(token)->Apply(workflowData);
                     }) };
                 // Report result to main thread.
                 workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result);
@@ -185,21 +183,21 @@ private:
             worker.detach();
 
             // Indicate that we've spun off a thread to do the actual work.
-            return ADUC_Result{ ADUC_ApplyResult_InProgress };
+            return ADUC_Result{ ADUC_Result_Apply_InProgress };
         }
         catch (const ADUC::Exception& e)
         {
             Log_Error("Unhandled ADU Agent exception. code: %d, message: %s", e.Code(), e.Message().c_str());
-            return ADUC_Result{ ADUC_ApplyResult_Failure, e.Code() };
+            return ADUC_Result{ ADUC_Result_Failure, e.Code() };
         }
         catch (const std::exception& e)
         {
             Log_Error("Unhandled std exception: %s", e.what());
-            return ADUC_Result{ ADUC_ApplyResult_Failure, ADUC_ERC_NOTRECOVERABLE };
+            return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
         }
         catch (...)
         {
-            return ADUC_Result{ ADUC_ApplyResult_Failure, ADUC_ERC_NOTRECOVERABLE };
+            return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
         }
     }
 
@@ -207,24 +205,25 @@ private:
      * @brief Implements Cancel callback.
      *
      * @param token Opaque token.
-     * @param workflowId Current workflow identifier.
+     * @param info #ADUC_WorkflowData to cancel.
      */
-    static void CancelCallback(ADUC_Token token, const char* workflowId) noexcept
+    static void CancelCallback(ADUC_Token token, ADUC_WorkflowDataToken info) noexcept
     {
         Log_Info("CancelCallback called");
+        const ADUC_WorkflowData* workflowData = static_cast<const ADUC_WorkflowData*>(info);
 
         ADUC::ExceptionUtils::CallVoidMethodAndHandleExceptions(
-            [&token, &workflowId]() -> void { static_cast<LinuxPlatformLayer*>(token)->Cancel(workflowId); });
+            [&token, &workflowData]() -> void { static_cast<LinuxPlatformLayer*>(token)->Cancel(workflowData); });
     }
 
-    static ADUC_Result IsInstalledCallback(
-        ADUC_Token token, const char* workflowId, const char* updateType, const char* installedCriteria) noexcept
+    static ADUC_Result IsInstalledCallback(ADUC_Token token, ADUC_WorkflowDataToken info) noexcept
     {
         Log_Info("IsInstalledCallback called");
+        const ADUC_WorkflowData* workflowData = static_cast<const ADUC_WorkflowData*>(info);
 
         return ADUC::ExceptionUtils::CallResultMethodAndHandleExceptions(
-            ADUC_IsInstalledResult_Failure, [&token, &workflowId, &updateType, &installedCriteria]() -> ADUC_Result {
-                return static_cast<LinuxPlatformLayer*>(token)->IsInstalled(workflowId, updateType, installedCriteria);
+            ADUC_Result_Failure, [&token, &workflowData]() -> ADUC_Result {
+                return static_cast<LinuxPlatformLayer*>(token)->IsInstalled(workflowData);
             });
     }
 
@@ -238,10 +237,10 @@ private:
      *
      * @return ADUC_Result
      */
-    static ADUC_Result SandboxCreateCallback(ADUC_Token token, const char* workflowId, char** workFolder) noexcept
+    static ADUC_Result SandboxCreateCallback(ADUC_Token token, const char* workflowId, char* workFolder) noexcept
     {
         return ADUC::ExceptionUtils::CallResultMethodAndHandleExceptions(
-            ADUC_SandboxCreateResult_Failure, [&token, &workflowId, &workFolder]() -> ADUC_Result {
+            ADUC_Result_Failure, [&token, &workflowId, &workFolder]() -> ADUC_Result {
                 return static_cast<LinuxPlatformLayer*>(token)->SandboxCreate(workflowId, workFolder);
             });
     }
@@ -251,7 +250,7 @@ private:
      *
      * @param token Contains pointer to our class instance.
      * @param workflowId Unique workflow identifier.
-     * @param workFolder Sandbox that was returned from SandboxCreate - can be NULL.
+     * @param workFolder[in] Sandbox path.
      */
     static void SandboxDestroyCallback(ADUC_Token token, const char* workflowId, const char* workFolder) noexcept
     {
@@ -261,34 +260,16 @@ private:
     }
 
     /**
-     * @brief Implements Prepare callback.
-     *
-     * @param token Contains pointer to our class instance.
-     * @param workflowId Unique workflow identifier.
-     * @param prepareInfo.
-     *
-     * @return ADUC_Result
-     */
-    static ADUC_Result
-    PrepareCallback(ADUC_Token token, const char* workflowId, const ADUC_PrepareInfo* prepareInfo) noexcept
-    {
-        return ADUC::ExceptionUtils::CallResultMethodAndHandleExceptions(
-            ADUC_PrepareResult_Failure, [&token, &workflowId, &prepareInfo]() -> ADUC_Result {
-                return static_cast<LinuxPlatformLayer*>(token)->Prepare(workflowId, prepareInfo);
-            });
-    }
-
-    /**
      * @brief Implements DoWork callback.
      *
      * @param token Opaque token.
-     * @param workflowId Current workflow identifier.
+     * @param workflowData Current workflow data object.
      */
-    static void DoWorkCallback(ADUC_Token token, const char* workflowId) noexcept
+    static void DoWorkCallback(ADUC_Token token, ADUC_WorkflowDataToken workflowData) noexcept
     {
         // Not used in this code.
         UNREFERENCED_PARAMETER(token);
-        UNREFERENCED_PARAMETER(workflowId);
+        UNREFERENCED_PARAMETER(workflowData);
     }
 
     //
@@ -299,12 +280,12 @@ private:
     LinuxPlatformLayer() = default;
 
     void Idle(const char* workflowId);
-    ADUC_Result Download(const char* workflowId, const char* updateType, const ADUC_DownloadInfo* info);
-    ADUC_Result Install(const char* workflowId, const ADUC_InstallInfo* info);
-    ADUC_Result Apply(const char* workflowId, const ADUC_ApplyInfo* info);
-    void Cancel(const char* workflowId);
+    ADUC_Result Download(const ADUC_WorkflowData* workflowData);
+    ADUC_Result Install(const ADUC_WorkflowData* workflowData);
+    ADUC_Result Apply(const ADUC_WorkflowData* workflowData);
+    void Cancel(const ADUC_WorkflowData* workflowData);
 
-    ADUC_Result IsInstalled(const char* workflowId, const char* updateType, const char* installedCriteria);
+    ADUC_Result IsInstalled(const ADUC_WorkflowData* workflowData);
 
     /**
      * @brief Class implementation of SandboxCreate method.
@@ -314,30 +295,20 @@ private:
      * Must be allocated using malloc.
      * @return ADUC_Result
      */
-    ADUC_Result SandboxCreate(const char* workflowId, char** workFolder);
+    ADUC_Result SandboxCreate(const char* workflowId, char* workFolder);
 
     /**
      * @brief Class implementation of SandboxDestroy method.
      *
      * @param workflowId Unique workflow identifier.
-     * @param workFolder Sandbox that was returned from SandboxCreate - can be NULL.
+     * @param workFolder Sandbox path.
      */
     void SandboxDestroy(const char* workflowId, const char* workFolder);
-
-    /**
-     * @brief Class implementation of Prepare method.
-     *
-     * @param workflowId Unique workflow identifier.
-     * @param metadata.
-     */
-    ADUC_Result Prepare(const char* workflowId, const ADUC_PrepareInfo* prepareInfo);
 
     /**
      * @brief Was Cancel called?
      */
     std::atomic_bool _IsCancellationRequested{ false };
-
-    std::unique_ptr<ContentHandler> _contentHandler;
 };
 } // namespace ADUC
 

@@ -17,7 +17,13 @@ add_library (
 
 add_library (aduc::${target_name} ALIAS ${target_name})
 
-target_include_directories (${target_name} PUBLIC ${ADUC_EXPORT_INCLUDES})
+#
+# Turn -fPIC on, in order to use this library in another shared library.
+#
+set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+target_include_directories (${target_name} PUBLIC ${ADUC_EXPORT_INCLUDES}
+                                                  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 find_package (azure_c_shared_utility REQUIRED)
 
@@ -28,9 +34,10 @@ target_compile_definitions (
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::c_utils
-            aduc::string_utils
-            aduc::logging
-            aduc::exception_utils
             aduc::content_handlers
+            aduc::exception_utils
+            aduc::logging
+            aduc::string_utils
+            aduc::workflow_utils
             aziotsharedutil
             uhttp)

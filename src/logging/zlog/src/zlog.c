@@ -174,6 +174,7 @@ int zlog_init(
         {
             return -1;
         }
+        log_debug("Log file created: %s", zlog_file_log_fullpath);
 
         zlog_ensure_at_most_n_logfiles(ZLOG_MAX_FILE_COUNT);
 
@@ -208,7 +209,7 @@ void zlog_finish(void)
 
 void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, ...)
 {
-    const _Bool console_log_needed =
+     const _Bool console_log_needed =
         (log_setting.console_logging_mode != ZLOG_CLM_DISABLED) && (msg_level >= log_setting.console_level);
     const _Bool file_log_needed = zlog_is_file_log_open() && (msg_level >= log_setting.file_level);
 
@@ -306,9 +307,17 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
     }
 }
 
+bool g_flushRequested = false;
+
+void zlog_request_flush_buffer(void)
+{
+    g_flushRequested = true;
+}
+
 // Buffer flushing thread
 // Flush the thread every ZLOG_FLUSH_INTERVAL_SEC seconds
 // or when buffer is 80% full
+// or when g_flushRequested is true
 //
 // Caller should NOT hold the lock
 static void* zlog_buffer_flush_thread()
@@ -326,8 +335,9 @@ static void* zlog_buffer_flush_thread()
         sleep(ZLOG_SLEEP_TIME_SEC);
         gettimeofday(&tv, NULL);
         curtime = tv.tv_sec;
-        if ((curtime - lasttime) >= ZLOG_FLUSH_INTERVAL_SEC)
+        if (g_flushRequested || ((curtime - lasttime) >= ZLOG_FLUSH_INTERVAL_SEC))
         {
+            g_flushRequested = false;
             zlog_flush_buffer();
             lasttime = curtime;
         }

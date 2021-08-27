@@ -32,7 +32,7 @@ public:
      */
     static void ThrowAducResult(const ADUC_Result_t code, const std::string& message)
     {
-        Log_Info("Throwing ADU Agent exception. code: %d, message: %s", code, message.c_str());
+        Log_Info("Throwing ADU Agent exception. code: %d (0x%x), message: %s", code, code, message.c_str());
         throw Exception(code, message);
     }
 

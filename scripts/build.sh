@@ -25,7 +25,7 @@ build_clean=false
 build_documentation=false
 build_packages=false
 platform_layer="simulator"
-content_handlers="microsoft/swupdate"
+content_handlers="microsoft/swupdate,microsoft/apt,microsoft/simulator"
 build_type=Debug
 adu_log_dir=""
 default_log_dir=/var/log/adu
@@ -55,7 +55,7 @@ print_help() {
     echo "                                      The simulator layer provides mocks of the ADU Core and DeviceInformation PnP interfaces."
     echo ""
     echo "--content-handlers <handlers...>      The comma delimited list of content handlers to include in the build. Default is microsoft/swupdate"
-    echo "                                      Options: microsoft/swupdate microsoft/apt"
+    echo "                                      Options: microsoft/swupdate microsoft/apt microsoft/simulator microsoft/bundle"
     echo ""
     echo "--provision-with-iotedge              Indicates to the agent to provision its connection string via the Edge Identity Service"
     echo "                                      instead of reading from the configuration file."

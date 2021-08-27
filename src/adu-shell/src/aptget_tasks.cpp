@@ -84,7 +84,7 @@ ADUShellTaskResult DoAptGetTask(const ADUShell_LaunchArguments& launchArgs)
 /**
  * @brief Add supported target options to the arguments list.
  * 
- * @param[in] targetOptions A string contins list of options to be added to the args.
+ * @param[in] targetOptions A string contains list of options to be added to the args.
  * @param args An argument list to which option items are added.
  */
 void AddOptionsToArgs(const std::string& targetOptions, std::vector<std::string>* args)
@@ -178,9 +178,10 @@ ADUShellTaskResult Download(const ADUShell_LaunchArguments& launchArgs)
     ADUShellTaskResult taskResult;
     std::vector<std::string> aptArgs = { apt_option_y, apt_option_allow_downgrades, apt_option_download_only };
 
-    if (launchArgs.targetOptions != nullptr)
+    // NOTE: Only support the first target option.
+    if (!launchArgs.targetOptions.empty())
     {
-        AddOptionsToArgs(launchArgs.targetOptions, &aptArgs);
+        AddOptionsToArgs(launchArgs.targetOptions.front(), &aptArgs);
     }
 
     aptArgs.emplace_back(apt_option_install);
@@ -213,9 +214,9 @@ ADUShellTaskResult Install(const ADUShell_LaunchArguments& launchArgs)
     ADUShellTaskResult taskResult;
     std::vector<std::string> aptArgs = { apt_option_y, apt_option_allow_downgrades };
 
-    if (launchArgs.targetOptions != nullptr)
+    if (!launchArgs.targetOptions.empty())
     {
-        AddOptionsToArgs(launchArgs.targetOptions, &aptArgs);
+        AddOptionsToArgs(launchArgs.targetOptions.front(), &aptArgs);
     }
 
     aptArgs.emplace_back(apt_option_install);
@@ -247,9 +248,9 @@ ADUShellTaskResult Remove(const ADUShell_LaunchArguments& launchArgs)
     ADUShellTaskResult taskResult;
     std::vector<std::string> aptArgs = { apt_option_y, apt_option_allow_downgrades };
 
-    if (launchArgs.targetOptions != nullptr)
+    if (!launchArgs.targetOptions.empty())
     {
-        AddOptionsToArgs(launchArgs.targetOptions, &aptArgs);
+        AddOptionsToArgs(launchArgs.targetOptions.front(), &aptArgs);
     }
 
     size_t argsCount = aptArgs.size();

@@ -29,6 +29,8 @@ _Bool atoui(const char* str, unsigned int* ui);
 
 char* ADUC_StringFormat(const char* fmt, ...);
 
+_Bool IsNullOrEmpty(const char* str);
+
 EXTERN_C_END
 
 #endif // ADUC_STRING_C_UTILS_H

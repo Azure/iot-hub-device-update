@@ -157,7 +157,7 @@ char* ADUC_StringUtils_Trim(char* str)
     char* begin = str;
     char* current = str;
 
-    if (!str || str[0] == '\0')
+    if (IsNullOrEmpty(str))
     {
         return str;
     }
@@ -204,7 +204,7 @@ char* ADUC_StringUtils_Trim(char* str)
  */
 _Bool atoul(const char* str, unsigned long* converted)
 {
-    if (str == NULL || *str == '\0')
+    if (IsNullOrEmpty(str))
     {
         return false;
     }
@@ -243,7 +243,7 @@ _Bool atoul(const char* str, unsigned long* converted)
  */
 _Bool atoui(const char* str, unsigned int* ui)
 {
-    if (str == NULL || *str == '\0')
+    if (IsNullOrEmpty(str))
     {
         return false;
     }
@@ -374,4 +374,15 @@ char* ADUC_StringFormat(const char* fmt, ...)
     }
 
     return outputStr;
+}
+
+/**
+ * @brief Check whether @p str is NULL or empty.
+ * 
+ * @param str A string to check.
+ * @return Returns true if @p str is NULL or empty.
+ */
+_Bool IsNullOrEmpty(const char* str)
+{
+    return str == NULL || *str == '\0';
 }

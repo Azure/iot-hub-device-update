@@ -1,15 +1,17 @@
 /**
  * @file adu_type.h
- * @brief Defines launch arguments and the ConnectionInfo struct used for created the connection between ADU and the IotHub
+ * @brief Defines common types used throughout Device Update agent components.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  */
 #ifndef ADUC_ADU_TYPES_H
 #define ADUC_ADU_TYPES_H
 
-#include <aduc/c_utils.h>
-#include <aduc/logging.h>
-#include <stdbool.h>
+#include <stdbool.h> // for bool
+#include <stddef.h> // for size_T
+
+#include "aduc/c_utils.h"
+#include "aduc/logging.h"
 
 EXTERN_C_BEGIN
 /**
@@ -24,6 +26,10 @@ typedef struct tagADUC_LaunchArguments
     bool iotHubTracingEnabled; /**< Whether to enable logging from IoT Hub SDK */
     bool showVersion; /**< Show an agent version */
     bool healthCheckOnly; /**< Only check agent health. Doesn't process any data or messages from services. */
+    char* contentHandlerFilePath; /**< A full path of an update content handler to be registered */
+    char* componentEnumeratorFilePath; /**< A full path of a component enumerator to be registered */
+    char* contentDownloaderFilePath; /**< A full path of a content downloader to be registered */
+    char* updateType;
 } ADUC_LaunchArguments;
 
 typedef enum tagADUC_ConnType

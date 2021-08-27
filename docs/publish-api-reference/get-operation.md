@@ -94,7 +94,7 @@ To call this API, the caller must supply a valid AAD token from the Azure tenant
 
 | Name | Type | Description |
 | --------- | -----------|-------------- |
-| OccuredDateTime | date/time | Date/time in UTC at which the error occured |
+| OccuredDateTime | date/time | Date/time in UTC at which the error occurred |
 | Code | string | Error code |
 | Message | string | Description of the error code |
 | InnerError | `InnerError` object | Detailed error information, if any |

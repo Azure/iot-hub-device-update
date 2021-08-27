@@ -4,8 +4,8 @@
  *
  * @copyright Copyright (c) 2020, Microsoft Corporation.
  */
-#include "aduc/logging.h"
 #include "adushell_action.hpp"
+#include "aduc/logging.h"
 
 #include <string>
 #include <unordered_map>

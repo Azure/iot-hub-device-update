@@ -10,14 +10,19 @@
 
 #include "aduc/content_handler.hpp"
 #include "aduc/content_handler_factory.hpp"
+#include "aduc/result.h"
+
 #include "apt_parser.hpp"
-#include <aduc/result.h>
+
+EXTERN_C_BEGIN
 
 /**
- * @brief handler creation function
- * This function calls  CreateContentHandler from handler factory 
+ * @brief Instantiates an Update Content Handler for 'microsoft/apt:1' update type.
+ * @return A pointer to an instantiated Update Content Handler object.
  */
-std::unique_ptr<ContentHandler> microsoft_apt_CreateFunc(const ContentHandlerCreateData& data);
+ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
+
+EXTERN_C_END
 
 /**
  * @class AptHandler
@@ -26,8 +31,7 @@ std::unique_ptr<ContentHandler> microsoft_apt_CreateFunc(const ContentHandlerCre
 class AptHandlerImpl : public ContentHandler
 {
 public:
-    static std::unique_ptr<ContentHandler>
-    CreateContentHandler(const std::string& workFolder, const std::string& filename);
+    static ContentHandler* CreateContentHandler();
 
     // Delete copy ctor, copy assignment, move ctor and move assignment operators.
     AptHandlerImpl(const AptHandlerImpl&) = delete;
@@ -37,34 +41,20 @@ public:
 
     ~AptHandlerImpl() override = default;
 
-    ADUC_Result Prepare(const ADUC_PrepareInfo* prepareInfo) override;
-    ADUC_Result Download() override;
-    ADUC_Result Install() override;
-    ADUC_Result Apply() override;
-    ADUC_Result Cancel() override;
-    ADUC_Result IsInstalled(const std::string& installedCriteria) override;
+    ADUC_Result Download(const ADUC_WorkflowData* workflowData) override;
+    ADUC_Result Install(const ADUC_WorkflowData* workflowData) override;
+    ADUC_Result Apply(const ADUC_WorkflowData* workflowData) override;
+    ADUC_Result Cancel(const ADUC_WorkflowData* workflowData) override;
+    ADUC_Result IsInstalled(const ADUC_WorkflowData* workflowData) override;
 
-    static const ADUC_Result
-    GetIsInstalled(const char* installedCriteriaFilePath, const std::string& installedCriteria);
-    static const bool
-    PersistInstalledCriteria(const char* installedCriteriaFilePath, const std::string& installedCriteria);
-    static const bool
-    RemoveInstalledCriteria(const char* installedCriteriaFilePath, const std::string& installedCriteria);
-    static void RemoveAllInstalledCriteria();
 
 protected:
-    AptHandlerImpl(const std::string& workFolder, const std::string& filename);
+    AptHandlerImpl()
+    {        
+    }
 
 private:
-    std::unique_ptr<AptContent> _aptContent;
-
-    bool _applied{ false };
-    std::string _workFolder;
-    std::string _logFolder;
-    std::string _filename;
-    std::list<std::string> _packages;
-
-    void CreatePersistedId();
+    ADUC_Result ParseContent(const std::string& aptManifestFile, std::unique_ptr<AptContent>& aptContent);
 };
 
 /**

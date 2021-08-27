@@ -4,23 +4,20 @@
  *
  * @copyright Copyright (c) 2019, Microsoft Corp.
  */
+#include <atomic>
+#include <catch2/catch.hpp>
+#include <chrono>
+#include <condition_variable>
+#include <iothub_device_client.h>
 #include <iterator>
 #include <map>
 #include <sstream>
-
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
 #include <thread>
 
-#include <catch2/catch.hpp>
-using Catch::Matchers::Equals;
-
 #include "aduc/adu_core_export_helpers.h"
-#include "agent_workflow_utils.h"
-
-#include <aduc/c_utils.h>
-#include <iothub_device_client.h>
+#include "aduc/agent_workflow_utils.h"
+#include "aduc/c_utils.h"
+#include "aduc/workflow_utils.h"
 
 //
 // Test Helpers
@@ -138,148 +135,66 @@ private:
     ADUC_ClientHandle m_previousDeviceHandle;
 };
 
-//
-// Test cases
-//
-
-TEST_CASE("ADUC_PrepareInfo_Init")
-{
-    ADUC_WorkflowData workflowData{};
-
-    const std::string workflowId{ "unit_test" };
-    constexpr size_t workflowIdSize = ARRAY_SIZE(workflowData.WorkflowId);
-    strncpy(workflowData.WorkflowId, workflowId.c_str(), workflowIdSize);
-    workflowData.WorkflowId[workflowIdSize - 1] = '\0';
-
-    workflowData.LastReportedState = ADUCITF_State_Idle;
-    workflowData.DownloadProgressCallback = DownloadProgressCallback;
-
-    ADUC_Result result;
-
-    result = ADUC_MethodCall_Register(&workflowData.RegisterData, 0 /*argc*/, nullptr /*argv*/);
-    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-    REQUIRE(result.ExtendedResultCode == 0);
-
-    // clang-format off
-    const std::map<std::string, std::string> files{
-        { "E8sbKCW3L/ALBTYE3umfzXMLel8Pk3TUCixceIAtnDo=", "https://example.com/tf01228997.accdt" },
-        { "Ilo1MnAkIDyIWjzSN9BaqHvzKetFhItdKQILFCOIuus=", "https://example.com/tf01225343.accdt" }
-    };
-    // clang-format on
-
-    std::string updateActionJson{ CreateSWUpdateDownloadUpdateActionJson(files) };
-
-    workflowData.UpdateActionJson = ADUC_Json_GetRoot(updateActionJson.c_str());
-    REQUIRE(workflowData.UpdateActionJson != nullptr);
-    workflowData.ContentData = ADUC_ContentData_AllocAndInit(workflowData.UpdateActionJson);
-
-    ADUC_PrepareInfo info{};
-    CHECK(ADUC_PrepareInfo_Init(&info, &workflowData));
-    CHECK(info.fileCount == files.size());
-    for (unsigned int i = 0; i < info.fileCount; ++i)
-    {
-        std::stringstream strm;
-        strm << "aduc-tempfile-" << i;
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        CHECK_THAT(info.files[i].DownloadUri, Equals(files.find(info.files[i].Hash[0].value)->second));
-    }
-    CHECK_THAT(info.updateType, Equals("microsoft/swupdate:1"));
-
-    ADUC_PrepareInfo_UnInit(&info);
-
-    REQUIRE(info.updateType == NULL);
-    REQUIRE(info.updateTypeName == NULL);
-    REQUIRE(info.updateTypeVersion == 0);
-    REQUIRE(info.files == NULL);
-    REQUIRE(info.fileCount == 0);
-
-    ADUC_MethodCall_Unregister(&workflowData.RegisterData);
-}
-
-TEST_CASE("ADUC_DownloadInfo_Init")
-{
-    ADUC_DownloadInfo info{};
-    // clang-format off
-    const std::map<std::string, std::string> files{
-        { "E8sbKCW3L/ALBTYE3umfzXMLel8Pk3TUCixceIAtnDo=", "https://example.com/tf01228997.accdt" },
-        { "Ilo1MnAkIDyIWjzSN9BaqHvzKetFhItdKQILFCOIuus=", "https://example.com/tf01225343.accdt" }
-    };
-    // clang-format on
-
-    const std::string updateAction{ CreateSWUpdateDownloadUpdateActionJson(files) };
-
-    INFO(updateAction);
-
-    const JSON_Value* updateActionJson{ ADUC_Json_GetRoot(updateAction.c_str()) };
-    REQUIRE(updateActionJson != nullptr);
-
-    const std::string workFolder{ "/tmp" };
-
-    CHECK(ADUC_DownloadInfo_Init(&info, updateActionJson, workFolder.c_str(), DownloadProgressCallback));
-
-    CHECK_THAT(info.WorkFolder, Equals(workFolder));
-    CHECK(info.FileCount == files.size());
-    for (unsigned int i = 0; i < info.FileCount; ++i)
-    {
-        std::stringstream strm;
-        strm << "aduc-tempfile-" << i;
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        CHECK_THAT(info.Files[i].DownloadUri, Equals(files.find(info.Files[i].Hash[0].value)->second));
-    }
-    CHECK(info.NotifyDownloadProgress == DownloadProgressCallback);
-
-    ADUC_DownloadInfo_UnInit(&info);
-}
-
-TEST_CASE("ADUC_InstallInfo_Init")
-{
-    ADUC_InstallInfo info{};
-    const std::string workFolder{ "/tmp" };
-
-    CHECK(ADUC_InstallInfo_Init(&info, workFolder.c_str()));
-
-    CHECK_THAT(info.WorkFolder, Equals(workFolder));
-
-    ADUC_InstallInfo_UnInit(&info);
-}
-
-TEST_CASE("ADUC_ApplyInfo_Init")
-{
-    ADUC_ApplyInfo info{};
-    const std::string workFolder{ "/tmp" };
-
-    CHECK(ADUC_ApplyInfo_Init(&info, workFolder.c_str()));
-
-    CHECK_THAT(info.WorkFolder, Equals(workFolder));
-
-    ADUC_ApplyInfo_UnInit(&info);
-}
-
 TEST_CASE("ADUC_MethodCall_Register and Unregister: Valid")
 {
-    ADUC_RegisterData registerData{};
-    const ADUC_Result result{ ADUC_MethodCall_Register(&registerData, 0 /*argc*/, nullptr /*argv*/) };
+    ADUC_UpdateActionCallbacks updateActionCallbacks{};
+    const ADUC_Result result{ ADUC_MethodCall_Register(&updateActionCallbacks, 0 /*argc*/, nullptr /*argv*/) };
     REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
     REQUIRE(result.ExtendedResultCode == 0);
 
-    ADUC_MethodCall_Unregister(&registerData);
+    ADUC_MethodCall_Unregister(&updateActionCallbacks);
 }
 
 TEST_CASE("ADUC_MethodCall_Register and Unregister: Invalid")
 {
     SECTION("Invalid args passed to register returns failure")
     {
-        ADUC_RegisterData registerData{};
+        ADUC_UpdateActionCallbacks updateActionCallbacks{};
         const char* argv[1] = {};
         const int argc = std::distance(std::begin(argv), std::end(argv));
-        const ADUC_Result result{ ADUC_MethodCall_Register(&registerData, argc, argv) };
+        const ADUC_Result result{ ADUC_MethodCall_Register(&updateActionCallbacks, argc, argv) };
         INFO_ADUC_Result(result);
         CHECK(IsAducResultCodeFailure(result.ResultCode));
         CHECK(result.ExtendedResultCode == ADUC_ERC_NOTRECOVERABLE);
     }
 }
 
-#if ADUC_SWUPDATE_HANDLER
+// clang-format off
+const char* workflow_test_download = 
+R"( {                    )"
+R"(     "workflow": {    )"
+R"(         "action": 0, )"
+R"(         "id": "action_bundle" )"
+R"(      },  )"
+R"(     "updateManifest": "{\"manifestVersion\":\"2.0\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
+R"(     "updateManifestSignature": "eyJhbGciOiJSUzI1NiIsInNqd2siOiJleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SWtGRVZTNHlNREEzTURJdVVpSjkuZXlKcmRIa2lPaUpTVTBFaUxDSnVJam9pY2toV1FrVkdTMUl4ZG5Ob1p5dEJhRWxuTDFORVVVOHplRFJyYWpORFZWUTNaa2R1U21oQmJYVkVhSFpJWm1velowaDZhVEJVTWtsQmNVTXhlREpDUTFka1QyODFkamgwZFcxeFVtb3ZibGx3WnprM2FtcFFRMHQxWTJSUE5tMHpOMlJqVDIxaE5EWm9OMDh3YTBod2Qwd3pibFZJUjBWeVNqVkVRUzloY0ZsdWQwVmxjMlY0VkdwVU9GTndMeXRpVkhGWFJXMTZaMFF6TjNCbVpFdGhjV3AwU0V4SFZtbFpkMVpJVUhwMFFtRmlkM2RxYUVGMmVubFNXUzk1T1U5bWJYcEVabGh0Y2xreGNtOHZLekpvUlhGRmVXdDFhbmRSUlZscmFHcEtZU3RDTkRjMkt6QnRkVWQ1VjBrMVpVbDJMMjlzZERKU1pWaDRUV0k1VFd4c1dFNTViMUF6WVU1TFNVcHBZbHBOY3pkMVMyTnBkMnQ1YVZWSllWbGpUV3B6T1drdlVrVjVLMnhOT1haSlduRnlabkJEVlZoMU0zUnVNVXRuWXpKUmN5OVVaRGgwVGxSRFIxWTJkM1JXWVhGcFNYQlVaRlEwVW5KRFpFMXZUelZUVG1WbVprUjVZekpzUXpkMU9EVXJiMjFVYTJOcVVHcHRObVpoY0dSSmVVWXljV1Z0ZGxOQ1JHWkNOMk5oYWpWRVNVa3lOVmQzTlVWS1kyRjJabmxRTlRSdGNVNVJVVE5IWTAxUllqSmtaMmhwWTJ4d2FsbHZLelF6V21kWlEyUkhkR0ZhWkRKRlpreGFkMGd6VVdjeWNrUnNabXN2YVdFd0x6RjVjV2xyTDFoYU1XNXpXbFJwTUVKak5VTndUMDFGY1daT1NrWlJhek5DVjI5Qk1EVnlRMW9pTENKbElqb2lRVkZCUWlJc0ltRnNaeUk2SWxKVE1qVTJJaXdpYTJsa0lqb2lRVVJWTGpJd01EY3dNaTVTTGxNaWZRLmlTVGdBRUJYc2Q3QUFOa1FNa2FHLUZBVjZRT0dVRXV4dUhnMllmU3VXaHRZWHFicE0takk1UlZMS2VzU0xDZWhLLWxSQzl4Ni1fTGV5eE5oMURPRmMtRmE2b0NFR3dVajh6aU9GX0FUNnM2RU9tY2txUHJ4dXZDV3R5WWtrRFJGNzRkdGFLMWpOQTdTZFhyWnp2V0NzTXFPVU1OejBnQ29WUjBDczEyNTRrRk1SbVJQVmZFY2pnVDdqNGxDcHlEdVdncjlTZW5TZXFnS0xZeGphYUcwc1JoOWNkaTJkS3J3Z2FOYXFBYkhtQ3JyaHhTUENUQnpXTUV4WnJMWXp1ZEVvZnlZSGlWVlJoU0pwajBPUTE4ZWN1NERQWFYxVGN0MXkzazdMTGlvN244aXpLdXEybTNUeEY5dlBkcWI5TlA2U2M5LW15YXB0cGJGcEhlRmtVTC1GNXl0bF9VQkZLcHdOOUNMNHdwNnlaLWpkWE5hZ3JtVV9xTDFDeVh3MW9tTkNnVG1KRjNHZDNseXFLSEhEZXJEcy1NUnBtS2p3U3dwWkNRSkdEUmNSb3ZXeUwxMnZqdzNMQkpNaG1VeHNFZEJhWlA1d0dkc2ZEOGxkS1lGVkZFY1owb3JNTnJVa1NNQWw2cEl4dGVmRVhpeTVscW1pUHpxX0xKMWVSSXJxWTBfIn0.eyJzaGEyNTYiOiI3alo1YWpFN2Z5SWpzcTlBbWlKNmlaQlNxYUw1bkUxNXZkL0puVWgwNFhZPSJ9.EK5zcNiEgO2rHh_ichQWlDIvkIsPXrPMQK-0D5WK8ZnOR5oJdwhwhdpgBaB-tE-6QxQB1PKurbC2BtiGL8HI1DgQtL8Fq_2ASRfzgNtrtpp6rBiLRynJuWCy7drgM6g8WoSh8Utdxsx5lnGgAVAU67ijK0ITd0E70R7vWJRmY8YxxDh-Sh8BNz68pvU-YJQwKtVy64lD5zA0--BL432F-uZWTc6n-BduQdSB4J7Eu6zGlT75s8Ehd-SIylsstu4wdypU0tcwIH-MaSKcH5mgEmokaHncJrb4zKnZwxYQUeDMoFjF39P9hDmheHywY1gwYziXjUcnMn8_T00oMeycQ7PDCTJHIYB3PGbtM9KiA3RQH-08ofqiCVgOLeqbUHTP03Z0Cx3e02LzTgP8_Lerr4okAUPksT2IGvvsiMtj04asdrLSlv-AvFud-9U0a2mJEWcosI04Q5NAbqhZ5ZBzCkkowLGofS04SnfS-VssBfmbH5ue5SWb-AxBv1inZWUj", )"
+R"(     "fileUrls": {   )"
+R"(         "00000": "file:///tmp/tests/testfiles/contoso-motor-1.0-updatemanifest.json",  )"
+R"(         "00001": "file:///tmp/tests/testfiles/contoso-motor-1.0-fileinstaller",     )"
+R"(         "gw001": "file:///tmp/tests/testfiles/behind-gateway-info.json" )"
+R"(     } )"
+R"( } )";
+
+const char* workflow_test_install = 
+R"( {                    )"
+R"(     "workflow": {    )"
+R"(         "action": 1, )"
+R"(         "id": "action_bundle" )"
+R"(      },  )"
+R"(     "updateManifest": "{\"manifestVersion\":\"2.0\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
+R"(     "updateManifestSignature": "eyJhbGciOiJSUzI1NiIsInNqd2siOiJleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SWtGRVZTNHlNREEzTURJdVVpSjkuZXlKcmRIa2lPaUpTVTBFaUxDSnVJam9pY2toV1FrVkdTMUl4ZG5Ob1p5dEJhRWxuTDFORVVVOHplRFJyYWpORFZWUTNaa2R1U21oQmJYVkVhSFpJWm1velowaDZhVEJVTWtsQmNVTXhlREpDUTFka1QyODFkamgwZFcxeFVtb3ZibGx3WnprM2FtcFFRMHQxWTJSUE5tMHpOMlJqVDIxaE5EWm9OMDh3YTBod2Qwd3pibFZJUjBWeVNqVkVRUzloY0ZsdWQwVmxjMlY0VkdwVU9GTndMeXRpVkhGWFJXMTZaMFF6TjNCbVpFdGhjV3AwU0V4SFZtbFpkMVpJVUhwMFFtRmlkM2RxYUVGMmVubFNXUzk1T1U5bWJYcEVabGh0Y2xreGNtOHZLekpvUlhGRmVXdDFhbmRSUlZscmFHcEtZU3RDTkRjMkt6QnRkVWQ1VjBrMVpVbDJMMjlzZERKU1pWaDRUV0k1VFd4c1dFNTViMUF6WVU1TFNVcHBZbHBOY3pkMVMyTnBkMnQ1YVZWSllWbGpUV3B6T1drdlVrVjVLMnhOT1haSlduRnlabkJEVlZoMU0zUnVNVXRuWXpKUmN5OVVaRGgwVGxSRFIxWTJkM1JXWVhGcFNYQlVaRlEwVW5KRFpFMXZUelZUVG1WbVprUjVZekpzUXpkMU9EVXJiMjFVYTJOcVVHcHRObVpoY0dSSmVVWXljV1Z0ZGxOQ1JHWkNOMk5oYWpWRVNVa3lOVmQzTlVWS1kyRjJabmxRTlRSdGNVNVJVVE5IWTAxUllqSmtaMmhwWTJ4d2FsbHZLelF6V21kWlEyUkhkR0ZhWkRKRlpreGFkMGd6VVdjeWNrUnNabXN2YVdFd0x6RjVjV2xyTDFoYU1XNXpXbFJwTUVKak5VTndUMDFGY1daT1NrWlJhek5DVjI5Qk1EVnlRMW9pTENKbElqb2lRVkZCUWlJc0ltRnNaeUk2SWxKVE1qVTJJaXdpYTJsa0lqb2lRVVJWTGpJd01EY3dNaTVTTGxNaWZRLmlTVGdBRUJYc2Q3QUFOa1FNa2FHLUZBVjZRT0dVRXV4dUhnMllmU3VXaHRZWHFicE0takk1UlZMS2VzU0xDZWhLLWxSQzl4Ni1fTGV5eE5oMURPRmMtRmE2b0NFR3dVajh6aU9GX0FUNnM2RU9tY2txUHJ4dXZDV3R5WWtrRFJGNzRkdGFLMWpOQTdTZFhyWnp2V0NzTXFPVU1OejBnQ29WUjBDczEyNTRrRk1SbVJQVmZFY2pnVDdqNGxDcHlEdVdncjlTZW5TZXFnS0xZeGphYUcwc1JoOWNkaTJkS3J3Z2FOYXFBYkhtQ3JyaHhTUENUQnpXTUV4WnJMWXp1ZEVvZnlZSGlWVlJoU0pwajBPUTE4ZWN1NERQWFYxVGN0MXkzazdMTGlvN244aXpLdXEybTNUeEY5dlBkcWI5TlA2U2M5LW15YXB0cGJGcEhlRmtVTC1GNXl0bF9VQkZLcHdOOUNMNHdwNnlaLWpkWE5hZ3JtVV9xTDFDeVh3MW9tTkNnVG1KRjNHZDNseXFLSEhEZXJEcy1NUnBtS2p3U3dwWkNRSkdEUmNSb3ZXeUwxMnZqdzNMQkpNaG1VeHNFZEJhWlA1d0dkc2ZEOGxkS1lGVkZFY1owb3JNTnJVa1NNQWw2cEl4dGVmRVhpeTVscW1pUHpxX0xKMWVSSXJxWTBfIn0.eyJzaGEyNTYiOiI3alo1YWpFN2Z5SWpzcTlBbWlKNmlaQlNxYUw1bkUxNXZkL0puVWgwNFhZPSJ9.EK5zcNiEgO2rHh_ichQWlDIvkIsPXrPMQK-0D5WK8ZnOR5oJdwhwhdpgBaB-tE-6QxQB1PKurbC2BtiGL8HI1DgQtL8Fq_2ASRfzgNtrtpp6rBiLRynJuWCy7drgM6g8WoSh8Utdxsx5lnGgAVAU67ijK0ITd0E70R7vWJRmY8YxxDh-Sh8BNz68pvU-YJQwKtVy64lD5zA0--BL432F-uZWTc6n-BduQdSB4J7Eu6zGlT75s8Ehd-SIylsstu4wdypU0tcwIH-MaSKcH5mgEmokaHncJrb4zKnZwxYQUeDMoFjF39P9hDmheHywY1gwYziXjUcnMn8_T00oMeycQ7PDCTJHIYB3PGbtM9KiA3RQH-08ofqiCVgOLeqbUHTP03Z0Cx3e02LzTgP8_Lerr4okAUPksT2IGvvsiMtj04asdrLSlv-AvFud-9U0a2mJEWcosI04Q5NAbqhZ5ZBzCkkowLGofS04SnfS-VssBfmbH5ue5SWb-AxBv1inZWUj" )"
+R"( } )";
+
+const char* workflow_test_apply = 
+R"( {                    )"
+R"(     "workflow": {    )"
+R"(         "action": 2, )"
+R"(         "id": "action_bundle" )"
+R"(      },  )"
+R"(     "updateManifest": "{\"manifestVersion\":\"2.0\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
+R"(     "updateManifestSignature": "eyJhbGciOiJSUzI1NiIsInNqd2siOiJleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SWtGRVZTNHlNREEzTURJdVVpSjkuZXlKcmRIa2lPaUpTVTBFaUxDSnVJam9pY2toV1FrVkdTMUl4ZG5Ob1p5dEJhRWxuTDFORVVVOHplRFJyYWpORFZWUTNaa2R1U21oQmJYVkVhSFpJWm1velowaDZhVEJVTWtsQmNVTXhlREpDUTFka1QyODFkamgwZFcxeFVtb3ZibGx3WnprM2FtcFFRMHQxWTJSUE5tMHpOMlJqVDIxaE5EWm9OMDh3YTBod2Qwd3pibFZJUjBWeVNqVkVRUzloY0ZsdWQwVmxjMlY0VkdwVU9GTndMeXRpVkhGWFJXMTZaMFF6TjNCbVpFdGhjV3AwU0V4SFZtbFpkMVpJVUhwMFFtRmlkM2RxYUVGMmVubFNXUzk1T1U5bWJYcEVabGh0Y2xreGNtOHZLekpvUlhGRmVXdDFhbmRSUlZscmFHcEtZU3RDTkRjMkt6QnRkVWQ1VjBrMVpVbDJMMjlzZERKU1pWaDRUV0k1VFd4c1dFNTViMUF6WVU1TFNVcHBZbHBOY3pkMVMyTnBkMnQ1YVZWSllWbGpUV3B6T1drdlVrVjVLMnhOT1haSlduRnlabkJEVlZoMU0zUnVNVXRuWXpKUmN5OVVaRGgwVGxSRFIxWTJkM1JXWVhGcFNYQlVaRlEwVW5KRFpFMXZUelZUVG1WbVprUjVZekpzUXpkMU9EVXJiMjFVYTJOcVVHcHRObVpoY0dSSmVVWXljV1Z0ZGxOQ1JHWkNOMk5oYWpWRVNVa3lOVmQzTlVWS1kyRjJabmxRTlRSdGNVNVJVVE5IWTAxUllqSmtaMmhwWTJ4d2FsbHZLelF6V21kWlEyUkhkR0ZhWkRKRlpreGFkMGd6VVdjeWNrUnNabXN2YVdFd0x6RjVjV2xyTDFoYU1XNXpXbFJwTUVKak5VTndUMDFGY1daT1NrWlJhek5DVjI5Qk1EVnlRMW9pTENKbElqb2lRVkZCUWlJc0ltRnNaeUk2SWxKVE1qVTJJaXdpYTJsa0lqb2lRVVJWTGpJd01EY3dNaTVTTGxNaWZRLmlTVGdBRUJYc2Q3QUFOa1FNa2FHLUZBVjZRT0dVRXV4dUhnMllmU3VXaHRZWHFicE0takk1UlZMS2VzU0xDZWhLLWxSQzl4Ni1fTGV5eE5oMURPRmMtRmE2b0NFR3dVajh6aU9GX0FUNnM2RU9tY2txUHJ4dXZDV3R5WWtrRFJGNzRkdGFLMWpOQTdTZFhyWnp2V0NzTXFPVU1OejBnQ29WUjBDczEyNTRrRk1SbVJQVmZFY2pnVDdqNGxDcHlEdVdncjlTZW5TZXFnS0xZeGphYUcwc1JoOWNkaTJkS3J3Z2FOYXFBYkhtQ3JyaHhTUENUQnpXTUV4WnJMWXp1ZEVvZnlZSGlWVlJoU0pwajBPUTE4ZWN1NERQWFYxVGN0MXkzazdMTGlvN244aXpLdXEybTNUeEY5dlBkcWI5TlA2U2M5LW15YXB0cGJGcEhlRmtVTC1GNXl0bF9VQkZLcHdOOUNMNHdwNnlaLWpkWE5hZ3JtVV9xTDFDeVh3MW9tTkNnVG1KRjNHZDNseXFLSEhEZXJEcy1NUnBtS2p3U3dwWkNRSkdEUmNSb3ZXeUwxMnZqdzNMQkpNaG1VeHNFZEJhWlA1d0dkc2ZEOGxkS1lGVkZFY1owb3JNTnJVa1NNQWw2cEl4dGVmRVhpeTVscW1pUHpxX0xKMWVSSXJxWTBfIn0.eyJzaGEyNTYiOiI3alo1YWpFN2Z5SWpzcTlBbWlKNmlaQlNxYUw1bkUxNXZkL0puVWgwNFhZPSJ9.EK5zcNiEgO2rHh_ichQWlDIvkIsPXrPMQK-0D5WK8ZnOR5oJdwhwhdpgBaB-tE-6QxQB1PKurbC2BtiGL8HI1DgQtL8Fq_2ASRfzgNtrtpp6rBiLRynJuWCy7drgM6g8WoSh8Utdxsx5lnGgAVAU67ijK0ITd0E70R7vWJRmY8YxxDh-Sh8BNz68pvU-YJQwKtVy64lD5zA0--BL432F-uZWTc6n-BduQdSB4J7Eu6zGlT75s8Ehd-SIylsstu4wdypU0tcwIH-MaSKcH5mgEmokaHncJrb4zKnZwxYQUeDMoFjF39P9hDmheHywY1gwYziXjUcnMn8_T00oMeycQ7PDCTJHIYB3PGbtM9KiA3RQH-08ofqiCVgOLeqbUHTP03Z0Cx3e02LzTgP8_Lerr4okAUPksT2IGvvsiMtj04asdrLSlv-AvFud-9U0a2mJEWcosI04Q5NAbqhZ5ZBzCkkowLGofS04SnfS-VssBfmbH5ue5SWb-AxBv1inZWUj" )"
+R"( } )";
+
 TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
 {
     std::mutex workCompletionCallbackMTX;
@@ -291,12 +206,13 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
 
     ADUC_WorkflowData workflowData{};
 
-    workflowData.LastReportedState = ADUCITF_State_Idle;
+    ADUC_Result result =
+        ADUC_MethodCall_Register(&(workflowData.UpdateActionCallbacks), 0 /*argc*/, nullptr /*argv*/);
+
     workflowData.DownloadProgressCallback = DownloadProgressCallback;
 
-    ADUC_Result result;
+    workflow_set_last_reported_state(ADUCITF_State_Idle);
 
-    result = ADUC_MethodCall_Register(&workflowData.RegisterData, 0 /*argc*/, nullptr /*argv*/);
     REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
     REQUIRE(result.ExtendedResultCode == 0);
 
@@ -304,18 +220,13 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
     // Download
     //
 
-    // clang-format off
-    const std::map<std::string, std::string> files{
-        { "E8sbKCW3L/ALBTYE3umfzXMLel8Pk3TUCixceIAtnDo=", "https://example.com/tf01228997.accdt" },
-        { "Ilo1MnAkIDyIWjzSN9BaqHvzKetFhItdKQILFCOIuus=", "https://example.com/tf01225343.accdt" }
-    };
-    // clang-format on
+    ADUC_WorkflowHandle handle = nullptr;
+    result = workflow_init(workflow_test_download, true, &handle);
 
-    std::string downloadJson{ CreateSWUpdateDownloadUpdateActionJson(files) };
+    CHECK(result.ResultCode != 0);
+    CHECK(result.ExtendedResultCode == 0);
 
-    workflowData.UpdateActionJson = ADUC_Json_GetRoot(downloadJson.c_str());
-    REQUIRE(workflowData.UpdateActionJson != nullptr);
-    workflowData.ContentData = ADUC_ContentData_AllocAndInit(workflowData.UpdateActionJson);
+    workflowData.WorkflowHandle = handle;
 
     // ADUC_MethodCall_Data must be on the heap, as the download callback uses it asynchronously.
     ADUC_MethodCall_Data methodCallData{};
@@ -323,27 +234,17 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
     methodCallData.WorkflowData = &workflowData;
     methodCallData.WorkCompletionData.WorkCompletionCallback = WorkCompletionCallback;
 
-    ADUC_DownloadInfo downloadInfo{};
-    ADUC_DownloadInfo_Init(&downloadInfo, workflowData.UpdateActionJson, "/tmp", DownloadProgressCallback);
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
-    methodCallData.MethodSpecificData.DownloadInfo = &downloadInfo;
-
     workflowData.CurrentAction = ADUCITF_UpdateAction_Download;
-
-    const std::string workflowId{ "unit_test" };
-    constexpr size_t workflowIdSize = ARRAY_SIZE(workflowData.WorkflowId);
-    strncpy(workflowData.WorkflowId, workflowId.c_str(), workflowIdSize);
-    workflowData.WorkflowId[workflowIdSize - 1] = '\0';
 
     result = ADUC_MethodCall_Download(&methodCallData);
 
-    CHECK(result.ResultCode == ADUC_DownloadResult_InProgress);
+    CHECK(result.ResultCode == ADUC_Result_Download_InProgress);
     CHECK(result.ExtendedResultCode == 0);
 
-    CHECK(workflowData.LastReportedState == ADUCITF_State_DownloadStarted);
+    CHECK(workflow_get_last_reported_state() == ADUCITF_State_DownloadStarted);
     CHECK(workflowData.IsRegistered == false);
-    CHECK(workflowData.OperationInProgress == false);
-    CHECK(workflowData.OperationCancelled == false);
+    CHECK(workflow_get_operation_in_progress(workflowData.WorkflowHandle) == false);
+    CHECK(workflow_get_operation_cancel_requested(workflowData.WorkflowHandle) == false);
 
     // Wait for async operation completion
     workCompletionCallbackCV.wait(lock);
@@ -353,19 +254,27 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
     //
     // Install
     //
+    workflow_uninit(handle);
+    handle = nullptr;
+    result = workflow_init(workflow_test_install, true, &handle);
 
-    workflowData.LastReportedState = ADUCITF_State_DownloadSucceeded;
+    CHECK(result.ResultCode != 0);
+    CHECK(result.ExtendedResultCode == 0);
+
+    workflowData.WorkflowHandle = handle;
+
+    workflow_set_last_reported_state(ADUCITF_State_DownloadSucceeded);
     workflowData.CurrentAction = ADUCITF_UpdateAction_Install;
 
     result = ADUC_MethodCall_Install(&methodCallData);
 
-    CHECK(result.ResultCode == ADUC_InstallResult_InProgress);
+    CHECK(result.ResultCode == ADUC_Result_Install_InProgress);
     CHECK(result.ExtendedResultCode == 0);
 
-    CHECK(workflowData.LastReportedState == ADUCITF_State_InstallStarted);
+    CHECK(workflow_get_last_reported_state() == ADUCITF_State_InstallStarted);
     CHECK(workflowData.IsRegistered == false);
-    CHECK(workflowData.OperationInProgress == false);
-    CHECK(workflowData.OperationCancelled == false);
+    CHECK(workflow_get_operation_in_progress(workflowData.WorkflowHandle) == false);
+    CHECK(workflow_get_operation_cancel_requested(workflowData.WorkflowHandle) == false);
 
     // Wait for async operation completion
     workCompletionCallbackCV.wait(lock);
@@ -375,19 +284,26 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
     //
     // Apply
     //
+    workflow_uninit(handle);
+    handle = nullptr;
+    result = workflow_init(workflow_test_apply, true, &handle);
 
-    workflowData.LastReportedState = ADUCITF_State_InstallSucceeded;
-    workflowData.CurrentAction = ADUCITF_UpdateAction_Apply;
+    CHECK(result.ResultCode != 0);
+    CHECK(result.ExtendedResultCode == 0);
+
+    workflowData.WorkflowHandle = handle;
+
+    workflow_set_last_reported_state(ADUCITF_State_InstallSucceeded);
 
     result = ADUC_MethodCall_Apply(&methodCallData);
 
-    CHECK(result.ResultCode == ADUC_InstallResult_InProgress);
+    CHECK(result.ResultCode == ADUC_Result_Apply_InProgress);
     CHECK(result.ExtendedResultCode == 0);
 
-    CHECK(workflowData.LastReportedState == ADUCITF_State_ApplyStarted);
+    CHECK(workflow_get_last_reported_state() == ADUCITF_State_ApplyStarted);
     CHECK(workflowData.IsRegistered == false);
-    CHECK(workflowData.OperationInProgress == false);
-    CHECK(workflowData.OperationCancelled == false);
+    CHECK(workflow_get_operation_in_progress(workflowData.WorkflowHandle) == false);
+    CHECK(workflow_get_operation_cancel_requested(workflowData.WorkflowHandle) == false);
 
     // Wait for async operation completion
     workCompletionCallbackCV.wait(lock);
@@ -398,6 +314,9 @@ TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
     // Unregister
     //
 
-    ADUC_MethodCall_Unregister(&workflowData.RegisterData);
+    workflow_uninit(handle);
+    handle = nullptr;
+    workflowData.WorkflowHandle = nullptr;
+
+    ADUC_MethodCall_Unregister(&workflowData.UpdateActionCallbacks);
 }
-#endif // ADUC_SWUPDATE_HANDLER

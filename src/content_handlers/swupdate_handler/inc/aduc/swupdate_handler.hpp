@@ -13,11 +13,15 @@
 #include <memory>
 #include <string>
 
+EXTERN_C_BEGIN
+
 /**
- * @brief handler creation function
- * This function calls  CreateContentHandler from handler factory 
+ * @brief Instantiates an Update Content Handler for 'microsoft/swupdate:1' update type.
+ * @return A pointer to an instantiated Update Content Handler object.
  */
-std::unique_ptr<ContentHandler> microsoft_swupdate_CreateFunc(const ContentHandlerCreateData& data);
+ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
+
+EXTERN_C_END
 
 /**
  * @class SWUpdateHandlerImpl
@@ -26,8 +30,7 @@ std::unique_ptr<ContentHandler> microsoft_swupdate_CreateFunc(const ContentHandl
 class SWUpdateHandlerImpl : public ContentHandler
 {
 public:
-    static std::unique_ptr<ContentHandler>
-    CreateContentHandler(const std::string& workFolder, const std::string& logFolder, const std::string& filename);
+    static ContentHandler* CreateContentHandler();
 
     // Delete copy ctor, copy assignment, move ctor and move assignment operators.
     SWUpdateHandlerImpl(const SWUpdateHandlerImpl&) = delete;
@@ -37,27 +40,19 @@ public:
 
     ~SWUpdateHandlerImpl() override = default;
 
-    ADUC_Result Prepare(const ADUC_PrepareInfo* prepareInfo) override;
-    ADUC_Result Download() override;
-    ADUC_Result Install() override;
-    ADUC_Result Apply() override;
-    ADUC_Result Cancel() override;
-    ADUC_Result IsInstalled(const std::string& installedCriteria) override;
+    ADUC_Result Download(const ADUC_WorkflowData* workflowData) override;
+    ADUC_Result Install(const ADUC_WorkflowData* workflowData) override;
+    ADUC_Result Apply(const ADUC_WorkflowData* workflowData) override;
+    ADUC_Result Cancel(const ADUC_WorkflowData* workflowData) override;
+    ADUC_Result IsInstalled(const ADUC_WorkflowData* workflowData) override;
 
     static std::string ReadValueFromFile(const std::string& filePath);
 
 protected:
     // Protected constructor, must call CreateContentHandler factory method or from derived simulator class
-    SWUpdateHandlerImpl(const std::string& workFolder, const std::string& logFolder, const std::string& filename) :
-        _workFolder{ workFolder }, _logFolder{ logFolder }, _filename{ filename }
+    SWUpdateHandlerImpl()
     {
     }
-
-private:
-    std::string _workFolder;
-    std::string _logFolder;
-    std::string _filename;
-    bool _isApply{ false };
 };
 
 #endif // ADUC_SWUPDATE_HANDLER_HPP

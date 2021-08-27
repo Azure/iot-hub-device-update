@@ -73,6 +73,8 @@ target_link_libraries (
             aduc::config_utils
             aduc::device_info_interface
             aduc::eis_utils
+            aduc::extension_manager
+            aduc::extension_utils
             aduc::logging
             aduc::permission_utils
             aduc::pnp_helper
@@ -89,6 +91,7 @@ target_compile_definitions (
             ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
             ADUC_CONF_FOLDER="${ADUC_CONF_FOLDER}"
             ADUC_DATA_FOLDER="${ADUC_DATA_FOLDER}"
+            ADUC_DOWNLOADS_FOLDER="${ADUC_DOWNLOADS_FOLDER}"
             ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
             ADUC_FILE_USER="${ADUC_FILE_USER}"
             ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}"

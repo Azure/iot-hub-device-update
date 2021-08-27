@@ -24,14 +24,18 @@ target_link_libraries (
     PUBLIC aduc::adu_types
            aduc::c_utils
            aduc::communication_abstraction
+           aduc::extension_manager
            Parson::parson
     PRIVATE aduc::config_utils
             aduc::hash_utils
             aduc::parson_json_utils
             aduc::jws_utils
             aduc::logging
+            aduc::parser_utils
             aduc::platform_layer
-            aduc::pnp_helper)
+            aduc::pnp_helper
+            aduc::system_utils
+            aduc::workflow_utils)
 
 target_compile_definitions (
     ${PROJECT_NAME}
@@ -40,33 +44,6 @@ target_compile_definitions (
             ADUC_DEVICEPROPERTIES_MODEL="${ADUC_DEVICEPROPERTIES_MODEL}"
             ADUC_VERSION="${ADUC_VERSION}"
             ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}")
-
-list (LENGTH ADUC_CONTENT_HANDLERS num_content_handlers)
-if (num_content_handlers EQUAL 0)
-    message (FATAL_ERROR "No content handler specified.")
-endif ()
-
-# Replace comma delimiter with semicolon to form a list
-# Converts the list passed in on the command line to a CMake list.
-
-string (
-    REPLACE ","
-            ";"
-            ADUC_CONTENT_HANDLER_LIST
-            ${ADUC_CONTENT_HANDLERS})
-
-# Iterate through the list of content handlers and add support for each one.
-foreach (content_handler IN LISTS ADUC_CONTENT_HANDLER_LIST)
-    if (content_handler STREQUAL "microsoft/swupdate")
-        target_link_libraries (${PROJECT_NAME} PRIVATE aduc::swupdate_handler)
-        target_compile_definitions (${PROJECT_NAME} PUBLIC ADUC_SWUPDATE_HANDLER=1)
-    elseif (content_handler STREQUAL "microsoft/apt")
-        target_link_libraries (${PROJECT_NAME} PRIVATE aduc::apt_handler)
-        target_compile_definitions (${PROJECT_NAME} PUBLIC ADUC_APT_HANDLER=1)
-    else () # NOTE: When adding a new content handler, create a new elseif statement like above.
-        message (FATAL_ERROR "Unknown content handler ${content_handler} specified.")
-    endif ()
-endforeach ()
 
 if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
     target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_PLATFORM_SIMULATOR)

@@ -24,10 +24,15 @@ target_link_libraries (
             aduc::logging
             aduc::process_utils
             aduc::string_utils
-            aduc::string_utils
-            aduc::system_utils)
+            aduc::system_utils
+            aduc::workflow_utils)
 
 target_link_dosdk (${target_name} PRIVATE)
+
+#
+# Turn -fPIC on, in order to use this library in another shared library.
+#
+set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 execute_process (
     COMMAND lsb_release --id --short
@@ -50,6 +55,8 @@ target_compile_definitions (
     ${target_name}
     PRIVATE ADUC_DEVICEINFO_MANUFACTURER="${ADUC_DEVICEINFO_MANUFACTURER}"
             ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
+            ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
+            ADUC_FILE_USER="${ADUC_FILE_USER}"
             ADUC_DEVICEINFO_MODEL="${ADUC_DEVICEINFO_MODEL}"
             ADUC_VERSION_FILE="${ADUC_VERSION_FILE}")
 

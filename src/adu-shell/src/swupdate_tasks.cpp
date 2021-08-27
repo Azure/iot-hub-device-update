@@ -11,8 +11,6 @@
 
 #include <unordered_map>
 
-namespace CommonTasks = Adu::Shell::Tasks::Common;
-
 namespace Adu
 {
 namespace Shell
@@ -137,7 +135,7 @@ ADUShellTaskResult DoSWUpdateTask(const ADUShell_LaunchArguments& launchArgs)
             { ADUShellAction::Apply, Apply },
             { ADUShellAction::Cancel, Cancel },
             { ADUShellAction::Rollback, Rollback },
-            { ADUShellAction::Reboot, CommonTasks::Reboot }
+            { ADUShellAction::Reboot, Adu::Shell::Tasks::Common::Reboot }
         };
 
         taskProc = actionMap.at(launchArgs.action);

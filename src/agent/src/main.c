@@ -10,7 +10,10 @@
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
 #include "aduc/config_utils.h"
+#include "aduc/connection_string_utils.h"
 #include "aduc/device_info_interface.h"
+#include "aduc/extension_manager.h"
+#include "aduc/extension_utils.h"
 #include "aduc/health_management.h"
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h"
@@ -69,10 +72,11 @@
  * 
  * Customers should change this ID to match their device model ID.
  */
-static const char g_aduModelId[] = "dtmi:AzureDeviceUpdate;1";
+
+static const char g_aduModelId[] = "dtmi:azure:iot:deviceUpdateModel;1";
 
 // Name of ADU Agent subcomponent that this device implements.
-static const char g_aduPnPComponentName[] = "azureDeviceUpdateAgent";
+static const char g_aduPnPComponentName[] = "deviceUpdate";
 
 // Name of DeviceInformation subcomponent that this device implements.
 static const char g_deviceInfoPnPComponentName[] = "deviceInformation";
@@ -215,11 +219,16 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
         // clang-format off
         static struct option long_options[] =
         {
-            { "version",                no_argument,   0, 'v' },
-            { "enable-iothub-tracing",  no_argument,   0, 'e' },
-            { "health-check",           no_argument,   0, 'h' },
-            { "log-level",         required_argument,  0, 'l' },
-            { "connection-string", required_argument,  0, 'c' },
+            { "version",                       no_argument,       0, 'v' },
+            { "enable-iothub-tracing",         no_argument,       0, 'e' },
+            { "health-check",                  no_argument,       0, 'h' },
+            { "log-level",                     required_argument, 0, 'l' },
+            { "connection-string",             required_argument, 0, 'c' },
+            { "register-content-handler",      required_argument, 0, 'C' },
+            { "register-component-enumerator", required_argument, 0, 'E' },
+            { "register-content-downloader",   required_argument, 0, 'D' },
+            { "update-type",                   required_argument, 0, 'u' },
+            { "run-as-owner",                  no_argument,       0, 'a' },
             { 0, 0, 0, 0 }
         };
         // clang-format on
@@ -230,7 +239,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
         int option = getopt_long(
             argc,
             argv,
-            STOP_PARSE_ON_NONOPTION_ARG RET_COLON_FOR_MISSING_OPTIONARG "vehc:l:",
+            STOP_PARSE_ON_NONOPTION_ARG RET_COLON_FOR_MISSING_OPTIONARG "avehcu:l:r:d:n:C:E:D:",
             long_options,
             &option_index);
 
@@ -273,6 +282,22 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
 
         case 'c':
             launchArgs->connectionString = optarg;
+            break;
+
+        case 'C':
+            launchArgs->contentHandlerFilePath = optarg;
+            break;
+
+        case 'D':
+            launchArgs->contentDownloaderFilePath = optarg;
+            break;
+
+        case 'E':
+            launchArgs->componentEnumeratorFilePath = optarg;
+            break;
+
+        case 'u':
+            launchArgs->updateType = optarg;
             break;
 
         case ':':
@@ -384,7 +409,7 @@ void ADUC_PnP_Components_Destroy()
  */
 _Bool ADUC_PnP_Components_Create(ADUC_ClientHandle clientHandle, int argc, char** argv)
 {
-    Log_Info("Initalizing PnP components.");
+    Log_Info("Initializing PnP components.");
     _Bool succeeded = false;
     const unsigned componentCount = ARRAY_SIZE(componentList);
 
@@ -815,21 +840,26 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         }
     }
 
-#ifndef ADUC_PLATFORM_SIMULATOR
+    ADUC_Result result;
+
     // The connection string is valid (IoT hub connection successful) and we are ready for further processing.
     // Send connection string to DO SDK for it to discover the Edge gateway if present.
     if (ConnectionStringUtils_IsNestedEdge(info.connectionString))
     {
-        const int result = deliveryoptimization_set_iot_connection_string(info.connectionString);
-        if (result != 0)
-        {
-            // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
-            // fail the startup.
-            Log_Error("Failed to set DO connection string in Nested Edge scenario, result: %d", result);
-            goto done;
-        }
+        result = ExtensionManager_InitializeContentDownloader(info.connectionString);
     }
-#endif
+    else
+    {
+        result = ExtensionManager_InitializeContentDownloader(NULL /*initializeData*/);
+    }
+
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
+        // fail the startup.
+        Log_Error("Failed to set DO connection string in Nested Edge scenario, result: %d", result);
+        goto done;
+    }
 
     succeeded = true;
 
@@ -906,7 +936,53 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    ADUC_Logging_Init(launchArgs.logLevel);
+    ADUC_Logging_Init(launchArgs.logLevel, "du-agent");
+
+    if (launchArgs.healthCheckOnly)
+    {
+        if (HealthCheck(&launchArgs))
+        {
+            return 0;
+        }
+
+        return 1;
+    }
+
+    if (launchArgs.contentHandlerFilePath != NULL)
+    {
+        if (launchArgs.updateType == NULL)
+        {
+            Log_Error("Missing --update-type argument.");
+            return 1;
+        }
+
+        if (RegisterUpdateContentHandler(launchArgs.updateType, launchArgs.contentHandlerFilePath))
+        {
+            return 0;
+        }
+
+        return 1;
+    }
+
+    if (launchArgs.componentEnumeratorFilePath != NULL)
+    {
+        if (RegisterComponentEnumeratorExtension(launchArgs.componentEnumeratorFilePath))
+        {
+            return 0;
+        }
+
+        return 1;
+    }
+
+    if (launchArgs.contentDownloaderFilePath != NULL)
+    {
+        if (RegisterContentDownloaderExtension(launchArgs.contentDownloaderFilePath))
+        {
+            return 0;
+        }
+
+        return 1;
+    }
 
     Log_Info("Agent (%s; %s) starting.", ADUC_PLATFORM_LAYER, ADUC_VERSION);
 #ifdef ADUC_GIT_INFO

@@ -162,8 +162,8 @@ SECTION("Valid config content without device info, Success Test")
         ADUC_ConfigInfo config = {};
 
         CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
-        CHECK(config.manufacturer == NULL);
-        CHECK(config.model == NULL);
+        CHECK(config.manufacturer == nullptr);
+        CHECK(config.model == nullptr);
 
         ADUC_ConfigInfo_UnInit(&config);
 

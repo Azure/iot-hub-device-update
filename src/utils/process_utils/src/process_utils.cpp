@@ -100,11 +100,12 @@ int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string>
             break;
         }
 
-        if (count == 0)
+        if (count <= 0)
         {
             break;
         }
 
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
         buffer[count] = 0;
         output += buffer;
     }

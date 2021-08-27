@@ -106,6 +106,52 @@ set (
         STRING
         "Path to the folder containing data file(s) for the ADU Agent. e.g. installedcriteria file."
 )
+
+set (
+    ADUC_EXTENSIONS_FOLDER "${ADUC_DATA_FOLDER}/extensions"
+    CACHE STRING "Path to the folder containing file(s) related to DU Agent extension(s).")
+
+set (
+    ADUC_EXTENSIONS_INSTALL_FOLDER "${ADUC_EXTENSIONS_FOLDER}/sources"
+    CACHE STRING "Path to the folder containing extensions .so file(s).")
+
+set (
+    ADUC_CONTENT_HANDLER_REG_FILENAME "content_handler.json"
+    CACHE STRING "Content handler registration file name.")
+
+set (
+    ADUC_EXTENSION_REG_FILENAME "extension.json"
+    CACHE STRING "Extension registration file name.")
+
+set (
+    ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR "component_enumerator"
+    CACHE STRING "Sub folder for component enumerator extension.")
+
+set (
+    ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER "content_downloader"
+    CACHE STRING "Sub folder for content downloader extension.")
+
+set (
+    ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS "update_content_handlers"
+    CACHE STRING "Sub folder for update content handler extensions.")
+
+set (
+    ADUC_COMPONENT_ENUMERATOR_EXTENSION_DIR "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR}"
+    CACHE STRING "Path for component enumerator extension.")
+
+set (
+    ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER}"
+    CACHE STRING "Path for content downloader extension.")
+
+set (
+    ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS}"
+    CACHE STRING "Sub folder for update content handler extensions.")
+
+set (
+    ADUC_DOWNLOADS_FOLDER "${ADUC_DATA_FOLDER}/downloads"
+    CACHE STRING "Path to the folder containing downloaded update artifacts."
+)
+
 set (
     ADUC_CONTENT_HANDLERS
     "microsoft/swupdate"
@@ -206,14 +252,12 @@ get_filename_component (
 set (
     ADUSHELL_FOLDER
     "/usr/lib/adu"
-    CACHE STRING "The directory of the adu-shell binary."
-)
+    CACHE STRING "The directory of the adu-shell binary.")
 
 set (
     ADUSHELL_FILENAME
     "adu-shell"
-    CACHE STRING "Filename of adu-shell."
-)
+    CACHE STRING "Filename of adu-shell.")
 
 get_filename_component (
     ADUSHELL_FILE_PATH
@@ -231,35 +275,30 @@ set (
     "adu"
     CACHE STRING "The effective group name for adu-shell process.")
 
-set(
+set (
     ADUC_FILE_USER
     "adu"
-    CACHE STRING "The user for adu file ownership."
-)
+    CACHE STRING "The user for adu file ownership.")
 
-set(
+set (
     ADUC_FILE_GROUP
     "adu"
-    CACHE STRING "The group for adu file ownership."
-)
+    CACHE STRING "The group for adu file ownership.")
 
-set(
+set (
     DO_FILE_USER
     "do"
-    CACHE STRING "The user for do file ownership."
-)
+    CACHE STRING "The user for do file ownership.")
 
-set(
+set (
     DO_FILE_GROUP
     "do"
-    CACHE STRING "The group for do file ownership."
-)
+    CACHE STRING "The group for do file ownership.")
 
-set(
+set (
     SYSLOG_FILE_GROUP
     "syslog"
-    CACHE STRING "The syslog group."
-)
+    CACHE STRING "The syslog group.")
 
 option (ADUC_WARNINGS_AS_ERRORS "Treat warnings as errors (-Werror)" ON)
 option (ADUC_BUILD_UNIT_TESTS "Build unit tests and mock some functionality" OFF)

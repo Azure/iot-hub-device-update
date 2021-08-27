@@ -33,14 +33,15 @@ add_executable (${PROJECT_NAME} ${sources})
 target_include_directories (${PROJECT_NAME} PRIVATE ${ADUC_EXPORT_INCLUDES}
                                                     ${PROJECT_SOURCE_DIR}/../src)
 target_compile_definitions (
-    ${PROJECT_NAME}
-    PRIVATE ADUC_VERSION="${ADUC_VERSION}"
-            ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}")
+    ${PROJECT_NAME} PRIVATE ADUC_VERSION="${ADUC_VERSION}"
+                            ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}")
 
 target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::adu_core_interface
             aduc::string_utils
+            aduc::parser_utils
+            aduc::workflow_utils
             Catch2::Catch2
             umock_c)
 

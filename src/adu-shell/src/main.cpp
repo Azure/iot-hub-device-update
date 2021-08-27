@@ -46,8 +46,17 @@ namespace adushconst = Adu::Shell::Const;
  */
 int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* launchArgs)
 {
+    if (launchArgs == nullptr)
+    {
+        return -1;
+    }
+
     int result = 0;
-    memset(launchArgs, 0, sizeof(*launchArgs));
+    launchArgs->updateType = nullptr;
+    launchArgs->updateAction = nullptr;
+    launchArgs->targetData = nullptr;
+    launchArgs->logFile = nullptr;
+    launchArgs->showVersion = false;
 
 #if _ADU_DEBUG
     launchArgs->logLevel = ADUC_LOG_DEBUG;
@@ -124,7 +133,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
             break;
 
         case 'o':
-            launchArgs->targetOptions = optarg;
+            launchArgs->targetOptions.emplace_back(optarg);
             break;
 
         case 'f':
@@ -195,17 +204,6 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
     return result;
 }
 
-std::string GetFormattedCommandline(const std::string& command, const std::vector<std::string>& args)
-{
-    std::stringstream output;
-    output << command << ' ';
-    for (const std::string& arg : args)
-    {
-        output << arg << ' ';
-    }
-    return output.str();
-}
-
 // TODO (Nox): 31082410: Revisit how to merge and display logs from adu-shell
 //            in adu-agent journalctl log w/o flooding adu log file.
 void ShowChildProcessLogs(const std::string& output)
@@ -234,12 +232,8 @@ int ADUShell_Dowork(const ADUShell_LaunchArguments& launchArgs)
     {
         const std::unordered_map<std::string, ADUShellTaskFuncType> actionMap = {
             { adushconst::update_type_common, CommonTasks::DoCommonTask },
-#ifdef ADUSHELL_APT
             { adushconst::update_type_microsoft_apt, AptGetTasks::DoAptGetTask },
-#endif
-#ifdef ADUSHELL_SWUPDATE
             { adushconst::update_type_microsoft_swupdate, SWUpdateTasks::DoSWUpdateTask }
-#endif
         };
 
         ADUShellTaskFuncType task = actionMap.at(std::string(launchArgs.updateType));
@@ -319,16 +313,19 @@ int main(int argc, char** argv)
 
     if (launchArgs.showVersion)
     {
-        printf(ADUC_VERSION);
+        printf("%s\n", ADUC_VERSION);
         return 0;
     }
 
-    ADUC_Logging_Init(launchArgs.logLevel);
+    ADUC_Logging_Init(launchArgs.logLevel, "adu-shell");
 
     Log_Debug("Update type: %s", launchArgs.updateType);
     Log_Debug("Update action: %s", launchArgs.updateAction);
     Log_Debug("Target data: %s", launchArgs.targetData);
-    Log_Debug("Target options: %s", launchArgs.targetOptions);
+    for (const std::string& option : launchArgs.targetOptions)
+    {
+        Log_Debug("Target options: %s", option.c_str());
+    }
     Log_Debug("Log level: %d", launchArgs.logLevel);
 
     // Run as 'root'.

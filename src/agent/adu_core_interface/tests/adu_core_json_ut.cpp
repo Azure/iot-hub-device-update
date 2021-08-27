@@ -15,6 +15,7 @@ using Catch::Matchers::Equals;
 #include "aduc/adu_core_export_helpers.h" // ADUC_FileEntityArray_Free
 #include "aduc/adu_core_exports.h" // ADUC_FileEntity
 #include "aduc/adu_core_json.h"
+#include "aduc/parser_utils.h"
 #include <aduc/calloc_wrapper.hpp>
 
 using ADUC::StringUtils::cstr_wrapper;
@@ -367,7 +368,7 @@ TEST_CASE("ADUC_Json_GetUpdateAction: Valid")
     {
         unsigned updateAction;
         std::stringstream strm;
-        strm << R"({ "action": )" << updateactionVal << " })";
+        strm << R"({ "workflow" : {"action": )" << updateactionVal << R"( } })";
         INFO(strm.str())
         const JSON_Value* updateActionJson{ ADUC_Json_GetRoot(strm.str().c_str()) };
         REQUIRE(updateActionJson != nullptr);
@@ -380,7 +381,7 @@ TEST_CASE("ADUC_Json_GetUpdateAction: Invalid")
 {
     unsigned updateAction;
     std::stringstream strm;
-    const JSON_Value* updateActionJsonValue{ ADUC_Json_GetRoot(R"({ "action": "foo" })") };
+    const JSON_Value* updateActionJsonValue{ ADUC_Json_GetRoot(R"({ "workflow" : { "action": "foo" }})") };
     INFO(strm.str())
     REQUIRE(updateActionJsonValue != nullptr);
     CHECK(!ADUC_Json_GetUpdateAction(updateActionJsonValue, &updateAction));
@@ -397,7 +398,9 @@ TEST_CASE("ADUC_Json_GetExpectedUpdateId: Valid")
     // clang-format off
     expectedUpdateIdJsonStrm
         << R"({)"
-        <<     R"("action": 0,)"
+        <<     R"("workflow" : { )"
+        <<     R"(  "action": 0  )"
+        <<     R"( },)"
         <<     R"("updateManifest":"{)"
         <<         R"(\"updateId\":{)"
         <<             R"(\"provider\":\")" << provider << R"(\",)"
@@ -428,7 +431,9 @@ TEST_CASE("ADUC_Json_GetExpectedUpdateId: Invalid")
         // clang-format off
         expectedUpdateIdJsonStrm
             << R"({)"
-            <<     R"("action": 0,)"
+            <<     R"("workflow" : { )"
+            <<     R"(  "action": 0  )"
+            <<     R"( },)"
             <<     R"("updateManifest":"{)"
             <<     R"(}")"
             << R"(})";
@@ -448,7 +453,9 @@ TEST_CASE("ADUC_Json_GetExpectedUpdateId: Invalid")
         // clang-format off
         expectedUpdateIdJsonStrm
             << R"({)"
-            <<     R"("action": 0,)"
+            <<     R"("workflow" : { )"
+            <<     R"(  "action": 0  )"
+            <<     R"( },)"
             <<     R"("updateManifest":"{)"
             <<        R"(\"updateId\":[\"a\"])"
             <<     R"(}")"

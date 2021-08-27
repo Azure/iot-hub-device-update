@@ -4,15 +4,18 @@
  *
  * @copyright Copyright (c) 2019, Microsoft Corp.
  */
-#include "aduc/system_utils.h"
 #include "aduc/logging.h"
+#include "aduc/string_c_utils.h"
+#include "aduc/system_utils.h"
 
 // for nftw
 #define __USE_XOPEN_EXTENDED 1
 
 #include <errno.h>
 #include <ftw.h> // for nftw
+#include <grp.h> // for getgrnam
 #include <limits.h> // for PATH_MAX
+#include <pwd.h> // for getpwnam
 #include <stdlib.h> // for getenv
 #include <string.h> // for strncpy, strlen
 #include <sys/stat.h>
@@ -67,7 +70,7 @@ const char* ADUC_SystemUtils_GetTemporaryPathName()
  */
 int ADUC_SystemUtils_ExecuteShellCommand(const char* command)
 {
-    if (command == NULL || command[0] == '\0')
+    if (IsNullOrEmpty(command))
     {
         Log_Error("ExecuteShellCommand failed: command is empty");
         return EINVAL;
@@ -263,6 +266,40 @@ int ADUC_SystemUtils_MkDirRecursive(const char* path, uid_t userId, gid_t groupI
     }
 
     return 0;
+}
+
+int ADUC_SystemUtils_MkSandboxDirRecursive(const char* path)
+{
+    // Create the sandbox folder with adu:adu ownership.
+    // Permissions are set to u=rwx,g=rwx. We grant read/write/execute to group owner so that partner
+    // processes like the DO daemon can download files to our sandbox.
+        
+    // Note: the return value may point to a static area,
+    // and may be overwritten by subsequent calls to getpwent(3), getpwnam(), or getpwuid().
+    // (Do not pass the returned pointer to free(3).)
+    struct passwd* pwd = getpwnam(ADUC_FILE_USER);
+    if (pwd == NULL)
+    {
+        Log_Error("adu user doesn't exist.");
+        return -1;
+    }
+
+    uid_t aduUserId = pwd->pw_uid;
+    pwd = NULL;
+
+    // Note: The return value may point to a static area,
+    // and may be overwritten by subsequent calls to getgrent(3), getgrgid(), or getgrnam().
+    // (Do not pass the returned pointer to free(3).)
+    struct group* grp = getgrnam(ADUC_FILE_GROUP);
+    if (grp == NULL)
+    {
+        Log_Error("adu group doesn't exist.");
+        return -1;
+    }
+    gid_t aduGroupId = grp->gr_gid;
+    grp = NULL;
+
+    return ADUC_SystemUtils_MkDirRecursive(path, aduUserId, aduGroupId, S_IRWXU | S_IRWXG);
 }
 
 static int RmDirRecursive_helper(const char* fpath, const struct stat* sb, int typeflag, struct FTW* info)

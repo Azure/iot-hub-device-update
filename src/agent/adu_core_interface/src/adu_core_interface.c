@@ -8,26 +8,31 @@
 #include "aduc/adu_core_interface.h"
 #include "aduc/adu_core_export_helpers.h" // ADUC_SetUpdateStateWithResult
 #include "aduc/agent_workflow.h"
+#include "aduc/agent_workflow_utils.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
 #include "aduc/hash_utils.h"
-#include "startup_msg_helper.h"
-#include <aduc/logging.h>
-#include <aduc/string_c_utils.h>
+#include "aduc/logging.h"
+#include "aduc/string_c_utils.h"
+#include "aduc/types/update_content.h"
+#include "aduc/workflow_utils.h"
 
+#include "startup_msg_helper.h"
+
+#include <azure_c_shared_utility/strings.h> // STRING_*
 #include <iothub_client_version.h>
 #include <parson.h>
 #include <pnp_protocol.h>
 #include <stdlib.h>
 
 // Name of an Azure Device Update Agent component that this device implements.
-static const char g_aduPnPComponentName[] = "azureDeviceUpdateAgent";
+static const char g_aduPnPComponentName[] = "deviceUpdate";
 
 // Name of properties that Azure Device Update Agent component supports.
 
 // This is the device-to-cloud property.
 // An agent communicates its state and other data to ADU Management service by reporting this property to IoTHub.
-static const char g_aduPnPComponentClientPropertyName[] = "client";
+static const char g_aduPnPComponentClientPropertyName[] = "agent";
 
 // This is the cloud-to-device property.
 // ADU Management send an 'Update Action' to this device by setting this property on IoTHub.
@@ -72,6 +77,8 @@ static void ReportClientJsonProperty(const char* json_value)
     const char* jsonToSendStr = STRING_c_str(jsonToSend);
     size_t jsonToSendStrLen = strlen(jsonToSendStr);
 
+    Log_Debug("Reporting agent state:\n%s", jsonToSendStr);
+
     iothubClientResult = ClientHandle_SendReportedState(
         g_iotHubClientHandleForADUComponent,
         (const unsigned char*)jsonToSendStr,
@@ -90,10 +97,7 @@ static void ReportClientJsonProperty(const char* json_value)
     }
 
 done:
-    if (jsonToSend != NULL)
-    {
-        STRING_delete(jsonToSend);
-    }
+    STRING_delete(jsonToSend);
 }
 
 /**
@@ -150,16 +154,14 @@ _Bool ReportStartupMsg()
 done:
     free(model);
     free(manufacturer);
-
     json_value_free(startupMsgValue);
-
     json_free_serialized_string(jsonString);
 
     return success;
 }
 
 //
-// AzureDeviceUpdateCoreInterface  methods
+// AzureDeviceUpdateCoreInterface methods
 //
 
 _Bool AzureDeviceUpdateCoreInterface_Create(void** context, int argc, char** argv)
@@ -186,7 +188,7 @@ done:
 
     if (!succeeded)
     {
-        ADUC_WorkflowData_Free(workflowData);
+        ADUC_WorkflowData_Uninit(workflowData);
         free(workflowData);
         workflowData = NULL;
     }
@@ -220,7 +222,7 @@ void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext)
 
     Log_Info("ADUC agent stopping");
 
-    ADUC_WorkflowData_Free(workflowData);
+    ADUC_WorkflowData_Uninit(workflowData);
     free(workflowData);
 
     *componentContext = NULL;
@@ -243,12 +245,21 @@ void OrchestratorUpdateCallback(
         goto done;
     }
 
-    Log_Debug(
-        "OrchestratorUpdateCallback received property JSON string (%s), property version (%d)",
-        jsonString,
-        propertyVersion);
+    // To reduce TWIN size, remove UpdateManifestSignature and fileUrls before ACK.
+    char* ackString = NULL;
+    JSON_Object* signatureObj = json_value_get_object(propertyValue);
+    if (signatureObj != NULL)
+    {
+        json_object_set_null(signatureObj, "updateManifestSignature");
+        json_object_set_null(signatureObj, "fileUrls");
+        ackString = json_serialize_to_string(propertyValue);
+    }
+
+    Log_Debug("Update Action info string (%s), property version (%d)", ackString, propertyVersion);
 
     ADUC_Workflow_HandlePropertyUpdate(workflowData, (const unsigned char*)jsonString);
+    free(jsonString);
+    jsonString = ackString;
 
     // ACK the request.
     jsonToSend = PnP_CreateReportedPropertyWithStatus(
@@ -280,15 +291,9 @@ void OrchestratorUpdateCallback(
     }
 
 done:
-    if (jsonToSend != NULL)
-    {
-        STRING_delete(jsonToSend);
-    }
+    STRING_delete(jsonToSend);
 
-    if (jsonString != NULL)
-    {
-        free(jsonString);
-    }
+    free(jsonString);
 
     Log_Info("OrchestratorPropertyUpdateCallback ended");
 }
@@ -310,13 +315,38 @@ void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
 // Reporting
 //
 
+JSON_Status _json_object_set_update_result(
+    JSON_Object* object, int32_t resultCode, int32_t extendedResultCode, const char* resultDetails)
+{
+    JSON_Status status = json_object_set_number(object, ADUCITF_FIELDNAME_RESULTCODE, resultCode);
+    if (status == JSONSuccess)
+    {
+        status = json_object_set_number(object, ADUCITF_FIELDNAME_EXTENDEDRESULTCODE, extendedResultCode);
+    }
+    if (status == JSONSuccess)
+    {
+        if (resultDetails)
+        {
+            status = json_object_set_string(object, ADUCITF_FIELDNAME_RESULTDETAILS, resultDetails);
+        }
+        else
+        {
+            status = json_object_set_null(object, ADUCITF_FIELDNAME_RESULTDETAILS);
+        }
+    }
+    return status;
+}
+
 /**
  * @brief Report state, and optionally result to service.
  *
+ * @param handle A workflow handle object.
  * @param updateState state to report.
  * @param result Result to report (optional, can be NULL).
+ * @param installedUpdateId Installed update id (if update completed successfully).
  */
-void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(ADUCITF_State updateState, const ADUC_Result* result)
+void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
+    ADUC_WorkflowHandle handle, ADUCITF_State updateState, const ADUC_Result* result, const char* installedUpdateId)
 {
     if (g_iotHubClientHandleForADUComponent == NULL)
     {
@@ -324,62 +354,232 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(ADUCITF_State upda
         return;
     }
 
-    // As a optimization to reduce network traffic, these states are not reported.
-    if (updateState == ADUCITF_State_DownloadStarted || updateState == ADUCITF_State_InstallStarted
-        || updateState == ADUCITF_State_ApplyStarted)
+    // As a optimization to reduce network traffic, these states are not reported to the cloud.
+    if (updateState == ADUCITF_State_InstallStarted || updateState == ADUCITF_State_ApplyStarted)
     {
         return;
+    }
+
+    //
+    // Get result from current workflow if exists.
+    // (Note: on startup, update workflow is not started, unless there is an existing Update Action in the twin.)
+    //
+    // If not, try to use specified 'result' param.
+    //
+    // If there's no result details, we'll report only 'updateState'.
+    //
+    ADUC_Result rootResult;
+
+    if (result != NULL)
+    {
+        rootResult = *result;
+    }
+    else
+    {
+        rootResult = workflow_get_result(handle);
     }
 
     JSON_Value* rootValue = json_value_init_object();
     JSON_Object* rootObject = json_value_get_object(rootValue);
     char* jsonString = NULL;
+    int leafCount = workflow_get_children_count(handle);
 
-    JSON_Status jsonStatus = json_object_set_number(rootObject, ADUCITF_FIELDNAME_STATE, updateState);
+    //
+    // Prepare 'lastInstallResult', 'updateInstallResult', and 'bundledUpdates' data.
+    //
+    // Example schema:
+    //
+    // {
+    //     "state" : ###,
+    //     "installedUpdateId" : "...",
+    //
+    //     "lastInstallResult" : {
+    //         "updateInstallResult" : {
+    //             "resultCode" : ####,
+    //             "extendedResultCode" : ####,
+    //             "resultDetails" : "..."
+    //         },
+    //         "bundledUpdates" : {
+    //             "<leaf#0 update id>" : {
+    //                 "resultCode" : ####,
+    //                 "extendedResultCode" : ####,
+    //                 "resultDetails" : "..."
+    //             },
+    //             ...
+    //             "<leaf#N update id>" : {
+    //                 "resultCode" : ####,
+    //                 "extendedResultCode" : ####,
+    //                 "resultDetails" : "..."
+    //             }
+    //         }
+    //     }
+    // }
+
+    JSON_Value* lastInstallResultValue = json_value_init_object();
+    JSON_Object* lastInstallResultObject = json_object(lastInstallResultValue);
+    JSON_Value* updateInstallResultValue = json_value_init_object();
+    JSON_Object* updateInstallResultObject = json_object(updateInstallResultValue);
+
+    JSON_Value* bundledResultsValue = json_value_init_object();
+    JSON_Object* bundledResultsObject = json_object(bundledResultsValue);
+
+    JSON_Status jsonStatus =
+        json_object_set_value(rootObject, ADUCITF_FIELDNAME_LASTINSTALLRESULT, lastInstallResultValue);
     if (jsonStatus != JSONSuccess)
     {
-        Log_Error("Could not serialize JSON field: %s value: %d", ADUCITF_FIELDNAME_STATE, updateState);
+        Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_LASTINSTALLRESULT);
         goto done;
     }
 
-    if (result != NULL)
+    lastInstallResultValue = NULL; // rootObject owns the value now.
+
+    //
+    // State
+    //
+    jsonStatus = json_object_set_number(rootObject, ADUCITF_FIELDNAME_STATE, updateState);
+    if (jsonStatus != JSONSuccess)
     {
-        // Report state and result.
+        Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_UPDATEINSTALLRESULT);
+        goto done;
+    }
 
-        const int httpResultCode = IsAducResultCodeSuccess(result->ResultCode) ? 200 : 500;
-        const int extendedResultCode = result->ExtendedResultCode;
-
-        Log_Info(
-            "Reporting state: %d, %s (%u); HTTP %d; result %d, %d",
-            updateState,
-            ADUCITF_StateToString(updateState),
-            updateState,
-            httpResultCode,
-            result->ResultCode,
-            extendedResultCode);
-
-        jsonStatus = json_object_set_number(rootObject, ADUCITF_FIELDNAME_RESULTCODE, httpResultCode);
+    //
+    // Install Update Id
+    //
+    if (installedUpdateId != NULL)
+    {
+        jsonStatus = json_object_set_string(rootObject, ADUCITF_FIELDNAME_INSTALLEDUPDATEID, installedUpdateId);
         if (jsonStatus != JSONSuccess)
         {
-            Log_Error("Could not serialize JSON field: %s value: %d", ADUCITF_FIELDNAME_RESULTCODE, httpResultCode);
-            goto done;
-        }
-
-        jsonStatus = json_object_set_number(rootObject, ADUCITF_FIELDNAME_EXTENDEDRESULTCODE, extendedResultCode);
-        if (jsonStatus != JSONSuccess)
-        {
-            Log_Error(
-                "Could not serialize JSON field: %s value: %d",
-                ADUCITF_FIELDNAME_EXTENDEDRESULTCODE,
-                extendedResultCode);
+            Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_INSTALLEDUPDATEID);
             goto done;
         }
     }
-    else
-    {
-        // Only report state.
 
-        Log_Info("Reporting state: %s (%u)", ADUCITF_StateToString(updateState), updateState);
+    // Top level result
+    jsonStatus = json_object_set_value(
+        lastInstallResultObject, ADUCITF_FIELDNAME_UPDATEINSTALLRESULT, updateInstallResultValue);
+    if (jsonStatus != JSONSuccess)
+    {
+        Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_UPDATEINSTALLRESULT);
+        goto done;
+    }
+
+    updateInstallResultValue = NULL; // rootObject owns the value now.
+
+    // If reporting 'downloadStarted' state, we must clear previous 'bundledUpdates' map, if exists.
+    if (updateState == ADUCITF_State_DownloadStarted)
+    {
+        if (json_object_set_null(lastInstallResultObject, ADUCITF_FIELDNAME_BUNDLEDUPDATES) != JSONSuccess)
+        {
+            /* Note: continue the 'download' phase if we could not clear the previous results. */
+            Log_Warn("Could not clear 'bundledUpdates' property. The property may contains previous install results.");
+        }
+    }
+    // Otherwise, we will only report 'bundledUpdates' result if we have one ore moe Components Update.
+    else if (leafCount > 0)
+    {
+        jsonStatus =
+            json_object_set_value(lastInstallResultObject, ADUCITF_FIELDNAME_BUNDLEDUPDATES, bundledResultsValue);
+        if (jsonStatus != JSONSuccess)
+        {
+            Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_BUNDLEDUPDATES);
+            goto done;
+        }
+
+        bundledResultsValue = NULL; // rootObject owns the value now.
+    }
+
+    //
+    // Report both state and result
+    //
+
+    // Set top-level update state and result.
+    jsonStatus = _json_object_set_update_result(
+        updateInstallResultObject,
+        rootResult.ResultCode,
+        rootResult.ExtendedResultCode,
+        workflow_peek_result_details(handle));
+
+    if (jsonStatus != JSONSuccess)
+    {
+        Log_Error("Could not set values for field: %s", ADUCITF_FIELDNAME_UPDATEINSTALLRESULT);
+        goto done;
+    }
+
+    // Report all leaf-updates result.
+    if (updateState != ADUCITF_State_DownloadStarted)
+    {
+        leafCount = workflow_get_children_count(handle);
+        if (leafCount == 0)
+        {
+            // Assuming this is not a Bundled Update, let's clear 'bundledUpdates' field.
+            jsonStatus = json_object_clear(bundledResultsObject);
+            if (jsonStatus != JSONSuccess)
+            {
+                Log_Warn("Could not clear JSON field: %s", ADUCITF_FIELDNAME_BUNDLEDUPDATES);
+            }
+        }
+
+        for (int i = 0; i < leafCount; i++)
+        {
+            ADUC_WorkflowHandle childHandle = workflow_get_child(handle, i);
+            ADUC_Result childResult;
+            JSON_Value* childResultValue = NULL;
+            JSON_Object* childResultObject = NULL;
+            STRING_HANDLE childUpdateId = NULL;
+
+            if (childHandle == NULL)
+            {
+                Log_Error("Could not get components #%d update result", i);
+                continue;
+            }
+
+            childResult = workflow_get_result(childHandle);
+
+            childResultValue = json_value_init_object();
+            childResultObject = json_object(childResultValue);
+            if (childResultValue == NULL)
+            {
+                Log_Error("Could not create components update result #%d", i);
+                goto childDone;
+            }
+
+            // Note: IoTHub twin doesn't support some special characters in a map key (e.g. ':', '-').
+            // Let's name the result using "leaf_" +  the array index.
+            childUpdateId = STRING_construct_sprintf("leaf_%d", i);
+            if (childUpdateId == NULL)
+            {
+                Log_Error("Could not create proper child update id result key.");
+                goto childDone;
+            }
+
+            jsonStatus = json_object_set_value(bundledResultsObject, STRING_c_str(childUpdateId), childResultValue);
+            if (jsonStatus != JSONSuccess)
+            {
+                Log_Error("Could not add leaf #%d update result", i);
+                goto childDone;
+            }
+            childResultValue = NULL; // bundledResultsValue owns it now.
+
+            jsonStatus = _json_object_set_update_result(
+                childResultObject,
+                childResult.ResultCode,
+                childResult.ExtendedResultCode,
+                workflow_peek_result_details(childHandle));
+
+            if (jsonStatus != JSONSuccess)
+            {
+                Log_Error("Could not add update result values for components #%d", i);
+                goto childDone;
+            }
+
+        childDone:
+            STRING_delete(childUpdateId);
+            childUpdateId = NULL;
+            json_value_free(childResultValue);
+            childResultValue = NULL;
+        }
     }
 
     jsonString = json_serialize_to_string(rootValue);
@@ -392,7 +592,6 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(ADUCITF_State upda
     ReportClientJsonProperty(jsonString);
 
 done:
-
     json_free_serialized_string(jsonString);
     json_value_free(rootValue);
 }
@@ -407,7 +606,7 @@ done:
  *
  * @param[in] updateId update ID to report as installed.
  */
-void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(const ADUC_UpdateId* updateId)
+void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(const char* updateId)
 {
     if (g_iotHubClientHandleForADUComponent == NULL)
     {
@@ -415,76 +614,7 @@ void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(const ADUC_Update
         return;
     }
 
-    if (!ADUC_IsValidUpdateId(updateId))
-    {
-        Log_Error("ReportUpdateIdAndIdleAsync called with invalid update ID");
-        return;
-    }
+    ADUC_Result result = { .ResultCode = ADUC_Result_Apply_Success, .ExtendedResultCode = 0 };
 
-    Log_Info(
-        "Reporting state: %s (%u); UpdateId %s:%s:%s",
-        ADUCITF_StateToString(ADUCITF_State_Idle),
-        ADUCITF_State_Idle,
-        updateId->Provider,
-        updateId->Name,
-        updateId->Version);
-
-    JSON_Value* rootValue = json_value_init_object();
-    JSON_Object* rootObject = json_value_get_object(rootValue);
-    char* jsonString = NULL;
-
-    char* installedUpdateIdJsonString = ADUC_UpdateIdToJsonString(updateId);
-
-    if (installedUpdateIdJsonString == NULL)
-    {
-        Log_Error("Serializing installedUpdateId JSON to string failed");
-        goto done;
-    }
-
-    JSON_Status jsonStatus =
-        json_object_set_string(rootObject, ADUCITF_FIELDNAME_INSTALLEDUPDATEID, installedUpdateIdJsonString);
-    if (jsonStatus != JSONSuccess)
-    {
-        Log_Error(
-            "Could not serialize JSON field: %s value %s",
-            ADUCITF_FIELDNAME_INSTALLEDUPDATEID,
-            installedUpdateIdJsonString);
-    }
-
-    jsonStatus = json_object_set_number(rootObject, ADUCITF_FIELDNAME_STATE, ADUCITF_State_Idle);
-    if (jsonStatus != JSONSuccess)
-    {
-        Log_Error("Could not serialize JSON field: %s value: %d", ADUCITF_FIELDNAME_STATE, ADUCITF_State_Idle);
-        goto done;
-    }
-
-    jsonStatus = json_object_set_number(rootObject, ADUCITF_FIELDNAME_RESULTCODE, 200); // Success
-    if (jsonStatus != JSONSuccess)
-    {
-        Log_Error("Could not serialize JSON field: %s value: %d", ADUCITF_FIELDNAME_RESULTCODE, 200);
-        goto done;
-    }
-
-    jsonStatus = json_object_set_number(rootObject, ADUCITF_FIELDNAME_EXTENDEDRESULTCODE, 0); // Success
-    if (jsonStatus != JSONSuccess)
-    {
-        Log_Error("Could not serialize JSON field: %s value: %d", ADUCITF_FIELDNAME_EXTENDEDRESULTCODE, 0);
-        goto done;
-    }
-
-    jsonString = json_serialize_to_string(rootValue);
-    if (jsonString == NULL)
-    {
-        Log_Error("Serializing JSON to string failed");
-        goto done;
-    }
-
-    ReportClientJsonProperty(jsonString);
-
-done:
-
-    json_free_serialized_string(installedUpdateIdJsonString);
-
-    json_free_serialized_string(jsonString);
-    json_value_free(rootValue);
+    AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(NULL, ADUCITF_State_Idle, &result, updateId);
 }

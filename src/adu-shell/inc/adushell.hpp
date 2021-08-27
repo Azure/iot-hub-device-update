@@ -25,7 +25,7 @@ typedef struct tagADUShell_LaunchArguments
     char* updateAction; /**< An ADU Update action */
     ADUShellAction action;
     char* targetData; /**< Data to pass to target command */
-    char* targetOptions; /**< Additional options to pass to target command */
+    std::vector<char*> targetOptions; /**< Additional options to pass to target command */
     char* logFile; /**< Custom log file path */
     bool showVersion; /**< Show an agent version */
 } ADUShell_LaunchArguments;
@@ -64,16 +64,6 @@ private:
     int _exitStatus{ EXIT_SUCCESS }; /**< An exit code from child process. Default is EXIT_SUCCESS */
     std::string _output; /**< A string from child process' standard output stream */
 };
-
-/**
- * @brief Returns a string that concatenate a command and all arguments.
- * 
- * @param command A command line to run.
- * @param args An argument list.
- * 
- * @return A concatenated, space delimited string. 
- */
-std::string GetFormattedCommandline(const std::string& command, const std::vector<std::string>& args);
 
 using ADUShellTaskFuncType = std::function<ADUShellTaskResult(const ADUShell_LaunchArguments&)>;
 

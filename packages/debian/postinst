@@ -9,14 +9,29 @@
 
 # Any error should exit the script (sort of)
 # See https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html#The-Set-Builtin
+
 set -e
 
 adu_conf_dir=/etc/adu
 adu_conf_file=adu-conf.txt
 adu_log_dir=/var/log/adu
 adu_data_dir=/var/lib/adu
+adu_downloads_dir="$adu_data_dir/downloads"
 adu_shell_dir=/usr/lib/adu
 adu_shell_file=adu-shell
+
+adu_bin_path=/usr/bin/AducIotAgent
+adu_extensions_dir="$adu_data_dir/extensions"
+adu_extensions_sources_dir="$adu_extensions_dir/sources"
+adu_apt_handler_file=libmicrosoft_apt_1.so
+adu_swupdate_handler_file=libmicrosoft_swupdate_1.so
+adu_simulator_handler_file=libmicrosoft_simulator_1.so
+adu_bundle_handler_file=libmicrosoft_bundle_1.so
+adu_components_handler_file=libmicrosoft_components_1.so
+
+adu_example_component_enumerator_file=libcontoso-component-enumerator.so
+
+adu_delivery_optimization_downloader_file=libdeliveryoptimization-content-downloader.so
 
 adu_eis_conf_file=adu.toml
 eis_idservice_dir=/etc/aziot/identityd/config.d
@@ -35,6 +50,7 @@ adu_home_dir=$(getent passwd $adu_user | cut -d: -f6)
 ms_doclient_lite_service="deliveryoptimization-agent"
 
 setup_dirs_and_files() {
+    echo "Setting directories and files..."
     # Note on linux permissions
     # u - The user owner of a file or a directory.
     # g - The group owner of a file or a directory. A group can contain multiple users.
@@ -52,7 +68,12 @@ setup_dirs_and_files() {
     if id -u "$adu_user" > /dev/null 2>&1; then
         mkdir -p "$adu_conf_dir"
 
+        # Ensure the right owners and permissions
+        chown "$adu_user:root" "$adu_conf_dir"
+        chmod u=rwx,g=rx,o=rx "$adu_conf_dir"        
+
         # Generate the template configuration file
+        echo "Generate the template configuration file..."
         if [ ! -f "$adu_conf_dir/${adu_conf_file}.template" ]; then
             echo "<Place your Azure IoT device connection string here>" > "$adu_conf_dir/${adu_conf_file}.template"
             chown "$adu_user:$adu_group" "$adu_conf_dir/${adu_conf_file}.template"
@@ -75,16 +96,50 @@ setup_dirs_and_files() {
         # Create log dir
         if [ ! -d "$adu_log_dir" ]; then
             mkdir -p "$adu_log_dir"
-            chown "$adu_user:$adu_group" "$adu_log_dir"
-            chmod u=rwx,g=rx "$adu_log_dir"
         fi
 
+        # Ensure the right owners and permissions
+        chown "$adu_user:$adu_group" "$adu_log_dir"
+        chmod u=rwx,g=rx "$adu_log_dir"
+
         # Create data dir
+        echo "Create data dir..."
         if [ ! -d "$adu_data_dir" ]; then
             mkdir -p "$adu_data_dir"
-            chown "$adu_user:$adu_group" "$adu_data_dir"
-            chmod u=rwx,g=rwx,o= "$adu_data_dir"
         fi
+
+        # Ensure the right owners and permissions
+        chown "$adu_user:$adu_group" "$adu_data_dir"
+        chmod u=rwx,g=rwx,o= "$adu_data_dir"
+        ls -ld "$adu_data_dir"
+
+        # Create downloads dir
+        if [ ! -d "$adu_downloads_dir" ]; then
+            mkdir -p "$adu_downloads_dir"
+        fi
+
+        # Ensure the right owners and permissions
+        chown "$adu_user:$adu_group" "$adu_downloads_dir"
+        chmod u=rwx,g=rwx,o= "$adu_downloads_dir"
+        ls -ld "$adu_downloads_dir"
+
+        # Create extensions dir
+        if [ ! -d "$adu_extensions_dir" ]; then
+            mkdir -p "$adu_extensions_dir"
+        fi
+
+        # Ensure the right owners and permissions
+        chown "$adu_user:$adu_group" "$adu_extensions_dir"
+        chmod u=rwx,g=rwx,o= "$adu_extensions_dir"
+
+        # Create extensions sources dir
+        if [ ! -d "$adu_extensions_sources_dir" ]; then
+            mkdir -p "$adu_extensions_sources_dir"
+        fi
+
+        # Ensure the right owners and permissions
+        chown "$adu_user:$adu_group" "$adu_extensions_sources_dir"
+        chmod u=rwx,g=rwx,o= "$adu_extensions_sources_dir"
 
         #Set adu-agent owner and permission
         if [ ! -f "$adu_shell_dir/$adu_shell_file" ]; then
@@ -100,6 +155,21 @@ setup_dirs_and_files() {
         echo "ERROR! $adu_user does not exist." >&2
         return 1
     fi
+}
+
+register_reference_extensions() {
+    echo "Register all reference update content handlers..."
+    
+    $adu_bin_path -l 2 --update-type "microsoft/apt:1" -C $adu_extensions_sources_dir/$adu_apt_handler_file
+    $adu_bin_path -l 2 --update-type "microsoft/swupdate:1" -C $adu_extensions_sources_dir/$adu_swupdate_handler_file
+    $adu_bin_path -l 2 --update-type "microsoft/bundle:1" -C $adu_extensions_sources_dir/$adu_bundle_handler_file
+    $adu_bin_path -l 2 --update-type "microsoft/components:1" -C $adu_extensions_sources_dir/$adu_components_handler_file
+
+    echo "Register a reference component enumerator..."
+    $adu_bin_path -l 2 -E $adu_extensions_sources_dir/$adu_example_component_enumerator_file
+
+    echo "Register content downloader extension..."
+    $adu_bin_path -l 2 -D $adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file
 }
 
 register_adu_user_and_process_with_eis() {
@@ -136,6 +206,8 @@ case "$1" in
     configure)
         setup_dirs_and_files
         register_adu_user_and_process_with_eis
+        
+        register_reference_extensions
 
         register_and_enable_daemon
 

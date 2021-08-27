@@ -227,10 +227,7 @@ IOTHUB_CLIENT_RESULT ReportChangedProperty(DeviceInfoInterface_Data* data)
     }
 
 done:
-    if (jsonToSend != NULL)
-    {
-        STRING_delete(jsonToSend);
-    }
+    STRING_delete(jsonToSend);
 
     return iothubClientResult;
 }
@@ -299,20 +296,9 @@ IOTHUB_CLIENT_RESULT DeviceInfoInterface_ReportChangedPropertiesAsync()
     }
 
 done:
-    if (root_value != NULL)
-    {
-        json_value_free(root_value);
-    }
-
-    if (serialized_string)
-    {
-        json_free_serialized_string(serialized_string);
-    }
-
-    if (jsonToSend != NULL)
-    {
-        STRING_delete(jsonToSend);
-    }
+    json_value_free(root_value);
+    json_free_serialized_string(serialized_string);
+    STRING_delete(jsonToSend);
 
     return iothubClientResult;
 }

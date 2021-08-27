@@ -29,18 +29,14 @@ string (
             ADUC_CONTENT_HANDLER_LIST
             ${ADUC_CONTENT_HANDLERS})
 
-# Iterate through the list of content handlers and add support for each one.
-foreach (content_handler IN LISTS ADUC_CONTENT_HANDLER_LIST)
-    if (content_handler STREQUAL "microsoft/swupdate")
-        add_executable (${target_name} ${agent_c_files} ${agent_swupdate_c_files})
-        set (adushell_def ADUSHELL_SWUPDATE="yes")
-    elseif (content_handler STREQUAL "microsoft/apt")
-        add_executable (${target_name} ${agent_c_files} ${agent_apt_c_files})
-        set (adushell_def ADUSHELL_APT="yes")
-    else () # NOTE: When adding a new content handler, create a new elseif statement like above.
-        message (FATAL_ERROR "Unknown content handler ${content_handler} specified.")
-    endif ()
-endforeach ()
+set (source_files ${agent_c_files})
+
+# Support all microsoft/* update types by default.
+set (source_files ${agent_c_files} ${agent_apt_c_files} ${agent_swupdate_c_files})
+
+set (adushell_def ADUSHELL_SWUPDATE="yes" ADUSHELL_APT="yes")
+
+add_executable (${target_name} ${source_files})
 
 target_include_directories (${target_name} PRIVATE inc ${ADUC_EXPORT_INCLUDES})
 

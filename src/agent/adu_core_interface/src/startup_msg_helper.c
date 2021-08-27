@@ -196,6 +196,7 @@ _Bool StartupMsg_AddDeviceProperties(JSON_Object* startupObj)
     }
 
     success = true;
+
 done:
 
     if (!success)
