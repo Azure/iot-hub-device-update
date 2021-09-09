@@ -9,7 +9,7 @@ fi
 
 error() { echo -e "\033[1;31mError:\033[0m $*" >&2; }
 
-current_schema_version="1.0"
+current_schema_version="1.1"
 
 conf_file="/etc/adu/adu-conf.txt"
 new_conf_file="/etc/adu/du-config.json"

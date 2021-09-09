@@ -117,6 +117,11 @@ typedef enum tagADUCITF_State
 #define ADUCITF_FIELDNAME_INSTALLEDUPDATEID "installedUpdateId"
 
 /**
+ * @brief JSON field name for compatPropertyNames
+ */
+#define ADUCITF_FIELDNAME_COMPAT_PROPERTY_NAMES "compatPropertyNames"
+
+/**
  * @brief JSON field name for DeviceProperties
  */
 #define ADUCITF_FIELDNAME_DEVICEPROPERTIES "deviceProperties"

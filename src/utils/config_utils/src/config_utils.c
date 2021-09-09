@@ -306,6 +306,16 @@ _Bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFilePath)
         goto done;
     }
 
+    const char* compatPropertyNames = ADUC_JSON_GetStringFieldPtr(root_value, "compatPropertyNames");
+
+    if (compatPropertyNames != NULL)
+    {
+        if (mallocAndStrcpy_s(&(config->compatPropertyNames), compatPropertyNames) != 0)
+        {
+            goto done;
+        }
+    }
+
     succeeded = true;
 
 done:

@@ -17,6 +17,8 @@
 #    include <do_config.h>
 #endif
 
+#define DEFAULT_COMPAT_PROPERTY_NAMES_VALUE "manufacturer,model"
+
 /**
  * @brief Adds the aduc_manufacturer and aduc_model to the @p devicePropsObj
  * @param devicePropsObj the JSON_Object the manufacturer and model will be added to
@@ -152,7 +154,7 @@ done:
 }
 
 /**
- * @brief Adds the deviceProperties to the @p startupObj 
+ * @brief Adds the deviceProperties to the @p startupObj
  * @param startupObj the JSON Object which will have the device properties added to it
  * @returns true on successful addition, false on failure
  */
@@ -203,6 +205,49 @@ done:
     {
         json_value_free(devicePropsValue);
     }
+
+    return success;
+}
+
+/**
+ * @brief Adds the compatPropertyNames to the @p startupObj
+ * @param startupObj the JSON Object which will have the compatPropertyNames from config added to it
+ * @returns true on successful addition, false on failure
+ */
+_Bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj)
+{
+    if (startupObj == NULL)
+    {
+        return false;
+    }
+
+    _Bool success = false;
+
+    ADUC_ConfigInfo config = {};
+
+    if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    {
+        Log_Warn("Could not initialize config at: %s", ADUC_CONF_FILE_PATH);
+    }
+
+    JSON_Status jsonStatus = json_object_set_string(
+        startupObj,
+        ADUCITF_FIELDNAME_COMPAT_PROPERTY_NAMES,
+        IsNullOrEmpty(config.compatPropertyNames)
+            ? DEFAULT_COMPAT_PROPERTY_NAMES_VALUE
+            : config.compatPropertyNames);
+
+    if (jsonStatus != JSONSuccess)
+    {
+        Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_COMPAT_PROPERTY_NAMES);
+        goto done;
+    }
+
+    success = true;
+
+done:
+
+    ADUC_ConfigInfo_UnInit(&config);
 
     return success;
 }
