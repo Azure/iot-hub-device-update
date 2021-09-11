@@ -137,6 +137,11 @@ typedef enum tagADUCITF_State
 #define ADUCITF_FIELDNAME_DEVICEPROPERTIES_MODEL "model"
 
 /**
+ * @brief JSON field name for DeviceProperties interfaceId
+ */
+#define ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID "interfaceId"
+
+/**
  * @brief JSON field name for DeviceProperties aduc version
  */
 #define ADUCITF_FIELDNAME_DEVICEPROPERTIES_ADUC_VERSION "aduVer"
