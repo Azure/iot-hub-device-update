@@ -22,6 +22,8 @@ void ADUC_Workflow_HandlePropertyUpdate(ADUC_WorkflowData* workflowData, const u
 
 void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData);
 
+void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData);
+
 void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* workflowData);
 
 EXTERN_C_END

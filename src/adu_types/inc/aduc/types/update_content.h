@@ -13,6 +13,12 @@
 EXTERN_C_BEGIN
 
 /**
+ * @brief JSON field name for state property.
+ *
+ */
+#define ADUCITF_FIELDNAME_STATE "state"
+
+/**
  * @brief JSON field name for Action property
  */
 #define ADUCITF_FIELDNAME_ACTION "action"
@@ -26,55 +32,6 @@ EXTERN_C_BEGIN
  * @brief JSON field name for Workflow Id property
  */
 #define ADUCITF_FILEDNAME_WORKFLOW_DOT_ID "workflow.id"
-
-//
-// UpdateAction
-//
-
-/**
- * @brief UpdateAction values.
- *
- * Values associated with UpdateAction in AzureDeviceUpdateCore interface.
- */
-typedef enum tagADUCITF_UpdateAction
-{
-    ADUCITF_UpdateAction_Download = 0,
-    ADUCITF_UpdateAction_Install = 1,
-    ADUCITF_UpdateAction_Apply = 2,
-
-    ADUCITF_UpdateAction_Cancel = 255,
-
-    ADUCITF_UpdateAction_Undefined = -1
-} ADUCITF_UpdateAction;
-
-//
-// UpdateState
-//
-
-/**
- * @brief JSON field name for state property.
- *
- */
-#define ADUCITF_FIELDNAME_STATE "state"
-
-/**
- * @brief UpdateState values.
- *
- * Values sent back to hub to indicate device agent state.
- */
-typedef enum tagADUCITF_State
-{
-    ADUCITF_State_None = -1,
-
-    ADUCITF_State_Idle = 0,
-    ADUCITF_State_DownloadStarted = 1,
-    ADUCITF_State_DownloadSucceeded = 2,
-    ADUCITF_State_InstallStarted = 3,
-    ADUCITF_State_InstallSucceeded = 4,
-    ADUCITF_State_ApplyStarted = 5,
-
-    ADUCITF_State_Failed = 255,
-} ADUCITF_State;
 
 /**
  * @brief JSON field name for LastInstallResult property.
@@ -222,6 +179,70 @@ typedef enum tagADUCITF_State
  * @brief JSON field name for the updateManifest's file entity's arguments
  */
 #define ADUCITF_FIELDNAME_ARGUMENTS "arguments"
+
+//
+// UpdateAction
+//
+
+/**
+ * @brief UpdateAction values sent to the agent from the service.
+ *
+ * Values associated with UpdateAction in AzureDeviceUpdateCore interface.
+ */
+typedef enum tagADUCITF_UpdateAction
+{
+    // TODO(JeffW): Remove the following 3 update actions since the service will no longer issue them and
+    // PPR agents and beyond do not support cloud-driven orchestration.
+    ADUCITF_UpdateAction_Download = 0, ///< Request to download an update. For legacy cloud-driven orchestration.
+    ADUCITF_UpdateAction_Install = 1, ///< Request to install an update. For legacy cloud-driven orchestration.
+    ADUCITF_UpdateAction_Apply = 2, ///< Request to do a post-install apply step for reboots, etc.
+
+    // Client-driven update workflow orchestration.
+    ADUCITF_UpdateAction_ProcessDeployment = 3, ///< Request to process an update workflow deployment via client-driven orchestration.
+    ADUCITF_UpdateAction_Cancel = 255, ///< Request to cancel an ongoing update workflow deployment.
+
+    ADUCITF_UpdateAction_Undefined = -1 ///< An undefined update action.
+} ADUCITF_UpdateAction;
+
+/**
+ * @brief WorkflowStep values
+ *
+ * Requested intraphase transitions representing workflow steps in the Agent.
+ * These values do have no relation to protocol values and are for internal
+ * workflow state machine only, but are in order they would occur While
+ * processing the udpate workflow.
+ */
+typedef enum tagADUCITF_WorkflowStep
+{
+    ADUCITF_WorkflowStep_Undefined = 0, ///< The undefined worfklow step.
+    ADUCITF_WorkflowStep_ProcessDeployment = 1, ///< Step that reports DeploymentInProgress ACK
+    ADUCITF_WorkflowStep_Download = 2, ///< Step where it starts download operation
+    ADUCITF_WorkflowStep_Install = 3, ///< Step where it starts install operation
+    ADUCITF_WorkflowStep_Apply = 4, ///< Step where it starts apply operation
+} ADUCITF_WorkflowStep;
+
+//
+// UpdateState
+//
+
+/**
+ * @brief Agent-orchestration internal state machine states.
+ *
+ * Currently, Idle, DeploymentInProgress, and Failed states report the "state"
+ * value of the enum on the wire as per the client-server protocol.
+ */
+typedef enum tagADUCITF_State
+{
+    ADUCITF_State_None = -1, ///< The state for when workflow data opaque, internal data is invalid.
+    ADUCITF_State_Idle = 0, ///< The start state and the state for reporting update deployment success.
+    ADUCITF_State_DownloadStarted = 1, ///< The state for when a download operation is in progress.
+    ADUCITF_State_DownloadSucceeded = 2, ///< The state for when a download operation has completed with success.
+    ADUCITF_State_InstallStarted = 3, ///< The state for when an install operation is in progress.
+    ADUCITF_State_InstallSucceeded = 4, ///< The state for when an install operation has completed with success.
+    ADUCITF_State_ApplyStarted = 5, ///< The state for when an apply operation is in progress.
+    ADUCITF_State_DeploymentInProgress = 6, ///< The state for reporting the acknowledgement of ProcessDeployment update action.
+    ADUCITF_State_Failed = 255, ///< The state for when a deployment has failed and for reporting the failure.
+} ADUCITF_State;
 
 /**
  * @brief Describes an update identity.

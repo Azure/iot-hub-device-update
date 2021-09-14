@@ -239,7 +239,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
         const ADUCITF_State updateState = ADUCITF_State_DownloadSucceeded;
         result.ResultCode = ADUC_Result_Download_Success;
         AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-            workflowData.WorkflowHandle, updateState, &result, nullptr);
+            &workflowData, updateState, &result, nullptr);
 
         CHECK(g_SendReportedStateValues.deviceHandle != nullptr);
         std::stringstream strm;
@@ -302,7 +302,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
 
         result = { ADUC_Result_Failure, ADUC_ERC_NOTPERMITTED };
         AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-            workflowData.WorkflowHandle, updateState, &result, nullptr);
+            &workflowData, updateState, &result, nullptr);
 
         CHECK(g_SendReportedStateValues.deviceHandle != nullptr);
         std::stringstream strm;

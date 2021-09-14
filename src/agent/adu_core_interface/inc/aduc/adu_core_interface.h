@@ -11,6 +11,7 @@
 #include <aduc/c_utils.h>
 #include <aduc/client_handle.h>
 #include <aduc/result.h> // ADUC_Result
+#include <aduc/types/workflow.h>
 #include <azureiot/iothub_client_core_common.h>
 #include <stdbool.h>
 
@@ -49,7 +50,7 @@ void AzureDeviceUpdateCoreInterface_Connected(void* componentContext);
  * @brief Called regularly after the device connected to the IoT Hub.
  *
  * This allows an interface implementation to do work in a cooperative multitasking environment.
- * 
+ *
  * @param componentContext Context object from Create.
  */
 void AzureDeviceUpdateCoreInterface_DoWork(void* componentContext);
@@ -74,13 +75,13 @@ void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
 /**
  * @brief Report a new state to the server.
  *
- * @param handle A workflow data object handle.
+ * @param workflowData A pointer to workflow data object.
  * @param updateState State to report.
  * @param result Result to report (optional, can be NULL).
  * @param installedUpdateId An installed update it JSON string.
  */
 void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-    ADUC_WorkflowHandle handle,
+    ADUC_WorkflowData* workflowData,
     ADUCITF_State updateState,
     const ADUC_Result* result,
     const char* installedUpdateId);

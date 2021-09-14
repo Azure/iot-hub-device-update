@@ -7,6 +7,7 @@
 
 #include "aduc/adu_core_interface.h"
 #include "aduc/adu_core_export_helpers.h" // ADUC_SetUpdateStateWithResult
+#include "aduc/agent_orchestration.h"
 #include "aduc/agent_workflow.h"
 #include "aduc/agent_workflow_utils.h"
 #include "aduc/c_utils.h"
@@ -346,13 +347,13 @@ JSON_Status _json_object_set_update_result(
 /**
  * @brief Report state, and optionally result to service.
  *
- * @param handle A workflow handle object.
+ * @param workflowData A workflow data object.
  * @param updateState state to report.
  * @param result Result to report (optional, can be NULL).
  * @param installedUpdateId Installed update id (if update completed successfully).
  */
 void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-    ADUC_WorkflowHandle handle, ADUCITF_State updateState, const ADUC_Result* result, const char* installedUpdateId)
+    ADUC_WorkflowData* workflowData, ADUCITF_State updateState, const ADUC_Result* result, const char* installedUpdateId)
 {
     if (g_iotHubClientHandleForADUComponent == NULL)
     {
@@ -360,8 +361,14 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
         return;
     }
 
-    // As a optimization to reduce network traffic, these states are not reported to the cloud.
-    if (updateState == ADUCITF_State_InstallStarted || updateState == ADUCITF_State_ApplyStarted)
+    if (AgentOrchestration_IsWorkflowOrchestratedByAgent(workflowData))
+    {
+        if (AgentOrchestration_ShouldNotReportToCloud(updateState)) {
+            return;
+        }
+    }
+    // TODO(jewelden): Remove following once disabling support for CBO-driven orchestration
+    else if (updateState == ADUCITF_State_InstallStarted || updateState == ADUCITF_State_ApplyStarted)
     {
         return;
     }
@@ -375,6 +382,9 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     // If there's no result details, we'll report only 'updateState'.
     //
     ADUC_Result rootResult;
+    ADUC_WorkflowHandle handle = workflowData == NULL
+        ? NULL // This is when reporting installedUpdateId and Idle
+        : workflowData->WorkflowHandle;
 
     if (result != NULL)
     {

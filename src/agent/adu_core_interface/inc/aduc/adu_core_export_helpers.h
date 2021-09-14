@@ -47,6 +47,9 @@ typedef struct tagADUC_MethodCall_Data
     ADUC_WorkflowData* WorkflowData;
 } ADUC_MethodCall_Data;
 
+ADUC_Result ADUC_MethodCall_ProcessDeployment(ADUC_MethodCall_Data* methodCallData);
+void ADUC_MethodCall_ProcessDeployment_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result);
+
 ADUC_Result ADUC_MethodCall_Download(ADUC_MethodCall_Data* methodCallData);
 void ADUC_MethodCall_Download_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result);
 

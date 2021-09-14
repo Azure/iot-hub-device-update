@@ -99,6 +99,7 @@ typedef struct tagADUC_WorkflowData
     // Workflow states
     //
     ADUC_Result Result; /**< Current workflow result data. */
+    ADUCITF_WorkflowStep CurrentWorkflowStep; /**< Value of the current internal workflow step. */
 
     ADUC_UpdateActionCallbacks UpdateActionCallbacks; /**< Upper-level registration data; function pointers, etc. */
 
@@ -116,7 +117,7 @@ typedef struct tagADUC_WorkflowData
 
     /**
      * @brief Results object
-     * 
+     *
      *  {
      *      "workflowId" : "root",
      *      "results" : {
@@ -143,7 +144,7 @@ typedef struct tagADUC_WorkflowData
      *              "extendedResultCode" : 0,
      *              "resultDetails" : "",
      *              "childIds" : [];
-     *          },     
+     *          },
      *          "root/0/comp1" : {
      *              "lastReportedState": 0,
      *              "currentState" : 0,
@@ -151,7 +152,7 @@ typedef struct tagADUC_WorkflowData
      *              "extendedResultCode" : 0,
      *              "resultDetails" : "",
      *              "childIds" : [];
-     *          },     
+     *          },
      *          "root/1" : {
      *              "lastReportedState": 0,
      *              "currentState" : 0,
@@ -159,7 +160,7 @@ typedef struct tagADUC_WorkflowData
      *              "extendedResultCode" : 0,
      *              "resultDetails" : "",
      *              "childIds" : [ "root/1/comp0"];
-     *          },     
+     *          },
      *          "root/1/comp0" : {
      *              "lastReportedState": 0,
      *              "currentState" : 0,
@@ -167,10 +168,10 @@ typedef struct tagADUC_WorkflowData
      *              "extendedResultCode" : 0,
      *              "resultDetails" : "",
      *              "childIds" : [];
-     *          },     
-     *      }    
+     *          },
+     *      }
      *  }
-     * 
+     *
      */
     JSON_Array* Results;
 

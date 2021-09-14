@@ -361,7 +361,8 @@ TEST_CASE("ADUC_Json_GetUpdateAction: Valid")
         ADUCITF_UpdateAction_Download,
         ADUCITF_UpdateAction_Install,
         ADUCITF_UpdateAction_Apply,
-        ADUCITF_UpdateAction_Cancel);
+        ADUCITF_UpdateAction_Cancel,
+        ADUCITF_UpdateAction_ProcessDeployment);
     // clang-format on
 
     SECTION("Verify update action values")

@@ -84,13 +84,13 @@ static void ADUC_SetUpdateStateHelper(
         }
 
         AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-            workflowHandle, updateState, result, NULL /* installedUpdateId */);
+            workflowData, updateState, result, NULL /* installedUpdateId */);
         ADUC_MethodCall_Idle(workflowData);
     }
     else
     {
         AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-            workflowHandle, updateState, result, NULL /* installedUpdateId */);
+            workflowData, updateState, result, NULL /* installedUpdateId */);
     }
 
     workflow_set_last_reported_state(updateState);
@@ -219,7 +219,7 @@ void ADUC_MethodCall_Unregister(const ADUC_UpdateActionCallbacks* updateActionCa
  * @brief Call into upper layer ADUC_RebootSystem() method.
  *
  * @param workflowData Metadata for call.
- * 
+ *
  * @returns int errno, 0 if success.
  */
 int ADUC_MethodCall_RebootSystem()
@@ -233,7 +233,7 @@ int ADUC_MethodCall_RebootSystem()
  * @brief Call into upper layer ADUC_RestartAgent() method.
  *
  * @param workflowData Metadata for call.
- * 
+ *
  * @returns int errno, 0 if success.
  */
 int ADUC_MethodCall_RestartAgent()
@@ -305,6 +305,27 @@ void ADUC_MethodCall_Idle(ADUC_WorkflowData* workflowData)
 }
 
 /**
+ * @brief Called to do ProcessDeployment.
+ *
+ * @param[in,out] methodCallData The metedata for the method call.
+ * @return Result code.
+ */
+ADUC_Result ADUC_MethodCall_ProcessDeployment(ADUC_MethodCall_Data* methodCallData)
+{
+    UNREFERENCED_PARAMETER(methodCallData);
+    Log_Info("Workflow step: ProcessDeployment");
+
+    ADUC_Result result = { ADUC_Result_Success };
+    return result;
+}
+
+void ADUC_MethodCall_ProcessDeployment_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
+{
+    UNREFERENCED_PARAMETER(methodCallData);
+    UNREFERENCED_PARAMETER(result);
+}
+
+/**
  * @brief Called to do download.
  *
  * @param[in,out] methodCallData The metedata for the method call.
@@ -320,12 +341,14 @@ ADUC_Result ADUC_MethodCall_Download(ADUC_MethodCall_Data* methodCallData)
     char* workFolder = workflow_get_workfolder(workflowHandle);
     char* workflowId = workflow_get_id(workflowHandle);
 
-    Log_Info("UpdateAction: Download");
+    Log_Info("Workflow step: Download");
 
-    if (lastReportedState != ADUCITF_State_Idle && lastReportedState != ADUCITF_State_None)
+    if (lastReportedState != ADUCITF_State_Idle &&
+        lastReportedState != ADUCITF_State_None &&
+        lastReportedState != ADUCITF_State_DeploymentInProgress)
     {
         Log_Error(
-            "Download UpdateAction called in unexpected state: %s!",
+            "Download workflow step called in unexpected state: %s!",
             ADUCITF_StateToString(workflow_get_last_reported_state()));
         result.ResultCode = ADUC_Result_Failure;
         result.ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_UPDATE_ACTION_UNEXPECTED_STATE;
@@ -380,12 +403,12 @@ ADUC_Result ADUC_MethodCall_Install(ADUC_MethodCall_Data* methodCallData)
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
     ADUC_Result result;
 
-    Log_Info("UpdateAction: Install");
+    Log_Info("Workflow step: Install");
 
     ADUCITF_State lastReportedState = workflow_get_last_reported_state();
     if (lastReportedState != ADUCITF_State_DownloadSucceeded)
     {
-        Log_Error("Install UpdateAction called in unexpected state: %s!", ADUCITF_StateToString(lastReportedState));
+        Log_Error("Install Workflow step called in unexpected state: %s!", ADUCITF_StateToString(lastReportedState));
         result.ResultCode = ADUC_Result_Failure;
         result.ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_INSTALL_ACTION_IN_UNEXPECTED_STATE;
         goto done;
@@ -454,12 +477,12 @@ ADUC_Result ADUC_MethodCall_Apply(ADUC_MethodCall_Data* methodCallData)
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
     ADUC_Result result;
 
-    Log_Info("UpdateAction: Apply");
+    Log_Info("Workflow step: Apply");
 
     ADUCITF_State lastReportedState = workflow_get_last_reported_state();
     if (lastReportedState != ADUCITF_State_InstallSucceeded)
     {
-        Log_Error("Apply UpdateAction called in unexpected state: %s!", ADUCITF_StateToString(lastReportedState));
+        Log_Error("Apply Workflow step called in unexpected state: %s!", ADUCITF_StateToString(lastReportedState));
         result.ResultCode = ADUC_Result_Failure;
         result.ExtendedResultCode = ADUC_ERC_NOTPERMITTED;
         goto done;
@@ -528,7 +551,7 @@ void ADUC_MethodCall_Cancel(const ADUC_WorkflowData* workflowData)
 {
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
 
-    Log_Info("UpdateAction: Cancel - calling CancelCallback");
+    Log_Info("Workflow step: Cancel - calling CancelCallback");
 
     if (!workflow_get_operation_in_progress(workflowData->WorkflowHandle))
     {

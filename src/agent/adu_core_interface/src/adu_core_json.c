@@ -45,6 +45,8 @@ const char* ADUCITF_StateToString(ADUCITF_State updateState)
         return "InstallSucceeded";
     case ADUCITF_State_ApplyStarted:
         return "ApplyStarted";
+    case ADUCITF_State_DeploymentInProgress:
+        return "DeploymentInProgress";
     case ADUCITF_State_Failed:
         return "Failed";
     }
@@ -68,6 +70,8 @@ const char* ADUCITF_UpdateActionToString(ADUCITF_UpdateAction updateAction)
         return "Install";
     case ADUCITF_UpdateAction_Apply:
         return "Apply";
+    case ADUCITF_UpdateAction_ProcessDeployment:
+        return "ProcessDeployment";
     case ADUCITF_UpdateAction_Cancel:
         return "Cancel";
     case ADUCITF_UpdateAction_Undefined:
