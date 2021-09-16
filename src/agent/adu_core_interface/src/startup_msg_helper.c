@@ -5,6 +5,7 @@
  * @copyright Copyright (c) 2021, Microsoft Corporation.
  */
 
+#include "device_properties.h"
 #include "startup_msg_helper.h"
 
 #include <aduc/adu_core_json.h>
@@ -12,7 +13,6 @@
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
-#include "device_properties.h"
 
 #define DEFAULT_COMPAT_PROPERTY_NAMES_VALUE "manufacturer,model"
 

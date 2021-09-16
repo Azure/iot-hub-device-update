@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <stdlib.h>
 
 #include "aduc/adu_core_export_helpers.h"
 #include "aduc/adu_core_exports.h"
@@ -180,15 +181,14 @@ const char* action_bundle_download =
     R"(     } )"
     R"( } )";
 
-const char* action_bundle_cancel =
-    R"({ )"
-    R"(     "updateManifest": "",     )"
-    R"(     "updateManifestSignature": "", )"
-    R"(     "workflow": {   )"
-    R"(         "id": "action_bundle", )"
-    R"(         "action": 255 )"
-    R"(     } )"
-    R"( })";
+const char* action_bundle_cancel = R"( { )"
+                                   R"(     "updateManifest": "",     )"
+                                   R"(     "updateManifestSignature": "", )"
+                                   R"(     "workflow": {   )"
+                                   R"(         "id": "action_bundle", )"
+                                   R"(         "action": 255 )"
+                                   R"(     } )"
+                                   R"( } )";
 
 TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_Connected")
 {
@@ -239,7 +239,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
         const ADUCITF_State updateState = ADUCITF_State_DownloadSucceeded;
         result.ResultCode = ADUC_Result_Download_Success;
         AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-            &workflowData, updateState, &result, nullptr);
+            &workflowData, updateState, &result, nullptr /* installedUpdateId */);
 
         CHECK(g_SendReportedStateValues.deviceHandle != nullptr);
         std::stringstream strm;
@@ -257,7 +257,11 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
                                 << R"("resultDetails":"")"
                             << R"(})"
                         << R"(},)"
-                        << R"("state":)" << static_cast<unsigned int>(updateState)
+                        << R"("state":)" << static_cast<unsigned int>(updateState) << R"(},)"
+                        << R"("workflow":{)"
+                            << R"("action":3,)"
+                            << R"("id":"action_bundle")"
+                        << R"(})"
                     << R"(})"
                 << R"(})"
              << R"(})";
@@ -276,7 +280,11 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
                                 << R"("resultDetails":"")"
                             << R"(})"
                         << R"(},)"
-                        << R"("state":)" << static_cast<unsigned int>(updateState)
+                        << R"("state":)" << static_cast<unsigned int>(updateState) << R"(,)"
+                        << R"("workflow":{)"
+                            << R"("action":3,)"
+                            << R"("id":"action_bundle")"
+                        << R"(})"
                     << R"(})"
                 << R"(})"
              << R"(})";
@@ -302,7 +310,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
 
         result = { ADUC_Result_Failure, ADUC_ERC_NOTPERMITTED };
         AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-            &workflowData, updateState, &result, nullptr);
+            &workflowData, updateState, &result, nullptr /* installedUpdateId */);
 
         CHECK(g_SendReportedStateValues.deviceHandle != nullptr);
         std::stringstream strm;
@@ -320,7 +328,11 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
                                 << R"("resultDetails":"")"
                             << R"(})"
                         << R"(},)"
-                        << R"("state":)" << static_cast<unsigned int>(updateState)
+                        << R"("state":)" << static_cast<unsigned int>(updateState) << R"(,)"
+                        << R"("workflow":{)"
+                            << R"("action":3,)"
+                            << R"("id":"action_bundle")"
+                        << R"(})"
                     << R"(})"
                 << R"(})"
                 << R"(})";
@@ -339,7 +351,11 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
                                 << R"("resultDetails":"")"
                             << R"(})"
                         << R"(},)"
-                        << R"("state":)" << static_cast<unsigned int>(updateState)
+                        << R"("state":)" << static_cast<unsigned int>(updateState) << R"(,)"
+                        << R"("workflow":{)"
+                            << R"("action":3,)"
+                            << R"("id":"action_bundle")"
+                        << R"(})"
                     << R"(})"
                 << R"(})"
                 << R"(})";
@@ -353,6 +369,8 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
 
 TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportContentIdAndIdleAsync")
 {
+    ADUC_Result result;
+
     const std::string provider{ "Microsoft" };
     const std::string name{ "adu" };
     const std::string version{ "1.2.3.4" };
@@ -371,7 +389,14 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportContentI
     ADUC_UpdateId* updateId = ADUC_UpdateId_AllocAndInit(provider.c_str(), name.c_str(), version.c_str());
     CHECK(updateId != nullptr);
 
-    AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(installedUpdateIdStr.str().c_str());
+    // Init workflow since workflow needs a valid workflow handle to get the workflow id.
+    ADUC_WorkflowData workflowData{};
+    ADUC_WorkflowHandle bundle = nullptr;
+    result = workflow_init(action_bundle_download, false, &bundle);
+    workflowData.WorkflowHandle = bundle;
+    CHECK(result.ResultCode != 0);
+
+    AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(&workflowData, installedUpdateIdStr.str().c_str());
 
     CHECK(g_SendReportedStateValues.deviceHandle != nullptr);
 
@@ -385,10 +410,15 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportContentI
                             << R"("updateInstallResult":{)"
                                 << R"("resultCode":700,)"
                                 << R"("extendedResultCode":0,)"
-                                << R"("resultDetails":null)"
+                                << R"("resultDetails":"")"
                             << R"(})"
                         << R"(},)"
                         << R"("state":)" << static_cast<unsigned int>(ADUCITF_State_Idle) << R"(,)"
+                        << R"("workflow":{)"
+                            << R"("action":3,)"
+                            << R"("id":"action_bundle")"
+                        << R"(})"
+                        << R"(,)"
                         << R"("installedUpdateId":"{\\\"provider\\\":\\\"Microsoft\\\",\\\"name\\\":\\\"adu\\\",\\\"version\\\":\\\"1.2.3.4\\\"}")"
                     << R"(})"
                 << R"(})"

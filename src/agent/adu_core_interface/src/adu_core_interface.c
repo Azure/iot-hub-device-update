@@ -24,7 +24,6 @@
 #include <iothub_client_version.h>
 #include <parson.h>
 #include <pnp_protocol.h>
-#include <stdlib.h>
 
 // Name of an Azure Device Update Agent component that this device implements.
 static const char g_aduPnPComponentName[] = "deviceUpdate";
@@ -345,6 +344,48 @@ JSON_Status _json_object_set_update_result(
 }
 
 /**
+ * @brief Sets workflow properties on the workflow json value.
+ *
+ * @param[in,out] workflowValue The workflow json value to set properties on.
+ * @param[in] workflowId The workflow id of the update deployment.
+ * @param[in] retryTimestamp optional. The retry timestamp that's present for service-initiated retries.
+ * @return true if all properties were set successfully; false, otherwise.
+ */
+static _Bool set_workflow_properties(JSON_Value* workflowValue, const char* workflowId, const char* retryTimestamp)
+{
+    _Bool succeeded = false;
+
+    JSON_Object* workflowObject = json_value_get_object(workflowValue);
+    if (json_object_set_number(workflowObject, ADUCITF_FIELDNAME_ACTION, ADUCITF_UpdateAction_ProcessDeployment) != JSONSuccess)
+    {
+        Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_ACTION);
+        goto done;
+    }
+
+    if (json_object_set_string(workflowObject, ADUCITF_FIELDNAME_ID, workflowId) != JSONSuccess)
+    {
+        Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_ID);
+        goto done;
+    }
+
+    if (!IsNullOrEmpty(retryTimestamp))
+    {
+        if (json_object_set_string(workflowObject, ADUCITF_FIELDNAME_RETRYTIMESTAMP, retryTimestamp) != JSONSuccess)
+        {
+            Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_RETRYTIMESTAMP);
+            goto done;
+        }
+    }
+
+    succeeded = true;
+
+done:
+
+    return succeeded;
+}
+
+
+/**
  * @brief Report state, and optionally result to service.
  *
  * @param workflowData A workflow data object.
@@ -382,9 +423,7 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     // If there's no result details, we'll report only 'updateState'.
     //
     ADUC_Result rootResult;
-    ADUC_WorkflowHandle handle = workflowData == NULL
-        ? NULL // This is when reporting installedUpdateId and Idle
-        : workflowData->WorkflowHandle;
+    ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
 
     if (result != NULL)
     {
@@ -407,6 +446,10 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     //
     // {
     //     "state" : ###,
+    //     "workflow": {
+    //         "action": 3,
+    //         "id": "..."
+    //     },
     //     "installedUpdateId" : "...",
     //
     //     "lastInstallResult" : {
@@ -433,11 +476,20 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
 
     JSON_Value* lastInstallResultValue = json_value_init_object();
     JSON_Object* lastInstallResultObject = json_object(lastInstallResultValue);
+
     JSON_Value* updateInstallResultValue = json_value_init_object();
     JSON_Object* updateInstallResultObject = json_object(updateInstallResultValue);
 
     JSON_Value* bundledResultsValue = json_value_init_object();
     JSON_Object* bundledResultsObject = json_object(bundledResultsValue);
+
+    JSON_Value* workflowValue = json_value_init_object();
+
+    if (lastInstallResultValue == NULL || updateInstallResultValue == NULL || bundledResultsValue == NULL || workflowValue == NULL)
+    {
+        Log_Error("Failed to init object for json value");
+        goto done;
+    }
 
     JSON_Status jsonStatus =
         json_object_set_value(rootObject, ADUCITF_FIELDNAME_LASTINSTALLRESULT, lastInstallResultValue);
@@ -457,6 +509,31 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     {
         Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_UPDATEINSTALLRESULT);
         goto done;
+    }
+
+    //
+    // Workflow
+    //
+    char *workflowId = workflow_get_id (handle);
+    if (!IsNullOrEmpty(workflowId))
+    {
+        _Bool success = set_workflow_properties(
+            workflowValue,
+            workflowId,
+            NULL); // retryTimestamp - TODO(JeffW): call workflow_get_retryTimestamp(handle) once available
+
+        if (!success)
+        {
+            goto done;
+        }
+
+        if (json_object_set_value(rootObject, ADUCITF_FIELDNAME_WORKFLOW, workflowValue) != JSONSuccess)
+        {
+            Log_Error("Could not add JSON : %s", ADUCITF_FIELDNAME_WORKFLOW);
+            goto done;
+        }
+
+        workflowValue = NULL; // rootObject owns the value now.
     }
 
     //
@@ -610,6 +687,10 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
 done:
     json_free_serialized_string(jsonString);
     json_value_free(rootValue);
+    json_value_free(lastInstallResultValue);
+    json_value_free(updateInstallResultValue);
+    json_value_free(bundledResultsValue);
+    json_value_free(workflowValue);
 }
 
 /**
@@ -620,9 +701,12 @@ done:
  * we need to also update the installedUpdateId property.
  * We want to set both of these in the Digital Twin at the same time.
  *
- * @param[in] updateId update ID to report as installed.
+ * @param[in] workflowData A workflow data object.
+ * @param[in] updateId Id of and update installed on the device.
  */
-void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(const char* updateId)
+void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(
+    ADUC_WorkflowData* workflowData,
+    const char* updateId)
 {
     if (g_iotHubClientHandleForADUComponent == NULL)
     {
@@ -632,5 +716,5 @@ void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(const char* updat
 
     ADUC_Result result = { .ResultCode = ADUC_Result_Apply_Success, .ExtendedResultCode = 0 };
 
-    AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(NULL, ADUCITF_State_Idle, &result, updateId);
+    AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(workflowData, ADUCITF_State_Idle, &result, updateId);
 }

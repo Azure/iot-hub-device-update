@@ -130,7 +130,7 @@ void ADUC_SetUpdateStateWithResult(
  */
 void ADUC_SetInstalledUpdateIdAndGoToIdle(ADUC_WorkflowData* workflowData, const char* updateId)
 {
-    AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(updateId);
+    AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(workflowData, updateId);
 
     workflow_set_last_reported_state(ADUCITF_State_Idle);
 

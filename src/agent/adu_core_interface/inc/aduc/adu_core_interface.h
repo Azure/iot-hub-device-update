@@ -89,9 +89,12 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
 /**
  * @brief Report the 'UpdateId' and 'Idle' state to the server.
  *
+ * @param workflowData A workflow data object.
  * @param updateId Id of and update installed on the device.
  */
-void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(const char* updateId);
+void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(
+    ADUC_WorkflowData* workflowData,
+    const char* updateId);
 
 EXTERN_C_END
 
