@@ -11,6 +11,8 @@ variables:
   ADUC_VERSION_PATCH: $(version.patch)
   ADUC_VERSION_PRERELEASE: $(version.pre-release)
   ADUC_VERSION_BUILD: $(version.build)
+  ADUC_DEBIAN_PACKAGE_ARCHITECTURE: "arm32"
+  
   ENABLE_ADU_TELEMETRY_REPORTING: true
   # ADUC_BUILDER_IDENTIFIER will be set to "DU" short for Device Update by default, for Device Update-sourced builder
   ADUC_BUILDER_IDENTIFIER: DU

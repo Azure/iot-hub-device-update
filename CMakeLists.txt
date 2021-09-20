@@ -85,6 +85,12 @@ if (ADUC_VERSION_BUILD)
     string (APPEND ADUC_VERSION "+${ADUC_VERSION_BUILD}")
 endif ()
 
+set_cache_with_env_or_default (
+    ADUC_DEBIAN_PACKAGE_ARCHITECTURE
+    "amd64"
+    STRING
+    "The output Debian package architecture")
+
 #
 # Custom CMake Options
 #
