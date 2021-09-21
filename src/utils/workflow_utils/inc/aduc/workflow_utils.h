@@ -221,25 +221,95 @@ void workflow_free_file_entity(ADUC_FileEntity* entity);
  */
 const char* workflow_peek_update_manifest_string(ADUC_WorkflowHandle handle, const char* propertyName);
 
-char* workflow_get_update_manifest_string_propery(ADUC_WorkflowHandle handle, const char* propertyName);
+/**
+ * @brief Get a property of type 'string' in the workflow update manfiest.
+ * 
+ * @param handle A workflow object handle.
+ * @param propertyName The name of a property to get.
+ * 
+ * @return A copy of specified property. Caller must call workflow_free_string when done with the value.
+ */
+char* workflow_get_update_manifest_string_property(ADUC_WorkflowHandle handle, const char* propertyName);
 
+/**
+ * @brief Get a 'Compatibility' entry of the workflow at a specified @p index.
+ * 
+ * @param handle A workflow object handle.
+ * @param index Index of the compatibility set to.
+ * 
+ * @return A copy of compatibility entry. Calle must call workflow_free_string when done with the value.
+ */
 char* workflow_get_update_manifest_compatibility(ADUC_WorkflowHandle handle, size_t index);
 
+/**
+ * @brief Get update manifest vesion.
+ * 
+ * @param handle A workflow object handle.
+ * 
+ * @return int The manifest version number. Return -1, if failed.
+ */
+int workflow_get_update_manifest_version(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Return an update id of this workflow.
+ * This id should be reported to the cloud once the update installed successfully.
+ * 
+ * @param handle A workflow object handle.
+ * @param[out] updateId A pointer to the output ADUC_UpdateId struct. 
+ *                      Must call 'workflow_free_update_id' function to free the memory when done.
+ * 
+ * @return ADUC_Result Return ADUC_GeneralResult_Success if success. Otherwise, return ADUC_GeneralResult_Failure with extendedResultCode.
+ */
 ADUC_Result workflow_get_expected_update_id(ADUC_WorkflowHandle handle, ADUC_UpdateId** updateId);
 
+/**
+ * @brief Return an update id of this workflow.
+ * This id should be reported to the cloud once the update installed successfully.
+ * 
+ * @param handle A workflow object handle.
+ * 
+ * @return char* Expected update id string. 
+ *         Caller must call 'workflow_free_string' function to free the memery when done.
+ */
 char* workflow_get_expected_update_id_string(ADUC_WorkflowHandle handle);
 
+/**
+ * @brief Get installed-criteria string from this workflow.
+ * @param handle A workflow object handle. 
+ * @return Returns installed-criteria string. 
+ *         Caller must call 'workflow_free_string' function to free the memery when done.
+ */
 char* workflow_get_installed_criteria(ADUC_WorkflowHandle handle);
 
+/**
+ * @brief Get the Update Manifest 'compatibility' array, in serialized json string format. 
+ * 
+ * @param handle A workflow handle.
+ * @return char* If success, returns a serialized json string. Otherwise, returns NULL.
+ *         Caller must call 'workflow_free_string' function to free the memery when done.
+ */
 char* workflow_get_compatibility(ADUC_WorkflowHandle handle);
 
+/**
+ * @brief Get the last reported state.
+ * 
+ * @return ADUCITF_State Return the last reported agent state.
+ */
 ADUCITF_State workflow_get_last_reported_state();
 
+/**
+ * @brief Set the last reported agent state.
+ * 
+ * @param lastReportedState The agent state reported to the IoT Hub.
+ */
 void workflow_set_last_reported_state(ADUCITF_State lastReportedState);
 
+/**
+ * @brief Free memory allocated for @p updateId.
+ * 
+ * @param updateId Update Id object to free.
+ */
 void workflow_free_update_id(ADUC_UpdateId* updateId);
-
-const char* workflow_status_filename();
 
 void workflow_set_operation_in_progress(ADUC_WorkflowHandle handle, bool inProgress);
 

@@ -28,9 +28,8 @@ target_link_libraries (
             aduc::logging
             aduc::parser_utils
             aduc::system_utils
-            Parson::parson
-            )
+            Parson::parson)
 
-#if (ADUC_BUILD_UNIT_TESTS)
+if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
-#endif ()
+endif ()

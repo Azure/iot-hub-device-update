@@ -27,6 +27,7 @@ using Catch::Matchers::Equals;
 */
 
 // clang-format off
+
 const char* bundle_with_bundledUpdates = 
     R"( {                    )"
     R"(     "workflow": {    )"
@@ -468,4 +469,191 @@ TEST_CASE("Set workflow result")
     CHECK(ADUCITF_State_DownloadStarted == workflow_get_root_state(leaf0_0));
 
     workflow_free(bundle);
+}
+
+// clang-format off
+const char* manifest_1_0 = 
+    R"( {                    )"
+    R"(     "workflow": {    )"
+    R"(         "action": 0, )"
+    R"(         "id": "action_bundle" )"
+    R"(      },  )"
+    R"(     "updateManifest": "{\"manifestVersion\":\"1.0\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
+    R"(     "updateManifestSignature": "" )"
+    R"( } )";
+// clang-format on
+
+TEST_CASE("Get update manifest version - 1.0")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(manifest_1_0, false, &handle);
+    CHECK(result.ResultCode > 0);
+    int versionNumber = workflow_get_update_manifest_version(handle);
+    CHECK(versionNumber == 1);
+    workflow_free(handle);
+}
+
+// clang-format off
+const char* manifest_2_0 = 
+    R"( {                    )"
+    R"(     "workflow": {    )"
+    R"(         "action": 0, )"
+    R"(         "id": "action_bundle" )"
+    R"(      },  )"
+    R"(     "updateManifest": "{\"manifestVersion\":\"2.0\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
+    R"(     "updateManifestSignature": "" )"
+    R"( } )";
+// clang-format on
+
+TEST_CASE("Get update manifest version - 2.0")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(manifest_2_0, false, &handle);
+    CHECK(result.ResultCode > 0);
+    int versionNumber = workflow_get_update_manifest_version(handle);
+    CHECK(versionNumber == 2);
+    workflow_free(handle);
+}
+
+// clang-format off
+const char* manifest_2 = 
+    R"( {                    )"
+    R"(     "workflow": {    )"
+    R"(         "action": 0, )"
+    R"(         "id": "action_bundle" )"
+    R"(      },  )"
+    R"(     "updateManifest": "{\"manifestVersion\":\"2\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
+    R"(     "updateManifestSignature": "" )"
+    R"( } )";
+// clang-format on
+
+TEST_CASE("Get update manifest version - 2")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(manifest_2, false, &handle);
+    CHECK(result.ResultCode > 0);
+    int versionNumber = workflow_get_update_manifest_version(handle);
+    CHECK(versionNumber == 2);
+    workflow_free(handle);
+}
+
+// clang-format off
+const char* manifest_3 = 
+    R"( {                    )"
+    R"(     "workflow": {    )"
+    R"(         "action": 0, )"
+    R"(         "id": "action_bundle" )"
+    R"(      },  )"
+    R"(     "updateManifest": "{\"manifestVersion\":\"3\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
+    R"(     "updateManifestSignature": "" )"
+    R"( } )";
+// clang-format on
+
+TEST_CASE("Get update manifest version - 3")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(manifest_3, false, &handle);
+    CHECK(result.ResultCode > 0);
+    int versionNumber = workflow_get_update_manifest_version(handle);
+    CHECK(versionNumber == 3);
+    workflow_free(handle);
+}
+
+// clang-format off
+const char* manifest_x = 
+    R"( {                    )"
+    R"(     "workflow": {    )"
+    R"(         "action": 0, )"
+    R"(         "id": "action_bundle" )"
+    R"(      },  )"
+    R"(     "updateManifest": "{\"manifestVersion\":\"x\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
+    R"(     "updateManifestSignature": "" )"
+    R"( } )";
+// clang-format on
+
+TEST_CASE("Get update manifest version - x")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(manifest_x, false, &handle);
+    CHECK(result.ResultCode > 0);
+
+    // Non-number version will return 0.
+    int versionNumber = workflow_get_update_manifest_version(handle);
+    CHECK(versionNumber == 0);
+    workflow_free(handle);
+}
+
+// clang-format off
+const char* manifest_empty = 
+    R"( {                    )"
+    R"(     "workflow": {    )"
+    R"(         "action": 0, )"
+    R"(         "id": "action_bundle" )"
+    R"(      },  )"
+    R"(     "updateManifest": "{\"manifestVersion\":\"\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
+    R"(     "updateManifestSignature": "" )"
+    R"( } )";
+// clang-format on
+
+TEST_CASE("Get update manifest version - empty")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(manifest_empty, false, &handle);
+    CHECK(result.ResultCode > 0);
+    int versionNumber = workflow_get_update_manifest_version(handle);
+    CHECK(versionNumber == -1);
+    workflow_free(handle);
+}
+
+// clang-format off
+const char* manifest_missing_version = 
+    R"( {                    )"
+    R"(     "workflow": {    )"
+    R"(         "action": 0, )"
+    R"(         "id": "action_bundle" )"
+    R"(      },  )"
+    R"(     "updateManifest": "{\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
+    R"(     "updateManifestSignature": "" )"
+    R"( } )";
+// clang-format on
+
+TEST_CASE("Get update manifest version - missing")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(manifest_missing_version, false, &handle);
+    CHECK(result.ResultCode > 0);
+    int versionNumber = workflow_get_update_manifest_version(handle);
+    CHECK(versionNumber == -1);
+    workflow_free(handle);
+}
+
+TEST_CASE("Mininum update manifest version check - 2")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(action_bundle, true, &handle);
+    CHECK(result.ResultCode > 0);
+    int versionNumber = workflow_get_update_manifest_version(handle);
+    CHECK(versionNumber == 2);
+    workflow_free(handle);
+}
+
+// clang-format off
+const char* manifest_old_1_0 = 
+    R"( {                    )"
+    R"(     "workflow": {    )"
+    R"(         "action": 0, )"
+    R"(         "id": "old_manifest" )"
+    R"(      },  )"
+    R"(     "updateManifest": "{\"manifestVersion\":\"1.0\",\"updateId\":{\"manufacturer\":\"Microsoft\",\"name\":\"OldManifest\",\"version\":\"1.0\"},\"updateType\":\"microsoft/swupdate:1\",\"installedCriteria\":\"1.0\",\"files\":{\"fec176c1cb389b2e4\":{\"fileName\":\"aduperftest-xsmall-5KB.json\",\"sizeInBytes\":4328,\"hashes\":{\"sha256\":\"RmjGU92yWs3H91/nGekzu9zvq0bFTHMnFMJI3A+YEOY=\"}}},\"createdDateTime\":\"2021-09-20T22:09:03.648Z\"}", )"
+    R"(     "updateManifestSignature": "eyJhbGciOiJSUzI1NiIsInNqd2siOiJleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SWtGRVZTNHlNREEzTURJdVVpNVVJbjAuZXlKcmRIa2lPaUpTVTBFaUxDSnVJam9pZVdaNVpUZ3pRMFl2TVZKYVUybHhaMFZ4UldJNWVIY3ZTeTlUSzFGa1pHaFRSbWsxYjNSbU9TdFJNMlV2TTJOVlJWbzJkRVkyZEhOQ2FITm9UbGxJUjBWV1dpOUlVRTh3Tms5WmNVUm1NMEZ6ZEdaQlZERmFPV0k1VmxORWEzWkxTR1ZKZGtGR01qVllNM1Z4YmpKeFJFZ3dkM0ZIUzBsM1EwOHlhV1J0ZVRWeFRVeHBaVFJHT0ZacVJXZFlTMlJRUzBnemNrdHpRbFpqTXpOaVVrUkhhVlVyYW05M1QyOVNkVkJYVXpVM1FYbGlOR3BIVTBOemRIUTVaSGxLTmpsQk1YZDZUMXBLUTNvell6TktPRU16TWs5aVVuaDNTM0IwY0dOUVlVZFBWbk4zWjNVM1pEUkhjMm93T0dsbFR6a3pZaTl4ZEROc1dWbzBVbGRTYWpsMk1uVXhjV1ZxTjBkcE9YaFpSWE5LVTJGeFExbzJjVWxOVDNNM1NDOTFjMVZPYVM5VmFscGtPR280ZVVwUmRtbEhVVXMzU200MFZsRXJUM2xLZEVNMU5uRlBTazFGWmxwMU1HczJhMWRGUkdGTWJWTndXa3hrU205bWMzWlRPV2hvZEU5WmJYZHpaVEZJV1VSUmRqVlJhVFlyTWxnME9GcE1TSE5CYkZocVkxcDVPRWRJYkRsclJVWm1aWFY1U21WeVJXOW1jM2gxV1dKcVEyVnRWV1pzWmpBeVYzbzJXR3RtYjNCMFFXbHJkSEJWTWtzdlZWZExVQzkwTkZWcU5uQjBjVGRXYkRGdmN6TXlha1IwZVRsaVVYZExZbmh6ZEVKM05IWXhLMEpFVG1Vd2RVcFhVSGcwYVRGRFEyaDVLekE1Tm1sVFJtRkdTazFQVmswcmRHWnVNbW9pTENKbElqb2lRVkZCUWlJc0ltRnNaeUk2SWxKVE1qVTJJaXdpYTJsa0lqb2lRVVJWTGpJeE1EWXdPUzVTTGxOVUluMC5lTFJ2N21TVEdycFpPcXJUM0NTX0VXSkFEdzE4UUxzM0lzMUlnSHFKS0pLRTFEVlFxdEEyS3ZBaEJlV3VMVkVKMGplNXA5ZUsyejFya1YzaHJFMFRGc0NRU05JSXFOWTVpMU9pNDNWbTlkelFWVFhHcUVUWUFfNVV4SzBqYWhBRE5zOHdETDFBMTlBTDc5SS1NaUlYVXZFeUtWNnliUnVDR3NucExUV1RMYWRNaTlMNzB4VXVpUjUzSVhsVmFFZ0psMWRwSktkUWd4NjdOMTFFME1VUGVWWEVPZmI3am1lQ2V3TkxzeF9WOUNqREtZcmF6ckhYV2pETVh0T0NOZW5RMHNvSnhiVUNDTmdWTTQtMl8wVXljVC1uN09YeWNSQldRUFctbHV6M0xNekNEMHRPRF9qV1oxUDdFNEQzTnIwRHVPb2lMVklSMGd3TWh5ZTRIaEN3RURMOWFaTlZEUTExX0ZYX2tFZnlybzcwVUtYVGFCNGJLX0EwTy12ZThxd1NqRGJYVWZxZThIZnRxTFFJSE9hSE56T2M4OG9qLWowRF9oREhfNF9oTlFrdTNhaGlKa0hpcjZwNWNDRTlPd2pheU8wUXNYUmo4U2lWYV9BU1hvVUJ2RUdVLU1KVTlNa3ZCeE9HWnVIeXNnRVhLYlpFQ24zWG50c29rTUVaMzlLVSJ9.eyJzaGEyNTYiOiJBRDFtZmhwS1JUWjJiTUVQNFhoRzJ3QVVvZ2dOKzVPeGtybzlzUHlpbVVZPSJ9.sdoYZxDuBPkvdN-U362smwm4CqYXQQ2NVt1zAlTyGQ4G6PTYQ2xIHJtW_QeKj5lbnjvSRV3yAaYVymwID_zFyCLf_lpkbq5Mkf2eO5LdU6Ske0s_Nzj98rZP2Io10B6zIcTLE9Rh_NWJyc3PCdIXv6k4sdkL3J2ioc6i8kUAtjwsyoF_-nv1xdEtlajNkxneaX8iOAGAmaM-NdVR6yHfXAAHoJHYEtfRqGw_z2ETG4wSEyuWsoLRgJPNbku9HqpJAQgo76dH0h6N97SY3unDJcVUW8St6V2uu7_ov1I5I_RQ1JQ1UaNPMYPdw48n3arkPsMQLZZrZ5HQg2cOvJdF_kLe6h0KtknLtwlk5r3K_jsUSRRzg3IZGcgh_Uje5s9EX3AM_S_iUshXENDSG6MRKH1u8pTl2Udzc_gkqybfFHLg0rymML-IDitHaEBhBIdvlZg-OIsmJPAQ8WHU4byFOfjGCCTf-rfoxbjS-s182U0QP0NHmRHmj7KVb_ds_WOY" )"
+    R"( } )";
+// clang-format on
+
+TEST_CASE("Mininum update manifest version check - 1")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(manifest_old_1_0, true, &handle);
+    CHECK(result.ResultCode == 0);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION);
+    workflow_free(handle);
 }

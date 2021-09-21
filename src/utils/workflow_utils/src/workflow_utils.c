@@ -20,11 +20,10 @@
 #include <azure_c_shared_utility/strings.h> // for STRING_*
 #include <parson.h>
 #include <stdarg.h> // for va_*
-#include <stdlib.h> // for calloc
+#include <stdlib.h> // for calloc, atoi
 #include <string.h>
 
 #define DEFAULT_SANDBOX_ROOT_PATH ADUC_DOWNLOADS_FOLDER
-#define WORKFLOW_STATUS_FILENAME "workflow-status.json"
 
 #define WORKFLOW_PROPERTY_FIELD_ID "_id"
 #define WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID "workflow.id"
@@ -44,6 +43,11 @@
  * @brief Maximum length for the 'resultDetails' string.
  */
 #define WORKFLOW_RESULT_DETAILS_MAX_LENGTH 1024
+
+/**
+ * @brief Minimum supported Update Manifest version
+ */
+#define MINIMUM_SUPPORTED_UPDATE_MANIFEST_VERSION 2
 
 EXTERN_C_BEGIN
 
@@ -340,6 +344,16 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
             result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_UPDATE_MANIFEST;
             goto done;
         }
+
+        if (validateManifest)
+        {
+            int manifestVersion = workflow_get_update_manifest_version(handle_from_workflow(wf));
+            if (manifestVersion < MINIMUM_SUPPORTED_UPDATE_MANIFEST_VERSION)
+            {
+                result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION;
+                goto done;
+            }
+        }
     }
 
     result.ResultCode = ADUC_GeneralResult_Success;
@@ -470,6 +484,31 @@ const JSON_Object* _workflow_get_update_manifest(ADUC_WorkflowHandle handle)
 
     ADUC_Workflow* wf = workflow_from_handle(handle);
     return wf->UpdateManifestObject;
+}
+
+/**
+ * @brief Get update manifest vesion.
+ * 
+ * @param handle A workflow object handle.
+ * 
+ * @return int The manifest version number. Return -1, if failed.
+ */
+int workflow_get_update_manifest_version(ADUC_WorkflowHandle handle)
+{
+    int versionNumber = -1;
+
+    char* version = workflow_get_update_manifest_string_property(handle, "manifestVersion");
+    if (IsNullOrEmpty(version))
+    {
+        goto done;
+    }
+
+    // Note: Version number older than 3 are decimal.
+    versionNumber = atoi(version);
+
+done:
+    workflow_free_string(version);
+    return versionNumber;
 }
 
 /**
@@ -706,17 +745,15 @@ const JSON_Object* _workflow_get_fileurls_map(ADUC_WorkflowHandle handle)
     return o == NULL ? NULL : json_object_dotget_object(o, "fileUrls");
 }
 
-//
-// Public getters and setters.
-//
-
 /**
  * @brief Return an update id of this workflow.
  * This id should be reported to the cloud once the update installed successfully.
  * 
- * @param handle 
- * @param[out] updateId 
- * @return ADUC_Result 
+ * @param handle A workflow object handle.
+ * @param[out] updateId A pointer to the output ADUC_UpdateId struct. 
+ *                      Must call 'workflow_free_update_id' function to free the memory when done.
+ * 
+ * @return ADUC_Result Return ADUC_GeneralResult_Success if success. Otherwise, return ADUC_GeneralResult_Failure with extendedResultCode.
  */
 ADUC_Result workflow_get_expected_update_id(ADUC_WorkflowHandle handle, ADUC_UpdateId** updateId)
 {
@@ -732,6 +769,15 @@ ADUC_Result workflow_get_expected_update_id(ADUC_WorkflowHandle handle, ADUC_Upd
     return result;
 }
 
+/**
+ * @brief Return an update id of this workflow.
+ * This id should be reported to the cloud once the update installed successfully.
+ * 
+ * @param handle A workflow object handle.
+ * 
+ * @return char* Expected update id string. 
+ *         Caller must call 'workflow_free_string' function to free the memery when done.
+ */
 char* workflow_get_expected_update_id_string(ADUC_WorkflowHandle handle)
 {
     const JSON_Object* manifest = _workflow_get_update_manifest(handle);
@@ -756,26 +802,23 @@ void workflow_free_update_id(ADUC_UpdateId* updateId)
     ADUC_UpdateId_UninitAndFree(updateId);
 }
 
-const char* workflow_status_filename()
-{
-    return WORKFLOW_STATUS_FILENAME;
-}
-
 /**
  * @brief Get installed-criteria string from this workflow.
  * @param handle A workflow object handle. 
- * @return Returns installed-criteria string. Caller must call 'workflow-free-string' function to free the memery when done.
+ * @return Returns installed-criteria string. 
+ *         Caller must call 'workflow_free_string' function to free the memery when done.
  */
 char* workflow_get_installed_criteria(ADUC_WorkflowHandle handle)
 {
-    return workflow_get_update_manifest_string_propery(handle, ADUCITF_FIELDNAME_INSTALLEDCRITERIA);
+    return workflow_get_update_manifest_string_property(handle, ADUCITF_FIELDNAME_INSTALLEDCRITERIA);
 }
 
 /**
- * @brief Get the Update Manifest 'compatibility' array, in serialize json string format. 
+ * @brief Get the Update Manifest 'compatibility' array, in serialized json string format. 
  * 
  * @param handle A workflow handle.
  * @return char* If success, returns a serialized json string. Otherwise, returns NULL.
+ *         Caller must call 'workflow_free_string' function to free the memery when done.
  */
 char* workflow_get_compatibility(ADUC_WorkflowHandle handle)
 {
@@ -794,11 +837,21 @@ char* workflow_get_compatibility(ADUC_WorkflowHandle handle)
     return NULL;
 }
 
+/**
+ * @brief Get the last reported state.
+ * 
+ * @return ADUCITF_State Return the last reported agent state.
+ */
 ADUCITF_State workflow_get_last_reported_state()
 {
     return g_LastReportedState;
 }
 
+/**
+ * @brief Set the last reported agent state.
+ * 
+ * @param lastReportedState The agent state reported to the IoT Hub.
+ */
 void workflow_set_last_reported_state(ADUCITF_State lastReportedState)
 {
     g_LastReportedState = lastReportedState;
@@ -1225,16 +1278,16 @@ const char* workflow_peek_update_manifest_string(ADUC_WorkflowHandle handle, con
  * @param propertyName The name of a property to get.
  * @return A copy of specified property. Caller must call workflow_free_string when done with the value.
  */
-char* workflow_get_update_manifest_string_propery(ADUC_WorkflowHandle handle, const char* propertyName)
+char* workflow_get_update_manifest_string_property(ADUC_WorkflowHandle handle, const char* propertyName)
 {
     return _workflow_copy_string(workflow_peek_update_manifest_string(handle, propertyName));
 }
 
 /**
- * @brief Get a 'Compatibilitiy' entry of the workflow at a specified @p index.
+ * @brief Get a 'Compatibility' entry of the workflow at a specified @p index.
  * 
  * @param handle A workflow object handle.
- * @param index Index of the compatibiity set to.
+ * @param index Index of the compatibility set to.
  * @return A copy of compatibility entry. Calle must call workflow_free_string when done with the value.
  */
 char* workflow_get_update_manifest_compatibility(ADUC_WorkflowHandle handle, size_t index)
@@ -1260,7 +1313,7 @@ char* workflow_get_update_manifest_compatibility(ADUC_WorkflowHandle handle, siz
  */
 char* workflow_get_update_type(ADUC_WorkflowHandle handle)
 {
-    return workflow_get_update_manifest_string_propery(handle, ADUCITF_FIELDNAME_UPDATETYPE);
+    return workflow_get_update_manifest_string_property(handle, ADUCITF_FIELDNAME_UPDATETYPE);
 }
 
 ADUC_Result _workflow_init_helper(ADUC_WorkflowHandle* handle)
