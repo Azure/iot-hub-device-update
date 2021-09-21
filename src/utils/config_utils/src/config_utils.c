@@ -53,25 +53,9 @@ static _Bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent
     const char* connection_data = json_object_get_string(connection_source, "connectionData");
 
     // As these fields are mandatory, if any of the fields doesn't exist, the agent will fail to be constructed.
-    if (name == NULL || runas == NULL || connection_type == NULL || connection_data == NULL)
+    if (name == NULL || runas == NULL || connection_type == NULL || connection_data == NULL || manufacturer == NULL || model == NULL)
     {
         goto done;
-    }
-
-    if (manufacturer != NULL)
-    {
-        if (mallocAndStrcpy_s(&(agent->manufacturer), manufacturer) != 0)
-        {
-            goto done;
-        }
-    }
-
-    if (model != NULL)
-    {
-        if (mallocAndStrcpy_s(&(agent->model), model) != 0)
-        {
-            goto done;
-        }
     }
 
     if (mallocAndStrcpy_s(&(agent->name), name) != 0)
@@ -90,6 +74,16 @@ static _Bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent
     }
 
     if (mallocAndStrcpy_s(&(agent->connectionData), connection_data) != 0)
+    {
+        goto done;
+    }
+
+    if (mallocAndStrcpy_s(&(agent->manufacturer), manufacturer) != 0)
+    {
+        goto done;
+    }
+
+    if (mallocAndStrcpy_s(&(agent->model), model) != 0)
     {
         goto done;
     }
@@ -265,23 +259,16 @@ _Bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFilePath)
     }
 
     const char* manufacturer = ADUC_JSON_GetStringFieldPtr(root_value, "manufacturer");
-
-    if (manufacturer != NULL)
-    {
-        if (mallocAndStrcpy_s(&(config->manufacturer), manufacturer) != 0)
-        {
-            goto done;
-        }
-    }
-
     const char* model = ADUC_JSON_GetStringFieldPtr(root_value, "model");
 
-    if (model != NULL)
+    if (manufacturer == NULL || model == NULL)
     {
-        if (mallocAndStrcpy_s(&(config->model), model) != 0)
-        {
-            goto done;
-        }
+        goto done;
+    }
+
+    if (mallocAndStrcpy_s(&(config->manufacturer), manufacturer) != 0 || mallocAndStrcpy_s(&(config->model), model) != 0)
+    {
+        goto done;
     }
 
     const char* edgegateway_cert_path = ADUC_JSON_GetStringFieldPtr(root_value, "edgegatewayCertPath");
