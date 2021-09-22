@@ -70,7 +70,7 @@ static inline _Bool IsAducResultCodeFailure(const ADUC_Result_t resultCode)
  */
 typedef enum tagADUC_Facility
 {
-    /*indicates errors from unkown sources*/
+    /*indicates errors from unknown sources*/
     ADUC_FACILITY_UNKNOWN = 0x0,
 
     /*indicates errors from the lower layer*/
@@ -177,7 +177,7 @@ typedef enum tagADUC_Component
     /*indicates errors from parsers. */
     ADUC_COMPONENT_UPDATE_DATA_PARSER = 0x03,
 
-    /*inidicates errors from Workflow Utilities or Function. */
+    /*indicates errors from Workflow Utilities or Function. */
     ADUC_COMPONENT_WORKFLOW_UTIL = 0x04,
 } ADUC_Component;
 
@@ -294,6 +294,7 @@ MAKE_ADUC_UPDATE_CONTENT_HANDLER_EXTENDEDRESULTCODE(const ADUC_Content_Handler h
 // Note: POSIX 2001 Standard ErrNos
 // Errno Values taken from /usr/include/asm-generic/errno-base.h
 // and                     /usr/include/asm-generic/errno.h
+// "see man 3 errno" manpage for more details.
 
 #define ADUC_ERC_NOTRECOVERABLE MAKE_ADUC_ERRNO_EXTENDEDRESULTCODE(131)
 #define ADUC_ERC_NOMEM MAKE_ADUC_ERRNO_EXTENDEDRESULTCODE(12)

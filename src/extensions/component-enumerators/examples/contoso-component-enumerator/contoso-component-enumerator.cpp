@@ -69,7 +69,7 @@ JSON_Value* _GetAllComponentsFromFile(const char* configFilepath)
         if (properties != nullptr)
         {
             // Populate 'properties.status'
-            //    'unkown' : 'firmwareDataFile' file is missing
+            //    'unknown' : 'firmwareDataFile' file is missing
             //    'ok'     : 'firmwareDataFile' file exists
             const char* path = json_object_get_string(properties, "path");
             const char* firmwareDataFile = json_object_get_string(properties, "firmwareDataFile");
