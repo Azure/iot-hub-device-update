@@ -33,12 +33,14 @@
     */
 
 //
+// *** IMPORTANT NOTE ****
 // For demonstration purposes, this is a fixed location for component inventory file.
-// And shouldn't be override.
-// To implement the actual enumerator, all components should be enuerated directly
+// And should be override.
+//
+// To implement the actual enumerator, all components should be enumerated directly
 // using system APIs or commands.
 //
-const char* g_contosoComponentInventoryFilePath = "/etc/adu/components-inventory.json";
+const char* g_contosoComponentInventoryFilePath = "/usr/local/contoso-device/components-inventory.json";
 
 JSON_Value* _GetAllComponentsFromFile(const char* configFilepath)
 {
