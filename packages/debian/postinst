@@ -164,6 +164,7 @@ register_reference_extensions() {
     $adu_bin_path -l 2 --update-type "microsoft/swupdate:1" -C $adu_extensions_sources_dir/$adu_swupdate_handler_file
     $adu_bin_path -l 2 --update-type "microsoft/bundle:1" -C $adu_extensions_sources_dir/$adu_bundle_handler_file
     $adu_bin_path -l 2 --update-type "microsoft/components:1" -C $adu_extensions_sources_dir/$adu_components_handler_file
+    $adu_bin_path -l 2 --update-type "microsoft/script:1" -C $adu_extensions_sources_dir/$adu_script_handler_file
 
     echo "Register a reference component enumerator..."
     $adu_bin_path -l 2 -E $adu_extensions_sources_dir/$adu_example_component_enumerator_file

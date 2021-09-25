@@ -29,6 +29,7 @@ add_subdirectory (swupdate_handler)
 add_subdirectory (simulator_handler)
 add_subdirectory (bundle_update_handler)
 add_subdirectory (components_update_handler)
+add_subdirectory (script_handler)
 
 #
 # Note: add more update content handler extensions here.

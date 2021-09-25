@@ -15,6 +15,8 @@ set (agent_apt_c_files ./src/aptget_tasks.cpp)
 
 set (agent_swupdate_c_files ./src/swupdate_tasks.cpp)
 
+set (agent_script_c_files ./src/script_tasks.cpp)
+
 list (LENGTH ADUC_CONTENT_HANDLERS num_content_handlers)
 if (num_content_handlers EQUAL 0)
     message (FATAL_ERROR "No content handler specified.")
