@@ -64,7 +64,7 @@ EOM
     )
     json_content=${json_content/<% MANUFACTURER %>/$manufacturer_json}
 else
-    warn "DeviceInfo manufacturer is mandatory, please add it in du-config.json"
+    warn "DeviceInfo manufacturer is mandatory, please add it in $new_conf_file"
     no_manufacturer_json=$(
         cat << EOM
 "manufacturer": <INSERT DEVICE INFO MANUFACTURER>,
@@ -81,7 +81,7 @@ EOM
     )
     json_content=${json_content/<% MODEL %>/$model_json}
 else
-    warn "DeviceInfo model is mandatory, please add it in du-config.json"
+    warn "DeviceInfo model is mandatory, please add it in $new_conf_file"
     no_model_json=$(
         cat << EOM
 "model": <INSERT DEVICE INFO MODEL>,
@@ -94,17 +94,17 @@ if [[ "$aduc_manufacturer" ]]; then
     aduc_manufacturer_json=$(
         cat << EOM
 ,
-      "aduc_manufacturer": "$aduc_manufacturer"
+      "manufacturer": "$aduc_manufacturer"
 EOM
     )
     processed_aduc_manufacturer_json=$(echo "$aduc_manufacturer_json" | tr '\n' '#' | sed -e 's/#$//g')
     json_content=$(echo "$json_content" | sed -e "s/<% ADUC_MANUFACTURER %>/$processed_aduc_manufacturer_json/g;s/#/\n/g")
 else
-    warn "DeviceProperty manufacturer (aduc_manufacturer) is mandatory, please add it in du-config.json"
+    warn "DeviceProperty manufacturer (aduc_manufacturer) is mandatory, please add it in $new_conf_file"
     no_aduc_manufacturer_json=$(
         cat << EOM
 ,
-      "aduc_manufacturer": <INSERT DEVICE PROPERTY MANUFACTURER>
+      "manufacturer": <INSERT DEVICE PROPERTY MANUFACTURER>
 EOM
     )
     json_content=${json_content/<% ADUC_MANUFACTURER %>/$no_aduc_manufacturer_json}
@@ -114,17 +114,17 @@ if [[ "$aduc_model" ]]; then
     aduc_model_json=$(
         cat << EOM
 ,
-      "aduc_model": "$aduc_model"
+      "model": "$aduc_model"
 EOM
     )
     processed_aduc_model_json=$(echo "$aduc_model_json" | tr '\n' '#' | sed -e 's/#$//g')
     json_content=$(echo "$json_content" | sed -e "s/<% ADUC_MODEL %>/$processed_aduc_model_json/g;s/#/\n/g")
 else
-    warn "DeviceProperty model (aduc_model) is mandatory, please add it in du-config.json"
+    warn "DeviceProperty model (aduc_model) is mandatory, please add it in $new_conf_file"
     no_aduc_model_json=$(
         cat << EOM
 ,
-      "aduc_model": <INSERT DEVICE PROPERTY MODEL>
+      "model": <INSERT DEVICE PROPERTY MODEL>
 EOM
     )
     json_content=${json_content/<% ADUC_MODEL %>/$no_aduc_model_json}

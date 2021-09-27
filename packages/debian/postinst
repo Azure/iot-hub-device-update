@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # postinst
 # post-install script for debian package.
@@ -13,7 +13,7 @@
 set -e
 
 adu_conf_dir=/etc/adu
-adu_conf_file=adu-conf.txt
+adu_conf_file=du-config.json
 adu_log_dir=/var/log/adu
 adu_data_dir=/var/lib/adu
 adu_downloads_dir="$adu_data_dir/downloads"
@@ -50,6 +50,34 @@ adu_home_dir=$(getent passwd $adu_user | cut -d: -f6)
 
 ms_doclient_lite_service="deliveryoptimization-agent"
 
+# The sample du-config.json
+sample_du_config=$(
+    cat << END_OF_JSON
+{
+  "schemaVersion": "1.0",
+  "aduShellTrustedUsers": [
+    "adu",
+    "do"
+  ],
+  "manufacturer": <Place your device info manufacturer here>,
+  "model": <Place your device info model here>,
+  "agents": [
+    {
+      "name": <Place your agent name here>,
+      "runas": "adu",
+      "connectionSource": {
+        "connectionType": "string",
+        "connectionData": <Place your Azure IoT device connection string here>
+      },
+      "manufacturer": <Place your device property manufacturer here>,
+      "model": <Place your device property model here>,
+    }
+    }
+  ]
+}
+END_OF_JSON
+)
+
 setup_dirs_and_files() {
     echo "Setting directories and files..."
     # Note on linux permissions
@@ -71,12 +99,12 @@ setup_dirs_and_files() {
 
         # Ensure the right owners and permissions
         chown "$adu_user:root" "$adu_conf_dir"
-        chmod u=rwx,g=rx,o=rx "$adu_conf_dir"        
+        chmod u=rwx,g=rx,o=rx "$adu_conf_dir"
 
         # Generate the template configuration file
         echo "Generate the template configuration file..."
         if [ ! -f "$adu_conf_dir/${adu_conf_file}.template" ]; then
-            echo "<Place your Azure IoT device connection string here>" > "$adu_conf_dir/${adu_conf_file}.template"
+            echo "$sample_du_config" > "$adu_conf_dir/${adu_conf_file}.template"
             chown "$adu_user:$adu_group" "$adu_conf_dir/${adu_conf_file}.template"
             chmod u=r,g=r,o=r "$adu_conf_dir/${adu_conf_file}.template"
         fi
@@ -160,7 +188,7 @@ setup_dirs_and_files() {
 
 register_reference_extensions() {
     echo "Register all reference update content handlers..."
-    
+
     $adu_bin_path -l 2 --update-type "microsoft/apt:1" -C $adu_extensions_sources_dir/$adu_apt_handler_file
     $adu_bin_path -l 2 --update-type "microsoft/swupdate:1" -C $adu_extensions_sources_dir/$adu_swupdate_handler_file
     $adu_bin_path -l 2 --update-type "microsoft/bundle:1" -C $adu_extensions_sources_dir/$adu_bundle_handler_file
@@ -208,7 +236,7 @@ case "$1" in
     configure)
         setup_dirs_and_files
         register_adu_user_and_process_with_eis
-        
+
         register_reference_extensions
 
         register_and_enable_daemon

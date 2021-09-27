@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Installs the adu-agent daemon and performs necessary setup/configuration.
 # This script is meant to only be called from CMake as part of the install target.
@@ -32,6 +32,34 @@ adu_group=adu
 
 # The user that the DO Agent daemon runs as.
 do_user='do'
+
+# The sample du-config.json
+sample_du_config=$(
+    cat << END_OF_JSON
+{
+  "schemaVersion": "1.0",
+  "aduShellTrustedUsers": [
+    "adu",
+    "do"
+  ],
+  "manufacturer": <Place your device info manufacturer here>,
+  "model": <Place your device info model here>,
+  "agents": [
+    {
+      "name": <Place your agent name here>,
+      "runas": "adu",
+      "connectionSource": {
+        "connectionType": "string",
+        "connectionData": <Place your Azure IoT device connection string here>
+      },
+      "manufacturer": <Place your device property manufacturer here>,
+      "model": <Place your device property model here>,
+    }
+    }
+  ]
+}
+END_OF_JSON
+)
 
 add_adu_user_and_group() {
     echo "Create the 'adu' group."
@@ -90,9 +118,7 @@ setup_dirs_and_files() {
 
         # Generate the template configuration file
         if [ ! -f "$adu_conf_dir/${adu_conf_file}.template" ]; then
-            echo "#connection_string=<Place your Azure IoT device connection string here>" > "$adu_conf_dir/${adu_conf_file}.template"
-            echo "#aduc_manufacturer=<OPTIONAL - Place your device's manufacturer name here>" >> "$adu_conf_dir/${adu_conf_file}.template"
-            echo "#aduc_model=<OPTIONAL - Place your device's model name here>" >> "$adu_conf_dir/${adu_conf_file}.template"
+            echo "$sample_du_config" > "$adu_conf_dir/${adu_conf_file}.template"
             chown "$adu_user:$adu_group" "$adu_conf_dir/${adu_conf_file}.template"
             chmod u=r "$adu_conf_dir/${adu_conf_file}.template"
         fi
