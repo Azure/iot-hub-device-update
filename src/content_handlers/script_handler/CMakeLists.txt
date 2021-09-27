@@ -31,35 +31,20 @@ target_link_libraries (
             aduc::system_utils
             aduc::workflow_utils)
 
-
-#if (ADUC_BUILD_UNIT_TESTS)
+if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
+endif ()
 
-    set (OUT_BIN_TESTFILES_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/script-handler-testfiles)
-    file (MAKE_DIRECTORY ${OUT_BIN_TESTFILES_DIR}) 
+#
+# Copy a target file to out/bin/extensions/ directory.
+#
+set (OUT_BIN_EXTENTIONS_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/extensions)
+file (MAKE_DIRECTORY ${OUT_BIN_EXTENTIONS_DIR})
 
-    #
-    # Copy all files from ./tests/files directory to out/bin directory.
-    #
-    add_custom_command(TARGET ${target_name}
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        ARGS -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/files ${OUT_BIN_TESTFILES_DIR}
-    )
-
-    set (MOCK_SANDBOX_DIR /tmp/adu_script_handle_tests/sandbox1/bundle)
-    file (MAKE_DIRECTORY ${MOCK_SANDBOX_DIR}) 
-    file (MAKE_DIRECTORY ${MOCK_SANDBOX_DIR}/leaf-0) 
-
-    #
-    # Copy some test files from ./tests/files directory to mock sandbox directory.
-    #
-    add_custom_command(TARGET ${target_name}
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        ARGS -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/files/leaf-0 ${MOCK_SANDBOX_DIR}/leaf-0
-    )
-
-#endif ()
+add_custom_command (
+    TARGET ${target_name}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} ARGS -E copy ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*${target_name}.so
+            ${OUT_BIN_EXTENTIONS_DIR})
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
