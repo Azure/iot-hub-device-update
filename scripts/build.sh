@@ -100,16 +100,16 @@ install_adu_components() {
     usermod -a -G adu "$USER"
     bullet "Current user info:"
     id
-    
+
     copyfile_exit_if_failed "$output_directory/bin/AducIotAgent" /usr/bin
 
     mkdir -p $adu_lib_dir
-    
+
     copyfile_exit_if_failed "$output_directory/bin/adu-shell" $adu_lib_dir
     copyfile_exit_if_failed "$root_dir/src/adu-shell/scripts/adu-swupdate.sh" "$adu_lib_dir"
 
     # Setup directories owner and/or permissions
-    
+
     # Logs directory
     mkdir -p "$adu_log_dir"
 
@@ -173,7 +173,7 @@ while [[ $1 != "" ]]; do
             $ret 1
         fi
         output_directory=$1
-       
+
         ;;
     -s | --static-analysis)
         shift
@@ -394,14 +394,15 @@ cmake -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
 # Save the return code of ninja so we can $ret with that return code.
 ninja
 ret_val=$?
-if [[ $ret_val && $build_packages == "true" ]]; then
+
+if [[ $ret_val == 0 && $build_packages == "true" ]]; then
     cpack
     ret_val=$?
 fi
 
 popd >/dev/null
 
-if [[ $ret_val == 0 && $install_adu == "true" ]]; then  
+if [[ $ret_val == 0 && $install_adu == "true" ]]; then
     install_adu_components
 fi
 
