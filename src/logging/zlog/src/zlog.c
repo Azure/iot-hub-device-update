@@ -209,7 +209,7 @@ void zlog_finish(void)
 
 void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, ...)
 {
-     const _Bool console_log_needed =
+    const _Bool console_log_needed =
         (log_setting.console_logging_mode != ZLOG_CLM_DISABLED) && (msg_level >= log_setting.console_level);
     const _Bool file_log_needed = zlog_is_file_log_open() && (msg_level >= log_setting.file_level);
 
@@ -305,6 +305,12 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
 
         zlog_finish_buffer_and_unlock();
     }
+
+    if (msg_level == ZLOG_ERROR)
+    {
+        zlog_request_flush_buffer();
+    }
+
 }
 
 bool g_flushRequested = false;
