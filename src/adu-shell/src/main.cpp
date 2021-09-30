@@ -2,7 +2,7 @@
  * @file main.cpp
  * @brief Implements the main code for the ADU Shell.
  *
- * @copyright Copyright (c) 2021, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
  */
 #include <getopt.h>
 #include <string.h>
@@ -27,6 +27,11 @@ namespace CommonTasks = Adu::Shell::Tasks::Common;
 #ifdef ADUSHELL_APT
 #    include "aptget_tasks.h"
 namespace AptGetTasks = Adu::Shell::Tasks::AptGet;
+#endif
+
+#ifdef ADUSHELL_SCRIPT
+#   include "script_tasks.hpp"
+namespace ScriptTasks = Adu::Shell::Tasks::Script;
 #endif
 
 #ifdef ADUSHELL_SWUPDATE
@@ -233,6 +238,7 @@ int ADUShell_Dowork(const ADUShell_LaunchArguments& launchArgs)
         const std::unordered_map<std::string, ADUShellTaskFuncType> actionMap = {
             { adushconst::update_type_common, CommonTasks::DoCommonTask },
             { adushconst::update_type_microsoft_apt, AptGetTasks::DoAptGetTask },
+            { adushconst::update_type_microsoft_script, ScriptTasks::DoScriptTask },
             { adushconst::update_type_microsoft_swupdate, SWUpdateTasks::DoSWUpdateTask }
         };
 

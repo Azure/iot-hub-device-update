@@ -2,7 +2,7 @@
  * @file adushell_action.cpp
  * @brief Implements the ADU Shell Actions helper functions.
  *
- * @copyright Copyright (c) 2020, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
  */
 #include "adushell_action.hpp"
 #include "aduc/logging.h"
@@ -25,16 +25,17 @@ ADUShellAction ADUShellActionFromString(const char* actionString)
         // clang-format off
 
         const std::unordered_map<std::string, ADUShellAction> actionMap = {
-            { "initialize", ADUShellAction::Initialize }, 
-            { "download", ADUShellAction::Download },
-            { "install", ADUShellAction::Install },
-            { "remove", ADUShellAction::Remove },
             { "apply", ADUShellAction::Apply },
             { "cancel", ADUShellAction::Cancel },
-            { "rollback", ADUShellAction::Rollback },
-            { "reboot", ADUShellAction::Reboot }
+            { "download", ADUShellAction::Download },
+            { "execute", ADUShellAction::Execute },
+            { "initialize", ADUShellAction::Initialize }, 
+            { "install", ADUShellAction::Install },
+            { "reboot", ADUShellAction::Reboot },
+            { "remove", ADUShellAction::Remove },
+            { "rollback", ADUShellAction::Rollback }
         };
-
+          
         // clang-format on
 
         value = actionMap.at(std::string(actionString));

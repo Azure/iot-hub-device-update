@@ -34,9 +34,9 @@ string (
 set (source_files ${agent_c_files})
 
 # Support all microsoft/* update types by default.
-set (source_files ${agent_c_files} ${agent_apt_c_files} ${agent_swupdate_c_files})
+set (source_files ${agent_c_files} ${agent_apt_c_files} ${agent_swupdate_c_files} ${agent_script_c_files})
 
-set (adushell_def ADUSHELL_SWUPDATE="yes" ADUSHELL_APT="yes")
+set (adushell_def ADUSHELL_SWUPDATE="yes" ADUSHELL_APT="yes" ADUSHELL_SCRIPT="yes")
 
 add_executable (${target_name} ${source_files})
 
