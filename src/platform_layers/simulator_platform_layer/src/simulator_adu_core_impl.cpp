@@ -15,12 +15,6 @@
 #include <cstring>
 #include <vector>
 
-#ifndef DISABLE_REAL_DOWNLOADING
-#    include "uhttp_downloader.h"
-#    include <sys/stat.h> // stat
-#    include <unistd.h> // rmdir
-#endif // DISABLE_REAL_DOWNLOADING
-
 #include "aduc/content_handler_factory.hpp"
 #include "aduc/logging.h"
 #include "aduc/string_utils.hpp"
@@ -30,23 +24,19 @@
 using ADUC::SimulatorPlatformLayer;
 
 std::unique_ptr<SimulatorPlatformLayer> SimulatorPlatformLayer::Create(
-    SimulationType type /*= SimulationType::AllSuccessful*/, bool performDownload /*= false*/)
+    SimulationType type /*= SimulationType::AllSuccessful*/)
 {
-    return std::unique_ptr<SimulatorPlatformLayer>{ new SimulatorPlatformLayer(type, performDownload) };
+    return std::unique_ptr<SimulatorPlatformLayer>{ new SimulatorPlatformLayer(type) };
 }
 
 /**
  * @brief Construct a new Simulator Impl object
  *
  * @param type Simulation type to run.
- * @param performDownload Whether an actual download should occur.
  */
-SimulatorPlatformLayer::SimulatorPlatformLayer(SimulationType type, bool performDownload) :
-    _simulationType(type), _shouldPerformDownload(performDownload), _cancellationRequested(false)
+SimulatorPlatformLayer::SimulatorPlatformLayer(SimulationType type) :
+    _simulationType(type), _cancellationRequested(false)
 {
-#ifdef DISABLE_REAL_DOWNLOADING
-    _shouldPerformDownload = false;
-#endif
 }
 
 ADUC_Result SimulatorPlatformLayer::SetUpdateActionCallbacks(ADUC_UpdateActionCallbacks* data)
@@ -130,43 +120,13 @@ ADUC_Result SimulatorPlatformLayer::Download(const ADUC_WorkflowData* workflowDa
         goto done;
     }
 
-#ifndef DISABLE_REAL_DOWNLOADING
-    if (ShouldPerformDownload())
-    {
-        // Actual download.
-        std::string outputFile{ workFolder };
-        outputFile += '/';
-        outputFile += entity->TargetFilename;
+    // Simulation mode.
 
-        const UHttpDownloaderResult downloadResult =
-            DownloadFile(entity->DownloadUri, entity->FileId, outputFile.c_str());
-        if (downloadResult != DR_OK)
-        {
-            Log_Error("Download failed, error %u", downloadResult);
+    workflowData->DownloadProgressCallback(
+        workflowId, entity->FileId, ADUC_DownloadProgressState_Completed, 424242, 424242);
 
-            workflowData->DownloadProgressCallback(workflowId, entity->FileId, ADUC_DownloadProgressState_Error, 0, 0);
-
-            result = { ADUC_Result_Failure, downloadResult };
-            goto done;
-        }
-
-        struct stat st = {};
-        const off_t fileSize{ (stat(outputFile.c_str(), &st) == 0) ? st.st_size : 0 };
-
-        workflowData->DownloadProgressCallback(
-            workflowId, entity->FileId, ADUC_DownloadProgressState_Completed, fileSize, fileSize);
-    }
-    else
-#endif
-    {
-        // Simulation mode.
-
-        workflowData->DownloadProgressCallback(
-            workflowId, entity->FileId, ADUC_DownloadProgressState_Completed, 424242, 424242);
-
-        Log_Info("Simulator sleeping...");
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
+    Log_Info("Simulator sleeping...");
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     // Download in progress.
     result = { ADUC_Result_Download_InProgress };
@@ -314,24 +274,8 @@ ADUC_Result SimulatorPlatformLayer::SandboxCreate(const char* workflowId, char* 
 {
     Log_Info("{%s} Creating sandbox %s", workflowId, workFolder);
 
-#ifndef DISABLE_REAL_DOWNLOADING
-    if (ShouldPerformDownload())
-    {
-        // Real download, create sandbox.
-        errno = 0;
-
-        if (mkdir(workFolder, S_IRWXU) != 0 && errno != EEXIST)
-        {
-            Log_Warn("Unable to create sandbox, error %u", errno);
-            return ADUC_Result{ ADUC_Result_Failure, MAKE_ADUC_ERRNO_EXTENDEDRESULTCODE(errno) };
-        }
-    }
-    else
-#endif
-    {
-        // Simulation.
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
+    // Simulation.
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     return ADUC_Result{ ADUC_Result_SandboxCreate_Success };
 }
@@ -346,16 +290,6 @@ void SimulatorPlatformLayer::SandboxDestroy(const char* workflowId, const char* 
 
     Log_Info("{%s} Deleting sandbox: %s", workflowId, workFolder);
 
-#ifndef DISABLE_REAL_DOWNLOADING
-    if (ShouldPerformDownload())
-    {
-        // Real download, remove sandbox.
-        (void)rmdir(workFolder);
-    }
-    else
-#endif
-    {
-        // Simulation.
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
+    // Simulation.
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }

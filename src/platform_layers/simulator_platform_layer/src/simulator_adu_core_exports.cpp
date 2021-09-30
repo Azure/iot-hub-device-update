@@ -70,9 +70,6 @@ ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, unsigne
         };
         SimulationType simulationType = SimulationType::AllSuccessful;
 
-        const char* performDownloadArg{ "perform_download" };
-        bool performDownload = false;
-
         const std::string manufacturerArgPrefix{ "deviceinfo_manufacturer=" };
         const std::string modelArgPrefix{ "deviceinfo_model=" };
         const std::string swVersionArgPrefix{ "deviceinfo_swversion=" };
@@ -88,11 +85,7 @@ ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, unsigne
                 continue;
             }
 
-            if (argument.substr(dashdash_cch) == performDownloadArg)
-            {
-                performDownload = true;
-            }
-            else if (argument.substr(dashdash_cch, manufacturerArgPrefix.size()) == manufacturerArgPrefix)
+            if (argument.substr(dashdash_cch, manufacturerArgPrefix.size()) == manufacturerArgPrefix)
             {
                 const std::string value{ argument.substr(dashdash_cch + manufacturerArgPrefix.size()) };
                 Log_Info("[Args] Using DeviceInfo manufacturer %s", value.c_str());
@@ -133,7 +126,7 @@ ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, unsigne
         }
 
         std::unique_ptr<ADUC::SimulatorPlatformLayer> pImpl{ ADUC::SimulatorPlatformLayer::Create(
-            simulationType, performDownload) };
+            simulationType) };
         ADUC_Result result{ pImpl->SetUpdateActionCallbacks(data) };
         // The platform layer object is now owned by the UpdateActionCallbacks object.
         pImpl.release();

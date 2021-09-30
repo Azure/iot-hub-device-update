@@ -41,7 +41,7 @@ class SimulatorPlatformLayer
 {
 public:
     static std::unique_ptr<SimulatorPlatformLayer>
-    Create(SimulationType type = SimulationType::AllSuccessful, bool performDownload = false);
+    Create(SimulationType type = SimulationType::AllSuccessful);
 
     // Delete copy ctor, copy assignment, move ctor and move assignment operators.
     SimulatorPlatformLayer(const SimulatorPlatformLayer&) = delete;
@@ -316,7 +316,7 @@ private:
     //
 
     // Private constructor, must use Create factory method to creat an object.
-    SimulatorPlatformLayer(SimulationType type, bool performDownload);
+    SimulatorPlatformLayer(SimulationType type);
 
     /**
      * @brief Class implementation of Idle method.
@@ -379,16 +379,6 @@ private:
     }
 
     /**
-     * @brief Determins if a real download should occur.
-     *
-     * @return bool True if download should occur.
-     */
-    bool ShouldPerformDownload() const
-    {
-        return _shouldPerformDownload;
-    }
-
-    /**
      * @brief Determine if cancellation was requested.
      *
      * @return bool True if requested.
@@ -406,11 +396,6 @@ private:
      * @brief Simulation that's being run.
      */
     SimulationType _simulationType;
-
-    /**
-     * @brief Should a download actually occur? (Useful for testing endpoints)
-     */
-    bool _shouldPerformDownload;
 
     /**
      * @brief Was Cancel called?
