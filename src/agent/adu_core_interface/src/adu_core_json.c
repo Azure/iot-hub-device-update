@@ -15,6 +15,7 @@
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h"
+#include "aduc/types/workflow.h"
 #include <jws_utils.h>
 #include <parson_json_utils.h>
 
@@ -64,18 +65,35 @@ const char* ADUCITF_UpdateActionToString(ADUCITF_UpdateAction updateAction)
 {
     switch (updateAction)
     {
-    case ADUCITF_UpdateAction_Download:
-        return "Download";
-    case ADUCITF_UpdateAction_Install:
-        return "Install";
-    case ADUCITF_UpdateAction_Apply:
-        return "Apply";
+    case ADUCITF_UpdateAction_Invalid_Download:
+        return "Invalid (Download)";
+    case ADUCITF_UpdateAction_Invalid_Install:
+        return "Invalid (Install)";
+    case ADUCITF_UpdateAction_Invalid_Apply:
+        return "Invalid (Apply)";
     case ADUCITF_UpdateAction_ProcessDeployment:
         return "ProcessDeployment";
     case ADUCITF_UpdateAction_Cancel:
         return "Cancel";
     case ADUCITF_UpdateAction_Undefined:
         return "Undefined";
+    }
+
+    return "<Unknown>";
+}
+
+const char* ADUC_WorkflowCancellationTypeToString(ADUC_WorkflowCancellationType cancellationType)
+{
+    switch (cancellationType)
+    {
+        case ADUC_WorkflowCancellationType_None:
+            return "None";
+        case ADUC_WorkflowCancellationType_Normal:
+            return "Normal";
+        case ADUC_WorkflowCancellationType_Replacement:
+            return "Replacement";
+        case ADUC_WorkflowCancellationType_Retry:
+            return "Retry";
     }
 
     return "<Unknown>";

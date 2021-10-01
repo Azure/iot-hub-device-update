@@ -73,21 +73,48 @@ void LinuxPlatformLayer::Idle(const char* workflowId)
     _IsCancellationRequested = false;
 }
 
+static ContentHandler* GetContentTypeHandler(const ADUC_WorkflowData* workflowData, char* updateType, ADUC_Result* result)
+{
+    ContentHandler* contentHandler = nullptr;
+    if (workflowData->TestOverrides && workflowData->TestOverrides->ContentHandler_TestOverride)
+    {
+        contentHandler = static_cast<ContentHandler*>(workflowData->TestOverrides->ContentHandler_TestOverride);
+    }
+    else
+    {
+        ADUC_Result loadResult = ContentHandlerFactory::LoadUpdateContentHandlerExtension(updateType, &contentHandler);
+        if (IsAducResultCodeFailure(loadResult.ResultCode))
+        {
+            contentHandler = nullptr;
+            *result = loadResult;
+        }
+    }
+
+done:
+    return contentHandler;
+}
+
 /**
  * @brief Class implementation of Download method.
  * @return ADUC_Result
  */
 ADUC_Result LinuxPlatformLayer::Download(const ADUC_WorkflowData* workflowData)
 {
+    ADUC_Result result{ ADUC_Result_Failure };
+
     char* updateType = workflow_get_update_type(workflowData->WorkflowHandle);
-    ContentHandler* contentHandler = nullptr;
-    ADUC_Result result = ContentHandlerFactory::LoadUpdateContentHandlerExtension(updateType, &contentHandler);
+    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, updateType, &result);
     if (contentHandler == nullptr)
     {
         goto done;
     }
 
     result = contentHandler->Download(workflowData);
+    if (_IsCancellationRequested)
+    {
+        result = ADUC_Result{ ADUC_Result_Failure_Cancelled };
+        _IsCancellationRequested = false; // For replacement, we can't call Idle so reset here
+    }
 
 done:
     workflow_free_string(updateType);
@@ -101,11 +128,12 @@ done:
  */
 ADUC_Result LinuxPlatformLayer::Install(const ADUC_WorkflowData* workflowData)
 {
+    ADUC_Result result{ ADUC_Result_Failure };
+
     char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
     char* updateType = workflow_get_update_type(workflowData->WorkflowHandle);
 
-    ContentHandler* contentHandler = nullptr;
-    ADUC_Result result = ContentHandlerFactory::LoadUpdateContentHandlerExtension(updateType, &contentHandler);
+    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, updateType, &result);
     if (contentHandler == nullptr)
     {
         goto done;
@@ -114,16 +142,8 @@ ADUC_Result LinuxPlatformLayer::Install(const ADUC_WorkflowData* workflowData)
     result = contentHandler->Install(workflowData);
     if (_IsCancellationRequested)
     {
-        Log_Info("Cancellation requested. Cancelling install. workflowId: %s", workflowId);
-        result = contentHandler->Cancel(workflowData);
-        if (IsAducResultCodeSuccess(result.ResultCode))
-        {
-            result = ADUC_Result{ ADUC_Result_Failure_Cancelled };
-        }
-        else
-        {
-            result = ADUC_Result{ ADUC_Result_Failure };
-        }
+        result = ADUC_Result{ ADUC_Result_Failure_Cancelled };
+        _IsCancellationRequested = false; // For replacement, we can't call Idle so reset here
     }
 
 done:
@@ -139,11 +159,12 @@ done:
  */
 ADUC_Result LinuxPlatformLayer::Apply(const ADUC_WorkflowData* workflowData)
 {
+    ADUC_Result result{ ADUC_Result_Failure };
+
     char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
     char* updateType = workflow_get_update_type(workflowData->WorkflowHandle);
 
-    ContentHandler* contentHandler = nullptr;
-    ADUC_Result result = ContentHandlerFactory::LoadUpdateContentHandlerExtension(updateType, &contentHandler);
+    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, updateType, &result);
     if (contentHandler == nullptr)
     {
         goto done;
@@ -152,16 +173,8 @@ ADUC_Result LinuxPlatformLayer::Apply(const ADUC_WorkflowData* workflowData)
     result = contentHandler->Apply(workflowData);
     if (_IsCancellationRequested)
     {
-        Log_Info("Cancellation requested. Cancelling apply. workflowId: %s", workflowId);
-        result = contentHandler->Cancel(workflowData);
-        if (IsAducResultCodeSuccess(result.ResultCode))
-        {
-            result = ADUC_Result{ ADUC_Result_Failure_Cancelled };
-        }
-        else
-        {
-            result = ADUC_Result{ ADUC_Result_Failure };
-        }
+        result = ADUC_Result{ ADUC_Result_Failure_Cancelled };
+        _IsCancellationRequested = false; // For replacement, we can't call Idle so reset here
     }
 
 done:
@@ -170,15 +183,45 @@ done:
     return result;
 }
 
-/** 
+/**
  * @brief Class implementation of Cancel method.
  */
 void LinuxPlatformLayer::Cancel(const ADUC_WorkflowData* workflowData)
 {
+    ADUC_Result result{ ADUC_Result_Failure };
     char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
+    char* updateType = workflow_get_update_type(workflowData->WorkflowHandle);
+
     Log_Info("Cancelling. workflowId: %s", workflowId);
+
     _IsCancellationRequested = true;
     workflow_free_string(workflowId);
+
+    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, updateType, &result);
+    if (contentHandler == nullptr)
+    {
+        Log_Error("Could not get content handler!");
+        goto done;
+    }
+
+    // Since this is coming in from main thread, let the content handler know that a cancel has been requested
+    // so that it can interrupt the current operation (download, install, apply) that's occurring on the
+    // worker thread. Cancel on the contentHandler is blocking call and once content handler confirms the
+    // operation has been cancelled, it returns success or failure for the cancel.
+    // After each blocking Download, Install, Apply calls above into content handler, it checks if
+    // _IsCancellationRequested is true and sets result to ADUC_Result_Failure_Cancelled
+    result = contentHandler->Cancel(workflowData);
+    if (IsAducResultCodeSuccess(result.ResultCode))
+    {
+        Log_Info("content handler successfully canceled ongoing operation for workflowId: %s", workflowId);
+    }
+    else
+    {
+        Log_Warn("content handler failed to cancel ongoing operation for workflowId: %s", workflowId);
+    }
+
+done:
+    return;
 }
 
 /**
@@ -217,9 +260,8 @@ ADUC_Result LinuxPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflowDat
         goto done;
     }
 
-    result = ContentHandlerFactory::LoadUpdateContentHandlerExtension(updateType, &contentHandler);
-
-    if (IsAducResultCodeFailure(result.ResultCode))
+    contentHandler = GetContentTypeHandler(workflowData, updateType, &result);
+    if (contentHandler == nullptr)
     {
         goto done;
     }

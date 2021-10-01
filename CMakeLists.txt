@@ -220,6 +220,11 @@ set (
     CACHE STRING "Path to the ADU Agent home folder.")
 
 set (
+    ADUC_WORKFLOWPERSISTENCE_FILE
+    "workflow"
+    CACHE STRING "Name of the data file containing workflow persistence records.")
+
+set (
     ADUC_INSTALLEDCRITERIA_FILE
     "installedcriteria"
     CACHE STRING "Name of the data file containing InstalledCriteria records.")
@@ -331,6 +336,12 @@ if (ADUC_BUILD_UNIT_TESTS)
     # Need to be in the root directory to place CTestTestfile.cmake in root
     # of output folder.
     enable_testing ()
+
+    set (
+        ADUC_TESTDATA_OUTPUT_DIRECTORY
+        "/tmp/adu"
+        CACHE STRING "Path to the ADU test data directory if testing."
+    )
 endif ()
 
 if (ADUC_INSTALL_DAEMON)

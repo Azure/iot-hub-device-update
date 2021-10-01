@@ -12,6 +12,7 @@
 #include "parson.h"
 #include <aduc/c_utils.h>
 #include <aduc/types/update_content.h>
+#include <aduc/types/workflow.h>
 #include <stdbool.h>
 
 EXTERN_C_BEGIN
@@ -19,6 +20,9 @@ EXTERN_C_BEGIN
 const char* ADUCITF_UpdateActionToString(ADUCITF_UpdateAction updateAction);
 
 const char* ADUCITF_StateToString(ADUCITF_State updateState);
+
+const char* ADUC_WorkflowCancellationTypeToString(ADUC_WorkflowCancellationType cancellationType);
+
 
 //
 // Methods

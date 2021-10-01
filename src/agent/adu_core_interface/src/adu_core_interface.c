@@ -9,7 +9,6 @@
 #include "aduc/adu_core_export_helpers.h" // ADUC_SetUpdateStateWithResult
 #include "aduc/agent_orchestration.h"
 #include "aduc/agent_workflow.h"
-#include "aduc/agent_workflow_utils.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
 #include "aduc/hash_utils.h"
@@ -19,6 +18,7 @@
 #include "aduc/workflow_utils.h"
 
 #include "startup_msg_helper.h"
+#include "workflow_persistence.h"
 
 #include <azure_c_shared_utility/strings.h> // STRING_*
 #include <iothub_client_version.h>
@@ -56,7 +56,7 @@ void ClientReportedStateCallback(int statusCode, void* context)
     }
 }
 
-static void ReportClientJsonProperty(const char* json_value)
+static void ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData* workflowData)
 {
     if (g_iotHubClientHandleForADUComponent == NULL)
     {
@@ -79,7 +79,16 @@ static void ReportClientJsonProperty(const char* json_value)
 
     Log_Debug("Reporting agent state:\n%s", jsonToSendStr);
 
-    iothubClientResult = ClientHandle_SendReportedState(
+    typedef typeof(ClientHandle_SendReportedState) ClientHandleSendReportType;
+    typedef ClientHandleSendReportType* ClientHandleSendReportFunc;
+    ClientHandleSendReportFunc clientHandle_SendReportedState_Func = ClientHandle_SendReportedState;
+    ADUC_TestOverride_Hooks* hooks = workflowData->TestOverrides;
+    if (hooks && hooks->ClientHandle_SendReportedStateFunc_TestOverride)
+    {
+        clientHandle_SendReportedState_Func = (ClientHandleSendReportFunc)(hooks->ClientHandle_SendReportedStateFunc_TestOverride);
+    }
+
+    iothubClientResult = clientHandle_SendReportedState_Func(
         g_iotHubClientHandleForADUComponent,
         (const unsigned char*)jsonToSendStr,
         jsonToSendStrLen,
@@ -104,9 +113,10 @@ done:
  * @brief Reports values to the cloud which do not change throughout ADUs execution
  * @details the current expectation is to report these values after the successful
  * connection of the AzureDeviceUpdateCoreInterface
+ * @param workflowData the workflow data.
  * @returns true when the report is sent and false when reporting fails.
  */
-_Bool ReportStartupMsg()
+_Bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
 {
     if (g_iotHubClientHandleForADUComponent == NULL)
     {
@@ -154,7 +164,7 @@ _Bool ReportStartupMsg()
         goto done;
     }
 
-    ReportClientJsonProperty(jsonString);
+    ReportClientJsonProperty(jsonString, workflowData);
 
     success = true;
 done:
@@ -210,7 +220,7 @@ void AzureDeviceUpdateCoreInterface_Connected(void* componentContext)
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)componentContext;
     ADUC_Workflow_HandleStartupWorkflowData(workflowData);
 
-    if (!ReportStartupMsg())
+    if (!ReportStartupMsg(workflowData))
     {
         Log_Warn("ReportStartupMsg failed");
     }
@@ -347,16 +357,17 @@ JSON_Status _json_object_set_update_result(
  * @brief Sets workflow properties on the workflow json value.
  *
  * @param[in,out] workflowValue The workflow json value to set properties on.
+ * @param[in] updateAction The updateAction for the action field.
  * @param[in] workflowId The workflow id of the update deployment.
  * @param[in] retryTimestamp optional. The retry timestamp that's present for service-initiated retries.
  * @return true if all properties were set successfully; false, otherwise.
  */
-static _Bool set_workflow_properties(JSON_Value* workflowValue, const char* workflowId, const char* retryTimestamp)
+static _Bool set_workflow_properties(JSON_Value* workflowValue, ADUCITF_UpdateAction updateAction, const char* workflowId, const char* retryTimestamp)
 {
     _Bool succeeded = false;
 
     JSON_Object* workflowObject = json_value_get_object(workflowValue);
-    if (json_object_set_number(workflowObject, ADUCITF_FIELDNAME_ACTION, ADUCITF_UpdateAction_ProcessDeployment) != JSONSuccess)
+    if (json_object_set_number(workflowObject, ADUCITF_FIELDNAME_ACTION, updateAction) != JSONSuccess)
     {
         Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_ACTION);
         goto done;
@@ -384,6 +395,7 @@ done:
     return succeeded;
 }
 
+JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State updateState, const ADUC_Result* result, const char* installedUpdateId);
 
 /**
  * @brief Report state, and optionally result to service.
@@ -402,17 +414,50 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
         return;
     }
 
-    if (AgentOrchestration_IsWorkflowOrchestratedByAgent(workflowData))
-    {
-        if (AgentOrchestration_ShouldNotReportToCloud(updateState)) {
-            return;
-        }
-    }
-    // TODO(jewelden): Remove following once disabling support for CBO-driven orchestration
-    else if (updateState == ADUCITF_State_InstallStarted || updateState == ADUCITF_State_ApplyStarted)
-    {
+    if (AgentOrchestration_ShouldNotReportToCloud(updateState)) {
+        Log_Debug("Skipping report of state '%s'", ADUCITF_StateToString(updateState));
         return;
     }
+
+    if (result == NULL && updateState == ADUCITF_State_DeploymentInProgress)
+    {
+        ADUC_Result resultForSet = { ADUC_Result_DeploymentInProgress_Success };
+        workflow_set_result(workflowData->WorkflowHandle, resultForSet);
+    }
+
+    // We are reporting idle on startup when persistence state is set on the workflow data.
+    // Use the persistence reporting json in that case; otherwise, generate the reporting
+    // json value.
+    char* jsonString = NULL;
+    JSON_Value* rootValue = NULL;
+
+    const WorkflowPersistenceState* persistenceState = workflowData->persistenceState;
+    if (persistenceState)
+    {
+        rootValue = json_parse_string(persistenceState->ReportingJson);
+    }
+    else
+    {
+        rootValue = GetReportingJsonValue(workflowData, updateState, result, installedUpdateId);
+    }
+
+    jsonString = json_serialize_to_string(rootValue);
+    if (jsonString == NULL)
+    {
+        Log_Error("Serializing JSON to string failed");
+        goto done;
+    }
+
+    ReportClientJsonProperty(jsonString, workflowData);
+
+done:
+    json_free_serialized_string(jsonString);
+    // Don't free the persistenceData as that will be done by the startup logic that owns it.
+}
+
+JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State updateState, const ADUC_Result* result, const char* installedUpdateId)
+{
+    JSON_Value* resultValue = NULL;
 
     //
     // Get result from current workflow if exists.
@@ -436,7 +481,6 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
 
     JSON_Value* rootValue = json_value_init_object();
     JSON_Object* rootObject = json_value_get_object(rootValue);
-    char* jsonString = NULL;
     int leafCount = workflow_get_children_count(handle);
 
     //
@@ -519,8 +563,9 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     {
         _Bool success = set_workflow_properties(
             workflowValue,
+            workflowData->CurrentAction,
             workflowId,
-            NULL); // retryTimestamp - TODO(JeffW): call workflow_get_retryTimestamp(handle) once available
+            workflow_peek_retryTimestamp(handle));
 
         if (!success)
         {
@@ -675,22 +720,17 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
         }
     }
 
-    jsonString = json_serialize_to_string(rootValue);
-    if (jsonString == NULL)
-    {
-        Log_Error("Serializing JSON to string failed");
-        goto done;
-    }
-
-    ReportClientJsonProperty(jsonString);
+    resultValue = rootValue;
+    rootValue = NULL;
 
 done:
-    json_free_serialized_string(jsonString);
     json_value_free(rootValue);
     json_value_free(lastInstallResultValue);
     json_value_free(updateInstallResultValue);
     json_value_free(bundledResultsValue);
     json_value_free(workflowValue);
+
+    return resultValue;
 }
 
 /**
@@ -699,14 +739,10 @@ done:
  * This method handles reporting values after a successful apply.
  * After a successful apply, we need to report State as Idle and
  * we need to also update the installedUpdateId property.
- * We want to set both of these in the Digital Twin at the same time.
- *
- * @param[in] workflowData A workflow data object.
+ * @param[in] workflowData The workflow data.
  * @param[in] updateId Id of and update installed on the device.
  */
-void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(
-    ADUC_WorkflowData* workflowData,
-    const char* updateId)
+void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(ADUC_WorkflowData* workflowData, const char* updateId)
 {
     if (g_iotHubClientHandleForADUComponent == NULL)
     {

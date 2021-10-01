@@ -9,7 +9,10 @@ compileasc99 ()
 add_library (${PROJECT_NAME} STATIC src/workflow_utils.c)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
-target_include_directories (${PROJECT_NAME} PUBLIC inc)
+target_include_directories (
+    ${PROJECT_NAME}
+    PUBLIC inc
+    PRIVATE src)
 
 #
 # Turn -fPIC on, in order to use this library in another shared library.

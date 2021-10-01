@@ -11,6 +11,7 @@
 #include "aduc/result.h"
 #include "aduc/types/download.h"
 #include "aduc/types/update_content.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h> // uint64_t
 
@@ -27,8 +28,9 @@ typedef void* ADUC_WorkflowDataToken;
  *
  * @param workCompletionToken Token received at method call.
  * @param result Result of work.
+ * @param isAsync true when worker thread, false when main thread.
  */
-typedef void (*WorkCompletionCallbackFunc)(const void* workCompletionToken, ADUC_Result result);
+typedef void (*WorkCompletionCallbackFunc)(const void* workCompletionToken, ADUC_Result result, _Bool isAsync);
 
 typedef struct tagADUC_WorkCompletionData
 {
@@ -62,8 +64,8 @@ typedef void (*IdleCallbackFunc)(ADUC_Token token, const char* workflowId);
  * @param workflowData Data about what to download.
  */
 typedef ADUC_Result (*DownloadCallbackFunc)(
-    ADUC_Token token, 
-    const ADUC_WorkCompletionData* workCompletionData, 
+    ADUC_Token token,
+    const ADUC_WorkCompletionData* workCompletionData,
     ADUC_WorkflowDataToken workflowData);
 
 //
@@ -106,7 +108,7 @@ typedef ADUC_Result (*ApplyCallbackFunc)(
  * @brief Signature for Cancel callback.
  *
  * @param token Opaque token.
- * @param workflowId Current workflow identifier.
+ * @param workflowData The workflow data object.
  */
 typedef void (*CancelCallbackFunc)(ADUC_Token token, ADUC_WorkflowDataToken workflowData);
 
@@ -189,20 +191,22 @@ typedef enum tagADUC_ResultCode
     ADUC_Result_Idle_Success=200,                    /**< Succeeded. */
 
     ADUC_Result_SandboxCreate_Success = 300,          /**< Succeeded. */
-    
+
+    ADUC_Result_DeploymentInProgress_Success = 400,   /**< Entering DeploymentInProgress state and sending ACK of ProcessDeployment update action Succeeded. */
+
     ADUC_Result_Download_Success = 500,                  /**< Succeeded. */
     ADUC_Result_Download_InProgress = 501,               /**< Async operation started. CompletionCallback will be called when complete. */
     ADUC_Result_Download_Skipped_FileExists = 502,       /**< Download skipped. File already exsits and hash validation passed. */
-    
+
     ADUC_Result_Download_Skipped_UpdateAlreadyInstalled = 503, /**< Download succeeded. Also indicates that the Installed Criteria is met. */
     ADUC_Result_Download_Skipped_NoMatchingComponents = 504, /**< Download succeeded. Also indicates that no matchings components for this update. */
-    
+
     ADUC_Result_Install_Success = 600,                       /**< Succeeded. */
     ADUC_Result_Install_InProgress = 601,                    /**< Async operation started. CompletionCallback will be called when complete. */
-    
+
     ADUC_Result_Install_Skipped_UpdateAlreadyInstalled = 603, /**< Install succeeded. Also indicates that the Installed Criteria is met. */
     ADUC_Result_Install_Skipped_NoMatchingComponents = 604,  /**< Install succeeded. Also indicates that no matchings components for this update. */
-    
+
     ADUC_Result_Install_RequiredImmediateReboot = 605,       /**< Succeeded. An immidiate device reboot is required, to complete the task. */
     ADUC_Result_Install_RequiredReboot = 606,                /**< Succeeded. A deferred device reboot is required, to complete the task. */
     ADUC_Result_Install_RequiredImmediateAgentRestart = 607, /**< Succeeded. An immediate agent restart is requied, to complete the task. */
@@ -210,7 +214,7 @@ typedef enum tagADUC_ResultCode
 
     ADUC_Result_Apply_Success = 700,                         /**< Succeeded. */
     ADUC_Result_Apply_InProgress = 701,                      /**< Async operation started. CompletionCallback will be called when complete. */
-    
+
     ADUC_Result_Apply_RequiredImmediateReboot = 705,         /**< Succeeded. An immidiate device reboot is required, to complete the task. */
     ADUC_Result_Apply_RequiredReboot = 706,                  /**< Succeeded. A deferred device reboot is required, to complete the task. */
     ADUC_Result_Apply_RequiredImmediateAgentRestart = 707,   /**< Succeeded. An immediate agent restart is requied, to complete the task. */

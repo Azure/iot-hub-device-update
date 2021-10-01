@@ -194,6 +194,7 @@ TEST_CASE("Download content")
     REQUIRE(updateActionCallbacks.DownloadCallback != nullptr);
     REQUIRE(updateActionCallbacks.InstallCallback != nullptr);
     REQUIRE(updateActionCallbacks.ApplyCallback != nullptr);
+    REQUIRE(updateActionCallbacks.CancelCallback != nullptr);
     REQUIRE(updateActionCallbacks.IsInstalledCallback != nullptr);
 
 // TODO(shiyipeng): Bug 28605123: Download UT's require DO to download for hash checks

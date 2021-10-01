@@ -358,9 +358,6 @@ TEST_CASE("ADUC_Json_GetUpdateAction: Valid")
 {
     // clang-format off
     auto updateactionVal = GENERATE( // NOLINT(google-build-using-namespace)
-        ADUCITF_UpdateAction_Download,
-        ADUCITF_UpdateAction_Install,
-        ADUCITF_UpdateAction_Apply,
         ADUCITF_UpdateAction_Cancel,
         ADUCITF_UpdateAction_ProcessDeployment);
     // clang-format on

@@ -15,7 +15,10 @@ using Catch::Matchers::Equals;
 
 /* Example of an Action PnP Data.
 {
-    "action": 0,
+    "workflow": {
+        "action": 3,
+        "id": "someWorkflowId"
+    }
     "updateManifest": "{\"manifestVersion\":\"2.0\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",
     "updateManifestSignature": "...",
     "fileUrls": {
@@ -31,7 +34,7 @@ using Catch::Matchers::Equals;
 const char* bundle_with_bundledUpdates = 
     R"( {                    )"
     R"(     "workflow": {    )"
-    R"(         "action": 0, )"
+    R"(         "action": 3, )"
     R"(         "id": "1533dab9-183c-47b7-aabf-a076fd5ea74f" )"
     R"(      },  )"
     R"(     "updateManifest": "{\"manifestVersion\":\"3\",\"updateId\":{\"provider\":\"contoso\",\"name\":\"virtual-vacuum\",\"version\":\"1.1\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"v1\",\"compatibility\":[{\"DeviceManufacturer\":\"contoso\",\"DeviceModel\":\"virtual-vacuum\"}],\"bundledUpdates\":[{\"fileId\":\"c7f95b5a4b0b328a\",\"fileName\":\"contoso.virtual-motor.1.1.updatemanifest.json\",\"sizeInBytes\":800,\"hashes\":{\"sha256\":\"KBJ8BKKZn3c1/Yo4sslPiiHVqCAk+aFfHBg8uNuTjLs=\"}}],\"createdDateTime\":\"2021-06-24T01:51:55.5872972Z\"}", )"
@@ -43,12 +46,12 @@ const char* bundle_with_bundledUpdates =
     R"(         "a85dc1692a0ff90a": "http://dcsfe.int.adu.microsoft.com/westus2/intModuleIdTestInstance--intmoduleidtest/e95d264d56b84fd288699c8f37489f1a/firmware.json" )"
     R"(      }  )"
     R"( } )";
- 
 
-const char* action_bundle = 
+
+const char* action_bundle =
     R"( {                    )"
     R"(     "workflow": {    )"
-    R"(         "action": 0, )"
+    R"(         "action": 3, )"
     R"(         "id": "action_bundle" )"
     R"(      },  )"
     R"(     "updateManifest": "{\"manifestVersion\":\"2.0\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
@@ -60,14 +63,14 @@ const char* action_bundle =
     R"(     } )"
     R"( } )";
 
-const char* action_leaf0 = 
+const char* action_leaf0 =
     R"( { )"
     R"(     "updateManifest": "{\"manifestVersion\":\"2.0\",\"updateId\":{\"provider\":\"fabrikam\",\"name\":\"motorUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"compatibility\":[{\"deviceManufacturer\":\"Contoso\",\"deviceModel\":\"VirtualVacuum\",\"componentGroup\":\"Motors\"}],\"files\":{\"00001\":{\"fileName\":\"contoso-motor-1.0-fileinstaller\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
     R"(     "fileUrls": {   )"
     R"(     } )"
     R"( } )";
 
-const char* action_leaf0_0 = 
+const char* action_leaf0_0 =
     R"( { )"
     R"(     "updateManifest": "{\"manifestVersion\":\"2.0\",\"updateId\":{\"provider\":\"fabrikam\",\"name\":\"peripheral-001-update\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"gw001\":{\"fileName\":\"behind-gateway-info.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
     R"(     "fileUrls": {   )"
@@ -98,7 +101,7 @@ TEST_CASE("Initialization test")
     CHECK(result.ExtendedResultCode == 0);
 
     auto action = workflow_get_action(handle);
-    REQUIRE(action == ADUCITF_UpdateAction_Download);
+    REQUIRE(action == ADUCITF_UpdateAction_ProcessDeployment);
 
     // Get and set id.
     char* id = workflow_get_id(handle);
@@ -464,7 +467,7 @@ TEST_CASE("Set workflow result")
     workflow_insert_child(leaf0, 0, leaf0_0);
 
     // Test set result
-    workflow_set_root_state(leaf0_0, ADUCITF_State_DownloadStarted);
+    workflow_set_state(bundle, ADUCITF_State_DownloadStarted);
 
     CHECK(ADUCITF_State_DownloadStarted == workflow_get_root_state(leaf0_0));
 

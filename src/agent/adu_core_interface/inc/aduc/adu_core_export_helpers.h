@@ -8,7 +8,7 @@
 #define ADUC_ADU_CORE_EXPORT_HELPERS_H
 
 #include "aduc/adu_core_exports.h"
-#include "aduc/agent_workflow.h"
+#include "aduc/types/workflow.h"
 #include "aduc/c_utils.h"
 #include "aduc/types/hash.h" // for ADUC_Hash
 #include "aduc/types/update_content.h" // for ADUC_FileEntity
@@ -46,6 +46,8 @@ typedef struct tagADUC_MethodCall_Data
     ADUC_WorkCompletionData WorkCompletionData;
     ADUC_WorkflowData* WorkflowData;
 } ADUC_MethodCall_Data;
+
+void ADUC_MethodCall_Idle(ADUC_WorkflowData* workflowData);
 
 ADUC_Result ADUC_MethodCall_ProcessDeployment(ADUC_MethodCall_Data* methodCallData);
 void ADUC_MethodCall_ProcessDeployment_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result);

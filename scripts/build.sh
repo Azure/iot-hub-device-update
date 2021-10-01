@@ -275,6 +275,7 @@ fi
 
 runtime_dir=${output_directory}/bin
 library_dir=${output_directory}/lib
+testdata_dir=${output_directory}/testdata
 
 # Output banner
 echo ''
@@ -310,6 +311,7 @@ CMAKE_OPTIONS=(
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
+    "-DADUC_TESTDATA_OUTPUT_DIRECTORY:STRING=$testdata_dir"
     "-DCMAKE_INSTALL_PREFIX=$install_prefix"
 )
 

@@ -5,6 +5,7 @@
  * @copyright Copyright (c) Microsoft Corp.
  */
 #include "aduc/workflow_utils.h"
+#include "workflow_internal.h"
 #include "aduc/adu_types.h"
 #include "aduc/c_utils.h"
 #include "aduc/hash_utils.h"
@@ -14,6 +15,7 @@
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
 #include "aduc/types/update_content.h"
+#include "aduc/types/workflow.h"
 #include "jws_utils.h"
 
 #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
@@ -26,7 +28,9 @@
 #define DEFAULT_SANDBOX_ROOT_PATH ADUC_DOWNLOADS_FOLDER
 
 #define WORKFLOW_PROPERTY_FIELD_ID "_id"
+#define WORKFLOW_PROPERTY_FIELD_RETRYTIMESTAMP "_retryTimestamp"
 #define WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID "workflow.id"
+#define WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_RETRYTIMESTAMP "workflow.retryTimestamp"
 #define WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ACTION "workflow.action"
 #define WORKFLOW_PROPERTY_FIELD_SANDBOX_ROOTPATH "_sandboxRootPath"
 #define WORKFLOW_PROPERTY_FIELD_WORKFOLDER "_workFolder"
@@ -51,31 +55,7 @@
 
 EXTERN_C_BEGIN
 
-/**
- * @brief A struct contianing data needed for an update workflow.
- * 
- */
-typedef struct tagADUC_Workflow
-{
-    JSON_Object* UpdateActionObject;
-    JSON_Object* UpdateManifestObject;
-    JSON_Object* PropertiesObject;
-    JSON_Object* ResultsObject;
 
-    ADUCITF_State State;
-    ADUC_Result Result;
-    STRING_HANDLE ResultDetails;
-    STRING_HANDLE InstalledUpdateId;
-
-    struct tagADUC_Workflow* Parent;
-    struct tagADUC_Workflow** Children;
-    size_t ChildrenMax;
-    size_t ChildCount;
-
-    bool OperationInProgress; /**< Is an upper-level method currently in progress? */
-    bool OperationCancelled; /**< Was the operation in progress requested to cancel? */
-
-} ADUC_Workflow;
 
 static ADUCITF_State g_LastReportedState; /**< Previously reported state (for state validation). */
 
@@ -85,7 +65,7 @@ static ADUCITF_State g_LastReportedState; /**< Previously reported state (for st
 
 /**
  * @brief Deep copy string. Caller must call workflow_free_string() when done.
- * 
+ *
  * @param s Input string.
  * @return A copy of input string if succeeded. Otherwise, return NULL.
  */
@@ -117,7 +97,7 @@ ADUC_Workflow* workflow_from_handle(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Gets workflow id (properties["_id"]).
- * 
+ *
  * @param handle A workflow handle object.
  * @return A read-only '_id' string.
  */
@@ -135,6 +115,25 @@ const char* _workflow_get_properties_id(ADUC_WorkflowHandle handle)
     }
 
     return NULL;
+}
+
+/**
+ * @brief Gets workflow retryTimestamp (properties["_retryTimestamp"]).
+ *
+ * @param handle A workflow handle object.
+ * @return A read-only '_retryTimestamp' string.
+ */
+const char* _workflow_get_properties_retryTimestamp(ADUC_WorkflowHandle handle)
+{
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    const char* result = NULL;
+
+    if (wf != NULL && wf->PropertiesObject != NULL && json_object_has_value(wf->PropertiesObject, WORKFLOW_PROPERTY_FIELD_RETRYTIMESTAMP))
+    {
+        result = json_object_get_string(wf->PropertiesObject, WORKFLOW_PROPERTY_FIELD_RETRYTIMESTAMP);
+    }
+
+    return result;
 }
 
 /**
@@ -209,12 +208,12 @@ done:
 
 /**
  * @brief A helper function for parsing workflow data from file, or from string.
- * 
+ *
  * @param isFile A boolean indicates whether @p source is an input file, or an input JSON string.
  * @param source An input file or JSON string.
  * @param validateManifest A boolean indicates whether to validate the manifest.
  * @param handle An output workflow object handle.
- * @return ADUC_Result 
+ * @return ADUC_Result
  */
 ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManifest, ADUC_WorkflowHandle* handle)
 {
@@ -378,7 +377,7 @@ done:
 
 /**
  * @brief Free an UpdateActionObject.
- * 
+ *
  * @param handle A workflow object handle.
  */
 void _workflow_free_updateaction(ADUC_WorkflowHandle handle)
@@ -393,7 +392,7 @@ void _workflow_free_updateaction(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Free an UpdateManifestObject.
- * 
+ *
  * @param handle A workflow object handle.
  */
 void _workflow_free_updatemanifest(ADUC_WorkflowHandle handle)
@@ -408,7 +407,7 @@ void _workflow_free_updatemanifest(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Free PropertyObject.
- * 
+ *
  * @param handle A workflow object handle.
  */
 void _workflow_free_properties(ADUC_WorkflowHandle handle)
@@ -423,7 +422,7 @@ void _workflow_free_properties(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Free an ResultsObject.
- * 
+ *
  * @param handle A workflow object handle.
  */
 void _workflow_free_results_object(ADUC_WorkflowHandle handle)
@@ -438,10 +437,10 @@ void _workflow_free_results_object(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Get the UpdateManifest property of type Array.
- * 
+ *
  * @param handle A workflow object handle.
  * @param propertyName A name of the property to get.
- * @return JSON_Array object, if exist. 
+ * @return JSON_Array object, if exist.
  */
 JSON_Array* _workflow_peek_update_manifest_array(ADUC_WorkflowHandle handle, const char* propertyName)
 {
@@ -488,9 +487,9 @@ const JSON_Object* _workflow_get_update_manifest(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Get update manifest vesion.
- * 
+ *
  * @param handle A workflow object handle.
- * 
+ *
  * @return int The manifest version number. Return -1, if failed.
  */
 int workflow_get_update_manifest_version(ADUC_WorkflowHandle handle)
@@ -513,7 +512,7 @@ done:
 
 /**
  * @brief Set workflow id property. (PropertiesObject["_id"])
- * 
+ *
  * @param handle A workflow object handle.
  * @param id A workflow id string.
  * @return True if success.
@@ -532,7 +531,7 @@ bool _workflow_set_id(ADUC_WorkflowHandle handle, const char* id)
 
 /**
  * @brief Get a read-only string containing 'workflow.id' property
- * 
+ *
  * @param handle A workflow object handle.
  * @return Workflow id string.
  */
@@ -551,6 +550,55 @@ const char* _workflow_peek_workflow_dot_id(ADUC_WorkflowHandle handle)
     }
 
     return NULL;
+}
+
+/**
+ * @brief Set workflow retryTimestamp property. (PropertiesObject["_retryTimestamp"])
+ *
+ * @param handle A workflow object handle.
+ * @param id A workflow retryTimestamp string.
+ * @return True if success.
+ */
+bool _workflow_set_retryTimestamp(ADUC_WorkflowHandle handle, const char* retryTimestamp)
+{
+    if (handle == NULL)
+    {
+        return false;
+    }
+
+    JSON_Status status;
+
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+
+    status = json_object_set_string(wf->PropertiesObject, WORKFLOW_PROPERTY_FIELD_RETRYTIMESTAMP, retryTimestamp);
+
+    return status == JSONSuccess;
+}
+
+/**
+ * @brief Get a read-only string containing 'workflow.retryTimestamp' property
+ *
+ * @param handle A workflow object handle.
+ * @return Workflow retryTimestamp string, or NULL if it was not specified by the service.
+ */
+const char* _workflow_peek_workflow_dot_retryTimestamp(ADUC_WorkflowHandle handle)
+{
+    if (handle == NULL)
+    {
+        return NULL;
+    }
+
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+
+    const char* result = NULL;
+
+    if (wf->UpdateActionObject != NULL
+        && json_object_dothas_value(wf->UpdateActionObject, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_RETRYTIMESTAMP))
+    {
+        result = json_object_dotget_string(wf->UpdateActionObject, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_RETRYTIMESTAMP);
+    }
+
+    return result;
 }
 
 bool workflow_set_string_property(ADUC_WorkflowHandle handle, const char* property, const char* value)
@@ -711,7 +759,7 @@ char* workflow_get_workfolder(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Get 'updateManifest.files' map.
- * 
+ *
  * @param handle A workflow object handle.
  * @return const JSON_Object* A map containing update files information.
  */
@@ -723,7 +771,7 @@ const JSON_Object* _workflow_get_update_manifest_files_map(ADUC_WorkflowHandle h
 
 /**
  * @brief Get 'updateManifest.bundledUpdates' array.
- * 
+ *
  * @param handle A workflow object handle.
  * @return const JSON_Object* A map containing bundle update manifest files information.
  */
@@ -735,7 +783,7 @@ JSON_Array* _workflow_get_update_manifest_bundle_updates_map(ADUC_WorkflowHandle
 
 /**
  * @brief Get 'fileUrls' map.
- * 
+ *
  * @param handle A workflow object handle.
  * @return const JSON_Object* A json object (map) containing update files information.
  */
@@ -748,11 +796,11 @@ const JSON_Object* _workflow_get_fileurls_map(ADUC_WorkflowHandle handle)
 /**
  * @brief Return an update id of this workflow.
  * This id should be reported to the cloud once the update installed successfully.
- * 
+ *
  * @param handle A workflow object handle.
- * @param[out] updateId A pointer to the output ADUC_UpdateId struct. 
+ * @param[out] updateId A pointer to the output ADUC_UpdateId struct.
  *                      Must call 'workflow_free_update_id' function to free the memory when done.
- * 
+ *
  * @return ADUC_Result Return ADUC_GeneralResult_Success if success. Otherwise, return ADUC_GeneralResult_Failure with extendedResultCode.
  */
 ADUC_Result workflow_get_expected_update_id(ADUC_WorkflowHandle handle, ADUC_UpdateId** updateId)
@@ -772,10 +820,10 @@ ADUC_Result workflow_get_expected_update_id(ADUC_WorkflowHandle handle, ADUC_Upd
 /**
  * @brief Return an update id of this workflow.
  * This id should be reported to the cloud once the update installed successfully.
- * 
+ *
  * @param handle A workflow object handle.
- * 
- * @return char* Expected update id string. 
+ *
+ * @return char* Expected update id string.
  *         Caller must call 'workflow_free_string' function to free the memery when done.
  */
 char* workflow_get_expected_update_id_string(ADUC_WorkflowHandle handle)
@@ -804,8 +852,8 @@ void workflow_free_update_id(ADUC_UpdateId* updateId)
 
 /**
  * @brief Get installed-criteria string from this workflow.
- * @param handle A workflow object handle. 
- * @return Returns installed-criteria string. 
+ * @param handle A workflow object handle.
+ * @return Returns installed-criteria string.
  *         Caller must call 'workflow_free_string' function to free the memery when done.
  */
 char* workflow_get_installed_criteria(ADUC_WorkflowHandle handle)
@@ -814,8 +862,8 @@ char* workflow_get_installed_criteria(ADUC_WorkflowHandle handle)
 }
 
 /**
- * @brief Get the Update Manifest 'compatibility' array, in serialized json string format. 
- * 
+ * @brief Get the Update Manifest 'compatibility' array, in serialized json string format.
+ *
  * @param handle A workflow handle.
  * @return char* If success, returns a serialized json string. Otherwise, returns NULL.
  *         Caller must call 'workflow_free_string' function to free the memery when done.
@@ -839,7 +887,7 @@ char* workflow_get_compatibility(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Get the last reported state.
- * 
+ *
  * @return ADUCITF_State Return the last reported agent state.
  */
 ADUCITF_State workflow_get_last_reported_state()
@@ -849,7 +897,7 @@ ADUCITF_State workflow_get_last_reported_state()
 
 /**
  * @brief Set the last reported agent state.
- * 
+ *
  * @param lastReportedState The agent state reported to the IoT Hub.
  */
 void workflow_set_last_reported_state(ADUCITF_State lastReportedState)
@@ -871,8 +919,16 @@ void workflow_set_operation_in_progress(ADUC_WorkflowHandle handle, bool inProgr
 
 bool workflow_get_operation_in_progress(ADUC_WorkflowHandle handle)
 {
+    bool result = false;
+
     ADUC_Workflow* wf = workflow_from_handle(handle);
-    return (wf != NULL) && wf->OperationInProgress;
+
+    if (wf != NULL)
+    {
+        result = wf->OperationInProgress;
+    }
+
+    return result;
 }
 
 void workflow_set_operation_cancel_requested(ADUC_WorkflowHandle handle, bool cancel)
@@ -889,16 +945,41 @@ void workflow_set_operation_cancel_requested(ADUC_WorkflowHandle handle, bool ca
 
 bool workflow_get_operation_cancel_requested(ADUC_WorkflowHandle handle)
 {
+    bool result = false;
+
     ADUC_Workflow* wf = workflow_from_handle(handle);
-    return wf != NULL && wf->OperationCancelled;
+
+    if (wf != NULL)
+    {
+        result = wf->OperationCancelled;
+    }
+
+    return result;
+}
+
+/**
+ * @brief sets both operation in progress and cancel requested to false
+ * @param handle The workflow handle
+ */
+void workflow_clear_inprogress_and_cancelrequested(ADUC_WorkflowHandle handle)
+{
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    if (wf == NULL)
+    {
+        Log_Warn("clearing when no active workflow.");
+        return;
+    }
+
+    wf->OperationInProgress = false;
+    wf->OperationCancelled = false;
 }
 
 /**
  * @brief Get an Update Action code.
- * 
+ *
  * @param handle A workflow object handle.
- * @return ADUCITF_UpdateAction Returns ADUCITF_UpdateAction_Undefined if no specified.
- * Otherwise, returns ADUCITF_UpdateAction_Download, ADUCITF_UpdateAction_Install, ADUCITF_UpdateAction_Apply
+ * @return ADUCITF_UpdateAction Returns ADUCITF_UpdateAction_Undefined if not specified.
+ * Otherwise, returns ADUCITF_UpdateAction_*
  * or ADUCITF_UpdateAction_Cancel.
  */
 ADUCITF_UpdateAction workflow_get_action(ADUC_WorkflowHandle handle)
@@ -1132,7 +1213,7 @@ done:
 
 /**
  * @brief Get total count of Components Update files in the Bundle Update.
- * 
+ *
  * @param handle A workflow object handle.
  * @return Total count of components update files.
  */
@@ -1144,7 +1225,7 @@ size_t workflow_get_bundle_updates_count(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Get a 'bundleFiles' entity at specified @p index.
- * 
+ *
  * @param handle A workflow object handle.
  * @param index  File entity index.
  * @param entity Output file entity object.
@@ -1247,7 +1328,7 @@ done:
 
 /**
  * @brief Uninitialize and free specified file entity object.
- * 
+ *
  * @param entity A file entity object.
  */
 void workflow_free_file_entity(ADUC_FileEntity* entity)
@@ -1259,7 +1340,7 @@ void workflow_free_file_entity(ADUC_FileEntity* entity)
 /**
  * @brief Get an Update Manifest property (string) without copying the value.
  * Caller must not free the pointer.
- * 
+ *
  * @param handle A workflow object handle.
  * @param[in] propertyName Name of the property to get.
  * @return const char* A reference to property value. Caller must not free this pointer.
@@ -1273,7 +1354,7 @@ const char* workflow_peek_update_manifest_string(ADUC_WorkflowHandle handle, con
 
 /**
  * @brief Get a property of type 'string' in the workflow update manfiest.
- * 
+ *
  * @param handle A workflow object handle.
  * @param propertyName The name of a property to get.
  * @return A copy of specified property. Caller must call workflow_free_string when done with the value.
@@ -1285,7 +1366,7 @@ char* workflow_get_update_manifest_string_property(ADUC_WorkflowHandle handle, c
 
 /**
  * @brief Get a 'Compatibility' entry of the workflow at a specified @p index.
- * 
+ *
  * @param handle A workflow object handle.
  * @param index Index of the compatibility set to.
  * @return A copy of compatibility entry. Calle must call workflow_free_string when done with the value.
@@ -1307,7 +1388,7 @@ char* workflow_get_update_manifest_compatibility(ADUC_WorkflowHandle handle, siz
 
 /**
  * @brief Get update type of the specified workflow.
- * 
+ *
  * @param handle A workflow object handle.
  * @return An UpdateType string.
  */
@@ -1396,16 +1477,15 @@ done:
 }
 
 /**
- * @brief Transfer action data from @p sourceHandle to @p targetHandle.
+ * @brief Transfer data from @p sourceHandle to @p targetHandle.
  * The sourceHandle will no longer contains transfered action data.
  * Caller should not use sourceHandle for other workflow related purposes.
- * 
- * @param targetHandle 
- * @param sourceHandle 
- * @return true 
- * @return false 
+ *
+ * @param targetHandle The target workflow handle
+ * @param sourceHandle The source workflow handle
+ * @return true if transfer succeeded.
  */
-bool workflow_update_action_data(ADUC_WorkflowHandle targetHandle, ADUC_WorkflowHandle sourceHandle)
+bool workflow_transfer_data(ADUC_WorkflowHandle targetHandle, ADUC_WorkflowHandle sourceHandle)
 {
     ADUC_Workflow* wfTarget = workflow_from_handle(targetHandle);
     ADUC_Workflow* wfSource = workflow_from_handle(sourceHandle);
@@ -1415,30 +1495,26 @@ bool workflow_update_action_data(ADUC_WorkflowHandle targetHandle, ADUC_Workflow
         return false;
     }
 
-    if (wfTarget->UpdateActionObject != NULL)
-    {
-        json_value_free(json_object_get_wrapping_value(wfTarget->UpdateActionObject));
-    }
+    // Transfer over the parsed JSON objects
     wfTarget->UpdateActionObject = wfSource->UpdateActionObject;
     wfSource->UpdateActionObject = NULL;
 
-    if (wfTarget->UpdateManifestObject != NULL)
-    {
-        json_value_free(json_object_get_wrapping_value(wfTarget->UpdateManifestObject));
-    }
     wfTarget->UpdateManifestObject = wfSource->UpdateManifestObject;
     wfSource->UpdateManifestObject = NULL;
+
+    wfTarget->PropertiesObject = wfSource->PropertiesObject;
+    wfSource->PropertiesObject = NULL;
 
     return true;
 }
 
 /**
  * @brief Instantiate and initialize workflow object with info from the given jsonData.
- * 
+ *
  * @param updateManifestJson A JSON string containing udpate manifest data.
  * @param validateManifest A boolean indicates whether to validate the update manifest.
  * @param handle An output workflow object handle.
- * @return ADUC_Result 
+ * @return ADUC_Result
  */
 ADUC_Result workflow_init(const char* updateManifestJson, bool validateManifest, ADUC_WorkflowHandle* handle)
 {
@@ -1476,8 +1552,42 @@ done:
 }
 
 /**
+ * @brief gets the current workflow step.
+ *
+ * @param handle A workflow data object handle.
+ * @return the workflow step.
+ */
+ADUCITF_WorkflowStep workflow_get_current_workflowstep(ADUC_WorkflowHandle handle)
+{
+    ADUCITF_WorkflowStep step = ADUCITF_WorkflowStep_Undefined;
+
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    if (wf != NULL)
+    {
+        step = wf->CurrentWorkflowStep;
+    }
+
+    return step;
+}
+
+/**
+ * @brief sets the current workflow step.
+ *
+ * @param handle A workflow data object handle.
+ * @param workflowStep The workflow step.
+ */
+void workflow_set_current_workflowstep(ADUC_WorkflowHandle handle, ADUCITF_WorkflowStep workflowStep)
+{
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    if (wf != NULL)
+    {
+        wf->CurrentWorkflowStep = workflowStep;
+    }
+}
+
+/**
  * @brief Set workflow 'property._id'. This function creates a copy of the input id.
- * 
+ *
  * @param handle A workflow object handle.
  * @param id A new id of the workflow.
  * @return Return true If succeeded.
@@ -1489,7 +1599,7 @@ bool workflow_set_id(ADUC_WorkflowHandle handle, const char* id)
 
 /**
  * @brief Get a read-only workflow id.
- * 
+ *
  * @param handle A workflow object handle.
  * @return Return the workflow id.
  */
@@ -1504,7 +1614,7 @@ const char* workflow_peek_id(ADUC_WorkflowHandle handle)
     const char* id = _workflow_get_properties_id(handle);
     if (id == NULL)
     {
-        // Reutrn 'workflow.id' from Action json data.
+        // Return 'workflow.id' from Action json data.
         id = _workflow_peek_workflow_dot_id(handle);
     }
 
@@ -1513,14 +1623,55 @@ const char* workflow_peek_id(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Get a workflow id.
- * 
+ *
  * @param handle A workflow object handle.
- * @return const char* If success, returns pointer to workflow id string. Otherwise, returns NULL. 
+ * @return const char* If success, returns pointer to workflow id string. Otherwise, returns NULL.
  * Caller must free the string by calling workflow_free_string() once done with the string.
  */
 char* workflow_get_id(ADUC_WorkflowHandle handle)
 {
     return _workflow_copy_string(workflow_peek_id(handle));
+}
+
+/**
+ * @brief Explicit set workflow retryTimestamp for this workflow.
+ *
+ * @param handle A workflow data object handle.
+ * @param retryTimestamp The retryTimestamp
+ * @return Return true if succeeded.
+ */
+bool workflow_set_retryTimestamp(ADUC_WorkflowHandle handle, const char* retryTimestamp)
+{
+    bool result = false;
+
+    result = _workflow_set_retryTimestamp(handle, retryTimestamp);
+
+    return result;
+}
+
+/**
+ * @brief Get a read-only workflow retryTimestamp.
+ *
+ * @param handle A workflow object handle.
+ * @return Return the workflow retryTimestamp, if it was in json message.
+ */
+const char* workflow_peek_retryTimestamp(ADUC_WorkflowHandle handle)
+{
+    if (handle == NULL)
+    {
+        return NULL;
+    }
+
+    // Return 'properties._retryTimestamp', if set.
+    const char* retryTimestamp = _workflow_get_properties_retryTimestamp(handle);
+    if (retryTimestamp == NULL)
+    {
+        // Return 'workflow.retryTimestamp' from Action json data,
+        // which could also be null or empty, as it's optional.
+        retryTimestamp = _workflow_peek_workflow_dot_retryTimestamp(handle);
+    }
+
+    return retryTimestamp;
 }
 
 /**
@@ -1534,7 +1685,7 @@ void workflow_free_string(char* string)
 
 /**
  * @brief Free workflow content.
- * 
+ *
  * @param handle A workflow object handle.
  */
 void workflow_uninit(ADUC_WorkflowHandle handle)
@@ -1552,11 +1703,18 @@ void workflow_uninit(ADUC_WorkflowHandle handle)
     _workflow_free_updatemanifest(handle);
     _workflow_free_properties(handle);
     _workflow_free_results_object(handle);
+
+    // This should have been transferred, but free it if it's still around.
+    if (wf->DeferredReplacementWorkflow)
+    {
+        workflow_free(wf->DeferredReplacementWorkflow);
+        wf->DeferredReplacementWorkflow = NULL;
+    }
 }
 
 /**
  * @brief Free workflow content and free the workflow object.
- * 
+ *
  * @param handle A workflow object handle.
  */
 void workflow_free(ADUC_WorkflowHandle handle)
@@ -1579,7 +1737,7 @@ void workflow_free(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Set workflow parent.
- * 
+ *
  * @param handle A child workflow object handle.
  * @param parent A parent workflow object handle.
  */
@@ -1596,9 +1754,9 @@ void workflow_set_parent(ADUC_WorkflowHandle handle, ADUC_WorkflowHandle parent)
 
 /**
  * @brief Get the root workflow object linked by the @p handle.
- * 
+ *
  * @param handle A workflow object handle.
- * @return ADUC_WorkflowHandle 
+ * @return ADUC_WorkflowHandle
  */
 ADUC_WorkflowHandle workflow_get_root(ADUC_WorkflowHandle handle)
 {
@@ -1617,9 +1775,9 @@ ADUC_WorkflowHandle workflow_get_root(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Get the parent workflow object linked by the @p handle.
- * 
+ *
  * @param handle A workflow object handle.
- * @return ADUC_WorkflowHandle 
+ * @return ADUC_WorkflowHandle
  */
 ADUC_WorkflowHandle workflow_get_parent(ADUC_WorkflowHandle handle)
 {
@@ -1634,7 +1792,7 @@ ADUC_WorkflowHandle workflow_get_parent(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Get workflow's children count.
- * 
+ *
  * @param handle A workflow object handle.
  * @return Total child workflow count.
  */
@@ -1646,7 +1804,7 @@ int workflow_get_children_count(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Get child workflow at specified @p index.
- * 
+ *
  * @param handle A workflow object handle.
  * @param index Index of a child workflow to get.
  * @return A child workflow object handle, or NULL if index out of range.
@@ -1712,9 +1870,9 @@ bool workflow_insert_child(ADUC_WorkflowHandle handle, int index, ADUC_WorkflowH
 }
 
 /**
- * @brief Remove child workflow at specified @p index 
- * 
- * @param handle 
+ * @brief Remove child workflow at specified @p index
+ *
+ * @param handle
  * @param index An index of the child workflow to be remove.
  * @return ADUC_WorkflowHandle Returns removed child, if succeeded.
  */
@@ -1764,12 +1922,6 @@ ADUCITF_State workflow_get_state(ADUC_WorkflowHandle handle)
     }
 
     return wf->State;
-}
-
-// Save this workflow's state at the root.
-bool workflow_set_root_state(ADUC_WorkflowHandle handle, ADUCITF_State state)
-{
-    return workflow_set_state(workflow_get_root(handle), state);
 }
 
 // Save this workflow's state at the root.
@@ -1895,6 +2047,124 @@ const char* workflow_peek_installed_update_id(ADUC_WorkflowHandle handle)
     return STRING_c_str(wf->InstalledUpdateId);
 }
 
+void workflow_set_cancellation_type(ADUC_WorkflowHandle handle, ADUC_WorkflowCancellationType cancellationType)
+{
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    if (wf != NULL)
+    {
+        wf->CancellationType = cancellationType;
+    }
+}
+
+ADUC_WorkflowCancellationType workflow_get_cancellation_type(ADUC_WorkflowHandle handle)
+{
+    ADUC_WorkflowCancellationType result;
+
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    if (wf == NULL)
+    {
+        result = ADUC_WorkflowCancellationType_Normal;
+    }
+    else
+    {
+        result = wf->CancellationType;
+    }
+
+    return result;
+}
+
+/**
+ * @brief sets both cancellation type to retry and retry timestamp.
+ * @param handle the workflow handle
+ * @param retryToken the retry token with which to update
+ * @return true if succeeded.
+ */
+bool workflow_update_retry_deployment(ADUC_WorkflowHandle handle, const char* retryToken)
+{
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    bool result = false;
+
+    if (wf != NULL)
+    {
+
+        wf->CancellationType = ADUC_WorkflowCancellationType_Retry;
+        result = _workflow_set_retryTimestamp(handle, retryToken);
+
+    }
+
+    return result;
+}
+
+/**
+ * @brief if operation is in progress on the current workflow, it will set the next workflow as a deferred workflow on the current workflow and set cancellation type to Replacement.
+ * @remark The caller must not free the next workflow handle when true is returned as it is owned by the current workflow as a deferred field. Conversely, if false is returned, then
+ *             the caller must free the current workflow handle and set the next workflow handle as the current in the workflow data.
+ * @param currentWorkflowHandle The workflow handle on the current workflow Data.
+ * @param nextWorkflowHandle The workflow handle for the next workflow update deployment.
+ * @return true if there was an operation in progress and the next workflow handle got deferred until workCompletionCallback processing.
+ */
+bool workflow_update_replacement_deployment(ADUC_WorkflowHandle currentWorkflowHandle, ADUC_WorkflowHandle nextWorkflowHandle)
+{
+    bool wasDeferred = false;
+
+    ADUC_Workflow* currentWorkflow = workflow_from_handle(currentWorkflowHandle);
+
+
+    if (currentWorkflow->OperationInProgress)
+    {
+        currentWorkflow->CancellationType = ADUC_WorkflowCancellationType_Replacement;
+        currentWorkflow->OperationCancelled = true;
+        currentWorkflow->DeferredReplacementWorkflow = nextWorkflowHandle; // upon return, caller must release ownership as it's owned by current workflow now
+        wasDeferred = true;
+    }
+
+
+    return wasDeferred;
+}
+
+/**
+ * @brief Resets state for retry and replacement deployment processing.
+ * @param wf The ADUC workflow state internal representation of a handle.
+ */
+static void reset_state_for_processing_deployment(ADUC_Workflow* wf)
+{
+    g_LastReportedState = ADUCITF_State_Idle;
+    wf->CurrentWorkflowStep = ADUCITF_WorkflowStep_ProcessDeployment;
+    wf->OperationInProgress = false;
+    wf->OperationCancelled = false;
+    wf->CancellationType = ADUC_WorkflowCancellationType_None;
+}
+
+/**
+ * @brief Resets state to process the deferred workflow deployment, which is also transferred to the current.
+ * @param handle The workflow handle on the current workflow Data.
+ */
+void workflow_update_for_replacement(ADUC_WorkflowHandle handle)
+{
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+
+
+    ADUC_Workflow* deferred = wf->DeferredReplacementWorkflow;
+    wf->DeferredReplacementWorkflow = NULL;
+    workflow_transfer_data(handle /* wfTarget */, deferred /* wfSource */);
+
+    reset_state_for_processing_deployment(wf);
+
+}
+
+/**
+ * @brief Resets state to reprocess the current workflow deployment.
+ * @param handle The workflow handle on the current workflow Data.
+ */
+void workflow_update_for_retry(ADUC_WorkflowHandle handle)
+{
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+
+
+    reset_state_for_processing_deployment(wf);
+
+}
+
 // If succeeded, free existing install state data and replace with a new one.
 // If failed, no changes to the handle.
 bool workflow_read_state_from_file(ADUC_WorkflowHandle handle, const char* stateFilename)
@@ -1972,9 +2242,9 @@ bool workflow_request_immediate_agent_restart(ADUC_WorkflowHandle handle)
 
 /**
  * @brief Compare id of @p handle0 and @p handle1
- * 
- * @param handle0 
- * @param handle1 
+ *
+ * @param handle0
+ * @param handle1
  * @return 0 if ids are equal.
  */
 int workflow_id_compare(ADUC_WorkflowHandle handle0, ADUC_WorkflowHandle handle1)
@@ -1999,12 +2269,12 @@ done:
 
 /**
  * @brief Create a new workflow data handler using base workflow and serialized 'instruction' json string.
- * Note: The 'workfolder' of the returned workflow data object will be the same as the base's. 
- * 
+ * Note: The 'workfolder' of the returned workflow data object will be the same as the base's.
+ *
  * @param base The base workflow containing valid Update Action and Manifest.
  * @param instruction A serialized json string containing single 'installItem' from an instruction file.
  * @param handle An output workflow handle.
- * @return ADUC_Result 
+ * @return ADUC_Result
  */
 ADUC_Result
 workflow_create_from_instruction(ADUC_WorkflowHandle base, const char* instruction, ADUC_WorkflowHandle* handle)
@@ -2029,12 +2299,12 @@ done:
 
 /**
  * @brief Create a new workflow data handler using base workflow and serialized 'instruction' json string.
- * Note: The 'workfolder' of the returned workflow data object will be the same as the base's. 
- * 
+ * Note: The 'workfolder' of the returned workflow data object will be the same as the base's.
+ *
  * @param base The base workflow containing valid Update Action and Manifest.
  * @param instruction A JSON_Value object contain install-item data.
  * @param handle An output workflow handle.
- * @return ADUC_Result 
+ * @return ADUC_Result
  */
 ADUC_Result
 workflow_create_from_instruction_value(ADUC_WorkflowHandle base, JSON_Value* instruction, ADUC_WorkflowHandle* handle)

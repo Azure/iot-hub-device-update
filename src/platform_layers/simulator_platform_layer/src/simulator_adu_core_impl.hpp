@@ -113,7 +113,7 @@ private:
                     }) };
 
                 // Report result to main thread.
-                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result);
+                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
             // Allow the thread to work independently of this main thread.
@@ -164,7 +164,7 @@ private:
                     }) };
 
                 // Report result to main thread.
-                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result);
+                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
             // Allow the thread to work independently of this main thread.
@@ -214,7 +214,7 @@ private:
                         return static_cast<SimulatorPlatformLayer*>(token)->Apply(workflowData);
                     }) };
                 // Report result to main thread.
-                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result);
+                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
             // Allow the thread to work independently of this main thread.

@@ -206,13 +206,12 @@ EXTERN_C_BEGIN
  */
 typedef enum tagADUCITF_UpdateAction
 {
-    // TODO(JeffW): Remove the following 3 update actions since the service will no longer issue them and
-    // PPR agents and beyond do not support cloud-driven orchestration.
-    ADUCITF_UpdateAction_Download = 0, ///< Request to download an update. For legacy cloud-driven orchestration.
-    ADUCITF_UpdateAction_Install = 1, ///< Request to install an update. For legacy cloud-driven orchestration.
-    ADUCITF_UpdateAction_Apply = 2, ///< Request to do a post-install apply step for reboots, etc.
+    // PPR+ agents no longer support the following 3 update actions:
+    ADUCITF_UpdateAction_Invalid_Download = 0, ///< Request to download an update. For legacy cloud-driven orchestration. Not supported.
+    ADUCITF_UpdateAction_Invalid_Install = 1, ///< Request to install an update. For legacy cloud-driven orchestration. Not supported.
+    ADUCITF_UpdateAction_Invalid_Apply = 2, ///< Request to do a post-install apply step for reboots, etc. For legacy cloud-driven orchestration. Not supported.
 
-    // Client-driven update workflow orchestration.
+    // Agent-orchestrated update workflow Update Actions
     ADUCITF_UpdateAction_ProcessDeployment = 3, ///< Request to process an update workflow deployment via client-driven orchestration.
     ADUCITF_UpdateAction_Cancel = 255, ///< Request to cancel an ongoing update workflow deployment.
 

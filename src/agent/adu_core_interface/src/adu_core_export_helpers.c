@@ -13,6 +13,7 @@
 #include "aduc/parser_utils.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/workflow_utils.h"
+#include "workflow_persistence.h"
 
 #include <parson.h>
 #include <stdbool.h>
@@ -20,8 +21,6 @@
 
 #include <sys/wait.h> // for waitpid
 #include <unistd.h>
-
-void ADUC_MethodCall_Idle(ADUC_WorkflowData* workflowData);
 
 /**
  * @brief Move state machine to a new stage.
@@ -343,9 +342,7 @@ ADUC_Result ADUC_MethodCall_Download(ADUC_MethodCall_Data* methodCallData)
 
     Log_Info("Workflow step: Download");
 
-    if (lastReportedState != ADUCITF_State_Idle &&
-        lastReportedState != ADUCITF_State_None &&
-        lastReportedState != ADUCITF_State_DeploymentInProgress)
+    if (lastReportedState != ADUCITF_State_DeploymentInProgress)
     {
         Log_Error(
             "Download workflow step called in unexpected state: %s!",
@@ -394,14 +391,14 @@ void ADUC_MethodCall_Download_Complete(ADUC_MethodCall_Data* methodCallData, ADU
 /**
  * @brief Called to do install.
  *
- * @param workflowData Workflow metadata.
+ * @param[in] methodCallData - the method call data.
  * @return Result code.
  */
 ADUC_Result ADUC_MethodCall_Install(ADUC_MethodCall_Data* methodCallData)
 {
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
-    ADUC_Result result;
+    ADUC_Result result = {};
 
     Log_Info("Workflow step: Install");
 
@@ -434,6 +431,11 @@ void ADUC_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallData, ADUC
         Log_Info("Install indicated success with RebootRequired - rebooting system now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
 
+        if (!WorkflowPersistence_Serialize(methodCallData->WorkflowData))
+        {
+            Log_Warn("serialize workflow state failed for RebootSystem.");
+        }
+
         int success = ADUC_MethodCall_RebootSystem();
         if (success == 0)
         {
@@ -452,6 +454,12 @@ void ADUC_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallData, ADUC
         // If 'install' indicated a restart is required, go ahead and restart the agent.
         Log_Info("Install indicated success with AgentRestartRequired - restarting the agent now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+
+        if (!WorkflowPersistence_Serialize(methodCallData->WorkflowData))
+        {
+            Log_Warn("serialize workflow state failed for RestartAgent.");
+        }
+
         int success = ADUC_MethodCall_RestartAgent();
         if (success == 0)
         {
@@ -468,14 +476,14 @@ void ADUC_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallData, ADUC
 /**
  * @brief Called to do apply.
  *
- * @param workflowData Workflow metadata.
+ * @param[in] methodCallData - the method call data.
  * @return Result code.
  */
 ADUC_Result ADUC_MethodCall_Apply(ADUC_MethodCall_Data* methodCallData)
 {
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
-    ADUC_Result result;
+    ADUC_Result result = {};
 
     Log_Info("Workflow step: Apply");
 
@@ -545,15 +553,17 @@ void ADUC_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_R
  *
  * This method should only be called while another MethodCall is currently active.
  *
- * @param[in] workflowData Workflow metadata.
+ * @param[in] methodCallData - the method call data.
  */
 void ADUC_MethodCall_Cancel(const ADUC_WorkflowData* workflowData)
 {
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
 
-    Log_Info("Workflow step: Cancel - calling CancelCallback");
-
-    if (!workflow_get_operation_in_progress(workflowData->WorkflowHandle))
+    if (workflow_get_operation_in_progress(workflowData->WorkflowHandle))
+    {
+        Log_Info("Requesting cancel for ongoing operation.");
+    }
+    else
     {
         Log_Warn("Cancel requested without operation in progress - ignoring.");
         return;

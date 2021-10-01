@@ -14,6 +14,7 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h> // PRIu64
 #include <stdlib.h>
+
 #include <time.h>
 
 #include "aduc/adu_core_export_helpers.h"
@@ -25,9 +26,56 @@
 #include "aduc/result.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
+#include "aduc/types/workflow.h"
 #include "aduc/workflow_utils.h"
+#include "workflow_persistence.h"
 
-#include "aduc/agent_workflow_utils.h"
+#include <pthread.h>
+
+// This lock is used for critical sections where main and worker thread could read/write to ADUC_workflowData
+// It is used only at the top-level coarse granularity operations:
+//     * (main thread) ADUC_Workflow_HandlePropertyUpdate
+//     * (main thread and worker thread) ADUC_Workflow_WorkCompletionCallback
+//         - when asynchronously called (worker thread) it takes the lock
+static pthread_mutex_t s_workflow_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static inline void s_workflow_lock(void)
+{
+    pthread_mutex_lock(&s_workflow_mutex);
+}
+
+static inline void s_workflow_unlock(void)
+{
+    pthread_mutex_unlock(&s_workflow_mutex);
+}
+
+// fwd decl
+void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, _Bool isAsync);
+
+/**
+ * @brief Convert WorkflowStep to string representation.
+ *
+ * @param workflowStep WorkflowStep to convert.
+ * @return const char* String representation.
+ */
+static const char* ADUCITF_WorkflowStepToString(ADUCITF_WorkflowStep workflowStep)
+{
+    switch (workflowStep)
+    {
+    case ADUCITF_WorkflowStep_ProcessDeployment:
+        return "ProcessDeployment";
+    case ADUCITF_WorkflowStep_Download:
+        return "Download";
+    case ADUCITF_WorkflowStep_Install:
+        return "Install";
+    case ADUCITF_WorkflowStep_Apply:
+        return "Apply";
+    case ADUCITF_WorkflowStep_Undefined:
+        return "Undefined";
+    }
+
+    return "<Unknown>";
+}
 
 /**
  * @brief Generate a unique identifier.
@@ -75,7 +123,7 @@ typedef struct tagADUC_WorkflowHandlerMapEntry
     const ADUCITF_State NextState; /**< State to transition to on successful operation */
 
     /**< The next workflow step input to transition workflow after transitioning to above NextState when current
-     *     workflow step is above WorkflowStep.
+     *     workflow step is above WorkflowStep. Using ADUCITF_WorkflowStep_Undefined means it ends the workflow.
      */
     const ADUCITF_WorkflowStep AutoTransitionWorkflowStep;
 
@@ -194,6 +242,10 @@ _Bool ADUC_WorkflowData_Init(ADUC_WorkflowData* workflowData, int argc, char** a
 
     workflowData->DownloadProgressCallback = DownloadProgressCallback;
 
+    workflow_set_cancellation_type(workflowData->WorkflowHandle, ADUC_WorkflowCancellationType_None);
+
+    // TODO(JeffW): Rehydrate reboot/restart and current workflow Step state across restart/reboot and put it into workflowData
+
     succeeded = true;
 
 done:
@@ -234,34 +286,13 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
     memset(workflowData, 0, sizeof(*workflowData));
 }
 
-static void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result);
-
-void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* workflowData)
+static void HandleWorkflowPersistence(SetUpdateStateWithResultFunc setUpdateStateWithResultFunc)
 {
-    // The default result for Idle state.
-    // This will reset twin status code to 200 to indicate that we're successful (so far).
-    const ADUC_Result result = { .ResultCode = ADUC_Result_Idle_Success };
-
-    if (workflowData == NULL)
+    WorkflowPersistenceState* persistenceState = WorkflowPersistence_Deserialize();
+    if (persistenceState == NULL)
     {
-        Log_Info("No update content. Reporting Idle state.");
-        ADUC_SetUpdateStateWithResult(workflowData, ADUCITF_State_Idle, result);
-        goto done;
-    }
-
-    if (workflowData->StartupIdleCallSent)
-    {
-        goto done;
-    }
-
-    Log_Info("Perform startup tasks.");
-
-    int desiredAction = workflow_get_action(workflowData->WorkflowHandle);
-    if (desiredAction == ADUCITF_UpdateAction_Cancel)
-    {
-        Log_Info("Received 'cancel' action on startup, reporting Idle state.");
-        ADUC_SetUpdateStateWithResult(workflowData, ADUCITF_State_Idle, result);
-        goto done;
+        Log_Info("No workflow persistence state. Continuing...");
+        return;
     }
 
     //
@@ -272,71 +303,138 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* workflowData)
     // In this case, we will update the 'InstalledUpdateId' to match 'UpdateId'
     // and transition to Idle state.
     //
-    // Note: This apply to 'install' and 'apply' actions only.
-    //
-    if (desiredAction == ADUCITF_UpdateAction_Install || desiredAction == ADUCITF_UpdateAction_Apply)
+    // Note: This applies to 'install' and 'apply' workflow step only, and persistence
+    // state is saved only when restart/reboot occurred during install or apply.
+    ADUC_Result installedResult = persistenceState->Result;
+    if (installedResult.ResultCode == ADUC_Result_IsInstalled_Installed)
     {
-        ADUC_Result isInstalledResult = ADUC_MethodCall_IsInstalled(workflowData);
-        if (isInstalledResult.ResultCode == ADUC_Result_IsInstalled_Installed)
-        {
-            char* updateId = workflow_get_expected_update_id_string(workflowData->WorkflowHandle);
-            Log_Info(
-                "IsInstalled call was true - setting installedUpdateId to %s and setting state to Idle", updateId);
-            ADUC_SetInstalledUpdateIdAndGoToIdle(workflowData, updateId);
-            workflow_free_string(updateId);
-            goto done;
-        }
+        char* updateId = persistenceState->ExpectedUpdateId;
+        Log_Info(
+            "IsInstalled call was true - setting installedUpdateId to %s and setting state to Idle", updateId);
 
-        if (IsAducResultCodeFailure(isInstalledResult.ResultCode))
-        {
-            Log_Warn(
-                "IsInstalled call failed. ExtendedResultCode: %d (0x%x) - setting state to Idle",
-                isInstalledResult.ExtendedResultCode,
-                isInstalledResult.ExtendedResultCode);
+        // Instead of attempting to rehydrate the entire workflow, we use the following one as a shell to
+        // transport the minimal persistence data to existing reporting internal API that will use it instead of
+        // generating it from other workflow data.
+        ADUC_WorkflowData persistenceReportingWorkflowData = {};
+        persistenceReportingWorkflowData.persistenceState = persistenceState;
 
-            ADUC_SetUpdateStateWithResult(workflowData, ADUCITF_State_Idle, result);
-            goto done;
-        }
+        ADUC_SetInstalledUpdateIdAndGoToIdle(&persistenceReportingWorkflowData, updateId);
+        workflow_free_string(updateId);
     }
 
-    // Allows retrying or resuming both 'download' and 'install' phases.
-    if (desiredAction == ADUCITF_UpdateAction_ProcessDeployment ||
-        desiredAction == ADUCITF_UpdateAction_Download || desiredAction == ADUCITF_UpdateAction_Install)
+    if (IsAducResultCodeFailure(installedResult.ResultCode))
     {
-        Log_Info("There's a pending '%s' action request.", ADUCITF_UpdateActionToString(desiredAction));
+        Log_Warn(
+            "IsInstalled call failed. ExtendedResultCode: %d (0x%x) - setting state to Idle",
+            installedResult.ExtendedResultCode,
+            installedResult.ExtendedResultCode);
 
-        // There's a pending download or install action in the twin.
-        // We need to make sure we don't report an 'idle' state, if we can resume or retry the action.
-        // In this case, we will set last reportedState to 'idle', so that we can continue 'download' or 'install'
-        // phase as appropriate.
-        workflowData->StartupIdleCallSent = true;
-        ADUCITF_State lastReportState =
-            (desiredAction == ADUCITF_UpdateAction_Install ? ADUCITF_State_DownloadSucceeded : ADUCITF_State_Idle);
+        ADUC_Result persistenceResult =
+        {
+            .ResultCode = (persistenceState->Result).ResultCode,
+            .ExtendedResultCode = (persistenceState->Result).ExtendedResultCode,
+        };
 
-        workflow_set_last_reported_state(lastReportState);
-        ADUC_Workflow_HandleUpdateAction(workflowData);
+        ADUC_WorkflowData workflowDataForStateUpdate = {};
+        workflowDataForStateUpdate.persistenceState = persistenceState;
+
+        (*setUpdateStateWithResultFunc)(&workflowDataForStateUpdate, ADUCITF_State_Idle, persistenceResult);
+    }
+
+    WorkflowPersistence_Free(persistenceState);
+}
+
+void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowData)
+{
+    // Setup any applicable test overrides
+    HandleUpdateActionFunc handleUpdateActionFunc = ADUC_Workflow_HandleUpdateAction;
+    if (currentWorkflowData->TestOverrides && currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride)
+    {
+        handleUpdateActionFunc = currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride;
+    }
+
+    SetUpdateStateWithResultFunc setUpdateStateWithResultFunc = ADUC_SetUpdateStateWithResult;
+    if (currentWorkflowData->TestOverrides && currentWorkflowData->TestOverrides->SetUpdateStateWithResultFunc_TestOverride)
+    {
+        setUpdateStateWithResultFunc = currentWorkflowData->TestOverrides->SetUpdateStateWithResultFunc_TestOverride;
+    }
+
+    //
+    // Now, we handle the current incoming ProcessDeployment or Cancel update action.
+    //
+
+    if (currentWorkflowData == NULL)
+    {
+        Log_Info("No update content. Ignoring.");
         goto done;
     }
 
-    ADUC_SetUpdateStateWithResult(
-        workflowData, ADUCITF_State_Idle, result);
+    if (currentWorkflowData->StartupIdleCallSent)
+    {
+        goto done;
+    }
+
+    Log_Info("Perform startup tasks.");
+
+    //
+    // Before handling the current workflow, handle reporting of any workflow completion that was pending reboot/restart of the agent.
+    //
+    HandleWorkflowPersistence(setUpdateStateWithResultFunc);
+
+    ADUC_Result isInstalledResult = ADUC_MethodCall_IsInstalled(currentWorkflowData);
+    if (isInstalledResult.ResultCode == ADUC_Result_IsInstalled_Installed)
+    {
+        // If it's already installed, then service either is misbehaving or failed to receive reporting.
+        // Try sending reporting now.
+        char* updateId = workflow_get_expected_update_id_string(currentWorkflowData->WorkflowHandle);
+        ADUC_SetInstalledUpdateIdAndGoToIdle(currentWorkflowData, updateId);
+        free(updateId);
+        goto done;
+    }
+
+    // The default result for Idle state.
+    // This will reset twin status code to 200 to indicate that we're successful (so far).
+    const ADUC_Result result = { .ResultCode = ADUC_Result_Idle_Success };
+
+    int desiredAction = workflow_get_action(currentWorkflowData->WorkflowHandle);
+
+    if (desiredAction == ADUCITF_UpdateAction_Cancel)
+    {
+        Log_Info("Received 'cancel' action on startup, reporting Idle state.");
+
+        currentWorkflowData->CurrentAction = desiredAction;
+        (*setUpdateStateWithResultFunc)(currentWorkflowData, ADUCITF_State_Idle, result);
+
+        goto done;
+    }
+
+    Log_Info("There's a pending '%s' action", ADUCITF_UpdateActionToString(desiredAction));
+
+    // There's a pending ProcessDeployment action in the twin.
+    // We need to make sure we don't report an 'idle' state, if we can resume or retry the action.
+    // In this case, we will set last reportedState to 'idle', so that we can continue.
+    workflow_set_last_reported_state(ADUCITF_State_Idle);
+    currentWorkflowData->StartupIdleCallSent = true;
+
+    (*handleUpdateActionFunc)(currentWorkflowData);
 
 done:
 
     // Once we set Idle state to the orchestrator we can start receiving update actions.
-    workflowData->StartupIdleCallSent = true;
+    currentWorkflowData->StartupIdleCallSent = true;
 }
 
 /**
  * @brief Handles updates to a 1 or more PnP Properties in the ADU Core interface.
  *
- * @param[in,out] workflowData The current ADUC_WorkflowData object.
+ * @param[in,out] currentWorkflowData The current ADUC_WorkflowData object.
  * @param[in] propertyUpdateValue The updated property value.
  */
-void ADUC_Workflow_HandlePropertyUpdate(ADUC_WorkflowData* workflowData, const unsigned char* propertyUpdateValue)
+void ADUC_Workflow_HandlePropertyUpdate(ADUC_WorkflowData* currentWorkflowData, const unsigned char* propertyUpdateValue)
 {
     ADUC_WorkflowHandle nextWorkflow;
     ADUC_Result result = workflow_init((const char*)propertyUpdateValue, true, &nextWorkflow);
+
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         Log_Error("Invalid desired update action data. Update data: (%s)", propertyUpdateValue);
@@ -344,49 +442,126 @@ void ADUC_Workflow_HandlePropertyUpdate(ADUC_WorkflowData* workflowData, const u
         //
         // TODO(NIC): 31481186 Refactor reporting so failures are reported in line instead of waiting for the state change to happen
         //
-        ADUC_SetUpdateStateWithResult(workflowData, ADUCITF_State_Failed, result);
+        ADUC_SetUpdateStateWithResult(currentWorkflowData, ADUCITF_State_Failed, result);
         return;
     }
 
-    //
-    if (workflowData->WorkflowHandle != NULL)
+    ADUCITF_UpdateAction nextUpdateAction = workflow_get_action(nextWorkflow);
+
+    if (nextUpdateAction == ADUCITF_UpdateAction_ProcessDeployment)
     {
-        if (workflow_id_compare(nextWorkflow, workflowData->WorkflowHandle) == 0)
+        ADUC_WorkflowData tempWorkflowData = *currentWorkflowData;
+        tempWorkflowData.WorkflowHandle = nextWorkflow;
+
+        ADUC_Result isInstalledResult = ADUC_MethodCall_IsInstalled(&tempWorkflowData);
+        if (isInstalledResult.ResultCode == ADUC_Result_IsInstalled_Installed)
         {
-            //
-            // TODO(jewelden): handle retry of same workflow, or else it's a dup.
-            //
+            Log_Debug("IsInstalled call was true for desired workflow id - skipping");
+            goto done;
+        }
+    }
 
-            // This desired action is part of an existing workflow, let's process it.
-            ADUCITF_UpdateAction nextAction = workflow_get_action(nextWorkflow);
+    //
+    // Take lock until goto done.
+    //
+    // N.B.
+    // Lock must *NOT* be taken in HandleStartupWorkflowData and HandleUpdateAction or any functions they call
+    //
+    s_workflow_lock();
 
+    HandleUpdateActionFunc handleUpdateActionFunc = ADUC_Workflow_HandleUpdateAction;
+    if (currentWorkflowData->TestOverrides && currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride)
+    {
+        handleUpdateActionFunc = currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride;
+    }
 
-            if (workflow_get_operation_in_progress(workflowData->WorkflowHandle)
-                && nextAction != ADUCITF_UpdateAction_Cancel
-                && nextAction != ADUCITF_UpdateAction_ProcessDeployment)
+    if (currentWorkflowData->WorkflowHandle != NULL)
+    {
+        if (nextUpdateAction == ADUCITF_UpdateAction_Cancel)
+        {
+            ADUC_WorkflowCancellationType currentCancellationType = workflow_get_cancellation_type(currentWorkflowData->WorkflowHandle);
+            if (currentCancellationType == ADUC_WorkflowCancellationType_None)
             {
-                Log_Warn("Received unexpected action '%s'.", ADUCITF_UpdateActionToString(nextAction));
+                workflow_set_cancellation_type(currentWorkflowData->WorkflowHandle, ADUC_WorkflowCancellationType_Normal);
+
+                // call into handle update action for cancellation logic to invoke ADUC_MethodCall_Cancel
+                (*handleUpdateActionFunc)(currentWorkflowData);
+
+                goto done;
             }
             else
             {
-                workflow_update_action_data(workflowData->WorkflowHandle, nextWorkflow);
-                workflow_free(nextWorkflow);
-                nextWorkflow = NULL;
-
-                ADUC_Workflow_HandleUpdateAction(workflowData);
+                Log_Info("Ignoring duplicate '%s' action. Current cancellation type is already '%s'.",
+                    ADUCITF_UpdateActionToString(nextUpdateAction),
+                    ADUC_WorkflowCancellationTypeToString(currentCancellationType));
+                goto done;
             }
-
-            goto done;
         }
-
-        // Not the same workflow.
-
-        // If existing workflow in progress? (Unlikely.)
-        if (workflow_get_operation_in_progress(workflowData->WorkflowHandle))
+        else if (nextUpdateAction == ADUCITF_UpdateAction_ProcessDeployment)
         {
-            Log_Warn("Received a new desired action while another workflow is in progress.");
-            workflow_set_operation_cancel_requested(workflowData->WorkflowHandle, true);
-            goto done;
+            if (workflow_id_compare(currentWorkflowData->WorkflowHandle, nextWorkflow) == 0)
+            {
+                // Possible retry of the current workflow.
+                const char* currentRetryToken = workflow_peek_retryTimestamp(currentWorkflowData->WorkflowHandle);
+                const char* newRetryToken = workflow_peek_retryTimestamp(nextWorkflow);
+
+                if (!AgentOrchestration_IsRetryApplicable(currentRetryToken, newRetryToken))
+                {
+                    Log_Warn("Ignoring Retry. currentRetryToken '%s', nextRetryToken '%s'.",
+                        newRetryToken ? newRetryToken : "(NULL)",
+                        currentRetryToken ? currentRetryToken : "(NULL)");
+                    goto done;
+                }
+
+                // This atomically sets both cancellation type to Retry and updates the current retry token on the workflow handle
+                workflow_update_retry_deployment(currentWorkflowData->WorkflowHandle, currentRetryToken);
+
+                // call into handle update action for cancellation logic to invoke ADUC_MethodCall_Cancel
+                (*handleUpdateActionFunc)(currentWorkflowData);
+                goto done;
+            }
+            else
+            {
+                // Possible replacement with a new workflow.
+                ADUCITF_State currentState = workflow_get_last_reported_state(currentWorkflowData->WorkflowHandle);
+                ADUCITF_WorkflowStep currentWorkflowStep = workflow_get_current_workflowstep(currentWorkflowData->WorkflowHandle);
+
+                if (currentState != ADUCITF_State_Idle &&
+                    currentState != ADUCITF_State_Failed &&
+                    currentWorkflowStep != ADUCITF_WorkflowStep_Undefined)
+                {
+                    Log_Info("Replacement. workflow '%s' is being replaced with workflow '%s'.",
+                        workflow_peek_id(currentWorkflowData->WorkflowHandle),
+                        workflow_peek_id(nextWorkflow));
+
+                    // If operation is in progress, then in the same critical section we set cancellation type to replacement
+                    // and set the pending workflow on the handle for use by WorkCompletionCallback to continue on with the
+                    // replacement deployment instead of going to idle and reporting the results as a cancel failure.
+                    // Otherwise, if the operation is not in progress, in the same critical section it transfers the
+                    // workflow handle of the new deployment into the current workflow data, so that we can handle the update action.
+                    _Bool deferredReplacement = workflow_update_replacement_deployment(currentWorkflowData->WorkflowHandle, nextWorkflow);
+                    if (deferredReplacement)
+                    {
+                        Log_Info("Deferred Replacement workflow id [%s] since current workflow id [%s] was still in progress.",
+                            workflow_peek_id(nextWorkflow),
+                            workflow_peek_id(currentWorkflowData->WorkflowHandle));
+
+                        // Ownership was transferred to current workflow so ensure it doesn't get freed.
+                        nextWorkflow = NULL;
+
+                        // call into handle update action for cancellation logic to invoke ADUC_MethodCall_Cancel
+                        (*handleUpdateActionFunc)(currentWorkflowData);
+                        goto done;
+                    }
+
+                    workflow_transfer_data(currentWorkflowData->WorkflowHandle /* wfTarget */, nextWorkflow /* wfSource */);
+
+                    (*handleUpdateActionFunc)(currentWorkflowData);
+                    goto done;
+                }
+
+                // Fall through to handle new workflow
+            }
         }
     }
     else
@@ -399,9 +574,15 @@ void ADUC_Workflow_HandlePropertyUpdate(ADUC_WorkflowData* workflowData, const u
     }
 
     // Continue with the new workflow.
-    workflow_free(workflowData->WorkflowHandle);
-    workflowData->WorkflowHandle = nextWorkflow;
+    workflow_free(currentWorkflowData->WorkflowHandle);
+    currentWorkflowData->WorkflowHandle = nextWorkflow;
     nextWorkflow = NULL;
+
+    workflow_set_cancellation_type(
+        currentWorkflowData->WorkflowHandle,
+        nextUpdateAction == ADUCITF_UpdateAction_Cancel
+            ? ADUC_WorkflowCancellationType_Normal
+            : ADUC_WorkflowCancellationType_None);
 
     // If the agent has just started up but we have yet to report the installedUpdateId along with a state of 'Idle'
     // we want to ignore any further action received so we don't confuse the workflow which would interpret a state of 'Idle'
@@ -409,113 +590,95 @@ void ADUC_Workflow_HandlePropertyUpdate(ADUC_WorkflowData* workflowData, const u
     // In this case we will go through our startup logic which would report the installedUpdateId with a state of 'Idle',
     // if we can determine that the update has been installed successfully (by calling IsInstalled()).
     // Otherwise we will honor and process the action requested.
-    if (!workflowData->StartupIdleCallSent)
+    if (!currentWorkflowData->StartupIdleCallSent)
     {
-        ADUC_Workflow_HandleStartupWorkflowData(workflowData);
+        ADUC_Workflow_HandleStartupWorkflowData(currentWorkflowData);
     }
     else
     {
-        ADUC_Workflow_HandleUpdateAction(workflowData);
+        (*handleUpdateActionFunc)(currentWorkflowData);
     }
 
 done:
+
+    s_workflow_unlock();
+
     workflow_free(nextWorkflow);
     Log_Debug("PropertyUpdated event handler completed.");
 }
 
 /**
  * @brief Handle an incoming update action.
+ * @remark Caller *must* be in a lock before calling
  *
  * @param workflowData Workflow metadata.
  */
 void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
 {
-    //
-    // Find the WorkflowHandlerMapEntry for the desired update action.
-    //
     unsigned int desiredAction = workflow_get_action(workflowData->WorkflowHandle);
 
     // Special case: Cancel is handled here.
     //
-    // If Cancel action is received while another action (e.g. download) is in progress the agent should cancel
-    // the in progress action and the agent should set Idle state.
+    // If Cancel action is received while another ProcessDeployment update action is in progress then the agent
+    // should cancel the in progress action and the agent should set Idle state.
     //
     // If an operation completes with a failed state, the error should be reported to the service, and the agent
-    // should set Failed state.  The CBO once it receives the Failed state will send the agent a Cancel action to
-    // indicate that it should return to Idle.  It's assumed that there is no action in progress on the agent at this
-    // point and as such, the agent should set Idle state and return a success result code to the service.
+    // should set Failed state.  The CBO once it receives the Failed state will NOT send the agent a Cancel action.
+    // Agent orchestration will auto-transition to Idle from Failed state.
     //
     //  Cancel should only be sent from the CBO when:
     // * An operation is in progress, to cancel the operation.
     // * After an operation fails to return the agent back to Idle state.
     // * A rollout end time has passed & the device has been offline and did not receive the previous command.
     //
-    if (desiredAction == ADUCITF_UpdateAction_Cancel)
+
+    ADUC_WorkflowCancellationType cancellationType = workflow_get_cancellation_type(workflowData->WorkflowHandle);
+    Log_Debug("cancellationType(%d) => %s", cancellationType, ADUC_WorkflowCancellationTypeToString(cancellationType));
+
+    _Bool isReplaceOrRetry = (cancellationType == ADUC_WorkflowCancellationType_Replacement) ||
+                             (cancellationType == ADUC_WorkflowCancellationType_Retry);
+
+    if (desiredAction == ADUCITF_UpdateAction_Cancel ||
+        cancellationType == ADUC_WorkflowCancellationType_Normal ||
+        ((desiredAction == ADUCITF_UpdateAction_ProcessDeployment) && isReplaceOrRetry))
     {
         if (workflow_get_operation_in_progress(workflowData->WorkflowHandle))
         {
-            Log_Info("Cancel requested - notifying operation in progress.");
+            Log_Info("Canceling request for in-progress operation. desiredAction: %s, cancelationType: %s",
+                ADUCITF_UpdateActionToString(desiredAction),
+                ADUC_WorkflowCancellationTypeToString(cancellationType));
 
-            // Set OperationCancelled so that when the operation in progress completes, it's clear
-            // that it was due to a cancellation.
-            // We will ignore the result of what the operation in progress returns when it completes
-            // in cancelled state.
+            // This sets a marker that cancelation has been requested.
             workflow_set_operation_cancel_requested(workflowData->WorkflowHandle, true);
 
-            // Call upper-layer to notify of cancel request.
+            // Call upper-layer to notify of cancel
             ADUC_MethodCall_Cancel(workflowData);
         }
-        else if (workflowData->SystemRebootState == ADUC_SystemRebootState_InProgress)
-        {
-            // It may not be possible, and unsafe, to try to cancel the reboot.
-            // At the moment, we will ignore the cancel request.
-            Log_Info("Cancel requested while system restarting - ignored");
-        }
-        else if (workflowData->AgentRestartState == ADUC_AgentRestartState_InProgress)
-        {
-            // It may not be possible, and unsafe, to try to cancel.
-            // At the moment, we will ignore the cancel request.
-            Log_Info("Cancel requested while agent is restarting - ignored");
-        }
-        else
+        else if (desiredAction == ADUCITF_UpdateAction_Cancel ||
+            cancellationType == ADUC_WorkflowCancellationType_Normal)
         {
             // Cancel without an operation in progress means return to Idle state.
             Log_Info("Cancel received with no operation in progress - returning to Idle state");
-
-            const ADUC_Result result = { .ResultCode = ADUC_Result_Idle_Success };
-            ADUC_SetUpdateStateWithResult(workflowData, ADUCITF_State_Idle, result);
+            goto done;
         }
 
         goto done;
     }
 
     //
-    // Workaround:
-    // Connections to the service may disconnect after a period of time (e.g. 40 minutes)
-    // due to the need to refresh a token. When the reconnection occurs, all properties are re-sent
-    // to the client, and as such the client might see a duplicate request, for example, another download request
-    // after already processing a downloadrequest.
-    // We ignore these requests because they have been handled, are currently being handled, or would be a no-op.
+    // Save the original action to the workflow data
     //
-
-    ADUCITF_State lastReportedState = workflow_get_last_reported_state();
-    _Bool isDuplicateRequest = IsDuplicateRequest(desiredAction, lastReportedState);
-    if (isDuplicateRequest)
-    {
-        Log_Info(
-            "'%s' action received. Last reported state: '%s'. Ignoring this action.",
-            ADUCITF_UpdateActionToString(desiredAction),
-            ADUCITF_StateToString(lastReportedState));
-        goto done;
-    }
-
-    // save the original action to the workflow data
     workflowData->CurrentAction = desiredAction;
 
-    // Map update action to corresponding internal workflow step, and transition using it.
-    workflowData->CurrentWorkflowStep = AgentOrchestration_GetWorkflowStep(desiredAction);
+    //
+    // Determine the current workflow step
+    //
+    ADUCITF_WorkflowStep nextStep = AgentOrchestration_GetWorkflowStep(workflowData, desiredAction);
+    workflow_set_current_workflowstep(workflowData->WorkflowHandle, nextStep);
 
+    //
     // Transition to the next phase for this workflow
+    //
     ADUC_Workflow_TransitionWorkflow(workflowData);
 
 done:
@@ -524,36 +687,18 @@ done:
 }
 
 /**
- * @brief Convert WorkflowStep to string representation.
+ * @brief Looks up the current workflow step in the state transition table and invokes a step transition if the workflow is not complete.
+ * @remark This is called by worker thread at the end of work completion processing.
+ *         It must be in a lock before calling this.
  *
- * @param workflowStep WorkflowStep to convert.
- * @return const char* String representation.
+ * @param workflowData The global context workflow data structure.
  */
-static const char* ADUCITF_WorkflowStepToString(ADUCITF_WorkflowStep workflowStep)
-{
-    switch (workflowStep)
-    {
-    case ADUCITF_WorkflowStep_ProcessDeployment:
-        return "ProcessDeployment";
-    case ADUCITF_WorkflowStep_Download:
-        return "Download";
-    case ADUCITF_WorkflowStep_Install:
-        return "Install";
-    case ADUCITF_WorkflowStep_Apply:
-        return "Apply";
-    case ADUCITF_WorkflowStep_Undefined:
-        return "Undefined";
-    }
-
-    return "<Unknown>";
-}
-
-static void autoTransitionWorkflow(ADUC_WorkflowData* workflowData)
+void autoTransitionWorkflow(ADUC_WorkflowData* workflowData)
 {
     if (workflow_get_last_reported_state() == ADUCITF_State_Failed)
     {
-        Log_Info("In Failed state so skipping auto-transition to next workflow step.");
-        goto done;
+        Log_Debug("Skipping transition for Failed state.");
+        return;
     }
 
     //
@@ -562,28 +707,42 @@ static void autoTransitionWorkflow(ADUC_WorkflowData* workflowData)
     // which will kick off the install operation.
     // Once that's kicked off, this thread will exit if the operation is async.
     //
-    const ADUC_WorkflowHandlerMapEntry* postCompleteEntry = GetWorkflowHandlerMapEntryForAction(workflowData->CurrentWorkflowStep);
+    ADUCITF_WorkflowStep currentWorkflowStep = workflow_get_current_workflowstep(workflowData->WorkflowHandle);
+
+    const ADUC_WorkflowHandlerMapEntry* postCompleteEntry = GetWorkflowHandlerMapEntryForAction(currentWorkflowStep);
     if (postCompleteEntry == NULL)
     {
-        Log_Error("Invalid workflow step %u after work completion", workflowData->CurrentWorkflowStep);
-        goto done;
+        Log_Error("Invalid workflow step %u", currentWorkflowStep);
+        return;
     }
 
-    if (!AgentOrchestration_IsWorkflowComplete(postCompleteEntry->AutoTransitionApplicableUpdateAction, workflowData->CurrentAction, postCompleteEntry->AutoTransitionWorkflowStep))
+    if (AgentOrchestration_IsWorkflowComplete(
+        postCompleteEntry->AutoTransitionApplicableUpdateAction,
+        workflowData->CurrentAction,
+        postCompleteEntry->AutoTransitionWorkflowStep))
     {
-        workflowData->CurrentWorkflowStep = postCompleteEntry->AutoTransitionWorkflowStep;
+        Log_Info("Workflow is Complete.");
+    }
+    else
+    {
+        workflow_set_current_workflowstep(workflowData->WorkflowHandle, postCompleteEntry->AutoTransitionWorkflowStep);
+
+        Log_Info("workflow is not completed. AutoTransition to step: %s", ADUCITF_WorkflowStepToString(postCompleteEntry->AutoTransitionWorkflowStep));
+
         ADUC_Workflow_TransitionWorkflow(workflowData);
     }
-
-done:
-    return;
 }
 
+/**
+ * @brief Transitions the workflow to the next workflow step, e.g. Download to Install, Install to Apply, etc.
+ * @remark Must be in a lock
+ *
+ * @param workflowData The global context workflow data structure.
+ */
 void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result;
-
-    ADUCITF_WorkflowStep currentWorkflowStep = workflowData->CurrentWorkflowStep;
+    ADUC_Result result = {};
+    ADUCITF_WorkflowStep currentWorkflowStep = workflow_get_current_workflowstep(workflowData->WorkflowHandle);
 
     const ADUC_WorkflowHandlerMapEntry* entry = GetWorkflowHandlerMapEntryForAction(currentWorkflowStep);
     if (entry == NULL)
@@ -592,22 +751,7 @@ void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    // Fail if we have already have an operation in progress.
-    // This check happens after the check for duplicates, so we don't log a warning in our logs for an operation
-    // that is currently being processed.
-    if (workflow_get_operation_in_progress(workflowData->WorkflowHandle))
-    {
-        //
-        // TODO(jewelden): Task 34752680 Handle Replacement/Retry of In-Progress Goal State
-        //
-
-        Log_Error(
-            "Cannot process workflow step '%s' - async operation already in progress.",
-            ADUCITF_WorkflowStepToString(entry->WorkflowStep));
-        goto done;
-    }
-
-    Log_Info("Processing '%s' action", ADUCITF_WorkflowStepToString(entry->WorkflowStep));
+    Log_Debug("Processing '%s' step", ADUCITF_WorkflowStepToString(entry->WorkflowStep));
 
     // Alloc this object on heap so that it will be valid for the entire (possibly async) operation func.
     ADUC_MethodCall_Data* methodCallData = calloc(1, sizeof(ADUC_MethodCall_Data));
@@ -620,13 +764,20 @@ void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData)
 
     // workCompletionData is sent to the upper-layer which will pass the WorkCompletionToken back
     // when it makes the async work complete call.
-    methodCallData->WorkCompletionData.WorkCompletionCallback = ADUC_Workflow_WorkCompletionCallback;
+    WorkCompletionCallbackFunc workCompletionCallbackFunc = ADUC_Workflow_WorkCompletionCallback;
+    if (workflowData->TestOverrides && workflowData->TestOverrides->WorkCompletionCallbackFunc_TestOverride)
+    {
+        workCompletionCallbackFunc = workflowData->TestOverrides->WorkCompletionCallbackFunc_TestOverride;
+    }
+
+    methodCallData->WorkCompletionData.WorkCompletionCallback = workCompletionCallbackFunc;
     methodCallData->WorkCompletionData.WorkCompletionToken = methodCallData;
 
-    // Call into the upper-layer method to perform operation..
+    // Call into the upper-layer method to perform operation.
+    Log_Debug("Setting operation_in_progress => true");
     workflow_set_operation_in_progress(workflowData->WorkflowHandle, true);
 
-    // Perform an update action.
+    // Perform an update operation.
     result = entry->OperationFunc(methodCallData);
 
     // Action is complete (i.e. we wont get a WorkCompletionCallback call from upper-layer) if:
@@ -635,7 +786,8 @@ void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData)
     // NOLINTNEXTLINE(misc-redundant-expression)
     if (!AducResultCodeIndicatesInProgress(result.ResultCode) || IsAducResultCodeFailure(result.ResultCode))
     {
-        ADUC_Workflow_WorkCompletionCallback(methodCallData, result);
+        Log_Debug("The synchronous operation is complete.");
+        (*workCompletionCallbackFunc)(methodCallData, result, false /* isAsync */);
     }
 
 done:
@@ -647,8 +799,9 @@ done:
  *
  * @param workCompletionToken ADUC_MethodCall_Data pointer.
  * @param result Result of work.
+ * @param result isAsync true if caller is on worker thread, false if from main thread.
  */
-static void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result)
+void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, _Bool isAsync)
 {
     // We own these objects, so no issue making them non-const.
     ADUC_MethodCall_Data* methodCallData = (ADUC_MethodCall_Data*)workCompletionToken;
@@ -661,16 +814,25 @@ static void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken
         goto done;
     }
 
-    const ADUC_WorkflowHandlerMapEntry* entry = GetWorkflowHandlerMapEntryForAction(workflowData->CurrentWorkflowStep);
+    // Need to avoid deadlock b/c main thread typically takes lock higher in the callstack above
+    // TransistionWorkflow and processing DeploymentInProgress state is synchronous
+    if (isAsync)
+    {
+        s_workflow_lock();
+    }
+
+    ADUCITF_WorkflowStep currentWorkflowStep = workflow_get_current_workflowstep(workflowData->WorkflowHandle);
+
+    const ADUC_WorkflowHandlerMapEntry* entry = GetWorkflowHandlerMapEntryForAction(currentWorkflowStep);
     if (entry == NULL)
     {
-        Log_Error("Invalid UpdateAction %u -- ignoring", workflowData->CurrentWorkflowStep);
+        Log_Error("Invalid UpdateAction %u -- ignoring", currentWorkflowStep);
         goto done;
     }
 
     if (workflowData->CurrentAction == ADUCITF_UpdateAction_Cancel)
     {
-        Log_Error("Cancel received in completion callback - should not happen!");
+        Log_Error("workflow data current action should not be Cancel.");
         goto done;
     }
 
@@ -703,16 +865,55 @@ static void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken
 
         if (workflow_get_operation_cancel_requested(workflowData->WorkflowHandle))
         {
-            //
-            // TODO(jewelden): Determine if this is a cancel due to replace/retry
-            //   of workflow and transition to process workflow.
-            //
+            ADUC_WorkflowCancellationType cancellationType = workflow_get_cancellation_type(workflowData->WorkflowHandle);
+            const char* cancellationTypeStr = ADUC_WorkflowCancellationTypeToString(cancellationType);
+
+            Log_Warn("Handling cancel completion, cancellation type '%s'.", cancellationTypeStr);
+
+            if (cancellationType == ADUC_WorkflowCancellationType_Replacement || cancellationType == ADUC_WorkflowCancellationType_Retry)
+            {
+                Log_Info("Starting process of deployment for '%s'", cancellationTypeStr);
+
+                // Note: Must NOT call linux platform layer Idle method to reset cancellation request to false in the
+                // platform layer because that would destroy and NULL out the WorkflowHandle in the workflowData.
+
+                if (cancellationType == ADUC_WorkflowCancellationType_Replacement)
+                {
+                    // Reset workflow state to process deployment and transfer the deferred workflow to current.
+                    workflow_update_for_replacement(workflowData->WorkflowHandle);
+                }
+                else
+                {
+                    // it's a retry. Reset workflow state to reprocess deployment.
+                    workflow_update_for_retry(workflowData->WorkflowHandle);
+                }
+
+                // ProcessDeployment's OperationFunc called by TransitionWorkflow is synchronous so it kicks off the
+                // download worker thread after reporting DeploymentInProgress ACK for the replacement/retry, so we
+                // return instead of goto done to avoid the redundant autoTransitionWorkflow call.
+                free(methodCallData);
+                ADUC_Workflow_TransitionWorkflow(workflowData);
+
+                if (isAsync)
+                {
+                    s_workflow_unlock();
+                }
+                return;
+            }
+
+            if (cancellationType != ADUC_WorkflowCancellationType_Normal)
+            {
+                Log_Error("Invalid cancellation Type '%s' when cancel requested.", cancellationTypeStr);
+                goto done;
+            }
 
             // Operation cancelled.
             //
-            // We are now at the completion of the operation that was cancelled and will just return to Idle state,
+            // We are now at the completion of the operation that was cancelled via a Cancel update action
+            // and will just return to Idle state.
+            //
             // Ignore the result of the operation, which most likely is cancelled, e.g. ADUC_Result_Failure_Cancelled.
-            Log_Error("Operation cancelled - returning to Idle state");
+            Log_Warn("Operation cancelled - returning to Idle state");
 
             const ADUC_Result result = { .ResultCode = ADUC_Result_Failure_Cancelled };
             ADUC_SetUpdateStateWithResult(workflowData, ADUCITF_State_Idle, result);
@@ -733,21 +934,28 @@ static void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken
                 result.ExtendedResultCode,
                 result.ExtendedResultCode);
 
-            ADUC_SetUpdateStateWithResult(
-                workflowData,
-                ADUCITF_State_Failed,
-                result);
+            ADUC_SetUpdateStateWithResult(workflowData, ADUCITF_State_Failed, result);
         }
     }
 
 done:
-    // Operation is now complete.
-    workflow_set_operation_in_progress(workflowData->WorkflowHandle, false);
-    workflow_set_operation_cancel_requested(workflowData->WorkflowHandle, false);
+    // Operation is now complete. Atomically clear both inprogress and cancel requested.
+    // If the main thread reads these and sees they are false when doing a deployment replacement, then
+    // it must not defer a deployment replacement but process it as a new deployment immediately.
+    workflow_clear_inprogress_and_cancelrequested(workflowData->WorkflowHandle);
 
+    // lifetime of methodCallData now ends as the operation work has completed.
     free(methodCallData);
 
+    //
+    // We are now ready to transition to the next step of the workflow.
+    //
     autoTransitionWorkflow(workflowData);
+
+    if (isAsync)
+    {
+        s_workflow_unlock();
+    }
 }
 
 //
@@ -787,52 +995,4 @@ static void DownloadProgressCallback(
         DownloadProgressStateToString(state),
         bytesTransferred,
         bytesTotal);
-}
-
-_Bool IsDuplicateRequest(ADUCITF_UpdateAction action, ADUCITF_State lastReportedState)
-{
-    _Bool isDuplicateRequest = false;
-    switch (action)
-    {
-    case ADUCITF_UpdateAction_Download:
-        isDuplicateRequest =
-            (lastReportedState == ADUCITF_State_DownloadStarted
-             || lastReportedState == ADUCITF_State_DownloadSucceeded);
-
-        break;
-    case ADUCITF_UpdateAction_Install:
-        isDuplicateRequest =
-            (lastReportedState == ADUCITF_State_InstallStarted || lastReportedState == ADUCITF_State_InstallSucceeded);
-
-        break;
-    case ADUCITF_UpdateAction_Apply:
-        isDuplicateRequest =
-            (lastReportedState == ADUCITF_State_ApplyStarted || lastReportedState == ADUCITF_State_Idle);
-        break;
-
-    //
-    // TODO(jewelden): Remove the above cases before shipping PPR once cloud-driven orchestration is disabled.
-    //
-
-    case ADUCITF_UpdateAction_ProcessDeployment:
-        //
-        // TODO(jewelden): Handle duplicate request for process deployment update action
-        //   Task 34752876 Update token timeout dup logic
-        //
-        break;
-    case ADUCITF_UpdateAction_Cancel:
-        // Cancel is considered a duplicate action when in the Idle state.
-        // This is because one of the purposes of cancel is to get
-        // the client back to the idle state. If the client is already
-        // in the idle state, there is no operation to cancel.
-        // Also, if a cancel is processed, the client will be in the idle state.
-        // If the same cancel is sent/received again, the device would already be in the
-        // idle state and the client should take no action on the duplicate cancel.
-        isDuplicateRequest = lastReportedState == ADUCITF_State_Idle;
-        break;
-    default:
-        break;
-    }
-
-    return isDuplicateRequest;
 }
