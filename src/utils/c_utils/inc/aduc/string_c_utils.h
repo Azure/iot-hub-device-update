@@ -27,6 +27,8 @@ _Bool atoul(const char* str, unsigned long* converted);
 
 _Bool atoui(const char* str, unsigned int* ui);
 
+size_t ADUC_StrNLen(const char* str, size_t maxsize);
+
 char* ADUC_StringFormat(const char* fmt, ...);
 
 _Bool IsNullOrEmpty(const char* str);

@@ -25,6 +25,8 @@
 #    include "aduc/connection_string_utils.h"
 #    include <do_config.h>
 #endif
+#include <diagnostics_devicename.h>
+#include <diagnostics_interface.h>
 #include <getopt.h>
 #include <iothub.h>
 #include <iothub_client_options.h>
@@ -80,6 +82,9 @@ static const char g_aduPnPComponentName[] = "deviceUpdate";
 
 // Name of DeviceInformation subcomponent that this device implements.
 static const char g_deviceInfoPnPComponentName[] = "deviceInformation";
+
+// Name of the Diagnostics subcomponent that this device is using
+static const char g_diagnosticsPnPComponentName[] = "diagnosticInformation";
 
 // Engine type for an OpenSSL Engine
 static const OPTION_OPENSSL_KEY_TYPE x509_key_from_engine = KEY_TYPE_ENGINE;
@@ -187,7 +192,17 @@ static PnPComponentEntry componentList[] = {
         AzureDeviceUpdateCoreInterface_Destroy,
         AzureDeviceUpdateCoreInterface_PropertyUpdateCallback
     },
+    {
+        g_diagnosticsPnPComponentName,
+        &g_iotHubClientHandleForDiagnosticsComponent,
+        DiagnosticsInterface_Create,
+        DiagnosticsInterface_Connected,
+        NULL,
+        DiagnosticsInterface_Destroy,
+        DiagnosticsInterface_PropertyUpdateCallback
+    },
 };
+
 // clang-format on
 
 /**
@@ -366,6 +381,41 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
     return result;
 }
 
+/**
+ * @brief Sets the Diagnostic DeviceName for creating the device's diagnostic container
+ * @param connectionString connectionString to extract the device-id and module-id from
+ * @returns true on success; false on failure
+ */
+_Bool ADUC_SetDiagnosticsDeviceNameFromConnectionString(const char* connectionString)
+{
+    _Bool succeeded = false;
+
+    char* deviceId = NULL;
+
+    char* moduleId = NULL;
+
+    if (!ConnectionStringUtils_GetDeviceIdFromConnectionString(connectionString, &deviceId))
+    {
+        goto done;
+    }
+
+    // Note: not all connection strings have a module-id
+    ConnectionStringUtils_GetModuleIdFromConnectionString(connectionString, &moduleId);
+
+    if (!DiagnosticsComponent_SetDeviceName(deviceId, moduleId))
+    {
+        goto done;
+    }
+
+    succeeded = true;
+
+done:
+
+    free(deviceId);
+    free(moduleId);
+    return succeeded;
+}
+
 //
 // IotHub methods.
 //
@@ -486,10 +536,25 @@ done:
     return;
 }
 
-static const char* g_modeledComponents[] = { g_aduPnPComponentName, g_deviceInfoPnPComponentName };
-static const size_t g_numModeledComponents = sizeof(g_modeledComponents) / sizeof(g_modeledComponents[0]);
+// Note: This is an array of weak references to componentList[i].componentName
+// as such the size of componentList must be equal to the size of g_modeledComponents
+static const char* g_modeledComponents[3];
+
+static const size_t g_numModeledComponents = ARRAY_SIZE(g_modeledComponents);
 
 static bool g_firstDeviceTwinDataProcessed = false;
+
+static void InititalizeModeledComponents()
+{
+    const size_t numModeledComponents = ARRAY_SIZE(g_modeledComponents);
+
+    STATIC_ASSERT(ARRAY_SIZE(componentList) == ARRAY_SIZE(g_modeledComponents));
+
+    for (int i = 0; i < numModeledComponents; ++i)
+    {
+        g_modeledComponents[i] = componentList[i].ComponentName;
+    }
+}
 //
 // ADUC_PnP_DeviceTwin_Callback is invoked by IoT SDK when a twin - either full twin or a PATCH update - arrives.
 //
@@ -791,6 +856,13 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         ADUC_ConnectionInfo connInfo = {
             ADUC_AuthType_NotSet, connType, launchArgs->connectionString, NULL, NULL, NULL
         };
+
+        if (!ADUC_SetDiagnosticsDeviceNameFromConnectionString(connInfo.connectionString))
+        {
+            Log_Error("Setting DiagnosticsDeviceName failed");
+            goto done;
+        }
+
         if (!ADUC_DeviceClient_Create(&connInfo, launchArgs))
         {
             Log_Error("ADUC_DeviceClient_Create failed");
@@ -830,6 +902,12 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         else
         {
             Log_Error("The connection type %s is not supported", agent->connectionType);
+            goto done;
+        }
+
+        if (!ADUC_SetDiagnosticsDeviceNameFromConnectionString(info.connectionString))
+        {
+            Log_Error("Setting DiagnosticsDeviceName failed");
             goto done;
         }
 
@@ -878,6 +956,7 @@ void ShutdownAgent()
     Log_Info("Agent is shutting down with signal %d.", g_shutdownSignal);
     ADUC_PnP_Components_Destroy();
     ADUC_DeviceClient_Destroy(g_iotHubClientHandle);
+    DiagnosticsComponent_DestroyDeviceName();
     ADUC_Logging_Uninit();
 }
 
@@ -922,6 +1001,8 @@ void OnRestartSignal(int sig)
  */
 int main(int argc, char** argv)
 {
+    InititalizeModeledComponents();
+
     ADUC_LaunchArguments launchArgs;
 
     int ret = ParseLaunchArguments(argc, argv, &launchArgs);

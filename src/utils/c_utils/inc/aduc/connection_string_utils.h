@@ -30,6 +30,22 @@ _Bool ConnectionStringUtils_DoesKeyExist(const char* connectionString, const cha
 _Bool ConnectionStringUtils_GetValue(const char* connectionString, const char* key, char** value);
 
 /**
+ * @brief Parses the connection string for the ModuleId and allocates it into the provided buffer
+ * @param[in] connectionString the connection string to scan for the module-id
+ * @param[out] moduleIdHandle the handle to be allocated with the module-id value
+ * @return true on success; false otherwise.
+ */
+_Bool ConnectionStringUtils_GetModuleIdFromConnectionString(const char* connectionString, char** moduleIdHandle);
+
+/**
+ * @brief Parses the connection string for the deviceId and allocates it into the provided buffer
+ * @param[in] connectionString the connection string to scan for the device-id
+ * @param[out] deviceIdHandle the handle to be allocated with the device-id value
+ * @return true on success; false otherwise
+ */
+_Bool ConnectionStringUtils_GetDeviceIdFromConnectionString(const char* connectionString, char** deviceIdHandle);
+
+/**
  * @brief Determines if the connection string indicates nested edge connectivity.
  * @param[in] connectionString the connection string from the connection info.
  */

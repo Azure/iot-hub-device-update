@@ -16,7 +16,6 @@ using ADUC::StringUtils::cstr_wrapper;
 #include <cstdint>
 #include <cstring>
 #include <fstream>
-
 class TemporaryTestFile
 {
 public:
@@ -392,6 +391,36 @@ TEST_CASE("atoul")
     }
 }
 
+TEST_CASE("ADUC_StrNLen")
+{
+    SECTION("Check string in bounds")
+    {
+        std::string testStr = "foobar";
+        size_t max = 10;
+
+        CHECK(ADUC_StrNLen(testStr.c_str(), 10) == testStr.length());
+    }
+    SECTION("Check null string")
+    {
+        const char* testStr = nullptr;
+
+        CHECK(ADUC_StrNLen(testStr, 10) == 0);
+    }
+    SECTION("Check empty string")
+    {
+        const char* testStr = "";
+        ;
+
+        CHECK(ADUC_StrNLen(testStr, 10) == 0);
+    }
+    SECTION("Check string out of bounds")
+    {
+        std::string testStr = "foobar";
+        size_t max = 2;
+
+        CHECK(ADUC_StrNLen(testStr.c_str(), max) == max);
+    }
+}
 TEST_CASE("ADUC_StringFormat")
 {
     SECTION("Create Formatted String")

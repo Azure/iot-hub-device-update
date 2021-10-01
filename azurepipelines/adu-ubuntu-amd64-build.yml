@@ -78,6 +78,13 @@ jobs:
         displayName: "Component Detection"
         inputs:
           sourceScanPath: src
+          
+      - task: Bash@3
+        displayName: "Install ADUC dependencies"
+        inputs:
+          targetType: "filePath"
+          filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
+          arguments: --install-aduc-deps --install-packages
 
       - task: Bash@3
         displayName: "Build Client and Unit Tests: simulator-swupdate-Debug"

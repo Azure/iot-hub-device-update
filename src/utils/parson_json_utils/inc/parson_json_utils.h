@@ -5,20 +5,30 @@
  * @copyright Copyright (c) 2021, Microsoft Corporation.
  */
 
-#ifndef parson_json_utils_H
-#define parson_json_utils_H
+#ifndef PARSON_JSON_UTILS_H
+#define PARSON_JSON_UTILS_H
 
 #include <aduc/c_utils.h>
 #include <parson.h>
 
 EXTERN_C_BEGIN
 
+//
+// JSON_Value Helper Utils
+//
 const char* ADUC_JSON_GetStringFieldPtr(const JSON_Value* jsonValue, const char* jsonFieldName);
 
 _Bool ADUC_JSON_GetStringField(const JSON_Value* jsonValue, const char* jsonFieldName, char** value);
 
 _Bool ADUC_JSON_GetBooleanField(const JSON_Value* jsonValue, const char* jsonFieldName);
 
+_Bool ADUC_JSON_GetUnsignedIntegerField(const JSON_Value* jsonValue, const char* jsonFieldName, unsigned int* value);
+
+//
+// JSON_Object Helper Utils
+//
+_Bool ADUC_JSON_GetStringFieldFromObj(const JSON_Object* jsonObj, const char* jsonFieldName, char** value);
+
 EXTERN_C_END
 
-#endif
+#endif // PARSON_JSON_UTILS_H

@@ -4,25 +4,36 @@
  *
  * @copyright Copyright (c) 2019, Microsoft Corp.
  */
+#include "aduc/system_utils.h"
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h"
-#include "aduc/system_utils.h"
 
 // for nftw
 #define __USE_XOPEN_EXTENDED 1
 
+#include <aduc/string_c_utils.h>
+#include <azure_c_shared_utility/strings.h>
 #include <errno.h>
 #include <ftw.h> // for nftw
 #include <grp.h> // for getgrnam
 #include <limits.h> // for PATH_MAX
 #include <pwd.h> // for getpwnam
+#include <stdio.h>
 #include <stdlib.h> // for getenv
 #include <string.h> // for strncpy, strlen
+#include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h> // for waitpid
 #include <unistd.h>
 
+#ifndef ALL_PERMS
+/**
+ * @brief Define all permissions mask if not defined already in octal format
+ */
+#    define ALL_PERMS 07777
+
+#endif
 /**
  * @brief Retrieve system temporary path with a subfolder.
  *
@@ -206,7 +217,7 @@ int ADUC_SystemUtils_MkDirRecursive(const char* path, uid_t userId, gid_t groupI
     }
 
     char mkdirPath[PATH_MAX + 1];
-    const size_t mkdirPath_cch = strnlen(path, PATH_MAX);
+    const size_t mkdirPath_cch = ADUC_StrNLen(path, PATH_MAX);
 
     // Create writable copy of path to iterate over.
     if (mkdirPath_cch + 1 > ARRAY_SIZE(mkdirPath))
@@ -249,18 +260,14 @@ int ADUC_SystemUtils_MkDirRecursive(const char* path, uid_t userId, gid_t groupI
     struct stat st = {};
     if (stat(path, &st) == 0)
     {
-        int perms = st.st_mode & ~S_IFMT;
+        int perms = (st.st_mode & (ALL_PERMS));
         if (perms != mode)
         {
             // Fix the permissions.
             if (0 != chmod(path, mode))
             {
                 stat(path, &st);
-                Log_Warn(
-                    "Failed to set '%s' folder permissions (expected:0%o, actual: 0%o)",
-                    mkdirPath,
-                    mode,
-                    st.st_mode & ~S_IFMT);
+                Log_Warn("Failed to set '%s' folder permissions (expected:0%o, actual: 0%o)", mkdirPath, mode, perms);
             }
         }
     }
@@ -273,7 +280,7 @@ int ADUC_SystemUtils_MkSandboxDirRecursive(const char* path)
     // Create the sandbox folder with adu:adu ownership.
     // Permissions are set to u=rwx,g=rwx. We grant read/write/execute to group owner so that partner
     // processes like the DO daemon can download files to our sandbox.
-        
+
     // Note: the return value may point to a static area,
     // and may be overwritten by subsequent calls to getpwent(3), getpwnam(), or getpwuid().
     // (Do not pass the returned pointer to free(3).)
@@ -338,6 +345,178 @@ int ADUC_SystemUtils_RmDirRecursive(const char* path)
 }
 
 /**
+ * @brief Takes the filename from @p filePath and concatenates it with @p dirPath and stores the result in @p newFilePath
+ * @details newFilePath should be freed using STRING_delete() by caller
+ * @param[out] newFilePath handle that will be allocated and intiialized with the new file path
+ * @param[in] filePath the path to a file who's name will be stripped out
+ * @param[in] dirPath directoryPath to have @p filePath's file name appended to it
+ * @returns true on success; false otherwise
+ */
+_Bool ADUC_SystemUtils_FormatFilePathHelper(STRING_HANDLE* newFilePath, const char* filePath, const char* dirPath)
+{
+    if (newFilePath == NULL || filePath == NULL || dirPath == NULL)
+    {
+        return false;
+    }
+
+    _Bool succeeded = false;
+    size_t dirPathSize = strlen(dirPath);
+
+    STRING_HANDLE tempHandle = STRING_new();
+
+    _Bool needForwardSlash = false;
+    if (dirPath[dirPathSize - 2] != '/')
+    {
+        needForwardSlash = true;
+    }
+
+    const char* fileNameStart = strrchr(filePath, '/');
+
+    if (fileNameStart == NULL)
+    {
+        goto done;
+    }
+    const size_t fileNameSize = strlen(fileNameStart) - 1;
+
+    if (fileNameSize == 0)
+    {
+        goto done;
+    }
+
+    // increment past the '/'
+    ++fileNameStart;
+
+    if (fileNameSize == 0 || dirPathSize + fileNameSize > PATH_MAX)
+    {
+        goto done;
+    }
+
+    if (needForwardSlash)
+    {
+        if (STRING_sprintf(tempHandle, "%s/%s", dirPath, fileNameStart) != 0)
+        {
+            goto done;
+        }
+    }
+    else
+    {
+        if (STRING_sprintf(tempHandle, "%s%s", dirPath, fileNameStart) != 0)
+        {
+            goto done;
+        }
+    }
+
+    succeeded = true;
+done:
+
+    if (!succeeded)
+    {
+        STRING_delete(tempHandle);
+        tempHandle = NULL;
+    }
+
+    *newFilePath = tempHandle;
+
+    return succeeded;
+}
+
+/**
+ * @brief Copies the file at @p filePath to @p dirPath with the same name
+ * @details Preserves the ownership and filemode bit permissions
+ * @param filePath path to the file
+ * @param dirPath path to the directory
+ * @param overwriteExistingFile if set to true will overwrite the existing file in @p dirPath named with the filename in @p fileName if it exists
+ * @returns the result of the operation
+ */
+int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, const _Bool overwriteExistingFile)
+{
+    int result = -1;
+    STRING_HANDLE destFilePath = NULL;
+
+    FILE* sourceFile = NULL;
+    FILE* destFile = NULL;
+    const size_t readMaxBuffSize = 1024;
+    unsigned char readBuff[readMaxBuffSize];
+
+    memset(readBuff, 0, readMaxBuffSize);
+
+    if (filePath == NULL || dirPath == NULL)
+    {
+        goto done;
+    }
+
+    if (!ADUC_SystemUtils_FormatFilePathHelper(&destFilePath, filePath, dirPath))
+    {
+        goto done;
+    }
+
+    sourceFile = fopen(filePath, "rb");
+
+    if (sourceFile == NULL)
+    {
+        goto done;
+    }
+
+    if (overwriteExistingFile)
+    {
+        destFile = fopen(STRING_c_str(destFilePath), "wb+");
+    }
+    else
+    {
+        destFile = fopen(STRING_c_str(destFilePath), "wb");
+    }
+
+    if (destFile == NULL)
+    {
+        goto done;
+    }
+
+    size_t readBytes = fread(readBuff, readMaxBuffSize, sizeof(readBuff[0]), sourceFile);
+
+    while (readBytes != 0 && feof(sourceFile) != 0)
+    {
+        const size_t writtenBytes = fwrite(readBuff, readBytes, sizeof(readBuff[0]), destFile);
+
+        result = ferror(destFile);
+        if (writtenBytes != readBytes || result != 0)
+        {
+            goto done;
+        }
+
+        readBytes = fread(readBuff, readMaxBuffSize, sizeof(readBuff[0]), sourceFile);
+        result = ferror(sourceFile);
+        if (result != 0)
+        {
+            goto done;
+        }
+    }
+
+    struct stat buff;
+    if (stat(filePath, &buff) != 0)
+    {
+        goto done;
+    }
+
+    if (chmod(STRING_c_str(destFilePath), buff.st_mode) != 0)
+    {
+        goto done;
+    }
+
+    result = 0;
+done:
+
+    fclose(sourceFile);
+    fclose(destFile);
+
+    if (result != 0)
+    {
+        remove(STRING_c_str(destFilePath));
+    }
+
+    STRING_delete(destFilePath);
+    return result;
+}
+/** 
  * @brief Checks if the file object at the given path is a directory.
  * @param path The path.
  * @returns true if it is a directory.

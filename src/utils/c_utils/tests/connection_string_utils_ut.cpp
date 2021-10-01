@@ -24,7 +24,7 @@ TEST_CASE("ConnectionStringUtils_GetValue_key_missing")
 {
     char someChar = 'c';
     char* value = &someChar;
-    CHECK(ConnectionStringUtils_GetValue("a=1;c=2", "b", &value));
+    CHECK_FALSE(ConnectionStringUtils_GetValue("a=1;c=2", "b", &value));
     CHECK(value == nullptr);
 }
 
@@ -80,4 +80,53 @@ TEST_CASE("ConnectionStringUtils_IsNestedEdge returns true", "[generators]")
 
     INFO(trueTestCase);
     CHECK(ConnectionStringUtils_IsNestedEdge(trueTestCase.c_str()));
+}
+TEST_CASE("ConnectionStringUtils_GetModuleIdFromConnectionString Success Case")
+{
+    char* ptr;
+    std::string connectionString{
+        "HostName=some-iot-device.io;DeviceId=somedeviceid;ModuleId=somemoduleid;SharedAccessKey=asdfasdfasdf;"
+    };
+    CHECK(ConnectionStringUtils_GetModuleIdFromConnectionString(connectionString.c_str(), &ptr));
+    std::unique_ptr<char, decltype(&free)> managed(ptr, free);
+    ptr = nullptr;
+
+    CHECK(managed != nullptr);
+    CHECK(std::string("somemoduleid") == std::string(managed.get()));
+}
+
+TEST_CASE("ConnectionStringUtils_GetModuleIdFromConnectionString Failure Case")
+{
+    char* ptr;
+    std::string connectionString{ "HostName=some-iot-device.io;DeviceId=somedeviceid;SharedAccessKey=asdfasdfasdf;" };
+    CHECK_FALSE(ConnectionStringUtils_GetModuleIdFromConnectionString(connectionString.c_str(), &ptr));
+    std::unique_ptr<char, decltype(&free)> managed(ptr, free);
+    ptr = nullptr;
+
+    CHECK(managed == nullptr);
+}
+
+TEST_CASE("ConnectionStringUtils_GetDeviceIdFromConnectionString Success Case")
+{
+    char* ptr;
+    std::string connectionString{
+        "HostName=some-iot-device.io;DeviceId=somedeviceid;ModuleId=somemoduleid;SharedAccessKey=asdfasdfasdf;"
+    };
+    CHECK(ConnectionStringUtils_GetDeviceIdFromConnectionString(connectionString.c_str(), &ptr));
+    std::unique_ptr<char, decltype(&free)> managed(ptr, free);
+    ptr = nullptr;
+
+    CHECK(managed != nullptr);
+    CHECK(std::string("somedeviceid") == std::string(managed.get()));
+}
+
+TEST_CASE("ConnectionStringUtils_GetDeviceIdFromConnectionString Failure Case")
+{
+    char* ptr;
+    std::string connectionString{ "HostName=some-iot-device.io;SharedAccessKey=asdfasdfasdf;" };
+    CHECK_FALSE(ConnectionStringUtils_GetDeviceIdFromConnectionString(connectionString.c_str(), &ptr));
+    std::unique_ptr<char, decltype(&free)> managed(ptr, free);
+    ptr = nullptr;
+
+    CHECK(managed == nullptr);
 }

@@ -39,9 +39,13 @@ use_ssh=false
 install_aduc_deps=false
 install_azure_iot_sdk=false
 azure_sdk_ref=master
+
 install_catch2=false
 default_catch2_ref=v2.11.0
 catch2_ref=$default_catch2_ref
+
+install_azure_storage_sdk=false
+azure_storage_sdk_ref=master
 
 # DO Deps
 install_do=false
@@ -68,7 +72,9 @@ print_help() {
     echo "                          When used with --install-packages will also install the package dependencies."
     echo "--install-azure-iot-sdk   Install the Azure IoT C SDK from source."
     echo "--azure-iot-sdk-ref <ref> Install the Azure IoT C SDK from a specific branch or tag."
-    echo "                          Default is public-preview."
+    echo "                           Default is public-preview."
+    echo "--install-azure-storage-sdk   Install the Azure C++ Lite Blob Storage SDK from source."
+    echo "--azure-storage-sdk-ref <ref> Install the Azure C++ Lite Blob Storage SDK from a specific branch or tag."
     echo "--install-catch2          Install Catch2 from source."
     echo "--catch2-ref              Install Catch2 from a specific branch or tag."
     echo "                          This value is passed to git clone as the --branch argument."
@@ -275,6 +281,53 @@ do_install_do() {
     fi
 }
 
+do_install_azure_storage_sdk() {
+    echo "Installing azure-storage-cpp-lite"
+    local azure_storage_cpplite_dir=$work_folder/azure_storage_cpplite_dir
+
+    if [[ $keep_source_code != "true" ]]; then
+        $SUDO rm -rf $azure_storage_cpplite_dir || return
+    elif [[ -d $azure_storage_cpplite_dir ]]; then
+        warn "$azure_storage_cpplite_dir already exists! Skipping Azure Storage CPP Lite."
+        return 0
+    fi
+
+    local azure_storage_cpplite_url
+    if [[ $use_ssh == "true" ]]; then
+        azure_storage_cpplite_url=git@github.com:Azure/azure-storage-cpplite.git
+    else
+        azure_storage_cpplite_url=https://github.com/Azure/azure-storage-cpplite.git
+    fi
+
+    echo -e "Building Azure CppLite ...\n\tBranch: $azure_storage_sdk_ref\n\t Folder: $azure_storage_cpplite_dir"
+    mkdir -p $azure_storage_cpplite_dir || return
+    pushd $azure_storage_cpplite_dir > /dev/null
+    git clone --recursive --single-branch --branch $azure_storage_sdk_ref --depth 1 $azure_storage_cpplite_url . || return
+
+    mkdir cmake || return
+    pushd cmake > /dev/null
+
+    local azure_cpp_lite_cmake_options
+    if [[ $keep_source_code == "true" ]]; then
+        # If source is wanted, presumably samples and symbols are useful as well.
+        azure_cpp_lite_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Debug")
+    else
+        azure_cpp_lite_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
+    fi
+
+    cmake "${azure_cpp_lite_cmake_options[@]}" .. || return
+
+    cmake --build . || return
+    $SUDO cmake --build . --target install || return
+
+    popd > /dev/null
+    popd > /dev/null
+
+    if [[ $keep_source_code != "true" ]]; then
+        $SUDO rm -rf $azure_storage_cpplite_dir || return
+    fi
+
+}
 do_list_all_deps() {
     declare -a deps_set=()
     deps_set+=(${aduc_packages[@]})
@@ -317,6 +370,14 @@ while [[ $1 != "" ]]; do
     --azure-iot-sdk-ref)
         shift
         azure_sdk_ref=$1
+        ;;
+    --install-azure-storage-sdk)
+        shift
+        install_azure_storage_sdk=true
+        ;;
+    --azure-storage-sdk-ref)
+        shift
+        azure_storage_sdk_ref=$1
         ;;
     --install-catch2)
         install_catch2=true
@@ -387,6 +448,7 @@ fi
 if [[ $install_aduc_deps == "true" ]]; then
     install_azure_iot_sdk=true
     install_catch2=true
+    install_azure_storage_sdk=true
 fi
 
 # Set implied options for packages only.
@@ -413,6 +475,10 @@ fi
 if [[ $install_packages_only == "false" ]]; then
     if [[ $install_azure_iot_sdk == "true" ]]; then
         do_install_azure_iot_sdk || $ret
+    fi
+
+    if [[ $install_azure_storage_sdk == "true" ]]; then
+        do_install_azure_storage_sdk || $ret
     fi
 
     if [[ $install_catch2 == "true" ]]; then

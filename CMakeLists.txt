@@ -114,49 +114,59 @@ set (
 )
 
 set (
-    ADUC_EXTENSIONS_FOLDER "${ADUC_DATA_FOLDER}/extensions"
+    ADUC_EXTENSIONS_FOLDER
+    "${ADUC_DATA_FOLDER}/extensions"
     CACHE STRING "Path to the folder containing file(s) related to DU Agent extension(s).")
 
 set (
-    ADUC_EXTENSIONS_INSTALL_FOLDER "${ADUC_EXTENSIONS_FOLDER}/sources"
+    ADUC_EXTENSIONS_INSTALL_FOLDER
+    "${ADUC_EXTENSIONS_FOLDER}/sources"
     CACHE STRING "Path to the folder containing extensions .so file(s).")
 
 set (
-    ADUC_CONTENT_HANDLER_REG_FILENAME "content_handler.json"
+    ADUC_CONTENT_HANDLER_REG_FILENAME
+    "content_handler.json"
     CACHE STRING "Content handler registration file name.")
 
 set (
-    ADUC_EXTENSION_REG_FILENAME "extension.json"
+    ADUC_EXTENSION_REG_FILENAME
+    "extension.json"
     CACHE STRING "Extension registration file name.")
 
 set (
-    ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR "component_enumerator"
+    ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR
+    "component_enumerator"
     CACHE STRING "Sub folder for component enumerator extension.")
 
 set (
-    ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER "content_downloader"
+    ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER
+    "content_downloader"
     CACHE STRING "Sub folder for content downloader extension.")
 
 set (
-    ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS "update_content_handlers"
+    ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS
+    "update_content_handlers"
     CACHE STRING "Sub folder for update content handler extensions.")
 
 set (
-    ADUC_COMPONENT_ENUMERATOR_EXTENSION_DIR "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR}"
+    ADUC_COMPONENT_ENUMERATOR_EXTENSION_DIR
+    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR}"
     CACHE STRING "Path for component enumerator extension.")
 
 set (
-    ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER}"
+    ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR
+    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER}"
     CACHE STRING "Path for content downloader extension.")
 
 set (
-    ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS}"
+    ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR
+    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS}"
     CACHE STRING "Sub folder for update content handler extensions.")
 
 set (
-    ADUC_DOWNLOADS_FOLDER "${ADUC_DATA_FOLDER}/downloads"
-    CACHE STRING "Path to the folder containing downloaded update artifacts."
-)
+    ADUC_DOWNLOADS_FOLDER
+    "${ADUC_DATA_FOLDER}/downloads"
+    CACHE STRING "Path to the folder containing downloaded update artifacts.")
 
 set (
     ADUC_CONTENT_HANDLERS
@@ -193,24 +203,9 @@ set (
     CACHE STRING "Model of the device")
 
 set (
-    ADUC_LOGGING_LIBRARY
-    "zlog"
-    CACHE STRING "The logging library to use. Options: xlog zlog")
-
-set (
-    ADUC_LOG_FOLDER
-    "/var/log/adu"
-    CACHE STRING "Location where ADU Agent will write logs.")
-
-set (
     ADUC_PLATFORM_LAYER
     "simulator"
     CACHE STRING "The platform layer to use. Options: simulator linux")
-
-set (
-    ADUC_VERSION_FILE
-    "/etc/adu-version"
-    CACHE STRING "Path to the file that contains version info for the image or device.")
 
 # By default ADU Agent daemon runs as root.
 # root user home directory should be /root.
@@ -259,6 +254,28 @@ get_filename_component (
     "${ADUC_AGENT_FOLDER}/${ADUC_AGENT_FILENAME}"
     ABSOLUTE
     "/")
+
+set (
+    DIAGNOSTICS_CONFIG_FILE
+    "adu-diagnostics-config.json"
+    CACHE STRING
+          "Path to the file that contains the configuration information for the diagnostics system")
+
+set (
+    DIAGNOSTICS_LOG_STAGING_FOLDER
+    "diagnostics_log_staging/"
+    CACHE STRING "Name of the diagnostics log staging directory")
+
+get_filename_component (
+    DIAGNOSTICS_LOG_STAGING_FOLDER_PATH
+    "${ADUC_CONF_FOLDER}/${DIAGNOSTICS_LOG_STAGING_FOLDER}"
+    ABSOLUTE
+    "/")
+
+set (
+    DIAGNOSTICS_LOG_STAGING_FOLDER_PATH
+    "${DIAGNOSTICS_LOG_STAGING_FOLDER_PATH}"
+    CACHE STRING "Path to the diagnostics log file staging directory.")
 
 set (
     ADUSHELL_FOLDER
@@ -331,6 +348,17 @@ set (
     ADUC_CONF_FILE_PATH
     "${ADUC_CONF_FILE_PATH}"
     CACHE STRING "Path to the ADU configuration file.")
+
+# Construct the absolute path to the adu diagnostics configuration file
+get_filename_component (
+    DIAGNOSTICS_CONFIG_FILE_PATH
+    "${ADUC_CONF_FOLDER}/${DIAGNOSTICS_CONFIG_FILE}"
+    ABSOLUTE
+    "/")
+set (
+    DIAGNOSTICS_CONFIG_FILE_PATH
+    "${DIAGNOSTICS_CONFIG_FILE_PATH}"
+    CACHE STRING "Path to the diagnostics configuration file.")
 
 if (ADUC_BUILD_UNIT_TESTS)
     # Need to be in the root directory to place CTestTestfile.cmake in root

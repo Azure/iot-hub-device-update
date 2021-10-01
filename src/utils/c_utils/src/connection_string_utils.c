@@ -28,6 +28,16 @@
 #define CONNECTION_STRING_GATEWAY_HOSTNAME_KEY "GatewayHostName"
 
 /**
+ * @brief Key for the DeviceId in the connection string
+ */
+#define CONNECTION_STRING_DEVICE_ID_KEY "DeviceId"
+
+/**
+ * @brief Key for the ModuleId in the connection string
+ */
+#define CONNECTION_STRING_MODULE_ID_KEY "ModuleId"
+
+/**
  * @brief Determines if the given key exists in the connection string.
  * @param[in] connectionString The connection string from the connection info.
  * @param[in] key The key in question.
@@ -62,17 +72,19 @@ done:
  * @brief Gets the value for the given key out of the connection string.
  * @param[in] connectionString The connection string from the connection info.
  * @param[in] key The key for the value in question.
- * @param[out] A copy of the value for the key allocated with malloc, or NULL if not found.
+ * @param[out] value a copy of the value for the key allocated with malloc, or NULL if not found.
  * @return true on success; false otherwise.
  */
 _Bool ConnectionStringUtils_GetValue(const char* connectionString, const char* key, char** value)
 {
-    _Bool result = false;
+    _Bool succeeded = false;
+    char* tempVal = NULL;
+
     MAP_HANDLE map = NULL;
 
     if (value == NULL)
     {
-        goto done;
+        return false;
     }
 
     map = connectionstringparser_parse_from_char(connectionString);
@@ -84,25 +96,50 @@ _Bool ConnectionStringUtils_GetValue(const char* connectionString, const char* k
     const char* mapValue = Map_GetValueFromKey(map, key);
     if (mapValue == NULL)
     {
-        result = true;
-        *value = NULL;
+        goto done;
     }
-    else
-    {
-        char* resultValue = NULL;
-        if (mallocAndStrcpy_s(&resultValue, mapValue) != 0)
-        {
-            goto done;
-        }
 
-        result = true;
-        *value = resultValue;
+    if (mallocAndStrcpy_s(&tempVal, mapValue) != 0)
+    {
+        goto done;
     }
+
+    succeeded = true;
 
 done:
     Map_Destroy(map);
 
-    return result;
+    if (!succeeded)
+    {
+        free(tempVal);
+        tempVal = NULL;
+    }
+
+    *value = tempVal;
+
+    return succeeded;
+}
+
+/**
+ * @brief Parses the connection string for the deviceId and allocates it into the provided buffer
+ * @param[in] connectionString the connection string to scan for the device-id
+ * @param[out] deviceIdHandle the handle to be allocated with the device-id value
+ * @return true on success; false otherwise
+ */
+_Bool ConnectionStringUtils_GetDeviceIdFromConnectionString(const char* connectionString, char** deviceIdHandle)
+{
+    return ConnectionStringUtils_GetValue(connectionString, CONNECTION_STRING_DEVICE_ID_KEY, deviceIdHandle);
+}
+
+/**
+ * @brief Parses the connection string for the ModuleId and allocates it into the provided buffer
+ * @param[in] connectionString the connection string to scan for the module-id
+ * @param[out] moduleIdHandle the handle to be allocated with the module-id value
+ * @returns true on success; false on failure
+ */
+_Bool ConnectionStringUtils_GetModuleIdFromConnectionString(const char* connectionString, char** moduleIdHandle)
+{
+    return ConnectionStringUtils_GetValue(connectionString, CONNECTION_STRING_MODULE_ID_KEY, moduleIdHandle);
 }
 
 /**

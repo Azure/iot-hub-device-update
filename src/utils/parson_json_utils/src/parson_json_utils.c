@@ -104,3 +104,73 @@ done:
 
     return succeeded;
 }
+
+/**
+ * @brief Gets the value of the field @p jsonFieldName from @p jsonObj and allocates and stores it in @p value
+ * @details Caller is responsible for calling free() on @p value when finished
+ * @param jsonObj the json object to ge the field value from
+ * @param jsonFieldName field to get the string value for
+ * @param value The buffer to fill with the value from the JSON field. Caller must call free()
+ * @returns true on success; false on failure
+ */
+_Bool ADUC_JSON_GetStringFieldFromObj(const JSON_Object* jsonObj, const char* jsonFieldName, char** value)
+{
+    if (jsonObj == NULL || jsonFieldName == NULL)
+    {
+        return false;
+    }
+
+    const char* fieldValue = json_object_get_string(jsonObj, jsonFieldName);
+
+    if (mallocAndStrcpy_s(value, fieldValue) != 0)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * @brief Gets the integer representation of a the value of @p jsonFieldName from @p jsonValue and assigns it to @p value
+ * 
+ * @details All values in json are doubles this function only returns true if the value read is a whole, 
+ * @param jsonValue value to extract the @p jsonFieldName value from
+ * @param value the parameter to store @p jsonFieldName's value in
+ * @returns true on success; false on failure
+ */
+_Bool ADUC_JSON_GetUnsignedIntegerField(const JSON_Value* jsonValue, const char* jsonFieldName, unsigned int* value)
+{
+    if (jsonValue == NULL || jsonFieldName == NULL)
+    {
+        return false;
+    }
+
+    _Bool succeeded = false;
+    double val = 0;
+    unsigned int castVal = 0;
+
+    JSON_Object* jsonObj = json_value_get_object(jsonValue);
+
+    if (jsonObj == NULL)
+    {
+        goto done;
+    }
+
+    // Note: cannot determine failure in this call as 0 is a valid return, always assume succeeded at this point
+    val = json_object_get_number(jsonObj, jsonFieldName);
+
+    // Note: check value is not negative and is a whole number for safe casting to an unsigned int
+    if (val < 0 || ((int)val) != val)
+    {
+        goto done;
+    }
+
+    castVal = (unsigned int)val;
+
+    succeeded = true;
+done:
+
+    *value = castVal;
+
+    return succeeded;
+}

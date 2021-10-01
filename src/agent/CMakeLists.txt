@@ -78,7 +78,9 @@ target_link_libraries (
             aduc::logging
             aduc::permission_utils
             aduc::pnp_helper
-            aduc::system_utils)
+            aduc::system_utils
+            diagnostics_component::diagnostics_interface
+            diagnostics_component::diagnostics_devicename)
 
 get_filename_component (
     ADUC_INSTALLEDCRITERIA_FILE_PATH

@@ -274,6 +274,30 @@ _Bool atoui(const char* str, unsigned int* ui)
 }
 
 /**
+ * @brief  Finds the length in bytes of the given string, not including the final null character. Only the first maxsize characters are inspected: if the null character is not found, maxsize is returned.
+ * @param str  string whose length is to be computed
+ * @param maxsize the limit up to which to check @p str's length
+ * @return Length of the string "str", exclusive of the final null byte, or maxsize if the null character is not found, 0 if str is NULL.
+ */
+size_t ADUC_StrNLen(const char* str, size_t maxsize)
+{
+    if (str == NULL)
+    {
+        return 0;
+    }
+
+    size_t length;
+
+    /* Note that we do not check if s == NULL, because we do not
+    * return errno_t...
+    */
+    for (length = 0; length < maxsize && *str; length++, str++)
+    {
+    }
+
+    return length;
+}
+/**
  * @brief Split updateType string by ':' to return updateTypeName and updateTypeVersion
  * @param[in] updateType - expected "Provider/Name:Version"
  * @param[out] updateTypeName - Caller must call free()
