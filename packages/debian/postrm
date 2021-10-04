@@ -40,6 +40,9 @@ deregister_eis()
 
     echo "Remove 'adu' user from 'aziotks' group."
     gpasswd -d $adu_user aziotks > /dev/null
+
+    echo "Restart IoT Identity Service"
+    systemctl restart aziot-{identity,cert,tpm,key}d
 }
 
 do_remove_tasks() {
