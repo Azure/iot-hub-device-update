@@ -21,7 +21,7 @@ extern "C" {
  * 
  * @param selectorJson A stringifed json containing one or more properties use for components selection.
  * @return Returns a serialized json data containing components information. 
- * Caller must call FreeString fuction when done with the returned string.
+ * Caller must call FreeString function when done with the returned string.
  * 
  * Example output:
  * 
@@ -72,7 +72,7 @@ typedef char* (*SelectComponentsProc)(const char* selector);
 /**
  * @brief Returns all components information in JSON format.
  * @return Returns a serialized json data containing components information. 
- * Caller must call FreeString fuction when done with the returned string.
+ * Caller must call FreeString function when done with the returned string.
  * 
  * Example output:
  * 

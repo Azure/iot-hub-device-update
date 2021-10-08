@@ -24,7 +24,7 @@ root_dir=$script_dir/..
 build_clean=false
 build_documentation=false
 build_packages=false
-platform_layer="simulator"
+platform_layer="linux"
 content_handlers="microsoft/swupdate,microsoft/apt,microsoft/simulator"
 build_type=Debug
 adu_log_dir=""
@@ -50,12 +50,8 @@ print_help() {
     echo "                                      Tools is a comma delimited list of static analysis tools to run at build time."
     echo "                                      Tools: clang-tidy cppcheck cpplint iwyu lwyu (or all)"
     echo ""
-    echo "-p, --platform-layer <layer>          Specify the platform layer to build/use. Default is simulator."
-    echo "                                      Options: linux simulator"
-    echo "                                      The simulator layer provides mocks of the ADU Core and DeviceInformation PnP interfaces."
-    echo ""
-    echo "--content-handlers <handlers...>      The comma delimited list of content handlers to include in the build. Default is microsoft/swupdate"
-    echo "                                      Options: microsoft/swupdate microsoft/apt microsoft/simulator microsoft/bundle"
+    echo "-p, --platform-layer <layer>          Specify the platform layer to build/use. Default is linux."
+    echo "                                      Option: linux"
     echo ""
     echo "--provision-with-iotedge              Indicates to the agent to provision its connection string via the Edge Identity Service"
     echo "                                      instead of reading from the configuration file."
@@ -200,14 +196,6 @@ while [[ $1 != "" ]]; do
         ;;
     --provision-with-iotedge)
         provision_with_iotedge=true
-        ;;
-    --content-handlers)
-        shift
-        if [[ -z $1 || $1 == -* ]]; then
-            error "--content-handlers parameter is mandatory."
-            $ret 1
-        fi
-        content_handlers=$1
         ;;
     --log-lib)
         shift

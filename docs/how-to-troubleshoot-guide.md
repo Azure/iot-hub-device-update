@@ -28,7 +28,7 @@ If you run into issues with the Device Update Agent, you have a couple options t
     /var/cache/deliveryoptimization-agent/log
     ```
 
-* For the Simulator the logs are found here:
+* For the Simulator (Device Update Agent version 0.7.0 and older) the logs are found here:
 
     ```markdown
     /tmp/aduc-logs

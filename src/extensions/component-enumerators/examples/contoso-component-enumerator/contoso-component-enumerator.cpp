@@ -162,7 +162,7 @@ extern "C"
      * 
      * @param selectorJson A stringified json containing one or more properties use for components selection.
      * @return Returns a serialized json data containing components information. 
-     * Caller must call FreeString fuction when done with the returned string.
+     * Caller must call FreeString function when done with the returned string.
      */
     char* SelectComponents(const char* selectorJson)
     {
@@ -214,7 +214,7 @@ extern "C"
     /**
      * @brief Returns all components information in JSON format.
      * @param includeProperties Indicates whether to include optional component's properties in the output string.
-     * @return Returns a serialized json data contains components information. Caller must call FreeComponentsDataString fuction
+     * @return Returns a serialized json data contains components information. Caller must call FreeComponentsDataString function
      * when done with the returned string.
      */
     char* GetAllComponents()

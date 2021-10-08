@@ -8,7 +8,7 @@
 ## Command Line
 
 ```bash
-AducIotAgent [options...] '<IoT device connection string>' [simulator args...]
+AducIotAgent [options...] '<IoT device connection string>' 
 AducIotAgent [options...] -- [one or more of connection string and simulator or other additional args]
 ```
 
@@ -19,21 +19,11 @@ AducIotAgent --enable-iothub-tracing --log-level 1 '<IoT device connection strin
 AducIotAgent --enable-iothub-tracing --log-level 1 -- '<IoT device connection string>'
 ```
 
-#### Simulator examples
+#### Simulator Update Handler
 
-```bash
-AducIotAgent '<IoT device connection string>' --simulation_mode=allsuccessful
-AducIotAgent --log-level 0 -e '<Iot device connection string> --simulation_mode=downloadfailed
-```
+The Simulator Update Handler can be used for demonstration and testing purposes.  
 
-If providing additional args (e.g. simulator args) without a non-option (i.e. -c) connection string, then explicitly separate options from additional args using '--'.
-e.g.
-
-```bash
-AducIotAgent -- --simulation_mode=allsuccessful '<IoT device connection string>' 
-AducIotAgent -- --simulation_mode=allsuccessful
-AducIotAgent --log-level 0 -e -- --simulation_mode=downloadfailed --device_manufacturer=MyContoso
-```
+See [how to simualtor update result](./how-to-simulate-update-result.md) for more details.
 
 ### Options Details
 
@@ -55,29 +45,6 @@ Expected value:
     - 1: Info
     - 2: Warning
     - 3: Error
-
-### Simulator Specific Arguments
-
-These arguments are specific to the agent simulator.
-
-#### --simulation_mode=\<mode>
-
-Tells the agent where and if to force a failure. This is useful for evaluating
-and testing how Device Update for IoT Hub reports errors.
-
-`mode` can be one of the following options:
-
-* `downloadfailed`
-* `installationfailed`
-* `applyfailed`
-* `allsuccessful`
-
-If no mode is specified, `allsuccessful` is the default.
-
-#### --perform_download
-
-This option will cause the simulator agent to download and verify the hash of
-the update.
 
 #### --deviceinfo_manufacturer=\<manufacturer>
 

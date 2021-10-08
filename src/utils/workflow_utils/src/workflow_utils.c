@@ -1,6 +1,6 @@
 /**
  * @file workflow_utils.c
- * @brief Utility fuctions for workflow data.
+ * @brief Utility functions for workflow data.
  *
  * @copyright Copyright (c) Microsoft Corp.
  */
@@ -319,7 +319,7 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
             if (updateManifestString == NULL)
             {
                 char* s = json_serialize_to_string(json_object_get_wrapping_value(wf->UpdateActionObject));
-                Log_Error("No upadteManifest\n%s", s);
+                Log_Error("No Update Manifest\n%s", s);
                 json_free_serialized_string(s);
                 result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_NO_UPDATE_MANIFEST;
                 goto done;

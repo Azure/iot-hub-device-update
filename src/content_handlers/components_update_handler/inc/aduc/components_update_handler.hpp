@@ -36,8 +36,6 @@ public:
     ADUC_Result Cancel(const ADUC_WorkflowData* workflowData) override;
     ADUC_Result IsInstalled(const ADUC_WorkflowData* workflowData) override;
 
-    void SetIsInstalled(bool installed);
-
 private:
     ComponentsUpdateHandlerImpl()
     {

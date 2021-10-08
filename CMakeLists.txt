@@ -204,7 +204,7 @@ set (
 
 set (
     ADUC_PLATFORM_LAYER
-    "simulator"
+    "linux"
     CACHE STRING "The platform layer to use. Options: simulator linux")
 
 # By default ADU Agent daemon runs as root.

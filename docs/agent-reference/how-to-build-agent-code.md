@@ -44,10 +44,10 @@ To install all dependencies run:
 
 **Note:**: `--use-ssh` can be used to clone dependencies from the Git repo using SSH instead of https.
 
-To install only the dependencies necessary for the simulator agent:
+To install only the dependencies necessary for the agent:
 
 ```shell
-./scripts/install-deps.sh --install-aduc-deps -p
+./scripts/install-deps.sh --install-aduc-deps --install-packages
 ```
 
 `install-deps.sh` also provides several options for installing individual
@@ -65,12 +65,6 @@ The Device Update for IoT Hub reference agent code utilizes CMake for building. 
 
 #### Build Using build.sh
 
-To build the simulator agent:
-
-```shell
-./scripts/build.sh -c
-```
-
 To build the reference agent integrated with Delivery Optimization for
 downloads but still mocks the `Install` and `Apply` actions:
 
@@ -84,18 +78,11 @@ To build the reference agent with support for provisioning using the IoT Identit
 ./scripts/build.sh -c --provision-with-iotedge
 ```
 
-To build the agent package for package based updating via APT
-Manifest:
-
-```shell
-./scripts/build.sh -c -p linux --content-handlers microsoft/apt --build-packages
-```
-
 To build the agent that supports provisioning using [IoT Identity Service](https://github.com/Azure/iot-identity-service/blob/main/docs/packaging.md#installing-and-configuring-the-package) specify '--provision-with-iotedge' as shown below:  
 Learn more about [how to provision Device Update agent with IoT Identity Service](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-agent-provisioning#how-to-provision-the-device-update-agent-as-a-module-identity). 
 
 ```shell
-./scripts/build.sh -c -p linux --content-handlers microsoft/apt --provision-with-iotedge
+./scripts/build.sh -c -p linux --provision-with-iotedge
 ```
 
 To see additional build options with build.sh:

@@ -47,15 +47,18 @@ public:
     ADUC_Result Cancel(const ADUC_WorkflowData* workflowData) override;
     ADUC_Result IsInstalled(const ADUC_WorkflowData* workflowData) override;
 
-    void SetIsInstalled(bool isInstalled);
-
 private:
     // Private constructor, must call CreateContentHandler factory method.
     SimulatorHandlerImpl()
     {
     }
-
-    bool _isInstalled{ false };
 };
+
+/**
+ * @brief Get the simulator data file path.
+ * 
+ * @return char* A buffer contains file path. Caller must call free() once done.
+ */
+char* GetSimulatorDataFilePath();
 
 #endif // ADUC_SIMULATOR_HANDLER_HPP

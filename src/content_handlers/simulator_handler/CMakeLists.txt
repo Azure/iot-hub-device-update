@@ -56,3 +56,7 @@ add_custom_command (
             ${OUT_BIN_EXTENTIONS_DIR})
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()
