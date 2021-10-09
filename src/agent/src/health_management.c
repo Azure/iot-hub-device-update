@@ -42,7 +42,7 @@ _Bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const cha
 
 /**
  * @brief Checks whether we can obtain a device or module connection string.
- * 
+ *
  * @return true if connection string can be obtained.
  */
 _Bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs, ADUC_ConfigInfo* config)
@@ -85,7 +85,7 @@ done:
 
 /**
  * @brief Helper function for simulating an unhealthy state.
- * 
+ *
  * @return true if an ADU configuration file contains simulateUnhealthyState value (any value).
  */
 _Bool IsSimulatingUnhealthyState(ADUC_ConfigInfo* config)
@@ -447,8 +447,6 @@ static _Bool CheckShellBinary()
             Log_Error("Lookup failed or '%s' has incorrect permissions (expected: 0%o)", path, expected_permissions);
             goto done;
         }
-
-        // TODO(JeffW): Bug 34035595: CheckShellBinary() needs to check ACLs
     }
     else
     {
@@ -516,11 +514,11 @@ static _Bool AreDirAndFilePermissionsValid()
 
 /**
  * @brief Performs necessary checks to determine whether ADU Agent can function properly.
- * 
+ *
  * Currently, we are performing the following:
  *     - Implicitly check that agent process launched successfully.
  *     - Check that we can obtain the connection info.
- * 
+ *
  * @return true if all checks passed.
  */
 _Bool HealthCheck(const ADUC_LaunchArguments* launchArgs)

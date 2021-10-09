@@ -175,9 +175,6 @@ setup_dirs_and_files() {
            echo "ERROR! $adu_shell_dir/$adu_shell_file does not exists." >&2
         else
            chown "root:$adu_group" "$adu_shell_dir/$adu_shell_file"
-           setfacl -m "group::---" "$adu_shell_dir/$adu_shell_file"
-           setfacl -m "user::r--" "$adu_shell_dir/$adu_shell_file"
-           setfacl -m "user:adu:r-x" "$adu_shell_dir/$adu_shell_file"
            chmod u=rxs "$adu_shell_dir/$adu_shell_file"
         fi
     else
