@@ -82,11 +82,14 @@ static void ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData* 
     typedef typeof(ClientHandle_SendReportedState) ClientHandleSendReportType;
     typedef ClientHandleSendReportType* ClientHandleSendReportFunc;
     ClientHandleSendReportFunc clientHandle_SendReportedState_Func = ClientHandle_SendReportedState;
+
+#ifdef ADUC_BUILD_UNIT_TESTS
     ADUC_TestOverride_Hooks* hooks = workflowData->TestOverrides;
     if (hooks && hooks->ClientHandle_SendReportedStateFunc_TestOverride)
     {
         clientHandle_SendReportedState_Func = (ClientHandleSendReportFunc)(hooks->ClientHandle_SendReportedStateFunc_TestOverride);
     }
+#endif
 
     iothubClientResult = clientHandle_SendReportedState_Func(
         g_iotHubClientHandleForADUComponent,

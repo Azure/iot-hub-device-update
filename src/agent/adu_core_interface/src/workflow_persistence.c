@@ -14,7 +14,6 @@
 
 // fwd decl
 JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State updateState, const ADUC_Result* result, const char* installedUpdateId);
-char* workflow_get_expected_update_id_string(void* WorkflowHandle);
 
 #define WORKFLOWSTEP_PERSISTENCE_FIELD_NAME "WorkflowStep"
 #define RESULTCODE_PERSISTENCE_FIELD_NAME "ResultCode"
@@ -124,7 +123,7 @@ bool WorkflowPersistence_Serialize(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    status = json_serialize_to_file_pretty(rootValue, ADUC_WORKFLOWPERSISTENCE_FILE_PATH);
+    status = json_serialize_to_file_pretty(rootValue, ADUC_WORKFLOW_PERSISTENCE_FILE_PATH);
     if (status != JSONSuccess)
     {
         goto done;
@@ -161,7 +160,7 @@ WorkflowPersistenceState* WorkflowPersistence_Deserialize()
         goto done;
     }
 
-    rootValue = json_parse_file(ADUC_WORKFLOWPERSISTENCE_FILE_PATH);
+    rootValue = json_parse_file(ADUC_WORKFLOW_PERSISTENCE_FILE_PATH);
     if (rootValue == NULL)
     {
         goto done;

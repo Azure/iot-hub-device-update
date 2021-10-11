@@ -114,6 +114,22 @@ set (
 )
 
 set (
+    ADUC_TEST_DATA_PATH_SEGMENT
+    "testdata"
+    CACHE
+        STRING
+        "The path segment in source tree where testdata for various test folders will be found."
+)
+
+set (
+    ADUC_TEST_DATA_FOLDER
+    "/tmp/adu/${ADUC_TEST_DATA_PATH_SEGMENT}"
+    CACHE
+        STRING
+        "Path to the folder containing test data file(s) copied from tests/testdata/<testname> folders in the source tree."
+)
+
+set (
     ADUC_EXTENSIONS_FOLDER
     "${ADUC_DATA_FOLDER}/extensions"
     CACHE STRING "Path to the folder containing file(s) related to DU Agent extension(s).")
@@ -215,7 +231,7 @@ set (
     CACHE STRING "Path to the ADU Agent home folder.")
 
 set (
-    ADUC_WORKFLOWPERSISTENCE_FILE
+    ADUC_WORKFLOW_PERSISTENCE_FILE
     "workflow"
     CACHE STRING "Name of the data file containing workflow persistence records.")
 
@@ -365,11 +381,11 @@ if (ADUC_BUILD_UNIT_TESTS)
     # of output folder.
     enable_testing ()
 
-    set (
-        ADUC_TESTDATA_OUTPUT_DIRECTORY
-        "/tmp/adu"
-        CACHE STRING "Path to the ADU test data directory if testing."
-    )
+    copy_test_data (
+        "${CMAKE_SOURCE_DIR}"
+        "${ADUC_TEST_DATA_PATH_SEGMENT}"
+        "${ADUC_TEST_DATA_FOLDER}")
+
 endif ()
 
 if (ADUC_INSTALL_DAEMON)

@@ -207,7 +207,10 @@ typedef struct tagADUC_WorkflowData
 
     struct tagWorkflowPersistenceState* persistenceState; /**< The workflow persistence state for reboot/restart scenario */
 
+#ifdef ADUC_BUILD_UNIT_TESTS
     ADUC_TestOverride_Hooks* TestOverrides; /**< Test hook overrides. This will be NULL when not testing. */
+#endif
+
 } ADUC_WorkflowData;
 
 #endif // ADUC_TYPES_WORKFLOW_H

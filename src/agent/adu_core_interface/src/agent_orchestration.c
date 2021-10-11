@@ -1,12 +1,22 @@
+/**
+ * @file agent_orchestration.c
+ * @brief Contains business logic implementation for agent-driven workflow orchestration processing.
+ *
+ * @copyright Copyright (c), Microsoft Corp.
+ */
 
 #include "aduc/agent_orchestration.h"
+#include "aduc/string_c_utils.h"
 #include "aduc/types/update_content.h"
 #include "aduc/types/workflow.h"
 #include "aduc/workflow_utils.h"
-#include "aduc/string_c_utils.h"
 
+/**
+ * @brief Maps the desired update action from the twin to a workflow step
+ * @param desiredUpdateAction The update action from the desired section of the twin
+ * @return The mapped workflow step
+ */
 ADUCITF_WorkflowStep AgentOrchestration_GetWorkflowStep(
-    ADUC_WorkflowData* workflowData,
     const ADUCITF_UpdateAction desiredUpdateAction)
 {
     switch (desiredUpdateAction)
@@ -24,26 +34,34 @@ ADUCITF_WorkflowStep AgentOrchestration_GetWorkflowStep(
     }
 }
 
+/**
+ * @brief Returns whether the workflow is complete.
+ * @param entryAutoTransitionWorkflowStep The auto transition workflow step from the entry in the workflow handler map.
+ * @return true if workflow is complete.
+ */
 _Bool AgentOrchestration_IsWorkflowComplete(
-    ADUCITF_UpdateAction entryUpdateAction,
-    ADUCITF_UpdateAction workflowDataUpdateAction,
     ADUCITF_WorkflowStep entryAutoTransitionWorkflowStep)
 {
-    // TODO(jewelden): Remove the next line before shipping PPR once disabling support for cloud-driven orchestration.
-    // That is, auto-transitioning will always occur when agent is driving orchestration via ProcessDeployment update action.
-    _Bool isAutoTransitionApplicable = entryUpdateAction == workflowDataUpdateAction;
-
-    _Bool isWorkflowOnLastStep = entryAutoTransitionWorkflowStep == ADUCITF_WorkflowStep_Undefined;
-
-    return !isAutoTransitionApplicable || isWorkflowOnLastStep;
+    return entryAutoTransitionWorkflowStep == ADUCITF_WorkflowStep_Undefined;
 }
 
+/**
+ * @brief Returns whether reporting to the cloud should be done.
+ * @param updateState the current update state.
+ * @return true if it should not report.
+ */
 _Bool AgentOrchestration_ShouldNotReportToCloud(ADUCITF_State updateState) {
     return updateState != ADUCITF_State_DeploymentInProgress
         && updateState != ADUCITF_State_Idle
         && updateState != ADUCITF_State_Failed;
 }
 
+/**
+ * @brief Returns whether a retry should be done or not.
+ * @param currentToken The timestamp token of the current workflow; can be NULL if it does not have one (first try).
+ * @param newToken The timestamp token of the new workflow request.
+ * @return true if a retry should be done.
+ */
 _Bool AgentOrchestration_IsRetryApplicable(const char* currentToken, const char* newToken)
 {
     if (currentToken == NULL || newToken == NULL)

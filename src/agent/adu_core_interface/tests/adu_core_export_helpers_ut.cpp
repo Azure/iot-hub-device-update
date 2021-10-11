@@ -2,7 +2,7 @@
  * @file adu_core_export_helpers_ut.cpp
  * @brief Unit tests for adu_core_export_helpers.h
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c), Microsoft Corp.
  */
 #include <atomic>
 #include <catch2/catch.hpp>
@@ -117,6 +117,8 @@ std::mutex replacementMutex;
 static bool s_downloadFirstWorkflow_completed = false;
 static bool s_replacementWorkflowIsDone = false;
 static bool s_idleDone = false;
+static bool s_workflowComplete = false;
+static std::string s_expectedWorkflowIdWhenIdle;
 
 #define ADUC_ClientHandle_Invalid (-1)
 
@@ -160,6 +162,11 @@ void Mock_Idle_Callback_for_REPLACEMENT(ADUC_Token token, const char* workflowId
         lock.unlock();
         replacementCV.notify_one();
     }
+}
+
+static void MockIdleCallback()
+{
+    s_workflowComplete = true;
 }
 
 extern "C"
@@ -456,6 +463,11 @@ ADUC_ResultCode s_isInstalled_result_code = ADUC_Result_IsInstalled_NotInstalled
 void Reset_Mocks_State()
 {
     s_mockWorkCompletionCallbackCallCount = 0;
+    s_downloadFirstWorkflow_completed = false;
+    s_replacementWorkflowIsDone = false;
+    s_idleDone = false;
+    s_workflowComplete = false;
+    s_expectedWorkflowIdWhenIdle = "";
 
     s_download_result_code = ADUC_Result_Download_Success;
     s_install_result_code = ADUC_Result_Install_Success;
@@ -596,14 +608,34 @@ public:
 
 };
 
-ADUC_Result Mock_SandboxCreateCallback(ADUC_Token token, const char* workflowId, char* workFolder)
+static ADUC_Result Mock_SandboxCreateCallback(ADUC_Token token, const char* workflowId, char* workFolder)
 {
     ADUC_Result result = { ADUC_Result_Success };
     return result;
 }
 
-void Mock_SandboxDestroyCallback(ADUC_Token token, const char* workflowId, const char* workFolder)
+static void Mock_SandboxDestroyCallback(ADUC_Token token, const char* workflowId, const char* workFolder)
 {
+}
+
+static void Mock_IdleCallback(ADUC_Token token, const char* workflowId)
+{
+    UNREFERENCED_PARAMETER(token);
+    CHECK(s_expectedWorkflowIdWhenIdle == workflowId);
+    s_workflowComplete = true;
+}
+
+static void wait_for_workflow_complete()
+{
+    const unsigned MaxIterations = 100;
+    const unsigned SleepIntervalInMs = 10;
+
+    unsigned count = 0;
+    while (count++ < MaxIterations && !s_workflowComplete)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(SleepIntervalInMs));
+    }
+    CHECK(s_workflowComplete);
 }
 
 class TestCaseFixture
@@ -666,6 +698,7 @@ TEST_CASE("ADUC_MethodCall_Register and Unregister: Valid")
 TEST_CASE_METHOD(TestCaseFixture, "Process Workflow E2E Functional")
 {
     Reset_Mocks_State();
+    s_expectedWorkflowIdWhenIdle = "action_bundle";
 
     std::mutex workCompletionCallbackMTX;
     std::unique_lock<std::mutex> lock(workCompletionCallbackMTX);
@@ -685,6 +718,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow E2E Functional")
 
     workflowData.UpdateActionCallbacks.SandboxCreateCallback = Mock_SandboxCreateCallback;
     workflowData.UpdateActionCallbacks.SandboxDestroyCallback = Mock_SandboxDestroyCallback;
+    workflowData.UpdateActionCallbacks.IdleCallback = Mock_IdleCallback;
 
     workflowData.DownloadProgressCallback = DownloadProgressCallback;
     workflow_set_last_reported_state(ADUCITF_State_Idle);
@@ -703,6 +737,8 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow E2E Functional")
     // Wait again for it to go to Idle so we don't trash the workflowData by going out of scope
     workCompletionCallbackCV.wait(lock);
 
+    wait_for_workflow_complete();
+
     ADUC_MethodCall_Unregister(&workflowData.UpdateActionCallbacks);
 }
 
@@ -713,6 +749,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process workflow - Replacement")
 {
     Reset_Mocks_State();
 
+    s_expectedWorkflowIdWhenIdle = "REPLACEMENT_bundle_update";
 
     MockContentHandlerForReplacement mockContentHandler;
 
@@ -731,6 +768,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process workflow - Replacement")
     workflowData.UpdateActionCallbacks.SandboxDestroyCallback = Mock_SandboxDestroyCallback;
 
     workflowData.DownloadProgressCallback = DownloadProgressCallback;
+
     workflow_set_last_reported_state(ADUCITF_State_Idle);
 
     REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
@@ -762,6 +800,9 @@ TEST_CASE_METHOD(TestCaseFixture, "Process workflow - Replacement")
     // make download result be a success for the next workflow download
     s_download_result_code = ADUC_Result_Download_Success;
 
+    // Also hook into IdleCallback to know workflow is done and WorkflowHandle has been freed
+    workflowData.UpdateActionCallbacks.IdleCallback = Mock_IdleCallback;
+
     {
         std::unique_lock<std::mutex> lock(replacementMutex);
         replacementCV.wait(lock, [] { return s_replacementWorkflowIsDone; });
@@ -772,6 +813,8 @@ TEST_CASE_METHOD(TestCaseFixture, "Process workflow - Replacement")
         std::unique_lock<std::mutex> lock(replacementMutex);
         replacementCV.wait(lock, [] { return s_idleDone; });
     }
+
+    wait_for_workflow_complete();
 
     ADUC_MethodCall_Unregister(&workflowData.UpdateActionCallbacks);
 }

@@ -460,7 +460,7 @@ bool workflow_is_immediate_reboot_requested(ADUC_WorkflowHandle handle);
 void workflow_set_cancellation_type(ADUC_WorkflowHandle handle, ADUC_WorkflowCancellationType cancellationType);
 ADUC_WorkflowCancellationType workflow_get_cancellation_type(ADUC_WorkflowHandle handle);
 
-bool workflow_update_retry_deployment(ADUC_WorkflowHandle handle, const char* currentRetryToken);
+bool workflow_update_retry_deployment(ADUC_WorkflowHandle handle, const char* retryToken);
 
 bool workflow_update_replacement_deployment(ADUC_WorkflowHandle currentWorkflowHandle, ADUC_WorkflowHandle nextWorkflowHandle);
 void workflow_update_for_replacement(ADUC_WorkflowHandle handle);

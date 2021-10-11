@@ -126,13 +126,6 @@ typedef struct tagADUC_WorkflowHandlerMapEntry
      *     workflow step is above WorkflowStep. Using ADUCITF_WorkflowStep_Undefined means it ends the workflow.
      */
     const ADUCITF_WorkflowStep AutoTransitionWorkflowStep;
-
-    /**< Above AutoTransitionWorkflowStep auto-transitions if and only if the current UpdateAction of the workflow being
-     *     processed is equal to this AutoTransitionApplicableUpdateAction.
-     */
-    // TODO(jewelden): remove this once switching entirely over to goal state orchestration, in which case don't need to
-    // check this.
-    const ADUCITF_UpdateAction AutoTransitionApplicableUpdateAction;
 } ADUC_WorkflowHandlerMapEntry;
 
 // clang-format off
@@ -158,7 +151,6 @@ const ADUC_WorkflowHandlerMapEntry workflowHandlerMap[] = {
         /* and on completion calls */                     ADUC_MethodCall_ProcessDeployment_Complete,
         /* then on success, transitions to state */       ADUCITF_State_DeploymentInProgress,
         /* and then auto-transitions to workflow step */  ADUCITF_WorkflowStep_Download,
-        /* but only if original update action was */      ADUCITF_UpdateAction_ProcessDeployment
     },
 
     { ADUCITF_WorkflowStep_Download,
@@ -166,7 +158,6 @@ const ADUC_WorkflowHandlerMapEntry workflowHandlerMap[] = {
         /* and on completion calls */                     ADUC_MethodCall_Download_Complete,
         /* then on success, transitions to state */       ADUCITF_State_DownloadSucceeded,
         /* and then auto-transitions to workflow step */  ADUCITF_WorkflowStep_Install,
-        /* but only if the original update action was */  ADUCITF_UpdateAction_ProcessDeployment
     },
 
     { ADUCITF_WorkflowStep_Install,
@@ -174,7 +165,6 @@ const ADUC_WorkflowHandlerMapEntry workflowHandlerMap[] = {
         /* and on completion calls */                     ADUC_MethodCall_Install_Complete,
         /* then on success, transitions to state */       ADUCITF_State_InstallSucceeded,
         /* and then auto-transitions to workflow step */  ADUCITF_WorkflowStep_Apply,
-        /* but only if the original update action was */  ADUCITF_UpdateAction_ProcessDeployment,
     },
 
     // Note: There's no "ApplySucceeded" state.  On success, we should return to Idle state.
@@ -183,7 +173,6 @@ const ADUC_WorkflowHandlerMapEntry workflowHandlerMap[] = {
         /* and on completion calls */                     ADUC_MethodCall_Apply_Complete,
         /* then on success, transition to state */        ADUCITF_State_Idle,
         /* and then auto-transitions to workflow step */  ADUCITF_WorkflowStep_Undefined, // Undefined means end of workflow
-        /* but only if the original update action was */  ADUCITF_UpdateAction_ProcessDeployment
     },
 };
 
@@ -346,22 +335,8 @@ static void HandleWorkflowPersistence(SetUpdateStateWithResultFunc setUpdateStat
 
 void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowData)
 {
-    // Setup any applicable test overrides
     HandleUpdateActionFunc handleUpdateActionFunc = ADUC_Workflow_HandleUpdateAction;
-    if (currentWorkflowData->TestOverrides && currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride)
-    {
-        handleUpdateActionFunc = currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride;
-    }
-
     SetUpdateStateWithResultFunc setUpdateStateWithResultFunc = ADUC_SetUpdateStateWithResult;
-    if (currentWorkflowData->TestOverrides && currentWorkflowData->TestOverrides->SetUpdateStateWithResultFunc_TestOverride)
-    {
-        setUpdateStateWithResultFunc = currentWorkflowData->TestOverrides->SetUpdateStateWithResultFunc_TestOverride;
-    }
-
-    //
-    // Now, we handle the current incoming ProcessDeployment or Cancel update action.
-    //
 
     if (currentWorkflowData == NULL)
     {
@@ -373,6 +348,23 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowD
     {
         goto done;
     }
+
+#ifdef ADUC_BUILD_UNIT_TESTS
+    // Setup any applicable test overrides
+    if (currentWorkflowData->TestOverrides && currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride)
+    {
+        handleUpdateActionFunc = currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride;
+    }
+
+    if (currentWorkflowData->TestOverrides && currentWorkflowData->TestOverrides->SetUpdateStateWithResultFunc_TestOverride)
+    {
+        setUpdateStateWithResultFunc = currentWorkflowData->TestOverrides->SetUpdateStateWithResultFunc_TestOverride;
+    }
+#endif
+
+    //
+    // Now, we handle the current incoming ProcessDeployment or Cancel update action.
+    //
 
     Log_Info("Perform startup tasks.");
 
@@ -421,7 +413,10 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowD
 done:
 
     // Once we set Idle state to the orchestrator we can start receiving update actions.
-    currentWorkflowData->StartupIdleCallSent = true;
+    if (currentWorkflowData)
+    {
+        currentWorkflowData->StartupIdleCallSent = true;
+    }
 }
 
 /**
@@ -470,10 +465,13 @@ void ADUC_Workflow_HandlePropertyUpdate(ADUC_WorkflowData* currentWorkflowData, 
     s_workflow_lock();
 
     HandleUpdateActionFunc handleUpdateActionFunc = ADUC_Workflow_HandleUpdateAction;
+
+#ifdef ADUC_BUILD_UNIT_TESTS
     if (currentWorkflowData->TestOverrides && currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride)
     {
         handleUpdateActionFunc = currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride;
     }
+#endif
 
     if (currentWorkflowData->WorkflowHandle != NULL)
     {
@@ -673,7 +671,7 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
     //
     // Determine the current workflow step
     //
-    ADUCITF_WorkflowStep nextStep = AgentOrchestration_GetWorkflowStep(workflowData, desiredAction);
+    ADUCITF_WorkflowStep nextStep = AgentOrchestration_GetWorkflowStep(desiredAction);
     workflow_set_current_workflowstep(workflowData->WorkflowHandle, nextStep);
 
     //
@@ -717,8 +715,6 @@ void autoTransitionWorkflow(ADUC_WorkflowData* workflowData)
     }
 
     if (AgentOrchestration_IsWorkflowComplete(
-        postCompleteEntry->AutoTransitionApplicableUpdateAction,
-        workflowData->CurrentAction,
         postCompleteEntry->AutoTransitionWorkflowStep))
     {
         Log_Info("Workflow is Complete.");
@@ -765,10 +761,13 @@ void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData)
     // workCompletionData is sent to the upper-layer which will pass the WorkCompletionToken back
     // when it makes the async work complete call.
     WorkCompletionCallbackFunc workCompletionCallbackFunc = ADUC_Workflow_WorkCompletionCallback;
+
+#ifdef ADUC_BUILD_UNIT_TESTS
     if (workflowData->TestOverrides && workflowData->TestOverrides->WorkCompletionCallbackFunc_TestOverride)
     {
         workCompletionCallbackFunc = workflowData->TestOverrides->WorkCompletionCallbackFunc_TestOverride;
     }
+#endif
 
     methodCallData->WorkCompletionData.WorkCompletionCallback = workCompletionCallbackFunc;
     methodCallData->WorkCompletionData.WorkCompletionToken = methodCallData;
@@ -858,6 +857,20 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
             ADUCITF_StateToString(nextUpdateState));
 
         ADUC_SetUpdateState(workflowData, nextUpdateState);
+
+        // Transitioning to idle (or failed) state frees and nulls-out the WorkflowHandle as a side-effect of
+        // setting the update state.
+        if (workflow_get_last_reported_state(workflowData->WorkflowHandle) != ADUCITF_State_Idle)
+        {
+            // Operation is now complete. Clear both inprogress and cancel requested.
+            workflow_clear_inprogress_and_cancelrequested(workflowData->WorkflowHandle);
+
+            //
+            // We are now ready to transition to the next step of the workflow.
+            //
+            autoTransitionWorkflow(workflowData);
+            goto done;
+        }
     }
     else
     {
@@ -891,14 +904,9 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
                 // ProcessDeployment's OperationFunc called by TransitionWorkflow is synchronous so it kicks off the
                 // download worker thread after reporting DeploymentInProgress ACK for the replacement/retry, so we
                 // return instead of goto done to avoid the redundant autoTransitionWorkflow call.
-                free(methodCallData);
                 ADUC_Workflow_TransitionWorkflow(workflowData);
 
-                if (isAsync)
-                {
-                    s_workflow_unlock();
-                }
-                return;
+                goto done;
             }
 
             if (cancellationType != ADUC_WorkflowCancellationType_Normal)
@@ -939,18 +947,8 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
     }
 
 done:
-    // Operation is now complete. Atomically clear both inprogress and cancel requested.
-    // If the main thread reads these and sees they are false when doing a deployment replacement, then
-    // it must not defer a deployment replacement but process it as a new deployment immediately.
-    workflow_clear_inprogress_and_cancelrequested(workflowData->WorkflowHandle);
-
     // lifetime of methodCallData now ends as the operation work has completed.
     free(methodCallData);
-
-    //
-    // We are now ready to transition to the next step of the workflow.
-    //
-    autoTransitionWorkflow(workflowData);
 
     if (isAsync)
     {

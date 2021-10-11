@@ -18,13 +18,13 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData);
 
 void ADUC_WorkflowData_DoWork(ADUC_WorkflowData* workflowData);
 
-void ADUC_Workflow_HandlePropertyUpdate(ADUC_WorkflowData* workflowData, const unsigned char* propertyUpdateValue);
+void ADUC_Workflow_HandlePropertyUpdate(ADUC_WorkflowData* currentWorkflowData, const unsigned char* propertyUpdateValue);
 
 void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData);
 
 void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData);
 
-void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* workflowData);
+void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowData);
 
 EXTERN_C_END
 

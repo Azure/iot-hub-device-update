@@ -76,11 +76,14 @@ void LinuxPlatformLayer::Idle(const char* workflowId)
 static ContentHandler* GetContentTypeHandler(const ADUC_WorkflowData* workflowData, char* updateType, ADUC_Result* result)
 {
     ContentHandler* contentHandler = nullptr;
+
+#ifdef ADUC_BUILD_UNIT_TESTS
     if (workflowData->TestOverrides && workflowData->TestOverrides->ContentHandler_TestOverride)
     {
         contentHandler = static_cast<ContentHandler*>(workflowData->TestOverrides->ContentHandler_TestOverride);
     }
     else
+#endif
     {
         ADUC_Result loadResult = ContentHandlerFactory::LoadUpdateContentHandlerExtension(updateType, &contentHandler);
         if (IsAducResultCodeFailure(loadResult.ResultCode))
