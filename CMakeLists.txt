@@ -273,7 +273,7 @@ get_filename_component (
 
 set (
     DIAGNOSTICS_CONFIG_FILE
-    "adu-diagnostics-config.json"
+    "du-diagnostics-config.json"
     CACHE STRING
           "Path to the file that contains the configuration information for the diagnostics system")
 

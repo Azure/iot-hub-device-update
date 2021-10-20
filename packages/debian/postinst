@@ -14,6 +14,7 @@ set -e
 
 adu_conf_dir=/etc/adu
 adu_conf_file=du-config.json
+adu_diagnostics_conf_file=du-diagnostics-config.json
 adu_log_dir=/var/log/adu
 adu_data_dir=/var/lib/adu
 adu_downloads_dir="$adu_data_dir/downloads"
@@ -78,6 +79,25 @@ sample_du_config=$(
 END_OF_JSON
 )
 
+# sample du-diagnostics-config.json.json file
+sample_du_diagnostics_config=$(
+    cat << END_OF_JSON
+{
+    "logComponents":[
+        {
+            "componentName":"adu",
+            "logPath":"/var/log/adu/"
+        },
+        {
+            "componentName":"do",
+            "logPath":"/var/log/deliveryoptimization-agent/"
+        }
+    ],
+    "maxKilobytesToUploadPerLogPath":50
+}
+END_OF_JSON
+)
+
 setup_dirs_and_files() {
     echo "Setting directories and files..."
     # Note on linux permissions
@@ -113,6 +133,13 @@ setup_dirs_and_files() {
         if [ ! -f "$adu_conf_dir/$adu_conf_file" ]; then
             cp -a "$adu_conf_dir/${adu_conf_file}.template" "$adu_conf_dir/$adu_conf_file"
             chmod u=r,g=r,o=r "$adu_conf_dir/$adu_conf_file"
+        fi
+
+        echo "Generating the diagnostics configuration file..."
+        if [ ! -f "$adu_conf_dir/$adu_diagnostics_conf_file" ]; then
+            echo "$sample_du_diagnostics_config" > "$adu_conf_dir/$adu_diagnostics_conf_file"
+            chown "$adu_user:$adu_group" "$adu_conf_dir/$adu_diagnostics_conf_file"
+            chmod u=r,g=r,o=r "$adu_conf_dir/$adu_diagnostics_conf_file"
         fi
 
         # Create home dir
