@@ -166,7 +166,7 @@ IOTHUB_MESSAGE_HANDLE PnP_CreateTelemetryMessageHandle(const char* componentName
 }
 
 //
-// VisitComponentProperties visits each sub element of the the given objectName in the desired JSON.  Each of these sub elements corresponds to
+// VisitComponentProperties visits each sub element of the given objectName in the desired JSON.  Each of these sub elements corresponds to
 // a property of this component, which we'll invoke the application's pnpPropertyCallback to inform.
 //
 static void VisitComponentProperties(

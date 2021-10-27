@@ -13,6 +13,7 @@
 #include "aduc/string_utils.hpp"
 #include "aduc/system_utils.h"
 #include "aduc/types/workflow.h"
+#include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 #include "parson.h"
 
@@ -68,12 +69,12 @@ ContentHandler* ComponentsUpdateHandlerImpl::CreateContentHandler()
 }
 
 /**
- * @brief Performs a download task. 
- * 
+ * @brief Performs a download task.
+ *
  * @return ADUC_Result The result of this download task.
- *  
+ *
  *     Following are the potential extended result codes:
- * 
+ *
  *     ADUC_ERC_COMPONENTS_HANDLER_INVALID_COMPONENTS_DATA
  *     ADUC_ERC_COMPONENTS_HANDLER_CREATE_SANDBOX_FAILURE
  *     ADUC_ERC_COMPONENTS_HANDLER_GET_FILE_ENTITY_FAILURE
@@ -201,11 +202,11 @@ char* _createComponentSerializedString(JSON_Array* components, size_t index)
 
 /**
  * @brief Perform 'install' and 'apply' actions on all 'installItems' entries.
- * 
- * @param workflowData A Components Update workflow data object. 
+ *
+ * @param workflowData A Components Update workflow data object.
  * @param instructionsRoot An JSON_Value object contain an instruction file content.
  * @param components A JSON_Value object contain an array with a single selected component.
- * @return ADUC_Result 
+ * @return ADUC_Result
  */
 ADUC_Result
 _ProcessInstallItems(const ADUC_WorkflowData* workflowData, JSON_Value* instructionsRoot, JSON_Array* components)
@@ -653,7 +654,7 @@ ADUC_Result ComponentsUpdateHandlerImpl::Cancel(const ADUC_WorkflowData* workflo
  */
 ADUC_Result ComponentsUpdateHandlerImpl::IsInstalled(const ADUC_WorkflowData* workflowData)
 {
-    char* installedCriteria = workflow_get_installed_criteria(workflowData->WorkflowHandle);
+    char* installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
     ADUC_Result result = GetIsInstalled(ADUC_INSTALLEDCRITERIA_FILE_PATH, installedCriteria);
     workflow_free_string(installedCriteria);
     return result;

@@ -12,17 +12,19 @@
 using Catch::Matchers::Equals;
 
 #include <fstream>
+#include <memory>
 #include <string.h>
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 class SimulatorHandlerDataFile
 {
     char* _dataFilePath = nullptr;
 
 public:
-    SimulatorHandlerDataFile(const char* data)
+    explicit SimulatorHandlerDataFile(const char* data)
     {
         _dataFilePath = GetSimulatorDataFilePath();
-        try 
+        try
         {
             std::ofstream file{ _dataFilePath, std::ios::app | std::ios::binary };
             file.write(data, strlen(data));
@@ -37,14 +39,14 @@ public:
     ~SimulatorHandlerDataFile()
     {
         remove(_dataFilePath);
-        free(_dataFilePath);
+        free(_dataFilePath); // NOLINT(cppcoreguidelines-owning-memory)
     }
 };
 
 
 // clang-format off
 
-const char* action_process_deployment = 
+const char* action_process_deployment =
     R"( {                    )"
     R"(     "workflow": {    )"
     R"(         "action": 3, )"
@@ -59,111 +61,111 @@ const char* action_process_deployment =
     R"(     } )"
     R"( } )";
 
-const char* downloadSucceeded500 = 
+const char* downloadSucceeded500 =
     R"({)"
     R"(  "download" : {)"
     R"(    "contoso-motor-1.0-updatemanifest.json" : {)"
-    R"(      "resultCode" : 500,)" 
+    R"(      "resultCode" : 500,)"
     R"(      "extendedResultCode" : 0,)"
     R"(      "resultDetails" : "")"
     R"(    })"
     R"(  })"
     R"(})";
 
-const char* downloadFailed12345 = 
+const char* downloadFailed12345 =
     R"({)"
     R"(  "download" : {)"
     R"(    "contoso-motor-1.0-updatemanifest.json" : {)"
-    R"(      "resultCode" : 0,)" 
+    R"(      "resultCode" : 0,)"
     R"(      "extendedResultCode" : 12345,)"
     R"(      "resultDetails" : "Mock failure result - 12345")"
     R"(    })"
     R"(  })"
     R"(})";
 
-const char* catchAlldownloadResultFailed22222 = 
+const char* catchAlldownloadResultFailed22222 =
     R"({)"
     R"(  "download" : {)"
     R"(    "*" : {)"
-    R"(      "resultCode" : 0,)" 
+    R"(      "resultCode" : 0,)"
     R"(      "extendedResultCode" : 22222,)"
     R"(      "resultDetails" : "Mock failure result - 22222")"
     R"(    })"
     R"(  })"
     R"(})";
 
-const char* noResultsSpecified = 
+const char* noResultsSpecified =
     R"({)"
     R"(  "bad_key" : {)"
     R"(    "*" : {)"
-    R"(      "resultCode" : 0,)" 
+    R"(      "resultCode" : 0,)"
     R"(      "extendedResultCode" : 12345,)"
     R"(      "resultDetails" : "Mock failure result - 12345")"
     R"(    })"
     R"(  })"
     R"(})";
 
-const char* installSucceeded603 = 
+const char* installSucceeded603 =
     R"({)"
     R"(  "install" : {)"
-    R"(    "resultCode" : 603,)" 
+    R"(    "resultCode" : 603,)"
     R"(    "extendedResultCode" : 0,)"
     R"(    "resultDetails" : "Mock installation skipped.")"
     R"(  })"
     R"(})";
 
-const char* installFailed33333 = 
+const char* installFailed33333 =
     R"({)"
     R"(  "install" : {)"
-    R"(    "resultCode" : 0,)" 
+    R"(    "resultCode" : 0,)"
     R"(    "extendedResultCode" : 33333,)"
     R"(    "resultDetails" : "Mock failure result - 33333")"
     R"(  })"
     R"(})";
 
-const char* applySucceed710 = 
+const char* applySucceed710 =
     R"({)"
     R"(  "apply" : {)"
-    R"(    "resultCode" : 710,)" 
+    R"(    "resultCode" : 710,)"
     R"(    "extendedResultCode" : 0,)"
     R"(    "resultDetails" : "Mock apply succeeded - 710")"
     R"(  })"
     R"(})";
 
-const char* applyFailed44444 = 
+const char* applyFailed44444 =
     R"({)"
     R"(  "apply" : {)"
-    R"(    "resultCode" : 0,)" 
+    R"(    "resultCode" : 0,)"
     R"(    "extendedResultCode" : 44444,)"
     R"(    "resultDetails" : "Mock failure result - 44444")"
     R"(  })"
     R"(})";
 
-const char* cancelFailed55555 = 
+const char* cancelFailed55555 =
     R"({)"
     R"(  "cancel" : {)"
-    R"(    "resultCode" : 0,)" 
+    R"(    "resultCode" : 0,)"
     R"(    "extendedResultCode" : 55555,)"
     R"(    "resultDetails" : "Mock failure result - 55555")"
     R"(  })"
     R"(})";
 
-const char* isInstalled_installed = 
+const char* isInstalled_installed =
     R"({)"
     R"(  "isInstalled" : {)"
     R"(    "1.0" : {)"
-    R"(      "resultCode" : 900,)" 
+    R"(      "resultCode" : 900,)"
     R"(      "extendedResultCode" : 0,)"
     R"(      "resultDetails" : "")"
     R"(    })"
     R"(  })"
     R"(})";
 
-const char* isInstalled_notInstalled = 
+const char* isInstalled_notInstalled =
     R"({)"
     R"(  "isInstalled" : {)"
     R"(    "1.0" : {)"
-    R"(      "resultCode" : 901,)" 
+    R"(      "resultCode" : 901,)"
     R"(      "extendedResultCode" : 0,)"
     R"(      "resultDetails" : "Mock result - 901")"
     R"(    })"
@@ -181,10 +183,10 @@ TEST_CASE("Download Succeeded 500")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    ADUC_WorkflowData testWorkflow;
+    ADUC_WorkflowData testWorkflow{};
     testWorkflow.WorkflowHandle = handle;
 
-    ContentHandler* simHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
 
     result = simHandler->Download(&testWorkflow);
     testWorkflow.WorkflowHandle = nullptr;
@@ -192,7 +194,6 @@ TEST_CASE("Download Succeeded 500")
     CHECK(result.ResultCode == 500);
     CHECK(result.ExtendedResultCode == 0);
 
-    delete simHandler;
     workflow_free(handle);
 }
 
@@ -205,10 +206,10 @@ TEST_CASE("Download Failed 12345")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    ADUC_WorkflowData testWorkflow;
+    ADUC_WorkflowData testWorkflow{};
     testWorkflow.WorkflowHandle = handle;
 
-    ContentHandler* simHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
 
     result = simHandler->Download(&testWorkflow);
     testWorkflow.WorkflowHandle = nullptr;
@@ -217,7 +218,6 @@ TEST_CASE("Download Failed 12345")
     CHECK(result.ExtendedResultCode == 12345);
     CHECK_THAT(workflow_peek_result_details(handle), Equals("Mock failure result - 12345"));
 
-    delete simHandler;
     workflow_free(handle);
 }
 
@@ -230,10 +230,10 @@ TEST_CASE("Download Catch-All 22222")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    ADUC_WorkflowData testWorkflow;
+    ADUC_WorkflowData testWorkflow{};
     testWorkflow.WorkflowHandle = handle;
 
-    ContentHandler* simHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
 
     result = simHandler->Download(&testWorkflow);
     testWorkflow.WorkflowHandle = nullptr;
@@ -242,7 +242,6 @@ TEST_CASE("Download Catch-All 22222")
     CHECK(result.ExtendedResultCode == 22222);
     CHECK_THAT(workflow_peek_result_details(handle), Equals("Mock failure result - 22222"));
 
-    delete simHandler;
     workflow_free(handle);
 }
 
@@ -255,10 +254,10 @@ TEST_CASE("Download - No Results - Succeeded 500")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    ADUC_WorkflowData testWorkflow;
+    ADUC_WorkflowData testWorkflow{};
     testWorkflow.WorkflowHandle = handle;
 
-    ContentHandler* simHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
 
     result = simHandler->Download(&testWorkflow);
     testWorkflow.WorkflowHandle = nullptr;
@@ -266,7 +265,6 @@ TEST_CASE("Download - No Results - Succeeded 500")
     CHECK(result.ResultCode == 500);
     CHECK(result.ExtendedResultCode == 0);
 
-    delete simHandler;
     workflow_free(handle);
 }
 
@@ -279,10 +277,10 @@ TEST_CASE("Install Skipped 603")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    ADUC_WorkflowData testWorkflow;
+    ADUC_WorkflowData testWorkflow{};
     testWorkflow.WorkflowHandle = handle;
 
-    ContentHandler* simHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
 
     result = simHandler->Install(&testWorkflow);
     testWorkflow.WorkflowHandle = nullptr;
@@ -290,7 +288,6 @@ TEST_CASE("Install Skipped 603")
     CHECK(result.ResultCode == 603);
     CHECK(result.ExtendedResultCode == 0);
 
-    delete simHandler;
     workflow_free(handle);
 }
 
@@ -303,10 +300,10 @@ TEST_CASE("Install Failed 333333")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    ADUC_WorkflowData testWorkflow;
+    ADUC_WorkflowData testWorkflow{};
     testWorkflow.WorkflowHandle = handle;
 
-    ContentHandler* simHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
 
     result = simHandler->Install(&testWorkflow);
     testWorkflow.WorkflowHandle = nullptr;
@@ -315,7 +312,6 @@ TEST_CASE("Install Failed 333333")
     CHECK(result.ExtendedResultCode == 33333);
     CHECK_THAT(workflow_peek_result_details(handle), Equals("Mock failure result - 33333"));
 
-    delete simHandler;
     workflow_free(handle);
 }
 
@@ -328,10 +324,10 @@ TEST_CASE("Install - No Results - Succeeded 600")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    ADUC_WorkflowData testWorkflow;
+    ADUC_WorkflowData testWorkflow{};
     testWorkflow.WorkflowHandle = handle;
 
-    ContentHandler* simHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
 
     result = simHandler->Install(&testWorkflow);
     testWorkflow.WorkflowHandle = nullptr;
@@ -339,7 +335,6 @@ TEST_CASE("Install - No Results - Succeeded 600")
     CHECK(result.ResultCode == 600);
     CHECK(result.ExtendedResultCode == 0);
 
-    delete simHandler;
     workflow_free(handle);
 }
 
@@ -352,10 +347,10 @@ TEST_CASE("Apply failed 44444")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    ADUC_WorkflowData testWorkflow;
+    ADUC_WorkflowData testWorkflow{};
     testWorkflow.WorkflowHandle = handle;
 
-    ContentHandler* simHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
 
     result = simHandler->Apply(&testWorkflow);
     testWorkflow.WorkflowHandle = nullptr;
@@ -364,7 +359,6 @@ TEST_CASE("Apply failed 44444")
     CHECK(result.ExtendedResultCode == 44444);
     CHECK_THAT(workflow_peek_result_details(handle), Equals("Mock failure result - 44444"));
 
-    delete simHandler;
     workflow_free(handle);
 }
 
@@ -377,10 +371,10 @@ TEST_CASE("Apply - No Results - Succeeded 700")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    ADUC_WorkflowData testWorkflow;
+    ADUC_WorkflowData testWorkflow{};
     testWorkflow.WorkflowHandle = handle;
 
-    ContentHandler* simHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
 
     result = simHandler->Apply(&testWorkflow);
     testWorkflow.WorkflowHandle = nullptr;
@@ -388,7 +382,6 @@ TEST_CASE("Apply - No Results - Succeeded 700")
     CHECK(result.ResultCode == 700);
     CHECK(result.ExtendedResultCode == 0);
 
-    delete simHandler;
     workflow_free(handle);
 }
 
@@ -401,10 +394,10 @@ TEST_CASE("Cancel failed 55555")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    ADUC_WorkflowData testWorkflow;
+    ADUC_WorkflowData testWorkflow{};
     testWorkflow.WorkflowHandle = handle;
 
-    ContentHandler* simHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
 
     result = simHandler->Cancel(&testWorkflow);
     testWorkflow.WorkflowHandle = nullptr;
@@ -413,7 +406,6 @@ TEST_CASE("Cancel failed 55555")
     CHECK(result.ExtendedResultCode == 55555);
     CHECK_THAT(workflow_peek_result_details(handle), Equals("Mock failure result - 55555"));
 
-    delete simHandler;
     workflow_free(handle);
 }
 
@@ -426,10 +418,10 @@ TEST_CASE("Cancel - No Results - Succeeded 800")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    ADUC_WorkflowData testWorkflow;
+    ADUC_WorkflowData testWorkflow{};
     testWorkflow.WorkflowHandle = handle;
 
-    ContentHandler* simHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
 
     result = simHandler->Cancel(&testWorkflow);
     testWorkflow.WorkflowHandle = nullptr;
@@ -437,7 +429,6 @@ TEST_CASE("Cancel - No Results - Succeeded 800")
     CHECK(result.ResultCode == 800);
     CHECK(result.ExtendedResultCode == 0);
 
-    delete simHandler;
     workflow_free(handle);
 }
 
@@ -450,10 +441,10 @@ TEST_CASE("IsInstalled - installed")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    ADUC_WorkflowData testWorkflow;
+    ADUC_WorkflowData testWorkflow{};
     testWorkflow.WorkflowHandle = handle;
 
-    ContentHandler* simHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
 
     result = simHandler->IsInstalled(&testWorkflow);
     testWorkflow.WorkflowHandle = nullptr;
@@ -461,7 +452,6 @@ TEST_CASE("IsInstalled - installed")
     CHECK(result.ResultCode == 900);
     CHECK(result.ExtendedResultCode == 0);
 
-    delete simHandler;
     workflow_free(handle);
 }
 
@@ -474,10 +464,10 @@ TEST_CASE("IsInstalled - notInstalled")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    ADUC_WorkflowData testWorkflow;
+    ADUC_WorkflowData testWorkflow{};
     testWorkflow.WorkflowHandle = handle;
 
-    ContentHandler* simHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
 
     result = simHandler->IsInstalled(&testWorkflow);
     testWorkflow.WorkflowHandle = nullptr;
@@ -486,6 +476,5 @@ TEST_CASE("IsInstalled - notInstalled")
     CHECK(result.ExtendedResultCode == 0);
     CHECK_THAT(workflow_peek_result_details(handle), Equals("Mock result - 901"));
 
-    delete simHandler;
     workflow_free(handle);
 }

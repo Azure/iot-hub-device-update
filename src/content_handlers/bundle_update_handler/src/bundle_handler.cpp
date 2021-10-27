@@ -14,6 +14,7 @@
 #include "aduc/logging.h"
 #include "aduc/string_utils.hpp"
 #include "aduc/system_utils.h"
+#include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 
 #include "parson.h"
@@ -75,7 +76,7 @@ ContentHandler* BundleHandlerImpl::CreateContentHandler()
 /**
  * @brief Performs 'Download' task by downloading all 'Components-Update' manifest files.
  * For each manifest file, invoke a Component Update Handler to performs 'Download' action.
- * 
+ *
  * @return ADUC_Result The result.
  */
 ADUC_Result BundleHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
@@ -291,9 +292,9 @@ done:
 
 /**
  * @brief Make sure that all child components update workflows are created.
- * 
+ *
  * @param handle A workflow data object handle.
- * @return ADUC_Result 
+ * @return ADUC_Result
  */
 ADUC_Result EnsureComponentsWorkflowsCreated(const ADUC_WorkflowHandle handle)
 {
@@ -656,7 +657,7 @@ ADUC_Result BundleHandlerImpl::Cancel(const ADUC_WorkflowData* workflowData)
  */
 ADUC_Result BundleHandlerImpl::IsInstalled(const ADUC_WorkflowData* workflowData)
 {
-    char* installedCriteria = workflow_get_installed_criteria(workflowData->WorkflowHandle);
+    char* installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
     ADUC_Result result = GetIsInstalled(ADUC_INSTALLEDCRITERIA_FILE_PATH, installedCriteria);
     workflow_free_string(installedCriteria);
     return result;

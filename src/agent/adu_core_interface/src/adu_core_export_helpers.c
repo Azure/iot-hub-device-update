@@ -12,8 +12,9 @@
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h"
 #include "aduc/string_c_utils.h"
+#include "aduc/workflow_data_utils.h"
+#include "aduc/workflow_persistence_utils.h"
 #include "aduc/workflow_utils.h"
-#include "workflow_persistence.h"
 
 #include <parson.h>
 #include <stdbool.h>
@@ -40,7 +41,7 @@ static void ADUC_SetUpdateStateHelper(
     // This is required by ADU service.
     if (updateState == ADUCITF_State_Idle)
     {
-        if (workflow_get_last_reported_state() == ADUCITF_State_ApplyStarted)
+        if (ADUC_WorkflowData_GetLastReportedState(workflowData) == ADUCITF_State_ApplyStarted)
         {
             if (workflowData->SystemRebootState == ADUC_SystemRebootState_None
                 && workflowData->AgentRestartState == ADUC_AgentRestartState_None)
@@ -49,7 +50,9 @@ static void ADUC_SetUpdateStateHelper(
                 // to the ADU service to complete the update workflow.
                 char* updateId = workflow_get_expected_update_id_string(workflowHandle);
                 ADUC_SetInstalledUpdateIdAndGoToIdle(workflowData, updateId);
-                workflow_set_last_reported_state(updateState);
+
+                ADUC_WorkflowData_SetLastReportedState(updateState, workflowData);
+
                 workflow_free_string(updateId);
                 return;
             }
@@ -82,17 +85,26 @@ static void ADUC_SetUpdateStateHelper(
             // Fall through to report Idle without InstalledUpdateId.
         }
 
-        AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-            workflowData, updateState, result, NULL /* installedUpdateId */);
-        ADUC_MethodCall_Idle(workflowData);
+        if (!AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(workflowData, updateState, result, NULL /* installedUpdateId */))
+        {
+            updateState = ADUCITF_State_Failed;
+            workflow_set_state(workflowData->WorkflowHandle, ADUCITF_State_Failed);
+        }
+        else
+        {
+            ADUC_MethodCall_Idle(workflowData);
+        }
     }
     else
     {
-        AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-            workflowData, updateState, result, NULL /* installedUpdateId */);
+        if (!AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(workflowData, updateState, result, NULL /* installedUpdateId */))
+        {
+            updateState = ADUCITF_State_Failed;
+            workflow_set_state(workflowData->WorkflowHandle, ADUCITF_State_Failed);
+        }
     }
 
-    workflow_set_last_reported_state(updateState);
+    ADUC_WorkflowData_SetLastReportedState(updateState, workflowData);
     Log_RequestFlush();
 }
 
@@ -129,9 +141,12 @@ void ADUC_SetUpdateStateWithResult(
  */
 void ADUC_SetInstalledUpdateIdAndGoToIdle(ADUC_WorkflowData* workflowData, const char* updateId)
 {
-    AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(workflowData, updateId);
+    if (!AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(workflowData, updateId))
+    {
+        Log_Error("Failed to report last installed updateId. Going to idle state.");
+    }
 
-    workflow_set_last_reported_state(ADUCITF_State_Idle);
+    ADUC_WorkflowData_SetLastReportedState(ADUCITF_State_Idle, workflowData);
 
     ADUC_MethodCall_Idle(workflowData);
 
@@ -153,10 +168,13 @@ static _Bool ADUC_UpdateActionCallbacks_VerifyData(const ADUC_UpdateActionCallba
 {
     // Note: Okay for updateActionCallbacks->PlatformLayerHandle to be NULL.
 
-    if (updateActionCallbacks->IdleCallback == NULL || updateActionCallbacks->DownloadCallback == NULL
-        || updateActionCallbacks->InstallCallback == NULL || updateActionCallbacks->ApplyCallback == NULL
+    if (updateActionCallbacks->IdleCallback == NULL
+        || updateActionCallbacks->DownloadCallback == NULL
+        || updateActionCallbacks->InstallCallback == NULL
+        || updateActionCallbacks->ApplyCallback == NULL
         || updateActionCallbacks->SandboxCreateCallback == NULL
-        || updateActionCallbacks->SandboxDestroyCallback == NULL || updateActionCallbacks->DoWorkCallback == NULL
+        || updateActionCallbacks->SandboxDestroyCallback == NULL
+        || updateActionCallbacks->DoWorkCallback == NULL
         || updateActionCallbacks->IsInstalledCallback == NULL)
     {
         Log_Error("Invalid ADUC_UpdateActionCallbacks object");
@@ -257,11 +275,12 @@ void ADUC_MethodCall_Idle(ADUC_WorkflowData* workflowData)
 {
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
 
-    ADUCITF_State lastReportedState = workflow_get_last_reported_state();
+    ADUCITF_State lastReportedState = ADUC_WorkflowData_GetLastReportedState(workflowData);
 
     // Can reach Idle state from ApplyStarted as there isn't an ApplySucceeded state.
-    if (lastReportedState != ADUCITF_State_Idle && lastReportedState != ADUCITF_State_ApplyStarted
-        && lastReportedState != ADUCITF_State_Failed)
+    if (lastReportedState != ADUCITF_State_Idle &&
+        lastReportedState != ADUCITF_State_ApplyStarted &&
+        lastReportedState != ADUCITF_State_Failed)
     {
         // Likely nothing we can do about this, but try setting Idle state again.
         Log_Warn("Idle UpdateAction called in unexpected state: %s!", ADUCITF_StateToString(lastReportedState));
@@ -270,8 +289,8 @@ void ADUC_MethodCall_Idle(ADUC_WorkflowData* workflowData)
     //
     // Clean up the sandbox.  It will be re-created when download starts.
     //
-    char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
-    char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
+    char* workflowId = ADUC_WorkflowData_GetWorkflowId(workflowData);
+    char* workFolder = ADUC_WorkflowData_GetWorkFolder(workflowData);
 
     if (workflowId != NULL)
     {
@@ -299,6 +318,7 @@ void ADUC_MethodCall_Idle(ADUC_WorkflowData* workflowData)
 
     workflow_free_string(workflowId);
     workflow_free_string(workFolder);
+
     workflow_free(workflowData->WorkflowHandle);
     workflowData->WorkflowHandle = NULL;
 }
@@ -335,7 +355,9 @@ ADUC_Result ADUC_MethodCall_Download(ADUC_MethodCall_Data* methodCallData)
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
     ADUC_WorkflowHandle* workflowHandle = workflowData->WorkflowHandle;
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
-    ADUCITF_State lastReportedState = workflow_get_last_reported_state();
+
+    ADUCITF_State lastReportedState = ADUC_WorkflowData_GetLastReportedState(workflowData);
+
     ADUC_Result result = { ADUC_Result_Download_Success };
     char* workFolder = workflow_get_workfolder(workflowHandle);
     char* workflowId = workflow_get_id(workflowHandle);
@@ -346,7 +368,8 @@ ADUC_Result ADUC_MethodCall_Download(ADUC_MethodCall_Data* methodCallData)
     {
         Log_Error(
             "Download workflow step called in unexpected state: %s!",
-            ADUCITF_StateToString(workflow_get_last_reported_state()));
+            ADUCITF_StateToString(lastReportedState));
+
         result.ResultCode = ADUC_Result_Failure;
         result.ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_UPDATE_ACTION_UNEXPECTED_STATE;
         goto done;
@@ -402,7 +425,7 @@ ADUC_Result ADUC_MethodCall_Install(ADUC_MethodCall_Data* methodCallData)
 
     Log_Info("Workflow step: Install");
 
-    ADUCITF_State lastReportedState = workflow_get_last_reported_state();
+    ADUCITF_State lastReportedState = ADUC_WorkflowData_GetLastReportedState(workflowData);
     if (lastReportedState != ADUCITF_State_DownloadSucceeded)
     {
         Log_Error("Install Workflow step called in unexpected state: %s!", ADUCITF_StateToString(lastReportedState));
@@ -431,12 +454,14 @@ void ADUC_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallData, ADUC
         Log_Info("Install indicated success with RebootRequired - rebooting system now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
 
-        if (!WorkflowPersistence_Serialize(methodCallData->WorkflowData))
+        if (!WorkflowPersistence_Serialize(methodCallData->WorkflowData, ADUC_SystemRebootState_InProgress, ADUC_AgentRestartState_None))
         {
             Log_Warn("serialize workflow state failed for RebootSystem.");
         }
 
-        int success = ADUC_MethodCall_RebootSystem();
+        RebootSystemFunc rebootFn = ADUC_WorkflowData_GetRebootSystemFunc(methodCallData->WorkflowData);
+
+        int success = (*rebootFn)();
         if (success == 0)
         {
             methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_InProgress;
@@ -455,12 +480,14 @@ void ADUC_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallData, ADUC
         Log_Info("Install indicated success with AgentRestartRequired - restarting the agent now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
 
-        if (!WorkflowPersistence_Serialize(methodCallData->WorkflowData))
+        if (!WorkflowPersistence_Serialize(methodCallData->WorkflowData, ADUC_SystemRebootState_None, ADUC_AgentRestartState_InProgress))
         {
             Log_Warn("serialize workflow state failed for RestartAgent.");
         }
 
-        int success = ADUC_MethodCall_RestartAgent();
+        RestartAgentFunc restartAgentFn = ADUC_WorkflowData_GetRestartAgentFunc(methodCallData->WorkflowData);
+
+        int success = (*restartAgentFn)();
         if (success == 0)
         {
             methodCallData->WorkflowData->AgentRestartState = ADUC_AgentRestartState_InProgress;
@@ -487,7 +514,7 @@ ADUC_Result ADUC_MethodCall_Apply(ADUC_MethodCall_Data* methodCallData)
 
     Log_Info("Workflow step: Apply");
 
-    ADUCITF_State lastReportedState = workflow_get_last_reported_state();
+    ADUCITF_State lastReportedState = ADUC_WorkflowData_GetLastReportedState(workflowData);
     if (lastReportedState != ADUCITF_State_InstallSucceeded)
     {
         Log_Error("Apply Workflow step called in unexpected state: %s!", ADUCITF_StateToString(lastReportedState));
@@ -509,12 +536,21 @@ done:
 
 void ADUC_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
 {
-    if (result.ResultCode == ADUC_Result_Apply_RequiredReboot)
+    if (result.ResultCode == ADUC_Result_Apply_RequiredReboot ||
+        result.ResultCode == ADUC_Result_Apply_RequiredImmediateReboot)
     {
         // If apply indicated a reboot required result from apply, go ahead and reboot.
         Log_Info("Apply indicated success with RebootRequired - rebooting system now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
-        int success = ADUC_MethodCall_RebootSystem();
+
+        if (!WorkflowPersistence_Serialize(methodCallData->WorkflowData, ADUC_SystemRebootState_InProgress, ADUC_AgentRestartState_None))
+        {
+            Log_Warn("serialize workflow state failed for RebootSystem.");
+        }
+
+        RebootSystemFunc rebootFn = ADUC_WorkflowData_GetRebootSystemFunc(methodCallData->WorkflowData);
+
+        int success = (*rebootFn)();
         if (success == 0)
         {
             methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_InProgress;
@@ -525,12 +561,21 @@ void ADUC_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_R
             workflow_set_operation_in_progress(methodCallData->WorkflowData->WorkflowHandle, false);
         }
     }
-    else if (result.ResultCode == ADUC_Result_Apply_RequiredImmediateAgentRestart)
+    else if (result.ResultCode == ADUC_Result_Apply_RequiredAgentRestart ||
+        result.ResultCode == ADUC_Result_Apply_RequiredImmediateAgentRestart)
     {
         // If apply indicated a restart is required, go ahead and restart the agent.
         Log_Info("Apply indicated success with AgentRestartRequired - restarting the agent now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
-        int success = ADUC_MethodCall_RestartAgent();
+
+        if (!WorkflowPersistence_Serialize(methodCallData->WorkflowData, ADUC_SystemRebootState_None, ADUC_AgentRestartState_InProgress))
+        {
+            Log_Warn("serialize workflow state failed for RestartAgent.");
+        }
+
+        RestartAgentFunc restartAgentFn = ADUC_WorkflowData_GetRestartAgentFunc(methodCallData->WorkflowData);
+
+        int success = (*restartAgentFn)();
         if (success == 0)
         {
             methodCallData->WorkflowData->AgentRestartState = ADUC_AgentRestartState_InProgress;

@@ -2,7 +2,7 @@
 #include "aduc/installed_criteria_utils.hpp"
 #include <catch2/catch.hpp>
 
-class InstalledCriteriaPersistence
+class InstalledCriteriaPersistence  // NOLINT
 {
 public:
     ~InstalledCriteriaPersistence()
@@ -15,6 +15,8 @@ public:
 TEST_CASE("IsInstalled_test")
 {
     InstalledCriteriaPersistence persistence; // remove installed criteria file on destruction.
+    UNREFERENCED_PARAMETER(persistence); // avoid style warning for unused variable.
+
     RemoveAllInstalledCriteria();
     // Persist foo
     const char* installedCriteria_foo = "contoso-iot-edge-6.1.0.19";
@@ -56,6 +58,8 @@ TEST_CASE("IsInstalled_test")
 TEST_CASE("RemoveIsInstalledWhenEmpty")
 {
     InstalledCriteriaPersistence persistence; // remove installed criteria file on destruction.
+    UNREFERENCED_PARAMETER(persistence); // avoid style warning for unused variable.
+
     RemoveAllInstalledCriteria();
 
     // Remove should succeeded despite no elements in json array.
@@ -67,6 +71,8 @@ TEST_CASE("RemoveIsInstalledWhenEmpty")
 TEST_CASE("RemoveIsInstalledWhenNoMatch")
 {
     InstalledCriteriaPersistence persistence; // remove installed criteria file on destruction.
+    UNREFERENCED_PARAMETER(persistence); // avoid style warning for unused variable.
+
     RemoveAllInstalledCriteria();
 
     const char* installedCriteria_foo = "contoso-iot-edge-6.1.0.19";
@@ -82,6 +88,8 @@ TEST_CASE("RemoveIsInstalledWhenNoMatch")
 TEST_CASE("RemoveIsInstalledTwice_test")
 {
     InstalledCriteriaPersistence persistence; // remove installed criteria file on destruction.
+    UNREFERENCED_PARAMETER(persistence); // avoid style warning for unused variable.
+
     RemoveAllInstalledCriteria();
 
     // Ensure foo doesn't exist.
@@ -109,6 +117,8 @@ TEST_CASE("RemoveIsInstalledTwice_test")
 TEST_CASE("RemoveInstalledCriteriaShouldRemoveDuplicates")
 {
     InstalledCriteriaPersistence persistence; // remove installed criteria file on destruction.
+    UNREFERENCED_PARAMETER(persistence); // avoid style warning for unused variable.
+
     RemoveAllInstalledCriteria();
 
     const char* installedCriteria_contoso = "contoso-iot-edge-6.1.0.19";
@@ -150,6 +160,8 @@ TEST_CASE("RemoveInstalledCriteriaShouldRemoveDuplicatesAndSkipNonMatching")
     const char* installedCriteria_bar = "bar.1.0.1";
 
     InstalledCriteriaPersistence persistence; // remove installed criteria file on destruction.
+    UNREFERENCED_PARAMETER(persistence); // avoid style warning for unused variable.
+
     RemoveAllInstalledCriteria();
 
     // Persist foo

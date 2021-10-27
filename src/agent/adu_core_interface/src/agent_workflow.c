@@ -27,8 +27,9 @@
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
 #include "aduc/types/workflow.h"
+#include "aduc/workflow_data_utils.h"
+#include "aduc/workflow_persistence_utils.h"
 #include "aduc/workflow_utils.h"
-#include "workflow_persistence.h"
 
 #include <pthread.h>
 
@@ -233,8 +234,6 @@ _Bool ADUC_WorkflowData_Init(ADUC_WorkflowData* workflowData, int argc, char** a
 
     workflow_set_cancellation_type(workflowData->WorkflowHandle, ADUC_WorkflowCancellationType_None);
 
-    // TODO(JeffW): Rehydrate reboot/restart and current workflow Step state across restart/reboot and put it into workflowData
-
     succeeded = true;
 
 done:
@@ -275,12 +274,17 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
     memset(workflowData, 0, sizeof(*workflowData));
 }
 
-static void HandleWorkflowPersistence(SetUpdateStateWithResultFunc setUpdateStateWithResultFunc)
+/**
+ * @brief Attempts to rehydrate persisted workflow state, if it exists.
+ *
+ * @param currentWorkflowData The workflow data used for test hooks.
+ */
+static void HandleWorkflowPersistence(ADUC_WorkflowData* currentWorkflowData)
 {
-    WorkflowPersistenceState* persistenceState = WorkflowPersistence_Deserialize();
+    WorkflowPersistenceState* persistenceState = WorkflowPersistence_Deserialize(currentWorkflowData);
     if (persistenceState == NULL)
     {
-        Log_Info("No workflow persistence state. Continuing...");
+        Log_Info("Continuing...");
         return;
     }
 
@@ -294,107 +298,102 @@ static void HandleWorkflowPersistence(SetUpdateStateWithResultFunc setUpdateStat
     //
     // Note: This applies to 'install' and 'apply' workflow step only, and persistence
     // state is saved only when restart/reboot occurred during install or apply.
-    ADUC_Result installedResult = persistenceState->Result;
-    if (installedResult.ResultCode == ADUC_Result_IsInstalled_Installed)
+
+    currentWorkflowData->persistenceState = persistenceState; // source from persistenceState instead of WorkflowHandle.
+
+    ADUC_Result isInstalledResult = ADUC_MethodCall_IsInstalled(currentWorkflowData);
+
+    if ((persistenceState->WorkflowStep == ADUCITF_WorkflowStep_Install || persistenceState->WorkflowStep == ADUCITF_WorkflowStep_Apply) &&
+        (persistenceState->SystemRebootState == ADUC_SystemRebootState_InProgress || persistenceState->AgentRestartState == ADUC_AgentRestartState_InProgress))
     {
-        char* updateId = persistenceState->ExpectedUpdateId;
-        Log_Info(
-            "IsInstalled call was true - setting installedUpdateId to %s and setting state to Idle", updateId);
-
-        // Instead of attempting to rehydrate the entire workflow, we use the following one as a shell to
-        // transport the minimal persistence data to existing reporting internal API that will use it instead of
-        // generating it from other workflow data.
-        ADUC_WorkflowData persistenceReportingWorkflowData = {};
-        persistenceReportingWorkflowData.persistenceState = persistenceState;
-
-        ADUC_SetInstalledUpdateIdAndGoToIdle(&persistenceReportingWorkflowData, updateId);
-        workflow_free_string(updateId);
-    }
-
-    if (IsAducResultCodeFailure(installedResult.ResultCode))
-    {
-        Log_Warn(
-            "IsInstalled call failed. ExtendedResultCode: %d (0x%x) - setting state to Idle",
-            installedResult.ExtendedResultCode,
-            installedResult.ExtendedResultCode);
-
-        ADUC_Result persistenceResult =
+        if (isInstalledResult.ResultCode == ADUC_Result_IsInstalled_Installed)
         {
-            .ResultCode = (persistenceState->Result).ResultCode,
-            .ExtendedResultCode = (persistenceState->Result).ExtendedResultCode,
-        };
+            const char* updateId = persistenceState->ExpectedUpdateId;
+            Log_Info(
+                "IsInstalled call was true - setting installedUpdateId to %s and setting state to Idle", updateId);
 
-        ADUC_WorkflowData workflowDataForStateUpdate = {};
-        workflowDataForStateUpdate.persistenceState = persistenceState;
+            ADUC_SetInstalledUpdateIdAndGoToIdle(currentWorkflowData, updateId);
+        }
+        else if (isInstalledResult.ResultCode == ADUC_Result_IsInstalled_NotInstalled)
+        {
+            // TODO(JeffW): Bug 36790018 Agent should continue processing after reboot/restart when contentHandler returns ADUC_Result_IsInstalled_NotInstalled
+        }
+        else if (IsAducResultCodeFailure(isInstalledResult.ResultCode))
+        {
+            Log_Warn(
+                "IsInstalled call failed. ExtendedResultCode: %d (0x%x) - setting state to Idle",
+                isInstalledResult.ExtendedResultCode,
+                isInstalledResult.ExtendedResultCode);
 
-        (*setUpdateStateWithResultFunc)(&workflowDataForStateUpdate, ADUCITF_State_Idle, persistenceResult);
+            ADUC_Result persistenceResult =
+            {
+                .ResultCode = isInstalledResult.ResultCode,
+                .ExtendedResultCode = isInstalledResult.ExtendedResultCode,
+            };
+
+            SetUpdateStateWithResultFunc setUpdateStateWithResultFunc = ADUC_WorkflowData_GetSetUpdateStateWithResultFunc(currentWorkflowData);
+
+            (*setUpdateStateWithResultFunc)(currentWorkflowData, ADUCITF_State_Idle, persistenceResult);
+        }
+
+        goto done;
     }
 
+    // TODO(JeffW): Task 36812133 Resume download on startup
+
+done:
     WorkflowPersistence_Free(persistenceState);
+    currentWorkflowData->persistenceState = NULL; // reset to default of sourcing from WorkflowHandle
+
+    WorkflowPersistence_Delete(currentWorkflowData);
 }
 
 void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowData)
 {
-    HandleUpdateActionFunc handleUpdateActionFunc = ADUC_Workflow_HandleUpdateAction;
-    SetUpdateStateWithResultFunc setUpdateStateWithResultFunc = ADUC_SetUpdateStateWithResult;
-
     if (currentWorkflowData == NULL)
     {
         Log_Info("No update content. Ignoring.");
-        goto done;
+        return;
     }
 
     if (currentWorkflowData->StartupIdleCallSent)
     {
-        goto done;
+        Log_Debug("StartupIdleCallSent true. Skipping.");
+        return;
     }
-
-#ifdef ADUC_BUILD_UNIT_TESTS
-    // Setup any applicable test overrides
-    if (currentWorkflowData->TestOverrides && currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride)
-    {
-        handleUpdateActionFunc = currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride;
-    }
-
-    if (currentWorkflowData->TestOverrides && currentWorkflowData->TestOverrides->SetUpdateStateWithResultFunc_TestOverride)
-    {
-        setUpdateStateWithResultFunc = currentWorkflowData->TestOverrides->SetUpdateStateWithResultFunc_TestOverride;
-    }
-#endif
-
-    //
-    // Now, we handle the current incoming ProcessDeployment or Cancel update action.
-    //
 
     Log_Info("Perform startup tasks.");
 
-    //
-    // Before handling the current workflow, handle reporting of any workflow completion that was pending reboot/restart of the agent.
-    //
-    HandleWorkflowPersistence(setUpdateStateWithResultFunc);
+    // There are 2 call patterns for startup:
+    //     (1) Called from AzureDeviceUpdateCoreInterface_Connected with a NULL WorkflowHandle in the workflowData
+    //     (2) Called from ADUC_Workflow_HandlePropertyUpdate (instead of calling ADUC_Workflow_HandleUpdateAction) when StartupIdleCallSent is false.
+    // In both cases, we must first try to complete workflow processing using the persisted workflow state.
+    HandleWorkflowPersistence(currentWorkflowData);
 
-    ADUC_Result isInstalledResult = ADUC_MethodCall_IsInstalled(currentWorkflowData);
-    if (isInstalledResult.ResultCode == ADUC_Result_IsInstalled_Installed)
+    if (currentWorkflowData->WorkflowHandle == NULL)
     {
-        // If it's already installed, then service either is misbehaving or failed to receive reporting.
-        // Try sending reporting now.
-        char* updateId = workflow_get_expected_update_id_string(currentWorkflowData->WorkflowHandle);
-        ADUC_SetInstalledUpdateIdAndGoToIdle(currentWorkflowData, updateId);
-        free(updateId);
+        // There's nothing more to do because AzureDeviceUpdateCoreInterface_Connected codepath does not pass along the twin
         goto done;
     }
+    // Otherwise, this is called from ADUC_Workflow_HandlePropertyUpdate when StartupIdleCallSent is false
 
     // The default result for Idle state.
     // This will reset twin status code to 200 to indicate that we're successful (so far).
     const ADUC_Result result = { .ResultCode = ADUC_Result_Idle_Success };
 
     int desiredAction = workflow_get_action(currentWorkflowData->WorkflowHandle);
+    if (desiredAction == ADUCITF_UpdateAction_Undefined)
+    {
+        goto done;
+    }
 
     if (desiredAction == ADUCITF_UpdateAction_Cancel)
     {
         Log_Info("Received 'cancel' action on startup, reporting Idle state.");
 
-        currentWorkflowData->CurrentAction = desiredAction;
+        ADUC_WorkflowData_SetCurrentAction(desiredAction, currentWorkflowData);
+
+        SetUpdateStateWithResultFunc setUpdateStateWithResultFunc = ADUC_WorkflowData_GetSetUpdateStateWithResultFunc(currentWorkflowData);
         (*setUpdateStateWithResultFunc)(currentWorkflowData, ADUCITF_State_Idle, result);
 
         goto done;
@@ -405,18 +404,15 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowD
     // There's a pending ProcessDeployment action in the twin.
     // We need to make sure we don't report an 'idle' state, if we can resume or retry the action.
     // In this case, we will set last reportedState to 'idle', so that we can continue.
-    workflow_set_last_reported_state(ADUCITF_State_Idle);
-    currentWorkflowData->StartupIdleCallSent = true;
+    ADUC_WorkflowData_SetLastReportedState(ADUCITF_State_Idle, currentWorkflowData);
 
+    HandleUpdateActionFunc handleUpdateActionFunc = ADUC_WorkflowData_GetHandleUpdateActionFunc(currentWorkflowData);
     (*handleUpdateActionFunc)(currentWorkflowData);
 
 done:
 
     // Once we set Idle state to the orchestrator we can start receiving update actions.
-    if (currentWorkflowData)
-    {
-        currentWorkflowData->StartupIdleCallSent = true;
-    }
+    currentWorkflowData->StartupIdleCallSent = true;
 }
 
 /**
@@ -464,14 +460,7 @@ void ADUC_Workflow_HandlePropertyUpdate(ADUC_WorkflowData* currentWorkflowData, 
     //
     s_workflow_lock();
 
-    HandleUpdateActionFunc handleUpdateActionFunc = ADUC_Workflow_HandleUpdateAction;
-
-#ifdef ADUC_BUILD_UNIT_TESTS
-    if (currentWorkflowData->TestOverrides && currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride)
-    {
-        handleUpdateActionFunc = currentWorkflowData->TestOverrides->HandleUpdateActionFunc_TestOverride;
-    }
-#endif
+    HandleUpdateActionFunc handleUpdateActionFunc = ADUC_WorkflowData_GetHandleUpdateActionFunc(currentWorkflowData);
 
     if (currentWorkflowData->WorkflowHandle != NULL)
     {
@@ -521,7 +510,7 @@ void ADUC_Workflow_HandlePropertyUpdate(ADUC_WorkflowData* currentWorkflowData, 
             else
             {
                 // Possible replacement with a new workflow.
-                ADUCITF_State currentState = workflow_get_last_reported_state(currentWorkflowData->WorkflowHandle);
+                ADUCITF_State currentState = ADUC_WorkflowData_GetLastReportedState(currentWorkflowData);
                 ADUCITF_WorkflowStep currentWorkflowStep = workflow_get_current_workflowstep(currentWorkflowData->WorkflowHandle);
 
                 if (currentState != ADUCITF_State_Idle &&
@@ -666,7 +655,7 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
     //
     // Save the original action to the workflow data
     //
-    workflowData->CurrentAction = desiredAction;
+    ADUC_WorkflowData_SetCurrentAction(desiredAction, workflowData);
 
     //
     // Determine the current workflow step
@@ -691,9 +680,9 @@ done:
  *
  * @param workflowData The global context workflow data structure.
  */
-void autoTransitionWorkflow(ADUC_WorkflowData* workflowData)
+void ADUC_Workflow_AutoTransitionWorkflow(ADUC_WorkflowData* workflowData)
 {
-    if (workflow_get_last_reported_state() == ADUCITF_State_Failed)
+    if (ADUC_WorkflowData_GetLastReportedState(workflowData) == ADUCITF_State_Failed)
     {
         Log_Debug("Skipping transition for Failed state.");
         return;
@@ -737,7 +726,7 @@ void autoTransitionWorkflow(ADUC_WorkflowData* workflowData)
  */
 void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result = {};
+    ADUC_Result result;
     ADUCITF_WorkflowStep currentWorkflowStep = workflow_get_current_workflowstep(workflowData->WorkflowHandle);
 
     const ADUC_WorkflowHandlerMapEntry* entry = GetWorkflowHandlerMapEntryForAction(currentWorkflowStep);
@@ -829,7 +818,7 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
         goto done;
     }
 
-    if (workflowData->CurrentAction == ADUCITF_UpdateAction_Cancel)
+    if (ADUC_WorkflowData_GetCurrentAction(workflowData) == ADUCITF_UpdateAction_Cancel)
     {
         Log_Error("workflow data current action should not be Cancel.");
         goto done;
@@ -860,7 +849,7 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
 
         // Transitioning to idle (or failed) state frees and nulls-out the WorkflowHandle as a side-effect of
         // setting the update state.
-        if (workflow_get_last_reported_state(workflowData->WorkflowHandle) != ADUCITF_State_Idle)
+        if (ADUC_WorkflowData_GetLastReportedState(workflowData) != ADUCITF_State_Idle)
         {
             // Operation is now complete. Clear both inprogress and cancel requested.
             workflow_clear_inprogress_and_cancelrequested(workflowData->WorkflowHandle);
@@ -868,7 +857,7 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
             //
             // We are now ready to transition to the next step of the workflow.
             //
-            autoTransitionWorkflow(workflowData);
+            ADUC_Workflow_AutoTransitionWorkflow(workflowData);
             goto done;
         }
     }
@@ -901,9 +890,11 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
                     workflow_update_for_retry(workflowData->WorkflowHandle);
                 }
 
+                ADUC_WorkflowData_SetLastReportedState(ADUCITF_State_Idle, workflowData);
+
                 // ProcessDeployment's OperationFunc called by TransitionWorkflow is synchronous so it kicks off the
                 // download worker thread after reporting DeploymentInProgress ACK for the replacement/retry, so we
-                // return instead of goto done to avoid the redundant autoTransitionWorkflow call.
+                // return instead of goto done to avoid the redundant ADUC_Workflow_AutoTransitionWorkflow call.
                 ADUC_Workflow_TransitionWorkflow(workflowData);
 
                 goto done;

@@ -19,6 +19,7 @@
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
 #include "aduc/types/update_content.h"
+#include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 #include "adushell_const.hpp"
 
@@ -385,7 +386,7 @@ ADUC_Result AptHandlerImpl::Cancel(const ADUC_WorkflowData* workflowData)
  */
 ADUC_Result AptHandlerImpl::IsInstalled(const ADUC_WorkflowData* workflowData)
 {
-    char* installedCriteria = workflow_get_installed_criteria(workflowData->WorkflowHandle);
+    char* installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
     ADUC_Result result = GetIsInstalled(ADUC_INSTALLEDCRITERIA_FILE_PATH, installedCriteria);
     workflow_free_string(installedCriteria);
     return result;

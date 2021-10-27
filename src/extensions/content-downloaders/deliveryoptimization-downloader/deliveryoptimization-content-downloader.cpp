@@ -207,10 +207,7 @@ ADUC_Result Download(
     unsigned int retryTimeout,
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
-    ADUC_Result result = do_download(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
-
-done:
-    return result;
+    return do_download(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
 }
 
 ADUC_Result Initialize(const char* initializeData)

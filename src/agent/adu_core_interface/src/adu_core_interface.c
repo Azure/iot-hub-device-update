@@ -15,10 +15,11 @@
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/types/update_content.h"
+#include "aduc/workflow_data_utils.h"
+#include "aduc/workflow_persistence_utils.h"
 #include "aduc/workflow_utils.h"
 
 #include "startup_msg_helper.h"
-#include "workflow_persistence.h"
 
 #include <azure_c_shared_utility/strings.h> // STRING_*
 #include <iothub_client_version.h>
@@ -56,12 +57,42 @@ void ClientReportedStateCallback(int statusCode, void* context)
     }
 }
 
-static void ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData* workflowData)
+/**
+ * @brief Gets the client handle send report function.
+ *
+ * @param workflowData The workflow data.
+ * @return ClientHandleSnedReportFunc The function for sending the client report.
+ */
+static ClientHandleSendReportFunc ADUC_WorkflowData_GetClientHandleSendReportFunc(const ADUC_WorkflowData* workflowData)
 {
+    ClientHandleSendReportFunc fn = (ClientHandleSendReportFunc)ClientHandle_SendReportedState;
+
+#ifdef ADUC_BUILD_UNIT_TESTS
+    ADUC_TestOverride_Hooks* hooks = workflowData->TestOverrides;
+    if (hooks && hooks->ClientHandle_SendReportedStateFunc_TestOverride)
+    {
+        fn = (ClientHandleSendReportFunc)(hooks->ClientHandle_SendReportedStateFunc_TestOverride);
+    }
+#endif
+
+    return fn;
+}
+
+/**
+ * @brief Reports the client json via PnP so it ends up in the reported section of the twin.
+ *
+ * @param json_value The json value to be reported.
+ * @param workflowData The workflow data.
+ * @return _Bool true if call succeeded.
+ */
+static _Bool ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData* workflowData)
+{
+    _Bool success = false;
+
     if (g_iotHubClientHandleForADUComponent == NULL)
     {
         Log_Error("ReportClientJsonProperty called with invalid IoTHub Device Client handle! Can't report!");
-        return;
+        return false;
     }
 
     IOTHUB_CLIENT_RESULT iothubClientResult;
@@ -79,19 +110,9 @@ static void ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData* 
 
     Log_Debug("Reporting agent state:\n%s", jsonToSendStr);
 
-    typedef typeof(ClientHandle_SendReportedState) ClientHandleSendReportType;
-    typedef ClientHandleSendReportType* ClientHandleSendReportFunc;
-    ClientHandleSendReportFunc clientHandle_SendReportedState_Func = ClientHandle_SendReportedState;
+    ClientHandleSendReportFunc clientHandle_SendReportedState_Func = ADUC_WorkflowData_GetClientHandleSendReportFunc(workflowData);
 
-#ifdef ADUC_BUILD_UNIT_TESTS
-    ADUC_TestOverride_Hooks* hooks = workflowData->TestOverrides;
-    if (hooks && hooks->ClientHandle_SendReportedStateFunc_TestOverride)
-    {
-        clientHandle_SendReportedState_Func = (ClientHandleSendReportFunc)(hooks->ClientHandle_SendReportedStateFunc_TestOverride);
-    }
-#endif
-
-    iothubClientResult = clientHandle_SendReportedState_Func(
+    iothubClientResult = (IOTHUB_CLIENT_RESULT)clientHandle_SendReportedState_Func(
         g_iotHubClientHandleForADUComponent,
         (const unsigned char*)jsonToSendStr,
         jsonToSendStrLen,
@@ -108,8 +129,12 @@ static void ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData* 
         goto done;
     }
 
+    success = true;
+
 done:
     STRING_delete(jsonToSend);
+
+    return success;
 }
 
 /**
@@ -398,66 +423,55 @@ done:
     return succeeded;
 }
 
-JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State updateState, const ADUC_Result* result, const char* installedUpdateId);
-
 /**
- * @brief Report state, and optionally result to service.
+ * @brief Updates the lastInstallResult resultCode and extendedResultCode in the client reporting json.
  *
- * @param workflowData A workflow data object.
- * @param updateState state to report.
- * @param result Result to report (optional, can be NULL).
- * @param installedUpdateId Installed update id (if update completed successfully).
+ * @param rootValue The root json value object for the client report.
+ * @param result The ADUC result from which to update the result codes.
+ * @return JSON_Status The json status result.
  */
-void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-    ADUC_WorkflowData* workflowData, ADUCITF_State updateState, const ADUC_Result* result, const char* installedUpdateId)
+static JSON_Status UpdateLastInstallResult(JSON_Value* rootValue, const ADUC_Result* result)
 {
-    if (g_iotHubClientHandleForADUComponent == NULL)
+    JSON_Status jsonStatus = JSONFailure;
+    JSON_Object* rootObject = json_value_get_object(rootValue);
+    if (rootValue == NULL)
     {
-        Log_Error("ReportStateAsync called before registration! Can't report!");
-        return;
-    }
-
-    if (AgentOrchestration_ShouldNotReportToCloud(updateState)) {
-        Log_Debug("Skipping report of state '%s'", ADUCITF_StateToString(updateState));
-        return;
-    }
-
-    if (result == NULL && updateState == ADUCITF_State_DeploymentInProgress)
-    {
-        ADUC_Result resultForSet = { ADUC_Result_DeploymentInProgress_Success };
-        workflow_set_result(workflowData->WorkflowHandle, resultForSet);
-    }
-
-    // We are reporting idle on startup when persistence state is set on the workflow data.
-    // Use the persistence reporting json in that case; otherwise, generate the reporting
-    // json value.
-    char* jsonString = NULL;
-    JSON_Value* rootValue = NULL;
-
-    const WorkflowPersistenceState* persistenceState = workflowData->persistenceState;
-    if (persistenceState)
-    {
-        rootValue = json_parse_string(persistenceState->ReportingJson);
-    }
-    else
-    {
-        rootValue = GetReportingJsonValue(workflowData, updateState, result, installedUpdateId);
-    }
-
-    jsonString = json_serialize_to_string(rootValue);
-    if (jsonString == NULL)
-    {
-        Log_Error("Serializing JSON to string failed");
         goto done;
     }
 
-    ReportClientJsonProperty(jsonString, workflowData);
+    JSON_Object* updateInstallResultObject = json_object_dotget_object(rootObject, "lastInstallResult.updateInstallResult");
+    if (rootValue == NULL)
+    {
+        goto done;
+    }
+
+    jsonStatus = json_object_set_number(updateInstallResultObject, "resultCode", result->ResultCode);
+    if (jsonStatus != JSONSuccess)
+    {
+        goto done;
+    }
+
+    jsonStatus = json_object_set_number(updateInstallResultObject, "extendedResultCode", result->ExtendedResultCode);
+    if (jsonStatus != JSONSuccess)
+    {
+        goto done;
+    }
+
+    jsonStatus = JSONSuccess;
 
 done:
-    json_free_serialized_string(jsonString);
-    // Don't free the persistenceData as that will be done by the startup logic that owns it.
+    return jsonStatus;
 }
 
+/**
+ * @brief Get the Reporting Json Value object
+ *
+ * @param workflowData The workflow data.
+ * @param updateState The workflow state machine state.
+ * @param result The pointer to the result. If NULL, then the result will be retrieved from the opaque handle object in the workflow data.
+ * @param installedUpdateId The installed Update ID string.
+ * @return JSON_Value* The resultant json value object.
+ */
 JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State updateState, const ADUC_Result* result, const char* installedUpdateId)
 {
     JSON_Value* resultValue = NULL;
@@ -566,7 +580,7 @@ JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State
     {
         _Bool success = set_workflow_properties(
             workflowValue,
-            workflowData->CurrentAction,
+            ADUC_WorkflowData_GetCurrentAction(workflowData),
             workflowId,
             workflow_peek_retryTimestamp(handle));
 
@@ -737,6 +751,84 @@ done:
 }
 
 /**
+ * @brief Report state, and optionally result to service.
+ *
+ * @param workflowData A workflow data object.
+ * @param updateState state to report.
+ * @param result Result to report (optional, can be NULL).
+ * @param installedUpdateId Installed update id (if update completed successfully).
+ * @return true if succeeded.
+ */
+_Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
+    ADUC_WorkflowData* workflowData, ADUCITF_State updateState, const ADUC_Result* result, const char* installedUpdateId)
+{
+    _Bool success = false;
+
+    if (g_iotHubClientHandleForADUComponent == NULL)
+    {
+        Log_Error("ReportStateAsync called before registration! Can't report!");
+        return false;
+    }
+
+    if (AgentOrchestration_ShouldNotReportToCloud(updateState)) {
+        Log_Debug("Skipping report of state '%s'", ADUCITF_StateToString(updateState));
+        return true;
+    }
+
+    if (result == NULL && updateState == ADUCITF_State_DeploymentInProgress)
+    {
+        ADUC_Result resultForSet = { ADUC_Result_DeploymentInProgress_Success };
+        workflow_set_result(workflowData->WorkflowHandle, resultForSet);
+    }
+
+    // We are reporting idle on startup when persistence state is set on the workflow data.
+    // Use the persistence reporting json in that case; otherwise, generate the reporting
+    // json value.
+    char* jsonString = NULL;
+    JSON_Value* rootValue = NULL;
+
+    const WorkflowPersistenceState* persistenceState = workflowData->persistenceState;
+    if (persistenceState)
+    {
+        rootValue = json_parse_string(persistenceState->ReportingJson);
+        if (UpdateLastInstallResult(rootValue, result) != JSONSuccess)
+        {
+            Log_Error("Failed to update lastInstallResult");
+            goto done;
+        }
+    }
+    else
+    {
+        rootValue = GetReportingJsonValue(workflowData, updateState, result, installedUpdateId);
+        if (rootValue == NULL)
+        {
+            Log_Error("Failed to get reporting json value");
+            goto done;
+        }
+    }
+
+    jsonString = json_serialize_to_string(rootValue);
+    if (jsonString == NULL)
+    {
+        Log_Error("Serializing JSON to string failed");
+        goto done;
+    }
+
+    if (!ReportClientJsonProperty(jsonString, workflowData))
+    {
+        goto done;
+    }
+
+    success = true;
+
+done:
+    json_free_serialized_string(jsonString);
+    // Don't free the persistenceData as that will be done by the startup logic that owns it.
+
+    return success;
+}
+
+/**
  * @brief Report Idle State and update ID to service.
  *
  * This method handles reporting values after a successful apply.
@@ -744,16 +836,17 @@ done:
  * we need to also update the installedUpdateId property.
  * @param[in] workflowData The workflow data.
  * @param[in] updateId Id of and update installed on the device.
+ * @returns true if reporting succeeded.
  */
-void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(ADUC_WorkflowData* workflowData, const char* updateId)
+_Bool AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(ADUC_WorkflowData* workflowData, const char* updateId)
 {
     if (g_iotHubClientHandleForADUComponent == NULL)
     {
         Log_Error("ReportUpdateIdAndIdleAsync called before registration! Can't report!");
-        return;
+        return false;
     }
 
     ADUC_Result result = { .ResultCode = ADUC_Result_Apply_Success, .ExtendedResultCode = 0 };
 
-    AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(workflowData, ADUCITF_State_Idle, &result, updateId);
+    return AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(workflowData, ADUCITF_State_Idle, &result, updateId);
 }

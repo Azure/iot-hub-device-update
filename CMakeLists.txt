@@ -233,7 +233,12 @@ set (
 set (
     ADUC_WORKFLOW_PERSISTENCE_FILE
     "workflow"
-    CACHE STRING "Name of the data file containing workflow persistence records.")
+    CACHE STRING "Name of the data file containing workflow persistence data.")
+
+set (
+    ADUC_WORKFLOW_PERSISTENCE_FILE_PATH
+    "${ADUC_DATA_FOLDER}/${ADUC_WORKFLOW_PERSISTENCE_FILE}"
+    CACHE STRING "The file path to the file containing workflow persistence data.")
 
 set (
     ADUC_INSTALLEDCRITERIA_FILE

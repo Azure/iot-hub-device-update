@@ -12,8 +12,7 @@ add_library (
     src/agent_orchestration.c
     src/agent_workflow.c
     src/device_properties.c
-    src/startup_msg_helper.c
-    src/workflow_persistence.c)
+    src/startup_msg_helper.c)
 
 set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
@@ -40,6 +39,8 @@ target_link_libraries (
             aduc::platform_layer
             aduc::pnp_helper
             aduc::system_utils
+            aduc::workflow_data_utils
+            aduc::workflow_persistence_utils
             aduc::workflow_utils)
 
 target_compile_definitions (
@@ -49,7 +50,6 @@ target_compile_definitions (
             ADUC_DEVICEPROPERTIES_MODEL="${ADUC_DEVICEPROPERTIES_MODEL}"
             ADUC_VERSION="${ADUC_VERSION}"
             ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}"
-            ADUC_WORKFLOW_PERSISTENCE_FILE_PATH="${ADUC_WORKFLOW_PERSISTENCE_FILE_PATH}"
             ADUC_BUILD_UNIT_TESTS="${ADUC_BUILD_UNIT_TESTS}")
 
 if (NOT ADUC_PLATFORM_LAYER STREQUAL "simulator")

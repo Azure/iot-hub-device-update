@@ -33,13 +33,14 @@ target_compile_definitions (
 
 target_link_libraries (
     ${target_name}
+    PUBLIC aduc::content_handlers
     PRIVATE aduc::c_utils
             aduc::exception_utils
-            aduc::extension_utils
             aduc::logging
             aduc::process_utils
             aduc::string_utils
             aduc::system_utils
+            aduc::workflow_data_utils
             aduc::workflow_utils
             Parson::parson)
 

@@ -29,6 +29,7 @@ target_link_libraries (
             aduc::process_utils
             aduc::string_utils
             aduc::system_utils
+            aduc::workflow_data_utils
             aduc::workflow_utils)
 
 if (ADUC_BUILD_UNIT_TESTS)

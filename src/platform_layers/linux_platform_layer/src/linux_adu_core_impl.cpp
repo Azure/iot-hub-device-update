@@ -5,12 +5,14 @@
  * @copyright Copyright (c) 2019, Microsoft Corporation.
  */
 #include "linux_adu_core_impl.hpp"
+#include "aduc/content_handler.hpp"
 #include "aduc/content_handler_factory.hpp"
 #include "aduc/hash_utils.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/string_utils.hpp"
 #include "aduc/system_utils.h"
 #include "aduc/types/workflow.h"
+#include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 
 #include <cstring>
@@ -78,7 +80,7 @@ static ContentHandler* GetContentTypeHandler(const ADUC_WorkflowData* workflowDa
     ContentHandler* contentHandler = nullptr;
 
 #ifdef ADUC_BUILD_UNIT_TESTS
-    if (workflowData->TestOverrides && workflowData->TestOverrides->ContentHandler_TestOverride)
+    if (workflowData->TestOverrides != nullptr && workflowData->TestOverrides->ContentHandler_TestOverride != nullptr)
     {
         contentHandler = static_cast<ContentHandler*>(workflowData->TestOverrides->ContentHandler_TestOverride);
     }
@@ -93,7 +95,6 @@ static ContentHandler* GetContentTypeHandler(const ADUC_WorkflowData* workflowDa
         }
     }
 
-done:
     return contentHandler;
 }
 
@@ -250,11 +251,11 @@ ADUC_Result LinuxPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflowDat
         goto done;
     }
 
-    workflowId = workflow_get_id(workflowData->WorkflowHandle);
-    updateType = workflow_get_update_type(workflowData->WorkflowHandle);
-    installedCriteria = workflow_get_installed_criteria(workflowData->WorkflowHandle);
+    workflowId = ADUC_WorkflowData_GetWorkflowId(workflowData);
+    updateType = ADUC_WorkflowData_GetUpdateType(workflowData);
+    installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
 
-    Log_Info("IsInstalled called workflowId: %s, installed criteria: %s", workflowId, installedCriteria);
+    Log_Info("IsInstalled called workflowId: %s, updateType: %s, installed criteria: %s", workflowId, updateType, installedCriteria);
 
     if (IsNullOrEmpty(updateType))
     {

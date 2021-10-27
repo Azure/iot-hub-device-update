@@ -18,6 +18,7 @@
 #include "aduc/content_handler_factory.hpp"
 #include "aduc/logging.h"
 #include "aduc/string_utils.hpp"
+#include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 #include "uhttp_downloader.h"
 
@@ -232,9 +233,8 @@ ADUC_Result SimulatorPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflo
     Log_Info("IsInstalled called");
 
     ContentHandler* contentHandler = nullptr;
-    ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
-    char* installedCriteria = workflow_get_installed_criteria(handle);
-    char* updateType = workflow_get_update_type(handle);
+    char* installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
+    char* updateType = ADUC_WorkflowData_GetUpdateType(workflowData);
     ADUC_Result result = { ADUC_Result_Failure };
 
     if (updateType == nullptr)

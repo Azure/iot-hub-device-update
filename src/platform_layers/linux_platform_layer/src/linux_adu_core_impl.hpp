@@ -18,9 +18,6 @@
 #include "aduc/types/workflow.h"
 #include "aduc/workflow_utils.h"
 
-#include "aduc/content_handler.hpp"
-#include "aduc/content_handler_factory.hpp"
-
 namespace ADUC
 {
 /**

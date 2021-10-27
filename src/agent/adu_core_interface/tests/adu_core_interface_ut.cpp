@@ -104,6 +104,8 @@ public:
         std::string reportedState;
         reportedState.clear();
         reportedState.reserve(reportedStateLenIn);
+
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         std::for_each(reportedStateIn, reportedStateIn + reportedStateLenIn, [&](unsigned char c) {
             reportedState.push_back(c);
         });
@@ -145,7 +147,6 @@ public:
 
     ~TestCaseFixture()
     {
-        CHECK(g_iotHubClientHandleForADUComponent != nullptr);
         g_iotHubClientHandleForADUComponent = m_previousDeviceHandle;
     }
 
@@ -209,9 +210,8 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_Connected")
     workflowData.WorkflowHandle = bundle;
     CHECK(result.ResultCode != 0);
 
-
     ADUC_TestOverride_Hooks testHooks = {};
-    testHooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState;
+    testHooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState; // NOLINT
     workflowData.TestOverrides = &testHooks;
 
     // Typically Register would initialize the IdleCallback.
@@ -231,7 +231,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_Connected")
 
     AzureDeviceUpdateCoreInterface_Connected(&workflowData);
 
-    int lastReportedState = workflow_get_last_reported_state();
+    int lastReportedState = workflowData.LastReportedState;
 
     // The expected reported state when Agent orchestration of all workflow steps is Idle.
     CHECK(lastReportedState == ADUCITF_State_Idle);
@@ -257,12 +257,12 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
         CHECK(result.ResultCode != 0);
 
         ADUC_TestOverride_Hooks testHooks = {};
-        testHooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState;
+        testHooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState; // NOLINT
         workflowData.TestOverrides = &testHooks;
 
         const ADUCITF_State updateState = ADUCITF_State_DeploymentInProgress;
-        AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-            &workflowData, updateState, &result, nullptr /* installedUpdateId */);
+        REQUIRE(AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
+            &workflowData, updateState, &result, nullptr /* installedUpdateId */));
 
         CHECK(g_SendReportedStateValues.deviceHandle != nullptr);
         std::stringstream strm;
@@ -311,12 +311,12 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
         CHECK(result.ResultCode != 0);
 
         ADUC_TestOverride_Hooks testHooks = {};
-        testHooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState;
+        testHooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState; // NOLINT
         workflowData.TestOverrides = &testHooks;
 
         result = { ADUC_Result_Failure, ADUC_ERC_NOTPERMITTED };
-        AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-            &workflowData, updateState, &result, nullptr /* installedUpdateId */);
+        REQUIRE(AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
+            &workflowData, updateState, &result, nullptr /* installedUpdateId */));
 
         CHECK(g_SendReportedStateValues.deviceHandle != nullptr);
         std::stringstream strm;
@@ -382,10 +382,10 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportContentI
     CHECK(result.ResultCode != 0);
 
     ADUC_TestOverride_Hooks testHooks = {};
-    testHooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState;
+    testHooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState; // NOLINT
     workflowData.TestOverrides = &testHooks;
 
-    AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(&workflowData, installedUpdateIdStr.str().c_str());
+    REQUIRE(AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(&workflowData, installedUpdateIdStr.str().c_str()));
 
     CHECK(g_SendReportedStateValues.deviceHandle != nullptr);
 

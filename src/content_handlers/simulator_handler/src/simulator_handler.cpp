@@ -10,6 +10,7 @@
 #include "aduc/string_c_utils.h"
 #include "aduc/string_utils.hpp"
 #include "aduc/system_utils.h"
+#include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 #include "parson.h"
 
@@ -70,7 +71,7 @@ ContentHandler* SimulatorHandlerImpl::CreateContentHandler()
 
 /**
  * @brief Get the simulator data file path.
- * 
+ *
  * @return char* A buffer contains file path. Caller must call free() once done.
  */
 char* GetSimulatorDataFilePath()
@@ -81,13 +82,13 @@ char* GetSimulatorDataFilePath()
 /**
  * @brief Load data from simulator data file.
  *        This function calls GetSimulatorDataFilePath() to retrieve the data file path.
- * 
- * @return JSON_Object A json object containing simulator data. 
+ *
+ * @return JSON_Object A json object containing simulator data.
  *         Caller must free the wrapping JSON_Value* object to free the memory.
  */
 JSON_Object* ReadDataFile()
 {
-    char* dataFilePath = GetSimulatorDataFilePath();
+    auto dataFilePath = GetSimulatorDataFilePath();
     JSON_Value* root_value = json_parse_file(dataFilePath);
     if (root_value == nullptr)
     {
@@ -102,7 +103,7 @@ done:
 
 /**
  * @brief Mock implementation of download action.
- * @return ADUC_Result Return result from simulator data file if specified. 
+ * @return ADUC_Result Return result from simulator data file if specified.
  *         Otherwise, return ADUC_Result_Download_Success.
  */
 ADUC_Result SimulatorHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
@@ -119,8 +120,6 @@ ADUC_Result SimulatorHandlerImpl::Download(const ADUC_WorkflowData* workflowData
         fileCount = static_cast<unsigned int>(workflow_get_update_files_count(handle));
     }
 
-    char* workflowId = workflow_get_id(handle);
-    char* workingFolder = workflow_get_workfolder(handle);
     STRING_HANDLE leafManifestFile = nullptr;
     STRING_HANDLE childId = nullptr;
     JSON_Object* downloadResult = nullptr;
@@ -144,7 +143,7 @@ ADUC_Result SimulatorHandlerImpl::Download(const ADUC_WorkflowData* workflowData
         bool fileEntityOk = useBundleFiles ? workflow_get_bundle_updates_file(handle, i, &entity)
                                            : workflow_get_update_file(handle, i, &entity);
 
-        if (!fileEntityOk)
+        if (!fileEntityOk || entity == nullptr)
         {
             result = { .ResultCode = ADUC_Result_Failure,
                        .ExtendedResultCode = ADUC_ERC_BUNDLE_CONTENT_HANDLER_GET_FILE_ENTITY_FAILURE };
@@ -197,11 +196,11 @@ done:
 
 ADUC_Result SimulatorActionHelper(
     const ADUC_WorkflowData* workflowData,
-    ADUC_Result_t defaultResultCoce,
+    ADUC_Result_t defaultResultCode,
     const char* action,
     const char* resultSelector)
 {
-    ADUC_Result result = { .ResultCode = defaultResultCoce };
+    ADUC_Result result = { .ResultCode = defaultResultCode };
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     ADUC_WorkflowHandle childHandle = nullptr;
 
@@ -211,7 +210,7 @@ ADUC_Result SimulatorActionHelper(
     if (data == nullptr)
     {
         Log_Info("No simulator data file provided, returning default result code...");
-        result = { .ResultCode = defaultResultCoce };
+        result = { .ResultCode = defaultResultCode };
         goto done;
     }
 
@@ -236,7 +235,11 @@ ADUC_Result SimulatorActionHelper(
     {
         result.ResultCode = json_object_get_number(resultObject, "resultCode");
         result.ExtendedResultCode = json_object_get_number(resultObject, "extendedResultCode");
-        workflow_set_result_details(handle, json_object_get_string(resultObject, "resultDetails"));
+
+        if (workflowData->WorkflowHandle != nullptr)
+        {
+            workflow_set_result_details(handle, json_object_get_string(resultObject, "resultDetails"));
+        }
     }
 
     // For 'microsoft/bundle:1' implementation, abort download task as soon as an error occurs.
@@ -255,7 +258,7 @@ done:
 
 /**
  * @brief Mock implementation of install
- * @return ADUC_Result Return result from simulator data file if specified. 
+ * @return ADUC_Result Return result from simulator data file if specified.
  *         Otherwise, return ADUC_Result_Install_Success.
  */
 ADUC_Result SimulatorHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
@@ -265,7 +268,7 @@ ADUC_Result SimulatorHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
 
 /**
  * @brief Mock implementation of apply
- * @return ADUC_Result Return result from simulator data file if specified. 
+ * @return ADUC_Result Return result from simulator data file if specified.
  *         Otherwise, return ADUC_Result_Apply_Success.
  */
 ADUC_Result SimulatorHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
@@ -275,7 +278,7 @@ ADUC_Result SimulatorHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
 
 /**
  * @brief Mock implementation of cancel
- * @return ADUC_Result Return result from simulator data file if specified. 
+ * @return ADUC_Result Return result from simulator data file if specified.
  *         Otherwise, return ADUC_Result_Cancel_Success.
  */
 ADUC_Result SimulatorHandlerImpl::Cancel(const ADUC_WorkflowData* workflowData)
@@ -289,7 +292,7 @@ ADUC_Result SimulatorHandlerImpl::Cancel(const ADUC_WorkflowData* workflowData)
  */
 ADUC_Result SimulatorHandlerImpl::IsInstalled(const ADUC_WorkflowData* workflowData)
 {
-    char* installedCriteria = workflow_get_installed_criteria(workflowData->WorkflowHandle);
+    char* installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
     ADUC_Result result =
         SimulatorActionHelper(workflowData, ADUC_Result_IsInstalled_Installed, "isInstalled", installedCriteria);
     workflow_free_string(installedCriteria);

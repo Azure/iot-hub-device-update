@@ -59,6 +59,14 @@ workflow_init_from_file(const char* updateManifestFile, bool validateManifest, A
 bool workflow_transfer_data(ADUC_WorkflowHandle targetHandle, ADUC_WorkflowHandle sourceHandle);
 
 /**
+ * @brief Deep copy string. Caller must call workflow_free_string() when done.
+ *
+ * @param s Input string.
+ * @return A copy of input string if succeeded. Otherwise, return NULL.
+ */
+char* workflow_copy_string(const char* s);
+
+/**
  * @brief Free text buffer returned by workflow_get_* APIs.
  *
  * @param string
@@ -98,6 +106,14 @@ ADUCITF_UpdateAction workflow_get_action(ADUC_WorkflowHandle handle);
  * @return const char* A current workflow update type.
  */
 char* workflow_get_update_type(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Gets the update type of the specified workflow.
+ *
+ * @param handle A workflow object handle.
+ * @return An UpdateType string. Caller does not own the string so must not free it.
+ */
+const char* workflow_peek_update_type(ADUC_WorkflowHandle handle);
 
 /**
  * @brief gets the current workflow step.
@@ -323,20 +339,6 @@ char* workflow_get_installed_criteria(ADUC_WorkflowHandle handle);
  *         Caller must call 'workflow_free_string' function to free the memery when done.
  */
 char* workflow_get_compatibility(ADUC_WorkflowHandle handle);
-
-/**
- * @brief Get the last reported state.
- *
- * @return ADUCITF_State Return the last reported agent state.
- */
-ADUCITF_State workflow_get_last_reported_state();
-
-/**
- * @brief Set the last reported agent state.
- *
- * @param lastReportedState The agent state reported to the IoT Hub.
- */
-void workflow_set_last_reported_state(ADUCITF_State lastReportedState);
 
 /**
  * @brief Free memory allocated for @p updateId.

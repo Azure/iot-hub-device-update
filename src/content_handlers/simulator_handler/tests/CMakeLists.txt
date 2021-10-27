@@ -21,6 +21,9 @@ set (
     ../src/simulator_handler.cpp)
 
 find_package (Catch2 REQUIRED)
+find_package (azure_c_shared_utility REQUIRED)
+find_package (IotHubClient REQUIRED)
+find_package (umqtt REQUIRED)
 
 add_executable (${PROJECT_NAME} ${sources})
 
@@ -32,20 +35,20 @@ target_include_directories (
             ${PROJECT_SOURCE_DIR}/inc
             ${PROJECT_SOURCE_DIR}/../inc
             ${PROJECT_SOURCE_DIR}/../../inc)
-            
+
 target_link_libraries (
     ${PROJECT_NAME}
-    PRIVATE aduc::adu_core_interface
-            aduc::c_utils
+    PUBLIC aduc::extension_manager
+    PRIVATE aduc::c_utils
+            aduc::content_handlers
             aduc::exception_utils
-            aduc::extension_manager
             aduc::extension_utils
-            aduc::installed_criteria_utils
             aduc::logging
+            aduc::process_utils
             aduc::string_utils
             aduc::system_utils
+            aduc::workflow_data_utils
             aduc::workflow_utils
-            Catch2::Catch2
             Parson::parson)
 
 # Ensure that ctest discovers catch2 tests.

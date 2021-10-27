@@ -24,6 +24,7 @@
 #include "aduc/string_utils.hpp"
 #include "aduc/system_utils.h"
 #include "aduc/types/update_content.h"
+#include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 #include "adushell_const.hpp"
 
@@ -331,7 +332,7 @@ std::string SWUpdateHandlerImpl::ReadValueFromFile(const std::string& filePath)
  */
 ADUC_Result SWUpdateHandlerImpl::IsInstalled(const ADUC_WorkflowData* workflowData)
 {
-    char* installedCriteria = workflow_get_installed_criteria(workflowData->WorkflowHandle);
+    char* installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
     ADUC_Result result;
 
     std::string version{ ReadValueFromFile(ADUC_VERSION_FILE) };

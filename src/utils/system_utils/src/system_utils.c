@@ -516,7 +516,21 @@ done:
     STRING_delete(destFilePath);
     return result;
 }
-/** 
+
+/**
+ * @brief Removes the file when caller knows the path refers to a file
+ * @remark On POSIX systems, it will remove a link to the name so it might not delete right away if there are other links
+ * or another process has it open.
+ *
+ * @param path The path to the file.
+ * @return int On success, 0 is returned. On error -1 is returned, and errno is set appropriately.
+ */
+int ADUC_SystemUtils_RemoveFile(const char* path)
+{
+    return unlink(path);
+}
+
+/**
  * @brief Checks if the file object at the given path is a directory.
  * @param path The path.
  * @returns true if it is a directory.

@@ -30,12 +30,12 @@ target_link_libraries (
     ${target_name}
     PRIVATE aduc::c_utils
             aduc::extension_manager
-            aduc::extension_utils
             aduc::installed_criteria_utils
             aduc::logging
             aduc::process_utils
             aduc::string_utils
             aduc::system_utils
+            aduc::workflow_data_utils
             aduc::workflow_utils
             aduc::exception_utils)
 
@@ -48,7 +48,7 @@ file (MAKE_DIRECTORY ${OUT_BIN_EXTENTIONS_DIR})
 add_custom_command(
         TARGET ${target_name}
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} ARGS -E copy 
+        COMMAND ${CMAKE_COMMAND} ARGS -E copy
                 ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*${target_name}.so
                 ${OUT_BIN_EXTENTIONS_DIR})
 

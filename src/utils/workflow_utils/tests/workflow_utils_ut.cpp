@@ -1,6 +1,6 @@
 /**
  * @file workflow_utils_ut.cpp
- * @brief Unit Tests for jws_utils library
+ * @brief Unit Tests for workflow_utils library
  *
  * @copyright Copyright (c) Microsoft Corp.
  */
@@ -31,7 +31,7 @@ using Catch::Matchers::Equals;
 
 // clang-format off
 
-const char* bundle_with_bundledUpdates = 
+const char* bundle_with_bundledUpdates =
     R"( {                    )"
     R"(     "workflow": {    )"
     R"(         "action": 3, )"
@@ -475,7 +475,7 @@ TEST_CASE("Set workflow result")
 }
 
 // clang-format off
-const char* manifest_1_0 = 
+const char* manifest_1_0 =
     R"( {                    )"
     R"(     "workflow": {    )"
     R"(         "action": 0, )"
@@ -497,7 +497,7 @@ TEST_CASE("Get update manifest version - 1.0")
 }
 
 // clang-format off
-const char* manifest_2_0 = 
+const char* manifest_2_0 =
     R"( {                    )"
     R"(     "workflow": {    )"
     R"(         "action": 0, )"
@@ -519,7 +519,7 @@ TEST_CASE("Get update manifest version - 2.0")
 }
 
 // clang-format off
-const char* manifest_2 = 
+const char* manifest_2 =
     R"( {                    )"
     R"(     "workflow": {    )"
     R"(         "action": 0, )"
@@ -541,7 +541,7 @@ TEST_CASE("Get update manifest version - 2")
 }
 
 // clang-format off
-const char* manifest_3 = 
+const char* manifest_3 =
     R"( {                    )"
     R"(     "workflow": {    )"
     R"(         "action": 0, )"
@@ -563,7 +563,7 @@ TEST_CASE("Get update manifest version - 3")
 }
 
 // clang-format off
-const char* manifest_x = 
+const char* manifest_x =
     R"( {                    )"
     R"(     "workflow": {    )"
     R"(         "action": 0, )"
@@ -587,7 +587,7 @@ TEST_CASE("Get update manifest version - x")
 }
 
 // clang-format off
-const char* manifest_empty = 
+const char* manifest_empty =
     R"( {                    )"
     R"(     "workflow": {    )"
     R"(         "action": 0, )"
@@ -609,7 +609,7 @@ TEST_CASE("Get update manifest version - empty")
 }
 
 // clang-format off
-const char* manifest_missing_version = 
+const char* manifest_missing_version =
     R"( {                    )"
     R"(     "workflow": {    )"
     R"(         "action": 0, )"
@@ -641,7 +641,7 @@ TEST_CASE("Mininum update manifest version check - 2")
 }
 
 // clang-format off
-const char* manifest_old_1_0 = 
+const char* manifest_old_1_0 =
     R"( {                    )"
     R"(     "workflow": {    )"
     R"(         "action": 0, )"

@@ -74,7 +74,6 @@ target_link_libraries (
             aduc::device_info_interface
             aduc::eis_utils
             aduc::extension_manager
-            aduc::extension_utils
             aduc::logging
             aduc::permission_utils
             aduc::pnp_helper
@@ -88,12 +87,6 @@ get_filename_component (
     ABSOLUTE
     "/")
 
-get_filename_component (
-    ADUC_WORKFLOW_PERSISTENCE_FILE_PATH
-    "${ADUC_DATA_FOLDER}/${ADUC_WORKFLOW_PERSISTENCE_FILE}"
-    ABSOLUTE
-    "/")
-
 target_compile_definitions (
     ${target_name}
     PRIVATE ADUC_AGENT_FILEPATH="${ADUC_AGENT_FILEPATH}"
@@ -104,7 +97,6 @@ target_compile_definitions (
             ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
             ADUC_FILE_USER="${ADUC_FILE_USER}"
             ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}"
-            ADUC_WORKFLOW_PERSISTENCE_FILE_PATH="${ADUC_WORKFLOW_PERSISTENCE_FILE_PATH}"
             ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
             ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}"
             DO_FILE_GROUP="${DO_FILE_GROUP}"

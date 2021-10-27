@@ -15,8 +15,9 @@ target_link_libraries (
     PRIVATE aduc::c_utils
             aduc::exception_utils
             aduc::extension_utils
-            aduc::string_utils
             aduc::logging
+            aduc::string_utils
+            aduc::workflow_data_utils
             ${CMAKE_DL_LIBS})
 
 #

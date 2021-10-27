@@ -15,8 +15,8 @@
 #include "aduc/system_utils.h"
 #include "aduc/types/update_content.h"
 #include "aduc/types/workflow.h"
+#include "aduc/workflow_internal.h"
 #include "jws_utils.h"
-#include "workflow_internal.h"
 
 #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
 #include <azure_c_shared_utility/strings.h> // for STRING_*
@@ -55,10 +55,6 @@
 
 EXTERN_C_BEGIN
 
-
-
-static ADUCITF_State g_LastReportedState; /**< Previously reported state (for state validation). */
-
 //
 // Private functions - this is an adapter for the underlying ADUC_Workflow object.
 //
@@ -69,7 +65,7 @@ static ADUCITF_State g_LastReportedState; /**< Previously reported state (for st
  * @param s Input string.
  * @return A copy of input string if succeeded. Otherwise, return NULL.
  */
-char* _workflow_copy_string(const char* s)
+char* workflow_copy_string(const char* s)
 {
     char* ret = NULL;
     if (mallocAndStrcpy_s(&ret, s) == 0)
@@ -885,26 +881,6 @@ char* workflow_get_compatibility(ADUC_WorkflowHandle handle)
     return NULL;
 }
 
-/**
- * @brief Get the last reported state.
- *
- * @return ADUCITF_State Return the last reported agent state.
- */
-ADUCITF_State workflow_get_last_reported_state()
-{
-    return g_LastReportedState;
-}
-
-/**
- * @brief Set the last reported agent state.
- *
- * @param lastReportedState The agent state reported to the IoT Hub.
- */
-void workflow_set_last_reported_state(ADUCITF_State lastReportedState)
-{
-    g_LastReportedState = lastReportedState;
-}
-
 void workflow_set_operation_in_progress(ADUC_WorkflowHandle handle, bool inProgress)
 {
     ADUC_Workflow* wf = workflow_from_handle(handle);
@@ -1361,7 +1337,7 @@ const char* workflow_peek_update_manifest_string(ADUC_WorkflowHandle handle, con
  */
 char* workflow_get_update_manifest_string_property(ADUC_WorkflowHandle handle, const char* propertyName)
 {
-    return _workflow_copy_string(workflow_peek_update_manifest_string(handle, propertyName));
+    return workflow_copy_string(workflow_peek_update_manifest_string(handle, propertyName));
 }
 
 /**
@@ -1379,7 +1355,7 @@ char* workflow_get_update_manifest_compatibility(ADUC_WorkflowHandle handle, siz
     if (object != NULL)
     {
         char* s = json_serialize_to_string(json_object_get_wrapping_value(object));
-        output = _workflow_copy_string(s);
+        output = workflow_copy_string(s);
         json_free_serialized_string(s);
     }
 
@@ -1387,14 +1363,25 @@ char* workflow_get_update_manifest_compatibility(ADUC_WorkflowHandle handle, siz
 }
 
 /**
- * @brief Get update type of the specified workflow.
+ * @brief Get a string copy of the update type for the specified workflow.
  *
  * @param handle A workflow object handle.
- * @return An UpdateType string.
+ * @return An UpdateType string. Caller owns it and must free with workflow_free_string.
  */
 char* workflow_get_update_type(ADUC_WorkflowHandle handle)
 {
     return workflow_get_update_manifest_string_property(handle, ADUCITF_FIELDNAME_UPDATETYPE);
+}
+
+/**
+ * @brief Gets the update type of the specified workflow.
+ *
+ * @param handle A workflow object handle.
+ * @return An UpdateType string. Caller does not own the string so must not free it.
+ */
+const char* workflow_peek_update_type(ADUC_WorkflowHandle handle)
+{
+    return workflow_peek_update_manifest_string(handle, ADUCITF_FIELDNAME_UPDATETYPE);
 }
 
 ADUC_Result _workflow_init_helper(ADUC_WorkflowHandle* handle)
@@ -1630,7 +1617,7 @@ const char* workflow_peek_id(ADUC_WorkflowHandle handle)
  */
 char* workflow_get_id(ADUC_WorkflowHandle handle)
 {
-    return _workflow_copy_string(workflow_peek_id(handle));
+    return workflow_copy_string(workflow_peek_id(handle));
 }
 
 /**
@@ -1642,11 +1629,7 @@ char* workflow_get_id(ADUC_WorkflowHandle handle)
  */
 bool workflow_set_retryTimestamp(ADUC_WorkflowHandle handle, const char* retryTimestamp)
 {
-    bool result = false;
-
-    result = _workflow_set_retryTimestamp(handle, retryTimestamp);
-
-    return result;
+    return _workflow_set_retryTimestamp(handle, retryTimestamp);
 }
 
 /**
@@ -1705,7 +1688,7 @@ void workflow_uninit(ADUC_WorkflowHandle handle)
     _workflow_free_results_object(handle);
 
     // This should have been transferred, but free it if it's still around.
-    if (wf->DeferredReplacementWorkflow)
+    if (wf != NULL && wf->DeferredReplacementWorkflow != NULL)
     {
         workflow_free(wf->DeferredReplacementWorkflow);
         wf->DeferredReplacementWorkflow = NULL;
@@ -2128,7 +2111,6 @@ bool workflow_update_replacement_deployment(ADUC_WorkflowHandle currentWorkflowH
  */
 static void reset_state_for_processing_deployment(ADUC_Workflow* wf)
 {
-    g_LastReportedState = ADUCITF_State_Idle;
     wf->CurrentWorkflowStep = ADUCITF_WorkflowStep_ProcessDeployment;
     wf->OperationInProgress = false;
     wf->OperationCancelled = false;
@@ -2143,13 +2125,11 @@ void workflow_update_for_replacement(ADUC_WorkflowHandle handle)
 {
     ADUC_Workflow* wf = workflow_from_handle(handle);
 
-
     ADUC_Workflow* deferred = wf->DeferredReplacementWorkflow;
     wf->DeferredReplacementWorkflow = NULL;
     workflow_transfer_data(handle /* wfTarget */, deferred /* wfSource */);
 
     reset_state_for_processing_deployment(wf);
-
 }
 
 /**
@@ -2160,9 +2140,7 @@ void workflow_update_for_retry(ADUC_WorkflowHandle handle)
 {
     ADUC_Workflow* wf = workflow_from_handle(handle);
 
-
     reset_state_for_processing_deployment(wf);
-
 }
 
 // If succeeded, free existing install state data and replace with a new one.

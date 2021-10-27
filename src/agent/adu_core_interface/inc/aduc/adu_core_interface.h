@@ -79,8 +79,9 @@ void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
  * @param updateState State to report.
  * @param result Result to report (optional, can be NULL).
  * @param installedUpdateId An installed update it JSON string.
+ * @returns true on reporting success.
  */
-void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
+_Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     ADUC_WorkflowData* workflowData,
     ADUCITF_State updateState,
     const ADUC_Result* result,
@@ -91,8 +92,9 @@ void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
  *
  * @param workflowData A workflow data object.
  * @param updateId Id of and update installed on the device.
+ * @returns true on reporting success.
  */
-void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(
+_Bool AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(
     ADUC_WorkflowData* workflowData,
     const char* updateId);
 

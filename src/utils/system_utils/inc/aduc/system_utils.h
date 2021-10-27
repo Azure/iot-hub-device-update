@@ -31,6 +31,8 @@ int ADUC_SystemUtils_RmDirRecursive(const char* path);
 
 int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, _Bool overwriteExistingFile);
 
+int ADUC_SystemUtils_RemoveFile(const char* path);
+
 _Bool SystemUtils_IsDir(const char* path);
 
 _Bool SystemUtils_IsFile(const char* path);

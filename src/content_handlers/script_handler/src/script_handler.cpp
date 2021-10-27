@@ -13,6 +13,7 @@
 #include "aduc/string_utils.hpp"
 #include "aduc/system_utils.h"
 #include "aduc/types/workflow.h"
+#include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 #include "adushell_const.hpp"
 
@@ -60,17 +61,17 @@ ContentHandler* ScriptHandlerImpl::CreateContentHandler()
 /**
  * @brief Performs a download task. The first file in FileEntity list must be the main script file,
  * which will be downloaded into the 'Working Folder' for the current 'Workflow' context.
- * 
+ *
  * This handler will then execute the main script with '--is-installed' argument to determine whether
  * to continue downloading the remaining file(s) in FileEntity list, if any.
- *     
+ *
  * @return ADUC_Result The result of this download task.
- *  
+ *
  *     Following are the potential extended result codes:
- * 
+ *
  *     ADUC_ERC_UPDATE_CONTENT_HANDLER_DOWNLOAD_FAILURE_BADFILECOUNT(201)
  *     ADUC_ERC_UPDATE_CONTENT_HANDLER_DOWNLOAD_FAILURE_UNKNOWNEXCEPTION(202)
- * 
+ *
  *     ADUC_ERC_CONTENT_DOWNLOADER_*
  */
 ADUC_Result ScriptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
@@ -174,12 +175,12 @@ done:
 
 /**
  * @brief A helper function that return a script file path, and arguments list.
- * 
+ *
  * @param workflowHandle An 'Install' phase workflow data containing script information and selected component.
  * @param resultFilePath A full path of the file containing seiralized ADUC_Result value returned by the script.
  * @param[out] scriptFilePath A output script file path.
  * @param[out] args An output script arguments list.
- * @return ADUC_Result 
+ * @return ADUC_Result
  */
 ADUC_Result ScriptHandlerImpl::PrepareScriptArguments(
     const ADUC_WorkflowHandle workflowHandle,
@@ -404,7 +405,7 @@ ADUC_Result ScriptHandlerImpl::PerformAction(const std::string& action, const AD
         return result;
     }
 
-    char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
+    char* workFolder = ADUC_WorkflowData_GetWorkFolder(workflowData);
     std::string scriptWorkfolder = workFolder;
     std::string scriptResultFile = scriptWorkfolder + "/" + "aduc_result.json";
     JSON_Value* installResultValue = nullptr;
@@ -426,7 +427,9 @@ ADUC_Result ScriptHandlerImpl::PerformAction(const std::string& action, const AD
     // If any install-item reported that the update is already installed on the
     // selected component, we will skip the 'apply' phase, and then skip the
     // remaining install-item(s).
-    if (result.ResultCode == ADUC_Result_Install_Skipped_UpdateAlreadyInstalled)
+    // Also, don't continue if WorkflowHandle is NULL in the ADUInterface_Connected->HandleStartupWorkflowData flow.
+    if (result.ResultCode == ADUC_Result_Install_Skipped_UpdateAlreadyInstalled ||
+        workflowData->WorkflowHandle == nullptr)
     {
         goto done;
     }
@@ -492,7 +495,7 @@ ADUC_Result ScriptHandlerImpl::PerformAction(const std::string& action, const AD
         workflow_peek_result_details(workflowData->WorkflowHandle));
 
 done:
-    if (IsAducResultCodeFailure(result.ResultCode))
+    if (IsAducResultCodeFailure(result.ResultCode) && workflowData->WorkflowHandle != nullptr)
     {
         workflow_set_result(workflowData->WorkflowHandle, result);
         workflow_set_state(workflowData->WorkflowHandle, ADUCITF_State_Failed);

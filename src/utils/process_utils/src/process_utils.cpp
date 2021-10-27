@@ -42,7 +42,7 @@
  *
  * @return An exit code from the command.
  */
-int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string> args, std::string& output)
+int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string> args, std::string& output) // NOLINT(google-runtime-references)
 {
 #define READ_END 0
 #define WRITE_END 1
@@ -70,10 +70,10 @@ int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string>
 
         std::vector<char*> argv;
         argv.reserve(args.size() + 2);
-        argv.emplace_back(const_cast<char*>(command.c_str()));
+        argv.emplace_back(const_cast<char*>(command.c_str())); // NOLINT(cppcoreguidelines-pro-type-const-cast)
         for (const std::string& arg : args)
         {
-            argv.emplace_back(const_cast<char*>(arg.c_str()));
+            argv.emplace_back(const_cast<char*>(arg.c_str())); // NOLINT(cppcoreguidelines-pro-type-const-cast)
         }
         argv.emplace_back(nullptr);
 

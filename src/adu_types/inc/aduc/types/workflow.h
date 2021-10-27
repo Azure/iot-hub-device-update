@@ -89,23 +89,42 @@ typedef ADUC_Result (*ADUC_Set_Workflow_Result_Function)(
 
 typedef void (*ADUC_WorkflowData_Free_Function)(struct tagADUC_WorkflowData* workflowData);
 
-// Test override function pointer type definitions
 typedef void (*HandleUpdateActionFunc)(struct tagADUC_WorkflowData* workflowData);
 typedef void (*SetUpdateStateWithResultFunc)(struct tagADUC_WorkflowData* workflowData, ADUCITF_State updateState, ADUC_Result result);
 typedef void (*WorkCompletionCallbackFunc)(const void* workCompletionToken, ADUC_Result result, _Bool isAsync);
+typedef int (*RebootSystemFunc)();
+typedef int (*RestartAgentFunc)();
 
+typedef void* ADUC_CLIENT_HANDLE_TYPE;
+typedef void (*IOTHUB_CLIENT_REPORTED_STATE_CALLBACK_TYPE)(int, void*);
+typedef enum ADUC_IOTHUB_CLIENT_RESULT_TAG {
+    ADUC_IOTHUB_CLIENT_OK,
+    ADUC_IOTHUB_CLIENT_INVALID_ARG,
+    ADUC_IOTHUB_CLIENT_ERROR,
+    ADUC_IOTHUB_CLIENT_INVALID_SIZE,
+    ADUC_IOTHUB_CLIENT_INDEFINITE_TIME
+} IOTHUB_CLIENT_RESULT_TYPE;
+typedef IOTHUB_CLIENT_RESULT_TYPE (ClientHandleSendReportType)(ADUC_CLIENT_HANDLE_TYPE, const unsigned char *, size_t, IOTHUB_CLIENT_REPORTED_STATE_CALLBACK_TYPE, void *);
+typedef ClientHandleSendReportType* ClientHandleSendReportFunc;
+
+#ifdef ADUC_BUILD_UNIT_TESTS
 typedef struct tagADUC_TestOverride_Hooks
 {
     void* ContentHandler_TestOverride;
     HandleUpdateActionFunc HandleUpdateActionFunc_TestOverride;
     SetUpdateStateWithResultFunc SetUpdateStateWithResultFunc_TestOverride;
     WorkCompletionCallbackFunc WorkCompletionCallbackFunc_TestOverride;
+    RebootSystemFunc RebootSystemFunc_TestOverride;
+    RestartAgentFunc RestartAgentFunc_TestOverride;
 
     // TODO(JeffW): 36438502 adu_core_interface unit tests have issues with umock_c failed, err=10
     //     Replace with proper mock framework mocking or do some design tweaks to make it more testable.
     //     It's void* since umocks macro return type makes typedef fail and don't want include dependency from workflow.h
     void* ClientHandle_SendReportedStateFunc_TestOverride;
+
+    const char* WorkflowPersistencePath_TestOverride;
 } ADUC_TestOverride_Hooks;
+#endif // #ifdef ADUC_BUILD_UNIT_TESTS
 
 // TODO(Nox): 34317366: [Code Clean Up] Consolidate tagADUC_WorkflowData and tagADUC_Workflow
 //            Move all ADUC_WorkflowData members into ADUC_WorkflowHandle.
@@ -130,6 +149,7 @@ typedef struct tagADUC_WorkflowData
     // Workflow states
     //
     ADUC_Result Result; /**< Current workflow result data. */
+    ADUCITF_State LastReportedState; /**< Last state set for the workflow and may have been reported as per agent orchestration. */
 
     ADUC_UpdateActionCallbacks UpdateActionCallbacks; /**< Upper-level registration data; function pointers, etc. */
 

@@ -39,14 +39,13 @@ target_compile_definitions (
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PRIVATE aduc::adu_core_interface
-            aduc::exception_utils
+    PRIVATE aduc::exception_utils
             aduc::extension_manager
-            aduc::extension_utils
             aduc::installed_criteria_utils
             aduc::process_utils
             aduc::string_utils
             aduc::system_utils
+            aduc::workflow_data_utils
             aduc::workflow_utils
             Catch2::Catch2)
 
