@@ -6,7 +6,7 @@
 
 #Requires -Version 5.0
 
-$API_VERSION = "api-version=2021-06-01-draft"
+$API_VERSION = "api-version=2021-06-01-preview"
 
 # --------------------------------------------------------------------------------------------------------------------------------
 # INTERNAL METHODS
@@ -16,7 +16,7 @@ function Get-AuthorizationHeaders
 {
     Param(
         [ValidateNotNullOrEmpty()]
-        $AccessToken
+        $AccessToken = $(throw "'AccessToken' parameter is required.")
     )
 
     return @{
@@ -200,7 +200,8 @@ function Wait-AduUpdateOperation
     do
     {
         $responseHeaders = @{}
-        $operation = Get-AduUpdateOperation -AccountEndpoint $AccountEndpoint -InstanceId $InstanceId -AuthorizationToken $AuthorizationToken -OperationId $operationId -ResponseHeaders $responseHeaders -ErrorAction Stop
+        $operation = Get-AduUpdateOperation -AccountEndpoint $AccountEndpoint -InstanceId $InstanceId -AuthorizationToken $AuthorizationToken `
+                                            -OperationId $operationId -ResponseHeaders $responseHeaders -ErrorAction Stop
 
         [int] $retryAfterInSecs = $responseHeaders["Retry-After"]
 

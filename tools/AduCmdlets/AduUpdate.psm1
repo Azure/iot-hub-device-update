@@ -1,6 +1,6 @@
 #
 # Device Update for IoT Hub
-# PowerShell module for creating import manifest and import API request body for Device Update for IoT Hub (ADU).
+# PowerShell module for creating import manifest for Device Update for IoT Hub (ADU).
 # Copyright (c) Microsoft Corporation.
 #
 
@@ -32,13 +32,13 @@ function Get-UpdateId
 {
     Param(
         [ValidateNotNullOrEmpty()]
-        [string] $Provider,
+        [string] $Provider = $(throw "'Provider' parameter is required."),
 
         [ValidateNotNullOrEmpty()]
-        [string] $Name,
+        [string] $Name = $(throw "'Name' parameter is required."),
 
         [ValidateNotNullOrEmpty()]
-        [version] $Version
+        [version] $Version = $(throw "'Version' parameter is required.")
     )
 
     # Server will accept any order; preserving order for aesthetics only.
@@ -55,7 +55,7 @@ function Get-FileMetadatas
 {
     Param(
         [ValidateCount(0, 5)]
-        [string[]] $FilePaths
+        [string[]] $FilePaths = $(throw "'FilePaths' parameter is required.")
     )
 
     $files = @()
@@ -182,17 +182,97 @@ function New-AduUpdateCompatibility
         [string] $DeviceModel
     )
 
-    if ($Properties -eq $null)
+    switch ($PSCmdlet.ParameterSetName)
     {
-        # Caller is using BackwardCompat parameter set.
-        return @{
-            DeviceManufacturer = $DeviceManufacturer
-            DeviceModel = $DeviceModel
+        'CustomProperties' {
+            return $Properties
+        }
+
+        'BackwardCompat' {
+            return @{
+                deviceManufacturer = $DeviceManufacturer
+                deviceModel = $DeviceModel
+            }
         }
     }
-    else
+}
+
+function New-AduInstallationStep
+{
+<#
+    .SYNOPSIS
+        Create a new ADU installation step.
+
+    .EXAMPLE
+        PS > New-AduInstallationStep -Handler 'microsoft/swupdate:1' -Files '.\file1.json', '.\file2.zip'
+#>
+    [CmdLetBinding()]
+    Param(
+        # Step handler type in form of "{provider}/{handlerType}:{handlerTypeVersion}".
+        # This parameter is forwarded to client device during deployment.
+        # For example, reference ADU agent uses the following:
+        # - "microsoft/swupdate:1" for SwUpdate image-based installation step.
+        # - "microsoft/apt:1" for APT package-based installation step.
+        [Parameter(ParameterSetName = 'inline', Mandatory=$true)]
+        [ValidateLength(1, 32)]
+        [ValidatePattern("^\S+\/\S+:\d{1,5}$")]
+        [string] $Handler,
+
+        # The payload filenames used for this step.
+        [Parameter(ParameterSetName = 'inline', Mandatory=$true)]
+        [ValidateCount(1, 10)]
+        [string[]] $Files,
+
+        # Optional JSON object argument to step handler.
+        [Parameter(ParameterSetName = 'inline')]
+        [hashtable] $HandlerProperties,
+
+        # Identity of child update to install for this step.
+        [Parameter(ParameterSetName = 'reference', Mandatory=$true)]
+        [UpdateId] $UpdateId,
+
+        # Optional step description.
+        [ValidateLength(0, 64)]
+        [string] $Description
+    )
+
+    switch ($PsCmdlet.ParameterSetName)
     {
-        return $Properties
+        'inline' {
+            $step = [ordered] @{
+                type = 'inline'
+            }
+
+            if ($Description.Length -gt 0)
+            {
+                $step.description = $Description
+            }
+
+            $step.handler = $Handler
+            $step.files = $Files
+
+            if ($HandlerProperties -ne $null)
+            {
+                $step.handlerProperties = $HandlerProperties
+            }
+
+            return $step
+        }
+
+        'reference' {
+            $step = [ordered] @{
+                type = 'reference'
+            }
+
+            if ($Description.Length -gt 0)
+            {
+                $step.description = $Description
+            }
+
+            $step.updateId = Get-UpdateId -Provider $UpdateId.Provider -Name $UpdateId.Name -Version $UpdateId.Version
+
+            return $step
+        }
     }
 }
 
@@ -206,11 +286,9 @@ function New-AduImportManifest
         PS > $updateId = New-AduUpdateId -Provider Fabrikam -Name Toaster -Version 2.0
         PS > $compatInfo1 = New-AduUpdateCompatibility -DeviceManufacturer Fabrikam -DeviceModel Toaster
         PS > $compatInfo2 = New-AduUpdateCompatibility -Properties @{ OS = "Linux"; DeviceManufacturer = "Fabrikam" }
+        PS > $step = New-AduInstallationStep -Handler 'microsoft/swupdate:1' -Files '.\file1.json', '.\file2.zip'
         PS >
-        PS > New-AduImportManifest -UpdateId $updateId `
-                                   -UpdateType microsoft/swupdate:1 -InstalledCriteria 5 `
-                                   -Compatibility $compatInfo1, $compatInfo2 `
-                                   -Files '.\file1.json', '.\file2.zip'
+        PS > New-AduImportManifest -UpdateId $updateId -Compatibility $compatInfo1, $compatInfo2 -InstallationSteps $step
 #>
     [CmdletBinding()]
     Param(
@@ -235,82 +313,87 @@ function New-AduImportManifest
         [Parameter(ParameterSetName='BackwardCompat', Mandatory=$true)]
         [version] $Version,
 
-        # Update type in form of "{provider}/{updateType}:{updateTypeVersion}"
-        # This parameter is forwarded to client device during deployment. It may be used to determine whether this update is of supported types.
-        # For example, reference ADU agent uses the following:
-        # - "microsoft/swupdate:1" for SwUpdate image-based update.
-        # - "microsoft/apt:1" for APT package-based update.
-        [Parameter(Mandatory=$true)]
-        [ValidateLength(1, 32)]
-        [ValidatePattern("^\S+\/\S+:\d{1,5}$")]
-        [string] $UpdateType,
-
-        # Criteria for update to be considered installed.
-        # This parameter is forwarded to client device during deployment.
-        # For example, reference ADU agent expects the following value:
-        # - Value of SwVersion for SwUpdate image-based update.
-        # - '{name}-{version}' of which name and version are obtained from the APT file.
-        [Parameter(Mandatory=$true)]
-        [ValidateLength(1, 64)]
-        [string] $InstalledCriteria,
+        # Optional friendly update description
+        [ValidateLength(0, 512)]
+        [string] $Description,
 
         # List of compatibility information of devices this update is compatible with, created using New-AduUpdateCompatibility.
         [Parameter(Mandatory=$true)]
         [ValidateCount(1, 10)]
         [hashtable[]] $Compatibility,
 
-        # List of full paths to update files.
-        [ValidateCount(0, 5)]
-        [string[]] $Files = @(),
+        # List of update installation steps.
+        [Parameter(Mandatory=$true)]
+        [ValidateCount(1, 10)]
+        [System.Collections.Specialized.OrderedDictionary[]] $InstallationSteps,
 
-        # List of bundled updateIds.
-        [ValidateCount(0, 10)]
-        [UpdateId[]] $BundledUpdates = @(),
-
-        # Whether the update can be deployed on its own to a device. Must be false for a leaf (bundled) update.
+        # Whether the update can be deployed on its own to a device. Must be false for a referenced update.
         [bool] $IsDeployable = $true
     )
 
-    if (($null -eq $Files -or $Files.Length -eq 0) -and ($null -eq $BundledUpdates -or $BundledUpdates.Length -eq 0))
+    switch ($PSCmdlet.ParameterSetName)
     {
-        # only bundle update is allowed to have no payload file.
-        Write-Error "Update must contain at least one file."
+        'UpdateId' {
+            $id = Get-UpdateId -Provider $UpdateId.Provider -Name $UpdateId.Name -Version $UpdateId.Version
+        }
+
+        'BackwardCompat' {
+            $id = Get-UpdateId -Provider $Provider -Name $Name -Version $Version
+        }
     }
 
-    if ($null -ne $UpdateId)
+    $fileMetadatas = @()
+
+    foreach ($step in $InstallationSteps)
     {
-        $id = Get-UpdateId -Provider $UpdateId.Provider -Name $UpdateId.Name -Version $UpdateId.Version
-    }
-    else
-    {
-        $id = Get-UpdateId -Provider $Provider -Name $Name -Version $Version
+        if ($step.type -eq 'inline')
+        {
+            for ($iFile = 0; $iFile -lt $step.files.Count; $iFile++)
+            {
+                $meta = Get-FileMetadatas $step.files[$iFile]
+
+                # in case multiple steps are sharing a payload file.
+                if ($fileMetadatas.filename -notcontains $meta.filename)
+                {
+                    $fileMetadatas += $meta
+                }
+
+                # inline step requires only payload file name, convert full path to filename.
+                $step.files[$iFile] = $meta.filename
+            }
+        }
     }
 
-    $fileMetadata = Get-FileMetadatas $Files
-    $createdDate = (Get-Date).ToUniversalTime().ToString('o') # ISO8601
+    if ($fileMetadatas.Count -gt 10)
+    {
+        Write-Error 'Update cannot have more than 10 payload files.'
+    }
 
     # Server will accept any order; preserving order for aesthetics only.
     $importManifest = [ordered] @{
-        'updateId' = $id
-        'isDeployable' = $IsDeployable
-        'updateType' = $UpdateType
-        'installedCriteria' = $InstalledCriteria
-        'compatibility' = [array] $Compatibility
-        'createdDateTime' = $createdDate
-        'manifestVersion' = '3.0'
+        updateId = $id
     }
 
-    if ($fileMetadata.Length -gt 0)
+    if ($Description.Length -gt 0)
     {
-        $importManifest['files'] = [array] $fileMetadata
+        $importManifest.description = $Description
     }
 
-    if ($BundledUpdates.Length -gt 0)
+    $importManifest.isDeployable = $IsDeployable
+    $importManifest.compatibility = [array] $Compatibility
+    $importManifest.instructions = [ordered] @{
+        steps = [array] $InstallationSteps
+    }
+
+    if ($fileMetadatas.Length -gt 0)
     {
-        $importManifest['bundledUpdates'] = [array] $BundledUpdates
+        $importManifest.files = [array] $fileMetadatas
     }
 
-    ConvertTo-Json -InputObject $importManifest -Depth 10
+    $importManifest.createdDateTime = (Get-Date).ToUniversalTime().ToString('o') # ISO8601
+    $importManifest.manifestVersion = '4.0'
+
+    ConvertTo-Json -InputObject $importManifest -Depth 20
 }
 
-Export-ModuleMember -Function New-AduImportManifest, New-AduUpdateId, New-AduUpdateCompatibility, Get-AduFileHashes
+Export-ModuleMember -Function New-AduImportManifest, New-AduUpdateId, New-AduUpdateCompatibility, New-AduInstallationStep, Get-AduFileHashes

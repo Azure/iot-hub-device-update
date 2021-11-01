@@ -52,11 +52,11 @@ function Get-AduAzBlobContainer
     return $container
 }
 
-function Get-AduAzBlobSASToken
+function Copy-AduFileToAzBlobContainer
 {
 <#
     .SYNOPSIS
-        Upload file to specified Azure Storage Blob container, and create a Shared-Access-Signature (SAS) token of the blob.
+        Upload file to specified Azure Storage Blob container, and return its Shared-Access-Signature (SAS) URL.
 #>
     [CmdletBinding()]
     Param(
@@ -82,4 +82,4 @@ function Get-AduAzBlobSASToken
     return $uri
 }
 
-Export-ModuleMember -Function Get-AduAzBlobSASToken, Get-AduAzBlobContainer
+Export-ModuleMember -Function Copy-AduFileToAzBlobContainer, Get-AduAzBlobContainer

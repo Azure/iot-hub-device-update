@@ -5,24 +5,24 @@
 #
 
 #Requires -Version 5.0
-using module .\AduUpdate.psm1
+using module .\AduUpdate.psm1 # to import classes
 Import-Module $PSScriptRoot\AduAzStorageBlobHelper.psm1 -ErrorAction Stop
 
 function New-AduImportUpdateInput
 {
 <#
     .SYNOPSIS
-        Create a new ADU update import input and stage relevant artifacts in the provided Azure Storage Blob container.
+        Stage update artifacts in provided Azure Storage Blob Container and create the request body for ADU Import Update API.
 
     .EXAMPLE
+        PS > $container = Get-AduAzBlobContainer -SubscriptionId $subscriptionId -ResourceGroupName $resourceGroupName -StorageAccountName $storageAccount -ContainerName $containerName
+        PS >
         PS > $updateId = New-AduUpdateId -Provider Fabrikam -Name Toaster -Version 2.0
         PS > $compatInfo1 = New-AduUpdateCompatibility -DeviceManufacturer Fabrikam -DeviceModel Toaster
-        PS > $compatInfo2 = New-AduUpdateCompatibility -DeviceManufacturer Contoso -DeviceModel Toaster
+        PS > $compatInfo2 = New-AduUpdateCompatibility -Properties @{ OS = "Linux"; DeviceManufacturer = "Fabrikam" }
+        PS > $step = New-AduInstallationStep -Handler 'microsoft/swupdate:1' -Files '.\file1.json', '.\file2.zip'
         PS >
-        PS > New-AduImportUpdateInput -UpdateId $updateId `
-                                      -UpdateType microsoft/swupdate:1 -InstalledCriteria 5 `
-                                      -Compatibility $compatInfo1, $compatInfo2 `
-                                      -Files '.\file1.json', '.\file2.zip'
+        PS > New-AduImportUpdateInput -UpdateId $updateId -Compatibility $compatInfo1, $compatInfo2 -InstallationSteps $step -BlobContainer $container
 #>
     [CmdletBinding()]
     Param(
@@ -31,40 +31,22 @@ function New-AduImportUpdateInput
         [ValidateNotNull()]
         [UpdateId] $UpdateId,
 
-        # Update type in form of "{provider}/{updateType}:{updateTypeVersion}"
-        # This parameter is forwarded to client device during deployment. It may be used to determine whether this update is of supported types.
-        # For example, reference ADU agent uses the following:
-        # - "microsoft/swupdate:1" for SwUpdate image-based update.
-        # - "microsoft/apt:1" for APT package-based update.
-        [Parameter(Mandatory=$true)]
-        [ValidateLength(1, 32)]
-        [ValidatePattern("^\S+\/\S+:\d{1,5}$")]
-        [string] $UpdateType,
+        # Optional friendly update description.
+        [ValidateLength(0, 512)]
+        [string] $Description,
 
-        # Criteria for update to be considered installed.
-        # This parameter is forwarded to client device during deployment.
-        # For example, reference ADU agent expects the following value:
-        # - Value of SwVersion for SwUpdate image-based update.
-        # - '{name}-{version}' of which name and version are obtained from the APT file.
-        [Parameter(Mandatory=$true)]
-        [ValidateLength(1, 64)]
-        [string] $InstalledCriteria,
+        # Whether the update can be deployed on its own to a device. Must be false for a referenced update.
+        [bool] $IsDeployable = $true,
 
         # List of compatibility information of devices this update is compatible with, created using New-AduUpdateCompatibility.
         [Parameter(Mandatory=$true)]
         [ValidateCount(1, 10)]
         [hashtable[]] $Compatibility,
 
-        # List of full paths to update files.
-        [ValidateCount(0, 5)]
-        [string[]] $Files = @(),
-
-        # List of bundled updateIds.
-        [ValidateCount(0, 10)]
-        [UpdateId[]] $BundledUpdates = @(),
-
-        # Whether the update can be deployed on its own to a device. Must be false for a leaf (bundled) update.
-        [bool] $IsDeployable = $true,
+        # List of update installation steps, created using New-AduInstallationSteps
+        [Parameter(Mandatory=$true)]
+        [ValidateCount(1, 10)]
+        [System.Collections.Specialized.OrderedDictionary[]] $InstallationSteps,
 
         # Azure Storage Blob container to host the files.
         [Parameter(Mandatory=$true)]
@@ -72,8 +54,33 @@ function New-AduImportUpdateInput
         [Microsoft.WindowsAzure.Commands.Common.Storage.ResourceModel.AzureStorageContainer] $BlobContainer
     )
 
-    $importMan = New-AduImportManifest -UpdateId $UpdateId -Files $Files -BundledUpdates $BundledUpdates -IsDeployable $IsDeployable `
-                                       -Compatibility $Compatibility -UpdateType $UpdateType -InstalledCriteria $InstalledCriteria `
+    Write-Verbose "Uploading update file(s) to Azure Blob Storage."
+    $fileMetaList = @()
+
+    $InstallationSteps | Where-Object { $_.type -eq 'inline' } | ForEach-Object {
+        $_.files | ForEach-Object {
+            $filename = Split-Path -Leaf (Resolve-Path $_)
+
+            if ($fileMetaList.filename -notcontains $filename)
+            {
+                # Place files within updateId subdirectory in case there are filenames conflict.
+                $blobName = "$updateIdStr/$filename"
+
+                $url = Copy-AduFileToAzBlobContainer -FilePath $_ -BlobName $blobName -BlobContainer $BlobContainer -ErrorAction Stop
+
+                $fileMeta = New-Object PSObject | Select-Object filename, url
+                $fileMeta.filename = $filename
+                $fileMeta.url = $url
+
+                $fileMetaList += $fileMeta
+            }
+        }
+    }
+
+    Write-Verbose "Uploading import manifest to Azure Blob Storage."
+
+    $importMan = New-AduImportManifest -UpdateId $UpdateId -Description $Description -IsDeployable $IsDeployable `
+                                       -Compatibility $Compatibility -InstallationSteps $InstallationSteps `
                                        -ErrorAction Stop
 
     $importManJsonFile = New-TemporaryFile
@@ -81,39 +88,22 @@ function New-AduImportUpdateInput
 
     Get-Content $importManJsonFile | Write-Verbose
 
-    Write-Verbose "Uploading import manifest to Azure Blob Storage."
     $importManJsonFile = Get-Item $importManJsonFile # refresh file properties
     $importManJsonHash = Get-AduFileHashes -FilePath $importManJsonFile -ErrorAction Stop
     $updateIdStr = "$($UpdateId.Provider).$($UpdateId.Name).$($UpdateId.Version)"
-    $importManUrl = Get-AduAzBlobSASToken -FilePath $importManJsonFile -BlobName "$updateIdStr/importmanifest.json" -BlobContainer $BlobContainer -ErrorAction Stop
-
-    Write-Verbose "Uploading update file(s) to Azure Blob Storage."
-    $fileMetaList = @()
-
-    $Files | ForEach-Object {
-        # Place files within updateId subdirectory in case there are filenames conflict.
-        $filename = Split-Path -Leaf $_
-        $blobName = "$updateIdStr/$filename"
-
-        $url = Get-AduAzBlobSASToken -FilePath $_ -BlobName $blobName -BlobContainer $BlobContainer -ErrorAction Stop
-
-        $fileMeta = New-Object PSObject | Select-Object FileName, Url
-        $fileMeta.FileName = (Split-Path $_ -Leaf)
-        $fileMeta.Url = $url
-
-        $fileMetaList += $fileMeta
-    }
+    $importManUrl = Copy-AduFileToAzBlobContainer -FilePath $importManJsonFile -BlobName "$updateIdStr/importmanifest.json" -BlobContainer $BlobContainer -ErrorAction Stop
 
     Write-Verbose "Preparing Import Update API request body."
-    $importManMeta = [PSCustomObject]@{
-        Url = $importManUrl
-        SizeInBytes = $importManJsonFile.Length
-        Hashes = $importManJsonHash
+
+    $importManMeta = [ordered] @{
+        url = $importManUrl
+        sizeInBytes = $importManJsonFile.Length
+        hashes = $importManJsonHash
     }
 
-    $importUpdateInput = [PSCustomObject]@{
-        ImportManifest = $importManMeta
-        Files = $fileMetaList
+    $importUpdateInput = [ordered] @{
+        importManifest = $importManMeta
+        files = $fileMetaList
     }
 
     Remove-Item $importManJsonFile
@@ -121,4 +111,4 @@ function New-AduImportUpdateInput
     return $importUpdateInput
 }
 
-Export-ModuleMember -Function New-AduImportUpdateInput, New-AduUpdateId, New-AduUpdateCompatibility, Get-AduAzBlobContainer
+Export-ModuleMember -Function New-AduImportUpdateInput, New-AduUpdateId, New-AduUpdateCompatibility, New-AduInstallationStep, Get-AduAzBlobContainer
