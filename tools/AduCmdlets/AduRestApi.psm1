@@ -83,7 +83,7 @@ function Start-AduImportUpdate
 
     if ($ImportUpdateInput)
     {
-        $RequestBody = $ImportUpdateInput | ConvertTo-Json -Depth 50
+        $RequestBody = ConvertTo-Json -InputObject $ImportUpdateInput -Depth 50
     }
 
     Write-Verbose $RequestBody
