@@ -48,6 +48,17 @@ ADUC_Result
 workflow_init_from_file(const char* updateManifestFile, bool validateManifest, ADUC_WorkflowHandle* handle);
 
 /**
+ * @brief Instantiate and initialize workflow object with info from the @p sourceHandle inline step.
+ *
+ * @param base A source workflow object.
+ * @param stepIndex A step index.
+ * @param handle A workflow object handle with information about the workflow.
+ * @return ADUC_Result
+ */
+ADUC_Result
+workflow_create_from_inline_step(const ADUC_WorkflowHandle base, int stepIndex, ADUC_WorkflowHandle* handle);
+
+/**
  * @brief Transfer action data from @p sourceHandle to @p targetHandle.
  * The sourceHandle will no longer contains transfered action data.
  * Caller should not use sourceHandle for other workflow related purposes.
@@ -400,6 +411,8 @@ ADUC_WorkflowHandle workflow_get_child(ADUC_WorkflowHandle handle, int index);
  * @brief Insert @p childHandle into @p handle children list.
  *
  * The @p childHandle will be freed when @p handle is free using workflow_free() function.
+ * 
+ * The @p childHandler's level will be set to ( @p handle's level + 1 ).
  *
  * @param handle A parent workflow object handle.
  * @param index An index indicate the location the @p childHandle will be inserted at.
@@ -464,7 +477,8 @@ ADUC_WorkflowCancellationType workflow_get_cancellation_type(ADUC_WorkflowHandle
 
 bool workflow_update_retry_deployment(ADUC_WorkflowHandle handle, const char* retryToken);
 
-bool workflow_update_replacement_deployment(ADUC_WorkflowHandle currentWorkflowHandle, ADUC_WorkflowHandle nextWorkflowHandle);
+bool workflow_update_replacement_deployment(
+    ADUC_WorkflowHandle currentWorkflowHandle, ADUC_WorkflowHandle nextWorkflowHandle);
 void workflow_update_for_replacement(ADUC_WorkflowHandle handle);
 void workflow_update_for_retry(ADUC_WorkflowHandle handle);
 
@@ -494,6 +508,99 @@ workflow_create_from_instruction(ADUC_WorkflowHandle base, const char* instructi
  */
 ADUC_Result
 workflow_create_from_instruction_value(ADUC_WorkflowHandle base, JSON_Value* instruction, ADUC_WorkflowHandle* handle);
+
+//
+// Update Manifest Version 4
+//
+
+/**
+ * @brief Set workflow level.
+ *
+ * @param handle A workflow object handle.
+ * @param level A workflow level
+ */
+void workflow_set_level(ADUC_WorkflowHandle handle, int level);
+
+/**
+ * @brief Get workflow level.
+ *
+ * @param handle A workflow object handle.
+ * @return Returns -1 if the specified handle is invalid. Otherwise, return the workflow level.
+ */
+int workflow_get_level(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Get update manifest instructions steps count.
+ *
+ * @param handle A workflow object handle.
+ *
+ * @return Total count of the update instruction steps.
+ */
+size_t workflow_get_instructions_steps_count(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Get a read-only update manifest step type
+ *
+ * @param handle A workflow object handle.
+ * @param stepIndex A step index.
+ *
+ * @return A step type. This can be 'inline' or 'reference'.
+ */
+const char* workflow_peek_step_type(ADUC_WorkflowHandle handle, size_t stepIndex);
+
+/**
+ * @brief Returns whether the specified step is an 'inline' step.
+ *
+ * @param handle A workflow object handle.
+ * @param stepIndex A step index.
+ *
+ * @return bool Return true if the specified step exists, and is inline step.
+ * Otherwise, return false.
+ * 
+ */
+bool workflow_is_inline_step(ADUC_WorkflowHandle handle, size_t stepIndex);
+
+/**
+ * @brief Get a read-only update manifest step handler (name)
+ *
+ * @param handle A workflow object handle.
+ * @param stepIndex A step index.
+ *
+ * @return A step handler name.
+ */
+const char* workflow_peek_update_manifest_step_handler(ADUC_WorkflowHandle handle, size_t stepIndex);
+
+/**
+ * @brief Get a read-only handlerProperties string value.
+ *
+ * @param handle A workflow object handle.
+ * @param propertyName
+ *
+ * @return A read-only string value of spcified property in handlerProperties map. 
+ *         Returns NULL if specifed property doesnot exist, or not a 'string' type.
+ */
+const char*
+workflow_peek_update_manifest_handler_properties_string(ADUC_WorkflowHandle handle, const char* propertyName);
+
+/**
+ * @brief Gets a reference step update manifest file at specified index.
+ *
+ * @param handle A workflow data object handle.
+ * @param stepIndex A step index.
+ * @param entity An output reference step update manifest file entity object. 
+ *               Caller must free the object with workflow_free_file_entity().
+ * @return Returns true if succeeded.
+ */
+bool workflow_get_step_detatched_manifest_file(ADUC_WorkflowHandle handle, size_t stepIndex, ADUC_FileEntity** entity);
+
+/**
+ * @brief Gets a serialized json string of the specified workflow's Update Manifest.
+ * 
+ * @param handle A workflow data object handle.
+ * @param pretty Whether to format the output string. 
+ * @return char* An output json string. Caller must free the string with workflow_free_string(). 
+ */
+char* workflow_get_serialized_update_manifest(ADUC_WorkflowHandle handle, bool pretty);
 
 EXTERN_C_END
 

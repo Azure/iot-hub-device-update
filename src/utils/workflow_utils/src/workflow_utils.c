@@ -7,6 +7,7 @@
 #include "aduc/workflow_utils.h"
 #include "aduc/adu_types.h"
 #include "aduc/c_utils.h"
+#include "aduc/extension_manager.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h"
@@ -25,6 +26,10 @@
 #include <stdlib.h> // for calloc, atoi
 #include <string.h>
 
+// Starting from version 4, the update manifest can contain both embeded manifest,
+// or a downloadable update manifest file (files["manifest"] contains the update manifest file info)
+#define EMBEDDED_AND_DOWNLOADABLE_UPDATE_MANIFEST_VERSION 4
+
 #define DEFAULT_SANDBOX_ROOT_PATH ADUC_DOWNLOADS_FOLDER
 
 #define WORKFLOW_PROPERTY_FIELD_ID "_id"
@@ -41,9 +46,19 @@
 #define WORKFLOW_PROPERTY_FIELD_IMMEDIATE_AGENT_RESTART_REQUESTED "_immediateAgentRestartRequested"
 #define WORKFLOW_PROPERTY_FIELD_SELECTED_COMPONENTS "_selectedComponents"
 
+// V4 and later.
+#define DEAULT_STEP_TYPE "reference"
+#define WORKFLOW_PROPERTY_FIELD_INSTRUCTIONS_DOT_STEPS "instructions.steps"
+#define UPDATE_MANIFEST_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID "detachedManifestFileId"
+#define STEP_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID UPDATE_MANIFEST_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID
+#define STEP_PROPERTY_FIELD_TYPE "type"
+#define STEP_PROPERTY_FIELD_HANDLER "handler"
+#define STEP_PROPERTY_FIELD_FILES "files"
+#define STEP_PROPERTY_FIELD_HANDLER_PROPERTIES "handlerProperties"
+
 #define WORKFLOW_CHILDREN_BLOCK_SIZE 10
 
-/**
+/** 
  * @brief Maximum length for the 'resultDetails' string.
  */
 #define WORKFLOW_RESULT_DETAILS_MAX_LENGTH 1024
@@ -124,7 +139,8 @@ const char* _workflow_get_properties_retryTimestamp(ADUC_WorkflowHandle handle)
     ADUC_Workflow* wf = workflow_from_handle(handle);
     const char* result = NULL;
 
-    if (wf != NULL && wf->PropertiesObject != NULL && json_object_has_value(wf->PropertiesObject, WORKFLOW_PROPERTY_FIELD_RETRYTIMESTAMP))
+    if (wf != NULL && wf->PropertiesObject != NULL
+        && json_object_has_value(wf->PropertiesObject, WORKFLOW_PROPERTY_FIELD_RETRYTIMESTAMP))
     {
         result = json_object_get_string(wf->PropertiesObject, WORKFLOW_PROPERTY_FIELD_RETRYTIMESTAMP);
     }
@@ -215,6 +231,9 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
 {
     ADUC_Result result = { ADUC_GeneralResult_Failure };
     JSON_Value* updateActionJson = NULL;
+    char* workFolder = NULL;
+    STRING_HANDLE detachedUpdateManifestFilePath = NULL;
+    ADUC_FileEntity* fileEntity = NULL;
 
     if (handle == NULL)
     {
@@ -340,9 +359,75 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
             goto done;
         }
 
+        int manifestVersion = workflow_get_update_manifest_version(handle_from_workflow(wf));
+
+        // Starting from version 4, the update manifest can contain both embeded manifest,
+        // or a downloadable update manifest file (files["manifest"] contains the update manifest file info)
+        if (manifestVersion >= EMBEDDED_AND_DOWNLOADABLE_UPDATE_MANIFEST_VERSION)
+        {
+            int sandboxCreateResult = -1;
+            const char* detachedManifestFileId = json_object_get_string(
+                wf->UpdateManifestObject, UPDATE_MANIFEST_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID);
+            if (!IsNullOrEmpty(detachedManifestFileId))
+            {
+                // There's only 1 file entity when the primary update manifest is detached.
+                if (!workflow_get_update_file(handle_from_workflow(wf), 0, &fileEntity))
+                {
+                    result.ExtendedResultCode =
+                        ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MISSING_DETACHED_UPDATE_MANIFEST_ENTITY;
+                    goto done;
+                }
+
+                workFolder = workflow_get_workfolder(handle_from_workflow(wf));
+
+                sandboxCreateResult = ADUC_SystemUtils_MkSandboxDirRecursive(workFolder);
+                if (sandboxCreateResult != 0)
+                {
+                    Log_Error("Unable to create folder %s, error %d", workFolder, sandboxCreateResult);
+                    result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_DETACHED_UPDATE_MANIFEST_DOWNLOAD_FAILED;
+                    goto done;
+                }
+
+                // Download the detached update manifest file.
+                result = ExtensionManager_Download(
+                    fileEntity,
+                    workflow_peek_id(handle_from_workflow(wf)),
+                    workFolder,
+                    (60 * 60 * 24) /* default : 24 hour */,
+                    NULL /* downloadProgressCallback */);
+                if (IsAducResultCodeFailure(result.ResultCode))
+                {
+                    workflow_set_result_details(
+                        handle_from_workflow(wf), "Cannot download primary detached update manifest file.");
+                    goto done;
+                }
+                else
+                {
+                    // Replace existing updateManifest with the one from detached update manifest file.
+                    detachedUpdateManifestFilePath =
+                        STRING_construct_sprintf("%s/%s", workFolder, fileEntity->TargetFilename);
+                    JSON_Object* rootObj =
+                        json_value_get_object(json_parse_file(STRING_c_str(detachedUpdateManifestFilePath)));
+                    const char* updateManifestString =
+                        json_object_get_string(rootObj, ADUCITF_FIELDNAME_UPDATEMANIFEST);
+                    JSON_Object* detachedManifest = json_value_get_object(json_parse_string(updateManifestString));
+                    json_value_free(json_object_get_wrapping_value(rootObj));
+
+                    if (detachedManifest == NULL)
+                    {
+                        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_DETACHED_UPDATE_MANIFEST;
+                        goto done;
+                    }
+
+                    // Free old manifest value.
+                    json_value_free(json_object_get_wrapping_value(wf->UpdateManifestObject));
+                    wf->UpdateManifestObject = detachedManifest;
+                }
+            }
+        }
+
         if (validateManifest)
         {
-            int manifestVersion = workflow_get_update_manifest_version(handle_from_workflow(wf));
             if (manifestVersion < MINIMUM_SUPPORTED_UPDATE_MANIFEST_VERSION)
             {
                 result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION;
@@ -355,6 +440,11 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
     result.ExtendedResultCode = 0;
 
 done:
+
+    workflow_free_file_entity(fileEntity);
+    fileEntity = NULL;
+
+    STRING_delete(detachedUpdateManifestFilePath);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -526,6 +616,40 @@ bool _workflow_set_id(ADUC_WorkflowHandle handle, const char* id)
 }
 
 /**
+ * @brief Set workflow level.
+ *
+ * @param handle A workflow object handle.
+ * @param level A workflow level
+ */
+void workflow_set_level(ADUC_WorkflowHandle handle, int level)
+{
+    if (handle == NULL)
+    {
+        return;
+    }
+
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    wf->Level = level;
+}
+
+/**
+ * @brief Get workflow level.
+ *
+ * @param handle A workflow object handle.
+ * @return Returns -1 if the specified handle is invalid. Otherwise, return the workflow level.
+ */
+int workflow_get_level(ADUC_WorkflowHandle handle)
+{
+    if (handle == NULL)
+    {
+        return -1;
+    }
+
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    return wf->Level;
+}
+
+/**
  * @brief Get a read-only string containing 'workflow.id' property
  *
  * @param handle A workflow object handle.
@@ -591,12 +715,22 @@ const char* _workflow_peek_workflow_dot_retryTimestamp(ADUC_WorkflowHandle handl
     if (wf->UpdateActionObject != NULL
         && json_object_dothas_value(wf->UpdateActionObject, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_RETRYTIMESTAMP))
     {
-        result = json_object_dotget_string(wf->UpdateActionObject, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_RETRYTIMESTAMP);
+        result =
+            json_object_dotget_string(wf->UpdateActionObject, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_RETRYTIMESTAMP);
     }
 
     return result;
 }
 
+/**
+ * @brief Set or add string property to the workflow object.
+ * 
+ * @param handle A workflow object handle.
+ * @param property Name of the property.
+ * @param value A string value to set.
+ *              If @value is NULL, the specified property will be removed from the object.
+ * @return bool Returns true of succeeded. Otherwise, return false.
+ */
 bool workflow_set_string_property(ADUC_WorkflowHandle handle, const char* property, const char* value)
 {
     ADUC_Workflow* wf = workflow_from_handle(handle);
@@ -615,7 +749,12 @@ bool workflow_set_string_property(ADUC_WorkflowHandle handle, const char* proper
         return false;
     }
 
-    return JSONSuccess == json_object_set_string(wf->PropertiesObject, property, value);
+    if (value != NULL)
+    {
+        return JSONSuccess == json_object_set_string(wf->PropertiesObject, property, value);
+    }
+
+    return JSONSuccess == json_object_set_null(wf->PropertiesObject, property);
 }
 
 char* workflow_get_string_property(ADUC_WorkflowHandle handle, const char* property)
@@ -854,7 +993,20 @@ void workflow_free_update_id(ADUC_UpdateId* updateId)
  */
 char* workflow_get_installed_criteria(ADUC_WorkflowHandle handle)
 {
-    return workflow_get_update_manifest_string_property(handle, ADUCITF_FIELDNAME_INSTALLEDCRITERIA);
+    char* installedCriteria = NULL;
+
+    // For Update Manifest V4, customer can specify installedCriteria in 'handlerPropertes' map.
+    if (workflow_get_update_manifest_version(handle) >= EMBEDDED_AND_DOWNLOADABLE_UPDATE_MANIFEST_VERSION)
+    {
+        installedCriteria = workflow_copy_string(
+            workflow_peek_update_manifest_handler_properties_string(handle, ADUCITF_FIELDNAME_INSTALLEDCRITERIA));
+    }
+    else
+    {
+        installedCriteria = workflow_get_update_manifest_string_property(handle, ADUCITF_FIELDNAME_INSTALLEDCRITERIA);
+    }
+
+    return installedCriteria;
 }
 
 /**
@@ -1022,16 +1174,17 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
 
     do
     {
-        if ((fileUrls = _workflow_get_fileurls_map(h)) == NULL)
-        {
-            Log_Warn("'fileUrls' property not found.");
-        }
-        else
+        if ((fileUrls = _workflow_get_fileurls_map(h)) != NULL)
         {
             uri = json_object_get_string(fileUrls, fileId);
         }
         h = workflow_get_parent(h);
     } while (uri == NULL && h != NULL);
+
+    if (uri == NULL)
+    {
+        Log_Error("Cannot find URL for fileId '%s'", fileId);
+    }
 
     name = json_object_get_string(file, ADUCITF_FIELDNAME_FILENAME);
     arguments = json_object_get_string(file, ADUCITF_FIELDNAME_ARGUMENTS);
@@ -1464,6 +1617,185 @@ done:
 }
 
 /**
+ * @brief Get 'updateManifest.instructions.steps' array.
+ *
+ * @param handle A workflow object handle.
+ * @return const JSON_Object* Array containing update instrutions steps.
+ */
+static JSON_Array* workflow_get_instructions_steps_array(ADUC_WorkflowHandle handle)
+{
+    const JSON_Object* o = _workflow_get_update_manifest(handle);
+    return json_object_dotget_array(o, WORKFLOW_PROPERTY_FIELD_INSTRUCTIONS_DOT_STEPS);
+}
+
+/**
+ * @brief Create a new workflow data handler using specified step data from base workflow.
+ * Note: The 'workfolder' of the returned workflow data object will be the same as the base's.
+ * 
+ * Example step data:
+ *
+ * {
+ *   "handler": "microsoft/script:1",
+ *   "files": [
+ *     "f81347aeb04c14ebf"
+ *   ],
+ *   "handlerProperties": {
+ *     "arguments": "--pre"
+ *   }
+ * }
+ *
+ * @param base The base workflow containing valid Update Action and Manifest.
+ * @param stepIndex A step index.
+ * @param handle An output workflow handle.
+ * @return ADUC_Result
+ */
+ADUC_Result
+workflow_create_from_inline_step(const ADUC_WorkflowHandle base, int stepIndex, ADUC_WorkflowHandle* handle)
+{
+    ADUC_Result result = { ADUC_GeneralResult_Failure };
+    JSON_Status jsonStatus = JSONFailure;
+    JSON_Value* updateActionValue = NULL;
+    JSON_Value* updateManifestValue = NULL;
+    ADUC_Workflow* wf = NULL;
+    JSON_Array* steps = workflow_get_instructions_steps_array(base);
+    JSON_Value* stepValue = json_array_get_value(steps, stepIndex);
+
+    if (stepValue == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_INVALID_STEP_INDEX;
+        goto done;
+    }
+
+    *handle = NULL;
+
+    ADUC_Workflow* wfBase = workflow_from_handle(base);
+
+    wf = malloc(sizeof(*wf));
+    if (wf == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
+        goto done;
+    }
+
+    memset(wf, 0, sizeof(*wf));
+
+    updateActionValue = json_value_deep_copy(json_object_get_wrapping_value(wfBase->UpdateActionObject));
+    if (updateActionValue == NULL)
+    {
+        Log_Error("Cannot copy Update Action json from base");
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACITON_FROM_BASE_FAILURE;
+        goto done;
+    }
+
+    JSON_Object* updateActionObject = json_object(updateActionValue);
+
+    updateManifestValue = json_value_deep_copy(json_object_get_wrapping_value(wfBase->UpdateManifestObject));
+    if (updateManifestValue == NULL)
+    {
+        Log_Error("Cannot copy Update Manifest json from base");
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACITON_FROM_BASE_FAILURE;
+        goto done;
+    }
+
+    JSON_Object* updateManifestObject = json_object(updateManifestValue);
+    JSON_Object* stepObject = json_object(stepValue);
+
+    char* currentStepData = json_serialize_to_string_pretty(stepValue);
+    Log_Debug("Processing current step:\n%s", currentStepData);
+    json_free_serialized_string(currentStepData);
+
+    // Replace 'updateType' with step's handler type.
+    const char* updateType = json_object_get_string(stepObject, STEP_PROPERTY_FIELD_HANDLER);
+    if (updateType == NULL || *updateType == 0)
+    {
+        Log_Error("Invalid step entry.");
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_PARSE_STEP_ENTRY_NO_HANDLER_TYPE;
+        goto done;
+    }
+    jsonStatus = json_object_set_string(updateManifestObject, ADUCITF_FIELDNAME_UPDATETYPE, updateType);
+    if (jsonStatus == JSONFailure)
+    {
+        Log_Error("Cannot update step entry updateType.");
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACTION_SET_UPDATE_TYPE_FAILURE;
+        goto done;
+    }
+
+    // Copy 'handlerProperties'.
+    JSON_Value* handlerProperties =
+        json_value_deep_copy(json_object_get_value(stepObject, STEP_PROPERTY_FIELD_HANDLER_PROPERTIES));
+    jsonStatus =
+        json_object_set_value(updateManifestObject, STEP_PROPERTY_FIELD_HANDLER_PROPERTIES, handlerProperties);
+    if (jsonStatus == JSONFailure)
+    {
+        json_value_free(handlerProperties);
+        handlerProperties = NULL;
+        Log_Error("Cannot copy 'handlerProperties'.");
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACTION_COPY_HANDLER_PROPERTIES_FAILED;
+        goto done;
+    }
+
+    // Keep only file needed by this step entry. Remove the rest.
+    JSON_Array* stepFiles = json_object_get_array(stepObject, ADUCITF_FIELDNAME_FILES);
+    JSON_Object* baseFiles = json_object_get_object(updateManifestObject, ADUCITF_FIELDNAME_FILES);
+    int fileCount = json_object_get_count(baseFiles);
+    for (int b = fileCount - 1; b >= 0; b--)
+    {
+        const char* baseFileId = json_object_get_name(baseFiles, b);
+
+        // If file is in the instruction, merge their properties.
+        bool fileRequired = false;
+        int stepFilesCount = json_array_get_count(stepFiles);
+        for (int i = stepFilesCount - 1; i >= 0; i--)
+        {
+            // Note: step's files is an array of file ids.
+            const char* stepFileId = json_array_get_string(stepFiles, i);
+
+            if (baseFileId != NULL && stepFileId != NULL && strcmp(baseFileId, stepFileId) == 0)
+            {
+                // Found.
+                fileRequired = true;
+
+                // Done with this file, remove it (and free).
+                json_array_remove(stepFiles, i);
+                break;
+            }
+        }
+
+        // Remove file from base files list, if no longer needed.
+        if (!fileRequired)
+        {
+            json_object_remove(baseFiles, json_object_get_name(baseFiles, b));
+        }
+    }
+
+    // Remove 'instructions' list...
+    json_object_set_null(updateManifestObject, "instructions");
+
+    wf->UpdateActionObject = updateActionObject;
+    wf->UpdateManifestObject = updateManifestObject;
+
+    {
+        char* baseWorkfolder = workflow_get_workfolder(base);
+        workflow_set_workfolder(wf, baseWorkfolder);
+        workflow_free_string(baseWorkfolder);
+    }
+
+    *handle = wf;
+    result.ResultCode = ADUC_GeneralResult_Success;
+    result.ExtendedResultCode = 0;
+
+done:
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        json_value_free(updateActionValue);
+        json_value_free(updateManifestValue);
+        workflow_free(wf);
+    }
+
+    return result;
+}
+
+/**
  * @brief Transfer data from @p sourceHandle to @p targetHandle.
  * The sourceHandle will no longer contains transfered action data.
  * Caller should not use sourceHandle for other workflow related purposes.
@@ -1733,6 +2065,7 @@ void workflow_set_parent(ADUC_WorkflowHandle handle, ADUC_WorkflowHandle parent)
 
     ADUC_Workflow* wf = workflow_from_handle(handle);
     wf->Parent = workflow_from_handle(parent);
+    wf->Level = workflow_get_level(parent) + 1;
 }
 
 /**
@@ -2069,10 +2402,8 @@ bool workflow_update_retry_deployment(ADUC_WorkflowHandle handle, const char* re
 
     if (wf != NULL)
     {
-
         wf->CancellationType = ADUC_WorkflowCancellationType_Retry;
         result = _workflow_set_retryTimestamp(handle, retryToken);
-
     }
 
     return result;
@@ -2086,21 +2417,21 @@ bool workflow_update_retry_deployment(ADUC_WorkflowHandle handle, const char* re
  * @param nextWorkflowHandle The workflow handle for the next workflow update deployment.
  * @return true if there was an operation in progress and the next workflow handle got deferred until workCompletionCallback processing.
  */
-bool workflow_update_replacement_deployment(ADUC_WorkflowHandle currentWorkflowHandle, ADUC_WorkflowHandle nextWorkflowHandle)
+bool workflow_update_replacement_deployment(
+    ADUC_WorkflowHandle currentWorkflowHandle, ADUC_WorkflowHandle nextWorkflowHandle)
 {
     bool wasDeferred = false;
 
     ADUC_Workflow* currentWorkflow = workflow_from_handle(currentWorkflowHandle);
 
-
     if (currentWorkflow->OperationInProgress)
     {
         currentWorkflow->CancellationType = ADUC_WorkflowCancellationType_Replacement;
         currentWorkflow->OperationCancelled = true;
-        currentWorkflow->DeferredReplacementWorkflow = nextWorkflowHandle; // upon return, caller must release ownership as it's owned by current workflow now
+        currentWorkflow->DeferredReplacementWorkflow =
+            nextWorkflowHandle; // upon return, caller must release ownership as it's owned by current workflow now
         wasDeferred = true;
     }
-
 
     return wasDeferred;
 }
@@ -2416,6 +2747,223 @@ done:
     }
 
     return result;
+}
+
+/**
+ * @brief Get update manifest instructions steps count.
+ *
+ * @param handle A workflow object handle.
+ *
+ * @return Total count of the update instruction steps.
+ */
+size_t workflow_get_instructions_steps_count(ADUC_WorkflowHandle handle)
+{
+    return json_array_get_count(workflow_get_instructions_steps_array(handle));
+}
+
+/**
+ * @brief Get a read-only update manifest step type
+ *
+ * @param handle A workflow object handle.
+ * @param stepIndex A step index.
+ *
+ * @return const char* Read-only step type string, or NULL if specified step or step 'type' property doesn't exist.
+ */
+const char* workflow_peek_step_type(ADUC_WorkflowHandle handle, size_t stepIndex)
+{
+    JSON_Object* step = json_array_get_object(workflow_get_instructions_steps_array(handle), stepIndex);
+    if (step == NULL)
+    {
+        return NULL;
+    }
+
+    const char* stepType = json_object_get_string(step, STEP_PROPERTY_FIELD_TYPE);
+    if (stepType == NULL)
+    {
+        return DEAULT_STEP_TYPE;
+    }
+
+    return stepType;
+}
+
+/**
+ * @brief Get a read-only handlerProperties string value.
+ *
+ * @param handle A workflow object handle.
+ * @param propertyName
+ *
+ * @return A read-only string value of spcified property in handlerProperties map.
+ */
+const char*
+workflow_peek_update_manifest_handler_properties_string(ADUC_WorkflowHandle handle, const char* propertyName)
+{
+    const JSON_Object* manifest = _workflow_get_update_manifest(handle);
+    const JSON_Object* properties = json_object_get_object(manifest, STEP_PROPERTY_FIELD_HANDLER_PROPERTIES);
+    return json_object_get_string(properties, propertyName);
+}
+
+/**
+ * @brief Returns whether the specified step is an 'inline' step.
+ *
+ * @param handle A workflow object handle.
+ * @param stepIndex A step index.
+ *
+ * @return bool Return true if the specified step exists, and is inline step.
+ * Otherwise, return false.
+ * 
+ */
+bool workflow_is_inline_step(ADUC_WorkflowHandle handle, size_t stepIndex)
+{
+    JSON_Object* step = json_array_get_object(workflow_get_instructions_steps_array(handle), stepIndex);
+    if (step == NULL)
+    {
+        return false;
+    }
+
+    const char* stepType = json_object_get_string(step, STEP_PROPERTY_FIELD_TYPE);
+    if (stepType != NULL && strcmp(stepType, "reference") == 0)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * @brief 
+ * 
+ * @param handle A workflow object handle.
+ * @param stepIndex A step index.
+ * @return const char* Read-only step handler name, or NULL for a 'reference' step.
+ */
+const char* workflow_peek_update_manifest_step_handler(ADUC_WorkflowHandle handle, size_t stepIndex)
+{
+    JSON_Object* step = json_array_get_object(workflow_get_instructions_steps_array(handle), stepIndex);
+    if (step == NULL)
+    {
+        return false;
+    }
+
+    const char* stepHandler = json_object_get_string(step, STEP_PROPERTY_FIELD_HANDLER);
+    return stepHandler;
+}
+
+/**
+ * @brief Gets a reference step update manifest file at specified index.
+ *
+ * @param handle A workflow data object handle.
+ * @param stepIndex A step index.
+ * @param entity An output reference step update manifest file entity object. 
+ *               Caller must free the object with workflow_free_file_entity().
+ * @return true If succeeded.
+ */
+bool workflow_get_step_detatched_manifest_file(ADUC_WorkflowHandle handle, size_t stepIndex, ADUC_FileEntity** entity)
+{
+    if (entity == NULL)
+    {
+        return false;
+    }
+
+    size_t count = workflow_get_instructions_steps_count(handle);
+    if (stepIndex >= count)
+    {
+        return false;
+    }
+
+    _Bool succeeded = false;
+    JSON_Object* step = json_array_get_object(workflow_get_instructions_steps_array(handle), stepIndex);
+    const char* fileId = json_object_get_string(step, STEP_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID);
+    const JSON_Object* files = _workflow_get_update_manifest_files_map(handle);
+    const JSON_Object* file = json_object_get_object(files, fileId);
+    const JSON_Object* fileUrls = NULL;
+    const char* uri = NULL;
+    const char* name = NULL;
+
+    *entity = NULL;
+
+    // Find fileurls map in this workflow, and its enclosing workflow(s).
+    ADUC_WorkflowHandle h = handle;
+
+    do
+    {
+        if ((fileUrls = _workflow_get_fileurls_map(h)) == NULL)
+        {
+            Log_Warn("'fileUrls' property not found.");
+        }
+        else
+        {
+            uri = json_object_get_string(fileUrls, fileId);
+        }
+        h = workflow_get_parent(h);
+    } while (uri == NULL && h != NULL);
+
+    if (uri == NULL)
+    {
+        goto done;
+    }
+
+    name = json_object_get_string(file, ADUCITF_FIELDNAME_FILENAME);
+    const JSON_Object* hashObj = json_object_get_object(file, ADUCITF_FIELDNAME_HASHES);
+
+    size_t tempHashCount = 0;
+    ADUC_Hash* tempHash = ADUC_HashArray_AllocAndInit(hashObj, &tempHashCount);
+    if (tempHash == NULL)
+    {
+        Log_Error("Unable to parse hashes for file @ %zu", stepIndex);
+        goto done;
+    }
+
+    size_t sizeInBytes = 0;
+    if (json_object_has_value(file, ADUCITF_FIELDNAME_SIZEINBYTES))
+    {
+        sizeInBytes = json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
+    }
+
+    *entity = malloc(sizeof(**entity));
+    if (*entity == NULL)
+    {
+        goto done;
+    }
+
+    if (!ADUC_FileEntity_Init(*entity, fileId, name, uri, NULL /*arguments*/, tempHash, tempHashCount, sizeInBytes))
+    {
+        Log_Error("Invalid file entity arguments");
+        goto done;
+    }
+
+    succeeded = true;
+
+done:
+
+    if (!succeeded)
+    {
+        if (*entity != NULL)
+        {
+            ADUC_FileEntity_Uninit(*entity);
+            free(*entity);
+            *entity = NULL;
+        }
+    }
+
+    return succeeded;
+}
+
+/**
+ * @brief Gets a serialized json string of the specified workflow's Update Manifest.
+ * 
+ * @param handle A workflow data object handle.
+ * @param pretty Whether to format the output string. 
+ * @return char* An output json string. Caller must free the string with workflow_free_string(). 
+ */
+char* workflow_get_serialized_update_manifest(ADUC_WorkflowHandle handle, bool pretty)
+{
+    const JSON_Object* o = _workflow_get_update_manifest(handle);
+    if (pretty)
+    {
+        return json_serialize_to_string_pretty(json_object_get_wrapping_value(o));
+    }
+
+    return json_serialize_to_string(json_object_get_wrapping_value(o));
 }
 
 EXTERN_C_END

@@ -345,6 +345,7 @@ ADUC_Result AptHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
     result = ParseContent(aptManifestFilename.str(), aptContent);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
+        workflow_set_result_details(handle, "Invalid APT manifest file.");
         goto done;
     }
 
@@ -353,6 +354,10 @@ ADUC_Result AptHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
         Log_Debug("The install task completed successfully, DU Agent restart is required for this update.");
         result = { .ResultCode = ADUC_Result_Apply_RequiredImmediateAgentRestart };
         goto done;
+    }
+    else
+    {
+        result = { .ResultCode = ADUC_Result_Apply_Success };
     }
 
     Log_Info("Apply succeeded");

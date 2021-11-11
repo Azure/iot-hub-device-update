@@ -146,7 +146,7 @@ ADUC_Result SimulatorHandlerImpl::Download(const ADUC_WorkflowData* workflowData
         if (!fileEntityOk || entity == nullptr)
         {
             result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_BUNDLE_CONTENT_HANDLER_GET_FILE_ENTITY_FAILURE };
+                       .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_GET_FILE_ENTITY_FAILURE };
             goto done;
         }
 

@@ -23,9 +23,9 @@
 #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
 #include <azure_c_shared_utility/sha.h> // for SHAversion
 
-STRING_HANDLE FolderNameFromUpdateType(const char* updateType)
+static STRING_HANDLE FolderNameFromHandlerId(const char* handlerId)
 {
-    STRING_HANDLE name = STRING_construct(updateType);
+    STRING_HANDLE name = STRING_construct(handlerId);
     STRING_replace(name, '/', '_');
     STRING_replace(name, ':', '_');
     return name;
@@ -98,19 +98,20 @@ done:
 }
 
 /**
- * @brief Find update content handler for specified UpdateType @p updateType.
+ * @brief Find a handler extension file entity for the specified @p handlerId.
  *
- * @param updateType Update type string.
+ * @param hanlderId A string represents Update Type or Step Handler Type.
  * @param fileEntity An output file entity.
- * @return True if an update content handler for specified @p updateType is available.
+ * @return True if a handler for specified @p handlerId is available.
  */
-_Bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity* fileEntity)
+static _Bool GetHandlerExtensionFileEntity(
+    const char* handlerId, const char* extensionDir, const char* regFileName, ADUC_FileEntity* fileEntity)
 {
     _Bool found = false;
 
-    if (updateType == NULL || *updateType == 0)
+    if (IsNullOrEmpty(handlerId))
     {
-        Log_Error("Invalid update type");
+        Log_Error("Invalid handler identifier.");
         return false;
     }
 
@@ -122,13 +123,9 @@ _Bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity*
 
     memset(fileEntity, 0, sizeof(*fileEntity));
 
-    STRING_HANDLE folderName = FolderNameFromUpdateType(updateType);
+    STRING_HANDLE folderName = FolderNameFromHandlerId(handlerId);
 
-    STRING_HANDLE path = STRING_construct_sprintf(
-        "%s/%s/%s",
-        ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR,
-        STRING_c_str(folderName),
-        ADUC_CONTENT_HANDLER_REG_FILENAME);
+    STRING_HANDLE path = STRING_construct_sprintf("%s/%s/%s", extensionDir, STRING_c_str(folderName), regFileName);
 
     found = GetExtensionFileEntity(STRING_c_str(path), fileEntity);
 
@@ -139,13 +136,32 @@ _Bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity*
 }
 
 /**
- * @brief Register an Update Content Handler for specified UpdateType @p updateType.
+ * @brief Find a handler for the specified UpdateType @p updateType.
  *
  * @param updateType Update type string.
- * @param handlerFilePath A full path to the Update Content Handler file.
+ * @param fileEntity An output file entity.
+ * @return True if an update content handler for the specified @p updateType is available.
+ */
+_Bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity* fileEntity)
+{
+    return GetHandlerExtensionFileEntity(
+        updateType, ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR, ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME, fileEntity);
+}
+
+/**
+ * @brief Register a handler for specified handler id.
+ *
+ * @param handlerId A string represents handler id. This can be an Update-Type, or Step-Handler-Type.
+ * @param handlerFilePath A full path to the handler shared-library file.
+ * @param handlerExtensionDir An extension directory.
+ * @param handlerRegistrationFileName A handler registration file name.
  * @return Returns true if the handler successfully registered.
  */
-_Bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFilePath)
+static _Bool RegisterHandlerExtension(
+    const char* handlerId,
+    const char* handlerFilePath,
+    const char* handlerExtensionDir,
+    const char* handlerRegistrationFileName)
 {
     _Bool success = false;
     STRING_HANDLE folderName = NULL;
@@ -155,28 +171,28 @@ _Bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFi
     FILE* outFile = NULL;
     char* hash = NULL;
 
-    Log_Debug("Registering content handler for '%s', file: %s", updateType, handlerFilePath);
+    Log_Debug("Registering handler for '%s', file: %s", handlerId, handlerFilePath);
 
-    if (IsNullOrEmpty(updateType))
+    if (IsNullOrEmpty(handlerId))
     {
-        Log_Error("Invalid update type");
+        Log_Error("Invalid handler identifier.");
         goto done;
     }
 
     if (IsNullOrEmpty(handlerFilePath))
     {
-        Log_Error("Invalid update content handler file path.");
+        Log_Error("Invalid handler extension file path.");
         goto done;
     }
 
-    folderName = FolderNameFromUpdateType(updateType);
+    folderName = FolderNameFromHandlerId(handlerId);
     if (folderName == NULL)
     {
         Log_Error("Cannot generate a folder name from an Update Type.");
         goto done;
     }
 
-    dir = STRING_construct_sprintf("%s/%s", ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR, STRING_c_str(folderName));
+    dir = STRING_construct_sprintf("%s/%s", handlerExtensionDir, STRING_c_str(folderName));
     if (dir == NULL)
     {
         goto done;
@@ -233,20 +249,20 @@ _Bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFi
         "   \"hashes\": {\n"
         "        \"sha256\":\"%s\"\n"
         "   },\n"
-        "   \"updateType\":\"%s\"\n"
+        "   \"handlerId\":\"%s\"\n"
         "}\n",
         handlerFilePath,
         fileSize,
         hash,
-        updateType);
+        handlerId);
 
     if (content == NULL)
     {
-        Log_Error("Cannot construct update content handler information.");
+        Log_Error("Cannot compose the handler registration information.");
         goto done;
     }
 
-    outFilePath = STRING_construct_sprintf("%s/%s", STRING_c_str(dir), ADUC_CONTENT_HANDLER_REG_FILENAME);
+    outFilePath = STRING_construct_sprintf("%s/%s", STRING_c_str(dir), handlerRegistrationFileName);
     outFile = fopen(STRING_c_str(outFilePath), "w");
     if (outFile == NULL)
     {
@@ -258,7 +274,7 @@ _Bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFi
     if (ref < 0)
     {
         Log_Error(
-            "Failed to write update content handler info to file. File:%s, Content:%s",
+            "Failed to write the handler registration information to file. File:%s, Content:%s",
             STRING_c_str(dir),
             STRING_c_str(content));
         goto done;
@@ -267,9 +283,7 @@ _Bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFi
     // Print directly to stdout. Since this will be seen by customer,
     // we don't want to show any 'log' info (e.g., time stamp, log level.)
     printf(
-        "Successfully registered a content handler for '%s'. Registration file: %s.\n",
-        updateType,
-        STRING_c_str(outFilePath));
+        "Successfully registered a handler for '%s'. Registration file: %s.\n", handlerId, STRING_c_str(outFilePath));
     success = true;
 
 done:
@@ -283,6 +297,22 @@ done:
     free(hash);
 
     return success;
+}
+
+/**
+ * @brief Register a Handler for the specified UpdateType @p updateType.
+ *
+ * @param updateType Update type string.
+ * @param handlerFilePath A full path to the handler shared-library file.
+ * @return Returns true if the handler successfully registered.
+ */
+_Bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFilePath)
+{
+    return RegisterHandlerExtension(
+        updateType,
+        handlerFilePath,
+        ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR,
+        ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME);
 }
 
 /**

@@ -54,9 +54,9 @@ EXTERN_C_BEGIN
 #define ADUCITF_FIELDNAME_UPDATEINSTALLRESULT "updateInstallResult"
 
 /**
- * @brief JSON field name for BundledUpdates property.
+ * @brief JSON field name for stepResults property.
  */
-#define ADUCITF_FIELDNAME_BUNDLEDUPDATES "bundledUpdates"
+#define ADUCITF_FIELDNAME_STEPRESULTS "stepResults"
 
 /**
  * @brief JSON field name for ResultCode property.
@@ -145,6 +145,12 @@ EXTERN_C_BEGIN
  * @brief JSON field name for the updateManifest's updateType
  */
 #define ADUCITF_FIELDNAME_UPDATETYPE "updateType"
+
+/**
+ * @brief JSON field name for the updateManifest's step handler type
+ */
+#define ADUCITF_FIELDNAME_STEP_HANLDERTYPE "handler"
+
 /**
  * @brief JSON field name for the updateManifest's UpdateId
  */
@@ -198,6 +204,8 @@ EXTERN_C_BEGIN
 //
 // UpdateAction
 //
+
+// clang-format off
 
 /**
  * @brief UpdateAction values sent to the agent from the service.
@@ -257,6 +265,8 @@ typedef enum tagADUCITF_State
     ADUCITF_State_DeploymentInProgress = 6, ///< The state for reporting the acknowledgement of ProcessDeployment update action.
     ADUCITF_State_Failed = 255, ///< The state for when a deployment has failed and for reporting the failure.
 } ADUCITF_State;
+
+// clang-format on
 
 /**
  * @brief Describes an update identity.

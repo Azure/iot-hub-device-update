@@ -5,6 +5,7 @@
  * @copyright Copyright (c) 2019, Microsoft Corporation.
  */
 #include "linux_adu_core_impl.hpp"
+#include "aduc/calloc_wrapper.hpp"
 #include "aduc/content_handler.hpp"
 #include "aduc/content_handler_factory.hpp"
 #include "aduc/hash_utils.h"
@@ -27,6 +28,9 @@
 #include <vector>
 
 using ADUC::LinuxPlatformLayer;
+using ADUC::StringUtils::cstr_wrapper;
+
+#define UPDATE_MANIFEST_V4_DEFAULT_HANDLER "microsoft/update-manifest"
 
 /**
  * @brief Factory method for LinuxPlatformLayer
@@ -75,7 +79,7 @@ void LinuxPlatformLayer::Idle(const char* workflowId)
     _IsCancellationRequested = false;
 }
 
-static ContentHandler* GetContentTypeHandler(const ADUC_WorkflowData* workflowData, char* updateType, ADUC_Result* result)
+static ContentHandler* GetContentTypeHandler(const ADUC_WorkflowData* workflowData, ADUC_Result* result)
 {
     ContentHandler* contentHandler = nullptr;
 
@@ -87,7 +91,41 @@ static ContentHandler* GetContentTypeHandler(const ADUC_WorkflowData* workflowDa
     else
 #endif
     {
-        ADUC_Result loadResult = ContentHandlerFactory::LoadUpdateContentHandlerExtension(updateType, &contentHandler);
+        ADUC_Result loadResult = {};
+
+        // Starting from version 4, the top-level update manifest doesn't contains the 'updateType' property.
+        // The manifest contains an Instruction (steps) data, which requires special processing.
+        // For backword compatibility and avoid code complexity, for V4, we will process the top level update content
+        // using 'microsoft/update-manifest:4'
+        int updateManifestVersion = workflow_get_update_manifest_version(workflowData->WorkflowHandle);
+        if (updateManifestVersion >= 4)
+        {
+            const cstr_wrapper updateManifestHandler{ ADUC_StringFormat(
+                "microsoft/update-manifest:%d", updateManifestVersion) };
+
+            Log_Info(
+                "Try to load a handler for current update manifest version %d (handler: '%s')",
+                updateManifestVersion,
+                updateManifestHandler.get());
+
+            loadResult =
+                ContentHandlerFactory::LoadUpdateContentHandlerExtension(updateManifestHandler.get(), &contentHandler);
+
+            // If handler for the current manifest version is not available,
+            // fallback to the V4 default handler.
+            if (IsAducResultCodeFailure(loadResult.ResultCode))
+            {
+                loadResult = ContentHandlerFactory::LoadUpdateContentHandlerExtension(
+                    UPDATE_MANIFEST_V4_DEFAULT_HANDLER, &contentHandler);
+            }
+        }
+        else
+        {
+            char* updateType = workflow_get_update_type(workflowData->WorkflowHandle);
+            loadResult = ContentHandlerFactory::LoadUpdateContentHandlerExtension(updateType, &contentHandler);
+            workflow_free_string(updateType);
+        }
+
         if (IsAducResultCodeFailure(loadResult.ResultCode))
         {
             contentHandler = nullptr;
@@ -105,9 +143,8 @@ static ContentHandler* GetContentTypeHandler(const ADUC_WorkflowData* workflowDa
 ADUC_Result LinuxPlatformLayer::Download(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
+    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, &result);
 
-    char* updateType = workflow_get_update_type(workflowData->WorkflowHandle);
-    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, updateType, &result);
     if (contentHandler == nullptr)
     {
         goto done;
@@ -121,8 +158,6 @@ ADUC_Result LinuxPlatformLayer::Download(const ADUC_WorkflowData* workflowData)
     }
 
 done:
-    workflow_free_string(updateType);
-
     return result;
 }
 
@@ -133,11 +168,9 @@ done:
 ADUC_Result LinuxPlatformLayer::Install(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
-
     char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
-    char* updateType = workflow_get_update_type(workflowData->WorkflowHandle);
 
-    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, updateType, &result);
+    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
         goto done;
@@ -152,8 +185,6 @@ ADUC_Result LinuxPlatformLayer::Install(const ADUC_WorkflowData* workflowData)
 
 done:
     workflow_free_string(workflowId);
-    workflow_free_string(updateType);
-
     return result;
 }
 
@@ -166,9 +197,8 @@ ADUC_Result LinuxPlatformLayer::Apply(const ADUC_WorkflowData* workflowData)
     ADUC_Result result{ ADUC_Result_Failure };
 
     char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
-    char* updateType = workflow_get_update_type(workflowData->WorkflowHandle);
 
-    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, updateType, &result);
+    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
         goto done;
@@ -183,7 +213,6 @@ ADUC_Result LinuxPlatformLayer::Apply(const ADUC_WorkflowData* workflowData)
 
 done:
     workflow_free_string(workflowId);
-    workflow_free_string(updateType);
     return result;
 }
 
@@ -194,14 +223,13 @@ void LinuxPlatformLayer::Cancel(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
     char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
-    char* updateType = workflow_get_update_type(workflowData->WorkflowHandle);
 
     Log_Info("Cancelling. workflowId: %s", workflowId);
 
     _IsCancellationRequested = true;
     workflow_free_string(workflowId);
 
-    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, updateType, &result);
+    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
         Log_Error("Could not get content handler!");
@@ -230,53 +258,31 @@ done:
 
 /**
  * @brief Class implementation of the IsInstalled callback.
- * Calls into the content handler to determine if the given installed criteria is installed.
+ * Calls into the content handler or step handler to determine if the update in the given workflow
+ * is installed.
  *
- * @param workflowId The workflow ID.
- * @param installedCriteria The installed criteria for the content.
+ * @param workflowData The workflow data object.
  * @return ADUC_Result The result of the IsInstalled call.
  */
 ADUC_Result LinuxPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflowData)
 {
     ContentHandler* contentHandler = nullptr;
-    ADUC_Result result;
-    char* workflowId = nullptr;
-    char* updateType = nullptr;
-    char* installedCriteria = nullptr;
 
     if (workflowData == nullptr)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_BAD_UPDATETYPE };
-        goto done;
+        return ADUC_Result { .ResultCode = ADUC_Result_Failure,
+                             .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_NULL_WORKFLOW };
     }
 
-    workflowId = ADUC_WorkflowData_GetWorkflowId(workflowData);
-    updateType = ADUC_WorkflowData_GetUpdateType(workflowData);
-    installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
-
-    Log_Info("IsInstalled called workflowId: %s, updateType: %s, installed criteria: %s", workflowId, updateType, installedCriteria);
-
-    if (IsNullOrEmpty(updateType))
-    {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_BAD_UPDATETYPE };
-        goto done;
-    }
-
-    contentHandler = GetContentTypeHandler(workflowData, updateType, &result);
+    ADUC_Result result;
+    contentHandler = GetContentTypeHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
-        goto done;
+        return  ADUC_Result { .ResultCode = ADUC_Result_Failure,
+                              .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_BAD_UPDATETYPE };
     }
 
-    result = contentHandler->IsInstalled(workflowData);
-
-done:
-    workflow_free_string(workflowId);
-    workflow_free_string(updateType);
-    workflow_free_string(installedCriteria);
-    return result;
+    return contentHandler->IsInstalled(workflowData);
 }
 
 ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* workFolder)

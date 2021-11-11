@@ -94,7 +94,7 @@ std::unique_ptr<AptContent> GetAptContentFromRootValue(JSON_Value* rootValue)
 
             // Are we installing deviceupdate-agent package?
             // Currently, we are assuming deviceupdate-agent* is a Device Update Agent package.
-            if (!aptContent->AgentRestartRequired && (name.find_first_of("deviceupdate-agent") == 0))
+            if (!aptContent->AgentRestartRequired && (name.find("deviceupdate-agent") == 0))
             {
                 aptContent->AgentRestartRequired = true;
                 Log_Info(

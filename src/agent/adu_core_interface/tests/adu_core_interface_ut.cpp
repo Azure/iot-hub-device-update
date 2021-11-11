@@ -235,7 +235,13 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_Connected")
 
     // The expected reported state when Agent orchestration of all workflow steps is Idle.
     CHECK(lastReportedState == ADUCITF_State_Idle);
-    CHECK(workflowData.StartupIdleCallSent);
+    
+    // NOTE: If AzureDeviceUpdateInterface_Connected() is called when the workflowData->WorkflowHandle is already set,
+    // the AzureDeviceUpdateCoreInterface_Connected function will not call ADUC_Workflow_HandleStartupWorkflowData().
+    // Hence, at this point, there's no guarantees that workflowData.StartupIdleCallSent is 'true'.
+    //
+    // CHECK(workflowData.StartupIdleCallSent);
+    //
     CHECK(!workflow_get_operation_in_progress(workflowData.WorkflowHandle));
     CHECK(!workflow_get_operation_cancel_requested(workflowData.WorkflowHandle));
 }
@@ -277,7 +283,8 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
                                 << R"("resultCode":)" << static_cast<unsigned int>(result.ResultCode) << R"(,)"
                                 << R"("extendedResultCode":0,)"
                                 << R"("resultDetails":"")"
-                            << R"(})"
+                            << R"(},)"
+                            << R"("stepResults":null)"
                         << R"(},)"
                         << R"("state":)" << static_cast<unsigned int>(updateState) << R"(,)"
                         << R"("workflow":{)"

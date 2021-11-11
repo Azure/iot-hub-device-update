@@ -116,10 +116,8 @@ set (
 set (
     ADUC_TEST_DATA_PATH_SEGMENT
     "testdata"
-    CACHE
-        STRING
-        "The path segment in source tree where testdata for various test folders will be found."
-)
+    CACHE STRING
+          "The path segment in source tree where testdata for various test folders will be found.")
 
 set (
     ADUC_TEST_DATA_FOLDER
@@ -140,7 +138,7 @@ set (
     CACHE STRING "Path to the folder containing extensions .so file(s).")
 
 set (
-    ADUC_CONTENT_HANDLER_REG_FILENAME
+    ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME
     "content_handler.json"
     CACHE STRING "Content handler registration file name.")
 
@@ -386,10 +384,8 @@ if (ADUC_BUILD_UNIT_TESTS)
     # of output folder.
     enable_testing ()
 
-    copy_test_data (
-        "${CMAKE_SOURCE_DIR}"
-        "${ADUC_TEST_DATA_PATH_SEGMENT}"
-        "${ADUC_TEST_DATA_FOLDER}")
+    copy_test_data ("${CMAKE_SOURCE_DIR}" "${ADUC_TEST_DATA_PATH_SEGMENT}"
+                    "${ADUC_TEST_DATA_FOLDER}")
 
 endif ()
 

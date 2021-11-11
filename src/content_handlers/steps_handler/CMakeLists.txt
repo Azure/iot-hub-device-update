@@ -1,21 +1,25 @@
 cmake_minimum_required (VERSION 3.5)
 
-set (target_name microsoft_components_1)
+#
+# Specify the update handler name.
+# This should match the associated update type.
+# e.g. 'microsoft/steps:1' ==> 'microsoft_steps_1'
+#
+set (target_name microsoft_steps_1)
 
-set (SOURCE_ALL src/components_update_handler.cpp)
+#
+# List all source files required for this handler.
+#
+set (SOURCE_ALL src/steps_handler.cpp)
 
+#
+# Create a shared library.
+#
 add_library (${target_name} SHARED ${SOURCE_ALL})
 
 add_library (aduc::${target_name} ALIAS ${target_name})
 
-get_filename_component (
-    ADUC_INSTALLEDCRITERIA_FILE_PATH
-    "${ADUC_DATA_FOLDER}/${ADUC_INSTALLEDCRITERIA_FILE}"
-    ABSOLUTE
-    "/")
-
-target_compile_definitions (
-    ${target_name} PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}")
+find_package (Parson REQUIRED)
 
 target_include_directories (
     ${target_name}
@@ -26,9 +30,19 @@ target_include_directories (
             ${ADU_SHELL_INCLUDES}
             ${ADU_EXTENSION_INCLUDES})
 
+get_filename_component (
+    ADUC_INSTALLEDCRITERIA_FILE_PATH
+    "${ADUC_DATA_FOLDER}/${ADUC_INSTALLEDCRITERIA_FILE}"
+    ABSOLUTE
+    "/")
+
+target_compile_definitions (
+    ${target_name} PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}")
+
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::c_utils
+            aduc::exception_utils
             aduc::extension_manager
             aduc::installed_criteria_utils
             aduc::logging
@@ -37,7 +51,7 @@ target_link_libraries (
             aduc::system_utils
             aduc::workflow_data_utils
             aduc::workflow_utils
-            aduc::exception_utils)
+            Parson::parson)
 
 #
 # Copy a target file to out/bin/extensions/ directory.

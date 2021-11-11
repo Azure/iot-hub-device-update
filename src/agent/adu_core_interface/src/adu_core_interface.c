@@ -63,7 +63,8 @@ void ClientReportedStateCallback(int statusCode, void* context)
  * @param workflowData The workflow data.
  * @return ClientHandleSnedReportFunc The function for sending the client report.
  */
-static ClientHandleSendReportFunc ADUC_WorkflowData_GetClientHandleSendReportFunc(const ADUC_WorkflowData* workflowData)
+static ClientHandleSendReportFunc
+ADUC_WorkflowData_GetClientHandleSendReportFunc(const ADUC_WorkflowData* workflowData)
 {
     ClientHandleSendReportFunc fn = (ClientHandleSendReportFunc)ClientHandle_SendReportedState;
 
@@ -110,7 +111,8 @@ static _Bool ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData*
 
     Log_Debug("Reporting agent state:\n%s", jsonToSendStr);
 
-    ClientHandleSendReportFunc clientHandle_SendReportedState_Func = ADUC_WorkflowData_GetClientHandleSendReportFunc(workflowData);
+    ClientHandleSendReportFunc clientHandle_SendReportedState_Func =
+        ADUC_WorkflowData_GetClientHandleSendReportFunc(workflowData);
 
     iothubClientResult = (IOTHUB_CLIENT_RESULT)clientHandle_SendReportedState_Func(
         g_iotHubClientHandleForADUComponent,
@@ -246,7 +248,12 @@ done:
 void AzureDeviceUpdateCoreInterface_Connected(void* componentContext)
 {
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)componentContext;
-    ADUC_Workflow_HandleStartupWorkflowData(workflowData);
+
+    if (workflowData->WorkflowHandle == NULL)
+    {
+        // Only perform startup logic here, if no workflows has been created.
+        ADUC_Workflow_HandleStartupWorkflowData(workflowData);
+    }
 
     if (!ReportStartupMsg(workflowData))
     {
@@ -390,7 +397,8 @@ JSON_Status _json_object_set_update_result(
  * @param[in] retryTimestamp optional. The retry timestamp that's present for service-initiated retries.
  * @return true if all properties were set successfully; false, otherwise.
  */
-static _Bool set_workflow_properties(JSON_Value* workflowValue, ADUCITF_UpdateAction updateAction, const char* workflowId, const char* retryTimestamp)
+static _Bool set_workflow_properties(
+    JSON_Value* workflowValue, ADUCITF_UpdateAction updateAction, const char* workflowId, const char* retryTimestamp)
 {
     _Bool succeeded = false;
 
@@ -439,7 +447,8 @@ static JSON_Status UpdateLastInstallResult(JSON_Value* rootValue, const ADUC_Res
         goto done;
     }
 
-    JSON_Object* updateInstallResultObject = json_object_dotget_object(rootObject, "lastInstallResult.updateInstallResult");
+    JSON_Object* updateInstallResultObject =
+        json_object_dotget_object(rootObject, "lastInstallResult.updateInstallResult");
     if (rootValue == NULL)
     {
         goto done;
@@ -472,7 +481,11 @@ done:
  * @param installedUpdateId The installed Update ID string.
  * @return JSON_Value* The resultant json value object.
  */
-JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State updateState, const ADUC_Result* result, const char* installedUpdateId)
+JSON_Value* GetReportingJsonValue(
+    ADUC_WorkflowData* workflowData,
+    ADUCITF_State updateState,
+    const ADUC_Result* result,
+    const char* installedUpdateId)
 {
     JSON_Value* resultValue = NULL;
 
@@ -498,10 +511,10 @@ JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State
 
     JSON_Value* rootValue = json_value_init_object();
     JSON_Object* rootObject = json_value_get_object(rootValue);
-    int leafCount = workflow_get_children_count(handle);
+    int stepsCount = workflow_get_children_count(handle);
 
     //
-    // Prepare 'lastInstallResult', 'updateInstallResult', and 'bundledUpdates' data.
+    // Prepare 'lastInstallResult', 'updateInstallResult', and 'stepResults' data.
     //
     // Example schema:
     //
@@ -519,14 +532,14 @@ JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State
     //             "extendedResultCode" : ####,
     //             "resultDetails" : "..."
     //         },
-    //         "bundledUpdates" : {
-    //             "<leaf#0 update id>" : {
+    //         "stepResults" : {
+    //             "step_0" : {
     //                 "resultCode" : ####,
     //                 "extendedResultCode" : ####,
     //                 "resultDetails" : "..."
     //             },
     //             ...
-    //             "<leaf#N update id>" : {
+    //             "step_N" : {
     //                 "resultCode" : ####,
     //                 "extendedResultCode" : ####,
     //                 "resultDetails" : "..."
@@ -541,12 +554,13 @@ JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State
     JSON_Value* updateInstallResultValue = json_value_init_object();
     JSON_Object* updateInstallResultObject = json_object(updateInstallResultValue);
 
-    JSON_Value* bundledResultsValue = json_value_init_object();
-    JSON_Object* bundledResultsObject = json_object(bundledResultsValue);
+    JSON_Value* stepResultsValue = json_value_init_object();
+    JSON_Object* stepResultsObject = json_object(stepResultsValue);
 
     JSON_Value* workflowValue = json_value_init_object();
 
-    if (lastInstallResultValue == NULL || updateInstallResultValue == NULL || bundledResultsValue == NULL || workflowValue == NULL)
+    if (lastInstallResultValue == NULL || updateInstallResultValue == NULL || stepResultsValue == NULL
+        || workflowValue == NULL)
     {
         Log_Error("Failed to init object for json value");
         goto done;
@@ -575,7 +589,7 @@ JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State
     //
     // Workflow
     //
-    char *workflowId = workflow_get_id (handle);
+    char* workflowId = workflow_get_id(handle);
     if (!IsNullOrEmpty(workflowId))
     {
         _Bool success = set_workflow_properties(
@@ -622,27 +636,26 @@ JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State
 
     updateInstallResultValue = NULL; // rootObject owns the value now.
 
-    // If reporting 'downloadStarted' state, we must clear previous 'bundledUpdates' map, if exists.
-    if (updateState == ADUCITF_State_DownloadStarted)
+    // If reporting 'downloadStarted' or 'ADUCITF_State_DeploymentInProgress' state, we must clear previous 'stepResults' map, if exists.
+    if (updateState == ADUCITF_State_DownloadStarted || updateState == ADUCITF_State_DeploymentInProgress)
     {
-        if (json_object_set_null(lastInstallResultObject, ADUCITF_FIELDNAME_BUNDLEDUPDATES) != JSONSuccess)
+        if (json_object_set_null(lastInstallResultObject, ADUCITF_FIELDNAME_STEPRESULTS) != JSONSuccess)
         {
             /* Note: continue the 'download' phase if we could not clear the previous results. */
-            Log_Warn("Could not clear 'bundledUpdates' property. The property may contains previous install results.");
+            Log_Warn("Could not clear 'stepResults' property. The property may contains previous install results.");
         }
     }
-    // Otherwise, we will only report 'bundledUpdates' result if we have one ore moe Components Update.
-    else if (leafCount > 0)
+    // Otherwise, we will only report 'stepResults' property if we have one or more step.
+    else if (stepsCount > 0)
     {
-        jsonStatus =
-            json_object_set_value(lastInstallResultObject, ADUCITF_FIELDNAME_BUNDLEDUPDATES, bundledResultsValue);
+        jsonStatus = json_object_set_value(lastInstallResultObject, ADUCITF_FIELDNAME_STEPRESULTS, stepResultsValue);
         if (jsonStatus != JSONSuccess)
         {
-            Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_BUNDLEDUPDATES);
+            Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_STEPRESULTS);
             goto done;
         }
 
-        bundledResultsValue = NULL; // rootObject owns the value now.
+        stepResultsValue = NULL; // rootObject owns the value now.
     }
 
     //
@@ -662,21 +675,11 @@ JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State
         goto done;
     }
 
-    // Report all leaf-updates result.
+    // Report all steps result.
     if (updateState != ADUCITF_State_DownloadStarted)
     {
-        leafCount = workflow_get_children_count(handle);
-        if (leafCount == 0)
-        {
-            // Assuming this is not a Bundled Update, let's clear 'bundledUpdates' field.
-            jsonStatus = json_object_clear(bundledResultsObject);
-            if (jsonStatus != JSONSuccess)
-            {
-                Log_Warn("Could not clear JSON field: %s", ADUCITF_FIELDNAME_BUNDLEDUPDATES);
-            }
-        }
-
-        for (int i = 0; i < leafCount; i++)
+        stepsCount = workflow_get_children_count(handle);
+        for (int i = 0; i < stepsCount; i++)
         {
             ADUC_WorkflowHandle childHandle = workflow_get_child(handle, i);
             ADUC_Result childResult;
@@ -701,21 +704,21 @@ JSON_Value* GetReportingJsonValue(ADUC_WorkflowData* workflowData, ADUCITF_State
             }
 
             // Note: IoTHub twin doesn't support some special characters in a map key (e.g. ':', '-').
-            // Let's name the result using "leaf_" +  the array index.
-            childUpdateId = STRING_construct_sprintf("leaf_%d", i);
+            // Let's name the result using "step_" +  the array index.
+            childUpdateId = STRING_construct_sprintf("step_%d", i);
             if (childUpdateId == NULL)
             {
                 Log_Error("Could not create proper child update id result key.");
                 goto childDone;
             }
 
-            jsonStatus = json_object_set_value(bundledResultsObject, STRING_c_str(childUpdateId), childResultValue);
+            jsonStatus = json_object_set_value(stepResultsObject, STRING_c_str(childUpdateId), childResultValue);
             if (jsonStatus != JSONSuccess)
             {
-                Log_Error("Could not add leaf #%d update result", i);
+                Log_Error("Could not add step #%d update result", i);
                 goto childDone;
             }
-            childResultValue = NULL; // bundledResultsValue owns it now.
+            childResultValue = NULL; // stepResultsValue owns it now.
 
             jsonStatus = _json_object_set_update_result(
                 childResultObject,
@@ -744,7 +747,7 @@ done:
     json_value_free(rootValue);
     json_value_free(lastInstallResultValue);
     json_value_free(updateInstallResultValue);
-    json_value_free(bundledResultsValue);
+    json_value_free(stepResultsValue);
     json_value_free(workflowValue);
 
     return resultValue;
@@ -760,7 +763,10 @@ done:
  * @return true if succeeded.
  */
 _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-    ADUC_WorkflowData* workflowData, ADUCITF_State updateState, const ADUC_Result* result, const char* installedUpdateId)
+    ADUC_WorkflowData* workflowData,
+    ADUCITF_State updateState,
+    const ADUC_Result* result,
+    const char* installedUpdateId)
 {
     _Bool success = false;
 
@@ -770,7 +776,8 @@ _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
         return false;
     }
 
-    if (AgentOrchestration_ShouldNotReportToCloud(updateState)) {
+    if (AgentOrchestration_ShouldNotReportToCloud(updateState))
+    {
         Log_Debug("Skipping report of state '%s'", ADUCITF_StateToString(updateState));
         return true;
     }
@@ -848,5 +855,6 @@ _Bool AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(ADUC_WorkflowDat
 
     ADUC_Result result = { .ResultCode = ADUC_Result_Apply_Success, .ExtendedResultCode = 0 };
 
-    return AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(workflowData, ADUCITF_State_Idle, &result, updateId);
+    return AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
+        workflowData, ADUCITF_State_Idle, &result, updateId);
 }

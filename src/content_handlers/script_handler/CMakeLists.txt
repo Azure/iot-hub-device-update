@@ -33,7 +33,8 @@ target_link_libraries (
             aduc::workflow_utils)
 
 if (ADUC_BUILD_UNIT_TESTS)
-    add_subdirectory (tests)
+# TODO:NOX:Bug 36966499: [PPR] Add and enable script handler unittest
+#    add_subdirectory (tests)
 endif ()
 
 #

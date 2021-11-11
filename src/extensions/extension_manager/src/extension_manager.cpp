@@ -38,9 +38,9 @@ std::unordered_map<std::string, ContentHandler*> ExtensionManager::_contentHandl
 void* ExtensionManager::_contentDownloader;
 void* ExtensionManager::_componentEnumerator;
 
-STRING_HANDLE FolderNameFromUpdateType(const char* updateType)
+STRING_HANDLE FolderNameFromHandlerId(const char* handlerId)
 {
-    STRING_HANDLE name = STRING_construct(updateType);
+    STRING_HANDLE name = STRING_construct(handlerId);
     STRING_replace(name, '/', '_');
     STRING_replace(name, ':', '_');
     return name;
@@ -225,7 +225,7 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
         goto done;
     }
 
-    folderName = FolderNameFromUpdateType(updateType.c_str());
+    folderName = FolderNameFromHandlerId(updateType.c_str());
     path = STRING_construct_sprintf("%s/%s", ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR, STRING_c_str(folderName));
 
     result = LoadExtensionLibrary(
@@ -241,8 +241,8 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
 
     dlerror(); // Clear any existing error
 
-    createUpdateContentHandlerExtension =
-        reinterpret_cast<UPDATE_CONTENT_HANDLER_CREATE_PROC>(dlsym(libHandle, "CreateUpdateContentHandlerExtension")); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+    createUpdateContentHandlerExtension = reinterpret_cast<UPDATE_CONTENT_HANDLER_CREATE_PROC>(dlsym(
+        libHandle, "CreateUpdateContentHandlerExtension")); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
     if (createUpdateContentHandlerExtension == nullptr)
     {
@@ -421,7 +421,8 @@ void ExtensionManager::_FreeComponentsDataString(char* componentsJson)
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    freeComponentsDataStringProc = reinterpret_cast<FreeComponentsDataStringProc>(dlsym(lib, "FreeComponentsDataString"));
+    freeComponentsDataStringProc =
+        reinterpret_cast<FreeComponentsDataStringProc>(dlsym(lib, "FreeComponentsDataString"));
 
     if (freeComponentsDataStringProc == nullptr)
     {

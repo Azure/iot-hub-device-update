@@ -1,11 +1,11 @@
 /**
- * @file bundle_handler.hpp
- * @brief Defines BundleHandlerImpl.
+ * @file steps_handler.hpp
+ * @brief Defines StepsHandlerImpl.
  *
  * @copyright Copyright (c) Microsoft Corp.
  */
-#ifndef ADUC_SIMULATOR_HANDLER_HPP
-#define ADUC_SIMULATOR_HANDLER_HPP
+#ifndef ADUC_STEPS_HANDLER_HPP
+#define ADUC_STEPS_HANDLER_HPP
 
 #include "aduc/content_handler.hpp"
 #include "aduc/content_handler_factory.hpp"
@@ -14,21 +14,21 @@
 #include <string>
 
 /**
- * @class BundleHandlerImpl
- * @brief The apt specific simulator implementation.
+ * @class StepsHandlerImpl
+ * @brief The Update Content Handler that performs 'Multi-Steps Ordered Execution'.
  */
-class BundleHandlerImpl : public ContentHandler
+class StepsHandlerImpl : public ContentHandler
 {
 public:
     static ContentHandler* CreateContentHandler();
 
     // Delete copy ctor, copy assignment, move ctor and move assignment operators.
-    BundleHandlerImpl(const BundleHandlerImpl&) = delete;
-    BundleHandlerImpl& operator=(const BundleHandlerImpl&) = delete;
-    BundleHandlerImpl(BundleHandlerImpl&&) = delete;
-    BundleHandlerImpl& operator=(BundleHandlerImpl&&) = delete;
+    StepsHandlerImpl(const StepsHandlerImpl&) = delete;
+    StepsHandlerImpl& operator=(const StepsHandlerImpl&) = delete;
+    StepsHandlerImpl(StepsHandlerImpl&&) = delete;
+    StepsHandlerImpl& operator=(StepsHandlerImpl&&) = delete;
 
-    ~BundleHandlerImpl() override = default;
+    ~StepsHandlerImpl() override = default;
 
     ADUC_Result Download(const ADUC_WorkflowData* workflowData) override;
     ADUC_Result Install(const ADUC_WorkflowData* workflowData) override;
@@ -38,9 +38,9 @@ public:
 
 private:
     // Private constructor, must call CreateContentHandler factory method.
-    BundleHandlerImpl()
+    StepsHandlerImpl()
     {
     }
 };
 
-#endif // ADUC_SIMULATOR_HANDLER_HPP
+#endif // ADUC_STEPS_HANDLER_HPP
