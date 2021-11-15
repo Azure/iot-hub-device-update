@@ -32,16 +32,4 @@ target_link_libraries (
 target_compile_definitions (${target_name} PRIVATE ADUC_VERSION_FILE="${ADUC_VERSION_FILE}"
                                                    ADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")
 
-#
-# Copy a target file to out/bin/extensions/ directory.
-#
-set (OUT_BIN_EXTENTIONS_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/extensions)
-file (MAKE_DIRECTORY ${OUT_BIN_EXTENTIONS_DIR})
-
-add_custom_command (
-    TARGET ${target_name}
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} ARGS -E copy ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*${target_name}.so
-            ${OUT_BIN_EXTENTIONS_DIR})
-
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

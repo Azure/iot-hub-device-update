@@ -23,16 +23,4 @@ target_link_libraries (
             aduc::string_utils
             Microsoft::deliveryoptimization)
 
-#
-# Copy a target file to out/bin/extensions/ directory.
-#
-set (OUT_BIN_EXTENTIONS_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/extensions)
-file (MAKE_DIRECTORY ${OUT_BIN_EXTENTIONS_DIR})
-
-add_custom_command (
-    TARGET ${PROJECT_NAME}
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} ARGS -E copy ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/*${PROJECT_NAME}.so
-            ${OUT_BIN_EXTENTIONS_DIR})
-
 install (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
