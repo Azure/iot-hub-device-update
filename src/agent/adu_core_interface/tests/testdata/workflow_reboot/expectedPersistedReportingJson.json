@@ -1,10 +1,8 @@
 {
     "lastInstallResult": {
-        "updateInstallResult": {
-            "resultCode": 400,
-            "extendedResultCode": 0,
-            "resultDetails": ""
-        }
+        "resultCode": 400,
+        "extendedResultCode": 0,
+        "resultDetails": ""
     },
     "state": 0,
     "workflow": {

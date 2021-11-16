@@ -3,11 +3,9 @@
         "__t": "c",
         "agent": {
             "lastInstallResult": {
-                "updateInstallResult": {
-                    "resultCode": 700,
-                    "extendedResultCode": 0,
-                    "resultDetails": ""
-                }
+                "resultCode": 700,
+                "extendedResultCode": 0,
+                "resultDetails": ""
             },
             "state": 0,
             "workflow": {

@@ -365,26 +365,41 @@ void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
 //
 // Reporting
 //
-
-JSON_Status _json_object_set_update_result(
+static JSON_Status _json_object_set_update_result(
     JSON_Object* object, int32_t resultCode, int32_t extendedResultCode, const char* resultDetails)
 {
     JSON_Status status = json_object_set_number(object, ADUCITF_FIELDNAME_RESULTCODE, resultCode);
-    if (status == JSONSuccess)
+    if (status != JSONSuccess)
     {
-        status = json_object_set_number(object, ADUCITF_FIELDNAME_EXTENDEDRESULTCODE, extendedResultCode);
+        Log_Error("Could not set value for field: %s", ADUCITF_FIELDNAME_RESULTCODE);
+        goto done;
     }
-    if (status == JSONSuccess)
+
+    status = json_object_set_number(object, ADUCITF_FIELDNAME_EXTENDEDRESULTCODE, extendedResultCode);
+    if (status != JSONSuccess)
     {
-        if (resultDetails)
+        Log_Error("Could not set value for field: %s", ADUCITF_FIELDNAME_EXTENDEDRESULTCODE);
+        goto done;
+    }
+
+    if (resultDetails != NULL)
+    {
+        status = json_object_set_string(object, ADUCITF_FIELDNAME_RESULTDETAILS, resultDetails);
+        if (status != JSONSuccess)
         {
-            status = json_object_set_string(object, ADUCITF_FIELDNAME_RESULTDETAILS, resultDetails);
-        }
-        else
-        {
-            status = json_object_set_null(object, ADUCITF_FIELDNAME_RESULTDETAILS);
+            Log_Error("Could not set value for field: %s", ADUCITF_FIELDNAME_RESULTDETAILS);
         }
     }
+    else
+    {
+        status = json_object_set_null(object, ADUCITF_FIELDNAME_RESULTDETAILS);
+        if (status != JSONSuccess)
+        {
+            Log_Error("Could not set field %s to 'null'", ADUCITF_FIELDNAME_RESULTDETAILS);
+        }
+    }
+
+done:
     return status;
 }
 
@@ -447,20 +462,20 @@ static JSON_Status UpdateLastInstallResult(JSON_Value* rootValue, const ADUC_Res
         goto done;
     }
 
-    JSON_Object* updateInstallResultObject =
-        json_object_dotget_object(rootObject, "lastInstallResult.updateInstallResult");
-    if (rootValue == NULL)
+    JSON_Object* lastInstallResultObject = json_object_get_object(rootObject, ADUCITF_FIELDNAME_LASTINSTALLRESULT);
+    if (lastInstallResultObject == NULL)
     {
         goto done;
     }
 
-    jsonStatus = json_object_set_number(updateInstallResultObject, "resultCode", result->ResultCode);
+    jsonStatus = json_object_set_number(lastInstallResultObject, ADUCITF_FIELDNAME_RESULTCODE, result->ResultCode);
     if (jsonStatus != JSONSuccess)
     {
         goto done;
     }
 
-    jsonStatus = json_object_set_number(updateInstallResultObject, "extendedResultCode", result->ExtendedResultCode);
+    jsonStatus = json_object_set_number(
+        lastInstallResultObject, ADUCITF_FIELDNAME_EXTENDEDRESULTCODE, result->ExtendedResultCode);
     if (jsonStatus != JSONSuccess)
     {
         goto done;
@@ -514,7 +529,7 @@ JSON_Value* GetReportingJsonValue(
     int stepsCount = workflow_get_children_count(handle);
 
     //
-    // Prepare 'lastInstallResult', 'updateInstallResult', and 'stepResults' data.
+    // Prepare 'lastInstallResult', 'stepResults' data.
     //
     // Example schema:
     //
@@ -527,11 +542,9 @@ JSON_Value* GetReportingJsonValue(
     //     "installedUpdateId" : "...",
     //
     //     "lastInstallResult" : {
-    //         "updateInstallResult" : {
-    //             "resultCode" : ####,
-    //             "extendedResultCode" : ####,
-    //             "resultDetails" : "..."
-    //         },
+    //         "resultCode" : ####,
+    //         "extendedResultCode" : ####,
+    //         "resultDetails" : "...",
     //         "stepResults" : {
     //             "step_0" : {
     //                 "resultCode" : ####,
@@ -551,16 +564,12 @@ JSON_Value* GetReportingJsonValue(
     JSON_Value* lastInstallResultValue = json_value_init_object();
     JSON_Object* lastInstallResultObject = json_object(lastInstallResultValue);
 
-    JSON_Value* updateInstallResultValue = json_value_init_object();
-    JSON_Object* updateInstallResultObject = json_object(updateInstallResultValue);
-
     JSON_Value* stepResultsValue = json_value_init_object();
     JSON_Object* stepResultsObject = json_object(stepResultsValue);
 
     JSON_Value* workflowValue = json_value_init_object();
 
-    if (lastInstallResultValue == NULL || updateInstallResultValue == NULL || stepResultsValue == NULL
-        || workflowValue == NULL)
+    if (lastInstallResultValue == NULL || stepResultsValue == NULL || workflowValue == NULL)
     {
         Log_Error("Failed to init object for json value");
         goto done;
@@ -582,7 +591,7 @@ JSON_Value* GetReportingJsonValue(
     jsonStatus = json_object_set_number(rootObject, ADUCITF_FIELDNAME_STATE, updateState);
     if (jsonStatus != JSONSuccess)
     {
-        Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_UPDATEINSTALLRESULT);
+        Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_STATE);
         goto done;
     }
 
@@ -625,17 +634,6 @@ JSON_Value* GetReportingJsonValue(
         }
     }
 
-    // Top level result
-    jsonStatus = json_object_set_value(
-        lastInstallResultObject, ADUCITF_FIELDNAME_UPDATEINSTALLRESULT, updateInstallResultValue);
-    if (jsonStatus != JSONSuccess)
-    {
-        Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_UPDATEINSTALLRESULT);
-        goto done;
-    }
-
-    updateInstallResultValue = NULL; // rootObject owns the value now.
-
     // If reporting 'downloadStarted' or 'ADUCITF_State_DeploymentInProgress' state, we must clear previous 'stepResults' map, if exists.
     if (updateState == ADUCITF_State_DownloadStarted || updateState == ADUCITF_State_DeploymentInProgress)
     {
@@ -664,14 +662,13 @@ JSON_Value* GetReportingJsonValue(
 
     // Set top-level update state and result.
     jsonStatus = _json_object_set_update_result(
-        updateInstallResultObject,
+        lastInstallResultObject,
         rootResult.ResultCode,
         rootResult.ExtendedResultCode,
         workflow_peek_result_details(handle));
 
     if (jsonStatus != JSONSuccess)
     {
-        Log_Error("Could not set values for field: %s", ADUCITF_FIELDNAME_UPDATEINSTALLRESULT);
         goto done;
     }
 
@@ -728,7 +725,6 @@ JSON_Value* GetReportingJsonValue(
 
             if (jsonStatus != JSONSuccess)
             {
-                Log_Error("Could not add update result values for components #%d", i);
                 goto childDone;
             }
 
@@ -746,7 +742,6 @@ JSON_Value* GetReportingJsonValue(
 done:
     json_value_free(rootValue);
     json_value_free(lastInstallResultValue);
-    json_value_free(updateInstallResultValue);
     json_value_free(stepResultsValue);
     json_value_free(workflowValue);
 
