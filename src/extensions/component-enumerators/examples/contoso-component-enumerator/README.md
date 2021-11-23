@@ -1,23 +1,21 @@
-# How to register multiple components with Contoso Virtual Vacuum Components Enumerator
-This sections shows a sample implementation of the Contoso Virtual Vacuum Components Enumerator that you can use to implement custom Components Enumerator's for your IoT devices. 
+# How to register multiple components with Contoso Virtual Vacuum Component Enumerator example
+This sections shows a sample implementation of the Contoso Virtual Vacuum Components Enumerator that you can reference to implement a custom Components Enumerator for your IoT devices. 
 
-## What is Contoso Virtual-Vacuum
+## What is Contoso Virtual Vacuum
 
-A Contoso Virtual-Vacuum is, as the name suggested, a virtual IoT device that we use to demonstrate a Device Update's **Proxy Update** feature.  
+A Contoso Virtual-Vacuum is a virtual IoT device that we use to demonstrate the **Proxy Update** feature.  
 
-**Proxy Updates** enables update multiple components on the same IoT device or multiple sensors connected to the IoT device with a single OTA deployment. Proxy updates also supports an install order when updating components and a multi-step update process with pre-install, install, post-install capabilities.  
-
-Examples include:
+**Proxy Updates** enables updating multiple components on the same IoT device or multiple sensors connected to the IoT device with a single over-the-air deployment. Proxy updates also supports an install order when updating components and a multi-step update process with pre-install, install, post-install capabilities. Use cases where proxy updates is applicable include:
 
 - Targeting specific update files to different partitions on the device.
 - Targeting specific update files to different apps/components on the device
 - Targeting specific update files to sensors connected to IoT devices over a network protocol (e.g., USB, CANbus etc.)  
 
-The Device Update Agent (running on the host device) can send each update to a specific **component** or to a **group of components** of the same hardware class (requiring the same software or firmware update).  
+The Device Update Agent (running on the host device) can send each update to a specific **component** or to a **group of components** of the same hardware class (i.e. requiring the same software or firmware update).  
 
 ## Virtual-Vacuum Components
 
-For this demonstration purpose, a Contoso Virtual Vacuum consists of five 'logical' components:  
+For this demonstration, the Contoso Virtual Vacuum consists of five 'logical' components:  
 
 - Host Firmware
 - Host Boot File System
@@ -42,7 +40,7 @@ We use the following directory structure to simulates those components mentioned
 /usr/local/contoso-device/vacuum-1/cameras/1  /* rear camera */
 ```
 
-Each component's directory contains a JSON file that store a mock software version number of each component. These file are `firmware.json` or `diskimage.json`.  
+Each component's directory contains a JSON file that stores a mock software version number of each component. These file are `firmware.json` or `diskimage.json`.  
 
 **Note:** For this demo, to update the components' firmware, we will copy a `firmware.json` or `diskimage.json` (update payload) to `targetted components' directory`.
 
@@ -58,37 +56,37 @@ Each component's directory contains a JSON file that store a mock software versi
 
 ## What is a Components Enumerator?
 
-A **Components Enumerator** is a **Device Update Agent Extension** that provides information about every **component** that you need to OTA update via a host device's IoT Hub connection.  
+A **Components Enumerator** is a **Device Update Agent Extension** that provides information about every **component** that you need to over-the-air update via a host device's IoT Hub connection.  
 
-The Device Update Agent is device and component agnostic. By itself, Device Update Agent doesn't know anything about components that resides or are connected to a host device at the time of the update.  
+The Device Update Agent is device and component agnostic. By itself, Device Update Agent doesn't know anything about components that resides on or are connected to a host device at the time of the update.  
 
-To enable Proxy Updates, Device Builder must identify all update-able components on the device and assign a unique name to each component. So that an Update Content Handler can install and apply the update to the correct component(s).  
+To enable Proxy Updates, device builders must identify all updateable components on the device and assign a unique name to each component. After doing this the Update Content Handler can install and apply the update to the correct component(s).  
 
 #### Figure 2 - Proxy Update Flow Diagram
 
 ![Contoso Virtual-Vacuum Update Flow](../contoso-component-enumerator/assets/contoso-virtual-vacuum-update-flow.svg)
 
-- **Device Builder**
+- **Device Builder reponsobilities**
   - Design and build the device.
   - Integrate Device Update Agent and its dependencies.
   - Implement device-specific **Component Enumerator Extension** and register with DU Agent.
   - The **Components Enumerator** leverage components information from a component inventory or configuration file. Then augment static (DU required) component data with the dynamic data (e.g., firmware version, connection status, hardware id, etc.)
-  - Create a Bundle Update containing one or more Leaf Updates that target one or more components on (or connected to) the device.
+  - Create a Proxy Update containing one or more Child Updates that target one or more components on (or connected to) the device.
   - Sent the update to their Solution Operator
 - **Solution Operator**
-  - Import the update to Azure Device Update Service
+  - Import the update (and manifest) to the Device Update Service
   - Deploy the update to a group of devices
 - **Device Update Agent**
-  - Received update information from Azure IoT Hub (via Device Twin or Module Twin)
-  - Invoke **Proxy Update Handler** to process the Proxy Update intended for one or more components on the device
-    - For each Leaf Update (in this example, there're 2 updates, `host-fw-1.1` and `motors-fw-1.1`), **Proxy Update Handler** invoke **Leaf Update Handler** to enumerate all components that matching the **Compatibilites** properties specified in Leaf Update Manifest file, then download, install and apply Leaf Update to all targetted components.
-    - To get the matching components, the Leaf Update will call a `SelectComponents` API provided by the **Components Enumerator**. <br/>**Note:** If there is no matching components, the Leaf Update will be skipped.
-  - Collect all update results from Proxy and Leaf Update(s) and report to the Azure IoT Hub.
+  - Receives update information from Azure IoT Hub (via Device Twin or Module Twin)
+  - Invokes **Proxy Update Handler** to process the Proxy Update intended for one or more components on the device
+    - For each Child Update (in this example, there're 2 updates, `host-fw-1.1` and `motors-fw-1.1`), **Proxy Update Handler** invokes **Child Update Handler** to enumerate all components that match the **Compatibilites** properties specified in Child Update Manifest file. Next the handler downloads, installs and applies the Child Update to all targetted components.
+    - To get the matching components, the Child Update will call a `SelectComponents` API provided by the **Components Enumerator**. <br/>**Note:** If there is no matching components, the Child Update will be skipped.
+  - Collects all update results from Proxy and Child Update(s) and report to the Azure IoT Hub.
 - **Bundle Update Handler**
   - An extension that implements Proxy Update workflow.
   - Only support a child (leaf) update of type `microsoft/components:1` (required Leaf Update Handler)
   - See [Bundle Update Handler](../../../../content_handlers/bundle_update_handler/README.md) for more information.
-- **Leaf Update Handler**
+- **Child Update Handler**
   - An extension that implements Leaf Update workflow.
   - Iterate through a list of **instances of component** that are compatible with the **Leaf Update** content.
   - Perform a set of tasks, called **InstallItems** as specified in an `instruction file`. These tasks can be any custom actions, such as perform the pre-install tasks, invoke the updater installer, perform the post-install tasks, etc.<br/> **Note:** associated Handler(s) must be implemented and registered on the device in order to perform those tasks.
