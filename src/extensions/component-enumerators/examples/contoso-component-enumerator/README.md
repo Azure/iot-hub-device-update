@@ -1,4 +1,5 @@
-# Contoso Virtual Vacuum Components Enumerator
+# How to register multiple components with Contoso Virtual Vacuum Components Enumerator
+This sections shows a sample implementation of the Contoso Virtual Vacuum Components Enumerator that you can use to implement custom Components Enumerator's for your IoT devices. 
 
 ## What is Contoso Virtual-Vacuum
 
