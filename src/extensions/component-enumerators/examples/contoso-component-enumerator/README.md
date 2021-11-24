@@ -81,16 +81,11 @@ To enable Proxy Updates, device builders must identify all updateable components
   - Invokes **Proxy Update Handler** to process the Proxy Update intended for one or more components on the device
     - For each Child Update (in this example, there're 2 updates, `host-fw-1.1` and `motors-fw-1.1`), **Proxy Update Handler** invokes **Child Update Handler** to enumerate all components that match the **Compatibilites** properties specified in Child Update Manifest file. Next the handler downloads, installs and applies the Child Update to all targetted components.
     - To get the matching components, the Child Update will call a `SelectComponents` API provided by the **Components Enumerator**. <br/>**Note:** If there is no matching components, the Child Update will be skipped.
-  - Collects all update results from Proxy and Child Update(s) and report to the Azure IoT Hub.
-- **Bundle Update Handler**
-  - An extension that implements Proxy Update workflow.
-  - Only support a child (leaf) update of type `microsoft/components:1` (required Leaf Update Handler)
-  - See [Bundle Update Handler](../../../../content_handlers/bundle_update_handler/README.md) for more information.
+  - Collects all update results from Proxy and Child Update(s) and reports it to the Azure IoT Hub.
 - **Child Update Handler**
-  - An extension that implements Leaf Update workflow.
-  - Iterate through a list of **instances of component** that are compatible with the **Leaf Update** content.
-  - Perform a set of tasks, called **InstallItems** as specified in an `instruction file`. These tasks can be any custom actions, such as perform the pre-install tasks, invoke the updater installer, perform the post-install tasks, etc.<br/> **Note:** associated Handler(s) must be implemented and registered on the device in order to perform those tasks.
-  - See [Leaf Update Handler](../../../../content_handlers/components_update_handler/README.md) for more information.
+  - An extension that implements the Child Update workflow.
+  - Iterate through a list of **instances of component** that are compatible with the **Child Update** content.
+  - See [Child Update Handler](../../../../content_handlers/components_update_handler/README.md) for more information.
 - **SWUpdate Installer** and **Motors Firmware Installer**
   - See [How To Implement Custom Update Content Handler](../../../../../docs/agent-reference/how-to-implement-custom-update-handler.md) for more details.
 
