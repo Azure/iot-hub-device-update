@@ -66,7 +66,7 @@ To enable Proxy Updates, device builders must identify all updateable components
 
 ![Contoso Virtual-Vacuum Update Flow](../contoso-component-enumerator/assets/contoso-virtual-vacuum-update-flow.svg)
 
-- **Device Builder reponsobilities**
+- **Device builder reponsobilities**
   - Design and build the device.
   - Integrate Device Update Agent and its dependencies.
   - Implement device-specific **Component Enumerator Extension** and register with DU Agent.
@@ -106,10 +106,10 @@ The ComponentInfo JSON string must include following requried properties
 | Name | Type | Description |
 |---|---|---|
 |id| string | A component's unique id (device scope)<br/><br/>e.g., hardware's serial number, disk partition id, unique file path of the component, etc.|
-|name| string| A component's `logical` name. This is the name that a Device Builder assigns to a component that is available in every device of the same `device class`.<br/><br/>For example, every Contoso Virtual-Vacuum device contains a motor that drives left wheel. Contoso assigned 'Left Motor' as a common (logical) name for this motore, to easily refer to this component, instead of hardware ID, which can be globally unique.|
+|name| string| A component's `logical` name. This is the name that a device builder assigns to a component that is available in every device of the same `device class`.<br/><br/>For example, every Contoso Virtual-Vacuum device contains a motor that drives left wheel. Contoso assigned 'Left Motor' as a common (logical) name for this motore, to easily refer to this component, instead of hardware ID, which can be globally unique.|
 |group|string|A group that this component belongs to.<br/><br/>For example, all motors could belong to a 'motors' group.|
-|manufacturer|string|For physical hardware component, this is a manufacturer or vendor name.<br/><br/>For logical component, such as, disk partition or directory, this can be any Device Builder's Defined value.|
-|model|string|For physical hardware component, this is a model name.<br/><br/>For logical component, such as, disk partition or directory, this can be any Device Builder's Defined value.|
+|manufacturer|string|For physical hardware component, this is a manufacturer or vendor name.<br/><br/>For logical component, such as, disk partition or directory, this can be any device Builder's Defined value.|
+|model|string|For physical hardware component, this is a model name.<br/><br/>For logical component, such as, disk partition or directory, this can be any device builder's Defined value.|
 |properties|object| A JSON object contain any optional device-specific properties.|
 
 #### Example ComponentInfo
@@ -342,7 +342,7 @@ The example implementation shown above for Contoso Components Enumerator will re
 
 **In the production scenario**, some properties, such as `id`, `manufacturer`, `model`, should be retrived directly from the actual components.  
 
-`name` and `group` properties are usually defined by the Device Builder. These values should never change, once defined. The `name` property must be unique within the device.  
+`name` and `group` properties are usually defined by the device builder. These values should never change, once defined. The `name` property must be unique within the device.  
 
 #### Example component-inventory.json file
 
