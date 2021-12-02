@@ -16,8 +16,8 @@
         "Type": "git",
         "git": {
           "RepositoryUrl": "https://github.com/Azure/azure-iot-sdk-c",
-          "CommitHash_Comment": "LTS_01_2021_Ref01",
-          "CommitHash": "17b7d536485b5e69555d76074803495b7b18e7ab"
+          "CommitHash_Comment": "LTS_07_2021_Ref01",
+          "CommitHash": "808a5595f98853a5f2eae2c67dd9b3608a2338ea"
         }
       },
       "DevelopmentDependency": false

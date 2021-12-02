@@ -38,7 +38,7 @@ use_ssh=false
 # ADUC Deps
 install_aduc_deps=false
 install_azure_iot_sdk=false
-azure_sdk_ref=master
+azure_sdk_ref=LTS_07_2021_Ref01
 
 install_catch2=false
 default_catch2_ref=v2.11.0
