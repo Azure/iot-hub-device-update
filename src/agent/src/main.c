@@ -1,6 +1,6 @@
 /**
  * @file main.c
- * @brief Implements the main code for the Azure Device Update Agent.
+ * @brief Implements the main code for the Device Update Agent.
  *
  * @copyright Copyright (c) 2019, Microsoft Corporation.
  */

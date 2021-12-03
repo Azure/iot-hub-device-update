@@ -32,7 +32,7 @@ function Start-AduImportUpdate
 {
 <#
     .SYNOPSIS
-        Start importing an update to Azure Device Update for IoT Hub. Method returns an operationId to be used for
+        Start importing an update to Device Update for IoT Hub. Method returns an operationId to be used for
         polling the operation status.
 
     .EXAMPLE

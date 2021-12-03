@@ -1482,7 +1482,7 @@ const char* workflow_peek_update_manifest_string(ADUC_WorkflowHandle handle, con
 }
 
 /**
- * @brief Get a property of type 'string' in the workflow update manfiest.
+ * @brief Get a property of type 'string' in the workflow update manifest.
  *
  * @param handle A workflow object handle.
  * @param propertyName The name of a property to get.
@@ -1830,7 +1830,7 @@ bool workflow_transfer_data(ADUC_WorkflowHandle targetHandle, ADUC_WorkflowHandl
 /**
  * @brief Instantiate and initialize workflow object with info from the given jsonData.
  *
- * @param updateManifestJson A JSON string containing udpate manifest data.
+ * @param updateManifestJson A JSON string containing update manifest data.
  * @param validateManifest A boolean indicates whether to validate the update manifest.
  * @param handle An output workflow object handle.
  * @return ADUC_Result

@@ -147,11 +147,6 @@ EXTERN_C_BEGIN
 #define ADUCITF_FIELDNAME_UPDATETYPE "updateType"
 
 /**
- * @brief JSON field name for the updateManifest's step handler type
- */
-#define ADUCITF_FIELDNAME_STEP_HANLDERTYPE "handler"
-
-/**
  * @brief JSON field name for the updateManifest's UpdateId
  */
 #define ADUCITF_FIELDNAME_UPDATEID "updateId"
@@ -232,7 +227,7 @@ typedef enum tagADUCITF_UpdateAction
  * Requested intraphase transitions representing workflow steps in the Agent.
  * These values do have no relation to protocol values and are for internal
  * workflow state machine only, but are in order they would occur While
- * processing the udpate workflow.
+ * processing the update workflow.
  */
 typedef enum tagADUCITF_WorkflowStep
 {

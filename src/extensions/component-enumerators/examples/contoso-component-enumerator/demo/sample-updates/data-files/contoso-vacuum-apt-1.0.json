@@ -1,0 +1,9 @@
+{
+    "name": "contoso-vacuum-apt",
+    "version" : "1.0",
+    "packages": [
+        {
+            "name" : "libcurl4-doc"
+        }
+    ]
+}

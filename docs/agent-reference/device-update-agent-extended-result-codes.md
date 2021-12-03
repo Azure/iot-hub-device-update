@@ -539,7 +539,7 @@ Another set of extended result codes returned from the Delivery Optimization sta
 | 0x40300001 |ADUC_ERROR_CURL_DOWNLOADER_INVALID_FILE_HASH  |
 | 0x40301000 + (exitCode) |ADUC_ERROR_CURL_DOWNLOADER_EXTERNAL_FAILURE  |
 
-### Components Enumerator Result Codes (facility #7)
+### Component Enumerator Result Codes (facility #7)
 
 7 00 #####
 
@@ -552,7 +552,7 @@ static inline ADUC_Result_t MAKE_ADUC_COMPONENT_ENUMERATOR_EXTENDEDRESULTCODE(co
 }
 ```
 
-###### Components Enumerator Reserved Result Codes (0x7000000 - 0x70000200)
+###### Component Enumerator Reserved Result Codes (0x7000000 - 0x70000200)
 
 | Extended Result Code | C Macro | Note |
 |:----|:----|:----|
@@ -563,7 +563,7 @@ static inline ADUC_Result_t MAKE_ADUC_COMPONENT_ENUMERATOR_EXTENDEDRESULTCODE(co
 | 0x70000005 |ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_SELECTCOMPONENTS  |
 | 0x70000006 |ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_FREECOMPONENTSDATASTRING  |
 
-**Note:** Custom components enumerator extension should return error codes between 0x70000200 and 0x700FFFFF
+**Note:** Custom component enumerator extension should return error codes between 0x70000200 and 0x700FFFFF
 
 ### Extended Result Codes from helper functions or shared utilities (facility #8)
 

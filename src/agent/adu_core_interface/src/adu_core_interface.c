@@ -26,10 +26,10 @@
 #include <parson.h>
 #include <pnp_protocol.h>
 
-// Name of an Azure Device Update Agent component that this device implements.
+// Name of an Device Update Agent component that this device implements.
 static const char g_aduPnPComponentName[] = "deviceUpdate";
 
-// Name of properties that Azure Device Update Agent component supports.
+// Name of properties that Device Update Agent component supports.
 
 // This is the device-to-cloud property.
 // An agent communicates its state and other data to ADU Management service by reporting this property to IoTHub.
@@ -40,7 +40,7 @@ static const char g_aduPnPComponentClientPropertyName[] = "agent";
 static const char g_aduPnPComponentOrchestratorPropertyName[] = "service";
 
 /**
- * @brief Handle for Azure Device Update Agent component to communication to service.
+ * @brief Handle for Device Update Agent component to communication to service.
  */
 ADUC_ClientHandle g_iotHubClientHandleForADUComponent;
 

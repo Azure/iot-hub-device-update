@@ -34,7 +34,7 @@ extern "C" {
  *           "manufacturer": "contoso",
  *           "model": "virtual-motor",
  *           "properties": {
- *               "path": "\/tmp\/contoso-device\/vacuum-1\/motors\/contoso-motor-serial-00001",
+ *               "path": "\/tmp\/contoso-devices\/vacuum-1\/motors\/contoso-motor-serial-00001",
  *               "firmwareDataFile": "firmware.json",
  *               "status": "unknown"
  *           }
@@ -46,7 +46,7 @@ extern "C" {
  *           "manufacturer": "contoso",
  *           "model": "virtual-motor",
  *           "properties": {
- *               "path": "\/tmp\/contoso-device\/vacuum-1\/motors\/contoso-motor-serial-00002",
+ *               "path": "\/tmp\/contoso-devices\/vacuum-1\/motors\/contoso-motor-serial-00002",
  *               "firmwareDataFile": "firmware.json",
  *               "status": "unknown"
  *           }
@@ -58,7 +58,7 @@ extern "C" {
  *           "manufacturer": "contoso",
  *           "model": "virtual-motor",
  *           "properties": {
- *               "path": "\/tmp\/contoso-device\/vacuum-1\/motors\/contoso-motor-serial-00003",
+ *               "path": "\/tmp\/contoso-devices\/vacuum-1\/motors\/contoso-motor-serial-00003",
  *               "firmwareDataFile": "firmware.json",
  *               "status": "unknown"
  *           }
@@ -85,7 +85,7 @@ typedef char* (*SelectComponentsProc)(const char* selector);
  *           "manufacturer": "contoso",
  *           "model": "virtual-motor",
  *           "properties": {
- *               "path": "\/tmp\/contoso-device\/vacuum-1\/motors\/contoso-motor-serial-00001",
+ *               "path": "\/tmp\/contoso-devices\/vacuum-1\/motors\/contoso-motor-serial-00001",
  *               "firmwareDataFile": "firmware.json",
  *               "status": "unknown"
  *           }
@@ -97,7 +97,7 @@ typedef char* (*SelectComponentsProc)(const char* selector);
  *           "manufacturer": "contoso",
  *           "model": "virtual-motor",
  *           "properties": {
- *               "path": "\/tmp\/contoso-device\/vacuum-1\/motors\/contoso-motor-serial-00002",
+ *               "path": "\/tmp\/contoso-devices\/vacuum-1\/motors\/contoso-motor-serial-00002",
  *               "firmwareDataFile": "firmware.json",
  *               "status": "unknown"
  *           }
@@ -109,7 +109,7 @@ typedef char* (*SelectComponentsProc)(const char* selector);
  *           "manufacturer": "contoso",
  *           "model": "virtual-motor",
  *           "properties": {
- *               "path": "\/tmp\/contoso-device\/vacuum-1\/motors\/contoso-motor-serial-00003",
+ *               "path": "\/tmp\/contoso-devices\/vacuum-1\/motors\/contoso-motor-serial-00003",
  *               "firmwareDataFile": "firmware.json",
  *               "status": "unknown"
  *           }

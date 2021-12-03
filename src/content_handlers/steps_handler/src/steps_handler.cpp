@@ -208,7 +208,7 @@ ADUC_Result EnsureStepsWorkflowsCreated(const ADUC_WorkflowHandle handle)
                 childId = nullptr;
 #if _ADU_DEBUG
                 char* childManifest = workflow_get_serialized_update_manifest(childHandle, true);
-                Log_Debug("##########\n# Successfully created workflow object for child#%s\n# Handle:0x%x\n# Manfiest:\n%s\n", workflow_peek_id(childHandle),
+                Log_Debug("##########\n# Successfully created workflow object for child#%s\n# Handle:0x%x\n# Manifest:\n%s\n", workflow_peek_id(childHandle),
                 childHandle,
                 childManifest);
                 workflow_free_string(childManifest);

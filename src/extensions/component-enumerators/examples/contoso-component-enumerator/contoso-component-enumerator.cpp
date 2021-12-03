@@ -40,7 +40,7 @@
 // To implement the actual enumerator, all components should be enumerated directly
 // using system APIs or commands.
 //
-const char* g_contosoComponentInventoryFilePath = "/usr/local/contoso-device/components-inventory.json";
+const char* g_contosoComponentInventoryFilePath = "/usr/local/contoso-devices/components-inventory.json";
 
 JSON_Value* _GetAllComponentsFromFile(const char* configFilepath)
 {

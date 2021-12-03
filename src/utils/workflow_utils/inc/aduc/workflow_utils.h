@@ -283,7 +283,7 @@ void workflow_free_file_entity(ADUC_FileEntity* entity);
 const char* workflow_peek_update_manifest_string(ADUC_WorkflowHandle handle, const char* propertyName);
 
 /**
- * @brief Get a property of type 'string' in the workflow update manfiest.
+ * @brief Get a property of type 'string' in the workflow update manifest.
  *
  * @param handle A workflow object handle.
  * @param propertyName The name of a property to get.

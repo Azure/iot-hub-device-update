@@ -1,0 +1,9 @@
+{
+    "name":"apt-update-test-tree",
+    "version":"1.0",
+    "packages":[
+        {
+            "name":"tree"
+        }
+    ]
+}
