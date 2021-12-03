@@ -26,7 +26,7 @@ add_adu_user_and_group() {
         addgroup --system "$adu_group"
     else
         # For security purposes, it's extremely important that there's no existing 'adu' user and 'adu' group.
-        # This ensures the account and group are setup by our package installation process only, 
+        # This ensures the account and group are setup by our package installation process only,
         # and no other actor can pre-create the user/group with nefarious intentions.
         echo "Error: 'adu' group already exists." >&2
         exit 1
@@ -37,14 +37,16 @@ add_adu_user_and_group() {
         adduser --system "$adu_user" --ingroup "$adu_group" --no-create-home --shell /bin/false
     else
         # For security purposes, it's extremely important that there's no existing 'adu' user and 'adu' group.
-        # This to ensures the account and group are setup by our package installation process only, 
+        # This to ensures the account and group are setup by our package installation process only,
         # and no other actor can pre-create the user/group with nefarious intentions.
         echo "Error: 'adu' user already exists." >&2
         exit 2
     fi
 
     echo "Add the 'adu' user to the 'syslog' group." # To allow ADU to write to /var/log folder
-    usermod -aG "syslog" "$adu_user" 
+    if ! getent group "syslog" > /dev/null; then
+        addgroup --system "syslog"
+    usermod -aG "syslog" "$adu_user"
 }
 
 case "$1" in
