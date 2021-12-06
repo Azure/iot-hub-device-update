@@ -34,6 +34,7 @@ install_packages_only=false
 work_folder=/tmp
 keep_source_code=false
 use_ssh=false
+install_prefix=/usr/local
 
 # ADUC Deps
 install_aduc_deps=false
@@ -101,6 +102,8 @@ print_help() {
     echo "-p, --install-packages    Indicates that packages should be installed."
     echo "--install-packages-only   Indicates that only packages should be installed and that dependencies should not be installed from source."
     echo ""
+    echo "--install-prefix <prefix> Install prefix to pass to CMake."
+    echo ""
     echo "-f, --work-folder <work_folder>   Specifies the folder where source code will be cloned or downloaded."
     echo "                                  Default is /tmp."
     echo "-k, --keep-source-code            Indicates that source code should not be deleted after install from work_folder."
@@ -166,7 +169,7 @@ do_install_cpprestsdk() {
     git clone --recursive --single-branch --branch $cpprestsdk_ref --depth 1 $cpprest_url . || return
     mkdir -p cmake || return
     pushd cmake > /dev/null
-    cmake -DBUILD_TESTS=OFF -DBUILD_SAMPLES=OFF -Wno-dev -DWERROR=OFF .. || return
+    cmake -DBUILD_TESTS=OFF -DBUILD_SAMPLES=OFF -Wno-dev -DWERROR=OFF -DCMAKE_INSTALL_PREFIX=$install_prefix .. || return
     cmake --build . || return
     $SUDO cmake --build . --target install || return
     popd > /dev/null
@@ -200,7 +203,7 @@ do_install_gsl() {
     git clone --recursive --single-branch --branch $gsl_ref --depth 1 $gsl_url . || return
     mkdir -p cmake || return
     pushd cmake > /dev/null
-    cmake -DGSL_TEST=OFF .. || return
+    cmake -DGSL_TEST=OFF -DCMAKE_INSTALL_PREFIX=$install_prefix .. || return
     cmake --build . || return
     $SUDO cmake --build . --target install || return
     popd > /dev/null
@@ -245,6 +248,7 @@ do_install_azure_iot_sdk() {
         "-Dskip_samples:BOOL=ON"
         "-Dbuild_service_client:BOOL=OFF"
         "-Dbuild_provisioning_service_client:BOOL=OFF"
+        "-DCMAKE_INSTALL_PREFIX=$install_prefix"
     )
 
     if [[ $keep_source_code == "true" ]]; then
@@ -292,7 +296,7 @@ do_install_catch2() {
 
     mkdir cmake || return
     pushd cmake > /dev/null
-    cmake .. || return
+    cmake .. -DCMAKE_INSTALL_PREFIX=$install_prefix || return
     cmake --build . || return
     $SUDO cmake --build . --target install || return
     popd > /dev/null
@@ -333,6 +337,7 @@ do_install_do() {
     local do_cmake_options=(
         "-DDO_BUILD_TESTS:BOOL=OFF"
         "-DDO_INCLUDE_SDK=ON"
+        "-DCMAKE_INSTALL_PREFIX=$install_prefix"
     )
 
     if [[ $keep_source_code == "true" ]]; then
@@ -431,6 +436,14 @@ while [[ $1 != "" ]]; do
         ;;
     --install-packages-only)
         install_packages_only=true
+        ;;
+    --install-prefix)
+        shift
+        if [[ -z $1 || $1 == -* ]]; then
+            error "--install-prefix parameter is mandatory."
+            $ret 1
+        fi
+        install_prefix=$1
         ;;
     -f | --work-folder)
         shift
