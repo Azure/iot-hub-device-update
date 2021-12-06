@@ -15,6 +15,8 @@ set (agent_apt_c_files ./src/aptget_tasks.cpp)
 
 set (agent_swupdate_c_files ./src/swupdate_tasks.cpp)
 
+set (adushell_def "")
+
 list (LENGTH ADUC_CONTENT_HANDLERS num_content_handlers)
 if (num_content_handlers EQUAL 0)
     message (FATAL_ERROR "No content handler specified.")
@@ -32,15 +34,17 @@ string (
 # Iterate through the list of content handlers and add support for each one.
 foreach (content_handler IN LISTS ADUC_CONTENT_HANDLER_LIST)
     if (content_handler STREQUAL "microsoft/swupdate")
-        add_executable (${target_name} ${agent_c_files} ${agent_swupdate_c_files})
-        set (adushell_def ADUSHELL_SWUPDATE="yes")
+        list (APPEND agent_c_files ${agent_swupdate_c_files})
+        list (APPEND adushell_def ADUSHELL_SWUPDATE="yes")
     elseif (content_handler STREQUAL "microsoft/apt")
-        add_executable (${target_name} ${agent_c_files} ${agent_apt_c_files})
-        set (adushell_def ADUSHELL_APT="yes")
+        list (APPEND agent_c_files ${agent_apt_c_files})
+        list (APPEND adushell_def ADUSHELL_APT="yes")
     else () # NOTE: When adding a new content handler, create a new elseif statement like above.
         message (FATAL_ERROR "Unknown content handler ${content_handler} specified.")
     endif ()
 endforeach ()
+
+add_executable (${target_name} ${agent_c_files})
 
 target_include_directories (${target_name} PRIVATE inc ${ADUC_EXPORT_INCLUDES})
 
