@@ -182,11 +182,6 @@ set (
     "/var/log/adu"
     CACHE STRING "Location where ADU Agent will write logs.")
 
-set (
-    ADUC_VERSION_FILE
-    "/etc/adu-version"
-    CACHE STRING "Path to the file that contains version info for the image or device.")
-
 option (ADUC_WARNINGS_AS_ERRORS "Treat warnings as errors (-Werror)" ON)
 option (ADUC_BUILD_UNIT_TESTS "Build unit tests and mock some functionality" OFF)
 option (ADUC_BUILD_DOCUMENTATION "Build documentation files" OFF)
