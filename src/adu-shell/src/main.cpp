@@ -17,7 +17,7 @@
 #include "aduc/system_utils.h"
 
 #include "adushell.hpp"
-#include "adushell_const.hpp"
+#include "adushell_const.h"
 #include "common_tasks.hpp"
 
 namespace CommonTasks = Adu::Shell::Tasks::Common;

@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 3.5)
 
+add_subdirectory (adushell_utils)
 add_subdirectory (c_utils)
 add_subdirectory (crypto_utils)
 add_subdirectory (eis_utils)

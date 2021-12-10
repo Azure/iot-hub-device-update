@@ -16,7 +16,7 @@
 #include "aduc/adu_core_exports.h"
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
-#include "adushell_const.hpp"
+#include "adushell_const.h"
 
 #include <chrono>
 #include <fstream>

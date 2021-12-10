@@ -37,6 +37,7 @@ target_link_libraries (
             aduc::system_utils
             aduc::string_utils
             aduc::exception_utils
+            aduc::adushell_utils
             Parson::parson)
 
 if (ADUC_BUILD_UNIT_TESTS AND ADUC_PLATFORM_LAYER STREQUAL "linux")

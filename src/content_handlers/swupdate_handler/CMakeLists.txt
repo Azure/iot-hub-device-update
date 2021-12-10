@@ -25,7 +25,8 @@ target_link_libraries (
             aduc::process_utils
             aduc::string_utils
             aduc::system_utils
-            aduc::exception_utils)
+            aduc::exception_utils
+            aduc::adushell_utils)
 target_compile_definitions (${target_name} PRIVATE ADUC_VERSION_FILE="${ADUC_VERSION_FILE}"
                                                    ADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")
 
