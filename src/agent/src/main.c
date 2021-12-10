@@ -21,7 +21,7 @@
 #include <iothub_client_options.h>
 #include <iothubtransportmqtt.h>
 
-#ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
+#ifdef ADUC_DELIVERY_OPTIMIZATION
 #    include <do_config.h>
 #endif
 
@@ -55,7 +55,7 @@
 /**
  * @brief The Device Twin Model Identifier.
  * This model must contain 'azureDeviceUpdateAgent' and 'deviceInformation' subcomponents.
- * 
+ *
  * Customers should change this ID to match their device model ID.
  */
 static const char g_aduModelId[] = "dtmi:AzureDeviceUpdate;1";
@@ -93,7 +93,7 @@ typedef _Bool (*PnPComponentCreateFunc)(void** componentContext, int argc, char*
 
 /**
  * @brief Called once after connected to IoTHub (device client handler is valid).
- * 
+ *
  * DigitalTwin handles aren't valid (and as such no calls may be made on them) until this method is called.
  */
 typedef void (*PnPComponentConnectedFunc)(void* componentContext);
@@ -723,8 +723,8 @@ done:
 #endif // ADUC_PROVISION_WITH_EIS
 
 /**
- * @brief Handles the startup of the agent 
- * @details Provisions the connection string with the CLI or either 
+ * @brief Handles the startup of the agent
+ * @details Provisions the connection string with the CLI or either
  * the Edge Identity Service or the configuration file
  * @param launchArgs CLI arguments passed to the client
  * @returns _Bool true on success.
@@ -765,7 +765,7 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         }
     }
 
-#ifndef ADUC_PLATFORM_SIMULATOR
+#ifdef ADUC_DELIVERY_OPTIMIZATION
     // The connection string is valid (IoT hub connection successful) and we are ready for further processing.
     // Send connection string to DO SDK for it to discover the Edge gateway if present.
     // Don't care about failures since we can't do much here - can't report it and

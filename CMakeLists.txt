@@ -160,6 +160,17 @@ set (
     "/etc/adu-version"
     CACHE STRING "Path to the file that contains version info for the image or device.")
 
+set (
+    ADUC_DELIVERY_OPTIMIZATION
+    "1"
+    CACHE STRING "Should delivery optimization support be compiled in. Default off if simulator else on")
+
+if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
+    set (
+        ADUC_DELIVERY_OPTIMIZATION
+        "0")
+endif(ADUC_PLATFORM_LAYER STREQUAL "simulator")
+
 # By default ADU Agent daemon runs as root.
 # root user home directory should be /root.
 set (

@@ -12,7 +12,7 @@
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
 
-#ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
+#ifdef ADUC_DELIVERY_OPTIMIZATION
 #    include <do_config.h>
 #endif
 
@@ -167,7 +167,7 @@ static _Bool DeviceProperties_AddVersions(JSON_Object* devicePropsObj)
         goto done;
     }
 
-#ifndef ADUC_PLATFORM_SIMULATOR
+#ifdef ADUC_DELIVERY_OPTIMIZATION
     do_version = deliveryoptimization_get_components_version();
 
     if (do_version == NULL)
@@ -194,7 +194,7 @@ done:
 }
 
 /**
- * @brief Adds the deviceProperties to the @p startupObj 
+ * @brief Adds the deviceProperties to the @p startupObj
  * @param startupObj the JSON Object which will have the device properties added to it
  * @returns true on successful addition, false on failure
  */

@@ -87,11 +87,10 @@ target_compile_definitions (
             ADUC_DATA_FOLDER="${ADUC_DATA_FOLDER}"
             ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}")
 
-if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
-    target_compile_definitions (${target_name} PRIVATE ADUC_PLATFORM_SIMULATOR)
-else ()
+if (ADUC_DELIVERY_OPTIMIZATION)
     find_package (deliveryoptimization_sdk CONFIG REQUIRED)
     target_link_libraries (${target_name} PRIVATE Microsoft::deliveryoptimization)
+    target_compile_definitions (${target_name} PRIVATE ADUC_DELIVERY_OPTIMIZATION)
 endif ()
 
 if (ADUC_PROVISION_WITH_EIS)
