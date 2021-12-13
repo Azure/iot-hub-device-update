@@ -28,6 +28,7 @@
 
 // Note: this requires ${CMAKE_DL_LIBS}
 #include <dlfcn.h>
+#include <unistd.h>
 
 // TODO(Nox) : 34318211: [Code Clean Up] [Agent Extensibility] Consolidate ContentHandlerFactory and ExtensionManager classes.
 // And move all hard-code strings into cmakelist.txt
@@ -108,21 +109,18 @@ ADUC_Result ExtensionManager::LoadExtensionLibrary(
 
     // Validate file hash.
     if (!ADUC_HashUtils_GetShaVersionForTypeString(
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            entity.Hash[0].type,
-            &algVersion))
+            ADUC_HashUtils_GetHashType(entity.Hash, entity.HashCount, 0), &algVersion))
     {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        Log_Error("FileEntity for %s has unsupported hash type %s", entity.TargetFilename, entity.Hash[0].type);
+        Log_Error(
+            "FileEntity for %s has unsupported hash type %s",
+            entity.TargetFilename,
+            ADUC_HashUtils_GetHashType(entity.Hash, entity.HashCount, 0));
         result.ExtendedResultCode = ADUC_ERC_EXTENSION_CREATE_FAILURE_VALIDATE(facilityCode, componentCode);
         goto done;
     }
 
     if (!ADUC_HashUtils_IsValidFileHash(
-            entity.TargetFilename,
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            entity.Hash[0].value,
-            algVersion))
+            entity.TargetFilename, ADUC_HashUtils_GetHashValue(entity.Hash, entity.HashCount, 0), algVersion))
     {
         Log_Error("Hash for %s is not valid", entity.TargetFilename);
         result.ExtendedResultCode = ADUC_ERC_EXTENSION_CREATE_FAILURE_VALIDATE(facilityCode, componentCode);
@@ -597,8 +595,25 @@ ADUC_Result ExtensionManager::Download(
     void* lib = nullptr;
     DownloadProc downloadProc = nullptr;
     char* components = nullptr;
+    SHAversion algVersion;
+    bool isFileExistsAndValidHash = false;
 
-    ADUC_Result result = ExtensionManager::LoadContentDownloaderLibrary(&lib);
+    std::stringstream childManifestFile;
+    ADUC_Result result;
+
+    try
+    {
+        childManifestFile << workFolder << "/" << entity->TargetFilename;
+    }
+    catch (...)
+    {
+        Log_Error("Cannot construct child manifest file path.");
+        result = { .ResultCode = ADUC_Result_Failure,
+                   .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_BAD_CHILD_MANIFEST_FILE_PATH };
+        goto done;
+    }
+
+    result = ExtensionManager::LoadContentDownloaderLibrary(&lib);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         goto done;
@@ -613,16 +628,71 @@ ADUC_Result ExtensionManager::Download(
         goto done;
     }
 
-    try
+    if (!ADUC_HashUtils_GetShaVersionForTypeString(
+            ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0), &algVersion))
     {
-        result = downloadProc(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
-    }
-    catch (...)
-    {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION };
+        Log_Error(
+            "FileEntity for %s has unsupported hash type %s",
+            childManifestFile.str().c_str(),
+            ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0));
+        result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_FILE_HASH_TYPE_NOT_SUPPORTED;
         goto done;
     }
+
+    // If file exists and has a valid hash, then skip download.
+    // Otherwise, delete an existing file, then download.
+    if (access(childManifestFile.str().c_str(), F_OK) == 0)
+    {
+        // If target file exists, validate file hash.
+        // If file is valid, then skip the download.
+        isFileExistsAndValidHash = ADUC_HashUtils_IsValidFileHash(
+            childManifestFile.str().c_str(),
+            ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
+            algVersion);
+
+        if (!isFileExistsAndValidHash)
+        {
+            // Delete existing file.
+            if (remove(childManifestFile.str().c_str()) != 0)
+            {
+                Log_Error("Cannot delete existing file that has invalid hash.");
+                result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_CANNOT_DELETE_EXISTING_FILE;
+                goto done;
+            }
+        }
+
+        result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
+        goto done;
+    }
+
+    if (!isFileExistsAndValidHash)
+    {
+        try
+        {
+            result = downloadProc(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
+        }
+        catch (...)
+        {
+            result = { .ResultCode = ADUC_Result_Failure,
+                       .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION };
+            goto done;
+        }
+
+        if (IsAducResultCodeSuccess(result.ResultCode))
+        {
+            if (!ADUC_HashUtils_IsValidFileHash(
+                    childManifestFile.str().c_str(),
+                    ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
+                    algVersion))
+            {
+                result = { .ResultCode = ADUC_Result_Failure,
+                           .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION };
+                goto done;
+            }
+        }
+    }
+
+    result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
 
 done:
     return result;

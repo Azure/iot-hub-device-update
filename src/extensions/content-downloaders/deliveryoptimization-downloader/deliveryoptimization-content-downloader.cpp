@@ -59,7 +59,8 @@ ADUC_Result do_download(
 
     try
     {
-        MSDO::download::download_url_to_path(entity->DownloadUri, fullFilePath.str(), false, std::chrono::seconds(retryTimeout));
+        MSDO::download::download_url_to_path(
+            entity->DownloadUri, fullFilePath.str(), false, std::chrono::seconds(retryTimeout));
 
         resultCode = ADUC_Result_Download_Success;
     }
@@ -132,13 +133,12 @@ ADUC_Result do_download(
 
         SHAversion algVersion;
         if (!ADUC_HashUtils_GetShaVersionForTypeString(
-                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                entity->Hash[0].type,
-                &algVersion))
+                ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0), &algVersion))
         {
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             Log_Error(
-                "FileEntity for %s has unsupported hash type %s", fullFilePath.str().c_str(), entity->Hash[0].type);
+                "FileEntity for %s has unsupported hash type %s",
+                fullFilePath.str().c_str(),
+                ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0));
             resultCode = ADUC_Result_Failure;
             extendedResultCode = ADUC_ERC_VALIDATION_FILE_HASH_TYPE_NOT_SUPPORTED;
 
@@ -151,10 +151,7 @@ ADUC_Result do_download(
         }
 
         const bool isValid = ADUC_HashUtils_IsValidFileHash(
-            fullFilePath.str().c_str(),
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            entity->Hash[0].value,
-            algVersion);
+            fullFilePath.str().c_str(), ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0), algVersion);
         if (!isValid)
         {
             Log_Error("Hash for %s is not valid", entity->TargetFilename);
@@ -212,7 +209,7 @@ ADUC_Result Download(
 
 ADUC_Result Initialize(const char* initializeData)
 {
-    ADUC_Result result { ADUC_GeneralResult_Success };
+    ADUC_Result result{ ADUC_GeneralResult_Success };
 
     if (initializeData == nullptr)
     {

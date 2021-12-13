@@ -67,12 +67,12 @@ ADUC_Result Download_curl(
     fullFilePath << workFolder << "/" << entity->TargetFilename;
 
     if (!ADUC_HashUtils_GetShaVersionForTypeString(
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            entity->Hash[0].type,
-            &algVersion))
+            ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0), &algVersion))
     {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        Log_Error("FileEntity for %s has unsupported hash type %s", fullFilePath.str().c_str(), entity->Hash[0].type);
+        Log_Error(
+            "FileEntity for %s has unsupported hash type %s",
+            fullFilePath.str().c_str(),
+            ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0));
         result.ExtendedResultCode = ADUC_ERC_VALIDATION_FILE_HASH_TYPE_NOT_SUPPORTED;
 
         if (downloadProgressCallback != nullptr)
@@ -90,10 +90,7 @@ ADUC_Result Download_curl(
     // If target file exists, validate file hash.
     // If file is valid, then skip the download.
     isValidHash = ADUC_HashUtils_IsValidFileHash(
-        fullFilePath.str().c_str(),
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        entity->Hash[0].value,
-        algVersion);
+        fullFilePath.str().c_str(), ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0), algVersion);
 
     if (isValidHash)
     {
@@ -137,10 +134,7 @@ ADUC_Result Download_curl(
         Log_Info("Validating file hash");
 
         const bool isValid = ADUC_HashUtils_IsValidFileHash(
-            fullFilePath.str().c_str(),
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            entity->Hash[0].value,
-            algVersion);
+            fullFilePath.str().c_str(), ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0), algVersion);
         if (!isValid)
         {
             Log_Error("Hash for %s is not valid", entity->TargetFilename);

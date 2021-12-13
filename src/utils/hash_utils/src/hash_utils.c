@@ -151,6 +151,44 @@ done:
 }
 
 /**
+ * @brief Get file hash type at specified index.
+ * @param hashArray The ADUC_Hash array.
+ * @param arraySize Size of array.
+ * @param hashIndex Index of the hash to return.
+ * 
+ * @return Hash type if succeeded. Otherwise, return NULL.
+ */
+char* ADUC_HashUtils_GetHashType(const ADUC_Hash* hashArray, size_t arraySize, size_t index)
+{
+    if (index >= arraySize)
+    {
+        return NULL;
+    }
+
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return hashArray[index].type;
+}
+
+/**
+ * @brief Get file hash value at specified index.
+ * @param hashArray The ADUC_Hash array.
+ * @param arraySize Size of array.
+ * @param hashIndex Index of the hash to return.
+ * 
+ * @return Hash value if succeeded. Otherwise, return NULL.
+ */
+char* ADUC_HashUtils_GetHashValue(const ADUC_Hash* hashArray, size_t arraySize, size_t index)
+{
+    if (index >= arraySize)
+    {
+        return NULL;
+    }
+
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return hashArray[index].value;
+}
+
+/**
  * @brief Checks if the hash of the file at @p path matches @p hashBase64
  *
  * @param path The path to the file to check

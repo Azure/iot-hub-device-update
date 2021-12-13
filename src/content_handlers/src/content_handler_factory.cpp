@@ -72,20 +72,19 @@ ADUC_Result ContentHandlerFactory::LoadExtensionLibrary(const std::string& updat
     // Validate file hash.
     SHAversion algVersion;
     if (!ADUC_HashUtils_GetShaVersionForTypeString(
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            entity.Hash[0].type,
-            &algVersion))
+            ADUC_HashUtils_GetHashType(entity.Hash, entity.HashCount, 0), &algVersion))
     {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        Log_Error("FileEntity for %s has unsupported hash type %s", entity.TargetFilename, entity.Hash[0].type);
+        Log_Error(
+            "FileEntity for %s has unsupported hash type %s",
+            entity.TargetFilename,
+            ADUC_HashUtils_GetHashType(entity.Hash, entity.HashCount, 0));
         result = { ADUC_GeneralResult_Failure, ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_VALIDATE };
         goto done;
     }
 
     if (!ADUC_HashUtils_IsValidFileHash(
             entity.TargetFilename,
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            entity.Hash[0].value,
+            ADUC_HashUtils_GetHashValue(entity.Hash, entity.HashCount, 0),
             algVersion))
     {
         Log_Error("Hash for %s is not valid", entity.TargetFilename);
@@ -194,7 +193,7 @@ ContentHandlerFactory::LoadUpdateContentHandlerExtension(const std::string& upda
 
     dlerror(); // Clear any existing error
 
-    createUpdateContentHandlerExtension =
+    createUpdateContentHandlerExtension = 
         reinterpret_cast<UPDATE_CONTENT_HANDLER_CREATE_PROC>(dlsym(libHandle, "CreateUpdateContentHandlerExtension")); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
     if (createUpdateContentHandlerExtension == nullptr)

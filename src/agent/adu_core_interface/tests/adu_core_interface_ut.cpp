@@ -14,6 +14,7 @@
 #include "aduc/adu_core_exports.h"
 #include "aduc/adu_core_interface.h"
 #include "aduc/agent_workflow.h"
+#include "aduc/hash_utils.h"
 #include "aduc/workflow_utils.h"
 
 #include "aduc/client_handle_helper.h"

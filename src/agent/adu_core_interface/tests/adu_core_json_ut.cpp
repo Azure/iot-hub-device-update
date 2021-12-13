@@ -15,6 +15,7 @@ using Catch::Matchers::Equals;
 #include "aduc/adu_core_export_helpers.h" // ADUC_FileEntityArray_Free
 #include "aduc/adu_core_exports.h" // ADUC_FileEntity
 #include "aduc/adu_core_json.h"
+#include "aduc/hash_utils.h"
 #include "aduc/parser_utils.h"
 #include <aduc/calloc_wrapper.hpp>
 
@@ -583,7 +584,10 @@ TEST_CASE("ADUC_Json_GetFiles: Valid")
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         CHECK_THAT(fileEntities[i].TargetFilename, Equals(strm.str()));
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        CHECK_THAT(fileEntities[i].DownloadUri, Equals(files.find(fileEntities[i].Hash[0].value)->second));
+        CHECK_THAT(
+            fileEntities[i].DownloadUri,
+            Equals(
+                files.find(ADUC_HashUtils_GetHashValue(fileEntities[i].Hash, fileEntities[i].HashCount, 0))->second));
     }
 
     ADUC_FileEntityArray_Free(fileCount, fileEntities);

@@ -518,6 +518,9 @@ typedef enum tagADUC_Content_Downloader
 | 0x40000005 |ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION  |
 | 0x40000006 |ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_ENTITY  |
 | 0x40000007 |ADUC_ERC_CONTENT_DOWNLOADER_INVALID_DOWNLOAD_URI  |
+| 0x40000008 |ADUC_ERC_CONTENT_DOWNLOADER_FILE_HASH_TYPE_NOT_SUPPORTED  |
+| 0x40000009 |ADUC_ERC_CONTENT_DOWNLOADER_BAD_CHILD_MANIFEST_FILE_PATH  |
+| 0x4000000a |ADUC_ERC_CONTENT_DOWNLOADER_CANNOT_DELETE_EXISTING_FILE  |
 
 ###### Delivery Optimization Downloader Result Codes
 
@@ -528,7 +531,6 @@ typedef enum tagADUC_Content_Downloader
 | 0x40101000 + (exitCode) |ADUC_ERROR_DELIVERY_OPTIMIZATION_DOWNLOADER_EXTERNAL_FAILURE  |
 
 ###### Additional Delivery Optimization Downloader Result Codes
-D#######
 
 Another set of extended result codes returned from the Delivery Optimization start 0xD0000000. To understand these result codes, replace 0xD with 0x8, then look up a matching WIN32 HRESULT.
 

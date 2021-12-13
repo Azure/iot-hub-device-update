@@ -27,6 +27,26 @@ _Bool ADUC_HashUtils_GetShaVersionForTypeString(const char* hashTypeStr, SHAvers
 _Bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** hash);
 
 /**
+ * @brief Get file hash type at specified index.
+ * @param hashArray The ADUC_Hash array.
+ * @param arraySize Size of array.
+ * @param hashIndex Index of the hash to return.
+ * 
+ * @return Hash type if succeeded. Otherwise, return NULL.
+ */
+char* ADUC_HashUtils_GetHashType(const ADUC_Hash* hashArray, size_t arraySize, size_t index);
+
+/**
+ * @brief Get file hash value at specified index.
+ * @param hashArray The ADUC_Hash array.
+ * @param arraySize Size of array.
+ * @param hashIndex Index of the hash to return.
+ * 
+ * @return Hash value if succeeded. Otherwise, return NULL.
+ */
+char* ADUC_HashUtils_GetHashValue(const ADUC_Hash* hashArray, size_t arraySize, size_t index);
+
+/**
  * @brief Allocates the memory for the ADUC_Hash struct member values
  * @param hash A pointer to an ADUC_Hash struct whose member values will be allocated
  * @param hashValue The value of the hash
