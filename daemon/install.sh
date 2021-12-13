@@ -85,7 +85,9 @@ add_adu_user_and_group() {
     fi
 
     echo "Add the 'adu' user to the 'syslog' group." # To allow ADU to write to /var/log folder
-    usermod -aG "syslog" "$adu_user"
+    if getent group "syslog" > /dev/null; then
+        usermod -aG "syslog" "$adu_user"
+    fi
 
     echo "Add the 'do' user to the 'adu' group." # To allow DO to write to ADU download sandbox.
     if getent passwd "$do_user" > /dev/null; then

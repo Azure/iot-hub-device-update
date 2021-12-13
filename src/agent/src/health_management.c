@@ -30,7 +30,6 @@ static const char* aduc_required_groups[] = { ADUC_FILE_GROUP, DO_FILE_GROUP };
  * @brief The supplementary groups for ADUC_FILE_USER
  */
 static const char* aduc_required_group_memberships[] = {
-    SYSLOG_FILE_GROUP, // allows ADU to write to /var/log
     DO_FILE_GROUP // allows agent to set connection_string for DO
 };
 

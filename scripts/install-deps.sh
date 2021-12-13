@@ -55,7 +55,7 @@ install_do_deps_distro=""
 default_do_deps_distro=ubuntu-18.04
 
 # Dependencies packages
-aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl')
+aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'pkg-config')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=("gcc-[68]")
 do_packages=('libproxy-dev' 'libssl-dev' 'zlib1g-dev' 'libboost-all-dev')
