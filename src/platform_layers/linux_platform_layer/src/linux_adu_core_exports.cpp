@@ -2,7 +2,8 @@
  * @file linux_adu_core_exports.cpp
  * @brief Implements exported methods for platform-specific ADUC agent code.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/adu_core_exports.h"
 #include "aduc/c_utils.h"
@@ -62,7 +63,7 @@ void ADUC_Unregister(ADUC_Token token)
 
 /**
  * @brief Reboot the system.
- * 
+ *
  * @returns int errno, 0 if success.
  */
 int ADUC_RebootSystem()
@@ -91,7 +92,7 @@ int ADUC_RebootSystem()
 
 /**
  * @brief Restart the ADU Agent.
- * 
+ *
  * @returns int errno, 0 if success.
  */
 int ADUC_RestartAgent()

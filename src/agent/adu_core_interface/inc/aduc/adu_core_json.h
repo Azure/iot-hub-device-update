@@ -4,7 +4,8 @@
  *
  * Note that the types in this file must be kept in sync with the AzureDeviceUpdateCore interface.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_ADU_CORE_JSON_H
 #define ADUC_ADU_CORE_JSON_H

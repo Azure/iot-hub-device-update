@@ -2,7 +2,8 @@
  * @file config_utils.h
  * @brief Header file for the Configuration Utility for reading, parsing the ADUC configuration file
  *
- * @copyright Copyright (c) 2021, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #ifndef CONFIG_UTILS_H

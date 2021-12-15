@@ -2,7 +2,8 @@
  * @file process_utils_ut.cpp
  * @brief Unit Tests for process_utils library
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>

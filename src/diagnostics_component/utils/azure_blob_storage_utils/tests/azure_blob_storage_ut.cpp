@@ -2,7 +2,8 @@
  * @file azure_blob_storage_uts.cpp
  * @brief Unit Tests for the Azure Blob Storage Utils library
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include <azure_blob_storage.h>

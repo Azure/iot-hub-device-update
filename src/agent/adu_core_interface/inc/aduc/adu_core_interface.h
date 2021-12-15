@@ -2,7 +2,8 @@
  * @file adu_core_interface.h
  * @brief Methods to communicate with "urn:azureiot:AzureDeviceUpdateCore:1" interface.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_ADU_CORE_INTERFACE_H
 #define ADUC_ADU_CORE_INTERFACE_H

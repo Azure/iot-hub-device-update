@@ -2,7 +2,8 @@
  * @file installed_criteria_utils.hpp
  * @brief Contains utilities for managing Installed-Criteria data.
  *
- * @copyright Copyright (c), Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corp.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_INSTALLED_CRITERIA_UTILS_HPP
 #define ADUC_INSTALLED_CRITERIA_UTILS_HPP
@@ -22,7 +23,7 @@ const ADUC_Result GetIsInstalled(const char* installedCriteriaFilePath, const st
 
 /**
  * @brief Persist specified installedCriteria in a file and mark its state as 'installed'.
- * 
+ *
  * @param installedCriteriaFilePath A full path to installed criteria data file.
  * @param installedCriteria An installed criteria string.
  *
@@ -52,9 +53,8 @@ const bool RemoveInstalledCriteria(const char* installedCriteriaFilePath, const 
 
 /**
  * @brief Remove all installed criteria data.
- * 
+ *
  */
 void RemoveAllInstalledCriteria();
 
 #endif // ADUC_INSTALLED_CRITERIA_UTILS_HPP
-

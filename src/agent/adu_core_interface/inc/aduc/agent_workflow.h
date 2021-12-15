@@ -2,7 +2,8 @@
  * @file agent_workflow.h
  * @brief Handles workflow requests coming in from the hub.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_AGENT_WORKFLOW_H
 #define ADUC_AGENT_WORKFLOW_H

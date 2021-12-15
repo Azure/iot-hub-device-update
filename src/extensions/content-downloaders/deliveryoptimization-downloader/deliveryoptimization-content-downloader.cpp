@@ -3,6 +3,7 @@
  * @brief Content Downloader Extension using Microsoft Delivery Optimization Agent.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/connection_string_utils.h"
 #include "aduc/content_downloader_extension.hpp"

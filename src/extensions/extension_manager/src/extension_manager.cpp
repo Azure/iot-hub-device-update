@@ -2,7 +2,8 @@
  * @file extension_manager.cpp
  * @brief Implementation of ExtensionManager.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/component_enumerator_extension.hpp"
 #include "aduc/content_downloader_extension.hpp"
@@ -52,7 +53,7 @@ STRING_HANDLE FolderNameFromHandlerId(const char* handlerId)
  * @param extensionName An extension sub-directory.
  * @param requiredFunctionName An required funciion.
  * @param facilityCode Facility code for extended error report.
- * @param componentCode Component code for extended error report. 
+ * @param componentCode Component code for extended error report.
  * @param libHandle A buffer for storing output extension library handle.
  * @return ADUC_Result contains result code and extended result code.
  */
@@ -176,7 +177,7 @@ done:
 /**
  * @brief Loads UpdateContentHandler for specified @p updateType
  * @param updateType An update type string.
- * @param handler A buffer for storing an output UpdateContentHandler object. 
+ * @param handler A buffer for storing an output UpdateContentHandler object.
  * @return ADUCResult contains result code and extended result code.
  * */
 ADUC_Result
@@ -302,7 +303,7 @@ void ExtensionManager::UnloadAllUpdateContentHandlers()
 
 /**
  * @brief This API unloads all handlers then unload all extension libraries.
- * 
+ *
  */
 void ExtensionManager::UnloadAllExtensions()
 {

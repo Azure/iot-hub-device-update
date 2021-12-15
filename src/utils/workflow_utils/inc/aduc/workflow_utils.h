@@ -2,7 +2,8 @@
  * @file workflow_utils.h
  * @brief Util functions for ADUC_Workflow data.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_WORKFLOW_UTILS_H
 #define ADUC_WORKFLOW_UTILS_H
@@ -411,7 +412,7 @@ ADUC_WorkflowHandle workflow_get_child(ADUC_WorkflowHandle handle, int index);
  * @brief Insert @p childHandle into @p handle children list.
  *
  * The @p childHandle will be freed when @p handle is free using workflow_free() function.
- * 
+ *
  * The @p childHandler's level will be set to ( @p handle's level + 1 ).
  *
  * @param handle A parent workflow object handle.
@@ -556,7 +557,7 @@ const char* workflow_peek_step_type(ADUC_WorkflowHandle handle, size_t stepIndex
  *
  * @return bool Return true if the specified step exists, and is inline step.
  * Otherwise, return false.
- * 
+ *
  */
 bool workflow_is_inline_step(ADUC_WorkflowHandle handle, size_t stepIndex);
 
@@ -576,7 +577,7 @@ const char* workflow_peek_update_manifest_step_handler(ADUC_WorkflowHandle handl
  * @param handle A workflow object handle.
  * @param propertyName
  *
- * @return A read-only string value of spcified property in handlerProperties map. 
+ * @return A read-only string value of spcified property in handlerProperties map.
  *         Returns NULL if specifed property doesnot exist, or not a 'string' type.
  */
 const char*
@@ -587,7 +588,7 @@ workflow_peek_update_manifest_handler_properties_string(ADUC_WorkflowHandle hand
  *
  * @param handle A workflow data object handle.
  * @param stepIndex A step index.
- * @param entity An output reference step update manifest file entity object. 
+ * @param entity An output reference step update manifest file entity object.
  *               Caller must free the object with workflow_free_file_entity().
  * @return Returns true if succeeded.
  */
@@ -595,10 +596,10 @@ bool workflow_get_step_detatched_manifest_file(ADUC_WorkflowHandle handle, size_
 
 /**
  * @brief Gets a serialized json string of the specified workflow's Update Manifest.
- * 
+ *
  * @param handle A workflow data object handle.
- * @param pretty Whether to format the output string. 
- * @return char* An output json string. Caller must free the string with workflow_free_string(). 
+ * @param pretty Whether to format the output string.
+ * @return char* An output json string. Caller must free the string with workflow_free_string().
  */
 char* workflow_get_serialized_update_manifest(ADUC_WorkflowHandle handle, bool pretty);
 

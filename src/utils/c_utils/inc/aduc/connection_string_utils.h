@@ -2,7 +2,8 @@
  * @file connection_string_utils.h
  * @brief connection string utilities.
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef CONNECTION_STRING_UTILS_H
 #define CONNECTION_STRING_UTILS_H

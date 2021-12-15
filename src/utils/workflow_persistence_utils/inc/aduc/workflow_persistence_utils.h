@@ -3,7 +3,8 @@
  * @brief The workflow persistence interface for saving, restoring, and freeing
  *            the state necessary for startup decisions and reporting.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef __WORKFLOW_PERSISTENCE_UTILS_H__
 #define __WORKFLOW_PERSISTENCE_UTILS_H__

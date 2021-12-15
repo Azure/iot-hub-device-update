@@ -3,6 +3,7 @@
  * @brief Implements functions related to microsoft/script update type.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADU_SHELL_SCRIPT_TASKS_HPP
 #define ADU_SHELL_SCRIPT_TASKS_HPP
@@ -27,7 +28,7 @@ ADUShellTaskResult Execute(const ADUShell_LaunchArguments& launchArgs);
 
 /**
  * @brief Runs appropriate command based on an action and other arguments in launchArgs.
- * 
+ *
  * @param launchArgs An adu-shell launch arguments.
  * @return A result from child process.
  */

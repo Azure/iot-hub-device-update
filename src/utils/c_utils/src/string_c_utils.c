@@ -2,7 +2,8 @@
  * @file string_c_utils.c
  * @brief Implementation of string utilities for C code.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/string_c_utils.h"
 #include "aduc/c_utils.h"
@@ -402,7 +403,7 @@ char* ADUC_StringFormat(const char* fmt, ...)
 
 /**
  * @brief Check whether @p str is NULL or empty.
- * 
+ *
  * @param str A string to check.
  * @return Returns true if @p str is NULL or empty.
  */

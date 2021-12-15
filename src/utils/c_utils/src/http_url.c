@@ -1,5 +1,10 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+/**
+ * @file http_url.c
+ * @brief HTTP URL utility
+ *
+ * @copyright Copyright (c) Microsoft Corp.
+ * Licensed under the MIT License.
+ */
 
 #include "aduc/http_url.h"
 

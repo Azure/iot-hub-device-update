@@ -2,7 +2,8 @@
  * @file apt_parser.cpp
  * @brief Implements a parser for APT file.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  *
  */
 #include "aduc/apt_parser.hpp"

@@ -3,6 +3,7 @@
  * @brief Defines types related to hashing functionality.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_TYPES_HASH_H
 #define ADUC_TYPES_HASH_H

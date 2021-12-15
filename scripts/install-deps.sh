@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # install-deps.sh makes it more convenient to install
 # dependencies for ADU Agent and Delivery Optimization.
 # Some dependencies are installed via packages and

@@ -1,8 +1,9 @@
 /**
  * @file script_tasks.cpp
- * @brief Implements tasks for microsoft/script actions. 
+ * @brief Implements tasks for microsoft/script actions.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "script_tasks.hpp"
 #include "aduc/logging.h"

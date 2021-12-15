@@ -2,6 +2,7 @@
  * @file adu_types.c
  * @brief Implements helper functions related to ConnectionInfo
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "aduc/adu_types.h"

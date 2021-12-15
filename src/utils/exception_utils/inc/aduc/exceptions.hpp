@@ -2,7 +2,8 @@
  * @file exceptions.hpp
  * @brief Defines ADU Agent exceptions.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_EXCEPTIONS_HPP
 #define ADUC_EXCEPTIONS_HPP

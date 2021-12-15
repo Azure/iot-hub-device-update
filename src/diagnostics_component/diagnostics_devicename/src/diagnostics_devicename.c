@@ -1,8 +1,9 @@
 /**
  * @file diagnostics_devicename.c
- * @brief Implements function necessary for getting and setting the devicename for the diagnostics_component 
+ * @brief Implements function necessary for getting and setting the devicename for the diagnostics_component
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "diagnostics_devicename.h"

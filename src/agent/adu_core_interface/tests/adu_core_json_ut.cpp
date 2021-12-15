@@ -2,7 +2,8 @@
  * @file adu_core_json_ut.cpp
  * @brief Unit tests for adu_core_json.h
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;

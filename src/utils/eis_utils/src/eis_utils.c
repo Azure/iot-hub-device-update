@@ -2,7 +2,8 @@
  * @file eis_utils.c
  * @brief Implements the EIS Utility for connecting to EIS and requesting a provisioned SaS token.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "eis_utils.h"
@@ -22,7 +23,7 @@
 
 /**
  * Example Identity Response:
- * 
+ *
  * {
  *   "type":"aziot",
  *   "spec":{
@@ -37,7 +38,7 @@
  *       }
  *   }
  * }
- * 
+ *
  */
 
 /**
@@ -110,7 +111,7 @@
  * {
  *  "pem":"string"
  * }
- * 
+ *
  */
 
 /**
@@ -239,7 +240,7 @@ done:
  * @param deviceId the device identity for the connection string
  * @param moduleId an optional parameter specifying the module identity to use in the connection string
  * @param connType the connection type being used, if EISConnType_ModuleId then moduleId must not be NULL
- * @param sharedAccessSignature the sharedAccessSignature generated for this connection string 
+ * @param sharedAccessSignature the sharedAccessSignature generated for this connection string
  * @param gatewayHostName the gatewayHostName for the parent device for MCC and Nested Edge scenarios
  * @param connectionStrPtr the pointer to the buffer which will be allocated for the connection string
  * @returns a value of EISErr
@@ -423,7 +424,7 @@ done:
 
 /**
  * @brief Creates a connection string using the provisioned data within EIS
- * @details Calls into the EIS Identity and Keyservice to create a SharedAccessSignature which is then used 
+ * @details Calls into the EIS Identity and Keyservice to create a SharedAccessSignature which is then used
  * to create the connection string, Caller is required to call free() to deallocate the connection string
  * @param[in] expirySecsSinceEpoch the expiration time in seconds since the epoch for the token in the connection string
  * @param[in] timeoutMS the timeoutMS in milliseconds for each call to EIS

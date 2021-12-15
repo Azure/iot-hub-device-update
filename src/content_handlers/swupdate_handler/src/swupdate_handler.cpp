@@ -12,7 +12,8 @@
  *   Expected files:
  *   .swu - contains swupdate image.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/swupdate_handler.hpp"
 

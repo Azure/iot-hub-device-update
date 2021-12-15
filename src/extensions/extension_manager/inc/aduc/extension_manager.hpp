@@ -2,7 +2,8 @@
  * @file extension_manager.hpp
  * @brief Definition of the ExtensionManager.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #ifndef ADUC_EXTENSION_MANAGER_HPP
@@ -23,7 +24,7 @@ typedef enum tagADUC_ExtensionType
     ADUC_COMPONENT_ENUMERATOR,
 } ADUC_ExtensionType;
 
-// Default DO retry timeout is 24 hours. 
+// Default DO retry timeout is 24 hours.
 #define DO_RETRY_TIMEOUT_DEFAULT (60*60*24)
 
 // Forward declaration.
@@ -60,19 +61,19 @@ public:
     /**
      * @brief Initialize Content Downloader extension.
      * @param[in] initializeData A string contains downloader initialization data.
-     * @return ADUC_Result 
+     * @return ADUC_Result
      */
     static ADUC_Result InitializeContentDownloader(const char* initializeData);
 
     /**
-     * @brief 
-     * 
+     * @brief
+     *
      * @param entity An #ADUC_FileEntity object with information of the file to be downloaded.
      * @param workflowId A workflow identifier.
      * @param workFolder A full path to target directory (sandbox).
      * @param retryTimeout A download retry timeout (in seconds).
      * @param downloadProgressCallback A download progress reporting callback.
-     * @return ADUC_Result 
+     * @return ADUC_Result
      */
     static ADUC_Result Download(
         const ADUC_FileEntity* entity,

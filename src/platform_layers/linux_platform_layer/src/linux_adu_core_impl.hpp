@@ -2,7 +2,8 @@
  * @file linux_adu_core_impl.hpp
  * @brief Implements the ADU Core interface functionality for linux platform.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef LINUX_ADU_CORE_IMPL_HPP
 #define LINUX_ADU_CORE_IMPL_HPP

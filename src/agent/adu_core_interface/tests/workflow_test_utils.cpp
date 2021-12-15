@@ -1,3 +1,11 @@
+/**
+ * @file workflow_test_utils.c
+ * @brief The implementation of workflow test utilities.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #include "workflow_test_utils.h"
 
 #include <fstream>

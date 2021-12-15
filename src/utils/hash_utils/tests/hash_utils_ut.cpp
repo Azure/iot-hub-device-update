@@ -2,7 +2,8 @@
  * @file hash_utils_ut.cpp
  * @brief Unit Tests for hash_utils library
  *
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <aduc/hash_utils.h>
 

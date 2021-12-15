@@ -2,7 +2,8 @@
  * @file adu_core.h
  * @brief Describes types used in ADUC agent code.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_TYPES_ADU_CORE_H
 #define ADUC_TYPES_ADU_CORE_H

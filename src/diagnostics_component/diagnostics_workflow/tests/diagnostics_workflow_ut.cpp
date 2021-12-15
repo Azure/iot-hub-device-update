@@ -2,7 +2,8 @@
  * @file diagnostics_workflow_ut.cpp
  * @brief Unit Tests for the Diagnostic Workflow
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "diagnostics_workflow.h"

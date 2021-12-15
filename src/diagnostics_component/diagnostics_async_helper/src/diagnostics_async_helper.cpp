@@ -2,7 +2,8 @@
  * @file diagnostics_async_helper.h
  * @brief Implementation for the asynchronous DiagnosticsWorkflow upload of logs
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "diagnostics_async_helper.h"
@@ -33,7 +34,7 @@ public:
     /**
      *@brief Joins the old worker thread if it is still working and then starts a new diagnostics workflow using the parameters passed
      * @param diagnosticsWorkflowData workflowData struct that describes the configuration for the DiagnosticsWorkflow
-     * @param jsonStringHandle the message from the PnP interface to be parsed for the operation-id and sas-credential 
+     * @param jsonStringHandle the message from the PnP interface to be parsed for the operation-id and sas-credential
      */
     void
     StartDiagnosticsWorkflow(const DiagnosticsWorkflowData* diagnosticsWorkflowData, STRING_HANDLE jsonStringHandle)

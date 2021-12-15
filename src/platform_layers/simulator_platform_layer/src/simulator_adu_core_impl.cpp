@@ -4,7 +4,8 @@
  *
  * Define DISABLE_REAL_DOWNLOADING to disable support for real downloads, e.g. to ease porting.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "simulator_adu_core_impl.hpp"
 #include "simulator_device_info.h"

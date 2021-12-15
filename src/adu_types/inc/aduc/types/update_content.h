@@ -3,6 +3,7 @@
  * @brief Defines types related to Update Content data.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_TYPES_UPDATE_CONTENT_H
 #define ADUC_TYPES_UPDATE_CONTENT_H

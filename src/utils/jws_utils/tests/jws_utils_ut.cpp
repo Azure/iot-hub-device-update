@@ -2,7 +2,8 @@
  * @file jws_utils_ut.cpp
  * @brief Unit Tests for jws_utils library
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "base64_utils.h"
 #include "crypto_lib.h"

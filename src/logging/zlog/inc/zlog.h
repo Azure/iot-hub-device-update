@@ -1,3 +1,13 @@
+/**
+ * @file zlog.h
+ * @brief Header for zlog logging utility
+ * Adapted from the public domain "zlog" by Zhiqiang Ma
+ * https://github.com/zma/zlog/
+ *
+ * @copyright Copyright (c) Microsoft Corp.
+ * Licensed under the MIT License.
+ */
+
 #ifndef ZLOG_H
 #define ZLOG_H
 

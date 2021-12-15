@@ -2,7 +2,8 @@
  * @file apt_handler.h
  * @brief Defines types and methods for APT handler plug-in for APT (Advanced Package Tool)
  *
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #ifndef ADUC_APT_HANDLER_HPP
@@ -50,7 +51,7 @@ public:
 
 protected:
     AptHandlerImpl()
-    {        
+    {
     }
 
 private:

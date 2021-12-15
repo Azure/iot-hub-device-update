@@ -2,7 +2,8 @@
  * @file permission_utils.c
  * @brief Implements utilities for working with user, group, and file permissions.
  *
- * @copyright Copyright (c) 2021, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/permission_utils.h"
 #include "aduc/bit_ops.h" // for BitOps_AreAllBitsSet

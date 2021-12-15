@@ -1,11 +1,13 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
-//
-// PnP is a convention built on top of existing IoTHub device transport primitives.
-// This header implements functions to aide applications in serializing and deserializing PnP data.
-// Note that actually sending and receiving the data from the underlying IoTHub client is the application's responsibility.
-//
+/**
+ * @file pnp_protocol.h
+ * @brief Header for PNP Protocol helper
+ * PnP is a convention built on top of existing IoTHub device transport primitives.
+ * This header implements functions to aide applications in serializing and deserializing PnP data.
+ * Note that actually sending and receiving the data from the underlying IoTHub client is the application's responsibility.
+ *
+ * @copyright Copyright (c) Microsoft Corp.
+ * Licensed under the MIT License.
+ */
 
 #ifndef PNP_PROTOCOL_H
 #define PNP_PROTOCOL_H

@@ -2,7 +2,8 @@
  * @file connection_string_utils.h
  * @brief connection string utilities.
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include <azure_c_shared_utility/connection_string_parser.h>

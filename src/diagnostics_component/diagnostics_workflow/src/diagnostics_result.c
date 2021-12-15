@@ -2,7 +2,8 @@
  * @file diagnostics_result.c
  * @brief Implementation for diagnostics_Result.h
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "diagnostics_result.h"
 

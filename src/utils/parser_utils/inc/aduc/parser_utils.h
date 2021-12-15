@@ -3,6 +3,7 @@
  * @brief Utilities for the Device Update Agent extensibility.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef PARSER_UTILS_H
 #define PARSER_UTILS_H
@@ -56,7 +57,7 @@ ADUC_Hash* ADUC_HashArray_AllocAndInit(const JSON_Object* hashObj, size_t* hashC
  * @brief Parse the update action JSON into a ADUC_FileEntity structure.
  * This function returns only files listed in 'updateManifest' property
  * The ADUC_FileEntity.DownloadUrl will be polulated with download url in 'fileUrls' entry selected by 'fileId'.
- * 
+ *
  * @param updateActionJson UpdateAction Json to parse
  * @param fileCount Returned number of files.
  * @param files ADUC_FileEntity array (size fileCount). Array to be freed using ADUC_FileEntityArray_Free().
@@ -104,7 +105,7 @@ void ADUC_FileEntityArray_Free(unsigned int fileCount, ADUC_FileEntity* files);
 /**
  * @brief Parse the update action JSON into a ADUC_FileUrls structure.
  * This function returns all entries listed in 'fileUrls' property.
- * 
+ *
  * @param updateActionJson UpdateAction Json to parse
  * @param urlCount Returned number of urls.
  * @param urls ADUC_FileEntity (size fileCount). Array to be freed using free(), objects must also be freed.

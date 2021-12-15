@@ -1,3 +1,11 @@
+/**
+ * @file installed_criteria_utils_ut.cpp
+ * @brief installed criteria utilities unit tests
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #include "aduc/adu_core_exports.h"
 #include "aduc/installed_criteria_utils.hpp"
 #include <catch2/catch.hpp>

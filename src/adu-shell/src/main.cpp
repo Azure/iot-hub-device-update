@@ -3,6 +3,7 @@
  * @brief Implements the main code for the ADU Shell.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <getopt.h>
 #include <string.h>

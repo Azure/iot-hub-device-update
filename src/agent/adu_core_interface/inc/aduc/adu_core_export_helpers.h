@@ -2,7 +2,8 @@
  * @file adu_core_export_helpers.h
  * @brief Provides set of helpers for creating objects defined in adu_core_exports.h
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_ADU_CORE_EXPORT_HELPERS_H
 #define ADUC_ADU_CORE_EXPORT_HELPERS_H

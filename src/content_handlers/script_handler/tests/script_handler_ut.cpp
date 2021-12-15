@@ -2,7 +2,8 @@
  * @file script_handler_ut.cpp
  * @brief Unit Tests for Script Update Handler.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/parser_utils.h"
 #include "aduc/script_handler.hpp"
@@ -30,7 +31,7 @@ using Catch::Matchers::Equals;
 
 // clang-format off
 
-const char* action_bundle = 
+const char* action_bundle =
 R"( { )"
 R"(     "action": 0, )"
 R"(     "updateManifest": "{\"manifestVersion\":\"2.0\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
@@ -46,14 +47,14 @@ R"(         "gw001": "file:///tmp/tests/testfiles/behind-gateway-info.json" )"
 R"(     } )"
 R"( } )";
 
-const char* action_leaf0 = 
+const char* action_leaf0 =
 R"( { )"
 R"(     "updateManifest": "{\"manifestVersion\":\"2.0\",\"updateId\":{\"provider\":\"contoso\",\"name\":\"motorUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00001\":{\"fileName\":\"contoso-motor-1.0-installscript.sh\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
 R"(     "fileUrls": {   )"
 R"(     } )"
 R"( } )";
 
-const char* action_leaf0_0 = 
+const char* action_leaf0_0 =
 R"( { )"
 R"(     "updateManifest": "{\"manifestVersion\":\"2.0\",\"updateId\":{\"provider\":\"fabrikam\",\"name\":\"peripheral-001-update\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"gw001\":{\"fileName\":\"behind-gateway-info.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
 R"(     "fileUrls": {   )"
@@ -87,7 +88,7 @@ const char* leaf0_instruction_installItems[] = {
 
 };
 
-const char* selectedComponent_1 = 
+const char* selectedComponent_1 =
 R"( { )"
 R"(     "components" : [ )"
 R"(     { )"
@@ -187,12 +188,12 @@ TEST_CASE("Install helper test")
     CHECK(args.size() == 14);
 
     /*
-        arguments: 
+        arguments:
             "--pre-install --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"
-        
+
         components:
 
-            const char* selectedComponent_1 = 
+            const char* selectedComponent_1 =
             R"( { )"
             R"(     "components" : [ )"
             R"(     { )"

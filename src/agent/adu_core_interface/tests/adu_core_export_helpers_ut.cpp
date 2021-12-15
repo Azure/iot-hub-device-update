@@ -2,7 +2,8 @@
  * @file adu_core_export_helpers_ut.cpp
  * @brief Unit tests for adu_core_export_helpers.h
  *
- * @copyright Copyright (c), Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corp.
+ * Licensed under the MIT License.
  */
 #include <atomic>
 #include <catch2/catch.hpp>

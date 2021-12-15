@@ -2,7 +2,8 @@
  * @file parson_json_utils.h
  * @brief Implements the JSON Utility for parsing json
  *
- * @copyright Copyright (c) 2021, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #ifndef PARSON_JSON_UTILS_H

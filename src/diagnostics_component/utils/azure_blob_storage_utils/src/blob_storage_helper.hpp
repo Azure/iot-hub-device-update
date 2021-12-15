@@ -2,7 +2,8 @@
  * @file azure_blob_storage.hpp
  * @brief Implements the interface for interacting with Azure Blob Storage
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "azure_blob_storage.h"
 

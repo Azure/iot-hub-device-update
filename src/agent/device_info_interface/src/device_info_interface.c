@@ -2,7 +2,8 @@
  * @file device_info_interface.c
  * @brief Methods to communicate with "dtmi:azure:DeviceManagement:DeviceInformation;1" interface.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/device_info_interface.h"
 #include "aduc/c_utils.h"

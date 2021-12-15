@@ -3,6 +3,7 @@
  * @brief Defines common types used throughout Device Update agent components.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_ADU_TYPES_H
 #define ADUC_ADU_TYPES_H

@@ -2,7 +2,8 @@
  * @file eis_utils_ut.cpp
  * @brief Unit Tests for eis_utils library
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "eis_utils.h"
 #include "umock_c/umock_c.h"
@@ -45,7 +46,7 @@ IMPLEMENT_UMOCK_C_ENUM_TYPE(
 //
 
 // clang-format off
-static const char* validDeviceSasIdentityResponseStr = 
+static const char* validDeviceSasIdentityResponseStr =
     R"({)"
         R"("type":"aziot",)"
         R"("spec":{)"
@@ -58,7 +59,7 @@ static const char* validDeviceSasIdentityResponseStr =
         R"(})"
     R"(})";
 
-static const char* validDeviceX509IdentityResponseStr = 
+static const char* validDeviceX509IdentityResponseStr =
     R"({)"
         R"("type":"aziot",)"
         R"("spec":{)"
@@ -72,7 +73,7 @@ static const char* validDeviceX509IdentityResponseStr =
         R"(})"
     R"(})";
 
-static const char* validModuleSasIdentityResponseStr = 
+static const char* validModuleSasIdentityResponseStr =
     R"({)"
         R"("type":"aziot",)"
         R"("spec":{)"

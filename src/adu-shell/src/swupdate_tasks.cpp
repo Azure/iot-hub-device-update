@@ -1,8 +1,9 @@
 /**
  * @file swupdate_tasks.cpp
- * @brief Implements tasks for microsoft/swupdate actions. 
+ * @brief Implements tasks for microsoft/swupdate actions.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "swupdate_tasks.hpp"
 #include "aduc/logging.h"

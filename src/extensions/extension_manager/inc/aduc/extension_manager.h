@@ -2,7 +2,8 @@
  * @file extension_manager.h
  * @brief Definition of the ExtensionManager (for C)
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #ifndef ADUC_EXTENSION_MANAGER_H

@@ -3,6 +3,7 @@
  * @brief Implementation of ContentHandler API for update content simulator.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/simulator_handler.hpp"
 #include "aduc/adu_core_exports.h"

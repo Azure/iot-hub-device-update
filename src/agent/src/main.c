@@ -2,7 +2,8 @@
  * @file main.c
  * @brief Implements the main code for the Device Update Agent.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/adu_core_export_helpers.h"
 #include "aduc/adu_core_interface.h"
@@ -71,7 +72,7 @@
 /**
  * @brief The Device Twin Model Identifier.
  * This model must contain 'azureDeviceUpdateAgent' and 'deviceInformation' subcomponents.
- * 
+ *
  * Customers should change this ID to match their device model ID.
  */
 
@@ -114,7 +115,7 @@ typedef _Bool (*PnPComponentCreateFunc)(void** componentContext, int argc, char*
 
 /**
  * @brief Called once after connected to IoTHub (device client handler is valid).
- * 
+ *
  * DigitalTwin handles aren't valid (and as such no calls may be made on them) until this method is called.
  */
 typedef void (*PnPComponentConnectedFunc)(void* componentContext);
@@ -732,7 +733,7 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
 
 /**
  * @brief Get the Connection Info from connection string, if a connection string is provided in configuration file
- * 
+ *
  * @return true if connection info can be obtained
  */
 _Bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString)
@@ -794,7 +795,7 @@ done:
 
 /**
  * @brief Get the Connection Info from Identity Service
- * 
+ *
  * @return true if connection info can be obtained
  */
 _Bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
@@ -829,8 +830,8 @@ done:
 }
 
 /**
- * @brief Handles the startup of the agent 
- * @details Provisions the connection string with the CLI or either 
+ * @brief Handles the startup of the agent
+ * @details Provisions the connection string with the CLI or either
  * the Edge Identity Service or the configuration file
  * @param launchArgs CLI arguments passed to the client
  * @returns _Bool true on success.

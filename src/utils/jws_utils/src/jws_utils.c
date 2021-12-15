@@ -2,7 +2,8 @@
  * @file jws_utils.c
  * @brief Provides methods for verifying Signed JSON Web Keys, JSON Web Tokens in JSON Web Signature Format, and JSON Web Signatures.
  * @brief Provides verification methods and helper functions
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "jws_utils.h"

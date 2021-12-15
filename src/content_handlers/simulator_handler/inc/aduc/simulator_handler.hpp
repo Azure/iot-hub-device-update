@@ -2,7 +2,8 @@
  * @file simulator_handler.hpp
  * @brief Defines SimulatorHandlerImpl.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_SIMULATOR_HANDLER_HPP
 #define ADUC_SIMULATOR_HANDLER_HPP
@@ -56,7 +57,7 @@ private:
 
 /**
  * @brief Get the simulator data file path.
- * 
+ *
  * @return char* A buffer contains file path. Caller must call free() once done.
  */
 char* GetSimulatorDataFilePath();

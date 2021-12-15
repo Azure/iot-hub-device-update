@@ -2,7 +2,8 @@
  * @file hash_utils.c
  * @brief Implements utilities for working with hashes
  *
- * @copyright Copyright (c), Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/hash_utils.h"
 
@@ -155,7 +156,7 @@ done:
  * @param hashArray The ADUC_Hash array.
  * @param arraySize Size of array.
  * @param hashIndex Index of the hash to return.
- * 
+ *
  * @return Hash type if succeeded. Otherwise, return NULL.
  */
 char* ADUC_HashUtils_GetHashType(const ADUC_Hash* hashArray, size_t arraySize, size_t index)
@@ -174,7 +175,7 @@ char* ADUC_HashUtils_GetHashType(const ADUC_Hash* hashArray, size_t arraySize, s
  * @param hashArray The ADUC_Hash array.
  * @param arraySize Size of array.
  * @param hashIndex Index of the hash to return.
- * 
+ *
  * @return Hash value if succeeded. Otherwise, return NULL.
  */
 char* ADUC_HashUtils_GetHashValue(const ADUC_Hash* hashArray, size_t arraySize, size_t index)

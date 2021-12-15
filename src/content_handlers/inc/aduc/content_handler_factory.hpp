@@ -2,7 +2,8 @@
  * @file content_handler_factory.hpp
  * @brief Definition of the ContentHandlerFactory.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #ifndef ADUC_CONTENT_HANDLER_FACTORY_HPP

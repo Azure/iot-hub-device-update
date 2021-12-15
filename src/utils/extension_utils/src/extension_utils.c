@@ -3,6 +3,7 @@
  * @brief Implements utilities for working with Device Update extension.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/extension_utils.h"
 #include "aduc/hash_utils.h"
@@ -33,7 +34,7 @@ static STRING_HANDLE FolderNameFromHandlerId(const char* handlerId)
 
 /**
  * @brief Get the Extension File Entity object
- * 
+ *
  * @param[in] extensionRegFile A full path to the extension registrion file.
  * @param[in,out] fileEntity An output buffer to hold file entity data.
  * @return _Bool Returns 'true' if succeeded.

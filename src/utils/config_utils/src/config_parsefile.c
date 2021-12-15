@@ -3,7 +3,8 @@
  * @file config_parsefile.c
  * @brief Implements parsing the config file
  *
- * @copyright Copyright (c) 2021, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/config_utils.h"
 #include <aduc/c_utils.h>
@@ -12,9 +13,9 @@
 
 /**
  * @brief Takes in the config file path and parse it into a JSON Value with Parson
- * 
- * @param configFilePath 
- * @return JSON_Value* 
+ *
+ * @param configFilePath
+ * @return JSON_Value*
  */
 JSON_Value* Parse_JSON_File(const char* configFilePath)
 {

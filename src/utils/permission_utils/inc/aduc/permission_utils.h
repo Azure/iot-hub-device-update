@@ -2,7 +2,8 @@
  * @file permission_utils.h
  * @brief Utilities for working with user, group, and file permissions.
  *
- * @copyright Copyright (c) 2021, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef _PERMISSION_UTILS_H_
 #define _PERMISSION_UTILS_H_

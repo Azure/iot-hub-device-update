@@ -2,7 +2,8 @@
  * @file download.h
  * @brief Defines types related to file download functionality.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_TYPES_DOWNLOAD_H
 #define ADUC_TYPES_DOWNLOAD_H

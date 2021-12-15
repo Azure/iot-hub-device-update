@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # Script to debug ADU agent.
 
 # Ensure that getopt starts from first option if ". <script.sh>" was used.

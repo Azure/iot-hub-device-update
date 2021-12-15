@@ -1,5 +1,8 @@
 #! /bin/sh
 
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 demo_dir=~/demo
 demo_devices_dir="$demo_dir/demo-devices/contoso-devices"
 target_devices_dir=/usr/local/contoso-devices

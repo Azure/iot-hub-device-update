@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # Installs the adu-agent daemon and performs necessary setup/configuration.
 # This script is meant to only be called from CMake as part of the install target.
 

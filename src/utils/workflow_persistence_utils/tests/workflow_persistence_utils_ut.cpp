@@ -2,7 +2,8 @@
  * @file workflow_persistence_utils_ut.cpp
  * @brief Unit Tests for workflow_persistence_utils library
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/workflow_persistence_utils.h"
 #include <catch2/catch.hpp>

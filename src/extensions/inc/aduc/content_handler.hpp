@@ -2,7 +2,8 @@
  * @file content_handler.hpp
  * @brief Defines ContentHandler interface.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_CONTENT_HANDLER_HPP
 #define ADUC_CONTENT_HANDLER_HPP

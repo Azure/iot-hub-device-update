@@ -2,7 +2,8 @@
  * @file system_utils.c
  * @brief System level utilities, e.g. directory management, reboot, etc.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/system_utils.h"
 #include "aduc/logging.h"

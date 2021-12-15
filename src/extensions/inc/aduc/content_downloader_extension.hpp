@@ -3,6 +3,7 @@
  * @brief Defines APIs for Device Update Content Downloader.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_CONTENT_DOWNLOADER_EXTENSION_HPP
 #define ADUC_CONTENT_DOWNLOADER_EXTENSION_HPP

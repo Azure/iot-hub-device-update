@@ -2,7 +2,8 @@
  * @file file_info_utils.h
  * @brief Header file for utilities scanning, parsing, and interacting with the file system
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <aduc/c_utils.h>
 #include <azure_c_shared_utility/strings.h>

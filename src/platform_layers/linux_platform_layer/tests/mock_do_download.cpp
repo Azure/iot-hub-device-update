@@ -2,7 +2,8 @@
  * @file mock_do_download.cpp
  * @brief Mock download service.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <system_error>
 #include <thread>

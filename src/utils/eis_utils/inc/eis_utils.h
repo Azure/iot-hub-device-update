@@ -2,7 +2,8 @@
  * @file eis_utils.h
  * @brief Header file for the Edge Identity Service (EIS) Utility
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <aduc/adu_types.h>
 #include <aduc/c_utils.h>
@@ -23,7 +24,7 @@ EXTERN_C_BEGIN
 
 /**
  * @brief Creates a connection string using the provisioned data within EIS
- * @details Calls into the EIS Identity and Keyservice to create a SharedAccessSignature which is then used 
+ * @details Calls into the EIS Identity and Keyservice to create a SharedAccessSignature which is then used
  * to create the connection string, Caller is required to call ADUC_ConnectionInfo_DeAlloc() to deallocate the ADUC_ConnectionInfo struct
  * @param[in] expirySecsSinceEpoch the expiration time in seconds since the epoch for the token in the connection string
  * @param[in] timeoutMS the timeoutMS in milliseconds for each call to EIS

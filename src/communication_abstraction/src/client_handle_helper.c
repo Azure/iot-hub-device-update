@@ -1,8 +1,9 @@
 /**
- * @file client_handle_helper.c 
+ * @file client_handle_helper.c
  * @brief Implements an abstract interface for communicating through the ModuleClient or DeviceClient libraries.
- *  
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "aduc/client_handle_helper.h"

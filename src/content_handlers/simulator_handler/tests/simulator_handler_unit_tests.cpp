@@ -2,7 +2,8 @@
  * @file simulator_handler_unit_tests.cpp
  * @brief Unit Tests for Simulator Update Handler.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "aduc/simulator_handler.hpp"

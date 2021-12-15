@@ -2,7 +2,8 @@
  * @file diagnostics_async_helper.h
  * @brief Header file for the asynchronous runner for the DiagnosticsWorkflow log upload
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <aduc/c_utils.h>
 #include <stdlib.h>

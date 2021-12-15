@@ -2,7 +2,8 @@
  * @file health_management.c
  * @brief Implements functions that determine whether ADU Agent can function properly.
  *
- * @copyright Copyright (c) 2021, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/health_management.h"
 #include "aduc/config_utils.h"

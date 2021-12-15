@@ -2,7 +2,8 @@
  * @file Diagnostics_Result.h
  * @brief Defines result values for the Diagnostics Interface
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef DIAGNOSTICS_RESULT_H
 #define DIAGNOSTICS_RESULT_H

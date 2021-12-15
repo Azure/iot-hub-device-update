@@ -2,7 +2,8 @@
  * @file content_handler_factory.cpp
  * @brief Implementation of ContentHandlerFactory.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/content_handler_factory.hpp"
 #include "aduc/content_handler.hpp"
@@ -144,7 +145,7 @@ done:
 /**
  * @brief Loads UpdateContentHandler for specified @p updateType
  * @param updateType An update type string.
- * @param handler A buffer for storing an output UpdateContentHandler object. 
+ * @param handler A buffer for storing an output UpdateContentHandler object.
  * @return ADUCResult contains result code and extended result code.
  * */
 ADUC_Result
@@ -193,7 +194,7 @@ ContentHandlerFactory::LoadUpdateContentHandlerExtension(const std::string& upda
 
     dlerror(); // Clear any existing error
 
-    createUpdateContentHandlerExtension = 
+    createUpdateContentHandlerExtension =
         reinterpret_cast<UPDATE_CONTENT_HANDLER_CREATE_PROC>(dlsym(libHandle, "CreateUpdateContentHandlerExtension")); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
     if (createUpdateContentHandlerExtension == nullptr)
@@ -251,7 +252,7 @@ void ContentHandlerFactory::UnloadAllUpdateContentHandlers()
 
 /**
  * @brief This API unloads all handlers then unload all extension libraries.
- * 
+ *
  */
 void ContentHandlerFactory::UnloadAllExtensions()
 {

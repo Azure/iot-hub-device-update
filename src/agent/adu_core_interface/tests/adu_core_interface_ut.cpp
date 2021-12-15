@@ -2,7 +2,8 @@
  * @file adu_core_interface_ut.cpp
  * @brief Unit tests for adu_core_interface.h
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <catch2/catch.hpp>
 
@@ -236,7 +237,7 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_Connected")
 
     // The expected reported state when Agent orchestration of all workflow steps is Idle.
     CHECK(lastReportedState == ADUCITF_State_Idle);
-    
+
     // NOTE: If AzureDeviceUpdateInterface_Connected() is called when the workflowData->WorkflowHandle is already set,
     // the AzureDeviceUpdateCoreInterface_Connected function will not call ADUC_Workflow_HandleStartupWorkflowData().
     // Hence, at this point, there's no guarantees that workflowData.StartupIdleCallSent is 'true'.

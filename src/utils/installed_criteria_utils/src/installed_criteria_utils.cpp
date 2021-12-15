@@ -2,7 +2,8 @@
  * @file installed_criteria_utils.hpp
  * @brief Contains utilities for managing Installed-Criteria data.
  *
- * @copyright Copyright (c), Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corp.
+ * Licensed under the MIT License.
  */
 #include "aduc/installed_criteria_utils.hpp"
 #include "aduc/adu_core_exports.h"
@@ -99,7 +100,7 @@ const JSON_Status safe_json_serialize_to_file_pretty(const JSON_Value* value, co
 
 /**
  * @brief Persist specified installedCriteria in a file and mark its state as 'installed'.
- * 
+ *
  * @param installedCriteriaFilePath A full path to installed criteria data file.
  * @param installedCriteria An installed criteria string.
  *

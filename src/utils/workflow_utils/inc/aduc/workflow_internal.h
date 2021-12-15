@@ -2,7 +2,8 @@
  * @file workflow_internal.h
  * @brief internal workflow structures and function signatures for use in tests.
  *
- * @copyright Copyright (c), Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corp.
+ * Licensed under the MIT License.
  */
 
 #include <aduc/result.h>
@@ -43,7 +44,7 @@ typedef struct tagADUC_Workflow
     size_t ChildrenMax; /**< The max children. */
     size_t ChildCount; /**< The count of children. */
     int Level; /**< The level of the workflow in the tree. */
-    
+
     //
     // Operation worker state including state for handling cancellation and completion.
     //

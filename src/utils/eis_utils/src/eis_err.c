@@ -2,7 +2,8 @@
  * @file eis_err.c
  * @brief Implementation file for the EISErrors with helpers
  *
- * @copyright Copyright (c) 2020, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "eis_err.h"

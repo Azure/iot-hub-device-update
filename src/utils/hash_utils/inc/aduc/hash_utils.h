@@ -2,7 +2,8 @@
  * @file hash_utils.h
  * @brief Utilities for working with hashes.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_HASH_UTILS_H
 #define ADUC_HASH_UTILS_H
@@ -31,7 +32,7 @@ _Bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** 
  * @param hashArray The ADUC_Hash array.
  * @param arraySize Size of array.
  * @param hashIndex Index of the hash to return.
- * 
+ *
  * @return Hash type if succeeded. Otherwise, return NULL.
  */
 char* ADUC_HashUtils_GetHashType(const ADUC_Hash* hashArray, size_t arraySize, size_t index);
@@ -41,7 +42,7 @@ char* ADUC_HashUtils_GetHashType(const ADUC_Hash* hashArray, size_t arraySize, s
  * @param hashArray The ADUC_Hash array.
  * @param arraySize Size of array.
  * @param hashIndex Index of the hash to return.
- * 
+ *
  * @return Hash value if succeeded. Otherwise, return NULL.
  */
 char* ADUC_HashUtils_GetHashValue(const ADUC_Hash* hashArray, size_t arraySize, size_t index);

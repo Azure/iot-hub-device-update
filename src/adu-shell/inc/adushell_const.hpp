@@ -1,7 +1,8 @@
 /**
  * @file adushell_const.hpp
  * @brief Private header contains all constants used by adu-shell and its consumers.
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADU_SHELL_CONST_HPP
 #define ADU_SHELL_CONST_HPP

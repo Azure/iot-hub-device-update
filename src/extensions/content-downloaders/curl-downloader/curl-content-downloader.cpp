@@ -3,6 +3,7 @@
  * @brief Content Downloader Extension using curl command.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/content_downloader_extension.hpp"
 #include "aduc/hash_utils.h"

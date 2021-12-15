@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # Bash script for creating ADU update import manifest.
 
 ENABLE_VERBOSE=0

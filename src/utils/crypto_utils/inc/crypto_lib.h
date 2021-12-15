@@ -2,7 +2,8 @@
  * @file crypto_lib.h
  * @brief Provides an implementation of cryptogrpahic functions for hashing, encrypting, and verifiying.
  *
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "crypto_key.h"

@@ -1,3 +1,13 @@
+/**
+ * @file zlog-config.c
+ * @brief Config header for Zlog utility
+ * Adapted from the public domain "zlog" by Zhiqiang Ma
+ * https://github.com/zma/zlog/
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #ifndef ZLOG_CONFIG_H
 #define ZLOG_CONFIG_H
 

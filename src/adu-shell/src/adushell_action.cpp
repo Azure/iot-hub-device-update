@@ -3,6 +3,7 @@
  * @brief Implements the ADU Shell Actions helper functions.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "adushell_action.hpp"
 #include "aduc/logging.h"
@@ -29,13 +30,13 @@ ADUShellAction ADUShellActionFromString(const char* actionString)
             { "cancel", ADUShellAction::Cancel },
             { "download", ADUShellAction::Download },
             { "execute", ADUShellAction::Execute },
-            { "initialize", ADUShellAction::Initialize }, 
+            { "initialize", ADUShellAction::Initialize },
             { "install", ADUShellAction::Install },
             { "reboot", ADUShellAction::Reboot },
             { "remove", ADUShellAction::Remove },
             { "rollback", ADUShellAction::Rollback }
         };
-          
+
         // clang-format on
 
         value = actionMap.at(std::string(actionString));

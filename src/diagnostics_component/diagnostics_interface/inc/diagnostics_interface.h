@@ -2,7 +2,8 @@
  * @file diagnostics_interface.h
  * @brief Methods to communicate with "dtmi:azure:iot:deviceUpdateDiagnosticModel;1" interface.
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef DIAGNOSTICS_INTERFACE_H
 #define DIAGNOSTICS_INTERFACE_H

@@ -2,7 +2,8 @@
  * @file main.cpp
  * @brief process_utils unitest helper program.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include <errno.h>

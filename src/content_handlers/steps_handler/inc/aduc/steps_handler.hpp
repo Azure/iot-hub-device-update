@@ -2,7 +2,8 @@
  * @file steps_handler.hpp
  * @brief Defines StepsHandlerImpl.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_STEPS_HANDLER_HPP
 #define ADUC_STEPS_HANDLER_HPP

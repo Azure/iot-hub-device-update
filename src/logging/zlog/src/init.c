@@ -2,7 +2,8 @@
  * @file init.c
  * @brief Implements the logging init and uninit functions.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/logging.h"
 #include <stdio.h> // printf

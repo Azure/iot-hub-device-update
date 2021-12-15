@@ -2,7 +2,8 @@
  * @file diagnostics_workflow.c
  * @brief Implementation for functions handling the Diagnostic Log Upload workflow
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "diagnostics_workflow.h"
 #include "diagnostics_result.h"
@@ -52,7 +53,7 @@
 #define DIAGNOSTICS_CONFIG_FILE_COMPONENT_FIELDNAME_LOGPATH "logPath"
 
 /**
- * @brief Fieldname for the maximum number of bytes to upload per diagnostics workflow 
+ * @brief Fieldname for the maximum number of bytes to upload per diagnostics workflow
  */
 #define DIAGNOSTICS_CONFIG_FILE_FIELDNAME_MAXKILOBYTESTOUPLOADPERLOGPATH "maxKilobytesToUploadPerLogPath"
 
@@ -62,7 +63,7 @@
 #define DIAGNOSTICS_MAX_KILOBYTES_PER_LOG_PATH 100000 /* 1000 KB or 100 MB */
 
 /**
- * @brief Returns the DiagnosticsLogComponent object @p index within @p workflowData 
+ * @brief Returns the DiagnosticsLogComponent object @p index within @p workflowData
  * @param workflowData the DiagnosticsWorkflowData vector from which to get the DiagnosticsComponent
  * @param index the index from which to retrieve the value
  * @returns NULL if index is out of range; the DiagnosticsComponent otherwise
@@ -489,7 +490,7 @@ done:
 }
 
 /**
- * @brief Helper function for freeing the contents of a vector of vectors of STRING_HANDLE type 
+ * @brief Helper function for freeing the contents of a vector of vectors of STRING_HANDLE type
  * @details Does not free @p logComponentFileNames itself just its contents
  * @param logComponentFileNames a vector of vectors of STRING_HANDLE type
  */
@@ -519,7 +520,7 @@ void DiagnosticsWorkflow_UnInitLogComponentFileNames(VECTOR_HANDLE logComponentF
     }
 }
 /**
- * @brief Uploads the diagnostic logs described by @p workflowData 
+ * @brief Uploads the diagnostic logs described by @p workflowData
  * @param workflowData the workflowData structure describing the log components
  * @param jsonString the string from the diagnostics_interface describing where to upload the logs
  */

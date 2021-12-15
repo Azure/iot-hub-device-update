@@ -2,7 +2,8 @@
  * @file config_utils_ut.cpp
  * @brief Unit Tests for config_utils library
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "umock_c/umock_c.h"

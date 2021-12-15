@@ -10,7 +10,8 @@
  *   Expected files:
  *   <manifest>.json - contains apt configuration and package list.
  *
- * @copyright Copyright (c), Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/apt_handler.hpp"
 #include "aduc/adu_core_exports.h"

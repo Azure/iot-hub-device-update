@@ -2,7 +2,8 @@
  * @file result.h
  * @brief Describes the ADUC result type.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_RESULT_H
 #define ADUC_RESULT_H
@@ -51,9 +52,9 @@ static inline _Bool IsAducResultCodeFailure(const ADUC_Result_t resultCode)
 
 /**
  * Extended Result Code Structure (32 bits)
- * 
+ *
  * Note: We're discussing a possiblity to increase the size to 64 bits.
- * 
+ *
  *    0 00 00000     Total 4 bytes (32 bits)
  *    - -- -----
  *    | |  |
@@ -62,7 +63,7 @@ static inline _Bool IsAducResultCodeFailure(const ADUC_Result_t resultCode)
  *    | |
  *    | +------------- Component/Area code (8 bits)
  *    |
- *    +--------------- Facility code (4 bits) 
+ *    +--------------- Facility code (4 bits)
  */
 
 /**
@@ -114,7 +115,7 @@ typedef enum tagADUC_Facility
 
 /**
  * @brief Content Handler codes to pass to MAKE_ADUC_CONTENT_HANDLER_EXTENDEDRESULTCODE.
- * 
+ *
  *    3 00 00000     Total 4 bytes (32 bits)
  *    - -- -----
  *    | |  |
@@ -125,7 +126,7 @@ typedef enum tagADUC_Facility
  *    |                0x00 - 0x1f : RESERVED for DU-Provided content handlers
  *    |                0x20 - 0xff : Available for customers and partners
  *    |
- *    +--------------- Facility code (4 bits) 
+ *    +--------------- Facility code (4 bits)
  */
 typedef enum tagADUC_Content_Handler
 {
@@ -183,9 +184,9 @@ typedef enum tagADUC_Component
 } ADUC_Component;
 
 /**
- * @brief Converts an error to a 32-bit value extended result code.  
+ * @brief Converts an error to a 32-bit value extended result code.
  * Top 4 bits is facility, next 8 bits is for component or area, therest is value.
- * 
+ *
  *    0 00 00000     Total 4 bytes (32 bits)
  *    - -- -----
  *    | |  |
@@ -194,7 +195,7 @@ typedef enum tagADUC_Component
  *    | |
  *    | +------------- Component/Area code (8 bits)
  *    |
- *    +--------------- Facility code (4 bits) 
+ *    +--------------- Facility code (4 bits)
  */
 static inline ADUC_Result_t
 MAKE_ADUC_EXTENDEDRESULTCODE(const unsigned int facility, const unsigned int component, const unsigned int value)
@@ -281,9 +282,9 @@ static inline ADUC_Result_t MAKE_ADUC_ERRNO_EXTENDEDRESULTCODE(const int value)
 }
 
 /**
- * @brief Macros to convert a Content Handler Extension results to extended result code values.\n 
+ * @brief Macros to convert a Content Handler Extension results to extended result code values.\n
  * The facility code for these errors is ADUC_FACILITY_UPDATE_CONTENT_HANDLER.
- * 
+ *
  * @param value An error value.
  */
 static inline ADUC_Result_t
@@ -546,11 +547,11 @@ static inline ADUC_Result_t MAKE_ADUC_SCRIPT_HANDLER_EXTENDEDRESULTCODE(const in
     MAKE_ADUC_SCRIPT_HANDLER_EXTENDEDRESULTCODE((0x1000 + exitCode))
 
 /**
- * @brief Macros to convert a Downloader Extension results to extended result code values.\n 
+ * @brief Macros to convert a Downloader Extension results to extended result code values.\n
  * The facility code for these errors is ADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER.
- * 
+ *
  * Error code starts at: 0x400#####
- * 
+ *
  * @param value An error value.
  */
 static inline ADUC_Result_t
@@ -618,11 +619,11 @@ MAKE_ADUC_UPDATE_CONTENT_DOWNLOADER_EXTENDEDRESULTCODE(const ADUC_Content_Downlo
 //
 
 /**
- * @brief Macros to convert a Content Handler Extension results to extended result code values.\n 
+ * @brief Macros to convert a Content Handler Extension results to extended result code values.\n
  * The facility code for these errors is ADUC_FACILITY_UPDATE_CONTENT_HANDLER.
- * 
+ *
  * Error code starts at: 0x7#######
- * 
+ *
  * @param value An error value.
  */
 static inline ADUC_Result_t MAKE_ADUC_COMPONENT_ENUMERATOR_EXTENDEDRESULTCODE(const int value)

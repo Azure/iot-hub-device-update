@@ -7,7 +7,8 @@
  * If we are, we'll call an upper-level method to do the work.
  * If not, we'll fail the request.
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/agent_workflow.h"
 
@@ -444,7 +445,7 @@ void ADUC_Workflow_HandlePropertyUpdate(
     //     (2) Called from ADUC_Workflow_HandlePropertyUpdate (instead of calling ADUC_Workflow_HandleUpdateAction) when StartupIdleCallSent is false.
     // In both cases, we must first try to complete workflow processing using the persisted workflow state.
     HandleWorkflowPersistence(currentWorkflowData);
-    
+
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         Log_Error("Invalid desired update action data. Update data: (%s)", propertyUpdateValue);

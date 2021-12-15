@@ -3,6 +3,7 @@
  * @brief Implementation of ContentHandler API for the MSOE (Multi Steps Ordered Execution) Steps.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/steps_handler.hpp"
 
@@ -65,9 +66,9 @@ EXTERN_C_END
 
 /**
  * @brief Make sure that all step workflows are created.
- * 
+ *
  * @param handle A workflow data object handle.
- * @return ADUC_Result 
+ * @return ADUC_Result
  */
 ADUC_Result EnsureStepsWorkflowsCreated(const ADUC_WorkflowHandle handle)
 {
@@ -111,10 +112,10 @@ ADUC_Result EnsureStepsWorkflowsCreated(const ADUC_WorkflowHandle handle)
                 const char* selectedComponents = workflow_peek_selected_components(handle);
 
                 Log_Debug("Creating workflow for level#%d step#%d. Selected components:\n=====\n%s\n=====", workflowLevel, i, selectedComponents);
-                
+
                 // Create child workflow using inline step data.
                 result = workflow_create_from_inline_step(handle, i, &childHandle);
-                
+
                 if (IsAducResultCodeSuccess(result.ResultCode))
                 {
                     // Inherit parent's selected components.
@@ -216,7 +217,7 @@ ADUC_Result EnsureStepsWorkflowsCreated(const ADUC_WorkflowHandle handle)
             }
 
             if (!workflow_insert_child(handle, -1, childHandle))
-            {    
+            {
                 result = { .ResultCode = ADUC_Result_Failure,
                            .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_CHILD_WORKFLOW_INSERT_FAILED };
                 goto done;
@@ -249,8 +250,8 @@ ContentHandler* StepsHandlerImpl::CreateContentHandler()
 }
 
 /**
- * @brief Return a json string containing a 'components' array with one component. 
- * 
+ * @brief Return a json string containing a 'components' array with one component.
+ *
  * @param components The source components array.
  * @param index Index of the component to be returned.
  * @return char* Returns a json string containing serialized 'components' data.
@@ -267,7 +268,7 @@ static char* CreateComponentSerializedString(JSON_Array* components, size_t inde
 
 /**
  * @brief Get a list of selected components for specified workflow.
- * 
+ *
  * @param handle A workflow data object handle.
  * @param componentsArray Array of selected components.
  * @return ADUC_Result Returns ADUC_Result_Success is succeeded.
@@ -320,10 +321,10 @@ done:
 
 /**
  * @brief Perform download phase for spicified step.
- * 
+ *
  * @param workflowData A workflow data object.
  * @param stepIndex A step index.
- * @return ADUC_Result 
+ * @return ADUC_Result
  */
 static ADUC_Result ProcessStepDownloadPhase(const ADUC_WorkflowData* workflowData, int stepIndex)
 {
@@ -332,11 +333,11 @@ static ADUC_Result ProcessStepDownloadPhase(const ADUC_WorkflowData* workflowDat
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     ContentHandler* contentHandler = nullptr;
     ADUC_WorkflowHandle childHandler = workflow_get_child(handle, stepIndex);
-    ADUC_WorkflowData childWorkflow { 
-        .WorkflowHandle = childHandler 
+    ADUC_WorkflowData childWorkflow {
+        .WorkflowHandle = childHandler
     };
 
-    const char* stepHandlerName = workflow_is_inline_step(handle, stepIndex) ?  
+    const char* stepHandlerName = workflow_is_inline_step(handle, stepIndex) ?
                                     workflow_peek_update_manifest_step_handler(handle, stepIndex):
                                     DEFAULT_REF_STEP_HANDLER;
 
@@ -359,7 +360,7 @@ static ADUC_Result ProcessStepDownloadPhase(const ADUC_WorkflowData* workflowDat
     }
     else
     {
-        // Step is completed, no files required. 
+        // Step is completed, no files required.
         result = contentHandler->Download(&childWorkflow);
     }
 
@@ -376,13 +377,13 @@ done:
 
 /**
  * @brief Performs 'Download' task by iterating through all steps and invoke each step's handler
- * to download file(s), if needed. 
- * 
+ * to download file(s), if needed.
+ *
  * It is a step's handler's responsibility to determine whether
  * files are needed for 'install' and 'apply' phases.
- * 
+ *
  * @param workflowData A workflow data object.
- * 
+ *
  * @return ADUC_Result The result.
  */
 static ADUC_Result StepsHandler_Download(const ADUC_WorkflowData* workflowData)
@@ -418,13 +419,13 @@ static ADUC_Result StepsHandler_Download(const ADUC_WorkflowData* workflowData)
             workflow_set_result_details(handle, "Cannot select target components.");
             goto done;
         }
-        
+
         selectedComponentsCount = json_array_get_count(selectedComponentsArray);
     }
     else
     {
         // Process all steps once.
-        selectedComponentsCount = 1; 
+        selectedComponentsCount = 1;
     }
 
     // If any of the targetted components is not up-to-date, download the update payloads.
@@ -484,7 +485,7 @@ static ADUC_Result StepsHandler_Download(const ADUC_WorkflowData* workflowData)
             stepWorkflow.WorkflowHandle = stepHandle;
 
             ContentHandler* contentHandler = nullptr;
-            const char* stepUpdateType = workflow_is_inline_step(handle, i) ?  
+            const char* stepUpdateType = workflow_is_inline_step(handle, i) ?
                                 workflow_peek_update_manifest_step_handler(handle, i):
                                 DEFAULT_REF_STEP_HANDLER;
 
@@ -591,13 +592,13 @@ done:
 
 /**
  * @brief Performs 'Download' task by iterating through all steps and invoke each step's handler
- * to download file(s), if needed. 
- * 
+ * to download file(s), if needed.
+ *
  * It is a step's handler's responsibility to determine whether
  * any files is needed for 'install' and 'apply' phases.
- * 
+ *
  * @param workflowData A workflow data object.
- * 
+ *
  * @return ADUC_Result The result.
  */
 ADUC_Result StepsHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
@@ -648,13 +649,13 @@ static ADUC_Result StepsHandler_Install(const ADUC_WorkflowData* workflowData)
             workflow_set_result_details(handle, "Cannot select target components.");
             goto done;
         }
-        
+
         selectedComponentsCount = json_array_get_count(selectedComponentsArray);
     }
     else
     {
         // Process all steps once.
-        selectedComponentsCount = 1; 
+        selectedComponentsCount = 1;
     }
 
     // For each targetted component, perform step's install & apply phase, in order.
@@ -715,7 +716,7 @@ static ADUC_Result StepsHandler_Install(const ADUC_WorkflowData* workflowData)
             stepWorkflow.WorkflowHandle = stepHandle;
 
             ContentHandler* contentHandler = nullptr;
-            const char* stepUpdateType = workflow_is_inline_step(handle, i) ?  
+            const char* stepUpdateType = workflow_is_inline_step(handle, i) ?
                                 workflow_peek_update_manifest_step_handler(handle, i):
                                 DEFAULT_REF_STEP_HANDLER;
 
@@ -999,13 +1000,13 @@ static ADUC_Result StepsHandler_IsInstalled(const ADUC_WorkflowData* workflowDat
             workflow_set_result_details(handle, "Cannot select target components.");
             goto done;
         }
-        
+
         selectedComponentsCount = json_array_get_count(selectedComponentsArray);
     }
     else
     {
         // Process all steps once.
-        selectedComponentsCount = 1; 
+        selectedComponentsCount = 1;
     }
 
     // For each targetted component, perform step's install & apply phase, in order.
@@ -1066,7 +1067,7 @@ static ADUC_Result StepsHandler_IsInstalled(const ADUC_WorkflowData* workflowDat
             stepWorkflow.WorkflowHandle = stepHandle;
 
             ContentHandler* contentHandler = nullptr;
-            const char* stepUpdateType = workflow_is_inline_step(handle, i) ?  
+            const char* stepUpdateType = workflow_is_inline_step(handle, i) ?
                                 workflow_peek_update_manifest_step_handler(handle, i):
                                 DEFAULT_REF_STEP_HANDLER;
 
@@ -1100,7 +1101,7 @@ static ADUC_Result StepsHandler_IsInstalled(const ADUC_WorkflowData* workflowDat
                 Log_Info("Step #%d is not installed.", i);
                 goto done;
             }
-            
+
             if (IsAducResultCodeFailure(result.ResultCode))
             {
                 // Propagate item's resultDetails to parent.

@@ -2,7 +2,8 @@
  * @file config_utils.c
  * @brief Implements the Configuration Utility for reading, parsing the ADUC configuration file
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "aduc/config_utils.h"

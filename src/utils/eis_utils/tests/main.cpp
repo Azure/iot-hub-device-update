@@ -2,7 +2,8 @@
  * @file main.cpp
  * @brief crypto_utils tests main entry point.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 // https://github.com/catchorg/Catch2/blob/master/docs/own-main.md
 #define CATCH_CONFIG_RUNNER

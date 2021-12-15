@@ -1,7 +1,11 @@
-/*
- * Zlog utility
+/**
+ * @file zlog.c
+ * @brief Zlog utility
  * Adapted from the public domain "zlog" by Zhiqiang Ma
  * https://github.com/zma/zlog/
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include <dirent.h>

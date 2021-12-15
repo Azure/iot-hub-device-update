@@ -2,7 +2,8 @@
  * @file azure_blob_storage.c
  * @brief Implements the interface for interacting with Azure Blob Storage
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "azure_blob_storage.h"
@@ -17,12 +18,12 @@
 EXTERN_C_BEGIN
 
 /**
- * @brief Uploads all the files listed in @p files using the storage information in @p blobInfo 
+ * @brief Uploads all the files listed in @p files using the storage information in @p blobInfo
  * @param blobInfo struct describing the connection information
  * @param maxConcurrency the max amount of concurrent threads for storage operations
- * @param fileNames vector of STRING_HANDLEs listing the names of the files to be uploaded 
- * @param directoryPath path to the directory which holds the files listed in @p fileNames 
- * @returns true on successful upload of all files; false on any failure 
+ * @param fileNames vector of STRING_HANDLEs listing the names of the files to be uploaded
+ * @param directoryPath path to the directory which holds the files listed in @p fileNames
+ * @returns true on successful upload of all files; false on any failure
  */
 _Bool UploadFilesToContainer(
     const BlobStorageInfo* blobInfo, const int maxConcurrency, VECTOR_HANDLE fileNames, const char* directoryPath)

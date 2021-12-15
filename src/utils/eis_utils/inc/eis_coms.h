@@ -2,7 +2,8 @@
  * @file eis_coms.h
  * @brief Header file for HTTP communication with Edge Identity Service (EIS) over UDS
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <aduc/c_utils.h>
 #include <eis_err.h>
@@ -22,7 +23,7 @@ EXTERN_C_BEGIN
  */
 // clang-format off
 // NOLINTNEXTLINE: clang-tidy doesn't like UMock macro expansions
-MOCKABLE_FUNCTION(, EISErr, RequestIdentitiesFromEIS, 
+MOCKABLE_FUNCTION(, EISErr, RequestIdentitiesFromEIS,
     unsigned int, timeoutMS,
     char**, responseBuffer)
 // clang-format on
@@ -57,8 +58,8 @@ MOCKABLE_FUNCTION(,EISErr,RequestSignatureFromEIS,
 // clang-format off
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast): clang-tidy doesn't like UMock macro expansions
 MOCKABLE_FUNCTION(,EISErr, RequestCertificateFromEIS,
-    const char*, certId, 
-    unsigned int, timeoutMS, 
+    const char*, certId,
+    unsigned int, timeoutMS,
     char**, responseBuffer)
 // clang-format on
 

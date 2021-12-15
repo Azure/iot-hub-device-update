@@ -2,7 +2,8 @@
  * @file apt_parser.hpp
  * @brief Defines types and methods required to parse APT file (JSON format).
  *
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_APT_PARSER_HPP
 #define ADUC_APT_PARSER_HPP

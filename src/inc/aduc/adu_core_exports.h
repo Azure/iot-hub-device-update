@@ -2,7 +2,8 @@
  * @file adu_core_exports.h
  * @brief Describes methods to be exported from platform-specific ADUC agent code.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_ADU_CORE_EXPORTS_H
 #define ADUC_ADU_CORE_EXPORTS_H

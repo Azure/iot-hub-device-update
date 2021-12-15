@@ -2,7 +2,8 @@
  * @file diagnostics_devicename.h
  * @brief Header file describing the methods for setting the static global device name for use in the diagnostic component
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef DIAGNOSTICS_DEVICENAMES_H
 #    define DIAGNOSTICS_DEVICENAMES_UTILS_H

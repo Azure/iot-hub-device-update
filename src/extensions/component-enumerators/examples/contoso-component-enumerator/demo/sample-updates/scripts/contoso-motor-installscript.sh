@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # Ensure that getopt starts from first option if ". <script.sh>" was used.
 OPTIND=1
 

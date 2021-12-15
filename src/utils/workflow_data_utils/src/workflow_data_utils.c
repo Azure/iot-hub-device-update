@@ -2,7 +2,8 @@
  * @file workflow_utils.c
  * @brief Utility functions for workflow data.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "aduc/workflow_data_utils.h"

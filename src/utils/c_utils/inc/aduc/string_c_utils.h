@@ -2,7 +2,8 @@
  * @file string_c_utils.h
  * @brief String utilities for C code.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_STRING_C_UTILS_H
 #define ADUC_STRING_C_UTILS_H

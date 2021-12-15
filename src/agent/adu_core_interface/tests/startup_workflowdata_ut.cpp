@@ -1,7 +1,8 @@
 /**
  * @file startup_workflowdata_ut.cpp
  * @brief Unit tests for ADUC_Workflow_HandleStartupWorkflowData
- * @copyright Copyright (c), Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corp.
+ * Licensed under the MIT License.
  */
 
 #include "workflow_test_utils.h"

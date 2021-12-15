@@ -1,7 +1,8 @@
 /**
  * @file adushell.hpp
  * @brief Private header for ADU Shell types and helper functions.
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADU_SHELL_HPP
 #define ADU_SHELL_HPP

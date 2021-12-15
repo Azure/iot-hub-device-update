@@ -2,7 +2,8 @@
  * @file swupdate_handler.hpp
  * @brief Defines SWUpdateHandlerImpl.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_SWUPDATE_HANDLER_HPP
 #define ADUC_SWUPDATE_HANDLER_HPP

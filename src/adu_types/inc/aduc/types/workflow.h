@@ -2,7 +2,8 @@
  * @file workflow.h
  * @brief Define types for Device Update agent workflow.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_TYPES_WORKFLOW_H
 #define ADUC_TYPES_WORKFLOW_H

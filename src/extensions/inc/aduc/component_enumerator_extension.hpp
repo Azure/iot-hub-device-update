@@ -1,3 +1,11 @@
+/**
+ * @file component_enumerator_extension.hpp
+ * @brief The header for component enumerator extension
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #ifndef _COMPONENT_ENUMERATOR_EXTENSION_HPP_
 #define _COMPONENT_ENUMERATOR_EXTENSION_HPP_
 
@@ -8,23 +16,23 @@ extern "C" {
 
 /**
  * @brief Select component(s) that contain property or properties matching specified in @p selectorJson string.
- * 
+ *
  * Example input json:
  *      - Select all components belong to a 'Motors' group
  *              "{\"group\":\"Motors\"}"
- * 
+ *
  *      - Select a component with name equals 'left-motor'
  *              "{\"name\":\"left-motor\"}"
- * 
+ *
  *      - Select components matching specified class (manufature/model)
  *              "{\"manufacturer\":\"Contoso\",\"model\":\"USB-Motor-0001\"}"
- * 
+ *
  * @param selectorJson A stringifed json containing one or more properties use for components selection.
- * @return Returns a serialized json data containing components information. 
+ * @return Returns a serialized json data containing components information.
  * Caller must call FreeString function when done with the returned string.
- * 
+ *
  * Example output:
- * 
+ *
  * {
  *   "components": [
  *       {
@@ -71,11 +79,11 @@ typedef char* (*SelectComponentsProc)(const char* selector);
 
 /**
  * @brief Returns all components information in JSON format.
- * @return Returns a serialized json data containing components information. 
+ * @return Returns a serialized json data containing components information.
  * Caller must call FreeString function when done with the returned string.
- * 
+ *
  * Example output:
- * 
+ *
  * {
  *   "components": [
  *       {

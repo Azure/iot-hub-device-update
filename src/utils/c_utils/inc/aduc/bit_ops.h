@@ -2,7 +2,8 @@
  * @file bit_ops.h
  * @brief inline functions that manipulate bits.
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #ifndef __BIT_OPS_H__

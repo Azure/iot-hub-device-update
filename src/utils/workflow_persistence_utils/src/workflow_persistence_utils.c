@@ -2,7 +2,8 @@
  * @file workflow_persistence_utils.c
  * @brief Implementation for serialization and deserialization of minimal data for startup logic and idle reporting.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "aduc/system_utils.h"

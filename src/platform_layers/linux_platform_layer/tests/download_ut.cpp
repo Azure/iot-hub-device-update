@@ -2,7 +2,8 @@
  * @file download_ut.cpp
  * @brief Unit tests for download functionality implemented in deviceUpdateReferenceImpl library.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <catch2/catch.hpp>
 #include <cstring>

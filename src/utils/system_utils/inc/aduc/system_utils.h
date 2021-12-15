@@ -2,7 +2,8 @@
  * @file system_utils.h
  * @brief System level utilities, e.g. directory management, reboot, etc.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_SYSTEM_UTILS_H
 #define ADUC_SYSTEM_UTILS_H

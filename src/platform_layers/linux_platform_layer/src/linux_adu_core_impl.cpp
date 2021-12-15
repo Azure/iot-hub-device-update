@@ -2,7 +2,8 @@
  * @file linux_adu_core_impl.cpp
  * @brief Implements an ADUC reference implementation library.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "linux_adu_core_impl.hpp"
 #include "aduc/calloc_wrapper.hpp"

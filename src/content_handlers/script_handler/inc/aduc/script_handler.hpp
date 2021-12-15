@@ -2,7 +2,8 @@
  * @file script_handler.hpp
  * @brief Defines ScriptHandlerImpl.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_SCRIPT_HANDLER_HPP
 #define ADUC_SCRIPT_HANDLER_HPP

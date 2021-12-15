@@ -2,7 +2,8 @@
  * @file startup_msg_helper.h
  * @brief Implements helper functions for building the startup message
  *
- * @copyright Copyright (c) 2021, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #ifndef STARTUP_MSG_HELPER_H

@@ -2,7 +2,8 @@
  * @file agent_orchestration.c
  * @brief Contains business logic implementation for agent-driven workflow orchestration processing.
  *
- * @copyright Copyright (c), Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corp.
+ * Licensed under the MIT License.
  */
 
 #include "aduc/agent_orchestration.h"

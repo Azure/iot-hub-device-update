@@ -2,7 +2,8 @@
  * @file azure_blob_storage.cpp
  * @brief Implements the interface for interacting with Azure Blob Storage
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "blob_storage_helper.hpp"
 
@@ -44,11 +45,11 @@ public:
 };
 
 /**
- * @brief Parses the container name from the @p sasUrl 
+ * @brief Parses the container name from the @p sasUrl
  * @details @p containerName should be freed by caller using STRING_delete()
  * @param[out] containerName value that will be loaded with the container name found in sasUrl
- * @param[in] sasUrl Properly formatted sasUrl of the form: <hostname-url>/<container-name> 
- * Refer to 
+ * @param[in] sasUrl Properly formatted sasUrl of the form: <hostname-url>/<container-name>
+ * Refer to
  * @returns true if a properly formatted; false if no container name is found
  */
 bool AzureBlobStorageHelper_ParseContainerNameFromSasUrl(STRING_HANDLE* containerName, const char* sasUrl)
@@ -220,7 +221,7 @@ AzureBlobStorageHelper::CreatePathFromFileAndDirectory(const std::string& fileNa
  * @param fileNames vector of file names to upload
  * @param directoryPath path to the directory where @p fileNames can be found
  * @param virtualDirectory a properly formatted virtual directory (ending in '/') to be used when uploading the files
- * @returns true on success; false on any failure 
+ * @returns true on success; false on any failure
  */
 bool AzureBlobStorageHelper::UploadFilesToContainer(
     const std::string& containerName,

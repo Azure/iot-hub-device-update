@@ -2,7 +2,8 @@
  * @file bit_ops.c
  * @brief This file contains extern declaration for each extern inline function from the header that manipulate bits.
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "aduc/bit_ops.h"

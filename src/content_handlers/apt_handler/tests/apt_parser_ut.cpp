@@ -1,3 +1,11 @@
+/**
+ * @file apt_parser_ut.cpp
+ * @brief APT parser unit tests
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #include "aduc/apt_parser.hpp"
 
 #include <catch2/catch.hpp>
@@ -25,7 +33,7 @@ using Catch::Matchers::Equals;
 
 // clang-format off
 
-const char* aptContentWithThreePackages = 
+const char* aptContentWithThreePackages =
     R"({)"
         R"( "name":"com-microsoft-eds-adu-testapt", )"
         R"( "version":"1.0.0", )"
@@ -45,7 +53,7 @@ const char* aptContentWithThreePackages =
     R"(})";
 
 
-const char* aptContentWithOnePackage = 
+const char* aptContentWithOnePackage =
     R"({)"
         R"( "name":"com-microsoft-eds-adu-testapt", )"
         R"( "version":"1.0.1", )"
@@ -57,7 +65,7 @@ const char* aptContentWithOnePackage =
             R"(])"
     R"(})";
 
-const char* aptContentWithAgentRestartRequired = 
+const char* aptContentWithAgentRestartRequired =
     R"({)"
         R"( "name":"com-microsoft-eds-adu-testapt", )"
         R"( "version":"1.0.1", )"
@@ -70,7 +78,7 @@ const char* aptContentWithAgentRestartRequired =
             R"(])"
     R"(})";
 
-const char* aptContentWithAgentRestartRequiredFalse = 
+const char* aptContentWithAgentRestartRequiredFalse =
     R"({)"
         R"( "name":"com-microsoft-eds-adu-testapt", )"
         R"( "version":"1.0.1", )"
@@ -83,7 +91,7 @@ const char* aptContentWithAgentRestartRequiredFalse =
             R"(])"
     R"(})";
 
-const char* aptContentWithAgentRestartRequiredUsingNameDuAgent = 
+const char* aptContentWithAgentRestartRequiredUsingNameDuAgent =
     R"({)"
         R"( "name":"com-microsoft-eds-adu-testapt", )"
         R"( "version":"1.0.1", )"

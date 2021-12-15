@@ -1,3 +1,10 @@
+/**
+ * @file device_properties.c
+ * @brief The implementation of device properties functions.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
 
 #include "device_properties.h"
 #include <aduc/logging.h>

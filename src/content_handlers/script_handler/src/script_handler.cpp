@@ -2,7 +2,8 @@
  * @file script_handler.cpp
  * @brief Implementation of ContentHandler API for 'microsoft/script:1' update type.
  *
- * @copyright Copyright (c), Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/script_handler.hpp"
 
@@ -112,17 +113,17 @@ done:
 /**
  * @brief Performs a download task. The first file in FileEntity list must be the main script file,
  * which will be downloaded into the 'Working Folder' for the current 'Workflow' context.
- * 
+ *
  * This handler will then execute the main script with '--is-installed' argument to determine whether
  * to continue downloading the remaining file(s) in FileEntity list, if any.
- *     
+ *
  * @return ADUC_Result The result of this download task.
- *  
+ *
  *     Following are the potential extended result codes:
- * 
+ *
  *     ADUC_ERC_UPDATE_CONTENT_HANDLER_DOWNLOAD_FAILURE_BADFILECOUNT(201)
  *     ADUC_ERC_UPDATE_CONTENT_HANDLER_DOWNLOAD_FAILURE_UNKNOWNEXCEPTION(202)
- * 
+ *
  *     ADUC_ERC_CONTENT_DOWNLOADER_*
  */
 ADUC_Result ScriptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)

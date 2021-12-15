@@ -2,7 +2,8 @@
  * @file simulator_adu_core_impl.hpp
  * @brief Implements an ADUC "simulator" mode.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef SIMULATOR_ADU_CORE_IMPL_HPP
 #define SIMULATOR_ADU_CORE_IMPL_HPP

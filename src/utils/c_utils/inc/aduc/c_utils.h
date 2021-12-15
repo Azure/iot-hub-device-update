@@ -2,7 +2,8 @@
  * @file c_utils.h
  * @brief Helpers and macros for C code.
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #ifndef ADUC_C_UTILS_H

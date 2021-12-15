@@ -2,7 +2,8 @@
  * @file agent_orchestration.h
  * @brief The header declarations for business logic for agent-driven workflow orchestration processing.
  *
- * @copyright Copyright (c), Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corp.
+ * Licensed under the MIT License.
  */
 
 #ifndef __AGENT_ORCHESTRATION_H__

@@ -2,7 +2,8 @@
  * @file c_utils_ut.cpp
  * @brief Unit Tests for c_utils library
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;

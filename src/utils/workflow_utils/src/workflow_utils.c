@@ -2,7 +2,8 @@
  * @file workflow_utils.c
  * @brief Utility functions for workflow data.
  *
- * @copyright Copyright (c) Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/workflow_utils.h"
 #include "aduc/adu_types.h"
@@ -58,7 +59,7 @@
 
 #define WORKFLOW_CHILDREN_BLOCK_SIZE 10
 
-/** 
+/**
  * @brief Maximum length for the 'resultDetails' string.
  */
 #define WORKFLOW_RESULT_DETAILS_MAX_LENGTH 1024
@@ -724,7 +725,7 @@ const char* _workflow_peek_workflow_dot_retryTimestamp(ADUC_WorkflowHandle handl
 
 /**
  * @brief Set or add string property to the workflow object.
- * 
+ *
  * @param handle A workflow object handle.
  * @param property Name of the property.
  * @param value A string value to set.
@@ -1631,7 +1632,7 @@ static JSON_Array* workflow_get_instructions_steps_array(ADUC_WorkflowHandle han
 /**
  * @brief Create a new workflow data handler using specified step data from base workflow.
  * Note: The 'workfolder' of the returned workflow data object will be the same as the base's.
- * 
+ *
  * Example step data:
  *
  * {
@@ -2810,7 +2811,7 @@ workflow_peek_update_manifest_handler_properties_string(ADUC_WorkflowHandle hand
  *
  * @return bool Return true if the specified step exists, and is inline step.
  * Otherwise, return false.
- * 
+ *
  */
 bool workflow_is_inline_step(ADUC_WorkflowHandle handle, size_t stepIndex)
 {
@@ -2830,8 +2831,8 @@ bool workflow_is_inline_step(ADUC_WorkflowHandle handle, size_t stepIndex)
 }
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  * @param handle A workflow object handle.
  * @param stepIndex A step index.
  * @return const char* Read-only step handler name, or NULL for a 'reference' step.
@@ -2853,7 +2854,7 @@ const char* workflow_peek_update_manifest_step_handler(ADUC_WorkflowHandle handl
  *
  * @param handle A workflow data object handle.
  * @param stepIndex A step index.
- * @param entity An output reference step update manifest file entity object. 
+ * @param entity An output reference step update manifest file entity object.
  *               Caller must free the object with workflow_free_file_entity().
  * @return true If succeeded.
  */
@@ -2950,10 +2951,10 @@ done:
 
 /**
  * @brief Gets a serialized json string of the specified workflow's Update Manifest.
- * 
+ *
  * @param handle A workflow data object handle.
- * @param pretty Whether to format the output string. 
- * @return char* An output json string. Caller must free the string with workflow_free_string(). 
+ * @param pretty Whether to format the output string.
+ * @return char* An output json string. Caller must free the string with workflow_free_string().
  */
 char* workflow_get_serialized_update_manifest(ADUC_WorkflowHandle handle, bool pretty)
 {

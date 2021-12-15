@@ -2,7 +2,8 @@
  * @file result_ut.cpp
  * @brief Unit tests for result.h
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <catch2/catch.hpp>
 

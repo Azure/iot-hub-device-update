@@ -3,6 +3,7 @@
  * @brief Utilities for the Device Update Agent extensibility.
  *
  * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_EXTENSION_UTILS_H
 #define ADUC_EXTENSION_UTILS_H

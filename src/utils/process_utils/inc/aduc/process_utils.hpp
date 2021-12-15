@@ -2,7 +2,8 @@
  * @file process_utils.hpp
  * @brief Contains utilities for managing child processes.
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_PROCESS_UTILS_HPP
 #define ADUC_PROCESS_UTILS_HPP

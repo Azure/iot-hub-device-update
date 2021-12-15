@@ -2,7 +2,8 @@
  * @file process_utils.hpp
  * @brief Contains utilities for managing child processes.
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <errno.h>
 #include <grp.h> // for getgrnam, struct group

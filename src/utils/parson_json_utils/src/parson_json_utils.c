@@ -2,7 +2,8 @@
  * @file parson_json_utils.c
  * @brief Provides set of functions for reading json
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "parson_json_utils.h"
 
@@ -132,8 +133,8 @@ _Bool ADUC_JSON_GetStringFieldFromObj(const JSON_Object* jsonObj, const char* js
 
 /**
  * @brief Gets the integer representation of a the value of @p jsonFieldName from @p jsonValue and assigns it to @p value
- * 
- * @details All values in json are doubles this function only returns true if the value read is a whole, 
+ *
+ * @details All values in json are doubles this function only returns true if the value read is a whole,
  * @param jsonValue value to extract the @p jsonFieldName value from
  * @param value the parameter to store @p jsonFieldName's value in
  * @returns true on success; false on failure

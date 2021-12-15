@@ -1,3 +1,11 @@
+/**
+ * @file device_properties.h
+ * @brief The header for device properties functions.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #ifndef __DEVICE_PROPERTIES_H__
 #define __DEVICE_PROPERTIES_H__
 

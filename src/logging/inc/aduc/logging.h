@@ -5,7 +5,8 @@
  * Uses ADUC_LOGGING_LIBRARY to determine which logging library to use.
  * Currently supported libraries are zlog and xlogging.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_LOGGING_H
 #define ADUC_LOGGING_H

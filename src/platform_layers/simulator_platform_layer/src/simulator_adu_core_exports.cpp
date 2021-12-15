@@ -2,7 +2,8 @@
  * @file simulator_adu_core_exports.cpp
  * @brief Implements exported methods for platform-specific ADUC agent code.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "simulator_adu_core_impl.hpp"
 #include "simulator_device_info.h"

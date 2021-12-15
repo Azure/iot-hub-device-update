@@ -2,7 +2,8 @@
  * @file file_info_utils.h
  * @brief Implementation file for utilities scanning, parsing, and interacting with the file system
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "file_info_utils.h"
@@ -86,7 +87,7 @@ bool FileInfoUtils_InsertFileInfoIntoArray(
 
 /**
  * @brief Fills @p logFiles with up to @p logFileSize newest files found in the directory at @p directoryPath
- * @details No spelunking, not recursively searching  
+ * @details No spelunking, not recursively searching
  * @param[out] logFiles the array of FileInfo structs that will hold the newest files
  * @param[in] logFileSize the size of @p logFiles
  * @param[in] directoryPath the directory to scan for the newest files
@@ -188,7 +189,7 @@ done:
  * @param[out] fileNameVector a pointer to a VECTOR_HANDLE of STRING_HANDLEs to be populated with the newest file names who's total size is less than @p maxFileSize - up to the caller to free with Vector_destroy()
  * @param[in] directoryPath path to the directory to scan
  * @param[in] maxFileSize the maximum size of all the files that can be uploaded in bytes
- * @returns true on successful scanning and populating of filePathVectorHandle; false on failure 
+ * @returns true on successful scanning and populating of filePathVectorHandle; false on failure
  */
 _Bool FileInfoUtils_GetNewestFilesInDirUnderSize(
     VECTOR_HANDLE* fileNameVector, const char* directoryPath, const unsigned int maxFileSize)

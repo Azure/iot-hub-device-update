@@ -2,7 +2,8 @@
  * @file string_handle_wrapper.h
  * @brief Defines STRING_HANDLE_wrapper class
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #ifndef ADUC_STRING_HANDLE_WRAPPER_HPP

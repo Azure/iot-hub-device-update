@@ -2,7 +2,8 @@
  * @file diagnostics_workflow.h
  * @brief Header for functions handling the Diagnostics Log Upload workflow
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef DIAGNOSTICS_WORKFLOW_H
 #define DIAGNOSTICS_WORKFLOW_H
@@ -63,7 +64,7 @@ _Bool DiagnosticsWorkflow_InitFromJSON(DiagnosticsWorkflowData* workflowData, JS
 void DiagnosticsWorkflow_UnInit(DiagnosticsWorkflowData* workflowData);
 
 /**
- * @brief Returns the DiagnosticsLogComponent object @p index within @p workflowData 
+ * @brief Returns the DiagnosticsLogComponent object @p index within @p workflowData
  * @param workflowData the DiagnosticsWorkflowData vector from which to get the DiagnosticsComponent
  * @param index the index from which to retrieve the value
  * @returns NULL if index is out of range; the DiagnosticsComponent otherwise
@@ -72,7 +73,7 @@ const DiagnosticsLogComponent*
 DiagnosticsWorkflow_GetLogComponentElem(const DiagnosticsWorkflowData* workflowData, unsigned int index);
 
 /**
- * @brief Uploads the diagnostic logs described by @p workflowData 
+ * @brief Uploads the diagnostic logs described by @p workflowData
  * @param workflowData the workflowData structure describing the log components
  * @param jsonString the string from the diagnostics_interface describing where to upload the logs
  */

@@ -2,7 +2,8 @@
  * @file parser_utils.c
  * @brief Implements utilities for parsing the common data types.
  *
- * @copyright Copyright (c), Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/parser_utils.h"
 #include "aduc/hash_utils.h"
@@ -303,7 +304,7 @@ done:
  *     ...,
  *     "updateManifest" : {
  *          ...,
- *         
+ *
  *         "files": {
  *             "0001": {
  *                  "fileName": "fileName",
