@@ -77,7 +77,7 @@ int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string>
 
         fprintf(stderr, "execvp failed, ret %d, error %d\n", ret, errno);
 
-        return ret;
+        _exit(ret);
     }
 
     close(filedes[WRITE_END]);
