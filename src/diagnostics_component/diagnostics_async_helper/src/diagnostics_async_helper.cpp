@@ -9,6 +9,7 @@
 #include "diagnostics_async_helper.h"
 
 #include <aduc/logging.h>
+#include <aduc/string_handle_wrapper.hpp>
 #include <azure_c_shared_utility/strings.h>
 #include <diagnostics_workflow.h>
 #include <mutex>
@@ -46,12 +47,15 @@ public:
                 worker.join();
             }
 
-            std::thread newWorker{ [diagnosticsWorkflowData, jsonStringHandle] {
-                STRING_HANDLE localJsonStringHandle = STRING_clone(jsonStringHandle);
+            STRING_HANDLE jsonStringHandleClone = STRING_clone(jsonStringHandle);
+            
+            std::thread newWorker{ [diagnosticsWorkflowData, jsonStringHandleClone] {
+                
+                ADUC::StringUtils::STRING_HANDLE_wrapper cloneWrapper(jsonStringHandleClone);
 
                 try
                 {
-                    DiagnosticsWorkflow_DiscoverAndUploadLogs(diagnosticsWorkflowData, STRING_c_str(jsonStringHandle));
+                    DiagnosticsWorkflow_DiscoverAndUploadLogs(diagnosticsWorkflowData, cloneWrapper.c_str());
                 }
                 catch (const std::exception& e)
                 {
@@ -61,8 +65,6 @@ public:
                 {
                     Log_Error("StartNewDiagnosticsWorkflowThread worker thread failed with unknown exception");
                 }
-
-                STRING_delete(localJsonStringHandle);
             } };
 
             worker = std::move(newWorker);

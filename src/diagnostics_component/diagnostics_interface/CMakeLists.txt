@@ -6,6 +6,9 @@ include (agentRules)
 
 compileasc99 ()
 
+# Used to find and include the CURL::libcurl imported libary
+find_curl_and_import_libcurl()
+
 add_library (${target_name} STATIC src/diagnostics_interface.c)
 add_library (diagnostics_component::${target_name} ALIAS ${target_name})
 

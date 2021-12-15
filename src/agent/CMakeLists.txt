@@ -10,8 +10,14 @@ add_subdirectory (device_info_interface)
 
 include (agentRules)
 
+include(find_curl_and_import_libcurl)
+
 compileasc99 ()
 disablertti ()
+
+
+# Used to find and include the CURL::libcurl imported libary
+find_curl_and_import_libcurl()
 
 set (agent_c_files ./src/main.c ./src/health_management.c)
 
@@ -58,6 +64,7 @@ find_package (azure_c_shared_utility REQUIRED)
 find_package (IotHubClient REQUIRED)
 find_package (umqtt REQUIRED)
 find_package (Parson REQUIRED)
+
 
 target_link_digital_twin_client (${target_name} PRIVATE)
 

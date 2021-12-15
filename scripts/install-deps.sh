@@ -47,8 +47,8 @@ install_catch2=false
 default_catch2_ref=v2.11.0
 catch2_ref=$default_catch2_ref
 
-install_azure_storage_sdk=false
-azure_storage_sdk_ref=master
+install_azure_blob_storage_file_upload_utility=false
+azure_blob_storage_file_upload_utility_ref=main
 
 # DO Deps
 install_do=false
@@ -58,7 +58,7 @@ install_do_deps_distro=""
 default_do_deps_distro=ubuntu-18.04
 
 # Dependencies packages
-aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'pkg-config')
+aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=("gcc-[68]")
 do_packages=('libproxy-dev' 'libssl-dev' 'zlib1g-dev' 'libboost-all-dev')
@@ -76,8 +76,8 @@ print_help() {
     echo "--install-azure-iot-sdk   Install the Azure IoT C SDK from source."
     echo "--azure-iot-sdk-ref <ref> Install the Azure IoT C SDK from a specific branch or tag."
     echo "                           Default is public-preview."
-    echo "--install-azure-storage-sdk   Install the Azure C++ Lite Blob Storage SDK from source."
-    echo "--azure-storage-sdk-ref <ref> Install the Azure C++ Lite Blob Storage SDK from a specific branch or tag."
+    echo "--install-abs-file-upload-utility   Install the Azure Blob Storage File Upload Utility from source."
+    echo "--abs-file-upload-utility-ref <ref> Install the Azure Blob Storage File Upload Utility from a specific branch or tag."
     echo "--install-catch2          Install Catch2 from source."
     echo "--catch2-ref              Install Catch2 from a specific branch or tag."
     echo "                          This value is passed to git clone as the --branch argument."
@@ -284,41 +284,50 @@ do_install_do() {
     fi
 }
 
-do_install_azure_storage_sdk() {
-    echo "Installing azure-storage-cpp-lite"
-    local azure_storage_cpplite_dir=$work_folder/azure_storage_cpplite_dir
+do_install_azure_blob_storage_file_upload_utility() {
+    echo "Installing azure-blob-storage-file-upload-utility from source."
+    local abs_fuu_dir=$work_folder/azure_blob_storage_file_upload_utility
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $azure_storage_cpplite_dir || return
-    elif [[ -d $azure_storage_cpplite_dir ]]; then
-        warn "$azure_storage_cpplite_dir already exists! Skipping Azure Storage CPP Lite."
+        $SUDO rm -rf $abs_fuu_dir || return
+    elif [[ -d $abs_fuu_dir ]]; then
+        warn "$abs_fuu_dir already exists! Skipping Azure Storage CPP Lite."
         return 0
     fi
 
     local azure_storage_cpplite_url
     if [[ $use_ssh == "true" ]]; then
-        azure_storage_cpplite_url=git@github.com:Azure/azure-storage-cpplite.git
+        azure_storage_cpplite_url=git@github.com:Azure/azure-blob-storage-file-upload-utility.git
     else
-        azure_storage_cpplite_url=https://github.com/Azure/azure-storage-cpplite.git
+        azure_storage_cpplite_url=https://github.com/Azure/azure-blob-storage-file-upload-utility.git
     fi
 
-    echo -e "Building Azure CppLite ...\n\tBranch: $azure_storage_sdk_ref\n\t Folder: $azure_storage_cpplite_dir"
-    mkdir -p $azure_storage_cpplite_dir || return
-    pushd $azure_storage_cpplite_dir > /dev/null
-    git clone --recursive --single-branch --branch $azure_storage_sdk_ref --depth 1 $azure_storage_cpplite_url . || return
+    echo -e "Cloning Azure Blob Storage File Upload Uility ...\n\tBranch: $azure_blob_storage_file_upload_utility_ref\n\t Folder: $abs_fuu_dir"
+    mkdir -p $abs_fuu_dir || return
+    pushd $abs_fuu_dir > /dev/null
+    git clone --recursive --single-branch --branch $azure_blob_storage_file_upload_utility_ref --depth 1 $azure_storage_cpplite_url . || return
+
+    echo -e "Installing Azure Blob Storage File Upload Utiltiy dependencies..."
+    
+    # Note added to make sure that install-deps.sh is executable
+    chmod u+x ./scripts/install-deps.sh 
+
+    # Note we can skip the azure iot sdk installation because it is guaranteed that it will already be installed.
+    ./scripts/install-deps.sh -a --skip-azure-iot-sdk-install
 
     mkdir cmake || return
     pushd cmake > /dev/null
 
-    local azure_cpp_lite_cmake_options
+    local azure_blob_storage_file_upload_utility_cmake_options
     if [[ $keep_source_code == "true" ]]; then
         # If source is wanted, presumably samples and symbols are useful as well.
-        azure_cpp_lite_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Debug")
+        azure_blob_storage_file_upload_utility_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Debug")
     else
-        azure_cpp_lite_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
+        azure_blob_storage_file_upload_utility_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
     fi
 
-    cmake "${azure_cpp_lite_cmake_options[@]}" .. || return
+    echo -e "Building Azure Blob Storage File Upload Uility ...\n\tBranch: $azure_blob_storage_file_upload_utility_ref\n\t"
+    cmake "${azure_blob_storage_file_upload_utility_cmake_options[@]}" .. || return
 
     cmake --build . || return
     $SUDO cmake --build . --target install || return
@@ -327,10 +336,10 @@ do_install_azure_storage_sdk() {
     popd > /dev/null
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $azure_storage_cpplite_dir || return
+        $SUDO rm -rf $abs_fuu_dir || return
     fi
-
 }
+
 do_list_all_deps() {
     declare -a deps_set=()
     deps_set+=(${aduc_packages[@]})
@@ -374,13 +383,13 @@ while [[ $1 != "" ]]; do
         shift
         azure_sdk_ref=$1
         ;;
-    --install-azure-storage-sdk)
+    --install-abs-file-upload-utility)
         shift
-        install_azure_storage_sdk=true
+        install_azure_blob_storage_file_upload_utility=true
         ;;
-    --azure-storage-sdk-ref)
+    --abs-file-upload-utility-ref)
         shift
-        azure_storage_sdk_ref=$1
+        azure_blob_storage_file_upload_utility_ref=$1
         ;;
     --install-catch2)
         install_catch2=true
@@ -451,7 +460,7 @@ fi
 if [[ $install_aduc_deps == "true" ]]; then
     install_azure_iot_sdk=true
     install_catch2=true
-    install_azure_storage_sdk=true
+    install_azure_blob_storage_file_upload_utility=true
 fi
 
 # Set implied options for packages only.
@@ -480,16 +489,16 @@ if [[ $install_packages_only == "false" ]]; then
         do_install_azure_iot_sdk || $ret
     fi
 
-    if [[ $install_azure_storage_sdk == "true" ]]; then
-        do_install_azure_storage_sdk || $ret
-    fi
-
     if [[ $install_catch2 == "true" ]]; then
         do_install_catch2 || $ret
     fi
 
     if [[ $install_do == "true" ]]; then
         do_install_do || $ret
+    fi
+    
+    if [[ $install_azure_blob_storage_file_upload_utility == "true" ]]; then
+        do_install_azure_blob_storage_file_upload_utility || $ret
     fi
 fi
 

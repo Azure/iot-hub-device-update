@@ -11,7 +11,7 @@
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
 #include <aduc/system_utils.h>
-#include <azure_blob_storage.h>
+#include <azure_blob_storage_file_upload_utility.h>
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>
 #include <file_info_utils.h>
@@ -408,7 +408,6 @@ done:
  * @param fileNames vector of files to be uploaded for @p logComponent
  * @param logComponent descriptor for the component for which we're going to upload logs
  * @param deviceName name of the device the DiagnosticsWorkflow is running on
- * @param containerName name of the container to upload the logComponent's files to
  * @param operationId the id associated with this upload request sent down by Diagnostics Service
  * @param storageSasUrl credential to be used for the Azure Blob Storage upload
  * @returns a value of Diagnostics_Result indicating the status of this component's upload
@@ -417,11 +416,10 @@ Diagnostics_Result DiagnosticsWorkflow_UploadFilesForComponent(
     VECTOR_HANDLE fileNames,
     const DiagnosticsLogComponent* logComponent,
     const char* deviceName,
-    const char* containerName,
     const char* operationId,
     const char* storageSasUrl)
 {
-    if (fileNames == NULL || logComponent == NULL || deviceName == NULL || containerName == NULL || operationId == NULL
+    if (fileNames == NULL || logComponent == NULL || deviceName == NULL || operationId == NULL
         || storageSasUrl == NULL)
     {
         return Diagnostics_Result_Failure;
@@ -435,13 +433,6 @@ Diagnostics_Result DiagnosticsWorkflow_UploadFilesForComponent(
     if (logComponent->componentName == NULL || logComponent->logPath == NULL)
     {
         Log_Error("DiagnosticsWorkflow_UploadFilesForComponent called with unitialized DiagnosticsComponent");
-        goto done;
-    }
-
-    blobInfo.containerName = STRING_construct(containerName);
-
-    if (blobInfo.containerName == NULL)
-    {
         goto done;
     }
 
@@ -466,7 +457,7 @@ Diagnostics_Result DiagnosticsWorkflow_UploadFilesForComponent(
         goto done;
     }
 
-    if (!UploadFilesToContainer(&blobInfo, 1, fileNames, STRING_c_str(logComponent->logPath)))
+    if (!AzureBlobStorageFileUploadUtility_UploadFilesToContainer(&blobInfo, 1, fileNames, STRING_c_str(logComponent->logPath)))
     {
         result = Diagnostics_Result_UploadFailed;
         Log_Info(
@@ -477,9 +468,6 @@ Diagnostics_Result DiagnosticsWorkflow_UploadFilesForComponent(
 
     result = Diagnostics_Result_Success;
 done:
-
-    STRING_delete(blobInfo.containerName);
-    blobInfo.containerName = NULL;
 
     STRING_delete(blobInfo.virtualDirectoryPath);
     blobInfo.virtualDirectoryPath = NULL;
@@ -536,7 +524,6 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
 
     STRING_HANDLE storageSasCredential = NULL;
     char* storageSasCredentialMemory = NULL;
-    STRING_HANDLE containerName = NULL;
 
     VECTOR_HANDLE logComponentFileNames = NULL;
 
@@ -587,12 +574,6 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
     if (storageSasCredential == NULL)
     {
         result = Diagnostics_Result_NoSasCredential;
-        goto done;
-    }
-
-    if (!ParseContainerNameFromSasUrl(&containerName, STRING_c_str(storageSasCredential)))
-    {
-        result = Diagnostics_Result_BadCredential;
         goto done;
     }
 
@@ -667,7 +648,6 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
             *discoveredLogFileNames,
             logComponent,
             deviceName,
-            STRING_c_str(containerName),
             STRING_c_str(operationId),
             STRING_c_str(storageSasCredential));
 
