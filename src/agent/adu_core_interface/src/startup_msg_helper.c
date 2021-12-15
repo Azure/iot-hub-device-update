@@ -14,6 +14,9 @@
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
 
+/**
+ * @brief The default compatibility properties sent to the cloud via DeviceProperties compatPropertyNames.
+ */
 #define DEFAULT_COMPAT_PROPERTY_NAMES_VALUE "manufacturer,model"
 
 /**
