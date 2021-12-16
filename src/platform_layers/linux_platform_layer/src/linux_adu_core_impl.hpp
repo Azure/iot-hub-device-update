@@ -12,8 +12,13 @@
 #include <exception>
 #include <thread>
 
+#include <sys/time.h> // for gettimeofday
+#include <time.h>
+
 #include "aduc/adu_core_exports.h"
+#include "aduc/agent_workflow.h"
 #include "aduc/exception_utils.hpp"
+#include "aduc/extension_manager.hpp"
 #include "aduc/logging.h"
 #include "aduc/result.h"
 #include "aduc/types/workflow.h"
@@ -32,6 +37,9 @@ public:
     ADUC_Result SetUpdateActionCallbacks(ADUC_UpdateActionCallbacks* data);
 
 private:
+    static std::string g_componentsInfo;
+    static time_t g_lastComponentsCheckTime;
+
     //
     // Static callbacks.
     //
@@ -258,6 +266,25 @@ private:
     }
 
     /**
+     * @brief This function is invoked when the agent detected that one or more component has changed.
+     *  If current workflow is in progress, the agent will cancel the workflow, then re-process the same update data.
+     *  If no workflows in progress, the agent will start a new workflow using cached update data, if available.
+     *    - If cached update data is not available, agent will log an error.
+     * 
+     * @param currenWorkflowData A current workflow data object.
+     */
+    static void RetryWorkflowDueToComponentChanged(ADUC_WorkflowData* currentWorkflowData);
+
+    /**
+     * @brief Detect changes in components collection. 
+     *        If new component is added, ensure that it has to latest available update installed.
+     * 
+     * @param token Contains pointer to our class instance.
+     * @param workflowData Current workflow data object, if any.
+     */
+    static void DetectAndHandleComponentsAvailabilityChangedEvent(ADUC_Token token, ADUC_WorkflowDataToken workflowData);
+    
+    /**
      * @brief Implements DoWork callback.
      *
      * @param token Opaque token.
@@ -265,9 +292,7 @@ private:
      */
     static void DoWorkCallback(ADUC_Token token, ADUC_WorkflowDataToken workflowData) noexcept
     {
-        // Not used in this code.
-        UNREFERENCED_PARAMETER(token);
-        UNREFERENCED_PARAMETER(workflowData);
+        DetectAndHandleComponentsAvailabilityChangedEvent(token, workflowData);
     }
 
     //

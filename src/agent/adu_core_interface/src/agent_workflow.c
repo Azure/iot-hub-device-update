@@ -272,6 +272,7 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
         ADUC_MethodCall_Unregister(&(workflowData->UpdateActionCallbacks));
     }
 
+    free(workflowData->LastGoalStateJson);
     memset(workflowData, 0, sizeof(*workflowData));
 }
 
@@ -434,8 +435,34 @@ done:
  * @param[in,out] currentWorkflowData The current ADUC_WorkflowData object.
  * @param[in] propertyUpdateValue The updated property value.
  */
+void ADUC_Workflow_HandleComponentChanged(ADUC_WorkflowData* workflowData)
+{
+    if (workflowData == NULL)
+    {
+        Log_Info("Nothing to do due to no workflow data object.");
+        return;
+    }
+
+    // Process the latest goal state, if successfully cached.
+    if (workflowData->LastGoalStateJson != NULL)
+    {
+        ADUC_Workflow_HandlePropertyUpdate(workflowData, (const unsigned char *) workflowData->LastGoalStateJson, true /* forceDeferral */);
+    }   
+    else
+    {
+        Log_Error("Component changes is detected, but the update data cache is not available. An update must be trigger by DU service.");
+    }
+}
+
+/**
+ * @brief Handles updates to a 1 or more PnP Properties in the ADU Core interface.
+ *
+ * @param[in,out] currentWorkflowData The current ADUC_WorkflowData object.
+ * @param[in] propertyUpdateValue The updated property value.
+ * @param[in] forceDeferral Ensures that specifed @p propertyUpdateValue will be processed by force deferral if there is ongoing workflow processing.
+ */
 void ADUC_Workflow_HandlePropertyUpdate(
-    ADUC_WorkflowData* currentWorkflowData, const unsigned char* propertyUpdateValue)
+    ADUC_WorkflowData* currentWorkflowData, const unsigned char* propertyUpdateValue, bool forceDeferral)
 {
     ADUC_WorkflowHandle nextWorkflow;
     ADUC_Result result = workflow_init((const char*)propertyUpdateValue, true, &nextWorkflow);
@@ -518,7 +545,7 @@ void ADUC_Workflow_HandlePropertyUpdate(
         }
         else if (nextUpdateAction == ADUCITF_UpdateAction_ProcessDeployment)
         {
-            if (workflow_id_compare(currentWorkflowData->WorkflowHandle, nextWorkflow) == 0)
+            if (!forceDeferral && workflow_id_compare(currentWorkflowData->WorkflowHandle, nextWorkflow) == 0)
             {
                 // Possible retry of the current workflow.
                 const char* currentRetryToken = workflow_peek_retryTimestamp(currentWorkflowData->WorkflowHandle);
@@ -578,6 +605,8 @@ void ADUC_Workflow_HandlePropertyUpdate(
 
                     workflow_transfer_data(
                         currentWorkflowData->WorkflowHandle /* wfTarget */, nextWorkflow /* wfSource */);
+                    
+                    ADUC_WorkflowData_SaveLastGoalStateJson(currentWorkflowData, (const char*)propertyUpdateValue);
 
                     (*handleUpdateActionFunc)(currentWorkflowData);
                     goto done;
@@ -599,6 +628,9 @@ void ADUC_Workflow_HandlePropertyUpdate(
     // Continue with the new workflow.
     workflow_free(currentWorkflowData->WorkflowHandle);
     currentWorkflowData->WorkflowHandle = nextWorkflow;
+
+    ADUC_WorkflowData_SaveLastGoalStateJson(currentWorkflowData, (const char*) propertyUpdateValue);
+                    
     nextWorkflow = NULL;
 
     workflow_set_cancellation_type(
@@ -910,7 +942,8 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
             Log_Warn("Handling cancel completion, cancellation type '%s'.", cancellationTypeStr);
 
             if (cancellationType == ADUC_WorkflowCancellationType_Replacement
-                || cancellationType == ADUC_WorkflowCancellationType_Retry)
+                || cancellationType == ADUC_WorkflowCancellationType_Retry
+                || cancellationType == ADUC_WorkflowCancellationType_ComponentChanged)
             {
                 Log_Info("Starting process of deployment for '%s'", cancellationTypeStr);
 

@@ -380,7 +380,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow E2E Functional")
     // simulating non-startup processing of twin
     workflowData.WorkflowHandle = nullptr;
     workflowData.StartupIdleCallSent = true;
-    ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment); // NOLINT
+    ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment, false /* forceDeferral */); // NOLINT
 
     // Wait for entire workflow to complete
     workCompletionCallbackCV.wait(lock);

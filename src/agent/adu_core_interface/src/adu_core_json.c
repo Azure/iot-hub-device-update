@@ -95,6 +95,8 @@ const char* ADUC_WorkflowCancellationTypeToString(ADUC_WorkflowCancellationType 
             return "Replacement";
         case ADUC_WorkflowCancellationType_Retry:
             return "Retry";
+        case ADUC_WorkflowCancellationType_ComponentChanged:
+            return "ComponentChanged";
     }
 
     return "<Unknown>";

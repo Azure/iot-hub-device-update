@@ -10,6 +10,9 @@
 #include "aduc/workflow_persistence_utils.h"
 #include "aduc/workflow_utils.h"
 
+#include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
+#include <stdlib.h>
+
 // Forward declarations
 int ADUC_MethodCall_RebootSystem();
 int ADUC_MethodCall_RestartAgent();
@@ -204,6 +207,24 @@ HandleUpdateActionFunc ADUC_WorkflowData_GetHandleUpdateActionFunc(const ADUC_Wo
 #endif
 
     return fn;
+}
+
+/**
+ * @brief Save the goal state json string used (re-process), as needed, after deployment is completed.
+ * 
+ * @param workflowData The workflow data.
+ * @param goalStateJson A serialized json string containing the last Goal State data.
+ */
+void ADUC_WorkflowData_SaveLastGoalStateJson(ADUC_WorkflowData* workflowData, const char* goalStateJson)
+{
+    if (workflowData->LastGoalStateJson != (char*)goalStateJson)
+    {
+        free(workflowData->LastGoalStateJson);
+        if (mallocAndStrcpy_s(&workflowData->LastGoalStateJson, (const char*) goalStateJson) != 0)
+        {
+            workflowData->LastGoalStateJson = NULL;
+        }
+    }
 }
 
 EXTERN_C_END

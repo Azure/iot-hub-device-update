@@ -34,11 +34,11 @@ static const char g_aduPnPComponentName[] = "deviceUpdate";
 
 // This is the device-to-cloud property.
 // An agent communicates its state and other data to ADU Management service by reporting this property to IoTHub.
-static const char g_aduPnPComponentClientPropertyName[] = "agent";
+static const char g_aduPnPComponentAgentPropertyName[] = "agent";
 
 // This is the cloud-to-device property.
 // ADU Management send an 'Update Action' to this device by setting this property on IoTHub.
-static const char g_aduPnPComponentOrchestratorPropertyName[] = "service";
+static const char g_aduPnPComponentServicePropertyName[] = "service";
 
 /**
  * @brief Handle for Device Update Agent component to communication to service.
@@ -99,7 +99,7 @@ static _Bool ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData*
 
     IOTHUB_CLIENT_RESULT iothubClientResult;
     STRING_HANDLE jsonToSend =
-        PnP_CreateReportedProperty(g_aduPnPComponentName, g_aduPnPComponentClientPropertyName, json_value);
+        PnP_CreateReportedProperty(g_aduPnPComponentName, g_aduPnPComponentAgentPropertyName, json_value);
 
     if (jsonToSend == NULL)
     {
@@ -309,14 +309,14 @@ void OrchestratorUpdateCallback(
 
     Log_Debug("Update Action info string (%s), property version (%d)", ackString, propertyVersion);
 
-    ADUC_Workflow_HandlePropertyUpdate(workflowData, (const unsigned char*)jsonString);
+    ADUC_Workflow_HandlePropertyUpdate(workflowData, (const unsigned char*)jsonString, false /* forceDeferral */);
     free(jsonString);
     jsonString = ackString;
 
     // ACK the request.
     jsonToSend = PnP_CreateReportedPropertyWithStatus(
         g_aduPnPComponentName,
-        g_aduPnPComponentOrchestratorPropertyName,
+        g_aduPnPComponentServicePropertyName,
         jsonString,
         PNP_STATUS_SUCCESS,
         "", // Description for this acknowledgement.
@@ -350,10 +350,19 @@ done:
     Log_Info("OrchestratorPropertyUpdateCallback ended");
 }
 
+/**
+ * @brief This function is invoked when Device Update PnP Interface property is updated.
+ * 
+ * @param clientHandle A Device Update Client handle object.
+ * @param propertyName The name of the property that changed.
+ * @param propertyValue The new property value.
+ * @param version Property version.
+ * @param context An ADUC_WorkflowData object.
+ */
 void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
     ADUC_ClientHandle clientHandle, const char* propertyName, JSON_Value* propertyValue, int version, void* context)
 {
-    if (strcmp(propertyName, g_aduPnPComponentOrchestratorPropertyName) == 0)
+    if (strcmp(propertyName, g_aduPnPComponentServicePropertyName) == 0)
     {
         OrchestratorUpdateCallback(clientHandle, propertyValue, version, context);
     }

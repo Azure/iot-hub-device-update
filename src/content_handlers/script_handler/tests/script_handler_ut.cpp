@@ -131,7 +131,7 @@ TEST_CASE("Install helper test")
     CHECK(result.ExtendedResultCode == 0);
 
     // Set workfolder.
-    std::string componentSandbox =  ADUC_SystemUtils_GetTemporaryPathName();
+    std::string componentSandbox = ADUC_SystemUtils_GetTemporaryPathName();
     componentSandbox += "/adu_script_handle_tests/sandbox1/bundle/leaf-0";
     workflow_set_workfolder(leaf0, componentSandbox.c_str());
 

@@ -502,7 +502,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
     workflowData.StartupIdleCallSent = true;
 
     std::string workflow_test_process_deployment = slurpTextFile(std::string{ ADUC_TEST_DATA_FOLDER } + "/workflow_reboot/updateActionForActionBundle.json");
-    ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment.c_str()); // NOLINT
+    ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment.c_str(), false /* forceDeferral */); // NOLINT
 
     {
         std::unique_lock<std::mutex> lock(cv_mutex);

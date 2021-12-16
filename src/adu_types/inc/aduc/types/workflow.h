@@ -60,10 +60,11 @@ typedef enum tagADUC_SystemRebootState
  */
 typedef enum tagADUC_WorkflowCancellationType
 {
-    ADUC_WorkflowCancellationType_None         = 0, /**< No cancellation. */
-    ADUC_WorkflowCancellationType_Normal       = 1, /**< A normal cancel due to a Cancel update action from the cloud. */
-    ADUC_WorkflowCancellationType_Replacement  = 2, /**< A cancel due to a process deployment update action from the cloud for a workflow with a different workflow id . */
-    ADUC_WorkflowCancellationType_Retry        = 3, /**< A cancel due to a process deployment update action from the cloud for the same workflow id but with a new retry timestamp token. */
+    ADUC_WorkflowCancellationType_None             = 0, /**< No cancellation. */
+    ADUC_WorkflowCancellationType_Normal           = 1, /**< A normal cancel due to a Cancel update action from the cloud. */
+    ADUC_WorkflowCancellationType_Replacement      = 2, /**< A cancel due to a process deployment update action from the cloud for a workflow with a different workflow id . */
+    ADUC_WorkflowCancellationType_Retry            = 3, /**< A cancel due to a process deployment update action from the cloud for the same workflow id but with a new retry timestamp token. */
+    ADUC_WorkflowCancellationType_ComponentChanged = 4, /**< A cancel due to a components changed event. */
 } ADUC_WorkflowCancellationType;
 
 /**
@@ -227,6 +228,8 @@ typedef struct tagADUC_WorkflowData
     JSON_Array* Results;
 
     struct tagWorkflowPersistenceState* persistenceState; /**< The workflow persistence state for reboot/restart scenario */
+
+    char* LastGoalStateJson; /**< The goal state data sent from DU Service to DU Agent. This data is needed when re-processing latest update on the device */
 
 #ifdef ADUC_BUILD_UNIT_TESTS
     ADUC_TestOverride_Hooks* TestOverrides; /**< Test hook overrides. This will be NULL when not testing. */
