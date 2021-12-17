@@ -14,7 +14,6 @@
 #include "aduc/parser_utils.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/workflow_data_utils.h"
-#include "aduc/workflow_persistence_utils.h"
 #include "aduc/workflow_utils.h"
 
 #include <parson.h>
@@ -455,11 +454,6 @@ void ADUC_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallData, ADUC
         Log_Info("Install indicated success with RebootRequired - rebooting system now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
 
-        if (!WorkflowPersistence_Serialize(methodCallData->WorkflowData, ADUC_SystemRebootState_InProgress, ADUC_AgentRestartState_None))
-        {
-            Log_Warn("serialize workflow state failed for RebootSystem.");
-        }
-
         RebootSystemFunc rebootFn = ADUC_WorkflowData_GetRebootSystemFunc(methodCallData->WorkflowData);
 
         int success = (*rebootFn)();
@@ -480,11 +474,6 @@ void ADUC_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallData, ADUC
         // If 'install' indicated a restart is required, go ahead and restart the agent.
         Log_Info("Install indicated success with AgentRestartRequired - restarting the agent now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
-
-        if (!WorkflowPersistence_Serialize(methodCallData->WorkflowData, ADUC_SystemRebootState_None, ADUC_AgentRestartState_InProgress))
-        {
-            Log_Warn("serialize workflow state failed for RestartAgent.");
-        }
 
         RestartAgentFunc restartAgentFn = ADUC_WorkflowData_GetRestartAgentFunc(methodCallData->WorkflowData);
 
@@ -544,11 +533,6 @@ void ADUC_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_R
         Log_Info("Apply indicated success with RebootRequired - rebooting system now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
 
-        if (!WorkflowPersistence_Serialize(methodCallData->WorkflowData, ADUC_SystemRebootState_InProgress, ADUC_AgentRestartState_None))
-        {
-            Log_Warn("serialize workflow state failed for RebootSystem.");
-        }
-
         RebootSystemFunc rebootFn = ADUC_WorkflowData_GetRebootSystemFunc(methodCallData->WorkflowData);
 
         int success = (*rebootFn)();
@@ -568,11 +552,6 @@ void ADUC_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_R
         // If apply indicated a restart is required, go ahead and restart the agent.
         Log_Info("Apply indicated success with AgentRestartRequired - restarting the agent now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
-
-        if (!WorkflowPersistence_Serialize(methodCallData->WorkflowData, ADUC_SystemRebootState_None, ADUC_AgentRestartState_InProgress))
-        {
-            Log_Warn("serialize workflow state failed for RestartAgent.");
-        }
 
         RestartAgentFunc restartAgentFn = ADUC_WorkflowData_GetRestartAgentFunc(methodCallData->WorkflowData);
 

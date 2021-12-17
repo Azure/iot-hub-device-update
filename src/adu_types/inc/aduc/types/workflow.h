@@ -19,8 +19,6 @@
 
 #include "parson.h"
 
-struct tagWorkflowPersistenceState; // fwd decl
-
 typedef void* ADUC_WorkflowHandle;
 
 /**
@@ -124,7 +122,6 @@ typedef struct tagADUC_TestOverride_Hooks
     //     It's void* since umocks macro return type makes typedef fail and don't want include dependency from workflow.h
     void* ClientHandle_SendReportedStateFunc_TestOverride;
 
-    const char* WorkflowPersistencePath_TestOverride;
 } ADUC_TestOverride_Hooks;
 #endif // #ifdef ADUC_BUILD_UNIT_TESTS
 
@@ -226,8 +223,6 @@ typedef struct tagADUC_WorkflowData
      *
      */
     JSON_Array* Results;
-
-    struct tagWorkflowPersistenceState* persistenceState; /**< The workflow persistence state for reboot/restart scenario */
 
     char* LastGoalStateJson; /**< The goal state data sent from DU Service to DU Agent. This data is needed when re-processing latest update on the device */
 

@@ -147,7 +147,6 @@ TEST_CASE("HandleStartupWorkflowData from ADUCoreInterface_Connected")
         // Arrange
         ADUC_WorkflowData workflowData{};
         ADUC_TestOverride_Hooks hooks{};
-        hooks.WorkflowPersistencePath_TestOverride = "/tmp/does/not/exist";
         workflowData.TestOverrides = &hooks;
 
         // Act
@@ -162,7 +161,6 @@ TEST_CASE("HandleStartupWorkflowData from ADUCoreInterface_Connected")
         // Arrange
         ADUC_WorkflowData workflowData{};
         ADUC_TestOverride_Hooks hooks{};
-        hooks.WorkflowPersistencePath_TestOverride = "/tmp/does/not/exist";
         workflowData.TestOverrides = &hooks;
 
         // Act

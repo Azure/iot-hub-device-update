@@ -7,7 +7,6 @@
  */
 
 #include "aduc/workflow_data_utils.h"
-#include "aduc/workflow_persistence_utils.h"
 #include "aduc/workflow_utils.h"
 
 #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
@@ -66,67 +65,47 @@ void ADUC_WorkflowData_SetLastReportedState(ADUCITF_State newState, ADUC_Workflo
 }
 
 /**
- * @brief Gets a copy of the sandbox work folder path from workflowData persistenceState, or else from the workflowHandle.
+ * @brief Gets a copy of the sandbox work folder path
  *
  * @param workflowData The workflow data.
  * @return char* On success, a copy of the string that must be freed with workflow_free_string; else, NULL on failure.
  */
 char* ADUC_WorkflowData_GetWorkFolder(const ADUC_WorkflowData* workflowData)
 {
-    if (workflowData->persistenceState == NULL)
-    {
-        return workflow_get_workfolder(workflowData->WorkflowHandle);
-    }
-
-    return workflow_copy_string(workflowData->persistenceState->WorkFolder);
+    return workflow_get_workfolder(workflowData->WorkflowHandle);
 }
 
 /**
- * @brief Gets the workflow Id from workflowData persistenceState, or else from the WorkflowHandle.
+ * @brief Gets the workflow Id
  *
  * @param workflowData The workflow data.
  * @return char* On success, a copy of the string that must be freed with workflow_free_string; else, NULL on failure.
  */
 char* ADUC_WorkflowData_GetWorkflowId(const ADUC_WorkflowData* workflowData)
 {
-    if (workflowData->persistenceState == NULL)
-    {
-        return workflow_get_id(workflowData->WorkflowHandle);
-    }
-
-    return workflow_copy_string(workflowData->persistenceState->WorkflowId);
+    return workflow_get_id(workflowData->WorkflowHandle);
 }
 
 /**
- * @brief Gets the update type of the workflow from workflowData persistenceState, or else from the WorkflowHandle.
+ * @brief Gets the update type of the workflow
  *
  * @param workflowData The workflow data.
  * @return char* On success, a copy of the string that must be freed with workflow_free_string; else, NULL on failure.
  */
 char* ADUC_WorkflowData_GetUpdateType(const ADUC_WorkflowData* workflowData)
 {
-    if (workflowData->persistenceState == NULL)
-    {
-        return workflow_get_update_type(workflowData->WorkflowHandle);
-    }
-
-    return workflow_copy_string(workflowData->persistenceState->UpdateType);
+    return workflow_get_update_type(workflowData->WorkflowHandle);
 }
 
 /**
- * @brief Gets the installed criteria of the workflow from workflowData persistenceState, or else from the WorkflowHandle.
+ * @brief Gets the installed criteria of the workflow
  *
  * @param workflowData The workflow data.
  * @return char* On success, a copy of the string that must be freed with workflow_free_string; else, NULL on failure.
  */
 char* ADUC_WorkflowData_GetInstalledCriteria(const ADUC_WorkflowData* workflowData)
 {
-    if (workflowData->persistenceState == NULL)
-    {
-        return workflow_get_installed_criteria(workflowData->WorkflowHandle);
-    }
-
-    return workflow_copy_string(workflowData->persistenceState->InstalledCriteria);
+    return workflow_get_installed_criteria(workflowData->WorkflowHandle);
 }
 
 /**

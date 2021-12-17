@@ -29,7 +29,6 @@
 #include "aduc/system_utils.h"
 #include "aduc/types/workflow.h"
 #include "aduc/workflow_data_utils.h"
-#include "aduc/workflow_persistence_utils.h"
 #include "aduc/workflow_utils.h"
 
 #include <pthread.h>
@@ -276,80 +275,6 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
     memset(workflowData, 0, sizeof(*workflowData));
 }
 
-/**
- * @brief Attempts to rehydrate persisted workflow state, if it exists.
- *
- * @param currentWorkflowData The workflow data used for test hooks.
- */
-static void HandleWorkflowPersistence(ADUC_WorkflowData* currentWorkflowData)
-{
-    WorkflowPersistenceState* persistenceState = WorkflowPersistence_Deserialize(currentWorkflowData);
-    if (persistenceState == NULL)
-    {
-        Log_Info("Continuing...");
-        return;
-    }
-
-    //
-    // The following logic handles the case where the device (or adu-agent) restarted.
-    //
-    // If IsInstalled returns true, we will assume that the update was succeeded.
-    //
-    // In this case, we will update the 'InstalledUpdateId' to match 'UpdateId'
-    // and transition to Idle state.
-    //
-    // Note: This applies to 'install' and 'apply' workflow step only, and persistence
-    // state is saved only when restart/reboot occurred during install or apply.
-
-    currentWorkflowData->persistenceState = persistenceState; // source from persistenceState instead of WorkflowHandle.
-
-    ADUC_Result isInstalledResult = ADUC_MethodCall_IsInstalled(currentWorkflowData);
-
-    if ((persistenceState->WorkflowStep == ADUCITF_WorkflowStep_Install || persistenceState->WorkflowStep == ADUCITF_WorkflowStep_Apply) &&
-        (persistenceState->SystemRebootState == ADUC_SystemRebootState_InProgress || persistenceState->AgentRestartState == ADUC_AgentRestartState_InProgress))
-    {
-        if (isInstalledResult.ResultCode == ADUC_Result_IsInstalled_Installed)
-        {
-            const char* updateId = persistenceState->ExpectedUpdateId;
-            Log_Info(
-                "IsInstalled call was true - setting installedUpdateId to %s and setting state to Idle", updateId);
-
-            ADUC_SetInstalledUpdateIdAndGoToIdle(currentWorkflowData, updateId);
-        }
-        else if (isInstalledResult.ResultCode == ADUC_Result_IsInstalled_NotInstalled)
-        {
-            // TODO(JeffW): Bug 36790018 Agent should continue processing after reboot/restart when contentHandler returns ADUC_Result_IsInstalled_NotInstalled
-        }
-        else if (IsAducResultCodeFailure(isInstalledResult.ResultCode))
-        {
-            Log_Warn(
-                "IsInstalled call failed. ExtendedResultCode: %d (0x%x) - setting state to Idle",
-                isInstalledResult.ExtendedResultCode,
-                isInstalledResult.ExtendedResultCode);
-
-            ADUC_Result persistenceResult =
-            {
-                .ResultCode = isInstalledResult.ResultCode,
-                .ExtendedResultCode = isInstalledResult.ExtendedResultCode,
-            };
-
-            SetUpdateStateWithResultFunc setUpdateStateWithResultFunc = ADUC_WorkflowData_GetSetUpdateStateWithResultFunc(currentWorkflowData);
-
-            (*setUpdateStateWithResultFunc)(currentWorkflowData, ADUCITF_State_Idle, persistenceResult);
-        }
-
-        goto done;
-    }
-
-    // TODO(JeffW): Task 36812133 Resume download on startup
-
-done:
-    WorkflowPersistence_Free(persistenceState);
-    currentWorkflowData->persistenceState = NULL; // reset to default of sourcing from WorkflowHandle
-
-    WorkflowPersistence_Delete(currentWorkflowData);
-}
-
 void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowData)
 {
     if (currentWorkflowData == NULL)
@@ -366,12 +291,6 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowD
 
     Log_Info("Perform startup tasks.");
 
-    // There are 2 call patterns for startup:
-    //     (1) Called from AzureDeviceUpdateCoreInterface_Connected with a NULL WorkflowHandle in the workflowData
-    //     (2) Called from ADUC_Workflow_HandlePropertyUpdate (instead of calling ADUC_Workflow_HandleUpdateAction) when StartupIdleCallSent is false.
-    // In both cases, we must first try to complete workflow processing using the persisted workflow state.
-    HandleWorkflowPersistence(currentWorkflowData);
-
     // NOTE: WorkflowHandle can be NULL when device first connected to the hub (no desired property).
     if (currentWorkflowData->WorkflowHandle == NULL)
     {
@@ -382,8 +301,6 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowD
         ADUC_Result isInstalledResult = ADUC_MethodCall_IsInstalled(currentWorkflowData);
         if (isInstalledResult.ResultCode == ADUC_Result_IsInstalled_Installed)
         {
-            // If it's already installed, then service either is misbehaving or failed to receive reporting.
-            // Try sending reporting now.
             char* updateId = workflow_get_expected_update_id_string(currentWorkflowData->WorkflowHandle);
             ADUC_SetInstalledUpdateIdAndGoToIdle(currentWorkflowData, updateId);
             free(updateId);
@@ -467,12 +384,6 @@ void ADUC_Workflow_HandlePropertyUpdate(
     ADUC_WorkflowHandle nextWorkflow;
     ADUC_Result result = workflow_init((const char*)propertyUpdateValue, true, &nextWorkflow);
 
-    // There are 2 call patterns for startup:
-    //     (1) Called from AzureDeviceUpdateCoreInterface_Connected with a NULL WorkflowHandle in the workflowData
-    //     (2) Called from ADUC_Workflow_HandlePropertyUpdate (instead of calling ADUC_Workflow_HandleUpdateAction) when StartupIdleCallSent is false.
-    // In both cases, we must first try to complete workflow processing using the persisted workflow state.
-    HandleWorkflowPersistence(currentWorkflowData);
-
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         Log_Error("Invalid desired update action data. Update data: (%s)", propertyUpdateValue);
@@ -485,28 +396,6 @@ void ADUC_Workflow_HandlePropertyUpdate(
     }
 
     ADUCITF_UpdateAction nextUpdateAction = workflow_get_action(nextWorkflow);
-
-    if (nextUpdateAction == ADUCITF_UpdateAction_ProcessDeployment)
-    {
-        ADUC_WorkflowData tempWorkflowData = *currentWorkflowData;
-        tempWorkflowData.WorkflowHandle = nextWorkflow;
-
-        ADUC_Result isInstalledResult = ADUC_MethodCall_IsInstalled(&tempWorkflowData);
-        if (isInstalledResult.ResultCode == ADUC_Result_IsInstalled_Installed)
-        {
-            Log_Debug("IsInstalled call was true for desired workflow id - skipping");
-
-            // However, if currentWorkflowData is empty, this is the first workflow data
-            // received from the twin. We should keep it around.
-            if (currentWorkflowData->WorkflowHandle == NULL)
-            {
-                currentWorkflowData->WorkflowHandle = nextWorkflow;
-                nextWorkflow = NULL;
-            }
-
-            goto done;
-        }
-    }
 
     //
     // Take lock until goto done.
@@ -723,6 +612,19 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
     // Save the original action to the workflow data
     //
     ADUC_WorkflowData_SetCurrentAction(desiredAction, workflowData);
+
+    //
+    // Check if installed already
+    // Note, must be done after setting current action for proper reporting.
+    //
+    ADUC_Result isInstalledResult = ADUC_MethodCall_IsInstalled(workflowData);
+    if (isInstalledResult.ResultCode == ADUC_Result_IsInstalled_Installed)
+    {
+        char* updateId = workflow_get_expected_update_id_string(workflowData->WorkflowHandle);
+        ADUC_SetInstalledUpdateIdAndGoToIdle(workflowData, updateId);
+        free(updateId);
+        goto done;
+    }
 
     //
     // Determine the current workflow step

@@ -46,7 +46,7 @@ ADUCITF_State ADUC_WorkflowData_GetLastReportedState(const ADUC_WorkflowData* wo
 void ADUC_WorkflowData_SetLastReportedState(ADUCITF_State newState, ADUC_WorkflowData* workflowData);
 
 /**
- * @brief Gets a copy of the sandbox work folder path from workflowData persistenceState, or else from the workflowHandle.
+ * @brief Gets a copy of the sandbox work folder path
  *
  * @param workflowData The workflow data.
  * @return char* On success, a copy of the string that must be freed with workflow_free_string; else, NULL on failure.
@@ -54,7 +54,7 @@ void ADUC_WorkflowData_SetLastReportedState(ADUCITF_State newState, ADUC_Workflo
 char* ADUC_WorkflowData_GetWorkFolder(const ADUC_WorkflowData* workflowData);
 
 /**
- * @brief Gets the workflow Id from workflowData persistenceState, or else from the WorkflowHandle.
+ * @brief Gets the workflow Id from workflowData
  *
  * @param workflowData The workflow data.
  * @return char* On success, a copy of the string that must be freed with workflow_free_string; else, NULL on failure.
@@ -62,7 +62,7 @@ char* ADUC_WorkflowData_GetWorkFolder(const ADUC_WorkflowData* workflowData);
 char* ADUC_WorkflowData_GetWorkflowId(const ADUC_WorkflowData* workflowData);
 
 /**
- * @brief Gets the update type of the workflow from workflowData persistenceState, or else from the WorkflowHandle.
+ * @brief Gets the update type of the workflow
  *
  * @param workflowData The workflow data.
  * @return char* On success, a copy of the string that must be freed with workflow_free_string; else, NULL on failure.
@@ -70,7 +70,7 @@ char* ADUC_WorkflowData_GetWorkflowId(const ADUC_WorkflowData* workflowData);
 char* ADUC_WorkflowData_GetUpdateType(const ADUC_WorkflowData* workflowData);
 
 /**
- * @brief Gets the installed criteria of the workflow from workflowData persistenceState, or else from the WorkflowHandle.
+ * @brief Gets the installed criteria of the workflow
  *
  * @param workflowData The workflow data.
  * @return char* On success, a copy of the string that must be freed with workflow_free_string; else, NULL on failure.

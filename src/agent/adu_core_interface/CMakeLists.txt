@@ -40,7 +40,6 @@ target_link_libraries (
             aduc::pnp_helper
             aduc::system_utils
             aduc::workflow_data_utils
-            aduc::workflow_persistence_utils
             aduc::workflow_utils)
 
 target_compile_definitions (

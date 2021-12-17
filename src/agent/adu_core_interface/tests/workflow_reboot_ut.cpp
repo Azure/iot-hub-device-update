@@ -30,8 +30,6 @@ using Catch::Matchers::Equals;
 #include "aduc/workflow_utils.h"
 #include "workflow_test_utils.h"
 
-#define TEST_WORKFLOW_PERSISTENCE_PATH "/tmp/adu/workflow_reboot_ut/workflow"
-
 // clang-format off
 
 EXTERN_C_BEGIN
@@ -413,9 +411,6 @@ public:
         // Don't actually reboot the system
         hooks->RebootSystemFunc_TestOverride = Mock_RebootSystem;
 
-        // Use test persistence path to isolate from actual persistence path
-        hooks->WorkflowPersistencePath_TestOverride = TEST_WORKFLOW_PERSISTENCE_PATH;
-
         // Mock the low level actual client reporting so we can verify the client reporting string
         hooks->ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState; // NOLINT
 
@@ -461,16 +456,13 @@ public:
 
 // This test processes a workflow that requires reboot during Apply phase.
 // The actual reboot action is mocked and startup is simulated afterwards by
-// calling ADUC_Workflow_HandleStartupWorkflowData.
-// It asserts that proper reporting occurs after the reboot once persisted
-// data is rehyrated and applied.
+// calling ADUC_Workflow_HandleStartupWorkflowData and then HandlePropertyUpdate.
+// It asserts that proper reporting occurs after the reboot.
 // The mock content handler above controls the ResultCode of Apply phase
 // to result in reboot.
 TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
 {
     Reset_Mocks_State();
-
-    remove(TEST_WORKFLOW_PERSISTENCE_PATH);
 
     const mode_t mode = S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH;
     if (::mkdir("/tmp/adu", mode) == -1)
@@ -521,11 +513,6 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
     CHECK(s_Mock_RebootSystem_call_count == 1);
     CHECK(workflowData.SystemRebootState == ADUC_SystemRebootState_InProgress);
 
-    // Verify the persisted workflow data
-    const std::string expected_persisted_json = slurpTextFile(std::string{ ADUC_TEST_DATA_FOLDER } + "/workflow_reboot/expectedPersistedWorkflowData.json");
-    const std::string actual_persisted_json = slurpTextFile(TEST_WORKFLOW_PERSISTENCE_PATH);
-    CHECK_THAT(expected_persisted_json.c_str(), Equals(actual_persisted_json));
-
     //
     // Simulate post reboot after this line
     //
@@ -540,9 +527,12 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
     // After reboot, have mock content handler report the update was installed successfully.
     startupWorkflowDataAfterReboot.UpdateActionCallbacks.IsInstalledCallback = Mock_IsInstalledCallback;
 
-    // Do Startup after reboot now so it rehydrates persistence and reports the apply
-    // that was in progress properly when it goes to idle
+    // Do Startup after reboot now.
+    // Call HandleStartupWorkflowData with NULL workflowHandle and
+    // then call HandlePropertyUpdate with latest twin JSON.
+    // Ensure that was in progress properly when it goes to idle
     ADUC_Workflow_HandleStartupWorkflowData(&startupWorkflowDataAfterReboot);
+    ADUC_Workflow_HandlePropertyUpdate(&startupWorkflowDataAfterReboot, (const unsigned char*)workflow_test_process_deployment.c_str(), false /* forceDeferral */);
 
     CHECK(s_SendReportedStateValues.reportedStates.size() == 1);
 
@@ -555,5 +545,4 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
 
     wait_for_workflow_complete();
 
-    remove(TEST_WORKFLOW_PERSISTENCE_PATH);
 }

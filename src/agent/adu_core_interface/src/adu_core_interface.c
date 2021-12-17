@@ -17,7 +17,6 @@
 #include "aduc/string_c_utils.h"
 #include "aduc/types/update_content.h"
 #include "aduc/workflow_data_utils.h"
-#include "aduc/workflow_persistence_utils.h"
 #include "aduc/workflow_utils.h"
 
 #include "startup_msg_helper.h"
@@ -457,47 +456,6 @@ done:
 }
 
 /**
- * @brief Updates the lastInstallResult resultCode and extendedResultCode in the client reporting json.
- *
- * @param rootValue The root json value object for the client report.
- * @param result The ADUC result from which to update the result codes.
- * @return JSON_Status The json status result.
- */
-static JSON_Status UpdateLastInstallResult(JSON_Value* rootValue, const ADUC_Result* result)
-{
-    JSON_Status jsonStatus = JSONFailure;
-    JSON_Object* rootObject = json_value_get_object(rootValue);
-    if (rootValue == NULL)
-    {
-        goto done;
-    }
-
-    JSON_Object* lastInstallResultObject = json_object_get_object(rootObject, ADUCITF_FIELDNAME_LASTINSTALLRESULT);
-    if (lastInstallResultObject == NULL)
-    {
-        goto done;
-    }
-
-    jsonStatus = json_object_set_number(lastInstallResultObject, ADUCITF_FIELDNAME_RESULTCODE, result->ResultCode);
-    if (jsonStatus != JSONSuccess)
-    {
-        goto done;
-    }
-
-    jsonStatus = json_object_set_number(
-        lastInstallResultObject, ADUCITF_FIELDNAME_EXTENDEDRESULTCODE, result->ExtendedResultCode);
-    if (jsonStatus != JSONSuccess)
-    {
-        goto done;
-    }
-
-    jsonStatus = JSONSuccess;
-
-done:
-    return jsonStatus;
-}
-
-/**
  * @brief Get the Reporting Json Value object
  *
  * @param workflowData The workflow data.
@@ -775,6 +733,9 @@ _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
 {
     _Bool success = false;
 
+    JSON_Value* rootValue = NULL;
+    char* jsonString = NULL;
+
     if (g_iotHubClientHandleForADUComponent == NULL)
     {
         Log_Error("ReportStateAsync called before registration! Can't report!");
@@ -793,30 +754,11 @@ _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
         workflow_set_result(workflowData->WorkflowHandle, resultForSet);
     }
 
-    // We are reporting idle on startup when persistence state is set on the workflow data.
-    // Use the persistence reporting json in that case; otherwise, generate the reporting
-    // json value.
-    char* jsonString = NULL;
-    JSON_Value* rootValue = NULL;
-
-    const WorkflowPersistenceState* persistenceState = workflowData->persistenceState;
-    if (persistenceState)
+    rootValue = GetReportingJsonValue(workflowData, updateState, result, installedUpdateId);
+    if (rootValue == NULL)
     {
-        rootValue = json_parse_string(persistenceState->ReportingJson);
-        if (UpdateLastInstallResult(rootValue, result) != JSONSuccess)
-        {
-            Log_Error("Failed to update lastInstallResult");
-            goto done;
-        }
-    }
-    else
-    {
-        rootValue = GetReportingJsonValue(workflowData, updateState, result, installedUpdateId);
-        if (rootValue == NULL)
-        {
-            Log_Error("Failed to get reporting json value");
-            goto done;
-        }
+        Log_Error("Failed to get reporting json value");
+        goto done;
     }
 
     jsonString = json_serialize_to_string(rootValue);

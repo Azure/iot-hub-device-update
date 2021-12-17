@@ -19,7 +19,6 @@ target_link_libraries (
     PUBLIC aduc::adu_core_interface
     PRIVATE aduc::adu_types
             aduc::c_utils
-            aduc::workflow_persistence_utils
             aduc::workflow_utils)
 
 target_compile_definitions (
