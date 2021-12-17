@@ -39,7 +39,7 @@ public:
     SWUpdateHandlerImpl(SWUpdateHandlerImpl&&) = delete;
     SWUpdateHandlerImpl& operator=(SWUpdateHandlerImpl&&) = delete;
 
-    ~SWUpdateHandlerImpl() override = default;
+    ~SWUpdateHandlerImpl() override;
 
     ADUC_Result Download(const ADUC_WorkflowData* workflowData) override;
     ADUC_Result Install(const ADUC_WorkflowData* workflowData) override;

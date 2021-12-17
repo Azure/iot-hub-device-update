@@ -61,6 +61,14 @@ ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 EXTERN_C_END
 
 /**
+ * @brief Destructor for the Apt Handler Impl class.
+ */
+AptHandlerImpl::~AptHandlerImpl() // override
+{
+    ADUC_Logging_Uninit();
+}
+
+/**
  * @brief Creates a new APTHandlerImpl object and casts to a ContentHandler.
  * @details Note that there is no way to create a APTHandlerImpl directly.
  *

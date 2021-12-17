@@ -40,7 +40,7 @@ public:
     AptHandlerImpl(AptHandlerImpl&&) = delete;
     AptHandlerImpl& operator=(AptHandlerImpl&&) = delete;
 
-    ~AptHandlerImpl() override = default;
+    ~AptHandlerImpl() override;
 
     ADUC_Result Download(const ADUC_WorkflowData* workflowData) override;
     ADUC_Result Install(const ADUC_WorkflowData* workflowData) override;

@@ -318,6 +318,11 @@ void ExtensionManager::UnloadAllExtensions()
     _libs.clear();
 }
 
+void ExtensionManager::Uninit()
+{
+    ExtensionManager::UnloadAllExtensions();
+}
+
 // TODO(Nox): Bug 34534009: [Code Cleanup] Revise extension manger code to avoid hard-coded functions and other strings.
 
 ADUC_Result ExtensionManager::LoadContentDownloaderLibrary(void** contentDownloaderLibrary)
@@ -714,6 +719,14 @@ ADUC_Result ExtensionManager_Download(
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
     return ExtensionManager::Download(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
+}
+
+/**
+ * @brief Uninitializes the extension manager.
+ */
+void ExtensionManager_Uninit()
+{
+    ExtensionManager::Uninit();
 }
 
 EXTERN_C_END

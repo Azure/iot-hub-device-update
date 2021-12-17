@@ -959,6 +959,7 @@ void ShutdownAgent()
     ADUC_DeviceClient_Destroy(g_iotHubClientHandle);
     DiagnosticsComponent_DestroyDeviceName();
     ADUC_Logging_Uninit();
+    ExtensionManager_Uninit();
 }
 
 /**

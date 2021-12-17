@@ -29,7 +29,7 @@ public:
     StepsHandlerImpl(StepsHandlerImpl&&) = delete;
     StepsHandlerImpl& operator=(StepsHandlerImpl&&) = delete;
 
-    ~StepsHandlerImpl() override = default;
+    ~StepsHandlerImpl() override;
 
     ADUC_Result Download(const ADUC_WorkflowData* workflowData) override;
     ADUC_Result Install(const ADUC_WorkflowData* workflowData) override;

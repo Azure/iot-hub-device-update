@@ -65,6 +65,14 @@ ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 EXTERN_C_END
 
 /**
+ * @brief Destructor for the Steps Handler Impl class.
+ */
+StepsHandlerImpl::~StepsHandlerImpl() // override
+{
+    ADUC_Logging_Uninit();
+}
+
+/**
  * @brief Make sure that all step workflows are created.
  *
  * @param handle A workflow data object handle.

@@ -40,7 +40,7 @@ public:
     SimulatorHandlerImpl(SimulatorHandlerImpl&&) = delete;
     SimulatorHandlerImpl& operator=(SimulatorHandlerImpl&&) = delete;
 
-    ~SimulatorHandlerImpl() override = default;
+    ~SimulatorHandlerImpl() override;
 
     ADUC_Result Download(const ADUC_WorkflowData* workflowData) override;
     ADUC_Result Install(const ADUC_WorkflowData* workflowData) override;

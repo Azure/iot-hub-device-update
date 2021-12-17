@@ -348,7 +348,12 @@ int main(int argc, char** argv)
             defaultUserId,
             effectiveUserId,
             getegid());
-        return ADUShell_Dowork(launchArgs);
+
+        ret = ADUShell_Dowork(launchArgs);
+
+        ADUC_Logging_Uninit();
+
+        return ret;
     }
 
     Log_Error("Cannot set user identity. (code: %d, errno: %d)", ret, errno);

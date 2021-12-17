@@ -56,6 +56,14 @@ ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 
 EXTERN_C_END
 
+/**
+ * @brief Destructor for the Simulator Handler Impl class.
+ */
+SimulatorHandlerImpl::~SimulatorHandlerImpl() // override
+{
+    ADUC_Logging_Uninit();
+}
+
 // Forward declarations.
 static ADUC_Result CancelApply(const char* logFolder);
 

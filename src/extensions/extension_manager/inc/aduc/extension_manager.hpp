@@ -39,9 +39,6 @@ public:
     static ADUC_Result LoadComponentEnumeratorLibrary(void** componentEnumerator);
 
     static ADUC_Result LoadUpdateContentHandlerExtension(const std::string& updateType, ContentHandler** handler);
-    static void UnloadAllUpdateContentHandlers();
-
-    static void UnloadAllExtensions();
 
     static void Uninit();
 
@@ -83,6 +80,9 @@ public:
         ADUC_DownloadProgressCallback downloadProgressCallback);
 
 private:
+    static void UnloadAllUpdateContentHandlers();
+    static void UnloadAllExtensions();
+
     static void _FreeComponentsDataString(char* componentsJson);
 
     static ADUC_Result LoadExtensionLibrary(
