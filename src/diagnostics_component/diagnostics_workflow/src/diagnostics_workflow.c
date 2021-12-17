@@ -392,7 +392,7 @@ Diagnostics_Result DiagnosticsWorkflow_GetFilesForComponent(
     {
         result = Diagnostics_Result_NoLogsFound;
         Log_Debug(
-            "DiagnosticsWorkflow_UploadComponent No files found for logComponent: %s", logComponent->componentName);
+            "DiagnosticsWorkflow_UploadComponent No files found for logComponent: %s", STRING_c_str(logComponent->componentName));
         goto done;
     }
 
