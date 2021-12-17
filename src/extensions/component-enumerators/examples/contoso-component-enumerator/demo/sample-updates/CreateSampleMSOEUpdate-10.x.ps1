@@ -2,6 +2,7 @@
 # Device Update for IoT Hub
 # Sample PowerShell script for creating import manifests and payloads files for testing purposes.
 # Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 #
 
 #Requires -Version 5.0
@@ -11,7 +12,7 @@
         Create a sample updates for testing purposes.
 
     .EXAMPLE
-        PS > CreateSampleMSOEUpdate-10.x.ps1 -UpdateProvider "Contoso" `
+        PS > CreateSampleMSOEUpdate-1.x.ps1 -UpdateProvider "Contoso" `
                                              -UpdateName "Virtual-Vacuum" `
                                              -DeviceManufacturer "contoso" `
                                              -DeviceModel "virtual-vacuum-v1" `

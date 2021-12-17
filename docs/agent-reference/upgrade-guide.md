@@ -1,12 +1,8 @@
-# DU Agent Upgrade Guide [Draft]
+# DU Agent Upgrade Guide
 
-## Things To Know
+## Configuration File Changes
 
-Based on feedback from Public Preview customers, many changes and improvements has been made to the Device Update Agent, including:
-
-### Configuration File Changes
-
-|| Pubic Preview | Public Preview Refresh|
+|| Public Preview | Public Preview Refresh|
 |----|----|----|
 | File name| /etc/adu/adu-conf.txt | /etc/adu/du-config.json |
 | File name (Yocto Reference Image)| /adu/adu-conf.txt | /adu/du-config.json |
@@ -14,7 +10,7 @@ Based on feedback from Public Preview customers, many changes and improvements h
 
 ### DU Agent Settings Changes
 
-The DU Agent properties can be specified in the `agents` array. Note that for Public Preview Refresh, only 1st Agent Settings is supported.  
+The DU Agent properties can be specified in the `agents` array. Note that for Public Preview Refresh, all agent properties will be read from `agents[0]`.  
 
 <table>
 <tr>
@@ -38,7 +34,7 @@ aduc_model=<device model name>
 
 <td>
 
-The `manufacturer` and `model` must be specified in an `agents[0].manufacturer` and `agent[0].model` respectively.  
+The `manufacturer` and `model` must be specified in an `agents[0].manufacturer` and `agents[0].model`, respectively.  
 
 For example:
 
@@ -91,7 +87,7 @@ connection_string=<device connection string>
             "runas": "adu",
             "connectionSource": { 
                 "connectionType": "string",
-                "connectionData": "<devcie or modeule connection string>"
+                "connectionData": "<device or module connection string>"
             },
             "manufacturer": "...",
             "model": "..."
@@ -102,6 +98,7 @@ connection_string=<device connection string>
 
 }
 ```
+
 </td>
 
 </td></tr>

@@ -299,12 +299,12 @@ char* workflow_get_update_manifest_string_property(ADUC_WorkflowHandle handle, c
  * @param handle A workflow object handle.
  * @param index Index of the compatibility set to.
  *
- * @return A copy of compatibility entry. Calle must call workflow_free_string when done with the value.
+ * @return A copy of compatibility entry. Caller must call workflow_free_string when done with the value.
  */
 char* workflow_get_update_manifest_compatibility(ADUC_WorkflowHandle handle, size_t index);
 
 /**
- * @brief Get update manifest vesion.
+ * @brief Get update manifest version.
  *
  * @param handle A workflow object handle.
  *
@@ -331,7 +331,7 @@ ADUC_Result workflow_get_expected_update_id(ADUC_WorkflowHandle handle, ADUC_Upd
  * @param handle A workflow object handle.
  *
  * @return char* Expected update id string.
- *         Caller must call 'workflow_free_string' function to free the memery when done.
+ *         Caller must call 'workflow_free_string' function to free the memory when done.
  */
 char* workflow_get_expected_update_id_string(ADUC_WorkflowHandle handle);
 
@@ -339,7 +339,7 @@ char* workflow_get_expected_update_id_string(ADUC_WorkflowHandle handle);
  * @brief Get installed-criteria string from this workflow.
  * @param handle A workflow object handle.
  * @return Returns installed-criteria string.
- *         Caller must call 'workflow_free_string' function to free the memery when done.
+ *         Caller must call 'workflow_free_string' function to free the memory when done.
  */
 char* workflow_get_installed_criteria(ADUC_WorkflowHandle handle);
 
@@ -348,7 +348,7 @@ char* workflow_get_installed_criteria(ADUC_WorkflowHandle handle);
  *
  * @param handle A workflow handle.
  * @return char* If success, returns a serialized json string. Otherwise, returns NULL.
- *         Caller must call 'workflow_free_string' function to free the memery when done.
+ *         Caller must call 'workflow_free_string' function to free the memory when done.
  */
 char* workflow_get_compatibility(ADUC_WorkflowHandle handle);
 
@@ -577,7 +577,7 @@ const char* workflow_peek_update_manifest_step_handler(ADUC_WorkflowHandle handl
  * @param handle A workflow object handle.
  * @param propertyName
  *
- * @return A read-only string value of spcified property in handlerProperties map.
+ * @return A read-only string value of specified property in handlerProperties map.
  *         Returns NULL if specifed property doesnot exist, or not a 'string' type.
  */
 const char*
@@ -592,7 +592,7 @@ workflow_peek_update_manifest_handler_properties_string(ADUC_WorkflowHandle hand
  *               Caller must free the object with workflow_free_file_entity().
  * @return Returns true if succeeded.
  */
-bool workflow_get_step_detatched_manifest_file(ADUC_WorkflowHandle handle, size_t stepIndex, ADUC_FileEntity** entity);
+bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t stepIndex, ADUC_FileEntity** entity);
 
 /**
  * @brief Gets a serialized json string of the specified workflow's Update Manifest.

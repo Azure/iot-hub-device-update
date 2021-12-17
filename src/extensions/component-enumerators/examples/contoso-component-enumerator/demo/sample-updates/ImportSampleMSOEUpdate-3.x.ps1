@@ -2,6 +2,7 @@
 # Device Update for IoT Hub
 # Sample PowerShell script for creating and importing a complex update with failure in child updates' steps.
 # Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 #
 
 #Requires -Version 5.0

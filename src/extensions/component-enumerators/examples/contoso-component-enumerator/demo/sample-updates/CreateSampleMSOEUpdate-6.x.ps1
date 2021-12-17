@@ -12,7 +12,7 @@
         Create a sample updates for testing purposes.
 
     .EXAMPLE
-        PS > CreateSampleMSOEUpdate-4.x.ps1 -UpdateProvider "Contoso" `
+        PS > CreateSampleMSOEUpdate-6.x.ps1 -UpdateProvider "Contoso" `
                                              -UpdateName "Virtual-Vacuum" `
                                              -DeviceManufacturer "contoso" `
                                              -DeviceModel "virtual-vacuum-v1" `
@@ -41,15 +41,13 @@ Param(
     [string] $DeviceModel = "virtual-vacuum-v1"
 )
 
-##############################################################
-# Update : 4.0
+########################################################################
+# Update : 6.0
 #
-# Create the parent update containing 1 reference update
-#     - Child update contains 3 step. First step failed.
-#     - Child update is for an optional steamer components.
-##############################################################
+# Create a parent update that updates an optional 'steamers' components
+########################################################################
 
-$UpdateVersion = '4.0'
+$UpdateVersion = '6.0'
 
 $parentCompat = New-AduUpdateCompatibility -DeviceManufacturer $DeviceManufacturer -DeviceModel $DeviceModel
 $parentUpdateId = New-AduUpdateId -Provider $UpdateProvider -Name $UpdateName -Version $UpdateVersion
@@ -58,7 +56,9 @@ $parentUpdateIdStr = "$($parentUpdateId.Provider).$($parentUpdateId.Name).$($par
 $RefUpdateNamePrefix = $UpdateName
 
 Write-Host "Preparing update $parentUpdateIdStr ..."
-             
+
+
+
     # -----------------------------------------------------------
     # Create a child update for an optional 'steamer' component
     # that currently not connected to the host device.
@@ -66,9 +66,9 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
 
     $RefUpdateManufacturer = "contoso"
     $RefUpdateName = "$RefUpdateNamePrefix-virtual-steamers"
-    $RefUpdateVersion = "1.0"
+    $RefUpdateVersion = "3.0"
 
-    $steamersFirmwareVersion = "1.0"
+    $steamersFirmwareVersion = "2.0"
 
     Write-Host "    Preparing child update ($RefUpdateManufacturer/$RefUpdateName/$RefUpdateVersion)..."
 
@@ -150,21 +150,20 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     Copy-Item -Path $childPayloadFiles -Destination $outputPath -Force
 
     Write-Host " "
-    
-# ------------------------------------------------------
-# Create the parent update containing one reference step
-# ------------------------------------------------------
-Write-Host "    Preparing parent update $parentUpdateIdStr..."
+
+# ----------------------------
+# Create the parent update 
+# ----------------------------
+Write-Host "    Preparing parent update $parentUpdateIdStr ..."
+
 $payloadFiles = 
 $parentSteps = @()
 
     #------------
     # ADD STEP(s)
 
-    # step #1 - A reference step for steamers update.
-    $parentSteps += New-AduInstallationStep `
-                        -UpdateId $steamersUpdateId `
-                        -Description "Steamer Firmware Update"
+    $parentSteps += New-AduInstallationStep -UpdateId $steamersUpdateId -Description "Steamers Firmware Version $steamersFirmwareVersion"
+
 
 # ------------------------------
 # Create parent update manifest

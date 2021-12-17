@@ -51,7 +51,7 @@ STRING_HANDLE FolderNameFromHandlerId(const char* handlerId)
 /**
  * @brief Loads extension shared library file.
  * @param extensionName An extension sub-directory.
- * @param requiredFunctionName An required funciion.
+ * @param requiredFunctionName An required function.
  * @param facilityCode Facility code for extended error report.
  * @param componentCode Component code for extended error report.
  * @param libHandle A buffer for storing output extension library handle.
@@ -148,7 +148,7 @@ ADUC_Result ExtensionManager::LoadExtensionLibrary(
         {
             Log_Error("The specified function ('%s') doesn't exist. %s\n", requiredFunction, dlerror());
             result.ExtendedResultCode =
-                ADUC_ERC_EXTENSION_FAILURE_REQUIED_FUNCITON_NOTIMPL(facilityCode, componentCode);
+                ADUC_ERC_EXTENSION_FAILURE_REQUIRED_FUNCTION_NOTIMPL(facilityCode, componentCode);
             goto done;
         }
     }
@@ -247,7 +247,7 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
     {
         Log_Error("The specified function doesn't exist. %s\n", dlerror());
         result.ExtendedResultCode =
-            ADUC_ERC_EXTENSION_FAILURE_REQUIED_FUNCITON_NOTIMPL(ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER, 0);
+            ADUC_ERC_EXTENSION_FAILURE_REQUIRED_FUNCTION_NOTIMPL(ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER, 0);
         goto done;
     }
 
@@ -307,7 +307,7 @@ void ExtensionManager::UnloadAllUpdateContentHandlers()
  */
 void ExtensionManager::UnloadAllExtensions()
 {
-    // Make sure we unload every handlers firsrt.
+    // Make sure we unload every handlers first.
     UnloadAllUpdateContentHandlers();
 
     for (auto& lib : _libs)
@@ -463,7 +463,7 @@ done:
 ADUC_Result ExtensionManager::GetAllComponents(std::string& outputComponentsData)
 {
     void* lib = nullptr;
-    GetAllComponentsProc _getAllConmponents = nullptr;
+    GetAllComponentsProc _getAllComponents = nullptr;
     char* components = nullptr;
 
     outputComponentsData = "";
@@ -475,8 +475,8 @@ ADUC_Result ExtensionManager::GetAllComponents(std::string& outputComponentsData
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    _getAllConmponents = reinterpret_cast<GetAllComponentsProc>(dlsym(lib, "GetAllComponents"));
-    if (_getAllConmponents == nullptr)
+    _getAllComponents = reinterpret_cast<GetAllComponentsProc>(dlsym(lib, "GetAllComponents"));
+    if (_getAllComponents == nullptr)
     {
         result = { .ResultCode = ADUC_Result_Failure,
                    .ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_GETALLCOMPONENTS_NOTIMP };
@@ -485,7 +485,7 @@ ADUC_Result ExtensionManager::GetAllComponents(std::string& outputComponentsData
 
     try
     {
-        components = _getAllConmponents();
+        components = _getAllComponents();
     }
     catch (...)
     {
@@ -514,7 +514,7 @@ done:
 ADUC_Result ExtensionManager::SelectComponents(const std::string& selector, std::string& outputComponentsData)
 {
     void* lib = nullptr;
-    SelectComponentsProc _selectConmponents = nullptr;
+    SelectComponentsProc _selectComponents = nullptr;
     char* components = nullptr;
 
     outputComponentsData = "";
@@ -526,8 +526,8 @@ ADUC_Result ExtensionManager::SelectComponents(const std::string& selector, std:
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    _selectConmponents = reinterpret_cast<SelectComponentsProc>(dlsym(lib, "SelectComponents"));
-    if (_selectConmponents == nullptr)
+    _selectComponents = reinterpret_cast<SelectComponentsProc>(dlsym(lib, "SelectComponents"));
+    if (_selectComponents == nullptr)
     {
         result = { .ResultCode = ADUC_Result_Failure,
                    .ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_SELECTCOMPONENTS_NOTIMP };
@@ -536,7 +536,7 @@ ADUC_Result ExtensionManager::SelectComponents(const std::string& selector, std:
 
     try
     {
-        components = _selectConmponents(selector.c_str());
+        components = _selectComponents(selector.c_str());
     }
     catch (...)
     {

@@ -256,7 +256,7 @@ void ContentHandlerFactory::UnloadAllUpdateContentHandlers()
  */
 void ContentHandlerFactory::UnloadAllExtensions()
 {
-    // Make sure we unload every handlers firsrt.
+    // Make sure we unload every handlers first.
     UnloadAllUpdateContentHandlers();
 
     for (auto& lib : _libs)

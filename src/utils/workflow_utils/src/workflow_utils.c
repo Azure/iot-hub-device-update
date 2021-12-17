@@ -27,7 +27,7 @@
 #include <stdlib.h> // for calloc, atoi
 #include <string.h>
 
-// Starting from version 4, the update manifest can contain both embeded manifest,
+// Starting from version 4, the update manifest can contain both embedded manifest,
 // or a downloadable update manifest file (files["manifest"] contains the update manifest file info)
 #define EMBEDDED_AND_DOWNLOADABLE_UPDATE_MANIFEST_VERSION 4
 
@@ -362,7 +362,7 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
 
         int manifestVersion = workflow_get_update_manifest_version(handle_from_workflow(wf));
 
-        // Starting from version 4, the update manifest can contain both embeded manifest,
+        // Starting from version 4, the update manifest can contain both embedded manifest,
         // or a downloadable update manifest file (files["manifest"] contains the update manifest file info)
         if (manifestVersion >= EMBEDDED_AND_DOWNLOADABLE_UPDATE_MANIFEST_VERSION)
         {
@@ -573,7 +573,7 @@ const JSON_Object* _workflow_get_update_manifest(ADUC_WorkflowHandle handle)
 }
 
 /**
- * @brief Get update manifest vesion.
+ * @brief Get update manifest version.
  *
  * @param handle A workflow object handle.
  *
@@ -960,7 +960,7 @@ ADUC_Result workflow_get_expected_update_id(ADUC_WorkflowHandle handle, ADUC_Upd
  * @param handle A workflow object handle.
  *
  * @return char* Expected update id string.
- *         Caller must call 'workflow_free_string' function to free the memery when done.
+ *         Caller must call 'workflow_free_string' function to free the memory when done.
  */
 char* workflow_get_expected_update_id_string(ADUC_WorkflowHandle handle)
 {
@@ -990,13 +990,13 @@ void workflow_free_update_id(ADUC_UpdateId* updateId)
  * @brief Get installed-criteria string from this workflow.
  * @param handle A workflow object handle.
  * @return Returns installed-criteria string.
- *         Caller must call 'workflow_free_string' function to free the memery when done.
+ *         Caller must call 'workflow_free_string' function to free the memory when done.
  */
 char* workflow_get_installed_criteria(ADUC_WorkflowHandle handle)
 {
     char* installedCriteria = NULL;
 
-    // For Update Manifest V4, customer can specify installedCriteria in 'handlerPropertes' map.
+    // For Update Manifest V4, customer can specify installedCriteria in 'handlerProperties' map.
     if (workflow_get_update_manifest_version(handle) >= EMBEDDED_AND_DOWNLOADABLE_UPDATE_MANIFEST_VERSION)
     {
         installedCriteria = workflow_copy_string(
@@ -1015,7 +1015,7 @@ char* workflow_get_installed_criteria(ADUC_WorkflowHandle handle)
  *
  * @param handle A workflow handle.
  * @return char* If success, returns a serialized json string. Otherwise, returns NULL.
- *         Caller must call 'workflow_free_string' function to free the memery when done.
+ *         Caller must call 'workflow_free_string' function to free the memory when done.
  */
 char* workflow_get_compatibility(ADUC_WorkflowHandle handle)
 {
@@ -1499,7 +1499,7 @@ char* workflow_get_update_manifest_string_property(ADUC_WorkflowHandle handle, c
  *
  * @param handle A workflow object handle.
  * @param index Index of the compatibility set to.
- * @return A copy of compatibility entry. Calle must call workflow_free_string when done with the value.
+ * @return A copy of compatibility entry. Caller must call workflow_free_string when done with the value.
  */
 char* workflow_get_update_manifest_compatibility(ADUC_WorkflowHandle handle, size_t index)
 {
@@ -1684,7 +1684,7 @@ workflow_create_from_inline_step(const ADUC_WorkflowHandle base, int stepIndex, 
     if (updateActionValue == NULL)
     {
         Log_Error("Cannot copy Update Action json from base");
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACITON_FROM_BASE_FAILURE;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACTION_FROM_BASE_FAILURE;
         goto done;
     }
 
@@ -1694,7 +1694,7 @@ workflow_create_from_inline_step(const ADUC_WorkflowHandle base, int stepIndex, 
     if (updateManifestValue == NULL)
     {
         Log_Error("Cannot copy Update Manifest json from base");
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACITON_FROM_BASE_FAILURE;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACTION_FROM_BASE_FAILURE;
         goto done;
     }
 
@@ -1798,7 +1798,7 @@ done:
 
 /**
  * @brief Transfer data from @p sourceHandle to @p targetHandle.
- * The sourceHandle will no longer contains transfered action data.
+ * The sourceHandle will no longer contains transferred action data.
  * Caller should not use sourceHandle for other workflow related purposes.
  *
  * @param targetHandle The target workflow handle
@@ -2647,7 +2647,7 @@ workflow_create_from_instruction_value(ADUC_WorkflowHandle base, JSON_Value* ins
     if (updateActionValue == NULL)
     {
         Log_Error("Cannot copy Update Action json from base");
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACITON_FROM_BASE_FAILURE;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACTION_FROM_BASE_FAILURE;
         goto done;
     }
 
@@ -2657,7 +2657,7 @@ workflow_create_from_instruction_value(ADUC_WorkflowHandle base, JSON_Value* ins
     if (updateManifestValue == NULL)
     {
         Log_Error("Cannot copy Update Manifest json from base");
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACITON_FROM_BASE_FAILURE;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACTION_FROM_BASE_FAILURE;
         goto done;
     }
 
@@ -2793,7 +2793,7 @@ const char* workflow_peek_step_type(ADUC_WorkflowHandle handle, size_t stepIndex
  * @param handle A workflow object handle.
  * @param propertyName
  *
- * @return A read-only string value of spcified property in handlerProperties map.
+ * @return A read-only string value of specified property in handlerProperties map.
  */
 const char*
 workflow_peek_update_manifest_handler_properties_string(ADUC_WorkflowHandle handle, const char* propertyName)
@@ -2858,7 +2858,7 @@ const char* workflow_peek_update_manifest_step_handler(ADUC_WorkflowHandle handl
  *               Caller must free the object with workflow_free_file_entity().
  * @return true If succeeded.
  */
-bool workflow_get_step_detatched_manifest_file(ADUC_WorkflowHandle handle, size_t stepIndex, ADUC_FileEntity** entity)
+bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t stepIndex, ADUC_FileEntity** entity)
 {
     if (entity == NULL)
     {

@@ -1,11 +1,11 @@
-# Welcome to the Device Update Agent Private Preview Refresh  (PPR) Release
+# Welcome to the Device Update Agent Private Preview Refresh (PPR) Release
 
 ## What's New In This Version?
 
-- New Device Update Configurations file
-- Device Diagnostic Service Support
-- Support new [Update Manifest Version 4](./update-manifest-v4-schema.md) which enabling following features:
-  - [Multi Step Ordered Execution](./what-is-msoe.md) (MSOE)
+- New Device Update [Configurations file](./configurations-file.md)
+- [Device Diagnostic Service](./device-diagnostic-service.md) Support
+- Support new [Update Manifest Version 4](./update-manifest-v4-schema.md), which enables the following features:
+  - [Multi Step Ordered Execution](./update-manifest-v4-schema.md#multi-step-ordered-execution-msoe-support) (MSOE)
   - [Multi Component Updating](./multi-component-updating.md)
   - [Goal State](./goal-state-support.md) Deployment
   - [Detached Update Manifest](./update-manifest-v4-schema.md)
@@ -18,7 +18,7 @@
     - Added [SWUpdate Handler](../../src/content_handlers/swupdate_handler)
 
   - [Component Enumerator Extension](../../src/extensions/component-enumerators/examples/contoso-component-enumerator/README.md)
-  - Content Downloader Extension
+  - [Content Downloader Extension](../../src/extensions/content-downloaders/README.md)
   
 ## Backward Compatibility
   

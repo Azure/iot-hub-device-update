@@ -19,7 +19,7 @@
 #include <aduc/logging.h>
 
 /**
- * @brief Helper function gets the calculated hash from the @p context, compares it to @p hashBase64, and returns the appropraite value
+ * @brief Helper function gets the calculated hash from the @p context, compares it to @p hashBase64, and returns the appropriate value
  * @param context Context in which the hash was calculated and stored
  * @param hashBase64 The expected hash from the context. If NULL, skip hashes comparison.
  * @param algorithm the algorithm used to calculate the hash
@@ -101,7 +101,7 @@ _Bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** 
     file = fopen(path, "rb");
     if (file == NULL)
     {
-        // Sometime we call this funcion to check whether the file is already exist.
+        // Sometime we call this function to check whether the file is already exist.
         // So, log info here instead of error.
         Log_Info("No such file or directory: %s", path);
         goto done;

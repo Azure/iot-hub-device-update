@@ -2,8 +2,8 @@
 # Device Update for IoT Hub
 # Sample PowerShell script for creating and importing updates with multiple inline steps.
 # Some update demonstrates error scenarios where payload file is invalid.
-#
 # Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 #
 
 #Requires -Version 5.0

@@ -133,7 +133,7 @@ ADUC_Result EnsureStepsWorkflowsCreated(const ADUC_WorkflowHandle handle)
             else
             {
                 // Download detached update manifest file.
-                if (!workflow_get_step_detatched_manifest_file(handle, i, &entity))
+                if (!workflow_get_step_detached_manifest_file(handle, i, &entity))
                 {
                     result = { .ResultCode = ADUC_Result_Failure,
                             .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_GET_FILE_ENTITY_FAILURE };
@@ -576,7 +576,7 @@ done:
     // NOTE: Do not free child workflow here, so that it can be reused in the next phase.
     // Only free child handle when the workflow is done.
     //
-    // Alternatively, we can persist child workflow state, to free up some memery, and
+    // Alternatively, we can persist child workflow state, to free up some memory, and
     // load the state when needed in the next phase
 
     workflow_set_result(handle, result);
@@ -898,7 +898,7 @@ done:
     // NOTE: Do not free child workflow here, so that it can be reused in the next phase.
     // Only free child handle when the workflow is done.
     //
-    // Alternatively, we can persist child workflow state, to free up some memery, and
+    // Alternatively, we can persist child workflow state, to free up some memory, and
     // load the state when needed in the next phase
 
     workflow_set_result(handle, result);

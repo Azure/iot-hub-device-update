@@ -101,7 +101,7 @@ done:
 /**
  * @brief Find a handler extension file entity for the specified @p handlerId.
  *
- * @param handlrId A string represents Update Type or Step Handler Type.
+ * @param handlerId A string represents Update Type or Step Handler Type.
  * @param fileEntity An output file entity.
  * @return True if a handler for specified @p handlerId is available.
  */

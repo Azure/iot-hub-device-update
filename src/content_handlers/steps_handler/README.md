@@ -8,7 +8,7 @@ At the Device Update Public Preview Refresh, the top level Update Manifest versi
 
 The following is an example of the Update Manifest version v4 that contains two instuction steps. In this example, both steps are `inline` step. 'Inline' step is the default value if not specified.  
 
-> Note: see [Multi Step Ordered Execution](../../../docs/agent-reference/what-is-msoe.md) for more information about `step`. The step's `handler` property is equivalent to an `Update Type` that was introduced in the previous version of the Update Manifest.  
+> Note: see [Multi Step Ordered Execution](../../../docs/agent-reference/update-manifest-v4-schema.md#multi-step-ordered-execution-msoe-support) for more information about `step`. The step's `handler` property is equivalent to an `Update Type` that was introduced in the previous version of the Update Manifest.  
 
 > Note: the step data also contains a property called `handlerProperties`. This is a JSON object that contains the data (such as, installedCriteria, script arguments, etc.) usually used by the Handler when performing various update tasks (such as download, install, apply, and cancel)
 
@@ -90,4 +90,4 @@ Next, Steps Handler will parse the Child Update Manifest and create ADUC_Workflo
 - [How To Implement Custom Update Content Handler](../../../docs/agent-reference/how-to-implement-custom-update-handler.md.md)
 - [Multi Component Updating](../../../docs/agent-reference/multi-component-updating.md)
 - [Contoso Component Enumerator Example](../../extensions/component-enumerators/examples/contoso-component-enumerator/README.md)
-- [What's MSOE](../../../docs/agent-reference/what-is-msoe.md)
+- [What's MSOE](../../../docs/agent-reference/update-manifest-v4-schema.md#multi-step-ordered-execution-msoe-support)
