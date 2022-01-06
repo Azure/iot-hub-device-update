@@ -40,7 +40,7 @@ do_user='do'
 sample_du_config=$(
     cat << END_OF_JSON
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "aduShellTrustedUsers": [
     "adu",
     "do"
@@ -56,8 +56,7 @@ sample_du_config=$(
         "connectionData": <Place your Azure IoT device connection string here>
       },
       "manufacturer": <Place your device property manufacturer here>,
-      "model": <Place your device property model here>,
-    }
+      "model": <Place your device property model here>
     }
   ]
 }
@@ -131,7 +130,7 @@ setup_dirs_and_files() {
         # Create configuration file from template
         if [ ! -f "$adu_conf_dir/$adu_conf_file" ]; then
             cp -a "$adu_conf_dir/${adu_conf_file}.template" "$adu_conf_dir/$adu_conf_file"
-            chmod u=r "$adu_conf_dir/$adu_conf_file"
+            chmod u=rw "$adu_conf_dir/$adu_conf_file"
         fi
 
         # Create home dir
