@@ -208,16 +208,9 @@ static _Bool CheckConfDirOwnershipAndPermissions()
 
     if (SystemUtils_IsDir(path))
     {
-        if (!PermissionUtils_CheckOwnership(path, ADUC_FILE_USER, NULL /* group */))
+        if (!PermissionUtils_CheckOwnership(path, ADUC_FILE_USER, ADUC_FILE_GROUP))
         {
             Log_Error("'%s' has incorrect ownership.", path);
-            result = false;
-            // continue to allow tracing other related issues
-        }
-
-        if (!PermissionUtils_CheckOwnerGid(path, 0 /* root */))
-        {
-            Log_Error("'%s' has incorrect GID.", path);
             result = false;
             // continue to allow tracing other related issues
         }

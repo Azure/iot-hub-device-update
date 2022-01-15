@@ -117,7 +117,7 @@ setup_dirs_and_files() {
         mkdir -p "$adu_conf_dir"
 
         # Ensure the right owners and permissions
-        chown "$adu_user:root" "$adu_conf_dir"
+        chown "$adu_user:$adu_group" "$adu_conf_dir"
         chmod u=rwx,g=rx,o=rx "$adu_conf_dir"
 
         # Generate the template configuration file
