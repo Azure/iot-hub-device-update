@@ -364,7 +364,7 @@ void ADUC_Workflow_HandleComponentChanged(ADUC_WorkflowData* workflowData)
     if (workflowData->LastGoalStateJson != NULL)
     {
         ADUC_Workflow_HandlePropertyUpdate(workflowData, (const unsigned char *) workflowData->LastGoalStateJson, true /* forceDeferral */);
-    }   
+    }
     else
     {
         Log_Error("Component changes is detected, but the update data cache is not available. An update must be trigger by DU service.");
@@ -415,8 +415,7 @@ void ADUC_Workflow_HandlePropertyUpdate(
                 workflow_get_cancellation_type(currentWorkflowData->WorkflowHandle);
             if (currentCancellationType == ADUC_WorkflowCancellationType_None)
             {
-                workflow_set_cancellation_type(
-                    currentWorkflowData->WorkflowHandle, ADUC_WorkflowCancellationType_Normal);
+                workflow_set_cancellation_type(currentWorkflowData->WorkflowHandle, ADUC_WorkflowCancellationType_Normal);
 
                 // call into handle update action for cancellation logic to invoke ADUC_MethodCall_Cancel
                 (*handleUpdateActionFunc)(currentWorkflowData);
@@ -449,8 +448,8 @@ void ADUC_Workflow_HandlePropertyUpdate(
                     goto done;
                 }
 
-                // This atomically sets both cancellation type to Retry and updates the current retry token on the workflow handle
-                workflow_update_retry_deployment(currentWorkflowData->WorkflowHandle, currentRetryToken);
+                // Sets both cancellation type to Retry and updates the current retry token
+                workflow_update_retry_deployment(currentWorkflowData->WorkflowHandle, newRetryToken);
 
                 // call into handle update action for cancellation logic to invoke ADUC_MethodCall_Cancel
                 (*handleUpdateActionFunc)(currentWorkflowData);
@@ -494,7 +493,7 @@ void ADUC_Workflow_HandlePropertyUpdate(
 
                     workflow_transfer_data(
                         currentWorkflowData->WorkflowHandle /* wfTarget */, nextWorkflow /* wfSource */);
-                    
+
                     ADUC_WorkflowData_SaveLastGoalStateJson(currentWorkflowData, (const char*)propertyUpdateValue);
 
                     (*handleUpdateActionFunc)(currentWorkflowData);
@@ -519,7 +518,7 @@ void ADUC_Workflow_HandlePropertyUpdate(
     currentWorkflowData->WorkflowHandle = nextWorkflow;
 
     ADUC_WorkflowData_SaveLastGoalStateJson(currentWorkflowData, (const char*) propertyUpdateValue);
-                    
+
     nextWorkflow = NULL;
 
     workflow_set_cancellation_type(
@@ -596,16 +595,25 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
 
             // Call upper-layer to notify of cancel
             ADUC_MethodCall_Cancel(workflowData);
+            goto done;
         }
         else if (
             desiredAction == ADUCITF_UpdateAction_Cancel || cancellationType == ADUC_WorkflowCancellationType_Normal)
         {
             // Cancel without an operation in progress means return to Idle state.
+            workflow_set_operation_cancel_requested(workflowData->WorkflowHandle, false);
+            workflow_set_cancellation_type(workflowData->WorkflowHandle, ADUC_WorkflowCancellationType_None);
+
             Log_Info("Cancel received with no operation in progress - returning to Idle state");
             goto done;
         }
+        else {
+            workflow_set_operation_cancel_requested(workflowData->WorkflowHandle, false);
+            workflow_set_cancellation_type(workflowData->WorkflowHandle, ADUC_WorkflowCancellationType_None);
 
-        goto done;
+            Log_Info("Replace/Retry when operation not in progress. Try to process workflow...");
+            // Continue processing workflow below.
+        }
     }
 
     //
@@ -907,6 +915,8 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
                 result.ExtendedResultCode);
 
             ADUC_SetUpdateStateWithResult(workflowData, ADUCITF_State_Failed, result);
+
+            workflow_set_operation_in_progress(workflowData->WorkflowHandle, false);
         }
     }
 

@@ -27,7 +27,7 @@ public:
         _dataFilePath = GetSimulatorDataFilePath();
         try
         {
-            std::ofstream file{ _dataFilePath, std::ios::app | std::ios::binary };
+            std::ofstream file{ _dataFilePath, std::ios::trunc | std::ios::binary };
             file.write(data, strlen(data));
             REQUIRE(!file.bad());
         }

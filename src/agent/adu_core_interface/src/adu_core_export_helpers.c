@@ -95,12 +95,16 @@ static void ADUC_SetUpdateStateHelper(
             ADUC_MethodCall_Idle(workflowData);
         }
     }
-    else
+    else // Not Idle state
     {
         if (!AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(workflowData, updateState, result, NULL /* installedUpdateId */))
         {
             updateState = ADUCITF_State_Failed;
             workflow_set_state(workflowData->WorkflowHandle, ADUCITF_State_Failed);
+        }
+        else
+        {
+            workflow_set_state(workflowData->WorkflowHandle, updateState);
         }
     }
 
