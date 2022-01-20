@@ -11,9 +11,9 @@
 #include "aduc/client_handle_helper.h"
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h" // atoint64t
-#include "pnp_protocol.h"
 #include <ctype.h> // isalnum
 #include <diagnostics_workflow.h>
+#include <pnp_protocol.h>
 #include <stdlib.h>
 
 // Name of the DiagnosticsInformation component that this device implements.
@@ -93,8 +93,6 @@ void DiagnosticsInterface_Connected(void* componentContext)
     UNREFERENCED_PARAMETER(componentContext);
 
     Log_Info("DiagnosticsInterface is connected");
-
-    DiagnosticsInterface_ReportStateAndResultAsync(Diagnostics_Result_Rebooted, "");
 }
 
 void DiagnosticsInterface_Destroy(void** componentContext)

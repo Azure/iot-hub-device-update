@@ -34,8 +34,6 @@ const char* DiagnosticsResult_ToString(Diagnostics_Result result)
         return "Failure";
     case Diagnostics_Result_Success:
         return "Success";
-    case Diagnostics_Result_Rebooted:
-        return "Rebooted";
     }
 
     return "<Unknown>";

@@ -13,6 +13,7 @@
 #include <azure_c_shared_utility/strings.h>
 #include <diagnostics_workflow.h>
 #include <mutex>
+#include <operation_id_utils.h>
 #include <thread>
 #include <vector>
 
@@ -47,10 +48,18 @@ public:
                 worker.join();
             }
 
+            //
+            // Required to prevent duplicate requests coming down from the service after
+            // restart or a connection refresh
+            //
+            if (OperationIdUtils_OperationIsComplete(STRING_c_str(jsonStringHandle)))
+            {
+                return;
+            }
+
             STRING_HANDLE jsonStringHandleClone = STRING_clone(jsonStringHandle);
-            
+
             std::thread newWorker{ [diagnosticsWorkflowData, jsonStringHandleClone] {
-                
                 ADUC::StringUtils::STRING_HANDLE_wrapper cloneWrapper(jsonStringHandleClone);
 
                 try

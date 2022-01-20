@@ -271,20 +271,13 @@ set (
           "Path to the file that contains the configuration information for the diagnostics system")
 
 set (
-    DIAGNOSTICS_LOG_STAGING_FOLDER
-    "diagnostics_log_staging/"
-    CACHE STRING "Name of the diagnostics log staging directory")
-
-get_filename_component (
-    DIAGNOSTICS_LOG_STAGING_FOLDER_PATH
-    "${ADUC_CONF_FOLDER}/${DIAGNOSTICS_LOG_STAGING_FOLDER}"
-    ABSOLUTE
-    "/")
-
+    DIAGNOSTICS_COMPLETED_OPERATION_FILE
+    "diagnosticsoperationids"
+    CACHE STRING "File that contains the last completed diagnostic operation's id")
 set (
-    DIAGNOSTICS_LOG_STAGING_FOLDER_PATH
-    "${DIAGNOSTICS_LOG_STAGING_FOLDER_PATH}"
-    CACHE STRING "Path to the diagnostics log file staging directory.")
+    DIAGNOSTICS_COMPLETED_OPERATION_FILE_PATH
+    "${ADUC_DATA_FOLDER}/${DIAGNOSTICS_COMPLETED_OPERATION_FILE}"
+    CACHE STRING "Path to the file that contains the completed diagnostic operation ids")
 
 set (
     ADUSHELL_FOLDER

@@ -11,4 +11,4 @@ find_package (Parson REQUIRED)
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::c_utils
-    PRIVATE aduc::logging aziotsharedutil Parson::parson)
+    PRIVATE aduc::logging aziotsharedutil Parson::parson umock_c)

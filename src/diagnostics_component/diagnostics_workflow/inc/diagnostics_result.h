@@ -27,7 +27,6 @@ typedef enum tagDiagnostics_Result
     Diagnostics_Result_UploadFailed = -2, //!< Uploading the files failed for some component
     Diagnostics_Result_NoLogsFound = -1, //!< No logs where found for a component
     Diagnostics_Result_Failure = 0, //!< DiagnosticsWorkflow failed in a generic, non workflow related way
-    Diagnostics_Result_Rebooted = 2, //!< Result reported after each boot
     Diagnostics_Result_Success = 200, //!< Upload of all component logs was successful.
 } Diagnostics_Result;
 

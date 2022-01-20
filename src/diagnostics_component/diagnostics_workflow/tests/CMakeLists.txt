@@ -11,7 +11,6 @@ set (sources main.cpp diagnostics_workflow_ut.cpp)
 
 find_package (azure_c_shared_utility REQUIRED)
 find_package (Catch2 REQUIRED)
-find_package (OpenSSL REQUIRED)
 find_package (Parson REQUIRED)
 
 target_compile_definitions (${target_name} PRIVATE ADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")
@@ -19,12 +18,8 @@ add_executable (${PROJECT_NAME} ${sources})
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PRIVATE aduc::jws_utils
-            aduc::crypto_utils
-            aduc::string_utils
+    PRIVATE Catch2::Catch2
             diagnostics_component::diagnostics_workflow
-            Catch2::Catch2
-            OpenSSL::Crypto
             Parson::parson
             aziotsharedutil)
 

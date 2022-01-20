@@ -9,8 +9,19 @@
 #ifndef CONFIG_UTILS_H
 #define CONFIG_UTILS_H
 
-#include "azure_c_shared_utility/strings.h"
-#include "azure_c_shared_utility/vector.h"
+#ifdef ENABLE_MOCKS
+
+#   undef ENABLE_MOCKS
+#   include "azure_c_shared_utility/strings.h"
+#   include "azure_c_shared_utility/vector.h"
+#   define ENABLE_MOCKS
+
+#else
+#   include "azure_c_shared_utility/strings.h"
+#   include "azure_c_shared_utility/vector.h"
+
+#endif
+
 #include <aduc/c_utils.h>
 #include <parson.h>
 #include <stdbool.h>

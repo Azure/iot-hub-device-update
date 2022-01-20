@@ -15,6 +15,7 @@
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>
 #include <file_info_utils.h>
+#include <operation_id_utils.h>
 #include <parson_json_utils.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -273,13 +274,13 @@ _Bool DiagnosticsWorkflow_InitFromJSON(DiagnosticsWorkflowData* workflowData, JS
             DIAGNOSTICS_CONFIG_FILE_FIELDNAME_MAXKILOBYTESTOUPLOADPERLOGPATH,
             &maxKilobytesToUploadPerLogPath))
     {
-        Log_Info("DiagnosticsWorkflow_Init failed to retrieve maxKilobytesPerLogPath from diagnostics config");
+        Log_Warn("DiagnosticsWorkflow_Init failed to retrieve maxKilobytesPerLogPath from diagnostics config");
         goto done;
     }
 
     if (maxKilobytesToUploadPerLogPath < 1)
     {
-        Log_Info(
+        Log_Warn(
             "DiagnosticsWorkflow_Init maxKilobytesPerLogPath config set to invalid value: %i",
             maxKilobytesToUploadPerLogPath);
         goto done;
@@ -392,7 +393,8 @@ Diagnostics_Result DiagnosticsWorkflow_GetFilesForComponent(
     {
         result = Diagnostics_Result_NoLogsFound;
         Log_Debug(
-            "DiagnosticsWorkflow_UploadComponent No files found for logComponent: %s", STRING_c_str(logComponent->componentName));
+            "DiagnosticsWorkflow_UploadComponent No files found for logComponent: %s",
+            STRING_c_str(logComponent->componentName));
         goto done;
     }
 
@@ -457,10 +459,11 @@ Diagnostics_Result DiagnosticsWorkflow_UploadFilesForComponent(
         goto done;
     }
 
-    if (!AzureBlobStorageFileUploadUtility_UploadFilesToContainer(&blobInfo, 1, fileNames, STRING_c_str(logComponent->logPath)))
+    if (!AzureBlobStorageFileUploadUtility_UploadFilesToContainer(
+            &blobInfo, 1, fileNames, STRING_c_str(logComponent->logPath)))
     {
         result = Diagnostics_Result_UploadFailed;
-        Log_Info(
+        Log_Warn(
             "DiagnosticsWorkflow_UploadFilesForComponent File upload failed for logComponent: %s",
             STRING_c_str(logComponent->componentName));
         goto done;
@@ -507,6 +510,7 @@ void DiagnosticsWorkflow_UnInitLogComponentFileNames(VECTOR_HANDLE logComponentF
         VECTOR_destroy(*fileNames);
     }
 }
+
 /**
  * @brief Uploads the diagnostic logs described by @p workflowData
  * @param workflowData the workflowData structure describing the log components
@@ -671,6 +675,15 @@ done:
     else
     {
         DiagnosticsInterface_ReportStateAndResultAsync(result, STRING_c_str(operationId));
+
+        //
+        // Required to prevent duplicate requests coming down from the service after
+        // restart or a connection refresh
+        //
+        if (!OperationIdUtils_StoreCompletedOperationId(STRING_c_str(operationId)))
+        {
+            Log_Warn("Unable to record completed operation-id: %s", STRING_c_str(operationId));
+        }
     }
 
     if (logComponentFileNames != NULL)

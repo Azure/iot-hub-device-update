@@ -15,6 +15,7 @@
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/strings.h>
 #include <errno.h>
+#include <fcntl.h> // for O_CLOEXEC
 #include <ftw.h> // for nftw
 #include <grp.h> // for getgrnam
 #include <limits.h> // for PATH_MAX
@@ -27,6 +28,15 @@
 #include <sys/types.h>
 #include <sys/wait.h> // for waitpid
 #include <unistd.h>
+
+#ifndef O_CLOEXEC
+/**
+ * @brief Enable the close-on-exec flag for the new file descriptor. pecifying this flag permits a program to avoid additional
+ * fcntl(2) F_SETFD operations to set the FD_CLOEXEC flag.
+ * @details Included here because not all linux kernels include O_CLOEXEC by default in fcntl.h
+ */
+#    define O_CLOEXEC __O_CLOEXEC
+#endif
 
 #ifndef ALL_PERMS
 /**
@@ -529,6 +539,106 @@ done:
 int ADUC_SystemUtils_RemoveFile(const char* path)
 {
     return unlink(path);
+}
+
+/**
+ * @brief Writes @p buff to file at @p path using   
+ * @details This function overwrites the current data in @p path with @p buff
+ * 
+ * @param path the path to the file to write data
+ * @param buff data to be written to the file  
+ * @return in On success 0 is returned; otherwise errno or -1 on failure
+ */
+int ADUC_SystemUtils_WriteToFileDurably(const char* path, const char* buff)
+{
+    int status = -1;
+    int fd = -1;
+
+    if (path == NULL || buff == NULL)
+    {
+        goto done;
+    }
+
+    fd = open(path, O_WRONLY | O_CLOEXEC);
+
+    if (fd == -1)
+    {
+        status = errno;
+        goto done;
+    }
+
+    status = write(fd, buff, strlen(buff));
+
+    if (status == -1)
+    {
+        status = errno;
+        goto done;
+    }
+
+    status = fsync(fd);
+
+    if (status == -1)
+    {
+        status = errno;
+        goto done;
+    }
+
+    status = 0;
+
+done:
+
+    close(fd);
+
+    return status;
+}
+
+/**
+ * @brief Reads the data from @p path into @p buff up to @p buffLen bytes
+ * @details Only up to @p buffLen - 1 bytes will be read from the file to save space for the null terminator
+ * @param path path to the file to read from
+ * @param buff buffer for the data to go into
+ * @param buffLen the maximum amount of data to be written to buff including the null-terminator
+ * @return returns 0 on success; errno or -1 on failure
+ */
+int ADUC_SystemUtils_ReadStringFromFile(const char* path, char* buff, size_t buffLen)
+{
+    int status = -1;
+    int fd = -1;
+
+    if (path == NULL || buff == NULL || buffLen == 0)
+    {
+        goto done;
+    }
+
+    fd = open(path, O_RDONLY | O_CLOEXEC);
+
+    if (fd == -1)
+    {
+        status = errno;
+        goto done;
+    }
+
+    size_t readBytes = read(fd, buff, buffLen - 1);
+
+    if (readBytes == -1) // Error if we are at EOF
+    {
+        status = errno;
+        goto done;
+    }
+    else if (readBytes == 0)
+    {
+        goto done;
+    }
+
+    buff[readBytes] = '\0';
+
+    status = 0;
+
+done:
+
+    close(fd);
+
+    return status;
 }
 
 /**

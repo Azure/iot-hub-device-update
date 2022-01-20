@@ -15,7 +15,6 @@
 #include <parson.h>
 #include <sstream>
 #include <string>
-#include <umock_c/umock_c.h>
 
 class DiagnosticWorkflowUnitTestHelper
 {

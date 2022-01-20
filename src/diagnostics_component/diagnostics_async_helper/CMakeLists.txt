@@ -2,10 +2,10 @@ cmake_minimum_required (VERSION 3.5)
 
 set (target_name diagnostics_async_helper)
 
-include(find_curl_and_import_libcurl)
+include (find_curl_and_import_libcurl)
 
 # Used to find and include the CURL::libcurl imported libary
-find_curl_and_import_libcurl()
+find_curl_and_import_libcurl ()
 
 add_library (${target_name} STATIC src/diagnostics_async_helper.cpp)
 add_library (diagnostics_component::${target_name} ALIAS ${target_name})
@@ -19,4 +19,8 @@ find_package (azure_c_shared_utility REQUIRED)
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils
-    PRIVATE aziotsharedutil aduc::logging aduc::string_utils diagnostics_component::diagnostics_workflow)
+    PRIVATE aziotsharedutil
+            aduc::logging
+            aduc::string_utils
+            diagnostics_component::diagnostics_workflow
+            diagnostic_utils::operation_id_utils)
