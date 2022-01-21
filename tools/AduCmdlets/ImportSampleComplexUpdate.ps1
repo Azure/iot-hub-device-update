@@ -20,8 +20,9 @@
         PS > $token = Get-MsalToken -ClientId $clientId -TenantId $tenantId -Scopes 'https://api.adu.microsoft.com/user_impersonation' -Authority https://login.microsoftonline.com/$tenantId/v2.0 -Interactive -DeviceCode
         PS >
         PS > ImportSampleComplexUpdate.ps1 -AccountEndpoint sampleaccount.api.adu.microsoft.com -InstanceId sampleinstance `
-                                          -Container $BlobContainer `
-                                          -AuthorizationToken $token
+                                           -Container $BlobContainer `
+                                           -AuthorizationToken $token `
+                                           -UpdateVersion 1.0
 #>
 [CmdletBinding()]
 Param(
@@ -45,25 +46,28 @@ Param(
     [ValidateNotNullOrEmpty()]
     [string] $AuthorizationToken,
 
-    # Version of update to create and import.
+    # Version of update to create and import. For e.g., 1.0
+    [Parameter(Mandatory=$true)]
     [ValidateNotNullOrEmpty()]
-    [string] $UpdateVersion = '1.0'
+    [string] $UpdateVersion
 )
 
 Import-Module $PSScriptRoot\AduImportUpdate.psm1 -ErrorAction Stop
 Import-Module $PSScriptRoot\AduRestApi.psm1 -ErrorAction Stop
 
-# We will use a random file as update payload files.
-$childFile = "$PSScriptRoot\README.md"
-$parentFile = "$PSScriptRoot\create-adu-import-manifest.sh"
+# We will use arbitrary files as update payload files.
+$childFile = "$env:TEMP/childFile.bin.txt"
+$parentFile = "$env:TEMP/parentFile.bin.txt"
+"This is a child update payload file." | Out-File $childFile -Force -Encoding utf8NoBOM
+"This is a parent update payload file." | Out-File $parentFile -Force -Encoding utf8NoBOM
 
 # ------------------------------
 # Create a child update
 # ------------------------------
 Write-Host 'Preparing child update ...'
 
-$microphoneUpdateId = New-AduUpdateId -Provider Microsoft -Name Microphone -Version $UpdateVersion
-$microphoneCompat = New-AduUpdateCompatibility -DeviceManufacturer Microsoft -DeviceModel Microphone
+$microphoneUpdateId = New-AduUpdateId -Provider Contoso -Name Microphone -Version $UpdateVersion
+$microphoneCompat = New-AduUpdateCompatibility -DeviceManufacturer Contoso -DeviceModel Microphone
 $microphoneInstallStep = New-AduInstallationStep -Handler 'microsoft/swupdate:1' -Files $childFile
 $microphoneUpdate = New-AduImportUpdateInput -UpdateId $microphoneUpdateId `
                                              -IsDeployable $false `
@@ -76,8 +80,8 @@ $microphoneUpdate = New-AduImportUpdateInput -UpdateId $microphoneUpdateId `
 # ------------------------------
 Write-Host 'Preparing another child update ...'
 
-$speakerUpdateId = New-AduUpdateId -Provider Microsoft -Name Speaker -Version $UpdateVersion
-$speakerCompat = New-AduUpdateCompatibility -DeviceManufacturer Microsoft -DeviceModel Speaker
+$speakerUpdateId = New-AduUpdateId -Provider Contoso -Name Speaker -Version $UpdateVersion
+$speakerCompat = New-AduUpdateCompatibility -DeviceManufacturer Contoso -DeviceModel Speaker
 $speakerInstallStep = New-AduInstallationStep -Handler 'microsoft/swupdate:1' -Files $childFile
 $speakerUpdate = New-AduImportUpdateInput -UpdateId $speakerUpdateId `
                                           -IsDeployable $false `
@@ -90,8 +94,8 @@ $speakerUpdate = New-AduImportUpdateInput -UpdateId $speakerUpdateId `
 # ------------------------------------------------------------
 Write-Host 'Preparing parent update ...'
 
-$parentUpdateId = New-AduUpdateId -Provider Microsoft -Name Surface -Version $UpdateVersion
-$parentCompat = New-AduUpdateCompatibility -DeviceManufacturer Microsoft -DeviceModel Surface
+$parentUpdateId = New-AduUpdateId -Provider Contoso -Name Toaster -Version $UpdateVersion
+$parentCompat = New-AduUpdateCompatibility -DeviceManufacturer Contoso -DeviceModel Toaster
 $parentSteps = @()
 $parentSteps += New-AduInstallationStep -Handler 'microsoft/script:1' -Files $parentFile -HandlerProperties @{ 'arguments'='--pre'} -Description 'Pre-install script'
 $parentSteps += New-AduInstallationStep -UpdateId $microphoneUpdateId -Description 'Microphone Firmware'
@@ -113,3 +117,6 @@ $operationId = Start-AduImportUpdate -AccountEndpoint $AccountEndpoint -Instance
 
 Wait-AduUpdateOperation -AccountEndpoint $AccountEndpoint -InstanceId $InstanceId -AuthorizationToken $AuthorizationToken `
                         -OperationId $operationId -Timeout (New-TimeSpan -Minutes 15) -Verbose:$VerbosePreference
+
+Remove-Item $childFile -Force -ErrorAction SilentlyContinue | Out-Null
+Remove-Item $parentFile -Force -ErrorAction SilentlyContinue | Out-Null

@@ -1,101 +1,105 @@
 # Device Update for IoT Hub - Scripts
 
-## Contents
+This directory contains sample PowerShell and BASH scripts for creating import manifest and importing update to Device Update for IoT Hub.
 
-* [PowerShell Modules](#PowerShell-Modules)
-* [Bash Script](#Bash-Script)
+## Creating import manifest
 
-## PowerShell Modules
+### Simple example
 
-The following PowerShell modules can be used to author and/or import an update to Device Update for IoT Hub (ADU).
+#### Using AduUpdate.psm1 (PowerShell)
 
-| Module | Purpose
-| -- | --
-| `AduUpdate.psm1` | Create an *import manifest* for importing an update into ADU.
-| `AduImportUpdate.psm1` | Create the input (request body) for ADU Import Update REST API and stage the artifacts in Azure Storage Blob container. Requires [Azure Az PowerShell module](https://docs.microsoft.com/en-us/powershell/azure/install-az-ps?view=azps-6.0.0).
-| `AduRestApi.psm1` | Call ADU REST API to import an update.
-
-### Usage: Create an import manifest
+The following sample command uses PowerShell module [AduUpdate.psm1](AduUpdate.psm1) to produce an import manifest for an update with single payload file to be installed by `microsoft/swupdate:1` handler:
 
 ```powershell
-Import-Module .\AduUpdate.psm1
-
-# Create an update that will be compatible with devices from two different manufacturers.
-$updateId = New-AduUpdateId `
-    -Provider 'Microsoft' `
-    -Name 'Toaster' `
-    -Version '2.0' `
-
-$compatInfo1 = New-AduUpdateCompatibility `
-    -DeviceManufacturer Fabrikam `
-    -DeviceModel Toaster
-
-$compatInfo2 = New-AduUpdateCompatibility `
-    -DeviceManufacturer Contoso `
-    -DeviceModel Toaster
-
-$importManifest = New-AduImportManifest `
-    -UpdateId $updateId `
-    -UpdateType 'microsoft/swupdate:1' `
-    -InstalledCriteria '5' `
-    -Compatibility $compatInfo1, $compatInfo2 `
-    -Files '.\file1.json', '.\file2.zip'
-
-$importManifest | Out-File '.\importManifest.json' -Encoding UTF8
+Import-Module ./AduUpdate.psm1
+$file = './README.md'
+$updateId = New-AduUpdateId -Provider Contoso -Name Toaster -Version 1.0
+$compat = New-AduUpdateCompatibility New-AduUpdateCompatibility -Properties @{ deviceManufacturer = 'Contoso'; deviceModel = 'Toaster' }
+$installStep = New-AduInstallationStep -Handler 'microsoft/swupdate:1'-HandlerProperties @{ installedCriteria = '1.0' } -Files $file
+$update = New-AduImportManifest -UpdateId $updateId -IsDeployable $false -Compatibility $compat -InstallationSteps $installStep
+$update | Out-File ./contoso.toaster.1.0.importmanifest.json -Encoding utf8NoBOM
 ```
 
-The sample commands above will produce the following import manifest (note that `sizeInbytes` and `sha256` will vary based on the actual files used):
+#### Using create-adu-import-manifest.sh (BASH)
+
+The following sample command uses BASH script [create-adu-import-manifest.sh](create-adu-import-manifest.sh) to produce an import manifest for an update with single payload file to be installed by `microsoft/swupdate:1` handler:
+
+```bash
+./create-adu-import-manifest.sh -p 'Contoso' -n 'Toaster' -v '1.0' -c 'deviceManufacturer:Contoso' -c 'deviceModel:Toaster' -h 'microsoft/swupdate:1' -r 'installedCriteria:1.0' ./README.md > ./contoso.toaster.1.0.importmanifest.json
+```
+
+#### Sample Output
+
+The above examples would produce the following manifest:
 
 ```json
 {
   "updateId": {
-    "provider": "Microsoft",
+    "provider": "Contoso",
     "name": "Toaster",
-    "version": "2.0"
+    "version": "1.0"
   },
-  "updateType": "microsoft/swupdate:1",
-  "installedCriteria": "5",
+  "isDeployable": false,
   "compatibility": [
-    {
-      "deviceManufacturer": "Fabrikam",
-      "deviceModel": "Toaster"
-    },
     {
       "deviceManufacturer": "Contoso",
       "deviceModel": "Toaster"
     }
   ],
+  "instructions": {
+    "steps": [
+      {
+        "type": "inline",
+        "handler": "microsoft/swupdate:1",
+        "files": [
+          "README.md"
+        ],
+        "handlerProperties": {
+          "installedCriteria": "1.0"
+        }
+      }
+    ]
+  },
   "files": [
     {
-      "filename": "file1.json",
-      "sizeInBytes": 7,
+      "filename": "README.md",
+      "sizeInBytes": 7558,
       "hashes": {
-        "sha256": "K2mn97qWmKSaSaM9SFdhC0QIEJ/wluXV7CoTlM8zMUo="
-      }
-    },
-    {
-      "filename": "file2.zip",
-      "sizeInBytes": 11,
-      "hashes": {
-        "sha256": "gbG9pxCr9RMH2Pv57vBxKjm89uhUstD06wvQSioLMgU="
+        "sha256": "/CD7Sn6fiknWa3NgcFjGlJ+ccA81s1QAXX4oo5GHiFA="
       }
     }
   ],
-  "createdDateTime": "2020-10-08T03:32:52.477Z",
-  "manifestVersion": "3.0"
+  "createdDateTime": "2022-01-19T06:23:52.6996916Z",
+  "manifestVersion": "4.0"
 }
 ```
 
-### Usage: Create an update and import to ADU using REST API
+### Complex example
 
-To import an update to ADU using REST API
+To create a more complex update that references one or more child updates, refer to PowerShell script [CreateSampleComplexUpdate.ps1](CreateSampleComplexUpdate.ps1) for usage. Modify the script as necessary, and run it as follow:
 
-1. [Create an Azure Storage account](https://docs.microsoft.com/en-us/azure/storage/common/storage-account-create?tabs=azure-portal) if you do not already have one. ADU requires update artifacts to be staged in Azure Storage Blob in order to be imported.
+```powershell
+./CreateSampleComplexUpdate.ps1 -Path ./exampleupdate
+```
 
-2. Create or get a reference to an Azure Storage Blob container. `AduImportUpdate.psm1` module provides a helper cmdlet for this:
+**Note**: BASH script `create-adu-import-manifest.sh` does not support creating complex update yet.
+
+## Calling Import Update REST API
+
+To import an update using [Import Update API](https://docs.microsoft.com/en-us/rest/api/deviceupdate/updates/import-update), import manifest JSON file and update payload files must be staged in Azure Storage Blob container, and their Shared Access Signature (SAS) URLs provided in the API request body.
+
+PowerShell script [ImportSampleComplexUpdate.ps1](ImportSampleComplexUpdate.ps1) provides an end-to-end example of creating import manifest, uploading update files to Azure Storage Blob, and importing the update by calling `Import Update REST API`. The resulting update uses an arbitrary file as payload and cannot actually be deployed to a device.
+
+### Prerequisites
+
+1. Install [Azure Az PowersShell](https://docs.microsoft.com/en-us/powershell/azure/install-az-ps) module.
+
+2. [Create an Azure Storage account](https://docs.microsoft.com/en-us/azure/storage/common/storage-account-create?tabs=azure-portal) if you do not already have one.
+
+3. Create or get a reference to an Azure Storage Blob container. PowerShell module [AduImportUpdate.psm1](AduImportUpdate.psm1) provides a helper cmdlet for this:
 
     ```powershell
-    Import-Module .\AduImportUpdate.psm1
+    Import-Module ./AduImportUpdate.psm1
 
     $AzureSubscriptionId = 'example'
     $AzureResourceGroupName = 'example'
@@ -103,15 +107,15 @@ To import an update to ADU using REST API
     $AzureBlobContainerName =  'example'
 
     $container = Get-AduAzBlobContainer `
-        -SubscriptionId $AzureSubscriptionId `
-        -ResourceGroupName $AzureResourceGroupName `
-        -StorageAccountName $AzureStorageAccountName `
-        -ContainerName $AzureBlobContainerName
+                    -SubscriptionId $AzureSubscriptionId `
+                    -ResourceGroupName $AzureResourceGroupName `
+                    -StorageAccountName $AzureStorageAccountName `
+                    -ContainerName $AzureBlobContainerName
     ```
 
-3. [Create a public Azure Active Directory (AzureAD) Client Application](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/device-update-control-access#authenticate-to-device-update-rest-apis-for-publishing-and-management) if you do not already have one. This is required for calling ADU REST API.
+4. [Create a public Azure Active Directory (AzureAD) Client Application](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/device-update-control-access#authenticate-to-device-update-rest-apis-for-publishing-and-management) if you do not already have one. This is required for  REST API authorization.
 
-4. Obtain an OAuth authorization token for the client application. One option is to use [MSAL.PS](https://github.com/AzureAD/MSAL.PS) PowerShell module:
+5. Obtain an OAuth authorization token for the client application. One option is to use PowerShell module [MSAL.PS](https://github.com/AzureAD/MSAL.PS):
 
     ```powershell
     Install-Module MSAL.PS
@@ -120,97 +124,31 @@ To import an update to ADU using REST API
     $AzureAdTenantId = 'example' # AzureAD application directory (tenant) ID.
 
     $token = Get-MsalToken `
-        -ClientId $AzureAdClientId `
-        -TenantId $AzureAdTenantId `
-        -Scopes 'https://api.adu.microsoft.com/user_impersonation' `
-        -Authority https://login.microsoftonline.com/$AzureAdTenantId/v2.0 `
-        -Interactive `
-        -DeviceCode
+                -ClientId $AzureAdClientId `
+                -TenantId $AzureAdTenantId `
+                -Scopes 'https://api.adu.microsoft.com/user_impersonation' `
+                -Authority https://login.microsoftonline.com/$AzureAdTenantId/v2.0 `
+                -Interactive `
+                -DeviceCode
     ```
 
-    **Note**: `MSAL.PS` cannot be loaded into the same session as `AzPowershell` due to an [unresolved issue](https://github.com/AzureAD/MSAL.PS/issues/32). For workaround, use them in separate PowerShell sessions.
-
-5. `ImportSampleBundleUpdate.ps1` script contains the sample code for creating a bundle update, and importing it to ADU using
-REST API. The update uses this README file as a payload and cannot actually be installed to a device.
-
-    ```powershell
-    $AduAccountEndpoint = 'example.api.adu.microsoft.com'
-    $AduInstanceId = 'example.instance'
-
-    .\ImportSampleBundleUpdate.ps1 `
-        -AccountEndpoint $AduAccountEndpoint `
-        -InstanceId $AduInstanceId `
-        -Container $container `
-        -AuthorizationToken $token `
-        -Verbose
-    ```
-
-    **Note**: An update version can only be imported once. To run the script multiple times, override the version using `-UpdateVersion` parameter.
-
-### Additional Documentation
-
-To get detailed help information:
+### Running ImportSampleComplexUpdate.ps1
 
 ```powershell
-Get-Help New-AduUpdateId -Detailed
-Get-Help New-AduUpdateCompatibility -Detailed
-Get-Help New-AduImportManifest -Detailed
-Get-Help Get-AduFileHashes -Detailed
-Get-Help New-AduImportUpdateInput -Detailed
-Get-Help Start-AduImportUpdate -Detailed
-Get-Help Wait-AduUpdateOperation -Detailed
+$AduAccountEndpoint = '{account}.api.adu.microsoft.com'
+$AduInstanceId = '{instance}'
+
+./ImportSampleComplexUpdate.ps1 `
+    -AccountEndpoint $AduAccountEndpoint `
+    -InstanceId $AduInstanceId `
+    -Container $container `
+    -AuthorizationToken $token `
+    -Verbose
 ```
 
-## Bash Script
+**Note**: An update version can only be imported once. To run the script multiple times, provide a different value for `-UpdateVersion` parameter each time.
 
-Bash script `create-adu-import-manifest.sh` can be used to create an *import manifest* to import an update into Device Update for IoT Hub.
+## References
 
-### Usage: Create an import manifest
-
-```bash
-# Create an update that will be compatible with devices from two different manufacturers.
-
-./create-adu-import-manifest.sh -p 'Microsoft' -n 'Toaster' -v '2.0' -t 'microsoft/swupdate:1' -i '5' -c Fabrikam,Toaster -c Contoso,Toaster ./file1.json ./file2.zip
-```
-
-The sample commands above will produce the following import manifest (note that `sizeInbytes` and `sha256` will vary based on the actual files used):
-
-```json
-{
-  "updateId": {
-    "provider": "Microsoft",
-    "name": "Toaster",
-    "version": "2.0"
-  },
-  "updateType": "microsoft/swupdate:1",
-  "installedCriteria": "5",
-  "compatibility": [
-    {
-      "deviceManufacturer": "Fabrikam",
-      "deviceModel": "Toaster"
-    },
-    {
-      "deviceManufacturer": "Contoso",
-      "deviceModel": "Toaster"
-    }
-  ],
-  "files": [
-    {
-      "filename": "file1.json",
-      "sizeInBytes": 7,
-      "hashes": {
-        "sha256": "K2mn97qWmKSaSaM9SFdhC0QIEJ/wluXV7CoTlM8zMUo="
-      }
-    },
-    {
-      "filename": "file2.zip",
-      "sizeInBytes": 11,
-      "hashes": {
-        "sha256": "gbG9pxCr9RMH2Pv57vBxKjm89uhUstD06wvQSioLMgU="
-      }
-    }
-  ],
-  "createdDateTime": "2020-10-08T03:32:52.477Z",
-  "manifestVersion": "2.0"
-}
-```
+- [Import Manifest JSON Schema version 4.0](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/import-schema)
+- [Import concepts](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/import-concepts)
