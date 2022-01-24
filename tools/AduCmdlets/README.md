@@ -16,7 +16,7 @@ $file = './README.md'
 $updateId = New-AduUpdateId -Provider Contoso -Name Toaster -Version 1.0
 $compat = New-AduUpdateCompatibility New-AduUpdateCompatibility -Properties @{ deviceManufacturer = 'Contoso'; deviceModel = 'Toaster' }
 $installStep = New-AduInstallationStep -Handler 'microsoft/swupdate:1'-HandlerProperties @{ installedCriteria = '1.0' } -Files $file
-$update = New-AduImportManifest -UpdateId $updateId -IsDeployable $false -Compatibility $compat -InstallationSteps $installStep
+$update = New-AduImportManifest -UpdateId $updateId -Compatibility $compat -InstallationSteps $installStep
 $update | Out-File ./contoso.toaster.1.0.importmanifest.json -Encoding utf8NoBOM
 ```
 
@@ -39,7 +39,6 @@ The above examples would produce the following manifest:
     "name": "Toaster",
     "version": "1.0"
   },
-  "isDeployable": false,
   "compatibility": [
     {
       "deviceManufacturer": "Contoso",
