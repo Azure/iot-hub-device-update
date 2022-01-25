@@ -23,7 +23,7 @@ AducIotAgent --enable-iothub-tracing --log-level 1 -- '<IoT device connection st
 
 The Simulator Update Handler can be used for demonstration and testing purposes.
 
-See [how to simualtor update result](./how-to-simulate-update-result.md) for more details.
+See [how to simulate update result](./how-to-simulate-update-result.md) for more details.
 
 ### Options Details
 

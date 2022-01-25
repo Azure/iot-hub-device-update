@@ -107,11 +107,13 @@ connection_string=<device connection string>
 
 ## Install Device Update Agent Package from packages.microsoft.com
 
-For a device that previously installed the DU Agent Public Preview version from pakcages.microsoft.com, you can choose from following upgrade options:
+> **Prerequisite** | Ensure that the device can access the Microsoft installation packages by following [this instruction](https://docs.microsoft.com/azure/iot-edge/how-to-provision-single-device-linux-symmetric?view=iotedge-2020-11&preserve-view=true&tabs=azure-portal#access-the-microsoft-installation-packages)
+
+For a device that previously installed the DU Agent Public Preview version from packages.microsoft.com, you can choose from following upgrade options:
 
 ### Option 1 - Manually install debian package
 
-You can manually install a new version of `deviceupdate-agent` debian package from packags.microsoft.com (for supported distros and architectures) by remotely executing following command on the device:
+You can manually install a new version of `deviceupdate-agent` debian package from packages.microsoft.com (for supported distros and architectures) by remotely executing following command on the device:
 
 ```sh
 sudo apt-get install deviceupdate-agent
@@ -143,7 +145,7 @@ To upgrade devices that currently connected to IoT Hub using Device Update Servi
 
 See [this document](../../tools/AduCmdlets/README.md) for how to import an update to ADU service.  
 
->**Note**<br/> 1) Specify `provider`, `name`, and `version` as appropriate. <br/>2) The DU Agent Public Preview version only support an Update Manfest version 2. The Update Manifest Version must be specified correctly when importing the update.
+>**Note**<br/> 1) Specify `provider`, `name`, and `version` as appropriate. <br/>2) The DU Agent Public Preview version only support an Update Manifest version 2. The Update Manifest version must be specified correctly when importing the update.
 
 #### 3. Deploy the update
 
