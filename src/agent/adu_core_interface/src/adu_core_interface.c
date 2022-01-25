@@ -7,7 +7,7 @@
  */
 
 #include "aduc/adu_core_interface.h"
-#include "aduc/adu_core_export_helpers.h" // ADUC_SetUpdateStateWithResult
+#include "aduc/adu_core_export_helpers.h" // ADUC_Workflow_SetUpdateStateWithResult
 #include "aduc/agent_orchestration.h"
 #include "aduc/agent_workflow.h"
 #include "aduc/c_utils.h"
@@ -55,6 +55,63 @@ void ClientReportedStateCallback(int statusCode, void* context)
             statusCode,
             MU_ENUM_TO_STRING(IOTHUB_CLIENT_RESULT, statusCode));
     }
+}
+
+/**
+ * @brief Initialize a ADUC_WorkflowData object.
+ *
+ * @param[out] workflowData Workflow metadata.
+ * @param argc Count of arguments in @p argv
+ * @param argv Command line parameters.
+ * @return _Bool True on success.
+ */
+_Bool ADUC_WorkflowData_Init(ADUC_WorkflowData* workflowData, int argc, char** argv)
+{
+    _Bool succeeded = false;
+
+    memset(workflowData, 0, sizeof(*workflowData));
+
+    ADUC_Result result = ADUC_MethodCall_Register(&(workflowData->UpdateActionCallbacks), argc, (const char**)argv);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error("ADUC_RegisterPlatformLayer failed %d, %d", result.ResultCode, result.ExtendedResultCode);
+        goto done;
+    }
+
+    // Only call Unregister if register succeeded.
+    workflowData->IsRegistered = true;
+
+    workflowData->DownloadProgressCallback = ADUC_Workflow_DefaultDownloadProgressCallback;
+
+    workflowData->ReportStateAndResultAsyncCallback = AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync;
+
+    workflow_set_cancellation_type(workflowData->WorkflowHandle, ADUC_WorkflowCancellationType_None);
+
+    succeeded = true;
+
+done:
+    return succeeded;
+}
+
+/**
+ * @brief Free members of ADUC_WorkflowData object.
+ *
+ * @param workflowData Object whose members should be freed.
+ */
+void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
+{
+    if (workflowData == NULL)
+    {
+        return;
+    }
+
+    if (workflowData->IsRegistered)
+    {
+        ADUC_MethodCall_Unregister(&(workflowData->UpdateActionCallbacks));
+    }
+
+    free(workflowData->LastGoalStateJson);
+    memset(workflowData, 0, sizeof(*workflowData));
 }
 
 /**
@@ -264,7 +321,7 @@ void AzureDeviceUpdateCoreInterface_Connected(void* componentContext)
 void AzureDeviceUpdateCoreInterface_DoWork(void* componentContext)
 {
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)componentContext;
-    ADUC_WorkflowData_DoWork(workflowData);
+    ADUC_Workflow_DoWork(workflowData);
 }
 
 void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext)
@@ -719,19 +776,20 @@ done:
 /**
  * @brief Report state, and optionally result to service.
  *
- * @param workflowData A workflow data object.
+ * @param workflowDataToken A workflow data object.
  * @param updateState state to report.
  * @param result Result to report (optional, can be NULL).
  * @param installedUpdateId Installed update id (if update completed successfully).
  * @return true if succeeded.
  */
 _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-    ADUC_WorkflowData* workflowData,
+    ADUC_WorkflowDataToken workflowDataToken,
     ADUCITF_State updateState,
     const ADUC_Result* result,
     const char* installedUpdateId)
 {
     _Bool success = false;
+    ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)workflowDataToken;
 
     JSON_Value* rootValue = NULL;
     char* jsonString = NULL;
@@ -780,28 +838,4 @@ done:
     // Don't free the persistenceData as that will be done by the startup logic that owns it.
 
     return success;
-}
-
-/**
- * @brief Report Idle State and update ID to service.
- *
- * This method handles reporting values after a successful apply.
- * After a successful apply, we need to report State as Idle and
- * we need to also update the installedUpdateId property.
- * @param[in] workflowData The workflow data.
- * @param[in] updateId Id of and update installed on the device.
- * @returns true if reporting succeeded.
- */
-_Bool AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(ADUC_WorkflowData* workflowData, const char* updateId)
-{
-    if (g_iotHubClientHandleForADUComponent == NULL)
-    {
-        Log_Error("ReportUpdateIdAndIdleAsync called before registration! Can't report!");
-        return false;
-    }
-
-    ADUC_Result result = { .ResultCode = ADUC_Result_Apply_Success, .ExtendedResultCode = 0 };
-
-    return AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-        workflowData, ADUCITF_State_Idle, &result, updateId);
 }

@@ -32,11 +32,11 @@ public:
 
     ~ScriptHandlerImpl() override = default;
 
-    ADUC_Result Download(const ADUC_WorkflowData* workflowData) override;
-    ADUC_Result Install(const ADUC_WorkflowData* workflowData) override;
-    ADUC_Result Apply(const ADUC_WorkflowData* workflowData) override;
-    ADUC_Result Cancel(const ADUC_WorkflowData* workflowData) override;
-    ADUC_Result IsInstalled(const ADUC_WorkflowData* workflowData) override;
+    ADUC_Result Download(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result Install(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result Apply(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result Cancel(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result IsInstalled(const tagADUC_WorkflowData* workflowData) override;
 
     static ADUC_Result PrepareScriptArguments(
         const ADUC_WorkflowHandle workflowHandle,
@@ -50,7 +50,7 @@ private:
     {
     }
 
-    static ADUC_Result PerformAction(const std::string& action, const ADUC_WorkflowData* workflowData);
+    static ADUC_Result PerformAction(const std::string& action, const tagADUC_WorkflowData* workflowData);
 };
 
 #endif // ADUC_SCRIPT_HANDLER_HPP

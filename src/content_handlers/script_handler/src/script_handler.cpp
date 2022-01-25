@@ -126,7 +126,7 @@ done:
  *
  *     ADUC_ERC_CONTENT_DOWNLOADER_*
  */
-ADUC_Result ScriptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
+ADUC_Result ScriptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData)
 {
     Log_Info("Script_Handler download task begin.");
 
@@ -309,7 +309,7 @@ ADUC_Result ScriptHandlerImpl::PrepareScriptArguments(
     }
     fileArgs = arguments;
 
-    Log_Info("Parsing script aguments: %s", arguments);
+    Log_Info("Parsing script arguments: %s", arguments);
     argumentList = ADUC::StringUtils::Split(fileArgs, ' ');
     for (int i = 0; i < argumentList.size(); i++)
     {
@@ -440,13 +440,13 @@ done:
  * @brief Performs 'Install' task.
  * @return ADUC_Result The result
  */
-ADUC_Result ScriptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
+ADUC_Result ScriptHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = PerformAction("--action-install", workflowData);
     return result;
 }
 
-static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const ADUC_WorkflowData* workflowData)
+static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowData* workflowData)
 {
     Log_Info("Action (%s) beging", action.c_str());
     ADUC_Result result = { ADUC_GeneralResult_Failure };
@@ -565,7 +565,7 @@ done:
     return result;
 }
 
-ADUC_Result ScriptHandlerImpl::PerformAction(const std::string& action, const ADUC_WorkflowData* workflowData)
+ADUC_Result ScriptHandlerImpl::PerformAction(const std::string& action, const tagADUC_WorkflowData* workflowData)
 {
     return ScriptHandler_PerformAction(action, workflowData);
 }
@@ -574,7 +574,7 @@ ADUC_Result ScriptHandlerImpl::PerformAction(const std::string& action, const AD
  * @brief Performs 'Apply' task.
  * @return ADUC_Result The result return from script execution.
  */
-ADUC_Result ScriptHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
+ADUC_Result ScriptHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = PerformAction("--action-apply", workflowData);
     return result;
@@ -584,18 +584,17 @@ ADUC_Result ScriptHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
  * @brief Performs 'Cancel' task.
  * @return ADUC_Result The result (always success)
  */
-ADUC_Result ScriptHandlerImpl::Cancel(const ADUC_WorkflowData* workflowData)
+ADUC_Result ScriptHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = PerformAction("--action-cancel", workflowData);
     return result;
 }
 
 /**
- * @brief Check whether the current device state satisfies specified 'installed-critieria'.
- * @param isntalledCriteria A string used to determine whether an update is installed on the device.
- * @return ADUC_Result The result based on evaluating the installed criteria.
+ * @brief Check whether the current device state satisfies specified workflow data.
+ * @return ADUC_Result The result based on evaluating the workflow data.
  */
-ADUC_Result ScriptHandlerImpl::IsInstalled(const ADUC_WorkflowData* workflowData)
+ADUC_Result ScriptHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = Script_Handler_DownloadPrimaryScriptFile(workflowData->WorkflowHandle);
     if (IsAducResultCodeSuccess(result.ResultCode))

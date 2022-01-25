@@ -15,7 +15,7 @@
 // Forward declarations
 int ADUC_MethodCall_RebootSystem();
 int ADUC_MethodCall_RestartAgent();
-void ADUC_SetUpdateStateWithResult(ADUC_WorkflowData* workflowData, ADUCITF_State updateState, ADUC_Result result);
+void ADUC_Workflow_SetUpdateStateWithResult(ADUC_WorkflowData* workflowData, ADUCITF_State updateState, ADUC_Result result);
 void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData);
 
 EXTERN_C_BEGIN
@@ -156,7 +156,7 @@ RestartAgentFunc ADUC_WorkflowData_GetRestartAgentFunc(const ADUC_WorkflowData* 
  */
 SetUpdateStateWithResultFunc ADUC_WorkflowData_GetSetUpdateStateWithResultFunc(const ADUC_WorkflowData* workflowData)
 {
-    SetUpdateStateWithResultFunc fn = ADUC_SetUpdateStateWithResult;
+    SetUpdateStateWithResultFunc fn = ADUC_Workflow_SetUpdateStateWithResult;
 
 #ifdef ADUC_BUILD_UNIT_TESTS
     if (workflowData->TestOverrides && workflowData->TestOverrides->SetUpdateStateWithResultFunc_TestOverride)

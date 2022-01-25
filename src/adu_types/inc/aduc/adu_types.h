@@ -74,18 +74,6 @@ void ADUC_ConnectionInfo_DeAlloc(ADUC_ConnectionInfo* info);
  */
 const char* ADUC_ConnType_ToString(const ADUC_ConnType connType);
 
-/**
- * @brief Scans the connection string and returns the connection type related to the string
- * @details The connection string must use the valid, correct format for the DeviceId and/or the ModuleId
- * e.g.
- * "DeviceId=some-device-id;ModuleId=some-module-id;"
- * If the connection string contains the DeviceId it is an ADUC_ConnType_Device
- * If the connection string contains the DeviceId AND the ModuleId it is an ADUC_ConnType_Module
- * @param connectionString the connection string to scan
- * @returns the connection type for @p connectionString
- */
-ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString);
-
 EXTERN_C_END
 
 #endif // ADUC_ADU_TYPES_H

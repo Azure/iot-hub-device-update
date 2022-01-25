@@ -6,9 +6,10 @@
  * Licensed under the MIT License.
  */
 #include "linux_adu_core_impl.hpp"
+#include "aduc/agent_workflow.h"
 #include "aduc/calloc_wrapper.hpp"
 #include "aduc/content_handler.hpp"
-#include "aduc/content_handler_factory.hpp"
+#include "aduc/extension_manager.hpp"
 #include "aduc/hash_utils.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/string_utils.hpp"
@@ -119,20 +120,20 @@ static ContentHandler* GetContentTypeHandler(const ADUC_WorkflowData* workflowDa
                 updateManifestHandler.get());
 
             loadResult =
-                ContentHandlerFactory::LoadUpdateContentHandlerExtension(updateManifestHandler.get(), &contentHandler);
+                ExtensionManager::LoadUpdateContentHandlerExtension(updateManifestHandler.get(), &contentHandler);
 
             // If handler for the current manifest version is not available,
             // fallback to the V4 default handler.
             if (IsAducResultCodeFailure(loadResult.ResultCode))
             {
-                loadResult = ContentHandlerFactory::LoadUpdateContentHandlerExtension(
+                loadResult = ExtensionManager::LoadUpdateContentHandlerExtension(
                     UPDATE_MANIFEST_V4_DEFAULT_HANDLER, &contentHandler);
             }
         }
         else
         {
             char* updateType = workflow_get_update_type(workflowData->WorkflowHandle);
-            loadResult = ContentHandlerFactory::LoadUpdateContentHandlerExtension(updateType, &contentHandler);
+            loadResult = ExtensionManager::LoadUpdateContentHandlerExtension(updateType, &contentHandler);
             workflow_free_string(updateType);
         }
 

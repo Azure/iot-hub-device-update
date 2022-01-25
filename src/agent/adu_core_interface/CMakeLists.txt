@@ -10,7 +10,6 @@ add_library (
     src/adu_core_json.c
     src/adu_core_export_helpers.c
     src/agent_orchestration.c
-    src/agent_workflow.c
     src/device_properties.c
     src/startup_msg_helper.c)
 
@@ -26,6 +25,7 @@ find_package (Parson REQUIRED)
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::adu_types
+           aduc::agent_workflow
            aduc::c_utils
            aduc::communication_abstraction
            aduc::extension_manager

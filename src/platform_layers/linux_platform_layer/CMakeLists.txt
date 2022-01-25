@@ -17,10 +17,12 @@ target_include_directories (${target_name} PUBLIC ${ADUC_EXPORT_INCLUDES})
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::adu_types
+            aduc::agent_workflow
             aduc::c_utils
             aduc::config_utils
             aduc::content_handlers
             aduc::exception_utils
+            aduc::extension_manager
             aduc::hash_utils
             aduc::logging
             aduc::process_utils

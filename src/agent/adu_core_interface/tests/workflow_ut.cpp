@@ -17,6 +17,7 @@
 #include <thread>
 
 #include "aduc/adu_core_export_helpers.h"
+#include "aduc/adu_core_interface.h"
 #include "aduc/agent_workflow.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle.h"
@@ -103,7 +104,7 @@ static void Mock_Idle_Callback(ADUC_Token token, const char* workflowId)
 
 extern "C"
 {
-    static void DownloadProgressCallback(
+    void Mock_DownloadProgressCallback(
         const char* /*workflowId*/,
         const char* /*fileId*/,
         ADUC_DownloadProgressState /*state*/,
@@ -371,7 +372,8 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow E2E Functional")
     workflowData.UpdateActionCallbacks.SandboxDestroyCallback = Mock_SandboxDestroyCallback;
     workflowData.UpdateActionCallbacks.IdleCallback = Mock_IdleCallback;
 
-    workflowData.DownloadProgressCallback = DownloadProgressCallback;
+    workflowData.DownloadProgressCallback = Mock_DownloadProgressCallback;
+    workflowData.ReportStateAndResultAsyncCallback = AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync;
     workflowData.LastReportedState = ADUCITF_State_Idle;
 
     REQUIRE(IsAducResultCodeSuccess(result.ResultCode));

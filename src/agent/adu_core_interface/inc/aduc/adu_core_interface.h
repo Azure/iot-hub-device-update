@@ -76,28 +76,17 @@ void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
 /**
  * @brief Report a new state to the server.
  *
- * @param workflowData A pointer to workflow data object.
+ * @param workflowDataToken A pointer to workflow data object.
  * @param updateState State to report.
  * @param result Result to report (optional, can be NULL).
  * @param installedUpdateId An installed update it JSON string.
  * @returns true on reporting success.
  */
 _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-    ADUC_WorkflowData* workflowData,
+    ADUC_WorkflowDataToken workflowDataToken,
     ADUCITF_State updateState,
     const ADUC_Result* result,
     const char* installedUpdateId);
-
-/**
- * @brief Report the 'UpdateId' and 'Idle' state to the server.
- *
- * @param workflowData A workflow data object.
- * @param updateId Id of and update installed on the device.
- * @returns true on reporting success.
- */
-_Bool AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(
-    ADUC_WorkflowData* workflowData,
-    const char* updateId);
 
 EXTERN_C_END
 

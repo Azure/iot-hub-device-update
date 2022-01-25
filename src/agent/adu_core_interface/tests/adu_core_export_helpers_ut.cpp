@@ -17,6 +17,7 @@
 #include <thread>
 
 #include "aduc/adu_core_export_helpers.h"
+#include "aduc/adu_core_interface.h"
 #include "aduc/agent_workflow.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle.h"
@@ -56,6 +57,7 @@ public:
         m_wf = get_workflow_from_test_data("adu_core_export_helpers/updateManifest.json");
         m_workflowData.WorkflowHandle = m_wf;
         m_workflowData.UpdateActionCallbacks = m_updateActionCallbacks;
+        m_workflowData.ReportStateAndResultAsyncCallback = AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync;
 
         m_previousDeviceHandle = g_iotHubClientHandleForADUComponent;
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -104,7 +106,7 @@ TEST_CASE("ADUC_MethodCall_Register and Unregister: Valid")
     ADUC_MethodCall_Unregister(&updateActionCallbacks);
 }
 
-TEST_CASE("ADUC_MethodCall_Idle - Calls SandboxDestroyCallback")
+TEST_CASE("ADUC_Workflow_MethodCall_Idle - Calls SandboxDestroyCallback")
 {
     AduCoreExportHelpersTestCaseFixture fixture;
     ADUC_WorkflowData* workflowData = fixture.GetWorkflowData();
@@ -122,13 +124,13 @@ TEST_CASE("ADUC_MethodCall_Idle - Calls SandboxDestroyCallback")
     workflowData->UpdateActionCallbacks.SandboxDestroyCallback = Mock_SandboxDestroyCallback;
     workflowData->UpdateActionCallbacks.IdleCallback = Mock_IdleCallback;
 
-    ADUC_MethodCall_Idle(workflowData);
+    ADUC_Workflow_MethodCall_Idle(workflowData);
 
-    // ADUC_MethodCall_Idle frees and Nulls-out WorkflowHandle
+    // ADUC_Workflow_MethodCall_Idle frees and Nulls-out WorkflowHandle
     CHECK(workflowData->WorkflowHandle == nullptr);
 }
 
-TEST_CASE("ADUC_MethodCall_Download - Fail if not DeploymentInProgress state")
+TEST_CASE("ADUC_Workflow_MethodCall_Download - Fail if not DeploymentInProgress state")
 {
     AduCoreExportHelpersTestCaseFixture fixture;
     ADUC_WorkflowData* workflowData = fixture.GetWorkflowData();
@@ -137,7 +139,7 @@ TEST_CASE("ADUC_MethodCall_Download - Fail if not DeploymentInProgress state")
 
     ADUC_MethodCall_Data methodCallData{};
     methodCallData.WorkflowData = workflowData;
-    ADUC_Result result = ADUC_MethodCall_Download(&methodCallData);
+    ADUC_Result result = ADUC_Workflow_MethodCall_Download(&methodCallData);
     CHECK(result.ResultCode == ADUC_Result_Failure);
     CHECK(result.ExtendedResultCode == ADUC_ERC_UPPERLEVEL_WORKFLOW_UPDATE_ACTION_UNEXPECTED_STATE);
 }
@@ -163,7 +165,7 @@ static ADUC_Result Mock_DownloadCallback(ADUC_Token token, const ADUC_WorkComple
     return result;
 }
 
-TEST_CASE("ADUC_MethodCall_Download - Calls SandboxCreate and DownloadCallback")
+TEST_CASE("ADUC_Workflow_MethodCall_Download - Calls SandboxCreate and DownloadCallback")
 {
     AduCoreExportHelpersTestCaseFixture fixture;
     ADUC_WorkflowData* workflowData = fixture.GetWorkflowData();
@@ -175,7 +177,7 @@ TEST_CASE("ADUC_MethodCall_Download - Calls SandboxCreate and DownloadCallback")
 
     ADUC_MethodCall_Data methodCallData{};
     methodCallData.WorkflowData = workflowData;
-    ADUC_Result result = ADUC_MethodCall_Download(&methodCallData);
+    ADUC_Result result = ADUC_Workflow_MethodCall_Download(&methodCallData);
 
     CHECK(result.ResultCode == ADUC_Result_Success);
 }

@@ -16,7 +16,6 @@
 
 #include <aduc/adu_core_exports.h>
 #include <aduc/content_handler.hpp>
-#include <aduc/content_handler_factory.hpp>
 #include <aduc/exception_utils.hpp>
 #include <aduc/logging.h>
 #include <aduc/result.h>

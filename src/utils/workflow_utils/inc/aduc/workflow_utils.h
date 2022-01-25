@@ -189,10 +189,12 @@ const char* workflow_peek_retryTimestamp(ADUC_WorkflowHandle handle);
  * @brief Set a work folder (a.k.a, sandbox) for this workflow.
  *
  * @param handle A workflow data object handle.
- * @param workfolder A full path to the work folder.
+ * @param format A format string for work folder path.
+ * @param ... An argument list.
  * @return Return true is succeeded.
  */
-bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* workfolder);
+bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* pathFormat, ...);
+
 
 /**
  * @brief Get the work folder for this workflow.

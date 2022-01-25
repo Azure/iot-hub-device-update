@@ -16,7 +16,6 @@ target_include_directories (
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aduc::adu_core_interface
     PRIVATE aduc::adu_types
             aduc::c_utils
             aduc::workflow_utils)

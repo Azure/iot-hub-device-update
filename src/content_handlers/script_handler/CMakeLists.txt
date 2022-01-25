@@ -30,7 +30,9 @@ target_link_libraries (
             aduc::string_utils
             aduc::system_utils
             aduc::workflow_data_utils
-            aduc::workflow_utils)
+            aduc::workflow_utils
+            -zdefs
+            )
 
 if (ADUC_BUILD_UNIT_TESTS)
 # TODO:NOX:Bug 36966499: [PPR] Add and enable script handler unittest

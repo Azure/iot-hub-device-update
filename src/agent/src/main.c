@@ -8,6 +8,7 @@
 #include "aduc/adu_core_export_helpers.h"
 #include "aduc/adu_core_interface.h"
 #include "aduc/adu_types.h"
+#include "aduc/agent_workflow.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
 #include "aduc/config_utils.h"
@@ -159,7 +160,7 @@ typedef struct tagPnPComponentEntry
     const PnPComponentDestroyFunc Destroy;
     const PnPComponentPropertyUpdateCallback
         PnPPropertyUpdateCallback; /**< Called when a component's property is updated. (optional) */
-
+    
     //
     // Following data is dynamic.
     // Must be initialized to NULL in map and remain last entries in this struct.
@@ -726,6 +727,45 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
     {
         ClientHandle_Destroy(g_iotHubClientHandle);
         g_iotHubClientHandle = NULL;
+    }
+
+    return result;
+}
+
+/**
+ * @brief Scans the connection string and returns the connection type related to the string
+ * @details The connection string must use the valid, correct format for the DeviceId and/or the ModuleId
+ * e.g.
+ * "DeviceId=some-device-id;ModuleId=some-module-id;"
+ * If the connection string contains the DeviceId it is an ADUC_ConnType_Device
+ * If the connection string contains the DeviceId AND the ModuleId it is an ADUC_ConnType_Module
+ * @param connectionString the connection string to scan
+ * @returns the connection type for @p connectionString
+ */
+ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
+{
+    ADUC_ConnType result = ADUC_ConnType_NotSet;
+
+    if (connectionString == NULL)
+    {
+        Log_Debug("Connection string passed to GetConnTypeFromConnectionString is NULL");
+        return ADUC_ConnType_NotSet;
+    }
+
+    if (ConnectionStringUtils_DoesKeyExist(connectionString, "DeviceId"))
+    {
+        if (ConnectionStringUtils_DoesKeyExist(connectionString, "ModuleId"))
+        {
+            result = ADUC_ConnType_Module;
+        }
+        else
+        {
+            result = ADUC_ConnType_Device;
+        }
+    }
+    else
+    {
+        Log_Debug("DeviceId not present in connection string.");
     }
 
     return result;

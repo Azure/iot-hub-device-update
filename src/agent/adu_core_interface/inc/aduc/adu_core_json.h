@@ -17,14 +17,6 @@
 #include <stdbool.h>
 
 EXTERN_C_BEGIN
-
-const char* ADUCITF_UpdateActionToString(ADUCITF_UpdateAction updateAction);
-
-const char* ADUCITF_StateToString(ADUCITF_State updateState);
-
-const char* ADUC_WorkflowCancellationTypeToString(ADUC_WorkflowCancellationType cancellationType);
-
-
 //
 // Methods
 //

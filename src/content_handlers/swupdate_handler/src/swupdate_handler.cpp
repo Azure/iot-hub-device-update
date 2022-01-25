@@ -93,7 +93,7 @@ ContentHandler* SWUpdateHandlerImpl::CreateContentHandler()
  *
  * @return ADUC_Result The result of the download (always success)
  */
-ADUC_Result SWUpdateHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
+ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowData)
 {
     std::stringstream updateFilename;
     ADUC_Result result = { ADUC_Result_Failure };
@@ -155,7 +155,7 @@ done:
  *
  * @return ADUC_Result The result of the install.
  */
-ADUC_Result SWUpdateHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
+ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = { ADUC_Result_Failure };
     ADUC_FileEntity* entity = nullptr;
@@ -229,7 +229,7 @@ done:
  *
  * @return ADUC_Result The result of the apply.
  */
-ADUC_Result SWUpdateHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
+ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = { ADUC_Result_Failure };
     char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
@@ -284,7 +284,7 @@ done:
  *
  * @return ADUC_Result The result of the cancel.
  */
-ADUC_Result SWUpdateHandlerImpl::Cancel(const ADUC_WorkflowData* workflowData)
+ADUC_Result SWUpdateHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
 {
     UNREFERENCED_PARAMETER(workflowData);
     return ADUC_Result{ ADUC_Result_Cancel_Success };
@@ -339,7 +339,7 @@ std::string SWUpdateHandlerImpl::ReadValueFromFile(const std::string& filePath)
  *
  * @return ADUC_Result
  */
-ADUC_Result SWUpdateHandlerImpl::IsInstalled(const ADUC_WorkflowData* workflowData)
+ADUC_Result SWUpdateHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflowData)
 {
     char* installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
     ADUC_Result result;

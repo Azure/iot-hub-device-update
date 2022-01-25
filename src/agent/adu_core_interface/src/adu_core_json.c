@@ -17,90 +17,12 @@
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h"
 #include "aduc/types/workflow.h"
+#include "aduc/agent_workflow.h"
 #include <jws_utils.h>
 #include <parson_json_utils.h>
 
 _Bool ADUC_JSON_GetUpdateManifestStringField(
     const JSON_Value* updateActionJson, const char* jsonFieldName, char** value);
-
-/**
- * @brief Convert UpdateState to string representation.
- *
- * @param updateState State to convert.
- * @return const char* String representation.
- */
-const char* ADUCITF_StateToString(ADUCITF_State updateState)
-{
-    switch (updateState)
-    {
-    case ADUCITF_State_None:
-        return "None";
-    case ADUCITF_State_Idle:
-        return "Idle";
-    case ADUCITF_State_DownloadStarted:
-        return "DownloadStarted";
-    case ADUCITF_State_DownloadSucceeded:
-        return "DownloadSucceeded";
-    case ADUCITF_State_InstallStarted:
-        return "InstallStarted";
-    case ADUCITF_State_InstallSucceeded:
-        return "InstallSucceeded";
-    case ADUCITF_State_ApplyStarted:
-        return "ApplyStarted";
-    case ADUCITF_State_DeploymentInProgress:
-        return "DeploymentInProgress";
-    case ADUCITF_State_Failed:
-        return "Failed";
-    }
-
-    return "<Unknown>";
-}
-
-/**
- * @brief Convert UpdateAction to string representation.
- *
- * @param updateAction Action to convert.
- * @return const char* String representation.
- */
-const char* ADUCITF_UpdateActionToString(ADUCITF_UpdateAction updateAction)
-{
-    switch (updateAction)
-    {
-    case ADUCITF_UpdateAction_Invalid_Download:
-        return "Invalid (Download)";
-    case ADUCITF_UpdateAction_Invalid_Install:
-        return "Invalid (Install)";
-    case ADUCITF_UpdateAction_Invalid_Apply:
-        return "Invalid (Apply)";
-    case ADUCITF_UpdateAction_ProcessDeployment:
-        return "ProcessDeployment";
-    case ADUCITF_UpdateAction_Cancel:
-        return "Cancel";
-    case ADUCITF_UpdateAction_Undefined:
-        return "Undefined";
-    }
-
-    return "<Unknown>";
-}
-
-const char* ADUC_WorkflowCancellationTypeToString(ADUC_WorkflowCancellationType cancellationType)
-{
-    switch (cancellationType)
-    {
-        case ADUC_WorkflowCancellationType_None:
-            return "None";
-        case ADUC_WorkflowCancellationType_Normal:
-            return "Normal";
-        case ADUC_WorkflowCancellationType_Replacement:
-            return "Replacement";
-        case ADUC_WorkflowCancellationType_Retry:
-            return "Retry";
-        case ADUC_WorkflowCancellationType_ComponentChanged:
-            return "ComponentChanged";
-    }
-
-    return "<Unknown>";
-}
 
 /**
  * @brief Do (some) UpdateAction JSON validation and return root object.

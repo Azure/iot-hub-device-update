@@ -25,7 +25,7 @@ typedef enum tagADUC_ExtensionType
 } ADUC_ExtensionType;
 
 // Default DO retry timeout is 24 hours.
-#define DO_RETRY_TIMEOUT_DEFAULT (60*60*24)
+#define DO_RETRY_TIMEOUT_DEFAULT (60 * 60 * 24)
 
 // Forward declaration.
 class ContentHandler;
@@ -86,11 +86,15 @@ private:
     static void _FreeComponentsDataString(char* componentsJson);
 
     static ADUC_Result LoadExtensionLibrary(
-        const std::string& extensionName,
+        const char* extensionName,
+        const char* extensionPath,
+        const char* extensionSubfolder,
+        const char* extensionRegFileName,
         const char* requiredFunction,
         int facilityCode,
         int componentCode,
         void** libHandle);
+
     static std::unordered_map<std::string, void*> _libs;
     static std::unordered_map<std::string, ContentHandler*> _contentHandlers;
     static void* _contentDownloader;

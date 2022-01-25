@@ -820,9 +820,37 @@ bool workflow_get_boolean_property(ADUC_WorkflowHandle handle, const char* prope
     return json_object_get_boolean(wf->PropertiesObject, property);
 }
 
-bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* workfolder)
+bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* format, ...)
 {
-    return workflow_set_string_property(handle, WORKFLOW_PROPERTY_FIELD_WORKFOLDER, workfolder);
+    bool success = false;
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    if (wf == NULL)
+    {
+        return false;
+    }
+
+    if (format == NULL)
+    {
+        success = workflow_set_string_property(handle, WORKFLOW_PROPERTY_FIELD_WORKFOLDER, "");
+    }
+    else
+    {
+        char buffer[WORKFLOW_RESULT_DETAILS_MAX_LENGTH];
+        va_list arg_list;
+        va_start(arg_list, format);
+        if (vsnprintf(buffer, WORKFLOW_RESULT_DETAILS_MAX_LENGTH, format, arg_list) >= 0)
+        {
+            success = workflow_set_string_property(handle, WORKFLOW_PROPERTY_FIELD_WORKFOLDER, buffer);
+        }
+        else
+        {
+            Log_Error("Cannot set workflow's workfolder.");
+            success = false;
+        }
+        va_end(arg_list);
+    }
+    
+    return success;
 }
 
 bool workflow_set_selected_components(ADUC_WorkflowHandle handle, const char* selectedComponents)

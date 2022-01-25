@@ -9,7 +9,7 @@
 #define ADUC_SWUPDATE_HANDLER_HPP
 
 #include "aduc/content_handler.hpp"
-#include "aduc/content_handler_factory.hpp"
+#include "aduc/logging.h"
 #include <aduc/result.h>
 #include <memory>
 #include <string>
@@ -41,11 +41,11 @@ public:
 
     ~SWUpdateHandlerImpl() override;
 
-    ADUC_Result Download(const ADUC_WorkflowData* workflowData) override;
-    ADUC_Result Install(const ADUC_WorkflowData* workflowData) override;
-    ADUC_Result Apply(const ADUC_WorkflowData* workflowData) override;
-    ADUC_Result Cancel(const ADUC_WorkflowData* workflowData) override;
-    ADUC_Result IsInstalled(const ADUC_WorkflowData* workflowData) override;
+    ADUC_Result Download(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result Install(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result Apply(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result Cancel(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result IsInstalled(const tagADUC_WorkflowData* workflowData) override;
 
     static std::string ReadValueFromFile(const std::string& filePath);
 

@@ -320,9 +320,25 @@ _Bool ADUC_IsValidUpdateId(const ADUC_UpdateId* updateId);
 
 /**
  * @brief Free the UpdateId and its content.
- * @param updateid a pointer to an updateId struct to be freed
+ * @param updateId a pointer to an updateId struct to be freed
  */
 void ADUC_UpdateId_UninitAndFree(ADUC_UpdateId* updateId);
+
+/**
+ * @brief Convert UpdateState to string representation.
+ *
+ * @param updateState State to convert.
+ * @return const char* String representation.
+ */
+const char* ADUCITF_StateToString(ADUCITF_State updateState);
+
+/**
+ * @brief Convert UpdateAction to string representation.
+ *
+ * @param updateAction Action to convert.
+ * @return const char* String representation.
+ */
+const char* ADUCITF_UpdateActionToString(ADUCITF_UpdateAction updateAction);
 
 EXTERN_C_END
 

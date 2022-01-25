@@ -7,11 +7,9 @@
  */
 #include "aduc/steps_handler.hpp"
 
-#include "aduc/adu_core_exports.h"
 #include "aduc/component_enumerator_extension.hpp"
 #include "aduc/extension_manager.hpp"
 #include "aduc/extension_utils.h"
-#include "aduc/installed_criteria_utils.hpp"
 #include "aduc/logging.h"
 #include "aduc/string_utils.hpp"
 #include "aduc/system_utils.h"
@@ -328,13 +326,13 @@ done:
 }
 
 /**
- * @brief Perform download phase for spicified step.
+ * @brief Perform download phase for specified step.
  *
  * @param workflowData A workflow data object.
  * @param stepIndex A step index.
  * @return ADUC_Result
  */
-static ADUC_Result ProcessStepDownloadPhase(const ADUC_WorkflowData* workflowData, int stepIndex)
+static ADUC_Result ProcessStepDownloadPhase(const tagADUC_WorkflowData* workflowData, int stepIndex)
 {
     Log_Info("Step's download phase begin.");
     ADUC_Result result = { ADUC_Result_Failure };
@@ -360,7 +358,7 @@ static ADUC_Result ProcessStepDownloadPhase(const ADUC_WorkflowData* workflowDat
         goto done;
     }
 
-    result = ContentHandlerFactory::LoadUpdateContentHandlerExtension(stepHandlerName, &contentHandler);
+    result = ExtensionManager::LoadUpdateContentHandlerExtension(stepHandlerName, &contentHandler);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -394,7 +392,7 @@ done:
  *
  * @return ADUC_Result The result.
  */
-static ADUC_Result StepsHandler_Download(const ADUC_WorkflowData* workflowData)
+static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
@@ -499,7 +497,7 @@ static ADUC_Result StepsHandler_Download(const ADUC_WorkflowData* workflowData)
 
             Log_Info("Loading handler for step #%d (handler: '%s')", i, stepUpdateType);
 
-            result = ContentHandlerFactory::LoadUpdateContentHandlerExtension(stepUpdateType, &contentHandler);
+            result = ExtensionManager::LoadUpdateContentHandlerExtension(stepUpdateType, &contentHandler);
 
             if (IsAducResultCodeFailure(result.ResultCode))
             {
@@ -609,7 +607,7 @@ done:
  *
  * @return ADUC_Result The result.
  */
-ADUC_Result StepsHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
+ADUC_Result StepsHandlerImpl::Download(const tagADUC_WorkflowData* workflowData)
 {
     return StepsHandler_Download(workflowData);
 }
@@ -623,7 +621,7 @@ ADUC_Result StepsHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
  *
  * @return ADUC_Result The result (always success)
  */
-static ADUC_Result StepsHandler_Install(const ADUC_WorkflowData* workflowData)
+static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
 
@@ -730,7 +728,7 @@ static ADUC_Result StepsHandler_Install(const ADUC_WorkflowData* workflowData)
 
             Log_Info("Loading handler for step #%d (handler: '%s')", i, stepUpdateType);
 
-            result = ContentHandlerFactory::LoadUpdateContentHandlerExtension(stepUpdateType, &contentHandler);
+            result = ExtensionManager::LoadUpdateContentHandlerExtension(stepUpdateType, &contentHandler);
 
             if (IsAducResultCodeFailure(result.ResultCode))
             {
@@ -928,7 +926,7 @@ done:
  *
  * @return ADUC_Result The result (always success)
  */
-ADUC_Result StepsHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
+ADUC_Result StepsHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
 {
     return StepsHandler_Install(workflowData);
 }
@@ -937,7 +935,7 @@ ADUC_Result StepsHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
  * @brief Perform 'Apply' action.
  * @return ADUC_Result The result (always success)
  */
-static ADUC_Result StepsHandler_Apply(const ADUC_WorkflowData* workflowData)
+static ADUC_Result StepsHandler_Apply(const tagADUC_WorkflowData* workflowData)
 {
     UNREFERENCED_PARAMETER(workflowData);
     Log_Debug("Steps_Handler 'apply' phase begin.");
@@ -951,7 +949,7 @@ static ADUC_Result StepsHandler_Apply(const ADUC_WorkflowData* workflowData)
  * @brief Perform 'Apply' action.
  * @return ADUC_Result The result (always success)
  */
-ADUC_Result StepsHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
+ADUC_Result StepsHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
 {
     return StepsHandler_Apply(workflowData);
 }
@@ -959,7 +957,7 @@ ADUC_Result StepsHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
 /**
  * @brief Perform 'Cancel' action
  */
-ADUC_Result StepsHandlerImpl::Cancel(const ADUC_WorkflowData* workflowData)
+ADUC_Result StepsHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
 {
     UNREFERENCED_PARAMETER(workflowData);
     Log_Info("Cancel called - returning success");
@@ -974,7 +972,7 @@ ADUC_Result StepsHandlerImpl::Cancel(const ADUC_WorkflowData* workflowData)
  *
  * @return ADUC_Result
  */
-static ADUC_Result StepsHandler_IsInstalled(const ADUC_WorkflowData* workflowData)
+static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
 
@@ -1081,7 +1079,7 @@ static ADUC_Result StepsHandler_IsInstalled(const ADUC_WorkflowData* workflowDat
 
             Log_Info("Loading handler for step #%d (handler: '%s')", i, stepUpdateType);
 
-            result = ContentHandlerFactory::LoadUpdateContentHandlerExtension(stepUpdateType, &contentHandler);
+            result = ExtensionManager::LoadUpdateContentHandlerExtension(stepUpdateType, &contentHandler);
 
             if (IsAducResultCodeFailure(result.ResultCode))
             {
@@ -1158,7 +1156,7 @@ done:
  *
  * @return ADUC_Result
  */
-ADUC_Result StepsHandlerImpl::IsInstalled(const ADUC_WorkflowData* workflowData)
+ADUC_Result StepsHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflowData)
 {
     return StepsHandler_IsInstalled(workflowData);
 }

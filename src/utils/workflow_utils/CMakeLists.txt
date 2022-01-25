@@ -24,7 +24,7 @@ find_package (azure_c_shared_utility REQUIRED)
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aziotsharedutil aduc::c_utils
+    PUBLIC  aduc::c_utils
     PRIVATE aduc::adu_types
             aduc::hash_utils
             aduc::jws_utils

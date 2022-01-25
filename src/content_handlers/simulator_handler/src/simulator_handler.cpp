@@ -6,29 +6,100 @@
  * Licensed under the MIT License.
  */
 #include "aduc/simulator_handler.hpp"
-#include "aduc/adu_core_exports.h"
 #include "aduc/logging.h"
-#include "aduc/string_c_utils.h"
-#include "aduc/string_utils.hpp"
-#include "aduc/system_utils.h"
-#include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 #include "parson.h"
-
-#include <azure_c_shared_utility/strings.h> // STRING_*
-
-#include <algorithm>
-#include <fstream>
-#include <functional>
+#include <stdarg.h> // for va_*
+#include <stdlib.h> // for getenv
 #include <memory>
-#include <sstream>
 #include <string>
-
-#include <dirent.h>
 
 #define SIMULATOR_DATA_FILE "du-simulator-data.json"
 
 EXTERN_C_BEGIN
+
+/**
+ * @brief Retrieve system temporary path with a subfolder.
+ *
+ * This only returns a folder name, which is neither created nor checked for existence.
+ *
+ * Loosely based on Boost's implementation, which is:
+ * TMPDIR > TMP > TEMP > TEMPDIR > (android only) "/data/local/tmp" > "/tmp"
+ *
+ * @return const char* Returns the path to the temporary directory. This is a long-lived string.
+ */
+const char* _GetTemporaryPathName()
+{
+    const char* env;
+    env = getenv("TMPDIR");
+    if (env == NULL)
+    {
+        env = getenv("TMP");
+        if (env == NULL)
+        {
+            env = getenv("TEMP");
+            if (env == NULL)
+            {
+                env = getenv("TEMPDIR");
+                if (env == NULL)
+                {
+                    static const char* root_tmp_folder = "/tmp";
+                    env = root_tmp_folder;
+                }
+            }
+        }
+    }
+
+    return env;
+}
+
+/**
+ * @brief Maximum length for the output string of ADUC_StringFormat()
+ */
+#define ADUC_STRING_FORMAT_MAX_LENGTH 512
+
+/**
+ * @brief Returns string created by formatting a variable number of string arguments with @p fmt
+ * @details Caller must free returned string, any formatted string above 512 characters in length will result in a failed call
+ * @param fmt format string to be used on parameters
+ * @returns in case of string > 512 characters or other failure NULL, otherwise a pointer to a null-terminated string
+ */
+char* _StringFormat(const char* fmt, ...)
+{
+    if (fmt == NULL)
+    {
+        return NULL;
+    }
+
+    char buffer[ADUC_STRING_FORMAT_MAX_LENGTH];
+
+    va_list args;
+
+    va_start(args, fmt);
+
+    const int result = vsnprintf(buffer, ADUC_STRING_FORMAT_MAX_LENGTH, fmt, args);
+
+    va_end(args);
+
+    if (result <= 0 || result >= ADUC_STRING_FORMAT_MAX_LENGTH)
+    {
+        return NULL;
+    }
+
+    char* outputStr = (char*)malloc(strlen(buffer)+1);
+    if (outputStr == NULL)
+    {
+        return NULL;
+    }
+
+    if (strcpy(outputStr, buffer) == NULL)
+    {
+        free(outputStr);
+        outputStr = NULL;
+    }
+
+    return outputStr;
+}
 
 /**
  * @brief Instantiates an Simulator Update Content Handler
@@ -85,7 +156,7 @@ ContentHandler* SimulatorHandlerImpl::CreateContentHandler()
  */
 char* GetSimulatorDataFilePath()
 {
-    return ADUC_StringFormat("%s/%s", ADUC_SystemUtils_GetTemporaryPathName(), SIMULATOR_DATA_FILE);
+    return _StringFormat("%s/%s", _GetTemporaryPathName(), SIMULATOR_DATA_FILE);
 }
 
 /**
@@ -115,7 +186,7 @@ done:
  * @return ADUC_Result Return result from simulator data file if specified.
  *         Otherwise, return ADUC_Result_Download_Success.
  */
-ADUC_Result SimulatorHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
+ADUC_Result SimulatorHandlerImpl::Download(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = { .ResultCode = ADUC_Result_Download_Success };
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
@@ -129,8 +200,6 @@ ADUC_Result SimulatorHandlerImpl::Download(const ADUC_WorkflowData* workflowData
         fileCount = static_cast<unsigned int>(workflow_get_update_files_count(handle));
     }
 
-    STRING_HANDLE leafManifestFile = nullptr;
-    STRING_HANDLE childId = nullptr;
     JSON_Object* downloadResult = nullptr;
 
     JSON_Object* data = ReadDataFile();
@@ -192,8 +261,6 @@ ADUC_Result SimulatorHandlerImpl::Download(const ADUC_WorkflowData* workflowData
     }
 
 done:
-    STRING_delete(leafManifestFile);
-    STRING_delete(childId);
 
     if (data != nullptr)
     {
@@ -204,7 +271,7 @@ done:
 }
 
 ADUC_Result SimulatorActionHelper(
-    const ADUC_WorkflowData* workflowData,
+    const tagADUC_WorkflowData* workflowData,
     ADUC_Result_t defaultResultCode,
     const char* action,
     const char* resultSelector)
@@ -227,7 +294,7 @@ ADUC_Result SimulatorActionHelper(
     resultObject = json_value_get_object(json_object_get_value(data, action));
 
     // Select for specific result.
-    if (!IsNullOrEmpty(resultSelector))
+    if (resultSelector != nullptr && *resultSelector != '\0')
     {
         JSON_Object* selectResult = json_value_get_object(json_object_get_value(resultObject, resultSelector));
 
@@ -270,7 +337,7 @@ done:
  * @return ADUC_Result Return result from simulator data file if specified.
  *         Otherwise, return ADUC_Result_Install_Success.
  */
-ADUC_Result SimulatorHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
+ADUC_Result SimulatorHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
 {
     return SimulatorActionHelper(workflowData, ADUC_Result_Install_Success, "install", nullptr);
 }
@@ -280,7 +347,7 @@ ADUC_Result SimulatorHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
  * @return ADUC_Result Return result from simulator data file if specified.
  *         Otherwise, return ADUC_Result_Apply_Success.
  */
-ADUC_Result SimulatorHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
+ADUC_Result SimulatorHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
 {
     return SimulatorActionHelper(workflowData, ADUC_Result_Apply_Success, "apply", nullptr);
 }
@@ -290,7 +357,7 @@ ADUC_Result SimulatorHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
  * @return ADUC_Result Return result from simulator data file if specified.
  *         Otherwise, return ADUC_Result_Cancel_Success.
  */
-ADUC_Result SimulatorHandlerImpl::Cancel(const ADUC_WorkflowData* workflowData)
+ADUC_Result SimulatorHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
 {
     return SimulatorActionHelper(workflowData, ADUC_Result_Cancel_Success, "cancel", nullptr);
 }
@@ -299,9 +366,10 @@ ADUC_Result SimulatorHandlerImpl::Cancel(const ADUC_WorkflowData* workflowData)
  * @brief Mock implementation of IsInstalled check.
  * @return ADUC_Result The result based on evaluating the installed criteria.
  */
-ADUC_Result SimulatorHandlerImpl::IsInstalled(const ADUC_WorkflowData* workflowData)
+ADUC_Result SimulatorHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflowData)
 {
-    char* installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
+    char* installedCriteria = workflow_get_installed_criteria(workflowData->WorkflowHandle);
+
     ADUC_Result result =
         SimulatorActionHelper(workflowData, ADUC_Result_IsInstalled_Installed, "isInstalled", installedCriteria);
     workflow_free_string(installedCriteria);

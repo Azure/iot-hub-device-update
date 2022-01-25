@@ -60,45 +60,6 @@ void ADUC_ConnectionInfo_DeAlloc(ADUC_ConnectionInfo* info)
 }
 
 /**
- * @brief Scans the connection string and returns the connection type related to the string
- * @details The connection string must use the valid, correct format for the DeviceId and/or the ModuleId
- * e.g.
- * "DeviceId=some-device-id;ModuleId=some-module-id;"
- * If the connection string contains the DeviceId it is an ADUC_ConnType_Device
- * If the connection string contains the DeviceId AND the ModuleId it is an ADUC_ConnType_Module
- * @param connectionString the connection string to scan
- * @returns the connection type for @p connectionString
- */
-ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
-{
-    ADUC_ConnType result = ADUC_ConnType_NotSet;
-
-    if (connectionString == NULL)
-    {
-        Log_Debug("Connection string passed to GetConnTypeFromConnectionString is NULL");
-        return ADUC_ConnType_NotSet;
-    }
-
-    if (ConnectionStringUtils_DoesKeyExist(connectionString, "DeviceId"))
-    {
-        if (ConnectionStringUtils_DoesKeyExist(connectionString, "ModuleId"))
-        {
-            result = ADUC_ConnType_Module;
-        }
-        else
-        {
-            result = ADUC_ConnType_Device;
-        }
-    }
-    else
-    {
-        Log_Debug("DeviceId not present in connection string.");
-    }
-
-    return result;
-}
-
-/**
  * @brief Checks if the UpdateId is valid
  * @param updateId updateId to check
  * @returns True if it is valid, false if not
@@ -181,4 +142,65 @@ done:
     }
 
     return updateId;
+}
+
+
+/**
+ * @brief Convert UpdateState to string representation.
+ *
+ * @param updateState State to convert.
+ * @return const char* String representation.
+ */
+const char* ADUCITF_StateToString(ADUCITF_State updateState)
+{
+    switch (updateState)
+    {
+    case ADUCITF_State_None:
+        return "None";
+    case ADUCITF_State_Idle:
+        return "Idle";
+    case ADUCITF_State_DownloadStarted:
+        return "DownloadStarted";
+    case ADUCITF_State_DownloadSucceeded:
+        return "DownloadSucceeded";
+    case ADUCITF_State_InstallStarted:
+        return "InstallStarted";
+    case ADUCITF_State_InstallSucceeded:
+        return "InstallSucceeded";
+    case ADUCITF_State_ApplyStarted:
+        return "ApplyStarted";
+    case ADUCITF_State_DeploymentInProgress:
+        return "DeploymentInProgress";
+    case ADUCITF_State_Failed:
+        return "Failed";
+    }
+
+    return "<Unknown>";
+}
+
+/**
+ * @brief Convert UpdateAction to string representation.
+ *
+ * @param updateAction Action to convert.
+ * @return const char* String representation.
+ */
+const char* ADUCITF_UpdateActionToString(ADUCITF_UpdateAction updateAction)
+{
+    switch (updateAction)
+    {
+    case ADUCITF_UpdateAction_Invalid_Download:
+        return "Invalid (Download)";
+    case ADUCITF_UpdateAction_Invalid_Install:
+        return "Invalid (Install)";
+    case ADUCITF_UpdateAction_Invalid_Apply:
+        return "Invalid (Apply)";
+    case ADUCITF_UpdateAction_ProcessDeployment:
+        return "ProcessDeployment";
+    case ADUCITF_UpdateAction_Cancel:
+        return "Cancel";
+    case ADUCITF_UpdateAction_Undefined:
+        return "Undefined";
+    }
+
+    return "<Unknown>";
 }

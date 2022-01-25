@@ -35,7 +35,7 @@ static STRING_HANDLE FolderNameFromHandlerId(const char* handlerId)
 /**
  * @brief Get the Extension File Entity object
  *
- * @param[in] extensionRegFile A full path to the extension registrion file.
+ * @param[in] extensionRegFile A full path to the extension registration file.
  * @param[in,out] fileEntity An output buffer to hold file entity data.
  * @return _Bool Returns 'true' if succeeded.
  */
@@ -126,7 +126,7 @@ static _Bool GetHandlerExtensionFileEntity(
 
     STRING_HANDLE folderName = FolderNameFromHandlerId(handlerId);
 
-    STRING_HANDLE path = STRING_construct_sprintf("%s/%s/%s", extensionDir, STRING_c_str(folderName), regFileName);
+    STRING_HANDLE path = STRING_construct_sprintf("%s/%s", STRING_c_str(folderName), regFileName);
 
     found = GetExtensionFileEntity(STRING_c_str(path), fileEntity);
 

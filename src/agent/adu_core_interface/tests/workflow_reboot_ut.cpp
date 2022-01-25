@@ -20,6 +20,7 @@ using Catch::Matchers::Equals;
 #include <thread>
 
 #include "aduc/adu_core_export_helpers.h"
+#include "aduc/adu_core_interface.h"
 #include "aduc/agent_workflow.h"
 #include "aduc/c_utils.h"
 #include "aduc/content_handler.hpp"
@@ -92,7 +93,7 @@ static void Mock_Idle_Callback(ADUC_Token token, const char* workflowId)
 
 extern "C"
 {
-    static void DownloadProgressCallback(
+    static void Mock_DownloadProgressCallback(
         const char* /*workflowId*/,
         const char* /*fileId*/,
         ADUC_DownloadProgressState /*state*/,
@@ -430,7 +431,8 @@ public:
         m_workflowData.UpdateActionCallbacks.IdleCallback = Mock_IdleCallback;
 
         // setup other workflow state
-        m_workflowData.DownloadProgressCallback = DownloadProgressCallback;
+        m_workflowData.DownloadProgressCallback = Mock_DownloadProgressCallback;
+        m_workflowData.ReportStateAndResultAsyncCallback = AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync;
         m_workflowData.LastReportedState = ADUCITF_State_Idle;
     }
 

@@ -20,6 +20,7 @@ add_library (${target_name} SHARED ${SOURCE_ALL})
 add_library (aduc::${target_name} ALIAS ${target_name})
 
 find_package (Parson REQUIRED)
+find_package (IotHubClient REQUIRED)
 
 target_include_directories (
     ${target_name}
@@ -42,15 +43,17 @@ target_compile_definitions (
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::c_utils
+            aduc::agent_workflow
             aduc::exception_utils
             aduc::extension_manager
-            aduc::installed_criteria_utils
             aduc::logging
             aduc::process_utils
             aduc::string_utils
             aduc::system_utils
             aduc::workflow_data_utils
             aduc::workflow_utils
-            Parson::parson)
+            Parson::parson
+            -zdefs
+            )
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

@@ -25,7 +25,6 @@
 #include <dlfcn.h>
 
 // TODO(Nox) : 34318211: [Code Clean Up] [Agent Extensibility] Consolidate ContentHandlerFactory and ExtensionManager classes.
-// And move all hard-code strings into cmakelist.txt
 
 std::unordered_map<std::string, void*> ContentHandlerFactory::_libs;
 std::unordered_map<std::string, ContentHandler*> ContentHandlerFactory::_contentHandlers;
@@ -84,7 +83,7 @@ ADUC_Result ContentHandlerFactory::LoadExtensionLibrary(const std::string& updat
     }
 
     if (!ADUC_HashUtils_IsValidFileHash(
-            entity.TargetFilename,
+            entity.TargetFilename, 
             ADUC_HashUtils_GetHashValue(entity.Hash, entity.HashCount, 0),
             algVersion))
     {
@@ -106,7 +105,7 @@ ADUC_Result ContentHandlerFactory::LoadExtensionLibrary(const std::string& updat
 
     dlerror(); // Clear any existing error
 
-    createUpdateContentHandlerExtension =
+    createUpdateContentHandlerExtension = 
         reinterpret_cast<UPDATE_CONTENT_HANDLER_CREATE_PROC>(dlsym(*libHandle, "CreateUpdateContentHandlerExtension")); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
     if (createUpdateContentHandlerExtension == nullptr)
@@ -194,7 +193,7 @@ ContentHandlerFactory::LoadUpdateContentHandlerExtension(const std::string& upda
 
     dlerror(); // Clear any existing error
 
-    createUpdateContentHandlerExtension =
+    createUpdateContentHandlerExtension = 
         reinterpret_cast<UPDATE_CONTENT_HANDLER_CREATE_PROC>(dlsym(libHandle, "CreateUpdateContentHandlerExtension")); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
     if (createUpdateContentHandlerExtension == nullptr)

@@ -16,9 +16,7 @@
 #include <time.h>
 
 #include "aduc/adu_core_exports.h"
-#include "aduc/agent_workflow.h"
 #include "aduc/exception_utils.hpp"
-#include "aduc/extension_manager.hpp"
 #include "aduc/logging.h"
 #include "aduc/result.h"
 #include "aduc/types/workflow.h"

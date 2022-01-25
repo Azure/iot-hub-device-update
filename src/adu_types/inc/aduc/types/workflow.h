@@ -125,8 +125,20 @@ typedef struct tagADUC_TestOverride_Hooks
 } ADUC_TestOverride_Hooks;
 #endif // #ifdef ADUC_BUILD_UNIT_TESTS
 
-// TODO(Nox): 34317366: [Code Clean Up] Consolidate tagADUC_WorkflowData and tagADUC_Workflow
-//            Move all ADUC_WorkflowData members into ADUC_WorkflowHandle.
+/**
+ * @brief A callback function for reporting state, and optionally result to service.
+ *
+ * @param workflowData A workflow data object.
+ * @param updateState state to report.
+ * @param result Result to report (optional, can be NULL).
+ * @param installedUpdateId Installed update id (if update completed successfully).
+ * @return true if succeeded.
+ */
+typedef _Bool (*ADUC_ReportStateAndResultAsyncCallback)(
+    ADUC_WorkflowDataToken workflowData,
+    ADUCITF_State updateState,
+    const ADUC_Result* result,
+    const char* installedUpdateId);
 
 /**
  * @brief Data shared across the agent workflow.
@@ -135,7 +147,6 @@ typedef struct tagADUC_WorkflowData
 {
     ADUC_WorkflowHandle WorkflowHandle;
     char* LogFolder; /** <Log files folder. */
-
 
     //
     // Update action data
@@ -163,6 +174,8 @@ typedef struct tagADUC_WorkflowData
     ADUC_AgentRestartState AgentRestartState; /**< The agent restart state. */
 
     ADUC_DownloadProgressCallback DownloadProgressCallback; /**< Callback for download progress. */
+
+    ADUC_ReportStateAndResultAsyncCallback ReportStateAndResultAsyncCallback; /**< Callback for reporting workflow state and result. */
 
     /**
      * @brief Results object

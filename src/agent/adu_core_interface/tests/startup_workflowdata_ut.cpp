@@ -27,7 +27,7 @@ static void Mock_ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowDat
 }
 
 static unsigned int s_setUpdateStateWithResult_call_count = 0;
-static void Mock_ADUC_SetUpdateStateWithResult(
+static void Mock_ADUC_Workflow_SetUpdateStateWithResult(
     ADUC_WorkflowData* workflowData, ADUCITF_State updateState, ADUC_Result result)
 {
     UNREFERENCED_PARAMETER(workflowData);
@@ -108,7 +108,7 @@ TEST_CASE("ADUC_Workflow_HandleStartupWorkflowData")
         ADUC_WorkflowData workflowData{};
         ADUC_TestOverride_Hooks hooks{};
         hooks.HandleUpdateActionFunc_TestOverride = Mock_ADUC_Workflow_HandleUpdateAction;
-        hooks.SetUpdateStateWithResultFunc_TestOverride = Mock_ADUC_SetUpdateStateWithResult;
+        hooks.SetUpdateStateWithResultFunc_TestOverride = Mock_ADUC_Workflow_SetUpdateStateWithResult;
         workflowData.TestOverrides = &hooks;
 
         workflowData.WorkflowHandle = nextWorkflow;

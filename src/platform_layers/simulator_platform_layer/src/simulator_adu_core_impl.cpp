@@ -16,7 +16,6 @@
 #include <cstring>
 #include <vector>
 
-#include "aduc/content_handler_factory.hpp"
 #include "aduc/logging.h"
 #include "aduc/string_utils.hpp"
 #include "aduc/workflow_data_utils.h"
@@ -257,7 +256,7 @@ ADUC_Result SimulatorPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflo
         goto done;
     }
 
-    result = ContentHandlerFactory::LoadUpdateContentHandlerExtension(updateType, &contentHandler);
+    result = ExtensionManager::LoadUpdateContentHandlerExtension(updateType, &contentHandler);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         goto done;

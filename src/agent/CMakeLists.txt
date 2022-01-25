@@ -75,6 +75,7 @@ target_link_libraries (
             iothub_client_mqtt_transport
             umqtt
             aduc::adu_core_interface
+            aduc::agent_workflow
             aduc::c_utils
             aduc::communication_abstraction
             aduc::config_utils

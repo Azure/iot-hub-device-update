@@ -390,7 +390,9 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportContentI
     testHooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState; // NOLINT
     workflowData.TestOverrides = &testHooks;
 
-    REQUIRE(AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(&workflowData, installedUpdateIdStr.str().c_str()));
+    ADUC_Result idleResult = { .ResultCode = ADUC_Result_Apply_Success, .ExtendedResultCode = 0 };
+    // Report Idle state and Update Id to service.
+    REQUIRE(AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync((ADUC_WorkflowDataToken)&workflowData, ADUCITF_State_Idle, &idleResult, installedUpdateIdStr.str().c_str()));
 
     CHECK(g_SendReportedStateValues.deviceHandle != nullptr);
 

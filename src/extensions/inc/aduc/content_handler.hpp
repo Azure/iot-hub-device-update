@@ -8,11 +8,20 @@
 #ifndef ADUC_CONTENT_HANDLER_HPP
 #define ADUC_CONTENT_HANDLER_HPP
 
-#include <string>
+#ifdef __cplusplus
+#    define EXTERN_C_BEGIN \
+        extern "C"         \
+        {
+#    define EXTERN_C_END }
+#else
+#    define EXTERN_C_BEGIN
+#    define EXTERN_C_END
+#endif
 
-#include "aduc/adu_core_exports.h"
 #include "aduc/result.h"
-#include "aduc/types/workflow.h"
+
+// Forward declation.
+struct tagADUC_WorkflowData;
 
 /**
  * @interface ContentHandler
@@ -27,11 +36,11 @@ public:
     ContentHandler(ContentHandler&&) = delete;
     ContentHandler& operator=(ContentHandler&&) = delete;
 
-    virtual ADUC_Result Download(const ADUC_WorkflowData* workflowData) = 0;
-    virtual ADUC_Result Install(const ADUC_WorkflowData* workflowData) = 0;
-    virtual ADUC_Result Apply(const ADUC_WorkflowData* workflowData) = 0;
-    virtual ADUC_Result Cancel(const ADUC_WorkflowData* workflowData) = 0;
-    virtual ADUC_Result IsInstalled(const ADUC_WorkflowData* workflowData) = 0;
+    virtual ADUC_Result Download(const tagADUC_WorkflowData* workflowData) = 0;
+    virtual ADUC_Result Install(const tagADUC_WorkflowData* workflowData) = 0;
+    virtual ADUC_Result Apply(const tagADUC_WorkflowData* workflowData) = 0;
+    virtual ADUC_Result Cancel(const tagADUC_WorkflowData* workflowData) = 0;
+    virtual ADUC_Result IsInstalled(const tagADUC_WorkflowData* workflowData) = 0;
 
     virtual ~ContentHandler()
     {

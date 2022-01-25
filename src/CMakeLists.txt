@@ -22,6 +22,7 @@ set (ADU_EXTENSION_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/extensions/inc
 
 add_subdirectory (adu-shell)
 add_subdirectory (adu_types)
+add_subdirectory (adu_workflow)
 add_subdirectory (communication_abstraction)
 add_subdirectory (content_handlers)
 add_subdirectory (diagnostics_component)

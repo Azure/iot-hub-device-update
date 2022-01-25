@@ -31,9 +31,6 @@
 #include <dlfcn.h>
 #include <unistd.h>
 
-// TODO(Nox) : 34318211: [Code Clean Up] [Agent Extensibility] Consolidate ContentHandlerFactory and ExtensionManager classes.
-// And move all hard-code strings into cmakelist.txt
-
 // Static members.
 std::unordered_map<std::string, void*> ExtensionManager::_libs;
 std::unordered_map<std::string, ContentHandler*> ExtensionManager::_contentHandlers;
@@ -50,7 +47,10 @@ STRING_HANDLE FolderNameFromHandlerId(const char* handlerId)
 
 /**
  * @brief Loads extension shared library file.
- * @param extensionName An extension sub-directory.
+ * @param extensionName An extension name.
+ * @param extensionFolder An extension root folder.
+ * @param extensionSubfolder An extension sub-folder.
+ * @param extensionRegFileName An extension registration file name.
  * @param requiredFunctionName An required function.
  * @param facilityCode Facility code for extended error report.
  * @param componentCode Component code for extended error report.
@@ -58,20 +58,23 @@ STRING_HANDLE FolderNameFromHandlerId(const char* handlerId)
  * @return ADUC_Result contains result code and extended result code.
  */
 ADUC_Result ExtensionManager::LoadExtensionLibrary(
-    const std::string& extensionName,
+    const char* extensionName,
+    const char* extensionPath,
+    const char* extensionSubfolder,
+    const char* extensionRegFileName,
     const char* requiredFunction,
     int facilityCode,
     int componentCode,
     void** libHandle)
 {
     ADUC_Result result{ ADUC_GeneralResult_Failure };
-    ADUC_FileEntity entity;
+    ADUC_FileEntity entity = {};
     SHAversion algVersion;
 
-    std::stringstream extensionPath;
-    extensionPath << ADUC_EXTENSIONS_FOLDER << "/" << extensionName << "/" << ADUC_EXTENSION_REG_FILENAME;
+    std::stringstream path;
+    path << extensionPath << "/" << extensionSubfolder << "/" << extensionRegFileName;
 
-    Log_Info("Loading extension '%s'. Reg file : %s", extensionName.c_str(), extensionPath.str().c_str());
+    Log_Info("Loading extension '%s'. Reg file : %s", extensionName, path.str().c_str());
 
     if (libHandle == nullptr)
     {
@@ -95,15 +98,15 @@ ADUC_Result ExtensionManager::LoadExtensionLibrary(
         }
         catch (...)
         {
-            Log_Debug("Unknown exception occurred while try to reuse '%s'", extensionName.c_str());
+            Log_Debug("Unknown exception occurred while try to reuse '%s'", extensionName);
         }
     }
 
     memset(&entity, 0, sizeof(entity));
 
-    if (!GetExtensionFileEntity(extensionPath.str().c_str(), &entity))
+    if (!GetExtensionFileEntity(path.str().c_str(), &entity))
     {
-        Log_Error("Failed to load extension from '%s'.", extensionPath.str().c_str());
+        Log_Error("Failed to load extension from '%s'.", path.str().c_str());
         result.ExtendedResultCode = ADUC_ERC_EXTENSION_CREATE_FAILURE_NOT_FOUND(facilityCode, componentCode);
         goto done;
     }
@@ -187,7 +190,6 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
 
     UPDATE_CONTENT_HANDLER_CREATE_PROC createUpdateContentHandlerExtension = nullptr;
     void* libHandle = nullptr;
-    std::string extensionDir = ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR;
     STRING_HANDLE folderName = nullptr;
     STRING_HANDLE path = nullptr;
 
@@ -228,11 +230,15 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
     path = STRING_construct_sprintf("%s/%s", ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR, STRING_c_str(folderName));
 
     result = LoadExtensionLibrary(
-        STRING_c_str(path),
+        updateType.c_str(),
+        ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR,
+        STRING_c_str(folderName),
+        ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME,
         "CreateUpdateContentHandlerExtension",
         ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER,
         0,
         &libHandle);
+
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         goto done;
@@ -339,7 +345,15 @@ ADUC_Result ExtensionManager::LoadContentDownloaderLibrary(void** contentDownloa
     }
 
     result = LoadExtensionLibrary(
-        "content_downloader", "Download", ADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER, 0, &extensionLib);
+        "Content Downloader",
+        ADUC_EXTENSIONS_FOLDER,
+        ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER,
+        ADUC_EXTENSION_REG_FILENAME,
+        functionNames[0],
+        ADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER,
+        0,
+        &extensionLib);
+
     if (IsAducResultCodeFailure(result.ResultCode) || extensionLib == nullptr)
     {
         goto done;
@@ -382,7 +396,15 @@ ADUC_Result ExtensionManager::LoadComponentEnumeratorLibrary(void** componentEnu
     }
 
     result = LoadExtensionLibrary(
-        "component_enumerator", requiredFunction, ADUC_FACILITY_EXTENSION_COMPONENT_ENUMERATOR, 0, &extensionLib);
+        "Component Enumerator",
+        ADUC_EXTENSIONS_FOLDER,
+        ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR,
+        ADUC_EXTENSION_REG_FILENAME,
+        requiredFunction,
+        ADUC_FACILITY_EXTENSION_COMPONENT_ENUMERATOR,
+        0,
+        &extensionLib);
+
     if (IsAducResultCodeFailure(result.ResultCode) || extensionLib == nullptr)
     {
         goto done;
