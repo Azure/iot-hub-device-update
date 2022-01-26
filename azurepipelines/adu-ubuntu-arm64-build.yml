@@ -11,7 +11,7 @@ variables:
   ADUC_VERSION_PRERELEASE: $(version.pre-release)
   ADUC_VERSION_BUILD: $(version.build)
   ADUC_DEBIAN_PACKAGE_ARCHITECTURE: "arm64"
-  
+
   ENABLE_ADU_TELEMETRY_REPORTING: true
   # ADUC_BUILDER_IDENTIFIER will be set to "DU" short for Device Update by default, for Device Update-sourced builder
   ADUC_BUILDER_IDENTIFIER: DU
@@ -29,7 +29,7 @@ trigger:
   branches:
     include:
       - main
-      # - release/*
+      - release/*
   paths:
     exclude:
       - docs/*
@@ -43,7 +43,7 @@ pr:
   branches:
     include:
       - main
-      # - release/*
+      - release/*
       # - feature/*
       #- dev/*
   paths:
@@ -87,8 +87,12 @@ jobs:
       - bash: |
           echo "Running whoami"
           whoami
+          echo "Register QEMU"
+          sudo docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
           echo "Listing running containers"
           sudo docker ps -a
+          echo "Listing current images"
+          sudo docker images
         displayName: "Prebuild"
         condition: always()
 
