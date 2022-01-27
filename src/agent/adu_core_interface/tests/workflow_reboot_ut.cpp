@@ -543,7 +543,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
     REQUIRE(value != nullptr);
 
     std::string actualClientReportingString_formatted = json_serialize_to_string_pretty(value);
-    REQUIRE_THAT(actualClientReportingString_formatted, Equals(expectedClientReportingString));
+    REQUIRE_THAT(actualClientReportingString_formatted + "\n", Equals(expectedClientReportingString));
 
     wait_for_workflow_complete();
 
