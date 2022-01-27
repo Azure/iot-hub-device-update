@@ -184,3 +184,7 @@ sudo /usr/bin/AducIotAgent -E /var/lib/adu/extensions/sources/libcontoso-compone
 ```
 
 **Congratulations!** Your VM should now support Proxy Updates!
+
+## Next Step
+
+Try [Tutorial #1 - Install 'tree' Debian package on the Contoso Virtual Vacuum devices, and update their motors' firmware to version 1.0](./tutorial1.md)

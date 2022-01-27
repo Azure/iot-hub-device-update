@@ -26,4 +26,4 @@ Device Update for IoT Hub features provide a powerful and flexible experience, i
 ## Getting started
 
 * [Device Update for IoT Hub](https://aka.ms/iot-hub-device-update-docs)
-* [Getting Started with Device Update Agent](https://github.com/Azure/iot-hub-device-update/tree/main/docs/agent-reference)
+* [Getting Started with Device Update Agent](./docs/agent-reference)
