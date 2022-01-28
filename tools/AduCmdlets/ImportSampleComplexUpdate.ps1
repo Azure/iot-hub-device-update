@@ -58,8 +58,8 @@ Import-Module $PSScriptRoot\AduRestApi.psm1 -ErrorAction Stop
 # We will use arbitrary files as update payload files.
 $childFile = "$env:TEMP/childFile.bin.txt"
 $parentFile = "$env:TEMP/parentFile.bin.txt"
-"This is a child update payload file." | Out-File $childFile -Force -Encoding utf8NoBOM
-"This is a parent update payload file." | Out-File $parentFile -Force -Encoding utf8NoBOM
+"This is a child update payload file." | Out-File $childFile -Force -Encoding utf8
+"This is a parent update payload file." | Out-File $parentFile -Force -Encoding utf8
 
 # ------------------------------
 # Create a child update

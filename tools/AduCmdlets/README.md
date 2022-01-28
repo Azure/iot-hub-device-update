@@ -17,7 +17,7 @@ $updateId = New-AduUpdateId -Provider Contoso -Name Toaster -Version 1.0
 $compat = New-AduUpdateCompatibility New-AduUpdateCompatibility -Properties @{ deviceManufacturer = 'Contoso'; deviceModel = 'Toaster' }
 $installStep = New-AduInstallationStep -Handler 'microsoft/swupdate:1'-HandlerProperties @{ installedCriteria = '1.0' } -Files $file
 $update = New-AduImportManifest -UpdateId $updateId -Compatibility $compat -InstallationSteps $installStep
-$update | Out-File ./contoso.toaster.1.0.importmanifest.json -Encoding utf8NoBOM
+$update | Out-File ./contoso.toaster.1.0.importmanifest.json -Encoding utf8
 ```
 
 #### Using create-adu-import-manifest.sh (BASH)
