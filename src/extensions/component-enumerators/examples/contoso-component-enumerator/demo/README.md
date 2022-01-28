@@ -10,7 +10,7 @@
 
 - Install PowerShellGet [see details here](https://docs.microsoft.com/en-us/powershell/scripting/gallery/installing-psget?view=powershell-7.1)
 
-```ps
+```powershell
 Install-PackageProvider -Name NuGet -Force
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
@@ -23,7 +23,7 @@ Update-Module -Name PowerShellGet
 
 - Install Azure Az PowerShell Modules
 
-```ps
+```powershell
 
 Install-Module -Name Az -Scope CurrentUser -Repository PSGallery -Force
 
@@ -34,7 +34,7 @@ Install-Module -Name Az -Scope CurrentUser -Repository PSGallery -Force
 
 For example:
 
-```ps
+```powershell
 
 Import-Module .\AduAzStorageBlobHelper.psm1
 Import-Module .\AduImportUpdate.psm1
@@ -50,7 +50,7 @@ $container = Get-AduAzBlobContainer  -SubscriptionId $AzureSubscriptionId -Resou
 
 - Get REST API token
 
-```ps
+```powershell
 Install-Module MSAL.PS
 
 $AzureAdClientId = '<AZURE AD CLIENT ID>'
@@ -65,7 +65,7 @@ $token = Get-MsalToken -ClientId $AzureAdClientId -TenantId $AzureAdTenantId -Sc
 Go to `sample-updates` directory, then run following commands to generate **all** example updates.  
 Note that you can choose to generate only updates you want to try.
 
-```ps
+```powershell
 ./CreateSampleMSOEUpdate-1.x.ps1
 ./CreateSampleMSOEUpdate-2.x.ps1
 ./CreateSampleMSOEUpdate-3.x.ps1
@@ -83,7 +83,7 @@ Import generated example update using the IoT Hub Device Update portal.
 
 Or, try one of the provided PowerShell scripts below:
 
-```ps
+```powershell
 
 ./ImportSampleMSOEUpdate-1.x.ps1 -AccountEndpoint <your account endpoint url> -InstanceId <your instant id> -BlobContainer $container -AuthorizationToken $token.AccessToken -Verbose
 
@@ -168,7 +168,7 @@ For testing and demonstration purposes, we'll be creating following mock compone
 **IMPORTANT**  
 This components configuration depends on the implementation of an example Component Enumerator extension called libcontoso-component-enumerator.so, which required a mock component inventory data file `/usr/local/contoso-devices/components-inventory.json`
 
-> Tip: you can copy [`demo`](https://github.com/Azure/adu-private-preview/tree/user/wewilair/v0.8.0-docs/src/extensions/component-enumerators/examples/contoso-component-enumerator/demo) folder to your home directory on the test VM an run `~/demo/tools/reset-demo-components.sh` to copy required files to the right locations.
+> Tip: you can copy [`demo`](../demo) folder to your home directory on the test VM and run `~/demo/tools/reset-demo-components.sh` to copy required files to the right locations.
 
 #### Add /usr/local/contoso-devices/components-inventory.json
 
@@ -187,4 +187,4 @@ sudo /usr/bin/AducIotAgent -E /var/lib/adu/extensions/sources/libcontoso-compone
 
 ## Next Step
 
-Try [Tutorial #1 - Install 'tree' Debian package on the Contoso Virtual Vacuum devices, and update their motors' firmware to version 1.0](./tutorial1.md)
+Try [Tutorial #1 - Install 'tree' Debian package on the Contoso Virtual Vacuum devices, and update their motors' firmware to version 1.1](./tutorial1.md)

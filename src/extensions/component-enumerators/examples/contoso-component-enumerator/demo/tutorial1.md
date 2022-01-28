@@ -54,7 +54,7 @@ To accomplish the goals, this update requires 2 `update instruction steps` in th
 
 The following command is used to create step #1:
 
-````ps
+```powershell
 # -------------------------------------------------
 # Create the first top-level step
 # -------------------------------------------------
@@ -64,7 +64,7 @@ $topLevelStep1 = New-AduInstallationStep `
                         -Files "./update-files/apt-manifest-tree-1.0.json" `
                         -HandlerProperties @{ 'installedCriteria'='apt-update-tree-1.0'} `
                         -Description 'Install tree Debian package on host device.'
-````
+```
 
 > **IMPORTANT** | Replace **"./update-files/apt-manifest-tree-1.0.json"** above with the actual file path.
 
@@ -75,7 +75,7 @@ The following script snippet is used to create both child update and reference s
 
 >**NOTE** | Child update identity is required. For this tutorial, we use **"contoso", "contoso-virtual-motors", "1.1"** for `Provider`, `Name`, and `Version` respectively.  
 
-```ps
+```powershell
 
 # -------------------------------------------------
 # Create a child update for all 'motor' components
@@ -154,7 +154,7 @@ $topLevelStep2 = New-AduInstallationStep `
 
 Create a main import manifest by adding above 2 top-level steps in the main update instructions steps collection:
 
-```ps
+```powershell
 ##############################################################
 # Update : 20.0
 ##############################################################

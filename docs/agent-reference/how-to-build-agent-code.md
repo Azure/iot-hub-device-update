@@ -6,20 +6,20 @@ Take a look at [dependancies](how-to-build-agent-code.md#dependencies-of-device-
 * [As a standalone solution](how-to-build-agent-code.md#as-a-standalone-solution)
 * [Integrate the Device Update agent in your existing application or solution](how-to-build-agent-code.md#integrate-the-device-update-agent-in-your-existing-application-or-solution)
 
-# Dependencies of Device Update Agent
+## Dependencies of Device Update Agent
 
-## Required Dependencies
+### Required Dependencies
 
 * Azure IoT C SDK
 * Delivery Optimization SDK
 
-## Azure IoT C SDK
+### Azure IoT C SDK
 
 Use the [Azure IoT C
 SDK](https://github.com/Azure/azure-iot-sdk-c)
 to connect to IoT Hub and call Azure IoT Plug and Play APIs.
 
-## Delivery Optimization
+### Delivery Optimization
 
 The [Delivery Optimization
 SDK](https://github.com/microsoft/do-client)
@@ -57,7 +57,7 @@ dependencies.  To see the usage info:
 ./scripts/install-deps.sh -h
 ```
 
-# As a standalone solution
+## As a standalone solution
 
 ### Device Update Linux Build System
 
@@ -135,20 +135,20 @@ popd > /dev/null
 
 Run Device Update Agent by following these [instructions](./how-to-run-agent.md)
 
-# Integrate the Device Update agent in your existing application or solution
+## Integrate the Device Update agent in your existing application or solution
 
-## Pre-concepts
+### Pre-concepts
 
 Before integrating the Device Update agent in your existing application or solution review the below concepts.
 
-* Learn how the Device Update service will communicate with the device client using IoT Hub Plug and Play properties to orchestrate over-the-air update actions from [here](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
+* Learn how the Device Update service will communicate with the device client using IoT Hub Plug and Play properties to orchestrate over-the-air update actions from [here](../../src/adu_workflow/src/agent_workflow.c).
 * Understand the update manifest to be able to write code to [respond to update actions from your client](update-manifest.md).
 * Understand how to implement  'ADU Core' interface for the Device Update service to [communicate with your client on the Device](device-update-plug-and-play.md).
 
-## Steps
+### Steps
 
 1. Create an IoT Hub C-SDK Plug and Play client: Your application needs to support IoT Hub Plug and Play as shown in this [example](https://docs.microsoft.com/en-us/azure/iot-pnp/tutorial-multiple-components?pivots=programming-language-ansi-c) to be used by Device Update for over-the-air updating.
-2. Once you have a IoT Hub Plug and Play enabled device, implement the 'ADU Core' interfaces for your application, see reference code [here](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
+2. Once you have a IoT Hub Plug and Play enabled device, implement the 'ADU Core' interfaces for your application, see reference code [here](../../src/adu_workflow/src/agent_workflow.c).
 3. Review the below Device Update agent implementation and source code so that you can modify your application to replicate the same behaviors:
 
 * Agent Architecture  
@@ -165,6 +165,6 @@ Install phase:
 Apply phase:  
 ![Apply phase](images/apply-phase.png)
 
-* [Source code](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c)
+* [Source code](../../src/adu_workflow/src/agent_workflow.c)
 
-4.The result reported from your application should be in this format so that the Device Update service can work with your application. Learn more about [plug and play format](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-plug-and-play), and Device Update agent [workflow](https://github.com/Azure/iot-hub-device-update/blob/main/src/agent/adu_core_interface/src/agent_workflow.c).
+4.The result reported from your application should be in this format so that the Device Update service can work with your application. Learn more about [plug and play format](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-plug-and-play), and Device Update agent [workflow](../../src/adu_workflow/src/agent_workflow.c).

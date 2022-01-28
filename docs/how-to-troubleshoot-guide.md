@@ -58,7 +58,7 @@ the rest of the bits are the *Error Code*.
 
 ### Error Codes explained
 
-* [Device Update for IoT Hub](https://github.com/Azure/iot-hub-device-update/blob/main/src/inc/aduc/result.h)
+* [Device Update for IoT Hub](../src/inc/aduc/result.h)
 * [Delivery Optimization](https://github.com/microsoft/do-client/blob/main/client-lite/src/include/do_error.h)
 
 ### Facility Codes explained

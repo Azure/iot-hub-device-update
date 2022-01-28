@@ -62,7 +62,7 @@ A **Component Enumerator** is a **Device Update Agent Extension** that provides 
 
 The Device Update Agent is device and component agnostic. By itself, Device Update Agent doesn't know anything about components that resides on or are connected to a host device at the time of the update.  
 
-To enable Proxy Updates, device builders must identify all update-able components on the device and assign a unique name to each component. Also, group name can be assigned to components of the same hardware class, so that, the same update can be installed onto all components in the same group.  
+To enable Proxy Updates, device builders must identify all components that can be updated on the device and assign a unique name to each component. Also, group name can be assigned to components of the same hardware class, so that, the same update can be installed onto all components in the same group.  
 
 After doing this the Update Content Handler can install and apply the update to the correct component(s).  
 
@@ -83,7 +83,7 @@ After doing this the Update Content Handler can install and apply the update to 
 - **Device Update Agent**
   - Receives update information from Azure IoT Hub (via Device Twin or Module Twin)
   - Invokes **Steps Handler** to process the Proxy Update intended for one or more components on the device
-    - For each Child Update (in this example, there're 2 updates, `host-fw-1.1` and `motors-fw-1.1`), Parent **Steps Handler** invokes Child **Steps Handler** to enumerate all components that match the **Compatibilities** properties specified in Child Update Manifest file. Next the handler downloads, installs and applies the Child Update to all targeted components.
+    - For each Child Update (in this example, there are 2 updates, `host-fw-1.1` and `motors-fw-1.1`), Parent **Steps Handler** invokes Child **Steps Handler** to enumerate all components that match the **Compatibilities** properties specified in Child Update Manifest file. Next the handler downloads, installs and applies the Child Update to all targeted components.
     - To get the matching components, the Child Update will call a `SelectComponents` API provided by the **Component Enumerator**. <br/>**Note:** If there is no matching components, the Child Update will be skipped.
   - Collects all update results from Parent and Child Update(s) and reports it to the Azure IoT Hub.
 - Child **Steps Handler**
@@ -106,7 +106,7 @@ After doing this the Update Content Handler can install and apply the update to 
 
 ### ComponentInfo
 
-The ComponentInfo JSON string must include following required properties
+The ComponentInfo JSON string must include following required properties:
 
 | Name | Type | Description |
 |---|---|---|
