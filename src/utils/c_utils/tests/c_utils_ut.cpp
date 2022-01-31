@@ -14,7 +14,6 @@ using Catch::Matchers::Equals;
 #include "aduc/calloc_wrapper.hpp"
 using ADUC::StringUtils::cstr_wrapper;
 
-#include <cstdint>
 #include <cstring>
 #include <fstream>
 class TemporaryTestFile
@@ -342,28 +341,28 @@ TEST_CASE("atoul")
     SECTION("Empty String")
     {
         const char* str = "";
-        uint64_t val = 0;
+        unsigned long val = 0;
         CHECK(!atoul(str, &val));
     }
 
     SECTION("Invalid Character")
     {
         const char* str = "*";
-        uint64_t val = 0;
+        unsigned long val = 0;
         CHECK(!atoul(str, &val));
     }
 
     SECTION("Invalid number")
     {
         const char* str = "500*";
-        uint64_t val = 0;
+        unsigned long val = 0;
         CHECK(!atoul(str, &val));
     }
 
     SECTION("Positive number")
     {
         const char* str = "500";
-        uint64_t val = 0;
+        unsigned long val = 0;
         CHECK(atoul(str, &val));
         CHECK(val == 500);
     }
@@ -371,7 +370,7 @@ TEST_CASE("atoul")
     SECTION("Positive Large Number")
     {
         const char* str = "4294967294";
-        uint64_t val = 0;
+        unsigned long val = 0;
         CHECK(atoul(str, &val));
         CHECK(val == 4294967294);
     }
@@ -379,14 +378,14 @@ TEST_CASE("atoul")
     SECTION("Negative number")
     {
         const char* str = "-123";
-        uint64_t val = 0;
+        unsigned long val = 0;
         CHECK(!atoul(str, &val));
     }
 
     SECTION("Zero")
     {
         const char* str = "0";
-        uint64_t val = 0;
+        unsigned long val = 0;
         CHECK(atoul(str, &val));
         CHECK(val == 0);
     }

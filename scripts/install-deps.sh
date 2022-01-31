@@ -39,6 +39,7 @@ keep_source_code=false
 use_ssh=false
 
 # ADUC Deps
+
 install_aduc_deps=false
 install_azure_iot_sdk=false
 azure_sdk_ref=LTS_07_2021_Ref01
@@ -51,11 +52,11 @@ install_azure_blob_storage_file_upload_utility=false
 azure_blob_storage_file_upload_utility_ref=main
 
 # DO Deps
+default_do_ref=v0.8.2
+default_do_deps_distro=ubuntu1804
 install_do=false
-default_do_ref=v0.7.0
 do_ref=$default_do_ref
 install_do_deps_distro=""
-default_do_deps_distro=ubuntu-18.04
 
 # Dependencies packages
 aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
@@ -84,15 +85,15 @@ print_help() {
     echo "                          Default is $default_catch2_ref."
     echo ""
     echo "--install-do              Install Delivery Optimization from source."
-    echo "                          Use --install-do-deps-distro [distro_name] to also install required dependencies."
+    echo "                          In order to install the correct dependencies, "
+    echo "                          use --install-do-deps-distro [distro_name] to specify the distro"
     echo "--do-ref <ref>            Install the DO source from this branch or tag."
     echo "                          This value is passed to git clone as the --branch argument."
     echo "                          Default is $default_do_ref."
     echo "--do-commit <commit_sha>  Specific commit to fetch."
     echo "                          Default is the latest commit in that branch."
-    echo "-d, --install-do-deps-distro      Indicates that dependencies for DO should be installed."
-    echo "                                  This value can be debian-9, debian-10, ubuntu-18.04, etc"
-    echo "                                  When used with --install-packages, the DO dependencies that are packages are also installed."
+    echo "-d, --install-do-deps-distro      Indicates the distro to install DO dependencies on."
+    echo "                                  This value can be debian9, debian10, ubuntu1804, etc."
     echo "-p, --install-packages    Indicates that packages should be installed."
     echo "--install-packages-only   Indicates that only packages should be installed and that dependencies should not be installed from source."
     echo ""
@@ -250,13 +251,9 @@ do_install_do() {
     git clone --recursive --single-branch --branch $do_ref --depth 1 $do_url . || return
 
     if [[ $install_do_deps_distro != "" ]]; then
-        local bootstrap_file=$do_dir/build/bootstrap/bootstrap-$install_do_deps_distro.sh
+        local bootstrap_file=$do_dir/build/scripts/bootstrap.sh
         chmod +x $bootstrap_file || return
-        if [[ $install_do_deps_distro == "ubuntu-18.04" ]]; then
-            $SUDO $bootstrap_file --no-tools || return
-        else
-            $SUDO $bootstrap_file || return
-        fi
+        $SUDO $bootstrap_file --platform $install_do_deps_distro --install build || return
     fi
 
     mkdir cmake || return
@@ -308,9 +305,9 @@ do_install_azure_blob_storage_file_upload_utility() {
     git clone --recursive --single-branch --branch $azure_blob_storage_file_upload_utility_ref --depth 1 $azure_storage_cpplite_url . || return
 
     echo -e "Installing Azure Blob Storage File Upload Utiltiy dependencies..."
-    
+
     # Note added to make sure that install-deps.sh is executable
-    chmod u+x ./scripts/install-deps.sh 
+    chmod u+x ./scripts/install-deps.sh
 
     # Note we can skip the azure iot sdk installation because it is guaranteed that it will already be installed.
     ./scripts/install-deps.sh -a --skip-azure-iot-sdk-install
@@ -441,9 +438,15 @@ while [[ $1 != "" ]]; do
     shift
 done
 
+# If there is no install_do_deps_distro specified,
+# set to the default DO dependency distro
+if [[ $install_do_deps_distro == "" ]]; then
+    install_do_deps_distro=$default_do_deps_distro
+fi
+
 # If there is no install action specified,
 # assume that we want to install all deps.
-if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && $install_do != "true" && $install_do_deps_distro == "" && $install_azure_iot_sdk != "true" && $install_catch2 != "true" ]]; then
+if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && $install_do != "true" && $install_azure_iot_sdk != "true" && $install_catch2 != "true" ]]; then
     install_all_deps=true
 fi
 
@@ -452,7 +455,6 @@ fi
 if [[ $install_all_deps == "true" ]]; then
     install_aduc_deps=true
     install_do=true
-    install_do_deps_distro=$default_do_deps_distro
     install_packages=true
 fi
 
@@ -473,7 +475,7 @@ fi
 if [[ $install_packages == "true" ]]; then
     # Check if we need to install any packages
     # before we call apt update.
-    if [[ $install_aduc_deps == "true" || $install_do_deps_distro != "" ]]; then
+    if [[ $install_aduc_deps == "true" ]]; then
         echo "Updating repository list..."
         $SUDO apt-get update --yes --fix-missing --quiet || $ret
     fi
@@ -496,13 +498,13 @@ if [[ $install_packages_only == "false" ]]; then
     if [[ $install_do == "true" ]]; then
         do_install_do || $ret
     fi
-    
+
     if [[ $install_azure_blob_storage_file_upload_utility == "true" ]]; then
         do_install_azure_blob_storage_file_upload_utility || $ret
     fi
 fi
 
 # After installation, it prints out the states of dependencies
-if [[ $install_aduc_deps == "true" || $install_do == "true" || $install_do_deps_distro != "" || $install_packages_only == "true" || $install_packages == "true" ]]; then
+if [[ $install_aduc_deps == "true" || $install_do == "true" || $install_packages_only == "true" || $install_packages == "true" ]]; then
     do_list_all_deps || $ret $?
 fi

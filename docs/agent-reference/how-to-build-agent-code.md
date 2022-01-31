@@ -1,6 +1,6 @@
 # How To Build the Device Update Agent
 
-Take a look at [dependancies](how-to-build-agent-code.md#dependencies-of-device-update-agent) before you get started. You can build the Device Update agent as a standlone solution or integrate it in your existing application or solution. 
+Take a look at [dependencies](how-to-build-agent-code.md#dependencies-of-device-update-agent) before you get started. You can build the Device Update agent as a standlone solution or integrate it in your existing application or solution.
 
 * [Dependencies](how-to-build-agent-code.md#dependencies-of-device-update-agent)
 * [As a standalone solution](how-to-build-agent-code.md#as-a-standalone-solution)
@@ -50,6 +50,9 @@ To install only the dependencies necessary for the agent:
 ./scripts/install-deps.sh --install-aduc-deps --install-packages
 ```
 
+If you want to install dependencies for a different distro other than Ubuntu 18.04 (the default option), use option `-d`, for example  `--deps-distro ubuntu2004`. (Installing DO dependencies using
+[bootstrap script in do-client](https://github.com/microsoft/do-client/blob/v0.8.2/build/scripts/bootstrap.sh))
+
 `install-deps.sh` also provides several options for installing individual
 dependencies.  To see the usage info:
 
@@ -78,8 +81,8 @@ To build the reference agent with support for provisioning using the IoT Identit
 ./scripts/build.sh -c --provision-with-iotedge
 ```
 
-To build the agent that supports provisioning using [IoT Identity Service](https://github.com/Azure/iot-identity-service/blob/main/docs/packaging.md#installing-and-configuring-the-package) specify '--provision-with-iotedge' as shown below:  
-Learn more about [how to provision Device Update agent with IoT Identity Service](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-agent-provisioning#how-to-provision-the-device-update-agent-as-a-module-identity). 
+To build the agent that supports provisioning using [IoT Identity Service](https://github.com/Azure/iot-identity-service/blob/main/docs/packaging.md#installing-and-configuring-the-package) specify '--provision-with-iotedge' as shown below:
+Learn more about [how to provision Device Update agent with IoT Identity Service](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-agent-provisioning#how-to-provision-the-device-update-agent-as-a-module-identity).
 
 ```shell
 ./scripts/build.sh -c -p linux --provision-with-iotedge
@@ -151,18 +154,18 @@ Before integrating the Device Update agent in your existing application or solut
 2. Once you have a IoT Hub Plug and Play enabled device, implement the 'ADU Core' interfaces for your application, see reference code [here](../../src/adu_workflow/src/agent_workflow.c).
 3. Review the below Device Update agent implementation and source code so that you can modify your application to replicate the same behaviors:
 
-* Agent Architecture  
+* Agent Architecture
 ![Agent Architecture](images/agent-architecture.png)
 
 * Workflow phases and source code
 
-Download phase:  
+Download phase:
 ![Download phase](images/download-phase.png)
 
-Install phase:  
+Install phase:
 ![Install phase](images/install-phase.png)
 
-Apply phase:  
+Apply phase:
 ![Apply phase](images/apply-phase.png)
 
 * [Source code](../../src/adu_workflow/src/agent_workflow.c)
