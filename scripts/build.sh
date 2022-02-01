@@ -34,7 +34,6 @@ adu_log_dir=""
 default_log_dir=/var/log/adu
 output_directory=$root_dir/out
 build_unittests=false
-provision_with_iotedge=false
 declare -a static_analysis_tools=()
 log_lib="zlog"
 install_prefix=/usr/local
@@ -55,9 +54,6 @@ print_help() {
     echo ""
     echo "-p, --platform-layer <layer>          Specify the platform layer to build/use. Default is linux."
     echo "                                      Option: linux"
-    echo ""
-    echo "--provision-with-iotedge              Indicates to the agent to provision its connection string via the Edge Identity Service"
-    echo "                                      instead of reading from the configuration file."
     echo ""
     echo "--log-lib <log_lib>                   Specify the logging library to build/use. Default is zlog."
     echo "                                      Options: zlog xlog"
@@ -197,9 +193,6 @@ while [[ $1 != "" ]]; do
         platform_layer=$1
 
         ;;
-    --provision-with-iotedge)
-        provision_with_iotedge=true
-        ;;
     --log-lib)
         shift
         if [[ -z $1 || $1 == -* ]]; then
@@ -296,7 +289,6 @@ CMAKE_OPTIONS=(
     "-DADUC_LOG_FOLDER:STRING=$adu_log_dir"
     "-DADUC_LOGGING_LIBRARY:STRING=$log_lib"
     "-DADUC_PLATFORM_LAYER:STRING=$platform_layer"
-    "-DADUC_PROVISION_WITH_EIS:BOOL=$provision_with_iotedge"
     "-DCMAKE_BUILD_TYPE:STRING=$build_type"
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"

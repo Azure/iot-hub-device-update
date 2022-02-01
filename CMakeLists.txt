@@ -329,7 +329,6 @@ option (ADUC_BUILD_UNIT_TESTS "Build unit tests and mock some functionality" OFF
 option (ADUC_BUILD_DOCUMENTATION "Build documentation files" OFF)
 option (ADUC_BUILD_PACKAGES "Build the ADU Agent packages" OFF)
 option (ADUC_INSTALL_DAEMON "Install the ADU Agent as a daemon" ON)
-option (ADUC_PROVISION_WITH_EIS "Provision the connection string with eis" OFF)
 option (ADUC_REGISTER_DAEMON "Register the ADU Agent daemon with the system" ON)
 
 ### End CMake Options

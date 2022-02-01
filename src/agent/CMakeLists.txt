@@ -10,14 +10,13 @@ add_subdirectory (device_info_interface)
 
 include (agentRules)
 
-include(find_curl_and_import_libcurl)
+include (find_curl_and_import_libcurl)
 
 compileasc99 ()
 disablertti ()
 
-
 # Used to find and include the CURL::libcurl imported libary
-find_curl_and_import_libcurl()
+find_curl_and_import_libcurl ()
 
 set (agent_c_files ./src/main.c ./src/health_management.c)
 
@@ -65,7 +64,6 @@ find_package (IotHubClient REQUIRED)
 find_package (umqtt REQUIRED)
 find_package (Parson REQUIRED)
 
-
 target_link_digital_twin_client (${target_name} PRIVATE)
 
 target_link_libraries (
@@ -109,18 +107,13 @@ target_compile_definitions (
             ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}"
             DO_FILE_GROUP="${DO_FILE_GROUP}"
             DO_FILE_USER="${DO_FILE_USER}"
-            SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}"
-)
+            SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}")
 
 if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
     target_compile_definitions (${target_name} PRIVATE ADUC_PLATFORM_SIMULATOR)
 else ()
     find_package (deliveryoptimization_sdk CONFIG REQUIRED)
     target_link_libraries (${target_name} PRIVATE Microsoft::deliveryoptimization)
-endif ()
-
-if (ADUC_PROVISION_WITH_EIS)
-    target_compile_definitions (${target_name} PRIVATE ADUC_PROVISION_WITH_EIS)
 endif ()
 
 target_link_libraries (${target_name} PRIVATE aduc::platform_layer)

@@ -99,7 +99,7 @@ jobs:
           sudo docker run -d -t --rm -v $(Build.SourcesDirectory):/iot-hub-device-update -v ~/.gitconfig:/etc/.gitconfig --name arm64container aduccontainerregistry.azurecr.io/ubuntu1804-arm64:latest bash
         displayName: "Run docker container"
       - bash: |
-          sudo docker exec -w /iot-hub-device-update arm64container scripts/build.sh --clean --build-unit-tests --provision-with-iotedge --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --static-analysis clang-tidy,cppcheck --out-dir out-arm64
+          sudo docker exec -w /iot-hub-device-update arm64container scripts/build.sh --clean --build-unit-tests --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --static-analysis clang-tidy,cppcheck --out-dir out-arm64
         displayName: "Build Client, Unit Tests and Packages: linux-apt-MinSizeRel"
       - bash: |
           cp out-arm64/*.deb $(Build.ArtifactStagingDirectory)
