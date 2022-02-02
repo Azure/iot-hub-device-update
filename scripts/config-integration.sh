@@ -13,27 +13,27 @@ fi
 error() { echo -e "\033[1;31mError:\033[0m $*" >&2; }
 warn() { echo -e "\033[1;33mWarning:\033[0m $*" >&2; }
 
-current_schema_version="1.1"
+current_schema_version="1.0"
 
-conf_file="/etc/adu/adu-conf.txt"
+conf_file=$1
 new_conf_file="/etc/adu/du-config.json"
 
-if [ ! -f $conf_file ]; then
+if [ ! -f "$conf_file" ]; then
     error "Could not find the existing conf file"
     $ret 1
 fi
 
-connection_string=$(grep "^connection_string\s*=\s*" $conf_file | sed -e "s/^connection_string\s*=\s*//")
+connection_string=$(grep "^connection_string\s*=\s*" "$conf_file" | sed -e "s/^connection_string\s*=\s*//")
 
 if [ ! "$connection_string" ]; then
     error "File does not contain connection_string"
     $ret 1
 fi
 
-aduc_manufacturer=$(grep "^aduc_manufacturer\s*=\s*" $conf_file | sed -e "s/^aduc_manufacturer\s*=\s*//")
-aduc_model=$(grep "^aduc_model\s*=\s*" $conf_file | sed -e "s/^aduc_model\s*=\s*//")
-manufacturer=$(grep "^manufacturer\s*=\s*" $conf_file | sed -e "s/^manufacturer\s*=\s*//")
-model=$(grep "^model\s*=\s*" $conf_file | sed -e "s/^model\s*=\s*//")
+aduc_manufacturer=$(grep "^aduc_manufacturer\s*=\s*" "$conf_file" | sed -e "s/^aduc_manufacturer\s*=\s*//")
+aduc_model=$(grep "^aduc_model\s*=\s*" "$conf_file" | sed -e "s/^aduc_model\s*=\s*//")
+manufacturer=$(grep "^manufacturer\s*=\s*" "$conf_file" | sed -e "s/^manufacturer\s*=\s*//")
+model=$(grep "^model\s*=\s*" "$conf_file" | sed -e "s/^model\s*=\s*//")
 
 json_content=$(
     cat << END_OF_JSON

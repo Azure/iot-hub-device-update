@@ -10,7 +10,7 @@
 
 ### DU Agent Settings Changes
 
-The DU Agent properties can be specified in the `agents` array. Note that for Public Preview Refresh, all agent properties will be read from `agents[0]`.  
+The DU Agent properties can be specified in the `agents` array. Note that for Public Preview Refresh, all agent properties will be read from `agents[0]`.
 
 <table>
 <tr>
@@ -34,7 +34,7 @@ aduc_model=<device model name>
 
 <td>
 
-The `manufacturer` and `model` must be specified in an `agents[0].manufacturer` and `agents[0].model`, respectively.  
+The `manufacturer` and `model` must be specified in an `agents[0].manufacturer` and `agents[0].model`, respectively.
 
 For example:
 
@@ -45,7 +45,7 @@ For example:
 
     "agents": [
         {
-            "name": "...",           
+            "name": "...",
             "runas": "...",
             "connectionSource": { ... },
             "manufacturer": "<device manufacturer name>",
@@ -83,9 +83,9 @@ connection_string=<device connection string>
 
     "agents": [
         {
-            "name": "<agent process name>",           
+            "name": "<agent process name>",
             "runas": "adu",
-            "connectionSource": { 
+            "connectionSource": {
                 "connectionType": "string",
                 "connectionData": "<device or module connection string>"
             },
@@ -113,13 +113,15 @@ For a device that previously installed the DU Agent Public Preview version from 
 
 ### Option 1 - Manually install debian package
 
-You can manually install a new version of `deviceupdate-agent` debian package from packages.microsoft.com (for supported distros and architectures) by remotely executing following command on the device:
+You can manually install a new version of `deviceupdate-agent` debian package from packages.microsoft.com (for supported distros and architectures) by remotely running following command on the device:
 
 ```sh
+sudo apt-get purge adu-agent #In case you have an old adu-agent in the system
+sudo apt-get purge deviceupdate-agent
 sudo apt-get install deviceupdate-agent
 ```
 
->**Note** | Data in existing **adu-conf.txt** file will be automatically migrated to the new **du-config.json** file.
+>**Note** | Please mind potential data loss when you use `purge`. If needed, save a copy of your configuration file, log files, etc.
 
 ### Option 2 - Deploy an APT update using ADU Service
 
@@ -143,20 +145,36 @@ To upgrade devices that currently connected to IoT Hub using Device Update Servi
 
 #### 2. Import the update to ADU service
 
-See [this document](../../tools/AduCmdlets/README.md) for how to import an update to ADU service.  
+See [this document](../../tools/AduCmdlets/README.md) for how to import an update to ADU service.
 
->**Note**<br/> 1) Specify `provider`, `name`, and `version` as appropriate. <br/>2) The DU Agent Public Preview version only support an Update Manifest version 2. The Update Manifest version must be specified correctly when importing the update.
+>**Note**
+>1. Specify `provider`, `name`, and `version` as appropriate.
+>2. The DU Agent Public Preview version only support an Update Manifest version 2. The Update Manifest version must be specified correctly when importing the update.
 
 #### 3. Deploy the update
 
-Follow this [Deploy A Device Update Guide](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/deploy-update) to deploy the update imported in above step to a desired group of device.  
+Follow [Deploy A Device Update Guide](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/deploy-update) to deploy the update imported in above step to a desired group of device.
 
-Once the target device(s) installed and applied the update, the DU Agent on the device should automatically restart and reconnect to the IoT Hub.  
+Once the target device(s) installed and applied the update, the DU Agent on the device should automatically restart and reconnect to the IoT Hub.
 
 ## Post-upgrade Step
 
 ### Update the ADUGroup property in Device/Module Twin
 
-Since the new DU Agent using newer version of IoT Hub PnP (Device Update) Interface, every device with upgraded DU Agent will be removed from previous Device Group, and must be re-assigned to a new Device Group.  
+Since the new DU Agent using newer version of IoT Hub PnP (Device Update) Interface, every device with upgraded DU Agent will be removed from previous Device Group, and must be re-assigned to a new Device Group.
 
 See [Create Update Group](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/create-update-group) for more details.
+
+### Fill in du-config.json
+
+Option 1:
+Manually fill in the configuration file with the instructions in **du-config.json** file. Note that values like `aduShellTrustedUsers` and `runas` are default values, you can change them as needed.
+
+Option 2:
+If you have an existing saved copy of **adu-conf.txt** file, You can run this script [config-integration.sh](../../scripts/config-integration.sh) to migrate from text format to the new **du-config.json** file in json format.
+
+```sh
+. scripts/config-integration.sh [copy of adu-conf.txt file]
+```
+
+Please check the **du-config.json** file after calling the script, to ensure all mandatory fields are filled in.
