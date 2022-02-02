@@ -34,7 +34,7 @@ int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, _B
 
 int ADUC_SystemUtils_RemoveFile(const char* path);
 
-int ADUC_SystemUtils_WriteToFileDurably(const char* path, const char* buff);
+int ADUC_SystemUtils_WriteStringToFile(const char* path, const char* buff);
 
 int ADUC_SystemUtils_ReadStringFromFile(const char* path, char* buff, size_t buffLen);
 

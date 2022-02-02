@@ -549,37 +549,36 @@ int ADUC_SystemUtils_RemoveFile(const char* path)
  * @param buff data to be written to the file  
  * @return in On success 0 is returned; otherwise errno or -1 on failure
  */
-int ADUC_SystemUtils_WriteToFileDurably(const char* path, const char* buff)
+int ADUC_SystemUtils_WriteStringToFile(const char* path, const char* buff)
 {
     int status = -1;
-    int fd = -1;
+    FILE* file = NULL;
 
     if (path == NULL || buff == NULL)
     {
         goto done;
     }
 
-    fd = open(path, O_WRONLY | O_CLOEXEC);
+    const size_t bytesToWrite = strlen(buff);
 
-    if (fd == -1)
+    if (bytesToWrite == 0)
+    {
+        return -1;
+    }
+
+    file = fopen(path, "w");
+
+    if (file == NULL)
     {
         status = errno;
         goto done;
     }
 
-    status = write(fd, buff, strlen(buff));
+    const size_t writtenBytes = fwrite(buff, sizeof(char), bytesToWrite, file);
 
-    if (status == -1)
+    if (writtenBytes != bytesToWrite)
     {
-        status = errno;
-        goto done;
-    }
-
-    status = fsync(fd);
-
-    if (status == -1)
-    {
-        status = errno;
+        status = -1;
         goto done;
     }
 
@@ -587,7 +586,10 @@ int ADUC_SystemUtils_WriteToFileDurably(const char* path, const char* buff)
 
 done:
 
-    close(fd);
+    if (file != NULL)
+    {
+        fclose(file);
+    }
 
     return status;
 }
@@ -603,31 +605,36 @@ done:
 int ADUC_SystemUtils_ReadStringFromFile(const char* path, char* buff, size_t buffLen)
 {
     int status = -1;
-    int fd = -1;
+    FILE* file = NULL;
 
-    if (path == NULL || buff == NULL || buffLen == 0)
+    if (path == NULL || buff == NULL || buffLen < 2)
     {
         goto done;
     }
 
-    fd = open(path, O_RDONLY | O_CLOEXEC);
+    file = fopen(path, "r");
 
-    if (fd == -1)
+    if (file == NULL)
     {
         status = errno;
         goto done;
     }
 
-    size_t readBytes = read(fd, buff, buffLen - 1);
+    const size_t readBytes = fread(buff, sizeof(char), buffLen - 1, file);
 
-    if (readBytes == -1) // Error if we are at EOF
+    if (readBytes == 0)
     {
-        status = errno;
-        goto done;
-    }
-    else if (readBytes == 0)
-    {
-        goto done;
+        if (feof(file) != 0)
+        {
+            status = -1;
+            goto done;
+        }
+
+        if (ferror(file) != 0)
+        {
+            status = errno;
+            goto done;
+        }
     }
 
     buff[readBytes] = '\0';
@@ -636,7 +643,10 @@ int ADUC_SystemUtils_ReadStringFromFile(const char* path, char* buff, size_t buf
 
 done:
 
-    close(fd);
+    if (file != NULL)
+    {
+        fclose(file);
+    }
 
     return status;
 }

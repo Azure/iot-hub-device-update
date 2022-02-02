@@ -18,4 +18,4 @@ find_package (Parson REQUIRED)
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils Parson::parson aziotsharedutil
-    PRIVATE aduc::system_utils aduc::parson_json_utils diagnostics_component::diagnostics_interface)
+    PRIVATE aduc::logging aduc::system_utils aduc::parson_json_utils diagnostics_component::diagnostics_interface)

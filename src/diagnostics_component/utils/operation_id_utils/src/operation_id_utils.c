@@ -7,6 +7,7 @@
  */
 
 #include "operation_id_utils.h"
+#include <aduc/logging.h>
 #include <aduc/system_utils.h>
 #include <diagnostics_interface.h>
 #include <parson_json_utils.h>
@@ -43,6 +44,7 @@ _Bool OperationIdUtils_OperationIsComplete(const char* serviceMsg)
             DIAGNOSTICS_COMPLETED_OPERATION_FILE_PATH, completedOperationId, ARRAY_SIZE(completedOperationId))
         != 0)
     {
+        Log_Info("Failed to read operation-id from file");
         goto done;
     }
 
@@ -92,8 +94,9 @@ _Bool OperationIdUtils_StoreCompletedOperationId(const char* operationId)
         return false;
     }
 
-    if (ADUC_SystemUtils_WriteToFileDurably(DIAGNOSTICS_COMPLETED_OPERATION_FILE_PATH, operationId) != 0)
+    if (ADUC_SystemUtils_WriteStringToFile(DIAGNOSTICS_COMPLETED_OPERATION_FILE_PATH, operationId) != 0)
     {
+        Log_Info("Failed to record diagnostcis operation-id: %s", operationId);
         return false;
     }
 
