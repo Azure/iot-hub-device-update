@@ -1,7 +1,7 @@
 variables:
   version.major: 0
   version.minor: 8
-  version.patch: 2
+  version.patch: 1
   version.pre-release: "public-preview"
   version.build: $[format('{0:yyyyMMdd}-{0:HHmmss}', pipeline.startTime)]
 
@@ -62,13 +62,24 @@ pr:
       - licenses/*
 
 jobs:
-  - job: BuildAduAgent
-    displayName: "Build ADU Agent"
+  - job: BuildAduAgent_ubuntu1804
+    displayName: "Build ADU Agent - Ubuntu 18.04 (amd64)"
     timeoutInMinutes: 60
     cancelTimeoutInMinutes: 60
     pool: aduc_1es_client_pool
     steps:
-      - template: ../templates/adu-native-build-steps.yml
+      - template: ../templates/adu-docker-build-steps.yml
         parameters:
           targetOs: 'ubuntu1804'
+          targetArch: 'amd64'
+
+  - job: BuildAduAgent_ubuntu2004
+    displayName: "Build ADU Agent - Ubuntu 20.04 (amd64)"
+    timeoutInMinutes: 60
+    cancelTimeoutInMinutes: 60
+    pool: 1es_hosted_pool_ubuntu2004
+    steps:
+      - template: ../templates/adu-docker-build-steps.yml
+        parameters:
+          targetOs: 'ubuntu2004'
           targetArch: 'amd64'

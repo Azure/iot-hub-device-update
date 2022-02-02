@@ -320,6 +320,23 @@ int ADUC_SystemUtils_MkSandboxDirRecursive(const char* path)
     return ADUC_SystemUtils_MkDirRecursive(path, aduUserId, aduGroupId, S_IRWXU | S_IRWXG);
 }
 
+int ADUC_SystemUtils_MkDirRecursiveAduUser(const char* path)
+{
+    // Create the sandbox folder with adu:default ownership.
+    // Permissions are set to u=rwx.
+    struct passwd* pwd = getpwnam(ADUC_FILE_USER);
+    if (pwd == NULL)
+    {
+        Log_Error("adu user doesn't exist.");
+        return -1;
+    }
+
+    uid_t aduUserId = pwd->pw_uid;
+    pwd = NULL;
+
+    return ADUC_SystemUtils_MkDirRecursive(path, aduUserId, -1, S_IRWXU);
+}
+
 static int RmDirRecursive_helper(const char* fpath, const struct stat* sb, int typeflag, struct FTW* info)
 {
     UNREFERENCED_PARAMETER(sb);
@@ -654,21 +671,71 @@ done:
 /**
  * @brief Checks if the file object at the given path is a directory.
  * @param path The path.
- * @returns true if it is a directory.
+ * @param err the error code (optional, can be NULL)
+ * @returns true if it is a directory, false otherwise.
  */
-_Bool SystemUtils_IsDir(const char* path)
+_Bool SystemUtils_IsDir(const char* path, int* err)
 {
+    bool is_dir = false;
+    int err_ret = 0;
+
     struct stat st;
-    return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
+    if (stat(path, &st) != 0)
+    {
+        err_ret = errno;
+        Log_Error("stat path '%s' failed: %d", path, err_ret);
+        is_dir = false;
+        goto done;
+    }
+
+    if (!S_ISDIR(st.st_mode))
+    {
+        is_dir = false;
+        goto done;
+    }
+
+    is_dir = true;
+
+done:
+    if (err != NULL)
+    {
+        *err = err_ret;
+    }
+    return is_dir;
 }
 
 /**
  * @brief Checks if the file object at the given path is a file.
  * @param path The path.
- * @returns true if it is a file.
+ * @param err the error code (optional, can be NULL)
+ * @returns true if it is a file, false otherwise.
  */
-_Bool SystemUtils_IsFile(const char* path)
+_Bool SystemUtils_IsFile(const char* path, int* err)
 {
+    bool is_file = false;
+    int err_ret = 0;
+
     struct stat st;
-    return stat(path, &st) == 0 && S_ISREG(st.st_mode);
+    if (stat(path, &st) != 0)
+    {
+        err_ret = errno;
+        Log_Error("stat path '%s' failed: %d", path, err_ret);
+        is_file = false;
+        goto done;
+    }
+
+    if (!S_ISREG(st.st_mode))
+    {
+        is_file = false;
+        goto done;
+    }
+
+    is_file = true;
+
+done:
+    if (err != NULL)
+    {
+        *err = err_ret;
+    }
+    return is_file;
 }

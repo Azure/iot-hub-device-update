@@ -80,7 +80,8 @@ private:
                     }) };
 
                 // Report result to main thread.
-                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result, true /* isAsync */);
+                workCompletionData->WorkCompletionCallback(
+                    workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
             // Allow the thread to work independently of this main thread.
@@ -103,6 +104,59 @@ private:
         {
             return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
         };
+    }
+
+    /**
+     * @brief Implements Backup callback.
+     *
+     * @param token Opaque token.
+     * @param workCompletionData Contains information on what to do when task is completed.
+     * @param info #ADUC_WorkflowData with information on how to backup.
+     * @return ADUC_Result
+     */
+    static ADUC_Result BackupCallback(
+        ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken info) noexcept
+    {
+        ADUC_Result result;
+        const ADUC_WorkflowData* workflowData = static_cast<const ADUC_WorkflowData*>(info);
+        try
+        {
+            Log_Info("Backup thread started");
+
+            // Pointers passed to this method are guaranteed to be valid until WorkCompletionCallback is called.
+            std::thread worker{ [token, workCompletionData, workflowData] {
+                const ADUC_Result result{ ADUC::ExceptionUtils::CallResultMethodAndHandleExceptions(
+                    ADUC_Result_Failure, [&token, &workCompletionData, &workflowData]() -> ADUC_Result {
+                        return static_cast<LinuxPlatformLayer*>(token)->Backup(workflowData);
+                    }) };
+
+                // Report result to main thread.
+                workCompletionData->WorkCompletionCallback(
+                    workCompletionData->WorkCompletionToken, result, true /* isAsync */);
+            } };
+
+            // Allow the thread to work independently of this main thread.
+            worker.detach();
+
+            // Indicate that we've spun off a thread to do the actual work.
+            result = { ADUC_Result_Backup_InProgress };
+        }
+        catch (const ADUC::Exception& e)
+        {
+            Log_Error("Unhandled ADU Agent exception. code: %d, message: %s", e.Code(), e.Message().c_str());
+            result = { ADUC_Result_Failure, e.Code() };
+        }
+        catch (const std::exception& e)
+        {
+            Log_Error("Unhandled std exception: %s", e.what());
+            result = ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
+        }
+        catch (...)
+        {
+            result = ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
+        }
+
+        return result;
     }
 
     /**
@@ -130,7 +184,8 @@ private:
                     }) };
 
                 // Report result to main thread.
-                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result, true /* isAsync */);
+                workCompletionData->WorkCompletionCallback(
+                    workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
             // Allow the thread to work independently of this main thread.
@@ -180,7 +235,8 @@ private:
                         return static_cast<LinuxPlatformLayer*>(token)->Apply(workflowData);
                     }) };
                 // Report result to main thread.
-                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result, true /* isAsync */);
+                workCompletionData->WorkCompletionCallback(
+                    workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
             // Allow the thread to work independently of this main thread.
@@ -188,6 +244,55 @@ private:
 
             // Indicate that we've spun off a thread to do the actual work.
             return ADUC_Result{ ADUC_Result_Apply_InProgress };
+        }
+        catch (const ADUC::Exception& e)
+        {
+            Log_Error("Unhandled ADU Agent exception. code: %d, message: %s", e.Code(), e.Message().c_str());
+            return ADUC_Result{ ADUC_Result_Failure, e.Code() };
+        }
+        catch (const std::exception& e)
+        {
+            Log_Error("Unhandled std exception: %s", e.what());
+            return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
+        }
+        catch (...)
+        {
+            return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
+        }
+    }
+
+    /**
+     * @brief Implements Restore callback.
+     *
+     * @param token Opaque token.
+     * @param workCompletionData Contains information on what to do when task is completed.
+     * @param info #ADUC_WorkflowData with information on how to restore.
+     * @return ADUC_Result
+     */
+    static ADUC_Result RestoreCallback(
+        ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken info) noexcept
+    {
+        const ADUC_WorkflowData* workflowData = static_cast<const ADUC_WorkflowData*>(info);
+        try
+        {
+            Log_Info("Restore thread started");
+
+            // Pointers passed to this method are guaranteed to be valid until WorkCompletionCallback is called.
+            std::thread worker{ [token, workCompletionData, workflowData] {
+                const ADUC_Result result{ ADUC::ExceptionUtils::CallResultMethodAndHandleExceptions(
+                    ADUC_Result_Failure, [&token, &workCompletionData, &workflowData]() -> ADUC_Result {
+                        return static_cast<LinuxPlatformLayer*>(token)->Restore(workflowData);
+                    }) };
+                // Report result to main thread.
+                workCompletionData->WorkCompletionCallback(
+                    workCompletionData->WorkCompletionToken, result, true /* isAsync */);
+            } };
+
+            // Allow the thread to work independently of this main thread.
+            worker.detach();
+
+            // Indicate that we've spun off a thread to do the actual work.
+            return ADUC_Result{ ADUC_Result_Restore_InProgress };
         }
         catch (const ADUC::Exception& e)
         {
@@ -264,25 +369,6 @@ private:
     }
 
     /**
-     * @brief This function is invoked when the agent detected that one or more component has changed.
-     *  If current workflow is in progress, the agent will cancel the workflow, then re-process the same update data.
-     *  If no workflows in progress, the agent will start a new workflow using cached update data, if available.
-     *    - If cached update data is not available, agent will log an error.
-     * 
-     * @param currenWorkflowData A current workflow data object.
-     */
-    static void RetryWorkflowDueToComponentChanged(ADUC_WorkflowData* currentWorkflowData);
-
-    /**
-     * @brief Detect changes in components collection. 
-     *        If new component is added, ensure that it has to latest available update installed.
-     * 
-     * @param token Contains pointer to our class instance.
-     * @param workflowData Current workflow data object, if any.
-     */
-    static void DetectAndHandleComponentsAvailabilityChangedEvent(ADUC_Token token, ADUC_WorkflowDataToken workflowData);
-    
-    /**
      * @brief Implements DoWork callback.
      *
      * @param token Opaque token.
@@ -290,12 +376,8 @@ private:
      */
     static void DoWorkCallback(ADUC_Token token, ADUC_WorkflowDataToken workflowData) noexcept
     {
-#if ENABLE_COMPONENT_CHANGED_DETECTION
-        DetectAndHandleComponentsAvailabilityChangedEvent(token, workflowData);
-#else
         UNREFERENCED_PARAMETER(token);
         UNREFERENCED_PARAMETER(workflowData);
-#endif
     }
 
     //
@@ -307,8 +389,10 @@ private:
 
     void Idle(const char* workflowId);
     ADUC_Result Download(const ADUC_WorkflowData* workflowData);
+    ADUC_Result Backup(const ADUC_WorkflowData* workflowData);
     ADUC_Result Install(const ADUC_WorkflowData* workflowData);
     ADUC_Result Apply(const ADUC_WorkflowData* workflowData);
+    ADUC_Result Restore(const ADUC_WorkflowData* workflowData);
     void Cancel(const ADUC_WorkflowData* workflowData);
 
     ADUC_Result IsInstalled(const ADUC_WorkflowData* workflowData);

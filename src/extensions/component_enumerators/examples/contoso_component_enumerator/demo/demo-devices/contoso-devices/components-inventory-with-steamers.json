@@ -1,0 +1,103 @@
+{
+    "components": [
+        {
+            "id": "hostfw",
+            "name": "hostfw",
+            "group": "firmware",
+            "manufacturer": "contoso",
+            "model": "virtual-firmware",
+            "properties": {
+                "path": "\/usr\/local\/contoso-devices\/vacuum-1\/hostfw",
+                "firmwareDataFile": "firmware.json"
+            }
+        },
+        {
+            "id": "bootfs",
+            "name": "bootfs",
+            "group": "boot-image",
+            "manufacturer": "contoso",
+            "model": "virtual-disk",
+            "properties": {
+                "path": "\/usr\/local\/contoso-devices\/vacuum-1\/bootfs",
+                "firmwareDataFile": "diskimage.json"
+            }
+        },
+        {
+            "id": "rootfs",
+            "name": "rootfs",
+            "group": "os-image",
+            "manufacturer": "contoso",
+            "model": "virtual-os",
+            "properties": {
+                "path": "\/usr\/local\/contoso-devices\/vacuum-1\/rootfs",
+                "firmwareDataFile": "diskimage.json"
+            }
+        },
+        {
+            "id": "contoso-motor-serial-00000",
+            "name": "left-motor",
+            "group": "motors",
+            "manufacturer": "contoso",
+            "model": "virtual-motor",
+            "properties": {
+                "path": "\/usr\/local\/contoso-devices\/vacuum-1\/motors\/contoso-motor-serial-00000",
+                "firmwareDataFile": "firmware.json"
+            }
+        },
+        {
+            "id": "contoso-motor-serial-00001",
+            "name": "right-motor",
+            "group": "motors",
+            "manufacturer": "contoso",
+            "model": "virtual-motor",
+            "properties": {
+                "path": "\/usr\/local\/contoso-devices\/vacuum-1\/motors\/contoso-motor-serial-00001",
+                "firmwareDataFile": "firmware.json"
+            }
+        },
+        {
+            "id": "contoso-motor-serial-00002",
+            "name": "vacuum-motor",
+            "group": "motors",
+            "manufacturer": "contoso",
+            "model": "virtual-motor",
+            "properties": {
+                "path": "\/usr\/local\/contoso-devices\/vacuum-1\/motors\/contoso-motor-serial-00002",
+                "firmwareDataFile": "firmware.json"
+            }
+        },
+        {
+            "id": "contoso-camera-serial-00000",
+            "name": "front-camera",
+            "group": "cameras",
+            "manufacturer": "contoso",
+            "model": "virtual-camera",
+            "properties": {
+                "path": "\/usr\/local\/contoso-devices\/vacuum-1\/cameras\/contoso-camera-serial-00000",
+                "firmwareDataFile": "firmware.json"
+            }
+        },
+        {
+            "id": "contoso-camera-serial-00001",
+            "name": "rear-camera",
+            "group": "cameras",
+            "manufacturer": "contoso",
+            "model": "virtual-camera",
+            "properties": {
+                "path": "\/usr\/local\/contoso-devices\/vacuum-1\/cameras\/contoso-camera-serial-00001",
+                "firmwareDataFile": "firmware.json"
+            }
+        },
+        {
+            "id": "contoso-steamer-serial-00000",
+            "name": "main-steamer",
+            "group": "steamers",
+            "manufacturer": "contoso",
+            "model": "virtual-steamer",
+            "properties": {
+                "path": "\/usr\/local\/contoso-devices\/vacuum-1\/steamers\/contoso-steamer-serial-00000",
+                "firmwareDataFile": "firmware.json"
+            }
+        }
+    ]
+}

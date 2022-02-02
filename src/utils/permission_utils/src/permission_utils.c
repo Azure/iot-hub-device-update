@@ -185,3 +185,29 @@ _Bool PermissionUtils_CheckOwnerGid(const char* path, gid_t gid)
 
     return st.st_gid == gid;
 }
+
+/**
+ * @brief Set effective user of the calling process.
+ * 
+ * @param name The username
+ * @return _Bool Returns true if user @p name exist and the effective user successfully set.
+ *  If failed, additional error is stored in errno.
+ */
+_Bool PermissionUtils_SetProcessEffectiveUID(const char* name)
+{
+    struct passwd* p = getpwnam(name);
+    return (p != NULL && seteuid(p->pw_uid) == 0);
+}
+
+/**
+ * @brief Set effective group of the calling process.
+ * 
+ * @param name The username
+ * @return _Bool Returns true if group @p name exist and the effective group successfully set.
+ * If failed, additional error is stored in errno.
+ */
+_Bool PermissionUtils_SetProcessEffectiveGID(const char* name)
+{
+    struct group* grp = getgrnam(name);
+    return (grp != NULL && setegid(grp->gr_gid) == 0);
+}

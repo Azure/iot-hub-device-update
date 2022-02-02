@@ -16,6 +16,8 @@ target_link_digital_twin_client (${PROJECT_NAME} PUBLIC)
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aduc::c_utils
-           aduc::communication_abstraction
-    PRIVATE aduc::logging aduc::pnp_helper IotHubClient::iothub_client)
+    PUBLIC aduc::c_utils aduc::communication_abstraction
+    PRIVATE aduc::d2c_messaging
+            aduc::logging
+            aduc::pnp_helper
+            IotHubClient::iothub_client)

@@ -7,17 +7,10 @@
  */
 
 #include "aduc/workflow_data_utils.h"
-#include "aduc/workflow_utils.h"
-
+#include <aduc/adu_core_export_helpers.h> //
+#include <aduc/workflow_utils.h>
 #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
 #include <stdlib.h>
-
-// Forward declarations
-int ADUC_MethodCall_RebootSystem();
-int ADUC_MethodCall_RestartAgent();
-void ADUC_Workflow_SetUpdateStateWithResult(
-    ADUC_WorkflowData* workflowData, ADUCITF_State updateState, ADUC_Result result);
-void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData);
 
 EXTERN_C_BEGIN
 
@@ -128,104 +121,6 @@ char* ADUC_WorkflowData_GetUpdateType(const ADUC_WorkflowData* workflowData)
 char* ADUC_WorkflowData_GetInstalledCriteria(const ADUC_WorkflowData* workflowData)
 {
     return workflow_get_installed_criteria(workflowData->WorkflowHandle);
-}
-
-/**
- * @brief Gets the function that reboots the system.
- *
- * @param workflowData The workflow data.
- * @return RebootSystemFunc The function that reboots the system.
- */
-RebootSystemFunc ADUC_WorkflowData_GetRebootSystemFunc(const ADUC_WorkflowData* workflowData)
-{
-    RebootSystemFunc fn = ADUC_MethodCall_RebootSystem;
-
-#ifdef ADUC_BUILD_UNIT_TESTS
-    if (workflowData->TestOverrides && workflowData->TestOverrides->RebootSystemFunc_TestOverride)
-    {
-        fn = workflowData->TestOverrides->RebootSystemFunc_TestOverride;
-    }
-#endif
-
-    return fn;
-}
-
-/**
- * @brief Gets the function for restarting the agent process.
- *
- * @param workflowData The workflow data.
- * @return RestartAgentFunc The restart agent function.
- */
-RestartAgentFunc ADUC_WorkflowData_GetRestartAgentFunc(const ADUC_WorkflowData* workflowData)
-{
-    RestartAgentFunc fn = ADUC_MethodCall_RestartAgent;
-
-#ifdef ADUC_BUILD_UNIT_TESTS
-    if (workflowData->TestOverrides && workflowData->TestOverrides->RestartAgentFunc_TestOverride)
-    {
-        fn = workflowData->TestOverrides->RestartAgentFunc_TestOverride;
-    }
-#endif
-
-    return fn;
-}
-
-/**
- * @brief Gets the function for updating the workflow state machine state with result.
- *
- * @param workflowData The workflow data.
- * @return SetUpdateStateWithResultFunc The function for updating the workflow state with result.
- */
-SetUpdateStateWithResultFunc ADUC_WorkflowData_GetSetUpdateStateWithResultFunc(const ADUC_WorkflowData* workflowData)
-{
-    SetUpdateStateWithResultFunc fn = ADUC_Workflow_SetUpdateStateWithResult;
-
-#ifdef ADUC_BUILD_UNIT_TESTS
-    if (workflowData->TestOverrides && workflowData->TestOverrides->SetUpdateStateWithResultFunc_TestOverride)
-    {
-        fn = workflowData->TestOverrides->SetUpdateStateWithResultFunc_TestOverride;
-    }
-#endif
-
-    return fn;
-}
-
-/**
- * @brief Gets the function for handling a new incoming update action
- *
- * @param workflowData The workflow data.
- * @return HandleUpdateActionFunc The function for handling update action.
- */
-HandleUpdateActionFunc ADUC_WorkflowData_GetHandleUpdateActionFunc(const ADUC_WorkflowData* workflowData)
-{
-    HandleUpdateActionFunc fn = ADUC_Workflow_HandleUpdateAction;
-
-#ifdef ADUC_BUILD_UNIT_TESTS
-    if (workflowData->TestOverrides && workflowData->TestOverrides->HandleUpdateActionFunc_TestOverride)
-    {
-        fn = workflowData->TestOverrides->HandleUpdateActionFunc_TestOverride;
-    }
-#endif
-
-    return fn;
-}
-
-/**
- * @brief Save the goal state json string used (re-process), as needed, after deployment is completed.
- *
- * @param workflowData The workflow data.
- * @param goalStateJson A serialized json string containing the last Goal State data.
- */
-void ADUC_WorkflowData_SaveLastGoalStateJson(ADUC_WorkflowData* workflowData, const char* goalStateJson)
-{
-    if (workflowData->LastGoalStateJson != (char*)goalStateJson)
-    {
-        free(workflowData->LastGoalStateJson);
-        if (mallocAndStrcpy_s(&workflowData->LastGoalStateJson, (const char*)goalStateJson) != 0)
-        {
-            workflowData->LastGoalStateJson = NULL;
-        }
-    }
 }
 
 EXTERN_C_END

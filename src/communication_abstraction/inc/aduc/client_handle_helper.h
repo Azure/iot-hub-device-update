@@ -108,6 +108,25 @@ MOCKABLE_FUNCTION(
     value);
 
 /**
+ * @brief Wrapper for the device or model GetTwinAsync functions
+ * @details Uses either the device or module function depending on what the client type has been set to.
+ * @param iotHubClientHandle The clientHandle to be used for the operation
+ * @param deviceTwinCallback Callback for when the function completes
+ * @param userContextCallback A parameter to @p deviceTwinCallback
+ * @returns a value of IOTHUB_CLIENT_RESULT
+ */
+MOCKABLE_FUNCTION(
+    ,
+    IOTHUB_CLIENT_RESULT,
+    ClientHandle_GetTwinAsync,
+    ADUC_ClientHandle,
+    iotHubClientHandle,
+    IOTHUB_CLIENT_DEVICE_TWIN_CALLBACK,
+    deviceTwinCallback,
+    void*,
+    userContextCallback)
+
+/**
  * @brief Wrapper for the Device and Module SetClientTwinCallback functions
  * @details Uses either the device or module function depending on what the client type has been set to.
  * @param iotHubClientHandle The clientHandle to be used for the operation

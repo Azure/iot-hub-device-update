@@ -16,10 +16,8 @@ target_include_directories (
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PRIVATE aduc::adu_types
+    PRIVATE aduc::adu_core_export_helpers
+            aduc::adu_types
             aduc::c_utils
             aduc::workflow_utils)
 
-target_compile_definitions (
-    ${PROJECT_NAME}
-    PRIVATE ADUC_BUILD_UNIT_TESTS="${ADUC_BUILD_UNIT_TESTS}")

@@ -1,0 +1,55 @@
+{
+    "compatibility": [
+        {
+            "manufacturer": "contoso",
+            "model": "toaster"
+        }
+    ],
+    "createdDateTime": "2022-03-12T12:22:37.2627901Z",
+    "files": {
+        "TARGET_UPDATE_FILE_ID": {
+            "fileName": "target_update.swu",
+            "hashes": {
+                "sha256": "TARGET_UPDATE_HASH"
+            },
+            "sizeInBytes": 98765,
+            "properties": {
+            },
+            "downloadHandler": {
+                "id": "microsoft/delta:1"
+            },
+            "relatedFiles": {
+                "DELTA_UPDATE_FILE_ID": {
+                    "fileName": "DELTA_UPDATE_FILE_NAME",
+                    "sizeInBytes": 1234,
+                    "hashes": {
+                        "sha256": "DELTA_UPDATE_HASH"
+                    },
+                    "properties": {
+                        "microsoft.sourceFileHash": "SOURCE_UPDATE_HASH",
+                        "microsoft.sourceFileHashAlgorithm": "sha256"
+                    }
+                }
+            }
+        }
+    },
+    "instructions": {
+        "steps": [
+            {
+                "files": [
+                    "f222b9ffefaaac577"
+                ],
+                "handler": "microsoft/swupdate:1",
+                "handlerProperties": {
+                    "installedCriteria": "toaster_firmware-0.1"
+                }
+            }
+        ]
+    },
+    "manifestVersion": "5",
+    "updateId": {
+        "name": "toaster_firmware",
+        "provider": "contoso",
+        "version": "0.1"
+    }
+}

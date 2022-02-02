@@ -6,11 +6,12 @@
 # Ensure that getopt starts from first option if ". <script.sh>" was used.
 OPTIND=1
 
+ret='exit'
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
-    ret=return
+    ret='return'
 else
-    ret=exit
+    ret='exit'
 fi
 
 warn() { echo -e "\033[1;33mWarning:\033[0m $*" >&2; }
@@ -21,13 +22,14 @@ header() { echo -e "\e[4m\e[1m\e[1;32m$*\e[0m"; }
 
 bullet() { echo -e "\e[1;34m*\e[0m $*"; }
 
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
 root_dir=$script_dir/..
 
 build_clean=false
 build_documentation=false
 build_packages=false
 platform_layer="linux"
+trace_target_deps=false
 content_handlers="microsoft/swupdate,microsoft/apt,microsoft/simulator"
 build_type=Debug
 adu_log_dir=""
@@ -38,7 +40,8 @@ declare -a static_analysis_tools=()
 log_lib="zlog"
 install_prefix=/usr/local
 install_adu=false
-cmake_dir_path=/tmp/cmake-3.10.2
+work_folder=/tmp
+cmake_dir_path="${work_folder}/deviceupdate-cmake"
 
 print_help() {
     echo "Usage: build.sh [options...]"
@@ -56,6 +59,8 @@ print_help() {
     echo "-p, --platform-layer <layer>          Specify the platform layer to build/use. Default is linux."
     echo "                                      Option: linux"
     echo ""
+    echo "--trace-target-deps                   Traces dependencies of CMake targets debug info."
+    echo ""
     echo "--log-lib <log_lib>                   Specify the logging library to build/use. Default is zlog."
     echo "                                      Options: zlog xlog"
     echo ""
@@ -65,11 +70,10 @@ print_help() {
     echo "--install-prefix <prefix>             Install prefix to pass to CMake."
     echo ""
     echo "--install                             Install the following ADU components."
-    echo "                                          From source: adu-agent.service & adu-swupdate.sh."
+    echo "                                          From source: deviceupdate-agent.service & adu-swupdate.sh."
     echo "                                          From build output directory: AducIotAgent & adu-shell."
     echo ""
-    echo "--cmake-path                          Specify the cmake path that we want to use to build ADU."
-    echo "                                      Default will be the path same as install-deps.sh cmake_dir_path"
+    echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
     echo ""
     echo "-h, --help                            Show this help message."
 }
@@ -80,7 +84,7 @@ copyfile_exit_if_failed() {
     ret_val=$?
     if [[ $ret_val != 0 ]]; then
         error "failed to copy $1 to $2 (exit code:$ret_val)"
-        exit $ret_val
+        return $ret_val
     fi
 }
 
@@ -95,7 +99,7 @@ install_adu_components() {
     groupadd --system adu
     useradd --system -p '' -g adu --no-create-home --shell /sbin/false adu
 
-    bullet "Add current user ('$USER') to 'adu' group, to allow launching adu-agent (for testing purposes only)"
+    bullet "Add current user ('$USER') to 'adu' group, to allow launching deviceupdate-agent (for testing purposes only)"
     usermod -a -G adu "$USER"
     bullet "Current user info:"
     id
@@ -126,17 +130,17 @@ install_adu_components() {
     chmod u=rwxs,g=rx,o= "$adu_lib_dir/adu-shell"
     chmod u=rwx,g=rx,o=rx "$adu_lib_dir/adu-swupdate.sh"
 
-    # Only install adu-agent service on system that support systemd.
+    # Only install deviceupdate-agent service on system that support systemd.
     systemd_system_dir=/usr/lib/systemd/system/
     if [ -d "$systemd_system_dir" ]; then
-        bullet "Install adu-agent systemd daemon..."
-        copyfile_exit_if_failed "$root_dir/daemon/adu-agent.service" "$systemd_system_dir"
+        bullet "Install deviceupdate-agent systemd daemon..."
+        copyfile_exit_if_failed "$root_dir/daemon/deviceupdate-agent.service" "$systemd_system_dir"
 
         systemctl daemon-reload
-        systemctl enable adu-agent
-        systemctl restart adu-agent
+        systemctl enable deviceupdate-agent
+        systemctl restart deviceupdate-agent
     else
-        warn "Directory $systemd_system_dir does not exist. Skip adu-agent.service installation."
+        warn "Directory $systemd_system_dir does not exist. Skip deviceupdate-agent.service installation."
     fi
 
     echo "ADU components installation completed."
@@ -146,15 +150,13 @@ install_adu_components() {
 OS=""
 VER=""
 determine_distro() {
-    # shellcheck disable=SC1091
-
     # Checking distro name and version
     if [ -r /etc/os-release ]; then
         # freedesktop.org and systemd
         OS=$(grep "^ID\s*=\s*" /etc/os-release | sed -e "s/^ID\s*=\s*//")
         VER=$(grep "^VERSION_ID\s*=\s*" /etc/os-release | sed -e "s/^VERSION_ID\s*=\s*//")
-        VER=$(sed -e 's/^"//' -e 's/"$//' <<<"$VER")
-    elif type lsb_release >/dev/null 2>&1; then
+        VER=$(sed -e 's/^"//' -e 's/"$//' <<< "$VER")
+    elif type lsb_release > /dev/null 2>&1; then
         # linuxbase.org
         OS=$(lsb_release -si)
         VER=$(lsb_release -sr)
@@ -217,7 +219,7 @@ while [[ $1 != "" ]]; do
             declare -a static_analysis_tools=(clang-tidy cppcheck cpplint iwyu lwyu)
         else
             IFS=','
-            read -ra static_analysis_tools <<<"$1"
+            read -ra static_analysis_tools <<< "$1"
             IFS=' '
         fi
         ;;
@@ -228,7 +230,9 @@ while [[ $1 != "" ]]; do
             $ret 1
         fi
         platform_layer=$1
-
+        ;;
+    --trace-target-deps)
+        trace_target_deps=true
         ;;
     --log-lib)
         shift
@@ -300,6 +304,8 @@ fi
 
 runtime_dir=${output_directory}/bin
 library_dir=${output_directory}/lib
+cmake_bin="${cmake_dir_path}/bin/cmake"
+shellcheck_bin="${work_folder}/deviceupdate-shellcheck"
 
 # Output banner
 echo ''
@@ -307,6 +313,7 @@ header "Building ADU Agent"
 bullet "Clean build: $build_clean"
 bullet "Documentation: $build_documentation"
 bullet "Platform layer: $platform_layer"
+bullet "Trace target deps: $trace_target_deps"
 bullet "Content handlers: $content_handlers"
 bullet "Build type: $build_type"
 bullet "Log directory: $adu_log_dir"
@@ -314,6 +321,10 @@ bullet "Logging library: $log_lib"
 bullet "Output directory: $output_directory"
 bullet "Build unit tests: $build_unittests"
 bullet "Build packages: $build_packages"
+bullet "CMake: $cmake_bin"
+bullet "CMake version: $(${cmake_bin} --version | grep version | awk '{ print $3 }')"
+bullet "shellcheck: $shellcheck_bin"
+bullet "shellcheck version: $("$shellcheck_bin" --version | grep 'version:' | awk '{ print $2 }')"
 if [[ ${#static_analysis_tools[@]} -eq 0 ]]; then
     bullet "Static analysis: (none)"
 else
@@ -330,6 +341,7 @@ CMAKE_OPTIONS=(
     "-DADUC_LOG_FOLDER:STRING=$adu_log_dir"
     "-DADUC_LOGGING_LIBRARY:STRING=$log_lib"
     "-DADUC_PLATFORM_LAYER:STRING=$platform_layer"
+    "-DADUC_TRACE_TARGET_DEPS=$trace_target_deps"
     "-DCMAKE_BUILD_TYPE:STRING=$build_type"
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
@@ -411,26 +423,31 @@ if [[ $build_clean == "true" ]]; then
 fi
 
 mkdir -p "$output_directory"
-pushd "$output_directory" >/dev/null
+pushd "$output_directory" > /dev/null || return
 
 # Generate build using cmake with options
-if [[ $OS != "ubuntu" || $VER != "18.04" ]]; then
-        "$cmake_dir_path"/bin/cmake -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
+if [ ! -f "$cmake_bin" ]; then
+    error "No '${cmake_bin}' file."
+    ret_val=1
 else
-    cmake -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
+    "$cmake_bin" -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
+    ret_val=$?
 fi
 
-# Do the actual building with ninja
-# Save the return code of ninja so we can $ret with that return code.
-ninja
-ret_val=$?
+if [ $ret_val -ne 0 ]; then
+    error "CMake failed to generate Ninja build with exit code: $ret_val"
+else
+    # Do the actual building with ninja
+    ninja
+    ret_val=$?
+fi
 
 if [[ $ret_val == 0 && $build_packages == "true" ]]; then
     cpack
     ret_val=$?
 fi
 
-popd >/dev/null
+popd > /dev/null || return
 
 if [[ $ret_val == 0 && $install_adu == "true" ]]; then
     install_adu_components

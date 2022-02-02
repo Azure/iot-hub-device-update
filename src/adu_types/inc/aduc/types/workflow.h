@@ -16,6 +16,7 @@
 #include "aduc/types/download.h"
 #include "aduc/types/hash.h"
 #include "aduc/types/update_content.h"
+#include "aduc/types/workflow.h"
 
 #include "parson.h"
 
@@ -58,67 +59,17 @@ typedef enum tagADUC_SystemRebootState
  */
 typedef enum tagADUC_WorkflowCancellationType
 {
-    ADUC_WorkflowCancellationType_None             = 0, /**< No cancellation. */
-    ADUC_WorkflowCancellationType_Normal           = 1, /**< A normal cancel due to a Cancel update action from the cloud. */
-    ADUC_WorkflowCancellationType_Replacement      = 2, /**< A cancel due to a process deployment update action from the cloud for a workflow with a different workflow id . */
-    ADUC_WorkflowCancellationType_Retry            = 3, /**< A cancel due to a process deployment update action from the cloud for the same workflow id but with a new retry timestamp token. */
+    ADUC_WorkflowCancellationType_None = 0, /**< No cancellation. */
+    ADUC_WorkflowCancellationType_Normal = 1, /**< A normal cancel due to a Cancel update action from the cloud. */
+    ADUC_WorkflowCancellationType_Replacement =
+        2, /**< A cancel due to a process deployment update action from the cloud for a workflow with a different workflow id . */
+    ADUC_WorkflowCancellationType_Retry =
+        3, /**< A cancel due to a process deployment update action from the cloud for the same workflow id but with a new retry timestamp token. */
     ADUC_WorkflowCancellationType_ComponentChanged = 4, /**< A cancel due to a components changed event. */
 } ADUC_WorkflowCancellationType;
 
-/**
- * @brief Function signature for callback to send download progress to.
- */
-typedef void (*ADUC_Core_DownloadFunction)(
-    const char* workflowId,
-    const char* fileId,
-    ADUC_DownloadProgressState state,
-    uint64_t bytesTransferred,
-    uint64_t bytesTotal);
-
 // Forward decl.
 struct tagADUC_WorkflowData;
-
-typedef ADUC_Result (*ADUC_Core_Download_Function)(
-    const ADUC_FileEntity* entity,
-    const char* workflowId,
-    const char* workFolder,
-    ADUC_DownloadProgressCallback downloadProgressCallback);
-
-typedef ADUC_Result (*ADUC_Set_Workflow_Result_Function)(
-    const char* workflowId, ADUC_Result result, _Bool reportToCloud, _Bool persistLocally);
-
-typedef void (*ADUC_WorkflowData_Free_Function)(struct tagADUC_WorkflowData* workflowData);
-
-typedef void (*HandleUpdateActionFunc)(struct tagADUC_WorkflowData* workflowData);
-typedef void (*SetUpdateStateWithResultFunc)(struct tagADUC_WorkflowData* workflowData, ADUCITF_State updateState, ADUC_Result result);
-typedef void (*WorkCompletionCallbackFunc)(const void* workCompletionToken, ADUC_Result result, _Bool isAsync);
-typedef int (*RebootSystemFunc)();
-typedef int (*RestartAgentFunc)();
-
-typedef void* ADUC_CLIENT_HANDLE_TYPE;
-typedef void (*IOTHUB_CLIENT_REPORTED_STATE_CALLBACK_TYPE)(int, void*);
-typedef enum ADUC_IOTHUB_CLIENT_RESULT_TAG {
-    ADUC_IOTHUB_CLIENT_OK,
-    ADUC_IOTHUB_CLIENT_INVALID_ARG,
-    ADUC_IOTHUB_CLIENT_ERROR,
-    ADUC_IOTHUB_CLIENT_INVALID_SIZE,
-    ADUC_IOTHUB_CLIENT_INDEFINITE_TIME
-} IOTHUB_CLIENT_RESULT_TYPE;
-typedef IOTHUB_CLIENT_RESULT_TYPE (ClientHandleSendReportType)(ADUC_CLIENT_HANDLE_TYPE, const unsigned char *, size_t, IOTHUB_CLIENT_REPORTED_STATE_CALLBACK_TYPE, void *);
-typedef ClientHandleSendReportType* ClientHandleSendReportFunc;
-
-#ifdef ADUC_BUILD_UNIT_TESTS
-typedef struct tagADUC_TestOverride_Hooks
-{
-    void* ContentHandler_TestOverride;
-    HandleUpdateActionFunc HandleUpdateActionFunc_TestOverride;
-    SetUpdateStateWithResultFunc SetUpdateStateWithResultFunc_TestOverride;
-    WorkCompletionCallbackFunc WorkCompletionCallbackFunc_TestOverride;
-    RebootSystemFunc RebootSystemFunc_TestOverride;
-    RestartAgentFunc RestartAgentFunc_TestOverride;
-    void* ClientHandle_SendReportedStateFunc_TestOverride;
-} ADUC_TestOverride_Hooks;
-#endif // #ifdef ADUC_BUILD_UNIT_TESTS
 
 /**
  * @brief A callback function for reporting state, and optionally result to service.
@@ -154,7 +105,8 @@ typedef struct tagADUC_WorkflowData
     // Workflow states
     //
     ADUC_Result Result; /**< Current workflow result data. */
-    ADUCITF_State LastReportedState; /**< Last state set for the workflow and may have been reported as per agent orchestration. */
+    ADUCITF_State
+        LastReportedState; /**< Last state set for the workflow and may have been reported as per agent orchestration. */
     char* LastCompletedWorkflowId; /**< Last workflow id for deployment that completed successfully. */
 
     ADUC_UpdateActionCallbacks UpdateActionCallbacks; /**< Upper-level registration data; function pointers, etc. */
@@ -171,7 +123,8 @@ typedef struct tagADUC_WorkflowData
 
     ADUC_DownloadProgressCallback DownloadProgressCallback; /**< Callback for download progress. */
 
-    ADUC_ReportStateAndResultAsyncCallback ReportStateAndResultAsyncCallback; /**< Callback for reporting workflow state and result. */
+    ADUC_ReportStateAndResultAsyncCallback
+        ReportStateAndResultAsyncCallback; /**< Callback for reporting workflow state and result. */
 
     /**
      * @brief Results object
@@ -232,12 +185,6 @@ typedef struct tagADUC_WorkflowData
      *
      */
     JSON_Array* Results;
-
-    char* LastGoalStateJson; /**< The goal state data sent from DU Service to DU Agent. This data is needed when re-processing latest update on the device */
-
-#ifdef ADUC_BUILD_UNIT_TESTS
-    ADUC_TestOverride_Hooks* TestOverrides; /**< Test hook overrides. This will be NULL when not testing. */
-#endif
 
 } ADUC_WorkflowData;
 

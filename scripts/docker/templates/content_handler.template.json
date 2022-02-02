@@ -1,0 +1,8 @@
+{
+   "fileName":"/var/lib/adu/extensions/sources/%%so_name%%.so",
+   "sizeInBytes":0,
+   "hashes": {
+        "sha256":"%%base64digest%%"
+   },
+   "handlerId":"%%handlerid%%"
+}

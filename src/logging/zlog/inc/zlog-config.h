@@ -15,7 +15,7 @@
 // enabling this will slow down the log
 // #define ZLOG_FORCE_FLUSH_BUFFER
 
-#define ZLOG_BUFFER_LINE_MAXCHARS 3000
+#define ZLOG_BUFFER_LINE_MAXCHARS 512
 #define ZLOG_BUFFER_MAXLINES 1024
 
 #define ZLOG_FLUSH_INTERVAL_SEC 30

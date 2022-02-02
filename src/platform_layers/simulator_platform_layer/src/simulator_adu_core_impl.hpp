@@ -26,8 +26,10 @@
 enum class SimulationType
 {
     DownloadFailed, /**< Simulate a download failure. */
+    BackupFailed, /**< Simulate a backup failure. */
     InstallationFailed, /**< Simulate an install failure. */
     ApplyFailed, /**< Simulate an apply failure. */
+    RestoreFailed, /**< Simulate an restore failure. */
     IsInstalledFailed, /**< Simulate IsInstalled failure. */
     AllSuccessful, /**< Simulate a successful run. */
 };
@@ -238,6 +240,103 @@ private:
             return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
         }
     }
+
+    /**
+     * @brief Implements Backup callback.
+     *
+     * @param token Opaque token.
+     * @param workCompletionData Contains information on what to do when task is completed.
+     * @param info #ADUC_WorkflowData with information on how to backup.
+     * @return ADUC_Result
+     */
+    static ADUC_Result BackupCallback(
+        ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken info) noexcept
+    {
+        const ADUC_WorkflowData* workflowData = static_cast<const ADUC_WorkflowData*>(info);
+        try
+        {
+            Log_Info("Backup thread started");
+
+            // Pointers passed to this method are guaranteed to be valid until WorkCompletionCallback is called.
+            std::thread worker{ [token, workCompletionData, workflowData] {
+                const ADUC_Result result{ ADUC::ExceptionUtils::CallResultMethodAndHandleExceptions(
+                    ADUC_Result_Failure, [&token, &workCompletionData, &workflowData]() -> ADUC_Result {
+                        return static_cast<SimulatorPlatformLayer*>(token)->Backup(workflowData);
+                    }) };
+                // Report result to main thread.
+                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result, true /* isAsync */);
+            } };
+
+            // Allow the thread to work independently of this main thread.
+            worker.detach();
+
+            // Indicate that we've spun off a thread to do the actual work.
+            return ADUC_Result{ ADUC_Result_Backup_InProgress };
+        }
+        catch (const ADUC::Exception& e)
+        {
+            Log_Error("Unhandled ADU Agent exception. code: %d, message: %s", e.Code(), e.Message().c_str());
+            return ADUC_Result{ ADUC_Result_Failure, e.Code() };
+        }
+        catch (const std::exception& e)
+        {
+            Log_Error("Unhandled std exception: %s", e.what());
+            return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
+        }
+        catch (...)
+        {
+            return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
+        }
+    }
+
+    /**
+     * @brief Implements Restore callback.
+     *
+     * @param token Opaque token.
+     * @param workCompletionData Contains information on what to do when task is completed.
+     * @param info #ADUC_WorkflowData with information on how to restore.
+     * @return ADUC_Result
+     */
+    static ADUC_Result RestoreCallback(
+        ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken info) noexcept
+    {
+        const ADUC_WorkflowData* workflowData = static_cast<const ADUC_WorkflowData*>(info);
+        try
+        {
+            Log_Info("Restore thread started");
+
+            // Pointers passed to this method are guaranteed to be valid until WorkCompletionCallback is called.
+            std::thread worker{ [token, workCompletionData, workflowData] {
+                const ADUC_Result result{ ADUC::ExceptionUtils::CallResultMethodAndHandleExceptions(
+                    ADUC_Result_Failure, [&token, &workCompletionData, &workflowData]() -> ADUC_Result {
+                        return static_cast<SimulatorPlatformLayer*>(token)->Restore(workflowData);
+                    }) };
+                // Report result to main thread.
+                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result, true /* isAsync */);
+            } };
+
+            // Allow the thread to work independently of this main thread.
+            worker.detach();
+
+            // Indicate that we've spun off a thread to do the actual work.
+            return ADUC_Result{ ADUC_Result_Restore_InProgress };
+        }
+        catch (const ADUC::Exception& e)
+        {
+            Log_Error("Unhandled ADU Agent exception. code: %d, message: %s", e.Code(), e.Message().c_str());
+            return ADUC_Result{ ADUC_Result_Failure, e.Code() };
+        }
+        catch (const std::exception& e)
+        {
+            Log_Error("Unhandled std exception: %s", e.what());
+            return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
+        }
+        catch (...)
+        {
+            return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
+        }
+    }
+
 
     /**
      * @brief Implements Cancel callback.
