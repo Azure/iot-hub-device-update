@@ -316,7 +316,6 @@ ADUC_Result ScriptHandlerImpl::PrepareScriptArguments(
         const std::string argument = argumentList[i];
         if (!argument.empty())
         {
-            // TODO(Nox): 34317934: [Code Clean Up] Create map for simplify processing of microsoft/script argument placeholders.
             if (argument == "--component-id-val")
             {
                 const char* val = json_object_get_string(component, "id");

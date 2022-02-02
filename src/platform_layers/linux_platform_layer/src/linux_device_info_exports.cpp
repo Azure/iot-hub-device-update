@@ -42,7 +42,6 @@ static char* DeviceInfo_GetManufacturer()
 
     char* result = nullptr;
 
-    // TODO(shiyipeng): Bug 33652090: Potential performance improvement on DeviceInfo_GetManufacturer/Model
     ADUC_ConfigInfo config = {};
     if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.manufacturer != nullptr)
     {
@@ -76,8 +75,6 @@ static char* DeviceInfo_GetModel()
     }
 
     char* result = nullptr;
-
-    //TODO(shiyipeng): Bug 33652090: Potential performance improvement on DeviceInfo_GetManufacturer/Model
     ADUC_ConfigInfo config = {};
     if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.model != nullptr)
     {

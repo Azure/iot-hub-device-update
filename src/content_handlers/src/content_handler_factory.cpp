@@ -24,8 +24,6 @@
 // Note: this requires ${CMAKE_DL_LIBS}
 #include <dlfcn.h>
 
-// TODO(Nox) : 34318211: [Code Clean Up] [Agent Extensibility] Consolidate ContentHandlerFactory and ExtensionManager classes.
-
 std::unordered_map<std::string, void*> ContentHandlerFactory::_libs;
 std::unordered_map<std::string, ContentHandler*> ContentHandlerFactory::_contentHandlers;
 

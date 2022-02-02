@@ -210,8 +210,6 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
     return result;
 }
 
-// TODO (Nox): 31082410: Revisit how to merge and display logs from adu-shell
-//            in adu-agent journalctl log w/o flooding adu log file.
 void ShowChildProcessLogs(const std::string& output)
 {
     if (!output.empty())

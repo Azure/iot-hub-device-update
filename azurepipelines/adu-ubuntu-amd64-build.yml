@@ -5,12 +5,6 @@ variables:
   version.pre-release: "public-preview"
   version.build: $[format('{0:yyyyMMdd}-{0:HHmmss}', pipeline.startTime)]
 
-  # TODO(shiyipeng): Bug 30317524: [ADU E2E Testing] Azure Artifacts no longer free - publishing to test feed fails
-  # # Version here refers to test package version, and follows format of 0.0.<Pipeline Build Number>
-  # # This is due to azure universal packaging apis requiring semantic versioning
-  # # Builds are monotonically increasing based on date and run as test builds will always pull the newest version
-  # test.package.version: 0.0.$(Build.BuildId)
-
   # Environment variables for all client builds:
   ADUC_VERSION_MAJOR: $(version.major)
   ADUC_VERSION_MINOR: $(version.minor)
@@ -157,18 +151,6 @@ jobs:
           shellcheck -s bash -e SC2164 -e SC2209 $(find -name "*.sh")
           exit $?
         displayName: "Run ShellCheck"
-
-      # TODO(shiyipeng) Bug 30317524: [ADU E2E Testing] Azure Artifacts no longer free - publishing to test feed fails
-      # - task: UniversalPackages@0
-      #   inputs:
-      #     command: 'publish'
-      #     publishDirectory: '$(Build.ArtifactStagingDirectory)'
-      #     feedsToUsePublish: 'internal'
-      #     vstsFeedPublish: 'eaf02756-0b76-4d11-94d6-2dc07c577fed'
-      #     publishPackageMetadata: false
-      #     vstsFeedPackagePublish: 'adu-agent'
-      #     versionOption: 'custom'
-      #     versionPublish: '$(test.package.version)'
 
       - task: ComponentGovernanceComponentDetection@0
         inputs:

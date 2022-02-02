@@ -917,8 +917,7 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
             Log_Error("No connnection string set from launch arguments or configuration file");
             goto done;
         }
-        //TODO(Nox): [MCU work in progress] Currently only supporting one agent (host device), so only reading the first agent
-        //in the configuration file. Later it will fork different processes to process multiple agents.
+
         const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(&config, 0);
         if (agent == NULL)
         {

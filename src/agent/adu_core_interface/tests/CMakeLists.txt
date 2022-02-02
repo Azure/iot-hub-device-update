@@ -25,7 +25,7 @@ find_package (Catch2 REQUIRED)
 find_package (umock_c REQUIRED CONFIG)
 find_package (azure_c_shared_utility REQUIRED)
 find_package (IotHubClient REQUIRED)
-find_package (umqtt REQUIRED) # TODO(Nic): Do we need this here?
+find_package (umqtt REQUIRED) 
 
 add_executable (${PROJECT_NAME} ${sources})
 

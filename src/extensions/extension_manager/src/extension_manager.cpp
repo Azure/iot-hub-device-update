@@ -329,8 +329,6 @@ void ExtensionManager::Uninit()
     ExtensionManager::UnloadAllExtensions();
 }
 
-// TODO(Nox): Bug 34534009: [Code Cleanup] Revise extension manger code to avoid hard-coded functions and other strings.
-
 ADUC_Result ExtensionManager::LoadContentDownloaderLibrary(void** contentDownloaderLibrary)
 {
     ADUC_Result result = { ADUC_Result_Failure };

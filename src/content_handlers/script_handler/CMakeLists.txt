@@ -34,9 +34,4 @@ target_link_libraries (
             -zdefs
             )
 
-if (ADUC_BUILD_UNIT_TESTS)
-# TODO:NOX:Bug 36966499: [PPR] Add and enable script handler unittest
-#    add_subdirectory (tests)
-endif ()
-
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

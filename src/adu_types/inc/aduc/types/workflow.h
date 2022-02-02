@@ -116,12 +116,7 @@ typedef struct tagADUC_TestOverride_Hooks
     WorkCompletionCallbackFunc WorkCompletionCallbackFunc_TestOverride;
     RebootSystemFunc RebootSystemFunc_TestOverride;
     RestartAgentFunc RestartAgentFunc_TestOverride;
-
-    // TODO(JeffW): 36438502 adu_core_interface unit tests have issues with umock_c failed, err=10
-    //     Replace with proper mock framework mocking or do some design tweaks to make it more testable.
-    //     It's void* since umocks macro return type makes typedef fail and don't want include dependency from workflow.h
     void* ClientHandle_SendReportedStateFunc_TestOverride;
-
 } ADUC_TestOverride_Hooks;
 #endif // #ifdef ADUC_BUILD_UNIT_TESTS
 

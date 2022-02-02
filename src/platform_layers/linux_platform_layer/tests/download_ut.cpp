@@ -11,8 +11,6 @@
 #include "mock_do_download.hpp"
 #include "mock_do_download_status.hpp"
 #include "mock_do_exceptions.hpp"
-// TODO(shiyipeng): Bug 28605123: Download UT's require DO to download for hash checks
-// namespace msdo = microsoft::deliveryoptimization;
 
 #include <aduc/adu_core_exports.h>
 #include <aduc/system_utils.h>
@@ -170,20 +168,13 @@ TEST_CASE("Download content")
     REQUIRE(pthread_mutex_init(&downloadMutex, nullptr) == 0);
     REQUIRE(pthread_cond_init(&downloadCompletedCond, nullptr) == 0);
 
-    // TODO(shiyipeng): Bug 28605123: Download UT's require DO to download for hash checks
-    // char updateType[] = "microsoft/apt:1";
     const size_t MAX_WORKFLOWID{ 13 };
     char workflowId[MAX_WORKFLOWID];
-
-    // TODO(shiyipeng): Bug 28605123: Download UT's require DO to download for hash checks
-    // ADUC_WorkCompletionData workflowCompletionData = { mockWorkCompletionCallback };
 
     GenerateUniqueId(workflowId, sizeof(workflowId) / sizeof(workflowId[0]));
 
     // Setup test
     ADUC_UpdateActionCallbacks updateActionCallbacks = {};
-    // TODO(shiyipeng): Bug 28605123: Download UT's require DO to download for hash checks
-    // ADUC_DownloadInfo downloadInfo = {};
 
     // Register
     ADUC_Result result = ADUC_RegisterPlatformLayer(&updateActionCallbacks, 0, nullptr);
@@ -197,179 +188,6 @@ TEST_CASE("Download content")
     REQUIRE(updateActionCallbacks.ApplyCallback != nullptr);
     REQUIRE(updateActionCallbacks.CancelCallback != nullptr);
     REQUIRE(updateActionCallbacks.IsInstalledCallback != nullptr);
-
-// TODO(shiyipeng): Bug 28605123: Download UT's require DO to download for hash checks
-#if 0
-    SECTION("Positive: download success.")
-    {
-        InitDownloadInfo(&downloadInfo, mockDownloadProgressCallback, 1, fileEntityWithGoodHash);
-
-        // Normal behavior
-        msdo::download::set_mock_download_behavior(msdo::mock_download_behavior::Normal);
-
-        // Create sandbox
-        ADUC_Result sandboxCreateResult = updateActionCallbacks.SandboxCreateCallback(updateActionCallbacks.PlatformLayerHandle, workflowId, &downloadInfo.WorkFolder);
-        REQUIRE(sandboxCreateResult.ResultCode == ADUC_Result_SandboxCreate_Success);
-
-        // Start download
-        ADUC_Result downloadResult = updateActionCallbacks.DownloadCallback(
-            updateActionCallbacks.PlatformLayerHandle, workflowId, updateType, &workflowCompletionData, &downloadInfo);
-        REQUIRE(downloadResult.ResultCode == ADUC_Result_Download_InProgress);
-
-        // Wait until download is done (either completed or failed);
-        pthread_cond_wait(&downloadCompletedCond, &downloadMutex);
-
-        // Verify expected results.
-        INFO("state: " << downloadProgressInfo.state);
-        INFO("ResultCode: " << downloadTestResult.ResultCode);
-        INFO("extendedResultCode: " << std::hex << downloadTestResult.ExtendedResultCode);
-        REQUIRE(downloadProgressInfo.state == ADUC_DownloadProgressState_Completed);
-        REQUIRE(downloadTestResult.ResultCode == ADUC_Result_Download_Success);
-        REQUIRE(downloadTestResult.ExtendedResultCode == 0);
-
-        // Destroy sandbox
-        updateActionCallbacks.SandboxDestroyCallback(updateActionCallbacks.PlatformLayerHandle, workflowId, downloadInfo.WorkFolder);
-    }
-#endif
-
-// TODO(shiyipeng): Bug 28605123: Download UT's require DO to download for hash checks
-#if 0
-    SECTION("Negative: invalid file hash.")
-    {
-        InitDownloadInfo(&downloadInfo, mockDownloadProgressCallback, 1, fileEntityWithBadHash);
-
-        // Normal behavior
-        msdo::download::set_mock_download_behavior(msdo::mock_download_behavior::Normal);
-
-        // Create sandbox
-        ADUC_Result sandboxCreateResult = updateActionCallbacks.SandboxCreateCallback(updateActionCallbacks.PlatformLayerHandle, workflowId, &downloadInfo.WorkFolder);
-        REQUIRE(sandboxCreateResult.ResultCode == ADUC_Result_SandboxCreate_Success);
-
-        // Start download
-        ADUC_Result downloadResult = updateActionCallbacks.DownloadCallback(
-            updateActionCallbacks.PlatformLayerHandle, &workflowCompletionData, &downloadInfo);
-        REQUIRE(downloadResult.ResultCode == ADUC_Result_Download_InProgress);
-
-        // Wait until download is done (either completed or failed);
-        pthread_cond_wait(&downloadCompletedCond, &downloadMutex);
-
-        // Verify expected results.
-        INFO("state: " << downloadProgressInfo.state);
-        INFO("resultCode: " << downloadTestResult.ResultCode);
-        INFO("extendedResultCode: " << std::hex << downloadTestResult.ExtendedResultCode);
-        REQUIRE(downloadProgressInfo.state == ADUC_DownloadProgressState_Error);
-        REQUIRE(downloadTestResult.ResultCode == ADUC_Result_Failure);
-        REQUIRE(downloadTestResult.ExtendedResultCode == ADUC_ERC_VALIDATION_FILE_HASH_INVALID_HASH);
-
-        // Destroy sandbox
-        updateActionCallbacks.SandboxDestroyCallback(updateActionCallbacks.PlatformLayerHandle, workflowId, downloadInfo.WorkFolder);
-    }
-#endif
-
-// TODO(shiyipeng): Bug 28605123: Download UT's require DO to download for hash checks
-#if 0
-    SECTION("Negative: force abort")
-    {
-        InitDownloadInfo(&downloadInfo, mockDownloadProgressCallback, 1, fileEntityWithGoodHash);
-
-        // Emulate abort action.
-        msdo::download::set_mock_download_behavior(msdo::mock_download_behavior::Aborted);
-
-        // Create sandbox
-        // Create sandbox
-        ADUC_Result sandboxCreateResult =
-            updateActionCallbacks.SandboxCreateCallback(updateActionCallbacks.PlatformLayerHandle, workflowId, &downloadInfo.WorkFolder);
-        REQUIRE(sandboxCreateResult.ResultCode == ADUC_Result_SandboxCreate_Success);
-
-        // Start download
-        ADUC_Result downloadResult = updateActionCallbacks.DownloadCallback(
-            updateActionCallbacks.PlatformLayerHandle, &workflowCompletionData, &downloadInfo);
-        REQUIRE(downloadResult.ResultCode == ADUC_Result_Download_InProgress);
-
-        // Wait until download is done (either completed or failed);
-        pthread_cond_wait(&downloadCompletedCond, &downloadMutex);
-
-        // Verify expected results.
-        INFO("state: " << downloadProgressInfo.state);
-        INFO("resultCode: " << downloadTestResult.ResultCode);
-        INFO("extendedResultCode: " << std::hex << downloadTestResult.ExtendedResultCode);
-        REQUIRE(downloadProgressInfo.state == ADUC_DownloadProgressState_Cancelled);
-        REQUIRE(downloadTestResult.ResultCode == ADUC_Result_Failure_Cancelled);
-        REQUIRE(downloadTestResult.ExtendedResultCode == MAKE_ADUC_DELIVERY_OPTIMIZATION_EXTENDEDRESULTCODE(0x7D));
-
-        // Destroy sandbox
-        updateActionCallbacks.SandboxDestroyCallback(updateActionCallbacks.PlatformLayerHandle, workflowId, downloadInfo.WorkFolder);
-    }
-#endif
-
-// TODO(shiyipeng): Bug 28605123: Download UT's require DO to download for hash checks
-#if 0
-    SECTION("Negative: unsupported file hash.")
-    {
-        InitDownloadInfo(&downloadInfo, mockDownloadProgressCallback, 1, fileEntityWithUnsupportedHash);
-
-        // Normal behavior
-        msdo::download::set_mock_download_behavior(msdo::mock_download_behavior::Normal);
-
-        // Create sandbox
-        ADUC_Result sandboxCreateResult =
-            updateActionCallbacks.SandboxCreateCallback(updateActionCallbacks.PlatformLayerHandle, workflowId, &downloadInfo.WorkFolder);
-        REQUIRE(sandboxCreateResult.ResultCode == ADUC_Result_SandboxCreate_Success);
-
-        // Start download
-        ADUC_Result downloadResult = updateActionCallbacks.DownloadCallback(
-            updateActionCallbacks.PlatformLayerHandle, &workflowCompletionData, &downloadInfo);
-        REQUIRE(downloadResult.ResultCode == ADUC_Result_Download_InProgress);
-
-        // Wait until download is done (either completed or failed);
-        pthread_cond_wait(&downloadCompletedCond, &downloadMutex);
-
-        // Verify expected results.
-        INFO("state: " << downloadProgressInfo.state);
-        INFO("resultCode: " << downloadTestResult.ResultCode);
-        INFO("extendedResultCode: " << std::hex << downloadTestResult.ExtendedResultCode);
-        REQUIRE(downloadProgressInfo.state == ADUC_DownloadProgressState_Error);
-        REQUIRE(downloadTestResult.ResultCode == ADUC_Result_Failure);
-        REQUIRE(downloadTestResult.ExtendedResultCode == ADUC_ERC_VALIDATION_FILE_HASH_TYPE_NOT_SUPPORTED);
-
-        // Destroy sandbox
-        updateActionCallbacks.SandboxDestroyCallback(updateActionCallbacks.PlatformLayerHandle, workflowId, downloadInfo.WorkFolder);
-    }
-#endif
-
-#if 0
-    SECTION("Negative: empty file hash.")
-    {
-        InitDownloadInfo(&downloadInfo, mockDownloadProgressCallback, 1, fileEntityWithEmptyHash);
-
-        // Normal behavior
-        msdo::download::set_mock_download_behavior(msdo::mock_download_behavior::Normal);
-
-        // Create sandbox
-        ADUC_Result sandboxCreateResult =
-            updateActionCallbacks.SandboxCreateCallback(updateActionCallbacks.PlatformLayerHandle, workflowId, &downloadInfo.WorkFolder);
-        REQUIRE(sandboxCreateResult.ResultCode == ADUC_Result_SandboxCreate_Success);
-
-        // Start download
-        ADUC_Result downloadResult = updateActionCallbacks.DownloadCallback(
-            updateActionCallbacks.PlatformLayerHandle, &workflowCompletionData, &downloadInfo);
-        REQUIRE(downloadResult.ResultCode == ADUC_Result_Download_InProgress);
-
-        // Wait until download is done (either completed or failed);
-        pthread_cond_wait(&downloadCompletedCond, &downloadMutex);
-
-        // Verify expected results.
-        INFO("state: " << downloadProgressInfo.state);
-        INFO("resultCode: " << downloadTestResult.ResultCode);
-        INFO("extendedResultCode: " << std::hex << downloadTestResult.ExtendedResultCode);
-        REQUIRE(downloadProgressInfo.state == ADUC_DownloadProgressState_Error);
-        REQUIRE(downloadTestResult.ResultCode == ADUC_Result_Failure);
-        REQUIRE(downloadTestResult.ExtendedResultCode == ADUC_ERC_VALIDATION_FILE_HASH_IS_EMPTY);
-
-        // Destroy sandbox
-        updateActionCallbacks.SandboxDestroyCallback(updateActionCallbacks.PlatformLayerHandle, workflowId, downloadInfo.WorkFolder);
-    }
-#endif
 
     // Clean up
     if (isRegistered)

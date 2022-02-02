@@ -341,9 +341,6 @@ void ADUC_Workflow_HandlePropertyUpdate(
     {
         Log_Error("Invalid desired update action data. Update data: (%s)", propertyUpdateValue);
 
-        //
-        // TODO(NIC): 31481186 Refactor reporting so failures are reported in line instead of waiting for the state change to happen
-        //
         ADUC_Workflow_SetUpdateStateWithResult(currentWorkflowData, ADUCITF_State_Failed, result);
         return;
     }

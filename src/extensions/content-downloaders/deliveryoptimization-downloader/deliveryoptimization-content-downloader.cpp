@@ -127,9 +127,6 @@ ADUC_Result do_download(
     // If we downloaded successfully, validate the file hash.
     if (resultCode == ADUC_Result_Download_Success)
     {
-        // TODO(Nic): 28241106 - Add crypto agility for hash validation
-        // Note: Currently we expect there to be only one hash, but
-        // support for multiple hashes is already built in.
         Log_Info("Validating file hash");
 
         SHAversion algVersion;

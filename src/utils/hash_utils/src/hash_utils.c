@@ -75,8 +75,6 @@ done:
     return success;
 }
 
-// TODO(Nox): 34405623: [Code Cleanup] hash_util.c - change ADUC_HashUtils_GetFileHash to return STRING_Handle
-
 /**
  * @brief Checks if the hash of the file at @p path matches @p hashBase64
  *

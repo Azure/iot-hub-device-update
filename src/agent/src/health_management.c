@@ -34,10 +34,18 @@ static const char* aduc_required_group_memberships[] = {
     DO_FILE_GROUP // allows agent to set connection_string for DO
 };
 
-// TODO (Nox): Consider consolidate all connectivity related code into a Connection Manager library.
-
+/**
+ * @brief Get the Connection Info from Identity Service
+ *
+ * @return true if connection info can be obtained
+ */
 _Bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info);
 
+/**
+ * @brief Get the Connection Info from connection string, if a connection string is provided in configuration file
+ *
+ * @return true if connection info can be obtained
+ */
 _Bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString);
 
 /**
@@ -57,8 +65,6 @@ _Bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs, ADUC_ConfigI
         goto done;
     }
 
-    //TODO(Nox): [MCU work in progress] Currently only supporting one agent (host device), so only reading the first agent
-    //in the configuration file. Later it will fork different processes to process multiple agents.
     const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(config, 0);
     if (agent == NULL)
     {
@@ -535,7 +541,6 @@ _Bool HealthCheck(const ADUC_LaunchArguments* launchArgs)
         goto done;
     }
 
-    // TODO (Nox): 31374905: Improve adu-agent 'health-check' logic.
 #ifdef ADUC_PLATFORM_SIMULATOR
     if (IsSimulatingUnhealthyState(&config))
     {

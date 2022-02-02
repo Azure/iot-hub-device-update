@@ -44,8 +44,6 @@ _Bool DeviceProperties_AddManufacturerAndModel(JSON_Object* devicePropsObj)
 
     if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
     {
-        //TODO(Nox): [MCU work in progress] Currently only supporting one agent (host device), so only reading the first agent
-        //in the configuration file. Later it will fork different processes to process multiple agents.
         const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(&config, 0);
         if (agent != NULL && agent->manufacturer != NULL && agent->model != NULL)
         {
