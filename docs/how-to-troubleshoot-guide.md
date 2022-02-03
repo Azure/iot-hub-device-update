@@ -28,7 +28,7 @@ If you run into issues with the Device Update Agent, you have a couple options t
     /var/cache/deliveryoptimization-agent/log
     ```
 
-* For the Simulator the logs are found here:
+* For the Simulator (Device Update Agent version 0.7.0 and older) the logs are found here:
 
     ```markdown
     /tmp/aduc-logs
@@ -58,7 +58,7 @@ the rest of the bits are the *Error Code*.
 
 ### Error Codes explained
 
-* [Device Update for IoT Hub](https://github.com/Azure/iot-hub-device-update/blob/main/src/inc/aduc/result.h)
+* [Device Update for IoT Hub](../src/inc/aduc/result.h)
 * [Delivery Optimization](https://github.com/microsoft/do-client/blob/main/client-lite/src/include/do_error.h)
 
 ### Facility Codes explained

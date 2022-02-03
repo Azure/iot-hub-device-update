@@ -5,6 +5,7 @@
 # Creates and configures necessary users and groups for ADU.
 # Runs before installing/unpacking the debian package.
 # See https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+#     https://www.debian.org/doc/debian-policy/ap-flowcharts.html
 
 echo "******************** Running $0 $1 $2 ***********************"
 
@@ -20,16 +21,81 @@ adu_user=adu
 # access to ADU resources like download sandbox folder.
 adu_group=adu
 
+# The location of the ADU configuration file pre-PPR (public preview refresh)
+pre_ppr_conf_file='/etc/adu/adu-conf.txt'
+
+# The path to the main ADU Agent binary.
+agent_file='/usr/bin/AducIotAgent'
+
+# The debian package name
+agent_deb_pkg_name='deviceupdate-agent'
+
+# The message to print for remediation of the upgrade.
+upgrade_remediation_step_message=''
+
+#
+# exit codes
+#
+exitcode_success=0
+exitcode_adu_group_already_exists=1
+exitcode_adu_user_already_exists=2
+exitcode_pre_ppr_installed=3 # pre-ppr agent binary is installed
+exitcode_pre_ppr_unpurged=4  # pre-ppr config exists
+exitcode_unknown_argument=5
+
+#
+# Prints an error message for failed upgrade due to presence of pre-PPR(public
+# preview refresh) installed binary or unpurged configuration.
+#
+# Pre-condition: must set upgrade_remediation_step_message before calling.
+#
+print_pre_ppr_error_message () {
+    echo "============================================================"
+    echo
+    echo "    Upgrade Failed."
+    echo
+    echo "    Before installing,"
+    echo "    ${upgrade_remediation_step_message}."
+    echo
+    echo "    After install, in the Azure portal, create a brand new device and"
+    echo "    add it to a new device group."
+    echo
+    echo "============================================================"
+}
+
+check_pre_ppr_agent_installed_or_unpurged () {
+    if [ -f "$agent_file" ]; then
+        agent_ver=$("$agent_file" --version)
+        echo "Existing DU Agent version: $agent_ver"
+
+        ver1=${agent_ver%%.*}
+        ver2=${agent_ver#${ver1}.}
+        ver2=${ver2%%.*}
+
+        if [ "$ver1" -eq 0 ] && [ "$ver2" -lt 8 ]; then
+            # Installed Agent binary is pre-PPR
+            upgrade_remediation_step_message="run 'sudo apt remove ${agent_deb_pkg_name}' and remove '${pre_ppr_conf_file}'"
+            print_pre_ppr_error_message
+            exit $exitcode_pre_ppr_installed
+        fi
+    elif [ -f "$pre_ppr_conf_file" ]; then
+        # Found non-purged pre-ppr upgrade
+        upgrade_remediation_step_message="remove '${pre_ppr_conf_file}'"
+        print_pre_ppr_error_message
+        exit $exitcode_pre_ppr_unpurged
+    fi
+}
+
 add_adu_user_and_group() {
     echo "Create the 'adu' group."
     if ! getent group "$adu_group" > /dev/null; then
         addgroup --system "$adu_group"
     else
         # For security purposes, it's extremely important that there's no existing 'adu' user and 'adu' group.
-        # This ensures the account and group are setup by our package installation process only, 
+        # This ensures the account and group are setup by our package installation process only,
         # and no other actor can pre-create the user/group with nefarious intentions.
         echo "Error: 'adu' group already exists." >&2
-        exit 1
+        exit $exitcode_adu_group_already_exists
     fi
 
     echo "Create the 'adu' user." # With no shell and no login, in 'adu' group.
@@ -37,24 +103,31 @@ add_adu_user_and_group() {
         adduser --system "$adu_user" --ingroup "$adu_group" --no-create-home --shell /bin/false
     else
         # For security purposes, it's extremely important that there's no existing 'adu' user and 'adu' group.
-        # This to ensures the account and group are setup by our package installation process only, 
+        # This to ensures the account and group are setup by our package installation process only,
         # and no other actor can pre-create the user/group with nefarious intentions.
         echo "Error: 'adu' user already exists." >&2
-        exit 2
+        exit $exitcode_adu_user_already_exists
     fi
 
     echo "Add the 'adu' user to the 'syslog' group." # To allow ADU to write to /var/log folder
-    usermod -aG "syslog" "$adu_user" 
+    if getent group "syslog" > /dev/null; then
+        usermod -aG "syslog" "$adu_user"
+    fi
 }
 
 case "$1" in
     install)
+        # Disallow upgrade for non-purged pre-PPR agent.
+        check_pre_ppr_agent_installed_or_unpurged
+
         # Try to add user during 'preinst install' step.
         # If fail, the 'adu' user and group will be removed at 'postrm abort-install' task.
         add_adu_user_and_group
     ;;
 
     upgrade)
+        # Disallow upgrade for unpacked pre-PPR agent.
+        check_pre_ppr_agent_installed_or_unpurged
     ;;
 
     abort-upgrade)
@@ -62,8 +135,8 @@ case "$1" in
 
     *)
         echo "preinst called with unknown argument \`$1'" >&2
-        exit 1
+        exit $exitcode_unknown_argument
     ;;
 esac
 
-exit 0
+exit $exitcode_success

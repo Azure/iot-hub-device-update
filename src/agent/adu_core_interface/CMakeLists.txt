@@ -9,8 +9,11 @@ add_library (
     src/adu_core_interface.c
     src/adu_core_json.c
     src/adu_core_export_helpers.c
-    src/agent_workflow.c
+    src/agent_orchestration.c
+    src/device_properties.c
     src/startup_msg_helper.c)
+
+set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
@@ -21,12 +24,23 @@ find_package (Parson REQUIRED)
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC Parson::parson aduc::c_utils
-    PRIVATE aduc::platform_layer
-            aduc::pnp_helper
-            aduc::logging
+    PUBLIC aduc::adu_types
+           aduc::agent_workflow
+           aduc::c_utils
+           aduc::communication_abstraction
+           aduc::extension_manager
+           Parson::parson
+    PRIVATE aduc::config_utils
+            aduc::hash_utils
+            aduc::parson_json_utils
             aduc::jws_utils
-            aduc::hash_utils)
+            aduc::logging
+            aduc::parser_utils
+            aduc::platform_layer
+            aduc::pnp_helper
+            aduc::system_utils
+            aduc::workflow_data_utils
+            aduc::workflow_utils)
 
 target_compile_definitions (
     ${PROJECT_NAME}
@@ -34,26 +48,20 @@ target_compile_definitions (
             ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
             ADUC_DEVICEPROPERTIES_MODEL="${ADUC_DEVICEPROPERTIES_MODEL}"
             ADUC_VERSION="${ADUC_VERSION}"
-            ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}")
+            ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}"
+            ADUC_BUILD_UNIT_TESTS="${ADUC_BUILD_UNIT_TESTS}")
 
-if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
-    target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_PLATFORM_SIMULATOR)
+if (NOT ADUC_PLATFORM_LAYER STREQUAL "simulator")
     if (ADUC_BUILD_UNIT_TESTS)
-        # Unit tests for this library depend on the simulator being built, so
-        # only build associated UT if we're building simulator.
         find_package (umock_c REQUIRED CONFIG)
         target_link_libraries (${PROJECT_NAME} PRIVATE umock_c)
-
-        add_definitions (-DENABLE_MOCKS=1)
-        add_definitions (-DUMOCK_STATIC=static)
-        add_definitions (-DENABLE_MOCK_FILTERING)
-        # Methods to mock:
-        add_definitions (-Dplease_mock_IoTHubDeviceClient_LL_SendReportedState=MOCK_ENABLED)
         add_subdirectory (tests)
-    endif()
-else ()
+    endif ()
+
     find_package (deliveryoptimization_sdk CONFIG REQUIRED)
     target_link_libraries (${PROJECT_NAME} PRIVATE Microsoft::deliveryoptimization)
+else ()
+    target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_PLATFORM_SIMULATOR)
 endif ()
 
 if (ENABLE_ADU_TELEMETRY_REPORTING)

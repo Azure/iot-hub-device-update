@@ -2,7 +2,8 @@
  * @file jws_utils.c
  * @brief Provides methods for verifying Signed JSON Web Keys, JSON Web Tokens in JSON Web Signature Format, and JSON Web Signatures.
  * @brief Provides verification methods and helper functions
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include "jws_utils.h"
@@ -179,7 +180,7 @@ done:
  * @brief Extracts the header from the Base64URL encoded JSON Web Signature within @p jws
  * @details Copies the header from @p jws to @p header the header will be allocated by this method and should be freed by the caller using free
  * @param jws a Base4Url encoded JSON Web Signature contianing at least a header delimited by '.'
- * @param header destinaton buffer to store the Base64Url encoded header in
+ * @param header destination buffer to store the Base64Url encoded header in
  * @returns on successful extraction of the header True, false otherwise
  *
  */

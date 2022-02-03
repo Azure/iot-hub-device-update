@@ -2,7 +2,8 @@
  * @file calloc_wrapper.h
  * @brief Defines calloc_wrapper class, which performs RAII for malloc'd pointers.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #ifndef ADUC_CALLOC_WRAPPER_HPP

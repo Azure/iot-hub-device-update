@@ -2,7 +2,8 @@
  * @file result_ut.cpp
  * @brief Unit tests for result.h
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <catch2/catch.hpp>
 
@@ -36,12 +37,12 @@ TEST_CASE("IsAducResultCode: Invalid")
 
 TEST_CASE("EXTENDEDRESULTCODE")
 {
-    auto errorVal = GENERATE(as<unsigned int>{}, 0, 1, 0xfffffff); // NOLINT(google-build-using-namespace)
+    auto errorVal = GENERATE(as<unsigned int>{}, 0, 1, 0xfffff); // NOLINT(google-build-using-namespace)
 
     SECTION("MAKE_ADUC_EXTENDEDRESULTCODE")
     {
-        const ADUC_Result_t erc{ MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_ERRNO, errorVal) };
-        CHECK(FacilityFromExtendedResultCode(erc) == ADUC_FACILITY_ERRNO);
+        const ADUC_Result_t erc{ MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_LOWERLAYER, 0, errorVal) };
+        CHECK(FacilityFromExtendedResultCode(erc) == ADUC_FACILITY_LOWERLAYER);
         CHECK(CodeFromExtendedResultCode(erc) == errorVal);
     }
 
@@ -52,10 +53,10 @@ TEST_CASE("EXTENDEDRESULTCODE")
         CHECK(CodeFromExtendedResultCode(erc) == errorVal);
     }
 
-    SECTION("ADUC_FACILITY_ERRNO")
+    SECTION("ADUC_FACILITY_LOWERLAYER")
     {
         const ADUC_Result_t erc{ MAKE_ADUC_ERRNO_EXTENDEDRESULTCODE(errorVal) };
-        CHECK(FacilityFromExtendedResultCode(erc) == ADUC_FACILITY_ERRNO);
+        CHECK(FacilityFromExtendedResultCode(erc) == ADUC_FACILITY_UNKNOWN);
         CHECK(CodeFromExtendedResultCode(erc) == errorVal);
     }
 }
@@ -68,12 +69,12 @@ TEST_CASE("EXTENDEDRESULTCODE")
 
 TEST_CASE("ADUC_ERC Macros")
 {
-    CHECK(FacilityFromExtendedResultCode(ADUC_ERC_NOTRECOVERABLE) == ADUC_FACILITY_ERRNO);
+    CHECK(FacilityFromExtendedResultCode(ADUC_ERC_NOTRECOVERABLE) == ADUC_FACILITY_UNKNOWN);
     CHECK(CodeFromExtendedResultCode(ADUC_ERC_NOTRECOVERABLE) == ENOTRECOVERABLE);
 
-    CHECK(FacilityFromExtendedResultCode(ADUC_ERC_NOMEM) == ADUC_FACILITY_ERRNO);
+    CHECK(FacilityFromExtendedResultCode(ADUC_ERC_NOMEM) == ADUC_FACILITY_UNKNOWN);
     CHECK(CodeFromExtendedResultCode(ADUC_ERC_NOMEM) == ENOMEM);
 
-    CHECK(FacilityFromExtendedResultCode(ADUC_ERC_NOTPERMITTED) == ADUC_FACILITY_ERRNO);
+    CHECK(FacilityFromExtendedResultCode(ADUC_ERC_NOTPERMITTED) == ADUC_FACILITY_UNKNOWN);
     CHECK(CodeFromExtendedResultCode(ADUC_ERC_NOTPERMITTED) == EPERM);
 }

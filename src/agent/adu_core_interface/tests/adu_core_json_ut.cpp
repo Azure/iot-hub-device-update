@@ -2,7 +2,8 @@
  * @file adu_core_json_ut.cpp
  * @brief Unit tests for adu_core_json.h
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
@@ -15,6 +16,8 @@ using Catch::Matchers::Equals;
 #include "aduc/adu_core_export_helpers.h" // ADUC_FileEntityArray_Free
 #include "aduc/adu_core_exports.h" // ADUC_FileEntity
 #include "aduc/adu_core_json.h"
+#include "aduc/hash_utils.h"
+#include "aduc/parser_utils.h"
 #include <aduc/calloc_wrapper.hpp>
 
 using ADUC::StringUtils::cstr_wrapper;
@@ -70,7 +73,7 @@ TEST_CASE("ADUC_Json_GetRoot: Invalid")
     "manifestVersion":"1.0",
     "updateId":{
         "provider":"AduTest",
-        "name":"dpokluda",
+        "name":"ADU content team",
         "version":"2020.611.534.16"
     },
     "updateType":null,
@@ -357,17 +360,15 @@ TEST_CASE("ADUC_Json_GetUpdateAction: Valid")
 {
     // clang-format off
     auto updateactionVal = GENERATE( // NOLINT(google-build-using-namespace)
-        ADUCITF_UpdateAction_Download,
-        ADUCITF_UpdateAction_Install,
-        ADUCITF_UpdateAction_Apply,
-        ADUCITF_UpdateAction_Cancel);
+        ADUCITF_UpdateAction_Cancel,
+        ADUCITF_UpdateAction_ProcessDeployment);
     // clang-format on
 
     SECTION("Verify update action values")
     {
         unsigned updateAction;
         std::stringstream strm;
-        strm << R"({ "action": )" << updateactionVal << " })";
+        strm << R"({ "workflow" : {"action": )" << updateactionVal << R"( } })";
         INFO(strm.str())
         const JSON_Value* updateActionJson{ ADUC_Json_GetRoot(strm.str().c_str()) };
         REQUIRE(updateActionJson != nullptr);
@@ -380,7 +381,7 @@ TEST_CASE("ADUC_Json_GetUpdateAction: Invalid")
 {
     unsigned updateAction;
     std::stringstream strm;
-    const JSON_Value* updateActionJsonValue{ ADUC_Json_GetRoot(R"({ "action": "jeff" })") };
+    const JSON_Value* updateActionJsonValue{ ADUC_Json_GetRoot(R"({ "workflow" : { "action": "foo" }})") };
     INFO(strm.str())
     REQUIRE(updateActionJsonValue != nullptr);
     CHECK(!ADUC_Json_GetUpdateAction(updateActionJsonValue, &updateAction));
@@ -397,7 +398,9 @@ TEST_CASE("ADUC_Json_GetExpectedUpdateId: Valid")
     // clang-format off
     expectedUpdateIdJsonStrm
         << R"({)"
-        <<     R"("action": 0,)"
+        <<     R"("workflow" : { )"
+        <<     R"(  "action": 0  )"
+        <<     R"( },)"
         <<     R"("updateManifest":"{)"
         <<         R"(\"updateId\":{)"
         <<             R"(\"provider\":\")" << provider << R"(\",)"
@@ -428,7 +431,9 @@ TEST_CASE("ADUC_Json_GetExpectedUpdateId: Invalid")
         // clang-format off
         expectedUpdateIdJsonStrm
             << R"({)"
-            <<     R"("action": 0,)"
+            <<     R"("workflow" : { )"
+            <<     R"(  "action": 0  )"
+            <<     R"( },)"
             <<     R"("updateManifest":"{)"
             <<     R"(}")"
             << R"(})";
@@ -448,7 +453,9 @@ TEST_CASE("ADUC_Json_GetExpectedUpdateId: Invalid")
         // clang-format off
         expectedUpdateIdJsonStrm
             << R"({)"
-            <<     R"("action": 0,)"
+            <<     R"("workflow" : { )"
+            <<     R"(  "action": 0  )"
+            <<     R"( },)"
             <<     R"("updateManifest":"{)"
             <<        R"(\"updateId\":[\"a\"])"
             <<     R"(}")"
@@ -578,7 +585,10 @@ TEST_CASE("ADUC_Json_GetFiles: Valid")
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         CHECK_THAT(fileEntities[i].TargetFilename, Equals(strm.str()));
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        CHECK_THAT(fileEntities[i].DownloadUri, Equals(files.find(fileEntities[i].Hash[0].value)->second));
+        CHECK_THAT(
+            fileEntities[i].DownloadUri,
+            Equals(
+                files.find(ADUC_HashUtils_GetHashValue(fileEntities[i].Hash, fileEntities[i].HashCount, 0))->second));
     }
 
     ADUC_FileEntityArray_Free(fileCount, fileEntities);

@@ -16,17 +16,27 @@ target_include_directories (${target_name} PUBLIC ${ADUC_EXPORT_INCLUDES})
 
 target_link_libraries (
     ${target_name}
-    PRIVATE aduc::content_handlers
+    PRIVATE aduc::adu_types
+            aduc::agent_workflow
             aduc::c_utils
-            aduc::string_utils
+            aduc::config_utils
+            aduc::content_handlers
             aduc::exception_utils
+            aduc::extension_manager
             aduc::hash_utils
             aduc::logging
             aduc::process_utils
             aduc::string_utils
-            aduc::system_utils)
+            aduc::system_utils
+            aduc::workflow_data_utils
+            aduc::workflow_utils)
 
 target_link_dosdk (${target_name} PRIVATE)
+
+#
+# Turn -fPIC on, in order to use this library in another shared library.
+#
+set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 execute_process (
     COMMAND lsb_release --id --short
@@ -49,8 +59,11 @@ target_compile_definitions (
     ${target_name}
     PRIVATE ADUC_DEVICEINFO_MANUFACTURER="${ADUC_DEVICEINFO_MANUFACTURER}"
             ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
+            ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
+            ADUC_FILE_USER="${ADUC_FILE_USER}"
             ADUC_DEVICEINFO_MODEL="${ADUC_DEVICEINFO_MODEL}"
-            ADUC_VERSION_FILE="${ADUC_VERSION_FILE}")
+            ADUC_VERSION_FILE="${ADUC_VERSION_FILE}"
+            ADUC_BUILD_UNIT_TESTS="${ADUC_BUILD_UNIT_TESTS}")
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

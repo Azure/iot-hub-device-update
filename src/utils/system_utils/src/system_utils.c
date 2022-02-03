@@ -2,24 +2,49 @@
  * @file system_utils.c
  * @brief System level utilities, e.g. directory management, reboot, etc.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/system_utils.h"
 #include "aduc/logging.h"
+#include "aduc/string_c_utils.h"
 
 // for nftw
 #define __USE_XOPEN_EXTENDED 1
 
+#include <aduc/string_c_utils.h>
+#include <azure_c_shared_utility/strings.h>
 #include <errno.h>
+#include <fcntl.h> // for O_CLOEXEC
 #include <ftw.h> // for nftw
+#include <grp.h> // for getgrnam
 #include <limits.h> // for PATH_MAX
+#include <pwd.h> // for getpwnam
+#include <stdio.h>
 #include <stdlib.h> // for getenv
 #include <string.h> // for strncpy, strlen
+#include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h> // for waitpid
 #include <unistd.h>
 
+#ifndef O_CLOEXEC
+/**
+ * @brief Enable the close-on-exec flag for the new file descriptor. pecifying this flag permits a program to avoid additional
+ * fcntl(2) F_SETFD operations to set the FD_CLOEXEC flag.
+ * @details Included here because not all linux kernels include O_CLOEXEC by default in fcntl.h
+ */
+#    define O_CLOEXEC __O_CLOEXEC
+#endif
+
+#ifndef ALL_PERMS
+/**
+ * @brief Define all permissions mask if not defined already in octal format
+ */
+#    define ALL_PERMS 07777
+
+#endif
 /**
  * @brief Retrieve system temporary path with a subfolder.
  *
@@ -67,7 +92,7 @@ const char* ADUC_SystemUtils_GetTemporaryPathName()
  */
 int ADUC_SystemUtils_ExecuteShellCommand(const char* command)
 {
-    if (command == NULL || command[0] == '\0')
+    if (IsNullOrEmpty(command))
     {
         Log_Error("ExecuteShellCommand failed: command is empty");
         return EINVAL;
@@ -172,7 +197,7 @@ int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t
  * Calls ADUC_SystemUtils_MkDirRecursive with:
  * userId == -1 (system default behavior)
  * groupId == -1 (system default behavior)
- * mode == S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP
+ * mode == S_IRWXU | S_IRWXG
  *
  * @param path Path to create.
  *
@@ -180,8 +205,7 @@ int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t
  */
 int ADUC_SystemUtils_MkDirRecursiveDefault(const char* path)
 {
-    return ADUC_SystemUtils_MkDirRecursive(
-        path, -1 /*userId*/, -1 /*groupId*/, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP /*mode*/);
+    return ADUC_SystemUtils_MkDirRecursive(path, -1 /*userId*/, -1 /*groupId*/, S_IRWXU | S_IRWXG /*mode*/);
 }
 
 /**
@@ -204,7 +228,7 @@ int ADUC_SystemUtils_MkDirRecursive(const char* path, uid_t userId, gid_t groupI
     }
 
     char mkdirPath[PATH_MAX + 1];
-    const size_t mkdirPath_cch = strnlen(path, PATH_MAX);
+    const size_t mkdirPath_cch = ADUC_StrNLen(path, PATH_MAX);
 
     // Create writable copy of path to iterate over.
     if (mkdirPath_cch + 1 > ARRAY_SIZE(mkdirPath))
@@ -247,23 +271,53 @@ int ADUC_SystemUtils_MkDirRecursive(const char* path, uid_t userId, gid_t groupI
     struct stat st = {};
     if (stat(path, &st) == 0)
     {
-        int perms = st.st_mode & ~S_IFMT;
+        int perms = (st.st_mode & (ALL_PERMS));
         if (perms != mode)
         {
             // Fix the permissions.
             if (0 != chmod(path, mode))
             {
                 stat(path, &st);
-                Log_Warn(
-                    "Failed to set '%s' folder permissions (expected:%d, actual: %d)",
-                    mkdirPath,
-                    mode,
-                    st.st_mode & ~S_IFMT);
+                Log_Warn("Failed to set '%s' folder permissions (expected:0%o, actual: 0%o)", mkdirPath, mode, perms);
             }
         }
     }
 
     return 0;
+}
+
+int ADUC_SystemUtils_MkSandboxDirRecursive(const char* path)
+{
+    // Create the sandbox folder with adu:adu ownership.
+    // Permissions are set to u=rwx,g=rwx. We grant read/write/execute to group owner so that partner
+    // processes like the DO daemon can download files to our sandbox.
+
+    // Note: the return value may point to a static area,
+    // and may be overwritten by subsequent calls to getpwent(3), getpwnam(), or getpwuid().
+    // (Do not pass the returned pointer to free(3).)
+    struct passwd* pwd = getpwnam(ADUC_FILE_USER);
+    if (pwd == NULL)
+    {
+        Log_Error("adu user doesn't exist.");
+        return -1;
+    }
+
+    uid_t aduUserId = pwd->pw_uid;
+    pwd = NULL;
+
+    // Note: The return value may point to a static area,
+    // and may be overwritten by subsequent calls to getgrent(3), getgrgid(), or getgrnam().
+    // (Do not pass the returned pointer to free(3).)
+    struct group* grp = getgrnam(ADUC_FILE_GROUP);
+    if (grp == NULL)
+    {
+        Log_Error("adu group doesn't exist.");
+        return -1;
+    }
+    gid_t aduGroupId = grp->gr_gid;
+    grp = NULL;
+
+    return ADUC_SystemUtils_MkDirRecursive(path, aduUserId, aduGroupId, S_IRWXU | S_IRWXG);
 }
 
 static int RmDirRecursive_helper(const char* fpath, const struct stat* sb, int typeflag, struct FTW* info)
@@ -301,3 +355,320 @@ int ADUC_SystemUtils_RmDirRecursive(const char* path)
     return nftw(path, RmDirRecursive_helper, 20 /*nfds*/, FTW_MOUNT | FTW_PHYS | FTW_DEPTH);
 }
 
+/**
+ * @brief Takes the filename from @p filePath and concatenates it with @p dirPath and stores the result in @p newFilePath
+ * @details newFilePath should be freed using STRING_delete() by caller
+ * @param[out] newFilePath handle that will be allocated and intiialized with the new file path
+ * @param[in] filePath the path to a file who's name will be stripped out
+ * @param[in] dirPath directoryPath to have @p filePath's file name appended to it
+ * @returns true on success; false otherwise
+ */
+_Bool ADUC_SystemUtils_FormatFilePathHelper(STRING_HANDLE* newFilePath, const char* filePath, const char* dirPath)
+{
+    if (newFilePath == NULL || filePath == NULL || dirPath == NULL)
+    {
+        return false;
+    }
+
+    _Bool succeeded = false;
+    size_t dirPathSize = strlen(dirPath);
+
+    STRING_HANDLE tempHandle = STRING_new();
+
+    _Bool needForwardSlash = false;
+    if (dirPath[dirPathSize - 2] != '/')
+    {
+        needForwardSlash = true;
+    }
+
+    const char* fileNameStart = strrchr(filePath, '/');
+
+    if (fileNameStart == NULL)
+    {
+        goto done;
+    }
+    const size_t fileNameSize = strlen(fileNameStart) - 1;
+
+    if (fileNameSize == 0)
+    {
+        goto done;
+    }
+
+    // increment past the '/'
+    ++fileNameStart;
+
+    if (fileNameSize == 0 || dirPathSize + fileNameSize > PATH_MAX)
+    {
+        goto done;
+    }
+
+    if (needForwardSlash)
+    {
+        if (STRING_sprintf(tempHandle, "%s/%s", dirPath, fileNameStart) != 0)
+        {
+            goto done;
+        }
+    }
+    else
+    {
+        if (STRING_sprintf(tempHandle, "%s%s", dirPath, fileNameStart) != 0)
+        {
+            goto done;
+        }
+    }
+
+    succeeded = true;
+done:
+
+    if (!succeeded)
+    {
+        STRING_delete(tempHandle);
+        tempHandle = NULL;
+    }
+
+    *newFilePath = tempHandle;
+
+    return succeeded;
+}
+
+/**
+ * @brief Copies the file at @p filePath to @p dirPath with the same name
+ * @details Preserves the ownership and filemode bit permissions
+ * @param filePath path to the file
+ * @param dirPath path to the directory
+ * @param overwriteExistingFile if set to true will overwrite the existing file in @p dirPath named with the filename in @p fileName if it exists
+ * @returns the result of the operation
+ */
+int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, const _Bool overwriteExistingFile)
+{
+    int result = -1;
+    STRING_HANDLE destFilePath = NULL;
+
+    FILE* sourceFile = NULL;
+    FILE* destFile = NULL;
+    const size_t readMaxBuffSize = 1024;
+    unsigned char readBuff[readMaxBuffSize];
+
+    memset(readBuff, 0, readMaxBuffSize);
+
+    if (filePath == NULL || dirPath == NULL)
+    {
+        goto done;
+    }
+
+    if (!ADUC_SystemUtils_FormatFilePathHelper(&destFilePath, filePath, dirPath))
+    {
+        goto done;
+    }
+
+    sourceFile = fopen(filePath, "rb");
+
+    if (sourceFile == NULL)
+    {
+        goto done;
+    }
+
+    if (overwriteExistingFile)
+    {
+        destFile = fopen(STRING_c_str(destFilePath), "wb+");
+    }
+    else
+    {
+        destFile = fopen(STRING_c_str(destFilePath), "wb");
+    }
+
+    if (destFile == NULL)
+    {
+        goto done;
+    }
+
+    size_t readBytes = fread(readBuff, readMaxBuffSize, sizeof(readBuff[0]), sourceFile);
+
+    while (readBytes != 0 && feof(sourceFile) != 0)
+    {
+        const size_t writtenBytes = fwrite(readBuff, readBytes, sizeof(readBuff[0]), destFile);
+
+        result = ferror(destFile);
+        if (writtenBytes != readBytes || result != 0)
+        {
+            goto done;
+        }
+
+        readBytes = fread(readBuff, readMaxBuffSize, sizeof(readBuff[0]), sourceFile);
+        result = ferror(sourceFile);
+        if (result != 0)
+        {
+            goto done;
+        }
+    }
+
+    struct stat buff;
+    if (stat(filePath, &buff) != 0)
+    {
+        goto done;
+    }
+
+    if (chmod(STRING_c_str(destFilePath), buff.st_mode) != 0)
+    {
+        goto done;
+    }
+
+    result = 0;
+done:
+
+    fclose(sourceFile);
+    fclose(destFile);
+
+    if (result != 0)
+    {
+        remove(STRING_c_str(destFilePath));
+    }
+
+    STRING_delete(destFilePath);
+    return result;
+}
+
+/**
+ * @brief Removes the file when caller knows the path refers to a file
+ * @remark On POSIX systems, it will remove a link to the name so it might not delete right away if there are other links
+ * or another process has it open.
+ *
+ * @param path The path to the file.
+ * @return int On success, 0 is returned. On error -1 is returned, and errno is set appropriately.
+ */
+int ADUC_SystemUtils_RemoveFile(const char* path)
+{
+    return unlink(path);
+}
+
+/**
+ * @brief Writes @p buff to file at @p path using   
+ * @details This function overwrites the current data in @p path with @p buff
+ * 
+ * @param path the path to the file to write data
+ * @param buff data to be written to the file  
+ * @return in On success 0 is returned; otherwise errno or -1 on failure
+ */
+int ADUC_SystemUtils_WriteStringToFile(const char* path, const char* buff)
+{
+    int status = -1;
+    FILE* file = NULL;
+
+    if (path == NULL || buff == NULL)
+    {
+        goto done;
+    }
+
+    const size_t bytesToWrite = strlen(buff);
+
+    if (bytesToWrite == 0)
+    {
+        return -1;
+    }
+
+    file = fopen(path, "w");
+
+    if (file == NULL)
+    {
+        status = errno;
+        goto done;
+    }
+
+    const size_t writtenBytes = fwrite(buff, sizeof(char), bytesToWrite, file);
+
+    if (writtenBytes != bytesToWrite)
+    {
+        status = -1;
+        goto done;
+    }
+
+    status = 0;
+
+done:
+
+    if (file != NULL)
+    {
+        fclose(file);
+    }
+
+    return status;
+}
+
+/**
+ * @brief Reads the data from @p path into @p buff up to @p buffLen bytes
+ * @details Only up to @p buffLen - 1 bytes will be read from the file to save space for the null terminator
+ * @param path path to the file to read from
+ * @param buff buffer for the data to go into
+ * @param buffLen the maximum amount of data to be written to buff including the null-terminator
+ * @return returns 0 on success; errno or -1 on failure
+ */
+int ADUC_SystemUtils_ReadStringFromFile(const char* path, char* buff, size_t buffLen)
+{
+    int status = -1;
+    FILE* file = NULL;
+
+    if (path == NULL || buff == NULL || buffLen < 2)
+    {
+        goto done;
+    }
+
+    file = fopen(path, "r");
+
+    if (file == NULL)
+    {
+        status = errno;
+        goto done;
+    }
+
+    const size_t readBytes = fread(buff, sizeof(char), buffLen - 1, file);
+
+    if (readBytes == 0)
+    {
+        if (feof(file) != 0)
+        {
+            status = -1;
+            goto done;
+        }
+
+        if (ferror(file) != 0)
+        {
+            status = errno;
+            goto done;
+        }
+    }
+
+    buff[readBytes] = '\0';
+
+    status = 0;
+
+done:
+
+    if (file != NULL)
+    {
+        fclose(file);
+    }
+
+    return status;
+}
+
+/**
+ * @brief Checks if the file object at the given path is a directory.
+ * @param path The path.
+ * @returns true if it is a directory.
+ */
+_Bool SystemUtils_IsDir(const char* path)
+{
+    struct stat st;
+    return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
+}
+
+/**
+ * @brief Checks if the file object at the given path is a file.
+ * @param path The path.
+ * @returns true if it is a file.
+ */
+_Bool SystemUtils_IsFile(const char* path)
+{
+    struct stat st;
+    return stat(path, &st) == 0 && S_ISREG(st.st_mode);
+}

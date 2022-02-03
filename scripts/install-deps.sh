@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # install-deps.sh makes it more convenient to install
 # dependencies for ADU Agent and Delivery Optimization.
 # Some dependencies are installed via packages and
@@ -36,27 +39,27 @@ keep_source_code=false
 use_ssh=false
 
 # ADUC Deps
+
 install_aduc_deps=false
 install_azure_iot_sdk=false
-azure_sdk_ref=LTS_01_2021_Ref01
+azure_sdk_ref=LTS_07_2021_Ref01
+
 install_catch2=false
 default_catch2_ref=v2.11.0
 catch2_ref=$default_catch2_ref
 
+install_azure_blob_storage_file_upload_utility=false
+azure_blob_storage_file_upload_utility_ref=main
+
 # DO Deps
+default_do_ref=v0.8.2
+default_do_deps_distro=ubuntu1804
 install_do=false
-default_do_ref=v0.6.0
 do_ref=$default_do_ref
-install_do_deps=false
-install_cpprestsdk=false
-default_cpprestsdk_ref=v2.10.15
-cpprestsdk_ref=$default_cpprestsdk_ref
-install_gsl=false
-default_gsl_ref=v2.0.0
-gsl_ref=$default_gsl_ref
+install_do_deps_distro=""
 
 # Dependencies packages
-aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl')
+aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=("gcc-[68]")
 do_packages=('libproxy-dev' 'libssl-dev' 'zlib1g-dev' 'libboost-all-dev')
@@ -73,31 +76,24 @@ print_help() {
     echo "                          When used with --install-packages will also install the package dependencies."
     echo "--install-azure-iot-sdk   Install the Azure IoT C SDK from source."
     echo "--azure-iot-sdk-ref <ref> Install the Azure IoT C SDK from a specific branch or tag."
-    echo "                          Default is public-preview."
+    echo "                           Default is public-preview."
+    echo "--install-abs-file-upload-utility   Install the Azure Blob Storage File Upload Utility from source."
+    echo "--abs-file-upload-utility-ref <ref> Install the Azure Blob Storage File Upload Utility from a specific branch or tag."
     echo "--install-catch2          Install Catch2 from source."
     echo "--catch2-ref              Install Catch2 from a specific branch or tag."
     echo "                          This value is passed to git clone as the --branch argument."
     echo "                          Default is $default_catch2_ref."
     echo ""
     echo "--install-do              Install Delivery Optimization from source."
-    echo "                          Use --install-do-deps to also install required dependencies."
+    echo "                          In order to install the correct dependencies, "
+    echo "                          use --install-do-deps-distro [distro_name] to specify the distro"
     echo "--do-ref <ref>            Install the DO source from this branch or tag."
     echo "                          This value is passed to git clone as the --branch argument."
     echo "                          Default is $default_do_ref."
     echo "--do-commit <commit_sha>  Specific commit to fetch."
     echo "                          Default is the latest commit in that branch."
-    echo "-d, --install-do-deps     Indicates that dependencies for DO should be installed."
-    echo "                          Implies --install-gsl and --install-cpprestsdk."
-    echo "                          When used with --install-packages, the DO dependencies that are packages are also installed."
-    echo "--install-cpprestsdk      Install the cpprestsdk from source."
-    echo "--cpprestsdk-ref <ref>    Install the cpprestsdk from this branch or tag."
-    echo "                          This value is passed to git clone as the --branch argument."
-    echo "                          Default is $default_cpprestsdk_ref."
-    echo "--install-gsl             Install Microsoft GSL from source."
-    echo "--gsl-ref <ref>           Install Microsoft GSL from this branch or tag."
-    echo "                          This value is passed to git clone as the --branch argument."
-    echo "                          Default is $default_gsl_ref."
-    echo ""
+    echo "-d, --install-do-deps-distro      Indicates the distro to install DO dependencies on."
+    echo "                                  This value can be debian9, debian10, ubuntu1804, etc."
     echo "-p, --install-packages    Indicates that packages should be installed."
     echo "--install-packages-only   Indicates that only packages should be installed and that dependencies should not be installed from source."
     echo ""
@@ -136,79 +132,6 @@ do_install_aduc_packages() {
 
     # Note that clang-tidy requires clang to be installed so that it can find clang headers.
     $SUDO apt-get install --yes "${static_analysis_packages[@]}" || return
-}
-
-do_install_do_packages() {
-    echo "Installing dependency packages for DO..."
-    $SUDO apt-get install --yes "${do_packages[@]}" || return
-}
-
-do_install_cpprestsdk() {
-    echo "Installing cpprestsdk ..."
-    local cpprest_dir=$work_folder/cpprestsdk
-    if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $cpprest_dir || return
-    elif [[ -d $cpprest_dir ]]; then
-        warn "$cpprest_dir already exists! Skipping cpprestsdk."
-        return 0
-    fi
-
-    local cpprest_url
-    if [[ $use_ssh == "true" ]]; then
-        cpprest_url=git@github.com:microsoft/cpprestsdk.git
-    else
-        cpprest_url=https://github.com/microsoft/cpprestsdk.git
-    fi
-
-    echo -e "Building cpprestsdk ...\n\tBranch: $cpprestsdk_ref\n\tFolder: $cpprest_dir"
-    mkdir -p $cpprest_dir || return
-    pushd $cpprest_dir > /dev/null
-    git clone --recursive --single-branch --branch $cpprestsdk_ref --depth 1 $cpprest_url . || return
-    mkdir -p cmake || return
-    pushd cmake > /dev/null
-    cmake -DBUILD_TESTS=OFF -DBUILD_SAMPLES=OFF -Wno-dev -DWERROR=OFF .. || return
-    cmake --build . || return
-    $SUDO cmake --build . --target install || return
-    popd > /dev/null
-    popd > /dev/null
-
-    if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $cpprest_dir || return
-    fi
-}
-
-do_install_gsl() {
-    echo "Installing Microsoft GSL ..."
-    local gsl_dir=$work_folder/gsl
-    if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $gsl_dir || return
-    elif [[ -d $gsl_dir ]]; then
-        warn "$gsl_dir already exists! Skipping Microsoft GSL."
-        return 0
-    fi
-
-    local gsl_url
-    if [[ $use_ssh == "true" ]]; then
-        gsl_url=git@github.com:microsoft/GSL.git
-    else
-        gsl_url=https://github.com/microsoft/GSL.git
-    fi
-
-    echo -e "Building GSL ...\n\tBranch: $gsl_ref\n\tFolder: $gsl_dir"
-    mkdir -p $gsl_dir || return
-    pushd $gsl_dir > /dev/null
-    git clone --recursive --single-branch --branch $gsl_ref --depth 1 $gsl_url . || return
-    mkdir -p cmake || return
-    pushd cmake > /dev/null
-    cmake -DGSL_TEST=OFF .. || return
-    cmake --build . || return
-    $SUDO cmake --build . --target install || return
-    popd > /dev/null
-    popd > /dev/null
-
-    if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $gsl_dir || return
-    fi
 }
 
 do_install_azure_iot_sdk() {
@@ -327,6 +250,12 @@ do_install_do() {
 
     git clone --recursive --single-branch --branch $do_ref --depth 1 $do_url . || return
 
+    if [[ $install_do_deps_distro != "" ]]; then
+        local bootstrap_file=$do_dir/build/scripts/bootstrap.sh
+        chmod +x $bootstrap_file || return
+        $SUDO $bootstrap_file --platform $install_do_deps_distro --install build || return
+    fi
+
     mkdir cmake || return
     pushd cmake > /dev/null
 
@@ -349,6 +278,62 @@ do_install_do() {
 
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf $do_dir
+    fi
+}
+
+do_install_azure_blob_storage_file_upload_utility() {
+    echo "Installing azure-blob-storage-file-upload-utility from source."
+    local abs_fuu_dir=$work_folder/azure_blob_storage_file_upload_utility
+
+    if [[ $keep_source_code != "true" ]]; then
+        $SUDO rm -rf $abs_fuu_dir || return
+    elif [[ -d $abs_fuu_dir ]]; then
+        warn "$abs_fuu_dir already exists! Skipping Azure Storage CPP Lite."
+        return 0
+    fi
+
+    local azure_storage_cpplite_url
+    if [[ $use_ssh == "true" ]]; then
+        azure_storage_cpplite_url=git@github.com:Azure/azure-blob-storage-file-upload-utility.git
+    else
+        azure_storage_cpplite_url=https://github.com/Azure/azure-blob-storage-file-upload-utility.git
+    fi
+
+    echo -e "Cloning Azure Blob Storage File Upload Uility ...\n\tBranch: $azure_blob_storage_file_upload_utility_ref\n\t Folder: $abs_fuu_dir"
+    mkdir -p $abs_fuu_dir || return
+    pushd $abs_fuu_dir > /dev/null
+    git clone --recursive --single-branch --branch $azure_blob_storage_file_upload_utility_ref --depth 1 $azure_storage_cpplite_url . || return
+
+    echo -e "Installing Azure Blob Storage File Upload Utiltiy dependencies..."
+
+    # Note added to make sure that install-deps.sh is executable
+    chmod u+x ./scripts/install-deps.sh
+
+    # Note we can skip the azure iot sdk installation because it is guaranteed that it will already be installed.
+    ./scripts/install-deps.sh -a --skip-azure-iot-sdk-install
+
+    mkdir cmake || return
+    pushd cmake > /dev/null
+
+    local azure_blob_storage_file_upload_utility_cmake_options
+    if [[ $keep_source_code == "true" ]]; then
+        # If source is wanted, presumably samples and symbols are useful as well.
+        azure_blob_storage_file_upload_utility_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Debug")
+    else
+        azure_blob_storage_file_upload_utility_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
+    fi
+
+    echo -e "Building Azure Blob Storage File Upload Uility ...\n\tBranch: $azure_blob_storage_file_upload_utility_ref\n\t"
+    cmake "${azure_blob_storage_file_upload_utility_cmake_options[@]}" .. || return
+
+    cmake --build . || return
+    $SUDO cmake --build . --target install || return
+
+    popd > /dev/null
+    popd > /dev/null
+
+    if [[ $keep_source_code != "true" ]]; then
+        $SUDO rm -rf $abs_fuu_dir || return
     fi
 }
 
@@ -395,6 +380,14 @@ while [[ $1 != "" ]]; do
         shift
         azure_sdk_ref=$1
         ;;
+    --install-abs-file-upload-utility)
+        shift
+        install_azure_blob_storage_file_upload_utility=true
+        ;;
+    --abs-file-upload-utility-ref)
+        shift
+        azure_blob_storage_file_upload_utility_ref=$1
+        ;;
     --install-catch2)
         install_catch2=true
         ;;
@@ -409,22 +402,9 @@ while [[ $1 != "" ]]; do
         shift
         do_ref=$1
         ;;
-    -d | --install-do-deps)
-        install_do_deps=true
-        ;;
-    --install-cpprestsdk)
-        install_cpprestsdk=true
-        ;;
-    --cpprestsdk-ref)
+    -d | --install-do-deps-distro)
         shift
-        cpprestsdk_ref=$1
-        ;;
-    --install-gsl)
-        install_gsl=true
-        ;;
-    --gsl-ref)
-        shift
-        gsl_ref=$1
+        install_do_deps_distro=$1
         ;;
     -p | --install-packages)
         install_packages=true
@@ -458,9 +438,15 @@ while [[ $1 != "" ]]; do
     shift
 done
 
+# If there is no install_do_deps_distro specified,
+# set to the default DO dependency distro
+if [[ $install_do_deps_distro == "" ]]; then
+    install_do_deps_distro=$default_do_deps_distro
+fi
+
 # If there is no install action specified,
 # assume that we want to install all deps.
-if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && $install_do != "true" && $install_do_deps != "true" && $install_cpprestsdk != "true" && $install_gsl != "true" && $install_azure_iot_sdk != "true" && $install_catch2 != "true" ]]; then
+if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && $install_do != "true" && $install_azure_iot_sdk != "true" && $install_catch2 != "true" ]]; then
     install_all_deps=true
 fi
 
@@ -469,7 +455,6 @@ fi
 if [[ $install_all_deps == "true" ]]; then
     install_aduc_deps=true
     install_do=true
-    install_do_deps=true
     install_packages=true
 fi
 
@@ -477,19 +462,12 @@ fi
 if [[ $install_aduc_deps == "true" ]]; then
     install_azure_iot_sdk=true
     install_catch2=true
-fi
-
-# Set implied options for do deps.
-if [[ $install_do_deps == "true" ]]; then
-    install_cpprestsdk=true
-    install_gsl=true
+    install_azure_blob_storage_file_upload_utility=true
 fi
 
 # Set implied options for packages only.
 if [[ $install_packages_only == "true" ]]; then
     install_packages=true
-    install_cpprestsdk=false
-    install_gsl=false
     install_azure_iot_sdk=false
     install_catch2=false
 fi
@@ -497,18 +475,14 @@ fi
 if [[ $install_packages == "true" ]]; then
     # Check if we need to install any packages
     # before we call apt update.
-    if [[ $install_aduc_deps == "true" || $install_do_deps == "true" ]]; then
+    if [[ $install_aduc_deps == "true" ]]; then
         echo "Updating repository list..."
         $SUDO apt-get update --yes --fix-missing --quiet || $ret
     fi
-
-    if [[ $install_aduc_deps == "true" ]]; then
-        do_install_aduc_packages || $ret
-    fi
 fi
 
-if [[ $install_do_deps == "true" ]]; then
-    do_install_do_packages || $ret
+if [[ $install_aduc_deps == "true" ]]; then
+    do_install_aduc_packages || $ret
 fi
 
 # Install dependencies from source
@@ -521,20 +495,16 @@ if [[ $install_packages_only == "false" ]]; then
         do_install_catch2 || $ret
     fi
 
-    if [[ $install_cpprestsdk == "true" ]]; then
-        do_install_cpprestsdk || $ret
-    fi
-
-    if [[ $install_gsl == "true" ]]; then
-        do_install_gsl || $ret
-    fi
-
     if [[ $install_do == "true" ]]; then
         do_install_do || $ret
+    fi
+
+    if [[ $install_azure_blob_storage_file_upload_utility == "true" ]]; then
+        do_install_azure_blob_storage_file_upload_utility || $ret
     fi
 fi
 
 # After installation, it prints out the states of dependencies
-if [[ $install_aduc_deps == "true" || $install_do == "true" || $install_do_deps == "true" || $install_packages_only == "true" || $install_packages == "true" ]]; then
+if [[ $install_aduc_deps == "true" || $install_do == "true" || $install_packages_only == "true" || $install_packages == "true" ]]; then
     do_list_all_deps || $ret $?
 fi

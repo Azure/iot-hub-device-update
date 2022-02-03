@@ -2,7 +2,8 @@
  * @file mock_do_download_status.hpp
  * @brief Implements a mock download_status class used in unit tests.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  *
  */
 #pragma once

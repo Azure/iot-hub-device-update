@@ -2,7 +2,8 @@
  * @file crypto_key.h
  * @brief Declares the Crypto Key Handle for the crypto_utils and jws_utils libraries
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #ifndef CRYPTO_KEY_H

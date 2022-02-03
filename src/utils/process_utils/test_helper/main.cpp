@@ -2,7 +2,8 @@
  * @file main.cpp
  * @brief process_utils unitest helper program.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include <errno.h>
@@ -87,6 +88,7 @@ int main(int argc, char** argv)
 
         case 's':
         {
+            // NOLINTNEXTLINE(google-readability-casting,cppcoreguidelines-pro-type-cstyle-cast)
             auto foo = (char*)"hello world";
             for (int i = 20; i < 10000; i++)
             {

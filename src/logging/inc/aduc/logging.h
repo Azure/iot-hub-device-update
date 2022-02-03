@@ -5,7 +5,8 @@
  * Uses ADUC_LOGGING_LIBRARY to determine which logging library to use.
  * Currently supported libraries are zlog and xlogging.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_LOGGING_H
 #define ADUC_LOGGING_H
@@ -37,8 +38,9 @@ typedef enum tagADUC_LOG_SEVERITY
 
 // Logging Init and Uninit helper function forward declarations.
 // These are implemented for each logging library.
-void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel);
+void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix);
 void ADUC_Logging_Uninit();
+ADUC_LOG_SEVERITY ADUC_Logging_GetLevel();
 
 /**
  * @brief Detailed informational events that are useful to debug an application.
@@ -60,6 +62,11 @@ void ADUC_Logging_Uninit();
  */
 #    define Log_Error log_error
 
+/*
+ * @brief Request a buffer flush.
+ */
+#    define Log_RequestFlush zlog_request_flush_buffer
+
 #elif ADUC_USE_XLOGGING
 
 #    include <azure_c_shared_utility/xlogging.h>
@@ -68,6 +75,7 @@ void ADUC_Logging_Uninit();
 // These are implemented for each logging library.
 #    define ADUC_Logging_Init(...)
 #    define ADUC_Logging_Uninit(...)
+#    define ADUC_Logging_GetLevel(...) (0)
 
 /**
  * @brief Detailed informational events that are useful to debug an application.
@@ -91,6 +99,11 @@ void ADUC_Logging_Uninit();
  * @brief Error events.
  */
 #    define Log_Error LogError
+
+/*
+ * @brief Request a buffer flush.
+ */
+#    define Log_RequestFlush(...)
 
 #else
 

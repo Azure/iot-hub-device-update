@@ -1,0 +1,13 @@
+{
+    "WorkflowStep": 4,
+    "ResultCode": 0,
+    "ExtendedResultCode": 0,
+    "SystemRebootState": 2,
+    "AgentRestartState": 0,
+    "ExpectedUpdateID": "{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"}",
+    "WorkflowId": "action_bundle",
+    "UpdateType": "microsoft\/bundle:1",
+    "InstalledCriteria": "1.0",
+    "WorkFolder": "\/var\/lib\/adu\/downloads\/action_bundle",
+    "ReportingJson": "{\"lastInstallResult\":{\"resultCode\":400,\"extendedResultCode\":0,\"resultDetails\":\"\"},\"state\":0,\"workflow\":{\"action\":3,\"id\":\"action_bundle\"},\"installedUpdateId\":\"{\\\"provider\\\":\\\"Contoso\\\",\\\"name\\\":\\\"VacuumBundleUpdate\\\",\\\"version\\\":\\\"1.0\\\"}\"}"
+}

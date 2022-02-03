@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # Wrapper around the existing FindCURL module provided by CMake.
 # Adds target CURL::libcurl if it doesn't already exist.
 # FindCURL doesn't export targets until CMake 3.12.

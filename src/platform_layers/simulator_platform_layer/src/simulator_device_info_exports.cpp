@@ -2,7 +2,8 @@
  * @file simulator_device_info_exports.cpp
  * @brief Implements exported methods for platform-specific device information code.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "simulator_device_info.h"
 
@@ -19,7 +20,7 @@
  * This could be the same as the name of the original equipment manufacturer (OEM).
  * e.g. Contoso
  *
- * @return char* Value of property allocated with malloc, or NULL on error or value not changed since last call.
+ * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
 static char* DeviceInfo_GetManufacturer()
 {
@@ -47,7 +48,7 @@ static char* DeviceInfo_GetManufacturer()
  * Device model name or ID.
  * e.g. Surface Book 2
  *
- * @return char* Value of property allocated with malloc, or NULL on error or value not changed since last call.
+ * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
 static char* DeviceInfo_GetModel()
 {
@@ -75,7 +76,7 @@ static char* DeviceInfo_GetModel()
  * Name of the operating system on the device.
  * e.g. Windows 10 IoT Core
  *
- * @return char* Value of property allocated with malloc, or NULL on error or value not changed since last call.
+ * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
 static char* DeviceInfo_GetOsName()
 {
@@ -97,7 +98,7 @@ static char* DeviceInfo_GetOsName()
  * This could be the version of your firmware.
  * e.g. 1.3.45
  *
- * @return char* Value of property allocated with malloc, or NULL on error or value not changed since last call.
+ * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
 static char* DeviceInfo_GetSwVersion()
 {
@@ -125,7 +126,7 @@ static char* DeviceInfo_GetSwVersion()
  * Architecture of the processor on the device.
  * e.g. x64
  *
- * @return char* Value of property allocated with malloc, or NULL on error or value not changed since last call.
+ * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
 static char* DeviceInfo_GetProcessorArchitecture()
 {
@@ -146,7 +147,7 @@ static char* DeviceInfo_GetProcessorArchitecture()
  * Name of the manufacturer of the processor on the device.
  * e.g. Intel
  *
- * @return char* Value of property allocated with malloc, or NULL on error or value not changed since last call.
+ * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
 static char* DeviceInfo_GetProcessorManufacturer()
 {
@@ -167,7 +168,7 @@ static char* DeviceInfo_GetProcessorManufacturer()
  * Total available memory on the device in kilobytes.
  * e.g. 256000
  *
- * @return char* Value of property allocated with malloc, or NULL on error or value not changed since last call.
+ * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
 static char* DeviceInfo_GetTotalMemory()
 {
@@ -188,7 +189,7 @@ static char* DeviceInfo_GetTotalMemory()
  * Total available storage on the device in kilobytes.
  * e.g. 2048000
  *
- * @return char* Value of property allocated with malloc, or NULL on error or value not changed since last call.
+ * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
 static char* DeviceInfo_GetTotalStorage()
 {
@@ -214,7 +215,7 @@ EXTERN_C_BEGIN
  * @brief Return a specific device information value.
  *
  * @param property Property to retrieve
- * @return char* Value of property allocated with malloc, or NULL on error or value not changed since last call.
+ * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
 char* DI_GetDeviceInformationValue(DI_DeviceInfoProperty property)
 {

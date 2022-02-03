@@ -12,15 +12,21 @@
  *   Expected files:
  *   .swu - contains swupdate image.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/swupdate_handler.hpp"
 
 #include "aduc/adu_core_exports.h"
+#include "aduc/extension_manager.hpp"
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
+#include "aduc/string_c_utils.h"
 #include "aduc/string_utils.hpp"
 #include "aduc/system_utils.h"
+#include "aduc/types/update_content.h"
+#include "aduc/workflow_data_utils.h"
+#include "aduc/workflow_utils.h"
 #include "adushell_const.hpp"
 
 #include <algorithm>
@@ -34,15 +40,38 @@
 
 namespace adushconst = Adu::Shell::Const;
 
+EXTERN_C_BEGIN
 /**
- * @brief handler creation function
- * This function calls  CreateContentHandler from handler factory 
+ * @brief Instantiates an Update Content Handler for 'microsoft/swupdate:1' update type.
  */
-std::unique_ptr<ContentHandler> microsoft_swupdate_CreateFunc(const ContentHandlerCreateData& data)
+ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
-    Log_Info("microsoft_swupdate_CreateFunc called.");
-    return std::unique_ptr<ContentHandler>{ SWUpdateHandlerImpl::CreateContentHandler(
-        data.WorkFolder(), data.LogFolder(), data.Filename()) };
+    ADUC_Logging_Init(logLevel, "swupdate-handler");
+    Log_Info("Instantiating an Update Content Handler for 'microsoft/swupdate:1'");
+    try
+    {
+        return SWUpdateHandlerImpl::CreateContentHandler();
+    }
+    catch (const std::exception& e)
+    {
+        const char* what = e.what();
+        Log_Error("Unhandled std exception: %s", what);
+    }
+    catch (...)
+    {
+        Log_Error("Unhandled exception");
+    }
+
+    return nullptr;
+}
+EXTERN_C_END
+
+/**
+ * @brief Destructor for the SWUpdate Handler Impl class.
+ */
+SWUpdateHandlerImpl::~SWUpdateHandlerImpl() // override
+{
+    ADUC_Logging_Uninit();
 }
 
 // Forward declarations.
@@ -52,54 +81,72 @@ static ADUC_Result CancelApply(const char* logFolder);
  * @brief Creates a new SWUpdateHandlerImpl object and casts to a ContentHandler.
  * Note that there is no way to create a SWUpdateHandlerImpl directly.
  *
- * @param workFolder The folder where content will be downloaded.
- * @param logFolder The folder where operational logs can be placed.
- * @param filename The .swu image file to be installed by swupdate.
- * @return std::unique_ptr<ContentHandler> SimulatorHandlerImpl object as a ContentHandler.
+ * @return ContentHandler* SimulatorHandlerImpl object as a ContentHandler.
  */
-std::unique_ptr<ContentHandler> SWUpdateHandlerImpl::CreateContentHandler(
-    const std::string& workFolder, const std::string& logFolder, const std::string& filename)
+ContentHandler* SWUpdateHandlerImpl::CreateContentHandler()
 {
-    return std::unique_ptr<ContentHandler>{ new SWUpdateHandlerImpl(workFolder, logFolder, filename) };
+    return new SWUpdateHandlerImpl();
 }
 
 /**
- * @brief Validate meta data including file count and handler version.
- * @param prepareInfo.
- * @return bool
- */
-ADUC_Result SWUpdateHandlerImpl::Prepare(const ADUC_PrepareInfo* prepareInfo)
-{
-    if (prepareInfo->updateTypeVersion != 1)
-    {
-        Log_Error("SWUpdate packages prepare failed. Wrong Handler Version %d", prepareInfo->updateTypeVersion);
-        return ADUC_Result{ ADUC_PrepareResult_Failure,
-                            ADUC_ERC_SWUPDATE_HANDLER_PACKAGE_PREPARE_FAILURE_WRONG_VERSION };
-    }
-
-    if (prepareInfo->fileCount != 1)
-    {
-        Log_Error("SWUpdate packages prepare failed. Wrong File Count %d", prepareInfo->fileCount);
-        return ADUC_Result{ ADUC_PrepareResult_Failure,
-                            ADUC_ERC_SWUPDATE_HANDLER_PACKAGE_PREPARE_FAILURE_WRONG_FILECOUNT };
-    }
-
-    Log_Info("Prepare succeeded.");
-    return ADUC_Result{ ADUC_PrepareResult_Success };
-}
-
-/**
- * @brief Download implementation for swupdate (no-op)
- * swupdate does not need to download additional content.
- * This method is a no-op.
+ * @brief Performs 'Download' task.
  *
  * @return ADUC_Result The result of the download (always success)
  */
-ADUC_Result SWUpdateHandlerImpl::Download()
+ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowData)
 {
-    _isApply = false;
-    Log_Info("Download called - no-op for swupdate");
-    return ADUC_Result{ ADUC_DownloadResult_Success };
+    std::stringstream updateFilename;
+    ADUC_Result result = { ADUC_Result_Failure };
+    ADUC_FileEntity* entity = nullptr;
+    ADUC_WorkflowHandle workflowHandle = workflowData->WorkflowHandle;
+    char* workflowId = workflow_get_id(workflowHandle);
+    char* workFolder = workflow_get_workfolder(workflowHandle);
+    int fileCount = 0;
+
+    char* updateType = workflow_get_update_type(workflowHandle);
+    char* updateName = nullptr;
+    unsigned int updateTypeVersion = 0;
+    bool updateTypeOk = ADUC_ParseUpdateType(updateType, &updateName, &updateTypeVersion);
+
+    if (!updateTypeOk)
+    {
+        Log_Error("SWUpdate packages download failed. Unknown Handler Version (UpdateDateType:%s)", updateType);
+        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_UNKNOW_UPDATE_VERSION;
+        goto done;
+    }
+
+    if (updateTypeVersion != 1)
+    {
+        Log_Error("SWUpdate packages download failed. Wrong Handler Version %d", updateTypeVersion);
+        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_WRONG_UPDATE_VERSION;
+        goto done;
+    }
+
+    // For 'microsoft/swupdate:1', we're expecting 1 payload file.
+    fileCount = workflow_get_update_files_count(workflowHandle);
+    if (fileCount != 1)
+    {
+        Log_Error("SWUpdate expecting one file. (%d)", fileCount);
+        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_WRONG_FILECOUNT;
+        goto done;
+    }
+
+    if (!workflow_get_update_file(workflowHandle, 0, &entity))
+    {
+        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOADE_BAD_FILE_ENTITY;
+        goto done;
+    }
+
+    updateFilename << workFolder << "/" << entity->TargetFilename;
+
+    result = ExtensionManager::Download(entity, workflowId, workFolder, DO_RETRY_TIMEOUT_DEFAULT, nullptr);
+
+done:
+    workflow_free_string(workflowId);
+    workflow_free_string(workFolder);
+    workflow_free_file_entity(entity);
+
+    return result;
 }
 
 /**
@@ -108,86 +155,74 @@ ADUC_Result SWUpdateHandlerImpl::Download()
  *
  * @return ADUC_Result The result of the install.
  */
-ADUC_Result SWUpdateHandlerImpl::Install()
+ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
 {
-    _isApply = false;
-    Log_Info("Installing from %s", _workFolder.c_str());
+    ADUC_Result result = { ADUC_Result_Failure };
+    ADUC_FileEntity* entity = nullptr;
+    ADUC_WorkflowHandle workflowHandle = workflowData->WorkflowHandle;
+    char* workFolder = workflow_get_workfolder(workflowHandle);
 
+    Log_Info("Installing from %s", workFolder);
     std::unique_ptr<DIR, std::function<int(DIR*)>> directory(
-        opendir(_workFolder.c_str()), [](DIR* dirp) -> int { return closedir(dirp); });
+        opendir(workFolder), [](DIR* dirp) -> int { return closedir(dirp); });
     if (directory == nullptr)
     {
         Log_Error("opendir failed, errno = %d", errno);
 
-        return ADUC_Result{ ADUC_InstallResult_Failure, MAKE_ADUC_ERRNO_EXTENDEDRESULTCODE(errno) };
+        result = { .ResultCode = ADUC_Result_Failure,
+                   .ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_CANNOT_OPEN_WORKFOLDER };
+        goto done;
     }
 
-    // Calling the install script to install the update. The script takes the name of the image file as input.
-    // Only one file is expected in the work folder. If multiple files exist, treat it as a failure.
-    // TODO(Nox): Forcing updates to be a single file is a temporary workaround.
-    // We need to have the ability to determine which file is the image file.
-    // Then we can pass the appropriate file to the install script.
-    const char* filename = nullptr;
-    const dirent* entry = nullptr;
-    while ((entry = readdir(directory.get())) != nullptr)
+    if (!workflow_get_update_file(workflowHandle, 0, &entity))
     {
-        if (entry->d_type == DT_REG)
-        {
-            if (filename == nullptr)
-            {
-                filename = entry->d_name;
-            }
-            else
-            {
-                Log_Error("More than one file in work folder");
-                return ADUC_Result{ ADUC_InstallResult_Failure, ADUC_ERC_NOTPERMITTED };
-            }
-        }
+        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_BAD_FILE_ENTITY;
+        goto done;
     }
 
-    if (filename == nullptr)
-    {
-        Log_Error("No file in work folder");
-        return ADUC_Result{ ADUC_InstallResult_Failure, ADUC_ERC_NOTRECOVERABLE };
-    }
-
-    if (_filename != filename)
-    {
-        Log_Warn("Specified filename %s does not match actual filename %s.", _filename.c_str(), filename);
-    }
-
-    Log_Info("Installing image file: %s", filename);
+    // For 'microsoft/swupdate:1', we are only support 1 image file.
 
     // Execute the install command with  "-i <image_file>"  to install the update image file.
     // For swupdate the image file is typically a .swu file
 
     // This is equivalent to: command << c_installScript << " -l " << _logFolder << " -i '" << _workFolder << "/" << filename << "'"
 
-    std::string command = adushconst::adu_shell;
-    std::vector<std::string> args{ adushconst::update_type_opt,
-                                   adushconst::update_type_microsoft_swupdate,
-                                   adushconst::update_action_opt,
-                                   adushconst::update_action_install };
-
-    std::stringstream data;
-    data << _workFolder << "/" << filename;
-    args.emplace_back(adushconst::target_data_opt);
-    args.emplace_back(data.str().c_str());
-
-    args.emplace_back(adushconst::target_log_folder_opt);
-    args.emplace_back(_logFolder);
-
-    std::string output;
-    const int exitCode = ADUC_LaunchChildProcess(command, args, output);
-
-    if (exitCode != 0)
     {
-        Log_Error("Install failed, extendedResultCode = %d", exitCode);
-        return ADUC_Result{ ADUC_InstallResult_Failure, exitCode };
+        std::string command = adushconst::adu_shell;
+        std::vector<std::string> args{ adushconst::update_type_opt,
+                                       adushconst::update_type_microsoft_swupdate,
+                                       adushconst::update_action_opt,
+                                       adushconst::update_action_install };
+
+        std::stringstream data;
+        data << workFolder << "/" << entity->TargetFilename;
+        args.emplace_back(adushconst::target_data_opt);
+        args.emplace_back(data.str().c_str());
+
+        args.emplace_back(adushconst::target_log_folder_opt);
+        
+        // Note: this implementation of SWUpdate Handler is relying on ADUC_LOG_FOLDER value from build pipeline.
+        // For GA, we should make this configurable in du-config.json. 
+        args.emplace_back(ADUC_LOG_FOLDER);
+
+        std::string output;
+        const int exitCode = ADUC_LaunchChildProcess(command, args, output);
+
+        if (exitCode != 0)
+        {
+            Log_Error("Install failed, extendedResultCode = %d", exitCode);
+            result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = exitCode };
+            goto done;
+        }
     }
 
     Log_Info("Install succeeded");
-    return ADUC_Result{ ADUC_InstallResult_Success };
+    result.ResultCode = ADUC_Result_Install_Success;
+
+done:
+    workflow_free_string(workFolder);
+    workflow_free_file_entity(entity);
+    return result;
 }
 
 /**
@@ -197,10 +232,11 @@ ADUC_Result SWUpdateHandlerImpl::Install()
  *
  * @return ADUC_Result The result of the apply.
  */
-ADUC_Result SWUpdateHandlerImpl::Apply()
+ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
 {
-    _isApply = true;
-    Log_Info("Applying data from %s", _workFolder.c_str());
+    ADUC_Result result = { ADUC_Result_Failure };
+    char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
+    Log_Info("Applying data from %s", workFolder);
 
     // Execute the install command with  "-a" to apply the install by telling
     // the bootloader to boot to the updated partition.
@@ -214,7 +250,10 @@ ADUC_Result SWUpdateHandlerImpl::Apply()
                                    adushconst::update_action_apply };
 
     args.emplace_back(adushconst::target_log_folder_opt);
-    args.emplace_back(_logFolder);
+    
+    // Note: this implementation of SWUpdate Handler is relying on ADUC_LOG_FOLDER value from build pipeline.
+    // For GA, we should make this configurable in du-config.json. 
+    args.emplace_back(ADUC_LOG_FOLDER);
 
     std::string output;
 
@@ -223,11 +262,25 @@ ADUC_Result SWUpdateHandlerImpl::Apply()
     if (exitCode != 0)
     {
         Log_Error("Apply failed, extendedResultCode = %d", exitCode);
-        return ADUC_Result{ ADUC_ApplyResult_Failure, exitCode };
+        result = { ADUC_Result_Failure, exitCode };
+        goto done;
     }
 
+    // Cancel requested?
+    if (workflow_get_operation_cancel_requested(workflowData->WorkflowHandle))
+    {
+        // Note: this implementation of SWUpdate Handler is relying on ADUC_LOG_FOLDER value from build pipeline.
+        // For GA, we should make this configurable in du-config.json. 
+        CancelApply(ADUC_LOG_FOLDER);
+    }
+
+done:
+    workflow_free_string(workFolder);
+
     // Always require a reboot after successful apply
-    return ADUC_Result{ ADUC_ApplyResult_SuccessRebootRequired };
+    result = { ADUC_Result_Apply_RequiredImmediateReboot };
+
+    return result;
 }
 
 /**
@@ -239,16 +292,10 @@ ADUC_Result SWUpdateHandlerImpl::Apply()
  *
  * @return ADUC_Result The result of the cancel.
  */
-ADUC_Result SWUpdateHandlerImpl::Cancel()
+ADUC_Result SWUpdateHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
 {
-    if (_isApply)
-    {
-        // swupdate handler can only cancel apply.
-        // all other cancels are no-ops.
-        return CancelApply(_logFolder.c_str());
-    }
-
-    return ADUC_Result{ ADUC_CancelResult_Success };
+    UNREFERENCED_PARAMETER(workflowData);
+    return ADUC_Result{ ADUC_Result_Cancel_Success };
 }
 
 /**
@@ -300,26 +347,33 @@ std::string SWUpdateHandlerImpl::ReadValueFromFile(const std::string& filePath)
  *
  * @return ADUC_Result
  */
-ADUC_Result SWUpdateHandlerImpl::IsInstalled(const std::string& installedCriteria)
+ADUC_Result SWUpdateHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflowData)
 {
+    char* installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
+    ADUC_Result result;
+
     std::string version{ ReadValueFromFile(ADUC_VERSION_FILE) };
     if (version.empty())
     {
         Log_Error("Version file %s did not contain a version or could not be read.", ADUC_VERSION_FILE);
-        return ADUC_Result{ ADUC_IsInstalledResult_Failure };
+        result = { ADUC_Result_Failure };
+        goto done;
     }
 
     if (version == installedCriteria)
     {
-        Log_Info("Installed criteria %s was installed.", installedCriteria.c_str());
-        return ADUC_Result{ ADUC_IsInstalledResult_Installed };
+        Log_Info("Installed criteria %s was installed.", installedCriteria);
+        result = { ADUC_Result_IsInstalled_Installed };
+        goto done;
     }
 
-    Log_Info(
-        "Installed criteria %s was not installed, the current version is %s",
-        installedCriteria.c_str(),
-        version.c_str());
-    return ADUC_Result{ ADUC_IsInstalledResult_NotInstalled };
+    Log_Info("Installed criteria %s was not installed, the current version is %s", installedCriteria, version.c_str());
+
+    result = { ADUC_Result_IsInstalled_NotInstalled };
+
+done:
+    workflow_free_string(installedCriteria);
+    return result;
 }
 
 /**
@@ -346,9 +400,9 @@ static ADUC_Result CancelApply(const char* logFolder)
     {
         // If failed to cancel apply, apply should return SuccessRebootRequired.
         Log_Error("Failed to cancel Apply, extendedResultCode = %d", exitCode);
-        return ADUC_Result{ ADUC_CancelResult_Failure, exitCode };
+        return ADUC_Result{ ADUC_Result_Failure, exitCode };
     }
 
     Log_Info("Apply was cancelled");
-    return ADUC_Result{ ADUC_ApplyResult_Cancelled };
+    return ADUC_Result{ ADUC_Result_Failure_Cancelled };
 }

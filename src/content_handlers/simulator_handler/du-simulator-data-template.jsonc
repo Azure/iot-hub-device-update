@@ -1,0 +1,73 @@
+{
+
+    "version" : "1.0",
+
+    //
+    // Top level property key designated a function name.
+    //
+    // This can be "download", "install", "apply", "cancel", "isInstalled"
+    //
+
+    "download" : {
+        //
+        // For 'download' function, this section contains a map of a download filename and result.
+        //
+
+        //
+        // Download result for file 'datafile.data'.
+        //
+        "datafile.data" : {
+            "resultCode" : 500, // ADUC_Result_Download_Success 
+            "extendedResultCode" : 0,
+            "resultDetails" : ""
+        },
+
+        //
+        // '*' indicates a default return value.
+        //
+        "*" : {
+            "resultCode" : 0, // ADUC_Result_Failure
+            "extendedResultCode" : 1073741831, // 0x40000007 - ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_ENTITY
+            "resultDetails" : "Simulating invalid file entity error."
+        }
+    },
+    //
+    // For 'install' function, only one result will be returned. 
+    //
+    "install" : {
+        "resultCode" : 600, // ADUC_Result_Install_Success 
+        "extendedResultCode" : 0,
+        "resultDetails" : ""
+    },
+    //
+    // For 'apply' function, only one result will be returned. 
+    //
+    "apply" : {
+        "resultCode" : 700, // ADUC_Result_Apply_Success 
+        "extendedResultCode" : 0,
+        "resultDetails" : ""
+    },
+    //
+    // For 'cancel' function, only one result will be returned. 
+    //
+    "cancel" : {
+        "resultCode" : 800, // ADUC_Result_Cancel_Success 
+        "extendedResultCode" : 0,
+        "resultDetails" : ""
+    },
+    //
+    // For 'isInstalled' function, this section contains a map of an 'installedCriteria' and result.
+    //
+    "isInstalled" : {
+        "install-criteria-0" : {
+            "resultCode" : 900, // ADUC_Result_IsInstalled_Installed 
+            "extendedResultCode" : 0,
+            "resultDetails" : ""
+            },
+        "*" : {
+            "resultCode" : 901, // ADUC_Result_IsInstalled_NotInstalled 
+            "extendedResultCode" : 0,
+            "resultDetails" : ""
+        }
+    }
+}

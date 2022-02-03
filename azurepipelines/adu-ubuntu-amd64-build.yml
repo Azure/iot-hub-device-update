@@ -1,15 +1,9 @@
 variables:
   version.major: 0
-  version.minor: 6
+  version.minor: 8
   version.patch: 0
   version.pre-release: "public-preview"
   version.build: $[format('{0:yyyyMMdd}-{0:HHmmss}', pipeline.startTime)]
-
-  # TODO(shiyipeng): Bug 30317524: [ADU E2E Testing] Azure Artifacts no longer free - publishing to test feed fails
-  # # Version here refers to test package version, and follows format of 0.0.<Pipeline Build Number>
-  # # This is due to azure universal packaging apis requiring semantic versioning
-  # # Builds are monotonically increasing based on date and run as test builds will always pull the newest version
-  # test.package.version: 0.0.$(Build.BuildId)
 
   # Environment variables for all client builds:
   ADUC_VERSION_MAJOR: $(version.major)
@@ -17,8 +11,10 @@ variables:
   ADUC_VERSION_PATCH: $(version.patch)
   ADUC_VERSION_PRERELEASE: $(version.pre-release)
   ADUC_VERSION_BUILD: $(version.build)
+  ADUC_DEBIAN_PACKAGE_ARCHITECTURE: "amd64"
+
   ENABLE_ADU_TELEMETRY_REPORTING: true
-  # aducBuilderIdentifier will be set to "DU" short for Device Update by default, for ADUC-sourced builder
+  # ADUC_BUILDER_IDENTIFIER will be set to "DU" short for Device Update by default, for Device Update-sourced builder
   ADUC_BUILDER_IDENTIFIER: DU
   # DO requires gcc greater than 6 for c++17 support.
   # gcc-8 matches what is built with poky warrior.
@@ -33,7 +29,7 @@ resources:
 trigger:
   branches:
     include:
-      - master
+      - main
       - release/*
       - feature/*
       - dev/*
@@ -51,7 +47,7 @@ trigger:
 pr:
   branches:
     include:
-      - master
+      - main
       - release/*
       - feature/*
       - dev/*
@@ -62,9 +58,7 @@ pr:
       - LICENSE.md
       - .clang-format
       - .cmake-format.json
-      - tools/*
       - docker/*
-      - scripts/*
       - licenses/*
 
 jobs:
@@ -72,7 +66,7 @@ jobs:
     displayName: "Build ADU Agent"
     timeoutInMinutes: 60
     cancelTimeoutInMinutes: 60
-    pool: ADUC-Linux
+    pool: aduc_1es_client_pool
     steps:
       - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
         displayName: "Component Detection"
@@ -84,62 +78,14 @@ jobs:
         inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
-          arguments: --install-aduc-deps --install-packages
-
-      - bash: |
-          curl https://packages.microsoft.com/config/ubuntu/18.04/multiarch/prod.list > ./microsoft-prod.list
-          sudo cp ./microsoft-prod.list /etc/apt/sources.list.d/
-          curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-          sudo cp ./microsoft.gpg /etc/apt/trusted.gpg.d/
-          sudo apt-get install -y libdeliveryoptimization-dev
-        displayName: "Install DO SDK"
+          arguments: --install-aduc-deps --install-packages --install-do-deps-distro ubuntu1804
 
       - task: Bash@3
-        displayName: "Build Client and Unit Tests: simulator-swupdate-Debug"
+        displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
         inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)/scripts/build.sh
-          arguments: "--clean --build-unit-tests --platform-layer simulator --content-handlers microsoft/swupdate --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
-
-      - bash: |
-          cp $(Build.BinariesDirectory)/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgentSim-microsoft-swupdate
-        displayName: "Stage build artifacts (simulator-swupdate-Debug)"
-        condition: and(ne(variables['Build.Reason'], 'IndividualCI'), ne(variables['Build.Reason'], 'PullRequest'))
-
-      - bash: |
-          ctest -T test -V --output-on-failure
-          exit $?
-        displayName: "Run Unit Tests: simulator-swupdate-Debug"
-        workingDirectory: $(Build.BinariesDirectory)
-
-      - task: PublishTestResults@2
-        displayName: "Publish Unit Test Results: simulator-swupdate-Debug"
-        condition: succeededOrFailed() # Run this task even if tests fail.
-        inputs:
-          testResultsFormat: cTest
-          testResultsFiles: "Testing/**/*.xml"
-          searchFolder: $(Build.BinariesDirectory)
-          failTaskOnFailedTests: true
-          publishRunAttachments: false # Attachments are not supported for CTest
-
-      - task: Bash@3
-        displayName: "Build Client: simulator-apt-Debug"
-        inputs:
-          targetType: "filePath"
-          filePath: $(Build.SourcesDirectory)/scripts/build.sh
-          arguments: "--clean --platform-layer simulator --content-handlers microsoft/apt --log-lib zlog --out-dir $(Build.BinariesDirectory)"
-
-      - bash: |
-          cp $(Build.BinariesDirectory)/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgentSim-microsoft-apt
-        displayName: "Stage build artifacts (simulator-apt-Debug)"
-        condition: and(ne(variables['Build.Reason'], 'IndividualCI'), ne(variables['Build.Reason'], 'PullRequest'))
-
-      - task: Bash@3
-        displayName: "Build Client, Unit Tests and Packages: linux-apt-MinSizeRel"
-        inputs:
-          targetType: "filePath"
-          filePath: $(Build.SourcesDirectory)/scripts/build.sh
-          arguments: "--clean --type MinSizeRel --platform-layer linux --provision-with-iotedge --content-handlers microsoft/apt --log-lib zlog --build-packages --build-unit-tests --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
+          arguments: "--clean --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --build-unit-tests --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
 
       - bash: |
           cp $(Build.BinariesDirectory)/*.deb $(Build.ArtifactStagingDirectory)
@@ -151,11 +97,11 @@ jobs:
       - bash: |
           ctest -T test -V --output-on-failure
           exit $?
-        displayName: "Run Unit Tests: linux-apt-MinSizeRel"
+        displayName: "Run Unit Tests: linux-MinSizeRel"
         workingDirectory: $(Build.BinariesDirectory)
 
       - task: PublishTestResults@2
-        displayName: "Publish Unit Test Results: linux-apt-MinSizeRel"
+        displayName: "Publish Unit Test Results: linux-MinSizeRel"
         condition: succeededOrFailed() # Run this task even if tests fail.
         inputs:
           testResultsFormat: cTest
@@ -165,21 +111,21 @@ jobs:
           publishRunAttachments: false # Attachments are not supported for CTest
 
       - task: Bash@3
-        displayName: "Build Client and Unit Tests: linux-swupdate-Debug"
+        displayName: "Build Client and Unit Tests: linux-Debug"
         inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)/scripts/build.sh
-          arguments: "--clean --build-unit-tests --platform-layer linux --content-handlers microsoft/swupdate --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
+          arguments: "--clean --build-unit-tests --platform-layer linux --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
 
         # Run all unit tests.
       - bash: |
           ctest -T test -V --output-on-failure
           exit $?
-        displayName: "Run Unit Tests: linux-swupdate-Debug"
+        displayName: "Run Unit Tests: linux-Debug"
         workingDirectory: $(Build.BinariesDirectory)
 
       - task: PublishTestResults@2
-        displayName: "Publish Unit Test Results: linux-swupdate-Debug"
+        displayName: "Publish Unit Test Results: linux-Debug"
         condition: succeededOrFailed() # Run this task even if tests fail.
         inputs:
           testResultsFormat: cTest
@@ -201,21 +147,10 @@ jobs:
         # Ignore SC2209: Use var=$(command) to assign output (or quote to assign string).
         #   We use 'ret=return' or 'ret=exit' to support dot sourcing.
       - bash: |
+          sudo apt install -y shellcheck
           shellcheck -s bash -e SC2164 -e SC2209 $(find -name "*.sh")
           exit $?
         displayName: "Run ShellCheck"
-
-      # TODO(shiyipeng) Bug 30317524: [ADU E2E Testing] Azure Artifacts no longer free - publishing to test feed fails
-      # - task: UniversalPackages@0
-      #   inputs:
-      #     command: 'publish'
-      #     publishDirectory: '$(Build.ArtifactStagingDirectory)'
-      #     feedsToUsePublish: 'internal'
-      #     vstsFeedPublish: 'eaf02756-0b76-4d11-94d6-2dc07c577fed'
-      #     publishPackageMetadata: false
-      #     vstsFeedPackagePublish: 'adu-agent'
-      #     versionOption: 'custom'
-      #     versionPublish: '$(test.package.version)'
 
       - task: ComponentGovernanceComponentDetection@0
         inputs:

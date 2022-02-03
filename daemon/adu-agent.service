@@ -1,5 +1,5 @@
 [Unit]
-Description=Azure Device Update Agent daemon.
+Description=Device Update Agent daemon.
 After=network-online.target deliveryoptimization-agent.service
 Wants=network-online.target deliveryoptimization-agent.service
 

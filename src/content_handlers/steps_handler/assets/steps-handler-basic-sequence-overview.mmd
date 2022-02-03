@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant awf as Agent Workflow
+    participant em as Extension Manager
+    participant sthd as Steps Handler
+    participant xyzhd as APT Handler<br/>SWUpdate Handler<br/>Script Handler<br/>Steps Handler, etc.
+
+    awf->>+em: load handler for 'microsoft/step:1'
+    em-->>+sthd: loads
+    em->>-awf: returns handler
+    awf->>+sthd:  'download'
+    loop foreach step
+    sthd->>+em: loads handler for {step.handler}
+    em-->>+xyzhd: loads
+    em-->>-sthd: returns handler
+    sthd->>+xyzhd: 'download'
+    xyzhd->>xyzhd: performs<br/>download task
+    xyzhd-->>-sthd: returns ADUC_Result
+    end
+    sthd->>-awf: return ADUC_Result
+
+    awf->>+sthd:  'install'
+    loop foreach step
+    sthd->>+em: loads handler for {step.handler}
+    em-->>+xyzhd: loads
+    em-->>-sthd: returns handler
+    sthd->>+xyzhd: 'install'
+    xyzhd->>xyzhd: performs<br/>install task
+    xyzhd-->>-sthd: returns ADUC_Result
+    end
+    sthd->>-awf: return ADUC_Result
+
+    awf->>+sthd:  'apply'
+    loop foreach step
+    sthd->>+em: loads handler for {step.handler}
+    em-->>+xyzhd: loads
+    em-->>-sthd: returns handler
+    sthd->>+xyzhd: 'apply'
+    xyzhd->>xyzhd: performs<br/>apply task
+    xyzhd-->>-sthd: returns ADUC_Result
+    end
+    sthd->>-awf: return ADUC_Result
+  
+            

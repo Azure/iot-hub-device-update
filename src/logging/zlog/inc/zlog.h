@@ -1,3 +1,13 @@
+/**
+ * @file zlog.h
+ * @brief Header for zlog logging utility
+ * Adapted from the public domain "zlog" by Zhiqiang Ma
+ * https://github.com/zma/zlog/
+ *
+ * @copyright Copyright (c) Microsoft Corp.
+ * Licensed under the MIT License.
+ */
+
 #ifndef ZLOG_H
 #define ZLOG_H
 
@@ -45,6 +55,8 @@ int zlog_init(
 void zlog_finish(void);
 // explicitly flush the buffer in memory
 void zlog_flush_buffer(void);
+// request to flush the buffer.
+void zlog_request_flush_buffer(void);
 // log an entry with the function scope and timestamp
 void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, ...);
 

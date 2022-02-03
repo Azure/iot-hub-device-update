@@ -2,398 +2,182 @@
  * @file adu_core_export_helpers_ut.cpp
  * @brief Unit tests for adu_core_export_helpers.h
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corp.
+ * Licensed under the MIT License.
  */
-#include <iterator>
-#include <map>
-#include <sstream>
-
 #include <atomic>
+#include <catch2/catch.hpp>
 #include <chrono>
 #include <condition_variable>
+#include <iothub_device_client.h>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <sstream>
 #include <thread>
 
-#include <catch2/catch.hpp>
-using Catch::Matchers::Equals;
-
 #include "aduc/adu_core_export_helpers.h"
-#include "agent_workflow_utils.h"
+#include "aduc/adu_core_interface.h"
+#include "aduc/agent_workflow.h"
+#include "aduc/c_utils.h"
+#include "aduc/client_handle.h"
+#include "aduc/content_handler.hpp"
+#include "aduc/result.h"
+#include "aduc/workflow_data_utils.h"
+#include "aduc/workflow_internal.h"
+#include "aduc/workflow_utils.h"
 
-#include <aduc/c_utils.h>
-#include <iothub_device_client.h>
+extern ADUC_ClientHandle g_iotHubClientHandleForADUComponent;
 
-//
-// Test Helpers
-//
-
-static uint8_t FacilityFromExtendedResultCode(ADUC_Result_t extendedResultCode)
+//NOLINTNEXTLINE(performance-unnecessary-value-param)
+static ADUC_Workflow* get_workflow_from_test_data(const std::string path_under_testdata_folder)
 {
-    return (static_cast<uint32_t>(extendedResultCode) >> 0x1C) & 0xF;
+    auto wf = (ADUC_Workflow*)malloc(sizeof(ADUC_Workflow)); // NOLINT
+    REQUIRE(wf != nullptr);
+
+    ADUC_Result result = workflow_init_from_file(
+        (std::string{ ADUC_TEST_DATA_FOLDER } + "/" + path_under_testdata_folder).c_str(),
+        true,
+        (void**)&wf); // NOLINT
+
+    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+    REQUIRE(wf != nullptr);
+    return wf;
 }
 
-static uint32_t CodeFromExtendedResultCode(ADUC_Result_t extendedResultCode)
-{
-    return extendedResultCode & 0xFFFFFFF;
-}
-
-// Needs to be a define as INFO is method scope specific.
-// Need to cast to uint16_t as catch2 doesn't have conversion for uint8_t.
-#define INFO_ADUC_Result(result)                                                                               \
-    INFO(                                                                                                      \
-        "Code: " << (result).ResultCode << "; Extended: { 0x" << std::hex                                      \
-                 << static_cast<uint16_t>(FacilityFromExtendedResultCode((result).ExtendedResultCode)) << ", " \
-                 << CodeFromExtendedResultCode((result).ExtendedResultCode) << " }")
-
-std::condition_variable workCompletionCallbackCV;
-
-extern "C"
-{
-    static void DownloadProgressCallback(
-        const char* /*workflowId*/,
-        const char* /*fileId*/,
-        ADUC_DownloadProgressState /*state*/,
-        uint64_t /*bytesTransferred*/,
-        uint64_t /*bytesTotal*/)
-    {
-    }
-
-    static void WorkCompletionCallback(const void* /*workCompletionToken*/, ADUC_Result result)
-    {
-        CHECK(IsAducResultCodeSuccess(result.ResultCode));
-        CHECK(result.ExtendedResultCode == 0);
-
-        workCompletionCallbackCV.notify_all();
-    }
-}
-
-std::string CreateDownloadUpdateActionJson(const std::map<std::string, std::string>& files)
-{
-    std::stringstream main_json_strm;
-    std::stringstream url_json_strm;
-
-    main_json_strm << R"({)"
-                   << R"("action":0,)"
-                   << R"("updateManifest":"{)"
-                   << R"(\"updateId\":{)"
-                   << R"(\"provider\": \"Azure\",)"
-                   << R"(\"name\": \"IOT-Firmware\",)"
-                   << R"(\"version\": \"1.2.0.0\")"
-                   << R"(},)"
-                   << R"(\"updateType\": \"microsoft/swupdate:1\",)"
-                   << R"(\"installedCriteria\": \"1.0.2903.1\",)"
-                   << R"(\"files\":{)";
-
-    url_json_strm << R"("fileUrls": {)";
-
-    // clang-format on
-
-    int i = 0;
-    for (auto it = files.begin(); it != files.end(); ++it)
-    {
-        main_json_strm << R"(\")" << i << R"(\":{)";
-        main_json_strm << R"(\"fileName\":\"file)" << i << R"(.txt\",)";
-        main_json_strm << R"(\"hashes\": {\"sha256\": \")" << it->first << R"(\"})";
-        main_json_strm << R"(})";
-
-        url_json_strm << R"(")" << i << R"(":")" << it->second << R"(")";
-
-        if (it != (--files.end()))
-        {
-            main_json_strm << ",";
-            url_json_strm << ",";
-        }
-
-        ++i;
-    }
-
-    url_json_strm << R"(})";
-    main_json_strm << R"(}}",)" << url_json_strm.str() << R"(})";
-
-    return main_json_strm.str();
-}
-
-class TestCaseFixture
+class AduCoreExportHelpersTestCaseFixture
 {
 public:
-    TestCaseFixture()
+    AduCoreExportHelpersTestCaseFixture()
     {
+        const ADUC_Result result{ ADUC_MethodCall_Register(&m_updateActionCallbacks, 0 /*argc*/, nullptr /*argv*/) };
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        REQUIRE(result.ExtendedResultCode == 0);
+
+        m_wf = get_workflow_from_test_data("adu_core_export_helpers/updateManifest.json");
+        m_workflowData.WorkflowHandle = m_wf;
+        m_workflowData.UpdateActionCallbacks = m_updateActionCallbacks;
+        m_workflowData.ReportStateAndResultAsyncCallback = AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync;
+
         m_previousDeviceHandle = g_iotHubClientHandleForADUComponent;
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        g_iotHubClientHandleForADUComponent = reinterpret_cast<IOTHUB_DEVICE_CLIENT_LL_HANDLE>(-1);
+        g_iotHubClientHandleForADUComponent = reinterpret_cast<ADUC_ClientHandle>(42);
     }
 
-    ~TestCaseFixture()
+    ~AduCoreExportHelpersTestCaseFixture()
     {
+        if (m_workflowData.WorkflowHandle != nullptr)
+        {
+            workflow_free(m_workflowData.WorkflowHandle);
+            m_workflowData.WorkflowHandle = nullptr;
+        }
+
+        ADUC_MethodCall_Unregister(&m_updateActionCallbacks);
+
+        CHECK(g_iotHubClientHandleForADUComponent != nullptr);
         g_iotHubClientHandleForADUComponent = m_previousDeviceHandle;
     }
 
-    TestCaseFixture(const TestCaseFixture&) = delete;
-    TestCaseFixture& operator=(const TestCaseFixture&) = delete;
-    TestCaseFixture(TestCaseFixture&&) = delete;
-    TestCaseFixture& operator=(TestCaseFixture&&) = delete;
+    AduCoreExportHelpersTestCaseFixture(const AduCoreExportHelpersTestCaseFixture&) = delete;
+    AduCoreExportHelpersTestCaseFixture& operator=(const AduCoreExportHelpersTestCaseFixture&) = delete;
+    AduCoreExportHelpersTestCaseFixture(AduCoreExportHelpersTestCaseFixture&&) = delete;
+    AduCoreExportHelpersTestCaseFixture& operator=(AduCoreExportHelpersTestCaseFixture&&) = delete;
+
+    ADUC_WorkflowData* GetWorkflowData()
+    {
+        return &m_workflowData;
+    }
 
 private:
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE m_previousDeviceHandle;
+    ADUC_ClientHandle m_previousDeviceHandle;
+
+    ADUC_UpdateActionCallbacks m_updateActionCallbacks{};
+    ADUC_WorkflowData m_workflowData{};
+    ADUC_Workflow* m_wf = nullptr;
 };
-
-//
-// Test cases
-//
-
-TEST_CASE("ADUC_PrepareInfo_Init")
-{
-    ADUC_WorkflowData workflowData{};
-
-    const std::string workflowId{ "unit_test" };
-    constexpr size_t workflowIdSize = ARRAY_SIZE(workflowData.WorkflowId);
-    strncpy(workflowData.WorkflowId, workflowId.c_str(), workflowIdSize);
-    workflowData.WorkflowId[workflowIdSize - 1] = '\0';
-
-    workflowData.LastReportedState = ADUCITF_State_Idle;
-    workflowData.DownloadProgressCallback = DownloadProgressCallback;
-
-    ADUC_Result result;
-
-    result = ADUC_MethodCall_Register(&workflowData.RegisterData, 0 /*argc*/, nullptr /*argv*/);
-    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-    REQUIRE(result.ExtendedResultCode == 0);
-
-    // clang-format off
-    const std::map<std::string, std::string> files{
-        { "E8sbKCW3L/ALBTYE3umfzXMLel8Pk3TUCixceIAtnDo=", "https://example.com/tf01228997.accdt" },
-        { "Ilo1MnAkIDyIWjzSN9BaqHvzKetFhItdKQILFCOIuus=", "https://example.com/tf01225343.accdt" }
-    };
-    // clang-format on
-
-    std::string updateActionJson{ CreateDownloadUpdateActionJson(files) };
-
-    workflowData.UpdateActionJson = ADUC_Json_GetRoot(updateActionJson.c_str());
-    REQUIRE(workflowData.UpdateActionJson != nullptr);
-    workflowData.ContentData = ADUC_ContentData_AllocAndInit(workflowData.UpdateActionJson);
-
-    ADUC_PrepareInfo info{};
-    CHECK(ADUC_PrepareInfo_Init(&info, &workflowData));
-    CHECK(info.fileCount == files.size());
-    for (unsigned int i = 0; i < info.fileCount; ++i)
-    {
-        std::stringstream strm;
-        strm << "aduc-tempfile-" << i;
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        CHECK_THAT(info.files[i].DownloadUri, Equals(files.find(info.files[i].Hash[0].value)->second));
-    }
-    CHECK_THAT(info.updateType, Equals("microsoft/swupdate:1"));
-
-    ADUC_PrepareInfo_UnInit(&info);
-
-    REQUIRE(info.updateType == NULL);
-    REQUIRE(info.updateTypeName == NULL);
-    REQUIRE(info.updateTypeVersion == 0);
-    REQUIRE(info.files == NULL);
-    REQUIRE(info.fileCount == 0);
-
-    ADUC_MethodCall_Unregister(&workflowData.RegisterData);
-}
-
-TEST_CASE("ADUC_DownloadInfo_Init")
-{
-    ADUC_DownloadInfo info{};
-    // clang-format off
-    const std::map<std::string, std::string> files{
-        { "E8sbKCW3L/ALBTYE3umfzXMLel8Pk3TUCixceIAtnDo=", "https://example.com/tf01228997.accdt" },
-        { "Ilo1MnAkIDyIWjzSN9BaqHvzKetFhItdKQILFCOIuus=", "https://example.com/tf01225343.accdt" }
-    };
-    // clang-format on
-
-    const std::string updateAction{ CreateDownloadUpdateActionJson(files) };
-
-    INFO(updateAction);
-
-    const JSON_Value* updateActionJson{ ADUC_Json_GetRoot(updateAction.c_str()) };
-    REQUIRE(updateActionJson != nullptr);
-
-    const std::string workFolder{ "/tmp" };
-
-    CHECK(ADUC_DownloadInfo_Init(&info, updateActionJson, workFolder.c_str(), DownloadProgressCallback));
-
-    CHECK_THAT(info.WorkFolder, Equals(workFolder));
-    CHECK(info.FileCount == files.size());
-    for (unsigned int i = 0; i < info.FileCount; ++i)
-    {
-        std::stringstream strm;
-        strm << "aduc-tempfile-" << i;
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        CHECK_THAT(info.Files[i].DownloadUri, Equals(files.find(info.Files[i].Hash[0].value)->second));
-    }
-    CHECK(info.NotifyDownloadProgress == DownloadProgressCallback);
-
-    ADUC_DownloadInfo_UnInit(&info);
-}
-
-TEST_CASE("ADUC_InstallInfo_Init")
-{
-    ADUC_InstallInfo info{};
-    const std::string workFolder{ "/tmp" };
-
-    CHECK(ADUC_InstallInfo_Init(&info, workFolder.c_str()));
-
-    CHECK_THAT(info.WorkFolder, Equals(workFolder));
-
-    ADUC_InstallInfo_UnInit(&info);
-}
-
-TEST_CASE("ADUC_ApplyInfo_Init")
-{
-    ADUC_ApplyInfo info{};
-    const std::string workFolder{ "/tmp" };
-
-    CHECK(ADUC_ApplyInfo_Init(&info, workFolder.c_str()));
-
-    CHECK_THAT(info.WorkFolder, Equals(workFolder));
-
-    ADUC_ApplyInfo_UnInit(&info);
-}
 
 TEST_CASE("ADUC_MethodCall_Register and Unregister: Valid")
 {
-    ADUC_RegisterData registerData{};
-    const ADUC_Result result{ ADUC_MethodCall_Register(&registerData, 0 /*argc*/, nullptr /*argv*/) };
+    ADUC_UpdateActionCallbacks updateActionCallbacks{};
+    const ADUC_Result result{ ADUC_MethodCall_Register(&updateActionCallbacks, 0 /*argc*/, nullptr /*argv*/) };
     REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
     REQUIRE(result.ExtendedResultCode == 0);
 
-    ADUC_MethodCall_Unregister(&registerData);
+    ADUC_MethodCall_Unregister(&updateActionCallbacks);
 }
 
-TEST_CASE("ADUC_MethodCall_Register and Unregister: Invalid")
+TEST_CASE("ADUC_Workflow_MethodCall_Idle - Calls SandboxDestroyCallback")
 {
-    SECTION("Invalid args passed to register returns failure")
+    AduCoreExportHelpersTestCaseFixture fixture;
+    ADUC_WorkflowData* workflowData = fixture.GetWorkflowData();
+
+    auto Mock_IdleCallback = [](ADUC_Token token, const char* workflowId)
     {
-        ADUC_RegisterData registerData{};
-        const char* argv[1] = {};
-        const int argc = std::distance(std::begin(argv), std::end(argv));
-        const ADUC_Result result{ ADUC_MethodCall_Register(&registerData, argc, argv) };
-        INFO_ADUC_Result(result);
-        CHECK(IsAducResultCodeFailure(result.ResultCode));
-        CHECK(result.ExtendedResultCode == ADUC_ERC_NOTRECOVERABLE);
-    }
+        CHECK(std::string("test-workflow-id") == workflowId);
+    };
+
+    auto Mock_SandboxDestroyCallback = [](ADUC_Token token, const char* workflowId, const char* workFolder)
+    {
+        CHECK(std::string("test-workflow-id") == workflowId);
+    };
+
+    workflowData->UpdateActionCallbacks.SandboxDestroyCallback = Mock_SandboxDestroyCallback;
+    workflowData->UpdateActionCallbacks.IdleCallback = Mock_IdleCallback;
+
+    ADUC_Workflow_MethodCall_Idle(workflowData);
+
+    // ADUC_Workflow_MethodCall_Idle frees and Nulls-out WorkflowHandle
+    CHECK(workflowData->WorkflowHandle == nullptr);
 }
 
-TEST_CASE_METHOD(TestCaseFixture, "MethodCall workflow: Valid")
+TEST_CASE("ADUC_Workflow_MethodCall_Download - Fail if not DeploymentInProgress state")
 {
-    std::mutex workCompletionCallbackMTX;
-    std::unique_lock<std::mutex> lock(workCompletionCallbackMTX);
+    AduCoreExportHelpersTestCaseFixture fixture;
+    ADUC_WorkflowData* workflowData = fixture.GetWorkflowData();
 
-    //
-    // Register
-    //
+    ADUC_WorkflowData_SetLastReportedState(ADUCITF_State_Idle, workflowData); // something other than DeploymentInProgress
 
-    ADUC_WorkflowData workflowData{};
-
-    const std::string workflowId{ "unit_test" };
-    constexpr size_t workflowIdSize = ARRAY_SIZE(workflowData.WorkflowId);
-    strncpy(workflowData.WorkflowId, workflowId.c_str(), workflowIdSize);
-    workflowData.WorkflowId[workflowIdSize - 1] = '\0';
-
-    workflowData.LastReportedState = ADUCITF_State_Idle;
-    workflowData.DownloadProgressCallback = DownloadProgressCallback;
-
-    ADUC_Result result;
-
-    result = ADUC_MethodCall_Register(&workflowData.RegisterData, 0 /*argc*/, nullptr /*argv*/);
-    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-    REQUIRE(result.ExtendedResultCode == 0);
-
-    //
-    // Download
-    //
-
-    // clang-format off
-    const std::map<std::string, std::string> files{
-        { "E8sbKCW3L/ALBTYE3umfzXMLel8Pk3TUCixceIAtnDo=", "https://example.com/tf01228997.accdt" },
-        { "Ilo1MnAkIDyIWjzSN9BaqHvzKetFhItdKQILFCOIuus=", "https://example.com/tf01225343.accdt" }
-    };
-    // clang-format on
-
-    std::string downloadJson{ CreateDownloadUpdateActionJson(files) };
-
-    workflowData.UpdateActionJson = ADUC_Json_GetRoot(downloadJson.c_str());
-    REQUIRE(workflowData.UpdateActionJson != nullptr);
-    workflowData.ContentData = ADUC_ContentData_AllocAndInit(workflowData.UpdateActionJson);
-
-    // ADUC_MethodCall_Data must be on the heap, as the download callback uses it asynchronously.
     ADUC_MethodCall_Data methodCallData{};
-    // NOLINTNEXTLNE(cppcoreguidelines-pro-type-union-access)
-    methodCallData.WorkflowData = &workflowData;
-    methodCallData.WorkCompletionData.WorkCompletionCallback = WorkCompletionCallback;
+    methodCallData.WorkflowData = workflowData;
+    ADUC_Result result = ADUC_Workflow_MethodCall_Download(&methodCallData);
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_UPPERLEVEL_WORKFLOW_UPDATE_ACTION_UNEXPECTED_STATE);
+}
 
-    ADUC_DownloadInfo downloadInfo{};
-    ADUC_DownloadInfo_Init(&downloadInfo, workflowData.UpdateActionJson, "/tmp", DownloadProgressCallback);
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
-    methodCallData.MethodSpecificData.DownloadInfo = &downloadInfo;
+// NOLINTNEXTLINE(readability-non-const-parameter)
+static ADUC_Result Mock_SandboxCreateCallback(ADUC_Token token, const char* workflowId, char* workFolder)
+{
+    UNREFERENCED_PARAMETER(token);
+    UNREFERENCED_PARAMETER(workflowId);
+    UNREFERENCED_PARAMETER(workFolder);
 
-    workflowData.CurrentAction = ADUCITF_UpdateAction_Download;
+    ADUC_Result result{ADUC_Result_Success};
+    return result;
+}
 
-    result = ADUC_MethodCall_Download(&methodCallData);
+static ADUC_Result Mock_DownloadCallback(ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken workflowData)
+{
+    UNREFERENCED_PARAMETER(token);
+    UNREFERENCED_PARAMETER(workCompletionData);
+    UNREFERENCED_PARAMETER(workflowData);
 
-    CHECK(result.ResultCode == ADUC_DownloadResult_InProgress);
-    CHECK(result.ExtendedResultCode == 0);
+    ADUC_Result result{ADUC_Result_Success};
+    return result;
+}
 
-    CHECK(workflowData.LastReportedState == ADUCITF_State_DownloadStarted);
-    CHECK(workflowData.IsRegistered == false);
-    CHECK(workflowData.OperationInProgress == false);
-    CHECK(workflowData.OperationCancelled == false);
+TEST_CASE("ADUC_Workflow_MethodCall_Download - Calls SandboxCreate and DownloadCallback")
+{
+    AduCoreExportHelpersTestCaseFixture fixture;
+    ADUC_WorkflowData* workflowData = fixture.GetWorkflowData();
 
-    // Wait for async operation completion
-    workCompletionCallbackCV.wait(lock);
-    
-    ADUC_MethodCall_Download_Complete(&methodCallData, result);
+    workflowData->UpdateActionCallbacks.SandboxCreateCallback = Mock_SandboxCreateCallback;
+    workflowData->UpdateActionCallbacks.DownloadCallback = Mock_DownloadCallback;
 
-    //
-    // Install
-    //
+    ADUC_WorkflowData_SetLastReportedState(ADUCITF_State_DeploymentInProgress, workflowData); // Must be DeploymentInProgress to succeed.
 
-    workflowData.LastReportedState = ADUCITF_State_DownloadSucceeded;
-    workflowData.CurrentAction = ADUCITF_UpdateAction_Install;
+    ADUC_MethodCall_Data methodCallData{};
+    methodCallData.WorkflowData = workflowData;
+    ADUC_Result result = ADUC_Workflow_MethodCall_Download(&methodCallData);
 
-    result = ADUC_MethodCall_Install(&methodCallData);
-
-    CHECK(result.ResultCode == ADUC_InstallResult_InProgress);
-    CHECK(result.ExtendedResultCode == 0);
-
-    CHECK(workflowData.LastReportedState == ADUCITF_State_InstallStarted);
-    CHECK(workflowData.IsRegistered == false);
-    CHECK(workflowData.OperationInProgress == false);
-    CHECK(workflowData.OperationCancelled == false);
-
-    // Wait for async operation completion
-    workCompletionCallbackCV.wait(lock);
-
-    ADUC_MethodCall_Install_Complete(&methodCallData, result);
-
-    //
-    // Apply
-    //
-
-    workflowData.LastReportedState = ADUCITF_State_InstallSucceeded;
-    workflowData.CurrentAction = ADUCITF_UpdateAction_Apply;
-
-    result = ADUC_MethodCall_Apply(&methodCallData);
-
-    CHECK(result.ResultCode == ADUC_InstallResult_InProgress);
-    CHECK(result.ExtendedResultCode == 0);
-
-    CHECK(workflowData.LastReportedState == ADUCITF_State_ApplyStarted);
-    CHECK(workflowData.IsRegistered == false);
-    CHECK(workflowData.OperationInProgress == false);
-    CHECK(workflowData.OperationCancelled == false);
-
-    // Wait for async operation completion
-    workCompletionCallbackCV.wait(lock);
-
-    ADUC_MethodCall_Apply_Complete(&methodCallData, result);
-
-    //
-    // Unregister
-    //
-
-    ADUC_MethodCall_Unregister(&workflowData.RegisterData);
+    CHECK(result.ResultCode == ADUC_Result_Success);
 }

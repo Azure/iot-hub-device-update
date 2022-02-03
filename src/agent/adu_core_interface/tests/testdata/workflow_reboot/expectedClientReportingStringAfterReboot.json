@@ -1,0 +1,18 @@
+{
+    "deviceUpdate": {
+        "__t": "c",
+        "agent": {
+            "lastInstallResult": {
+                "resultCode": 700,
+                "extendedResultCode": 0,
+                "resultDetails": ""
+            },
+            "state": 0,
+            "workflow": {
+                "action": 3,
+                "id": "action_bundle"
+            },
+            "installedUpdateId": "{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"}"
+        }
+    }
+}

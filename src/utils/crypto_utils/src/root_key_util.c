@@ -4,7 +4,8 @@
  * these have exponents and parameters that have been extracted from their certs
  * to ease the computation process but remain the same as the ones issued by the Authority
  *
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include <stdbool.h>

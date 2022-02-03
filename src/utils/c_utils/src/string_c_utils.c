@@ -2,7 +2,8 @@
  * @file string_c_utils.c
  * @brief Implementation of string utilities for C code.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "aduc/string_c_utils.h"
 #include "aduc/c_utils.h"
@@ -157,7 +158,7 @@ char* ADUC_StringUtils_Trim(char* str)
     char* begin = str;
     char* current = str;
 
-    if (!str || str[0] == '\0')
+    if (IsNullOrEmpty(str))
     {
         return str;
     }
@@ -204,7 +205,7 @@ char* ADUC_StringUtils_Trim(char* str)
  */
 _Bool atoul(const char* str, unsigned long* converted)
 {
-    if (str == NULL || *str == '\0')
+    if (IsNullOrEmpty(str))
     {
         return false;
     }
@@ -243,7 +244,7 @@ _Bool atoul(const char* str, unsigned long* converted)
  */
 _Bool atoui(const char* str, unsigned int* ui)
 {
-    if (str == NULL || *str == '\0')
+    if (IsNullOrEmpty(str))
     {
         return false;
     }
@@ -273,6 +274,30 @@ _Bool atoui(const char* str, unsigned int* ui)
     return true;
 }
 
+/**
+ * @brief  Finds the length in bytes of the given string, not including the final null character. Only the first maxsize characters are inspected: if the null character is not found, maxsize is returned.
+ * @param str  string whose length is to be computed
+ * @param maxsize the limit up to which to check @p str's length
+ * @return Length of the string "str", exclusive of the final null byte, or maxsize if the null character is not found, 0 if str is NULL.
+ */
+size_t ADUC_StrNLen(const char* str, size_t maxsize)
+{
+    if (str == NULL)
+    {
+        return 0;
+    }
+
+    size_t length;
+
+    /* Note that we do not check if s == NULL, because we do not
+    * return errno_t...
+    */
+    for (length = 0; length < maxsize && *str; length++, str++)
+    {
+    }
+
+    return length;
+}
 /**
  * @brief Split updateType string by ':' to return updateTypeName and updateTypeVersion
  * @param[in] updateType - expected "Provider/Name:Version"
@@ -374,4 +399,15 @@ char* ADUC_StringFormat(const char* fmt, ...)
     }
 
     return outputStr;
+}
+
+/**
+ * @brief Check whether @p str is NULL or empty.
+ *
+ * @param str A string to check.
+ * @return Returns true if @p str is NULL or empty.
+ */
+_Bool IsNullOrEmpty(const char* str)
+{
+    return str == NULL || *str == '\0';
 }

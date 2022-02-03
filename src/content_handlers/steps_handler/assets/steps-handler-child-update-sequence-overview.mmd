@@ -1,0 +1,77 @@
+sequenceDiagram
+    participant awf as Agent Workflow
+    participant sthd as Steps Handler<br/>(Parent Update)
+    participant csthd as Steps Handler<br/>(Child Update)
+    participant xyzhd as APT Handler<br/>SWUpdate Handler<br/>Script Handler<br/>Steps Handler, etc.
+    participant comenum as Component Enumerator
+
+    Note over awf, sthd : Note: Simplified diagram <br/>Extension Manager is hidden
+    awf-->>+sthd: loads handler<br/>for Parent Update<br/>('microsoft/step:1')
+    awf->>+sthd:  'download'
+    loop foreach step
+    Note over sthd, csthd : Note: For demo purposes,<br/>all Parent's step are 'Reference Step'
+    sthd-->>csthd: loads handler<br/>for Child Update<br/>('microsoft/step:1')
+    sthd->>+csthd: 'download'
+    loop foreach step
+    csthd-->>xyzhd:  loads handler<br/>for {step.handler}
+    csthd->>+xyzhd: 'download'
+    xyzhd->>xyzhd: performs<br/>download task
+    xyzhd-->>-csthd: returns ADUC_Result
+    end
+    csthd-->>-sthd: returns ADUC_Result
+    end
+    sthd->>-awf: return ADUC_Result
+
+
+    awf->>+sthd:  'install'
+
+    Note over sthd, comenum : Note: Enumerate compatible component.<br/>If Component Enuemrator is not available, the following loop will be process only once,<br/>and assumed target is a Host Device.
+    sthd->>+comenum: 'select components'
+    comenum-->>-sthd: returns 'selected components'
+
+
+    
+    loop for each selected component
+        sthd->>sthd: sets current component<br/>as Child Workflow's selectedComponents
+        
+        Note over sthd, xyzhd: For each component, perform every step in sequence.<br/>All steps must be completed successfully before continue with the next component.
+        loop for each step
+        sthd-->>csthd: loads handler<br/>for Child Update<br/>('microsoft/step:1')
+
+        Note over sthd, xyzhd: For each step, perform both 'install' and 'apply' task<br/>to ensure that an Update is installed and applied onto<br/>current component, before move on to the next one.
+
+        sthd->>+csthd: 'install'
+
+        loop foreach step
+        csthd-->>xyzhd:  loads handler<br/>for {step.handler}
+        csthd->>+xyzhd: 'install'
+        xyzhd->>xyzhd: performs<br/>install task
+        Note over xyzhd,csthd: Note: a device or DU Agent restart request can be encoded<br/>in ADUC_Result if needed.
+        xyzhd-->>-csthd: returns ADUC_Result
+        end
+        csthd-->>-sthd: returns ADUC_Result
+
+        sthd->>+csthd: 'apply'
+        loop foreach step
+        csthd-->>xyzhd:  loads handler<br/>for {step.handler}
+        csthd->>+xyzhd: 'apply'
+        xyzhd->>xyzhd: performs<br/>apply task
+        Note over xyzhd,csthd: Note: a device or DU Agent restart request can be encoded<br/>in ADUC_Result if needed.
+        xyzhd-->>-csthd: returns ADUC_Result
+        end
+        csthd-->>-sthd: returns ADUC_Result
+        end
+    end
+    sthd->>-awf: return ADUC_Result
+
+    awf->>+sthd:  'apply'
+    loop foreach step
+    Note over sthd, csthd : Note: For demo purposes,<br/>all Parent's step are 'Reference Step'
+    sthd-->>csthd: loads handler<br/>for Child Update<br/>('microsoft/step:1')
+    sthd->>+csthd: 'apply'
+    Note over csthd : Since 'apply' task was completed as part of 'install' above, <br/> always return success here.
+    csthd-->>-sthd: returns ADUC_Result
+    end
+    sthd->>-awf: return ADUC_Result
+  
+            

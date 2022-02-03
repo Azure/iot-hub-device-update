@@ -1,6 +1,6 @@
 variables:
   version.major: 0
-  version.minor: 6
+  version.minor: 8
   version.patch: 0
   version.pre-release: "public-preview"
   version.build: $[format('{0:yyyyMMdd}-{0:HHmmss}', pipeline.startTime)]
@@ -11,8 +11,10 @@ variables:
   ADUC_VERSION_PATCH: $(version.patch)
   ADUC_VERSION_PRERELEASE: $(version.pre-release)
   ADUC_VERSION_BUILD: $(version.build)
+  ADUC_DEBIAN_PACKAGE_ARCHITECTURE: "arm32"
+
   ENABLE_ADU_TELEMETRY_REPORTING: true
-  # aducBuilderIdentifier will be set to "DU" short for Device Update by default, for ADUC-sourced builder
+  # ADUC_BUILDER_IDENTIFIER will be set to "DU" short for Device Update by default, for Device Update-sourced builder
   ADUC_BUILDER_IDENTIFIER: DU
   # DO requires gcc greater than 6 for c++17 support.
   # gcc-8 matches what is built with poky warrior.
@@ -27,8 +29,8 @@ resources:
 trigger:
   branches:
     include:
-      - master
-      - release/*
+      - main
+      # - release/*
   paths:
     exclude:
       - docs/*
@@ -36,17 +38,14 @@ trigger:
       - LICENSE.md
       - .clang-format
       - .cmake-format.json
-      - tools/*
       - docker/*
-      - scripts/*
 
 pr:
   branches:
     include:
-      - master
-      - release/*
-      - feature/*
-      # TODO(shiyipeng): Task 27290511: Debian arm32 64 pipeline - improve build time
+      - main
+      # - release/*
+      # - feature/*
       #- dev/*
   paths:
     exclude:
@@ -63,145 +62,53 @@ pr:
 jobs:
   - job: BuildAduAgent
     displayName: "Build ADU Agent"
-    # Task 27290511: Debian arm pipeline - improve build time
     timeoutInMinutes: 360
     cancelTimeoutInMinutes: 360
-    pool: ADUC-Linux
+    pool: aduc_1es_client_pool
     steps:
       - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
         displayName: "Component Detection"
         inputs:
           sourceScanPath: src
 
+      - task: Docker@2
+        displayName: Login to ACR
+        inputs:
+          command: login
+          containerRegistry: aduccontainerregistry
+          repository: debian9-arm32
+
+      - task: Docker@2
+        displayName: Pull latest build image
+        inputs:
+          command: pull
+          containerRegistry: aduccontainerregistry
+          arguments: "aduccontainerregistry.azurecr.io/debian9-arm32:latest"
+
       - bash: |
           echo "Running whoami"
           whoami
+          echo "Register QEMU"
+          sudo docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
           echo "Listing running containers"
           sudo docker ps -a
+          echo "Listing current images"
+          sudo docker images
         displayName: "Prebuild"
         condition: always()
-
       - bash: |
-          cp /usr/bin/qemu-arm-static $(Build.SourcesDirectory)/docker/arm32/qemu-arm-static
-          sudo docker build --pull --rm -f "docker/arm32/Dockerfile" -t aduprivatepreview:latest "docker/arm32"
-        displayName: "Build docker image"
-
-      - bash: |
-          sudo docker run -d -t --rm -v $(Build.SourcesDirectory):/iot-hub-device-update -v ~/.gitconfig:/etc/.gitconfig --name arm32container aduprivatepreview:latest bash
+          sudo docker run -d -t --rm -v $(Build.SourcesDirectory):/iot-hub-device-update -v ~/.gitconfig:/etc/.gitconfig --name arm32container aduccontainerregistry.azurecr.io/debian9-arm32:latest bash
         displayName: "Run docker container"
-
       - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-aduc-deps --install-packages
-        displayName: "Install aduc dependencies in container"
-
-      - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-do-deps
-        displayName: "Install DO SDK dependencies in container"
-
-        # do_access_token is defined as a secret variable.
-        # This token gives our pipeline access to DO's private github repos.
-        # When DO code is public, we will no longer need to use this access token.
-        # Here we use git configuration to 'hijack' the regular github repo URLs
-        # and replace them with the authenticated URLs.
-        # See https://git-scm.com/docs/git-config#Documentation/git-config.txt-urlltbasegtinsteadOf
-        # Before setting the various url insteadOf sections, we make sure the config is in a clean state.
-        # Any corrupted/invalid entries will prevent the clone from succeeding.
-        # The various git config commands will also fail to remove invalid entries,
-        # so we use sed instead.
-      - bash: |
-          sudo docker exec arm32container cp /etc/.gitconfig /iot-hub-device-update/.gitconfig
-          sudo docker exec arm32container sed -i -e '/^.*url.*https.*@github.com\/Microsoft.*$/d' -e '/^.*insteadOf.*https.*github.com\/Microsoft.*$/d' /iot-hub-device-update/.gitconfig
-          sudo docker exec arm32container cp -f /iot-hub-device-update/.gitconfig /etc/.gitconfig
-          sudo docker exec arm32container git config --global url."https://api:$DO_ACCESS_TOKEN@github.com/Microsoft/do-client.git".insteadOf "https://github.com/Microsoft/do-client.git"
-          sudo docker exec arm32container git config --global url."https://api:$DO_ACCESS_TOKEN@github.com/Microsoft/do-client".insteadOf "https://github.com/Microsoft/do-client"
-        displayName: "Configure git credentials for DO inside container"
-        env:
-          DO_ACCESS_TOKEN: $(do_access_token)
-
-      - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container scripts/install-deps.sh --install-do
-        displayName: "Install DO SDK from source in container"
-
-        # Cleanup the entries we added to clone private repos.
-        # The various git config commands will also fail to remove invalid entries,
-        # so we use sed instead.
-      - bash: |
-          sudo docker exec arm32container cp /etc/.gitconfig /iot-hub-device-update/.gitconfig
-          sudo docker exec arm32container sed -i -e '/^.*url.*https.*github.com\/Microsoft.*$/d' -e '/^.*insteadOf.*https.*github.com\/Microsoft.*$/d' /iot-hub-device-update/.gitconfig
-          sudo docker exec arm32container cp -f /iot-hub-device-update/.gitconfig /etc/.gitconfig
-        displayName: "Remove git credentials for DO in container"
-        condition: succeededOrFailed()
-
-      - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container scripts/build.sh --clean --build-unit-tests --platform-layer simulator --content-handlers microsoft/swupdate --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir out-arm32
-        displayName: "Build Client and Unit Tests (simulator-swupdate-Debug)"
-
-        # note, --out-dir param in the dependencies script adds a src/agent to the final location of AducIotAgent
-      - bash: |
-          cp out-arm32/src/agent/out-arm32/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgentSim-microsoft-swupdate
-        displayName: "Stage build artifacts (simulator-swupdate-Debug)"
-        condition: and(ne(variables['Build.Reason'], 'IndividualCI'), ne(variables['Build.Reason'], 'PullRequest'))
-
-      - bash: |
-          sudo docker exec -w /iot-hub-device-update/out-arm32 arm32container ctest -T test -V --output-on-failure
-        displayName: "Run Unit Tests"
-
-      - task: PublishTestResults@2
-        displayName: "Publish Unit Test Results"
-        condition: succeededOrFailed() # Run this task even if tests fail.
-        inputs:
-          testResultsFormat: cTest
-          testResultsFiles: "Testing/**/*.xml"
-          searchFolder: out-arm32
-          failTaskOnFailedTests: true
-          publishRunAttachments: false # Attachments are not supported for CTest
-
-      - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container scripts/build.sh --clean --provision-with-iotedge --platform-layer simulator --content-handlers microsoft/apt --log-lib zlog --out-dir out-arm32
-        displayName: "Build Client (simulator-apt-Debug)"
-
-        # note, --out-dir param in the dependencies script adds a src/agent to the final location of AducIotAgent
-      - bash: |
-          cp out-arm32/src/agent/out-arm32/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgentSim-microsoft-apt
-        displayName: "Stage build artifacts (simulator-apt-Debug)"
-        condition: and(ne(variables['Build.Reason'], 'IndividualCI'), ne(variables['Build.Reason'], 'PullRequest'))
-
-      - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container scripts/build.sh --clean --provision-with-iotedge --build-unit-tests --platform-layer linux --content-handlers microsoft/apt --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir out-arm32
-        displayName: "Build Client and Unit Tests (linux-apt-Debug)"
-
-      - bash: |
-          cp out-arm32/src/agent/out-arm32/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgent
-        displayName: "Stage build artifacts (linux-apt-Debug)"
-        condition: and(ne(variables['Build.Reason'], 'IndividualCI'), ne(variables['Build.Reason'], 'PullRequest'))
-
-      - bash: |
-          sudo docker exec -w /iot-hub-device-update/out-arm32 arm32container ctest -T test -V --output-on-failure
-        displayName: "Run Unit Tests"
-
-      - task: PublishTestResults@2
-        displayName: "Publish Unit Test Results"
-        condition: succeededOrFailed() # Run this task even if tests fail.
-        inputs:
-          testResultsFormat: cTest
-          testResultsFiles: "Testing/**/*.xml"
-          searchFolder: out-arm32
-          failTaskOnFailedTests: true
-          publishRunAttachments: false # Attachments are not supported for CTest
-
-      - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container scripts/build.sh --clean --type MinSizeRel --provision-with-iotedge --build-unit-tests --platform-layer linux --content-handlers microsoft/apt --log-lib zlog --build-packages --static-analysis clang-tidy,cppcheck --out-dir out-arm32
+          sudo docker exec -w /iot-hub-device-update arm32container scripts/build.sh --clean --type MinSizeRel --build-unit-tests --platform-layer linux --log-lib zlog --build-packages --static-analysis clang-tidy,cppcheck --out-dir out-arm32
         displayName: "Build Client, Unit Tests and Packages (linux-apt-MinSizeRel)"
-
       - bash: |
           cp out-arm32/*.deb $(Build.ArtifactStagingDirectory)
         displayName: "Stage build artifacts"
         condition: and(ne(variables['Build.Reason'], 'IndividualCI'), ne(variables['Build.Reason'], 'PullRequest'))
-
       - bash: |
           sudo docker exec -w /iot-hub-device-update/out-arm32 arm32container ctest -T test -V --output-on-failure
         displayName: "Run Unit Tests"
-
       - task: PublishTestResults@2
         displayName: "Publish Unit Test Results"
         condition: succeededOrFailed() # Run this task even if tests fail.
@@ -213,9 +120,8 @@ jobs:
           publishRunAttachments: false # Attachments are not supported for CTest
 
       - bash: |
-          sudo docker exec -w /iot-hub-device-update arm32container scripts/build.sh --clean --platform-layer linux --content-handlers microsoft/swupdate --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir out-arm32
-        displayName: "Build Client (linux-swupdate-Debug)"
-
+          sudo docker exec -w /iot-hub-device-update arm32container scripts/build.sh --clean --platform-layer linux --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir out-arm32
+        displayName: "Build Client (linux-Debug)"
       - task: PublishPipelineArtifact@0
         displayName: "Publish Pipeline Artifacts"
         condition: and(succeeded(), ne(variables['Build.Reason'], 'IndividualCI'), ne(variables['Build.Reason'], 'PullRequest'))
@@ -229,10 +135,10 @@ jobs:
         # Ignore SC2209: Use var=$(command) to assign output (or quote to assign string).
         #   We use 'ret=return' or 'ret=exit' to support dot sourcing.
       - bash: |
+          sudo apt-get install -y shellcheck
           shellcheck -s bash -e SC2164 -e SC2209 $(find -name "*.sh")
           exit $?
         displayName: "Run ShellCheck"
-
         # Stop the running container at the end of the build job
         # Remove output directory to prevent persisting across build jobs
       - bash: |

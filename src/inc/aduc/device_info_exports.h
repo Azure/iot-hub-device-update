@@ -2,7 +2,8 @@
  * @file device_info_exports.h
  * @brief Describes methods to be exported from platform-specific ADUC agent code for the device information interface.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_DEVICE_INFO_EXPORTS_H
 #define ADUC_DEVICE_INFO_EXPORTS_H

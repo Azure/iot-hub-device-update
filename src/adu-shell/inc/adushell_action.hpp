@@ -1,7 +1,8 @@
 /**
  * @file adushell_action.hpp
  * @brief Private header for ADU Shell Actions enum and helper functions.
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADU_SHELL_ACTION_HPP
 #define ADU_SHELL_ACTION_HPP
@@ -16,7 +17,8 @@ enum class ADUShellAction
     Apply,
     Cancel,
     Rollback,
-    Reboot
+    Reboot,
+    Execute
 };
 
 /**

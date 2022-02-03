@@ -2,15 +2,17 @@
  * @file main.cpp
  * @brief Implements the main code for the ADU Shell.
  *
- * @copyright Copyright (c) 2019, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include <getopt.h>
 #include <string.h>
-#include <unistd.h> // for geteuid and setuid.
+#include <unistd.h> // for getegid, geteuid, and setuid.
 #include <unordered_map>
 #include <vector>
 
 #include "aduc/c_utils.h"
+#include "aduc/config_utils.h"
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
 #include "aduc/string_utils.hpp"
@@ -18,6 +20,7 @@
 
 #include "adushell.hpp"
 #include "adushell_const.hpp"
+#include "azure_c_shared_utility/vector.h"
 #include "common_tasks.hpp"
 
 namespace CommonTasks = Adu::Shell::Tasks::Common;
@@ -25,6 +28,11 @@ namespace CommonTasks = Adu::Shell::Tasks::Common;
 #ifdef ADUSHELL_APT
 #    include "aptget_tasks.h"
 namespace AptGetTasks = Adu::Shell::Tasks::AptGet;
+#endif
+
+#ifdef ADUSHELL_SCRIPT
+#   include "script_tasks.hpp"
+namespace ScriptTasks = Adu::Shell::Tasks::Script;
 #endif
 
 #ifdef ADUSHELL_SWUPDATE
@@ -44,8 +52,17 @@ namespace adushconst = Adu::Shell::Const;
  */
 int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* launchArgs)
 {
+    if (launchArgs == nullptr)
+    {
+        return -1;
+    }
+
     int result = 0;
-    memset(launchArgs, 0, sizeof(*launchArgs));
+    launchArgs->updateType = nullptr;
+    launchArgs->updateAction = nullptr;
+    launchArgs->targetData = nullptr;
+    launchArgs->logFile = nullptr;
+    launchArgs->showVersion = false;
 
 #if _ADU_DEBUG
     launchArgs->logLevel = ADUC_LOG_DEBUG;
@@ -62,16 +79,16 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
 
         // "--version"           |   Show adu-shell version number.
         //
-        // "--update-type"       |   An ADU Update Type.  
+        // "--update-type"       |   An ADU Update Type.
         //                             e.g., "microsoft/apt", "microsoft/swupdate", "common".
         //
         // "--update-action"     |   An action to perform.
         //                             e.g., "initialize", "download", "install", "apply", "cancel", "rollback", "reboot".
         //
-        // "--target-data"       |   A string contains data for a target command. 
+        // "--target-data"       |   A string contains data for a target command.
         //                             e.g., for microsoft/apt download action, this is a single-quoted string
         //                             contains space-delimited list of package names.
-        // 
+        //
         // "--target-options"    |   Additional options for a target command.
         //
         // "--target-log-folder" |   Some target command requires specific logs storage.
@@ -122,7 +139,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
             break;
 
         case 'o':
-            launchArgs->targetOptions = optarg;
+            launchArgs->targetOptions.emplace_back(optarg);
             break;
 
         case 'f':
@@ -134,7 +151,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
             char* endptr;
             errno = 0; /* To distinguish success/failure after call */
             int64_t logLevel = strtol(optarg, &endptr, 10);
-            if (errno != 0 || endptr == optarg || logLevel < ADUC_LOG_DEBUG || logLevel >= ADUC_LOG_ERROR)
+            if (errno != 0 || endptr == optarg || logLevel < ADUC_LOG_DEBUG || logLevel > ADUC_LOG_ERROR)
             {
                 printf("Invalid log level after '--log-level' or '-l' option. Expected value: 0-3.");
                 result = -1;
@@ -193,19 +210,6 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
     return result;
 }
 
-std::string GetFormattedCommandline(const std::string& command, const std::vector<std::string>& args)
-{
-    std::stringstream output;
-    output << command << ' ';
-    for (const std::string& arg : args)
-    {
-        output << arg << ' ';
-    }
-    return output.str();
-}
-
-// TODO (Nox): 31082410: Revisit how to merge and display logs from adu-shell
-//            in adu-agent journalctl log w/o flooding adu log file.
 void ShowChildProcessLogs(const std::string& output)
 {
     if (!output.empty())
@@ -232,12 +236,9 @@ int ADUShell_Dowork(const ADUShell_LaunchArguments& launchArgs)
     {
         const std::unordered_map<std::string, ADUShellTaskFuncType> actionMap = {
             { adushconst::update_type_common, CommonTasks::DoCommonTask },
-#ifdef ADUSHELL_APT
             { adushconst::update_type_microsoft_apt, AptGetTasks::DoAptGetTask },
-#endif
-#ifdef ADUSHELL_SWUPDATE
+            { adushconst::update_type_microsoft_script, ScriptTasks::DoScriptTask },
             { adushconst::update_type_microsoft_swupdate, SWUpdateTasks::DoSWUpdateTask }
-#endif
         };
 
         ADUShellTaskFuncType task = actionMap.at(std::string(launchArgs.updateType));
@@ -255,6 +256,41 @@ int ADUShell_Dowork(const ADUShell_LaunchArguments& launchArgs)
 }
 
 /**
+ * @brief Checking if the process has permission to run the adu shell operations
+ *
+ * @return true if the process is either in the trusted Group, or is one of the adu shell trusted users.
+ * @return false otherwise
+ */
+bool ADUShell_PermissionCheck()
+{
+    bool isTrusted = false;
+
+    // If config file is provided, check if user is in trusted user list.
+    ADUC_ConfigInfo config = {};
+    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    {
+        VECTOR_HANDLE aduShellTrustedUsers = ADUC_ConfigInfo_GetAduShellTrustedUsers(&config);
+
+        isTrusted = VerifyProcessEffectiveUser(aduShellTrustedUsers);
+
+        ADUC_ConfigInfo_FreeAduShellTrustedUsers(aduShellTrustedUsers);
+        aduShellTrustedUsers = nullptr;
+        ADUC_ConfigInfo_UnInit(&config);
+    }
+
+    // If config file not provided or user not in the trusted users list, then
+    // check whether the effective user is in the trusted group
+    if (!isTrusted)
+    {
+        isTrusted = VerifyProcessEffectiveGroup(ADUSHELL_EFFECTIVE_GROUP_NAME);
+    }
+
+    // If a trusted user list is provided, the permission check passes if the user is either in trusted group,
+    // or is one of the trusted user.
+    return isTrusted;
+}
+
+/**
  * @brief Main method.
  *
  * @param argc Count of arguments in @p argv.
@@ -267,6 +303,11 @@ int ADUShell_Dowork(const ADUShell_LaunchArguments& launchArgs)
  */
 int main(int argc, char** argv)
 {
+    if (!ADUShell_PermissionCheck())
+    {
+        return EPERM;
+    }
+
     ADUShell_LaunchArguments launchArgs;
 
     int ret = ParseLaunchArguments(argc, argv, &launchArgs);
@@ -277,28 +318,40 @@ int main(int argc, char** argv)
 
     if (launchArgs.showVersion)
     {
-        printf(ADUC_VERSION);
+        printf("%s\n", ADUC_VERSION);
         return 0;
     }
 
-    ADUC_Logging_Init(launchArgs.logLevel);
+    ADUC_Logging_Init(launchArgs.logLevel, "adu-shell");
 
     Log_Debug("Update type: %s", launchArgs.updateType);
     Log_Debug("Update action: %s", launchArgs.updateAction);
     Log_Debug("Target data: %s", launchArgs.targetData);
-    Log_Debug("Target options: %s", launchArgs.targetOptions);
+    for (const std::string& option : launchArgs.targetOptions)
+    {
+        Log_Debug("Target options: %s", option.c_str());
+    }
     Log_Debug("Log level: %d", launchArgs.logLevel);
 
     // Run as 'root'.
     // Note: this requires the file owner to be 'root'.
-    int defaultUserId = getuid();
-    int effectiveUserId = geteuid();
-
+    uid_t defaultUserId = getuid();
+    uid_t effectiveUserId = geteuid();
     ret = setuid(effectiveUserId);
     if (ret == 0)
     {
-        Log_Info("Run as uid(%d), defaultUid(%d), effectiveUid(%d)", getuid(), defaultUserId, effectiveUserId);
-        return ADUShell_Dowork(launchArgs);
+        Log_Info(
+            "Run as uid(%d), defaultUid(%d), effectiveUid(%d), effectiveGid(%d)",
+            getuid(),
+            defaultUserId,
+            effectiveUserId,
+            getegid());
+
+        ret = ADUShell_Dowork(launchArgs);
+
+        ADUC_Logging_Uninit();
+
+        return ret;
     }
 
     Log_Error("Cannot set user identity. (code: %d, errno: %d)", ret, errno);

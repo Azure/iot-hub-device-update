@@ -2,7 +2,8 @@
  * @file apt_parser.hpp
  * @brief Defines types and methods required to parse APT file (JSON format).
  *
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_APT_PARSER_HPP
 #define ADUC_APT_PARSER_HPP
@@ -29,12 +30,18 @@
  */
 #define ADU_APT_FIELDNAME_VERSION "version"
 
+/**
+ * @brief JSON field name for agentRestartRequired property
+ */
+#define ADU_APT_FIELDNAME_AGENT_RESTART_REQUIRED "agentRestartRequired"
+
 struct AptContent
 {
     std::string Id;
     std::string Name;
     std::string Version;
     std::list<std::string> Packages;
+    bool AgentRestartRequired;
 };
 
 namespace AptParser

@@ -2,7 +2,8 @@
  * @file aptget_tasks.cpp
  * @brief Implements functions related to microsoft/apt update tasks.
  *
- * @copyright Copyright (c) 2020, Microsoft Corporation.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 #include <unordered_map>
@@ -35,9 +36,9 @@ const char* apt_option_y = "-y";
 
 /**
  * @brief Runs appropriate command based on an action and other arguments in launchArgs.
- * 
+ *
  * This could resulted in one or more packaged installed or removed from the system.
- * 
+ *
  * @param launchArgs The adu-shell launch command-line arguments that has been parsed.
  * @return A result from child process.
  */
@@ -51,7 +52,7 @@ ADUShellTaskResult DoAptGetTask(const ADUShell_LaunchArguments& launchArgs)
         // clang-format off
 
         static const std::unordered_map<ADUShellAction, ADUShellTaskFuncType> actionMap = {
-            { ADUShellAction::Initialize, Update }, 
+            { ADUShellAction::Initialize, Update },
             { ADUShellAction::Download, Download },
             { ADUShellAction::Install, Install },
             { ADUShellAction::Remove, Remove },
@@ -83,11 +84,11 @@ ADUShellTaskResult DoAptGetTask(const ADUShell_LaunchArguments& launchArgs)
 
 /**
  * @brief Add supported target options to the arguments list.
- * 
- * @param args An argument list.
- * @param targetOptions A string contins list of options to be added to the args.
+ *
+ * @param[in] targetOptions A string contains list of options to be added to the args.
+ * @param args An argument list to which option items are added.
  */
-void AddOptionsToArgs(std::vector<std::string>& args, const std::string& targetOptions)
+void AddOptionsToArgs(const std::string& targetOptions, std::vector<std::string>* args)
 {
     if (targetOptions.empty())
     {
@@ -105,7 +106,7 @@ void AddOptionsToArgs(std::vector<std::string>& args, const std::string& targetO
             && ((option == "-o") || (option == "Dpkg::Options::=--force-confdef")
                 || (option == "Dpkg::Options::=--force-confold")))
         {
-            args.emplace_back(option);
+            args->emplace_back(option);
         }
         else
         {
@@ -115,18 +116,18 @@ void AddOptionsToArgs(std::vector<std::string>& args, const std::string& targetO
 }
 
 /**
- * @brief Removes enclosing single-quotes in targetData, if exist. Then add splitted package names to 
+ * @brief Removes enclosing single-quotes in targetData, if exist. Then add splitted package names to
  * the given output argument list.
  *
- * @param args An argument list to be updated.
  * @param targetData A string contains space delimited package names.
- *     
+ *
  * e.g., 'package1=#.#.# package2=#.#.# package3-'
- * 
+ *
  * If a hyphen is appended to the package name (with no intervening space),
  * the identified package will be removed if it is installed.
+ * @param args An argument list to be updated.
  */
-void AddPackagesToArgs(std::vector<std::string>& args, const std::string& targetData)
+void AddPackagesToArgs(const std::string& targetData, std::vector<std::string>* args)
 {
     if (targetData.empty())
     {
@@ -141,7 +142,7 @@ void AddPackagesToArgs(std::vector<std::string>& args, const std::string& target
     {
         if (!package.empty())
         {
-            args.emplace_back(package);
+            args->emplace_back(package);
         }
     }
 }
@@ -169,7 +170,7 @@ ADUShellTaskResult Update(const ADUShell_LaunchArguments& /*launchArgs*/)
 
 /**
  * @brief Runs "apt-get install -y --allow-downgrades --download-only" command in  a child process.
- * 
+ *
  * @param launchArgs An adu-shell launch arguments.
  * @return A result from child process.
  */
@@ -178,9 +179,10 @@ ADUShellTaskResult Download(const ADUShell_LaunchArguments& launchArgs)
     ADUShellTaskResult taskResult;
     std::vector<std::string> aptArgs = { apt_option_y, apt_option_allow_downgrades, apt_option_download_only };
 
-    if (launchArgs.targetOptions != nullptr)
+    // NOTE: Only support the first target option.
+    if (!launchArgs.targetOptions.empty())
     {
-        AddOptionsToArgs(aptArgs, launchArgs.targetOptions);
+        AddOptionsToArgs(launchArgs.targetOptions.front(), &aptArgs);
     }
 
     aptArgs.emplace_back(apt_option_install);
@@ -188,7 +190,7 @@ ADUShellTaskResult Download(const ADUShell_LaunchArguments& launchArgs)
     size_t argsCount = aptArgs.size();
     if (launchArgs.targetData != nullptr)
     {
-        AddPackagesToArgs(aptArgs, launchArgs.targetData);
+        AddPackagesToArgs(launchArgs.targetData, &aptArgs);
     }
 
     if (aptArgs.size() == argsCount)
@@ -204,7 +206,7 @@ ADUShellTaskResult Download(const ADUShell_LaunchArguments& launchArgs)
 
 /**
  * @brief Runs "apt-get -y --allow-downgrades install" command in  a child process.
- * 
+ *
  * @param launchArgs An adu-shell launch arguments.
  * @return A result from child process.
  */
@@ -213,9 +215,9 @@ ADUShellTaskResult Install(const ADUShell_LaunchArguments& launchArgs)
     ADUShellTaskResult taskResult;
     std::vector<std::string> aptArgs = { apt_option_y, apt_option_allow_downgrades };
 
-    if (launchArgs.targetOptions != nullptr)
+    if (!launchArgs.targetOptions.empty())
     {
-        AddOptionsToArgs(aptArgs, launchArgs.targetOptions);
+        AddOptionsToArgs(launchArgs.targetOptions.front(), &aptArgs);
     }
 
     aptArgs.emplace_back(apt_option_install);
@@ -223,7 +225,7 @@ ADUShellTaskResult Install(const ADUShell_LaunchArguments& launchArgs)
     size_t argsCount = aptArgs.size();
     if (launchArgs.targetData != nullptr)
     {
-        AddPackagesToArgs(aptArgs, launchArgs.targetData);
+        AddPackagesToArgs(launchArgs.targetData, &aptArgs);
     }
 
     if (aptArgs.size() == argsCount)
@@ -238,7 +240,7 @@ ADUShellTaskResult Install(const ADUShell_LaunchArguments& launchArgs)
 
 /**
  * @brief Runs "apt-get -y --allow-downgrades remove" command in a child process.
- * 
+ *
  * @param launchArgs An adu-shell launch arguments.
  * @return A result from child process.
  */
@@ -247,16 +249,16 @@ ADUShellTaskResult Remove(const ADUShell_LaunchArguments& launchArgs)
     ADUShellTaskResult taskResult;
     std::vector<std::string> aptArgs = { apt_option_y, apt_option_allow_downgrades };
 
-    if (launchArgs.targetOptions != nullptr)
+    if (!launchArgs.targetOptions.empty())
     {
-        AddOptionsToArgs(aptArgs, launchArgs.targetOptions);
+        AddOptionsToArgs(launchArgs.targetOptions.front(), &aptArgs);
     }
 
     size_t argsCount = aptArgs.size();
     aptArgs.emplace_back(apt_option_remove);
     if (launchArgs.targetData != nullptr)
     {
-        AddPackagesToArgs(aptArgs, launchArgs.targetData);
+        AddPackagesToArgs(launchArgs.targetData, &aptArgs);
     }
 
     if (aptArgs.size() == argsCount)
@@ -272,10 +274,10 @@ ADUShellTaskResult Remove(const ADUShell_LaunchArguments& launchArgs)
 
 /**
  * @brief Run "apt-get -y install --auto-remove" command in a child process.
- * 
- * --auto-remove option is used to remove packages that were automatically installed to 
+ *
+ * --auto-remove option is used to remove packages that were automatically installed to
  * satisfy dependencies for other packages and are now no longer needed.
- * 
+ *
  * @param launchArgs An adu-shell launch arguments.
  * @return A result from child process.
  */
@@ -289,7 +291,7 @@ ADUShellTaskResult RemoveUnusedDependencies(const ADUShell_LaunchArguments& /*la
 
 /**
  * @brief Runs "apt-get -y remove" and "apt-get -y install --auto-remove" commands in a child process.
- * 
+ *
  * @param launchArgs An adu-shell launch arguments.
  * @return A result from child process.
  */

@@ -2,7 +2,8 @@
  * @file jws_utils.h
  * @brief Provides helper methods for parsing and verifying JSON Web Keys and JSON Web Tokens
  * @details The user should note that the following library expects the caller to check the inputs for malicious intent (e.g. non-utf-8 characters) and insure that all strings are null-terminated.
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 
 /**

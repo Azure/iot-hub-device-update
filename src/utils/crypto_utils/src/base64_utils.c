@@ -2,7 +2,8 @@
  * @file base64_utils.c
  * @brief Implementation for Base64 encoding and decoding
  *
- * @copyright Copyright (c) 2020, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #include "base64_utils.h"
 #include <azure_c_shared_utility/azure_base64.h>

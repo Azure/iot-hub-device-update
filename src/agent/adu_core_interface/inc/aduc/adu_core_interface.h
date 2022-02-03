@@ -2,20 +2,24 @@
  * @file adu_core_interface.h
  * @brief Methods to communicate with "urn:azureiot:AzureDeviceUpdateCore:1" interface.
  *
- * @copyright Copyright (c) 2019, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
  */
 #ifndef ADUC_ADU_CORE_INTERFACE_H
 #define ADUC_ADU_CORE_INTERFACE_H
 
-#include "aduc/adu_core_json.h" // ADUCITF_State
-#include "aduc/result.h" // ADUC_Result
+#include <aduc/adu_core_json.h> // ADUCITF_State
 #include <aduc/c_utils.h>
-#include <iothub_device_client_ll.h>
+#include <aduc/client_handle.h>
+#include <aduc/result.h> // ADUC_Result
+#include <aduc/types/workflow.h>
+#include <azureiot/iothub_client_core_common.h>
 #include <stdbool.h>
 
 EXTERN_C_BEGIN
 
 struct tagADUC_UpdateId;
+typedef void* ADUC_WorkflowHandle;
 
 //
 // Registration/Unregistration
@@ -24,7 +28,7 @@ struct tagADUC_UpdateId;
 /**
  * @brief Handle for communication to service.
  */
-extern IOTHUB_DEVICE_CLIENT_LL_HANDLE g_iotHubClientHandleForADUComponent;
+extern ADUC_ClientHandle g_iotHubClientHandleForADUComponent;
 
 /**
  * @brief Initialize the interface.
@@ -47,7 +51,7 @@ void AzureDeviceUpdateCoreInterface_Connected(void* componentContext);
  * @brief Called regularly after the device connected to the IoT Hub.
  *
  * This allows an interface implementation to do work in a cooperative multitasking environment.
- * 
+ *
  * @param componentContext Context object from Create.
  */
 void AzureDeviceUpdateCoreInterface_DoWork(void* componentContext);
@@ -60,14 +64,10 @@ void AzureDeviceUpdateCoreInterface_DoWork(void* componentContext);
 void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext);
 
 /**
- * @brief A callback for an 'azureDeviceUpdateAgent' component's property update events.
+ * @brief A callback for an 'deviceUpdate' component's property update events.
  */
 void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceClient,
-    const char* propertyName,
-    JSON_Value* propertyValue,
-    int version,
-    void* context);
+    ADUC_ClientHandle clientHandle, const char* propertyName, JSON_Value* propertyValue, int version, void* context);
 
 //
 // Reporting
@@ -76,41 +76,17 @@ void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
 /**
  * @brief Report a new state to the server.
  *
+ * @param workflowDataToken A pointer to workflow data object.
  * @param updateState State to report.
  * @param result Result to report (optional, can be NULL).
+ * @param installedUpdateId An installed update it JSON string.
+ * @returns true on reporting success.
  */
-void AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(ADUCITF_State updateState, const ADUC_Result* result);
-
-/**
- * @brief Report the 'UpdateId' and 'Idle' state to the server.
- *
- * @param updateId Id of and update installed on the device.
- */
-void AzureDeviceUpdateCoreInterface_ReportUpdateIdAndIdleAsync(const struct tagADUC_UpdateId* updateId);
-
-//
-// Unit Tests
-//
-
-#ifdef ENABLE_MOCKS
-
-typedef IOTHUB_CLIENT_RESULT (*MockIoTHubDeviceClient_LL_SendReportedState)(
-    IOTHUB_DEVICE_CLIENT_LL_HANDLE deviceHandle,
-    const unsigned char* reportedState,
-    size_t reportedStateLen,
-    IOTHUB_CLIENT_REPORTED_STATE_CALLBACK reportedStateCallback,
-    void* context);
-
-/**
- * @brief Dynamic mocking of IoTHubDeviceClient_LL_SendReportedState.
- *
- * Only available if ENABLE_MOCKS is set.
- *
- * @param function Mock function, or NULL for no mocking.
- */
-void ADUC_UT_SetSendReportedStateMock(MockIoTHubDeviceClient_LL_SendReportedState function);
-
-#endif
+_Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
+    ADUC_WorkflowDataToken workflowDataToken,
+    ADUCITF_State updateState,
+    const ADUC_Result* result,
+    const char* installedUpdateId);
 
 EXTERN_C_END
 
