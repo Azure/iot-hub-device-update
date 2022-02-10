@@ -15,6 +15,8 @@ include (find_curl_and_import_libcurl)
 compileasc99 ()
 disablertti ()
 
+set (CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic")
+
 # Used to find and include the CURL::libcurl imported libary
 find_curl_and_import_libcurl ()
 
