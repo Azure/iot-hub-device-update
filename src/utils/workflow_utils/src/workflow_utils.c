@@ -385,7 +385,8 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
                 if (sandboxCreateResult != 0)
                 {
                     Log_Error("Unable to create folder %s, error %d", workFolder, sandboxCreateResult);
-                    result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_DETACHED_UPDATE_MANIFEST_DOWNLOAD_FAILED;
+                    result.ExtendedResultCode =
+                        ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_DETACHED_UPDATE_MANIFEST_DOWNLOAD_FAILED;
                     goto done;
                 }
 
@@ -849,7 +850,7 @@ bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* format, ...
         }
         va_end(arg_list);
     }
-    
+
     return success;
 }
 
@@ -2603,6 +2604,25 @@ done:
     workflow_free_string(id0);
     workflow_free_string(id1);
     return result;
+}
+
+/**
+ * @brief Compare id of @p handle and @p workflowId. No memory is allocated or freed by this function.
+ *
+ * @param handle The handle for first workflow id.
+ * @param workflowId The c-string for the second workflow id.
+ * @return int Returns 0 if ids are equal.
+ */
+bool workflow_isequal_id(ADUC_WorkflowHandle handle, const char* workflowId)
+{
+    const char* id = workflow_peek_id(handle);
+    if (id == NULL)
+    {
+        Log_Error("invalid handle: null id");
+        return false;
+    }
+
+    return workflowId != NULL && strcmp(id, workflowId) == 0;
 }
 
 /**
