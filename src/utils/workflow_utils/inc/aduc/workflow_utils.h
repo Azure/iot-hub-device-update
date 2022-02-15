@@ -195,7 +195,6 @@ const char* workflow_peek_retryTimestamp(ADUC_WorkflowHandle handle);
  */
 bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* pathFormat, ...);
 
-
 /**
  * @brief Get the work folder for this workflow.
  *
@@ -488,7 +487,24 @@ void workflow_update_for_retry(ADUC_WorkflowHandle handle);
 //
 // Misc.
 //
+
+/**
+ * @brief Compare id of @p handle0 and @p handle1
+ *
+ * @param handle0 The workflow handle containing the first workflow id.
+ * @param handle1 The workflow handle containing the second workflow id.
+ * @return 0 if ids are equal.
+ */
 int workflow_id_compare(ADUC_WorkflowHandle handle0, ADUC_WorkflowHandle handle1);
+
+/**
+ * @brief Compare id of @p handle and @p workflowId. No memory is allocated or freed by this function.
+ *
+ * @param handle The handle for first workflow id.
+ * @param workflowId The c-string for the second workflow id.
+ * @return bool Returns true if ids are equal.
+ */
+bool workflow_isequal_id(ADUC_WorkflowHandle handle, const char* workflowId);
 
 /**
  * @brief Create a new workflow data handler using base workflow and serialized 'instruction' json string.

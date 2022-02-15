@@ -72,7 +72,7 @@ static void Mock_Idle_Callback(ADUC_Token token, const char* workflowId)
 {
     CHECK(token != nullptr);
     CHECK(workflowId != nullptr);
-    CHECK(strcmp(workflowId, "action_bundle") == 0);
+    CHECK(strcmp(workflowId, "e99c69ca-3188-43a3-80af-310616c7751d") == 0);
 
     // call the original update callback
     REQUIRE(s_platform_idle_callback != nullptr);
@@ -477,7 +477,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
         REQUIRE(errno == EEXIST);
     }
 
-    s_expectedWorkflowIdWhenIdle = "action_bundle";
+    s_expectedWorkflowIdWhenIdle = "e99c69ca-3188-43a3-80af-310616c7751d";
 
     std::mutex workCompletionCallbackMTX;
     std::unique_lock<std::mutex> lock(workCompletionCallbackMTX);
@@ -496,7 +496,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
     workflowData.StartupIdleCallSent = true;
 
     std::string workflow_test_process_deployment = slurpTextFile(std::string{ ADUC_TEST_DATA_FOLDER } + "/workflow_reboot/updateActionForActionBundle.json");
-    ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment.c_str(), false /* forceDeferral */); // NOLINT
+    ADUC_Workflow_HandlePropertyUpdate(&workflowData, reinterpret_cast<const unsigned char*>(workflow_test_process_deployment.c_str()), false /* forceDeferral */); // NOLINT
 
     {
         std::unique_lock<std::mutex> lock(cv_mutex);
@@ -520,7 +520,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
     //
 
     Reset_Mocks_State();
-    s_expectedWorkflowIdWhenIdle = "action_bundle";
+    s_expectedWorkflowIdWhenIdle = "e99c69ca-3188-43a3-80af-310616c7751d";
 
     // This simulates when workflowdata is created when adu interface has just connected
     WorkflowRebootManagedWorkflowData managedStartupWorkflowDataAfterReboot;
@@ -534,7 +534,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
     // then call HandlePropertyUpdate with latest twin JSON.
     // Ensure that was in progress properly when it goes to idle
     ADUC_Workflow_HandleStartupWorkflowData(&startupWorkflowDataAfterReboot);
-    ADUC_Workflow_HandlePropertyUpdate(&startupWorkflowDataAfterReboot, (const unsigned char*)workflow_test_process_deployment.c_str(), false /* forceDeferral */);
+    ADUC_Workflow_HandlePropertyUpdate(&startupWorkflowDataAfterReboot, reinterpret_cast<const unsigned char*>(workflow_test_process_deployment.c_str()), false /* forceDeferral */);
 
     CHECK(s_SendReportedStateValues.reportedStates.size() == 1);
 
@@ -545,6 +545,14 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
     std::string actualClientReportingString_formatted = json_serialize_to_string_pretty(value);
     REQUIRE_THAT(actualClientReportingString_formatted + "\n", Equals(expectedClientReportingString));
 
+    REQUIRE_THAT(startupWorkflowDataAfterReboot.LastCompletedWorkflowId, Equals("e99c69ca-3188-43a3-80af-310616c7751d"));
+
     wait_for_workflow_complete();
 
+    // Now simulate a duplicate workflow request due to token expiry connection refresh
+    s_SendReportedStateValues.reportedStates.clear();
+    ADUC_Workflow_HandlePropertyUpdate(&startupWorkflowDataAfterReboot, reinterpret_cast<const unsigned char*>(workflow_test_process_deployment.c_str()), false /* forceDeferral */);
+    CHECK(s_SendReportedStateValues.reportedStates.size() == 0); // did not do a duplicate report but ignored it
+
+    wait_for_workflow_complete();
 }

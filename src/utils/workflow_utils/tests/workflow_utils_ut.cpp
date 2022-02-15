@@ -661,3 +661,83 @@ TEST_CASE("Mininum update manifest version check - 1")
     CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION);
     workflow_free(handle);
 }
+
+// clang-format off
+#define WORKFLOW_ID_COMPARE_0_UUID "e99c69ca-3188-43a3-80af-310616c7751d"
+const char* manifest_workflow_id_compare_0 =
+    R"( {                    )"
+    R"(     "workflow": {    )"
+    R"(         "action": 0, )"
+    R"(         "id": "e99c69ca-3188-43a3-80af-310616c7751d" )"
+    R"(      },  )"
+    R"(     "updateManifest": "{\"manifestVersion\":\"3\",\"updateId\":{\"provider\":\"contoso\",\"name\":\"virtual-vacuum\",\"version\":\"1.1\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"v1\",\"compatibility\":[{\"DeviceManufacturer\":\"contoso\",\"DeviceModel\":\"virtual-vacuum\"}],\"bundledUpdates\":[{\"fileId\":\"c7f95b5a4b0b328a\",\"fileName\":\"contoso.virtual-motor.1.1.updatemanifest.json\",\"sizeInBytes\":800,\"hashes\":{\"sha256\":\"KBJ8BKKZn3c1/Yo4sslPiiHVqCAk+aFfHBg8uNuTjLs=\"}}],\"createdDateTime\":\"2021-06-24T01:51:55.5872972Z\"}", )"
+    R"(     "updateManifestSignature": "eyJhbGciOiJSUzI1NiIsInNqd2siOiJleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SWtGRVZTNHlNREEzTURJdVVpNVVJbjAuZXlKcmRIa2lPaUpTVTBFaUxDSnVJam9pZGtwYWJGRjFjM1J3T1RsUFRpOXJXWEJ4TlVveFRtdG1hMGxDTjNrdldVbzJNbWRrVjJWRFlteE5XWGt3WjNRd1VVVjZXVGR4TjI1UFJHMDJTbXQxYldoTVpuTTNaa1JCVTA4elJIaG5SVlE0Y1dkWmQyNVdhMFpsTVVkVVowZEVXR28xVTFGQ2VIQkxVRWxQTlVRclZ6TXdSSEpKTmxGSk4xRm1hVFpRWmxaT2FsVlVTRkI2U0VaNWFFMVRUVnByYWxreGVFeFBNMDFSWjBobmRXUjFNV1pzU0hGREszUmlhbms1WTI0emVtcDBNM2hUVWpKbU9URkRVa0p5VWxRelJ6Vm1WbFkxVjA1U1EwOWlWVU51YUdNeWFHaHlSRU15V0dreFFWaHliazlRZDNWRFJFbEZkSFIzYjBzd1QyNVFjV3BLVHk5SVVqRjJMelJPY3l0S1YwOU1VRTU0ZW1aRlNqSnBXVTlSWkdwbFpteEJPRVoyVFhWMGVYVndaVXRwUTJsclYzY3lOWFpwYjAxUldWSXdiMVozUjFwMU16aG1PSFJvTVVoRlZFSjJkVVZWTDFkeGVIQllXbVJQUm5wa09VTkhabVZsTW5FMGIzcFFNQzlQVUUxRWQxQlRNRzVZWm0xYVVHUlhhWHBwVDNWRlUwSndVRko1TjFwcFJYSjVSbVpNWjJnemNVWkVXQ3RYZDB3eFdXWmxaRzU1V1N0cFVWWjNiaXRpVTNWalVHeFRlRXdyUmxJNVNuZFFaRGhNZUU1bmFHUnZZbTFCTjA1MmNXSkNaakp6Wld0dE1HUkpTa0pRTm5wc2MxQmxURU5ZVW1VMU1IbE9SVk5rYUhWRlFuVnhNV1k0Y1ZZek1VVklSVmx6V0dRMGMwWm5WMVZ2Wm5kM1dIaFBTM0FpTENKbElqb2lRVkZCUWlJc0ltRnNaeUk2SWxKVE1qVTJJaXdpYTJsa0lqb2lRVVJWTGpJd01EY3dNaTVTTGxOVUluMC5RS0ktckVJSXBIZTRPZVd1dkN4cFNYam1wbC05czNlN1d2ZGRPcFNnR2dJaUN5T1hPYThjSFdlbnpzSFVMTUZBZEF0WVBnM2ZVTnl3QUNJOEI2U044UGhUc3E5TFg4QjR2c0l2QlZ2S2FrTU1ucjRuZXRlVHN5V0NJbEhBeG4ydThzSlQ3amVzMmtFQ2ZrNnpBeS16cElSSXhYaF8yVEl5Y2RNLVU0UmJYVDhwSGpPUTVfZTRnSFRCZjRlODRaWTdsUEw0RGtTa3haR1dnaERhOTFGVjlXbjRtc050eDdhMEJ3NEtTMURVd1c2eXE0c2diTDFncVl6VG04bENaSDJOb1pDdjZZUUd4YVE5UkJ1ek5Eb0VMb0RXXzB4S3V1VzFaa3UxSDN6c3lZNlNJMVp0bkFkdDAxcmxIck5fTTlKdTBZM3EyNzJiRWxWSnVnN3F6cGF5WXFucllOMTBHRWhIUW9KTkRxZnlPSHNLRG9FbTNOR1pKY2FSWVl4eHY2SVZxTFJDaFZidnJ3ekdkTXdmME95aE52THFGWlhMS1RWMmhPX2t6MXZWaVNwRi1PVXVWbW5uRC1ZMXFQb28xSTBJeVFYallxaGNlME01UkhiQ1drVk1Qbk5jZHFMQzZlTWhiTjJGT1pHSUxSOVRqcDIyMmxucGFTbnVmMHlVbDF4MiJ9.eyJzaGEyNTYiOiJneUNWNm10bjd6ZDZhNGFpVzlGZ1c1c2hqaE5ubXVjNjVJbXJNbmo4ZDJrPSJ9.gz9abderaPSVXLP9AcsUS6OzabI-n2MLD8CZCP9cct0imQCLWZ0kEOX6G3wCSNgdvvTpocTYD0O5dZiDkzcYMzKJUr3sDOyjgxTYYLy51YCBcNKz3mcHA3bPZFBgMqmkZrdXvjp50sx612CBPbleVWF61tpqdbPzChOpCVL4EdHYgn8DfDx5qPa4EAgrnZH2WJrKuKo9JJeXuNNut3CMM7KVpHNgPgZ31LEYEZU__i904cqaMKUbY0s9KOVkHuuu8uiFB3Iisk9sgpv2tygCg-a0x7Dqaz9fI_wiT0D7Do9FRMCAqiEhiaYDAT6_3LEPgRfPJ4iesUG2NdDg4QWXzh3gy1QGOEACWSaswmIHg8moICJ3GH4VEjZ-AluqMU_FYI2KKcxyeU-96Y8SPlArYwxnGk0oIz-MBCgC9MvYuzJkr6DQuXaoNbMhxsRUaELnT7PdilWMr15EC7msDwmPWJdwMfX8Y2jh_MH5BNJZBgp76I_QgFK4WaLM6Y7GBcr9", )"
+    R"(     "fileUrls": { )"
+    R"(         "c7f95b5a4b0b328a": "http://dcsfe.int.adu.microsoft.com/westus2/intModuleIdTestInstance--intmoduleidtest/7349b36a88284d1d9daf850860ff1880/contoso.virtual-motor.1.1.updatemanifest.json", )"
+    R"(         "3671c4d30950daa9": "http://dcsfe.int.adu.microsoft.com/westus2/intModuleIdTestInstance--intmoduleidtest/cc4beac35ec249748b3972a6a2e9e9f6/contoso-motor-1.1-instructions.json", )"
+    R"(         "875773ba321fda6c": "http://dcsfe.int.adu.microsoft.com/westus2/intModuleIdTestInstance--intmoduleidtest/c78826e7b595400993ea2dc8995c5717/contoso-motor-fileinstaller", )"
+    R"(         "a85dc1692a0ff90a": "http://dcsfe.int.adu.microsoft.com/westus2/intModuleIdTestInstance--intmoduleidtest/e95d264d56b84fd288699c8f37489f1a/firmware.json" )"
+    R"(      }  )"
+    R"( } )";
+
+#define WORKFLOW_ID_COMPARE_1_UUID "680ceade-8860-4cab-81ec-818bf1f659d2"
+const char* manifest_workflow_id_compare_1 =
+    R"( {                    )"
+    R"(     "workflow": {    )"
+    R"(         "action": 0, )"
+    R"(         "id": "680ceade-8860-4cab-81ec-818bf1f659d2" )"
+    R"(      },  )"
+    R"(     "updateManifest": "{\"manifestVersion\":\"3\",\"updateId\":{\"provider\":\"contoso\",\"name\":\"virtual-vacuum\",\"version\":\"1.1\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"v1\",\"compatibility\":[{\"DeviceManufacturer\":\"contoso\",\"DeviceModel\":\"virtual-vacuum\"}],\"bundledUpdates\":[{\"fileId\":\"c7f95b5a4b0b328a\",\"fileName\":\"contoso.virtual-motor.1.1.updatemanifest.json\",\"sizeInBytes\":800,\"hashes\":{\"sha256\":\"KBJ8BKKZn3c1/Yo4sslPiiHVqCAk+aFfHBg8uNuTjLs=\"}}],\"createdDateTime\":\"2021-06-24T01:51:55.5872972Z\"}", )"
+    R"(     "updateManifestSignature": "eyJhbGciOiJSUzI1NiIsInNqd2siOiJleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SWtGRVZTNHlNREEzTURJdVVpNVVJbjAuZXlKcmRIa2lPaUpTVTBFaUxDSnVJam9pZGtwYWJGRjFjM1J3T1RsUFRpOXJXWEJ4TlVveFRtdG1hMGxDTjNrdldVbzJNbWRrVjJWRFlteE5XWGt3WjNRd1VVVjZXVGR4TjI1UFJHMDJTbXQxYldoTVpuTTNaa1JCVTA4elJIaG5SVlE0Y1dkWmQyNVdhMFpsTVVkVVowZEVXR28xVTFGQ2VIQkxVRWxQTlVRclZ6TXdSSEpKTmxGSk4xRm1hVFpRWmxaT2FsVlVTRkI2U0VaNWFFMVRUVnByYWxreGVFeFBNMDFSWjBobmRXUjFNV1pzU0hGREszUmlhbms1WTI0emVtcDBNM2hUVWpKbU9URkRVa0p5VWxRelJ6Vm1WbFkxVjA1U1EwOWlWVU51YUdNeWFHaHlSRU15V0dreFFWaHliazlRZDNWRFJFbEZkSFIzYjBzd1QyNVFjV3BLVHk5SVVqRjJMelJPY3l0S1YwOU1VRTU0ZW1aRlNqSnBXVTlSWkdwbFpteEJPRVoyVFhWMGVYVndaVXRwUTJsclYzY3lOWFpwYjAxUldWSXdiMVozUjFwMU16aG1PSFJvTVVoRlZFSjJkVVZWTDFkeGVIQllXbVJQUm5wa09VTkhabVZsTW5FMGIzcFFNQzlQVUUxRWQxQlRNRzVZWm0xYVVHUlhhWHBwVDNWRlUwSndVRko1TjFwcFJYSjVSbVpNWjJnemNVWkVXQ3RYZDB3eFdXWmxaRzU1V1N0cFVWWjNiaXRpVTNWalVHeFRlRXdyUmxJNVNuZFFaRGhNZUU1bmFHUnZZbTFCTjA1MmNXSkNaakp6Wld0dE1HUkpTa0pRTm5wc2MxQmxURU5ZVW1VMU1IbE9SVk5rYUhWRlFuVnhNV1k0Y1ZZek1VVklSVmx6V0dRMGMwWm5WMVZ2Wm5kM1dIaFBTM0FpTENKbElqb2lRVkZCUWlJc0ltRnNaeUk2SWxKVE1qVTJJaXdpYTJsa0lqb2lRVVJWTGpJd01EY3dNaTVTTGxOVUluMC5RS0ktckVJSXBIZTRPZVd1dkN4cFNYam1wbC05czNlN1d2ZGRPcFNnR2dJaUN5T1hPYThjSFdlbnpzSFVMTUZBZEF0WVBnM2ZVTnl3QUNJOEI2U044UGhUc3E5TFg4QjR2c0l2QlZ2S2FrTU1ucjRuZXRlVHN5V0NJbEhBeG4ydThzSlQ3amVzMmtFQ2ZrNnpBeS16cElSSXhYaF8yVEl5Y2RNLVU0UmJYVDhwSGpPUTVfZTRnSFRCZjRlODRaWTdsUEw0RGtTa3haR1dnaERhOTFGVjlXbjRtc050eDdhMEJ3NEtTMURVd1c2eXE0c2diTDFncVl6VG04bENaSDJOb1pDdjZZUUd4YVE5UkJ1ek5Eb0VMb0RXXzB4S3V1VzFaa3UxSDN6c3lZNlNJMVp0bkFkdDAxcmxIck5fTTlKdTBZM3EyNzJiRWxWSnVnN3F6cGF5WXFucllOMTBHRWhIUW9KTkRxZnlPSHNLRG9FbTNOR1pKY2FSWVl4eHY2SVZxTFJDaFZidnJ3ekdkTXdmME95aE52THFGWlhMS1RWMmhPX2t6MXZWaVNwRi1PVXVWbW5uRC1ZMXFQb28xSTBJeVFYallxaGNlME01UkhiQ1drVk1Qbk5jZHFMQzZlTWhiTjJGT1pHSUxSOVRqcDIyMmxucGFTbnVmMHlVbDF4MiJ9.eyJzaGEyNTYiOiJneUNWNm10bjd6ZDZhNGFpVzlGZ1c1c2hqaE5ubXVjNjVJbXJNbmo4ZDJrPSJ9.gz9abderaPSVXLP9AcsUS6OzabI-n2MLD8CZCP9cct0imQCLWZ0kEOX6G3wCSNgdvvTpocTYD0O5dZiDkzcYMzKJUr3sDOyjgxTYYLy51YCBcNKz3mcHA3bPZFBgMqmkZrdXvjp50sx612CBPbleVWF61tpqdbPzChOpCVL4EdHYgn8DfDx5qPa4EAgrnZH2WJrKuKo9JJeXuNNut3CMM7KVpHNgPgZ31LEYEZU__i904cqaMKUbY0s9KOVkHuuu8uiFB3Iisk9sgpv2tygCg-a0x7Dqaz9fI_wiT0D7Do9FRMCAqiEhiaYDAT6_3LEPgRfPJ4iesUG2NdDg4QWXzh3gy1QGOEACWSaswmIHg8moICJ3GH4VEjZ-AluqMU_FYI2KKcxyeU-96Y8SPlArYwxnGk0oIz-MBCgC9MvYuzJkr6DQuXaoNbMhxsRUaELnT7PdilWMr15EC7msDwmPWJdwMfX8Y2jh_MH5BNJZBgp76I_QgFK4WaLM6Y7GBcr9", )"
+    R"(     "fileUrls": { )"
+    R"(         "c7f95b5a4b0b328a": "http://dcsfe.int.adu.microsoft.com/westus2/intModuleIdTestInstance--intmoduleidtest/7349b36a88284d1d9daf850860ff1880/contoso.virtual-motor.1.1.updatemanifest.json", )"
+    R"(         "3671c4d30950daa9": "http://dcsfe.int.adu.microsoft.com/westus2/intModuleIdTestInstance--intmoduleidtest/cc4beac35ec249748b3972a6a2e9e9f6/contoso-motor-1.1-instructions.json", )"
+    R"(         "875773ba321fda6c": "http://dcsfe.int.adu.microsoft.com/westus2/intModuleIdTestInstance--intmoduleidtest/c78826e7b595400993ea2dc8995c5717/contoso-motor-fileinstaller", )"
+    R"(         "a85dc1692a0ff90a": "http://dcsfe.int.adu.microsoft.com/westus2/intModuleIdTestInstance--intmoduleidtest/e95d264d56b84fd288699c8f37489f1a/firmware.json" )"
+    R"(      }  )"
+    R"( } )";
+
+// clang-format on
+
+TEST_CASE("workflow_id_compare")
+{
+    ADUC_Result result = {};
+    ADUC_WorkflowHandle handle0 = nullptr;
+    ADUC_WorkflowHandle handle1 = nullptr;
+    ADUC_WorkflowHandle handleNull = nullptr;
+
+    result = workflow_init(manifest_workflow_id_compare_0, true, &handle0);
+    REQUIRE(result.ResultCode > 0);
+
+    result = workflow_init(manifest_workflow_id_compare_1, true, &handle1);
+    REQUIRE(result.ResultCode > 0);
+
+    // different
+    CHECK(workflow_id_compare(handle0, handle1) != 0);
+
+    // same
+    CHECK(workflow_id_compare(handle0, handle0) == 0);
+
+    workflow_free(handle0);
+    workflow_free(handle1);
+}
+
+TEST_CASE("workflow_isequal_id")
+{
+    ADUC_Result result = {};
+    ADUC_WorkflowHandle handle0 = nullptr;
+
+    result = workflow_init(manifest_workflow_id_compare_0, true, &handle0);
+    REQUIRE(result.ResultCode > 0);
+
+    // NULL
+    CHECK_FALSE(workflow_isequal_id(handle0, NULL));
+
+    // different
+    CHECK_FALSE(workflow_isequal_id(handle0, WORKFLOW_ID_COMPARE_1_UUID));
+
+    // same
+    CHECK(workflow_isequal_id(handle0, WORKFLOW_ID_COMPARE_0_UUID));
+
+    workflow_free(handle0);
+}
