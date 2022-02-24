@@ -92,9 +92,9 @@ The states of the state machine are defined in the `ADUCITF_State` enum in [upda
 
 ### State Transitions
 
-A state transition is describe by the `ADUC_WorkflowHandlerMapEntry` struct in [agent_workflow.c](../../src/agent/adu_core_interface/src/agent_workflow.c).
+A state transition is describe by the `ADUC_WorkflowHandlerMapEntry` struct in [agent_workflow.c](../../src/adu_workflow/src/agent_workflow.c).
 
-The state transitions are defined in the `workflowHandlerMap` array in [agent_workflow.c](../../src/agent/adu_core_interface/src/agent_workflow.c).
+The state transitions are defined in the `workflowHandlerMap` array in [agent_workflow.c](../../src/adu_workflow/src/agent_workflow.c).
 
 ### State Machine Diagram
 ![State Machine Diagram](images/goalstate-state-diagram.png)
@@ -117,6 +117,6 @@ Similarly, if the service operator issues a retry, the agent will cancel any cur
 
 When a service operator issues a cancellation of the current workflow processing, the agent will attempt to cancel it. This leads to a call to the Cancel method of the ContentHandler that is registered for the update's update type.
 
-The content handler should interupt the current in-progress operation (e.g. Download) so that the operation exits and calls WorkCompletionCallback to complete the current operation.
+The content handler should interrupt the current in-progress operation (e.g. Download) so that the operation exits and calls WorkCompletionCallback to complete the current operation.
 
 The agent will then report to the cloud a result code of ADUC_Result_Failure_Cancelled(-1) and transition to Idle state.
