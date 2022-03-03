@@ -1,0 +1,105 @@
+# Template: Steps to build ADU Agent targeting ARM architecture.
+# Consume this steps template in one or more jobs by passing in parameter values.
+
+parameters:
+  - name: targetOs # example: ubuntu1804
+    type: string
+  - name: targetArch # example: amd64
+    type: string
+
+steps:
+
+  - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+    displayName: "Component Detection"
+    inputs:
+      sourceScanPath: src
+
+  - task: Docker@2
+    displayName: Login to ACR
+    inputs:
+      command: login
+      containerRegistry: aduccontainerregistry
+      repository: ${{parameters.targetOs}}-${{parameters.targetArch}}
+
+  - task: Docker@2
+    displayName: Pull latest build image
+    inputs:
+      command: pull
+      containerRegistry: aduccontainerregistry
+      arguments: "aduccontainerregistry.azurecr.io/${{parameters.targetOs}}-${{parameters.targetArch}}:latest"
+
+  - bash: |
+      echo "Running whoami"
+      whoami
+      echo "Register QEMU"
+      sudo docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      echo "Listing running containers"
+      sudo docker ps -a
+      echo "Listing current images"
+      sudo docker images
+    displayName: "Prebuild"
+    condition: always()
+  - bash: |
+      sudo docker run -d -t --rm -v $(Build.SourcesDirectory):/iot-hub-device-update -v ~/.gitconfig:/etc/.gitconfig --name ARMcontainer aduccontainerregistry.azurecr.io/${{parameters.targetOs}}-${{parameters.targetArch}}:latest bash
+    displayName: "Run docker container"
+  - bash: |
+      sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/build.sh --clean --build-unit-tests --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --static-analysis clang-tidy,cppcheck --out-dir out-${{parameters.targetOs}}-${{parameters.targetArch}}
+    displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
+  - bash: |
+      cp out-${{parameters.targetOs}}-${{parameters.targetArch}}/*.deb $(Build.ArtifactStagingDirectory)
+      cp out-${{parameters.targetOs}}-${{parameters.targetArch}}/src/agent/out-${{parameters.targetOs}}-${{parameters.targetArch}}/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgent
+    displayName: "Stage build artifacts (Deb package, agent and docs)"
+    condition: ne(variables['Build.Reason'], 'PullRequest')
+  - bash: |
+      sudo docker exec -w /iot-hub-device-update/out-${{parameters.targetOs}}-${{parameters.targetArch}} ARMcontainer ctest -T test -V --output-on-failure
+    displayName: "Run Unit Tests: linux-MinSizeRel"
+  - task: PublishTestResults@2
+    displayName: "Publish Unit Test Results: linux-MinSizeRel"
+    condition: succeededOrFailed() # Run this task even if tests fail.
+    inputs:
+      testResultsFormat: cTest
+      testResultsFiles: "Testing/**/*.xml"
+      searchFolder: out-${{parameters.targetOs}}-${{parameters.targetArch}}
+      failTaskOnFailedTests: true
+      publishRunAttachments: false # Attachments are not supported for CTest
+
+  - bash: |
+      sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/build.sh --clean --build-unit-tests --platform-layer linux --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir out-${{parameters.targetOs}}-${{parameters.targetArch}}
+    displayName: "Build Client and Unit Tests: linux-Debug"
+  - bash: |
+      sudo docker exec -w /iot-hub-device-update/out-${{parameters.targetOs}}-${{parameters.targetArch}} ARMcontainer ctest -T test -V --output-on-failure
+    displayName: "Run Unit Tests: linux-Debug"
+  - task: PublishTestResults@2
+    displayName: "Publish Unit Test Results: linux-Debug"
+    condition: succeededOrFailed() # Run this task even if tests fail.
+    inputs:
+      testResultsFormat: cTest
+      testResultsFiles: "Testing/**/*.xml"
+      searchFolder: out-${{parameters.targetOs}}-${{parameters.targetArch}}
+      failTaskOnFailedTests: true
+      publishRunAttachments: false # Attachments are not supported for CTest
+
+  - task: PublishPipelineArtifact@0
+    displayName: "Publish Pipeline Artifacts"
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    inputs:
+      artifactName: "adu-client-${{parameters.targetOs}}-${{parameters.targetArch}}"
+      targetPath: "$(Build.ArtifactStagingDirectory)"
+
+    # Ignore SC2164: Use 'cd ... || exit' or 'cd ... || return' in case cd fails.
+    #   We usually want to return an error code from a specific, previous command
+    #   even if popd, pushd, or cd fails.
+    # Ignore SC2209: Use var=$(command) to assign output (or quote to assign string).
+    #   We use 'ret=return' or 'ret=exit' to support dot sourcing.
+  - bash: |
+      sudo apt install -y shellcheck
+      shellcheck -s bash -e SC2164 -e SC2209 $(find -name "*.sh")
+      exit $?
+    displayName: " Run ShellCheck"
+    # Stop the running container at the end of the build job
+    # Remove output directory to prevent persisting across build jobs
+  - bash: |
+      sudo docker stop ARMcontainer
+      sudo rm -rf out-${{parameters.targetOs}}-${{parameters.targetArch}}
+    displayName: "Postbuild"
+    condition: always()
