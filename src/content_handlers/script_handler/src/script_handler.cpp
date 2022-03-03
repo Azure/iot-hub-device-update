@@ -200,7 +200,7 @@ done:
  * @brief A helper function that return a script file path, and arguments list.
  *
  * @param workflowHandle An 'Install' phase workflow data containing script information and selected component.
- * @param resultFilePath A full path of the file containing seiralized ADUC_Result value returned by the script.
+ * @param resultFilePath A full path of the file containing serialized ADUC_Result value returned by the script.
  * @param[out] scriptFilePath A output script file path.
  * @param[out] args An output script arguments list.
  * @return ADUC_Result
