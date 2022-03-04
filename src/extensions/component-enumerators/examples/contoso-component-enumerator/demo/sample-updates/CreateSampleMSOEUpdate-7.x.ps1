@@ -91,7 +91,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $motorScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-motor-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateManufacturer-$RefUpdateName-$RefUpdateVersion-step-0";   `
+                                'installedCriteria'="$RefUpdateVersion";   `
                                 'arguments'="--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -102,7 +102,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $motorScriptFile, $motorFirmwareFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-motor-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateManufacturer-$RefUpdateName-$RefUpdateVersion-step-1"; `
+                                'installedCriteria'="$RefUpdateVersion"; `
                                 "arguments"="--firmware-file motor-firmware-$motorsFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -113,7 +113,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $motorScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-motor-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateManufacturer-$RefUpdateName-$RefUpdateVersion-step-2"; `
+                                'installedCriteria'="$RefUpdateVersion"; `
                                 "arguments"="--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"  `
                             }   `
                             `
@@ -185,7 +185,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $cameraScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateManufacturer-$RefUpdateName-$RefUpdateVersion-step-0";   `
+                                'installedCriteria'="$RefUpdateVersion";   `
                                 'arguments'="--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -196,7 +196,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $cameraScriptFile, $cameraFirmwareFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateManufacturer-$RefUpdateName-$RefUpdateVersion-step-1"; `
+                                'installedCriteria'="$RefUpdateVersion"; `
                                 "arguments"="--firmware-file camera-firmware-$camerasFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -207,7 +207,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $cameraScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateManufacturer-$RefUpdateName-$RefUpdateVersion-step-2"; `
+                                'installedCriteria'="$RefUpdateVersion"; `
                                 "arguments"="--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"  `
                             }   `
                             `
