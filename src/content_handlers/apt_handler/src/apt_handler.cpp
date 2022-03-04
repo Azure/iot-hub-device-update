@@ -309,6 +309,7 @@ ADUC_Result AptHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
         result.ResultCode = ADUC_Result_Failure;
         result.ExtendedResultCode = ADUC_ERC_APT_HANDLER_PACKAGE_INSTALL_FAILURE;
         Log_Error("APT packages install failed. (Exit code: %d)", aptExitCode);
+        goto done;
     }
 
     result = { ADUC_Result_Install_Success };
