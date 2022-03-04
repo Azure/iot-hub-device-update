@@ -93,7 +93,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $steamerScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-steamer-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateManufacturer-$RefUpdateName-$RefUpdateVersion-step-0";   `
+                                'installedCriteria'="$RefUpdateVersion";   `
                                 'arguments'="--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -104,7 +104,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $steamerScriptFile, $steamerFirmwareFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-steamer-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateManufacturer-$RefUpdateName-$RefUpdateVersion-step-1"; `
+                                'installedCriteria'="$RefUpdateVersion"; `
                                 "arguments"="--firmware-file steamer-firmware-$steamersFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -115,7 +115,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $steamerScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-steamer-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateManufacturer-$RefUpdateName-$RefUpdateVersion-step-2"; `
+                                'installedCriteria'="$RefUpdateVersion"; `
                                 "arguments"="--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"  `
                             }   `
                             `
