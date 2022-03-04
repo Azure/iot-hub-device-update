@@ -36,12 +36,26 @@ namespace adushconst = Adu::Shell::Const;
 EXTERN_C_BEGIN
 
 /**
- * @brief Instantiates an Update Content Handler for 'microsoft/bundle:1' update type.
+ * @brief Instantiates an Update Content Handler for 'microsoft/script:1' update type.
  */
-ContentHandler* CreateUpdateContentHandlerExtension()
+ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
-    Log_Info("Instantiating an Update Content Handler for 'microsoft/script:1'");
-    return ScriptHandlerImpl::CreateContentHandler();
+    ADUC_Logging_Init(logLevel, "script-handler");
+    Log_Info("Instantiating an Update Content Handler for 'microsoft/script:1' update type.");
+    try
+    {
+        return ScriptHandlerImpl::CreateContentHandler();
+    }
+    catch (const std::exception& e)
+    {
+        Log_Error("Unhandled std exception: %s", e.what());
+    }
+    catch (...)
+    {
+        Log_Error("Unhandled exception");
+    }
+
+    return nullptr;
 }
 
 EXTERN_C_END
