@@ -1,11 +1,5 @@
 # How To Build the Device Update Agent
 
-Take a look at [dependencies](how-to-build-agent-code.md#dependencies-of-device-update-agent) before you get started. You can build the Device Update agent as a standlone solution or integrate it in your existing application or solution.
-
-* [Dependencies](how-to-build-agent-code.md#dependencies-of-device-update-agent)
-* [As a standalone solution](how-to-build-agent-code.md#as-a-standalone-solution)
-* [Integrate the Device Update agent in your existing application or solution](how-to-build-agent-code.md#integrate-the-device-update-agent-in-your-existing-application-or-solution)
-
 Take a look at [dependancies](how-to-build-agent-code.md#dependencies-of-device-update-agent) before you get started. You can build the Device Update agent as a standlone solution or integrate it in your existing application or solution.
 
 * [Dependencies](how-to-build-agent-code.md#dependencies-of-device-update-agent)
