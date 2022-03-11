@@ -108,6 +108,7 @@ You can modify the Simulator Update Handler source code to specify your own sear
             "resultDetails" : "<desired result details string>"
         },
         "*" : { // A fall back result for all unmatched 'installedCriteria' string
+                // IMPORTANT: For Update Manifest version 4.0 or later, only this fall-back result will be return.
             "resultCode" : <desired result code>, 
             "extendedResultCode" : <desired extended result code>,
             "resultDetails" : "<desired result details string>"

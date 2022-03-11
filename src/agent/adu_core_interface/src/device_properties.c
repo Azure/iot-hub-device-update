@@ -19,7 +19,7 @@
 /*
  * @brief The ADU interface id associated with the modelId for agent-orchestrated updates.
  */
-#define ADUC_DEVICEPROPERTIES_INTERFACEID "dtmi:azure:iot:deviceUpdate;1"
+#define ADUC_DEVICEPROPERTIES_DEVICEUPDATE_INTERFACEID "dtmi:azure:iot:deviceUpdate;1"
 
 /* @brief The adu client builder and version.
  * Consisting of BUILDER; component and ADUC_VERSION
@@ -112,11 +112,11 @@ _Bool DeviceProperties_AddInterfaceId(JSON_Object* devicePropsObj)
 {
     bool success = false;
 
-    JSON_Status jsonStatus = json_object_set_string(devicePropsObj, ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID, ADUC_DEVICEPROPERTIES_INTERFACEID);
+    JSON_Status jsonStatus = json_object_set_string(devicePropsObj, ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID, ADUC_DEVICEPROPERTIES_DEVICEUPDATE_INTERFACEID);
 
     if (jsonStatus != JSONSuccess)
     {
-        Log_Error("Could not serialize JSON field: %s value: %s", ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID, ADUC_DEVICEPROPERTIES_INTERFACEID);
+        Log_Error("Could not serialize JSON field: %s value: %s", ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID, ADUC_DEVICEPROPERTIES_DEVICEUPDATE_INTERFACEID);
         goto done;
     }
 

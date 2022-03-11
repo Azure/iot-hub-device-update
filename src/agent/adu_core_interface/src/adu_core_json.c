@@ -1,8 +1,8 @@
 /**
  * @file adu_core_json.c
- * @brief Defines types and methods required to parse JSON from the urn:azureiot:AzureDeviceUpdateCore:1 interface.
+ * @brief Defines types and methods required to parse JSON from the dtmi:azure:iot:deviceUpdate;1 interface.
  *
- * Note that the types in this file must be kept in sync with the AzureDeviceUpdateCore interface.
+ * Note that the types in this file must be kept in sync with the Device Update interface.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.

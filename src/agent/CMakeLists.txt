@@ -55,7 +55,8 @@ endif ()
 target_compile_definitions (
     ${target_name}
     PRIVATE ADUC_VERSION="${ADUC_VERSION}" ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
-            ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}")
+            ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}"
+            SUPPORTED_UPDATE_MANIFEST_VERSION=${SUPPORTED_UPDATE_MANIFEST_VERSION})
 
 # NOTE: the call to find_package for azure_c_shared_utility
 # must come before umqtt since their config.cmake files expect the aziotsharedutil target to already have been defined.

@@ -46,7 +46,8 @@ execute_process (
 if (DISTRIBUTOR_ID STREQUAL "Debian")
     # Debian does not support manufacturer and model file, so use a hardcoded value
     target_compile_definitions (${target_name} PRIVATE ADUC_MANUFACTURER_NAME="${DISTRIBUTOR_ID}"
-                                                       ADUC_MODEL_NAME="${DISTRIBUTOR_ID}")
+                                                       ADUC_MODEL_NAME="${DISTRIBUTOR_ID}"
+                                                       SUPPORTED_UPDATE_MANIFEST_VERSION=${SUPPORTED_UPDATE_MANIFEST_VERSION})
 elseif (DISTRIBUTOR_ID STREQUAL "Raspbian")
     # Raspbian does not support manufacturer and model file, so use a hardcoded value
     target_compile_definitions (${target_name} PRIVATE ADUC_MANUFACTURER_NAME="Raspberry Pi"

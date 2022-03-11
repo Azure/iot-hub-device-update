@@ -27,10 +27,6 @@
 #include <stdlib.h> // for calloc, atoi
 #include <string.h>
 
-// Starting from version 4, the update manifest can contain both embedded manifest,
-// or a downloadable update manifest file (files["manifest"] contains the update manifest file info)
-#define EMBEDDED_AND_DOWNLOADABLE_UPDATE_MANIFEST_VERSION 4
-
 #define DEFAULT_SANDBOX_ROOT_PATH ADUC_DOWNLOADS_FOLDER
 
 #define WORKFLOW_PROPERTY_FIELD_ID "_id"
@@ -63,11 +59,6 @@
  * @brief Maximum length for the 'resultDetails' string.
  */
 #define WORKFLOW_RESULT_DETAILS_MAX_LENGTH 1024
-
-/**
- * @brief Minimum supported Update Manifest version
- */
-#define MINIMUM_SUPPORTED_UPDATE_MANIFEST_VERSION 2
 
 EXTERN_C_BEGIN
 
@@ -364,74 +355,72 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
 
         // Starting from version 4, the update manifest can contain both embedded manifest,
         // or a downloadable update manifest file (files["manifest"] contains the update manifest file info)
-        if (manifestVersion >= EMBEDDED_AND_DOWNLOADABLE_UPDATE_MANIFEST_VERSION)
+        int sandboxCreateResult = -1;
+        const char* detachedManifestFileId = json_object_get_string(
+            wf->UpdateManifestObject, UPDATE_MANIFEST_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID);
+        if (!IsNullOrEmpty(detachedManifestFileId))
         {
-            int sandboxCreateResult = -1;
-            const char* detachedManifestFileId = json_object_get_string(
-                wf->UpdateManifestObject, UPDATE_MANIFEST_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID);
-            if (!IsNullOrEmpty(detachedManifestFileId))
+            // There's only 1 file entity when the primary update manifest is detached.
+            if (!workflow_get_update_file(handle_from_workflow(wf), 0, &fileEntity))
             {
-                // There's only 1 file entity when the primary update manifest is detached.
-                if (!workflow_get_update_file(handle_from_workflow(wf), 0, &fileEntity))
+                result.ExtendedResultCode =
+                    ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MISSING_DETACHED_UPDATE_MANIFEST_ENTITY;
+                goto done;
+            }
+
+            workFolder = workflow_get_workfolder(handle_from_workflow(wf));
+
+            sandboxCreateResult = ADUC_SystemUtils_MkSandboxDirRecursive(workFolder);
+            if (sandboxCreateResult != 0)
+            {
+                Log_Error("Unable to create folder %s, error %d", workFolder, sandboxCreateResult);
+                result.ExtendedResultCode =
+                    ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_DETACHED_UPDATE_MANIFEST_DOWNLOAD_FAILED;
+                goto done;
+            }
+
+            // Download the detached update manifest file.
+            result = ExtensionManager_Download(
+                fileEntity,
+                workflow_peek_id(handle_from_workflow(wf)),
+                workFolder,
+                (60 * 60 * 24) /* default : 24 hour */,
+                NULL /* downloadProgressCallback */);
+            if (IsAducResultCodeFailure(result.ResultCode))
+            {
+                workflow_set_result_details(
+                    handle_from_workflow(wf), "Cannot download primary detached update manifest file.");
+                goto done;
+            }
+            else
+            {
+                // Replace existing updateManifest with the one from detached update manifest file.
+                detachedUpdateManifestFilePath =
+                    STRING_construct_sprintf("%s/%s", workFolder, fileEntity->TargetFilename);
+                JSON_Object* rootObj =
+                    json_value_get_object(json_parse_file(STRING_c_str(detachedUpdateManifestFilePath)));
+                const char* updateManifestString =
+                    json_object_get_string(rootObj, ADUCITF_FIELDNAME_UPDATEMANIFEST);
+                JSON_Object* detachedManifest = json_value_get_object(json_parse_string(updateManifestString));
+                json_value_free(json_object_get_wrapping_value(rootObj));
+
+                if (detachedManifest == NULL)
                 {
-                    result.ExtendedResultCode =
-                        ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MISSING_DETACHED_UPDATE_MANIFEST_ENTITY;
+                    result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_DETACHED_UPDATE_MANIFEST;
                     goto done;
                 }
 
-                workFolder = workflow_get_workfolder(handle_from_workflow(wf));
-
-                sandboxCreateResult = ADUC_SystemUtils_MkSandboxDirRecursive(workFolder);
-                if (sandboxCreateResult != 0)
-                {
-                    Log_Error("Unable to create folder %s, error %d", workFolder, sandboxCreateResult);
-                    result.ExtendedResultCode =
-                        ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_DETACHED_UPDATE_MANIFEST_DOWNLOAD_FAILED;
-                    goto done;
-                }
-
-                // Download the detached update manifest file.
-                result = ExtensionManager_Download(
-                    fileEntity,
-                    workflow_peek_id(handle_from_workflow(wf)),
-                    workFolder,
-                    (60 * 60 * 24) /* default : 24 hour */,
-                    NULL /* downloadProgressCallback */);
-                if (IsAducResultCodeFailure(result.ResultCode))
-                {
-                    workflow_set_result_details(
-                        handle_from_workflow(wf), "Cannot download primary detached update manifest file.");
-                    goto done;
-                }
-                else
-                {
-                    // Replace existing updateManifest with the one from detached update manifest file.
-                    detachedUpdateManifestFilePath =
-                        STRING_construct_sprintf("%s/%s", workFolder, fileEntity->TargetFilename);
-                    JSON_Object* rootObj =
-                        json_value_get_object(json_parse_file(STRING_c_str(detachedUpdateManifestFilePath)));
-                    const char* updateManifestString =
-                        json_object_get_string(rootObj, ADUCITF_FIELDNAME_UPDATEMANIFEST);
-                    JSON_Object* detachedManifest = json_value_get_object(json_parse_string(updateManifestString));
-                    json_value_free(json_object_get_wrapping_value(rootObj));
-
-                    if (detachedManifest == NULL)
-                    {
-                        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_DETACHED_UPDATE_MANIFEST;
-                        goto done;
-                    }
-
-                    // Free old manifest value.
-                    json_value_free(json_object_get_wrapping_value(wf->UpdateManifestObject));
-                    wf->UpdateManifestObject = detachedManifest;
-                }
+                // Free old manifest value.
+                json_value_free(json_object_get_wrapping_value(wf->UpdateManifestObject));
+                wf->UpdateManifestObject = detachedManifest;
             }
         }
 
         if (validateManifest)
         {
-            if (manifestVersion < MINIMUM_SUPPORTED_UPDATE_MANIFEST_VERSION)
+            if (manifestVersion != SUPPORTED_UPDATE_MANIFEST_VERSION)
             {
+                Log_Error("Bad update manifest version: %d. Expected: %d", manifestVersion, SUPPORTED_UPDATE_MANIFEST_VERSION);
                 result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION;
                 goto done;
             }
@@ -1025,16 +1014,9 @@ char* workflow_get_installed_criteria(ADUC_WorkflowHandle handle)
 {
     char* installedCriteria = NULL;
 
-    // For Update Manifest V4, customer can specify installedCriteria in 'handlerProperties' map.
-    if (workflow_get_update_manifest_version(handle) >= EMBEDDED_AND_DOWNLOADABLE_UPDATE_MANIFEST_VERSION)
-    {
-        installedCriteria = workflow_copy_string(
-            workflow_peek_update_manifest_handler_properties_string(handle, ADUCITF_FIELDNAME_INSTALLEDCRITERIA));
-    }
-    else
-    {
-        installedCriteria = workflow_get_update_manifest_string_property(handle, ADUCITF_FIELDNAME_INSTALLEDCRITERIA);
-    }
+    // For Update Manifest v4, customer can specify installedCriteria in 'handlerProperties' map.
+    installedCriteria = workflow_copy_string(
+        workflow_peek_update_manifest_handler_properties_string(handle, ADUCITF_FIELDNAME_INSTALLEDCRITERIA));
 
     return installedCriteria;
 }

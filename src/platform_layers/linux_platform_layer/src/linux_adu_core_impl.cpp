@@ -33,7 +33,9 @@
 using ADUC::LinuxPlatformLayer;
 using ADUC::StringUtils::cstr_wrapper;
 
-#define UPDATE_MANIFEST_V4_DEFAULT_HANDLER "microsoft/update-manifest"
+// The update manifest handler type.
+#define UPDATE_MANIFEST_DEFAULT_HANDLER "microsoft/update-manifest"
+
 #define COMPONENT_CHANGED_DETECTION_INTERVAL_SECONDS 600
 
 std::string LinuxPlatformLayer::g_componentsInfo;
@@ -44,7 +46,7 @@ time_t LinuxPlatformLayer::g_lastComponentsCheckTime;
  * @return std::unique_ptr<LinuxPlatformLayer> The newly created LinuxPlatformLayer object.
  */
 std::unique_ptr<LinuxPlatformLayer> LinuxPlatformLayer::Create()
-{    
+{
     struct timeval tv;
     gettimeofday(&tv, NULL);
     g_lastComponentsCheckTime = tv.tv_sec;
@@ -90,7 +92,7 @@ void LinuxPlatformLayer::Idle(const char* workflowId)
     _IsCancellationRequested = false;
 }
 
-static ContentHandler* GetContentTypeHandler(const ADUC_WorkflowData* workflowData, ADUC_Result* result)
+static ContentHandler* GetUpdateManifestHandler(const ADUC_WorkflowData* workflowData, ADUC_Result* result)
 {
     ContentHandler* contentHandler = nullptr;
 
@@ -127,14 +129,15 @@ static ContentHandler* GetContentTypeHandler(const ADUC_WorkflowData* workflowDa
             if (IsAducResultCodeFailure(loadResult.ResultCode))
             {
                 loadResult = ExtensionManager::LoadUpdateContentHandlerExtension(
-                    UPDATE_MANIFEST_V4_DEFAULT_HANDLER, &contentHandler);
+                    UPDATE_MANIFEST_DEFAULT_HANDLER, &contentHandler);
             }
         }
         else
         {
-            char* updateType = workflow_get_update_type(workflowData->WorkflowHandle);
-            loadResult = ExtensionManager::LoadUpdateContentHandlerExtension(updateType, &contentHandler);
-            workflow_free_string(updateType);
+            loadResult = {
+                .ResultCode = ADUC_Result_Failure,
+                .ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION
+            };
         }
 
         if (IsAducResultCodeFailure(loadResult.ResultCode))
@@ -154,7 +157,7 @@ static ContentHandler* GetContentTypeHandler(const ADUC_WorkflowData* workflowDa
 ADUC_Result LinuxPlatformLayer::Download(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
-    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, &result);
+    ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
 
     if (contentHandler == nullptr)
     {
@@ -181,7 +184,7 @@ ADUC_Result LinuxPlatformLayer::Install(const ADUC_WorkflowData* workflowData)
     ADUC_Result result{ ADUC_Result_Failure };
     char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
 
-    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, &result);
+    ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
         goto done;
@@ -209,7 +212,7 @@ ADUC_Result LinuxPlatformLayer::Apply(const ADUC_WorkflowData* workflowData)
 
     char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
 
-    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, &result);
+    ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
         goto done;
@@ -240,7 +243,7 @@ void LinuxPlatformLayer::Cancel(const ADUC_WorkflowData* workflowData)
     _IsCancellationRequested = true;
     workflow_free_string(workflowId);
 
-    ContentHandler* contentHandler = GetContentTypeHandler(workflowData, &result);
+    ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
         Log_Error("Could not get content handler!");
@@ -286,7 +289,7 @@ ADUC_Result LinuxPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflowDat
     }
 
     ADUC_Result result;
-    contentHandler = GetContentTypeHandler(workflowData, &result);
+    contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
         return  ADUC_Result { .ResultCode = ADUC_Result_Failure,
@@ -393,7 +396,7 @@ void LinuxPlatformLayer::SandboxDestroy(const char* workflowId, const char* work
  *  If current workflow is in progress, the agent will cancel the workflow, then re-process the same update data.
  *  If no workflows in progress, the agent will start a new workflow using cached update data, if available.
  *    - If cached update data is not available, agent will log an error.
- * 
+ *
  * @param currenWorkflowData A current workflow data object.
  */
 void LinuxPlatformLayer::RetryWorkflowDueToComponentChanged(ADUC_WorkflowData* currentWorkflowData)
@@ -402,9 +405,9 @@ void LinuxPlatformLayer::RetryWorkflowDueToComponentChanged(ADUC_WorkflowData* c
 }
 
 /**
- * @brief Detect changes in components collection. 
+ * @brief Detect changes in components collection.
  *        If new component is added, ensure that it has to latest available update installed.
- * 
+ *
  * @param token Contains pointer to our class instance.
  * @param workflowData Current workflow data object, if any.
  */

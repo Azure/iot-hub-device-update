@@ -22,6 +22,10 @@ set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 find_package (Parson REQUIRED)
 find_package (azure_c_shared_utility REQUIRED)
 
+target_compile_definitions (
+    ${PROJECT_NAME}
+    PRIVATE SUPPORTED_UPDATE_MANIFEST_VERSION=${SUPPORTED_UPDATE_MANIFEST_VERSION})
+
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC  aduc::c_utils

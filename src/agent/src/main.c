@@ -160,7 +160,7 @@ typedef struct tagPnPComponentEntry
     const PnPComponentDestroyFunc Destroy;
     const PnPComponentPropertyUpdateCallback
         PnPPropertyUpdateCallback; /**< Called when a component's property is updated. (optional) */
-    
+
     //
     // Following data is dynamic.
     // Must be initialized to NULL in map and remain last entries in this struct.
@@ -546,7 +546,7 @@ static const size_t g_numModeledComponents = ARRAY_SIZE(g_modeledComponents);
 
 static bool g_firstDeviceTwinDataProcessed = false;
 
-static void InititalizeModeledComponents()
+static void InitializeModeledComponents()
 {
     const size_t numModeledComponents = ARRAY_SIZE(g_modeledComponents);
 
@@ -914,7 +914,7 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     {
         if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
         {
-            Log_Error("No connnection string set from launch arguments or configuration file");
+            Log_Error("No connection string set from launch arguments or configuration file");
             goto done;
         }
 
@@ -1042,7 +1042,7 @@ void OnRestartSignal(int sig)
  */
 int main(int argc, char** argv)
 {
-    InititalizeModeledComponents();
+    InitializeModeledComponents();
 
     ADUC_LaunchArguments launchArgs;
 
@@ -1111,6 +1111,7 @@ int main(int argc, char** argv)
     Log_Info("Git Info: %s", ADUC_GIT_INFO);
 #endif
     Log_Info("Agent built with handlers: %s.", ADUC_CONTENT_HANDLERS);
+    Log_Info("Supported Update Manifest version: %d", SUPPORTED_UPDATE_MANIFEST_VERSION);
 
     _Bool healthy = HealthCheck(&launchArgs);
     if (launchArgs.healthCheckOnly || !healthy)

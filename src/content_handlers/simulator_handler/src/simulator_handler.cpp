@@ -306,6 +306,14 @@ ADUC_Result SimulatorActionHelper(
 
         resultObject = selectResult;
     }
+    else if (0 == strcmp(action, "isInstalled"))
+    {
+        // For update manifest version 4, top-level (parent) update doesn't have installed criteria property.
+        // In this case, we'll return the catch-all (*) result instead.
+        JSON_Object* selectResult = json_value_get_object(json_object_get_value(resultObject, resultSelector));
+
+        resultObject = json_value_get_object(json_object_get_value(resultObject, "*"));
+    }
 
     if (resultObject != nullptr)
     {
@@ -318,7 +326,6 @@ ADUC_Result SimulatorActionHelper(
         }
     }
 
-    // For 'microsoft/bundle:1' implementation, abort download task as soon as an error occurs.
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         goto done;

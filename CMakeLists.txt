@@ -182,6 +182,14 @@ set (
     CACHE STRING "The list of content handlers.")
 
 #
+# Starting from version 0.8.1, Device Update Agent must support only one version of the update manifest
+# based on the base dtmi model that the Agent announces when connecting to the IoT Hub.
+#
+# For this version, "dtmi:azure:iot:deviceUpdateModel;1" is using the manifest version verison 4.
+#
+set (SUPPORTED_UPDATE_MANIFEST_VERSION 4)
+
+#
 # DeviceInfo configuration
 # These values must be modified to describe your device.
 #
