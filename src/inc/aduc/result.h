@@ -482,7 +482,7 @@ static inline ADUC_Result_t MAKE_ADUC_STEPS_HANDLER_EXTENDEDRESULTCODE(const int
 
 /**
  * @brief Macros to convert Script Handler results to extended result code values.
- * Extended error codes begin with 0x306#####
+ * Extended error codes begin with 0x305#####
  */
 static inline ADUC_Result_t MAKE_ADUC_SCRIPT_HANDLER_EXTENDEDRESULTCODE(const int32_t value)
 {

@@ -435,7 +435,16 @@ ADUC_Result ScriptHandlerImpl::PrepareScriptArguments(
     args.emplace_back(resultFilePath);
 
     args.emplace_back("--installed-criteria");
-    args.emplace_back(installedCriteria);
+
+    if (installedCriteria != nullptr)
+    {
+        args.emplace_back(installedCriteria);
+    }
+    else
+    {
+        Log_Info("Installed criteria is null.");
+        args.emplace_back("");
+    }
 
     result = { ADUC_Result_Success };
 
