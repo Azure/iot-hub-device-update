@@ -25,10 +25,12 @@ JSON_Value* ADUC_JSON_GetUpdateManifestRoot(const JSON_Value* updateActionJson)
     if (!ADUC_JSON_GetStringField(updateActionJson, ADUCITF_FIELDNAME_UPDATEMANIFEST, &manifestString))
     {
         Log_Error("updateActionJson does not include an updateManifest field");
-        return false;
+        return NULL;
     }
 
-    return json_parse_string(manifestString);
+    JSON_Value* updateManifestRoot = json_parse_string(manifestString);
+    free(manifestString);
+    return updateManifestRoot;
 }
 
 /**
