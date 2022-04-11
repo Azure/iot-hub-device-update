@@ -297,6 +297,37 @@ done:
     return result;
 }
 
+/**
+ * @brief Sets UpdateContentHandler for specified @p updateType
+ * @param updateType An update type string.
+ * @param handler A ContentHandler object.
+ * @return ADUCResult contains result code and extended result code.
+ * */
+ADUC_Result ExtensionManager::SetUpdateContentHandlerExtension(const std::string& updateType, ContentHandler* handler)
+{
+    ADUC_Result result = { ADUC_Result_Failure };
+
+    Log_Info("Setting Content Handler for '%s'.", updateType.c_str());
+
+    if (handler == nullptr)
+    {
+        Log_Error("Invalid argument(s).");
+        result.ExtendedResultCode =
+            ADUC_ERC_EXTENSION_CREATE_FAILURE_INVALID_ARG(ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER, 0);
+        goto done;
+    }
+
+    // Remove existing one.
+    _contentHandlers.erase(updateType);
+
+    _contentHandlers.emplace(updateType, handler);
+
+    result = { ADUC_GeneralResult_Success };
+
+done:
+    return result;
+}
+
 void ExtensionManager::UnloadAllUpdateContentHandlers()
 {
     for (auto& contentHandler : _contentHandlers)
@@ -376,6 +407,13 @@ ADUC_Result ExtensionManager::LoadContentDownloaderLibrary(void** contentDownloa
     result = { ADUC_Result_Success };
 
 done:
+    return result;
+}
+
+ADUC_Result ExtensionManager::SetContentDownloaderLibrary(void* contentDownloaderLibrary)
+{
+    ADUC_Result result = { ADUC_Result_Success };
+    _contentDownloader = contentDownloaderLibrary;
     return result;
 }
 

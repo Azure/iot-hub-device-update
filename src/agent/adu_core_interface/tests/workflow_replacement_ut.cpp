@@ -116,7 +116,7 @@ EXTERN_C_BEGIN
 void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, bool isAsync);
 EXTERN_C_END
 
-extern ADUC_ClientHandle g_iotHubClientHandleForADUComponent;
+// Note: g_iotHubClientHandleForADUComponent declared in adu_core_intefaace.h
 
 //
 // Test Helpers
@@ -450,21 +450,18 @@ public:
             {
                 select(0, nullptr, nullptr, nullptr, &half_sec);
 
+                // Let the main thread test case move on once receive Cancel due to replacement
                 if (!polling)
                 {
-                    // Let the main thread test case move on once receive Cancel due to replacement
-                    if (!polling)
-                    {
-                        std::unique_lock<std::mutex> lock(replacementMutex);
+                    std::unique_lock<std::mutex> lock(replacementMutex);
 
-                        s_downloadFirstWorkflow_completed = true; // update condition
-                        polling = true;
+                    s_downloadFirstWorkflow_completed = true; // update condition
+                    polling = true;
 
-                        // need to manually unlock before notifying to prevent waking wait
-                        // thread to only block again because lock was already taken
-                        lock.unlock();
-                        replacementCV.notify_one();
-                    }
+                    // need to manually unlock before notifying to prevent waking wait
+                    // thread to only block again because lock was already taken
+                    lock.unlock();
+                    replacementCV.notify_one();
                 }
             }
         }

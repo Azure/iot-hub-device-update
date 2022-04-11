@@ -47,8 +47,10 @@ time_t LinuxPlatformLayer::g_lastComponentsCheckTime;
  */
 std::unique_ptr<LinuxPlatformLayer> LinuxPlatformLayer::Create()
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
+    struct timeval tv
+    {
+    };
+    gettimeofday(&tv, nullptr);
     g_lastComponentsCheckTime = tv.tv_sec;
 
     return std::unique_ptr<LinuxPlatformLayer>{ new LinuxPlatformLayer() };
@@ -134,10 +136,9 @@ static ContentHandler* GetUpdateManifestHandler(const ADUC_WorkflowData* workflo
         }
         else
         {
-            loadResult = {
-                .ResultCode = ADUC_Result_Failure,
-                .ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION
-            };
+            loadResult = { .ResultCode = ADUC_Result_Failure,
+                           .ExtendedResultCode =
+                               ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION };
         }
 
         if (IsAducResultCodeFailure(loadResult.ResultCode))
@@ -284,16 +285,16 @@ ADUC_Result LinuxPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflowDat
 
     if (workflowData == nullptr)
     {
-        return ADUC_Result { .ResultCode = ADUC_Result_Failure,
-                             .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_NULL_WORKFLOW };
+        return ADUC_Result{ .ResultCode = ADUC_Result_Failure,
+                            .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_NULL_WORKFLOW };
     }
 
     ADUC_Result result;
     contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
-        return  ADUC_Result { .ResultCode = ADUC_Result_Failure,
-                              .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_BAD_UPDATETYPE };
+        return ADUC_Result{ .ResultCode = ADUC_Result_Failure,
+                            .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_BAD_UPDATETYPE };
     }
 
     return contentHandler->IsInstalled(workflowData);
@@ -411,10 +412,14 @@ void LinuxPlatformLayer::RetryWorkflowDueToComponentChanged(ADUC_WorkflowData* c
  * @param token Contains pointer to our class instance.
  * @param workflowData Current workflow data object, if any.
  */
-void LinuxPlatformLayer::DetectAndHandleComponentsAvailabilityChangedEvent(ADUC_Token token, ADUC_WorkflowDataToken workflowData)
+void LinuxPlatformLayer::DetectAndHandleComponentsAvailabilityChangedEvent(
+    ADUC_Token token, ADUC_WorkflowDataToken workflowData)
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
+    UNREFERENCED_PARAMETER(token);
+    struct timeval tv
+    {
+    };
+    gettimeofday(&tv, nullptr);
     time_t nowTime = tv.tv_sec;
 
     if ((nowTime - g_lastComponentsCheckTime) > COMPONENT_CHANGED_DETECTION_INTERVAL_SECONDS)
@@ -446,10 +451,10 @@ void LinuxPlatformLayer::DetectAndHandleComponentsAvailabilityChangedEvent(ADUC_
         if (g_componentsInfo != components)
         {
             // Something changed.
-            Log_Info("Components changed deltected");
+            Log_Info("Components changed detected");
             g_componentsInfo = components;
 
-            RetryWorkflowDueToComponentChanged((ADUC_WorkflowData*)workflowData);
+            RetryWorkflowDueToComponentChanged(static_cast<ADUC_WorkflowData*>(workflowData));
         }
     }
 

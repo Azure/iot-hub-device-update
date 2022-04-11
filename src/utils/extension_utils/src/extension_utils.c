@@ -99,57 +99,6 @@ done:
 }
 
 /**
- * @brief Find a handler extension file entity for the specified @p handlerId.
- *
- * @param handlerId A string represents Update Type or Step Handler Type.
- * @param fileEntity An output file entity.
- * @return True if a handler for specified @p handlerId is available.
- */
-static _Bool GetHandlerExtensionFileEntity(
-    const char* handlerId, const char* extensionDir, const char* regFileName, ADUC_FileEntity* fileEntity)
-{
-    _Bool found = false;
-
-    if (IsNullOrEmpty(handlerId))
-    {
-        Log_Error("Invalid handler identifier.");
-        return false;
-    }
-
-    if (fileEntity == NULL)
-    {
-        Log_Error("Invalid output buffer.");
-        return false;
-    }
-
-    memset(fileEntity, 0, sizeof(*fileEntity));
-
-    STRING_HANDLE folderName = FolderNameFromHandlerId(handlerId);
-
-    STRING_HANDLE path = STRING_construct_sprintf("%s/%s", STRING_c_str(folderName), regFileName);
-
-    found = GetExtensionFileEntity(STRING_c_str(path), fileEntity);
-
-    STRING_delete(folderName);
-    STRING_delete(path);
-
-    return found;
-}
-
-/**
- * @brief Find a handler for the specified UpdateType @p updateType.
- *
- * @param updateType Update type string.
- * @param fileEntity An output file entity.
- * @return True if an update content handler for the specified @p updateType is available.
- */
-_Bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity* fileEntity)
-{
-    return GetHandlerExtensionFileEntity(
-        updateType, ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR, ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME, fileEntity);
-}
-
-/**
  * @brief Register a handler for specified handler id.
  *
  * @param handlerId A string represents handler id. This can be an Update-Type, or Step-Handler-Type.

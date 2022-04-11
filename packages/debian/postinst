@@ -30,6 +30,7 @@ adu_script_handler_file=libmicrosoft_script_1.so
 adu_simulator_handler_file=libmicrosoft_simulator_1.so
 adu_steps_handler_file=libmicrosoft_steps_1.so
 adu_swupdate_handler_file=libmicrosoft_swupdate_1.so
+adu_swupdate_handler_2_file=libmicrosoft_swupdate_2.so
 
 adu_example_component_enumerator_file=libcontoso-component-enumerator.so
 
@@ -214,6 +215,7 @@ register_reference_extensions() {
 
     $adu_bin_path -l 2 --update-type "microsoft/apt:1" -C $adu_extensions_sources_dir/$adu_apt_handler_file
     $adu_bin_path -l 2 --update-type "microsoft/swupdate:1" -C $adu_extensions_sources_dir/$adu_swupdate_handler_file
+    $adu_bin_path -l 2 --update-type "microsoft/swupdate:2" -C $adu_extensions_sources_dir/$adu_swupdate_handler_2_file
     $adu_bin_path -l 2 --update-type "microsoft/script:1" -C $adu_extensions_sources_dir/$adu_script_handler_file
     $adu_bin_path -l 2 --update-type "microsoft/steps:1" -C $adu_extensions_sources_dir/$adu_steps_handler_file
     $adu_bin_path -l 2 --update-type "microsoft/update-manifest" -C $adu_extensions_sources_dir/$adu_steps_handler_file

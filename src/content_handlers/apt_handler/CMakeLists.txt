@@ -33,9 +33,7 @@ target_compile_definitions (
 
 target_link_libraries (
     ${target_name}
-    PUBLIC
-            aduc::content_handlers
-            aduc::workflow_data_utils
+    PUBLIC aduc::content_handlers aduc::workflow_data_utils
     PRIVATE aduc::c_utils
             aduc::extension_manager
             aduc::exception_utils
@@ -47,12 +45,7 @@ target_link_libraries (
             aduc::workflow_utils
             Parson::parson)
 
-if ((NOT
-     ${ADUC_PLATFORM_LAYER}
-     STREQUAL
-     "simulator"
-    )
-    AND ADUC_BUILD_UNIT_TESTS)
+if (ADUC_BUILD_UNIT_TESTS)
 
     add_subdirectory (tests)
 

@@ -19,8 +19,7 @@ target_include_directories (
     PRIVATE ${PROJECT_SOURCE_DIR}/inc
             ${ADUC_TYPES_INCLUDES}
             ${ADUC_EXPORT_INCLUDES}
-            ${ADU_SHELL_INCLUDES}
-            ${ADU_EXTENSION_INCLUDES})
+            ${ADU_SHELL_INCLUDES})
 
 get_filename_component (
     ADUC_INSTALLEDCRITERIA_FILE_PATH
@@ -40,8 +39,7 @@ target_link_libraries (
             aduc::agent_workflow
             aduc::workflow_utils
             Parson::parson
-            -zdefs
-            )
+            -zdefs)
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
 

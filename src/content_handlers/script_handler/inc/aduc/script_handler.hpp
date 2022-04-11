@@ -39,7 +39,7 @@ public:
     ADUC_Result IsInstalled(const tagADUC_WorkflowData* workflowData) override;
 
     static ADUC_Result PrepareScriptArguments(
-        const ADUC_WorkflowHandle workflowHandle,
+        ADUC_WorkflowHandle workflowHandle,
         std::string resultFilePath,
         std::string workFolder,
         std::string& scriptFilePath,

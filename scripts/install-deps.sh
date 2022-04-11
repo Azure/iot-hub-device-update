@@ -44,9 +44,14 @@ install_aduc_deps=false
 install_azure_iot_sdk=false
 azure_sdk_ref=LTS_07_2021_Ref01
 
+# ADUC Test Deps
+
 install_catch2=false
 default_catch2_ref=v2.11.0
 catch2_ref=$default_catch2_ref
+install_swupdate=false
+default_swupdate_ref=2021.11
+swupdate_ref=$default_swupdate_ref
 
 install_azure_blob_storage_file_upload_utility=false
 azure_blob_storage_file_upload_utility_ref=main
@@ -83,6 +88,10 @@ print_help() {
     echo "--catch2-ref              Install Catch2 from a specific branch or tag."
     echo "                          This value is passed to git clone as the --branch argument."
     echo "                          Default is $default_catch2_ref."
+    echo ""
+    echo "--install-swupdate        Build and install the SWUpdate project. (required for SWUpdate unit tests on Ubuntu)"
+    echo "--swupdate-ref            <ref> Clone the SWUpdate project from a specific branch or tag."
+    echo "                           Default is $default_swupdate_ref."
     echo ""
     echo "--install-do              Install Delivery Optimization from source."
     echo "                          In order to install the correct dependencies, "
@@ -223,6 +232,57 @@ do_install_catch2() {
 
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf $catch2_dir
+    fi
+}
+
+do_install_swupdate() {
+    echo "Installing SWupdate ($swupdate_ref) ..."
+
+    # Currently only support building SWUpdate on following distros:
+    #   - Ubuntu 18.04
+    #   - Ubuntu 20.04
+    lsb_release -a | grep -e 'Ubuntu 18.04' -e 'Ubuntu 20.04'
+    local grep_res=$?
+    if [[ "$grep_res" -ne "0" ]]; then
+        echo "Only need to build SWUpdate for Ubuntu 18.04 and Ubuntu 20.04. Skipping..."
+        return 0
+    fi
+
+    local swupdate_dir=$work_folder/swupdate
+
+    if [[ $keep_source_code != "true" ]]; then
+        $SUDO rm -rf $swupdate_dir || return
+    elif [[ -d $swupdate_dir ]]; then
+        warn "$swupdate_dir already exists! Skipping SWUpdate."
+        return 0
+    fi
+
+    local swupdate_url
+    if [[ $use_ssh == "true" ]]; then
+        swupdate_url=git@github.com:sbabic/swupdate.git
+    else
+        swupdate_url=https://github.com/sbabic/swupdate.git
+    fi
+
+    echo -e "Building SWUpdate ...\n\tBranch: $swupdate_ref\n\tFolder: $swupdate_dir"
+    mkdir -p $swupdate_dir || return
+    pushd $swupdate_dir > /dev/null
+    git clone --recursive --single-branch --branch $swupdate_ref --depth 1 $swupdate_url . || return
+
+    popd > /dev/null
+    echo -e "Customizing SWUpdate build configurations..."
+    cp src/deps/swupdate/.config "$swupdate_dir" || return
+    pushd $swupdate_dir > /dev/null
+
+    echo -r "Building SWUpdate..."
+    make || return
+
+    echo -e "Installing SWUpdate..."
+    $SUDO make install || return
+    popd > /dev/null
+
+    if [[ $keep_source_code != "true" ]]; then
+        $SUDO rm -rf $swupdate_dir
     fi
 }
 
@@ -395,6 +455,13 @@ while [[ $1 != "" ]]; do
         shift
         catch2_ref=$1
         ;;
+    --install-swupdate)
+        install_swupdate=true
+        ;;
+    --swupdate-ref)
+        shift
+        swupdate_ref=$1
+        ;;
     --install-do)
         install_do=true
         ;;
@@ -446,7 +513,7 @@ fi
 
 # If there is no install action specified,
 # assume that we want to install all deps.
-if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && $install_do != "true" && $install_azure_iot_sdk != "true" && $install_catch2 != "true" ]]; then
+if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && $install_do != "true" && $install_azure_iot_sdk != "true" && $install_catch2 != "true" && $install_swupdate != "true" ]]; then
     install_all_deps=true
 fi
 
@@ -493,6 +560,10 @@ if [[ $install_packages_only == "false" ]]; then
 
     if [[ $install_catch2 == "true" ]]; then
         do_install_catch2 || $ret
+    fi
+
+    if [[ $install_swupdate == "true" ]]; then
+        do_install_swupdate || $ret
     fi
 
     if [[ $install_do == "true" ]]; then

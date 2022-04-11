@@ -26,6 +26,7 @@
 #include <stdarg.h> // for va_*
 #include <stdlib.h> // for calloc, atoi
 #include <string.h>
+#include <strings.h> // for strcasecmp
 
 #define DEFAULT_SANDBOX_ROOT_PATH ADUC_DOWNLOADS_FOLDER
 
@@ -356,8 +357,8 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
         // Starting from version 4, the update manifest can contain both embedded manifest,
         // or a downloadable update manifest file (files["manifest"] contains the update manifest file info)
         int sandboxCreateResult = -1;
-        const char* detachedManifestFileId = json_object_get_string(
-            wf->UpdateManifestObject, UPDATE_MANIFEST_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID);
+        const char* detachedManifestFileId =
+            json_object_get_string(wf->UpdateManifestObject, UPDATE_MANIFEST_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID);
         if (!IsNullOrEmpty(detachedManifestFileId))
         {
             // There's only 1 file entity when the primary update manifest is detached.
@@ -399,8 +400,7 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
                     STRING_construct_sprintf("%s/%s", workFolder, fileEntity->TargetFilename);
                 JSON_Object* rootObj =
                     json_value_get_object(json_parse_file(STRING_c_str(detachedUpdateManifestFilePath)));
-                const char* updateManifestString =
-                    json_object_get_string(rootObj, ADUCITF_FIELDNAME_UPDATEMANIFEST);
+                const char* updateManifestString = json_object_get_string(rootObj, ADUCITF_FIELDNAME_UPDATEMANIFEST);
                 JSON_Object* detachedManifest = json_value_get_object(json_parse_string(updateManifestString));
                 json_value_free(json_object_get_wrapping_value(rootObj));
 
@@ -420,7 +420,10 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
         {
             if (manifestVersion != SUPPORTED_UPDATE_MANIFEST_VERSION)
             {
-                Log_Error("Bad update manifest version: %d. Expected: %d", manifestVersion, SUPPORTED_UPDATE_MANIFEST_VERSION);
+                Log_Error(
+                    "Bad update manifest version: %d. Expected: %d",
+                    manifestVersion,
+                    SUPPORTED_UPDATE_MANIFEST_VERSION);
                 result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION;
                 goto done;
             }
@@ -924,18 +927,6 @@ const JSON_Object* _workflow_get_update_manifest_files_map(ADUC_WorkflowHandle h
 }
 
 /**
- * @brief Get 'updateManifest.bundledUpdates' array.
- *
- * @param handle A workflow object handle.
- * @return const JSON_Object* A map containing bundle update manifest files information.
- */
-JSON_Array* _workflow_get_update_manifest_bundle_updates_map(ADUC_WorkflowHandle handle)
-{
-    const JSON_Object* o = _workflow_get_update_manifest(handle);
-    return json_object_get_array(o, "bundledUpdates");
-}
-
-/**
  * @brief Get 'fileUrls' map.
  *
  * @param handle A workflow object handle.
@@ -1012,10 +1003,8 @@ void workflow_free_update_id(ADUC_UpdateId* updateId)
  */
 char* workflow_get_installed_criteria(ADUC_WorkflowHandle handle)
 {
-    char* installedCriteria = NULL;
-
     // For Update Manifest v4, customer can specify installedCriteria in 'handlerProperties' map.
-    installedCriteria = workflow_copy_string(
+    char* installedCriteria = workflow_copy_string(
         workflow_peek_update_manifest_handler_properties_string(handle, ADUCITF_FIELDNAME_INSTALLEDCRITERIA));
 
     return installedCriteria;
@@ -1163,11 +1152,14 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
     const JSON_Object* files = NULL;
     const JSON_Object* file = NULL;
     const JSON_Object* fileUrls = NULL;
+    ADUC_FileEntity* newEntity = NULL;
     *entity = NULL;
     const char* uri = NULL;
     const char* fileId = NULL;
     const char* name = NULL;
     const char* arguments = NULL;
+    size_t tempHashCount = 0;
+    ADUC_Hash* tempHash = NULL;
 
     if ((files = _workflow_get_update_manifest_files_map(handle)) == NULL)
     {
@@ -1203,8 +1195,7 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
 
     const JSON_Object* hashObj = json_object_get_object(file, ADUCITF_FIELDNAME_HASHES);
 
-    size_t tempHashCount = 0;
-    ADUC_Hash* tempHash = ADUC_HashArray_AllocAndInit(hashObj, &tempHashCount);
+    tempHash = ADUC_HashArray_AllocAndInit(hashObj, &tempHashCount);
     if (tempHash == NULL)
     {
         Log_Error("Unable to parse hashes for file @ %zu", index);
@@ -1217,38 +1208,49 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
         sizeInBytes = json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
     }
 
-    *entity = malloc(sizeof(**entity));
-    if (*entity == NULL)
+    newEntity = malloc(sizeof(*newEntity));
+    if (newEntity == NULL)
     {
         goto done;
     }
 
-    if (!ADUC_FileEntity_Init(*entity, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
+    if (!ADUC_FileEntity_Init(newEntity, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
     {
         Log_Error("Invalid file entity arguments");
         goto done;
     }
 
+    *entity = newEntity;
     succeeded = true;
 
 done:
-
     if (!succeeded)
     {
-        if (*entity != NULL)
+        if (newEntity != NULL)
         {
-            ADUC_FileEntity_Uninit(*entity);
-            free(*entity);
-            *entity = NULL;
+            newEntity->Hash = NULL; // Manually free hash array below...
+            ADUC_FileEntity_Uninit(newEntity);
+            free(newEntity);
+        }
+
+        if (tempHash != NULL)
+        {
+            ADUC_Hash_FreeArray(tempHashCount, tempHash);
         }
     }
 
     return succeeded;
 }
 
-bool workflow_get_first_update_file_of_type(ADUC_WorkflowHandle handle, const char* fileType, ADUC_FileEntity** entity)
+bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fileName, ADUC_FileEntity** entity)
 {
     if (entity == NULL)
+    {
+        return false;
+    }
+
+    size_t count = workflow_get_update_files_count(handle);
+    if (count == 0)
     {
         return false;
     }
@@ -1257,33 +1259,32 @@ bool workflow_get_first_update_file_of_type(ADUC_WorkflowHandle handle, const ch
     const JSON_Object* files = NULL;
     const JSON_Object* file = NULL;
     const JSON_Object* fileUrls = NULL;
+    ADUC_FileEntity* newEntity = NULL;
     *entity = NULL;
     const char* uri = NULL;
     const char* fileId = NULL;
     const char* name = NULL;
     const char* arguments = NULL;
+    size_t tempHashCount = 0;
+    ADUC_Hash* tempHash = NULL;
 
     if ((files = _workflow_get_update_manifest_files_map(handle)) == NULL)
     {
         goto done;
     }
 
-    size_t count = json_object_get_count(files);
-    size_t index;
-    for (index = 0; index < count; index++)
+    // Find file by name.
+    for (int i = 0; i < count; i++)
     {
-        file = json_object(json_object_get_value_at(files, index));
-        const char* t = json_object_get_string(file, "fileType");
-        if (t != NULL && strcmp(t, fileType) == 0)
+        if ((file = json_value_get_object(json_object_get_value_at(files, i))) != NULL
+            && strcasecmp(json_object_get_string(file, "fileName"), fileName) == 0)
         {
-            fileId = json_object_get_name(files, index);
+            fileId = json_object_get_name(files, i);
             break;
         }
-        file = NULL;
     }
 
-    // No file with matching 'fileType'?
-    if (file == NULL)
+    if (fileId == NULL)
     {
         goto done;
     }
@@ -1293,27 +1294,27 @@ bool workflow_get_first_update_file_of_type(ADUC_WorkflowHandle handle, const ch
 
     do
     {
-        if ((fileUrls = _workflow_get_fileurls_map(h)) == NULL)
-        {
-            Log_Warn("'fileUrls' property not found.");
-        }
-        else
+        if ((fileUrls = _workflow_get_fileurls_map(h)) != NULL)
         {
             uri = json_object_get_string(fileUrls, fileId);
         }
         h = workflow_get_parent(h);
     } while (uri == NULL && h != NULL);
 
+    if (uri == NULL)
+    {
+        Log_Error("Cannot find URL for fileId '%s'", fileId);
+    }
+
     name = json_object_get_string(file, ADUCITF_FIELDNAME_FILENAME);
     arguments = json_object_get_string(file, ADUCITF_FIELDNAME_ARGUMENTS);
 
     const JSON_Object* hashObj = json_object_get_object(file, ADUCITF_FIELDNAME_HASHES);
 
-    size_t tempHashCount = 0;
-    ADUC_Hash* tempHash = ADUC_HashArray_AllocAndInit(hashObj, &tempHashCount);
+    tempHash = ADUC_HashArray_AllocAndInit(hashObj, &tempHashCount);
     if (tempHash == NULL)
     {
-        Log_Error("Unable to parse hashes for file @ %zu", index);
+        Log_Error("Unable to parse hashes for fileId", fileId);
         goto done;
     }
 
@@ -1323,144 +1324,34 @@ bool workflow_get_first_update_file_of_type(ADUC_WorkflowHandle handle, const ch
         sizeInBytes = json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
     }
 
-    *entity = malloc(sizeof(**entity));
-    if (*entity == NULL)
+    newEntity = malloc(sizeof(*newEntity));
+    if (newEntity == NULL)
     {
         goto done;
     }
 
-    if (!ADUC_FileEntity_Init(*entity, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
+    if (!ADUC_FileEntity_Init(newEntity, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
     {
         Log_Error("Invalid file entity arguments");
         goto done;
     }
 
+    *entity = newEntity;
     succeeded = true;
 
 done:
-
     if (!succeeded)
     {
-        if (*entity != NULL)
+        if (newEntity != NULL)
         {
-            ADUC_FileEntity_Uninit(*entity);
-            free(*entity);
-            *entity = NULL;
+            newEntity->Hash = NULL; // Manually free hash array below...
+            ADUC_FileEntity_Uninit(newEntity);
+            free(newEntity);
         }
-    }
 
-    return succeeded;
-}
-
-/**
- * @brief Get total count of Components Update files in the Bundle Update.
- *
- * @param handle A workflow object handle.
- * @return Total count of components update files.
- */
-size_t workflow_get_bundle_updates_count(ADUC_WorkflowHandle handle)
-{
-    JSON_Array* files = _workflow_get_update_manifest_bundle_updates_map(handle);
-    return json_array_get_count(files);
-}
-
-/**
- * @brief Get a 'bundleFiles' entity at specified @p index.
- *
- * @param handle A workflow object handle.
- * @param index  File entity index.
- * @param entity Output file entity object.
- * @return True if success.
- */
-bool workflow_get_bundle_updates_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity** entity)
-{
-    if (entity == NULL)
-    {
-        return false;
-    }
-
-    size_t count = workflow_get_bundle_updates_count(handle);
-    if (index >= count)
-    {
-        return false;
-    }
-
-    _Bool succeeded = false;
-    const JSON_Array* files = NULL;
-    const JSON_Object* file = NULL;
-    const JSON_Object* fileUrls = NULL;
-    *entity = NULL;
-    const char* uri = NULL;
-    const char* fileId = NULL;
-    const char* name = NULL;
-    const char* arguments = NULL;
-
-    if ((files = _workflow_get_update_manifest_bundle_updates_map(handle)) == NULL)
-    {
-        goto done;
-    }
-
-    file = json_array_get_object(files, index);
-    fileId = json_object_get_string(file, "fileId");
-
-    // Find fileurls map in this workflow, and its enclosing workflow(s).
-    ADUC_WorkflowHandle h = handle;
-
-    do
-    {
-        if ((fileUrls = _workflow_get_fileurls_map(h)) == NULL)
+        if (tempHash != NULL)
         {
-            Log_Warn("'fileUrls' property not found.");
-        }
-        else
-        {
-            uri = json_object_get_string(fileUrls, fileId);
-        }
-        h = workflow_get_parent(h);
-    } while (uri == NULL && h != NULL);
-
-    name = json_object_get_string(file, ADUCITF_FIELDNAME_FILENAME);
-    arguments = json_object_get_string(file, ADUCITF_FIELDNAME_ARGUMENTS);
-
-    const JSON_Object* hashObj = json_object_get_object(file, ADUCITF_FIELDNAME_HASHES);
-
-    size_t tempHashCount = 0;
-    ADUC_Hash* tempHash = ADUC_HashArray_AllocAndInit(hashObj, &tempHashCount);
-    if (tempHash == NULL)
-    {
-        Log_Error("Unable to parse hashes for file @ %zu", index);
-        goto done;
-    }
-
-    size_t sizeInBytes = 0;
-    if (json_object_has_value(file, ADUCITF_FIELDNAME_SIZEINBYTES))
-    {
-        sizeInBytes = json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
-    }
-
-    *entity = malloc(sizeof(**entity));
-    if (*entity == NULL)
-    {
-        goto done;
-    }
-
-    if (!ADUC_FileEntity_Init(*entity, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
-    {
-        Log_Error("Invalid file entity arguments");
-        goto done;
-    }
-
-    succeeded = true;
-
-done:
-
-    if (!succeeded)
-    {
-        if (*entity != NULL)
-        {
-            ADUC_FileEntity_Uninit(*entity);
-            free(*entity);
-            *entity = NULL;
+            ADUC_Hash_FreeArray(tempHashCount, tempHash);
         }
     }
 
@@ -1661,8 +1552,7 @@ static JSON_Array* workflow_get_instructions_steps_array(ADUC_WorkflowHandle han
  * @param handle An output workflow handle.
  * @return ADUC_Result
  */
-ADUC_Result
-workflow_create_from_inline_step(const ADUC_WorkflowHandle base, int stepIndex, ADUC_WorkflowHandle* handle)
+ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, int stepIndex, ADUC_WorkflowHandle* handle)
 {
     ADUC_Result result = { ADUC_GeneralResult_Failure };
     JSON_Status jsonStatus = JSONFailure;
@@ -2909,6 +2799,8 @@ bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t
     const JSON_Object* fileUrls = NULL;
     const char* uri = NULL;
     const char* name = NULL;
+    size_t tempHashCount = 0;
+    ADUC_Hash* tempHash = NULL;
 
     *entity = NULL;
 
@@ -2936,8 +2828,7 @@ bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t
     name = json_object_get_string(file, ADUCITF_FIELDNAME_FILENAME);
     const JSON_Object* hashObj = json_object_get_object(file, ADUCITF_FIELDNAME_HASHES);
 
-    size_t tempHashCount = 0;
-    ADUC_Hash* tempHash = ADUC_HashArray_AllocAndInit(hashObj, &tempHashCount);
+    tempHash = ADUC_HashArray_AllocAndInit(hashObj, &tempHashCount);
     if (tempHash == NULL)
     {
         Log_Error("Unable to parse hashes for file @ %zu", stepIndex);

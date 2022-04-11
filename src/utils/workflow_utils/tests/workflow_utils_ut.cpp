@@ -14,22 +14,6 @@ using Catch::Matchers::Equals;
 #include <sstream>
 #include <string>
 
-/* Example of an Action PnP Data.
-{
-    "workflow": {
-        "action": 3,
-        "id": "someWorkflowId"
-    }
-    "updateManifest": "{\"manifestVersion\":\"2.0\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"files\":{\"00000\":{\"fileName\":\"contoso-motor-1.0-updatemanifest.json\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",
-    "updateManifestSignature": "...",
-    "fileUrls": {
-        "00000": "file:///home/nox/tests/testfiles/contoso-motor-1.0-updatemanifest.json",
-        "00001": "file:///home/nox/tests/testfiles/contoso-motor-1.0-fileinstaller",
-        "00002": "file:///home/nox/tests/testfiles/component.json",
-        "00003": "file:///home/nox/tests/testfiles/contoso-motor-1.0-instruction.json"
-    }
-*/
-
 // clang-format off
 
 const char* action_parent_update =
@@ -65,26 +49,6 @@ const char* action_no_update_action_data =
     R"(            "f13b5435aab7c18da": "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/c02058a476a242d7bc0e3c576c180051/contoso-motor-installscript.sh"   )"
     R"(        }    )"
     R"( } )";
-
-
-// const char* action_leaf0 =
-//     R"( { )"
-//     R"(     "updateManifest": "{\"manifestVersion\":\"2.0\",\"updateId\":{\"provider\":\"fabrikam\",\"name\":\"motorUpdate\",\"version\":\"1.0\"},\"updateType\":\"microsoft/bundle:1\",\"installedCriteria\":\"1.0\",\"compatibility\":[{\"deviceManufacturer\":\"Contoso\",\"deviceModel\":\"VirtualVacuum\",\"componentGroup\":\"Motors\"}],\"files\":{\"00001\":{\"fileName\":\"contoso-motor-1.0-fileinstaller\",\"sizeInBytes\":1396,\"hashes\":{\"sha256\":\"E2o94XQss/K8niR1pW6OdaIS/y3tInwhEKMn/6Rw1Gw=\"}}},\"createdDateTime\":\"2021-06-07T07:25:59.0781905Z\"}",     )"
-//     R"(     "fileUrls": {   )"
-//     R"(     } )"
-//     R"( } )";
-
-// const char* leaf0_instruction_step[] = {
-//     R"( { )"
-//     R"(     "handler": "contoso/fileinstaller:1", )"
-//     R"(     "files": [ )"
-//     R"(         { )"
-//     R"(             "fileName": "contoso-motor-1.0-fileinstaller", )"
-//     R"(             "arguments": "--pre-install" )"
-//     R"(         } )"
-//     R"(     ] )"
-//     R"( } )"
-// };
 
 // clang-format on
 
@@ -123,7 +87,10 @@ TEST_CASE("Initialization test")
     CHECK(file0 != nullptr);
     CHECK_THAT(file0->FileId, Equals("f483750ebb885d32c"));
     CHECK(file0->HashCount == 1);
-    CHECK_THAT(file0->DownloadUri, Equals("http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/e5cc19d5e9174c93ada35cc315f1fb1d/apt-manifest-tree-1.0.json"));
+    CHECK_THAT(
+        file0->DownloadUri,
+        Equals(
+            "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/e5cc19d5e9174c93ada35cc315f1fb1d/apt-manifest-tree-1.0.json"));
 
     ADUC_FileEntity_Uninit(file0);
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc)
@@ -221,7 +188,72 @@ TEST_CASE("Child workflow uses fileUrls from parent")
     CHECK(file0 != nullptr);
     CHECK_THAT(file0->FileId, Equals("f13b5435aab7c18da"));
     CHECK(file0->HashCount == 1);
-    CHECK_THAT(file0->DownloadUri, Equals("http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/c02058a476a242d7bc0e3c576c180051/contoso-motor-installscript.sh"));
+    CHECK_THAT(
+        file0->DownloadUri,
+        Equals(
+            "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/c02058a476a242d7bc0e3c576c180051/contoso-motor-installscript.sh"));
+
+    ADUC_FileEntity_Uninit(file0);
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc)
+    free(file0);
+
+    workflow_free(bundle);
+}
+
+TEST_CASE("Get update file by name")
+{
+    ADUC_WorkflowHandle bundle = nullptr;
+    ADUC_Result result = workflow_init(action_parent_update, false, &bundle);
+
+    CHECK(result.ResultCode != 0);
+    CHECK(result.ExtendedResultCode == 0);
+
+    auto filecount = workflow_get_update_files_count(bundle);
+    REQUIRE(filecount == 2);
+
+    // Check that leaf 0 file has the right download uri.
+    ADUC_FileEntity* file0 = nullptr;
+    bool success =
+        workflow_get_update_file_by_name(bundle, "contoso.contoso-virtual-motors.1.1.updatemanifest.json", &file0);
+    CHECK(success);
+    CHECK(file0 != nullptr);
+    CHECK_THAT(file0->FileId, Equals("f222b9ffefaaac577"));
+    CHECK(file0->HashCount == 1);
+    CHECK_THAT(
+        file0->DownloadUri,
+        Equals(
+            "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/31c38c3340a84e38ae8d30ce340f4a49/contoso.contoso-virtual-motors.1.1.updatemanifest.json"));
+
+    ADUC_FileEntity_Uninit(file0);
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc)
+    free(file0);
+
+    workflow_free(bundle);
+}
+
+TEST_CASE("Get update file by name - mixed case")
+{
+    ADUC_WorkflowHandle bundle = nullptr;
+    ADUC_Result result = workflow_init(action_parent_update, false, &bundle);
+
+    CHECK(result.ResultCode != 0);
+    CHECK(result.ExtendedResultCode == 0);
+
+    auto filecount = workflow_get_update_files_count(bundle);
+    REQUIRE(filecount == 2);
+
+    // Check that leaf 0 file has the right download uri.
+    ADUC_FileEntity* file0 = nullptr;
+    bool success =
+        workflow_get_update_file_by_name(bundle, "contoso.Contoso-virtual-motors.1.1.updatemanifest.json", &file0);
+    CHECK(success);
+    CHECK(file0 != nullptr);
+    CHECK_THAT(file0->FileId, Equals("f222b9ffefaaac577"));
+    CHECK(file0->HashCount == 1);
+    CHECK_THAT(
+        file0->DownloadUri,
+        Equals(
+            "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/31c38c3340a84e38ae8d30ce340f4a49/contoso.contoso-virtual-motors.1.1.updatemanifest.json"));
 
     ADUC_FileEntity_Uninit(file0);
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc)
@@ -560,12 +592,11 @@ const char* manifest_workflow_id_compare_1 =
 
 TEST_CASE("workflow_id_compare")
 {
-    ADUC_Result result = {};
     ADUC_WorkflowHandle handle0 = nullptr;
     ADUC_WorkflowHandle handle1 = nullptr;
     ADUC_WorkflowHandle handleNull = nullptr;
 
-    result = workflow_init(manifest_workflow_id_compare_0, true, &handle0);
+    ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, true, &handle0);
     REQUIRE(result.ResultCode > 0);
 
     result = workflow_init(manifest_workflow_id_compare_1, true, &handle1);
@@ -583,14 +614,13 @@ TEST_CASE("workflow_id_compare")
 
 TEST_CASE("workflow_isequal_id")
 {
-    ADUC_Result result = {};
     ADUC_WorkflowHandle handle0 = nullptr;
 
-    result = workflow_init(manifest_workflow_id_compare_0, true, &handle0);
+    ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, true, &handle0);
     REQUIRE(result.ResultCode > 0);
 
     // NULL
-    CHECK_FALSE(workflow_isequal_id(handle0, NULL));
+    CHECK_FALSE(workflow_isequal_id(handle0, nullptr));
 
     // different
     CHECK_FALSE(workflow_isequal_id(handle0, WORKFLOW_ID_COMPARE_1_UUID));

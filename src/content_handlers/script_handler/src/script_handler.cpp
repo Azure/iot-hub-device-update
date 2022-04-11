@@ -144,15 +144,13 @@ ADUC_Result ScriptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData
 {
     Log_Info("Script_Handler download task begin.");
 
-    ADUC_Result result = { ADUC_Result_Failure };
     ADUC_WorkflowHandle workflowHandle = workflowData->WorkflowHandle;
     char* installedCriteria = nullptr;
     const char* workflowId = workflow_peek_id(workflowHandle);
     char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
     ADUC_FileEntity* entity = nullptr;
     int fileCount = workflow_get_update_files_count(workflowHandle);
-
-    result = Script_Handler_DownloadPrimaryScriptFile(workflowHandle);
+    ADUC_Result result = Script_Handler_DownloadPrimaryScriptFile(workflowHandle);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -202,6 +200,9 @@ ADUC_Result ScriptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData
         }
     }
 
+    // Invoke primary script to download additional files, if required.
+    result = PerformAction("--action-download", workflowData);
+
 done:
     workflow_free_string(workFolder);
     workflow_free_file_entity(entity);
@@ -220,7 +221,7 @@ done:
  * @return ADUC_Result
  */
 ADUC_Result ScriptHandlerImpl::PrepareScriptArguments(
-    const ADUC_WorkflowHandle workflowHandle,
+    ADUC_WorkflowHandle workflowHandle,
     std::string resultFilePath,
     std::string workFolder,
     std::string& scriptFilePath,
@@ -470,7 +471,7 @@ ADUC_Result ScriptHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
 
 static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowData* workflowData)
 {
-    Log_Info("Action (%s) beging", action.c_str());
+    Log_Info("Action (%s) begin", action.c_str());
     ADUC_Result result = { ADUC_GeneralResult_Failure };
     STRING_HANDLE resultDetails;
 
@@ -508,8 +509,8 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
     // selected component, we will skip the 'apply' phase, and then skip the
     // remaining install-item(s).
     // Also, don't continue if WorkflowHandle is NULL in the ADUInterface_Connected->HandleStartupWorkflowData flow.
-    if (result.ResultCode == ADUC_Result_Install_Skipped_UpdateAlreadyInstalled ||
-        workflowData->WorkflowHandle == nullptr)
+    if (result.ResultCode == ADUC_Result_Install_Skipped_UpdateAlreadyInstalled
+        || workflowData->WorkflowHandle == nullptr)
     {
         goto done;
     }
@@ -526,13 +527,13 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
         aduShellArgs.emplace_back(a);
     }
 
-    #if _ADU_DEBUG
+#if _ADU_DEBUG
     for (const auto a : aduShellArgs)
     {
         ss << " " << a;
     }
     Log_Debug("##########\n# ADU-SHELL ARGS:\n##########\n %s", ss.str().c_str());
-    #endif
+#endif
 
     exitCode = ADUC_LaunchChildProcess(adushconst::adu_shell, aduShellArgs, scriptOutput);
     if (exitCode != 0)

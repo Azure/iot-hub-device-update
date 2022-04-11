@@ -12,12 +12,12 @@
 
 #include "aduc/adu_core_export_helpers.h"
 #include "aduc/adu_core_interface.h"
+#include "aduc/agent_workflow.h"
 #include "aduc/c_utils.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h"
 #include "aduc/types/workflow.h"
-#include "aduc/agent_workflow.h"
 #include <jws_utils.h>
 #include <parson_json_utils.h>
 

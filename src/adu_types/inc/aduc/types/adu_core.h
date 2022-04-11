@@ -65,9 +65,7 @@ typedef void (*IdleCallbackFunc)(ADUC_Token token, const char* workflowId);
  * @param workflowData Data about what to download.
  */
 typedef ADUC_Result (*DownloadCallbackFunc)(
-    ADUC_Token token,
-    const ADUC_WorkCompletionData* workCompletionData,
-    ADUC_WorkflowDataToken workflowData);
+    ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken workflowData);
 
 //
 // Install callback.
@@ -83,9 +81,7 @@ typedef ADUC_Result (*DownloadCallbackFunc)(
  * @param workflowData Data about what to install.
  */
 typedef ADUC_Result (*InstallCallbackFunc)(
-    ADUC_Token token,
-    const ADUC_WorkCompletionData* workCompletionData,
-    ADUC_WorkflowDataToken workflowData);
+    ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken workflowData);
 
 // Apply callback.
 
@@ -99,9 +95,7 @@ typedef ADUC_Result (*InstallCallbackFunc)(
  * @param info Data about what to apply.
  */
 typedef ADUC_Result (*ApplyCallbackFunc)(
-    ADUC_Token Token,
-    const ADUC_WorkCompletionData* workCompletionData,
-    ADUC_WorkflowDataToken workflowData);
+    ADUC_Token Token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken workflowData);
 
 // Cancel callback.
 
@@ -197,7 +191,7 @@ typedef enum tagADUC_ResultCode
 
     ADUC_Result_Download_Success = 500,                  /**< Succeeded. */
     ADUC_Result_Download_InProgress = 501,               /**< Async operation started. CompletionCallback will be called when complete. */
-    ADUC_Result_Download_Skipped_FileExists = 502,       /**< Download skipped. File already exsits and hash validation passed. */
+    ADUC_Result_Download_Skipped_FileExists = 502,       /**< Download skipped. File already exists and hash validation passed. */
 
     ADUC_Result_Download_Skipped_UpdateAlreadyInstalled = 503, /**< Download succeeded. Also indicates that the Installed Criteria is met. */
     ADUC_Result_Download_Skipped_NoMatchingComponents = 504, /**< Download succeeded. Also indicates that no matchings components for this update. */
@@ -210,16 +204,16 @@ typedef enum tagADUC_ResultCode
 
     ADUC_Result_Install_RequiredImmediateReboot = 605,       /**< Succeeded. An immidiate device reboot is required, to complete the task. */
     ADUC_Result_Install_RequiredReboot = 606,                /**< Succeeded. A deferred device reboot is required, to complete the task. */
-    ADUC_Result_Install_RequiredImmediateAgentRestart = 607, /**< Succeeded. An immediate agent restart is requied, to complete the task. */
-    ADUC_Result_Install_RequiredAgentRestart = 608,          /**< Succeeded. A deferred agent restart is requied, to complete the task. */
+    ADUC_Result_Install_RequiredImmediateAgentRestart = 607, /**< Succeeded. An immediate agent restart is required, to complete the task. */
+    ADUC_Result_Install_RequiredAgentRestart = 608,          /**< Succeeded. A deferred agent restart is required, to complete the task. */
 
     ADUC_Result_Apply_Success = 700,                         /**< Succeeded. */
     ADUC_Result_Apply_InProgress = 701,                      /**< Async operation started. CompletionCallback will be called when complete. */
 
     ADUC_Result_Apply_RequiredImmediateReboot = 705,         /**< Succeeded. An immidiate device reboot is required, to complete the task. */
     ADUC_Result_Apply_RequiredReboot = 706,                  /**< Succeeded. A deferred device reboot is required, to complete the task. */
-    ADUC_Result_Apply_RequiredImmediateAgentRestart = 707,   /**< Succeeded. An immediate agent restart is requied, to complete the task. */
-    ADUC_Result_Apply_RequiredAgentRestart = 708,            /**< Succeeded. A deferred agent restart is requied, to complete the task. */
+    ADUC_Result_Apply_RequiredImmediateAgentRestart = 707,   /**< Succeeded. An immediate agent restart is required, to complete the task. */
+    ADUC_Result_Apply_RequiredAgentRestart = 708,            /**< Succeeded. A deferred agent restart is required, to complete the task. */
 
     ADUC_Result_Cancel_Success = 800,            /**< Succeeded. */
     ADUC_Result_Cancel_UnableToCancel = 801,     /**< Not a failure. Cancel is best effort. */

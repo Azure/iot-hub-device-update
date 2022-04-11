@@ -10,7 +10,7 @@ set (target_name microsoft_steps_1)
 #
 # List all source files required for this handler.
 #
-set (SOURCE_ALL src/steps_handler.cpp)
+set (SOURCE_ALL src/steps_handler.cpp src/handler_create.cpp)
 
 #
 # Create a shared library.
@@ -53,7 +53,6 @@ target_link_libraries (
             aduc::workflow_data_utils
             aduc::workflow_utils
             Parson::parson
-            -zdefs
-            )
+            -zdefs)
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

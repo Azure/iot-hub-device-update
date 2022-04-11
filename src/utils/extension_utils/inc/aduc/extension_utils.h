@@ -15,8 +15,6 @@ EXTERN_C_BEGIN
 
 _Bool GetExtensionFileEntity(const char* extensionRegFile, ADUC_FileEntity* fileEntity);
 
-_Bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity* fileEntity);
-
 _Bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFilePath);
 
 _Bool RegisterComponentEnumeratorExtension(const char* extensionFilePath);

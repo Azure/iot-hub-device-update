@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.5)
 
 project (content_handlers)
 
-add_library (${PROJECT_NAME} STATIC src/content_handler_factory.cpp)
+add_library (${PROJECT_NAME} STATIC)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES}
@@ -30,6 +30,7 @@ add_subdirectory (script_handler)
 add_subdirectory (simulator_handler)
 add_subdirectory (steps_handler)
 add_subdirectory (swupdate_handler)
+add_subdirectory (swupdate_handler_v2)
 
 #
 # Note: add more update content handler extensions here.
@@ -37,7 +38,3 @@ add_subdirectory (swupdate_handler)
 # e.g.
 #   add_subdirectory (my_handler)
 #
-
-if (${ADUC_PLATFORM_LAYER} STREQUAL "simulator")
-    target_compile_definitions (${PROJECT_NAME} PUBLIC ADUC_SIMULATOR_MODE=1)
-endif ()

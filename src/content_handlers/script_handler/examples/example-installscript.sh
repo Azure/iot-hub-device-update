@@ -187,7 +187,7 @@ print_help() {
     echo "Device Update reserved argument"
     echo "==============================="
     echo ""
-    echo "--action-isinstalled                      Perform 'is-installed' check."
+    echo "--action-is-installed                     Perform 'is-installed' check."
     echo "                                          Check whether the selected component [or primary device] current states"
     echo "                                          satisfies specified 'installedCriteria' data."
     echo "--installed-criteria                      Specify the Installed-Criteria string."
@@ -540,7 +540,7 @@ done
 # Example implementation of 'IsInstalled' function, for contoso-motor component.
 #
 # Design Goal:
-#   Determine whether the spcifified 'installedCriteria' (parameter $1) is met.
+#   Determine whether the specified 'installedCriteria' (parameter $1) is met.
 #
 #   'installedCriteria' is a version number of a motor in a mock component's data file
 #   located at "$component_props['path']/firmware.json".

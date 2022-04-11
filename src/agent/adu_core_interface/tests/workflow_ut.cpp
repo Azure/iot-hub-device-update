@@ -50,7 +50,7 @@ EXTERN_C_BEGIN
 void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, bool isAsync);
 EXTERN_C_END
 
-extern ADUC_ClientHandle g_iotHubClientHandleForADUComponent;
+// Note: g_iotHubClientHandleForADUComponent declared in adu_core_intefaace.h
 
 //
 // Test Helpers

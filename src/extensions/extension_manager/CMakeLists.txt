@@ -39,7 +39,3 @@ target_link_libraries (
 # Turn -fPIC on, in order to use this library in another shared library.
 #
 set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-if (${ADUC_PLATFORM_LAYER} STREQUAL "simulator")
-    target_compile_definitions (${PROJECT_NAME} PUBLIC ADUC_SIMULATOR_MODE=1)
-endif ()

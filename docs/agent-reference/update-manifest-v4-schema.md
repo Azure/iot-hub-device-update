@@ -208,13 +208,13 @@ Reference step(s) specified in `Parent Update` will be applied to the component 
 
 Next, the Steps Handler will parse the Child Update Manifest and create ADUC_Workflow object (aka. Child Workflow Data) by combining the data from Child Update Manifest and File URLs information from the Parent Update Manifest.  This Child Workflow Data also has a 'level' property set to '1'.
 
-> Note: for Update Manfiest version v4, the Child Udpate cannot contain any Reference Steps.
+> Note: for Update Manifest version v4, the Child Update cannot contain any Reference Steps.
 
 ## Detached Update Manifest
 
 To avoid deployment failure due to IoT Hub Twin Data Size Limit, any large Update Manifest will be delivered in a form of JSON data file, called 'Detached Update Manifest'.
 
-If an update with large content is imported into Device Update for IoT Hub, the generated Update Manifest will contain an additional payload file called `Detached Update Manifest` which contians a full data of the Update Manifest.
+If an update with large content is imported into Device Update for IoT Hub, the generated Update Manifest will contain an additional payload file called `Detached Update Manifest` which contains a full data of the Update Manifest.
 
 The `UpdateManifest` property in the Device or Module Twin will contains the Detached Update Manifest file information.
 

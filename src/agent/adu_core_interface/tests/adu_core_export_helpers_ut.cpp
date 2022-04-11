@@ -27,7 +27,7 @@
 #include "aduc/workflow_internal.h"
 #include "aduc/workflow_utils.h"
 
-extern ADUC_ClientHandle g_iotHubClientHandleForADUComponent;
+// Note: g_iotHubClientHandleForADUComponent declared in adu_core_intefaace.h
 
 //NOLINTNEXTLINE(performance-unnecessary-value-param)
 static ADUC_Workflow* get_workflow_from_test_data(const std::string path_under_testdata_folder)
@@ -111,13 +111,11 @@ TEST_CASE("ADUC_Workflow_MethodCall_Idle - Calls SandboxDestroyCallback")
     AduCoreExportHelpersTestCaseFixture fixture;
     ADUC_WorkflowData* workflowData = fixture.GetWorkflowData();
 
-    auto Mock_IdleCallback = [](ADUC_Token token, const char* workflowId)
-    {
+    auto Mock_IdleCallback = [](ADUC_Token token, const char* workflowId) {
         CHECK(std::string("test-workflow-id") == workflowId);
     };
 
-    auto Mock_SandboxDestroyCallback = [](ADUC_Token token, const char* workflowId, const char* workFolder)
-    {
+    auto Mock_SandboxDestroyCallback = [](ADUC_Token token, const char* workflowId, const char* workFolder) {
         CHECK(std::string("test-workflow-id") == workflowId);
     };
 
@@ -135,7 +133,8 @@ TEST_CASE("ADUC_Workflow_MethodCall_Download - Fail if not DeploymentInProgress 
     AduCoreExportHelpersTestCaseFixture fixture;
     ADUC_WorkflowData* workflowData = fixture.GetWorkflowData();
 
-    ADUC_WorkflowData_SetLastReportedState(ADUCITF_State_Idle, workflowData); // something other than DeploymentInProgress
+    ADUC_WorkflowData_SetLastReportedState(
+        ADUCITF_State_Idle, workflowData); // something other than DeploymentInProgress
 
     ADUC_MethodCall_Data methodCallData{};
     methodCallData.WorkflowData = workflowData;
@@ -151,17 +150,18 @@ static ADUC_Result Mock_SandboxCreateCallback(ADUC_Token token, const char* work
     UNREFERENCED_PARAMETER(workflowId);
     UNREFERENCED_PARAMETER(workFolder);
 
-    ADUC_Result result{ADUC_Result_Success};
+    ADUC_Result result{ ADUC_Result_Success };
     return result;
 }
 
-static ADUC_Result Mock_DownloadCallback(ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken workflowData)
+static ADUC_Result Mock_DownloadCallback(
+    ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken workflowData)
 {
     UNREFERENCED_PARAMETER(token);
     UNREFERENCED_PARAMETER(workCompletionData);
     UNREFERENCED_PARAMETER(workflowData);
 
-    ADUC_Result result{ADUC_Result_Success};
+    ADUC_Result result{ ADUC_Result_Success };
     return result;
 }
 
@@ -173,7 +173,8 @@ TEST_CASE("ADUC_Workflow_MethodCall_Download - Calls SandboxCreate and DownloadC
     workflowData->UpdateActionCallbacks.SandboxCreateCallback = Mock_SandboxCreateCallback;
     workflowData->UpdateActionCallbacks.DownloadCallback = Mock_DownloadCallback;
 
-    ADUC_WorkflowData_SetLastReportedState(ADUCITF_State_DeploymentInProgress, workflowData); // Must be DeploymentInProgress to succeed.
+    ADUC_WorkflowData_SetLastReportedState(
+        ADUCITF_State_DeploymentInProgress, workflowData); // Must be DeploymentInProgress to succeed.
 
     ADUC_MethodCall_Data methodCallData{};
     methodCallData.WorkflowData = workflowData;
