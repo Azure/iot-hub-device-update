@@ -17,6 +17,7 @@
 #include "aduc/extension_manager.h"
 #include "aduc/extension_utils.h"
 #include "aduc/health_management.h"
+#include "aduc/https_proxy_utils.h"
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
@@ -617,7 +618,9 @@ static void ADUC_ConnectionStatus_Callback(
 _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchArguments* launchArgs)
 {
     IOTHUB_CLIENT_RESULT iothubResult;
+    HTTP_PROXY_OPTIONS proxyOptions = {};
     bool result = true;
+    bool shouldSetProxyOptions = InitializeProxyOptions(&proxyOptions);
 
     Log_Info("Attempting to create connection to IotHub using type: %s ", ADUC_ConnType_ToString(connInfo->connType));
 
@@ -644,6 +647,14 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
             != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set IotHub certificate, error=%d", iothubResult);
+        result = false;
+    }
+    else if (
+        shouldSetProxyOptions
+        && (iothubResult =
+                ClientHandle_SetOption(g_iotHubClientHandle, OPTION_HTTP_PROXY, &proxyOptions) != IOTHUB_CLIENT_OK))
+    {
+        Log_Error("Could not set http proxy options, error=%d ", iothubResult);
         result = false;
     }
     else if (
@@ -727,6 +738,11 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
     {
         ClientHandle_Destroy(g_iotHubClientHandle);
         g_iotHubClientHandle = NULL;
+    }
+
+    if (shouldSetProxyOptions)
+    {
+        UninitializeProxyOptions(&proxyOptions);
     }
 
     return result;

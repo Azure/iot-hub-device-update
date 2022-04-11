@@ -80,6 +80,7 @@ target_link_libraries (
             aduc::device_info_interface
             aduc::eis_utils
             aduc::extension_manager
+            aduc::https_proxy_utils
             aduc::logging
             aduc::permission_utils
             aduc::pnp_helper
