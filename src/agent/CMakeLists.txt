@@ -54,7 +54,8 @@ endif ()
 
 target_compile_definitions (
     ${target_name}
-    PRIVATE ADUC_VERSION="${ADUC_VERSION}" ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
+    PRIVATE ADUC_VERSION="${ADUC_VERSION}"
+            ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
             ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}"
             SUPPORTED_UPDATE_MANIFEST_VERSION=${SUPPORTED_UPDATE_MANIFEST_VERSION})
 
@@ -81,6 +82,7 @@ target_link_libraries (
             aduc::device_info_interface
             aduc::eis_utils
             aduc::extension_manager
+            aduc::https_proxy_utils
             aduc::logging
             aduc::permission_utils
             aduc::pnp_helper
