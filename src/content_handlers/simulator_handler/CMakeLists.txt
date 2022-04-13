@@ -17,9 +17,10 @@ target_include_directories (
     ${target_name}
     PUBLIC inc
     PRIVATE ${PROJECT_SOURCE_DIR}/inc
-            ${ADUC_TYPES_INCLUDES}
+            ${ADU_EXTENSION_INCLUDES}
+            ${ADU_SHELL_INCLUDES}
             ${ADUC_EXPORT_INCLUDES}
-            ${ADU_SHELL_INCLUDES})
+            ${ADUC_TYPES_INCLUDES})
 
 get_filename_component (
     ADUC_INSTALLEDCRITERIA_FILE_PATH
@@ -34,7 +35,6 @@ target_compile_definitions (
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::content_handlers
     PRIVATE aduc::logging
             aduc::agent_workflow
             aduc::workflow_utils

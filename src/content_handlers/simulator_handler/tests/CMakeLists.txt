@@ -40,7 +40,6 @@ target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::extension_manager
     PRIVATE aduc::c_utils
-            aduc::content_handlers
             aduc::exception_utils
             aduc::extension_utils
             aduc::logging
