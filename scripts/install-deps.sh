@@ -56,18 +56,23 @@ swupdate_ref=$default_swupdate_ref
 install_azure_blob_storage_file_upload_utility=false
 azure_blob_storage_file_upload_utility_ref=main
 
+install_cmake_from_source=false
+install_cmake_version=3.10.2
+
 # DO Deps
 default_do_ref=v0.8.2
-default_do_deps_distro=ubuntu1804
 install_do=false
 do_ref=$default_do_ref
-install_do_deps_distro=""
 
 # Dependencies packages
 aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=("gcc-[68]")
 do_packages=('libproxy-dev' 'libssl-dev' 'zlib1g-dev' 'libboost-all-dev')
+
+# Distro info
+OS=""
+VER=""
 
 print_help() {
     echo "Usage: install-deps.sh [options...]"
@@ -95,14 +100,12 @@ print_help() {
     echo ""
     echo "--install-do              Install Delivery Optimization from source."
     echo "                          In order to install the correct dependencies, "
-    echo "                          use --install-do-deps-distro [distro_name] to specify the distro"
     echo "--do-ref <ref>            Install the DO source from this branch or tag."
     echo "                          This value is passed to git clone as the --branch argument."
     echo "                          Default is $default_do_ref."
     echo "--do-commit <commit_sha>  Specific commit to fetch."
     echo "                          Default is the latest commit in that branch."
-    echo "-d, --install-do-deps-distro      Indicates the distro to install DO dependencies on."
-    echo "                                  This value can be debian9, debian10, ubuntu1804, etc."
+    echo ""
     echo "-p, --install-packages    Indicates that packages should be installed."
     echo "--install-packages-only   Indicates that only packages should be installed and that dependencies should not be installed from source."
     echo ""
@@ -125,7 +128,7 @@ do_install_aduc_packages() {
     # The latest version of gcc available on Debian is gcc-6. We install that version if we are
     # building for Debian, otherwise we install gcc-8 for Ubuntu.
     OS=$(lsb_release --short --id)
-    if [[ $OS == "Debian" ]]; then
+    if [[ $OS == "debian" && $VER == "9" ]]; then
         $SUDO apt-get install --yes gcc-6 g++-6 || return
     else
         $SUDO apt-get install --yes gcc-8 g++-8 || return
@@ -141,6 +144,10 @@ do_install_aduc_packages() {
 
     # Note that clang-tidy requires clang to be installed so that it can find clang headers.
     $SUDO apt-get install --yes "${static_analysis_packages[@]}" || return
+
+    if [[ $install_cmake_from_source ]]; then
+        do_install_cmake_from_source
+    fi
 }
 
 do_install_azure_iot_sdk() {
@@ -310,10 +317,13 @@ do_install_do() {
 
     git clone --recursive --single-branch --branch $do_ref --depth 1 $do_url . || return
 
+    distro=$OS$VER
+    install_do_deps_distro="${distro//.}"
+
     if [[ $install_do_deps_distro != "" ]]; then
         local bootstrap_file=$do_dir/build/scripts/bootstrap.sh
         chmod +x $bootstrap_file || return
-        $SUDO $bootstrap_file --platform $install_do_deps_distro --install build || return
+        $SUDO $bootstrap_file --platform "$install_do_deps_distro" --install build || return
     fi
 
     mkdir cmake || return
@@ -397,6 +407,64 @@ do_install_azure_blob_storage_file_upload_utility() {
     fi
 }
 
+do_install_cmake_from_source() {
+    local cmake_url
+    local cmake_tar_path
+    local cmake_dir_path
+
+    if [[ $install_cmake_version == "3.10.2" ]]; then
+        cmake_url="https://cmake.org/files/v3.10/cmake-3.10.2.tar.gz"
+        cmake_tar_path="$work_folder/cmake-3.10.2.tar.gz"
+        cmake_dir_path="$work_folder/cmake-3.10.2/"
+
+        wget -P $work_folder ${cmake_url}
+        tar -zxvf ${cmake_tar_path} -C ${work_folder}
+
+        pushd $cmake_dir_path > /dev/null
+
+        ./bootstrap
+        make > /dev/null
+        popd > /dev/null
+    elif [[ $install_cmake_version == "3.19.8" ]]; then
+        # Later it will be added when the cmake linking error is solved
+        # Task 38390989: Move to latest CMake at least 3.19+ to get Ubuntu 20.04+ working
+        error "Currently CMake 3.13+ is not supported. It will be added in June 2022. "
+    else
+        echo "Not a supported cmake version"
+    fi
+}
+
+determine_distro() {
+    # shellcheck disable=SC1091
+
+    # Checking distro name and version
+    if [ -r /etc/os-release ]; then
+        # freedesktop.org and systemd
+        OS=$(grep "^ID\s*=\s*" /etc/os-release | sed -e "s/^ID\s*=\s*//")
+        VER=$(grep "^VERSION_ID=" /etc/os-release | sed -e "s/^VERSION_ID=//")
+        VER=$(sed -e 's/^"//' -e 's/"$//' <<<"$VER")
+    elif type lsb_release >/dev/null 2>&1; then
+        # linuxbase.org
+        OS=$(lsb_release -si)
+        VER=$(lsb_release -sr)
+    elif [ -f /etc/lsb-release ]; then
+        # For some versions of Debian/Ubuntu without lsb_release command
+        . /etc/lsb-release
+        OS=$DISTRIB_ID
+        VER=$DISTRIB_RELEASE
+    elif [ -f /etc/debian_version ]; then
+        # Older Debian/Ubuntu/etc.
+        OS=Debian
+        VER=$(cat /etc/debian_version)
+    else
+        # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
+        OS=$(uname -s)
+        VER=$(uname -r)
+    fi
+    # Covert OS to lowercase 
+    OS="$(echo "$OS" | tr '[:upper:]' '[:lower:]')"
+}
+
 do_list_all_deps() {
     declare -a deps_set=()
     deps_set+=(${aduc_packages[@]})
@@ -422,6 +490,12 @@ do_list_all_deps() {
 if [[ $1 == "" ]]; then
     error "Must specify at least one option."
     $ret 1
+fi
+
+determine_distro
+
+if [[ $OS != "ubuntu" || $VER != "18.04" ]]; then
+    install_cmake_from_source=true
 fi
 
 # Parse cmd options
@@ -469,10 +543,6 @@ while [[ $1 != "" ]]; do
         shift
         do_ref=$1
         ;;
-    -d | --install-do-deps-distro)
-        shift
-        install_do_deps_distro=$1
-        ;;
     -p | --install-packages)
         install_packages=true
         ;;
@@ -504,12 +574,6 @@ while [[ $1 != "" ]]; do
     esac
     shift
 done
-
-# If there is no install_do_deps_distro specified,
-# set to the default DO dependency distro
-if [[ $install_do_deps_distro == "" ]]; then
-    install_do_deps_distro=$default_do_deps_distro
-fi
 
 # If there is no install action specified,
 # assume that we want to install all deps.

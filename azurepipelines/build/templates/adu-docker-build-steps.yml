@@ -51,7 +51,7 @@ steps:
     displayName: "Stage build artifacts (Deb package, agent and docs)"
     condition: ne(variables['Build.Reason'], 'PullRequest')
   - bash: |
-      sudo docker exec -w /iot-hub-device-update/out-${{parameters.targetOs}}-${{parameters.targetArch}} ARMcontainer ctest -T test -V --output-on-failure
+      sudo docker exec -w /iot-hub-device-update/out-${{parameters.targetOs}}-${{parameters.targetArch}} ARMcontainer ctest --repeat until-pass:5 --timeout 300 --force-new-ctest-process -T test -V --output-on-failure
     displayName: "Run Unit Tests: linux-MinSizeRel"
   - task: PublishTestResults@2
     displayName: "Publish Unit Test Results: linux-MinSizeRel"
@@ -67,7 +67,7 @@ steps:
       sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/build.sh --clean --build-unit-tests --platform-layer linux --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir out-${{parameters.targetOs}}-${{parameters.targetArch}}
     displayName: "Build Client and Unit Tests: linux-Debug"
   - bash: |
-      sudo docker exec -w /iot-hub-device-update/out-${{parameters.targetOs}}-${{parameters.targetArch}} ARMcontainer ctest -T test -V --output-on-failure
+      sudo docker exec -w /iot-hub-device-update/out-${{parameters.targetOs}}-${{parameters.targetArch}} ARMcontainer ctest --repeat until-pass:5 --timeout 300 --force-new-ctest-process -T test -V --output-on-failure
     displayName: "Run Unit Tests: linux-Debug"
   - task: PublishTestResults@2
     displayName: "Publish Unit Test Results: linux-Debug"
