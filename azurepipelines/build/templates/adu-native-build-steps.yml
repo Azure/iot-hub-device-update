@@ -18,7 +18,7 @@ steps:
     inputs:
       targetType: "filePath"
       filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
-      arguments: --install-aduc-deps --install-packages --install-do-deps-distro ${{parameters.targetOs}}
+      arguments: --install-aduc-deps --install-packages
 
   - task: Bash@3
     displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
@@ -35,7 +35,7 @@ steps:
 
     # Run all unit tests.
   - bash: |
-      ctest -T test -V --output-on-failure
+      ctest --repeat until-pass:5 --timeout 300 --force-new-ctest-process -T test -V --output-on-failure
       exit $?
     displayName: "Run Unit Tests: linux-MinSizeRel"
     workingDirectory: $(Build.BinariesDirectory)
@@ -59,7 +59,7 @@ steps:
 
     # Run all unit tests.
   - bash: |
-      ctest -T test -V --output-on-failure
+      ctest --repeat until-pass:5 --timeout 300 --force-new-ctest-process -T test -V --output-on-failure
       exit $?
     displayName: "Run Unit Tests: linux-Debug"
     workingDirectory: $(Build.BinariesDirectory)
