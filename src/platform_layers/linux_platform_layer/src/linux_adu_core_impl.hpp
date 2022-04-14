@@ -290,7 +290,12 @@ private:
      */
     static void DoWorkCallback(ADUC_Token token, ADUC_WorkflowDataToken workflowData) noexcept
     {
+#if ENABLE_COMPONENT_CHANGED_DETECTION
         DetectAndHandleComponentsAvailabilityChangedEvent(token, workflowData);
+#else
+        UNREFERENCED_PARAMETER(token);
+        UNREFERENCED_PARAMETER(workflowData);
+#endif
     }
 
     //
