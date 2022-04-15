@@ -33,7 +33,7 @@
 #include <getopt.h>
 #include <iothub.h>
 #include <iothub_client_options.h>
-#include <iothubtransportmqtt.h>
+#include <iothubtransportmqtt_websockets.h>
 #include <limits.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -161,7 +161,7 @@ typedef struct tagPnPComponentEntry
     const PnPComponentDestroyFunc Destroy;
     const PnPComponentPropertyUpdateCallback
         PnPPropertyUpdateCallback; /**< Called when a component's property is updated. (optional) */
-    
+
     //
     // Following data is dynamic.
     // Must be initialized to NULL in map and remain last entries in this struct.
@@ -626,7 +626,7 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
 
     // Create a connection to IoTHub.
     if (!ClientHandle_CreateFromConnectionString(
-            &g_iotHubClientHandle, connInfo->connType, connInfo->connectionString, MQTT_Protocol))
+            &g_iotHubClientHandle, connInfo->connType, connInfo->connectionString, MQTT_WebSocket_Protocol))
     {
         Log_Error("Failure creating IotHub device client using MQTT protocol. Check your connection string.");
         result = false;

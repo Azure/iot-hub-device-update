@@ -164,7 +164,9 @@ do_install_azure_iot_sdk() {
     local azureiotsdkc_cmake_options=(
         "-Duse_amqp:BOOL=OFF"
         "-Duse_http:BOOL=ON"
+        "-Duse_mqtt:BOOL=OFF"
         "-Duse_mqtt:BOOL=ON"
+        "-Duse_wsio:BOOL=ON"
         "-Dskip_samples:BOOL=ON"
         "-Dbuild_service_client:BOOL=OFF"
         "-Dbuild_provisioning_service_client:BOOL=OFF"
