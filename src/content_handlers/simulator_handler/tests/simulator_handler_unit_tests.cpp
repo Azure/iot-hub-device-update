@@ -176,6 +176,24 @@ const char* isInstalled_notInstalled =
     R"(  })"
     R"(})";
 
+const char* backupSucceed1000 =
+    R"({)"
+    R"(  "backup" : {)"
+    R"(    "resultCode" : 1000,)"
+    R"(    "extendedResultCode" : 0,)"
+    R"(    "resultDetails" : "Mock backup succeeded - 1000")"
+    R"(  })"
+    R"(})";
+
+const char* restoreSucceed1100 =
+    R"({)"
+    R"(  "restore" : {)"
+    R"(    "resultCode" : 1100,)"
+    R"(    "extendedResultCode" : 0,)"
+    R"(    "resultDetails" : "Mock restore succeeded - 1100")"
+    R"(  })"
+    R"(})";
+
 // clang-format on
 
 TEST_CASE("Download Succeeded 500")
@@ -479,6 +497,54 @@ TEST_CASE("IsInstalled - notInstalled")
     CHECK(result.ResultCode == 901);
     CHECK(result.ExtendedResultCode == 0);
     CHECK_THAT(workflow_peek_result_details(handle), Equals("Mock result - 901"));
+
+    workflow_free(handle);
+}
+
+TEST_CASE("Backup Succeeded 1000")
+{
+    SimulatorHandlerDataFile simData(backupSucceed1000);
+
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    CHECK(result.ResultCode != 0);
+    CHECK(result.ExtendedResultCode == 0);
+
+    ADUC_WorkflowData testWorkflow{};
+    testWorkflow.WorkflowHandle = handle;
+
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
+
+    result = simHandler->Backup(&testWorkflow);
+    testWorkflow.WorkflowHandle = nullptr;
+
+    CHECK(result.ResultCode == 1000);
+    CHECK(result.ExtendedResultCode == 0);
+    CHECK_THAT(workflow_peek_result_details(handle), Equals("Mock backup succeeded - 1000"));
+
+    workflow_free(handle);
+}
+
+TEST_CASE("Restore Succeeded 1100")
+{
+    SimulatorHandlerDataFile simData(restoreSucceed1100);
+
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    CHECK(result.ResultCode != 0);
+    CHECK(result.ExtendedResultCode == 0);
+
+    ADUC_WorkflowData testWorkflow{};
+    testWorkflow.WorkflowHandle = handle;
+
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
+
+    result = simHandler->Restore(&testWorkflow);
+    testWorkflow.WorkflowHandle = nullptr;
+
+    CHECK(result.ResultCode == 1100);
+    CHECK(result.ExtendedResultCode == 0);
+    CHECK_THAT(workflow_peek_result_details(handle), Equals("Mock restore succeeded - 1100"));
 
     workflow_free(handle);
 }

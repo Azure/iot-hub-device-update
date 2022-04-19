@@ -235,8 +235,10 @@ typedef enum tagADUCITF_WorkflowStep
     ADUCITF_WorkflowStep_Undefined = 0, ///< The undefined worfklow step.
     ADUCITF_WorkflowStep_ProcessDeployment = 1, ///< Step that reports DeploymentInProgress ACK
     ADUCITF_WorkflowStep_Download = 2, ///< Step where it starts download operation
-    ADUCITF_WorkflowStep_Install = 3, ///< Step where it starts install operation
-    ADUCITF_WorkflowStep_Apply = 4, ///< Step where it starts apply operation
+    ADUCITF_WorkflowStep_Backup = 3, ///< Step where it starts backup operation
+    ADUCITF_WorkflowStep_Install = 4, ///< Step where it starts install operation
+    ADUCITF_WorkflowStep_Apply = 5, ///< Step where it starts apply operation
+    ADUCITF_WorkflowStep_Restore = 6, ///< Step where it starts restore operation
 } ADUCITF_WorkflowStep;
 
 //
@@ -259,6 +261,9 @@ typedef enum tagADUCITF_State
     ADUCITF_State_InstallSucceeded = 4, ///< The state for when an install operation has completed with success.
     ADUCITF_State_ApplyStarted = 5, ///< The state for when an apply operation is in progress.
     ADUCITF_State_DeploymentInProgress = 6, ///< The state for reporting the acknowledgement of ProcessDeployment update action.
+    ADUCITF_State_BackupStarted = 7, ///< The state for when a backup operation is in progress.
+    ADUCITF_State_BackupSucceeded = 8, ///< The state for when a backup operation has completed with success.
+    ADUCITF_State_RestoreStarted = 9, ///< The state for when an restore operation is in progress.
     ADUCITF_State_Failed = 255, ///< The state for when a deployment has failed and for reporting the failure.
 } ADUCITF_State;
 

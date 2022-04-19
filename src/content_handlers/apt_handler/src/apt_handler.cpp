@@ -406,3 +406,27 @@ ADUC_Result AptHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflowData
     workflow_free_string(installedCriteria);
     return result;
 }
+
+/**
+ * @brief Backup implementation for APT Handler.
+ *
+ * @return ADUC_Result The result of the backup.
+ */
+ADUC_Result AptHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData)
+{
+    ADUC_Result result = { ADUC_Result_Backup_Success_Unsupported };
+    Log_Info("Apt update backup & restore is not supported. (no-op)");
+    return result;
+}
+
+/**
+ * @brief Restore implementation for APT Handler.
+ *
+ * @return ADUC_Result The result of the restore.
+ */
+ADUC_Result AptHandlerImpl::Restore(const tagADUC_WorkflowData* workflowData)
+{
+    ADUC_Result result = { ADUC_Result_Restore_Success_Unsupported };
+    Log_Info("Apt update backup & restore is not supported. (no-op)");
+    return result;
+}

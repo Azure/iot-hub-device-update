@@ -82,10 +82,14 @@ static const char* ADUCITF_WorkflowStepToString(ADUCITF_WorkflowStep workflowSte
         return "ProcessDeployment";
     case ADUCITF_WorkflowStep_Download:
         return "Download";
+    case ADUCITF_WorkflowStep_Backup:
+        return "Backup";
     case ADUCITF_WorkflowStep_Install:
         return "Install";
     case ADUCITF_WorkflowStep_Apply:
         return "Apply";
+    case ADUCITF_WorkflowStep_Restore:
+        return "Restore";
     case ADUCITF_WorkflowStep_Undefined:
         return "Undefined";
     }
@@ -129,12 +133,19 @@ typedef struct tagADUC_WorkflowHandlerMapEntry
 
     const ADUC_Workflow_OperationCompleteFunc OperationCompleteFunc;
 
-    const ADUCITF_State NextState; /**< State to transition to on successful operation */
+    const ADUCITF_State NextStateOnSuccess; /**< State to transition to on successful operation */
 
-    /**< The next workflow step input to transition workflow after transitioning to above NextState when current
+    /**< The next workflow step input to transition workflow after transitioning to above NextStateOnSuccess when current
      *     workflow step is above WorkflowStep. Using ADUCITF_WorkflowStep_Undefined means it ends the workflow.
      */
-    const ADUCITF_WorkflowStep AutoTransitionWorkflowStep;
+    const ADUCITF_WorkflowStep AutoTransitionWorkflowStepOnSuccess;
+
+    const ADUCITF_State NextStateOnFailure; /**< State to transition to on failed operation */
+
+    /**< The next workflow step input to transition workflow after transitioning to above NextStateOnFailure when current
+     *     workflow step is above WorkflowStep. Using ADUCITF_WorkflowStep_Undefined means it ends the workflow.
+     */
+    const ADUCITF_WorkflowStep AutoTransitionWorkflowStepOnFailure;
 } ADUC_WorkflowHandlerMapEntry;
 
 // clang-format off
@@ -156,32 +167,63 @@ typedef struct tagADUC_WorkflowHandlerMapEntry
  */
 const ADUC_WorkflowHandlerMapEntry workflowHandlerMap[] = {
     { ADUCITF_WorkflowStep_ProcessDeployment,
-        /* calls operation */                             ADUC_Workflow_MethodCall_ProcessDeployment,
-        /* and on completion calls */                     ADUC_Workflow_MethodCall_ProcessDeployment_Complete,
-        /* then on success, transitions to state */       ADUCITF_State_DeploymentInProgress,
-        /* and then auto-transitions to workflow step */  ADUCITF_WorkflowStep_Download,
+        /* calls operation */                               ADUC_Workflow_MethodCall_ProcessDeployment,
+        /* and on completion calls */                       ADUC_Workflow_MethodCall_ProcessDeployment_Complete,
+        /* on success, transitions to state */              ADUCITF_State_DeploymentInProgress,
+        /* on success auto-transitions to workflow step */  ADUCITF_WorkflowStep_Download,
+        /* on failure, transitions to state */              ADUCITF_State_Failed,
+        /* on failure auto-transitions to workflow step */  ADUCITF_WorkflowStep_Undefined,
     },
 
     { ADUCITF_WorkflowStep_Download,
-        /* calls operation */                             ADUC_Workflow_MethodCall_Download,
-        /* and on completion calls */                     ADUC_Workflow_MethodCall_Download_Complete,
-        /* then on success, transitions to state */       ADUCITF_State_DownloadSucceeded,
-        /* and then auto-transitions to workflow step */  ADUCITF_WorkflowStep_Install,
+        /* calls operation */                               ADUC_Workflow_MethodCall_Download,
+        /* and on completion calls */                       ADUC_Workflow_MethodCall_Download_Complete,
+        /* on success, transitions to state */              ADUCITF_State_DownloadSucceeded,
+        /* on success auto-transitions to workflow step */  ADUCITF_WorkflowStep_Backup,
+        /* on failure, transitions to state */              ADUCITF_State_Failed,
+        /* on failure auto-transitions to workflow step */  ADUCITF_WorkflowStep_Undefined,
+    },
+
+    { ADUCITF_WorkflowStep_Backup,
+        /* calls operation */                               ADUC_Workflow_MethodCall_Backup,
+        /* and on completion calls */                       ADUC_Workflow_MethodCall_Backup_Complete,
+        /* on success, transitions to state */              ADUCITF_State_BackupSucceeded,
+        /* on success auto-transitions to workflow step */  ADUCITF_WorkflowStep_Install,
+        /* Note: The default behavior of backup is that if Backup fails, 
+        the workflow will end and report failure immediately.
+        To opt out of this design, in the content handler, the owner of the content handler
+        will need to persist the result of ADUC_Workflow_MethodCall_Backup and return
+        ADUC_Result_Backup_Success to let the workflow continue. */
+        /* on failure, transitions to state */              ADUCITF_State_Failed,
+        /* on failure auto-transitions to workflow step */  ADUCITF_WorkflowStep_Undefined,
     },
 
     { ADUCITF_WorkflowStep_Install,
-        /* calls operation */                             ADUC_Workflow_MethodCall_Install,
-        /* and on completion calls */                     ADUC_Workflow_MethodCall_Install_Complete,
-        /* then on success, transitions to state */       ADUCITF_State_InstallSucceeded,
-        /* and then auto-transitions to workflow step */  ADUCITF_WorkflowStep_Apply,
+        /* calls operation */                               ADUC_Workflow_MethodCall_Install,
+        /* and on completion calls */                       ADUC_Workflow_MethodCall_Install_Complete,
+        /* on success, transitions to state */              ADUCITF_State_InstallSucceeded,
+        /* on success auto-transitions to workflow step */  ADUCITF_WorkflowStep_Apply,
+        /* on failure, transitions to state */              ADUCITF_State_Failed,
+        /* on failure auto-transitions to workflow step */  ADUCITF_WorkflowStep_Restore,
     },
 
     // Note: There's no "ApplySucceeded" state.  On success, we should return to Idle state.
     { ADUCITF_WorkflowStep_Apply,
-        /* calls operation */                             ADUC_Workflow_MethodCall_Apply,
-        /* and on completion calls */                     ADUC_Workflow_MethodCall_Apply_Complete,
-        /* then on success, transition to state */        ADUCITF_State_Idle,
-        /* and then auto-transitions to workflow step */  ADUCITF_WorkflowStep_Undefined, // Undefined means end of workflow
+        /* calls operation */                               ADUC_Workflow_MethodCall_Apply,
+        /* and on completion calls */                       ADUC_Workflow_MethodCall_Apply_Complete,
+        /* on success, transition to state */               ADUCITF_State_Idle,
+        /* on success auto-transitions to workflow step */  ADUCITF_WorkflowStep_Undefined, // Undefined means end of workflow
+        /* on failure, transitions to state */              ADUCITF_State_Failed,
+        /* on failure auto-transitions to workflow step */  ADUCITF_WorkflowStep_Restore,
+    },
+
+    { ADUCITF_WorkflowStep_Restore,
+        /* calls operation */                               ADUC_Workflow_MethodCall_Restore,
+        /* and on completion calls */                       ADUC_Workflow_MethodCall_Restore_Complete,
+        /* on success, transition to state */               ADUCITF_State_Idle,
+        /* on success auto-transitions to workflow step */  ADUCITF_WorkflowStep_Undefined, // Undefined means end of workflow
+        /* on failure, transitions to state */              ADUCITF_State_Failed,
+        /* on failure auto-transitions to workflow step */  ADUCITF_WorkflowStep_Undefined,
     },
 };
 
@@ -617,15 +659,10 @@ done:
  *         It must be in a lock before calling this.
  *
  * @param workflowData The global context workflow data structure.
+ * @param onSuccess Indicate whether it is a transition on success or on failure.
  */
-void ADUC_Workflow_AutoTransitionWorkflow(ADUC_WorkflowData* workflowData)
+void ADUC_Workflow_AutoTransitionWorkflow(ADUC_WorkflowData* workflowData, _Bool onSuccess)
 {
-    if (ADUC_WorkflowData_GetLastReportedState(workflowData) == ADUCITF_State_Failed)
-    {
-        Log_Debug("Skipping transition for Failed state.");
-        return;
-    }
-
     //
     // If the workflow's not complete, then auto-transition to the next step/phase of the workflow.
     // For example, Download just completed, so it should auto-transition with workflow step input of WorkflowStep_Install,
@@ -641,19 +678,42 @@ void ADUC_Workflow_AutoTransitionWorkflow(ADUC_WorkflowData* workflowData)
         return;
     }
 
-    if (AgentOrchestration_IsWorkflowComplete(postCompleteEntry->AutoTransitionWorkflowStep))
+    if (!onSuccess)
     {
-        Log_Info("Workflow is Complete.");
+        if (AgentOrchestration_IsWorkflowComplete(postCompleteEntry->AutoTransitionWorkflowStepOnFailure))
+        {
+            Log_Info("Workflow is Complete.");
+        }
+        else
+        {
+            workflow_set_current_workflowstep(
+                workflowData->WorkflowHandle, postCompleteEntry->AutoTransitionWorkflowStepOnFailure);
+
+            Log_Info(
+                "workflow is not completed. AutoTransition to step: %s",
+                ADUCITF_WorkflowStepToString(postCompleteEntry->AutoTransitionWorkflowStepOnFailure));
+
+            ADUC_Workflow_TransitionWorkflow(workflowData);
+        }
     }
+
     else
     {
-        workflow_set_current_workflowstep(workflowData->WorkflowHandle, postCompleteEntry->AutoTransitionWorkflowStep);
+        if (AgentOrchestration_IsWorkflowComplete(postCompleteEntry->AutoTransitionWorkflowStepOnSuccess))
+        {
+            Log_Info("Workflow is Complete.");
+        }
+        else
+        {
+            workflow_set_current_workflowstep(
+                workflowData->WorkflowHandle, postCompleteEntry->AutoTransitionWorkflowStepOnSuccess);
 
-        Log_Info(
-            "workflow is not completed. AutoTransition to step: %s",
-            ADUCITF_WorkflowStepToString(postCompleteEntry->AutoTransitionWorkflowStep));
+            Log_Info(
+                "workflow is not completed. AutoTransition to step: %s",
+                ADUCITF_WorkflowStepToString(postCompleteEntry->AutoTransitionWorkflowStepOnSuccess));
 
-        ADUC_Workflow_TransitionWorkflow(workflowData);
+            ADUC_Workflow_TransitionWorkflow(workflowData);
+        }
     }
 }
 
@@ -777,14 +837,14 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
     {
         // Operation succeeded -- go to next state.
 
-        const ADUCITF_State nextUpdateState = entry->NextState;
+        const ADUCITF_State nextUpdateStateOnSuccess = entry->NextStateOnSuccess;
 
         Log_Info(
             "WorkCompletionCallback: %s succeeded. Going to state %s",
             ADUCITF_WorkflowStepToString(entry->WorkflowStep),
-            ADUCITF_StateToString(nextUpdateState));
+            ADUCITF_StateToString(nextUpdateStateOnSuccess));
 
-        ADUC_Workflow_SetUpdateState(workflowData, nextUpdateState);
+        ADUC_Workflow_SetUpdateState(workflowData, nextUpdateStateOnSuccess);
 
         // Transitioning to idle (or failed) state frees and nulls-out the WorkflowHandle as a side-effect of
         // setting the update state.
@@ -796,7 +856,7 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
             //
             // We are now ready to transition to the next step of the workflow.
             //
-            ADUC_Workflow_AutoTransitionWorkflow(workflowData);
+            ADUC_Workflow_AutoTransitionWorkflow(workflowData, true);
             goto done;
         }
     }
@@ -862,22 +922,17 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
         else
         {
             // Operation failed.
-            //
-            // Report back the result and set state to "Failed".
-            // It's expected that the service will call us again with a "Cancel" action,
-            // to indicate that it's received the operation result and state, at which time
-            // we'll return back to idle state.
 
-            Log_Error(
-                "%s failed. error %d, %d (0x%X) - Expecting service to send Cancel action.",
+            const ADUCITF_State nextUpdateStateOnFailure = entry->NextStateOnFailure;
+
+            Log_Info(
+                "WorkCompletionCallback: %s failed. Going to state %s",
                 ADUCITF_WorkflowStepToString(entry->WorkflowStep),
-                result.ResultCode,
-                result.ExtendedResultCode,
-                result.ExtendedResultCode);
+                ADUCITF_StateToString(nextUpdateStateOnFailure));
 
-            ADUC_Workflow_SetUpdateStateWithResult(workflowData, ADUCITF_State_Failed, result);
+            ADUC_Workflow_SetUpdateState(workflowData, nextUpdateStateOnFailure);
 
-            workflow_set_operation_in_progress(workflowData->WorkflowHandle, false);
+            ADUC_Workflow_AutoTransitionWorkflow(workflowData, false);
         }
     }
 
@@ -1233,7 +1288,7 @@ ADUC_Result ADUC_Workflow_MethodCall_Install(ADUC_MethodCall_Data* methodCallDat
     Log_Info("Workflow step: Install");
 
     ADUCITF_State lastReportedState = ADUC_WorkflowData_GetLastReportedState(workflowData);
-    if (lastReportedState != ADUCITF_State_DownloadSucceeded)
+    if (lastReportedState != ADUCITF_State_BackupSucceeded)
     {
         Log_Error("Install Workflow step called in unexpected state: %s!", ADUCITF_StateToString(lastReportedState));
         result.ResultCode = ADUC_Result_Failure;
@@ -1295,6 +1350,46 @@ void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallD
             workflow_set_operation_in_progress(methodCallData->WorkflowData->WorkflowHandle, false);
         }
     }
+}
+
+/**
+ * @brief Called to do backup.
+ *
+ * @param[in] methodCallData - the method call data.
+ * @return Result code.
+ */
+ADUC_Result ADUC_Workflow_MethodCall_Backup(ADUC_MethodCall_Data* methodCallData)
+{
+    ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
+    const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
+    ADUC_Result result = {};
+
+    Log_Info("Workflow step: backup");
+
+    ADUCITF_State lastReportedState = ADUC_WorkflowData_GetLastReportedState(workflowData);
+    if (lastReportedState != ADUCITF_State_DownloadSucceeded)
+    {
+        Log_Error("Backup Workflow step called in unexpected state: %s!", ADUCITF_StateToString(lastReportedState));
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_UPDATE_ACTION_UNEXPECTED_STATE;
+        goto done;
+    }
+
+    ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_BackupStarted);
+
+    Log_Info("Calling BackupCallback");
+
+    result = updateActionCallbacks->BackupCallback(
+        updateActionCallbacks->PlatformLayerHandle, &(methodCallData->WorkCompletionData), workflowData);
+
+done:
+    return result;
+}
+
+void ADUC_Workflow_MethodCall_Backup_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
+{
+    UNREFERENCED_PARAMETER(methodCallData);
+    UNREFERENCED_PARAMETER(result);
 }
 
 /**
@@ -1377,6 +1472,94 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
     else if (result.ResultCode == ADUC_Result_Apply_Success)
     {
         // An Apply action completed successfully. Continue to the next step.
+        workflow_set_operation_in_progress(methodCallData->WorkflowData->WorkflowHandle, false);
+    }
+}
+
+/**
+ * @brief Called to do restore.
+ *
+ * @param[in] methodCallData - the method call data.
+ * @return Result code.
+ */
+ADUC_Result ADUC_Workflow_MethodCall_Restore(ADUC_MethodCall_Data* methodCallData)
+{
+    ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
+    const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
+    ADUC_Result result = {};
+
+    Log_Info("Workflow step: Restore");
+
+    ADUCITF_State lastReportedState = ADUC_WorkflowData_GetLastReportedState(workflowData);
+    if (lastReportedState != ADUCITF_State_Failed)
+    {
+        Log_Error("Apply Workflow step called in unexpected state: %s!", ADUCITF_StateToString(lastReportedState));
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERC_NOTPERMITTED;
+        goto done;
+    }
+
+    workflow_set_current_workflowstep(workflowData->WorkflowHandle, ADUCITF_WorkflowStep_Restore);
+
+    ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_RestoreStarted);
+
+    Log_Info("Calling RestoreCallback");
+
+    result = updateActionCallbacks->RestoreCallback(
+        updateActionCallbacks->PlatformLayerHandle, &(methodCallData->WorkCompletionData), workflowData);
+
+done:
+    return result;
+}
+
+void ADUC_Workflow_MethodCall_Restore_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
+{
+    if (result.ResultCode == ADUC_Result_Restore_RequiredReboot
+        || result.ResultCode == ADUC_Result_Restore_RequiredImmediateReboot)
+    {
+        // If restore indicated a reboot required result from restore, go ahead and reboot.
+        Log_Info("Restore indicated success with RebootRequired - rebooting system now");
+        methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+
+        RebootSystemFunc rebootFn = ADUC_WorkflowData_GetRebootSystemFunc(methodCallData->WorkflowData);
+
+        int success = (*rebootFn)();
+        if (success == 0)
+        {
+            methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_InProgress;
+        }
+        else
+        {
+            Log_Error("Reboot attempt failed.");
+            workflow_set_operation_in_progress(methodCallData->WorkflowData->WorkflowHandle, false);
+        }
+    }
+    else if (
+        result.ResultCode == ADUC_Result_Restore_RequiredAgentRestart
+        || result.ResultCode == ADUC_Result_Restore_RequiredImmediateAgentRestart)
+    {
+        // If restore indicated a restart is required, go ahead and restart the agent.
+        Log_Info("Restore indicated success with AgentRestartRequired - restarting the agent now");
+        methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+
+        RestartAgentFunc restartAgentFn = ADUC_WorkflowData_GetRestartAgentFunc(methodCallData->WorkflowData);
+
+        int success = (*restartAgentFn)();
+        if (success == 0)
+        {
+            methodCallData->WorkflowData->AgentRestartState = ADUC_AgentRestartState_InProgress;
+        }
+        else
+        {
+            Log_Error("Agent restart attempt failed.");
+            workflow_set_operation_in_progress(methodCallData->WorkflowData->WorkflowHandle, false);
+        }
+    }
+    else if (
+        result.ResultCode == ADUC_Result_Restore_Success
+        || result.ResultCode == ADUC_Result_Restore_Success_Unsupported)
+    {
+        // An restore action completed successfully. Continue to the next step.
         workflow_set_operation_in_progress(methodCallData->WorkflowData->WorkflowHandle, false);
     }
 }

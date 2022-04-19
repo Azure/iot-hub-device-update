@@ -44,11 +44,17 @@ void ADUC_Workflow_MethodCall_ProcessDeployment_Complete(ADUC_MethodCall_Data* m
 ADUC_Result ADUC_Workflow_MethodCall_Download(ADUC_MethodCall_Data* methodCallData);
 void ADUC_Workflow_MethodCall_Download_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result);
 
+ADUC_Result ADUC_Workflow_MethodCall_Backup(ADUC_MethodCall_Data* methodCallData);
+void ADUC_Workflow_MethodCall_Backup_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result);
+
 ADUC_Result ADUC_Workflow_MethodCall_Install(ADUC_MethodCall_Data* methodCallData);
 void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result);
 
 ADUC_Result ADUC_Workflow_MethodCall_Apply(ADUC_MethodCall_Data* methodCallData);
 void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result);
+
+ADUC_Result ADUC_Workflow_MethodCall_Restore(ADUC_MethodCall_Data* methodCallData);
+void ADUC_Workflow_MethodCall_Restore_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result);
 
 void ADUC_Workflow_MethodCall_Cancel(const ADUC_WorkflowData* workflowData);
 

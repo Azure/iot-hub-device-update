@@ -406,3 +406,36 @@ static ADUC_Result CancelApply(const char* logFolder)
     Log_Info("Apply was cancelled");
     return ADUC_Result{ ADUC_Result_Failure_Cancelled };
 }
+
+/**
+ * @brief Backup implementation for swupdate.
+ * Calls into the swupdate wrapper script to perform backup.
+ * For swupdate, no operation is required.
+ *
+ * @return ADUC_Result The result of the backup.
+ * It will always return ADUC_Result_Backup_Success.
+ */
+ADUC_Result SWUpdateHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData)
+{
+    ADUC_Result result = { ADUC_Result_Backup_Success };
+    Log_Info("Swupdate doesn't require a specific operation to backup. (no-op) ");
+    return result;
+}
+
+/**
+ * @brief Restore implementation for swupdate.
+ * Calls into the swupdate wrapper script to perform restore.
+ * Will flip bootloader flag to boot into the previous partition for A/B update.
+ *
+ * @return ADUC_Result The result of the restore.
+ */
+ADUC_Result SWUpdateHandlerImpl::Restore(const tagADUC_WorkflowData* workflowData)
+{
+    ADUC_Result result = { ADUC_Result_Restore_Success };
+    ADUC_Result cancel_result = CancelApply(ADUC_LOG_FOLDER);
+    if (cancel_result.ResultCode != ADUC_Result_Failure_Cancelled)
+    {
+        result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_FAILED_RESTORE_FAILED };
+    }
+    return result;
+}

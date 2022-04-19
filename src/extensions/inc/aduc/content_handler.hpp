@@ -37,8 +37,10 @@ public:
     ContentHandler& operator=(ContentHandler&&) = delete;
 
     virtual ADUC_Result Download(const tagADUC_WorkflowData* workflowData) = 0;
+    virtual ADUC_Result Backup(const tagADUC_WorkflowData* workflowData) = 0;
     virtual ADUC_Result Install(const tagADUC_WorkflowData* workflowData) = 0;
     virtual ADUC_Result Apply(const tagADUC_WorkflowData* workflowData) = 0;
+    virtual ADUC_Result Restore(const tagADUC_WorkflowData* workflowData) = 0;
     virtual ADUC_Result Cancel(const tagADUC_WorkflowData* workflowData) = 0;
     virtual ADUC_Result IsInstalled(const tagADUC_WorkflowData* workflowData) = 0;
 

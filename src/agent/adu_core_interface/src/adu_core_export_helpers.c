@@ -38,8 +38,12 @@ static _Bool ADUC_UpdateActionCallbacks_VerifyData(const ADUC_UpdateActionCallba
 {
     // Note: Okay for updateActionCallbacks->PlatformLayerHandle to be NULL.
 
-    if (updateActionCallbacks->IdleCallback == NULL || updateActionCallbacks->DownloadCallback == NULL
-        || updateActionCallbacks->InstallCallback == NULL || updateActionCallbacks->ApplyCallback == NULL
+    if (updateActionCallbacks->IdleCallback == NULL
+        || updateActionCallbacks->DownloadCallback == NULL
+        || updateActionCallbacks->BackupCallback == NULL
+        || updateActionCallbacks->InstallCallback == NULL
+        || updateActionCallbacks->ApplyCallback == NULL
+        || updateActionCallbacks->RestoreCallback == NULL
         || updateActionCallbacks->SandboxCreateCallback == NULL
         || updateActionCallbacks->SandboxDestroyCallback == NULL || updateActionCallbacks->DoWorkCallback == NULL
         || updateActionCallbacks->IsInstalledCallback == NULL)

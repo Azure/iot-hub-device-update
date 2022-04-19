@@ -20,6 +20,14 @@ The followings are Result Code that visible in the Device or Module Twin:
 | 700 | ADUC_Result_Apply_Success |
 | 800 | ADUC_Result_Cancel_Success |
 | 801 | ADUC_Result_Cancel_UnableToCancel |
+| 900 | ADUC_Result_IsInstalled_Installed |
+| 901 | ADUC_Result_IsInstalled_NotInstalled |
+| 1000| ADUC_Result_Backup_Success |
+| 1001| ADUC_Result_Backup_Success_Unsupported |
+| 1002| ADUC_Result_Backup_InProgress |
+| 1100| ADUC_Result_Restore_Success |
+| 1101| ADUC_Result_Restore_Success_Unsupported |
+| 1102| ADUC_Result_Restore_InProgress |
 
 See [adu_core.h](../../src/adu/types/adu_core.h) for more detail.
 
@@ -189,6 +197,7 @@ static inline ADUC_Result_t MAKE_ADUC_UPPERLAYER_EXTENDEDRESULTCODE(const int va
 |:----|:----|:----|
 | 0x20000001 |ADUC_ERC_UPPERLEVEL_WORKFLOW_UPDATE_ACTION_UNEXPECTED_STATE  |
 | 0x20000002 |ADUC_ERC_UPPERLEVEL_WORKFLOW_INSTALL_ACTION_IN_UNEXPECTED_STATE  |
+| 0x20000003 | ADUC_ERC_UPPERLEVEL_WORKFLOW_FAILED_RESTORE_FAILED |
 
 ### Update Content Handler Result Codes (facility #3)
 

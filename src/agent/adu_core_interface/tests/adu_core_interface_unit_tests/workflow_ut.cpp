@@ -131,6 +131,20 @@ extern "C"
 
             case 2:
                 //
+                // Backup
+                //
+                REQUIRE(isAsync);
+                REQUIRE(ADUC_WorkflowData_GetLastReportedState(workflowData) == ADUCITF_State_BackupStarted);
+                REQUIRE(ADUC_WorkflowData_GetCurrentAction(workflowData) == ADUCITF_UpdateAction_ProcessDeployment);
+                REQUIRE(workflow_get_current_workflowstep(workflowData->WorkflowHandle) == ADUCITF_WorkflowStep_Backup);
+
+                REQUIRE(workflowData->IsRegistered == false);
+                REQUIRE(workflow_get_operation_in_progress(workflowData->WorkflowHandle) == true);
+                REQUIRE(workflow_get_operation_cancel_requested(workflowData->WorkflowHandle) == false);
+                break;
+
+            case 3:
+                //
                 // Install
                 //
                 REQUIRE(isAsync);
@@ -143,7 +157,7 @@ extern "C"
                 REQUIRE(workflow_get_operation_cancel_requested(workflowData->WorkflowHandle) == false);
                 break;
 
-            case 3:
+            case 4:
                 //
                 // Apply
                 //
@@ -174,8 +188,10 @@ extern "C"
 }
 
 static ADUC_ResultCode s_download_result_code = ADUC_Result_Download_Success;
+static ADUC_ResultCode s_backup_result_code = ADUC_Result_Backup_Success;
 static ADUC_ResultCode s_install_result_code = ADUC_Result_Install_Success;
 static ADUC_ResultCode s_apply_result_code = ADUC_Result_Apply_Success;
+static ADUC_ResultCode s_restore_result_code = ADUC_Result_Restore_Success;
 static ADUC_ResultCode s_cancel_result_code = ADUC_Result_Cancel_Success;
 static ADUC_ResultCode s_isInstalled_result_code = ADUC_Result_IsInstalled_NotInstalled;
 
@@ -186,8 +202,10 @@ static void Reset_Mocks_State()
     s_expectedWorkflowIdWhenIdle = "";
 
     s_download_result_code = ADUC_Result_Download_Success;
+    s_backup_result_code = ADUC_Result_Backup_Success;
     s_install_result_code = ADUC_Result_Install_Success;
     s_apply_result_code = ADUC_Result_Apply_Success;
+    s_restore_result_code = ADUC_Result_Restore_Success;
     s_cancel_result_code = ADUC_Result_Cancel_Success;
     s_isInstalled_result_code = ADUC_Result_IsInstalled_NotInstalled;
 }
@@ -213,6 +231,13 @@ public:
         return result;
     }
 
+    ADUC_Result Backup(const ADUC_WorkflowData* workflowData) override
+    {
+        UNREFERENCED_PARAMETER(workflowData);
+        ADUC_Result result = { s_backup_result_code };
+        return result;
+    }
+
     ADUC_Result Install(const ADUC_WorkflowData* workflowData) override
     {
         UNREFERENCED_PARAMETER(workflowData);
@@ -224,6 +249,13 @@ public:
     {
         UNREFERENCED_PARAMETER(workflowData);
         ADUC_Result result = { s_apply_result_code };
+        return result;
+    }
+
+    ADUC_Result Restore(const ADUC_WorkflowData* workflowData) override
+    {
+        UNREFERENCED_PARAMETER(workflowData);
+        ADUC_Result result = { s_restore_result_code };
         return result;
     }
 

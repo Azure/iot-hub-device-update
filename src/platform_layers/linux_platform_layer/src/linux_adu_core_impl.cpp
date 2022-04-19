@@ -67,8 +67,10 @@ ADUC_Result LinuxPlatformLayer::SetUpdateActionCallbacks(ADUC_UpdateActionCallba
     // Message handlers.
     data->IdleCallback = IdleCallback;
     data->DownloadCallback = DownloadCallback;
+    data->BackupCallback = BackupCallback;
     data->InstallCallback = InstallCallback;
     data->ApplyCallback = ApplyCallback;
+    data->RestoreCallback = RestoreCallback;
     data->CancelCallback = CancelCallback;
 
     data->IsInstalledCallback = IsInstalledCallback;
@@ -230,6 +232,62 @@ done:
     workflow_free_string(workflowId);
     return result;
 }
+
+/**
+ * @brief Class implementation of Backup method.
+ * @return ADUC_Result
+ */
+ADUC_Result LinuxPlatformLayer::Backup(const ADUC_WorkflowData* workflowData)
+{
+    ADUC_Result result{ ADUC_Result_Failure };
+
+    char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
+
+    ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
+    if (contentHandler == nullptr)
+    {
+        goto done;
+    }
+
+    result = contentHandler->Backup(workflowData);
+
+    // If cancel is requested during backup, we will proceed to finish the backup.
+    if (_IsCancellationRequested)
+    {
+        result = ADUC_Result{ ADUC_Result_Failure_Cancelled };
+        _IsCancellationRequested = false; // For replacement, we can't call Idle so reset here
+    }
+
+done:
+    workflow_free_string(workflowId);
+    return result;
+}
+/**
+ * @brief Class implementation of Restore method.
+ * @return ADUC_Result
+ */
+ADUC_Result LinuxPlatformLayer::Restore(const ADUC_WorkflowData* workflowData)
+{
+    ADUC_Result result{ ADUC_Result_Failure };
+
+    char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
+
+    ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
+    if (contentHandler == nullptr)
+    {
+        goto done;
+    }
+
+    result = contentHandler->Restore(workflowData);
+
+    // If cancel is requested during restore, it means that the user wants to cancel the deployment (which already failed),
+    // so the agent should try to restore to the previous state - proceed to finish the restore.
+
+done:
+    workflow_free_string(workflowId);
+    return result;
+}
+
 
 /**
  * @brief Class implementation of Cancel method.

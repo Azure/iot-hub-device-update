@@ -69,5 +69,21 @@
             "extendedResultCode" : 0,
             "resultDetails" : ""
         }
+    },
+    //
+    // For 'backup' function, only one result will be returned. 
+    //
+    "backup" : {
+        "resultCode" : 1000, // ADUC_Result_Install_Success 
+        "extendedResultCode" : 0,
+        "resultDetails" : ""
+    },
+        //
+    // For 'backup' function, only one result will be returned. 
+    //
+    "restore" : {
+        "resultCode" : 1100, // ADUC_Result_Install_Success 
+        "extendedResultCode" : 0,
+        "resultDetails" : ""
     }
 }

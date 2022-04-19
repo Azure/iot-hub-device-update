@@ -626,3 +626,25 @@ ADUC_Result ScriptHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflowD
     }
     return result;
 }
+
+/**
+ * @brief Performs 'Backup' task.
+ * @return ADUC_Result The result (always success)
+ */
+ADUC_Result ScriptHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData)
+{
+    ADUC_Result result = { ADUC_Result_Backup_Success_Unsupported };
+    Log_Info("Script handler backup & restore is not supported. (no-op)");
+    return result;
+}
+
+/**
+ * @brief Performs 'Restore' task.
+ * @return ADUC_Result The result (always success)
+ */
+ADUC_Result ScriptHandlerImpl::Restore(const tagADUC_WorkflowData* workflowData)
+{
+    ADUC_Result result = { ADUC_Result_Restore_Success_Unsupported };
+    Log_Info("Script handler backup & restore is not supported. (no-op)");
+    return result;
+}

@@ -163,10 +163,16 @@ const char* ADUCITF_StateToString(ADUCITF_State updateState)
         return "DownloadStarted";
     case ADUCITF_State_DownloadSucceeded:
         return "DownloadSucceeded";
+    case ADUCITF_State_BackupStarted:
+        return "BackupStarted";
+    case ADUCITF_State_BackupSucceeded:
+        return "BackupSucceeded";
     case ADUCITF_State_InstallStarted:
         return "InstallStarted";
     case ADUCITF_State_InstallSucceeded:
         return "InstallSucceeded";
+    case ADUCITF_State_RestoreStarted:
+        return "RestoreStarted";
     case ADUCITF_State_ApplyStarted:
         return "ApplyStarted";
     case ADUCITF_State_DeploymentInProgress:

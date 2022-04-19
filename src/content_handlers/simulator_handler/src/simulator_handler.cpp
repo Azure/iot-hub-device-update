@@ -329,6 +329,17 @@ done:
 }
 
 /**
+ * @brief Mock implementation of backup
+ * @return ADUC_Result Return result from simulator data file if specified.
+ *         Otherwise, return ADUC_Result_Backup_Success.
+ */
+ADUC_Result SimulatorHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData)
+{
+    return SimulatorActionHelper(workflowData, ADUC_Result_Backup_Success, "backup", nullptr);
+}
+
+
+/**
  * @brief Mock implementation of install
  * @return ADUC_Result Return result from simulator data file if specified.
  *         Otherwise, return ADUC_Result_Install_Success.
@@ -336,6 +347,16 @@ done:
 ADUC_Result SimulatorHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
 {
     return SimulatorActionHelper(workflowData, ADUC_Result_Install_Success, "install", nullptr);
+}
+
+/**
+ * @brief Mock implementation of restore
+ * @return ADUC_Result Return result from simulator data file if specified.
+ *         Otherwise, return ADUC_Result_Restore_Success.
+ */
+ADUC_Result SimulatorHandlerImpl::Restore(const tagADUC_WorkflowData* workflowData)
+{
+    return SimulatorActionHelper(workflowData, ADUC_Result_Restore_Success, "restore", nullptr);
 }
 
 /**

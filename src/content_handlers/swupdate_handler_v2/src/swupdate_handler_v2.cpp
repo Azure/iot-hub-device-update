@@ -819,3 +819,67 @@ ADUC_Result SWUpdateHandlerImpl::PerformAction(const std::string& action, const 
     return SWUpdateHandler_PerformAction(
         action, workflowData, false, scriptFilePath, args, commandLineArgs, scriptOutput);
 }
+
+/**
+ * @brief Helper function to perform cancel when we are doing an apply.
+ *
+ * @return ADUC_Result The result of the cancel.
+ */
+static ADUC_Result CancelApply(const char* logFolder)
+{
+    // Execute the install command with  "-r" to reverts the apply by
+    // telling the bootloader to boot into the current partition
+
+    // This is equivalent to : command << c_installScript << " -l " << logFolder << " -r"
+
+    std::string command = adushconst::adu_shell;
+    std::vector<std::string> args{ adushconst::update_type_opt,       adushconst::update_type_microsoft_swupdate,
+                                   adushconst::update_action_opt,     adushconst::update_action_apply,
+                                   adushconst::target_log_folder_opt, logFolder };
+
+    std::string output;
+
+    const int exitCode = ADUC_LaunchChildProcess(command, args, output);
+    if (exitCode != 0)
+    {
+        // If failed to cancel apply, apply should return SuccessRebootRequired.
+        Log_Error("Failed to cancel Apply, extendedResultCode = %d", exitCode);
+        return ADUC_Result{ ADUC_Result_Failure, exitCode };
+    }
+
+    Log_Info("Apply was cancelled");
+    return ADUC_Result{ ADUC_Result_Failure_Cancelled };
+}
+
+/**
+ * @brief Backup implementation for swupdate V2.
+ * Calls into the swupdate wrapper script to perform backup.
+ * For swupdate, no operation is required.
+ *
+ * @return ADUC_Result The result of the backup.
+ * It will always return ADUC_Result_Backup_Success.
+ */
+ADUC_Result SWUpdateHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData)
+{
+    ADUC_Result result = { ADUC_Result_Backup_Success };
+    Log_Info("Swupdate doesn't require a specific operation to backup. (no-op) ");
+    return result;
+}
+
+/**
+ * @brief Restore implementation for swupdate V2.
+ * Calls into the swupdate wrapper script to perform restore.
+ * Will flip bootloader flag to boot into the previous partition for A/B update.
+ *
+ * @return ADUC_Result The result of the restore.
+ */
+ADUC_Result SWUpdateHandlerImpl::Restore(const tagADUC_WorkflowData* workflowData)
+{
+    ADUC_Result result = { ADUC_Result_Restore_Success };
+    ADUC_Result cancel_result = CancelApply(ADUC_LOG_FOLDER);
+    if (cancel_result.ResultCode != ADUC_Result_Failure_Cancelled)
+    {
+        result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_FAILED_RESTORE_FAILED };
+    }
+    return result;
+}
