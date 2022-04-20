@@ -60,11 +60,50 @@ dependencies.  To see the usage info:
 ./scripts/install-deps.sh -h
 ```
 
+#### Enabling MQTT over WebSockets in Azure IoTHub SDK for C
+
+You can enable MQTT over web sockets in the Azure IoTHub SDK library dependency by adding `--use-websockets` command-line switch:
+
+```shell
+./scripts/install-deps.sh --install-azure-iot-sdk --use-websockets
+```
+
+Verify that the mqtt websockets static library was built successfully:
+```shell
+$ locate libiothub_client_mqtt_ws_transport.a | grep '/usr/local/lib/'
+/usr/local/lib/libiothub_client_mqtt_ws_transport.a
+```
+
+NOTE: You'll also have to modify the top-level CMakeLists.txt to set `ADUC_IOT_HUB_PROTOCOL` to `MQTT_over_WebSockets` before running build.sh
+
 ## As a standalone solution
 
 ### Device Update Linux Build System
 
 The Device Update for IoT Hub reference agent code utilizes CMake for building. An example build script is provided at [scripts/build.sh](../../scripts/build.sh).
+
+#### Optionally Choose MQTT over WebSockets for IotHub SDK Protocol
+
+After enabling WebSockets above using install-deps.sh so that it builds libiothub_client_mqtt_ws_transport.a static library, modify the top-level CMakeLists.txt to use MQTT_over_WebSockets:
+
+```shell
+set (
+    ADUC_IOT_HUB_PROTOCOL
+    "MQTT_over_WebSockets"
+    CACHE STRING " The protocol for Azure IotHub SDK communication. Options are MQTT or MQTT_over_WebSockets")
+```
+
+Doing ./build.sh after setting this to `"MQTT_over_WebSockets"` will have the MQTT traffic go over a websocket on port 443.
+Using `"MQTT"` will use SecureMQTT over port 8883.
+You can verify by doing:
+
+```shell
+$ sudo ./out/bin/AducIotClient -l0 -e > /dev/null 2>&1 &
+$ sudo netstat -pantu | grep Adu
+tcp        0      0 <LOCAL IP ADDR>:<LOCAL PORT>       20.40.207.0:443         ESTABLISHED <PID>/./out/bin/Aduc
+$ fg
+<ctrl-c>
+```
 
 #### Build Using build.sh
 

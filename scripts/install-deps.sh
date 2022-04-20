@@ -37,6 +37,7 @@ install_packages_only=false
 work_folder=/tmp
 keep_source_code=false
 use_ssh=false
+use_websockets=false
 
 # ADUC Deps
 
@@ -114,6 +115,7 @@ print_help() {
     echo "-k, --keep-source-code            Indicates that source code should not be deleted after install from work_folder."
     echo ""
     echo "--use-ssh                 Use ssh URLs to clone instead of https URLs."
+    echo "--use-websockets          Enables websockets in azure-iot-sdk"
     echo "--list-deps               List the states of the dependencies."
     echo "-h, --help                Show this help message."
     echo ""
@@ -185,6 +187,10 @@ do_install_azure_iot_sdk() {
         "-Dbuild_service_client:BOOL=OFF"
         "-Dbuild_provisioning_service_client:BOOL=OFF"
     )
+
+    if [[ "$use_websockets" == "true" ]]; then
+        azureiotsdkc_cmake_options+=("-Duse_wsio:BOOL=ON")
+    fi
 
     if [[ $keep_source_code == "true" ]]; then
         # If source is wanted, presumably samples and symbols are useful as well.
@@ -461,7 +467,7 @@ determine_distro() {
         OS=$(uname -s)
         VER=$(uname -r)
     fi
-    # Covert OS to lowercase 
+    # Covert OS to lowercase
     OS="$(echo "$OS" | tr '[:upper:]' '[:lower:]')"
 }
 
@@ -558,6 +564,9 @@ while [[ $1 != "" ]]; do
         ;;
     --use-ssh)
         use_ssh=true
+        ;;
+    --use-websockets)
+        use_websockets=true
         ;;
     --list-deps)
         do_list_all_deps

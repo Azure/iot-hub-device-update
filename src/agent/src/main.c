@@ -33,7 +33,11 @@
 #include <getopt.h>
 #include <iothub.h>
 #include <iothub_client_options.h>
-#include <iothubtransportmqtt.h>
+#ifdef ADUC_USE_WEBSOCKETS
+#    include <iothubtransportmqtt_websockets.h>
+#else
+#    include <iothubtransportmqtt.h>
+#endif
 #include <limits.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -626,7 +630,13 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
 
     // Create a connection to IoTHub.
     if (!ClientHandle_CreateFromConnectionString(
-            &g_iotHubClientHandle, connInfo->connType, connInfo->connectionString, MQTT_Protocol))
+            &g_iotHubClientHandle, connInfo->connType, connInfo->connectionString,
+#ifdef ADUC_USE_WEBSOCKETS
+            MQTT_WebSocket_Protocol
+#else
+            MQTT_Protocol
+#endif
+            ))
     {
         Log_Error("Failure creating IotHub device client using MQTT protocol. Check your connection string.");
         result = false;

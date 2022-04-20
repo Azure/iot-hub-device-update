@@ -332,6 +332,11 @@ set (
     "syslog"
     CACHE STRING "The syslog group.")
 
+set (
+    ADUC_IOT_HUB_PROTOCOL
+    "MQTT"
+    CACHE STRING " The protocol for Azure IotHub SDK communication. Options are MQTT or MQTT_over_WebSockets")
+
 option (ADUC_WARNINGS_AS_ERRORS "Treat warnings as errors (-Werror)" ON)
 option (ADUC_BUILD_UNIT_TESTS "Build unit tests and mock some functionality" OFF)
 option (ADUC_BUILD_DOCUMENTATION "Build documentation files" OFF)

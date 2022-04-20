@@ -72,7 +72,6 @@ target_link_libraries (
     ${target_name}
     PRIVATE aziotsharedutil
             IotHubClient::iothub_client
-            iothub_client_mqtt_transport
             umqtt
             aduc::adu_core_interface
             aduc::agent_workflow
@@ -89,6 +88,16 @@ target_link_libraries (
             aduc::system_utils
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
+
+if (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT_over_WebSockets")
+    target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_ws_transport)
+    target_compile_definitions (
+        ${target_name} PRIVATE ADUC_USE_WEBSOCKETS=1)
+elseif (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT")
+    target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_transport)
+else ()
+    target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_transport)
+endif ()
 
 get_filename_component (
     ADUC_INSTALLEDCRITERIA_FILE_PATH
