@@ -822,37 +822,15 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
                 // When install fails, invoke Restore action
                 try
                 {
-                    result = contentHandler->Restore(&stepWorkflow);
+                    // Try to restore from the install failure, but it shouldn't impact the result code.
+                    // To know the restore result on each step, the corresponding Update Handler will need to
+                    // implement proper logging and send it up through Diagnostics service.
+                    contentHandler->Restore(&stepWorkflow);
                 }
                 catch (...)
                 {
-                    result = { .ResultCode = ADUC_Result_Failure,
-                            .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_RESTORE_CHILD_STEP };
+                    Log_Warn("Unexpected error happened during restore action.");
                     goto done;
-                }
-                switch (result.ResultCode)
-                {
-                case ADUC_Result_Restore_RequiredImmediateReboot:
-                    workflow_request_immediate_reboot(handle);
-                    // We can skip another instances.
-                    goto done;
-
-                case ADUC_Result_Restore_RequiredReboot:
-                    workflow_request_reboot(handle);
-                    break;
-
-                case ADUC_Result_Restore_RequiredImmediateAgentRestart:
-                    workflow_request_immediate_agent_restart(handle);
-                    goto done;
-
-                case ADUC_Result_Restore_RequiredAgentRestart:
-                    workflow_request_agent_restart(handle);
-                    break;
-                }
-                if (IsAducResultCodeFailure(result.ResultCode))
-                {
-                    // Propagate item's restore resultDetails to parent. 
-                    workflow_set_result_details(handle, workflow_peek_result_details(stepHandle));
                 }
                 goto done;
             }
@@ -917,37 +895,15 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
                 // when apply fails, invoke restore action
                 try
                 {
-                    result = contentHandler->Restore(&stepWorkflow);
+                    // Try to restore from the apply failure, but it shouldn't impact the result code.
+                    // To know the restore result on each step, the corresponding Update Handler will need to
+                    // implement proper logging and send it up through Diagnostics service.
+                    contentHandler->Restore(&stepWorkflow);
                 }
                 catch (...)
                 {
-                    result = { .ResultCode = ADUC_Result_Failure,
-                            .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_RESTORE_CHILD_STEP };
+                    Log_Warn("Unexpected error happened during restore action.");
                     goto done;
-                }
-                switch (result.ResultCode)
-                {
-                case ADUC_Result_Restore_RequiredImmediateReboot:
-                    workflow_request_immediate_reboot(handle);
-                    // We can skip another instances.
-                    goto done;
-
-                case ADUC_Result_Restore_RequiredReboot:
-                    workflow_request_reboot(handle);
-                    break;
-
-                case ADUC_Result_Restore_RequiredImmediateAgentRestart:
-                    workflow_request_immediate_agent_restart(handle);
-                    goto done;
-
-                case ADUC_Result_Restore_RequiredAgentRestart:
-                    workflow_request_agent_restart(handle);
-                    break;
-                }
-                if (IsAducResultCodeFailure(result.ResultCode))
-                {
-                    // Propagate item's restore resultDetails to parent. 
-                    workflow_set_result_details(handle, workflow_peek_result_details(stepHandle));
                 }
             }
 
@@ -1020,11 +976,11 @@ ADUC_Result StepsHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
  */
 static ADUC_Result StepsHandler_Apply(const tagADUC_WorkflowData* workflowData)
 {
-    UNREFERENCED_PARAMETER(workflowData);
-    Log_Debug("Steps_Handler 'apply' phase begin.");
+    // Steps_Handler 'apply' is returning success to proceed with the workflow here, and the actual apply happens during each step.
+    Log_Debug("Apply task at level %d is no-op.", workflow_get_level(workflowData->WorkflowHandle));
+
     ADUC_Result result{ ADUC_Result_Apply_Success };
 
-    Log_Debug("Steps_Handler apply phase end.");
     return result;
 }
 
@@ -1257,11 +1213,10 @@ ADUC_Result StepsHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflowDa
  */
 static ADUC_Result StepsHandler_Backup(const tagADUC_WorkflowData* workflowData)
 {
-    UNREFERENCED_PARAMETER(workflowData);
-    Log_Debug("Steps_Handler 'backup' phase begin.");
-    ADUC_Result result{ ADUC_Result_Backup_Success };
+    // Steps_Handler 'backup' is returning success to proceed with the workflow here, and the actual backup happens during each step.
+    Log_Debug("Backup task at level %d is no-op.", workflow_get_level(workflowData->WorkflowHandle));
 
-    Log_Debug("Steps_Handler backup phase end.");
+    ADUC_Result result{ ADUC_Result_Backup_Success };
     return result;
 }
 
@@ -1280,11 +1235,11 @@ ADUC_Result StepsHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData)
  */
 static ADUC_Result StepsHandler_Restore(const tagADUC_WorkflowData* workflowData)
 {
-    UNREFERENCED_PARAMETER(workflowData);
-    Log_Debug("Steps_Handler 'restore' phase begin.");
+    // Steps_Handler 'restore' is returning success to proceed with the workflow here, and the actual restore happens during each step.
+    Log_Debug("Restore task at level %d is no-op.", workflow_get_level(workflowData->WorkflowHandle));
+
     ADUC_Result result{ ADUC_Result_Restore_Success };
 
-    Log_Debug("Steps_Handler restore phase end.");
     return result;
 }
 
