@@ -626,6 +626,7 @@ ADUC_Result ExtensionManager::Download(
 
     std::stringstream childManifestFile;
     ADUC_Result result;
+    int accessRes = 0;
 
     try
     {
@@ -667,7 +668,8 @@ ADUC_Result ExtensionManager::Download(
 
     // If file exists and has a valid hash, then skip download.
     // Otherwise, delete an existing file, then download.
-    if (access(childManifestFile.str().c_str(), F_OK) == 0)
+    accessRes = access(childManifestFile.str().c_str(), F_OK);
+    if (accessRes == 0)
     {
         // If target file exists, validate file hash.
         // If file is valid, then skip the download.

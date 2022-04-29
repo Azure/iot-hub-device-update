@@ -31,7 +31,7 @@ Param(
     # Update Provider
     [ValidateNotNullOrEmpty()]
     [string] $UpdateName = "Virtual-Vacuum",
-    
+
     # Device Manufacturer
     [ValidateNotNullOrEmpty()]
     [string] $DeviceManufacturer = "contoso",
@@ -75,21 +75,21 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     $hostfwCompat = New-AduUpdateCompatibility  -Properties $hostfwSelector
 
     $hostfwScriptFile = "$PSScriptRoot\scripts\contoso-firmware-installscript.sh"
-    $hostfwFirmwareFile = "$PSScriptRoot\data-files\host-firmware-$hostfwFirmwareVersion.json"  
+    $hostfwFirmwareFile = "$PSScriptRoot\data-files\host-firmware-$hostfwFirmwareVersion.json"
 
     #------------
     # ADD STEP(S)
-    #  
-    
+    #
+
     # This update contains 3 steps.
     $hostfwInstallSteps = @()
-    
+
     # Step #1 - install host firmware and reboot
     $hostfwInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
                             -Files $hostfwScriptFile, $hostfwFirmwareFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-firmware-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion";   `
+                                'installedCriteria'="$hostfwFirmwareVersion";   `
                                 'arguments'="--restart-to-apply --firmware-file host-firmware-$hostfwFirmwareVersion.json  --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -144,21 +144,21 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     $motorsCompat = New-AduUpdateCompatibility  -Properties $motorsSelector
 
     $motorScriptFile = "$PSScriptRoot\scripts\contoso-motor-installscript.sh"
-    $motorFirmwareFile = "$PSScriptRoot\data-files\motor-firmware-$motorsFirmwareVersion.json"  
+    $motorFirmwareFile = "$PSScriptRoot\data-files\motor-firmware-$motorsFirmwareVersion.json"
 
     #------------
     # ADD STEP(S)
-    #  
-    
+    #
+
     # This update contains 3 steps.
     $motorsInstallSteps = @()
-    
+
     # Step #1 - simulating a success pre-install task.
     $motorsInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
                             -Files $motorScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-motor-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion";   `
+                                'installedCriteria'="$motorsFirmwareVersion";   `
                                 'arguments'="--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -169,7 +169,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $motorScriptFile, $motorFirmwareFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-motor-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
+                                'installedCriteria'="$motorsFirmwareVersion"; `
                                 "arguments"="--firmware-file motor-firmware-$motorsFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -180,7 +180,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $motorScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-motor-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
+                                'installedCriteria'="$motorsFirmwareVersion"; `
                                 "arguments"="--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"  `
                             }   `
                             `
@@ -242,7 +242,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
 
     #------------
     # ADD STEP(S)
-    #    
+    #
 
     # This update contains 3 steps.
     $camerasInstallSteps = @()
@@ -252,7 +252,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $cameraScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion";   `
+                                'installedCriteria'="$camerasFirmwareVersion";   `
                                 'arguments'="--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -263,7 +263,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $cameraScriptFile, $cameraFirmwareFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
+                                'installedCriteria'="$camerasFirmwareVersion"; `
                                 "arguments"="--firmware-file camera-firmware-$camerasFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -274,7 +274,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $cameraScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
+                                'installedCriteria'="$camerasFirmwareVersion"; `
                                 "arguments"="--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"  `
                             }   `
                             `
@@ -311,11 +311,11 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     Write-Host " "
 
 # ----------------------------
-# Create the parent update 
+# Create the parent update
 # ----------------------------
 Write-Host "    Preparing parent update $parentUpdateIdStr ..."
 
-$payloadFiles = 
+$payloadFiles =
 $parentSteps = @()
 
     #------------
