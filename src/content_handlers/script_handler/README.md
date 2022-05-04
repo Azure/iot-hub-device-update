@@ -181,7 +181,7 @@ The following options and arguments are automatically pass to the script.
 |--action-download| none | Script Handler will append this option to the `arguments` list to indicate that the script is invoked as part of the `download` action.<br/>The Script should perform any additional content download tasks to ensure that all content required by the installation is accessible during the installation. |
 |--action-install| none | Script Handler will append this option to the `arguments` list to indicate that the script is invoked as part of the `install` action.<br/>The Script should perform all tasks related to the software installation. Such as, install a software package(s) on host device, transfer firmware file to connected peripheral, remove existing file(s) that no longer needed, etc.|
 |--action-is-install| none |Script Handler will append this option to the `arguments` list to indicate that the script is invoked as part of the `isInstalled` inquiry.<br/>As part of the Agent-Orchestrated workflow, sometimes, Device Update Agent will invoke the Script Handler's `IsInstalled` function to determine wither the current Step has been **installed**. <br> For Step that does not install any software, **isinstalled** is equivalent to **applied**. E.g., "Is the step has been applied on the device or components?"|
-| --workfolder | <"work_folder_path">| A fully qualified path to `workfolder` (a.k.a. `sandbox folder`). This is a folder used for storing downloaded file, workflow result file, and any other temp files.<br/><br/>Script Handler will append this option to the arguments list when invoking the script. |
+| --work-folder | <"work_folder_path">| A fully qualified path to `workfolder` (a.k.a. `sandbox folder`). This is a folder used for storing downloaded file, workflow result file, and any other temp files.<br/><br/>Script Handler will append this option to the arguments list when invoking the script. |
 | --result-file | <"result_file_path"> |A fully qualified path to the workflow task result. The result file contains a  ADUC_Result data in a JSON. The Script Handler will read ADUC_Result data in this file and continue or abort the update workflow based on the `resultCode`. If the result file does not exist, or can not be opened, the update workflow will be aborted.<br/><br/>Script Handler will append this option to the arguments list when invoking the script.|
 | --installed-criteria | <"installed_criteria_string">| Pass-through value to the script.|  
 
@@ -266,7 +266,7 @@ Following are the mapping between the `step.handlersProperties.arguments` value 
 |--component-prop |path| --component-prop path| Not a reserved option. Note that both option and argument are unchanged. |
 |--component-prop-val| path|**"\/usr\/local\/contoso-devices\/vacuum-1\/motors\/contoso-motor-serial-00000"**| This is the value of the component's **properties.path** value above. |
 |||***--action-install***| Automatically appended as part of the *`*install*`* workflow. This indicates that the script should perform 'install' task. |
-|||**--workfolder** **"/var/lib/adu/downloads/workflow_id_1234567890/"**| Automatically appended as part of the *`*install*`* workflow. Note that is is for demonstration purposes. The actual work folder path will be different in real update scenario. |
+|||**--work-folder** **"/var/lib/adu/downloads/workflow_id_1234567890/"**| Automatically appended as part of the *`*install*`* workflow. Note that is is for demonstration purposes. The actual work folder path will be different in real update scenario. |
 |||**--result-file** **"/var/lib/adu/downloads/workflow_id_1234567890/aduc_result.json"**| Automatically appended as part of the *`*install*`* workflow. Note that is is for demonstration purposes. The actual file path will be different in real update scenario. |
 |||**--installed-criteria** **"2.0"**| Automatically appended as part of the *`*install*`* workflow. The value **"2.0"** is the value of `handlerProperties.installedCriteria`, if specified. |
 
@@ -278,7 +278,7 @@ contoso-motor-installscript.sh
     --component-name "left-motor" --component-group "motors" 
     --component-prop path "/usr/local/contoso-devices/vacuum-1/motors/contoso-motor-serial-00000" 
     --action-install 
-    --workfolder "/var/lib/adu/downloads/workflow_id_1234567890/" 
+    --work-folder "/var/lib/adu/downloads/workflow_id_1234567890/" 
     --result-file "/var/lib/adu/downloads/workflow_id_1234567890/aduc_result.json"
     --installed-criteria": "1.2"
 
