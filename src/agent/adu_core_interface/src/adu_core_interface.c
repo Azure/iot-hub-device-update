@@ -519,7 +519,7 @@ done:
  * @param updateState The workflow state machine state.
  * @param result The pointer to the result. If NULL, then the result will be retrieved from the opaque handle object in the workflow data.
  * @param installedUpdateId The installed Update ID string.
- * @return JSON_Value* The resultant json value object. User must free using json_value_free().
+ * @return JSON_Value* The resultant json value object. Caller must free using json_value_free().
  */
 JSON_Value* GetReportingJsonValue(
     ADUC_WorkflowData* workflowData,
@@ -820,7 +820,6 @@ _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     }
 
     jsonString = json_serialize_to_string(rootValue);
-    json_value_free(rootValue);
     if (jsonString == NULL)
     {
         Log_Error("Serializing JSON to string failed");
@@ -835,6 +834,7 @@ _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     success = true;
 
 done:
+    json_value_free(rootValue);
     json_free_serialized_string(jsonString);
     // Don't free the persistenceData as that will be done by the startup logic that owns it.
 
