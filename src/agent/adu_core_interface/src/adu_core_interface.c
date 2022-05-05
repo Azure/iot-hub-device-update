@@ -519,7 +519,7 @@ done:
  * @param updateState The workflow state machine state.
  * @param result The pointer to the result. If NULL, then the result will be retrieved from the opaque handle object in the workflow data.
  * @param installedUpdateId The installed Update ID string.
- * @return JSON_Value* The resultant json value object.
+ * @return JSON_Value* The resultant json value object. User must free using json_value_free().
  */
 JSON_Value* GetReportingJsonValue(
     ADUC_WorkflowData* workflowData,
