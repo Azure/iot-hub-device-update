@@ -81,9 +81,10 @@ ADUC_Result ContentHandlerFactory::LoadExtensionLibrary(const std::string& updat
     }
 
     if (!ADUC_HashUtils_IsValidFileHash(
-            entity.TargetFilename, 
+            entity.TargetFilename,
             ADUC_HashUtils_GetHashValue(entity.Hash, entity.HashCount, 0),
-            algVersion))
+            algVersion,
+            false))
     {
         Log_Error("Hash for %s is not valid", entity.TargetFilename);
         result = { ADUC_GeneralResult_Failure, ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_VALIDATE };
@@ -103,7 +104,7 @@ ADUC_Result ContentHandlerFactory::LoadExtensionLibrary(const std::string& updat
 
     dlerror(); // Clear any existing error
 
-    createUpdateContentHandlerExtension = 
+    createUpdateContentHandlerExtension =
         reinterpret_cast<UPDATE_CONTENT_HANDLER_CREATE_PROC>(dlsym(*libHandle, "CreateUpdateContentHandlerExtension")); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
     if (createUpdateContentHandlerExtension == nullptr)
@@ -191,7 +192,7 @@ ContentHandlerFactory::LoadUpdateContentHandlerExtension(const std::string& upda
 
     dlerror(); // Clear any existing error
 
-    createUpdateContentHandlerExtension = 
+    createUpdateContentHandlerExtension =
         reinterpret_cast<UPDATE_CONTENT_HANDLER_CREATE_PROC>(dlsym(libHandle, "CreateUpdateContentHandlerExtension")); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
     if (createUpdateContentHandlerExtension == nullptr)

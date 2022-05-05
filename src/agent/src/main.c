@@ -160,7 +160,7 @@ typedef struct tagPnPComponentEntry
     const PnPComponentDestroyFunc Destroy;
     const PnPComponentPropertyUpdateCallback
         PnPPropertyUpdateCallback; /**< Called when a component's property is updated. (optional) */
-    
+
     //
     // Following data is dynamic.
     // Must be initialized to NULL in map and remain last entries in this struct.
@@ -546,7 +546,7 @@ static const size_t g_numModeledComponents = ARRAY_SIZE(g_modeledComponents);
 
 static bool g_firstDeviceTwinDataProcessed = false;
 
-static void InititalizeModeledComponents()
+static void InitializeModeledComponents()
 {
     const size_t numModeledComponents = ARRAY_SIZE(g_modeledComponents);
 
@@ -1042,7 +1042,7 @@ void OnRestartSignal(int sig)
  */
 int main(int argc, char** argv)
 {
-    InititalizeModeledComponents();
+    InitializeModeledComponents();
 
     ADUC_LaunchArguments launchArgs;
 

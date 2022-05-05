@@ -106,7 +106,7 @@ ADUC_Result ExtensionManager::LoadExtensionLibrary(
 
     if (!GetExtensionFileEntity(path.str().c_str(), &entity))
     {
-        Log_Error("Failed to load extension from '%s'.", path.str().c_str());
+        Log_Info("Failed to load extension from '%s'.", path.str().c_str());
         result.ExtendedResultCode = ADUC_ERC_EXTENSION_CREATE_FAILURE_NOT_FOUND(facilityCode, componentCode);
         goto done;
     }
@@ -124,7 +124,7 @@ ADUC_Result ExtensionManager::LoadExtensionLibrary(
     }
 
     if (!ADUC_HashUtils_IsValidFileHash(
-            entity.TargetFilename, ADUC_HashUtils_GetHashValue(entity.Hash, entity.HashCount, 0), algVersion))
+            entity.TargetFilename, ADUC_HashUtils_GetHashValue(entity.Hash, entity.HashCount, 0), algVersion, true))
     {
         Log_Error("Hash for %s is not valid", entity.TargetFilename);
         result.ExtendedResultCode = ADUC_ERC_EXTENSION_CREATE_FAILURE_VALIDATE(facilityCode, componentCode);
@@ -246,8 +246,9 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
 
     dlerror(); // Clear any existing error
 
-    createUpdateContentHandlerExtension = reinterpret_cast<UPDATE_CONTENT_HANDLER_CREATE_PROC>(dlsym(
-        libHandle, "CreateUpdateContentHandlerExtension")); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    createUpdateContentHandlerExtension =
+        reinterpret_cast<UPDATE_CONTENT_HANDLER_CREATE_PROC>(dlsym(libHandle, "CreateUpdateContentHandlerExtension"));
 
     if (createUpdateContentHandlerExtension == nullptr)
     {
@@ -294,6 +295,37 @@ done:
     STRING_delete(folderName);
     STRING_delete(path);
 
+    return result;
+}
+
+/**
+ * @brief Sets UpdateContentHandler for specified @p updateType
+ * @param updateType An update type string.
+ * @param handler A ContentHandler object.
+ * @return ADUCResult contains result code and extended result code.
+ * */
+ADUC_Result ExtensionManager::SetUpdateContentHandlerExtension(const std::string& updateType, ContentHandler* handler)
+{
+    ADUC_Result result = { ADUC_Result_Failure };
+
+    Log_Info("Setting Content Handler for '%s'.", updateType.c_str());
+
+    if (handler == nullptr)
+    {
+        Log_Error("Invalid argument(s).");
+        result.ExtendedResultCode =
+            ADUC_ERC_EXTENSION_CREATE_FAILURE_INVALID_ARG(ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER, 0);
+        goto done;
+    }
+
+    // Remove existing one.
+    _contentHandlers.erase(updateType);
+
+    _contentHandlers.emplace(updateType, handler);
+
+    result = { ADUC_GeneralResult_Success };
+
+done:
     return result;
 }
 
@@ -379,6 +411,20 @@ done:
     return result;
 }
 
+ADUC_Result ExtensionManager::SetContentDownloaderLibrary(void* contentDownloaderLibrary)
+{
+    ADUC_Result result = { ADUC_Result_Success };
+    _contentDownloader = contentDownloaderLibrary;
+    return result;
+}
+
+bool ExtensionManager::IsComponentsEnumeratorRegistered()
+{
+    void* extensionLib = nullptr;
+    ADUC_Result result = LoadComponentEnumeratorLibrary(&extensionLib);
+    return (IsAducResultCodeSuccess(result.ResultCode) && extensionLib != nullptr);
+}
+
 ADUC_Result ExtensionManager::LoadComponentEnumeratorLibrary(void** componentEnumerator)
 {
     ADUC_Result result = { ADUC_Result_Failure };
@@ -419,7 +465,8 @@ ADUC_Result ExtensionManager::LoadComponentEnumeratorLibrary(void** componentEnu
 
     if (mainFunc == nullptr)
     {
-        Log_Error("The specified function ('%s') doesn't exist. %s\n", requiredFunction, dlerror());
+        // Log info instead of error since some extension is optional and may not be registered.
+        Log_Info("The specified function ('%s') doesn't exist. %s\n", requiredFunction, dlerror());
         result = { .ResultCode = ADUC_GeneralResult_Failure,
                    .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_NO_SYMBOL };
         goto done;
@@ -445,8 +492,8 @@ void ExtensionManager::_FreeComponentsDataString(char* componentsJson)
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    freeComponentsDataStringProc =
-        reinterpret_cast<FreeComponentsDataStringProc>(dlsym(lib, "FreeComponentsDataString"));
+    freeComponentsDataStringProc = reinterpret_cast<FreeComponentsDataStringProc>(
+        dlsym(lib, "FreeComponentsDataString")); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
     if (freeComponentsDataStringProc == nullptr)
     {
@@ -667,6 +714,7 @@ ADUC_Result ExtensionManager::Download(
 
     // If file exists and has a valid hash, then skip download.
     // Otherwise, delete an existing file, then download.
+    Log_Debug("Check whether '%s' has already been download into the work folder.", childManifestFile.str().c_str());
     if (access(childManifestFile.str().c_str(), F_OK) == 0)
     {
         // If target file exists, validate file hash.
@@ -674,7 +722,8 @@ ADUC_Result ExtensionManager::Download(
         isFileExistsAndValidHash = ADUC_HashUtils_IsValidFileHash(
             childManifestFile.str().c_str(),
             ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
-            algVersion);
+            algVersion,
+            false);
 
         if (!isFileExistsAndValidHash)
         {
@@ -709,7 +758,8 @@ ADUC_Result ExtensionManager::Download(
             if (!ADUC_HashUtils_IsValidFileHash(
                     childManifestFile.str().c_str(),
                     ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
-                    algVersion))
+                    algVersion,
+                    true))
             {
                 result = { .ResultCode = ADUC_Result_Failure,
                            .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION };

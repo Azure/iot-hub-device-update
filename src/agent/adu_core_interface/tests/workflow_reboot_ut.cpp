@@ -38,7 +38,7 @@ EXTERN_C_BEGIN
 void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, bool isAsync);
 EXTERN_C_END
 
-extern void* g_iotHubClientHandleForADUComponent;
+// Note: g_iotHubClientHandleForADUComponent declared in adu_core_intefaace.h
 
 //
 // Test Helpers
@@ -552,7 +552,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
     // Now simulate a duplicate workflow request due to token expiry connection refresh
     s_SendReportedStateValues.reportedStates.clear();
     ADUC_Workflow_HandlePropertyUpdate(&startupWorkflowDataAfterReboot, reinterpret_cast<const unsigned char*>(workflow_test_process_deployment.c_str()), false /* forceDeferral */);
-    CHECK(s_SendReportedStateValues.reportedStates.size() == 0); // did not do a duplicate report but ignored it
+    CHECK(s_SendReportedStateValues.reportedStates.empty()); // did not do a duplicate report but ignored it
 
     wait_for_workflow_complete();
 }

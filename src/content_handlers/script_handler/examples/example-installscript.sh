@@ -187,7 +187,7 @@ print_help() {
     echo "Device Update reserved argument"
     echo "==============================="
     echo ""
-    echo "--action-isinstalled                      Perform 'is-installed' check."
+    echo "--action-is-installed                     Perform 'is-installed' check."
     echo "                                          Check whether the selected component [or primary device] current states"
     echo "                                          satisfies specified 'installedCriteria' data."
     echo "--installed-criteria                      Specify the Installed-Criteria string."
@@ -216,7 +216,7 @@ print_help() {
     echo "File and Folder information"
     echo "=========================="
     echo ""
-    echo "--workfolder            A work-folder (or sandbox folder)."
+    echo "--work-folder           A work-folder (or sandbox folder)."
     echo "--firmware-file         A firmware to install."
     echo "--output-file           An output file."
     echo "--log-file              A log file."
@@ -251,7 +251,7 @@ print_help() {
     echo ""
     echo "Scenario: perform install action"
     echo "================================"
-    echo "    <script> --log-level 0 --action-install --intalled-criteria 1.0 --component-name host-fw  --component-prop path /usr/local/adu-tests/contoso-devices/vacuum-1/hostfw --firmware-file firmware.json --workfolder <sandbox-folder>"
+    echo "    <script> --log-level 0 --action-install --intalled-criteria 1.0 --component-name host-fw  --component-prop path /usr/local/adu-tests/contoso-devices/vacuum-1/hostfw --firmware-file firmware.json --work-folder <sandbox-folder>"
     echo ""
 }
 
@@ -430,10 +430,10 @@ while [[ $1 != "" ]]; do
         shift
         ;;
 
-    --workfolder)
+    --work-folder)
         shift
         if [[ -z $1 || $1 == -* ]]; then
-            error "--workfolder parameter is mandatory."
+            error "--work-folder parameter is mandatory."
             $ret 1
         fi
         workfolder="$1";
@@ -540,7 +540,7 @@ done
 # Example implementation of 'IsInstalled' function, for contoso-motor component.
 #
 # Design Goal:
-#   Determine whether the spcifified 'installedCriteria' (parameter $1) is met.
+#   Determine whether the specified 'installedCriteria' (parameter $1) is met.
 #
 #   'installedCriteria' is a version number of a motor in a mock component's data file
 #   located at "$component_props['path']/firmware.json".
@@ -777,3 +777,4 @@ if [ -n "$do_cancel_action" ]; then
 fi
 
 $ret $ret_val
+
