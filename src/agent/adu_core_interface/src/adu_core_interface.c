@@ -820,6 +820,7 @@ _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     }
 
     jsonString = json_serialize_to_string(rootValue);
+    json_value_free(rootValue);
     if (jsonString == NULL)
     {
         Log_Error("Serializing JSON to string failed");
