@@ -214,8 +214,6 @@ _Bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
     _Bool success = false;
 
     char* jsonString = NULL;
-    char* manufacturer = NULL;
-    char* model = NULL;
 
     JSON_Value* startupMsgValue = json_value_init_object();
 
@@ -255,8 +253,6 @@ _Bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
 
     success = true;
 done:
-    free(model);
-    free(manufacturer);
     json_value_free(startupMsgValue);
     json_free_serialized_string(jsonString);
 
@@ -774,6 +770,47 @@ done:
 }
 
 /**
+ * @brief Free all ressource associated with ReportingJsonValue
+ *
+ * @param rootValue JSON_Value pointer previously given by GetReportingJsonValue()
+ * @return true if succeeded.
+ */
+_Bool FreeReportingJsonValue(JSON_Value* rootValue)
+{
+    _Bool result = true;
+    JSON_Object* rootObject = json_value_get_object(rootValue);
+
+    if(rootObject)
+    {
+        JSON_Value* lastInstallResultValue = json_object_get_value(rootObject, ADUCITF_FIELDNAME_LASTINSTALLRESULT);
+        if(lastInstallResultValue)
+        {
+            JSON_Object* lastInstallResultObject = json_value_get_object(lastInstallResultValue);
+
+            if(lastInstallResultObject)
+            {
+                result &= JSONSuccess == json_object_clear(lastInstallResultObject);
+            }
+
+        }
+
+        JSON_Value* stepResultsValue = json_object_get_value(rootObject, ADUCITF_FIELDNAME_STEPRESULTS);
+        if(stepResultsValue)
+        {
+            JSON_Object* stepResultsObject = json_value_get_object(stepResultsValue);
+            if(stepResultsObject)
+            {
+                result &= JSONSuccess == json_object_clear(stepResultsObject);
+            }
+        }
+        result &= JSONSuccess == json_object_clear(rootObject);
+    }
+    json_value_free(rootValue);
+
+    return result;
+}
+
+/**
  * @brief Report state, and optionally result to service.
  *
  * @param workflowDataToken A workflow data object.
@@ -834,7 +871,7 @@ _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     success = true;
 
 done:
-    json_value_free(rootValue);
+    FreeReportingJsonValue(rootValue);
     json_free_serialized_string(jsonString);
     // Don't free the persistenceData as that will be done by the startup logic that owns it.
 
