@@ -115,11 +115,10 @@ case "$1" in
     failed-upgrade)
         echo "[postrm failed-upgrade $2] Perform new ADU Agent health validation." >&2
 
-        # When upgrading 0.8.0 to 0.8.1, adu-shell ownereship and permissions can be incorrect.
+        # When upgrading 0.8.0 to 0.8.1, adu-shell ownership and permissions can be incorrect.
         echo "Attempting to fix-up $adu_shell_bin_path after postrm upgrade failure from $2 ..."
         chown root:adu "$adu_shell_bin_path"
-        # 4 is setuid bit, 5 read+write for user & group, and 0 is no bits set for other
-        chmod 04550 "$adu_shell_bin_path"
+        chmod u=rxs,g=rx,o= "$adu_shell_bin_path"
 
         echo "AducIotAgent version:" >&2
         /usr/bin/AducIotAgent --version >&2
