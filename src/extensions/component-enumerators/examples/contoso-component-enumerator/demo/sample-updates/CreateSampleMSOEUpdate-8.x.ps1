@@ -81,10 +81,9 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     # ADD STEP(S)
     #
 
-    # This update contains 1 step.
     $hostfwInstallSteps = @()
 
-    # Step #1 - install host firmware and reboot
+    # Step #0 - install host firmware and reboot
     $hostfwInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
                             -Files $hostfwScriptFile, $hostfwFirmwareFile `
                             -HandlerProperties @{  `
@@ -150,10 +149,9 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     # ADD STEP(S)
     #
 
-    # This update contains 2 steps.
     $motorsInstallSteps = @()
 
-    # Step #1 - simulating a success pre-install task.
+    # Step #0 - simulating a success pre-install task.
     $motorsInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
                             -Files $motorScriptFile `
                             -HandlerProperties @{  `
@@ -164,7 +162,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             `
                             -Description 'Motors Update pre-install step'
 
-    # Step #2 - install a mock firmware version 1.2 onto motor component.
+    # Step #1 - install a mock firmware version 1.2 onto motor component.
     $motorsInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
                             -Files $motorScriptFile, $motorFirmwareFile `
                             -HandlerProperties @{  `
@@ -234,10 +232,9 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     # ADD STEP(S)
     #
 
-    # This update contains 2 steps.
     $camerasInstallSteps = @()
 
-    # Step #1 - simulating a success pre-install task.
+    # Step #0 - simulating a success pre-install task.
     $camerasInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
                             -Files $cameraScriptFile `
                             -HandlerProperties @{  `
@@ -248,7 +245,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             `
                             -Description 'Cameras Update pre-install step'
 
-    # Step #2 - install a mock firmware version 2.1 onto camera component.
+    # Step #1 - install a mock firmware version 2.1 onto camera component.
     $camerasInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
                             -Files $cameraScriptFile, $cameraFirmwareFile `
                             -HandlerProperties @{  `
