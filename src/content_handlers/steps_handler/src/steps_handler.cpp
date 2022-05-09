@@ -553,6 +553,7 @@ static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowDat
                 result.ResultCode = ADUC_Result_Install_Skipped_UpdateAlreadyInstalled;
                 result.ExtendedResultCode = 0;
                 workflow_set_result(stepHandle, result);
+                workflow_set_result_details(handle, workflow_peek_result_details(stepHandle));
                 // The current instance is already up-to-date, continue checking the next instance.
                 goto instanceDone;
             }
@@ -839,6 +840,7 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
                 result.ResultCode = ADUC_Result_Install_Skipped_UpdateAlreadyInstalled;
                 result.ExtendedResultCode = 0;
                 workflow_set_result(stepHandle, result);
+                workflow_set_result_details(handle, workflow_peek_result_details(stepHandle));
                 // Skipping 'backup', 'install' and 'apply'.
                 goto instanceDone;
             }

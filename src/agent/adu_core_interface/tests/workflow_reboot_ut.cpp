@@ -218,6 +218,23 @@ public:
         UNREFERENCED_PARAMETER(workflowData);
 
         ADUC_Result result = { s_install_result_code, 0 };
+
+        switch (result.ResultCode)
+        {
+            case ADUC_Result_Install_RequiredImmediateAgentRestart:
+                workflow_request_immediate_agent_restart(workflowData->WorkflowHandle);
+                break;
+            case ADUC_Result_Install_RequiredAgentRestart:
+                workflow_request_agent_restart(workflowData->WorkflowHandle);
+                break;
+            case ADUC_Result_Install_RequiredImmediateReboot:
+                workflow_request_immediate_reboot(workflowData->WorkflowHandle);
+                break;
+            case ADUC_Result_Install_RequiredReboot:
+                workflow_request_reboot(workflowData->WorkflowHandle);
+                break;
+        }
+
         return result;
     }
 
@@ -225,6 +242,23 @@ public:
         UNREFERENCED_PARAMETER(workflowData);
 
         ADUC_Result result = { s_apply_result_code, 0 };
+
+        switch (result.ResultCode)
+        {
+            case ADUC_Result_Apply_RequiredImmediateAgentRestart:
+                workflow_request_immediate_agent_restart(workflowData->WorkflowHandle);
+                break;
+            case ADUC_Result_Apply_RequiredAgentRestart:
+                workflow_request_agent_restart(workflowData->WorkflowHandle);
+                break;
+            case ADUC_Result_Apply_RequiredImmediateReboot:
+                workflow_request_immediate_reboot(workflowData->WorkflowHandle);
+                break;
+            case ADUC_Result_Apply_RequiredReboot:
+                workflow_request_reboot(workflowData->WorkflowHandle);
+                break;
+        }
+
         return result;
     }
 

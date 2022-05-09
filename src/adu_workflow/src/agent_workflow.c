@@ -1254,8 +1254,8 @@ done:
 
 void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
 {
-    if (result.ResultCode == ADUC_Result_Install_RequiredImmediateReboot
-        || result.ResultCode == ADUC_Result_Install_RequiredReboot)
+    if (workflow_is_immediate_reboot_requested(methodCallData->WorkflowData->WorkflowHandle) ||
+        workflow_is_reboot_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
         // If 'install' indicated a reboot required result from apply, go ahead and reboot.
         Log_Info("Install indicated success with RebootRequired - rebooting system now");
@@ -1275,8 +1275,8 @@ void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallD
         }
     }
     else if (
-        result.ResultCode == ADUC_Result_Install_RequiredImmediateAgentRestart
-        || result.ResultCode == ADUC_Result_Install_RequiredAgentRestart)
+        workflow_is_immediate_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle) ||
+        workflow_is_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
         // If 'install' indicated a restart is required, go ahead and restart the agent.
         Log_Info("Install indicated success with AgentRestartRequired - restarting the agent now");
@@ -1333,8 +1333,8 @@ done:
 
 void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
 {
-    if (result.ResultCode == ADUC_Result_Apply_RequiredReboot
-        || result.ResultCode == ADUC_Result_Apply_RequiredImmediateReboot)
+    if (workflow_is_immediate_reboot_requested(methodCallData->WorkflowData->WorkflowHandle) ||
+        workflow_is_reboot_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
         // If apply indicated a reboot required result from apply, go ahead and reboot.
         Log_Info("Apply indicated success with RebootRequired - rebooting system now");
@@ -1354,8 +1354,8 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
         }
     }
     else if (
-        result.ResultCode == ADUC_Result_Apply_RequiredAgentRestart
-        || result.ResultCode == ADUC_Result_Apply_RequiredImmediateAgentRestart)
+        workflow_is_immediate_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle) ||
+        workflow_is_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
         // If apply indicated a restart is required, go ahead and restart the agent.
         Log_Info("Apply indicated success with AgentRestartRequired - restarting the agent now");
