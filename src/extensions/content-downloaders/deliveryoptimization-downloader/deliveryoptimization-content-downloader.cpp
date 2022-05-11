@@ -152,7 +152,7 @@ ADUC_Result do_download(
             fullFilePath.str().c_str(),
             ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
             algVersion,
-            false);
+            false /* suppressErrorLog */);
 
         if (!isValid)
         {

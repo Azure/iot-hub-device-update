@@ -24,7 +24,6 @@
  * @param hashBase64 The expected hash from the context. If NULL, skip hashes comparison.
  * @param algorithm the algorithm used to calculate the hash
  * @param outputHash an optional output buffer for computed hash. Caller must call free() to deallocate the buffer when done.
- * @param suppressErrorLog a boolean indicates whether to log error message inside this fuction.
  * @returns bool True if the hash is valid and equals @p hashBase64
  */
 static bool GetResultAndCompareHashes(
@@ -209,7 +208,8 @@ char* ADUC_HashUtils_GetHashValue(const ADUC_Hash* hashArray, size_t arraySize, 
  * @param suppressErrorLog A boolean indicates whether to log error message inside this function.
  * @return bool True if the hash is valid and matches @p hashBase64
  */
-_Bool ADUC_HashUtils_IsValidFileHash(const char* path, const char* hashBase64, SHAversion algorithm, bool suppressErrorLog)
+_Bool ADUC_HashUtils_IsValidFileHash(
+    const char* path, const char* hashBase64, SHAversion algorithm, bool suppressErrorLog)
 {
     _Bool success = false;
 
@@ -264,7 +264,7 @@ _Bool ADUC_HashUtils_IsValidFileHash(const char* path, const char* hashBase64, S
         };
     }
 
-    success = GetResultAndCompareHashes(&context, hashBase64, algorithm, suppressErrorLog, NULL);
+    success = GetResultAndCompareHashes(&context, hashBase64, algorithm, suppressErrorLog, NULL /* outputHash */);
     if (!success)
     {
         goto done;
