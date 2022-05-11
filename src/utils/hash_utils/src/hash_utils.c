@@ -264,7 +264,7 @@ _Bool ADUC_HashUtils_IsValidFileHash(const char* path, const char* hashBase64, S
         };
     }
 
-    success = GetResultAndCompareHashes(&context, hashBase64, algorithm, !suppressErrorLog, NULL);
+    success = GetResultAndCompareHashes(&context, hashBase64, algorithm, suppressErrorLog, NULL);
     if (!success)
     {
         goto done;
