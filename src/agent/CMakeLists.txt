@@ -96,7 +96,7 @@ if (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT_over_WebSockets")
 elseif (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT")
     target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_transport)
 else ()
-    target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_transport)
+    message (FATAL_ERROR, "Invalid value '${ADUC_IOT_HUB_PROTOCOL}' for ADUC_IOT_HUB_PROTOCOL. Valid values: MQTT or MQTT_over_WebSockets")
 endif ()
 
 get_filename_component (
