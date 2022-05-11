@@ -1,1 +1,6 @@
 * text=auto
+
+# require LF ending for shell scripts
+*.sh text eol=lf
+
+*.png binary
