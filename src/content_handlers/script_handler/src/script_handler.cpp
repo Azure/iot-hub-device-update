@@ -547,7 +547,6 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
         aduShellArgs.emplace_back(a);
     }
 
-    // Check runtime
     if (IsExtraDebugLogEnabled())
     {
         std::stringstream ss;
@@ -559,41 +558,44 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
     }
 
     exitCode = ADUC_LaunchChildProcess(adushconst::adu_shell, aduShellArgs, scriptOutput);
-    if (exitCode != 0)
-    {
-        int extendedCode = ADUC_ERC_SCRIPT_HANDLER_CHILD_PROCESS_FAILURE_EXITCODE(exitCode);
-        Log_Error(
-            "Child process failed (%s), extendedResultCode:0x%X (exitCode:%d)",
-            action.c_str(),
-            extendedCode,
-            exitCode);
-        result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = extendedCode };
-    }
 
     if (!scriptOutput.empty())
     {
         Log_Info(scriptOutput.c_str());
     }
 
-    // Parse result file.
-    actionResultValue = json_parse_file(scriptResultFile.c_str());
-    if (actionResultValue == nullptr)
+    if (exitCode != 0)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE };
-        workflow_set_result_details(
-            workflowData->WorkflowHandle,
-            "The install script doesn't create a result file '%s'.",
-            scriptResultFile.c_str());
-        goto done;
+        int extendedCode = ADUC_ERC_SCRIPT_HANDLER_CHILD_PROCESS_FAILURE_EXITCODE(exitCode);
+        Log_Error(
+            "Script failed (%s), extendedResultCode:0x%X (exitCode:%d)",
+            action.c_str(),
+            extendedCode,
+            exitCode);
+        result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = extendedCode };
     }
     else
     {
-        JSON_Object* actionResultObject = json_object(actionResultValue);
-        result.ResultCode = json_object_get_number(actionResultObject, "resultCode");
-        result.ExtendedResultCode = json_object_get_number(actionResultObject, "extendedResultCode");
-        const char* details = json_object_get_string(actionResultObject, "resultDetails");
-        workflow_set_result_details(workflowData->WorkflowHandle, details);
+        // Parse result file.
+        actionResultValue = json_parse_file(scriptResultFile.c_str());
+        if (actionResultValue == nullptr)
+        {
+            result = { .ResultCode = ADUC_Result_Failure,
+                    .ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE };
+            workflow_set_result_details(
+                workflowData->WorkflowHandle,
+                "Cannot parse the script result file '%s'.",
+                scriptResultFile.c_str());
+            goto done;
+        }
+        else
+        {
+            JSON_Object* actionResultObject = json_object(actionResultValue);
+            result.ResultCode = json_object_get_number(actionResultObject, "resultCode");
+            result.ExtendedResultCode = json_object_get_number(actionResultObject, "extendedResultCode");
+            const char* details = json_object_get_string(actionResultObject, "resultDetails");
+            workflow_set_result_details(workflowData->WorkflowHandle, details);
+        }
     }
 
     Log_Info(
