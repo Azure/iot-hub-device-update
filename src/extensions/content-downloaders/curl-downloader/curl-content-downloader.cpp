@@ -94,7 +94,7 @@ ADUC_Result Download_curl(
         fullFilePath.str().c_str(),
         ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
         algVersion,
-        false);
+        false /* suppressErrorLog */);
 
     if (isValidHash)
     {
@@ -141,7 +141,8 @@ ADUC_Result Download_curl(
             fullFilePath.str().c_str(),
             ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
             algVersion,
-            true);
+            true /* suppressErrorLog */);
+
         if (!isValid)
         {
             Log_Error("Hash for %s is not valid", entity->TargetFilename);

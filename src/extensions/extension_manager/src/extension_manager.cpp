@@ -124,7 +124,10 @@ ADUC_Result ExtensionManager::LoadExtensionLibrary(
     }
 
     if (!ADUC_HashUtils_IsValidFileHash(
-            entity.TargetFilename, ADUC_HashUtils_GetHashValue(entity.Hash, entity.HashCount, 0), algVersion, true))
+            entity.TargetFilename,
+            ADUC_HashUtils_GetHashValue(entity.Hash, entity.HashCount, 0),
+            algVersion,
+            true /* suppressErrorLog */))
     {
         Log_Error("Hash for %s is not valid", entity.TargetFilename);
         result.ExtendedResultCode = ADUC_ERC_EXTENSION_CREATE_FAILURE_VALIDATE(facilityCode, componentCode);
@@ -669,8 +672,6 @@ ADUC_Result ExtensionManager::Download(
     DownloadProc downloadProc = nullptr;
     char* components = nullptr;
     SHAversion algVersion;
-    bool isFileExistsAndValidHash = false;
-
     std::stringstream childManifestFile;
     ADUC_Result result;
 
@@ -715,17 +716,23 @@ ADUC_Result ExtensionManager::Download(
     // If file exists and has a valid hash, then skip download.
     // Otherwise, delete an existing file, then download.
     Log_Debug("Check whether '%s' has already been download into the work folder.", childManifestFile.str().c_str());
+
     if (access(childManifestFile.str().c_str(), F_OK) == 0)
     {
+        char* hashValue = ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0 /* index */);
+        if (hashValue == nullptr)
+        {
+            result = { .ResultCode = ADUC_Result_Failure,
+                       .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_ENTITY_NO_HASHES };
+            goto done;
+        }
+
         // If target file exists, validate file hash.
         // If file is valid, then skip the download.
-        isFileExistsAndValidHash = ADUC_HashUtils_IsValidFileHash(
-            childManifestFile.str().c_str(),
-            ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
-            algVersion,
-            false);
+        bool validHash = ADUC_HashUtils_IsValidFileHash(
+            childManifestFile.str().c_str(), hashValue, algVersion, false /* suppressErrorLog */);
 
-        if (!isFileExistsAndValidHash)
+        if (!validHash)
         {
             // Delete existing file.
             if (remove(childManifestFile.str().c_str()) != 0)
@@ -740,35 +747,30 @@ ADUC_Result ExtensionManager::Download(
         goto done;
     }
 
-    if (!isFileExistsAndValidHash)
+    try
     {
-        try
-        {
-            result = downloadProc(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
-        }
-        catch (...)
+        result = downloadProc(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
+    }
+    catch (...)
+    {
+        result = { .ResultCode = ADUC_Result_Failure,
+                   .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION };
+        goto done;
+    }
+
+    if (IsAducResultCodeSuccess(result.ResultCode))
+    {
+        if (!ADUC_HashUtils_IsValidFileHash(
+                childManifestFile.str().c_str(),
+                ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0 /* index */),
+                algVersion,
+                true))
         {
             result = { .ResultCode = ADUC_Result_Failure,
                        .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION };
             goto done;
         }
-
-        if (IsAducResultCodeSuccess(result.ResultCode))
-        {
-            if (!ADUC_HashUtils_IsValidFileHash(
-                    childManifestFile.str().c_str(),
-                    ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
-                    algVersion,
-                    true))
-            {
-                result = { .ResultCode = ADUC_Result_Failure,
-                           .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION };
-                goto done;
-            }
-        }
     }
-
-    result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
 
 done:
     return result;

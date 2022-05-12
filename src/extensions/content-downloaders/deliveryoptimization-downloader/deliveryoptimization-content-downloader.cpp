@@ -152,7 +152,8 @@ ADUC_Result do_download(
             fullFilePath.str().c_str(),
             ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
             algVersion,
-            true);
+            false /* suppressErrorLog */);
+
         if (!isValid)
         {
             Log_Error("Hash for %s is not valid", entity->TargetFilename);

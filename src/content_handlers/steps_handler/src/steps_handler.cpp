@@ -135,6 +135,7 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
         {
             STRING_HANDLE childId = nullptr;
             ADUC_FileEntity* entity = nullptr;
+            childHandle = nullptr;
 
             if (workflow_is_inline_step(handle, i))
             {
