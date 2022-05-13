@@ -28,6 +28,7 @@ build_clean=false
 build_documentation=false
 build_packages=false
 platform_layer="linux"
+trace_target_deps=false
 content_handlers="microsoft/swupdate,microsoft/apt,microsoft/simulator"
 build_type=Debug
 adu_log_dir=""
@@ -55,6 +56,8 @@ print_help() {
     echo ""
     echo "-p, --platform-layer <layer>          Specify the platform layer to build/use. Default is linux."
     echo "                                      Option: linux"
+    echo ""
+    echo "--trace-target-deps                   Traces dependencies of CMake targets debug info."
     echo ""
     echo "--log-lib <log_lib>                   Specify the logging library to build/use. Default is zlog."
     echo "                                      Options: zlog xlog"
@@ -228,7 +231,9 @@ while [[ $1 != "" ]]; do
             $ret 1
         fi
         platform_layer=$1
-
+        ;;
+    --trace-target-deps)
+        trace_target_deps=true
         ;;
     --log-lib)
         shift
@@ -307,6 +312,7 @@ header "Building ADU Agent"
 bullet "Clean build: $build_clean"
 bullet "Documentation: $build_documentation"
 bullet "Platform layer: $platform_layer"
+bullet "Trace target deps: $trace_target_deps"
 bullet "Content handlers: $content_handlers"
 bullet "Build type: $build_type"
 bullet "Log directory: $adu_log_dir"
@@ -330,6 +336,7 @@ CMAKE_OPTIONS=(
     "-DADUC_LOG_FOLDER:STRING=$adu_log_dir"
     "-DADUC_LOGGING_LIBRARY:STRING=$log_lib"
     "-DADUC_PLATFORM_LAYER:STRING=$platform_layer"
+    "-DADUC_TRACE_TARGET_DEPS=$trace_target_deps"
     "-DCMAKE_BUILD_TYPE:STRING=$build_type"
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"

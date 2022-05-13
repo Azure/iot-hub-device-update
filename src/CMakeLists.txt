@@ -1,5 +1,9 @@
 cmake_minimum_required (VERSION 3.5)
 
+if (ADUC_TRACE_TARGET_DEPS)
+    set_property(GLOBAL PROPERTY GLOBAL_DEPENDS_DEBUG_MODE 1)
+endif ()
+
 if (ADUC_WARNINGS_AS_ERRORS)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
