@@ -31,7 +31,7 @@ Param(
     # Update Provider
     [ValidateNotNullOrEmpty()]
     [string] $UpdateName = "Virtual-Vacuum",
-    
+
     # Device Manufacturer
     [ValidateNotNullOrEmpty()]
     [string] $DeviceManufacturer = "contoso",
@@ -73,13 +73,13 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     # This components update only apply to 'cameras' group.
     $camerasSelector = @{ group = 'cameras' }
     $camerasCompat = New-AduUpdateCompatibility  -Properties $camerasSelector
-    
+
     $cameraScriptFile = "$PSScriptRoot\scripts\contoso-camera-installscript.sh"
     $cameraFirmwareFile = "$PSScriptRoot\data-files\camera-firmware-1.1.json"
-    
+
     #------------
     # ADD STEP(S)
-    #    
+    #
 
     # This update contains 3 steps.
     $camerasInstallSteps = @()
@@ -153,7 +153,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
 # Create the parent update containing one reference step
 # ------------------------------------------------------
 Write-Host "    Preparing parent update $parentUpdateIdStr..."
-$payloadFiles = 
+$payloadFiles =
 $parentSteps = @()
 
     #------------
@@ -221,13 +221,13 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     # This components update only apply to 'cameras' group.
     $camerasSelector = @{ group = 'cameras' }
     $camerasCompat = New-AduUpdateCompatibility  -Properties $camerasSelector
-    
+
     $cameraScriptFile = "$PSScriptRoot\scripts\contoso-camera-installscript.sh"
     $cameraFirmwareFile = "$PSScriptRoot\data-files\camera-firmware-1.1.json"
-    
+
     #------------
     # ADD STEP(S)
-    #    
+    #
     # This update contains 3 steps.
     $camerasInstallSteps = @()
 
@@ -299,7 +299,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
 # Create the parent update containing one reference step
 # ------------------------------------------------------
 Write-Host "    Preparing parent update $parentUpdateIdStr..."
-$payloadFiles = 
+$payloadFiles =
 $parentSteps = @()
 
     #------------
@@ -367,13 +367,13 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     # This components update only apply to 'cameras' group.
     $camerasSelector = @{ group = 'cameras' }
     $camerasCompat = New-AduUpdateCompatibility  -Properties $camerasSelector
-    
+
     $cameraScriptFile = "$PSScriptRoot\scripts\contoso-camera-installscript.sh"
     $cameraFirmwareFile = "$PSScriptRoot\data-files\camera-firmware-1.1.json"
-    
+
     #------------
     # ADD STEP(S)
-    #    
+    #
     # This update contains 3 steps.
     $camerasInstallSteps = @()
 
@@ -445,7 +445,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
 # Create the parent update containing one reference step
 # ------------------------------------------------------
 Write-Host "    Preparing parent update $parentUpdateIdStr..."
-$payloadFiles = 
+$payloadFiles =
 $parentSteps = @()
 
     #------------
@@ -514,28 +514,16 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     # This components update only apply to 'cameras' group.
     $camerasSelector = @{ group = 'cameras' }
     $camerasCompat = New-AduUpdateCompatibility  -Properties $camerasSelector
-    
+
     $cameraScriptFile = "$PSScriptRoot\scripts\contoso-camera-installscript.sh"
     $cameraFirmwareFile = "$PSScriptRoot\data-files\camera-firmware-1.1.json"
-    
+
     #------------
     # ADD STEP(S)
-    #    
-    # This update contains 3 steps.
+    #
     $camerasInstallSteps = @()
 
-    # Step #1 - simulating a successful pre-install task.
-    $camerasInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
-                            -Files $cameraScriptFile `
-                            -HandlerProperties @{  `
-                                'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion";   `
-                                'arguments'="--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
-                            }   `
-                            `
-                            -Description 'Cameras Update - pre-install step (failure - missing file)'
-
-    # Step #2 - Simulating a successful firmware update.
+    # Step #0 - Install a camera firmware update.
     $camerasInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
                             -Files  $cameraScriptFile, $cameraFirmwareFile `
                             -HandlerProperties @{  `
@@ -545,17 +533,6 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             }   `
                             `
                             -Description 'Cameras Update - firmware installation'
-
-    # Step #3 - simulating a successful post-install task.
-    $camerasInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
-                            -Files  $cameraScriptFile `
-                            -HandlerProperties @{  `
-                                'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
-                                "arguments"="--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"  `
-                            }   `
-                            `
-                            -Description 'Cameras Update - post-install script'
 
     # ------------------------------
     # Create child update manifest
@@ -591,7 +568,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
 # Create the parent update containing one reference step
 # ------------------------------------------------------
 Write-Host "    Preparing parent update $parentUpdateIdStr..."
-$payloadFiles = 
+$payloadFiles =
 $parentSteps = @()
 
     #------------

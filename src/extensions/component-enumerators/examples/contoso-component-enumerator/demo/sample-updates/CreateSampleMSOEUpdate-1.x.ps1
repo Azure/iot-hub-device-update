@@ -31,7 +31,7 @@ Param(
     # Update Provider
     [ValidateNotNullOrEmpty()]
     [string] $UpdateName = "Virtual-Vacuum",
-    
+
     # Device Manufacturer
     [ValidateNotNullOrEmpty()]
     [string] $DeviceManufacturer = "contoso",
@@ -42,10 +42,10 @@ Param(
 )
 
 # ------------------------------------------------------------
-# Update : 1.0
+# Update : 0.1
 # Create the parent update with bad APT Manifest file.
 # ------------------------------------------------------------
-$UpdateVersion = '1.0'
+$UpdateVersion = '0.1'
 
 $parentCompat = New-AduUpdateCompatibility -DeviceManufacturer $DeviceManufacturer -DeviceModel $DeviceModel
 $parentUpdateId = New-AduUpdateId -Provider $UpdateProvider -Name $UpdateName -Version $UpdateVersion
@@ -59,8 +59,9 @@ $parentFile0 = "$PSScriptRoot\data-files\APT\bad-apt-manifest-1.0.json"
 
     # -----------
     # ADD STEP(S)
-    
-    # Step 1 - Simulating a failure during an install task.
+
+    # Step 0 - Simulating a failure during an install task (for testing purposes)
+    #          by intentionally using mal-formed APT manifest file.
     $parentSteps += New-AduInstallationStep `
                         -Handler 'microsoft/apt:1' `
                         -Files $parentFile0 `
@@ -93,11 +94,12 @@ Write-Host " "
 
 
 # ---------------------------------------------------------------
-# Update 1.1
+# Update 1.0
+#
 # Create the parent update with good APT Manifest file.
 # This update installs libcurl4-doc package on the target device.
 # ---------------------------------------------------------------
-$UpdateVersion = '1.1'
+$UpdateVersion = '1.0'
 
 $parentCompat = New-AduUpdateCompatibility -DeviceManufacturer $DeviceManufacturer -DeviceModel $DeviceModel
 $parentUpdateId = New-AduUpdateId -Provider $UpdateProvider -Name $UpdateName -Version $UpdateVersion
@@ -107,11 +109,11 @@ $parentSteps = @()
 Write-Host "Preparing parent update $UpdateVersion ..."
 
 $parentFile1 = "$PSScriptRoot\data-files\APT\apt-manifest-1.0.json"
-   
+
     # -----------
     # ADD STEP(S)
 
-    # Step 1 - APT update that installs libcurl4-doc debian package.
+    # Step 0 - APT update that installs 'tree'' debian package.
     $parentSteps += New-AduInstallationStep `
                             -Handler 'microsoft/apt:1' `
                             -Files $parentFile1 `

@@ -41,13 +41,14 @@ Param(
     [string] $DeviceModel = "virtual-vacuum-v1"
 )
 
-########################################################################
-# Update : 6.0
+##############################################################
+# Update : 8.0
 #
-# Create a parent update that updates an optional 'steamers' components
-########################################################################
+# Create a parent update that updates 'motors', 'cameras'
+#     - Each child update contains 3 inline steps.
+##############################################################
 
-$UpdateVersion = '6.0'
+$UpdateVersion = '8.0'
 
 $parentCompat = New-AduUpdateCompatibility -DeviceManufacturer $DeviceManufacturer -DeviceModel $DeviceModel
 $parentUpdateId = New-AduUpdateId -Provider $UpdateProvider -Name $UpdateName -Version $UpdateVersion
@@ -56,65 +57,129 @@ $parentUpdateIdStr = "$($parentUpdateId.Provider).$($parentUpdateId.Name).$($par
 $RefUpdateNamePrefix = $UpdateName
 
 Write-Host "Preparing update $parentUpdateIdStr ..."
-
-
-
-    # -----------------------------------------------------------
-    # Create a child update for an optional 'steamer' component
-    # that currently not connected to the host device.
-    # -----------------------------------------------------------
-
+    # -------------------------------------------------
+    # Create a child update for hostfw
+    # -------------------------------------------------
     $RefUpdateManufacturer = "contoso"
-    $RefUpdateName = "$RefUpdateNamePrefix-virtual-steamers"
-    $RefUpdateVersion = "3.0"
+    $RefUpdateName = "$RefUpdateNamePrefix-hostfw"
+    $RefUpdateVersion = "1.1"
 
-    $steamersFirmwareVersion = "2.0"
+    $hostfwFirmwareVersion = "1.1"
 
-    Write-Host "    Preparing child update ($RefUpdateManufacturer/$RefUpdateName/$RefUpdateVersion)..."
+    Write-Host "Preparing child update ($RefUpdateManufacturer/$RefUpdateName/$RefUpdateVersion)..."
 
-    $steamersUpdateId = New-AduUpdateId -Provider $RefUpdateManufacturer -Name $RefUpdateName -Version $RefUpdateVersion
+    $hostfwUpdateId = New-AduUpdateId -Provider $RefUpdateManufacturer -Name $RefUpdateName -Version $RefUpdateVersion
 
-    # This components update only apply to 'steamers' group.
-    $steamersSelector = @{ group = 'steamers' }
-    $steamersCompat = New-AduUpdateCompatibility  -Properties $steamersSelector
+    # This components update only apply to 'motors' group.
+    $hostfwSelector = @{ group = 'hostfw' }
+    $hostfwCompat = New-AduUpdateCompatibility  -Properties $hostfwSelector
 
-    $steamerScriptFile = "$PSScriptRoot\scripts\contoso-steamer-installscript.sh"
-    $steamerFirmwareFile = "$PSScriptRoot\data-files\steamer-firmware-$steamersFirmwareVersion.json"
-    
+    $hostfwScriptFile = "$PSScriptRoot\scripts\contoso-firmware-installscript.sh"
+    $hostfwFirmwareFile = "$PSScriptRoot\data-files\host-firmware-$hostfwFirmwareVersion.json"  
+
     #------------
     # ADD STEP(S)
-    #    
-
+    #  
+    
     # This update contains 3 steps.
-    $steamersInstallSteps = @()
-
-    # Step #1 - simulating a success pre-install task.
-    $steamersInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
-                            -Files $steamerScriptFile `
+    $hostfwInstallSteps = @()
+    
+    # Step #1 - install host firmware and reboot
+    $hostfwInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
+                            -Files $hostfwScriptFile, $hostfwFirmwareFile `
                             -HandlerProperties @{  `
-                                'scriptFileName'='contoso-steamer-installscript.sh';  `
+                                'scriptFileName'='contoso-firmware-installscript.sh';  `
+                                'installedCriteria'="$RefUpdateVersion";   `
+                                'arguments'="--restart-to-apply --firmware-file host-firmware-$hostfwFirmwareVersion.json  --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
+                            }   `
+                            `
+                            -Description 'Host Firmware Update'
+
+    # ------------------------------
+    # Create child update manifest
+    # ------------------------------
+
+    $childUpdateId = $hostfwUpdateId
+    $childUpdateIdStr = "$($childUpdateId.Provider).$($childUpdateId.Name).$($childUpdateId.Version)"
+    $childPayloadFiles = $hostfwScriptFile, $hostfwFirmwareFile
+    $childCompat = $hostfwCompat
+    $childSteps = $hostfwInstallSteps
+
+    Write-Host "    Preparing child update manifest $childUpdateIdStr ..."
+
+    $childManifest = New-AduImportManifest -UpdateId $childUpdateId -IsDeployable $false `
+                                        -Compatibility $childCompat `
+                                        -InstallationSteps $childSteps `
+                                        -ErrorAction Stop
+
+    # Create folder for manifest files and payload.
+    $outputPath = "$OutputManifestPath\$parentUpdateIdStr"
+    Write-Host "    Saving child manifest files and payload to $outputPath..."
+    New-Item $outputPath -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+
+    # Generate manifest files.
+    $childManifest | Out-File "$outputPath\$childUpdateIdStr.importmanifest.json" -Encoding utf8
+
+    # Copy all payloads (if used)
+    Copy-Item -Path $childPayloadFiles -Destination $outputPath -Force
+
+    Write-Host " "
+
+    # -------------------------------------------------
+    # Create a child update for all 'motor' components
+    # -------------------------------------------------
+
+    $RefUpdateManufacturer = "contoso"
+    $RefUpdateName = "$RefUpdateNamePrefix-virtual-motors"
+    $RefUpdateVersion = "8.0"
+
+    $motorsFirmwareVersion = "3.1"
+
+    Write-Host "Preparing child update ($RefUpdateManufacturer/$RefUpdateName/$RefUpdateVersion)..."
+
+    $motorsUpdateId = New-AduUpdateId -Provider $RefUpdateManufacturer -Name $RefUpdateName -Version $RefUpdateVersion
+
+    # This components update only apply to 'motors' group.
+    $motorsSelector = @{ group = 'motors' }
+    $motorsCompat = New-AduUpdateCompatibility  -Properties $motorsSelector
+
+    $motorScriptFile = "$PSScriptRoot\scripts\contoso-motor-installscript.sh"
+    $motorFirmwareFile = "$PSScriptRoot\data-files\motor-firmware-$motorsFirmwareVersion.json"  
+
+    #------------
+    # ADD STEP(S)
+    #  
+    
+    # This update contains 3 steps.
+    $motorsInstallSteps = @()
+    
+    # Step #1 - simulating a success pre-install task.
+    $motorsInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
+                            -Files $motorScriptFile `
+                            -HandlerProperties @{  `
+                                'scriptFileName'='contoso-motor-installscript.sh';  `
                                 'installedCriteria'="$RefUpdateVersion";   `
                                 'arguments'="--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
-                            -Description 'Steamers Update pre-install step'
+                            -Description 'Motors Update pre-install step'
 
-    # Step #2 - install a mock firmware version 1.0 onto steamer component.
-    $steamersInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
-                            -Files $steamerScriptFile, $steamerFirmwareFile `
+    # Step #2 - install a mock firmware version 1.2 onto motor component.
+    $motorsInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
+                            -Files $motorScriptFile, $motorFirmwareFile `
                             -HandlerProperties @{  `
-                                'scriptFileName'='contoso-steamer-installscript.sh';  `
+                                'scriptFileName'='contoso-motor-installscript.sh';  `
                                 'installedCriteria'="$RefUpdateVersion"; `
-                                "arguments"="--firmware-file steamer-firmware-$steamersFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
+                                "arguments"="--firmware-file motor-firmware-$motorsFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
-                            -Description 'Steamers Update - firmware installation'
+                            -Description 'Motors Update - firmware installation'
 
     # Step #3 - simulating a success post-install task.
-    $steamersInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
-                            -Files $steamerScriptFile `
+    $motorsInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
+                            -Files $motorScriptFile `
                             -HandlerProperties @{  `
-                                'scriptFileName'='contoso-steamer-installscript.sh';  `
+                                'scriptFileName'='contoso-motor-installscript.sh';  `
                                 'installedCriteria'="$RefUpdateVersion"; `
                                 "arguments"="--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"  `
                             }   `
@@ -125,11 +190,105 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     # Create child update manifest
     # ------------------------------
 
-    $childUpdateId = $steamersUpdateId
+    $childUpdateId = $motorsUpdateId
     $childUpdateIdStr = "$($childUpdateId.Provider).$($childUpdateId.Name).$($childUpdateId.Version)"
-    $childPayloadFiles = $steamerScriptFile, $steamerFirmwareFile
-    $childCompat = $steamersCompat
-    $childSteps = $steamersInstallSteps
+    $childPayloadFiles = $motorScriptFile, $motorFirmwareFile
+    $childCompat = $motorsCompat
+    $childSteps = $motorsInstallSteps
+
+    Write-Host "    Preparing child update manifest $childUpdateIdStr ..."
+
+    $childManifest = New-AduImportManifest -UpdateId $childUpdateId -IsDeployable $false `
+                                        -Compatibility $childCompat `
+                                        -InstallationSteps $childSteps `
+                                        -ErrorAction Stop
+
+    # Create folder for manifest files and payload.
+    $outputPath = "$OutputManifestPath\$parentUpdateIdStr"
+    Write-Host "    Saving child manifest files and payload to $outputPath..."
+    New-Item $outputPath -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+
+    # Generate manifest files.
+    $childManifest | Out-File "$outputPath\$childUpdateIdStr.importmanifest.json" -Encoding utf8
+
+    # Copy all payloads (if used)
+    Copy-Item -Path $childPayloadFiles -Destination $outputPath -Force
+
+    Write-Host " "
+
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    # -------------------------------------------------
+    # Create a child update for all 'camera' components
+    # -------------------------------------------------
+
+    $RefUpdateManufacturer = "contoso"
+    $RefUpdateName = "$RefUpdateNamePrefix-virtual-cameras"
+    $RefUpdateVersion = "8.0"
+
+    $camerasFirmwareVersion = "3.0"
+
+    Write-Host "Preparing child update ($RefUpdateManufacturer/$RefUpdateName/$RefUpdateVersion)..."
+
+    $camerasUpdateId = New-AduUpdateId -Provider $RefUpdateManufacturer -Name $RefUpdateName -Version $RefUpdateVersion
+
+    # This components update only apply to 'cameras' group.
+    $camerasSelector = @{ group = 'cameras' }
+    $camerasCompat = New-AduUpdateCompatibility  -Properties $camerasSelector
+
+    $cameraScriptFile = "$PSScriptRoot\scripts\contoso-camera-installscript.sh"
+    $cameraFirmwareFile = "$PSScriptRoot\data-files\camera-firmware-$camerasFirmwareVersion.json"
+
+    #------------
+    # ADD STEP(S)
+    #    
+
+    # This update contains 3 steps.
+    $camerasInstallSteps = @()
+
+    # Step #1 - simulating a success pre-install task.
+    $camerasInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
+                            -Files $cameraScriptFile `
+                            -HandlerProperties @{  `
+                                'scriptFileName'='contoso-camera-installscript.sh';  `
+                                'installedCriteria'="$RefUpdateVersion";   `
+                                'arguments'="--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
+                            }   `
+                            `
+                            -Description 'Cameras Update pre-install step'
+
+    # Step #2 - install a mock firmware version 2.1 onto camera component.
+    $camerasInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
+                            -Files $cameraScriptFile, $cameraFirmwareFile `
+                            -HandlerProperties @{  `
+                                'scriptFileName'='contoso-camera-installscript.sh';  `
+                                'installedCriteria'="$RefUpdateVersion"; `
+                                "arguments"="--firmware-file camera-firmware-$camerasFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
+                            }   `
+                            `
+                            -Description 'Cameras Update - firmware installation'
+
+    # Step #3 - simulating a success post-install task.
+    $camerasInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
+                            -Files $cameraScriptFile `
+                            -HandlerProperties @{  `
+                                'scriptFileName'='contoso-camera-installscript.sh';  `
+                                'installedCriteria'="$RefUpdateVersion"; `
+                                "arguments"="--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"  `
+                            }   `
+                            `
+                            -Description 'Cameras Update post-install step'
+
+    # ------------------------------
+    # Create child update manifest
+    # ------------------------------
+
+    $childUpdateId = $camerasUpdateId
+    $childUpdateIdStr = "$($childUpdateId.Provider).$($childUpdateId.Name).$($childUpdateId.Version)"
+    $childPayloadFiles = $cameraScriptFile, $cameraFirmwareFile
+    $childCompat = $camerasCompat
+    $childSteps = $camerasInstallSteps
 
     Write-Host "    Preparing child update manifest $childUpdateIdStr ..."
 
@@ -162,8 +321,9 @@ $parentSteps = @()
     #------------
     # ADD STEP(s)
 
-    $parentSteps += New-AduInstallationStep -UpdateId $steamersUpdateId -Description "Steamers Firmware Version $steamersFirmwareVersion"
-
+    $parentSteps += New-AduInstallationStep -UpdateId $hostfwUpdateId -Description "Host Firmware Version $hostfwFirmwareVersion"
+    $parentSteps += New-AduInstallationStep -UpdateId $motorsUpdateId -Description "Motors Firmware Version $motorsFirmwareVersion"
+    $parentSteps += New-AduInstallationStep -UpdateId $camerasUpdateId -Description "Cameras Firmware Version $camerasFirmwareVersion"
 
 # ------------------------------
 # Create parent update manifest
