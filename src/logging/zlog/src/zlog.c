@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h> // for strcmp, memset, strlen, etc.
 #include <sys/stat.h>
+#include <sys/syscall.h> // for SYS_gettid
 #include <sys/time.h> // for gettimeofday
 #include <sys/types.h>
 #include <time.h>
@@ -223,8 +224,13 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
         return;
     }
 
-    char time_buffer[sizeof("2020-07-01T18:21:26.1234Z")];
-    time_buffer[0] = '\0';
+    // Format: DateTime ProcessID[ThreadID]
+    // Note: 4194304 = PID_MAX_LIMIT = 4 * 1024 * 1024 = 2^22
+    //       Max numeric assignable is in /proc/sys/kernel/pid_max but that
+    //       could change while running, so using PID_MAX_LIMIT as defined
+    //       in Linux kernel include/linux/threads.h
+    char prelude_buffer[sizeof("2020-07-01T18:21:26.1234Z 4194304[4194304]")];
+    prelude_buffer[0] = '\0';
 
     struct timespec curtime;
     clock_gettime(CLOCK_REALTIME, &curtime);
@@ -238,16 +244,18 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
     {
         // % 100 below to ensure the values fit in 2-digits template.
         int ret = snprintf(
-            time_buffer,
-            sizeof(time_buffer),
-            "%04d-%02d-%02dT%02d:%02d:%02d.%04dZ",
+            prelude_buffer,
+            sizeof(prelude_buffer),
+            "%04d-%02d-%02dT%02d:%02d:%02d.%04dZ %d[%d]",
             tmval->tm_year + 1900,
             tmval->tm_mon + 1,
             tmval->tm_mday % 100,
             tmval->tm_hour % 100,
             tmval->tm_min % 100,
             tmval->tm_sec % 100,
-            (int)(curtime.tv_nsec / 100000));
+            (int)(curtime.tv_nsec / 100000),
+            getpid(),
+            (pid_t)syscall(SYS_gettid)/* cannot call gettid() directly */);
 
         if (ret < 0)
         {
@@ -283,7 +291,7 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
         fprintf(
             msg_level == ZLOG_ERROR ? stderr : stdout,
             "%s %s[%c]%s %s [%s]\n",
-            time_buffer,
+            prelude_buffer,
             color_prefix,
             level_names[msg_level],
             color_suffix,
@@ -302,7 +310,7 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
             buffer,
             ZLOG_BUFFER_LINE_MAXCHARS,
             "%s [%c] %.400s [%s]\n",
-            time_buffer,
+            prelude_buffer,
             level_names[msg_level],
             va_buffer,
             func);
