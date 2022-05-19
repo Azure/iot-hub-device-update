@@ -85,6 +85,9 @@ _Bool ADUC_WorkflowData_Init(ADUC_WorkflowData* workflowData, int argc, char** a
 
     workflowData->ReportStateAndResultAsyncCallback = AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync;
 
+    workflowData->LastCompletedWorkflowId = NULL;
+    workflowData->LastGoalStateJson = NULL;
+
     workflow_set_cancellation_type(workflowData->WorkflowHandle, ADUC_WorkflowCancellationType_None);
 
     succeeded = true;
@@ -110,6 +113,7 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
         ADUC_MethodCall_Unregister(&(workflowData->UpdateActionCallbacks));
     }
 
+    workflow_free_string(workflowData->LastCompletedWorkflowId);
     free(workflowData->LastGoalStateJson);
     memset(workflowData, 0, sizeof(*workflowData));
 }
@@ -408,7 +412,7 @@ done:
 
 /**
  * @brief This function is invoked when Device Update PnP Interface property is updated.
- * 
+ *
  * @param clientHandle A Device Update Client handle object.
  * @param propertyName The name of the property that changed.
  * @param propertyValue The new property value.
@@ -519,7 +523,7 @@ done:
  * @param updateState The workflow state machine state.
  * @param result The pointer to the result. If NULL, then the result will be retrieved from the opaque handle object in the workflow data.
  * @param installedUpdateId The installed Update ID string.
- * @return JSON_Value* The resultant json value object.
+ * @return JSON_Value* The resultant json value object. Caller must free using json_value_free().
  */
 JSON_Value* GetReportingJsonValue(
     ADUC_WorkflowData* workflowData,
@@ -834,6 +838,7 @@ _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     success = true;
 
 done:
+    json_value_free(rootValue);
     json_free_serialized_string(jsonString);
     // Don't free the persistenceData as that will be done by the startup logic that owns it.
 

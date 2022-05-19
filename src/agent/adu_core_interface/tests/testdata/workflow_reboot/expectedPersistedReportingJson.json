@@ -7,7 +7,7 @@
     "state": 0,
     "workflow": {
         "action": 3,
-        "id": "action_bundle"
+        "id": "e99c69ca-3188-43a3-80af-310616c7751d"
     },
     "installedUpdateId": "{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"}"
 }

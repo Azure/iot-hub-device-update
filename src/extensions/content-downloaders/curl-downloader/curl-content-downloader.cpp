@@ -91,7 +91,10 @@ ADUC_Result Download_curl(
     // If target file exists, validate file hash.
     // If file is valid, then skip the download.
     isValidHash = ADUC_HashUtils_IsValidFileHash(
-        fullFilePath.str().c_str(), ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0), algVersion);
+        fullFilePath.str().c_str(),
+        ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
+        algVersion,
+        false /* suppressErrorLog */);
 
     if (isValidHash)
     {
@@ -135,7 +138,11 @@ ADUC_Result Download_curl(
         Log_Info("Validating file hash");
 
         const bool isValid = ADUC_HashUtils_IsValidFileHash(
-            fullFilePath.str().c_str(), ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0), algVersion);
+            fullFilePath.str().c_str(),
+            ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
+            algVersion,
+            true /* suppressErrorLog */);
+
         if (!isValid)
         {
             Log_Error("Hash for %s is not valid", entity->TargetFilename);

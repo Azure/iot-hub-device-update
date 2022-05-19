@@ -31,7 +31,7 @@ typedef void* ADUC_WorkflowHandle;
  *
  * @param updateManifestJson A json string containing an update manifest data.
  * @param validateManifest  A indicates whether to validate the manifest signature.
- *  Note that a Components Update maneifest file doesn't contain a signature. We sign at the Bundle-level.
+ *  Note that a referenced step manifest file doesn't contain a signature. We sign at the top level.
  * @param handle A workflow object handle with information about the workflow.
  * @return ADUC_Result
  */
@@ -56,12 +56,11 @@ workflow_init_from_file(const char* updateManifestFile, bool validateManifest, A
  * @param handle A workflow object handle with information about the workflow.
  * @return ADUC_Result
  */
-ADUC_Result
-workflow_create_from_inline_step(const ADUC_WorkflowHandle base, int stepIndex, ADUC_WorkflowHandle* handle);
+ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, int stepIndex, ADUC_WorkflowHandle* handle);
 
 /**
  * @brief Transfer action data from @p sourceHandle to @p targetHandle.
- * The sourceHandle will no longer contains transfered action data.
+ * The sourceHandle will no longer contains transferred action data.
  * Caller should not use sourceHandle for other workflow related purposes.
  *
  * @param targetHandle A target workflow object.
@@ -193,8 +192,7 @@ const char* workflow_peek_retryTimestamp(ADUC_WorkflowHandle handle);
  * @param ... An argument list.
  * @return Return true is succeeded.
  */
-bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* pathFormat, ...);
-
+bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* format, ...);
 
 /**
  * @brief Get the work folder for this workflow.
@@ -234,39 +232,20 @@ size_t workflow_get_update_files_count(ADUC_WorkflowHandle handle);
  *
  * @param handle A workflow data object handle.
  * @param index An index of the file to get.
- * @param entity An output file entity object. Caller must free the object with workflow_free_file_entiry().
+ * @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
  * @return true If succeeded.
  */
 bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity** entity);
 
 /**
- * @brief Gets a first file in the update files array that match specified @p fileType.
+ * @brief Gets the update file entity by name.
  *
  * @param handle A workflow data object handle.
- * @param fileType A file type.
- * @param entity An output file entitry object. Caller must free the object with workflow_free_file_entity().
+ * @param fileName File name.
+* @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
  * @return true If succeeded.
  */
-bool workflow_get_first_update_file_of_type(
-    ADUC_WorkflowHandle handle, const char* fileType, ADUC_FileEntity** entity);
-
-/**
- * @brief Gets a bundle updates count.
- *
- * @param handle A workflow data object handle.
- * @return size_t Total bundle updates count.
- */
-size_t workflow_get_bundle_updates_count(ADUC_WorkflowHandle handle);
-
-/**
- * @brief Gets a bundle update file at specified index.
- *
- * @param handle A workflow data object handle.
- * @param index An index of the file to get.
- * @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
- * @return true If succeeded.
- */
-bool workflow_get_bundle_updates_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity** entity);
+bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fileName, ADUC_FileEntity** entity);
 
 /**
  * @brief Free specified file entity object.
@@ -488,7 +467,24 @@ void workflow_update_for_retry(ADUC_WorkflowHandle handle);
 //
 // Misc.
 //
+
+/**
+ * @brief Compare id of @p handle0 and @p handle1
+ *
+ * @param handle0 The workflow handle containing the first workflow id.
+ * @param handle1 The workflow handle containing the second workflow id.
+ * @return 0 if ids are equal.
+ */
 int workflow_id_compare(ADUC_WorkflowHandle handle0, ADUC_WorkflowHandle handle1);
+
+/**
+ * @brief Compare id of @p handle and @p workflowId. No memory is allocated or freed by this function.
+ *
+ * @param handle The handle for first workflow id.
+ * @param workflowId The c-string for the second workflow id.
+ * @return bool Returns true if ids are equal.
+ */
+bool workflow_isequal_id(ADUC_WorkflowHandle handle, const char* workflowId);
 
 /**
  * @brief Create a new workflow data handler using base workflow and serialized 'instruction' json string.
@@ -525,12 +521,28 @@ workflow_create_from_instruction_value(ADUC_WorkflowHandle base, JSON_Value* ins
 void workflow_set_level(ADUC_WorkflowHandle handle, int level);
 
 /**
+ * @brief Set workflow step index.
+ *
+ * @param handle A workflow object handle.
+ * @param stepIndex A workflow step index.
+ */
+void workflow_set_step_index(ADUC_WorkflowHandle handle, int stepIndex);
+
+/**
  * @brief Get workflow level.
  *
  * @param handle A workflow object handle.
  * @return Returns -1 if the specified handle is invalid. Otherwise, return the workflow level.
  */
 int workflow_get_level(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Get workflow step index.
+ *
+ * @param handle A workflow object handle.
+ * @return Returns -1 if the specified handle is invalid. Otherwise, return the workflow step index.
+ */
+int workflow_get_step_index(ADUC_WorkflowHandle handle);
 
 /**
  * @brief Get update manifest instructions steps count.
