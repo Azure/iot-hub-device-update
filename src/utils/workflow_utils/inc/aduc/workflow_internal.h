@@ -44,6 +44,7 @@ typedef struct tagADUC_Workflow
     size_t ChildrenMax; /**< The max children. */
     size_t ChildCount; /**< The count of children. */
     int Level; /**< The level of the workflow in the tree. */
+    int StepIndex; /**< The step index for this workflow. */
 
     //
     // Operation worker state including state for handling cancellation and completion.

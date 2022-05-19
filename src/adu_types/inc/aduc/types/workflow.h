@@ -155,6 +155,7 @@ typedef struct tagADUC_WorkflowData
     //
     ADUC_Result Result; /**< Current workflow result data. */
     ADUCITF_State LastReportedState; /**< Last state set for the workflow and may have been reported as per agent orchestration. */
+    char* LastCompletedWorkflowId; /**< Last workflow id for deployment that completed successfully. */
 
     ADUC_UpdateActionCallbacks UpdateActionCallbacks; /**< Upper-level registration data; function pointers, etc. */
 

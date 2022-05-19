@@ -8,10 +8,8 @@
 #include "aduc/simulator_handler.hpp"
 #include "aduc/logging.h"
 #include "aduc/workflow_utils.h"
-#include "parson.h"
 #include <stdarg.h> // for va_*
 #include <stdlib.h> // for getenv
-#include <memory>
 #include <string>
 
 #define SIMULATOR_DATA_FILE "du-simulator-data.json"
@@ -32,16 +30,16 @@ const char* _GetTemporaryPathName()
 {
     const char* env;
     env = getenv("TMPDIR");
-    if (env == NULL)
+    if (env == nullptr)
     {
         env = getenv("TMP");
-        if (env == NULL)
+        if (env == nullptr)
         {
             env = getenv("TEMP");
-            if (env == NULL)
+            if (env == nullptr)
             {
                 env = getenv("TEMPDIR");
-                if (env == NULL)
+                if (env == nullptr)
                 {
                     static const char* root_tmp_folder = "/tmp";
                     env = root_tmp_folder;
@@ -62,13 +60,13 @@ const char* _GetTemporaryPathName()
  * @brief Returns string created by formatting a variable number of string arguments with @p fmt
  * @details Caller must free returned string, any formatted string above 512 characters in length will result in a failed call
  * @param fmt format string to be used on parameters
- * @returns in case of string > 512 characters or other failure NULL, otherwise a pointer to a null-terminated string
+ * @returns in case of string > 512 characters or other failure nullptr, otherwise a pointer to a null-terminated string
  */
 char* _StringFormat(const char* fmt, ...)
 {
-    if (fmt == NULL)
+    if (fmt == nullptr)
     {
-        return NULL;
+        return nullptr;
     }
 
     char buffer[ADUC_STRING_FORMAT_MAX_LENGTH];
@@ -83,19 +81,19 @@ char* _StringFormat(const char* fmt, ...)
 
     if (result <= 0 || result >= ADUC_STRING_FORMAT_MAX_LENGTH)
     {
-        return NULL;
+        return nullptr;
     }
 
-    char* outputStr = (char*)malloc(strlen(buffer)+1);
-    if (outputStr == NULL)
+    auto outputStr = static_cast<char*>(malloc(strlen(buffer) + 1));
+    if (outputStr == nullptr)
     {
-        return NULL;
+        return nullptr;
     }
 
-    if (strcpy(outputStr, buffer) == NULL)
+    if (strcpy(outputStr, buffer) == nullptr)
     {
         free(outputStr);
-        outputStr = NULL;
+        outputStr = nullptr;
     }
 
     return outputStr;
@@ -192,13 +190,7 @@ ADUC_Result SimulatorHandlerImpl::Download(const tagADUC_WorkflowData* workflowD
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     ADUC_WorkflowHandle childHandle = nullptr;
 
-    bool useBundleFiles = true;
-    auto fileCount = static_cast<unsigned int>(workflow_get_bundle_updates_count(handle));
-    if (fileCount == 0)
-    {
-        useBundleFiles = false;
-        fileCount = static_cast<unsigned int>(workflow_get_update_files_count(handle));
-    }
+    auto fileCount = static_cast<unsigned int>(workflow_get_update_files_count(handle));
 
     JSON_Object* downloadResult = nullptr;
 
@@ -218,8 +210,7 @@ ADUC_Result SimulatorHandlerImpl::Download(const tagADUC_WorkflowData* workflowD
         ADUC_FileEntity* entity = nullptr;
         result = { .ResultCode = ADUC_Result_Download_Success };
 
-        bool fileEntityOk = useBundleFiles ? workflow_get_bundle_updates_file(handle, i, &entity)
-                                           : workflow_get_update_file(handle, i, &entity);
+        bool fileEntityOk = workflow_get_update_file(handle, i, &entity);
 
         if (!fileEntityOk || entity == nullptr)
         {
@@ -306,6 +297,12 @@ ADUC_Result SimulatorActionHelper(
 
         resultObject = selectResult;
     }
+    else if (0 == strcmp(action, "isInstalled"))
+    {
+        // For update manifest version 4, top-level (parent) update doesn't have installed criteria property.
+        // In this case, we'll return the catch-all (*) result instead.
+        resultObject = json_value_get_object(json_object_get_value(resultObject, "*"));
+    }
 
     if (resultObject != nullptr)
     {
@@ -318,7 +315,6 @@ ADUC_Result SimulatorActionHelper(
         }
     }
 
-    // For 'microsoft/bundle:1' implementation, abort download task as soon as an error occurs.
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         goto done;

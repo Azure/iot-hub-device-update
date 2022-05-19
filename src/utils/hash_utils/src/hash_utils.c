@@ -26,8 +26,8 @@
  * @param outputHash an optional output buffer for computed hash. Caller must call free() to deallocate the buffer when done.
  * @returns bool True if the hash is valid and equals @p hashBase64
  */
-static bool
-GetResultAndCompareHashes(USHAContext* context, const char* hashBase64, SHAversion algorithm, char** outputHash)
+static bool GetResultAndCompareHashes(
+    USHAContext* context, const char* hashBase64, SHAversion algorithm, bool suppressErrorLog, char** outputHash)
 {
     bool success = false;
     // "USHAHashSize(algorithm)" is more precise, but requires a variable length array, or heap allocation.
@@ -36,14 +36,20 @@ GetResultAndCompareHashes(USHAContext* context, const char* hashBase64, SHAversi
 
     if (USHAResult(context, (uint8_t*)buffer_hash) != 0)
     {
-        Log_Error("Error in SHA Result, SHAversion: %d", algorithm);
+        if (!suppressErrorLog)
+        {
+            Log_Error("Error in SHA Result, SHAversion: %d", algorithm);
+        }
         goto done;
     }
 
     encoded_file_hash = Azure_Base64_Encode_Bytes((unsigned char*)buffer_hash, USHAHashSize(algorithm));
     if (encoded_file_hash == NULL)
     {
-        Log_Error("Error in Base64 Encoding");
+        if (!suppressErrorLog)
+        {
+            Log_Error("Error in Base64 Encoding");
+        }
         goto done;
     }
 
@@ -51,11 +57,14 @@ GetResultAndCompareHashes(USHAContext* context, const char* hashBase64, SHAversi
 
     if (!hashMatches)
     {
-        Log_Error(
-            "Invalid Hash, Expect: %s, Result: %s, SHAversion: %d",
-            hashBase64,
-            STRING_c_str(encoded_file_hash),
-            algorithm);
+        if (!suppressErrorLog)
+        {
+            Log_Error(
+                "Invalid Hash, Expect: %s, Result: %s, SHAversion: %d",
+                hashBase64,
+                STRING_c_str(encoded_file_hash),
+                algorithm);
+        }
         goto done;
     }
 
@@ -63,7 +72,10 @@ GetResultAndCompareHashes(USHAContext* context, const char* hashBase64, SHAversi
     {
         if (mallocAndStrcpy_s(outputHash, STRING_c_str(encoded_file_hash)) != 0)
         {
-            Log_Error("Cannot allocate output buffer and copy hash.");
+            if (!suppressErrorLog)
+            {
+                Log_Error("Cannot allocate output buffer and copy hash.");
+            }
             goto done;
         }
     }
@@ -137,7 +149,7 @@ _Bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** 
         };
     }
 
-    success = GetResultAndCompareHashes(&context, NULL, algorithm, hash);
+    success = GetResultAndCompareHashes(&context, NULL, algorithm, true, hash);
 
 done:
 
@@ -193,16 +205,21 @@ char* ADUC_HashUtils_GetHashValue(const ADUC_Hash* hashArray, size_t arraySize, 
  * @param path The path to the file to check
  * @param hashBase64 The expected hash of the file at @p path
  * @param algorithm The hashing algorithm to use to calculate the hash.
+ * @param suppressErrorLog A boolean indicates whether to log error message inside this function.
  * @return bool True if the hash is valid and matches @p hashBase64
  */
-_Bool ADUC_HashUtils_IsValidFileHash(const char* path, const char* hashBase64, SHAversion algorithm)
+_Bool ADUC_HashUtils_IsValidFileHash(
+    const char* path, const char* hashBase64, SHAversion algorithm, bool suppressErrorLog)
 {
     _Bool success = false;
 
     FILE* file = fopen(path, "rb");
     if (file == NULL)
     {
-        Log_Error("Cannot open file: %s", path);
+        if (!suppressErrorLog)
+        {
+            Log_Error("Cannot open file: %s", path);
+        }
         goto done;
     }
 
@@ -210,7 +227,10 @@ _Bool ADUC_HashUtils_IsValidFileHash(const char* path, const char* hashBase64, S
 
     if (USHAReset(&context, algorithm) != 0)
     {
-        Log_Error("Error in SHA Reset, SHAversion: %d", algorithm);
+        if (!suppressErrorLog)
+        {
+            Log_Error("Error in SHA Reset, SHAversion: %d", algorithm);
+        }
         goto done;
     };
 
@@ -223,7 +243,10 @@ _Bool ADUC_HashUtils_IsValidFileHash(const char* path, const char* hashBase64, S
         {
             if (ferror(file))
             {
-                Log_Error("Error reading file content.");
+                if (!suppressErrorLog)
+                {
+                    Log_Error("Error reading file content.");
+                }
                 goto done;
             }
 
@@ -233,12 +256,15 @@ _Bool ADUC_HashUtils_IsValidFileHash(const char* path, const char* hashBase64, S
 
         if (USHAInput(&context, buffer, readSize) != 0)
         {
-            Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
+            if (!suppressErrorLog)
+            {
+                Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
+            }
             goto done;
         };
     }
 
-    success = GetResultAndCompareHashes(&context, hashBase64, algorithm, NULL);
+    success = GetResultAndCompareHashes(&context, hashBase64, algorithm, suppressErrorLog, NULL /* outputHash */);
     if (!success)
     {
         goto done;
@@ -278,7 +304,7 @@ _Bool ADUC_HashUtils_IsValidBufferHash(
         return false;
     }
 
-    return GetResultAndCompareHashes(&context, hashBase64, algorithm, NULL);
+    return GetResultAndCompareHashes(&context, hashBase64, algorithm, true, NULL);
 }
 
 /**

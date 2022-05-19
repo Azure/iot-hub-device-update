@@ -8,7 +8,7 @@ OPTIND=1
 
 ret_val=0
 
-# Ensure we dont end the user's terminal session if invoked from source (".").
+# Ensure we don't end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
     ret=return
 else
@@ -42,7 +42,7 @@ log_debug_pref="\033[1;30m[D]\033[0m"
 # Log info prefix - blue
 log_info_pref="\033[1;34m[I]\033[0m"
 
-# Log warning prefix - yello
+# Log warning prefix - yellow
 log_warn_pref="\033[1;33m[W]\033[0m"
 
 # Log error prefix - red
@@ -86,20 +86,11 @@ do_install_action=
 do_apply_action=
 do_cancel_action=
 
-restart_to_apply=
-restart_agent_to_apply=
-
 #
 # Test or Demo related variables
 #
 simulate_preinstall_success=
 simulate_postinstall_success=
-reset_component=
-
-simulate_action_result=
-simulate_action_resultcode=0
-simulate_action_extended_resultcode=0
-simulate_action_result_details="Simulation result unspecified."
 
 #
 # Remaining aguments and parameters
@@ -163,8 +154,11 @@ output(){
     fi
 }
 
+#
+# Write result json string to result file.
+#
 result(){
-    # NOTE: dont' insert timestamp in result file.
+    # NOTE: don't insert timestamp in result file.
     if [ -z $result_file ]; then
         echo "$@" >&1
     else
@@ -193,7 +187,7 @@ print_help() {
     echo "Device Update reserved argument"
     echo "==============================="
     echo ""
-    echo "--action-isinstalled                      Perform 'is-installed' check."
+    echo "--action-is-installed                     Perform 'is-installed' check."
     echo "                                          Check whether the selected component [or primary device] current states"
     echo "                                          satisfies specified 'installedCriteria' data."
     echo "--installed-criteria                      Specify the Installed-Criteria string."
@@ -202,9 +196,6 @@ print_help() {
     echo "--action-install                          Perform 'install' action."
     echo "--action-apply                            Perform 'apply' action."
     echo "--action-cancel                           Perform 'cancel' action."
-    echo ""
-    echo "--restart-to-apply                        Request the host device to restart when applying update to this component."
-    echo "--restart-agent-to-apply                  Request the DU Agent to restart when applying update to this component."
     echo ""
     echo "--install-error-policy                    Indicates how to proceed when an error occurs. Default \"abort\""
     echo "                                          options: abort, continue"
@@ -222,10 +213,10 @@ print_help() {
     echo "--post-install-sim-success    Simulate post-install success scenario (no-op)"
     echo ""
     echo ""
-    echo "File and Folderinformation"
+    echo "File and Folder information"
     echo "=========================="
     echo ""
-    echo "--work-folder            A work-folder (or sandbox folder)."
+    echo "--work-folder           A work-folder (or sandbox folder)."
     echo "--firmware-file         A firmware to install."
     echo "--output-file           An output file."
     echo "--log-file              A log file."
@@ -285,6 +276,7 @@ while [[ $1 != "" ]]; do
             $ret 1
         fi
         component_id=$1
+        echo "Component id: $component_id"
         shift
         ;;
 
@@ -306,6 +298,7 @@ while [[ $1 != "" ]]; do
             $ret 1
         fi
         component_group=$1
+        echo "Component group: $component_group"
         shift
         ;;
 
@@ -315,6 +308,7 @@ while [[ $1 != "" ]]; do
             $ret 1
         fi
         component_vendor=$2
+        echo "Component vendor: $component_vendor"
         shift
         shift
         ;;
@@ -326,6 +320,7 @@ while [[ $1 != "" ]]; do
             $ret 1
         fi
         component_model=$1
+        echo "Component model: $component_model"
         shift
         ;;
 
@@ -336,6 +331,7 @@ while [[ $1 != "" ]]; do
             $ret 1
         fi
         component_version=$1
+        echo "Component version: $component_version"
         shift
         ;;
 
@@ -375,16 +371,6 @@ while [[ $1 != "" ]]; do
     --action-apply)
         shift
         do_apply_action=yes
-        ;;
-
-    --restart-to-apply)
-        shift
-        restart_to_apply=yes
-        ;;
-
-    --restart-agent-to-apply)
-        shift
-        restart_agent_to_apply=yes
         ;;
 
     --action_cancel)
@@ -451,6 +437,7 @@ while [[ $1 != "" ]]; do
             $ret 1
         fi
         workfolder="$1";
+        echo "Workfolder: $workfolder"
         shift
         ;;
 
@@ -526,12 +513,6 @@ while [[ $1 != "" ]]; do
     #
     # Test or Demo fuctionality
     #
-    --reset-component)
-        log_info "Will reset the specified component."
-        reset_component=yes
-        shift
-        ;;
-
     --pre-install-sim-success)
         log_info "Will simulate pre-install script success."
         simulate_preinstall_success=yes
@@ -541,42 +522,6 @@ while [[ $1 != "" ]]; do
     --post-install-sim-success)
         log_info "Will simulate post-install script success."
         simulate_postinstall_success=yes
-        shift
-        ;;
-
-    --simulate-action-result)
-        log_info "Will return ADUC_Result based on --simulate-action-resultcode, --simulate-action-extended-resultcode, and --simulate-action-result-details"
-        simulate_action_result=yes
-        shift
-        ;;
-
-    --simulate-action-resultcode)
-        shift
-        if [[ -z $1 || $1 == -* ]]; then
-            error "--simulate-action-resultcode requires parameter."
-            $ret 1
-        fi
-        simulate_action_resultcode=$1
-        shift
-        ;;
-
-    --simulate-action-extended-resultcode)
-        shift
-        if [[ -z $1 || $1 == -* ]]; then
-            error "--simulate-action-extended-resultcode requires parameter."
-            $ret 1
-        fi
-        simulate_action_extended_resultcode=$1
-        shift
-        ;;
-
-    --simulate-action-result-detail)
-        shift
-        if [[ -z $1 || $1 == -* ]]; then
-            error "--simulate-action-result-details requires parameter."
-            $ret 1
-        fi
-        simulate_action_result_details=$1
         shift
         ;;
 
@@ -595,7 +540,7 @@ done
 # Example implementation of 'IsInstalled' function, for contoso-motor component.
 #
 # Design Goal:
-#   Determine whether the spcifified 'installedCriteria' (parameter $1) is met.
+#   Determine whether the specified 'installedCriteria' (parameter $1) is met.
 #
 #   'installedCriteria' is a version number of a motor in a mock component's data file
 #   located at "$component_props['path']/firmware.json".
@@ -619,297 +564,134 @@ done
 #     ADUC_Result_IsInstalled_NotInstalled = 901,  /**< Succeeded and content is not installed */
 #
 IsInstalled(){
-    path_key=path
-    component_path=${component_props[$path_key]}
-    component_file_path="$component_path/firmware.json"
-    log_info "IsInstalled(\"$1\"), path:\"$component_file_path\""
-
-    if [ -z "$1" ]; then
-
-        # function call failed, due to invalid input.
-        ret_val=1
-        # resultCode(0) == Failure.
-        resultCode=0
-        # extendedResultCode(12345) mock value.
-        extendedResultCode=12345
-        resultDetails="Invalid installedCriteria value."
-    elif [[ -f "$component_file_path" ]]; then
-
-        log_debug "Found component data file '$component_file_path'."
-
-        # check if version number matched.
-        grep_params="-F \"\\\"version\\\": \\\"$installed_criteria$output_file\\\"\" '$component_file_path'"
-        log_info "Running: grep $grep_params"
-
-        {
-            grep -F "\"version\": \"${installed_criteria}\"" "${component_file_path}"
-        }
-
-        grep_ret=$?
-        log_info "grep exit code: $grep_ret"
-
-        # Tell caller that IsInstall() function call succeeded.
-        ret_val=0
-
-        # resultCode, based on exit code from 'grep'.
-        if [ $grep_ret -eq 0 ]; then
-            # ADUC_Result_IsInstalled_Installed = 900
-            resultCode=900
-            # No additional error.
-            extendedResultCode=0
-            resultDetails=
-        else
-            # ADUC_Result_IsInstalled_NotInstalled = 901
-            resultCode=901
-            # No additional error.
-            extendedResultCode=0
-            resultDetails="installedCriteria not met: '$installed_criteria'."
-        fi
-
-    else
-        #
-        # Cannot get component data?
-        # Fo this demo purposes, let's simulate the situation when this component is off, disconnected (not-pnp), or malfunction.
-        #
-        # Applicable extendedResultCode: (facility: 0x30000000)
-        #   ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_COMPONENT_UNAVAILABLE (502) - 0x1F6
-        #   ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_ACCESS_DATA (503)- 0x1F7
-        #
-
-        # function call succeeded.
-        ret_val=0
-
-        # resultCode(0) == Failure. Can't access device data.
-        resultCode=0
-        # extendedResultCode(0x300001F6)
-        extendedResultCode=$((0x300001F6))
-        resultDetails="Cannot communicate with the specified component. Name:$component_name, Id:$component_id"
-    fi
-
-    mock_result="{\"resultCode\":$resultCode, \"extendedResultCode\":$extendedResultCode,\"resultDetails\":\"$resultDetails\"}"
-
-    # Show output.
-    output "Result:" "$mock_result"
-
-    # Write ADUC_Result to result file.
-    result  "$mock_result"
-
-}
-
-#
-# Helper function
-# Not returning ADUC_RESULT
-#
-ResetComponent(){
-    path_key=path
-    component_path=${component_props[$path_key]}
-    component_file_path="$component_path/firmware.json"
-    log_info "Reset component($component_name), path:\"$component_file_path\""
-
-    if [ -z "$component_path" ]; then
-        log_error "Must specified --component-prop path <component_path>."
-        ret_val=1
-        $ret $ret_val
-    fi
-
-    if [ -d "$component_path" ]; then
-        log_info "Path '$component_path' exists."
-    else
-        {
-            mkdir -p "${component_path}"
-            mkdir_ret=$?
-            if [ $mkdir_ret -ne 0 ]; then
-                log_error "Cannot create component data folder: '$component_path'."
-                ret_val=$mkdir_ret
-                $ret $ret_val
-            fi
-        }
-    fi
-
-    o="$component_file_path"
-
-    {
-        echo "{";
-        echo "    \"id\": \"$component_id\"," ;
-        echo "    \"name\": \"$component_name\"," ;
-        echo "    \"group\": \"$component_group\"," ;
-        echo "    \"manufacturer\": \"$component_vendor\"," ;
-        echo "    \"model\": \"$component_model\"," ;
-        echo "    \"version\": \"$component_version\"," ;
-        echo "    \"description\": \"This component is generated for testing purposes.\"," ;
-        echo "    \"properties\": {" ;
-        echo "        \"path\": \"$component_path\"" ;
-        echo "    }" ;
-        echo "}"
-    } > "$o"
-
-    echo "#"
-    echo "# Genrated component data file: \"$component_file_path\""
-    echo "#"
-    echo "----- content begin -----"
-    {
-        cat "${component_file_path}"
-    }
-    echo "----- content end -----"
-    echo ""
-
-    ret_val=0
-}
-
-DownloadUpdateArtifacts() {
-    log_info "DownloadUpdateArtifacts called"
-    path_key=path
-    component_path=${component_props[$path_key]}
-    component_file_path="$component_path/firmware.json"
-    log_info "Note: nothing to do here. Expectting that all artifacts already downloaded."
-    log_info "DownloadUpdateArtifacts succeeded."
-
-    # ADUC_Result_Download_Skipped_FileExists = 502
-    resultCode=502
-    # No additional errors.
+    resultCode=0
     extendedResultCode=0
-    resultDetails="installedCriteria not met: '$installed_criteria'."
+    resultDetails=""
+    ret_val=0
+
+    #
+    # PLACEHOLDER : Evalue 'installedCriteria'
+    #
+    #               Based on overall result..
+    #
+    #               # Set result code and details
+    #               resultCode=<Result Code>
+    #               extendedResultCode=<Extended Result Code, in case of error>
+    #               resultDetails="<Additional result details>
+    #               $ret_value=<Script exit code>
 
     # Prepare ADUC_Result json.
-    mock_result="{\"resultCode\":$resultCode, \"extendedResultCode\":$extendedResultCode,\"resultDetails\":\"$resultDetails\"}"
+    aduc_result_json="{\"resultCode\":$resultCode, \"extendedResultCode\":$extendedResultCode,\"resultDetails\":\"$resultDetails\"}"
 
     # Show output.
-    output "Result:" "$mock_result"
+    output "Result:" "$aduc_result_json"
 
     # Write ADUC_Result to result file.
-    result  "$mock_result"
+    result  "$aduc_result_json"
+
+    $ret $ret_val
+
+}
+
+#
+# Perfomr download-related tasks
+#
+DownloadUpdateArtifacts() {
+    resultCode=0
+    extendedResultCode=0
+    resultDetails=""
+    ret_val=0
+
+    #
+    # PLACEHOLDER : Perform download-related tasks here.
+    #
+    #               Based on overall result..
+    #
+    #               # Set result code and details
+    #               resultCode=<Result Code>
+    #               extendedResultCode=<Extended Result Code, in case of error>
+    #               resultDetails="<Additional result details>
+    #               $ret_value=<Script exit code>
+
+    # Prepare ADUC_Result json.
+    aduc_result_json="{\"resultCode\":$resultCode, \"extendedResultCode\":$extendedResultCode,\"resultDetails\":\"$resultDetails\"}"
+
+    # Show output.
+    output "Result:" "$aduc_result_json"
+
+    # Write ADUC_Result to result file.
+    result  "$aduc_result_json"
 
     $ret $ret_val
 }
 
 #
-# InstallUpdate:
-# Copies a 'firmware.json' to component's folder (properties.path).
+# Perform install-related tasks.
 #
 InstallUpdate() {
-    path_key=path
-    component_path=${component_props[$path_key]}
-    component_file_path="$component_path/firmware.json"
-    log_info "InstallUpdate called, component:$component_name, firmware: $component_file_path"
-
-    #
-    # Note: we could simulate 'component off-line' scenario here.
-    #
-
-    # Check whether the component is already installed the specified update...
-
-    # check if version number matched.
-    if [ "$installed_criteria" == "" ]; then
-        log_error "Script call missing '--installed-criteria' argument."
-        resultCode=0
-        # ADUC_ERC_SCRIPT_HANDLER_MISSING_INSTALLED_CRITERIA (0x30600002)
-        extendedResultCode=$((0x30600002))
-        resultDetails="Script call missing '--installed-criteria' argument."
-    else
-
-        # Check whether the update has benn installed.
-        grep_params="-F \"\\\"version\\\": \\\"$installed_criteria$output_file\\\"\" '$component_file_path'"
-        log_info "Running: grep $grep_params"
-
-        {
-            grep -F "\"version\": \"${installed_criteria}\"" "${component_file_path}"
-        }
-
-        grep_ret=$?
-        log_info "grep exit code: $grep_ret"
-
-        # resultCode, based on exit code from 'grep'.
-        if [ $grep_ret -eq 0 ]; then
-            log_info "It appears that this component already installed the specified update."
-            # ADUC_Result_Install_Skipped_UpdateAlreadyInstalled = 603
-            resultCode=603
-            # No additional error.
-            extendedResultCode=0
-            resultDetails=
-        else
-
-            log_info "Installing... (workfolder:$workfolder, firmware:$firmware_file)"
-            cp -f "$workfolder/$firmware_file" "$component_path/firmware.json"
-            copy_ret=$?
-
-            if [ $copy_ret -ne 0 ]; then
-                log_error "Cannot install a firmware to: '$component_path'. (exitCode:$copy_ret)"
-
-                # Set result code and details
-                resultCode=0
-                # ADUC_ERC_SCRIPT_HANDLER_CHILD_PROCESS_FAILURE_EXITCODE(exitCode) (0x30601000 + exitCode)
-                extendedResultCode=$((0x30601000 + copy_ret))
-                resultDetails="Firmware installation failed. ComponentId: $component_id"
-            else
-                log_info "Install succeeded."
-
-                # ADUC_Result_Install_Success = 600
-                resultCode=600
-                # No additional error.
-                extendedResultCode=0
-                resultDetails=
-            fi
-            ret_val=0
-        fi
-    fi
-
-    # Prepare ADUC_Result json.
-    mock_result="{\"resultCode\":$resultCode, \"extendedResultCode\":$extendedResultCode,\"resultDetails\":\"$resultDetails\"}"
-
-    # Show output.
-    output "Result:" "$mock_result"
-
-    # Write ADUC_Result to result file.
-    result  "$mock_result"
-
-    $ret $ret_val
-}
-
-ApplyUpdate() {
-    ret_val=0
-    if [ "$restart_to_apply" == "yes" ]; then
-        # ADUC_Result_Apply_RequiredImmediateReboot = 705
-        resultCode=705
-    elif [ "$restart_agent_to_apply" == "yes" ]; then
-        # ADUC_Result_Apply_RequiredImmediateAgentRestart = 707
-        resultCode=707
-    else
-        # ADUC_Result_Apply_Success = 700
-        resultCode=700
-    fi
-        # No additional error.
+    resultCode=0
     extendedResultCode=0
-    resultDetails=
-    # Prepare ADUC_Result json.
-    mock_result="{\"resultCode\":$resultCode, \"extendedResultCode\":$extendedResultCode,\"resultDetails\":\"$resultDetails\"}"
-
-    # Show output.
-    output "Result:" "$mock_result"
-
-    # Write ADUC_Result to result file.
-    result  "$mock_result"
-
-    $ret $ret_val
-}
-
-SimulateActionResult() {
-    output "Simulating specified action results."
+    resultDetails=""
     ret_val=0
-    resultCode=$simulate_action_resultcode
-    extendedResultCode=$simulate_action_extended_resultcode
-    resultDetails="$simulate_action_result_details"
+
+    #
+    # PLACEHOLDER : Evaluate 'installCriteria' to determine if there is anything to do.
+    #               If not, return ADUC_Result_Install_Success (600). Otherwise, continue.
+    #
+
+    #
+    # PLACEHOLDER : Perform installation tasks here.
+    #
+    #               Based on overall result..
+    #
+    #               # Set result code and details
+    #               resultCode=<Result Code>
+    #               extendedResultCode=<Extended Result Code, in case of error>
+    #               resultDetails="<Additional result details>
+    #               $ret_value=<Script exit code>
+
     # Prepare ADUC_Result json.
-    mock_result="{\"resultCode\":$resultCode, \"extendedResultCode\":$extendedResultCode,\"resultDetails\":\"$resultDetails\"}"
+    aduc_result_json="{\"resultCode\":$resultCode, \"extendedResultCode\":$extendedResultCode,\"resultDetails\":\"$resultDetails\"}"
 
     # Show output.
-    output "Result:" "$mock_result"
+    output "Result:" "$aduc_result_json"
 
     # Write ADUC_Result to result file.
-    result  "$mock_result"
+    result  "$aduc_result_json"
 
     $ret $ret_val
 }
 
+#
+# Perform install-related tasks.
+#
+ApplyUpdate() {
+    resultCode=0
+    extendedResultCode=0
+    resultDetails=""
+    ret_val=0
+    #
+    # PLACEHOLDER : Perform installation tasks here.
+    #
+    #               Based on overall result..
+    #
+    #               # Set result code and details
+    #               resultCode=<Result Code>
+    #               extendedResultCode=<Extended Result Code, in case of error>
+    #               resultDetails="<Additional result details>
+    #               $ret_value=<Script exit code>
+
+    # Prepare ADUC_Result json.
+    aduc_result_json="{\"resultCode\":$resultCode, \"extendedResultCode\":$extendedResultCode,\"resultDetails\":\"$resultDetails\"}"
+
+    # Show output.
+    output "Result:" "$aduc_result_json"
+
+    # Write ADUC_Result to result file.
+    result  "$aduc_result_json"
+
+    $ret $ret_val
+}
 
 SimulatePreInstallSuccess() {
     output "Simulating pre-instll step success."
@@ -959,10 +741,9 @@ CancelUpdate(){
 #
 # Main
 #
-
-if [ "$reset_component" == "yes" ]; then
-    ResetComponent
-    $ret $ret_val
+if [ -n "$check_is_installed" ]; then
+    IsInstalled "$installed_criteria"
+    exit $ret_val
 fi
 
 if [ -n "$simulate_preinstall_success" ]; then
@@ -972,16 +753,6 @@ fi
 
 if [ -n "$simulate_postinstall_success" ]; then
     SimulatePostInstallSuccess
-    exit $ret_val
-fi
-
-if [ -n "$simulate_action_result" ]; then
-    SimulateActionResult
-    exit $ret_val
-fi
-
-if [ -n "$check_is_installed" ]; then
-    IsInstalled "$installed_criteria"
     exit $ret_val
 fi
 
