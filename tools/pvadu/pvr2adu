@@ -1,0 +1,230 @@
+#!/bin/sh
+
+set -e
+
+usage() {
+	echo "Usage: pvr2adu [options] <add-agent|export> [arguments]"
+	echo "Convert pvr checkout and images into ADU format"
+	echo "options:"
+	echo "       -h this help"
+	echo "       -v verbose"
+}
+
+usage_add_agent() {
+	echo "Usage: pvr2adu [options] add-agent <connection-string> <manufacturer> <model>"
+	echo "Install ADU agent in the current pvr checkout that will connect to ADU with the provided configuration"
+}
+
+usage_export() {
+	echo "Usage: pvr2adu [options] export <provider> <name> <version> <manufacturer> <model> <part> <output>"
+	echo "Export the current pvr checkout into ADU compatible format"
+}
+
+parse_args() {
+	while [ $# -gt 0 ]; do
+		key="$1"
+		case "$key" in
+			-h)
+				usage
+				exit 0
+				;;
+			-v)
+				verbose="true"
+				;;
+			*)
+
+				break
+		esac
+		shift
+	done
+
+	case "$1" in
+		add-agent)
+			cmd='add-agent'
+			connectionstring="$2"
+			manufacturer="$3"
+			model="$4"
+			;;
+		export)
+			cmd='export'
+			provider="$2"
+			name="$3"
+			version="$4"
+			manufacturer="$5"
+			model="$6"
+			part="$7"
+			output="$8"
+			;;
+		*)
+			usage; exit 1
+			;;
+	esac
+}
+
+check_args_add_agent() {
+	if [ -z "$connectionstring" ]; then usage_add_agent; exit 1; fi
+	if [ -z "$manufacturer" ]; then usage_add_agent; exit 1; fi
+	if [ -z "$model" ]; then usage_add_agent; exit 1; fi
+}
+
+check_args_export() {
+	if [ -z "$provider" ]; then usage_export; exit 1; fi
+	if [ -z "$name" ]; then usage_export; exit 1; fi
+	if [ -z "$version" ]; then usage_export; exit 1; fi
+	if [ -z "$manufacturer" ]; then usage_export; exit 1; fi
+	if [ -z "$model" ]; then usage_export; exit 1; fi
+	if [ -z "$part" ]; then usage_export; exit 1; fi
+	if [ -z "$output" ]; then usage_export; exit 1; fi
+}
+
+add_agent() {
+	if [ ! -e _hostconfig/pvr/docker.json ]; then
+		echo "no _hostconfig found in pvr checkout"
+		exit 1
+	else
+		grep -q amd64 _hostconfig/pvr/docker.json && target="amd64-pvcontainer-0-8-0"
+		grep -q arm _hostconfig/pvr/docker.json && target="arm32v7-pvcontainer-0-8-0"
+		grep -q arm64 _hostconfig/pvr/docker.json && target="arm64v8-pvcontainer-0-8-0"
+	fi
+
+	if [ -z "$target" ]; then
+		echo "unknown target"
+		exit 1
+	fi
+	if [ -n "$verbose" ]; then echo "installing adu agent for $target"; fi
+
+	pvr app add --from "registry.gitlab.com/pantacor/pv-platforms/adu-agent:$target-pvcontainer_0.8.0_script_handler" azure-client
+} 
+
+add_config() {
+	mkdir -p _config/azure-client/etc/adu
+	json=`jq -n \
+		--arg cs "$connectionstring" \
+		--arg ma "$manufacturer" \
+		--arg mo "$model" \
+		'{
+			schemaVersion: "1.0",
+			aduShellTrustedUsers: [
+				"adu",
+				"do"
+			],
+			manufacturer: $ma,
+			model: $mo,
+			agents: [
+				{
+					name: "pvcontrol",
+					runas: "adu",
+					connectionSource: {
+						connectionType: "string",
+						connectionData: $cs
+					},
+					manufacturer: $ma,
+					model: $mo
+				}
+			]
+		}'`
+	echo $json > _config/azure-client/etc/adu/du-config.json
+}
+
+create_tarball() {
+	mkdir -p "$output"
+	pvr export -p "$part" "$output/pvadu.tgz"
+	ls "$output/pvadu.tgz"
+}
+
+create_script() {
+	cp "$(dirname $0)/pantavisor-installscript.sh" "$output/pantavisor-installscript.sh"
+	ls "$output/pantavisor-installscript.sh"
+}
+
+create_manifest() {
+	sha64_script=`openssl dgst -sha256 -binary "$output/pantavisor-installscript.sh" | openssl base64`
+	size_script=`stat -c%s "$output/pantavisor-installscript.sh"`
+	sha64_pvadu=`openssl dgst -sha256 -binary "$output/pvadu.tgz" | openssl base64`
+	size_pvadu=`stat -c%s "$output/pvadu.tgz"`
+	date=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
+
+	json=`jq -n \
+        --arg pr "$provider" \
+        --arg na "$name" \
+        --arg ve "$version" \
+        --arg ma "$manufacturer" \
+        --arg mo "$model" \
+        --arg hs "$sha64_script" \
+        --arg ss "$size_script" \
+        --arg ha "$sha64_pvadu" \
+        --arg sa "$size_pvadu" \
+        --arg da "$date" \
+		'{
+           "updateId": {
+             "provider": $pr,
+             "name": $na,
+             "version": $ve
+           },  
+           "compatibility": [
+             {   
+               "deviceManufacturer": $ma,
+               "deviceModel": $mo
+             }   
+           ],  
+           "instructions": {
+             "steps": [
+               {   
+                 "description": "install step",
+                 "handler": "microsoft/script:1",
+                 "files": [
+                   "pantavisor-installscript.sh",
+                   "pvadu.tgz"
+                 ],
+                 "handlerProperties": {
+                   "scriptFileName": "pantavisor-installscript.sh",
+                   "arguments": "--log-level 0 --firmware-file pvadu.tgz",
+                   "installedCriteria": $ve
+                 }
+               }
+             ]
+           },
+           "files": [
+             {
+               "filename": "pvadu.tgz",
+               "sizeInBytes": $sa,
+               "hashes": {
+                 "sha256": $ha
+               }
+             },
+             {
+               "filename": "pantavisor-installscript.sh",
+               "sizeInBytes": $ss,
+               "hashes": {
+                 "sha256": $hs
+               }
+             }
+           ],
+           "createdDateTime": $da,
+           "manifestVersion": "4.0"
+         }'`
+	echo $json > "$output/pvadu.importmanifest.json"
+	ls "$output/pvadu.importmanifest.json"
+}
+
+exec_cmd() {
+	case "$cmd" in
+		add-agent)
+			check_args_add_agent
+			add_agent
+			add_config
+			;;
+		export)
+			check_args_export
+			create_tarball
+			create_script
+			create_manifest
+			;;
+		*)
+			echo "ERROR: unknown operation"; usage; exit 1
+			;;
+	esac
+}
+
+parse_args "$@"
+exec_cmd
