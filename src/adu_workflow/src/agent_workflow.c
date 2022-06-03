@@ -189,7 +189,7 @@ const ADUC_WorkflowHandlerMapEntry workflowHandlerMap[] = {
         /* and on completion calls */                       ADUC_Workflow_MethodCall_Backup_Complete,
         /* on success, transitions to state */              ADUCITF_State_BackupSucceeded,
         /* on success auto-transitions to workflow step */  ADUCITF_WorkflowStep_Install,
-        /* Note: The default behavior of backup is that if Backup fails, 
+        /* Note: The default behavior of backup is that if Backup fails,
         the workflow will end and report failure immediately.
         To opt out of this design, in the content handler, the owner of the content handler
         will need to persist the result of ADUC_Workflow_MethodCall_Backup and return
@@ -293,15 +293,6 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowD
     }
     else
     {
-        ADUC_Result isInstalledResult = ADUC_Workflow_MethodCall_IsInstalled(currentWorkflowData);
-        if (isInstalledResult.ResultCode == ADUC_Result_IsInstalled_Installed)
-        {
-            char* updateId = workflow_get_expected_update_id_string(currentWorkflowData->WorkflowHandle);
-            ADUC_Workflow_SetInstalledUpdateIdAndGoToIdle(currentWorkflowData, updateId);
-            free(updateId);
-            goto done;
-        }
-
         // The default result for Idle state.
         // This will reset twin status code to 200 to indicate that we're successful (so far).
         const ADUC_Result result = { .ResultCode = ADUC_Result_Idle_Success };
@@ -314,15 +305,34 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowD
 
         if (desiredAction == ADUCITF_UpdateAction_Cancel)
         {
-            Log_Info("Received 'cancel' action on startup, reporting Idle state.");
+            const char* workflowId = workflow_peek_id(currentWorkflowData->WorkflowHandle);
+            if (workflowId != NULL && strcmp(workflowId, "nodeployment") == 0)
+            {
+                Log_Info("Ignoring 'nodeployment' cancel and skipping report of Idle state.");
+            }
+            else
+            {
+                Log_Info("Received 'cancel' action on startup, reporting Idle state.");
 
-            ADUC_WorkflowData_SetCurrentAction(desiredAction, currentWorkflowData);
+                ADUC_WorkflowData_SetCurrentAction(desiredAction, currentWorkflowData);
 
-            SetUpdateStateWithResultFunc setUpdateStateWithResultFunc =
-                ADUC_WorkflowData_GetSetUpdateStateWithResultFunc(currentWorkflowData);
-            (*setUpdateStateWithResultFunc)(currentWorkflowData, ADUCITF_State_Idle, result);
+                SetUpdateStateWithResultFunc setUpdateStateWithResultFunc =
+                    ADUC_WorkflowData_GetSetUpdateStateWithResultFunc(currentWorkflowData);
+                (*setUpdateStateWithResultFunc)(currentWorkflowData, ADUCITF_State_Idle, result);
+            }
 
             goto done;
+        }
+        else if (desiredAction == ADUCITF_UpdateAction_ProcessDeployment)
+        {
+            ADUC_Result isInstalledResult = ADUC_Workflow_MethodCall_IsInstalled(currentWorkflowData);
+            if (isInstalledResult.ResultCode == ADUC_Result_IsInstalled_Installed)
+            {
+                char* updateId = workflow_get_expected_update_id_string(currentWorkflowData->WorkflowHandle);
+                ADUC_Workflow_SetInstalledUpdateIdAndGoToIdle(currentWorkflowData, updateId);
+                free(updateId);
+                goto done;
+            }
         }
 
         Log_Info("There's a pending '%s' action", ADUCITF_UpdateActionToString(desiredAction));
