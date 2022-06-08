@@ -242,7 +242,7 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
  *
  * @param handle A workflow data object handle.
  * @param fileName File name.
- * @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
+* @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
  * @return true If succeeded.
  */
 bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fileName, ADUC_FileEntity** entity);
@@ -521,12 +521,28 @@ workflow_create_from_instruction_value(ADUC_WorkflowHandle base, JSON_Value* ins
 void workflow_set_level(ADUC_WorkflowHandle handle, int level);
 
 /**
+ * @brief Set workflow step index.
+ *
+ * @param handle A workflow object handle.
+ * @param stepIndex A workflow step index.
+ */
+void workflow_set_step_index(ADUC_WorkflowHandle handle, int stepIndex);
+
+/**
  * @brief Get workflow level.
  *
  * @param handle A workflow object handle.
  * @return Returns -1 if the specified handle is invalid. Otherwise, return the workflow level.
  */
 int workflow_get_level(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Get workflow step index.
+ *
+ * @param handle A workflow object handle.
+ * @return Returns -1 if the specified handle is invalid. Otherwise, return the workflow step index.
+ */
+int workflow_get_step_index(ADUC_WorkflowHandle handle);
 
 /**
  * @brief Get update manifest instructions steps count.

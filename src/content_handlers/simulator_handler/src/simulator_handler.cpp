@@ -84,7 +84,7 @@ char* _StringFormat(const char* fmt, ...)
         return nullptr;
     }
 
-    char* outputStr = (char*)malloc(strlen(buffer) + 1);
+    auto outputStr = static_cast<char*>(malloc(strlen(buffer) + 1));
     if (outputStr == nullptr)
     {
         return nullptr;

@@ -49,7 +49,7 @@ _Bool GetExtensionFileEntity(const char* extensionRegFile, ADUC_FileEntity* file
     JSON_Value* rootValue = json_parse_file(extensionRegFile);
     if (rootValue == NULL)
     {
-        Log_Error("Cannot open an extension registration file. ('%s')", extensionRegFile);
+        Log_Info("Cannot open an extension registration file. ('%s')", extensionRegFile);
         goto done;
     }
 

@@ -38,6 +38,7 @@ public:
     static ADUC_Result LoadContentDownloaderLibrary(void** contentDownloaderLibrary);
     static ADUC_Result SetContentDownloaderLibrary(void* contentDownloaderLibrary);
 
+    static bool IsComponentsEnumeratorRegistered();
     static ADUC_Result LoadComponentEnumeratorLibrary(void** componentEnumerator);
 
     static ADUC_Result LoadUpdateContentHandlerExtension(const std::string& updateType, ContentHandler** handler);

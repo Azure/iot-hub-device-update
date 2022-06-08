@@ -35,7 +35,7 @@ steps:
 
     # Run all unit tests.
   - bash: |
-      ctest --repeat until-pass:5 --force-new-ctest-process -T test -V --output-on-failure
+      ctest --repeat until-pass:5 --timeout 300 --force-new-ctest-process -T test -V --output-on-failure
       exit $?
     displayName: "Run Unit Tests: linux-MinSizeRel"
     workingDirectory: $(Build.BinariesDirectory)
@@ -59,7 +59,7 @@ steps:
 
     # Run all unit tests.
   - bash: |
-      ctest --repeat until-pass:5 --force-new-ctest-process -T test -V --output-on-failure
+      ctest --repeat until-pass:5 --timeout 300 --force-new-ctest-process -T test -V --output-on-failure
       exit $?
     displayName: "Run Unit Tests: linux-Debug"
     workingDirectory: $(Build.BinariesDirectory)

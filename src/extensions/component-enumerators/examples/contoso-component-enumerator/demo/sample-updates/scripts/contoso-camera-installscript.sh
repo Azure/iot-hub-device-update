@@ -220,7 +220,7 @@ print_help() {
     echo "File and Folderinformation"
     echo "=========================="
     echo ""
-    echo "--workfolder            A work-folder (or sandbox folder)."
+    echo "--work-folder            A work-folder (or sandbox folder)."
     echo "--firmware-file         A firmware to install."
     echo "--output-file           An output file."
     echo "--log-file              A log file."
@@ -255,7 +255,7 @@ print_help() {
     echo ""
     echo "Scenario: perform install action"
     echo "================================"
-    echo "    <script> --log-level 0 --action-install --intalled-criteria 1.0 --component-name host-fw  --component-prop path /usr/local/adu-tests/contoso-devices/vacuum-1/hostfw --firmware-file firmware.json --workfolder <sandbox-folder>"
+    echo "    <script> --log-level 0 --action-install --intalled-criteria 1.0 --component-name host-fw  --component-prop path /usr/local/adu-tests/contoso-devices/vacuum-1/hostfw --firmware-file firmware.json --work-folder <sandbox-folder>"
     echo ""
 }
 
@@ -439,10 +439,10 @@ while [[ $1 != "" ]]; do
         shift
         ;;
 
-    --workfolder)
+    --work-folder)
         shift
         if [[ -z $1 || $1 == -* ]]; then
-            error "--workfolder parameter is mandatory."
+            error "--work-folder parameter is mandatory."
             $ret 1
         fi
         workfolder="$1";

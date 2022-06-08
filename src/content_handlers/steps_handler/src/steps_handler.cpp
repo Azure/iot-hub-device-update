@@ -11,9 +11,11 @@
 #include "aduc/extension_manager.hpp"
 #include "aduc/extension_utils.h"
 #include "aduc/logging.h"
+#include "aduc/string_c_utils.h"    // IsNullOrEmpty
 #include "aduc/string_utils.hpp"
 #include "aduc/system_utils.h"
 #include "aduc/workflow_utils.h"
+#include "aduc/calloc_wrapper.hpp"  // cstr_wrapper
 
 #include "parson.h"
 
@@ -33,7 +35,19 @@
 // Note: this requires ${CMAKE_DL_LIBS}
 #include <dlfcn.h>
 
+using ADUC::StringUtils::cstr_wrapper;
+
 #define DEFAULT_REF_STEP_HANDLER "microsoft/steps:1"
+
+/**
+ * @brief Check whether to show additional debug logs.
+ *
+ * @return true if DU_AGENT_ENABLE_STEPS_HANDLER_EXTRA_DEBUG_LOGS is set
+ */
+static bool IsStepsHandlerExtraDebugLogsEnabled()
+{
+    return (!IsNullOrEmpty(getenv("DU_AGENT_ENABLE_STEPS_HANDLER_EXTRA_DEBUG_LOGS")));
+}
 
 /**
  * @brief Destructor for the Steps Handler Impl class.
@@ -44,12 +58,30 @@ StepsHandlerImpl::~StepsHandlerImpl() // override
 }
 
 /**
- * @brief Make sure that all step workflows are created.
+ * @brief Ensure all steps' workflow data objects are created.
+ *
+ * Algorithm:
+ *    Start from a given parent workflow ( @p handle )
+ *
+ *       foreach step in steps {
+ *
+ *          if in-line step {
+ *              - create child workflow for this step (inherit some file entities from parent workflow )
+ *              - copy parent workflow's selected components into child workflow
+ *          } else {
+ *              - download this reference step detached-manifest file
+ *              - create child workflor for tis step from manifest file (inherit some file entities from parent workflow)
+ *              - select target components based on this step workflow's compatibilities
+ *                  Note: components-enumerator extension is not registered, the reference step will be applied to host device (selected component is empty)
+ *          }
+ *
+ *      } // next step
+ *
  *
  * @param handle A workflow data object handle.
  * @return ADUC_Result
  */
-ADUC_Result EnsureStepsWorkflowsCreated(ADUC_WorkflowHandle handle)
+ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
 {
     ADUC_Result result{ ADUC_Result_Failure };
     ADUC_WorkflowHandle childHandle = nullptr;
@@ -77,13 +109,14 @@ ADUC_Result EnsureStepsWorkflowsCreated(ADUC_WorkflowHandle handle)
         {
             STRING_HANDLE childId = nullptr;
             ADUC_FileEntity* entity = nullptr;
+            childHandle = nullptr;
 
             if (workflow_is_inline_step(handle, i))
             {
                 const char* selectedComponents = workflow_peek_selected_components(handle);
 
                 Log_Debug(
-                    "Creating workflow for level#%d step#%d. Selected components:\n=====\n%s\n=====\n",
+                    "Creating workflow for level#%d step#%d.\nSelected components:\n=====\n%s\n=====\n",
                     workflowLevel,
                     i,
                     selectedComponents);
@@ -93,6 +126,8 @@ ADUC_Result EnsureStepsWorkflowsCreated(ADUC_WorkflowHandle handle)
 
                 if (IsAducResultCodeSuccess(result.ResultCode))
                 {
+                    workflow_set_step_index(childHandle, i);
+
                     // Inherit parent's selected components.
                     workflow_set_selected_components(childHandle, workflow_peek_selected_components(handle));
                 }
@@ -123,7 +158,7 @@ ADUC_Result EnsureStepsWorkflowsCreated(ADUC_WorkflowHandle handle)
                 catch (...)
                 {
                     Log_Error(
-                        "Exception occured while downloading a detached Update Manifest file for level#%d step#%d (file id:%s).",
+                        "Exception occurred while downloading a detached Update Manifest file for level#%d step#%d (file id:%s).",
                         workflowLevel,
                         i,
                         entity->FileId);
@@ -140,7 +175,7 @@ ADUC_Result EnsureStepsWorkflowsCreated(ADUC_WorkflowHandle handle)
                 if (IsAducResultCodeFailure(result.ResultCode))
                 {
                     Log_Error(
-                        "An error occured while downloading manifest file for step#%d (erc:%d)",
+                        "An error occurred while downloading manifest file for step#%d (erc:%d)",
                         i,
                         result.ExtendedResultCode);
                     goto done;
@@ -151,37 +186,46 @@ ADUC_Result EnsureStepsWorkflowsCreated(ADUC_WorkflowHandle handle)
 
                 if (IsAducResultCodeSuccess(result.ResultCode))
                 {
-                    // Select components based on the first pair of compatibility properties.
-                    char* compatibilityString = workflow_get_update_manifest_compatibility(childHandle, 0);
-                    JSON_Value* compsValue = nullptr;
-                    if (compatibilityString == nullptr)
+                    workflow_set_step_index(childHandle, i);
+
+                    // If no component enumerator is registered, assume that this reference update is for the host device.
+                    // Don't set selected components in the workflow data.
+                    if (ExtensionManager::IsComponentsEnumeratorRegistered())
                     {
-                        Log_Error("Cannot get compatibility info for components-update #%d", i);
-                        result = { .ResultCode = ADUC_Result_Failure,
-                                   .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_GET_REF_STEP_COMPATIBILITY_FAILED };
-                        goto done;
+                        // Select components based on the first pair of compatibility properties.
+                        ADUC::StringUtils::cstr_wrapper compatibilityString{ workflow_get_update_manifest_compatibility(childHandle, 0) };
+                        JSON_Value* compsValue = nullptr;
+                        if (compatibilityString.get() == nullptr)
+                        {
+                            Log_Error("Cannot get compatibility info for components-update #%d", i);
+                            result = { .ResultCode = ADUC_Result_Failure,
+                                       .ExtendedResultCode =
+                                           ADUC_ERC_STEPS_HANDLER_GET_REF_STEP_COMPATIBILITY_FAILED };
+                            goto done;
+                        }
+
+                        std::string output;
+                        result = ExtensionManager::SelectComponents(compatibilityString.get(), output);
+
+                        if (IsAducResultCodeFailure(result.ResultCode))
+                        {
+                            Log_Error("Cannot select components for components-update #%d", i);
+                            goto done;
+                        }
+
+                        compsValue = json_parse_string(output.c_str());
+                        json_value_free(compsValue);
+
+                        if (!workflow_set_selected_components(childHandle, output.c_str()))
+                        {
+                            result.ResultCode = ADUC_Result_Failure;
+                            result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_SET_SELECTED_COMPONENTS_FAILURE;
+                        }
+
+                        Log_Debug(
+                            "Set child handle's selected components: %s",
+                            workflow_peek_selected_components(childHandle));
                     }
-
-                    std::string output;
-                    result = ExtensionManager::SelectComponents(compatibilityString, output);
-
-                    if (IsAducResultCodeFailure(result.ResultCode))
-                    {
-                        Log_Error("Cannot select components for components-update #%d", i);
-                        goto done;
-                    }
-
-                    compsValue = json_parse_string(output.c_str());
-                    json_value_free(compsValue);
-
-                    if (!workflow_set_selected_components(childHandle, output.c_str()))
-                    {
-                        result.ResultCode = ADUC_Result_Failure;
-                        result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_SET_SELECTED_COMPONENTS_FAILURE;
-                    }
-
-                    Log_Debug(
-                        "Set child handle's selected components: %s", workflow_peek_selected_components(childHandle));
                 }
             }
 
@@ -245,12 +289,19 @@ ContentHandler* StepsHandlerImpl::CreateContentHandler()
  *
  * @param components The source components array.
  * @param index Index of the component to be returned.
- * @return char* Returns a json string containing serialized 'components' data.
+ * @return char* Returns nullptr if @p index is invalid.
+ *         Otherwise, return a json string containing serialized 'components' data.
  */
 static char* CreateComponentSerializedString(JSON_Array* components, size_t index)
 {
+    JSON_Value* val = json_array_get_value(components, index);
+    if (val == nullptr)
+    {
+        return nullptr;
+    }
+
     JSON_Value* root = json_value_init_object();
-    JSON_Value* componentClone = json_value_deep_copy(json_array_get_value(components, index));
+    JSON_Value* componentClone = json_value_deep_copy(val);
     JSON_Array* array = json_array(json_value_init_array());
     json_array_append_value(array, componentClone);
     json_object_set_value(json_object(root), "components", json_array_get_wrapping_value(array));
@@ -258,7 +309,7 @@ static char* CreateComponentSerializedString(JSON_Array* components, size_t inde
 }
 
 /**
- * @brief Get a list of selected components for specified workflow.
+ * @brief Get a list of selected components for specified workflow @p handle.
  *
  * @param handle A workflow data object handle.
  * @param componentsArray Array of selected components.
@@ -281,7 +332,7 @@ static ADUC_Result GetSelectedComponentsArray(ADUC_WorkflowHandle handle, JSON_A
 
     // Parse componenets list. If the list is empty, nothing to install.
     const char* selectedComponents = workflow_peek_selected_components(handle);
-    if (selectedComponents == nullptr)
+    if (IsNullOrEmpty(selectedComponents))
     {
         result = { .ResultCode = ADUC_Result_Failure };
         goto done;
@@ -309,86 +360,35 @@ done:
 }
 
 /**
- * @brief Perform download phase for specified step.
- *
- * @param workflowData A workflow data object.
- * @param stepIndex A step index.
- * @return ADUC_Result
- */
-static ADUC_Result ProcessStepDownloadPhase(const tagADUC_WorkflowData* workflowData, int stepIndex)
-{
-    Log_Info("Step's download phase begin.");
-    ADUC_Result result = { ADUC_Result_Failure };
-    ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
-    ContentHandler* contentHandler = nullptr;
-    ADUC_WorkflowHandle childHandler = workflow_get_child(handle, stepIndex);
-    ADUC_WorkflowData childWorkflow{ .WorkflowHandle = childHandler };
-
-    const char* stepHandlerName = workflow_is_inline_step(handle, stepIndex)
-        ? workflow_peek_update_manifest_step_handler(handle, stepIndex)
-        : DEFAULT_REF_STEP_HANDLER;
-
-    Log_Info("Loading handler for step #%d ('%s')", stepIndex, stepHandlerName);
-
-    char* workFolder = workflow_get_workfolder(childHandler);
-    int createResult = ADUC_SystemUtils_MkSandboxDirRecursive(workFolder);
-    if (createResult != 0)
-    {
-        Log_Error("Unable to create folder %s, error %d", workFolder, createResult);
-        result = { ADUC_Result_Failure, ADUC_ERC_STEPS_HANDLER_CREATE_SANDBOX_FAILURE };
-        goto done;
-    }
-
-    result = ExtensionManager::LoadUpdateContentHandlerExtension(stepHandlerName, &contentHandler);
-
-    if (IsAducResultCodeFailure(result.ResultCode))
-    {
-        Log_Error("Cannot load the step handler for step #%d", stepIndex);
-    }
-    else
-    {
-        // Step is completed, no files required.
-        result = contentHandler->Download(&childWorkflow);
-    }
-
-done:
-    workflow_set_result(childHandler, result);
-
-    workflow_set_state(
-        handle, IsAducResultCodeSuccess(result.ResultCode) ? ADUCITF_State_DownloadSucceeded : ADUCITF_State_Failed);
-
-    workflow_free_string(workFolder);
-    return result;
-}
-
-/**
  * @brief Performs 'Download' task by iterating through all steps and invoke each step's handler
  * to download file(s), if needed.
  *
- * It is a step's handler's responsibility to determine whether
- * files are needed for 'install' and 'apply' phases.
+ * Each step's handler is responsible for determine whether to download payload file(s) for
+ * for 'install' and 'apply' tasks.
  *
  * @param workflowData A workflow data object.
  *
  * @return ADUC_Result The result.
+ *
  */
 static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     ADUC_WorkflowHandle stepHandle = nullptr;
-
     char* workflowId = workflow_get_id(handle);
     char* workFolder = workflow_get_workfolder(handle);
-    char* compatibilityString = nullptr;
     JSON_Array* selectedComponentsArray = nullptr;
-    char* currentComponent;
     int workflowLevel = workflow_get_level(handle);
+    int workflowStep = workflow_get_step_index(handle);
     int selectedComponentsCount = 0;
+    char* serializedComponentString = nullptr;
+    bool isComponentsEnumeratorRegistered = ExtensionManager::IsComponentsEnumeratorRegistered();
 
     Log_Debug(
-        "\n##########\n#\n# Steps_Handler Download begin (level %d, id: %d, addr:0x%x\n#\n##########\n",
+        "\n#\n#Download task begin (level: %d, step:%d, wfid:%s, h_addr:0x%x).",
         workflowLevel,
+        workflowStep,
         workflowId,
         handle);
 
@@ -400,59 +400,77 @@ static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowDat
         goto done;
     }
 
-    result = EnsureStepsWorkflowsCreated(handle);
+    result = PrepareStepsWorkflowDataObject(handle);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        workflow_set_result_details(handle, "Invalid steps workflow collection.");
+        workflow_set_result_details(handle, "Invalid steps workflow collection");
         goto done;
     }
 
-    if (workflowLevel > 0)
+    if (workflowLevel == 0 || !isComponentsEnumeratorRegistered)
     {
-        // If this is not a top level workflow, selected component array must exists (okay to be empty).
+        // If this is a top-level step or component enumerator is not registered, we will assume that this step is
+        // intended for the host device and will set selectedComponentCount to 1 to iterate through
+        // every step once without setting any component data on the workflow.
+        selectedComponentsCount = 1;
+    }
+    else
+    {
+        // This is a reference step (workflowLevel == 1), this intended for one or more components.
         result = GetSelectedComponentsArray(handle, &selectedComponentsArray);
         if (IsAducResultCodeFailure(result.ResultCode))
         {
-            Log_Error("Missing selected components. workflow level #%d", workflowLevel);
-            workflow_set_result_details(handle, "Cannot select target components.");
+            const char* fmt = "Missing selected components. workflow level %d, step %d";
+            Log_Error(fmt, workflowLevel, workflowStep);
+            workflow_set_result_details(handle, fmt, workflowLevel, workflowStep);
             goto done;
         }
 
         selectedComponentsCount = json_array_get_count(selectedComponentsArray);
-    }
-    else
-    {
-        // Process all steps once.
-        selectedComponentsCount = 1;
+
+        if (selectedComponentsCount == 0)
+        {
+            // If there's no matching component, we will consider this step 'optional' and this
+            // step is no-op.
+            const char* msg = "Optional step (no matching components)";
+            Log_Debug(msg);
+            result = { ADUC_Result_Download_Skipped_NoMatchingComponents };
+
+            // This is a good opportunity to set the workflow state to indicates that
+            // the current component is 'optional'.
+            // We do this by setting workflow result code to ADUC_Result_Download_Skipped_NoMatchingComponents
+            ADUC_Result currentResult = workflow_get_result(handle);
+            if (IsAducResultCodeFailure(currentResult.ResultCode))
+            {
+                ADUC_Result newResult = { ADUC_Result_Download_Skipped_NoMatchingComponents };
+                workflow_set_result(handle, newResult);
+                workflow_set_result_details(handle, msg);
+            }
+        }
     }
 
-    // If any of the targetted components is not up-to-date, download the update payloads.
-    for (int iCom = 0; iCom < selectedComponentsCount; iCom++)
+    // For each selected component, perform step's backup, install & apply phase, restore phase if needed, in order.
+    for (int iCom = 0, stepsCount = workflow_get_children_count(handle); iCom < selectedComponentsCount; iCom++)
     {
-        char* componentJson = nullptr;
-        int childCount = workflow_get_children_count(handle);
-
-        if (workflowLevel > 0)
-        {
-            componentJson = CreateComponentSerializedString(selectedComponentsArray, iCom);
-            Log_Debug(
-                "Processing %d step(s) for component #%d.\nComponent Json Data:%s\n", iCom, childCount, componentJson);
-        }
-        else
-        {
-            Log_Debug("Processing %d step(s) on host device.", childCount);
-        }
+        serializedComponentString = CreateComponentSerializedString(selectedComponentsArray, iCom);
 
         //
-        // For each step (child workflow), invoke download actions, if not already installed.
+        // For each step (child workflow), invoke backup, install and apply actions.
+        // if install or apply fails, invoke restore action.
         //
-        for (int i = 0; i < childCount; i++)
+        for (int i = 0; i < stepsCount; i++)
         {
-            Log_Info("Processing step #%d on component #%d.", i, iCom);
+            if (IsStepsHandlerExtraDebugLogsEnabled())
+            {
+                Log_Debug(
+                    "Perform download action of child step #%d on component #%d.\n#### Component ####\n%s\n###################\n",
+                    i,
+                    iCom,
+                    serializedComponentString);
+            }
 
-            // Dummy workflow to hold a childHandle.
+            // Use a wrapper workflow to hold a stepHandle.
             ADUC_WorkflowData stepWorkflow = {};
-            std::string selectedComponentsJson;
 
             stepHandle = workflow_get_child(handle, i);
             if (stepHandle == nullptr)
@@ -463,11 +481,12 @@ static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowDat
                 workflow_set_result_details(handle, errorFmt, i);
                 goto done;
             }
+            stepWorkflow.WorkflowHandle = stepHandle;
 
             // For inline step - set current component info on the workflow.
-            if (workflow_is_inline_step(handle, i))
+            if (serializedComponentString != nullptr && workflow_is_inline_step(handle, i))
             {
-                if (!workflow_set_selected_components(stepHandle, componentJson))
+                if (!workflow_set_selected_components(stepHandle, serializedComponentString))
                 {
                     result.ResultCode = ADUC_Result_Failure;
                     result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_SET_SELECTED_COMPONENTS_FAILURE;
@@ -475,9 +494,6 @@ static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowDat
                     goto done;
                 }
             }
-
-            // Using same core functions.
-            stepWorkflow.WorkflowHandle = stepHandle;
 
             ContentHandler* contentHandler = nullptr;
             const char* stepUpdateType = workflow_is_inline_step(handle, i)
@@ -511,6 +527,8 @@ static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowDat
             {
                 result.ResultCode = ADUC_Result_Install_Skipped_UpdateAlreadyInstalled;
                 result.ExtendedResultCode = 0;
+                workflow_set_result(stepHandle, result);
+                workflow_set_result_details(handle, workflow_peek_result_details(stepHandle));
                 // The current instance is already up-to-date, continue checking the next instance.
                 goto instanceDone;
             }
@@ -543,8 +561,8 @@ static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowDat
         } // instances loop
 
     componentDone:
-        json_free_serialized_string(componentJson);
-        componentJson = nullptr;
+        json_free_serialized_string(serializedComponentString);
+        serializedComponentString = nullptr;
 
         if (IsAducResultCodeFailure(result.ResultCode))
         {
@@ -575,9 +593,9 @@ done:
         workflow_set_state(handle, ADUCITF_State_Failed);
     }
 
+    json_free_serialized_string(serializedComponentString);
     workflow_free_string(workflowId);
     workflow_free_string(workFolder);
-    workflow_free_string(compatibilityString);
 
     Log_Debug("Steps_Handler Download end (level %d).", workflowLevel);
     return result;
@@ -605,26 +623,59 @@ ADUC_Result StepsHandlerImpl::Download(const tagADUC_WorkflowData* workflowData)
  * During this phase, we will not re-download any file.
  * If file(s) missing, install will be aborted.
  *
- * @return ADUC_Result The result (always success)
+ * Algorithm:
+ *      - Top-level inline step is intended for the host.
+ *          - [Process the step]
+ *              - Load content handler
+ *              - Invoke contentHandler::Install
+ *                  - If failed, return with 'Install' result.
+ *                  - If success with Reboot or Agent Restart request, then call workflow api accordingly, then return with 'Install' result.
+ *                  - Otherise, continue...
+ *              - Invoke contentHandler::Apply
+ *              - Return 'Apply' result
+ *
+ *     - For reference step(s):
+ *         - If component enumerator is registered...
+ *              - The reference step must be installed onto 'selected-components'
+ *              - Components are selected using compat properties specified in reference step's update manifest.
+ *              - If no components matched, the reference step are considered "optional".
+ *                   - Install resultCode for optional step is ADUC_Result_Install_Skipped_NoMatchingComponents (604)
+ *              - For each selected component [Process the step]
+ *                   - Load content handler
+ *                   - Invoke contentHandler::Install
+ *                      - If failed, return with 'Install' result.
+ *                      - If success with Reboot or Agent Restart request, then call workflow api accordingly, then return with 'Install' result.
+ *                      - Otherise, continue...
+ *                   - Invoke contentHandler::Apply
+ *                      - If failed, invoke contentHandler::Restore, then return with 'Apply' result
+ *                      - If success, continue to next *component*
+ *                   - Once done with every components, return ADUC_Result_Install_Success (600)
+ *
+ *         - If component enumerator is not registered, every child steps of this reference step will be installed onto the host.
+ *           In this case, if the reference step is intended to be install onto a component, it's likely to be failed, due to missing component info.
+ *              - [Process the step] (same as above, but w/o selected component data)
+ *
+ * @return ADUC_Result The 'install' result
  */
 static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
-
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     ADUC_WorkflowHandle stepHandle = nullptr;
 
     char* workflowId = workflow_get_id(handle);
     char* workFolder = workflow_get_workfolder(handle);
-    char* compatibilityString = nullptr;
     JSON_Array* selectedComponentsArray = nullptr;
-    char* currentComponent;
     int workflowLevel = workflow_get_level(handle);
+    int workflowStep = workflow_get_step_index(handle);
     int selectedComponentsCount = 0;
+    char* serializedComponentString = nullptr;
+    bool isComponentsEnumeratorRegistered = ExtensionManager::IsComponentsEnumeratorRegistered();
 
     Log_Debug(
-        "\n##########\n#\n# Steps_Handler Install begin (level %d, id: %s, addr:0x%x\n#\n##########\n",
+        "\n#\n#Install task begin (level: %d, step:%d, wfid:%s, h_addr:0x%x).",
         workflowLevel,
+        workflowStep,
         workflowId,
         handle);
 
@@ -636,61 +687,77 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
         goto done;
     }
 
-    result = EnsureStepsWorkflowsCreated(handle);
+    result = PrepareStepsWorkflowDataObject(handle);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        workflow_set_result_details(handle, "Invalid steps workflow collection.");
+        workflow_set_result_details(handle, "Invalid steps workflow collection");
         goto done;
     }
 
-    if (workflowLevel > 0)
+    if (workflowLevel == 0 || !isComponentsEnumeratorRegistered)
     {
-        // If this is not a top level workflow, selected component array must exists (okay to be empty).
+        // If this is a top-level step or component enumerator is not registered, we will assume that this step is
+        // intended for the host device and will set selectedComponentCount to 1 to iterate through
+        // every step once  without setting any component data on the workflow.
+        selectedComponentsCount = 1;
+    }
+    else
+    {
+        // This is a reference step (workflowLevel == 1), this intended for one or more components.
         result = GetSelectedComponentsArray(handle, &selectedComponentsArray);
         if (IsAducResultCodeFailure(result.ResultCode))
         {
-            Log_Error("Missing selected components. workflow level #%d", workflowLevel);
-            workflow_set_result_details(handle, "Cannot select target components.");
+            const char* fmt = "Missing selected components. workflow level %d, step %d";
+            Log_Error(fmt, workflowLevel, workflowStep);
+            workflow_set_result_details(handle, fmt, workflowLevel, workflowStep);
             goto done;
         }
 
         selectedComponentsCount = json_array_get_count(selectedComponentsArray);
-    }
-    else
-    {
-        // Process all steps once.
-        selectedComponentsCount = 1;
+
+        if (selectedComponentsCount == 0)
+        {
+            // If there's no matching component, we will consider this step 'optional' and this
+            // step is no-op.
+            const char* msg = "Optional step (no matching components)";
+            Log_Debug(msg);
+            result = { ADUC_Result_Install_Skipped_NoMatchingComponents };
+
+            // This is a good opportunity to set the workflow state to indicates that
+            // the current component is 'optional'.
+            // We do this by setting workflow result code to ADUC_Result_Install_Skipped_NoMatchingComponents
+            ADUC_Result currentResult = workflow_get_result(handle);
+            if (IsAducResultCodeFailure(currentResult.ResultCode))
+            {
+                ADUC_Result newResult = { ADUC_Result_Install_Skipped_NoMatchingComponents };
+                workflow_set_result(handle, newResult);
+                workflow_set_result_details(handle, msg);
+            }
+        }
     }
 
-    // For each targetted component, perform step's backup, install & apply phase, restore phase if needed, in order.
-    for (int iCom = 0; iCom < selectedComponentsCount; iCom++)
+    // For each selected component, perform step's backup, install & apply phase, restore phase if needed, in order.
+    for (int iCom = 0, stepsCount = workflow_get_children_count(handle); iCom < selectedComponentsCount; iCom++)
     {
-        char* componentJson = nullptr;
-        bool skipRemainingSteps = false;
-        int childCount = workflow_get_children_count(handle);
-
-        if (workflowLevel > 0)
-        {
-            componentJson = CreateComponentSerializedString(selectedComponentsArray, iCom);
-            Log_Debug(
-                "Processing %d step(s) for component #%d.\nComponent Json Data:%s\n", iCom, childCount, componentJson);
-        }
-        else
-        {
-            Log_Debug("Processing %d step(s) on host device.", workflow_get_children_count(handle));
-        }
+        serializedComponentString = CreateComponentSerializedString(selectedComponentsArray, iCom);
 
         //
         // For each step (child workflow), invoke backup, install and apply actions.
         // if install or apply fails, invoke restore action.
         //
-        for (int i = 0; i < childCount && !skipRemainingSteps; i++)
+        for (int i = 0; i < stepsCount; i++)
         {
-            Log_Info("Processing step #%d on component #%d.", i, iCom);
+            if (IsStepsHandlerExtraDebugLogsEnabled())
+            {
+                Log_Debug(
+                    "Perform install action of child step #%d on component #%d.\n#### Component ####\n%s\n###################\n",
+                    i,
+                    iCom,
+                    serializedComponentString);
+            }
 
-            // Dummy workflow to hold a childHandle.
+            // Use a wrapper workflow to hold a stepHandle.
             ADUC_WorkflowData stepWorkflow = {};
-            std::string selectedComponentsJson;
 
             stepHandle = workflow_get_child(handle, i);
             if (stepHandle == nullptr)
@@ -701,28 +768,26 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
                 workflow_set_result_details(handle, errorFmt, i);
                 goto done;
             }
+            stepWorkflow.WorkflowHandle = stepHandle;
 
             // For inline step - set current component info on the workflow.
-            if (workflow_is_inline_step(handle, i))
+            if (serializedComponentString != nullptr && workflow_is_inline_step(handle, i))
             {
-                if (!workflow_set_selected_components(stepHandle, componentJson))
+                if (!workflow_set_selected_components(stepHandle, serializedComponentString))
                 {
                     result.ResultCode = ADUC_Result_Failure;
                     result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_SET_SELECTED_COMPONENTS_FAILURE;
-                    workflow_set_result_details(handle, "Cannot select target component(s) for step #%d", i);
+                    workflow_set_result_details(handle, "Cannot set target component(s) for step #%d", i);
                     goto done;
                 }
             }
-
-            // Using same core functions.
-            stepWorkflow.WorkflowHandle = stepHandle;
 
             ContentHandler* contentHandler = nullptr;
             const char* stepUpdateType = workflow_is_inline_step(handle, i)
                 ? workflow_peek_update_manifest_step_handler(handle, i)
                 : DEFAULT_REF_STEP_HANDLER;
 
-            Log_Info("Loading handler for step #%d (handler: '%s')", i, stepUpdateType);
+            Log_Info("Loading handler for child step #%d (handler: '%s')", i, stepUpdateType);
 
             result = ExtensionManager::LoadUpdateContentHandlerExtension(stepUpdateType, &contentHandler);
 
@@ -749,7 +814,9 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             {
                 result.ResultCode = ADUC_Result_Install_Skipped_UpdateAlreadyInstalled;
                 result.ExtendedResultCode = 0;
-                // Skipping 'install' and 'apply'.
+                workflow_set_result(stepHandle, result);
+                workflow_set_result_details(handle, workflow_peek_result_details(stepHandle));
+                // Skipping 'backup', 'install' and 'apply'.
                 goto instanceDone;
             }
 
@@ -787,33 +854,29 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
                 goto done;
             }
 
+            // If the workflow interuption is required as part of the Install action,
+            // we must propagate that request to the wrapping workflow.
+
+            if (workflow_is_immediate_reboot_requested(stepHandle)
+                || workflow_is_immediate_agent_restart_requested(stepHandle))
+            {
+                // Skip remaining tasks for this instance.
+                // And then skip remaining instance(s) if requested.
+                goto instanceDone;
+            }
+
+            // If any step reported that the update is already installed on the
+            // selected component, we will skip the 'apply' phase, and skip all
+            // remaining step(s).
             switch (result.ResultCode)
             {
-            case ADUC_Result_Install_RequiredImmediateReboot:
-                workflow_request_immediate_reboot(handle);
-                // We can skip another instances.
-                goto done;
-
-            case ADUC_Result_Install_RequiredReboot:
-                workflow_request_reboot(handle);
-                break;
-
-            case ADUC_Result_Install_RequiredImmediateAgentRestart:
-                workflow_request_immediate_agent_restart(handle);
-                goto done;
-
-            case ADUC_Result_Install_RequiredAgentRestart:
-                workflow_request_agent_restart(handle);
-                break;
-
-            // If any install-item reported that the update is already installed on the
-            // selected component, we will skip the 'apply' phase, and then skip the
-            // remaining install-item(s).
             case ADUC_Result_Install_Skipped_UpdateAlreadyInstalled:
             case ADUC_Result_Install_Skipped_NoMatchingComponents:
                 goto instanceDone;
             }
 
+            // If Install task failed, try to restore (best effort).
+            // The restore result is discarded, since install result is more important to customer.
             if (IsAducResultCodeFailure(result.ResultCode))
             {
                 // Propagate item's resultDetails to parent.
@@ -830,7 +893,6 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
                 catch (...)
                 {
                     Log_Warn("Unexpected error happened during restore action.");
-                    goto done;
                 }
                 goto done;
             }
@@ -847,44 +909,6 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
                 result = { .ResultCode = ADUC_Result_Failure,
                            .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_APPLY_CHILD_STEP };
                 goto done;
-            }
-
-            if (iCom == (selectedComponentsCount - 1))
-            {
-                // This is the last instance of the selected component.
-                if (!IsAducResultCodeFailure(result.ResultCode))
-                {
-                    workflow_set_result(stepHandle, result);
-                    workflow_set_result_details(stepHandle, "");
-                }
-            }
-
-            switch (result.ResultCode)
-            {
-            case ADUC_Result_Apply_RequiredImmediateReboot:
-                workflow_request_immediate_reboot(handle);
-                // Translate into components-level result.
-                result.ResultCode = ADUC_Result_Install_RequiredImmediateReboot;
-                // We can skip another instances.
-                goto done;
-
-            case ADUC_Result_Apply_RequiredReboot:
-                workflow_request_reboot(handle);
-                // Translate into 'install' result.
-                result.ResultCode = ADUC_Result_Install_RequiredReboot;
-                break;
-
-            case ADUC_Result_Apply_RequiredImmediateAgentRestart:
-                workflow_request_immediate_agent_restart(handle);
-                // Translate into components-level result.
-                result.ResultCode = ADUC_Result_Install_RequiredImmediateAgentRestart;
-                goto done;
-
-            case ADUC_Result_Apply_RequiredAgentRestart:
-                workflow_request_agent_restart(handle);
-                // Translate into components-level result.
-                result.ResultCode = ADUC_Result_Install_RequiredAgentRestart;
-                break;
             }
 
             if (IsAducResultCodeFailure(result.ResultCode))
@@ -908,24 +932,54 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             }
 
         instanceDone:
+            // If the workflow interuption is required as part of the Install action,
+            // we must propagate that request to the wrapping workflow.
+
+            if (workflow_is_immediate_reboot_requested(stepHandle))
+            {
+                workflow_request_immediate_reboot(handle);
+                // We must skip the remaining instance(s).
+                goto done;
+            }
+
+            if (workflow_is_immediate_agent_restart_requested(stepHandle))
+            {
+                // We must skip the remaining instance(s).
+                workflow_request_immediate_agent_restart(handle);
+                goto done;
+            }
+
+            if (workflow_is_reboot_requested(stepHandle))
+            {
+                // Continue with the remaining instance(s).
+                workflow_request_reboot(handle);
+                break;
+            }
+
+            if (workflow_is_agent_restart_requested(stepHandle))
+            {
+                // Continue with the remaining instance(s).
+                workflow_request_agent_restart(handle);
+                break;
+            }
+
+            workflow_set_result(stepHandle, result);
             stepHandle = nullptr;
 
             if (IsAducResultCodeFailure(result.ResultCode))
             {
                 goto componentDone;
             }
-        } // installItems loop
+        } // steps
 
     componentDone:
-        json_free_serialized_string(componentJson);
-        componentJson = nullptr;
+        json_free_serialized_string(serializedComponentString);
+        serializedComponentString = nullptr;
 
         if (IsAducResultCodeFailure(result.ResultCode))
         {
             goto done;
         }
-
-        // Set step's result.
     }
 
     result = { ADUC_Result_Install_Success };
@@ -949,9 +1003,9 @@ done:
         workflow_set_state(handle, ADUCITF_State_Failed);
     }
 
+    json_free_serialized_string(serializedComponentString);
     workflow_free_string(workflowId);
     workflow_free_string(workFolder);
-    workflow_free_string(compatibilityString);
 
     Log_Debug("Steps_Handler Install end (level %d).", workflowLevel);
     return result;
@@ -963,7 +1017,7 @@ done:
  * During this phase, we will not re-download any file.
  * If file(s) missing, install will be aborted.
  *
- * @return ADUC_Result The result (always success)
+ * @return ADUC_Result The install result.
  */
 ADUC_Result StepsHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
 {
@@ -971,8 +1025,9 @@ ADUC_Result StepsHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
 }
 
 /**
- * @brief Perform 'Apply' action.
- * @return ADUC_Result The result (always success)
+ * @brief This function is no-op because 'Apply' action for every step
+ * were invoked inside the 'StepsHandler::Install' function.
+ * @return ADUC_Result The result (ADUC_Result_Apply_Success)
  */
 static ADUC_Result StepsHandler_Apply(const tagADUC_WorkflowData* workflowData)
 {
@@ -980,7 +1035,6 @@ static ADUC_Result StepsHandler_Apply(const tagADUC_WorkflowData* workflowData)
     Log_Debug("Apply task at level %d is no-op.", workflow_get_level(workflowData->WorkflowHandle));
 
     ADUC_Result result{ ADUC_Result_Apply_Success };
-
     return result;
 }
 
@@ -1020,13 +1074,14 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
 
     char* workflowId = workflow_get_id(handle);
     char* workFolder = workflow_get_workfolder(handle);
-    char* compatibilityString = nullptr;
     JSON_Array* selectedComponentsArray = nullptr;
-    char* currentComponent;
     int workflowLevel = workflow_get_level(handle);
+    int workflowStep = workflow_get_step_index(handle);
     int selectedComponentsCount = 0;
+    char* serializedComponentString = nullptr;
+    bool isComponentsEnumeratorRegistered = ExtensionManager::IsComponentsEnumeratorRegistered();
 
-    Log_Debug("Steps_Handler IsInstall begin (level %d).", workflowLevel);
+    Log_Debug("Evaluating is-installed state of the workflow (level %d, step %d).", workflowLevel, workflowStep);
 
     int createResult = ADUC_SystemUtils_MkSandboxDirRecursive(workFolder);
     if (createResult != 0)
@@ -1036,102 +1091,112 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
         goto done;
     }
 
-    result = EnsureStepsWorkflowsCreated(handle);
+    result = PrepareStepsWorkflowDataObject(handle);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        workflow_set_result_details(handle, "Invalid steps workflow collection.");
+        workflow_set_result_details(handle, "Invalid steps workflow collection");
         goto done;
     }
 
-    if (workflowLevel > 0)
+    if (workflowLevel == 0 || !isComponentsEnumeratorRegistered)
     {
-        // If this is not a top level workflow, selected component array must exists (okay to be empty).
+        // To top-level step, or if component enumerator is not registered, we will assume that this reference update is
+        // interned for the host device and will set selectedComponentCount to 1 to iterate through
+        // every step once.
+        selectedComponentsCount = 1;
+    }
+    else
+    {
+        // This is a reference step (workflowLevel == 1), this intended for one or more components.
         result = GetSelectedComponentsArray(handle, &selectedComponentsArray);
         if (IsAducResultCodeFailure(result.ResultCode))
         {
-            Log_Error("Missing selected components. workflow level #%d", workflowLevel);
-            workflow_set_result_details(handle, "Cannot select target components.");
+            const char* fmt = "Missing selected components. workflow level %d, step %d";
+            Log_Error(fmt, workflowLevel, workflowStep);
+            workflow_set_result_details(handle, fmt, workflowLevel, workflowStep);
             goto done;
         }
 
         selectedComponentsCount = json_array_get_count(selectedComponentsArray);
-    }
-    else
-    {
-        // Process all steps once.
-        selectedComponentsCount = 1;
-    }
 
-    // For each targetted component, perform step's install & apply phase, in order.
-    for (int iCom = 0; iCom < selectedComponentsCount; iCom++)
-    {
-        char* componentJson = nullptr;
-        bool skipRemainingSteps = false;
-        int childCount = workflow_get_children_count(handle);
-
-        if (workflowLevel > 0)
+        if (selectedComponentsCount == 0)
         {
-            componentJson = CreateComponentSerializedString(selectedComponentsArray, iCom);
-            Log_Debug(
-                "Processing %d step(s) for component #%d.\nComponent Json Data:%s\n", iCom, childCount, componentJson);
+            // If there's no matching component, we will consider this step 'optional' and this
+            // step is no-op. Returning 'installed' to skip this step.
+            const char* msg = "Optional step (no matching components)";
+            Log_Debug(msg);
+            result = { ADUC_Result_IsInstalled_Installed };
+
+            // This is a good opportunity to set the workflow state to indicates that
+            // the current component is 'optional'.
+            // We do this by setting workflow result code to ADUC_Result_Download_Skipped_NoMatchingComponents.
+            ADUC_Result currentResult = workflow_get_result(handle);
+            if (IsAducResultCodeFailure(currentResult.ResultCode))
+            {
+                ADUC_Result newResult = { ADUC_Result_Download_Skipped_NoMatchingComponents };
+                workflow_set_result(handle, newResult);
+                workflow_set_result_details(handle, msg);
+            }
+
+            goto done;
         }
-        else
-        {
-            Log_Debug("Processing %d step(s) on host device.", childCount);
-        }
+    }
 
-        //
-        // For each step (child workflow), invoke install and apply actions.
-        //
-        for (int i = 0; i < childCount && !skipRemainingSteps; i++)
-        {
-            Log_Info(
-                "Processing step #%d on component #%d.\n#### Component ####\n%s\n###################\n",
-                i,
-                iCom,
-                componentJson);
+    // For each selected component, check whether the update has been installed.
+    for (int iCom = 0, stepsCount = workflow_get_children_count(handle); iCom < selectedComponentsCount; iCom++)
+    {
+        serializedComponentString = CreateComponentSerializedString(selectedComponentsArray, iCom);
 
-            // Dummy workflow to hold a childHandle.
+        // For each step (child workflow), invoke isInstalled.
+        for (int i = 0; i < stepsCount; i++)
+        {
+            if (IsStepsHandlerExtraDebugLogsEnabled())
+            {
+                Log_Debug(
+                    "Evaluating child step #%d on component #%d.\n#### Component ####\n%s\n###################\n",
+                    i,
+                    iCom,
+                    serializedComponentString);
+            }
+
+            // Use a wrapper workflow to hold a stepHandle.
             ADUC_WorkflowData stepWorkflow = {};
-            std::string selectedComponentsJson;
 
             stepHandle = workflow_get_child(handle, i);
             if (stepHandle == nullptr)
             {
-                const char* errorFmt = "Cannot process step #%d due to missing (child) workflow data.";
+                const char* errorFmt = "Cannot process child step #%d due to missing (child) workflow data.";
                 Log_Error(errorFmt, i);
-                result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INSTALL_FAILURE_MISSING_CHILD_WORKFLOW;
+                result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_ISINSTALLED_FAILURE_MISSING_CHILD_WORKFLOW;
                 workflow_set_result_details(handle, errorFmt, i);
                 goto done;
             }
+            stepWorkflow.WorkflowHandle = stepHandle;
 
             // For inline step - set current component info on the workflow.
-            if (workflow_is_inline_step(handle, i))
+            if (serializedComponentString != nullptr && workflow_is_inline_step(handle, i))
             {
-                if (!workflow_set_selected_components(stepHandle, componentJson))
+                if (!workflow_set_selected_components(stepHandle, serializedComponentString))
                 {
                     result.ResultCode = ADUC_Result_Failure;
                     result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_SET_SELECTED_COMPONENTS_FAILURE;
-                    workflow_set_result_details(handle, "Cannot select target component(s) for step #%d", i);
+                    workflow_set_result_details(handle, "Cannot set target component(s) for child step #%d", i);
                     goto done;
                 }
             }
-
-            // Using same core functions.
-            stepWorkflow.WorkflowHandle = stepHandle;
 
             ContentHandler* contentHandler = nullptr;
             const char* stepUpdateType = workflow_is_inline_step(handle, i)
                 ? workflow_peek_update_manifest_step_handler(handle, i)
                 : DEFAULT_REF_STEP_HANDLER;
 
-            Log_Info("Loading handler for step #%d (handler: '%s')", i, stepUpdateType);
+            Log_Debug("Loading handler for child step #%d (handler: '%s')", i, stepUpdateType);
 
             result = ExtensionManager::LoadUpdateContentHandlerExtension(stepUpdateType, &contentHandler);
 
             if (IsAducResultCodeFailure(result.ResultCode))
             {
-                const char* errorFmt = "Cannot load a handler for step #%d (handler :%s)";
+                const char* errorFmt = "Cannot load a handler for child step #%d (handler :%s)";
                 Log_Error(errorFmt, i, stepUpdateType);
                 workflow_set_result_details(handle, errorFmt, i, stepUpdateType == nullptr ? "NULL" : stepUpdateType);
                 goto done;
@@ -1144,52 +1209,46 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
             }
             catch (...)
             {
-                // Cannot determine whether the step has been applied, so, we'll try to process the step.
+                // Cannot determine whether the step is installed, so, let's assume that it's not install.
                 result = { .ResultCode = ADUC_Result_IsInstalled_NotInstalled, .ExtendedResultCode = 0 };
             }
 
             if (IsAducResultCodeFailure(result.ResultCode)
                 || result.ResultCode == ADUC_Result_IsInstalled_NotInstalled)
             {
-                Log_Info("Step #%d is not installed.", i);
+                Log_Info(
+                    "Workflow lvl %d, step #%d, child step #%d, component #%d is not installed.",
+                    workflowLevel,
+                    workflowStep,
+                    i,
+                    iCom);
+                // We can stop here if we found one component that not installed.
                 goto done;
             }
-
-            if (IsAducResultCodeFailure(result.ResultCode))
-            {
-                // Propagate item's resultDetails to parent.
-                workflow_set_result_details(handle, workflow_peek_result_details(stepHandle));
-            }
-
-            stepHandle = nullptr;
-
-            if (IsAducResultCodeFailure(result.ResultCode))
-            {
-                goto componentDone;
-            }
-        } // installItems loop
-
-    componentDone:
-        json_free_serialized_string(componentJson);
-        componentJson = nullptr;
-
-        if (IsAducResultCodeFailure(result.ResultCode))
-        {
-            goto done;
-        }
-
-        // Set step's result.
-    }
+        } // steps
+    } // components
 
     result = { ADUC_Result_IsInstalled_Installed };
 
+    {
+        // This is a good opportunity to set the workflow state to indicates that
+        // the current component is up-to-date with its goal state.
+        // We do this by setting workflow result code to ADUC_Result_Apply_Success.
+        ADUC_Result currentResult = workflow_get_result(handle);
+        if (IsAducResultCodeFailure(currentResult.ResultCode))
+        {
+            ADUC_Result newResult = { ADUC_Result_Apply_Success };
+            workflow_set_result(handle, newResult);
+        }
+    }
+
 done:
 
+    json_free_serialized_string(serializedComponentString);
     workflow_free_string(workflowId);
     workflow_free_string(workFolder);
-    workflow_free_string(compatibilityString);
 
-    Log_Debug("Steps_Handler IsInstall end (level %d).", workflowLevel);
+    Log_Debug("Workflow lvl %d step #%d is-installed state %d", workflowLevel, workflowStep, result.ResultCode);
 
     return result;
 }

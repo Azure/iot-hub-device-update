@@ -4,9 +4,9 @@ Script Handler Extension (or, in short, **Script Handler**) handler can be used 
 
 ## Overview
 
-For some update scenarios, you may want to run additional set of commands before, during, or after, installing a software update on your device. This can be achieved using an **Inline Step** with `microsoft/script:1` handler type.  
+For some update scenarios, you may want to run additional set of commands before, during, or after, installing a software update on your device. This can be achieved using an **Inline Step** with `microsoft/script:1` handler type.
 
-By default, Device Update Agent workflow invokes **Script Handler** to process `microsoft/script:/1` steps.  
+By default, Device Update Agent workflow invokes **Script Handler** to process `microsoft/script:/1` steps.
 
 > For more information about **Inline Step**, see [Update Manifest V4 Schema](../../../docs/agent-reference/update-manifest-v4-schema.md)
 
@@ -123,11 +123,11 @@ The current implementation of the Script Handler requires following values in th
 
 ## Specify A Script Filename
 
-From an [example steps data](#example-update-manifest-json-data) above, notice the `handlerProperties.scriptFileName` property values, which are the same as file names in `files` array.  
+From an [example steps data](#example-update-manifest-json-data) above, notice the `handlerProperties.scriptFileName` property values, which are the same as file names in `files` array.
 
 At runtime, the Script Handler will download every files listed in `files` array, into a `workfolder` (e.g., **/var/lib/adu/downloads/workflow_id_1234567890/**).
 
->**Note** | Learn more about how the Script Handler passes `workfolder` path to the script in [Default Workflow Options and Arguments](#default-workflow-options-and-arguments) section below.  
+>**Note** | Learn more about how the Script Handler passes `workfolder` path to the script in [Default Workflow Options and Arguments](#default-workflow-options-and-arguments) section below.
 
 Later on, the Script Handler will invoke the specified script file, in a forked-process, to perform various tasks, such as `download` (additional file), `install` an update, `apply` the installed update, `cancel` the update flow if needed, or perform `is-installed` evaluation.
 
@@ -156,9 +156,9 @@ For example (see **arguments** value below):
 
 ### Arguments Value Format
 
-The `arguments` value contains a space-delimited `options` and `arguments` that will be processed by the Script Handler. These `options` may be interpreted by the Script Handler, then, replaced by, or populated with runtime variables.  
+The `arguments` value contains a space-delimited `options` and `arguments` that will be processed by the Script Handler. These `options` may be interpreted by the Script Handler, then, replaced by, or populated with runtime variables.
 
-Additionally, the Script Handler will append some default runtime workflow related values, such as, `workfolder`, `result-file`, `installed-criteria`, etc. to the options and arguments list.  
+Additionally, the Script Handler will append some default runtime workflow related values, such as, `workfolder`, `result-file`, `installed-criteria`, etc. to the options and arguments list.
 
 You can specify any options and arguments that relevant to the script in this 'arguments' string, as long as they don't conflict with [reserved options](#reserved-options) or [default workflow runtime options and arguments](#default-workflow-options-and-arguments) listed below.
 
@@ -181,9 +181,9 @@ The following options and arguments are automatically pass to the script.
 |--action-download| none | Script Handler will append this option to the `arguments` list to indicate that the script is invoked as part of the `download` action.<br/>The Script should perform any additional content download tasks to ensure that all content required by the installation is accessible during the installation. |
 |--action-install| none | Script Handler will append this option to the `arguments` list to indicate that the script is invoked as part of the `install` action.<br/>The Script should perform all tasks related to the software installation. Such as, install a software package(s) on host device, transfer firmware file to connected peripheral, remove existing file(s) that no longer needed, etc.|
 |--action-is-install| none |Script Handler will append this option to the `arguments` list to indicate that the script is invoked as part of the `isInstalled` inquiry.<br/>As part of the Agent-Orchestrated workflow, sometimes, Device Update Agent will invoke the Script Handler's `IsInstalled` function to determine wither the current Step has been **installed**. <br> For Step that does not install any software, **isinstalled** is equivalent to **applied**. E.g., "Is the step has been applied on the device or components?"|
-| --workfolder | <"work_folder_path">| A fully qualified path to `workfolder` (a.k.a. `sandbox folder`). This is a folder used for storing downloaded file, workflow result file, and any other temp files.<br/><br/>Script Handler will append this option to the arguments list when invoking the script. |
+| --work-folder | <"work_folder_path">| A fully qualified path to `workfolder` (a.k.a. `sandbox folder`). This is a folder used for storing downloaded file, workflow result file, and any other temp files.<br/><br/>Script Handler will append this option to the arguments list when invoking the script. |
 | --result-file | <"result_file_path"> |A fully qualified path to the workflow task result. The result file contains a  ADUC_Result data in a JSON. The Script Handler will read ADUC_Result data in this file and continue or abort the update workflow based on the `resultCode`. If the result file does not exist, or can not be opened, the update workflow will be aborted.<br/><br/>Script Handler will append this option to the arguments list when invoking the script.|
-| --installed-criteria | <"installed_criteria_string">| Pass-through value to the script.|  
+| --installed-criteria | <"installed_criteria_string">| Pass-through value to the script.|
 
 #### Options for Components Runtime Variables
 
@@ -227,13 +227,13 @@ The following instruction step contains various reserved options that would be r
     },
 ```
 
-Following are the mapping between the `step.handlersProperties.arguments` value and the actual arguments that **StepHandler** pass to the script at runtime.  
+Following are the mapping between the `step.handlersProperties.arguments` value and the actual arguments that **StepHandler** pass to the script at runtime.
 > Note: for this example, let's assumed that the Script Handler is processing an update workflow (`install`) for following component information provided by a registered `Component Enumerator` extension
 
 ```json
 {
     "components": [
-        
+
         ...,
 
         {
@@ -254,7 +254,7 @@ Following are the mapping between the `step.handlersProperties.arguments` value 
         ...
     ]
 }
-```  
+```
 
 | handleProperties.arguments<br/>(option) | handleProperties.arguments<br/>(arguments)| Value pass to the script at runtime<br/>(*after processed by Script Handler*) | Note
 |----|----|----|---|
@@ -266,19 +266,19 @@ Following are the mapping between the `step.handlersProperties.arguments` value 
 |--component-prop |path| --component-prop path| Not a reserved option. Note that both option and argument are unchanged. |
 |--component-prop-val| path|**"\/usr\/local\/contoso-devices\/vacuum-1\/motors\/contoso-motor-serial-00000"**| This is the value of the component's **properties.path** value above. |
 |||***--action-install***| Automatically appended as part of the *`*install*`* workflow. This indicates that the script should perform 'install' task. |
-|||**--workfolder** **"/var/lib/adu/downloads/workflow_id_1234567890/"**| Automatically appended as part of the *`*install*`* workflow. Note that is is for demonstration purposes. The actual work folder path will be different in real update scenario. |
+|||**--work-folder** **"/var/lib/adu/downloads/workflow_id_1234567890/"**| Automatically appended as part of the *`*install*`* workflow. Note that is is for demonstration purposes. The actual work folder path will be different in real update scenario. |
 |||**--result-file** **"/var/lib/adu/downloads/workflow_id_1234567890/aduc_result.json"**| Automatically appended as part of the *`*install*`* workflow. Note that is is for demonstration purposes. The actual file path will be different in real update scenario. |
 |||**--installed-criteria** **"2.0"**| Automatically appended as part of the *`*install*`* workflow. The value **"2.0"** is the value of `handlerProperties.installedCriteria`, if specified. |
 
 From the post-processed values in the table above, this is what the script invoking command looks like:
 
 ```sh
-contoso-motor-installscript.sh 
-    --firmware-file motor-firmware-1.2.json 
-    --component-name "left-motor" --component-group "motors" 
-    --component-prop path "/usr/local/contoso-devices/vacuum-1/motors/contoso-motor-serial-00000" 
-    --action-install 
-    --workfolder "/var/lib/adu/downloads/workflow_id_1234567890/" 
+contoso-motor-installscript.sh
+    --firmware-file motor-firmware-1.2.json
+    --component-name "left-motor" --component-group "motors"
+    --component-prop path "/usr/local/contoso-devices/vacuum-1/motors/contoso-motor-serial-00000"
+    --action-install
+    --work-folder "/var/lib/adu/downloads/workflow_id_1234567890/"
     --result-file "/var/lib/adu/downloads/workflow_id_1234567890/aduc_result.json"
     --installed-criteria": "1.2"
 
@@ -286,7 +286,7 @@ contoso-motor-installscript.sh
 
 ### Example Script
 
-To get started, you can take a look at the [example-installscript.sh](./examples/example-installscript.sh) to see how the script can be implemented.  
+To get started, you can take a look at the [example-installscript.sh](./examples/example-installscript.sh) to see how the script can be implemented.
 
 > IMPORTANT: Please note that this is for demonstration purposes only. The example script is provided AS-IS. You should not use it for your production project.
 

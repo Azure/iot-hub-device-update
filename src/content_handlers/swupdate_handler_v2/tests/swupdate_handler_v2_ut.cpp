@@ -34,7 +34,7 @@ ADUC_Result SWUpdateHandler_PerformAction(
     std::vector<std::string>& commandLineArgs,
     std::string& scriptOutput);
 
-ADUC_Result EnsureStepsWorkflowsCreated(ADUC_WorkflowHandle handle);
+ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle);
 
 // clang-format off
 const char* filecopy_workflow =
@@ -110,7 +110,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test")
     auto filecount = workflow_get_update_files_count(handle);
     REQUIRE(filecount == 2);
 
-    result = EnsureStepsWorkflowsCreated(handle);
+    result = PrepareStepsWorkflowDataObject(handle);
     CHECK(result.ResultCode != 0);
 
     int childCount = workflow_get_children_count(handle);
@@ -197,7 +197,7 @@ TEST_CASE("SWUpdate sample script --action-is-installed")
 
     workflow_set_workfolder(handle, "/tmp/adu/testdata/swupdate_filecopy");
 
-    result = EnsureStepsWorkflowsCreated(handle);
+    result = PrepareStepsWorkflowDataObject(handle);
     CHECK(result.ResultCode != 0);
 
     ADUC_WorkflowHandle stepHandle = workflow_get_child(handle, 0);
@@ -249,7 +249,7 @@ TEST_CASE("SWUpdate sample script --action-download")
 
     workflow_set_workfolder(handle, "/tmp/adu/testdata/swupdate_filecopy");
 
-    result = EnsureStepsWorkflowsCreated(handle);
+    result = PrepareStepsWorkflowDataObject(handle);
     CHECK(result.ResultCode != 0);
 
     ADUC_WorkflowHandle stepHandle = workflow_get_child(handle, 0);
@@ -301,7 +301,7 @@ TEST_CASE("SWUpdate sample script --action-install", "[!hide][functional_test]")
 
     workflow_set_workfolder(handle, "/tmp/adu/testdata/swupdate_filecopy");
 
-    result = EnsureStepsWorkflowsCreated(handle);
+    result = PrepareStepsWorkflowDataObject(handle);
     CHECK(result.ResultCode != 0);
 
     ADUC_WorkflowHandle stepHandle = workflow_get_child(handle, 0);
@@ -355,7 +355,7 @@ TEST_CASE("SWUpdate sample script --action-apply")
 
     workflow_set_workfolder(handle, "/tmp/adu/testdata/swupdate_filecopy");
 
-    result = EnsureStepsWorkflowsCreated(handle);
+    result = PrepareStepsWorkflowDataObject(handle);
     CHECK(result.ResultCode != 0);
 
     ADUC_WorkflowHandle stepHandle = workflow_get_child(handle, 0);
@@ -404,7 +404,7 @@ TEST_CASE("SWUpdate sample script --action-cancel")
 
     workflow_set_workfolder(handle, "/tmp/adu/testdata/swupdate_filecopy");
 
-    result = EnsureStepsWorkflowsCreated(handle);
+    result = PrepareStepsWorkflowDataObject(handle);
     CHECK(result.ResultCode != 0);
 
     ADUC_WorkflowHandle stepHandle = workflow_get_child(handle, 0);

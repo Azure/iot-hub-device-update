@@ -61,6 +61,8 @@
  */
 #define WORKFLOW_RESULT_DETAILS_MAX_LENGTH 1024
 
+#define SUPPORTED_UPDATE_MANIFEST_VERSION 4
+
 EXTERN_C_BEGIN
 
 //
@@ -627,6 +629,23 @@ void workflow_set_level(ADUC_WorkflowHandle handle, int level)
 }
 
 /**
+ * @brief Set workflow step index.
+ *
+ * @param handle A workflow object handle.
+ * @param step A workflow step index.
+ */
+void workflow_set_step_index(ADUC_WorkflowHandle handle, int stepIndex)
+{
+    if (handle == NULL)
+    {
+        return;
+    }
+
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    wf->StepIndex = stepIndex;
+}
+
+/**
  * @brief Get workflow level.
  *
  * @param handle A workflow object handle.
@@ -641,6 +660,23 @@ int workflow_get_level(ADUC_WorkflowHandle handle)
 
     ADUC_Workflow* wf = workflow_from_handle(handle);
     return wf->Level;
+}
+
+/**
+ * @brief Get workflow step index.
+ *
+ * @param handle A workflow object handle.
+ * @return Returns -1 if the specified handle is invalid. Otherwise, return the workflow step index.
+ */
+int workflow_get_step_index(ADUC_WorkflowHandle handle)
+{
+    if (handle == NULL)
+    {
+        return -1;
+    }
+
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    return wf->StepIndex;
 }
 
 /**

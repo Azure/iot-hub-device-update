@@ -31,7 +31,7 @@ Param(
     # Update Provider
     [ValidateNotNullOrEmpty()]
     [string] $UpdateName = "Virtual-Vacuum",
-    
+
     # Device Manufacturer
     [ValidateNotNullOrEmpty()]
     [string] $DeviceManufacturer = "contoso",
@@ -75,90 +75,24 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     $hostfwCompat = New-AduUpdateCompatibility  -Properties $hostfwSelector
 
     $hostfwScriptFile = "$PSScriptRoot\scripts\contoso-firmware-installscript.sh"
-    $hostfwFirmwareFile = "$PSScriptRoot\data-files\host-firmware-$hostfwFirmwareVersion.json"  
+    $hostfwFirmwareFile = "$PSScriptRoot\data-files\host-firmware-$hostfwFirmwareVersion.json"
+
+    $steamerScriptFile = "$PSScriptRoot\scripts\contoso-steamer-installscript.sh"
+    $steamerFirmwareFile = "$PSScriptRoot\data-files\steamer-firmware-$steamersFirmwareVersion.json"
 
     #------------
     # ADD STEP(S)
-    #  
-    
+    #
+
     # This update contains 3 steps.
     $hostfwInstallSteps = @()
-    
+
     # Step #1 - install host firmware and reboot
     $hostfwInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
                             -Files $hostfwScriptFile, $hostfwFirmwareFile `
                             -HandlerProperties @{  `
-                                'scriptFileName'='contoso-firmware-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion";   `
-                                'arguments'="--restart-to-apply --firmware-file host-firmware-$hostfwFirmwareVersion.json  --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
-                            }   `
-                            `
-                            -Description 'Host Firmware Update'
-
-    # ------------------------------
-    # Create child update manifest
-    # ------------------------------
-
-    $childUpdateId = $hostfwUpdateId
-    $childUpdateIdStr = "$($childUpdateId.Provider).$($childUpdateId.Name).$($childUpdateId.Version)"
-    $childPayloadFiles = $hostfwScriptFile, $hostfwFirmwareFile
-    $childCompat = $hostfwCompat
-    $childSteps = $hostfwInstallSteps
-
-    Write-Host "    Preparing child update manifest $childUpdateIdStr ..."
-
-    $childManifest = New-AduImportManifest -UpdateId $childUpdateId -IsDeployable $false `
-                                        -Compatibility $childCompat `
-                                        -InstallationSteps $childSteps `
-                                        -ErrorAction Stop
-
-    # Create folder for manifest files and payload.
-    $outputPath = "$OutputManifestPath\$parentUpdateIdStr"
-    Write-Host "    Saving child manifest files and payload to $outputPath..."
-    New-Item $outputPath -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
-
-    # Generate manifest files.
-    $childManifest | Out-File "$outputPath\$childUpdateIdStr.importmanifest.json" -Encoding utf8
-
-    # Copy all payloads (if used)
-    Copy-Item -Path $childPayloadFiles -Destination $outputPath -Force
-
-    Write-Host " "
-
-    # -------------------------------------------------
-    # Create a child update for all 'motor' components
-    # -------------------------------------------------
-
-    $RefUpdateManufacturer = "contoso"
-    $RefUpdateName = "$RefUpdateNamePrefix-virtual-motors"
-    $RefUpdateVersion = "8.0"
-
-    $motorsFirmwareVersion = "3.1"
-
-    Write-Host "Preparing child update ($RefUpdateManufacturer/$RefUpdateName/$RefUpdateVersion)..."
-
-    $motorsUpdateId = New-AduUpdateId -Provider $RefUpdateManufacturer -Name $RefUpdateName -Version $RefUpdateVersion
-
-    # This components update only apply to 'motors' group.
-    $motorsSelector = @{ group = 'motors' }
-    $motorsCompat = New-AduUpdateCompatibility  -Properties $motorsSelector
-
-    $motorScriptFile = "$PSScriptRoot\scripts\contoso-motor-installscript.sh"
-    $motorFirmwareFile = "$PSScriptRoot\data-files\motor-firmware-$motorsFirmwareVersion.json"  
-
-    #------------
-    # ADD STEP(S)
-    #  
-    
-    # This update contains 3 steps.
-    $motorsInstallSteps = @()
-    
-    # Step #1 - simulating a success pre-install task.
-    $motorsInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
-                            -Files $motorScriptFile `
-                            -HandlerProperties @{  `
-                                'scriptFileName'='contoso-motor-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion";   `
+                                'scriptFileName'='contoso-steamer-installscript.sh';  `
+                                'installedCriteria'="$steamersFirmwareVersion";   `
                                 'arguments'="--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -168,9 +102,9 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     $motorsInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
                             -Files $motorScriptFile, $motorFirmwareFile `
                             -HandlerProperties @{  `
-                                'scriptFileName'='contoso-motor-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
-                                "arguments"="--firmware-file motor-firmware-$motorsFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
+                                'scriptFileName'='contoso-steamer-installscript.sh';  `
+                                'installedCriteria'="$steamersFirmwareVersion"; `
+                                "arguments"="--firmware-file steamer-firmware-$steamersFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
                             -Description 'Motors Update - firmware installation'
@@ -179,8 +113,8 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     $motorsInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
                             -Files $motorScriptFile `
                             -HandlerProperties @{  `
-                                'scriptFileName'='contoso-motor-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
+                                'scriptFileName'='contoso-steamer-installscript.sh';  `
+                                'installedCriteria'="$steamersFirmwareVersion"; `
                                 "arguments"="--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"  `
                             }   `
                             `
@@ -242,7 +176,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
 
     #------------
     # ADD STEP(S)
-    #    
+    #
 
     # This update contains 3 steps.
     $camerasInstallSteps = @()
@@ -311,11 +245,11 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     Write-Host " "
 
 # ----------------------------
-# Create the parent update 
+# Create the parent update
 # ----------------------------
 Write-Host "    Preparing parent update $parentUpdateIdStr ..."
 
-$payloadFiles = 
+$payloadFiles =
 $parentSteps = @()
 
     #------------

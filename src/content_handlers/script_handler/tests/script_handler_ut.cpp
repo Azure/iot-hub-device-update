@@ -184,7 +184,7 @@ TEST_CASE("Install helper test")
     CHECK_THAT(scriptFilePath.c_str(), Equals(expectedPath));
 
     // Expecting 14 arguments. 8 specified in instruction, plus 6 defaults arguments added automatically:
-    // --workfolder <value> --result-file <value> --installed-criteria <value>
+    // --work-folder <value> --result-file <value> --installed-criteria <value>
     CHECK(args.size() == 14);
 
     /*

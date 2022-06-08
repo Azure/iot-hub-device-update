@@ -65,6 +65,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     $RefUpdateManufacturer = "contoso"
     $RefUpdateName = "$RefUpdateNamePrefix-virtual-camera"
     $RefUpdateVersion = "1.1"
+    $camerasFirmwareVersion = "1.1"
 
     Write-Host "    Preparing child update ($RefUpdateManufacturer/$RefUpdateName/$RefUpdateVersion)..."
 
@@ -75,7 +76,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     $camerasCompat = New-AduUpdateCompatibility  -Properties $camerasSelector
 
     $cameraScriptFile = "$PSScriptRoot\scripts\contoso-camera-installscript.sh"
-    $cameraFirmwareFile = "$PSScriptRoot\data-files\camera-firmware-1.1.json"
+    $cameraFirmwareFile = "$PSScriptRoot\data-files\camera-firmware-$camerasFirmwareVersion.json"
 
     #------------
     # ADD STEP(S)
@@ -91,7 +92,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $cameraScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='missing-contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion";   `
+                                'installedCriteria'="$camerasFirmwareVersion";   `
                                 'arguments'="--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -102,8 +103,8 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files  $cameraScriptFile, $cameraFirmwareFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
-                                "arguments"="--firmware-file camera-firmware-1.1.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
+                                'installedCriteria'="$camerasFirmwareVersion"; `
+                                "arguments"="--firmware-file camera-firmware-$camerasFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
                             -Description 'Cameras Update - firmware installation'
@@ -113,7 +114,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files  $cameraScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
+                                'installedCriteria'="$camerasFirmwareVersion"; `
                                 "arguments"="--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"  `
                             }   `
                             `
@@ -213,6 +214,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     $RefUpdateManufacturer = "contoso"
     $RefUpdateName = "$RefUpdateNamePrefix-virtual-camera"
     $RefUpdateVersion = "1.2"
+    $camerasFirmwareVersion = "1.1"
 
     Write-Host "    Preparing child update ($RefUpdateManufacturer/$RefUpdateName/$RefUpdateVersion)..."
 
@@ -223,7 +225,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     $camerasCompat = New-AduUpdateCompatibility  -Properties $camerasSelector
 
     $cameraScriptFile = "$PSScriptRoot\scripts\contoso-camera-installscript.sh"
-    $cameraFirmwareFile = "$PSScriptRoot\data-files\camera-firmware-1.1.json"
+    $cameraFirmwareFile = "$PSScriptRoot\data-files\camera-firmware-$camerasFirmwareVersion.json"
 
     #------------
     # ADD STEP(S)
@@ -236,7 +238,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $cameraScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion";   `
+                                'installedCriteria'="$camerasFirmwareVersion";   `
                                 'arguments'="--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -248,8 +250,8 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files  $cameraScriptFile, $cameraFirmwareFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='missing-contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
-                                "arguments"="--firmware-file camera-firmware-1.1.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
+                                'installedCriteria'="$camerasFirmwareVersion"; `
+                                "arguments"="--firmware-file camera-firmware-$camerasFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
                             -Description 'Cameras Update - firmware installation'
@@ -259,7 +261,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files  $cameraScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
+                                'installedCriteria'="$camerasFirmwareVersion"; `
                                 "arguments"="--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"  `
                             }   `
                             `
@@ -359,6 +361,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     $RefUpdateManufacturer = "contoso"
     $RefUpdateName = "$RefUpdateNamePrefix-virtual-camera"
     $RefUpdateVersion = "1.3"
+    $camerasFirmwareVersion = "1.1"
 
     Write-Host "    Preparing child update ($RefUpdateManufacturer/$RefUpdateName/$RefUpdateVersion)..."
 
@@ -369,7 +372,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     $camerasCompat = New-AduUpdateCompatibility  -Properties $camerasSelector
 
     $cameraScriptFile = "$PSScriptRoot\scripts\contoso-camera-installscript.sh"
-    $cameraFirmwareFile = "$PSScriptRoot\data-files\camera-firmware-1.1.json"
+    $cameraFirmwareFile = "$PSScriptRoot\data-files\camera-firmware-$camerasFirmwareVersion.json"
 
     #------------
     # ADD STEP(S)
@@ -382,7 +385,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files $cameraScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion";   `
+                                'installedCriteria'="$camerasFirmwareVersion";   `
                                 'arguments'="--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
@@ -393,8 +396,8 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files  $cameraScriptFile, $cameraFirmwareFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
-                                "arguments"="--firmware-file camera-firmware-1.1.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
+                                'installedCriteria'="$camerasFirmwareVersion"; `
+                                "arguments"="--firmware-file camera-firmware-$camerasFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
                             -Description 'Cameras Update - firmware installation'
@@ -405,7 +408,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
                             -Files  $cameraScriptFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='missing-contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
+                                'installedCriteria'="$camerasFirmwareVersion"; `
                                 "arguments"="--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"  `
                             }   `
                             `
@@ -506,6 +509,7 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     $RefUpdateManufacturer = "contoso"
     $RefUpdateName = "$RefUpdateNamePrefix-virtual-camera"
     $RefUpdateVersion = "1.4"
+    $camerasFirmwareVersion = "1.1"
 
     Write-Host "    Preparing child update ($RefUpdateManufacturer/$RefUpdateName/$RefUpdateVersion)..."
 
@@ -516,23 +520,46 @@ Write-Host "Preparing update $parentUpdateIdStr ..."
     $camerasCompat = New-AduUpdateCompatibility  -Properties $camerasSelector
 
     $cameraScriptFile = "$PSScriptRoot\scripts\contoso-camera-installscript.sh"
-    $cameraFirmwareFile = "$PSScriptRoot\data-files\camera-firmware-1.1.json"
+    $cameraFirmwareFile = "$PSScriptRoot\data-files\camera-firmware-$camerasFirmwareVersion.json"
 
     #------------
     # ADD STEP(S)
     #
+    # This update contains 3 steps.
     $camerasInstallSteps = @()
 
-    # Step #0 - Install a camera firmware update.
+    # Step #1 - simulating a successful pre-install task.
+    $camerasInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
+                            -Files $cameraScriptFile `
+                            -HandlerProperties @{  `
+                                'scriptFileName'='contoso-camera-installscript.sh';  `
+                                'installedCriteria'="$camerasFirmwareVersion";   `
+                                'arguments'="--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
+                            }   `
+                            `
+                            -Description 'Cameras Update - pre-install step (failure - missing file)'
+
+    # Step #2 - Simulating a successful firmware update.
     $camerasInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
                             -Files  $cameraScriptFile, $cameraFirmwareFile `
                             -HandlerProperties @{  `
                                 'scriptFileName'='contoso-camera-installscript.sh';  `
-                                'installedCriteria'="$RefUpdateVersion"; `
+                                'installedCriteria'="$camerasFirmwareVersion"; `
                                 "arguments"="--firmware-file camera-firmware-1.1.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
                             }   `
                             `
                             -Description 'Cameras Update - firmware installation'
+
+    # Step #3 - simulating a successful post-install task.
+    $camerasInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
+                            -Files  $cameraScriptFile `
+                            -HandlerProperties @{  `
+                                'scriptFileName'='contoso-camera-installscript.sh';  `
+                                'installedCriteria'="$camerasFirmwareVersion"; `
+                                "arguments"="--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"  `
+                            }   `
+                            `
+                            -Description 'Cameras Update - post-install script'
 
     # ------------------------------
     # Create child update manifest

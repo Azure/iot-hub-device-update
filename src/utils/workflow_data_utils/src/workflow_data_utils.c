@@ -221,7 +221,7 @@ void ADUC_WorkflowData_SaveLastGoalStateJson(ADUC_WorkflowData* workflowData, co
     if (workflowData->LastGoalStateJson != (char*)goalStateJson)
     {
         free(workflowData->LastGoalStateJson);
-        if (mallocAndStrcpy_s(&workflowData->LastGoalStateJson, goalStateJson) != 0)
+        if (mallocAndStrcpy_s(&workflowData->LastGoalStateJson, (const char*)goalStateJson) != 0)
         {
             workflowData->LastGoalStateJson = NULL;
         }
