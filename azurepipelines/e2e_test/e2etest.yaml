@@ -272,6 +272,22 @@ stages:
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
 
       - task: PythonScript@0
+        displayName: Run script to test diagnostics
+        continueOnError: False
+        inputs:
+          scriptSource: 'filePath'
+          scriptPath: '$(E2E_WORKING_DIR)/$(scenarioPath)/diagnostics.py'
+          workingDirectory: $(E2E_WORKING_DIR)
+        env:
+          IOTHUB_URL: $(IOTHUB_URL)
+          IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+          ADU_ENDPOINT: $(ADU_ENDPOINT)
+          ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+          AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+          AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+          AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+      - task: PythonScript@0
         displayName: Run script to clean up the device
         continueOnError: False
         inputs:

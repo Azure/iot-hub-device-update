@@ -15,27 +15,27 @@ from testingtoolkit import DeviceUpdateTestHelper
 from testingtoolkit import DuAutomatedTestConfigurationManager
 from xmlrunner.extra.xunit_plugin import transform
 
-
 sys.path.append('./scenarios/ubuntu-18.04-amd64/')
-from scenario_definitions import test_device_id,test_adu_group,test_result_file_prefix
+from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix
 
 class DeleteDeviceAndGroup(unittest.TestCase):
 
-  def test_DeleteTestDeviceAndGroup(self):
-      configManager = DuAutomatedTestConfigurationManager.FromOSEnvironment()
+    def test_DeleteTestDeviceAndGroup(self):
+        configManager = DuAutomatedTestConfigurationManager.FromOSEnvironment()
 
-      duTestHelper = configManager.CreateDeviceUpdateTestHelper()
+        duTestHelper = configManager.CreateDeviceUpdateTestHelper()
 
-      self.assertEqual(duTestHelper.DeleteADUGroup(test_adu_group),204)
+        self.assertEqual(duTestHelper.DeleteADUGroup(test_adu_group), 204)
 
-      time.sleep(30)
-      self.assertTrue(duTestHelper.DeleteDevice(test_device_id))
+        time.sleep(30)
+        self.assertTrue(duTestHelper.DeleteDevice(test_device_id))
 
 
 if (__name__ == "__main__"):
     out = io.BytesIO()
 
-    unittest.main(testRunner = xmlrunner.XMLTestRunner(output=out),failfast=False,buffer=False,catchbreak=False,exit=False)
+    unittest.main(testRunner=xmlrunner.XMLTestRunner(output=out),
+                  failfast=False, buffer=False, catchbreak=False, exit=False)
 
-    with open('./testresults/' + test_result_file_prefix + '-delete-device-test.xml','wb') as report:
+    with open('./testresults/' + test_result_file_prefix + '-delete-device-test.xml', 'wb') as report:
         report.write(transform(out.getvalue()))

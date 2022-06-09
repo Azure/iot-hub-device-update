@@ -13,7 +13,7 @@ sys.path.append('./scenarios/')
 sys.path.append('./scenarios/ubuntu-18.04-amd64/')
 print(os.path.abspath('./'))
 from scenario_definitions import test_device_id
-from testingtoolkit import DeviceUpdateTestHelper,DuAutomatedTestConfigurationManager
+from testingtoolkit import DeviceUpdateTestHelper, DuAutomatedTestConfigurationManager
 
 duTestConfig = DuAutomatedTestConfigurationManager.FromOSEnvironment()
 
@@ -31,7 +31,7 @@ duTestWrapper.DeleteDevice(test_device_id)
 #
 # Create the Device
 #
-connectionString = duTestWrapper.CreateDevice(test_device_id,isIotEdge=True)
+connectionString = duTestWrapper.CreateDevice(test_device_id, isIotEdge=True)
 
 if (len(connectionString) == 0):
     print("Failed to create the device in the IotHub")
@@ -67,7 +67,7 @@ duConfigJson = {
 # Write the configuration out to disk so we can install it as a part of the test
 #
 
-with open('du-config.json','w') as jsonFile:
+with open('du-config.json', 'w') as jsonFile:
     configJson = json.dumps(duConfigJson)
     jsonFile.write(configJson)
 

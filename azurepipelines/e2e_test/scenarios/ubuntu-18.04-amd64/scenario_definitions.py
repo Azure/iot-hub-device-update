@@ -8,6 +8,7 @@
 # the project.
 #
 import sys
+import uuid
 
 sys.path.append('./')
 from testingtoolkit import UpdateId
@@ -19,6 +20,7 @@ test_device_id = "ubuntu-18.04-apt-deployment-test-device"
 test_adu_group = "Ubuntu1804AduGroup"
 test_apt_deployment_id = "ubuntu1804aptdeploymenttest"
 test_result_file_prefix = 'ubuntu-18.04-amd64'
+test_operation_id = str(uuid.uuid4()).replace('-', '')
 #
 # Other variables that should be available to all tests in this scenario may be added here
 #

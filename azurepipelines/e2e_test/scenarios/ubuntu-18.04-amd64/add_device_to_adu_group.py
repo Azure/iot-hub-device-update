@@ -30,20 +30,20 @@ class AddDeviceToGroupTest(unittest.TestCase):
         # We expect the device to connect within 3 minutes of setting up the device in the step previous
         #
         connectionStatus = ""
-        for i in range(0,5):
+        for i in range(0, 5):
             connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
             if (connectionStatus == "Connected"):
                 break
             time.sleep(30)
 
-        self.assertEqual(connectionStatus,"Connected")
+        self.assertEqual(connectionStatus, "Connected")
 
         #
         # Before we can run the deployment we need to add the ADUGroup test_adu_group tag to the
         # the device before we make the ADUGroup which we can then use to target the deployment
         # to the device.
         #
-        success = self.duTestHelper.AddDeviceToGroup(test_device_id,test_adu_group)
+        success = self.duTestHelper.AddDeviceToGroup(test_device_id, test_adu_group)
 
         self.assertTrue(success)
 
@@ -51,20 +51,21 @@ class AddDeviceToGroupTest(unittest.TestCase):
 
         deviceClassId = self.duTestHelper.GetAduDeviceClassIdForDevice(test_device_id)
 
-        self.assertNotEqual(deviceClassId,"")
+        self.assertNotEqual(deviceClassId, "")
 
         #
         # Create the ADUGroup
         #
-        status_code = self.duTestHelper.CreateADUGroup(test_adu_group,deviceClassId)
+        status_code = self.duTestHelper.CreateADUGroup(test_adu_group, deviceClassId)
 
-        self.assertEqual(status_code,200)
+        self.assertEqual(status_code, 200)
 
 
 if (__name__ == "__main__"):
     out = io.BytesIO()
 
-    unittest.main(testRunner = xmlrunner.XMLTestRunner(output=out),failfast=False,buffer=False,catchbreak=False,exit=False)
+    unittest.main(testRunner=xmlrunner.XMLTestRunner(output=out),
+                  failfast=False, buffer=False, catchbreak=False, exit=False)
 
-    with open('./testresults/' + test_result_file_prefix + 'add-device-to-adu-group-test.xml','wb') as report:
+    with open('./testresults/' + test_result_file_prefix + 'add-device-to-adu-group-test.xml', 'wb') as report:
         report.write(transform(out.getvalue()))

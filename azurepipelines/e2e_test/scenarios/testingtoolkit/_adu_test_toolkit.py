@@ -3,13 +3,14 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
-from azure.identity import  ClientSecretCredential
+from azure.identity import ClientSecretCredential
 from azure.iot.deviceupdate import DeviceUpdateClient
 from azure.iot.hub import IoTHubRegistryManager
 from azure.core.rest import HttpRequest, HttpResponse
 from azure.iot.hub.protocol.models import Device
 from azure.iot.hub.protocol.models import Module
 from azure.iot.hub.protocol.models import Twin
+from urllib.parse import urljoin
 import base64
 import datetime
 import getopt
@@ -19,8 +20,9 @@ import os
 import sys
 import uuid
 
+
 class DuAutomatedTestConfigurationManager():
-    def __init__(self,aduEndpoint="",aduInstanceId="",iotHubUrl="",iotHubConnectionString="",aadRegistrarClientId="",aadRegistrarTenantId="",pathToCertificate="",passwordForCertificate="") -> None:
+    def __init__(self, aduEndpoint="", aduInstanceId="", iotHubUrl="", iotHubConnectionString="", aadRegistrarClientId="", aadRegistrarTenantId="", pathToCertificate="", passwordForCertificate="") -> None:
         """
         Convenience wrapper for the configuration details required for DU automated tests to run.
         """
@@ -69,8 +71,9 @@ class DuAutomatedTestConfigurationManager():
         # (-t)--aad-registrar-tenant-id
         # (-p)--aad-registrar-client-secret
         shortopts = "a:i:u:c:r:t:p:"
-        longopts = ['adu-endpoint=','adu-instance-id=','iothub-url=','iothub-connection-string=','aad-registrar-client-id=','aad-registrar-tenant-id=','aad-registrar-client-secret=',]
-        optlist,args = getopt.getopt(sys.argv[1:],shortopts,longopts)
+        longopts = ['adu-endpoint=', 'adu-instance-id=', 'iothub-url=', 'iothub-connection-string=',
+                    'aad-registrar-client-id=', 'aad-registrar-tenant-id=', 'aad-registrar-client-secret=', ]
+        optlist, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
 
         #
         # Require that all parameters have been passed
@@ -79,7 +82,7 @@ class DuAutomatedTestConfigurationManager():
         if (len(optlist) < 7):
             return None
 
-        for opt,val in optlist:
+        for opt, val in optlist:
             if (opt == "-a" or opt == "--" + longopts[0]):
                 self._aduEndpoint = val
             elif (opt == "-i" or opt == "--" + longopts[1]):
@@ -100,13 +103,12 @@ class DuAutomatedTestConfigurationManager():
     def CreateClientSecretCredential(self):
 
         if (not self._configured):
-            print ("Calling CreateClientSecretCredential without configuring first")
+            print("Calling CreateClientSecretCredential without configuring first")
             return None
 
         return ClientSecretCredential(tenant_id=self._aadRegistrarTenantId, client_id=self._aadRegistrarClientId, client_secret=self._aadRegistrarClientSecret)
 
-
-    def CreateDeviceUpdateTestHelper(self,credential=None):
+    def CreateDeviceUpdateTestHelper(self, credential=None):
 
         if (not self._configured):
             print("Calling CreateDeviceUpdateTestHelper without configuring first")
@@ -115,10 +117,11 @@ class DuAutomatedTestConfigurationManager():
         if (self.credential == None):
             self.credential = self.CreateClientSecretCredential()
 
-        return DeviceUpdateTestHelper(self._aduInstanceId,self._iotHubUrl,self._iotHubConnectionString,self.credential,self._aduEndpoint)
+        return DeviceUpdateTestHelper(self._aduInstanceId, self._iotHubUrl, self._iotHubConnectionString, self.credential, self._aduEndpoint)
+
 
 class DeploymentStatusResponse():
-    def __init__(self,deploymentStatusJson) -> None:
+    def __init__(self, deploymentStatusJson) -> None:
         """
         Convenience wrapper object for the deployment status response. Converts the JSON returned by
         the service request into a Python object that makes it easier to access.
@@ -133,7 +136,7 @@ class DeploymentStatusResponse():
         self.devicesCanceledCount = 0
         self.ParseResponseJson(deploymentStatusJson)
 
-    def ParseResponseJson(self,deploymentStatusJson):
+    def ParseResponseJson(self, deploymentStatusJson):
         self.deploymentState = deploymentStatusJson["deploymentState"]
         self.totalDevices = deploymentStatusJson["totalDevices"]
         self.devicesInProgressCount = deploymentStatusJson["devicesInProgressCount"]
@@ -141,20 +144,42 @@ class DeploymentStatusResponse():
         self.devicesCompletedSucceededCount = deploymentStatusJson["devicesCompletedSucceededCount"]
         self.devicesCanceledCount = deploymentStatusJson["devicesCanceledCount"]
 
+
+class DiagnosticLogCollectionStatusResponse():
+    def __init__(self) -> None:
+        """
+        Convenience wrapper object for the diagnostic log collection status response.
+        Converts the JSON returned by the service request into a Python object that makes it easier to access.
+        You can see the types and potential values of each of the variables here: https://docs.microsoft.com/en-us/rest/api/deviceupdate/2021-06-01-preview/device-management/get-deployment-status
+        """
+        super().__init__()
+        self.operationStatus = ""
+        self.deviceStatus = ""
+
+    def ParseResponseJson(self, logCollectionStatusResponseJson):
+        self.operationStatus = logCollectionStatusResponseJson["status"]
+        deviceResoponseList = logCollectionStatusResponseJson["deviceStatus"]
+        deviceResponseInfo = deviceResoponseList[0]
+        self.deviceStatus = deviceResponseInfo["status"]
+
+        return self
+
+
 class UpdateId():
-    def __init__(self,provider,name,version) -> None:
+    def __init__(self, provider, name, version) -> None:
         """
         Convenience wrapper for update-ids being used for deployments following the standard methods.
         """
         self.provider = provider
         self.name = name
         self.version = version
+
     def __str__(self) -> str:
         return '{ "provider":"' + str(self.provider) + '" , "name": "' + str(self.name) + '", "version": "' + str(self.version) + '"}'
 
 
 class DeviceUpdateTestHelper:
-    def __init__(self,aduInstanceId,iothubUrl,iothub_connection_string,adu_credential,endpoint = "") -> None:
+    def __init__(self, aduInstanceId, iothubUrl, iothub_connection_string, adu_credential, endpoint="") -> None:
         """
         Test Helper for the Device Update Test Automation work. The object wraps different parts of the required functions
         and works with the azure.iot.deviceupdate.DeviceUpdateClient and azure.iot.hub.IotHubRegistryManager objects to
@@ -174,15 +199,17 @@ class DeviceUpdateTestHelper:
         # Internal Values for managing the connection to DU and the IotHub
         self._aduInstanceId = aduInstanceId
         self._aduEndpoint = endpoint
-        self._iothub_connection_string  = iothub_connection_string
+        self._iothub_connection_string = iothub_connection_string
         self._aduCredential = adu_credential
         self._iotHubUrl = iothubUrl
-        self._aduAcnt = DeviceUpdateClient(endpoint,aduInstanceId,adu_credential)
+        self._aduAcnt = DeviceUpdateClient(endpoint, aduInstanceId, adu_credential)
 
         self._hubRegistryManager = IoTHubRegistryManager.from_connection_string(iothub_connection_string)
 
+        self._base_url = f'https://{self._aduEndpoint}/deviceupdate/{self._aduInstanceId}/'
+        self._apiVersion = "?api-version=2021-06-01-preview"
 
-    def CreateDevice(self, deviceId,isIotEdge=False):
+    def CreateDevice(self, deviceId, isIotEdge=False):
         """
         Use the IotHubRegistryManager to create the device using the passed deviceId and isIotEdge parameters using the IotHubRegistryManager
 
@@ -194,13 +221,14 @@ class DeviceUpdateTestHelper:
         secondary_key = base64.b64encode(str(uuid.uuid4()).encode()).decode()
         device_status = "enabled"
 
-        self._hubRegistryManager.create_device_with_sas(deviceId,primary_key,secondary_key,device_status,isIotEdge)
+        self._hubRegistryManager.create_device_with_sas(deviceId, primary_key, secondary_key, device_status, isIotEdge)
 
         # Should always be of type Device
         device = self._hubRegistryManager.get_device(deviceId)
 
         if (type(device) != Device):
-            print( "Return type for retrieving the device state is not Device. Requested Raw response?")
+            print(
+                "Return type for retrieving the device state is not Device. Requested Raw response?")
 
         # Can't guarantee that the device will be connected but the generation-id should work
         if (device.generation_id == ""):
@@ -211,7 +239,7 @@ class DeviceUpdateTestHelper:
 
         return connectionString
 
-    def DeleteDevice(self,deviceId):
+    def DeleteDevice(self, deviceId):
         """
         Deletes the device specified by deviceId
 
@@ -227,7 +255,7 @@ class DeviceUpdateTestHelper:
 
         return True
 
-    def CreateModuleForExistingDevice(self,deviceId,moduleId):
+    def CreateModuleForExistingDevice(self, deviceId, moduleId):
         """
         Use the IotHubRegistryManager to create the module on the device using the passed deviceId and moduleId parameters using the IotHubRegistryManager
 
@@ -239,9 +267,9 @@ class DeviceUpdateTestHelper:
         secondary_key = base64.b64encode(str(uuid.uuid4()).encode()).decode()
         device_status = "enabled"
 
-        self._hubRegistryManager.create_module_with_sas(deviceId,moduleId,managed_by="",primary_key=primary_key,secondary_key=secondary_key)
+        self._hubRegistryManager.create_module_with_sas(deviceId, moduleId, managed_by="", primary_key=primary_key, secondary_key=secondary_key)
 
-        module  = self._hubRegistryManager.get_module(deviceId,moduleId)
+        module = self._hubRegistryManager.get_module(deviceId, moduleId)
 
         if (module.generation_id == ""):
             return ""
@@ -251,7 +279,7 @@ class DeviceUpdateTestHelper:
 
         return connectionString
 
-    def DeleteModuleOnDevice(self,deviceId,moduleId):
+    def DeleteModuleOnDevice(self, deviceId, moduleId):
         """
         Deletes the module specified by moduleId on the device
 
@@ -262,14 +290,14 @@ class DeviceUpdateTestHelper:
 
         try:
 
-            self._hubRegistryManager.delete_module(deviceId,moduleId)
+            self._hubRegistryManager.delete_module(deviceId, moduleId)
 
         except HttpOperationError:
             return False
 
         return True
 
-    def AddDeviceToGroup(self,deviceId,groupName):
+    def AddDeviceToGroup(self, deviceId, groupName):
         """
         Patches the device twin "tags" value on the device twin to include the key ADUGroup and value of the parameter groupName
 
@@ -278,16 +306,16 @@ class DeviceUpdateTestHelper:
         :returns: True on success; False on failure
         """
 
-        newTagForTwin = Twin(tags={"ADUGroup":groupName})
+        newTagForTwin = Twin(tags={"ADUGroup": groupName})
 
-        updatedTwin = self._hubRegistryManager.replace_twin(deviceId,newTagForTwin)
+        updatedTwin = self._hubRegistryManager.replace_twin(deviceId, newTagForTwin)
 
         if (updatedTwin.tags["ADUGroup"] != groupName):
             return False
 
         return True
 
-    def AddModuleToGroup(self,deviceId,moduleId,groupName):
+    def AddModuleToGroup(self, deviceId, moduleId, groupName):
         """
         Patches the module twin "tags" value on the device twin to include the key ADUGroup and value of the parameter groupName
 
@@ -297,16 +325,16 @@ class DeviceUpdateTestHelper:
         :returns: True on success; False on failure
         """
 
-        newTagForTwin = Twin(tags={"ADUGroup":groupName})
+        newTagForTwin = Twin(tags={"ADUGroup": groupName})
 
-        updatedTwin = self._hubRegistryManager.replace_module_twin(deviceId,moduleId,newTagForTwin)
+        updatedTwin = self._hubRegistryManager.replace_module_twin(deviceId, moduleId, newTagForTwin)
 
         if (updatedTwin.tags["ADUGroup"] != groupName):
             return False
 
         return True
 
-    def GetDeviceTwinForDevice(self,deviceId):
+    def GetDeviceTwinForDevice(self, deviceId):
         """
         Returns the twin of the device
 
@@ -315,7 +343,7 @@ class DeviceUpdateTestHelper:
         """
         return self._hubRegistryManager.get_twin(deviceId)
 
-    def GetModuleTwinForModule(self,deviceId,moduleId):
+    def GetModuleTwinForModule(self, deviceId, moduleId):
         """
         Returns the twin of the module
 
@@ -323,9 +351,9 @@ class DeviceUpdateTestHelper:
         :param str moduleId: Identifier for the module for which to retrieve the twin
         :returns: An object of type azure.iot.hub.protocols.models.Twin which encapsulates the twin
         """
-        return self._hubRegistryManager.get_module_twin(deviceId,moduleId)
+        return self._hubRegistryManager.get_module_twin(deviceId, moduleId)
 
-    def GetConnectionStatusForDevice(self,deviceId):
+    def GetConnectionStatusForDevice(self, deviceId):
         """
         Returns the connection state of the device
 
@@ -334,7 +362,7 @@ class DeviceUpdateTestHelper:
         """
         return self._hubRegistryManager.get_device(deviceId).connection_state
 
-    def GetConnectionStatusForModule(self,deviceId,moduleId):
+    def GetConnectionStatusForModule(self, deviceId, moduleId):
         """
         Returns the connection state of the module
 
@@ -342,9 +370,9 @@ class DeviceUpdateTestHelper:
         :param str moduleId: the module for which to retrieve the connection_state
         :returns: the string representation of the connection_state
         """
-        return self._hubRegistryManager.get_module(deviceId,moduleId).connection_state
+        return self._hubRegistryManager.get_module(deviceId, moduleId).connection_state
 
-    def StartDeploymentForGroup(self,deploymentId, groupName,updateId):
+    def StartDeploymentForGroup(self, deploymentId, groupName, updateId):
         """
         Starts the deployment for the specified groupname and updateId
 
@@ -358,15 +386,15 @@ class DeviceUpdateTestHelper:
         if (type(updateId) != UpdateId):
             print("Unusable type for updateId, use the UpdateId class")
 
-        jsonBodyString = '{"deploymentId": "' + deploymentId + '","groupId": "'+ groupName+'","startDateTime": "' + str(datetime.datetime.now()) + '", "updateId": ' + str(updateId) + '}'
+        jsonBodyString = '{"deploymentId": "' + deploymentId + '","groupId": "' + groupName + '","startDateTime": "' + str(datetime.datetime.now()) + '", "updateId": ' + str(updateId) + '}'
 
-        deploymentStartRequest = HttpRequest("PUT",requestString,json=json.loads(jsonBodyString))
+        deploymentStartRequest = HttpRequest("PUT", requestString, json=json.loads(jsonBodyString))
 
         deploymentStartResponse = self._aduAcnt.send_request(deploymentStartRequest)
 
         return deploymentStartResponse.status_code
 
-    def StopDeployment(self,deploymentId,groupName):
+    def StopDeployment(self, deploymentId, groupName):
         """
         Stops the deployment for the specified groupname
 
@@ -376,7 +404,7 @@ class DeviceUpdateTestHelper:
         """
         requestString = "/deviceupdate/" + self._aduInstanceId + "/management/groups/" + groupName + "/deployments/" + deploymentId + "?action=cancel&api-version=2021-06-01-preview"
 
-        deploymentCancelRequest = HttpRequest("PUT",requestString)
+        deploymentCancelRequest = HttpRequest("PUT", requestString)
 
         deploymentCancelResponse = self._aduAcnt.send_request(deploymentCancelRequest)
 
@@ -390,7 +418,7 @@ class DeviceUpdateTestHelper:
         :param str groupName: the id for the group to which the deployment was made
         :returns: An object of type DeploymentStatusResponse, this will be empty on failure
         """
-        deploymentStatusRequest = HttpRequest("GET","/deviceupdate/" + self._aduInstanceId + "/management/groups/" + groupName + "/deployments/" + deploymentId + "/status?api-version=2021-06-01-preview")
+        deploymentStatusRequest = HttpRequest("GET", "/deviceupdate/" + self._aduInstanceId + "/management/groups/" + groupName + "/deployments/" + deploymentId + "/status?api-version=2021-06-01-preview")
 
         deploymentStatusResponse = self._aduAcnt.send_request(deploymentStatusRequest)
 
@@ -401,7 +429,7 @@ class DeviceUpdateTestHelper:
 
         return deploymentStateResponseJson
 
-    def DeleteDeployment(self,deploymentId,groupId):
+    def DeleteDeployment(self, deploymentId, groupId):
         """
         Deletes the deployment specified by deploymentId for group specified by groupId
 
@@ -409,16 +437,15 @@ class DeviceUpdateTestHelper:
         :param str groupId: the group-id for group on which the deployment was operating
         :returns: the status code of the response to delete the deployment
         """
-        requestString = '/deviceupdate/'+ self._aduInstanceId + '/management/groups/'+ groupId+ '/deployments/' + deploymentId+ '?api-version=2021-06-01-preview'
+        requestString = '/deviceupdate/' + self._aduInstanceId + '/management/groups/' + groupId + '/deployments/' + deploymentId + '?api-version=2021-06-01-preview'
 
-        deleteDeploymentRequest = HttpRequest("DELETE",requestString)
+        deleteDeploymentRequest = HttpRequest("DELETE", requestString)
 
         deleteDeploymentResponse = self._aduAcnt.send_request(deleteDeploymentRequest)
 
         return deleteDeploymentResponse.status_code
 
-
-    def RunDiagnosticsOnDeviceOrModule(self,deviceId,operationId,description,moduleId=""):
+    def RunDiagnosticsOnDeviceOrModule(self, deviceId, operationId, description, moduleId=""):
         """
         Initiates a diagnostics log collection flow for the specified device or module using the operationId and description passed
 
@@ -430,17 +457,58 @@ class DeviceUpdateTestHelper:
         """
         jsonBody = None
         if (len(moduleId) == 0):
-            jsonBody = json.loads('{"deviceList":[{"deviceId":' + deviceId +'"}], "description":' + description + '}')
-        else:
-            jsonBody = json.loads('{"deviceList":[{"deviceId":' + deviceId +'", moduleId:"'+ moduleId + '"}], "description":' + description + '}')
+            jsonBody = {
+                "deviceList": [
+                    {
+                        "deviceId": deviceId
+                    },
+                ],
+                "description": description
+            }
 
-        diagnosticsRequest = HttpRequest("PUT","/deviceupdate/" + self._aduInstanceId + "/management/deviceDiagnostics/logCollections/" + operationId + "?api-version=2021-06-01-preview",json=jsonBody)
+        else:
+            jsonBody = {
+                "deviceList": [
+                    {
+                        "deviceId": deviceId,
+                        "moduleId": moduleId
+                    }
+                ],
+                "description": description
+            }
+
+        collectLog_url = f'management/deviceDiagnostics/logCollections/{operationId}{self._apiVersion}'
+
+        requestString = urljoin(self._base_url, collectLog_url)
+
+        diagnosticsRequest = HttpRequest("PUT", requestString, json=jsonBody)
 
         diagnosticsResponse = self._aduAcnt.send_request(diagnosticsRequest)
 
         return diagnosticsResponse.status_code
 
-    def CreateADUGroup(self,tag,deviceClassId):
+    def GetDiagnosticsLogCollectionStatus(self, operationId):
+        """
+        Returns the log collection state for the given operationId
+        :param str operationId: Log collection operation identifier
+        :returns: An object of type DiagnosticLogCollectionStatusResponse, this will be empty on failure
+        """
+        getLogCollectDetail_url = f'management/deviceDiagnostics/logCollections/{operationId}/detailedstatus{self._apiVersion}'
+
+        requestString = urljoin(self._base_url, getLogCollectDetail_url)
+
+        logCollectionStatusRequest = HttpRequest("GET", requestString)
+
+        logCollectionStatusResponse = self._aduAcnt.send_request(logCollectionStatusRequest)
+
+        if (logCollectionStatusResponse.status_code != 200):
+            return DiagnosticLogCollectionStatusResponse()
+
+        logCollectionStatusResponseJson = DiagnosticLogCollectionStatusResponse().ParseResponseJson(logCollectionStatusResponse.json())
+
+        return logCollectionStatusResponseJson
+
+    def CreateADUGroup(self, tag, deviceClassId):
         """
         Creates an ADUGroup from a group that has been added to a device. You must add the "ADUGroup" tag with the groupname before calling this function
         :param str tag: IotHub tag to be used to create the ADUGroup it also functions as the group name
@@ -448,36 +516,36 @@ class DeviceUpdateTestHelper:
         :returns: the status code for the request to create the ADUGroup
         """
 
-        requestString = "/deviceupdate/" + self._aduInstanceId + "/management/groups/" +tag+ "?api-version=2021-06-01-preview"
+        requestString = "/deviceupdate/" + self._aduInstanceId + "/management/groups/" + tag + "?api-version=2021-06-01-preview"
 
-        jsonString = '{"groupId":"' +tag +'",' +'"groupType":"DeviceClassIdAndIoTHubTag","tags":["' + tag + '"], "createdDateTime":"'+str(datetime.datetime.now())+'","deviceClassId":"'+deviceClassId + '"}'
+        jsonString = '{"groupId":"' + tag + '",' + '"groupType":"DeviceClassIdAndIoTHubTag","tags":["' + tag + '"], "createdDateTime":"'+str(
+            datetime.datetime.now())+'","deviceClassId":"'+deviceClassId + '"}'
         jsonBody = json.loads(jsonString)
 
-        aduGroupCreateRequest = HttpRequest("PUT",requestString,json=jsonBody)
+        aduGroupCreateRequest = HttpRequest("PUT", requestString, json=jsonBody)
 
         aduGroupCreateResponse = self._aduAcnt.send_request(aduGroupCreateRequest)
 
         return aduGroupCreateResponse.status_code
 
-    def GetAduDeviceClassIdForDevice(self,deviceId):
-        requestString = "/deviceupdate/"+ self._aduInstanceId + "/management/devices/" + deviceId + "?api-version=2021-06-01-preview"
+    def GetAduDeviceClassIdForDevice(self, deviceId):
+        requestString = "/deviceupdate/" + self._aduInstanceId + "/management/devices/" + deviceId + "?api-version=2021-06-01-preview"
 
-        aduDeviceRequest = HttpRequest("GET",requestString)
+        aduDeviceRequest = HttpRequest("GET", requestString)
 
         aduDeviceRequestResponse = self._aduAcnt.send_request(aduDeviceRequest)
 
         if (aduDeviceRequestResponse.status_code != 200):
             return ""
 
-
         deviceJsonResponse = json.loads(aduDeviceRequestResponse.content)
 
         return deviceJsonResponse["deviceClassId"]
 
-    def GetAduDeviceClassIdForModule(self,deviceId,moduleId):
-        requestString = "/deviceupdate/"+ self._aduInstanceId + "/management/devices/" + deviceId + "/modules/" + moduleId + "?api-version=2021-06-01-preview"
+    def GetAduDeviceClassIdForModule(self, deviceId, moduleId):
+        requestString = "/deviceupdate/" + self._aduInstanceId + "/management/devices/" + deviceId + "/modules/" + moduleId + "?api-version=2021-06-01-preview"
 
-        aduModuleRequest = HttpRequest("GET",requestString)
+        aduModuleRequest = HttpRequest("GET", requestString)
 
         aduModuleRequestResponse = self._aduAcnt.send_request(aduModuleRequest)
 
@@ -488,7 +556,7 @@ class DeviceUpdateTestHelper:
 
         return moduleJsonResponse["deviceClassId"]
 
-    def DeleteADUGroup(self,aduGroupId):
+    def DeleteADUGroup(self, aduGroupId):
         """
         Deletes the ADUGroup declared by aduGroupId
 
@@ -497,7 +565,7 @@ class DeviceUpdateTestHelper:
         """
         requestString = '/deviceupdate/' + self._aduInstanceId + '/management/groups/' + aduGroupId + '?api-version=2021-06-01-preview'
 
-        deleteAduGroupRequest = HttpRequest("DELETE",requestString)
+        deleteAduGroupRequest = HttpRequest("DELETE", requestString)
 
         deleteAduGroupResponse = self._aduAcnt.send_request(deleteAduGroupRequest)
 
