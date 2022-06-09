@@ -139,14 +139,15 @@ TEST_CASE("ADUC_HashUtils_IsValidFileHash - SmallFile")
     SECTION("Verify file hash")
     {
         INFO("SHAversion: " << version);
-        REQUIRE(ADUC_HashUtils_IsValidFileHash(testFile.Filename(), testFile.GetDataHashBase64(version), version));
+        REQUIRE(
+            ADUC_HashUtils_IsValidFileHash(testFile.Filename(), testFile.GetDataHashBase64(version), version, true));
     }
 
     SECTION("Verify bad file hash")
     {
         INFO("SHAversion: " << version);
         REQUIRE_FALSE(ADUC_HashUtils_IsValidFileHash(
-            testFile.Filename(), "xxXXXgW/Nr695oSEGijw/UPGmFCj3OX+26aZKO46iZE=", version));
+            testFile.Filename(), "xxXXXgW/Nr695oSEGijw/UPGmFCj3OX+26aZKO46iZE=", version, true));
     }
 }
 
@@ -272,14 +273,15 @@ TEST_CASE("ADUC_HashUtils_IsValidFileHash - LargeFile")
     SECTION("Verify file hash")
     {
         INFO("SHAversion: " << version);
-        REQUIRE(ADUC_HashUtils_IsValidFileHash(testFile.Filename(), testFile.GetDataHashBase64(version), version));
+        REQUIRE(
+            ADUC_HashUtils_IsValidFileHash(testFile.Filename(), testFile.GetDataHashBase64(version), version, true));
     }
 
     SECTION("Verify bad file hash")
     {
         INFO("SHAversion: " << version);
         REQUIRE_FALSE(ADUC_HashUtils_IsValidFileHash(
-            testFile.Filename(), "xxXXXgW/Nr695oSEGijw/UPGmFCj3OX+26aZKO46iZE=", version));
+            testFile.Filename(), "xxXXXgW/Nr695oSEGijw/UPGmFCj3OX+26aZKO46iZE=", version, true));
     }
 }
 

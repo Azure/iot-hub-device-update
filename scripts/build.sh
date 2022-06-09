@@ -38,6 +38,7 @@ declare -a static_analysis_tools=()
 log_lib="zlog"
 install_prefix=/usr/local
 install_adu=false
+cmake_dir_path=/tmp/cmake-3.10.2
 
 print_help() {
     echo "Usage: build.sh [options...]"
@@ -66,6 +67,9 @@ print_help() {
     echo "--install                             Install the following ADU components."
     echo "                                          From source: adu-agent.service & adu-swupdate.sh."
     echo "                                          From build output directory: AducIotAgent & adu-shell."
+    echo ""
+    echo "--cmake-path                          Specify the cmake path that we want to use to build ADU."
+    echo "                                      Default will be the path same as install-deps.sh cmake_dir_path"
     echo ""
     echo "-h, --help                            Show this help message."
 }
@@ -138,6 +142,39 @@ install_adu_components() {
     echo "ADU components installation completed."
     echo ""
 }
+
+OS=""
+VER=""
+determine_distro() {
+    # shellcheck disable=SC1091
+
+    # Checking distro name and version
+    if [ -r /etc/os-release ]; then
+        # freedesktop.org and systemd
+        OS=$(grep "^ID\s*=\s*" /etc/os-release | sed -e "s/^ID\s*=\s*//")
+        VER=$(grep "^VERSION_ID\s*=\s*" /etc/os-release | sed -e "s/^VERSION_ID\s*=\s*//")
+        VER=$(sed -e 's/^"//' -e 's/"$//' <<<"$VER")
+    elif type lsb_release >/dev/null 2>&1; then
+        # linuxbase.org
+        OS=$(lsb_release -si)
+        VER=$(lsb_release -sr)
+    elif [ -f /etc/lsb-release ]; then
+        # For some versions of Debian/Ubuntu without lsb_release command
+        OS=$(grep "^DISTRIB_ID\s*=\s*" /etc/lsb-release | sed -e "s/^DISTRIB_ID\s*=\s*//")
+        VER=$(grep "^DISTRIB_RELEASE\s*=\s*" /etc/lsb-release | sed -e "s/^DISTRIB_RELEASE\s*=\s*//")
+    elif [ -f /etc/debian_version ]; then
+        # Older Debian/Ubuntu/etc.
+        OS=Debian
+        VER=$(cat /etc/debian_version)
+    else
+        # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
+        OS=$(uname -s)
+        VER=$(uname -r)
+    fi
+    OS="$(echo "$OS" | tr '[:upper:]' '[:lower:]')"
+}
+
+determine_distro
 
 while [[ $1 != "" ]]; do
     case $1 in
@@ -223,6 +260,10 @@ while [[ $1 != "" ]]; do
             $ret 1
         fi
         install_adu="true"
+        ;;
+    --cmake-path)
+        shift
+        cmake_dir_path=$1
         ;;
     -h | --help)
         print_help
@@ -373,7 +414,12 @@ mkdir -p "$output_directory"
 pushd "$output_directory" >/dev/null
 
 # Generate build using cmake with options
-cmake -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
+if [[ $OS != "ubuntu" || $VER != "18.04" ]]; then
+        "$cmake_dir_path"/bin/cmake -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
+else
+    cmake -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
+fi
+
 # Do the actual building with ninja
 # Save the return code of ninja so we can $ret with that return code.
 ninja

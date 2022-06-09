@@ -18,7 +18,7 @@
 
 EXTERN_C_BEGIN
 
-_Bool ADUC_HashUtils_IsValidFileHash(const char* path, const char* hashBase64, SHAversion algorithm);
+_Bool ADUC_HashUtils_IsValidFileHash(const char* path, const char* hashBase64, SHAversion algorithm, bool suppressErrorLog);
 
 _Bool ADUC_HashUtils_IsValidBufferHash(
     const uint8_t* buffer, size_t bufferLen, const char* hashBase64, SHAversion algorithm);

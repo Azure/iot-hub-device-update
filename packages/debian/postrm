@@ -9,6 +9,7 @@
 adu_conf_dir=/etc/adu
 adu_log_dir=/var/log/adu
 adu_data_dir=/var/lib/adu
+adu_shell_bin_path=/usr/lib/adu/adu-shell
 
 adu_eis_conf_file=adu.toml
 eis_idservice_dir=/etc/aziot/identityd/config.d
@@ -47,13 +48,13 @@ deregister_eis()
 
 do_remove_tasks() {
         deregister_eis
-        
+
         # The adu-agent unit file is removed after 'prerm remove' step.
         # We just need to reload the daemon here.
         systemctl daemon-reload
 
         remove_adu_users_and_group
-        
+
         rm -rf "$adu_data_dir"
         rm -rf "$adu_log_dir"
 }
@@ -73,7 +74,7 @@ case "$1" in
         echo "Installation failed."
         remove_adu_users_and_group
     ;;
-    
+
     #
     # Note: (see https://www.debian.org/doc/debian-policy/ap-flowcharts.html)
     #
@@ -99,13 +100,13 @@ case "$1" in
     #
     # Note: (see https://www.debian.org/doc/debian-policy/ap-flowcharts.html)
     #
-    # When '[old] postrm upgrade new-ver#' returned an error code, 
+    # When '[old] postrm upgrade new-ver#' returned an error code,
     # the '[new] postrm failed-upgrade new-ver#' will be invoked.
     #
     # In [new] postrm context:
-    #   - We have another chance to verify whether the new adu-agent can function properly. 
+    #   - We have another chance to verify whether the new adu-agent can function properly.
     #   - If yes, we will return 0 to tell APT to continue the upgrade with '[new] postinst configure old-ver#'.
-    #   - If no, we will return 1 to tell APT to abort the upgrade. 
+    #   - If no, we will return 1 to tell APT to abort the upgrade.
     #     In order to restore the old package, the following maintainer scripts must return ok (exit 0):
     #          a. '[old] preinst abort-upgrade new-ver#'
     #          b. '[new] postrm aboard-upgrade old-ver#'
@@ -113,6 +114,12 @@ case "$1" in
     #
     failed-upgrade)
         echo "[postrm failed-upgrade $2] Perform new ADU Agent health validation." >&2
+
+        # When upgrading 0.8.0 to 0.8.1, adu-shell ownership and permissions can be incorrect.
+        echo "Attempting to fix-up $adu_shell_bin_path after postrm upgrade failure from $2 ..."
+        chown root:adu "$adu_shell_bin_path"
+        chmod u=rxs,g=rx,o= "$adu_shell_bin_path"
+
         echo "AducIotAgent version:" >&2
         /usr/bin/AducIotAgent --version >&2
         if (/usr/bin/AducIotAgent --enable-iothub-tracing --health-check --log-level 0) then
