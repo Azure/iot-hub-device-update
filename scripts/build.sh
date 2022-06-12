@@ -68,7 +68,7 @@ print_help() {
     echo "--install-prefix <prefix>             Install prefix to pass to CMake."
     echo ""
     echo "--install                             Install the following ADU components."
-    echo "                                          From source: adu-agent.service & adu-swupdate.sh."
+    echo "                                          From source: deviceupdate-agent.service & adu-swupdate.sh."
     echo "                                          From build output directory: AducIotAgent & adu-shell."
     echo ""
     echo "--cmake-path                          Specify the cmake path that we want to use to build ADU."
@@ -98,7 +98,7 @@ install_adu_components() {
     groupadd --system adu
     useradd --system -p '' -g adu --no-create-home --shell /sbin/false adu
 
-    bullet "Add current user ('$USER') to 'adu' group, to allow launching adu-agent (for testing purposes only)"
+    bullet "Add current user ('$USER') to 'adu' group, to allow launching deviceupdate-agent (for testing purposes only)"
     usermod -a -G adu "$USER"
     bullet "Current user info:"
     id
@@ -129,17 +129,17 @@ install_adu_components() {
     chmod u=rwxs,g=rx,o= "$adu_lib_dir/adu-shell"
     chmod u=rwx,g=rx,o=rx "$adu_lib_dir/adu-swupdate.sh"
 
-    # Only install adu-agent service on system that support systemd.
+    # Only install deviceupdate-agent service on system that support systemd.
     systemd_system_dir=/usr/lib/systemd/system/
     if [ -d "$systemd_system_dir" ]; then
-        bullet "Install adu-agent systemd daemon..."
-        copyfile_exit_if_failed "$root_dir/daemon/adu-agent.service" "$systemd_system_dir"
+        bullet "Install deviceupdate-agent systemd daemon..."
+        copyfile_exit_if_failed "$root_dir/daemon/deviceupdate-agent.service" "$systemd_system_dir"
 
         systemctl daemon-reload
-        systemctl enable adu-agent
-        systemctl restart adu-agent
+        systemctl enable deviceupdate-agent
+        systemctl restart deviceupdate-agent
     else
-        warn "Directory $systemd_system_dir does not exist. Skip adu-agent.service installation."
+        warn "Directory $systemd_system_dir does not exist. Skip deviceupdate-agent.service installation."
     fi
 
     echo "ADU components installation completed."

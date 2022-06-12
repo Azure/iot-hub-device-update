@@ -49,7 +49,7 @@ deregister_eis()
 do_remove_tasks() {
         deregister_eis
 
-        # The adu-agent unit file is removed after 'prerm remove' step.
+        # The deviceupdate-agent unit file is removed after 'prerm remove' step.
         # We just need to reload the daemon here.
         systemctl daemon-reload
 
@@ -104,7 +104,7 @@ case "$1" in
     # the '[new] postrm failed-upgrade new-ver#' will be invoked.
     #
     # In [new] postrm context:
-    #   - We have another chance to verify whether the new adu-agent can function properly.
+    #   - We have another chance to verify whether the new deviceupdate-agent can function properly.
     #   - If yes, we will return 0 to tell APT to continue the upgrade with '[new] postinst configure old-ver#'.
     #   - If no, we will return 1 to tell APT to abort the upgrade.
     #     In order to restore the old package, the following maintainer scripts must return ok (exit 0):

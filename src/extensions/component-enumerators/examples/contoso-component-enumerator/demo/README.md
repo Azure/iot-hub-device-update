@@ -297,10 +297,10 @@ Note: this will automatically install the delivery-optimization-agent package fr
 
 >NOTE | The current example only compatible with device with "contoso" manufacturer, and "virtual-vacuum-v1" model. These values must be correctly set inside `agents` entry in du-config.json
 
-- Restart `adu-agent` service
+- Restart `deviceupdate-agent` service
 
 ```sh
-sudo systemctl restart adu-agent
+sudo systemctl restart deviceupdate-agent
 ```
 
 ### Optional Steps

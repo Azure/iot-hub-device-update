@@ -1046,7 +1046,7 @@ void OnShutdownSignal(int sig)
 void OnRestartSignal(int sig)
 {
     // Note: Main loop will break once this becomes true. We rely on the 'Restart' setting in
-    // adu-agent.service file to instruct systemd to restart the agent.
+    // deviceupdate-agent.service file to instruct systemd to restart the agent.
     Log_Info("Restart signal detect.");
     g_shutdownSignal = sig;
 }

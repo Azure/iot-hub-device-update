@@ -197,7 +197,7 @@ setup_dirs_and_files() {
         chown "$adu_user:$adu_group" "$adu_extensions_sources_dir"
         chmod u=rwx,g=rwx,o= "$adu_extensions_sources_dir"
 
-        #Set adu-agent owner and permission
+        #Set deviceupdate-agent owner and permission
         if [ ! -f "$adu_shell_dir/$adu_shell_file" ]; then
            echo "ERROR! $adu_shell_dir/$adu_shell_file does not exists." >&2
         else
@@ -255,7 +255,24 @@ register_adu_user_and_process_with_eis() {
 register_and_enable_daemon()
 {
     systemctl daemon-reload
-    systemctl enable adu-agent
+    systemctl enable deviceupdate-agent
+}
+
+#
+# General migration tasks should be added here
+#
+complete_migration_steps()
+{
+    # For migrating to current version from 0.8.0 need
+    # to disable the old agent the old one
+    if systemctl is-active --quiet adu-agent; then
+
+        #disable old agent and let it die
+        systemctl disable adu-agent
+
+        # start the new one
+        systemctl start deviceupdate-agent
+    fi
 }
 
 case "$1" in
@@ -268,7 +285,7 @@ case "$1" in
         register_and_enable_daemon
 
         # Note: DO user and group are created by deliveryoptimization-agent Debian package,
-        # which is one of the dependencies declared in adu-agent control file.
+        # which is one of the dependencies declared in deviceupdate-agent control file.
         # We are assuming that both DO user and group currently exist at this point.
         # Add 'do' user to 'adu' group to allow DO to write to ADU download sandbox.
         echo "Add the 'do' user to the 'adu' group and 'adu' to the 'do' group"
@@ -282,13 +299,15 @@ case "$1" in
             systemctl restart "$ms_doclient_lite_service"
         fi
 
-        # Do not restart the current adu-agent because we want the update workflow
+        complete_migration_steps
+
+        # Do not restart the current deviceupdate-agent because we want the update workflow
         # to complete, and reports the agent's state to ADU Management service.
         echo "============================================================"
         echo
         echo "     ADU Agent service must be restarted." >&2
         echo
-        echo "     Please run 'sudo systemctl restart adu-agent'" >&2
+        echo "     Please run 'sudo systemctl restart deviceupdate-agent'" >&2
         echo
         echo "============================================================"
     ;;

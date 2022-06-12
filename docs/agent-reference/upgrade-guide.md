@@ -116,7 +116,7 @@ For a device that previously installed the DU Agent Public Preview version from 
 You can manually install a new version of `deviceupdate-agent` debian package from packages.microsoft.com (for supported distros and architectures) by remotely running following command on the device:
 
 ```sh
-sudo apt-get purge adu-agent #In case you have an old adu-agent in the system
+sudo apt-get purge deviceupdate-agentt #In case you have an old deviceupdate-agent in the system
 sudo apt-get purge deviceupdate-agent
 sudo apt-get install deviceupdate-agent
 ```

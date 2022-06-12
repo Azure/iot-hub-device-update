@@ -30,9 +30,9 @@ gather_aduc_info() {
 
         # Agent info.
 
-        cp /usr/lib/systemd/system/adu-agent.service .
+        cp /usr/lib/systemd/system/deviceupdate-agent.service .
 
-        systemctl status adu-agent.service > adu-agent.service.txt
+        systemctl status deviceupdate-agent.service > deviceupdate-agent.service.txt
 
         ls -l /usr/bin/AducIotAgent > AducIotAgent.txt
     } &>> adu-diag.log
