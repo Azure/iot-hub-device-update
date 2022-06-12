@@ -118,9 +118,9 @@ create_update_content_handler_extension_registration() {
     local libname=${handlerid/\//_}
     libname=${libname/:/_}
 
-    base64digest=$(openssl dgst -binary $EXT_SRC/${so_name}.so | openssl base64)
+    base64digest=$(openssl dgst -binary "$EXT_SRC/${so_name}.so" | openssl base64)
 
-    $mkdir_cmd $APP_EXT_BASE_DIR/update_content_handlers/$libname
+    $mkdir_cmd "$APP_EXT_BASE_DIR/update_content_handlers/$libname"
     local target_filepath="$APP_EXT_BASE_DIR/update_content_handlers/${libname}/content_handler.json"
     cp "$TEMPLATES_SOURCE_DIR/content_handler.template.json" "$target_filepath"
 
@@ -139,7 +139,7 @@ create_content_downloader_registration() {
     local target_filepath="$APP_EXT_BASE_DIR/content_downloader/extension.json"
     cp "$TEMPLATES_SOURCE_DIR/content_downloader.extension.template.json" "$target_filepath"
 
-    base64digest=$(openssl dgst -binary $EXT_SRC/${so_name}.so | openssl base64)
+    base64digest=$(openssl dgst -binary "$EXT_SRC/${so_name}.so" | openssl base64)
 
     parameters_to_expand="
         so_name
@@ -151,16 +151,16 @@ create_content_downloader_registration() {
 copy_deps_binaries() {
     local do_url="https://github.com/microsoft/do-client/releases/download/v0.8.2/ubuntu1804_x64-packages.tar"
 
-    cd $TMP_WORK_DIR
+    cd $TMP_WORK_DIR || exit
     $wget_cmd $do_url
     $untar_cmd ./ubuntu1804_x64-packages.tar
     mkdir libdo
     cp libdeliveryoptimization_0.6.0_amd64.deb libdo
-    cd libdo
+    cd libdo || exit
     $extract_debian_archive_cmd libdeliveryoptimization_0.6.0_amd64.deb
     mkdir data
     cp data.tar.gz data
-    cd data
+    cd data || exit
     $extract_tarball_cmd data.tar.gz
     cp usr/lib/* $APP_DEPS_LIB_DIR/
 }
@@ -181,7 +181,7 @@ create_app_tarball() {
         script
     "
     for ext in $supported_extensions; do
-        cp $EXT_SRC/libmicrosoft_${ext}_1.so $APP_EXT_DIR
+        cp "$EXT_SRC/libmicrosoft_${ext}_1.so" $APP_EXT_DIR
     done
 
     # Copy content downloader plugin modules
@@ -195,10 +195,10 @@ create_app_tarball() {
     create_content_downloader_registration 'libcurl-content-downloader'
 
     # Copy required assets for use by container image
-    cp $TEMPLATES_SOURCE_DIR/setup_container.sh $APP_LIB_DIR/
+    cp "$TEMPLATES_SOURCE_DIR/setup_container.sh" $APP_LIB_DIR/
 
     # Copy and expand template params for du-config.json
-    cp $TEMPLATES_SOURCE_DIR/du-config.template.json $APP_ETC_DIR/du-config.json
+    cp "$TEMPLATES_SOURCE_DIR/du-config.template.json" $APP_ETC_DIR/du-config.json
     parameters_to_expand="
         DUCONFIG_COMPAT_PROPERTY_NAMES
         DUCONFIG_DEVICEINFO_MANUFACTURER
@@ -231,7 +231,7 @@ while [ "$1" != "" ]; do
             echo "ERROR: $1 is not a valid path"
             exit $EXIT_CODE_BAD_INVALID_CONNECTION_STRING_PATH
         fi
-        DUCONFIG_CONNECTION_STRING="$(cat $1)"
+        DUCONFIG_CONNECTION_STRING=$(cat "$1")
         ;;
     -C | --clean)
         CLEAN=1
@@ -280,7 +280,7 @@ while [ "$1" != "" ]; do
 done
 
 if [ "$DUCONFIG_CONNECTION_STRING" = "" ]; then
-    echo -n "\nERROR: -c | --connection-string is required.\n\n"
+    printf "\nERROR: -c | --connection-string is required.\n\n"
     usage
     exit 1
 fi
@@ -305,8 +305,9 @@ EOF
 #
 DEP_FAILURE=0
 for sysdep in $SYSTEM_DEPS; do
-    which $sysdep > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
+    which "$sysdep" > /dev/null 2>&1
+    ret_val=$?
+    if [ $ret_val -ne 0 ]; then
         DEP_FAILURE=1
         echo "Unmet system dependencies: $sysdep"
     fi
@@ -340,8 +341,8 @@ DIRS_TO_CREATE="
     $APP_ETC_DIR
 "
 for d in $DIRS_TO_CREATE; do
-    if [ ! -d $d ]; then
-        $mkdir_cmd $d
+    if [ ! -d "$d" ]; then
+        $mkdir_cmd "$d"
     fi
 done
 
@@ -349,7 +350,7 @@ done
 # Download DU agent deb pkg
 #
 
-cd $TMP_WORK_DIR
+cd $TMP_WORK_DIR || exit
 if [ "$DEB_PKG_PATH" = "" ]; then
     $wget_cmd $DU_AGENT_URL
     digest=$(openssl dgst -binary $DEB_FILE | openssl base64)
@@ -364,18 +365,18 @@ fi
 #
 # Extract deb pkg
 #
-cd $TMP_WORK_DIR
-$extract_debian_archive_cmd $DEB_FILE
+cd $TMP_WORK_DIR || exit
+$extract_debian_archive_cmd "$DEB_FILE"
 
 $mkdir_cmd $TMP_DATA_DIR
 cp data.tar.gz $TMP_DATA_DIR
-cd $TMP_DATA_DIR
+cd $TMP_DATA_DIR || exit
 $extract_tarball_cmd data.tar.gz > /dev/null 2>&1
 
-cd $TMP_WORK_DIR
+cd $TMP_WORK_DIR || exit
 $mkdir_cmd $TMP_CTRL_DIR
 cp control.tar.gz $TMP_CTRL_DIR
-cd $TMP_CTRL_DIR
+cd $TMP_CTRL_DIR || exit
 $extract_tarball_cmd control.tar.gz > /dev/null 2>&1
 
 create_app_tarball
@@ -383,13 +384,13 @@ create_app_tarball
 #
 # Create Dockerfile from template
 #
-cd $APP_WORK_DIR
+cd $APP_WORK_DIR || exit
 cp "${TEMPLATES_SOURCE_DIR}/Dockerfile.template" "$APP_WORK_DIR/Dockerfile"
 
 # Replace template parameters with contents of variables with same name as template parameter.
 APT_PACKAGES_FOR_DEBUGGING=''
 if [ $ADD_DEBUGGING_PACKAGES -eq 1 ]; then
-    APT_PACKAGES_FOR_DEBUGGING="$DBG_APT_PACKAGES"
+    export APT_PACKAGES_FOR_DEBUGGING="$DBG_APT_PACKAGES"
 fi
 
 params_to_replace="
@@ -404,5 +405,5 @@ inline_expand_template_parameters "$params_to_replace" "$APP_WORK_DIR/Dockerfile
 #
 # Build Docker image
 #
-cd $APP_WORK_DIR
-docker build --pull -f "Dockerfile" --rm -t $CONTAINER_IMAGE_TAG .
+cd $APP_WORK_DIR || exit
+docker build --pull -f "Dockerfile" --rm -t "$CONTAINER_IMAGE_TAG" .

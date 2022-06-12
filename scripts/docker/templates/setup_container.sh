@@ -18,7 +18,6 @@ adu_downloads_dir="$adu_data_dir/downloads"
 adu_shell_dir=/usr/lib/adu
 adu_shell_file=adu-shell
 
-adu_bin_path=/usr/bin/AducIotAgent
 adu_extensions_dir="$adu_data_dir/extensions"
 adu_extensions_sources_dir="$adu_extensions_dir/sources"
 
@@ -98,8 +97,8 @@ chmod u=rxs "$adu_shell_dir/$adu_shell_file"
 # misc for healthcheck
 #
 
-addgroup --system do
-adduser --system do --ingroup do --no-create-home --shell /bin/false
+addgroup --system 'do'
+adduser --system 'do' --ingroup 'do' --no-create-home --shell /bin/false
 usermod -aG 'adu' 'do'
 usermod -aG 'do' 'adu'
 chown root:root /usr/bin/AducIotAgent
