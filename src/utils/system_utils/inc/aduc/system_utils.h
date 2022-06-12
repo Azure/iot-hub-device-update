@@ -38,9 +38,9 @@ int ADUC_SystemUtils_WriteStringToFile(const char* path, const char* buff);
 
 int ADUC_SystemUtils_ReadStringFromFile(const char* path, char* buff, size_t buffLen);
 
-_Bool SystemUtils_IsDir(const char* path);
+_Bool SystemUtils_IsDir(const char* path, int* err);
 
-_Bool SystemUtils_IsFile(const char* path);
+_Bool SystemUtils_IsFile(const char* path, int* err);
 
 EXTERN_C_END
 

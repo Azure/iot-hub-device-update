@@ -13,6 +13,7 @@
 #include "aduc/system_utils.h" // for SystemUtils_IsDir, SystemUtils_IsFile
 #include <azure_c_shared_utility/strings.h> // for STRING_HANDLE, STRING_delete, STRING_c_str
 #include <ctype.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -212,7 +213,7 @@ static _Bool CheckConfDirOwnershipAndPermissions()
 
     const char* path = ADUC_CONF_FOLDER;
 
-    if (SystemUtils_IsDir(path))
+    if (SystemUtils_IsDir(path, NULL))
     {
         if (!PermissionUtils_CheckOwnership(path, ADUC_FILE_USER, ADUC_FILE_GROUP))
         {
@@ -253,7 +254,7 @@ static _Bool CheckConfFile()
 
     const char* path = ADUC_CONF_FILE_PATH;
 
-    if (SystemUtils_IsFile(path))
+    if (SystemUtils_IsFile(path, NULL))
     {
         if (!PermissionUtils_CheckOwnership(path, ADUC_FILE_USER, ADUC_FILE_GROUP))
         {
@@ -288,9 +289,15 @@ static _Bool CheckLogDir()
 
     const char* dir = ADUC_LOG_FOLDER;
 
-    if (!SystemUtils_IsDir(dir))
+    int err;
+    if (!SystemUtils_IsDir(dir, &err))
     {
-        Log_Error("'%s' does not exist or is not a directory", dir);
+        if (err != 0)
+        {
+            Log_Error("Cannot get '%s' status. (errno: %d)", dir, errno);
+            goto done;
+        }
+        Log_Error("'%s' is not a directory", dir);
         goto done;
     }
 
@@ -323,13 +330,20 @@ done:
  * @param expectedPermissions The expected permissions of the file object.
  * @returns true if everything is correct.
  */
-static _Bool CheckDirOwnershipAndVerifyFilemodeExact(const char* path, const char* user, const char* group, const mode_t expected_permissions)
+static _Bool CheckDirOwnershipAndVerifyFilemodeExact(
+    const char* path, const char* user, const char* group, const mode_t expected_permissions)
 {
     _Bool result = false;
 
-    if (!SystemUtils_IsDir(path))
+    int err;
+    if (!SystemUtils_IsDir(path, &err))
     {
-        Log_Error("'%s' does not exist or is not a directory", path);
+        if (err != 0)
+        {
+            Log_Error("Cannot get '%s' status. (errno: %d)", path, errno);
+            goto done;
+        }
+        Log_Error("'%s' is not a directory", path);
         goto done;
     }
 
@@ -360,7 +374,8 @@ static _Bool CheckDataDir()
 {
     // Note: "Other" bits are cleared to align with ADUC_SystemUtils_MkDirRecursiveDefault and packaging.
     const mode_t expected_permissions = S_IRWXU | S_IRWXG;
-    return CheckDirOwnershipAndVerifyFilemodeExact(ADUC_DATA_FOLDER, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
+    return CheckDirOwnershipAndVerifyFilemodeExact(
+        ADUC_DATA_FOLDER, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
 }
 
 /**
@@ -371,7 +386,8 @@ static _Bool CheckDownloadsDir()
 {
     // Note: "Other" bits are cleared to align with ADUC_SystemUtils_MkDirRecursiveDefault and packaging.
     const mode_t expected_permissions = S_IRWXU | S_IRWXG;
-    return CheckDirOwnershipAndVerifyFilemodeExact(ADUC_DOWNLOADS_FOLDER, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
+    return CheckDirOwnershipAndVerifyFilemodeExact(
+        ADUC_DOWNLOADS_FOLDER, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
 }
 
 /**
@@ -384,7 +400,7 @@ static _Bool CheckAgentBinary()
 
     const char* path = ADUC_AGENT_FILEPATH;
 
-    if (SystemUtils_IsFile(path))
+    if (SystemUtils_IsFile(path, NULL))
     {
         if (!PermissionUtils_CheckOwnerUid(path, 0 /* root */))
         {
@@ -423,7 +439,7 @@ static _Bool CheckShellBinary()
 
     const char* path = ADUSHELL_FILE_PATH;
 
-    if (SystemUtils_IsFile(path))
+    if (SystemUtils_IsFile(path, NULL))
     {
         if (!PermissionUtils_CheckOwnerUid(path, 0 /* root */))
         {
