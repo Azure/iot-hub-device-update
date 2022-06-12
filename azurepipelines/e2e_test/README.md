@@ -1,4 +1,4 @@
-# Azure Pipelines ReadMe
+# Azure E2E Test Pipelines ReadMe
 
 ## Introduction
 This document is intended as a description of the structure, flow, and meaning of the files held within this directory for the purposes of running builds and completing our automated test environment. Our goal is to provide an outline for the current state, future state, and the operation of the pipelines. 
