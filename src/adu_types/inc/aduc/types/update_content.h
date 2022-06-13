@@ -197,6 +197,21 @@ EXTERN_C_BEGIN
  */
 #define ADUCITF_FIELDNAME_ARGUMENTS "arguments"
 
+/**
+ * @brief JSON field name for the updateManifest's file entity's relatedFiles
+ */
+#define ADUCITF_FIELDNAME_RELATEDFILES "relatedFiles"
+
+/**
+ * @brief JSON field name for the updateManifest's file entity's downloadHandler
+ */
+#define ADUCITF_FIELDNAME_DOWNLOADHANDLER "downloadHandler"
+
+/**
+ * @brief JSON field name for the updateManifest's file entity's downloadHandler id
+ */
+#define ADUCITF_FIELDNAME_DOWNLOADHANDLER_ID "id"
+
 //
 // UpdateAction
 //
@@ -280,6 +295,30 @@ typedef struct tagADUC_UpdateId
 } ADUC_UpdateId;
 
 /**
+ * @brief Describes a name value pair property.
+ */
+typedef struct tagProperty
+{
+    char* Name; /**< Name for the property. */
+    char* Value; /**< Value for the property. */
+} ADUC_Property;
+
+/**
+ * @brief Describes a related file.
+ */
+typedef struct tagRelatedFile
+{
+    char* FileId; /**< Id for the related file. */
+    char* DownloadUri; /**< The URI of the related file to download. */
+    ADUC_Hash* Hash; /**< Array of ADUC_Hashes containing the hash options for the file. */
+    size_t HashCount; /**< Total number of hashes in the array of hashes. */
+    char* FileName; /**< The file name of the related file. */
+    size_t SizeInBytes; /**< The file size. */
+    ADUC_Property* Properties; /**< The property bag for related file. */
+    size_t PropertiesCount; /**< Count of properties in the property bag. */
+} ADUC_RelatedFile;
+
+/**
  * @brief Describes a specific file to download.
  */
 typedef struct tagADUC_FileEntity
@@ -291,6 +330,9 @@ typedef struct tagADUC_FileEntity
     char* TargetFilename; /**< File name to store content in DownloadUri to. */
     char* Arguments; //**< Arguments associate with this file. */
     size_t SizeInBytes; /**< File size. */
+    ADUC_RelatedFile* RelatedFiles; /**< The related files for this update payload. */
+    size_t RelatedFileCount; /**< The count of related files. */
+    char* DownloadHandlerId; /**< The identifier for the download handler extensibility point. */
 } ADUC_FileEntity;
 
 /**
@@ -305,16 +347,6 @@ typedef struct tagADUC_FileUrl
 //
 // ADUC_UpdateId Helper Functions
 //
-
-/**
- * @brief Allocates and sets the UpdateId fields
- * @param provider the provider for the UpdateId
- * @param name the name for the UpdateId
- * @param version the version for the UpdateId
- *
- * @returns An UpdateId on success, NULL on failure
- */
-ADUC_UpdateId* ADUC_UpdateId_AllocAndInit(const char* provider, const char* name, const char* version);
 
 /**
  * @brief Checks if the UpdateId is valid

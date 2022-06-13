@@ -6,6 +6,7 @@
  * Licensed under the MIT License.
  */
 #include <catch2/catch.hpp>
+using Catch::Matchers::Equals;
 
 #include <algorithm>
 #include <sstream>
@@ -15,7 +16,9 @@
 #include "aduc/adu_core_exports.h"
 #include "aduc/adu_core_interface.h"
 #include "aduc/agent_workflow.h"
+#include "aduc/calloc_wrapper.hpp"
 #include "aduc/hash_utils.h"
+#include "aduc/parser_utils.h"
 #include "aduc/workflow_utils.h"
 
 #include "aduc/client_handle_helper.h"
@@ -265,7 +268,8 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
         CHECK(result.ResultCode != 0);
 
         ADUC_TestOverride_Hooks testHooks = {};
-        testHooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState; // NOLINT
+        testHooks.ClientHandle_SendReportedStateFunc_TestOverride =
+            (void*)mockClientHandle_SendReportedState; // NOLINT
         workflowData.TestOverrides = &testHooks;
 
         const ADUCITF_State updateState = ADUCITF_State_DeploymentInProgress;
@@ -318,7 +322,8 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportStateAnd
         CHECK(result.ResultCode != 0);
 
         ADUC_TestOverride_Hooks testHooks = {};
-        testHooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState; // NOLINT
+        testHooks.ClientHandle_SendReportedStateFunc_TestOverride =
+            (void*)mockClientHandle_SendReportedState; // NOLINT
         workflowData.TestOverrides = &testHooks;
 
         result = { ADUC_Result_Failure, ADUC_ERC_NOTPERMITTED };
@@ -392,7 +397,8 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportContentI
 
     ADUC_Result idleResult = { .ResultCode = ADUC_Result_Apply_Success, .ExtendedResultCode = 0 };
     // Report Idle state and Update Id to service.
-    REQUIRE(AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync((ADUC_WorkflowDataToken)&workflowData, ADUCITF_State_Idle, &idleResult, installedUpdateIdStr.str().c_str()));
+    REQUIRE(AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
+        (ADUC_WorkflowDataToken)&workflowData, ADUCITF_State_Idle, &idleResult, installedUpdateIdStr.str().c_str()));
 
     CHECK(g_SendReportedStateValues.deviceHandle != nullptr);
 
@@ -423,4 +429,96 @@ TEST_CASE_METHOD(TestCaseFixture, "AzureDeviceUpdateCoreInterface_ReportContentI
     CHECK(g_SendReportedStateValues.userContextCallback == nullptr);
 
     ADUC_UpdateId_UninitAndFree(updateId);
+}
+
+TEST_CASE("GetReportingJsonValue")
+{
+    SECTION("ERC is 0 on success")
+    {
+        ADUC_WorkflowData workflowData{};
+        workflowData.CurrentAction = ADUCITF_UpdateAction_ProcessDeployment;
+
+        ADUC_WorkflowHandle h = nullptr;
+        ADUC_Result result = workflow_init(action_bundle_deployment, false, &h);
+        workflowData.WorkflowHandle = h;
+        REQUIRE(result.ResultCode != 0);
+
+        const ADUC_Result successResult = { ADUC_Result_Apply_Success, 0 };
+        workflow_set_result(h, successResult);
+
+        ADUC::StringUtils::cstr_wrapper expectedUpdateId{ workflow_get_expected_update_id_string(h) };
+        JSON_Value* jsonValue =
+            GetReportingJsonValue(&workflowData, ADUCITF_State_Idle, &successResult, expectedUpdateId.get());
+        REQUIRE(jsonValue != nullptr);
+
+        char* updateManifestObject = json_serialize_to_string_pretty(jsonValue);
+        REQUIRE(updateManifestObject != nullptr);
+
+        const char* expected =
+            R"( { )"
+            R"(     "lastInstallResult": {            )"
+            R"(         "resultCode": 700,            )"
+            R"(         "extendedResultCode": 0,      )"
+            R"(         "resultDetails": ""           )"
+            R"(     },                                )"
+            R"(     "state": 0,                       )"
+            R"(     "workflow": {                     )"
+            R"(         "action": 3,                  )"
+            R"(         "id": "action_bundle"         )"
+            R"(     },                                )"
+            R"(     "installedUpdateId": "{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"}"  )"
+            R"( }                                     )";
+
+        JSON_Value* expectedJsonValue = json_parse_string(expected);
+        REQUIRE(expectedJsonValue != nullptr);
+        char* expectedJson = json_serialize_to_string_pretty(expectedJsonValue);
+        REQUIRE(expectedJson != nullptr);
+
+        CHECK_THAT(updateManifestObject, Equals(expectedJson));
+    }
+
+    SECTION("ERC is non-zero when workflow_set_success_erc called")
+    {
+        ADUC_WorkflowData workflowData{};
+        workflowData.CurrentAction = ADUCITF_UpdateAction_ProcessDeployment;
+
+        ADUC_WorkflowHandle h = nullptr;
+        ADUC_Result result = workflow_init(action_bundle_deployment, false, &h);
+        workflowData.WorkflowHandle = h;
+        REQUIRE(result.ResultCode != 0);
+
+        const ADUC_Result successResult = { ADUC_Result_Apply_Success, 0 };
+        workflow_set_result(h, successResult);
+
+        workflow_set_success_erc(h, ADUC_ERC_NOMEM);
+
+        ADUC::StringUtils::cstr_wrapper expectedUpdateId{ workflow_get_expected_update_id_string(h) };
+        JSON_Value* jsonValue =
+            GetReportingJsonValue(&workflowData, ADUCITF_State_Idle, &successResult, expectedUpdateId.get());
+        REQUIRE(jsonValue != nullptr);
+
+        char* updateManifestObject = json_serialize_to_string_pretty(jsonValue);
+        REQUIRE(updateManifestObject != nullptr);
+
+        const char* expected =
+            R"( {                                                               )"
+            R"(     "lastInstallResult": {                                      )"
+            R"(         "resultCode": 700,                                      )"
+            R"(         "extendedResultCode": 12,                               )"
+            R"(         "resultDetails": ""                                     )"
+            R"(     },                                                          )"
+            R"(     "state": 0,                                                 )"
+            R"(     "workflow": {                                               )"
+            R"(         "action": 3,                                            )"
+            R"(         "id": "action_bundle"                                   )"
+            R"(     },                                                          )"
+            R"(     "installedUpdateId": "{\"provider\":\"Contoso\",\"name\":\"VacuumBundleUpdate\",\"version\":\"1.0\"}" )"
+            R"( }                                                               )";
+        JSON_Value* expectedJsonValue = json_parse_string(expected);
+        REQUIRE(expectedJsonValue != nullptr);
+        char* expectedJson = json_serialize_to_string_pretty(expectedJsonValue);
+        REQUIRE(expectedJson != nullptr);
+
+        CHECK_THAT(updateManifestObject, Equals(expectedJson));
+    }
 }

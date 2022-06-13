@@ -21,7 +21,7 @@ header() { echo -e "\e[4m\e[1m\e[1;32m$*\e[0m"; }
 
 bullet() { echo -e "\e[1;34m*\e[0m $*"; }
 
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
 root_dir=$script_dir/..
 
 build_clean=false
@@ -156,8 +156,8 @@ determine_distro() {
         # freedesktop.org and systemd
         OS=$(grep "^ID\s*=\s*" /etc/os-release | sed -e "s/^ID\s*=\s*//")
         VER=$(grep "^VERSION_ID\s*=\s*" /etc/os-release | sed -e "s/^VERSION_ID\s*=\s*//")
-        VER=$(sed -e 's/^"//' -e 's/"$//' <<<"$VER")
-    elif type lsb_release >/dev/null 2>&1; then
+        VER=$(sed -e 's/^"//' -e 's/"$//' <<< "$VER")
+    elif type lsb_release > /dev/null 2>&1; then
         # linuxbase.org
         OS=$(lsb_release -si)
         VER=$(lsb_release -sr)
@@ -220,7 +220,7 @@ while [[ $1 != "" ]]; do
             declare -a static_analysis_tools=(clang-tidy cppcheck cpplint iwyu lwyu)
         else
             IFS=','
-            read -ra static_analysis_tools <<<"$1"
+            read -ra static_analysis_tools <<< "$1"
             IFS=' '
         fi
         ;;
@@ -418,11 +418,11 @@ if [[ $build_clean == "true" ]]; then
 fi
 
 mkdir -p "$output_directory"
-pushd "$output_directory" >/dev/null
+pushd "$output_directory" > /dev/null
 
 # Generate build using cmake with options
 if [[ $OS != "ubuntu" || $VER != "18.04" ]]; then
-        "$cmake_dir_path"/bin/cmake -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
+    "$cmake_dir_path"/bin/cmake -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
 else
     cmake -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
 fi
@@ -437,7 +437,7 @@ if [[ $ret_val == 0 && $build_packages == "true" ]]; then
     ret_val=$?
 fi
 
-popd >/dev/null
+popd > /dev/null
 
 if [[ $ret_val == 0 && $install_adu == "true" ]]; then
     install_adu_components

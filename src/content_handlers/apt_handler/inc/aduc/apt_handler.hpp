@@ -11,7 +11,7 @@
 
 #include "aduc/apt_handler.hpp"
 #include "aduc/content_handler.hpp"
-#include "aduc/logging.h"
+#include "aduc/logging.h" // ADUC_LOG_SEVERITY
 #include "aduc/result.h"
 #include "apt_parser.hpp"
 
@@ -49,7 +49,6 @@ public:
     ADUC_Result Restore(const tagADUC_WorkflowData* workflowData) override;
     ADUC_Result Cancel(const tagADUC_WorkflowData* workflowData) override;
     ADUC_Result IsInstalled(const tagADUC_WorkflowData* workflowData) override;
-
 
 protected:
     AptHandlerImpl()

@@ -7,22 +7,13 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-set (
-    sources
-    main.cpp
-    installed_criteria_utils_ut.cpp
-)
-
 find_package (Catch2 REQUIRED)
 
-add_executable (${PROJECT_NAME} ${sources})
+add_executable (${PROJECT_NAME} "")
 
-target_include_directories (
-    ${PROJECT_NAME}
-    PRIVATE ${ADUC_EXPORT_INCLUDES}
-            ${PROJECT_SOURCE_DIR}/inc
-            ${PROJECT_SOURCE_DIR}/../../inc
-            ${PROJECT_SOURCE_DIR}/../inc)
+target_include_directories (${PROJECT_NAME} PRIVATE ${ADUC_EXPORT_INCLUDES})
+
+target_sources (${PROJECT_NAME} PRIVATE main.cpp installed_criteria_utils_ut.cpp)
 
 target_compile_definitions (
     ${PROJECT_NAME} PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="/tmp/adu-test-installedcriteria")
@@ -31,6 +22,7 @@ target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::adu_core_interface
             aduc::installed_criteria_utils
+            aduc::platform_layer
             Catch2::Catch2)
 
 # Ensure that ctest discovers catch2 tests.

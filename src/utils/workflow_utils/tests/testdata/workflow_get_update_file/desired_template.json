@@ -1,0 +1,12 @@
+{
+    "workflow": {
+           "action": 3,
+           "id": "8ea4b58c-98b2-447b-8675-c6c1a45f785e"
+       },
+       "updateManifest": "UPDATE_MANIFEST",
+       "updateManifestSignature": "UPDATE_MANIFEST_SIGNATURE",
+       "fileUrls": {
+           "TARGET_UPDATE_FILE_ID": "gopher://buck.t33th/0/target_update-0.2.swu",
+           "DELTA_UPDATE_FILE_ID": "DELTA_UPDATE_FILE_URL"
+       }
+}

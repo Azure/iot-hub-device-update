@@ -475,6 +475,11 @@ static IOTHUB_CLIENT_RESULT mockClientHandle_SendReportedState(
     return IOTHUB_CLIENT_OK;
 }
 
+static bool shouldValidateUpdateManifest()
+{
+    return false;
+}
+
 // This test exercises the apply failed path for the entire agent-orchestrated workflow
 // via HandlePropertyUpdate, but with mocked
 // ADUC_Workflow_WorkCompletionCallback and mocked ContentHandler layer.
@@ -498,6 +503,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Rollback - Apply Failed")
     hooks.WorkCompletionCallbackFunc_TestOverride = Mock_WorkCompletionCallback_ApplyFailed;
     hooks.ContentHandler_TestOverride = &mockContentHandler;
     hooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState; // NOLINT
+    hooks.ShouldValidateUpdateManifest_TestOverride = shouldValidateUpdateManifest;
     workflowData.TestOverrides = &hooks;
 
     ADUC_Result result =
@@ -553,6 +559,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Rollback - Install Failed")
     hooks.WorkCompletionCallbackFunc_TestOverride = Mock_WorkCompletionCallback_InstallFailed;
     hooks.ContentHandler_TestOverride = &mockContentHandler;
     hooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState; // NOLINT
+    hooks.ShouldValidateUpdateManifest_TestOverride = shouldValidateUpdateManifest;
     workflowData.TestOverrides = &hooks;
 
     ADUC_Result result =

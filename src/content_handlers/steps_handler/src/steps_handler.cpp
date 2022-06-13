@@ -7,15 +7,15 @@
  */
 #include "aduc/steps_handler.hpp"
 
+#include "aduc/calloc_wrapper.hpp" // cstr_wrapper
 #include "aduc/component_enumerator_extension.hpp"
 #include "aduc/extension_manager.hpp"
-#include "aduc/extension_utils.h"
+#include "aduc/extension_manager_download_options.h"
 #include "aduc/logging.h"
-#include "aduc/string_c_utils.h"    // IsNullOrEmpty
+#include "aduc/string_c_utils.h" // IsNullOrEmpty
 #include "aduc/string_utils.hpp"
 #include "aduc/system_utils.h"
 #include "aduc/workflow_utils.h"
-#include "aduc/calloc_wrapper.hpp"  // cstr_wrapper
 
 #include "parson.h"
 
@@ -152,8 +152,11 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
 
                 try
                 {
-                    result =
-                        ExtensionManager::Download(entity, workflowId, workFolder, DO_RETRY_TIMEOUT_DEFAULT, nullptr);
+                    ExtensionManager_Download_Options downloadOptions = {
+                        .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
+                    };
+
+                    result = ExtensionManager::Download(entity, handle, &downloadOptions, nullptr);
                 }
                 catch (...)
                 {
@@ -193,7 +196,9 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                     if (ExtensionManager::IsComponentsEnumeratorRegistered())
                     {
                         // Select components based on the first pair of compatibility properties.
-                        ADUC::StringUtils::cstr_wrapper compatibilityString{ workflow_get_update_manifest_compatibility(childHandle, 0) };
+                        ADUC::StringUtils::cstr_wrapper compatibilityString{
+                            workflow_get_update_manifest_compatibility(childHandle, 0)
+                        };
                         JSON_Value* compsValue = nullptr;
                         if (compatibilityString.get() == nullptr)
                         {

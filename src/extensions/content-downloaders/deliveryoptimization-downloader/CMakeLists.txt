@@ -10,7 +10,7 @@ find_package (deliveryoptimization_sdk CONFIG REQUIRED)
 
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
-target_include_directories (${PROJECT_NAME} PUBLIC ${ADUC_EXTENSION_INCLUDES}
+target_include_directories (${PROJECT_NAME} PUBLIC ${ADU_EXTENSION_INCLUDES}
                                                    ${ADUC_EXPORT_INCLUDES})
 
 target_link_libraries (

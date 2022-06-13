@@ -320,6 +320,23 @@ int ADUC_SystemUtils_MkSandboxDirRecursive(const char* path)
     return ADUC_SystemUtils_MkDirRecursive(path, aduUserId, aduGroupId, S_IRWXU | S_IRWXG);
 }
 
+int ADUC_SystemUtils_MkDirRecursiveAduUser(const char* path)
+{
+    // Create the sandbox folder with adu:default ownership.
+    // Permissions are set to u=rwx.
+    struct passwd* pwd = getpwnam(ADUC_FILE_USER);
+    if (pwd == NULL)
+    {
+        Log_Error("adu user doesn't exist.");
+        return -1;
+    }
+
+    uid_t aduUserId = pwd->pw_uid;
+    pwd = NULL;
+
+    return ADUC_SystemUtils_MkDirRecursive(path, aduUserId, -1, S_IRWXU);
+}
+
 static int RmDirRecursive_helper(const char* fpath, const struct stat* sb, int typeflag, struct FTW* info)
 {
     UNREFERENCED_PARAMETER(sb);

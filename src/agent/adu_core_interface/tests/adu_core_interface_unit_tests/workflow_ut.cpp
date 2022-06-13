@@ -351,6 +351,11 @@ static IOTHUB_CLIENT_RESULT mockClientHandle_SendReportedState(
     return IOTHUB_CLIENT_OK;
 }
 
+static bool Mock_ShouldValidateUpdateManifest()
+{
+    return false;
+}
+
 // This test exercises the happy path for the entire agent-orchestrated workflow
 // via HandlePropertyUpdate, but with mocked
 // ADUC_Workflow_WorkCompletionCallback and mocked ContentHandler layer.
@@ -374,6 +379,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow E2E Functional")
     hooks.WorkCompletionCallbackFunc_TestOverride = Mock_WorkCompletionCallback;
     hooks.ContentHandler_TestOverride = &mockContentHandler;
     hooks.ClientHandle_SendReportedStateFunc_TestOverride = (void*)mockClientHandle_SendReportedState; // NOLINT
+    hooks.ShouldValidateUpdateManifest_TestOverride = Mock_ShouldValidateUpdateManifest;
     workflowData.TestOverrides = &hooks;
 
     ADUC_Result result =

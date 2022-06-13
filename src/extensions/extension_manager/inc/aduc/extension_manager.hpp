@@ -9,20 +9,16 @@
 #ifndef ADUC_EXTENSION_MANAGER_HPP
 #define ADUC_EXTENSION_MANAGER_HPP
 
-#include "aduc/component_enumerator_extension.hpp"
-#include "aduc/extension_utils.h"
-#include "aduc/result.h"
+#include <aduc/component_enumerator_extension.hpp>
+#include <aduc/extension_manager_download_options.h>
+#include <aduc/logging.h> // ADUC_LOG_SEVERITY
+#include <aduc/result.h> // ADUC_Result
+#include <aduc/types/download.h> // ADUC_DownloadProgressCallback
+#include <aduc/types/update_content.h> // ADUC_FileEntity
 
 #include <memory>
 #include <string>
 #include <unordered_map>
-
-typedef enum tagADUC_ExtensionType
-{
-    ADUC_UPDATE_CONTENT_HADDLER,
-    ADUC_CONTENT_DOWNLOADER,
-    ADUC_COMPONENT_ENUMERATOR,
-} ADUC_ExtensionType;
 
 // Default DO retry timeout is 24 hours.
 #define DO_RETRY_TIMEOUT_DEFAULT (60 * 60 * 24)
@@ -30,7 +26,7 @@ typedef enum tagADUC_ExtensionType
 // Forward declaration.
 class ContentHandler;
 
-typedef ContentHandler* (*UPDATE_CONTENT_HANDLER_CREATE_PROC)(ADUC_LOG_SEVERITY logLevel);
+using ADUC_WorkflowHandle = void*;
 
 class ExtensionManager
 {
@@ -70,17 +66,15 @@ public:
      * @brief
      *
      * @param entity An #ADUC_FileEntity object with information of the file to be downloaded.
-     * @param workflowId A workflow identifier.
-     * @param workFolder A full path to target directory (sandbox).
-     * @param retryTimeout A download retry timeout (in seconds).
+     * @param workflowHandle The workflow handle opaque object for per-workflow workflow data.
+     * @param downloadOptions The download options.
      * @param downloadProgressCallback A download progress reporting callback.
      * @return ADUC_Result
      */
     static ADUC_Result Download(
         const ADUC_FileEntity* entity,
-        const char* workflowId,
-        const char* workFolder,
-        unsigned int retryTimeout,
+        ADUC_WorkflowHandle workflowHandle,
+        ExtensionManager_Download_Options* downloadOptions,
         ADUC_DownloadProgressCallback downloadProgressCallback);
 
 private:
@@ -103,7 +97,6 @@ private:
     static std::unordered_map<std::string, ContentHandler*> _contentHandlers;
     static void* _contentDownloader;
     static void* _componentEnumerator;
-    static pthread_mutex_t factoryMutex;
 };
 
 #endif // ADUC_EXTENSION_MANAGER_HPP

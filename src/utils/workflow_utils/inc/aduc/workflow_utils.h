@@ -12,14 +12,15 @@
 #include "aduc/result.h"
 #include "aduc/types/update_content.h"
 #include "aduc/types/workflow.h"
-
-#include "parson.h"
+#include <azure_c_shared_utility/strings.h>
 
 #include <stdbool.h>
 #include <string.h> // strlen
+#include <sys/types.h> // ino_t
 
 EXTERN_C_BEGIN
 
+// fwd declaration
 typedef void* ADUC_WorkflowHandle;
 
 //
@@ -200,7 +201,7 @@ bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* format, ...
  * @param handle A workflow data object handle.
  * @return char* contains full path to work folder. Caller must call workflow_free_string() to free the memory once done.
  */
-char* workflow_get_workfolder(ADUC_WorkflowHandle handle);
+char* workflow_get_workfolder(const ADUC_WorkflowHandle handle);
 
 /**
  * @brief Sets selected-components (in a form of serialized json string) to be used in this workflow.
@@ -228,7 +229,7 @@ const char* workflow_peek_selected_components(ADUC_WorkflowHandle handle);
 size_t workflow_get_update_files_count(ADUC_WorkflowHandle handle);
 
 /**
- * @brief Gets the update file entity as specified index.
+ * @brief Gets the update file entity at the specified index.
  *
  * @param handle A workflow data object handle.
  * @param index An index of the file to get.
@@ -246,6 +247,43 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
  * @return true If succeeded.
  */
 bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fileName, ADUC_FileEntity** entity);
+
+/**
+ * @brief Gets the inode associated with the update file entity at the specified index.
+ *
+ * @param handle A workflow data object handle.
+ * @param index An index of the file to get.
+ * @return ino_t The inode, or ADUC_INODE_SENTINEL_VALUE if inode has not been set yet.
+ */
+ino_t workflow_get_update_file_inode(ADUC_WorkflowHandle handle, size_t index);
+
+/**
+ * @brief Sets the inode associated with the update file entity at the specified index.
+ *
+ * @param handle A workflow data object handle.
+ * @param index An index of the file to get.
+ * @param inode The inode.
+ * @return bool true on success.
+ */
+bool workflow_set_update_file_inode(ADUC_WorkflowHandle handle, size_t index, ino_t inode);
+
+/**
+ * @brief Gets a bundle updates count.
+ *
+ * @param handle A workflow data object handle.
+ * @return size_t Total bundle updates count.
+ */
+size_t workflow_get_bundle_updates_count(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Gets a bundle update file at specified index.
+ *
+ * @param handle A workflow data object handle.
+ * @param index An index of the file to get.
+ * @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
+ * @return true If succeeded.
+ */
+bool workflow_get_bundle_updates_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity** entity);
 
 /**
  * @brief Free specified file entity object.
@@ -418,6 +456,8 @@ ADUCITF_State workflow_get_state(ADUC_WorkflowHandle handle);
 
 ADUC_Result workflow_get_result(ADUC_WorkflowHandle handle);
 void workflow_set_result(ADUC_WorkflowHandle handle, ADUC_Result result);
+ADUC_Result_t workflow_get_success_erc(ADUC_WorkflowHandle handle);
+void workflow_set_success_erc(ADUC_WorkflowHandle handle, ADUC_Result_t erc);
 
 /**
  * @brief Set workflow resultDetails string.
@@ -616,6 +656,18 @@ bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t
  * @return char* An output json string. Caller must free the string with workflow_free_string().
  */
 char* workflow_get_serialized_update_manifest(ADUC_WorkflowHandle handle, bool pretty);
+
+/**
+ * @brief Gets the file path of the entity target update under the download work folder sandbox.
+ *
+ * @param workflowHandle The workflow handle.
+ * @param entity The file entity.
+ * @param outFilePath The resultant work folder file path to the file entity.
+ * @return _Bool true if success
+ * @remark Caller will own the STRING_HANDLE outFilePath and must call STRING_delete on it.
+ */
+_Bool workflow_get_entity_workfolder_filepath(
+    ADUC_WorkflowHandle workflowHandle, const ADUC_FileEntity* entity, STRING_HANDLE* outFilePath);
 
 EXTERN_C_END
 

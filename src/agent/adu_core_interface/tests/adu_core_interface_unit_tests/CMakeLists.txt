@@ -13,11 +13,8 @@ set (
     main.cpp
     adu_core_export_helpers_ut.cpp
     adu_core_interface_ut.cpp
-    adu_core_json_ut.cpp
     result_ut.cpp
     startup_workflowdata_ut.cpp
-    workflow_reboot_ut.cpp
-    workflow_test_utils.cpp
     workflow_ut.cpp)
 
 find_package (Catch2 REQUIRED)
@@ -28,7 +25,8 @@ find_package (umqtt REQUIRED)
 
 add_executable (${PROJECT_NAME} ${sources})
 
-target_include_directories (${PROJECT_NAME} PRIVATE ${ADUC_EXPORT_INCLUDES})
+target_include_directories (${PROJECT_NAME} PRIVATE ${ADUC_EXPORT_INCLUDES}
+                                                    ${ADU_EXTENSION_INCLUDES})
 
 target_compile_definitions (
     ${PROJECT_NAME}
@@ -37,13 +35,22 @@ target_compile_definitions (
             ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}"
             ADUC_BUILD_UNIT_TESTS="${ADUC_BUILD_UNIT_TESTS}")
 
+if (ADUC_ENABLE_TEST_HOOKS)
+    target_compile_definitions (${PROJECT_NAME}
+                                PRIVATE ADUC_ENABLE_TEST_HOOKS="${ADUC_ENABLE_TEST_HOOKS}")
+endif ()
+
 target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::adu_core_interface
+            aduc::adu_core_export_helpers
             aduc::adu_types
+            aduc::agent_workflow
             aduc::c_utils
+            aduc::hash_utils
             aduc::parser_utils
             aduc::string_utils
+            aduc::test_utils
             aduc::workflow_data_utils
             aduc::workflow_utils
             Catch2::Catch2

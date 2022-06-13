@@ -27,11 +27,18 @@ target_compile_definitions (
 #
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aduc::extension_utils
+    PUBLIC aduc::adu_types # download.h, update_content.h, and workflow.h used by header and impl
     PRIVATE aduc::c_utils
+            aduc::download_handler_factory
+            aduc::download_handler_plugin
             aduc::exception_utils
-            aduc::string_utils
+            aduc::extension_utils
+            aduc::hash_utils
             aduc::logging
+            aduc::parser_utils
+            aduc::path_utils
+            aduc::string_utils
+            aduc::workflow_utils
             ${CMAKE_DL_LIBS})
 
 #

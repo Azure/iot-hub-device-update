@@ -15,22 +15,33 @@
 #include "aduc/logging.h"
 
 EXTERN_C_BEGIN
+
+typedef enum tagADUC_ExtensionRegistrationType
+{
+    ExtensionRegistrationType_None,
+    ExtensionRegistrationType_UpdateContentHandler,
+    ExtensionRegistrationType_ContentDownloadHandler,
+    ExtensionRegistrationType_ComponentEnumerator,
+    ExtensionRegistrationType_DownloadHandler,
+} ADUC_ExtensionRegistrationType;
+
 /**
  * @brief ADU Client launch arguments.
  */
 typedef struct tagADUC_LaunchArguments
 {
-    int argc; /**< Size of argv */
     char** argv; /**< Command-line arguments */
-    ADUC_LOG_SEVERITY logLevel; /**< Log level */
     char* connectionString; /**< Device connection string from command-line. */
-    bool iotHubTracingEnabled; /**< Whether to enable logging from IoT Hub SDK */
+    char* contentDownloaderFilePath; /**< A full path of a content downloader to be registered. */
+    char* extensionFilePath; /**< The path to the extension shared library file. */
+    char*
+        extensionId; /**< The extension id for an extension regisration type like downloadHandlerId for download handlers and updateType for content handlers. */
+    int argc; /**< Size of argv */
+    ADUC_LOG_SEVERITY logLevel; /**< Log level */
+    ADUC_ExtensionRegistrationType extensionRegistrationType; /**< The type of extension being registered. */
+    bool iotHubTracingEnabled; /**< Whether to enable logging from IoT Hub SDK. */
     bool showVersion; /**< Show an agent version */
     bool healthCheckOnly; /**< Only check agent health. Doesn't process any data or messages from services. */
-    char* contentHandlerFilePath; /**< A full path of an update content handler to be registered */
-    char* componentEnumeratorFilePath; /**< A full path of a component enumerator to be registered */
-    char* contentDownloaderFilePath; /**< A full path of a content downloader to be registered */
-    char* updateType;
 } ADUC_LaunchArguments;
 
 typedef enum tagADUC_ConnType

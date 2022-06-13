@@ -139,7 +139,13 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
 
     updateFilename << workFolder << "/" << entity->TargetFilename;
 
-    result = ExtensionManager::Download(entity, workflowId, workFolder, DO_RETRY_TIMEOUT_DEFAULT, nullptr);
+    {
+        ExtensionManager_Download_Options downloadOptions = {
+            .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
+        };
+
+        result = ExtensionManager::Download(entity, workflowHandle, &downloadOptions, nullptr);
+    }
 
 done:
     workflow_free_string(workflowId);
@@ -428,7 +434,8 @@ ADUC_Result SWUpdateHandlerImpl::Restore(const tagADUC_WorkflowData* workflowDat
     ADUC_Result cancel_result = CancelApply(ADUC_LOG_FOLDER);
     if (cancel_result.ResultCode != ADUC_Result_Failure_Cancelled)
     {
-        result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_FAILED_RESTORE_FAILED };
+        result = { .ResultCode = ADUC_Result_Failure,
+                   .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_FAILED_RESTORE_FAILED };
     }
     return result;
 }

@@ -6,26 +6,16 @@
  * Licensed under the MIT License.
  */
 #include "aduc/script_handler.hpp"
-
-#include "aduc/adu_core_exports.h"
 #include "aduc/extension_manager.hpp"
 #include "aduc/logging.h"
-#include "aduc/process_utils.hpp"
+#include "aduc/process_utils.hpp" // ADUC_LaunchChildProcess
 #include "aduc/string_c_utils.h" // IsNullOrEmpty
-#include "aduc/string_utils.hpp"
-#include "aduc/system_utils.h"
-#include "aduc/types/workflow.h"
-#include "aduc/workflow_data_utils.h"
-#include "aduc/workflow_utils.h"
+#include "aduc/string_utils.hpp" // ADUC::StringUtils::Split
+#include "aduc/system_utils.h" // ADUC_SystemUtils_MkSandboxDirRecursive
+#include "aduc/types/adu_core.h" // ADUC_Result_*
+#include "aduc/workflow_data_utils.h" // ADUC_WorkflowData_GetWorkFolder
+#include "aduc/workflow_utils.h" // workflow_*
 #include "adushell_const.hpp"
-
-#include <algorithm>
-#include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
-#include <azure_c_shared_utility/strings.h> // STRING_*
-#include <dirent.h>
-#include <fstream>
-#include <functional>
-#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -129,7 +119,11 @@ static ADUC_Result Script_Handler_DownloadPrimaryScriptFile(ADUC_WorkflowHandle 
 
     try
     {
-        result = ExtensionManager::Download(entity, workflowId, workFolder, DO_RETRY_TIMEOUT_DEFAULT, nullptr);
+        ExtensionManager_Download_Options downloadOptions = {
+            .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
+        };
+
+        result = ExtensionManager::Download(entity, handle, &downloadOptions, nullptr);
     }
     catch (...)
     {
@@ -202,7 +196,11 @@ ADUC_Result ScriptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData
 
         try
         {
-            result = ExtensionManager::Download(entity, workflowId, workFolder, DO_RETRY_TIMEOUT_DEFAULT, nullptr);
+            ExtensionManager_Download_Options downloadOptions = {
+                .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
+            };
+
+            result = ExtensionManager::Download(entity, workflowHandle, &downloadOptions, nullptr);
         }
         catch (...)
         {
@@ -496,7 +494,6 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
 {
     Log_Info("Action (%s) begin", action.c_str());
     ADUC_Result result = { ADUC_GeneralResult_Failure };
-    STRING_HANDLE resultDetails;
 
     std::string scriptFilePath;
     std::vector<std::string> args;
@@ -531,7 +528,9 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
     // If any install-item reported that the update is already installed on the
     // selected component, we will skip the 'apply' phase, and then skip the
     // remaining install-item(s).
-    if (result.ResultCode == ADUC_Result_Install_Skipped_UpdateAlreadyInstalled)
+    // Also, don't continue if WorkflowHandle is NULL in the ADUInterface_Connected->HandleStartupWorkflowData flow.
+    if (result.ResultCode == ADUC_Result_Install_Skipped_UpdateAlreadyInstalled
+        || workflowData->WorkflowHandle == nullptr)
     {
         goto done;
     }

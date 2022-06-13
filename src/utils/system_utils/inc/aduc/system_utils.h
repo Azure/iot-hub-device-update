@@ -28,6 +28,8 @@ int ADUC_SystemUtils_MkDirRecursiveDefault(const char* path);
 
 int ADUC_SystemUtils_MkSandboxDirRecursive(const char* path);
 
+int ADUC_SystemUtils_MkDirRecursiveAduUser(const char* path);
+
 int ADUC_SystemUtils_RmDirRecursive(const char* path);
 
 int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, _Bool overwriteExistingFile);

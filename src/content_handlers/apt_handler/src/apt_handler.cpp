@@ -32,6 +32,9 @@
 
 namespace adushconst = Adu::Shell::Const;
 
+/* external linkage */
+extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
+
 EXTERN_C_BEGIN
 
 /**
@@ -105,7 +108,7 @@ done:
  *
  * @return ADUC_Result The result of the download.
  */
-ADUC_Result AptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData)
+ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = { ADUC_Result_Failure };
     std::stringstream aptManifestFilename;
@@ -134,7 +137,8 @@ ADUC_Result AptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData)
     aptManifestFilename << workFolder << "/" << fileEntity->TargetFilename;
 
     // Download the APT manifest file.
-    result = ExtensionManager::Download(fileEntity, workflowId, workFolder, DO_RETRY_TIMEOUT_DEFAULT, nullptr);
+    result = ExtensionManager::Download(
+        fileEntity, workflowData->WorkflowHandle, &Default_ExtensionManager_Download_Options, nullptr);
 
     workflow_free_file_entity(fileEntity);
     fileEntity = nullptr;
@@ -240,7 +244,7 @@ done:
  *
  * @return ADUC_Result The result of the install.
  */
-ADUC_Result AptHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
+ADUC_Result AptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
 {
     std::string aptOutput;
     int aptExitCode = -1;
@@ -326,7 +330,7 @@ done:
  *
  * @return ADUC_Result The result of the apply.
  */
-ADUC_Result AptHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
+ADUC_Result AptHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = { ADUC_Result_Apply_Success };
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
@@ -385,7 +389,7 @@ done:
  *
  * @return ADUC_Result The result of the cancel.
  */
-ADUC_Result AptHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
+ADUC_Result AptHandlerImpl::Cancel(const ADUC_WorkflowData* workflowData)
 {
     UNREFERENCED_PARAMETER(workflowData);
     // For APT Update, cancel is not supported.
@@ -400,7 +404,7 @@ ADUC_Result AptHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
  *
  * @return ADUC_Result
  */
-ADUC_Result AptHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflowData)
+ADUC_Result AptHandlerImpl::IsInstalled(const ADUC_WorkflowData* workflowData)
 {
     char* installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
     ADUC_Result result = GetIsInstalled(ADUC_INSTALLEDCRITERIA_FILE_PATH, installedCriteria);

@@ -46,6 +46,7 @@ target_link_libraries (
             aduc::agent_workflow
             aduc::exception_utils
             aduc::extension_manager
+            aduc::extension_utils
             aduc::logging
             aduc::process_utils
             aduc::string_utils

@@ -118,6 +118,8 @@ create_update_content_handler_extension_registration() {
     local libname=${handlerid/\//_}
     libname=${libname/:/_}
 
+    # SC2034 is irrelevant because base64digest is implicitly used by inline_expand_template_parameters via parameters_to_expand
+    # shellcheck disable=SC2034
     base64digest=$(openssl dgst -binary "$EXT_SRC/${so_name}.so" | openssl base64)
 
     $mkdir_cmd "$APP_EXT_BASE_DIR/update_content_handlers/$libname"
@@ -139,6 +141,8 @@ create_content_downloader_registration() {
     local target_filepath="$APP_EXT_BASE_DIR/content_downloader/extension.json"
     cp "$TEMPLATES_SOURCE_DIR/content_downloader.extension.template.json" "$target_filepath"
 
+    # SC2034 is irrelevant because base64digest is implicitly used by inline_expand_template_parameters via parameters_to_expand
+    # shellcheck disable=SC2034
     base64digest=$(openssl dgst -binary "$EXT_SRC/${so_name}.so" | openssl base64)
 
     parameters_to_expand="

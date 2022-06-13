@@ -13,6 +13,8 @@ TAGS
 .TAGS
 !TAGS/
 tags
+tags.lock
+tags.temp
 .tags
 !tags/
 gtags.files

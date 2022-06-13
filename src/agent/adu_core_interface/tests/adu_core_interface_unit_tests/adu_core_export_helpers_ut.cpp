@@ -21,7 +21,6 @@
 #include "aduc/agent_workflow.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle.h"
-#include "aduc/content_handler.hpp"
 #include "aduc/result.h"
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_internal.h"
@@ -37,7 +36,7 @@ static ADUC_Workflow* get_workflow_from_test_data(const std::string path_under_t
 
     ADUC_Result result = workflow_init_from_file(
         (std::string{ ADUC_TEST_DATA_FOLDER } + "/" + path_under_testdata_folder).c_str(),
-        true,
+        false,
         (void**)&wf); // NOLINT
 
     REQUIRE(IsAducResultCodeSuccess(result.ResultCode));

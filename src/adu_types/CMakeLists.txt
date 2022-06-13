@@ -15,4 +15,4 @@ set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories (${target_name} PUBLIC inc)
 
-target_link_libraries (${target_name} PUBLIC aduc::logging aduc::c_utils Parson::parson)
+target_link_libraries (${target_name} PUBLIC aduc::c_utils aduc::logging Parson::parson)

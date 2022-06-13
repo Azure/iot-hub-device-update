@@ -137,6 +137,11 @@ set (
     CACHE STRING "Content handler registration file name.")
 
 set (
+    ADUC_DOWNLOAD_HANDLER_REG_FILENAME
+    "download_handler.json"
+    CACHE STRING "Download handler registration file name.")
+
+set (
     ADUC_EXTENSION_REG_FILENAME
     "extension.json"
     CACHE STRING "Extension registration file name.")
@@ -172,6 +177,16 @@ set (
     CACHE STRING "Sub folder for update content handler extensions.")
 
 set (
+    ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS
+    "download_handlers"
+    CACHE STRING "Sub folder for download handler extensions.")
+
+set (
+    ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR
+    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS}"
+    CACHE STRING "Path for the download handler extensions")
+
+set (
     ADUC_DOWNLOADS_FOLDER
     "${ADUC_DATA_FOLDER}/downloads"
     CACHE STRING "Path to the folder containing downloaded update artifacts.")
@@ -185,9 +200,9 @@ set (
 # Starting from version 0.8.1, Device Update Agent must support only one version of the update manifest
 # based on the base dtmi model that the Agent announces when connecting to the IoT Hub.
 #
-# For this version, "dtmi:azure:iot:deviceUpdateModel;1" is using the manifest version verison 4.
+# For this version, "dtmi:azure:iot:deviceUpdateModel;2" is using the manifest version verison 5.
 #
-set (SUPPORTED_UPDATE_MANIFEST_VERSION 4)
+set (SUPPORTED_UPDATE_MANIFEST_VERSION 5)
 
 #
 # DeviceInfo configuration
@@ -335,7 +350,35 @@ set (
 set (
     ADUC_IOT_HUB_PROTOCOL
     "MQTT"
-    CACHE STRING " The protocol for Azure IotHub SDK communication. Options are MQTT or MQTT_over_WebSockets")
+    CACHE
+        STRING
+        " The protocol for Azure IotHub SDK communication. Options are MQTT or MQTT_over_WebSockets"
+)
+
+#######
+# BEGIN Delta Downloader Handler Source Update Cache Configurations
+
+# Source Update Cache Commit Strategy
+#
+# Value values are:
+#   "TWO_PHASE_COMMIT" - Moves the incoming files then deletes previous.
+#   "OVERWRITE" - Saves space by deleting existing source updates first.
+set (
+    ADUC_DELTA_DOWNLOAD_HANDLER_SOURCE_UPDATE_CACHE_COMMIT_STRATEGY
+    "TWO_PHASE_COMMIT"
+    CACHE STRING "The commit strategy for the source update cache.")
+
+# Source Update Cache Directory
+#
+# Directory where an update from download work folder is cached after successful workflow processing
+set (
+    ADUC_DELTA_DOWNLOAD_HANDLER_SOURCE_UPDATE_CACHE_DIR
+    "${ADUC_DATA_FOLDER}/sdc"
+    CACHE STRING
+          "The base directory to cache source update payloads that delta updates are based upon.")
+
+# END Delta Downloader Handler Source Update Cache Configurations
+#######
 
 option (ADUC_WARNINGS_AS_ERRORS "Treat warnings as errors (-Werror)" ON)
 option (ADUC_BUILD_UNIT_TESTS "Build unit tests and mock some functionality" OFF)
@@ -343,6 +386,7 @@ option (ADUC_BUILD_DOCUMENTATION "Build documentation files" OFF)
 option (ADUC_BUILD_PACKAGES "Build the ADU Agent packages" OFF)
 option (ADUC_INSTALL_DAEMON "Install the ADU Agent as a daemon" ON)
 option (ADUC_REGISTER_DAEMON "Register the ADU Agent daemon with the system" ON)
+option (ADUC_TRACE_TARGET_DEPS "Trace target dependencies" OFF)
 
 ### End CMake Options
 
@@ -373,9 +417,12 @@ if (ADUC_BUILD_UNIT_TESTS)
     # of output folder.
     enable_testing ()
 
+    set (ADUC_ENABLE_TEST_HOOKS ON)
+
     copy_test_data ("${CMAKE_SOURCE_DIR}" "${ADUC_TEST_DATA_PATH_SEGMENT}"
                     "${ADUC_TEST_DATA_FOLDER}")
-
+else ()
+    unset (ADUC_ENABLE_TEST_HOOKS CACHE)
 endif ()
 
 if (ADUC_INSTALL_DAEMON)

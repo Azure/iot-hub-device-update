@@ -5,7 +5,7 @@ set (target_name microsoft_apt_1)
 set (SOURCE_ALL src/apt_handler.cpp src/apt_parser.cpp)
 
 #
-# Create a shared library.
+# Create a SHARED library.
 #
 add_library (${target_name} SHARED ${SOURCE_ALL})
 
@@ -19,8 +19,7 @@ target_include_directories (
     PRIVATE ${PROJECT_SOURCE_DIR}/inc
             ${ADU_EXTENSION_INCLUDES}
             ${ADU_SHELL_INCLUDES}
-            ${ADUC_EXPORT_INCLUDES}
-            ${ADUC_TYPES_INCLUDES})
+            ${ADUC_EXPORT_INCLUDES})
 
 get_filename_component (
     ADUC_INSTALLEDCRITERIA_FILE_PATH
@@ -33,15 +32,13 @@ target_compile_definitions (
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::workflow_data_utils
-    PRIVATE aduc::c_utils
+    PUBLIC aduc::logging
+    PRIVATE aduc::adu_types
+            aduc::c_utils
             aduc::extension_manager
-            aduc::exception_utils
             aduc::installed_criteria_utils
-            aduc::logging
             aduc::process_utils
-            aduc::string_utils
-            aduc::system_utils
+            aduc::workflow_data_utils
             aduc::workflow_utils
             Parson::parson)
 

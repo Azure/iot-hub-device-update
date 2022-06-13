@@ -103,22 +103,6 @@ RebootSystemFunc ADUC_WorkflowData_GetRebootSystemFunc(const ADUC_WorkflowData* 
 RestartAgentFunc ADUC_WorkflowData_GetRestartAgentFunc(const ADUC_WorkflowData* workflowData);
 
 /**
- * @brief Gets the function for updating the workflow state machine state with result.
- *
- * @param workflowData The workflow data.
- * @return SetUpdateStateWithResultFunc The function for updating the workflow state with result.
- */
-SetUpdateStateWithResultFunc ADUC_WorkflowData_GetSetUpdateStateWithResultFunc(const ADUC_WorkflowData* workflowData);
-
-/**
- * @brief Gets the function for handling a new incoming update action
- *
- * @param workflowData The workflow data.
- * @return HandleUpdateActionFunc The function for handling update action.
- */
-HandleUpdateActionFunc ADUC_WorkflowData_GetHandleUpdateActionFunc(const ADUC_WorkflowData* workflowData);
-
-/**
  * @brief Save the goal state json string used (re-process), as needed, after deployment is completed.
  *
  * @param workflowData The workflow data.

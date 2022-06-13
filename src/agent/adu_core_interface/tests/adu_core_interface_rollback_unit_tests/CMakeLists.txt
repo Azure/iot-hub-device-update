@@ -8,33 +8,40 @@ include (aduc_helpers)
 compileasc99 ()
 disablertti ()
 
-set (
-    sources
-    main.cpp
-    workflow_rollback_ut.cpp)
+set (sources main.cpp workflow_rollback_ut.cpp)
 
 find_package (Catch2 REQUIRED)
 find_package (umock_c REQUIRED CONFIG)
 find_package (azure_c_shared_utility REQUIRED)
 find_package (IotHubClient REQUIRED)
-find_package (umqtt REQUIRED) 
+find_package (umqtt REQUIRED)
 
 add_executable (${PROJECT_NAME} ${sources})
 
-target_include_directories (${PROJECT_NAME} PRIVATE ${ADUC_EXPORT_INCLUDES})
+target_include_directories (${PROJECT_NAME} PRIVATE ${ADUC_EXPORT_INCLUDES}
+                                                    ${ADU_EXTENSION_INCLUDES})
 
 target_compile_definitions (
-    ${PROJECT_NAME} PRIVATE ADUC_VERSION="${ADUC_VERSION}"
-                            ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}"
-                            ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}"
-                            ADUC_BUILD_UNIT_TESTS="${ADUC_BUILD_UNIT_TESTS}")
+    ${PROJECT_NAME}
+    PRIVATE ADUC_VERSION="${ADUC_VERSION}"
+            ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}"
+            ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}"
+            ADUC_BUILD_UNIT_TESTS="${ADUC_BUILD_UNIT_TESTS}")
+
+if (ADUC_ENABLE_TEST_HOOKS)
+    target_compile_definitions (${PROJECT_NAME}
+                                PRIVATE ADUC_ENABLE_TEST_HOOKS="${ADUC_ENABLE_TEST_HOOKS}")
+endif ()
 
 target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::adu_core_interface
-            aduc::c_utils aduc::adu_types
-            aduc::string_utils
+            aduc::adu_core_export_helpers
+            aduc::adu_types
+            aduc::agent_workflow
+            aduc::c_utils
             aduc::parser_utils
+            aduc::string_utils
             aduc::workflow_data_utils
             aduc::workflow_utils
             Catch2::Catch2

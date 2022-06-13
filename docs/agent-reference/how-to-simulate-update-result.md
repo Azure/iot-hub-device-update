@@ -1,6 +1,6 @@
 # How To Simulate Update Results
 
-You can use the Simulator Update Handler to simulate the Device Update workflow without actually downloading and installing any files to the actual device for demonstration or testing purposes.  
+You can use the Simulator Update Handler to simulate the Device Update workflow without actually downloading and installing any files to the actual device for demonstration or testing purposes.
 
 The source code for this Simulator Update Handler can be found at [src/content_handlers/simulator_handler](../../src/content_handlers/simulator_handler)
 
@@ -9,13 +9,13 @@ The source code for this Simulator Update Handler can be found at [src/content_h
 To register the Simulator Update Handle, use following command:
 
 ```sh
-sudo /usr/bin/AducIotAgent --update-type <update type> --register-content-handler <full path to the simulator update handler>
+sudo /usr/bin/AducIotAgent --extension-type updateContentHandler --extension-id <update type> --register-extension <full path to the simulator update handler>
 ```
 
 Below is an example of how to register Simulator Update Handler for handle 'microsoft/apt:1' update:
 
 ```sh
-sudo /usr/bin/AducIotAgent --update-type 'microsoft/apt:1' --register-content-handler /var/lib/adu/extensions/sources/libmicrosoft_simulator_1.so
+sudo /usr/bin/AducIotAgent --extension-type updateContentHandler --extension-id 'microsoft/apt:1' --register-extension /var/lib/adu/extensions/sources/libmicrosoft_simulator_1.so
 ```
 
 ## Create Simulator Data File
@@ -30,9 +30,9 @@ The Simulator Update Handler by default will returns following results:
 | Cancel | { "resultCode" : 800 } |
 | IsInstalled | { "resultCode" : 900 } |
 
-**Note:** See `ADUC_ResultCode` enum in [aduc_core.h](../../src/adu_types/inc/aduc/types/adu_core.h)  
+**Note:** See `ADUC_ResultCode` enum in [aduc_core.h](../../src/adu_types/inc/aduc/types/adu_core.h)
 
-To override one or more default result above, the desired result can be specified in the Simulator Data file (**du-simulator-data.json**).  
+To override one or more default result above, the desired result can be specified in the Simulator Data file (**du-simulator-data.json**).
 
 The Simulator Update Handler will search for this file in `temp` directories specified by following system environment variables (in order):
 
@@ -54,62 +54,62 @@ You can modify the Simulator Update Handler source code to specify your own sear
     "version" : "1.0",
     "download" : {
             "<file name #1>" : {
-                "resultCode" : <desired result code>, 
+                "resultCode" : <desired result code>,
                 "extendedResultCode" : <desired extended result code>,
                 "resultDetails" : "<desired result details string>"
             }
             "<file name #2>" : {
-                "resultCode" : <desired result code>, 
+                "resultCode" : <desired result code>,
                 "extendedResultCode" : <desired extended result code>,
                 "resultDetails" : "<desired result details string>"
             },
             ...
             "<file name #N>" : {
-                "resultCode" : <desired result code>, 
+                "resultCode" : <desired result code>,
                 "extendedResultCode" : <desired extended result code>,
                 "resultDetails" : "<desired result details string>"
-            },        
+            },
             "*" : { // A fall back result for all unmatched file names
-                "resultCode" : <desired result code>, 
+                "resultCode" : <desired result code>,
                 "extendedResultCode" : <desired extended result code>,
                 "resultDetails" : "<desired result details string>"
             }
         },
     "install" : {
-        "resultCode" : <desired result code>, 
+        "resultCode" : <desired result code>,
         "extendedResultCode" : <desired extended result code>,
         "resultDetails" : "<desired result details string>"
     },
     "apply" : {
-        "resultCode" : <desired result code>, 
+        "resultCode" : <desired result code>,
         "extendedResultCode" : <desired extended result code>,
         "resultDetails" : "<desired result details string>"
     },
     "cancel" : {
-        "resultCode" : <desired result code>, 
+        "resultCode" : <desired result code>,
         "extendedResultCode" : <desired extended result code>,
         "resultDetails" : "<desired result details string>"
     },
     "isInstalled" : {
         "<installed criteria string #1>" : {
-            "resultCode" : <desired result code>, 
+            "resultCode" : <desired result code>,
             "extendedResultCode" : <desired extended result code>,
             "resultDetails" : "<desired result details string>"
         },
         "<installed criteria string #2>" : {
-            "resultCode" : <desired result code>, 
+            "resultCode" : <desired result code>,
             "extendedResultCode" : <desired extended result code>,
             "resultDetails" : "<desired result details string>"
         },
         ...
         "<installed criteria string #N>" : {
-            "resultCode" : <desired result code>, 
+            "resultCode" : <desired result code>,
             "extendedResultCode" : <desired extended result code>,
             "resultDetails" : "<desired result details string>"
         },
         "*" : { // A fall back result for all unmatched 'installedCriteria' string
                 // IMPORTANT: For Update Manifest version 4.0 or later, only this fall-back result will be return.
-            "resultCode" : <desired result code>, 
+            "resultCode" : <desired result code>,
             "extendedResultCode" : <desired extended result code>,
             "resultDetails" : "<desired result details string>"
         }
@@ -124,23 +124,23 @@ To simulate the desired result for 'download' action, place the following JSON d
 ```json
     "download" : {
         "<file name #1>" : {
-            "resultCode" : <desired result code>, 
+            "resultCode" : <desired result code>,
             "extendedResultCode" : <desired extended result code>,
             "resultDetails" : "<desired result details string>"
         }
         "<file name #2>" : {
-            "resultCode" : <desired result code>, 
+            "resultCode" : <desired result code>,
             "extendedResultCode" : <desired extended result code>,
             "resultDetails" : "<desired result details string>"
         },
         ...
         "<file name #N>" : {
-            "resultCode" : <desired result code>, 
+            "resultCode" : <desired result code>,
             "extendedResultCode" : <desired extended result code>,
             "resultDetails" : "<desired result details string>"
-        },        
+        },
         "*" : { // A fall back result for all unmatched file names
-            "resultCode" : <desired result code>, 
+            "resultCode" : <desired result code>,
             "extendedResultCode" : <desired extended result code>,
             "resultDetails" : "<desired result details string>"
         }
@@ -169,7 +169,7 @@ You can specify only one result for the 'install' action. To simulate the desire
 
 ```json
     "install" : {
-        "resultCode" : <desired result code>, 
+        "resultCode" : <desired result code>,
         "extendedResultCode" : <desired extended result code>,
         "resultDetails" : "<desired result details string>"
     }
@@ -191,7 +191,7 @@ You can specify only one result for the 'apply' action. To simulate the desired 
 
 ```json
     "apply" : {
-        "resultCode" : <desired result code>, 
+        "resultCode" : <desired result code>,
         "extendedResultCode" : <desired extended result code>,
         "resultDetails" : "<desired result details string>"
     }
@@ -203,7 +203,7 @@ You can specify only one result for the 'cancel' action. To simulate the desired
 
 ```json
     "cancel" : {
-        "resultCode" : <desired result code>, 
+        "resultCode" : <desired result code>,
         "extendedResultCode" : <desired extended result code>,
         "resultDetails" : "<desired result details string>"
     }
@@ -216,23 +216,23 @@ To simulate the desired result for the 'isInstalled' check, place the following 
 ```json
     "isInstalled" : {
         "<installed criteria string #1>" : {
-            "resultCode" : <desired result code>, 
+            "resultCode" : <desired result code>,
             "extendedResultCode" : <desired extended result code>,
             "resultDetails" : "<desired result details string>"
         },
         "<installed criteria string #2>" : {
-            "resultCode" : <desired result code>, 
+            "resultCode" : <desired result code>,
             "extendedResultCode" : <desired extended result code>,
             "resultDetails" : "<desired result details string>"
         },
         ...
         "<installed criteria string #N>" : {
-            "resultCode" : <desired result code>, 
+            "resultCode" : <desired result code>,
             "extendedResultCode" : <desired extended result code>,
             "resultDetails" : "<desired result details string>"
         },
         "*" : { // A fall back result for all unmatched 'installedCriteria' string
-            "resultCode" : <desired result code>, 
+            "resultCode" : <desired result code>,
             "extendedResultCode" : <desired extended result code>,
             "resultDetails" : "<desired result details string>"
         }
@@ -244,19 +244,19 @@ You can specify multiple results for 'isInstalled' check, for example:
 ```json
     "isInstalled" : {
         "1.0" : {
-            "resultCode" : 900,         // ADUC_Result_IsInstalled_Installed 
+            "resultCode" : 900,         // ADUC_Result_IsInstalled_Installed
             "extendedResultCode" : 0,
             "resultDetails" : ""
         },
 
         "1.2" : {
-            "resultCode" : 900,         // ADUC_Result_IsInstalled_Installed 
+            "resultCode" : 900,         // ADUC_Result_IsInstalled_Installed
             "extendedResultCode" : 0,
             "resultDetails" : ""
         },
 
         "*" : {                         // Indicates a fall back result for all unmatched 'installedCriteria' string
-            "resultCode" : 901,         // ADUC_Result_IsInstalled_NotInstalled 
+            "resultCode" : 901,         // ADUC_Result_IsInstalled_NotInstalled
             "extendedResultCode" : 0,
             "resultDetails" : "This update is not installed."
         }

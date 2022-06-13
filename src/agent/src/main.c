@@ -82,7 +82,7 @@
  * Customers should change this ID to match their device model ID.
  */
 
-static const char g_aduModelId[] = "dtmi:azure:iot:deviceUpdateModel;1";
+static const char g_aduModelId[] = "dtmi:azure:iot:deviceUpdateModel;2";
 
 // Name of ADU Agent subcomponent that this device implements.
 static const char g_aduPnPComponentName[] = "deviceUpdate";
@@ -212,6 +212,28 @@ static PnPComponentEntry componentList[] = {
 
 // clang-format on
 
+ADUC_ExtensionRegistrationType GetRegistrationTypeFromArg(const char* arg)
+{
+    if (strcmp(arg, "updateContentHandler") == 0)
+    {
+        return ExtensionRegistrationType_UpdateContentHandler;
+    }
+    else if (strcmp(arg, "contentDownloader") == 0)
+    {
+        return ExtensionRegistrationType_ContentDownloadHandler;
+    }
+    else if (strcmp(arg, "componentEnumerator") == 0)
+    {
+        return ExtensionRegistrationType_ComponentEnumerator;
+    }
+    else if (strcmp(arg, "downloadHandler") == 0)
+    {
+        return ExtensionRegistrationType_DownloadHandler;
+    }
+
+    return ExtensionRegistrationType_None;
+}
+
 /**
  * @brief Parse command-line arguments.
  * @param argc arguments count.
@@ -246,10 +268,9 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             { "health-check",                  no_argument,       0, 'h' },
             { "log-level",                     required_argument, 0, 'l' },
             { "connection-string",             required_argument, 0, 'c' },
-            { "register-content-handler",      required_argument, 0, 'C' },
-            { "register-component-enumerator", required_argument, 0, 'E' },
-            { "register-content-downloader",   required_argument, 0, 'D' },
-            { "update-type",                   required_argument, 0, 'u' },
+            { "register-extension",            required_argument, 0, 'E' },
+            { "extension-type",                required_argument, 0, 't' },
+            { "extension-id",                  required_argument, 0, 'i' },
             { "run-as-owner",                  no_argument,       0, 'a' },
             { 0, 0, 0, 0 }
         };
@@ -261,7 +282,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
         int option = getopt_long(
             argc,
             argv,
-            STOP_PARSE_ON_NONOPTION_ARG RET_COLON_FOR_MISSING_OPTIONARG "avehcu:l:r:d:n:C:E:D:",
+            STOP_PARSE_ON_NONOPTION_ARG RET_COLON_FOR_MISSING_OPTIONARG "avehcu:l:r:d:n:E:t:i:",
             long_options,
             &option_index);
 
@@ -306,20 +327,16 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             launchArgs->connectionString = optarg;
             break;
 
-        case 'C':
-            launchArgs->contentHandlerFilePath = optarg;
-            break;
-
-        case 'D':
-            launchArgs->contentDownloaderFilePath = optarg;
-            break;
-
         case 'E':
-            launchArgs->componentEnumeratorFilePath = optarg;
+            launchArgs->extensionFilePath = optarg;
             break;
 
-        case 'u':
-            launchArgs->updateType = optarg;
+        case 't':
+            launchArgs->extensionRegistrationType = GetRegistrationTypeFromArg(optarg);
+            break;
+
+        case 'i':
+            launchArgs->extensionId = optarg;
             break;
 
         case ':':
@@ -630,7 +647,9 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
 
     // Create a connection to IoTHub.
     if (!ClientHandle_CreateFromConnectionString(
-            &g_iotHubClientHandle, connInfo->connType, connInfo->connectionString,
+            &g_iotHubClientHandle,
+            connInfo->connType,
+            connInfo->connectionString,
 #ifdef ADUC_USE_WEBSOCKETS
             MQTT_WebSocket_Protocol
 #else
@@ -1096,40 +1115,62 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    if (launchArgs.contentHandlerFilePath != NULL)
+    if (launchArgs.extensionFilePath != NULL)
     {
-        if (launchArgs.updateType == NULL)
+        switch (launchArgs.extensionRegistrationType)
         {
-            Log_Error("Missing --update-type argument.");
+        case ExtensionRegistrationType_None:
+            Log_Error("Missing --extension-type argument.");
+            return 1;
+
+        case ExtensionRegistrationType_UpdateContentHandler:
+            if (launchArgs.extensionId == NULL)
+            {
+                Log_Error("Missing --extension-id argument.");
+                return 1;
+            }
+
+            if (RegisterUpdateContentHandler(launchArgs.extensionId, launchArgs.extensionFilePath))
+            {
+                return 0;
+            }
+
+            return 1;
+
+        case ExtensionRegistrationType_ComponentEnumerator:
+            if (RegisterComponentEnumeratorExtension(launchArgs.extensionFilePath))
+            {
+                return 0;
+            }
+
+            return 1;
+
+        case ExtensionRegistrationType_ContentDownloadHandler:
+            if (RegisterContentDownloaderExtension(launchArgs.extensionFilePath))
+            {
+                return 0;
+            }
+
+            return 1;
+
+        case ExtensionRegistrationType_DownloadHandler:
+            if (launchArgs.extensionId == NULL)
+            {
+                Log_Error("Missing --extension-id argument.");
+                return 1;
+            }
+
+            if (RegisterDownloadHandler(launchArgs.extensionId, launchArgs.extensionFilePath))
+            {
+                return 0;
+            }
+
+            return 1;
+
+        default:
+            Log_Error("Unknown ExtensionRegistrationType: %d", launchArgs.extensionRegistrationType);
             return 1;
         }
-
-        if (RegisterUpdateContentHandler(launchArgs.updateType, launchArgs.contentHandlerFilePath))
-        {
-            return 0;
-        }
-
-        return 1;
-    }
-
-    if (launchArgs.componentEnumeratorFilePath != NULL)
-    {
-        if (RegisterComponentEnumeratorExtension(launchArgs.componentEnumeratorFilePath))
-        {
-            return 0;
-        }
-
-        return 1;
-    }
-
-    if (launchArgs.contentDownloaderFilePath != NULL)
-    {
-        if (RegisterContentDownloaderExtension(launchArgs.contentDownloaderFilePath))
-        {
-            return 0;
-        }
-
-        return 1;
     }
 
     Log_Info("Agent (%s; %s) starting.", ADUC_PLATFORM_LAYER, ADUC_VERSION);

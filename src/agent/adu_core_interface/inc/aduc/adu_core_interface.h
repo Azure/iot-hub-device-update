@@ -8,7 +8,6 @@
 #ifndef ADUC_ADU_CORE_INTERFACE_H
 #define ADUC_ADU_CORE_INTERFACE_H
 
-#include <aduc/adu_core_json.h> // ADUCITF_State
 #include <aduc/c_utils.h>
 #include <aduc/client_handle.h>
 #include <aduc/result.h> // ADUC_Result
@@ -84,6 +83,21 @@ void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
  */
 _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     ADUC_WorkflowDataToken workflowDataToken,
+    ADUCITF_State updateState,
+    const ADUC_Result* result,
+    const char* installedUpdateId);
+
+/**
+ * @brief Get the Reporting Json Value object
+ *
+ * @param workflowData The workflow data.
+ * @param updateState The workflow state machine state.
+ * @param result The pointer to the result. If NULL, then the result will be retrieved from the opaque handle object in the workflow data.
+ * @param installedUpdateId The installed Update ID string.
+ * @return JSON_Value* The resultant json value object.
+ */
+JSON_Value* GetReportingJsonValue(
+    ADUC_WorkflowData* workflowData,
     ADUCITF_State updateState,
     const ADUC_Result* result,
     const char* installedUpdateId);

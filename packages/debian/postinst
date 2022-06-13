@@ -10,6 +10,8 @@
 # Any error should exit the script (sort of)
 # See https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html#The-Set-Builtin
 
+echo "******************** Running $0 $1 ***********************"
+
 set -e
 
 adu_conf_dir=/etc/adu
@@ -35,6 +37,8 @@ adu_swupdate_handler_2_file=libmicrosoft_swupdate_2.so
 adu_example_component_enumerator_file=libcontoso-component-enumerator.so
 
 adu_delivery_optimization_downloader_file=libdeliveryoptimization-content-downloader.so
+
+adu_delta_download_handler_file=libmicrosoft-delta-download-handler.so
 
 adu_eis_conf_file=adu.toml
 eis_idservice_dir=/etc/aziot/identityd/config.d
@@ -213,19 +217,23 @@ setup_dirs_and_files() {
 register_reference_extensions() {
     echo "Register all reference update content handlers..."
 
-    $adu_bin_path -l 2 --update-type "microsoft/apt:1" -C $adu_extensions_sources_dir/$adu_apt_handler_file
-    $adu_bin_path -l 2 --update-type "microsoft/swupdate:1" -C $adu_extensions_sources_dir/$adu_swupdate_handler_file
-    $adu_bin_path -l 2 --update-type "microsoft/swupdate:2" -C $adu_extensions_sources_dir/$adu_swupdate_handler_2_file
-    $adu_bin_path -l 2 --update-type "microsoft/script:1" -C $adu_extensions_sources_dir/$adu_script_handler_file
-    $adu_bin_path -l 2 --update-type "microsoft/steps:1" -C $adu_extensions_sources_dir/$adu_steps_handler_file
-    $adu_bin_path -l 2 --update-type "microsoft/update-manifest" -C $adu_extensions_sources_dir/$adu_steps_handler_file
-    $adu_bin_path -l 2 --update-type "microsoft/update-manifest:4" -C $adu_extensions_sources_dir/$adu_steps_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/apt:1" --register-extension $adu_extensions_sources_dir/$adu_apt_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/swupdate:1" --register-extension $adu_extensions_sources_dir/$adu_swupdate_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/swupdate:2" --register-extension $adu_extensions_sources_dir/$adu_swupdate_handler_2_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/script:1" --register-extension $adu_extensions_sources_dir/$adu_script_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/steps:1" --register-extension $adu_extensions_sources_dir/$adu_steps_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/update-manifest" --register-extension $adu_extensions_sources_dir/$adu_steps_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/update-manifest:4" --register-extension $adu_extensions_sources_dir/$adu_steps_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/update-manifest:5" --register-extension $adu_extensions_sources_dir/$adu_steps_handler_file
 
     echo "Register a reference component enumerator..."
-    $adu_bin_path -l 2 -E $adu_extensions_sources_dir/$adu_example_component_enumerator_file
+    $adu_bin_path -l 2 --extension-type componentEnumerator --register-extension $adu_extensions_sources_dir/$adu_example_component_enumerator_file
 
     echo "Register content downloader extension..."
-    $adu_bin_path -l 2 -D $adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file
+    $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file
+
+    echo "Register delta download handler..."
+    $adu_bin_path -l 2 --extension-type downloadHandler --extension-id "microsoft/delta:1" --register-extension $adu_extensions_sources_dir/$adu_delta_download_handler_file
 }
 
 register_adu_user_and_process_with_eis() {

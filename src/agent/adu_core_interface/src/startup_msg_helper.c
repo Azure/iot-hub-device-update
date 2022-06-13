@@ -6,13 +6,13 @@
  * Licensed under the MIT License.
  */
 
-#include "device_properties.h"
 #include "startup_msg_helper.h"
+#include "device_properties.h"
 
-#include <aduc/adu_core_json.h>
 #include <aduc/config_utils.h>
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
+#include <aduc/types/update_content.h> // ADUCITF_FIELDNAME_DEVICEPROPERTIES, etc.
 #include <azure_c_shared_utility/crt_abstractions.h>
 
 /**
@@ -104,9 +104,7 @@ _Bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj)
     JSON_Status jsonStatus = json_object_set_string(
         startupObj,
         ADUCITF_FIELDNAME_COMPAT_PROPERTY_NAMES,
-        IsNullOrEmpty(config.compatPropertyNames)
-            ? DEFAULT_COMPAT_PROPERTY_NAMES_VALUE
-            : config.compatPropertyNames);
+        IsNullOrEmpty(config.compatPropertyNames) ? DEFAULT_COMPAT_PROPERTY_NAMES_VALUE : config.compatPropertyNames);
 
     if (jsonStatus != JSONSuccess)
     {

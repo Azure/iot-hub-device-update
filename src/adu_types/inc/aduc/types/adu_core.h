@@ -81,9 +81,7 @@ typedef ADUC_Result (*DownloadCallbackFunc)(
  * @param workflowData Data about what to backup.
  */
 typedef ADUC_Result (*BackupCallbackFunc)(
-    ADUC_Token token,
-    const ADUC_WorkCompletionData* workCompletionData,
-    ADUC_WorkflowDataToken workflowData);
+    ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken workflowData);
 
 //
 // Install callback.
@@ -129,9 +127,7 @@ typedef ADUC_Result (*ApplyCallbackFunc)(
  * @param workflowData Data about what to restore.
  */
 typedef ADUC_Result (*RestoreCallbackFunc)(
-    ADUC_Token token,
-    const ADUC_WorkCompletionData* workCompletionData,
-    ADUC_WorkflowDataToken workflowData);
+    ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken workflowData);
 
 // Cancel callback.
 
@@ -218,6 +214,7 @@ typedef enum tagADUC_ResultCode
 
     // Success codes.
     ADUC_Result_Success = 1,                         /**< General success. */
+    ADUC_Result_Success_Cache_Miss = 2,              /**< General success when cache miss. */
 
     ADUC_Result_Register_Success = 100,              /**< Succeeded. */
 
@@ -233,6 +230,9 @@ typedef enum tagADUC_ResultCode
 
     ADUC_Result_Download_Skipped_UpdateAlreadyInstalled = 503, /**< Download succeeded. Also indicates that the Installed Criteria is met. */
     ADUC_Result_Download_Skipped_NoMatchingComponents = 504, /**< Download succeeded. Also indicates that no matchings components for this update. */
+
+    ADUC_Result_Download_Handler_SuccessSkipDownload = 520,  /**< Succeeded. DownloadHandler was able to produce the update. Agent must skip downloading. */
+    ADUC_Result_Download_Handler_RequiredFullDownload = 521, /**< Not a failure. Agent fallback to downloading the update is required. */
 
     ADUC_Result_Install_Success = 600,                       /**< Succeeded. */
     ADUC_Result_Install_InProgress = 601,                    /**< Async operation started. CompletionCallback will be called when complete. */

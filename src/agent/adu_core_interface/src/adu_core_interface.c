@@ -129,7 +129,7 @@ ADUC_WorkflowData_GetClientHandleSendReportFunc(const ADUC_WorkflowData* workflo
 {
     ClientHandleSendReportFunc fn = (ClientHandleSendReportFunc)ClientHandle_SendReportedState;
 
-#ifdef ADUC_BUILD_UNIT_TESTS
+#ifdef ADUC_ENABLE_TEST_HOOKS
     ADUC_TestOverride_Hooks* hooks = workflowData->TestOverrides;
     if (hooks && hooks->ClientHandle_SendReportedStateFunc_TestOverride)
     {
@@ -543,6 +543,7 @@ JSON_Value* GetReportingJsonValue(
     //
     ADUC_Result rootResult;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
+    ADUC_Result_t successErc = workflow_get_success_erc(handle);
 
     if (result != NULL)
     {
@@ -551,6 +552,13 @@ JSON_Value* GetReportingJsonValue(
     else
     {
         rootResult = workflow_get_result(handle);
+    }
+
+    // Allow reporting of extended result code of soft-failing mechanisms, such as download handler, that have a
+    // fallback mechanism (e.g. full content download) that can ultimately become an overall success.
+    if (IsAducResultCodeSuccess(rootResult.ResultCode) && successErc != 0)
+    {
+        rootResult.ExtendedResultCode = successErc;
     }
 
     JSON_Value* rootValue = json_value_init_object();

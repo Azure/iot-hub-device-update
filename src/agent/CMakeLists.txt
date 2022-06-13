@@ -4,9 +4,10 @@ project (azure_iot_aduc_agent)
 
 set (target_name AducIotAgent)
 
-add_subdirectory (pnp_helper)
+add_subdirectory (adu_core_export_helpers)
 add_subdirectory (adu_core_interface)
 add_subdirectory (device_info_interface)
+add_subdirectory (pnp_helper)
 
 include (agentRules)
 
@@ -73,7 +74,9 @@ target_link_libraries (
     PRIVATE aziotsharedutil
             IotHubClient::iothub_client
             umqtt
+            aduc::adu_core_export_helpers
             aduc::adu_core_interface
+            aduc::agent_orchestration
             aduc::agent_workflow
             aduc::c_utils
             aduc::communication_abstraction
@@ -81,6 +84,7 @@ target_link_libraries (
             aduc::device_info_interface
             aduc::eis_utils
             aduc::extension_manager
+            aduc::extension_utils
             aduc::https_proxy_utils
             aduc::logging
             aduc::permission_utils
@@ -91,12 +95,14 @@ target_link_libraries (
 
 if (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT_over_WebSockets")
     target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_ws_transport)
-    target_compile_definitions (
-        ${target_name} PRIVATE ADUC_USE_WEBSOCKETS=1)
+    target_compile_definitions (${target_name} PRIVATE ADUC_USE_WEBSOCKETS=1)
 elseif (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT")
     target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_transport)
 else ()
-    message (FATAL_ERROR, "Invalid value '${ADUC_IOT_HUB_PROTOCOL}' for ADUC_IOT_HUB_PROTOCOL. Valid values: MQTT or MQTT_over_WebSockets")
+    message (
+        FATAL_ERROR,
+        "Invalid value '${ADUC_IOT_HUB_PROTOCOL}' for ADUC_IOT_HUB_PROTOCOL. Valid values: MQTT or MQTT_over_WebSockets"
+    )
 endif ()
 
 get_filename_component (

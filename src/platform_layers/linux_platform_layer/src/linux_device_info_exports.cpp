@@ -176,7 +176,7 @@ static char* DeviceInfo_GetOsName()
 
     // First, use /etc/os-release that is required by systemd-based systems.
     // As per os-release(5) manpage, read the announcement here: http://0pointer.de/blog/projects/os-release
-    if (SystemUtils_IsFile(ETC_OS_RELEASE_FILEPATH))
+    if (SystemUtils_IsFile(ETC_OS_RELEASE_FILEPATH, nullptr))
     {
         std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_OS_RELEASE_FILEPATH, "NAME", "VERSION") };
         if (releaseInfo)
@@ -186,7 +186,7 @@ static char* DeviceInfo_GetOsName()
     }
 
     // Next, try the Linux Standard Base file present on some systems
-    if (SystemUtils_IsFile(ETC_LSB_RELEASE_FILEPATH))
+    if (SystemUtils_IsFile(ETC_LSB_RELEASE_FILEPATH, nullptr))
     {
         std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_LSB_RELEASE_FILEPATH, "DISTRIB_ID", "DISTRIB_RELEASE") };
         if (releaseInfo)
@@ -229,7 +229,7 @@ static char* DeviceInfo_GetOsVersion()
 
     // First, use /etc/os-release that is required by systemd-based systems.
     // As per os-release(5) manpage, read the announcement here: http://0pointer.de/blog/projects/os-release
-    if (SystemUtils_IsFile(ETC_OS_RELEASE_FILEPATH))
+    if (SystemUtils_IsFile(ETC_OS_RELEASE_FILEPATH, nullptr))
     {
         std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_OS_RELEASE_FILEPATH, "NAME", "VERSION") };
         if (releaseInfo)
@@ -239,7 +239,7 @@ static char* DeviceInfo_GetOsVersion()
     }
 
     // Next, try the Linux Standard Base file present on some systems
-    if (SystemUtils_IsFile(ETC_LSB_RELEASE_FILEPATH))
+    if (SystemUtils_IsFile(ETC_LSB_RELEASE_FILEPATH, nullptr))
     {
         std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_LSB_RELEASE_FILEPATH, "DISTRIB_ID", "DISTRIB_RELEASE") };
         if (releaseInfo)

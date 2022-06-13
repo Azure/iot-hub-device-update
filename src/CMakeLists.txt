@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.5)
 
 if (ADUC_TRACE_TARGET_DEPS)
-    set_property(GLOBAL PROPERTY GLOBAL_DEPENDS_DEBUG_MODE 1)
+    set_property (GLOBAL PROPERTY GLOBAL_DEPENDS_DEBUG_MODE 1)
 endif ()
 
 if (ADUC_WARNINGS_AS_ERRORS)
@@ -40,3 +40,4 @@ add_subdirectory (platform_layers)
 add_subdirectory (utils)
 add_subdirectory (extensions)
 add_subdirectory (agent)
+add_subdirectory (agent_orchestration)

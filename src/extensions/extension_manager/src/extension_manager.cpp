@@ -8,42 +8,50 @@
 #include "aduc/component_enumerator_extension.hpp"
 #include "aduc/content_downloader_extension.hpp"
 #include "aduc/content_handler.hpp"
+#include "aduc/download_handler_factory.hpp"
+#include "aduc/download_handler_plugin.hpp"
 
 #include "aduc/c_utils.h"
+#include "aduc/calloc_wrapper.hpp" // ADUC::StringUtils::cstr_wrapper
 #include "aduc/exceptions.hpp"
+#include "aduc/extension_manager.h"
 #include "aduc/extension_manager.hpp"
 #include "aduc/extension_utils.h"
 #include "aduc/hash_utils.h" // for SHAversion
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h"
+#include "aduc/path_utils.h" // SanitizePathSegment
 #include "aduc/result.h"
+#include "aduc/string_c_utils.h"
+#include "aduc/string_handle_wrapper.hpp"
 #include "aduc/string_utils.hpp"
+#include "aduc/types/workflow.h" // ADUC_WorkflowHandle
+#include "aduc/workflow_utils.h"
 
 #include <cstring>
 #include <unordered_map>
 #include <vector>
 
-#include <azure_c_shared_utility/azure_base64.h>
-#include <azure_c_shared_utility/buffer_.h>
-#include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
-
 // Note: this requires ${CMAKE_DL_LIBS}
 #include <dlfcn.h>
 #include <unistd.h>
+
+// type aliases
+using UPDATE_CONTENT_HANDLER_CREATE_PROC = ContentHandler* (*)(ADUC_LOG_SEVERITY logLevel);
+using WorkflowHandle = void*;
+using ADUC::StringUtils::cstr_wrapper;
+
+EXTERN_C_BEGIN
+ExtensionManager_Download_Options Default_ExtensionManager_Download_Options = {
+    .retryTimeout = 60 * 60 * 24 /* default : 24 hour */,
+};
+EXTERN_C_END
 
 // Static members.
 std::unordered_map<std::string, void*> ExtensionManager::_libs;
 std::unordered_map<std::string, ContentHandler*> ExtensionManager::_contentHandlers;
 void* ExtensionManager::_contentDownloader;
 void* ExtensionManager::_componentEnumerator;
-
-STRING_HANDLE FolderNameFromHandlerId(const char* handlerId)
-{
-    STRING_HANDLE name = STRING_construct(handlerId);
-    STRING_replace(name, '/', '_');
-    STRING_replace(name, ':', '_');
-    return name;
-}
 
 /**
  * @brief Loads extension shared library file.
@@ -193,8 +201,6 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
 
     UPDATE_CONTENT_HANDLER_CREATE_PROC createUpdateContentHandlerExtension = nullptr;
     void* libHandle = nullptr;
-    STRING_HANDLE folderName = nullptr;
-    STRING_HANDLE path = nullptr;
 
     Log_Info("Loading Update Content Handler for '%s'.", updateType.c_str());
 
@@ -203,7 +209,14 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
         Log_Error("Invalid argument(s).");
         result.ExtendedResultCode =
             ADUC_ERC_EXTENSION_CREATE_FAILURE_INVALID_ARG(ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER, 0);
-        goto done;
+        return result;
+    }
+
+    ADUC::StringUtils::STRING_HANDLE_wrapper folderName{ SanitizePathSegment(updateType.c_str()) };
+    if (folderName.is_null())
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
+        return result;
     }
 
     // Try to find cached handler.
@@ -229,13 +242,10 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
         goto done;
     }
 
-    folderName = FolderNameFromHandlerId(updateType.c_str());
-    path = STRING_construct_sprintf("%s/%s", ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR, STRING_c_str(folderName));
-
     result = LoadExtensionLibrary(
         updateType.c_str(),
         ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR,
-        STRING_c_str(folderName),
+        folderName.c_str(),
         ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME,
         "CreateUpdateContentHandlerExtension",
         ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER,
@@ -267,11 +277,11 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
     }
     catch (const std::exception& ex)
     {
-        Log_Debug("An exception occurred while creating update handler: %s", ex.what());
+        Log_Error("An exception occurred while creating update handler: %s", ex.what());
     }
     catch (...)
     {
-        Log_Debug("Unknown exception occurred while creating update handler for '%s'", updateType.c_str());
+        Log_Error("Unknown exception occurred while creating update handler for '%s'", updateType.c_str());
     }
 
     if (*handler == nullptr)
@@ -294,9 +304,6 @@ done:
             libHandle = nullptr;
         }
     }
-
-    STRING_delete(folderName);
-    STRING_delete(path);
 
     return result;
 }
@@ -663,23 +670,19 @@ done:
 
 ADUC_Result ExtensionManager::Download(
     const ADUC_FileEntity* entity,
-    const char* workflowId,
-    const char* workFolder,
-    unsigned int retryTimeout,
+    WorkflowHandle workflowHandle,
+    ExtensionManager_Download_Options* options,
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
     void* lib = nullptr;
     DownloadProc downloadProc = nullptr;
     char* components = nullptr;
     SHAversion algVersion;
-    std::stringstream childManifestFile;
-    ADUC_Result result;
 
-    try
-    {
-        childManifestFile << workFolder << "/" << entity->TargetFilename;
-    }
-    catch (...)
+    ADUC_Result result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+    ADUC::StringUtils::STRING_HANDLE_wrapper targetUpdateFilePath{ nullptr };
+
+    if (!workflow_get_entity_workfolder_filepath(workflowHandle, entity, targetUpdateFilePath.address_of()))
     {
         Log_Error("Cannot construct child manifest file path.");
         result = { .ResultCode = ADUC_Result_Failure,
@@ -707,7 +710,7 @@ ADUC_Result ExtensionManager::Download(
     {
         Log_Error(
             "FileEntity for %s has unsupported hash type %s",
-            childManifestFile.str().c_str(),
+            targetUpdateFilePath.c_str(),
             ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0));
         result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_FILE_HASH_TYPE_NOT_SUPPORTED;
         goto done;
@@ -715,9 +718,9 @@ ADUC_Result ExtensionManager::Download(
 
     // If file exists and has a valid hash, then skip download.
     // Otherwise, delete an existing file, then download.
-    Log_Debug("Check whether '%s' has already been download into the work folder.", childManifestFile.str().c_str());
+    Log_Debug("Check whether '%s' has already been download into the work folder.", targetUpdateFilePath.c_str());
 
-    if (access(childManifestFile.str().c_str(), F_OK) == 0)
+    if (access(targetUpdateFilePath.c_str(), F_OK) == 0)
     {
         char* hashValue = ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0 /* index */);
         if (hashValue == nullptr)
@@ -730,12 +733,12 @@ ADUC_Result ExtensionManager::Download(
         // If target file exists, validate file hash.
         // If file is valid, then skip the download.
         bool validHash = ADUC_HashUtils_IsValidFileHash(
-            childManifestFile.str().c_str(), hashValue, algVersion, false /* suppressErrorLog */);
+            targetUpdateFilePath.c_str(), hashValue, algVersion, false /* suppressErrorLog */);
 
         if (!validHash)
         {
             // Delete existing file.
-            if (remove(childManifestFile.str().c_str()) != 0)
+            if (remove(targetUpdateFilePath.c_str()) != 0)
             {
                 Log_Error("Cannot delete existing file that has invalid hash.");
                 result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_CANNOT_DELETE_EXISTING_FILE;
@@ -749,7 +752,44 @@ ADUC_Result ExtensionManager::Download(
 
     try
     {
-        result = downloadProc(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
+        const char* workflowId = workflow_peek_id(workflowHandle);
+        cstr_wrapper workFolder{ workflow_get_workfolder(workflowHandle) };
+
+        // First, attempt to produce the update using download handler if
+        // download handler exists in the entity (metadata).
+        if (!IsNullOrEmpty(entity->DownloadHandlerId))
+        {
+            DownloadHandlerFactory* factory = DownloadHandlerFactory::GetInstance();
+            DownloadHandlerPlugin* plugin = factory->LoadDownloadHandler(entity->DownloadHandlerId);
+            if (plugin == nullptr)
+            {
+                Log_Warn("Load Download Handler %s failed", entity->DownloadHandlerId);
+
+                workflow_set_success_erc(
+                    workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_CREATE_FAILURE_CREATE);
+            }
+            else
+            {
+                result = plugin->ProcessUpdate(workflowHandle, entity, targetUpdateFilePath.c_str());
+                if (IsAducResultCodeFailure(result.ResultCode))
+                {
+                    Log_Warn(
+                        "Download handler failed to produce update: result 0x%08x, erc 0x%08x",
+                        result.ResultCode,
+                        result.ExtendedResultCode);
+
+                    workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
+                }
+            }
+
+            if (IsAducResultCodeFailure(result.ResultCode)
+                || result.ResultCode == ADUC_Result_Download_Handler_RequiredFullDownload)
+            {
+                // Either download handler id did not exist, or download handler failed and doing fallback here.
+                result = downloadProc(
+                    entity, workflowId, workFolder.get(), options->retryTimeout, downloadProgressCallback);
+            }
+        }
     }
     catch (...)
     {
@@ -761,18 +801,22 @@ ADUC_Result ExtensionManager::Download(
     if (IsAducResultCodeSuccess(result.ResultCode))
     {
         if (!ADUC_HashUtils_IsValidFileHash(
-                childManifestFile.str().c_str(),
-                ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0 /* index */),
+                targetUpdateFilePath.c_str(),
+                ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
                 algVersion,
-                true))
+                false))
         {
             result = { .ResultCode = ADUC_Result_Failure,
                        .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION };
+
+            workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
+
             goto done;
         }
     }
 
 done:
+
     return result;
 }
 
@@ -785,12 +829,11 @@ ADUC_Result ExtensionManager_InitializeContentDownloader(const char* initializeD
 
 ADUC_Result ExtensionManager_Download(
     const ADUC_FileEntity* entity,
-    const char* workflowId,
-    const char* workFolder,
-    unsigned int retryTimeout,
+    ADUC_WorkflowHandle workflowHandle,
+    ExtensionManager_Download_Options* options,
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
-    return ExtensionManager::Download(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
+    return ExtensionManager::Download(entity, workflowHandle, options, downloadProgressCallback);
 }
 
 /**

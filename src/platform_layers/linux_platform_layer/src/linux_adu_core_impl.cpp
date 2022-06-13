@@ -100,7 +100,7 @@ static ContentHandler* GetUpdateManifestHandler(const ADUC_WorkflowData* workflo
 {
     ContentHandler* contentHandler = nullptr;
 
-#ifdef ADUC_BUILD_UNIT_TESTS
+#ifdef ADUC_ENABLE_TEST_HOOKS
     if (workflowData->TestOverrides != nullptr && workflowData->TestOverrides->ContentHandler_TestOverride != nullptr)
     {
         contentHandler = static_cast<ContentHandler*>(workflowData->TestOverrides->ContentHandler_TestOverride);
@@ -287,7 +287,6 @@ done:
     workflow_free_string(workflowId);
     return result;
 }
-
 
 /**
  * @brief Class implementation of Cancel method.

@@ -5,14 +5,16 @@
  * Licensed under the MIT License.
  */
 
-#include "workflow_test_utils.h"
 #include <aduc/agent_workflow.h>
 #include <aduc/c_utils.h>
+#include <aduc/file_test_utils.hpp>
+#include <aduc/types/workflow.h>
 #include <aduc/workflow_internal.h>
 #include <aduc/workflow_utils.h>
 #include <catch2/catch.hpp>
 
-static std::string get_update_manifest_json_path() {
+static std::string get_update_manifest_json_path()
+{
     std::string path{ ADUC_TEST_DATA_FOLDER };
     path += "/startupworkflowdata/updateManifest.json";
     return path;
@@ -102,7 +104,8 @@ TEST_CASE("ADUC_Workflow_HandleStartupWorkflowData")
         auto nextWorkflow = (ADUC_Workflow*)malloc(sizeof(ADUC_Workflow)); // NOLINT
         REQUIRE(nextWorkflow != nullptr);
 
-        ADUC_Result result = workflow_init_from_file(get_update_manifest_json_path().c_str(), true, (void**)&nextWorkflow); // NOLINT
+        ADUC_Result result =
+            workflow_init_from_file(get_update_manifest_json_path().c_str(), false, (void**)&nextWorkflow); // NOLINT
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
         ADUC_WorkflowData workflowData{};
@@ -130,7 +133,8 @@ TEST_CASE("ADUC_Workflow_HandleStartupWorkflowData")
         auto nextWorkflow = (ADUC_Workflow*)malloc(sizeof(ADUC_Workflow)); // NOLINT
         REQUIRE(nextWorkflow != nullptr);
 
-        ADUC_Result result = workflow_init_from_file(get_update_manifest_json_path().c_str(), true, (void**)&nextWorkflow); // NOLINT
+        ADUC_Result result =
+            workflow_init_from_file(get_update_manifest_json_path().c_str(), false, (void**)&nextWorkflow); // NOLINT
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
         ADUC_Workflow_HandleStartupWorkflowData(nullptr);

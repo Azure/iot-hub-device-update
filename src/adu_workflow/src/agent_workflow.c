@@ -19,7 +19,10 @@
 #include <time.h>
 
 #include "aduc/agent_orchestration.h"
+#include "aduc/download_handler_factory.h" // ADUC_DownloadHandlerFactory_LoadDownloadHandler
+#include "aduc/download_handler_plugin.h" // ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted
 #include "aduc/logging.h"
+#include "aduc/parser_utils.h" // ADUC_FileEntity_Uninit
 #include "aduc/result.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
@@ -28,6 +31,9 @@
 #include "aduc/workflow_utils.h"
 
 #include <pthread.h>
+
+// fwd decl
+void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, _Bool isAsync);
 
 // This lock is used for critical sections where main and worker thread could read/write to ADUC_workflowData
 // It is used only at the top-level coarse granularity operations:
@@ -46,10 +52,7 @@ static inline void s_workflow_unlock(void)
     pthread_mutex_unlock(&s_workflow_mutex);
 }
 
-// fwd decl
-void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, _Bool isAsync);
-
-const char* ADUC_Workflow_CancellationTypeToString(ADUC_WorkflowCancellationType cancellationType)
+static const char* ADUC_Workflow_CancellationTypeToString(ADUC_WorkflowCancellationType cancellationType)
 {
     switch (cancellationType)
     {
@@ -66,6 +69,47 @@ const char* ADUC_Workflow_CancellationTypeToString(ADUC_WorkflowCancellationType
     }
 
     return "<Unknown>";
+}
+
+/**
+ * @brief Gets the function for handling a new incoming update action
+ *
+ * @param workflowData The workflow data.
+ * @return HandleUpdateActionFunc The function for handling update action.
+ */
+static HandleUpdateActionFunc ADUC_WorkflowData_GetHandleUpdateActionFunc(const ADUC_WorkflowData* workflowData)
+{
+    HandleUpdateActionFunc fn = ADUC_Workflow_HandleUpdateAction;
+
+#ifdef ADUC_ENABLE_TEST_HOOKS
+    if (workflowData->TestOverrides && workflowData->TestOverrides->HandleUpdateActionFunc_TestOverride)
+    {
+        fn = workflowData->TestOverrides->HandleUpdateActionFunc_TestOverride;
+    }
+#endif
+
+    return fn;
+}
+
+/**
+ * @brief Gets the function for updating the workflow state machine state with result.
+ *
+ * @param workflowData The workflow data.
+ * @return SetUpdateStateWithResultFunc The function for updating the workflow state with result.
+ */
+static SetUpdateStateWithResultFunc
+ADUC_WorkflowData_GetSetUpdateStateWithResultFunc(const ADUC_WorkflowData* workflowData)
+{
+    SetUpdateStateWithResultFunc fn = ADUC_Workflow_SetUpdateStateWithResult;
+
+#ifdef ADUC_ENABLE_TEST_HOOKS
+    if (workflowData->TestOverrides && workflowData->TestOverrides->SetUpdateStateWithResultFunc_TestOverride)
+    {
+        fn = workflowData->TestOverrides->SetUpdateStateWithResultFunc_TestOverride;
+    }
+#endif
+
+    return fn;
 }
 
 /**
@@ -390,7 +434,18 @@ void ADUC_Workflow_HandlePropertyUpdate(
     ADUC_WorkflowData* currentWorkflowData, const unsigned char* propertyUpdateValue, bool forceDeferral)
 {
     ADUC_WorkflowHandle nextWorkflow;
+
+#ifdef ADUC_ENABLE_TEST_HOOKS
+    _Bool shouldValidate = true;
+    if (currentWorkflowData->TestOverrides
+        && currentWorkflowData->TestOverrides->ShouldValidateUpdateManifest_TestOverride)
+    {
+        shouldValidate = currentWorkflowData->TestOverrides->ShouldValidateUpdateManifest_TestOverride();
+    }
+    ADUC_Result result = workflow_init((const char*)propertyUpdateValue, shouldValidate, &nextWorkflow);
+#else
     ADUC_Result result = workflow_init((const char*)propertyUpdateValue, true, &nextWorkflow);
+#endif
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -760,7 +815,7 @@ void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData)
     // when it makes the async work complete call.
     WorkCompletionCallbackFunc workCompletionCallbackFunc = ADUC_Workflow_WorkCompletionCallback;
 
-#ifdef ADUC_BUILD_UNIT_TESTS
+#ifdef ADUC_ENABLE_TEST_HOOKS
     if (workflowData->TestOverrides && workflowData->TestOverrides->WorkCompletionCallbackFunc_TestOverride)
     {
         workCompletionCallbackFunc = workflowData->TestOverrides->WorkCompletionCallbackFunc_TestOverride;
@@ -1085,6 +1140,55 @@ static void ADUC_Workflow_SetUpdateStateHelper(
     Log_RequestFlush();
 }
 
+static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHandle workflowHandle)
+{
+    DownloadHandlerHandle handle = NULL;
+
+    size_t payloadCount = workflow_get_update_files_count(workflowHandle);
+    if (payloadCount <= 0)
+    {
+        goto done;
+    }
+
+    for (int i = 0; i < payloadCount; ++i)
+    {
+        ADUC_Result result = {};
+        ADUC_FileEntity* fileEntity = NULL;
+        if (!workflow_get_update_file(workflowHandle, i, &fileEntity))
+        {
+            goto done;
+        }
+
+        if (IsNullOrEmpty(fileEntity->DownloadHandlerId))
+        {
+            continue;
+        }
+
+        handle = ADUC_DownloadHandlerFactory_LoadDownloadHandler(fileEntity->DownloadHandlerId);
+        if (handle == NULL)
+        {
+            goto done;
+        }
+
+        result = ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(handle, workflowHandle);
+        ADUC_DownloadHandlerFactory_FreeHandle(handle);
+        handle = NULL;
+
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            Log_Error(
+                "OnupdateWorkflowCompleted, result 0x%08x, erc 0x%08x", result.ResultCode, result.ExtendedResultCode);
+
+            workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
+
+            goto done;
+        }
+    }
+
+done:
+    ADUC_DownloadHandlerFactory_FreeHandle(handle);
+}
+
 /**
  * @brief Set a new update state.
  *
@@ -1132,6 +1236,8 @@ void ADUC_Workflow_SetInstalledUpdateIdAndGoToIdle(ADUC_WorkflowData* workflowDa
     {
         Log_Error("Failed to set last completed workflow id. Going to idle state.");
     }
+
+    CallDownloadHandlerOnUpdateWorkflowCompleted(workflowData->WorkflowHandle);
 
     ADUC_Workflow_MethodCall_Idle(workflowData);
 
@@ -1319,8 +1425,8 @@ done:
 
 void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
 {
-    if (workflow_is_immediate_reboot_requested(methodCallData->WorkflowData->WorkflowHandle) ||
-        workflow_is_reboot_requested(methodCallData->WorkflowData->WorkflowHandle))
+    if (workflow_is_immediate_reboot_requested(methodCallData->WorkflowData->WorkflowHandle)
+        || workflow_is_reboot_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
         // If 'install' indicated a reboot required result from apply, go ahead and reboot.
         Log_Info("Install indicated success with RebootRequired - rebooting system now");
@@ -1340,8 +1446,8 @@ void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallD
         }
     }
     else if (
-        workflow_is_immediate_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle) ||
-        workflow_is_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle))
+        workflow_is_immediate_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle)
+        || workflow_is_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
         // If 'install' indicated a restart is required, go ahead and restart the agent.
         Log_Info("Install indicated success with AgentRestartRequired - restarting the agent now");
@@ -1438,8 +1544,8 @@ done:
 
 void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
 {
-    if (workflow_is_immediate_reboot_requested(methodCallData->WorkflowData->WorkflowHandle) ||
-        workflow_is_reboot_requested(methodCallData->WorkflowData->WorkflowHandle))
+    if (workflow_is_immediate_reboot_requested(methodCallData->WorkflowData->WorkflowHandle)
+        || workflow_is_reboot_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
         // If apply indicated a reboot required result from apply, go ahead and reboot.
         Log_Info("Apply indicated success with RebootRequired - rebooting system now");
@@ -1459,8 +1565,8 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
         }
     }
     else if (
-        workflow_is_immediate_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle) ||
-        workflow_is_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle))
+        workflow_is_immediate_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle)
+        || workflow_is_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
         // If apply indicated a restart is required, go ahead and restart the agent.
         Log_Info("Apply indicated success with AgentRestartRequired - restarting the agent now");

@@ -31,10 +31,13 @@
 
 #include <parson.h>
 
-namespace adushconst = Adu::Shell::Const;
-
 #define HANDLER_PROPERTIES_SCRIPT_FILENAME "scriptFileName"
 #define HANDLER_PROPERTIES_SWU_FILENAME "swuFileName"
+
+namespace adushconst = Adu::Shell::Const;
+
+/* external linkage */
+extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
 
 struct JSONValueDeleter
 {
@@ -118,7 +121,7 @@ static ADUC_Result SWUpdate_Handler_DownloadScriptFile(ADUC_WorkflowHandle handl
 
     try
     {
-        result = ExtensionManager::Download(entity, workflowId, workFolder, DO_RETRY_TIMEOUT_DEFAULT, nullptr);
+        result = ExtensionManager::Download(entity, handle, &Default_ExtensionManager_Download_Options, nullptr);
     }
     catch (...)
     {
@@ -180,7 +183,8 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
 
         try
         {
-            result = ExtensionManager::Download(entity, workflowId, workFolder, DO_RETRY_TIMEOUT_DEFAULT, nullptr);
+            result = ExtensionManager::Download(
+                entity, workflowHandle, &Default_ExtensionManager_Download_Options, nullptr);
         }
         catch (...)
         {
@@ -879,7 +883,8 @@ ADUC_Result SWUpdateHandlerImpl::Restore(const tagADUC_WorkflowData* workflowDat
     ADUC_Result cancel_result = CancelApply(ADUC_LOG_FOLDER);
     if (cancel_result.ResultCode != ADUC_Result_Failure_Cancelled)
     {
-        result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_FAILED_RESTORE_FAILED };
+        result = { .ResultCode = ADUC_Result_Failure,
+                   .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_FAILED_RESTORE_FAILED };
     }
     return result;
 }

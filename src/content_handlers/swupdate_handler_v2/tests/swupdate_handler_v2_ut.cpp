@@ -7,7 +7,6 @@
  */
 
 #include "aduc/extension_manager.hpp"
-#include "aduc/parser_utils.h"
 #include "aduc/process_utils.hpp"
 #include "aduc/swupdate_handler_v2.hpp"
 #include "aduc/system_utils.h"
