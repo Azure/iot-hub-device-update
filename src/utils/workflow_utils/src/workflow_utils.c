@@ -1559,7 +1559,7 @@ done:
  * @brief Get 'updateManifest.instructions.steps' array.
  *
  * @param handle A workflow object handle.
- * @return const JSON_Object* Array containing update instrutions steps.
+ * @return const JSON_Object* Array containing update instructions steps.
  */
 static JSON_Array* workflow_get_instructions_steps_array(ADUC_WorkflowHandle handle)
 {

@@ -362,6 +362,7 @@ ADUC_Result AptHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
     if (aptContent->AgentRestartRequired)
     {
         Log_Debug("The install task completed successfully, DU Agent restart is required for this update.");
+        workflow_request_immediate_agent_restart(handle);
         result = { .ResultCode = ADUC_Result_Apply_RequiredImmediateAgentRestart };
         goto done;
     }
