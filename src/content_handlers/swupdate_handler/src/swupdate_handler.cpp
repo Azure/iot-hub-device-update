@@ -200,9 +200,9 @@ ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowDat
         args.emplace_back(data.str().c_str());
 
         args.emplace_back(adushconst::target_log_folder_opt);
-        
+
         // Note: this implementation of SWUpdate Handler is relying on ADUC_LOG_FOLDER value from build pipeline.
-        // For GA, we should make this configurable in du-config.json. 
+        // For GA, we should make this configurable in du-config.json.
         args.emplace_back(ADUC_LOG_FOLDER);
 
         std::string output;
@@ -250,9 +250,9 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
                                    adushconst::update_action_apply };
 
     args.emplace_back(adushconst::target_log_folder_opt);
-    
+
     // Note: this implementation of SWUpdate Handler is relying on ADUC_LOG_FOLDER value from build pipeline.
-    // For GA, we should make this configurable in du-config.json. 
+    // For GA, we should make this configurable in du-config.json.
     args.emplace_back(ADUC_LOG_FOLDER);
 
     std::string output;
@@ -270,15 +270,17 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
     if (workflow_get_operation_cancel_requested(workflowData->WorkflowHandle))
     {
         // Note: this implementation of SWUpdate Handler is relying on ADUC_LOG_FOLDER value from build pipeline.
-        // For GA, we should make this configurable in du-config.json. 
-        CancelApply(ADUC_LOG_FOLDER);
+        // For GA, we should make this configurable in du-config.json.
+        result = CancelApply(ADUC_LOG_FOLDER); // Otherwise returning ADUC_Result_Success ot ADUC_Result_InProgress
+        goto done;
     }
+
+    Log_Info("Apply succeeded");
+    // Always require a reboot after successful apply
+    result = { ADUC_Result_Apply_RequiredImmediateReboot };
 
 done:
     workflow_free_string(workFolder);
-
-    // Always require a reboot after successful apply
-    result = { ADUC_Result_Apply_RequiredImmediateReboot };
 
     return result;
 }
