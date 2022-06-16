@@ -330,6 +330,7 @@ option (ADUC_BUILD_DOCUMENTATION "Build documentation files" OFF)
 option (ADUC_BUILD_PACKAGES "Build the ADU Agent packages" OFF)
 option (ADUC_INSTALL_DAEMON "Install the ADU Agent as a daemon" ON)
 option (ADUC_REGISTER_DAEMON "Register the ADU Agent daemon with the system" ON)
+option (ADUC_HARDENING "Add hardening flags to compilation" ON)
 
 ### End CMake Options
 
