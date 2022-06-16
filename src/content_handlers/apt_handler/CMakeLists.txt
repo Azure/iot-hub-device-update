@@ -29,13 +29,12 @@ get_filename_component (
     "/")
 
 target_compile_definitions (
-    ${target_name} PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}")
+    ${target_name} PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}"
+                           ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}")
 
 target_link_libraries (
     ${target_name}
-    PUBLIC
-            aduc::content_handlers
-            aduc::workflow_data_utils
+    PUBLIC aduc::content_handlers aduc::workflow_data_utils
     PRIVATE aduc::c_utils
             aduc::extension_manager
             aduc::exception_utils

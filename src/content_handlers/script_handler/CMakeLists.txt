@@ -31,7 +31,8 @@ target_link_libraries (
             aduc::system_utils
             aduc::workflow_data_utils
             aduc::workflow_utils
-            -zdefs
-            )
+            -zdefs)
+
+target_compile_definitions (${target_name} PUBLIC ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}")
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

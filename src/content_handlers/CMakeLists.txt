@@ -38,6 +38,8 @@ add_subdirectory (swupdate_handler)
 #   add_subdirectory (my_handler)
 #
 
+target_compile_definitions (${PROJECT_NAME} PUBLIC ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}")
+
 if (${ADUC_PLATFORM_LAYER} STREQUAL "simulator")
     target_compile_definitions (${PROJECT_NAME} PUBLIC ADUC_SIMULATOR_MODE=1)
 endif ()

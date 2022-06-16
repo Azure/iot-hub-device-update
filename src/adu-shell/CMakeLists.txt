@@ -34,7 +34,12 @@ string (
 set (source_files ${agent_c_files})
 
 # Support all microsoft/* update types by default.
-set (source_files ${agent_c_files} ${agent_apt_c_files} ${agent_swupdate_c_files} ${agent_script_c_files})
+set (
+    source_files
+    ${agent_c_files}
+    ${agent_apt_c_files}
+    ${agent_swupdate_c_files}
+    ${agent_script_c_files})
 
 set (adushell_def ADUSHELL_SWUPDATE="yes" ADUSHELL_APT="yes" ADUSHELL_SCRIPT="yes")
 
@@ -48,6 +53,7 @@ set_target_properties (${target_name} PROPERTIES COMPILE_DEFINITIONS _DEFAULT_SO
 
 target_compile_definitions (
     ${target_name}
+    PUBLIC ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}"
     PRIVATE ADUC_VERSION="${ADUC_VERSION}"
             ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
             ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
