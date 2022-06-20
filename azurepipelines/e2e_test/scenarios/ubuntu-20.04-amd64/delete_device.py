@@ -15,7 +15,7 @@ from testingtoolkit import DeviceUpdateTestHelper
 from testingtoolkit import DuAutomatedTestConfigurationManager
 from xmlrunner.extra.xunit_plugin import transform
 
-sys.path.append('./scenarios/ubuntu-18.04-amd64/')
+sys.path.append('./scenarios/ubuntu-20.04-amd64/')
 from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, retry_wait_time_in_seconds
 
 class DeleteDeviceAndGroup(unittest.TestCase):
@@ -29,7 +29,6 @@ class DeleteDeviceAndGroup(unittest.TestCase):
 
         time.sleep(retry_wait_time_in_seconds)
         self.assertTrue(duTestHelper.DeleteDevice(test_device_id))
-
 
 if (__name__ == "__main__"):
     out = io.BytesIO()

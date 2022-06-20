@@ -15,16 +15,16 @@ import xmlrunner
 # from testingtoolkit import UpdateId
 # from azure.identity import DefaultAzureCredential
 sys.path.append('./scenarios/')
-from testingtoolkit import DeviceUpdateTestHelper
-from testingtoolkit import UpdateId
-from testingtoolkit import DeploymentStatusResponse
-from testingtoolkit import DuAutomatedTestConfigurationManager
 from xmlrunner.extra.xunit_plugin import transform
+from testingtoolkit import DuAutomatedTestConfigurationManager
+from testingtoolkit import DeploymentStatusResponse
+from testingtoolkit import UpdateId
+from testingtoolkit import DeviceUpdateTestHelper
 
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/testscript.py
-sys.path.append('./scenarios/ubuntu-18.04-amd64/')
-from scenario_definitions import test_device_id, test_result_file_prefix, test_operation_id
+sys.path.append('./scenarios/ubuntu-20.04-amd64/')
+from scenario_definitions import test_device_id, test_result_file_prefix, test_operation_id, test_connection_timeout_tries, retry_wait_time_in_seconds
 
 class DiagnosticsTest(unittest.TestCase):
     def test_diagnostics(self):
@@ -32,7 +32,7 @@ class DiagnosticsTest(unittest.TestCase):
         self.duTestHelper = self.aduTestConfig.CreateDeviceUpdateTestHelper()
 
         #
-        # We retrieve the test operation id to be used by the script from the scenario definitions file. It's important to keep
+        # We retrieve the apt deployment id to be used by the script from the scenario definitions file. It's important to keep
         # things like the deployment id, device-id, module-id, and other scenario level definitions that might effect other
         # tests in the scenario_definitions.py file.
         #
@@ -43,11 +43,11 @@ class DiagnosticsTest(unittest.TestCase):
         # We expect the device to connect within the configured amount of time of setting up the device in the step previous
         #
         connectionStatus = ""
-        for i in range(0, 5):
+        for i in range(0, test_connection_timeout_tries):
             connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
             if (connectionStatus == "Connected"):
                 break
-            time.sleep(30)
+            time.sleep(retry_wait_time_in_seconds)
 
         self.assertEqual(connectionStatus, "Connected")
 
@@ -65,12 +65,12 @@ class DiagnosticsTest(unittest.TestCase):
         # Get device diagnostics log collection operatio status and device status
         # device status represent Log upload status, operatin status represent background operation status
         #
-        for i in range(0, 30):
-            time.sleep(5)
+        for i in range(0, test_connection_timeout_tries):
             diagnosticJsonStatus = self.duTestHelper.GetDiagnosticsLogCollectionStatus(self.operationId)
 
             if (diagnosticJsonStatus.operationStatus == "Succeeded" and diagnosticJsonStatus.deviceStatus == "Succeeded"):
                 break
+            time.sleep(retry_wait_time_in_seconds)
 
         self.assertEqual(diagnosticJsonStatus.operationStatus, diagnosticJsonStatus.deviceStatus,
                          "Log upload failed, status is " + diagnosticJsonStatus.deviceStatus)

@@ -120,6 +120,8 @@ class DuAutomatedTestConfigurationManager():
         return DeviceUpdateTestHelper(self._aduInstanceId, self._iotHubUrl, self._iotHubConnectionString, self.credential, self._aduEndpoint)
 
 
+
+
 class DeploymentStatusResponse():
     def __init__(self, deploymentStatusJson) -> None:
         """
@@ -144,7 +146,6 @@ class DeploymentStatusResponse():
         self.devicesCompletedSucceededCount = deploymentStatusJson["devicesCompletedSucceededCount"]
         self.devicesCanceledCount = deploymentStatusJson["devicesCanceledCount"]
 
-
 class DiagnosticLogCollectionStatusResponse():
     def __init__(self) -> None:
         """
@@ -164,7 +165,6 @@ class DiagnosticLogCollectionStatusResponse():
 
         return self
 
-
 class UpdateId():
     def __init__(self, provider, name, version) -> None:
         """
@@ -176,7 +176,6 @@ class UpdateId():
 
     def __str__(self) -> str:
         return '{ "provider":"' + str(self.provider) + '" , "name": "' + str(self.name) + '", "version": "' + str(self.version) + '"}'
-
 
 class DeviceUpdateTestHelper:
     def __init__(self, aduInstanceId, iothubUrl, iothub_connection_string, adu_credential, endpoint="") -> None:
@@ -445,7 +444,7 @@ class DeviceUpdateTestHelper:
 
         return deleteDeploymentResponse.status_code
 
-    def RunDiagnosticsOnDeviceOrModule(self, deviceId, operationId, description, moduleId=""):
+    def RunDiagnosticsOnDeviceOrModule(self,deviceId,operationId,description,moduleId=""):
         """
         Initiates a diagnostics log collection flow for the specified device or module using the operationId and description passed
 
@@ -458,14 +457,13 @@ class DeviceUpdateTestHelper:
         jsonBody = None
         if (len(moduleId) == 0):
             jsonBody = {
-                "deviceList": [
+                "deviceList":[
                     {
                         "deviceId": deviceId
                     },
                 ],
                 "description": description
             }
-
         else:
             jsonBody = {
                 "deviceList": [
@@ -508,7 +506,7 @@ class DeviceUpdateTestHelper:
 
         return logCollectionStatusResponseJson
 
-    def CreateADUGroup(self, tag, deviceClassId):
+    def CreateADUGroup(self,tag,deviceClassId):
         """
         Creates an ADUGroup from a group that has been added to a device. You must add the "ADUGroup" tag with the groupname before calling this function
         :param str tag: IotHub tag to be used to create the ADUGroup it also functions as the group name
@@ -570,3 +568,5 @@ class DeviceUpdateTestHelper:
         deleteAduGroupResponse = self._aduAcnt.send_request(deleteAduGroupRequest)
 
         return deleteAduGroupResponse.status_code
+
+

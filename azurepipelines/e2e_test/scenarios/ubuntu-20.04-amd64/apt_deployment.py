@@ -20,7 +20,7 @@ from xmlrunner.extra.xunit_plugin import transform
 
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/testscript.py
-sys.path.append('./scenarios/ubuntu-18.04-amd64/')
+sys.path.append('./scenarios/ubuntu-20.04-amd64/')
 from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, test_apt_deployment_id, test_connection_timeout_tries, retry_wait_time_in_seconds
 
 #
@@ -35,7 +35,7 @@ class AptDeploymentTest(unittest.TestCase):
     # Every test within a subclass of a unittest.TestCase to be run by unittest must have the prefix test_
     #
     def test_AptDeployment(self):
-
+      
         #
         # The first step to any test is to create the test helper that allows us to make calls to both the DU account and the
         # IotHub. In the pipeline the parameters to create the test helper are passed to the environment from which we can read them
@@ -49,14 +49,12 @@ class AptDeploymentTest(unittest.TestCase):
         self.aduTestConfig = DuAutomatedTestConfigurationManager.FromOSEnvironment()
         self.duTestHelper = self.aduTestConfig.CreateDeviceUpdateTestHelper()
 
-
         #
         # We retrieve the apt deployment id to be used by the script from the scenario definitions file. It's important to keep
         # things like the deployment id, device-id, module-id, and other scenario level definitions that might effect other
         # tests in the scenario_definitions.py file.
         #
         self.deploymentId = test_apt_deployment_id
-
         self.deploymentUpdateId = UpdateId(provider="Contoso1", name="Virtual", version="1.0.2")
 
         #
@@ -64,7 +62,7 @@ class AptDeploymentTest(unittest.TestCase):
         # We expect the device to connect within the configured amount of time of setting up the device in the step previous
         #
         connectionStatus = ""
-        for i in range(0,test_connection_timeout_tries):
+        for i in range(0, test_connection_timeout_tries):
             connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
             if (connectionStatus == "Connected"):
                 break
@@ -77,9 +75,8 @@ class AptDeploymentTest(unittest.TestCase):
         # model for the device created in the devicesetup.py. Now we have to create the deployment for
         # the device using the update-id for the update
         #
-        # Note: ALL UPDATES SHOULD BE UPLOADED TO THE TEST AUTOMATION HUB NOTHING SHOULD BE IMPORTED AT TEST TIME
-        #
-        status_code = self.duTestHelper.StartDeploymentForGroup(deploymentId=self.deploymentId,groupName=test_adu_group,updateId=self.deploymentUpdateId)
+        status_code = self.duTestHelper.StartDeploymentForGroup(
+            deploymentId=self.deploymentId, groupName=test_adu_group, updateId=self.deploymentUpdateId)
 
         self.assertEqual(status_code, 200)
 
@@ -89,21 +86,18 @@ class AptDeploymentTest(unittest.TestCase):
         #
         deploymentStatus = None
 
-
-        for i in range(0,apt_deployment_status_retries):
-            deploymentStatus = self.duTestHelper.GetDeploymentStatusForGroup(self.deploymentId,test_adu_group)
+        for i in range(0, apt_deployment_status_retries):
+            deploymentStatus = self.duTestHelper.GetDeploymentStatusForGroup(
+                self.deploymentId, test_adu_group)
 
             #
             # If we see all the devices have completed the deployment then we can exit early
             #
-            if (deploymentStatus.devicesCompletedSucceededCount == 1):
+            if (deploymentStatus.devicesCompletedSucceededCount != 0):
                 break
             time.sleep(retry_wait_time_in_seconds)
 
-        #
-        # Do the check to make sure all the devices in the group have succeeded
-        #
-        self.assertEqual(deploymentStatus.totalDevices,deploymentStatus.devicesCompletedSucceededCount)
+        self.assertEqual(deploymentStatus.totalDevices, deploymentStatus.devicesCompletedSucceededCount)
 
         # Sleep to give time for changes to propagate and for DU to switch it's state back to idle
         time.sleep(retry_wait_time_in_seconds)
@@ -114,10 +108,7 @@ class AptDeploymentTest(unittest.TestCase):
         # is back in the idle state.
         #
         twin = self.duTestHelper.GetDeviceTwinForDevice(test_device_id)
-
-        print(twin.properties.reported["deviceUpdate"]["agent"]["state"])
-
-        self.assertEqual(twin.properties.reported["deviceUpdate"]["agent"]["state"],0)
+        self.assertEqual(twin.properties.reported["deviceUpdate"]["agent"]["state"], 0)
 
         #
         # In case of a succeeded deployment we need to clean up the resources we created.
@@ -126,7 +117,7 @@ class AptDeploymentTest(unittest.TestCase):
         time.sleep(retry_wait_time_in_seconds)
 
         if (deploymentStatus.devicesInProgressCount != 0):
-            self.assertEqual(self.duTestHelper.StopDeployment(self.deploymentId,test_adu_group),200)
+            self.assertEqual(self.duTestHelper.StopDeployment(self.deploymentId, test_adu_group), 200)
             time.sleep(retry_wait_time_in_seconds)
 
         # Once stopped we can delete the deployment
@@ -137,20 +128,21 @@ class AptDeploymentTest(unittest.TestCase):
 # Below is the section of code that uses the above class to run the test. It starts by running the test, capturing the output, transforming
 # the output from Python Unittest to X/JUnit format. Then the function exports the values to an xml file in the testresults directory which is
 # then uploaded by the Azure Pipelines PostTestResults job
-#
+#       
 if (__name__ == "__main__"):
     #
     # Create the IO pipe
     #
     out = io.BytesIO()
-
+    
     #
     # Exercise the TestCase and all the tests within it.
     #
-    unittest.main(testRunner = xmlrunner.XMLTestRunner(output=out),failfast=False,buffer=False,catchbreak=False,exit=False)
-
+    unittest.main(testRunner=xmlrunner.XMLTestRunner(output=out),
+                  failfast=False, buffer=False, catchbreak=False, exit=False)
+    
     #
     # Finally transform the output unto the X/JUnit XML file format
     #
-    with open('./testresults/' + test_result_file_prefix + '-apt-deployment-test.xml','wb') as report:
+    with open('./testresults/' + test_result_file_prefix + '-apt-deployment-test.xml', 'wb') as report:
         report.write(transform(out.getvalue()))

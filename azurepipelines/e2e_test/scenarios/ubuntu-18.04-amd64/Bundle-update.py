@@ -21,7 +21,7 @@ from xmlrunner.extra.xunit_plugin import transform
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/testscript.py
 sys.path.append('./scenarios/ubuntu-18.04-amd64/')
-from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, test_apt_deployment_id, test_connection_timeout_tries, retry_wait_time_in_seconds
+from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix,test_bundle_update_deployment_id, test_connection_timeout_tries , retry_wait_time_in_seconds
 
 #
 # Global Test Variables
@@ -55,9 +55,7 @@ class AptDeploymentTest(unittest.TestCase):
         # things like the deployment id, device-id, module-id, and other scenario level definitions that might effect other
         # tests in the scenario_definitions.py file.
         #
-        self.deploymentId = test_apt_deployment_id
-
-        self.deploymentUpdateId = UpdateId(provider="Contoso1", name="Virtual", version="1.0.2")
+        self.deploymentId = test_bundle_update_deployment_id
 
         #
         # Before anything else we need to wait and check the device connection status
@@ -70,7 +68,13 @@ class AptDeploymentTest(unittest.TestCase):
                 break
             time.sleep(retry_wait_time_in_seconds)
 
-        self.assertEqual(connectionStatus, "Connected")
+        self.assertEqual(connectionStatus,"Connected")
+        #
+        # For every deployment we need to create an Update Id. For all tests running in the DeviceUpdate for IotHub Test Automation
+        # pipeline we use Fabrikaam as a provider and Vaccuum as the name for the update. You'll see the same values supplied as the
+        # manufacturer and model in the devicesetup.py script.
+        #
+        self.deploymentUpdateId = UpdateId(provider="Contoso1", name="Virtual", version="3.0")
 
         #
         # The assumption is that we've already imported the update targeting the manufacturer and
@@ -81,7 +85,7 @@ class AptDeploymentTest(unittest.TestCase):
         #
         status_code = self.duTestHelper.StartDeploymentForGroup(deploymentId=self.deploymentId,groupName=test_adu_group,updateId=self.deploymentUpdateId)
 
-        self.assertEqual(status_code, 200)
+        self.assertEqual(status_code,200)
 
         #
         # Once we've started the deployment for the group we can then query for the status of the deployment
@@ -99,6 +103,7 @@ class AptDeploymentTest(unittest.TestCase):
             if (deploymentStatus.devicesCompletedSucceededCount == 1):
                 break
             time.sleep(retry_wait_time_in_seconds)
+
 
         #
         # Do the check to make sure all the devices in the group have succeeded
@@ -130,7 +135,7 @@ class AptDeploymentTest(unittest.TestCase):
             time.sleep(retry_wait_time_in_seconds)
 
         # Once stopped we can delete the deployment
-        self.assertEqual(self.duTestHelper.DeleteDeployment(self.deploymentId, test_adu_group), 204)
+        self.assertEqual(self.duTestHelper.DeleteDeployment(self.deploymentId,test_adu_group),204)
 
 
 #
@@ -152,5 +157,5 @@ if (__name__ == "__main__"):
     #
     # Finally transform the output unto the X/JUnit XML file format
     #
-    with open('./testresults/' + test_result_file_prefix + '-apt-deployment-test.xml','wb') as report:
+    with open('./testresults/' + test_result_file_prefix + '-bundle-update-deployment-test.xml','wb') as report:
         report.write(transform(out.getvalue()))

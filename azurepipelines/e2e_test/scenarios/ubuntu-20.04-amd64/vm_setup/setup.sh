@@ -26,7 +26,7 @@
 # Install the Microsoft APT repository
 #
 
-wget https://packages.microsoft.com/config/ubuntu/18.04/multiarch/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 sudo dpkg -i packages-microsoft-prod.deb
 rm packages-microsoft-prod.deb
 
@@ -55,16 +55,17 @@ sudo apt-get install -y ./testsetup/deviceupdate-package.deb
 # go here. For instance you might have the config.toml for IotEdge,
 # another kind of diagnostics file, or other kinds of data
 # this is the area where such things can be added
+
 sudo cp ./testsetup/du-config.json /etc/adu/du-config.json
 
 #
-# Restart the deviceupdate-agent.service
+# Restart the adu-agent.service
 #
 # Note: We expect that everything should be setup for the deviceupdate agent at this point. Once
 # we restart the agent we expect it to be able to boot back up and connect to the IotHub. Otherwise
 # this test will be considered a failure.
-sudo systemctl restart adu-agent.service
 
+sudo systemctl restart adu-agent.service
 
 git clone https://github.com/Azure/iot-hub-device-update.git ~/adu-pp/
 
@@ -81,5 +82,3 @@ sh ./tools/reset-demo-components.sh
 
 #registers the extension
 sudo /usr/bin/AducIotAgent -E /var/lib/adu/extensions/sources/libcontoso-component-enumerator.so
-
-sh ./tools/reset-demo-components.sh

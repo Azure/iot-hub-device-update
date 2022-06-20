@@ -17,7 +17,7 @@ variable "environment_tag" {
 }
 
 variable "vm_name" {
-    default = "test-device"
+    default = "autest-device"
 }
 
 variable "image_publisher" {

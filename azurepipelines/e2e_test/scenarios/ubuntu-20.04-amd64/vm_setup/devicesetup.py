@@ -10,10 +10,11 @@ import sys
 # Note: the intention is that this script is called like:
 # python ./<scenario-name>/vm-setup/devicesetup.py
 sys.path.append('./scenarios/')
-sys.path.append('./scenarios/ubuntu-18.04-amd64/')
+sys.path.append('./scenarios/ubuntu-20.04-amd64/')
 print(os.path.abspath('./'))
 from scenario_definitions import test_device_id
-from testingtoolkit import DeviceUpdateTestHelper, DuAutomatedTestConfigurationManager
+from testingtoolkit import DeviceUpdateTestHelper,DuAutomatedTestConfigurationManager
+
 
 def main():
     duTestConfig = DuAutomatedTestConfigurationManager.FromOSEnvironment()
@@ -29,7 +30,7 @@ def main():
     #
     # Create the Device
     #
-    connectionString = duTestWrapper.CreateDevice(test_device_id,isIotEdge=True)
+    connectionString = duTestWrapper.CreateDevice(test_device_id, isIotEdge=True)
 
     if (len(connectionString) == 0):
         print_error("Failed to create the device in the IotHub")
@@ -64,16 +65,17 @@ def main():
     # Write the configuration out to disk so we can install it as a part of the test
     #
 
-    with open('du-config.json','w') as jsonFile:
+    with open('du-config.json', 'w') as jsonFile:
         configJson = json.dumps(duConfigJson)
         jsonFile.write(configJson)
+
+        
+if __name__ == '__main__':
+    main()
+    
+def print_error(msg):
+        print(msg, file=sys.stderr)
 
 #
 # Output is now a newly created device and a du-config.json file that will work with it
 #
-
-
-if __name__ == '__main__':
-    main()
-def print_error(msg):
-        print(msg, file=sys.stderr)

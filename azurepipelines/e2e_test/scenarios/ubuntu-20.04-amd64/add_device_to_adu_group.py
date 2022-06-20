@@ -17,7 +17,7 @@ from testingtoolkit import UpdateId
 from testingtoolkit import DeploymentStatusResponse
 from testingtoolkit import DuAutomatedTestConfigurationManager
 
-sys.path.append('./scenarios/ubuntu-18.04-amd64/')
+sys.path.append('./scenarios/ubuntu-20.04-amd64/')
 from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, test_connection_timeout_tries, retry_wait_time_in_seconds
 
 class AddDeviceToGroupTest(unittest.TestCase):
@@ -30,7 +30,7 @@ class AddDeviceToGroupTest(unittest.TestCase):
         # We expect the device to connect within the configured amount of time of setting up the device in the step previous
         #
         connectionStatus = ""
-        for i in range(0,test_connection_timeout_tries):
+        for i in range(0, test_connection_timeout_tries):
             connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
             if (connectionStatus == "Connected"):
                 break
@@ -47,7 +47,7 @@ class AddDeviceToGroupTest(unittest.TestCase):
 
         self.assertTrue(success)
 
-        time.sleep(60)
+        time.sleep(retry_wait_time_in_seconds)
 
         deviceClassId = self.duTestHelper.GetAduDeviceClassIdForDevice(test_device_id)
 
@@ -60,11 +60,11 @@ class AddDeviceToGroupTest(unittest.TestCase):
 
         self.assertEqual(status_code, 200)
 
-
 if (__name__ == "__main__"):
     out = io.BytesIO()
 
-    unittest.main(testRunner = xmlrunner.XMLTestRunner(output=out), failfast=False, buffer=False, catchbreak=False, exit=False)
+    unittest.main(testRunner=xmlrunner.XMLTestRunner(output=out),
+                  failfast=False, buffer=False, catchbreak=False, exit=False)
 
-    with open('./testresults/' + test_result_file_prefix + 'add-device-to-adu-group-test.xml', 'wb') as report:
+    with open('./testresults/' + test_result_file_prefix + '-add-device-to-adu-group-test.xml', 'wb') as report:
         report.write(transform(out.getvalue()))

@@ -4,13 +4,13 @@
 
 The goal of this project is to write testing helpers that ease the creation of tests for the DU Client.
 
-These are for testing. Not for running high level operations. If you're looking for easy to use Python extensions for Device Update for IotHub please look [here](https://github.com/Azure/azure-sdk-for-python). The Testing Toolkit was written in Python 3.10.2. It is expected that any tests making use of the testing toolkit also uses that version.
+These are for testing. Not for running high level operations. If you're looking for easy to use Python extensions for Device Update for IotHub please look [here](https://github.com/Azure/azure-sdk-for-python). The Testing Toolkit was written in Python 3.9. It is expected that any tests making use of the testing toolkit also uses that version.
 
 ## Dependencies
 
 ### Language Support
 
-This toolkit was explicitly written for Python 3.10.2. Newer versions might work but likely with differing results.
+This toolkit was explicitly written for Python 3.9. Other versions have not been tested.
 
 ### Azure SDK For Python azure-iot-deviceupdate
 
@@ -38,18 +38,20 @@ For the Python Module you can install it with
 
 ### Azure Identity
 
-In order to make a connection with the IotHub or Adu Account you need to have an associated identity. This isn't particularly important when running in an Azure CLI running on the same subscription as the Azure Resources you're working on but when the toolkit is running in a pipeline a [Managed Identity](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/) will need to be added. The identity will be installed in an Azure Key Vault that once retrieved and installed in the pipeline/VM running the script can be loaded into any application as a credential value. These credentials are then used for authenticating the user connecting to the resources. To install the Azure Identity Module use:
+In order to make a connection with the IotHub or Adu Account you need to have an associated identity. The toolkit is built to run using an (Azure Active Directory Application Registrar)[https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app]. Using the AAD Registrar and the azure.identity package we can create a connection to the Adu Account for sending messages/data/commands to the DU REST API. 
+
+The module can be installed using: 
 
 ```shell
     pip install azure-identity
 ```
 
-Then in your script if you need to load the dependency you can use something like the following snippet to load the credential from the environment and then pass it to the ```DeviceUpdateTestHelper``` to create the connections used to provision the services.
+Then in your script if you need to load the dependency you can use something like the following snippet to load the AAD Registrar's data into a credential that can be used for authenticating calls:
 
 ```python
-from azure.identity import DefaultAzureCredential
+from azure.identity import ClientSecretCredential
 
-credential=DefaultAzureCredential()
+credential=ClientSecretCredential(tenant_id=_aadRegistrarTenantId, client_id=_aadRegistrarClientId, client_secret=_aadRegistrarClientSecret)
 ```
 
 ### How to Install Dependencies
@@ -58,6 +60,12 @@ The dependencies can be installed by running the following:
 
 ```shell
     pip install azure-iot-deviceupdate azure.iot.hub azure-identity
+```
+
+or using the requirements.txt file:
+
+```shell
+    python3 -m pip install -r <path-to-requirements-file>
 ```
 
 ## Requirements for instantiating a Device Update client in Python
@@ -108,3 +116,7 @@ The IotHub Registry manager is able to connect to an IotHub's device and module 
 For the actual setup we expect all of these scripts to be running in the Pipelines within the context of an Azure CLI. The IotHubs we're using SHOULD (not tested still working on that) just require us to use the DefaultCredential values to get access to the DU account.
 
 You can see an [example](https://github.com/Azure/azure-iot-sdk-python/blob/main/azure-iot-hub/samples/iothub_registry_manager_token_credential_sample.py) for the type of authentication we're looking at.
+
+## Using the Toolkit in Tests
+
+For using the toolkit it's recommended to use the `DuAutomatedTestConfigurationManager` class to create the `DeviceUpdateTestHelper` class. It manages all of the variables that need to be passed to it in order to make a connection. You can either instantiate the class using command line arguments (implemented for testing) or use the OS Environment variables like the pipelines do. The choice is up to you but any test that is added to the pipeline will be required to use the OS environment variables. 
