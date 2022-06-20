@@ -111,7 +111,7 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
     if (!updateTypeOk)
     {
         Log_Error("SWUpdate packages download failed. Unknown Handler Version (UpdateDateType:%s)", updateType);
-        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_UNKNOW_UPDATE_VERSION;
+        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_UNKNOWN_UPDATE_VERSION;
         goto done;
     }
 
@@ -133,7 +133,7 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
 
     if (!workflow_get_update_file(workflowHandle, 0, &entity))
     {
-        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOADE_BAD_FILE_ENTITY;
+        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_BAD_FILE_ENTITY;
         goto done;
     }
 
@@ -206,6 +206,7 @@ ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowDat
         args.emplace_back(data.str().c_str());
 
         args.emplace_back(adushconst::target_log_folder_opt);
+
         args.emplace_back(ADUC_LOG_FOLDER);
 
         std::string output;

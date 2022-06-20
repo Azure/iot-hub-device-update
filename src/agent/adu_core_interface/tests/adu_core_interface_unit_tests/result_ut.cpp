@@ -55,7 +55,7 @@ TEST_CASE("EXTENDEDRESULTCODE")
 
     SECTION("ADUC_FACILITY_LOWERLAYER")
     {
-        const ADUC_Result_t erc{ MAKE_ADUC_ERRNO_EXTENDEDRESULTCODE(errorVal) };
+        const ADUC_Result_t erc{ MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ERRNO(errorVal) };
         CHECK(FacilityFromExtendedResultCode(erc) == ADUC_FACILITY_UNKNOWN);
         CHECK(CodeFromExtendedResultCode(erc) == errorVal);
     }

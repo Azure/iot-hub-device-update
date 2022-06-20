@@ -101,7 +101,7 @@ ADUC_Result do_download(
         resultCode = ADUC_Result_Failure;
         if (errno != 0)
         {
-            extendedResultCode = MAKE_ADUC_ERRNO_EXTENDEDRESULTCODE(errno);
+            extendedResultCode = MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ERRNO(errno);
         }
         else
         {
@@ -116,7 +116,7 @@ ADUC_Result do_download(
 
         if (errno != 0)
         {
-            extendedResultCode = MAKE_ADUC_ERRNO_EXTENDEDRESULTCODE(errno);
+            extendedResultCode = MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ERRNO(errno);
         }
         else
         {
