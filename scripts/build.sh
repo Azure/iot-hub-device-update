@@ -43,7 +43,8 @@ declare -a static_analysis_tools=()
 log_lib="zlog"
 install_prefix=/usr/local
 install_adu=false
-cmake_dir_path=/tmp/cmake-3.10.2
+work_folder=/tmp
+cmake_dir_path="${work_folder}/deviceupdate-cmake"
 
 print_help() {
     echo "Usage: build.sh [options...]"
@@ -75,8 +76,7 @@ print_help() {
     echo "                                          From source: deviceupdate-agent.service & adu-swupdate.sh."
     echo "                                          From build output directory: AducIotAgent & adu-shell."
     echo ""
-    echo "--cmake-path                          Specify the cmake path that we want to use to build ADU."
-    echo "                                      Default will be the path same as install-deps.sh cmake_dir_path"
+    echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
     echo ""
     echo "-h, --help                            Show this help message."
 }
@@ -322,6 +322,7 @@ echo 'Finished generating error code file'
 
 runtime_dir=${output_directory}/bin
 library_dir=${output_directory}/lib
+CMAKE_BIN="${cmake_dir_path}/bin/cmake"
 
 # Output banner
 echo ''
@@ -337,6 +338,8 @@ bullet "Logging library: $log_lib"
 bullet "Output directory: $output_directory"
 bullet "Build unit tests: $build_unittests"
 bullet "Build packages: $build_packages"
+bullet "CMake: $CMAKE_BIN"
+bullet "$(${CMAKE_BIN} --version)"
 if [[ ${#static_analysis_tools[@]} -eq 0 ]]; then
     bullet "Static analysis: (none)"
 else
@@ -438,16 +441,21 @@ mkdir -p "$output_directory"
 pushd "$output_directory" > /dev/null
 
 # Generate build using cmake with options
-if [[ $OS != "ubuntu" || $VER != "18.04" ]]; then
-    "$cmake_dir_path"/bin/cmake -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
+if [ ! -f "$CMAKE_BIN" ]; then
+    error "No '${CMAKE_BIN}' file."
+    ret_val=1
 else
-    cmake -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
+    "$CMAKE_BIN" -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
+    ret_val=$?
 fi
 
-# Do the actual building with ninja
-# Save the return code of ninja so we can $ret with that return code.
-ninja
-ret_val=$?
+if [ $ret_val -ne 0 ]; then
+    error "CMake failed to generate Ninja build with exit code: $ret_val"
+else
+    # Do the actual building with ninja
+    ninja
+    ret_val=$?
+fi
 
 if [[ $ret_val == 0 && $build_packages == "true" ]]; then
     cpack

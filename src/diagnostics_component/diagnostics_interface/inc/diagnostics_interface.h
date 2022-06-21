@@ -11,7 +11,7 @@
 #include <aduc/c_utils.h>
 #include <aduc/client_handle.h>
 #include <azureiot/iothub_client_core_common.h>
-#include <diagnostics_workflow.h>
+#include <diagnostics_result.h>
 #include <parson.h>
 
 #include <stdbool.h>

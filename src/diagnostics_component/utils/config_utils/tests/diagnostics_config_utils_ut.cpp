@@ -1,12 +1,12 @@
 /**
- * @file diagnostics_workflow_ut.cpp
- * @brief Unit Tests for the Diagnostic Workflow
+ * @file diagnostics_config_utils_ut.cpp
+ * @brief Unit Tests for the Diagnostic Config utils.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
 
-#include "diagnostics_workflow.h"
+#include "diagnostics_config_utils.h"
 
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
@@ -16,13 +16,13 @@
 #include <sstream>
 #include <string>
 
-class DiagnosticWorkflowUnitTestHelper
+class DiagnosticConfigUtilsUnitTestHelper
 {
 public:
     JSON_Value* jsonValue = nullptr;
     DiagnosticsWorkflowData workflowData = {};
 
-    explicit DiagnosticWorkflowUnitTestHelper(const char* jsonString)
+    explicit DiagnosticConfigUtilsUnitTestHelper(const char* jsonString)
     {
         jsonValue = json_parse_string(jsonString);
 
@@ -31,21 +31,21 @@ public:
             throw std::runtime_error("json could not be parsed");
         }
     }
-    DiagnosticWorkflowUnitTestHelper(const DiagnosticWorkflowUnitTestHelper&) = delete;
-    DiagnosticWorkflowUnitTestHelper(DiagnosticWorkflowUnitTestHelper&&) = delete;
-    DiagnosticWorkflowUnitTestHelper& operator=(const DiagnosticWorkflowUnitTestHelper&) = delete;
-    DiagnosticWorkflowUnitTestHelper& operator=(DiagnosticWorkflowUnitTestHelper&&) = delete;
+    DiagnosticConfigUtilsUnitTestHelper(const DiagnosticConfigUtilsUnitTestHelper&) = delete;
+    DiagnosticConfigUtilsUnitTestHelper(DiagnosticConfigUtilsUnitTestHelper&&) = delete;
+    DiagnosticConfigUtilsUnitTestHelper& operator=(const DiagnosticConfigUtilsUnitTestHelper&) = delete;
+    DiagnosticConfigUtilsUnitTestHelper& operator=(DiagnosticConfigUtilsUnitTestHelper&&) = delete;
 
-    ~DiagnosticWorkflowUnitTestHelper()
+    ~DiagnosticConfigUtilsUnitTestHelper()
     {
         json_value_free(jsonValue);
-        DiagnosticsWorkflow_UnInit(&workflowData);
+        DiagnosticsConfigUtils_UnInit(&workflowData);
     }
 };
 
-TEST_CASE("DiagnosticsWorkflow_Init")
+TEST_CASE("DiagnosticsConfigUtils_Init")
 {
-    SECTION("DiagnosticsWorkflow_Init- Positive Test Case")
+    SECTION("DiagnosticsConfigUtils_Init- Positive Test Case")
     {
         unsigned int maxKilobytesToUploadPerLogPath = 5;
 
@@ -66,9 +66,9 @@ TEST_CASE("DiagnosticsWorkflow_Init")
                                     R"("maxKilobytesToUploadPerLogPath":)" << maxKilobytesToUploadPerLogPath <<
                                 R"(})";
         // clang-format on
-        DiagnosticWorkflowUnitTestHelper testHelper(goodConfigJsonStream.str().c_str());
+        DiagnosticConfigUtilsUnitTestHelper testHelper(goodConfigJsonStream.str().c_str());
 
-        CHECK(DiagnosticsWorkflow_InitFromJSON(&testHelper.workflowData, testHelper.jsonValue));
+        CHECK(DiagnosticsConfigUtils_InitFromJSON(&testHelper.workflowData, testHelper.jsonValue));
 
         CHECK_FALSE(testHelper.workflowData.components == nullptr);
         const size_t logComponentLength = VECTOR_size(testHelper.workflowData.components);
@@ -76,14 +76,14 @@ TEST_CASE("DiagnosticsWorkflow_Init")
         CHECK(logComponentLength == 2);
 
         const DiagnosticsLogComponent* firstLogComponent =
-            DiagnosticsWorkflow_GetLogComponentElem(&testHelper.workflowData, 0);
+            DiagnosticsConfigUtils_GetLogComponentElem(&testHelper.workflowData, 0);
 
         CHECK(firstLogComponent != nullptr);
         CHECK(strcmp(STRING_c_str(firstLogComponent->componentName), "DU") == 0);
         CHECK(strcmp(STRING_c_str(firstLogComponent->logPath), ADUC_LOG_FOLDER) == 0);
 
         const DiagnosticsLogComponent* secondLogComponent =
-            DiagnosticsWorkflow_GetLogComponentElem(&testHelper.workflowData, 1);
+            DiagnosticsConfigUtils_GetLogComponentElem(&testHelper.workflowData, 1);
 
         CHECK(secondLogComponent != nullptr);
         CHECK(strcmp(STRING_c_str(secondLogComponent->componentName), "DO") == 0);
@@ -92,7 +92,7 @@ TEST_CASE("DiagnosticsWorkflow_Init")
         CHECK(testHelper.workflowData.maxBytesToUploadPerLogPath == (maxKilobytesToUploadPerLogPath * 1024));
     }
 
-    SECTION("DiagnosticsWorkflow_Init- No logComponents")
+    SECTION("DiagnosticsConfigUtils_Init- No logComponents")
     {
         // clang-format off
         std::string noLogComponents = R"({)"
@@ -100,14 +100,14 @@ TEST_CASE("DiagnosticsWorkflow_Init")
                                       R"(})";
         // clang-format on
 
-        DiagnosticWorkflowUnitTestHelper testHelper(noLogComponents.c_str());
+        DiagnosticConfigUtilsUnitTestHelper testHelper(noLogComponents.c_str());
 
-        CHECK_FALSE(DiagnosticsWorkflow_InitFromJSON(&testHelper.workflowData, testHelper.jsonValue));
+        CHECK_FALSE(DiagnosticsConfigUtils_InitFromJSON(&testHelper.workflowData, testHelper.jsonValue));
 
         CHECK(testHelper.workflowData.components == nullptr);
     }
 
-    SECTION("DiagnosticsWorkflow_Init- No Upload Limit")
+    SECTION("DiagnosticsConfigUtils_Init- No Upload Limit")
     {
         // clang-format off
         std::string noUploadLimit = R"({)"
@@ -124,9 +124,9 @@ TEST_CASE("DiagnosticsWorkflow_Init")
                                     R"(})";
         // clang-format on
 
-        DiagnosticWorkflowUnitTestHelper testHelper(noUploadLimit.c_str());
+        DiagnosticConfigUtilsUnitTestHelper testHelper(noUploadLimit.c_str());
 
-        CHECK_FALSE(DiagnosticsWorkflow_InitFromJSON(&testHelper.workflowData, testHelper.jsonValue));
+        CHECK_FALSE(DiagnosticsConfigUtils_InitFromJSON(&testHelper.workflowData, testHelper.jsonValue));
 
         CHECK(testHelper.workflowData.components == nullptr);
     }

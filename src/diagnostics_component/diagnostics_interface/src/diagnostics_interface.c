@@ -12,7 +12,8 @@
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h" // atoint64t
 #include <ctype.h> // isalnum
-#include <diagnostics_workflow.h>
+#include <diagnostics_async_helper.h> // for DiagnosticsWorkflow_DiscoverAndUploadLogsAsync
+#include <diagnostics_config_utils.h> // for DiagnosticsWorkflowData, DiagnosticsWorkflow_InitFromFile
 #include <pnp_protocol.h>
 #include <stdlib.h>
 
@@ -61,7 +62,7 @@ _Bool DiagnosticsInterface_Create(void** componentContext, int argc, char** argv
         goto done;
     }
 
-    if (!DiagnosticsWorkflow_InitFromFile(workflowData, DIAGNOSTICS_CONFIG_FILE_PATH))
+    if (!DiagnosticsConfigUtils_InitFromFile(workflowData, DIAGNOSTICS_CONFIG_FILE_PATH))
     {
         Log_Error("Unable to initialize the diagnostic workflow data.");
         goto done;
@@ -73,7 +74,7 @@ done:
 
     if (!succeeded)
     {
-        DiagnosticsWorkflow_UnInit(workflowData);
+        DiagnosticsConfigUtils_UnInit(workflowData);
         free(workflowData);
         workflowData = NULL;
     }
@@ -105,7 +106,7 @@ void DiagnosticsInterface_Destroy(void** componentContext)
 
     DiagnosticsWorkflowData* workflowData = (DiagnosticsWorkflowData*)*componentContext;
 
-    DiagnosticsWorkflow_UnInit(workflowData);
+    DiagnosticsConfigUtils_UnInit(workflowData);
     free(workflowData);
     *componentContext = NULL;
 }

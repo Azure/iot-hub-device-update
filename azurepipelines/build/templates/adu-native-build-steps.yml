@@ -18,7 +18,7 @@ steps:
     inputs:
       targetType: "filePath"
       filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
-      arguments: --install-aduc-deps --install-packages
+      arguments: --install-aduc-deps --install-packages --install-cmake
 
   - task: Bash@3
     displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"

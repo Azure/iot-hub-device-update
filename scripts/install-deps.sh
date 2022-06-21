@@ -57,8 +57,15 @@ swupdate_ref=$default_swupdate_ref
 install_azure_blob_storage_file_upload_utility=false
 azure_blob_storage_file_upload_utility_ref=main
 
-install_cmake_from_source=false
-install_cmake_version=3.10.2
+install_cmake=false
+
+supported_cmake_version='3.23.2'
+install_cmake_version="$supported_cmake_version"
+cmake_force_source=false
+
+cmake_prefix="$work_folder"
+cmake_installer_dir=""
+cmake_dir_symlink="${work_folder}/deviceupdate-cmake"
 
 # DO Deps
 default_do_ref=v0.8.2
@@ -71,9 +78,10 @@ static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=("gcc-[68]")
 do_packages=('libproxy-dev' 'libssl-dev' 'zlib1g-dev' 'libboost-all-dev')
 
-# Distro info
+# Distro and arch info
 OS=""
 VER=""
+ARCH='x86_64'
 
 print_help() {
     echo "Usage: install-deps.sh [options...]"
@@ -91,6 +99,10 @@ print_help() {
     echo "--install-abs-file-upload-utility   Install the Azure Blob Storage File Upload Utility from source."
     echo "--abs-file-upload-utility-ref <ref> Install the Azure Blob Storage File Upload Utility from a specific branch or tag."
     echo "--install-catch2          Install Catch2 from source."
+    echo "--install-cmake           Installs supported version of cmake from installer if on ubuntu, else installs it from source."
+    echo "--cmake-prefix            Set the install path prefix when --install-cmake is used. Default is /tmp."
+    echo "--cmake-version           Override the version of CMake. e.g. 3.23.2 that will be installed if --install-cmake is used."
+    echo "--cmake-force-source      Force building cmake from source when --install-cmake is used."
     echo "--catch2-ref              Install Catch2 from a specific branch or tag."
     echo "                          This value is passed to git clone as the --branch argument."
     echo "                          Default is $default_catch2_ref."
@@ -146,10 +158,6 @@ do_install_aduc_packages() {
 
     # Note that clang-tidy requires clang to be installed so that it can find clang headers.
     $SUDO apt-get install --yes "${static_analysis_packages[@]}" || return
-
-    if [[ $install_cmake_from_source ]]; then
-        do_install_cmake_from_source
-    fi
 }
 
 do_install_azure_iot_sdk() {
@@ -188,7 +196,7 @@ do_install_azure_iot_sdk() {
         "-Dbuild_provisioning_service_client:BOOL=OFF"
     )
 
-    if [[ "$use_websockets" == "true" ]]; then
+    if [[ $use_websockets == "true" ]]; then
         azureiotsdkc_cmake_options+=("-Duse_wsio:BOOL=ON")
     fi
 
@@ -256,7 +264,7 @@ do_install_swupdate() {
     #   - Ubuntu 20.04
     lsb_release -a | grep -e 'Ubuntu 18.04' -e 'Ubuntu 20.04'
     local grep_res=$?
-    if [[ "$grep_res" -ne "0" ]]; then
+    if [[ $grep_res -ne "0" ]]; then
         echo "Only need to build SWUpdate for Ubuntu 18.04 and Ubuntu 20.04. Skipping..."
         return 0
     fi
@@ -324,7 +332,7 @@ do_install_do() {
     git clone --recursive --single-branch --branch $do_ref --depth 1 $do_url . || return
 
     distro=$OS$VER
-    install_do_deps_distro="${distro//.}"
+    install_do_deps_distro="${distro//./}"
 
     if [[ $install_do_deps_distro != "" ]]; then
         local bootstrap_file=$do_dir/build/scripts/bootstrap.sh
@@ -414,33 +422,113 @@ do_install_azure_blob_storage_file_upload_utility() {
 }
 
 do_install_cmake_from_source() {
-    local cmake_url
+    local ret_value
+    local cmake_src_url
     local cmake_tar_path
     local cmake_dir_path
+    local maj_min_ver=
 
-    if [[ $install_cmake_version == "3.10.2" ]]; then
-        cmake_url="https://cmake.org/files/v3.10/cmake-3.10.2.tar.gz"
-        cmake_tar_path="$work_folder/cmake-3.10.2.tar.gz"
-        cmake_dir_path="$work_folder/cmake-3.10.2/"
-
-        wget -P $work_folder ${cmake_url}
-        tar -zxvf ${cmake_tar_path} -C ${work_folder}
-
-        pushd $cmake_dir_path > /dev/null
-
-        ./bootstrap
-        make > /dev/null
-        popd > /dev/null
-    elif [[ $install_cmake_version == "3.19.8" ]]; then
-        # Later it will be added when the cmake linking error is solved
-        # Task 38390989: Move to latest CMake at least 3.19+ to get Ubuntu 20.04+ working
-        error "Currently CMake 3.13+ is not supported. It will be added in June 2022. "
-    else
-        echo "Not a supported cmake version"
+    if [[ $install_cmake_version != "$supported_cmake_version" ]]; then
+        warn "Using unsupported cmake version ${install_cmake_version}!"
     fi
+
+    echo "Building CMake ${install_cmake_version} from source ..."
+
+    local tarball_name="cmake-${install_cmake_version}"
+    local tarball_filename="cmake-${install_cmake_version}.tar.gz"
+    maj_min_ver=$(echo "$install_cmake_version" | sed -E 's#([0-9]+\.[0-9]+)\.[0-9]+#\1#g') # e.g. 3.23.2 => 3.23
+
+    cmake_src_url="https://cmake.org/files/v${maj_min_ver}/${tarball_filename}"
+    cmake_tar_path="$work_folder/${tarball_filename}"
+    cmake_dir_path="$work_folder/${tarball_name}"
+
+    mkdir -p "$cmake_dir_path"
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "Failed to make dir '${cmake_dir_path}' with exit code: ${ret_value}"
+        $ret $ret_value
+    fi
+
+    echo "Fetching source tarball '$cmake_src_url' -> '$work_folder' ..."
+    wget -P "$work_folder" "$cmake_src_url" > "$cmake_dir_path/wget.log" 2>&1
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "wget of ${cmake_src_url} failed with exit code ${ret_value}"
+        $ret $ret_value
+    fi
+
+    echo "Expanding source tarball '$cmake_tar_path' ..."
+    tar -xzvf "$cmake_tar_path" -C "$work_folder" > "$cmake_dir_path/tar.log" 2>&1
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "untar of ${cmake_tar_path} failed with exit code ${ret_value}"
+        $ret $ret_value
+    fi
+
+    pushd "$cmake_dir_path" > /dev/null
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "pushd ${cmake_dir_path} failed with exit code ${ret_value}"
+        $ret $ret_value
+    fi
+
+    echo "Running 'bootstrap' ..."
+    $SUDO ./bootstrap --verbose --no-qt-gui --prefix=${cmake_prefix} > "${cmake_dir_path}/bootstrap.log" 2>&1
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "bootstrap --prefix=${cmake_prefix} failed with exit code ${ret_value}"
+        $ret $ret_value
+    fi
+
+    echo "Running 'make' ..."
+    $SUDO make > "$cmake_dir_path/make.log" 2>&1
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "make failed with exit code ${ret_value}"
+        $ret $ret_value
+    fi
+
+    popd > /dev/null
+
+    ln -sf "${cmake_prefix}/${tarball_name}" "$cmake_dir_symlink"
 }
 
-determine_distro() {
+do_install_cmake_from_installer() {
+    local ret_value
+    local cmake_installer_url
+    local cmake_installer_sh="cmake-${install_cmake_version}-linux-${ARCH}.sh"
+
+    if [[ $install_cmake_version != "$supported_cmake_version" ]]; then
+        warn "Using unsupported cmake version ${install_cmake_version}!"
+    fi
+
+    if [[ $ARCH != 'x86_64' && $ARCH != 'aarch64' ]]; then
+        echo "Architecture ${ARCH} is not supported for cmake."
+        $ret 1
+    fi
+
+    cmake_installer_url="https://github.com/Kitware/CMake/releases/download/v${install_cmake_version}/${cmake_installer_sh}"
+
+    $SUDO wget -P "$work_folder" "$cmake_installer_url"
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "wget failed with exit code ${ret_value}"
+        $ret $ret_value
+    fi
+
+    local fullpath_cmake_installer_sh="${work_folder}/${cmake_installer_sh}"
+    $SUDO chmod u+x "${fullpath_cmake_installer_sh}"
+    $SUDO ${fullpath_cmake_installer_sh} --include-subdir --skip-license --prefix=${cmake_prefix}
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "${fullpath_cmake_installer_sh} failed with exit code ${ret_value}"
+        $ret $ret_value
+    fi
+
+    ln -sf "$cmake_installer_dir" "$cmake_dir_symlink"
+}
+
+determine_distro_and_arch() {
     # shellcheck disable=SC1091
 
     # Checking distro name and version
@@ -448,8 +536,8 @@ determine_distro() {
         # freedesktop.org and systemd
         OS=$(grep "^ID\s*=\s*" /etc/os-release | sed -e "s/^ID\s*=\s*//")
         VER=$(grep "^VERSION_ID=" /etc/os-release | sed -e "s/^VERSION_ID=//")
-        VER=$(sed -e 's/^"//' -e 's/"$//' <<<"$VER")
-    elif type lsb_release >/dev/null 2>&1; then
+        VER=$(sed -e 's/^"//' -e 's/"$//' <<< "$VER")
+    elif type lsb_release > /dev/null 2>&1; then
         # linuxbase.org
         OS=$(lsb_release -si)
         VER=$(lsb_release -sr)
@@ -467,8 +555,19 @@ determine_distro() {
         OS=$(uname -s)
         VER=$(uname -r)
     fi
-    # Covert OS to lowercase
+
+    # Convert OS to lowercase
     OS="$(echo "$OS" | tr '[:upper:]' '[:lower:]')"
+
+    ARCH='x86_64'
+    which lscpu > /dev/null 2>&1
+    ret_value=$?
+    if [[ $ret_value == 0 ]]; then
+        ARCH=$(lscpu | grep 'Architecture:' | awk '{ print $2 }')
+    else
+        echo "WARNING: failed to get cpu architecture. Trying x86_64..."
+        ARCH='x86_64'
+    fi
 }
 
 do_list_all_deps() {
@@ -498,12 +597,6 @@ if [[ $1 == "" ]]; then
     $ret 1
 fi
 
-determine_distro
-
-if [[ $OS != "ubuntu" || $VER != "18.04" ]]; then
-    install_cmake_from_source=true
-fi
-
 # Parse cmd options
 while [[ $1 != "" ]]; do
     case $1 in
@@ -530,6 +623,20 @@ while [[ $1 != "" ]]; do
         ;;
     --install-catch2)
         install_catch2=true
+        ;;
+    --install-cmake)
+        install_cmake=true
+        ;;
+    --cmake-prefix)
+        shift
+        cmake_prefix=$1
+        ;;
+    --cmake-version)
+        shift
+        install_cmake_version=$1
+        ;;
+    --cmake-force-source)
+        cmake_force_source=true
         ;;
     --catch2-ref)
         shift
@@ -583,6 +690,30 @@ while [[ $1 != "" ]]; do
     esac
     shift
 done
+
+# Get OS, VER, ARCH for use in other parts of the script.
+determine_distro_and_arch
+
+# Must be of the form X.Y.Z, where X, Y, and Z are one or more decimal digits.
+if [[ $install_cmake_version != "" && ! $install_cmake_version =~ ^[[:digit:]]+.[[:digit:]]+\.[[:digit:]]+ ]]; then
+    error "Invalid --cmake-version '${install_cmake_version}'. Valid pattern: digit+.digit+.digit+ e.g. '3.23.2'"
+    $ret 1
+fi
+
+# First off, install cmake if needed.
+if [[ $install_cmake == "true" ]]; then
+    if [[ $ARCH != "x86_64" && $ARCH != "aarch64" || $cmake_force_source == "true" ]]; then
+        do_install_cmake_from_source
+    else
+        cmake_installer_dir="${cmake_prefix}/cmake-${install_cmake_version}-linux-${ARCH}"
+
+        if [ -d "$cmake_installer_dir" ]; then
+            echo "INFO: ${cmake_installer_dir} already exists. Skipping install of cmake..."
+        else
+            do_install_cmake_from_installer
+        fi
+    fi
+fi
 
 # If there is no install action specified,
 # assume that we want to install all deps.

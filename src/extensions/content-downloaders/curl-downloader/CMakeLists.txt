@@ -6,8 +6,6 @@ compileasc99 ()
 
 add_library (${PROJECT_NAME} SHARED curl-content-downloader.cpp)
 
-#find_package (Parson REQUIRED)
-
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories (${PROJECT_NAME} PUBLIC ${ADU_EXTENSION_INCLUDES} ${ADU_EXPORT_INCLUDES})

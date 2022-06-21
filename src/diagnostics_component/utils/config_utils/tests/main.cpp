@@ -1,6 +1,6 @@
 /**
  * @file main.cpp
- * @brief diagnostics_workflow_ut tests main entry point.
+ * @brief diagnostics_config_utils_ut tests main entry point.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
