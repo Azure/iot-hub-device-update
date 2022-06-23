@@ -1,13 +1,13 @@
-# !/bin/bash
+#!/bin/bash
 
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
-    ret=return
+    ret='return'
 else
-    ret=exit
+    ret='exit'
 fi
 
 error() { echo -e "\033[1;31mError:\033[0m $*" >&2; }
@@ -70,11 +70,11 @@ gather_do_info
 
 tar -czvf ~/adu-diag.tar.gz . || {
     error "tar command failed."
-    popd
+    popd || $ret
     $ret 1
 }
 
-popd
+popd || $ret
 
 echo ""
 

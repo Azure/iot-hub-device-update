@@ -8,9 +8,9 @@ OPTIND=1
 
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
-    ret=return
+    ret='return'
 else
-    ret=exit
+    ret='exit'
 fi
 
 error() { echo -e "\033[1;31mError:\033[0m $*" >&2; }

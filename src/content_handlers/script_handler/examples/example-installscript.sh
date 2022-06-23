@@ -10,9 +10,9 @@ ret_val=0
 
 # Ensure we don't end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
-    ret=return
+    ret='return'
 else
-    ret=exit
+    ret='exit'
 fi
 
 # Output formatting.
@@ -102,52 +102,51 @@ PARAMS=
 #
 _timestamp=
 
-update_timestamp()
-{
+update_timestamp() {
     # See https://man7.org/linux/man-pages/man1/date.1.html
     _timestamp="$(date +'%Y/%m/%d:%H%M%S')"
 }
 
-log_debug(){
-    if [ $log_level -gt 0  ]; then
+log_debug() {
+    if [ $log_level -gt 0 ]; then
         return
     fi
     log "$log_debug_pref" "$@"
 }
 
-log_info(){
-    if [ $log_level -gt 1  ]; then
+log_info() {
+    if [ $log_level -gt 1 ]; then
         return
     fi
     log "$log_info_pref" "$@"
 }
 
-log_warn(){
-    if [ $log_level -gt 2  ]; then
+log_warn() {
+    if [ $log_level -gt 2 ]; then
         return
     fi
     log "$log_warn_pref" "$@"
 }
 
-log_error(){
-    if [ $log_level -gt 3  ]; then
+log_error() {
+    if [ $log_level -gt 3 ]; then
         return
     fi
     log "$log_error_pref" "$@"
 }
 
-log(){
+log() {
     update_timestamp
-    if [ -z $log_file ]; then
+    if [ -z "$log_file" ]; then
         echo -e "[$_timestamp]" "$@" >&1
     else
-        echo "[$_timestamp]" "$@" >> $log_file
+        echo "[$_timestamp]" "$@" >> "$log_file"
     fi
 }
 
-output(){
+output() {
     update_timestamp
-    if [ -z $output_file ]; then
+    if [ -z "$output_file" ]; then
         echo "[$_timestamp]" "$@" >&1
     else
         echo "[$_timestamp]" "$@" >> "$output_file"
@@ -157,9 +156,9 @@ output(){
 #
 # Write result json string to result file.
 #
-result(){
+result() {
     # NOTE: don't insert timestamp in result file.
-    if [ -z $result_file ]; then
+    if [ -z "$result_file" ]; then
         echo "$@" >&1
     else
         echo "$@" > "$result_file"
@@ -197,7 +196,7 @@ print_help() {
     echo "--action-apply                            Perform 'apply' action."
     echo "--action-cancel                           Perform 'cancel' action."
     echo ""
-    echo "--install-error-policy                    Indicates how to proceed when an error occurs. Default \"abort\""
+    echo '--install-error-policy                    Indicates how to proceed when an error occurs. Default "abort"'
     echo "                                          options: abort, continue"
     echo "--install-reboot-policy                   Indicates whether a device reboot is required, after install completed successfully."
     echo "                                          Optios:"
@@ -425,7 +424,7 @@ while [[ $1 != "" ]]; do
             error "--firmware-file parameter is mandatory."
             $ret 1
         fi
-        firmware_file="$1";
+        firmware_file="$1"
         echo "firmware file: $firmware_file"
         shift
         ;;
@@ -436,7 +435,7 @@ while [[ $1 != "" ]]; do
             error "--work-folder parameter is mandatory."
             $ret 1
         fi
-        workfolder="$1";
+        workfolder="$1"
         echo "Workfolder: $workfolder"
         shift
         ;;
@@ -452,7 +451,7 @@ while [[ $1 != "" ]]; do
             error "--out-file parameter is mandatory."
             $ret 1
         fi
-        output_file="$1";
+        output_file="$1"
 
         #
         #Create output file path.
@@ -473,7 +472,7 @@ while [[ $1 != "" ]]; do
             error "--result-file parameter is mandatory."
             $ret 1
         fi
-        result_file="$1";
+        result_file="$1"
         #
         #Create result file path.
         #
@@ -492,7 +491,7 @@ while [[ $1 != "" ]]; do
             error "--log-file parameter is mandatory."
             $ret 1
         fi
-        log_file="$1";
+        log_file="$1"
         shift
         ;;
     --log-level)
@@ -563,7 +562,7 @@ done
 #     ADUC_Result_IsInstalled_Installed = 900,     /**< Succeeded and content is installed. */
 #     ADUC_Result_IsInstalled_NotInstalled = 901,  /**< Succeeded and content is not installed */
 #
-IsInstalled(){
+IsInstalled() {
     resultCode=0
     extendedResultCode=0
     resultDetails=""
@@ -587,7 +586,7 @@ IsInstalled(){
     output "Result:" "$aduc_result_json"
 
     # Write ADUC_Result to result file.
-    result  "$aduc_result_json"
+    result "$aduc_result_json"
 
     $ret $ret_val
 
@@ -620,7 +619,7 @@ DownloadUpdateArtifacts() {
     output "Result:" "$aduc_result_json"
 
     # Write ADUC_Result to result file.
-    result  "$aduc_result_json"
+    result "$aduc_result_json"
 
     $ret $ret_val
 }
@@ -657,7 +656,7 @@ InstallUpdate() {
     output "Result:" "$aduc_result_json"
 
     # Write ADUC_Result to result file.
-    result  "$aduc_result_json"
+    result "$aduc_result_json"
 
     $ret $ret_val
 }
@@ -688,7 +687,7 @@ ApplyUpdate() {
     output "Result:" "$aduc_result_json"
 
     # Write ADUC_Result to result file.
-    result  "$aduc_result_json"
+    result "$aduc_result_json"
 
     $ret $ret_val
 }
@@ -708,13 +707,13 @@ SimulatePreInstallSuccess() {
     output "Result:" "$mock_result"
 
     # Write ADUC_Result to result file.
-    result  "$mock_result"
+    result "$mock_result"
 
     $ret $ret_val
 }
 
 SimulatePostInstallSuccess() {
-output "Simulating post-instll step success."
+    output "Simulating post-instll step success."
     ret_val=0
     # ADUC_Result_Apply_Success = 700
     resultCode=700
@@ -728,12 +727,12 @@ output "Simulating post-instll step success."
     output "Result:" "$mock_result"
 
     # Write ADUC_Result to result file.
-    result  "$mock_result"
+    result "$mock_result"
 
     $ret $ret_val
 }
 
-CancelUpdate(){
+CancelUpdate() {
     ret_val=0
     $ret $ret_val
 }

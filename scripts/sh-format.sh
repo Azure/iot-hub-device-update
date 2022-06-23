@@ -8,14 +8,15 @@ OPTIND=1
 
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
-    ret=return
+    ret='return'
 else
-    ret=exit
+    ret='exit'
 fi
 
 error() { echo -e "\033[1;31mError:\033[0m $*" >&2; }
 
 validate=false
+shellcheck_bin='/tmp/deviceupdate-shellcheck'
 
 print_help() {
     echo "Usage: sh-format.sh [options...]"
@@ -57,7 +58,7 @@ if [ -z "$GITROOT" ]; then
     $ret 1
 fi
 
-pushd "$GITROOT" > /dev/null
+pushd "$GITROOT" > /dev/null || $ret
 # diff-filter=d will exclude deleted files.
 IFS=$'\n'
 shell_files=$(git diff --diff-filter=d --relative --name-only HEAD -- "*.sh" "*.bash" "*.mksh")
@@ -66,16 +67,19 @@ for FILE in $shell_files; do
     shfmt -s -w -i 4 -bn -sr "$FILE"
 done
 
+ret_val=0
 if [[ $validate == "true" ]]; then
-    if ! [ -x "$(command -v shellcheck)" ]; then
-        echo 'Error: shellcheck is not installed. Try: apt install shellcheck' >&2
+    if [ ! -x "$shellcheck_bin" ]; then
+        error "'$shellcheck_bin' is not installed. Try: ./scripts/install-deps --install-shellcheck"
         $ret 1
     fi
 
     for FILE in $shell_files; do
         echo "Checking $FILE"
-        shellcheck -s bash "$FILE"
+        "$shellcheck_bin" --shell=bash --severity=style "$FILE" || ret_val=$?
     done
 fi
 IFS=' '
-popd > /dev/null
+popd > /dev/null || $ret
+
+$ret $ret_val

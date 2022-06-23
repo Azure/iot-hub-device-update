@@ -8,9 +8,9 @@ OPTIND=1
 
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
-    ret=return
+    ret='return'
 else
-    ret=exit
+    ret='exit'
 fi
 
 if ! [ -x "$(command -v git)" ]; then
@@ -30,11 +30,11 @@ if [ -z "$GITROOT" ]; then
     $ret 1
 fi
 
-pushd "$GITROOT" > /dev/null
+pushd "$GITROOT" > /dev/null || $ret
 # diff-filter=d will exclude deleted files.
 IFS=$'\n'
 for FILE in $(git diff --diff-filter=d --relative --name-only HEAD -- "*.[CcHh]" "*.[CcHh][Pp][Pp]"); do
     clang-format -verbose -style=file -i "$FILE"
 done
 IFS=' '
-popd > /dev/null
+popd > /dev/null || $ret

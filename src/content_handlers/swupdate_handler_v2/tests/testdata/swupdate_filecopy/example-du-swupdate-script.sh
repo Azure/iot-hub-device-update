@@ -10,9 +10,9 @@ ret_val=0
 
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
-    ret=return
+    ret='return'
 else
-    ret=exit
+    ret='exit'
 fi
 
 # Output formatting.
@@ -88,61 +88,60 @@ PARAMS=
 #
 _timestamp=
 
-update_timestamp()
-{
+update_timestamp() {
     # See https://man7.org/linux/man-pages/man1/date.1.html
     _timestamp="$(date +'%Y/%m/%d:%H%M%S')"
 }
 
-log_debug(){
-    if [ $log_level -gt 0  ]; then
+log_debug() {
+    if [ $log_level -gt 0 ]; then
         return
     fi
     log "$log_debug_pref" "$@"
 }
 
-log_info(){
-    if [ $log_level -gt 1  ]; then
+log_info() {
+    if [ $log_level -gt 1 ]; then
         return
     fi
     log "$log_info_pref" "$@"
 }
 
-log_warn(){
-    if [ $log_level -gt 2  ]; then
+log_warn() {
+    if [ $log_level -gt 2 ]; then
         return
     fi
     log "$log_warn_pref" "$@"
 }
 
-log_error(){
-    if [ $log_level -gt 3  ]; then
+log_error() {
+    if [ $log_level -gt 3 ]; then
         return
     fi
     log "$log_error_pref" "$@"
 }
 
-log(){
+log() {
     update_timestamp
-    if [ -z $log_file ]; then
+    if [ -z "$log_file" ]; then
         echo -e "[$_timestamp]" "$@" >&1
     else
-        echo "[$_timestamp]" "$@" >> $log_file
+        echo "[$_timestamp]" "$@" >> "$log_file"
     fi
 }
 
-output(){
+output() {
     update_timestamp
-    if [ -z $output_file ]; then
+    if [ -z "$output_file" ]; then
         echo "[$_timestamp]" "$@" >&1
     else
         echo "[$_timestamp]" "$@" >> "$output_file"
     fi
 }
 
-result(){
+result() {
     # NOTE: don't insert timestamp in result file.
-    if [ -z $result_file ]; then
+    if [ -z "$result_file" ]; then
         echo "$@" >&1
     else
         echo "$@" > "$result_file"
@@ -165,15 +164,15 @@ result(){
 #  (RESULT is 0x30101014)
 #
 make_swupdate_handler_erc() {
-  local base_erc=0x30101000
-  local -n res=$2  # name reference
-  res=$((base_erc + $1))
+    local base_erc=0x30101000
+    local -n res=$2 # name reference
+    res=$((base_erc + $1))
 }
 
 # usage: make_aduc_result_json $resultCode $extendedResultCode $resultDetails <out param>
 # shellcheck disable=SC2034
 function make_aduc_result_json() {
-    local -n res=$4  # name reference
+    local -n res=$4 # name reference
     res="{\"resultCode\":$1, \"extendedResultCode\":$2,\"resultDetails\":\"$3\"}"
 }
 
@@ -286,7 +285,7 @@ while [[ $1 != "" ]]; do
             error "--swu-file parameter is mandatory."
             $ret 1
         fi
-        swu_file="$1";
+        swu_file="$1"
         echo "swu file: $swu_file"
         shift
         ;;
@@ -297,7 +296,7 @@ while [[ $1 != "" ]]; do
             error "--workfolder parameter is mandatory."
             $ret 1
         fi
-        workfolder="$1";
+        workfolder="$1"
         echo "work folder: $workfolder"
         shift
         ;;
@@ -313,7 +312,7 @@ while [[ $1 != "" ]]; do
             error "--out-file parameter is mandatory."
             $ret 1
         fi
-        output_file="$1";
+        output_file="$1"
 
         #
         #Create output file path.
@@ -334,7 +333,7 @@ while [[ $1 != "" ]]; do
             error "--result-file parameter is mandatory."
             $ret 1
         fi
-        result_file="$1";
+        result_file="$1"
         #
         #Create result file path.
         #
@@ -353,7 +352,7 @@ while [[ $1 != "" ]]; do
             error "--software-version-file parameter is mandatory."
             $ret 1
         fi
-        software_version_file="$1";
+        software_version_file="$1"
         shift
         ;;
 
@@ -363,7 +362,7 @@ while [[ $1 != "" ]]; do
             error "--public-key-file parameter is mandatory."
             $ret 1
         fi
-        public_key_file="$1";
+        public_key_file="$1"
         shift
         ;;
 
@@ -373,7 +372,7 @@ while [[ $1 != "" ]]; do
             error "--log-file parameter is mandatory."
             $ret 1
         fi
-        log_file="$1";
+        log_file="$1"
         shift
         ;;
 
@@ -383,7 +382,7 @@ while [[ $1 != "" ]]; do
             error "--swu-log-file parameter is mandatory."
             $ret 1
         fi
-        swu_log_file="$1";
+        swu_log_file="$1"
         shift
         ;;
 
@@ -421,15 +420,15 @@ done
 #
 # shellcheck disable=SC2034
 function is_installed {
-    local -n rc=$3   # name reference for resultCode
-    local -n erc=$4  # name reference for extendedResultCode
-    local -n rd=$5   # name reference for resultDetails
+    local -n rc=$3  # name reference for resultCode
+    local -n erc=$4 # name reference for extendedResultCode
+    local -n rd=$5  # name reference for resultDetails
 
-    if ! [[ -f "$2" ]]; then
+    if ! [[ -f $2 ]]; then
         rc=901
         make_swupdate_handler_erc 100 erc
         rd="Software version file doesn't exists."
-    elif [[ "$1" == "" ]]; then
+    elif [[ $1 == "" ]]; then
         rc=0
         make_swupdate_handler_erc 101 erc
         rd="Installed criteria is empty."
@@ -440,7 +439,7 @@ function is_installed {
 
         grep_res=$?
 
-        if [[ "$grep_res" -eq "0" ]]; then
+        if [[ $grep_res -eq "0" ]]; then
             rc=900
         else
             rc=901
@@ -464,7 +463,7 @@ function is_installed {
 #     ADUC_Result_IsInstalled_Installed = 900,     /**< Succeeded and content is installed. */
 #     ADUC_Result_IsInstalled_NotInstalled = 901,  /**< Succeeded and content is not installed */
 #
-CheckIsInstalledState(){
+CheckIsInstalledState() {
     log_info "CheckIsInstalledState (\"$1\"), adu-version path:\"$software_version_file\""
 
     local local_rc=2
@@ -482,7 +481,7 @@ CheckIsInstalledState(){
     output "Result:" "$aduc_result"
 
     # Write ADUC_Result to result file.
-    result  "$aduc_result"
+    result "$aduc_result"
 }
 
 #
@@ -505,7 +504,7 @@ DownloadUpdateArtifacts() {
     output "Result:" "$aduc_result"
 
     # Write ADUC_Result to result file.
-    result  "$aduc_result"
+    result "$aduc_result"
 
     $ret $ret_val
 }
@@ -525,7 +524,7 @@ InstallUpdate() {
     #
 
     # Check whether the component is already installed the specified update...
-    is_installed "$installed_criteria" "$software_version_file"  resultCode extendedResultCode resultDetails
+    is_installed "$installed_criteria" "$software_version_file" resultCode extendedResultCode resultDetails
 
     is_installed_ret=$?
 
@@ -545,7 +544,7 @@ InstallUpdate() {
         echo "Installing update." >> "${swu_log_file}"
         if [[ -f $swu_file ]]; then
             # Call swupdate with the image file
-            if [[ ! "${public_key_file}" == "" ]]; then
+            if [[ ${public_key_file} != "" ]]; then
                 swupdate -v -i "${swu_file}" -l 4 &>> "${swu_log_file}"
             else
                 swupdate -v -i "${swu_file}" -k "${public_key_file}" -l 4 &>> "${swu_log_file}"
@@ -585,7 +584,7 @@ InstallUpdate() {
     output "Result:" "$aduc_result"
 
     # Write ADUC_Result to result file.
-    result  "$aduc_result"
+    result "$aduc_result"
 
     $ret $ret_val
 }
@@ -609,7 +608,7 @@ ApplyUpdate() {
     output "Result:" "$aduc_result"
 
     # Write ADUC_Result to result file.
-    result  "$aduc_result"
+    result "$aduc_result"
 
     $ret $ret_val
 }
@@ -621,7 +620,7 @@ ApplyUpdate() {
 # So, will simply return ADUC_Result_Cancel_UnableToCancel (801)
 #
 #
-CancelUpdate(){
+CancelUpdate() {
     log_info "CancelUpdate called"
 
     # Note: for this example update, there's no other files to download.
@@ -638,7 +637,7 @@ CancelUpdate(){
     output "Result:" "$aduc_result"
 
     # Write ADUC_Result to result file.
-    result  "$aduc_result"
+    result "$aduc_result"
 
     $ret $ret_val
 }
@@ -648,7 +647,7 @@ CancelUpdate(){
 #
 
 # Ensure that swu_log_file is avalid
-if [[ "$swu_log_file" == "" ]]; then
+if [[ $swu_log_file == "" ]]; then
     swu_log_file="$log_file.swupdate.log"
 fi
 

@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
@@ -10,4 +11,3 @@ curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microso
 sudo cp ./microsoft.gpg /etc/apt/trusted.gpg.d/
 
 sudo apt-get update
-

@@ -14,11 +14,18 @@ steps:
       sourceScanPath: src
 
   - task: Bash@3
+    displayName: "Install CMake and shellcheck"
+    inputs:
+      targetType: "filePath"
+      filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
+      arguments: --install-cmake --install-shellcheck
+
+  - task: Bash@3
     displayName: "Install ADUC dependencies"
     inputs:
       targetType: "filePath"
       filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
-      arguments: --install-aduc-deps --install-packages --install-cmake
+      arguments: --install-aduc-deps --install-packages
 
   - task: Bash@3
     displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
@@ -87,8 +94,7 @@ steps:
     # Ignore SC2209: Use var=$(command) to assign output (or quote to assign string).
     #   We use 'ret=return' or 'ret=exit' to support dot sourcing.
   - bash: |
-      sudo apt install -y shellcheck
-      shellcheck -s bash -e SC2164 -e SC2209 $(find -name "*.sh")
+      /tmp/deviceupdate-shellcheck --shell=bash $(find -name "*.sh" | grep -v -e '^\.\/out')
       exit $?
     displayName: "Run ShellCheck"
 

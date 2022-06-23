@@ -71,7 +71,7 @@ git clone https://github.com/Azure/iot-hub-device-update.git ~/adu-pp/
 
 sudo mkdir -p ~/demo/demo-devices/contoso-devices
 
-cd ~/adu-pp/src/extensions/component-enumerators/examples/contoso-component-enumerator/demo
+cd ~/adu-pp/src/extensions/component-enumerators/examples/contoso-component-enumerator/demo || exit
 
 chmod 755 ./tools/reset-demo-components.sh
 

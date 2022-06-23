@@ -13,9 +13,9 @@ OPTIND=1
 
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
-    ret=return
+    ret='return'
 else
-    ret=exit
+    ret='exit'
 fi
 
 # Use sudo if user is not root
@@ -58,14 +58,15 @@ install_azure_blob_storage_file_upload_utility=false
 azure_blob_storage_file_upload_utility_ref=main
 
 install_cmake=false
-
 supported_cmake_version='3.23.2'
 install_cmake_version="$supported_cmake_version"
 cmake_force_source=false
-
 cmake_prefix="$work_folder"
 cmake_installer_dir=""
 cmake_dir_symlink="${work_folder}/deviceupdate-cmake"
+
+install_shellcheck=false
+supported_shellcheck_version='0.8.0'
 
 # DO Deps
 default_do_ref=v0.8.2
@@ -81,7 +82,8 @@ do_packages=('libproxy-dev' 'libssl-dev' 'zlib1g-dev' 'libboost-all-dev')
 # Distro and arch info
 OS=""
 VER=""
-ARCH='x86_64'
+is_amd64=false
+is_arm64=false
 
 print_help() {
     echo "Usage: install-deps.sh [options...]"
@@ -179,12 +181,12 @@ do_install_azure_iot_sdk() {
 
     echo -e "Building azure-iot-sdk-c ...\n\tBranch: $azure_sdk_ref\n\tFolder: $azure_sdk_dir"
     mkdir -p $azure_sdk_dir || return
-    pushd $azure_sdk_dir > /dev/null
+    pushd $azure_sdk_dir > /dev/null || return
     git clone --branch $azure_sdk_ref $azure_sdk_url . || return
     git submodule update --init || return
 
     mkdir cmake || return
-    pushd cmake > /dev/null
+    pushd cmake > /dev/null || return
 
     # use_http is required for uHTTP support.
     local azureiotsdkc_cmake_options=(
@@ -212,8 +214,8 @@ do_install_azure_iot_sdk() {
     cmake --build . || return
     $SUDO cmake --build . --target install || return
 
-    popd > /dev/null
-    popd > /dev/null
+    popd > /dev/null || return
+    popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf $azure_sdk_dir || return
@@ -240,16 +242,16 @@ do_install_catch2() {
 
     echo -e "Building Catch2 ...\n\tBranch: $catch2_ref\n\tFolder: $catch2_dir"
     mkdir -p $catch2_dir || return
-    pushd $catch2_dir > /dev/null
+    pushd $catch2_dir > /dev/null || return
     git clone --recursive --single-branch --branch $catch2_ref --depth 1 $catch2_url . || return
 
     mkdir cmake || return
-    pushd cmake > /dev/null
+    pushd cmake > /dev/null || return
     cmake .. || return
     cmake --build . || return
     $SUDO cmake --build . --target install || return
-    popd > /dev/null
-    popd > /dev/null
+    popd > /dev/null || return
+    popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf $catch2_dir
@@ -287,20 +289,20 @@ do_install_swupdate() {
 
     echo -e "Building SWUpdate ...\n\tBranch: $swupdate_ref\n\tFolder: $swupdate_dir"
     mkdir -p $swupdate_dir || return
-    pushd $swupdate_dir > /dev/null
+    pushd $swupdate_dir > /dev/null || return
     git clone --recursive --single-branch --branch $swupdate_ref --depth 1 $swupdate_url . || return
 
-    popd > /dev/null
+    popd > /dev/null || return
     echo -e "Customizing SWUpdate build configurations..."
     cp src/deps/swupdate/.config "$swupdate_dir" || return
-    pushd $swupdate_dir > /dev/null
+    pushd $swupdate_dir > /dev/null || return
 
     echo -r "Building SWUpdate..."
     make || return
 
     echo -e "Installing SWUpdate..."
     $SUDO make install || return
-    popd > /dev/null
+    popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf $swupdate_dir
@@ -320,7 +322,7 @@ do_install_do() {
 
     echo -e "Building DO ...\n\tBranch: $do_ref\n\tFolder: $do_dir"
     mkdir -p $do_dir || return
-    pushd $do_dir > /dev/null
+    pushd $do_dir > /dev/null || return
 
     local do_url
     if [[ $use_ssh == "true" ]]; then
@@ -341,7 +343,7 @@ do_install_do() {
     fi
 
     mkdir cmake || return
-    pushd cmake > /dev/null
+    pushd cmake > /dev/null || return
 
     local do_cmake_options=(
         "-DDO_BUILD_TESTS:BOOL=OFF"
@@ -357,8 +359,8 @@ do_install_do() {
     cmake "${do_cmake_options[@]}" .. || return
     cmake --build . || return
     $SUDO cmake --build . --target install || return
-    popd > /dev/null
-    popd > /dev/null
+    popd > /dev/null || return
+    popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf $do_dir
@@ -385,7 +387,7 @@ do_install_azure_blob_storage_file_upload_utility() {
 
     echo -e "Cloning Azure Blob Storage File Upload Uility ...\n\tBranch: $azure_blob_storage_file_upload_utility_ref\n\t Folder: $abs_fuu_dir"
     mkdir -p $abs_fuu_dir || return
-    pushd $abs_fuu_dir > /dev/null
+    pushd $abs_fuu_dir > /dev/null || return
     git clone --recursive --single-branch --branch $azure_blob_storage_file_upload_utility_ref --depth 1 $azure_storage_cpplite_url . || return
 
     echo -e "Installing Azure Blob Storage File Upload Utiltiy dependencies..."
@@ -397,7 +399,7 @@ do_install_azure_blob_storage_file_upload_utility() {
     ./scripts/install-deps.sh -a --skip-azure-iot-sdk-install
 
     mkdir cmake || return
-    pushd cmake > /dev/null
+    pushd cmake > /dev/null || return
 
     local azure_blob_storage_file_upload_utility_cmake_options
     if [[ $keep_source_code == "true" ]]; then
@@ -413,8 +415,8 @@ do_install_azure_blob_storage_file_upload_utility() {
     cmake --build . || return
     $SUDO cmake --build . --target install || return
 
-    popd > /dev/null
-    popd > /dev/null
+    popd > /dev/null || return
+    popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf $abs_fuu_dir || return
@@ -446,7 +448,7 @@ do_install_cmake_from_source() {
     ret_value=$?
     if [ $ret_value -ne 0 ]; then
         error "Failed to make dir '${cmake_dir_path}' with exit code: ${ret_value}"
-        $ret $ret_value
+        return $ret_value
     fi
 
     echo "Fetching source tarball '$cmake_src_url' -> '$work_folder' ..."
@@ -454,83 +456,133 @@ do_install_cmake_from_source() {
     ret_value=$?
     if [ $ret_value -ne 0 ]; then
         error "wget of ${cmake_src_url} failed with exit code ${ret_value}"
-        $ret $ret_value
+        return $ret_value
     fi
 
     echo "Expanding source tarball '$cmake_tar_path' ..."
-    tar -xzvf "$cmake_tar_path" -C "$work_folder" > "$cmake_dir_path/tar.log" 2>&1
-    ret_value=$?
-    if [ $ret_value -ne 0 ]; then
-        error "untar of ${cmake_tar_path} failed with exit code ${ret_value}"
-        $ret $ret_value
-    fi
+    tar -xzvf "$cmake_tar_path" -C "$work_folder" > "$cmake_dir_path/tar.log" 2>&1 || return
 
-    pushd "$cmake_dir_path" > /dev/null
-    ret_value=$?
-    if [ $ret_value -ne 0 ]; then
-        error "pushd ${cmake_dir_path} failed with exit code ${ret_value}"
-        $ret $ret_value
-    fi
+    pushd "$cmake_dir_path" > /dev/null || return
 
     echo "Running 'bootstrap' ..."
     $SUDO ./bootstrap --verbose --no-qt-gui --prefix=${cmake_prefix} > "${cmake_dir_path}/bootstrap.log" 2>&1
     ret_value=$?
     if [ $ret_value -ne 0 ]; then
         error "bootstrap --prefix=${cmake_prefix} failed with exit code ${ret_value}"
-        $ret $ret_value
+        return $ret_value
     fi
 
     echo "Running 'make' ..."
-    $SUDO make > "$cmake_dir_path/make.log" 2>&1
-    ret_value=$?
-    if [ $ret_value -ne 0 ]; then
-        error "make failed with exit code ${ret_value}"
-        $ret $ret_value
-    fi
+    $SUDO make > "$cmake_dir_path/make.log" 2>&1 || return
 
-    popd > /dev/null
+    popd > /dev/null || return
 
-    ln -sf "${cmake_prefix}/${tarball_name}" "$cmake_dir_symlink"
+    $SUDO ln -sf "${cmake_prefix}/${tarball_name}" "$cmake_dir_symlink"
 }
 
 do_install_cmake_from_installer() {
+    local arch="$1"
+    shift
+
     local ret_value
-    local cmake_installer_url
-    local cmake_installer_sh="cmake-${install_cmake_version}-linux-${ARCH}.sh"
 
     if [[ $install_cmake_version != "$supported_cmake_version" ]]; then
         warn "Using unsupported cmake version ${install_cmake_version}!"
     fi
 
-    if [[ $ARCH != 'x86_64' && $ARCH != 'aarch64' ]]; then
-        echo "Architecture ${ARCH} is not supported for cmake."
-        $ret 1
-    fi
-
-    cmake_installer_url="https://github.com/Kitware/CMake/releases/download/v${install_cmake_version}/${cmake_installer_sh}"
+    local cmake_installer_sh="cmake-${install_cmake_version}-linux-${arch}.sh"
+    local cmake_installer_url="https://github.com/Kitware/CMake/releases/download/v${install_cmake_version}/${cmake_installer_sh}"
 
     $SUDO wget -P "$work_folder" "$cmake_installer_url"
     ret_value=$?
     if [ $ret_value -ne 0 ]; then
         error "wget failed with exit code ${ret_value}"
-        $ret $ret_value
+        return $ret_value
     fi
 
     local fullpath_cmake_installer_sh="${work_folder}/${cmake_installer_sh}"
     $SUDO chmod u+x "${fullpath_cmake_installer_sh}"
-    $SUDO ${fullpath_cmake_installer_sh} --include-subdir --skip-license --prefix=${cmake_prefix}
+    $SUDO "${fullpath_cmake_installer_sh}" --include-subdir --skip-license --prefix=${cmake_prefix}
     ret_value=$?
     if [ $ret_value -ne 0 ]; then
         error "${fullpath_cmake_installer_sh} failed with exit code ${ret_value}"
-        $ret $ret_value
+        return $ret_value
     fi
 
-    ln -sf "$cmake_installer_dir" "$cmake_dir_symlink"
+    $SUDO ln -sf "$cmake_installer_dir" "$cmake_dir_symlink"
+}
+
+do_install_shellcheck() {
+    local shellcheck_version=''
+    if [ -x "${work_folder}/deviceupdate-shellcheck" ]; then
+        shellcheck_version=$("${work_folder}/deviceupdate-shellcheck" --version | grep -i -e '^version:' | awk '{ print $2 }')
+    fi
+
+    if [[ $shellcheck_version == "$supported_shellcheck_version" ]]; then
+        echo "${work_folder}/deviceupdate-shellcheck at version ${supported_cmake_version} already exists. Skipping install..."
+        return 0
+    fi
+
+    local arch=''
+    if [[ $is_arm64 == "true" ]]; then
+        arch='aarch64'
+    elif [[ $is_amd64 == "true" ]]; then
+        arch='x86_64'
+    fi
+
+    local base_url='https://github.com/koalaman/shellcheck'
+    local scver="$supported_shellcheck_version"
+    if [[ $arch == '' ]]; then
+        echo "Building shellcheck ${scver} from source..."
+        $SUDO apt install --yes cabal-install || return 1
+        cabal update || return 1
+
+        local tarball_filename="v${scver}.tar.gz"
+        wget "${base_url}/archive/refs/tags/${tarball_filename}" || return 1
+        tar xzvf "$tarball_filename" || return 1
+
+        pushd shellcheck-${scver} > /dev/null || return 1
+        cabal install
+        local ret_val=$?
+        popd || return 1
+
+        if [[ $ret_val != 0 ]]; then
+            return $ret_val
+        fi
+
+        ln -sf "${HOME}/.cabal/bin/shellcheck" "${work_folder}/deviceupdate-shellcheck" || return 1
+    else
+        echo "Installing shellcheck ${scver} from pre-built binaries..."
+        local tar_filename="shellcheck-v${scver}.linux.x86_64.tar.xz"
+        wget "${base_url}/releases/download/v${scver}/${tar_filename}" || return 1
+        tar xvf "$tar_filename" -C "$work_folder" || return 1
+        ln -sf "${work_folder}/shellcheck-v0.8.0/shellcheck" "${work_folder}/deviceupdate-shellcheck" || return 1
+    fi
+}
+
+determine_machine_architecture() {
+    local arch=''
+    arch="$(uname -m)"
+    local ret_val=$?
+    if [[ $ret_val != 0 ]]; then
+        error "Failed to get cpu architecture."
+        return 1
+    else
+        if [[ $arch == aarch64* || $arch == armv8* ]]; then
+            is_arm64=true
+        elif [[ $arch == armv7* || $arch == 'arm' ]]; then
+            # is_arm32=true
+            true
+        elif [[ $arch == 'x86_64' || $arch == 'amd64' ]]; then
+            is_amd64=true
+        else
+            error "Machine architecture '$arch' is not supported."
+            return 1
+        fi
+    fi
 }
 
 determine_distro_and_arch() {
-    # shellcheck disable=SC1091
-
     # Checking distro name and version
     if [ -r /etc/os-release ]; then
         # freedesktop.org and systemd
@@ -543,9 +595,8 @@ determine_distro_and_arch() {
         VER=$(lsb_release -sr)
     elif [ -f /etc/lsb-release ]; then
         # For some versions of Debian/Ubuntu without lsb_release command
-        . /etc/lsb-release
-        OS=$DISTRIB_ID
-        VER=$DISTRIB_RELEASE
+        OS=$(grep DISTRIB_ID /etc/lsb-release | awk -F'=' '{ print $2 }')
+        VER=$(grep DISTRIB_RELEASE /etc/lsb-release | awk -F'=' '{ print $2 }')
     elif [ -f /etc/debian_version ]; then
         # Older Debian/Ubuntu/etc.
         OS=Debian
@@ -559,23 +610,15 @@ determine_distro_and_arch() {
     # Convert OS to lowercase
     OS="$(echo "$OS" | tr '[:upper:]' '[:lower:]')"
 
-    ARCH='x86_64'
-    which lscpu > /dev/null 2>&1
-    ret_value=$?
-    if [[ $ret_value == 0 ]]; then
-        ARCH=$(lscpu | grep 'Architecture:' | awk '{ print $2 }')
-    else
-        echo "WARNING: failed to get cpu architecture. Trying x86_64..."
-        ARCH='x86_64'
-    fi
+    determine_machine_architecture || return 1
 }
 
 do_list_all_deps() {
     declare -a deps_set=()
-    deps_set+=(${aduc_packages[@]})
-    deps_set+=(${compiler_packages[@]})
-    deps_set+=(${static_analysis_packages[@]})
-    deps_set+=(${do_packages[@]})
+    deps_set+=("${aduc_packages[@]}")
+    deps_set+=("${compiler_packages[@]}")
+    deps_set+=("${static_analysis_packages[@]}")
+    deps_set+=("${do_packages[@]}")
     echo "Listing the state of dependencies:"
     dpkg-query -W -f='${binary:Package} ${Version} (${Architecture})\n' "${deps_set[@]}"
     ret_val=$?
@@ -638,6 +681,9 @@ while [[ $1 != "" ]]; do
     --cmake-force-source)
         cmake_force_source=true
         ;;
+    --install-shellcheck)
+        install_shellcheck=true
+        ;;
     --catch2-ref)
         shift
         catch2_ref=$1
@@ -691,7 +737,7 @@ while [[ $1 != "" ]]; do
     shift
 done
 
-# Get OS, VER, ARCH for use in other parts of the script.
+# Get OS, VER, machine architecture for use in other parts of the script.
 determine_distro_and_arch
 
 # Must be of the form X.Y.Z, where X, Y, and Z are one or more decimal digits.
@@ -700,19 +746,48 @@ if [[ $install_cmake_version != "" && ! $install_cmake_version =~ ^[[:digit:]]+.
     $ret 1
 fi
 
-# First off, install cmake if needed.
+# First off, install cmake if requested.
 if [[ $install_cmake == "true" ]]; then
-    if [[ $ARCH != "x86_64" && $ARCH != "aarch64" || $cmake_force_source == "true" ]]; then
-        do_install_cmake_from_source
+    if [[ ! $is_amd64 && ! $is_arm64 || $cmake_force_source == "true" ]]; then
+        if ! do_install_cmake_from_source; then
+            error "Failed to install cmake from source."
+            $ret 1
+        fi
     else
-        cmake_installer_dir="${cmake_prefix}/cmake-${install_cmake_version}-linux-${ARCH}"
-
-        if [ -d "$cmake_installer_dir" ]; then
-            echo "INFO: ${cmake_installer_dir} already exists. Skipping install of cmake..."
+        arch=''
+        if [[ $is_amd64 == "true" ]]; then
+            arch='x86_64'
+        elif [[ $is_arm64 == "true" ]]; then
+            arch='aarch64'
         else
-            do_install_cmake_from_installer
+            error "Machine architecture is not supported for downloading CMake installer."
+            $ret 1
+        fi
+        cmake_installer_dir="${cmake_prefix}/cmake-${install_cmake_version}-linux-${arch}"
+
+        if [[ -d $cmake_installer_dir && -x "${cmake_dir_symlink}/bin/cmake" ]]; then
+            echo "${cmake_installer_dir} already exists. Skipping install of cmake..."
+        else
+            if ! do_install_cmake_from_installer "$arch"; then
+                error "Failed to install cmake using installer."
+                $ret 1
+            fi
         fi
     fi
+fi
+
+# Install shellcheck if requested.
+if [[ $install_shellcheck == "true" ]]; then
+    if ! do_install_shellcheck; then
+        error "Failed to install shellcheck."
+        $ret 1
+    fi
+fi
+
+# Exit early and return success if installing cmake or shellcheck
+if [[ $install_cmake == "true" || $install_shellcheck == "true" ]]; then
+    echo "Successfully installed."
+    $ret 0
 fi
 
 # If there is no install action specified,

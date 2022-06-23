@@ -39,7 +39,8 @@ enabled, use a personal access token (PAT) as the password.
 To install all dependencies run:
 
 ```shell
-./scripts/install-deps.sh -a --install-cmake
+./scripts/install-deps.sh --install-cmake --install-shellcheck
+./scripts/install-deps.sh -a
 ```
 
 **Note:**: `--use-ssh` can be used to clone dependencies from the Git repo using SSH instead of https.

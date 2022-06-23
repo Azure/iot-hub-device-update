@@ -6,12 +6,12 @@
 # Ensure that getopt starts from first option if ". <script.sh>" was used.
 OPTIND=1
 
-ret=exit
+ret='exit'
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
-    ret=return
+    ret='return'
 else
-    ret=exit
+    ret='exit'
 fi
 
 warn() { echo -e "\033[1;33mWarning:\033[0m $*" >&2; }
@@ -45,6 +45,7 @@ install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
+no_shellcheck=false
 
 print_help() {
     echo "Usage: build.sh [options...]"
@@ -77,6 +78,7 @@ print_help() {
     echo "                                          From build output directory: AducIotAgent & adu-shell."
     echo ""
     echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
+    echo "--no-shellcheck                       Omit the shellcheck of all shell scripts."
     echo ""
     echo "-h, --help                            Show this help message."
 }
@@ -87,7 +89,7 @@ copyfile_exit_if_failed() {
     ret_val=$?
     if [[ $ret_val != 0 ]]; then
         error "failed to copy $1 to $2 (exit code:$ret_val)"
-        exit $ret_val
+        return $ret_val
     fi
 }
 
@@ -153,8 +155,6 @@ install_adu_components() {
 OS=""
 VER=""
 determine_distro() {
-    # shellcheck disable=SC1091
-
     # Checking distro name and version
     if [ -r /etc/os-release ]; then
         # freedesktop.org and systemd
@@ -274,6 +274,9 @@ while [[ $1 != "" ]]; do
         shift
         cmake_dir_path=$1
         ;;
+    --no-shellcheck)
+        no_shellcheck="true"
+        ;;
     -h | --help)
         print_help
         $ret 0
@@ -322,7 +325,8 @@ echo 'Finished generating error code file'
 
 runtime_dir=${output_directory}/bin
 library_dir=${output_directory}/lib
-CMAKE_BIN="${cmake_dir_path}/bin/cmake"
+cmake_bin="${cmake_dir_path}/bin/cmake"
+shellcheck_bin="${work_folder}/deviceupdate-shellcheck"
 
 # Output banner
 echo ''
@@ -338,8 +342,10 @@ bullet "Logging library: $log_lib"
 bullet "Output directory: $output_directory"
 bullet "Build unit tests: $build_unittests"
 bullet "Build packages: $build_packages"
-bullet "CMake: $CMAKE_BIN"
-bullet "$(${CMAKE_BIN} --version)"
+bullet "CMake: $cmake_bin"
+bullet "CMake version: $(${cmake_bin} --version | grep version | awk '{ print $3 }')"
+bullet "shellcheck: $shellcheck_bin"
+bullet "shellcheck version: $("$shellcheck_bin" --version | grep 'version:' | awk '{ print $2 }')"
 if [[ ${#static_analysis_tools[@]} -eq 0 ]]; then
     bullet "Static analysis: (none)"
 else
@@ -438,14 +444,14 @@ if [[ $build_clean == "true" ]]; then
 fi
 
 mkdir -p "$output_directory"
-pushd "$output_directory" > /dev/null
+pushd "$output_directory" > /dev/null || return
 
 # Generate build using cmake with options
-if [ ! -f "$CMAKE_BIN" ]; then
-    error "No '${CMAKE_BIN}' file."
+if [ ! -f "$cmake_bin" ]; then
+    error "No '${cmake_bin}' file."
     ret_val=1
 else
-    "$CMAKE_BIN" -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
+    "$cmake_bin" -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
     ret_val=$?
 fi
 
@@ -462,7 +468,26 @@ if [[ $ret_val == 0 && $build_packages == "true" ]]; then
     ret_val=$?
 fi
 
-popd > /dev/null
+popd > /dev/null || return
+
+if [[ $no_shellcheck == "false" ]]; then
+    # Run shellcheck on all *.sh not beginning with ./out
+    shell_files=$(find . -name '*.sh' | grep -v -e '^\.\/out' | xargs)
+    if [ ! -x "$shellcheck_bin" ]; then
+        error "Error: '${shellcheck_bin}' is not installed."
+        $ret 1
+    fi
+
+    shellcheck_severity='style'
+    for script in $shell_files; do
+        echo "[shellcheck Sev=${shellcheck_severity}] Checking $script"
+        "$shellcheck_bin" --shell=bash --severity="$shellcheck_severity" "$script"
+        ret_tmp=$?
+        if [[ $ret_tmp != 0 ]]; then
+            ret_val=$ret_tmp
+        fi
+    done
+fi
 
 if [[ $ret_val == 0 && $install_adu == "true" ]]; then
     install_adu_components

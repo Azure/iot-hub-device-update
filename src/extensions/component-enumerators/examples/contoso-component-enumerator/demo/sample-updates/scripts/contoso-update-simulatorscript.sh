@@ -10,9 +10,9 @@ ret_val=0
 
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
-    ret=return
+    ret='return'
 else
-    ret=exit
+    ret='exit'
 fi
 
 # Output formatting.
@@ -111,61 +111,60 @@ PARAMS=
 #
 _timestamp=
 
-update_timestamp()
-{
+update_timestamp() {
     # See https://man7.org/linux/man-pages/man1/date.1.html
     _timestamp="$(date +'%Y/%m/%d:%H%M%S')"
 }
 
-log_debug(){
-    if [ $log_level -gt 0  ]; then
+log_debug() {
+    if [ $log_level -gt 0 ]; then
         return
     fi
     log "$log_debug_pref" "$@"
 }
 
-log_info(){
-    if [ $log_level -gt 1  ]; then
+log_info() {
+    if [ $log_level -gt 1 ]; then
         return
     fi
     log "$log_info_pref" "$@"
 }
 
-log_warn(){
-    if [ $log_level -gt 2  ]; then
+log_warn() {
+    if [ $log_level -gt 2 ]; then
         return
     fi
     log "$log_warn_pref" "$@"
 }
 
-log_error(){
-    if [ $log_level -gt 3  ]; then
+log_error() {
+    if [ $log_level -gt 3 ]; then
         return
     fi
     log "$log_error_pref" "$@"
 }
 
-log(){
+log() {
     update_timestamp
-    if [ -z $log_file ]; then
+    if [ -z "$log_file" ]; then
         echo -e "[$_timestamp]" "$@" >&1
     else
-        echo "[$_timestamp]" "$@" >> $log_file
+        echo "[$_timestamp]" "$@" >> "$log_file"
     fi
 }
 
-output(){
+output() {
     update_timestamp
-    if [ -z $output_file ]; then
+    if [ -z "$output_file" ]; then
         echo "[$_timestamp]" "$@" >&1
     else
         echo "[$_timestamp]" "$@" >> "$output_file"
     fi
 }
 
-result(){
+result() {
     # NOTE: don't insert timestamp in result file.
-    if [ -z $result_file ]; then
+    if [ -z "$result_file" ]; then
         echo "$@" >&1
     else
         echo "$@" > "$result_file"
@@ -206,7 +205,7 @@ print_help() {
     echo "--restart-to-apply                        Request the host device to restart when applying update to this component."
     echo "--restart-agent-to-apply                  Request the DU Agent to restart when applying update to this component."
     echo ""
-    echo "--install-error-policy                    Indicates how to proceed when an error occurs. Default \"abort\""
+    echo '--install-error-policy                    Indicates how to proceed when an error occurs. Default "abort"'
     echo "                                          options: abort, continue"
     echo "--install-reboot-policy                   Indicates whether a device reboot is required, after install completed successfully."
     echo "                                          Optios:"
@@ -439,7 +438,7 @@ while [[ $1 != "" ]]; do
             error "--firmware-file parameter is mandatory."
             $ret 1
         fi
-        firmware_file="$1";
+        firmware_file="$1"
         echo "firmware file: $firmware_file"
         shift
         ;;
@@ -450,7 +449,7 @@ while [[ $1 != "" ]]; do
             error "--work-folder parameter is mandatory."
             $ret 1
         fi
-        workfolder="$1";
+        workfolder="$1"
         shift
         ;;
 
@@ -465,7 +464,7 @@ while [[ $1 != "" ]]; do
             error "--out-file parameter is mandatory."
             $ret 1
         fi
-        output_file="$1";
+        output_file="$1"
 
         #
         #Create output file path.
@@ -486,7 +485,7 @@ while [[ $1 != "" ]]; do
             error "--result-file parameter is mandatory."
             $ret 1
         fi
-        result_file="$1";
+        result_file="$1"
         #
         #Create result file path.
         #
@@ -505,7 +504,7 @@ while [[ $1 != "" ]]; do
             error "--log-file parameter is mandatory."
             $ret 1
         fi
-        log_file="$1";
+        log_file="$1"
         shift
         ;;
     --log-level)
@@ -618,7 +617,7 @@ done
 #     ADUC_Result_IsInstalled_Installed = 900,     /**< Succeeded and content is installed. */
 #     ADUC_Result_IsInstalled_NotInstalled = 901,  /**< Succeeded and content is not installed */
 #
-IsInstalled(){
+IsInstalled() {
     path_key=path
     component_path=${component_props[$path_key]}
     component_file_path="$component_path/firmware.json"
@@ -633,7 +632,7 @@ IsInstalled(){
         # extendedResultCode(12345) mock value.
         extendedResultCode=12345
         resultDetails="Invalid installedCriteria value."
-    elif [[ -f "$component_file_path" ]]; then
+    elif [[ -f $component_file_path ]]; then
 
         log_debug "Found component data file '$component_file_path'."
 
@@ -692,7 +691,7 @@ IsInstalled(){
     output "Result:" "$mock_result"
 
     # Write ADUC_Result to result file.
-    result  "$mock_result"
+    result "$mock_result"
 
 }
 
@@ -700,7 +699,7 @@ IsInstalled(){
 # Helper function
 # Not returning ADUC_RESULT
 #
-ResetComponent(){
+ResetComponent() {
     path_key=path
     component_path=${component_props[$path_key]}
     component_file_path="$component_path/firmware.json"
@@ -729,17 +728,17 @@ ResetComponent(){
     o="$component_file_path"
 
     {
-        echo "{";
-        echo "    \"id\": \"$component_id\"," ;
-        echo "    \"name\": \"$component_name\"," ;
-        echo "    \"group\": \"$component_group\"," ;
-        echo "    \"manufacturer\": \"$component_vendor\"," ;
-        echo "    \"model\": \"$component_model\"," ;
-        echo "    \"version\": \"$component_version\"," ;
-        echo "    \"description\": \"This component is generated for testing purposes.\"," ;
-        echo "    \"properties\": {" ;
-        echo "        \"path\": \"$component_path\"" ;
-        echo "    }" ;
+        echo "{"
+        echo "    \"id\": \"$component_id\","
+        echo "    \"name\": \"$component_name\","
+        echo "    \"group\": \"$component_group\","
+        echo "    \"manufacturer\": \"$component_vendor\","
+        echo "    \"model\": \"$component_model\","
+        echo "    \"version\": \"$component_version\","
+        echo '    "description": "This component is generated for testing purposes.",'
+        echo '    "properties": {'
+        echo "        \"path\": \"$component_path\""
+        echo "    }"
         echo "}"
     } > "$o"
 
@@ -777,7 +776,7 @@ DownloadUpdateArtifacts() {
     output "Result:" "$mock_result"
 
     # Write ADUC_Result to result file.
-    result  "$mock_result"
+    result "$mock_result"
 
     $ret $ret_val
 }
@@ -860,7 +859,7 @@ InstallUpdate() {
     output "Result:" "$mock_result"
 
     # Write ADUC_Result to result file.
-    result  "$mock_result"
+    result "$mock_result"
 
     $ret $ret_val
 }
@@ -877,7 +876,7 @@ ApplyUpdate() {
         # ADUC_Result_Apply_Success = 700
         resultCode=700
     fi
-        # No additional error.
+    # No additional error.
     extendedResultCode=0
     resultDetails=
     # Prepare ADUC_Result json.
@@ -887,7 +886,7 @@ ApplyUpdate() {
     output "Result:" "$mock_result"
 
     # Write ADUC_Result to result file.
-    result  "$mock_result"
+    result "$mock_result"
 
     $ret $ret_val
 }
@@ -905,11 +904,10 @@ SimulateActionResult() {
     output "Result:" "$mock_result"
 
     # Write ADUC_Result to result file.
-    result  "$mock_result"
+    result "$mock_result"
 
     $ret $ret_val
 }
-
 
 SimulatePreInstallSuccess() {
     output "Simulating pre-instll step success."
@@ -926,13 +924,13 @@ SimulatePreInstallSuccess() {
     output "Result:" "$mock_result"
 
     # Write ADUC_Result to result file.
-    result  "$mock_result"
+    result "$mock_result"
 
     $ret $ret_val
 }
 
 SimulatePostInstallSuccess() {
-output "Simulating post-instll step success."
+    output "Simulating post-instll step success."
     ret_val=0
     # ADUC_Result_Apply_Success = 700
     resultCode=700
@@ -946,12 +944,12 @@ output "Simulating post-instll step success."
     output "Result:" "$mock_result"
 
     # Write ADUC_Result to result file.
-    result  "$mock_result"
+    result "$mock_result"
 
     $ret $ret_val
 }
 
-CancelUpdate(){
+CancelUpdate() {
     ret_val=0
     $ret $ret_val
 }
@@ -1006,4 +1004,3 @@ if [ -n "$do_cancel_action" ]; then
 fi
 
 $ret $ret_val
-
