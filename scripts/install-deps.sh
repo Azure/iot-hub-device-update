@@ -538,10 +538,10 @@ do_install_shellcheck() {
         cabal update || return 1
 
         local tarball_filename="v${scver}.tar.gz"
-        wget "${base_url}/archive/refs/tags/${tarball_filename}" || return 1
-        tar xzvf "$tarball_filename" || return 1
+        wget -P "$work_folder" "${base_url}/archive/refs/tags/${tarball_filename}" || return 1
+        tar -xzvf "$work_folder/$tarball_filename" -C "$work_folder" || return 1
 
-        pushd shellcheck-${scver} > /dev/null || return 1
+        pushd "${work_folder}/shellcheck-${scver}" > /dev/null || return 1
         cabal install
         local ret_val=$?
         popd || return 1
@@ -554,8 +554,8 @@ do_install_shellcheck() {
     else
         echo "Installing shellcheck ${scver} from pre-built binaries..."
         local tar_filename="shellcheck-v${scver}.linux.x86_64.tar.xz"
-        wget "${base_url}/releases/download/v${scver}/${tar_filename}" || return 1
-        tar xvf "$tar_filename" -C "$work_folder" || return 1
+        wget -P "$work_folder" "${base_url}/releases/download/v${scver}/${tar_filename}" || return 1
+        tar -xvf "$work_folder/$tar_filename" -C "$work_folder" || return 1
         ln -sf "${work_folder}/shellcheck-v0.8.0/shellcheck" "${work_folder}/deviceupdate-shellcheck" || return 1
     fi
 }
@@ -740,6 +740,34 @@ done
 # Get OS, VER, machine architecture for use in other parts of the script.
 determine_distro_and_arch
 
+# If there is no install action specified,
+# assume that we want to install all deps.
+if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && $install_do != "true" && $install_azure_iot_sdk != "true" && $install_catch2 != "true" && $install_swupdate != "true" && $install_cmake != "true" && $install_shellcheck != "true" ]]; then
+    install_all_deps=true
+fi
+
+# If --all was specified,
+# set all install actions to "true".
+if [[ $install_all_deps == "true" ]]; then
+    install_aduc_deps=true
+    install_do=true
+    install_packages=true
+fi
+
+# Set implied options for aduc deps.
+if [[ $install_aduc_deps == "true" ]]; then
+    install_azure_iot_sdk=true
+    install_catch2=true
+    install_azure_blob_storage_file_upload_utility=true
+fi
+
+# Set implied options for packages only.
+if [[ $install_packages_only == "true" ]]; then
+    install_packages=true
+    install_azure_iot_sdk=false
+    install_catch2=false
+fi
+
 # Must be of the form X.Y.Z, where X, Y, and Z are one or more decimal digits.
 if [[ $install_cmake_version != "" && ! $install_cmake_version =~ ^[[:digit:]]+.[[:digit:]]+\.[[:digit:]]+ ]]; then
     error "Invalid --cmake-version '${install_cmake_version}'. Valid pattern: digit+.digit+.digit+ e.g. '3.23.2'"
@@ -747,7 +775,7 @@ if [[ $install_cmake_version != "" && ! $install_cmake_version =~ ^[[:digit:]]+.
 fi
 
 # First off, install cmake if requested.
-if [[ $install_cmake == "true" ]]; then
+if [[ $install_cmake == "true" || $install_all_deps == "true" || $install_aduc_deps == "true" ]]; then
     if [[ ! $is_amd64 && ! $is_arm64 || $cmake_force_source == "true" ]]; then
         if ! do_install_cmake_from_source; then
             error "Failed to install cmake from source."
@@ -777,7 +805,7 @@ if [[ $install_cmake == "true" ]]; then
 fi
 
 # Install shellcheck if requested.
-if [[ $install_shellcheck == "true" ]]; then
+if [[ $install_shellcheck == "true" || $install_all_deps == "true" || $install_aduc_deps == "true" ]]; then
     if ! do_install_shellcheck; then
         error "Failed to install shellcheck."
         $ret 1
@@ -788,34 +816,6 @@ fi
 if [[ $install_cmake == "true" || $install_shellcheck == "true" ]]; then
     echo "Successfully installed."
     $ret 0
-fi
-
-# If there is no install action specified,
-# assume that we want to install all deps.
-if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && $install_do != "true" && $install_azure_iot_sdk != "true" && $install_catch2 != "true" && $install_swupdate != "true" ]]; then
-    install_all_deps=true
-fi
-
-# If --all was specified,
-# set all install actions to "true".
-if [[ $install_all_deps == "true" ]]; then
-    install_aduc_deps=true
-    install_do=true
-    install_packages=true
-fi
-
-# Set implied options for aduc deps.
-if [[ $install_aduc_deps == "true" ]]; then
-    install_azure_iot_sdk=true
-    install_catch2=true
-    install_azure_blob_storage_file_upload_utility=true
-fi
-
-# Set implied options for packages only.
-if [[ $install_packages_only == "true" ]]; then
-    install_packages=true
-    install_azure_iot_sdk=false
-    install_catch2=false
 fi
 
 if [[ $install_packages == "true" ]]; then

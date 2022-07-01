@@ -14,13 +14,6 @@ steps:
       sourceScanPath: src
 
   - task: Bash@3
-    displayName: "Install CMake and shellcheck"
-    inputs:
-      targetType: "filePath"
-      filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
-      arguments: --install-cmake --install-shellcheck
-
-  - task: Bash@3
     displayName: "Install ADUC dependencies"
     inputs:
       targetType: "filePath"
