@@ -2,7 +2,7 @@
 
 You can use the Simulator Update Handler to simulate the Device Update workflow without actually downloading and installing any files to the actual device for demonstration or testing purposes.
 
-The source code for this Simulator Update Handler can be found at [src/content_handlers/simulator_handler](../../src/content_handlers/simulator_handler)
+The source code for this Simulator Update Handler can be found at [src/extensions/step_handlers/simulator_handler](../../src/extensions/step_handlers/simulator_handler)
 
 ## Register Simulator Update Handler
 
@@ -45,7 +45,7 @@ TEMPDIR
 
 If none of the above system environment variables are specified, the file must be place in `/tmp` directory (**/tmp/du-simulator-data.json**)
 
-You can modify the Simulator Update Handler source code to specify your own search preference. See [simulator_handler.cpp](../../src/content_handlers/simulator_handler/src/simulator_handler.cpp)
+You can modify the Simulator Update Handler source code to specify your own search preference. See [simulator_handler.cpp](../../src/extensions/step_handlers/simulator_handler/src/simulator_handler.cpp)
 
 ### Simulate Data File Schema
 

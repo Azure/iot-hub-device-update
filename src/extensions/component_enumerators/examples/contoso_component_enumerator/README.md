@@ -26,7 +26,7 @@ For this demonstration, the Contoso Virtual Vacuum consists of five 'logical' co
 
 **Figure 1** - Contoso Virtual Vacuum Components Diagram
 
-![Contoso Virtual-Vacuum Components Diagram](../contoso-component-enumerator/assets/contoso-virtual-vacuum-components-diagram.svg)
+![Contoso Virtual-Vacuum Components Diagram](../contoso_component_enumerator/assets/contoso-virtual-vacuum-components-diagram.svg)
 
 We use the following directory structure to simulates those components mentioned above.
 
@@ -68,7 +68,7 @@ After doing this the Update Content Handler can install and apply the update to 
 
 **Figure 2** - Proxy Update Flow Diagram
 
-![Contoso Virtual-Vacuum Update Flow](../contoso-component-enumerator/assets/contoso-virtual-vacuum-update-flow.svg)
+![Contoso Virtual-Vacuum Update Flow](../contoso_component_enumerator/assets/contoso-virtual-vacuum-update-flow.svg)
 
 - **Device Builder responsibilities**
   - Design and build the device.
@@ -88,7 +88,7 @@ After doing this the Update Content Handler can install and apply the update to 
   - Collects all update results from Parent and Child Update(s) and reports it to the Azure IoT Hub.
 - Child **Steps Handler**
   - Iterate through a list of **instances of component** that are compatible with the **Child Update** content.
-  - See [Steps Handler](../../../../content_handlers/steps_handler/README.md) for more information.
+  - See [Steps Handler](../../../../extensions/update_manifest_handlers/steps_handler/README.md) for more information.
 - **SWUpdate Installer** and **Motors Firmware Installer**
   - See [How To Implement Custom Update Content Handler](../../../../../docs/agent-reference/how-to-implement-custom-update-handler.md) for more details.
 
@@ -454,8 +454,8 @@ For example, for `hostfw`, the value of property `properties.version` will be po
 
 This example is written in `C++`. You can choose to use `C` if desired.
 
-- [CMakeLists.txt](../contoso-component-enumerator/CMakeLists.txt)
-- [contoso-component-enumerator.cpp](../contoso-component-enumerator/contoso-component-enumerator.cpp)
+- [CMakeLists.txt](../contoso_component_enumerator/CMakeLists.txt)
+- [contoso_component_enumerator.cpp](../contoso_component_enumerator/contoso_component_enumerator.cpp)
 - [inc/aduc/component_enumerator_extension.hpp](../../inc/aduc/../../../inc/aduc/component_enumerator_extension.hpp)
 
 ### Example Proxy Update

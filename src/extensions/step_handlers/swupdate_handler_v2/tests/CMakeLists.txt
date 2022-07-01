@@ -13,7 +13,7 @@ set (
     swupdate_handler_v2_ut.cpp
     ../src/handler_create.cpp
     ../src/swupdate_handler_v2.cpp
-    ../../steps_handler/src/steps_handler.cpp
+    ../../../update_manifest_handlers/steps_handler/src/steps_handler.cpp
     )
 
 find_package (Catch2 REQUIRED)
@@ -28,7 +28,7 @@ target_include_directories (
             ${PROJECT_SOURCE_DIR}/inc
             ${PROJECT_SOURCE_DIR}/../inc
             ${PROJECT_SOURCE_DIR}/../../inc
-            ${PROJECT_SOURCE_DIR}/../../steps_handler/inc
+            ${PROJECT_SOURCE_DIR}/../../../update_manifest_handlers/steps_handler/inc
             )
 
 target_compile_definitions (

@@ -34,11 +34,11 @@ adu_steps_handler_file=libmicrosoft_steps_1.so
 adu_swupdate_handler_file=libmicrosoft_swupdate_1.so
 adu_swupdate_handler_2_file=libmicrosoft_swupdate_2.so
 
-adu_example_component_enumerator_file=libcontoso-component-enumerator.so
+adu_example_component_enumerator_file=libcontoso_component_enumerator.so
 
-adu_delivery_optimization_downloader_file=libdeliveryoptimization-content-downloader.so
+adu_delivery_optimization_downloader_file=libdeliveryoptimization_content_downloader.so
 
-adu_delta_download_handler_file=libmicrosoft-delta-download-handler.so
+adu_delta_download_handler_file=libmicrosoft_delta_download_handler.so
 
 adu_eis_conf_file=adu.toml
 eis_idservice_dir=/etc/aziot/identityd/config.d

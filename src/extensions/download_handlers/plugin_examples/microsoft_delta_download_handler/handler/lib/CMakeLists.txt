@@ -1,4 +1,4 @@
-set (target_name microsoft_delta_download_handler)
+set (target_name microsoft-delta-download-handler)
 
 include (agentRules)
 compileasc99 ()

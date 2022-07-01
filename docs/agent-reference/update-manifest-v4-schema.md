@@ -200,7 +200,7 @@ Currently, a `Child Update` must not contain any Reference Steps. This restricti
 
 Inline step(s) specified in `Parent Update` will be applied to the Host Device. Here the ADUC_WorkflowData object that is passed to a Step Handler (aka. Update Content Handler) will not contains a `Selected Components` data. The handler for this type of step should not be a `Component-Aware` handler.  
 
-> **Note** | See [Steps Content Handler](../../src/content_handlers/steps_handler/README.md) and [Implementing a Component-Aware Content Handler](./how-to-implement-custom-update-handler.md#implementing-a-component-aware-content-handler) for more details.
+> **Note** | See [Steps Content Handler](../../src/extensions/step_handlers/steps_handler/README.md) and [Implementing a Component-Aware Content Handler](./how-to-implement-custom-update-handler.md#implementing-a-component-aware-content-handler) for more details.
 
 ### Reference Step In Parent Update
 

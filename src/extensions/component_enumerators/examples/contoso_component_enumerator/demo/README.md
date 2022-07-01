@@ -154,8 +154,8 @@ A **Bundle Update** is an update that contains at least one reference step.
 A **Multi Component Update** is a Bundle Update intended for a device with a registered `Component Enumerator Extension`.
 
 > If the target device doesn't have a registered component enumerator, the Device Update Agent will assume that every step is intended to be installed onto the host device and will not pass any 'Component Context' to a Content Handler when processing steps.
-> 
-> See [Steps Handler](../../../../../content_handlers/steps_handler/) for more information.
+>  
+> See [Steps Handler](../../../../../extensions/update_manifest_handlers/steps_handler/) for more information.
 
 Follow this [instruction](#generate-example-updates) to generate the example update using `CreateSampleMSOEUpdate-3.x.ps1` PowerShell script.
 
@@ -257,7 +257,7 @@ The above update contains a single inline step that installs `camera firmware v1
 When the Component Enumerator extension is registered, the Device Update agent will **select** the compatible `component` by invoking a `SelectComponents` api and passing the referenced-update's compatibility property as a `selector`. For this example, the component enumerator will return every component with a `group` property value that equals `cameras`.
 
 When processing this step, the Agent will iterate through the list of returned compatible components and perform the step's actions (download, install, apply) on each component with each component's context accordingly.
-See [Steps Handler](../../../../../content_handlers/steps_handler/) and [Component Enumerator Extension](../../contoso-component-enumerator/README.md) for more details. 
+See [Steps Handler](../../../../../extensions/step_handlers/steps_handler/) and [Component Enumerator Extension](../../contoso_component_enumerator/README.md) for more details. 
 
 ---
 ## Appendix
@@ -312,7 +312,7 @@ The following optional steps are required for Multi Component Update (a.k.a. Pro
 Run following command on your test device
 
 ```sh
-sudo /usr/bin/AducIotAgent -E /var/lib/adu/extensions/sources/libcontoso-component-enumerator.so
+sudo /usr/bin/AducIotAgent -E /var/lib/adu/extensions/sources/libcontoso_component_enumerator.so
 ```
 
 #### Setup Mock Components
@@ -325,7 +325,7 @@ For testing and demonstration purposes, we'll be creating following mock compone
 - rootfs
 
 **IMPORTANT**  
-This components configuration depends on the implementation of an example Component Enumerator extension called libcontoso-component-enumerator.so, which required a mock component inventory data file `/usr/local/contoso-devices/components-inventory.json`
+This components configuration depends on the implementation of an example Component Enumerator extension called libcontoso_component_enumerator.so, which required a mock component inventory data file `/usr/local/contoso-devices/components-inventory.json`
 
 > Tip: you can copy [demo](../demo) folder to your home directory on the test VM and run `~/demo/tools/reset-demo-components.sh` to copy required files to the right locations.
 

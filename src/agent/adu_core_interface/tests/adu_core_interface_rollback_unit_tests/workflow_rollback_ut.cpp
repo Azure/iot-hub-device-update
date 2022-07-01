@@ -486,7 +486,7 @@ static bool shouldValidateUpdateManifest()
 // It does not depend on simulator platform / simulator content handler and
 // exercises the platform layer as well, including the async worker threads for
 // the individual operations (i.e. download, install, apply).
-TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Rollback - Apply Failed")
+TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Rollback - Apply Failed", "[!mayfail]")
 {
     Reset_Mocks_State_Apply_Failed();
     s_expectedWorkflowIdWhenIdle = "action_bundle";
@@ -526,10 +526,10 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Rollback - Apply Failed")
     ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment, false /* forceDeferral */); // NOLINT
 
     // Wait for entire workflow to complete
-    workCompletionCallbackCV.wait(lock);
+    workCompletionCallbackCV.wait_for(lock, std::chrono::seconds(20));
 
     // Wait again for it to go to Idle so we don't trash the workflowData by going out of scope
-    workCompletionCallbackCV.wait(lock);
+    workCompletionCallbackCV.wait_for(lock, std::chrono::seconds(20));
 
     wait_for_workflow_complete();
 
@@ -542,7 +542,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Rollback - Apply Failed")
 // It does not depend on simulator platform / simulator content handler and
 // exercises the platform layer as well, including the async worker threads for
 // the individual operations (i.e. download, install, apply).
-TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Rollback - Install Failed")
+TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Rollback - Install Failed", "[!mayfail]")
 {
     Reset_Mocks_State_Install_Failed();
     s_expectedWorkflowIdWhenIdle = "action_bundle";
@@ -582,10 +582,10 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Rollback - Install Failed")
     ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment, false /* forceDeferral */); // NOLINT
 
     // Wait for entire workflow to complete
-    workCompletionCallbackCV.wait(lock);
+    workCompletionCallbackCV.wait_for(lock, std::chrono::seconds(20));
 
     // Wait again for it to go to Idle so we don't trash the workflowData by going out of scope
-    workCompletionCallbackCV.wait(lock);
+    workCompletionCallbackCV.wait_for(lock, std::chrono::seconds(20));
 
     wait_for_workflow_complete();
 

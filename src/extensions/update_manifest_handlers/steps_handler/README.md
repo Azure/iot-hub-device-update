@@ -79,7 +79,7 @@ Next, Steps Handler will parse the Child Update Manifest and create ADUC_Workflo
 
 ### Things To Know
 
-- To deliver an update to a component or group of components connected to a Host Device, the step must be `Reference Step`. The `compatibility` property will be used for selecting target components.<br/><br/>See [Contoso Component Enumerator Example](../../extensions/component-enumerators/examples/contoso-component-enumerator/README.md) for more details about components selection process.
+- To deliver an update to a component or group of components connected to a Host Device, the step must be `Reference Step`. The `compatibility` property will be used for selecting target components.<br/><br/>See [Contoso Component Enumerator Example](../../extensions/component_enumerators/examples/contoso_component_enumerator/README.md) for more details about components selection process.
 
 - Parent Update's inline steps will be applied to Host Device only.
 - Only Parent Update can contains Reference Step.
@@ -89,5 +89,5 @@ Next, Steps Handler will parse the Child Update Manifest and create ADUC_Workflo
 
 - [How To Implement Custom Update Content Handler](../../../docs/agent-reference/how-to-implement-custom-update-handler.md.md)
 - [Multi Component Updating](../../../docs/agent-reference/multi-component-updating.md)
-- [Contoso Component Enumerator Example](../../extensions/component-enumerators/examples/contoso-component-enumerator/README.md)
+- [Contoso Component Enumerator Example](../../extensions/component_enumerators/examples/contoso_component_enumerator/README.md)
 - [What's MSOE](../../../docs/agent-reference/update-manifest-v4-schema.md#multi-step-ordered-execution-msoe-support)

@@ -15,7 +15,7 @@ and
 
 You may want to implement your own version of Download, Install and Apply for
 your device or installer. You can provide your own implementation of the
-[Content Handler APIs](../../src/content_handlers/inc/aduc/content_handler.hpp)
+[Content Handler APIs](../../src/extensions/step_handlers/inc/aduc/content_handler.hpp)
 in [src/content_handlers](../../src/content_handlers)
 
 ## Porting to a Different OS or Platform

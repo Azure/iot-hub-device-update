@@ -122,7 +122,7 @@ create_update_content_handler_extension_registration() {
     # shellcheck disable=SC2034
     base64digest=$(openssl dgst -binary "$EXT_SRC/${so_name}.so" | openssl base64)
 
-    $mkdir_cmd "$APP_EXT_BASE_DIR/update_content_handlers/$libname"
+    $mkdir_cmd "$APP_EXT_BASE_DIR/update_extensions/step_handlers/$libname"
     local target_filepath="$APP_EXT_BASE_DIR/update_content_handlers/${libname}/content_handler.json"
     cp "$TEMPLATES_SOURCE_DIR/content_handler.template.json" "$target_filepath"
 
@@ -189,14 +189,14 @@ create_app_tarball() {
     done
 
     # Copy content downloader plugin modules
-    cp $EXT_SRC/libcurl-content-downloader.so $APP_EXT_DIR
+    cp $EXT_SRC/libcurl_content_downloader.so $APP_EXT_DIR
 
     # Create app plugin modules registrations
     create_update_content_handler_extension_registration 'microsoft/apt:1' 'libmicrosoft_apt_1'
     create_update_content_handler_extension_registration 'microsoft/script:1' 'libmicrosoft_script_1'
     create_update_content_handler_extension_registration 'microsoft/steps:1' 'libmicrosoft_steps_1'
     create_update_content_handler_extension_registration 'microsoft/update-manifest:4' 'libmicrosoft_steps_1' # update manifest handler currently uses steps lib
-    create_content_downloader_registration 'libcurl-content-downloader'
+    create_content_downloader_registration 'libcurl_content_downloader'
 
     # Copy required assets for use by container image
     cp "$TEMPLATES_SOURCE_DIR/setup_container.sh" $APP_LIB_DIR/

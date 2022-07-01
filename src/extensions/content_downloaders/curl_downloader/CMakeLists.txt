@@ -1,4 +1,4 @@
-project (curl-content-downloader)
+project (curl_content_downloader)
 
 include (agentRules)
 

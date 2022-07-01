@@ -61,7 +61,7 @@ workflow_get_installed_criteria|Get the 'installed' criteria string|
 
 ## Implementing A 'Component-Aware' Content Handler
 
-Usually, a content handler is designed to install an update content on a Host Device. An example of this is the [APT Update Content Handler](../../src/content_handlers/apt_handler/README.md) provided in this project, which installs one or more Debian packages on the host device.
+Usually, a content handler is designed to install an update content on a Host Device. An example of this is the [APT Update Content Handler](../../src/extensions/step_handlers/apt_handler/README.md) provided in this project, which installs one or more Debian packages on the host device.
 
 In some case, a Device Builder may want to install an update content on one or more component(s) that connected to the Host Device instead.
 
@@ -75,7 +75,7 @@ When implementing a handler that handles an update intended for connected-compon
 
 The component data is provided by Component Enumerator Extension, which usually implemented by Device Builder and registered on the Host Device.
 
-> See [Contoso Virtual Vacuum Component Enumerator](../../src/extensions/component-enumerators/examples/contoso-component-enumerator/README.md) example for more details
+> See [Contoso Virtual Vacuum Component Enumerator](../../src/extensions/component_enumerators/examples/contoso_component_enumerator/README.md) example for more details
 
 ## How To Build A Content Handler Extension
 

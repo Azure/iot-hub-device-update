@@ -69,7 +69,7 @@ git clone https://github.com/Azure/iot-hub-device-update.git ~/adu-pp/
 
 sudo mkdir -p ~/demo/demo-devices/contoso-devices
 
-cd ~/adu-pp/src/extensions/component-enumerators/examples/contoso-component-enumerator/demo || exit
+cd ~/adu-pp/src/extensions/component_enumerators/examples/contoso_component_enumerator/demo || exit
 
 chmod 755 ./tools/reset-demo-components.sh
 
@@ -79,6 +79,6 @@ sudo cp -a ./demo-devices/contoso-devices/. ~/demo/demo-devices/contoso-devices/
 sh ./tools/reset-demo-components.sh
 
 #registers the extension
-sudo /usr/bin/AducIotAgent -E /var/lib/adu/extensions/sources/libcontoso-component-enumerator.so
+sudo /usr/bin/AducIotAgent -E /var/lib/adu/extensions/sources/libcontoso_component_enumerator.so
 
 sh ./tools/reset-demo-components.sh

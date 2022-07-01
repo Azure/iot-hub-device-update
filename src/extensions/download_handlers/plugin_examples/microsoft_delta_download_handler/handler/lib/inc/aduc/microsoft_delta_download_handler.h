@@ -1,7 +1,7 @@
 /**
  * @file microsoft_delta_download_handler.h
  * @brief Function prototypes for the delta download handler library functions used
- * by the sample libmicrosoft-delta-download-handler.so plugin.
+ * by the sample libmicrosoft_delta_download_handler.so plugin.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.

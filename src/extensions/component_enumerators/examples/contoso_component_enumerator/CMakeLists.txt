@@ -1,10 +1,10 @@
-project (contoso-component-enumerator)
+project (contoso_component_enumerator)
 
 include (agentRules)
 
 compileasc99 ()
 
-add_library (${PROJECT_NAME} SHARED contoso-component-enumerator.cpp)
+add_library (${PROJECT_NAME} SHARED contoso_component_enumerator.cpp)
 
 find_package (Parson REQUIRED)
 

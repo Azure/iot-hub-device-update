@@ -1,4 +1,4 @@
-project (deliveryoptimization-content-downloader)
+project (deliveryoptimization_content_downloader)
 
 include (agentRules)
 

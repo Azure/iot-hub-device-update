@@ -1,6 +1,19 @@
-# Welcome to the Device Update Agent Private Preview Refresh (PPR) Release
+# Welcome to the Device Update Agent Release
 
-## What's New In This Version?
+## What's New In Version 1.0 (GA)?
+
+- New Step Handler Extension
+  - [SWUpdate Handler V2](../../src/extensions/step_handlers/swupdate_handler_v2/README.md)
+
+- Add Extensibility for the Download Handlers
+  - [Microsoft Delta Download Handler Example](../../src/extensions/download_handlers/plugin_examples/microsoft_delta_download_handler/../../../../../README.md)
+
+- Component Name Changes
+  - contoso-component-enumerator => contoso_component_enumerator
+  - curl-content-downloader => curl_content_downloader
+  - deliveryoptimization-content-downloader => deliveryoptimization_content_downloader
+
+## What's New In Version 0.8.0 (Public Preview Refresh)?
 
 - New Device Update [Configurations file](./configurations-file.md)
 - [Device Diagnostic Service](./device-diagnostic-service.md) Support
@@ -11,14 +24,14 @@
   - [Detached Update Manifest](./update-manifest-v4-schema.md)
 - Agent Extensibility Support
   - [Update Content Handler Extension](./how-to-implement-custom-update-handler.md)
-    - Added [APT Update Handler](../../src/content_handlers/apt_handler)
+    - Added [APT Update Handler](../../src/extensions/step_handlers/apt_handler)
     - Added Script Handler
-    - Added [Simulator Handler](../../src/content_handlers/simulator_handler)
-    - Added [Steps Handler](../../src/content_handlers/steps_handler/README.md)
-    - Added [SWUpdate Handler](../../src/content_handlers/swupdate_handler)
+    - Added [Simulator Handler](../../src/extensions/step_handlers/simulator_handler)
+    - Added [Steps Handler](../../src/extensions/step_handlers/steps_handler/README.md)
+    - Added [SWUpdate Handler](../../src/extensions/step_handlers/swupdate_handler)
 
-  - [Component Enumerator Extension](../../src/extensions/component-enumerators/examples/contoso-component-enumerator/README.md)
-  - [Content Downloader Extension](../../src/extensions/content-downloaders/README.md)
+  - [Component Enumerator Extension](../../src/extensions/component_enumerators/examples/contoso_component_enumerator/README.md)
+  - [Content Downloader Extension](../../src/extensions/content_downloaders/README.md)
   
 ## Backward Compatibility
   
