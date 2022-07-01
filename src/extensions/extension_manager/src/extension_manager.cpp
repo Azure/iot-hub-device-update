@@ -807,7 +807,7 @@ ADUC_Result ExtensionManager::Download(
                 false))
         {
             result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION };
+                       .ExtendedResultCode = ADUC_ERC_VALIDATION_FILE_HASH_INVALID_HASH };
 
             workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
 
