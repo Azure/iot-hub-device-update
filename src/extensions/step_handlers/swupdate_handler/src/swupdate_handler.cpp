@@ -349,8 +349,15 @@ std::string SWUpdateHandlerImpl::ReadValueFromFile(const std::string& filePath)
  */
 ADUC_Result SWUpdateHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflowData)
 {
-    char* installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
     ADUC_Result result;
+
+    char* installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
+    if (installedCriteria == nullptr)
+    {
+        Log_Error("Missing installedCriteria.");
+        result = { ADUC_Result_Failure, ADUC_ERC_SWUPDATE_HANDLER_MISSING_INSTALLED_CRITERIA };
+        return result;
+    }
 
     std::string version{ ReadValueFromFile(ADUC_VERSION_FILE) };
     if (version.empty())

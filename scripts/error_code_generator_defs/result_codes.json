@@ -312,6 +312,10 @@
                 "value": 517
               },
               {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_MISSING_INSTALLED_CRITERIA",
+                "value": 518
+              },
+              {
                 "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_UNKNOWNEXCEPTION",
                 "value": 767
               }
