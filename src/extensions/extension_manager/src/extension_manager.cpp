@@ -755,6 +755,8 @@ ADUC_Result ExtensionManager::Download(
         const char* workflowId = workflow_peek_id(workflowHandle);
         cstr_wrapper workFolder{ workflow_get_workfolder(workflowHandle) };
 
+        result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+
         // First, attempt to produce the update using download handler if
         // download handler exists in the entity (metadata).
         if (!IsNullOrEmpty(entity->DownloadHandlerId))
@@ -781,14 +783,15 @@ ADUC_Result ExtensionManager::Download(
                     workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
                 }
             }
+        }
 
-            if (IsAducResultCodeFailure(result.ResultCode)
-                || result.ResultCode == ADUC_Result_Download_Handler_RequiredFullDownload)
-            {
-                // Either download handler id did not exist, or download handler failed and doing fallback here.
-                result = downloadProc(
-                    entity, workflowId, workFolder.get(), options->retryTimeout, downloadProgressCallback);
-            }
+        // If no download handlers specified, or download handler failed to produce the target file.
+        if (IsAducResultCodeFailure(result.ResultCode)
+            || result.ResultCode == ADUC_Result_Download_Handler_RequiredFullDownload)
+        {
+            // Either download handler id did not exist, or download handler failed and doing fallback here.
+            result = downloadProc(
+                entity, workflowId, workFolder.get(), options->retryTimeout, downloadProgressCallback);
         }
     }
     catch (...)
@@ -807,7 +810,7 @@ ADUC_Result ExtensionManager::Download(
                 false))
         {
             result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_VALIDATION_FILE_HASH_INVALID_HASH };
+                       .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_HASH };
 
             workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
 

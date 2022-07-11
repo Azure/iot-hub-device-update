@@ -617,6 +617,10 @@
               {
                 "name": "ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_ENTITY_NO_HASHES",
                 "value": 11
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_HASH",
+                "value": 12
               }
             ]
           },
