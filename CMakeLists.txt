@@ -47,13 +47,13 @@ set_cache_with_env_or_default (
 
 set_cache_with_env_or_default (
     ADUC_VERSION_PATCH
-    "1"
+    "4"
     STRING
     "The patch part of the semantic version")
 
 set_cache_with_env_or_default (
     ADUC_VERSION_PRERELEASE
-    "du-client-internal-development"
+    "du-client-bugbash1"
     STRING
     "The pre-release part of the semantic version")
 

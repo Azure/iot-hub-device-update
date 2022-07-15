@@ -12,8 +12,8 @@
       "name": "%%DUCONFIG_AGENT_NAME%%",
       "runas": "adu",
       "connectionSource": {
-        "connectionType": "string",
-        "connectionData": "%%DUCONFIG_CONNECTION_STRING%%"
+        "connectionType": "AIS",
+        "connectionData": "iotHubDeviceUpdate"
       },
       "manufacturer": "%%DUCONFIG_DEVICEPROPERTIES_MANUFACTURER%%",
       "model": "%%DUCONFIG_DEVICEPROPERTIES_MODEL%%"

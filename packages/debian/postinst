@@ -72,8 +72,8 @@ sample_du_config=$(
       "name": <Place your agent name here>,
       "runas": "adu",
       "connectionSource": {
-        "connectionType": "string",
-        "connectionData": <Place your Azure IoT device connection string here>
+        "connectionType": "AIS",
+        "connectionData": "iotHubDeviceUpdate"
       },
       "manufacturer": <Place your device property manufacturer here>,
       "model": <Place your device property model here>

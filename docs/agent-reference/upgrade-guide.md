@@ -86,8 +86,8 @@ connection_string=<device connection string>
             "name": "<agent process name>",
             "runas": "adu",
             "connectionSource": {
-                "connectionType": "string",
-                "connectionData": "<device or module connection string>"
+                "connectionType": "AIS",
+                "connectionData": "iotHubDeviceUpdate"
             },
             "manufacturer": "...",
             "model": "..."
