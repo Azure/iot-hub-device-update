@@ -1,7 +1,7 @@
 variables:
   version.major: 0
-  version.minor: 8
-  version.patch: 4
+  version.minor: 9
+  version.patch: 0
   version.pre-release: "bugbash1"
   version.build: $[format('{0:yyyyMMdd}-{0:HHmmss}', pipeline.startTime)]
   # Environment variables for all client builds:
