@@ -743,7 +743,7 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
     // This will also automatically retrieve the full twin for the application.
     else if (
         (iothubResult = ClientHandle_SetClientTwinCallback(
-             g_iotHubClientHandle, ADUC_PnPDeviceTwin_Callback, (void*)g_iotHubClientHandle))
+             g_iotHubClientHandle, ADUC_PnPDeviceTwin_Callback, g_iotHubClientHandle))
         != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set device twin callback, error=%d", iothubResult);
