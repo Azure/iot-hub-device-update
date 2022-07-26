@@ -88,7 +88,7 @@ is_arm64=false
 print_help() {
     echo "Usage: install-deps.sh [options...]"
     echo "-a, --install-all-deps    Install all dependencies."
-    echo "                          Implies --install-aduc-deps, --install-do, --install-do-deps, and --install-packages."
+    echo "                          Implies --install-aduc-deps, --install-do, --install-do-deps, --install-packages, --install-cmake, and --install-shellcheck."
     echo "                          Can be used with --install-packages-only."
     echo "                          This is the default if no options are specified."
     echo ""
@@ -102,6 +102,7 @@ print_help() {
     echo "--abs-file-upload-utility-ref <ref> Install the Azure Blob Storage File Upload Utility from a specific branch or tag."
     echo "--install-catch2          Install Catch2 from source."
     echo "--install-cmake           Installs supported version of cmake from installer if on ubuntu, else installs it from source."
+    echo "--install-shellcheck      Installs supported version of shellcheck."
     echo "--cmake-prefix            Set the install path prefix when --install-cmake is used. Default is /tmp."
     echo "--cmake-version           Override the version of CMake. e.g. 3.23.2 that will be installed if --install-cmake is used."
     echo "--cmake-force-source      Force building cmake from source when --install-cmake is used."

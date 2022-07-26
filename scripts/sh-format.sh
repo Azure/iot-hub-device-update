@@ -69,8 +69,8 @@ done
 
 ret_val=0
 if [[ $validate == "true" ]]; then
-    if [ ! -x "$shellcheck_bin" ]; then
-        error "'$shellcheck_bin' is not installed. Try: ./scripts/install-deps --install-shellcheck"
+    if [ ! -e "$shellcheck_bin" ]; then
+        error "'$shellcheck_bin' is not installed. Try: ./scripts/install-deps.sh --install-shellcheck"
         $ret 1
     fi
 
