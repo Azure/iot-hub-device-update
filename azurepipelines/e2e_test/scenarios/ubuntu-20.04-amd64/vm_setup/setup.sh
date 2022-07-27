@@ -59,13 +59,13 @@ sudo apt-get install -y ./testsetup/deviceupdate-package.deb
 sudo cp ./testsetup/du-config.json /etc/adu/du-config.json
 
 #
-# Restart the adu-agent.service
+# Restart the deviceupdate-agent.service
 #
 # Note: We expect that everything should be setup for the deviceupdate agent at this point. Once
 # we restart the agent we expect it to be able to boot back up and connect to the IotHub. Otherwise
 # this test will be considered a failure.
 
-sudo systemctl restart adu-agent.service
+sudo systemctl restart deviceupdate-agent.service
 
 git clone https://github.com/Azure/iot-hub-device-update.git ~/adu-pp/
 

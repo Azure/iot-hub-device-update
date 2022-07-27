@@ -89,7 +89,7 @@ fi
 chown "$adu_user:$adu_group" "$adu_extensions_sources_dir"
 chmod u=rwx,g=rwx,o= "$adu_extensions_sources_dir"
 
-# Set adu-agent owner and permission
+# Set deviceupdate-agent owner and permission
 chown "root:$adu_group" "$adu_shell_dir/$adu_shell_file"
 chmod u=rxs "$adu_shell_dir/$adu_shell_file"
 

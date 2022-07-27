@@ -10,7 +10,7 @@ RestartSec=5
 User=adu
 Group=adu
 # systemd will try to start the ADU executable 5 times and then give up.
-# We can check logs with journalctl -f -u adu-agent.service
+# We can check logs with journalctl -f -u deviceupdate-agent.service
 # Set log verbosity level to 'Debug' and enable IoT Hub tracing.
 ExecStart=/usr/bin/AducIotAgent -l 0 -e
 
