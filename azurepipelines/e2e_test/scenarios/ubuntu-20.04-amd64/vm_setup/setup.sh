@@ -81,4 +81,5 @@ sudo cp -a ./demo-devices/contoso-devices/. ~/demo/demo-devices/contoso-devices/
 sh ./tools/reset-demo-components.sh
 
 #registers the extension
-sudo /usr/bin/AducIotAgent -E /var/lib/adu/extensions/sources/libcontoso_component_enumerator.so
+sudo /usr/bin/AducIotAgent -l 2 --extension-type componentEnumerator --register-extension /var/lib/adu/extensions/sources/libcontoso_component_enumerator.so
+
