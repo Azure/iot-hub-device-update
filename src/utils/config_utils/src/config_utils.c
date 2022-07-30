@@ -89,6 +89,8 @@ static _Bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent
         goto done;
     }
 
+    agent->additionalDeviceProperties = json_object_get_object(agent_obj, "additionalDeviceProperties");
+
     success = true;
 done:
 
@@ -125,6 +127,8 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent)
 
     free(agent->model);
     agent->model = NULL;
+
+    agent->additionalDeviceProperties = NULL;
 }
 
 /**

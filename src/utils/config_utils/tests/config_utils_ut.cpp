@@ -151,6 +151,41 @@ static const char* invalidConfigContentStr =
         R"("agents": [])"
     R"(})";
 
+static const char* validConfigContentAdditionalPropertyNames =
+    R"({)"
+        R"("schemaVersion": "1.0",)"
+        R"("aduShellTrustedUsers": ["adu","do"],)"
+        R"("simulateUnhealthyState": true,)"
+        R"("manufacturer": "device_info_manufacturer",)"
+        R"("model": "device_info_model",)"
+        R"("agents": [)"
+            R"({ )"
+            R"("name": "host-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "AIS",)"
+                R"("connectionData": "iotHubDeviceUpdate")"
+            R"(},)"
+            R"("manufacturer": "Contoso",)"
+            R"("model": "Smart-Box",)"
+            R"("additionalDeviceProperties": {)"
+                R"("location": "US",)"
+                R"("language": "English")"
+            R"(})"
+            R"(},)"
+            R"({)"
+            R"("name": "leaf-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "string",)"
+                R"("connectionData": "HOSTNAME=...")"
+            R"(},)"
+            R"("manufacturer": "Fabrikam",)"
+            R"("model": "Camera")"
+            R"(})"
+        R"(])"
+    R"(})";
+
 static char* g_configContentString = nullptr;
 
 static JSON_Value* MockParse_JSON_File(const char* configFilePath)
@@ -210,6 +245,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK_THAT(second_agent_info->model, Equals("Camera"));
         CHECK_THAT(second_agent_info->connectionType, Equals("string"));
         CHECK_THAT(second_agent_info->connectionData, Equals("HOSTNAME=..."));
+        CHECK(first_agent_info->additionalDeviceProperties == nullptr);
 
         ADUC_ConfigInfo_UnInit(&config);
 
@@ -226,6 +262,21 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
         CHECK(config.compatPropertyNames == nullptr);
 
+        ADUC_ConfigInfo_UnInit(&config);
+
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc): g_configContentString is a basic C-string so it must be freed by a call to free()
+        free(g_configContentString);
+    }
+
+    SECTION("Config content with customized additional device properties, Successful Test")
+    {
+        REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentAdditionalPropertyNames) == 0);
+
+        ADUC_ConfigInfo config = {};
+
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        const ADUC_AgentInfo* first_agent_info = ADUC_ConfigInfo_GetAgent(&config, 0);
+        CHECK(first_agent_info->additionalDeviceProperties != nullptr);
         ADUC_ConfigInfo_UnInit(&config);
 
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc): g_configContentString is a basic C-string so it must be freed by a call to free()

@@ -43,6 +43,8 @@ typedef struct tagADUC_AgentInfo
 
     char* model; /**< Device property model. */
 
+    JSON_Object* additionalDeviceProperties; /**< Additional device properties. */
+
 } ADUC_AgentInfo;
 
 /**

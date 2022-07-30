@@ -12,6 +12,7 @@
 #include "aduc/agent_workflow.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
+#include "aduc/config_utils.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h"
@@ -218,8 +219,6 @@ _Bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
     _Bool success = false;
 
     char* jsonString = NULL;
-    char* manufacturer = NULL;
-    char* model = NULL;
 
     JSON_Value* startupMsgValue = json_value_init_object();
 
@@ -235,13 +234,22 @@ _Bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    if (!StartupMsg_AddDeviceProperties(startupMsgObj))
+   ADUC_ConfigInfo config = {};
+
+    if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    {
+        goto done;
+    }
+
+    const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(&config, 0);
+
+    if (!StartupMsg_AddDeviceProperties(startupMsgObj, agent))
     {
         Log_Error("Could not add Device Properties to the startup message");
         goto done;
     }
 
-    if (!StartupMsg_AddCompatPropertyNames(startupMsgObj))
+    if (!StartupMsg_AddCompatPropertyNames(startupMsgObj, &config))
     {
         Log_Error("Could not add compatPropertyNames to the startup message");
         goto done;
@@ -259,11 +267,10 @@ _Bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
 
     success = true;
 done:
-    free(model);
-    free(manufacturer);
     json_value_free(startupMsgValue);
     json_free_serialized_string(jsonString);
 
+    ADUC_ConfigInfo_UnInit(&config);
     return success;
 }
 
