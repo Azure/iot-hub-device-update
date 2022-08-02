@@ -76,6 +76,15 @@ chmod u+x "$result_generator_dir_path/error_code_defs_generator.py"
 
 python3 "$result_generator_dir_path/error_code_defs_generator.py" -j "$json_file_path" -r "$result_file_path"
 
+python_ret=$?
+
+if [[ $python_ret != 0 ]]; then
+    # error "Failed to generate error code definition file"
+    $python_ret 1
+fi
+
 if [ $skip_clang_format == "false" ]; then
     clang-format -verbose -style=file -i "$result_file_path"
 fi
+
+$ret 0

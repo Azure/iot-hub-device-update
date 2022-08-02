@@ -25,9 +25,6 @@ bullet() { echo -e "\e[1;34m*\e[0m $*"; }
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
 root_dir=$script_dir/..
 
-error_code_json_file="$script_dir/error_code_generator_defs/result_codes.json"
-error_code_define_file_dest="$root_dir/src/inc/aduc/result.h"
-
 build_clean=false
 build_documentation=false
 build_packages=false
@@ -309,19 +306,6 @@ if [[ $adu_log_dir == "" ]]; then
         adu_log_dir=$default_log_dir
     fi
 fi
-
-# Generate the result.h file
-echo 'Generating result.h'
-
-"$script_dir/generate_error_code_defs.sh" -j "$error_code_json_file" -r "$error_code_define_file_dest" -s
-
-generate_result=$?
-
-if [[ $generate_result -ne "0" ]]; then
-    echo "Failed to generate the error code definition file from $error_code_json_file to $error_code_define_file_dest"
-    $ret 1
-fi
-echo 'Finished generating error code file'
 
 runtime_dir=${output_directory}/bin
 library_dir=${output_directory}/lib

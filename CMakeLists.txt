@@ -352,8 +352,77 @@ set (
     "MQTT"
     CACHE
         STRING
-        " The protocol for Azure IotHub SDK communication. Options are MQTT or MQTT_over_WebSockets"
-)
+        "The protocol for Azure IotHub SDK communication. Options are MQTT or MQTT_over_WebSockets")
+
+# Device Update Repo Locations
+
+set (
+    ADUC_SCRIPTS_FOLDER
+    "/scripts/"
+    CACHE STRING "The folder that holds all of the scripts")
+
+set (
+    ADUC_SCRIPTS_FOLDER_PATH
+    "${PROJECT_SOURCE_DIR}/${ADUC_SCRIPTS_FOLDER}"
+    CACHE STRING "Path to the scripts folder within the Device Update project")
+
+# Error Code Generator Script Name
+set (
+    ADUC_ERROR_CODE_GENERATOR_SCRIPT_FILENAME
+    "generate_error_code_defs.sh"
+    CACHE STRING "The script file that generates the error code definitions")
+
+# Error Code Definition Folder and Filename
+set (
+    ADUC_ERROR_CODE_DEFS_FOLDER
+    "/src/inc/aduc/"
+    CACHE STRING "The folder within Device Update to generate the result.h file to")
+
+set (
+    ADUC_GENERATED_ERROR_CODE_FOLDER_PATH
+    "${PROJECT_SOURCE_DIR}/${ADUC_ERROR_CODE_DEFS_FOLDER}"
+    CACHE STRING "Path to the folder to generate the error code file")
+
+set (
+    ADUC_ERROR_CODE_DEFS_FILENAME
+    "result.h"
+    CACHE STRING "File name for the error code definitions")
+
+# Error Code Json Folder, Filename, and Path
+set (
+    ADUC_ERROR_CODE_JSON_FOLDER
+    "error_code_generator_defs"
+    CACHE STRING "Name of the folder that contains the error codes JSON file")
+
+set (
+    ADUC_ERROR_CODE_JSON_FILENAME
+    "result_codes.json"
+    CACHE STRING "Name of the json file that defines the error codes for Device Update")
+
+set (
+    ADUC_ERROR_CODE_JSON_FOLDER_PATH
+    "${ADUC_SCRIPTS_FOLDER_PATH}/${ADUC_ERROR_CODE_GENERATOR_JSON_FOLDER}"
+    CACHE STRING "Path to the folder where the JSON error code definition file lives")
+
+# Paths for the Folders
+
+get_filename_component (
+    ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT
+    "${ADUC_SCRIPTS_FOLDER_PATH}/${ADUC_ERROR_CODE_GENERATOR_SCRIPT_FILENAME}"
+    ABSOLUTE
+    "/")
+
+get_filename_component (
+    ADUC_PATH_TO_ERROR_CODE_JSON_FILE
+    "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/${ADUC_ERROR_CODE_JSON_FILENAME}"
+    ABSOLUTE
+    "/")
+
+get_filename_component (
+    ADUC_GENERATED_ERROR_CODE_FILE_PATH
+    "${ADUC_GENERATED_ERROR_CODE_FOLDER_PATH}/${ADUC_ERROR_CODE_DEFS_FILENAME}"
+    ABSOLUTE
+    "/")
 
 #######
 # BEGIN Delta Downloader Handler Source Update Cache Configurations
@@ -407,10 +476,30 @@ get_filename_component (
     "${ADUC_CONF_FOLDER}/${DIAGNOSTICS_CONFIG_FILE}"
     ABSOLUTE
     "/")
+
 set (
     DIAGNOSTICS_CONFIG_FILE_PATH
     "${DIAGNOSTICS_CONFIG_FILE_PATH}"
     CACHE STRING "Path to the diagnostics configuration file.")
+
+# Generate the error code definition file
+execute_process (
+    COMMAND
+        ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT} --json-file-path
+        "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}" --result-file-path
+        "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}" -s
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    RESULT_VARIABLE GENERATE_ERROR_CODE_DEFS_RESULT)
+
+if (NOT
+    GENERATE_ERROR_CODE_DEFS_RESULT
+    EQUAL
+    "0")
+    message (
+        FATAL_ERROR
+            "Failed to generate error code definition from json file ${ADUC_PATH_TO_ERROR_CODE_JSON_FILE} to ${ADUC_GENERATED_ERROR_CODE_FILE_PATH} with error code ${GENERATE_ERROR_CODE_DEFS_RESULT}"
+    )
+endif ()
 
 if (ADUC_BUILD_UNIT_TESTS)
     # Need to be in the root directory to place CTestTestfile.cmake in root

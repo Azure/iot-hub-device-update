@@ -696,3 +696,6 @@ if (__name__ == '__main__'):
     if (not result_generator.generate_result_h_file()):
         print("Failed to generate result.h file at " + str(result_h_abs_path))
         sys.exit(1)
+
+    # Exit successfully
+    sys.exit(0)
