@@ -37,7 +37,7 @@ static _Bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent
 {
     _Bool success = false;
 
-    if (agent == NULL)
+    if (agent == NULL || agent_obj == NULL)
     {
         return false;
     }
@@ -50,8 +50,16 @@ static _Bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent
     const char* model = json_object_get_string(agent_obj, "model");
 
     JSON_Object* connection_source = json_object_get_object(agent_obj, "connectionSource");
-    const char* connection_type = json_object_get_string(connection_source, "connectionType");
-    const char* connection_data = json_object_get_string(connection_source, "connectionData");
+    const char* connection_type = NULL;
+    const char* connection_data = NULL;
+
+    if (connection_source == NULL)
+    {
+        return false;
+    }
+
+    connection_type = json_object_get_string(connection_source, "connectionType");
+    connection_data = json_object_get_string(connection_source, "connectionData");
 
     // As these fields are mandatory, if any of the fields doesn't exist, the agent will fail to be constructed.
     if (name == NULL || runas == NULL || connection_type == NULL || connection_data == NULL || manufacturer == NULL
