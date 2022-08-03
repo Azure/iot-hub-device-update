@@ -54,7 +54,8 @@ static _Bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent
     const char* connection_data = json_object_get_string(connection_source, "connectionData");
 
     // As these fields are mandatory, if any of the fields doesn't exist, the agent will fail to be constructed.
-    if (name == NULL || runas == NULL || connection_type == NULL || connection_data == NULL || manufacturer == NULL || model == NULL)
+    if (name == NULL || runas == NULL || connection_type == NULL || connection_data == NULL || manufacturer == NULL
+        || model == NULL)
     {
         goto done;
     }
@@ -271,7 +272,8 @@ _Bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFilePath)
         goto done;
     }
 
-    if (mallocAndStrcpy_s(&(config->manufacturer), manufacturer) != 0 || mallocAndStrcpy_s(&(config->model), model) != 0)
+    if (mallocAndStrcpy_s(&(config->manufacturer), manufacturer) != 0
+        || mallocAndStrcpy_s(&(config->model), model) != 0)
     {
         goto done;
     }
@@ -308,6 +310,16 @@ _Bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFilePath)
         }
     }
 
+    const char* iotHubProtocol = ADUC_JSON_GetStringFieldPtr(root_value, "iotHubProtocol");
+
+    if (iotHubProtocol != NULL)
+    {
+        if (mallocAndStrcpy_s(&(config->iotHubProtocol), iotHubProtocol) != 0)
+        {
+            goto done;
+        }
+    }
+
     succeeded = true;
 
 done:
@@ -332,6 +344,7 @@ void ADUC_ConfigInfo_UnInit(ADUC_ConfigInfo* config)
 
     free(config->manufacturer);
     free(config->model);
+    free(config->iotHubProtocol);
     ADUC_AgentInfoArray_Free(config->agentCount, config->agents);
 
     memset(config, 0, sizeof(*config));

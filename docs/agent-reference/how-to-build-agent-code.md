@@ -60,21 +60,23 @@ dependencies.  To see the usage info:
 ./scripts/install-deps.sh -h
 ```
 
-#### Enabling MQTT over WebSockets in Azure IoTHub SDK for C
+#### Build Azure IotHub SDK for C WebSockets static library
 
-You can enable MQTT over web sockets in the Azure IoTHub SDK library dependency by adding `--use-websockets` command-line switch:
+By default, both MQTT (`libiothub_client_mqtt_transport.a`) and MQTT over WebSockets(`libiothub_client_mqtt_ws_transport.a`) static libraries are built by `install-deps.sh` via the `use_mqtt` and `use_wsio` -D configs.
 
 ```shell
-./scripts/install-deps.sh --install-azure-iot-sdk --use-websockets
+# Verify mqtt transport static lib exists
+$ locate libiothub_client_mqtt_transport.a | \
+    grep '/usr/local/lib/'
+/usr/local/lib/libiothub_client_mqtt_transport.a
 ```
 
-Verify that the mqtt websockets static library was built successfully:
 ```shell
-$ locate libiothub_client_mqtt_ws_transport.a | grep '/usr/local/lib/'
+# Verify mqtt over websockets static lib exists
+$ locate libiothub_client_mqtt_ws_transport.a | \
+    grep '/usr/local/lib/'
 /usr/local/lib/libiothub_client_mqtt_ws_transport.a
 ```
-
-NOTE: You'll also have to modify the top-level CMakeLists.txt to set `ADUC_IOT_HUB_PROTOCOL` to `MQTT_over_WebSockets` before running build.sh
 
 ## As a standalone solution
 
@@ -82,42 +84,42 @@ NOTE: You'll also have to modify the top-level CMakeLists.txt to set `ADUC_IOT_H
 
 The Device Update for IoT Hub reference agent code utilizes CMake for building. An example build script is provided at [scripts/build.sh](../../scripts/build.sh).
 
-#### Optionally Choose MQTT over WebSockets for IotHub SDK Protocol
-
-After enabling WebSockets above using install-deps.sh so that it builds libiothub_client_mqtt_ws_transport.a static library, modify the top-level CMakeLists.txt to use MQTT_over_WebSockets:
-
-```shell
-set (
-    ADUC_IOT_HUB_PROTOCOL
-    "MQTT_over_WebSockets"
-    CACHE STRING " The protocol for Azure IotHub SDK communication. Options are MQTT or MQTT_over_WebSockets")
-```
-
-Doing ./build.sh after setting this to `"MQTT_over_WebSockets"` will have the MQTT traffic go over a websocket on port 443.
-Using `"MQTT"` will use SecureMQTT over port 8883.
-You can verify by doing:
-
-```shell
-$ sudo ./out/bin/AducIotClient -l0 -e > /dev/null 2>&1 &
-$ sudo netstat -pantu | grep Adu
-tcp        0      0 <LOCAL IP ADDR>:<LOCAL PORT>       20.40.207.0:443         ESTABLISHED <PID>/./out/bin/Aduc
-$ fg
-<ctrl-c>
-```
-
 #### Build Using build.sh
 
-To build the reference agent integrated with Delivery Optimization for
-downloads but still mocks the `Install` and `Apply` actions:
+To build the reference agent:
 
 ```shell
-./scripts/build.sh -c -p linux
+./scripts/build.sh -c
 ```
 
 To see additional build options with build.sh:
 
 ```shell
 build.sh -h
+```
+
+### Build and Run the unit tests
+
+To build and run the unit tests:
+
+```shell
+./scripts/build.sh -c -u
+pushd out
+ctest
+```
+
+For more test run options:
+
+```shell
+ctest -h
+```
+
+### Build the Debian package
+
+To build the debian package (will be output to the `out` directory):
+
+```shell
+./scripts/build.sh --build-packages
 ```
 
 ### Build the agent using CMake
@@ -142,9 +144,82 @@ ninja
 popd > /dev/null
 ```
 
+You can do incremental builds with Ninja:
+
+```shell
+pushd out && ninja
+popd
+```
+
+### Build Options for MQTT and MQTT over WebSockets IotHub Transport Providers
+
+#### Allow MQTT or MQTT over Websockets IotHub Transport Protocols Driven from Config
+
+By Default, both mqtt and mqtt/WebSockets will be linked into the AducIotAgent binary agent and driven by the `"iotHubProtocol"` config property with valid values of `"mqtt"` or `"mqtt/ws"`, for MQTT and MQTT over WebSockets, respectively.
+
+Here is the default in top-level `CMakeLists.txt`:
+
+```shell
+set (
+    ADUC_IOT_HUB_PROTOCOL
+    "IotHub_Protocol_from_Config"
+    CACHE
+        STRING
+        "The protocol for Azure IotHub SDK communication. Options are MQTT, MQTT_over_WebSockets, and IotHub_Protocol_from_Config")
+```
+
+Sample `/etc/adu/du-config.json` that selects `MQTT` value for the `iotHubProtocol` property:
+
+```json
+{
+  ...
+  "iotHubProtocol": "mqtt"
+}
+```
+
+Sample `/etc/adu/du-config.json` that selects `MQTT over WebSockets` value for the `iotHubProtocol` property:
+
+```json
+{
+  ...
+  "iotHubProtocol": "mqtt/ws"
+}
+```
+
+#### Use only MQTT IotHub Transport Protocol
+
+If using only `MQTT`, then choosing `MQTT` for `ADUC_IOT_HUB_PROTOCOL` in the top-level `CMakeLists.txt` will reduce the size of Type=SizeMinRel AducIotAgent binary by about 60 KB, which is relatively small compared to the overall footprint that is on the order of 2-3 megabytes.
+
+To link in only MQTT transport provider, set this in the top-level `CMakeLists.txt`:
+
+```shell
+set (
+    ADUC_IOT_HUB_PROTOCOL
+    "MQTT"
+    CACHE
+        STRING
+        "The protocol for Azure IotHub SDK communication. Options are MQTT, MQTT_over_WebSockets, and IotHub_Protocol_from_Config")
+```
+
+#### Use only MQTT over WebSockets IotHub Transport Protocol
+
+After enabling WebSockets above using install-deps.sh so that it builds libiothub_client_mqtt_ws_transport.a static library, modify the top-level CMakeLists.txt to use MQTT_over_WebSockets:
+
+```shell
+set (
+    ADUC_IOT_HUB_PROTOCOL
+    "MQTT_over_WebSockets"
+    CACHE
+        STRING
+        "The protocol for Azure IotHub SDK communication. Options are MQTT, MQTT_over_WebSockets, and IotHub_Protocol_from_Config")
+```
+
+Doing ./build.sh after setting this to `"MQTT_over_WebSockets"` will have the MQTT traffic go over a websocket on port `443`.
+Using `"MQTT"` will use SecureMQTT over port `8883`.
+
 ## Install the Device Update Agent
 
-To install the Device Update Agent after building:
+### Install the Device Update Agent after building
 
 ```shell
 sudo cmake --build out --target install
@@ -160,9 +235,41 @@ popd > /dev/null
 
 **Note** If the Device Update Agent was built as a daemon, the install targets will install and register the Device Update Agent as a daemon.
 
+### Install the Device Update Agent and Extensions from Debian Package
+
+After building the Debian package using `build.sh --build-packages`, do:
+
+```shell
+sudo apt install ./out/{PKG_NAME}.deb
+```
+
 ## Run Device Update Agent
 
 Run Device Update Agent by following these [instructions](./how-to-run-agent.md)
+
+### Verify MQTT Port
+
+If using MQTT, run the following netstat command to verify that it is connecting to the remote MQTT port of 8883:
+
+```shell
+$ sudo ./out/bin/AducIotClient -l0 -e > /dev/null 2>&1 &
+$ sudo netstat -pantu | grep Adu
+tcp        0      0 <LOCAL IP ADDR>:<LOCAL PORT>       <REMOTE IP ADDR>:8883         ESTABLISHED <PID>/./out/bin/Aduc
+$ fg
+<ctrl-c>
+```
+
+### Verify MQTT over WebSockets Port
+
+If using MQTT over WebSockets, run the following netstat command to verify that it is connecting to the remote WebSockets port of 443:
+
+```shell
+$ sudo ./out/bin/AducIotClient -l0 -e > /dev/null 2>&1 &
+$ sudo netstat -pantu | grep Adu
+tcp        0      0 <LOCAL IP ADDR>:<LOCAL PORT>       <REMOTE IP ADDR>:443         ESTABLISHED <PID>/./out/bin/Aduc
+$ fg
+<ctrl-c>
+```
 
 ## Integrate the Device Update agent in your existing application or solution
 

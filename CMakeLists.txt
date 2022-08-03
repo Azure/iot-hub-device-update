@@ -349,10 +349,11 @@ set (
 
 set (
     ADUC_IOT_HUB_PROTOCOL
-    "MQTT"
+    "IotHub_Protocol_from_Config"
     CACHE
         STRING
-        "The protocol for Azure IotHub SDK communication. Options are MQTT or MQTT_over_WebSockets")
+        "The protocol for Azure IotHub SDK communication. Options are MQTT, MQTT_over_WebSockets, and IotHub_Protocol_from_Config"
+)
 
 # Device Update Repo Locations
 

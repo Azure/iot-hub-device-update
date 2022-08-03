@@ -33,11 +33,15 @@
 #include <getopt.h>
 #include <iothub.h>
 #include <iothub_client_options.h>
-#ifdef ADUC_USE_WEBSOCKETS
-#    include <iothubtransportmqtt_websockets.h>
-#else
+
+#ifdef ADUC_ALLOW_MQTT
 #    include <iothubtransportmqtt.h>
 #endif
+
+#ifdef ADUC_ALLOW_MQTT_OVER_WEBSOCKETS
+#    include <iothubtransportmqtt_websockets.h>
+#endif
+
 #include <limits.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -629,6 +633,64 @@ static void ADUC_ConnectionStatus_Callback(
     Log_Debug("IotHub connection status: %d, reason:%d", result, reason);
 }
 
+static IOTHUB_CLIENT_TRANSPORT_PROVIDER GetIotHubProtocolFromConfig()
+{
+#ifdef ADUC_GET_IOTHUB_PROTOCOL_FROM_CONFIG
+    IOTHUB_CLIENT_TRANSPORT_PROVIDER transportProvider = NULL;
+
+    ADUC_ConfigInfo config;
+    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    {
+        if (config.iotHubProtocol != NULL)
+        {
+            if (strcmp(config.iotHubProtocol, "mqtt") == 0)
+            {
+                transportProvider = MQTT_Protocol;
+                Log_Info("IotHub Protocol: MQTT");
+            }
+            else if (strcmp(config.iotHubProtocol, "mqtt/ws") == 0)
+            {
+                transportProvider = MQTT_WebSocket_Protocol;
+                Log_Info("IotHub Protocol: MQTT/WS");
+            }
+            else
+            {
+                Log_Error(
+                    "Unsupported 'iotHubProtocol' value of '%s' from '" ADUC_CONF_FILE_PATH "'.",
+                    config.iotHubProtocol);
+            }
+        }
+        else
+        {
+            Log_Warn("Missing 'iotHubProtocol' setting from '" ADUC_CONF_FILE_PATH "'. Default to MQTT.");
+            transportProvider = MQTT_Protocol;
+            Log_Info("IotHub Protocol: MQTT");
+        }
+
+        ADUC_ConfigInfo_UnInit(&config);
+    }
+    else
+    {
+        Log_Error("Failed to initialize config file '" ADUC_CONF_FILE_PATH "'.");
+    }
+
+    return transportProvider;
+
+#else
+
+#    ifdef ADUC_ALLOW_MQTT
+    Log_Info("IotHub Protocol: MQTT");
+    return MQTT_Protocol;
+#    endif // ADUC_ALLOW_MQTT
+
+#    ifdef ADUC_ALLOW_MQTT_OVER_WEBSOCKETS
+    Log_Info("IotHub Protocol: MQTT/WS");
+    return MQTT_WebSocket_Protocol;
+#    endif // ADUC_ALLOW_MQTT_OVER_WEBSOCKETS
+
+#endif // ADUC_GET_IOTHUB_PROTOCOL_FROM_CONFIG
+}
+
 /**
  * @brief Creates an IoTHub device client handler and register all callbacks.
  *
@@ -645,17 +707,14 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
 
     Log_Info("Attempting to create connection to IotHub using type: %s ", ADUC_ConnType_ToString(connInfo->connType));
 
+    IOTHUB_CLIENT_TRANSPORT_PROVIDER transportProvider = GetIotHubProtocolFromConfig();
+    if (transportProvider == NULL)
+    {
+        result = false;
+    }
     // Create a connection to IoTHub.
-    if (!ClientHandle_CreateFromConnectionString(
-            &g_iotHubClientHandle,
-            connInfo->connType,
-            connInfo->connectionString,
-#ifdef ADUC_USE_WEBSOCKETS
-            MQTT_WebSocket_Protocol
-#else
-            MQTT_Protocol
-#endif
-            ))
+    else if (!ClientHandle_CreateFromConnectionString(
+                 &g_iotHubClientHandle, connInfo->connType, connInfo->connectionString, transportProvider))
     {
         Log_Error("Failure creating IotHub device client using MQTT protocol. Check your connection string.");
         result = false;

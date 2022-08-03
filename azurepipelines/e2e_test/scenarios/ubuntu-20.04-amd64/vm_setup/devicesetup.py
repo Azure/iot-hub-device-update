@@ -40,11 +40,12 @@ def main():
     # Create the du-config.json JSON Object
     #
     duConfigJson = {
-                    "schemaVersion": "1.0",
+                    "schemaVersion": "1.1",
                     "aduShellTrustedUsers": [
                         "adu",
                         "do"
                     ],
+                    "iotHubProtocol": "mqtt",
                     "manufacturer": "contoso",
                     "model": "virtual-vacuum-v2",
                     "agents": [
@@ -69,10 +70,10 @@ def main():
         configJson = json.dumps(duConfigJson)
         jsonFile.write(configJson)
 
-        
+
 if __name__ == '__main__':
     main()
-    
+
 def print_error(msg):
         print(msg, file=sys.stderr)
 

@@ -40,11 +40,12 @@ do_user='do'
 sample_du_config=$(
     cat << END_OF_JSON
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "aduShellTrustedUsers": [
     "adu",
     "do"
   ],
+  "iotHubProtocol": "mqtt",
   "manufacturer": <Place your device info manufacturer here>,
   "model": <Place your device info model here>,
   "agents": [
