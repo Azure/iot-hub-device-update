@@ -181,7 +181,7 @@ ADUC_Property* ADUC_PropertiesArray_AllocAndInit(const JSON_Object* propertiesOb
         goto done;
     }
 
-    tempPropertyArray = (ADUC_Property*)malloc(tempPropertyCount * sizeof(ADUC_Property));
+    tempPropertyArray = calloc(tempPropertyCount, sizeof(*tempPropertyArray));
 
     if (tempPropertyArray == NULL)
     {
@@ -257,7 +257,7 @@ static _Bool ADUC_RelatedFile_Init(
     }
 
     relatedFile->HashCount = hashCount;
-    ADUC_Hash* tempHashArray = (ADUC_Hash*)malloc(hashCount * sizeof(ADUC_Hash));
+    ADUC_Hash* tempHashArray = calloc(hashCount, sizeof(*tempHashArray));
     if (tempHashArray == NULL)
     {
         goto done;
@@ -328,7 +328,8 @@ done:
             tempPropertiesArray = NULL;
         }
 
-        ADUC_RelatedFile_UnInit(relatedFile);
+        // do not call ADUC_RelatedFile_UnInit(relatedFile) here as it will
+        // get cleaned up by caller for the failure.
     }
 
     return success;
@@ -376,6 +377,11 @@ static bool workflow_init_update_file_inodes(ADUC_Workflow* wf)
  */
 void ADUC_RelatedFile_FreeArray(size_t relatedFileCount, ADUC_RelatedFile* relatedFileArray)
 {
+    if (relatedFileArray == NULL || relatedFileCount == 0)
+    {
+        return;
+    }
+
     for (size_t relatedFile_index = 0; relatedFile_index < relatedFileCount; ++relatedFile_index)
     {
         ADUC_RelatedFile* relatedFileEntity = relatedFileArray + relatedFile_index;
@@ -393,7 +399,8 @@ void ADUC_RelatedFile_FreeArray(size_t relatedFileCount, ADUC_RelatedFile* relat
  * @param relatedFileObj JSON Object that contains the relatedFiles to be returned.
  * @param relatedFileCount A size_t* where the count of output relatedFiles will be stored.
  * @returns If success, a pointer to an array of ADUC_RelatedFile object. Otherwise, returns NULL.
- * @details Caller must call ADUC_RelatedFileArray_Free() to free the array.
+ * @details Caller must call ADUC_RelatedFileArray_Free() to free the array. On error, this function
+ * will set extendedResultCode
  */
 ADUC_RelatedFile* ADUC_RelatedFileArray_AllocAndInit(
     ADUC_WorkflowHandle handle, const JSON_Object* relatedFileObj, size_t* relatedFileCount)
@@ -417,7 +424,7 @@ ADUC_RelatedFile* ADUC_RelatedFileArray_AllocAndInit(
         goto done;
     }
 
-    tempRelatedFileArray = (ADUC_RelatedFile*)malloc(tempRelatedFileCount * sizeof(ADUC_RelatedFile));
+    tempRelatedFileArray = calloc(tempRelatedFileCount, sizeof(*tempRelatedFileArray));
 
     if (tempRelatedFileArray == NULL)
     {
@@ -1792,7 +1799,7 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
         sizeInBytes = json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
     }
 
-    newEntity = malloc(sizeof(*newEntity));
+    newEntity = calloc(1, sizeof(*newEntity));
     if (newEntity == NULL)
     {
         goto done;
@@ -1804,29 +1811,30 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
         goto done;
     }
 
-    *entity = newEntity;
+    // transfer tempHash as it has been assigned into newEntity structure now
+    tempHash = NULL;
 
-    if (!ParseFileEntityDownloadHandler(handle, file, *entity))
+    if (!ParseFileEntityDownloadHandler(handle, file, newEntity))
     {
         goto done;
     }
 
     succeeded = true;
 
-done:
-    if (!succeeded)
-    {
-        if (newEntity != NULL)
-        {
-            newEntity->Hash = NULL; // Manually free hash array below...
-            ADUC_FileEntity_Uninit(newEntity);
-            free(newEntity);
-        }
+    *entity = newEntity;
+    newEntity = NULL;
 
-        if (tempHash != NULL)
-        {
-            ADUC_Hash_FreeArray(tempHashCount, tempHash);
-        }
+done:
+    if (newEntity != NULL)
+    {
+        newEntity->Hash = NULL; // Manually free hash array below...
+        ADUC_FileEntity_Uninit(newEntity);
+        free(newEntity);
+    }
+
+    if (tempHash != NULL)
+    {
+        ADUC_Hash_FreeArray(tempHashCount, tempHash);
     }
 
     return succeeded;
@@ -1914,7 +1922,7 @@ bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fi
         sizeInBytes = json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
     }
 
-    newEntity = malloc(sizeof(*newEntity));
+    newEntity = calloc(1, sizeof(*newEntity));
     if (newEntity == NULL)
     {
         goto done;
@@ -3525,7 +3533,7 @@ bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t
         sizeInBytes = json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
     }
 
-    *entity = malloc(sizeof(**entity));
+    *entity = calloc(1, sizeof(**entity));
     if (*entity == NULL)
     {
         goto done;

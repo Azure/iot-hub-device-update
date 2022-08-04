@@ -53,6 +53,36 @@ public:
     }
 
     /**
+     * @brief Get the non-const wrapped object.
+     *
+     * @return T* Pointer to wrapped object.
+     */
+    T* get()
+    {
+        return m_ptr;
+    }
+
+    /**
+     * @brief Get the wrapped object for arrow syntax.
+     *
+     * @return const T* Pointer to wrapped object.
+     */
+    const T* operator->() const
+    {
+        return m_ptr;
+    }
+
+    /**
+     * @brief Whether underlying pointer is nullptr or not.
+     *
+     * @return true if m_ptr is nullptr.
+     */
+    bool is_null() const
+    {
+        return m_ptr == nullptr;
+    }
+
+    /**
      * @brief Get the address of the wrapped object.
      * Useful for passing to methods with the signature "f([out] T** pp)"
      *

@@ -23,3 +23,7 @@ target_link_libraries (
             aduc::logging
             aduc::parson_json_utils
             aziotsharedutil)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

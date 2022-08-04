@@ -55,7 +55,7 @@ ADUC_Hash* ADUC_HashArray_AllocAndInit(const JSON_Object* hashObj, size_t* hashC
 
 /**
  * @brief Initializes the file entity
- * @param file the file entity to be initialized
+ * @param fileEntity the file entity to be initialized. Caller MUST zero-out before calling.
  * @param fileId fileId for @p fileEntity
  * @param targetFileName fileName for @p fileEntity
  * @param downloadUri downloadUri for @p fileEntity
