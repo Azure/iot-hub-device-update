@@ -492,10 +492,13 @@ done:
  */
 void ADUC_Hash_FreeArray(size_t hashCount, ADUC_Hash* hashArray)
 {
-    for (size_t hash_index = 0; hash_index < hashCount; ++hash_index)
+    if (hashArray != NULL)
     {
-        ADUC_Hash* hashEntity = hashArray + hash_index;
-        ADUC_Hash_UnInit(hashEntity);
+        for (size_t hash_index = 0; hash_index < hashCount; ++hash_index)
+        {
+            ADUC_Hash* hashEntity = hashArray + hash_index;
+            ADUC_Hash_UnInit(hashEntity);
+        }
+        free(hashArray);
     }
-    free(hashArray);
 }

@@ -148,6 +148,7 @@ void ADUC_FileEntityArray_Free(unsigned int fileCount, ADUC_FileEntity* files)
  * @param hashCount a hash count of @p hashArray
  * @param sizeInBytes file size (in bytes)
  * @returns True on success and false on failure
+ * @details All strings and hashArray are deep-copied. hashArray ownership is not transferred.
  */
 _Bool ADUC_FileEntity_Init(
     ADUC_FileEntity* fileEntity,
@@ -160,6 +161,7 @@ _Bool ADUC_FileEntity_Init(
     size_t sizeInBytes)
 {
     _Bool success = false;
+    ADUC_Hash* tempHashArray = NULL;
 
     if (fileEntity == NULL)
     {
@@ -198,19 +200,38 @@ _Bool ADUC_FileEntity_Init(
         goto done;
     }
 
-    fileEntity->Hash = hashArray;
+    // Make a deep copy of hashArray
+    tempHashArray = (ADUC_Hash*)calloc(hashCount, sizeof(*hashArray));
+    if (tempHashArray == NULL)
+    {
+        goto done;
+    }
+
+    for (size_t i = 0; i < hashCount; ++i)
+    {
+        if (!ADUC_Hash_Init(&tempHashArray[i], hashArray[i].value, hashArray[i].type))
+        {
+            goto done;
+        }
+    }
+
+    fileEntity->Hash = tempHashArray;
+    tempHashArray = NULL;
 
     fileEntity->HashCount = hashCount;
 
     fileEntity->SizeInBytes = sizeInBytes;
 
     success = true;
+
 done:
+    ADUC_Hash_FreeArray(hashCount, tempHashArray);
 
     if (!success)
     {
         ADUC_FileEntity_Uninit(fileEntity);
     }
+
     return success;
 }
 
