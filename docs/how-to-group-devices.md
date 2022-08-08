@@ -22,22 +22,21 @@ Follow the steps below to manually tag your devices.
 1. Ensure you have the ADU bash CLI https://github.com/Azure/azure-iot-cli-extension/wiki/ADU-CLI-Primer  
 Device twin support is available via normal azure-iot extension which can be installed via "az extension add --source azure-iot" but the ADU bash CLI is recommended to enable ADU data-plane functionality. We recommend Azure CLI 2.30.0 or greater.
 2. You can update a single device twin tag via https://docs.microsoft.com/en-us/cli/azure/iot/hub/device-twin?view=azure-cli-latest#az-iot-hub-device-twin-update
-	    ```
-        Example (powershell): 
-			§ az iot hub device-twin update -n hubName -d myDevice --tags '{\"ADUGroup\": \"ADUBBTag1\"}'
-        ``` 
+
+|Powershell                |
+|:-------------------------:|
+| ```§ az iot hub device-twin update -n hubName -d myDevice --tags '{\"ADUGroup\": \"ADUBBTag1\"}'```| 
+
+|Bash              |
+|:-------------------------:|
+| ```§ az iot hub device-twin update -n hubName -d myDevice --tags '{"ADUGroup": "ADUBBTag1"}'```| 
+
+|Shell agnostic         |
+|:-------------------------:|
+| ```§ az iot hub device-twin update -n hubName -d myDevice --tags '/path/to/tag/payload/file'```| 
+
+
         
-        
-        ```
-		Example (bash):  
-			§ az iot hub device-twin update -n hubName -d myDevice --tags '{"ADUGroup": "ADUBBTag1"}'
-         ```
-        
-        
-         ```
-		 Example (shell agnostic): 
-			§ az iot hub device-twin update -n hubName -d myDevice --tags '/path/to/tag/payload/file'
-         ```
 3. You can update a set of device twins (using a twin query) via https://docs.microsoft.com/en-us/cli/azure/iot/hub/job?view=azure-cli-latest#az-iot-hub-job-create
 		```
         Example (powershell): 
