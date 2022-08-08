@@ -9,12 +9,12 @@ Please fill this [2-min onboarding form](https://aka.ms/aduearlyaccessform) befo
 ## Documentation
 
 General information on Device Update for IoT Hub overview as well as concepts can be found [here](
-Additional documentation specific to the new features available in the early access can be found in the [docs folder of the early-access/0.9 branch](https://github.com/Azure/iot-hub-device-update/early-access/0.9/docs)
+Additional documentation specific to the new features available in the early access can be found in the [docs folder](https://github.com/Azure/iot-hub-device-update/tree/early-access/0.9/docs) of the early-access/0.9 branch
 
 ## Reporting bugs
 
-Issues can be filed in the [issues section](https://github.com/Azure/iot-hub-device-update/issues) of the GitHub repo. Please add an "early-access" label to your issues to 
-help us address your feedback in a timely manner. 
+The Device Update for IoT Hub team is ready to share with you, engage in discussions, and hear your voices. Your thoughts will make us better, so don't hold back. Bugs
+as well as feedback can be filed in the [issues section](https://github.com/Azure/iot-hub-device-update/issues) of the GitHub repo. Please add an "early-access" label to your issues to help us address your feedback in a timely manner. 
 
 ## Support policy
 
