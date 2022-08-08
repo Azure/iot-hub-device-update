@@ -1,6 +1,6 @@
 # Getting with Early Access
 
-Welcome to the early access 0.9 release of Device Update for IoT Hub. You can get a sneak peak 
+Welcome to the early access 0.9 release of Device Update for IoT Hub. 
 
 ## Onboarding Requirements
 
