@@ -51,9 +51,9 @@ Device twin support is available via normal azure-iot extension which can be ins
 
 4. Now you can execute the "az iot device-update device import" ADU CLI command to import IoT Hub devices to the target ADU instance https://github.com/Azure/azure-iot-cli-extension/wiki/ADU-CLI-Primer#importing-and-managing-devices
 
-		```
-        az iot device-update device import --account test-adu-35d878a5c16248 --instance myinstance1
-		```
+```
+az iot device-update device import --account test-adu-35d878a5c16248 --instance myinstance1
+```
 
 
 
