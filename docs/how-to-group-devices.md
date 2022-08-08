@@ -38,16 +38,17 @@ Device twin support is available via normal azure-iot extension which can be ins
 
         
 3. You can update a set of device twins (using a twin query) via https://docs.microsoft.com/en-us/cli/azure/iot/hub/job?view=azure-cli-latest#az-iot-hub-job-create
-		```
-        Example (powershell): 
-			§ az iot hub job create --job-id test1 --job-type scheduleUpdateTwin -n hubName -q "*" --twin-patch '{\"tags\":{\"ADUGroup\": \"ADUBBTag1\"}}' --wait
-		```
+
+|Powershell                |
+|:-------------------------:|
+| ```§ az iot hub job create --job-id test1 --job-type scheduleUpdateTwin -n hubName -q "*" --twin-patch '{\"tags\":{\"ADUGroup\": \"ADUBBTag1\"}}' --wait```| 
+    
+
+|Bash              |
+|:-------------------------:|
+| ```§ az iot hub job create --job-id test1 --job-type scheduleUpdateTwin -n hubName -q "*" --twin-patch '{"tags":{"ADUGroup": "ADUBBTag1"}}' --wait```| 
         
-        
-        ```
-        Example (bash):
-			§ az iot hub job create --job-id test1 --job-type scheduleUpdateTwin -n hubName -q "*" --twin-patch '{"tags":{"ADUGroup": "ADUBBTag1"}}' --wait
-        ```
+
 4. Now you can execute the "az iot device-update device import" ADU CLI command to import IoT Hub devices to the target ADU instance https://github.com/Azure/azure-iot-cli-extension/wiki/ADU-CLI-Primer#importing-and-managing-devices
 
 		```
