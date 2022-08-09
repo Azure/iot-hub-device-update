@@ -140,7 +140,7 @@ The script includes example usage. The new/unique elements for delta update rela
 
 ### Import using the Azure portal UI
 
-To import the delta update, follow the public documentation here: [Add an update to Device Update for IoT Hub](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/import-update#import-an-update)
+To import the delta update, follow the public documentation here: [Add an update to Device Update for IoT Hub](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/import-update#import-an-update). **However, you will need to access the Azure portal using this link**: https://portal.azure.com/?feature.canmodifystamps=true&Microsoft_Azure_Iothub=tip1
 
 Note that you must include the following when importing:
 - The import manifest .json file you created in the previous step.
