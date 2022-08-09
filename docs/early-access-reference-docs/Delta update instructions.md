@@ -20,19 +20,17 @@ a.	Note: this requires using [SWUpdate 2019.11](https://github.com/sbabic/swupda
 
 ### Download all needed files
 
-In order to use the Device Update delta update preview, you will need some files. Please download all content in the Delta Updates folder, as we will reference it at various points in the instructions below.
+In order to use the Device Update delta update preview, you will need some files. Please download all the files in **iot-hub-device-update/tools/delta/**, as we will reference those items at various points in the instructions below.
 
 ### Configure a device with Device Update Agent and delta processor component
 
 **Device Update Agent**
 
-You will find all the DU Agent code in the following folder you previously downloaded: Client\Device_Update_Agent
-
-To add the Device Update Agent to a device and configure it for use, you can follow the instructions from our public documentation: [Provisioning Device Update for Azure IoT Hub Agent](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/device-update-agent-provisioning). Note that you will also need to include an SWUpdate [Update Handler](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/device-update-agent-overview#update-handlers) which integrates with the DU Agent to perform the actual update install. We have included a sample SWUpdate config file and Debian 11 build script as examples - the key takeaway is to enable ZSTD decompression in SWUpdate!
+To add the Early Access Device Update Agent to a device and configure it for use, use the latest Early Access version of the Agent and follow the instructions from our public documentation: [Provisioning Device Update for Azure IoT Hub Agent](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/device-update-agent-provisioning). Note that you will also need to include an SWUpdate [Update Handler](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/device-update-agent-overview#update-handlers) which integrates with the DU Agent to perform the actual update install. We have included a Debian 11 build script as an example - the key takeaway is to enable ZSTD decompression in SWUpdate!
 
 **Delta processor**
 
-You will find all the Delta processor code in the following folder you previously downloaded: Client\Delta_processor
+You will find all the Delta processor code in the file you previously downloaded: Delta_processor.zip
 
 To add the delta processor component to your device image and configure it for use, use apt-get to install the proper Debian package for your platform (it should be named ms-adu_diffs_1.0.3_amd64.deb for amd64):  
 `sudo apt-get install [path to Debian package]`
@@ -43,7 +41,7 @@ Alternatively, on a non-Debian Linux you can install the shared object (libadudi
 
 ### Deploy a full image update to your device
 
-After a delta update has been downloaded to a device, in order to be re-created into a full image, it must be diffed against a valid _source .swu file_ which has been previously cached on the device. For this preview, the simplest way to populate this cached image is to deploy a full image update to the device via the DU service (using the existing import and deployment processes in our [public documentation](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/)). As long as the device has been configured with the preview DU Agent and Delta processor, the installed .swu file will be cached automatically by the DU Agent for future delta update use.
+After a delta update has been downloaded to a device, in order to be re-created into a full image, it must be diffed against a valid _source .swu file_ which has been previously cached on the device. For this preview, the simplest way to populate this cached image is to deploy a full image update to the device via the DU service (using the existing import and deployment processes in our [public documentation](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/)). As long as the device has been configured with the Early Access DU Agent and Delta processor, the installed .swu file will be cached automatically by the DU Agent for future delta update use.
 
 ### Generate delta updates using the DiffGen tool
 
@@ -56,10 +54,19 @@ The following table provides a list of the content needed, where to retrieve the
 
 | Binary Name       | Where to acquire      | How to install        |
 |-------------------------------|----------------------------------------------------------------------------|------------------------------------|
-| DiffGen           | You will find all the DiffGen code in the following folder you previously downloaded: DU_delta_preview\Delta_generation  | Download all content and place into a known directory.
+| DiffGen           | You will find all the DiffGen code in the file you previously downloaded: Delta_generation.zip  | Download all content and place into a known directory.
 | .NET (Runtime)    |Via Terminal / Package Managers    | Since running a pre-built version of the tool, only the Runtime is required. [Microsoft Doc Link](https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu).
 
 ---
+
+**Dependencies**
+
+The zstd_compression_tool is used for decompressing an archive's image files and recompressing them with zstd. This ensures all archive files used for diff generation have the same compression algorithm for the images inside the archives.
+
+Commands to install required packages/libraries:  
+`sudo apt update`  
+`sudo apt-get install -y python3 python3-pip`  
+`sudo pip3 install libconf zstandard`
 
 **How to run DiffGen**  
 
@@ -75,31 +82,6 @@ You can also run DiffGenTool the following ways:
 
 `DiffGenTool [source_archive] [target_archive] [output_path] [log_folder] [working_folder] [recompressed_target_archive] "[signing_command]"`
 - In addition to using [recompressed_target_archive] as the target file, providing a signing command string parameter will run recompress_and_sign_tool.py to create the file [recompressed_target_archive] and have the sw-description file within the archive signed (i.e. sw-description.sig file will be present)
-
-
-**Dependencies**
-
-The zstd_compression_tool is used for decompressing an archive's image files and recompressing them with zstd. This ensures all archive files used for diff generation have the same compression algorithm for the images inside the archives.
-
-Commands to install required packages/libraries:  
-`sudo apt update`  
-`sudo apt-get install -y python3 python3-pip`  
-`sudo pip3 install libconf zstandard`
-
-
-**Tool Usage**
-
-There are two ways to use zstd_compression_tool:
-1. Run recompress_tool.py to create a test archive and then sign_tool.py to create the final production archives
-2. Run recompress_and_sign_tool.py to run the full E2E workflow
-
-_Recompressing/signing in separate steps:_  
-`python3 recompress_tool.py [input archive path] [output test archive path] [zstd_compress_file path]` 
-`python3 sign_tool.py sign [input test archive path] [output archive path] "[signing command]"`  
-- Example signing command: "gpg --detach-sign"  
-
-_Recompressing/signing in one step:_  
-`python3 recompress_and_sign_tool.py [input archive path] [output archive path] [zstd_compress_file path] "[signing command]"`  
 
 The following table describes the arguments in more detail:
 
@@ -150,17 +132,15 @@ Note: if you encounter an error "_Parameters failed. Status: MissingBinaries Iss
 
 ## Importing the generated delta update into Device Update for IoT Hub
 
-### Download helper scripts
+### Generate import manifest
 
 The basic process of importing an update to the Device Update service is unchanged from our public documentation, so if you haven't already, be sure to review this page:
 
 [How to prepare an update to be imported into Azure Device Update for IoT Hub](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/create-update)
 
-Importantly, however, there are specific aspects of delta support which are not fully implemented yet for this preview. Therefore, we have created a series of scripts to simplify the process during preview, which you can find in the Import folder you previously downloaded. Note: the scripts use PowerShell, which can be [installed](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell) on Linux, Windows, or MacOS.
+Importantly, however, there are specific aspects of delta support which are not fully implemented yet for this preview. Therefore, we have created a script to simplify the process during Early Access, which you previously downloaded: **New-ImportManifest.ps1**. Note: the script uses PowerShell, which can be [installed](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell) on Linux, Windows, or MacOS.
 
-### Generate import manifest
-
-The first step in importing an update into the Device Update service is always to create an import manifest. You can learn about the import manifest concept here, but note that delta updates require a new import manifest format that is not yet ready for our public documentation. Therefore, please use this script instead to generate your import manifest: **New-ImportManifest.ps1**
+The first step in importing an update into the Device Update service is always to create an import manifest. You can learn about the import manifest concept [here](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/import-concepts#import-manifest), but note that delta updates require a new import manifest format that is not yet ready for our public documentation. Therefore, please use New-ImportManifest.ps1 instead to generate your import manifest.
 
 The script includes example usage. The new/unique elements for delta update relative to our publicly-documented import manifest format are "-DeltaFile" and "-SourceFile", and there is a specific usage for the "-File" element as well:
  - The **File** element represents the Target update used when generating the delta.
@@ -205,7 +185,7 @@ If the delta update failed but did a successful fallback to full image:
 - extendedResultCode: [non-zero; will be further defined by GA]
 
 If the update was unsuccessful:
- - Start with the Device Update Agent errors in error_code_markdown.pdf, which can be found in the following folder you previously downloaded: Client\Device_Update_Agent 
+ - Start with the Device Update Agent errors in error_code_markdown.pdf, which you previously downloaded. 
     - Errors from the Device Update Agent that are specific to the Download Handler functionality used for delta updates begin with 0x9:
 
 ---
