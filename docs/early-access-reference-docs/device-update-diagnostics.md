@@ -35,7 +35,7 @@ When a device reports a deployment failure to the Device Update service, the Dev
 
 ## Remote log collection
 
-When more information from the device is necessary to diagnose and troubleshoot an error, you can use the log collection feature to instruct targeted devices to upload on-device diagnostic logs to a linked Azure Blob storage account. You can start using this feature by following these [instructions](device-update-log-collection.md).
+When more information from the device is necessary to diagnose and troubleshoot an error, you can use the log collection feature to instruct targeted devices to upload on-device diagnostic logs to a linked Azure Blob storage account. You can start using this feature by following these [log collection instructions](device-update-log-collection.md).
 
 Device Update's remote log collection is a service-driven, operation-based feature. To take advantage of log collection, a device need only be able to implement the Diagnostics interface and configuration file, and be able to upload files to Azure Blob storage via SDK.
 
@@ -56,7 +56,7 @@ From a high level, the log collection feature works as follows:
 
 ## Agent Check
 
-When your device is registered in IoT Hub but is not appearing in your Device Update instance, you can use the Agent Check feature to run pre-made validation checks to help you diagnose the underlying issue. You can start using this feature by following these [instructions](device-update-agent-check.md).
+When your device is registered in IoT Hub but is not appearing in your Device Update instance, you can use the Agent Check feature to run pre-made validation checks to help you diagnose the underlying issue. You can start using this feature by following these [Agent Check instructions](device-update-agent-check.md).
 
 From a high level, the agent check feature works as follows:
 
