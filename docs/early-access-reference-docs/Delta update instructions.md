@@ -1,7 +1,7 @@
 
 # Device Update for Azure IoT Hub
 
-## How to use delta update Private Preview
+## How to use delta update in Early Access
 
 ### Summary
 
@@ -30,7 +30,7 @@ To add the Early Access Device Update Agent to a device and configure it for use
 
 **Delta processor**
 
-You will find all the Delta processor code in the file you previously downloaded: Delta_processor.zip
+You will find all the Delta processor code in the file you previously downloaded: **Delta_processor.zip**
 
 To add the delta processor component to your device image and configure it for use, use apt-get to install the proper Debian package for your platform (it should be named ms-adu_diffs_1.0.3_amd64.deb for amd64):  
 `sudo apt-get install [path to Debian package]`
@@ -54,7 +54,7 @@ The following table provides a list of the content needed, where to retrieve the
 
 | Binary Name       | Where to acquire      | How to install        |
 |-------------------------------|----------------------------------------------------------------------------|------------------------------------|
-| DiffGen           | You will find all the DiffGen code in the file you previously downloaded: Delta_generation.zip  | Download all content and place into a known directory.
+| DiffGen           | You will find all the DiffGen code in the file you previously downloaded: **Delta_generation.zip**  | Download all content and place into a known directory.
 | .NET (Runtime)    |Via Terminal / Package Managers    | Since running a pre-built version of the tool, only the Runtime is required. [Microsoft Doc Link](https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu).
 
 ---
@@ -72,13 +72,11 @@ Commands to install required packages/libraries:
 
 The DiffGen tool is run with several arguments. All arguments are required, and overall syntax looks like the following:
 
-`DiffGenTool [source_archive] [target_archive] [output_path] [log_folder] [working_folder]`
-
-You can also run DiffGenTool the following ways:
-
 `DiffGenTool [source_archive] [target_archive] [output_path] [log_folder] [working_folder] [recompressed_target_archive]`  
 - The script recompress_tool.py will be run to create the file [recompressed_target_archive], which will then be used instead of [target_archive] as the target file for creating the diff
-- The image files within [recompressed_target_archive] will be compressed with ZSTD  
+- The image files within [recompressed_target_archive] will be compressed with ZSTD
+
+If your .swu files are signed (likely), you will need an additional argument as well:
 
 `DiffGenTool [source_archive] [target_archive] [output_path] [log_folder] [working_folder] [recompressed_target_archive] "[signing_command]"`
 - In addition to using [recompressed_target_archive] as the target file, providing a signing command string parameter will run recompress_and_sign_tool.py to create the file [recompressed_target_archive] and have the sw-description file within the archive signed (i.e. sw-description.sig file will be present)
@@ -94,21 +92,16 @@ The following table describes the arguments in more detail:
 | [output_path] | The path (including the desired name of the delta file being generated) on the host machine where the delta will get placed after creation.  If the path does not exist, the directory will be created by the tool.|
 | [log_folder]  | The path on the host machine where logs will get created and dropped into. We recommend defining this location as a sub folder of the output path. If path does not exist, it will be created by the tool. |
 | [working_folder]  | Path on the machine where collateral and other working files are placed during the delta generation. We recommend defining this location as a subfolder of the output path. If the path does not exist, it will be created by the tool. |
-| [recompressed_target_archive] _(optional)_  | The path on the host machine where the recompressed target file will be created. This file will be used instead of <target_archive> as the target file for diff generation. If this path exists before calling DiffGenTool, the path will be overwritten. We recommend defining this path as a file in the subfolder of the output path. |
-| "[signing_command]" _(optional)_    | The desired command used for signing the sw-description file within the recompressed archive file.NOTE: Surrounding the parameter in double quotes is needed so that the whole command is passed in as a single parameter. NOTE: [recompressed_target_archive] must also be provided if using this parameter. NOTE: DO NOT put the '~' character in a key path used for signing, use the full home path instead. For example, use /home/USER/keys/priv.pem instead of ~/keys/priv.pem |
+| [recompressed_target_archive]  | The path on the host machine where the recompressed target file will be created. This file will be used instead of <target_archive> as the target file for diff generation. If this path exists before calling DiffGenTool, the path will be overwritten. We recommend defining this path as a file in the subfolder of the output path. |
+| "[signing_command]" _(optional)_    | The desired command used for signing the sw-description file within the recompressed archive file.  
+NOTE: Surrounding the parameter in double quotes is needed so that the whole command is passed in as a single parameter.  
+NOTE: [recompressed_target_archive] must also be provided if using this parameter.  
+NOTE: DO NOT put the '~' character in a key path used for signing, use the full home path instead. For example, use /home/USER/keys/priv.pem instead of ~/keys/priv.pem |
 
 ---
 
 ### DiffGen Examples
 In the examples below, we are operating out of the /mnt/o/temp directory (in WSL):
-
-_Creating diff between input source and target files:_  
-`sudo ./DiffGenTool`  
-`/mnt/o/temp/[source file.swu]`  
-`/mnt/o/temp/[target file.swu]`  
-`/mnt/o/temp/[delta file to be created]`  
-`/mnt/o/temp/logs`  
-`/mnt/o/temp/working`
 
 _Creating diff between input source file and recompressed target file:_  
 `sudo ./DiffGenTool`  
@@ -117,7 +110,7 @@ _Creating diff between input source file and recompressed target file:_
 `/mnt/o/temp/[delta file to be created]`  
 `/mnt/o/temp/logs`  
 `/mnt/o/temp/working`  
-`/mnt/o/temp/in2.FIT_RECOMPRESSED.swu`
+`/mnt/o/temp/[recompressed file to be created.swu]`
 
 _Creating diff between input source file and recompressed/re-signed target file_  
 `sudo ./DiffGenTool`  
@@ -185,7 +178,7 @@ If the delta update failed but did a successful fallback to full image:
 - extendedResultCode: [non-zero; will be further defined by GA]
 
 If the update was unsuccessful:
- - Start with the Device Update Agent errors in error_code_markdown.pdf, which you previously downloaded. 
+ - Start with the Device Update Agent errors in **error_code_markdown.pdf**, which you previously downloaded. 
     - Errors from the Device Update Agent that are specific to the Download Handler functionality used for delta updates begin with 0x9:
 
 ---
