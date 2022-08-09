@@ -93,10 +93,7 @@ The following table describes the arguments in more detail:
 | [log_folder]  | The path on the host machine where logs will get created and dropped into. We recommend defining this location as a sub folder of the output path. If path does not exist, it will be created by the tool. |
 | [working_folder]  | Path on the machine where collateral and other working files are placed during the delta generation. We recommend defining this location as a subfolder of the output path. If the path does not exist, it will be created by the tool. |
 | [recompressed_target_archive]  | The path on the host machine where the recompressed target file will be created. This file will be used instead of <target_archive> as the target file for diff generation. If this path exists before calling DiffGenTool, the path will be overwritten. We recommend defining this path as a file in the subfolder of the output path. |
-| "[signing_command]" _(optional)_    | The desired command used for signing the sw-description file within the recompressed archive file.
-- NOTE: Surrounding the parameter in double quotes is needed so that the whole command is passed in as a single parameter.
-- NOTE: [recompressed_target_archive] must also be provided if using this parameter.
-- NOTE: DO NOT put the '~' character in a key path used for signing, use the full home path instead. For example, use /home/USER/keys/priv.pem instead of ~/keys/priv.pem |
+| "[signing_command]" _(optional)_    | The desired command used for signing the sw-description file within the recompressed archive file. A few notes: Surrounding the parameter in double quotes is needed so that the whole command is passed in as a single parameter, you must provide [recompressed_target_archive] if using this parameter, and don't put the '~' character in a key path used for signing, use the full home path instead (for example, use /home/USER/keys/priv.pem instead of ~/keys/priv.pem) |
 
 ---
 
