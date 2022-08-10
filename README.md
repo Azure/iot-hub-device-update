@@ -4,7 +4,7 @@ Welcome to the early access 0.9 release of Device Update for IoT Hub.
 
 ## Onboarding Requirements
 
-Please fill this [2-min onboarding form](https://aka.ms/aduearlyaccessform) before you start using the early access to ensure that we can set up the right preview environments for you. 
+Please fill this [2-min onboarding form](https://aka.ms/aduearlyaccessform) before you start using the early access to ensure that we can set up the right preview environments for you. Once you do this, you can access the early access Azure Portal [here](https://portal.azure.com/?feature.adu=true&feature.canmodifystamps=true&Microsoft_Azure_Iothub=tip1&Microsoft_Azure_ADU_Diagnostic=true)
 
 ## Documentation
 
