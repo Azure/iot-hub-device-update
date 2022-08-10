@@ -2,6 +2,18 @@
 
 Welcome to the early access 0.9 release of Device Update for IoT Hub. 
 
+This release will give you a chance to preview some of the upcoming features such as:
+
+* Delta updates allow you to generate a very small update which represents only the changes between two full updates – a source image and a target image. This is ideal for reducing the bandwidth used to download an update to a device, particularly if there have only been a small number of changes between the source and target updates.
+* Automatic group provisioning will automatically create groups of devices based on their compatibility properties and device tags, so you can easily deploy updates to your devices without the additional overhead
+* Improved troubleshooting features such as agent check and device sync help you troubleshoot and repair your devices with ease
+* Automatic rollback enables you to define a fallback version for your managed devices if they meet the rollback criteria that can be easily set from the cloud
+* Azure CLI Support enables you to create and mange DU resources, groups and deployments using command line functions
+* Support for OS platforms such as Ubuntu 18.04 and Ubuntu 20.04
+* and many more….
+
+
+
 ## Onboarding Requirements
 
 Please fill this [2-min onboarding form](https://aka.ms/aduearlyaccessform) before you start using the early access to ensure that we can set up the right preview environments for you. Once you do this, you can access the early access Azure Portal [here](https://portal.azure.com/?feature.adu=true&feature.canmodifystamps=true&Microsoft_Azure_Iothub=tip1&Microsoft_Azure_ADU_Diagnostic=true)
