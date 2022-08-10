@@ -23,26 +23,6 @@ Learn how to initiate a Device Update for IoT Hub log operation and view collect
 > [!NOTE]
 > The remote log collection feature is currently compatible only with devices that implement the Diagnostic Interface and are able to upload files to Azure Blob storage. The reference agent implementation also expects the device to write log files to a user-specified file path on the device.
 
-# [Azure CLI](#tab/cli)
-
-* [Access to an IoT Hub with Device Update for IoT Hub enabled](create-device-update-account.md).
-
-* An IoT device (or simulator) [provisioned for Device Update](device-update-agent-provisioning.md) within IoT Hub and implementing the Diagnostic Interface.
-
-* An [Azure Blob storage account](../storage/common/storage-account-create.md) under the same subscription as your Device Update for IoT Hub account.
-
-* An Azure CLI environment:
-
-  * Use the Bash environment in [Azure Cloud Shell](../cloud-shell/quickstart.md).
-
-    [![Launch Cloud Shell in a new window](../../includes/media/cloud-shell-try-it/hdi-launch-cloud-shell.png)](https://shell.azure.com)
-
-  * Or, if you prefer to run CLI reference commands locally, [install the Azure CLI](/cli/azure/install-azure-cli)
-
-    * Sign in to the Azure CLI by using the [az login](/cli/azure/reference-index#az-login) command.
-    * Run [az version](/cli/azure/reference-index#az-version) to find the version and dependent libraries that are installed. To upgrade to the latest version, run [az upgrade](/cli/azure/reference-index#az-upgrade).
-    * When prompted, install Azure CLI extensions on first use. The commands in this article use the **azure-iot** extension. Run `az extension update --name azure-iot` to make sure you're using the latest version of the extension.
-
 > [!NOTE]
 > The remote log collection feature is currently compatible only with devices that implement the Diagnostic Interface and are able to upload files to Azure Blob storage. The reference agent implementation also expects the device to write log files to a user-specified file path on the device.
 
