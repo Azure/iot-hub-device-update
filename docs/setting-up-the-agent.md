@@ -8,22 +8,6 @@ In IoT Hub, under each device identity, you can create up to 50 module identitie
 
 If you are migrating from a device level agent to adding the agent as a Module identity on the device, remove the older agent that was communicating over the Device Twin. When you provision the Device Update agent as a Module Identity, all communications between the device and the Device Update service happen over the Module Twin so do remember to tag the Module Twin of the device when creating [groups](device-update-groups.md) and all [communications](device-update-plug-and-play.md) must happen over the module twin.
 
-## Support for Device Update
-
-The following IoT device over the air update types are currently supported with Device Update:
-
-* Linux devices (IoT Edge and Non-IoT Edge devices):
-    * [Image A/B update](device-update-raspberry-pi.md)       
-    * [Package update](device-update-ubuntu-agent.md)
-    * [Proxy update for downstream devices](device-update-howto-proxy-updates.md)
-	
-* Constrained devices:
-    * AzureRTOS Device Update agent samples: [Device Update for Azure IoT Hub tutorial for Azure-Real-Time-Operating-System](device-update-azure-real-time-operating-system.md)
-
-* Disconnected devices: 
-    * [Understand support for disconnected device update](connected-cache-disconnected-device-update.md)
-
-
 ## Prerequisites  
 
 If you're setting up the IoT device/IoT Edge device for [package based updates](./understand-device-update.md#support-for-a-wide-range-of-update-artifacts), add packages.microsoft.com to your machine’s repositories by following these steps:
