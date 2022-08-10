@@ -12,7 +12,10 @@ General information on Device Update for IoT Hub overview as well as concepts ca
 
 Additional documentation specific to the new features available in the early access can be found in the [docs folder](https://github.com/Azure/iot-hub-device-update/tree/early-access/0.9/docs) of the early-access/0.9 branch
 
-[Getting Started with Device Update Agent](./docs/agent-reference)
+## Device Update Agent
+
+The Device update and delivery optimizationagent build for Ubuntu 18.04 have been provided in [Early Access Agent artifacts](https://github.com/Azure/iot-hub-device-update/tree/early-access/0.9/early-access-agent-artifacts) in addition to the agent code.
+
 
 ## Reporting bugs
 
