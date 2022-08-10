@@ -22,10 +22,28 @@ Learn how to initiate a Device Update for IoT Hub log operation and view collect
 
 > [!NOTE]
 > The remote log collection feature is currently compatible only with devices that implement the Diagnostic Interface and are able to upload files to Azure Blob storage. The reference agent implementation also expects the device to write log files to a user-specified file path on the device.
+# [Azure CLI](#tab/cli)
+
+* [Access to an IoT Hub with Device Update for IoT Hub enabled](create-device-update-account.md).
+
+* An IoT device (or simulator) [provisioned for Device Update](device-update-agent-provisioning.md) within IoT Hub and implementing the Diagnostic Interface.
+
+* An [Azure Blob storage account](../storage/common/storage-account-create.md) under the same subscription as your Device Update for IoT Hub account.
+
+* An Azure CLI environment:
+
+  * Use the Bash environment in [Azure Cloud Shell](../cloud-shell/quickstart.md).
+
+    [![Launch Cloud Shell in a new window](../../includes/media/cloud-shell-try-it/hdi-launch-cloud-shell.png)](https://shell.azure.com)
+
+  * Or, if you prefer to run CLI reference commands locally, [install the Azure CLI](/cli/azure/install-azure-cli)
+
+    * Sign in to the Azure CLI by using the [az login](/cli/azure/reference-index#az-login) command.
+    * Run [az version](/cli/azure/reference-index#az-version) to find the version and dependent libraries that are installed. To upgrade to the latest version, run [az upgrade](/cli/azure/reference-index#az-upgrade).
+    * When prompted, install Azure CLI extensions on first use. The commands in this article use the **azure-iot** extension. Run `az extension update --name azure-iot` to make sure you're using the latest version of the extension.
 
 > [!NOTE]
 > The remote log collection feature is currently compatible only with devices that implement the Diagnostic Interface and are able to upload files to Azure Blob storage. The reference agent implementation also expects the device to write log files to a user-specified file path on the device.
-
 ---
 
 ## Link your Azure Blob storage account to your Device Update instance
@@ -46,6 +64,23 @@ In order to use the remote log collection feature, you must first link an Azure 
 
 6. Once back on the instance list, select **Refresh** periodically until the instance's provisioning state shows "Succeeded." This process usually takes 2-3 minutes.
 
+# [Azure CLI](#tab/cli)
+
+Use the [az iot device-update instance create](/cli/azure/iot/device-update/instance#az-iot-device-update-instance-create) command to configure diagnostics for your Device Update instance.
+
+>[!TIP]
+>You can use the `az iot device-update instance create` command on an existing Device Update instances and it will configure the instance with the updated parameters.
+Replace the following placeholders with your own information:
+
+* *\<account_name>*: The name of your Device Update account.
+* *\<instance_name>*: The name of your Device Update instance.
+* *\<storage_id>*: The resource ID of the storage account where the diagnostics logs will be stored. You can retrieve the resource ID by using the [az storage show](/cli/azure/storage/account#az-storage-account-show) command and querying for the ID value: `az storage account show -n <storage_name> --query id`.
+
+```azurecli-interactive
+az iot device-update instance update --account <account_name> --instance <instance_name> --set enableDiagnostics=true diagnosticStorageProperties.resourceId=<storage_id>
+```
+
+---
 
 ## Configure log collection
 
