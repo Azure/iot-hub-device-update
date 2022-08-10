@@ -77,16 +77,6 @@ Follow these instructions to provision the Device Update agent on [IoT Edge enab
 
 1. Install the Device Update package update agent.
 
-    - For latest agent versions from packages.miscrosoft.com: Update package lists on your device and install the Device Update agent package and its dependencies using:	
-
-        ```shell
-        sudo apt-get update
-        ```
-	
-        ```shell
-        sudo apt-get install deviceupdate-agent deliveryoptimization-plugin-apt
-        ```
-	
     - For any early access agent version from [Artifacts](https://github.com/Azure/iot-hub-device-update/releases) : Download the deviceupdate-agent_0.9.0 and deliveryoptimization-agent deb files to the machine you want to install the Device Update and Delivery Optimization agent on, then:
    
         ```shell
