@@ -70,11 +70,7 @@ Follow all or any of the below sections to add the Device update agent based on 
 Follow these instructions to provision the Device Update agent on [IoT Edge enabled devices](../iot-edge/index.yml).
 
 1. Follow the instructions to [Manually provision a single Linux IoT Edge device](../iot-edge/how-to-provision-single-device-linux-symmetric.md?preserve-view=true&view=iotedge-2020-11#install-iot-edge).
-
-1. Install the Device Update image update agent.
-
-    We provide sample images in the [Assets here](https://github.com/Azure/iot-hub-device-update/releases) repository. The swUpdate file is the base image that you can flash onto a Raspberry Pi B3+ board. The .gz file is the update you would import through Device Update for IoT Hub. For an example, see [How to flash the image to your IoT Hub device](./device-update-raspberry-pi.md#flash-an-sd-card-with-the-image).  
-
+  
 1. Install the Device Update package update agent.
 
     - For any early access agent version from [Artifacts](https://github.com/Azure/iot-hub-device-update/releases) : Download the deviceupdate-agent_0.9.0 and deliveryoptimization-agent deb files to the machine you want to install the Device Update and Delivery Optimization agent on, then:
