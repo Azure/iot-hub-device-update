@@ -57,7 +57,7 @@ Follow these instructions to provision the Device Update agent on IoT Edge enabl
   
 1. Install the Device Update package update agent.
 
-    - For any early access agent version, download the deviceupdate-agent and deliveryoptimization-agent deb files from the here to the machine you want to install the Device Update and Delivery Optimization agent on, then:
+    - For any early access agent version, download the deviceupdate-agent and deliveryoptimization-agent deb files from the [here](https://github.com/esha0611/iot-hub-device-update/tree/early-access/0.9/early-access-agent-artifacts) to the machine you want to install the Device Update and Delivery Optimization agent on, then:
    
         ```shell
         sudo apt-get install -y ./"<PATH TO FILE>"/"<.DEB FILE NAME>"
