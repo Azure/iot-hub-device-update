@@ -16,5 +16,3 @@ Follow the steps below to manually tag your devices.
 	            "ADUGroup": "<CustomTagValue>"
 	            }
     ```
-
-
