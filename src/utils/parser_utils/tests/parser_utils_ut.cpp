@@ -1,19 +1,16 @@
 
-#include "aduc/parser_utils.h"
-#include <aduc/calloc_wrapper.hpp>
 #include "aduc/hash_utils.h"
+#include "aduc/parser_utils.h"
 #include <aduc/types/hash.h>
 #include <catch2/catch.hpp>
-#include <string>
 
-using ADUC::StringUtils::calloc_wrapper;
+using Catch::Matchers::Equals;
 
 TEST_CASE("ADUC_FileEntity_Init")
 {
     SECTION("Deep copies fields")
     {
-        calloc_wrapper<ADUC_FileEntity> fileEntity { static_cast<ADUC_FileEntity*>(calloc(1, sizeof(ADUC_FileEntity))) };
-        REQUIRE_FALSE(fileEntity.is_null());
+        ADUC_FileEntity fileEntity{};
 
         // Don't use calloc_wrapper as ADUC_Hash_FreeArray below will also free the hash
         ADUC_Hash* hash = static_cast<ADUC_Hash*>(calloc(1, sizeof(ADUC_Hash)));
@@ -21,39 +18,51 @@ TEST_CASE("ADUC_FileEntity_Init")
         REQUIRE_FALSE(hash == nullptr);
         REQUIRE(ADUC_Hash_Init(hash, "hashvalue", "sha256"));
 
-        const std::string fileId{ "abcdefg123456789" };
-        const std::string targetFileName{ "someFileName.ext" };
-        const std::string downloadUri{ "http://somehost.li/path/to/someFileName.ext" };
-        const std::string arguments{ "" };
+        char fileId[] = "abcdefg123456789";
+        char targetFileName[] = "someFileName.ext";
+        char downloadUri[] = "http://somehost.li/path/to/someFileName.ext";
+        char arguments[] = "";
 
         REQUIRE(ADUC_FileEntity_Init(
-            fileEntity.get(),
-            fileId.c_str(),
-            targetFileName.c_str(),
-            downloadUri.c_str(),
-            arguments.c_str(),
+            &fileEntity,
+            fileId,
+            targetFileName,
+            downloadUri,
+            arguments,
             hash,
             1, /* hashCount */
             1234567 /* sizeInBytes */));
 
-        // pointer memory checks
-        CHECK_FALSE(&fileEntity->FileId[0] == &fileId.c_str()[0]);
-        CHECK_FALSE(&fileEntity->TargetFilename[0] == &targetFileName.c_str()[0]);
-        CHECK_FALSE(&fileEntity->Arguments[0] == &arguments.c_str()[0]);
-        CHECK_FALSE(&fileEntity->DownloadUri[0] == &downloadUri.c_str()[0]);
-        CHECK_FALSE(fileEntity->Hash == nullptr);
-        CHECK_FALSE(fileEntity->Hash == hash);
-        CHECK_FALSE(fileEntity->Hash->value == nullptr);
-        CHECK_FALSE(static_cast<void*>(fileEntity->Hash->value) == static_cast<void*>(hash->value));
-        CHECK_FALSE(fileEntity->Hash->type == nullptr);
-        CHECK_FALSE(static_cast<void*>(fileEntity->Hash->type) == static_cast<void*>(hash->type));
+        auto check_ptr_false = [](void* p, void* q) { CHECK_FALSE(p == q); };
 
-        // non-memory checks
-        CHECK(fileEntity->HashCount == 1);
-        CHECK(fileEntity->SizeInBytes == 1234567);
+        check_ptr_false(fileEntity.FileId, fileId);
+        CHECK_THAT(fileEntity.FileId, Equals(fileId));
+
+        check_ptr_false(fileEntity.TargetFilename, targetFileName);
+        CHECK_THAT(fileEntity.TargetFilename, Equals(targetFileName));
+
+        check_ptr_false(fileEntity.Arguments, arguments);
+        CHECK_THAT(fileEntity.Arguments, Equals(arguments));
+
+        check_ptr_false(fileEntity.DownloadUri, downloadUri);
+        CHECK_THAT(fileEntity.DownloadUri, Equals(downloadUri));
+
+        REQUIRE_FALSE(fileEntity.Hash == nullptr);
+        check_ptr_false(fileEntity.Hash, hash);
+
+        REQUIRE_FALSE(fileEntity.Hash->value == nullptr);
+        check_ptr_false(fileEntity.Hash->value, hash->value);
+        CHECK_THAT(fileEntity.Hash->value, Equals(hash->value));
+
+        REQUIRE_FALSE(fileEntity.Hash->type == nullptr);
+        check_ptr_false(fileEntity.Hash->type, hash->type);
+        CHECK_THAT(fileEntity.Hash->type, Equals(hash->type));
+
+        CHECK(fileEntity.HashCount == 1);
+        CHECK(fileEntity.SizeInBytes == 1234567);
 
         // cleanup
-        ADUC_FileEntity_Uninit(fileEntity.get());
+        ADUC_FileEntity_Uninit(&fileEntity);
         ADUC_Hash_FreeArray(1, hash);
         hash = nullptr;
     }

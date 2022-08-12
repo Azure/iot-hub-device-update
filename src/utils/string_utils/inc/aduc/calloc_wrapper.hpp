@@ -53,16 +53,6 @@ public:
     }
 
     /**
-     * @brief Get the non-const wrapped object.
-     *
-     * @return T* Pointer to wrapped object.
-     */
-    T* get()
-    {
-        return m_ptr;
-    }
-
-    /**
      * @brief Get the wrapped object for arrow syntax.
      *
      * @return const T* Pointer to wrapped object.
