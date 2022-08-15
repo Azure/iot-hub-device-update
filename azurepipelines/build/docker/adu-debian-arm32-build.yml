@@ -60,13 +60,13 @@ pr:
       - licenses/*
 
 jobs:
-  - job: BuildAduAgent
-    displayName: "Build ADU Agent"
+  - job: BuildAduAgent_debian10
+    displayName: "Build ADU Agent - Debian 10"
     timeoutInMinutes: 360
     cancelTimeoutInMinutes: 360
     pool: aduc_1es_client_pool
     steps:
       - template: ../templates/adu-docker-build-steps.yml
         parameters:
-          targetOs: 'debian9'
+          targetOs: 'debian10'
           targetArch: 'arm32'
