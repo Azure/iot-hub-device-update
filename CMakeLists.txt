@@ -391,7 +391,7 @@ set (
 
 # Error Code Json Folder, Filename, and Path
 set (
-    ADUC_ERROR_CODE_JSON_FOLDER
+    ADUC_ERROR_CODE_GENERATOR_JSON_FOLDER
     "error_code_generator_defs"
     CACHE STRING "Name of the folder that contains the error codes JSON file")
 
