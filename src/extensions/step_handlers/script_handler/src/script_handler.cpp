@@ -589,6 +589,12 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
     workflow_set_result_details(
         workflowData->WorkflowHandle, json_object_get_string(actionResultObject, "resultDetails"));
 
+    if (IsAducResultCodeFailure(result.ResultCode) && result.ExtendedResultCode == 0)
+    {
+        Log_Warn("Script result had non-actionable ExtendedResultCode of 0.");
+        result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_SCRIPT_RESULT_EXTENDEDRESULTCODE_ZERO;
+    }
+
     Log_Info(
         "Action (%s) done - returning rc:%d, erc:0x%X, rd:%s",
         action.c_str(),

@@ -294,6 +294,30 @@ To get started, you can take a look at the [example-installscript.sh](./examples
 
 The script, must write an ADUC_Result data into a designated result file (specified by --result-file option)
 
+> IMPORTANT: Make sure to modify the default behavior of writing result file. If agent detects ResultCode and ExtendedResultCode of 0, then for discoverability, it will replace the ExtendedResultCode with ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_SCRIPT_RESULT_EXTENDEDRESULTCODE_ZERO that has numeric code of 81054976 (decimal) and 0x30500206 (hexadecimal).
+
+Example contents of result file for Success:
+
+```json
+{
+    "resultCode": 1,
+    "extendedResultCode": 0,
+    "resultDetails": ""
+}
+```
+
+Example contents of result file for Failure:
+
+```json
+{
+    "resultCode": 0,
+    "extendedResultCode": <some non-zero decimal number>,
+    "resultDetails": "some optional description"
+}
+```
+
+#### Example
+
 The following is excerpt from an example script:
 
 ```sh
@@ -352,3 +376,4 @@ InstallUpdate() {
 ...
 
 ```
+
