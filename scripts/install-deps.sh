@@ -761,6 +761,19 @@ if [[ $install_packages_only == "true" ]]; then
     install_catch2=false
 fi
 
+if [[ $install_packages == "true" ]]; then
+    # Check if we need to install any packages
+    # before we call apt update.
+    if [[ $install_aduc_deps == "true" ]]; then
+        echo "Updating repository list..."
+        $SUDO apt-get update --yes --fix-missing --quiet || $ret
+    fi
+fi
+
+if [[ $install_aduc_deps == "true" ]]; then
+    do_install_aduc_packages || $ret
+fi
+
 # Must be of the form X.Y.Z, where X, Y, and Z are one or more decimal digits.
 if [[ $install_cmake_version != "" && ! $install_cmake_version =~ ^[[:digit:]]+.[[:digit:]]+\.[[:digit:]]+ ]]; then
     error "Invalid --cmake-version '${install_cmake_version}'. Valid pattern: digit+.digit+.digit+ e.g. '3.23.2'"
@@ -809,19 +822,6 @@ fi
 if [[ $install_cmake == "true" || $install_shellcheck == "true" ]]; then
     echo "Successfully installed."
     $ret 0
-fi
-
-if [[ $install_packages == "true" ]]; then
-    # Check if we need to install any packages
-    # before we call apt update.
-    if [[ $install_aduc_deps == "true" ]]; then
-        echo "Updating repository list..."
-        $SUDO apt-get update --yes --fix-missing --quiet || $ret
-    fi
-fi
-
-if [[ $install_aduc_deps == "true" ]]; then
-    do_install_aduc_packages || $ret
 fi
 
 # Install dependencies from source
