@@ -109,6 +109,8 @@ _Creating diff between input source file and recompressed target file:_
 `/mnt/o/temp/working`  
 `/mnt/o/temp/[recompressed file to be created.swu]`
 
+If you're also using the signing parameter (needed if your .swu file is signed), you can use the sample 'sign_file.sh' script you previously downloaded. First, open the script and edit it to add the path to your private key file. Save the script, and then run DiffGen as follows:
+
 _Creating diff between input source file and recompressed/re-signed target file_  
 `sudo ./DiffGenTool`  
 `/mnt/o/temp/[source file.swu]`  
@@ -116,7 +118,7 @@ _Creating diff between input source file and recompressed/re-signed target file_
 `/mnt/o/temp/logs`  
 `/mnt/o/temp/working`  
 `/mnt/o/temp/[recompressed file to be created.swu]`  
-`"openssl dgst -sha256 -sign [path to directory with key]/priv.pem"`
+`/mnt/o/temp/[path to script]/sign_file.sh`
 
 Note: if you encounter an error "_Parameters failed. Status: MissingBinaries Issues: dumpextfs zstd_compress_file bsdiff_", add executable permissions for those files (e.g. set chmod 755).
 
