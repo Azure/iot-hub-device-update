@@ -240,7 +240,7 @@ typedef enum tagADUC_ResultCode
     ADUC_Result_Install_Skipped_UpdateAlreadyInstalled = 603, /**< Install succeeded. Also indicates that the Installed Criteria is met. */
     ADUC_Result_Install_Skipped_NoMatchingComponents = 604,  /**< Install succeeded. Also indicates that no matchings components for this update. */
 
-    ADUC_Result_Install_RequiredImmediateReboot = 605,       /**< Succeeded. An immidiate device reboot is required, to complete the task. */
+    ADUC_Result_Install_RequiredImmediateReboot = 605,       /**< Succeeded. An immediate device reboot is required, to complete the task. */
     ADUC_Result_Install_RequiredReboot = 606,                /**< Succeeded. A deferred device reboot is required, to complete the task. */
     ADUC_Result_Install_RequiredImmediateAgentRestart = 607, /**< Succeeded. An immediate agent restart is required, to complete the task. */
     ADUC_Result_Install_RequiredAgentRestart = 608,          /**< Succeeded. A deferred agent restart is required, to complete the task. */
@@ -248,7 +248,7 @@ typedef enum tagADUC_ResultCode
     ADUC_Result_Apply_Success = 700,                         /**< Succeeded. */
     ADUC_Result_Apply_InProgress = 701,                      /**< Async operation started. CompletionCallback will be called when complete. */
 
-    ADUC_Result_Apply_RequiredImmediateReboot = 705,         /**< Succeeded. An immidiate device reboot is required, to complete the task. */
+    ADUC_Result_Apply_RequiredImmediateReboot = 705,         /**< Succeeded. An immediate device reboot is required, to complete the task. */
     ADUC_Result_Apply_RequiredReboot = 706,                  /**< Succeeded. A deferred device reboot is required, to complete the task. */
     ADUC_Result_Apply_RequiredImmediateAgentRestart = 707,   /**< Succeeded. An immediate agent restart is required, to complete the task. */
     ADUC_Result_Apply_RequiredAgentRestart = 708,            /**< Succeeded. A deferred agent restart is required, to complete the task. */
@@ -267,10 +267,10 @@ typedef enum tagADUC_ResultCode
     ADUC_Result_Restore_Success_Unsupported = 1101,          /**< Succeeded to proceed with the workflow, but the action is not implemented/supported in the content handler. */
     ADUC_Result_Restore_InProgress = 1102,                   /**< Async operation started. CompletionCallback will be called when complete. */
 
-    ADUC_Result_Restore_RequiredImmediateReboot = 1105,         /**< Succeeded. An immidiate device reboot is required, to complete the task. */
+    ADUC_Result_Restore_RequiredImmediateReboot = 1105,         /**< Succeeded. An immediate device reboot is required, to complete the task. */
     ADUC_Result_Restore_RequiredReboot = 1106,                  /**< Succeeded. A deferred device reboot is required, to complete the task. */
-    ADUC_Result_Restore_RequiredImmediateAgentRestart = 1107,   /**< Succeeded. An immediate agent restart is requied, to complete the task. */
-    ADUC_Result_Restore_RequiredAgentRestart = 1108,            /**< Succeeded. A deferred agent restart is requied, to complete the task. */
+    ADUC_Result_Restore_RequiredImmediateAgentRestart = 1107,   /**< Succeeded. An immediate agent restart is required, to complete the task. */
+    ADUC_Result_Restore_RequiredAgentRestart = 1108,            /**< Succeeded. A deferred agent restart is required, to complete the task. */
 } ADUC_ResultCode;
 
 #define AducResultCodeIndicatesInProgress(resultCode)                                                  \

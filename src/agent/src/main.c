@@ -813,7 +813,7 @@ _Bool ADUC_DeviceClient_Create(ADUC_ConnectionInfo* connInfo, const ADUC_LaunchA
              ClientHandle_SetConnectionStatusCallback(g_iotHubClientHandle, ADUC_ConnectionStatus_Callback, NULL))
         != IOTHUB_CLIENT_OK)
     {
-        Log_Error("Unable to set connection status calback, error=%d", iothubResult);
+        Log_Error("Unable to set connection status callback, error=%d", iothubResult);
         result = false;
     }
     else

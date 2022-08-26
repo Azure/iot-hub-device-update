@@ -1063,12 +1063,28 @@ ADUC_Result StepsHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
 }
 
 /**
- * @brief Checks if the installed content matches the installed criteria.
+ * @brief Determines whether every child-step has met its installed criteria.
+ *        The installed criteria information of each step is defined by the implementor of each step's handler type.
  *
- * @param installedCriteria The installed criteria string. e.g. The firmware version or APT id.
- *  installedCriteria has already been checked to be non-empty before this call.
+ *        For example, 'microsoft/apt:1' handler type requires that the update creator specify the 'installedCriteria' value in the
+ *        step's 'handlerProperties'. The APTHandler uses this 'installedCriteria' string to determine the step's 'IsInstalled' state.
  *
- * @return ADUC_Result
+ *        Another example, 'microsoft/swupdate:1' handler type requires that the update creator specify the 'installedCriteria' value in the
+ *        step's 'handlerProperties'. The step's is 'installed' if the 'installedCriteria' string matches the content of
+ *        the ADU_VERSION file on the device.
+ *
+ *        Other update types may or may not require additional data if the 'IsInstalled' state can be inferred by the data, files, or software on the device.
+ *
+ *   Algorithm:
+ *        - Iterate through child steps collection and call IsInstalled() on each step's handler to determine the step's 'IsInstalled' state.
+ *            - For a step that has already been 'Installed', ensure that the step's WorkflowData cached-result is set accordingly.
+ *        - If one or more steps is not 'Installed', return ADUC_Result_IsInstalled_NotInstalled
+ *        - If all steps are 'Installed', return ADUC_Result_IsInstalled_Installed
+ *        - If an error occurs, return ADUC_Result_Failure with the appropriate extended result code.
+ *
+ * @param workflowData The WorkflowData object that contains information and state of the workflow.
+ *
+ * @return ADUC_Result The ADUC_Result that indicates the overall 'IsInstalled' state.
  */
 static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflowData)
 {
@@ -1152,7 +1168,7 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
     {
         serializedComponentString = CreateComponentSerializedString(selectedComponentsArray, iCom);
 
-        // For each step (child workflow), invoke isInstalled.
+        // For each step (child workflow), invoke IsInstalled().
         for (int i = 0; i < stepsCount; i++)
         {
             if (IsStepsHandlerExtraDebugLogsEnabled())
@@ -1207,10 +1223,27 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
                 goto done;
             }
 
-            // If this item is already installed, skip to the next one.
+            // If this step is already installed, skip to the next one.
             try
             {
                 result = contentHandler->IsInstalled(&stepWorkflow);
+
+                // If step is already installed, we should make sure that the current step's result is set correctly.
+                if (result.ResultCode == ADUC_Result_IsInstalled_Installed)
+                {
+                    // Note: the step's workflow result will be reported to the IoT Hub when the workflow is finished.
+                    // If the step is 'Installed', its workflow result should not be 'Failure'.
+                    // We're setting the result code to ADUC_Result_Install_Skipped_UpdateAlreadyInstalled here
+                    // to avoid potential confusion when customer viewing the twin data.
+                    ADUC_Result stepWorkflowResult = workflow_get_result(stepWorkflow.WorkflowHandle);
+                    if (stepWorkflowResult.ResultCode == ADUC_Result_Failure
+                        || stepWorkflowResult.ResultCode == ADUC_Result_Failure_Cancelled)
+                    {
+                        workflow_set_result(
+                            stepWorkflow.WorkflowHandle,
+                            { .ResultCode = ADUC_Result_Install_Skipped_UpdateAlreadyInstalled });
+                    }
+                }
             }
             catch (...)
             {
@@ -1230,6 +1263,7 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
                 // We can stop here if we found one component that not installed.
                 goto done;
             }
+
         } // steps
     } // components
 
