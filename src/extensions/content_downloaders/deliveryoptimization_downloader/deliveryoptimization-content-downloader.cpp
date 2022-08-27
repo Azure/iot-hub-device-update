@@ -21,7 +21,6 @@
 
 #include <do_config.h>
 #include <do_download.h>
-#include <do_exceptions.h>
 
 namespace MSDO = microsoft::deliveryoptimization;
 
@@ -58,70 +57,22 @@ ADUC_Result do_download(
         entity->DownloadUri,
         fullFilePath.str().c_str());
 
-    try
+    const std::error_code doErrorCode = MSDO::download::download_url_to_path(
+        entity->DownloadUri, fullFilePath.str(), false, std::chrono::seconds(retryTimeout));
+    if (!doErrorCode)
     {
-        MSDO::download::download_url_to_path(
-            entity->DownloadUri, fullFilePath.str(), false, std::chrono::seconds(retryTimeout));
-
         resultCode = ADUC_Result_Download_Success;
+        extendedResultCode = 0;
     }
-    // Catch DO exception only to get extended result code. Other exceptions will be caught by CallResultMethodAndHandleExceptions
-    catch (const MSDO::exception& e)
+    else
     {
-        const int32_t doErrorCode = e.error_code();
-
-        Log_Info("Caught DO exception, msg: %s, code: %d (%#08x)", e.what(), doErrorCode, doErrorCode);
-
-        if (doErrorCode == static_cast<int32_t>(std::errc::operation_canceled))
-        {
-            Log_Info("Download was cancelled");
-            if (downloadProgressCallback != nullptr)
-            {
-                downloadProgressCallback(workflowId, entity->FileId, ADUC_DownloadProgressState_Cancelled, 0, 0);
-            }
-
-            resultCode = ADUC_Result_Failure_Cancelled;
-        }
-        else
-        {
-            if (doErrorCode == static_cast<int32_t>(std::errc::timed_out))
-            {
-                Log_Error("Download failed due to DO timeout");
-            }
-
-            resultCode = ADUC_Result_Failure;
-        }
-
-        extendedResultCode = MAKE_ADUC_DELIVERY_OPTIMIZATION_EXTENDEDRESULTCODE(doErrorCode);
-    }
-    catch (const std::exception& e)
-    {
-        Log_Error("DO download failed with an unhandled std exception: %s", e.what());
+        // Note: The call to download_url_to_path() does not make use of a cancellation token,
+        // so the download can only timeout or hit a fatal error.
+        Log_Error("DO error, msg: %s, code: %#08x, timeout? %d", doErrorCode.message().c_str(), doErrorCode.value(),
+            (doErrorCode == std::errc::timed_out));
 
         resultCode = ADUC_Result_Failure;
-        if (errno != 0)
-        {
-            extendedResultCode = MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ERRNO(errno);
-        }
-        else
-        {
-            extendedResultCode = ADUC_ERC_NOTRECOVERABLE;
-        }
-    }
-    catch (...)
-    {
-        Log_Error("DO download failed due to an unknown exception");
-
-        resultCode = ADUC_Result_Failure;
-
-        if (errno != 0)
-        {
-            extendedResultCode = MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ERRNO(errno);
-        }
-        else
-        {
-            extendedResultCode = ADUC_ERC_NOTRECOVERABLE;
-        }
+        extendedResultCode = MAKE_ADUC_DELIVERY_OPTIMIZATION_EXTENDEDRESULTCODE(doErrorCode.value());
     }
 
     // If we downloaded successfully, validate the file hash.
