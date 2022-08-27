@@ -543,7 +543,8 @@ _Bool HealthCheck(const ADUC_LaunchArguments* launchArgs)
     ADUC_ConfigInfo config = {};
     if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
     {
-        Log_Warn("Cannot read configuration file: %s", ADUC_CONF_FILE_PATH);
+        Log_Error("Failed to initialize from config file: %s", ADUC_CONF_FILE_PATH);
+        goto done;
     }
 
     if (!IsConnectionInfoValid(launchArgs, &config))

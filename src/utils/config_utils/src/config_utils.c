@@ -249,7 +249,7 @@ _Bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFilePath)
 
     if (root_value == NULL)
     {
-        Log_Warn("Cannot read configuration file: %s", ADUC_CONF_FILE_PATH);
+        Log_Error("Failed parse of JSON file: %s", ADUC_CONF_FILE_PATH);
         goto done;
     }
 
