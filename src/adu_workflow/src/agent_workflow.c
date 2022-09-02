@@ -1171,8 +1171,7 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
         }
 
         result = ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(handle, workflowHandle);
-        ADUC_DownloadHandlerFactory_FreeHandle(handle);
-        handle = NULL;
+        handle = NULL; // OnUpdateWorkflowCompleted plugin dstor already calls Cleanup, don't do FreeHandle here
 
         if (IsAducResultCodeFailure(result.ResultCode))
         {
@@ -1186,7 +1185,10 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
     }
 
 done:
-    ADUC_DownloadHandlerFactory_FreeHandle(handle);
+    if (handle != NULL)
+    {
+        ADUC_DownloadHandlerFactory_FreeHandle(handle);
+    }
 }
 
 /**

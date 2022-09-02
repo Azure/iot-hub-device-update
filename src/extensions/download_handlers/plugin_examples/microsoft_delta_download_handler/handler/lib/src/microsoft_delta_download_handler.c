@@ -88,6 +88,7 @@ ADUC_Result MicrosoftDeltaDownloadHandler_ProcessUpdate(
         if (IsAducResultCodeSuccess(relatedFileResult.ResultCode))
         {
             Log_Info("Processing Delta %d succeeded", index);
+            result.ResultCode = ADUC_Result_Success;
             break;
         }
 

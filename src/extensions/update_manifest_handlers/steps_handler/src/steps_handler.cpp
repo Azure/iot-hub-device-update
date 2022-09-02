@@ -481,6 +481,8 @@ static ADUC_Result HandleComponents(
         }
     }
 
+    result.ResultCode = ADUC_Result_Success;
+
 done:
     return result;
 }
