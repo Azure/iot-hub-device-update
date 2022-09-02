@@ -9,7 +9,7 @@
 #ifndef MICROSOFT_DELTA_DOWNLOAD_HANDLER_UTILS_H
 #define MICROSOFT_DELTA_DOWNLOAD_HANDLER_UTILS_H
 
-#include "aduc/c_utils.h" // EXTERN_C_BEGIN, EXTERN_C_END
+#include <aduc/c_utils.h> // EXTERN_C_BEGIN, EXTERN_C_END
 #include <aduc/types/adu_core.h> // ADUC_Result_*
 #include <aduc/types/update_content.h> // ADUC_RelatedFile
 #include <aduc/types/workflow.h> // ADUC_WorkflowHandle

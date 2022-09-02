@@ -199,6 +199,14 @@
               {
                 "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_ACCESS_DATA",
                 "value": 506
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_GET_CONTRACT_INFO_CALL_FAILURE",
+                "value": 507
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_UNSUPPORTED_CONTRACT_VERSION",
+                "value": 508
               }
             ]
           },
@@ -625,6 +633,10 @@
               {
                 "name": "ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_HASH",
                 "value": 12
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_UNSUPPORTED_CONTRACT_VERSION",
+                "value": 13
               }
             ]
           },
@@ -707,6 +719,10 @@
               {
                 "name": "ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_FREECOMPONENTSDATASTRING",
                 "value": 6
+              },
+              {
+                "name": "ADUC_ERC_COMPONENT_ENUMERATOR_UNSUPPORTED_CONTRACT_VERSION",
+                "value": 7
               }
             ]
           }
@@ -854,6 +870,10 @@
               {
                 "name": "ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_CREATE_FAILURE_CREATE",
                 "value": 1
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_UNSUPPORTED_CONTRACT_VERSION",
+                "value": 2
               }
             ]
           },
@@ -865,6 +885,10 @@
               {
                 "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_ON_UPDATE_WORKFLOW_COMPLETED_FAILURE",
                 "value": 1
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_MISSING_EXPORT_SYMBOL",
+                "value": 2
               }
             ]
           },

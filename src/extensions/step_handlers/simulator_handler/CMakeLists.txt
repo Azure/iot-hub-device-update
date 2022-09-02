@@ -35,11 +35,11 @@ target_compile_definitions (
 
 target_link_libraries (
     ${target_name}
-    PRIVATE aduc::logging
-            aduc::agent_workflow
+    PRIVATE aduc::agent_workflow
+            aduc::contract_utils
+            aduc::logging
             aduc::workflow_utils
-            Parson::parson
-            -zdefs)
+            Parson::parson)
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
 

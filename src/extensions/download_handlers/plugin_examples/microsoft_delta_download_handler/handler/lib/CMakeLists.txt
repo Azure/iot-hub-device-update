@@ -3,7 +3,7 @@ set (target_name microsoft-delta-download-handler)
 include (agentRules)
 compileasc99 ()
 
-add_library (${target_name} STATIC "")
+add_library (${target_name} STATIC)
 add_library (aduc::${target_name} ALIAS ${target_name})
 
 # Turn -fPIC on, in order to use this library in a shared library.

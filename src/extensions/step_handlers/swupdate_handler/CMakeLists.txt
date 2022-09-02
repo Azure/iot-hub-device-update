@@ -21,14 +21,14 @@ target_link_libraries (
     ${target_name}
     PRIVATE aduc::adu_core_export_helpers
             aduc::c_utils
+            aduc::contract_utils
             aduc::extension_manager
             aduc::logging
             aduc::process_utils
             aduc::string_utils
             aduc::system_utils
             aduc::workflow_data_utils
-            aduc::workflow_utils
-            -zdefs)
+            aduc::workflow_utils)
 
 target_compile_definitions (${target_name} PRIVATE ADUC_VERSION_FILE="${ADUC_VERSION_FILE}"
                                                    ADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")

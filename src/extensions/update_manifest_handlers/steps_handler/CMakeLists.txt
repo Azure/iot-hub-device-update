@@ -7,20 +7,13 @@ cmake_minimum_required (VERSION 3.5)
 #
 set (target_name microsoft_steps_1)
 
-#
-# List all source files required for this handler.
-#
-set (SOURCE_ALL src/steps_handler.cpp src/handler_create.cpp)
-
-#
-# Create a shared library.
-#
-add_library (${target_name} SHARED ${SOURCE_ALL})
-
-add_library (aduc::${target_name} ALIAS ${target_name})
-
 find_package (Parson REQUIRED)
 find_package (IotHubClient REQUIRED)
+
+add_library (${target_name} SHARED)
+add_library (aduc::${target_name} ALIAS ${target_name})
+
+target_sources (${target_name} PRIVATE src/steps_handler.cpp src/handler_create.cpp)
 
 target_include_directories (
     ${target_name}
@@ -42,8 +35,9 @@ target_compile_definitions (
 
 target_link_libraries (
     ${target_name}
-    PRIVATE aduc::c_utils
-            aduc::agent_workflow
+    PRIVATE aduc::agent_workflow
+            aduc::contract_utils
+            aduc::c_utils
             aduc::exception_utils
             aduc::extension_manager
             aduc::extension_utils
@@ -53,7 +47,6 @@ target_link_libraries (
             aduc::system_utils
             aduc::workflow_data_utils
             aduc::workflow_utils
-            Parson::parson
-            -zdefs)
+            Parson::parson)
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

@@ -9,6 +9,7 @@
 #ifndef DOWNLOAD_HANDLER_PLUGIN_HPP
 #define DOWNLOAD_HANDLER_PLUGIN_HPP
 
+#include <aduc/contract_utils.h> // ADUC_ExtensionContractInfo
 #include <aduc/logging.h> // ADUC_LOG_SEVERITY
 #include <aduc/result.h> // ADUC_Result
 #include <aduc/shared_lib.hpp> // aduc::SharedLib
@@ -33,6 +34,7 @@ public:
         const ADUC_FileEntity* fileEntity,
         const char* payloadFilePath) const;
     ADUC_Result OnUpdateWorkflowCompleted(const ADUC_WorkflowHandle workflowHandle) const;
+    ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo) const;
 
 private:
     std::unique_ptr<aduc::SharedLib> lib;

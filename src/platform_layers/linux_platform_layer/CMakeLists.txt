@@ -7,7 +7,7 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-add_library (${target_name} STATIC "")
+add_library (${target_name} STATIC)
 add_library (aduc::${target_name} ALIAS ${target_name})
 
 target_sources (
@@ -24,6 +24,7 @@ target_link_libraries (
     PRIVATE aduc::adu_types
             aduc::agent_workflow
             aduc::c_utils
+            aduc::contract_utils
             aduc::config_utils
             aduc::exception_utils
             aduc::extension_manager

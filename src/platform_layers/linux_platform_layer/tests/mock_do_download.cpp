@@ -89,13 +89,14 @@ download_status download::get_status() const
     return _mockStatus;
 }
 
-void download::download_url_to_path(
+const std::error_code download::download_url_to_path(
     const std::string& /*uri*/, const std::string& /*downloadFilePath*/, std::chrono::seconds /*timeoutSecs*/)
 {
     // No-op.
+    return std::error_code();
 }
 
-void download::download_url_to_path(
+const std::error_code download::download_url_to_path(
     const std::string& /*uri*/,
     const std::string& /*downloadFilePath*/,
     const std::atomic_bool& /*isCancelled*/,
@@ -122,4 +123,6 @@ void download::download_url_to_path(
         ThrowException(std::errc::connection_refused);
         break;
     }
+
+    return std::error_code();
 }

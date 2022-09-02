@@ -34,7 +34,7 @@ target_link_libraries (
     ${target_name}
     PUBLIC aduc::logging
     PRIVATE aduc::adu_types
-            aduc::c_utils
+            aduc::contract_utils
             aduc::extension_manager
             aduc::installed_criteria_utils
             aduc::process_utils

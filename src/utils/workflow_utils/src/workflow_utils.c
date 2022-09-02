@@ -8,7 +8,6 @@
 #include "aduc/workflow_utils.h"
 #include "aduc/adu_types.h"
 #include "aduc/aduc_inode.h" // ADUC_INODE_SENTINEL_VALUE
-#include "aduc/c_utils.h"
 #include "aduc/extension_manager.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
@@ -20,6 +19,7 @@
 #include "aduc/types/workflow.h"
 #include "aduc/workflow_internal.h"
 #include "jws_utils.h"
+#include <aduc/c_utils.h>
 
 #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
 #include <azure_c_shared_utility/strings.h> // for STRING_*

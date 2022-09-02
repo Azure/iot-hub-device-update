@@ -7,6 +7,7 @@
  */
 #include "aduc/connection_string_utils.h"
 #include "aduc/content_downloader_extension.hpp"
+#include "aduc/contract_utils.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
@@ -23,8 +24,6 @@
 #include <do_download.h>
 
 namespace MSDO = microsoft::deliveryoptimization;
-
-EXTERN_C_BEGIN
 
 ADUC_Result do_download(
     const ADUC_FileEntity* entity,
@@ -149,45 +148,3 @@ ADUC_Result do_download(
     Log_Info("Download resultCode: %d, extendedCode: %d", resultCode, extendedResultCode);
     return ADUC_Result{ resultCode, extendedResultCode };
 }
-
-ADUC_Result Download(
-    const ADUC_FileEntity* entity,
-    const char* workflowId,
-    const char* workFolder,
-    unsigned int retryTimeout,
-    ADUC_DownloadProgressCallback downloadProgressCallback)
-{
-    return do_download(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
-}
-
-ADUC_Result Initialize(const char* initializeData)
-{
-    ADUC_Result result{ ADUC_GeneralResult_Success };
-
-    if (initializeData == nullptr)
-    {
-        Log_Info("Skipping downloader initialization. NULL input.");
-        goto done;
-    }
-
-    // The connection string is valid (IoT hub connection successful) and we are ready for further processing.
-    // Send connection string to DO SDK for it to discover the Edge gateway if present.
-    if (ConnectionStringUtils_IsNestedEdge(initializeData))
-    {
-        const int ret = deliveryoptimization_set_iot_connection_string(initializeData);
-        if (ret != 0)
-        {
-            // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
-            // fail the startup.
-            Log_Error("Failed to set DO connection string in Nested Edge scenario, result: %d", ret);
-            result.ResultCode = ADUC_Result_Failure;
-            result.ExtendedResultCode = ADUC_ERROR_DELIVERY_OPTIMIZATION_DOWNLOADER_EXTERNAL_FAILURE(ret);
-            goto done;
-        }
-    }
-
-done:
-    return result;
-}
-
-EXTERN_C_END

@@ -6,8 +6,8 @@
  * Licensed under the MIT License.
  */
 #include "aduc/adu_core_export_helpers.h"
-#include "aduc/c_utils.h"
 #include "aduc/logging.h"
+#include <aduc/c_utils.h>
 #include <parson.h>
 #include <stdbool.h>
 #include <stdlib.h>

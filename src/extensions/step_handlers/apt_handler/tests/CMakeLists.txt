@@ -40,6 +40,7 @@ target_compile_definitions (
 target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::agent_orchestration
+            aduc::contract_utils
             aduc::exception_utils
             aduc::extension_manager
             aduc::installed_criteria_utils

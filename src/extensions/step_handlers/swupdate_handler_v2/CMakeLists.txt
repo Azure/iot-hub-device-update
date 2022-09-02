@@ -29,6 +29,7 @@ target_include_directories (
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::c_utils
+            aduc::contract_utils
             aduc::exception_utils
             aduc::extension_manager
             aduc::logging
@@ -37,8 +38,7 @@ target_link_libraries (
             aduc::system_utils
             aduc::workflow_data_utils
             aduc::workflow_utils
-            Parson::parson
-            -zdefs)
+            Parson::parson)
 
 target_compile_definitions (
     ${target_name}

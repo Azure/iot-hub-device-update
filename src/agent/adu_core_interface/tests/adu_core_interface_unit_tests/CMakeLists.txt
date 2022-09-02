@@ -46,7 +46,7 @@ target_link_libraries (
             aduc::adu_core_export_helpers
             aduc::adu_types
             aduc::agent_workflow
-            aduc::c_utils
+            aduc::contract_utils
             aduc::hash_utils
             aduc::parser_utils
             aduc::string_utils

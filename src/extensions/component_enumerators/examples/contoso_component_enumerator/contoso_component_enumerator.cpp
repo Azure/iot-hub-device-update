@@ -7,6 +7,7 @@
  */
 #include "aduc/component_enumerator_extension.hpp"
 #include "parson.h"
+#include <aduc/contract_utils.h>
 #include <algorithm>
 #include <sstream>
 #include <string.h>
@@ -43,7 +44,7 @@
 //
 const char* g_contosoComponentInventoryFilePath = "/usr/local/contoso-devices/components-inventory.json";
 
-JSON_Value* _GetAllComponentsFromFile(const char* configFilepath)
+static JSON_Value* _GetAllComponentsFromFile(const char* configFilepath)
 {
     // Read config file.
     JSON_Value* rootValue = json_parse_file(configFilepath);
@@ -134,101 +135,130 @@ JSON_Value* _GetAllComponentsFromFile(const char* configFilepath)
     return rootValue;
 }
 
-extern "C"
+static bool _json_object_contains_named_value(JSON_Object* jsonObject, const char* name, const char* value)
 {
-    bool _json_object_contains_named_value(JSON_Object* jsonObject, const char* name, const char* value)
+    if (!(jsonObject != nullptr && name != nullptr && *name != 0 && value != nullptr && *value != 0))
     {
-        if (!(jsonObject != nullptr && name != nullptr && *name != 0 && value != nullptr && *value != 0))
-        {
-            return false;
-        }
-
-        return (
-            json_object_has_value_of_type(jsonObject, name, JSONString) != 0
-            && strcmp(json_object_get_string(jsonObject, name), value) == 0);
+        return false;
     }
 
-    /**
-     * @brief Select component(s) that contain property or properties matching specified in @p selectorJson string.
-     *
-     * Example input json:
-     *      - Select all components belong to a 'Motors' group
-     *              "{\"group\":\"Motors\"}"
-     *
-     *      - Select a component with name equals 'left-motor'
-     *              "{\"name\":\"left-motor\"}"
-     *
-     *      - Select components matching specified class (manufature/model)
-     *              "{\"manufacturer\":\"Contoso\",\"model\":\"USB-Motor-0001\"}"
-     *
-     * @param selectorJson A stringified json containing one or more properties use for components selection.
-     * @return Returns a serialized json data containing components information.
-     * Caller must call FreeString function when done with the returned string.
-     */
-    char* SelectComponents(const char* selectorJson)
+    return (
+        json_object_has_value_of_type(jsonObject, name, JSONString) != 0
+        && strcmp(json_object_get_string(jsonObject, name), value) == 0);
+}
+
+EXTERN_C_BEGIN
+
+/////////////////////////////////////////////////////////////////////////////
+// BEGIN Shared Library Export Functions
+//
+// These are the function symbols that the device update agent will
+// lookup and call.
+//
+
+/**
+ * @brief Select component(s) that contain property or properties matching specified in @p selectorJson string.
+ *
+ * Example input json:
+ *      - Select all components belong to a 'Motors' group
+ *              "{\"group\":\"Motors\"}"
+ *
+ *      - Select a component with name equals 'left-motor'
+ *              "{\"name\":\"left-motor\"}"
+ *
+ *      - Select components matching specified class (manufature/model)
+ *              "{\"manufacturer\":\"Contoso\",\"model\":\"USB-Motor-0001\"}"
+ *
+ * @param selectorJson A stringified json containing one or more properties use for components selection.
+ * @return Returns a serialized json data containing components information.
+ * Caller must call FreeString function when done with the returned string.
+ */
+char* SelectComponents(const char* selectorJson)
+{
+    char* outputString = nullptr;
+
+    JSON_Value* allComponentsValue = nullptr;
+    JSON_Array* componentsArray = nullptr;
+
+    JSON_Value* selectorValue = json_parse_string(selectorJson);
+    JSON_Object* selector = json_object(selectorValue);
+    if (selector == nullptr)
     {
-        char* outputString = nullptr;
+        goto done;
+    }
 
-        JSON_Value* allComponentsValue = nullptr;
-        JSON_Array* componentsArray = nullptr;
+    // NOTE: For demonstration purposes, we're popoulating components data by reading from
+    // the specified 'component inventory' file.
+    allComponentsValue = _GetAllComponentsFromFile(g_contosoComponentInventoryFilePath);
+    componentsArray = json_object_get_array(json_object(allComponentsValue), "components");
+    if (componentsArray == nullptr)
+    {
+        goto done;
+    }
 
-        JSON_Value* selectorValue = json_parse_string(selectorJson);
-        JSON_Object* selector = json_object(selectorValue);
-        if (selector == nullptr)
+    // Keep only components that contain all properties (name & value) specified in the selector.
+    for (int i = json_array_get_count(componentsArray) - 1; i >= 0; i--)
+    {
+        JSON_Object* component = json_array_get_object(componentsArray, i);
+        for (int s = json_object_get_count(selector) - 1; s >= 0; s--)
         {
-            goto done;
-        }
-
-        // NOTE: For demonstration purposes, we're popoulating components data by reading from
-        // the specified 'component inventory' file.
-        allComponentsValue = _GetAllComponentsFromFile(g_contosoComponentInventoryFilePath);
-        componentsArray = json_object_get_array(json_object(allComponentsValue), "components");
-        if (componentsArray == nullptr)
-        {
-            goto done;
-        }
-
-        // Keep only components that contain all properties (name & value) specified in the selector.
-        for (int i = json_array_get_count(componentsArray) - 1; i >= 0; i--)
-        {
-            JSON_Object* component = json_array_get_object(componentsArray, i);
-            for (int s = json_object_get_count(selector) - 1; s >= 0; s--)
+            bool matched = _json_object_contains_named_value(
+                component, json_object_get_name(selector, s), json_string(json_object_get_value_at(selector, s)));
+            if (!matched)
             {
-                bool matched = _json_object_contains_named_value(
-                    component, json_object_get_name(selector, s), json_string(json_object_get_value_at(selector, s)));
-                if (!matched)
-                {
-                    json_array_remove(componentsArray, (size_t)i);
-                }
+                json_array_remove(componentsArray, (size_t)i);
             }
         }
-
-        outputString = json_serialize_to_string_pretty(allComponentsValue);
-
-    done:
-        json_value_free(selectorValue);
-        json_value_free(allComponentsValue);
-
-        return outputString;
     }
 
-    /**
-     * @brief Returns all components information in JSON format.
-     * @param includeProperties Indicates whether to include optional component's properties in the output string.
-     * @return Returns a serialized json data contains components information. Caller must call FreeComponentsDataString function
-     * when done with the returned string.
-     */
-    char* GetAllComponents()
-    {
-        JSON_Value* val = _GetAllComponentsFromFile(g_contosoComponentInventoryFilePath);
-        char* returnString = json_serialize_to_string_pretty(val);
-        json_value_free(val);
-        return returnString;
-    }
+    outputString = json_serialize_to_string_pretty(allComponentsValue);
 
-    void FreeComponentsDataString(char* string)
-    {
-        json_free_serialized_string(string);
-    }
+done:
+    json_value_free(selectorValue);
+    json_value_free(allComponentsValue);
 
-} // extern "c"
+    return outputString;
+}
+
+/**
+ * @brief Returns all components information in JSON format.
+ * @param includeProperties Indicates whether to include optional component's properties in the output string.
+ * @return Returns a serialized json data contains components information. Caller must call FreeComponentsDataString function
+ * when done with the returned string.
+ */
+char* GetAllComponents()
+{
+    JSON_Value* val = _GetAllComponentsFromFile(g_contosoComponentInventoryFilePath);
+    char* returnString = json_serialize_to_string_pretty(val);
+    json_value_free(val);
+    return returnString;
+}
+
+/**
+ * @brief Frees the components data string allocated by GetAllComponents.
+ *
+ * @param string The string previously returned by GetAllComponents.
+ */
+void FreeComponentsDataString(char* string)
+{
+    json_free_serialized_string(string);
+}
+
+/**
+ * @brief Gets the extension contract info.
+ *
+ * @param[out] contractInfo The extension contract info.
+ * @return ADUC_Result The result.
+ */
+ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
+{
+    contractInfo->majorVer = ADUC_V1_CONTRACT_MAJOR_VER;
+    contractInfo->majorVer = ADUC_V1_CONTRACT_MINOR_VER;
+    return ADUC_Result{ ADUC_GeneralResult_Success, 0 };
+}
+
+//
+// END Shared Library Export Functions
+/////////////////////////////////////////////////////////////////////////////
+
+EXTERN_C_END

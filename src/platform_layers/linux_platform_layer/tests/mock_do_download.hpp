@@ -51,12 +51,12 @@ public:
 
     download_status get_status() const;
 
-    static void download_url_to_path(
+    static const std::error_code download_url_to_path(
         const std::string& uri,
         const std::string& downloadFilePath,
         std::chrono::seconds timeoutSecs = std::chrono::hours(24));
 
-    static void download_url_to_path(
+    static const std::error_code download_url_to_path(
         const std::string& uri,
         const std::string& downloadFilePath,
         const std::atomic_bool& isCancelled,

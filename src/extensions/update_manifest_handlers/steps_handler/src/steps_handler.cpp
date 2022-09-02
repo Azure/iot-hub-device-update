@@ -364,6 +364,127 @@ done:
     return result;
 }
 
+static ADUC_Result DoV1DownloadWork(
+    ADUC_WorkflowData* stepWorkflow,
+    ContentHandler* contentHandler,
+    ADUC_WorkflowHandle handle,
+    ADUC_WorkflowHandle stepHandle)
+{
+    ADUC_Result result{};
+
+    // If this item is already installed, skip to the next one.
+    try
+    {
+        result = contentHandler->IsInstalled(stepWorkflow);
+    }
+    catch (...)
+    {
+        // Cannot determine whether the step has been applied, so, we'll try to process the step.
+        result = { .ResultCode = ADUC_Result_IsInstalled_NotInstalled, .ExtendedResultCode = 0 };
+    }
+
+    if (IsAducResultCodeSuccess(result.ResultCode) && result.ResultCode == ADUC_Result_IsInstalled_Installed)
+    {
+        result.ResultCode = ADUC_Result_Install_Skipped_UpdateAlreadyInstalled;
+        result.ExtendedResultCode = 0;
+        workflow_set_result(stepHandle, result);
+        workflow_set_result_details(handle, workflow_peek_result_details(stepHandle));
+        // The current instance is already up-to-date, continue checking the next instance.
+    }
+    else
+    {
+        // Try to download content for current instance and step.
+        try
+        {
+            result = contentHandler->Download(stepWorkflow);
+        }
+        catch (...)
+        {
+            result = { .ResultCode = ADUC_Result_Failure,
+                       .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_DOWNLOAD_UNKNOWN_EXCEPTION_DOWNLOAD_CONTENT };
+        }
+
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            // Propagate item's resultDetails to parent.
+            workflow_set_result_details(handle, workflow_peek_result_details(stepHandle));
+        }
+    }
+
+    return result;
+}
+
+static ADUC_Result handleUnsupportedContractVersion(
+    const ADUC_ExtensionContractInfo* contractInfo, const char* stepUpdateType, ADUC_WorkflowHandle handle)
+{
+    ADUC_Result result{ ADUC_Result_Failure, ADUC_ERC_UPDATE_CONTENT_HANDLER_UNSUPPORTED_CONTRACT_VERSION };
+    const char* errorFmt = "Unsupported content handler contract version %d.%d for '%s'";
+    Log_Error(errorFmt, contractInfo->majorVer, contractInfo->minorVer, stepUpdateType);
+    workflow_set_result_details(
+        handle,
+        errorFmt,
+        contractInfo->majorVer,
+        contractInfo->minorVer,
+        stepUpdateType == nullptr ? "NULL" : stepUpdateType);
+    return result;
+}
+
+static ADUC_Result HandleComponents(
+    int workflowLevel,
+    int workflowStep,
+    bool isComponentsEnumeratorRegistered,
+    ADUC_WorkflowHandle handle,
+    JSON_Array* selectedComponentsArray,
+    int* selectedComponentsCount)
+{
+    ADUC_Result result{ ADUC_GeneralResult_Failure, 0 };
+
+    if (workflowLevel == 0 || !isComponentsEnumeratorRegistered)
+    {
+        // If this is a top-level step or component enumerator is not registered, we will assume that this step is
+        // intended for the host device and will set selectedComponentCount to 1 to iterate through
+        // every step once without setting any component data on the workflow.
+        *selectedComponentsCount = 1;
+    }
+    else
+    {
+        // This is a reference step (workflowLevel == 1), this intended for one or more components.
+        result = GetSelectedComponentsArray(handle, &selectedComponentsArray);
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            const char* fmt = "Missing selected components. workflow level %d, step %d";
+            Log_Error(fmt, workflowLevel, workflowStep);
+            workflow_set_result_details(handle, fmt, workflowLevel, workflowStep);
+            goto done;
+        }
+
+        *selectedComponentsCount = json_array_get_count(selectedComponentsArray);
+
+        if (*selectedComponentsCount == 0)
+        {
+            // If there's no matching component, we will consider this step 'optional' and this
+            // step is no-op.
+            const char* msg = "Optional step (no matching components)";
+            Log_Debug(msg);
+            result = { ADUC_Result_Download_Skipped_NoMatchingComponents };
+
+            // This is a good opportunity to set the workflow state to indicates that
+            // the current component is 'optional'.
+            // We do this by setting workflow result code to ADUC_Result_Download_Skipped_NoMatchingComponents
+            ADUC_Result currentResult = workflow_get_result(handle);
+            if (IsAducResultCodeFailure(currentResult.ResultCode))
+            {
+                ADUC_Result newResult = { ADUC_Result_Download_Skipped_NoMatchingComponents };
+                workflow_set_result(handle, newResult);
+                workflow_set_result_details(handle, msg);
+            }
+        }
+    }
+
+done:
+    return result;
+}
+
 /**
  * @brief Performs 'Download' task by iterating through all steps and invoke each step's handler
  * to download file(s), if needed.
@@ -412,46 +533,16 @@ static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowDat
         goto done;
     }
 
-    if (workflowLevel == 0 || !isComponentsEnumeratorRegistered)
+    result = HandleComponents(
+        workflowLevel,
+        workflowStep,
+        isComponentsEnumeratorRegistered,
+        handle,
+        selectedComponentsArray,
+        &selectedComponentsCount);
+    if (IsAducResultCodeFailure(result.ResultCode))
     {
-        // If this is a top-level step or component enumerator is not registered, we will assume that this step is
-        // intended for the host device and will set selectedComponentCount to 1 to iterate through
-        // every step once without setting any component data on the workflow.
-        selectedComponentsCount = 1;
-    }
-    else
-    {
-        // This is a reference step (workflowLevel == 1), this intended for one or more components.
-        result = GetSelectedComponentsArray(handle, &selectedComponentsArray);
-        if (IsAducResultCodeFailure(result.ResultCode))
-        {
-            const char* fmt = "Missing selected components. workflow level %d, step %d";
-            Log_Error(fmt, workflowLevel, workflowStep);
-            workflow_set_result_details(handle, fmt, workflowLevel, workflowStep);
-            goto done;
-        }
-
-        selectedComponentsCount = json_array_get_count(selectedComponentsArray);
-
-        if (selectedComponentsCount == 0)
-        {
-            // If there's no matching component, we will consider this step 'optional' and this
-            // step is no-op.
-            const char* msg = "Optional step (no matching components)";
-            Log_Debug(msg);
-            result = { ADUC_Result_Download_Skipped_NoMatchingComponents };
-
-            // This is a good opportunity to set the workflow state to indicates that
-            // the current component is 'optional'.
-            // We do this by setting workflow result code to ADUC_Result_Download_Skipped_NoMatchingComponents
-            ADUC_Result currentResult = workflow_get_result(handle);
-            if (IsAducResultCodeFailure(currentResult.ResultCode))
-            {
-                ADUC_Result newResult = { ADUC_Result_Download_Skipped_NoMatchingComponents };
-                workflow_set_result(handle, newResult);
-                workflow_set_result_details(handle, msg);
-            }
-        }
+        goto done;
     }
 
     // For each selected component, perform step's backup, install & apply phase, restore phase if needed, in order.
@@ -517,43 +608,25 @@ static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowDat
                 goto done;
             }
 
-            // If this item is already installed, skip to the next one.
-            try
+            ADUC_ExtensionContractInfo contractInfo = contentHandler->GetContractInfo();
+            if (ADUC_ContractUtils_IsV1Contract(&contractInfo))
             {
-                result = contentHandler->IsInstalled(&stepWorkflow);
-            }
-            catch (...)
-            {
-                // Cannot determine whether the step has been applied, so, we'll try to process the step.
-                result = { .ResultCode = ADUC_Result_IsInstalled_NotInstalled, .ExtendedResultCode = 0 };
-            }
+                result = DoV1DownloadWork(&stepWorkflow, contentHandler, handle, stepHandle);
 
-            if (IsAducResultCodeSuccess(result.ResultCode) && result.ResultCode == ADUC_Result_IsInstalled_Installed)
-            {
-                result.ResultCode = ADUC_Result_Install_Skipped_UpdateAlreadyInstalled;
-                result.ExtendedResultCode = 0;
-                workflow_set_result(stepHandle, result);
-                workflow_set_result_details(handle, workflow_peek_result_details(stepHandle));
-                // The current instance is already up-to-date, continue checking the next instance.
-                goto instanceDone;
-            }
+                if (IsAducResultCodeFailure(result.ResultCode))
+                {
+                    goto done;
+                }
 
-            // Try to download content for current instance and step.
-            try
-            {
-                result = contentHandler->Download(&stepWorkflow);
+                if (result.ResultCode == ADUC_Result_Install_Skipped_UpdateAlreadyInstalled)
+                {
+                    goto instanceDone;
+                }
             }
-            catch (...)
+            else
             {
-                result = { .ResultCode = ADUC_Result_Failure,
-                           .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_DOWNLOAD_UNKNOWN_EXCEPTION_DOWNLOAD_CONTENT };
+                result = handleUnsupportedContractVersion(&contractInfo, stepUpdateType, handle);
                 goto done;
-            }
-
-            if (IsAducResultCodeFailure(result.ResultCode))
-            {
-                // Propagate item's resultDetails to parent.
-                workflow_set_result_details(handle, workflow_peek_result_details(stepHandle));
             }
 
         instanceDone:

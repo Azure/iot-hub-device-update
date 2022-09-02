@@ -17,8 +17,16 @@
 
 #include "aduc/microsoft_delta_download_handler.h"
 
+#include <aduc/contract_utils.h> // ADUC_ExtensionContractInfo
 #include <aduc/logging.h> // ADUC_Logging_*, Log_*
 #include <aduc/types/adu_core.h> // ADUC_Result_*
+
+/////////////////////////////////////////////////////////////////////////////
+// BEGIN Shared Library Export Functions
+//
+// These are the function symbols that the device update agent will
+// lookup and call.
+//
 
 /**
  * @brief One-time initialization for the download handler.
@@ -71,3 +79,21 @@ ADUC_Result OnUpdateWorkflowCompleted(const ADUC_WorkflowHandle workflowHandle)
 {
     return MicrosoftDeltaDownloadHandler_OnUpdateWorkflowCompleted(workflowHandle, NULL /* updateCacheBasePath */);
 }
+
+/**
+ * @brief Gets the extension contract info.
+ *
+ * @param[out] contractInfo The extension contract info.
+ * @return ADUC_Result The result.
+ */
+ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
+{
+    ADUC_Result result = { ADUC_GeneralResult_Success, 0 };
+    contractInfo->majorVer = ADUC_V1_CONTRACT_MAJOR_VER;
+    contractInfo->minorVer = ADUC_V1_CONTRACT_MINOR_VER;
+    return result;
+}
+
+//
+// END Shared Library Export Functions
+/////////////////////////////////////////////////////////////////////////////

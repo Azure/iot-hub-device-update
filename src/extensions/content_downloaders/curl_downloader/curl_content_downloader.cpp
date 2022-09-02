@@ -5,20 +5,16 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+
 #include "aduc/content_downloader_extension.hpp"
+#include "aduc/contract_utils.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
-#include "aduc/process_utils.hpp"
+#include "aduc/process_utils.hpp" // for ADUC_LaunchChildProcess
 
-#include <atomic>
 #include <sstream>
-#include <stdio.h> // for FILE
-#include <stdlib.h> // for calloc
-#include <strings.h> // for strcasecmp
 #include <sys/stat.h> // for stat
 #include <vector>
-
-EXTERN_C_BEGIN
 
 ADUC_Result Download_curl(
     const ADUC_FileEntity* entity,
@@ -186,21 +182,3 @@ done:
         result.ExtendedResultCode);
     return result;
 }
-
-ADUC_Result Download(
-    const ADUC_FileEntity* entity,
-    const char* workflowId,
-    const char* workFolder,
-    unsigned int retryTimeout,
-    ADUC_DownloadProgressCallback downloadProgressCallback)
-{
-    return Download_curl(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
-}
-
-ADUC_Result Initialize(const char* initializeData)
-{
-    UNREFERENCED_PARAMETER(initializeData);
-    return { ADUC_GeneralResult_Success };
-}
-
-EXTERN_C_END

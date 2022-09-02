@@ -23,6 +23,14 @@ EXTERN_C_BEGIN
  */
 ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
 
+/**
+ * @brief Gets the extension contract info.
+ *
+ * @param[out] contractInfo The extension contract info.
+ * @return ADUC_Result The result.
+ */
+ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo);
+
 EXTERN_C_END
 
 /**

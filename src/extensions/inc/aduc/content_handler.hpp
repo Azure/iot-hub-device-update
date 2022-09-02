@@ -8,17 +8,9 @@
 #ifndef ADUC_CONTENT_HANDLER_HPP
 #define ADUC_CONTENT_HANDLER_HPP
 
-#ifdef __cplusplus
-#    define EXTERN_C_BEGIN \
-        extern "C"         \
-        {
-#    define EXTERN_C_END }
-#else
-#    define EXTERN_C_BEGIN
-#    define EXTERN_C_END
-#endif
-
-#include "aduc/result.h"
+#include <aduc/c_utils.h>
+#include <aduc/contract_utils.h>
+#include <aduc/result.h>
 
 // Forward declation.
 struct tagADUC_WorkflowData;
@@ -48,8 +40,21 @@ public:
     {
     }
 
+    void SetContractInfo(const ADUC_ExtensionContractInfo& info)
+    {
+        contractInfo = info;
+    }
+
+    ADUC_ExtensionContractInfo GetContractInfo() const
+    {
+        return contractInfo;
+    }
+
 protected:
     ContentHandler() = default;
+
+private:
+    ADUC_ExtensionContractInfo contractInfo{};
 };
 
 #endif // ADUC_CONTENT_HANDLER_HPP

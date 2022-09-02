@@ -14,11 +14,7 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-set (
-    sources
-    main.cpp
-    simulator_handler_unit_tests.cpp
-    ../src/simulator_handler.cpp)
+set (sources main.cpp simulator_handler_unit_tests.cpp ../src/simulator_handler.cpp)
 
 find_package (Catch2 REQUIRED)
 find_package (azure_c_shared_utility REQUIRED)
@@ -39,7 +35,7 @@ target_include_directories (
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::extension_manager
-    PRIVATE aduc::c_utils
+    PRIVATE aduc::contract_utils
             aduc::exception_utils
             aduc::extension_utils
             aduc::logging

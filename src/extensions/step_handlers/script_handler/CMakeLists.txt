@@ -14,6 +14,7 @@ target_link_libraries (
     ${target_name}
     PRIVATE aduc::adu_core_export_helpers
             aduc::c_utils
+            aduc::contract_utils
             aduc::exception_utils
             aduc::extension_utils
             aduc::extension_manager
@@ -22,7 +23,6 @@ target_link_libraries (
             aduc::string_utils
             aduc::system_utils
             aduc::workflow_data_utils
-            aduc::workflow_utils
-            -zdefs)
+            aduc::workflow_utils)
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
