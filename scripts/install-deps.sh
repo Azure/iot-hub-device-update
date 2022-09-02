@@ -83,6 +83,7 @@ OS=""
 VER=""
 is_amd64=false
 is_arm64=false
+is_arm32=false
 
 print_help() {
     echo "Usage: install-deps.sh [options...]"
@@ -305,9 +306,109 @@ do_install_swupdate() {
     fi
 }
 
+do_install_do_release_tarball() {
+    local ret=0
+    local dist=''
+    local arch=''
+    local do_release_tarball_url=''
+    local tarball_filename=''
+    local do_dir="$work_folder/do"
+
+    echo -e "Attempting to install libdeliveryoptimization from release tarball...\n"
+
+    local os_lowercase="${OS,,}"
+
+    echo "os_lowercase => $os_lowercase"
+    echo "VER => $VER"
+    echo "is_arm32 => $is_arm32"
+    echo "is_arm64 => $is_arm64"
+    echo "is_amd64 => $is_amd64"
+
+    if [[ $os_lowercase == "debian" && $VER == "9" ]]; then
+        echo "evaluating debian9 for supported DO tarball ..."
+        dist='debian9'
+        if [[ $is_arm32 == "true" ]]; then
+            arch='arm32'
+        else
+            warn "unsupported arch for DO release asset on Debian9. Supported: arm32"
+            return 1
+        fi
+    elif [[ $os_lowercase == "debian" && $VER == "10" ]]; then
+        echo "evaluating debian10 for supported DO tarball ..."
+        dist='debian10'
+        if [[ $is_amd64 == "true" ]]; then
+            arch='x64'
+        elif [[ $is_arm64 == "true" ]]; then
+            arch='arm64'
+        elif [[ $is_arm32 == "true" ]]; then
+            arch='arm32'
+        else
+            warn "unsupported arch for DO release asset on Debian10. Supported: amd64 arm64 arm32"
+            return 1
+        fi
+    elif [[ $os_lowercase == "ubuntu" ]]; then
+        echo "evaluating ubuntu for supported DO tarball ..."
+
+        if [[ $VER == "18.04" ]]; then
+            dist='ubuntu1804'
+        elif [[ $VER == "20.04" ]]; then
+            dist='ubuntu2004'
+        else
+            warn "unsupported ubuntu version: $VER. Supported: 18.04 20.04"
+            return 1
+        fi
+
+        if [[ $dist != '' ]]; then
+            if [[ $is_amd64 == "true" ]]; then
+                arch='x64'
+            elif [[ $is_arm64 == "true" ]]; then
+                arch='arm64'
+            else
+                warn "unsupported arch for DO release asset on ${dist}. Supported: amd64 arm64"
+                return 1
+            fi
+        fi
+    fi
+
+    if [[ $dist != '' && $arch != '' ]]; then
+        tarball_filename="${dist}_${arch}-packages.tar"
+        do_release_tarball_url="https://github.com/microsoft/do-client/releases/download/${do_ref}/${tarball_filename}"
+
+        if [[ ! -e "$do_dir" ]]; then
+            echo "creating $do_dir dir..."
+            mkdir -p "$do_dir" || return
+        fi
+
+        # v0.9.0 DO has libboost-filesystem and libboost-system deps
+        echo "Installing libboost-filesystem-dev and libboost-system-dev DO deps for ${dist} ..."
+        $SUDO apt-get install -y libboost-filesystem-dev libboost-system-dev || return
+
+        echo "wget DO release tarball from $do_release_tarball_url ..."
+        wget -P "$do_dir" "${do_release_tarball_url}" || return
+
+        echo "extracting $tarball_filename tarball ..."
+        pushd "$do_dir" || return
+        ls -latr || return
+        tar -xvf "$tarball_filename" || return
+
+        echo "apt-get installing DO .deb ..."
+        $SUDO apt-get install -y ./deliveryoptimization-agent_*.deb ./libdeliveryoptimization_*.deb ./libdeliveryoptimization-dev*.deb || return
+        popd || return
+    fi
+
+    return 0
+}
+
 do_install_do() {
     echo "Installing DO ..."
     local do_dir=$work_folder/do
+
+    if [[ $install_packages == "true" || $install_packages_only == "true" ]]; then
+        if do_install_do_release_tarball; then
+            echo "Install libdeliveryoptimization from tarball succeeded!"
+            return 0
+        fi
+    fi
 
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf $do_dir || return
@@ -567,8 +668,7 @@ determine_machine_architecture() {
         if [[ $arch == aarch64* || $arch == armv8* ]]; then
             is_arm64=true
         elif [[ $arch == armv7* || $arch == 'arm' ]]; then
-            # is_arm32=true
-            true
+            is_arm32=true
         elif [[ $arch == 'x86_64' || $arch == 'amd64' ]]; then
             is_amd64=true
         else

@@ -5,11 +5,11 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-#include <system_error>
-#include <thread>
 
 #include "mock_do_download.hpp"
 #include "mock_do_exceptions.hpp"
+
+#include <thread>
 
 using microsoft::deliveryoptimization::download;
 using microsoft::deliveryoptimization::download_state;
@@ -53,35 +53,44 @@ download::download(const std::string& /*uri*/, const std::string& /*downloadFile
 
 download::~download() = default;
 
-void download::start()
+std::error_code download::start()
 {
     _mockStatus.set_mock_state(download_state::Created);
+    return DO_OK;
 }
 
-void download::pause()
+std::error_code download::pause()
 {
     if (_mockStatus.state() == download_state::Transferring)
     {
         _mockStatus.set_mock_state(download_state::Paused);
     }
+
+    return DO_OK;
 }
 
-void download::resume()
+std::error_code download::resume()
 {
     if (_mockStatus.state() == download_state::Paused)
     {
         _mockStatus.set_mock_state(download_state::Transferring);
     }
+
+    return DO_OK;
 }
 
-void download::finalize()
+std::error_code download::finalize()
 {
     _mockStatus.set_mock_state(download_state::Finalized);
+
+    return DO_OK;
 }
 
-void download::abort()
+std::error_code download::abort()
 {
     _mockStatus.set_mock_state(download_state::Aborted);
+
+    return DO_OK;
 }
 
 download_status download::get_status() const
@@ -93,7 +102,7 @@ const std::error_code download::download_url_to_path(
     const std::string& /*uri*/, const std::string& /*downloadFilePath*/, std::chrono::seconds /*timeoutSecs*/)
 {
     // No-op.
-    return std::error_code();
+    return DO_OK;
 }
 
 const std::error_code download::download_url_to_path(
