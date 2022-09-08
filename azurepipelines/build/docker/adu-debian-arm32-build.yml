@@ -44,7 +44,7 @@ pr:
   branches:
     include:
       - main
-      # - release/*
+      - release/*
       # - feature/*
       #- dev/*
   paths:
