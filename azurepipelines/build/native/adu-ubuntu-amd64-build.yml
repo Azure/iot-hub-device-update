@@ -68,7 +68,7 @@ jobs:
     cancelTimeoutInMinutes: 60
     pool: aduc_1es_client_pool
     steps:
-      - template: ../templates/adu-native-build-steps.yml
+      - template: ../templates/adu-docker-build-steps.yml
         parameters:
           targetOs: 'ubuntu1804'
           targetArch: 'amd64'
