@@ -236,7 +236,7 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
 
             if (!aptOutput.empty())
             {
-                Log_Info(aptOutput.c_str());
+                Log_Info("\n\nadu-shell logs\n================\n\n%s", aptOutput.c_str());
             }
         }
         catch (const std::exception& de)
@@ -324,7 +324,7 @@ ADUC_Result AptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
 
         if (!aptOutput.empty())
         {
-            Log_Info(aptOutput.c_str());
+            Log_Info("\n\nadu-shell logs\n================\n\n%s", aptOutput.c_str());
         }
     }
     catch (const std::exception& de)
@@ -444,6 +444,7 @@ ADUC_Result AptHandlerImpl::IsInstalled(const ADUC_WorkflowData* workflowData)
  */
 ADUC_Result AptHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData)
 {
+    UNREFERENCED_PARAMETER(workflowData);
     ADUC_Result result = { ADUC_Result_Backup_Success_Unsupported };
     Log_Info("Apt update backup & restore is not supported. (no-op)");
     return result;
@@ -456,6 +457,7 @@ ADUC_Result AptHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData)
  */
 ADUC_Result AptHandlerImpl::Restore(const tagADUC_WorkflowData* workflowData)
 {
+    UNREFERENCED_PARAMETER(workflowData);
     ADUC_Result result = { ADUC_Result_Restore_Success_Unsupported };
     Log_Info("Apt update backup & restore is not supported. (no-op)");
     return result;

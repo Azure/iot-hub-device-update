@@ -222,15 +222,18 @@ ADUC_ExtensionRegistrationType GetRegistrationTypeFromArg(const char* arg)
     {
         return ExtensionRegistrationType_UpdateContentHandler;
     }
-    else if (strcmp(arg, "contentDownloader") == 0)
+
+    if (strcmp(arg, "contentDownloader") == 0)
     {
         return ExtensionRegistrationType_ContentDownloadHandler;
     }
-    else if (strcmp(arg, "componentEnumerator") == 0)
+
+    if (strcmp(arg, "componentEnumerator") == 0)
     {
         return ExtensionRegistrationType_ComponentEnumerator;
     }
-    else if (strcmp(arg, "downloadHandler") == 0)
+
+    if (strcmp(arg, "downloadHandler") == 0)
     {
         return ExtensionRegistrationType_DownloadHandler;
     }
