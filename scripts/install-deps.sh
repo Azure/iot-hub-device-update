@@ -882,7 +882,7 @@ fi
 
 # First off, install cmake if requested.
 if [[ $install_cmake == "true" || $install_all_deps == "true" || $install_aduc_deps == "true" ]]; then
-    if [[ ! $is_amd64 && ! $is_arm64 || $cmake_force_source == "true" ]]; then
+    if [[ $is_amd64 == "false" && $is_arm64 == "false" || $cmake_force_source == "true" ]]; then
         if ! do_install_cmake_from_source; then
             error "Failed to install cmake from source."
             $ret 1
