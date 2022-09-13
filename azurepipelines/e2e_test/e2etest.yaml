@@ -27,7 +27,7 @@ stages:
       displayName: Building the Device Update Package for Ubuntu 18.04 AMD64
       continueOnError: False
       steps:
-        - template: ../build/templates/adu-native-build-steps.yml
+        - template: ../build/templates/adu-docker-build-steps.yml
           parameters:
             targetOs: ubuntu1804
             targetArch: amd64
@@ -35,7 +35,7 @@ stages:
       displayName: Building the Device Update Package for Ubuntu 20.04 AMD64
       continueOnError: False
       steps:
-        - template: ../build/templates/adu-native-build-steps.yml
+        - template: ../build/templates/adu-docker-build-steps.yml
           parameters:
             targetOs: ubuntu2004
             targetArch: amd64
