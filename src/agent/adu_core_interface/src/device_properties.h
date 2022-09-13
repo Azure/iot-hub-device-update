@@ -28,11 +28,19 @@ _Bool DeviceProperties_AddManufacturerAndModel(JSON_Object* devicePropsObj, cons
 _Bool DeviceProperties_AddAdditionalProperties(JSON_Object* devicePropsObj, const ADUC_AgentInfo* agent);
 
 /**
- * @brief Adds the interfaceId property into the @p devicePropsObj
- * @param devicePropsObj the JSON_Object the interfaceId will be added to
+ * @brief Clears the interfaceId property from the @p devicePropsObj
+ * @param devicePropsObj the JSON_Object the interfaceId will be set to 'null' to remove any
+ *      existing value set by DU Agents older than version 1.0.
  * @returns true on successful addition and false on failure
  */
-_Bool DeviceProperties_AddInterfaceId(JSON_Object* devicePropsObj);
+_Bool DeviceProperties_ClearInterfaceId(JSON_Object* devicePropsObj);
+
+/**
+ * @brief Adds the contractModelId property into the @p devicePropsObj
+ * @param devicePropsObj the JSON_Object the contractModelId will be added to
+ * @returns true on successful addition and false on failure
+ */
+_Bool DeviceProperties_AddContractModelId(JSON_Object* devicePropsObj);
 
 /**
  * @brief Adds the version properties into the @p devicePropsObj

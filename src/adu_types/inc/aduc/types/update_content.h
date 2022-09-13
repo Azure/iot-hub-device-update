@@ -115,6 +115,11 @@ EXTERN_C_BEGIN
 #define ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID "interfaceId"
 
 /**
+ * @brief JSON field name for DeviceProperties contractModelId
+ */
+#define ADUCITF_FIELDNAME_DEVICEPROPERTIES_CONTRACT_MODEL_ID "contractModelId"
+
+/**
  * @brief JSON field name for DeviceProperties aduc version
  */
 #define ADUCITF_FIELDNAME_DEVICEPROPERTIES_ADUC_VERSION "aduVer"

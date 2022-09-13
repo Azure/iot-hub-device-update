@@ -53,7 +53,12 @@ _Bool StartupMsg_AddDeviceProperties(JSON_Object* startupObj, const ADUC_AgentIn
         goto done;
     }
 
-    if (!DeviceProperties_AddInterfaceId(devicePropsObj))
+    if (!DeviceProperties_ClearInterfaceId(devicePropsObj))
+    {
+        goto done;
+    }
+
+    if (!DeviceProperties_AddContractModelId(devicePropsObj))
     {
         goto done;
     }

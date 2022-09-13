@@ -17,9 +17,9 @@
 #include <stdlib.h>
 
 /*
- * @brief The ADU interface id associated with the modelId for agent-orchestrated updates.
+ * @brief The ADU contract model id associated with the modelId for agent-orchestrated updates.
  */
-#define ADUC_DEVICEPROPERTIES_DEVICEUPDATE_INTERFACEID "dtmi:azure:iot:deviceUpdate;1"
+#define ADUC_DEVICEPROPERTIES_DEVICEUPDATE_CONTRACT_MODEL_ID "dtmi:azure:iot:deviceUpdateContractModel;2"
 
 /* @brief The adu client builder and version.
  * Consisting of BUILDER; component and ADUC_VERSION
@@ -99,25 +99,55 @@ done:
 }
 
 /**
- * @brief Adds the interfaceId property into the @p devicePropsObj
- * @param devicePropsObj the JSON_Object the interfaceId will be added to
+ * @brief Clears the interfaceId property from the @p devicePropsObj.
+ *     This function add or update the value of 'interfaceId' property in @p devicePropsObj to null.
+ *  When client reports any property with null value to the IoTHub device (or, module) twin, the property will
+ *  be deleted from the twin.
+ *
+ * @param devicePropsObj the JSON_Object the interfaceId will be set to 'null'.
  * @returns true on successful addition and false on failure
  */
-_Bool DeviceProperties_AddInterfaceId(JSON_Object* devicePropsObj)
+_Bool DeviceProperties_ClearInterfaceId(JSON_Object* devicePropsObj)
+{
+    bool success = false;
+
+    JSON_Status jsonStatus = json_object_set_null(
+        devicePropsObj,
+        ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
+
+    if (jsonStatus != JSONSuccess)
+    {
+        Log_Error(
+            "Could not set JSON field '%s' to null",
+            ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
+        goto done;
+    }
+
+    success = true;
+done:
+    return success;
+}
+
+/**
+ * @brief Adds the contractModelId property into the @p devicePropsObj
+ * @param devicePropsObj the JSON_Object the contractModelId will be added to
+ * @returns true on successful addition and false on failure
+ */
+_Bool DeviceProperties_AddContractModelId(JSON_Object* devicePropsObj)
 {
     bool success = false;
 
     JSON_Status jsonStatus = json_object_set_string(
         devicePropsObj,
-        ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID,
-        ADUC_DEVICEPROPERTIES_DEVICEUPDATE_INTERFACEID);
+        ADUCITF_FIELDNAME_DEVICEPROPERTIES_CONTRACT_MODEL_ID,
+        ADUC_DEVICEPROPERTIES_DEVICEUPDATE_CONTRACT_MODEL_ID);
 
     if (jsonStatus != JSONSuccess)
     {
         Log_Error(
             "Could not serialize JSON field: %s value: %s",
-            ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID,
-            ADUC_DEVICEPROPERTIES_DEVICEUPDATE_INTERFACEID);
+            ADUCITF_FIELDNAME_DEVICEPROPERTIES_CONTRACT_MODEL_ID,
+            ADUC_DEVICEPROPERTIES_DEVICEUPDATE_CONTRACT_MODEL_ID);
         goto done;
     }
 
