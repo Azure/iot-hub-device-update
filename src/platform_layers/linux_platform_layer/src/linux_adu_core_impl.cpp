@@ -294,12 +294,11 @@ done:
 void LinuxPlatformLayer::Cancel(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
-    char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
+    const char* workflowId = workflow_peek_id(workflowData->WorkflowHandle);
 
     Log_Info("Cancelling. workflowId: %s", workflowId);
 
     _IsCancellationRequested = true;
-    workflow_free_string(workflowId);
 
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)

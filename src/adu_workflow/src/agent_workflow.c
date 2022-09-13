@@ -349,21 +349,13 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowD
 
         if (desiredAction == ADUCITF_UpdateAction_Cancel)
         {
-            const char* workflowId = workflow_peek_id(currentWorkflowData->WorkflowHandle);
-            if (workflowId != NULL && strcmp(workflowId, "nodeployment") == 0)
-            {
-                Log_Info("Ignoring 'nodeployment' cancel and skipping report of Idle state.");
-            }
-            else
-            {
-                Log_Info("Received 'cancel' action on startup, reporting Idle state.");
+            Log_Info("Received 'cancel' action on startup, reporting Idle state.");
 
-                ADUC_WorkflowData_SetCurrentAction(desiredAction, currentWorkflowData);
+            ADUC_WorkflowData_SetCurrentAction(desiredAction, currentWorkflowData);
 
-                SetUpdateStateWithResultFunc setUpdateStateWithResultFunc =
-                    ADUC_WorkflowData_GetSetUpdateStateWithResultFunc(currentWorkflowData);
-                (*setUpdateStateWithResultFunc)(currentWorkflowData, ADUCITF_State_Idle, result);
-            }
+            SetUpdateStateWithResultFunc setUpdateStateWithResultFunc =
+                ADUC_WorkflowData_GetSetUpdateStateWithResultFunc(currentWorkflowData);
+            (*setUpdateStateWithResultFunc)(currentWorkflowData, ADUCITF_State_Idle, result);
 
             goto done;
         }
