@@ -294,9 +294,6 @@ done:
 void LinuxPlatformLayer::Cancel(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
-    const char* workflowId = workflow_peek_id(workflowData->WorkflowHandle);
-
-    Log_Info("Cancelling. workflowId: %s", workflowId);
 
     _IsCancellationRequested = true;
 
@@ -316,11 +313,11 @@ void LinuxPlatformLayer::Cancel(const ADUC_WorkflowData* workflowData)
     result = contentHandler->Cancel(workflowData);
     if (IsAducResultCodeSuccess(result.ResultCode))
     {
-        Log_Info("content handler successfully canceled ongoing operation for workflowId: %s", workflowId);
+        Log_Info("Successful cancel of workflowId: %s", workflow_peek_id(workflowData->WorkflowHandle));
     }
     else
     {
-        Log_Warn("content handler failed to cancel ongoing operation for workflowId: %s", workflowId);
+        Log_Warn("Failed to cancel workflowId: %s", workflow_peek_id(workflowData->WorkflowHandle));
     }
 
 done:
