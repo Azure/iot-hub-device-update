@@ -359,4 +359,6 @@ void ClientHandle_Destroy(ADUC_ClientHandle iotHubClientHandle)
     {
         Log_Error("ClientHandle_Destroy before called ClientHandle_CreateFromConnectionString");
     }
+
+    g_ClientHandleType = ADUC_ConnType_NotSet;
 }
