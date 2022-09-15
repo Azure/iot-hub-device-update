@@ -15,7 +15,6 @@
 #include <aduc/parser_utils.h> // ADUC_FileEntity_Uninit
 #include <aduc/types/update_content.h> // ADUC_FileEntity
 #include <cstring> // memset
-#include <memory> // std::unique_ptr
 #include <unordered_map>
 
 using DownloadHandlerHandle = void*;
@@ -64,8 +63,6 @@ DownloadHandlerFactory* DownloadHandlerFactory::GetInstance()
 
 DownloadHandlerPlugin* DownloadHandlerFactory::LoadDownloadHandler(const std::string& downloadHandlerId)
 {
-    static std::unordered_map<std::string, std::unique_ptr<DownloadHandlerPlugin>> cachedPlugins;
-
     auto entry = cachedPlugins.find(downloadHandlerId);
     if (entry != cachedPlugins.end())
     {
@@ -109,17 +106,6 @@ DownloadHandlerHandle ADUC_DownloadHandlerFactory_LoadDownloadHandler(const char
     }
 
     return handle;
-}
-
-void ADUC_DownloadHandlerFactory_FreeHandle(DownloadHandlerHandle handle)
-{
-    if (handle == NULL)
-    {
-        return;
-    }
-
-    DownloadHandlerPlugin* plugin = reinterpret_cast<DownloadHandlerPlugin*>(handle);
-    delete plugin;
 }
 
 EXTERN_C_END

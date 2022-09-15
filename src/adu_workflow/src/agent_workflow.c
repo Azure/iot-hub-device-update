@@ -1132,54 +1132,39 @@ static void ADUC_Workflow_SetUpdateStateHelper(
     Log_RequestFlush();
 }
 
+/**
+ * @brief For each update payload that has a DownloadHandlerId, load the handler and call OnUpdateWorkflowCompleted.
+ *
+ * @param workflowHandle The workflow handle.
+ * @details This function will not fail but if a download handler's OnUpdateWorkflowCompleted fails, side effects include logging the error result codes and saving the extended result code that can be reported along with a successful workflow deployment.
+ */
 static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHandle workflowHandle)
 {
-    DownloadHandlerHandle handle = NULL;
-
     size_t payloadCount = workflow_get_update_files_count(workflowHandle);
-    if (payloadCount <= 0)
-    {
-        goto done;
-    }
-
-    for (int i = 0; i < payloadCount; ++i)
+    for (size_t i = 0; i < payloadCount; ++i)
     {
         ADUC_Result result = {};
         ADUC_FileEntity* fileEntity = NULL;
-        if (!workflow_get_update_file(workflowHandle, i, &fileEntity))
-        {
-            goto done;
-        }
-
-        if (IsNullOrEmpty(fileEntity->DownloadHandlerId))
+        if (!workflow_get_update_file(workflowHandle, i, &fileEntity) || IsNullOrEmpty(fileEntity->DownloadHandlerId))
         {
             continue;
         }
 
-        handle = ADUC_DownloadHandlerFactory_LoadDownloadHandler(fileEntity->DownloadHandlerId);
-        if (handle == NULL)
+        // NOTE: do not free the handle as it is owned by the DownloadHandlerFactory.
+        DownloadHandlerHandle* handle = ADUC_DownloadHandlerFactory_LoadDownloadHandler(fileEntity->DownloadHandlerId);
+        if (handle != NULL)
         {
-            goto done;
+            result = ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(handle, workflowHandle);
+            if (IsAducResultCodeFailure(result.ResultCode))
+            {
+                Log_Warn(
+                    "OnupdateWorkflowCompleted, result 0x%08x, erc 0x%08x",
+                    result.ResultCode,
+                    result.ExtendedResultCode);
+
+                workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
+            }
         }
-
-        result = ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(handle, workflowHandle);
-        handle = NULL; // OnUpdateWorkflowCompleted plugin dstor already calls Cleanup, don't do FreeHandle here
-
-        if (IsAducResultCodeFailure(result.ResultCode))
-        {
-            Log_Error(
-                "OnupdateWorkflowCompleted, result 0x%08x, erc 0x%08x", result.ResultCode, result.ExtendedResultCode);
-
-            workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
-
-            goto done;
-        }
-    }
-
-done:
-    if (handle != NULL)
-    {
-        ADUC_DownloadHandlerFactory_FreeHandle(handle);
     }
 }
 

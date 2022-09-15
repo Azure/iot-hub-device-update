@@ -27,11 +27,6 @@ using GetContractInfoFn = ADUC_Result (*)(ADUC_ExtensionContractInfo* contractIn
 DownloadHandlerPlugin::DownloadHandlerPlugin(const std::string& libPath, ADUC_LOG_SEVERITY logLevel)
 {
     lib = std::unique_ptr<aduc::SharedLib>(new aduc::SharedLib(libPath));
-    lib->EnsureSymbols({ DOWNLOAD_HANDLER__Initialize__EXPORT_SYMBOL,
-                         DOWNLOAD_HANDLER__Cleanup__EXPORT_SYMBOL,
-                         DOWNLOAD_HANDLER__ProcessUpdate__EXPORT_SYMBOL,
-                         DOWNLOAD_HANDLER__OnUpdateWorkflowCompleted__EXPORT_SYMBOL });
-
     Log_Debug("Calling '" DOWNLOAD_HANDLER__Initialize__EXPORT_SYMBOL "' export on download handler.");
 
     void* sym = lib->GetSymbol(DOWNLOAD_HANDLER__Initialize__EXPORT_SYMBOL);
@@ -123,8 +118,12 @@ ADUC_Result ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(
                            ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_ON_UPDATE_WORKFLOW_COMPLETED_FAILURE };
     try
     {
-        std::unique_ptr<DownloadHandlerPlugin> plugin{ reinterpret_cast<DownloadHandlerPlugin*>(handle) };
-        result = plugin->OnUpdateWorkflowCompleted(workflowHandle);
+        // Do not free the DownloadHandlerHandle handle that is owned by DownloadHandlerFactory.
+        if (handle != nullptr)
+        {
+            DownloadHandlerPlugin* plugin = reinterpret_cast<DownloadHandlerPlugin*>(handle);
+            result = plugin->OnUpdateWorkflowCompleted(workflowHandle);
+        }
     }
     catch (...)
     {
