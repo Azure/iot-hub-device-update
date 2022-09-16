@@ -940,7 +940,29 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
 
                 if (cancellationType == ADUC_WorkflowCancellationType_Replacement)
                 {
-                    // Reset workflow state to process deployment and transfer the deferred workflow to current.
+                    // Cleanup the download sandbox for the current workflowId
+                    // since it will not be transitioning to Idle state (where
+                    // sandbox cleanup is normally done)
+
+                    char* workflowId = ADUC_WorkflowData_GetWorkflowId(workflowData); // see workflow_free_string below
+                    char* workFolder = ADUC_WorkflowData_GetWorkFolder(workflowData); // see workflow_free_string below
+
+                    if (workflowId != NULL && workFolder != NULL)
+                    {
+                        Log_Info("Cleanup sandbox before replacement workflow");
+
+                        const ADUC_UpdateActionCallbacks* updateActionCallbacks =
+                            &(workflowData->UpdateActionCallbacks);
+
+                        updateActionCallbacks->SandboxDestroyCallback(
+                            updateActionCallbacks->PlatformLayerHandle, workflowId, workFolder);
+                    }
+
+                    workflow_free_string(workflowId);
+                    workflow_free_string(workFolder);
+
+                    // Reset workflow state to process deployment and transfer
+                    // the deferred workflow to current.
                     workflow_update_for_replacement(workflowData->WorkflowHandle);
                 }
                 else
