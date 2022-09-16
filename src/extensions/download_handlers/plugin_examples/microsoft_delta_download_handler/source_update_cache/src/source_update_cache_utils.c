@@ -10,7 +10,7 @@
 #include "aduc/source_update_cache_utils.h"
 #include <aduc/path_utils.h> // SanitizePathSegment
 #include <aduc/string_c_utils.h> // IsNullOrEmpty
-#include <aduc/system_utils.h> // ADUC_SystemUtils_MkDirRecursiveAduUser
+#include <aduc/system_utils.h> // ADUC_SystemUtils_*
 #include <aduc/types/update_content.h> // ADUC_FileEntity
 #include <aduc/workflow_utils.h> // workflow_*
 #include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy_s, strcat_s
@@ -150,7 +150,7 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
     ADUC_Result result = { .ResultCode = ADUC_Result_Failure };
     int res = -1;
     ADUC_FileEntity* fileEntity = NULL;
-    STRING_HANDLE sourceDownloadSandboxFilePath = NULL;
+    STRING_HANDLE sandboxUpdatePayloadFile = NULL;
     ADUC_UpdateId* updateId = NULL;
     STRING_HANDLE updateCacheFilePath = NULL;
     char dirPath[1024] = "";
@@ -167,12 +167,21 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
             goto done;
         }
 
-        workflow_get_entity_workfolder_filepath(workflowHandle, fileEntity, &sourceDownloadSandboxFilePath);
+        workflow_get_entity_workfolder_filepath(workflowHandle, fileEntity, &sandboxUpdatePayloadFile);
 
         result = workflow_get_expected_update_id(workflowHandle, &updateId);
         if (IsAducResultCodeFailure(result.ResultCode))
         {
             Log_Error("get updateId, erc 0x%08x", result.ExtendedResultCode);
+            goto done;
+        }
+
+        // When update is already installed, payloads would not be downloaded but it would still
+        // attempt to move to cache with OnUpdateWorkflowCompleted contract call because overall
+        // is it Apply Success result, so guard against non-existent sandbox file.
+        if (!SystemUtils_IsFile(STRING_c_str(sandboxUpdatePayloadFile), NULL))
+        {
+            result.ExtendedResultCode = ADUC_ERC_MISSING_SOURCE_SANDBOX_FILE;
             goto done;
         }
 
@@ -211,16 +220,18 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
         // errno EXDEV would be common if copying across different mount points.
         // For any failure, it falls back to copy.
 
-        Log_Debug("moving '%s' -> '%s'");
+        Log_Debug(
+            "moving '%s' -> '%s'", STRING_c_str(sandboxUpdatePayloadFile), STRING_c_str(updateCacheFilePath));
 
-        res = rename(STRING_c_str(sourceDownloadSandboxFilePath), STRING_c_str(updateCacheFilePath));
+        res = rename(STRING_c_str(sandboxUpdatePayloadFile), STRING_c_str(updateCacheFilePath));
         if (res != 0)
         {
             Log_Warn("rename, errno %d", errno);
 
             // fallback to copy
+            //
             if (ADUC_SystemUtils_CopyFileToDir(
-                    STRING_c_str(sourceDownloadSandboxFilePath), dirPathCache, false /* overwriteExistingFile */)
+                    STRING_c_str(sandboxUpdatePayloadFile), dirPathCache, false /* overwriteExistingFile */)
                 != 0)
             {
                 Log_Error("Copy Failed");
@@ -236,7 +247,7 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
     result.ResultCode = ADUC_Result_Success;
 
 done:
-    STRING_delete(sourceDownloadSandboxFilePath);
+    STRING_delete(sandboxUpdatePayloadFile);
     STRING_delete(updateCacheFilePath);
     workflow_free_file_entity(fileEntity);
 

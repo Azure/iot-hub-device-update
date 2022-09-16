@@ -889,6 +889,10 @@
               {
                 "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_MISSING_EXPORT_SYMBOL",
                 "value": 2
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_EXCEPTION",
+                "value": 3
               }
             ]
           },
@@ -959,6 +963,10 @@
               {
                 "name": "ADUC_ERC_LOOKUP_CREATE_PATH",
                 "value": 6
+              },
+              {
+                "name": "ADUC_ERC_MISSING_SOURCE_SANDBOX_FILE",
+                "value": 7
               }
             ]
           },

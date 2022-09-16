@@ -12,7 +12,7 @@
 #include <aduc/contract_utils.h>
 #include <aduc/exports/extension_export_symbols.h>
 #include <aduc/logging.h>
-#include <memory>
+#include <aduc/plugin_call_helper.hpp> // for CallExport
 
 using InitializeFn = void (*)(ADUC_LOG_SEVERITY logLevel);
 
@@ -24,93 +24,116 @@ using ProcessUpdateFn = ADUC_Result (*)(
 using OnUpdateWorkflowCompletedFn = ADUC_Result (*)(const ADUC_WorkflowHandle workflowHandle);
 using GetContractInfoFn = ADUC_Result (*)(ADUC_ExtensionContractInfo* contractInfo);
 
-DownloadHandlerPlugin::DownloadHandlerPlugin(const std::string& libPath, ADUC_LOG_SEVERITY logLevel)
+/**
+ * @brief Construct a new Download Handler Plugin object
+ *
+ * @param libPath The path to the dynamic library.
+ * @param logLevel The log severity.
+ */
+DownloadHandlerPlugin::DownloadHandlerPlugin(const std::string& libPath, ADUC_LOG_SEVERITY logLevel) : lib(libPath)
 {
-    lib = std::unique_ptr<aduc::SharedLib>(new aduc::SharedLib(libPath));
-    Log_Debug("Calling '" DOWNLOAD_HANDLER__Initialize__EXPORT_SYMBOL "' export on download handler.");
-
-    void* sym = lib->GetSymbol(DOWNLOAD_HANDLER__Initialize__EXPORT_SYMBOL);
-    if (sym == nullptr)
-    {
-        Log_Error("Missing '%s' export", DOWNLOAD_HANDLER__Initialize__EXPORT_SYMBOL);
-    }
-    else
-    {
-        auto initializeFn = reinterpret_cast<InitializeFn>(sym);
-        initializeFn(logLevel);
-    }
+    const char* const symbol = DOWNLOAD_HANDLER__Initialize__EXPORT_SYMBOL;
+    CallExport<InitializeFn, false /* ExportReturnsAducResult */, ADUC_LOG_SEVERITY>(
+        symbol, lib, nullptr /* outResult */, logLevel);
 }
 
+/**
+ * @brief Destroy the Download Handler Plugin object
+ *
+ */
 DownloadHandlerPlugin::~DownloadHandlerPlugin()
 {
-    Log_Debug("Calling '" DOWNLOAD_HANDLER__Cleanup__EXPORT_SYMBOL "' export on download handler.");
-    void* sym = lib->GetSymbol(DOWNLOAD_HANDLER__Cleanup__EXPORT_SYMBOL);
-    if (sym == nullptr)
-    {
-        Log_Error("Missing '%s' export", DOWNLOAD_HANDLER__Cleanup__EXPORT_SYMBOL);
-    }
-    else
-    {
-        auto cleanupFn = reinterpret_cast<CleanupFn>(sym);
-        cleanupFn();
-    }
+    const char* const symbol = DOWNLOAD_HANDLER__Cleanup__EXPORT_SYMBOL;
+    CallExport<CleanupFn, false /* ExportReturnsAducResult */>(symbol, lib, nullptr /* outResult */);
 }
 
+/**
+ * @brief Processes the update to either produce the target file path so that the core agent can skip downloading the
+ * update payload or do some pre-download processing and then tell the agent to continue on downloading the payload.
+ *
+ * @param workflowHandle The workflow handle, containing the update deployment info.
+ * @param fileEntity The file entity with the update payload metadata, where RelatedFiles is most applicable to
+ * download handlers.
+ * @param targetFilePath The file path of the file that the plugin should create if wanting to return a ResultCode of
+ * ADUC_Result_Download_Handler_SuccessSkipDownload.
+ * @return ADUC_Result The result. When able to produce the target file path using workflowHandle and fileEntity inputs,
+ * it returns a result with ResultCode of ADUC_Result_Download_Handler_SuccessSkipDownload to tell the agent to skip
+ * downloading the update content. When it wants the agent to go ahead and download the update payload as usual, it
+ * returns ADUC_Result_Download_Handler_RequiredFullDownload success ResultCode.
+ */
 ADUC_Result DownloadHandlerPlugin::ProcessUpdate(
     const ADUC_WorkflowHandle workflowHandle, const ADUC_FileEntity* fileEntity, const char* targetFilePath) const
 {
-    Log_Debug(
-        "Calling '" DOWNLOAD_HANDLER__ProcessUpdate__EXPORT_SYMBOL
-        "' export on download handler with targetFilePath '%s'.",
-        targetFilePath);
-    void* sym = lib->GetSymbol(DOWNLOAD_HANDLER__ProcessUpdate__EXPORT_SYMBOL);
-    if (sym == nullptr)
-    {
-        Log_Error("Missing '%s' export", DOWNLOAD_HANDLER__ProcessUpdate__EXPORT_SYMBOL);
-        return ADUC_Result{ ADUC_GeneralResult_Failure, ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_MISSING_EXPORT_SYMBOL };
-    }
+    ADUC_Result result{ ADUC_GeneralResult_Failure, 0 };
 
-    auto produceUpdateFn = reinterpret_cast<ProcessUpdateFn>(sym);
-    return produceUpdateFn(workflowHandle, fileEntity, targetFilePath);
+    const char* const symbol = DOWNLOAD_HANDLER__ProcessUpdate__EXPORT_SYMBOL;
+    CallExport<ProcessUpdateFn, true /* ExportReturnsAducResult */>(
+        symbol, lib, &result /* outResult */, workflowHandle, fileEntity, targetFilePath);
+
+    Log_Info(
+        "DownloadHandlerPlugin ProcessUpdate result - rc: %d, erc: %08x",
+        result.ResultCode,
+        result.ExtendedResultCode);
+
+    return result;
 }
 
+/**
+ * @brief Calls the download handler plugin's export function to handle workflow completion.
+ * This is called on by the core agent for update payloads associated with this download handler when the update
+ * deployment workflow was successfully applied to the device. The plugin can do cleanup of resources it needed for
+ * payloads associated with this download handler plugin as well as any post-processing needed such as copying files
+ * from the sandbox to caches, etc.
+ *
+ * @param workflowHandle The workflow handle.
+ * @return ADUC_Result The result.
+ */
 ADUC_Result DownloadHandlerPlugin::OnUpdateWorkflowCompleted(const ADUC_WorkflowHandle workflowHandle) const
 {
-    Log_Debug("Calling '" DOWNLOAD_HANDLER__OnUpdateWorkflowCompleted__EXPORT_SYMBOL "' export on download handler.");
-    void* sym = lib->GetSymbol(DOWNLOAD_HANDLER__OnUpdateWorkflowCompleted__EXPORT_SYMBOL);
-    if (sym == nullptr)
-    {
-        Log_Error("Missing '%s' export", DOWNLOAD_HANDLER__OnUpdateWorkflowCompleted__EXPORT_SYMBOL);
-        return ADUC_Result{ ADUC_GeneralResult_Failure, ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_MISSING_EXPORT_SYMBOL };
-    }
+    ADUC_Result result{ ADUC_GeneralResult_Failure, 0 };
 
-    auto onUpdateWorkflowCompletedFn = reinterpret_cast<OnUpdateWorkflowCompletedFn>(sym);
-    return onUpdateWorkflowCompletedFn(workflowHandle);
+    CallExport<OnUpdateWorkflowCompletedFn, true /* ExportReturnsAducResult */>(
+        DOWNLOAD_HANDLER__OnUpdateWorkflowCompleted__EXPORT_SYMBOL, lib, &result /* outResult */, workflowHandle);
+
+    Log_Info(
+        "DownloadHandlerPlugin OnUpdateWorkflowCompleted result - rc: %d, erc: %08x",
+        result.ResultCode,
+        result.ExtendedResultCode);
+
+    return result;
 }
 
+/**
+ * @brief Gets the contract info for the download handler plugin.
+ *
+ * @param[out] contractInfo The contract info.
+ * @return ADUC_Result The result.
+ */
 ADUC_Result DownloadHandlerPlugin::GetContractInfo(ADUC_ExtensionContractInfo* contractInfo) const
 {
-    ADUC_Result result = { ADUC_GeneralResult_Success, 0 };
+    ADUC_Result result{ ADUC_GeneralResult_Failure, 0 };
 
-    Log_Debug("Calling '" DOWNLOAD_HANDLER__GetContractInfo__EXPORT_SYMBOL "' export on download handler.");
+    CallExport<GetContractInfoFn, true /* ExportReturnsAducResult */>(
+        DOWNLOAD_HANDLER__GetContractInfo__EXPORT_SYMBOL, lib, &result /* outResult */, contractInfo);
 
-    void* sym = lib->GetSymbol(DOWNLOAD_HANDLER__GetContractInfo__EXPORT_SYMBOL);
-    if (sym == nullptr)
-    {
-        contractInfo->majorVer = ADUC_V1_CONTRACT_MAJOR_VER;
-        contractInfo->minorVer = ADUC_V1_CONTRACT_MINOR_VER;
-    }
-    else
-    {
-        auto getContractInfoFn = reinterpret_cast<GetContractInfoFn>(sym);
-        result = getContractInfoFn(contractInfo);
-    }
+    Log_Info(
+        "DownloadHandlerPlugin GetContractInfo result - rc: %d, erc: %08x",
+        result.ResultCode,
+        result.ExtendedResultCode);
 
     return result;
 }
 
 EXTERN_C_BEGIN
 
+/**
+ * @brief The C API for invoking the post-processing after the update deployment has completed hook for an update with
+ * a download handler id .
+ *
+ * @param handle  The download handler handle opaque object.
+ * @param workflowHandle  The workflow handle.
+ * @return ADUC_Result The result.
+ */
 ADUC_Result ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(
     const DownloadHandlerHandle handle, const ADUC_WorkflowHandle workflowHandle)
 {
@@ -128,8 +151,6 @@ ADUC_Result ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(
     catch (...)
     {
     }
-
-    Log_Info("OnUpdateWorkflowCompleted result: %d, erc: %08x.", result.ResultCode, result.ExtendedResultCode);
 
     return result;
 }

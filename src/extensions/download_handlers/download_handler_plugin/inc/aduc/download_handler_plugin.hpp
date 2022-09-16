@@ -14,7 +14,6 @@
 #include <aduc/result.h> // ADUC_Result
 #include <aduc/shared_lib.hpp> // aduc::SharedLib
 #include <aduc/types/update_content.h> // typedef struct ADUC_FileEntity
-#include <memory> // std::unique_ptr
 #include <string>
 
 using ADUC_WorkflowHandle = void*;
@@ -37,7 +36,7 @@ public:
     ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo) const;
 
 private:
-    std::unique_ptr<aduc::SharedLib> lib;
+    aduc::SharedLib lib;
 };
 
 #endif // DOWNLOAD_HANDLER_PLUGIN_HPP

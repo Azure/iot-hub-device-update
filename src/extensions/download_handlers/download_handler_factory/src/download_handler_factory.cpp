@@ -83,10 +83,17 @@ DownloadHandlerPlugin* DownloadHandlerFactory::LoadDownloadHandler(const std::st
         return nullptr;
     }
 
-    auto plugin = std::unique_ptr<DownloadHandlerPlugin>(
-        new DownloadHandlerPlugin(autoFileEntity->TargetFilename, ADUC_Logging_GetLevel()));
-    cachedPlugins.insert(std::make_pair(downloadHandlerId, plugin.get()));
-    return plugin.release();
+    try
+    {
+        auto plugin = std::unique_ptr<DownloadHandlerPlugin>(
+            new DownloadHandlerPlugin(autoFileEntity->TargetFilename, ADUC_Logging_GetLevel()));
+        cachedPlugins.insert(std::make_pair(downloadHandlerId, plugin.get()));
+        return plugin.release();
+    }
+    catch (...)
+    {
+        return nullptr;
+    }
 }
 
 EXTERN_C_BEGIN
