@@ -8,6 +8,7 @@ add_subdirectory (adu_core_export_helpers)
 add_subdirectory (adu_core_interface)
 add_subdirectory (device_info_interface)
 add_subdirectory (pnp_helper)
+add_subdirectory (command_helper)
 
 include (agentRules)
 
@@ -79,6 +80,7 @@ target_link_libraries (
             aduc::agent_orchestration
             aduc::agent_workflow
             aduc::c_utils
+            aduc::command_helper
             aduc::communication_abstraction
             aduc::config_utils
             aduc::device_info_interface
@@ -128,6 +130,7 @@ target_compile_definitions (
             ADUC_CONF_FOLDER="${ADUC_CONF_FOLDER}"
             ADUC_DATA_FOLDER="${ADUC_DATA_FOLDER}"
             ADUC_DOWNLOADS_FOLDER="${ADUC_DOWNLOADS_FOLDER}"
+            ADUC_COMMANDS_FIFO_NAME="${ADUC_COMMANDS_FIFO_NAME}"
             ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
             ADUC_FILE_USER="${ADUC_FILE_USER}"
             ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}"

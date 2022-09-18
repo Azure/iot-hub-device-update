@@ -73,7 +73,7 @@ _Bool ADUC_IsValidUpdateId(const ADUC_UpdateId* updateId)
 
 /**
  * @brief Free the UpdateId and its content.
- * @param updateid a pointer to an updateId struct to be freed
+ * @param updateId a pointer to an updateId struct to be freed
  */
 void ADUC_UpdateId_UninitAndFree(ADUC_UpdateId* updateId)
 {

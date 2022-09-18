@@ -86,6 +86,8 @@ static HandleUpdateActionFunc ADUC_WorkflowData_GetHandleUpdateActionFunc(const 
     {
         fn = workflowData->TestOverrides->HandleUpdateActionFunc_TestOverride;
     }
+#else
+    UNREFERENCED_PARAMETER(workflowData);
 #endif
 
     return fn;
@@ -393,33 +395,6 @@ done:
  *
  * @param[in,out] currentWorkflowData The current ADUC_WorkflowData object.
  * @param[in] propertyUpdateValue The updated property value.
- */
-void ADUC_Workflow_HandleComponentChanged(ADUC_WorkflowData* workflowData)
-{
-    if (workflowData == NULL)
-    {
-        Log_Info("Nothing to do due to no workflow data object.");
-        return;
-    }
-
-    // Process the latest goal state, if successfully cached.
-    if (workflowData->LastGoalStateJson != NULL)
-    {
-        ADUC_Workflow_HandlePropertyUpdate(
-            workflowData, (const unsigned char*)workflowData->LastGoalStateJson, true /* forceDeferral */);
-    }
-    else
-    {
-        Log_Error(
-            "Component changes is detected, but the update data cache is not available. An update must be trigger by DU service.");
-    }
-}
-
-/**
- * @brief Handles updates to a 1 or more PnP Properties in the ADU Core interface.
- *
- * @param[in,out] currentWorkflowData The current ADUC_WorkflowData object.
- * @param[in] propertyUpdateValue The updated property value.
  * @param[in] forceDeferral Ensures that specifed @p propertyUpdateValue will be processed by force deferral if there is ongoing workflow processing.
  */
 void ADUC_Workflow_HandlePropertyUpdate(
@@ -548,8 +523,6 @@ void ADUC_Workflow_HandlePropertyUpdate(
                     workflow_transfer_data(
                         currentWorkflowData->WorkflowHandle /* wfTarget */, nextWorkflow /* wfSource */);
 
-                    ADUC_WorkflowData_SaveLastGoalStateJson(currentWorkflowData, (const char*)propertyUpdateValue);
-
                     (*handleUpdateActionFunc)(currentWorkflowData);
                     goto done;
                 }
@@ -567,8 +540,6 @@ void ADUC_Workflow_HandlePropertyUpdate(
     // Continue with the new workflow.
     workflow_free(currentWorkflowData->WorkflowHandle);
     currentWorkflowData->WorkflowHandle = nextWorkflow;
-
-    ADUC_WorkflowData_SaveLastGoalStateJson(currentWorkflowData, (const char*)propertyUpdateValue);
 
     nextWorkflow = NULL;
 
@@ -638,11 +609,11 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
         if (workflow_get_operation_in_progress(workflowData->WorkflowHandle))
         {
             Log_Info(
-                "Canceling request for in-progress operation. desiredAction: %s, cancelationType: %s",
+                "Canceling request for in-progress operation. desiredAction: %s, cancellationType: %s",
                 ADUCITF_UpdateActionToString(desiredAction),
                 ADUC_Workflow_CancellationTypeToString(cancellationType));
 
-            // This sets a marker that cancelation has been requested.
+            // This sets a marker that cancellation has been requested.
             workflow_set_operation_cancel_requested(workflowData->WorkflowHandle, true);
 
             // Call upper-layer to notify of cancel

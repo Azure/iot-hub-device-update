@@ -451,8 +451,9 @@ static ADUC_Result CancelApply(const char* logFolder)
  */
 ADUC_Result SWUpdateHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData)
 {
+    UNREFERENCED_PARAMETER(workflowData);
     ADUC_Result result = { ADUC_Result_Backup_Success };
-    Log_Info("Swupdate doesn't require a specific operation to backup. (no-op) ");
+    Log_Info("SWUpdate doesn't require a specific operation to backup. (no-op) ");
     return result;
 }
 
@@ -465,6 +466,7 @@ ADUC_Result SWUpdateHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData
  */
 ADUC_Result SWUpdateHandlerImpl::Restore(const tagADUC_WorkflowData* workflowData)
 {
+    UNREFERENCED_PARAMETER(workflowData);
     ADUC_Result result = { ADUC_Result_Restore_Success };
     ADUC_Result cancel_result = CancelApply(ADUC_LOG_FOLDER);
     if (cancel_result.ResultCode != ADUC_Result_Failure_Cancelled)

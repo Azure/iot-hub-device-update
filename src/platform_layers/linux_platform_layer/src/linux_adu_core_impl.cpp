@@ -36,8 +36,6 @@ using ADUC::StringUtils::cstr_wrapper;
 // The update manifest handler type.
 #define UPDATE_MANIFEST_DEFAULT_HANDLER "microsoft/update-manifest"
 
-#define COMPONENT_CHANGED_DETECTION_INTERVAL_SECONDS 600
-
 std::string LinuxPlatformLayer::g_componentsInfo;
 time_t LinuxPlatformLayer::g_lastComponentsCheckTime;
 
@@ -443,74 +441,4 @@ void LinuxPlatformLayer::SandboxDestroy(const char* workflowId, const char* work
     {
         Log_Info("Can not access folder '%s', or doesn't exist. Ignored...", workFolder);
     }
-}
-
-/**
- * @brief This function is invoked when the agent detected that one or more component has changed.
- *  If current workflow is in progress, the agent will cancel the workflow, then re-process the same update data.
- *  If no workflows in progress, the agent will start a new workflow using cached update data, if available.
- *    - If cached update data is not available, agent will log an error.
- *
- * @param currenWorkflowData A current workflow data object.
- */
-void LinuxPlatformLayer::RetryWorkflowDueToComponentChanged(ADUC_WorkflowData* currentWorkflowData)
-{
-    ADUC_Workflow_HandleComponentChanged(currentWorkflowData);
-}
-
-/**
- * @brief Detect changes in components collection.
- *        If new component is added, ensure that it has to latest available update installed.
- *
- * @param token Contains pointer to our class instance.
- * @param workflowData Current workflow data object, if any.
- */
-void LinuxPlatformLayer::DetectAndHandleComponentsAvailabilityChangedEvent(
-    ADUC_Token token, ADUC_WorkflowDataToken workflowData)
-{
-    UNREFERENCED_PARAMETER(token);
-    struct timeval tv
-    {
-    };
-    gettimeofday(&tv, nullptr);
-    time_t nowTime = tv.tv_sec;
-
-    if ((nowTime - g_lastComponentsCheckTime) > COMPONENT_CHANGED_DETECTION_INTERVAL_SECONDS)
-    {
-        g_lastComponentsCheckTime = nowTime;
-        Log_Info("Check whether the components collection has changed...");
-        std::string components;
-        ADUC_Result result = ExtensionManager::GetAllComponents(components);
-        if (IsAducResultCodeFailure(result.ResultCode))
-        {
-            if (result.ExtendedResultCode == ADUC_ERC_COMPONENT_ENUMERATOR_GETALLCOMPONENTS_NOTIMP)
-            {
-                // No component enumerators, no op.
-                goto done;
-            }
-
-            Log_Error("Cannot get components information. erc: 0x%x", result.ExtendedResultCode);
-            goto done;
-        }
-
-        // If component has changed, re-process the latest deployment goal state.
-        if (g_componentsInfo.empty())
-        {
-            // Save the baseline.
-            g_componentsInfo = components;
-            goto done;
-        }
-
-        if (g_componentsInfo != components)
-        {
-            // Something changed.
-            Log_Info("Components changed detected");
-            g_componentsInfo = components;
-
-            RetryWorkflowDueToComponentChanged(static_cast<ADUC_WorkflowData*>(workflowData));
-        }
-    }
-
-done:
-    return;
 }

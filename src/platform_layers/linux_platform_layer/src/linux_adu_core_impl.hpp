@@ -80,7 +80,8 @@ private:
                     }) };
 
                 // Report result to main thread.
-                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result, true /* isAsync */);
+                workCompletionData->WorkCompletionCallback(
+                    workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
             // Allow the thread to work independently of this main thread.
@@ -130,7 +131,8 @@ private:
                     }) };
 
                 // Report result to main thread.
-                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result, true /* isAsync */);
+                workCompletionData->WorkCompletionCallback(
+                    workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
             // Allow the thread to work independently of this main thread.
@@ -182,7 +184,8 @@ private:
                     }) };
 
                 // Report result to main thread.
-                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result, true /* isAsync */);
+                workCompletionData->WorkCompletionCallback(
+                    workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
             // Allow the thread to work independently of this main thread.
@@ -232,7 +235,8 @@ private:
                         return static_cast<LinuxPlatformLayer*>(token)->Apply(workflowData);
                     }) };
                 // Report result to main thread.
-                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result, true /* isAsync */);
+                workCompletionData->WorkCompletionCallback(
+                    workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
             // Allow the thread to work independently of this main thread.
@@ -280,7 +284,8 @@ private:
                         return static_cast<LinuxPlatformLayer*>(token)->Restore(workflowData);
                     }) };
                 // Report result to main thread.
-                workCompletionData->WorkCompletionCallback(workCompletionData->WorkCompletionToken, result, true /* isAsync */);
+                workCompletionData->WorkCompletionCallback(
+                    workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
             // Allow the thread to work independently of this main thread.
@@ -364,25 +369,6 @@ private:
     }
 
     /**
-     * @brief This function is invoked when the agent detected that one or more component has changed.
-     *  If current workflow is in progress, the agent will cancel the workflow, then re-process the same update data.
-     *  If no workflows in progress, the agent will start a new workflow using cached update data, if available.
-     *    - If cached update data is not available, agent will log an error.
-     * 
-     * @param currenWorkflowData A current workflow data object.
-     */
-    static void RetryWorkflowDueToComponentChanged(ADUC_WorkflowData* currentWorkflowData);
-
-    /**
-     * @brief Detect changes in components collection. 
-     *        If new component is added, ensure that it has to latest available update installed.
-     * 
-     * @param token Contains pointer to our class instance.
-     * @param workflowData Current workflow data object, if any.
-     */
-    static void DetectAndHandleComponentsAvailabilityChangedEvent(ADUC_Token token, ADUC_WorkflowDataToken workflowData);
-    
-    /**
      * @brief Implements DoWork callback.
      *
      * @param token Opaque token.
@@ -390,12 +376,8 @@ private:
      */
     static void DoWorkCallback(ADUC_Token token, ADUC_WorkflowDataToken workflowData) noexcept
     {
-#if ENABLE_COMPONENT_CHANGED_DETECTION
-        DetectAndHandleComponentsAvailabilityChangedEvent(token, workflowData);
-#else
         UNREFERENCED_PARAMETER(token);
         UNREFERENCED_PARAMETER(workflowData);
-#endif
     }
 
     //

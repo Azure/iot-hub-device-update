@@ -31,11 +31,12 @@ typedef enum tagADUC_ExtensionRegistrationType
 typedef struct tagADUC_LaunchArguments
 {
     char** argv; /**< Command-line arguments */
+    char* ipcCommand; /**< an inter-process command to be insert into a command queue. */
     char* connectionString; /**< Device connection string from command-line. */
     char* contentDownloaderFilePath; /**< A full path of a content downloader to be registered. */
     char* extensionFilePath; /**< The path to the extension shared library file. */
-    char*
-        extensionId; /**< The extension id for an extension regisration type like downloadHandlerId for download handlers and updateType for content handlers. */
+    char* extensionId; /**< The extension id for an extension registration type like
+                            downloadHandlerId for download handlers and updateType for content handlers. */
     int argc; /**< Size of argv */
     ADUC_LOG_SEVERITY logLevel; /**< Log level */
     ADUC_ExtensionRegistrationType extensionRegistrationType; /**< The type of extension being registered. */
@@ -84,6 +85,18 @@ void ADUC_ConnectionInfo_DeAlloc(ADUC_ConnectionInfo* info);
  * @returns if the ADUC_ConnType exists then the string version of the value is returned, "" otherwise
  */
 const char* ADUC_ConnType_ToString(const ADUC_ConnType connType);
+
+/**
+ * @brief Struct containing information about the IoT Hub device/model client PnP property update notification.
+ *
+ */
+typedef struct tagADUC_PnPComponentClient_PropertyUpdate_Context
+{
+    _Bool clientInitiated; /** Indicates that the property update notification was caused by a client request.
+                               For example, when the agent call IoTHub_DeviceClient_LL_GetTwinAsync API.
+                               Note: this value should be set to null when calling ClientHandle_SetClientTwinCallback. */
+    _Bool forceDeferral; /** In indicates whether the force process the update. */
+} ADUC_PnPComponentClient_PropertyUpdate_Context;
 
 EXTERN_C_END
 

@@ -279,8 +279,14 @@ done:
  * @brief A callback for the diagnostic component's property update events.
  */
 void DiagnosticsInterface_PropertyUpdateCallback(
-    ADUC_ClientHandle clientHandle, const char* propertyName, JSON_Value* propertyValue, int version, void* context)
+    ADUC_ClientHandle clientHandle,
+    const char* propertyName,
+    JSON_Value* propertyValue,
+    int version,
+    ADUC_PnPComponentClient_PropertyUpdate_Context* sourceContext,
+    void* context)
 {
+    UNREFERENCED_PARAMETER(sourceContext);
     if (strcmp(propertyName, g_diagnosticsPnPComponentOrchestratorPropertyName) == 0)
     {
         DiagnosticsOrchestratorUpdateCallback(clientHandle, propertyValue, version, context);

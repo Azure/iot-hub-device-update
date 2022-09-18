@@ -21,7 +21,7 @@ void findFilesInDir(const std::string& dirPath, std::vector<std::string>* outPat
 
     while (auto file = dirEntry.NextDirEntry())
     {
-        if (file->d_name == nullptr || file->d_name[0] == '.')
+        if (file->d_name[0] == '.')
         {
             continue; // Skip everything that starts with a dot
         }

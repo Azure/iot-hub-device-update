@@ -26,7 +26,7 @@ public:
     DownloadHandlerPlugin(DownloadHandlerPlugin&&) = delete;
     DownloadHandlerPlugin& operator=(DownloadHandlerPlugin&&) = delete;
 
-    DownloadHandlerPlugin(const std::string& downloadHandlerId, ADUC_LOG_SEVERITY logLevel);
+    DownloadHandlerPlugin(const std::string& libPath, ADUC_LOG_SEVERITY logLevel);
     ~DownloadHandlerPlugin();
     ADUC_Result ProcessUpdate(
         const ADUC_WorkflowHandle workflowHandle,

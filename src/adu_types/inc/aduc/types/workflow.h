@@ -243,9 +243,6 @@ typedef struct tagADUC_WorkflowData
      */
     JSON_Array* Results;
 
-    char*
-        LastGoalStateJson; /**< The goal state data sent from DU Service to DU Agent. This data is needed when re-processing latest update on the device */
-
 #ifdef ADUC_ENABLE_TEST_HOOKS
     ADUC_TestOverride_Hooks* TestOverrides; /**< Test hook overrides. This will be NULL when not testing. */
 #endif

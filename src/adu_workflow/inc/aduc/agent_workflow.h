@@ -18,8 +18,6 @@ void ADUC_Workflow_DoWork(ADUC_WorkflowData* workflowData);
 void ADUC_Workflow_HandlePropertyUpdate(
     ADUC_WorkflowData* currentWorkflowData, const unsigned char* propertyUpdateValue, bool forceDeferral);
 
-void ADUC_Workflow_HandleComponentChanged(ADUC_WorkflowData* workflowData);
-
 void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData);
 
 void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData);

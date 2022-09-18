@@ -22,7 +22,7 @@ SharedLib::SharedLib(const std::string& libPath)
     if (nullptr == handle)
     {
         char* error = dlerror();
-        throw std::runtime_error(error ? error : "dlopen");
+        throw std::runtime_error(error != nullptr ? error : "dlopen");
     }
 
     libHandle = handle;
@@ -49,7 +49,7 @@ void* SharedLib::GetSymbol(const std::string& symbol) const
     if (sym == nullptr)
     {
         char* error = dlerror();
-        throw std::runtime_error(error ? error : "dlsym");
+        throw std::runtime_error(error != nullptr ? error : "dlsym");
     }
 
     return sym;

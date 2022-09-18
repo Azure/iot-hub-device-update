@@ -63,10 +63,15 @@ void AzureDeviceUpdateCoreInterface_DoWork(void* componentContext);
 void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext);
 
 /**
- * @brief A callback for an 'deviceUpdate' component's property update events.
+ * @brief A callback for a 'deviceUpdate' component's property update events.
  */
 void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
-    ADUC_ClientHandle clientHandle, const char* propertyName, JSON_Value* propertyValue, int version, void* context);
+    ADUC_ClientHandle clientHandle,
+    const char* propertyName,
+    JSON_Value* propertyValue,
+    int version,
+    ADUC_PnPComponentClient_PropertyUpdate_Context* sourceContext,
+    void* context);
 
 //
 // Reporting

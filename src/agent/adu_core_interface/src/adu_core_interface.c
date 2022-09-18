@@ -40,6 +40,8 @@ static const char g_aduPnPComponentAgentPropertyName[] = "agent";
 // ADU Management send an 'Update Action' to this device by setting this property on IoTHub.
 static const char g_aduPnPComponentServicePropertyName[] = "service";
 
+const char g_retryUpdateCommand[] = "retry-update";
+
 /**
  * @brief Handle for Device Update Agent component to communication to service.
  */
@@ -87,7 +89,6 @@ _Bool ADUC_WorkflowData_Init(ADUC_WorkflowData* workflowData, int argc, char** a
     workflowData->ReportStateAndResultAsyncCallback = AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync;
 
     workflowData->LastCompletedWorkflowId = NULL;
-    workflowData->LastGoalStateJson = NULL;
 
     workflow_set_cancellation_type(workflowData->WorkflowHandle, ADUC_WorkflowCancellationType_None);
 
@@ -115,7 +116,6 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
     }
 
     workflow_free_string(workflowData->LastCompletedWorkflowId);
-    free(workflowData->LastGoalStateJson);
     memset(workflowData, 0, sizeof(*workflowData));
 }
 
@@ -123,7 +123,7 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
  * @brief Gets the client handle send report function.
  *
  * @param workflowData The workflow data.
- * @return ClientHandleSnedReportFunc The function for sending the client report.
+ * @return ClientHandleSendReportFunc The function for sending the client report.
  */
 static ClientHandleSendReportFunc
 ADUC_WorkflowData_GetClientHandleSendReportFunc(const ADUC_WorkflowData* workflowData)
@@ -234,7 +234,7 @@ _Bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-   ADUC_ConfigInfo config = {};
+    ADUC_ConfigInfo config = {};
 
     if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
     {
@@ -348,7 +348,11 @@ void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext)
 }
 
 void OrchestratorUpdateCallback(
-    ADUC_ClientHandle clientHandle, JSON_Value* propertyValue, int propertyVersion, void* context)
+    ADUC_ClientHandle clientHandle,
+    JSON_Value* propertyValue,
+    int propertyVersion,
+    ADUC_PnPComponentClient_PropertyUpdate_Context* sourceContext,
+    void* context)
 {
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)context;
     STRING_HANDLE jsonToSend = NULL;
@@ -376,7 +380,7 @@ void OrchestratorUpdateCallback(
 
     Log_Debug("Update Action info string (%s), property version (%d)", ackString, propertyVersion);
 
-    ADUC_Workflow_HandlePropertyUpdate(workflowData, (const unsigned char*)jsonString, false /* forceDeferral */);
+    ADUC_Workflow_HandlePropertyUpdate(workflowData, (const unsigned char*)jsonString, sourceContext->forceDeferral);
     free(jsonString);
     jsonString = ackString;
 
@@ -424,14 +428,20 @@ done:
  * @param propertyName The name of the property that changed.
  * @param propertyValue The new property value.
  * @param version Property version.
+ * @param sourceContext An information about the source of the property update notificaion.
  * @param context An ADUC_WorkflowData object.
  */
 void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
-    ADUC_ClientHandle clientHandle, const char* propertyName, JSON_Value* propertyValue, int version, void* context)
+    ADUC_ClientHandle clientHandle,
+    const char* propertyName,
+    JSON_Value* propertyValue,
+    int version,
+    ADUC_PnPComponentClient_PropertyUpdate_Context* sourceContext,
+    void* context)
 {
     if (strcmp(propertyName, g_aduPnPComponentServicePropertyName) == 0)
     {
-        OrchestratorUpdateCallback(clientHandle, propertyValue, version, context);
+        OrchestratorUpdateCallback(clientHandle, propertyValue, version, sourceContext, context);
     }
     else
     {

@@ -144,7 +144,7 @@ ADUC_Result ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(
         // Do not free the DownloadHandlerHandle handle that is owned by DownloadHandlerFactory.
         if (handle != nullptr)
         {
-            DownloadHandlerPlugin* plugin = reinterpret_cast<DownloadHandlerPlugin*>(handle);
+            auto plugin = reinterpret_cast<DownloadHandlerPlugin*>(handle);
             result = plugin->OnUpdateWorkflowCompleted(workflowHandle);
         }
     }

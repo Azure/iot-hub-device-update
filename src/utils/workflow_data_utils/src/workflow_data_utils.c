@@ -145,6 +145,8 @@ RebootSystemFunc ADUC_WorkflowData_GetRebootSystemFunc(const ADUC_WorkflowData* 
     {
         fn = workflowData->TestOverrides->RebootSystemFunc_TestOverride;
     }
+#else
+    UNREFERENCED_PARAMETER(workflowData);
 #endif
 
     return fn;
@@ -165,27 +167,11 @@ RestartAgentFunc ADUC_WorkflowData_GetRestartAgentFunc(const ADUC_WorkflowData* 
     {
         fn = workflowData->TestOverrides->RestartAgentFunc_TestOverride;
     }
+#else
+    UNREFERENCED_PARAMETER(workflowData);
 #endif
 
     return fn;
-}
-
-/**
- * @brief Save the goal state json string used (re-process), as needed, after deployment is completed.
- *
- * @param workflowData The workflow data.
- * @param goalStateJson A serialized json string containing the last Goal State data.
- */
-void ADUC_WorkflowData_SaveLastGoalStateJson(ADUC_WorkflowData* workflowData, const char* goalStateJson)
-{
-    if (workflowData->LastGoalStateJson != (char*)goalStateJson)
-    {
-        free(workflowData->LastGoalStateJson);
-        if (mallocAndStrcpy_s(&workflowData->LastGoalStateJson, (const char*)goalStateJson) != 0)
-        {
-            workflowData->LastGoalStateJson = NULL;
-        }
-    }
 }
 
 EXTERN_C_END

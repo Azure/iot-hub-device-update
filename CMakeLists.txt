@@ -196,6 +196,11 @@ set (
     "microsoft/swupdate"
     CACHE STRING "The list of content handlers.")
 
+set (
+    ADUC_COMMANDS_FIFO_NAME
+    "${ADUC_DATA_FOLDER}/du-commands.fifo"
+    CACHE STRING "The named-pipe for commands IPC.")
+
 #
 # Starting from version 0.8.1, Device Update Agent must support only one version of the update manifest
 # based on the base dtmi model that the Agent announces when connecting to the IoT Hub.

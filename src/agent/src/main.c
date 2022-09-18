@@ -11,6 +11,7 @@
 #include "aduc/agent_workflow.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
+#include "aduc/command_helper.h"
 #include "aduc/config_utils.h"
 #include "aduc/connection_string_utils.h"
 #include "aduc/device_info_interface.h"
@@ -19,6 +20,7 @@
 #include "aduc/health_management.h"
 #include "aduc/https_proxy_utils.h"
 #include "aduc/logging.h"
+#include "aduc/permission_utils.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
 #include <azure_c_shared_utility/shared_util_options.h>
@@ -156,7 +158,12 @@ typedef void (*PnPComponentPropertyUpdateCallback)(
     const char* propertyName,
     JSON_Value* propertyValue,
     int version,
+    ADUC_PnPComponentClient_PropertyUpdate_Context* sourceContext,
     void* userContextCallback);
+
+static ADUC_PnPComponentClient_PropertyUpdate_Context g_iotHubInitiatedPnPPropertyChangeContext = { false, false };
+
+static ADUC_PnPComponentClient_PropertyUpdate_Context g_deviceInitiatedRetryPnPPropertyChangeContext = { true, true };
 
 /**
  * @brief Defines an PnP Component Client that this agent supports.
@@ -171,7 +178,6 @@ typedef struct tagPnPComponentEntry
     const PnPComponentDestroyFunc Destroy;
     const PnPComponentPropertyUpdateCallback
         PnPPropertyUpdateCallback; /**< Called when a component's property is updated. (optional) */
-
     //
     // Following data is dynamic.
     // Must be initialized to NULL in map and remain last entries in this struct.
@@ -187,15 +193,8 @@ typedef struct tagPnPComponentEntry
  */
 // NOLINTNEXTLINE(cppcoreguidelines-interfaces-global-init)
 static PnPComponentEntry componentList[] = {
-    {
-        g_deviceInfoPnPComponentName,
-        &g_iotHubClientHandleForDeviceInfoComponent,
-        DeviceInfoInterface_Create,
-        DeviceInfoInterface_Connected,
-        NULL /* DoWork method - not used */,
-        DeviceInfoInterface_Destroy,
-        NULL, /* PropertyUpdateCallback - not used */
-    },
+    // Important: the 'deviceUpdate' component must before first entry here.
+    // This entry will be referenced by ADUC_PnPDeviceTwin_RetryUpdateCommand_Callback function below.
     {
         g_aduPnPComponentName,
         &g_iotHubClientHandleForADUComponent,
@@ -206,11 +205,20 @@ static PnPComponentEntry componentList[] = {
         AzureDeviceUpdateCoreInterface_PropertyUpdateCallback
     },
     {
+        g_deviceInfoPnPComponentName,
+        &g_iotHubClientHandleForDeviceInfoComponent,
+        DeviceInfoInterface_Create,
+        DeviceInfoInterface_Connected,
+        NULL /* DoWork method - not used */,
+        DeviceInfoInterface_Destroy,
+        NULL /* PropertyUpdateCallback - not used */
+    },
+    {
         g_diagnosticsPnPComponentName,
         &g_iotHubClientHandleForDiagnosticsComponent,
         DiagnosticsInterface_Create,
         DiagnosticsInterface_Connected,
-        NULL,
+        NULL /* DoWork method - not used */,
         DiagnosticsInterface_Destroy,
         DiagnosticsInterface_PropertyUpdateCallback
     },
@@ -283,6 +291,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             { "extension-type",                required_argument, 0, 't' },
             { "extension-id",                  required_argument, 0, 'i' },
             { "run-as-owner",                  no_argument,       0, 'a' },
+            { "command",                       required_argument, 0, 'C' },
             { 0, 0, 0, 0 }
         };
         // clang-format on
@@ -293,7 +302,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
         int option = getopt_long(
             argc,
             argv,
-            STOP_PARSE_ON_NONOPTION_ARG RET_COLON_FOR_MISSING_OPTIONARG "avehcu:l:r:d:n:E:t:i:",
+            STOP_PARSE_ON_NONOPTION_ARG RET_COLON_FOR_MISSING_OPTIONARG "avehcu:l:d:n:E:t:i:C:",
             long_options,
             &option_index);
 
@@ -336,6 +345,10 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
 
         case 'c':
             launchArgs->connectionString = optarg;
+            break;
+
+        case 'C':
+            launchArgs->ipcCommand = optarg;
             break;
 
         case 'E':
@@ -537,7 +550,8 @@ static void ADUC_PnP_ComponentClient_PropertyUpdate_Callback(
     int version,
     void* userContextCallback)
 {
-    ADUC_ClientHandle clientHandle = (ADUC_ClientHandle)userContextCallback;
+    ADUC_PnPComponentClient_PropertyUpdate_Context* sourceContext =
+        (ADUC_PnPComponentClient_PropertyUpdate_Context*)userContextCallback;
 
     Log_Debug("ComponentName:%s, propertyName:%s", componentName, propertyName);
 
@@ -557,7 +571,8 @@ static void ADUC_PnP_ComponentClient_PropertyUpdate_Callback(
             supported = true;
             if (entry->PnPPropertyUpdateCallback != NULL)
             {
-                entry->PnPPropertyUpdateCallback(clientHandle, propertyName, propertyValue, version, entry->Context);
+                entry->PnPPropertyUpdateCallback(
+                    *(entry->clientHandle), propertyName, propertyValue, version, sourceContext, entry->Context);
             }
             else
             {
@@ -597,6 +612,31 @@ static void InitializeModeledComponents()
         g_modeledComponents[i] = componentList[i].ComponentName;
     }
 }
+
+//
+// ADUC_PnP_DeviceTwin_Callback is invoked by IoT SDK when a twin - either full twin or a PATCH update - arrives.
+//
+static void ADUC_PnPDeviceTwin_RetryUpdateCommand_Callback(
+    DEVICE_TWIN_UPDATE_STATE updateState, const unsigned char* payload, size_t size, void* userContextCallback)
+{
+    // Invoke PnP_ProcessTwinData to actually process the data.  PnP_ProcessTwinData uses a visitor pattern to parse
+    // the JSON and then visit each property, invoking PnP_TempControlComponent_ApplicationPropertyCallback on each element.
+    if (PnP_ProcessTwinData(
+            updateState,
+            payload,
+            size,
+            g_modeledComponents,
+            1, // Only process the first entry, which is 'deviceUpdate' PnP component.
+            ADUC_PnP_ComponentClient_PropertyUpdate_Callback,
+            userContextCallback)
+        == false)
+    {
+        // If we're unable to parse the JSON for any reason (typically because the JSON is malformed or we ran out of memory)
+        // there is no action we can take beyond logging.
+        Log_Error("Unable to process twin JSON.  Ignoring any desired property update requests.");
+    }
+}
+
 //
 // ADUC_PnP_DeviceTwin_Callback is invoked by IoT SDK when a twin - either full twin or a PATCH update - arrives.
 //
@@ -827,7 +867,7 @@ static _Bool ADUC_DeviceClient_Create(
     // This will also automatically retrieve the full twin for the application.
     else if (
         (iothubResult = ClientHandle_SetClientTwinCallback(
-             g_iotHubClientHandle, ADUC_PnPDeviceTwin_Callback, g_iotHubClientHandle))
+             g_iotHubClientHandle, ADUC_PnPDeviceTwin_Callback, &g_iotHubInitiatedPnPPropertyChangeContext))
         != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set device twin callback, error=%d", iothubResult);
@@ -1012,6 +1052,28 @@ done:
 }
 
 /**
+ * @brief Invokes PnPHandleCommandCallback on every PnPComponentEntry.
+ *
+ * @param command The string contains command (and options) from other component or process.
+ * @param commandContext A data context associated with the command.
+ * @return _Bool
+ */
+static _Bool RetryUpdateCommandHandler(const char* command, void* commandContext)
+{
+    UNREFERENCED_PARAMETER(command);
+    UNREFERENCED_PARAMETER(commandContext);
+    IOTHUB_CLIENT_RESULT iothubResult = ClientHandle_GetTwinAsync(
+        g_iotHubClientHandle,
+        ADUC_PnPDeviceTwin_RetryUpdateCommand_Callback,
+        &g_deviceInitiatedRetryPnPPropertyChangeContext);
+
+    return iothubResult == IOTHUB_CLIENT_OK;
+}
+
+// This command can be use by other process, to tell a DU agent to retry the current update, if exist.
+ADUC_Command redoUpdateCommand = { "retry-update", RetryUpdateCommandHandler };
+
+/**
  * @brief Gets the agent configuration information and loads it according to the provisioning scenario
  *
  * @param info the connection information that will be configured
@@ -1182,6 +1244,18 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         result = ExtensionManager_InitializeContentDownloader(NULL /*initializeData*/);
     }
 
+    if (InitializeCommandListenerThread())
+    {
+        RegisterCommand(&redoUpdateCommand);
+    }
+    else
+    {
+        Log_Error(
+            "Cannot initialize the command listener thread. Running another instance of DU Agent with --command will not work correctly.");
+        // Note: even though we can't create command listener here, we need to ensure that
+        // the agent stay alive and connected to the IoT hub.
+    }
+
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
@@ -1204,6 +1278,7 @@ done:
 void ShutdownAgent()
 {
     Log_Info("Agent is shutting down with signal %d.", g_shutdownSignal);
+    UninitializeCommandListenerThread();
     ADUC_PnP_Components_Destroy();
     ADUC_DeviceClient_Destroy(g_iotHubClientHandle);
     DiagnosticsComponent_DestroyDeviceName();
@@ -1233,6 +1308,43 @@ void OnRestartSignal(int sig)
     // deviceupdate-agent.service file to instruct systemd to restart the agent.
     Log_Info("Restart signal detect.");
     g_shutdownSignal = sig;
+}
+
+/**
+ * @brief Sets effective user id as specified in du-config.json (agents[#].ranAs property),
+ * and Sets effective group id to as ADUC_FILE_GROUP.
+ *
+ * This to ensure that the agent process is run with the intended privileges, and the resource that
+ * created by the agent has the correct ownership.
+ *
+ * @return _Bool
+ */
+_Bool RunAsDesiredUser()
+{
+    _Bool success = false;
+    ADUC_ConfigInfo config = {};
+    if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    {
+        Log_Error("Cannot read configuration file.");
+        return false;
+    }
+
+    if (!PermissionUtils_SetProcessEffectiveGID(ADUC_FILE_GROUP))
+    {
+        Log_Error("Failed to set process effective group to '%s'. (errno:%d)", ADUC_FILE_GROUP, errno);
+        goto done;
+    }
+
+    if (!PermissionUtils_SetProcessEffectiveUID(config.agents[0].runas))
+    {
+        Log_Error("Failed to set process effective user to '%s'. (errno:%d)", config.agents[0].runas, errno);
+        goto done;
+    }
+
+    success = true;
+done:
+    ADUC_ConfigInfo_UnInit(&config);
+    return success;
 }
 
 //
@@ -1334,6 +1446,24 @@ int main(int argc, char** argv)
             Log_Error("Unknown ExtensionRegistrationType: %d", launchArgs.extensionRegistrationType);
             return 1;
         }
+    }
+
+    // This instance of an agent is launched for sending command to the main agent process.
+    if (launchArgs.ipcCommand != NULL)
+    {
+        if (SendCommand(launchArgs.ipcCommand))
+        {
+            return 0;
+        }
+        return 1;
+    }
+
+    // Switch to specified agent.runas user.
+    // Note: it's important that we do this only when we're not performing any
+    // high-privileged tasks, such as, registering agent's extension(s).
+    if (!RunAsDesiredUser())
+    {
+        return 0;
     }
 
     Log_Info("Agent (%s; %s) starting.", ADUC_PLATFORM_LAYER, ADUC_VERSION);

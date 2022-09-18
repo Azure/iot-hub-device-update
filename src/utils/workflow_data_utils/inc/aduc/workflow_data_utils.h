@@ -102,14 +102,6 @@ RebootSystemFunc ADUC_WorkflowData_GetRebootSystemFunc(const ADUC_WorkflowData* 
  */
 RestartAgentFunc ADUC_WorkflowData_GetRestartAgentFunc(const ADUC_WorkflowData* workflowData);
 
-/**
- * @brief Save the goal state json string used (re-process), as needed, after deployment is completed.
- *
- * @param workflowData The workflow data.
- * @param goalStateJson A serialized json string containing the last Goal State data.
- */
-void ADUC_WorkflowData_SaveLastGoalStateJson(ADUC_WorkflowData* workflowData, const char* goalStateJson);
-
 EXTERN_C_END
 
 #endif // ADUC_DATA_WORKFLOW_UTILS_H
