@@ -54,8 +54,8 @@ def main():
 
     compatibility_info = adu_update.compatibility_info(
         {
-            'deviceManufacturer': 'Contoso',
-            'deviceModel': 'Toaster'
+            'manufacturer': 'Contoso',
+            'model': 'Toaster'
         })
 
     # Note that files is passed as a list.

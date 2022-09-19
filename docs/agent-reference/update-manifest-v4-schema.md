@@ -6,7 +6,7 @@ Please see the [Update Manifest](https://docs.microsoft.com/en-us/azure/iot-hub-
 
 ## Multi-Step Ordered Execution (MSOE) Support
 
-Based on many Public Preview customers' requests for the ability to run pre-install and post-install tasks, a new feature called Multi-Step Ordered Execution (MSOE) has been added to Device Update platform. The MSOE data is part of the Update Manifest v4 schema.  
+Based on many Public Preview customers' requests for the ability to run pre-install and post-install tasks, a new feature called Multi-Step Ordered Execution (MSOE) has been added to Device Update platform. The MSOE data is part of the Update Manifest v4 schema.
 
 There are 2 types of Steps:
 
@@ -21,8 +21,8 @@ Example Update Manifest with 1 Inline Step:
     "isDeployable": true,
     "compatibility": [
         {
-            "deviceManufacturer": "adu-device",
-            "deviceModel": "e2e-test"
+            "manufacturer": "adu-device",
+            "model": "e2e-test"
         }
     ],
     "instructions": {
@@ -53,8 +53,8 @@ Example Update Manifest with 2 Inline Steps:
     "isDeployable": true,
     "compatibility": [
         {
-            "deviceManufacturer": "adu-device",
-            "deviceModel": "e2e-test"
+            "manufacturer": "adu-device",
+            "model": "e2e-test"
         }
     ],
     "instructions": {
@@ -97,8 +97,8 @@ Example Update Manifest with 1 Reference Step:
     "isDeployable": true,
     "compatibility": [
         {
-            "deviceManufacturer": "adu-device",
-            "deviceModel": "e2e-test"
+            "manufacturer": "adu-device",
+            "model": "e2e-test"
         }
     ],
     "instructions": {
@@ -192,13 +192,13 @@ Example Update Manifest with 1 Reference Step:
 
 ## Parent Update vs. Child Update
 
-For Public Preview Refresh, we will refer to the top-level Update Manifest as `Parent Update` and refer to an Update Manifest specified in a Reference Step as `Child Update`.  
+For Public Preview Refresh, we will refer to the top-level Update Manifest as `Parent Update` and refer to an Update Manifest specified in a Reference Step as `Child Update`.
 
 Currently, a `Child Update` must not contain any Reference Steps. This restriction is validate at import time. If violated, the import will fail.
 
 ### Inline Step In Parent Update
 
-Inline step(s) specified in `Parent Update` will be applied to the Host Device. Here the ADUC_WorkflowData object that is passed to a Step Handler (aka. Update Content Handler) will not contains a `Selected Components` data. The handler for this type of step should not be a `Component-Aware` handler.  
+Inline step(s) specified in `Parent Update` will be applied to the Host Device. Here the ADUC_WorkflowData object that is passed to a Step Handler (aka. Update Content Handler) will not contains a `Selected Components` data. The handler for this type of step should not be a `Component-Aware` handler.
 
 > **Note** | See [Steps Content Handler](../../src/extensions/step_handlers/steps_handler/README.md) and [Implementing a Component-Aware Content Handler](./how-to-implement-custom-update-handler.md#implementing-a-component-aware-content-handler) for more details.
 

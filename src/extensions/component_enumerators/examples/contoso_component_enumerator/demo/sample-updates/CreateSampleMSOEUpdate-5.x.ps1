@@ -14,8 +14,8 @@
     .EXAMPLE
         PS > CreateSampleMSOEUpdate-5.x.ps1 -UpdateProvider "Contoso" `
                                              -UpdateName "Virtual-Vacuum" `
-                                             -DeviceManufacturer "contoso" `
-                                             -DeviceModel "virtual-vacuum-v1" `
+                                             -Manufacturer "contoso" `
+                                             -Model "virtual-vacuum-v1" `
                                              -OutputManifestPath .
 #>
 [CmdletBinding()]
@@ -34,11 +34,11 @@ Param(
 
     # Device Manufacturer
     [ValidateNotNullOrEmpty()]
-    [string] $DeviceManufacturer = "contoso",
+    [string] $Manufacturer = "contoso",
 
     # Device Model
     [ValidateNotNullOrEmpty()]
-    [string] $DeviceModel = "virtual-vacuum-v1"
+    [string] $Model = "virtual-vacuum-v1"
 )
 
 ##############################################################
@@ -52,7 +52,7 @@ Param(
 
 $UpdateVersion = '5.0'
 
-$parentCompat = New-AduUpdateCompatibility -DeviceManufacturer $DeviceManufacturer -DeviceModel $DeviceModel
+$parentCompat = New-AduUpdateCompatibility -Manufacturer $Manufacturer -Model $Model
 $parentUpdateId = New-AduUpdateId -Provider $UpdateProvider -Name $UpdateName -Version $UpdateVersion
 $parentUpdateIdStr = "$($parentUpdateId.Provider).$($parentUpdateId.Name).$($parentUpdateId.Version)"
 

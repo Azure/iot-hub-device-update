@@ -18,8 +18,8 @@ function New-AduImportUpdateInput
         PS > $container = Get-AduAzBlobContainer -SubscriptionId $subscriptionId -ResourceGroupName $resourceGroupName -StorageAccountName $storageAccount -ContainerName $containerName
         PS >
         PS > $updateId = New-AduUpdateId -Provider Fabrikam -Name Toaster -Version 2.0
-        PS > $compatInfo1 = New-AduUpdateCompatibility -DeviceManufacturer Fabrikam -DeviceModel Toaster
-        PS > $compatInfo2 = New-AduUpdateCompatibility -Properties @{ OS = "Linux"; DeviceManufacturer = "Fabrikam" }
+        PS > $compatInfo1 = New-AduUpdateCompatibility -Manufacturer Fabrikam -Model Toaster
+        PS > $compatInfo2 = New-AduUpdateCompatibility -Properties @{ OS = "Linux"; Manufacturer = "Fabrikam" }
         PS > $step = New-AduInstallationStep -Handler 'microsoft/swupdate:1' -Files '.\file1.json', '.\file2.zip'
         PS >
         PS > New-AduImportUpdateInput -UpdateId $updateId -Compatibility $compatInfo1, $compatInfo2 -InstallationSteps $step -BlobContainer $container

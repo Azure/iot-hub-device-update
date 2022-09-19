@@ -2,13 +2,13 @@
 
 ## Introducing Install Instructions Step
 
-At the Device Update Public Preview Refresh, the top level Update Manifest version v4 will no longer contain the `UpdateType` property, instead it will have one or more `instruction.steps` data.  
+At the Device Update Public Preview Refresh, the top level Update Manifest version v4 will no longer contain the `UpdateType` property, instead it will have one or more `instruction.steps` data.
 
 ### Example Update Manifest with Steps
 
-The following is an example of the Update Manifest version v4 that contains two instuction steps. In this example, both steps are `inline` step. 'Inline' step is the default value if not specified.  
+The following is an example of the Update Manifest version v4 that contains two instuction steps. In this example, both steps are `inline` step. 'Inline' step is the default value if not specified.
 
-> Note: see [Multi Step Ordered Execution](../../../docs/agent-reference/update-manifest-v4-schema.md#multi-step-ordered-execution-msoe-support) for more information about `step`. The step's `handler` property is equivalent to an `Update Type` that was introduced in the previous version of the Update Manifest.  
+> Note: see [Multi Step Ordered Execution](../../../docs/agent-reference/update-manifest-v4-schema.md#multi-step-ordered-execution-msoe-support) for more information about `step`. The step's `handler` property is equivalent to an `Update Type` that was introduced in the previous version of the Update Manifest.
 
 > Note: the step data also contains a property called `handlerProperties`. This is a JSON object that contains the data (such as, installedCriteria, script arguments, etc.) usually used by the Handler when performing various update tasks (such as download, install, apply, and cancel)
 
@@ -18,8 +18,8 @@ Usually, the Handler implementer is responsible for defining the set of properti
     "updateId": {...},
     "compatibility": [
         {
-            "deviceManufacturer": "adu-device",
-            "deviceModel": "e2e-test"
+            "manufacturer": "adu-device",
+            "model": "e2e-test"
         }
     ],
     "instructions": {
@@ -55,7 +55,7 @@ Usually, the Handler implementer is responsible for defining the set of properti
 
 As mentioned earlier on this page, the top level (parent) Update Manifest does not contains `Update Type`, an Agent Workflow will implicitly assign a type called `microsoft/step:1`, and automatically load the Steps Handler (libmicrosoft_steps_1.so) to process this Parent Update Manifest (and if available the Child Update Manifest as well, which will be demonstrated later in this document).
 
-It's worth noting that, for Parent Update, the Steps Handler will iterates through every step. For each step, the handler will perform 'download', 'install', and 'apply' actions, in the exact order. Unless an error occurs, in which case, the workflow will be aborted and the `ResultCode`, `ExtendedResultCode`, and `ResultDetails` will be reported to the cloud accordingly.  
+It's worth noting that, for Parent Update, the Steps Handler will iterates through every step. For each step, the handler will perform 'download', 'install', and 'apply' actions, in the exact order. Unless an error occurs, in which case, the workflow will be aborted and the `ResultCode`, `ExtendedResultCode`, and `ResultDetails` will be reported to the cloud accordingly.
 
 **Figure 1** - High-Level Overview of Steps Handler Sequence Diagram
 

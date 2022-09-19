@@ -163,7 +163,7 @@ function New-AduUpdateCompatibility
         Create a new ADU update compatibility info.
 
     .EXAMPLE
-        PS > New-AduUpdateCompatibility -DeviceManufacturer Contoso -DeviceModel Toaster
+        PS > New-AduUpdateCompatibility -Manufacturer Contoso -Model Toaster
 #>
     [CmdletBinding()]
     Param(
@@ -174,12 +174,12 @@ function New-AduUpdateCompatibility
         # Device manufacturer.
         [Parameter(ParameterSetName='BackwardCompat', Mandatory=$true)]
         [ValidateLength(1, 64)]
-        [string] $DeviceManufacturer,
+        [string] $Manufacturer,
 
         # Device model.
         [Parameter(ParameterSetName='BackwardCompat', Mandatory=$true)]
         [ValidateLength(1, 64)]
-        [string] $DeviceModel
+        [string] $Model
     )
 
     switch ($PSCmdlet.ParameterSetName)
@@ -190,8 +190,8 @@ function New-AduUpdateCompatibility
 
         'BackwardCompat' {
             return @{
-                deviceManufacturer = $DeviceManufacturer
-                deviceModel = $DeviceModel
+                manufacturer = $Manufacturer
+                model = $Model
             }
         }
     }
@@ -284,8 +284,8 @@ function New-AduImportManifest
 
     .EXAMPLE
         PS > $updateId = New-AduUpdateId -Provider Fabrikam -Name Toaster -Version 2.0
-        PS > $compatInfo1 = New-AduUpdateCompatibility -DeviceManufacturer Fabrikam -DeviceModel Toaster
-        PS > $compatInfo2 = New-AduUpdateCompatibility -Properties @{ OS = "Linux"; DeviceManufacturer = "Fabrikam" }
+        PS > $compatInfo1 = New-AduUpdateCompatibility -Manufacturer Fabrikam -Model Toaster
+        PS > $compatInfo2 = New-AduUpdateCompatibility -Properties @{ OS = "Linux"; Manufacturer = "Fabrikam" }
         PS > $step = New-AduInstallationStep -Handler 'microsoft/swupdate:1' -Files '.\file1.json', '.\file2.zip'
         PS >
         PS > New-AduImportManifest -UpdateId $updateId -Compatibility $compatInfo1, $compatInfo2 -InstallationSteps $step

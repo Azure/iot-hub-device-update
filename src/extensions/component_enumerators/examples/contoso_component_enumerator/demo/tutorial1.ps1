@@ -46,11 +46,11 @@ $motorsSelector = @{ group = 'motors' }
 $motorsCompat = New-AduUpdateCompatibility  -Properties $motorsSelector
 
 $motorScriptFile = ".\update-files\contoso-motor-installscript.sh"
-$motorFirmwareFile = ".\update-files\motor-firmware-$motorsFirmwareVersion.json"  
+$motorFirmwareFile = ".\update-files\motor-firmware-$motorsFirmwareVersion.json"
 
 #------------
 # ADD STEP(S)
-#  
+#
 
 # This update contains 1 steps.
 $motorsInstallSteps = @()
@@ -109,10 +109,10 @@ $UpdateName = "Virtual-Vacuum"
 $UpdateVersion = '20.0'
 
 # Host Device Info
-$DeviceManufacturer = "contoso"
-$DeviceModel = 'virtual-vacuum-v1'
+$Manufacturer = "contoso"
+$Model = 'virtual-vacuum-v1'
 
-$parentCompat = New-AduUpdateCompatibility -DeviceManufacturer $DeviceManufacturer -DeviceModel $DeviceModel
+$parentCompat = New-AduUpdateCompatibility -Manufacturer $Manufacturer -Model $Model
 $parentUpdateId = New-AduUpdateId -Provider $UpdateProvider -Name $UpdateName -Version $UpdateVersion
 $parentUpdateIdStr = "$($parentUpdateId.Provider).$($parentUpdateId.Name).$($parentUpdateId.Version)"
 
@@ -121,7 +121,7 @@ $parentUpdateIdStr = "$($parentUpdateId.Provider).$($parentUpdateId.Name).$($par
 # Create the parent update containing 1 inline step and 1 reference step.
 # ------------------------------------------------------
 Write-Host "    Preparing parent update $parentUpdateIdStr..."
-$payloadFiles = 
+$payloadFiles =
 $parentSteps = @()
 
     #------------

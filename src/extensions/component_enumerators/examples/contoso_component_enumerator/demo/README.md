@@ -26,8 +26,8 @@ Follow this [instruction](#generate-example-updates) to generate the example upd
     "isDeployable":  true,
     "compatibility":  [
                           {
-                              "deviceModel":  "virtual-vacuum-v1",
-                              "deviceManufacturer":  "contoso"
+                              "model":  "virtual-vacuum-v1",
+                              "manufacturer":  "contoso"
                           }
                       ],
     "instructions":  {
@@ -61,16 +61,16 @@ Follow this [instruction](#generate-example-updates) to generate the example upd
 ```
 
 From the example import manifest above, you will notice the following:
-- The `instructions.steps` property (array) contains only 1 step. 
-- The `type` property indicates that this is an inline step. 
-- A `handler` property informs the Device Update agent which Content Handler to be used to process this step. 
+- The `instructions.steps` property (array) contains only 1 step.
+- The `type` property indicates that this is an inline step.
+- A `handler` property informs the Device Update agent which Content Handler to be used to process this step.
 - The `files` property contains a single file entity. This file is called an APT manifest. The current implementation of APT Content Handler requires one APT manifest. (See [apt-manifest-1.0.json](./sample-updates/data-files/APT/apt-manifest-1.0.json))
 - An `handlerProperties.installedCriteria` is a string used by APT Content Handler to determine whether this 'step' has been installed (or processed) on the target device.
-  
+
 ---
 ## Tutorial 2 - Multi Step Update
 
-A **Multi Step Update** is an update that contains at least two steps. If at least one of those steps is a `reference` step, the update will be called `Bundle Update`. 
+A **Multi Step Update** is an update that contains at least two steps. If at least one of those steps is a `reference` step, the update will be called `Bundle Update`.
 
 This example update (Contoso.Virtual-Vacuum.2.2) demonstrates how to create an update with two `inline` steps.
 - Step 0 - Install an APT package ('libcurl4-doc') onto the target device.
@@ -92,8 +92,8 @@ Follow this [instruction](#generate-example-updates) to generate the example upd
     "isDeployable":  true,
     "compatibility":  [
                           {
-                              "deviceModel":  "virtual-vacuum-v1",
-                              "deviceManufacturer":  "contoso"
+                              "model":  "virtual-vacuum-v1",
+                              "manufacturer":  "contoso"
                           }
                       ],
     "instructions":  {
@@ -143,7 +143,7 @@ Follow this [instruction](#generate-example-updates) to generate the example upd
 }
 ```
 
-This import manifest contains steps that use 'microsoft/apt:1' handler type. Each step requires a corresponding APT manifest containing information about the package to be installed.  
+This import manifest contains steps that use 'microsoft/apt:1' handler type. Each step requires a corresponding APT manifest containing information about the package to be installed.
 
 ---
 
@@ -154,7 +154,7 @@ A **Bundle Update** is an update that contains at least one reference step.
 A **Multi Component Update** is a Bundle Update intended for a device with a registered `Component Enumerator Extension`.
 
 > If the target device doesn't have a registered component enumerator, the Device Update Agent will assume that every step is intended to be installed onto the host device and will not pass any 'Component Context' to a Content Handler when processing steps.
->  
+>
 > See [Steps Handler](../../../../../extensions/update_manifest_handlers/steps_handler/) for more information.
 
 Follow this [instruction](#generate-example-updates) to generate the example update using `CreateSampleMSOEUpdate-3.x.ps1` PowerShell script.
@@ -175,8 +175,8 @@ This import manifest contains a single reference step that requires the [contoso
     "isDeployable":  true,
     "compatibility":  [
                           {
-                              "deviceModel":  "virtual-vacuum-v1",
-                              "deviceManufacturer":  "contoso"
+                              "model":  "virtual-vacuum-v1",
+                              "manufacturer":  "contoso"
                           }
                       ],
     "instructions":  {
@@ -338,7 +338,7 @@ The above update contains a single inline step that installs `camera firmware v1
 When the Component Enumerator extension is registered, the Device Update agent will **select** the compatible `component` by invoking a `SelectComponents` api and passing the referenced-update's compatibility property as a `selector`. For this example, the component enumerator will return every component with a `group` property value that equals `cameras`.
 
 When processing this step, the Agent will iterate through the list of returned compatible components and perform the step's actions (download, install, apply) on each component with each component's context accordingly.
-See [Steps Handler](../../../../../extensions/step_handlers/steps_handler/) and [Component Enumerator Extension](../../contoso_component_enumerator/README.md) for more details. 
+See [Steps Handler](../../../../../extensions/step_handlers/steps_handler/) and [Component Enumerator Extension](../../contoso_component_enumerator/README.md) for more details.
 
 ---
 ## Appendix
@@ -365,7 +365,7 @@ Prerequisites
     sudo apt-get update
     ```
 
-- Install test **deviceupdate-agent-[version].deb** package on the test device.  
+- Install test **deviceupdate-agent-[version].deb** package on the test device.
 e.g.
 
   ```sh
@@ -405,7 +405,7 @@ For testing and demonstration purposes, we'll be creating following mock compone
 - hostfs
 - rootfs
 
-**IMPORTANT**  
+**IMPORTANT**
 This components configuration depends on the implementation of an example Component Enumerator extension called libcontoso_component_enumerator.so, which required a mock component inventory data file `/usr/local/contoso-devices/components-inventory.json`
 
 > Tip: you can copy [demo](../demo) folder to your home directory on the test VM and run `sudo ~/demo/tools/reset-demo-components.sh` to copy required files to the right locations.
@@ -413,7 +413,7 @@ This components configuration depends on the implementation of an example Compon
 #### Add /usr/local/contoso-devices/components-inventory.json
 
 - Copy [components-inventory.json](./demo-devices/contoso-devices/components-inventory.json) to **/usr/local/contoso-devices** folder
-  
+
 ### Generate Example Updates
 
 Open PowerShell terminal, go [[project-root]/tools/AduCmdlets](../../../../../../tools/AduCmdlets/) directory, then import AduUpdate.psm1 module:

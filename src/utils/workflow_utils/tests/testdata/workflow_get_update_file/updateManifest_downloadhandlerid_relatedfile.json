@@ -1,8 +1,8 @@
 {
     "compatibility": [
         {
-            "deviceManufacturer": "contoso",
-            "deviceModel": "toaster"
+            "manufacturer": "contoso",
+            "model": "toaster"
         }
     ],
     "createdDateTime": "2022-03-12T12:22:37.2627901Z",

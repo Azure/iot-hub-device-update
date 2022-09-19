@@ -43,7 +43,7 @@ At this time, this update is version 20 in their `update line of service`. The f
 
 ## Preparing Update Instructions (steps)
 
-> **Prerequisites** | Read [Device Update for IoT Hub - Scripts](../../../../../../tools/AduCmdlets/README.md) to understand how to create ADU Import Manifest, and ensure that all required scripts can be run properly.  
+> **Prerequisites** | Read [Device Update for IoT Hub - Scripts](../../../../../../tools/AduCmdlets/README.md) to understand how to create ADU Import Manifest, and ensure that all required scripts can be run properly.
 
 To accomplish the goals, this update requires 2 `update instruction steps` in the Update Manifest:
 
@@ -70,10 +70,10 @@ $topLevelStep1 = New-AduInstallationStep `
 
 ### Top-Level Step #2 - Install `Virtual Motors Firmware 1.0` on all `Motor` components
 
-Since this update is targeting a group of components on the host device, the `child update` and a top-level `reference step` must be created.  
+Since this update is targeting a group of components on the host device, the `child update` and a top-level `reference step` must be created.
 The following script snippet is used to create both child update and reference step:
 
->**NOTE** | Child update identity is required. For this tutorial, we use **"contoso", "contoso-virtual-motors", "1.1"** for `Provider`, `Name`, and `Version` respectively.  
+>**NOTE** | Child update identity is required. For this tutorial, we use **"contoso", "contoso-virtual-motors", "1.1"** for `Provider`, `Name`, and `Version` respectively.
 
 ```powershell
 
@@ -96,11 +96,11 @@ $motorsSelector = @{ group = 'motors' }
 $motorsCompat = New-AduUpdateCompatibility  -Properties $motorsSelector
 
 $motorScriptFile = ".\update-files\contoso-motor-installscript.sh"
-$motorFirmwareFile = ".\update-files\motor-firmware-$motorsFirmwareVersion.json"  
+$motorFirmwareFile = ".\update-files\motor-firmware-$motorsFirmwareVersion.json"
 
 #------------
 # ADD STEP(S)
-#  
+#
 
 # This update contains 1 steps.
 $motorsInstallSteps = @()
@@ -165,10 +165,10 @@ $UpdateName = "Virtual-Vacuum"
 $UpdateVersion = '20.0'
 
 # Host Device Info
-$DeviceManufacturer = "contoso"
-$DeviceModel = 'virtual-vacuum-v1'
+$Manufacturer = "contoso"
+$Model = 'virtual-vacuum-v1'
 
-$parentCompat = New-AduUpdateCompatibility -DeviceManufacturer $DeviceManufacturer -DeviceModel $DeviceModel
+$parentCompat = New-AduUpdateCompatibility -Manufacturer $Manufacturer -Model $Model
 $parentUpdateId = New-AduUpdateId -Provider $UpdateProvider -Name $UpdateName -Version $UpdateVersion
 $parentUpdateIdStr = "$($parentUpdateId.Provider).$($parentUpdateId.Name).$($parentUpdateId.Version)"
 
@@ -177,7 +177,7 @@ $parentUpdateIdStr = "$($parentUpdateId.Provider).$($parentUpdateId.Name).$($par
 # Create the parent update containing 1 inline step and 1 reference step.
 # ------------------------------------------------------
 Write-Host "    Preparing parent update $parentUpdateIdStr..."
-$payloadFiles = 
+$payloadFiles =
 $parentSteps = @()
 
     #------------

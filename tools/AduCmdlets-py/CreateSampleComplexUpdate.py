@@ -56,8 +56,8 @@ def main():
 
     compatibility_info = adu_update.compatibility_info(
         {
-            'deviceManufacturer': 'Contoso',
-            'deviceModel': 'Microphone'
+            'manufacturer': 'Contoso',
+            'model': 'Microphone'
         })
 
     installation_step = adu_update.inline_installation_step(
@@ -87,8 +87,8 @@ def main():
         version=update_version)
 
     compatibility_info = adu_update.compatibility_info({
-        'deviceManufacturer': 'Contoso',
-        'deviceModel': 'Speaker'
+        'manufacturer': 'Contoso',
+        'model': 'Speaker'
     })
 
     installation_step = adu_update.inline_installation_step(
@@ -119,8 +119,8 @@ def main():
 
     compatibility_info = adu_update.compatibility_info(
         {
-            'deviceManufacturer': 'Contoso',
-            'deviceModel': 'SmartDevice'
+            'manufacturer': 'Contoso',
+            'model': 'SmartDevice'
         })
 
     installation_steps = []
