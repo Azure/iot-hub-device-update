@@ -40,8 +40,6 @@ static const char g_aduPnPComponentAgentPropertyName[] = "agent";
 // ADU Management send an 'Update Action' to this device by setting this property on IoTHub.
 static const char g_aduPnPComponentServicePropertyName[] = "service";
 
-const char g_retryUpdateCommand[] = "retry-update";
-
 /**
  * @brief Handle for Device Update Agent component to communication to service.
  */
@@ -380,7 +378,7 @@ void OrchestratorUpdateCallback(
 
     Log_Debug("Update Action info string (%s), property version (%d)", ackString, propertyVersion);
 
-    ADUC_Workflow_HandlePropertyUpdate(workflowData, (const unsigned char*)jsonString, sourceContext->forceDeferral);
+    ADUC_Workflow_HandlePropertyUpdate(workflowData, (const unsigned char*)jsonString, sourceContext->forceUpdate);
     free(jsonString);
     jsonString = ackString;
 

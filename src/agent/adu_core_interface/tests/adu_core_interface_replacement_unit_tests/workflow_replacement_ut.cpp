@@ -661,7 +661,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process workflow - Replacement")
     workflowData.StartupIdleCallSent = true;
 
     // NOLINTNEXTLINE
-    ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment, false /* forceDeferral */); // workflow id => "bundle_update"
+    ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment, false /* forceUpdate */); // workflow id => "bundle_update"
 
     // The mock content handler will loop with sleep during each poll iteration. It will exit poll loop when
     // it receives Cancel in the content handler due to cancel request from 2nd ProcessDeployment update action
@@ -678,7 +678,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process workflow - Replacement")
     // the DeferredReplacementWorkflow that was saved in the current WorkflowData Handle.
 
     // NOLINTNEXTLINE
-    ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment_REPLACEMENT, false /* forceDeferral */); // workflow id => "REPLACEMENT_bundle_update"
+    ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment_REPLACEMENT, false /* forceUpdate */); // workflow id => "REPLACEMENT_bundle_update"
 
     // make download result be a success for the next workflow download
     s_download_result_code = ADUC_Result_Download_Success;

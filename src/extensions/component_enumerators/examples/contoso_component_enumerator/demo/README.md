@@ -163,7 +163,7 @@ Follow this [instruction](#generate-example-updates) to generate the example upd
 
 ### Example Import Manifest - Contoso.Virtual-Vacuum.3.3
 
-This import manifest contains a single reference step that requires the `contoso Virtual-Vacuum-virtual-camera 1.4` update to be imported simultaneously.
+This import manifest contains a single reference step that requires the [contoso Virtual-Vacuum-virtual-camera 1.4](#example-import-manifest-for-reference-update-virtual-vacuum-virtual-camera-14) update to be imported simultaneously.
 
 ```json
 {
@@ -192,7 +192,88 @@ This import manifest contains a single reference step that requires the `contoso
                                        }
                                    ]
                      },
-    "createdDateTime":  "2022-05-13T22:49:03.4183255Z",
+    "createdDateTime":  "2022-09-19T04:02:43.9745720Z",
+    "manifestVersion":  "4.0"
+}
+
+```
+
+#### Example Import Manifest for the reference update Virtual-vacuum-virtual-camera 1.4
+
+```json
+{
+    "updateId":  {
+                     "provider":  "contoso",
+                     "name":  "Virtual-Vacuum-virtual-camera",
+                     "version":  "1.4"
+                 },
+    "isDeployable":  false,
+    "compatibility":  [
+                          {
+                              "group":  "cameras"
+                          }
+                      ],
+    "instructions":  {
+                         "steps":  [
+                                       {
+                                           "type":  "inline",
+                                           "description":  "Cameras Update - pre-install step (failure - missing file)",
+                                           "handler":  "microsoft/script:1",
+                                           "files":  [
+                                                         "contoso-camera-installscript.sh"
+                                                     ],
+                                           "handlerProperties":  {
+                                                                     "scriptFileName":  "contoso-camera-installscript.sh",
+                                                                     "arguments":  "--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path",
+                                                                     "installedCriteria":  "1.1"
+                                                                 }
+                                       },
+                                       {
+                                           "type":  "inline",
+                                           "description":  "Cameras Update - firmware installation",
+                                           "handler":  "microsoft/script:1",
+                                           "files":  [
+                                                         "contoso-camera-installscript.sh",
+                                                         "camera-firmware-1.1.json"
+                                                     ],
+                                           "handlerProperties":  {
+                                                                     "scriptFileName":  "contoso-camera-installscript.sh",
+                                                                     "arguments":  "--firmware-file camera-firmware-1.1.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path",
+                                                                     "installedCriteria":  "1.1"
+                                                                 }
+                                       },
+                                       {
+                                           "type":  "inline",
+                                           "description":  "Cameras Update - post-install script",
+                                           "handler":  "microsoft/script:1",
+                                           "files":  [
+                                                         "contoso-camera-installscript.sh"
+                                                     ],
+                                           "handlerProperties":  {
+                                                                     "scriptFileName":  "contoso-camera-installscript.sh",
+                                                                     "arguments":  "--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path",
+                                                                     "installedCriteria":  "1.1"
+                                                                 }
+                                       }
+                                   ]
+                     },
+    "files":  [
+                  {
+                      "filename":  "contoso-camera-installscript.sh",
+                      "sizeInBytes":  26884,
+                      "hashes":  {
+                                     "sha256":  "K6F2TUmY2JPtp6vWI8bNl6sVceacBFTHXIyhOOmS1x8="
+                                 }
+                  },
+                  {
+                      "filename":  "camera-firmware-1.1.json",
+                      "sizeInBytes":  124,
+                      "hashes":  {
+                                     "sha256":  "6jst7Roi7dbeb3BNokQo6Gea5qsPPu2KDJ6GotaOQi4="
+                                 }
+                  }
+              ],
+    "createdDateTime":  "2022-09-19T04:02:43.9465570Z",
     "manifestVersion":  "4.0"
 }
 
@@ -327,7 +408,7 @@ For testing and demonstration purposes, we'll be creating following mock compone
 **IMPORTANT**  
 This components configuration depends on the implementation of an example Component Enumerator extension called libcontoso_component_enumerator.so, which required a mock component inventory data file `/usr/local/contoso-devices/components-inventory.json`
 
-> Tip: you can copy [demo](../demo) folder to your home directory on the test VM and run `~/demo/tools/reset-demo-components.sh` to copy required files to the right locations.
+> Tip: you can copy [demo](../demo) folder to your home directory on the test VM and run `sudo ~/demo/tools/reset-demo-components.sh` to copy required files to the right locations.
 
 #### Add /usr/local/contoso-devices/components-inventory.json
 

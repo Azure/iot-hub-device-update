@@ -395,10 +395,10 @@ done:
  *
  * @param[in,out] currentWorkflowData The current ADUC_WorkflowData object.
  * @param[in] propertyUpdateValue The updated property value.
- * @param[in] forceDeferral Ensures that specifed @p propertyUpdateValue will be processed by force deferral if there is ongoing workflow processing.
+ * @param[in] forceUpdate Ensures that specifed @p propertyUpdateValue will be processed by force deferral if there is ongoing workflow processing.
  */
 void ADUC_Workflow_HandlePropertyUpdate(
-    ADUC_WorkflowData* currentWorkflowData, const unsigned char* propertyUpdateValue, bool forceDeferral)
+    ADUC_WorkflowData* currentWorkflowData, const unsigned char* propertyUpdateValue, bool forceUpdate)
 {
     ADUC_WorkflowHandle nextWorkflow;
 
@@ -413,6 +413,8 @@ void ADUC_Workflow_HandlePropertyUpdate(
 #else
     ADUC_Result result = workflow_init((const char*)propertyUpdateValue, true, &nextWorkflow);
 #endif
+
+    workflow_set_force_update(nextWorkflow, forceUpdate);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -461,7 +463,7 @@ void ADUC_Workflow_HandlePropertyUpdate(
         }
         else if (nextUpdateAction == ADUCITF_UpdateAction_ProcessDeployment)
         {
-            if (!forceDeferral && workflow_id_compare(currentWorkflowData->WorkflowHandle, nextWorkflow) == 0)
+            if (!forceUpdate && workflow_id_compare(currentWorkflowData->WorkflowHandle, nextWorkflow) == 0)
             {
                 // Possible retry of the current workflow.
                 const char* currentRetryToken = workflow_peek_retryTimestamp(currentWorkflowData->WorkflowHandle);
@@ -641,7 +643,8 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
     }
 
     // Ignore duplicate deployment that can be caused by token expiry connection refresh after about 40 minutes.
-    if (workflow_isequal_id(workflowData->WorkflowHandle, workflowData->LastCompletedWorkflowId))
+    if (workflow_isequal_id(workflowData->WorkflowHandle, workflowData->LastCompletedWorkflowId)
+        && !workflow_get_force_update(workflowData->WorkflowHandle))
     {
         Log_Debug("Ignoring duplicate deployment %s, action %d", workflowData->LastCompletedWorkflowId, desiredAction);
         goto done;

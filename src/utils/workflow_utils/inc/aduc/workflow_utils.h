@@ -669,6 +669,19 @@ char* workflow_get_serialized_update_manifest(ADUC_WorkflowHandle handle, bool p
 _Bool workflow_get_entity_workfolder_filepath(
     ADUC_WorkflowHandle workflowHandle, const ADUC_FileEntity* entity, STRING_HANDLE* outFilePath);
 
+/**
+ * @brief Gets boolean indicates whether to bypass duplicate workflow check, and always process the update.
+ */
+_Bool workflow_get_force_update(ADUC_WorkflowHandle workflowHandle);
+
+/**
+ * @brief Sets boolean indicates whether to bypass duplicate workflow check, and always process the update.
+ *
+ * @param handle The workflow handle.
+ * @param forceUpdate Set to true to bypass duplicate workflow check.
+ */
+void workflow_set_force_update(ADUC_WorkflowHandle handle, bool forceUpdate);
+
 EXTERN_C_END
 
 #endif // ADUC_WORKFLOW_UTILS_H

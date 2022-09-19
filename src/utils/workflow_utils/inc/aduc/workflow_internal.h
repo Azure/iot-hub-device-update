@@ -63,6 +63,8 @@ typedef struct tagADUC_Workflow
     // Plugin Extension state.
     //
     ino_t* UpdateFileInodes;
+
+    bool ForceUpdate; /**< Always process this workflow, even when the previous update was successful. */
 } ADUC_Workflow;
 
 #endif // WORKFLOW_INTERNAL_H

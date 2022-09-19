@@ -523,7 +523,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Rollback - Apply Failed", "[
     // simulating non-startup processing of twin
     workflowData.WorkflowHandle = nullptr;
     workflowData.StartupIdleCallSent = true;
-    ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment, false /* forceDeferral */); // NOLINT
+    ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment, false /* forceUpdate */); // NOLINT
 
     // Wait for entire workflow to complete
     workCompletionCallbackCV.wait_for(lock, std::chrono::seconds(20));
@@ -579,7 +579,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Rollback - Install Failed", 
     // simulating non-startup processing of twin
     workflowData.WorkflowHandle = nullptr;
     workflowData.StartupIdleCallSent = true;
-    ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment, false /* forceDeferral */); // NOLINT
+    ADUC_Workflow_HandlePropertyUpdate(&workflowData, (const unsigned char*)workflow_test_process_deployment, false /* forceUpdate */); // NOLINT
 
     // Wait for entire workflow to complete
     workCompletionCallbackCV.wait_for(lock, std::chrono::seconds(20));

@@ -569,7 +569,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
     workflowData.StartupIdleCallSent = true;
 
     std::string workflow_test_process_deployment = aduc::FileTestUtils_slurpFile(std::string{ ADUC_TEST_DATA_FOLDER } + "/workflow_reboot/updateActionForActionBundle.json");
-    ADUC_Workflow_HandlePropertyUpdate(&workflowData, reinterpret_cast<const unsigned char*>(workflow_test_process_deployment.c_str()), false /* forceDeferral */); // NOLINT
+    ADUC_Workflow_HandlePropertyUpdate(&workflowData, reinterpret_cast<const unsigned char*>(workflow_test_process_deployment.c_str()), false /* forceUpdate */); // NOLINT
 
     {
         std::unique_lock<std::mutex> lock(cv_mutex);
@@ -607,7 +607,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
     // then call HandlePropertyUpdate with latest twin JSON.
     // Ensure that was in progress properly when it goes to idle
     ADUC_Workflow_HandleStartupWorkflowData(&startupWorkflowDataAfterReboot);
-    ADUC_Workflow_HandlePropertyUpdate(&startupWorkflowDataAfterReboot, reinterpret_cast<const unsigned char*>(workflow_test_process_deployment.c_str()), false /* forceDeferral */);
+    ADUC_Workflow_HandlePropertyUpdate(&startupWorkflowDataAfterReboot, reinterpret_cast<const unsigned char*>(workflow_test_process_deployment.c_str()), false /* forceUpdate */);
 
     CHECK(s_SendReportedStateValues.reportedStates.size() == 1);
 
@@ -624,7 +624,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Process Workflow Apply - Reboot Success")
 
     // Now simulate a duplicate workflow request due to token expiry connection refresh
     s_SendReportedStateValues.reportedStates.clear();
-    ADUC_Workflow_HandlePropertyUpdate(&startupWorkflowDataAfterReboot, reinterpret_cast<const unsigned char*>(workflow_test_process_deployment.c_str()), false /* forceDeferral */);
+    ADUC_Workflow_HandlePropertyUpdate(&startupWorkflowDataAfterReboot, reinterpret_cast<const unsigned char*>(workflow_test_process_deployment.c_str()), false /* forceUpdate */);
     CHECK(s_SendReportedStateValues.reportedStates.empty()); // did not do a duplicate report but ignored it
 
     wait_for_workflow_complete();

@@ -95,7 +95,7 @@ typedef struct tagADUC_PnPComponentClient_PropertyUpdate_Context
     _Bool clientInitiated; /** Indicates that the property update notification was caused by a client request.
                                For example, when the agent call IoTHub_DeviceClient_LL_GetTwinAsync API.
                                Note: this value should be set to null when calling ClientHandle_SetClientTwinCallback. */
-    _Bool forceDeferral; /** In indicates whether the force process the update. */
+    _Bool forceUpdate; /** In indicates whether the force process the update. */
 } ADUC_PnPComponentClient_PropertyUpdate_Context;
 
 EXTERN_C_END

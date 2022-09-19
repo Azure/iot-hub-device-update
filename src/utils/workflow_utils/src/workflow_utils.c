@@ -3627,4 +3627,24 @@ done:
     return result;
 }
 
+_Bool workflow_get_force_update(ADUC_WorkflowHandle workflowHandle)
+{
+    ADUC_Workflow* wf = workflow_from_handle(workflowHandle);
+    if (wf == NULL)
+    {
+        return false;
+    }
+
+    return wf->ForceUpdate;
+}
+
+void workflow_set_force_update(ADUC_WorkflowHandle handle, bool forceUpdate)
+{
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    if (wf != NULL)
+    {
+        wf->ForceUpdate = forceUpdate;
+    }
+}
+
 EXTERN_C_END
