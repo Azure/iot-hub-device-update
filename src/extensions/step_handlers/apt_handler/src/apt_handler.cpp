@@ -135,27 +135,33 @@ done:
  */
 ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result = { ADUC_Result_Failure };
+    ADUC_Result result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
     std::stringstream aptManifestFilename;
     std::unique_ptr<AptContent> aptContent{ nullptr };
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
+    int fileCount = 0;
+
+    if (workflow_is_cancel_requested(handle))
+    {
+        return this->Cancel(workflowData);
+    }
 
     // For 'microsoft/apt:1', we're expecting 1 payload file.
-    int fileCount = workflow_get_update_files_count(handle);
+    fileCount = workflow_get_update_files_count(handle);
     if (fileCount != 1)
     {
         Log_Error("APT packages expecting one file. (%d)", fileCount);
-        return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_APT_HANDLER_PACKAGE_PREPARE_FAILURE_WRONG_FILECOUNT };
+        return ADUC_Result{ .ResultCode = ADUC_Result_Failure,
+                            .ExtendedResultCode = ADUC_ERC_APT_HANDLER_PACKAGE_PREPARE_FAILURE_WRONG_FILECOUNT };
     }
 
     char* workFolder = workflow_get_workfolder(handle);
-    char* workflowId = workflow_get_id(handle);
-
     ADUC_FileEntity* fileEntity = nullptr;
 
     if (!workflow_get_update_file(handle, 0, &fileEntity))
     {
-        result = { ADUC_Result_Failure, ADUC_ERC_APT_HANDLER_GET_FILEENTITY_FAILURE };
+        result = { .ResultCode = ADUC_Result_Failure,
+                   .ExtendedResultCode = ADUC_ERC_APT_HANDLER_GET_FILEENTITY_FAILURE };
         goto done;
     }
 
@@ -254,10 +260,9 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
         }
     }
 
-    result = { ADUC_Result_Download_Success };
+    result = { .ResultCode = ADUC_Result_Download_Success, .ExtendedResultCode = 0 };
 
 done:
-    workflow_free_string(workflowId);
     workflow_free_string(workFolder);
     workflow_free_file_entity(fileEntity);
 
@@ -273,17 +278,23 @@ ADUC_Result AptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
 {
     std::string aptOutput;
     int aptExitCode = -1;
-    ADUC_Result result = { ADUC_Result_Download_Success };
+    ADUC_Result result = { .ResultCode = ADUC_Result_Download_Success, .ExtendedResultCode = 0 };
     ADUC_FileEntity* fileEntity = nullptr;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     char* workFolder = workflow_get_workfolder(handle);
-    char* workflowId = workflow_get_id(handle);
     std::stringstream aptManifestFilename;
     std::unique_ptr<AptContent> aptContent;
 
+    if (workflow_is_cancel_requested(handle))
+    {
+        result = this->Cancel(workflowData);
+        goto done;
+    }
+
     if (!workflow_get_update_file(handle, 0, &fileEntity))
     {
-        result = { ADUC_Result_Failure, ADUC_ERC_APT_HANDLER_GET_FILEENTITY_FAILURE };
+        result = { .ResultCode = ADUC_Result_Failure,
+                   .ExtendedResultCode = ADUC_ERC_APT_HANDLER_GET_FILEENTITY_FAILURE };
         goto done;
     }
 
@@ -341,10 +352,9 @@ ADUC_Result AptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    result = { ADUC_Result_Install_Success };
+    result = { .ResultCode = ADUC_Result_Install_Success, .ExtendedResultCode = 0 };
 
 done:
-    workflow_free_string(workflowId);
     workflow_free_string(workFolder);
     workflow_free_file_entity(fileEntity);
     return result;
@@ -357,13 +367,19 @@ done:
  */
 ADUC_Result AptHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result = { ADUC_Result_Apply_Success };
+    ADUC_Result result = { .ResultCode = ADUC_Result_Apply_Success, .ExtendedResultCode = 0 };
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     char* installedCriteria = workflow_get_installed_criteria(handle);
     char* workFolder = workflow_get_workfolder(handle);
     std::unique_ptr<AptContent> aptContent{ nullptr };
     std::stringstream aptManifestFilename;
     ADUC_FileEntity* entity = nullptr;
+
+    if (workflow_is_cancel_requested(handle))
+    {
+        result = this->Cancel(workflowData);
+        goto done;
+    }
 
     if (!PersistInstalledCriteria(ADUC_INSTALLEDCRITERIA_FILE_PATH, installedCriteria))
     {
@@ -392,12 +408,12 @@ ADUC_Result AptHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
     {
         Log_Debug("The install task completed successfully, DU Agent restart is required for this update.");
         workflow_request_immediate_agent_restart(handle);
-        result = { .ResultCode = ADUC_Result_Apply_RequiredImmediateAgentRestart };
+        result = { .ResultCode = ADUC_Result_Apply_RequiredImmediateAgentRestart, .ExtendedResultCode = 0 };
         goto done;
     }
     else
     {
-        result = { .ResultCode = ADUC_Result_Apply_Success };
+        result = { .ResultCode = ADUC_Result_Apply_Success, .ExtendedResultCode = 0 };
     }
 
     Log_Info("Apply succeeded");
@@ -416,9 +432,27 @@ done:
  */
 ADUC_Result AptHandlerImpl::Cancel(const ADUC_WorkflowData* workflowData)
 {
-    UNREFERENCED_PARAMETER(workflowData);
-    // For APT Update, cancel is not supported.
-    return ADUC_Result{ ADUC_Result_Cancel_UnableToCancel };
+    ADUC_Result result = { .ResultCode = ADUC_Result_Cancel_Success, .ExtendedResultCode = 0 };
+    ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
+    ADUC_WorkflowHandle stepWorkflowHandle = nullptr;
+
+    const char* workflowId = workflow_peek_id(handle);
+    int workflowLevel = workflow_get_level(handle);
+    int workflowStep = workflow_get_step_index(handle);
+
+    Log_Info(
+        "Requesting cancel operation (workflow id '%s', level %d, step %d).", workflowId, workflowLevel, workflowStep);
+    if (!workflow_request_cancel(handle))
+    {
+        Log_Error(
+            "Cancellation request failed. (workflow id '%s', level %d, step %d)",
+            workflowId,
+            workflowLevel,
+            workflowStep);
+        result.ResultCode = ADUC_Result_Cancel_UnableToCancel;
+    }
+
+    return result;
 }
 
 /**
@@ -445,7 +479,7 @@ ADUC_Result AptHandlerImpl::IsInstalled(const ADUC_WorkflowData* workflowData)
 ADUC_Result AptHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData)
 {
     UNREFERENCED_PARAMETER(workflowData);
-    ADUC_Result result = { ADUC_Result_Backup_Success_Unsupported };
+    ADUC_Result result = { .ResultCode = ADUC_Result_Backup_Success_Unsupported, .ExtendedResultCode = 0 };
     Log_Info("Apt update backup & restore is not supported. (no-op)");
     return result;
 }
@@ -458,7 +492,7 @@ ADUC_Result AptHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData)
 ADUC_Result AptHandlerImpl::Restore(const tagADUC_WorkflowData* workflowData)
 {
     UNREFERENCED_PARAMETER(workflowData);
-    ADUC_Result result = { ADUC_Result_Restore_Success_Unsupported };
+    ADUC_Result result = { .ResultCode = ADUC_Result_Restore_Success_Unsupported, .ExtendedResultCode = 0 };
     Log_Info("Apt update backup & restore is not supported. (no-op)");
     return result;
 }

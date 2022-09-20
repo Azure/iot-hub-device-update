@@ -6,8 +6,8 @@
  * Licensed under the MIT License.
  */
 #include "aduc/parser_utils.h"
-#include "aduc/workflow_utils.h"
 #include "aduc/result.h"
+#include "aduc/workflow_utils.h"
 
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
@@ -655,4 +655,60 @@ TEST_CASE("result success erc")
         ADUC_Result_t erc = workflow_get_success_erc(h);
         CHECK(erc == ADUC_ERC_NOMEM);
     }
+}
+
+TEST_CASE("Request workflow cancellation")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &handle);
+
+    CHECK(result.ResultCode != 0);
+    CHECK(result.ExtendedResultCode == 0);
+
+    ADUC_WorkflowHandle childWorkflow[3];
+
+    char name[40];
+    for (int i = 0; i < ARRAY_SIZE(childWorkflow); i++)
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+        result = workflow_init(action_child_update_0, false /* validateManifest */, &childWorkflow[i]);
+        CHECK(result.ResultCode != 0);
+        CHECK(result.ExtendedResultCode == 0);
+
+        sprintf(name, "leaf%d", i);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+        bool nameOk = workflow_set_id(childWorkflow[i], name);
+        CHECK(nameOk);
+
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+        bool insertOk = workflow_insert_child(handle, -1, childWorkflow[i]);
+        CHECK(insertOk);
+
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+        auto p = workflow_get_parent(childWorkflow[i]);
+        CHECK(p == handle);
+
+        int childCount = workflow_get_children_count(handle);
+        CHECK(childCount == (i + 1));
+
+        CHECK(!workflow_is_cancel_requested(childWorkflow[i]));
+    }
+
+    // Rquest cancel on parent and children
+    CHECK(!workflow_is_cancel_requested(handle));
+    CHECK(workflow_request_cancel(handle));
+    CHECK(workflow_is_cancel_requested(handle));
+
+    for (int i = 0; i < ARRAY_SIZE(childWorkflow); i++)
+    {
+        CHECK(workflow_is_cancel_requested(childWorkflow[i]));
+    }
+
+    for (int i = ARRAY_SIZE(childWorkflow) - 1; i >= 0; i--)
+    {
+        workflow_remove_child(handle, i);
+        workflow_free(childWorkflow[i]);
+    }
+
+    workflow_free(handle);
 }

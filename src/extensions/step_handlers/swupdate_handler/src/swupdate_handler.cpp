@@ -126,15 +126,21 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
     ADUC_Result result = { ADUC_Result_Failure };
     ADUC_FileEntity* entity = nullptr;
     ADUC_WorkflowHandle workflowHandle = workflowData->WorkflowHandle;
-    char* workflowId = workflow_get_id(workflowHandle);
     char* workFolder = workflow_get_workfolder(workflowHandle);
     int fileCount = 0;
 
     char* updateType = workflow_get_update_type(workflowHandle);
     char* updateName = nullptr;
     unsigned int updateTypeVersion = 0;
-    bool updateTypeOk = ADUC_ParseUpdateType(updateType, &updateName, &updateTypeVersion);
+    bool updateTypeOk = false;
 
+    if (workflow_is_cancel_requested(workflowHandle))
+    {
+        result = this->Cancel(workflowData);
+        goto done;
+    }
+
+    updateTypeOk = ADUC_ParseUpdateType(updateType, &updateName, &updateTypeVersion);
     if (!updateTypeOk)
     {
         Log_Error("SWUpdate packages download failed. Unknown Handler Version (UpdateDateType:%s)", updateType);
@@ -175,7 +181,6 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
     }
 
 done:
-    workflow_free_string(workflowId);
     workflow_free_string(workFolder);
     workflow_free_file_entity(entity);
 
@@ -204,6 +209,12 @@ ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowDat
 
         result = { .ResultCode = ADUC_Result_Failure,
                    .ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_CANNOT_OPEN_WORKFOLDER };
+        goto done;
+    }
+
+    if (workflow_is_cancel_requested(workflowHandle))
+    {
+        result = this->Cancel(workflowData);
         goto done;
     }
 
@@ -266,7 +277,14 @@ done:
 ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = { ADUC_Result_Failure };
-    char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
+    char* workFolder = NULL;
+
+    if (workflow_is_cancel_requested(workflowData->WorkflowHandle))
+    {
+        return this->Cancel(workflowData);
+    }
+
+    workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
     Log_Info("Applying data from %s", workFolder);
 
     // Execute the install command with  "-a" to apply the install by telling
@@ -295,6 +313,12 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
     }
 
     // Cancel requested?
+    if (workflow_is_cancel_requested(workflowData->WorkflowHandle))
+    {
+        result = this->Cancel(workflowData);
+        goto done;
+    }
+
     if (workflow_get_operation_cancel_requested(workflowData->WorkflowHandle))
     {
         CancelApply(ADUC_LOG_FOLDER);
@@ -304,8 +328,11 @@ done:
     workflow_free_string(workFolder);
 
     // Always require a reboot after successful apply
-    workflow_request_immediate_reboot(workflowData->WorkflowHandle);
-    result = { ADUC_Result_Apply_RequiredImmediateReboot };
+    if (IsAducResultCodeSuccess(result.ResultCode))
+    {
+        workflow_request_immediate_reboot(workflowData->WorkflowHandle);
+        result = { ADUC_Result_Apply_RequiredImmediateReboot };
+    }
 
     return result;
 }
@@ -321,8 +348,27 @@ done:
  */
 ADUC_Result SWUpdateHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
 {
-    UNREFERENCED_PARAMETER(workflowData);
-    return ADUC_Result{ ADUC_Result_Cancel_Success };
+    ADUC_Result result = { .ResultCode = ADUC_Result_Cancel_Success, .ExtendedResultCode = 0 };
+    ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
+    ADUC_WorkflowHandle stepWorkflowHandle = nullptr;
+
+    const char* workflowId = workflow_peek_id(handle);
+    int workflowLevel = workflow_get_level(handle);
+    int workflowStep = workflow_get_step_index(handle);
+
+    Log_Info(
+        "Requesting cancel operation (workflow id '%s', level %d, step %d).", workflowId, workflowLevel, workflowStep);
+    if (!workflow_request_cancel(handle))
+    {
+        Log_Error(
+            "Cancellation request failed. (workflow id '%s', level %d, step %d)",
+            workflowId,
+            workflowLevel,
+            workflowStep);
+        result.ResultCode = ADUC_Result_Cancel_UnableToCancel;
+    }
+
+    return result;
 }
 
 /**

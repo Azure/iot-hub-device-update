@@ -650,13 +650,12 @@ JSON_Value* GetReportingJsonValue(
     //
     // Workflow
     //
-    char* workflowId = workflow_get_id(handle);
-    if (!IsNullOrEmpty(workflowId))
+    if (!IsNullOrEmpty(workflow_peek_id(handle)))
     {
         _Bool success = set_workflow_properties(
             workflowValue,
             ADUC_WorkflowData_GetCurrentAction(workflowData),
-            workflowId,
+            workflow_peek_id(handle),
             workflow_peek_retryTimestamp(handle));
 
         if (!success)

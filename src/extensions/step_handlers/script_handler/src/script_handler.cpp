@@ -669,6 +669,11 @@ ADUC_Result ScriptHandlerImpl::PerformAction(const std::string& action, const ta
     return ScriptHandler_PerformAction(action, workflowData);
 }
 
+static ADUC_Result DoCancel(const tagADUC_WorkflowData* workflowData)
+{
+    return ScriptHandler_PerformAction("--action-cancel", workflowData);
+}
+
 /**
  * @brief Performs 'Apply' task.
  * @return ADUC_Result The result return from script execution.
@@ -685,7 +690,26 @@ ADUC_Result ScriptHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
  */
 ADUC_Result ScriptHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result = PerformAction("--action-cancel", workflowData);
+    ADUC_Result result = { .ResultCode = ADUC_Result_Cancel_Success, .ExtendedResultCode = 0 };
+    ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
+    ADUC_WorkflowHandle stepWorkflowHandle = nullptr;
+
+    const char* workflowId = workflow_peek_id(handle);
+    int workflowLevel = workflow_get_level(handle);
+    int workflowStep = workflow_get_step_index(handle);
+
+    Log_Info(
+        "Requesting cancel operation (workflow id '%s', level %d, step %d).", workflowId, workflowLevel, workflowStep);
+    if (!workflow_request_cancel(handle))
+    {
+        Log_Error(
+            "Cancellation request failed. (workflow id '%s', level %d, step %d)",
+            workflowId,
+            workflowLevel,
+            workflowStep);
+        result.ResultCode = ADUC_Result_Cancel_UnableToCancel;
+    }
+
     return result;
 }
 

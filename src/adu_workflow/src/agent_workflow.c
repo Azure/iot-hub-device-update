@@ -1315,7 +1315,6 @@ ADUC_Result ADUC_Workflow_MethodCall_Download(ADUC_MethodCall_Data* methodCallDa
 
     ADUC_Result result = { ADUC_Result_Download_Success };
     char* workFolder = workflow_get_workfolder(workflowHandle);
-    char* workflowId = workflow_get_id(workflowHandle);
 
     Log_Info("Workflow step: Download");
 
@@ -1333,7 +1332,7 @@ ADUC_Result ADUC_Workflow_MethodCall_Download(ADUC_MethodCall_Data* methodCallDa
     // Note: It's okay for SandboxCreate to return NULL for the work folder.
     // NULL likely indicates an OS without a file system.
     result = updateActionCallbacks->SandboxCreateCallback(
-        updateActionCallbacks->PlatformLayerHandle, workflowId, workFolder);
+        updateActionCallbacks->PlatformLayerHandle, workflow_peek_id(workflowData->WorkflowHandle), workFolder);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -1352,7 +1351,6 @@ ADUC_Result ADUC_Workflow_MethodCall_Download(ADUC_MethodCall_Data* methodCallDa
     }
 
 done:
-    workflow_free_string(workflowId);
     workflow_free_string(workFolder);
 
     return result;

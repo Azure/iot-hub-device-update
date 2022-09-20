@@ -183,8 +183,6 @@ done:
 ADUC_Result LinuxPlatformLayer::Install(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
-    char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
-
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
@@ -199,7 +197,6 @@ ADUC_Result LinuxPlatformLayer::Install(const ADUC_WorkflowData* workflowData)
     }
 
 done:
-    workflow_free_string(workflowId);
     return result;
 }
 
@@ -210,9 +207,6 @@ done:
 ADUC_Result LinuxPlatformLayer::Apply(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
-
-    char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
-
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
@@ -227,7 +221,6 @@ ADUC_Result LinuxPlatformLayer::Apply(const ADUC_WorkflowData* workflowData)
     }
 
 done:
-    workflow_free_string(workflowId);
     return result;
 }
 
@@ -238,9 +231,6 @@ done:
 ADUC_Result LinuxPlatformLayer::Backup(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
-
-    char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
-
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
@@ -257,7 +247,6 @@ ADUC_Result LinuxPlatformLayer::Backup(const ADUC_WorkflowData* workflowData)
     }
 
 done:
-    workflow_free_string(workflowId);
     return result;
 }
 /**
@@ -267,9 +256,6 @@ done:
 ADUC_Result LinuxPlatformLayer::Restore(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
-
-    char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
-
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
@@ -282,7 +268,6 @@ ADUC_Result LinuxPlatformLayer::Restore(const ADUC_WorkflowData* workflowData)
     // so the agent should try to restore to the previous state - proceed to finish the restore.
 
 done:
-    workflow_free_string(workflowId);
     return result;
 }
 

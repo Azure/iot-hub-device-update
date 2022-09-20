@@ -46,7 +46,7 @@
 #define WORKFLOW_PROPERTY_FIELD_SELECTED_COMPONENTS "_selectedComponents"
 
 // V4 and later.
-#define DEAULT_STEP_TYPE "reference"
+#define DEFAULT_STEP_TYPE "reference"
 #define WORKFLOW_PROPERTY_FIELD_INSTRUCTIONS_DOT_STEPS "instructions.steps"
 #define UPDATE_MANIFEST_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID "detachedManifestFileId"
 #define STEP_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID UPDATE_MANIFEST_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID
@@ -2640,6 +2640,14 @@ void workflow_set_parent(ADUC_WorkflowHandle handle, ADUC_WorkflowHandle parent)
     ADUC_Workflow* wf = workflow_from_handle(handle);
     wf->Parent = workflow_from_handle(parent);
     wf->Level = workflow_get_level(parent) + 1;
+
+    if (parent != NULL && workflow_is_cancel_requested(parent))
+    {
+        if (!workflow_request_cancel(handle))
+        {
+            Log_Warn("Workflow cancellation request failed. (workflow level %d)", wf->Level);
+        }
+    }
 }
 
 /**
@@ -3093,9 +3101,25 @@ bool workflow_read_state_from_file(ADUC_WorkflowHandle handle, const char* state
     return true;
 }
 
+bool workflow_request_cancel(ADUC_WorkflowHandle handle)
+{
+    if (handle == NULL)
+    {
+        return false;
+    }
+
+    bool success = workflow_set_boolean_property(handle, WORKFLOW_PROPERTY_FIELD_CANCEL_REQUESTED, true);
+    int childCount = workflow_get_children_count(handle);
+    for (int i = 0; i < childCount; i++)
+    {
+        success = success && workflow_request_cancel(workflow_get_child(handle, i));
+    }
+    return success;
+}
+
 bool workflow_is_cancel_requested(ADUC_WorkflowHandle handle)
 {
-    return workflow_get_boolean_property(workflow_get_root(handle), WORKFLOW_PROPERTY_FIELD_CANCEL_REQUESTED);
+    return workflow_get_boolean_property(handle, WORKFLOW_PROPERTY_FIELD_CANCEL_REQUESTED);
 }
 
 bool workflow_is_agent_restart_requested(ADUC_WorkflowHandle handle)
@@ -3393,7 +3417,7 @@ const char* workflow_peek_step_type(ADUC_WorkflowHandle handle, size_t stepIndex
     const char* stepType = json_object_get_string(step, STEP_PROPERTY_FIELD_TYPE);
     if (stepType == NULL)
     {
-        return DEAULT_STEP_TYPE;
+        return DEFAULT_STEP_TYPE;
     }
 
     return stepType;

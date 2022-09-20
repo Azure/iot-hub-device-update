@@ -57,20 +57,6 @@ SWUpdateHandlerImpl::~SWUpdateHandlerImpl() // override
     ADUC_Logging_Uninit();
 }
 
-// Forward declarations.
-static ADUC_Result CancelApply(const char* logFolder);
-
-/**
- * @brief Creates a new SWUpdateHandlerImpl object and casts to a ContentHandler.
- * Note that there is no way to create a SWUpdateHandlerImpl directly.
- *
- * @return ContentHandler* SimulatorHandlerImpl object as a ContentHandler.
- */
-ContentHandler* SWUpdateHandlerImpl::CreateContentHandler()
-{
-    return new SWUpdateHandlerImpl();
-}
-
 /**
  * @brief Downloads a main script file into a sandbox folder.
  *        The 'handlerProperties["scriptFileName"]' contains the main script file name.
@@ -81,7 +67,6 @@ ContentHandler* SWUpdateHandlerImpl::CreateContentHandler()
 static ADUC_Result SWUpdate_Handler_DownloadScriptFile(ADUC_WorkflowHandle handle)
 {
     ADUC_Result result = { ADUC_Result_Failure };
-    const char* workflowId = nullptr;
     char* workFolder = nullptr;
     ADUC_FileEntity* entity = nullptr;
     int fileCount = workflow_get_update_files_count(handle);
@@ -108,7 +93,6 @@ static ADUC_Result SWUpdate_Handler_DownloadScriptFile(ADUC_WorkflowHandle handl
         goto done;
     }
 
-    workflowId = workflow_peek_id(handle);
     workFolder = workflow_get_workfolder(handle);
 
     createResult = ADUC_SystemUtils_MkSandboxDirRecursive(workFolder);
@@ -137,17 +121,180 @@ done:
 }
 
 /**
+ * @brief Perform a workflow action. If @p prepareArgsOnly is true, only prepare data, but not actually
+ *        perform any action.
+ *
+ * @param action Indicate an action to perform. This can be '--action-download', '--action-install',
+ *               '--action-apply', "--action-cancel", and "--action-is-installed".
+ * @param workflowData An object containing workflow data.
+ * @param prepareArgsOnly  Boolean indicates whether to prepare action data only.
+ * @param[out] scriptFilePath Output string contains a script to be run.
+ * @param[in] args List of options and arguments.
+ * @param[out] commandLineArgs An output command-line arguments.
+ * @param[out] scriptOutput If @p prepareArgsOnly is false, this will contains the action output string.
+ * @return ADUC_Result
+ */
+ADUC_Result SWUpdateHandler_PerformAction(
+    const std::string& action,
+    const tagADUC_WorkflowData* workflowData,
+    bool prepareArgsOnly,
+    std::string& scriptFilePath,
+    std::vector<std::string>& args,
+    std::vector<std::string>& commandLineArgs,
+    std::string& scriptOutput)
+{
+    Log_Info("Action (%s) begin", action.c_str());
+    ADUC_Result result = { ADUC_GeneralResult_Failure };
+
+    int exitCode = 0;
+    commandLineArgs.clear();
+
+    if (workflowData == nullptr || workflowData->WorkflowHandle == nullptr)
+    {
+        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_INSTALL_ERROR_NULL_WORKFLOW;
+        return result;
+    }
+
+    char* workFolder = ADUC_WorkflowData_GetWorkFolder(workflowData);
+    std::string scriptWorkfolder = workFolder;
+    std::string scriptResultFile = scriptWorkfolder + "/" + "aduc_result.json";
+    JSON_Value* actionResultValue = nullptr;
+
+    std::vector<std::string> aduShellArgs = { adushconst::update_type_opt,
+                                              adushconst::update_type_microsoft_script,
+                                              adushconst::update_action_opt,
+                                              adushconst::update_action_execute };
+
+    std::stringstream ss;
+
+    result = SWUpdateHandlerImpl::PrepareCommandArguments(
+        workflowData->WorkflowHandle, scriptResultFile, scriptWorkfolder, scriptFilePath, args);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        goto done;
+    }
+
+    // If any install-item reported that the update is already installed on the
+    // selected component, we will skip the 'apply' phase, and then skip the
+    // remaining install-item(s).
+    // Also, don't continue if WorkflowHandle is NULL in the ADUInterface_Connected->HandleStartupWorkflowData flow.
+    if (result.ResultCode == ADUC_Result_Install_Skipped_UpdateAlreadyInstalled
+        || workflowData->WorkflowHandle == nullptr)
+    {
+        goto done;
+    }
+
+    aduShellArgs.emplace_back(adushconst::target_data_opt);
+    aduShellArgs.emplace_back(scriptFilePath);
+    commandLineArgs.emplace_back(scriptFilePath);
+
+    aduShellArgs.emplace_back(adushconst::target_options_opt);
+    aduShellArgs.emplace_back(action.c_str());
+    commandLineArgs.emplace_back(action.c_str());
+
+    for (const auto& a : args)
+    {
+        aduShellArgs.emplace_back(adushconst::target_options_opt);
+        aduShellArgs.emplace_back(a);
+        commandLineArgs.emplace_back(a);
+    }
+
+    if (prepareArgsOnly)
+    {
+        for (const auto& a : aduShellArgs)
+        {
+            if (a[0] != '-')
+            {
+                ss << " \"" << a << "\"";
+            }
+            else
+            {
+                ss << " " << a;
+            }
+        }
+        scriptOutput = ss.str();
+
+        Log_Debug("Prepare Only! adu-shell Command:\n\n %s", scriptOutput.c_str());
+        result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
+        goto done;
+    }
+
+    exitCode = ADUC_LaunchChildProcess(adushconst::adu_shell, aduShellArgs, scriptOutput);
+    if (exitCode != 0)
+    {
+        int extendedCode = ADUC_ERC_SWUPDATE_HANDLER_CHILD_FAILURE_PROCESS_EXITCODE(exitCode);
+        Log_Error("Install failed, extendedResultCode:0x%X (exitCode:%d)", extendedCode, exitCode);
+        result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = extendedCode };
+    }
+
+    if (!scriptOutput.empty())
+    {
+        Log_Info(scriptOutput.c_str());
+    }
+
+    // Parse result file.
+    actionResultValue = json_parse_file(scriptResultFile.c_str());
+
+    if (actionResultValue == nullptr)
+    {
+        result = { .ResultCode = ADUC_Result_Failure,
+                   .ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE };
+        workflow_set_result_details(
+            workflowData->WorkflowHandle,
+            "The install script doesn't create a result file '%s'.",
+            scriptResultFile.c_str());
+        goto done;
+    }
+    else
+    {
+        JSON_Object* actionResultObject = json_object(actionResultValue);
+        result.ResultCode = json_object_get_number(actionResultObject, "resultCode");
+        result.ExtendedResultCode = json_object_get_number(actionResultObject, "extendedResultCode");
+        const char* details = json_object_get_string(actionResultObject, "resultDetails");
+        workflow_set_result_details(workflowData->WorkflowHandle, details);
+    }
+
+    Log_Info(
+        "Action (%s) done - returning rc:%d, erc:0x%X, rd:%s",
+        action.c_str(),
+        result.ResultCode,
+        result.ExtendedResultCode,
+        workflow_peek_result_details(workflowData->WorkflowHandle));
+
+done:
+    if (IsAducResultCodeFailure(result.ResultCode) && workflowData->WorkflowHandle != nullptr)
+    {
+        workflow_set_result(workflowData->WorkflowHandle, result);
+        workflow_set_state(workflowData->WorkflowHandle, ADUCITF_State_Failed);
+    }
+
+    json_value_free(actionResultValue);
+    workflow_free_string(workFolder);
+    return result;
+}
+
+/**
+ * @brief Creates a new SWUpdateHandlerImpl object and casts to a ContentHandler.
+ * Note that there is no way to create a SWUpdateHandlerImpl directly.
+ *
+ * @return ContentHandler* SimulatorHandlerImpl object as a ContentHandler.
+ */
+ContentHandler* SWUpdateHandlerImpl::CreateContentHandler()
+{
+    return new SWUpdateHandlerImpl();
+}
+
+/**
  * @brief Performs 'Download' task.
  *
  * @return ADUC_Result The result of the download (always success)
- */
+*/
 ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowData)
 {
     Log_Info("SWUpdate handler v2 download task begin.");
 
     ADUC_WorkflowHandle workflowHandle = workflowData->WorkflowHandle;
     char* installedCriteria = nullptr;
-    const char* workflowId = workflow_peek_id(workflowHandle);
     char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
     ADUC_FileEntity* entity = nullptr;
     int fileCount = workflow_get_update_files_count(workflowHandle);
@@ -292,11 +439,26 @@ done:
  */
 ADUC_Result SWUpdateHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result = SWUpdate_Handler_DownloadScriptFile(workflowData->WorkflowHandle);
-    if (IsAducResultCodeSuccess(result.ResultCode))
+    ADUC_Result result = { .ResultCode = ADUC_Result_Cancel_Success, .ExtendedResultCode = 0 };
+    ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
+    ADUC_WorkflowHandle stepWorkflowHandle = nullptr;
+
+    const char* workflowId = workflow_peek_id(handle);
+    int workflowLevel = workflow_get_level(handle);
+    int workflowStep = workflow_get_step_index(handle);
+
+    Log_Info(
+        "Requesting cancel operation (workflow id '%s', level %d, step %d).", workflowId, workflowLevel, workflowStep);
+    if (!workflow_request_cancel(handle))
     {
-        result = PerformAction("--action-cancel", workflowData);
+        Log_Error(
+            "Cancellation request failed. (workflow id '%s', level %d, step %d)",
+            workflowId,
+            workflowLevel,
+            workflowStep);
+        result.ResultCode = ADUC_Result_Cancel_UnableToCancel;
     }
+
     return result;
 }
 
@@ -657,159 +819,6 @@ done:
     }
 
     workflow_free_string(installedCriteria);
-    return result;
-}
-
-/**
- * @brief Perform a workflow action. If @p prepareArgsOnly is true, only prepare data, but not actually
- *        perform any action.
- *
- * @param action Indicate an action to perform. This can be '--action-download', '--action-install',
- *               '--action-apply', "--action-cancel", and "--action-is-installed".
- * @param workflowData An object containing workflow data.
- * @param prepareArgsOnly  Boolean indicates whether to prepare action data only.
- * @param[out] scriptFilePath Output string contains a script to be run.
- * @param[in] args List of options and arguments.
- * @param[out] commandLineArgs An output command-line arguments.
- * @param[out] scriptOutput If @p prepareArgsOnly is false, this will contains the action output string.
- * @return ADUC_Result
- */
-ADUC_Result SWUpdateHandler_PerformAction(
-    const std::string& action,
-    const tagADUC_WorkflowData* workflowData,
-    bool prepareArgsOnly,
-    std::string& scriptFilePath,
-    std::vector<std::string>& args,
-    std::vector<std::string>& commandLineArgs,
-    std::string& scriptOutput)
-{
-    Log_Info("Action (%s) begin", action.c_str());
-    ADUC_Result result = { ADUC_GeneralResult_Failure };
-
-    int exitCode = 0;
-    commandLineArgs.clear();
-
-    if (workflowData == nullptr || workflowData->WorkflowHandle == nullptr)
-    {
-        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_INSTALL_ERROR_NULL_WORKFLOW;
-        return result;
-    }
-
-    char* workFolder = ADUC_WorkflowData_GetWorkFolder(workflowData);
-    std::string scriptWorkfolder = workFolder;
-    std::string scriptResultFile = scriptWorkfolder + "/" + "aduc_result.json";
-    JSON_Value* actionResultValue = nullptr;
-
-    std::vector<std::string> aduShellArgs = { adushconst::update_type_opt,
-                                              adushconst::update_type_microsoft_script,
-                                              adushconst::update_action_opt,
-                                              adushconst::update_action_execute };
-
-    std::stringstream ss;
-
-    result = SWUpdateHandlerImpl::PrepareCommandArguments(
-        workflowData->WorkflowHandle, scriptResultFile, scriptWorkfolder, scriptFilePath, args);
-    if (IsAducResultCodeFailure(result.ResultCode))
-    {
-        goto done;
-    }
-
-    // If any install-item reported that the update is already installed on the
-    // selected component, we will skip the 'apply' phase, and then skip the
-    // remaining install-item(s).
-    // Also, don't continue if WorkflowHandle is NULL in the ADUInterface_Connected->HandleStartupWorkflowData flow.
-    if (result.ResultCode == ADUC_Result_Install_Skipped_UpdateAlreadyInstalled
-        || workflowData->WorkflowHandle == nullptr)
-    {
-        goto done;
-    }
-
-    aduShellArgs.emplace_back(adushconst::target_data_opt);
-    aduShellArgs.emplace_back(scriptFilePath);
-    commandLineArgs.emplace_back(scriptFilePath);
-
-    aduShellArgs.emplace_back(adushconst::target_options_opt);
-    aduShellArgs.emplace_back(action.c_str());
-    commandLineArgs.emplace_back(action.c_str());
-
-    for (const auto& a : args)
-    {
-        aduShellArgs.emplace_back(adushconst::target_options_opt);
-        aduShellArgs.emplace_back(a);
-        commandLineArgs.emplace_back(a);
-    }
-
-    if (prepareArgsOnly)
-    {
-        for (const auto& a : aduShellArgs)
-        {
-            if (a[0] != '-')
-            {
-                ss << " \"" << a << "\"";
-            }
-            else
-            {
-                ss << " " << a;
-            }
-        }
-        scriptOutput = ss.str();
-
-        Log_Debug("Prepare Only! adu-shell Command:\n\n %s", scriptOutput.c_str());
-        result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
-        goto done;
-    }
-
-    exitCode = ADUC_LaunchChildProcess(adushconst::adu_shell, aduShellArgs, scriptOutput);
-    if (exitCode != 0)
-    {
-        int extendedCode = ADUC_ERC_SWUPDATE_HANDLER_CHILD_FAILURE_PROCESS_EXITCODE(exitCode);
-        Log_Error("Install failed, extendedResultCode:0x%X (exitCode:%d)", extendedCode, exitCode);
-        result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = extendedCode };
-    }
-
-    if (!scriptOutput.empty())
-    {
-        Log_Info(scriptOutput.c_str());
-    }
-
-    // Parse result file.
-    actionResultValue = json_parse_file(scriptResultFile.c_str());
-
-    if (actionResultValue == nullptr)
-    {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE };
-        workflow_set_result_details(
-            workflowData->WorkflowHandle,
-            "The install script doesn't create a result file '%s'.",
-            scriptResultFile.c_str());
-        goto done;
-    }
-    else
-    {
-        JSON_Object* actionResultObject = json_object(actionResultValue);
-        result.ResultCode = json_object_get_number(actionResultObject, "resultCode");
-        result.ExtendedResultCode = json_object_get_number(actionResultObject, "extendedResultCode");
-        const char* details = json_object_get_string(actionResultObject, "resultDetails");
-        workflow_set_result_details(workflowData->WorkflowHandle, details);
-    }
-
-    Log_Info(
-        "Action (%s) done - returning rc:%d, erc:0x%X, rd:%s",
-        action.c_str(),
-        result.ResultCode,
-        result.ExtendedResultCode,
-        workflow_peek_result_details(workflowData->WorkflowHandle));
-
-done:
-    if (IsAducResultCodeFailure(result.ResultCode) && workflowData->WorkflowHandle != nullptr)
-    {
-        workflow_set_result(workflowData->WorkflowHandle, result);
-        workflow_set_state(workflowData->WorkflowHandle, ADUCITF_State_Failed);
-    }
-
-    json_value_free(actionResultValue);
-    workflow_free_string(workFolder);
     return result;
 }
 

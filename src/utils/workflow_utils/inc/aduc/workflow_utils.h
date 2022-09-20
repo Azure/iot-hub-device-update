@@ -482,19 +482,100 @@ const char* workflow_peek_installed_update_id(ADUC_WorkflowHandle handle);
 
 bool workflow_read_state_from_file(ADUC_WorkflowHandle handle, const char* stateFilename);
 
+/**
+ * @brief Request a workflow cancellation.
+ *
+ * @param handle A workflow data object handle.
+ * @return A boolean indicates that the 'WORKFLOW_PROPERTY_FIELD_CANCEL_REQUESTED' property successfully set to 'true'.
+ */
+bool workflow_request_cancel(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Check whether the workflow cancellation is requested.
+ *
+ * @param handle A workflow data object handle.
+ * @return A boolean indicates whether the workflow cancellation is requested.
+ */
 bool workflow_is_cancel_requested(ADUC_WorkflowHandle handle);
 
+/**
+ * @brief Request the agent to restart after the top level workflow is finished.
+ *
+ * @param handle A workflow data object handle.
+ * @return 'True' if request success.
+ */
 bool workflow_request_agent_restart(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Request the agent to restart immediately after current operation (e.g., download, install, or apply) is finished.
+ *
+ * @param handle A workflow data object handle.
+ * @return 'True' if request success.
+ */
 bool workflow_request_immediate_agent_restart(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Check whether the agent restart is requested.
+ *
+ * @param handle A workflow data object handle.
+ * @return A boolean indicates whether the agent restart is requested.
+ */
 bool workflow_is_agent_restart_requested(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Check whether the agent immediate restart is requested.
+ *
+ * @param handle A workflow data object handle.
+ * @return A boolean indicates whether the agent immediate restart is requested.
+ */
 bool workflow_is_immediate_agent_restart_requested(ADUC_WorkflowHandle handle);
 
+/**
+ * @brief Request the agent to reboot the device after the top level workflow is finished.
+ *
+ * @param handle A workflow data object handle.
+ * @return 'True' if request success.
+ */
 bool workflow_request_reboot(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Request the agent to reboot the device immediately  after current operation (e.g., download, install, or apply) is finished.
+ *
+ * @param handle A workflow data object handle.
+ * @return 'True' if request success.
+ */
 bool workflow_request_immediate_reboot(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Check whether the device reboot is requested.
+ *
+ * @param handle A workflow data object handle.
+ * @return A boolean indicates whether the device reboot is requested.
+ */
 bool workflow_is_reboot_requested(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Check whether the immediate device reboot is requested.
+ *
+ * @param handle A workflow data object handle.
+ * @return A boolean indicates whether the immediate device reboot is requested.
+ */
 bool workflow_is_immediate_reboot_requested(ADUC_WorkflowHandle handle);
 
+/**
+ * @brief Set workflow cancellation type.
+ *
+ * @param handle A workflow data object handle.
+ * @param cancellationType A cancellation type.
+ */
 void workflow_set_cancellation_type(ADUC_WorkflowHandle handle, ADUC_WorkflowCancellationType cancellationType);
+
+/**
+ * @brief Set workflow cancellation type.
+ *
+ * @param handle A workflow data object handle.
+ * @param cancellationType A cancellation type.
+ */
 ADUC_WorkflowCancellationType workflow_get_cancellation_type(ADUC_WorkflowHandle handle);
 
 bool workflow_update_retry_deployment(ADUC_WorkflowHandle handle, const char* retryToken);
