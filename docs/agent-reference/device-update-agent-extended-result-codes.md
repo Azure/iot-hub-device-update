@@ -416,7 +416,6 @@ static inline ADUC_Result_t MAKE_ADUC_STEPS_HANDLER_EXTENDEDRESULTCODE(const int
     None
 ```
 
-
 #### Script Handler Result Codes (0x305#####)
 
 ##### Macro for creating extended result codes

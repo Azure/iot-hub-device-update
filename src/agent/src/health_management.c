@@ -21,17 +21,32 @@
 /**
  * @brief The users that must exist on the system.
  */
-static const char* aduc_required_users[] = { ADUC_FILE_USER, DO_FILE_USER };
+static const char* aduc_required_users[] = { ADUC_FILE_USER };
+
+/**
+ * @brief The optional users.
+ */
+static const char* aduc_optional_users[] = { DO_FILE_USER };
 
 /**
  * @brief The groups that must exist on the system.
  */
-static const char* aduc_required_groups[] = { ADUC_FILE_GROUP, DO_FILE_GROUP };
+static const char* aduc_required_groups[] = { ADUC_FILE_GROUP };
+
+/**
+ * @brief The optional groups.
+ */
+static const char* aduc_optional_groups[] = { DO_FILE_GROUP };
 
 /**
  * @brief The supplementary groups for ADUC_FILE_USER
  */
-static const char* aduc_required_group_memberships[] = {
+static const char* aduc_required_group_memberships[] = {};
+
+/**
+ * @brief The supplementary groups for ADUC_FILE_USER
+ */
+static const char* aduc_optional_group_memberships[] = {
     DO_FILE_GROUP // allows agent to set connection_string for DO
 };
 
@@ -113,8 +128,17 @@ static _Bool ReportMissingRequiredUsers()
     {
         if (!PermissionUtils_UserExists(aduc_required_users[i]))
         {
-            Log_Error("User '%s' does not exist.", aduc_required_users[i]);
+            Log_Error("Required user '%s' does not exist.", aduc_required_users[i]);
             result = false;
+            // continue on to next user
+        }
+    }
+
+    for (int i = 0; i < ARRAY_SIZE(aduc_optional_users); ++i)
+    {
+        if (!PermissionUtils_UserExists(aduc_optional_users[i]))
+        {
+            Log_Warn("Optional user '%s' does not exist.", aduc_optional_users[i]);
             // continue on to next user
         }
     }
@@ -135,8 +159,17 @@ static _Bool ReportMissingRequiredGroups()
     {
         if (!PermissionUtils_GroupExists(aduc_required_groups[i]))
         {
-            Log_Error("Group '%s' does not exist.", aduc_required_groups[i]);
+            Log_Error("Required group '%s' does not exist.", aduc_required_groups[i]);
             result = false;
+            // continue on to next user
+        }
+    }
+
+    for (int i = 0; i < ARRAY_SIZE(aduc_optional_groups); ++i)
+    {
+        if (!PermissionUtils_GroupExists(aduc_optional_groups[i]))
+        {
+            Log_Warn("Optional group '%s' does not exist.", aduc_optional_groups[i]);
             // continue on to next user
         }
     }
@@ -164,11 +197,20 @@ static _Bool ReportMissingGroupMemberships()
         }
     }
 
+    // ADUC group memberships
+    for (int i = 0; i < ARRAY_SIZE(aduc_optional_group_memberships); ++i)
+    {
+        if (!PermissionUtils_UserInSupplementaryGroup(ADUC_FILE_USER, aduc_optional_group_memberships[i]))
+        {
+            Log_Warn("User '%s' is not a member of '%s' group.", ADUC_FILE_USER, aduc_optional_group_memberships[i]);
+            // continue evaluating next membership
+        }
+    }
+
     // DO group memberships
     if (!PermissionUtils_UserInSupplementaryGroup(DO_FILE_USER, ADUC_FILE_GROUP))
     {
-        Log_Error("User '%s' is not a member of '%s' group.", DO_FILE_USER, ADUC_FILE_GROUP);
-        result = false;
+        Log_Warn("User '%s' is not a member of '%s' group.", DO_FILE_USER, ADUC_FILE_GROUP);
     }
 
     return result;

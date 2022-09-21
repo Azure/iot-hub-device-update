@@ -19,6 +19,7 @@
 #include "aduc/installed_criteria_utils.hpp"
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
+#include "aduc/string_c_utils.h"
 #include "aduc/types/update_content.h"
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
@@ -140,6 +141,7 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
     std::unique_ptr<AptContent> aptContent{ nullptr };
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     int fileCount = 0;
+    char* installedCriteria = nullptr;
 
     if (workflow_is_cancel_requested(handle))
     {
@@ -162,6 +164,15 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
     {
         result = { .ResultCode = ADUC_Result_Failure,
                    .ExtendedResultCode = ADUC_ERC_APT_HANDLER_GET_FILEENTITY_FAILURE };
+        goto done;
+    }
+
+    installedCriteria = workflow_get_installed_criteria(handle);
+    if (IsNullOrEmpty(installedCriteria))
+    {
+        workflow_set_result_details(handle, "Property 'installedCriteria' in handlerProperties is missing or empty.");
+        result = { .ResultCode = ADUC_Result_Failure,
+                   .ExtendedResultCode = ADUC_ERC_APT_HANDLER_MISSING_INSTALLED_CRITERIA };
         goto done;
     }
 
@@ -263,6 +274,7 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
     result = { .ResultCode = ADUC_Result_Download_Success, .ExtendedResultCode = 0 };
 
 done:
+    workflow_free_string(installedCriteria);
     workflow_free_string(workFolder);
     workflow_free_file_entity(fileEntity);
 
@@ -465,8 +477,17 @@ ADUC_Result AptHandlerImpl::Cancel(const ADUC_WorkflowData* workflowData)
  */
 ADUC_Result AptHandlerImpl::IsInstalled(const ADUC_WorkflowData* workflowData)
 {
+    ADUC_Result result = { .ResultCode = ADUC_Result_IsInstalled_NotInstalled, .ExtendedResultCode = 0 };
     char* installedCriteria = ADUC_WorkflowData_GetInstalledCriteria(workflowData);
-    ADUC_Result result = GetIsInstalled(ADUC_INSTALLEDCRITERIA_FILE_PATH, installedCriteria);
+    if (installedCriteria == nullptr)
+    {
+        Log_Error("installedCriteria is null.");
+        goto done;
+    }
+
+    result = GetIsInstalled(ADUC_INSTALLEDCRITERIA_FILE_PATH, installedCriteria);
+
+done:
     workflow_free_string(installedCriteria);
     return result;
 }

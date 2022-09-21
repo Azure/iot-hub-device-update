@@ -363,6 +363,10 @@
                 "value": 6
               },
               {
+                "name": "ADUC_ERC_APT_HANDLER_MISSING_INSTALLED_CRITERIA",
+                "value": 7
+              },
+              {
                 "name": "ADUC_ERC_APT_HANDLER_PACKAGE_DOWNLOAD_FAILURE",
                 "value": 256
               },
