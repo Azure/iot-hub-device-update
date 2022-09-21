@@ -67,6 +67,8 @@ cmake_dir_symlink="${work_folder}/deviceupdate-cmake"
 install_shellcheck=false
 supported_shellcheck_version='0.8.0'
 
+install_githooks=false
+
 # DO Deps
 default_do_ref=v0.9.0
 install_do=false
@@ -106,6 +108,7 @@ print_help() {
     echo "--cmake-prefix            Set the install path prefix when --install-cmake is used. Default is /tmp."
     echo "--cmake-version           Override the version of CMake. e.g. 3.23.2 that will be installed if --install-cmake is used."
     echo "--cmake-force-source      Force building cmake from source when --install-cmake is used."
+    echo "--install-githooks        Install githooks required by the repository."
     echo "--catch2-ref              Install Catch2 from a specific branch or tag."
     echo "                          This value is passed to git clone as the --branch argument."
     echo "                          Default is $default_catch2_ref."
@@ -134,6 +137,22 @@ print_help() {
     echo "-h, --help                Show this help message."
     echo ""
     echo "Example: ${BASH_SOURCE[0]} --install-all-deps --work-folder ~/adu-linux-client-deps --keep-source-code"
+}
+
+do_install_githooks() {
+    echo "Installing githooks..."
+
+    GITROOT="$(git rev-parse --show-toplevel 2> /dev/null)"
+
+    if [ -z "$GITROOT" ]; then
+        echo 'Unable to determine git root.' >&2
+        $ret 1
+    fi
+
+    if ! $SUDO ln -sf "$GITROOT/scripts/githooks/pre-commit.sh" "$GITROOT/.git/hooks/pre-commit"; then
+        echo "Unable to symlink pre-commit. exit code: $?"
+        $ret 1
+    fi
 }
 
 do_install_aduc_packages() {
@@ -374,7 +393,7 @@ do_install_do_release_tarball() {
         tarball_filename="${dist}_${arch}-packages.tar"
         do_release_tarball_url="https://github.com/microsoft/do-client/releases/download/${do_ref}/${tarball_filename}"
 
-        if [[ ! -e "$do_dir" ]]; then
+        if [[ ! -e $do_dir ]]; then
             echo "creating $do_dir dir..."
             mkdir -p "$do_dir" || return
         fi
@@ -780,6 +799,9 @@ while [[ $1 != "" ]]; do
     --install-shellcheck)
         install_shellcheck=true
         ;;
+    --install-githooks)
+        install_githooks=true
+        ;;
     --catch2-ref)
         shift
         catch2_ref=$1
@@ -835,7 +857,11 @@ determine_distro_and_arch
 
 # If there is no install action specified,
 # assume that we want to install all deps.
-if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && $install_do != "true" && $install_azure_iot_sdk != "true" && $install_catch2 != "true" && $install_swupdate != "true" && $install_cmake != "true" && $install_shellcheck != "true" ]]; then
+if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && \
+    $install_do != "true" && $install_azure_iot_sdk != "true" && \
+    $install_catch2 != "true" && $install_swupdate != "true" && \
+    $install_cmake != "true" && $install_shellcheck != "true" && \
+    $install_githooks != "true" ]]; then
     install_all_deps=true
 fi
 
@@ -845,6 +871,9 @@ if [[ $install_all_deps == "true" ]]; then
     install_aduc_deps=true
     install_do=true
     install_packages=true
+    install_cmake=true
+    install_shellcheck=true
+    install_githooks=true
 fi
 
 # Set implied options for aduc deps.
@@ -881,7 +910,7 @@ if [[ $install_cmake_version != "" && ! $install_cmake_version =~ ^[[:digit:]]+.
 fi
 
 # First off, install cmake if requested.
-if [[ $install_cmake == "true" || $install_all_deps == "true" || $install_aduc_deps == "true" ]]; then
+if [[ $install_cmake == "true" ]]; then
     if [[ $is_amd64 == "false" && $is_arm64 == "false" || $cmake_force_source == "true" ]]; then
         if ! do_install_cmake_from_source; then
             error "Failed to install cmake from source."
@@ -910,18 +939,18 @@ if [[ $install_cmake == "true" || $install_all_deps == "true" || $install_aduc_d
     fi
 fi
 
-# Install shellcheck if requested.
-if [[ $install_shellcheck == "true" || $install_all_deps == "true" || $install_aduc_deps == "true" ]]; then
-    if ! do_install_shellcheck; then
-        error "Failed to install shellcheck."
-        $ret 1
+# Install git hooks if requested.
+if [[ $install_githooks == "true" ]]; then
+    if ! do_install_githooks; then
+        warn "Failed to install git hooks."
     fi
 fi
 
-# Exit early and return success if installing cmake or shellcheck
-if [[ $install_cmake == "true" || $install_shellcheck == "true" ]]; then
-    echo "Successfully installed."
-    $ret 0
+# Install shellcheck if requested.
+if [[ $install_shellcheck == "true" ]]; then
+    if ! do_install_shellcheck; then
+        warn "Failed to install shellcheck."
+    fi
 fi
 
 # Install dependencies from source

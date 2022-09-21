@@ -42,7 +42,6 @@ install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
-no_shellcheck=false
 
 print_help() {
     echo "Usage: build.sh [options...]"
@@ -75,7 +74,6 @@ print_help() {
     echo "                                          From build output directory: AducIotAgent & adu-shell."
     echo ""
     echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
-    echo "--no-shellcheck                       Omit the shellcheck of all shell scripts."
     echo ""
     echo "-h, --help                            Show this help message."
 }
@@ -271,9 +269,6 @@ while [[ $1 != "" ]]; do
         shift
         cmake_dir_path=$1
         ;;
-    --no-shellcheck)
-        no_shellcheck="true"
-        ;;
     -h | --help)
         print_help
         $ret 0
@@ -453,25 +448,6 @@ if [[ $ret_val == 0 && $build_packages == "true" ]]; then
 fi
 
 popd > /dev/null || return
-
-if [[ $no_shellcheck == "false" ]]; then
-    # Run shellcheck on all *.sh not beginning with ./out
-    shell_files=$(find . -name '*.sh' | grep -v -e '^\.\/out' | xargs)
-    if [ ! -x "$shellcheck_bin" ]; then
-        error "Error: '${shellcheck_bin}' is not installed."
-        $ret 1
-    fi
-
-    shellcheck_severity='style'
-    for script in $shell_files; do
-        echo "[shellcheck Sev=${shellcheck_severity}] Checking $script"
-        "$shellcheck_bin" --shell=bash --severity="$shellcheck_severity" "$script"
-        ret_tmp=$?
-        if [[ $ret_tmp != 0 ]]; then
-            ret_val=$ret_tmp
-        fi
-    done
-fi
 
 if [[ $ret_val == 0 && $install_adu == "true" ]]; then
     install_adu_components

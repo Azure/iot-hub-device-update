@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 BASE_SOURCE_DIR=$(pwd)
 TEMPLATES_SOURCE_DIR=$BASE_SOURCE_DIR/templates
 

@@ -43,7 +43,7 @@ steps:
       sudo docker run -d -t --rm -v $(Build.SourcesDirectory):/iot-hub-device-update -v ~/.gitconfig:/etc/.gitconfig --name ARMcontainer aduccontainerregistry.azurecr.io/${{parameters.targetOs}}-${{parameters.targetArch}}:latest bash
     displayName: "Run docker container"
   - bash: |
-      sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/build.sh --clean --build-unit-tests --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --static-analysis clang-tidy,cppcheck --out-dir out-${{parameters.targetOs}}-${{parameters.targetArch}} --no-shellcheck
+      sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/build.sh --clean --build-unit-tests --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --static-analysis clang-tidy,cppcheck --out-dir out-${{parameters.targetOs}}-${{parameters.targetArch}}
     displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
   - bash: |
       cp out-${{parameters.targetOs}}-${{parameters.targetArch}}/*.deb $(Build.ArtifactStagingDirectory)
