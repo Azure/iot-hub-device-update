@@ -12,13 +12,6 @@
 #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
 #include <stdlib.h>
 
-// Forward declarations
-// int ADUC_MethodCall_RebootSystem();
-// int ADUC_MethodCall_RestartAgent();
-// void ADUC_Workflow_SetUpdateStateWithResult(
-//     ADUC_WorkflowData* workflowData, ADUCITF_State updateState, ADUC_Result result);
-// void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData);
-
 EXTERN_C_BEGIN
 
 /**
@@ -128,50 +121,6 @@ char* ADUC_WorkflowData_GetUpdateType(const ADUC_WorkflowData* workflowData)
 char* ADUC_WorkflowData_GetInstalledCriteria(const ADUC_WorkflowData* workflowData)
 {
     return workflow_get_installed_criteria(workflowData->WorkflowHandle);
-}
-
-/**
- * @brief Gets the function that reboots the system.
- *
- * @param workflowData The workflow data.
- * @return RebootSystemFunc The function that reboots the system.
- */
-RebootSystemFunc ADUC_WorkflowData_GetRebootSystemFunc(const ADUC_WorkflowData* workflowData)
-{
-    RebootSystemFunc fn = ADUC_MethodCall_RebootSystem;
-
-#ifdef ADUC_ENABLE_TEST_HOOKS
-    if (workflowData->TestOverrides && workflowData->TestOverrides->RebootSystemFunc_TestOverride)
-    {
-        fn = workflowData->TestOverrides->RebootSystemFunc_TestOverride;
-    }
-#else
-    UNREFERENCED_PARAMETER(workflowData);
-#endif
-
-    return fn;
-}
-
-/**
- * @brief Gets the function for restarting the agent process.
- *
- * @param workflowData The workflow data.
- * @return RestartAgentFunc The restart agent function.
- */
-RestartAgentFunc ADUC_WorkflowData_GetRestartAgentFunc(const ADUC_WorkflowData* workflowData)
-{
-    RestartAgentFunc fn = ADUC_MethodCall_RestartAgent;
-
-#ifdef ADUC_ENABLE_TEST_HOOKS
-    if (workflowData->TestOverrides && workflowData->TestOverrides->RestartAgentFunc_TestOverride)
-    {
-        fn = workflowData->TestOverrides->RestartAgentFunc_TestOverride;
-    }
-#else
-    UNREFERENCED_PARAMETER(workflowData);
-#endif
-
-    return fn;
 }
 
 EXTERN_C_END

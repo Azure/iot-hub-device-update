@@ -68,65 +68,8 @@ typedef enum tagADUC_WorkflowCancellationType
     ADUC_WorkflowCancellationType_ComponentChanged = 4, /**< A cancel due to a components changed event. */
 } ADUC_WorkflowCancellationType;
 
-/**
- * @brief Function signature for callback to send download progress to.
- */
-typedef void (*ADUC_Core_DownloadFunction)(
-    const char* workflowId,
-    const char* fileId,
-    ADUC_DownloadProgressState state,
-    uint64_t bytesTransferred,
-    uint64_t bytesTotal);
-
 // Forward decl.
 struct tagADUC_WorkflowData;
-
-typedef ADUC_Result (*ADUC_Core_Download_Function)(
-    const ADUC_FileEntity* entity,
-    const char* workflowId,
-    const char* workFolder,
-    ADUC_DownloadProgressCallback downloadProgressCallback);
-
-typedef ADUC_Result (*ADUC_Set_Workflow_Result_Function)(
-    const char* workflowId, ADUC_Result result, _Bool reportToCloud, _Bool persistLocally);
-
-typedef void (*ADUC_WorkflowData_Free_Function)(struct tagADUC_WorkflowData* workflowData);
-
-typedef void (*HandleUpdateActionFunc)(struct tagADUC_WorkflowData* workflowData);
-typedef void (*SetUpdateStateWithResultFunc)(
-    struct tagADUC_WorkflowData* workflowData, ADUCITF_State updateState, ADUC_Result result);
-typedef void (*WorkCompletionCallbackFunc)(const void* workCompletionToken, ADUC_Result result, _Bool isAsync);
-typedef int (*RebootSystemFunc)();
-typedef int (*RestartAgentFunc)();
-typedef bool (*ShouldValidateUpdateManifestFunc)();
-
-typedef void* ADUC_CLIENT_HANDLE_TYPE;
-typedef void (*IOTHUB_CLIENT_REPORTED_STATE_CALLBACK_TYPE)(int, void*);
-typedef enum ADUC_IOTHUB_CLIENT_RESULT_TAG
-{
-    ADUC_IOTHUB_CLIENT_OK,
-    ADUC_IOTHUB_CLIENT_INVALID_ARG,
-    ADUC_IOTHUB_CLIENT_ERROR,
-    ADUC_IOTHUB_CLIENT_INVALID_SIZE,
-    ADUC_IOTHUB_CLIENT_INDEFINITE_TIME
-} IOTHUB_CLIENT_RESULT_TYPE;
-typedef IOTHUB_CLIENT_RESULT_TYPE(ClientHandleSendReportType)(
-    ADUC_CLIENT_HANDLE_TYPE, const unsigned char*, size_t, IOTHUB_CLIENT_REPORTED_STATE_CALLBACK_TYPE, void*);
-typedef ClientHandleSendReportType* ClientHandleSendReportFunc;
-
-#ifdef ADUC_ENABLE_TEST_HOOKS
-typedef struct tagADUC_TestOverride_Hooks
-{
-    void* ContentHandler_TestOverride;
-    HandleUpdateActionFunc HandleUpdateActionFunc_TestOverride;
-    SetUpdateStateWithResultFunc SetUpdateStateWithResultFunc_TestOverride;
-    WorkCompletionCallbackFunc WorkCompletionCallbackFunc_TestOverride;
-    RebootSystemFunc RebootSystemFunc_TestOverride;
-    RestartAgentFunc RestartAgentFunc_TestOverride;
-    void* ClientHandle_SendReportedStateFunc_TestOverride;
-    ShouldValidateUpdateManifestFunc ShouldValidateUpdateManifest_TestOverride;
-} ADUC_TestOverride_Hooks;
-#endif // #ifdef ADUC_ENABLE_TEST_HOOKS
 
 /**
  * @brief A callback function for reporting state, and optionally result to service.
@@ -242,10 +185,6 @@ typedef struct tagADUC_WorkflowData
      *
      */
     JSON_Array* Results;
-
-#ifdef ADUC_ENABLE_TEST_HOOKS
-    ADUC_TestOverride_Hooks* TestOverrides; /**< Test hook overrides. This will be NULL when not testing. */
-#endif
 
 } ADUC_WorkflowData;
 

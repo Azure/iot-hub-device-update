@@ -45,23 +45,10 @@ target_compile_definitions (
             ADUC_VERSION="${ADUC_VERSION}"
             ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}")
 
-if (ADUC_ENABLE_TEST_HOOKS)
-    target_compile_definitions (${PROJECT_NAME}
-                                PRIVATE ADUC_ENABLE_TEST_HOOKS="${ADUC_ENABLE_TEST_HOOKS}")
-endif ()
-
 if (NOT
     ADUC_PLATFORM_LAYER
     STREQUAL
     "simulator")
-    if (ADUC_BUILD_UNIT_TESTS)
-        find_package (umock_c REQUIRED CONFIG)
-        target_link_libraries (${PROJECT_NAME} PRIVATE umock_c)
-        add_subdirectory (tests/adu_core_interface_replacement_unit_tests)
-        add_subdirectory (tests/adu_core_interface_rollback_unit_tests)
-        add_subdirectory (tests/adu_core_interface_unit_tests)
-    endif ()
-
     find_package (deliveryoptimization_sdk CONFIG REQUIRED)
     target_link_libraries (${PROJECT_NAME} PRIVATE Microsoft::deliveryoptimization)
 else ()

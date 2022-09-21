@@ -118,28 +118,6 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
 }
 
 /**
- * @brief Gets the client handle send report function.
- *
- * @param workflowData The workflow data.
- * @return ClientHandleSendReportFunc The function for sending the client report.
- */
-static ClientHandleSendReportFunc
-ADUC_WorkflowData_GetClientHandleSendReportFunc(const ADUC_WorkflowData* workflowData)
-{
-    ClientHandleSendReportFunc fn = (ClientHandleSendReportFunc)ClientHandle_SendReportedState;
-
-#ifdef ADUC_ENABLE_TEST_HOOKS
-    ADUC_TestOverride_Hooks* hooks = workflowData->TestOverrides;
-    if (hooks && hooks->ClientHandle_SendReportedStateFunc_TestOverride)
-    {
-        fn = (ClientHandleSendReportFunc)(hooks->ClientHandle_SendReportedStateFunc_TestOverride);
-    }
-#endif
-
-    return fn;
-}
-
-/**
  * @brief Reports the client json via PnP so it ends up in the reported section of the twin.
  *
  * @param json_value The json value to be reported.
@@ -171,10 +149,7 @@ static _Bool ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData*
 
     Log_Debug("Reporting agent state:\n%s", jsonToSendStr);
 
-    ClientHandleSendReportFunc clientHandle_SendReportedState_Func =
-        ADUC_WorkflowData_GetClientHandleSendReportFunc(workflowData);
-
-    iothubClientResult = (IOTHUB_CLIENT_RESULT)clientHandle_SendReportedState_Func(
+    iothubClientResult = (IOTHUB_CLIENT_RESULT)ClientHandle_SendReportedState(
         g_iotHubClientHandleForADUComponent,
         (const unsigned char*)jsonToSendStr,
         jsonToSendStrLen,

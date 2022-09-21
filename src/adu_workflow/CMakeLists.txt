@@ -19,7 +19,8 @@ find_package (Parson REQUIRED)
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::adu_types
-    PRIVATE aduc::agent_orchestration
+    PRIVATE aduc::adu_core_export_helpers
+            aduc::agent_orchestration
             aduc::c_utils
             aduc::download_handler_factory
             aduc::download_handler_plugin
@@ -32,7 +33,3 @@ target_link_libraries (
 
 target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")
 
-if (ADUC_ENABLE_TEST_HOOKS)
-    target_compile_definitions (${PROJECT_NAME}
-                                PRIVATE ADUC_ENABLE_TEST_HOOKS="${ADUC_ENABLE_TEST_HOOKS}")
-endif ()

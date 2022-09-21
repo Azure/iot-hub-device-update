@@ -512,12 +512,8 @@ if (ADUC_BUILD_UNIT_TESTS)
     # of output folder.
     enable_testing ()
 
-    set (ADUC_ENABLE_TEST_HOOKS ON)
-
     copy_test_data ("${CMAKE_SOURCE_DIR}" "${ADUC_TEST_DATA_PATH_SEGMENT}"
                     "${ADUC_TEST_DATA_FOLDER}")
-else ()
-    unset (ADUC_ENABLE_TEST_HOOKS CACHE)
 endif ()
 
 if (ADUC_INSTALL_DAEMON)

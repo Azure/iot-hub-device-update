@@ -21,7 +21,3 @@ target_link_libraries (
             aduc::c_utils
             aduc::workflow_utils)
 
-if (ADUC_ENABLE_TEST_HOOKS)
-    target_compile_definitions (${PROJECT_NAME}
-                                PRIVATE ADUC_ENABLE_TEST_HOOKS="${ADUC_ENABLE_TEST_HOOKS}")
-endif ()

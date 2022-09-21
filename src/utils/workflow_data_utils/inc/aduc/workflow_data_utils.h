@@ -86,22 +86,6 @@ char* ADUC_WorkflowData_GetUpdateType(const ADUC_WorkflowData* workflowData);
  */
 char* ADUC_WorkflowData_GetInstalledCriteria(const ADUC_WorkflowData* workflowData);
 
-/**
- * @brief Gets the function that reboots the system.
- *
- * @param workflowData The workflow data.
- * @return RebootSystemFunc The function that reboots the system.
- */
-RebootSystemFunc ADUC_WorkflowData_GetRebootSystemFunc(const ADUC_WorkflowData* workflowData);
-
-/**
- * @brief Gets the function for restarting the agent process.
- *
- * @param workflowData The workflow data.
- * @return RestartAgentFunc The restart agent function.
- */
-RestartAgentFunc ADUC_WorkflowData_GetRestartAgentFunc(const ADUC_WorkflowData* workflowData);
-
 EXTERN_C_END
 
 #endif // ADUC_DATA_WORKFLOW_UTILS_H

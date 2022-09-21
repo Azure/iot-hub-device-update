@@ -98,54 +98,45 @@ static ContentHandler* GetUpdateManifestHandler(const ADUC_WorkflowData* workflo
 {
     ContentHandler* contentHandler = nullptr;
 
-#ifdef ADUC_ENABLE_TEST_HOOKS
-    if (workflowData->TestOverrides != nullptr && workflowData->TestOverrides->ContentHandler_TestOverride != nullptr)
+    ADUC_Result loadResult = {};
+
+    // Starting from version 4, the top-level update manifest doesn't contains the 'updateType' property.
+    // The manifest contains an Instruction (steps) data, which requires special processing.
+    // For backword compatibility and avoid code complexity, for V4, we will process the top level update content
+    // using 'microsoft/update-manifest:4'
+    int updateManifestVersion = workflow_get_update_manifest_version(workflowData->WorkflowHandle);
+    if (updateManifestVersion >= 4)
     {
-        contentHandler = static_cast<ContentHandler*>(workflowData->TestOverrides->ContentHandler_TestOverride);
-    }
-    else
-#endif
-    {
-        ADUC_Result loadResult = {};
+        const cstr_wrapper updateManifestHandler{ ADUC_StringFormat(
+            "microsoft/update-manifest:%d", updateManifestVersion) };
 
-        // Starting from version 4, the top-level update manifest doesn't contains the 'updateType' property.
-        // The manifest contains an Instruction (steps) data, which requires special processing.
-        // For backword compatibility and avoid code complexity, for V4, we will process the top level update content
-        // using 'microsoft/update-manifest:4'
-        int updateManifestVersion = workflow_get_update_manifest_version(workflowData->WorkflowHandle);
-        if (updateManifestVersion >= 4)
-        {
-            const cstr_wrapper updateManifestHandler{ ADUC_StringFormat(
-                "microsoft/update-manifest:%d", updateManifestVersion) };
+        Log_Info(
+            "Try to load a handler for current update manifest version %d (handler: '%s')",
+            updateManifestVersion,
+            updateManifestHandler.get());
 
-            Log_Info(
-                "Try to load a handler for current update manifest version %d (handler: '%s')",
-                updateManifestVersion,
-                updateManifestHandler.get());
+        loadResult =
+            ExtensionManager::LoadUpdateContentHandlerExtension(updateManifestHandler.get(), &contentHandler);
 
-            loadResult =
-                ExtensionManager::LoadUpdateContentHandlerExtension(updateManifestHandler.get(), &contentHandler);
-
-            // If handler for the current manifest version is not available,
-            // fallback to the V4 default handler.
-            if (IsAducResultCodeFailure(loadResult.ResultCode))
-            {
-                loadResult = ExtensionManager::LoadUpdateContentHandlerExtension(
-                    UPDATE_MANIFEST_DEFAULT_HANDLER, &contentHandler);
-            }
-        }
-        else
-        {
-            loadResult = { .ResultCode = ADUC_Result_Failure,
-                           .ExtendedResultCode =
-                               ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION };
-        }
-
+        // If handler for the current manifest version is not available,
+        // fallback to the V4 default handler.
         if (IsAducResultCodeFailure(loadResult.ResultCode))
         {
-            contentHandler = nullptr;
-            *result = loadResult;
+            loadResult = ExtensionManager::LoadUpdateContentHandlerExtension(
+                UPDATE_MANIFEST_DEFAULT_HANDLER, &contentHandler);
         }
+    }
+    else
+    {
+        loadResult = { .ResultCode = ADUC_Result_Failure,
+                       .ExtendedResultCode =
+                           ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION };
+    }
+
+    if (IsAducResultCodeFailure(loadResult.ResultCode))
+    {
+        contentHandler = nullptr;
+        *result = loadResult;
     }
 
     return contentHandler;

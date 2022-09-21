@@ -50,11 +50,6 @@ target_compile_definitions (
             ADUC_DEVICEINFO_MODEL="${ADUC_DEVICEINFO_MODEL}"
             ADUC_VERSION_FILE="${ADUC_VERSION_FILE}")
 
-if (ADUC_ENABLE_TEST_HOOKS)
-    target_compile_definitions (${target_name}
-                                PRIVATE ADUC_ENABLE_TEST_HOOKS="${ADUC_ENABLE_TEST_HOOKS}")
-endif ()
-
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
 endif ()
