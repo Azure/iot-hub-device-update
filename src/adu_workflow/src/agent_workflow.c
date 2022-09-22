@@ -18,8 +18,8 @@
 
 #include <time.h>
 
-#include "aduc/agent_orchestration.h"
 #include "aduc/adu_core_export_helpers.h" // ADUC_MethodCall_RestartAgent
+#include "aduc/agent_orchestration.h"
 #include "aduc/download_handler_factory.h" // ADUC_DownloadHandlerFactory_LoadDownloadHandler
 #include "aduc/download_handler_plugin.h" // ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted
 #include "aduc/logging.h"
@@ -916,6 +916,9 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
                 "WorkCompletionCallback: %s failed. Going to state %s",
                 ADUCITF_WorkflowStepToString(entry->WorkflowStep),
                 ADUCITF_StateToString(nextUpdateStateOnFailure));
+
+            // Reset so that a Retry/Replacement avoids cancel and instead properly starts processing.
+            workflow_set_operation_in_progress(workflowData->WorkflowHandle, false);
 
             ADUC_Workflow_SetUpdateState(workflowData, nextUpdateStateOnFailure);
 
