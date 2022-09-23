@@ -41,7 +41,12 @@ sudo apt-get update
 # Note: If there are other dependencies tht need to be installed via APT or other means they should
 # be added here. You might be installing iotedge, another package to setup for a deployment test, or
 # anything else.
-sudo apt-get install -y deliveryoptimization-plugin-apt
+
+# Handle installing DO from latest build instead of packages.microsoft.com
+wget https://github.com/microsoft/do-client/releases/download/v0.9.0/ubuntu1804_x64-packages.tar -O ubuntu18_x64-packages.tar
+tar -xvf ubuntu18_x64-packages.tar
+sudo apt-get install -y ./deliveryoptimization-agent_0.7.0_amd64.deb ./deliveryoptimization-plugin-apt_0.5.0_amd64.deb ./libdeliveryoptimization_0.7.0_amd64.deb
+
 
 #
 # Install the Device Update Artifact Under Test
@@ -57,19 +62,14 @@ sudo apt-get install -y ./testsetup/deviceupdate-package.deb
 # this is the area where such things can be added
 sudo cp ./testsetup/du-config.json /etc/adu/du-config.json
 
-#
-# Restart the deviceupdate-agent.service
-#
-# Note: We expect that everything should be setup for the deviceupdate agent at this point. Once
-# we restart the agent we expect it to be able to boot back up and connect to the IotHub. Otherwise
-# this test will be considered a failure.
-sudo systemctl restart deviceupdate-agent.service
 
-git clone https://github.com/Azure/iot-hub-device-update.git ~/adu-pp/
+mkdir ~/adu_srcs/
+
+tar -xvf ./testsetup/adu_srcs_repo.tar.gz -C ~/adu_srcs/
 
 sudo mkdir -p ~/demo/demo-devices/contoso-devices
 
-cd ~/adu-pp/src/extensions/component_enumerators/examples/contoso_component_enumerator/demo || exit
+cd ~/adu_srcs/src/extensions/component_enumerators/examples/contoso_component_enumerator/demo || exit
 
 chmod 755 ./tools/reset-demo-components.sh
 
@@ -82,3 +82,12 @@ sh ./tools/reset-demo-components.sh
 sudo /usr/bin/AducIotAgent -l 2 --extension-type componentEnumerator --register-extension /var/lib/adu/extensions/sources/libcontoso_component_enumerator.so
 
 sh ./tools/reset-demo-components.sh
+
+
+#
+# Restart the deviceupdate-agent.service
+#
+# Note: We expect that everything should be setup for the deviceupdate agent at this point. Once
+# we restart the agent we expect it to be able to boot back up and connect to the IotHub. Otherwise
+# this test will be considered a failure.
+sudo systemctl restart deviceupdate-agent.service

@@ -9,7 +9,7 @@ import time
 import unittest
 import xmlrunner
 # Note: the intention is that this script is called like:
-# python ./scenarios/<scenario-name>/<test-script-name>.py
+# python ./scenarios/<scenario-name>/testscript.py
 sys.path.append('./scenarios/')
 from testingtoolkit import DeviceUpdateTestHelper
 from testingtoolkit import DuAutomatedTestConfigurationManager
@@ -17,7 +17,7 @@ from xmlrunner.extra.xunit_plugin import transform
 
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/<test-script-name>.py
-sys.path.append('./scenarios/ubuntu-20.04-amd64/')
+sys.path.append('./scenarios/debian-10-amd64/')
 from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, retry_wait_time_in_seconds
 
 class DeleteDeviceAndGroup(unittest.TestCase):
@@ -32,6 +32,8 @@ class DeleteDeviceAndGroup(unittest.TestCase):
         time.sleep(retry_wait_time_in_seconds*5)
 
         self.assertEqual(duTestHelper.DeleteADUGroup(test_adu_group), 204)
+
+
 
 if (__name__ == "__main__"):
     out = io.BytesIO()

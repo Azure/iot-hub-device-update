@@ -62,6 +62,7 @@ resource "azurerm_network_security_group" "deviceupdatensg" {
     location            = "eastus"
     resource_group_name = var.resource_group_name
 
+
     security_rule {
         name                       = "SSH"
         priority                   = 1001
@@ -117,7 +118,6 @@ resource "azurerm_key_vault_secret" "vm_ssh_secret" {
   # expire in 30 days
   expiration_date = timeadd(timestamp(), "720h")
 }
-
 # Create virtual machine
 resource "azurerm_linux_virtual_machine" "deviceupdatevm" {
     name                  = "myVM-${var.vm_name}"
@@ -185,7 +185,7 @@ resource "azurerm_dev_test_global_vm_shutdown_schedule" "vm_shutdown_schedule" {
   enabled            = true
 
   // Shutdown 60-mins after creation time for cost savings
-  daily_recurrence_time = formatdate("hhmm", timeadd(timestamp(), "60m"))
+  daily_recurrence_time = formatdate("hhmm", timeadd(timestamp(), "180m"))
   timezone              = "UTC"
 
   notification_settings {

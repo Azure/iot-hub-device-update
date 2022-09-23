@@ -8,12 +8,8 @@ import sys
 import time
 import unittest
 import xmlrunner
-
-# Import testingtoolkit module from parent directory
-# sys.path.append('../')
-# from testingtoolkit import DeviceUpdateTestHelper
-# from testingtoolkit import UpdateId
-# from azure.identity import DefaultAzureCredential
+# Note: the intention is that this script is called like:
+# python ./scenarios/<scenario-name>/testscript.py
 sys.path.append('./scenarios/')
 from testingtoolkit import DeviceUpdateTestHelper
 from testingtoolkit import UpdateId
@@ -24,7 +20,7 @@ from xmlrunner.extra.xunit_plugin import transform
 
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/<test-script-name>.py
-sys.path.append('./scenarios/ubuntu-18.04-amd64/')
+sys.path.append('./scenarios/debian-10-amd64/')
 from scenario_definitions import test_device_id, test_result_file_prefix, test_operation_id
 
 diagnostics_operation_status_retries = 15

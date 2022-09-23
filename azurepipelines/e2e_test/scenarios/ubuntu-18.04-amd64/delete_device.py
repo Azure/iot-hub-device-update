@@ -25,10 +25,12 @@ class DeleteDeviceAndGroup(unittest.TestCase):
 
         duTestHelper = configManager.CreateDeviceUpdateTestHelper()
 
+        self.assertTrue(duTestHelper.DeleteDevice(test_device_id))
+
+        time.sleep(retry_wait_time_in_seconds*5)
+
         self.assertEqual(duTestHelper.DeleteADUGroup(test_adu_group), 204)
 
-        time.sleep(retry_wait_time_in_seconds)
-        self.assertTrue(duTestHelper.DeleteDevice(test_device_id))
 
 
 if (__name__ == "__main__"):

@@ -26,6 +26,7 @@ from testingtoolkit import DeviceUpdateTestHelper
 sys.path.append('./scenarios/ubuntu-20.04-amd64/')
 from scenario_definitions import test_device_id, test_result_file_prefix, test_operation_id, test_connection_timeout_tries, retry_wait_time_in_seconds
 
+diagnostics_operation_status_retries = 15
 class DiagnosticsTest(unittest.TestCase):
     def test_diagnostics(self):
         self.aduTestConfig = DuAutomatedTestConfigurationManager.FromOSEnvironment()
@@ -65,15 +66,18 @@ class DiagnosticsTest(unittest.TestCase):
         # Get device diagnostics log collection operatio status and device status
         # device status represent Log upload status, operatin status represent background operation status
         #
-        for i in range(0, test_connection_timeout_tries):
+        for i in range(0, diagnostics_operation_status_retries):
             diagnosticJsonStatus = self.duTestHelper.GetDiagnosticsLogCollectionStatus(self.operationId)
 
-            if (diagnosticJsonStatus.operationStatus == "Succeeded" and diagnosticJsonStatus.deviceStatus == "Succeeded"):
+            if (diagnosticJsonStatus.status == "Succeeded"):
                 break
             time.sleep(retry_wait_time_in_seconds)
 
-        self.assertEqual(diagnosticJsonStatus.operationStatus, diagnosticJsonStatus.deviceStatus,
-                         "Log upload failed, status is " + diagnosticJsonStatus.deviceStatus)
+
+        self.assertEqual(diagnosticJsonStatus.status, "Succeeded")
+        self.assertEqual(len(diagnosticJsonStatus.deviceStatus),1)
+        self.assertEqual(diagnosticJsonStatus.deviceStatus[0].status, "Succeeded")
+        self.assertEqual(diagnosticJsonStatus.deviceStatus[0].resultCode, "200")
 
 
 #

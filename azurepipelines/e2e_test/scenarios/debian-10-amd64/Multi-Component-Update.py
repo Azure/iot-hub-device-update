@@ -20,7 +20,7 @@ from xmlrunner.extra.xunit_plugin import transform
 
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/<test-script-name>.py
-sys.path.append('./scenarios/ubuntu-20.04-amd64/')
+sys.path.append('./scenarios/debian-10-amd64/')
 from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, test_mcu_deployment_id, test_connection_timeout_tries, retry_wait_time_in_seconds
 
 #
@@ -29,12 +29,12 @@ from scenario_definitions import test_device_id, test_adu_group, test_result_fil
 
 mcu_deployment_status_retries = 15
 
-class AptDeploymentTest(unittest.TestCase):
+class MCUDeploymentTest(unittest.TestCase):
 
     #
     # Every test within a subclass of a unittest.TestCase to be run by unittest must have the prefix test_
     #
-    def test_AptDeployment(self):
+    def test_MCUDeployment(self):
 
         #
         # The first step to any test is to create the test helper that allows us to make calls to both the DU account and the
@@ -106,7 +106,6 @@ class AptDeploymentTest(unittest.TestCase):
             time.sleep(retry_wait_time_in_seconds)
 
 
-
         #
         # Should only be one device group in the deployment
         #
@@ -135,12 +134,8 @@ class AptDeploymentTest(unittest.TestCase):
         #
         time.sleep(retry_wait_time_in_seconds)
 
-        # self.assertEqual(self.duTestHelper.StopDeployment(self.deploymentId,test_adu_group),200)
-        # time.sleep(retry_wait_time_in_seconds)
-
         # Once stopped we can delete the deployment
         self.assertEqual(self.duTestHelper.DeleteDeployment(self.deploymentId,test_adu_group),204)
-
 
 #
 # Below is the section of code that uses the above class to run the test. It starts by running the test, capturing the output, transforming

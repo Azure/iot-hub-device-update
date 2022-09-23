@@ -19,7 +19,7 @@ from testingtoolkit import DuAutomatedTestConfigurationManager
 
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/<test-script-name>.py
-sys.path.append('./scenarios/ubuntu-18.04-amd64/')
+sys.path.append('./scenarios/debian-10-amd64/')
 from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, test_connection_timeout_tries, retry_wait_time_in_seconds
 
 class AddDeviceToGroupTest(unittest.TestCase):

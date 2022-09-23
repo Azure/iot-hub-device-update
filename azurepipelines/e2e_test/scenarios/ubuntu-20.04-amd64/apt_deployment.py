@@ -19,14 +19,13 @@ from testingtoolkit import DuAutomatedTestConfigurationManager
 from xmlrunner.extra.xunit_plugin import transform
 
 # Note: the intention is that this script is called like:
-# python ./scenarios/<scenario-name>/testscript.py
+# python ./scenarios/<scenario-name>/<test-script-name>.py
 sys.path.append('./scenarios/ubuntu-20.04-amd64/')
 from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, test_apt_deployment_id, test_connection_timeout_tries, retry_wait_time_in_seconds
 
 #
 # Global Test Variables
 #
-
 apt_deployment_status_retries = 15
 
 class AptDeploymentTest(unittest.TestCase):
@@ -35,7 +34,7 @@ class AptDeploymentTest(unittest.TestCase):
     # Every test within a subclass of a unittest.TestCase to be run by unittest must have the prefix test_
     #
     def test_AptDeployment(self):
-      
+
         #
         # The first step to any test is to create the test helper that allows us to make calls to both the DU account and the
         # IotHub. In the pipeline the parameters to create the test helper are passed to the environment from which we can read them
@@ -93,11 +92,20 @@ class AptDeploymentTest(unittest.TestCase):
             #
             # If we see all the devices have completed the deployment then we can exit early
             #
-            if (deploymentStatus.devicesCompletedSucceededCount != 0):
-                break
+            if (len(deploymentStatus.subgroupStatuses) != 0):
+                if (deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount == 1):
+                    break
             time.sleep(retry_wait_time_in_seconds)
 
-        self.assertEqual(deploymentStatus.totalDevices, deploymentStatus.devicesCompletedSucceededCount)
+        #
+        # Should only be one device group in the deployment
+        #
+        self.assertEqual(len(deploymentStatus.subgroupStatuses),1)
+
+        #
+        # Devices in the group should have succeeded
+        #
+        self.assertEqual(deploymentStatus.subgroupStatuses[0].totalDevices,deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount)
 
         # Sleep to give time for changes to propagate and for DU to switch it's state back to idle
         time.sleep(retry_wait_time_in_seconds)
@@ -108,7 +116,8 @@ class AptDeploymentTest(unittest.TestCase):
         # is back in the idle state.
         #
         twin = self.duTestHelper.GetDeviceTwinForDevice(test_device_id)
-        self.assertEqual(twin.properties.reported["deviceUpdate"]["agent"]["state"], 0)
+
+        self.assertEqual(twin.properties.reported["deviceUpdate"]["agent"]["state"],0)
 
         #
         # In case of a succeeded deployment we need to clean up the resources we created.
@@ -116,9 +125,8 @@ class AptDeploymentTest(unittest.TestCase):
         #
         time.sleep(retry_wait_time_in_seconds)
 
-        if (deploymentStatus.devicesInProgressCount != 0):
-            self.assertEqual(self.duTestHelper.StopDeployment(self.deploymentId, test_adu_group), 200)
-            time.sleep(retry_wait_time_in_seconds)
+        # self.assertEqual(self.duTestHelper.StopDeployment(self.deploymentId, test_adu_group), 200)
+        # time.sleep(retry_wait_time_in_seconds)
 
         # Once stopped we can delete the deployment
         self.assertEqual(self.duTestHelper.DeleteDeployment(self.deploymentId, test_adu_group), 204)
@@ -128,19 +136,19 @@ class AptDeploymentTest(unittest.TestCase):
 # Below is the section of code that uses the above class to run the test. It starts by running the test, capturing the output, transforming
 # the output from Python Unittest to X/JUnit format. Then the function exports the values to an xml file in the testresults directory which is
 # then uploaded by the Azure Pipelines PostTestResults job
-#       
+#
 if (__name__ == "__main__"):
     #
     # Create the IO pipe
     #
     out = io.BytesIO()
-    
+
     #
     # Exercise the TestCase and all the tests within it.
     #
     unittest.main(testRunner=xmlrunner.XMLTestRunner(output=out),
                   failfast=False, buffer=False, catchbreak=False, exit=False)
-    
+
     #
     # Finally transform the output unto the X/JUnit XML file format
     #

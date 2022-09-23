@@ -27,7 +27,7 @@ from scenario_definitions import test_device_id, test_adu_group, test_result_fil
 # Global Test Variables
 #
 
-apt_deployment_status_retries = 15
+bundle_update_status_retries = 15
 
 class AptDeploymentTest(unittest.TestCase):
 
@@ -94,21 +94,26 @@ class AptDeploymentTest(unittest.TestCase):
         deploymentStatus = None
 
 
-        for i in range(0,apt_deployment_status_retries):
+        for i in range(0,bundle_update_status_retries):
             deploymentStatus = self.duTestHelper.GetDeploymentStatusForGroup(self.deploymentId,test_adu_group)
 
             #
             # If we see all the devices have completed the deployment then we can exit early
             #
-            if (deploymentStatus.devicesCompletedSucceededCount == 1):
-                break
+            if (len(deploymentStatus.subgroupStatuses) != 0):
+                if (deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount == 1):
+                    break
             time.sleep(retry_wait_time_in_seconds)
 
+        #
+        # Should only be one device group in the deployment
+        #
+        self.assertEqual(len(deploymentStatus.subgroupStatuses),1)
 
         #
-        # Do the check to make sure all the devices in the group have succeeded
+        # Devices in the group should have succeeded
         #
-        self.assertEqual(deploymentStatus.totalDevices,deploymentStatus.devicesCompletedSucceededCount)
+        self.assertEqual(deploymentStatus.subgroupStatuses[0].totalDevices,deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount)
 
         # Sleep to give time for changes to propagate and for DU to switch it's state back to idle
         time.sleep(retry_wait_time_in_seconds)
@@ -120,8 +125,6 @@ class AptDeploymentTest(unittest.TestCase):
         #
         twin = self.duTestHelper.GetDeviceTwinForDevice(test_device_id)
 
-        print(twin.properties.reported["deviceUpdate"]["agent"]["state"])
-
         self.assertEqual(twin.properties.reported["deviceUpdate"]["agent"]["state"],0)
 
         #
@@ -130,9 +133,8 @@ class AptDeploymentTest(unittest.TestCase):
         #
         time.sleep(retry_wait_time_in_seconds)
 
-        if (deploymentStatus.devicesInProgressCount != 0):
-            self.assertEqual(self.duTestHelper.StopDeployment(self.deploymentId,test_adu_group),200)
-            time.sleep(retry_wait_time_in_seconds)
+        # self.assertEqual(self.duTestHelper.StopDeployment(self.deploymentId,test_adu_group),200)
+        # time.sleep(retry_wait_time_in_seconds)
 
         # Once stopped we can delete the deployment
         self.assertEqual(self.duTestHelper.DeleteDeployment(self.deploymentId,test_adu_group),204)

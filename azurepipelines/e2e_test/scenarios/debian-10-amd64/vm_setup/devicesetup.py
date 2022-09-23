@@ -9,10 +9,7 @@ import sys
 # Note: the intention is that this script is called like:
 # python ./<scenario-name>/vm-setup/devicesetup.py
 sys.path.append('./scenarios/')
-
-# Note: the intention is that this script is called like:
-# python ./scenarios/<scenario-name>/<test-script-name>.py
-sys.path.append('./scenarios/ubuntu-18.04-amd64/')
+sys.path.append('./scenarios/debian-10-amd64/')
 from scenario_definitions import test_device_id
 from testingtoolkit import DeviceUpdateTestHelper, DuAutomatedTestConfigurationManager
 
@@ -61,7 +58,6 @@ def main():
                         }
                     ]
                     }
-
     #
     # Write the configuration out to disk so we can install it as a part of the test
     #

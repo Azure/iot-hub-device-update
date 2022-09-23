@@ -10,7 +10,7 @@ import unittest
 import xmlrunner
 from xmlrunner.extra.xunit_plugin import transform
 # Note: the intention is that this script is called like:
-# python ./scenarios/<scenario-name>/testscript.py
+# python ./scenarios/<scenario-name>/<test-script-name>.py
 sys.path.append('./scenarios/')
 from testingtoolkit import DeviceUpdateTestHelper
 from testingtoolkit import UpdateId
@@ -46,21 +46,11 @@ class AddDeviceToGroupTest(unittest.TestCase):
         success = self.duTestHelper.AddDeviceToGroup(test_device_id, test_adu_group)
 
         self.assertTrue(success)
-
         time.sleep(retry_wait_time_in_seconds)
 
-        deviceClassId = self.duTestHelper.GetAduDeviceClassIdForDevice(test_device_id)
-
-        self.assertNotEqual(deviceClassId, "")
-
-        #
-        # Create the ADUGroup
-        #
-        status_code = self.duTestHelper.CreateADUGroup(test_adu_group, deviceClassId)
-
-        self.assertEqual(status_code, 200)
 
 if (__name__ == "__main__"):
+
     out = io.BytesIO()
 
     unittest.main(testRunner=xmlrunner.XMLTestRunner(output=out),

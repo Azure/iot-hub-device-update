@@ -120,6 +120,19 @@ class DuAutomatedTestConfigurationManager():
         return DeviceUpdateTestHelper(self._aduInstanceId, self._iotHubUrl, self._iotHubConnectionString, self.credential, self._aduEndpoint)
 
 
+class DeploymentSubGroupStatus():
+    def __init__(self, subGroupJson) -> None:
+        self.groupId = subGroupJson["groupId"]
+        self.deviceClassId = subGroupJson["deviceClassId"]
+        self.deploymentState = subGroupJson["deploymentState"]
+        self.totalDevices = subGroupJson["totalDevices"]
+        self.devicesInProgressCount = subGroupJson["devicesInProgressCount"]
+        self.devicesCompletedFailedCount = subGroupJson["devicesCompletedFailedCount"]
+        self.devicesCompletedSucceededCount = subGroupJson["devicesCompletedSucceededCount"]
+        self.devicesCanceledCount = subGroupJson["devicesCanceledCount"]
+
+        if ("error" in subGroupJson):
+            self.error = subGroupJson["error"]
 
 
 class DeploymentStatusResponse():
@@ -131,37 +144,64 @@ class DeploymentStatusResponse():
         You can see the types and potential values of each of the variables here: https://docs.microsoft.com/en-us/rest/api/deviceupdate/2021-06-01-preview/device-management/get-deployment-status
         """
         self.deploymentState = ""
-        self.totalDevices = 0
-        self.devicesInProgressCount = 0
-        self.devicesCompletedFailedCount = 0
-        self.devicesCompletedSucceededCount = 0
-        self.devicesCanceledCount = 0
         self.ParseResponseJson(deploymentStatusJson)
 
     def ParseResponseJson(self, deploymentStatusJson):
         self.deploymentState = deploymentStatusJson["deploymentState"]
-        self.totalDevices = deploymentStatusJson["totalDevices"]
-        self.devicesInProgressCount = deploymentStatusJson["devicesInProgressCount"]
-        self.devicesCompletedFailedCount = deploymentStatusJson["devicesCompletedFailedCount"]
-        self.devicesCompletedSucceededCount = deploymentStatusJson["devicesCompletedSucceededCount"]
-        self.devicesCanceledCount = deploymentStatusJson["devicesCanceledCount"]
+        self.groupId = deploymentStatusJson["groupId"]
+
+        subgroupStatus = deploymentStatusJson["subgroupStatus"]
+
+        self.subgroupStatuses = []
+        for status in subgroupStatus:
+            self.subgroupStatuses.append(DeploymentSubGroupStatus(status))
+
+
+class DiagnosticsDeviceStatus:
+    def __init__(self,deviceStatusJson):
+        self.deviceId = deviceStatusJson["deviceId"]
+        self.moduleId = ""
+
+        if ("moduleId" in deviceStatusJson):
+            self.moduleId = deviceStatusJson["moduleId"]
+
+        self.status = deviceStatusJson["status"]
+
+        if ("resultCode" in deviceStatusJson):
+            self.resultCode = deviceStatusJson["resultCode"]
+        else:
+            print ("No result code")
+        if ("extendedResultCode" in deviceStatusJson):
+            self.extendedResultCode = deviceStatusJson["extendedResultCode"]
+        else:
+            print("No extended result code")
+        self.logLocation = deviceStatusJson["logLocation"]
 
 class DiagnosticLogCollectionStatusResponse():
-    def __init__(self) -> None:
+    def __init__(self):
         """
         Convenience wrapper object for the diagnostic log collection status response.
         Converts the JSON returned by the service request into a Python object that makes it easier to access.
         You can see the types and potential values of each of the variables here: https://docs.microsoft.com/en-us/rest/api/deviceupdate/2021-06-01-preview/device-management/get-deployment-status
         """
         super().__init__()
-        self.operationStatus = ""
-        self.deviceStatus = ""
+        self.operationId = ""
+        self.status = ""
+        self.createdDateTime = ""
+        self.lastActionDateTime = ""
+        self.deviceStatus = []
 
     def ParseResponseJson(self, logCollectionStatusResponseJson):
-        self.operationStatus = logCollectionStatusResponseJson["status"]
-        deviceResoponseList = logCollectionStatusResponseJson["deviceStatus"]
-        deviceResponseInfo = deviceResoponseList[0]
-        self.deviceStatus = deviceResponseInfo["status"]
+        self.operationId = logCollectionStatusResponseJson["operationId"]
+        self.createdDateTime = logCollectionStatusResponseJson["createdDateTime"]
+        self.lastActionDateTime = logCollectionStatusResponseJson["lastActionDateTime"]
+        self.status = logCollectionStatusResponseJson["status"]
+
+        deviceStatuses = logCollectionStatusResponseJson["deviceStatus"]
+
+        for status in deviceStatuses:
+            deviceStatus = DiagnosticsDeviceStatus(status)
+            self.deviceStatus.append(deviceStatus)
 
         return self
 
@@ -175,7 +215,7 @@ class UpdateId():
         self.version = version
 
     def __str__(self) -> str:
-        return '{ "provider":"' + str(self.provider) + '" , "name": "' + str(self.name) + '", "version": "' + str(self.version) + '"}'
+        return '{ "provider":"' + str(self.provider) + '", "name": "' + str(self.name) + '", "version": "' + str(self.version) + '"}'
 
 class DeviceUpdateTestHelper:
     def __init__(self, aduInstanceId, iothubUrl, iothub_connection_string, adu_credential, endpoint="") -> None:
@@ -205,8 +245,9 @@ class DeviceUpdateTestHelper:
 
         self._hubRegistryManager = IoTHubRegistryManager.from_connection_string(iothub_connection_string)
 
-        self._base_url = f'https://{self._aduEndpoint}/deviceupdate/{self._aduInstanceId}/'
-        self._apiVersion = "?api-version=2021-06-01-preview"
+        self._base_url = f'https://{self._aduEndpoint}/deviceUpdate/{self._aduInstanceId}/'
+        self._iotHubApiVersion = "?api-version=2021-06-01-preview"
+        self._aduApiVersion= "?api-version=2022-07-01-preview"
 
     def CreateDevice(self, deviceId, isIotEdge=False):
         """
@@ -307,7 +348,7 @@ class DeviceUpdateTestHelper:
 
         newTagForTwin = Twin(tags={"ADUGroup": groupName})
 
-        updatedTwin = self._hubRegistryManager.replace_twin(deviceId, newTagForTwin)
+        updatedTwin = self._hubRegistryManager.update_twin(deviceId, newTagForTwin)
 
         if (updatedTwin.tags["ADUGroup"] != groupName):
             return False
@@ -325,8 +366,9 @@ class DeviceUpdateTestHelper:
         """
 
         newTagForTwin = Twin(tags={"ADUGroup": groupName})
+        twin = self.GetDeviceTwinForDevice(deviceId)
 
-        updatedTwin = self._hubRegistryManager.replace_module_twin(deviceId, moduleId, newTagForTwin)
+        updatedTwin = self._hubRegistryManager.update_module_twin(deviceId, moduleId, newTagForTwin)
 
         if (updatedTwin.tags["ADUGroup"] != groupName):
             return False
@@ -378,14 +420,16 @@ class DeviceUpdateTestHelper:
         :param str deploymentId: the id for the deployment
         :param str groupName: the id for the group to which to deploy the update
         :param str updateId: the update-id for the deployment
+        :param str rollbackPolicy: the string version of the rollback policy
+        :param str failure: the string body of the failure definition
         :returns: the status code for the deployment request, 200 for success, all other values are failures
         """
-        requestString = "/deviceupdate/" + self._aduInstanceId + "/management/groups/" + groupName + "/deployments/" + deploymentId + "?api-version=2021-06-01-preview"
+        requestString = "/deviceUpdate/" + self._aduInstanceId + "/management/groups/" + groupName + "/deployments/" + deploymentId + self._aduApiVersion
 
         if (type(updateId) != UpdateId):
             print("Unusable type for updateId, use the UpdateId class")
 
-        jsonBodyString = '{"deploymentId": "' + deploymentId + '","groupId": "' + groupName + '","startDateTime": "' + str(datetime.datetime.now()) + '", "updateId": ' + str(updateId) + '}'
+        jsonBodyString = '{"deploymentId": "' + deploymentId + '","groupId": "' + groupName + '","startDateTime": "' + str(datetime.datetime.now()) + '","update":{ "updateId": ' + str(updateId) + ' } }'
 
         deploymentStartRequest = HttpRequest("PUT", requestString, json=json.loads(jsonBodyString))
 
@@ -393,7 +437,7 @@ class DeviceUpdateTestHelper:
 
         return deploymentStartResponse.status_code
 
-    def StopDeployment(self, deploymentId, groupName):
+    def StopDeployment(self, deploymentId, groupName, deviceClassId):
         """
         Stops the deployment for the specified groupname
 
@@ -401,9 +445,10 @@ class DeviceUpdateTestHelper:
         :param str groupName: the id for the group to which to cancel the deployment
         :returns: the status code for the deployment cancel request, 200 for success, all other values are failures
         """
-        requestString = "/deviceupdate/" + self._aduInstanceId + "/management/groups/" + groupName + "/deployments/" + deploymentId + "?action=cancel&api-version=2021-06-01-preview"
+        # /deviceUpdate/{instanceId}/management/groups/{groupId}/deviceClassSubgroups/{deviceClassId}/deployments/{deploymentId}
+        requestString = "/deviceUpdate/" + self._aduInstanceId + "/management/groups/" + groupName + "/deployments/" + deploymentId + self._aduApiVersion
 
-        deploymentCancelRequest = HttpRequest("PUT", requestString)
+        deploymentCancelRequest = HttpRequest("POST", requestString)
 
         deploymentCancelResponse = self._aduAcnt.send_request(deploymentCancelRequest)
 
@@ -417,7 +462,7 @@ class DeviceUpdateTestHelper:
         :param str groupName: the id for the group to which the deployment was made
         :returns: An object of type DeploymentStatusResponse, this will be empty on failure
         """
-        deploymentStatusRequest = HttpRequest("GET", "/deviceupdate/" + self._aduInstanceId + "/management/groups/" + groupName + "/deployments/" + deploymentId + "/status?api-version=2021-06-01-preview")
+        deploymentStatusRequest = HttpRequest("GET", "/deviceUpdate/" + self._aduInstanceId + "/management/groups/" + groupName + "/deployments/" + deploymentId + "/status" + self._aduApiVersion)
 
         deploymentStatusResponse = self._aduAcnt.send_request(deploymentStatusRequest)
 
@@ -436,7 +481,7 @@ class DeviceUpdateTestHelper:
         :param str groupId: the group-id for group on which the deployment was operating
         :returns: the status code of the response to delete the deployment
         """
-        requestString = '/deviceupdate/' + self._aduInstanceId + '/management/groups/' + groupId + '/deployments/' + deploymentId + '?api-version=2021-06-01-preview'
+        requestString = '/deviceUpdate/' + self._aduInstanceId + '/management/groups/' + groupId + '/deployments/' + deploymentId + self._aduApiVersion
 
         deleteDeploymentRequest = HttpRequest("DELETE", requestString)
 
@@ -462,7 +507,8 @@ class DeviceUpdateTestHelper:
                         "deviceId": deviceId
                     },
                 ],
-                "description": description
+                "description": description,
+                "operationId":operationId
             }
         else:
             jsonBody = {
@@ -472,10 +518,11 @@ class DeviceUpdateTestHelper:
                         "moduleId": moduleId
                     }
                 ],
-                "description": description
+                "description": description,
+                "operationId":operationId
             }
 
-        collectLog_url = f'management/deviceDiagnostics/logCollections/{operationId}{self._apiVersion}'
+        collectLog_url = f'management/deviceDiagnostics/logCollections/{operationId}{self._iotHubApiVersion}'
 
         requestString = urljoin(self._base_url, collectLog_url)
 
@@ -491,7 +538,7 @@ class DeviceUpdateTestHelper:
         :param str operationId: Log collection operation identifier
         :returns: An object of type DiagnosticLogCollectionStatusResponse, this will be empty on failure
         """
-        getLogCollectDetail_url = f'management/deviceDiagnostics/logCollections/{operationId}/detailedstatus{self._apiVersion}'
+        getLogCollectDetail_url = f'management/deviceDiagnostics/logCollections/{operationId}/detailedstatus{self._aduApiVersion}'
 
         requestString = urljoin(self._base_url, getLogCollectDetail_url)
 
@@ -506,54 +553,6 @@ class DeviceUpdateTestHelper:
 
         return logCollectionStatusResponseJson
 
-    def CreateADUGroup(self,tag,deviceClassId):
-        """
-        Creates an ADUGroup from a group that has been added to a device. You must add the "ADUGroup" tag with the groupname before calling this function
-        :param str tag: IotHub tag to be used to create the ADUGroup it also functions as the group name
-        :param str deviceClassId: the deviceClassId guid to be used for the ADU Group
-        :returns: the status code for the request to create the ADUGroup
-        """
-
-        requestString = "/deviceupdate/" + self._aduInstanceId + "/management/groups/" + tag + "?api-version=2021-06-01-preview"
-
-        jsonString = '{"groupId":"' + tag + '",' + '"groupType":"DeviceClassIdAndIoTHubTag","tags":["' + tag + '"], "createdDateTime":"'+str(
-            datetime.datetime.now())+'","deviceClassId":"'+deviceClassId + '"}'
-        jsonBody = json.loads(jsonString)
-
-        aduGroupCreateRequest = HttpRequest("PUT", requestString, json=jsonBody)
-
-        aduGroupCreateResponse = self._aduAcnt.send_request(aduGroupCreateRequest)
-
-        return aduGroupCreateResponse.status_code
-
-    def GetAduDeviceClassIdForDevice(self, deviceId):
-        requestString = "/deviceupdate/" + self._aduInstanceId + "/management/devices/" + deviceId + "?api-version=2021-06-01-preview"
-
-        aduDeviceRequest = HttpRequest("GET", requestString)
-
-        aduDeviceRequestResponse = self._aduAcnt.send_request(aduDeviceRequest)
-
-        if (aduDeviceRequestResponse.status_code != 200):
-            return ""
-
-        deviceJsonResponse = json.loads(aduDeviceRequestResponse.content)
-
-        return deviceJsonResponse["deviceClassId"]
-
-    def GetAduDeviceClassIdForModule(self, deviceId, moduleId):
-        requestString = "/deviceupdate/" + self._aduInstanceId + "/management/devices/" + deviceId + "/modules/" + moduleId + "?api-version=2021-06-01-preview"
-
-        aduModuleRequest = HttpRequest("GET", requestString)
-
-        aduModuleRequestResponse = self._aduAcnt.send_request(aduModuleRequest)
-
-        if (aduModuleRequestResponse.status_code != 200):
-            return ""
-
-        moduleJsonResponse = json.loads(aduModuleRequestResponse.content)
-
-        return moduleJsonResponse["deviceClassId"]
-
     def DeleteADUGroup(self, aduGroupId):
         """
         Deletes the ADUGroup declared by aduGroupId
@@ -561,7 +560,7 @@ class DeviceUpdateTestHelper:
         :param str aduGroupId: the ADU Group to delete
         :returns: the status code of the response
         """
-        requestString = '/deviceupdate/' + self._aduInstanceId + '/management/groups/' + aduGroupId + '?api-version=2021-06-01-preview'
+        requestString = '/deviceUpdate/' + self._aduInstanceId + '/management/groups/' + aduGroupId + self._aduApiVersion
 
         deleteAduGroupRequest = HttpRequest("DELETE", requestString)
 

@@ -4,16 +4,17 @@
 # license information.
 # --------------------------------------------------------------------------
 import json
-import os
 import sys
 
 # Note: the intention is that this script is called like:
 # python ./<scenario-name>/vm-setup/devicesetup.py
 sys.path.append('./scenarios/')
-sys.path.append('./scenarios/ubuntu-20.04-amd64/')
-print(os.path.abspath('./'))
-from scenario_definitions import test_device_id
 from testingtoolkit import DeviceUpdateTestHelper,DuAutomatedTestConfigurationManager
+
+# Note: the intention is that this script is called like:
+# python ./scenarios/<scenario-name>/<test-script-name>.py
+sys.path.append('./scenarios/ubuntu-20.04-amd64/')
+from scenario_definitions import test_device_id
 
 
 def main():
@@ -34,7 +35,8 @@ def main():
 
     if (len(connectionString) == 0):
         print_error("Failed to create the device in the IotHub")
-        exit(1)
+        sys.exit(1)
+
 
     #
     # Create the du-config.json JSON Object
@@ -66,7 +68,7 @@ def main():
     # Write the configuration out to disk so we can install it as a part of the test
     #
 
-    with open('du-config.json', 'w') as jsonFile:
+    with open('du-config.json', 'w',encoding="utf-8") as jsonFile:
         configJson = json.dumps(duConfigJson)
         jsonFile.write(configJson)
 
@@ -75,7 +77,7 @@ if __name__ == '__main__':
     main()
 
 def print_error(msg):
-        print(msg, file=sys.stderr)
+    print(msg, file=sys.stderr)
 
 #
 # Output is now a newly created device and a du-config.json file that will work with it
