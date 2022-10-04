@@ -974,12 +974,14 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
 
         if (validateManifest)
         {
-            if (manifestVersion != SUPPORTED_UPDATE_MANIFEST_VERSION)
+            if (manifestVersion < SUPPORTED_UPDATE_MANIFEST_VERSION_MIN
+                || manifestVersion > SUPPORTED_UPDATE_MANIFEST_VERSION_MAX)
             {
                 Log_Error(
-                    "Bad update manifest version: %d. Expected: %d",
+                    "Bad update manifest version: %d. (min: %d, max: %d)",
                     manifestVersion,
-                    SUPPORTED_UPDATE_MANIFEST_VERSION);
+                    SUPPORTED_UPDATE_MANIFEST_VERSION_MIN,
+                    SUPPORTED_UPDATE_MANIFEST_VERSION_MAX);
                 result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION;
                 goto done;
             }

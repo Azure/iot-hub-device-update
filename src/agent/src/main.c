@@ -1471,7 +1471,10 @@ int main(int argc, char** argv)
     Log_Info("Git Info: %s", ADUC_GIT_INFO);
 #endif
     Log_Info("Agent built with handlers: %s.", ADUC_CONTENT_HANDLERS);
-    Log_Info("Supported Update Manifest version: %d", SUPPORTED_UPDATE_MANIFEST_VERSION);
+    Log_Info(
+        "Supported Update Manifest version: min: %d, max: %d",
+        SUPPORTED_UPDATE_MANIFEST_VERSION_MIN,
+        SUPPORTED_UPDATE_MANIFEST_VERSION_MAX);
 
     _Bool healthy = HealthCheck(&launchArgs);
     if (launchArgs.healthCheckOnly || !healthy)

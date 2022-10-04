@@ -207,7 +207,8 @@ set (
 #
 # For this version, "dtmi:azure:iot:deviceUpdateModel;2" is using the manifest version verison 5.
 #
-set (SUPPORTED_UPDATE_MANIFEST_VERSION 5)
+set (SUPPORTED_UPDATE_MANIFEST_VERSION_MIN 4)
+set (SUPPORTED_UPDATE_MANIFEST_VERSION_MAX 5)
 
 #
 # DeviceInfo configuration
