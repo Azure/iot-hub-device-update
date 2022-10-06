@@ -2,16 +2,18 @@
 
 Take a look at [dependencies](how-to-build-agent-code.md#dependencies-of-device-update-agent) before you get started. You can build the Device Update agent as a standlone solution or integrate it in your existing application or solution.
 
-* [Dependencies](how-to-build-agent-code.md#dependencies-of-device-update-agent)
-* [As a standalone solution](how-to-build-agent-code.md#as-a-standalone-solution)
-* [Integrate the Device Update agent in your existing application or solution](how-to-build-agent-code.md#integrate-the-device-update-agent-in-your-existing-application-or-solution)
+-   [Dependencies](how-to-build-agent-code.md#dependencies-of-device-update-agent)
+-   [As a standalone solution](how-to-build-agent-code.md#as-a-standalone-solution)
+-   [Integrate the Device Update agent in your existing application or solution](how-to-build-agent-code.md#integrate-the-device-update-agent-in-your-existing-application-or-solution)
 
 ## Dependencies of Device Update Agent
 
 ### Required Dependencies
 
-* Azure IoT C SDK
-* Delivery Optimization SDK
+-   Azure IoT C SDK
+-   Delivery Optimization SDK
+-   Azure Blob Storage File Upload Utility
+-   IotHub Device Update Delta
 
 ### Azure IoT C SDK
 
@@ -50,11 +52,11 @@ To install only the dependencies necessary for the agent:
 ./scripts/install-deps.sh --install-aduc-deps --install-packages
 ```
 
-If you want to install dependencies for a different distro other than Ubuntu 18.04 (the default option), use option `-d`, for example  `--deps-distro ubuntu2004`. (Installing DO dependencies using
+If you want to install dependencies for a different distro other than Ubuntu 18.04 (the default option), use option `-d`, for example `--deps-distro ubuntu2004`. (Installing DO dependencies using
 [bootstrap script in do-client](https://github.com/microsoft/do-client/blob/v0.8.2/build/scripts/bootstrap.sh))
 
 `install-deps.sh` also provides several options for installing individual
-dependencies.  To see the usage info:
+dependencies. To see the usage info:
 
 ```shell
 ./scripts/install-deps.sh -h
@@ -86,7 +88,7 @@ The Device Update for IoT Hub reference agent code utilizes CMake for building. 
 
 #### Build Using build.sh
 
-To build the reference agent:
+To build the reference agent with the default parameters:
 
 ```shell
 ./scripts/build.sh -c
@@ -126,7 +128,7 @@ To build the debian package (will be output to the `out` directory):
 
 Alternatively, you can build using CMake directly. Set the required product values
 for ADUC_DEVICEINFO_MANUFACTURER and ADUC_DEVICEINFO_MODEL in the top-level
-[CMakeLists.txt](../../CMakeLists.txt) before building.  Optional CMake values can be found there as well.
+[CMakeLists.txt](../../CMakeLists.txt) before building. Optional CMake values can be found there as well.
 
 ```shell
 mkdir -p build && pushd build
@@ -277,9 +279,9 @@ $ fg
 
 Before integrating the Device Update agent in your existing application or solution review the below concepts.
 
-* Learn how the Device Update service will communicate with the device client using IoT Hub Plug and Play properties to orchestrate over-the-air update actions from [here](../../src/adu_workflow/src/agent_workflow.c).
-* Understand the update manifest to be able to write code to [respond to update actions from your client](update-manifest.md).
-* Understand how to implement  'ADU Core' interface for the Device Update service to [communicate with your client on the Device](device-update-plug-and-play.md).
+-   Learn how the Device Update service will communicate with the device client using IoT Hub Plug and Play properties to orchestrate over-the-air update actions from [here](../../src/adu_workflow/src/agent_workflow.c).
+-   Understand the update manifest to be able to write code to [respond to update actions from your client](update-manifest.md).
+-   Understand how to implement 'ADU Core' interface for the Device Update service to [communicate with your client on the Device](device-update-plug-and-play.md).
 
 ### Steps
 
@@ -287,10 +289,7 @@ Before integrating the Device Update agent in your existing application or solut
 2. Once you have a IoT Hub Plug and Play enabled device, implement the 'ADU Core' interfaces for your application, see reference code [here](../../src/adu_workflow/src/agent_workflow.c).
 3. Review the below Device Update agent implementation and source code so that you can modify your application to replicate the same behaviors:
 
-* Agent Architecture
-![Agent Architecture](images/agent-architecture.png)
-
-* Workflow phases and source code
+-   Workflow phases and source code
 
 Download phase:
 ![Download phase](images/download-phase.png)
@@ -301,6 +300,6 @@ Install phase:
 Apply phase:
 ![Apply phase](images/apply-phase.png)
 
-* [Source code](../../src/adu_workflow/src/agent_workflow.c)
+-   [Source code](../../src/adu_workflow/src/agent_workflow.c)
 
-4.The result reported from your application should be in this format so that the Device Update service can work with your application. Learn more about [plug and play format](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-plug-and-play), and Device Update agent [workflow](../../src/adu_workflow/src/agent_workflow.c).
+    4.The result reported from your application should be in this format so that the Device Update service can work with your application. Learn more about [plug and play format](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-plug-and-play), and Device Update agent [workflow](../../src/adu_workflow/src/agent_workflow.c).
