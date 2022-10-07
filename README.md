@@ -10,7 +10,7 @@ Additional documentation specific to the new features available in the early acc
 
 ## Device Update Agent
 
-The Device update and delivery optimizationagent build for Ubuntu 18.04 have been provided in [Early Access Agent artifacts](https://github.com/Azure/iot-hub-device-update/tree/early-access/0.9.2/early-access-agent-artifacts) in addition to the agent code.
+The Device update and delivery optimizationagent build for Ubuntu 18.04 and Ubuntu 20.04 have been provided in [Early Access Agent artifacts]https://github.com/esha0611/iot-hub-device-update/tree/early-access/0.9.2/early-access-agent-artifacts) in addition to the agent code.
 
 
 ## Reporting bugs
