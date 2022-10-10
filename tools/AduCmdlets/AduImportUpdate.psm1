@@ -57,6 +57,8 @@ function New-AduImportUpdateInput
     Write-Verbose "Uploading update file(s) to Azure Blob Storage."
     $fileMetaList = @()
 
+    $updateIdStr = "$($UpdateId.Provider).$($UpdateId.Name).$($UpdateId.Version)"
+
     $InstallationSteps | Where-Object { $_.type -eq 'inline' } | ForEach-Object {
         $_.files | ForEach-Object {
             $filename = Split-Path -Leaf (Resolve-Path $_)
@@ -90,7 +92,6 @@ function New-AduImportUpdateInput
 
     $importManJsonFile = Get-Item $importManJsonFile # refresh file properties
     $importManJsonHash = Get-AduFileHashes -FilePath $importManJsonFile -ErrorAction Stop
-    $updateIdStr = "$($UpdateId.Provider).$($UpdateId.Name).$($UpdateId.Version)"
     $importManUrl = Copy-AduFileToAzBlobContainer -FilePath $importManJsonFile -BlobName "$updateIdStr/importmanifest.json" -BlobContainer $BlobContainer -ErrorAction Stop
 
     Write-Verbose "Preparing Import Update API request body."
