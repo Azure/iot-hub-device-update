@@ -34,3 +34,5 @@ cscope.po.out
 out/
 build/
 Testing/
+squashfs-root/
+*.snap
