@@ -156,9 +156,9 @@ stages:
                   workingDirectory: $(E2E_WORKING_DIR)/
 
                 - task: UsePythonVersion@0
-                  displayName: Using Python version 3.6
+                  displayName: Using Python version 3.10
                   inputs:
-                      versionSpec: 3.6
+                      versionSpec: 3.10
 
                 - script: |
                       python3 -m pip install -r scenarios/testingtoolkit/requirements.txt
@@ -272,9 +272,9 @@ stages:
                   workingDirectory: $(E2E_WORKING_DIR)
 
                 - task: UsePythonVersion@0
-                  displayName: Set the python version to Python 3.6
+                  displayName: Set the python version to Python 3.10
                   inputs:
-                      versionSpec: 3.6
+                      versionSpec: 3.10
 
                 - script: |
                       python -m pip install -r scenarios/testingtoolkit/requirements.txt
