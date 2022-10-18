@@ -12,6 +12,10 @@ Additional documentation specific to the new features available in the early acc
 
 The Device update and delivery optimizationagent build for Ubuntu 18.04 and Ubuntu 20.04 have been provided in [Early Access Agent artifacts](https://github.com/esha0611/iot-hub-device-update/tree/early-access/0.9.2/early-access-agent-artifacts) in addition to the agent code.
 
+## Onboarding Requirements
+
+Please fill this [2-min onboarding form](https://aka.ms/aduearlyaccessform) before you start using the early access to ensure that we can set up the right preview environments for you. Once you do this, you can access the early access Azure Portal [here](https://portal.azure.com/?feature.adu=true&feature.canmodifystamps=true&Microsoft_Azure_Iothub=tip1&Microsoft_Azure_ADU_Diagnostic=true)
+Please fill this [2-min onboarding form](https://aka.ms/aduearlyaccessform) before you start using the early access to ensure that we can set up the right preview environments for you. Once you do this, you can access the [early access Azure Portal here](https://portal.azure.com/?feature.adu=true&feature.canmodifystamps=true&Microsoft_Azure_Iothub=tip1&Microsoft_Azure_ADU_Diagnostic=true)
 
 ## Reporting bugs
 
