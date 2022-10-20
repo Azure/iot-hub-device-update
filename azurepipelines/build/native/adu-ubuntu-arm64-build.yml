@@ -10,7 +10,7 @@ variables:
   ADUC_VERSION_PATCH: $(version.patch)
   ADUC_VERSION_PRERELEASE: $(version.pre-release)
   ADUC_VERSION_BUILD: $(version.build)
-  ADUC_DEBIAN_PACKAGE_ARCHITECTURE: "amd64"
+  ADUC_DEBIAN_PACKAGE_ARCHITECTURE: "arm64"
 
   ENABLE_ADU_TELEMETRY_REPORTING: true
   # ADUC_BUILDER_IDENTIFIER will be set to "DU" short for Device Update by default, for Device Update-sourced builder
@@ -59,13 +59,25 @@ pr:
       - licenses/*
 
 jobs:
-  - job: BuildAduAgent
-    displayName: "Build ADU Agent"
-    timeoutInMinutes: 360
-    cancelTimeoutInMinutes: 360
-    pool: aduc_1es_client_pool
+  - job: BuildAduAgent_ubuntu2004
+    displayName: "Build ADU Agent - Ubuntu 20.04 (arm64)"
+    timeoutInMinutes: 60
+    cancelTimeoutInMinutes: 60
+    pool: ubuntu2004_arm_pool
     steps:
-      - template: ../templates/adu-docker-build-steps.yml
+      - template: ../templates/adu-native-build-steps.yml
         parameters:
           targetOs: 'ubuntu2004'
-          targetArch: 'amd64'
+          targetArch: 'arm64'
+
+
+  - job: BuildAduAgent_ubuntu1804
+    displayName: "Build ADU Agent - Ubuntu 18.04 (arm64)"
+    timeoutInMinutes: 60
+    cancelTimeoutInMinutes: 60
+    pool: ubuntu1804_arm_pool
+    steps:
+      - template: ../templates/adu-native-build-steps.yml
+        parameters:
+          targetOs: 'ubuntu1804'
+          targetArch: 'arm64'
