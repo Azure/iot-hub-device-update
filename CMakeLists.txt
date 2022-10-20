@@ -53,7 +53,7 @@ set_cache_with_env_or_default (
 
 set_cache_with_env_or_default (
     ADUC_VERSION_PRERELEASE
-    ""
+    "rc0"
     STRING
     "The pre-release part of the semantic version")
 
