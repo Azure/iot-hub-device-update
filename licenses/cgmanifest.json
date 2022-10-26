@@ -1,82 +1,95 @@
 {
-  "Registrations": [
-    {
-      "Component": {
-        "Type": "git",
-        "git": {
-          "RepositoryUrl": "https://github.com/Microsoft/do-client",
-          "CommitHash_Comment": "v0.9.0",
-          "CommitHash": "3f00d1e0f841e6376f1c2852079e19ccc00f8ec4"
+    "$schema": "https://json.schemastore.org/component-detection-manifest.json",
+    "Registrations": [
+        {
+            "Component": {
+                "Type": "git",
+                "git": {
+                    "RepositoryUrl": "https://github.com/Microsoft/do-client",
+                    "CommitHash_Comment": "v0.9.0",
+                    "CommitHash": "3f00d1e0f841e6376f1c2852079e19ccc00f8ec4"
+                }
+            },
+            "DevelopmentDependency": false
+        },
+        {
+            "Component": {
+                "Type": "git",
+                "git": {
+                    "RepositoryUrl": "https://github.com/Azure/azure-iot-sdk-c",
+                    "CommitHash_Comment": "LTS_07_2021_Ref01",
+                    "CommitHash": "808a5595f98853a5f2eae2c67dd9b3608a2338ea"
+                }
+            },
+            "DevelopmentDependency": false
+        },
+        {
+            "Component": {
+                "Type": "git",
+                "git": {
+                    "RepositoryUrl": "https://github.com/catchorg/Catch2",
+                    "CommitHash_Comment": "v2.11.0",
+                    "CommitHash": "e1c9d5569dc4135babb9c81891d70a8ba8ed938c"
+                }
+            },
+            "DevelopmentDependency": true
+        },
+        {
+            "Component": {
+                "Type": "git",
+                "git": {
+                    "RepositoryUrl": "https://github.com/sbabic/swupdate.git",
+                    "CommitHash_Comment": "2021.11",
+                    "CommitHash": "14d5d196304d408d61d4f1a07264f248201f46cc"
+                }
+            },
+            "DevelopmentDependency": false
+        },
+        {
+            "Component": {
+                "Type": "git",
+                "git": {
+                    "RepositoryUrl": "https://github.com/koalaman/shellcheck",
+                    "CommitHash_Comment": "0.8.0",
+                    "CommitHash": "e5ad4cf420a7f7b8e5eaac872b14a1619051cf10"
+                }
+            },
+            "DevelopmentDependency": false
+        },
+        {
+            "Component": {
+                "Type": "git",
+                "git": {
+                    "RepositoryUrl": "https://github.com/Azure/azure-blob-storage-file-upload-utility.git",
+                    "CommitHash_Comment": "main",
+                    "CommitHash": "6969d0fc9d222a5c132d0b8fb4305697a6017383"
+                }
+            },
+            "DevelopmentDependency": false
+        },
+        {
+            "Component": {
+                "Type": "linux",
+                "linux": {
+                    "Name": "uuid",
+                    "Version": "1.6.2-1.5build4 500",
+                    "Distribution": "Ubuntu",
+                    "Release": "18.04"
+                }
+            },
+            "DevelopmentDependency": false
+        },
+        {
+            "Component": {
+                "Type": "linux",
+                "linux": {
+                    "Name": "uuid",
+                    "Version": "1.6.2-1.5+b7 500",
+                    "Distribution": "Debian",
+                    "Release": "10.6"
+                }
+            },
+            "DevelopmentDependency": false
         }
-      },
-      "DevelopmentDependency": false
-    },
-    {
-      "Component": {
-        "Type": "git",
-        "git": {
-          "RepositoryUrl": "https://github.com/Azure/azure-iot-sdk-c",
-          "CommitHash_Comment": "LTS_07_2021_Ref01",
-          "CommitHash": "808a5595f98853a5f2eae2c67dd9b3608a2338ea"
-        }
-      },
-      "DevelopmentDependency": false
-    },
-    {
-      "Component": {
-        "Type": "git",
-        "git": {
-          "RepositoryUrl": "https://github.com/catchorg/Catch2",
-          "CommitHash_Comment": "v2.11.0",
-          "CommitHash": "e1c9d5569dc4135babb9c81891d70a8ba8ed938c"
-        }
-      },
-      "DevelopmentDependency": true
-    },
-    {
-      "Component": {
-        "Type": "git",
-        "git": {
-          "RepositoryUrl": "https://github.com/sbabic/swupdate.git",
-          "CommitHash_Comment": "2021.11",
-          "CommitHash": "14d5d196304d408d61d4f1a07264f248201f46cc"
-        }
-      },
-      "DevelopmentDependency": false
-    },
-    {
-      "Component": {
-        "Type": "git",
-        "git": {
-          "RepositoryUrl": "https://github.com/koalaman/shellcheck",
-          "CommitHash_Comment": "0.8.0",
-          "CommitHash": "e5ad4cf420a7f7b8e5eaac872b14a1619051cf10"
-        }
-      },
-      "DevelopmentDependency": false
-    },
-    {
-      "Component": {
-        "Type": "git",
-        "git": {
-          "RepositoryUrl": "https://github.com/Azure/azure-blob-storage-file-upload-utility.git",
-          "CommitHash_Comment": "main",
-          "CommitHash": "6969d0fc9d222a5c132d0b8fb4305697a6017383"
-        }
-      },
-      "DevelopmentDependency": false
-    },
-    {
-      "Component": {
-        "Type": "linux",
-        "linux": {
-          "Name": "uuid",
-          "Version": "1.65.1.0ubuntu1",
-          "Distribution": "Ubuntu",
-          "Release": "18.04"
-        }
-      },
-      "DevelopmentDependency": false
-    }
-  ]
+    ]
 }
