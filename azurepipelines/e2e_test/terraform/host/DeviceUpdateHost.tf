@@ -124,7 +124,7 @@ resource "azurerm_linux_virtual_machine" "deviceupdatevm" {
     location              = "eastus"
     resource_group_name   = var.resource_group_name
     network_interface_ids = [azurerm_network_interface.deviceupdatenic.id]
-    size                  = "Standard_DS1_v2"
+    size                  = var.vm_size
 
     os_disk {
         name              = "myOsDisk-${var.vm_name}"
