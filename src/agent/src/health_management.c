@@ -265,8 +265,8 @@ static _Bool CheckConfDirOwnershipAndPermissions()
         }
 
         // owning user can read, write, and list entries in dir.
-        // group members and everyone else can read and list entries in dir.
-        const mode_t expected_permissions = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+        // group members can read and list entries in dir.
+        const mode_t expected_permissions = S_IRWXU | S_IRGRP | S_IXGRP;
 
         if (!PermissionUtils_VerifyFilemodeExact(path, expected_permissions))
         {
@@ -304,7 +304,7 @@ static _Bool CheckConfFile()
             result = false;
         }
 
-        const mode_t bitmask = S_IRUSR | S_IRGRP | S_IROTH;
+        const mode_t bitmask = S_IRUSR | S_IRGRP;
 
         if (!PermissionUtils_VerifyFilemodeBitmask(path, bitmask))
         {
