@@ -21,7 +21,7 @@
         PS >
         PS > ImportSampleComplexUpdate.ps1 -AccountEndpoint sampleaccount.api.adu.microsoft.com -InstanceId sampleinstance `
                                            -Container $BlobContainer `
-                                           -AuthorizationToken $token `
+                                           -AuthorizationToken $token.AccessToken `
                                            -UpdateVersion 1.0
 #>
 [CmdletBinding()]
