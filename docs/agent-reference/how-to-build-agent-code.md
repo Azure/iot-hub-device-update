@@ -52,9 +52,6 @@ To install only the dependencies necessary for the agent:
 ./scripts/install-deps.sh --install-aduc-deps --install-packages
 ```
 
-If you want to install dependencies for a different distro other than Ubuntu 18.04 (the default option), use option `-d`, for example `--deps-distro ubuntu2004`. (Installing DO dependencies using
-[bootstrap script in do-client](https://github.com/microsoft/do-client/blob/v0.8.2/build/scripts/bootstrap.sh))
-
 `install-deps.sh` also provides several options for installing individual
 dependencies. To see the usage info:
 

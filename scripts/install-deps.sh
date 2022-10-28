@@ -70,7 +70,7 @@ supported_shellcheck_version='0.8.0'
 install_githooks=false
 
 # DO Deps
-default_do_ref=v0.9.0
+default_do_ref=v1.0.0
 install_do=false
 do_ref=$default_do_ref
 

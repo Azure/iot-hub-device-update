@@ -43,9 +43,9 @@ sudo apt-get update
 # anything else.
 
 # Handle installing DO from latest build instead of packages.microsoft.com
-wget https://github.com/microsoft/do-client/releases/download/v0.9.0/ubuntu2004_x64-packages.tar -O ubuntu20_x64-packages.tar
+wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_x64-packages.tar -O ubuntu20_x64-packages.tar
 tar -xvf ubuntu20_x64-packages.tar
-sudo apt-get install -y ./deliveryoptimization-agent_0.7.0_amd64.deb ./deliveryoptimization-plugin-apt_0.5.0_amd64.deb ./libdeliveryoptimization_0.7.0_amd64.deb
+sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_amd64.deb ./deliveryoptimization-plugin-apt_0.5.1_amd64.deb ./libdeliveryoptimization_1.0.0_amd64.deb
 
 #
 # Install the Device Update Artifact Under Test

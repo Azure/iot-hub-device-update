@@ -151,7 +151,7 @@ create_content_downloader_registration() {
 }
 
 copy_deps_binaries() {
-    local do_url="https://github.com/microsoft/do-client/releases/download/v0.8.2/ubuntu1804_x64-packages.tar"
+    local do_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu1804_x64-packages.tar"
 
     cd $TMP_WORK_DIR || exit
     $wget_cmd $do_url

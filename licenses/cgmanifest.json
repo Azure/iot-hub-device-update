@@ -5,8 +5,8 @@
         "Type": "git",
         "git": {
           "RepositoryUrl": "https://github.com/Microsoft/do-client",
-          "CommitHash_Comment": "v0.9.0",
-          "CommitHash": "3f00d1e0f841e6376f1c2852079e19ccc00f8ec4"
+          "CommitHash_Comment": "v1.0.0",
+          "CommitHash": "b61de2d347c8032562056b18f90ec710e531baf8"
         }
       },
       "DevelopmentDependency": false

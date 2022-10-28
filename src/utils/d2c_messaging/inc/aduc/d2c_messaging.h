@@ -167,7 +167,7 @@ void ADUC_D2C_Messaging_DoWork();
 /**
  * @brief Submits the message to messaging utility queue. If the message for specified @p type already exist, it will be replaced by the latest message.
  * 
- *        IMPORTANT: The implemenation of @p responseCallback, @p completedCallback, and @p statusChangedCallback MUST NOT
+ *        IMPORTANT: The implementation of @p responseCallback, @p completedCallback, and @p statusChangedCallback MUST NOT
  *        call any ADUC_D2C_* functions. Otherwise, a dead-lock may occurs.
  * 
  * @param type The message type.
@@ -194,7 +194,7 @@ bool ADUC_D2C_Message_SendAsync(
 /**
  * @brief Sets the messaging transport. By default, the messaging utility will send messages to IoT Hub.
  *
- *        IMPORTANT: The implemenation of @p transportFunc MUST NOT call any ADUC_D2C_* functions. 
+ *        IMPORTANT: The implementation of @p transportFunc MUST NOT call any ADUC_D2C_* functions. 
  *         Otherwise, a dead-lock may occurs.
  * 
  * @param type The message type.
@@ -213,7 +213,7 @@ void ADUC_D2C_Messaging_Set_Retry_Strategy(ADUC_D2C_Message_Type type, ADUC_D2C_
 /**
  * @brief The default message transport function.
  *
- *        IMPORTANT: The implemenation of @p c2dResponseHandlerFunc MUST NOT call any ADUC_D2C_* functions.
+ *        IMPORTANT: The implementation of @p c2dResponseHandlerFunc MUST NOT call any ADUC_D2C_* functions.
  *        Otherwise, a dead-lock may occurs.
  * 
  * @param cloudServiceHandle A pointer to the cloud service handle.
