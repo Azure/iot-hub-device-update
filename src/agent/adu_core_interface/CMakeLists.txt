@@ -27,6 +27,7 @@ target_link_libraries (
             aduc::agent_orchestration
             aduc::agent_workflow
             aduc::config_utils
+            aduc::d2c_messaging
             aduc::extension_manager
             aduc::hash_utils
             aduc::logging

@@ -84,6 +84,7 @@ target_link_libraries (
             aduc::command_helper
             aduc::communication_abstraction
             aduc::config_utils
+            aduc::d2c_messaging
             aduc::device_info_interface
             aduc::eis_utils
             aduc::extension_manager

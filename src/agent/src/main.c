@@ -14,6 +14,7 @@
 #include "aduc/command_helper.h"
 #include "aduc/config_utils.h"
 #include "aduc/connection_string_utils.h"
+#include "aduc/d2c_messaging.h"
 #include "aduc/device_info_interface.h"
 #include "aduc/extension_manager.h"
 #include "aduc/extension_utils.h"
@@ -1185,6 +1186,11 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 
     ADUC_ConnectionInfo info = {};
 
+    if (!ADUC_D2C_Messaging_Init())
+    {
+        goto done;
+    }
+
     if (launchArgs->connectionString != NULL)
     {
         ADUC_ConnType connType = GetConnTypeFromConnectionString(launchArgs->connectionString);
@@ -1278,6 +1284,7 @@ done:
 void ShutdownAgent()
 {
     Log_Info("Agent is shutting down with signal %d.", g_shutdownSignal);
+    ADUC_D2C_Messaging_Uninit();
     UninitializeCommandListenerThread();
     ADUC_PnP_Components_Destroy();
     ADUC_DeviceClient_Destroy(g_iotHubClientHandle);
@@ -1535,6 +1542,7 @@ int main(int argc, char** argv)
             }
         }
 
+        ADUC_D2C_Messaging_DoWork();
         ClientHandle_DoWork(g_iotHubClientHandle);
 
         // NOTE: When using low level samples (iothub_ll_*), the IoTHubDeviceClient_LL_DoWork

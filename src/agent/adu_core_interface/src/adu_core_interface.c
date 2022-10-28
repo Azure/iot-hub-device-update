@@ -13,6 +13,7 @@
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
 #include "aduc/config_utils.h"
+#include "aduc/d2c_messaging.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h"
@@ -45,17 +46,16 @@ static const char g_aduPnPComponentServicePropertyName[] = "service";
  */
 ADUC_ClientHandle g_iotHubClientHandleForADUComponent;
 
-void ClientReportedStateCallback(int statusCode, void* context)
+/**
+ * @brief This function is called when the message is no longer being process.
+ *
+ * @param context The ADUC_D2C_Message object
+ * @param status The message status.
+ */
+static void OnUpdateResultD2CMessageCompleted(void* context, ADUC_D2C_Message_Status status)
 {
     UNREFERENCED_PARAMETER(context);
-
-    if (statusCode < 200 || statusCode >= 300)
-    {
-        Log_Error(
-            "Failed to report ADU agent's state, error: %d, %s",
-            statusCode,
-            MU_ENUM_TO_STRING(IOTHUB_CLIENT_RESULT, statusCode));
-    }
+    Log_Debug("Send message completed (status:%d)", status);
 }
 
 /**
@@ -134,7 +134,6 @@ static _Bool ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData*
         return false;
     }
 
-    IOTHUB_CLIENT_RESULT iothubClientResult;
     STRING_HANDLE jsonToSend =
         PnP_CreateReportedProperty(g_aduPnPComponentName, g_aduPnPComponentAgentPropertyName, json_value);
 
@@ -144,25 +143,16 @@ static _Bool ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData*
         goto done;
     }
 
-    const char* jsonToSendStr = STRING_c_str(jsonToSend);
-    size_t jsonToSendStrLen = strlen(jsonToSendStr);
-
-    Log_Debug("Reporting agent state:\n%s", jsonToSendStr);
-
-    iothubClientResult = (IOTHUB_CLIENT_RESULT)ClientHandle_SendReportedState(
-        g_iotHubClientHandleForADUComponent,
-        (const unsigned char*)jsonToSendStr,
-        jsonToSendStrLen,
-        ClientReportedStateCallback,
-        NULL);
-
-    if (iothubClientResult != IOTHUB_CLIENT_OK)
+    if (!ADUC_D2C_Message_SendAsync(
+            ADUC_D2C_Message_Type_Device_Update_Result,
+            &g_iotHubClientHandleForADUComponent,
+            STRING_c_str(jsonToSend),
+            NULL /* responseCallback */,
+            OnUpdateResultD2CMessageCompleted,
+            NULL /* statusChangedCallback */,
+            NULL /* userData */))
     {
-        Log_Error(
-            "Unable to report state, %s, error: %d, %s",
-            json_value,
-            iothubClientResult,
-            MU_ENUM_TO_STRING(IOTHUB_CLIENT_RESULT, iothubClientResult));
+        Log_Error("Unable to send update result.");
         goto done;
     }
 
@@ -372,17 +362,16 @@ void OrchestratorUpdateCallback(
         goto done;
     }
 
-    const char* jsonToSendStr = STRING_c_str(jsonToSend);
-    size_t jsonToSendStrLen = strlen(jsonToSendStr);
-    IOTHUB_CLIENT_RESULT iothubClientResult = ClientHandle_SendReportedState(
-        clientHandle, (const unsigned char*)jsonToSendStr, jsonToSendStrLen, NULL, NULL);
-
-    if (iothubClientResult != IOTHUB_CLIENT_OK)
+    if (!ADUC_D2C_Message_SendAsync(
+            ADUC_D2C_Message_Type_Device_Update_ACK,
+            &g_iotHubClientHandleForADUComponent,
+            STRING_c_str(jsonToSend),
+            NULL /* responseCallback */,
+            OnUpdateResultD2CMessageCompleted,
+            NULL /* statusChangedCallback */,
+            NULL /* userData */))
     {
-        Log_Error(
-            "Unable to send acknowledgement of property to IoT Hub for component=%s, error=%d",
-            g_aduPnPComponentName,
-            iothubClientResult);
+        Log_Error("Unable to send update result.");
         goto done;
     }
 

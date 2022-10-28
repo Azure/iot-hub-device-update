@@ -26,4 +26,7 @@ target_link_libraries (
            diagnostics_component::diagnostics_workflow
            diagnostic_utils::diagnostics_config_utils
            Parson::parson
-    PRIVATE aduc::logging aduc::pnp_helper IotHubClient::iothub_client)
+    PRIVATE aduc::d2c_messaging
+            aduc::logging
+            aduc::pnp_helper
+            IotHubClient::iothub_client)
