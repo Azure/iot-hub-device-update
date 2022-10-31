@@ -1,8 +1,8 @@
 variables:
-  version.major: 0
-  version.minor: 8
-  version.patch: 1
-  version.pre-release: "public-preview"
+  version.major: 1
+  version.minor: 0
+  version.patch: 0
+  version.pre-release: ""
   version.build: $[format('{0:yyyyMMdd}-{0:HHmmss}', pipeline.startTime)]
   # Environment variables for all client builds:
   ADUC_VERSION_MAJOR: $(version.major)
