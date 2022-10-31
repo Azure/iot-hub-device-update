@@ -8,7 +8,7 @@
 #ifndef CONNECTION_STRING_UTILS_H
 #define CONNECTION_STRING_UTILS_H
 
-#include "aduc/c_utils.h"
+#include <aduc/c_utils.h>
 #include <stdbool.h>
 
 EXTERN_C_BEGIN

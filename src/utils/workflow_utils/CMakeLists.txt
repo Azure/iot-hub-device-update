@@ -22,15 +22,23 @@ set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 find_package (Parson REQUIRED)
 find_package (azure_c_shared_utility REQUIRED)
 
+target_compile_definitions (
+    ${PROJECT_NAME}
+    PRIVATE SUPPORTED_UPDATE_MANIFEST_VERSION_MIN=${SUPPORTED_UPDATE_MANIFEST_VERSION_MIN}
+            SUPPORTED_UPDATE_MANIFEST_VERSION_MAX=${SUPPORTED_UPDATE_MANIFEST_VERSION_MAX})
+
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC  aduc::c_utils
-    PRIVATE aduc::adu_types
+    PUBLIC aduc::adu_types
+    PRIVATE aduc::c_utils
+            aduc::extension_manager
             aduc::hash_utils
-            aduc::jws_utils
             aduc::logging
             aduc::parser_utils
             aduc::system_utils
+            aduc::workflow_utils
+            aduc::jws_utils
+            aziotsharedutil
             Parson::parson)
 
 if (ADUC_BUILD_UNIT_TESTS)

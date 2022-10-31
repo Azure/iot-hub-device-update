@@ -65,9 +65,23 @@ typedef void (*IdleCallbackFunc)(ADUC_Token token, const char* workflowId);
  * @param workflowData Data about what to download.
  */
 typedef ADUC_Result (*DownloadCallbackFunc)(
-    ADUC_Token token,
-    const ADUC_WorkCompletionData* workCompletionData,
-    ADUC_WorkflowDataToken workflowData);
+    ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken workflowData);
+
+//
+// Backup callback.
+//
+
+/**
+ * @brief Callback method to do backup.
+ *
+ * Must not block!
+ *
+ * @param token Opaque token.
+ * @param workCompletionData Method and value to call when work completes if *Result_InProgress returned.
+ * @param workflowData Data about what to backup.
+ */
+typedef ADUC_Result (*BackupCallbackFunc)(
+    ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken workflowData);
 
 //
 // Install callback.
@@ -83,9 +97,7 @@ typedef ADUC_Result (*DownloadCallbackFunc)(
  * @param workflowData Data about what to install.
  */
 typedef ADUC_Result (*InstallCallbackFunc)(
-    ADUC_Token token,
-    const ADUC_WorkCompletionData* workCompletionData,
-    ADUC_WorkflowDataToken workflowData);
+    ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken workflowData);
 
 // Apply callback.
 
@@ -99,9 +111,23 @@ typedef ADUC_Result (*InstallCallbackFunc)(
  * @param info Data about what to apply.
  */
 typedef ADUC_Result (*ApplyCallbackFunc)(
-    ADUC_Token Token,
-    const ADUC_WorkCompletionData* workCompletionData,
-    ADUC_WorkflowDataToken workflowData);
+    ADUC_Token Token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken workflowData);
+
+//
+// Restore callback.
+//
+
+/**
+ * @brief Callback method to do restore.
+ *
+ * Must not block!
+ *
+ * @param token Opaque token.
+ * @param workCompletionData Method and value to call when work completes if *Result_InProgress returned.
+ * @param workflowData Data about what to restore.
+ */
+typedef ADUC_Result (*RestoreCallbackFunc)(
+    ADUC_Token token, const ADUC_WorkCompletionData* workCompletionData, ADUC_WorkflowDataToken workflowData);
 
 // Cancel callback.
 
@@ -162,8 +188,10 @@ typedef struct tagADUC_UpdateActionCallbacks
 
     IdleCallbackFunc IdleCallback; /**< Idle state handler. */
     DownloadCallbackFunc DownloadCallback; /**< Download message handler. */
+    BackupCallbackFunc BackupCallback; /**< Backup message handler. */
     InstallCallbackFunc InstallCallback; /**< Install message handler. */
     ApplyCallbackFunc ApplyCallback; /**< Apply message handler. */
+    RestoreCallbackFunc RestoreCallback; /**< Restore message handler. */
     CancelCallbackFunc CancelCallback; /**< Cancel message handler. */
 
     IsInstalledCallbackFunc IsInstalledCallback; /**< IsInstalled function pointer */
@@ -186,6 +214,7 @@ typedef enum tagADUC_ResultCode
 
     // Success codes.
     ADUC_Result_Success = 1,                         /**< General success. */
+    ADUC_Result_Success_Cache_Miss = 2,              /**< General success when cache miss. */
 
     ADUC_Result_Register_Success = 100,              /**< Succeeded. */
 
@@ -197,10 +226,13 @@ typedef enum tagADUC_ResultCode
 
     ADUC_Result_Download_Success = 500,                  /**< Succeeded. */
     ADUC_Result_Download_InProgress = 501,               /**< Async operation started. CompletionCallback will be called when complete. */
-    ADUC_Result_Download_Skipped_FileExists = 502,       /**< Download skipped. File already exsits and hash validation passed. */
+    ADUC_Result_Download_Skipped_FileExists = 502,       /**< Download skipped. File already exists and hash validation passed. */
 
     ADUC_Result_Download_Skipped_UpdateAlreadyInstalled = 503, /**< Download succeeded. Also indicates that the Installed Criteria is met. */
     ADUC_Result_Download_Skipped_NoMatchingComponents = 504, /**< Download succeeded. Also indicates that no matchings components for this update. */
+
+    ADUC_Result_Download_Handler_SuccessSkipDownload = 520,  /**< Succeeded. DownloadHandler was able to produce the update. Agent must skip downloading. */
+    ADUC_Result_Download_Handler_RequiredFullDownload = 521, /**< Not a failure. Agent fallback to downloading the update is required. */
 
     ADUC_Result_Install_Success = 600,                       /**< Succeeded. */
     ADUC_Result_Install_InProgress = 601,                    /**< Async operation started. CompletionCallback will be called when complete. */
@@ -208,18 +240,18 @@ typedef enum tagADUC_ResultCode
     ADUC_Result_Install_Skipped_UpdateAlreadyInstalled = 603, /**< Install succeeded. Also indicates that the Installed Criteria is met. */
     ADUC_Result_Install_Skipped_NoMatchingComponents = 604,  /**< Install succeeded. Also indicates that no matchings components for this update. */
 
-    ADUC_Result_Install_RequiredImmediateReboot = 605,       /**< Succeeded. An immidiate device reboot is required, to complete the task. */
+    ADUC_Result_Install_RequiredImmediateReboot = 605,       /**< Succeeded. An immediate device reboot is required, to complete the task. */
     ADUC_Result_Install_RequiredReboot = 606,                /**< Succeeded. A deferred device reboot is required, to complete the task. */
-    ADUC_Result_Install_RequiredImmediateAgentRestart = 607, /**< Succeeded. An immediate agent restart is requied, to complete the task. */
-    ADUC_Result_Install_RequiredAgentRestart = 608,          /**< Succeeded. A deferred agent restart is requied, to complete the task. */
+    ADUC_Result_Install_RequiredImmediateAgentRestart = 607, /**< Succeeded. An immediate agent restart is required, to complete the task. */
+    ADUC_Result_Install_RequiredAgentRestart = 608,          /**< Succeeded. A deferred agent restart is required, to complete the task. */
 
     ADUC_Result_Apply_Success = 700,                         /**< Succeeded. */
     ADUC_Result_Apply_InProgress = 701,                      /**< Async operation started. CompletionCallback will be called when complete. */
 
-    ADUC_Result_Apply_RequiredImmediateReboot = 705,         /**< Succeeded. An immidiate device reboot is required, to complete the task. */
+    ADUC_Result_Apply_RequiredImmediateReboot = 705,         /**< Succeeded. An immediate device reboot is required, to complete the task. */
     ADUC_Result_Apply_RequiredReboot = 706,                  /**< Succeeded. A deferred device reboot is required, to complete the task. */
-    ADUC_Result_Apply_RequiredImmediateAgentRestart = 707,   /**< Succeeded. An immediate agent restart is requied, to complete the task. */
-    ADUC_Result_Apply_RequiredAgentRestart = 708,            /**< Succeeded. A deferred agent restart is requied, to complete the task. */
+    ADUC_Result_Apply_RequiredImmediateAgentRestart = 707,   /**< Succeeded. An immediate agent restart is required, to complete the task. */
+    ADUC_Result_Apply_RequiredAgentRestart = 708,            /**< Succeeded. A deferred agent restart is required, to complete the task. */
 
     ADUC_Result_Cancel_Success = 800,            /**< Succeeded. */
     ADUC_Result_Cancel_UnableToCancel = 801,     /**< Not a failure. Cancel is best effort. */
@@ -227,12 +259,24 @@ typedef enum tagADUC_ResultCode
     ADUC_Result_IsInstalled_Installed = 900,     /**< Succeeded and content is installed. */
     ADUC_Result_IsInstalled_NotInstalled = 901,  /**< Succeeded and content is not installed */
 
+    ADUC_Result_Backup_Success = 1000,                       /**< Succeeded. */
+    ADUC_Result_Backup_Success_Unsupported = 1001,           /**< Succeeded to proceed with the workflow, but the action is not implemented/supported in the content handler. */
+    ADUC_Result_Backup_InProgress = 1002,                    /**< Async operation started. CompletionCallback will be called when complete. */
+
+    ADUC_Result_Restore_Success = 1100,                      /**< Succeeded. */
+    ADUC_Result_Restore_Success_Unsupported = 1101,          /**< Succeeded to proceed with the workflow, but the action is not implemented/supported in the content handler. */
+    ADUC_Result_Restore_InProgress = 1102,                   /**< Async operation started. CompletionCallback will be called when complete. */
+
+    ADUC_Result_Restore_RequiredImmediateReboot = 1105,         /**< Succeeded. An immediate device reboot is required, to complete the task. */
+    ADUC_Result_Restore_RequiredReboot = 1106,                  /**< Succeeded. A deferred device reboot is required, to complete the task. */
+    ADUC_Result_Restore_RequiredImmediateAgentRestart = 1107,   /**< Succeeded. An immediate agent restart is required, to complete the task. */
+    ADUC_Result_Restore_RequiredAgentRestart = 1108,            /**< Succeeded. A deferred agent restart is required, to complete the task. */
 } ADUC_ResultCode;
 
-#define AducResultCodeIndicatesInProgress(resultCode)                                                \
-    ((resultCode) == ADUC_Result_Download_InProgress || \
-    (resultCode) == ADUC_Result_Install_InProgress || \
-    (resultCode) == ADUC_Result_Apply_InProgress)
+#define AducResultCodeIndicatesInProgress(resultCode)                                                  \
+    ((resultCode) == ADUC_Result_Download_InProgress || (resultCode) == ADUC_Result_Backup_InProgress || \
+    (resultCode) == ADUC_Result_Install_InProgress || (resultCode) == ADUC_Result_Apply_InProgress || \
+    (resultCode) == ADUC_Result_Restore_InProgress)
 
 // clang-format on
 

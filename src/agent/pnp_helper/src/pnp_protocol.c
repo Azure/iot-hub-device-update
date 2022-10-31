@@ -196,9 +196,9 @@ static void VisitComponentProperties(
         {
             // This should never happen because we are simply accessing parson tree.  Do not pass NULL to application in case it does occur.
             LogError(
-                "Unexpected error retrieving the property name and/or value of component=%s at element at index=%lu",
+                "Unexpected error retrieving the property name and/or value of component=%s at element at index=%zu",
                 objectName,
-                (unsigned long)i);
+                i);
             continue;
         }
 

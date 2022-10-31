@@ -14,7 +14,7 @@ The following sample command uses PowerShell module [AduUpdate.psm1](AduUpdate.p
 Import-Module ./AduUpdate.psm1
 $file = './README.md'
 $updateId = New-AduUpdateId -Provider Contoso -Name Toaster -Version 1.0
-$compat = New-AduUpdateCompatibility -Properties @{ deviceManufacturer = 'Contoso'; deviceModel = 'Toaster' }
+$compat = New-AduUpdateCompatibility -Properties @{ manufacturer = 'Contoso'; model = 'Toaster' }
 $installStep = New-AduInstallationStep -Handler 'microsoft/swupdate:1'-HandlerProperties @{ installedCriteria = '1.0' } -Files $file
 $update = New-AduImportManifest -UpdateId $updateId -Compatibility $compat -InstallationSteps $installStep
 $update | Out-File ./contoso.toaster.1.0.importmanifest.json -Encoding utf8
@@ -25,7 +25,7 @@ $update | Out-File ./contoso.toaster.1.0.importmanifest.json -Encoding utf8
 The following sample command uses BASH script [create-adu-import-manifest.sh](create-adu-import-manifest.sh) to produce an import manifest for an update with single payload file to be installed by `microsoft/swupdate:1` handler:
 
 ```bash
-./create-adu-import-manifest.sh -p 'Contoso' -n 'Toaster' -v '1.0' -c 'deviceManufacturer:Contoso' -c 'deviceModel:Toaster' -h 'microsoft/swupdate:1' -r 'installedCriteria:1.0' ./README.md > ./contoso.toaster.1.0.importmanifest.json
+./create-adu-import-manifest.sh -p 'Contoso' -n 'Toaster' -v '1.0' -c 'manufacturer:Contoso' -c 'model:Toaster' -h 'microsoft/swupdate:1' -r 'installedCriteria:1.0' ./README.md > ./contoso.toaster.1.0.importmanifest.json
 ```
 
 #### Sample Output
@@ -41,8 +41,8 @@ The above examples would produce the following manifest:
   },
   "compatibility": [
     {
-      "deviceManufacturer": "Contoso",
-      "deviceModel": "Toaster"
+      "manufacturer": "Contoso",
+      "model": "Toaster"
     }
   ],
   "instructions": {

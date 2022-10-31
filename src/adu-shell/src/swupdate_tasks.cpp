@@ -36,7 +36,7 @@ ADUShellTaskResult Install(const ADUShell_LaunchArguments& launchArgs)
     ADUShellTaskResult taskResult;
 
     // Constructing parameter for child process.
-    // command << c_installScript << " -l " << _logFolder << " -i '" << _workFolder << "/" << filename << "'";
+    // command << SWUpdateCommand << " -l " << _logFolder << " -i '" << _workFolder << "/" << filename << "'";
 
     Log_Info("Installing image. Path: %s, Log folder: %s", launchArgs.targetData, launchArgs.logFile);
 
@@ -65,7 +65,7 @@ ADUShellTaskResult Apply(const ADUShell_LaunchArguments& launchArgs)
     ADUShellTaskResult taskResult;
 
     // Constructing parameter for child process.
-    // This is equivalent to : command << c_installScript << " -l " << _logFolder << " -a"
+    // This is equivalent to : command << SWUpdateCommand << " -l " << _logFolder << " -a"
 
     std::vector<std::string> args;
 
@@ -103,7 +103,7 @@ ADUShellTaskResult Cancel(const ADUShell_LaunchArguments& launchArgs)
     ADUShellTaskResult taskResult;
 
     // Constructing parameter for child process.
-    // command << c_installScript << " -l " << logFolder << " -r"
+    // command << SWUpdateCommand << " -l " << logFolder << " -r"
     std::vector<std::string> args;
 
     if (launchArgs.logFile != nullptr)

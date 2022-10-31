@@ -4,9 +4,11 @@ project (azure_iot_aduc_agent)
 
 set (target_name AducIotAgent)
 
-add_subdirectory (pnp_helper)
+add_subdirectory (adu_core_export_helpers)
 add_subdirectory (adu_core_interface)
 add_subdirectory (device_info_interface)
+add_subdirectory (pnp_helper)
+add_subdirectory (command_helper)
 
 include (agentRules)
 
@@ -54,8 +56,11 @@ endif ()
 
 target_compile_definitions (
     ${target_name}
-    PRIVATE ADUC_VERSION="${ADUC_VERSION}" ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
-            ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}")
+    PRIVATE ADUC_VERSION="${ADUC_VERSION}"
+            ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
+            ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}"
+            SUPPORTED_UPDATE_MANIFEST_VERSION_MIN=${SUPPORTED_UPDATE_MANIFEST_VERSION_MIN}
+            SUPPORTED_UPDATE_MANIFEST_VERSION_MAX=${SUPPORTED_UPDATE_MANIFEST_VERSION_MAX})
 
 # NOTE: the call to find_package for azure_c_shared_utility
 # must come before umqtt since their config.cmake files expect the aziotsharedutil target to already have been defined.
@@ -70,22 +75,49 @@ target_link_libraries (
     ${target_name}
     PRIVATE aziotsharedutil
             IotHubClient::iothub_client
-            iothub_client_mqtt_transport
             umqtt
+            aduc::adu_core_export_helpers
             aduc::adu_core_interface
+            aduc::agent_orchestration
             aduc::agent_workflow
             aduc::c_utils
+            aduc::command_helper
             aduc::communication_abstraction
             aduc::config_utils
+            aduc::d2c_messaging
             aduc::device_info_interface
             aduc::eis_utils
             aduc::extension_manager
+            aduc::extension_utils
+            aduc::https_proxy_utils
             aduc::logging
             aduc::permission_utils
             aduc::pnp_helper
             aduc::system_utils
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
+
+if (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT")
+    target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT=1)
+    target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_transport)
+
+elseif (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT_over_WebSockets")
+    target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT_OVER_WEBSOCKETS=1)
+    target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_ws_transport)
+
+elseif (ADUC_IOT_HUB_PROTOCOL STREQUAL "IotHub_Protocol_from_Config")
+    target_compile_definitions (${target_name} PRIVATE ADUC_GET_IOTHUB_PROTOCOL_FROM_CONFIG=1)
+    target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT=1)
+    target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT_OVER_WEBSOCKETS=1)
+    target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_transport)
+    target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_ws_transport)
+
+else ()
+    message (
+        FATAL_ERROR,
+        "Invalid value '${ADUC_IOT_HUB_PROTOCOL}' for ADUC_IOT_HUB_PROTOCOL. Valid values: MQTT | MQTT_over_WebSockets | IotHub_Protocol_from_Config"
+    )
+endif ()
 
 get_filename_component (
     ADUC_INSTALLEDCRITERIA_FILE_PATH
@@ -100,6 +132,7 @@ target_compile_definitions (
             ADUC_CONF_FOLDER="${ADUC_CONF_FOLDER}"
             ADUC_DATA_FOLDER="${ADUC_DATA_FOLDER}"
             ADUC_DOWNLOADS_FOLDER="${ADUC_DOWNLOADS_FOLDER}"
+            ADUC_COMMANDS_FIFO_NAME="${ADUC_COMMANDS_FIFO_NAME}"
             ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
             ADUC_FILE_USER="${ADUC_FILE_USER}"
             ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}"

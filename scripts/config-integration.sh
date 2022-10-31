@@ -5,15 +5,15 @@
 
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
-    ret=return
+    ret='return'
 else
-    ret=exit
+    ret='exit'
 fi
 
 error() { echo -e "\033[1;31mError:\033[0m $*" >&2; }
 warn() { echo -e "\033[1;33mWarning:\033[0m $*" >&2; }
 
-current_schema_version="1.0"
+current_schema_version="1.1"
 
 conf_file=$1
 new_conf_file="/etc/adu/du-config.json"
@@ -43,6 +43,7 @@ json_content=$(
     "adu",
     "do"
   ],
+  "iotHubProtocol": "mqtt",
   <% MANUFACTURER %>
   <% MODEL %>
   "agents": [

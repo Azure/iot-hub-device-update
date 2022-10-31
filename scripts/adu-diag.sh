@@ -1,13 +1,13 @@
-# !/bin/bash
+#!/bin/bash
 
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
-    ret=return
+    ret='return'
 else
-    ret=exit
+    ret='exit'
 fi
 
 error() { echo -e "\033[1;31mError:\033[0m $*" >&2; }
@@ -30,9 +30,9 @@ gather_aduc_info() {
 
         # Agent info.
 
-        cp /usr/lib/systemd/system/adu-agent.service .
+        cp /usr/lib/systemd/system/deviceupdate-agent.service .
 
-        systemctl status adu-agent.service > adu-agent.service.txt
+        systemctl status deviceupdate-agent.service > deviceupdate-agent.service.txt
 
         ls -l /usr/bin/AducIotAgent > AducIotAgent.txt
     } &>> adu-diag.log
@@ -70,11 +70,11 @@ gather_do_info
 
 tar -czvf ~/adu-diag.tar.gz . || {
     error "tar command failed."
-    popd
+    popd || $ret
     $ret 1
 }
 
-popd
+popd || $ret
 
 echo ""
 
