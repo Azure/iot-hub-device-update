@@ -401,7 +401,7 @@ determine_distro() {
         OS=$(uname -s)
         VER=$(uname -r)
     fi
-    # Covert OS to lowercase 
+    # Covert OS to lowercase
     OS="$(echo "$OS" | tr '[:upper:]' '[:lower:]')"
 }
 
@@ -519,7 +519,9 @@ fi
 if [[ $install_all_deps == "true" ]]; then
     install_aduc_deps=true
     install_do=true
-    install_packages=true
+    install_cmake=true
+    install_shellcheck=true
+    install_githooks=true
 fi
 
 # Set implied options for aduc deps.
