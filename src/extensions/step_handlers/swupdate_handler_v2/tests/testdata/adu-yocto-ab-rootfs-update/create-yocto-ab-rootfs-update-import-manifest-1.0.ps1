@@ -120,7 +120,7 @@ Write-Host "#    $parentFile1"
     #
     #                       Required argument:
     #                           --software-version-file <filepath>
-    #                                 A full path to a file (on a target device) containing a single line of text that identifies the image vesrion.
+    #                                 A full path to a file (on a target device) containing a single line of text that identifies the image version.
     #                                 Default path '/etc/adu-version
     #
     #                       Optional argument:
