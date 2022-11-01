@@ -24,7 +24,7 @@ Follow steps below to prepare the payloads:
    ```
 
 2. Copy your update file (.swu) to `$work_folder/payloads` folder. For example, `/tmp/ab-demo/payload/my-update.swu`
-3. **Optional:** copy [AduUpdate.psm1](../../../../../../tools/AduCmdlets/AduUpdate.psm1) into the work folder
+3. **Optional:** copy [AduUpdate.psm1](../../../../../../../tools/AduCmdlets/AduUpdate.psm1) into the work folder
 
 ### Generate Device Update Import Manifest File
 

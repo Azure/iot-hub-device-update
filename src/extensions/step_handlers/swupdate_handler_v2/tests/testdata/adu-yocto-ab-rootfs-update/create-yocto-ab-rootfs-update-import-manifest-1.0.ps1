@@ -18,6 +18,8 @@
                 -Manufacturer "contoso" `
                 -Model "virtual-vacuum-v1" `
                 -UpdateVersion "1.0" `
+                -SwuFileName "my-update.swu" `
+                -InstalledCriteria "8.0.1.0001" `
                 -OutputManifestPath .
 #>
 [CmdletBinding()]
@@ -43,16 +45,22 @@ Param(
     [string] $Model = "virtual-vacuum-v2",
 
     # Update Version
+    # NOTE: This is the version of the update. Not the version of the image in .swu file.
     [ValidateNotNullOrEmpty()]
     [string] $UpdateVersion = "1.0",
 
-    # Update Version
+    # Update Filename
     [ValidateNotNullOrEmpty()]
-    [string] $SwuFileName = "my-update.swu"
+    [string] $SwuFileName = "my-update.swu",
+
+    # Installed Criteria
+    # NOTE: This is the version number in the '--software-version-file'
+    [ValidateNotNullOrEmpty()]
+    [string] $InstalledCriteria = "8.0.1.0001"
 )
 
 # ------------------------------------------------------------
-# Create the parent update with bad APT Manifest file.
+# Create the parent update.
 # ------------------------------------------------------------
 
 $parentCompat = New-AduUpdateCompatibility -Manufacturer $Manufacturer -Model $Model
@@ -112,8 +120,8 @@ Write-Host "#    $parentFile1"
     #
     #                       Required argument:
     #                           --software-version-file <filepath>
-    #                                 A full path to a file containing a single line of text that identifies the image vesrion.
-    #                                 Default path '/etc/adu/adu-version
+    #                                 A full path to a file (on a target device) containing a single line of text that identifies the image version.
+    #                                 Default path '/etc/adu-version
     #
     #                       Optional argument:
     #                           --swupdate-log-file <filepath>
@@ -124,12 +132,12 @@ Write-Host "#    $parentFile1"
                         -Handler 'microsoft/swupdate:2'     `
                         -Files $payloadFiles  `
                         -HandlerProperties @{               `
-                            'scriptFile'='example-.sh'; `
+                            'scriptFile'='example-a-b-update.sh'; `
                             'swuFile'="$SwuFileName"
-                            'installedCriteria'='8.0.1.0001';   `
+                            'installedCriteria'="$InstalledCriteria";   `
                             'arguments'='--software-version-file /etc/adu-version --swupdate-log-file /adu/logs/swupdate.log'
                         } `
-                        -Description 'Update rootfs using A/B update pattern'
+                        -Description 'Update rootfs using A/B update strategy'
 
 # ------------------------------
 # Create parent update manifest
@@ -159,4 +167,3 @@ if ($payloadFiles) { `
 }
 
 Write-Host "#"
-
