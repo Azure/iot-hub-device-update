@@ -34,7 +34,6 @@ target_compile_definitions (
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::c_utils
-            aduc::content_handlers
             aduc::exception_utils
             aduc::logging
             aduc::string_utils

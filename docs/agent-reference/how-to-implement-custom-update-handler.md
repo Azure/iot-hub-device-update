@@ -9,9 +9,9 @@ Device Update has previously supported four reference Device Update Agent binari
 - A simulator agent that supports 'microsoft/swupdate:1' update type
 - A simulator agent that supports 'microsoft/apt:1' update type
 
-The Public Preview refresh Agent supports an Update Content Handler extension, which enables the Agent to support multiple Update Types at the same time.  
+The Public Preview refresh Agent supports an Update Content Handler extension, which enables the Agent to support multiple Update Types at the same time.
 
-Device builders can define a custom Update Type, implement the associated custom Update Content Handler, and register it, if needed for their additional device updates and deployment scenarios.  
+Device builders can define a custom Update Type, implement the associated custom Update Content Handler, and register it, if needed for their additional device updates and deployment scenarios.
 
 ## Requirements
 
@@ -43,11 +43,11 @@ See **ContentHandler** class definition in  [content_handler.hpp](../../src/exte
 
 ## Consuming ADUC_WorkflowData
 
-As noted above, DU Agent Core passes an [**ADUC_WorkflowData**](../../src/adu_types/inc/aduc/types/workflow.h) object when invoking a function provided by the handler. A '**WorkflowHandle**' field of the  [**ADUC_WorkflowData**](../../src/adu_types/inc/aduc/types/workflow.h) object contains all data needed to perform each task.  
+As noted above, DU Agent Core passes an [**ADUC_WorkflowData**](../../src/adu_types/inc/aduc/types/workflow.h) object when invoking a function provided by the handler. A '**WorkflowHandle**' field of the  [**ADUC_WorkflowData**](../../src/adu_types/inc/aduc/types/workflow.h) object contains all data needed to perform each task.
 
-A group of helper functions declared in workflow_utils.h can be used to query workflow data from the WorkflowHandle.  
+A group of helper functions declared in workflow_utils.h can be used to query workflow data from the WorkflowHandle.
 
-Below, you can find an example of useful helper functions used in most handlers provided in this project.  
+Below, you can find an example of useful helper functions used in most handlers provided in this project.
 
 | Function | Purpose |
 |:---|:---|
@@ -61,11 +61,11 @@ workflow_get_installed_criteria|Get the 'installed' criteria string|
 
 ## Implementing A 'Component-Aware' Content Handler
 
-Usually, a content handler is designed to install an update content on a Host Device. An example of this is the [APT Update Content Handler](../../src/content_handlers/apt_handler/README.md) provided in this project, which installs one or more Debian packages on the host device.  
+Usually, a content handler is designed to install an update content on a Host Device. An example of this is the [APT Update Content Handler](../../src/extensions/step_handlers/apt_handler/README.md) provided in this project, which installs one or more Debian packages on the host device.
 
-In some case, a Device Builder may want to install an update content on one or more component(s) that connected to the Host Device instead.  
+In some case, a Device Builder may want to install an update content on one or more component(s) that connected to the Host Device instead.
 
-In this case, if the Update has been authored and imported correctly, the DU Agent workflow will include a 'Selected Components' data in the ADUC_WorkflowHandle object that is passed to the handler's function.  
+In this case, if the Update has been authored and imported correctly, the DU Agent workflow will include a 'Selected Components' data in the ADUC_WorkflowHandle object that is passed to the handler's function.
 
 When implementing a handler that handles an update intended for connected-components, the following helper functions can be used to get selected components properties:
 
@@ -73,23 +73,23 @@ When implementing a handler that handles an update intended for connected-compon
 |---|---|
 |workflow_peek_selected_components|Get a serialized JSON string containing a collection of components that the update should be installed.|
 
-The component data is provided by Component Enumerator Extension, which usually implemented by Device Builder and registered on the Host Device.  
+The component data is provided by Component Enumerator Extension, which usually implemented by Device Builder and registered on the Host Device.
 
-> See [Contoso Virtual Vacuum Component Enumerator](../../src/extensions/component-enumerators/examples/contoso-component-enumerator/README.md) example for more details
+> See [Contoso Virtual Vacuum Component Enumerator](../../src/extensions/component_enumerators/examples/contoso_component_enumerator/README.md) example for more details
 
 ## How To Build A Content Handler Extension
 
-To get started, take a look at existing Content Handler Extensions in [src/content_handlers](../../src/content_handlers) folder for reference.  
+To get started, take a look at existing Content Handler Extensions in [src/content_handlers](../../src/content_handlers) folder for reference.
 
 ## How To Register A Content Handler Extension
 
 To register a content handler, run following command on the device:
 
 ```sh
-sudo /usr/bin/AducIotAgent --register--content-handler <full path to the handler file> --update-type <update type name>
+sudo /usr/bin/AducIotAgent --extension-type updateContentHandler --register-extension <full path to the handler file> --extension-id <update type name>
 
 # For example
-# sudo /usr/bin/AducIotAgent --register-content-handler /var/lib/adu/extensions/sources/libmicrosoft_apt_1.so --update-type 'microsoft/apt:1'
+# sudo /usr/bin/AducIotAgent --extension-type updateContentHandler --register-extension /var/lib/adu/extensions/sources/libmicrosoft_apt_1.so --extension-id 'microsoft/apt:1'
 ```
 
 ### Return Value

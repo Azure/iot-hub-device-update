@@ -5,8 +5,6 @@ project (extension_utils)
 add_library (${PROJECT_NAME} STATIC src/extension_utils.c)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
-target_include_directories (${PROJECT_NAME} PUBLIC inc)
-
 target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
 #
@@ -28,16 +26,19 @@ target_compile_definitions (
         ADUC_COMPONENT_ENUMERATOR_EXTENSION_DIR="${ADUC_COMPONENT_ENUMERATOR_EXTENSION_DIR}"
         ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR="${ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR}"
         ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR="${ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR}"
+        ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR="${ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR}"
+        ADUC_DOWNLOAD_HANDLER_REG_FILENAME="${ADUC_DOWNLOAD_HANDLER_REG_FILENAME}"
         ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
         ADUC_FILE_USER="${ADUC_FILE_USER}")
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aziotsharedutil
-           aduc::adu_core_interface
-           aduc::c_utils
-           aduc::hash_utils
-           aduc::parser_utils
-           aduc::system_utils
-           Parson::parson
-    PRIVATE aduc::logging aduc::string_utils)
+    PUBLIC aduc::adu_types
+    PRIVATE aduc::hash_utils
+            aduc::logging
+            aduc::parser_utils
+            aduc::path_utils
+            aduc::string_utils
+            aduc::system_utils
+            aziotsharedutil
+            Parson::parson)

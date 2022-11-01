@@ -9,10 +9,11 @@
 #ifndef _COMPONENT_ENUMERATOR_EXTENSION_HPP_
 #define _COMPONENT_ENUMERATOR_EXTENSION_HPP_
 
+#include <aduc/c_utils.h>
 #include <string>
 #include <vector>
 
-extern "C" {
+EXTERN_C_BEGIN
 
 /**
  * @brief Select component(s) that contain property or properties matching specified in @p selectorJson string.
@@ -134,6 +135,6 @@ typedef char* (*GetAllComponentsProc)();
  */
 typedef void (*FreeComponentsDataStringProc)(char* string);
 
-} // extern "c"
+EXTERN_C_END
 
 #endif // _COMPONENT_ENUMERATOR_EXTENSION_HPP_

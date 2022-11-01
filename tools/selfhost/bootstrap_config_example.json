@@ -1,0 +1,19 @@
+{
+    "deviceupdate_agent": {
+        "package_path": "/tmp/adu/boot/du_agent_pkg.deb",
+        "dependencies": {
+            "ubuntu18.04_x64": {
+                "delivery_optimization_tarball_url": "https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu1804_x64-packages.tar"
+            },
+            "ubuntu20.04_x64": {
+                "delivery_optimization_tarball_url": "https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_x64-packages.tar"
+            }
+        }
+    },
+    "features": {
+        "delta_update": {
+            "deltaupdate_files": "/tmp/adu/boot/deltaupdate_files.zip",
+            "deltaupdate_swupdate_files": "/tmp/adu/boot/delta_swupdate_files.tar.gz"
+        }
+    }
+}

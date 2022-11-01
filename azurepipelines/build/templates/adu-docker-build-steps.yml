@@ -65,7 +65,6 @@ steps:
 
   - task: PublishPipelineArtifact@0
     displayName: "Publish Pipeline Artifacts"
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
     inputs:
       artifactName: "adu-client-${{parameters.targetOs}}-${{parameters.targetArch}}"
       targetPath: "$(Build.ArtifactStagingDirectory)"

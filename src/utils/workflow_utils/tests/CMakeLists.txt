@@ -7,23 +7,21 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-set (sources main.cpp workflow_utils_ut.cpp)
-
 find_package (Catch2 REQUIRED)
-find_package (azure_c_shared_utility REQUIRED)
+find_package (Parson REQUIRED)
 
-add_executable (${PROJECT_NAME} ${sources})
+add_executable (${PROJECT_NAME} ${sources} "")
+
+target_sources (${PROJECT_NAME} PRIVATE main.cpp workflow_utils_ut.cpp
+                                        workflow_get_update_file_ut.cpp)
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
-target_link_libraries (
-    ${PROJECT_NAME}
-    PRIVATE aduc::adu_types
-            aduc::parser_utils
-            aduc::string_utils
-            aduc::workflow_utils
-            Catch2::Catch2
-            aziotsharedutil)
+target_link_libraries (${PROJECT_NAME} PRIVATE aduc::parser_utils aduc::workflow_utils
+                                               Catch2::Catch2)
+
+target_compile_definitions (${PROJECT_NAME}
+                            PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
 include (CTest)
 include (Catch)

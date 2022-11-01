@@ -11,14 +11,14 @@
 
 #ifdef ENABLE_MOCKS
 
-#   undef ENABLE_MOCKS
-#   include "azure_c_shared_utility/strings.h"
-#   include "azure_c_shared_utility/vector.h"
-#   define ENABLE_MOCKS
+#    undef ENABLE_MOCKS
+#    include "azure_c_shared_utility/strings.h"
+#    include "azure_c_shared_utility/vector.h"
+#    define ENABLE_MOCKS
 
 #else
-#   include "azure_c_shared_utility/strings.h"
-#   include "azure_c_shared_utility/vector.h"
+#    include "azure_c_shared_utility/strings.h"
+#    include "azure_c_shared_utility/vector.h"
 
 #endif
 
@@ -42,6 +42,8 @@ typedef struct tagADUC_AgentInfo
     char* manufacturer; /**< Device property manufacturer. */
 
     char* model; /**< Device property model. */
+
+    JSON_Object* additionalDeviceProperties; /**< Additional device properties. */
 
 } ADUC_AgentInfo;
 
@@ -68,6 +70,8 @@ typedef struct tagADUC_ConfigInfo
     unsigned int agentCount; /**< Total number of agents configured. */
 
     char* compatPropertyNames; /**< Compat property names. */
+
+    char* iotHubProtocol; /**< The IotHub transport protocol to use. */
 } ADUC_ConfigInfo;
 
 /**

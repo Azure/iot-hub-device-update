@@ -2,15 +2,15 @@
 
 # prerm
 # pre-remove script for ADU Agent debian package.
-# Deregister adu-agent daemon.
+# Deregister deviceupdate-agent daemon.
 # See https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
 
-adu_agent_service=adu-agent.service
-adu_agent_unit_file=/usr/lib/systemd/system/adu-agent.service
+adu_agent_service=deviceupdate-agent.service
+adu_agent_unit_file=/usr/lib/systemd/system/deviceupdate-agent.service
 
 deregister_daemon()
 {
-    # Stop and remove adu-agent service from the failed services list. No-op if never failed earlier.
+    # Stop and remove deviceupdate-agent service from the failed services list. No-op if never failed earlier.
     systemctl stop $adu_agent_service
     systemctl reset-failed $adu_agent_service
 }

@@ -59,8 +59,7 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-if ! command -v openssl &> /dev/null
-then
+if ! command -v openssl &> /dev/null; then
     write_error "This script requires openssl."
     exit 1
 fi
@@ -77,13 +76,13 @@ UPDATE_FILES=''
 while getopts "c:r:n:p:h:v:" OPT; do
     case "$OPT" in
     c)
-        if ! [[ "$OPTARG" =~ ^[^[:space:]]+:[^[:space:]]+$ ]]; then
+        if ! [[ $OPTARG =~ ^[^[:space:]]+:[^[:space:]]+$ ]]; then
             write_error "Invalid compatibility specified."
             exit 1
         fi
 
         IFS=':'
-        read -ra ARGS <<<"$OPTARG"
+        read -ra ARGS <<< "$OPTARG"
         if [ ${#ARGS[@]} -ne 2 ]; then
             write_error 'Compatibility info format is key:value'
             exit 1
@@ -93,13 +92,13 @@ while getopts "c:r:n:p:h:v:" OPT; do
         COMPAT_INFOS+=("$OPTARG")
         ;;
     r)
-        if ! [[ "$OPTARG" =~ ^[^[:space:]]+:[^[:space:]]+$ ]]; then
+        if ! [[ $OPTARG =~ ^[^[:space:]]+:[^[:space:]]+$ ]]; then
             write_error "Invalid handler property specified."
             exit 1
         fi
 
         IFS=':'
-        read -ra ARGS <<<"$OPTARG"
+        read -ra ARGS <<< "$OPTARG"
         if [ ${#ARGS[@]} -ne 2 ]; then
             write_error 'Handler property format is key:value'
             exit 1
@@ -110,33 +109,33 @@ while getopts "c:r:n:p:h:v:" OPT; do
         ;;
 
     n)
-        if [ ! -z "$UPDATE_NAME" ]; then
+        if [ -n "$UPDATE_NAME" ]; then
             write_error "Update name specified twice."
             exit 1
         fi
 
         UPDATE_NAME=$OPTARG
 
-        if ! [[ "$UPDATE_NAME" =~ ^[a-zA-Z0-9.-]{1,64}$ ]]; then
+        if ! [[ $UPDATE_NAME =~ ^[a-zA-Z0-9.-]{1,64}$ ]]; then
             write_error "Invalid update name specified."
             exit 1
         fi
         ;;
     p)
-        if [ ! -z "$UPDATE_PROVIDER" ]; then
+        if [ -n "$UPDATE_PROVIDER" ]; then
             write_error "Update provider specified twice."
             exit 1
         fi
 
         UPDATE_PROVIDER=$OPTARG
 
-        if ! [[ "$UPDATE_PROVIDER" =~ ^[a-zA-Z0-9.-]{1,64}$ ]]; then
+        if ! [[ $UPDATE_PROVIDER =~ ^[a-zA-Z0-9.-]{1,64}$ ]]; then
             write_error "Invalid update provider specified."
             exit 1
         fi
         ;;
     h)
-        if [ ! -z "$HANDLER" ]; then
+        if [ -n "$HANDLER" ]; then
             write_error "Handler specified twice."
             exit 1
         fi
@@ -144,14 +143,14 @@ while getopts "c:r:n:p:h:v:" OPT; do
         HANDLER=$OPTARG
 
         # POSIX regex only, sigh.
-        if ! [[ "$HANDLER" =~ ^[^[:space:]]+/[^[:space:]]+:[[:digit:]]{1,5}$ ]]; then
+        if ! [[ $HANDLER =~ ^[^[:space:]]+/[^[:space:]]+:[[:digit:]]{1,5}$ ]]; then
             write_error "Invalid handler specified."
             exit 1
         fi
         ;;
 
     v)
-        if [ ! -z "$UPDATE_VERSION" ]; then
+        if [ -n "$UPDATE_VERSION" ]; then
             write_error "Update version specified twice."
             exit 1
         fi
@@ -176,7 +175,7 @@ done
 
 # Update files are the arguments without switches.
 shift "$((OPTIND - 1))"
-UPDATE_FILES=($@)
+UPDATE_FILES=("$@")
 
 # Verify that all required arguments were specified and correct.
 
@@ -222,7 +221,7 @@ CREATED_DATETIME=$(date --utc --iso-8601=seconds)
 # Write out JSON.
 # Using "jq" would be better, but trying to reduce script dependencies.
 
-cat <<EOF
+cat << EOF
 {
   "updateId": {
     "provider": "$UPDATE_PROVIDER",
@@ -235,21 +234,21 @@ EOF
 
 for idx in "${!COMPAT_INFOS[@]}"; do
     IFS=':'
-    read -ra ARGS <<<"${COMPAT_INFOS[$idx]}"
+    read -ra ARGS <<< "${COMPAT_INFOS[$idx]}"
 
     if [ $((idx + 1)) -ne ${#COMPAT_INFOS[@]} ]; then
-        cat <<EOF
+        cat << EOF
       "${ARGS[0]}": "${ARGS[1]}",
 EOF
     else
-        cat <<EOF
+        cat << EOF
       "${ARGS[0]}": "${ARGS[1]}"
 EOF
-    echo "    }"
+        echo "    }"
     fi
 done
 
-cat <<EOF
+cat << EOF
   ],
   "instructions": {
     "steps": [
@@ -270,24 +269,24 @@ for idx in "${!UPDATE_FILES[@]}"; do
 done
 
 if [ ${#HANDLER_PROPS[@]} -ne 0 ]; then
-    cat <<EOF
+    cat << EOF
         ],
         "handlerProperties": {
 EOF
 
     for idx in "${!HANDLER_PROPS[@]}"; do
         IFS=':'
-        read -ra ARGS <<<"${HANDLER_PROPS[$idx]}"
+        read -ra ARGS <<< "${HANDLER_PROPS[$idx]}"
 
         if [ $((idx + 1)) -ne ${#HANDLER_PROPS[@]} ]; then
-            cat <<EOF
+            cat << EOF
           "${ARGS[0]}": "${ARGS[1]}",
 EOF
         else
-            cat <<EOF
+            cat << EOF
           "${ARGS[0]}": "${ARGS[1]}"
 EOF
-        echo "        }"
+            echo "        }"
         fi
     done
 
@@ -296,7 +295,7 @@ else
 
 fi
 
-cat <<EOF
+cat << EOF
       }
     ]
   },
@@ -309,7 +308,7 @@ for idx in "${!UPDATE_FILES[@]}"; do
     FILESIZE=$(stat --printf="%s" "$UPDATE_FILE")
     SHA256HASH=$(openssl dgst -sha256 -binary "$UPDATE_FILE" | openssl base64)
 
-    cat <<EOF
+    cat << EOF
     {
       "filename": "$FILENAME",
       "sizeInBytes": $FILESIZE,
@@ -324,7 +323,7 @@ EOF
     fi
 done
 
-cat <<EOF
+cat << EOF
   ],
   "createdDateTime": "$CREATED_DATETIME",
   "manifestVersion": "$MANIFEST_VERSION"

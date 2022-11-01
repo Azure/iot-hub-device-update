@@ -3,7 +3,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-# Installs the adu-agent daemon and performs necessary setup/configuration.
+# Installs the deviceupdate-agent daemon and performs necessary setup/configuration.
 # This script is meant to only be called from CMake as part of the install target.
 
 # Any error should exit the script (sort of)
@@ -30,7 +30,7 @@ adu_user=adu
 adu_group=adu
 
 # Note: DO user and group are created by deliveryoptimization-agent Debian package,
-# which is one of the dependencies declared in adu-agent control file.
+# which is one of the dependencies declared in deviceupdate-agent control file.
 # We are assuming that both DO user and group currently exist at this point.
 
 # The user that the DO Agent daemon runs as.
@@ -40,11 +40,12 @@ do_user='do'
 sample_du_config=$(
     cat << END_OF_JSON
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "aduShellTrustedUsers": [
     "adu",
     "do"
   ],
+  "iotHubProtocol": "mqtt",
   "manufacturer": <Place your device info manufacturer here>,
   "model": <Place your device info model here>,
   "agents": [
@@ -99,7 +100,7 @@ add_adu_user_and_group() {
 
 register_daemon() {
     systemctl daemon-reload
-    systemctl enable adu-agent
+    systemctl enable deviceupdate-agent
 }
 
 setup_dirs_and_files() {

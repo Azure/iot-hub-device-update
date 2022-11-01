@@ -87,6 +87,86 @@ done:
     return success;
 }
 
+static inline _Bool IsValidFileHashCheckAlgorithm(SHAversion sha)
+{
+    return sha >= SHA256;
+}
+
+static _Bool ADUC_HashUtils_GetIndexStrongestValidHash(
+    const ADUC_Hash* hashes, size_t hashCount, size_t* outIndexStrongestAlgorithm, SHAversion* outBestShaVersion)
+{
+    if (outIndexStrongestAlgorithm == NULL || outBestShaVersion == NULL)
+    {
+        return false;
+    }
+
+    size_t strongestIndex = -1; // Assume hashes array is not sorted by strength ordering.
+    SHAversion curBestAlg = SHA1;
+
+    for (size_t i = 0; i < hashCount; ++i)
+    {
+        SHAversion algVersion = SHA1;
+        char* hashType = ADUC_HashUtils_GetHashType(hashes, hashCount, i);
+        if (!ADUC_HashUtils_GetShaVersionForTypeString(hashType, &algVersion))
+        {
+            Log_Error("Unsupported algorithm: %s", hashType);
+            return false;
+        }
+
+        // Just because it's supported by the underlying library does not mean
+        // it's valid for file digests (e.g. SHA1 is not valid).
+        if (!IsValidFileHashCheckAlgorithm(algVersion))
+        {
+            Log_Warn("Invalid hash alg: %s", hashType);
+            continue;
+        }
+
+        if (algVersion > curBestAlg)
+        {
+            strongestIndex = i;
+            curBestAlg = algVersion;
+        }
+    }
+
+    if (strongestIndex >= 0)
+    {
+        *outIndexStrongestAlgorithm = strongestIndex;
+        *outBestShaVersion = curBestAlg;
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * @brief For the given array of ADUC_Hash, it will verify that the hash of the file contents matches the strongest hash in the array.
+ *
+ * @param filePath The path to the file with contents to hash.
+ * @param hashes The array of ADUC_Hash objects.
+ * @param hashCount The length of the array.
+ * @return _Bool true if the hash with the strongest algorithm matches the hash of the file at the given path.
+ */
+_Bool ADUC_HashUtils_VerifyWithStrongestHash(const char* filePath, const ADUC_Hash* hashes, size_t hashCount)
+{
+    size_t indexStrongestAlgorithm = 0;
+    SHAversion bestShaVersion = SHA256;
+    if (!ADUC_HashUtils_GetIndexStrongestValidHash(hashes, hashCount, &indexStrongestAlgorithm, &bestShaVersion))
+    {
+        // There is no hash with a valid algorithm.
+        return false;
+    }
+
+    Log_Debug("Best hash index %d", indexStrongestAlgorithm);
+
+    char* hashValue = ADUC_HashUtils_GetHashValue(hashes, hashCount, indexStrongestAlgorithm);
+    if (!ADUC_HashUtils_IsValidFileHash(filePath, hashValue, bestShaVersion, false))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 /**
  * @brief Checks if the hash of the file at @p path matches @p hashBase64
  *
@@ -412,10 +492,13 @@ done:
  */
 void ADUC_Hash_FreeArray(size_t hashCount, ADUC_Hash* hashArray)
 {
-    for (size_t hash_index = 0; hash_index < hashCount; ++hash_index)
+    if (hashArray != NULL)
     {
-        ADUC_Hash* hashEntity = hashArray + hash_index;
-        ADUC_Hash_UnInit(hashEntity);
+        for (size_t hash_index = 0; hash_index < hashCount; ++hash_index)
+        {
+            ADUC_Hash* hashEntity = hashArray + hash_index;
+            ADUC_Hash_UnInit(hashEntity);
+        }
+        free(hashArray);
     }
-    free(hashArray);
 }

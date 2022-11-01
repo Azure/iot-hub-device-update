@@ -8,6 +8,7 @@
 #include "aduc/device_info_interface.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
+#include "aduc/d2c_messaging.h"
 #include "aduc/device_info_exports.h"
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h" // atoint64t
@@ -167,12 +168,7 @@ void DeviceInfoInterface_Connected(void* componentContext)
     //
     // After DeviceInfoInterface is registered, report current DeviceInfo properties, e.g. software version.
     //
-
-    IOTHUB_CLIENT_RESULT reportResult = DeviceInfoInterface_ReportChangedPropertiesAsync();
-    if (reportResult != IOTHUB_CLIENT_OK)
-    {
-        Log_Warn("DeviceInfoInterface_ReportChangedPropertiesAsync() failed, %u", reportResult);
-    }
+    DeviceInfoInterface_ReportChangedPropertiesAsync();
 }
 
 void DeviceInfoInterface_Destroy(void** componentContext)
@@ -183,59 +179,20 @@ void DeviceInfoInterface_Destroy(void** componentContext)
     DeviceInfoInterfaceData_Free();
 }
 
-IOTHUB_CLIENT_RESULT ReportChangedProperty(DeviceInfoInterface_Data* data)
+/**
+ * @brief This function is called when the message is no longer being process.
+ *
+ * @param context The ADUC_D2C_Message object
+ * @param status The message status.
+ */
+static void OnDeviceInfoD2CMessageCompleted(void* context, ADUC_D2C_Message_Status status)
 {
-    ADUC_ClientHandle deviceClientLL = g_iotHubClientHandleForDeviceInfoComponent;
-    IOTHUB_CLIENT_RESULT iothubClientResult = IOTHUB_CLIENT_OK;
-    STRING_HANDLE jsonToSend = NULL;
-
-    if (!data->IsDirty)
-    {
-        goto done;
-    }
-
-    const char* propertyName = data->PropertyName;
-    const char* propertyValue = data->Value;
-
-    Log_Info("Reporting changed property: %s, value: %s", propertyName, propertyValue);
-
-    jsonToSend = PnP_CreateReportedProperty(g_deviceInfoPnPComponentName, propertyName, propertyValue);
-
-    if (jsonToSend == NULL)
-    {
-        Log_Error(
-            "Unable to build reported property response for propertyName=%s, propertyValue=%s",
-            propertyName,
-            propertyValue);
-        iothubClientResult = IOTHUB_CLIENT_ERROR;
-        goto done;
-    }
-
-    const char* jsonToSendStr = STRING_c_str(jsonToSend);
-    size_t jsonToSendStrLen = strlen(jsonToSendStr);
-
-    iothubClientResult = ClientHandle_SendReportedState(
-        deviceClientLL, (const unsigned char*)jsonToSendStr, jsonToSendStrLen, NULL, NULL);
-
-    if (iothubClientResult != IOTHUB_CLIENT_OK)
-    {
-        Log_Error(
-            "DeviceInfoInterface: Reporting property %s failed, error: %d, %s",
-            propertyName,
-            iothubClientResult,
-            MU_ENUM_TO_STRING(IOTHUB_CLIENT_RESULT, iothubClientResult));
-        goto done;
-    }
-
-done:
-    STRING_delete(jsonToSend);
-
-    return iothubClientResult;
+    UNREFERENCED_PARAMETER(context);
+    Log_Debug("Send message completed (status:%d)", status);
 }
 
-IOTHUB_CLIENT_RESULT DeviceInfoInterface_ReportChangedPropertiesAsync()
+void DeviceInfoInterface_ReportChangedPropertiesAsync()
 {
-    IOTHUB_CLIENT_RESULT iothubClientResult = IOTHUB_CLIENT_OK;
     RefreshDeviceInfoInterfaceData();
 
     STRING_HANDLE jsonToSend = NULL;
@@ -264,7 +221,6 @@ IOTHUB_CLIENT_RESULT DeviceInfoInterface_ReportChangedPropertiesAsync()
             if (!atoul(propertyValue, &val))
             {
                 Log_Error("Cannot convert property value to number. Value: %s", propertyValue);
-                iothubClientResult = IOTHUB_CLIENT_ERROR;
                 goto done;
             }
             json_object_set_number(root_object, propertyName, val);
@@ -278,28 +234,24 @@ IOTHUB_CLIENT_RESULT DeviceInfoInterface_ReportChangedPropertiesAsync()
     if (jsonToSend == NULL)
     {
         Log_Error("Unable to build reported property for DeviceInformation component.");
-        iothubClientResult = IOTHUB_CLIENT_ERROR;
         goto done;
     }
 
-    const char* jsonToSendStr = STRING_c_str(jsonToSend);
-    size_t jsonToSendStrLen = strlen(jsonToSendStr);
-
-    iothubClientResult = ClientHandle_SendReportedState(
-        g_iotHubClientHandleForDeviceInfoComponent, (const unsigned char*)jsonToSendStr, jsonToSendStrLen, NULL, NULL);
-
-    if (iothubClientResult != IOTHUB_CLIENT_OK)
+    if (!ADUC_D2C_Message_SendAsync(
+            ADUC_D2C_Message_Type_Device_Information,
+            &g_iotHubClientHandleForDeviceInfoComponent,
+            STRING_c_str(jsonToSend),
+            NULL /* responseCallback */,
+            OnDeviceInfoD2CMessageCompleted,
+            NULL /* statusChangedCallback */,
+            NULL /* userData */))
     {
-        Log_Error(
-            "DeviceInfoInterface: Report property failed, error: %d, %s",
-            iothubClientResult,
-            MU_ENUM_TO_STRING(IOTHUB_CLIENT_RESULT, iothubClientResult));
+        Log_Error("Unable to send device information.");
+        goto done;
     }
 
 done:
     json_value_free(root_value);
     json_free_serialized_string(serialized_string);
     STRING_delete(jsonToSend);
-
-    return iothubClientResult;
 }

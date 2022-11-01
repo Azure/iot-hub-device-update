@@ -18,7 +18,8 @@
 
 EXTERN_C_BEGIN
 
-_Bool ADUC_HashUtils_IsValidFileHash(const char* path, const char* hashBase64, SHAversion algorithm, bool suppressErrorLog);
+_Bool ADUC_HashUtils_IsValidFileHash(
+    const char* path, const char* hashBase64, SHAversion algorithm, bool suppressErrorLog);
 
 _Bool ADUC_HashUtils_IsValidBufferHash(
     const uint8_t* buffer, size_t bufferLen, const char* hashBase64, SHAversion algorithm);
@@ -68,6 +69,16 @@ void ADUC_Hash_UnInit(ADUC_Hash* hash);
  * @param hashArray a pointer to an array of ADUC_Hash structs
  */
 void ADUC_Hash_FreeArray(size_t hashCount, ADUC_Hash* hashArray);
+
+/**
+ * @brief For the given array of ADUC_Hash, it will verify that the hash of the file contents matches the strongest hash in the array.
+ *
+ * @param filePath The path to the file with contents to hash.
+ * @param hashes The array of ADUC_Hash objects.
+ * @param hashCount The length of the array.
+ * @return _Bool true if the hash with the strongest algorithm matches the hash of the file at the given path.
+ */
+_Bool ADUC_HashUtils_VerifyWithStrongestHash(const char* filePath, const ADUC_Hash* hashes, size_t hashCount);
 
 EXTERN_C_END
 

@@ -18,14 +18,12 @@ find_package (azure_c_shared_utility REQUIRED)
 set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aziotsharedutil aduc::c_utils
-    PRIVATE aduc::logging)
+    PUBLIC aduc::c_utils
+    PRIVATE aduc::logging aziotsharedutil)
 
-target_compile_definitions (
-    ${PROJECT_NAME}
-    PRIVATE ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
-            ADUC_FILE_USER="${ADUC_FILE_USER}")
-            
+target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
+                                                    ADUC_FILE_USER="${ADUC_FILE_USER}")
+
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
 endif ()

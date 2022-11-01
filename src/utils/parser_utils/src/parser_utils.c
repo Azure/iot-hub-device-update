@@ -148,6 +148,7 @@ void ADUC_FileEntityArray_Free(unsigned int fileCount, ADUC_FileEntity* files)
  * @param hashCount a hash count of @p hashArray
  * @param sizeInBytes file size (in bytes)
  * @returns True on success and false on failure
+ * @details All strings and hashArray are deep-copied. hashArray ownership is not transferred.
  */
 _Bool ADUC_FileEntity_Init(
     ADUC_FileEntity* fileEntity,
@@ -160,6 +161,7 @@ _Bool ADUC_FileEntity_Init(
     size_t sizeInBytes)
 {
     _Bool success = false;
+    ADUC_Hash* tempHashArray = NULL;
 
     if (fileEntity == NULL)
     {
@@ -198,19 +200,38 @@ _Bool ADUC_FileEntity_Init(
         goto done;
     }
 
-    fileEntity->Hash = hashArray;
+    // Make a deep copy of hashArray
+    tempHashArray = (ADUC_Hash*)calloc(hashCount, sizeof(*hashArray));
+    if (tempHashArray == NULL)
+    {
+        goto done;
+    }
+
+    for (size_t i = 0; i < hashCount; ++i)
+    {
+        if (!ADUC_Hash_Init(&tempHashArray[i], hashArray[i].value, hashArray[i].type))
+        {
+            goto done;
+        }
+    }
+
+    fileEntity->Hash = tempHashArray;
+    tempHashArray = NULL;
 
     fileEntity->HashCount = hashCount;
 
     fileEntity->SizeInBytes = sizeInBytes;
 
     success = true;
+
 done:
+    ADUC_Hash_FreeArray(hashCount, tempHashArray);
 
     if (!success)
     {
         ADUC_FileEntity_Uninit(fileEntity);
     }
+
     return success;
 }
 
@@ -298,151 +319,56 @@ done:
 }
 
 /**
- * @brief Parse the update action JSON into a ADUC_FileEntity structure.
+ * @brief Allocates and sets the UpdateId fields
+ * @details Caller should free the allocated ADUC_UpdateId* using ADUC_UpdateId_UninitAndFree()
+ * @param provider the provider for the UpdateId
+ * @param name the name for the UpdateId
+ * @param version the version for the UpdateId
  *
- * Sample JSON:
- *
- * {
- *     ...,
- *     "updateManifest" : {
- *          ...,
- *
- *         "files": {
- *             "0001": {
- *                  "fileName": "fileName",
- *                  "sizeInBytes": "1024",
- *                  "hashes":{
- *                      "sha256": "base64_encoded_hash_value"
- *                   }
- *              },
- *         }
- *         ...
- *      },
- *      ...
- *      "fileUrls": {
- *          "0001": "uri1"
- *       },
- *       ...
- * }
- *
- * @param updateActionJson UpdateAction Json to parse
- * @param fileCount Returned number of files.
- * @param files ADUC_FileEntity (size fileCount). Array to be freed using free(), objects must also be freed.
- * @return _Bool Success state.
+ * @returns An UpdateId on success, NULL on failure
  */
-_Bool ADUC_Json_GetFiles(const JSON_Value* updateActionJson, unsigned int* fileCount, ADUC_FileEntity** files)
+ADUC_UpdateId* ADUC_UpdateId_AllocAndInit(const char* provider, const char* name, const char* version)
 {
-    _Bool succeeded = false;
+    _Bool success = false;
+    ADUC_UpdateId* updateId = NULL;
 
-    if (fileCount == NULL || files == NULL)
+    if (provider == NULL || name == NULL || version == NULL)
     {
-        return false;
+        Log_Error("Invalid call");
+        return NULL;
     }
 
-    *fileCount = 0;
-    *files = NULL;
+    updateId = (ADUC_UpdateId*)calloc(1, sizeof(ADUC_UpdateId));
+    if (updateId == NULL)
+    {
+        Log_Error("ADUC_UpdateId_AllocAndInit called with a NULL updateId handle");
+        goto done;
+    }
 
-    JSON_Value* updateManifestValue = ADUC_JSON_GetUpdateManifestRoot(updateActionJson);
-
-    if (updateManifestValue == NULL)
+    if (mallocAndStrcpy_s(&(updateId->Provider), provider) != 0)
     {
         goto done;
     }
 
-    const JSON_Object* updateManifest = json_value_get_object(updateManifestValue);
-    const JSON_Object* filesObject = json_object_get_object(updateManifest, ADUCITF_FIELDNAME_FILES);
-
-    if (filesObject == NULL)
-    {
-        Log_Error("Invalid json - '%s' missing or incorrect", ADUCITF_FIELDNAME_FILES);
-        goto done;
-    }
-
-    // Get file count from 'UpdateManifest' property.
-    const size_t filesCount = json_object_get_count(filesObject);
-    if (filesCount == 0)
-    {
-        Log_Error("An update manifest must contain at least one file.");
-        goto done;
-    }
-
-    const JSON_Object* updateActionJsonObject = json_value_get_object(updateActionJson);
-    const JSON_Object* fileUrlsObject = json_object_get_object(updateActionJsonObject, ADUCITF_FIELDNAME_FILE_URLS);
-    const size_t fileUrlsCount = json_object_get_count(fileUrlsObject);
-
-    if (fileUrlsCount == 0)
-    {
-        Log_Error("File URLs is empty.");
-        goto done;
-    }
-
-    // Previously, we're expecting UpdateManifest.files.count to match UpdateAction.fileUrls.count.
-    // This is no-longer a valid expectation.
-    // For 'microsoft/bundle:*' update type, UpdateManifest.files contains only a list of 'microsoft/components:*' manifest files.
-    // However, the UpdateAction.fileUrls contains all files referenced by both Bundle and Components Updates.
-    if (fileUrlsCount < filesCount)
-    {
-        Log_Error("File URLs count (%d) is less than UpdateManifest's Files count (%d).", fileUrlsCount, filesCount);
-        goto done;
-    }
-
-    *files = calloc(filesCount, sizeof(ADUC_FileEntity));
-    if (*files == NULL)
+    if (mallocAndStrcpy_s(&(updateId->Name), name) != 0)
     {
         goto done;
     }
 
-    *fileCount = filesCount;
-
-    for (size_t index = 0; index < filesCount; ++index)
+    if (mallocAndStrcpy_s(&(updateId->Version), version) != 0)
     {
-        ADUC_FileEntity* curFile = *files + index;
-
-        const JSON_Object* fileObj = json_value_get_object(json_object_get_value_at(filesObject, index));
-        const JSON_Object* hashObj = json_object_get_object(fileObj, ADUCITF_FIELDNAME_HASHES);
-
-        if (hashObj == NULL)
-        {
-            Log_Error("No hash for file @ %zu", index);
-            goto done;
-        }
-        size_t tempHashCount = 0;
-        ADUC_Hash* tempHash = ADUC_HashArray_AllocAndInit(hashObj, &tempHashCount);
-        if (tempHash == NULL)
-        {
-            Log_Error("Unable to parse hashes for file @ %zu", index);
-            goto done;
-        }
-
-        const char* uri = json_value_get_string(json_object_get_value_at(fileUrlsObject, index));
-        const char* fileId = json_object_get_name(filesObject, index);
-        const char* name = json_object_get_string(fileObj, ADUCITF_FIELDNAME_FILENAME);
-        const char* arguments = json_object_get_string(fileObj, ADUCITF_FIELDNAME_ARGUMENTS);
-        size_t sizeInBytes = 0;
-        if (json_object_has_value(fileObj, ADUCITF_FIELDNAME_SIZEINBYTES))
-        {
-            sizeInBytes = json_object_get_number(fileObj, ADUCITF_FIELDNAME_SIZEINBYTES);
-        }
-
-        if (!ADUC_FileEntity_Init(curFile, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
-        {
-            ADUC_Hash_FreeArray(tempHashCount, tempHash);
-            Log_Error("Invalid file arguments");
-            goto done;
-        }
+        goto done;
     }
 
-    succeeded = true;
+    success = true;
 
 done:
-    if (!succeeded)
+
+    if (!success)
     {
-        ADUC_FileEntityArray_Free(*fileCount, *files);
-        *files = NULL;
-        *fileCount = 0;
+        ADUC_UpdateId_UninitAndFree(updateId);
+        updateId = NULL;
     }
 
-    json_value_free(updateManifestValue);
-
-    return succeeded;
+    return updateId;
 }

@@ -37,7 +37,7 @@ static _Bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent
 {
     _Bool success = false;
 
-    if (agent == NULL)
+    if (agent == NULL || agent_obj == NULL)
     {
         return false;
     }
@@ -50,11 +50,20 @@ static _Bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent
     const char* model = json_object_get_string(agent_obj, "model");
 
     JSON_Object* connection_source = json_object_get_object(agent_obj, "connectionSource");
-    const char* connection_type = json_object_get_string(connection_source, "connectionType");
-    const char* connection_data = json_object_get_string(connection_source, "connectionData");
+    const char* connection_type = NULL;
+    const char* connection_data = NULL;
+
+    if (connection_source == NULL)
+    {
+        return false;
+    }
+
+    connection_type = json_object_get_string(connection_source, "connectionType");
+    connection_data = json_object_get_string(connection_source, "connectionData");
 
     // As these fields are mandatory, if any of the fields doesn't exist, the agent will fail to be constructed.
-    if (name == NULL || runas == NULL || connection_type == NULL || connection_data == NULL || manufacturer == NULL || model == NULL)
+    if (name == NULL || runas == NULL || connection_type == NULL || connection_data == NULL || manufacturer == NULL
+        || model == NULL)
     {
         goto done;
     }
@@ -88,6 +97,8 @@ static _Bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent
     {
         goto done;
     }
+
+    agent->additionalDeviceProperties = json_object_get_object(agent_obj, "additionalDeviceProperties");
 
     success = true;
 done:
@@ -125,6 +136,8 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent)
 
     free(agent->model);
     agent->model = NULL;
+
+    agent->additionalDeviceProperties = NULL;
 }
 
 /**
@@ -236,7 +249,7 @@ _Bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFilePath)
 
     if (root_value == NULL)
     {
-        Log_Warn("Cannot read configuration file: %s", ADUC_CONF_FILE_PATH);
+        Log_Error("Failed parse of JSON file: %s", ADUC_CONF_FILE_PATH);
         goto done;
     }
 
@@ -267,7 +280,8 @@ _Bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFilePath)
         goto done;
     }
 
-    if (mallocAndStrcpy_s(&(config->manufacturer), manufacturer) != 0 || mallocAndStrcpy_s(&(config->model), model) != 0)
+    if (mallocAndStrcpy_s(&(config->manufacturer), manufacturer) != 0
+        || mallocAndStrcpy_s(&(config->model), model) != 0)
     {
         goto done;
     }
@@ -304,6 +318,16 @@ _Bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFilePath)
         }
     }
 
+    const char* iotHubProtocol = ADUC_JSON_GetStringFieldPtr(root_value, "iotHubProtocol");
+
+    if (iotHubProtocol != NULL)
+    {
+        if (mallocAndStrcpy_s(&(config->iotHubProtocol), iotHubProtocol) != 0)
+        {
+            goto done;
+        }
+    }
+
     succeeded = true;
 
 done:
@@ -328,6 +352,7 @@ void ADUC_ConfigInfo_UnInit(ADUC_ConfigInfo* config)
 
     free(config->manufacturer);
     free(config->model);
+    free(config->iotHubProtocol);
     ADUC_AgentInfoArray_Free(config->agentCount, config->agents);
 
     memset(config, 0, sizeof(*config));

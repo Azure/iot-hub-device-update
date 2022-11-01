@@ -18,8 +18,8 @@ function New-AduImportUpdateInput
         PS > $container = Get-AduAzBlobContainer -SubscriptionId $subscriptionId -ResourceGroupName $resourceGroupName -StorageAccountName $storageAccount -ContainerName $containerName
         PS >
         PS > $updateId = New-AduUpdateId -Provider Fabrikam -Name Toaster -Version 2.0
-        PS > $compatInfo1 = New-AduUpdateCompatibility -DeviceManufacturer Fabrikam -DeviceModel Toaster
-        PS > $compatInfo2 = New-AduUpdateCompatibility -Properties @{ OS = "Linux"; DeviceManufacturer = "Fabrikam" }
+        PS > $compatInfo1 = New-AduUpdateCompatibility -Manufacturer Fabrikam -Model Toaster
+        PS > $compatInfo2 = New-AduUpdateCompatibility -Properties @{ OS = "Linux"; Manufacturer = "Fabrikam" }
         PS > $step = New-AduInstallationStep -Handler 'microsoft/swupdate:1' -Files '.\file1.json', '.\file2.zip'
         PS >
         PS > New-AduImportUpdateInput -UpdateId $updateId -Compatibility $compatInfo1, $compatInfo2 -InstallationSteps $step -BlobContainer $container
@@ -57,8 +57,6 @@ function New-AduImportUpdateInput
     Write-Verbose "Uploading update file(s) to Azure Blob Storage."
     $fileMetaList = @()
 
-    $updateIdStr = "$($UpdateId.Provider).$($UpdateId.Name).$($UpdateId.Version)"
-
     $InstallationSteps | Where-Object { $_.type -eq 'inline' } | ForEach-Object {
         $_.files | ForEach-Object {
             $filename = Split-Path -Leaf (Resolve-Path $_)
@@ -92,6 +90,7 @@ function New-AduImportUpdateInput
 
     $importManJsonFile = Get-Item $importManJsonFile # refresh file properties
     $importManJsonHash = Get-AduFileHashes -FilePath $importManJsonFile -ErrorAction Stop
+    $updateIdStr = "$($UpdateId.Provider).$($UpdateId.Name).$($UpdateId.Version)"
     $importManUrl = Copy-AduFileToAzBlobContainer -FilePath $importManJsonFile -BlobName "$updateIdStr/importmanifest.json" -BlobContainer $BlobContainer -ErrorAction Stop
 
     Write-Verbose "Preparing Import Update API request body."
