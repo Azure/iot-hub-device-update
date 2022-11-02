@@ -8,6 +8,8 @@ Device Update for Iot Hub is looking forward to your contributions and feedback 
 * [Review Process](#review-process)
 
 ## Contributing code or documentation
+In general, work should be in the [develop branch](https://github.com/Azure/iot-hub-device-update/tree/develop).
+Other than simple bug fixes, PRs should have been already been discussed and agreed upon in either a [github issue](https://github.com/Azure/iot-hub-device-update/issues) or in [ideas discussion](https://github.com/Azure/iot-hub-device-update/discussions/categories/ideas).
 
 We require pull-requests for code and documentation to be submitted against a new branch in order to review and run it in our gated build system. We try to maintain a high bar for code quality and maintainability, we insist on having tests associated with the code, and if necessary, additions/modifications to the requirement documents. Please include 'adu-client' as an approver. Also, have you signed the [Contribution License Agreement](https://cla.microsoft.com/) ([CLA](https://cla.microsoft.com/))? A friendly bot will remind you about it when you submit your pull-request.
 
