@@ -54,6 +54,8 @@ function New-AduImportUpdateInput
         [Microsoft.WindowsAzure.Commands.Common.Storage.ResourceModel.AzureStorageContainer] $BlobContainer
     )
 
+    $updateIdStr = "$($UpdateId.Provider).$($UpdateId.Name).$($UpdateId.Version)"
+
     Write-Verbose "Uploading update file(s) to Azure Blob Storage."
     $fileMetaList = @()
 
@@ -90,7 +92,6 @@ function New-AduImportUpdateInput
 
     $importManJsonFile = Get-Item $importManJsonFile # refresh file properties
     $importManJsonHash = Get-AduFileHashes -FilePath $importManJsonFile -ErrorAction Stop
-    $updateIdStr = "$($UpdateId.Provider).$($UpdateId.Name).$($UpdateId.Version)"
     $importManUrl = Copy-AduFileToAzBlobContainer -FilePath $importManJsonFile -BlobName "$updateIdStr/importmanifest.json" -BlobContainer $BlobContainer -ErrorAction Stop
 
     Write-Verbose "Preparing Import Update API request body."
