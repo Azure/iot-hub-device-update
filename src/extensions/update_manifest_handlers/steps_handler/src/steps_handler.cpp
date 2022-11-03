@@ -1003,7 +1003,7 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             try
             {
                 result = contentHandler->Apply(&stepWorkflow);
-                Log_Info("Step's apply() return r:0x%x rc:0x%x", result.resultCode, result.ExtendedResultCode);
+                Log_Info("Step's apply() return r:0x%x rc:0x%x", result.ResultCode, result.ExtendedResultCode);
             }
             catch (...)
             {
