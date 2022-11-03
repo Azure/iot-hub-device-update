@@ -3030,11 +3030,6 @@ bool workflow_update_replacement_deployment(
 
     if (currentWorkflow->OperationInProgress)
     {
-        Log_Info("Update deployment cwf:0x%x ct:%d, oc:%d, drwf:0x%x", 
-            currentWorkflowHandle,
-            ADUC_WorkflowCancellationType_Replacement,
-            true,
-            nextWorkflowHandle);
         currentWorkflow->CancellationType = ADUC_WorkflowCancellationType_Replacement;
         currentWorkflow->OperationCancelled = true;
         currentWorkflow->DeferredReplacementWorkflow =
