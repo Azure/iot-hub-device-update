@@ -531,7 +531,7 @@ bool ADUC_D2C_Message_SendAsync(
         }
     }
 
-    Log_Debug("Queueing message (t:%d, c:0x%x, t:%s)", type, message, message);
+    Log_Debug("Queueing message (t:%d, c:0x%x, m:%s)", type, message, message);
     memset(&s_pendingMessageStore[type], 0, sizeof(s_pendingMessageStore[0]));
     s_pendingMessageStore[type].cloudServiceHandle = cloudServiceHandle;
     s_pendingMessageStore[type].originalContent = message;
