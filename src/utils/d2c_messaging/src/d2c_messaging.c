@@ -526,12 +526,12 @@ bool ADUC_D2C_Message_SendAsync(
     {
         if (s_pendingMessageStore[type].completedCallback != NULL)
         {
-            Log_Debug("Replacing existing pending message. (t:%d)", type);
+            Log_Debug("Replacing existing pending message. (t:%d, s:%s)", type, s_pendingMessageStore[type].content);
             OnMessageProcessingCompleted(&s_pendingMessageStore[type], ADUC_D2C_Message_Status_Replaced);
         }
     }
 
-    Log_Debug("Queueing message (t:%d, c:0x%x", type, message);
+    Log_Debug("Queueing message (t:%d, c:0x%x, m:%s)", type, message, message);
     memset(&s_pendingMessageStore[type], 0, sizeof(s_pendingMessageStore[0]));
     s_pendingMessageStore[type].cloudServiceHandle = cloudServiceHandle;
     s_pendingMessageStore[type].originalContent = message;

@@ -315,14 +315,21 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
     // Cancel requested?
     if (workflow_is_cancel_requested(workflowData->WorkflowHandle))
     {
+        Log_Info("Workflow cancel requested. Calling Cancel() now...");
         result = this->Cancel(workflowData);
         goto done;
     }
 
     if (workflow_get_operation_cancel_requested(workflowData->WorkflowHandle))
     {
+        Log_Info("Workflow operation cancel requested. Calling CancelApply() now...");
         CancelApply(ADUC_LOG_FOLDER);
     }
+
+    result = {
+        .ResultCode = ADUC_Result_Success,
+        .ExtendedResultCode = 0
+    };
 
 done:
     workflow_free_string(workFolder);
@@ -512,6 +519,7 @@ ADUC_Result SWUpdateHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData
  */
 ADUC_Result SWUpdateHandlerImpl::Restore(const tagADUC_WorkflowData* workflowData)
 {
+    Log_Info("Restore begin.");
     UNREFERENCED_PARAMETER(workflowData);
     ADUC_Result result = { ADUC_Result_Restore_Success };
     ADUC_Result cancel_result = CancelApply(ADUC_LOG_FOLDER);
@@ -520,5 +528,6 @@ ADUC_Result SWUpdateHandlerImpl::Restore(const tagADUC_WorkflowData* workflowDat
         result = { .ResultCode = ADUC_Result_Failure,
                    .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_FAILED_RESTORE_FAILED };
     }
+    Log_Info("Restore end.");
     return result;
 }
