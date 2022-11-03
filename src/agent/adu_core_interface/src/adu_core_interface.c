@@ -120,11 +120,12 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
 /**
  * @brief Reports the client json via PnP so it ends up in the reported section of the twin.
  *
+ * @param messageType The message type.
  * @param json_value The json value to be reported.
  * @param workflowData The workflow data.
  * @return _Bool true if call succeeded.
  */
-static _Bool ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData* workflowData)
+static _Bool ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_value, ADUC_WorkflowData* workflowData)
 {
     _Bool success = false;
 
@@ -144,7 +145,7 @@ static _Bool ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData*
     }
 
     if (!ADUC_D2C_Message_SendAsync(
-            ADUC_D2C_Message_Type_Device_Update_Result,
+            messageType,
             &g_iotHubClientHandleForADUComponent,
             STRING_c_str(jsonToSend),
             NULL /* responseCallback */,
@@ -226,7 +227,7 @@ _Bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    ReportClientJsonProperty(jsonString, workflowData);
+    ReportClientJsonProperty(ADUC_D2C_Message_Type_Device_Properties, jsonString, workflowData);
 
     success = true;
 done:
@@ -816,7 +817,7 @@ _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
         goto done;
     }
 
-    if (!ReportClientJsonProperty(jsonString, workflowData))
+    if (!ReportClientJsonProperty(ADUC_D2C_Message_Type_Device_Update_Result, jsonString, workflowData))
     {
         goto done;
     }
