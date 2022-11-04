@@ -102,16 +102,87 @@ static const char* ADUCITF_WorkflowStepToString(ADUCITF_WorkflowStep workflowSte
 }
 
 /**
- * @brief Generate a unique identifier.
+ * @brief Cleans up previously created sandboxes, excluding the current workflowId.
  *
- * @param buffer Where to store identifier.
- * @param buffer_cch Number of characters in @p buffer.
+ * @param context The context that is workflow data.
+ * @param baseDir The base of the workflowId work folders, e.g. /var/lib/adu/downloads
+ * @param workflowId The workflow id.
  */
-void GenerateUniqueId(char* buffer, size_t buffer_cch)
+static void CleanupSandbox(void* context, const char* baseDir, const char* workflowId)
 {
-    const time_t timer = time(NULL);
-    const struct tm* ptm = gmtime(&timer);
-    (void)strftime(buffer, buffer_cch, "%y%m%d%H%M%S", ptm);
+    Log_Debug("begin cleanup for wf %s under %s", workflowId, baseDir);
+
+    ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)context;
+    if (!IsNullOrEmpty(baseDir) && !IsNullOrEmpty(workflowId) && workflowData != NULL)
+    {
+        char* workDirPath = ADUC_StringFormat("%s/%s", baseDir, workflowId);
+        if (workDirPath == NULL)
+        {
+            Log_Error("workDirPath failed.");
+        }
+        else
+        {
+            const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
+
+            updateActionCallbacks->SandboxDestroyCallback(
+                updateActionCallbacks->PlatformLayerHandle, workflowId, workDirPath);
+
+            free(workDirPath);
+        }
+    }
+    Log_Debug("end cleanup for wf %s under %s", workflowId, baseDir);
+}
+
+/**
+ * @brief Cleans up previously created sandboxes, excluding the current workflowId.
+ *
+ * @param workflowData The workflow data.
+ */
+static void Cleanup_Previous_Sandboxes(ADUC_WorkflowData* workflowData)
+{
+    const char* current_workflowId = workflow_peek_id(workflowData->WorkflowHandle);
+    char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
+    int err = 0;
+
+    ADUC_SystemUtils_ForEachDirFunctor functor = { .context = workflowData, .callbackFn = CleanupSandbox };
+
+    Log_Debug("begin clean previous sandboxes");
+
+    if (IsNullOrEmpty(workFolder))
+    {
+        Log_Error("Failed getting workFolder.");
+        goto done;
+    }
+
+    // remove the "/<workflowId>" suffix because we want to remove other workflowId dirs
+    char* lastSlash = strrchr(workFolder, '/');
+    if (lastSlash == NULL)
+    {
+        err = -1;
+        goto done;
+    }
+
+    *lastSlash = '\0';
+
+    if (!SystemUtils_IsDir(workFolder, &err) || err != 0)
+    {
+        Log_Error("%s is not a dir", workFolder);
+        goto done;
+    }
+
+    Log_Debug("Cleaning foreach under %s except %s", workFolder, current_workflowId);
+    err = SystemUtils_ForEachDir(
+        workFolder /* baseDir */, current_workflowId /* excludedDir */, &functor /* perDirActionFunctor */);
+    if (err != 0)
+    {
+        Log_Error("foreach CleanupSandbox failed with: %d", err);
+        goto done;
+    }
+
+done:
+    workflow_free_string(workFolder);
+
+    Log_Debug("end clean previous sandboxes");
 }
 
 /**
@@ -616,6 +687,22 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
     //
     ADUCITF_WorkflowStep nextStep = AgentOrchestration_GetWorkflowStep(desiredAction);
     workflow_set_current_workflowstep(workflowData->WorkflowHandle, nextStep);
+
+    //
+    // Cleanup any sandboxes other than the current workflowId.
+    // Previous failed install/apply do not cleanup the sandbox to avoid
+    // redownload of payloads when "retry failed" is issued by service for the
+    // same workflowId.
+    //
+    // Do not cleanup the current workflowId sandbox because it might need a
+    // payload to be able to evaluate IsInstalled and it may be there
+    // already due to a reboot/restart after Apply or if something else caused
+    // agent to restart.
+    //
+    if (nextStep == ADUCITF_WorkflowStep_ProcessDeployment)
+    {
+        Cleanup_Previous_Sandboxes(workflowData);
+    }
 
     //
     // Transition to the next phase for this workflow
