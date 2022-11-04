@@ -418,14 +418,24 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
     if (workflow_get_operation_cancel_requested(workflowData->WorkflowHandle))
     {
         Cancel(workflowData);
+        goto done;
     }
+
+    result = {
+        .ResultCode = ADUC_Result_Success,
+        .ExtendedResultCode = 0
+    };
 
 done:
     workflow_free_string(workFolder);
 
     // Always require a reboot after successful apply
-    result = { ADUC_Result_Apply_RequiredImmediateReboot };
-
+    if (IsAducResultCodeSuccess(result.ResultCode))
+    {
+        workflow_request_immediate_reboot(workflowData->WorkflowHandle);
+        result = { ADUC_Result_Apply_RequiredImmediateReboot };
+    }
+    
     return result;
 }
 
