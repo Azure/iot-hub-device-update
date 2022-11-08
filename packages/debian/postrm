@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "******************** Running $0 $1 $2 ***********************"
+
 # postrm
 # post-remove script for ADU Agent debian package.
 # Cleans up files and directories created by package post-install
@@ -42,14 +44,17 @@ deregister_eis()
     echo "Remove 'adu' user from 'aziotks' group."
     gpasswd -d $adu_user aziotks > /dev/null
 
-    echo "Restart IoT Identity Service"
-    systemctl restart aziot-{identity,cert,tpm,key}d
+    echo "Restart IoT Identity Services"
+    systemctl restart aziot-certd
+    systemctl restart aziot-tpmd
+    systemctl restart aziot-keyd
+    systemctl restart aziot-identityd
 }
 
 do_remove_tasks() {
         deregister_eis
 
-        # The adu-agent unit file is removed after 'prerm remove' step.
+        # The deviceupdate-agent unit file is removed after 'prerm remove' step.
         # We just need to reload the daemon here.
         systemctl daemon-reload
 
@@ -104,7 +109,7 @@ case "$1" in
     # the '[new] postrm failed-upgrade new-ver#' will be invoked.
     #
     # In [new] postrm context:
-    #   - We have another chance to verify whether the new adu-agent can function properly.
+    #   - We have another chance to verify whether the new deviceupdate-agent can function properly.
     #   - If yes, we will return 0 to tell APT to continue the upgrade with '[new] postinst configure old-ver#'.
     #   - If no, we will return 1 to tell APT to abort the upgrade.
     #     In order to restore the old package, the following maintainer scripts must return ok (exit 0):
@@ -115,10 +120,11 @@ case "$1" in
     failed-upgrade)
         echo "[postrm failed-upgrade $2] Perform new ADU Agent health validation." >&2
 
-        # When upgrading 0.8.0 to 0.8.1, adu-shell ownership and permissions can be incorrect.
-        echo "Attempting to fix-up $adu_shell_bin_path after postrm upgrade failure from $2 ..."
+        # When upgrading 0.8.0 to 0.8.1, adu-shell and adu-conf ownership and permissions can be incorrect.
+        echo "Attempting to fix-up $adu_shell_bin_path and $adu_conf_dir after postrm upgrade failure from $2 ..."
         chown root:adu "$adu_shell_bin_path"
         chmod u=rxs,g=rx,o= "$adu_shell_bin_path"
+        chmod u=rwx,g=rx,o= "$adu_conf_dir"
 
         echo "AducIotAgent version:" >&2
         /usr/bin/AducIotAgent --version >&2

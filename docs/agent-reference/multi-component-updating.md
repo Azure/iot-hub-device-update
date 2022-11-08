@@ -17,8 +17,8 @@ In order to update a component or components that connected to a IoTHub-Connecte
 
 ## How to register multiple components with the Component Enumerator Extension
 
-See [Contoso Component Enumerator](../../src/extensions/component-enumerators/examples/contoso-component-enumerator/README.md) for example on how to implement and register a custom Component Enumerator extension.
+See [Contoso Component Enumerator](../../src/extensions/component_enumerators/examples/contoso_component_enumerator/README.md) for example on how to implement and register a custom Component Enumerator extension.
 
 ## Example Proxy Update
 
-See [tutorial using the Device Update agent to do Proxy Updates](../../src/extensions/component-enumerators/examples/contoso-component-enumerator/demo/README.md) with sample updates for components connected to a Contoso Virtual Vacuum device.
+See [tutorial using the Device Update agent to do Proxy Updates](../../src/extensions/component_enumerators/examples/contoso_component_enumerator/demo/README.md) with sample updates for components connected to a Contoso Virtual Vacuum device.

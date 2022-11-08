@@ -35,25 +35,25 @@ include (aduc_helpers)
 # https://semver.org/spec/v2.0.0.html
 set_cache_with_env_or_default (
     ADUC_VERSION_MAJOR
-    "0"
+    "1"
     STRING
     "The major part of the semantic version")
 
 set_cache_with_env_or_default (
     ADUC_VERSION_MINOR
-    "8"
+    "0"
     STRING
     "The minor part of the semantic version")
 
 set_cache_with_env_or_default (
     ADUC_VERSION_PATCH
-    "1"
+    "0"
     STRING
     "The patch part of the semantic version")
 
 set_cache_with_env_or_default (
     ADUC_VERSION_PRERELEASE
-    "public-preview"
+    ""
     STRING
     "The pre-release part of the semantic version")
 
@@ -137,6 +137,11 @@ set (
     CACHE STRING "Content handler registration file name.")
 
 set (
+    ADUC_DOWNLOAD_HANDLER_REG_FILENAME
+    "download_handler.json"
+    CACHE STRING "Download handler registration file name.")
+
+set (
     ADUC_EXTENSION_REG_FILENAME
     "extension.json"
     CACHE STRING "Extension registration file name.")
@@ -172,6 +177,16 @@ set (
     CACHE STRING "Sub folder for update content handler extensions.")
 
 set (
+    ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS
+    "download_handlers"
+    CACHE STRING "Sub folder for download handler extensions.")
+
+set (
+    ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR
+    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS}"
+    CACHE STRING "Path for the download handler extensions")
+
+set (
     ADUC_DOWNLOADS_FOLDER
     "${ADUC_DATA_FOLDER}/downloads"
     CACHE STRING "Path to the folder containing downloaded update artifacts.")
@@ -180,6 +195,20 @@ set (
     ADUC_CONTENT_HANDLERS
     "microsoft/swupdate"
     CACHE STRING "The list of content handlers.")
+
+set (
+    ADUC_COMMANDS_FIFO_NAME
+    "${ADUC_DATA_FOLDER}/du-commands.fifo"
+    CACHE STRING "The named-pipe for commands IPC.")
+
+#
+# Starting from version 0.8.1, Device Update Agent must support only one version of the update manifest
+# based on the base dtmi model that the Agent announces when connecting to the IoT Hub.
+#
+# For this version, "dtmi:azure:iot:deviceUpdateModel;2" is using the manifest version verison 5.
+#
+set (SUPPORTED_UPDATE_MANIFEST_VERSION_MIN 4)
+set (SUPPORTED_UPDATE_MANIFEST_VERSION_MAX 5)
 
 #
 # DeviceInfo configuration
@@ -324,12 +353,116 @@ set (
     "syslog"
     CACHE STRING "The syslog group.")
 
+set (
+    ADUC_IOT_HUB_PROTOCOL
+    "IotHub_Protocol_from_Config"
+    CACHE
+        STRING
+        "The protocol for Azure IotHub SDK communication. Options are MQTT, MQTT_over_WebSockets, and IotHub_Protocol_from_Config"
+)
+
+# Device Update Repo Locations
+
+set (
+    ADUC_SCRIPTS_FOLDER
+    "/scripts/"
+    CACHE STRING "The folder that holds all of the scripts")
+
+set (
+    ADUC_SCRIPTS_FOLDER_PATH
+    "${PROJECT_SOURCE_DIR}/${ADUC_SCRIPTS_FOLDER}"
+    CACHE STRING "Path to the scripts folder within the Device Update project")
+
+# Error Code Generator Script Name
+set (
+    ADUC_ERROR_CODE_GENERATOR_SCRIPT_FILENAME
+    "generate_error_code_defs.sh"
+    CACHE STRING "The script file that generates the error code definitions")
+
+# Error Code Definition Folder and Filename
+set (
+    ADUC_ERROR_CODE_DEFS_FOLDER
+    "/src/inc/aduc/"
+    CACHE STRING "The folder within Device Update to generate the result.h file to")
+
+set (
+    ADUC_GENERATED_ERROR_CODE_FOLDER_PATH
+    "${PROJECT_SOURCE_DIR}/${ADUC_ERROR_CODE_DEFS_FOLDER}"
+    CACHE STRING "Path to the folder to generate the error code file")
+
+set (
+    ADUC_ERROR_CODE_DEFS_FILENAME
+    "result.h"
+    CACHE STRING "File name for the error code definitions")
+
+# Error Code Json Folder, Filename, and Path
+set (
+    ADUC_ERROR_CODE_GENERATOR_JSON_FOLDER
+    "error_code_generator_defs"
+    CACHE STRING "Name of the folder that contains the error codes JSON file")
+
+set (
+    ADUC_ERROR_CODE_JSON_FILENAME
+    "result_codes.json"
+    CACHE STRING "Name of the json file that defines the error codes for Device Update")
+
+set (
+    ADUC_ERROR_CODE_JSON_FOLDER_PATH
+    "${ADUC_SCRIPTS_FOLDER_PATH}/${ADUC_ERROR_CODE_GENERATOR_JSON_FOLDER}"
+    CACHE STRING "Path to the folder where the JSON error code definition file lives")
+
+# Paths for the Folders
+
+get_filename_component (
+    ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT
+    "${ADUC_SCRIPTS_FOLDER_PATH}/${ADUC_ERROR_CODE_GENERATOR_SCRIPT_FILENAME}"
+    ABSOLUTE
+    "/")
+
+get_filename_component (
+    ADUC_PATH_TO_ERROR_CODE_JSON_FILE
+    "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/${ADUC_ERROR_CODE_JSON_FILENAME}"
+    ABSOLUTE
+    "/")
+
+get_filename_component (
+    ADUC_GENERATED_ERROR_CODE_FILE_PATH
+    "${ADUC_GENERATED_ERROR_CODE_FOLDER_PATH}/${ADUC_ERROR_CODE_DEFS_FILENAME}"
+    ABSOLUTE
+    "/")
+
+#######
+# BEGIN Delta Downloader Handler Source Update Cache Configurations
+
+# Source Update Cache Commit Strategy
+#
+# Value values are:
+#   "TWO_PHASE_COMMIT" - Moves the incoming files then deletes previous.
+#   "OVERWRITE" - Saves space by deleting existing source updates first.
+set (
+    ADUC_DELTA_DOWNLOAD_HANDLER_SOURCE_UPDATE_CACHE_COMMIT_STRATEGY
+    "TWO_PHASE_COMMIT"
+    CACHE STRING "The commit strategy for the source update cache.")
+
+# Source Update Cache Directory
+#
+# Directory where an update from download work folder is cached after successful workflow processing
+set (
+    ADUC_DELTA_DOWNLOAD_HANDLER_SOURCE_UPDATE_CACHE_DIR
+    "${ADUC_DATA_FOLDER}/sdc"
+    CACHE STRING
+          "The base directory to cache source update payloads that delta updates are based upon.")
+
+# END Delta Downloader Handler Source Update Cache Configurations
+#######
+
 option (ADUC_WARNINGS_AS_ERRORS "Treat warnings as errors (-Werror)" ON)
 option (ADUC_BUILD_UNIT_TESTS "Build unit tests and mock some functionality" OFF)
 option (ADUC_BUILD_DOCUMENTATION "Build documentation files" OFF)
 option (ADUC_BUILD_PACKAGES "Build the ADU Agent packages" OFF)
 option (ADUC_INSTALL_DAEMON "Install the ADU Agent as a daemon" ON)
 option (ADUC_REGISTER_DAEMON "Register the ADU Agent daemon with the system" ON)
+option (ADUC_TRACE_TARGET_DEPS "Trace target dependencies" OFF)
 
 ### End CMake Options
 
@@ -350,10 +483,30 @@ get_filename_component (
     "${ADUC_CONF_FOLDER}/${DIAGNOSTICS_CONFIG_FILE}"
     ABSOLUTE
     "/")
+
 set (
     DIAGNOSTICS_CONFIG_FILE_PATH
     "${DIAGNOSTICS_CONFIG_FILE_PATH}"
     CACHE STRING "Path to the diagnostics configuration file.")
+
+# Generate the error code definition file
+execute_process (
+    COMMAND
+        ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT} --json-file-path
+        "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}" --result-file-path
+        "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}" -s
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    RESULT_VARIABLE GENERATE_ERROR_CODE_DEFS_RESULT)
+
+if (NOT
+    GENERATE_ERROR_CODE_DEFS_RESULT
+    EQUAL
+    "0")
+    message (
+        FATAL_ERROR
+            "Failed to generate error code definition from json file ${ADUC_PATH_TO_ERROR_CODE_JSON_FILE} to ${ADUC_GENERATED_ERROR_CODE_FILE_PATH} with error code ${GENERATE_ERROR_CODE_DEFS_RESULT}"
+    )
+endif ()
 
 if (ADUC_BUILD_UNIT_TESTS)
     # Need to be in the root directory to place CTestTestfile.cmake in root
@@ -362,7 +515,6 @@ if (ADUC_BUILD_UNIT_TESTS)
 
     copy_test_data ("${CMAKE_SOURCE_DIR}" "${ADUC_TEST_DATA_PATH_SEGMENT}"
                     "${ADUC_TEST_DATA_FOLDER}")
-
 endif ()
 
 if (ADUC_INSTALL_DAEMON)

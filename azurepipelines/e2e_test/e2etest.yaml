@@ -1,0 +1,509 @@
+# E2E test pipeline - performs end-to-end tests on the following platforms
+#  - Ubuntu 18.04
+
+resources:
+    containers:
+        - container: ubuntu
+          image: ubuntu:18.04
+
+parameters:
+    - name: SKIP_TEARDOWN
+      displayName: "Leave test infrastructure in-place"
+      type: boolean
+      default: false
+
+variables:
+    SKIP_TEARDOWN: ${{ parameters.SKIP_TEARDOWN }}
+    E2E_WORKING_DIR: $(Build.SourcesDirectory)/azurepipelines/e2e_test
+
+name: "E2E Automated Test Run"
+
+stages:
+    - stage: PerformNativeBuilds
+      displayName: Builds all the native architecture builds
+      jobs:
+          - job: BuildUbuntu_1804_AMD64
+            displayName: Building the Device Update Package for Ubuntu 18.04 AMD64
+            continueOnError: False
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ../build/templates/adu-docker-build-steps.yml
+                  parameters:
+                      targetOs: ubuntu1804
+                      targetArch: amd64
+          - job: BuildUbuntu_1804_ARM64
+            displayName: Building the Device Update Package for Ubuntu 18.04 ARM64
+            continueOnError: False
+            pool: ubuntu1804_arm_pool
+            steps:
+                - template: ../build/templates/adu-native-build-steps.yml
+                  parameters:
+                      targetOs: ubuntu1804
+                      targetArch: arm64
+
+          - job: BuildUbuntu_2004_AMD64
+            displayName: Building the Device Update Package for Ubuntu 20.04 AMD64
+            continueOnError: False
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ../build/templates/adu-docker-build-steps.yml
+                  parameters:
+                      targetOs: ubuntu2004
+                      targetArch: amd64
+
+          - job: BuildDebian_10_AMD64
+            displayName: Building the Device Update Package for Debian 10 amd64
+            continueOnError: False
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ../build/templates/adu-docker-build-steps.yml
+                  parameters:
+                      targetOs: debian10
+                      targetArch: amd64
+
+    - stage: TerraformSetup
+      displayName: Initializes and installs Terraform into the VM
+      pool:
+          vmImage: "ubuntu-18.04"
+      jobs:
+          - job: TerraformInstall
+            displayName: "Install Terraform Into the VM and Create the Resource Group"
+            continueOnError: False
+            steps:
+                - script: |
+                      sudo apt update && sudo apt install curl
+                      curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+                      sudo apt-add-repository "deb [arch=$(dpkg --print-architecture)] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+                      sudo apt install terraform
+                  displayName: "Installing Terraform"
+                - script: "terraform init"
+                  displayName: terraform init (VM)
+                  continueOnError: true
+                  workingDirectory: $(E2E_WORKING_DIR)/terraform/resource_group/
+                - script: 'terraform apply -var subscription_id="$(SUBSCRIPTION_ID)" -var tenant_id="$(TERRAFORM_TENANT_ID)" -var client_id="$(TERRAFORM_CLIENT_ID)" -var client_secret="$(TERRAFORM_CLIENT_SECRET)" -auto-approve'
+                  displayName: Creating the resource group for the testing environment
+                  continueOnError: true
+                  workingDirectory: $(E2E_WORKING_DIR)/terraform/resource_group/
+                - script: |
+                      RESOURCE_GROUP_NAME=`terraform output du_resource_group_name`
+                      echo "$RESOURCE_GROUP_NAME"
+                      echo "##vso[task.setvariable variable=TERRAFORM_RESOURCE_GROUP_NAME;isOutput=true]$RESOURCE_GROUP_NAME"
+                  name: resource_group_name_step
+                  displayName: Retrieve Resource Group Name
+                  continueOnError: true
+                  workingDirectory: $(E2E_WORKING_DIR)/terraform/resource_group/
+
+    - stage: TerraformVMInitialization
+      displayName: Initializes the Terraform VMs for the Automated Tests
+      dependsOn:
+          - TerraformSetup
+          - PerformNativeBuilds
+      variables:
+          TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
+      pool:
+          vmImage: "ubuntu-18.04"
+      jobs:
+          - job: Terraform_VM_Setup
+            strategy:
+                matrix:
+                    ubuntu-18.04-amd64:
+                        distroName: ubuntu-18.04-amd64
+                        vm_size: Standard_DS1_v2
+                        image_publisher: Canonical
+                        image_offer: UbuntuServer
+                        image_sku: 18.04-LTS
+                        image_version: latest
+                        packagePattern: "*ubuntu1804-amd64*/*.deb"
+                        package_pipeline: "Azure.adu-private-preview.e2e-test"
+                        scenarioSetupDir: "./scenarios/ubuntu-18.04-amd64"
+                        du_tarball_script: >-
+                            tar -xvf /tmp/testsetup.tar.gz -C ./ &&
+                            chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
+                            ./testsetup/setup.sh
+
+                    ubuntu-18.04-arm64:
+                        distroName: ubuntu-18.04-arm64
+                        vm_size: Standard_D2plds_v5
+                        image_publisher: Canonical
+                        image_offer: UbuntuServer
+                        image_sku: 18_04-lts-arm64
+                        image_version: latest
+                        packagePattern: "*ubuntu1804-arm64*/*.deb"
+                        package_pipeline: "Azure.adu-private-preview.e2e-test"
+                        scenarioSetupDir: "./scenarios/ubuntu-18.04-arm64"
+                        du_tarball_script: >-
+                            tar -xvf /tmp/testsetup.tar.gz -C ./ &&
+                            chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
+                            ./testsetup/setup.sh
+
+                    ubuntu-20.04-amd64:
+                        distroName: ubuntu-20.04-amd64
+                        vm_size: Standard_DS1_v2
+                        image_publisher: canonical
+                        image_offer: 0001-com-ubuntu-server-focal
+                        image_sku: 20_04-lts
+                        image_version: latest
+                        packagePattern: "*ubuntu2004-amd64*/*.deb"
+                        package_pipeline: "Azure.adu-private-preview.e2e-test"
+                        scenarioSetupDir: "./scenarios/ubuntu-20.04-amd64"
+                        du_tarball_script: >-
+                            tar -xvf /tmp/testsetup.tar.gz -C ./ &&
+                            chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
+                            ./testsetup/setup.sh
+
+                    debian-10-amd64:
+                        distroName: debian-10-amd64
+                        vm_size: Standard_DS1_v2
+                        image_publisher: debian
+                        image_offer: debian-10
+                        image_sku: 10
+                        image_version: latest
+                        packagePattern: "*debian10-amd64*/*.deb"
+                        package_pipeline: "Azure.adu-private-preview.e2e-test"
+                        scenarioSetupDir: "./scenarios/debian-10-amd64"
+                        du_tarball_script: >-
+                            tar -xvf /tmp/testsetup.tar.gz -C ./ &&
+                            chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
+                            ./testsetup/setup.sh
+
+            steps:
+                - task: DownloadPipelineArtifact@2
+                  displayName: "Download DeviceUpdate Package from pipeline"
+                  inputs:
+                      source: "current"
+                      project: "adu-linux-client"
+                      pipeline: $(package_pipeline)
+                      itemPattern: "$(packagePattern)"
+                      path: $(E2E_WORKING_DIR)
+                - script: |
+                      mkdir $(scenarioSetupDir)/vm_setup/testsetup/
+                  displayName: "Create the test setup directory that will contain all of the values needed for the setup tarball"
+                  continueOnError: false
+                  workingDirectory: $(E2E_WORKING_DIR)/
+
+                - script: |
+                      cp `find . -name '*.deb'` $(scenarioSetupDir)/vm_setup/testsetup/deviceupdate-package.deb
+                  displayName: Stage DU Artifact for Preparing the VM Tarball
+                  continueOnError: false
+                  workingDirectory: $(E2E_WORKING_DIR)/
+
+                - task: UsePythonVersion@0
+                  displayName: Using Python version 3.10
+                  inputs:
+                      versionSpec: 3.10
+
+                - script: |
+                      python3 -m pip install -r scenarios/testingtoolkit/requirements.txt
+                  workingDirectory: $(E2E_WORKING_DIR)
+                  displayName: Installing the toolkits requirements
+
+                - task: PythonScript@0
+                  displayName: "Run the script to create the device and output a configuration file"
+                  inputs:
+                      scriptSource: "filePath"
+                      scriptPath: "$(E2E_WORKING_DIR)/$(scenarioSetupDir)/vm_setup/devicesetup.py"
+                      workingDirectory: $(E2E_WORKING_DIR)/
+                  env:
+                      IOTHUB_URL: $(IOTHUB_URL)
+                      IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+                      ADU_ENDPOINT: $(ADU_ENDPOINT)
+                      ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+                      AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+                      AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+                      AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+                - script: |
+                      mv du-config.json $(scenarioSetupDir)/vm_setup/testsetup/
+                  displayName: Copy the configuration file to the same location as the artifact
+                  continueOnError: False
+                  workingDirectory: $(E2E_WORKING_DIR)/
+
+                - script: |
+                      cp $(scenarioSetupDir)/vm_setup/setup.sh $(scenarioSetupDir)/vm_setup/testsetup/
+                  displayName: Copy the setup script to the same location as the artifact
+                  continueOnError: False
+                  workingDirectory: $(E2E_WORKING_DIR)/
+
+                - script: |
+                      tar -czvf $(scenarioSetupDir)/vm_setup/testsetup/adu_srcs_repo.tar.gz -C $(Build.SourcesDirectory) ./src ./scripts ./tools
+                  displayName: Taring the repo for access on the virtual machine
+                  continueOnError: False
+                  workingDirectory: $(E2E_WORKING_DIR)
+
+                  #
+                  # At this point /testsetup/
+                  #                          du-agent.deb
+                  #                          du-config.json
+                  #                          setup.sh
+                  #                          adu_srcs_repo.tar.gz
+                - script: |
+                      tar -czvf $(scenarioSetupDir)/testsetup.tar.gz -C $(scenarioSetupDir)/vm_setup ./testsetup/
+                  displayName: Creating the test scenario tar ball with just the contents of ./scenarios/<scenario-name>/vm_setup/testsetup/
+                  continueOnError: False
+                  workingDirectory: $(E2E_WORKING_DIR)/
+
+                - script: |
+                      cp $(scenarioSetupDir)/testsetup.tar.gz terraform/host/
+                  workingDirectory: $(E2e_WORKING_DIR)
+                  continueOnError: False
+                  displayName: "Copying tarball over to the terraform host"
+
+                - script: |
+                      sudo apt update && sudo apt install curl
+                      curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+                      sudo apt-add-repository "deb [arch=$(dpkg --print-architecture)] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+                      sudo apt install terraform
+                  displayName: "Installing Terraform"
+
+                - script: "terraform init"
+                  displayName: terraform init (VM)
+                  continueOnError: False
+                  workingDirectory: $(E2E_WORKING_DIR)/terraform/host/
+
+                - script: terraform apply -var subscription_id="$(SUBSCRIPTION_ID)" -var tenant_id="$(TERRAFORM_TENANT_ID)" -var client_id="$(TERRAFORM_CLIENT_ID)" -var client_secret="$(TERRAFORM_CLIENT_SECRET)" -var key_vault_id="$(Azure_Key_Vault_ID)" -var resource_group_name=$(TERRAFORM_RESOURCE_GROUP_NAME) -var vm_name=$(distroName) -var vm_size=$(vm_size) -var image_offer=$(image_offer) -var image_publisher=$(image_publisher) -var image_sku=$(image_sku) -var image_version=$(image_version) -var test_setup_tarball="./testsetup.tar.gz" -var vm_du_tarball_script="$(du_tarball_script)" -auto-approve
+                  displayName: Creating the Virtual Machines
+                  continueOnError: False
+                  workingDirectory: $(E2E_WORKING_DIR)/terraform/host/
+
+                - script: |
+                      mkdir -p $(Build.ArtifactStagingDirectory)/terraform/host
+                      cp -R ./terraform/host/* $(Build.ArtifactStagingDirectory)/terraform/host
+                  displayName: Copy terraform state (vm)
+                  continueOnError: False
+                  workingDirectory: $(E2E_WORKING_DIR)
+
+                - publish: "$(Build.ArtifactStagingDirectory)/terraform/host"
+                  displayName: "Publish Terraform state for destroy stage (vm)"
+                  continueOnError: False
+                  artifact: terraformStateVM_$(distroName)
+
+    - stage: RunTestsAndPostResults
+      displayName: Execute E2E Test
+      dependsOn:
+          - TerraformVMInitialization
+      jobs:
+          - job: E2ETestJob
+            strategy:
+                matrix:
+                    ubuntu-18.04-amd64:
+                        distroName: ubuntu-18.04-amd64
+                        scenarioPath: scenarios/ubuntu-18.04-amd64/
+                    ubuntu-18.04-arm64:
+                        distroName: ubuntu-18.04-arm64
+                        scenarioPath: scenarios/ubuntu-18.04-arm64/
+                    ubuntu-20.04-amd64:
+                        distroName: ubuntu-20.04-amd64
+                        scenarioPath: scenarios/ubuntu-20.04-amd64/
+                    debian-10-amd64:
+                        distroName: debian-10-amd64
+                        scenarioPath: scenarios/debian-10-amd64/
+            pool:
+                vmImage: "ubuntu-18.04"
+            steps:
+                - script: |
+                      mkdir testresults
+                  displayName: Creating the test results directory
+                  continueOnError: False
+                  workingDirectory: $(E2E_WORKING_DIR)
+
+                - task: UsePythonVersion@0
+                  displayName: Set the python version to Python 3.10
+                  inputs:
+                      versionSpec: 3.10
+
+                - script: |
+                      python -m pip install -r scenarios/testingtoolkit/requirements.txt
+                  workingDirectory: $(E2E_WORKING_DIR)
+                  displayName: Installing the toolkit dependencies
+                  continueOnError: False
+
+                - task: PythonScript@0
+                  displayName: Run script to add the device to the ADU group
+                  continueOnError: True
+                  inputs:
+                      scriptSource: "filePath"
+                      scriptPath: "$(E2E_WORKING_DIR)/$(scenarioPath)/add_device_to_adu_group.py"
+                      workingDirectory: $(E2E_WORKING_DIR)
+                  env:
+                      IOTHUB_URL: $(IOTHUB_URL)
+                      IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+                      ADU_ENDPOINT: $(ADU_ENDPOINT)
+                      ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+                      AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+                      AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+                      AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+                - task: PythonScript@0
+                  displayName: Run script to test apt-deployment
+                  continueOnError: True
+                  inputs:
+                      scriptSource: "filePath"
+                      scriptPath: "$(E2E_WORKING_DIR)/$(scenarioPath)/apt_deployment.py"
+                      workingDirectory: $(E2E_WORKING_DIR)
+                  env:
+                      IOTHUB_URL: $(IOTHUB_URL)
+                      IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+                      ADU_ENDPOINT: $(ADU_ENDPOINT)
+                      ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+                      AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+                      AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+                      AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+                - task: PythonScript@0
+                  displayName: Run script to test diagnostics
+                  continueOnError: True
+                  inputs:
+                      scriptSource: "filePath"
+                      scriptPath: "$(E2E_WORKING_DIR)/$(scenarioPath)/diagnostics.py"
+                      workingDirectory: $(E2E_WORKING_DIR)
+                  env:
+                      IOTHUB_URL: $(IOTHUB_URL)
+                      IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+                      ADU_ENDPOINT: $(ADU_ENDPOINT)
+                      ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+                      AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+                      AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+                      AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+                - task: PythonScript@0
+                  displayName: Run script to test mcu
+                  continueOnError: True
+                  inputs:
+                      scriptSource: "filePath"
+                      scriptPath: "$(E2E_WORKING_DIR)/$(scenarioPath)/Multi-Component-Update.py"
+                      workingDirectory: $(E2E_WORKING_DIR)
+                  env:
+                      IOTHUB_URL: $(IOTHUB_URL)
+                      IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+                      ADU_ENDPOINT: $(ADU_ENDPOINT)
+                      ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+                      AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+                      AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+                      AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+                - task: PythonScript@0
+                  displayName: Run script to test bundle-update
+                  continueOnError: True
+                  inputs:
+                      scriptSource: "filePath"
+                      scriptPath: "$(E2E_WORKING_DIR)/$(scenarioPath)/Bundle-update.py"
+                      workingDirectory: $(E2E_WORKING_DIR)
+                  env:
+                      IOTHUB_URL: $(IOTHUB_URL)
+                      IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+                      ADU_ENDPOINT: $(ADU_ENDPOINT)
+                      ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+                      AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+                      AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+                      AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+                - task: PythonScript@0
+                  displayName: Run script to clean up the device
+                  continueOnError: True
+                  inputs:
+                      scriptSource: "filePath"
+                      scriptPath: "$(E2E_WORKING_DIR)/$(scenarioPath)/delete_device.py"
+                      workingDirectory: $(E2E_WORKING_DIR)
+                  env:
+                      IOTHUB_URL: $(IOTHUB_URL)
+                      IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+                      ADU_ENDPOINT: $(ADU_ENDPOINT)
+                      ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+                      AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+                      AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+                      AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+                - script: |
+                      mkdir -p $(Build.ArtifactStagingDirectory)/testresults/
+                      cp -R ./testresults/* $(Build.ArtifactStagingDirectory)/testresults/
+                  displayName: Copy terraform state (vm)
+                  workingDirectory: $(E2E_WORKING_DIR)
+
+                - task: PublishPipelineArtifact@1
+                  inputs:
+                      targetPath: "$(Build.ArtifactStagingDirectory)/testresults/"
+                      artifact: "TestResults_$(distroName)"
+                      publishLocation: "pipeline"
+
+                - task: PublishTestResults@2
+                  inputs:
+                      testRunner: JUnit
+                      testResultsFiles: "$(E2E_WORKING_DIR)/testresults/*.xml"
+                      failTaskOnFailedTests: false
+                      testRunTitle: $(distroName)
+
+    - stage: TerraformDestroyVm
+      displayName: Tear down cloud resources (VMs) and destroy the resource group
+      dependsOn:
+          - TerraformSetup
+          - TerraformVMInitialization
+          - RunTestsAndPostResults
+      pool:
+          vmImage: "ubuntu-18.04"
+      variables:
+          TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
+      jobs:
+          - job: TerraformDestroy
+            strategy:
+                matrix:
+                    ubuntu-18.04-amd64:
+                        distroName: ubuntu-18.04-amd64
+                    ubuntu-18.04-arm64:
+                        distroName: ubuntu-18.04-arm64
+                    ubuntu-20.04:
+                        distroName: ubuntu-20.04-amd64
+                    debian-10:
+                        distroName: debian-10-amd64
+            steps:
+                - script: echo "$(TERRAFORM_RESOURCE_GROUP_NAME)"
+                  displayName: Checking terraform resource group name
+                - script: |
+                      sudo apt update && sudo apt install curl
+                      curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+                      sudo apt-add-repository "deb [arch=$(dpkg --print-architecture)] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+                      sudo apt install terraform
+                  displayName: Installing Terraform
+                - script: |
+                      mkdir $(Pipeline.Workspace)/terraformStateVM_$(distroName)
+                  displayName: Create the artifact directory
+                  workingDirectory: $(Pipeline.Workspace)
+
+                - task: DownloadPipelineArtifact@2
+                  inputs:
+                      buildType: "current"
+                      artifactName: "terraformStateVM_$(distroName)"
+                      targetPath: "$(Pipeline.Workspace)/terraformStateVM_$(distroName)"
+                  displayName: Downloading the terraform artifacts
+                  continueOnError: false
+
+                - script: |
+                      terraform init
+                      terraform destroy -var client_id="$(TERRAFORM_CLIENT_ID)" -var client_secret="$(TERRAFORM_CLIENT_SECRET)" -var subscription_id="$(SUBSCRIPTION_ID)" -var tenant_id="$(TERRAFORM_TENANT_ID)" -var key_vault_id="$(Azure_Key_Vault_ID)" -var resource_group_name=$(TERRAFORM_RESOURCE_GROUP_NAME) -auto-approve || true
+                  workingDirectory: $(Pipeline.Workspace)/terraformStateVM_$(distroName)
+                  displayName: Destroy cloud resources (VM)
+                  continueOnError: true
+
+    - stage: RG_Destroy
+      displayName: Destroys the Resource Group used for the End-To-End Test
+      dependsOn:
+          - TerraformSetup
+          - TerraformVMInitialization
+          - RunTestsAndPostResults
+          - TerraformDestroyVm
+      pool:
+          vmImage: "ubuntu-18.04"
+      variables:
+          TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
+      jobs:
+          - job: ResourceGroupDestroy
+            steps:
+                - task: AzureCLI@2
+                  displayName: Cleanup All Test Infrastructure
+                  condition: eq(variables['SKIP_TEARDOWN'], 'false')
+                  inputs:
+                      azureSubscription: $(SERVICE_CONNECTION_NAME)
+                      scriptType: bash
+                      scriptLocation: inlineScript
+                      inlineScript: |
+                          echo "Starting to delete the resource group"
+                          az group delete -n $(TERRAFORM_RESOURCE_GROUP_NAME) --yes --no-wait

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.1",
+  "aduShellTrustedUsers": [
+    "adu",
+    "do"
+  ],
+  "compatPropertyNames": "%%DUCONFIG_COMPAT_PROPERTY_NAMES%%",
+  "manufacturer": "%%DUCONFIG_DEVICEINFO_MANUFACTURER%%",
+  "model": "%%DUCONFIG_DEVICEINFO_MODEL%%",
+  "agents": [
+    {
+      "name": "%%DUCONFIG_AGENT_NAME%%",
+      "runas": "adu",
+      "connectionSource": {
+        "connectionType": "string",
+        "connectionData": "%%DUCONFIG_CONNECTION_STRING%%"
+      },
+      "manufacturer": "%%DUCONFIG_DEVICEPROPERTIES_MANUFACTURER%%",
+      "model": "%%DUCONFIG_DEVICEPROPERTIES_MODEL%%"
+    }
+  ]
+}

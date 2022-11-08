@@ -1,12 +1,13 @@
 {
+  "$schema": "https://json.schemastore.org/component-detection-manifest.json",
   "Registrations": [
     {
       "Component": {
         "Type": "git",
         "git": {
           "RepositoryUrl": "https://github.com/Microsoft/do-client",
-          "CommitHash_Comment": "0.7.0",
-          "CommitHash": "3f00d1e0f841e6376f1c2852079e19ccc00f8ec4"
+          "CommitHash_Comment": "v1.0.0",
+          "CommitHash": "b61de2d347c8032562056b18f90ec710e531baf8"
         }
       },
       "DevelopmentDependency": false
@@ -37,9 +38,31 @@
       "Component": {
         "Type": "git",
         "git": {
-          "RepositoryUrl": "https://github.com/Microsoft/GSL",
-          "CommitHash_Comment": "v2.0.0",
-          "CommitHash": "1995e86d1ad70519465374fb4876c6ef7c9f8c61"
+          "RepositoryUrl": "https://github.com/sbabic/swupdate.git",
+          "CommitHash_Comment": "2021.11",
+          "CommitHash": "14d5d196304d408d61d4f1a07264f248201f46cc"
+        }
+      },
+      "DevelopmentDependency": false
+    },
+    {
+      "Component": {
+        "Type": "git",
+        "git": {
+          "RepositoryUrl": "https://github.com/koalaman/shellcheck",
+          "CommitHash_Comment": "0.8.0",
+          "CommitHash": "e5ad4cf420a7f7b8e5eaac872b14a1619051cf10"
+        }
+      },
+      "DevelopmentDependency": false
+    },
+    {
+      "Component": {
+        "Type": "git",
+        "git": {
+          "RepositoryUrl": "https://github.com/Azure/azure-blob-storage-file-upload-utility.git",
+          "CommitHash_Comment": "main",
+          "CommitHash": "6969d0fc9d222a5c132d0b8fb4305697a6017383"
         }
       },
       "DevelopmentDependency": false

@@ -51,7 +51,7 @@ ADUC_LOG_SEVERITY ZLogLevelToAducLogSeverity(enum ZLOG_SEVERITY logLevel)
         return ADUC_LOG_WARN;
 
     default:
-        return ZLOG_ERROR;
+        return ADUC_LOG_ERROR;
     }
 }
 

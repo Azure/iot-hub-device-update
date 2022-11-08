@@ -34,6 +34,8 @@ char* ADUC_StringFormat(const char* fmt, ...);
 
 _Bool IsNullOrEmpty(const char* str);
 
+_Bool MallocAndSubstr(char** target, char* source, size_t len);
+
 EXTERN_C_END
 
 #endif // ADUC_STRING_C_UTILS_H

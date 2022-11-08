@@ -24,8 +24,8 @@
 
 using ADUC::SimulatorPlatformLayer;
 
-std::unique_ptr<SimulatorPlatformLayer> SimulatorPlatformLayer::Create(
-    SimulationType type /*= SimulationType::AllSuccessful*/)
+std::unique_ptr<SimulatorPlatformLayer>
+SimulatorPlatformLayer::Create(SimulationType type /*= SimulationType::AllSuccessful*/)
 {
     return std::unique_ptr<SimulatorPlatformLayer>{ new SimulatorPlatformLayer(type) };
 }
@@ -76,7 +76,7 @@ ADUC_Result SimulatorPlatformLayer::Download(const ADUC_WorkflowData* workflowDa
     ADUC_Result result = { ADUC_Result_Failure };
     ADUC_FileEntity* entity = nullptr;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
-    char* workflowId = workflow_get_id(handle);
+    const char* workflowId = workflow_peek_id(handle);
     char* updateType = workflow_get_update_type(handle);
     char* workFolder = workflow_get_workfolder(handle);
 
@@ -134,7 +134,6 @@ ADUC_Result SimulatorPlatformLayer::Download(const ADUC_WorkflowData* workflowDa
     Log_Info("Download resultCode: %d, extendedCode: %d", result.ResultCode, result.ExtendedResultCode);
 
 done:
-    workflow_free_string(workflowId);
     workflow_free_string(updateType);
     workflow_free_string(workFolder);
     workflow_free_file_entity(entity);
@@ -147,11 +146,10 @@ ADUC_Result SimulatorPlatformLayer::Install(const ADUC_WorkflowData* workflowDat
 {
     ADUC_Result result;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
-    char* workflowId = workflow_get_id(handle);
     char* updateType = workflow_get_update_type(handle);
     char* workFolder = workflow_get_workfolder(handle);
 
-    Log_Info("{%s} Installing from %s", workflowId, workFolder);
+    Log_Info("{%s} Installing from %s", workflow_peek_id(handle), workFolder);
 
     if (CancellationRequested())
     {
@@ -173,7 +171,6 @@ ADUC_Result SimulatorPlatformLayer::Install(const ADUC_WorkflowData* workflowDat
     result = { ADUC_Result_Install_Success };
 
 done:
-    workflow_free_string(workflowId);
     workflow_free_string(updateType);
     workflow_free_string(workFolder);
 
@@ -186,9 +183,8 @@ ADUC_Result SimulatorPlatformLayer::Apply(const ADUC_WorkflowData* workflowData)
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     char* updateType = workflow_get_update_type(handle);
     char* workFolder = workflow_get_workfolder(handle);
-    char* workflowId = workflow_get_id(handle);
 
-    Log_Info("{%s} Applying data from %s", workflowId, workFolder);
+    Log_Info("{%s} Applying data from %s", workflow_peek_id(handle), workFolder);
 
     if (CancellationRequested())
     {
@@ -213,7 +209,6 @@ ADUC_Result SimulatorPlatformLayer::Apply(const ADUC_WorkflowData* workflowData)
 done:
     workflow_free_string(updateType);
     workflow_free_string(workFolder);
-    workflow_free_string(workflowId);
 
     // Can alternately return ADUC_Result_Apply_RequiredReboot to indicate reboot required.
     // Success is returned here to force a new swVersion to be sent back to the server.
@@ -222,9 +217,7 @@ done:
 
 void SimulatorPlatformLayer::Cancel(const ADUC_WorkflowData* workflowData)
 {
-    char* workflowId = workflow_get_id(workflowData->WorkflowHandle);
-    Log_Info("{%s} Cancel requested", workflowId);
-    workflow_free_string(workflowId);
+    Log_Info("{%s} Cancel requested", workflow_peek_id(workflowData->WorkflowHandle));
     _cancellationRequested = true;
 }
 

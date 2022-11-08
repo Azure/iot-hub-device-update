@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h> // for strcmp, memset, strlen, etc.
 #include <sys/stat.h>
+#include <sys/syscall.h> // for SYS_gettid
 #include <sys/time.h> // for gettimeofday
 #include <sys/types.h>
 #include <time.h>
@@ -60,6 +61,7 @@ struct tm* get_current_utctime();
 _Bool get_current_utctime_filename(char* fullpath, size_t fullpath_len);
 static inline void _zlog_buffer_lock(void);
 static inline void _zlog_buffer_unlock(void);
+static void _zlog_roll_over_if_file_size_too_large(int additional_log_len);
 static void _zlog_flush_buffer(void);
 static inline char* zlog_lock_and_get_buffer(void);
 static inline void zlog_finish_buffer_and_unlock(void);
@@ -211,6 +213,28 @@ void zlog_finish(void)
     free(zlog_file_log_prefix);
 }
 
+#define MAX_FUNCTION_NAME 64
+
+// Note: [%.64s] below match the MAX_FUNCTION_NAME above.
+#define LOG_FORMAT "%s [%c] %s [%.64s]\n"
+
+// Format: DateTime ProcessID[ThreadID]
+// Note: 4194304 = PID_MAX_LIMIT = 4 * 1024 * 1024 = 2^22
+//       Max numeric assignable is in /proc/sys/kernel/pid_max but that
+//       could change while running, so using PID_MAX_LIMIT as defined
+//       in Linux kernel include/linux/threads.h
+#define PRELUDE_FORMAT "%04d-%02d-%02dT%02d:%02d:%02d.%04dZ %d[%d]"
+#define PRELUDE_SAMPLE "2020-07-01T18:21:26.1234Z 4194304[4194304]"
+#define PRELUDE_BUFFER_SIZE sizeof(PRELUDE_SAMPLE)
+
+#define RESERVED_INFO_SIZE (sizeof(LOG_FORMAT) + PRELUDE_BUFFER_SIZE + sizeof(level_names[0]) + MAX_FUNCTION_NAME)
+
+// Log content buffer must be smaller than the zlog line buffer - reserved info size.
+#define LOG_CONTENT_BUFFER_SIZE (ZLOG_BUFFER_LINE_MAXCHARS - RESERVED_INFO_SIZE)
+
+#define MULTILINE_BEGIN_FORMAT "\n\n%s [%c] [%s] ==== MULTI-LINE LOG BEGIN ====\n"
+#define MULTILINE_END_FORMAT "%s [%c] [%s] ==== MULTI-LINE LOG END ====\n\n"
+
 void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, ...)
 {
     const _Bool console_log_needed =
@@ -223,8 +247,8 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
         return;
     }
 
-    char time_buffer[sizeof("2020-07-01T18:21:26.1234Z")];
-    time_buffer[0] = '\0';
+    char prelude_buffer[PRELUDE_BUFFER_SIZE];
+    prelude_buffer[0] = '\0';
 
     struct timespec curtime;
     clock_gettime(CLOCK_REALTIME, &curtime);
@@ -238,16 +262,18 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
     {
         // % 100 below to ensure the values fit in 2-digits template.
         int ret = snprintf(
-            time_buffer,
-            sizeof(time_buffer),
-            "%04d-%02d-%02dT%02d:%02d:%02d.%04dZ",
+            prelude_buffer,
+            PRELUDE_BUFFER_SIZE,
+            PRELUDE_FORMAT,
             tmval->tm_year + 1900,
             tmval->tm_mon + 1,
             tmval->tm_mday % 100,
             tmval->tm_hour % 100,
             tmval->tm_min % 100,
             tmval->tm_sec % 100,
-            (int)(curtime.tv_nsec / 100000));
+            (int)(curtime.tv_nsec / 100000),
+            getpid(),
+            (pid_t)syscall(SYS_gettid) /* cannot call gettid() directly */);
 
         if (ret < 0)
         {
@@ -255,10 +281,12 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
         }
     }
 
-    char va_buffer[ZLOG_BUFFER_LINE_MAXCHARS];
+    char va_buffer[LOG_CONTENT_BUFFER_SIZE];
     va_list va;
     va_start(va, fmt);
-    vsnprintf(va_buffer, sizeof(va_buffer) / sizeof(va_buffer[0]), fmt, va);
+    int full_log_len = vsnprintf(va_buffer, sizeof(va_buffer) / sizeof(va_buffer[0]), fmt, va);
+    // A return value of size or more means that the output was truncated.
+    _Bool log_truncated = full_log_len >= (sizeof(va_buffer) / sizeof(va_buffer[0]));
     va_end(va);
 
     if (console_log_needed)
@@ -280,41 +308,76 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
             color_suffix = "\033[m";
         }
 
-        fprintf(
-            msg_level == ZLOG_ERROR ? stderr : stdout,
-            "%s %s[%c]%s %s [%s]\n",
-            time_buffer,
-            color_prefix,
-            level_names[msg_level],
-            color_suffix,
-            va_buffer,
-            func);
+        FILE* output = msg_level == ZLOG_ERROR ? stderr : stdout;
+
+        if (log_truncated)
+        {
+            // va_buffer contains truncated log. Let's use vfprintf to directly
+            // print log to console instead.
+            fprintf(output, "%s %s[%c]%s ", prelude_buffer, color_prefix, level_names[msg_level], color_suffix);
+            va_start(va, fmt);
+            (void)vfprintf(output, fmt, va);
+            va_end(va);
+            fprintf(output, " [%s]\n", func);
+            fflush(output);
+        }
+        else
+        {
+            fprintf(
+                msg_level == ZLOG_ERROR ? stderr : stdout,
+                "%s %s[%c]%s %s [%s]\n",
+                prelude_buffer,
+                color_prefix,
+                level_names[msg_level],
+                color_suffix,
+                va_buffer,
+                func);
+        }
     }
 
     if (file_log_needed)
     {
-        // Add to zlog buffer.
-        char* buffer = zlog_lock_and_get_buffer();
+        if ((full_log_len + RESERVED_INFO_SIZE) < ZLOG_BUFFER_LINE_MAXCHARS)
+        {
+            // The log can fit in one line. Just add to zlog buffer.
+            char* buffer = zlog_lock_and_get_buffer();
 
-        // "%.400s" avoids error: '%s' directive output may be truncated writing up to 511 bytes into
-        // a region of size between 444 and 507 [-Werror=format-truncation=]
-        (void)snprintf(
-            buffer,
-            ZLOG_BUFFER_LINE_MAXCHARS,
-            "%s [%c] %.400s [%s]\n",
-            time_buffer,
-            level_names[msg_level],
-            va_buffer,
-            func);
+            (void)snprintf(
+                buffer,
+                ZLOG_BUFFER_LINE_MAXCHARS,
+                LOG_FORMAT,
+                prelude_buffer,
+                level_names[msg_level],
+                va_buffer,
+                func);
 
-        zlog_finish_buffer_and_unlock();
+            zlog_finish_buffer_and_unlock();
+        }
+        else
+        {
+            // The log is too long, let's flush the buffer then write to log file directly.
+            _zlog_buffer_lock();
+            _zlog_flush_buffer();
+
+            _zlog_roll_over_if_file_size_too_large(
+                full_log_len + sizeof(MULTILINE_BEGIN_FORMAT) + sizeof(MULTILINE_END_FORMAT)
+                + (PRELUDE_BUFFER_SIZE + MAX_FUNCTION_NAME) * 2);
+            fprintf(zlog_fout, MULTILINE_BEGIN_FORMAT, prelude_buffer, level_names[msg_level], func);
+            va_list va;
+            va_start(va, fmt);
+            (void)vfprintf(zlog_fout, fmt, va);
+            va_end(va);
+            fprintf(zlog_fout, MULTILINE_END_FORMAT, prelude_buffer, level_names[msg_level], func);
+            fflush(zlog_fout);
+
+            _zlog_buffer_unlock();
+        }
     }
 
     if (msg_level == ZLOG_ERROR)
     {
         zlog_request_flush_buffer();
     }
-
 }
 
 bool g_flushRequested = false;
@@ -421,26 +484,16 @@ _Bool get_current_utctime_filename(char* fullpath, size_t fullpath_len)
     return true;
 }
 
-// Caller should hold the lock
-static void _zlog_flush_buffer()
+// Roll over to a new log file if the current file size + additional_log_len exceeds ZLOG_FILE_MAX_SIZE_KB * 1024.
+static void _zlog_roll_over_if_file_size_too_large(int additional_log_len)
 {
     if (!zlog_is_file_log_open())
     {
         return;
     }
 
-    // Flush buffer to file
-    int i = 0;
-    for (i = 0; i < _zlog_buffer_count; i++)
-    {
-        fputs(_zlog_buffer[i], zlog_fout);
-    }
-    fflush(zlog_fout);
-
-    _zlog_buffer_count = 0;
-
     // Roll over to new log file once the current file size exceeds the limit
-    if (ftell(zlog_fout) > (ZLOG_FILE_MAX_SIZE_KB * 1024))
+    if ((ftell(zlog_fout) + additional_log_len) > (ZLOG_FILE_MAX_SIZE_KB * 1024))
     {
         zlog_close_file_log();
 
@@ -457,6 +510,28 @@ static void _zlog_flush_buffer()
         // INVARIANT: zlog_fout == NULL due to zlog_close_file_log() call above.
         zlog_fout = fopen(zlog_file_log_fullpath, "a");
     }
+}
+
+// Caller should hold the lock
+static void _zlog_flush_buffer()
+{
+    if (!zlog_is_file_log_open())
+    {
+        return;
+    }
+
+    // Flush buffer to file
+    int i = 0;
+    for (i = 0; i < _zlog_buffer_count; i++)
+    {
+        _zlog_roll_over_if_file_size_too_large(strlen(_zlog_buffer[i]));
+        fputs(_zlog_buffer[i], zlog_fout);
+    }
+    fflush(zlog_fout);
+
+    _zlog_buffer_count = 0;
+
+    _zlog_roll_over_if_file_size_too_large(0);
 }
 
 // Caller should NOT hold the lock

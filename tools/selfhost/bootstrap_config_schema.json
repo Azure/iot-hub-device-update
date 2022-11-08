@@ -1,0 +1,78 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Configurations for bootstrap bundle creation.",
+    "type": "object",
+    "required": [ "deviceupdate_agent", "features" ],
+    "properties": {
+        "deviceupdate_agent": { "$ref": "#/$defs/deviceupdate_agent" },
+        "features": { "$ref": "#/$defs/features" }
+    },
+    "$defs": {
+        "deviceupdate_agent": {
+            "type": "object",
+            "description": "The bootstrap configuration properties for self-host device update agent.",
+            "required": [ "package_path", "dependencies" ],
+            "properties": {
+                "package_path": {
+                    "type": "string",
+                    "description": "The absolute file path of the device update agent debian self-host package."
+                },
+                "dependencies": {
+                    "type": "object",
+                    "description": "The config properties for dependencies of device update agent.",
+                    "required": [ "ubuntu18.04_x64", "ubuntu20.04_x64" ],
+                    "properties": {
+                        "ubuntu18.04_x64": {
+                            "type": "object",
+                            "description": "",
+                            "$ref": "#$defs/delivery_optimization_properties"
+                        },
+                        "ubuntu20.04_x64": {
+                            "type": "object",
+                            "description": "",
+                            "$ref": "#$defs/delivery_optimization_properties"
+                        }
+                    }
+                }
+            }
+        },
+        "features": {
+            "type": "object",
+            "description": "The bootstrap configuration properties for self-host features.",
+            "required": [ "delta_update" ],
+            "properties": {
+                "delta_update": {
+                    "type": "object",
+                    "description": "The bootstrap configuration properties for the DeltaUpdate feature.",
+                    "required": [
+                        "deltaupdate_files",
+                        "deltaupdate_swupdate_files"
+                    ],
+                    "properties": {
+                        "deltaupdate_files": {
+                            "type": "string",
+                            "description": "The path to the non-swupdate deltaupdate self-host files zip."
+                        },
+                        "deltaupdate_swupdate_files": {
+                            "type": "string",
+                            "description": "The path to the swupdate-related deltaupdate self-host files tarball."
+                        }
+                    }
+                }
+            }
+        },
+        "delivery_optimization_properties": {
+            "type": "object",
+            "description": "The properties for delivery optimization dependencies.",
+            "required": [
+                "delivery_optimization_tarball_url"
+            ],
+            "properties": {
+                "delivery_optimization_tarball_url": {
+                    "type": "string",
+                    "description": "The URL of the delivery optimization release tarball."
+                }
+            }
+        }
+    }
+}

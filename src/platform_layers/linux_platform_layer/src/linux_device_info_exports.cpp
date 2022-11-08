@@ -6,8 +6,11 @@
  * Licensed under the MIT License.
  */
 #include "aduc/device_info_exports.h"
+#include "os_release_info.hpp"
 
+#include <fstream>
 #include <functional>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -22,6 +25,9 @@
 #include <aduc/string_c_utils.h>
 #include <aduc/string_utils.hpp>
 #include <aduc/system_utils.h>
+
+#define ETC_OS_RELEASE_FILEPATH "/etc/os-release"
+#define ETC_LSB_RELEASE_FILEPATH "/etc/lsb-release"
 
 /**
  * @brief Get manufacturer
@@ -92,9 +98,68 @@ static char* DeviceInfo_GetModel()
 }
 
 /**
+ * @brief Gets value for a property in an etc release file with one name-value pair separated by equal-sign delimiter per line.
+ * @param path The path to the file of name-value pair lines
+ * @param name_property_name The identifier for the property that represents the os name.
+ * @param version_property_name The identifier for the property that represents the os version.
+ * @return OsReleaseInfo* The new OS release infol, or nullptr on error.
+ * @detail Caller will own OsReleaseInfo instance and must free with delete. Also, values will have surrounding double-quotes removed.
+ */
+static OsReleaseInfo* get_os_release_info(const char* path, const char* name_property_name, const char* version_property_name)
+{
+    std::unique_ptr<OsReleaseInfo> result;
+
+    std::ifstream file{ path };
+    if (!file.is_open())
+    {
+        Log_Error("File %s failed to open, error: %d", path, errno);
+        return nullptr;
+    }
+
+    std::string os_name;
+    std::string os_version;
+
+    std::string line;
+    while (std::getline(file, line))
+    {
+        std::string trimmed = ADUC::StringUtils::Trim(line);
+        if (trimmed.length() == 0)
+        {
+            continue;
+        }
+
+        auto parts = ADUC::StringUtils::Split(trimmed, '=');
+        if (parts[0] == name_property_name)
+        {
+            ADUC::StringUtils::RemoveSurrounding(parts[1], '"');
+            os_name = std::move(parts[1]);
+        }
+        else if (parts[0] == version_property_name)
+        {
+            ADUC::StringUtils::RemoveSurrounding(parts[1], '"');
+            os_version = std::move(parts[1]);
+        }
+
+        if (os_name.length() > 0 && os_version.length() > 0)
+        {
+            result = std::unique_ptr<OsReleaseInfo>{ new OsReleaseInfo{ os_name, os_version } };
+            break;
+        }
+    }
+
+    if (result)
+    {
+        return result.release();
+    }
+
+    Log_Debug("'%s' or '%s' property missing or '%s' does not exist", name_property_name, version_property_name, path);
+
+    return nullptr;
+}
+
+/**
  * @brief Get operating system name.
  * Name of the operating system on the device.
- * e.g. Windows 10 IoT Core
  *
  * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
@@ -107,27 +172,52 @@ static char* DeviceInfo_GetOsName()
         return nullptr;
     }
 
-    utsname uts{};
+    valueIsDirty = false;
 
-    if (uname(&uts) < 0)
+    // First, use /etc/os-release that is required by systemd-based systems.
+    // As per os-release(5) manpage, read the announcement here: http://0pointer.de/blog/projects/os-release
+    if (SystemUtils_IsFile(ETC_OS_RELEASE_FILEPATH, nullptr))
     {
-        Log_Error("uname failed, error: %d", errno);
-        return nullptr;
+        std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_OS_RELEASE_FILEPATH, "NAME", "VERSION") };
+        if (releaseInfo)
+        {
+            return strdup(releaseInfo->ExportOsName());
+        }
     }
 
-    valueIsDirty = false;
-    return strdup(ADUC_StringUtils_Trim(uts.sysname /*Operating system name*/));
+    // Next, try the Linux Standard Base file present on some systems
+    if (SystemUtils_IsFile(ETC_LSB_RELEASE_FILEPATH, nullptr))
+    {
+        std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_LSB_RELEASE_FILEPATH, "DISTRIB_ID", "DISTRIB_RELEASE") };
+        if (releaseInfo)
+        {
+            return strdup(releaseInfo->ExportOsName());
+        }
+    }
+
+    // Finally, fallback to uname strategy
+    {
+        utsname uts{};
+        if (uname(&uts) < 0)
+        {
+            Log_Error("uname failed, error: %d", errno);
+        }
+        else
+        {
+            return strdup(uts.sysname);
+        }
+    }
+
+    return nullptr;
 }
 
 /**
- * @brief Get software version.
- * Version of the software on your device.
- * This could be the version of your firmware.
- * e.g. 1.3.45
+ * @brief Get OS version.
+ * Version of the OS distro or linux kernel on the device.
  *
  * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
-static char* DeviceInfo_GetSwVersion()
+static char* DeviceInfo_GetOsVersion()
 {
     static bool valueIsDirty = true;
     if (!valueIsDirty)
@@ -135,18 +225,49 @@ static char* DeviceInfo_GetSwVersion()
         return nullptr;
     }
 
-    // Note: In the V2 interface, we will implement swVersion in a more "standard" way
-    // by querying the OS for version rather than reading the custom version file.
-    utsname uts{};
+    valueIsDirty = false;
 
-    if (uname(&uts) < 0)
+    // First, use /etc/os-release that is required by systemd-based systems.
+    // As per os-release(5) manpage, read the announcement here: http://0pointer.de/blog/projects/os-release
+    if (SystemUtils_IsFile(ETC_OS_RELEASE_FILEPATH, nullptr))
     {
-        Log_Error("uname failed, error: %d", errno);
-        return nullptr;
+        std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_OS_RELEASE_FILEPATH, "NAME", "VERSION") };
+        if (releaseInfo)
+        {
+            return strdup(releaseInfo->ExportOsVersion());
+        }
     }
 
-    valueIsDirty = false;
-    return strdup(uts.release /*Operating system release*/);
+    // Next, try the Linux Standard Base file present on some systems
+    if (SystemUtils_IsFile(ETC_LSB_RELEASE_FILEPATH, nullptr))
+    {
+        std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_LSB_RELEASE_FILEPATH, "DISTRIB_ID", "DISTRIB_RELEASE") };
+        if (releaseInfo)
+        {
+            return strdup(releaseInfo->ExportOsVersion());
+        }
+    }
+
+    // Finally, fallback to uname strategy
+    {
+        // Note: In the V2 interface, we will implement swVersion in a more "standard" way
+        // by querying the OS for version rather than reading the custom version file.
+        //
+        // It is "swVersion" on "the wire" in the device info interface, but has been repurposed for OS distro / kernel release version.
+        utsname uts{};
+
+        if (uname(&uts) < 0)
+        {
+            Log_Error("uname failed, error: %d", errno);
+        }
+        else
+        {
+            // This is typically just the kernel version.
+            return strdup(uts.release /*Operating system release*/);
+        }
+    }
+
+    return nullptr;
 }
 
 /**
@@ -319,7 +440,7 @@ char* DI_GetDeviceInformationValue(DI_DeviceInfoProperty property)
             { DIIP_Manufacturer, DeviceInfo_GetManufacturer },
             { DIIP_Model, DeviceInfo_GetModel },
             { DIIP_OsName, DeviceInfo_GetOsName },
-            { DIIP_SoftwareVersion, DeviceInfo_GetSwVersion },
+            { DIIP_SoftwareVersion, DeviceInfo_GetOsVersion },
             { DIIP_ProcessorArchitecture, DeviceInfo_GetProcessorArchitecture },
             { DIIP_ProcessorManufacturer, DeviceInfo_GetProcessorManufacturer },
             { DIIP_TotalMemory, DeviceInfo_GetTotalMemory },

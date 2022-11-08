@@ -13,6 +13,7 @@
 #include "aduc/system_utils.h" // for SystemUtils_IsDir, SystemUtils_IsFile
 #include <azure_c_shared_utility/strings.h> // for STRING_HANDLE, STRING_delete, STRING_c_str
 #include <ctype.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -20,17 +21,32 @@
 /**
  * @brief The users that must exist on the system.
  */
-static const char* aduc_required_users[] = { ADUC_FILE_USER, DO_FILE_USER };
+static const char* aduc_required_users[] = { ADUC_FILE_USER };
+
+/**
+ * @brief The optional users.
+ */
+static const char* aduc_optional_users[] = { DO_FILE_USER };
 
 /**
  * @brief The groups that must exist on the system.
  */
-static const char* aduc_required_groups[] = { ADUC_FILE_GROUP, DO_FILE_GROUP };
+static const char* aduc_required_groups[] = { ADUC_FILE_GROUP };
+
+/**
+ * @brief The optional groups.
+ */
+static const char* aduc_optional_groups[] = { DO_FILE_GROUP };
 
 /**
  * @brief The supplementary groups for ADUC_FILE_USER
  */
-static const char* aduc_required_group_memberships[] = {
+static const char* aduc_required_group_memberships[] = {};
+
+/**
+ * @brief The supplementary groups for ADUC_FILE_USER
+ */
+static const char* aduc_optional_group_memberships[] = {
     DO_FILE_GROUP // allows agent to set connection_string for DO
 };
 
@@ -112,8 +128,17 @@ static _Bool ReportMissingRequiredUsers()
     {
         if (!PermissionUtils_UserExists(aduc_required_users[i]))
         {
-            Log_Error("User '%s' does not exist.", aduc_required_users[i]);
+            Log_Error("Required user '%s' does not exist.", aduc_required_users[i]);
             result = false;
+            // continue on to next user
+        }
+    }
+
+    for (int i = 0; i < ARRAY_SIZE(aduc_optional_users); ++i)
+    {
+        if (!PermissionUtils_UserExists(aduc_optional_users[i]))
+        {
+            Log_Warn("Optional user '%s' does not exist.", aduc_optional_users[i]);
             // continue on to next user
         }
     }
@@ -134,8 +159,17 @@ static _Bool ReportMissingRequiredGroups()
     {
         if (!PermissionUtils_GroupExists(aduc_required_groups[i]))
         {
-            Log_Error("Group '%s' does not exist.", aduc_required_groups[i]);
+            Log_Error("Required group '%s' does not exist.", aduc_required_groups[i]);
             result = false;
+            // continue on to next user
+        }
+    }
+
+    for (int i = 0; i < ARRAY_SIZE(aduc_optional_groups); ++i)
+    {
+        if (!PermissionUtils_GroupExists(aduc_optional_groups[i]))
+        {
+            Log_Warn("Optional group '%s' does not exist.", aduc_optional_groups[i]);
             // continue on to next user
         }
     }
@@ -163,11 +197,20 @@ static _Bool ReportMissingGroupMemberships()
         }
     }
 
+    // ADUC group memberships
+    for (int i = 0; i < ARRAY_SIZE(aduc_optional_group_memberships); ++i)
+    {
+        if (!PermissionUtils_UserInSupplementaryGroup(ADUC_FILE_USER, aduc_optional_group_memberships[i]))
+        {
+            Log_Warn("User '%s' is not a member of '%s' group.", ADUC_FILE_USER, aduc_optional_group_memberships[i]);
+            // continue evaluating next membership
+        }
+    }
+
     // DO group memberships
     if (!PermissionUtils_UserInSupplementaryGroup(DO_FILE_USER, ADUC_FILE_GROUP))
     {
-        Log_Error("User '%s' is not a member of '%s' group.", DO_FILE_USER, ADUC_FILE_GROUP);
-        result = false;
+        Log_Warn("User '%s' is not a member of '%s' group.", DO_FILE_USER, ADUC_FILE_GROUP);
     }
 
     return result;
@@ -212,7 +255,7 @@ static _Bool CheckConfDirOwnershipAndPermissions()
 
     const char* path = ADUC_CONF_FOLDER;
 
-    if (SystemUtils_IsDir(path))
+    if (SystemUtils_IsDir(path, NULL))
     {
         if (!PermissionUtils_CheckOwnership(path, ADUC_FILE_USER, ADUC_FILE_GROUP))
         {
@@ -222,8 +265,8 @@ static _Bool CheckConfDirOwnershipAndPermissions()
         }
 
         // owning user can read, write, and list entries in dir.
-        // group members and everyone else can read and list entries in dir.
-        const mode_t expected_permissions = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+        // group members can read and list entries in dir.
+        const mode_t expected_permissions = S_IRWXU | S_IRGRP | S_IXGRP;
 
         if (!PermissionUtils_VerifyFilemodeExact(path, expected_permissions))
         {
@@ -253,7 +296,7 @@ static _Bool CheckConfFile()
 
     const char* path = ADUC_CONF_FILE_PATH;
 
-    if (SystemUtils_IsFile(path))
+    if (SystemUtils_IsFile(path, NULL))
     {
         if (!PermissionUtils_CheckOwnership(path, ADUC_FILE_USER, ADUC_FILE_GROUP))
         {
@@ -261,7 +304,7 @@ static _Bool CheckConfFile()
             result = false;
         }
 
-        const mode_t bitmask = S_IRUSR | S_IRGRP | S_IROTH;
+        const mode_t bitmask = S_IRUSR | S_IRGRP;
 
         if (!PermissionUtils_VerifyFilemodeBitmask(path, bitmask))
         {
@@ -288,9 +331,15 @@ static _Bool CheckLogDir()
 
     const char* dir = ADUC_LOG_FOLDER;
 
-    if (!SystemUtils_IsDir(dir))
+    int err;
+    if (!SystemUtils_IsDir(dir, &err))
     {
-        Log_Error("'%s' does not exist or is not a directory", dir);
+        if (err != 0)
+        {
+            Log_Error("Cannot get '%s' status. (errno: %d)", dir, errno);
+            goto done;
+        }
+        Log_Error("'%s' is not a directory", dir);
         goto done;
     }
 
@@ -323,13 +372,20 @@ done:
  * @param expectedPermissions The expected permissions of the file object.
  * @returns true if everything is correct.
  */
-static _Bool CheckDirOwnershipAndVerifyFilemodeExact(const char* path, const char* user, const char* group, const mode_t expected_permissions)
+static _Bool CheckDirOwnershipAndVerifyFilemodeExact(
+    const char* path, const char* user, const char* group, const mode_t expected_permissions)
 {
     _Bool result = false;
 
-    if (!SystemUtils_IsDir(path))
+    int err;
+    if (!SystemUtils_IsDir(path, &err))
     {
-        Log_Error("'%s' does not exist or is not a directory", path);
+        if (err != 0)
+        {
+            Log_Error("Cannot get '%s' status. (errno: %d)", path, errno);
+            goto done;
+        }
+        Log_Error("'%s' is not a directory", path);
         goto done;
     }
 
@@ -360,7 +416,8 @@ static _Bool CheckDataDir()
 {
     // Note: "Other" bits are cleared to align with ADUC_SystemUtils_MkDirRecursiveDefault and packaging.
     const mode_t expected_permissions = S_IRWXU | S_IRWXG;
-    return CheckDirOwnershipAndVerifyFilemodeExact(ADUC_DATA_FOLDER, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
+    return CheckDirOwnershipAndVerifyFilemodeExact(
+        ADUC_DATA_FOLDER, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
 }
 
 /**
@@ -371,7 +428,8 @@ static _Bool CheckDownloadsDir()
 {
     // Note: "Other" bits are cleared to align with ADUC_SystemUtils_MkDirRecursiveDefault and packaging.
     const mode_t expected_permissions = S_IRWXU | S_IRWXG;
-    return CheckDirOwnershipAndVerifyFilemodeExact(ADUC_DOWNLOADS_FOLDER, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
+    return CheckDirOwnershipAndVerifyFilemodeExact(
+        ADUC_DOWNLOADS_FOLDER, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
 }
 
 /**
@@ -384,7 +442,7 @@ static _Bool CheckAgentBinary()
 
     const char* path = ADUC_AGENT_FILEPATH;
 
-    if (SystemUtils_IsFile(path))
+    if (SystemUtils_IsFile(path, NULL))
     {
         if (!PermissionUtils_CheckOwnerUid(path, 0 /* root */))
         {
@@ -423,7 +481,7 @@ static _Bool CheckShellBinary()
 
     const char* path = ADUSHELL_FILE_PATH;
 
-    if (SystemUtils_IsFile(path))
+    if (SystemUtils_IsFile(path, NULL))
     {
         if (!PermissionUtils_CheckOwnerUid(path, 0 /* root */))
         {
@@ -527,7 +585,8 @@ _Bool HealthCheck(const ADUC_LaunchArguments* launchArgs)
     ADUC_ConfigInfo config = {};
     if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
     {
-        Log_Warn("Cannot read configuration file: %s", ADUC_CONF_FILE_PATH);
+        Log_Error("Failed to initialize from config file: %s", ADUC_CONF_FILE_PATH);
+        goto done;
     }
 
     if (!IsConnectionInfoValid(launchArgs, &config))

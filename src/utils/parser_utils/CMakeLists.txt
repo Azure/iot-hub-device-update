@@ -18,11 +18,12 @@ find_package (azure_c_shared_utility REQUIRED)
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aziotsharedutil
-           aduc::adu_core_interface
-           aduc::c_utils
-           aduc::hash_utils
-           aduc::parson_json_utils
-           aduc::system_utils
-           Parson::parson
-    PRIVATE aduc::logging aduc::string_utils)
+    PUBLIC aduc::adu_types Parson::parson
+    PRIVATE aduc::hash_utils
+            aduc::logging
+            aduc::parson_json_utils
+            aziotsharedutil)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

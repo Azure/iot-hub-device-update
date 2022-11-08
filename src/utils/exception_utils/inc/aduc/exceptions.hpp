@@ -60,7 +60,7 @@ public:
      */
     static void ThrowErrno(int code, const std::string& message)
     {
-        ThrowAducResult(MAKE_ADUC_ERRNO_EXTENDEDRESULTCODE(code), message);
+        ThrowAducResult(MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ERRNO(code), message);
     }
 
     /**

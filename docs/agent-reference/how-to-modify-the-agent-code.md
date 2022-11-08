@@ -13,10 +13,20 @@ and
 
 ## Adjusting the Download, Install, and Apply actions for your device
 
-You may want to implement your own version of Download, Install and Apply for
+You may want to implement your own version of IsInstalled, Download, Install and Apply for
 your device or installer. You can provide your own implementation of the
-[Content Handler APIs](../../src/content_handlers/inc/aduc/content_handler.hpp)
-in [src/content_handlers](../../src/content_handlers)
+[Content Handler APIs](../../src/extensions/inc/aduc/content_handler.hpp)
+in [src/extensions/step_handlers](../../src/extensions/step_handlers)
+
+## Customize extensibility points
+
+In addition to customizing content handlers, you can customize:
+- How update steps in the update metadata are orchestrated/processed,
+- How update payloads and detached v4 update manifest files are downloaded,
+- How hardware sub-module "components" are enumerated and queried,
+- How update payloads can be pre-processed to reconstitute payloads (particularly large ones) without downloading them (e.g. Delta Updating).
+
+For comprehensive docs on all extensibility points, refer to the [Device Update Agent Extensibility points](./device-update-agent-extensibility-points.md) doc.
 
 ## Porting to a Different OS or Platform
 

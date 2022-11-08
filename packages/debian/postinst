@@ -10,6 +10,8 @@
 # Any error should exit the script (sort of)
 # See https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html#The-Set-Builtin
 
+echo "******************** Running $0 $1 ***********************"
+
 set -e
 
 adu_conf_dir=/etc/adu
@@ -30,10 +32,13 @@ adu_script_handler_file=libmicrosoft_script_1.so
 adu_simulator_handler_file=libmicrosoft_simulator_1.so
 adu_steps_handler_file=libmicrosoft_steps_1.so
 adu_swupdate_handler_file=libmicrosoft_swupdate_1.so
+adu_swupdate_handler_2_file=libmicrosoft_swupdate_2.so
 
-adu_example_component_enumerator_file=libcontoso-component-enumerator.so
+adu_example_component_enumerator_file=libcontoso_component_enumerator.so
 
-adu_delivery_optimization_downloader_file=libdeliveryoptimization-content-downloader.so
+adu_delivery_optimization_downloader_file=libdeliveryoptimization_content_downloader.so
+
+adu_delta_download_handler_file=libmicrosoft_delta_download_handler.so
 
 adu_eis_conf_file=adu.toml
 eis_idservice_dir=/etc/aziot/identityd/config.d
@@ -55,11 +60,12 @@ ms_doclient_lite_service="deliveryoptimization-agent"
 sample_du_config=$(
     cat << END_OF_JSON
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "aduShellTrustedUsers": [
     "adu",
     "do"
   ],
+  "iotHubProtocol": "mqtt",
   "manufacturer": <Place your device info manufacturer here>,
   "model": <Place your device info model here>,
   "agents": [
@@ -118,27 +124,27 @@ setup_dirs_and_files() {
 
         # Ensure the right owners and permissions
         chown "$adu_user:$adu_group" "$adu_conf_dir"
-        chmod u=rwx,g=rx,o=rx "$adu_conf_dir"
+        chmod u=rwx,g=rx,o= "$adu_conf_dir"
 
         # Generate the template configuration file
         echo "Generate the template configuration file..."
         if [ ! -f "$adu_conf_dir/${adu_conf_file}.template" ]; then
             echo "$sample_du_config" > "$adu_conf_dir/${adu_conf_file}.template"
             chown "$adu_user:$adu_group" "$adu_conf_dir/${adu_conf_file}.template"
-            chmod u=r,g=r,o=r "$adu_conf_dir/${adu_conf_file}.template"
+            chmod u=r,g=r,o= "$adu_conf_dir/${adu_conf_file}.template"
         fi
 
         # Create configuration file from template
         if [ ! -f "$adu_conf_dir/$adu_conf_file" ]; then
             cp -a "$adu_conf_dir/${adu_conf_file}.template" "$adu_conf_dir/$adu_conf_file"
-            chmod u=rw,g=r,o=r "$adu_conf_dir/$adu_conf_file"
+            chmod u=rw,g=r,o= "$adu_conf_dir/$adu_conf_file"
         fi
 
         echo "Generating the diagnostics configuration file..."
         if [ ! -f "$adu_conf_dir/$adu_diagnostics_conf_file" ]; then
             echo "$sample_du_diagnostics_config" > "$adu_conf_dir/$adu_diagnostics_conf_file"
             chown "$adu_user:$adu_group" "$adu_conf_dir/$adu_diagnostics_conf_file"
-            chmod u=r,g=r,o=r "$adu_conf_dir/$adu_diagnostics_conf_file"
+            chmod u=r,g=r,o= "$adu_conf_dir/$adu_diagnostics_conf_file"
         fi
 
         # Create home dir
@@ -196,7 +202,7 @@ setup_dirs_and_files() {
         chown "$adu_user:$adu_group" "$adu_extensions_sources_dir"
         chmod u=rwx,g=rwx,o= "$adu_extensions_sources_dir"
 
-        #Set adu-agent owner and permission
+        #Set deviceupdate-agent owner and permission
         if [ ! -f "$adu_shell_dir/$adu_shell_file" ]; then
            echo "ERROR! $adu_shell_dir/$adu_shell_file does not exists." >&2
         else
@@ -212,18 +218,23 @@ setup_dirs_and_files() {
 register_reference_extensions() {
     echo "Register all reference update content handlers..."
 
-    $adu_bin_path -l 2 --update-type "microsoft/apt:1" -C $adu_extensions_sources_dir/$adu_apt_handler_file
-    $adu_bin_path -l 2 --update-type "microsoft/swupdate:1" -C $adu_extensions_sources_dir/$adu_swupdate_handler_file
-    $adu_bin_path -l 2 --update-type "microsoft/script:1" -C $adu_extensions_sources_dir/$adu_script_handler_file
-    $adu_bin_path -l 2 --update-type "microsoft/steps:1" -C $adu_extensions_sources_dir/$adu_steps_handler_file
-    $adu_bin_path -l 2 --update-type "microsoft/update-manifest" -C $adu_extensions_sources_dir/$adu_steps_handler_file
-    $adu_bin_path -l 2 --update-type "microsoft/update-manifest:4" -C $adu_extensions_sources_dir/$adu_steps_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/apt:1" --register-extension $adu_extensions_sources_dir/$adu_apt_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/swupdate:1" --register-extension $adu_extensions_sources_dir/$adu_swupdate_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/swupdate:2" --register-extension $adu_extensions_sources_dir/$adu_swupdate_handler_2_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/script:1" --register-extension $adu_extensions_sources_dir/$adu_script_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/steps:1" --register-extension $adu_extensions_sources_dir/$adu_steps_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/update-manifest" --register-extension $adu_extensions_sources_dir/$adu_steps_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/update-manifest:4" --register-extension $adu_extensions_sources_dir/$adu_steps_handler_file
+    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/update-manifest:5" --register-extension $adu_extensions_sources_dir/$adu_steps_handler_file
 
     echo "Register a reference component enumerator..."
-    $adu_bin_path -l 2 -E $adu_extensions_sources_dir/$adu_example_component_enumerator_file
+    $adu_bin_path -l 2 --extension-type componentEnumerator --register-extension $adu_extensions_sources_dir/$adu_example_component_enumerator_file
 
     echo "Register content downloader extension..."
-    $adu_bin_path -l 2 -D $adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file
+    $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file
+
+    echo "Register delta download handler..."
+    $adu_bin_path -l 2 --extension-type downloadHandler --extension-id "microsoft/delta:1" --register-extension $adu_extensions_sources_dir/$adu_delta_download_handler_file
 }
 
 register_adu_user_and_process_with_eis() {
@@ -253,7 +264,24 @@ register_adu_user_and_process_with_eis() {
 register_and_enable_daemon()
 {
     systemctl daemon-reload
-    systemctl enable adu-agent
+    systemctl enable deviceupdate-agent
+}
+
+#
+# General migration tasks should be added here
+#
+complete_migration_steps()
+{
+    # For migrating to current version from 0.8.0 need
+    # to disable the old agent the old one
+    if systemctl is-active --quiet adu-agent; then
+
+        #disable old agent and let it die
+        systemctl disable adu-agent
+
+        # start the new one
+        systemctl start deviceupdate-agent
+    fi
 }
 
 case "$1" in
@@ -266,7 +294,7 @@ case "$1" in
         register_and_enable_daemon
 
         # Note: DO user and group are created by deliveryoptimization-agent Debian package,
-        # which is one of the dependencies declared in adu-agent control file.
+        # which is one of the dependencies declared in deviceupdate-agent control file.
         # We are assuming that both DO user and group currently exist at this point.
         # Add 'do' user to 'adu' group to allow DO to write to ADU download sandbox.
         echo "Add the 'do' user to the 'adu' group and 'adu' to the 'do' group"
@@ -280,13 +308,15 @@ case "$1" in
             systemctl restart "$ms_doclient_lite_service"
         fi
 
-        # Do not restart the current adu-agent because we want the update workflow
+        complete_migration_steps
+
+        # Do not restart the current deviceupdate-agent because we want the update workflow
         # to complete, and reports the agent's state to ADU Management service.
         echo "============================================================"
         echo
         echo "     ADU Agent service must be restarted." >&2
         echo
-        echo "     Please run 'sudo systemctl restart adu-agent'" >&2
+        echo "     Please run 'sudo systemctl restart deviceupdate-agent'" >&2
         echo
         echo "============================================================"
     ;;

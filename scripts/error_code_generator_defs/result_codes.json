@@ -1,0 +1,1025 @@
+{
+    "facilities": [
+      {
+        "components": [
+          {
+            "code": 0,
+            "doc_string": "General Error Codes, that come from POSIX 2001 Standard Errnos",
+            "name": "ERRNO",
+            "results": [
+              {
+                "name": "ADUC_ERC_NOTPERMITTED",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_NOMEM",
+                "value": 12
+              },
+              {
+                "name": "ADUC_ERC_NOTRECOVERABLE",
+                "value": 131
+              }
+            ]
+          },
+          {
+            "code": 1,
+            "doc_string": "validation and cryptographic component",
+            "name": "ADUC_COMPONENT_CRYPTO",
+            "results": [
+              {
+                "name": "ADUC_ERC_VALIDATION_FILE_HASH_IS_EMPTY",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_VALIDATION_FILE_HASH_TYPE_NOT_SUPPORTED",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_VALIDATION_FILE_HASH_INVALID_HASH",
+                "value": 3
+              }
+            ]
+          }
+        ],
+        "code": 0,
+        "doc_string": "indicates errors from unknown sources",
+        "name": "ADUC_FACILITY_UNKNOWN"
+      },
+      {
+        "components": [
+          {
+            "code": 0,
+            "doc_string": "non component specific error codes",
+            "name": "ADUC_LOWERLAYER_COMMON",
+            "results": [
+              {
+                "name": "ADUC_ERC_LOWERLEVEL_INVALID_UPDATE_ACTION",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_LOWERLEVEL_UPDATE_MANIFEST_VALIDATION_INVALID_HASH",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_LOWERLEVEL_GET_FILE_ENTITY_FAILURE",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_LOWERLEVEL_SANDBOX_CREATE_FAILURE_NO_ADU_USER",
+                "value": 5
+              },
+              {
+                "name": "ADUC_ERC_LOWERLEVEL_SANDBOX_CREATE_FAILURE_NO_ADU_GROUP",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_LOWERLEVEL_WORKFLOW_INIT_ERROR_NULL_PARAM",
+                "value": 20
+              }
+            ]
+          }
+        ],
+        "code": 1,
+        "doc_string": "indicates errors from the lower layer",
+        "name": "ADUC_FACILITY_LOWERLAYER"
+      },
+      {
+        "components": [
+          {
+            "code": 0,
+            "doc_string": "non component specific error codes",
+            "name": "ADUC_UPPERLAYER_COMMON",
+            "results": [
+              {
+                "name": "ADUC_ERC_UPPERLEVEL_WORKFLOW_UPDATE_ACTION_UNEXPECTED_STATE",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_UPPERLEVEL_WORKFLOW_INSTALL_ACTION_IN_UNEXPECTED_STATE",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_UPPERLEVEL_WORKFLOW_FAILED_RESTORE_FAILED",
+                "value": 3
+              }
+            ]
+          }
+        ],
+        "code": 2,
+        "doc_string": "indicates errors from the upper layer.",
+        "name": "ADUC_FACILITY_UPPERLAYER"
+      },
+      {
+        "components": [
+          {
+            "code": 0,
+            "doc_string": "General error codes that can come from any content handler",
+            "name": "ADUC_CONTENT_HANDLER_COMMON",
+            "results": [
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_INVALID_ARG",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_UNKNOWN",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_NOT_FOUND",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_VALIDATE",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_LOAD",
+                "value": 5
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_NO_SYMBOL",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_CREATE",
+                "value": 7
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_PREPARE_FAILURE_WRONG_VERSION",
+                "value": 101
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_PARSE_BAD_FORMAT",
+                "value": 104
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_DOWNLOAD_FAILURE_BADFILECOUNT",
+                "value": 201
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_DOWNLOAD_FAILURE_UNKNOWNEXCEPTION",
+                "value": 202
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_NULL_WORKFLOW",
+                "value": 301
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_MISSING_PRIMARY_FILE",
+                "value": 302
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_MISSING_PRIMARY_COMPONENT",
+                "value": 303
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_UNKNOWNEXCEPTION",
+                "value": 304
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_BAD_UPDATETYPE",
+                "value": 501
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_COMPONENT_UNAVAILABLE",
+                "value": 502
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_NULL_WORKFLOW",
+                "value": 503
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_NULL_WORKFLOW_HANDLE",
+                "value": 504
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_NO_STEPS",
+                "value": 505
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_ACCESS_DATA",
+                "value": 506
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_GET_CONTRACT_INFO_CALL_FAILURE",
+                "value": 507
+              },
+              {
+                "name": "ADUC_ERC_UPDATE_CONTENT_HANDLER_UNSUPPORTED_CONTRACT_VERSION",
+                "value": 508
+              }
+            ]
+          },
+          {
+            "code": 1,
+            "doc_string": "Results that originate from the SwUpdate Content Handler",
+            "name": "ADUC_CONTENT_HANDLER_SWUPDATE",
+            "results": [
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_EMPTY_VERSION",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_PREPARE_FAILURE_UNKNOWN_UPDATE_VERSION",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_PREPARE_FAILURE_WRONG_UPDATE_VERSION",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_PREPARE_FAILURE_WRONG_FILECOUNT",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_PREPARE_FAILURE_BAD_FILE_ENTITY",
+                "value": 5
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_CREATE_SANDBOX_FAILURE",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_MISSING_SCRIPT_FILE_NAME",
+                "value": 7
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_MISSING_SWU_FILE_NAME",
+                "value": 8
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_TOO_MANY_COMPONENTS",
+                "value": 9
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_INVALID_COMPONENTS_DATA",
+                "value": 10
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_BAD_SWUPDATE_CONFIG_FILE",
+                "value": 32
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_UNKNOWN_UPDATE_VERSION",
+                "value": 257
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_WRONG_UPDATE_VERSION",
+                "value": 258
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_WRONG_FILECOUNT",
+                "value": 259
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_BAD_FILE_ENTITY",
+                "value": 260
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_ERROR_NULL_WORKFLOW",
+                "value": 261
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_GET_PRIMARY_FILE_ENTITY",
+                "value": 262
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_GET_SCRIPT_FILE_ENTITY",
+                "value": 263
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_GET_PAYLOAD_FILE_ENTITY",
+                "value": 264
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_PAYLOAD_FILE_FAILURE_UNKNOWNEXCEPTION",
+                "value": 510
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_PRIMARY_FILE_FAILURE_UNKNOWNEXCEPTION",
+                "value": 511
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_CANNOT_OPEN_WORKFOLDER",
+                "value": 513
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_IMAGE_FILE_NOT_FOUND",
+                "value": 514
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_ERROR_NULL_WORKFLOW",
+                "value": 515
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_BAD_FILE_ENTITY",
+                "value": 516
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE",
+                "value": 517
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_MISSING_INSTALLED_CRITERIA",
+                "value": 518
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_UNKNOWNEXCEPTION",
+                "value": 767
+              }
+            ]
+          },
+          {
+            "code": 2,
+            "doc_string": "Results that originate from the APT Content Handler",
+            "name": "ADUC_CONTENT_HANDLER_APT",
+            "results": [
+              {
+                "name": "ADUC_ERC_APT_HANDLER_ERROR_NONE",
+                "value": 0
+              },
+              {
+                "name": "ADUC_ERC_APT_HANDLER_INITIALIZATION_FAILURE",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_APT_HANDLER_INVALID_PACKAGE_DATA",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_APT_HANDLER_PACKAGE_PREPARE_FAILURE_WRONG_VERSION",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_APT_HANDLER_PACKAGE_PREPARE_FAILURE_WRONG_FILECOUNT",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_APT_HANDLER_GET_FILEENTITY_FAILURE",
+                "value": 5
+              },
+              {
+                "name": "ADUC_ERC_APT_HANDLER_INSTALLCRITERIA_PERSIST_FAILURE",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_APT_HANDLER_MISSING_INSTALLED_CRITERIA",
+                "value": 7
+              },
+              {
+                "name": "ADUC_ERC_APT_HANDLER_PACKAGE_DOWNLOAD_FAILURE",
+                "value": 256
+              },
+              {
+                "name": "ADUC_ERC_APT_HANDLER_PACKAGE_INSTALL_FAILURE",
+                "value": 512
+              },
+              {
+                "name": "ADUC_ERC_APT_HANDLER_PACKAGE_CANCEL_FAILURE",
+                "value": 768
+              }
+            ]
+          },
+          {
+            "code": 3,
+            "doc_string": "Results that originate from the simulator, only included here for completeness",
+            "name": "ADUC_CONTENT_HANDLER_SIMULATOR",
+            "results": []
+          },
+          {
+            "code": 4,
+            "doc_string": "Results that originate from the steps handler part of the content handlers",
+            "name": "ADUC_CONTENT_HANDLER_STEPS",
+            "results": [
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_GET_FILE_ENTITY_FAILURE",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_INVALID_CHILD_MANIFEST_FILENAME",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_CHILD_WORKFLOW_CREATE_FAILED",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_CHILD_WORKFLOW_INSERT_FAILED",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_GET_REF_STEP_COMPATIBILITY_FAILED",
+                "value": 5
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_SET_SELECTED_COMPONENTS_FAILED",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_GET_STEP_COMPATIBILITY_FAILED",
+                "value": 7
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_SET_SELECTED_COMPONENTS_FAILURE",
+                "value": 8
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_NESTED_REFERENCE_STEP_DETECTED",
+                "value": 9
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_INVALID_COMPONENTS_DATA",
+                "value": 10
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_CREATE_SANDBOX_FAILURE",
+                "value": 11
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_DOWNLOAD_FAILURE_UNKNOWNEXCEPTION",
+                "value": 256
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_DOWNLOAD_FAILURE_MISSING_CHILD_WORKFLOW",
+                "value": 257
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_DOWNLOAD_UNKNOWN_EXCEPTION_DOWNLOAD_CONTENT",
+                "value": 258
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_INSTALL_FAILURES_UNKNOWNEXCEPTION",
+                "value": 512
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_ISINSTALLED_FAILURE_MISSING_CHILD_WORKFLOW",
+                "value": 501
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_INSTALL_FAILURE_MISSING_CHILD_WORKFLOW",
+                "value": 513
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_INSTALL_CHILD_STEP",
+                "value": 514
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_APPLY_CHILD_STEP",
+                "value": 515
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_BACKUP_CHILD_STEP",
+                "value": 516
+              },
+              {
+                "name": "ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_RESTORE_CHILD_STEP",
+                "value": 517
+              }
+            ]
+          },
+          {
+            "code": 5,
+            "doc_string": "Results that originate from the script handler part of the content handlers",
+            "name": "ADUC_CONTENT_HANDLER_SCRIPT",
+            "results": [
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_ERROR_NONE",
+                "value": 0
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_SET_SELECTED_COMPONENTS_FAILURE",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_MISSING_INSTALLED_CRITERIA",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_TOO_MANY_COMPONENTS",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_MISSING_PRIMARY_SCRIPT_FILE",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_MISSING_SCRIPTFILENAME_PROPERTY",
+                "value": 5
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_CREATE_SANDBOX_FAILURE",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_INVALID_COMPONENTS_DATA",
+                "value": 7
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_ERROR_NULL_WORKFLOW",
+                "value": 257
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_FAILURE_INVALID_FILE_COUNT",
+                "value": 258
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_FAILURE_GET_PRIMARY_FILE_ENTITY",
+                "value": 259
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_FAILURE_GET_PAYLOAD_FILE_ENTITY",
+                "value": 260
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_PAYLOAD_FILE_FAILURE_UNKNOWNEXCEPTION",
+                "value": 510
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_PRIMARY_FILE_FAILURE_UNKNOWNEXCEPTION",
+                "value": 511
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_INSTALL_ERROR_NULL_WORKFLOW",
+                "value": 513
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_INSTALL_INSTALLITEM_BAD_DATA",
+                "value": 514
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_INSTALL_INSTALLITEM_NO_UPDATE_TYPE",
+                "value": 515
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_MISSING_PRIMARY_SCRIPT_FILE",
+                "value": 516
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE",
+                "value": 517
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_SCRIPT_RESULT_EXTENDEDRESULTCODE_ZERO",
+                "value": 518
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_UNKNOWNEXCEPTION",
+                "value": 767
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_APPLY_FAILURE_UNKNOWNEXCEPTION",
+                "value": 1023
+              }
+            ]
+          },
+          {
+            "code": 32,
+            "doc_string": "indicates errors from Custom Update handlers, only included here for completeness",
+            "name": "ADUC_CONTENT_HANDLER_EXTERNAL",
+            "results": []
+          }
+        ],
+        "code": 3,
+        "doc_string": "indicates errors from an update content handler",
+        "name": "ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER"
+      },
+      {
+        "components": [
+          {
+            "code": 0,
+            "doc_string": "indicates common errors from the downloader extension",
+            "name": "ADUC_CONTENT_DOWNLOADER_COMMON",
+            "results": [
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_CREATE_FAILURE_NO_SYMBOL",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOADPROC_NOTIMP",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZE_EXCEPTION",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION",
+                "value": 5
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_ENTITY",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_INVALID_DOWNLOAD_URI",
+                "value": 7
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_FILE_HASH_TYPE_NOT_SUPPORTED",
+                "value": 8
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_BAD_CHILD_MANIFEST_FILE_PATH",
+                "value": 9
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_CANNOT_DELETE_EXISTING_FILE",
+                "value": 10
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_ENTITY_NO_HASHES",
+                "value": 11
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_HASH",
+                "value": 12
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_UNSUPPORTED_CONTRACT_VERSION",
+                "value": 13
+              }
+            ]
+          },
+          {
+            "code": 1,
+            "doc_string": "indicates errors from Delivery Optimization agent. ",
+            "name": "ADUC_CONTENT_DOWNLOADER_DELIVERY_OPTIMIZATION",
+            "results": [
+              {
+                "name": "ADUC_ERROR_DELIVERY_OPTIMIZATION_DOWNLOADER_NOT_INITIALIZE",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERROR_DELIVERY_OPTIMIZATION_DOWNLOADER_BAD_INIT_DATA",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "code": 2,
+            "doc_string": "indicates errors from Simple Http Downloader.  ",
+            "name": "ADUC_CONTENT_DOWNLOADER_SIMPLE_HTTP_DOWNLOADER",
+            "results": []
+          },
+          {
+            "code": 3,
+            "doc_string": "indicates errors from Curl Downloader.",
+            "name": "ADUC_CONTENT_DOWNLOADER_CURL_DOWNLOADER",
+            "results": [
+              {
+                "name": "ADUC_ERROR_CURL_DOWNLOADER_INVALID_FILE_HASH",
+                "value": 1
+              }
+            ]
+          }
+        ],
+        "code": 4,
+        "doc_string": "indicates errors from CONTENT_DOWNLOADER Extension",
+        "name": "ADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER"
+      },
+      {
+        "components": [],
+        "code": 5,
+        "doc_string": "indicates errors from COMMUNICATION PROVIDER Extension.",
+        "name": "ADUC_FACILITY_EXTENSION_COMMUNICATION_PROVIDER"
+      },
+      {
+        "components": [],
+        "code": 6,
+        "doc_string": "indicates errors from LOG PROVIDER Extension.",
+        "name": "ADUC_FACILITY_EXTENSION_LOG_PROVIDER"
+      },
+      {
+        "components": [
+          {
+            "code": 0,
+            "doc_string": "General errors from the Extension Component Enumerator",
+            "name": "ADUC_COMPONENT_EXTENSION_ENUMERATOR_COMMON",
+            "results": [
+              {
+                "name": "ADUC_ERC_COMPONENT_ENUMERATOR_GETALLCOMPONENTS_NOTIMP",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_COMPONENT_ENUMERATOR_SELECTCOMPONENTS_NOTIMP",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_COMPONENT_ENUMERATOR_FREECOMPONENTSDATASTRING_NOTIMP",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_GETALLCOMPONENTS",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_SELECTCOMPONENTS",
+                "value": 5
+              },
+              {
+                "name": "ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_FREECOMPONENTSDATASTRING",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_COMPONENT_ENUMERATOR_UNSUPPORTED_CONTRACT_VERSION",
+                "value": 7
+              }
+            ]
+          }
+        ],
+        "code": 7,
+        "doc_string": "indicates errors from COMPONENT ENUMERATOR Extension. ",
+        "name": "ADUC_FACILITY_EXTENSION_COMPONENT_ENUMERATOR"
+      },
+      {
+        "components": [
+          {
+            "code": 3,
+            "doc_string": "indicates errors from parsers.",
+            "name": "ADUC_COMPONENT_UPDATE_DATA_PARSER",
+            "results": [
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_INVALID_ACTION_JSON",
+                "value": 0
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MANIFEST_VALIDATION_FAILED",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_NO_UPDATE_ACTION",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_NO_UPDATE_ID",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_NO_UPDATE_TYPE",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_UPDATE_TYPE",
+                "value": 5
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_NO_INSTALLEDCRITERIA",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_FILES_OR_FILEURLS",
+                "value": 7
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_NO_UPDATE_MANIFEST",
+                "value": 8
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_UPDATE_MANIFEST",
+                "value": 9
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION",
+                "value": 10
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MISSING_DETACHED_UPDATE_MANIFEST_ENTITY",
+                "value": 11
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_DETACHED_UPDATE_MANIFEST",
+                "value": 12
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_DETACHED_UPDATE_MANIFEST_DOWNLOAD_FAILED",
+                "value": 13
+              }
+            ]
+          },
+          {
+            "code": 4,
+            "doc_string": "indicates errors from Workflow Utilities or Function.",
+            "name": "ADUC_COMPONENT_WORKFLOW_UTIL",
+            "results": [
+              {
+                "name": "ADUC_ERC_UTILITIES_WORKFLOW_UTIL_ERROR_BAD_PARAM",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_WORKFLOW_UTIL_ERROR_NO_MEM",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_WORKFLOW_UTIL_INVALID_ACTION_JSON_STRING",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_WORKFLOW_UTIL_INVALID_ACTION_JSON_FILE",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_WORKFLOW_UTIL_INVALID_UPDATE_ID",
+                "value": 5
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACTION_FROM_BASE_FAILURE",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_MANIFEST_FROM_BASE_FAILURE",
+                "value": 7
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_WORKFLOW_UTIL_PARSE_INSTRUCTION_ENTRY_FAILURE",
+                "value": 8
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_WORKFLOW_UTIL_PARSE_INSTRUCTION_ENTRY_NO_UPDATE_TYPE",
+                "value": 9
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACTION_SET_UPDATE_TYPE_FAILURE",
+                "value": 10
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_WORKFLOW_UTIL_INVALID_STEP_INDEX",
+                "value": 11
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_WORKFLOW_UTIL_PARSE_STEP_ENTRY_NO_HANDLER_TYPE",
+                "value": 12
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_WORKFLOW_UTIL_COPY_UPDATE_ACTION_COPY_HANDLER_PROPERTIES_FAILED",
+                "value": 13
+              }
+            ]
+          }
+        ],
+        "code": 8,
+        "doc_string": "indicates errors from utility functions.",
+        "name": "ADUC_FACILITY_UTILITY"
+      },
+      {
+        "components": [
+          {
+            "code": 0,
+            "doc_string": "0x00 - 0x07 are reserved for download handler. Indicates errors from extension manager download handler logic.",
+            "name": "ADUC_COMPONENT_DOWNLOAD_HANDLER_EXTENSION_MANAGER",
+            "results": [
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_CREATE_FAILURE_CREATE",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_UNSUPPORTED_CONTRACT_VERSION",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "code": 1,
+            "doc_string": "Indicates errors with usage of download handler plugin shared libraries.",
+            "name": "ADUC_COMPONENT_DOWNLOAD_HANDLER_PLUGIN",
+            "results": [
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_ON_UPDATE_WORKFLOW_COMPLETED_FAILURE",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_MISSING_EXPORT_SYMBOL",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_EXCEPTION",
+                "value": 3
+              }
+            ]
+          },
+          {
+            "code": 8,
+            "doc_string": "0x08 - 0x0F are reserved for Delta download handler. Indicates errors in Delta Download Handler extension top-level logic.",
+            "name": "ADUC_COMPONENT_DELTA_DOWNLOAD_HANDLER_COMMON",
+            "results": [
+              {
+                "name": "ADUC_ERC_DDH_BAD_ARGS",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_DDH_RELATEDFILE_NO_PROPERTIES",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_DDH_RELATEDFILE_BAD_OR_MISSING_HASH_PROPERTIES",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_DDH_MAKE_DELTA_UPDATE_PATH",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_DDH_PROCESSOR_LOAD_LIB",
+                "value": 5
+              },
+              {
+                "name": "ADUC_ERC_DDH_PROCESSOR_ENSURE_SYMBOLS",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_DDH_PROCESSOR_CREATE_SESSION",
+                "value": 7
+              },
+              {
+                "name": "ADUC_ERC_DDH_SOURCE_UPDATE_CACHE_MISS",
+                "value": 8
+              }
+            ]
+          },
+          {
+            "code": 9,
+            "doc_string": "Indicates errors in Delta Download handler extension Source Update Cache.",
+            "name": "ADUC_COMPONENT_DELTA_DOWNLOAD_HANDLER_SOURCE_UPDATE_CACHE",
+            "results": [
+              {
+                "name": "ADUC_ERC_MOVE_PREPURGE",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_MOVE_PAYLOAD",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_MOVE_POSTPURGE",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_MOVE_CREATE_CACHE_PATH",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_MOVE_COPYFALLBACK",
+                "value": 5
+              },
+              {
+                "name": "ADUC_ERC_LOOKUP_CREATE_PATH",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_MISSING_SOURCE_SANDBOX_FILE",
+                "value": 7
+              }
+            ]
+          },
+          {
+            "code": 10,
+            "doc_string": "error code for errors from delta processor API",
+            "name": "ADUC_COMPONENT_DELTA_DOWNLOAD_HANDLER_DELTA_PROCESSOR",
+            "results": []
+          }
+        ],
+        "code": 9,
+        "doc_string": "Indicates errors from download handler infrastructure or download handler extensions.",
+        "name": "ADUC_FACILITY_DOWNLOAD_HANDLER"
+      },
+      {
+        "components": [],
+        "code": 10,
+        "doc_string": "unused",
+        "name": "ADUC_FACILITY_UNUSED_A"
+      },
+      {
+        "components": [],
+        "code": 11,
+        "doc_string": "unused",
+        "name": "ADUC_FACILITY_UNUSED_B"
+      },
+      {
+        "components": [],
+        "code": 12,
+        "doc_string": "unused",
+        "name": "ADUC_FACILITY_UNUSED_C"
+      },
+      {
+        "components": [],
+        "code": 13,
+        "doc_string": "indicates errors from Delivery Optimization. DO returns HRESULT-like code. The HResult is transformed into our custom format.",
+        "name": "ADUC_FACILITY_DELIVERY_OPTIMIZATION"
+      },
+      {
+        "components": [],
+        "code": 14,
+        "doc_string": "unused",
+        "name": "ADUC_FACILITY_UNUSED_E"
+      },
+      {
+        "components": [],
+        "code": 15,
+        "doc_string": "unused",
+        "name": "ADUC_FACILITY_UNUSED_F"
+      }
+    ]
+  }
