@@ -30,9 +30,10 @@ if ! "$GITROOT/scripts/sh-format.sh" -v; then
     $ret 1
 fi
 
-if ! "$GITROOT/scripts/clang-format.sh"; then
-    $ret 1
-fi
+# Disable for now due to arg compat across clangformat versions
+# if ! "$GITROOT/scripts/clang-format.sh"; then
+#     $ret 1
+# fi
 
 # Unfortunately, cmake-format cannot take in piped file contents, so
 # not using it for pre-commit hook currently.
