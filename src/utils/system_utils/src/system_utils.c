@@ -746,7 +746,6 @@ done:
  * @param baseDir The base dir to list directories in.
  * @param excludedDir A dir to exclude via exact match in addition to . and .. dirs. NULL means to exclude only . and .. dirs.
  * @param perDirActionFunctor The functor to apply for each dir in the baseDir.
- * @param err the error code (optional, can be NULL)
  * @returns 0 if succeeded in calling the action func for every dir in baseDir (except . and .. dirs).
  */
 int SystemUtils_ForEachDir(
@@ -786,7 +785,7 @@ int SystemUtils_ForEachDir(
 
             perDirActionFunctor->callbackFn(perDirActionFunctor->context, baseDir, &(dir_entry->d_name)[0]);
         }
-        else
+        else // dir_entry == NULL
         {
             if (errno != 0)
             {
@@ -794,11 +793,7 @@ int SystemUtils_ForEachDir(
                 err_ret = errno;
                 goto done;
             }
-            else
-            {
-                // end of stream
-                // fall-through to exit loop and set success to true
-            }
+            // otherwise, it's the end of the stream.
         }
     } while (dir_entry != NULL);
 
