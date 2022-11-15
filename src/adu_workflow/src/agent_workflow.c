@@ -1276,7 +1276,7 @@ ADUC_Result ADUC_Workflow_MethodCall_Download(ADUC_MethodCall_Data* methodCallDa
         goto done;
     }
 
-    Log_Info("Using sandbox %s", workFolder);
+    Log_Info("Using sandbox %s", workFolder != NULL ? workFolder : "(null)");
 
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_DownloadStarted);
 
