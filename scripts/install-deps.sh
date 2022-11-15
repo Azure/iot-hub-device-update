@@ -34,7 +34,8 @@ install_packages=false
 install_packages_only=false
 # The folder where source code will be placed
 # for building and installing from source.
-work_folder=/tmp
+DEFAULT_WORKFOLDER=/tmp
+work_folder=$DEFAULT_WORKFOLDER
 keep_source_code=false
 use_ssh=false
 
@@ -62,7 +63,7 @@ install_cmake_version="$supported_cmake_version"
 cmake_force_source=false
 cmake_prefix="$work_folder"
 cmake_installer_dir=""
-cmake_dir_symlink="${work_folder}/deviceupdate-cmake"
+cmake_dir_symlink="/tmp/deviceupdate-cmake"
 
 install_shellcheck=false
 supported_shellcheck_version='0.8.0'
@@ -617,15 +618,16 @@ do_install_cmake_from_installer() {
     fi
 
     local fullpath_cmake_installer_sh="${work_folder}/${cmake_installer_sh}"
-    $SUDO chmod u+x "${fullpath_cmake_installer_sh}"
-    $SUDO "${fullpath_cmake_installer_sh}" --include-subdir --skip-license --prefix=${cmake_prefix}
+    $SUDO chown "$(id -un)":"$(id -gn)" "${fullpath_cmake_installer_sh}"
+    chmod u+x "${fullpath_cmake_installer_sh}"
+    "${fullpath_cmake_installer_sh}" --include-subdir --skip-license --prefix=${cmake_prefix}
     ret_value=$?
     if [ $ret_value -ne 0 ]; then
         error "${fullpath_cmake_installer_sh} failed with exit code ${ret_value}"
         return $ret_value
     fi
 
-    $SUDO ln -sf "$cmake_installer_dir" "$cmake_dir_symlink"
+    ln -sf "$cmake_installer_dir" "$cmake_dir_symlink"
 }
 
 do_install_shellcheck() {
@@ -666,13 +668,13 @@ do_install_shellcheck() {
             return $ret_val
         fi
 
-        ln -sf "${HOME}/.cabal/bin/shellcheck" "${work_folder}/deviceupdate-shellcheck" || return 1
+        ln -sf "${HOME}/.cabal/bin/shellcheck" "/tmp/deviceupdate-shellcheck" || return 1
     else
         echo "Installing shellcheck ${scver} from pre-built binaries..."
         local tar_filename="shellcheck-v${scver}.linux.x86_64.tar.xz"
         wget -P "$work_folder" "${base_url}/releases/download/v${scver}/${tar_filename}" || return 1
         tar -xvf "$work_folder/$tar_filename" -C "$work_folder" || return 1
-        ln -sf "${work_folder}/shellcheck-v0.8.0/shellcheck" "${work_folder}/deviceupdate-shellcheck" || return 1
+        ln -sf "${work_folder}/shellcheck-v0.8.0/shellcheck" "/tmp/deviceupdate-shellcheck" || return 1
     fi
 }
 
@@ -851,6 +853,13 @@ while [[ $1 != "" ]]; do
     esac
     shift
 done
+
+# setup workfolder if different from default
+if [[ $work_folder != "$DEFAULT_WORKFOLDER" ]]; then
+    mkdir -pv "$work_folder" || $ret
+    $SUDO chown "$(id -un)":"$(id -gn)" "$work_folder" || $ret
+    chmod ug+rwx,o= "$work_folder" || $ret
+fi
 
 # Get OS, VER, machine architecture for use in other parts of the script.
 determine_distro_and_arch
