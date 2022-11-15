@@ -170,7 +170,7 @@ static void Cleanup_Previous_Sandboxes(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    Log_Debug("Cleaning foreach under %s except %s", workFolder, current_workflowId);
+    Log_Debug("Cleaning dirs under %s except %s", workFolder, current_workflowId);
     err = SystemUtils_ForEachDir(
         workFolder /* baseDir */, current_workflowId /* excludedDir */, &functor /* perDirActionFunctor */);
     if (err != 0)
