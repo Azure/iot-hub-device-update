@@ -12,6 +12,7 @@
 #include "aduc/rootkeypackage_types.h"
 #include <aduc/result.h>
 
-ADUC_Result RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyPackage* outRootKeyPackage);
+ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyPackage* outRootKeyPackage);
+void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage);
 
 #endif // ROOTKEYPACKAGE_UTILS_H

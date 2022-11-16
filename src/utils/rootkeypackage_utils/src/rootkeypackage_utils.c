@@ -16,10 +16,19 @@
  * @param outRootKeyPackage parameter for the resultant ADUC_RootKeyPackage.
  *
  * @return ADUC_Result The result of parsing.
- * @details Caller must call ADUC_RootKeyPackage_Cleanup() on the resultant ADUC_RootKeyPackage.
+ * @details Caller must call ADUC_RootKeyPackageUtils_Cleanup() on the resultant ADUC_RootKeyPackage.
  */
-ADUC_Result RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyPackage* outRootKeyPackage)
+ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyPackage* outRootKeyPackage)
 {
     ADUC_Result result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
     return result;
+}
+
+/**
+ * @brief Cleans up an ADUC_RootKeyPackage object.
+ *
+ * @param rootKeyPackage The root key package object to cleanup.
+ */
+void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+{
 }
