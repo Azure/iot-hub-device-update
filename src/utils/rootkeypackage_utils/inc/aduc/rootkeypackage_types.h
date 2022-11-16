@@ -12,6 +12,15 @@
 #include <azure_c_shared_utility/constbuffer.h>
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
+#include <sys/time.h> // for struct timespec
+
+/**
+ * @brief The root key keytype.
+ */
+typedef enum tagADUC_RootKey_KeyType
+{
+    RSA,
+} ADUC_RootKey_KeyType;
 
 /**
  * @brief The root key SHA algorithms.
@@ -50,11 +59,11 @@ typedef struct tagADUC_RootKey
  */
 typedef struct tagADUC_RootKeyPackage_ProtectedProperties
 {
+    unsigned long version; /**< The monotonic increasing version of the package. */
+    struct timespec publishedTime; /**< The struct timespec published unix time of the root key. */
     VECTOR_HANDLE disabledRootKeys; /**< handle to vector of STRING_HANDLE KIDS(KeyIds) of disabled root keys. */
     VECTOR_HANDLE disabledSigningKeys;/**< handle to vector of ADUC_RootKeyPackage_Hash hashes of public key of disabled signing keys. */
     VECTOR_HANDLE rootKeys; /**< handle to vector of ADUC_RootKey root keys. */
-    unsigned long version; /**< The monotonic increasing version of the package. */
-    struct timespec publishedTime; /**< The struct timespec published unix time of the root key. */
 } ADUC_RootKeyPackage_ProtectedProperties;
 
 /**
@@ -62,9 +71,9 @@ typedef struct tagADUC_RootKeyPackage_ProtectedProperties
  */
 typedef struct tagADUC_RootKeyPackage
 {
+    ADUC_RootKeyPackage_ProtectedProperties protectedProperties; /**< The parsed protected properties. */
     STRING_HANDLE protectedPropertiesJsonString; /**< The serialized json string for which to verify the signatures. */
     VECTOR_HANDLE signatures; /**< handle to vector of ADUC_RootKeyPackage_Hash signatures used to verify the propertedProperties using the provenance public root keys. */
-    ADUC_RootKeyPackage_ProtectedProperties protectedProperties; /**< The parsed protected properties. */
 } ADUC_RootKeyPackage;
 
 #endif //ROOTKEYPACKAGE_TYPES_H
