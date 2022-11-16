@@ -23,17 +23,6 @@ typedef enum tagADUC_RootKeyShaAlgorithm
     SHA512,
 } ADUC_RootKeyShaAlgorithm;
 
-/**
- * @brief The root key SHA elliptic curve algorithms.
- */
-typedef enum tagADUC_EllipticCurve
-{
-    P_256,
-    P_256K,
-    P_384,
-    P_512,
-} ADUC_EllipticCurve;
-
 typedef struct tagADUC_RootKeyPackage_Hash
 {
     ADUC_RootKeyShaAlgorithm alg;
@@ -47,27 +36,13 @@ typedef struct tagADUC_RSA_RootKeyParameters
 } ADUC_RSA_RootKeyParameters;
 
 /**
- * @brief Elliptic Curve rootkey parameters.
- */
-typedef struct tagADUC_EC_RootKeyParameters
-{
-    ADUC_EllipticCurve crv;
-    CONSTBUFFER_HANDLE x;
-    CONSTBUFFER_HANDLE y;
-} ADUC_EC_RootKeyParameters;
-
-/**
  * @brief The root key.
  */
 typedef struct tagADUC_RootKey
 {
     STRING_HANDLE kid; /**< The key id. */
     ADUC_RootKey_KeyType keyType; /**< The key type. */
-    union
-    {
-        ADUC_RSA_RootKeyParameters rsaParameters; /**< The RSA key parameters */
-        ADUC_EC_RootKeyParameters ecParameters; /**< The EC key parameters */
-    }
+    ADUC_RSA_RootKeyParameters rsaParameters; /**< The RSA key parameters */
 } ADUC_RootKey;
 
 /**
@@ -75,8 +50,8 @@ typedef struct tagADUC_RootKey
  */
 typedef struct tagADUC_RootKeyPackage_ProtectedProperties
 {
-    VECTOR_HANDLE untrustedRootKeys; /**< handle to vector of STRING_HANDLE KIDS(KeyIds) of untrusted root keys. */
-    VECTOR_HANDLE untrustedSigningKeys;/**< handle to vector of ADUC_RootKeyPackage_Hash hashes of public key of untrusted signing keys. */
+    VECTOR_HANDLE disabledRootKeys; /**< handle to vector of STRING_HANDLE KIDS(KeyIds) of disabled root keys. */
+    VECTOR_HANDLE disabledSigningKeys;/**< handle to vector of ADUC_RootKeyPackage_Hash hashes of public key of disabled signing keys. */
     VECTOR_HANDLE rootKeys; /**< handle to vector of ADUC_RootKey root keys. */
     unsigned long version; /**< The monotonic increasing version of the package. */
     struct timespec publishedTime; /**< The struct timespec published unix time of the root key. */
