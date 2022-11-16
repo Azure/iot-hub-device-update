@@ -1,0 +1,131 @@
+{
+    "$id": "https://json.schemastore.org/azure-deviceupdate-rootkeypackage-1.0.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "protected": {
+            "type": "object",
+            "properties": {
+                "version": {
+                    "type": "number"
+                },
+                "published": {
+                    "type": "number"
+                },
+                "untrustedRootKeys": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "untrustedSigningKeys": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/signingKeyHashDef"
+                    }
+                },
+                "rootKeys": {
+                    "type": "object",
+                    "patternProperties": {
+                        ".*": {
+                            "$ref": "#/definitions/rootKeyDef"
+                        }
+                    }
+                }
+            }
+        },
+        "signatures": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "alg": {
+                        "enum": [
+                            "SHA256", "SHA384", "SHA512"
+                        ]
+                    },
+                    "sig": {
+                        "type": "string"
+                    }
+                },
+                "uniqueItems": true
+            }
+        }
+    },
+    "required": [
+        "protected",
+        "signatures"
+    ],
+    "definitions": {
+        "signingKeyHashDef": {
+            "type": "object",
+            "properties": {
+                "alg": { "type": "string" },
+                "hash": { "type": "string" }
+            }
+        },
+        "rootKeyDef": {
+            "type": "object",
+            "properties": {
+                "keytype": {
+                    "enum": [
+                      "RSA",
+                      "EC"
+                    ]
+                }
+            },
+            "required": [ "keytype"],
+            "unevaluatedProperties": true,
+            "if": {
+                "type": "object",
+                "properties": {
+                    "keytype": {
+                        "const": "RSA"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "n": {
+                        "type": "string"
+                    },
+                    "e": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "n",
+                    "e"
+                ]
+            },
+            "else": {
+                "if": {
+                    "type": "object",
+                    "properties": {
+                        "keytype": {
+                            "const": "EC"
+                        }
+                    }
+                },
+                "then": {
+                    "properties": {
+                        "crv": {
+                            "enum": [ "P-256", "P-256K", "P-384", "P-512" ]
+                        },
+                        "x": {
+                            "type": "string"
+                        },
+                        "y": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "crv",
+                        "x",
+                        "y"
+                    ]
+                }
+            }
+        }
+    }
+}
