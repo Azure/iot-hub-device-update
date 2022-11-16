@@ -97,34 +97,6 @@
                     "n",
                     "e"
                 ]
-            },
-            "else": {
-                "if": {
-                    "type": "object",
-                    "properties": {
-                        "keytype": {
-                            "const": "EC"
-                        }
-                    }
-                },
-                "then": {
-                    "properties": {
-                        "crv": {
-                            "enum": [ "P-256", "P-256K", "P-384", "P-512" ]
-                        },
-                        "x": {
-                            "type": "string"
-                        },
-                        "y": {
-                            "type": "string"
-                        }
-                    },
-                    "required": [
-                        "crv",
-                        "x",
-                        "y"
-                    ]
-                }
             }
         }
     }
