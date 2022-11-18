@@ -7,7 +7,12 @@
  */
 
 #include "aduc/rootkeypackage_utils.h"
-#include <aduc/types/adu_core.h> // for ADUC_Result_Failure
+#include <aduc/c_utils.h> // for EXTERN_C_BEGIN, EXTERN_C_END
+#include <parson.h>
+
+EXTERN_C_BEGIN
+
+//static ParseProtectedProperties()
 
 /**
  * @brief Parses JSON string into an ADUC_RootKeyPackage struct.
@@ -20,7 +25,19 @@
  */
 ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyPackage* outRootKeyPackage)
 {
-    ADUC_Result result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
+    JSON_Value* rootValue = NULL;
+
+    rootValue = json_parse_string(jsonString);
+    if (rootValue == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_JSON;
+        goto done;
+    }
+
+done:
+
     return result;
 }
 
@@ -32,3 +49,5 @@ ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyP
 void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
 {
 }
+
+EXTERN_C_END

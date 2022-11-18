@@ -858,6 +858,17 @@
                 "value": 13
               }
             ]
+          },
+          {
+            "code": 5,
+            "doc_string": "indicates errors from RootKeyPackage Utilities or Function.",
+            "name": "ADUC_COMPONENT_ROOTKEYPKG_UTIL",
+            "results": [
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_JSON",
+                "value": 1
+              }
+            ]
           }
         ],
         "code": 8,

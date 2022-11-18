@@ -32,12 +32,18 @@ typedef enum tagADUC_RootKeyShaAlgorithm
     SHA512, /**< The SHA512 algorithm. */
 } ADUC_RootKeyShaAlgorithm;
 
+/**
+ * @brief The Root key package hash.
+ */
 typedef struct tagADUC_RootKeyPackage_Hash
 {
     ADUC_RootKeyShaAlgorithm alg; /**< The hash algorithm. */
     CONSTBUFFER_HANDLE hash; /**< The hash const buffer handle. */
 } ADUC_RootKeyPackage_Hash;
 
+/**
+ * @brief The RSA root key parameters.
+ */
 typedef struct tagADUC_RSA_RootKeyParameters
 {
     CONSTBUFFER_HANDLE n; /**< The RSA modulus parameter. */
@@ -62,7 +68,8 @@ typedef struct tagADUC_RootKeyPackage_ProtectedProperties
     unsigned long version; /**< The monotonic increasing version of the package. */
     struct timespec publishedTime; /**< The struct timespec published unix time of the root key. */
     VECTOR_HANDLE disabledRootKeys; /**< handle to vector of STRING_HANDLE KIDS(KeyIds) of disabled root keys. */
-    VECTOR_HANDLE disabledSigningKeys;/**< handle to vector of ADUC_RootKeyPackage_Hash hashes of public key of disabled signing keys. */
+    VECTOR_HANDLE
+        disabledSigningKeys; /**< handle to vector of ADUC_RootKeyPackage_Hash hashes of public key of disabled signing keys. */
     VECTOR_HANDLE rootKeys; /**< handle to vector of ADUC_RootKey root keys. */
 } ADUC_RootKeyPackage_ProtectedProperties;
 
@@ -73,7 +80,8 @@ typedef struct tagADUC_RootKeyPackage
 {
     ADUC_RootKeyPackage_ProtectedProperties protectedProperties; /**< The parsed protected properties. */
     STRING_HANDLE protectedPropertiesJsonString; /**< The serialized json string for which to verify the signatures. */
-    VECTOR_HANDLE signatures; /**< handle to vector of ADUC_RootKeyPackage_Hash signatures used to verify the propertedProperties using the provenance public root keys. */
+    VECTOR_HANDLE
+        signatures; /**< handle to vector of ADUC_RootKeyPackage_Hash signatures used to verify the propertedProperties using the provenance public root keys. */
 } ADUC_RootKeyPackage;
 
 #endif //ROOTKEYPACKAGE_TYPES_H
