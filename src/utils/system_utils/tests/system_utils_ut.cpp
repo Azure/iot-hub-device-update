@@ -11,6 +11,7 @@ using Catch::Matchers::Equals;
 #include "aduc/system_utils.h"
 
 #include <aduc/auto_opendir.hpp>
+#include <algorithm> // std::find*
 #include <dirent.h>
 #include <sstream>
 #include <sys/stat.h>
@@ -472,8 +473,9 @@ TEST_CASE_METHOD(TestCaseFixture, "SystemUtils_ForEachDir")
             std::vector<std::string> paths;
             REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
             REQUIRE(paths.size() == 2);
-            CHECK_THAT(paths[0], Equals(first_subdir));
-            CHECK_THAT(paths[1], Equals(second_subdir));
+
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), first_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), second_subdir));
         }
 
         int err = SystemUtils_ForEachDir(
@@ -487,8 +489,8 @@ TEST_CASE_METHOD(TestCaseFixture, "SystemUtils_ForEachDir")
             std::vector<std::string> paths;
             REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
             REQUIRE(paths.size() == 2);
-            CHECK_THAT(paths[0], Equals(first_subdir));
-            CHECK_THAT(paths[1], Equals(second_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), first_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), second_subdir));
         }
     }
 
@@ -533,9 +535,9 @@ TEST_CASE_METHOD(TestCaseFixture, "SystemUtils_ForEachDir")
             std::vector<std::string> paths;
             REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
             REQUIRE(paths.size() == 3);
-            CHECK_THAT(paths[0], Equals(first_subdir));
-            CHECK_THAT(paths[1], Equals(second_subdir));
-            CHECK_THAT(paths[2], Equals(third_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), first_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), second_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), third_subdir));
         }
 
         int err = SystemUtils_ForEachDir(
@@ -549,9 +551,9 @@ TEST_CASE_METHOD(TestCaseFixture, "SystemUtils_ForEachDir")
             std::vector<std::string> paths;
             REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
             REQUIRE(paths.size() == 3);
-            CHECK_THAT(paths[0], Equals(first_subdir));
-            CHECK_THAT(paths[1], Equals(second_subdir));
-            CHECK_THAT(paths[2], Equals(third_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), first_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), second_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), third_subdir));
         }
     }
 
@@ -596,9 +598,9 @@ TEST_CASE_METHOD(TestCaseFixture, "SystemUtils_ForEachDir")
             std::vector<std::string> paths;
             REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
             REQUIRE(paths.size() == 3);
-            CHECK_THAT(paths[0], Equals(first_subdir));
-            CHECK_THAT(paths[1], Equals(second_subdir));
-            CHECK_THAT(paths[2], Equals(third_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), first_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), second_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), third_subdir));
         }
 
         int err = SystemUtils_ForEachDir(
@@ -612,9 +614,9 @@ TEST_CASE_METHOD(TestCaseFixture, "SystemUtils_ForEachDir")
             std::vector<std::string> paths;
             REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
             REQUIRE(paths.size() == 3);
-            CHECK_THAT(paths[0], Equals(first_subdir));
-            CHECK_THAT(paths[1], Equals(second_subdir));
-            CHECK_THAT(paths[2], Equals(third_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), first_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), second_subdir));
+            CHECK(std::end(paths) != std::find(begin(paths), end(paths), third_subdir));
         }
     }
 }
