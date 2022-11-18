@@ -58,11 +58,6 @@ component_vendor=
 component_model=
 component_version=
 
-#
-# Install poicy
-#
-#install_error_policy="abort"
-#install_reboot_policy="none"
 
 # component_props will contain a map of property.
 declare -A component_props
@@ -536,34 +531,18 @@ done
 #
 
 #
-# Example implementation of 'IsInstalled' function, for contoso-motor component.
+# Determines whether the specified 'installedCriteria' (parameter $1) is met.
 #
-# Design Goal:
-#   Determine whether the specified 'installedCriteria' (parameter $1) is met.
-#
-#   'installedCriteria' is a version number of a motor in a mock component's data file
-#   located at "$component_props['path']/firmware.json".
-#
-#   The version number is in the following format:
-#
-#       {
-#          ...
-#          "version":"1.0"
-#          ...
-#       }
-#
-#
-#   For demo purposes, to determine whether the motor has a desired version installed, we'll simply check
-#   an output from command grep -F "\"version\":\"$installed_criteria\"" <component file>
-#   If matched, grep command will return '0' exit code. Otherwise, '1'.
+# Requried argument:
+#   'installedCriteria' is a data that used for evaluating whether this script should be exectued.
 #
 # Expected resultCode:
-#     ADUC_Result_Failure = 0,
-#     ADUC_Result_IsInstalled_Installed = 900,     /**< Succeeded and content is installed. */
-#     ADUC_Result_IsInstalled_NotInstalled = 901,  /**< Succeeded and content is not installed */
+#    ADUC_Result_Failure = 0,
+#    ADUC_Result_IsInstalled_Installed = 900,     /**< Succeeded and content is installed. */
+#    ADUC_Result_IsInstalled_NotInstalled = 901,  /**< Succeeded and content is not installed */
 #
 IsInstalled() {
-    resultCode=0
+    resultCode=901
     extendedResultCode=0
     resultDetails=""
     ret_val=0
@@ -593,10 +572,23 @@ IsInstalled() {
 }
 
 #
-# Perfomr download-related tasks
+# Downloads additional files.
+#
+#
+# Expected resultCode:
+#    ADUC_Result_Failure = 0,
+#    ADUC_Result_Download_Success = 500,                  /**< Succeeded. */
+#    ADUC_Result_Download_InProgress = 501,               /**< Async operation started. CompletionCallback will be called when complete. */
+#    ADUC_Result_Download_Skipped_FileExists = 502,       /**< Download skipped. File already exists and hash validation passed. */
+#
+#    ADUC_Result_Download_Skipped_UpdateAlreadyInstalled = 503, /**< Download succeeded. Also indicates that the Installed Criteria is met. */
+#    ADUC_Result_Download_Skipped_NoMatchingComponents = 504, /**< Download succeeded. Also indicates that no matchings components for this update. */
+#
+#    ADUC_Result_Download_Handler_SuccessSkipDownload = 520,  /**< Succeeded. DownloadHandler was able to produce the update. Agent must skip downloading. */
+#    ADUC_Result_Download_Handler_RequiredFullDownload = 521, /**< Not a failure. Agent fallback to downloading the update is required. */
 #
 DownloadUpdateArtifacts() {
-    resultCode=0
+    resultCode=500
     extendedResultCode=0
     resultDetails=""
     ret_val=0
@@ -627,8 +619,17 @@ DownloadUpdateArtifacts() {
 #
 # Perform install-related tasks.
 #
+# Expected resultCode:
+#    ADUC_Result_Failure = 0,
+#    ADUC_Result_Install_Success = 600,                        /**< Succeeded. */
+#    ADUC_Result_Install_Skipped_UpdateAlreadyInstalled = 603, /**< Succeeded (skipped). Indicates that 'install' action is no-op. */
+#    ADUC_Result_Install_RequiredImmediateReboot = 605,        /**< Succeeded. An immediate device reboot is required, to complete the task. */
+#    ADUC_Result_Install_RequiredReboot = 606,                 /**< Succeeded. A deferred device reboot is required, to complete the task. */
+#    ADUC_Result_Install_RequiredImmediateAgentRestart = 607,  /**< Succeeded. An immediate agent restart is required, to complete the task. */
+#    ADUC_Result_Install_RequiredAgentRestart = 608,           /**< Succeeded. A deferred agent restart is required, to complete the task. */
+#
 InstallUpdate() {
-    resultCode=0
+    resultCode=600
     extendedResultCode=0
     resultDetails=""
     ret_val=0
@@ -662,10 +663,18 @@ InstallUpdate() {
 }
 
 #
-# Perform install-related tasks.
+# Perform optional tasks to finalize the update.
+#
+# Expected resultCode:
+#    ADUC_Result_Failure = 0,
+#    ADUC_Result_Apply_Success = 700,                         /**< Succeeded. */
+#    ADUC_Result_Apply_RequiredImmediateReboot = 705,         /**< Succeeded. An immediate device reboot is required, to complete the task. */
+#    ADUC_Result_Apply_RequiredReboot = 706,                  /**< Succeeded. A deferred device reboot is required, to complete the task. */
+#    ADUC_Result_Apply_RequiredImmediateAgentRestart = 707,   /**< Succeeded. An immediate agent restart is required, to complete the task. */
+#    ADUC_Result_Apply_RequiredAgentRestart = 708,            /**< Succeeded. A deferred agent restart is required, to complete the task. */
 #
 ApplyUpdate() {
-    resultCode=0
+    resultCode=700
     extendedResultCode=0
     resultDetails=""
     ret_val=0
@@ -732,9 +741,19 @@ SimulatePostInstallSuccess() {
     $ret $ret_val
 }
 
+#
+# Cancel the script execution.
+#
+# Expected resultCode:
+#    ADUC_Result_Failure = 0,
+#    ADUC_Result_Cancel_Success = 800,            /**< Succeeded. */
+#    ADUC_Result_Cancel_UnableToCancel = 801,     /**< Not a failure. Cancel is best effort. */
 CancelUpdate() {
-    ret_val=0
-    $ret $ret_val
+    # EXAMPLE : Most script cannot be canceled. So this is no-op.
+
+    # Write ADUC_Result to result file.
+    result "{\"resultCode\":801, \"extendedResultCode\":0,\"resultDetails\":\"\"}"
+    $ret 0
 }
 
 #

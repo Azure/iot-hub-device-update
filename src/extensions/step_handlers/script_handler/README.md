@@ -284,15 +284,21 @@ contoso-motor-installscript.sh
 
 ```
 
-### Example Script
+### Example Scripts
 
 To get started, you can take a look at the [example-installscript.sh](./examples/example-installscript.sh) to see how the script can be implemented.
+
+> Note:  This example script may appear complicated because it demonstrated how to parse and use all options passed by the Script Handler.
+
+A simplified script is also provided [here](./examples/basic-script.sh)
 
 > IMPORTANT: Please note that this is for demonstration purposes only. The example script is provided AS-IS. You should not use it for your production project.
 
 ### Communicating the script execution result back to the Script Handler
 
 The script, must write an ADUC_Result data into a designated result file (specified by --result-file option)
+
+See all available ADUC_Result codes in [adu_core.h](../../../adu_types/inc/aduc/types/adu_core.h)
 
 > IMPORTANT: Make sure to modify the default behavior of writing result file. If agent detects ResultCode and ExtendedResultCode of 0, then for discoverability, it will replace the ExtendedResultCode with ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_SCRIPT_RESULT_EXTENDEDRESULTCODE_ZERO that has numeric code of 81054976 (decimal) and 0x30500206 (hexadecimal).
 
