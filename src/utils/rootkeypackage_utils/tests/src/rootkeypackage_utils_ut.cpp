@@ -138,11 +138,11 @@ TEST_CASE("RootKeyPackageUtils_Parse")
 
         result = ADUC_RootKeyPackageUtils_Parse(nullptr, &pkg);
         REQUIRE(IsAducResultCodeFailure(result.ResultCode));
-        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_JSON);
+        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG);
 
         result = ADUC_RootKeyPackageUtils_Parse("", &pkg);
         REQUIRE(IsAducResultCodeFailure(result.ResultCode));
-        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_JSON);
+        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG);
 
         result = ADUC_RootKeyPackageUtils_Parse("{[}", &pkg);
         REQUIRE(IsAducResultCodeFailure(result.ResultCode));
@@ -201,18 +201,14 @@ TEST_CASE("RootKeyPackageUtils_Parse")
 
         // verify "disabledRootKeys"
         {
-            std::vector<std::string> disabledRootKeys;
-            disabledRootKeys.push_back(
-                STRING_c_str((STRING_HANDLE)VECTOR_element(pkg.protectedProperties.disabledRootKeys, 0)));
-            disabledRootKeys.push_back(
-                STRING_c_str((STRING_HANDLE)VECTOR_element(pkg.protectedProperties.disabledRootKeys, 1)));
+            // put the KIDs from disabledRootKeys into std::vector for making it more convenient to do assertions.
+            const STRING_HANDLE* const disabledRootKey1 =
+                static_cast<STRING_HANDLE*>(VECTOR_element(pkg.protectedProperties.disabledRootKeys, 0));
+            const STRING_HANDLE* const disabledRootKey2 =
+                static_cast<STRING_HANDLE*>(VECTOR_element(pkg.protectedProperties.disabledRootKeys, 1));
 
-            CHECK(
-                std::end(disabledRootKeys)
-                != std::find(std::begin(disabledRootKeys), std::end(disabledRootKeys), std::string{ "rootkey1" }));
-            CHECK(
-                std::end(disabledRootKeys)
-                != std::find(std::begin(disabledRootKeys), std::end(disabledRootKeys), std::string{ "rootkey2" }));
+            CHECK_THAT(STRING_c_str(*disabledRootKey1), Catch::Matchers::Equals("rootkey1"));
+            CHECK_THAT(STRING_c_str(*disabledRootKey2), Catch::Matchers::Equals("rootkey2"));
         }
 
         // verify "disabledSigningKeys"
@@ -233,5 +229,10 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         //
         // Verify "signatures" properties
         //
+
+        //
+        // Cleanup
+        //
+        ADUC_RootKeyPackageUtils_Cleanup(&pkg);
     }
 }

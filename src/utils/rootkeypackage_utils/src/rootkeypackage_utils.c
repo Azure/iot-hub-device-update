@@ -104,67 +104,79 @@ void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
 
     // cleanup disabledRootKeys
     vec = rootKeyPackage->protectedProperties.disabledRootKeys;
-    cnt = VECTOR_size(vec);
-    for (size_t i = 0; i < cnt; ++i)
+    if (vec != NULL)
     {
-        STRING_HANDLE* h = (STRING_HANDLE*)VECTOR_element(vec, i);
-        if (h != NULL)
+        cnt = VECTOR_size(vec);
+        for (size_t i = 0; i < cnt; ++i)
         {
-            STRING_delete(*h);
+            STRING_HANDLE* h = (STRING_HANDLE*)VECTOR_element(vec, i);
+            if (h != NULL)
+            {
+                STRING_delete(*h);
+            }
         }
+        VECTOR_destroy(rootKeyPackage->protectedProperties.disabledRootKeys);
     }
-    VECTOR_destroy(rootKeyPackage->protectedProperties.disabledRootKeys);
 
     // cleanup disabledSigningKeys
     vec = rootKeyPackage->protectedProperties.disabledSigningKeys;
-    cnt = VECTOR_size(vec);
-    for (size_t i = 0; i < cnt; ++i)
+    if (vec != NULL)
     {
-        ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(vec, i);
-        if (node != NULL && node->hash != NULL)
+        cnt = VECTOR_size(vec);
+        for (size_t i = 0; i < cnt; ++i)
         {
-            CONSTBUFFER_DecRef(node->hash);
+            ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(vec, i);
+            if (node != NULL && node->hash != NULL)
+            {
+                CONSTBUFFER_DecRef(node->hash);
+            }
         }
+        VECTOR_destroy(rootKeyPackage->protectedProperties.disabledSigningKeys);
     }
-    VECTOR_destroy(rootKeyPackage->protectedProperties.disabledSigningKeys);
 
     // cleanup rootKeys
     vec = rootKeyPackage->protectedProperties.rootKeys;
-    cnt = VECTOR_size(vec);
-    for (size_t i = 0; i < cnt; ++i)
+    if (vec != NULL)
     {
-        ADUC_RootKey* rootKeyEntry = (ADUC_RootKey*)VECTOR_element(vec, i);
-        if (rootKeyEntry != NULL && rootKeyEntry->kid != NULL)
+        cnt = VECTOR_size(vec);
+        for (size_t i = 0; i < cnt; ++i)
         {
-            STRING_delete(rootKeyEntry->kid);
-        }
+            ADUC_RootKey* rootKeyEntry = (ADUC_RootKey*)VECTOR_element(vec, i);
+            if (rootKeyEntry != NULL && rootKeyEntry->kid != NULL)
+            {
+                STRING_delete(rootKeyEntry->kid);
+            }
 
-        if (rootKeyEntry->rsaParameters.n != NULL)
-        {
-            CONSTBUFFER_DecRef(rootKeyEntry->rsaParameters.n);
-        }
+            if (rootKeyEntry->rsaParameters.n != NULL)
+            {
+                CONSTBUFFER_DecRef(rootKeyEntry->rsaParameters.n);
+            }
 
-        if (rootKeyEntry->rsaParameters.e != NULL)
-        {
-            CONSTBUFFER_DecRef(rootKeyEntry->rsaParameters.e);
+            if (rootKeyEntry->rsaParameters.e != NULL)
+            {
+                CONSTBUFFER_DecRef(rootKeyEntry->rsaParameters.e);
+            }
         }
+        VECTOR_destroy(rootKeyPackage->protectedProperties.rootKeys);
     }
-    VECTOR_destroy(rootKeyPackage->protectedProperties.rootKeys);
 
     //
     // Cleanup signatures
     //
     vec = rootKeyPackage->signatures;
-    cnt = VECTOR_size(vec);
-    for (size_t i = 0; i < cnt; ++i)
+    if (vec != NULL)
     {
-        ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(vec, i);
-        if (node != NULL && node->hash != NULL)
+        cnt = VECTOR_size(vec);
+        for (size_t i = 0; i < cnt; ++i)
         {
-            CONSTBUFFER_DecRef(node->hash);
+            ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(vec, i);
+            if (node != NULL && node->hash != NULL)
+            {
+                CONSTBUFFER_DecRef(node->hash);
+            }
         }
+        VECTOR_destroy(rootKeyPackage->signatures);
     }
-    VECTOR_destroy(rootKeyPackage->signatures);
 
     // finally, zero-out
     memset(rootKeyPackage, 0, sizeof(*rootKeyPackage));

@@ -865,24 +865,40 @@
             "name": "ADUC_COMPONENT_ROOTKEYPKG_UTIL",
             "results": [
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_UNEXPECTED",
                 "value": 1
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_JSON",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG",
                 "value": 2
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_JSON",
                 "value": 3
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_UNSUPPORTED_HASH_ALGORITHM",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY",
                 "value": 4
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_ENCODING",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_UNSUPPORTED_HASH_ALGORITHM",
                 "value": 5
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_ENCODING",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_KEY_ID",
+                "value": 7
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_UNSUPPORTED_KEYTYPE",
+                "value": 8
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_RSA_PARAMETERS",
+                "value": 9
               }
             ]
           }
