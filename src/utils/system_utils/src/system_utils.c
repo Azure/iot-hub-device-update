@@ -14,6 +14,7 @@
 
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/strings.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h> // for O_CLOEXEC
 #include <ftw.h> // for nftw
@@ -559,11 +560,11 @@ int ADUC_SystemUtils_RemoveFile(const char* path)
 }
 
 /**
- * @brief Writes @p buff to file at @p path using   
+ * @brief Writes @p buff to file at @p path using
  * @details This function overwrites the current data in @p path with @p buff
- * 
+ *
  * @param path the path to the file to write data
- * @param buff data to be written to the file  
+ * @param buff data to be written to the file
  * @return in On success 0 is returned; otherwise errno or -1 on failure
  */
 int ADUC_SystemUtils_WriteStringToFile(const char* path, const char* buff)
@@ -738,4 +739,71 @@ done:
         *err = err_ret;
     }
     return is_file;
+}
+
+/**
+ * @brief For each dir_name in the baseDir, it calls the action function with the baseDir and dir_name.
+ * @param baseDir The base dir to list directories in.
+ * @param excludedDir A dir to exclude via exact match in addition to . and .. dirs. NULL means to exclude only . and .. dirs.
+ * @param perDirActionFunctor The functor to apply for each dir in the baseDir.
+ * @returns 0 if succeeded in calling the action func for every dir in baseDir (except . and .. dirs).
+ */
+int SystemUtils_ForEachDir(
+    const char* baseDir, const char* excludedDir, ADUC_SystemUtils_ForEachDirFunctor* perDirActionFunctor)
+{
+    int err_ret = -1;
+    struct dirent* dir_entry = NULL;
+    DIR* dir = NULL;
+
+    if (baseDir == NULL || (perDirActionFunctor == NULL) || (perDirActionFunctor->callbackFn == NULL))
+    {
+        goto done;
+    }
+
+    dir = opendir(baseDir);
+    if (dir == NULL)
+    {
+        err_ret = errno;
+        Log_Error("opendir '%s' failed: %d", baseDir, err_ret);
+        goto done;
+    }
+
+    do
+    {
+        errno = 0;
+        if ((dir_entry = readdir(dir)) != NULL)
+        {
+            if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0)
+            {
+                continue;
+            }
+
+            if (excludedDir != NULL && strcmp(dir_entry->d_name, excludedDir) == 0)
+            {
+                continue;
+            }
+
+            perDirActionFunctor->callbackFn(perDirActionFunctor->context, baseDir, &(dir_entry->d_name)[0]);
+        }
+        else // dir_entry == NULL
+        {
+            if (errno != 0)
+            {
+                // error
+                err_ret = errno;
+                goto done;
+            }
+            // otherwise, it's the end of the stream.
+        }
+    } while (dir_entry != NULL);
+
+    err_ret = 0;
+done:
+    if (dir != NULL)
+    {
+        closedir(dir);
+        dir = NULL;
+    }
+
+    return err_ret;
 }

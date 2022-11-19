@@ -16,6 +16,9 @@ namespace aduc
 {
 std::string FileTestUtils_slurpFile(const std::string& path);
 
+std::string FileTestUtils_applyTemplateParam(
+    const std::string& templateStr, const char* parameterName, const char* parameterValue);
+
 } // namespace aduc
 
 #endif // FILE_TEST_UTILS_HPP
