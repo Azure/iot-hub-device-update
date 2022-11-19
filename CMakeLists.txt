@@ -20,8 +20,6 @@ message (STATUS)
 # Tell CMake where to find our custom CMake module files.
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
-set (CMAKE_VERBOSE_MAKEFILE ON)
-
 # GNUInstallDirs defines the standard GNU install directories
 # so that we can reference them in our install commands.
 # e.g. CMAKE_INSTALL_BINDIR
