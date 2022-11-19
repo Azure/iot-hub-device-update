@@ -6,8 +6,10 @@ compileasc99 ()
 find_package (azure_c_shared_utility REQUIRED)
 find_package (Parson REQUIRED)
 
-add_library (${target_name} STATIC src/rootkeypackage_utils.c)
+add_library (${target_name} STATIC)
 add_library (aduc::${target_name} ALIAS ${target_name})
+
+target_sources (${target_name} PRIVATE src/rootkeypackage_parse.c src/rootkeypackage_utils.c)
 
 target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 

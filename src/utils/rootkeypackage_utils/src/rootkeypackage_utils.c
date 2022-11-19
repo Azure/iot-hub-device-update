@@ -7,24 +7,11 @@
  */
 
 #include "aduc/rootkeypackage_utils.h"
+#include "aduc/rootkeypackage_parse.h"
 #include <aduc/c_utils.h> // for EXTERN_C_BEGIN, EXTERN_C_END
 #include <parson.h>
 
 EXTERN_C_BEGIN
-
-/**
- * @brief Parses the protected properties in accordance with rootkeypackage.schema.json
- *
- * @param rootValue The root JSON value.
- * @param[out] outPackage The root key package object to write parsed protected properties data.
- *
- * @return true on successful parse.
- */
-static bool ParseProtectedProperties(JSON_Value* rootValue, ADUC_RootKeyPackage* outPackage)
-{
-    bool parsed = false;
-    return parsed;
-}
 
 /**
  * @brief Parses JSON string into an ADUC_RootKeyPackage struct.
@@ -51,7 +38,13 @@ ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyP
         goto done;
     }
 
-    if (!ParseProtectedProperties(rootValue, &pkg))
+    if (!RootKeyPackage_ParseProtectedProperties(rootValue, &pkg))
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_PARSE;
+        goto done;
+    }
+
+    if (!RootKeyPackage_ParseSignatures(rootValue, &pkg))
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_PARSE;
         goto done;
