@@ -12,9 +12,9 @@
 #include <aduc/rootkeypackage_utils.h>
 #include <algorithm>
 #include <catch2/catch.hpp>
+#include <parson.h>
 #include <sstream>
 #include <vector>
-#include <parson.h>
 
 static std::string get_valid_rootkey_package_template_json_path()
 {
@@ -31,8 +31,9 @@ static std::string get_serialized_protectedProperties(JSON_Value* rootkeyPkgJson
     JSON_Object* protectedProperties = json_object_get_object(pkgJsonObj, "protected");
     REQUIRE(protectedProperties != nullptr);
 
-    char* serializedProtectedProperties_cstr = json_serialize_to_string(json_object_get_wrapping_value(protectedProperties));
-    REQUIRE(serializedProtectedProperties_cstr!= nullptr);
+    char* serializedProtectedProperties_cstr =
+        json_serialize_to_string(json_object_get_wrapping_value(protectedProperties));
+    REQUIRE(serializedProtectedProperties_cstr != nullptr);
 
     std::string protectedPropertiesSerialized = serializedProtectedProperties_cstr;
 
@@ -101,7 +102,15 @@ static std::string get_valid_rootkey_package(
 
     // Fill out the "protected" properties template parameters, but do not fill out
     // the signatures "sig" properties yet.
-    templateStr = fillout_protected_properties_template_params(templateStr, disabledHashPublicSigningKey, modulus_1, exponent_1, modulus_2, exponent_2, modulus_3, exponent_3);
+    templateStr = fillout_protected_properties_template_params(
+        templateStr,
+        disabledHashPublicSigningKey,
+        modulus_1,
+        exponent_1,
+        modulus_2,
+        exponent_2,
+        modulus_3,
+        exponent_3);
 
     // Generate the signatures using the rootkey private keys passed in
     // and the protected properties data to be signed.
@@ -142,7 +151,6 @@ TEST_CASE("RootKeyPackageUtils_Parse")
 
     SECTION("valid")
     {
-
         aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair1{};
         aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair2{};
         aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair3{};
@@ -152,7 +160,8 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         const auto& rootkey3_publickey = rootKeyPair3.GetPublicKey();
 
         std::string urlIntBase64EncodedHash_of_rootkey3_public_key = rootkey3_publickey.getSha256HashOfPublicKey();
-        const char* PUBLIC_SIGNING_KEY_CHAINING_UP_TO_ROOTKEY_3 = urlIntBase64EncodedHash_of_rootkey3_public_key.c_str();
+        const char* PUBLIC_SIGNING_KEY_CHAINING_UP_TO_ROOTKEY_3 =
+            urlIntBase64EncodedHash_of_rootkey3_public_key.c_str();
 
         const char* ROOTKEY_1_MODULUS = rootkey1_publickey.GetModulus().c_str();
         const char* ROOTKEY_1_EXPONENT = rootkey1_publickey.GetExponent().c_str();
@@ -186,18 +195,24 @@ TEST_CASE("RootKeyPackageUtils_Parse")
 
         // verify "version" and "published"
         CHECK(pkg.protectedProperties.version == 2);
-        CHECK(pkg.protectedProperties.publishedTime.tv_sec == 1667343602);
+        CHECK(pkg.protectedProperties.publishedTime == 1667343602);
 
         REQUIRE(VECTOR_size(pkg.protectedProperties.disabledRootKeys) == 2);
 
         // verify "disabledRootKeys"
         {
             std::vector<std::string> disabledRootKeys;
-            disabledRootKeys.push_back(STRING_c_str((STRING_HANDLE)VECTOR_element(pkg.protectedProperties.disabledRootKeys, 0)));
-            disabledRootKeys.push_back(STRING_c_str((STRING_HANDLE)VECTOR_element(pkg.protectedProperties.disabledRootKeys, 1)));
+            disabledRootKeys.push_back(
+                STRING_c_str((STRING_HANDLE)VECTOR_element(pkg.protectedProperties.disabledRootKeys, 0)));
+            disabledRootKeys.push_back(
+                STRING_c_str((STRING_HANDLE)VECTOR_element(pkg.protectedProperties.disabledRootKeys, 1)));
 
-            CHECK(std::end(disabledRootKeys) != std::find(std::begin(disabledRootKeys), std::end(disabledRootKeys), std::string{"rootkey1"}));
-            CHECK(std::end(disabledRootKeys) != std::find(std::begin(disabledRootKeys), std::end(disabledRootKeys), std::string{"rootkey2"}));
+            CHECK(
+                std::end(disabledRootKeys)
+                != std::find(std::begin(disabledRootKeys), std::end(disabledRootKeys), std::string{ "rootkey1" }));
+            CHECK(
+                std::end(disabledRootKeys)
+                != std::find(std::begin(disabledRootKeys), std::end(disabledRootKeys), std::string{ "rootkey2" }));
         }
 
         // verify "disabledSigningKeys"
@@ -211,9 +226,9 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         const CONSTBUFFER* hashBuffer = CONSTBUFFER_GetContent(signingKeyHash.hash);
         REQUIRE(hashBuffer != nullptr);
 
-//        std::string encodedHash = GetEncodedHashValue(hashBuffer->buffer, hashBuffer->size);
-//        CONSTBUFFER_DecRef(signingKeyHash.hash);// Cleanup CONSTBUFFER
-//        CHECK(encodedHash.c_str() == PUBLIC_SIGNING_KEY_CHAINING_UP_TO_ROOTKEY_3);
+        //        std::string encodedHash = GetEncodedHashValue(hashBuffer->buffer, hashBuffer->size);
+        //        CONSTBUFFER_DecRef(signingKeyHash.hash);// Cleanup CONSTBUFFER
+        //        CHECK(encodedHash.c_str() == PUBLIC_SIGNING_KEY_CHAINING_UP_TO_ROOTKEY_3);
 
         //
         // Verify "signatures" properties

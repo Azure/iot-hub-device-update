@@ -30,6 +30,7 @@ ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyP
     memset(&pkg, 0, sizeof(pkg));
 
     JSON_Value* rootValue = NULL;
+    JSON_Object* rootObj = NULL;
 
     rootValue = json_parse_string(jsonString);
     if (rootValue == NULL)
@@ -38,13 +39,20 @@ ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyP
         goto done;
     }
 
-    if (!RootKeyPackage_ParseProtectedProperties(rootValue, &pkg))
+    rootObj = json_object(rootValue);
+    if (rootObj == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_JSON;
+        goto done;
+    }
+
+    if (!RootKeyPackage_ParseProtectedProperties(rootObj, &pkg))
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_PARSE;
         goto done;
     }
 
-    if (!RootKeyPackage_ParseSignatures(rootValue, &pkg))
+    if (!RootKeyPackage_ParseSignatures(rootObj, &pkg))
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_PARSE;
         goto done;
