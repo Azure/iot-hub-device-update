@@ -12,7 +12,19 @@
 
 EXTERN_C_BEGIN
 
-//static ParseProtectedProperties()
+/**
+ * @brief Parses the protected properties in accordance with rootkeypackage.schema.json
+ *
+ * @param rootValue The root JSON value.
+ * @param[out] outPackage The root key package object to write parsed protected properties data.
+ *
+ * @return true on successful parse.
+ */
+static bool ParseProtectedProperties(JSON_Value* rootValue, ADUC_RootKeyPackage* outPackage)
+{
+    bool parsed = false;
+    return parsed;
+}
 
 /**
  * @brief Parses JSON string into an ADUC_RootKeyPackage struct.
@@ -27,6 +39,9 @@ ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyP
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
+    ADUC_RootKeyPackage pkg;
+    memset(&pkg, 0, sizeof(pkg));
+
     JSON_Value* rootValue = NULL;
 
     rootValue = json_parse_string(jsonString);
@@ -36,7 +51,22 @@ ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyP
         goto done;
     }
 
+    if (!ParseProtectedProperties(rootValue, &pkg))
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_PARSE;
+        goto done;
+    }
+
+    result.ResultCode = ADUC_GeneralResult_Success;
+    *outRootKeyPackage = pkg;
+
 done:
+    json_value_free(rootValue);
+
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        ADUC_RootKeyPackageUtils_Cleanup(&pkg);
+    }
 
     return result;
 }

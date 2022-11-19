@@ -867,6 +867,10 @@
               {
                 "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_JSON",
                 "value": 1
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_PARSE",
+                "value": 2
               }
             ]
           }
