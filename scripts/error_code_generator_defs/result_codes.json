@@ -865,12 +865,24 @@
             "name": "ADUC_COMPONENT_ROOTKEYPKG_UTIL",
             "results": [
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_JSON",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG",
                 "value": 1
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_PARSE",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_JSON",
                 "value": 2
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_UNSUPPORTED_HASH_ALGORITHM",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_ENCODING",
+                "value": 5
               }
             ]
           }
