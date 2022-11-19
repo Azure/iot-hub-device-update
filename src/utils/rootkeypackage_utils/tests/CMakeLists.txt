@@ -6,10 +6,18 @@ compileasc99 ()
 disablertti ()
 
 find_package (Catch2 REQUIRED)
+find_package (Parson REQUIRED)
 
-add_executable (${target_name} main.cpp rootkeypackage_utils_ut.cpp)
+add_executable (${target_name})
+target_sources(${target_name} PRIVATE src/main.cpp src/rootkeypackage_utils_ut.cpp)
 
-target_link_libraries (${target_name} PRIVATE aduc::rootkeypackage_utils Catch2::Catch2)
+target_include_directories(${target_name} PRIVATE inc)
+
+target_link_libraries (${target_name} PRIVATE aduc::rootkeypackage_utils aduc::test_utils
+                                              Catch2::Catch2 Parson::parson)
+
+target_compile_definitions (${target_name}
+                            PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
 include (CTest)
 include (Catch)

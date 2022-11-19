@@ -12,13 +12,13 @@
                 "published": {
                     "type": "number"
                 },
-                "untrustedRootKeys": {
+                "disabledRootKeys": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "untrustedSigningKeys": {
+                "disabledSigningKeys": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/signingKeyHashDef"

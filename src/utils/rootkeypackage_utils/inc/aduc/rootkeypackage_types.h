@@ -19,7 +19,8 @@
  */
 typedef enum tagADUC_RootKey_KeyType
 {
-    RSA, /**< RSA keytype. */
+    ADUC_RootKey_KeyType_INVALID = 0,
+    ADUC_RootKey_KeyType_RSA, /**< RSA keytype. */
 } ADUC_RootKey_KeyType;
 
 /**
@@ -27,9 +28,10 @@ typedef enum tagADUC_RootKey_KeyType
  */
 typedef enum tagADUC_RootKeyShaAlgorithm
 {
-    SHA256, /**< The SHA256 algorithm. */
-    SHA384, /**< The SHA384 algorithm. */
-    SHA512, /**< The SHA512 algorithm. */
+    ADUC_RootKeyShaAlgorithm_INVALID = 0,
+    ADUC_RootKeyShaAlgorithm_SHA256, /**< The SHA256 algorithm. */
+    ADUC_RootKeyShaAlgorithm_SHA384, /**< The SHA384 algorithm. */
+    ADUC_RootKeyShaAlgorithm_SHA512, /**< The SHA512 algorithm. */
 } ADUC_RootKeyShaAlgorithm;
 
 /**
