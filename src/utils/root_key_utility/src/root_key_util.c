@@ -18,6 +18,8 @@
 
 #include "crypto_lib.h"
 #include "root_key_util.h"
+#include "root_key_result.h"
+
 //
 // Root Key Type Definitions
 //
@@ -30,11 +32,11 @@ typedef struct tagRSARootKey
 } RSARootKey;
 
 //
-// Root Keychain Definitions
+// Hardcoded Root Keychain Definitions
 //
 
 // clang-format off
-static const RSARootKey RSARootKeyList[] =
+static const RSARootKey HardcodedRSARootKeyList[] =
 {
     {
         // kid
@@ -176,16 +178,86 @@ static const RSARootKey RSARootKeyList[] =
 };
 // clang-format on
 
+//
+// Static Global for the Root Key Package
+//
+static ADUC_RootKeyPackage_* rootKeyPackage = NULL;
+
+
+// Returns no-good root keys upon both hardcoded root keys being disabled
+
+VECTOR_HANDLE GetHardcodedRootKeys(VECTOR_HANDLE* outRootKeys)
+{
+    VECTOR_HANDLE
+}
+
+VECTOR_HANDLE GetLocalStoreRootKeys(void)
+{
+
+}
+
+_Bool CheckKeyIsDisabled(const char* keyId);
+
+void* GetHardcodedKeyForKeyId(hardcoded_root_key_name)
+
+void* GetLocalStoreKeyForKeyId(const char* keyId);
+
+RootKeyUtility_ValidationResult ValidateSignatureWithRootKey(STRING_HANDLE keyId,const ADUC_RootKeyPackage* rootKeyPackage)
+{
+    RootKeyUtility_ValidationResult result = RootKeyUtility_ValidationResult_Failure;
+
+    const size_t key_size = VECTOR_size(rootKeyPackage->signatures);
+
+    unsigned int key_index = 0;
+
+    for (unsigned int key_index = 0; key_index < key_size; key_index++ )
+    {
+        const ADUC_RootKey* rootKey = (ADUC_RootKey*)VECTOR_element(rootKeyPackage->rootKeys,key_index);
+        if (STRING_compare(rootKey->kid,keyId) == 0)
+        {
+            key_index = i;
+            break;
+        }
+    }
+
+    if (key_index == key_size)
+    {
+        result = RootKeyUtility_ValidationResult_KeyIdNotFound;
+        goto done;
+    }
+
+
+
+done:
+
+    return result;
+}
+
+RootKeyUtility_ValidationResult RootKeyUtil_ValidateRootKeyPackage(const ADUC_RootKeyPackage* rootKeyPackagePath )
+{
+    RootKeyUtility_ValidationResult result = RootKeyUtility_InstallResult_Failed;
+
+
+
+    return result;
+}
+
+RootKeyUtility_InstallResult RootKeyUtil_StoreNewRootKeyPackage(const ADUC_RootKeyPackage* srcRootKeyPackagePath )
+{
+    // needs to call serialize/ struct_to_json function
+}
+
+
 /**
  * @brief Helper function that returns a CryptoKeyHandle associated with the kid
  * @details The caller must free the returned Key with the FreeCryptoKeyHandle() function
  * @param kid the key identifier associated with the key
  * @returns the CryptoKeyHandle on success, null on failure
  */
-CryptoKeyHandle GetKeyForKid(const char* kid)
+CryptoKeyHandle RootKeyUtility_GerKeyForKid(const char* kid)
 {
     //
-    // Iterate through the RSA Root Keys
+    // Iterate through the Hardcoded RSA Root Keys
     //
     const unsigned numberKeys = (sizeof(RSARootKeyList) / sizeof(RSARootKey));
     for (unsigned i = 0; i < numberKeys; ++i)
@@ -196,5 +268,14 @@ CryptoKeyHandle GetKeyForKid(const char* kid)
         }
     }
 
+    //
+    // New RSA Keys Go Here
+    //
+
+    if (rootKeyPackage == NULL)
+    {
+        // load the local store
+    }
     return NULL;
 }
+

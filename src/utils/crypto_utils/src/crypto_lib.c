@@ -373,5 +373,5 @@ void FreeCryptoKeyHandle(CryptoKeyHandle key)
  */
 CryptoKeyHandle GetRootKeyForKeyID(const char* kid)
 {
-    return GetKeyForKid(kid);
+    return RootKeyUtility_GerKeyForKid(kid);
 }
