@@ -49,7 +49,7 @@ typedef struct tagADUC_RootKeyPackage_Hash
 typedef struct tagADUC_RSA_RootKeyParameters
 {
     CONSTBUFFER_HANDLE n; /**< The RSA modulus parameter. */
-    CONSTBUFFER_HANDLE e; /**< The RSA exponent parameter. */
+    unsigned int e; /**< The RSA exponent parameter. */
 } ADUC_RSA_RootKeyParameters;
 
 /**

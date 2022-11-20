@@ -20,6 +20,9 @@ ADUC_Result
 RootKeyPackage_ParseProtectedProperties(JSON_Object* protectedPropertiesObj, ADUC_RootKeyPackage* outPackage);
 ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* signaturesObj, ADUC_RootKeyPackage* outPackage);
 
+void ADUC_RootKey_Free(ADUC_RootKey* node);
+void ADUC_RootKeyPackage_Hash_Free(ADUC_RootKeyPackage_Hash* node);
+
 EXTERN_C_END
 
 #endif // ROOTKEYPACKAGE_PARSE_H

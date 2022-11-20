@@ -142,20 +142,7 @@ void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKey* rootKeyEntry = (ADUC_RootKey*)VECTOR_element(vec, i);
-            if (rootKeyEntry != NULL && rootKeyEntry->kid != NULL)
-            {
-                STRING_delete(rootKeyEntry->kid);
-            }
-
-            if (rootKeyEntry->rsaParameters.n != NULL)
-            {
-                CONSTBUFFER_DecRef(rootKeyEntry->rsaParameters.n);
-            }
-
-            if (rootKeyEntry->rsaParameters.e != NULL)
-            {
-                CONSTBUFFER_DecRef(rootKeyEntry->rsaParameters.e);
-            }
+            ADUC_RootKey_Free(rootKeyEntry);
         }
         VECTOR_destroy(rootKeyPackage->protectedProperties.rootKeys);
     }
