@@ -334,7 +334,8 @@ public:
 
     ~TestRSAKeyPair()
     {
-        // cleanup resources
+        delete privateKey;
+        delete publicKey;
     }
 
     TestRSAKeyPair(const TestRSAKeyPair&) = delete;
