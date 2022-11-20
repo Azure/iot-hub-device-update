@@ -11,10 +11,14 @@
 #include <aduc/rootkeypackage_types.h>
 #include <aduc/rootkeypackage_utils.h>
 #include <algorithm>
+#include <base64_utils.h>
 #include <catch2/catch.hpp>
 #include <parson.h>
+#include <regex>
 #include <sstream>
 #include <vector>
+
+using Catch::Matchers::Equals;
 
 static std::string get_valid_rootkey_package_template_json_path()
 {
@@ -59,23 +63,32 @@ static std::string fillout_protected_properties_template_params(
     const std::string& templateStr,
     const char* disabledHashPublicSigningKey,
     const char* modulus_1,
-    const char* exponent_1,
+    size_t exponent_1,
     const char* modulus_2,
-    const char* exponent_2,
+    size_t exponent_2,
     const char* modulus_3,
-    const char* exponent_3)
+    size_t exponent_3)
 {
     std::string str = aduc::FileTestUtils_applyTemplateParam(
         templateStr, "disabledHashPublicSigningKey", disabledHashPublicSigningKey);
 
+    auto conv = [](size_t exp) {
+        std::stringstream ss;
+        ss << exp;
+        return ss.str();
+    };
+    std::string exp1_str = conv(exponent_1);
+    std::string exp2_str = conv(exponent_2);
+    std::string exp3_str = conv(exponent_3);
+
     str = aduc::FileTestUtils_applyTemplateParam(str, "modulus_1", modulus_1);
-    str = aduc::FileTestUtils_applyTemplateParam(str, "exponent_1", exponent_1);
+    str = aduc::FileTestUtils_applyTemplateParam(str, "exponent_1", exp1_str.c_str());
 
     str = aduc::FileTestUtils_applyTemplateParam(str, "modulus_2", modulus_2);
-    str = aduc::FileTestUtils_applyTemplateParam(str, "exponent_2", exponent_2);
+    str = aduc::FileTestUtils_applyTemplateParam(str, "exponent_2", exp2_str.c_str());
 
     str = aduc::FileTestUtils_applyTemplateParam(str, "modulus_3", modulus_3);
-    str = aduc::FileTestUtils_applyTemplateParam(str, "exponent_3", exponent_3);
+    str = aduc::FileTestUtils_applyTemplateParam(str, "exponent_3", exp3_str.c_str());
 
     return str;
 }
@@ -83,11 +96,11 @@ static std::string fillout_protected_properties_template_params(
 static std::string get_valid_rootkey_package(
     const char* disabledHashPublicSigningKey,
     const char* modulus_1,
-    const char* exponent_1,
+    size_t exponent_1,
     const char* modulus_2,
-    const char* exponent_2,
+    size_t exponent_2,
     const char* modulus_3,
-    const char* exponent_3,
+    size_t exponent_3,
     const aduc::rootkeypkgtestutils::TestRSAPrivateKey& rootkey1_privateKey,
     const aduc::rootkeypkgtestutils::TestRSAPrivateKey& rootkey2_privateKey,
     const aduc::rootkeypkgtestutils::TestRSAPrivateKey& rootkey3_privateKey)
@@ -151,9 +164,9 @@ TEST_CASE("RootKeyPackageUtils_Parse")
 
     SECTION("valid")
     {
-        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair1{};
-        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair2{};
-        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair3{};
+        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair1{ aduc::rootkeypkgtestutils::rootkeys::rootkey1 };
+        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair2{ aduc::rootkeypkgtestutils::rootkeys::rootkey2 };
+        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair3{ aduc::rootkeypkgtestutils::rootkeys::rootkey3 };
 
         const auto& rootkey1_publickey = rootKeyPair1.GetPublicKey();
         const auto& rootkey2_publickey = rootKeyPair2.GetPublicKey();
@@ -163,23 +176,23 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         const char* PUBLIC_SIGNING_KEY_CHAINING_UP_TO_ROOTKEY_3 =
             urlIntBase64EncodedHash_of_rootkey3_public_key.c_str();
 
-        const char* ROOTKEY_1_MODULUS = rootkey1_publickey.GetModulus().c_str();
-        const char* ROOTKEY_1_EXPONENT = rootkey1_publickey.GetExponent().c_str();
+        std::string ROOTKEY_1_MODULUS = rootkey1_publickey.GetModulus();
+        size_t ROOTKEY_1_EXPONENT = rootkey1_publickey.GetExponent();
 
-        const char* ROOTKEY_2_MODULUS = rootkey2_publickey.GetModulus().c_str();
-        const char* ROOTKEY_2_EXPONENT = rootkey2_publickey.GetExponent().c_str();
+        std::string ROOTKEY_2_MODULUS = rootkey2_publickey.GetModulus();
+        size_t ROOTKEY_2_EXPONENT = rootkey2_publickey.GetExponent();
 
-        const char* ROOTKEY_3_MODULUS = rootkey3_publickey.GetModulus().c_str();
-        const char* ROOTKEY_3_EXPONENT = rootkey3_publickey.GetExponent().c_str();
+        std::string ROOTKEY_3_MODULUS = rootkey3_publickey.GetModulus();
+        size_t ROOTKEY_3_EXPONENT = rootkey3_publickey.GetExponent();
 
         const std::string rootKeyPkgJsonStr = get_valid_rootkey_package(
             PUBLIC_SIGNING_KEY_CHAINING_UP_TO_ROOTKEY_3, // disabledHashPublicSigningKey
-            ROOTKEY_1_MODULUS, // modulus_1
+            ROOTKEY_1_MODULUS.c_str(), // modulus_1
             ROOTKEY_1_EXPONENT, // exponent_1
-            ROOTKEY_2_MODULUS, // modulus_2
+            ROOTKEY_2_MODULUS.c_str(), // modulus_2
             ROOTKEY_2_EXPONENT, // exponent_2
-            ROOTKEY_3_MODULUS, // modulus_3
-            ROOTKEY_1_MODULUS, // modulus_1
+            ROOTKEY_3_MODULUS.c_str(), // modulus_3
+            ROOTKEY_3_EXPONENT, // exponent_3
             rootKeyPair1.GetPrivateKey(), // privateKey_1
             rootKeyPair2.GetPrivateKey(), // privateKey_2
             rootKeyPair3.GetPrivateKey() // privateKey_3
@@ -207,28 +220,68 @@ TEST_CASE("RootKeyPackageUtils_Parse")
             const STRING_HANDLE* const disabledRootKey2 =
                 static_cast<STRING_HANDLE*>(VECTOR_element(pkg.protectedProperties.disabledRootKeys, 1));
 
-            CHECK_THAT(STRING_c_str(*disabledRootKey1), Catch::Matchers::Equals("rootkey1"));
-            CHECK_THAT(STRING_c_str(*disabledRootKey2), Catch::Matchers::Equals("rootkey2"));
+            CHECK_THAT(STRING_c_str(*disabledRootKey1), Equals("rootkey1"));
+            CHECK_THAT(STRING_c_str(*disabledRootKey2), Equals("rootkey2"));
         }
 
         // verify "disabledSigningKeys"
         REQUIRE(VECTOR_size(pkg.protectedProperties.disabledSigningKeys) == 1);
+        {
+            void* el = VECTOR_element(pkg.protectedProperties.disabledSigningKeys, 0);
+            REQUIRE(el != nullptr);
 
-        void* el = VECTOR_element(pkg.protectedProperties.disabledSigningKeys, 0);
-        auto a = static_cast<ADUC_RootKeyPackage_Hash*>(el);
-        ADUC_RootKeyPackage_Hash signingKeyHash{ *a };
-        CHECK(signingKeyHash.alg == ADUC_RootKeyShaAlgorithm_SHA256);
+            auto a = static_cast<ADUC_RootKeyPackage_Hash*>(el);
+            ADUC_RootKeyPackage_Hash signingKeyHash{ *a };
+            CHECK(signingKeyHash.alg == ADUC_RootKeyShaAlgorithm_SHA256);
 
-        const CONSTBUFFER* hashBuffer = CONSTBUFFER_GetContent(signingKeyHash.hash);
-        REQUIRE(hashBuffer != nullptr);
+            const CONSTBUFFER* hashBuffer = CONSTBUFFER_GetContent(signingKeyHash.hash);
+            REQUIRE(hashBuffer != nullptr);
 
-        //        std::string encodedHash = GetEncodedHashValue(hashBuffer->buffer, hashBuffer->size);
-        //        CONSTBUFFER_DecRef(signingKeyHash.hash);// Cleanup CONSTBUFFER
-        //        CHECK(encodedHash.c_str() == PUBLIC_SIGNING_KEY_CHAINING_UP_TO_ROOTKEY_3);
+            char* encodedHash = Base64URLEncode(hashBuffer->buffer, hashBuffer->size);
+            std::string encodedHashStr{ encodedHash };
+            encodedHashStr = std::regex_replace(encodedHashStr, std::regex("="), "");
+
+            std::string expected{ PUBLIC_SIGNING_KEY_CHAINING_UP_TO_ROOTKEY_3 };
+            expected = std::regex_replace(expected, std::regex("="), "");
+
+            CHECK(encodedHashStr == expected);
+
+            CONSTBUFFER_DecRef(signingKeyHash.hash);
+            free(encodedHash);
+        }
 
         //
         // Verify "signatures" properties
         //
+        REQUIRE(pkg.signatures != nullptr);
+        REQUIRE(VECTOR_size(pkg.signatures) == 3);
+
+        auto verifyPkgSig = [&](size_t sig_index, const aduc::rootkeypkgtestutils::TestRSAKeyPair& testRootKeyPair) {
+            ADUC_RootKeyPackage_Hash* hashNode;
+            void* el = VECTOR_element(pkg.signatures, sig_index);
+            REQUIRE(el != nullptr);
+
+            auto a = static_cast<ADUC_RootKeyPackage_Hash*>(el);
+            ADUC_RootKeyPackage_Hash signatureHash{ *a };
+
+            CHECK(signatureHash.alg == ADUC_RootKeyShaAlgorithm_SHA256);
+
+            const CONSTBUFFER* hashBuffer = CONSTBUFFER_GetContent(signatureHash.hash);
+            REQUIRE(hashBuffer != nullptr);
+
+            char* encodedHash = Base64URLEncode(hashBuffer->buffer, hashBuffer->size);
+            std::string urlDecodedStr{ encodedHash };
+            urlDecodedStr = std::regex_replace(urlDecodedStr, std::regex("_"), "/");
+            urlDecodedStr = std::regex_replace(urlDecodedStr, std::regex("-"), "+");
+            CHECK(testRootKeyPair.GetPublicKey().VerifySignature(urlDecodedStr));
+
+            CONSTBUFFER_DecRef(signatureHash.hash);
+            free(encodedHash);
+        };
+
+        verifyPkgSig(0, rootKeyPair1);
+        verifyPkgSig(1, rootKeyPair2);
+        verifyPkgSig(2, rootKeyPair3);
 
         //
         // Cleanup

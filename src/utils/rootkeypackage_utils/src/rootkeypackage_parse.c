@@ -681,6 +681,7 @@ done:
 ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* rootObj, ADUC_RootKeyPackage* outPackage)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    VECTOR_HANDLE hashes = NULL;
 
     JSON_Array* signaturesArray = json_object_get_array(rootObj, "signatures");
     if (signaturesArray == NULL)
@@ -689,8 +690,80 @@ ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* rootObj, ADUC_RootKeyPac
         goto done;
     }
 
+    size_t cnt = json_array_get_count(signaturesArray);
+    if (cnt == 0)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        goto done;
+    }
+
+    hashes = VECTOR_create(sizeof(ADUC_RootKeyPackage_Hash));
+    if (hashes == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
+        goto done;
+    }
+
+    for (size_t i = 0; i < cnt; ++i)
+    {
+        ADUC_RootKeyPackage_Hash hashElement = { .alg = ADUC_RootKeyShaAlgorithm_INVALID, .hash = NULL };
+        ADUC_RootKeyShaAlgorithm tmpAlg = ADUC_RootKeyShaAlgorithm_INVALID;
+        CONSTBUFFER_HANDLE hashBuf = NULL;
+
+        JSON_Object* hashJsonArrayElementObj = json_array_get_object(signaturesArray, i);
+        if (hashJsonArrayElementObj == NULL)
+        {
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+            goto done;
+        }
+
+        result = RootKeyPackage_ParseShaHashAlg(hashJsonArrayElementObj, &tmpAlg);
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            goto done;
+        }
+
+        result = RootKeyPackage_ParseShaHashValue(hashJsonArrayElementObj, "sig", &hashBuf);
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            goto done;
+        }
+
+        hashElement.alg = tmpAlg;
+        hashElement.hash = hashBuf;
+
+        if (VECTOR_push_back(hashes, &hashElement, 1) != 0)
+        {
+            // can't add to vector, so free it
+            CONSTBUFFER_DecRef(hashElement.hash);
+            hashElement.hash = NULL;
+
+            result.ExtendedResultCode = ADUC_ERC_NOMEM;
+            goto done;
+        }
+        memset(&hashElement, 0, sizeof(hashElement));
+    }
+
+    outPackage->signatures = hashes;
+    hashes = NULL;
+
     result.ResultCode = ADUC_GeneralResult_Success;
 done:
+
+    if (hashes != NULL)
+    {
+        size_t cnt = VECTOR_size(hashes);
+        for (size_t i = 0; i < cnt; ++i)
+        {
+            ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(hashes, i);
+            if (node != NULL && node->hash != NULL)
+            {
+                CONSTBUFFER_DecRef(node->hash);
+            }
+        }
+
+        VECTOR_destroy(hashes);
+    }
 
     return result;
 }
