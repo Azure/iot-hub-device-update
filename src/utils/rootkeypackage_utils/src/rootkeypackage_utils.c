@@ -83,6 +83,12 @@ done:
     return result;
 }
 
+ADUC_Result ADUC_RootKeyPackageUtil_DownloadPackage(char** outPathToRootKeyPackage)
+{
+    ADUC_Result result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+    return result;
+}
+
 /**
  * @brief Cleans up the disabled root keys in the rootkey package.
  *

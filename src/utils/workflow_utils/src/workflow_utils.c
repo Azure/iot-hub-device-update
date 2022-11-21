@@ -710,8 +710,8 @@ const char* _workflow_get_properties_retryTimestamp(ADUC_WorkflowHandle handle)
  *
  * @details Caller must never free workflowId.
  */
-static void workflow_parse_peek_unprotected_workflow_properties(
-    JSON_Object* updateActionJsonObj, ADUCITF_UpdateAction* outWorkflowUpdateAction, const char** outWorkflowId)
+void workflow_parse_peek_unprotected_workflow_properties(
+    JSON_Object* updateActionJsonObj, ADUCITF_UpdateAction* outWorkflowUpdateAction, char** outWorkflowId)
 {
     ADUCITF_UpdateAction updateAction = ADUCITF_UpdateAction_Undefined;
     const char* workflowId = NULL;
@@ -730,7 +730,11 @@ static void workflow_parse_peek_unprotected_workflow_properties(
 
     if (outWorkflowId != NULL)
     {
-        *outWorkflowId = workflowId;
+        *outWorkflowId = NULL;
+        if (workflowId != NULL)
+        {
+            *outWorkflowId = workflowId == NULL ? NULL : workflow_copy_string(workflowId);
+        }
     }
 }
 
@@ -2411,13 +2415,14 @@ workflow_init_from_file(const char* updateManifestFile, bool validateManifest, A
 
     ADUC_WorkflowHandle workflowHandle = NULL;
 
+    JSON_Value* rootJsonValue = NULL;
+
     if (updateManifestFile == NULL || outWorkflowHandle == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_ERROR_BAD_PARAM;
         goto done;
     }
 
-    JSON_Value* rootJsonValue = NULL;
     result = workflow_parse_json(true /* isFile */, updateManifestFile, &rootJsonValue);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -3949,6 +3954,32 @@ void workflow_set_force_update(ADUC_WorkflowHandle handle, bool forceUpdate)
     {
         wf->ForceUpdate = forceUpdate;
     }
+}
+
+bool workflow_init_workflow_handle(ADUC_WorkflowData* workflowData)
+{
+    ADUC_Workflow* wf = malloc(sizeof(*wf));
+    if (wf == NULL)
+    {
+        return false;
+    }
+
+    memset(wf, 0, sizeof(*wf));
+
+    workflowData->WorkflowHandle = wf;
+    return true;
+}
+
+bool workflow_set_update_action_object(ADUC_WorkflowHandle handle, JSON_Object* jsonObj)
+{
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    if (wf != NULL)
+    {
+        wf->UpdateActionObject = jsonObj;
+        return true;
+    }
+
+    return false;
 }
 
 EXTERN_C_END

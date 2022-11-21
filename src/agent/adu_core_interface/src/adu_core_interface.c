@@ -16,6 +16,8 @@
 #include "aduc/d2c_messaging.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
+#include "aduc/rootkeypackage_types.h"
+#include "aduc/rootkeypackage_utils.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/types/update_content.h"
 #include "aduc/workflow_data_utils.h"
@@ -125,7 +127,8 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
  * @param workflowData The workflow data.
  * @return _Bool true if call succeeded.
  */
-static _Bool ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_value, ADUC_WorkflowData* workflowData)
+static _Bool
+ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_value, ADUC_WorkflowData* workflowData)
 {
     _Bool success = false;
 
@@ -311,6 +314,77 @@ void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext)
     *componentContext = NULL;
 }
 
+// TODO: Remove once real root key util function is available.
+static bool RootKeyUtil_NeedNewRootKeys()
+{
+    return false;
+}
+
+// TODO: Remove once real root key util function is available.
+static ADUC_Result RootKeyUtil_VerifyAndInstallRootKeys(ADUC_RootKeyPackage* rootKeyPackage)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Success, .ExtendedResultCode = 0 };
+    return result;
+}
+
+/**
+ * @brief Reports DeploymentInProgress for a propertyUpdate update action json.
+ *
+ * @param propertyValue The json value to use for reporting.
+ * @return true on reporting success.
+ */
+static bool ReportDeploymentInProgress(JSON_Value* propertyValue)
+{
+    JSON_Value* propertyValueCopy = NULL;
+    bool reportingSuccess = false;
+
+    // fake workflowData and workflow handle for reporting DeploymentInProgress
+    ADUC_WorkflowData inProgressWorkflowData;
+    memset(&inProgressWorkflowData, 0, sizeof(inProgressWorkflowData));
+    if (!ADUC_WorkflowData_InitWorkflowHandle(&inProgressWorkflowData))
+    {
+        goto done;
+    }
+
+    // Synthesize workflowData current action and set a copy of the
+    // propertyValue to workflow UpdateActionObject, both of which will be
+    // needed to generate the reporting json for DeploymentInProgress.
+    inProgressWorkflowData.CurrentAction = ADUCITF_UpdateAction_ProcessDeployment;
+    propertyValueCopy = json_value_deep_copy(propertyValue);
+    if (propertyValueCopy == NULL)
+    {
+        goto done;
+    }
+
+    if (!workflow_set_update_action_object(inProgressWorkflowData.WorkflowHandle, json_object(propertyValueCopy)))
+    {
+        goto done;
+    }
+
+    reportingSuccess = AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
+        (ADUC_WorkflowDataToken)&inProgressWorkflowData,
+        ADUCITF_State_DeploymentInProgress,
+        NULL /* result */,
+        NULL /* installedUpdateId */);
+    if (!reportingSuccess)
+    {
+        goto done;
+    }
+
+    ADUC_WorkflowData_SetLastReportedState(ADUCITF_State_DeploymentInProgress, &inProgressWorkflowData);
+    Log_RequestFlush();
+
+    reportingSuccess = true;
+done:
+
+    if (propertyValueCopy != NULL)
+    {
+        json_value_free(propertyValueCopy);
+    }
+
+    return reportingSuccess;
+}
+
 void OrchestratorUpdateCallback(
     ADUC_ClientHandle clientHandle,
     JSON_Value* propertyValue,
@@ -319,7 +393,13 @@ void OrchestratorUpdateCallback(
     void* context)
 {
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)context;
+
     STRING_HANDLE jsonToSend = NULL;
+    char* ackString = NULL;
+    JSON_Object* signatureObj = NULL;
+
+    ADUCITF_UpdateAction updateAction = ADUCITF_UpdateAction_Undefined;
+    char* workflowId = NULL;
 
     // Reads out the json string so we can Log Out what we've got.
     // The value will be parsed and handled in ADUC_Workflow_HandlePropertyUpdate.
@@ -333,8 +413,7 @@ void OrchestratorUpdateCallback(
     }
 
     // To reduce TWIN size, remove UpdateManifestSignature and fileUrls before ACK.
-    char* ackString = NULL;
-    JSON_Object* signatureObj = json_value_get_object(propertyValue);
+    signatureObj = json_value_get_object(propertyValue);
     if (signatureObj != NULL)
     {
         json_object_set_null(signatureObj, "updateManifestSignature");
@@ -343,6 +422,56 @@ void OrchestratorUpdateCallback(
     }
 
     Log_Debug("Update Action info string (%s), property version (%d)", ackString, propertyVersion);
+
+    // If a
+    // We do this instead of waiting for update manifest signature to be
+    // verified because we may need to fetch new root keys that are used
+    // to verify the signing keys in the update manifest signature.
+    //
+    // If we waited to report In-Progress state until after root key package
+    // is downloaded, verified, and installed, then, in the worst case, the
+    // service would not be updated of In-Progress state for up to 48 hours
+    // due to download retry policy.
+
+    workflow_parse_peek_unprotected_workflow_properties(json_object(propertyValue), &updateAction, &workflowId);
+
+    if (updateAction == ADUCITF_UpdateAction_ProcessDeployment && !IsNullOrEmpty(workflowId))
+    {
+        Log_Debug("Processing deployment %s ...", workflowId);
+
+        bool reportingSuccess = ReportDeploymentInProgress(propertyValue);
+        if (!reportingSuccess)
+        {
+            Log_Warn(
+                "Kick off reporting of deployment in progress failed. Continuing to process deployment %s",
+                workflowId);
+        }
+
+        workflow_free_string(workflowId);
+
+        if (RootKeyUtil_NeedNewRootKeys()) // TODO: Replace with call to the real rootkey utils
+        {
+            ADUC_RootKeyPackage rootKeyPackage;
+            memset(&rootKeyPackage, 0, sizeof(rootKeyPackage));
+
+            char* filePathToDownloadedRootKeyPackage = NULL;
+            ADUC_Result rootKeyResult = ADUC_RootKeyPackageUtil_DownloadPackage(&filePathToDownloadedRootKeyPackage);
+            free(filePathToDownloadedRootKeyPackage);
+            if (IsAducResultCodeFailure(rootKeyResult.ResultCode))
+            {
+                // TODO: Report failed rootKeyResult
+                goto done;
+            }
+
+            rootKeyResult = RootKeyUtil_VerifyAndInstallRootKeys(
+                &rootKeyPackage); // TODO: Replace with call to the real rootkey utils.
+            if (IsAducResultCodeFailure(rootKeyResult.ResultCode))
+            {
+                // TODO: Report failed rootKeyResult
+                goto done;
+            }
+        }
+    }
 
     ADUC_Workflow_HandlePropertyUpdate(workflowData, (const unsigned char*)jsonString, sourceContext->forceUpdate);
     free(jsonString);
