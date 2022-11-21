@@ -1172,6 +1172,7 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
 
         // NOTE: do not free the handle as it is owned by the DownloadHandlerFactory.
         DownloadHandlerHandle* handle = ADUC_DownloadHandlerFactory_LoadDownloadHandler(fileEntity->DownloadHandlerId);
+        workflow_free_file_entity(fileEntity);
         if (handle != NULL)
         {
             result = ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(handle, workflowHandle);

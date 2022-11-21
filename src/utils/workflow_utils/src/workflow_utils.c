@@ -702,26 +702,56 @@ const char* _workflow_get_properties_retryTimestamp(ADUC_WorkflowHandle handle)
 }
 
 /**
+ * @brief peeks at the properties under the "workflow" unprotected property
+ *
+ * @param updateActionJsonObj The JSON object of the update action JSON.
+ * @param outWorkflowUpdateAction The output parameter for receiving the value of "action" under "workflow". May be set to NULL if there was none in the JSON.
+ * @param outWorkflowId The output parameter for receiving the value of "id" under "workflow". May be set to NULL if there was none in the JSON.
+ *
+ * @details Caller must never free workflowId.
+ */
+static void workflow_parse_peek_unprotected_workflow_properties(
+    JSON_Object* updateActionJsonObj, ADUCITF_UpdateAction* outWorkflowUpdateAction, const char** outWorkflowId)
+{
+    ADUCITF_UpdateAction updateAction = ADUCITF_UpdateAction_Undefined;
+    const char* workflowId = NULL;
+
+    if (json_object_dothas_value(updateActionJsonObj, ADUCITF_FIELDNAME_WORKFLOW_DOT_ACTION))
+    {
+        updateAction = json_object_dotget_number(updateActionJsonObj, ADUCITF_FIELDNAME_WORKFLOW_DOT_ACTION);
+    }
+
+    workflowId = json_object_dotget_string(updateActionJsonObj, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID);
+
+    if (outWorkflowUpdateAction != NULL)
+    {
+        *outWorkflowUpdateAction = updateAction;
+    }
+
+    if (outWorkflowId != NULL)
+    {
+        *outWorkflowId = workflowId;
+    }
+}
+
+/**
  * @brief Helper function for checking the hash of the updatemanifest is equal to the
  * hash held within the signature
- * @param updateActionJson JSON value created form an updateActionJsonString and contains
- * both the updateManifest and the updateManifestSignature
+ * @param updateActionObject update action JSON object.
  * @returns true on success and false on failure
  */
-_Bool _Json_ValidateManifestHash(const JSON_Value* updateActionJson)
+static _Bool Json_ValidateManifestHash(const JSON_Object* updateActionObject)
 {
     _Bool success = false;
 
     JSON_Value* signatureValue = NULL;
     char* jwtPayload = NULL;
 
-    if (updateActionJson == NULL)
+    if (updateActionObject == NULL)
     {
-        Log_Error("updateActionJson passed to _Json_ValidateManifestHash is NULL");
+        Log_Error("NULL updateActionObject");
         goto done;
     }
-
-    JSON_Object* updateActionObject = json_value_get_object(updateActionJson);
 
     const char* updateManifestStr = json_object_get_string(updateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFEST);
 
@@ -772,38 +802,292 @@ done:
 }
 
 /**
- * @brief A helper function for parsing workflow data from file, or from string.
+ * @brief Validates the update manifest signature.
+ * @param updateActionObject The update action JSON object.
  *
- * @param isFile A boolean indicates whether @p source is an input file, or an input JSON string.
- * @param source An input file or JSON string.
- * @param validateManifest A boolean indicates whether to validate the manifest.
- * @param handle An output workflow object handle.
- * @return ADUC_Result
+ * @return ADUC_Result The result.
  */
-ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManifest, ADUC_WorkflowHandle* handle)
+static ADUC_Result workflow_validate_update_manifest_signature(JSON_Object* updateActionObject)
 {
-    ADUC_Result result = { ADUC_GeneralResult_Failure };
-    JSON_Value* updateActionJson = NULL;
-    char* workFolder = NULL;
-    STRING_HANDLE detachedUpdateManifestFilePath = NULL;
-    ADUC_FileEntity* fileEntity = NULL;
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
-    if (handle == NULL)
+    if (updateActionObject == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_ERROR_BAD_PARAM;
         return result;
     }
 
-    *handle = NULL;
+    const char* manifestSignature =
+        json_object_get_string(updateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFESTSIGNATURE);
+    if (manifestSignature == NULL)
+    {
+        Log_Error("Invalid manifest. Does not contain a signature");
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MANIFEST_VALIDATION_FAILED;
+        goto done;
+    }
 
-    ADUC_Workflow* wf = malloc(sizeof(*wf));
-    if (wf == NULL)
+    JWSResult jwsResult = VerifyJWSWithSJWK(manifestSignature);
+    if (jwsResult != JWSResult_Success)
+    {
+        Log_Error("Manifest signature validation failed with result: %u", jwsResult);
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MANIFEST_VALIDATION_FAILED;
+        goto done;
+    }
+
+    if (!Json_ValidateManifestHash(updateActionObject))
+    {
+        // Handle failed hash case
+        Log_Error("Json_ValidateManifestHash failed");
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MANIFEST_VALIDATION_FAILED;
+        goto done;
+    }
+
+    result.ResultCode = ADUC_GeneralResult_Success;
+done:
+
+    return result;
+}
+
+/**
+ * @brief Updates the workflow object's UpdateManifest JSON object based on the workflow object's UpdateAction JSON object.
+ *
+ * @param wf The workflow object.
+ *
+ * @return ADUC_Result The result
+ */
+static ADUC_Result UpdateWorkflowUpdateManifestObjFromUpdateActionObj(ADUC_Workflow* wf)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
+    if (json_object_has_value_of_type(wf->UpdateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFEST, JSONString) == 1)
+    {
+        // Deserialize update manifest.
+        const char* updateManifestString =
+            json_object_get_string(wf->UpdateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFEST);
+        if (updateManifestString == NULL)
+        {
+            char* s = json_serialize_to_string(json_object_get_wrapping_value(wf->UpdateActionObject));
+            Log_Error("No Update Manifest\n%s", s);
+            json_free_serialized_string(s);
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_NO_UPDATE_MANIFEST;
+            goto done;
+        }
+
+        wf->UpdateManifestObject = json_value_get_object(json_parse_string(updateManifestString));
+    }
+    // In case the Update Manifest is in a from of JSON object.
+    else if (json_object_has_value_of_type(wf->UpdateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFEST, JSONObject))
+    {
+        JSON_Value* v = json_object_get_value(wf->UpdateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFEST);
+        if (v != NULL)
+        {
+            char* serialized = json_serialize_to_string(v);
+            wf->UpdateManifestObject = json_value_get_object(json_parse_string(serialized));
+            json_free_serialized_string(serialized);
+        }
+    }
+
+    if (wf->UpdateManifestObject == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_UPDATE_MANIFEST;
+        goto done;
+    }
+
+    result.ResultCode = ADUC_GeneralResult_Success;
+done:
+
+    return result;
+}
+
+/**
+ * @brief Get the Detached Manifest Json Obj from the downloaded detached manifest file in the sandbox work folder.
+ *
+ * @param detachedUpdateManifestFilePath The detached update manifest file path.
+ * @param outDetachedManifestJsonObj The output parameter for detached manifest JSON object.
+ * @return ADUC_Result The result.
+ */
+ADUC_Result GetDetachedManifestJsonObjFromSandbox(
+    const char* detachedUpdateManifestFilePath, JSON_Object** outDetachedManifestJsonObj)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
+    JSON_Value* rootValue = NULL;
+    const char* updateManifestString = NULL;
+    JSON_Object* detachedManifestJsonObj = NULL;
+
+    rootValue = json_parse_file(detachedUpdateManifestFilePath);
+    if (rootValue == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_DETACHED_UPDATE_MANIFEST_JSON_FILE;
+        goto done;
+    }
+
+    updateManifestString = json_object_get_string(json_value_get_object(rootValue), ADUCITF_FIELDNAME_UPDATEMANIFEST);
+    if (updateManifestString == NULL)
+    {
+        result.ExtendedResultCode =
+            ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_DETACHED_UPDATE_MANIFEST_MISSING_UPDATEMANIFEST_PROPERTY;
+        goto done;
+    }
+
+    detachedManifestJsonObj = json_value_get_object(json_parse_string(updateManifestString));
+    if (detachedManifestJsonObj == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_DETACHED_UPDATE_MANIFEST_JSON_STRING;
+        goto done;
+    }
+
+    // commit on success
+    *outDetachedManifestJsonObj = detachedManifestJsonObj;
+    detachedManifestJsonObj = NULL;
+
+    result.ResultCode = ADUC_GeneralResult_Success;
+
+done:
+    json_value_free(rootValue);
+
+    if (detachedManifestJsonObj != NULL)
+    {
+        json_value_free(json_object_get_wrapping_value(detachedManifestJsonObj));
+    }
+
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error("Failed getting valid detached manifest from sandbox, ERC %d", result.ExtendedResultCode);
+    }
+
+    return result;
+}
+
+/**
+ * @brief Replaces the existing update manifest JSON object in the workflow object with that of the detached manifest.
+ *
+ * @param workFolder The work folder download sandbox.
+ * @param detachedManifestFilePath The file path of detached manifest file.
+ * @param wf The aduc workflow in which the UpdateManifestObject will be replaced.
+ *
+ * @return ADUC_Result The result.
+ */
+ADUC_Result ReplaceExistingUpdateManifestWithDetachedManifest(
+    const char* workFolder, const char* detachedManifestFilePath, ADUC_Workflow* wf)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
+    JSON_Object* detachedManifestJsonObj = NULL;
+
+    STRING_HANDLE detachedUpdateManifestFilePath =
+        STRING_construct_sprintf("%s/%s", workFolder, detachedManifestFilePath);
+    if (detachedUpdateManifestFilePath == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
 
-    memset(wf, 0, sizeof(*wf));
+    result =
+        GetDetachedManifestJsonObjFromSandbox(STRING_c_str(detachedUpdateManifestFilePath), &detachedManifestJsonObj);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        goto done;
+    }
+
+    // Replace old manifest object with detached one.
+    json_value_free(json_object_get_wrapping_value(wf->UpdateManifestObject));
+    wf->UpdateManifestObject = detachedManifestJsonObj;
+    detachedManifestJsonObj = NULL;
+
+done:
+    STRING_delete(detachedUpdateManifestFilePath);
+
+    if (detachedManifestJsonObj != NULL)
+    {
+        json_value_free(json_object_get_wrapping_value(detachedManifestJsonObj));
+    }
+
+    return result;
+}
+
+/**
+ * @brief Downloads the detached v4+ update manifest and replaces existing one with it upon success.
+ *
+ * @param handle The workflow handle.
+ * @return ADUC_Result The result.
+ */
+
+static ADUC_Result DownloadAndUseDetachedManifest(ADUC_Workflow* wf)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
+    ADUC_FileEntity* fileEntity = NULL;
+    const char* workFolder = NULL;
+    int sandboxCreateResult = -1;
+
+    if (wf == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_ERROR_BAD_PARAM;
+        return result;
+    }
+
+    // There's only 1 file entity when the primary update manifest is detached.
+    if (!workflow_get_update_file(handle_from_workflow(wf), 0, &fileEntity))
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MISSING_DETACHED_UPDATE_MANIFEST_ENTITY;
+        goto done;
+    }
+
+    workFolder = workflow_get_workfolder(handle_from_workflow(wf));
+
+    sandboxCreateResult = ADUC_SystemUtils_MkSandboxDirRecursive(workFolder);
+    if (sandboxCreateResult != 0)
+    {
+        Log_Error("Unable to create folder %s, error %d", workFolder, sandboxCreateResult);
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_DETACHED_UPDATE_MANIFEST_DOWNLOAD_FAILED;
+        goto done;
+    }
+
+    // Download the detached update manifest file.
+    result = ExtensionManager_Download(
+        fileEntity,
+        handle_from_workflow(wf),
+        &Default_ExtensionManager_Download_Options,
+        NULL /* downloadProgressCallback */);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        workflow_set_result_details(
+            handle_from_workflow(wf), "Cannot download primary detached update manifest file.");
+        goto done;
+    }
+
+    result = ReplaceExistingUpdateManifestWithDetachedManifest(workFolder, fileEntity->TargetFilename, wf);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        goto done;
+    }
+
+done:
+    workflow_free_file_entity(fileEntity);
+
+    return result;
+}
+
+/**
+ * @brief A helper function for getting the JSON_Value from file or string.
+ *
+ * @param isFile A boolean indicates whether @p source is an input file, or an input JSON string.
+ * @param source An input file or JSON string.
+ * @param outJsonValue The output parameter for json value.
+ *
+ * @returns ADUC_Result The result.
+ */
+ADUC_Result workflow_parse_json(bool isFile, const char* source, JSON_Value** outJsonValue)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    JSON_Value* updateActionJson = NULL;
+
+    if (source == NULL || outJsonValue == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_ERROR_BAD_PARAM;
+        return result;
+    }
 
     if (isFile)
     {
@@ -833,147 +1117,115 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
         goto done;
     }
 
-    JSON_Object* updateActionObject = json_value_get_object(updateActionJson);
-    ADUCITF_UpdateAction updateAction = ADUCITF_UpdateAction_Undefined;
-    if (json_object_dothas_value(updateActionObject, ADUCITF_FIELDNAME_WORKFLOW_DOT_ACTION))
+    *outJsonValue = updateActionJson;
+    updateActionJson = NULL;
+    result.ResultCode = ADUC_GeneralResult_Success;
+done:
+
+    if (updateActionJson != NULL)
     {
-        updateAction = json_object_dotget_number(updateActionObject, ADUCITF_FIELDNAME_WORKFLOW_DOT_ACTION);
+        json_value_free(updateActionJson);
     }
 
+    return result;
+}
+
+/**
+ * @brief A helper function for parsing workflow data from file, or from string.
+ *
+ * @param updateActionJson The update action JSON value.
+ * @param validateManifest A boolean indicates whether to validate the manifest.
+ * @param handle An output workflow object handle.
+ * @return ADUC_Result The result.
+ */
+ADUC_Result _workflow_parse(JSON_Value* updateActionJson, bool validateManifest, ADUC_WorkflowHandle* handle)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
+    ADUC_Workflow* wf = NULL;
+    JSON_Value* updateActionJsonClone = NULL;
+    JSON_Object* updateActionObject = NULL;
+    ADUCITF_UpdateAction updateAction = ADUCITF_UpdateAction_Undefined;
+
+    if (handle == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_ERROR_BAD_PARAM;
+        return result;
+    }
+
+    *handle = NULL;
+
+    wf = malloc(sizeof(*wf));
+    if (wf == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
+        goto done;
+    }
+
+    memset(wf, 0, sizeof(*wf));
+
+    updateActionJsonClone = json_value_deep_copy(updateActionJson);
+    updateActionJson = NULL;
+
+    // commit ownership of cloned JSON_Value to the workflow's UpdateActionObject.
+    updateActionObject = json_value_get_object(updateActionJsonClone);
     wf->UpdateActionObject = updateActionObject;
+    updateActionJsonClone = NULL;
+
+    // At this point, we have had a side-effect of committing to the
+    // wf->UpdateActionObject.
+    //
+    // Now, if not a cancel update action, then update the
+    // wf->UpdateManifestObj only after validating update manifest signature.
+    //
+    // After that, if a detached manifest exists in the manifest, then
+    // overwrite wf->UpdateManifestObj after downloading and verifying the
+    // detached manifest.
 
     // 'cancel' action doesn't contains UpdateManifest and UpdateSignature.
     // Skip this part.
+    workflow_parse_peek_unprotected_workflow_properties(updateActionObject, &updateAction, NULL /* outWorkflowId */);
     if (updateAction != ADUCITF_UpdateAction_Cancel)
     {
+        ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
         // Skip signature validation if specified.
         // Also, some (partial) action data may not contain an UpdateAction,
         // e.g., Components-Update manifest that delivered as part of Bundle Updates,
         // We will skip the validation for these cases.
-        if (validateManifest && (updateAction != ADUCITF_UpdateAction_Undefined))
+        if (updateAction != ADUCITF_UpdateAction_Undefined && validateManifest)
         {
-            const char* manifestSignature =
-                json_object_get_string(updateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFESTSIGNATURE);
-            if (manifestSignature == NULL)
+            tmpResult = workflow_validate_update_manifest_signature(updateActionObject);
+            if (IsAducResultCodeFailure(tmpResult.ResultCode))
             {
-                Log_Error("Invalid manifest. Does not contain a signature");
-                result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MANIFEST_VALIDATION_FAILED;
-                goto done;
-            }
-
-            JWSResult jwsResult = VerifyJWSWithSJWK(manifestSignature);
-            if (jwsResult != JWSResult_Success)
-            {
-                Log_Error("Manifest signature validation failed with result: %u", jwsResult);
-                result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MANIFEST_VALIDATION_FAILED;
-                goto done;
-            }
-
-            if (!_Json_ValidateManifestHash(updateActionJson))
-            {
-                // Handle failed hash case
-                Log_Error("_Json_ValidateManifestHash failed");
-                result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MANIFEST_VALIDATION_FAILED;
+                result = tmpResult;
                 goto done;
             }
         }
 
-        // Parsing Update Manifest in a form of JSON string.
-        if (json_object_has_value_of_type(wf->UpdateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFEST, JSONString) == 1)
+        tmpResult = UpdateWorkflowUpdateManifestObjFromUpdateActionObj(wf);
+        if (IsAducResultCodeFailure(tmpResult.ResultCode))
         {
-            // Deserialize update manifest.
-            const char* updateManifestString =
-                json_object_get_string(wf->UpdateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFEST);
-            if (updateManifestString == NULL)
-            {
-                char* s = json_serialize_to_string(json_object_get_wrapping_value(wf->UpdateActionObject));
-                Log_Error("No Update Manifest\n%s", s);
-                json_free_serialized_string(s);
-                result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_NO_UPDATE_MANIFEST;
-                goto done;
-            }
-
-            wf->UpdateManifestObject = json_value_get_object(json_parse_string(updateManifestString));
-        }
-        // In case the Update Manifest is in a from of JSON object.
-        else if (json_object_has_value_of_type(wf->UpdateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFEST, JSONObject))
-        {
-            JSON_Value* v = json_object_get_value(wf->UpdateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFEST);
-            if (v != NULL)
-            {
-                char* s = json_serialize_to_string(v);
-                wf->UpdateManifestObject = json_value_get_object(json_parse_string(s));
-            }
-        }
-
-        if (wf->UpdateManifestObject == NULL)
-        {
-            result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_UPDATE_MANIFEST;
+            result = tmpResult;
             goto done;
         }
 
-        int manifestVersion = workflow_get_update_manifest_version(handle_from_workflow(wf));
-
         // Starting from version 4, the update manifest can contain both embedded manifest,
         // or a downloadable update manifest file (files["manifest"] contains the update manifest file info)
-        int sandboxCreateResult = -1;
-        const char* detachedManifestFileId =
-            json_object_get_string(wf->UpdateManifestObject, UPDATE_MANIFEST_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID);
-        if (!IsNullOrEmpty(detachedManifestFileId))
+        if (!IsNullOrEmpty(json_object_get_string(
+                wf->UpdateManifestObject, UPDATE_MANIFEST_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID)))
         {
-            // There's only 1 file entity when the primary update manifest is detached.
-            if (!workflow_get_update_file(handle_from_workflow(wf), 0, &fileEntity))
+            tmpResult = DownloadAndUseDetachedManifest(wf);
+            if (IsAducResultCodeFailure(tmpResult.ResultCode))
             {
-                result.ExtendedResultCode =
-                    ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MISSING_DETACHED_UPDATE_MANIFEST_ENTITY;
+                result = tmpResult;
                 goto done;
-            }
-
-            workFolder = workflow_get_workfolder(handle_from_workflow(wf));
-
-            sandboxCreateResult = ADUC_SystemUtils_MkSandboxDirRecursive(workFolder);
-            if (sandboxCreateResult != 0)
-            {
-                Log_Error("Unable to create folder %s, error %d", workFolder, sandboxCreateResult);
-                result.ExtendedResultCode =
-                    ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_DETACHED_UPDATE_MANIFEST_DOWNLOAD_FAILED;
-                goto done;
-            }
-
-            // Download the detached update manifest file.
-            result = ExtensionManager_Download(
-                fileEntity, handle, &Default_ExtensionManager_Download_Options, NULL /* downloadProgressCallback */);
-            if (IsAducResultCodeFailure(result.ResultCode))
-            {
-                workflow_set_result_details(
-                    handle_from_workflow(wf), "Cannot download primary detached update manifest file.");
-                goto done;
-            }
-            else
-            {
-                // Replace existing updateManifest with the one from detached update manifest file.
-                detachedUpdateManifestFilePath =
-                    STRING_construct_sprintf("%s/%s", workFolder, fileEntity->TargetFilename);
-                JSON_Object* rootObj =
-                    json_value_get_object(json_parse_file(STRING_c_str(detachedUpdateManifestFilePath)));
-                const char* updateManifestString = json_object_get_string(rootObj, ADUCITF_FIELDNAME_UPDATEMANIFEST);
-                JSON_Object* detachedManifest = json_value_get_object(json_parse_string(updateManifestString));
-                json_value_free(json_object_get_wrapping_value(rootObj));
-
-                if (detachedManifest == NULL)
-                {
-                    result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_DETACHED_UPDATE_MANIFEST;
-                    goto done;
-                }
-
-                // Free old manifest value.
-                json_value_free(json_object_get_wrapping_value(wf->UpdateManifestObject));
-                wf->UpdateManifestObject = detachedManifest;
             }
         }
 
         if (validateManifest)
         {
+            int manifestVersion = workflow_get_update_manifest_version(handle_from_workflow(wf));
             if (manifestVersion < SUPPORTED_UPDATE_MANIFEST_VERSION_MIN
                 || manifestVersion > SUPPORTED_UPDATE_MANIFEST_VERSION_MAX)
             {
@@ -988,28 +1240,23 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
         }
     }
 
+    *handle = wf;
     result.ResultCode = ADUC_GeneralResult_Success;
     result.ExtendedResultCode = 0;
 
 done:
 
-    workflow_free_file_entity(fileEntity);
-    fileEntity = NULL;
-
-    STRING_delete(detachedUpdateManifestFilePath);
+    if (updateActionJsonClone != NULL)
+    {
+        json_value_free(updateActionJsonClone);
+    }
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        if (updateActionJson != NULL)
-        {
-            json_value_free(updateActionJson);
-        }
-
         free(wf);
         wf = NULL;
     }
 
-    *handle = wf;
     return result;
 }
 
@@ -2157,35 +2404,55 @@ done:
     return result;
 }
 
-ADUC_Result workflow_init_from_file(const char* updateManifestFile, bool validateManifest, ADUC_WorkflowHandle* handle)
+ADUC_Result
+workflow_init_from_file(const char* updateManifestFile, bool validateManifest, ADUC_WorkflowHandle* outWorkflowHandle)
 {
-    ADUC_Result result = { ADUC_GeneralResult_Failure };
-    if (updateManifestFile == NULL || handle == NULL)
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
+    ADUC_WorkflowHandle workflowHandle = NULL;
+
+    if (updateManifestFile == NULL || outWorkflowHandle == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_ERROR_BAD_PARAM;
         goto done;
     }
 
-    result = _workflow_parse(true, updateManifestFile, validateManifest, handle);
-
+    JSON_Value* rootJsonValue = NULL;
+    result = workflow_parse_json(true /* isFile */, updateManifestFile, &rootJsonValue);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         goto done;
     }
 
-    result = _workflow_init_helper(handle);
+    result = _workflow_parse(rootJsonValue, validateManifest, &workflowHandle);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        goto done;
+    }
+
+    result = _workflow_init_helper(workflowHandle);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        goto done;
+    }
+
+    *outWorkflowHandle = workflowHandle;
+    workflowHandle = NULL;
 
 done:
+
+    json_value_free(rootJsonValue);
+
+    if (workflowHandle != NULL)
+    {
+        workflow_free(workflowHandle);
+        workflowHandle = NULL;
+    }
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         Log_Error(
             "Failed to init workflow handle. result:%d (erc:0x%X)", result.ResultCode, result.ExtendedResultCode);
-        if (handle != NULL)
-        {
-            workflow_free(*handle);
-            *handle = NULL;
-        }
     }
 
     return result;
@@ -2404,15 +2671,18 @@ bool workflow_transfer_data(ADUC_WorkflowHandle targetHandle, ADUC_WorkflowHandl
 /**
  * @brief Instantiate and initialize workflow object with info from the given jsonData.
  *
- * @param updateManifestJson A JSON string containing update manifest data.
+ * @param updateManifestJsonStr A JSON string containing update manifest data.
  * @param validateManifest A boolean indicates whether to validate the update manifest.
  * @param handle An output workflow object handle.
  * @return ADUC_Result
  */
-ADUC_Result workflow_init(const char* updateManifestJson, bool validateManifest, ADUC_WorkflowHandle* handle)
+ADUC_Result workflow_init(const char* updateManifestJsonStr, bool validateManifest, ADUC_WorkflowHandle* handle)
 {
-    ADUC_Result result = { ADUC_GeneralResult_Failure };
-    if (updateManifestJson == NULL || handle == NULL)
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
+    JSON_Value* rootJsonValue = NULL;
+
+    if (updateManifestJsonStr == NULL || handle == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_ERROR_BAD_PARAM;
         goto done;
@@ -2420,7 +2690,13 @@ ADUC_Result workflow_init(const char* updateManifestJson, bool validateManifest,
 
     memset(handle, 0, sizeof(*handle));
 
-    result = _workflow_parse(false, updateManifestJson, validateManifest, handle);
+    result = workflow_parse_json(false /* isFile */, updateManifestJsonStr, &rootJsonValue);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        goto done;
+    }
+
+    result = _workflow_parse(rootJsonValue, validateManifest, handle);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         goto done;
@@ -2429,6 +2705,8 @@ ADUC_Result workflow_init(const char* updateManifestJson, bool validateManifest,
     result = _workflow_init_helper(handle);
 
 done:
+
+    json_value_free(rootJsonValue);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
