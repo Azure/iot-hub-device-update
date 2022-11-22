@@ -75,13 +75,13 @@ parts:
     #   - libdeliveryoptimization
 
 # TODO: define the deviceupdate-agent daemon
-# apps:
-#   # Defines 'deviceupdate-agent' service
-#   # See document: https://forum.snapcraft.io/t/snapcraft-app-and-service-metadata/8335
-#   deviceupdate-agent:
-#     command : /usr/bin/AductIotAgent
-#     daemon: simple
-#     refresh-mode: restart
-#     restart-condition: always
-#     restart-delay: 10s
+apps:
+  # Defines 'deviceupdate-agent' service
+  # See document: https://forum.snapcraft.io/t/snapcraft-app-and-service-metadata/8335
+  deviceupdate-agent:
+    command : usr/bin/AducIotAgent
+    daemon: simple
+    refresh-mode: restart
+    restart-condition: always
+    restart-delay: 10s
 
