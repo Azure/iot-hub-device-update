@@ -34,7 +34,7 @@ parts:
     plugin: nil
     source: .
     override-build: |
-      ./scripts/build.sh -p linux
+      ./scripts/build.sh --ubuntu-core-snap-only
       mkdir -p ../install/usr/bin
       mkdir -p ../install/usr/lib/adu
       mkdir -p ../install/var/lib/adu/extensions/sources
