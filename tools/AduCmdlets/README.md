@@ -2,6 +2,10 @@
 
 This directory contains sample PowerShell and BASH scripts for creating import manifest and importing update to Device Update for IoT Hub.
 
+## Recommended approach: Azure CLI
+
+All of the capabilities provided by the scripts in this directory can also be easily utilized via the **Azure Command Line Interface (CLI)**. We recommend the Azure CLI as the most robust and straightforward mechanism to perform import actions from the command line, as described here: [Prepare an update to import into Device Update for IoT Hub](https://learn.microsoft.com/en-us/azure/iot-hub-device-update/create-update). We may deprecate the PowerShell scripts at a future time, so avoid taking dependencies on them.
+
 ## Creating import manifest
 
 ### Simple example
