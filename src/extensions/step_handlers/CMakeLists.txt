@@ -1,8 +1,12 @@
-add_subdirectory (apt_handler)
+if (NOT ADUC_UBUNTU_CORE_SNAP_ONLY)
+    # Don't need these handlers when build for Ubuntu Core snap.
+    add_subdirectory (apt_handler)
+    add_subdirectory (simulator_handler)
+    add_subdirectory (swupdate_handler)
+    add_subdirectory (swupdate_handler_v2)
+endif()
+
 add_subdirectory (script_handler)
-add_subdirectory (simulator_handler)
-add_subdirectory (swupdate_handler)
-add_subdirectory (swupdate_handler_v2)
 
 #
 # Note: add more update content handler extensions here.
