@@ -1477,7 +1477,6 @@ int main(int argc, char** argv)
 #ifdef ADUC_GIT_INFO
     Log_Info("Git Info: %s", ADUC_GIT_INFO);
 #endif
-    Log_Info("Agent built with handlers: %s.", ADUC_CONTENT_HANDLERS);
     Log_Info(
         "Supported Update Manifest version: min: %d, max: %d",
         SUPPORTED_UPDATE_MANIFEST_VERSION_MIN,
