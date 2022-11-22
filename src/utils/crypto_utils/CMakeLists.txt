@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.5)
 
 project (crypto_utils)
 
-add_library (${PROJECT_NAME} STATIC src/crypto_lib.c src/root_key_util.c src/base64_utils.c)
+add_library (${PROJECT_NAME} STATIC src/crypto_lib.c src/base64_utils.c)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc)

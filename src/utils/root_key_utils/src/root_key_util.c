@@ -19,11 +19,15 @@
 #include "crypto_lib.h"
 #include "root_key_util.h"
 #include "root_key_result.h"
+#include "aduc/rootkeypackage_parse.h"
+#include "aduc/rootkeypackage_types.h"
+#include "aduc/rootkeypackage_utils.h"
 
 //
 // Root Key Type Definitions
 //
 
+// TODO: Use the RootKeyPackage definition format
 typedef struct tagRSARootKey
 {
     const char* kid;
@@ -181,14 +185,39 @@ static const RSARootKey HardcodedRSARootKeyList[] =
 //
 // Static Global for the Root Key Package
 //
-static ADUC_RootKeyPackage_* rootKeyPackage = NULL;
+static ADUC_RootKeyPackage_* loadedRootKeyPackage = NULL;
 
 
 // Returns no-good root keys upon both hardcoded root keys being disabled
 
-VECTOR_HANDLE GetHardcodedRootKeys(VECTOR_HANDLE* outRootKeys)
+_Bool GetHardcodedRootKeys(VECTOR_HANDLE* outRootKeys)
 {
-    VECTOR_HANDLE
+    _Bool success = false;
+
+    VECTOR_HANDLE tempHandle = VECTOR_create(sizeof(ADUC_RootKey));
+
+    if (tempHandle == NULL)
+    {
+        goto done;
+    }
+done:
+    if (success){
+        *outRootKeys = tempHandle;
+    }
+
+    if (tempHandle != NULL)
+    {
+        const size_t tempHandleSize = VECTOR_size(tempHandle);
+
+        for (size_t i= 0; i < tempHandleSize; ++i )
+        {
+            ADUC_RootKey* rootKey = (ADUC_RootKey*)VECTOR_element(tempHandle,i);
+
+
+        }
+
+        VECTOR_destroy(tempHandle);
+    }
 }
 
 VECTOR_HANDLE GetLocalStoreRootKeys(void)
@@ -272,9 +301,10 @@ CryptoKeyHandle RootKeyUtility_GerKeyForKid(const char* kid)
     // New RSA Keys Go Here
     //
 
-    if (rootKeyPackage == NULL)
+    if (loadedRootKeyPackage == NULL)
     {
         // load the local store
+
     }
     return NULL;
 }

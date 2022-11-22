@@ -182,4 +182,27 @@ void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
     memset(rootKeyPackage, 0, sizeof(*rootKeyPackage));
 }
 
+
+_Bool ADUC_RootKeyPackage_Utils_RootKeyInitRSAKey(ADUC_RootKey** outKey, STRING_HANDLE kid, ADUC_RootKey_KeyType keyType, ADUC_RSA_RootKeyParameters* parameters )
+{
+    _Bool success = false;
+
+    ADUC_RootKey* tempKey = malloc(sizeof(ADUC_RootKey));
+
+    if (tempKey == NULL)
+    {
+        goto done;
+    }
+
+done:
+    if (! success)
+    {
+
+    }
+    return success;
+}
+void ADUC_RootKeyPackageUtils_RootKeyDeInit(ADUC_RootKey* key)
+{
+
+}
 EXTERN_C_END
