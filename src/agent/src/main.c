@@ -28,8 +28,10 @@
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
 #ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
+#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
 #    include "aduc/connection_string_utils.h"
 #    include <do_config.h>
+#endif
 #endif
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>

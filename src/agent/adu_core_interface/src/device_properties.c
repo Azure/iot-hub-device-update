@@ -10,8 +10,10 @@
 #include <aduc/logging.h>
 #include <aduc/types/update_content.h>
 
+#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
 #ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
 #    include <do_config.h>
+#endif
 #endif
 
 #include <stdlib.h>
@@ -180,6 +182,7 @@ _Bool DeviceProperties_AddVersions(JSON_Object* devicePropsObj)
         goto done;
     }
 
+#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
 #ifndef ADUC_PLATFORM_SIMULATOR
     do_version = deliveryoptimization_get_components_version();
 
@@ -197,6 +200,7 @@ _Bool DeviceProperties_AddVersions(JSON_Object* devicePropsObj)
             "Could not serialize JSON field: %s value: %s", ADUCITF_FIELDNAME_DEVICEPROPERTIES_DO_VERSION, do_version);
         goto done;
     }
+#endif
 #endif
 
     success = true;
