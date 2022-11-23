@@ -25,6 +25,8 @@ parts:
     source: .
     override-build: |
       ./scripts/install-deps.sh -a
+      mkdir -p ../install/usr/lib
+      cp /usr/local/lib/libdeliveryoptimization.so* ../install/usr/lib
 
   #
   # Agent component
@@ -38,10 +40,14 @@ parts:
       mkdir -p ../install/usr/bin
       mkdir -p ../install/usr/lib/adu
       mkdir -p ../install/var/lib/adu/extensions/sources
+      mkdir -p ../install/conf
+      echo 'placeholder' > ../install/conf/du-config.json
+      echo 'placeholder' > ../install/conf/du-diagnostic.json
       cp ../build/out/bin/AducIotAgent ../install/usr/bin/AducIotAgent
-      cp /usr/lib/libdeliveryoptimization.so* ../install/usr/lib
       cp ../build/out/bin/adu-shell ../install/usr/lib/adu
       cp ../build/out/lib/*.so ../install/var/lib/adu/extensions/sources
+
+    # cp /usr/lib/libdeliveryoptimization.so* ../install/usr/lib
 
     # Require install-deps
     after:
@@ -51,37 +57,57 @@ parts:
       - usr/lib/*
       - usr/lib/adu/*
       - var/lib/adu/extensions/sources/*.so
-    # stage-packages:
-    #   - libasn1-8-heimdal
-    #   - libboost-filesystem1.71.0
-    #   - libbrotli1
-    #   - libcurl4
-    #   - libgssapi3-heimdal
-    #   - libhcrypto4-heimdal
-    #   - libheimbase1-heimdal
-    #   - libheimntlm0-heimdal
-    #   - libhx509-5-heimdal
-    #   - libicu66
-    #   - libkrb5-26-heimdal
-    #   - libldap-2.4-2
-    #   - libnghttp2-14
-    #   - libpsl5
-    #   - libroken18-heimdal
-    #   - librtmp1
-    #   - libsasl2-2
-    #   - libssh-4
-    #   - libwind0-heimdal
-    #   - libxml2
-    #   - libdeliveryoptimization
+      - conf/*.*
+    stage-packages:
+      - libasn1-8-heimdal
+      - libboost-filesystem1.71.0
+      - libbrotli1
+      - libcurl4
+      - libgssapi3-heimdal
+      - libhcrypto4-heimdal
+      - libheimbase1-heimdal
+      - libheimntlm0-heimdal
+      - libhx509-5-heimdal
+      - libicu66
+      - libkrb5-26-heimdal
+      - libldap-2.4-2
+      - libnghttp2-14
+      - libpsl5
+      - libroken18-heimdal
+      - librtmp1
+      - libsasl2-2
+      - libssh-4
+      - libwind0-heimdal
+      - libxml2
 
-# TODO: define the deviceupdate-agent daemon
 apps:
-  # Defines 'deviceupdate-agent' service
+  # high-previlege tasks broker
+  adu-shell:
+    command: usr/lib/adu/adu-shell
+    plugs:
+      - network
+
+  # 'deviceupdate-agent' service
   # See document: https://forum.snapcraft.io/t/snapcraft-app-and-service-metadata/8335
   deviceupdate-agent:
-    command : usr/bin/AducIotAgent
+    command: usr/bin/AducIotAgent
     daemon: simple
     refresh-mode: restart
     restart-condition: always
     restart-delay: 10s
+    plugs:
+      - network
 
+environment:
+  LD_LIBRARY_PATH: "$LD_LIBRARY_PATH:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET"
+
+layout:
+# adu_data_dir
+  /var/lib/adu:
+    symlink: $SNAP/var/lib/adu
+# adu_conf_dir
+  /etc/adu:
+    symlink: $SNAP/config
+# adu_shell_dir
+  /usr/lib/adu:
+    symlink: $SNAP/usr/lib/adu
