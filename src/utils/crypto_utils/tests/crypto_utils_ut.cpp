@@ -62,7 +62,7 @@ TEST_CASE("RSA Keys")
 
         CHECK(key != nullptr);
 
-        FreeCryptoKeyHandle(key);
+        CryptoUtils_FreeCryptoKeyHandle(key);
     }
 
     SECTION("Getting a Root Key ID")
@@ -71,7 +71,7 @@ TEST_CASE("RSA Keys")
 
         CHECK(key != nullptr);
 
-        FreeCryptoKeyHandle(key);
+        CryptoUtils_FreeCryptoKeyHandle(key);
     }
 
     SECTION("Failing to get a Root Key")
@@ -114,7 +114,7 @@ TEST_CASE("Signature Verification")
         uint8_t* d_sig_handle = nullptr;
         size_t sig_len = Base64URLDecode(signature.c_str(), &d_sig_handle);
 
-        CHECK(IsValidSignature(
+        CHECK(CryptoUtils_IsValidSignature(
             "RS256",
             d_sig_handle,
             sig_len,
@@ -156,7 +156,7 @@ TEST_CASE("Signature Verification")
         uint8_t* d_sig_handle = nullptr;
         size_t sig_len = Base64URLDecode(signature.c_str(), &d_sig_handle);
 
-        CHECK(!IsValidSignature(
+        CHECK(!CryptoUtils_IsValidSignature(
             "RS256",
             d_sig_handle,
             sig_len,

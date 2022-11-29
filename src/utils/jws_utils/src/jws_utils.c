@@ -308,7 +308,7 @@ done:
 
     if (rootKey != NULL)
     {
-        FreeCryptoKeyHandle(rootKey);
+        CryptoUtils_FreeCryptoKeyHandle(rootKey);
     }
 
     return retval;
@@ -389,7 +389,7 @@ done:
 
     if (key != NULL)
     {
-        FreeCryptoKeyHandle(key);
+        CryptoUtils_FreeCryptoKeyHandle(key);
     }
     return result;
 }
@@ -457,7 +457,7 @@ JWSResult VerifyJWSWithKey(const char* blob, CryptoKeyHandle key)
 
     size_t decodedSignatureLen = Base64URLDecode(signature, &decodedSignature);
 
-    if (!IsValidSignature(
+    if (!CryptoUtils_IsValidSignature(
             alg, decodedSignature, decodedSignatureLen, (uint8_t*)headerPlusPayload, strlen(headerPlusPayload), key))
     {
         result = JWSResult_InvalidSignature;

@@ -183,12 +183,56 @@ static const RSARootKey HardcodedRSARootKeyList[] =
 // clang-format on
 
 //
-// Static Global for the Root Key Package
+// Root Key Validation Helper Functions
 //
-static ADUC_RootKeyPackage_* loadedRootKeyPackage = NULL;
 
+ADUC_RootKey* MakeADUC_RootKeyFromHardcodedRSAKey(const RSARootKey key)
+{
+    ADUC_RootKey* outKey =  NULL;
+    uint8_t* exponent_buf = NULL;
+    size_t  decodedExponentLength = 0;
 
-// Returns no-good root keys upon both hardcoded root keys being disabled
+    uint8_t* decodedModulus = NULL;
+    size_t decodedModulusLength = 0;
+
+    BUFFER_HANDLE n = NULL;
+
+    const size_t eLength = ARRAY_SIZE(key.N);
+    const size_t nLength = ARRAY_SIZE(key.e);
+
+    BUFFER_HANDLE e = BUFFER_create(key.e,eLength);
+
+    if (e == NULL)
+    {
+        goto done;
+    }
+
+    n = BUFFER_create(key.N,nLength);
+
+    if (n == NULL)
+    {
+        goto done;
+    }
+
+    if (! ADUC_RootKeyPackageUtils_RootKey_Init(&outKey,key.kid,ADUC_RootKey_KeyType_RSA,n,e))
+    {
+        goto done;
+    }
+
+done:
+
+    if (n != NULL)
+    {
+        BUFFER_delete(n);
+    }
+
+    if (e != NULL)
+    {
+        BUFFER_delete(e);
+    }
+
+    return outKey;
+}
 
 _Bool GetHardcodedRootKeys(VECTOR_HANDLE* outRootKeys)
 {
@@ -200,90 +244,216 @@ _Bool GetHardcodedRootKeys(VECTOR_HANDLE* outRootKeys)
     {
         goto done;
     }
-done:
-    if (success){
-        *outRootKeys = tempHandle;
-    }
 
-    if (tempHandle != NULL)
+    size_t hardcodedKeys = ARRAY_SIZE(HardcodedRSARootKeyList);
+
+    for (int i=0 ; i < hardcodedKeys; ++i)
     {
-        const size_t tempHandleSize = VECTOR_size(tempHandle);
+        const RSARootKey hardcodedKey = HardcodedRSARootKeyList[i];
 
-        for (size_t i= 0; i < tempHandleSize; ++i )
+        ADUC_RootKey* rootKey = MakeADUC_RootKeyFromHardcodedKey(hardcodedKey);
+
+        if (rootKey == NULL)
         {
-            ADUC_RootKey* rootKey = (ADUC_RootKey*)VECTOR_element(tempHandle,i);
-
-
+            goto done;
         }
 
-        VECTOR_destroy(tempHandle);
+        VECTOR_push_back(tempHandle,&rootKey,1);
     }
+
+    success = true;
+
+done:
+    if (! success){
+        if (tempHandle != NULL)
+        {
+            const size_t tempHandleSize = VECTOR_size(tempHandle);
+
+            for (size_t i= 0; i < tempHandleSize; ++i )
+            {
+                ADUC_RootKey* rootKey = (ADUC_RootKey*)VECTOR_element(tempHandle,i);
+
+                ADUC_RootKeyPackageUtils_RootKeyDeInit(rootKey);
+                free(rootKey);
+            }
+
+            VECTOR_destroy(tempHandle);
+        }
+        tempHandle = NULL;
+    }
+
+    *outRootKeys = tempHandle;
+
+    return success;
 }
 
-VECTOR_HANDLE GetLocalStoreRootKeys(void)
+_Bool RootKeyUtils_GetSignatureForKey(size_t* foundIndex, const ADUC_RootKeyPackage* rootKeyPackage, const STRING_HANDLE seekKid)
 {
+    if (rootKeyPackage == NULL || seekKid == NULL)
+    {
+        return false;
+    }
 
+    size_t numKeys = VECTOR_size(rootKeyPackage->protectedProperties.rootKeys);
+
+    for (int i=0 ; i < numKeys; ++i)
+    {
+        ADUC_RootKey* root_key = (ADUC_RootKey*)VECTOR_element(rootKeyPackage->protectedProperties.rootKeys,i);
+
+        if (root_key == NULL)
+        {
+            return false;
+        }
+
+        if (STRING_compare(root_key->kid,seekKid) == 0)
+        {
+            foundIndex = i;
+            return true;
+        }
+    }
+
+    return false;
 }
 
-_Bool CheckKeyIsDisabled(const char* keyId);
+CryptoKeyHandle MakeCryptoKeyHandleFromADUC_RootKey(const ADUC_RootKey* rootKey)
+{
+    if (rootKey == NULL)
+    {
+        return NULL;
+    }
 
-void* GetHardcodedKeyForKeyId(hardcoded_root_key_name)
+    CryptoKeyHandle key = NULL;
 
-void* GetLocalStoreKeyForKeyId(const char* keyId);
+    switch(rootKey->keyType){
+        case ADUC_RootKey_KeyType_RSA:
+        key = RSAKey_ObjFromBytes(rootKey->rsaParameters.n.buffer,rootKey->rsaParameters.n.size,rootKey->rsaParameters.e.buffer,rootKey->rsaParameters.e.size);
+        break;
 
-RootKeyUtility_ValidationResult ValidateSignatureWithRootKey(STRING_HANDLE keyId,const ADUC_RootKeyPackage* rootKeyPackage)
+        case ADUC_RootKey_KeyType_INVALID:
+        // TODO: Some logging info
+        break;
+
+        default:
+        break;
+    }
+
+    return key;
+}
+
+
+RootKeyUtility_ValidationResult RootKeyUtil_ValidatePackageWithKey(const ADUC_RootKeyPackage* rootKeyPackage, const ADUC_RootKey* rootKey)
 {
     RootKeyUtility_ValidationResult result = RootKeyUtility_ValidationResult_Failure;
+    CryptoKeyHandle rootKeyCryptoKey = NULL;
 
-    const size_t key_size = VECTOR_size(rootKeyPackage->signatures);
-
-    unsigned int key_index = 0;
-
-    for (unsigned int key_index = 0; key_index < key_size; key_index++ )
+    if (rootKeyPackage == NULL || rootKey == NULL)
     {
-        const ADUC_RootKey* rootKey = (ADUC_RootKey*)VECTOR_element(rootKeyPackage->rootKeys,key_index);
-        if (STRING_compare(rootKey->kid,keyId) == 0)
-        {
-            key_index = i;
-            break;
-        }
-    }
-
-    if (key_index == key_size)
-    {
-        result = RootKeyUtility_ValidationResult_KeyIdNotFound;
         goto done;
     }
 
+    size_t signatureIndex = 0;
+    if (! RootKeyUtils_GetSignatureForKey(&signatureIndex, rootKeyPackage,rootKey->kid))
+    {
+        result = RootKeyUtility_ValidationResult_SignatureForKeyNotFound;
+        goto done;
+    }
 
+    // Get the signature
+    ADUC_RootKeyPackage_Hash* signature = (ADUC_RootKeyPackage_Hash*)VECTOR_element(rootKeyPackage->signatures,signatureIndex);
+
+    if (signature == NULL)
+    {
+        result = RootKeyUtility_ValidationResult_SignatureForKeyNotFound;
+        goto done;
+    }
+
+    CryptoKeyHandle rootKeyCryptoKey = RootKeyUtility_MakeCryptoKeyHandleFromADUC_RootKey(rootKey);
+
+    if (rootKeyCryptoKey == NULL)
+    {
+        goto done;
+    }
+
+    // Now we have the key and the signature.
+    const char* protectedProperties = STRING_c_str(rootKeyPackage->protectedPropertiesJsonString);
+    const size_t protectedPropertiesLength = STRING_length(RootKeyPackage->protectedPropertiesJsonString);
+    // key, signature, and hash plus
+    if (! CryptoUtils_IsValidSignature("rs256",signature->hash.buffer,signature->hash.size,protectedProperties,protectedPropertiesLength,rootKeyCryptoKey) ){
+        result = RootKeyUtility_ValidationResult_SignatureValidationFailed;
+        goto done;
+    }
+
+    result = RootKeyUtility_ValidationResult_Success;
 
 done:
 
-    return result;
-}
-
-RootKeyUtility_ValidationResult RootKeyUtil_ValidateRootKeyPackage(const ADUC_RootKeyPackage* rootKeyPackagePath )
-{
-    RootKeyUtility_ValidationResult result = RootKeyUtility_InstallResult_Failed;
-
-
+    if (rootKeyCryptoKey != NULL)
+    {
+        CryptoUtils_FreeCryptoKeyHandle(rootKeyCryptoKey);
+    }
 
     return result;
 }
 
-RootKeyUtility_InstallResult RootKeyUtil_StoreNewRootKeyPackage(const ADUC_RootKeyPackage* srcRootKeyPackagePath )
+RootKeyUtility_ValidationResult RootKeyUtil_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage )
 {
-    // needs to call serialize/ struct_to_json function
+    RootKeyUtility_ValidationResult result = RootKeyUtility_ValidationResult_Failure;
+
+    //
+    // Need to 1. Get Hardcoded Keys from the device
+    //         2. Get the signature form the rootKeyPackagePath
+    //         3. Evaluate the signature
+
+    VECTOR_HANDLE hardcodedRootKeys = NULL;
+
+    if (! GetHardcodedRootKeys(&hardcodedRootKeys))
+    {
+        result = RootKeyUtility_ValidationResult_HardcodedRootKeyLoadFailed;
+        goto done;
+    }
+
+    const size_t numHardcodedKeys = VECTOR_size(hardcodedRootKeys);
+
+    for (size_t i = 0; i < numHardcodedKeys; ++i)
+    {
+        ADUC_RootKey* rootKey = (ADUC_RootKey*)VECTOR_element(hardcodedRootKeys,i);
+
+        result = RootKeyUtil_ValidatePackageWithKey(rootKeyPackage,rootKey);
+
+        if (result != RootKeyUtility_ValidationResult_Success)
+        {
+            // TODO: Logging info for what key failed
+            goto done;
+        }
+    }
+
+done:
+
+    if (hardcodedRootKeys != NULL )
+    {
+        const size_t hardcodedRootKeysLength = VECTOR_size(hardcodedRootKeys);
+        for(size_t i =0 ; i < hardcodedRootKeysLength; ++i )
+        {
+            ADUC_RootKey* rootKey = (ADUC_RootKey*)VECTOR_element(hardcodedRootKeys,i);
+
+            ADUC_RootKeyPackageUtils_RootKeyDeInit(rootKey);
+            free(rootKey);
+        }
+        VECTOR_destroy(hardcodedRootKeys);
+    }
+
+
+    return result;
 }
 
 
 /**
  * @brief Helper function that returns a CryptoKeyHandle associated with the kid
- * @details The caller must free the returned Key with the FreeCryptoKeyHandle() function
+ * @details The caller must free the returned Key with the CryptoUtils_FreeCryptoKeyHandle() function
  * @param kid the key identifier associated with the key
  * @returns the CryptoKeyHandle on success, null on failure
  */
-CryptoKeyHandle RootKeyUtility_GerKeyForKid(const char* kid)
+CryptoKeyHandle RootKeyUtility_GetKeyForKid(const char* kid)
 {
     //
     // Iterate through the Hardcoded RSA Root Keys
@@ -295,16 +465,6 @@ CryptoKeyHandle RootKeyUtility_GerKeyForKid(const char* kid)
         {
             return RSAKey_ObjFromStrings(RSARootKeyList[i].N, RSARootKeyList[i].e);
         }
-    }
-
-    //
-    // New RSA Keys Go Here
-    //
-
-    if (loadedRootKeyPackage == NULL)
-    {
-        // load the local store
-
     }
     return NULL;
 }

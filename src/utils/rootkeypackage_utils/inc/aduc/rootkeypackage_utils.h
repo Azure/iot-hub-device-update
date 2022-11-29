@@ -15,7 +15,7 @@
 
 EXTERN_C_BEGIN
 
-_Bool ADUC_RootKeyPackage_Utils_RootKey_Init(ADUC_RootKey* outKey, STRING_HANDLE kid, ADUC_RootKey_KeyType keyType, ADUC_RSA_RootKeyParameters* parameters );
+_Bool ADUC_RootKeyPackageUtils_RootKey_Init(ADUC_RootKey** outKey, const char* kid, const ADUC_RootKey_KeyType keyType, const BUFFER_HANDLE n , const BUFFER_HANDLE e);
 
 void ADUC_RootKeyPackageUtils_RootKeyDeInit(ADUC_RootKey* key);
 

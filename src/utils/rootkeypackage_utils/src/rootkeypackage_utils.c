@@ -142,20 +142,7 @@ void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKey* rootKeyEntry = (ADUC_RootKey*)VECTOR_element(vec, i);
-            if (rootKeyEntry != NULL && rootKeyEntry->kid != NULL)
-            {
-                STRING_delete(rootKeyEntry->kid);
-            }
-
-            if (rootKeyEntry->rsaParameters.n != NULL)
-            {
-                CONSTBUFFER_DecRef(rootKeyEntry->rsaParameters.n);
-            }
-
-            if (rootKeyEntry->rsaParameters.e != NULL)
-            {
-                CONSTBUFFER_DecRef(rootKeyEntry->rsaParameters.e);
-            }
+            ADUC_RootKeyPackageUtils_RootKeyDeInit(rootKeyEntry);
         }
         VECTOR_destroy(rootKeyPackage->protectedProperties.rootKeys);
     }
@@ -183,26 +170,68 @@ void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
 }
 
 
-_Bool ADUC_RootKeyPackage_Utils_RootKeyInitRSAKey(ADUC_RootKey** outKey, STRING_HANDLE kid, ADUC_RootKey_KeyType keyType, ADUC_RSA_RootKeyParameters* parameters )
+_Bool ADUC_RootKeyPackageUtils_RootKey_Init(ADUC_RootKey** outKey, const char* kid, const ADUC_RootKey_KeyType keyType, const BUFFER_HANDLE n , const BUFFER_HANDLE e)
 {
     _Bool success = false;
+    if (outKey == NULL || n == NULL || e == NULL)
+    {
+        return false;
+    }
 
-    ADUC_RootKey* tempKey = malloc(sizeof(ADUC_RootKey));
+    ADUC_RootKey* tempKey = (ADUC_RootKey*)malloc(sizeof(ADUC_RootKey));
 
     if (tempKey == NULL)
     {
         goto done;
     }
 
+    STRING_HANDLE str_keyId = STRING_construct(kid);
+
+    if (str_keyId == NULL)
+    {
+        goto done;
+    }
+
+    tempKey->kid = str_keyId;
+
+    tempKey->keyType = keyType;
+
+    tempKey->rsaParameters.e = CONSTBUFFER_CreateFromBuffer(e);
+    tempKey->rsaParameters.n = CONSTBUFFER_CreateFromBuffer(n);
+
+    success = true;
+
 done:
+
     if (! success)
     {
+        ADUC_RootKeyPackageUtils_RootKeyDeInit(tempKey);
+        free(tempKey);
 
+        tempKey = NULL;
     }
+
+    *outKey = tempKey;
+
     return success;
 }
+
 void ADUC_RootKeyPackageUtils_RootKeyDeInit(ADUC_RootKey* key)
 {
+    if (key->kid != NULL)
+    {
+        STRING_delete(key->kid);
+    }
 
+    if (key->rsaParameters.n != NULL)
+    {
+        CONSTBUFFER_DecRef(key->rsaParameters.n);
+    }
+
+    if (key->rsaParameters.e != NULL)
+    {
+        CONSTBUFFER_DecRef(key->rsaParameters.e);
+    }
 }
+
 EXTERN_C_END

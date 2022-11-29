@@ -8,7 +8,7 @@
 
 #include "crypto_lib.h"
 #include "base64_utils.h"
-#include "root_key_util.h"
+// #include "root_key_util.h"
 #include <azure_c_shared_utility/azure_base64.h>
 #include <ctype.h>
 #include <openssl/bn.h>
@@ -162,7 +162,7 @@ done:
  * @param keyToSign key that should be used for generating the computed signature. May be NULL depending on the algorithm
  * @returns true if the signature is valid, false if it is invalid
  */
-bool IsValidSignature(
+bool CryptoUtils_IsValidSignature(
     const char* alg,
     const uint8_t* expectedSignature,
     size_t sigLength,
@@ -200,7 +200,7 @@ bool IsValidSignature(
  * @param e_len the length of the exponent buffer
  * @returns NULL on failure and a key on success
  */
-CryptoKeyHandle RSAKey_ObjFromBytes(uint8_t* N, size_t N_len, uint8_t* e, size_t e_len)
+CryptoKeyHandle RSAKey_ObjFromBytes(const uint8_t* N, size_t N_len, const uint8_t* e, size_t e_len)
 {
     EVP_PKEY* result = NULL;
 
@@ -360,7 +360,7 @@ done:
  * @details Caller should assume the key is invalid after this call
  * @param key the key to free
  */
-void FreeCryptoKeyHandle(CryptoKeyHandle key)
+void CryptoUtils_FreeCryptoKeyHandle(CryptoKeyHandle key)
 {
     EVP_PKEY_free(CryptoKeyHandleToEVP_PKEY(key));
 }
@@ -373,5 +373,6 @@ void FreeCryptoKeyHandle(CryptoKeyHandle key)
  */
 CryptoKeyHandle GetRootKeyForKeyID(const char* kid)
 {
-    return RootKeyUtility_GerKeyForKid(kid);
+    // return RootKeyUtility_GerKeyForKid(kid);
+    return NULL;
 }
