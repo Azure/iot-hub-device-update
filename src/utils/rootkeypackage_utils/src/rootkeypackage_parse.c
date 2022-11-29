@@ -75,7 +75,7 @@ ADUC_Result RootKeyPackage_ParseVersion(JSON_Object* protectedPropertiesObj, ADU
     version = json_object_get_number(protectedPropertiesObj, "version");
     if (version == 0)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_VERSION;
         goto done;
     }
 
@@ -113,7 +113,7 @@ ADUC_Result RootKeyPackage_ParsePublished(JSON_Object* protectedPropertiesObj, A
     published = json_object_get_number(protectedPropertiesObj, "published");
     if (published <= 0)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_PUBLISHED;
         goto done;
     }
 
@@ -155,14 +155,14 @@ ADUC_Result RootKeyPackage_ParseDisabledRootKeys(JSON_Object* protectedPropertie
     kidsArray = json_object_get_array(protectedPropertiesObj, "disabledRootKeys");
     if (kidsArray == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_DISABLEDROOTKEYS;
         goto done;
     }
 
     count = json_array_get_count(kidsArray);
     if (count == 0)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_DISABLEDROOTKEYS_EMPTY;
         goto done;
     }
 
@@ -239,7 +239,7 @@ ADUC_Result RootKeyPackage_ParseShaHashAlg(JSON_Object* jsonObj, ADUC_RootKeySha
     val = json_object_get_string(jsonObj, "alg");
     if (val == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_ALG;
         goto done;
     }
 
@@ -299,7 +299,7 @@ RootKeyPackage_ParseShaHashValue(JSON_Object* jsonObj, const char* propertyName,
     val = json_object_get_string(jsonObj, propertyName);
     if (val == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_HASH_OR_SIG;
         goto done;
     }
 
@@ -363,14 +363,14 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
     hashesArray = json_object_get_array(protectedPropertiesObj, "disabledSigningKeys");
     if (hashesArray == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_DISABLEDSIGNINGKEYS;
         goto done;
     }
 
     count = json_array_get_count(hashesArray);
     if (count == 0)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_DISABLEDSIGNINGKEYS_EMPTY;
         goto done;
     }
 
@@ -390,7 +390,7 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
         JSON_Object* hashJsonArrayElementObj = json_array_get_object(hashesArray, i);
         if (hashJsonArrayElementObj == NULL)
         {
-            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_GETOBJ_DISABLEDSIGNINGKEYS_ELEMENT;
             goto done;
         }
 
@@ -491,7 +491,7 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
     keytypeStr = json_object_get_string(rootKeyDefinition, "keytype");
     if (IsNullOrEmpty(keytypeStr))
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_KEYTYPE;
         goto done;
     }
 
@@ -503,7 +503,7 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
 
         if (IsNullOrEmpty(n_modulusStr))
         {
-            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_MODULUS;
             goto done;
         }
 
@@ -607,14 +607,14 @@ ADUC_Result RootKeyPackage_ParseRootKeys(JSON_Object* protectedPropertiesObj, AD
     rootKeysObj = json_object_get_object(protectedPropertiesObj, "rootKeys");
     if (protectedPropertiesObj == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_ROOTKEYS;
         goto done;
     }
 
     cnt = json_object_get_count(rootKeysObj);
     if (cnt == 0)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_ROOTKEYS_EMPTY;
         goto done;
     }
 
@@ -681,7 +681,7 @@ ADUC_Result RootKeyPackage_ParseProtectedProperties(JSON_Object* rootObj, ADUC_R
     protectedPropertiesObj = json_object_get_object(rootObj, "protected");
     if (protectedPropertiesObj == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_PROTECTED;
         goto done;
     }
 
@@ -742,14 +742,14 @@ ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* rootObj, ADUC_RootKeyPac
     JSON_Array* signaturesArray = json_object_get_array(rootObj, "signatures");
     if (signaturesArray == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_SIGNATURES;
         goto done;
     }
 
     size_t cnt = json_array_get_count(signaturesArray);
     if (cnt == 0)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_SIGNATURES_EMPTY;
         goto done;
     }
 
@@ -769,7 +769,7 @@ ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* rootObj, ADUC_RootKeyPac
         JSON_Object* hashJsonArrayElementObj = json_array_get_object(signaturesArray, i);
         if (hashJsonArrayElementObj == NULL)
         {
-            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_GETOBJ_SIGNATURES_ELEMENT;
             goto done;
         }
 
