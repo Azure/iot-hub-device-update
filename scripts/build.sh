@@ -28,6 +28,7 @@ root_dir=$script_dir/..
 build_clean=false
 build_documentation=false
 build_packages=false
+ubuntu_core_snap_only=false;
 platform_layer="linux"
 trace_target_deps=false
 content_handlers="microsoft/swupdate,microsoft/apt,microsoft/simulator"
@@ -74,6 +75,8 @@ print_help() {
     echo "                                          From build output directory: AducIotAgent & adu-shell."
     echo ""
     echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
+    echo ""
+    echo "-u, --ubuntu-core-snap-only           Only build components and features those required for the Ubuntu Core snap."
     echo ""
     echo "-h, --help                            Show this help message."
 }
@@ -269,6 +272,10 @@ while [[ $1 != "" ]]; do
         shift
         cmake_dir_path=$1
         ;;
+    -u | --ubuntu-core-snap-only)
+        shift
+        ubuntu_core_snap_only=true
+        ;;
     -h | --help)
         print_help
         $ret 0
@@ -302,6 +309,11 @@ if [[ $adu_log_dir == "" ]]; then
     fi
 fi
 
+# For ubuntu core snap...
+if [[ $ubuntu_core_snap_only == "true" ]]; then
+    build_packages=false
+fi
+
 runtime_dir=${output_directory}/bin
 library_dir=${output_directory}/lib
 cmake_bin="${cmake_dir_path}/bin/cmake"
@@ -314,13 +326,13 @@ bullet "Clean build: $build_clean"
 bullet "Documentation: $build_documentation"
 bullet "Platform layer: $platform_layer"
 bullet "Trace target deps: $trace_target_deps"
-bullet "Content handlers: $content_handlers"
 bullet "Build type: $build_type"
 bullet "Log directory: $adu_log_dir"
 bullet "Logging library: $log_lib"
 bullet "Output directory: $output_directory"
 bullet "Build unit tests: $build_unittests"
 bullet "Build packages: $build_packages"
+bullet "Build Ubuntu Core snap features only: $ubuntu_core_snap_only"
 bullet "CMake: $cmake_bin"
 bullet "CMake version: $(${cmake_bin} --version | grep version | awk '{ print $3 }')"
 bullet "shellcheck: $shellcheck_bin"
@@ -347,6 +359,7 @@ CMAKE_OPTIONS=(
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
     "-DCMAKE_INSTALL_PREFIX=$install_prefix"
+    "-DADUC_UBUNTU_CORE_SNAP_ONLY:BOOL=$ubuntu_core_snap_only"
 )
 
 for i in "${static_analysis_tools[@]}"; do

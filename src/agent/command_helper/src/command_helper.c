@@ -168,11 +168,11 @@ static _Bool SecurityChecks()
     }
 
     // Verify current user
-    struct group* grp = getgrnam("adu");
+    struct group* grp = getgrnam(ADUC_FILE_GROUP);
     if (grp == NULL)
     {
         // Failed to get 'adu' group information, bail.
-        Log_Error("Cannot get 'adu' group info.");
+        Log_Error("Cannot get '%s' group info.", ADUC_FILE_GROUP);
         return false;
     }
 
