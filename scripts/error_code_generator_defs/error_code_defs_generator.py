@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-import argparse
+import getopt
 import json
 import os
 from platform import version
@@ -176,7 +176,6 @@ static inline ADUC_Result_t {ComponentDecl}(const int32_t value)
 
 tabsize = 2
 
-
 def CreateBriefDoxyString(brief):
     """
     Returns a doxygen style comment with the passed brief
@@ -195,6 +194,7 @@ def CreateEnumDoxyString(brief):
     Creates an enum doxygen documentation string with the passed brief
     """
     return f"//!< {brief}"
+
 
 
 def MakeERC(facility, component, result):
@@ -220,7 +220,7 @@ class FacilityCode(object):
                 return True
             return False
 
-    def add_component(self, component):
+    def add_component(self,component):
         if (component not in self.components):
             self.components.append(component)
             return True
@@ -521,16 +521,14 @@ typedef enum tag{f_name}_Components
                   str(self.json_path) + " ", e)
             return False
         except Exception as e:
-            print(
-                f"An unknown error occurred while opening the json file path at: {self.json_path} ", e)
+            print(f"An unknown error occurred while opening the json file path at: {self.json_path} ", e)
             return False
 
         try:
             result_json = json.load(file)
 
         except Exception as e:
-            print(
-                f"An unknown error occurred while loading the json from file path: {self.json_path}", e)
+            print(f"An unknown error occurred while loading the json from file path: {self.json_path}", e)
             return False
 
         facilities = result_json["facilities"]
@@ -609,19 +607,47 @@ typedef enum tag{f_name}_Components
 
         return True
 
+
+help_msg = """\
+Usage: python3 ./ErrorCodeDefinitionGenerator.py [options...]
+-j, --json-file-path           The file path to the json file that describes the results
+-r, --result-file-path         The file to write the error code definitions to
+-h, --help                     Prints this message
+"""
+
+
+def print_help_msg():
+    print(help_msg)
+
+
 if (__name__ == '__main__'):
+
+    shortopts = "j:r:h"
+    longopts = ["json-file-path", "result-file-path", "help"]
+
+    optlist, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
+
     json_file_path = ""
     result_file_path = ""
 
-    parser = argparse.ArgumentParser(description='Generate error code definition file')
-    parser.add_argument('-j', '--json-file-path', required=True,
-                        help='The file path to the json file that describes the results')
-    parser.add_argument('-r', '--result-file-path',
-                        required=True, help='The file to write the error code definitions to')
-    args = parser.parse_args()
+    for opt, val in optlist:
 
-    json_file_path = args.json_file_path
-    result_file_path = args.result_file_path
+        if (opt == "-j" or opt == "--" + longopts[0]):
+            json_file_path = val
+        elif (opt == "-r" or opt == "--"+longopts[0]):
+            result_file_path = val
+        elif (opt == "-h" or opt == "--"+longopts[0]):
+            print_help_msg()
+            sys.exit(1)
+        else:
+            print("Unrecognized command " + opt)
+            print_help_msg()
+            sys.exit(1)
+
+    if (json_file_path == "" or result_file_path == ""):
+        print("No arguments passed...")
+        print_help_msg()
+        sys.exit(1)
 
     if (not os.path.exists(json_file_path)):
         print("The path: " + json_file_path + " does not exist!")
@@ -642,11 +668,11 @@ if (__name__ == '__main__'):
         print(result_dest_dir + " is not a directory")
         sys.exit(1)
 
-    if (os.path.exists(result_file_path)):
+    if ( os.path.exists(result_file_path) ):
         print("Overwriting file at " + result_file_path)
 
     file_name = os.path.basename(result_file_path)
-    if (file_name == ""):
+    if (file_name == "" ):
         print("result-file-path must end with a file to create!")
         sys.exit(1)
 
