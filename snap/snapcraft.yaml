@@ -104,10 +104,13 @@ environment:
 layout:
 # adu_data_dir
   /var/lib/adu:
-    symlink: $SNAP/var/lib/adu
+    symlink: $SNAP_DATA/data
 # adu_conf_dir
   /etc/adu:
-    symlink: $SNAP/config
+    symlink: $SNAP_DATA/config
 # adu_shell_dir
   /usr/lib/adu:
     symlink: $SNAP/usr/lib/adu
+# adu_log_dir
+  /var/log/adu:
+    symlink: $SNAP_DATA/log

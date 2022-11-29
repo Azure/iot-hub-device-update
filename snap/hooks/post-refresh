@@ -11,13 +11,13 @@ adu_group=snap_aziot_du
 # Use getent and cut to get the info for the adu user and parse out the home directory.
 adu_home_dir=$(getent passwd $adu_user | cut -d: -f6)
 
-adu_conf_dir=/etc/adu
+adu_conf_dir=$SNAP_DATA/config
 adu_conf_file=du-config.json
 adu_diagnostics_conf_file=du-diagnostics-config.json
-adu_log_dir=/var/log/adu
-adu_data_dir=/var/lib/adu
+adu_log_dir=$SNAP_DATA/log
+adu_data_dir=$SNAP_DATA/data
 adu_downloads_dir="$adu_data_dir/downloads"
-adu_shell_dir=/usr/lib/adu
+adu_shell_dir=$SNAP/usr/lib/adu
 adu_shell_file=adu-shell
 
 adu_bin_path=$SNAP/usr/bin/AducIotAgent
@@ -134,35 +134,35 @@ setup_dirs_and_files() {
         mkdir -p "$adu_conf_dir"
 
         # Ensure the right owners and permissions
-        chown "$adu_user:$adu_group" "$adu_conf_dir"
-        chmod u=rwx,g=rx,o= "$adu_conf_dir"
+        #chown "$adu_user:$adu_group" "$adu_conf_dir"
+        #chmod u=rwx,g=rx,o= "$adu_conf_dir"
 
         # Generate the template configuration file
         echo "Generate the template configuration file..."
         if [ ! -f "$adu_conf_dir/${adu_conf_file}.template" ]; then
             echo "$sample_du_config" > "$adu_conf_dir/${adu_conf_file}.template"
-            chown "$adu_user:$adu_group" "$adu_conf_dir/${adu_conf_file}.template"
-            chmod u=r,g=r,o= "$adu_conf_dir/${adu_conf_file}.template"
+            #chown "$adu_user:$adu_group" "$adu_conf_dir/${adu_conf_file}.template"
+            #chmod u=r,g=r,o= "$adu_conf_dir/${adu_conf_file}.template"
         fi
 
         # Create configuration file from template
         if [ ! -f "$adu_conf_dir/$adu_conf_file" ]; then
             cp -a "$adu_conf_dir/${adu_conf_file}.template" "$adu_conf_dir/$adu_conf_file"
-            chmod u=rw,g=r,o= "$adu_conf_dir/$adu_conf_file"
+            #chmod u=rw,g=r,o= "$adu_conf_dir/$adu_conf_file"
         fi
 
         echo "Generating the diagnostics configuration file..."
         if [ ! -f "$adu_conf_dir/$adu_diagnostics_conf_file" ]; then
             echo "$sample_du_diagnostics_config" > "$adu_conf_dir/$adu_diagnostics_conf_file"
-            chown "$adu_user:$adu_group" "$adu_conf_dir/$adu_diagnostics_conf_file"
-            chmod u=r,g=r,o= "$adu_conf_dir/$adu_diagnostics_conf_file"
+            #chown "$adu_user:$adu_group" "$adu_conf_dir/$adu_diagnostics_conf_file"
+            #chmod u=r,g=r,o= "$adu_conf_dir/$adu_diagnostics_conf_file"
         fi
 
         # Create home dir
         if [ ! -d "$adu_home_dir" ]; then
             mkdir -p "$adu_home_dir"
-            chown "$adu_user:$adu_group" "$adu_home_dir"
-            chmod u=rwx,g=rx "$adu_home_dir"
+            #chown "$adu_user:$adu_group" "$adu_home_dir"
+            #chmod u=rwx,g=rx "$adu_home_dir"
         fi
 
         # Create log dir
@@ -171,8 +171,8 @@ setup_dirs_and_files() {
         fi
 
         # Ensure the right owners and permissions
-        chown "$adu_user:$adu_group" "$adu_log_dir"
-        chmod u=rwx,g=rx "$adu_log_dir"
+        #chown "$adu_user:$adu_group" "$adu_log_dir"
+        #chmod u=rwx,g=rx "$adu_log_dir"
 
         # Create data dir
         echo "Create data dir..."
@@ -181,8 +181,8 @@ setup_dirs_and_files() {
         fi
 
         # Ensure the right owners and permissions
-        chown "$adu_user:$adu_group" "$adu_data_dir"
-        chmod u=rwx,g=rwx,o= "$adu_data_dir"
+        #chown "$adu_user:$adu_group" "$adu_data_dir"
+        #chmod u=rwx,g=rwx,o= "$adu_data_dir"
         ls -ld "$adu_data_dir"
 
         # Create downloads dir
@@ -191,8 +191,8 @@ setup_dirs_and_files() {
         fi
 
         # Ensure the right owners and permissions
-        chown "$adu_user:$adu_group" "$adu_downloads_dir"
-        chmod u=rwx,g=rwx,o= "$adu_downloads_dir"
+        #chown "$adu_user:$adu_group" "$adu_downloads_dir"
+        #chmod u=rwx,g=rwx,o= "$adu_downloads_dir"
         ls -ld "$adu_downloads_dir"
 
         # Create extensions dir
@@ -201,8 +201,8 @@ setup_dirs_and_files() {
         fi
 
         # Ensure the right owners and permissions
-        chown "$adu_user:$adu_group" "$adu_extensions_dir"
-        chmod u=rwx,g=rwx,o= "$adu_extensions_dir"
+        #chown "$adu_user:$adu_group" "$adu_extensions_dir"
+        #chmod u=rwx,g=rwx,o= "$adu_extensions_dir"
 
         # Create extensions sources dir
         if [ ! -d "$adu_extensions_sources_dir" ]; then
@@ -210,15 +210,15 @@ setup_dirs_and_files() {
         fi
 
         # Ensure the right owners and permissions
-        chown "$adu_user:$adu_group" "$adu_extensions_sources_dir"
-        chmod u=rwx,g=rwx,o= "$adu_extensions_sources_dir"
+        #chown "$adu_user:$adu_group" "$adu_extensions_sources_dir"
+        #chmod u=rwx,g=rwx,o= "$adu_extensions_sources_dir"
 
         #Set deviceupdate-agent owner and permission
         if [ ! -f "$adu_shell_dir/$adu_shell_file" ]; then
            echo "ERROR! $adu_shell_dir/$adu_shell_file does not exists." >&2
         else
-           chown "root:$adu_group" "$adu_shell_dir/$adu_shell_file"
-           chmod u=rxs "$adu_shell_dir/$adu_shell_file"
+        #   chown "root:$adu_group" "$adu_shell_dir/$adu_shell_file"
+        #   chmod u=rxs "$adu_shell_dir/$adu_shell_file"
         fi
     else
         echo "ERROR! $adu_user does not exist." >&2
@@ -239,6 +239,6 @@ register_extensions() {
     $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_curl_downloader_file
 }
 
-add_adu_user_and_group
+#add_adu_user_and_group
 setup_dirs_and_files
-register_extensions
+#register_extensions

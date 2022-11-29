@@ -47,4 +47,4 @@ add_adu_user_and_group() {
     fi
 }
 
-add_adu_user_and_group
+#add_adu_user_and_group
