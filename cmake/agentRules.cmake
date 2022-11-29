@@ -2,30 +2,28 @@
 # Licensed under the MIT License.
 
 macro (compileAsC99)
-    if (CMAKE_VERSION VERSION_LESS "3.1")
-        if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
-            set (CMAKE_C_FLAGS "--std=c99 ${CMAKE_C_FLAGS}")
-            if (CXX_FLAG_CXX11)
-                set (CMAKE_CXX_FLAGS "--std=c++11 ${CMAKE_CXX_FLAGS}")
-            else ()
-                set (CMAKE_CXX_FLAGS "--std=c++0x ${CMAKE_CXX_FLAGS}")
-            endif ()
-        endif ()
-    else ()
-        set (CMAKE_C_STANDARD 99)
-        set (CMAKE_CXX_STANDARD 11)
-    endif ()
+    set (CMAKE_C_STANDARD 99)
+    set (CMAKE_CXX_STANDARD 11)
 endmacro (compileAsC99)
 
 macro (disableRTTI)
-    # Disable RTTI by replacing rtti compile flag with the no-rtti flag in the cpp compiler flags.
-    string (
-        REGEX
-        REPLACE "-frtti"
-                ""
-                CMAKE_CXX_FLAGS
-                "${CMAKE_CXX_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        string (
+            REGEX
+            REPLACE "/GR"
+                    ""
+                    CMAKE_CXX_FLAGS
+                    "${CMAKE_CXX_FLAGS}")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
+    else ()
+        string (
+            REGEX
+            REPLACE "-frtti"
+                    ""
+                    CMAKE_CXX_FLAGS
+                    "${CMAKE_CXX_FLAGS}")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+    endif ()
 endmacro (disableRTTI)
 
 function (target_link_iothub_client target scope)
@@ -51,9 +49,15 @@ function (target_link_digital_twin_client target scope)
 endfunction (target_link_digital_twin_client)
 
 function (target_link_dosdk target scope)
-    find_package (deliveryoptimization_sdk CONFIG REQUIRED)
-    target_link_libraries (
-        ${target}
-        ${scope}
-        Microsoft::deliveryoptimization)
+    if (NOT (CMAKE_SYSTEM_NAME STREQUAL "Windows"))
+        find_package (deliveryoptimization_sdk CONFIG REQUIRED)
+        target_link_libraries (${target} ${scope} Microsoft::deliveryoptimization)
+    else ()
+        message (
+            FATAL_ERROR
+                target_link_dosdk
+                referenced
+                on
+                Windows)
+    endif ()
 endfunction (target_link_dosdk)

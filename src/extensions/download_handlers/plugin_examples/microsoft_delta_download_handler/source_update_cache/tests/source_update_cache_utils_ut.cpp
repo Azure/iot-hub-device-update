@@ -199,7 +199,7 @@ TEST_CASE("ADUC_SourceUpdateCacheUtils_MoveToUpdateCache")
     workflow_uninit(handle);
 }
 
-// TODO: re-activate this section after this resolves: Bug 40886231: Arm32 UT ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache failed
+// TODO(JeWelden): re-activate this section after this resolves: Bug 40886231: Arm32 UT ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache failed
 // TEST_CASE("ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache")
 // {
 //     //

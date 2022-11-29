@@ -267,6 +267,10 @@ while [[ $1 != "" ]]; do
         ;;
     --cmake-path)
         shift
+        if [[ -z $1 || $1 == -* ]]; then
+            error "--cmake-path parameter is mandatory."
+            $ret 1
+        fi
         cmake_dir_path=$1
         ;;
     -h | --help)

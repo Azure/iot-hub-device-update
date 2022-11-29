@@ -1,5 +1,35 @@
 cmake_minimum_required (VERSION 3.5)
 
+# Note:
+# CMAKE_SYSTEM_NAME is undefined prior to project directive.
+# but FetchContent needs to occur before project, so using
+# CMAKE_HOST_SYSTEM_NAME.
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    message (STATUS "Checking vcpkg")
+    include (FetchContent)
+
+    fetchcontent_declare (
+        vcpkg
+        GIT_REPOSITORY https://github.com/microsoft/vcpkg.git
+        GIT_TAG origin/master)
+
+    fetchcontent_makeavailable (vcpkg)
+
+    set (
+        CMAKE_TOOLCHAIN_FILE
+        ${vcpkg_SOURCE_DIR}/scripts/buildsystems/vcpkg.cmake
+        CACHE STRING "CMake toolchain file")
+
+    set (
+        VCPKG_TARGET_TRIPLET
+        "x64-windows"
+        CACHE STRING "vcpkg target triplet")
+
+    message (STATUS vcpkg_SOURCE_DIR=${vcpkg_SOURCE_DIR})
+    message (STATUS VCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET})
+    message (STATUS)
+endif ()
+
 project (azure_device_update_client)
 
 # Print out CMake build variables.
@@ -14,7 +44,6 @@ message (STATUS CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
 message (STATUS CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR})
 message (STATUS CMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR})
 message (STATUS CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
-message (STATUS CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME})
 message (STATUS)
 
 # Tell CMake where to find our custom CMake module files.
@@ -281,11 +310,11 @@ set (
     "AducIotAgent"
     CACHE STRING "The filename of the ADU Agent binary.")
 
-get_filename_component (
+cmake_path (
+    SET
     ADUC_AGENT_FILEPATH
-    "${ADUC_AGENT_FOLDER}/${ADUC_AGENT_FILENAME}"
-    ABSOLUTE
-    "/")
+    NORMALIZE
+    "${ADUC_AGENT_FOLDER}/${ADUC_AGENT_FILENAME}")
 
 set (
     DIAGNOSTICS_CONFIG_FILE
@@ -312,11 +341,11 @@ set (
     "adu-shell"
     CACHE STRING "Filename of adu-shell.")
 
-get_filename_component (
+cmake_path (
+    SET
     ADUSHELL_FILE_PATH
-    "${ADUSHELL_FOLDER}/${ADUSHELL_FILENAME}"
-    ABSOLUTE
-    "/")
+    NORMALIZE
+    "${ADUSHELL_FOLDER}/${ADUSHELL_FILENAME}")
 
 set (
     ADUSHELL_FILE_PATH
@@ -373,12 +402,6 @@ set (
     "${PROJECT_SOURCE_DIR}/${ADUC_SCRIPTS_FOLDER}"
     CACHE STRING "Path to the scripts folder within the Device Update project")
 
-# Error Code Generator Script Name
-set (
-    ADUC_ERROR_CODE_GENERATOR_SCRIPT_FILENAME
-    "generate_error_code_defs.sh"
-    CACHE STRING "The script file that generates the error code definitions")
-
 # Error Code Definition Folder and Filename
 set (
     ADUC_ERROR_CODE_DEFS_FOLDER
@@ -413,23 +436,24 @@ set (
 
 # Paths for the Folders
 
-get_filename_component (
+# Error Code Generator Script
+cmake_path (
+    SET
     ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT
-    "${ADUC_SCRIPTS_FOLDER_PATH}/${ADUC_ERROR_CODE_GENERATOR_SCRIPT_FILENAME}"
-    ABSOLUTE
-    "/")
+    NORMALIZE
+    "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/error_code_defs_generator.py")
 
-get_filename_component (
+cmake_path (
+    SET
     ADUC_PATH_TO_ERROR_CODE_JSON_FILE
-    "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/${ADUC_ERROR_CODE_JSON_FILENAME}"
-    ABSOLUTE
-    "/")
+    NORMALIZE
+    "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/${ADUC_ERROR_CODE_JSON_FILENAME}")
 
-get_filename_component (
+cmake_path (
+    SET
     ADUC_GENERATED_ERROR_CODE_FILE_PATH
-    "${ADUC_GENERATED_ERROR_CODE_FOLDER_PATH}/${ADUC_ERROR_CODE_DEFS_FILENAME}"
-    ABSOLUTE
-    "/")
+    NORMALIZE
+    "${ADUC_GENERATED_ERROR_CODE_FOLDER_PATH}/${ADUC_ERROR_CODE_DEFS_FILENAME}")
 
 #######
 # BEGIN Delta Downloader Handler Source Update Cache Configurations
@@ -467,22 +491,22 @@ option (ADUC_TRACE_TARGET_DEPS "Trace target dependencies" OFF)
 ### End CMake Options
 
 # Construct the absolute path to the adu configuration file.
-get_filename_component (
+cmake_path (
+    SET
     ADUC_CONF_FILE_PATH
-    "${ADUC_CONF_FOLDER}/${ADUC_CONF_FILE}"
-    ABSOLUTE
-    "/")
+    NORMALIZE
+    "${ADUC_CONF_FOLDER}/${ADUC_CONF_FILE}")
 set (
     ADUC_CONF_FILE_PATH
     "${ADUC_CONF_FILE_PATH}"
     CACHE STRING "Path to the ADU configuration file.")
 
 # Construct the absolute path to the adu diagnostics configuration file
-get_filename_component (
+cmake_path (
+    SET
     DIAGNOSTICS_CONFIG_FILE_PATH
-    "${ADUC_CONF_FOLDER}/${DIAGNOSTICS_CONFIG_FILE}"
-    ABSOLUTE
-    "/")
+    NORMALIZE
+    "${ADUC_CONF_FOLDER}/${DIAGNOSTICS_CONFIG_FILE}")
 
 set (
     DIAGNOSTICS_CONFIG_FILE_PATH
@@ -490,11 +514,13 @@ set (
     CACHE STRING "Path to the diagnostics configuration file.")
 
 # Generate the error code definition file
+find_package (PythonInterp REQUIRED)
+
 execute_process (
     COMMAND
-        ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT} --json-file-path
-        "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}" --result-file-path
-        "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}" -s
+        "${PYTHON_EXECUTABLE}" "${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}" "--json-file-path"
+        "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}" "--result-file-path"
+        "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     RESULT_VARIABLE GENERATE_ERROR_CODE_DEFS_RESULT)
 
@@ -504,7 +530,7 @@ if (NOT
     "0")
     message (
         FATAL_ERROR
-            "Failed to generate error code definition from json file ${ADUC_PATH_TO_ERROR_CODE_JSON_FILE} to ${ADUC_GENERATED_ERROR_CODE_FILE_PATH} with error code ${GENERATE_ERROR_CODE_DEFS_RESULT}"
+            "Failed to generate error code definition file using ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}"
     )
 endif ()
 
@@ -513,7 +539,7 @@ if (ADUC_BUILD_UNIT_TESTS)
     # of output folder.
     enable_testing ()
 
-    copy_test_data ("${CMAKE_SOURCE_DIR}" "${ADUC_TEST_DATA_PATH_SEGMENT}"
+    copy_test_data ("${CMAKE_SOURCE_DIR}/src" "${ADUC_TEST_DATA_PATH_SEGMENT}"
                     "${ADUC_TEST_DATA_FOLDER}")
 endif ()
 
