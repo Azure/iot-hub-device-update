@@ -28,6 +28,7 @@ root_dir=$script_dir/..
 build_clean=false
 build_documentation=false
 build_packages=false
+ubuntu_core_snap_only=false;
 platform_layer="linux"
 trace_target_deps=false
 step_handlers="microsoft/apt,microsoft/script,microsoft/simulator,microsoft/swupdate,microsoft/swupdate_v2"
@@ -84,6 +85,7 @@ print_help() {
     echo "--minor-version                       Minor version of ADU"
     echo ""
     echo "--patch-version                       Patch version of ADU"
+    echo "-u, --ubuntu-core-snap-only           Only build components and features those required for the Ubuntu Core snap."
     echo ""
     echo "-h, --help                            Show this help message."
 }
@@ -306,6 +308,9 @@ while [[ $1 != "" ]]; do
     --patch-version)
         shift
         patch_version=$1
+    -u | --ubuntu-core-snap-only)
+        shift
+        ubuntu_core_snap_only=true
         ;;
     -h | --help)
         print_help
@@ -336,6 +341,11 @@ if [[ $adu_log_dir == "" ]]; then
     adu_log_dir=$default_log_dir
 fi
 
+# For ubuntu core snap...
+if [[ $ubuntu_core_snap_only == "true" ]]; then
+    build_packages=false
+fi
+
 runtime_dir=${output_directory}/bin
 library_dir=${output_directory}/lib
 cmake_bin="${cmake_dir_path}/bin/cmake"
@@ -355,6 +365,7 @@ bullet "Logging library: $log_lib"
 bullet "Output directory: $output_directory"
 bullet "Build unit tests: $build_unittests"
 bullet "Build packages: $build_packages"
+bullet "Build Ubuntu Core snap features only: $ubuntu_core_snap_only"
 bullet "CMake: $cmake_bin"
 bullet "CMake version: $(${cmake_bin} --version | grep version | awk '{ print $3 }')"
 bullet "shellcheck: $shellcheck_bin"
@@ -381,6 +392,7 @@ CMAKE_OPTIONS=(
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
     "-DCMAKE_INSTALL_PREFIX=$install_prefix"
+    "-DADUC_UBUNTU_CORE_SNAP_ONLY:BOOL=$ubuntu_core_snap_only"
 )
 
 if [[ $major_version != "" ]]; then
