@@ -60,7 +60,46 @@ tree squashfs-root
 ```
 
 ## Install The Snap
-[TBD]
+
+To install the snap for testing (developer mode)
+
+```sh
+sudo snap install --devmode ./deviceupdate-agent_0.1_amd64.snap 
+```
+
+> NOTE | This will installs the snap content to /snap/<'snap name'>/ directory on the host device
+
+## Run The Snap
+
+To run a shell in the confined environment
+
+```sh
+ snap run --shell deviceupdate-agent
+```
+
+Inspect some snap variables:
+
+```sh
+root@myhost:~# printenv SNAP
+/snap/deviceupdate-agent/x2
+
+root@myhost:~# printenv SNAP_COMMON
+/var/snap/deviceupdate-agent/common
+
+root@myhost:~# printenv SNAP_DATA  
+/var/snap/deviceupdate-agent/x2
+```
+
+## View Snap Logs using Journalctl
+
+The name of the Device Update agent in the confined environment is `snap.deviceupdate-agent.deviceupdate-agent`.
+
+To view the journal log, use following command:
+
+```sh
+journalctl -u snap.deviceupdate-agent.deviceupdate-agent -f --no-tail
+```
+
 
 ## Configure The Snap
 [TBD]

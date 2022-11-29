@@ -330,25 +330,47 @@ set (
     "adu"
     CACHE STRING "The effective group name for adu-shell process.")
 
-set (
-    ADUC_FILE_USER
-    "adu"
-    CACHE STRING "The user for adu file ownership.")
+if (ADUC_UBUNTU_CORE_SNAP_ONLY)
+    set (
+        ADUC_FILE_USER
+        "snap_aziot_du"
+        CACHE STRING "The user for adu file ownership.")
 
-set (
-    ADUC_FILE_GROUP
-    "adu"
-    CACHE STRING "The group for adu file ownership.")
+    set (
+        ADUC_FILE_GROUP
+        "snap_aziot_du"
+        CACHE STRING "The group for adu file ownership.")
 
-set (
-    DO_FILE_USER
-    "do"
-    CACHE STRING "The user for do file ownership.")
+    set (
+        DO_FILE_USER
+        "snap_aziot_do"
+        CACHE STRING "The user for do file ownership.")
 
-set (
-    DO_FILE_GROUP
-    "do"
-    CACHE STRING "The group for do file ownership.")
+    set (
+        DO_FILE_GROUP
+        "snap_aziot_do"
+        CACHE STRING "The group for do file ownership.")
+else ()
+    set (
+        ADUC_FILE_USER
+        "adu"
+        CACHE STRING "The user for adu file ownership.")
+
+    set (
+        ADUC_FILE_GROUP
+        "adu"
+        CACHE STRING "The group for adu file ownership.")
+
+    set (
+        DO_FILE_USER
+        "do"
+        CACHE STRING "The user for do file ownership.")
+
+    set (
+        DO_FILE_GROUP
+        "do"
+        CACHE STRING "The group for do file ownership.")
+endif ()
 
 set (
     SYSLOG_FILE_GROUP

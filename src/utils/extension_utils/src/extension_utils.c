@@ -213,7 +213,7 @@ static bool RegisterHandlerExtension(
     struct passwd* pwd = getpwnam(ADUC_FILE_USER);
     if (pwd == NULL)
     {
-        Log_Error("Cannot verify credential of 'adu' user.");
+        Log_Error("Cannot verify credential of '%s' user.", ADUC_FILE_USER);
         goto done;
     }
     uid_t aduUserId = pwd->pw_uid;
@@ -225,7 +225,7 @@ static bool RegisterHandlerExtension(
     struct group* grp = getgrnam(ADUC_FILE_GROUP);
     if (grp == NULL)
     {
-        Log_Error("Cannot get 'adu' group info.");
+        Log_Error("Cannot get '%s' group info.", ADUC_FILE_GROUP);
         goto done;
     }
     gid_t aduGroupId = grp->gr_gid;
@@ -393,7 +393,7 @@ bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
     pwd = getpwnam(ADUC_FILE_USER);
     if (pwd == NULL)
     {
-        Log_Error("Cannot verify credential of 'adu' user.");
+        Log_Error("Cannot verify credential of '%s' user.", ADUC_FILE_USER);
         goto done;
     }
 
@@ -406,7 +406,7 @@ bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
     grp = getgrnam(ADUC_FILE_GROUP);
     if (grp == NULL)
     {
-        Log_Error("Cannot get 'adu' group info.");
+        Log_Error("Cannot get '%s' group info.", ADUC_FILE_GROUP);
         goto done;
     }
     gid_t aduGroupId = grp->gr_gid;
