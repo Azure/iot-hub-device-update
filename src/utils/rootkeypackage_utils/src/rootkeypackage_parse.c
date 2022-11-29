@@ -542,13 +542,8 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
     }
 
     rootKey.kid = kidStrHandle;
-    kidStrHandle = NULL;
-
     rootKey.keyType = keyType;
-
     rootKey.rsaParameters.n = rsa_modulus;
-    rsa_modulus = NULL;
-
     rootKey.rsaParameters.e = rsa_exponent;
 
     if (VECTOR_push_back(*outRootKeys, &rootKey, 1) != 0)
@@ -557,8 +552,12 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
         goto done;
     }
 
-    memset(&rootKey, 0, sizeof(rootKey)); // commit
+    // commit transfer
+    kidStrHandle = NULL;
+    rsa_modulus = NULL;
+    memset(&rootKey, 0, sizeof(rootKey));
     result.ResultCode = ADUC_GeneralResult_Success;
+
 done:
     if (kidStrHandle != NULL)
     {
