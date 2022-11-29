@@ -1,0 +1,18 @@
+{
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+    "name": "iot-hub-device-update",
+    "description": "Add description here",
+    "version-string": "1.0.0",
+    "dependencies": [
+        "azure-c-shared-utility",
+        "azure-iot-sdk-c",
+        "azure-storage-blobs-cpp",
+        "catch2",
+        {
+            "name": "curl",
+            "default-features": true,
+            "features": ["openssl"]
+        },
+        "parson"
+    ]
+}
