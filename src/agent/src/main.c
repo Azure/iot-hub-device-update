@@ -1465,6 +1465,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
+#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
     // Switch to specified agent.runas user.
     // Note: it's important that we do this only when we're not performing any
     // high-privileged tasks, such as, registering agent's extension(s).
@@ -1472,6 +1473,7 @@ int main(int argc, char** argv)
     {
         return 0;
     }
+#endif
 
     Log_Info("Agent (%s; %s) starting.", ADUC_PLATFORM_LAYER, ADUC_VERSION);
 #ifdef ADUC_GIT_INFO
@@ -1483,6 +1485,7 @@ int main(int argc, char** argv)
         SUPPORTED_UPDATE_MANIFEST_VERSION_MIN,
         SUPPORTED_UPDATE_MANIFEST_VERSION_MAX);
 
+#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
     _Bool healthy = HealthCheck(&launchArgs);
     if (launchArgs.healthCheckOnly || !healthy)
     {
@@ -1496,6 +1499,7 @@ int main(int argc, char** argv)
         }
         return healthy ? 0 : 1;
     }
+#endif
 
     // Ensure that the ADU data folder exists.
     // Normally, ADUC_DATA_FOLDER is created by install script.
