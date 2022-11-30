@@ -85,6 +85,7 @@ apps:
   adu-shell:
     command: usr/lib/adu/adu-shell
     plugs:
+      - home
       - network
 
   # 'deviceupdate-agent' service
