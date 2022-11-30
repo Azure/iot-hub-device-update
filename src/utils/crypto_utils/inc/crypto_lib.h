@@ -37,6 +37,10 @@ CryptoKeyHandle RSAKey_ObjFromBytes(const uint8_t* N, size_t N_len, const uint8_
 
 CryptoKeyHandle RSAKey_ObjFromB64Strings(const char* encodedN, const char* encodedE);
 
+CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N_len, const unsigned int e);
+
+CryptoKeyHandle RSAKey_ObjFromModulusStringsExponentInt(const char* N, const unsigned int e);
+
 CryptoKeyHandle RSAKey_ObjFromStrings(const char* N, const char* e);
 
 CryptoKeyHandle GetRootKeyForKeyID(const char* kid);

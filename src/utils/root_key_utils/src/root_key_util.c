@@ -32,7 +32,7 @@ typedef struct tagRSARootKey
 {
     const char* kid;
     const char* N;
-    const char* e;
+    const unsigned int e;
 } RSARootKey;
 
 //
@@ -73,7 +73,7 @@ static const RSARootKey HardcodedRSARootKeyList[] =
         "7e4048a91201a8d97ef3a51bf1fb90"
         "773e408718c9abd9f779",
         // E
-        "010001"
+        65537
     },
 
     {
@@ -107,7 +107,7 @@ static const RSARootKey HardcodedRSARootKeyList[] =
         "56a65d79444a1af3dc1610b3c12d27"
         "11fe1b9805e4a3603199",
         // E
-        "010001"
+        65537
     },
 
 #ifdef BUILD_WITH_TEST_KEYS
@@ -142,7 +142,7 @@ static const RSARootKey HardcodedRSARootKeyList[] =
         "71747ff95e0737640ed23329b255fc"
         "3ef54996bfea282b517d",
         // E
-        "010001"
+        65537
     },
 
     {
@@ -176,7 +176,7 @@ static const RSARootKey HardcodedRSARootKeyList[] =
         "d1a224020131dea7afa6416e542aaf"
         "e89c95b66cda3b8bd19b",
         // E
-        "010001"
+        65537
     },
 #endif
 };
@@ -186,52 +186,37 @@ static const RSARootKey HardcodedRSARootKeyList[] =
 // Root Key Validation Helper Functions
 //
 
-ADUC_RootKey* MakeADUC_RootKeyFromHardcodedRSAKey(const RSARootKey key)
+_Bool InitADUCRootKeyWith_RSAKey(ADUC_RootKey* rootKey, const RSARootKey rsaKey )
 {
-    ADUC_RootKey* outKey =  NULL;
-    uint8_t* exponent_buf = NULL;
-    size_t  decodedExponentLength = 0;
+    _Bool success = false;
+    STRING_HANDLE kid = NULL;
 
-    uint8_t* decodedModulus = NULL;
-    size_t decodedModulusLength = 0;
-
-    BUFFER_HANDLE n = NULL;
-
-    const size_t eLength = ARRAY_SIZE(key.N);
-    const size_t nLength = ARRAY_SIZE(key.e);
-
-    BUFFER_HANDLE e = BUFFER_create(key.e,eLength);
-
-    if (e == NULL)
+    if (rootKey == NULL )
     {
         goto done;
     }
 
-    n = BUFFER_create(key.N,nLength);
 
-    if (n == NULL)
+    rootKey->keyType = ADUC_RootKey_KeyType_RSA;
+
+    kid = STRING_construct(rsaKey.kid);
+
+    if (kid == NULL)
     {
         goto done;
     }
 
-    if (! ADUC_RootKeyPackageUtils_RootKey_Init(&outKey,key.kid,ADUC_RootKey_KeyType_RSA,n,e))
-    {
-        goto done;
-    }
+    rootKey->kid = kid;
 
+    success = true;
 done:
 
-    if (n != NULL)
+    if (kid != NULL)
     {
-        BUFFER_delete(n);
+        STRING_delete(kid);
     }
 
-    if (e != NULL)
-    {
-        BUFFER_delete(e);
-    }
-
-    return outKey;
+    return success;
 }
 
 _Bool GetHardcodedRootKeys(VECTOR_HANDLE* outRootKeys)
@@ -251,9 +236,8 @@ _Bool GetHardcodedRootKeys(VECTOR_HANDLE* outRootKeys)
     {
         const RSARootKey hardcodedKey = HardcodedRSARootKeyList[i];
 
-        ADUC_RootKey* rootKey = MakeADUC_RootKeyFromHardcodedKey(hardcodedKey);
-
-        if (rootKey == NULL)
+        ADUC_RootKey rootKey = {};
+        if ( ! InitADUCRootKeyWith_RSAKey(&rootKey,hardcodedKey) )
         {
             goto done;
         }
@@ -271,10 +255,9 @@ done:
 
             for (size_t i= 0; i < tempHandleSize; ++i )
             {
-                ADUC_RootKey* rootKey = (ADUC_RootKey*)VECTOR_element(tempHandle,i);
+                // ADUC_RootKey* rootKey = (ADUC_RootKey*)VECTOR_element(tempHandle,i);
 
-                ADUC_RootKeyPackageUtils_RootKeyDeInit(rootKey);
-                free(rootKey);
+                // ADUC_RootKeyPackageUtils_RootKeyDeInit(rootKey);
             }
 
             VECTOR_destroy(tempHandle);
@@ -307,7 +290,7 @@ _Bool RootKeyUtils_GetSignatureForKey(size_t* foundIndex, const ADUC_RootKeyPack
 
         if (STRING_compare(root_key->kid,seekKid) == 0)
         {
-            foundIndex = i;
+            *foundIndex = i;
             return true;
         }
     }
@@ -324,9 +307,12 @@ CryptoKeyHandle MakeCryptoKeyHandleFromADUC_RootKey(const ADUC_RootKey* rootKey)
 
     CryptoKeyHandle key = NULL;
 
+    const CONSTBUFFER* modulus;
     switch(rootKey->keyType){
         case ADUC_RootKey_KeyType_RSA:
-        key = RSAKey_ObjFromBytes(rootKey->rsaParameters.n.buffer,rootKey->rsaParameters.n.size,rootKey->rsaParameters.e.buffer,rootKey->rsaParameters.e.size);
+        modulus = CONSTBUFFER_GetContent(rootKey->rsaParameters.n);
+
+        key = RSAKey_ObjFromModulusBytesExponentInt(modulus->buffer,modulus->size,rootKey->rsaParameters.e);
         break;
 
         case ADUC_RootKey_KeyType_INVALID:
@@ -367,7 +353,7 @@ RootKeyUtility_ValidationResult RootKeyUtil_ValidatePackageWithKey(const ADUC_Ro
         goto done;
     }
 
-    CryptoKeyHandle rootKeyCryptoKey = RootKeyUtility_MakeCryptoKeyHandleFromADUC_RootKey(rootKey);
+    rootKeyCryptoKey = MakeCryptoKeyHandleFromADUC_RootKey(rootKey);
 
     if (rootKeyCryptoKey == NULL)
     {
@@ -376,9 +362,12 @@ RootKeyUtility_ValidationResult RootKeyUtil_ValidatePackageWithKey(const ADUC_Ro
 
     // Now we have the key and the signature.
     const char* protectedProperties = STRING_c_str(rootKeyPackage->protectedPropertiesJsonString);
-    const size_t protectedPropertiesLength = STRING_length(RootKeyPackage->protectedPropertiesJsonString);
+    const size_t protectedPropertiesLength = STRING_length(rootKeyPackage->protectedPropertiesJsonString);
+
     // key, signature, and hash plus
-    if (! CryptoUtils_IsValidSignature("rs256",signature->hash.buffer,signature->hash.size,protectedProperties,protectedPropertiesLength,rootKeyCryptoKey) ){
+    const CONSTBUFFER* signatureHash = CONSTBUFFER_GetContent(signature->hash);
+
+    if (! CryptoUtils_IsValidSignature("rs256",signatureHash->buffer,signatureHash->size,(const uint8_t*)protectedProperties,protectedPropertiesLength,rootKeyCryptoKey) ){
         result = RootKeyUtility_ValidationResult_SignatureValidationFailed;
         goto done;
     }
@@ -434,10 +423,10 @@ done:
         const size_t hardcodedRootKeysLength = VECTOR_size(hardcodedRootKeys);
         for(size_t i =0 ; i < hardcodedRootKeysLength; ++i )
         {
-            ADUC_RootKey* rootKey = (ADUC_RootKey*)VECTOR_element(hardcodedRootKeys,i);
+            // ADUC_RootKey* rootKey = (ADUC_RootKey*)VECTOR_element(hardcodedRootKeys,i);
 
-            ADUC_RootKeyPackageUtils_RootKeyDeInit(rootKey);
-            free(rootKey);
+            // ADUC_RootKeyPackageUtils_RootKeyDeInit(rootKey);
+            // free(rootKey);
         }
         VECTOR_destroy(hardcodedRootKeys);
     }
@@ -458,12 +447,12 @@ CryptoKeyHandle RootKeyUtility_GetKeyForKid(const char* kid)
     //
     // Iterate through the Hardcoded RSA Root Keys
     //
-    const unsigned numberKeys = (sizeof(RSARootKeyList) / sizeof(RSARootKey));
+    const unsigned numberKeys = (sizeof(HardcodedRSARootKeyList) / sizeof(RSARootKey));
     for (unsigned i = 0; i < numberKeys; ++i)
     {
-        if (strcmp(RSARootKeyList[i].kid, kid) == 0)
+        if (strcmp(HardcodedRSARootKeyList[i].kid, kid) == 0)
         {
-            return RSAKey_ObjFromStrings(RSARootKeyList[i].N, RSARootKeyList[i].e);
+            return RSAKey_ObjFromModulusStringsExponentInt(HardcodedRSARootKeyList[i].N, HardcodedRSARootKeyList[i].e);
         }
     }
     return NULL;
