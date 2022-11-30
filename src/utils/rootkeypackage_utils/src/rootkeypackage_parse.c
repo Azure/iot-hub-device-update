@@ -13,7 +13,7 @@ EXTERN_C_BEGIN
  *
  * @param node The pointer to the root key object.
  */
-void ADUC_RootKey_Free(ADUC_RootKey* node)
+void ADUC_RootKey_DeInit(ADUC_RootKey* node)
 {
     if (node == NULL)
     {
@@ -37,7 +37,7 @@ void ADUC_RootKey_Free(ADUC_RootKey* node)
     node->rsaParameters.e = 0;
 }
 
-void ADUC_RootKeyPackage_Hash_Free(ADUC_RootKeyPackage_Hash* node)
+void ADUC_RootKeyPackage_Hash_DeInit(ADUC_RootKeyPackage_Hash* node)
 {
     if (node == NULL)
     {
@@ -411,7 +411,7 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
 
         if (VECTOR_push_back(hashes, &hashElement, 1) != 0)
         {
-            ADUC_RootKeyPackage_Hash_Free(&hashElement);
+            ADUC_RootKeyPackage_Hash_DeInit(&hashElement);
 
             result.ExtendedResultCode = ADUC_ERC_NOMEM;
             goto done;
@@ -430,7 +430,7 @@ done:
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(hashes, i);
-            ADUC_RootKeyPackage_Hash_Free(node);
+            ADUC_RootKeyPackage_Hash_DeInit(node);
         }
 
         VECTOR_destroy(hashes);
@@ -645,7 +645,7 @@ done:
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKey* node = (ADUC_RootKey*)VECTOR_element(rootKeys, i);
-            ADUC_RootKey_Free(node);
+            ADUC_RootKey_DeInit(node);
         }
 
         VECTOR_destroy(rootKeys);

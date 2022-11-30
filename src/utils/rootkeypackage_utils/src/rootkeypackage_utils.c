@@ -131,7 +131,7 @@ void ADUC_RootKeyPackageUtils_DisabledSigningKeys_Cleanup(ADUC_RootKeyPackage* r
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(vec, i);
-            ADUC_RootKeyPackage_Hash_Free(node);
+            ADUC_RootKeyPackage_Hash_DeInit(node);
         }
 
         VECTOR_destroy(rootKeyPackage->protectedProperties.disabledSigningKeys);
@@ -158,7 +158,7 @@ void ADUC_RootKeyPackageUtils_RootKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPacka
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKey* rootKeyEntry = (ADUC_RootKey*)VECTOR_element(vec, i);
-            ADUC_RootKey_Free(rootKeyEntry);
+            ADUC_RootKey_DeInit(rootKeyEntry);
         }
         VECTOR_destroy(rootKeyPackage->protectedProperties.rootKeys);
         rootKeyPackage->protectedProperties.rootKeys = NULL;
@@ -184,7 +184,7 @@ void ADUC_RootKeyPackageUtils_Signatures_Cleanup(ADUC_RootKeyPackage* rootKeyPac
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(vec, i);
-            ADUC_RootKeyPackage_Hash_Free(node);
+            ADUC_RootKeyPackage_Hash_DeInit(node);
         }
 
         VECTOR_destroy(rootKeyPackage->signatures);
