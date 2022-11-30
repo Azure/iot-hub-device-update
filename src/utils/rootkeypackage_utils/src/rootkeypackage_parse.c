@@ -9,6 +9,51 @@
 EXTERN_C_BEGIN
 
 /**
+ * @brief Frees resources for an ADUC_RootKey object.
+ *
+ * @param node The pointer to the root key object.
+ */
+void ADUC_RootKey_Free(ADUC_RootKey* node)
+{
+    if (node == NULL)
+    {
+        return;
+    }
+
+    if (node->kid != NULL)
+    {
+        STRING_delete(node->kid);
+        node->kid = NULL;
+    }
+
+    node->keyType = ADUC_RootKey_KeyType_INVALID;
+
+    if (node->rsaParameters.n != NULL)
+    {
+        CONSTBUFFER_DecRef(node->rsaParameters.n);
+        node->rsaParameters.n = NULL;
+    }
+
+    node->rsaParameters.e = 0;
+}
+
+void ADUC_RootKeyPackage_Hash_Free(ADUC_RootKeyPackage_Hash* node)
+{
+    if (node == NULL)
+    {
+        return;
+    }
+
+    node->alg = ADUC_RootKeyShaAlgorithm_INVALID;
+
+    if (node->hash != NULL)
+    {
+        CONSTBUFFER_DecRef(node->hash);
+        node->hash = NULL;
+    }
+}
+
+/**
  * @brief Parses the version protected property in accordance with rootkeypackage.schema.json
  *
  * @param protectedPropertiesObj The root JSON object.
@@ -30,7 +75,7 @@ ADUC_Result RootKeyPackage_ParseVersion(JSON_Object* protectedPropertiesObj, ADU
     version = json_object_get_number(protectedPropertiesObj, "version");
     if (version == 0)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_VERSION;
         goto done;
     }
 
@@ -68,7 +113,7 @@ ADUC_Result RootKeyPackage_ParsePublished(JSON_Object* protectedPropertiesObj, A
     published = json_object_get_number(protectedPropertiesObj, "published");
     if (published <= 0)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_PUBLISHED;
         goto done;
     }
 
@@ -110,14 +155,14 @@ ADUC_Result RootKeyPackage_ParseDisabledRootKeys(JSON_Object* protectedPropertie
     kidsArray = json_object_get_array(protectedPropertiesObj, "disabledRootKeys");
     if (kidsArray == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_DISABLEDROOTKEYS;
         goto done;
     }
 
     count = json_array_get_count(kidsArray);
     if (count == 0)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_DISABLEDROOTKEYS_EMPTY;
         goto done;
     }
 
@@ -158,7 +203,7 @@ done:
         size_t cnt = VECTOR_size(kids);
         for (size_t i = 0; i < cnt; ++i)
         {
-            STRING_HANDLE* h = (STRING_HANDLE*)VECTOR_element(kids, i);
+            STRING_HANDLE* h = VECTOR_element(kids, i);
             STRING_delete(*h);
         }
         VECTOR_destroy(kids);
@@ -194,7 +239,7 @@ ADUC_Result RootKeyPackage_ParseShaHashAlg(JSON_Object* jsonObj, ADUC_RootKeySha
     val = json_object_get_string(jsonObj, "alg");
     if (val == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_ALG;
         goto done;
     }
 
@@ -254,7 +299,7 @@ RootKeyPackage_ParseShaHashValue(JSON_Object* jsonObj, const char* propertyName,
     val = json_object_get_string(jsonObj, propertyName);
     if (val == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_HASH_OR_SIG;
         goto done;
     }
 
@@ -318,14 +363,14 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
     hashesArray = json_object_get_array(protectedPropertiesObj, "disabledSigningKeys");
     if (hashesArray == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_DISABLEDSIGNINGKEYS;
         goto done;
     }
 
     count = json_array_get_count(hashesArray);
     if (count == 0)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_DISABLEDSIGNINGKEYS_EMPTY;
         goto done;
     }
 
@@ -345,7 +390,7 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
         JSON_Object* hashJsonArrayElementObj = json_array_get_object(hashesArray, i);
         if (hashJsonArrayElementObj == NULL)
         {
-            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_GETOBJ_DISABLEDSIGNINGKEYS_ELEMENT;
             goto done;
         }
 
@@ -366,14 +411,11 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
 
         if (VECTOR_push_back(hashes, &hashElement, 1) != 0)
         {
-            // can't add to vector, so free it
-            CONSTBUFFER_DecRef(hashElement.hash);
-            hashElement.hash = NULL;
+            ADUC_RootKeyPackage_Hash_Free(&hashElement);
 
             result.ExtendedResultCode = ADUC_ERC_NOMEM;
             goto done;
         }
-        memset(&hashElement, 0, sizeof(hashElement));
     }
 
     (outPackage->protectedProperties).disabledSigningKeys = hashes;
@@ -388,10 +430,7 @@ done:
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(hashes, i);
-            if (node != NULL && node->hash != NULL)
-            {
-                CONSTBUFFER_DecRef(node->hash);
-            }
+            ADUC_RootKeyPackage_Hash_Free(node);
         }
 
         VECTOR_destroy(hashes);
@@ -413,9 +452,10 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
     JSON_Object* rootKeyDefinition = NULL;
+    STRING_HANDLE kidStrHandle = NULL;
     ADUC_RootKey_KeyType keyType = ADUC_RootKey_KeyType_INVALID;
-    CONSTBUFFER_HANDLE n_modulus_constbuffer = NULL;
-    CONSTBUFFER_HANDLE e_exponent_constbuffer = NULL;
+    CONSTBUFFER_HANDLE rsa_modulus = NULL;
+    unsigned int rsa_exponent = 0;
 
     ADUC_RootKey rootKey;
     memset(&rootKey, 0, sizeof(rootKey));
@@ -423,17 +463,21 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
     size_t modulus_len = 0;
     uint8_t* modulus_buf = NULL;
 
-    size_t exponent_len = 0;
-    uint8_t* exponent_buf = NULL;
-
-    const char* keytype = NULL;
-    const char* n_modulus = NULL;
-    const char* e_exponent = NULL;
+    const char* keytypeStr = NULL;
+    const char* n_modulusStr = NULL;
+    const char* e_exponentStr = NULL;
 
     const char* kid = json_object_get_name(rootKeysObj, index);
     if (IsNullOrEmpty(kid))
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_KEY_ID;
+        goto done;
+    }
+
+    kidStrHandle = STRING_construct(kid);
+    if (kidStrHandle == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
 
@@ -444,22 +488,22 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
         goto done;
     }
 
-    keytype = json_object_get_string(rootKeyDefinition, "keytype");
-    if (IsNullOrEmpty(keytype))
+    keytypeStr = json_object_get_string(rootKeyDefinition, "keytype");
+    if (IsNullOrEmpty(keytypeStr))
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_KEYTYPE;
         goto done;
     }
 
-    if (strcmp(keytype, "RSA") == 0)
+    if (strcmp(keytypeStr, "RSA") == 0)
     {
         keyType = ADUC_RootKey_KeyType_RSA;
-        n_modulus = json_object_get_string(rootKeyDefinition, "n");
-        e_exponent = json_object_get_string(rootKeyDefinition, "e");
+        n_modulusStr = json_object_get_string(rootKeyDefinition, "n");
+        e_exponentStr = json_object_get_string(rootKeyDefinition, "e");
 
-        if (IsNullOrEmpty(n_modulus) || IsNullOrEmpty(e_exponent))
+        if (IsNullOrEmpty(n_modulusStr))
         {
-            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_MODULUS;
             goto done;
         }
 
@@ -467,23 +511,15 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
         // CONSTBUFFER_CreateWithMoveMemory to transfer ownership to the
         // CONSTBUFFER will free correctly when refcount goes to 0 after a
         // CONSTBUFFER DecRef() call.
-        modulus_len = Base64URLDecode(n_modulus, &modulus_buf);
-        exponent_len = Base64URLDecode(e_exponent, &exponent_buf);
-        if (modulus_len == 0 || exponent_len == 0)
+        modulus_len = Base64URLDecode(n_modulusStr, &modulus_buf);
+        if (modulus_len == 0)
         {
             result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_RSA_PARAMETERS;
             goto done;
         }
 
-        n_modulus_constbuffer = CONSTBUFFER_CreateWithMoveMemory(modulus_buf, modulus_len);
-        if (n_modulus_constbuffer == NULL)
-        {
-            result.ExtendedResultCode = ADUC_ERC_NOMEM;
-            goto done;
-        }
-
-        e_exponent_constbuffer = CONSTBUFFER_CreateWithMoveMemory(exponent_buf, exponent_len);
-        if (e_exponent_constbuffer == NULL)
+        rsa_modulus = CONSTBUFFER_CreateWithMoveMemory(modulus_buf, modulus_len);
+        if (rsa_modulus == NULL)
         {
             result.ExtendedResultCode = ADUC_ERC_NOMEM;
             goto done;
@@ -491,7 +527,13 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
 
         // commit the transfer of ownership
         modulus_buf = NULL;
-        exponent_buf = NULL;
+
+        // convert exponent to size_t
+        if (!atoui(e_exponentStr, &rsa_exponent))
+        {
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_RSA_PARAMETERS;
+            goto done;
+        }
     }
     else
     {
@@ -499,9 +541,10 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
         goto done;
     }
 
+    rootKey.kid = kidStrHandle;
     rootKey.keyType = keyType;
-    rootKey.rsaParameters.n = n_modulus_constbuffer;
-    rootKey.rsaParameters.e = e_exponent_constbuffer;
+    rootKey.rsaParameters.n = rsa_modulus;
+    rootKey.rsaParameters.e = rsa_exponent;
 
     if (VECTOR_push_back(*outRootKeys, &rootKey, 1) != 0)
     {
@@ -509,28 +552,26 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
         goto done;
     }
 
-    memset(&rootKey, 0, sizeof(rootKey)); // commit
+    // commit transfer
+    kidStrHandle = NULL;
+    rsa_modulus = NULL;
+    memset(&rootKey, 0, sizeof(rootKey));
     result.ResultCode = ADUC_GeneralResult_Success;
+
 done:
+    if (kidStrHandle != NULL)
+    {
+        STRING_delete(kidStrHandle);
+    }
 
     if (modulus_buf != NULL)
     {
         free(modulus_buf);
     }
 
-    if (exponent_buf != NULL)
+    if (rsa_modulus != NULL)
     {
-        free(exponent_buf);
-    }
-
-    if (rootKey.rsaParameters.n != NULL)
-    {
-        CONSTBUFFER_DecRef(rootKey.rsaParameters.n);
-    }
-
-    if (rootKey.rsaParameters.e != NULL)
-    {
-        CONSTBUFFER_DecRef(rootKey.rsaParameters.e);
+        CONSTBUFFER_DecRef(rsa_modulus);
     }
 
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -566,14 +607,14 @@ ADUC_Result RootKeyPackage_ParseRootKeys(JSON_Object* protectedPropertiesObj, AD
     rootKeysObj = json_object_get_object(protectedPropertiesObj, "rootKeys");
     if (protectedPropertiesObj == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_ROOTKEYS;
         goto done;
     }
 
     cnt = json_object_get_count(rootKeysObj);
     if (cnt == 0)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_ROOTKEYS_EMPTY;
         goto done;
     }
 
@@ -593,8 +634,23 @@ ADUC_Result RootKeyPackage_ParseRootKeys(JSON_Object* protectedPropertiesObj, AD
         }
     }
 
+    outPackage->protectedProperties.rootKeys = rootKeys;
+    rootKeys = NULL;
     result.ResultCode = ADUC_GeneralResult_Success;
+
 done:
+    if (rootKeys != NULL)
+    {
+        size_t cnt = VECTOR_size(rootKeys);
+        for (size_t i = 0; i < cnt; ++i)
+        {
+            ADUC_RootKey* node = (ADUC_RootKey*)VECTOR_element(rootKeys, i);
+            ADUC_RootKey_Free(node);
+        }
+
+        VECTOR_destroy(rootKeys);
+    }
+
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         Log_Error("ERC %d parsing 'protected' property.", result.ResultCode);
@@ -625,7 +681,7 @@ ADUC_Result RootKeyPackage_ParseProtectedProperties(JSON_Object* rootObj, ADUC_R
     protectedPropertiesObj = json_object_get_object(rootObj, "protected");
     if (protectedPropertiesObj == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_PROTECTED;
         goto done;
     }
 
@@ -681,16 +737,89 @@ done:
 ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* rootObj, ADUC_RootKeyPackage* outPackage)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    VECTOR_HANDLE hashes = NULL;
 
     JSON_Array* signaturesArray = json_object_get_array(rootObj, "signatures");
     if (signaturesArray == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_SIGNATURES;
         goto done;
     }
 
+    size_t cnt = json_array_get_count(signaturesArray);
+    if (cnt == 0)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_SIGNATURES_EMPTY;
+        goto done;
+    }
+
+    hashes = VECTOR_create(sizeof(ADUC_RootKeyPackage_Hash));
+    if (hashes == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
+        goto done;
+    }
+
+    for (size_t i = 0; i < cnt; ++i)
+    {
+        ADUC_RootKeyPackage_Hash hashElement = { .alg = ADUC_RootKeyShaAlgorithm_INVALID, .hash = NULL };
+        ADUC_RootKeyShaAlgorithm tmpAlg = ADUC_RootKeyShaAlgorithm_INVALID;
+        CONSTBUFFER_HANDLE hashBuf = NULL;
+
+        JSON_Object* hashJsonArrayElementObj = json_array_get_object(signaturesArray, i);
+        if (hashJsonArrayElementObj == NULL)
+        {
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_GETOBJ_SIGNATURES_ELEMENT;
+            goto done;
+        }
+
+        result = RootKeyPackage_ParseShaHashAlg(hashJsonArrayElementObj, &tmpAlg);
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            goto done;
+        }
+
+        result = RootKeyPackage_ParseShaHashValue(hashJsonArrayElementObj, "sig", &hashBuf);
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            goto done;
+        }
+
+        hashElement.alg = tmpAlg;
+        hashElement.hash = hashBuf;
+
+        if (VECTOR_push_back(hashes, &hashElement, 1) != 0)
+        {
+            // can't add to vector, so free it
+            CONSTBUFFER_DecRef(hashElement.hash);
+            hashElement.hash = NULL;
+
+            result.ExtendedResultCode = ADUC_ERC_NOMEM;
+            goto done;
+        }
+        memset(&hashElement, 0, sizeof(hashElement));
+    }
+
+    outPackage->signatures = hashes;
+    hashes = NULL;
+
     result.ResultCode = ADUC_GeneralResult_Success;
 done:
+
+    if (hashes != NULL)
+    {
+        size_t cnt = VECTOR_size(hashes);
+        for (size_t i = 0; i < cnt; ++i)
+        {
+            ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(hashes, i);
+            if (node != NULL && node->hash != NULL)
+            {
+                CONSTBUFFER_DecRef(node->hash);
+            }
+        }
+
+        VECTOR_destroy(hashes);
+    }
 
     return result;
 }

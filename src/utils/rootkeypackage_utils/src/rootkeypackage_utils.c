@@ -84,29 +84,21 @@ done:
 }
 
 /**
- * @brief Cleans up an ADUC_RootKeyPackage object.
+ * @brief Cleans up the disabled root keys in the rootkey package.
  *
- * @param rootKeyPackage The root key package object to cleanup.
+ * @param rootKeyPackage The root key package.
  */
-void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+void ADUC_RootKeyPackageUtils_DisabledRootKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
 {
-    VECTOR_HANDLE vec = NULL;
-    size_t cnt = 0;
-
     if (rootKeyPackage == NULL)
     {
         return;
     }
 
-    //
-    // Cleanup protectedProperties
-    //
-
-    // cleanup disabledRootKeys
-    vec = rootKeyPackage->protectedProperties.disabledRootKeys;
+    VECTOR_HANDLE vec = rootKeyPackage->protectedProperties.disabledRootKeys;
     if (vec != NULL)
     {
-        cnt = VECTOR_size(vec);
+        size_t cnt = VECTOR_size(vec);
         for (size_t i = 0; i < cnt; ++i)
         {
             STRING_HANDLE* h = (STRING_HANDLE*)VECTOR_element(vec, i);
@@ -116,56 +108,108 @@ void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
             }
         }
         VECTOR_destroy(rootKeyPackage->protectedProperties.disabledRootKeys);
+        rootKeyPackage->protectedProperties.disabledRootKeys = NULL;
+    }
+}
+
+/**
+ * @brief Cleans up the disabled signing keys in the rootkey package.
+ *
+ * @param rootKeyPackage The root key package.
+ */
+void ADUC_RootKeyPackageUtils_DisabledSigningKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+{
+    if (rootKeyPackage == NULL)
+    {
+        return;
     }
 
-    // cleanup disabledSigningKeys
-    vec = rootKeyPackage->protectedProperties.disabledSigningKeys;
+    VECTOR_HANDLE vec = rootKeyPackage->protectedProperties.disabledSigningKeys;
     if (vec != NULL)
     {
-        cnt = VECTOR_size(vec);
+        size_t cnt = VECTOR_size(vec);
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(vec, i);
-            if (node != NULL && node->hash != NULL)
-            {
-                CONSTBUFFER_DecRef(node->hash);
-            }
+            ADUC_RootKeyPackage_Hash_Free(node);
         }
+
         VECTOR_destroy(rootKeyPackage->protectedProperties.disabledSigningKeys);
+        rootKeyPackage->protectedProperties.disabledSigningKeys = NULL;
+    }
+}
+
+/**
+ * @brief Cleans up the root keys in the rootkey package.
+ *
+ * @param rootKeyPackage The root key package.
+ */
+void ADUC_RootKeyPackageUtils_RootKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+{
+    if (rootKeyPackage == NULL)
+    {
+        return;
     }
 
-    // cleanup rootKeys
-    vec = rootKeyPackage->protectedProperties.rootKeys;
+    VECTOR_HANDLE vec = rootKeyPackage->protectedProperties.rootKeys;
     if (vec != NULL)
     {
-        cnt = VECTOR_size(vec);
+        size_t cnt = VECTOR_size(vec);
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKey* rootKeyEntry = (ADUC_RootKey*)VECTOR_element(vec, i);
-            ADUC_RootKeyPackageUtils_RootKeyDeInit(rootKeyEntry);
+            ADUC_RootKey_Free(rootKeyEntry);
         }
         VECTOR_destroy(rootKeyPackage->protectedProperties.rootKeys);
+        rootKeyPackage->protectedProperties.rootKeys = NULL;
+    }
+}
+
+/**
+ * @brief Cleans up the signatures in the rootkey package.
+ *
+ * @param rootKeyPackage The root key package.
+ */
+void ADUC_RootKeyPackageUtils_Signatures_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+{
+    if (rootKeyPackage == NULL)
+    {
+        return;
     }
 
-    //
-    // Cleanup signatures
-    //
-    vec = rootKeyPackage->signatures;
+    VECTOR_HANDLE vec = rootKeyPackage->signatures;
     if (vec != NULL)
     {
-        cnt = VECTOR_size(vec);
+        size_t cnt = VECTOR_size(vec);
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(vec, i);
-            if (node != NULL && node->hash != NULL)
-            {
-                CONSTBUFFER_DecRef(node->hash);
-            }
+            ADUC_RootKeyPackage_Hash_Free(node);
         }
+
         VECTOR_destroy(rootKeyPackage->signatures);
+        rootKeyPackage->signatures = NULL;
+    }
+}
+
+/**
+ * @brief Cleans up an ADUC_RootKeyPackage object.
+ *
+ * @param rootKeyPackage The root key package object to cleanup.
+ */
+void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+{
+    if (rootKeyPackage == NULL)
+    {
+        return;
     }
 
-    // finally, zero-out
+    ADUC_RootKeyPackageUtils_DisabledRootKeys_Cleanup(rootKeyPackage);
+    ADUC_RootKeyPackageUtils_DisabledSigningKeys_Cleanup(rootKeyPackage);
+    ADUC_RootKeyPackageUtils_RootKeys_Cleanup(rootKeyPackage);
+
+    ADUC_RootKeyPackageUtils_Signatures_Cleanup(rootKeyPackage);
+
     memset(rootKeyPackage, 0, sizeof(*rootKeyPackage));
 }
 

@@ -13,7 +13,7 @@ target_sources(${target_name} PRIVATE src/main.cpp src/rootkeypackage_utils_ut.c
 
 target_include_directories(${target_name} PRIVATE inc)
 
-target_link_libraries (${target_name} PRIVATE aduc::rootkeypackage_utils aduc::test_utils
+target_link_libraries (${target_name} PRIVATE aduc::rootkeypackage_utils aduc::test_utils aduc::crypto_utils
                                               Catch2::Catch2 Parson::parson)
 
 target_compile_definitions (${target_name}

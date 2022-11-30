@@ -11,10 +11,15 @@
 #include <aduc/rootkeypackage_types.h>
 #include <aduc/rootkeypackage_utils.h>
 #include <algorithm>
+#include <base64_utils.h>
 #include <catch2/catch.hpp>
 #include <parson.h>
+#include <regex>
 #include <sstream>
+#include <stdexcept>
 #include <vector>
+
+using Catch::Matchers::Equals;
 
 static std::string get_valid_rootkey_package_template_json_path()
 {
@@ -59,41 +64,90 @@ static std::string fillout_protected_properties_template_params(
     const std::string& templateStr,
     const char* disabledHashPublicSigningKey,
     const char* modulus_1,
-    const char* exponent_1,
+    size_t exponent_1,
     const char* modulus_2,
-    const char* exponent_2,
+    size_t exponent_2,
     const char* modulus_3,
-    const char* exponent_3)
+    size_t exponent_3)
 {
     std::string str = aduc::FileTestUtils_applyTemplateParam(
         templateStr, "disabledHashPublicSigningKey", disabledHashPublicSigningKey);
 
+    auto conv = [](size_t exp) {
+        std::stringstream ss;
+        ss << exp;
+        return ss.str();
+    };
+    std::string exp1_str = conv(exponent_1);
+    std::string exp2_str = conv(exponent_2);
+    std::string exp3_str = conv(exponent_3);
+
     str = aduc::FileTestUtils_applyTemplateParam(str, "modulus_1", modulus_1);
-    str = aduc::FileTestUtils_applyTemplateParam(str, "exponent_1", exponent_1);
+    str = aduc::FileTestUtils_applyTemplateParam(str, "exponent_1", exp1_str.c_str());
 
     str = aduc::FileTestUtils_applyTemplateParam(str, "modulus_2", modulus_2);
-    str = aduc::FileTestUtils_applyTemplateParam(str, "exponent_2", exponent_2);
+    str = aduc::FileTestUtils_applyTemplateParam(str, "exponent_2", exp2_str.c_str());
 
     str = aduc::FileTestUtils_applyTemplateParam(str, "modulus_3", modulus_3);
-    str = aduc::FileTestUtils_applyTemplateParam(str, "exponent_3", exponent_3);
+    str = aduc::FileTestUtils_applyTemplateParam(str, "exponent_3", exp3_str.c_str());
 
     return str;
+}
+
+static std::string convert_hexcolon_to_URLUIntBase64String(const std::string& hexcolon)
+{
+    std::stringstream ss{ hexcolon };
+    std::vector<std::string> hexBytes;
+    while (ss.good())
+    {
+        std::string tok;
+        getline(ss, tok, ':');
+        hexBytes.push_back(tok);
+    }
+
+    auto hex2nibble = [](char c) {
+        if (c >= '0' && c <= '9')
+        {
+            return c - '0';
+        }
+        else if (c >= 'a' && c <= 'f')
+        {
+            return c - 'a' + 10;
+        }
+        else if (c >= 'A' && c <= 'F')
+        {
+            return c - 'A' + 10;
+        }
+        throw std::invalid_argument("bad hex char");
+    };
+
+    std::vector<std::uint8_t> bytes;
+    for (const std::string& hexByte : hexBytes)
+    {
+        uint8_t hi_nibble = hex2nibble(hexByte[0]);
+        uint8_t lo_nibble = hex2nibble(hexByte[1]);
+        uint8_t byte = (hi_nibble << 4) | lo_nibble;
+        bytes.push_back(byte);
+    }
+
+    char* encoded = Base64URLEncode(bytes.data(), bytes.size());
+    std::string base64url{ encoded };
+    free(encoded);
+    return base64url;
 }
 
 static std::string get_valid_rootkey_package(
     const char* disabledHashPublicSigningKey,
     const char* modulus_1,
-    const char* exponent_1,
+    size_t exponent_1,
     const char* modulus_2,
-    const char* exponent_2,
+    size_t exponent_2,
     const char* modulus_3,
-    const char* exponent_3,
+    size_t exponent_3,
     const aduc::rootkeypkgtestutils::TestRSAPrivateKey& rootkey1_privateKey,
     const aduc::rootkeypkgtestutils::TestRSAPrivateKey& rootkey2_privateKey,
     const aduc::rootkeypkgtestutils::TestRSAPrivateKey& rootkey3_privateKey)
 {
-    std::stringstream ss;
-
     JSON_Value* pkgJsonValue = json_parse_file(get_valid_rootkey_package_template_json_path().c_str());
     REQUIRE(pkgJsonValue != nullptr);
 
@@ -151,9 +205,9 @@ TEST_CASE("RootKeyPackageUtils_Parse")
 
     SECTION("valid")
     {
-        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair1{};
-        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair2{};
-        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair3{};
+        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair1{ aduc::rootkeypkgtestutils::rootkeys::rootkey1 };
+        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair2{ aduc::rootkeypkgtestutils::rootkeys::rootkey2 };
+        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair3{ aduc::rootkeypkgtestutils::rootkeys::rootkey3 };
 
         const auto& rootkey1_publickey = rootKeyPair1.GetPublicKey();
         const auto& rootkey2_publickey = rootKeyPair2.GetPublicKey();
@@ -163,23 +217,23 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         const char* PUBLIC_SIGNING_KEY_CHAINING_UP_TO_ROOTKEY_3 =
             urlIntBase64EncodedHash_of_rootkey3_public_key.c_str();
 
-        const char* ROOTKEY_1_MODULUS = rootkey1_publickey.GetModulus().c_str();
-        const char* ROOTKEY_1_EXPONENT = rootkey1_publickey.GetExponent().c_str();
+        std::string ROOTKEY_1_MODULUS = convert_hexcolon_to_URLUIntBase64String(rootkey1_publickey.GetModulus());
+        size_t ROOTKEY_1_EXPONENT = rootkey1_publickey.GetExponent();
 
-        const char* ROOTKEY_2_MODULUS = rootkey2_publickey.GetModulus().c_str();
-        const char* ROOTKEY_2_EXPONENT = rootkey2_publickey.GetExponent().c_str();
+        std::string ROOTKEY_2_MODULUS = convert_hexcolon_to_URLUIntBase64String(rootkey2_publickey.GetModulus());
+        size_t ROOTKEY_2_EXPONENT = rootkey2_publickey.GetExponent();
 
-        const char* ROOTKEY_3_MODULUS = rootkey3_publickey.GetModulus().c_str();
-        const char* ROOTKEY_3_EXPONENT = rootkey3_publickey.GetExponent().c_str();
+        std::string ROOTKEY_3_MODULUS = convert_hexcolon_to_URLUIntBase64String(rootkey3_publickey.GetModulus());
+        size_t ROOTKEY_3_EXPONENT = rootkey3_publickey.GetExponent();
 
         const std::string rootKeyPkgJsonStr = get_valid_rootkey_package(
             PUBLIC_SIGNING_KEY_CHAINING_UP_TO_ROOTKEY_3, // disabledHashPublicSigningKey
-            ROOTKEY_1_MODULUS, // modulus_1
+            ROOTKEY_1_MODULUS.c_str(), // modulus_1
             ROOTKEY_1_EXPONENT, // exponent_1
-            ROOTKEY_2_MODULUS, // modulus_2
+            ROOTKEY_2_MODULUS.c_str(), // modulus_2
             ROOTKEY_2_EXPONENT, // exponent_2
-            ROOTKEY_3_MODULUS, // modulus_3
-            ROOTKEY_1_MODULUS, // modulus_1
+            ROOTKEY_3_MODULUS.c_str(), // modulus_3
+            ROOTKEY_3_EXPONENT, // exponent_3
             rootKeyPair1.GetPrivateKey(), // privateKey_1
             rootKeyPair2.GetPrivateKey(), // privateKey_2
             rootKeyPair3.GetPrivateKey() // privateKey_3
@@ -207,28 +261,103 @@ TEST_CASE("RootKeyPackageUtils_Parse")
             const STRING_HANDLE* const disabledRootKey2 =
                 static_cast<STRING_HANDLE*>(VECTOR_element(pkg.protectedProperties.disabledRootKeys, 1));
 
-            CHECK_THAT(STRING_c_str(*disabledRootKey1), Catch::Matchers::Equals("rootkey1"));
-            CHECK_THAT(STRING_c_str(*disabledRootKey2), Catch::Matchers::Equals("rootkey2"));
+            CHECK_THAT(STRING_c_str(*disabledRootKey1), Equals("rootkey1"));
+            CHECK_THAT(STRING_c_str(*disabledRootKey2), Equals("rootkey2"));
         }
 
         // verify "disabledSigningKeys"
         REQUIRE(VECTOR_size(pkg.protectedProperties.disabledSigningKeys) == 1);
+        {
+            void* el = VECTOR_element(pkg.protectedProperties.disabledSigningKeys, 0);
+            REQUIRE(el != nullptr);
 
-        void* el = VECTOR_element(pkg.protectedProperties.disabledSigningKeys, 0);
-        auto a = static_cast<ADUC_RootKeyPackage_Hash*>(el);
-        ADUC_RootKeyPackage_Hash signingKeyHash{ *a };
-        CHECK(signingKeyHash.alg == ADUC_RootKeyShaAlgorithm_SHA256);
+            auto a = static_cast<ADUC_RootKeyPackage_Hash*>(el);
+            ADUC_RootKeyPackage_Hash signingKeyHash{ *a };
+            CHECK(signingKeyHash.alg == ADUC_RootKeyShaAlgorithm_SHA256);
 
-        const CONSTBUFFER* hashBuffer = CONSTBUFFER_GetContent(signingKeyHash.hash);
-        REQUIRE(hashBuffer != nullptr);
+            const CONSTBUFFER* hashBuffer = CONSTBUFFER_GetContent(signingKeyHash.hash);
+            REQUIRE(hashBuffer != nullptr);
 
-        //        std::string encodedHash = GetEncodedHashValue(hashBuffer->buffer, hashBuffer->size);
-        //        CONSTBUFFER_DecRef(signingKeyHash.hash);// Cleanup CONSTBUFFER
-        //        CHECK(encodedHash.c_str() == PUBLIC_SIGNING_KEY_CHAINING_UP_TO_ROOTKEY_3);
+            char* encodedHash = Base64URLEncode(hashBuffer->buffer, hashBuffer->size);
+            std::string encodedHashStr{ encodedHash };
+            encodedHashStr = std::regex_replace(encodedHashStr, std::regex("="), "");
+
+            std::string expected{ PUBLIC_SIGNING_KEY_CHAINING_UP_TO_ROOTKEY_3 };
+            expected = std::regex_replace(expected, std::regex("="), "");
+
+            CHECK(encodedHashStr == expected);
+
+            CONSTBUFFER_DecRef(signingKeyHash.hash);
+            free(encodedHash);
+        }
+
+        // verify "rootKeys"
+        REQUIRE(VECTOR_size(pkg.protectedProperties.rootKeys) == 3);
+        const ADUC_RootKey* const rootkey1 = static_cast<ADUC_RootKey*>(VECTOR_element(pkg.protectedProperties.rootKeys, 0));
+        const ADUC_RootKey* const rootkey2 = static_cast<ADUC_RootKey*>(VECTOR_element(pkg.protectedProperties.rootKeys, 1));
+        const ADUC_RootKey* const rootkey3 = static_cast<ADUC_RootKey*>(VECTOR_element(pkg.protectedProperties.rootKeys, 2));
+
+        REQUIRE(rootkey1 != nullptr);
+        REQUIRE(rootkey2 != nullptr);
+        REQUIRE(rootkey3 != nullptr);
+
+        CHECK_THAT(STRING_c_str(rootkey1->kid), Equals("rootkey1"));
+        CHECK_THAT(STRING_c_str(rootkey2->kid), Equals("rootkey2"));
+        CHECK_THAT(STRING_c_str(rootkey3->kid), Equals("rootkey3"));
+
+        CHECK(rootkey1->keyType == ADUC_RootKey_KeyType_RSA);
+        CHECK(rootkey2->keyType == ADUC_RootKey_KeyType_RSA);
+        CHECK(rootkey3->keyType == ADUC_RootKey_KeyType_RSA);
+
+        auto VerifyRsaParams = [](const ADUC_RSA_RootKeyParameters& rsaParams, const std::string& expected_modulus, size_t expected_exponent) {
+            CHECK(rsaParams.e == expected_exponent);
+
+            const CONSTBUFFER* actual_modulus_buf = CONSTBUFFER_GetContent(rsaParams.n);
+            REQUIRE(actual_modulus_buf != nullptr);
+
+            char* actual_modulus = Base64URLEncode(actual_modulus_buf->buffer, actual_modulus_buf->size);
+            REQUIRE(actual_modulus != nullptr);
+
+            CHECK_THAT(actual_modulus, Equals(expected_modulus));
+            free(actual_modulus);
+        };
+
+        VerifyRsaParams(rootkey1->rsaParameters, ROOTKEY_1_MODULUS, ROOTKEY_1_EXPONENT);
+        VerifyRsaParams(rootkey2->rsaParameters, ROOTKEY_2_MODULUS, ROOTKEY_2_EXPONENT);
+        VerifyRsaParams(rootkey3->rsaParameters, ROOTKEY_3_MODULUS, ROOTKEY_3_EXPONENT);
 
         //
         // Verify "signatures" properties
         //
+        REQUIRE(pkg.signatures != nullptr);
+        REQUIRE(VECTOR_size(pkg.signatures) == 3);
+
+        auto verifyPkgSig = [&](size_t sig_index, const aduc::rootkeypkgtestutils::TestRSAKeyPair& testRootKeyPair) {
+            ADUC_RootKeyPackage_Hash* hashNode;
+            void* el = VECTOR_element(pkg.signatures, sig_index);
+            REQUIRE(el != nullptr);
+
+            auto a = static_cast<ADUC_RootKeyPackage_Hash*>(el);
+            ADUC_RootKeyPackage_Hash signatureHash{ *a };
+
+            CHECK(signatureHash.alg == ADUC_RootKeyShaAlgorithm_SHA256);
+
+            const CONSTBUFFER* hashBuffer = CONSTBUFFER_GetContent(signatureHash.hash);
+            REQUIRE(hashBuffer != nullptr);
+
+            char* encodedHash = Base64URLEncode(hashBuffer->buffer, hashBuffer->size);
+            std::string urlDecodedStr{ encodedHash };
+            urlDecodedStr = std::regex_replace(urlDecodedStr, std::regex("_"), "/");
+            urlDecodedStr = std::regex_replace(urlDecodedStr, std::regex("-"), "+");
+            CHECK(testRootKeyPair.GetPublicKey().VerifySignature(urlDecodedStr));
+
+            CONSTBUFFER_DecRef(signatureHash.hash);
+            free(encodedHash);
+        };
+
+        verifyPkgSig(0, rootKeyPair1);
+        verifyPkgSig(1, rootKeyPair2);
+        verifyPkgSig(2, rootKeyPair3);
 
         //
         // Cleanup

@@ -21,8 +21,10 @@ void ADUC_RootKeyPackageUtils_RootKeyDeInit(ADUC_RootKey* key);
 
 ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyPackage* outRootKeyPackage);
 
-ADUC_Result ADUC_RootKeyPackageUtils_ParseFromFile(const char* filePath, ADUC_RootKeyPackage* outRootKeyPackage);
-
+void ADUC_RootKeyPackageUtils_DisabledRootKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPackage);
+void ADUC_RootKeyPackageUtils_DisabledSigningKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPackage);
+void ADUC_RootKeyPackageUtils_RootKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPackage);
+void ADUC_RootKeyPackageUtils_Signatures_Cleanup(ADUC_RootKeyPackage* rootKeyPackage);
 void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage);
 
 EXTERN_C_END
