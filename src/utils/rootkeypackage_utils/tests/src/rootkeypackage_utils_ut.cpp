@@ -362,6 +362,6 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         //
         // Cleanup
         //
-        ADUC_RootKeyPackageUtils_Cleanup(&pkg);
+        ADUC_RootKeyPackageUtils_Destroy(&pkg);
     }
 }

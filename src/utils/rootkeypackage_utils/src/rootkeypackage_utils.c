@@ -77,7 +77,7 @@ done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        ADUC_RootKeyPackageUtils_Cleanup(&pkg);
+        ADUC_RootKeyPackageUtils_Destroy(&pkg);
     }
 
     return result;
@@ -88,7 +88,7 @@ done:
  *
  * @param rootKeyPackage The root key package.
  */
-void ADUC_RootKeyPackageUtils_DisabledRootKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+void ADUC_RootKeyPackageUtils_DisabledRootKeys_Destroy(ADUC_RootKeyPackage* rootKeyPackage)
 {
     if (rootKeyPackage == NULL)
     {
@@ -117,7 +117,7 @@ void ADUC_RootKeyPackageUtils_DisabledRootKeys_Cleanup(ADUC_RootKeyPackage* root
  *
  * @param rootKeyPackage The root key package.
  */
-void ADUC_RootKeyPackageUtils_DisabledSigningKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+void ADUC_RootKeyPackageUtils_DisabledSigningKeys_Destroy(ADUC_RootKeyPackage* rootKeyPackage)
 {
     if (rootKeyPackage == NULL)
     {
@@ -144,7 +144,7 @@ void ADUC_RootKeyPackageUtils_DisabledSigningKeys_Cleanup(ADUC_RootKeyPackage* r
  *
  * @param rootKeyPackage The root key package.
  */
-void ADUC_RootKeyPackageUtils_RootKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+void ADUC_RootKeyPackageUtils_RootKeys_Destroy(ADUC_RootKeyPackage* rootKeyPackage)
 {
     if (rootKeyPackage == NULL)
     {
@@ -170,7 +170,7 @@ void ADUC_RootKeyPackageUtils_RootKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPacka
  *
  * @param rootKeyPackage The root key package.
  */
-void ADUC_RootKeyPackageUtils_Signatures_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+void ADUC_RootKeyPackageUtils_Signatures_Destroy(ADUC_RootKeyPackage* rootKeyPackage)
 {
     if (rootKeyPackage == NULL)
     {
@@ -197,18 +197,18 @@ void ADUC_RootKeyPackageUtils_Signatures_Cleanup(ADUC_RootKeyPackage* rootKeyPac
  *
  * @param rootKeyPackage The root key package object to cleanup.
  */
-void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+void ADUC_RootKeyPackageUtils_Destroy(ADUC_RootKeyPackage* rootKeyPackage)
 {
     if (rootKeyPackage == NULL)
     {
         return;
     }
 
-    ADUC_RootKeyPackageUtils_DisabledRootKeys_Cleanup(rootKeyPackage);
-    ADUC_RootKeyPackageUtils_DisabledSigningKeys_Cleanup(rootKeyPackage);
-    ADUC_RootKeyPackageUtils_RootKeys_Cleanup(rootKeyPackage);
+    ADUC_RootKeyPackageUtils_DisabledRootKeys_Destroy(rootKeyPackage);
+    ADUC_RootKeyPackageUtils_DisabledSigningKeys_Destroy(rootKeyPackage);
+    ADUC_RootKeyPackageUtils_RootKeys_Destroy(rootKeyPackage);
 
-    ADUC_RootKeyPackageUtils_Signatures_Cleanup(rootKeyPackage);
+    ADUC_RootKeyPackageUtils_Signatures_Destroy(rootKeyPackage);
 
     memset(rootKeyPackage, 0, sizeof(*rootKeyPackage));
 }
