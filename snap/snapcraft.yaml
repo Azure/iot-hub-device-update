@@ -17,6 +17,9 @@ confinement: devmode # use 'strict' once you have the right plugs and slots
 #                  https://snapcraft.io/docs/parts-lifecycle
 # plugin - Specifies a plugin required for building the part.
 #
+# see also:
+#     environment variables - https://snapcraft.io/docs/parts-environment-variables
+#
 #####
 
 parts:
@@ -25,9 +28,10 @@ parts:
     source: .
     override-build: |
       ./scripts/install-deps.sh -a
-      mkdir -p ../install/usr/lib
-      cp /usr/local/lib/libdeliveryoptimization.so* ../install/usr/lib
-
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp /usr/local/lib/libdeliveryoptimization.so* $SNAPCRAFT_PART_INSTALL/usr/lib
+    stage-packages:
+      - libboost-filesystem1.71.0
   #
   # Agent component
   # This is the main agent application.
@@ -37,17 +41,13 @@ parts:
     source: .
     override-build: |
       ./scripts/build.sh --ubuntu-core-snap-only
-      mkdir -p ../install/usr/bin
-      mkdir -p ../install/usr/lib/adu
-      mkdir -p ../install/var/lib/adu/extensions/sources
-      mkdir -p ../install/conf
-      echo 'placeholder' > ../install/conf/du-config.json
-      echo 'placeholder' > ../install/conf/du-diagnostic.json
-      cp ../build/out/bin/AducIotAgent ../install/usr/bin/AducIotAgent
-      cp ../build/out/bin/adu-shell ../install/usr/lib/adu
-      cp ../build/out/lib/*.so ../install/var/lib/adu/extensions/sources
-
-    # cp /usr/lib/libdeliveryoptimization.so* ../install/usr/lib
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib/adu
+      mkdir -p $SNAPCRAFT_PART_INSTALL/var/lib/adu/extensions/sources
+      mkdir -p $SNAPCRAFT_PART_INSTALL/conf
+      cp $SNAPCRAFT_PART_BUILD/out/bin/AducIotAgent $SNAPCRAFT_PART_INSTALL/usr/bin/AducIotAgent
+      cp $SNAPCRAFT_PART_BUILD/out/bin/adu-shell $SNAPCRAFT_PART_INSTALL/usr/lib/adu
+      cp $SNAPCRAFT_PART_BUILD/out/lib/*.so $SNAPCRAFT_PART_INSTALL/var/lib/adu/extensions/sources
 
     # Require install-deps
     after:
@@ -81,7 +81,7 @@ parts:
       - libxml2
 
 apps:
-  # high-previlege tasks broker
+  # high-privilege tasks broker
   adu-shell:
     command: usr/lib/adu/adu-shell
     plugs:

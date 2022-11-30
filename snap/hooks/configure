@@ -22,7 +22,7 @@ adu_shell_file=adu-shell
 
 adu_bin_path=$SNAP/usr/bin/AducIotAgent
 adu_extensions_dir="$adu_data_dir/extensions"
-adu_extensions_sources_dir="$adu_extensions_dir/sources"
+adu_extensions_sources_dir="$SNAP/var/lib/adu/extensions/sources"
 
 adu_script_handler_file=libmicrosoft_script_1.so
 adu_steps_handler_file=libmicrosoft_steps_1.so
@@ -34,8 +34,8 @@ sample_du_config=$(
 {
   "schemaVersion": "1.1",
   "aduShellTrustedUsers": [
-    "adu",
-    "do"
+    "snap_aziot_du",
+    "snap_aziot_do"
   ],
   "iotHubProtocol": "mqtt",
   "manufacturer": <Place your device info manufacturer here>,
@@ -43,7 +43,7 @@ sample_du_config=$(
   "agents": [
     {
       "name": <Place your agent name here>,
-      "runas": "adu",
+      "runas": "snap_aziot_du",
       "connectionSource": {
         "connectionType": "string",
         "connectionData": <Place your Azure IoT device connection string here>
@@ -64,10 +64,6 @@ sample_du_diagnostics_config=$(
         {
             "componentName":"adu",
             "logPath":"/var/log/adu/"
-        },
-        {
-            "componentName":"do",
-            "logPath":"/var/log/deliveryoptimization-agent/"
         }
     ],
     "maxKilobytesToUploadPerLogPath":50
@@ -167,6 +163,7 @@ setup_dirs_and_files() {
 
         # Create log dir
         if [ ! -d "$adu_log_dir" ]; then
+            echo "Create log dir ($adu_log_dir)..."
             mkdir -p "$adu_log_dir"
         fi
 
@@ -175,8 +172,8 @@ setup_dirs_and_files() {
         #chmod u=rwx,g=rx "$adu_log_dir"
 
         # Create data dir
-        echo "Create data dir..."
         if [ ! -d "$adu_data_dir" ]; then
+            echo "Create data dir ($adu_data_dir)..."
             mkdir -p "$adu_data_dir"
         fi
 
@@ -187,6 +184,7 @@ setup_dirs_and_files() {
 
         # Create downloads dir
         if [ ! -d "$adu_downloads_dir" ]; then
+            echo "Create downloads dir ($adu_downloads_dir)..."
             mkdir -p "$adu_downloads_dir"
         fi
 
@@ -197,6 +195,7 @@ setup_dirs_and_files() {
 
         # Create extensions dir
         if [ ! -d "$adu_extensions_dir" ]; then
+            echo "Create extensions dir ($adu_extensions_dir)..."
             mkdir -p "$adu_extensions_dir"
         fi
 
@@ -205,9 +204,9 @@ setup_dirs_and_files() {
         #chmod u=rwx,g=rwx,o= "$adu_extensions_dir"
 
         # Create extensions sources dir
-        if [ ! -d "$adu_extensions_sources_dir" ]; then
-            mkdir -p "$adu_extensions_sources_dir"
-        fi
+        # if [ ! -d "$adu_extensions_sources_dir" ]; then
+        #     mkdir -p "$adu_extensions_sources_dir"
+        # fi
 
         # Ensure the right owners and permissions
         #chown "$adu_user:$adu_group" "$adu_extensions_sources_dir"
@@ -216,7 +215,7 @@ setup_dirs_and_files() {
         #Set deviceupdate-agent owner and permission
         if [ ! -f "$adu_shell_dir/$adu_shell_file" ]; then
            echo "ERROR! $adu_shell_dir/$adu_shell_file does not exists." >&2
-        else
+        #else
         #   chown "root:$adu_group" "$adu_shell_dir/$adu_shell_file"
         #   chmod u=rxs "$adu_shell_dir/$adu_shell_file"
         fi
@@ -241,4 +240,4 @@ register_extensions() {
 
 #add_adu_user_and_group
 setup_dirs_and_files
-#register_extensions
+register_extensions

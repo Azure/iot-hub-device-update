@@ -45,14 +45,14 @@ snapcraft
 
 If build success, you can find `deviceupdate-agent_#.#_amd64.snap` at the project root directory.
 
-### How To View Snap Packge Content
+### How To View Snap Package Content
 
 You can use `unsquashfs` command to extract `.snap` file.
 
 ```sh
 # Run unsquashfs <snap file name>
 # e.g., unsquashfs deviceupdate-agent.0.1_amd64.snap
-unsquashfs deviceupdate-agent.0.1_adm64.nsap
+unsquashfs deviceupdate-agent.0.1_adm64.snap
 
 # The content will be extracted to 'squashfs-root' directory
 # You can use 'tree' command to view the directory content
