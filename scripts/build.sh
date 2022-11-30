@@ -434,7 +434,7 @@ if [ ! -f "$cmake_bin" ]; then
     error "No '${cmake_bin}' file."
     ret_val=1
 else
-    "$cmake_bin" -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
+    "$cmake_bin" --graphviz=aduc-deps.dot -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
     ret_val=$?
 fi
 
