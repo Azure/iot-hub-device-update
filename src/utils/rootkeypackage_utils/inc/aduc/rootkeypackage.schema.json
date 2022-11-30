@@ -12,13 +12,13 @@
                 "published": {
                     "type": "number"
                 },
-                "untrustedRootKeys": {
+                "disabledRootKeys": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "untrustedSigningKeys": {
+                "disabledSigningKeys": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/signingKeyHashDef"
@@ -41,7 +41,7 @@
                 "properties": {
                     "alg": {
                         "enum": [
-                            "SHA256", "SHA384", "SHA512"
+                            "RS256", "RS384", "RS512"
                         ]
                     },
                     "sig": {
@@ -60,7 +60,13 @@
         "signingKeyHashDef": {
             "type": "object",
             "properties": {
-                "alg": { "type": "string" },
+                "alg": {
+                    "enum": [
+                        "SHA256",
+                        "SHA384",
+                        "SHA512"
+                    ]
+                },
                 "hash": { "type": "string" }
             }
         },
@@ -69,8 +75,7 @@
             "properties": {
                 "keytype": {
                     "enum": [
-                      "RSA",
-                      "EC"
+                      "RSA"
                     ]
                 }
             },

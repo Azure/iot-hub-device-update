@@ -80,6 +80,14 @@ void ADUC_Hash_FreeArray(size_t hashCount, ADUC_Hash* hashArray);
  */
 _Bool ADUC_HashUtils_VerifyWithStrongestHash(const char* filePath, const ADUC_Hash* hashes, size_t hashCount);
 
+/**
+ * @brief Whether the hash algorithm is valid.
+ *
+ * @param sha The SHA version.
+ * @return _Bool true if valid.
+ */
+_Bool ADUC_HashUtils_IsValidHashAlgorithm(SHAversion sha);
+
 EXTERN_C_END
 
 #endif // ADUC_HASH_UTILS_H

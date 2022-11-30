@@ -1,22 +1,29 @@
-cmake_minimum_required (VERSION 3.5)
-
-project (rootkeypackage_utils_unit_test)
+set (target_name rootkeypackage_utils_unit_test)
 
 include (agentRules)
 
 compileasc99 ()
 disablertti ()
 
-set (sources main.cpp rootkeypackage_utils_ut.cpp)
-
 find_package (Catch2 REQUIRED)
+find_package (Parson REQUIRED)
 
-add_executable (${PROJECT_NAME} ${sources})
+add_executable (${target_name})
+target_sources (${target_name} PRIVATE src/main.cpp src/rootkeypackage_utils_ut.cpp)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE
-    aduc::rootkeypackage_utils
-    Catch2::Catch2)
+target_include_directories (${target_name} PRIVATE inc)
+
+target_link_libraries (
+    ${target_name}
+    PRIVATE aduc::rootkeypackage_utils
+            aduc::test_utils
+            aduc::crypto_utils
+            aduc::hash_utils
+            Catch2::Catch2
+            Parson::parson)
+
+target_compile_definitions (${target_name} PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
 include (CTest)
 include (Catch)
-catch_discover_tests (${PROJECT_NAME})
+catch_discover_tests (${target_name})
