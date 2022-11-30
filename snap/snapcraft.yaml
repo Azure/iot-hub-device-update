@@ -91,12 +91,13 @@ apps:
   # 'deviceupdate-agent' service
   # See document: https://forum.snapcraft.io/t/snapcraft-app-and-service-metadata/8335
   deviceupdate-agent:
-    command: usr/bin/AducIotAgent
+    command: usr/bin/AducIotAgent -l 0 -e
     daemon: simple
     refresh-mode: restart
-    restart-condition: always
+    restart-condition: on-failure
     restart-delay: 10s
     plugs:
+      - home
       - network
 
 environment:

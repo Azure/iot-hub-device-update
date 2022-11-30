@@ -142,10 +142,10 @@ For example:
 
 ## Run The Snap
 
-To run a shell in the confined environment
+To run a shell in the confined environment:
 
 ```shell
-$ snap run --shell deviceupdate-agent
+$ sudo snap run --shell deviceupdate-agent
 ```
 
 Optionally, copy the prepared `du-config.json` from [host machine] home directory to `$SNAP_DATA/config` directory
@@ -289,5 +289,23 @@ The name of the Device Update agent in the confined environment is `snap.deviceu
 To view the journal log, use following command:
 
 ```shell
-journalctl -u snap.deviceupdate-agent.deviceupdate-agent -f --no-tail
+$ journalctl -u snap.deviceupdate-agent.deviceupdate-agent -f --no-tail
+```
+
+To start the daemon:
+
+```shell
+$ sudo systemctl start  snap.deviceupdate-agent.deviceupdate-agent
+```
+
+To stop the daemon:
+
+```shell
+$ sudo systemctl stop  snap.deviceupdate-agent.deviceupdate-agent
+```
+
+To restart the daemon:
+
+```shell
+$ sudo systemctl restart  snap.deviceupdate-agent.deviceupdate-agent
 ```
