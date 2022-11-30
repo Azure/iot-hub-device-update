@@ -36,7 +36,7 @@ header:
 and footer:
 `-----END PUBLIC KEY-----`
 
-## SHA256 hash of Public
+## RS256 hash of Public key
 
 After URLUInt decode and restore header/footer:
 

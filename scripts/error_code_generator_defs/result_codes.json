@@ -889,80 +889,88 @@
                 "value": 6
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_ALG",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_HASHING_PROPERTY_ALG",
                 "value": 7
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_HASH_OR_SIG",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_SIGNATURE_PROPERTY_ALG",
                 "value": 8
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_DISABLEDSIGNINGKEYS",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_HASH_OR_SIG",
                 "value": 9
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_KEYTYPE",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_DISABLEDSIGNINGKEYS",
                 "value": 10
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_ROOTKEYS",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_KEYTYPE",
                 "value": 11
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_PROTECTED",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_ROOTKEYS",
                 "value": 12
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_SIGNATURES",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_PROTECTED",
                 "value": 13
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_DISABLEDROOTKEYS_EMPTY",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_SIGNATURES",
                 "value": 14
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_DISABLEDSIGNINGKEYS_EMPTY",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_DISABLEDROOTKEYS_EMPTY",
                 "value": 15
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_ROOTKEYS_EMPTY",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_DISABLEDSIGNINGKEYS_EMPTY",
                 "value": 16
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_SIGNATURES_EMPTY",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_ROOTKEYS_EMPTY",
                 "value": 17
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_MODULUS",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_SIGNATURES_EMPTY",
                 "value": 18
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_UNSUPPORTED_HASH_ALGORITHM",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_MODULUS",
                 "value": 19
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_ENCODING",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_HASH_ALGORITHM",
                 "value": 20
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_KEY_ID",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_SIGNING_ALGORITHM",
                 "value": 21
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_UNSUPPORTED_KEYTYPE",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_ENCODING",
                 "value": 22
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_RSA_PARAMETERS",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_KEY_ID",
                 "value": 23
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_GETOBJ_SIGNATURES_ELEMENT",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_UNSUPPORTED_KEYTYPE",
                 "value": 24
               },
               {
-                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_GETOBJ_DISABLEDSIGNINGKEYS_ELEMENT",
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_RSA_PARAMETERS",
                 "value": 25
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_GETOBJ_SIGNATURES_ELEMENT",
+                "value": 26
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_GETOBJ_DISABLEDSIGNINGKEYS_ELEMENT",
+                "value": 27
               }
             ]
           }

@@ -183,8 +183,8 @@ void ADUC_RootKeyPackageUtils_Signatures_Destroy(ADUC_RootKeyPackage* rootKeyPac
         size_t cnt = VECTOR_size(vec);
         for (size_t i = 0; i < cnt; ++i)
         {
-            ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(vec, i);
-            ADUC_RootKeyPackage_Hash_DeInit(node);
+            ADUC_RootKeyPackage_Signature* node = (ADUC_RootKeyPackage_Signature*)VECTOR_element(vec, i);
+            ADUC_RootKeyPackage_Signature_DeInit(node);
         }
 
         VECTOR_destroy(rootKeyPackage->signatures);

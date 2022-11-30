@@ -32,15 +32,15 @@
     },
     "signatures": [
         {
-            "alg": "SHA256",
+            "alg": "RS256",
             "sig": "{{rootkeysig_1}}"
         },
         {
-            "alg": "SHA256",
+            "alg": "RS256",
             "sig": "{{rootkeysig_2}}"
         },
         {
-            "alg": "SHA256",
+            "alg": "RS256",
             "sig": "{{rootkeysig_3}}"
         }
     ]

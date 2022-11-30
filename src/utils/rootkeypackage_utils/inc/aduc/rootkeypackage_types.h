@@ -9,6 +9,7 @@
 #ifndef ROOTKEYPACKAGE_TYPES_H
 #define ROOTKEYPACKAGE_TYPES_H
 
+#include <aduc/hash_utils.h>
 #include <azure_c_shared_utility/constbuffer.h>
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
@@ -24,24 +25,33 @@ typedef enum tagADUC_RootKey_KeyType
 } ADUC_RootKey_KeyType;
 
 /**
- * @brief The root key SHA algorithms.
+ * @brief The root key Signature algorithms.
  */
-typedef enum tagADUC_RootKeyShaAlgorithm
+typedef enum tagADUC_RootKeySigningAlgorithm
 {
-    ADUC_RootKeyShaAlgorithm_INVALID = 0,
-    ADUC_RootKeyShaAlgorithm_SHA256, /**< The SHA256 algorithm. */
-    ADUC_RootKeyShaAlgorithm_SHA384, /**< The SHA384 algorithm. */
-    ADUC_RootKeyShaAlgorithm_SHA512, /**< The SHA512 algorithm. */
-} ADUC_RootKeyShaAlgorithm;
+    ADUC_RootKeySigningAlgorithm_INVALID = 0,
+    ADUC_RootKeySigningAlgorithm_RS256, /**< The RS256 algorithm. */
+    ADUC_RootKeySigningAlgorithm_RS384, /**< The RS384 algorithm. */
+    ADUC_RootKeySigningAlgorithm_RS512, /**< The RS512 algorithm. */
+} ADUC_RootKeySigningAlgorithm;
 
 /**
  * @brief The Root key package hash.
  */
 typedef struct tagADUC_RootKeyPackage_Hash
 {
-    ADUC_RootKeyShaAlgorithm alg; /**< The hash algorithm. */
+    SHAversion alg; /**< The hash algorithm. */
     CONSTBUFFER_HANDLE hash; /**< The hash const buffer handle. */
 } ADUC_RootKeyPackage_Hash;
+
+/**
+ * @brief The Root key package signature.
+ */
+typedef struct tagADUC_RootKeyPackage_Signature
+{
+    ADUC_RootKeySigningAlgorithm alg; /**< The signing algorithm. */
+    CONSTBUFFER_HANDLE signature; /**< The signature const buffer handle. */
+} ADUC_RootKeyPackage_Signature;
 
 /**
  * @brief The RSA root key parameters.
@@ -83,7 +93,7 @@ typedef struct tagADUC_RootKeyPackage
     ADUC_RootKeyPackage_ProtectedProperties protectedProperties; /**< The parsed protected properties. */
     STRING_HANDLE protectedPropertiesJsonString; /**< The serialized json string for which to verify the signatures. */
     VECTOR_HANDLE
-    signatures; /**< handle to vector of ADUC_RootKeyPackage_Hash signatures used to verify the propertedProperties using the provenance public root keys. */
+    signatures; /**< handle to vector of ADUC_RootKeyPackage_Signature signatures used to verify the protectedProperties using the provenance public root keys. */
 } ADUC_RootKeyPackage;
 
 #endif //ROOTKEYPACKAGE_TYPES_H

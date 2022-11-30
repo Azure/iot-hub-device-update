@@ -37,6 +37,11 @@ void ADUC_RootKey_DeInit(ADUC_RootKey* node)
     node->rsaParameters.e = 0;
 }
 
+/**
+ * @brief Deinitializes members of ADUC_RootKeyPackage_Hash node
+ *
+ * @param node The node.
+ */
 void ADUC_RootKeyPackage_Hash_DeInit(ADUC_RootKeyPackage_Hash* node)
 {
     if (node == NULL)
@@ -44,12 +49,29 @@ void ADUC_RootKeyPackage_Hash_DeInit(ADUC_RootKeyPackage_Hash* node)
         return;
     }
 
-    node->alg = ADUC_RootKeyShaAlgorithm_INVALID;
-
     if (node->hash != NULL)
     {
         CONSTBUFFER_DecRef(node->hash);
         node->hash = NULL;
+    }
+}
+
+/**
+ * @brief Deinitializes members of ADUC_RootKeyPackage_Signature node
+ *
+ * @param node The node.
+ */
+void ADUC_RootKeyPackage_Signature_DeInit(ADUC_RootKeyPackage_Signature* node)
+{
+    if (node == NULL)
+    {
+        return;
+    }
+
+    if (node->signature != NULL)
+    {
+        CONSTBUFFER_DecRef(node->signature);
+        node->signature = NULL;
     }
 }
 
@@ -218,16 +240,16 @@ done:
 }
 
 /**
- * @brief Parses "alg" SHA hash algorithm property.
+ * @brief Parses "alg" hash algorithm property.
  *
  * @param jsonObj The json object with the "alg" property.
- * @param outAlg The output parameter to hold the parsed algorithm upon success.
+ * @param outAlg The output parameter to hold the parsed hash algorithm upon success.
  * @return ADUC_Result The result.
  */
-ADUC_Result RootKeyPackage_ParseShaHashAlg(JSON_Object* jsonObj, ADUC_RootKeyShaAlgorithm* outAlg)
+ADUC_Result RootKeyPackage_ParseHashAlg(JSON_Object* jsonObj, SHAversion* outAlg)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-    ADUC_RootKeyShaAlgorithm alg = ADUC_RootKeyShaAlgorithm_INVALID;
+    SHAversion alg = SHA256;
     const char* val = NULL;
 
     if (jsonObj == NULL || outAlg == NULL)
@@ -239,25 +261,13 @@ ADUC_Result RootKeyPackage_ParseShaHashAlg(JSON_Object* jsonObj, ADUC_RootKeySha
     val = json_object_get_string(jsonObj, "alg");
     if (val == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_ALG;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_HASHING_PROPERTY_ALG;
         goto done;
     }
 
-    if (strcmp(val, "SHA256") == 0)
+    if (!ADUC_HashUtils_GetShaVersionForTypeString(val, &alg) || !ADUC_HashUtils_IsValidHashAlgorithm(alg))
     {
-        alg = ADUC_RootKeyShaAlgorithm_SHA256;
-    }
-    else if (strcmp(val, "SHA384") == 0)
-    {
-        alg = ADUC_RootKeyShaAlgorithm_SHA384;
-    }
-    else if (strcmp(val, "SHA512") == 0)
-    {
-        alg = ADUC_RootKeyShaAlgorithm_SHA512;
-    }
-    else
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_UNSUPPORTED_HASH_ALGORITHM;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_HASH_ALGORITHM;
         goto done;
     }
 
@@ -267,22 +277,78 @@ done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("ERC %d parsing 'alg' property.", result.ResultCode);
+        Log_Error("ERC %d parsing hash 'alg' property.", result.ResultCode);
     }
 
     return result;
 }
 
 /**
- * @brief Parses the SHA hash value from the JSON object.
+ * @brief Parses "alg" signing algorithm property.
  *
- * @param jsonObj The JSON object with the property that is the hash value.
- * @param propertyName The property name for the hash value, such as "hash", or "sig".
- * @param outHashBuffer The output parameter const buffer handle for holding the binary hash data.
+ * @param jsonObj The json object with the "alg" property.
+ * @param outAlg The output parameter to hold the parsed signing algorithm upon success.
  * @return ADUC_Result The result.
  */
-ADUC_Result
-RootKeyPackage_ParseShaHashValue(JSON_Object* jsonObj, const char* propertyName, CONSTBUFFER_HANDLE* outHashBuffer)
+ADUC_Result RootKeyPackage_ParseSigningAlg(JSON_Object* jsonObj, ADUC_RootKeySigningAlgorithm* outAlg)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    ADUC_RootKeySigningAlgorithm alg = ADUC_RootKeySigningAlgorithm_INVALID;
+    const char* val = NULL;
+
+    if (jsonObj == NULL || outAlg == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
+        return result;
+    }
+
+    val = json_object_get_string(jsonObj, "alg");
+    if (val == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_SIGNATURE_PROPERTY_ALG;
+        goto done;
+    }
+
+    if (strcmp(val, "RS256") == 0)
+    {
+        alg = ADUC_RootKeySigningAlgorithm_RS256;
+    }
+    else if (strcmp(val, "RS384") == 0)
+    {
+        alg = ADUC_RootKeySigningAlgorithm_RS384;
+    }
+    else if (strcmp(val, "RS512") == 0)
+    {
+        alg = ADUC_RootKeySigningAlgorithm_RS512;
+    }
+    else
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_SIGNING_ALGORITHM;
+        goto done;
+    }
+
+    *outAlg = alg;
+    result.ResultCode = ADUC_GeneralResult_Success;
+done:
+
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error("ERC %d parsing signing 'alg' property.", result.ResultCode);
+    }
+
+    return result;
+}
+
+/**
+ * @brief Parses a base64 URLUInt value from the JSON object.
+ *
+ * @param jsonObj The JSON object with the property that is the hash value.
+ * @param propertyName The property name for the value containing the Base64 URLUInt encoded data.
+ * @param outHashBuffer The output parameter const buffer handle for holding the binary data.
+ * @return ADUC_Result The result.
+ */
+ADUC_Result RootKeyPackage_ParseBase64URLUIntJsonString(
+    JSON_Object* jsonObj, const char* propertyName, CONSTBUFFER_HANDLE* outHashBuffer)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     uint8_t* buf = NULL;
@@ -383,8 +449,9 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
 
     for (size_t i = 0; i < count; ++i)
     {
-        ADUC_RootKeyPackage_Hash hashElement = { .alg = ADUC_RootKeyShaAlgorithm_INVALID, .hash = NULL };
-        ADUC_RootKeyShaAlgorithm tmpAlg = ADUC_RootKeyShaAlgorithm_INVALID;
+        // These are SHA256 (or stronger) Hash of the public key of signing key.
+        ADUC_RootKeyPackage_Hash hashElement = { .alg = SHA256, .hash = NULL };
+        SHAversion tmpAlg = SHA256;
         CONSTBUFFER_HANDLE hashBuf = NULL;
 
         JSON_Object* hashJsonArrayElementObj = json_array_get_object(hashesArray, i);
@@ -394,13 +461,13 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
             goto done;
         }
 
-        result = RootKeyPackage_ParseShaHashAlg(hashJsonArrayElementObj, &tmpAlg);
+        result = RootKeyPackage_ParseHashAlg(hashJsonArrayElementObj, &tmpAlg);
         if (IsAducResultCodeFailure(result.ResultCode))
         {
             goto done;
         }
 
-        result = RootKeyPackage_ParseShaHashValue(hashJsonArrayElementObj, "hash", &hashBuf);
+        result = RootKeyPackage_ParseBase64URLUIntJsonString(hashJsonArrayElementObj, "hash", &hashBuf);
         if (IsAducResultCodeFailure(result.ResultCode))
         {
             goto done;
@@ -737,7 +804,7 @@ done:
 ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* rootObj, ADUC_RootKeyPackage* outPackage)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-    VECTOR_HANDLE hashes = NULL;
+    VECTOR_HANDLE signatures = NULL;
 
     JSON_Array* signaturesArray = json_object_get_array(rootObj, "signatures");
     if (signaturesArray == NULL)
@@ -753,8 +820,8 @@ ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* rootObj, ADUC_RootKeyPac
         goto done;
     }
 
-    hashes = VECTOR_create(sizeof(ADUC_RootKeyPackage_Hash));
-    if (hashes == NULL)
+    signatures = VECTOR_create(sizeof(ADUC_RootKeyPackage_Signature));
+    if (signatures == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
@@ -762,9 +829,10 @@ ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* rootObj, ADUC_RootKeyPac
 
     for (size_t i = 0; i < cnt; ++i)
     {
-        ADUC_RootKeyPackage_Hash hashElement = { .alg = ADUC_RootKeyShaAlgorithm_INVALID, .hash = NULL };
-        ADUC_RootKeyShaAlgorithm tmpAlg = ADUC_RootKeyShaAlgorithm_INVALID;
-        CONSTBUFFER_HANDLE hashBuf = NULL;
+        ADUC_RootKeyPackage_Signature signatureElement = { .alg = ADUC_RootKeySigningAlgorithm_INVALID,
+                                                           .signature = NULL };
+        ADUC_RootKeySigningAlgorithm tmpAlg = ADUC_RootKeySigningAlgorithm_INVALID;
+        CONSTBUFFER_HANDLE signatureBuf = NULL;
 
         JSON_Object* hashJsonArrayElementObj = json_array_get_object(signaturesArray, i);
         if (hashJsonArrayElementObj == NULL)
@@ -773,49 +841,49 @@ ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* rootObj, ADUC_RootKeyPac
             goto done;
         }
 
-        result = RootKeyPackage_ParseShaHashAlg(hashJsonArrayElementObj, &tmpAlg);
+        result = RootKeyPackage_ParseSigningAlg(hashJsonArrayElementObj, &tmpAlg);
         if (IsAducResultCodeFailure(result.ResultCode))
         {
             goto done;
         }
 
-        result = RootKeyPackage_ParseShaHashValue(hashJsonArrayElementObj, "sig", &hashBuf);
+        result = RootKeyPackage_ParseBase64URLUIntJsonString(hashJsonArrayElementObj, "sig", &signatureBuf);
         if (IsAducResultCodeFailure(result.ResultCode))
         {
             goto done;
         }
 
-        hashElement.alg = tmpAlg;
-        hashElement.hash = hashBuf;
+        signatureElement.alg = tmpAlg;
+        signatureElement.signature = signatureBuf;
 
-        if (VECTOR_push_back(hashes, &hashElement, 1) != 0)
+        if (VECTOR_push_back(signatures, &signatureElement, 1) != 0)
         {
             // can't add to vector, so free it
-            CONSTBUFFER_DecRef(hashElement.hash);
-            hashElement.hash = NULL;
+            CONSTBUFFER_DecRef(signatureElement.signature);
+            signatureElement.signature = NULL;
 
             result.ExtendedResultCode = ADUC_ERC_NOMEM;
             goto done;
         }
-        memset(&hashElement, 0, sizeof(hashElement));
+        memset(&signatureElement, 0, sizeof(signatureElement));
     }
 
-    outPackage->signatures = hashes;
-    hashes = NULL;
+    outPackage->signatures = signatures;
+    signatures = NULL;
 
     result.ResultCode = ADUC_GeneralResult_Success;
 done:
 
-    if (hashes != NULL)
+    if (signatures != NULL)
     {
-        size_t cnt = VECTOR_size(hashes);
+        size_t cnt = VECTOR_size(signatures);
         for (size_t i = 0; i < cnt; ++i)
         {
-            ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(hashes, i);
-            ADUC_RootKeyPackage_Hash_DeInit(node);
+            ADUC_RootKeyPackage_Signature* node = (ADUC_RootKeyPackage_Signature*)VECTOR_element(signatures, i);
+            ADUC_RootKeyPackage_Signature_DeInit(node);
         }
 
-        VECTOR_destroy(hashes);
+        VECTOR_destroy(signatures);
     }
 
     return result;
