@@ -812,10 +812,7 @@ done:
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(hashes, i);
-            if (node != NULL && node->hash != NULL)
-            {
-                CONSTBUFFER_DecRef(node->hash);
-            }
+            ADUC_RootKeyPackage_Hash_DeInit(node);
         }
 
         VECTOR_destroy(hashes);
