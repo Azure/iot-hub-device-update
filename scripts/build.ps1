@@ -1,5 +1,5 @@
 # e.g.
-# scripts\build.ps1 --build-unit-tests --platform-layer simulator --log-dir '/tmp/aduc-logs'
+# scripts\build.ps1 --build-unit-tests --type RelWithDebInfo --platform-layer simulator --log-dir '/tmp/aduc-logs'
 # TODO(JeffMill): Change arg parsing to standard PowerShell Param()
 #
 # TODO(JeffMill): Scenario 2:--static-analysis clang-tidy,cppcheck --build-docs
@@ -378,27 +378,23 @@ mkdir -Path $output_directory -Force | Out-Null
 # TODO(JeffMill): Add graphviz
 # --graphviz="$output_directory\graphviz.dot"
 
-# TODO(JeffMill): Scenario 2: Ninja
-
-& $cmake_bin `
-    -S "$root_dir" `
-    -B $output_directory `
-    @CMAKE_OPTIONS
+& $cmake_bin -S "$root_dir" -B $output_directory @CMAKE_OPTIONS
+# TODO(JeffMill): Scenario 2: Use Ninja
+# & $cmake_bin -S "$root_dir" -B $output_directory  -G Ninja @CMAKE_OPTIONS
 $ret_val = $LASTEXITCODE
 
 if ($ret_val -ne 0) {
     error "CMake failed to generate build with exit code: $ret_val"
 }
 else {
+    # TODO(JeffMill): Scenario 2: Use Ninja
     # TODO(JeffMill): Do the actual building.
-
-    # & $cmake_bin `
-    #     --build build
-    # --config RelWithDebInfo
-    # $ret_val = $LASTEXITCODE
+    # ninja.exe
+    & $cmake_bin --build $output_directory
+    $ret_val = $LASTEXITCODE
 }
 
-# if ($LASTEXITCODE -eq 0 -and $build_packages) {
+# if ($ret_val -eq 0 -and $build_packages) {
 #     cpack
 #     $ret_val=$LASTEXITCODE
 # }

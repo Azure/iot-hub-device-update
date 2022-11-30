@@ -5,15 +5,28 @@ if (ADUC_TRACE_TARGET_DEPS)
 endif ()
 
 if (ADUC_WARNINGS_AS_ERRORS)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+    if (MSVC)
+        # TODO(JeffMill): Maybe just use /W3?
+        add_compile_options (/W4 /WX)
+    else ()
+        # TODO(JeffMill): This was previously only "-Werror"
+        add_compile_options (
+            -Wall
+            -Wextra
+            -pedantic
+            -Werror)
+    endif ()
 endif ()
 
-set (COMPILER_HARDENING_FLAGS
-     "-fPIE -D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wformat -Werror=format-security")
-set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie -z relro -z now")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMPILER_HARDENING_FLAGS}")
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMPILER_HARDENING_FLAGS} -Wall")
+if (MSVC)
+    # TODO(JeffMill): Determine what the equivalent on MSVC is.
+else ()
+    set (COMPILER_HARDENING_FLAGS
+         "-fPIE -D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wformat -Werror=format-security")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie -z relro -z now")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMPILER_HARDENING_FLAGS}")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMPILER_HARDENING_FLAGS} -Wall")
+endif ()
 
 add_definitions (-DADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")
 add_definitions (-DADUC_DOWNLOADS_FOLDER="${ADUC_DOWNLOADS_FOLDER}")

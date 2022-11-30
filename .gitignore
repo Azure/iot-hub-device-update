@@ -30,7 +30,14 @@ cscope.po.out
 ### Python Module Files
 *__pycache__
 *__pycache__/*
+
 ### ADU build environment
 out/
 build/
 Testing/
+
+### FetchContent storage
+_fetchcontent/
+
+### vcpkg installed content
+_vcpkg_installed/
