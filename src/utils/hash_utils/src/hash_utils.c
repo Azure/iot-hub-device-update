@@ -87,7 +87,7 @@ done:
     return success;
 }
 
-static inline _Bool IsValidFileHashCheckAlgorithm(SHAversion sha)
+_Bool ADUC_HashUtils_IsValidHashAlgorithm(SHAversion sha)
 {
     return sha >= SHA256;
 }
@@ -115,7 +115,7 @@ static _Bool ADUC_HashUtils_GetIndexStrongestValidHash(
 
         // Just because it's supported by the underlying library does not mean
         // it's valid for file digests (e.g. SHA1 is not valid).
-        if (!IsValidFileHashCheckAlgorithm(algVersion))
+        if (!ADUC_HashUtils_IsValidHashAlgorithm(algVersion))
         {
             Log_Warn("Invalid hash alg: %s", hashType);
             continue;

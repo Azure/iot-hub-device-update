@@ -77,7 +77,7 @@ done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        ADUC_RootKeyPackageUtils_Cleanup(&pkg);
+        ADUC_RootKeyPackageUtils_Destroy(&pkg);
     }
 
     return result;
@@ -88,7 +88,7 @@ done:
  *
  * @param rootKeyPackage The root key package.
  */
-void ADUC_RootKeyPackageUtils_DisabledRootKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+void ADUC_RootKeyPackageUtils_DisabledRootKeys_Destroy(ADUC_RootKeyPackage* rootKeyPackage)
 {
     if (rootKeyPackage == NULL)
     {
@@ -117,7 +117,7 @@ void ADUC_RootKeyPackageUtils_DisabledRootKeys_Cleanup(ADUC_RootKeyPackage* root
  *
  * @param rootKeyPackage The root key package.
  */
-void ADUC_RootKeyPackageUtils_DisabledSigningKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+void ADUC_RootKeyPackageUtils_DisabledSigningKeys_Destroy(ADUC_RootKeyPackage* rootKeyPackage)
 {
     if (rootKeyPackage == NULL)
     {
@@ -131,7 +131,7 @@ void ADUC_RootKeyPackageUtils_DisabledSigningKeys_Cleanup(ADUC_RootKeyPackage* r
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(vec, i);
-            ADUC_RootKeyPackage_Hash_Free(node);
+            ADUC_RootKeyPackage_Hash_DeInit(node);
         }
 
         VECTOR_destroy(rootKeyPackage->protectedProperties.disabledSigningKeys);
@@ -144,7 +144,7 @@ void ADUC_RootKeyPackageUtils_DisabledSigningKeys_Cleanup(ADUC_RootKeyPackage* r
  *
  * @param rootKeyPackage The root key package.
  */
-void ADUC_RootKeyPackageUtils_RootKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+void ADUC_RootKeyPackageUtils_RootKeys_Destroy(ADUC_RootKeyPackage* rootKeyPackage)
 {
     if (rootKeyPackage == NULL)
     {
@@ -158,7 +158,7 @@ void ADUC_RootKeyPackageUtils_RootKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPacka
         for (size_t i = 0; i < cnt; ++i)
         {
             ADUC_RootKey* rootKeyEntry = (ADUC_RootKey*)VECTOR_element(vec, i);
-            ADUC_RootKey_Free(rootKeyEntry);
+            ADUC_RootKey_DeInit(rootKeyEntry);
         }
         VECTOR_destroy(rootKeyPackage->protectedProperties.rootKeys);
         rootKeyPackage->protectedProperties.rootKeys = NULL;
@@ -170,7 +170,7 @@ void ADUC_RootKeyPackageUtils_RootKeys_Cleanup(ADUC_RootKeyPackage* rootKeyPacka
  *
  * @param rootKeyPackage The root key package.
  */
-void ADUC_RootKeyPackageUtils_Signatures_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+void ADUC_RootKeyPackageUtils_Signatures_Destroy(ADUC_RootKeyPackage* rootKeyPackage)
 {
     if (rootKeyPackage == NULL)
     {
@@ -183,8 +183,8 @@ void ADUC_RootKeyPackageUtils_Signatures_Cleanup(ADUC_RootKeyPackage* rootKeyPac
         size_t cnt = VECTOR_size(vec);
         for (size_t i = 0; i < cnt; ++i)
         {
-            ADUC_RootKeyPackage_Hash* node = (ADUC_RootKeyPackage_Hash*)VECTOR_element(vec, i);
-            ADUC_RootKeyPackage_Hash_Free(node);
+            ADUC_RootKeyPackage_Signature* node = (ADUC_RootKeyPackage_Signature*)VECTOR_element(vec, i);
+            ADUC_RootKeyPackage_Signature_DeInit(node);
         }
 
         VECTOR_destroy(rootKeyPackage->signatures);
@@ -197,18 +197,18 @@ void ADUC_RootKeyPackageUtils_Signatures_Cleanup(ADUC_RootKeyPackage* rootKeyPac
  *
  * @param rootKeyPackage The root key package object to cleanup.
  */
-void ADUC_RootKeyPackageUtils_Cleanup(ADUC_RootKeyPackage* rootKeyPackage)
+void ADUC_RootKeyPackageUtils_Destroy(ADUC_RootKeyPackage* rootKeyPackage)
 {
     if (rootKeyPackage == NULL)
     {
         return;
     }
 
-    ADUC_RootKeyPackageUtils_DisabledRootKeys_Cleanup(rootKeyPackage);
-    ADUC_RootKeyPackageUtils_DisabledSigningKeys_Cleanup(rootKeyPackage);
-    ADUC_RootKeyPackageUtils_RootKeys_Cleanup(rootKeyPackage);
+    ADUC_RootKeyPackageUtils_DisabledRootKeys_Destroy(rootKeyPackage);
+    ADUC_RootKeyPackageUtils_DisabledSigningKeys_Destroy(rootKeyPackage);
+    ADUC_RootKeyPackageUtils_RootKeys_Destroy(rootKeyPackage);
 
-    ADUC_RootKeyPackageUtils_Signatures_Cleanup(rootKeyPackage);
+    ADUC_RootKeyPackageUtils_Signatures_Destroy(rootKeyPackage);
 
     memset(rootKeyPackage, 0, sizeof(*rootKeyPackage));
 }

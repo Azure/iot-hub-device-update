@@ -15,7 +15,7 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::c_utils aziotsharedutil
+    PUBLIC aduc::c_utils aduc::hash_utils aziotsharedutil
     PRIVATE aduc::crypto_utils aduc::logging Parson::parson)
 
 if (ADUC_BUILD_UNIT_TESTS)

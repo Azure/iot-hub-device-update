@@ -8,6 +8,7 @@
 
 #include "rootkeypkgtestutils.hpp"
 #include <aduc/file_test_utils.hpp>
+#include <aduc/hash_utils.h>
 #include <aduc/rootkeypackage_types.h>
 #include <aduc/rootkeypackage_utils.h>
 #include <algorithm>
@@ -273,7 +274,7 @@ TEST_CASE("RootKeyPackageUtils_Parse")
 
             auto a = static_cast<ADUC_RootKeyPackage_Hash*>(el);
             ADUC_RootKeyPackage_Hash signingKeyHash{ *a };
-            CHECK(signingKeyHash.alg == ADUC_RootKeyShaAlgorithm_SHA256);
+            CHECK(signingKeyHash.alg == SHA256);
 
             const CONSTBUFFER* hashBuffer = CONSTBUFFER_GetContent(signingKeyHash.hash);
             REQUIRE(hashBuffer != nullptr);
@@ -293,9 +294,12 @@ TEST_CASE("RootKeyPackageUtils_Parse")
 
         // verify "rootKeys"
         REQUIRE(VECTOR_size(pkg.protectedProperties.rootKeys) == 3);
-        const ADUC_RootKey* const rootkey1 = static_cast<ADUC_RootKey*>(VECTOR_element(pkg.protectedProperties.rootKeys, 0));
-        const ADUC_RootKey* const rootkey2 = static_cast<ADUC_RootKey*>(VECTOR_element(pkg.protectedProperties.rootKeys, 1));
-        const ADUC_RootKey* const rootkey3 = static_cast<ADUC_RootKey*>(VECTOR_element(pkg.protectedProperties.rootKeys, 2));
+        const ADUC_RootKey* const rootkey1 =
+            static_cast<ADUC_RootKey*>(VECTOR_element(pkg.protectedProperties.rootKeys, 0));
+        const ADUC_RootKey* const rootkey2 =
+            static_cast<ADUC_RootKey*>(VECTOR_element(pkg.protectedProperties.rootKeys, 1));
+        const ADUC_RootKey* const rootkey3 =
+            static_cast<ADUC_RootKey*>(VECTOR_element(pkg.protectedProperties.rootKeys, 2));
 
         REQUIRE(rootkey1 != nullptr);
         REQUIRE(rootkey2 != nullptr);
@@ -309,7 +313,9 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         CHECK(rootkey2->keyType == ADUC_RootKey_KeyType_RSA);
         CHECK(rootkey3->keyType == ADUC_RootKey_KeyType_RSA);
 
-        auto VerifyRsaParams = [](const ADUC_RSA_RootKeyParameters& rsaParams, const std::string& expected_modulus, size_t expected_exponent) {
+        auto VerifyRsaParams = [](const ADUC_RSA_RootKeyParameters& rsaParams,
+                                  const std::string& expected_modulus,
+                                  size_t expected_exponent) {
             CHECK(rsaParams.e == expected_exponent);
 
             const CONSTBUFFER* actual_modulus_buf = CONSTBUFFER_GetContent(rsaParams.n);
@@ -333,25 +339,23 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         REQUIRE(VECTOR_size(pkg.signatures) == 3);
 
         auto verifyPkgSig = [&](size_t sig_index, const aduc::rootkeypkgtestutils::TestRSAKeyPair& testRootKeyPair) {
-            ADUC_RootKeyPackage_Hash* hashNode;
             void* el = VECTOR_element(pkg.signatures, sig_index);
             REQUIRE(el != nullptr);
 
-            auto a = static_cast<ADUC_RootKeyPackage_Hash*>(el);
-            ADUC_RootKeyPackage_Hash signatureHash{ *a };
+            ADUC_RootKeyPackage_Signature* sig = static_cast<ADUC_RootKeyPackage_Signature*>(el);
+            REQUIRE(sig != nullptr);
 
-            CHECK(signatureHash.alg == ADUC_RootKeyShaAlgorithm_SHA256);
+            CHECK(sig->alg == ADUC_RootKeySigningAlgorithm_RS256);
 
-            const CONSTBUFFER* hashBuffer = CONSTBUFFER_GetContent(signatureHash.hash);
-            REQUIRE(hashBuffer != nullptr);
+            const CONSTBUFFER* signatureBuffer = CONSTBUFFER_GetContent(sig->signature);
+            REQUIRE(signatureBuffer != nullptr);
 
-            char* encodedHash = Base64URLEncode(hashBuffer->buffer, hashBuffer->size);
+            char* encodedHash = Base64URLEncode(signatureBuffer->buffer, signatureBuffer->size);
             std::string urlDecodedStr{ encodedHash };
             urlDecodedStr = std::regex_replace(urlDecodedStr, std::regex("_"), "/");
             urlDecodedStr = std::regex_replace(urlDecodedStr, std::regex("-"), "+");
             CHECK(testRootKeyPair.GetPublicKey().VerifySignature(urlDecodedStr));
 
-            CONSTBUFFER_DecRef(signatureHash.hash);
             free(encodedHash);
         };
 
@@ -362,6 +366,6 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         //
         // Cleanup
         //
-        ADUC_RootKeyPackageUtils_Cleanup(&pkg);
+        ADUC_RootKeyPackageUtils_Destroy(&pkg);
     }
 }
