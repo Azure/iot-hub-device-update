@@ -83,6 +83,11 @@ done:
     return result;
 }
 
+/**
+ * @brief Downloads the rootkey package
+ *
+ * @param outPathToRootKeyPackage The resultant path to the root key package file.
+ */
 ADUC_Result ADUC_RootKeyPackageUtil_DownloadPackage(char** outPathToRootKeyPackage)
 {
     ADUC_Result result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
