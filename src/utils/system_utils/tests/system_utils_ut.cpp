@@ -70,11 +70,7 @@ static void ForEachDir_Callback(void* context, const char* baseDir, const char* 
 
 ADUC_SystemUtils_ForEachDirFunctor CreateCallbackFunctor(TestCaseFixture* fixture)
 {
-    return ADUC_SystemUtils_ForEachDirFunctor
-    {
-        .context = fixture,
-        .callbackFn = ForEachDir_Callback
-    };
+    return ADUC_SystemUtils_ForEachDirFunctor{ .context = fixture, .callbackFn = ForEachDir_Callback };
 };
 
 class TestCaseFixture
@@ -139,7 +135,11 @@ public:
      * @param shouldDeleteBaseDirBeforeExecuteTest Optional, default of false. Deletes BaseDir before running test case if true.
      * @return std::vector<CallRecord> The sorted vector of call records to the C-style callback function.
      */
-    std::vector<ForEachDirCallRecord> ExecuteForEachDirTestCase(std::vector<std::string> subdirs, std::string excludedSubDir, int expectedRetCode, bool shouldDeleteBaseDirBeforeExecuteTest = false)
+    std::vector<ForEachDirCallRecord> ExecuteForEachDirTestCase(
+        std::vector<std::string> subdirs,
+        std::string excludedSubDir,
+        int expectedRetCode,
+        bool shouldDeleteBaseDirBeforeExecuteTest = false)
     {
         std::string base_dir{ BaseDir_for_ForEachDir() };
         ADUC_SystemUtils_RmDirRecursive(base_dir.c_str());
@@ -162,7 +162,10 @@ public:
             &functor /* perDirActionFunctor */);
         REQUIRE(err == expectedRetCode);
 
-        std::sort(m_actual_foreach_callback_records.begin(), m_actual_foreach_callback_records.end(), std::less<ForEachDirCallRecord>());
+        std::sort(
+            m_actual_foreach_callback_records.begin(),
+            m_actual_foreach_callback_records.end(),
+            std::less<ForEachDirCallRecord>());
         return m_actual_foreach_callback_records;
     }
 
@@ -342,85 +345,114 @@ TEST_CASE_METHOD(TestCaseFixture, "SystemUtils_ForEachDir")
 {
     SECTION("All NULL should fail")
     {
-        CHECK(-1 == SystemUtils_ForEachDir(
-            nullptr /* baseDir */,
-            nullptr /* excludeDir */,
-            nullptr /* perDirActionFunctor */));
+        CHECK(
+            -1
+            == SystemUtils_ForEachDir(
+                nullptr /* baseDir */, nullptr /* excludeDir */, nullptr /* perDirActionFunctor */));
     }
 
     SECTION("NULL functor should fail")
     {
-        CHECK(-1 == SystemUtils_ForEachDir(
-            BaseDir_for_ForEachDir().c_str() /* baseDir */,
-            "subdir" /* excludeDir */,
-            nullptr /* perDirActionFunctor */));
+        CHECK(
+            -1
+            == SystemUtils_ForEachDir(
+                BaseDir_for_ForEachDir().c_str() /* baseDir */,
+                "subdir" /* excludeDir */,
+                nullptr /* perDirActionFunctor */));
     }
 
     SECTION("Non-existent base dir should fail with errno FileNotFound")
     {
         int FileNotFound = 2;
-        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{} /* subdirs */, "" /* excludedSubDir */, FileNotFound /* expectedRetCode */, true /* shouldDeleteBaseDirBeforeExecuteTest */);
+        auto actualCallRecords = ExecuteForEachDirTestCase(
+            std::vector<std::string>{} /* subdirs */,
+            "" /* excludedSubDir */,
+            FileNotFound /* expectedRetCode */,
+            true /* shouldDeleteBaseDirBeforeExecuteTest */);
         REQUIRE(actualCallRecords.size() == 0);
     }
 
     SECTION("Empty Dir, no excludeDir should succeed")
     {
-        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{} /* subdirs */, "" /* excludedSubDir */, 0 /* expectedRetCode */);
+        auto actualCallRecords = ExecuteForEachDirTestCase(
+            std::vector<std::string>{} /* subdirs */, "" /* excludedSubDir */, 0 /* expectedRetCode */);
         REQUIRE(actualCallRecords.size() == 0);
     }
 
     SECTION("Non-Empty Dir, no excludeDir should callback")
     {
-        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{ "subdir1" } /* subdirs */, "" /* excludedSubDir */, 0 /* expectedRetCode */);
+        auto actualCallRecords = ExecuteForEachDirTestCase(
+            std::vector<std::string>{ "subdir1" } /* subdirs */, "" /* excludedSubDir */, 0 /* expectedRetCode */);
         REQUIRE(actualCallRecords.size() == 1);
 
-        CHECK(actualCallRecords == std::vector<ForEachDirCallRecord>{
-            CreateCallRecord("subdir1"),
-        });
+        CHECK(
+            actualCallRecords
+            == std::vector<ForEachDirCallRecord>{
+                CreateCallRecord("subdir1"),
+            });
     }
 
     SECTION("Exclude the only existing subdir should not callback")
     {
-        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{ "subdir1" } /* subdirs */, "subdir1" /* excludedSubDir */, 0 /* expectedRetCode */);
+        auto actualCallRecords = ExecuteForEachDirTestCase(
+            std::vector<std::string>{ "subdir1" } /* subdirs */,
+            "subdir1" /* excludedSubDir */,
+            0 /* expectedRetCode */);
         REQUIRE(actualCallRecords.size() == 0);
     }
 
     SECTION("Empty Dir, exclude non-existent should not callback")
     {
-        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{} /* subdirs */, "i_do_not_exist" /* excludedSubDir */, 0 /* expectedRetCode */);
+        auto actualCallRecords = ExecuteForEachDirTestCase(
+            std::vector<std::string>{} /* subdirs */, "i_do_not_exist" /* excludedSubDir */, 0 /* expectedRetCode */);
         REQUIRE(actualCallRecords.size() == 0);
     }
 
     SECTION("two subdirs, exclude the 1st one")
     {
-        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{ "subdir1", "subdir2", "subdir3"} /* subdirs */, "subdir1" /* excludedSubDir */, 0 /* expectedRetCode */);
+        auto actualCallRecords = ExecuteForEachDirTestCase(
+            std::vector<std::string>{ "subdir1", "subdir2", "subdir3" } /* subdirs */,
+            "subdir1" /* excludedSubDir */,
+            0 /* expectedRetCode */);
         REQUIRE(actualCallRecords.size() == 2);
 
-        CHECK(actualCallRecords == std::vector<ForEachDirCallRecord>{
-            CreateCallRecord("subdir2"),
-            CreateCallRecord("subdir3"),
-        });
+        CHECK(
+            actualCallRecords
+            == std::vector<ForEachDirCallRecord>{
+                CreateCallRecord("subdir2"),
+                CreateCallRecord("subdir3"),
+            });
     }
 
     SECTION("multiple subdirs, exclude second one")
     {
-        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{ "subdir1", "subdir2", "subdir3"} /* subdirs */, "subdir2" /* excludedSubDir */, 0 /* expectedRetCode */);
+        auto actualCallRecords = ExecuteForEachDirTestCase(
+            std::vector<std::string>{ "subdir1", "subdir2", "subdir3" } /* subdirs */,
+            "subdir2" /* excludedSubDir */,
+            0 /* expectedRetCode */);
         REQUIRE(actualCallRecords.size() == 2);
 
-        CHECK(actualCallRecords == std::vector<ForEachDirCallRecord>{
-            CreateCallRecord("subdir1"),
-            CreateCallRecord("subdir3"),
-        });
+        CHECK(
+            actualCallRecords
+            == std::vector<ForEachDirCallRecord>{
+                CreateCallRecord("subdir1"),
+                CreateCallRecord("subdir3"),
+            });
     }
 
     SECTION("multiple subdirs, exclude the last one")
     {
-        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{ "subdir1", "subdir2", "subdir3"} /* subdirs */, "subdir3" /* excludedSubDir */, 0 /* expectedRetCode */);
+        auto actualCallRecords = ExecuteForEachDirTestCase(
+            std::vector<std::string>{ "subdir1", "subdir2", "subdir3" } /* subdirs */,
+            "subdir3" /* excludedSubDir */,
+            0 /* expectedRetCode */);
         REQUIRE(actualCallRecords.size() == 2);
 
-        CHECK(actualCallRecords == std::vector<ForEachDirCallRecord>{
-            CreateCallRecord("subdir1"),
-            CreateCallRecord("subdir2"),
-        });
+        CHECK(
+            actualCallRecords
+            == std::vector<ForEachDirCallRecord>{
+                CreateCallRecord("subdir1"),
+                CreateCallRecord("subdir2"),
+            });
     }
 }
