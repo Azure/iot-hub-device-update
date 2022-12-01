@@ -937,7 +937,7 @@ ADUC_Result GetDetachedManifestJsonObjFromSandbox(
     detachedManifestJsonObj = json_value_get_object(json_parse_string(updateManifestString));
     if (detachedManifestJsonObj == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_DETACHED_UPDATE_MANIFEST_JSON_STRING;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_DETACHED_UPDATE_MANIFEST;
         goto done;
     }
 

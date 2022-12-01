@@ -791,15 +791,15 @@
                 "value": 11
               },
               {
-                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_DETACHED_UPDATE_MANIFEST_JSON_FILE",
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_DETACHED_UPDATE_MANIFEST",
                 "value": 12
               },
               {
-                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_DETACHED_UPDATE_MANIFEST_JSON_STRING",
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_DETACHED_UPDATE_MANIFEST_DOWNLOAD_FAILED",
                 "value": 13
               },
               {
-                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_DETACHED_UPDATE_MANIFEST_DOWNLOAD_FAILED",
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_DETACHED_UPDATE_MANIFEST_JSON_FILE",
                 "value": 14
               },
               {
