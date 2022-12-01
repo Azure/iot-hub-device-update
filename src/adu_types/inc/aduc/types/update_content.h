@@ -358,7 +358,7 @@ typedef struct tagADUC_FileUrl
  * @param updateId updateId to check
  * @returns True if it is valid, false if not
  */
-_Bool ADUC_IsValidUpdateId(const ADUC_UpdateId* updateId);
+bool ADUC_IsValidUpdateId(const ADUC_UpdateId* updateId);
 
 /**
  * @brief Free the UpdateId and its content.

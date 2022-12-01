@@ -11,7 +11,7 @@
 
 #include "aduc/c_utils.h"
 #include "azure_c_shared_utility/shared_util_options.h"
-#include <stdbool.h> // for _Bool
+#include <stdbool.h> // for bool
 
 EXTERN_C_BEGIN
 
@@ -19,9 +19,9 @@ EXTERN_C_BEGIN
  * @brief Initializes @p proxyOptions object by reading and parsing environment variable 'https_proxy' or 'HTTPS_PROXY', in that order.
  * @param proxyOptions HTTP_PROXY_OPTIONS A pointer to HTTP_PROXY_OPTIONS struct to be initialized.
  *                     Caller must call UninitializeProxyOptions() to free memory allocated for the member variables.
- * @return _Bool True when the proxy options successfully initialized.
+ * @return bool True when the proxy options successfully initialized.
  */
-_Bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions);
+bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions);
 
 /**
  * @brief Frees all memory allocated for @p proxyOptions member variables.

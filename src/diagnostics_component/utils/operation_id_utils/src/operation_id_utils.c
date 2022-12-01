@@ -27,9 +27,9 @@
  * @param serviceMsg the message from the service that contains the operation-id
  * @return true if the operation-id has already been run; false otherwise 
  */
-_Bool OperationIdUtils_OperationIsComplete(const char* serviceMsg)
+bool OperationIdUtils_OperationIsComplete(const char* serviceMsg)
 {
-    _Bool alreadyCompleted = false;
+    bool alreadyCompleted = false;
 
     char completedOperationId[MAX_OPERATION_ID_CHARS + 1]; // +1 for the null terminator
 
@@ -87,7 +87,7 @@ done:
  * @param operationId the operation-id to be stored
  * @return true if the operation-id is stored; false otherwise
  */
-_Bool OperationIdUtils_StoreCompletedOperationId(const char* operationId)
+bool OperationIdUtils_StoreCompletedOperationId(const char* operationId)
 {
     if (operationId == NULL)
     {

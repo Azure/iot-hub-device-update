@@ -44,7 +44,7 @@ int ADUC_SystemUtils_MkDirRecursiveAduUser(const char* path);
 
 int ADUC_SystemUtils_RmDirRecursive(const char* path);
 
-int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, _Bool overwriteExistingFile);
+int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, bool overwriteExistingFile);
 
 int ADUC_SystemUtils_RemoveFile(const char* path);
 
@@ -52,9 +52,9 @@ int ADUC_SystemUtils_WriteStringToFile(const char* path, const char* buff);
 
 int ADUC_SystemUtils_ReadStringFromFile(const char* path, char* buff, size_t buffLen);
 
-_Bool SystemUtils_IsDir(const char* path, int* err);
+bool SystemUtils_IsDir(const char* path, int* err);
 
-_Bool SystemUtils_IsFile(const char* path, int* err);
+bool SystemUtils_IsFile(const char* path, int* err);
 
 int SystemUtils_ForEachDir(
     const char* baseDir, const char* excludeDir, ADUC_SystemUtils_ForEachDirFunctor* perDirActionFunctor);

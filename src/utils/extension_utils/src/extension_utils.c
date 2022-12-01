@@ -32,11 +32,11 @@
  *
  * @param[in] extensionRegFile A full path to the extension registration file.
  * @param[in,out] fileEntity An output buffer to hold file entity data.
- * @return _Bool Returns 'true' if succeeded.
+ * @return bool Returns 'true' if succeeded.
  */
-_Bool GetExtensionFileEntity(const char* extensionRegFile, ADUC_FileEntity* fileEntity)
+bool GetExtensionFileEntity(const char* extensionRegFile, ADUC_FileEntity* fileEntity)
 {
-    _Bool found = false;
+    bool found = false;
     size_t tempHashCount = 0;
     ADUC_Hash* tempHash = NULL;
     const char* fileName = NULL;
@@ -100,10 +100,10 @@ done:
  * @param fileEntity An output file entity.
  * @return True if a handler for specified @p handlerId is available.
  */
-static _Bool GetHandlerExtensionFileEntity(
+static bool GetHandlerExtensionFileEntity(
     const char* handlerId, const char* extensionDir, const char* regFileName, ADUC_FileEntity* fileEntity)
 {
-    _Bool found = false;
+    bool found = false;
 
     if (IsNullOrEmpty(handlerId))
     {
@@ -138,7 +138,7 @@ static _Bool GetHandlerExtensionFileEntity(
  * @param fileEntity An output file entity.
  * @return True if an update content handler for the specified @p updateType is available.
  */
-_Bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity* fileEntity)
+bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity* fileEntity)
 {
     return GetHandlerExtensionFileEntity(
         updateType, ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR, ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME, fileEntity);
@@ -151,7 +151,7 @@ _Bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity*
  * @param fileEntity An output file entity.
  * @return True if an update content handler for the specified @p downloadHandlerId is available.
  */
-_Bool GetDownloadHandlerFileEntity(const char* downloadHandlerId, ADUC_FileEntity* fileEntity)
+bool GetDownloadHandlerFileEntity(const char* downloadHandlerId, ADUC_FileEntity* fileEntity)
 {
     return GetHandlerExtensionFileEntity(
         downloadHandlerId, ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR, ADUC_DOWNLOAD_HANDLER_REG_FILENAME, fileEntity);
@@ -166,13 +166,13 @@ _Bool GetDownloadHandlerFileEntity(const char* downloadHandlerId, ADUC_FileEntit
  * @param handlerRegistrationFileName A handler registration file name.
  * @return Returns true if the handler successfully registered.
  */
-static _Bool RegisterHandlerExtension(
+static bool RegisterHandlerExtension(
     const char* handlerId,
     const char* handlerFilePath,
     const char* handlerExtensionDir,
     const char* handlerRegistrationFileName)
 {
-    _Bool success = false;
+    bool success = false;
     STRING_HANDLE folderName = NULL;
     STRING_HANDLE dir = NULL;
     STRING_HANDLE content = NULL;
@@ -315,7 +315,7 @@ done:
  * @param handlerFilePath A full path to the handler shared-library file.
  * @return Returns true if the handler successfully registered.
  */
-_Bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFilePath)
+bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFilePath)
 {
     return RegisterHandlerExtension(
         updateType,
@@ -331,7 +331,7 @@ _Bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFi
  * @param handlerFilePath A full path to the handler shared-library file.
  * @return Returns true if the handler successfully registered.
  */
-_Bool RegisterDownloadHandler(const char* downloadHandlerId, const char* handlerFilePath)
+bool RegisterDownloadHandler(const char* downloadHandlerId, const char* handlerFilePath)
 {
     return RegisterHandlerExtension(
         downloadHandlerId, handlerFilePath, ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR, ADUC_DOWNLOAD_HANDLER_REG_FILENAME);
@@ -342,7 +342,7 @@ _Bool RegisterDownloadHandler(const char* downloadHandlerId, const char* handler
  * @param extensionFilePath A full path to an extension to register.
  * @return Returns true if the extension successfully registered.
  */
-_Bool RegisterComponentEnumeratorExtension(const char* extensionFilePath)
+bool RegisterComponentEnumeratorExtension(const char* extensionFilePath)
 {
     return RegisterExtension(ADUC_COMPONENT_ENUMERATOR_EXTENSION_DIR, extensionFilePath);
 }
@@ -352,7 +352,7 @@ _Bool RegisterComponentEnumeratorExtension(const char* extensionFilePath)
  * @param extensionFilePath A full path to an extension to register.
  * @return Returns true if the extension successfully registered.
  */
-_Bool RegisterContentDownloaderExtension(const char* extensionFilePath)
+bool RegisterContentDownloaderExtension(const char* extensionFilePath)
 {
     return RegisterExtension(ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR, extensionFilePath);
 }
@@ -363,11 +363,11 @@ _Bool RegisterContentDownloaderExtension(const char* extensionFilePath)
  * @param extensionFilePath A full path to an extension to register.
  * @return Returns true if the extension successfully registered.
  */
-_Bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
+bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
 {
     Log_Debug("Registering an extension, target dir: %s, file: %s", extensionDir, extensionFilePath);
 
-    _Bool success = false;
+    bool success = false;
     char* hash = NULL;
     STRING_HANDLE content = NULL;
     STRING_HANDLE outFilePath = NULL;

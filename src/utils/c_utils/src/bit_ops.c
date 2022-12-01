@@ -14,4 +14,4 @@
  */
 
 // NOLINTNEXTLINE(readability-redundant-declaration)
-extern /* inline */ _Bool BitOps_AreAllBitsSet(size_t bits, size_t mask);
+extern /* inline */ bool BitOps_AreAllBitsSet(size_t bits, size_t mask);

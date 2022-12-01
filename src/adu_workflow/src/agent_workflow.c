@@ -34,7 +34,7 @@
 #include <pthread.h>
 
 // fwd decl
-void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, _Bool isAsync);
+void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, bool isAsync);
 
 // This lock is used for critical sections where main and worker thread could read/write to ADUC_workflowData
 // It is used only at the top-level coarse granularity operations:
@@ -519,7 +519,7 @@ void ADUC_Workflow_HandlePropertyUpdate(
                     // replacement deployment instead of going to idle and reporting the results as a cancel failure.
                     // Otherwise, if the operation is not in progress, in the same critical section it transfers the
                     // workflow handle of the new deployment into the current workflow data, so that we can handle the update action.
-                    _Bool deferredReplacement =
+                    bool deferredReplacement =
                         workflow_update_replacement_deployment(currentWorkflowData->WorkflowHandle, nextWorkflow);
                     if (deferredReplacement)
                     {
@@ -616,7 +616,7 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
     Log_Debug(
         "cancellationType(%d) => %s", cancellationType, ADUC_Workflow_CancellationTypeToString(cancellationType));
 
-    _Bool isReplaceOrRetry = (cancellationType == ADUC_WorkflowCancellationType_Replacement)
+    bool isReplaceOrRetry = (cancellationType == ADUC_WorkflowCancellationType_Replacement)
         || (cancellationType == ADUC_WorkflowCancellationType_Retry);
 
     if (desiredAction == ADUCITF_UpdateAction_Cancel || cancellationType == ADUC_WorkflowCancellationType_Normal
@@ -722,7 +722,7 @@ done:
  * @param workflowData The global context workflow data structure.
  * @param onSuccess Indicate whether it is a transition on success or on failure.
  */
-void ADUC_Workflow_AutoTransitionWorkflow(ADUC_WorkflowData* workflowData, _Bool onSuccess)
+void ADUC_Workflow_AutoTransitionWorkflow(ADUC_WorkflowData* workflowData, bool onSuccess)
 {
     //
     // If the workflow's not complete, then auto-transition to the next step/phase of the workflow.
@@ -840,7 +840,7 @@ done:
  * @param result Result of work.
  * @param result isAsync true if caller is on worker thread, false if from main thread.
  */
-void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, _Bool isAsync)
+void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, bool isAsync)
 {
     // We own these objects, so no issue making them non-const.
     ADUC_MethodCall_Data* methodCallData = (ADUC_MethodCall_Data*)workCompletionToken;
