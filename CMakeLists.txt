@@ -531,7 +531,7 @@ set (
 # Generate the error code definition file
 find_package (
     Python3
-    COMPONENTS Interpreter Development
+    COMPONENTS Interpreter
     REQUIRED)
 
 set (
