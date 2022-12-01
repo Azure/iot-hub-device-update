@@ -12,6 +12,12 @@
 #include <stdbool.h>
 #include <sys/types.h>
 
+#if defined(_WIN32)
+typedef int uid_t;
+typedef int gid_t;
+typedef unsigned int mode_t;
+#endif
+
 EXTERN_C_BEGIN
 
 typedef void (*ADUC_SystemUtils_ForEachDirFunc)(void* context, const char* baseDir, const char* subDir);

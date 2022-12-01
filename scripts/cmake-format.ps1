@@ -4,12 +4,12 @@ function error {
     Write-Host " $message"
 }
 
-if (-not (Get-Command 'git.exe' -ErrorAction SilentlyContinue)) {
+if (-not (Get-Command 'git.exe' -CommandType Application  -ErrorAction SilentlyContinue)) {
     error 'git is not installed.'
     exit 1
 }
 
-if (-not (Get-Command 'cmake-format.exe'  -ErrorAction SilentlyContinue)) {
+if (-not (Get-Command 'cmake-format.exe' -CommandType Application -ErrorAction SilentlyContinue)) {
     error 'cmake-format is not installed.'
     exit 1
 }

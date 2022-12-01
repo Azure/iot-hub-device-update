@@ -16,7 +16,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <unistd.h>
+
+#if defined _WIN32
+#    include <corecrt_io.h> // open, read, close
+#else
+#    include <unistd.h>
+#endif
 
 /**
  * @brief Maximum length for the output string of ADUC_StringFormat()
@@ -37,8 +42,8 @@
 bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* value, unsigned int valueLen)
 {
     bool foundKey = false;
-    const unsigned int bufferLen = 1024;
-    char buffer[bufferLen];
+    char buffer[1024];
+    const unsigned int bufferLen = ARRAY_SIZE(buffer);
 
     if (valueLen < 2)
     {
@@ -104,9 +109,12 @@ bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const siz
 
     bool success = false;
 
+#if defined(_WIN32)
+    int fd = _open(filePath, O_EXCL | O_RDONLY);
+#else
     // NOLINTNEXTLINE(android-cloexec-open): We are not guaranteed to have access to O_CLOEXEC on all of our builds so no need to include
     int fd = open(filePath, O_EXCL | O_RDONLY);
-
+#endif
     if (fd == -1)
     {
         goto done;
@@ -126,7 +134,11 @@ bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const siz
         goto done;
     }
 
+#if defined(_WIN32)
+    size_t numRead = _read(fd, strBuffer, fileSize);
+#else
     size_t numRead = read(fd, strBuffer, fileSize);
+#endif
 
     if (numRead != fileSize)
     {
@@ -138,7 +150,11 @@ bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const siz
     success = true;
 done:
 
+#if defined(_WIN32)
+    _close(fd);
+#else
     close(fd);
+#endif
 
     if (!success)
     {

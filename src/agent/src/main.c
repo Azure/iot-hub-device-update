@@ -323,8 +323,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             launchArgs->iotHubTracingEnabled = true;
             break;
 
-        case 'l':
-        {
+        case 'l': {
             unsigned int logLevel = 0;
             bool ret = atoui(optarg, &logLevel);
             if (!ret || logLevel < ADUC_LOG_DEBUG || logLevel > ADUC_LOG_ERROR)

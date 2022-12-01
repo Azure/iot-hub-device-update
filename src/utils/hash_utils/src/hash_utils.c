@@ -9,7 +9,12 @@
 
 #include <stdio.h> // for FILE
 #include <stdlib.h> // for calloc
-#include <strings.h> // for strcasecmp
+#if defined(_WIN32)
+#    include <string.h> // _strcmpi
+#    define strcasecmp(string1, string2) _strcmpi(string1, string2)
+#else
+#    include <strings.h> // for strcasecmp
+#endif
 
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/buffer_.h>
@@ -222,7 +227,7 @@ bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** h
             break;
         }
 
-        if (USHAInput(&context, buffer, readSize) != 0)
+        if (USHAInput(&context, buffer, (unsigned int)readSize) != 0)
         {
             Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
             goto done;
@@ -334,7 +339,7 @@ bool ADUC_HashUtils_IsValidFileHash(
             break;
         }
 
-        if (USHAInput(&context, buffer, readSize) != 0)
+        if (USHAInput(&context, buffer, (unsigned int)readSize) != 0)
         {
             if (!suppressErrorLog)
             {
@@ -378,7 +383,7 @@ bool ADUC_HashUtils_IsValidBufferHash(
         return false;
     }
 
-    if (USHAInput(&context, buffer, bufferLen) != 0)
+    if (USHAInput(&context, buffer, (unsigned int)bufferLen) != 0)
     {
         Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
         return false;

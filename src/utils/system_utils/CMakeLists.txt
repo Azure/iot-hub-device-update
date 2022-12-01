@@ -14,8 +14,10 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc)
 #
 # Turn -fPIC on, in order to use this library in another shared library.
 #
-find_package (azure_c_shared_utility REQUIRED)
 set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+find_package (azure_c_shared_utility REQUIRED)
+
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::c_utils
@@ -25,5 +27,8 @@ target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_FILE_GROUP="${ADUC_FILE
                                                     ADUC_FILE_USER="${ADUC_FILE_USER}")
 
 if (ADUC_BUILD_UNIT_TESTS)
+    find_package (umock_c REQUIRED CONFIG)
+    target_link_libraries (${target_name} PRIVATE umock_c)
+
     add_subdirectory (tests)
 endif ()

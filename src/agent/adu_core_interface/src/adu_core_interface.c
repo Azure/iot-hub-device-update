@@ -125,7 +125,8 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
  * @param workflowData The workflow data.
  * @return bool true if call succeeded.
  */
-static bool ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_value, ADUC_WorkflowData* workflowData)
+static bool
+ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_value, ADUC_WorkflowData* workflowData)
 {
     bool success = false;
 

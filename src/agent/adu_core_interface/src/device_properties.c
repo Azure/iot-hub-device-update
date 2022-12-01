@@ -111,15 +111,11 @@ bool DeviceProperties_ClearInterfaceId(JSON_Object* devicePropsObj)
 {
     bool success = false;
 
-    JSON_Status jsonStatus = json_object_set_null(
-        devicePropsObj,
-        ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
+    JSON_Status jsonStatus = json_object_set_null(devicePropsObj, ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
 
     if (jsonStatus != JSONSuccess)
     {
-        Log_Error(
-            "Could not set JSON field '%s' to null",
-            ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
+        Log_Error("Could not set JSON field '%s' to null", ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
         goto done;
     }
 

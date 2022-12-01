@@ -19,7 +19,6 @@
 #include <pwd.h> // for getpwnam
 #include <stdio.h> // for FILE
 #include <stdlib.h> // for calloc
-#include <strings.h> // for strcasecmp
 #include <sys/stat.h> // for stat, struct stat
 
 #include <azure_c_shared_utility/azure_base64.h>

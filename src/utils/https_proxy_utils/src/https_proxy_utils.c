@@ -13,7 +13,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 /**
  * @brief Initializes @p proxyOptions object by reading and parsing environment variable 'https_proxy' or 'HTTPS_PROXY', in that order.
@@ -24,7 +23,7 @@
 bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions)
 {
     bool success = false;
-    CURLU *curlHandle = curl_url();
+    CURLU* curlHandle = curl_url();
     CURLcode uc;
     char* host = NULL;
     char* port = NULL;

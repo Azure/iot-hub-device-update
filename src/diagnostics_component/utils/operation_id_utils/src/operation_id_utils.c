@@ -13,7 +13,7 @@
 #include <parson_json_utils.h>
 
 /**
- * @brief Maximum characters an operation-id can be. Used to do a bounded strcmp on operation-ids 
+ * @brief Maximum characters an operation-id can be. Used to do a bounded strcmp on operation-ids
  */
 #define MAX_OPERATION_ID_CHARS 256
 
@@ -25,7 +25,7 @@
 /**
  * @brief Checks the DIAGNOSTICS_COMPLETED_OPERATION_FILE_PATH for the last completed operation-id and compares it against the operation-id within @p serviceMsg
  * @param serviceMsg the message from the service that contains the operation-id
- * @return true if the operation-id has already been run; false otherwise 
+ * @return true if the operation-id has already been run; false otherwise
  */
 bool OperationIdUtils_OperationIsComplete(const char* serviceMsg)
 {

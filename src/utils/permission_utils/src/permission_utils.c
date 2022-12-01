@@ -188,7 +188,7 @@ bool PermissionUtils_CheckOwnerGid(const char* path, gid_t gid)
 
 /**
  * @brief Set effective user of the calling process.
- * 
+ *
  * @param name The username
  * @return bool Returns true if user @p name exist and the effective user successfully set.
  *  If failed, additional error is stored in errno.
@@ -201,7 +201,7 @@ bool PermissionUtils_SetProcessEffectiveUID(const char* name)
 
 /**
  * @brief Set effective group of the calling process.
- * 
+ *
  * @param name The username
  * @return bool Returns true if group @p name exist and the effective group successfully set.
  * If failed, additional error is stored in errno.

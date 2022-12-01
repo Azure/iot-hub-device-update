@@ -14,11 +14,19 @@ set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/inc
                                                    ${ADUC_LOGGING_INCLUDES})
 
-find_package (Threads REQUIRED)
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    # TODO(JeffMill): PAL
+    find_path (DIRENT_INCLUDE_DIRS "dirent.h")
+    target_include_directories (${PROJECT_NAME} PRIVATE ${DIRENT_INCLUDE_DIRS})
 
-target_link_libraries (${PROJECT_NAME} PRIVATE Threads::Threads)
+    find_package (PThreads4W REQUIRED)
+    target_link_libraries (${PROJECT_NAME} PRIVATE PThreads4W::PThreads4W)
+else ()
+    find_package (Threads REQUIRED)
+    target_link_libraries (${PROJECT_NAME} PRIVATE Threads::Threads)
+endif ()
 
-# _DEAFULT_SOURCE - Needed so DT_REG is defined in dirent.h
+# _DEFAULT_SOURCE - Needed so DT_REG is defined in dirent.h
 #                   see man page for readdir
 #                   _BSD_SOURCE and _SVID_SOURCE are deprecated aliases for _DEFAULT_SOURCE.
 #
