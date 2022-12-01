@@ -33,9 +33,9 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent);
  * @param model connectionData for @p agent
  * @returns True on success and false on failure
  */
-static _Bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_obj)
+static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_obj)
 {
-    _Bool success = false;
+    bool success = false;
 
     if (agent == NULL || agent_obj == NULL)
     {
@@ -162,11 +162,11 @@ static void ADUC_AgentInfoArray_Free(unsigned int agentCount, ADUC_AgentInfo* ag
  * @param root_value config JSON_Value to get agents from
  * @param agentCount Returned number of agents.
  * @param agents ADUC_AgentInfo (size agentCount). Array to be freed using free(), objects must also be freed.
- * @return _Bool Success state.
+ * @return bool Success state.
  */
-_Bool ADUC_Json_GetAgents(JSON_Value* root_value, unsigned int* agentCount, ADUC_AgentInfo** agents)
+bool ADUC_Json_GetAgents(JSON_Value* root_value, unsigned int* agentCount, ADUC_AgentInfo** agents)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
     if ((agentCount == NULL) || (agents == NULL))
     {
         return false;
@@ -238,9 +238,9 @@ done:
  * @param configFilePath The path of configuration file
  * @returns True if successfully allocated, False if failure
  */
-_Bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFilePath)
+bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFilePath)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
 
     // Initialize out parameter.
     memset(config, 0, sizeof(*config));

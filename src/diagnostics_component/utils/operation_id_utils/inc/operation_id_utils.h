@@ -15,9 +15,9 @@
 
 EXTERN_C_BEGIN
 
-_Bool OperationIdUtils_OperationIsComplete(const char* serviceMsg);
+bool OperationIdUtils_OperationIsComplete(const char* serviceMsg);
 
-_Bool OperationIdUtils_StoreCompletedOperationId(const char* operationId);
+bool OperationIdUtils_StoreCompletedOperationId(const char* operationId);
 
 EXTERN_C_END
 

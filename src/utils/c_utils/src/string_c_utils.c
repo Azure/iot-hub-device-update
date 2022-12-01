@@ -16,7 +16,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <unistd.h>
+
+#if defined _WIN32
+#    include <corecrt_io.h> // open, read, close
+#else
+#    include <unistd.h>
+#endif
 
 /**
  * @brief Maximum length for the output string of ADUC_StringFormat()
@@ -34,11 +39,11 @@
  * @param valueLen Size of buffer for @p value
  * @return true if value found, false otherwise.
  */
-_Bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* value, unsigned int valueLen)
+bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* value, unsigned int valueLen)
 {
-    _Bool foundKey = false;
-    const unsigned int bufferLen = 1024;
-    char buffer[bufferLen];
+    bool foundKey = false;
+    char buffer[1024];
+    const unsigned int bufferLen = ARRAY_SIZE(buffer);
 
     if (valueLen < 2)
     {
@@ -95,18 +100,21 @@ _Bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* va
  * @param strBuffSize the size of the buffer
  * @returns false on failure, true on success
  */
-_Bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const size_t strBuffSize)
+bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const size_t strBuffSize)
 {
     if (filePath == NULL || strBuffer == NULL || strBuffSize == 0)
     {
         return false;
     }
 
-    _Bool success = false;
+    bool success = false;
 
+#if defined(_WIN32)
+    int fd = _open(filePath, O_EXCL | O_RDONLY);
+#else
     // NOLINTNEXTLINE(android-cloexec-open): We are not guaranteed to have access to O_CLOEXEC on all of our builds so no need to include
     int fd = open(filePath, O_EXCL | O_RDONLY);
-
+#endif
     if (fd == -1)
     {
         goto done;
@@ -126,7 +134,11 @@ _Bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const si
         goto done;
     }
 
+#if defined(_WIN32)
+    size_t numRead = _read(fd, strBuffer, fileSize);
+#else
     size_t numRead = read(fd, strBuffer, fileSize);
+#endif
 
     if (numRead != fileSize)
     {
@@ -138,7 +150,11 @@ _Bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const si
     success = true;
 done:
 
+#if defined(_WIN32)
+    _close(fd);
+#else
     close(fd);
+#endif
 
     if (!success)
     {
@@ -203,7 +219,7 @@ char* ADUC_StringUtils_Trim(char* str)
  * @param[in] string that needs to be converted
  * @param[out] converted unsigned long
  */
-_Bool atoul(const char* str, unsigned long* converted)
+bool atoul(const char* str, unsigned long* converted)
 {
     if (IsNullOrEmpty(str))
     {
@@ -242,7 +258,7 @@ _Bool atoul(const char* str, unsigned long* converted)
  * @param[in] string that needs to be converted
  * @param[out] converted integer
  */
-_Bool atoui(const char* str, unsigned int* ui)
+bool atoui(const char* str, unsigned int* ui)
 {
     if (IsNullOrEmpty(str))
     {
@@ -304,9 +320,9 @@ size_t ADUC_StrNLen(const char* str, size_t maxsize)
  * @param[out] updateTypeName - Caller must call free()
  * @param[out] updateTypeVersion
  */
-_Bool ADUC_ParseUpdateType(const char* updateType, char** updateTypeName, unsigned int* updateTypeVersion)
+bool ADUC_ParseUpdateType(const char* updateType, char** updateTypeName, unsigned int* updateTypeVersion)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
     char* name = NULL;
     *updateTypeName = NULL;
     *updateTypeVersion = 0;
@@ -407,7 +423,7 @@ char* ADUC_StringFormat(const char* fmt, ...)
  * @param str A string to check.
  * @return Returns true if @p str is NULL or empty.
  */
-_Bool IsNullOrEmpty(const char* str)
+bool IsNullOrEmpty(const char* str)
 {
     return str == NULL || *str == '\0';
 }
@@ -418,9 +434,9 @@ _Bool IsNullOrEmpty(const char* str)
  * @param[out] target Output string
  * @param source Source string
  * @param len Length of string to copy.
- * @return _Bool Returns true is success.
+ * @return bool Returns true is success.
  */
-_Bool MallocAndSubstr(char** target, char* source, size_t len)
+bool MallocAndSubstr(char** target, char* source, size_t len)
 {
     if (target == NULL || source == NULL)
     {

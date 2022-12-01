@@ -9,7 +9,7 @@
 #ifndef __BIT_OPS_H__
 #define __BIT_OPS_H__
 
-#include <stdbool.h> // for _Bool
+#include <stdbool.h> // for bool
 #include <stddef.h> // for size_t
 
 /*
@@ -23,7 +23,7 @@
  * @param mask The bitmask to apply.
  * @return true when all bits are high for corresponding high bits in the mask.
  */
-inline _Bool BitOps_AreAllBitsSet(size_t bits, size_t mask)
+inline bool BitOps_AreAllBitsSet(size_t bits, size_t mask)
 {
     return (bits & mask) == mask;
 }

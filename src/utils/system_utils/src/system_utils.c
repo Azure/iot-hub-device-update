@@ -381,19 +381,19 @@ int ADUC_SystemUtils_RmDirRecursive(const char* path)
  * @param[in] dirPath directoryPath to have @p filePath's file name appended to it
  * @returns true on success; false otherwise
  */
-_Bool ADUC_SystemUtils_FormatFilePathHelper(STRING_HANDLE* newFilePath, const char* filePath, const char* dirPath)
+bool ADUC_SystemUtils_FormatFilePathHelper(STRING_HANDLE* newFilePath, const char* filePath, const char* dirPath)
 {
     if (newFilePath == NULL || filePath == NULL || dirPath == NULL)
     {
         return false;
     }
 
-    _Bool succeeded = false;
+    bool succeeded = false;
     size_t dirPathSize = strlen(dirPath);
 
     STRING_HANDLE tempHandle = STRING_new();
 
-    _Bool needForwardSlash = false;
+    bool needForwardSlash = false;
     if (dirPath[dirPathSize - 2] != '/')
     {
         needForwardSlash = true;
@@ -457,7 +457,7 @@ done:
  * @param overwriteExistingFile if set to true will overwrite the existing file in @p dirPath named with the filename in @p fileName if it exists
  * @returns the result of the operation
  */
-int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, const _Bool overwriteExistingFile)
+int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, const bool overwriteExistingFile)
 {
     int result = -1;
     STRING_HANDLE destFilePath = NULL;
@@ -675,7 +675,7 @@ done:
  * @param err the error code (optional, can be NULL)
  * @returns true if it is a directory, false otherwise.
  */
-_Bool SystemUtils_IsDir(const char* path, int* err)
+bool SystemUtils_IsDir(const char* path, int* err)
 {
     bool is_dir = false;
     int err_ret = 0;
@@ -711,7 +711,7 @@ done:
  * @param err the error code (optional, can be NULL)
  * @returns true if it is a file, false otherwise.
  */
-_Bool SystemUtils_IsFile(const char* path, int* err)
+bool SystemUtils_IsFile(const char* path, int* err)
 {
     bool is_file = false;
     int err_ret = 0;

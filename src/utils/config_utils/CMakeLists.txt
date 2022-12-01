@@ -4,6 +4,7 @@ project (config_utils)
 
 include (agentRules)
 compileasc99 ()
+
 add_library (${PROJECT_NAME} STATIC src/config_utils.c src/config_parsefile.c)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 

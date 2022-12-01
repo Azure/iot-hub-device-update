@@ -31,7 +31,7 @@ typedef void* ADUC_WorkflowDataToken;
  * @param result Result of work.
  * @param isAsync true when worker thread, false when main thread.
  */
-typedef void (*WorkCompletionCallbackFunc)(const void* workCompletionToken, ADUC_Result result, _Bool isAsync);
+typedef void (*WorkCompletionCallbackFunc)(const void* workCompletionToken, ADUC_Result result, bool isAsync);
 
 typedef struct tagADUC_WorkCompletionData
 {

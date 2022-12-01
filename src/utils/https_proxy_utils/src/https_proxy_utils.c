@@ -13,18 +13,17 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 /**
  * @brief Initializes @p proxyOptions object by reading and parsing environment variable 'https_proxy' or 'HTTPS_PROXY', in that order.
  * @param proxyOptions HTTP_PROXY_OPTIONS A pointer to HTTP_PROXY_OPTIONS struct to be initialized.
  *                     Caller must call UninitializeProxyOptions() to free memory allocated for the member variables.
- * @return _Bool True when the proxy options successfully initialized.
+ * @return bool True when the proxy options successfully initialized.
  */
-_Bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions)
+bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions)
 {
     bool success = false;
-    CURLU *curlHandle = curl_url();
+    CURLU* curlHandle = curl_url();
     CURLcode uc;
     char* host = NULL;
     char* port = NULL;

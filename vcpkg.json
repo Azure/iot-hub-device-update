@@ -13,6 +13,9 @@
             "default-features": true,
             "features": ["openssl"]
         },
-        "parson"
+        "dirent",
+        "parson",
+        "pthreads",
+        "umock-c"
     ]
 }

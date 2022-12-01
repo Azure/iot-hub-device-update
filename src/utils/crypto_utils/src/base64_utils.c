@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 /* Note: on Base64 Encoding vs Base64URL
  * Base64 encodes byte values into specified values. A chart of these can be found in
@@ -116,7 +115,7 @@ size_t Base64URLDecode(const char* base64_encoded_blob, unsigned char** decoded_
         }
     }
 
-    unsigned int padding_end = blob_len + padding;
+    size_t padding_end = blob_len + padding;
     while (i < padding_end)
     {
         temp_blob[i] = '=';
@@ -160,7 +159,7 @@ done:
  */
 char* Base64URLDecodeToString(const char* base64_encoded_blob)
 {
-    _Bool success = false;
+    bool success = false;
 
     char* blobStr = NULL;
 

@@ -9,6 +9,16 @@
  */
 
 #include <dirent.h>
+
+#if defined(_WIN32)
+#    include <corecrt_io.h>
+#    include <process.h> // getpid()
+#elif defined __linux__
+#    include <sys/syscall.h> // for SYS_gettid
+#    include <sys/time.h> // for gettimeofday
+#    include <unistd.h> // isatty
+#endif
+
 #include <errno.h>
 #include <pthread.h>
 #include <stdarg.h>
@@ -17,11 +27,8 @@
 #include <stdlib.h>
 #include <string.h> // for strcmp, memset, strlen, etc.
 #include <sys/stat.h>
-#include <sys/syscall.h> // for SYS_gettid
-#include <sys/time.h> // for gettimeofday
 #include <sys/types.h>
 #include <time.h>
-#include <unistd.h> // isatty
 
 #include "zlog-config.h"
 #include "zlog.h"
@@ -53,21 +60,21 @@ char _zlog_buffer[ZLOG_BUFFER_MAXLINES][ZLOG_BUFFER_LINE_MAXCHARS];
 static int _zlog_buffer_count = 0;
 static pthread_mutex_t _zlog_buffer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t _zlog_flush_thread;
-static _Bool _is_flush_thread_initialized = false;
+static bool _is_flush_thread_initialized = false;
 
 void zlog_init_flush_thread(void);
 void zlog_stop_flush_thread(void);
 struct tm* get_current_utctime();
-_Bool get_current_utctime_filename(char* fullpath, size_t fullpath_len);
+bool get_current_utctime_filename(char* fullpath, size_t fullpath_len);
 static inline void _zlog_buffer_lock(void);
 static inline void _zlog_buffer_unlock(void);
-static void _zlog_roll_over_if_file_size_too_large(int additional_log_len);
+static void _zlog_roll_over_if_file_size_too_large(size_t additional_log_len);
 static void _zlog_flush_buffer(void);
 static inline char* zlog_lock_and_get_buffer(void);
 static inline void zlog_finish_buffer_and_unlock(void);
 void zlog_ensure_at_most_n_logfiles(int max_num);
 
-static _Bool zlog_is_file_log_open()
+static bool zlog_is_file_log_open()
 {
     return zlog_fout != NULL;
 }
@@ -81,12 +88,16 @@ static void zlog_close_file_log()
     }
 }
 
-static _Bool zlog_is_stdout_a_tty()
+static bool zlog_is_stdout_a_tty()
 {
+#if defined(_WIN32)
+    return (_isatty(_fileno(stdout)) != 0);
+#else
     return (isatty(fileno(stdout)) != 0);
+#endif
 }
 
-static _Bool zlog_term_supports_color()
+static bool zlog_term_supports_color()
 {
     const char* term = getenv("TERM");
     if (term != NULL)
@@ -237,9 +248,9 @@ void zlog_finish(void)
 
 void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, ...)
 {
-    const _Bool console_log_needed =
+    const bool console_log_needed =
         (log_setting.console_logging_mode != ZLOG_CLM_DISABLED) && (msg_level >= log_setting.console_level);
-    const _Bool file_log_needed = zlog_is_file_log_open() && (msg_level >= log_setting.file_level);
+    const bool file_log_needed = zlog_is_file_log_open() && (msg_level >= log_setting.file_level);
 
     if (!console_log_needed && !file_log_needed)
     {
@@ -250,6 +261,12 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
     char prelude_buffer[PRELUDE_BUFFER_SIZE];
     prelude_buffer[0] = '\0';
 
+#if defined(_WIN32)
+    struct timespec curtime;
+    timespec_get(&curtime, TIME_UTC);
+
+    struct tm* tmval = gmtime(&curtime.tv_sec);
+#else
     struct timespec curtime;
     clock_gettime(CLOCK_REALTIME, &curtime);
 
@@ -257,6 +274,7 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
 
     struct tm gmtval;
     struct tm* tmval = gmtime_r(&seconds, &gmtval);
+#endif
 
     if (tmval != NULL)
     {
@@ -272,8 +290,14 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
             tmval->tm_min % 100,
             tmval->tm_sec % 100,
             (int)(curtime.tv_nsec / 100000),
+#if defined(_WIN32)
+            _getpid(),
+            pthread_getw32threadid_np(pthread_self())
+#else
             getpid(),
-            (pid_t)syscall(SYS_gettid) /* cannot call gettid() directly */);
+            (pid_t)syscall(SYS_gettid) /* cannot call gettid() directly */
+#endif
+        );
 
         if (ret < 0)
         {
@@ -286,7 +310,7 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
     va_start(va, fmt);
     int full_log_len = vsnprintf(va_buffer, sizeof(va_buffer) / sizeof(va_buffer[0]), fmt, va);
     // A return value of size or more means that the output was truncated.
-    _Bool log_truncated = full_log_len >= (sizeof(va_buffer) / sizeof(va_buffer[0]));
+    bool log_truncated = full_log_len >= (sizeof(va_buffer) / sizeof(va_buffer[0]));
     va_end(va);
 
     if (console_log_needed)
@@ -393,21 +417,30 @@ void zlog_request_flush_buffer(void)
 // or when g_flushRequested is true
 //
 // Caller should NOT hold the lock
-static void* zlog_buffer_flush_thread()
+static void* zlog_buffer_flush_thread(void* unused)
 {
-    struct timeval tv;
     time_t lasttime;
 
+#if defined(_WIN32)
+    time(&lasttime);
+#else
+    struct timeval tv;
     gettimeofday(&tv, NULL);
     lasttime = tv.tv_sec;
+#endif
 
     do
     {
         time_t curtime;
 
+#if defined(_WIN32)
+        Sleep(ZLOG_SLEEP_TIME_SEC);
+        time(&curtime);
+#else
         sleep(ZLOG_SLEEP_TIME_SEC);
         gettimeofday(&tv, NULL);
         curtime = tv.tv_sec;
+#endif
         if (g_flushRequested || ((curtime - lasttime) >= ZLOG_FLUSH_INTERVAL_SEC))
         {
             g_flushRequested = false;
@@ -467,7 +500,7 @@ static inline void _zlog_buffer_unlock(void)
     pthread_mutex_unlock(&_zlog_buffer_mutex);
 }
 
-_Bool get_current_utctime_filename(char* fullpath, size_t fullpath_len)
+bool get_current_utctime_filename(char* fullpath, size_t fullpath_len)
 {
     // Timestamp the log file
     char timebuf[sizeof("20200819-19181597864683")];
@@ -485,7 +518,7 @@ _Bool get_current_utctime_filename(char* fullpath, size_t fullpath_len)
 }
 
 // Roll over to a new log file if the current file size + additional_log_len exceeds ZLOG_FILE_MAX_SIZE_KB * 1024.
-static void _zlog_roll_over_if_file_size_too_large(int additional_log_len)
+static void _zlog_roll_over_if_file_size_too_large(size_t additional_log_len)
 {
     if (!zlog_is_file_log_open())
     {
@@ -579,7 +612,7 @@ void zlog_ensure_at_most_n_logfiles(int max_num)
             char filepath[512];
             const unsigned int max_filepath = sizeof(filepath) / sizeof(filepath[0]);
             int res = snprintf(filepath, max_filepath, "%s/%s", zlog_file_log_dir, logfiles[i]->d_name);
-            if (res > 0 && res < max_filepath)
+            if (res > 0 && res < (int)max_filepath)
             {
                 remove(filepath);
             }
