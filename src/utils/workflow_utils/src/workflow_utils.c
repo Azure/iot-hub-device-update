@@ -2423,6 +2423,8 @@ workflow_init_from_file(const char* updateManifestFile, bool validateManifest, A
         goto done;
     }
 
+    *outWorkflowHandle = NULL;
+
     result = workflow_parse_json(true /* isFile */, updateManifestFile, &rootJsonValue);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
