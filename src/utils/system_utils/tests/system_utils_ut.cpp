@@ -9,80 +9,210 @@
 using Catch::Matchers::Equals;
 
 #include "aduc/system_utils.h"
-
 #include <aduc/auto_opendir.hpp>
-#include <algorithm> // std::find*
-#include <dirent.h>
-#include <sstream>
 #include <sys/stat.h>
 #include <vector>
 
-static bool callback_called = false;
-std::vector<std::string> actual;
-
-static void perDirFn(void* context, const char* baseDir, const char* subdir_name)
+/**
+ * @brief A capture of the arguments passed in a call invocation to callback for each sub dir in base dir.
+ *
+ */
+struct ForEachDirCallRecord
 {
-    callback_called = true;
-    std::stringstream ss;
-
-    if (context != nullptr)
-    {
-        ss << *((int*)(context));
-    }
-
-    ss << ", " << baseDir << ", " << subdir_name << std::endl;
-
-    actual.push_back(ss.str());
+    void* context;
+    std::string baseDir;
+    std::string subDir;
 };
 
-static void reset_test_state()
+/**
+ * @brief ForEachDirCallRecord equals operator needed for STL container.
+ *
+ * @param first The first call record object.
+ * @param second The second call record object.
+
+ * @return true when equal.
+ */
+bool operator==(const ForEachDirCallRecord& first, const ForEachDirCallRecord& second)
 {
-    callback_called = false;
-    actual.clear();
+    return first.context == second.context && first.baseDir == second.baseDir && first.subDir == second.subDir;
 }
 
-static int get_dirs_in_dir(std::string dir, std::vector<std::string>& outPaths)
+/**
+ * @brief ForEachDirCallRecord less-than operator for use with std::sort with std::less comparator.
+ *
+ * @param first The first call record object.
+ * @param second The second call record object.
+ * @return true When first call record is considered to be ordered less than the second.
+ */
+bool operator<(const ForEachDirCallRecord& first, const ForEachDirCallRecord& second)
 {
-    struct dirent* entry = nullptr;
-
-    aduc::AutoOpenDir d{ dir };
-    if (d.GetDirectoryStreamHandle() == nullptr)
+    if (first.baseDir < second.baseDir)
     {
-        return errno;
+        return true;
     }
 
-    struct dirent* dirEntry = nullptr;
-    do
-    {
-        errno = 0;
-        dirEntry = d.NextDirEntry();
-        if (dirEntry == nullptr)
-        {
-            if (errno != 0)
-            {
-                return errno;
-            }
-        }
-        else
-        {
-            std::string entry_name{ dirEntry->d_name };
-            if (entry_name == "." || entry_name == "..")
-            {
-                continue;
-            }
-
-            outPaths.push_back(entry_name);
-        }
-    } while (dirEntry != nullptr);
-
-    return 0;
+    return first.baseDir == second.baseDir ? first.subDir < second.subDir : false;
 }
 
-int val = 42;
-ADUC_SystemUtils_ForEachDirFunctor functor = {
-    &val, // context
-    perDirFn, // callbackFn
+// forward declarations to successfully compile CreateCallbackFunctor function that references
+// pointer to TestCaseFixture and the ForEachDir_Callback C-style callback, which has to
+// call into TestCaseFixture class's static AddCallRecord method so that the TestCaseFixture
+// instance can update it's per-testcase vector of callback call records.
+class TestCaseFixture;
+static void ForEachDir_Callback(void* context, const char* baseDir, const char* subDir);
+
+/**
+ * @brief Create a Callback Functor object for the test case fixture object.
+ *
+ * @param fixture The test case fixture object instance.
+ * @return ADUC_SystemUtils_ForEachDirFunctor The functor object.
+ */
+
+ADUC_SystemUtils_ForEachDirFunctor CreateCallbackFunctor(TestCaseFixture* fixture)
+{
+    return ADUC_SystemUtils_ForEachDirFunctor
+    {
+        .context = fixture,
+        .callbackFn = ForEachDir_Callback
+    };
 };
+
+class TestCaseFixture
+{
+public:
+    TestCaseFixture() : m_testPath{ ADUC_SystemUtils_GetTemporaryPathName() }
+    {
+        m_testPath += "/system_utils_ut";
+
+        (void)ADUC_SystemUtils_RmDirRecursive(m_testPath.c_str());
+    }
+
+    ~TestCaseFixture()
+    {
+        (void)ADUC_SystemUtils_RmDirRecursive(m_testPath.c_str());
+    }
+
+    /**
+     * @brief Gets the base test temp path as a c_str.
+     *
+     * @return const char* The test path.
+     */
+    const char* TestPath() const
+    {
+        return m_testPath.c_str();
+    }
+
+    std::string BaseDir_for_ForEachDir() const
+    {
+        return m_testPath + "/ForEachDirTest/";
+    };
+
+    /**
+     * @brief provides the instance to this text fixture object for asserting
+     * that the Context passed to the for-each callback matches the current
+     * TestCaseFixture instance.
+     *
+     * @return TestCaseFixture* The pointer to this instance.
+     */
+    TestCaseFixture* Instance()
+    {
+        return this;
+    }
+
+    /**
+     * @brief Create a Call Record object for use in test assertions.
+     *
+     * @param subdir The sub directory under the BaseDir.
+     * @return ForEachDirCallRecord The expected call record for the given sub directory.
+     */
+    ForEachDirCallRecord CreateCallRecord(std::string subdir)
+    {
+        return { Instance(), BaseDir_for_ForEachDir(), subdir };
+    }
+
+    /**
+     * @brief Wrapper to execute a test case for SystemUtils_ForEachDir utility function.
+     *
+     * @param subdirs The vector of subdirs under the base dir on the file system.
+     * @param excludedSubDir The subdir to exclude. Empty string to not exclude any.
+     * @param expectedRetCode The expected return code of the SystemUtils_ForEachDir call.
+     * @param shouldDeleteBaseDirBeforeExecuteTest Optional, default of false. Deletes BaseDir before running test case if true.
+     * @return std::vector<CallRecord> The sorted vector of call records to the C-style callback function.
+     */
+    std::vector<ForEachDirCallRecord> ExecuteForEachDirTestCase(std::vector<std::string> subdirs, std::string excludedSubDir, int expectedRetCode, bool shouldDeleteBaseDirBeforeExecuteTest = false)
+    {
+        std::string base_dir{ BaseDir_for_ForEachDir() };
+        ADUC_SystemUtils_RmDirRecursive(base_dir.c_str());
+
+        if (!shouldDeleteBaseDirBeforeExecuteTest)
+        {
+            REQUIRE(0 == ADUC_SystemUtils_MkDirRecursiveDefault(base_dir.c_str()));
+        }
+
+        for (const auto& subdir : subdirs)
+        {
+            REQUIRE(0 == ADUC_SystemUtils_MkDirRecursiveDefault((base_dir + subdir).c_str()));
+        }
+
+        auto functor = CreateCallbackFunctor(this);
+
+        int err = SystemUtils_ForEachDir(
+            base_dir.c_str() /* baseDir */,
+            excludedSubDir.length() > 0 ? excludedSubDir.c_str() : nullptr /* excludeDir */,
+            &functor /* perDirActionFunctor */);
+        REQUIRE(err == expectedRetCode);
+
+        std::sort(m_actual_foreach_callback_records.begin(), m_actual_foreach_callback_records.end(), std::less<ForEachDirCallRecord>());
+        return m_actual_foreach_callback_records;
+    }
+
+    /**
+     * @brief Adds a call record to the instance's collection.
+     *
+     * @param call_record The call record to save.
+     */
+    void AddCallRecord(const ForEachDirCallRecord& call_record)
+    {
+        m_actual_foreach_callback_records.push_back(call_record);
+    }
+
+    /**
+     * @brief static AddCallRecord so that pure C callback function can call it.
+     *
+     * @param instance The TestCaseFixture instance on which to call the AddCallRecord instance method.
+     * @param call_record The call record to save.
+     */
+    static void AddCallRecord(void* instance, const ForEachDirCallRecord& call_record)
+    {
+        static_cast<TestCaseFixture*>(instance)->AddCallRecord(call_record);
+    }
+
+private:
+    TestCaseFixture(const TestCaseFixture&) = delete;
+    TestCaseFixture& operator=(const TestCaseFixture&) = delete;
+    TestCaseFixture(TestCaseFixture&&) = delete;
+    TestCaseFixture& operator=(TestCaseFixture&&) = delete;
+
+    // The test temporary file path.
+    std::string m_testPath;
+
+    // The captures an ordered list of call captures, one for each  timethe SystemUtils_ForEachDir calls
+    // the C-style callback for each subdir under baseDir.
+    std::vector<ForEachDirCallRecord> m_actual_foreach_callback_records;
+};
+
+/**
+ * @brief The C-style callback for use when test case exercises SystemUtils_ForEachDir.
+ *
+ * @param context The context object, which is a TestCaseFixture pointer in the context of test case.
+ * @param baseDir The base directory.
+ * @param subDir The subdirectory under the base dir.
+ * @details It simply forwards along the context and a call record to the AddCallRecord static class method.
+ */
+static void ForEachDir_Callback(void* context, const char* baseDir, const char* subDir)
+{
+    TestCaseFixture::AddCallRecord(context, ForEachDirCallRecord{ context, baseDir, subDir });
+}
 
 TEST_CASE("ADUC_SystemUtils_GetTemporaryPathName")
 {
@@ -111,35 +241,6 @@ TEST_CASE("ADUC_SystemUtils_ExecuteShellCommand")
         CHECK_FALSE(ret == 0);
     }
 }
-
-class TestCaseFixture
-{
-public:
-    TestCaseFixture() : _testPath{ ADUC_SystemUtils_GetTemporaryPathName() }
-    {
-        _testPath += "/system_utils_ut";
-
-        (void)ADUC_SystemUtils_RmDirRecursive(_testPath.c_str());
-    }
-
-    ~TestCaseFixture()
-    {
-        (void)ADUC_SystemUtils_RmDirRecursive(_testPath.c_str());
-    }
-
-    const char* TestPath() const
-    {
-        return _testPath.c_str();
-    }
-
-    TestCaseFixture(const TestCaseFixture&) = delete;
-    TestCaseFixture& operator=(const TestCaseFixture&) = delete;
-    TestCaseFixture(TestCaseFixture&&) = delete;
-    TestCaseFixture& operator=(TestCaseFixture&&) = delete;
-
-private:
-    std::string _testPath;
-};
 
 TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirDefault")
 {
@@ -241,405 +342,85 @@ TEST_CASE_METHOD(TestCaseFixture, "SystemUtils_ForEachDir")
 {
     SECTION("All NULL should fail")
     {
-        reset_test_state();
-
-        int err =
-            SystemUtils_ForEachDir(nullptr /* baseDir */, nullptr /* excludeDir */, nullptr /* perDirActionFunctor */);
-        CHECK_FALSE(err == 0);
+        CHECK(-1 == SystemUtils_ForEachDir(
+            nullptr /* baseDir */,
+            nullptr /* excludeDir */,
+            nullptr /* perDirActionFunctor */));
     }
 
     SECTION("NULL functor should fail")
     {
-        reset_test_state();
-
-        ADUC_SystemUtils_RmDirRecursive(TestPath());
-
-        {
-            int ret{ ADUC_SystemUtils_MkDirDefault(TestPath()) };
-            REQUIRE(ret == 0);
-        }
-
-        {
-            std::vector<std::string> paths;
-            REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
-            REQUIRE(paths.size() == 0);
-        }
-
-        int err = SystemUtils_ForEachDir(
-            TestPath() /* baseDir */, nullptr /* excludeDir */, nullptr /* perDirActionFunctor */);
-        CHECK_FALSE(err == 0);
-
-        {
-            std::vector<std::string> paths;
-            REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
-            REQUIRE(paths.size() == 0);
-        }
+        CHECK(-1 == SystemUtils_ForEachDir(
+            BaseDir_for_ForEachDir().c_str() /* baseDir */,
+            "subdir" /* excludeDir */,
+            nullptr /* perDirActionFunctor */));
     }
 
     SECTION("Non-existent base dir should fail with errno FileNotFound")
     {
-        reset_test_state();
-
-        ADUC_SystemUtils_RmDirRecursive(TestPath());
-
-        int err = SystemUtils_ForEachDir(
-            TestPath() /* baseDir */, nullptr /* excludeDir */, &functor /* perDirActionFunctor */);
-        CHECK(err == 2); // FileNotFound
+        int FileNotFound = 2;
+        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{} /* subdirs */, "" /* excludedSubDir */, FileNotFound /* expectedRetCode */, true /* shouldDeleteBaseDirBeforeExecuteTest */);
+        REQUIRE(actualCallRecords.size() == 0);
     }
 
     SECTION("Empty Dir, no excludeDir should succeed")
     {
-        reset_test_state();
-
-        ADUC_SystemUtils_RmDirRecursive(TestPath());
-
-        {
-            int ret{ ADUC_SystemUtils_MkDirDefault(TestPath()) };
-            REQUIRE(ret == 0);
-        }
-
-        auto verify_dirs_fn = [&]()
-        {
-            std::vector<std::string> paths;
-            REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
-            REQUIRE(paths.size() == 0);
-        };
-
-        verify_dirs_fn();
-
-        int err = SystemUtils_ForEachDir(
-            TestPath() /* baseDir */, nullptr /* excludeDir */, &functor /* perDirActionFunctor */);
-        REQUIRE(err == 0);
-
-        CHECK_FALSE(callback_called);
-
-        verify_dirs_fn();
+        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{} /* subdirs */, "" /* excludedSubDir */, 0 /* expectedRetCode */);
+        REQUIRE(actualCallRecords.size() == 0);
     }
 
     SECTION("Non-Empty Dir, no excludeDir should callback")
     {
-        reset_test_state();
+        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{ "subdir1" } /* subdirs */, "" /* excludedSubDir */, 0 /* expectedRetCode */);
+        REQUIRE(actualCallRecords.size() == 1);
 
-        ADUC_SystemUtils_RmDirRecursive(TestPath());
-
-        {
-            int ret{ ADUC_SystemUtils_MkDirDefault(TestPath()) };
-            REQUIRE(ret == 0);
-        }
-
-        const std::string test_subdir = "foo_subdir";
-
-        std::vector<std::string> expected;
-
-        {
-            std::stringstream ss;
-            ss << "42, " << TestPath() << ", " << test_subdir << std::endl;
-            expected.push_back(ss.str());
-        }
-
-        // create a directory under the test path;
-        std::string test_path{ TestPath() };
-        test_path += "/";
-        test_path += test_subdir;
-
-        REQUIRE(0 == ADUC_SystemUtils_MkDirRecursiveDefault(test_path.c_str()));
-
-        auto verify_dirs_fn = [&]()
-        {
-            std::vector<std::string> paths;
-            REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
-            REQUIRE(paths.size() == 1);
-            REQUIRE_THAT(paths[0], Equals(test_subdir));
-        };
-
-        verify_dirs_fn();
-
-        int err = SystemUtils_ForEachDir(
-            TestPath() /* baseDir */, nullptr /* excludeDir */, &functor /* perDirActionFunctor */);
-        REQUIRE(err == 0);
-
-        std::sort(actual.begin(), actual.end(), std::less<std::string>());
-        std::sort(expected.begin(), expected.end(), std::less<std::string>());
-        CHECK(actual == expected);
-
-        verify_dirs_fn();
+        CHECK(actualCallRecords == std::vector<ForEachDirCallRecord>{
+            CreateCallRecord("subdir1"),
+        });
     }
 
     SECTION("Exclude the only existing subdir should not callback")
     {
-        reset_test_state();
-
-        ADUC_SystemUtils_RmDirRecursive(TestPath());
-
-        {
-            int ret{ ADUC_SystemUtils_MkDirDefault(TestPath()) };
-            REQUIRE(ret == 0);
-        }
-
-        const std::string test_subdir = "foo_subdir";
-
-        // create a directory under the test path;
-        std::string test_path{ TestPath() };
-        test_path += "/";
-        test_path += test_subdir;
-
-        REQUIRE(0 == ADUC_SystemUtils_MkDirRecursiveDefault(test_path.c_str()));
-
-        auto verify_dirs_fn = [&]()
-        {
-            std::vector<std::string> paths;
-            REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
-            REQUIRE(paths.size() == 1);
-            CHECK_THAT(paths[0], Equals(test_subdir));
-        };
-
-        verify_dirs_fn();
-
-        int err = SystemUtils_ForEachDir(
-            TestPath() /* baseDir */, test_subdir.c_str() /* excludeDir */, &functor /* perDirActionFunctor */);
-        REQUIRE(err == 0);
-
-        CHECK_FALSE(callback_called);
-
-        CHECK(actual.size() == 0);
-
-        verify_dirs_fn();
+        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{ "subdir1" } /* subdirs */, "subdir1" /* excludedSubDir */, 0 /* expectedRetCode */);
+        REQUIRE(actualCallRecords.size() == 0);
     }
 
     SECTION("Empty Dir, exclude non-existent should not callback")
     {
-        reset_test_state();
-
-        ADUC_SystemUtils_RmDirRecursive(TestPath());
-
-        {
-            int ret{ ADUC_SystemUtils_MkDirDefault(TestPath()) };
-            REQUIRE(ret == 0);
-        }
-
-        auto verify_dirs_fn = [&]()
-        {
-            std::vector<std::string> paths;
-            REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
-            REQUIRE(paths.size() == 0);
-        };
-
-        verify_dirs_fn();
-
-        std::string excluded_subdir = "i_dont_exist";
-
-        int err = SystemUtils_ForEachDir(
-            TestPath() /* baseDir */, excluded_subdir.c_str() /* excludeDir */, &functor /* perDirActionFunctor */);
-        REQUIRE(err == 0);
-
-        CHECK_FALSE(callback_called);
-
-        CHECK(actual.size() == 0);
-
-        verify_dirs_fn();
+        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{} /* subdirs */, "i_do_not_exist" /* excludedSubDir */, 0 /* expectedRetCode */);
+        REQUIRE(actualCallRecords.size() == 0);
     }
 
     SECTION("two subdirs, exclude the 1st one")
     {
-        reset_test_state();
+        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{ "subdir1", "subdir2", "subdir3"} /* subdirs */, "subdir1" /* excludedSubDir */, 0 /* expectedRetCode */);
+        REQUIRE(actualCallRecords.size() == 2);
 
-        ADUC_SystemUtils_RmDirRecursive(TestPath());
-
-        {
-            int ret{ ADUC_SystemUtils_MkDirDefault(TestPath()) };
-            REQUIRE(ret == 0);
-        }
-
-        const std::string first_subdir = "i_exist";
-        const std::string second_subdir = "i_exist_too";
-
-        std::stringstream ss;
-        ss << "42, " << TestPath() << ", " << second_subdir << std::endl;
-        std::string expected = ss.str();
-
-        // create directories under the test path;
-        std::string test_path{ TestPath() };
-        test_path += "/";
-        test_path += first_subdir;
-
-        std::string test_path2{ TestPath() };
-        test_path2 += "/";
-        test_path2 += second_subdir;
-
-        REQUIRE(0 == ADUC_SystemUtils_MkDirRecursiveDefault(test_path.c_str()));
-        REQUIRE(0 == ADUC_SystemUtils_MkDirRecursiveDefault(test_path2.c_str()));
-
-        auto verify_dirs_fn = [&]()
-        {
-            std::vector<std::string> paths;
-            REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
-            REQUIRE(paths.size() == 2);
-
-            std::sort(paths.begin(), paths.end(), std::less<std::string>());
-            CHECK_THAT(paths[0], Equals(first_subdir));
-            CHECK_THAT(paths[1], Equals(second_subdir));
-        };
-
-        verify_dirs_fn();
-
-        int err = SystemUtils_ForEachDir(
-            TestPath() /* baseDir */, first_subdir.c_str() /* excludeDir */, &functor /* perDirActionFunctor */);
-        REQUIRE(err == 0);
-
-        CHECK(callback_called);
-
-        REQUIRE(actual.size() == 1);
-        CHECK_THAT(actual[0].c_str(), Equals(expected.c_str()));
-
-        verify_dirs_fn();
+        CHECK(actualCallRecords == std::vector<ForEachDirCallRecord>{
+            CreateCallRecord("subdir2"),
+            CreateCallRecord("subdir3"),
+        });
     }
 
     SECTION("multiple subdirs, exclude second one")
     {
-        reset_test_state();
+        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{ "subdir1", "subdir2", "subdir3"} /* subdirs */, "subdir2" /* excludedSubDir */, 0 /* expectedRetCode */);
+        REQUIRE(actualCallRecords.size() == 2);
 
-        ADUC_SystemUtils_RmDirRecursive(TestPath());
-
-        {
-            int ret{ ADUC_SystemUtils_MkDirDefault(TestPath()) };
-            REQUIRE(ret == 0);
-        }
-
-        const std::string first_subdir = "i_exist";
-        const std::string second_subdir = "i_exist_too";
-        const std::string third_subdir = "i_exist_z";
-
-        std::vector<std::string> expected;
-
-        {
-            std::stringstream ss;
-            ss << "42, " << TestPath() << ", " << first_subdir << std::endl;
-            expected.push_back(ss.str());
-        }
-
-        {
-            std::stringstream ss;
-            ss << "42, " << TestPath() << ", " << third_subdir << std::endl;
-            expected.push_back(ss.str());
-        }
-
-        // create a directory under the test path;
-        std::string test_path{ TestPath() };
-        test_path += "/";
-        test_path += first_subdir;
-
-        std::string test_path2{ TestPath() };
-        test_path2 += "/";
-        test_path2 += second_subdir;
-
-        std::string test_path3{ TestPath() };
-        test_path3 += "/";
-        test_path3 += third_subdir;
-
-        REQUIRE(0 == ADUC_SystemUtils_MkDirRecursiveDefault(test_path.c_str()));
-        REQUIRE(0 == ADUC_SystemUtils_MkDirRecursiveDefault(test_path2.c_str()));
-        REQUIRE(0 == ADUC_SystemUtils_MkDirRecursiveDefault(test_path3.c_str()));
-
-        auto verify_dirs_fn = [&]()
-        {
-            std::vector<std::string> paths;
-            REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
-            REQUIRE(paths.size() == 3);
-
-            std::sort(paths.begin(), paths.end(), std::less<std::string>());
-            CHECK_THAT(paths[0], Equals(first_subdir));
-            CHECK_THAT(paths[1], Equals(second_subdir));
-            CHECK_THAT(paths[2], Equals(third_subdir));
-        };
-
-        verify_dirs_fn();
-
-        int err = SystemUtils_ForEachDir(
-            TestPath() /* baseDir */, second_subdir.c_str() /* excludeDir */, &functor /* perDirActionFunctor */);
-        CHECK(err == 0); // not set
-
-        CHECK(callback_called);
-
-        std::sort(actual.begin(), actual.end(), std::less<std::string>());
-        std::sort(expected.begin(), expected.end(), std::less<std::string>());
-        CHECK(actual == expected);
-
-        // post-check that no side effects occurred on the fs dirs.
-        verify_dirs_fn();
+        CHECK(actualCallRecords == std::vector<ForEachDirCallRecord>{
+            CreateCallRecord("subdir1"),
+            CreateCallRecord("subdir3"),
+        });
     }
 
     SECTION("multiple subdirs, exclude the last one")
     {
-        reset_test_state();
+        auto actualCallRecords = ExecuteForEachDirTestCase(std::vector<std::string>{ "subdir1", "subdir2", "subdir3"} /* subdirs */, "subdir3" /* excludedSubDir */, 0 /* expectedRetCode */);
+        REQUIRE(actualCallRecords.size() == 2);
 
-        ADUC_SystemUtils_RmDirRecursive(TestPath());
-
-        {
-            int ret{ ADUC_SystemUtils_MkDirDefault(TestPath()) };
-            REQUIRE(ret == 0);
-        }
-
-        const std::string first_subdir = "i_exist";
-        const std::string second_subdir = "i_exist_too";
-        const std::string third_subdir = "i_exist_z";
-
-
-        std::vector<std::string> expected;
-
-        {
-            std::stringstream ss;
-            ss << "42, " << TestPath() << ", " << first_subdir << std::endl;
-            expected.push_back(ss.str());
-        }
-
-        {
-            std::stringstream ss;
-            ss << "42, " << TestPath() << ", " << second_subdir << std::endl;
-            expected.push_back(ss.str());
-        }
-
-        // create a directory under the test path;
-        std::string test_path{ TestPath() };
-        test_path += "/";
-        test_path += first_subdir;
-
-        std::string test_path2{ TestPath() };
-        test_path2 += "/";
-        test_path2 += second_subdir;
-
-        std::string test_path3{ TestPath() };
-        test_path3 += "/";
-        test_path3 += third_subdir;
-
-        REQUIRE(0 == ADUC_SystemUtils_MkDirRecursiveDefault(test_path.c_str()));
-        REQUIRE(0 == ADUC_SystemUtils_MkDirRecursiveDefault(test_path2.c_str()));
-        REQUIRE(0 == ADUC_SystemUtils_MkDirRecursiveDefault(test_path3.c_str()));
-
-        auto verify_dirs_fn = [&]()
-        {
-            std::vector<std::string> paths;
-            REQUIRE(get_dirs_in_dir(TestPath(), paths) == 0);
-            REQUIRE(paths.size() == 3);
-
-            std::sort(paths.begin(), paths.end(), std::less<std::string>());
-            CHECK_THAT(paths[0], Equals(first_subdir));
-            CHECK_THAT(paths[1], Equals(second_subdir));
-            CHECK_THAT(paths[2], Equals(third_subdir));
-        };
-
-        verify_dirs_fn();
-
-        int err = SystemUtils_ForEachDir(
-            TestPath() /* baseDir */, third_subdir.c_str() /* excludeDir */, &functor /* perDirActionFunctor */);
-        CHECK(err == 0); // not set
-
-        CHECK(callback_called);
-
-        std::sort(actual.begin(), actual.end(), std::less<std::string>());
-        std::sort(expected.begin(), expected.end(), std::less<std::string>());
-        CHECK(actual == expected);
-
-        // post-check that no side effects occurred on the fs dirs.
-        verify_dirs_fn();
+        CHECK(actualCallRecords == std::vector<ForEachDirCallRecord>{
+            CreateCallRecord("subdir1"),
+            CreateCallRecord("subdir2"),
+        });
     }
 }
