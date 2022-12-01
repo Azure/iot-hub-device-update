@@ -423,7 +423,6 @@ void OrchestratorUpdateCallback(
 
     Log_Debug("Update Action info string (%s), property version (%d)", ackString, propertyVersion);
 
-    // If a
     // We do this instead of waiting for update manifest signature to be
     // verified because we may need to fetch new root keys that are used
     // to verify the signing keys in the update manifest signature.
