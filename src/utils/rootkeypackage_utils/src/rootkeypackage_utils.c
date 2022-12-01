@@ -84,6 +84,17 @@ done:
 }
 
 /**
+ * @brief Downloads the rootkey package
+ *
+ * @param outPathToRootKeyPackage The resultant path to the root key package file.
+ */
+ADUC_Result ADUC_RootKeyPackageUtil_DownloadPackage(char** outPathToRootKeyPackage)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    return result;
+}
+
+/**
  * @brief Cleans up the disabled root keys in the rootkey package.
  *
  * @param rootKeyPackage The root key package.

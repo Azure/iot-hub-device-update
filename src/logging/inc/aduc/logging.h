@@ -62,11 +62,6 @@ ADUC_LOG_SEVERITY ADUC_Logging_GetLevel();
  */
 #    define Log_Error log_error
 
-/*
- * @brief Request a buffer flush.
- */
-#    define Log_RequestFlush zlog_request_flush_buffer
-
 #elif ADUC_USE_XLOGGING
 
 #    include <azure_c_shared_utility/xlogging.h>
