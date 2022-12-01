@@ -9,6 +9,7 @@
 #include <stdio.h> // printf
 
 #if defined(_WIN32)
+// TODO(JeffMill): [PAL] _mkdir
 #    include <direct.h>
 #elif defined __linux__
 #    include <sys/stat.h> //mkdir

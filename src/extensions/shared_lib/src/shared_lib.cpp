@@ -12,7 +12,7 @@
 #include <algorithm> // std::for_each
 
 #if defined(_WIN32)
-// TODO(JeffMill): PAL
+// TODO(JeffMill): [PAL] dlopen, dlerror, dlsym, dlclose
 #    define RTLD_LAZY 0
 
 void* dlopen(const char* filename, int flag)

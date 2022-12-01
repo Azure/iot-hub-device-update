@@ -1,5 +1,5 @@
 /**
- * @file system_utils.c
+  * @file system_utils.c
  * @brief System level utilities, e.g. directory management, reboot, etc.
  *
  * @copyright Copyright (c) Microsoft Corporation.
@@ -9,26 +9,120 @@
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h"
 
+#if defined(_WIN32)
+#    include <corecrt_io.h> // chmod
+#    include <direct.h> // _mkdir
+#else
+#    include <sys/file.h>
+// #    include <sys/wait.h> // for waitpid
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] nftw (libgw32c implementation?)
+
+typedef struct _FTW
+{
+    void* unused;
+} FTW;
+
+enum
+{
+    FTW_DEPTH = 1,
+    FTW_PHYS = 2,
+    FTW_MOUNT = 4,
+    FTW_CHDIR = 8
+} FTW_FLAGS;
+
+enum
+{
+    FTW_F = 1,
+    FTW_D = 2,
+    FTW_DNR = 3,
+    FTW_DP = 4,
+    FTW_NS = 5,
+    FTW_SL = 6,
+    FTW_SLN = 7
+} FTW_TYPE;
+
+typedef int (*NFTW_FUNC_T)(const char* fpath, const struct stat* sb, int typeflag, struct FTW* ftwbuf);
+
+int nftw(const char* path, NFTW_FUNC_T func, int descriptors, int flags)
+{
+    return -1; // failure
+}
+#else
 // for nftw
-#define __USE_XOPEN_EXTENDED 1
+#    define __USE_XOPEN_EXTENDED 1
+#    include <ftw.h> // for nftw
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getgrname
+
+// This code only references gr_gid
+struct group
+{
+    gid_t gr_gid;
+};
+
+struct group* getgrnam(const char* name)
+{
+    static struct group grp;
+    grp.gr_gid = 0;
+    return &grp;
+}
+#else
+#    include <grp.h> // for getgrnam
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getpwnam
+
+// This code only references pw_uid
+struct passwd
+{
+    uid_t pw_uid; /* user uid */
+};
+
+struct passwd* getpwnam(const char* name)
+{
+    static struct passwd pw;
+
+    // TODO(JeffMill): No equivalent of getuid() on windows.
+    // See suggestions at https://stackoverflow.com/questions/1594746/win32-equivalent-of-getuid
+    pw.pw_uid = 0; // getuid();
+    return &pw;
+}
+#else
+#    include <pwd.h> // for getpwnam
+#endif
+
+// TODO(JeffMill): [PAL] child status
+#define WIFEXITED(stat_val) (((stat_val)&255) == 0)
+#define WEXITSTATUS(stat_val) ((unsigned)(stat_val) >> 8)
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] chown
+
+int chown(const char* file, uid_t owner, gid_t group)
+{
+    return 0;
+}
+#else
+#    include <unistd.h>
+#endif
 
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/strings.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h> // for O_CLOEXEC
-#include <ftw.h> // for nftw
-#include <grp.h> // for getgrnam
 #include <limits.h> // for PATH_MAX
-#include <pwd.h> // for getpwnam
 #include <stdio.h>
 #include <stdlib.h> // for getenv
 #include <string.h> // for strncpy, strlen
-#include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h> // for waitpid
-#include <unistd.h>
 
 #ifndef O_CLOEXEC
 /**
@@ -160,11 +254,17 @@ int ADUC_SystemUtils_MkDirDefault(const char* path)
  */
 int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t mode)
 {
-    struct stat st = {};
+    struct stat st;
+    memset(&st, 0, sizeof(st));
+
     if (stat(path, &st) != 0)
     {
         /* Directory does not exist. EEXIST for race condition */
+#if defined(_WIN32)
+        if (_mkdir(path) != 0 && errno != EEXIST)
+#else
         if (mkdir(path, mode) != 0 && errno != EEXIST)
+#endif
         {
             Log_Error("Could not create directory %s errno: %d", path, errno);
             return errno;
@@ -269,14 +369,20 @@ int ADUC_SystemUtils_MkDirRecursive(const char* path, uid_t userId, gid_t groupI
     }
 
     // Let's make sure that we set this correct permission on the leaf folder.
-    struct stat st = {};
+    struct stat st;
+    memset(&st, 0, sizeof(st));
+
     if (stat(path, &st) == 0)
     {
         int perms = (st.st_mode & (ALL_PERMS));
         if (perms != mode)
         {
             // Fix the permissions.
+#if defined(_WIN32)
+            if (0 != _chmod(path, mode))
+#else
             if (0 != chmod(path, mode))
+#endif
             {
                 stat(path, &st);
                 Log_Warn("Failed to set '%s' folder permissions (expected:0%o, actual: 0%o)", mkdirPath, mode, perms);
@@ -348,12 +454,20 @@ static int RmDirRecursive_helper(const char* fpath, const struct stat* sb, int t
     if (typeflag == FTW_DP)
     {
         // fpath is a directory, and FTW_DEPTH was specified in flags.
+#if defined(_WIN32)
+        result = _rmdir(fpath);
+#else
         result = rmdir(fpath);
+#endif
     }
     else
     {
         // Assume a file.
+#if defined(_WIN32)
+        result = _unlink(fpath);
+#else
         result = unlink(fpath);
+#endif
     }
 
     return result;
@@ -464,8 +578,8 @@ int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, co
 
     FILE* sourceFile = NULL;
     FILE* destFile = NULL;
-    const size_t readMaxBuffSize = 1024;
-    unsigned char readBuff[readMaxBuffSize];
+    unsigned char readBuff[1024];
+    const size_t readMaxBuffSize = ARRAY_SIZE(readBuff);
 
     memset(readBuff, 0, readMaxBuffSize);
 
@@ -526,7 +640,11 @@ int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, co
         goto done;
     }
 
+#if defined(_WIN32)
+    if (_chmod(STRING_c_str(destFilePath), buff.st_mode) != 0)
+#else
     if (chmod(STRING_c_str(destFilePath), buff.st_mode) != 0)
+#endif
     {
         goto done;
     }
@@ -556,7 +674,11 @@ done:
  */
 int ADUC_SystemUtils_RemoveFile(const char* path)
 {
+#if defined(_WIN32)
+    return _unlink(path);
+#else
     return unlink(path);
+#endif
 }
 
 /**

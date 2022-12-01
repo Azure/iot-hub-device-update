@@ -18,7 +18,8 @@
 #include <sys/stat.h>
 
 #if defined _WIN32
-#    include <corecrt_io.h> // open, read, close
+// TODO(JeffMill): [PAL] _open, _read, _close
+#    include <corecrt_io.h>
 #else
 #    include <unistd.h>
 #endif

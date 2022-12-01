@@ -16,9 +16,16 @@
 #include <sstream>
 #include <stdio.h> // for FILE
 #include <stdlib.h> // for calloc
-#include <strings.h> // for strcasecmp
 #include <sys/stat.h> // for stat
 #include <vector>
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] strcasecmp
+#    include <string.h> // _strcmpi
+#    define strcasecmp(string1, string2) _strcmpi(string1, string2)
+#else
+#    include <strings.h> // strcasecmp
+#endif
 
 #include <do_config.h>
 #include <do_download.h>
@@ -67,7 +74,10 @@ ADUC_Result do_download(
     {
         // Note: The call to download_url_to_path() does not make use of a cancellation token,
         // so the download can only timeout or hit a fatal error.
-        Log_Error("DO error, msg: %s, code: %#08x, timeout? %d", doErrorCode.message().c_str(), doErrorCode.value(),
+        Log_Error(
+            "DO error, msg: %s, code: %#08x, timeout? %d",
+            doErrorCode.message().c_str(),
+            doErrorCode.value(),
             (doErrorCode == std::errc::timed_out));
 
         resultCode = ADUC_Result_Failure;

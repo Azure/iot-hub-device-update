@@ -11,6 +11,7 @@
 #include <dirent.h>
 
 #if defined(_WIN32)
+// TODO(JeffMill): [PAL] _isatty(), isatty()
 #    include <corecrt_io.h>
 #    include <process.h> // getpid()
 #elif defined __linux__
