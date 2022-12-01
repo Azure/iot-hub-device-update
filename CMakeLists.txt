@@ -529,7 +529,10 @@ set (
     CACHE STRING "Path to the diagnostics configuration file.")
 
 # Generate the error code definition file
-find_package (PythonInterp REQUIRED)
+find_package (
+    Python3
+    COMPONENTS Interpreter
+    REQUIRED)
 
 set (
     ERROR_CODE_GENERATOR_ARGS
@@ -539,7 +542,7 @@ set (
     "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}")
 
 execute_process (
-    COMMAND ${PYTHON_EXECUTABLE} ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}
+    COMMAND ${Python3_EXECUTABLE} ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}
             ${ERROR_CODE_GENERATOR_ARGS}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     RESULT_VARIABLE GENERATE_ERROR_CODE_DEFS_RESULT)
