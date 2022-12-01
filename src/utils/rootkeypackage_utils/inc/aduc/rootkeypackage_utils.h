@@ -24,5 +24,6 @@ void ADUC_RootKeyPackageUtils_RootKeys_Destroy(ADUC_RootKeyPackage* rootKeyPacka
 void ADUC_RootKeyPackageUtils_Signatures_Destroy(ADUC_RootKeyPackage* rootKeyPackage);
 void ADUC_RootKeyPackageUtils_Destroy(ADUC_RootKeyPackage* rootKeyPackage);
 
+EXTERN_C_END
 
 #endif // ROOTKEYPACKAGE_UTILS_H

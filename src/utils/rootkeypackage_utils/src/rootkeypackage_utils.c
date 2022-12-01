@@ -90,7 +90,7 @@ done:
  */
 ADUC_Result ADUC_RootKeyPackageUtil_DownloadPackage(char** outPathToRootKeyPackage)
 {
-    ADUC_Result result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     return result;
 }
 
