@@ -9,7 +9,7 @@
 #define ADUC_AGENT_WORKFLOW_H
 
 #include "aduc/types/workflow.h"
-#include <stdbool.h> // for _Bool
+#include <stdbool.h> // for bool
 
 EXTERN_C_BEGIN
 

@@ -44,7 +44,7 @@ const char* ADUC_JSON_GetStringFieldPtr(const JSON_Value* jsonValue, const char*
  * @param jsonFieldName The name of the JSON field to get.
  * @return the boolean value of the jsonFieldName, returns false on fail and logs error
  */
-_Bool ADUC_JSON_GetBooleanField(const JSON_Value* jsonValue, const char* jsonFieldName)
+bool ADUC_JSON_GetBooleanField(const JSON_Value* jsonValue, const char* jsonFieldName)
 {
     JSON_Object* object = json_value_get_object(jsonValue);
 
@@ -68,11 +68,11 @@ _Bool ADUC_JSON_GetBooleanField(const JSON_Value* jsonValue, const char* jsonFie
  * @param jsonValue The JSON Value.
  * @param jsonFieldName The name of the JSON field to get.
  * @param value The buffer to fill with the value from the JSON field. Caller must call free().
- * @return _Bool true if call succeeded. false otherwise.
+ * @return bool true if call succeeded. false otherwise.
  */
-_Bool ADUC_JSON_GetStringField(const JSON_Value* jsonValue, const char* jsonFieldName, char** value)
+bool ADUC_JSON_GetStringField(const JSON_Value* jsonValue, const char* jsonFieldName, char** value)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
 
     *value = NULL;
 
@@ -116,7 +116,7 @@ done:
  * @param value The buffer to fill with the value from the JSON field. Caller must call free()
  * @returns true on success; false on failure
  */
-_Bool ADUC_JSON_GetStringFieldFromObj(const JSON_Object* jsonObj, const char* jsonFieldName, char** value)
+bool ADUC_JSON_GetStringFieldFromObj(const JSON_Object* jsonObj, const char* jsonFieldName, char** value)
 {
     if (jsonObj == NULL || jsonFieldName == NULL)
     {
@@ -141,14 +141,14 @@ _Bool ADUC_JSON_GetStringFieldFromObj(const JSON_Object* jsonObj, const char* js
  * @param value the parameter to store @p jsonFieldName's value in
  * @returns true on success; false on failure
  */
-_Bool ADUC_JSON_GetUnsignedIntegerField(const JSON_Value* jsonValue, const char* jsonFieldName, unsigned int* value)
+bool ADUC_JSON_GetUnsignedIntegerField(const JSON_Value* jsonValue, const char* jsonFieldName, unsigned int* value)
 {
     if (jsonValue == NULL || jsonFieldName == NULL)
     {
         return false;
     }
 
-    _Bool succeeded = false;
+    bool succeeded = false;
     double val = 0;
     unsigned int castVal = 0;
 

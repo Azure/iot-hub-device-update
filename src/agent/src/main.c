@@ -126,7 +126,7 @@ static int g_shutdownSignal = 0;
 /**
  * @brief Function signature for PnP Handler create method.
  */
-typedef _Bool (*PnPComponentCreateFunc)(void** componentContext, int argc, char** argv);
+typedef bool (*PnPComponentCreateFunc)(void** componentContext, int argc, char** argv);
 
 /**
  * @brief Called once after connected to IoTHub (device client handler is valid).
@@ -326,7 +326,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
         case 'l':
         {
             unsigned int logLevel = 0;
-            _Bool ret = atoui(optarg, &logLevel);
+            bool ret = atoui(optarg, &logLevel);
             if (!ret || logLevel < ADUC_LOG_DEBUG || logLevel > ADUC_LOG_ERROR)
             {
                 puts("Invalid log level after '--log-level' or '-l' option. Expected value: 0-3.");
@@ -435,9 +435,9 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
  * @param connectionString connectionString to extract the device-id and module-id from
  * @returns true on success; false on failure
  */
-_Bool ADUC_SetDiagnosticsDeviceNameFromConnectionString(const char* connectionString)
+bool ADUC_SetDiagnosticsDeviceNameFromConnectionString(const char* connectionString)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
 
     char* deviceId = NULL;
 
@@ -510,12 +510,12 @@ static void ADUC_PnP_Components_HandleRefresh(ADUC_ClientHandle clientHandle)
  * @param clientHandle the ClientHandle for the IotHub connection
  * @param argc Command-line arguments specific to upper-level handlers.
  * @param argv Size of argc.
- * @return _Bool True on success.
+ * @return bool True on success.
  */
-static _Bool ADUC_PnP_Components_Create(ADUC_ClientHandle clientHandle, int argc, char** argv)
+static bool ADUC_PnP_Components_Create(ADUC_ClientHandle clientHandle, int argc, char** argv)
 {
     Log_Info("Initializing PnP components.");
-    _Bool succeeded = false;
+    bool succeeded = false;
     const unsigned componentCount = ARRAY_SIZE(componentList);
 
     for (unsigned index = 0; index < componentCount; ++index)
@@ -768,7 +768,7 @@ static IOTHUB_CLIENT_TRANSPORT_PROVIDER GetIotHubProtocolFromConfig()
  * @param launchArgs Launch command-line arguments.
  * @return true on success, false on failure
  */
-static _Bool ADUC_DeviceClient_Create(
+static bool ADUC_DeviceClient_Create(
     ADUC_ClientHandle clientHandle, ADUC_ConnectionInfo* connInfo, const ADUC_LaunchArguments* launchArgs)
 {
     IOTHUB_CLIENT_RESULT iothubResult;
@@ -959,9 +959,9 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
  *
  * @return true if connection info can be obtained
  */
-_Bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString)
+bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
     if (info == NULL)
     {
         goto done;
@@ -1021,9 +1021,9 @@ done:
  *
  * @return true if connection info can be obtained
  */
-_Bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
+bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
     if (info == NULL)
     {
         goto done;
@@ -1057,9 +1057,9 @@ done:
  *
  * @param command The string contains command (and options) from other component or process.
  * @param commandContext A data context associated with the command.
- * @return _Bool
+ * @return bool
  */
-static _Bool RetryUpdateCommandHandler(const char* command, void* commandContext)
+static bool RetryUpdateCommandHandler(const char* command, void* commandContext)
 {
     UNREFERENCED_PARAMETER(command);
     UNREFERENCED_PARAMETER(commandContext);
@@ -1080,9 +1080,9 @@ ADUC_Command redoUpdateCommand = { "retry-update", RetryUpdateCommandHandler };
  * @param info the connection information that will be configured
  * @return true on success; false on failure
  */
-_Bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
+bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
 {
-    _Bool success = false;
+    bool success = false;
     ADUC_ConfigInfo config = {};
     if (info == NULL)
     {
@@ -1178,11 +1178,11 @@ done:
  * @details Provisions the connection string with the CLI or either
  * the Edge Identity Service or the configuration file
  * @param launchArgs CLI arguments passed to the client
- * @returns _Bool true on success.
+ * @returns bool true on success.
  */
-_Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
+bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
 
     ADUC_ConnectionInfo info = {};
 
@@ -1324,11 +1324,11 @@ void OnRestartSignal(int sig)
  * This to ensure that the agent process is run with the intended privileges, and the resource that
  * created by the agent has the correct ownership.
  *
- * @return _Bool
+ * @return bool
  */
-_Bool RunAsDesiredUser()
+bool RunAsDesiredUser()
 {
-    _Bool success = false;
+    bool success = false;
     ADUC_ConfigInfo config = {};
     if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
     {
@@ -1483,7 +1483,7 @@ int main(int argc, char** argv)
         SUPPORTED_UPDATE_MANIFEST_VERSION_MIN,
         SUPPORTED_UPDATE_MANIFEST_VERSION_MAX);
 
-    _Bool healthy = HealthCheck(&launchArgs);
+    bool healthy = HealthCheck(&launchArgs);
     if (launchArgs.healthCheckOnly || !healthy)
     {
         if (healthy)

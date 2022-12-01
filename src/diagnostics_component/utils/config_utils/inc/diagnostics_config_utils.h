@@ -37,7 +37,7 @@ typedef struct tagDiagnosticWorkflowData
  * @param fileJsonValue a JSON_Value representation of a diagnostics-config.json file
  * @returns true on successful configuration; false on failures
  */
-_Bool DiagnosticsConfigUtils_InitFromJSON(DiagnosticsWorkflowData* workflowData, JSON_Value* fileJsonValue);
+bool DiagnosticsConfigUtils_InitFromJSON(DiagnosticsWorkflowData* workflowData, JSON_Value* fileJsonValue);
 
 /**
  * @brief Initializes @p workflowData with the contents of @p filePath
@@ -45,7 +45,7 @@ _Bool DiagnosticsConfigUtils_InitFromJSON(DiagnosticsWorkflowData* workflowData,
  * @param filePath path to the diagnostics configuration file
  * @returns true on successful configuration, false on failure
  */
-_Bool DiagnosticsConfigUtils_InitFromFile(DiagnosticsWorkflowData* workflowData, const char* filePath);
+bool DiagnosticsConfigUtils_InitFromFile(DiagnosticsWorkflowData* workflowData, const char* filePath);
 
 /**
  * @brief UnInitializes @p workflowData's data members
