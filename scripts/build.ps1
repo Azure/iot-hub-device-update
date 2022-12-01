@@ -361,7 +361,7 @@ $static_analysis_tools | ForEach-Object {
 }
 
 if ($build_clean) {
-    Bullet 'Cleaning repo'
+    Bullet 'Cleaning repo ...'
 
     if (Test-Path $output_directory) {
         Remove-Item -Recurse -LiteralPath $output_directory
@@ -378,6 +378,8 @@ mkdir -Path $output_directory -Force | Out-Null
 # TODO(JeffMill): Add graphviz
 # --graphviz="$output_directory\graphviz.dot"
 
+Bullet 'Generating makefiles ...'
+
 & $cmake_bin -S "$root_dir" -B $output_directory @CMAKE_OPTIONS
 # TODO(JeffMill): Scenario 2: Use Ninja
 # & $cmake_bin -S "$root_dir" -B $output_directory  -G Ninja @CMAKE_OPTIONS
@@ -387,10 +389,12 @@ if ($ret_val -ne 0) {
     error "CMake failed to generate build with exit code: $ret_val"
 }
 else {
+    Bullet 'Building product ...'
+
     # TODO(JeffMill): Scenario 2: Use Ninja
     # TODO(JeffMill): Do the actual building.
     # ninja.exe
-    & $cmake_bin --build $output_directory
+    & $cmake_bin --build $output_directory --config $build_type
     $ret_val = $LASTEXITCODE
 }
 

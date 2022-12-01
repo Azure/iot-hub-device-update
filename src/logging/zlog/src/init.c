@@ -7,7 +7,12 @@
  */
 #include "aduc/logging.h"
 #include <stdio.h> // printf
-#include <sys/stat.h> // mkdir
+
+#if defined(_WIN32)
+#    include <direct.h>
+#elif defined __linux__
+#    include <sys/stat.h> //mkdir
+#endif
 
 /**
  * @brief Convert ADUC_LOG_SEVERITY to ZLOG_SEVERITY
@@ -67,7 +72,11 @@ void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
 
     // zlog_init doesn't create the log path, so attempt to create it here.
     // If it can't be created, zlogging will send output to console.
+#if defined(_WIN32)
+    (void)_mkdir(ADUC_LOG_FOLDER);
+#elif defined __linux__
     (void)mkdir(ADUC_LOG_FOLDER, S_IRWXU);
+#endif
 
     if (zlog_init(
             ADUC_LOG_FOLDER,

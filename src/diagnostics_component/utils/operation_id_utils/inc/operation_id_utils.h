@@ -8,6 +8,7 @@
 #include <aduc/c_utils.h>
 #include <azure_c_shared_utility/strings.h>
 #include <parson.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 #ifndef OPERATION_ID_UTILS_H
@@ -15,9 +16,9 @@
 
 EXTERN_C_BEGIN
 
-_Bool OperationIdUtils_OperationIsComplete(const char* serviceMsg);
+bool OperationIdUtils_OperationIsComplete(const char* serviceMsg);
 
-_Bool OperationIdUtils_StoreCompletedOperationId(const char* operationId);
+bool OperationIdUtils_StoreCompletedOperationId(const char* operationId);
 
 EXTERN_C_END
 

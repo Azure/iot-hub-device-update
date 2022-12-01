@@ -10,7 +10,34 @@
 #include "aduc/hash_utils.h"
 
 #include <algorithm> // std::for_each
-#include <dlfcn.h> // dlopen
+
+#if defined(_WIN32)
+// TODO(JeffMill): PAL
+#    define RTLD_LAZY 0
+
+void* dlopen(const char* filename, int flag)
+{
+    return NULL;
+}
+
+char* dlerror(void)
+{
+    return "NYI";
+}
+
+void* dlsym(void* handle, const char* symbol)
+{
+    return NULL;
+}
+
+int dlclose(void* handle)
+{
+    return 0;
+}
+#else
+#    include <dlfcn.h> // dlopen
+#endif
+
 #include <stdexcept> // std::runtime_error
 
 namespace aduc

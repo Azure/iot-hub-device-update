@@ -99,9 +99,9 @@ static void ADUC_Property_UnInit(ADUC_Property* property)
  * @param value The property value
  * @returns True if successfully allocated, False if failure
  */
-static _Bool ADUC_Property_Init(ADUC_Property* outProperty, const char* name, const char* value)
+static bool ADUC_Property_Init(ADUC_Property* outProperty, const char* name, const char* value)
 {
-    _Bool success = false;
+    bool success = false;
 
     if (outProperty == NULL)
     {
@@ -237,7 +237,7 @@ static void ADUC_RelatedFile_UnInit(ADUC_RelatedFile* relatedFile)
     relatedFile->Properties = NULL;
 }
 
-static _Bool ADUC_RelatedFile_Init(
+static bool ADUC_RelatedFile_Init(
     ADUC_RelatedFile* relatedFile,
     const char* fileId,
     const char* downloadUri,
@@ -247,7 +247,7 @@ static _Bool ADUC_RelatedFile_Init(
     size_t propertiesCount,
     ADUC_Property* properties)
 {
-    _Bool success = false;
+    bool success = false;
     ADUC_Property* tempPropertiesArray = NULL;
 
     if (relatedFile == NULL || fileId == NULL || downloadUri == NULL || fileName == NULL || hashes == NULL
@@ -405,7 +405,7 @@ void ADUC_RelatedFile_FreeArray(size_t relatedFileCount, ADUC_RelatedFile* relat
 ADUC_RelatedFile* ADUC_RelatedFileArray_AllocAndInit(
     ADUC_WorkflowHandle handle, const JSON_Object* relatedFileObj, size_t* relatedFileCount)
 {
-    _Bool success = false;
+    bool success = false;
 
     ADUC_RelatedFile* tempRelatedFileArray = NULL;
     const JSON_Object* fileUrls = NULL;
@@ -540,9 +540,9 @@ done:
  * @param entity the file entity.
  * @returns true for success.
  */
-static _Bool ParseFileEntityRelatedFiles(ADUC_WorkflowHandle handle, const JSON_Object* file, ADUC_FileEntity* entity)
+static bool ParseFileEntityRelatedFiles(ADUC_WorkflowHandle handle, const JSON_Object* file, ADUC_FileEntity* entity)
 {
-    _Bool success = false;
+    bool success = false;
 
     const JSON_Object* relatedFilesObj = json_object_get_object(file, ADUCITF_FIELDNAME_RELATEDFILES);
     if (relatedFilesObj == NULL)
@@ -585,10 +585,10 @@ done:
  * @param entity the file entity.
  * @returns true for success.
  */
-static _Bool
+static bool
 ParseFileEntityDownloadHandler(ADUC_WorkflowHandle handle, const JSON_Object* file, ADUC_FileEntity* entity)
 {
-    _Bool success = false;
+    bool success = false;
     const char* downloadHandlerId = NULL;
     const JSON_Object* downloadHandlerObj = NULL;
 
@@ -708,9 +708,9 @@ const char* _workflow_get_properties_retryTimestamp(ADUC_WorkflowHandle handle)
  * both the updateManifest and the updateManifestSignature
  * @returns true on success and false on failure
  */
-_Bool _Json_ValidateManifestHash(const JSON_Value* updateActionJson)
+bool _Json_ValidateManifestHash(const JSON_Value* updateActionJson)
 {
-    _Bool success = false;
+    bool success = false;
 
     JSON_Value* signatureValue = NULL;
     char* jwtPayload = NULL;
@@ -1740,7 +1740,7 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
         return false;
     }
 
-    _Bool succeeded = false;
+    bool succeeded = false;
     const JSON_Object* files = NULL;
     const JSON_Object* file = NULL;
     const JSON_Object* fileUrls = NULL;
@@ -1855,7 +1855,7 @@ bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fi
         return false;
     }
 
-    _Bool succeeded = false;
+    bool succeeded = false;
     const JSON_Object* files = NULL;
     const JSON_Object* file = NULL;
     const JSON_Object* fileUrls = NULL;
@@ -3509,7 +3509,7 @@ bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t
         return false;
     }
 
-    _Bool succeeded = false;
+    bool succeeded = false;
     JSON_Object* step = json_array_get_object(workflow_get_instructions_steps_array(handle), stepIndex);
     const char* fileId = json_object_get_string(step, STEP_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID);
     const JSON_Object* files = _workflow_get_update_manifest_files_map(handle);
@@ -3617,13 +3617,13 @@ char* workflow_get_serialized_update_manifest(ADUC_WorkflowHandle handle, bool p
  * @param workflowHandle The workflow handle.
  * @param entity The file entity.
  * @param outFilePath The resultant work folder file path to the file entity.
- * @return _Bool true if success
+ * @return bool true if success
  * @remark Caller will own the STRING_HANDLE outFilePath and must call STRING_delete on it.
  */
-_Bool workflow_get_entity_workfolder_filepath(
+bool workflow_get_entity_workfolder_filepath(
     ADUC_WorkflowHandle workflowHandle, const ADUC_FileEntity* entity, STRING_HANDLE* outFilePath)
 {
-    _Bool result = false;
+    bool result = false;
     char dir[1024] = { 0 };
     char* workFolder = workflow_get_workfolder(workflowHandle);
     if (workFolder == NULL)
@@ -3653,7 +3653,7 @@ done:
     return result;
 }
 
-_Bool workflow_get_force_update(ADUC_WorkflowHandle workflowHandle)
+bool workflow_get_force_update(ADUC_WorkflowHandle workflowHandle)
 {
     ADUC_Workflow* wf = workflow_from_handle(workflowHandle);
     if (wf == NULL)

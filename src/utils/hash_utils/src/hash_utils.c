@@ -9,7 +9,12 @@
 
 #include <stdio.h> // for FILE
 #include <stdlib.h> // for calloc
-#include <strings.h> // for strcasecmp
+#if defined(_WIN32)
+#    include <string.h> // _strcmpi
+#    define strcasecmp(string1, string2) _strcmpi(string1, string2)
+#else
+#    include <strings.h> // for strcasecmp
+#endif
 
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/buffer_.h>
@@ -87,12 +92,12 @@ done:
     return success;
 }
 
-static inline _Bool IsValidFileHashCheckAlgorithm(SHAversion sha)
+static inline bool IsValidFileHashCheckAlgorithm(SHAversion sha)
 {
     return sha >= SHA256;
 }
 
-static _Bool ADUC_HashUtils_GetIndexStrongestValidHash(
+static bool ADUC_HashUtils_GetIndexStrongestValidHash(
     const ADUC_Hash* hashes, size_t hashCount, size_t* outIndexStrongestAlgorithm, SHAversion* outBestShaVersion)
 {
     if (outIndexStrongestAlgorithm == NULL || outBestShaVersion == NULL)
@@ -144,9 +149,9 @@ static _Bool ADUC_HashUtils_GetIndexStrongestValidHash(
  * @param filePath The path to the file with contents to hash.
  * @param hashes The array of ADUC_Hash objects.
  * @param hashCount The length of the array.
- * @return _Bool true if the hash with the strongest algorithm matches the hash of the file at the given path.
+ * @return bool true if the hash with the strongest algorithm matches the hash of the file at the given path.
  */
-_Bool ADUC_HashUtils_VerifyWithStrongestHash(const char* filePath, const ADUC_Hash* hashes, size_t hashCount)
+bool ADUC_HashUtils_VerifyWithStrongestHash(const char* filePath, const ADUC_Hash* hashes, size_t hashCount)
 {
     size_t indexStrongestAlgorithm = 0;
     SHAversion bestShaVersion = SHA256;
@@ -175,9 +180,9 @@ _Bool ADUC_HashUtils_VerifyWithStrongestHash(const char* filePath, const ADUC_Ha
  * @param hash [out] The pointer to output buffer. Caller must call free() when done with the returned buffer.
  * @return bool True if the hash data is successfully generated.
  */
-_Bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** hash)
+bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** hash)
 {
-    _Bool success = false;
+    bool success = false;
     FILE* file = NULL;
 
     if (hash == NULL)
@@ -222,7 +227,7 @@ _Bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** 
             break;
         }
 
-        if (USHAInput(&context, buffer, readSize) != 0)
+        if (USHAInput(&context, buffer, (unsigned int)readSize) != 0)
         {
             Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
             goto done;
@@ -288,10 +293,10 @@ char* ADUC_HashUtils_GetHashValue(const ADUC_Hash* hashArray, size_t arraySize, 
  * @param suppressErrorLog A boolean indicates whether to log error message inside this function.
  * @return bool True if the hash is valid and matches @p hashBase64
  */
-_Bool ADUC_HashUtils_IsValidFileHash(
+bool ADUC_HashUtils_IsValidFileHash(
     const char* path, const char* hashBase64, SHAversion algorithm, bool suppressErrorLog)
 {
-    _Bool success = false;
+    bool success = false;
 
     FILE* file = fopen(path, "rb");
     if (file == NULL)
@@ -334,7 +339,7 @@ _Bool ADUC_HashUtils_IsValidFileHash(
             break;
         }
 
-        if (USHAInput(&context, buffer, readSize) != 0)
+        if (USHAInput(&context, buffer, (unsigned int)readSize) != 0)
         {
             if (!suppressErrorLog)
             {
@@ -367,7 +372,7 @@ done:
  * @param hashBase64 The expected hash of the buffer @p buffer
  * @return bool True if the hash is valid and matches @p hashBase64
  */
-_Bool ADUC_HashUtils_IsValidBufferHash(
+bool ADUC_HashUtils_IsValidBufferHash(
     const uint8_t* buffer, size_t bufferLen, const char* hashBase64, SHAversion algorithm)
 {
     USHAContext context;
@@ -378,7 +383,7 @@ _Bool ADUC_HashUtils_IsValidBufferHash(
         return false;
     }
 
-    if (USHAInput(&context, buffer, bufferLen) != 0)
+    if (USHAInput(&context, buffer, (unsigned int)bufferLen) != 0)
     {
         Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
         return false;
@@ -393,7 +398,7 @@ _Bool ADUC_HashUtils_IsValidBufferHash(
  * @param algorithm the destination to store the SHAversion
  * @returns True if a hash type was found, false if it was not
  */
-_Bool ADUC_HashUtils_GetShaVersionForTypeString(const char* hashTypeStr, SHAversion* algorithm)
+bool ADUC_HashUtils_GetShaVersionForTypeString(const char* hashTypeStr, SHAversion* algorithm)
 {
     bool success = true;
 
@@ -445,9 +450,9 @@ void ADUC_Hash_UnInit(ADUC_Hash* hash)
  * @param hashType The type of the hash
  * @returns True if successfully allocated, False if failure
  */
-_Bool ADUC_Hash_Init(ADUC_Hash* hash, const char* hashValue, const char* hashType)
+bool ADUC_Hash_Init(ADUC_Hash* hash, const char* hashValue, const char* hashType)
 {
-    _Bool success = false;
+    bool success = false;
 
     if (hash == NULL)
     {

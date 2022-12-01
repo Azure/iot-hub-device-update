@@ -23,6 +23,13 @@ target_link_libraries (
 # Always support test root keys.
 add_definitions (-DBUILD_WITH_TEST_KEYS=1)
 
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    # Windows uses OpenSSL, but there are deprecated APIs there. Allow them.
+    # TODO(JeffMill): Use target_compile_definitions instead?
+    # https://www.openssl.org/docs/man3.0/man7/OPENSSL_NO_DEPRECATED.html
+    add_compile_definitions (OPENSSL_API_COMPAT=10002)
+endif ()
+
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
 endif ()

@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-//_Bool PermissionUtils_VerifyFilemodeBits(const char* path, mode_t expectedPermissions, _Bool isExactMatch);
+//bool PermissionUtils_VerifyFilemodeBits(const char* path, mode_t expectedPermissions, bool isExactMatch);
 TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
 {
     const mode_t file_permissions = S_ISUID | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IWOTH; // 04752
@@ -30,8 +30,7 @@ TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
     CHECK(PermissionUtils_VerifyFilemodeBitmask(tmpfile_path, file_permissions));
     CHECK(PermissionUtils_VerifyFilemodeBitmask(tmpfile_path, S_IXUSR | S_IRGRP | S_IWOTH /* 00142 */));
     CHECK_FALSE(PermissionUtils_VerifyFilemodeBitmask(
-        tmpfile_path,
-        S_ISUID | S_ISVTX | S_IRWXU | S_IRGRP | S_IXGRP | S_IWOTH /* 05752 */));
+        tmpfile_path, S_ISUID | S_ISVTX | S_IRWXU | S_IRGRP | S_IXGRP | S_IWOTH /* 05752 */));
 
     // cleanup
     unlink(tmpfile_path);

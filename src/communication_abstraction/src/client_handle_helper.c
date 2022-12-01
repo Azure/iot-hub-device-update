@@ -52,7 +52,7 @@ IOTHUB_MODULE_CLIENT_LL_HANDLE GetModuleClientHandle(ADUC_ClientHandle handle)
  * @param protocol the protocol to use to create the client connection
  * @returns true on success false on failure
  */
-_Bool ClientHandle_CreateFromConnectionString(
+bool ClientHandle_CreateFromConnectionString(
     ADUC_ClientHandle* iotHubClientHandle,
     ADUC_ConnType type,
     const char* connectionString,

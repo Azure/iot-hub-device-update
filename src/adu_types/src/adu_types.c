@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
+// #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
 
 /**
  * @brief Returns the string associated with @p connType
@@ -64,7 +64,7 @@ void ADUC_ConnectionInfo_DeAlloc(ADUC_ConnectionInfo* info)
  * @param updateId updateId to check
  * @returns True if it is valid, false if not
  */
-_Bool ADUC_IsValidUpdateId(const ADUC_UpdateId* updateId)
+bool ADUC_IsValidUpdateId(const ADUC_UpdateId* updateId)
 {
     return !(
         updateId == NULL || IsNullOrEmpty(updateId->Provider) || IsNullOrEmpty(updateId->Name)

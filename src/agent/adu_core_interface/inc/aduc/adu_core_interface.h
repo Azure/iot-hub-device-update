@@ -35,9 +35,9 @@ extern ADUC_ClientHandle g_iotHubClientHandleForADUComponent;
  * @param context Optional context object.
  * @param argc Count of arguments in @p argv
  * @param argv Command line parameters.
- * @return _Bool True on success.
+ * @return bool True on success.
  */
-_Bool AzureDeviceUpdateCoreInterface_Create(void** context, int argc, char** argv);
+bool AzureDeviceUpdateCoreInterface_Create(void** context, int argc, char** argv);
 
 /**
  * @brief Called after the device connected to IoT Hub (device client handler is valid).
@@ -86,7 +86,7 @@ void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
  * @param installedUpdateId An installed update it JSON string.
  * @returns true on reporting success.
  */
-_Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
+bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     ADUC_WorkflowDataToken workflowDataToken,
     ADUCITF_State updateState,
     const ADUC_Result* result,

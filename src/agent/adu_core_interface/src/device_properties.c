@@ -33,7 +33,7 @@
  * @param agent the ADUC_AgentInfo that contains the agent info
  * @returns true on successful addition and false on failure
  */
-_Bool DeviceProperties_AddManufacturerAndModel(JSON_Object* devicePropsObj, const ADUC_AgentInfo* agent)
+bool DeviceProperties_AddManufacturerAndModel(JSON_Object* devicePropsObj, const ADUC_AgentInfo* agent)
 {
     bool success = false;
     bool configExisted = false;
@@ -107,19 +107,15 @@ done:
  * @param devicePropsObj the JSON_Object the interfaceId will be set to 'null'.
  * @returns true on successful addition and false on failure
  */
-_Bool DeviceProperties_ClearInterfaceId(JSON_Object* devicePropsObj)
+bool DeviceProperties_ClearInterfaceId(JSON_Object* devicePropsObj)
 {
     bool success = false;
 
-    JSON_Status jsonStatus = json_object_set_null(
-        devicePropsObj,
-        ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
+    JSON_Status jsonStatus = json_object_set_null(devicePropsObj, ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
 
     if (jsonStatus != JSONSuccess)
     {
-        Log_Error(
-            "Could not set JSON field '%s' to null",
-            ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
+        Log_Error("Could not set JSON field '%s' to null", ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
         goto done;
     }
 
@@ -133,7 +129,7 @@ done:
  * @param devicePropsObj the JSON_Object the contractModelId will be added to
  * @returns true on successful addition and false on failure
  */
-_Bool DeviceProperties_AddContractModelId(JSON_Object* devicePropsObj)
+bool DeviceProperties_AddContractModelId(JSON_Object* devicePropsObj)
 {
     bool success = false;
 
@@ -163,9 +159,9 @@ done:
  * @param devicePropsObj the JSON_Object the versions will be added to
  * @returns true on successful addition and false on failure
  */
-_Bool DeviceProperties_AddVersions(JSON_Object* devicePropsObj)
+bool DeviceProperties_AddVersions(JSON_Object* devicePropsObj)
 {
-    _Bool success = false;
+    bool success = false;
     char* do_version = NULL;
 
     JSON_Status jsonStatus =
@@ -212,7 +208,7 @@ done:
  * @param agent the ADUC_AgentInfo that contains the agent info
  * @returns true on successful addition and false on failure
  */
-_Bool DeviceProperties_AddAdditionalProperties(JSON_Object* devicePropsObj, const ADUC_AgentInfo* agent)
+bool DeviceProperties_AddAdditionalProperties(JSON_Object* devicePropsObj, const ADUC_AgentInfo* agent)
 {
     bool success = false;
 

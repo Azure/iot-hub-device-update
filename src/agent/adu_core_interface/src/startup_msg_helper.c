@@ -25,14 +25,14 @@
  * @param agent the ADUC_AgentInfo that contains the agent info
  * @returns true on successful addition, false on failure
  */
-_Bool StartupMsg_AddDeviceProperties(JSON_Object* startupObj, const ADUC_AgentInfo* agent)
+bool StartupMsg_AddDeviceProperties(JSON_Object* startupObj, const ADUC_AgentInfo* agent)
 {
     if (startupObj == NULL)
     {
         return false;
     }
 
-    _Bool success = false;
+    bool success = false;
 
     JSON_Value* devicePropsValue = json_value_init_object();
 
@@ -95,19 +95,20 @@ done:
  * @param config the ADUC_ConfigInfo that contains the config info
  * @returns true on successful addition, false on failure
  */
-_Bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj, ADUC_ConfigInfo* config)
+bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj, ADUC_ConfigInfo* config)
 {
     if (startupObj == NULL)
     {
         return false;
     }
 
-    _Bool success = false;
+    bool success = false;
 
     JSON_Status jsonStatus = json_object_set_string(
         startupObj,
         ADUCITF_FIELDNAME_COMPAT_PROPERTY_NAMES,
-        IsNullOrEmpty(config->compatPropertyNames) ? DEFAULT_COMPAT_PROPERTY_NAMES_VALUE : config->compatPropertyNames);
+        IsNullOrEmpty(config->compatPropertyNames) ? DEFAULT_COMPAT_PROPERTY_NAMES_VALUE
+                                                   : config->compatPropertyNames);
 
     if (jsonStatus != JSONSuccess)
     {
