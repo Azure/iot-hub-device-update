@@ -16,7 +16,9 @@
 #include <openssl/rsa.h>
 #include <stdio.h>
 #include <string.h>
+
 #if defined(_WIN32)
+// TODO(JeffMill): [PAL] strcasecmp
 #    include <string.h> // _strcmpi
 #    define strcasecmp(string1, string2) _strcmpi(string1, string2)
 #else

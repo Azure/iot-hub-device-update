@@ -7,11 +7,66 @@
  */
 #include "aduc/permission_utils.h"
 #include "aduc/bit_ops.h" // for BitOps_AreAllBitsSet
-#include <grp.h> // for getgrnam
-#include <pwd.h> // for getpwnam
 #include <string.h> // for stat, etc.
 #include <sys/stat.h> // for stat, etc.
-#include <unistd.h> // for access
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] seteuid, setegid
+int seteuid(uid_t uid)
+{
+    return 0;
+}
+
+int setegid(gid_t gid)
+{
+    return 0;
+}
+#else
+#    include <unistd.h> // for seteuid, setegid
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getgrname
+
+// This code only references gr_gid and gr_mem
+struct group
+{
+    gid_t gr_gid; /* group id */
+    char** gr_mem; /* group members */
+};
+
+struct group* getgrnam(const char* name)
+{
+    static struct group grp;
+    grp.gr_gid = 0;
+    grp.gr_mem = NULL;
+    return &grp;
+}
+#else
+#    include <grp.h> // for getgrnam
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getpwnam
+
+// This code only references pw_uid
+struct passwd
+{
+    uid_t pw_uid; /* user uid */
+};
+
+struct passwd* getpwnam(const char* name)
+{
+    static struct passwd pw;
+
+    // TODO(JeffMill): No equivalent of getuid() on windows.
+    // See suggestions at https://stackoverflow.com/questions/1594746/win32-equivalent-of-getuid
+    pw.pw_uid = 0; // getuid();
+    return &pw;
+}
+#else
+#    include <pwd.h> // for getpwnam
+#endif
 
 //
 // Internal functions

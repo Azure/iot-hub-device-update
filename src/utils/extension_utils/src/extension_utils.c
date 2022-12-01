@@ -14,9 +14,54 @@
 #include "aduc/system_utils.h"
 
 #include <ctype.h> // isalnum
-#include <grp.h> // for getgrnam
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] S_*GRP
+#    include <dirent.h> // S_IXGRP, S_IWGRP, S_IRGRP
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getgrname
+
+// This code only references gr_gid
+struct group
+{
+    gid_t gr_gid;
+};
+
+struct group* getgrnam(const char* name)
+{
+    static struct group grp;
+    grp.gr_gid = 0;
+    return &grp;
+}
+#else
+#    include <grp.h> // for getgrnam
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getpwnam
+
+// This code only references pw_uid
+struct passwd
+{
+    uid_t pw_uid; /* user uid */
+};
+
+struct passwd* getpwnam(const char* name)
+{
+    static struct passwd pw;
+
+    // TODO(JeffMill): No equivalent of getuid() on windows.
+    // See suggestions at https://stackoverflow.com/questions/1594746/win32-equivalent-of-getuid
+    pw.pw_uid = 0; // getuid();
+    return &pw;
+}
+#else
+#    include <pwd.h> // for getpwnam
+#endif
+
 #include <parson.h> // for JSON_*, json_*
-#include <pwd.h> // for getpwnam
 #include <stdio.h> // for FILE
 #include <stdlib.h> // for calloc
 #include <sys/stat.h> // for stat, struct stat

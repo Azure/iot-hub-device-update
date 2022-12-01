@@ -34,9 +34,41 @@
 #include <cstring>
 #include <unordered_map>
 
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] dlopen, dlerror, dlsym, dlclose
+#    define RTLD_LAZY 0
+
+void* dlopen(const char* filename, int flag)
+{
+    return NULL;
+}
+
+char* dlerror(void)
+{
+    return "NYI";
+}
+
+void* dlsym(void* handle, const char* symbol)
+{
+    return NULL;
+}
+
+int dlclose(void* handle)
+{
+    return 0;
+}
+#else
 // Note: this requires ${CMAKE_DL_LIBS}
-#include <dlfcn.h>
-#include <unistd.h>
+#    include <dlfcn.h> // dlopen
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] access
+#    include <corecrt_io.h> // _access
+#    define F_OK 0
+#else
+#    include <unistd.h> // for access
+#endif
 
 // type aliases
 using UPDATE_CONTENT_HANDLER_CREATE_PROC = ContentHandler* (*)(ADUC_LOG_SEVERITY logLevel);
@@ -46,7 +78,7 @@ using ADUC::StringUtils::cstr_wrapper;
 
 EXTERN_C_BEGIN
 ExtensionManager_Download_Options Default_ExtensionManager_Download_Options = {
-    .retryTimeout = 60 * 60 * 24 /* default : 24 hour */,
+    /* .retryTimeout = */ 60 * 60 * 24 /* default : 24 hour */,
 };
 EXTERN_C_END
 
@@ -453,8 +485,8 @@ ADUC_Result ExtensionManager::LoadContentDownloaderLibrary(void** contentDownloa
         if (downloadFunc == nullptr)
         {
             Log_Error("The specified function ('%s') doesn't exist. %s\n", functionName, dlerror());
-            result = { .ResultCode = ADUC_GeneralResult_Failure,
-                       .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_CREATE_FAILURE_NO_SYMBOL };
+            result = { /* .ResultCode = */ ADUC_GeneralResult_Failure,
+                       /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_CREATE_FAILURE_NO_SYMBOL };
             goto done;
         }
     }
@@ -558,8 +590,8 @@ ADUC_Result ExtensionManager::LoadComponentEnumeratorLibrary(void** componentEnu
     {
         // Log info instead of error since some extension is optional and may not be registered.
         Log_Info("The specified function ('%s') doesn't exist. %s\n", requiredFunction, dlerror());
-        result = { .ResultCode = ADUC_GeneralResult_Failure,
-                   .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_NO_SYMBOL };
+        result = { /* .ResultCode = */ ADUC_GeneralResult_Failure,
+                   /* .ExtendedResultCode = */ ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_NO_SYMBOL };
         goto done;
     }
 
@@ -612,8 +644,8 @@ void ExtensionManager::_FreeComponentsDataString(char* componentsJson)
 
         if (freeComponentsDataStringProc == nullptr)
         {
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_FREECOMPONENTSDATASTRING_NOTIMP };
+            result = { /* .ResultCode = */ ADUC_Result_Failure,
+                       /* .ExtendedResultCode = */ ADUC_ERC_COMPONENT_ENUMERATOR_FREECOMPONENTSDATASTRING_NOTIMP };
 
             goto done;
         }
@@ -624,8 +656,8 @@ void ExtensionManager::_FreeComponentsDataString(char* componentsJson)
         }
         catch (...)
         {
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_FREECOMPONENTSDATASTRING };
+            result = { /* .ResultCode = */ ADUC_Result_Failure,
+                       /* .ExtendedResultCode = */ ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_FREECOMPONENTSDATASTRING };
             goto done;
         }
     }
@@ -678,8 +710,8 @@ ADUC_Result ExtensionManager::GetAllComponents(std::string& outputComponentsData
                 dlsym(lib, COMPONENT_ENUMERATOR__GetAllComponents__EXPORT_SYMBOL));
             if (_getAllComponents == nullptr)
             {
-                result = { .ResultCode = ADUC_Result_Failure,
-                           .ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_GETALLCOMPONENTS_NOTIMP };
+                result = { /* .ResultCode = */ ADUC_Result_Failure,
+                           /* .ExtendedResultCode = */ ADUC_ERC_COMPONENT_ENUMERATOR_GETALLCOMPONENTS_NOTIMP };
                 goto done;
             }
         }
@@ -690,8 +722,8 @@ ADUC_Result ExtensionManager::GetAllComponents(std::string& outputComponentsData
         }
         catch (...)
         {
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_GETALLCOMPONENTS };
+            result = { /* .ResultCode = */ ADUC_Result_Failure,
+                       /* .ExtendedResultCode = */ ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_GETALLCOMPONENTS };
             goto done;
         }
 
@@ -742,8 +774,8 @@ ADUC_Result ExtensionManager::SelectComponents(const std::string& selector, std:
         reinterpret_cast<SelectComponentsProc>(dlsym(lib, COMPONENT_ENUMERATOR__SelectComponents__EXPORT_SYMBOL));
     if (_selectComponents == nullptr)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_SELECTCOMPONENTS_NOTIMP };
+        result = { /* .ResultCode = */ ADUC_Result_Failure,
+                   /* .ExtendedResultCode = */ ADUC_ERC_COMPONENT_ENUMERATOR_SELECTCOMPONENTS_NOTIMP };
         goto done;
     }
 
@@ -753,8 +785,8 @@ ADUC_Result ExtensionManager::SelectComponents(const std::string& selector, std:
     }
     catch (...)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_GETALLCOMPONENTS };
+        result = { /* .ResultCode = */ ADUC_Result_Failure,
+                   /* .ExtendedResultCode = */ ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_GETALLCOMPONENTS };
         goto done;
     }
 
@@ -796,8 +828,8 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
     _initialize = reinterpret_cast<InitializeProc>(dlsym(lib, CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL));
     if (_initialize == nullptr)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP };
+        result = { /* .ResultCode = */ ADUC_Result_Failure,
+                   /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP };
         goto done;
     }
 
@@ -807,8 +839,8 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
     }
     catch (...)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZE_EXCEPTION };
+        result = { /* .ResultCode = */ ADUC_Result_Failure,
+                   /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZE_EXCEPTION };
         goto done;
     }
 
@@ -827,14 +859,14 @@ ADUC_Result ExtensionManager::Download(
     char* components = nullptr;
     SHAversion algVersion;
 
-    ADUC_Result result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+    ADUC_Result result = { /* .ResultCode = */ ADUC_Result_Failure, /* .ExtendedResultCode = */ 0 };
     ADUC::StringUtils::STRING_HANDLE_wrapper targetUpdateFilePath{ nullptr };
 
     if (!workflow_get_entity_workfolder_filepath(workflowHandle, entity, targetUpdateFilePath.address_of()))
     {
         Log_Error("Cannot construct child manifest file path.");
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_BAD_CHILD_MANIFEST_FILE_PATH };
+        result = { /* .ResultCode = */ ADUC_Result_Failure,
+                   /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_BAD_CHILD_MANIFEST_FILE_PATH };
         goto done;
     }
 
@@ -860,8 +892,8 @@ ADUC_Result ExtensionManager::Download(
     downloadProc = reinterpret_cast<DownloadProc>(dlsym(lib, CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL));
     if (downloadProc == nullptr)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP };
+        result = { /* .ResultCode = */ ADUC_Result_Failure,
+                   /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP };
         goto done;
     }
 
@@ -880,13 +912,17 @@ ADUC_Result ExtensionManager::Download(
     // Otherwise, delete an existing file, then download.
     Log_Debug("Check whether '%s' has already been download into the work folder.", targetUpdateFilePath.c_str());
 
+#if defined(_WIN32)
+    if (_access(targetUpdateFilePath.c_str(), F_OK) == 0)
+#else
     if (access(targetUpdateFilePath.c_str(), F_OK) == 0)
+#endif
     {
         char* hashValue = ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0 /* index */);
         if (hashValue == nullptr)
         {
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_ENTITY_NO_HASHES };
+            result = { /* .ResultCode = */ ADUC_Result_Failure,
+                       /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_ENTITY_NO_HASHES };
             goto done;
         }
 
@@ -906,7 +942,7 @@ ADUC_Result ExtensionManager::Download(
             }
         }
 
-        result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
+        result = { /* .ResultCode = */ ADUC_Result_Success, /* .ExtendedResultCode = */ 0 };
         goto done;
     }
 
@@ -915,7 +951,7 @@ ADUC_Result ExtensionManager::Download(
         const char* workflowId = workflow_peek_id(workflowHandle);
         cstr_wrapper workFolder{ workflow_get_workfolder(workflowHandle) };
 
-        result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        result = { /* .ResultCode = */ ADUC_Result_Failure, /* .ExtendedResultCode = */ 0 };
 
         // First, attempt to produce the update using download handler if
         // download handler exists in the entity (metadata).
@@ -992,8 +1028,8 @@ ADUC_Result ExtensionManager::Download(
     }
     catch (...)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION };
+        result = { /* .ResultCode = */ ADUC_Result_Failure,
+                   /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION };
         goto done;
     }
 
@@ -1005,8 +1041,8 @@ ADUC_Result ExtensionManager::Download(
                 algVersion,
                 false))
         {
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_HASH };
+            result = { /* .ResultCode = */ ADUC_Result_Failure,
+                       /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_HASH };
 
             workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
 

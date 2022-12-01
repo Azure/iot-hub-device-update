@@ -19,7 +19,14 @@
 #include <sys/stat.h> // stat
 #include <sys/types.h> // ino_t
 #include <time.h> // time_t
-#include <unistd.h> // unlink
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] access
+#    include <corecrt_io.h> // _unlink
+#else
+#    include <unistd.h> // unlink
+#endif
+
 #include <vector>
 
 struct LessThan_UpdateCachePurgeFile
@@ -167,10 +174,15 @@ int ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
             off_t fileSize = cachePurgeFile.GetSizeInBytes();
 
             std::string filePathForDelete{ std::move(cachePurgeFile.GetFilePath()) };
+#if defined(_WIN32)
+            int res = _unlink(filePathForDelete.c_str());
+#else
             int res = unlink(filePathForDelete.c_str());
+#endif
             if (res != 0)
             {
-                Log_Error("unlink '%s', inode %d - errno: %d", filePathForDelete.c_str(), cachePurgeFile.GetInode(), errno);
+                Log_Error(
+                    "unlink '%s', inode %d - errno: %d", filePathForDelete.c_str(), cachePurgeFile.GetInode(), errno);
                 result = -1; // overall it is a failure, but keep going to attempt to free up space.
                 continue;
             }

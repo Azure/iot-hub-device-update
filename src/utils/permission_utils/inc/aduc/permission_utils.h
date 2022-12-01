@@ -10,7 +10,21 @@
 
 #include <aduc/c_utils.h> // for EXTERN_C_*
 #include <stdbool.h> // for bool
-#include <sys/types.h> // for uid_t, gid_t, mode_t
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] uid_t, gid_t
+typedef int uid_t;
+typedef int gid_t;
+
+// dirent.h has S_IXGRP, S_IWGRP, S_IRGRP
+#    define S_IRWXG 070 /* group_all */
+#    define S_IRWXU 0700 /* owner_all */
+
+// TODO(JeffMill): [PAL] mode_t
+typedef unsigned int mode_t;
+#else
+#    include <sys/types.h> // for uid_t, gid_t, mode_t
+#endif
 
 EXTERN_C_BEGIN
 

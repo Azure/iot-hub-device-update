@@ -14,10 +14,15 @@
 #include <aduc/types/adu_core.h> // ADUC_Result_Success_Cache_Miss
 #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
 #include <azure_c_shared_utility/strings.h>
-#include <libgen.h> // dirname
+// #include <libgen.h> // dirname
 #include <stdio.h> // rename
 #include <stdlib.h> // free
-#include <sys/stat.h> // S_IRUSR
+
+#if defined(_WIN32)
+#    include <dirent.h> // S_IRUSR
+#else
+#    include <sys/stat.h> // S_IRUSR
+#endif
 
 /**
  * @brief Looks up a source update from the source update cache.

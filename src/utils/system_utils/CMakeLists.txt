@@ -28,7 +28,7 @@ target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_FILE_GROUP="${ADUC_FILE
 
 if (ADUC_BUILD_UNIT_TESTS)
     find_package (umock_c REQUIRED CONFIG)
-    target_link_libraries (${target_name} PRIVATE umock_c)
+    target_link_libraries (${PROJECT_NAME} PRIVATE umock_c)
 
     add_subdirectory (tests)
 endif ()
