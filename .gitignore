@@ -29,6 +29,10 @@ cscope.out
 cscope.in.out
 cscope.po.out
 
+### openssl output
+*.sig
+*.pem
+
 ### Python Module Files
 *__pycache__
 *__pycache__/*

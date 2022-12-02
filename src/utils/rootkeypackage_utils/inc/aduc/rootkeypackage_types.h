@@ -16,12 +16,12 @@
 #include <sys/time.h> // for struct timespec
 
 /**
- * @brief The root key keytype.
+ * @brief The root key keyType.
  */
 typedef enum tagADUC_RootKey_KeyType
 {
     ADUC_RootKey_KeyType_INVALID = 0,
-    ADUC_RootKey_KeyType_RSA, /**< RSA keytype. */
+    ADUC_RootKey_KeyType_RSA, /**< RSA keyType. */
 } ADUC_RootKey_KeyType;
 
 /**

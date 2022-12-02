@@ -17,7 +17,7 @@ target_sources (${PROJECT_NAME} PRIVATE main.cpp workflow_utils_ut.cpp
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
-target_link_libraries (${PROJECT_NAME} PRIVATE aduc::parser_utils aduc::workflow_utils
+target_link_libraries (${PROJECT_NAME} PRIVATE aduc::parser_utils aduc::workflow_utils aduc::test_utils
                                                Catch2::Catch2)
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
