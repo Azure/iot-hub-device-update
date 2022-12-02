@@ -59,6 +59,7 @@ parts:
       - var/lib/adu/extensions/sources/*.so
       - conf/*.*
     stage-packages:
+      - curl
       - libasn1-8-heimdal
       - libboost-filesystem1.71.0
       - libbrotli1
@@ -116,3 +117,6 @@ layout:
 # adu_log_dir
   /var/log/adu:
     symlink: $SNAP_DATA/log
+# curl command
+  /usr/bin/curl-downloader:
+    symlink: $SNAP/usr/bin/curl
