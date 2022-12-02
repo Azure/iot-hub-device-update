@@ -8,6 +8,8 @@
  * Licensed under the MIT License.
  */
 
+#include "root_key_util.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -15,11 +17,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-
+#include <azure_c_shared_utility/constbuffer.h>
+#include <azure_c_shared_utility/strings.h>
+#include <azure_c_shared_utility/vector.h>
 #include "crypto_lib.h"
 #include "base64_utils.h"
 #include "root_key_list.h"
-#include "root_key_util.h"
 #include "root_key_result.h"
 #include "aduc/rootkeypackage_parse.h"
 #include "aduc/rootkeypackage_types.h"

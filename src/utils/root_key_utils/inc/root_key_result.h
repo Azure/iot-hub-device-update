@@ -5,9 +5,12 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+#include "aduc/c_utils.h"
+
 #ifndef ROOT_KEY_RESULT_H
 #define ROOT_KEY_RESULT_H
 
+EXTERN_C_BEGIN
 /**
  * @brief Structure that declares
  *
@@ -24,5 +27,7 @@ typedef enum _RootKeyUtility_ValidationResult
     RootKeyUtility_ValidationResult_SignatureForKeyNotFound = 3,
     RootKeyUtility_ValidationResult_SignatureValidationFailed = 4,
 } RootKeyUtility_ValidationResult;
+
+EXTERN_C_END
 
 #endif // ROOT_KEY_RESULT_H

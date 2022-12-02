@@ -5,16 +5,16 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-#include <azure_c_shared_utility/constbuffer.h>
-#include <azure_c_shared_utility/vector.h>
-#include <azure_c_shared_utility/strings.h>
 
 #include "crypto_key.h"
 #include "root_key_result.h"
 #include "aduc/rootkeypackage_types.h"
+#include "aduc/c_utils.h"
 
 #ifndef ROOT_KEY_UTIL_H
 #    define ROOT_KEY_UTIL_H
+
+EXTERN_C_BEGIN
 
 RootKeyUtility_ValidationResult RootKeyUtil_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage );
 
@@ -26,4 +26,5 @@ RootKeyUtility_ValidationResult RootKeyUtil_ValidateRootKeyPackageWithHardcodedK
  */
 CryptoKeyHandle RootKeyUtility_GetKeyForKid(const char* kid);
 
+EXTERN_C_END
 #endif // ROOT_KEY_UTIL_H
