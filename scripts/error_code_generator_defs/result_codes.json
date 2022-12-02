@@ -987,6 +987,10 @@
               {
                 "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_GETOBJ_DISABLEDSIGNINGKEYS_ELEMENT",
                 "value": 27
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_EXPONENT",
+                "value": 28
               }
             ]
           }
