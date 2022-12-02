@@ -25,6 +25,4 @@ void ADUC_RootKeyPackageUtils_Destroy(ADUC_RootKeyPackage* rootKeyPackage);
 
 EXTERN_C_END
 
-EXTERN_C_END
-
 #endif // ROOTKEYPACKAGE_UTILS_H

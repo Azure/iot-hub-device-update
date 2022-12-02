@@ -11,11 +11,12 @@
 
 #include "crypto_key.h"
 #include "root_key_result.h"
+#include "aduc/rootkeypackage_types.h"
 
 #ifndef ROOT_KEY_UTIL_H
 #    define ROOT_KEY_UTIL_H
 
-RootKeyUtility_ValidationResult RootKeyUtil_ValidateRootKeyPackage(const STRING_HANDLE rootKeyPackagePath );
+RootKeyUtility_ValidationResult RootKeyUtil_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage );
 
 /**
  * @brief Get the Key For Kid object

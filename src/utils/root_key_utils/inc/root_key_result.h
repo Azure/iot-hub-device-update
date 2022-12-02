@@ -8,6 +8,10 @@
 #ifndef ROOT_KEY_RESULT_H
 #define ROOT_KEY_RESULT_H
 
+/**
+ * @brief Structure that declares
+ *
+ */
 typedef enum _RootKeyUtility_ValidationResult
 {
     RootKeyUtility_ValidationResult_Success = 0,
@@ -18,8 +22,7 @@ typedef enum _RootKeyUtility_ValidationResult
     RootKeyUtility_ValidationResult_Failure = 1,
     RootKeyUtility_ValidationResult_HardcodedRootKeyLoadFailed = 2,
     RootKeyUtility_ValidationResult_SignatureForKeyNotFound = 3,
-    RootKeyUtility_ValidationResult_KeyIdNotFound = 4,
-    RootKeyUtility_ValidationResult_SignatureValidationFailed = 5,
+    RootKeyUtility_ValidationResult_SignatureValidationFailed = 4,
 } RootKeyUtility_ValidationResult;
 
 #endif // ROOT_KEY_RESULT_H
