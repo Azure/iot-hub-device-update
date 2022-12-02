@@ -73,18 +73,18 @@
         "rootKeyDef": {
             "type": "object",
             "properties": {
-                "keytype": {
+                "keyType": {
                     "enum": [
                       "RSA"
                     ]
                 }
             },
-            "required": [ "keytype"],
+            "required": [ "keyType"],
             "unevaluatedProperties": true,
             "if": {
                 "type": "object",
                 "properties": {
-                    "keytype": {
+                    "keyType": {
                         "const": "RSA"
                     }
                 }

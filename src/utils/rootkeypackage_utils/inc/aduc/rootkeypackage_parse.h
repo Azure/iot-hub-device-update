@@ -1,3 +1,11 @@
+/**
+ * @file rootkeypackage_parse.h
+ * @brief Header for rootkeypackage parse module.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #ifndef ROOTKEYPACKAGE_PARSE_H
 #define ROOTKEYPACKAGE_PARSE_H
 
