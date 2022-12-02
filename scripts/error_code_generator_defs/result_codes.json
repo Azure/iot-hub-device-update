@@ -971,6 +971,14 @@
                         {
                             "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_GETOBJ_DISABLEDSIGNINGKEYS_ELEMENT",
                             "value": 27
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PROTECTEDPROPERTIES_UNSERIALIZABLE",
+                            "value": 28
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PROTECTEDPROPERTIES_JSONSTRING_EMPTY",
+                            "value": 29
                         }
                     ]
                 }

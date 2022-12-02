@@ -18,6 +18,8 @@
 
 RootKeyUtility_ValidationResult RootKeyUtil_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage );
 
+RootKeyUtility_InstallationResult RootKeyUtil_WriteRootKeyPackageToFileAtomically(const ADUC_RootKeyPackage* rootKeyPackage, const STRING_HANDLE fileDest);
+
 /**
  * @brief Get the Key For Kid object
  *

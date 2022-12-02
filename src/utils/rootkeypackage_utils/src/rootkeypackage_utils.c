@@ -83,6 +83,211 @@ done:
     return result;
 }
 
+STRING_HANDLE RootKeyPackage_SigningAlgToString(const ADUC_RootKeySigningAlgorithm alg )
+{
+    STRING_HANDLE algStr = NULL;
+
+    switch(alg)
+    {
+        case ADUC_RootKeySigningAlgorithm_RS256:
+        algStr = STRING_construct("RS256");
+        break;
+        case ADUC_RootKeySigningAlgorithm_RS384:
+        algStr = STRING_construct("RS384");
+        break;
+        case ADUC_RootKeySigningAlgorithm_RS512:
+        algStr = STRING_construct("RS512");
+        break;
+    }
+
+    return algStr;
+}
+
+JSON_Value* ADUC_RootKeyPackageUtils_SignatureToJsonValue(const ADUC_RootKeyPackage_Signature* signature)
+{
+    _Bool success = true;
+    JSON_Value* sigJsonValue = NULL;
+    char* encodedSignature = NULL;
+    STRING_HANDLE algString = NULL;
+
+    sigJsonValue = json_value_init_object();
+
+    if (sigJsonValue == NULL)
+    {
+        goto done;
+    }
+
+    JSON_Object* sigJsonObj = json_value_get_object(sigJsonValue);
+
+    const CONSTBUFFER* decodedSig = CONSTBUFFER_GetContent(signature->signature);
+
+    if (decodedSig == NULL || decodedSig->size == 0)
+    {
+        goto done;
+    }
+
+    encodedSignature = Base64URLEncode(decodedSig->buffer,decodedSig->size);
+
+    if (encodedSignature == NULL)
+    {
+        goto done;
+    }
+
+    JSON_Status jsonStatus = json_object_set_string(sigJsonObj,"sig",encodedSignature);
+
+    if (jsonStatus != JSONSuccess)
+    {
+        goto done;
+    }
+
+    algString = RootKeyPackage_SigningAlgToString(signature->alg);
+
+    if (algString == NULL)
+    {
+        goto done;
+    }
+
+    jsonStatus = json_object_set_string(sigJsonObj,"alg", STRING_c_str(algString));
+
+done:
+
+    if (! success )
+    {
+        if (sigJsonValue != NULL)
+        {
+            json_value_free(sigJsonValue);
+            sigJsonValue = NULL;
+        }
+    }
+
+    if (algString != NULL)
+    {
+        STRING_delete(algString);
+    }
+
+    free(encodedSignature);
+
+    return sigJsonValue;
+}
+/**
+ * @brief Serializes the ADUC_RootKeyPackage's contents to JSON in string form
+ * @details it is the duty of the caller to free the returned string
+ * @param rootKeyPackage root key package to serialize
+ * @return the serialized version of the root key package in string form
+ */
+char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPackage* rootKeyPackage)
+{
+    JSON_Value* rootKeyPackageJsonValue = NULL;
+
+    JSON_Value* rootKeySignatureArrayValue = NULL;
+
+    VECTOR_HANDLE sigJsonValueVector = NULL;
+
+    char* retString = NULL;
+
+    if (rootKeyPackage == NULL)
+    {
+        goto done;
+    }
+
+    if (rootKeyPackage->protectedPropertiesJsonString == NULL || STRING_length(rootKeyPackage->protectedPropertiesJsonString) == 0)
+    {
+        goto done;
+    }
+
+    rootKeyPackageJsonValue = json_parse_string(STRING_c_str(rootKeyPackage->protectedPropertiesJsonString));
+
+    if (rootKeyPackageJsonValue == NULL)
+    {
+        goto done;
+    }
+
+    JSON_Object* rootKeyPackageJsonObject = json_value_get_object(rootKeyPackageJsonValue);
+
+    if (rootKeyPackageJsonObject != NULL)
+    {
+        goto done;
+    }
+
+    // Make the signatures json stuff
+
+    rootKeySignatureArrayValue = json_value_init_array();
+    if (rootKeySignatureArrayValue == NULL)
+    {
+        goto done;
+    }
+
+    JSON_Array* signatureArray = json_value_get_array(rootKeySignatureArrayValue);
+
+    if (signatureArray == NULL)
+    {
+        goto done;
+    }
+
+    sigJsonValueVector = VECTOR_create(sizeof(JSON_Value*));
+
+    const size_t numSignatures = VECTOR_size(rootKeyPackage->signatures);
+
+    for (size_t i = 0 ; i < numSignatures ; ++i)
+    {
+        ADUC_RootKeyPackage_Signature* signature = (ADUC_RootKeyPackage_Signature*)VECTOR_element(rootKeyPackage->signatures,i);
+
+        if (signature == NULL)
+        {
+            goto done;
+        }
+
+        JSON_Value* sigJsonValue = ADUC_RootKeyPackageUtils_SignatureToJsonValue(signature);
+
+        if ( json_array_append_value(signatureArray,sigJsonValue) != JSONSuccess )
+        {
+            goto done;
+        }
+
+        VECTOR_push_back(sigJsonValueVector,sigJsonValue,1);
+    }
+
+    if (json_object_set_value(rootKeyPackageJsonObject,"signatures",rootKeySignatureArrayValue) != JSONSuccess)
+    {
+        goto done;
+    }
+
+    retString = json_serialize_to_string(rootKeyPackageJsonValue);
+
+    if (retString == NULL)
+    {
+        goto done;
+    }
+
+done:
+
+    if (rootKeyPackageJsonValue != NULL)
+    {
+        json_value_free(rootKeyPackageJsonValue);
+    }
+
+    if (rootKeySignatureArrayValue != NULL)
+    {
+        json_value_freE(rootKeySignatureArrayValue);
+    }
+
+    if (sigJsonValueVector != NULL )
+    {
+        const size_t numSignatures = VECTOR_size(sigJsonValueVector);
+
+        for (size_t i = 0; i < numSignatures; ++i)
+        {
+            JSON_Value** sigValuePtr = (JSON_Value**)VECTOR_element(sigJsonValueVector,i);
+
+            json_value_free(*sigValuePtr);
+        }
+        VECTOR_destroy(sigJsonValueVector);
+    }
+
+    return retString;
+}
+
+
 /**
  * @brief Cleans up the disabled root keys in the rootkey package.
  *

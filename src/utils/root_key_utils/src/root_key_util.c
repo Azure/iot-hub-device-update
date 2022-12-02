@@ -292,7 +292,79 @@ done:
     return result;
 }
 
+RootKeyUtility_InstallationResult RootKeyUtil_WriteRootKeyPackageToFileAtomically(const ADUC_RootKeyPackage* rootKeyPackage, const STRING_HANDLE fileDest)
+{
+    RootKeyUtility_InstallationResult result = RootKeyUtility_InstallationResult_Failure;
+    JSON_Value* rootKeyPackageValue = NULL;
 
+    char* rootKeyPackageSerializedString = NULL;
+    STRING_HANDLE tempFileName = NULL;
+
+    if (rootKeyPackage == NULL || fileDest == NULL || STRING_length(fileDest) == 0)
+    {
+        goto done;
+    }
+
+
+    rootKeyPackageSerializedString = ADUC_RootKeyPackageUtils_SerializePackageToJsonString(rootKeyPackage);
+
+    if (rootKeyPackageSerializedString == NULL)
+    {
+        goto done;
+    }
+
+    // Write this to the temp file
+    rootKeyPackageValue = json_parse_string(rootKeyPackageSerializedString);
+
+    if (rootKeyPackageValue == NULL)
+    {
+        goto done;
+    }
+
+    tempFileName = STRING_construct_sprintf("%s-temp",STRING_c_str(fileDest));
+
+    if (tempFileName == NULL)
+    {
+        goto done;
+    }
+
+    if (json_serialize_to_file(rootKeyPackageValue,STRING_c_str(tempFileName)) != JSONSuccess)
+    {
+        goto done;
+    }
+
+    if (rename(STRING_c_str(tempFileName),STRING_c_str(fileDest)) != 0)
+    {
+        goto done;
+    }
+    // Switch the names
+done:
+
+    if (rootKeyPackageSerializedString != NULL)
+    {
+        free(rootKeyPackageSerializedString);
+    }
+
+    if (rootKeyPackageValue != NULL)
+    {
+        json_value_free(rootKeyPackageValue);
+    }
+
+    if (tempFileName != NULL)
+    {
+        FILE* f = fopen(STRING_c_str(tempFileName),'w');
+        if (f != NULL)
+        {
+            fclose(f);
+            remove(STRING_c_str(tempFileName));
+        }
+
+        STRING_delete(tempFileName);
+    }
+
+
+    return result;
+}
 /**
  * @brief Helper function that returns a CryptoKeyHandle associated with the kid
  * @details The caller must free the returned Key with the CryptoUtils_FreeCryptoKeyHandle() function

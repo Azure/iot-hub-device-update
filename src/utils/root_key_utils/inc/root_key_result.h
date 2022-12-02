@@ -25,4 +25,12 @@ typedef enum _RootKeyUtility_ValidationResult
     RootKeyUtility_ValidationResult_SignatureValidationFailed = 4,
 } RootKeyUtility_ValidationResult;
 
+typedef enum _RootKeyUtility_InstallationResult
+{
+    RootKeyUtility_InstallationResult_Success = 0,
+    RootKeyUtility_InstallationResult_Failure = 1,
+    RootKeyUtility_InstallationResult_OutOfDiskSpace = 2,
+    // etc
+}RootKeyUtility_InstallationResult;
+
 #endif // ROOT_KEY_RESULT_H

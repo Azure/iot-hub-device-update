@@ -560,7 +560,7 @@ int ADUC_SystemUtils_RemoveFile(const char* path)
 }
 
 /**
- * @brief Writes @p buff to file at @p path using
+ * @brief Writes @p buff to file at @p path
  * @details This function overwrites the current data in @p path with @p buff
  *
  * @param path the path to the file to write data
