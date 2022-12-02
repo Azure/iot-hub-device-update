@@ -11,6 +11,7 @@
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
 
+#include <aduc/file_test_utils.hpp>
 #include <aduc/workflow_utils.h>
 #include <fstream>
 #include <parson.h>
@@ -30,14 +31,6 @@ static std::string get_twin_desired_json_path()
     std::string path{ ADUC_TEST_DATA_FOLDER };
     path += "/workflow_get_update_file/desired_template.json";
     return path;
-}
-
-static std::string slurp(const std::string& path)
-{
-    std::ifstream f(path);
-    std::stringstream stream;
-    stream << f.rdbuf();
-    return stream.str();
 }
 
 TEST_CASE("workflow_get_update_file with download handler")
@@ -63,7 +56,7 @@ TEST_CASE("workflow_get_update_file with download handler")
         std::regex_replace(serializedUpdateManifest, std::regex("DELTA_UPDATE_FILE_ID"), deltaUpdateFileId);
     serializedUpdateManifest = std::regex_replace(serializedUpdateManifest, std::regex("\""), "\\\"");
 
-    std::string desired = slurp(get_twin_desired_json_path());
+    std::string desired = aduc::FileTestUtils_slurpFile(get_twin_desired_json_path());
     desired = std::regex_replace(desired, std::regex("UPDATE_MANIFEST_SIGNATURE"), "foo");
     desired = std::regex_replace(desired, std::regex("TARGET_UPDATE_FILE_ID"), targetUpdateFileId);
     desired = std::regex_replace(desired, std::regex("DELTA_UPDATE_FILE_ID"), deltaUpdateFileId);
@@ -126,7 +119,8 @@ TEST_CASE("workflow_get_update_file - upd metadata missing relatedFile URL")
     {
         ADUC_WorkflowHandle handle = nullptr;
 
-        ADUC_Result result = workflow_init(manifest_missing_related_file_file_url, true /* validateManifest */, &handle);
+        ADUC_Result result =
+            workflow_init(manifest_missing_related_file_file_url, true /* validateManifest */, &handle);
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
         ADUC_FileEntity* file = nullptr;

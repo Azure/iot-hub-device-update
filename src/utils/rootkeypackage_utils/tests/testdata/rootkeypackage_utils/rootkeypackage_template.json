@@ -11,19 +11,19 @@
         ],
         "rootKeys": {
             "rootkey1": {
-                "keytype": "RSA",
+                "keyType": "RSA",
                 "n": "{{modulus_1}}",
-                "e": "{{exponent_1}}"
+                "e": {{exponent_1}}
             },
             "rootkey2": {
-                "keytype": "RSA",
+                "keyType": "RSA",
                 "n": "{{modulus_2}}",
-                "e": "{{exponent_2}}"
+                "e": {{exponent_2}}
             },
             "rootkey3": {
-                "keytype": "RSA",
+                "keyType": "RSA",
                 "n": "{{modulus_3}}",
-                "e": "{{exponent_3}}"
+                "e": {{exponent_3}}
             }
         }
     },

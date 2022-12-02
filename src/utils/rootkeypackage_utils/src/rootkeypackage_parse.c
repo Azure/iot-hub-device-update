@@ -1,10 +1,32 @@
 
 #include "aduc/rootkeypackage_parse.h"
+#include "aduc/rootkeypackage_json_properties.h"
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h> // for IsNullOrEmpty
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
 #include <base64_utils.h> // for Base64URLDecode
+#include <math.h> // for isnan, isinf
+
+#if defined(isnan) && defined(isinf)
+#    define ADUC_IS_NUMBER_INVALID(x) (isnan((x)) || isinf((x)))
+#else
+#    define ADUC_IS_NUMBER_INVALID(x) (((x)*0.0) != 0.0)
+#endif
+
+/*
+    Using 0 to indicate invalid RSA exponent since json_object_get_number
+    returns 0 when the json property value is not json number type and because 0 is
+    not one of the 5 known Fermat primes of 3, 5, 17, 257 and 65537 for base b = 2
+    n generalized Fermat primes. The current root keys use the industry standard of
+    65537. For reference:
+    https://www.quora.com/Why-is-e-65537-used-for-most-RSA-encryption
+    https://crypto.stackexchange.com/questions/3110/impacts-of-not-using-rsa-exponent-of-65537
+    https://en.wikipedia.org/wiki/65,537
+    https://crypto.stanford.edu/~dabo/pubs/papers/RSA-survey.pdf
+
+ */
+#define INVALID_EXPONENT 0
 
 EXTERN_C_BEGIN
 
@@ -94,7 +116,7 @@ ADUC_Result RootKeyPackage_ParseVersion(JSON_Object* protectedPropertiesObj, ADU
         goto done;
     }
 
-    version = json_object_get_number(protectedPropertiesObj, "version");
+    version = json_object_get_number(protectedPropertiesObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_VERSION);
     if (version == 0)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_VERSION;
@@ -107,7 +129,7 @@ done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("ERC %d parsing 'version' property.", result.ResultCode);
+        Log_Error("ERC %d parsing '" ADUC_ROOTKEY_PACKAGE_PROPERTY_VERSION "' property.", result.ResultCode);
     }
 
     return result;
@@ -132,7 +154,7 @@ ADUC_Result RootKeyPackage_ParsePublished(JSON_Object* protectedPropertiesObj, A
         return result;
     }
 
-    published = json_object_get_number(protectedPropertiesObj, "published");
+    published = json_object_get_number(protectedPropertiesObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_PUBLISHED);
     if (published <= 0)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_PUBLISHED;
@@ -146,7 +168,7 @@ done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("ERC %d parsing 'published' property.", result.ResultCode);
+        Log_Error("ERC %d parsing '" ADUC_ROOTKEY_PACKAGE_PROPERTY_PUBLISHED "' property.", result.ResultCode);
     }
 
     return result;
@@ -174,7 +196,7 @@ ADUC_Result RootKeyPackage_ParseDisabledRootKeys(JSON_Object* protectedPropertie
         return result;
     }
 
-    kidsArray = json_object_get_array(protectedPropertiesObj, "disabledRootKeys");
+    kidsArray = json_object_get_array(protectedPropertiesObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_DISABLED_ROOT_KEYS);
     if (kidsArray == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_DISABLEDROOTKEYS;
@@ -233,7 +255,8 @@ done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("ERC %d parsing 'disabledRootKeys' property.", result.ResultCode);
+        Log_Error(
+            "ERC %d parsing '" ADUC_ROOTKEY_PACKAGE_PROPERTY_DISABLED_ROOT_KEYS "' property.", result.ResultCode);
     }
 
     return result;
@@ -277,7 +300,7 @@ done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("ERC %d parsing hash 'alg' property.", result.ResultCode);
+        Log_Error("ERC %d parsing hash '" ADUC_ROOTKEY_PACKAGE_PROPERTY_ALG "' property.", result.ResultCode);
     }
 
     return result;
@@ -302,22 +325,22 @@ ADUC_Result RootKeyPackage_ParseSigningAlg(JSON_Object* jsonObj, ADUC_RootKeySig
         return result;
     }
 
-    val = json_object_get_string(jsonObj, "alg");
+    val = json_object_get_string(jsonObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_ALG);
     if (val == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_SIGNATURE_PROPERTY_ALG;
         goto done;
     }
 
-    if (strcmp(val, "RS256") == 0)
+    if (strcmp(val, ADUC_ROOTKEY_PACKAGE_PROPERTY_SIGNATURE_ALG_RS256) == 0)
     {
         alg = ADUC_RootKeySigningAlgorithm_RS256;
     }
-    else if (strcmp(val, "RS384") == 0)
+    else if (strcmp(val, ADUC_ROOTKEY_PACKAGE_PROPERTY_SIGNATURE_ALG_RS384) == 0)
     {
         alg = ADUC_RootKeySigningAlgorithm_RS384;
     }
-    else if (strcmp(val, "RS512") == 0)
+    else if (strcmp(val, ADUC_ROOTKEY_PACKAGE_PROPERTY_SIGNATURE_ALG_RS512) == 0)
     {
         alg = ADUC_RootKeySigningAlgorithm_RS512;
     }
@@ -333,7 +356,7 @@ done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("ERC %d parsing signing 'alg' property.", result.ResultCode);
+        Log_Error("ERC %d parsing signing '" ADUC_ROOTKEY_PACKAGE_PROPERTY_ALG "' property.", result.ResultCode);
     }
 
     return result;
@@ -426,7 +449,7 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
         return result;
     }
 
-    hashesArray = json_object_get_array(protectedPropertiesObj, "disabledSigningKeys");
+    hashesArray = json_object_get_array(protectedPropertiesObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_DISABLED_SIGNING_KEYS);
     if (hashesArray == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_DISABLEDSIGNINGKEYS;
@@ -467,7 +490,10 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
             goto done;
         }
 
-        result = RootKeyPackage_ParseBase64URLUIntJsonString(hashJsonArrayElementObj, "hash", &hashBuf);
+        result = RootKeyPackage_ParseBase64URLUIntJsonString(
+            hashJsonArrayElementObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_HASH, &hashBuf);
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
             goto done;
 
         hashElement.alg = tmpAlg;
@@ -530,7 +556,7 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
 
     const char* keytypeStr = NULL;
     const char* n_modulusStr = NULL;
-    const char* e_exponentStr = NULL;
+    double e_exponent = INVALID_EXPONENT;
 
     const char* kid = json_object_get_name(rootKeysObj, index);
     if (IsNullOrEmpty(kid))
@@ -553,24 +579,32 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
         goto done;
     }
 
-    keytypeStr = json_object_get_string(rootKeyDefinition, "keytype");
+    keytypeStr = json_object_get_string(rootKeyDefinition, ADUC_ROOTKEY_PACKAGE_PROPERTY_KEY_TYPE);
     if (IsNullOrEmpty(keytypeStr))
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_KEYTYPE;
         goto done;
     }
 
-    if (strcmp(keytypeStr, "RSA") == 0)
+    if (strcmp(keytypeStr, ADUC_ROOTKEY_PACKAGE_PROPERTY_KEY_TYPE_RSA) == 0)
     {
         keyType = ADUC_RootKey_KeyType_RSA;
-        n_modulusStr = json_object_get_string(rootKeyDefinition, "n");
-        e_exponentStr = json_object_get_string(rootKeyDefinition, "e");
+        n_modulusStr = json_object_get_string(rootKeyDefinition, ADUC_ROOTKEY_PACKAGE_PROPERTY_RSA_MODULUS);
 
         if (IsNullOrEmpty(n_modulusStr))
         {
             result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_MODULUS;
             goto done;
         }
+
+        e_exponent = json_object_get_number(rootKeyDefinition, ADUC_ROOTKEY_PACKAGE_PROPERTY_RSA_EXPONENT);
+        if (e_exponent == INVALID_EXPONENT || ADUC_IS_NUMBER_INVALID(e_exponent))
+        {
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_EXPONENT;
+            goto done;
+        }
+
+        rsa_exponent = (unsigned int)e_exponent;
 
         // Base64URLDecode uses malloc when creating the buffers, so using
         // CONSTBUFFER_CreateWithMoveMemory to transfer ownership to the
@@ -592,13 +626,6 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
 
         // commit the transfer of ownership
         modulus_buf = NULL;
-
-        // convert exponent to size_t
-        if (!atoui(e_exponentStr, &rsa_exponent))
-        {
-            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_RSA_PARAMETERS;
-            goto done;
-        }
     }
     else
     {
@@ -669,7 +696,7 @@ ADUC_Result RootKeyPackage_ParseRootKeys(JSON_Object* protectedPropertiesObj, AD
         return result;
     }
 
-    rootKeysObj = json_object_get_object(protectedPropertiesObj, "rootKeys");
+    rootKeysObj = json_object_get_object(protectedPropertiesObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_ROOTKEYS);
     if (protectedPropertiesObj == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_ROOTKEYS;
@@ -743,7 +770,7 @@ ADUC_Result RootKeyPackage_ParseProtectedProperties(JSON_Object* rootObj, ADUC_R
         return result;
     }
 
-    protectedPropertiesObj = json_object_get_object(rootObj, "protected");
+    protectedPropertiesObj = json_object_get_object(rootObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_PROTECTED);
     if (protectedPropertiesObj == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_PROTECTED;
@@ -804,7 +831,7 @@ ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* rootObj, ADUC_RootKeyPac
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     VECTOR_HANDLE signatures = NULL;
 
-    JSON_Array* signaturesArray = json_object_get_array(rootObj, "signatures");
+    JSON_Array* signaturesArray = json_object_get_array(rootObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_SIGNATURES);
     if (signaturesArray == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_SIGNATURES;
@@ -845,7 +872,8 @@ ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* rootObj, ADUC_RootKeyPac
             goto done;
         }
 
-        result = RootKeyPackage_ParseBase64URLUIntJsonString(hashJsonArrayElementObj, "sig", &signatureBuf);
+        result = RootKeyPackage_ParseBase64URLUIntJsonString(
+            hashJsonArrayElementObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_SIG, &signatureBuf);
         if (IsAducResultCodeFailure(result.ResultCode))
         {
             goto done;
