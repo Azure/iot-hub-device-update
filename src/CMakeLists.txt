@@ -12,12 +12,7 @@ if (ADUC_WARNINGS_AS_ERRORS)
         # TODO(JeffMill): allow strcpy, strcat, fopen, etc.
         add_definitions (-D_CRT_SECURE_NO_WARNINGS)
     else ()
-        # TODO(JeffMill): This was previously only "-Werror"
-        add_compile_options (
-            -Wall
-            -Wextra
-            -pedantic
-            -Werror)
+        add_compile_options (-Werror)
     endif ()
 endif ()
 
