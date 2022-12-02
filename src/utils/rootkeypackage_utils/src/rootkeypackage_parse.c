@@ -9,9 +9,9 @@
 #include <math.h> // for isnan, isinf
 
 #if defined(isnan) && defined(isinf)
-#define ADUC_IS_NUMBER_INVALID(x) (isnan((x)) || isinf((x)))
+#    define ADUC_IS_NUMBER_INVALID(x) (isnan((x)) || isinf((x)))
 #else
-#define ADUC_IS_NUMBER_INVALID(x) (((x) * 0.0) != 0.0)
+#    define ADUC_IS_NUMBER_INVALID(x) (((x)*0.0) != 0.0)
 #endif
 
 /*
@@ -255,7 +255,8 @@ done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("ERC %d parsing '" ADUC_ROOTKEY_PACKAGE_PROPERTY_DISABLED_ROOT_KEYS "' property.", result.ResultCode);
+        Log_Error(
+            "ERC %d parsing '" ADUC_ROOTKEY_PACKAGE_PROPERTY_DISABLED_ROOT_KEYS "' property.", result.ResultCode);
     }
 
     return result;
@@ -489,7 +490,8 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
             goto done;
         }
 
-        result = RootKeyPackage_ParseBase64URLUIntJsonString(hashJsonArrayElementObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_HASH, &hashBuf);
+        result = RootKeyPackage_ParseBase64URLUIntJsonString(
+            hashJsonArrayElementObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_HASH, &hashBuf);
         if (IsAducResultCodeFailure(result.ResultCode))
         {
             goto done;
@@ -870,7 +872,8 @@ ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* rootObj, ADUC_RootKeyPac
             goto done;
         }
 
-        result = RootKeyPackage_ParseBase64URLUIntJsonString(hashJsonArrayElementObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_SIG, &signatureBuf);
+        result = RootKeyPackage_ParseBase64URLUIntJsonString(
+            hashJsonArrayElementObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_SIG, &signatureBuf);
         if (IsAducResultCodeFailure(result.ResultCode))
         {
             goto done;

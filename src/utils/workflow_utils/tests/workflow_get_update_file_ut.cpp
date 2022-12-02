@@ -119,7 +119,8 @@ TEST_CASE("workflow_get_update_file - upd metadata missing relatedFile URL")
     {
         ADUC_WorkflowHandle handle = nullptr;
 
-        ADUC_Result result = workflow_init(manifest_missing_related_file_file_url, true /* validateManifest */, &handle);
+        ADUC_Result result =
+            workflow_init(manifest_missing_related_file_file_url, true /* validateManifest */, &handle);
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
         ADUC_FileEntity* file = nullptr;
