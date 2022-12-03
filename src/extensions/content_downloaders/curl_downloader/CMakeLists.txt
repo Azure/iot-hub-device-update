@@ -13,6 +13,10 @@ target_sources (
 
 target_include_directories (${PROJECT_NAME} PUBLIC ${ADU_EXTENSION_INCLUDES} ${ADU_EXPORT_INCLUDES})
 
+target_compile_definitions (
+    ${PROJECT_NAME}
+    PRIVATE ADUC_UBUNTU_CORE_SNAP_ONLY="${ADUC_UBUNTU_CORE_SNAP_ONLY}")
+
 target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::contract_utils
