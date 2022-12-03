@@ -123,4 +123,16 @@ char* ADUC_WorkflowData_GetInstalledCriteria(const ADUC_WorkflowData* workflowDa
     return workflow_get_installed_criteria(workflowData->WorkflowHandle);
 }
 
+/**
+ * @brief Creates a Workflow for the WorkflowHandle of the workflow data.
+ *
+ * @param workflowData The workflow data for which WorkflowHandle will be initialized.
+ *
+ * @returns true on success.
+ */
+bool ADUC_WorkflowData_InitWorkflowHandle(ADUC_WorkflowData* workflowData)
+{
+    return workflow_init_workflow_handle(workflowData);
+}
+
 EXTERN_C_END

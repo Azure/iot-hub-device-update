@@ -763,6 +763,12 @@ _Bool workflow_get_force_update(ADUC_WorkflowHandle workflowHandle);
  */
 void workflow_set_force_update(ADUC_WorkflowHandle handle, bool forceUpdate);
 
+void workflow_parse_peek_unprotected_workflow_properties(
+    JSON_Object* updateActionJsonObj, ADUCITF_UpdateAction* outWorkflowUpdateAction, char** outWorkflowId);
+
+bool workflow_init_workflow_handle(ADUC_WorkflowData* workflowData);
+bool workflow_set_update_action_object(ADUC_WorkflowHandle handle, JSON_Object* jsonObj);
+
 EXTERN_C_END
 
 #endif // ADUC_WORKFLOW_UTILS_H
