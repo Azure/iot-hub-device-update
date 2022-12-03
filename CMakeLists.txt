@@ -333,7 +333,7 @@ set (
 if (ADUC_UBUNTU_CORE_SNAP_ONLY)
     set (
         ADUC_FILE_USER
-        "snap_aziot_du"
+        "root"
         CACHE STRING "The user for adu file ownership.")
 
     set (

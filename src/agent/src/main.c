@@ -770,6 +770,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         result = ExtensionManager_InitializeContentDownloader(NULL /*initializeData*/);
     }
 
+#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
     if (InitializeCommandListenerThread())
     {
         RegisterCommand(&redoUpdateCommand);
@@ -781,6 +782,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         // Note: even though we can't create command listener here, we need to ensure that
         // the agent stay alive and connected to the IoT hub.
     }
+#endif
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -805,7 +807,9 @@ void ShutdownAgent()
 {
     Log_Info("Agent is shutting down with signal %d.", g_shutdownSignal);
     ADUC_D2C_Messaging_Uninit();
+#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
     UninitializeCommandListenerThread();
+#endif
     ADUC_PnP_Components_Destroy();
     IoTHub_CommunicationManager_Deinit();
     DiagnosticsComponent_DestroyDeviceName();
