@@ -19,7 +19,7 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc)
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::crypto_utils aduc::c_utils
-    PRIVATE Parson::parson aziotsharedutil)
+    PRIVATE Parson::parson aziotsharedutil aduc::root_key_utils)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

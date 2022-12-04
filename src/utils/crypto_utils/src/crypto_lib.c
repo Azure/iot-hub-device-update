@@ -8,7 +8,7 @@
 
 #include "crypto_lib.h"
 #include "base64_utils.h"
-// #include "root_key_util.h"
+#include "root_key_util.h"
 #include <azure_c_shared_utility/azure_base64.h>
 #include <ctype.h>
 #include <openssl/bn.h>
@@ -483,16 +483,4 @@ done:
 void CryptoUtils_FreeCryptoKeyHandle(CryptoKeyHandle key)
 {
     EVP_PKEY_free(CryptoKeyHandleToEVP_PKEY(key));
-}
-
-/**
- * @brief Returns the master key for the provided kid
- * @details this cals into the master_key_utility to get the key
- * @param kid the key identifier
- * @returns NULL on failure and a pointer to a key on success.
- */
-CryptoKeyHandle GetRootKeyForKeyID(const char* kid)
-{
-    // return RootKeyUtility_GerKeyForKid(kid);
-    return NULL;
 }

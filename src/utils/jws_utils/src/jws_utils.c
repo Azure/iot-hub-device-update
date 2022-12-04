@@ -9,6 +9,7 @@
 #include "jws_utils.h"
 #include "base64_utils.h"
 #include "crypto_lib.h"
+#include "root_key_util.h"
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <parson.h>
@@ -274,7 +275,7 @@ JWSResult VerifySJWK(const char* sjwk)
         goto done;
     }
 
-    rootKey = GetRootKeyForKeyID(kid);
+    rootKey = RootKeyUtility_GetKeyForKid(kid);
 
     if (rootKey == NULL)
     {
