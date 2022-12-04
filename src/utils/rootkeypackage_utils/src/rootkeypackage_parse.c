@@ -830,7 +830,7 @@ ADUC_Result RootKeyPackage_ParseProtectedPropertiesString(JSON_Object* rootObj, 
         goto done;
     }
 
-    JSON_Value* protectedPropertiesValue = json_object_get_value(rootObj,ADUC_ROOTKEY_PACKAGE_PROPERTY_PROTECTED);
+    JSON_Value* protectedPropertiesValue = json_object_get_value(rootObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_PROTECTED);
 
     if (protectedPropertiesValue == NULL)
     {
@@ -844,6 +844,7 @@ ADUC_Result RootKeyPackage_ParseProtectedPropertiesString(JSON_Object* rootObj, 
 
     if (protectedPropertiesStringHandle == NULL)
     {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
 
