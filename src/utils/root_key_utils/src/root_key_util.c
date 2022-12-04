@@ -17,22 +17,27 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <aduc/result.h>
+#include "aduc/rootkeypackage_parse.h"
+#include "aduc/rootkeypackage_types.h"
+#include "aduc/rootkeypackage_utils.h"
 #include <azure_c_shared_utility/constbuffer.h>
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
 #include "crypto_lib.h"
 #include "base64_utils.h"
 #include "root_key_list.h"
-#include "root_key_result.h"
-#include "aduc/rootkeypackage_parse.h"
-#include "aduc/rootkeypackage_types.h"
-#include "aduc/rootkeypackage_utils.h"
 
 //
 // Root Key Validation Helper Functions
 //
 
-
+/**
+ * @brief Helper function for mkaing a CryptoKeyHandle from an ADUC_RootKety
+ *
+ * @param rootKey ADUC_RootKey to make into a crypto key handle
+ * @return NULL on failure, a CryptoKeyHandle on sucess
+ */
 CryptoKeyHandle MakeCryptoKeyHandleFromADUC_RootKey(const ADUC_RootKey* rootKey)
 {
     if (rootKey == NULL)
@@ -61,6 +66,13 @@ CryptoKeyHandle MakeCryptoKeyHandleFromADUC_RootKey(const ADUC_RootKey* rootKey)
     return key;
 }
 
+/**
+ * @brief Initializes an aDUC_RootKey with the parameters in an RSARootKey
+ * @details Caller must take care to de-init the rootKey using ADUC_RootKey_DeInit()
+ * @param rootKey rootKey pointer to initialize with the data
+ * @param rsaKey rsaKey to use for intiialization
+ * @return True on success; false on failure
+ */
 _Bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const RSARootKey rsaKey )
 {
     _Bool success = false;
@@ -111,6 +123,14 @@ done:
     return success;
 }
 
+/**
+ * @brief Returns the index for the signature associated with the key
+ *
+ * @param foundIndex index that will be set with the index for the signature
+ * @param rootKeyPackage the root key package to search
+ * @param seekKid the kid to search for within the rootKeyPackage
+ * @return True on success; false on failure
+ */
 _Bool RootKeyUtility_GetSignatureForKey(size_t* foundIndex, const ADUC_RootKeyPackage* rootKeyPackage, const char* seekKid)
 {
     if (rootKeyPackage == NULL || seekKid == NULL)
@@ -139,6 +159,12 @@ _Bool RootKeyUtility_GetSignatureForKey(size_t* foundIndex, const ADUC_RootKeyPa
     return false;
 }
 
+/**
+ * @brief Fills a VECTOR_HANDLE with the hardcoded root keys in ADUC_RootKey format
+ * @details Caller must free @p aducRootKeyVector using VECTOR_delete()
+ * @param aducRootKeyVector vector handle to initialize with the hard coded root keys
+ * @return True on sucess; false on failure
+ */
 _Bool RootKeyUtility_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVector)
 {
     _Bool success = false;
@@ -198,9 +224,16 @@ done:
     return success;
 }
 
-RootKeyUtility_ValidationResult RootKeyUtility_ValidatePackageWithKey(const ADUC_RootKeyPackage* rootKeyPackage, const RSARootKey rootKey)
+/**
+ * @brief Validates the @p rootKeyPackage using a hardcoded root key
+ * @details Helper function for RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys()
+ * @param rootKeyPackage package to be validated
+ * @param rootKey the key to use to validate the package
+ * @return a value of ADUC_Result
+ */
+ADUC_Result RootKeyUtility_ValidatePackageWithKey(const ADUC_RootKeyPackage* rootKeyPackage, const RSARootKey rootKey)
 {
-    RootKeyUtility_ValidationResult result = RootKeyUtility_ValidationResult_Failure;
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     CryptoKeyHandle rootKeyCryptoKey = NULL;
 
     if (rootKeyPackage == NULL )
@@ -211,7 +244,7 @@ RootKeyUtility_ValidationResult RootKeyUtility_ValidatePackageWithKey(const ADUC
     size_t signatureIndex = 0;
     if (! RootKeyUtility_GetSignatureForKey(&signatureIndex, rootKeyPackage,rootKey.kid))
     {
-        result = RootKeyUtility_ValidationResult_SignatureForKeyNotFound;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_FOR_KEY_NOT_FOUND;
         goto done;
     }
 
@@ -220,7 +253,7 @@ RootKeyUtility_ValidationResult RootKeyUtility_ValidatePackageWithKey(const ADUC
 
     if (signature == NULL)
     {
-        result = RootKeyUtility_ValidationResult_SignatureForKeyNotFound;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_UNEXPECTED;
         goto done;
     }
 
@@ -239,11 +272,11 @@ RootKeyUtility_ValidationResult RootKeyUtility_ValidatePackageWithKey(const ADUC
     const CONSTBUFFER* signatureHash = CONSTBUFFER_GetContent(signature->hash);
 
     if (! CryptoUtils_IsValidSignature("rs256",signatureHash->buffer,signatureHash->size,(const uint8_t*)protectedProperties,protectedPropertiesLength,rootKeyCryptoKey) ){
-        result = RootKeyUtility_ValidationResult_SignatureValidationFailed;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_VALIDATION_FAILED;
         goto done;
     }
 
-    result = RootKeyUtility_ValidationResult_Success;
+    result.ResultCode = ADUC_GeneralResult_Success;
 
 done:
 
@@ -255,9 +288,15 @@ done:
     return result;
 }
 
-RootKeyUtility_ValidationResult RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage )
+/**
+ * @brief Validates the @p rootKeyPackage using the hard coded root keys from the RootKeyList within the agent binary
+ *
+ * @param rootKeyPackage root key package containing the signatures to validate with the hardcoded root keys
+ * @return a value of ADUC_Result
+ */
+ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage )
 {
-    RootKeyUtility_ValidationResult result = RootKeyUtility_ValidationResult_Failure;
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
     VECTOR_HANDLE hardcodedRootKeys = NULL;
 
@@ -270,9 +309,8 @@ RootKeyUtility_ValidationResult RootKeyUtility_ValidateRootKeyPackageWithHardcod
 
         result = RootKeyUtility_ValidatePackageWithKey(rootKeyPackage,rootKey);
 
-        if (result != RootKeyUtility_ValidationResult_Success)
+        if (IsAducResultCodeFailure(result.ResultCode))
         {
-            // TODO: Logging info for what key failed
             goto done;
         }
     }
@@ -290,7 +328,6 @@ done:
         }
         VECTOR_destroy(hardcodedRootKeys);
     }
-
 
     return result;
 }
