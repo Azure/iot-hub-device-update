@@ -7,16 +7,16 @@
  */
 
 #include "crypto_key.h"
-#include "root_key_result.h"
 #include "aduc/rootkeypackage_types.h"
 #include "aduc/c_utils.h"
+#include "aduc/result.h"
 
 #ifndef ROOT_KEY_UTIL_H
 #    define ROOT_KEY_UTIL_H
 
 EXTERN_C_BEGIN
 
-RootKeyUtility_ValidationResult RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage );
+ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage );
 
 RootKeyUtility_InstallationResult RootKeyUtil_WriteRootKeyPackageToFileAtomically(const ADUC_RootKeyPackage* rootKeyPackage, const STRING_HANDLE fileDest);
 

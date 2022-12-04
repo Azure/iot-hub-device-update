@@ -12,11 +12,10 @@
 #include "root_key_list.h"
 #undef ENABLE_MOCKS
 
-#include "root_key_result.h"
 #include "root_key_util.h"
 #include "aduc/rootkeypackage_parse.h"
 #include "aduc/rootkeypackage_utils.h"
-
+#include <aduc/result.h>
 #include <aduc/calloc_wrapper.hpp>
 #include <catch2/catch.hpp>
 #include <cstring>
@@ -93,9 +92,9 @@ TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_ValidateRootKeyPac
         ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(validRootKeyPackageJson.c_str(),&pkg);
 
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-        RootKeyUtility_ValidationResult validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
+        ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
 
-        CHECK(validationResult == RootKeyUtility_ValidationResult_Success);
+        CHECK(IsAducResultCodeSuccess(validationResult.ResultCode));
 
     }
     SECTION("RootKeyUtil_ValidateRootKeyPackage - Invalid RootKeyPackage")
@@ -105,9 +104,9 @@ TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_ValidateRootKeyPac
         ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(invalidRootKeyPackageJson.c_str(),&pkg);
 
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-        RootKeyUtility_ValidationResult validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
+        ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
 
-        CHECK(validationResult == RootKeyUtility_ValidationResult_SignatureValidationFailed);
+        CHECK(validationResult.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_VALIDATION_FAILED);
     }
     SECTION("RootKeyUtil_ValidateRootKeyPackage - Missing Signature")
     {
@@ -116,8 +115,8 @@ TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_ValidateRootKeyPac
         ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(rootKeyPackageWithoutHardcodedRootKeyId.c_str(),&pkg);
 
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-        RootKeyUtility_ValidationResult validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
+        ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
 
-        CHECK(validationResult == RootKeyUtility_ValidationResult_SignatureForKeyNotFound);
+        CHECK(validationResult.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_FOR_KEY_NOT_FOUND);
     }
 }
