@@ -103,9 +103,9 @@ _Bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const RSARoo
     success = true;
 done:
 
-    if (kid != NULL)
+    if (! success)
     {
-        STRING_delete(kid);
+        ADUC_RootKey_DeInit(rootKey);
     }
 
     return success;
@@ -152,7 +152,7 @@ _Bool RootKeyUtil_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVecto
 
     const RSARootKey* rsaKeyList = RootKeyList_GetHardcodedRsaRootKeys();
 
-    const size_t rsaKeyListSize = ARRAY_SIZE(rsaKeyList);
+    const size_t rsaKeyListSize = RootKeyList_numHardcodedKeys();
 
     for (int i=0 ; i < rsaKeyListSize; ++i)
     {
@@ -163,6 +163,11 @@ _Bool RootKeyUtil_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVecto
             goto done;
         }
         VECTOR_push_back(tempHandle,&rootKey,1);
+    }
+
+    if (VECTOR_size(tempHandle) == 0)
+    {
+        goto done;
     }
 
     //
@@ -309,7 +314,7 @@ CryptoKeyHandle RootKeyUtility_GetKeyForKid(const char* kid)
 
     const RSARootKey* hardcodedRsaRootKeys = RootKeyList_GetHardcodedRsaRootKeys();
 
-    const unsigned numberKeys = (sizeof(hardcodedRsaRootKeys) / sizeof(RSARootKey));
+    const unsigned numberKeys = RootKeyList_numHardcodedKeys();
     for (unsigned i = 0; i < numberKeys; ++i)
     {
         if (strcmp(hardcodedRsaRootKeys[i].kid, kid) == 0)

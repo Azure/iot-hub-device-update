@@ -30,7 +30,7 @@
 using ADUC::StringUtils::cstr_wrapper;
 using uint8_t_wrapper = ADUC::StringUtils::calloc_wrapper<uint8_t>;
 
-RSARootKey testHardcodedRootKeys [] = {
+const RSARootKey testHardcodedRootKeys [] = {
     {
         "rootkey1",
         "AK0s6dGfMRRbOn90osTP4hZ4vhxuRn3bH45u3yjUp0R5guueqGs1k6VIAtBgq87PMWMCEaE8hWyEGQEH-HCaQNhClSJFsT7JR7l1JghkRRraDqfpv2BIGdk9-jRtHWxTrszwxi51MNhMMmaz2aizyiMLFj-qh4CNBUVskexUKBn2Ko4yrG0tl7dqBZA7fNdtVymK8SyFnt4GIFLLcKgnc0_NqwLc6S7zFQ--EbXuah32_Fw9rp7ZZpp6RPYzMoc2DnTarFGLhk8tzQQCTYOToAFQCDVq3KBSWkjY5QWbh2LZO-NeKNg0pG6aSOZlopf5ebuK0mEFoyB1oc6ne3HSem8",
@@ -61,12 +61,18 @@ const RSARootKey* MockRootKeyList_GetHardcodedRsaRootKeys()
     return testHardcodedRootKeys;
 }
 
+size_t MockRootKeyList_numHardcodedKeys()
+{
+    return ARRAY_SIZE(testHardcodedRootKeys);
+}
+
 class SignatureValidationMockHook
 {
 public:
     SignatureValidationMockHook()
     {
         REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_GetHardcodedRsaRootKeys, MockRootKeyList_GetHardcodedRsaRootKeys);
+        REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_numHardcodedKeys, MockRootKeyList_numHardcodedKeys);
     }
 
     ~SignatureValidationMockHook() = default;

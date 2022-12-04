@@ -22,6 +22,8 @@ typedef struct tagRSARootKey
 
 MOCKABLE_FUNCTION(, const RSARootKey*,RootKeyList_GetHardcodedRsaRootKeys,)
 
+MOCKABLE_FUNCTION(, size_t, RootKeyList_numHardcodedKeys,)
+
 EXTERN_C_END
 
 #endif // ROOT_KEY_LIST_H

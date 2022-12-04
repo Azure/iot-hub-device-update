@@ -152,3 +152,8 @@ const RSARootKey* RootKeyList_GetHardcodedRsaRootKeys(void)
 {
     return HardcodedRSARootKeyList;
 }
+
+size_t RootKeyList_numHardcodedKeys(void)
+{
+    return ARRAY_SIZE(HardcodedRSARootKeyList);
+}

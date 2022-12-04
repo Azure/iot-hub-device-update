@@ -220,7 +220,7 @@ CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N
         goto done;
     }
 
-    if (BN_set_word(rsa_e,e) != 0)
+    if (BN_set_word(rsa_e,e) == 0)
     {
         goto done;
     }
