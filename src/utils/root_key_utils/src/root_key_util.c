@@ -336,11 +336,12 @@ RootKeyUtility_InstallationResult RootKeyUtil_WriteRootKeyPackageToFileAtomicall
         goto done;
     }
 
+    // Switch the names
     if (rename(STRING_c_str(tempFileName),STRING_c_str(fileDest)) != 0)
     {
         goto done;
     }
-    // Switch the names
+
 done:
 
     if (rootKeyPackageSerializedString != NULL)
