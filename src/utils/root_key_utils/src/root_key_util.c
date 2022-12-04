@@ -111,7 +111,7 @@ done:
     return success;
 }
 
-_Bool RootKeyUtils_GetSignatureForKey(size_t* foundIndex, const ADUC_RootKeyPackage* rootKeyPackage, const STRING_HANDLE seekKid)
+_Bool RootKeyUtility_GetSignatureForKey(size_t* foundIndex, const ADUC_RootKeyPackage* rootKeyPackage, const char* seekKid)
 {
     if (rootKeyPackage == NULL || seekKid == NULL)
     {
@@ -129,7 +129,7 @@ _Bool RootKeyUtils_GetSignatureForKey(size_t* foundIndex, const ADUC_RootKeyPack
             return false;
         }
 
-        if (STRING_compare(root_key->kid,seekKid) == 0)
+        if (strcmp(STRING_c_str(root_key->kid),seekKid) == 0)
         {
             *foundIndex = i;
             return true;
@@ -139,7 +139,7 @@ _Bool RootKeyUtils_GetSignatureForKey(size_t* foundIndex, const ADUC_RootKeyPack
     return false;
 }
 
-_Bool RootKeyUtil_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVector)
+_Bool RootKeyUtility_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVector)
 {
     _Bool success = false;
 
@@ -198,18 +198,18 @@ done:
     return success;
 }
 
-RootKeyUtility_ValidationResult RootKeyUtil_ValidatePackageWithKey(const ADUC_RootKeyPackage* rootKeyPackage, const ADUC_RootKey* rootKey)
+RootKeyUtility_ValidationResult RootKeyUtility_ValidatePackageWithKey(const ADUC_RootKeyPackage* rootKeyPackage, const RSARootKey rootKey)
 {
     RootKeyUtility_ValidationResult result = RootKeyUtility_ValidationResult_Failure;
     CryptoKeyHandle rootKeyCryptoKey = NULL;
 
-    if (rootKeyPackage == NULL || rootKey == NULL)
+    if (rootKeyPackage == NULL )
     {
         goto done;
     }
 
     size_t signatureIndex = 0;
-    if (! RootKeyUtils_GetSignatureForKey(&signatureIndex, rootKeyPackage,rootKey->kid))
+    if (! RootKeyUtility_GetSignatureForKey(&signatureIndex, rootKeyPackage,rootKey.kid))
     {
         result = RootKeyUtility_ValidationResult_SignatureForKeyNotFound;
         goto done;
@@ -224,7 +224,7 @@ RootKeyUtility_ValidationResult RootKeyUtil_ValidatePackageWithKey(const ADUC_Ro
         goto done;
     }
 
-    rootKeyCryptoKey = MakeCryptoKeyHandleFromADUC_RootKey(rootKey);
+    rootKeyCryptoKey = RootKeyUtility_GetKeyForKid(rootKey.kid);
 
     if (rootKeyCryptoKey == NULL)
     {
@@ -255,25 +255,20 @@ done:
     return result;
 }
 
-RootKeyUtility_ValidationResult RootKeyUtil_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage )
+RootKeyUtility_ValidationResult RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage )
 {
     RootKeyUtility_ValidationResult result = RootKeyUtility_ValidationResult_Failure;
 
     VECTOR_HANDLE hardcodedRootKeys = NULL;
 
-    if (! RootKeyUtil_GetHardcodedKeysAsAducRootKeys(&hardcodedRootKeys))
-    {
-        result = RootKeyUtility_ValidationResult_HardcodedRootKeyLoadFailed;
-        goto done;
-    }
-
-    const size_t numHardcodedKeys = VECTOR_size(hardcodedRootKeys);
+    const RSARootKey* hardcodedRsaKeys = RootKeyList_GetHardcodedRsaRootKeys();
+    const size_t numHardcodedKeys = RootKeyList_numHardcodedKeys();
 
     for (size_t i = 0; i < numHardcodedKeys; ++i)
     {
-        ADUC_RootKey* rootKey = (ADUC_RootKey*)VECTOR_element(hardcodedRootKeys,i);
+        const RSARootKey rootKey = hardcodedRsaKeys[i];
 
-        result = RootKeyUtil_ValidatePackageWithKey(rootKeyPackage,rootKey);
+        result = RootKeyUtility_ValidatePackageWithKey(rootKeyPackage,rootKey);
 
         if (result != RootKeyUtility_ValidationResult_Success)
         {
