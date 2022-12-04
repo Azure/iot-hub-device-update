@@ -131,7 +131,6 @@ static std::string convert_hexcolon_to_URLUIntBase64String(const std::string& he
     free(encoded);
     return base64url;
 }
-
 static std::string get_valid_rootkey_package(
     const char* disabledHashPublicSigningKey,
     const char* modulus_1,
@@ -326,6 +325,19 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         VerifyRsaParams(rootkey1->rsaParameters, ROOTKEY_1_MODULUS, ROOTKEY_1_EXPONENT);
         VerifyRsaParams(rootkey2->rsaParameters, ROOTKEY_2_MODULUS, ROOTKEY_2_EXPONENT);
         VerifyRsaParams(rootkey3->rsaParameters, ROOTKEY_3_MODULUS, ROOTKEY_3_EXPONENT);
+
+        //
+        // Verify "protected" properties tring
+        //
+        JSON_Value* pkgJson = json_parse_string(rootKeyPkgJsonStr.c_str());
+
+        REQUIRE(pkgJson != NULL);
+
+        std::string protectedProperties = get_serialized_protectedProperties(pkgJson);
+
+        CHECK_THAT(STRING_c_str(pkg.protectedPropertiesJsonString),Equals(protectedProperties.c_str()));
+
+        json_value_free(pkgJson);
 
         //
         // Verify "signatures" properties
