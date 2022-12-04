@@ -21,6 +21,7 @@ add_subdirectory (process_utils)
 add_subdirectory (rootkeypackage_utils)
 add_subdirectory (string_utils)
 add_subdirectory (system_utils)
+add_subdirectory (url_utils)
 add_subdirectory (workflow_data_utils)
 add_subdirectory (workflow_utils)
 

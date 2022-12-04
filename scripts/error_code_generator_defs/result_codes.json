@@ -993,6 +993,25 @@
                 "value": 28
               }
             ]
+          },
+          {
+            "code": 6,
+            "doc_string": "indicates errors from url utility.",
+            "name": "ADUC_COMPONENT_URL_UTIL",
+            "results": [
+              {
+                "name": "ADUC_ERC_UTILITIES_URL_CREATE",
+                "value": 0
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_URL_GET_PATH",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_URL_BAD_PATH",
+                "value": 2
+              }
+            ]
           }
         ],
         "code": 8,
