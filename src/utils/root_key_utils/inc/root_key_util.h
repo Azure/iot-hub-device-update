@@ -16,7 +16,7 @@
 
 EXTERN_C_BEGIN
 
-RootKeyUtility_ValidationResult RootKeyUtil_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage );
+RootKeyUtility_ValidationResult RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage );
 
 /**
  * @brief Get the Key For Kid object
