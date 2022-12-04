@@ -1,3 +1,11 @@
+/**
+ * @file rootkeypackage_parse.h
+ * @brief Header for rootkeypackage parse module.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #ifndef ROOTKEYPACKAGE_PARSE_H
 #define ROOTKEYPACKAGE_PARSE_H
 
@@ -19,6 +27,7 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
 ADUC_Result RootKeyPackage_ParseRootKeys(JSON_Object* protectedPropertiesObj, ADUC_RootKeyPackage* outPackage);
 ADUC_Result
 RootKeyPackage_ParseProtectedProperties(JSON_Object* protectedPropertiesObj, ADUC_RootKeyPackage* outPackage);
+ADUC_Result RootKeyPackage_ParseProtectedPropertiesString(JSON_Object* rootObj, ADUC_RootKeyPackage* outPackage);
 ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* signaturesObj, ADUC_RootKeyPackage* outPackage);
 
 void ADUC_RootKey_DeInit(ADUC_RootKey* node);

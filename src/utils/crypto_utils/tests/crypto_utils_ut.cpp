@@ -7,6 +7,7 @@
  */
 #include "base64_utils.h"
 #include "crypto_lib.h"
+#include "root_key_util.h"
 #include <aduc/calloc_wrapper.hpp>
 #include <catch2/catch.hpp>
 #include <cstring>
@@ -67,7 +68,7 @@ TEST_CASE("RSA Keys")
 
     SECTION("Getting a Root Key ID")
     {
-        CryptoKeyHandle key = GetRootKeyForKeyID("ADU.200702.R");
+        CryptoKeyHandle key = RootKeyUtility_GetKeyForKid("ADU.200702.R");
 
         CHECK(key != nullptr);
 
@@ -76,7 +77,7 @@ TEST_CASE("RSA Keys")
 
     SECTION("Failing to get a Root Key")
     {
-        CryptoKeyHandle key = GetRootKeyForKeyID("foo");
+        CryptoKeyHandle key = RootKeyUtility_GetKeyForKid("foo");
         CHECK(key == nullptr);
     }
 }
@@ -109,7 +110,7 @@ TEST_CASE("Signature Verification")
                           "CV29BMDVyQ1oiLCJlIjoiQVFBQiIsImFsZyI6IlJTMjU2Iiwia2lkIjoiQURVL"
                           "jIwMDcwMi5SLlMifQ" };
 
-        CryptoKeyHandle key = GetRootKeyForKeyID("ADU.200702.R");
+        CryptoKeyHandle key = RootKeyUtility_GetKeyForKid("ADU.200702.R");
 
         uint8_t* d_sig_handle = nullptr;
         size_t sig_len = Base64URLDecode(signature.c_str(), &d_sig_handle);
@@ -151,7 +152,7 @@ TEST_CASE("Signature Verification")
                           "CV29BMDVyQ1oiLCJlIjoiQVFBQiIsImFsZyI6IlJTMjU2Iiwia2lkIjoiQURVL"
                           "jIwMDcwMi5SLlMifQ" };
 
-        CryptoKeyHandle key = GetRootKeyForKeyID("ADU.200702.R");
+        CryptoKeyHandle key = RootKeyUtility_GetKeyForKid("ADU.200702.R");
 
         uint8_t* d_sig_handle = nullptr;
         size_t sig_len = Base64URLDecode(signature.c_str(), &d_sig_handle);

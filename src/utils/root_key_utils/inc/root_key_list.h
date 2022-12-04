@@ -5,10 +5,13 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+#include <umock_c/umock_c_prod.h>
+#include "aduc/c_utils.h"
+
 #ifndef ROOT_KEY_LIST_H
 #define ROOT_KEY_LIST_H
 
-#include <umock_c/umock_c_prod.h>
+EXTERN_C_BEGIN
 
 typedef struct tagRSARootKey
 {
@@ -18,5 +21,9 @@ typedef struct tagRSARootKey
 } RSARootKey;
 
 MOCKABLE_FUNCTION(, const RSARootKey*,RootKeyList_GetHardcodedRsaRootKeys,)
+
+MOCKABLE_FUNCTION(, size_t, RootKeyList_numHardcodedKeys,)
+
+EXTERN_C_END
 
 #endif // ROOT_KEY_LIST_H

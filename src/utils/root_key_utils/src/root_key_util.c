@@ -8,6 +8,8 @@
  * Licensed under the MIT License.
  */
 
+#include "root_key_util.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -15,11 +17,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-
+#include <azure_c_shared_utility/constbuffer.h>
+#include <azure_c_shared_utility/strings.h>
+#include <azure_c_shared_utility/vector.h>
 #include "crypto_lib.h"
 #include "base64_utils.h"
 #include "root_key_list.h"
-#include "root_key_util.h"
 #include "root_key_result.h"
 #include "aduc/rootkeypackage_parse.h"
 #include "aduc/rootkeypackage_types.h"
@@ -100,9 +103,9 @@ _Bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const RSARoo
     success = true;
 done:
 
-    if (kid != NULL)
+    if (! success)
     {
-        STRING_delete(kid);
+        ADUC_RootKey_DeInit(rootKey);
     }
 
     return success;
@@ -149,7 +152,7 @@ _Bool RootKeyUtil_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVecto
 
     const RSARootKey* rsaKeyList = RootKeyList_GetHardcodedRsaRootKeys();
 
-    const size_t rsaKeyListSize = ARRAY_SIZE(rsaKeyList);
+    const size_t rsaKeyListSize = RootKeyList_numHardcodedKeys();
 
     for (int i=0 ; i < rsaKeyListSize; ++i)
     {
@@ -160,6 +163,11 @@ _Bool RootKeyUtil_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVecto
             goto done;
         }
         VECTOR_push_back(tempHandle,&rootKey,1);
+    }
+
+    if (VECTOR_size(tempHandle) == 0)
+    {
+        goto done;
     }
 
     //
@@ -378,7 +386,7 @@ CryptoKeyHandle RootKeyUtility_GetKeyForKid(const char* kid)
 
     const RSARootKey* hardcodedRsaRootKeys = RootKeyList_GetHardcodedRsaRootKeys();
 
-    const unsigned numberKeys = (sizeof(hardcodedRsaRootKeys) / sizeof(RSARootKey));
+    const unsigned numberKeys = RootKeyList_numHardcodedKeys();
     for (unsigned i = 0; i < numberKeys; ++i)
     {
         if (strcmp(hardcodedRsaRootKeys[i].kid, kid) == 0)

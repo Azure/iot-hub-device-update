@@ -18,7 +18,7 @@ set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::c_utils
-    PRIVATE aziotsharedutil OpenSSL::Crypto)
+    PRIVATE aziotsharedutil aduc::root_key_utils OpenSSL::Crypto )
 
 # Always support test root keys.
 add_definitions (-DBUILD_WITH_TEST_KEYS=1)

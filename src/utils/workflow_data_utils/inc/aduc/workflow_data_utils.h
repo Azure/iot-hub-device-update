@@ -86,6 +86,13 @@ char* ADUC_WorkflowData_GetUpdateType(const ADUC_WorkflowData* workflowData);
  */
 char* ADUC_WorkflowData_GetInstalledCriteria(const ADUC_WorkflowData* workflowData);
 
+/**
+ * @brief Creates a Workflow for the WorkflowHandle of the workflow data.
+ *
+ * @param workflowData The workflow data for which WorkflowHandle will be initialized.
+ */
+bool ADUC_WorkflowData_InitWorkflowHandle(ADUC_WorkflowData* workflowData);
+
 EXTERN_C_END
 
 #endif // ADUC_DATA_WORKFLOW_UTILS_H

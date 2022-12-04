@@ -22,10 +22,17 @@
 
 using Catch::Matchers::Equals;
 
-static std::string get_valid_rootkey_package_template_json_path()
+static std::string get_rootkey_package_template_json_path()
 {
     std::string path{ ADUC_TEST_DATA_FOLDER };
-    path += "/rootkeypackage_utils/valid_test_rootkeypackage.json";
+    path += "/rootkeypackage_utils/rootkeypackage_template.json";
+    return path;
+}
+
+static std::string get_example_rootkey_package_json_path()
+{
+    std::string path{ ADUC_TEST_DATA_FOLDER };
+    path += "/rootkeypackage_utils/rootkeypackage.json";
     return path;
 }
 
@@ -47,18 +54,6 @@ static std::string get_serialized_protectedProperties(JSON_Value* rootkeyPkgJson
     serializedProtectedProperties_cstr = nullptr;
 
     return protectedPropertiesSerialized;
-}
-
-static std::string LoadTemplateRootKeyPackageJson(JSON_Value* rootKeyJsonValue)
-{
-    std::string templateStr;
-
-    char* serializedTemplate_cstr = json_serialize_to_string(rootKeyJsonValue);
-    REQUIRE(serializedTemplate_cstr != nullptr);
-    templateStr = serializedTemplate_cstr;
-    json_free_serialized_string(serializedTemplate_cstr);
-
-    return templateStr;
 }
 
 static std::string fillout_protected_properties_template_params(
@@ -136,7 +131,6 @@ static std::string convert_hexcolon_to_URLUIntBase64String(const std::string& he
     free(encoded);
     return base64url;
 }
-
 static std::string get_valid_rootkey_package(
     const char* disabledHashPublicSigningKey,
     const char* modulus_1,
@@ -149,16 +143,13 @@ static std::string get_valid_rootkey_package(
     const aduc::rootkeypkgtestutils::TestRSAPrivateKey& rootkey2_privateKey,
     const aduc::rootkeypkgtestutils::TestRSAPrivateKey& rootkey3_privateKey)
 {
-    JSON_Value* pkgJsonValue = json_parse_file(get_valid_rootkey_package_template_json_path().c_str());
-    REQUIRE(pkgJsonValue != nullptr);
-
-    // Load template root key package JSON
-    std::string templateStr = LoadTemplateRootKeyPackageJson(pkgJsonValue);
+    std::string json_template = aduc::FileTestUtils_slurpFile(get_rootkey_package_template_json_path().c_str());
+    REQUIRE(json_template.length() > 0);
 
     // Fill out the "protected" properties template parameters, but do not fill out
     // the signatures "sig" properties yet.
-    templateStr = fillout_protected_properties_template_params(
-        templateStr,
+    std::string templateStr = fillout_protected_properties_template_params(
+        json_template,
         disabledHashPublicSigningKey,
         modulus_1,
         exponent_1,
@@ -169,6 +160,9 @@ static std::string get_valid_rootkey_package(
 
     // Generate the signatures using the rootkey private keys passed in
     // and the protected properties data to be signed.
+    JSON_Value* pkgJsonValue = json_parse_string(templateStr.c_str());
+    REQUIRE(pkgJsonValue != nullptr);
+
     std::string protectedProperties = get_serialized_protectedProperties(pkgJsonValue);
 
     std::string rootkeysig_1 = rootkey1_privateKey.SignData(protectedProperties);
@@ -204,7 +198,7 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_JSON);
     }
 
-    SECTION("valid")
+    SECTION("valid template")
     {
         aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair1{ aduc::rootkeypkgtestutils::rootkeys::rootkey1 };
         aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair2{ aduc::rootkeypkgtestutils::rootkeys::rootkey2 };
@@ -333,6 +327,19 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         VerifyRsaParams(rootkey3->rsaParameters, ROOTKEY_3_MODULUS, ROOTKEY_3_EXPONENT);
 
         //
+        // Verify "protected" properties tring
+        //
+        JSON_Value* pkgJson = json_parse_string(rootKeyPkgJsonStr.c_str());
+
+        REQUIRE(pkgJson != NULL);
+
+        std::string protectedProperties = get_serialized_protectedProperties(pkgJson);
+
+        CHECK_THAT(STRING_c_str(pkg.protectedPropertiesJsonString),Equals(protectedProperties.c_str()));
+
+        json_value_free(pkgJson);
+
+        //
         // Verify "signatures" properties
         //
         REQUIRE(pkg.signatures != nullptr);
@@ -367,5 +374,14 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         // Cleanup
         //
         ADUC_RootKeyPackageUtils_Destroy(&pkg);
+    }
+
+    SECTION("valid example")
+    {
+        std::string rootkey_pkg_json = aduc::FileTestUtils_slurpFile(get_example_rootkey_package_json_path());
+
+        ADUC_RootKeyPackage pkg{};
+        ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(rootkey_pkg_json.c_str(), &pkg);
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
     }
 }
