@@ -61,6 +61,12 @@ ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyP
         goto done;
     }
 
+    result = RootKeyPackage_ParseProtectedPropertiesString(rootObj,&pkg);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        goto done;
+    }
+
     result = RootKeyPackage_ParseSignatures(rootObj, &pkg);
     if (IsAducResultCodeFailure(result.ResultCode))
     {

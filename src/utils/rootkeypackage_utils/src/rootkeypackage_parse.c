@@ -818,6 +818,54 @@ done:
     return result;
 }
 
+ADUC_Result RootKeyPackage_ParseProtectedPropertiesString(JSON_Object* rootObj, ADUC_RootKeyPackage* outPackage)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
+    STRING_HANDLE protectedPropertiesStringHandle = NULL;
+
+    if (rootObj == NULL || outPackage == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
+        goto done;
+    }
+
+    JSON_Value* protectedPropertiesValue = json_object_get_value(rootObj,ADUC_ROOTKEY_PACKAGE_PROPERTY_PROTECTED);
+
+    if (protectedPropertiesValue == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_PROTECTED;
+        goto done;
+    }
+
+    const char* protectedPropertiesString = json_serialize_to_string(protectedPropertiesValue);
+
+    protectedPropertiesStringHandle = STRING_construct(protectedPropertiesString);
+
+    if (protectedPropertiesStringHandle == NULL)
+    {
+        goto done;
+    }
+
+    result.ResultCode = ADUC_GeneralResult_Success;
+
+done:
+
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error("ERC %d parsing 'protected' property to string", result.ResultCode);
+
+        if (protectedPropertiesStringHandle != NULL)
+        {
+            STRING_delete(protectedPropertiesStringHandle);
+            protectedPropertiesStringHandle = NULL;
+        }
+    }
+
+    outPackage->protectedPropertiesJsonString = protectedPropertiesStringHandle;
+
+    return result;
+}
 /**
  * @brief Parses the signatures properties in accordance with rootkeypackage.schema.json
  *
