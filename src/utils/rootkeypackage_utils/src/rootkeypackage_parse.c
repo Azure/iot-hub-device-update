@@ -1,3 +1,10 @@
+/**
+ * @file rootkeypackage_parse.c
+ * @brief rootkeypackage_parse implementation.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
 
 #include "aduc/rootkeypackage_parse.h"
 #include "aduc/rootkeypackage_json_properties.h"
