@@ -53,11 +53,6 @@ function (target_link_dosdk target scope)
         find_package (deliveryoptimization_sdk CONFIG REQUIRED)
         target_link_libraries (${target} ${scope} Microsoft::deliveryoptimization)
     else ()
-        message (
-            FATAL_ERROR
-                target_link_dosdk
-                referenced
-                on
-                Windows)
+        message (FATAL_ERROR "target_link_dosdk referenced on Windows build")
     endif ()
 endfunction (target_link_dosdk)

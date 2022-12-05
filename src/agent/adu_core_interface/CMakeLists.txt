@@ -50,8 +50,7 @@ if (NOT
     ADUC_PLATFORM_LAYER
     STREQUAL
     "simulator")
-    find_package (deliveryoptimization_sdk CONFIG REQUIRED)
-    target_link_libraries (${PROJECT_NAME} PRIVATE Microsoft::deliveryoptimization)
+    target_link_dosdk (${target_name} PRIVATE)
 else ()
     target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_PLATFORM_SIMULATOR)
 endif ()

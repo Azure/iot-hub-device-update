@@ -252,6 +252,12 @@ if ($build_documentation) {
     }
 }
 
+# TODO(JeffMill): Add a 'windows' platform layer. simulator seems to be broken.
+if ($platform_layer -ne 'linux') {
+    Error 'Only linux platform layer is supported currently!'
+    exit 1
+}
+
 # Set default log dir if not specified.
 if (-not $adu_log_dir) {
     if ($platform_layer -eq 'simulator') {
@@ -261,7 +267,6 @@ if (-not $adu_log_dir) {
         $adu_log_dir = $default_log_dir
     }
 }
-
 
 $runtime_dir = "$output_directory/bin"
 $library_dir = "$output_directory/lib"
