@@ -993,6 +993,30 @@
                             "value": 28
                         }
                     ]
+                },
+                {
+                    "code": 6,
+                    "doc_string": "indicates errors from RootKey Utilities or function",
+                    "name": "ADUC_COMPONENT_ROOTKEY_UTIL",
+                    "results": [
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_UNEXPECTED",
+                            "value": 1
+                        },
+
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_HARDCODED_ROOTKEY_LOAD_FAILED",
+                            "value": 2
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_FOR_KEY_NOT_FOUND",
+                            "value": 3
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_VALIDATION_FAILED",
+                            "value": 4
+                        }
+                    ]
                 }
             ],
             "code": 8,
