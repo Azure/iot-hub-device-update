@@ -641,6 +641,10 @@
               {
                 "name": "ADUC_ERC_CONTENT_DOWNLOADER_UNSUPPORTED_CONTRACT_VERSION",
                 "value": 13
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_EXTENSIONMANAGER_DOWNLOAD_BADARG",
+                "value": 14
               }
             ]
           },
@@ -999,6 +1003,62 @@
               {
                 "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_INVALID_EXPONENT",
                 "value": 28
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_DOWNLOAD_URL_PARSE",
+                "value": 29
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_DOWNLOAD_HTTP_URL_PATH_PARSE",
+                "value": 30
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_DOWNLOAD_URL_BAD_PATH",
+                "value": 31
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_DOWNLOAD_BADARG",
+                "value": 32
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_DOWNLOAD_MKDIR_DWNLD_FOLDER",
+                "value": 33
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_DOWNLOAD_FAILED",
+                "value": 34
+              },
+              {
+                "name": "ADUC_ERC_ROOTKEYPKG_DOWNLOADER_CURL_INIT",
+                "value": 35
+              },
+              {
+                "name": "ADUC_ERC_ROOTKEYPKG_DOWNLOADER_CURL_SETOPT_PROTOCOLS",
+                "value": 36
+              },
+              {
+                "name": "ADUC_ERC_ROOTKEYPKG_DOWNLOADER_CURL_SETOPT_URL",
+                "value": 37
+              },
+              {
+                "name": "ADUC_ERC_ROOTKEYPKG_DOWNLOADER_CURL_SETOPT_TIMEOUT",
+                "value": 38
+              },
+              {
+                "name": "ADUC_ERC_ROOTKEYPKG_DOWNLOADER_CURL_SETOPT_WRITEFUNCTION",
+                "value": 39
+              },
+              {
+                "name": "ADUC_ERC_ROOTKEYPKG_DOWNLOADER_CURL_SETOPT_WRITEDATA",
+                "value": 40
+              },
+              {
+                "name": "ADUC_ERC_ROOTKEYPKG_DOWNLOADER_CURL_PERFORM_DOWNLOAD",
+                "value": 41
+              },
+              {
+                "name": "ADUC_ERC_ROOTKEYPKG_DOWNLOADER_CURL_FILEWRITE",
+                "value": 42
               }
             ]
           },

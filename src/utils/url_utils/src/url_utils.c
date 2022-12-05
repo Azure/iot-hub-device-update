@@ -10,7 +10,7 @@
 #include "aduc/http_url.h"
 #include "aduc/string_c_utils.h"
 
-ADUC_Result GetLastPathSegmentOfUrl(const char* url, STRING_HANDLE* outLastPathSegment)
+ADUC_Result ADUC_UrlUtils_GetLastPathSegmentOfUrl(const char* url, STRING_HANDLE* outLastPathSegment)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 

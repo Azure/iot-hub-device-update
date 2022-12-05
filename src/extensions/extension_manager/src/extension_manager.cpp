@@ -46,7 +46,7 @@ using ADUC::StringUtils::cstr_wrapper;
 
 EXTERN_C_BEGIN
 ExtensionManager_Download_Options Default_ExtensionManager_Download_Options = {
-    .retryTimeout = 60 * 60 * 24 /* default : 24 hour */,
+    /* .retryTimeout = */ 60 * 60 * 24 /* default : 24 hour */,
 };
 EXTERN_C_END
 
@@ -80,7 +80,7 @@ ADUC_Result ExtensionManager::LoadExtensionLibrary(
     int componentCode,
     void** libHandle)
 {
-    ADUC_Result result{ ADUC_GeneralResult_Failure };
+    ADUC_Result result{ ADUC_GeneralResult_Failure, 0 };
     ADUC_FileEntity entity = {};
     SHAversion algVersion;
 
@@ -175,7 +175,8 @@ ADUC_Result ExtensionManager::LoadExtensionLibrary(
     // Cache the loaded library.
     ExtensionManager::_libs.emplace(extensionName, *libHandle);
 
-    result = { ADUC_Result_Success };
+    result.ResultCode = ADUC_GeneralResult_Success;
+    result.ExtendedResultCode = 0;
 
 done:
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -202,7 +203,7 @@ done:
 ADUC_Result
 ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateType, ContentHandler** handler)
 {
-    ADUC_Result result = { ADUC_Result_Failure };
+    ADUC_Result result = { ADUC_Result_Failure, 0 };
 
     UPDATE_CONTENT_HANDLER_CREATE_PROC createUpdateContentHandlerExtensionFn = nullptr;
     GET_CONTRACT_INFO_PROC getContractInfoFn = nullptr;
@@ -263,6 +264,9 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
     {
         goto done;
     }
+
+    result.ResultCode = ADUC_GeneralResult_Failure;
+    result.ExtendedResultCode = 0;
 
     dlerror(); // Clear any existing error
 
@@ -337,7 +341,8 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
     Log_Debug("Caching new content handler for '%s'.", updateType.c_str());
     _contentHandlers.emplace(updateType, *handler);
 
-    result = { ADUC_GeneralResult_Success };
+    result.ResultCode = ADUC_GeneralResult_Success;
+    result.ExtendedResultCode = 0;
 
 done:
     if (result.ResultCode == 0)
@@ -377,7 +382,8 @@ ADUC_Result ExtensionManager::SetUpdateContentHandlerExtension(const std::string
 
     _contentHandlers.emplace(updateType, handler);
 
-    result = { ADUC_GeneralResult_Success };
+    result.ResultCode = ADUC_GeneralResult_Success;
+    result.ExtendedResultCode = 0;
 
 done:
     return result;
@@ -445,6 +451,9 @@ ADUC_Result ExtensionManager::LoadContentDownloaderLibrary(void** contentDownloa
         goto done;
     }
 
+    result.ResultCode = ADUC_GeneralResult_Failure;
+    result.ExtendedResultCode = 0;
+
     for (auto& functionName : functionNames)
     {
         dlerror(); // Clear any existing error
@@ -453,8 +462,9 @@ ADUC_Result ExtensionManager::LoadContentDownloaderLibrary(void** contentDownloa
         if (downloadFunc == nullptr)
         {
             Log_Error("The specified function ('%s') doesn't exist. %s\n", functionName, dlerror());
-            result = { .ResultCode = ADUC_GeneralResult_Failure,
-                       .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_CREATE_FAILURE_NO_SYMBOL };
+
+            result.ResultCode = ADUC_GeneralResult_Failure;
+            result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_CREATE_FAILURE_NO_SYMBOL;
             goto done;
         }
     }
@@ -482,7 +492,8 @@ ADUC_Result ExtensionManager::LoadContentDownloaderLibrary(void** contentDownloa
 
     *contentDownloaderLibrary = _contentDownloader = extensionLib;
 
-    result = { ADUC_Result_Success };
+    result.ResultCode = ADUC_Result_Success;
+    result.ExtendedResultCode = 0;
 
 done:
     return result;
@@ -490,7 +501,7 @@ done:
 
 ADUC_Result ExtensionManager::SetContentDownloaderLibrary(void* contentDownloaderLibrary)
 {
-    ADUC_Result result = { ADUC_Result_Success };
+    ADUC_Result result = { ADUC_Result_Success, 0 };
     _contentDownloader = contentDownloaderLibrary;
     return result;
 }
@@ -503,7 +514,7 @@ ADUC_Result ExtensionManager::GetContentDownloaderContractVersion(ADUC_Extension
 
 ADUC_Result ExtensionManager::GetComponentEnumeratorContractVersion(ADUC_ExtensionContractInfo* contractInfo)
 {
-    ADUC_Result result = { ADUC_Result_Success };
+    ADUC_Result result = { ADUC_Result_Success, 0 };
     *contractInfo = _componentEnumeratorContractVersion;
     return result;
 }
@@ -517,7 +528,7 @@ bool ExtensionManager::IsComponentsEnumeratorRegistered()
 
 ADUC_Result ExtensionManager::LoadComponentEnumeratorLibrary(void** componentEnumerator)
 {
-    ADUC_Result result = { ADUC_Result_Failure };
+    ADUC_Result result = { ADUC_Result_Failure, 0 };
     void* mainFunc = nullptr;
     void* extensionLib = nullptr;
     const char* requiredFunction = COMPONENT_ENUMERATOR__GetAllComponents__EXPORT_SYMBOL;
@@ -545,6 +556,9 @@ ADUC_Result ExtensionManager::LoadComponentEnumeratorLibrary(void** componentEnu
         goto done;
     }
 
+    result.ResultCode = ADUC_Result_Failure;
+    result.ExtendedResultCode = 0;
+
     dlerror(); // Clear any existing error
     try
     {
@@ -558,8 +572,9 @@ ADUC_Result ExtensionManager::LoadComponentEnumeratorLibrary(void** componentEnu
     {
         // Log info instead of error since some extension is optional and may not be registered.
         Log_Info("The specified function ('%s') doesn't exist. %s\n", requiredFunction, dlerror());
-        result = { .ResultCode = ADUC_GeneralResult_Failure,
-                   .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_NO_SYMBOL };
+
+        result.ResultCode = ADUC_GeneralResult_Failure;
+        result.ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_NO_SYMBOL;
         goto done;
     }
 
@@ -585,7 +600,8 @@ ADUC_Result ExtensionManager::LoadComponentEnumeratorLibrary(void** componentEnu
 
     *componentEnumerator = _componentEnumerator = extensionLib;
 
-    result = { ADUC_Result_Success };
+    result.ResultCode = ADUC_Result_Success;
+    result.ExtendedResultCode = 0;
 
 done:
     return result;
@@ -602,6 +618,9 @@ void ExtensionManager::_FreeComponentsDataString(char* componentsJson)
         goto done;
     }
 
+    result.ResultCode = ADUC_GeneralResult_Failure;
+    result.ExtendedResultCode = 0;
+
     if (ExtensionManager::_componentEnumeratorContractVersion.majorVer == ADUC_V1_CONTRACT_MAJOR_VER
         && ExtensionManager::_componentEnumeratorContractVersion.minorVer == ADUC_V1_CONTRACT_MINOR_VER)
     {
@@ -612,8 +631,8 @@ void ExtensionManager::_FreeComponentsDataString(char* componentsJson)
 
         if (freeComponentsDataStringProc == nullptr)
         {
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_FREECOMPONENTSDATASTRING_NOTIMP };
+            result.ResultCode = ADUC_Result_Failure;
+            result.ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_FREECOMPONENTSDATASTRING_NOTIMP;
 
             goto done;
         }
@@ -635,12 +654,14 @@ void ExtensionManager::_FreeComponentsDataString(char* componentsJson)
             "Unsupported contract %d.%d",
             ExtensionManager::_componentEnumeratorContractVersion.majorVer,
             ExtensionManager::_componentEnumeratorContractVersion.minorVer);
+
         result.ResultCode = ADUC_Result_Failure;
         result.ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_UNSUPPORTED_CONTRACT_VERSION;
         goto done;
     }
 
-    result = { ADUC_GeneralResult_Success };
+    result.ResultCode = ADUC_GeneralResult_Success;
+    result.ExtendedResultCode = 0;
 
 done:
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -668,6 +689,9 @@ ADUC_Result ExtensionManager::GetAllComponents(std::string& outputComponentsData
         goto done;
     }
 
+    result.ResultCode = ADUC_Result_Failure;
+    result.ExtendedResultCode = 0;
+
     if (ExtensionManager::_componentEnumeratorContractVersion.majorVer == ADUC_V1_CONTRACT_MAJOR_VER
         && ExtensionManager::_componentEnumeratorContractVersion.minorVer == ADUC_V1_CONTRACT_MINOR_VER)
     {
@@ -678,8 +702,8 @@ ADUC_Result ExtensionManager::GetAllComponents(std::string& outputComponentsData
                 dlsym(lib, COMPONENT_ENUMERATOR__GetAllComponents__EXPORT_SYMBOL));
             if (_getAllComponents == nullptr)
             {
-                result = { .ResultCode = ADUC_Result_Failure,
-                           .ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_GETALLCOMPONENTS_NOTIMP };
+                result.ResultCode = ADUC_Result_Failure;
+                result.ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_GETALLCOMPONENTS_NOTIMP;
                 goto done;
             }
         }
@@ -690,8 +714,8 @@ ADUC_Result ExtensionManager::GetAllComponents(std::string& outputComponentsData
         }
         catch (...)
         {
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_GETALLCOMPONENTS };
+            result.ResultCode = ADUC_Result_Failure;
+            result.ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_GETALLCOMPONENTS;
             goto done;
         }
 
@@ -707,12 +731,14 @@ ADUC_Result ExtensionManager::GetAllComponents(std::string& outputComponentsData
             "Unsupported contract version %d.%d",
             ExtensionManager::_componentEnumeratorContractVersion.majorVer,
             ExtensionManager::_componentEnumeratorContractVersion.minorVer);
+
         result.ResultCode = ADUC_GeneralResult_Failure;
         result.ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_UNSUPPORTED_CONTRACT_VERSION;
         goto done;
     }
 
-    result = { ADUC_GeneralResult_Success, 0 };
+    result.ResultCode = ADUC_GeneralResult_Success;
+    result.ExtendedResultCode = 0;
 
 done:
     return result;
@@ -737,13 +763,16 @@ ADUC_Result ExtensionManager::SelectComponents(const std::string& selector, std:
         goto done;
     }
 
+    result.ResultCode = ADUC_Result_Failure;
+    result.ExtendedResultCode = 0;
+
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     _selectComponents =
         reinterpret_cast<SelectComponentsProc>(dlsym(lib, COMPONENT_ENUMERATOR__SelectComponents__EXPORT_SYMBOL));
     if (_selectComponents == nullptr)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_SELECTCOMPONENTS_NOTIMP };
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_SELECTCOMPONENTS_NOTIMP;
         goto done;
     }
 
@@ -753,8 +782,8 @@ ADUC_Result ExtensionManager::SelectComponents(const std::string& selector, std:
     }
     catch (...)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_GETALLCOMPONENTS };
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERC_COMPONENT_ENUMERATOR_EXCEPTION_GETALLCOMPONENTS;
         goto done;
     }
 
@@ -780,6 +809,9 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
         goto done;
     }
 
+    result.ResultCode = ADUC_GeneralResult_Failure;
+    result.ExtendedResultCode = 0;
+
     if (ExtensionManager::_contentDownloaderContractVersion.majorVer != ADUC_V1_CONTRACT_MAJOR_VER
         && ExtensionManager::_contentDownloaderContractVersion.minorVer != ADUC_V1_CONTRACT_MINOR_VER)
     {
@@ -787,7 +819,7 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
             "Unsupported contract version %d.%d",
             ExtensionManager::_contentDownloaderContractVersion.majorVer,
             ExtensionManager::_contentDownloaderContractVersion.minorVer);
-        result.ResultCode = ADUC_GeneralResult_Failure;
+
         result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_UNSUPPORTED_CONTRACT_VERSION;
         goto done;
     }
@@ -796,8 +828,7 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
     _initialize = reinterpret_cast<InitializeProc>(dlsym(lib, CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL));
     if (_initialize == nullptr)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP };
+        result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP;
         goto done;
     }
 
@@ -807,8 +838,8 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
     }
     catch (...)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZE_EXCEPTION };
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZE_EXCEPTION;
         goto done;
     }
 
@@ -827,7 +858,7 @@ ADUC_Result ExtensionManager::Download(
     char* components = nullptr;
     SHAversion algVersion;
 
-    ADUC_Result result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+    ADUC_Result result = { /*.ResultCode = */ ADUC_Result_Failure, /* .ExtendedResultCode = */ 0 };
     ADUC::StringUtils::STRING_HANDLE_wrapper targetUpdateFilePath{ nullptr };
 
     if (!workflow_get_entity_workfolder_filepath(workflowHandle, entity, targetUpdateFilePath.address_of()))
@@ -860,8 +891,8 @@ ADUC_Result ExtensionManager::Download(
     downloadProc = reinterpret_cast<DownloadProc>(dlsym(lib, CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL));
     if (downloadProc == nullptr)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP };
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP;
         goto done;
     }
 
@@ -872,6 +903,8 @@ ADUC_Result ExtensionManager::Download(
             "FileEntity for %s has unsupported hash type %s",
             targetUpdateFilePath.c_str(),
             ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0));
+
+        result.ResultCode = ADUC_Result_Failure;
         result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_FILE_HASH_TYPE_NOT_SUPPORTED;
         goto done;
     }
@@ -906,7 +939,8 @@ ADUC_Result ExtensionManager::Download(
             }
         }
 
-        result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
+        result.ResultCode = ADUC_Result_Success;
+        result.ExtendedResultCode = 0;
         goto done;
     }
 
@@ -915,7 +949,8 @@ ADUC_Result ExtensionManager::Download(
         const char* workflowId = workflow_peek_id(workflowHandle);
         cstr_wrapper workFolder{ workflow_get_workfolder(workflowHandle) };
 
-        result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = 0;
 
         // First, attempt to produce the update using download handler if
         // download handler exists in the entity (metadata).
@@ -992,8 +1027,8 @@ ADUC_Result ExtensionManager::Download(
     }
     catch (...)
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION };
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION;
         goto done;
     }
 
@@ -1005,8 +1040,8 @@ ADUC_Result ExtensionManager::Download(
                 algVersion,
                 false))
         {
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_HASH };
+            result.ResultCode = ADUC_Result_Failure;
+            result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_HASH;
 
             workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
 

@@ -15,7 +15,7 @@
 
 EXTERN_C_BEGIN
 
-ADUC_Result GetLastPathSegmentOfUrl(const char* url, STRING_HANDLE* outLastPathSegment);
+ADUC_Result ADUC_UrlUtils_GetLastPathSegmentOfUrl(const char* url, STRING_HANDLE* outLastPathSegment);
 
 EXTERN_C_END
 

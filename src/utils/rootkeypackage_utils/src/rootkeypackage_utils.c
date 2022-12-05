@@ -8,8 +8,9 @@
 
 #include "aduc/rootkeypackage_utils.h"
 #include "aduc/rootkeypackage_parse.h"
-#include <aduc/c_utils.h> // for EXTERN_C_BEGIN, EXTERN_C_END
+#include <aduc/c_utils.h> // for EXTERN_C_BEGIN, EXTERN_C_END, HTTP_URL_HANDLE
 #include <aduc/string_c_utils.h> // for IsNullOrEmpty
+#include <azure_c_shared_utility/string_token.h>
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
 #include <parson.h>
@@ -86,30 +87,6 @@ done:
         ADUC_RootKeyPackageUtils_Destroy(&pkg);
     }
 
-    return result;
-}
-
-/**
- * @brief Downloads the rootkey package
- *
- * @param rootKeyPkgUrl The root key package URL.
- * @param workflowId The update deployment workflow Id.
- * @param outPathToRootKeyPackage The resultant path to the root key package file.
- */
-ADUC_Result ADUC_RootKeyPackageUtil_DownloadPackage(
-    const char* rootKeyPkgUrl, const char* workflowId, STRING_HANDLE* outRootKeyPackageDownloadedFile)
-{
-    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-
-    if (IsNullOrEmpty(rootKeyPkgUrl) || IsNullOrEmpty(workflowId) || outRootKeyPackageDownloadedFile == NULL)
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
-        goto done;
-    }
-
-    result.ResultCode = ADUC_GeneralResult_Success;
-
-done:
     return result;
 }
 

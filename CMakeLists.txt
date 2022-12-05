@@ -201,6 +201,14 @@ set (
     "${ADUC_DATA_FOLDER}/du-commands.fifo"
     CACHE STRING "The named-pipe for commands IPC.")
 
+set (
+    ADUC_ROOTKEY_PKG_URL_OVERRIDE
+    ""
+    CACHE
+        STRING
+        "An override URL to use for the public rootkey package. Leave empty to use the URL provided in the C2D message."
+)
+
 #
 # Starting from version 0.8.1, Device Update Agent must support only one version of the update manifest
 # based on the base dtmi model that the Agent announces when connecting to the IoT Hub.
