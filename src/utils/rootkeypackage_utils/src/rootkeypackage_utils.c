@@ -9,6 +9,7 @@
 #include "aduc/rootkeypackage_utils.h"
 #include "aduc/rootkeypackage_parse.h"
 #include <aduc/c_utils.h> // for EXTERN_C_BEGIN, EXTERN_C_END
+#include <base64_utils.h>
 #include <aduc/string_c_utils.h> // for IsNullOrEmpty
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
@@ -103,6 +104,9 @@ STRING_HANDLE RootKeyPackage_SigningAlgToString(const ADUC_RootKeySigningAlgorit
         break;
         case ADUC_RootKeySigningAlgorithm_RS512:
         algStr = STRING_construct("RS512");
+        break;
+        case ADUC_RootKeySigningAlgorithm_INVALID:
+        default:
         break;
     }
 
@@ -274,7 +278,7 @@ done:
 
     if (rootKeySignatureArrayValue != NULL)
     {
-        json_value_freE(rootKeySignatureArrayValue);
+        json_value_free(rootKeySignatureArrayValue);
     }
 
     if (sigJsonValueVector != NULL )

@@ -1003,7 +1003,6 @@
                             "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_UNEXPECTED",
                             "value": 1
                         },
-
                         {
                             "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_HARDCODED_ROOTKEY_LOAD_FAILED",
                             "value": 2
@@ -1015,6 +1014,22 @@
                         {
                             "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_VALIDATION_FAILED",
                             "value": 4
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_STORE_FAILED",
+                            "value": 5
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_BAD_ARGS",
+                            "value": 6
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANNOT_WRITE_PACKAGE_TO_STORE",
+                            "value": 7
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_RENAME_TO_STORE",
+                            "value": 8
                         }
                     ]
                 }
