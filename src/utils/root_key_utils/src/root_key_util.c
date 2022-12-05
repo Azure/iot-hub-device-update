@@ -332,9 +332,9 @@ done:
     return result;
 }
 
-RootKeyUtility_InstallationResult RootKeyUtil_WriteRootKeyPackageToFileAtomically(const ADUC_RootKeyPackage* rootKeyPackage, const STRING_HANDLE fileDest)
+ADUC_Result RootKeyUtil_WriteRootKeyPackageToFileAtomically(const ADUC_RootKeyPackage* rootKeyPackage, const STRING_HANDLE fileDest)
 {
-    RootKeyUtility_InstallationResult result = RootKeyUtility_InstallationResult_Failure;
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     JSON_Value* rootKeyPackageValue = NULL;
 
     char* rootKeyPackageSerializedString = NULL;
@@ -342,6 +342,7 @@ RootKeyUtility_InstallationResult RootKeyUtil_WriteRootKeyPackageToFileAtomicall
 
     if (rootKeyPackage == NULL || fileDest == NULL || STRING_length(fileDest) == 0)
     {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_BAD_ARGS;
         goto done;
     }
 
@@ -370,12 +371,14 @@ RootKeyUtility_InstallationResult RootKeyUtil_WriteRootKeyPackageToFileAtomicall
 
     if (json_serialize_to_file(rootKeyPackageValue,STRING_c_str(tempFileName)) != JSONSuccess)
     {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANNOT_WRITE_PACKAGE_TO_STORE;
         goto done;
     }
 
     // Switch the names
     if (rename(STRING_c_str(tempFileName),STRING_c_str(fileDest)) != 0)
     {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_RENAME_TO_STORE;
         goto done;
     }
 
@@ -393,16 +396,8 @@ done:
 
     if (tempFileName != NULL)
     {
-        FILE* f = fopen(STRING_c_str(tempFileName),'w');
-        if (f != NULL)
-        {
-            fclose(f);
-            remove(STRING_c_str(tempFileName));
-        }
-
         STRING_delete(tempFileName);
     }
-
 
     return result;
 }
