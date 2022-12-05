@@ -10,14 +10,15 @@
 
 #include <dirent.h>
 
-#include <process.h> // getpid()
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] getpid()
-// #    define getpid _getpid
+#    include <process.h>
+#else
+#    include <unistd.h> // getpid
 #endif
 
 #if defined(_WIN32)
-// TODO(JeffMill): [PAL] _isatty(), isatty()
+// TODO(JeffMill): [PAL] isatty
 #    include <corecrt_io.h>
 // #    define isatty(fd) _isatty
 #else
@@ -434,6 +435,8 @@ void zlog_request_flush_buffer(void)
 static void* zlog_buffer_flush_thread(void* unused)
 {
     time_t lasttime;
+
+    (void)unused; // avoid unused parameter warning
 
 #if defined(_WIN32)
     time(&lasttime);
