@@ -50,7 +50,7 @@ if (NOT
     ADUC_PLATFORM_LAYER
     STREQUAL
     "simulator")
-    target_link_dosdk (${target_name} PRIVATE)
+    target_link_dosdk (${PROJECT_NAME} PRIVATE)
 else ()
     target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_PLATFORM_SIMULATOR)
 endif ()

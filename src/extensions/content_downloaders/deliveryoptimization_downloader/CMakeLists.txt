@@ -4,8 +4,6 @@ include (agentRules)
 
 compileasc99 ()
 
-target_link_dosdk (${PROJECT_NAME} PRIVATE)
-
 add_library (${PROJECT_NAME} SHARED)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
@@ -17,6 +15,8 @@ target_sources (
 
 target_include_directories (${PROJECT_NAME} PUBLIC ${ADU_EXTENSION_INCLUDES}
                                                    ${ADUC_EXPORT_INCLUDES})
+
+target_link_dosdk (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (
     ${PROJECT_NAME}
