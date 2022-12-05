@@ -10,14 +10,32 @@
 
 #include <dirent.h>
 
+#include <process.h> // getpid()
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getpid()
+// #    define getpid _getpid
+#endif
+
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] _isatty(), isatty()
 #    include <corecrt_io.h>
-#    include <process.h> // getpid()
-#elif defined __linux__
-#    include <sys/syscall.h> // for SYS_gettid
-#    include <sys/time.h> // for gettimeofday
+// #    define isatty(fd) _isatty
+#else
 #    include <unistd.h> // isatty
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] SYS_getttid
+#    include <pthread.h>
+#else
+#    include <sys/syscall.h> // for SYS_gettid
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] gettimeofday
+#    include <time.h>
+#else
+#    include <sys/time.h> // for gettimeofday
 #endif
 
 #include <errno.h>
@@ -91,11 +109,7 @@ static void zlog_close_file_log()
 
 static bool zlog_is_stdout_a_tty()
 {
-#if defined(_WIN32)
-    return (_isatty(_fileno(stdout)) != 0);
-#else
     return (isatty(fileno(stdout)) != 0);
-#endif
 }
 
 static bool zlog_term_supports_color()
@@ -291,11 +305,10 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
             tmval->tm_min % 100,
             tmval->tm_sec % 100,
             (int)(curtime.tv_nsec / 100000),
+            getpid(),
 #if defined(_WIN32)
-            _getpid(),
             pthread_getw32threadid_np(pthread_self())
 #else
-            getpid(),
             (pid_t)syscall(SYS_gettid) /* cannot call gettid() directly */
 #endif
         );

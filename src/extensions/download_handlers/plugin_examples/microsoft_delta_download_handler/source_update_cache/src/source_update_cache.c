@@ -19,6 +19,7 @@
 #include <stdlib.h> // free
 
 #if defined(_WIN32)
+// TODO(JeffMill): [PAL] S_IRUSR
 #    include <dirent.h> // S_IRUSR
 #else
 #    include <sys/stat.h> // S_IRUSR

@@ -19,8 +19,10 @@ function Error {
 
 function Header {
     Param([Parameter(mandatory = $true, position = 0)][string]$message)
-    Write-Host -ForegroundColor Green $message
-    Write-Host -ForegroundColor Green ('-' * $message.Length)
+    $sep = ":{0}:" -f (' ' * ($message.Length + 2))
+    Write-Host -ForegroundColor DarkYellow -BackgroundColor DarkBlue $sep
+    Write-Host -ForegroundColor White -BackgroundColor DarkBlue ("  {0}  " -f $message)
+    Write-Host -ForegroundColor DarkYellow -BackgroundColor DarkBlue $sep
 }
 
 function Bullet {
@@ -30,8 +32,9 @@ function Bullet {
 }
 
 $root_dir = git.exe rev-parse --show-toplevel
+
 # TODO(JeffMill): Unused variable
-$script_dir = "$root_dir/scripts"
+# $script_dir = "$root_dir/scripts"
 
 $build_clean = $false
 $build_documentation = $false
@@ -47,11 +50,14 @@ $build_unittests = $false
 $static_analysis_tools = @()
 $log_lib = 'zlog'
 $install_prefix = '/usr/local'
+
 # TODO(JeffMill): unused variable
-$install_adu = $false
+# $install_adu = $false
+
 $work_folder = '/tmp'
+
 # TODO(JeffMill): unused variable
-$cmake_dir_path = "$work_folder/deviceupdate-cmake"
+# $cmake_dir_path = "$work_folder/deviceupdate-cmake"
 
 function print_help {
     @'
@@ -96,7 +102,7 @@ function CopyFile-ExitIfFailed {
         [Parameter(mandatory = $true)][string]$Path,
         [Parameter(mandatory = $true)][string]$Destination)
 
-    Bullet "Copying $Path to $Destination"
+    Header "Copying $Path to $Destination"
     if (-not (Copy-Item -LiteralPath $Path -Destination $Destination -ErrorAction SilentlyContinue)) {
         Error "Failed to copy $Path to $Destination (exit code: $($Error[0].CategoryInfo))"
         exit 1
@@ -375,10 +381,7 @@ if ($build_clean) {
 
 mkdir -Path $output_directory -Force | Out-Null
 
-# TODO(JeffMill): Add graphviz
-# --graphviz="$output_directory\graphviz.dot"
-
-Bullet 'Generating makefiles ...'
+Header 'Generating Makefiles'
 
 & $cmake_bin -S "$root_dir" -B $output_directory @CMAKE_OPTIONS
 # TODO(JeffMill): Scenario 2: Use Ninja
@@ -389,7 +392,7 @@ if ($ret_val -ne 0) {
     error "CMake failed to generate build with exit code: $ret_val"
 }
 else {
-    Bullet 'Building product ...'
+    Header 'Building Product'
 
     # TODO(JeffMill): Scenario 2: Use Ninja
     # TODO(JeffMill): Do the actual building.

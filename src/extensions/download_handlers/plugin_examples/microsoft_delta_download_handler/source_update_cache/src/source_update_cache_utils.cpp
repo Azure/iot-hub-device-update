@@ -23,6 +23,7 @@
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] access
 #    include <corecrt_io.h> // _unlink
+// #    define unlink(path) _unlink(path)
 #else
 #    include <unistd.h> // unlink
 #endif
@@ -174,11 +175,7 @@ int ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
             off_t fileSize = cachePurgeFile.GetSizeInBytes();
 
             std::string filePathForDelete{ std::move(cachePurgeFile.GetFilePath()) };
-#if defined(_WIN32)
-            int res = _unlink(filePathForDelete.c_str());
-#else
             int res = unlink(filePathForDelete.c_str());
-#endif
             if (res != 0)
             {
                 Log_Error(

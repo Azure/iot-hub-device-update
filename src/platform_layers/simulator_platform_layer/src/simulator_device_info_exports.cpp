@@ -8,6 +8,7 @@
 #include "simulator_device_info.h"
 
 #include <functional>
+#include <string>
 #include <unordered_map>
 
 #include <cstring>

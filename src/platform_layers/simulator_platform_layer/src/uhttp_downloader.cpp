@@ -108,7 +108,7 @@ bool UHttpDownloader::HashMatches(const unsigned char* content, size_t content_l
     USHAContext context;
     if (USHAReset(&context, algorithm) == 0)
     {
-        if (USHAInput(&context, content, content_len) == 0)
+        if (USHAInput(&context, content, static_cast<unsigned int>(content_len)) == 0)
         {
             // "USHAHashSize(algorithm)" is more precise, but requires a variable length array, or heap allocation.
             unsigned char buffer_hash[USHAMaxHashSize];

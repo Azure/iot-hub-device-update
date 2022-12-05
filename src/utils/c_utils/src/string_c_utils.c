@@ -20,6 +20,9 @@
 #if defined _WIN32
 // TODO(JeffMill): [PAL] _open, _read, _close
 #    include <corecrt_io.h>
+// #    define open(path, oflag) _open(path, oflag)
+// #    define read(fildes, buf, nbyte) _read(fildes, buf, nbyte)
+// #    define close(fildes) _close(fildes)
 #else
 #    include <unistd.h>
 #endif
@@ -110,12 +113,8 @@ bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const siz
 
     bool success = false;
 
-#if defined(_WIN32)
-    int fd = _open(filePath, O_EXCL | O_RDONLY);
-#else
     // NOLINTNEXTLINE(android-cloexec-open): We are not guaranteed to have access to O_CLOEXEC on all of our builds so no need to include
     int fd = open(filePath, O_EXCL | O_RDONLY);
-#endif
     if (fd == -1)
     {
         goto done;
@@ -135,12 +134,7 @@ bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const siz
         goto done;
     }
 
-#if defined(_WIN32)
-    size_t numRead = _read(fd, strBuffer, fileSize);
-#else
     size_t numRead = read(fd, strBuffer, fileSize);
-#endif
-
     if (numRead != fileSize)
     {
         goto done;
@@ -151,11 +145,7 @@ bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const siz
     success = true;
 done:
 
-#if defined(_WIN32)
-    _close(fd);
-#else
     close(fd);
-#endif
 
     if (!success)
     {

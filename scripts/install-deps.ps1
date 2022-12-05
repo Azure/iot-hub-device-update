@@ -114,6 +114,18 @@ else {
 }
 
 #
+# CLANG-FORMAT
+#
+
+if (-not (Get-Command -Name 'clang-format.exe' -CommandType Application -ErrorAction SilentlyContinue)) {
+    python.exe -m pip install --upgrade pip
+    pip.exe install clang-format
+}
+else {
+    Write-Host -ForegroundColor Green "clang-format already installed."
+}
+
+#
 # DOXYGEN, GRAPHVIZ (for --build_documentation)
 #
 
@@ -126,22 +138,3 @@ Install-WithWinGet -PackageId 'Graphviz.Graphviz' -TestExecutable "$env:ProgramF
 #
 
 Install-WithWinGet -PackageId 'Cppcheck.Cppcheck' -TestExecutable "$env:ProgramFiles\Cppcheck\cppcheck.exe"
-
-#
-# VCPKG and packages (--triplet x64-windows):
-#
-# azure-c-shared-utility
-# azure-iot-sdk-c
-# azure-storage-blobs-cpp:x64-windows
-# catch2
-# curl[openssl]
-# parson
-# umock-c
-
-# TODO(JeffMill): Check if needed
-# * deliveryoptimization_sdk
-# * iothubclient
-# * threads
-# * umqtt
-
-

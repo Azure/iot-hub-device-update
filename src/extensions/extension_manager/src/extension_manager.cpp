@@ -66,6 +66,7 @@ int dlclose(void* handle)
 // TODO(JeffMill): [PAL] access
 #    include <corecrt_io.h> // _access
 #    define F_OK 0
+// #    define access(path, amode) _access(path, amode)
 #else
 #    include <unistd.h> // for access
 #endif
@@ -912,11 +913,7 @@ ADUC_Result ExtensionManager::Download(
     // Otherwise, delete an existing file, then download.
     Log_Debug("Check whether '%s' has already been download into the work folder.", targetUpdateFilePath.c_str());
 
-#if defined(_WIN32)
-    if (_access(targetUpdateFilePath.c_str(), F_OK) == 0)
-#else
     if (access(targetUpdateFilePath.c_str(), F_OK) == 0)
-#endif
     {
         char* hashValue = ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0 /* index */);
         if (hashValue == nullptr)

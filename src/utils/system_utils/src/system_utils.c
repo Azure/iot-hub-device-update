@@ -10,11 +10,30 @@
 #include "aduc/string_c_utils.h"
 
 #if defined(_WIN32)
-#    include <corecrt_io.h> // chmod
+// TODO(JeffMill): [PAL] mkdir
 #    include <direct.h> // _mkdir
+#    define mkdir(path, mode) _mkdir(path)
 #else
 #    include <sys/file.h>
 // #    include <sys/wait.h> // for waitpid
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] chmod
+#    include <corecrt_io.h> // chmod
+// #    define chmod(path, mode) _chmod(path, mode)
+#else
+#    include <sys/file.h>
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] unlink
+// #    define unlink(path) _unlink(path)
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] rmdir
+// #    define rmdir(path) _rmdir(path)
 #endif
 
 #if defined(_WIN32)
@@ -260,11 +279,7 @@ int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t
     if (stat(path, &st) != 0)
     {
         /* Directory does not exist. EEXIST for race condition */
-#if defined(_WIN32)
-        if (_mkdir(path) != 0 && errno != EEXIST)
-#else
         if (mkdir(path, mode) != 0 && errno != EEXIST)
-#endif
         {
             Log_Error("Could not create directory %s errno: %d", path, errno);
             return errno;
@@ -378,11 +393,7 @@ int ADUC_SystemUtils_MkDirRecursive(const char* path, uid_t userId, gid_t groupI
         if (perms != mode)
         {
             // Fix the permissions.
-#if defined(_WIN32)
-            if (0 != _chmod(path, mode))
-#else
             if (0 != chmod(path, mode))
-#endif
             {
                 stat(path, &st);
                 Log_Warn("Failed to set '%s' folder permissions (expected:0%o, actual: 0%o)", mkdirPath, mode, perms);
@@ -454,20 +465,12 @@ static int RmDirRecursive_helper(const char* fpath, const struct stat* sb, int t
     if (typeflag == FTW_DP)
     {
         // fpath is a directory, and FTW_DEPTH was specified in flags.
-#if defined(_WIN32)
-        result = _rmdir(fpath);
-#else
         result = rmdir(fpath);
-#endif
     }
     else
     {
         // Assume a file.
-#if defined(_WIN32)
-        result = _unlink(fpath);
-#else
         result = unlink(fpath);
-#endif
     }
 
     return result;
@@ -640,11 +643,7 @@ int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, co
         goto done;
     }
 
-#if defined(_WIN32)
-    if (_chmod(STRING_c_str(destFilePath), buff.st_mode) != 0)
-#else
     if (chmod(STRING_c_str(destFilePath), buff.st_mode) != 0)
-#endif
     {
         goto done;
     }
@@ -674,11 +673,7 @@ done:
  */
 int ADUC_SystemUtils_RemoveFile(const char* path)
 {
-#if defined(_WIN32)
-    return _unlink(path);
-#else
     return unlink(path);
-#endif
 }
 
 /**
