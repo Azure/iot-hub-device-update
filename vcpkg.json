@@ -11,11 +11,20 @@
         {
             "name": "curl",
             "default-features": true,
-            "features": ["openssl"]
+            "features": [
+                "openssl"
+            ]
         },
         "dirent",
         "parson",
         "pthreads",
         "umock-c"
+    ],
+    "builtin-baseline": "e0e2f13940afa865cbd57bb1d00eacf808696a3a",
+    "overrides": [
+        {
+            "name": "catch2",
+            "version": "2.13.9"
+        }
     ]
 }
