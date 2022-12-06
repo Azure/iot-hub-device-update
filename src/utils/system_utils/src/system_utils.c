@@ -116,9 +116,11 @@ struct passwd* getpwnam(const char* name)
 #    include <pwd.h> // for getpwnam
 #endif
 
+#if defined(_WIN32)
 // TODO(JeffMill): [PAL] child status
 #define WIFEXITED(stat_val) (((stat_val)&255) == 0)
 #define WEXITSTATUS(stat_val) ((unsigned)(stat_val) >> 8)
+#endif
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] chown
