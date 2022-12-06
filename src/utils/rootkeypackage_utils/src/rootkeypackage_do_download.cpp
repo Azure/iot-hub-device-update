@@ -1,3 +1,11 @@
+/**
+ * @file rootkeypackage_do_download.cpp
+ * @brief Implements delivery optimization download.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #include <aduc/logging.h>
 #include <aduc/result.h>
 #include <do_download.h>

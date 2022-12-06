@@ -1272,13 +1272,6 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         // the agent stay alive and connected to the IoT hub.
     }
 
-    // Initialize curl global init for root key package downloads, which needs to be done on main thread.
-    if (curl_global_init(CURL_GLOBAL_DEFAULT) != 0)
-    {
-        Log_Error("libcurl global init failed");
-        goto done;
-    }
-
     succeeded = true;
 
 done:
@@ -1300,7 +1293,6 @@ void ShutdownAgent()
     DiagnosticsComponent_DestroyDeviceName();
     ADUC_Logging_Uninit();
     ExtensionManager_Uninit();
-    curl_global_cleanup();
 }
 
 /**

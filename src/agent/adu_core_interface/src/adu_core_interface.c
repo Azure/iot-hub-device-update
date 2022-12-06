@@ -16,6 +16,7 @@
 #include "aduc/d2c_messaging.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
+#include "aduc/rootkeypackage_do_download.h"
 #include "aduc/rootkeypackage_types.h"
 #include "aduc/rootkeypackage_utils.h"
 #include "aduc/string_c_utils.h"
@@ -42,6 +43,16 @@ static const char g_aduPnPComponentAgentPropertyName[] = "agent";
 // This is the cloud-to-device property.
 // ADU Management send an 'Update Action' to this device by setting this property on IoTHub.
 static const char g_aduPnPComponentServicePropertyName[] = "service";
+
+/**
+ * @brief The info for each rootkey package downloader.
+ *
+ */
+static ADUC_RootKeyPkgDownloaderInfo s_default_rootkey_downloader = {
+    .name = "DO", // DeliveryOptimization
+    .downloadFn = DownloadRootKeyPkg_DO,
+    .downloadBaseDir = ADUC_DOWNLOADS_FOLDER,
+};
 
 /**
  * @brief Handle for Device Update Agent component to communication to service.
@@ -449,7 +460,8 @@ void OrchestratorUpdateCallback(
         // TODO: Replace the following if-block with the real RootKeyUtil
         if (RootKeyUtil_NeedNewRootKeys())
         {
-            tmpResult = ADUC_RootKeyPackageUtil_DownloadPackage(rootKeyPkgUrl, workflowId, &rootKeyPackageFilePath);
+            tmpResult = ADUC_RootKeyPackageUtil_DownloadPackage(
+                rootKeyPkgUrl, workflowId, &s_default_rootkey_downloader, &rootKeyPackageFilePath);
 
             if (IsAducResultCodeFailure(tmpResult.ResultCode))
             {
