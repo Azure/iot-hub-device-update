@@ -1,5 +1,5 @@
 ---
-name: 'Bug report - Device Update '
+name: Bug report
 about: Users can use this template to report bugs and provide required information
   to enable investigation
 title: ''
