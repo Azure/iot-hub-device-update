@@ -34,7 +34,7 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
             sortedLogFileArray,
             sortedLogFileArraySize,
             testCandidateFileName,
-            testSizeOfCandidateFile,
+            static_cast<unsigned long>(testSizeOfCandidateFile),
             testCandidateLastWrite));
 
         CHECK(strcmp(sortedLogFileArray[0].fileName, testCandidateFileName) == 0);
@@ -52,7 +52,7 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
             sortedLogFileArray,
             sortedLogFileArraySize,
             testCandidateFileName,
-            testSizeOfCandidateFile,
+            static_cast<unsigned long>(testSizeOfCandidateFile),
             testCandidateLastWrite));
 
         CHECK(strcmp(sortedLogFileArray[0].fileName, testCandidateFileName) == 0);
@@ -66,7 +66,7 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
             sortedLogFileArray,
             sortedLogFileArraySize,
             secondTestCandidateFileName,
-            testCandidateLastWrite,
+            static_cast<unsigned long>(testCandidateLastWrite),
             secondTestCandidateLastWrite));
 
         CHECK(strcmp(sortedLogFileArray[0].fileName, secondTestCandidateFileName) == 0);
@@ -79,7 +79,7 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
             sortedLogFileArray,
             sortedLogFileArraySize,
             thirdTestCandidateFileName,
-            testSizeOfCandidateFile,
+            static_cast<unsigned long>(testSizeOfCandidateFile),
             testCandidateLastWrite));
 
         // With no change secondTestCandidateFileName should still be at the front

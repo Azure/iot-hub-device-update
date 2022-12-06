@@ -26,7 +26,14 @@ target_compile_definitions (
     PRIVATE SUPPORTED_UPDATE_MANIFEST_VERSION_MIN=${SUPPORTED_UPDATE_MANIFEST_VERSION_MIN}
             SUPPORTED_UPDATE_MANIFEST_VERSION_MAX=${SUPPORTED_UPDATE_MANIFEST_VERSION_MAX})
 
-target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+# TODO(JeffMill): This is required for Windows to avoid
+# C:\wiot-s1\src\utils\workflow_utils\inc\aduc/workflow_utils.h(15,10): fatal  error C1083:
+# Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    target_link_aziotsharedutil (${PROJECT_NAME} PUBLIC)
+else ()
+    target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+endif ()
 
 target_link_libraries (
     ${PROJECT_NAME}

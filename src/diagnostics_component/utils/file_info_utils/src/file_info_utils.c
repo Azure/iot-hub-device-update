@@ -199,7 +199,8 @@ bool FileInfoUtils_GetNewestFilesInDirUnderSize(
     VECTOR_HANDLE fileVector = NULL;
 
     // Note: Total amount of files set to MAX_FILES_TO_REPORT to ease diagnostics and scanning efforts.
-    FileInfo discoveredFiles[MAX_FILES_TO_REPORT] = {};
+    FileInfo discoveredFiles[MAX_FILES_TO_REPORT];
+    memset(&discoveredFiles, 0, sizeof(discoveredFiles));
 
     const size_t discoveredFilesSize = ARRAY_SIZE(discoveredFiles);
 

@@ -15,23 +15,27 @@
 // TODO(JeffMill): [PAL] dlopen, dlerror, dlsym, dlclose
 #    define RTLD_LAZY 0
 
-void* dlopen(const char* filename, int flag)
+static void* dlopen(const char* filename, int flag)
 {
+    __debugbreak();
     return NULL;
 }
 
-char* dlerror(void)
+static char* dlerror(void)
 {
+    __debugbreak();
     return "NYI";
 }
 
-void* dlsym(void* handle, const char* symbol)
+static void* dlsym(void* handle, const char* symbol)
 {
+    __debugbreak();
     return NULL;
 }
 
-int dlclose(void* handle)
+static int dlclose(void* handle)
 {
+    __debugbreak();
     return 0;
 }
 #else

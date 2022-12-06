@@ -20,10 +20,74 @@
 #include "aduc/workflow_utils.h"
 
 #include <cstring>
-#include <grp.h> // for getgrnam
-#include <pwd.h> // for getpwnam
-#include <sys/stat.h>
-#include <unistd.h>
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] S_*GRP
+#    define S_IXGRP 00010
+#    define S_IWGRP 00020
+#    define S_IRGRP 00040
+
+#    define __S_IFDIR 0040000 /* Directory.  */
+
+#    define S_ISDIR(x) (((x)&S_IFMT) == S_IFDIR)
+#else
+#    include <sys/stat.h>
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] gettimeofday
+struct timeval
+{
+    time_t tv_sec; /* Seconds.  */
+};
+
+static int gettimeofday(struct timeval* tp, void* tzp)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return 0;
+}
+#else
+#    include <sys/time.h> // for gettimeofday
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getgrnam, group
+
+// This code only references gr_gid
+struct group
+{
+    gid_t gr_gid;
+};
+
+static struct group* getgrnam(const char* name)
+{
+    __debugbreak();
+    return NULL;
+}
+#else
+#    include <grp.h> // for getgrnam
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getpwnam
+
+// This code only references pw_uid
+struct passwd
+{
+    uid_t pw_uid; /* user uid */
+};
+
+static struct passwd* getpwnam(const char* name)
+{
+    __debugbreak();
+    return NULL;
+}
+#else
+#    include <pwd.h> // for getpwnam
+#endif
+
+// #include <unistd.h>
 
 #include <memory>
 #include <sstream>
@@ -115,22 +179,20 @@ static ContentHandler* GetUpdateManifestHandler(const ADUC_WorkflowData* workflo
             updateManifestVersion,
             updateManifestHandler.get());
 
-        loadResult =
-            ExtensionManager::LoadUpdateContentHandlerExtension(updateManifestHandler.get(), &contentHandler);
+        loadResult = ExtensionManager::LoadUpdateContentHandlerExtension(updateManifestHandler.get(), &contentHandler);
 
         // If handler for the current manifest version is not available,
         // fallback to the V4 default handler.
         if (IsAducResultCodeFailure(loadResult.ResultCode))
         {
-            loadResult = ExtensionManager::LoadUpdateContentHandlerExtension(
-                UPDATE_MANIFEST_DEFAULT_HANDLER, &contentHandler);
+            loadResult =
+                ExtensionManager::LoadUpdateContentHandlerExtension(UPDATE_MANIFEST_DEFAULT_HANDLER, &contentHandler);
         }
     }
     else
     {
-        loadResult = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode =
-                           ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION };
+        loadResult.ResultCode = ADUC_Result_Failure;
+        loadResult.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION;
     }
 
     if (IsAducResultCodeFailure(loadResult.ResultCode))
@@ -312,16 +374,20 @@ ADUC_Result LinuxPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflowDat
 
     if (workflowData == nullptr)
     {
-        return ADUC_Result{ .ResultCode = ADUC_Result_Failure,
-                            .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_NULL_WORKFLOW };
+        ADUC_Result result;
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_NULL_WORKFLOW;
+        return result;
     }
 
     ADUC_Result result;
     contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
-        return ADUC_Result{ .ResultCode = ADUC_Result_Failure,
-                            .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_BAD_UPDATETYPE };
+        ADUC_Result result;
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_BAD_UPDATETYPE;
+        return result;
     }
 
     return contentHandler->IsInstalled(workflowData);
@@ -340,9 +406,8 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* work
 
     // Try to delete existing directory.
     int dir_result;
-    struct stat sb
-    {
-    };
+    struct stat sb;
+
     if (stat(workFolder, &sb) == 0 && S_ISDIR(sb.st_mode))
     {
         dir_result = ADUC_SystemUtils_RmDirRecursive(workFolder);

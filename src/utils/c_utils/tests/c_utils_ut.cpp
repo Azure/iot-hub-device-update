@@ -16,6 +16,33 @@ using ADUC::StringUtils::cstr_wrapper;
 
 #include <cstring>
 #include <fstream>
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] mkstemp
+static int mkstemp(char* tmpl)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+#else
+#    include <stdlib.h> //mkstemp
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] fchmod
+typedef unsigned int mode_t;
+
+static int fchmod(int fd, mode_t mode)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+#else
+#    include <sys/stat.h> // fchmod
+#endif
+
 class TemporaryTestFile
 {
 public:
@@ -106,17 +133,17 @@ TEST_CASE("ARRAY_SIZE")
 {
     SECTION("Inferred array size")
     {
-        int array0[] = {};
+        int array1[] = { 1 };
         int array3[] = { 1, 2, 3 };
-        CHECK(ARRAY_SIZE(array0) == 0);
+        CHECK(ARRAY_SIZE(array1) == 1);
         CHECK(ARRAY_SIZE(array3) == 3);
     }
 
     SECTION("Explicit array size")
     {
-        int array0[0];
+        int array1[1];
         int array3[3];
-        CHECK(ARRAY_SIZE(array0) == 0);
+        CHECK(ARRAY_SIZE(array1) == 1);
         CHECK(ARRAY_SIZE(array3) == 3);
     }
 

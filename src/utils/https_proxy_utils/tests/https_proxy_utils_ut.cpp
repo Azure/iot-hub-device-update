@@ -10,6 +10,23 @@
 
 using Catch::Matchers::Equals;
 
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] setenv, unsetenv
+static int setenv(const char* name, const char* value, int overwrite)
+{
+    __debugbreak();
+    return -1;
+}
+
+static int unsetenv(const char* name)
+{
+    __debugbreak();
+    return -1;
+}
+#else
+#    include <stdlib.h> // setenv, unsetenv
+#endif
+
 class TestCaseFixture
 {
 public:

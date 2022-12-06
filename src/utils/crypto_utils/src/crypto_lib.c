@@ -19,8 +19,12 @@
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] strcasecmp
-#    include <string.h> // _strcmpi
-#    define strcasecmp(string1, string2) _strcmpi(string1, string2)
+static int strcasecmp(const char* s1, const char* s2)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return 0;
+}
 #else
 #    include <strings.h> // strcasecmp
 #endif
@@ -222,21 +226,13 @@ CryptoKeyHandle RSAKey_ObjFromBytes(uint8_t* N, size_t N_len, uint8_t* e, size_t
         goto done;
     }
 
-#if defined(_WIN32)
     rsa_N = BN_bin2bn(N, (int)N_len, NULL);
-#else
-    rsa_N = BN_bin2bn(N, N_len, NULL);
-#endif
     if (rsa_N == NULL)
     {
         goto done;
     }
 
-#if defined(_WIN32)
     rsa_e = BN_bin2bn(e, (int)e_len, NULL);
-#else
-    rsa_e = BN_bin2bn(e, e_len, NULL);
-#endif
     if (rsa_e == NULL)
     {
         goto done;

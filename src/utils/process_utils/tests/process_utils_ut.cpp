@@ -8,7 +8,18 @@
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
 #include <catch2/catch.hpp>
-#include <unistd.h>
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] gethostname
+static int gethostname(char* name, size_t namelen)
+{
+    __debugbreak();
+    return -1;
+}
+#else
+#    include <unistd.h>
+#endif
+
 #include <vector>
 
 using Catch::Matchers::Contains;
@@ -158,7 +169,7 @@ TEST_CASE("VerifyProcessEffectiveGroup")
 
         const std::function<gid_t()> mock_getegid = [&]() { return desiredGroupId; };
 
-        const std::function<struct group*(const char*)> mock_getgrnam = [](const char*) {
+        const std::function<struct group*(const char*)> mock_getgrnam = [&desiredGroupId](const char*) {
             static struct group desiredGroupEntry = {};
             desiredGroupEntry.gr_gid = desiredGroupId;
 

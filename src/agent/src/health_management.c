@@ -16,7 +16,22 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
-#include <sys/stat.h>
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] S_*GRP
+#    define S_IXGRP 00010
+#    define S_IRGRP 00040
+#    define S_IRWXU 00700
+
+#    define S_IXOTH 00001
+#    define S_IROTH 00004
+
+#    define S_ISUID 0004000
+#    define S_IRUSR 00400
+#    define S_IXUSR 00100
+#else
+#    include <sys/stat.h>
+#endif
 
 /**
  * @brief The users that must exist on the system.
@@ -41,7 +56,7 @@ static const char* aduc_optional_groups[] = { DO_FILE_GROUP };
 /**
  * @brief The supplementary groups for ADUC_FILE_USER
  */
-static const char* aduc_required_group_memberships[] = {};
+static const char* aduc_required_group_memberships[] = { NULL };
 
 /**
  * @brief The supplementary groups for ADUC_FILE_USER
@@ -73,7 +88,8 @@ bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs, ADUC_ConfigIn
 {
     bool validInfo = false;
 
-    ADUC_ConnectionInfo info = {};
+    ADUC_ConnectionInfo info;
+    memset(&info, 0, sizeof(info));
 
     if (launchArgs->connectionString != NULL)
     {
@@ -189,6 +205,11 @@ static bool ReportMissingGroupMemberships()
     // ADUC group memberships
     for (int i = 0; i < ARRAY_SIZE(aduc_required_group_memberships); ++i)
     {
+        if (aduc_required_group_memberships[i] == NULL)
+        {
+            continue;
+        }
+
         if (!PermissionUtils_UserInSupplementaryGroup(ADUC_FILE_USER, aduc_required_group_memberships[i]))
         {
             Log_Error("User '%s' is not a member of '%s' group.", ADUC_FILE_USER, aduc_required_group_memberships[i]);
@@ -582,7 +603,8 @@ bool HealthCheck(const ADUC_LaunchArguments* launchArgs)
 {
     bool isHealthy = false;
 
-    ADUC_ConfigInfo config = {};
+    ADUC_ConfigInfo config;
+    memset(&config, 0, sizeof(config));
     if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
     {
         Log_Error("Failed to initialize from config file: %s", ADUC_CONF_FILE_PATH);

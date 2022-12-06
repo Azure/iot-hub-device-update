@@ -38,23 +38,27 @@
 // TODO(JeffMill): [PAL] dlopen, dlerror, dlsym, dlclose
 #    define RTLD_LAZY 0
 
-void* dlopen(const char* filename, int flag)
+static void* dlopen(const char* filename, int flag)
 {
+    __debugbreak();
     return NULL;
 }
 
-char* dlerror(void)
+static char* dlerror(void)
 {
+    __debugbreak();
     return "NYI";
 }
 
-void* dlsym(void* handle, const char* symbol)
+static void* dlsym(void* handle, const char* symbol)
 {
+    __debugbreak();
     return NULL;
 }
 
-int dlclose(void* handle)
+static int dlclose(void* handle)
 {
+    __debugbreak();
     return 0;
 }
 #else
@@ -64,9 +68,14 @@ int dlclose(void* handle)
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] access
-#    include <corecrt_io.h> // _access
 #    define F_OK 0
-// #    define access(path, amode) _access(path, amode)
+
+static int access(const char* path, int amode)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
 #else
 #    include <unistd.h> // for access
 #endif

@@ -12,14 +12,117 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <grp.h> // getgrnm
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] ssize_t
+typedef long ssize_t;
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getgrnam, group
+
+// This code only references gr_gid
+struct group
+{
+    gid_t gr_gid;
+};
+
+static struct group* getgrnam(const char* name)
+{
+    __debugbreak();
+    return NULL;
+}
+#else
+#    include <grp.h> // for getgrnam
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getegid
+typedef int gid_t;
+
+static gid_t getegid(void)
+{
+    __debugbreak();
+    return 0;
+}
+#else
+#    include <unistd.h>
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] open, read, write, close
+static int open(const char* path, int oflag)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+
+typedef long ssize_t;
+
+static ssize_t read(int fildes, void* buf, size_t nbyte)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+
+static ssize_t write(int fildes, const void* buf, size_t nbyte)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+
+int close(int fildes)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+#else
+#    include <unistd.h>
+#endif
+
 #include <pthread.h> // pthread_*
+
 #include <stdbool.h> // bool
 #include <stdio.h> // getline
 #include <stdlib.h> // free
 #include <string.h> // strlen
-#include <sys/stat.h> // mkfifo
-#include <unistd.h> // sleep
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] mkfifo
+#    define S_IRUSR 00400
+#    define S_IWUSR 00200
+
+#    define S_IRGRP 00040
+#    define S_IWGRP 00020
+
+#    define EDQUOT 123
+
+static int mkfifo(const char* pathname, mode_t mode)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+#else
+#    include <sys/stat.h> // mkfifo
+#endif
+
+#include <sys/stat.h> // stat
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] sleep
+static unsigned int sleep(unsigned int seconds)
+{
+    __debugbreak();
+    return 0;
+}
+#else
+#    include <unistd.h> // sleep
+#endif
 
 // For version 1.0, we're supporting only 1 command.
 #define MAX_COMMAND_ARRAY_SIZE 1
@@ -34,7 +137,7 @@ static bool g_terminate_thread_request = false;
 
 bool ADUC_OnReprocessUpdate(const char* command, void* context);
 
-static ADUC_Command* g_commands[MAX_COMMAND_ARRAY_SIZE] = {};
+static ADUC_Command* g_commands[MAX_COMMAND_ARRAY_SIZE] = { NULL };
 
 /**
  * @brief Register command.
@@ -191,10 +294,12 @@ static bool SecurityChecks()
  *
  * @return void*
  */
-static void* ADUC_CommandListenerThread()
+static void* ADUC_CommandListenerThread(void* unused)
 {
     bool threadCreated = false;
     int fileDescriptor = 0;
+
+    (void)unused; // avoid unused parameter warning
 
     if (!TryCreateFIFOPipe() || !SecurityChecks())
     {

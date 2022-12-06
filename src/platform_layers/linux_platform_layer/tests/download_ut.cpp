@@ -7,6 +7,19 @@
  */
 #include <catch2/catch.hpp>
 #include <cstring>
+#include <pthread.h>
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] gmtime_r
+static struct tm* gmtime_r(const time_t* timep, struct tm* result)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return NULL;
+}
+#else
+#    include <time.h> // gmtime_r
+#endif
 
 #include "mock_do_download.hpp"
 #include "mock_do_download_status.hpp"
@@ -97,7 +110,10 @@ ADUC_Hash unsupportedHash[] = { {
     const_cast<char*>("sha1024"), // type
 } };
 
-ADUC_Hash emptyHash[] = {};
+ADUC_Hash emptyHash[] = {
+    /* .value = */ nullptr,
+    /* .type = */ nullptr
+};
 
 ADUC_FileEntity fileEntityWithGoodHash[] = { {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)

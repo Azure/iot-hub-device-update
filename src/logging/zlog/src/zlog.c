@@ -12,31 +12,97 @@
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] getpid()
-#    include <process.h>
+typedef unsigned int pid_t;
+
+static pid_t getpid(void)
+{
+    __debugbreak();
+    return 0;
+}
 #else
 #    include <unistd.h> // getpid
 #endif
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] isatty
-#    include <corecrt_io.h>
-// #    define isatty(fd) _isatty
+static int isatty(int fd)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return 0;
+}
 #else
 #    include <unistd.h> // isatty
 #endif
 
 #if defined(_WIN32)
-// TODO(JeffMill): [PAL] SYS_getttid
-#    include <pthread.h>
+#    define __NR_gettid 178
+#    define SYS_gettid __NR_gettid
+
+static long syscall(long number)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return 0;
+}
 #else
 #    include <sys/syscall.h> // for SYS_gettid
 #endif
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] gettimeofday
-#    include <time.h>
+struct timeval
+{
+    time_t tv_sec; /* Seconds.  */
+};
+
+static int gettimeofday(struct timeval* restrict tp, void* restrict tzp)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return 0;
+}
 #else
 #    include <sys/time.h> // for gettimeofday
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] gmtime_r
+static struct tm* gmtime_r(const time_t* timep, struct tm* result)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return NULL;
+}
+#else
+#    include <time.h> // gmtime_r
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill):[PAL] clock_gettime
+typedef unsigned int clockid_t;
+#    define CLOCK_REALTIME 0
+
+static int clock_gettime(clockid_t clk_id, struct timespec* tp)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+#else
+#    include <time.h> // clock_gettime
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] sleep
+static unsigned int sleep(unsigned int seconds)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return 0;
+}
+#else
+#    include <unistd.h> // sleep
 #endif
 
 #include <errno.h>
@@ -277,12 +343,6 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
     char prelude_buffer[PRELUDE_BUFFER_SIZE];
     prelude_buffer[0] = '\0';
 
-#if defined(_WIN32)
-    struct timespec curtime;
-    timespec_get(&curtime, TIME_UTC);
-
-    struct tm* tmval = gmtime(&curtime.tv_sec);
-#else
     struct timespec curtime;
     clock_gettime(CLOCK_REALTIME, &curtime);
 
@@ -290,7 +350,6 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
 
     struct tm gmtval;
     struct tm* tmval = gmtime_r(&seconds, &gmtval);
-#endif
 
     if (tmval != NULL)
     {
@@ -307,11 +366,7 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
             tmval->tm_sec % 100,
             (int)(curtime.tv_nsec / 100000),
             getpid(),
-#if defined(_WIN32)
-            pthread_getw32threadid_np(pthread_self())
-#else
             (pid_t)syscall(SYS_gettid) /* cannot call gettid() directly */
-#endif
         );
 
         if (ret < 0)
@@ -438,26 +493,18 @@ static void* zlog_buffer_flush_thread(void* unused)
 
     (void)unused; // avoid unused parameter warning
 
-#if defined(_WIN32)
-    time(&lasttime);
-#else
     struct timeval tv;
     gettimeofday(&tv, NULL);
     lasttime = tv.tv_sec;
-#endif
 
     do
     {
         time_t curtime;
 
-#if defined(_WIN32)
-        Sleep(ZLOG_SLEEP_TIME_SEC);
-        time(&curtime);
-#else
         sleep(ZLOG_SLEEP_TIME_SEC);
         gettimeofday(&tv, NULL);
         curtime = tv.tv_sec;
-#endif
+
         if (g_flushRequested || ((curtime - lasttime) >= ZLOG_FLUSH_INTERVAL_SEC))
         {
             g_flushRequested = false;

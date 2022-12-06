@@ -133,7 +133,8 @@ const bool PersistInstalledCriteria(const char* installedCriteriaFilePath, const
 
             if (JSONSuccess == (status = json_object_set_string(icObject, "state", "installed")))
             {
-                if (JSONSuccess == (status = json_object_set_number(icObject, "timestamp", seconds)))
+                if (JSONSuccess
+                    == (status = json_object_set_number(icObject, "timestamp", static_cast<double>(seconds))))
                 {
                     if (JSONSuccess == (status = json_array_append_value(rootArray, icValue)))
                     {

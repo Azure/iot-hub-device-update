@@ -6,13 +6,97 @@
  * Licensed under the MIT License.
  */
 #include <errno.h>
-#include <grp.h> // for getgrnam, struct group
-#include <pwd.h> // for getpwnam
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getgrnam, struct group
+typedef int gid_t;
+
+// This code only references gr_gid
+struct group
+{
+    gid_t gr_gid;
+};
+#else
+#    include <grp.h> // for getgrnam, struct group
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getpwnam
+typedef int uid_t;
+
+// This code only references pw_uid
+struct passwd
+{
+    uid_t pw_uid; /* user uid */
+};
+#else
+#    include <pwd.h> // for getpwnam
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <unistd.h>
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] pipe, fork, dup2, close, execvp, read
+#    define STDOUT_FILENO 1
+#    define STDERR_FILENO 2
+
+#    define WIFEXITED(stat_val) (((stat_val)&255) == 0)
+#    define WEXITSTATUS(stat_val) ((unsigned)(stat_val) >> 8)
+#    define WIFSIGNALED(stat_val) 0
+#    define WTERMSIG(stat_val) 0
+#    define WCOREDUMP(stat_val) 0
+
+static int pipe(int fildes[2])
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+typedef unsigned int pid_t;
+
+static pid_t fork()
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+
+static int dup2(int fildes, int fildes2)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+
+static int close(int fildes)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+
+static int execvp(const char* file, char* const argv[])
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+
+typedef long ssize_t;
+
+static ssize_t read(int fildes, void* buf, size_t nbyte)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+
+#else
+#    include <unistd.h>
+#endif
 
 #include <aduc/c_utils.h>
 #include <aduc/config_utils.h>
@@ -30,7 +114,20 @@
 
 #include <fcntl.h>
 #include <sys/types.h>
-#include <sys/wait.h>
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] waitpid
+typedef unsigned int pid_t;
+
+static pid_t waitpid(pid_t pid, int* stat_loc, int options)
+{
+    __debugbreak();
+    *stat_loc = -1;
+    return -1;
+}
+#else
+#    include <sys/wait.h> // for waitpid
+#endif
 
 /**
  * @brief Runs specified command in a new process and captures output, error messages, and exit code.
@@ -43,7 +140,10 @@
  *
  * @return An exit code from the command.
  */
-int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string> args, std::string& output) // NOLINT(google-runtime-references)
+int ADUC_LaunchChildProcess(
+    const std::string& command,
+    std::vector<std::string> args,
+    std::string& output) // NOLINT(google-runtime-references)
 {
 #define READ_END 0
 #define WRITE_END 1

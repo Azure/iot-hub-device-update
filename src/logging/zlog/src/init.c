@@ -10,8 +10,14 @@
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] _mkdir
-#    include <direct.h>
-#    define mkdir(path, mode) _mkdir(path)
+typedef unsigned int mode_t;
+#    define S_IRWXU 00700
+
+static int mkdir(const char* path, mode_t mode)
+{
+    __debugbreak();
+    return -1;
+}
 #else
 #    include <sys/stat.h> //mkdir
 #endif

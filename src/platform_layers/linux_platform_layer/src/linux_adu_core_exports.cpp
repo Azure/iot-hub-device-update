@@ -11,9 +11,32 @@
 #include "aduc/process_utils.hpp"
 #include "linux_adu_core_impl.hpp"
 #include <memory>
-#include <signal.h> // raise()
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] raise
+#    define SIGUSR1 10
+
+static int raise(int sig)
+{
+    __debugbreak();
+    return -1;
+}
+#else
+#    include <signal.h> // raise()
+#endif
+
 #include <string>
-#include <unistd.h> // sync()
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] sync
+static void sync()
+{
+    __debugbreak();
+}
+#else
+#    include <unistd.h> // sync()
+#endif
+
 #include <vector>
 
 EXTERN_C_BEGIN

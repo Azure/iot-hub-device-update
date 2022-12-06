@@ -14,10 +14,15 @@
 #include "aduc/system_utils.h"
 
 #include <ctype.h> // isalnum
+#include <sys/stat.h> // stat
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] S_*GRP
-#    include <dirent.h> // S_IXGRP, S_IWGRP, S_IRGRP
+#    define S_IXGRP 00010
+#    define S_IWGRP 00020
+#    define S_IRGRP 00040
+#else
+#    include <sys/stat.h>
 #endif
 
 #if defined(_WIN32)
@@ -29,9 +34,12 @@ struct group
     gid_t gr_gid;
 };
 
-struct group* getgrnam(const char* name)
+static struct group* getgrnam(const char* name)
 {
     static struct group grp;
+
+    __debugbreak();
+
     grp.gr_gid = 0;
     return &grp;
 }
@@ -48,14 +56,10 @@ struct passwd
     uid_t pw_uid; /* user uid */
 };
 
-struct passwd* getpwnam(const char* name)
+static struct passwd* getpwnam(const char* name)
 {
-    static struct passwd pw;
-
-    // TODO(JeffMill): No equivalent of getuid() on windows.
-    // See suggestions at https://stackoverflow.com/questions/1594746/win32-equivalent-of-getuid
-    pw.pw_uid = 0; // getuid();
-    return &pw;
+    __debugbreak();
+    return NULL;
 }
 #else
 #    include <pwd.h> // for getpwnam
@@ -64,7 +68,6 @@ struct passwd* getpwnam(const char* name)
 #include <parson.h> // for JSON_*, json_*
 #include <stdio.h> // for FILE
 #include <stdlib.h> // for calloc
-#include <sys/stat.h> // for stat, struct stat
 
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/buffer_.h>

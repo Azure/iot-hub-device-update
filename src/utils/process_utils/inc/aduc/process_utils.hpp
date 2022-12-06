@@ -10,11 +10,47 @@
 
 #include <azure_c_shared_utility/vector.h>
 #include <functional>
-#include <grp.h>
-#include <pwd.h>
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getgrname
+typedef int gid_t;
+#else
+#    include <grp.h>
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getpwnam
+typedef int uid_t;
+#else
+#    include <pwd.h>
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] passwd
+
+// This code only references pw_uid
+struct passwd
+{
+    uid_t pw_uid; /* user uid */
+};
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] group
+typedef int gid_t;
+
+// This code only references gr_gid
+struct group
+{
+    gid_t gr_gid;
+};
+#endif
+
 #include <string>
 #include <sys/types.h>
-#include <unistd.h>
+
+// #include <unistd.h>
+
 #include <vector>
 
 /**
@@ -40,8 +76,14 @@ int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string>
  */
 bool VerifyProcessEffectiveGroup(
     const char* groupName,
+#if defined(_WIN32)
+    // TODO(JeffMill): [PAL] getegid, getgrnam
+    const std::function<gid_t()>& getegidFunc,
+    const std::function<struct group*(const char*)>& getgrnamFunc);
+#else
     const std::function<gid_t()>& getegidFunc = getegid,
     const std::function<struct group*(const char*)>& getgrnamFunc = getgrnam);
+#endif
 
 /**
  * @brief Ensure that the effective user of the process is one of the ADU Shell Trusted Users.
@@ -53,7 +95,13 @@ bool VerifyProcessEffectiveGroup(
  */
 bool VerifyProcessEffectiveUser(
     VECTOR_HANDLE trustedUsersArray,
+#if defined(_WIN32)
+    // TODO(JeffMill): [PAL] geteuid, getpwnam
+    const std::function<uid_t()>& geteuidFunc,
+    const std::function<struct passwd*(const char*)>& getpwnamFunc);
+#else
     const std::function<uid_t()>& geteuidFunc = geteuid,
     const std::function<struct passwd*(const char*)>& getpwnamFunc = getpwnam);
+#endif
 
 #endif // ADUC_PROCESS_UTILS_HPP

@@ -11,29 +11,33 @@
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] mkdir
-#    include <direct.h> // _mkdir
-#    define mkdir(path, mode) _mkdir(path)
+static int mkdir(const char* path, mode_t mode)
+{
+    __debugbreak();
+    return -1;
+}
 #else
 #    include <sys/file.h>
-// #    include <sys/wait.h> // for waitpid
 #endif
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] chmod
-#    include <corecrt_io.h> // chmod
-// #    define chmod(path, mode) _chmod(path, mode)
+static int chmod(const char* path, mode_t mode)
+{
+    __debugbreak();
+    return -1;
+}
 #else
-#    include <sys/file.h>
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] unlink
-// #    define unlink(path) _unlink(path)
+#    include <sys/file.h> // chmod
 #endif
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] rmdir
-// #    define rmdir(path) _rmdir(path)
+static int rmdir(const char* path)
+{
+    __debugbreak();
+    return -1;
+}
 #endif
 
 #if defined(_WIN32)
@@ -65,8 +69,9 @@ enum
 
 typedef int (*NFTW_FUNC_T)(const char* fpath, const struct stat* sb, int typeflag, struct FTW* ftwbuf);
 
-int nftw(const char* path, NFTW_FUNC_T func, int descriptors, int flags)
+static int nftw(const char* path, NFTW_FUNC_T func, int descriptors, int flags)
 {
+    __debugbreak();
     return -1; // failure
 }
 #else
@@ -84,11 +89,10 @@ struct group
     gid_t gr_gid;
 };
 
-struct group* getgrnam(const char* name)
+static struct group* getgrnam(const char* name)
 {
-    static struct group grp;
-    grp.gr_gid = 0;
-    return &grp;
+    __debugbreak();
+    return NULL;
 }
 #else
 #    include <grp.h> // for getgrnam
@@ -103,14 +107,11 @@ struct passwd
     uid_t pw_uid; /* user uid */
 };
 
-struct passwd* getpwnam(const char* name)
+static struct passwd* getpwnam(const char* name)
 {
-    static struct passwd pw;
+    __debugbreak();
 
-    // TODO(JeffMill): No equivalent of getuid() on windows.
-    // See suggestions at https://stackoverflow.com/questions/1594746/win32-equivalent-of-getuid
-    pw.pw_uid = 0; // getuid();
-    return &pw;
+    return NULL;
 }
 #else
 #    include <pwd.h> // for getpwnam
@@ -123,8 +124,10 @@ struct passwd* getpwnam(const char* name)
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] chown
 
-int chown(const char* file, uid_t owner, gid_t group)
+static int chown(const char* file, uid_t owner, gid_t group)
 {
+    __debugbreak();
+
     return 0;
 }
 #else
