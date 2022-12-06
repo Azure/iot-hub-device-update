@@ -16,12 +16,12 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc)
 #
 set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-find_package (azure_c_shared_utility REQUIRED)
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::c_utils
-    PRIVATE aduc::logging aziotsharedutil)
+    PRIVATE aduc::logging)
 
 target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
                                                     ADUC_FILE_USER="${ADUC_FILE_USER}")

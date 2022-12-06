@@ -26,8 +26,12 @@ macro (disableRTTI)
     endif ()
 endmacro (disableRTTI)
 
-function (target_link_iothub_client target scope)
+function (target_link_aziotsharedutil target scope)
+    find_package (azure_c_shared_utility CONFIG REQUIRED)
+    target_link_libraries (${target} ${scope} aziotsharedutil)
+endfunction ()
 
+function (target_link_iothub_client target scope)
     # NOTE: the call to find_package for azure_c_shared_utility
     # must come before umqtt since their config.cmake files expect
     # the aziotsharedutil target to already have been defined.
@@ -40,7 +44,6 @@ function (target_link_iothub_client target scope)
         aziotsharedutil
         iothub_client_http_transport
         uhttp)
-
 endfunction (target_link_iothub_client)
 
 function (target_link_digital_twin_client target scope)
@@ -53,6 +56,6 @@ function (target_link_dosdk target scope)
         find_package (deliveryoptimization_sdk CONFIG REQUIRED)
         target_link_libraries (${target} ${scope} Microsoft::deliveryoptimization)
     else ()
-        message (FATAL_ERROR "target_link_dosdk referenced on Windows build")
+        message (NOTICE "[Windows] Not referencing deliveryoptimization_sdk")
     endif ()
 endfunction (target_link_dosdk)

@@ -14,11 +14,11 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 target_sources (${PROJECT_NAME} PRIVATE src/microsoft_delta_download_handler_utils.c
                                         src/microsoft_delta_download_handler_utils.cpp)
 
-find_package (azure_c_shared_utility REQUIRED)
+target_link_aziotsharedutil (${PROJECT_NAME} PUBLIC)
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aduc::adu_types aziotsharedutil
+    PUBLIC aduc::adu_types
     PRIVATE aduc::c_utils
             aduc::extension_manager
             aduc::logging

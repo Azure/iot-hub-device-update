@@ -13,13 +13,12 @@ target_include_directories (${PROJECT_NAME} PUBLIC ./inc ${ADUC_TYPES_INCLUDES}
 #
 set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-find_package (azure_c_shared_utility REQUIRED)
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::adu_types
-    PRIVATE aduc::communication_abstraction
-            aduc::logging)
+    PRIVATE aduc::communication_abstraction aduc::logging)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

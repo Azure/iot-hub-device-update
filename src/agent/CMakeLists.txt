@@ -64,17 +64,17 @@ target_compile_definitions (
 
 # NOTE: the call to find_package for azure_c_shared_utility
 # must come before umqtt since their config.cmake files expect the aziotsharedutil target to already have been defined.
-find_package (azure_c_shared_utility REQUIRED)
 find_package (IotHubClient REQUIRED)
 find_package (umqtt REQUIRED)
 find_package (Parson REQUIRED)
 
 target_link_digital_twin_client (${target_name} PRIVATE)
 
+target_link_aziotsharedutil (${target_name} PRIVATE)
+
 target_link_libraries (
     ${target_name}
-    PRIVATE aziotsharedutil
-            IotHubClient::iothub_client
+    PRIVATE IotHubClient::iothub_client
             umqtt
             aduc::adu_core_export_helpers
             aduc::adu_core_interface

@@ -10,11 +10,12 @@ disablertti ()
 set (sources main.cpp process_utils_ut.cpp)
 
 find_package (Catch2 REQUIRED)
-find_package (azure_c_shared_utility REQUIRED)
 
 add_executable (${PROJECT_NAME} ${sources})
 
-target_link_libraries (${PROJECT_NAME} PRIVATE aduc::process_utils aziotsharedutil Catch2::Catch2)
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE aduc::process_utils Catch2::Catch2)
 
 include (CTest)
 include (Catch)

@@ -13,7 +13,6 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 find_package (Parson REQUIRED)
-find_package (azure_c_shared_utility REQUIRED)
 
 target_compile_definitions (
     ${PROJECT_NAME}
@@ -31,6 +30,8 @@ target_compile_definitions (
         ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
         ADUC_FILE_USER="${ADUC_FILE_USER}")
 
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::adu_types
@@ -40,5 +41,4 @@ target_link_libraries (
             aduc::path_utils
             aduc::string_utils
             aduc::system_utils
-            aziotsharedutil
             Parson::parson)

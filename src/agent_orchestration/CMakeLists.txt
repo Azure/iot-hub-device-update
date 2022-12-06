@@ -10,6 +10,8 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
 target_sources (${target_name} PRIVATE src/agent_orchestration.c)
 
+target_link_aziotsharedutil (${target_name} PRIVATE)
+
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types

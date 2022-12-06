@@ -15,6 +15,8 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 target_sources (${target_name} PRIVATE src/source_update_cache.c src/source_update_cache_utils.cpp
                                        src/source_update_cache_utils.c)
 
+target_link_aziotsharedutil (${target_name} PRIVATE)
+
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types aduc::c_utils
@@ -22,8 +24,7 @@ target_link_libraries (
             aduc::path_utils
             aduc::permission_utils
             aduc::system_utils
-            aduc::workflow_utils
-            aziotsharedutil)
+            aduc::workflow_utils)
 
 target_compile_definitions (
     ${target_name}

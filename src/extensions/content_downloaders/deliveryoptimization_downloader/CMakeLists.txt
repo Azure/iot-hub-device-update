@@ -16,12 +16,12 @@ target_sources (
 target_include_directories (${PROJECT_NAME} PUBLIC ${ADU_EXTENSION_INCLUDES}
                                                    ${ADUC_EXPORT_INCLUDES})
 
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 target_link_dosdk (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PRIVATE aziotsharedutil
-            aduc::c_utils
+    PRIVATE aduc::c_utils
             aduc::contract_utils
             aduc::hash_utils
             aduc::logging

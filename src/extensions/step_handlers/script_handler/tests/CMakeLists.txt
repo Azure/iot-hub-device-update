@@ -10,7 +10,6 @@ disablertti ()
 set (sources main.cpp script_handler_ut.cpp ../src/script_handler.cpp)
 
 find_package (Catch2 REQUIRED)
-find_package (azure_c_shared_utility REQUIRED)
 find_package (IotHubClient REQUIRED)
 find_package (umqtt REQUIRED)
 
@@ -24,6 +23,8 @@ target_include_directories (
            ${ADU_EXTENSION_INCLUDES}
            ${ADU_SHELL_INCLUDES})
 
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+
 target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::adu_types
@@ -33,8 +34,7 @@ target_link_libraries (
             aduc::string_utils
             aduc::workflow_data_utils
             aduc::workflow_utils
-            Catch2::Catch2
-            aziotsharedutil)
+            Catch2::Catch2)
 
 include (CTest)
 include (Catch)

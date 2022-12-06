@@ -11,7 +11,6 @@ add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 find_package (Parson REQUIRED)
-find_package (azure_c_shared_utility REQUIRED)
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc)
 
@@ -22,13 +21,12 @@ if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
     target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_PLATFORM_SIMULATOR)
 endif ()
 
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::c_utils
-    PRIVATE Parson::parson
-            aziotsharedutil
-            aduc::logging
-            aduc::parson_json_utils)
+    PRIVATE Parson::parson aduc::logging aduc::parson_json_utils)
 
 if (ADUC_BUILD_UNIT_TESTS)
     find_package (umock_c REQUIRED CONFIG)

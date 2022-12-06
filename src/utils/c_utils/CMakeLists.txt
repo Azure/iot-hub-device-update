@@ -19,11 +19,11 @@ add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 #
 set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-find_package (azure_c_shared_utility REQUIRED)
-
 target_include_directories (${PROJECT_NAME} PUBLIC inc)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE aduc::logging aziotsharedutil)
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE aduc::logging)
 
 if (ADUC_BUILD_UNIT_TESTS)
     find_package (umock_c CONFIG REQUIRED)
