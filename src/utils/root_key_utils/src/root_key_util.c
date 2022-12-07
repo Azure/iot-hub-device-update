@@ -16,7 +16,6 @@
 #include "base64_utils.h"
 #include "crypto_lib.h"
 #include "root_key_list.h"
-#include <aduc/logging.h>
 #include <aduc/result.h>
 #include <azure_c_shared_utility/constbuffer.h>
 #include <azure_c_shared_utility/strings.h>
@@ -426,7 +425,6 @@ ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
         goto done;
     }
 
-    // Write this to the temp file
     rootKeyPackageValue = json_parse_string(rootKeyPackageSerializedString);
 
     if (rootKeyPackageValue == NULL)
@@ -447,7 +445,6 @@ ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
         goto done;
     }
 
-    // Switch the names
     if (rename(STRING_c_str(tempFileName), STRING_c_str(fileDest)) != 0)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_RENAME_TO_STORE;
