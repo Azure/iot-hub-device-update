@@ -49,7 +49,11 @@ struct group
 #include <string>
 #include <sys/types.h>
 
-// #include <unistd.h>
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getegid
+#else
+#    include <unistd.h>
+#endif
 
 #include <vector>
 

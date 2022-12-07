@@ -27,7 +27,7 @@ static int mkstemp(char* tmpl)
 #endif
 
 #if defined(_WIN32)
-// TODO(JeffMill: [PAL] fchmod
+// TODO(JeffMill): [PAL] fchmod
 typedef unsigned int mode_t;
 
 static int fchmod(int fd, mode_t mode)

@@ -47,44 +47,9 @@ static int clock_gettime(clockid_t clk_id, struct timespec* tp)
 static pthread_mutex_t s_pendingMessageStoreMutex = PTHREAD_MUTEX_INITIALIZER;
 static bool s_core_initialized = false;
 
-static ADUC_D2C_Message s_pendingMessageStore[ADUC_D2C_Message_Type_Max] = {
-    // ADUC_D2C_Message
-    NULL, // cloudServiceHandle
-    NULL, // originalContent
-    NULL, // content
-    0, // contentSubmitTime
-    NULL, // responseCallback
-    NULL, // completedCallback
-    NULL, // statusChangedCallback
-    0, // status
-    NULL, // userData
-    0, // lastHttpStatus
-    0, // attempts
-};
-
-static ADUC_D2C_Message_Processing_Context s_messageProcessingContext[ADUC_D2C_Message_Type_Max] = {
-    0, // type
-    false, // initialized
-    NULL, // mutex
-    NULL, // transportFunc
-    {
-        // ADUC_D2C_Message
-        NULL, // cloudServiceHandle
-        NULL, // originalContent
-        NULL, // content
-        0, // contentSubmitTime
-        NULL, // responseCallback
-        NULL, // completedCallback
-        NULL, // statusChangedCallback
-        0, // status
-        NULL, // userData
-        0, // lastHttpStatus
-        0, // attempts
-    },
-    NULL, // retryStrategy
-    0, // retries
-    0 // nextRetryTimeStampEpoch
-};
+// Initialized in ADUC_D2C_Messaging_Init
+static ADUC_D2C_Message s_pendingMessageStore[ADUC_D2C_Message_Type_Max];
+static ADUC_D2C_Message_Processing_Context s_messageProcessingContext[ADUC_D2C_Message_Type_Max];
 
 static void ProcessMessage(ADUC_D2C_Message_Processing_Context* context);
 
