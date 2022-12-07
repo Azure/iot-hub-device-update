@@ -23,7 +23,7 @@ target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils aduc::crypto_utils aduc::rootkeypackage_utils
     PRIVATE
-           aziotsharedutil)
+           aduc::logging aziotsharedutil)
 
 
 # Always support test root keys.

@@ -16,6 +16,7 @@
 #include "base64_utils.h"
 #include "crypto_lib.h"
 #include "root_key_list.h"
+#include <aduc/logging.h>
 #include <aduc/result.h>
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/constbuffer.h>
@@ -109,14 +110,14 @@ static bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const 
     STRING_HANDLE kid = NULL;
     uint8_t* modulus = 0;
 
-    if (rootKey == NULL || IsNullOrEmpty(rsaKey))
+    if (rootKey == NULL || rsaKey == NULL || rsaKey->N == NULL || IsNullOrEmpty(rsaKey->kid))
     {
         goto done;
     }
 
     rootKey->keyType = ADUC_RootKey_KeyType_RSA;
 
-    kid = STRING_construct(rsaKey.kid);
+    kid = STRING_construct(rsaKey->kid);
 
     if (kid == NULL)
     {
@@ -125,7 +126,7 @@ static bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const 
 
     rootKey->kid = kid;
 
-    const size_t modulusSize = Base64URLDecode(rsaKey.N, &modulus);
+    const size_t modulusSize = Base64URLDecode(rsaKey->N, &modulus);
 
     if (modulusSize == 0)
     {
@@ -139,7 +140,7 @@ static bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const 
         goto done;
     }
 
-    rootKey->rsaParameters.e = rsaKey.e;
+    rootKey->rsaParameters.e = rsaKey->e;
 
     success = true;
 done:
