@@ -17,6 +17,7 @@
 #include "crypto_lib.h"
 #include "root_key_list.h"
 #include <aduc/result.h>
+#include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/constbuffer.h>
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
@@ -35,10 +36,10 @@
 static ADUC_RootKeyPackage* localStore = NULL;
 
 /**
- * @brief Helper function for mkaing a CryptoKeyHandle from an ADUC_RootKety
+ * @brief Helper function for making a CryptoKeyHandle from an ADUC_RootKey
  *
  * @param rootKey ADUC_RootKey to make into a crypto key handle
- * @return NULL on failure, a CryptoKeyHandle on sucess
+ * @return NULL on failure, a CryptoKeyHandle on success
  */
 CryptoKeyHandle MakeCryptoKeyHandleFromADUC_RootKey(const ADUC_RootKey* rootKey)
 {
@@ -102,13 +103,13 @@ done:
  * @param rsaKey rsaKey to use for intiialization
  * @return True on success; false on failure
  */
-_Bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const RSARootKey rsaKey)
+static bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const RSARootKey* rsaKey)
 {
-    _Bool success = false;
+    bool success = false;
     STRING_HANDLE kid = NULL;
     uint8_t* modulus = 0;
 
-    if (rootKey == NULL)
+    if (rootKey == NULL || IsNullOrEmpty(rsaKey))
     {
         goto done;
     }
@@ -159,10 +160,10 @@ done:
  * @param seekKid the kid to search for within the rootKeyPackage
  * @return True on success; false on failure
  */
-_Bool RootKeyUtility_GetSignatureForKey(
+bool RootKeyUtility_GetSignatureForKey(
     size_t* foundIndex, const ADUC_RootKeyPackage* rootKeyPackage, const char* seekKid)
 {
-    if (rootKeyPackage == NULL || seekKid == NULL)
+    if (foundIndex == NULL || rootKeyPackage == NULL || seekKid == NULL)
     {
         return false;
     }
@@ -194,9 +195,9 @@ _Bool RootKeyUtility_GetSignatureForKey(
  * @param aducRootKeyVector vector handle to initialize with the hard coded root keys
  * @return True on sucess; false on failure
  */
-_Bool RootKeyUtility_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVector)
+bool RootKeyUtility_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVector)
 {
-    _Bool success = false;
+    bool success = false;
 
     VECTOR_HANDLE tempHandle = VECTOR_create(sizeof(ADUC_RootKey));
 
@@ -213,7 +214,7 @@ _Bool RootKeyUtility_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVe
     {
         RSARootKey key = rsaKeyList[i];
         ADUC_RootKey rootKey = {};
-        if (!InitializeADUC_RootKey_From_RSARootKey(&rootKey, key))
+        if (!InitializeADUC_RootKey_From_RSARootKey(&rootKey, &key))
         {
             goto done;
         }
@@ -295,15 +296,13 @@ ADUC_Result RootKeyUtility_ValidatePackageWithKey(const ADUC_RootKeyPackage* roo
         goto done;
     }
 
-    // Now we have the key and the signature.
     const char* protectedProperties = STRING_c_str(rootKeyPackage->protectedPropertiesJsonString);
     const size_t protectedPropertiesLength = STRING_length(rootKeyPackage->protectedPropertiesJsonString);
 
-    // key, signature, and hash plus
     const CONSTBUFFER* signatureHash = CONSTBUFFER_GetContent(signature->hash);
 
     if (!CryptoUtils_IsValidSignature(
-            "rs256",
+            CRYPTO_UTILS_SIGNATURE_VALIDATION_ALG_RS256,
             signatureHash->buffer,
             signatureHash->size,
             (const uint8_t*)protectedProperties,
@@ -467,7 +466,12 @@ done:
 
     if (tempFileName != NULL)
     {
-        remove(STRING_c_str(tempFileName));
+        if (remove(STRING_c_str(tempFileName)) != 0)
+        {
+            Log_Info(
+                "RootKeyUtility_WriteRootKeyPackageToFileAtomically failed to remove temp file at %s",
+                STRING_c_str(tempFileName));
+        }
 
         STRING_delete(tempFileName);
     }
@@ -584,7 +588,7 @@ done:
  * @param keyId the id of the key to check
  * @return true if the key is in the disabledKeys section, false if it isn't
  */
-_Bool RootKeyUtility_RootKeyIsDisabled(const ADUC_RootKeyPackage* rootKeyPackage, const char* keyId)
+bool RootKeyUtility_RootKeyIsDisabled(const ADUC_RootKeyPackage* rootKeyPackage, const char* keyId)
 {
     if (rootKeyPackage == NULL)
     {

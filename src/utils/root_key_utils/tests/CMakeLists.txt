@@ -21,6 +21,7 @@ target_compile_definitions (${target_name} PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC
 
 target_link_libraries (${target_name} PRIVATE aduc::root_key_utils aduc::rootkeypackage_utils aduc::string_utils Catch2::Catch2 umock_c)
 
+
 include (CTest)
 include (Catch)
 catch_discover_tests (${target_name})

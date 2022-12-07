@@ -194,7 +194,8 @@ bool CryptoUtils_IsValidSignature(
 
 CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N_len, const unsigned int e)
 {
-    EVP_PKEY* result = NULL;
+    _Bool success = false;
+    EVP_PKEY* pkey = NULL;
 
     BIGNUM* rsa_N = NULL;
     BIGNUM* rsa_e = NULL;
@@ -220,7 +221,7 @@ CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N
         goto done;
     }
 
-    if (BN_set_word(rsa_e,e) == 0)
+    if (BN_set_word(rsa_e, e) == 0)
     {
         goto done;
     }
@@ -230,7 +231,7 @@ CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N
         goto done;
     }
 
-    EVP_PKEY* pkey = EVP_PKEY_new();
+    pkey = EVP_PKEY_new();
 
     if (pkey == NULL)
     {
@@ -242,16 +243,19 @@ CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N
         goto done;
     }
 
-    result = pkey;
+    success = true;
+
 done:
 
-    if (result == NULL)
+    if (!success)
     {
         BN_free(rsa_N);
         BN_free(rsa_e);
+        EVP_PKEY_free(pkey);
+        pkey = NULL;
     }
 
-    return CryptoKeyHandleToEVP_PKEY(result);
+    return CryptoKeyHandleToEVP_PKEY(pkey);
 }
 
 /**
@@ -384,64 +388,6 @@ done:
     return CryptoKeyHandleToEVP_PKEY(result);
 }
 
-CryptoKeyHandle RSAKey_ObjFromModulusStringsExponentInt(const char* N, const unsigned int e)
-{
-    EVP_PKEY* result = NULL;
-    EVP_PKEY* pkey = NULL;
-    BIGNUM* M = NULL;
-    BIGNUM* E = NULL;
-
-    RSA* rsa = RSA_new();
-    if (rsa == NULL)
-    {
-        goto done;
-    }
-
-    M = BN_new();
-    if (M == NULL)
-    {
-        goto done;
-    }
-
-    E = BN_new();
-    if (E == NULL)
-    {
-        goto done;
-    }
-
-    if (BN_hex2bn(&M, N) == 0)
-    {
-        goto done;
-    }
-
-    if (BN_set_word(E,e) != 0)
-    {
-        goto done;
-    }
-
-    if (RSA_set0_key(rsa, M, E, NULL) == 0)
-    {
-        goto done;
-    }
-
-    pkey = EVP_PKEY_new();
-    if (EVP_PKEY_assign_RSA(pkey, rsa) == 0)
-    {
-        goto done;
-    }
-
-    result = pkey;
-
-done:
-    if (result == NULL)
-    {
-        BN_free(M);
-        BN_free(E);
-        EVP_PKEY_free(pkey);
-    }
-
-    return CryptoKeyHandleToEVP_PKEY(result);
-}
 /**
  * @brief Makes an RSA key from pure strings.
  * @param N the modulus in string format

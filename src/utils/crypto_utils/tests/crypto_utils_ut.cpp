@@ -128,7 +128,7 @@ TEST_CASE("Signature Verification")
         size_t sig_len = Base64URLDecode(signature.c_str(), &d_sig_handle);
 
         CHECK(CryptoUtils_IsValidSignature(
-            "RS256",
+            CRYPTO_UTILS_SIGNATURE_VALIDATION_ALG_RS256,
             d_sig_handle,
             sig_len,
             reinterpret_cast<const uint8_t*>(blob.c_str()), // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -175,7 +175,7 @@ TEST_CASE("Signature Verification")
         size_t sig_len = Base64URLDecode(signature.c_str(), &d_sig_handle);
 
         CHECK(!CryptoUtils_IsValidSignature(
-            "RS256",
+            CRYPTO_UTILS_SIGNATURE_VALIDATION_ALG_RS256,
             d_sig_handle,
             sig_len,
             reinterpret_cast<const uint8_t*>(blob.c_str()), // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)

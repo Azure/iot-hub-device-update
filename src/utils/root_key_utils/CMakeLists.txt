@@ -25,6 +25,7 @@ target_link_libraries (
     PRIVATE
            aziotsharedutil)
 
+
 # Always support test root keys.
 add_definitions (-DBUILD_WITH_TEST_KEYS=1)
 

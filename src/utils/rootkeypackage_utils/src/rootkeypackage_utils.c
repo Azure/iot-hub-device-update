@@ -398,7 +398,7 @@ JSON_Value* ADUC_RootKeyPackageUtils_SignatureToJsonValue(const ADUC_RootKeyPack
         goto done;
     }
 
-    JSON_Status jsonStatus = json_object_set_string(sigJsonObj, "sig", encodedSignature);
+    JSON_Status jsonStatus = json_object_set_string(sigJsonObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_SIG, encodedSignature);
 
     if (jsonStatus != JSONSuccess)
     {
@@ -412,7 +412,7 @@ JSON_Value* ADUC_RootKeyPackageUtils_SignatureToJsonValue(const ADUC_RootKeyPack
         goto done;
     }
 
-    jsonStatus = json_object_set_string(sigJsonObj, "alg", STRING_c_str(algString));
+    jsonStatus = json_object_set_string(sigJsonObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_ALG, STRING_c_str(algString));
 
 done:
 
@@ -524,7 +524,9 @@ char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPa
         }
     }
 
-    if (json_object_set_value(rootKeyPackageJsonObj, "signatures", rootKeySignatureArrayValue) != JSONSuccess)
+    if (json_object_set_value(
+            rootKeyPackageJsonObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_SIGNATURES, rootKeySignatureArrayValue)
+        != JSONSuccess)
     {
         goto done;
     }

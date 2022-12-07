@@ -82,7 +82,7 @@ static const RSARootKey HardcodedRSARootKeyList[] =
 // clang-format on
 
 /**
- * @brief
+ * @brief Returns the hardcoded array of hardcoded RSARootKeys
  *
  * @return the current list of hardcoded keys
  */
@@ -91,6 +91,11 @@ const RSARootKey* RootKeyList_GetHardcodedRsaRootKeys(void)
     return HardcodedRSARootKeyList;
 }
 
+/**
+ * @brief Returns the number of hardcoded RSARootKeys
+ *
+ * @return the current size of the list of hardcoded root keys
+ */
 size_t RootKeyList_numHardcodedKeys(void)
 {
     return ARRAY_SIZE(HardcodedRSARootKeyList);
