@@ -7,8 +7,6 @@ add_library (diagnostic_utils::${target_name} ALIAS ${target_name})
 
 target_include_directories (${target_name} PUBLIC inc)
 
-# NOTE: the call to find_package for azure_c_shared_utility
-# must come before umqtt since their config.cmake files expect the aziotsharedutil target to already have been defined.
 find_package (Parson REQUIRED)
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
@@ -20,6 +18,13 @@ target_link_libraries (
 
 if (ADUC_BUILD_UNIT_TESTS)
     find_package (umock_c REQUIRED CONFIG)
+
+    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+        # TODO(JeffMill): This is required for Windows to avoid
+        # fatal  error C1083: Cannot open include file: 'umock_c/umock_c_prod.h': No such file or directory
+        target_include_directories (${target_name} PRIVATE ${UMOCK_C_INC_FOLDER})
+    endif ()
+
     target_link_libraries (${target_name} PRIVATE umock_c)
 
     add_subdirectory (tests)

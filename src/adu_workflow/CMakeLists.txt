@@ -16,11 +16,11 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
 find_package (Parson REQUIRED)
 
-# TODO(JeffMill): This is required for Windows to avoid
-# fatal  error C1083: Cannot open include file: 'umock_c/umock_c_prod.h': No such file or directory
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-    find_package (umock_c REQUIRED CONFIG)
-    target_link_libraries (${PROJECT_NAME} PRIVATE umock_c)
+    # TODO(JeffMill): This is required for Windows to avoid
+    #  fatal  error C1083: Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
+    find_package (azure_c_shared_utility CONFIG REQUIRED)
+    target_include_directories (${PROJECT_NAME} PRIVATE ${AZURE_C_SHARED_UTILITY_INCLUDES})
 endif ()
 
 target_link_libraries (

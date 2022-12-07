@@ -6,6 +6,7 @@
     "dependencies": [
         "azure-c-shared-utility",
         "azure-iot-sdk-c",
+        "azure-macro-utils-c",
         "azure-storage-blobs-cpp",
         "catch2",
         "dirent",

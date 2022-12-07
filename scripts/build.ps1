@@ -388,6 +388,18 @@ mkdir -Path $output_directory -Force | Out-Null
 
 Header 'Generating Makefiles'
 
+# Troubleshooting CMake dependencies
+# show every find_package call (vcpkg specific):
+# $CMAKE_OPTIONS += '-DVCPKG_TRACE_FIND_PACKAGE:BOOL=ON'
+# Verbose output (very verbose):
+# $CMAKE_OPTIONS += '--trace-expand'
+# See cmake dependencies (very verbose):
+# $CMAKE_OPTIONS += '--debug-output'
+# See compiler output at build time:
+# $CMAKE_OPTIONS += '-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON'
+# See library search output:
+# $CMAKE_OPTIONS += '-DCMAKE_EXE_LINKER_FLAGS=/VERBOSE:LIB'
+
 & $cmake_bin -S "$root_dir" -B $output_directory @CMAKE_OPTIONS
 # TODO(JeffMill): Scenario 2: Use Ninja
 # & $cmake_bin -S "$root_dir" -B $output_directory  -G Ninja @CMAKE_OPTIONS

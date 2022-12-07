@@ -14,11 +14,11 @@ target_include_directories (
     PUBLIC inc ${ADUC_EXPORT_INCLUDES}
     PRIVATE src)
 
-# TODO(JeffMill): This is required for Windows to avoid
-# C:\wiot-s1\src\utils\workflow_utils\inc\aduc/workflow_utils.h(15,10): fatal  error C1083:
-# Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-    target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+    # TODO(JeffMill): This is required for Windows to avoid
+    #  fatal  error C1083: Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
+    find_package (azure_c_shared_utility CONFIG REQUIRED)
+    target_include_directories (${PROJECT_NAME} PRIVATE ${AZURE_C_SHARED_UTILITY_INCLUDES})
 endif ()
 
 target_link_libraries (

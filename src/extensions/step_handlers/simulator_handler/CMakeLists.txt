@@ -33,6 +33,13 @@ find_package (azure_c_shared_utility REQUIRED)
 target_compile_definitions (
     ${target_name} PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}")
 
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    # TODO(JeffMill): This is required for Windows to avoid
+    #  fatal  error C1083: Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
+    find_package (azure_c_shared_utility CONFIG REQUIRED)
+    target_include_directories (${target_name} PRIVATE ${AZURE_C_SHARED_UTILITY_INCLUDES})
+endif ()
+
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::agent_workflow
