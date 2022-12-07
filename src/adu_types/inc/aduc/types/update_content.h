@@ -143,6 +143,11 @@ EXTERN_C_BEGIN
  */
 #define ADUCITF_FIELDNAME_FILE_URLS "fileUrls"
 
+/**
+ * @brief JSON field name for Root Key Package URL
+ */
+#define ADUCITF_FIELDNAME_ROOTKEY_PACKAGE_URL "rootKeyPackageUrl"
+
 //
 // Update Manifest Field Values
 //

@@ -12,10 +12,12 @@
 #include "aduc/rootkeypackage_types.h"
 #include <aduc/c_utils.h>
 #include <aduc/result.h>
+#include <azure_c_shared_utility/strings.h>
 
 EXTERN_C_BEGIN
 
-ADUC_Result ADUC_RootKeyPackageUtil_DownloadPackage(char** outPathToRootKeyPackage);
+ADUC_Result ADUC_RootKeyPackageUtil_DownloadPackage(
+    const char* rootKeyPkgUrl, const char* workflowId, STRING_HANDLE* outRootKeyPackageDownloadedFile);
 ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyPackage* outRootKeyPackage);
 
 void ADUC_RootKeyPackageUtils_DisabledRootKeys_Destroy(ADUC_RootKeyPackage* rootKeyPackage);

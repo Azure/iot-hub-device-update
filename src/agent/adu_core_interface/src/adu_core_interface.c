@@ -320,13 +320,6 @@ static bool RootKeyUtil_NeedNewRootKeys()
     return false;
 }
 
-// TODO: Remove once real root key util function is available.
-static ADUC_Result RootKeyUtil_VerifyAndInstallRootKeys(ADUC_RootKeyPackage* rootKeyPackage)
-{
-    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Success, .ExtendedResultCode = 0 };
-    return result;
-}
-
 /**
  * @brief Reports DeploymentInProgress for a propertyUpdate update action json.
  *
@@ -392,6 +385,7 @@ void OrchestratorUpdateCallback(
     ADUC_PnPComponentClient_PropertyUpdate_Context* sourceContext,
     void* context)
 {
+    ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)context;
 
     STRING_HANDLE jsonToSend = NULL;
@@ -400,6 +394,8 @@ void OrchestratorUpdateCallback(
 
     ADUCITF_UpdateAction updateAction = ADUCITF_UpdateAction_Undefined;
     char* workflowId = NULL;
+    char* rootKeyPkgUrl = NULL;
+    STRING_HANDLE rootKeyPackageFilePath = NULL;
 
     // Reads out the json string so we can Log Out what we've got.
     // The value will be parsed and handled in ADUC_Workflow_HandlePropertyUpdate.
@@ -432,7 +428,13 @@ void OrchestratorUpdateCallback(
     // service would not be updated of In-Progress state for up to 48 hours
     // due to download retry policy.
 
-    workflow_parse_peek_unprotected_workflow_properties(json_object(propertyValue), &updateAction, &workflowId);
+    // Get the unprotected properties, including rootkey package URL.
+    tmpResult = workflow_parse_peek_unprotected_workflow_properties(
+        json_object(propertyValue), &updateAction, &workflowId, &rootKeyPkgUrl);
+    if (IsAducResultCodeFailure(tmpResult.ResultCode))
+    {
+        goto done;
+    }
 
     if (updateAction == ADUCITF_UpdateAction_ProcessDeployment && !IsNullOrEmpty(workflowId))
     {
@@ -441,31 +443,18 @@ void OrchestratorUpdateCallback(
         bool reportingSuccess = ReportDeploymentInProgress(propertyValue);
         if (!reportingSuccess)
         {
-            Log_Warn(
-                "Kick off reporting of deployment in progress failed. Continuing to process deployment %s",
-                workflowId);
+            Log_Warn("Reporting InProgress failed. Continuing processing deployment %s", workflowId);
         }
 
-        workflow_free_string(workflowId);
-
-        if (RootKeyUtil_NeedNewRootKeys()) // TODO: Replace with call to the real rootkey utils
+        // TODO: Replace the following if-block with the real RootKeyUtil
+        if (RootKeyUtil_NeedNewRootKeys())
         {
-            ADUC_RootKeyPackage rootKeyPackage;
-            memset(&rootKeyPackage, 0, sizeof(rootKeyPackage));
+            tmpResult = ADUC_RootKeyPackageUtil_DownloadPackage(rootKeyPkgUrl, workflowId, &rootKeyPackageFilePath);
 
-            char* filePathToDownloadedRootKeyPackage = NULL;
-            ADUC_Result rootKeyResult = ADUC_RootKeyPackageUtil_DownloadPackage(&filePathToDownloadedRootKeyPackage);
-            free(filePathToDownloadedRootKeyPackage);
-            if (IsAducResultCodeFailure(rootKeyResult.ResultCode))
+            if (IsAducResultCodeFailure(tmpResult.ResultCode))
             {
-                // TODO: Report failed rootKeyResult
-                goto done;
-            }
+                Log_Error("Failed to download root key pkg, 0x%08x", tmpResult.ExtendedResultCode);
 
-            rootKeyResult = RootKeyUtil_VerifyAndInstallRootKeys(
-                &rootKeyPackage); // TODO: Replace with call to the real rootkey utils.
-            if (IsAducResultCodeFailure(rootKeyResult.ResultCode))
-            {
                 // TODO: Report failed rootKeyResult
                 goto done;
             }
@@ -505,6 +494,9 @@ void OrchestratorUpdateCallback(
     }
 
 done:
+    free(rootKeyPackageFilePath);
+    free(rootKeyPkgUrl);
+    workflow_free_string(workflowId);
     STRING_delete(jsonToSend);
 
     free(jsonString);

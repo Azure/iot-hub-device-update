@@ -805,6 +805,14 @@
               {
                 "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_DETACHED_UPDATE_MANIFEST_MISSING_UPDATEMANIFEST_PROPERTY",
                 "value": 15
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_WORKFLOW_ACTION",
+                "value": 16
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_EMPTY_OR_MISSING_ROOTKEY_PKG_URL",
+                "value": 17
               }
             ]
           },

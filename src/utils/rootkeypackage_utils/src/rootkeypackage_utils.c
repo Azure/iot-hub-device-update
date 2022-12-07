@@ -92,11 +92,24 @@ done:
 /**
  * @brief Downloads the rootkey package
  *
+ * @param rootKeyPkgUrl The root key package URL.
+ * @param workflowId The update deployment workflow Id.
  * @param outPathToRootKeyPackage The resultant path to the root key package file.
  */
-ADUC_Result ADUC_RootKeyPackageUtil_DownloadPackage(char** outPathToRootKeyPackage)
+ADUC_Result ADUC_RootKeyPackageUtil_DownloadPackage(
+    const char* rootKeyPkgUrl, const char* workflowId, STRING_HANDLE* outRootKeyPackageDownloadedFile)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
+    if (IsNullOrEmpty(rootKeyPkgUrl) || IsNullOrEmpty(workflowId) || outRootKeyPackageDownloadedFile == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
+        goto done;
+    }
+
+    result.ResultCode = ADUC_GeneralResult_Success;
+
+done:
     return result;
 }
 
