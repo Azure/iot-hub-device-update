@@ -41,7 +41,7 @@ static int mkstemp(char* tmpl)
 #endif
 
 #if defined(_WIN32)
-// TODO(JeffMill: [PAL] fchmod
+// TODO(JeffMill): [PAL] fchmod
 static int fchmod(int fd, mode_t mode)
 {
     __debugbreak();
@@ -53,7 +53,11 @@ static int fchmod(int fd, mode_t mode)
 #    include <sys/stat.h> // fchmod
 #endif
 
-// #include <unistd.h>
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] unlink
+#else
+#    include <unistd.h>
+#endif
 
 //bool PermissionUtils_VerifyFilemodeBits(const char* path, mode_t expectedPermissions, bool isExactMatch);
 TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
