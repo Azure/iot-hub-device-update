@@ -5,6 +5,7 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+#include "aduc/result.h"
 #include "base64_utils.h"
 #include "crypto_lib.h"
 #include "root_key_util.h"
@@ -68,7 +69,11 @@ TEST_CASE("RSA Keys")
 
     SECTION("Getting a Root Key ID")
     {
-        CryptoKeyHandle key = RootKeyUtility_GetKeyForKid("ADU.200702.R");
+        CryptoKeyHandle key = nullptr;
+
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, "ADU.200702.R");
+
+        CHECK(IsAducResultCodeSuccess(result.ResultCode));
 
         CHECK(key != nullptr);
 
@@ -77,7 +82,10 @@ TEST_CASE("RSA Keys")
 
     SECTION("Failing to get a Root Key")
     {
-        CryptoKeyHandle key = RootKeyUtility_GetKeyForKid("foo");
+        CryptoKeyHandle key = nullptr;
+
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, "foo");
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
         CHECK(key == nullptr);
     }
 }
@@ -110,7 +118,11 @@ TEST_CASE("Signature Verification")
                           "CV29BMDVyQ1oiLCJlIjoiQVFBQiIsImFsZyI6IlJTMjU2Iiwia2lkIjoiQURVL"
                           "jIwMDcwMi5SLlMifQ" };
 
-        CryptoKeyHandle key = RootKeyUtility_GetKeyForKid("ADU.200702.R");
+        CryptoKeyHandle key = nullptr;
+
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, "ADU.200702.R");
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
         uint8_t* d_sig_handle = nullptr;
         size_t sig_len = Base64URLDecode(signature.c_str(), &d_sig_handle);
@@ -152,7 +164,12 @@ TEST_CASE("Signature Verification")
                           "CV29BMDVyQ1oiLCJlIjoiQVFBQiIsImFsZyI6IlJTMjU2Iiwia2lkIjoiQURVL"
                           "jIwMDcwMi5SLlMifQ" };
 
-        CryptoKeyHandle key = RootKeyUtility_GetKeyForKid("ADU.200702.R");
+        CryptoKeyHandle key = NULL;
+
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, "ADU.200702.R");
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        REQUIRE(key != nullptr);
 
         uint8_t* d_sig_handle = nullptr;
         size_t sig_len = Base64URLDecode(signature.c_str(), &d_sig_handle);

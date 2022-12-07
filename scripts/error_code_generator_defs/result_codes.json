@@ -1030,6 +1030,26 @@
                         {
                             "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_RENAME_TO_STORE",
                             "value": 8
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_LOAD_FROM_STORE",
+                            "value": 9
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_FAILED_SERIALIZE_TO_STRING",
+                            "value": 10
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID",
+                            "value": 11
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_ERRNOMEM",
+                            "value": 12
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_ROOTKEY_IS_DISABLED",
+                            "value": 13
                         }
                     ]
                 }
