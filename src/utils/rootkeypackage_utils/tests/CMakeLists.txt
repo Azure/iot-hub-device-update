@@ -10,7 +10,8 @@ find_package (Catch2 REQUIRED)
 find_package (Parson REQUIRED)
 
 add_executable (${target_name})
-target_sources (${target_name} PRIVATE src/main.cpp src/rootkeypackage_utils_ut.cpp src/rootkeypackage_download_ut.cpp)
+target_sources (${target_name} PRIVATE src/main.cpp src/rootkeypackage_utils_ut.cpp
+                                       src/rootkeypackage_download_ut.cpp)
 
 target_include_directories (${target_name} PRIVATE inc)
 
@@ -30,3 +31,5 @@ target_compile_definitions (${target_name} PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC
 include (CTest)
 include (Catch)
 catch_discover_tests (${target_name})
+
+add_subdirectory (testapp)
