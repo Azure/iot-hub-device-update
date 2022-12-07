@@ -27,7 +27,6 @@
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
-#include <curl/curl.h>
 #ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
 #    include "aduc/connection_string_utils.h"
 #    include <do_config.h>
@@ -324,7 +323,8 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             launchArgs->iotHubTracingEnabled = true;
             break;
 
-        case 'l': {
+        case 'l':
+        {
             unsigned int logLevel = 0;
             _Bool ret = atoui(optarg, &logLevel);
             if (!ret || logLevel < ADUC_LOG_DEBUG || logLevel > ADUC_LOG_ERROR)
@@ -1183,10 +1183,6 @@ done:
 _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 {
     _Bool succeeded = false;
-    ADUC_Result result = {
-        .ResultCode = ADUC_GeneralResult_Failure,
-        .ExtendedResultCode = 0,
-    };
 
     ADUC_ConnectionInfo info = {};
 
@@ -1241,6 +1237,8 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         goto done;
     }
 
+    ADUC_Result result;
+
     // The connection string is valid (IoT hub connection successful) and we are ready for further processing.
     // Send connection string to DO SDK for it to discover the Edge gateway if present.
     if (ConnectionStringUtils_IsNestedEdge(info.connectionString))
@@ -1250,14 +1248,6 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     else
     {
         result = ExtensionManager_InitializeContentDownloader(NULL /*initializeData*/);
-    }
-
-    if (IsAducResultCodeFailure(result.ResultCode))
-    {
-        // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
-        // fail the startup.
-        Log_Error("Failed to set DO connection string in Nested Edge scenario, erc: %d", result.ExtendedResultCode);
-        goto done;
     }
 
     if (InitializeCommandListenerThread())
@@ -1270,6 +1260,14 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
             "Cannot initialize the command listener thread. Running another instance of DU Agent with --command will not work correctly.");
         // Note: even though we can't create command listener here, we need to ensure that
         // the agent stay alive and connected to the IoT hub.
+    }
+
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
+        // fail the startup.
+        Log_Error("Failed to set DO connection string in Nested Edge scenario, result: %d", result);
+        goto done;
     }
 
     succeeded = true;
