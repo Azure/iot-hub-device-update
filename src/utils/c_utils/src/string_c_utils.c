@@ -17,12 +17,30 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#if defined _WIN32
-// TODO(JeffMill): [PAL] _open, _read, _close
-#    include <corecrt_io.h>
-// #    define open(path, oflag) _open(path, oflag)
-// #    define read(fildes, buf, nbyte) _read(fildes, buf, nbyte)
-// #    define close(fildes) _close(fildes)
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] open, read, close
+static int open(const char* path, int oflag)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+
+typedef long ssize_t;
+
+static ssize_t read(int fildes, void* buf, size_t nbyte)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+
+int close(int fildes)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
 #else
 #    include <unistd.h>
 #endif

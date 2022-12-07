@@ -211,7 +211,9 @@ done:
  */
 ADUC_Result SimulatorHandlerImpl::Download(const tagADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result = { .ResultCode = ADUC_Result_Download_Success };
+    ADUC_Result result;
+    result.ResultCode = ADUC_Result_Download_Success;
+    result.ExtendedResultCode = 0;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     ADUC_WorkflowHandle childHandle = nullptr;
 
@@ -223,7 +225,7 @@ ADUC_Result SimulatorHandlerImpl::Download(const tagADUC_WorkflowData* workflowD
     if (data == nullptr)
     {
         Log_Info("No simulator data file provided, returning default result code...");
-        result = { .ResultCode = ADUC_Result_Download_Success };
+        result.ResultCode = ADUC_Result_Download_Success;
         goto done;
     }
 
@@ -233,14 +235,14 @@ ADUC_Result SimulatorHandlerImpl::Download(const tagADUC_WorkflowData* workflowD
     for (size_t i = 0; i < fileCount; i++)
     {
         ADUC_FileEntity* entity = nullptr;
-        result = { .ResultCode = ADUC_Result_Download_Success };
+        result.ResultCode = ADUC_Result_Download_Success;
 
         bool fileEntityOk = workflow_get_update_file(handle, i, &entity);
 
         if (!fileEntityOk || entity == nullptr)
         {
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_GET_FILE_ENTITY_FAILURE };
+            result.ResultCode = ADUC_Result_Failure;
+            result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_GET_FILE_ENTITY_FAILURE;
             goto done;
         }
 
@@ -261,13 +263,14 @@ ADUC_Result SimulatorHandlerImpl::Download(const tagADUC_WorkflowData* workflowD
 
         if (resultForFile != nullptr)
         {
-            result.ResultCode = json_object_get_number(resultForFile, "resultCode");
-            result.ExtendedResultCode = json_object_get_number(resultForFile, "extendedResultCode");
+            result.ResultCode = static_cast<ADUC_Result_t>(json_object_get_number(resultForFile, "resultCode"));
+            result.ExtendedResultCode =
+                static_cast<ADUC_Result_t>(json_object_get_number(resultForFile, "extendedResultCode"));
             workflow_set_result_details(handle, json_object_get_string(resultForFile, "resultDetails"));
         }
         else
         {
-            result = { .ResultCode = ADUC_Result_Download_Success };
+            result.ResultCode = ADUC_Result_Download_Success;
         }
 
         if (IsAducResultCodeFailure(result.ResultCode))
@@ -292,7 +295,9 @@ ADUC_Result SimulatorActionHelper(
     const char* action,
     const char* resultSelector)
 {
-    ADUC_Result result = { .ResultCode = defaultResultCode };
+    ADUC_Result result;
+    result.ResultCode = defaultResultCode;
+    result.ExtendedResultCode = 0;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     ADUC_WorkflowHandle childHandle = nullptr;
 
@@ -302,7 +307,7 @@ ADUC_Result SimulatorActionHelper(
     if (data == nullptr)
     {
         Log_Info("No simulator data file provided, returning default result code...");
-        result = { .ResultCode = defaultResultCode };
+        result.ResultCode = defaultResultCode;
         goto done;
     }
 
@@ -331,8 +336,9 @@ ADUC_Result SimulatorActionHelper(
 
     if (resultObject != nullptr)
     {
-        result.ResultCode = json_object_get_number(resultObject, "resultCode");
-        result.ExtendedResultCode = json_object_get_number(resultObject, "extendedResultCode");
+        result.ResultCode = static_cast<ADUC_Result_t>(json_object_get_number(resultObject, "resultCode"));
+        result.ExtendedResultCode =
+            static_cast<ADUC_Result_t>(json_object_get_number(resultObject, "extendedResultCode"));
 
         if (workflowData->WorkflowHandle != nullptr)
         {

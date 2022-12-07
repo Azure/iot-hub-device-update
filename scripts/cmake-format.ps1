@@ -29,6 +29,7 @@ Push-Location $GITROOT
 # diff-filter=d will exclude deleted files.
 git.exe diff --diff-filter=d --relative --name-only --cached HEAD -- 'CMakeLists.txt' '*/CMakeLists.txt' '*.cmake' '*/*.cmake' ` | ForEach-Object {
     $FILE = $_
+    "Formatting $FILE"
     # Unfortunately, cmake-format doesn't work when piping git cat-file blob
     # into it so that it processes only staged file contents, but we use the
     # --check argument so that a reformatting results in non-zero exit code.

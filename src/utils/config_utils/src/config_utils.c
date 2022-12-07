@@ -18,7 +18,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+
+#if defined(_WIN32)
+#else
+#    include <unistd.h>
+#endif
 
 static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent);
 
@@ -198,7 +202,7 @@ bool ADUC_Json_GetAgents(JSON_Value* root_value, unsigned int* agentCount, ADUC_
         goto done;
     }
 
-    *agentCount = agents_count;
+    *agentCount = (unsigned int)agents_count;
 
     for (size_t index = 0; index < agents_count; ++index)
     {

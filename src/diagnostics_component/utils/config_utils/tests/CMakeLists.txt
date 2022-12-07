@@ -18,6 +18,13 @@ target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_LOG_FOLDER="${ADUC_LOG_
 target_link_libraries (${PROJECT_NAME} PRIVATE diagnostic_utils::diagnostics_config_utils
                                                Catch2::Catch2 Parson::parson)
 
+# TODO(JeffMill): This is required for Windows to avoid
+# C:\wiot-s1\src\utils\workflow_utils\inc\aduc/workflow_utils.h(15,10): fatal  error C1083:
+# Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+endif ()
+
 include (CTest)
 include (Catch)
 catch_discover_tests (${PROJECT_NAME})

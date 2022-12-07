@@ -12,13 +12,15 @@
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] seteuid, setegid
-int seteuid(uid_t uid)
+static int seteuid(uid_t uid)
 {
+    __debugbreak();
     return 0;
 }
 
-int setegid(gid_t gid)
+static int setegid(gid_t gid)
 {
+    __debugbreak();
     return 0;
 }
 #else
@@ -35,12 +37,10 @@ struct group
     char** gr_mem; /* group members */
 };
 
-struct group* getgrnam(const char* name)
+static struct group* getgrnam(const char* name)
 {
-    static struct group grp;
-    grp.gr_gid = 0;
-    grp.gr_mem = NULL;
-    return &grp;
+    __debugbreak();
+    return NULL;
 }
 #else
 #    include <grp.h> // for getgrnam
@@ -55,13 +55,13 @@ struct passwd
     uid_t pw_uid; /* user uid */
 };
 
-struct passwd* getpwnam(const char* name)
+static struct passwd* getpwnam(const char* name)
 {
     static struct passwd pw;
 
-    // TODO(JeffMill): No equivalent of getuid() on windows.
-    // See suggestions at https://stackoverflow.com/questions/1594746/win32-equivalent-of-getuid
-    pw.pw_uid = 0; // getuid();
+    __debugbreak();
+
+    pw.pw_uid = 0;
     return &pw;
 }
 #else

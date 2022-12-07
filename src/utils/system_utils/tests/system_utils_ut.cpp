@@ -70,7 +70,10 @@ static void ForEachDir_Callback(void* context, const char* baseDir, const char* 
 
 ADUC_SystemUtils_ForEachDirFunctor CreateCallbackFunctor(TestCaseFixture* fixture)
 {
-    return ADUC_SystemUtils_ForEachDirFunctor{ .context = fixture, .callbackFn = ForEachDir_Callback };
+    ADUC_SystemUtils_ForEachDirFunctor functor;
+    functor.context = fixture;
+    functor.callbackFn = ForEachDir_Callback;
+    return functor;
 };
 
 class TestCaseFixture

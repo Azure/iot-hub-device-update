@@ -33,7 +33,7 @@
 #include <dirent.h>
 
 // Note: this requires ${CMAKE_DL_LIBS}
-#include <dlfcn.h>
+// #include <dlfcn.h>
 
 using ADUC::StringUtils::cstr_wrapper;
 
@@ -83,7 +83,9 @@ StepsHandlerImpl::~StepsHandlerImpl() // override
  */
 ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
 {
-    ADUC_Result result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+    ADUC_Result result;
+    result.ResultCode = ADUC_Result_Failure;
+    result.ExtendedResultCode = 0;
     ADUC_WorkflowHandle childHandle = nullptr;
 
     auto stepCount = static_cast<unsigned int>(workflow_get_instructions_steps_count(handle));
@@ -136,8 +138,8 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                 // Download detached update manifest file.
                 if (!workflow_get_step_detached_manifest_file(handle, i, &entity))
                 {
-                    result = { .ResultCode = ADUC_Result_Failure,
-                               .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_GET_FILE_ENTITY_FAILURE };
+                    result.ResultCode = ADUC_Result_Failure;
+                    result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_GET_FILE_ENTITY_FAILURE;
                     Log_Error(
                         "Cannot get a detached Update manifest file entity for level#%d step#%d", workflowLevel, i);
                     goto done;
@@ -151,9 +153,9 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
 
                 try
                 {
-                    ExtensionManager_Download_Options downloadOptions = {
-                        .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
-                    };
+                    ExtensionManager_Download_Options downloadOptions;
+                    memset(&downloadOptions, 0, sizeof(downloadOptions));
+                    downloadOptions.retryTimeout = DO_RETRY_TIMEOUT_DEFAULT;
 
                     result = ExtensionManager::Download(entity, handle, &downloadOptions, nullptr);
                 }
@@ -202,9 +204,8 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                         if (compatibilityString.get() == nullptr)
                         {
                             Log_Error("Cannot get compatibility info for components-update #%d", i);
-                            result = { .ResultCode = ADUC_Result_Failure,
-                                       .ExtendedResultCode =
-                                           ADUC_ERC_STEPS_HANDLER_GET_REF_STEP_COMPATIBILITY_FAILED };
+                            result.ResultCode = ADUC_Result_Failure;
+                            result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_GET_REF_STEP_COMPATIBILITY_FAILED;
                             goto done;
                         }
 
@@ -257,8 +258,8 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
 
             if (!workflow_insert_child(handle, -1, childHandle))
             {
-                result = { .ResultCode = ADUC_Result_Failure,
-                           .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_CHILD_WORKFLOW_INSERT_FAILED };
+                result.ResultCode = ADUC_Result_Failure;
+                result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_CHILD_WORKFLOW_INSERT_FAILED;
                 goto done;
             }
         }
@@ -338,7 +339,8 @@ static ADUC_Result GetSelectedComponentsArray(ADUC_WorkflowHandle handle, JSON_A
     const char* selectedComponents = workflow_peek_selected_components(handle);
     if (IsNullOrEmpty(selectedComponents))
     {
-        result = { .ResultCode = ADUC_Result_Failure };
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = 0;
         goto done;
     }
 
@@ -357,7 +359,8 @@ static ADUC_Result GetSelectedComponentsArray(ADUC_WorkflowHandle handle, JSON_A
         goto done;
     }
 
-    result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
+    result.ResultCode = ADUC_Result_Success;
+    result.ExtendedResultCode = 0;
 
 done:
     return result;
@@ -379,7 +382,8 @@ static ADUC_Result DoV1DownloadWork(
     catch (...)
     {
         // Cannot determine whether the step has been applied, so, we'll try to process the step.
-        result = { .ResultCode = ADUC_Result_IsInstalled_NotInstalled, .ExtendedResultCode = 0 };
+        result.ResultCode = ADUC_Result_IsInstalled_NotInstalled;
+        result.ExtendedResultCode = 0;
     }
 
     if (IsAducResultCodeSuccess(result.ResultCode) && result.ResultCode == ADUC_Result_IsInstalled_Installed)
@@ -399,8 +403,8 @@ static ADUC_Result DoV1DownloadWork(
         }
         catch (...)
         {
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_DOWNLOAD_UNKNOWN_EXCEPTION_DOWNLOAD_CONTENT };
+            result.ResultCode = ADUC_Result_Failure;
+            result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_DOWNLOAD_UNKNOWN_EXCEPTION_DOWNLOAD_CONTENT;
         }
 
         if (IsAducResultCodeFailure(result.ResultCode))
@@ -457,7 +461,7 @@ static ADUC_Result HandleComponents(
             goto done;
         }
 
-        *selectedComponentsCount = json_array_get_count(selectedComponentsArray);
+        *selectedComponentsCount = static_cast<int>(json_array_get_count(selectedComponentsArray));
 
         if (*selectedComponentsCount == 0)
         {
@@ -500,7 +504,9 @@ done:
  */
 static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+    ADUC_Result result;
+    result.ResultCode = ADUC_Result_Failure;
+    result.ExtendedResultCode = 0;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     ADUC_WorkflowHandle stepHandle = nullptr;
     char* workFolder = workflow_get_workfolder(handle);
@@ -514,7 +520,8 @@ static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowDat
 
     if (workflow_is_cancel_requested(handle))
     {
-        result = { .ResultCode = ADUC_Result_Failure_Cancelled, .ExtendedResultCode = 0 };
+        result.ResultCode = ADUC_Result_Failure_Cancelled;
+        result.ExtendedResultCode = 0;
         goto done;
     }
 
@@ -658,7 +665,8 @@ static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowDat
         // Set step's result.
     }
 
-    result = { .ResultCode = ADUC_Result_Download_Success, .ExtendedResultCode = 0 };
+    result.ResultCode = ADUC_Result_Download_Success;
+    result.ExtendedResultCode = 0;
 
 done:
 
@@ -744,7 +752,9 @@ ADUC_Result StepsHandlerImpl::Download(const tagADUC_WorkflowData* workflowData)
  */
 static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+    ADUC_Result result;
+    result.ResultCode = ADUC_Result_Failure;
+    result.ExtendedResultCode = 0;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     ADUC_WorkflowHandle stepHandle = nullptr;
 
@@ -766,7 +776,8 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             workflowStep,
             workflowId,
             handle);
-        result = { .ResultCode = ADUC_Result_Failure_Cancelled };
+        result.ResultCode = ADUC_Result_Failure_Cancelled;
+        result.ExtendedResultCode = 0;
         goto done;
     }
 
@@ -811,7 +822,7 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             goto done;
         }
 
-        selectedComponentsCount = json_array_get_count(selectedComponentsArray);
+        selectedComponentsCount = static_cast<int>(json_array_get_count(selectedComponentsArray));
 
         if (selectedComponentsCount == 0)
         {
@@ -827,8 +838,9 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             ADUC_Result currentResult = workflow_get_result(handle);
             if (IsAducResultCodeFailure(currentResult.ResultCode))
             {
-                ADUC_Result newResult = { .ResultCode = ADUC_Result_Install_Skipped_NoMatchingComponents,
-                                          .ExtendedResultCode = 0 };
+                ADUC_Result newResult;
+                newResult.ResultCode = ADUC_Result_Install_Skipped_NoMatchingComponents;
+                newResult.ExtendedResultCode = 0;
                 workflow_set_result(handle, newResult);
                 workflow_set_result_details(handle, msg);
             }
@@ -906,7 +918,8 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             catch (...)
             {
                 // Cannot determine whether the step has been applied, so, we'll try to process the step.
-                result = { .ResultCode = ADUC_Result_IsInstalled_NotInstalled, .ExtendedResultCode = 0 };
+                result.ResultCode = ADUC_Result_IsInstalled_NotInstalled;
+                result.ExtendedResultCode = 0;
             }
 
             if (IsAducResultCodeSuccess(result.ResultCode) && result.ResultCode == ADUC_Result_IsInstalled_Installed)
@@ -928,8 +941,8 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             }
             catch (...)
             {
-                result = { .ResultCode = ADUC_Result_Failure,
-                           .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_BACKUP_CHILD_STEP };
+                result.ResultCode = ADUC_Result_Failure;
+                result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_BACKUP_CHILD_STEP;
                 goto done;
             }
             if (IsAducResultCodeFailure(result.ResultCode))
@@ -949,8 +962,8 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             catch (...)
             {
                 Log_Error("The handler throws an exception inside Install().");
-                result = { .ResultCode = ADUC_Result_Failure,
-                           .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_INSTALL_CHILD_STEP };
+                result.ResultCode = ADUC_Result_Failure;
+                result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_INSTALL_CHILD_STEP;
                 goto done;
             }
 
@@ -1008,8 +1021,8 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             catch (...)
             {
                 Log_Error("The handler throws an exception inside Apply().");
-                result = { .ResultCode = ADUC_Result_Failure,
-                           .ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_APPLY_CHILD_STEP };
+                result.ResultCode = ADUC_Result_Failure;
+                result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_APPLY_CHILD_STEP;
                 goto done;
             }
 
@@ -1087,11 +1100,13 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
 
     if (workflow_is_cancel_requested(workflowData->WorkflowHandle))
     {
-        result = { .ResultCode = ADUC_Result_Failure_Cancelled, .ExtendedResultCode = 0 };
+        result.ResultCode = ADUC_Result_Failure_Cancelled;
+        result.ExtendedResultCode = 0;
     }
     else
     {
-        result = { .ResultCode = ADUC_Result_Install_Success, .ExtendedResultCode = 0 };
+        result.ResultCode = ADUC_Result_Install_Success;
+        result.ExtendedResultCode = 0;
     }
 
 done:
@@ -1140,16 +1155,22 @@ ADUC_Result StepsHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
  */
 static ADUC_Result StepsHandler_Apply(const tagADUC_WorkflowData* workflowData)
 {
+    ADUC_Result result;
+
     if (workflow_is_cancel_requested(workflowData->WorkflowHandle))
     {
-        return { .ResultCode = ADUC_Result_Failure_Cancelled, .ExtendedResultCode = 0};
+        result.ResultCode = ADUC_Result_Failure_Cancelled;
+        result.ExtendedResultCode = 0;
+        return result;
     }
 
     // Since the child-step's Install and Apply tasks have already been processed in 'StepsHandler_Install' function,
     // the Apply task for this workflow is no-op.
     Log_Debug("Apply task at level %d is no-op.", workflow_get_level(workflowData->WorkflowHandle));
 
-    return { .ResultCode = ADUC_Result_Apply_Success, .ExtendedResultCode = 0 };
+    result.ResultCode = ADUC_Result_Apply_Success;
+    result.ExtendedResultCode = 0;
+    return result;
 }
 
 /**
@@ -1182,7 +1203,9 @@ ADUC_Result StepsHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
  */
 static ADUC_Result StepsHandler_Cancel(const tagADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result = { .ResultCode = ADUC_Result_Cancel_Success, .ExtendedResultCode = 0 };
+    ADUC_Result result;
+    result.ResultCode = ADUC_Result_Cancel_Success;
+    result.ExtendedResultCode = 0;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     ADUC_WorkflowHandle stepWorkflowHandle = nullptr;
 
@@ -1190,7 +1213,10 @@ static ADUC_Result StepsHandler_Cancel(const tagADUC_WorkflowData* workflowData)
     int workflowStep = workflow_get_step_index(handle);
 
     Log_Info(
-        "Requesting cancel operation (workflow id '%s', level %d, step %d).", workflow_peek_id(handle), workflowLevel, workflowStep);
+        "Requesting cancel operation (workflow id '%s', level %d, step %d).",
+        workflow_peek_id(handle),
+        workflowLevel,
+        workflowStep);
     if (!workflow_request_cancel(handle))
     {
         Log_Error(
@@ -1287,7 +1313,7 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
             goto done;
         }
 
-        selectedComponentsCount = json_array_get_count(selectedComponentsArray);
+        selectedComponentsCount = static_cast<int>(json_array_get_count(selectedComponentsArray));
 
         if (selectedComponentsCount == 0)
         {
@@ -1388,16 +1414,19 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
                     if (stepWorkflowResult.ResultCode == ADUC_Result_Failure
                         || stepWorkflowResult.ResultCode == ADUC_Result_Failure_Cancelled)
                     {
-                        workflow_set_result(
-                            stepWorkflow.WorkflowHandle,
-                            { .ResultCode = ADUC_Result_Install_Skipped_UpdateAlreadyInstalled });
+                        ADUC_Result stepResultCode;
+                        stepResultCode.ResultCode = ADUC_Result_Install_Skipped_UpdateAlreadyInstalled;
+                        stepResultCode.ExtendedResultCode = 0;
+
+                        workflow_set_result(stepWorkflow.WorkflowHandle, stepResultCode);
                     }
                 }
             }
             catch (...)
             {
                 // Cannot determine whether the step is installed, so, let's assume that it's not install.
-                result = { .ResultCode = ADUC_Result_IsInstalled_NotInstalled, .ExtendedResultCode = 0 };
+                result.ResultCode = ADUC_Result_IsInstalled_NotInstalled;
+                result.ExtendedResultCode = 0;
             }
 
             if (IsAducResultCodeFailure(result.ResultCode)
@@ -1416,7 +1445,8 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
         } // steps
     } // components
 
-    result = { .ResultCode = ADUC_Result_IsInstalled_Installed, .ExtendedResultCode = 0 };
+    result.ResultCode = ADUC_Result_IsInstalled_Installed;
+    result.ExtendedResultCode = 0;
 
     {
         // This is a good opportunity to set the workflow state to indicates that
@@ -1425,7 +1455,9 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
         ADUC_Result currentResult = workflow_get_result(handle);
         if (IsAducResultCodeFailure(currentResult.ResultCode))
         {
-            ADUC_Result newResult = { .ResultCode = ADUC_Result_Apply_Success, .ExtendedResultCode = 0 };
+            ADUC_Result newResult;
+            newResult.ResultCode = ADUC_Result_Apply_Success;
+            newResult.ExtendedResultCode = 0;
             workflow_set_result(handle, newResult);
         }
     }
@@ -1461,7 +1493,10 @@ static ADUC_Result StepsHandler_Backup(const tagADUC_WorkflowData* workflowData)
 {
     if (workflow_is_cancel_requested(workflowData->WorkflowHandle))
     {
-        return { .ResultCode = ADUC_Result_Failure_Cancelled, .ExtendedResultCode = 0 };
+        ADUC_Result result;
+        result.ResultCode = ADUC_Result_Failure_Cancelled;
+        result.ExtendedResultCode = 0;
+        return result;
     }
 
     // Steps_Handler 'backup' is returning success to proceed with the workflow here, and the actual backup happens during each step.

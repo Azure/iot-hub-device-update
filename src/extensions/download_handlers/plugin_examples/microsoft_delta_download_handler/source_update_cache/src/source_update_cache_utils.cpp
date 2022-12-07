@@ -21,9 +21,13 @@
 #include <time.h> // time_t
 
 #if defined(_WIN32)
-// TODO(JeffMill): [PAL] access
-#    include <corecrt_io.h> // _unlink
-// #    define unlink(path) _unlink(path)
+// TODO(JeffMill): [PAL] unlink
+static int unlink(const char* path)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
 #else
 #    include <unistd.h> // unlink
 #endif

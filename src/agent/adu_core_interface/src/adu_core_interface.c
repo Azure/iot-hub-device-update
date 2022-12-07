@@ -199,7 +199,8 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    ADUC_ConfigInfo config = {};
+    ADUC_ConfigInfo config;
+    memset(&config, 0, sizeof(config));
 
     if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
     {

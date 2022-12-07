@@ -30,8 +30,11 @@
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] strcasecmp
-#    include <string.h> // _strcmpi
-#    define strcasecmp(string1, string2) _strcmpi(string1, string2)
+static int strcasecmp(const char* s1, const char* s2)
+{
+    __debugbreak();
+    return 0;
+}
 #else
 #    include <strings.h> // strcasecmp
 #endif

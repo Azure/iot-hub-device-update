@@ -10,8 +10,29 @@
 #include "aduc/process_utils.hpp"
 #include "common_tasks.hpp"
 
-#include <sys/stat.h>
 #include <unordered_map>
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] S_*GRP
+#    define S_IXGRP 00010
+#    define S_IRGRP 00040
+#    define S_IRWXU 00700
+#else
+#    include <sys/stat.h>
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] chmod
+typedef unsigned int mode_t;
+
+static int chmod(const char* path, mode_t mode)
+{
+    __debugbreak();
+    return -1;
+}
+#else
+#    include <sys/file.h> // chmod
+#endif
 
 namespace Adu
 {
@@ -97,7 +118,7 @@ ADUShellTaskResult DoScriptTask(const ADUShell_LaunchArguments& launchArgs)
 
         taskProc = actionMap.at(launchArgs.action);
     }
-    catch (const std::exception& ex)
+    catch (const std::exception& /* ex*/)
     {
         Log_Error("Unsupported action: '%s'", launchArgs.updateAction);
         taskResult.SetExitStatus(ADUSHELL_EXIT_UNSUPPORTED);

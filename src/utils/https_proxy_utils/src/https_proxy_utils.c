@@ -53,7 +53,7 @@ bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions)
     }
 
     int outLen = 0;
-    unescapedUrl = curl_easy_unescape(NULL, httpsProxyEnvvar, strlen(httpsProxyEnvvar), &outLen);
+    unescapedUrl = curl_easy_unescape(NULL, httpsProxyEnvvar, (int)strlen(httpsProxyEnvvar), &outLen);
 
     curlHandle = curl_url();
     if (curlHandle == NULL)

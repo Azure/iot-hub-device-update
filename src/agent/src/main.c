@@ -27,16 +27,27 @@
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
+
 #ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
 #    include "aduc/connection_string_utils.h"
-#    include <do_config.h>
+#    if defined(_WIN32)
+// TODO(JeffMill): [PAL] do_config.h
+#    else
+#        include <do_config.h>
+#    endif
 #endif
+
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>
 #include <getopt.h>
 #include <iothub.h>
 #include <iothub_client_options.h>
 #include <pnp_protocol.h>
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] signal
+#    define SIGUSR1 10
+#endif
 
 #ifdef ADUC_ALLOW_MQTT
 #    include <iothubtransportmqtt.h>
@@ -52,7 +63,11 @@
 #include <stdio.h>
 #include <stdlib.h> // strtol
 #include <sys/stat.h>
-#include <unistd.h>
+
+#if defined(_WIN32)
+#else
+#    include <unistd.h>
+#endif
 
 #include "pnp_protocol.h"
 
@@ -771,7 +786,8 @@ static bool ADUC_DeviceClient_Create(
     ADUC_ClientHandle clientHandle, ADUC_ConnectionInfo* connInfo, const ADUC_LaunchArguments* launchArgs)
 {
     IOTHUB_CLIENT_RESULT iothubResult;
-    HTTP_PROXY_OPTIONS proxyOptions = {};
+    HTTP_PROXY_OPTIONS proxyOptions;
+    memset(&proxyOptions, 0, sizeof(proxyOptions));
     bool result = true;
     bool shouldSetProxyOptions = InitializeProxyOptions(&proxyOptions);
 
@@ -990,7 +1006,8 @@ bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char
     info->authType = ADUC_AuthType_SASToken;
 
     // Optional: The certificate string is needed for Edge Gateway connection.
-    ADUC_ConfigInfo config = {};
+    ADUC_ConfigInfo config;
+    memset(&config, 0, sizeof(config));
     if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.edgegatewayCertPath != NULL)
     {
         if (!LoadBufferWithFileContents(config.edgegatewayCertPath, certificateString, ARRAY_SIZE(certificateString)))
@@ -1082,7 +1099,8 @@ ADUC_Command redoUpdateCommand = { "retry-update", RetryUpdateCommandHandler };
 bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
 {
     bool success = false;
-    ADUC_ConfigInfo config = {};
+    ADUC_ConfigInfo config;
+    memset(&config, 0, sizeof(config));
     if (info == NULL)
     {
         return false;
@@ -1151,7 +1169,8 @@ static void ADUC_Refresh_IotHub_Connection_SAS_Token()
 {
     ADUC_DeviceClient_Destroy(g_iotHubClientHandle);
 
-    ADUC_ConnectionInfo info = {};
+    ADUC_ConnectionInfo info;
+    memset(&info, 0, sizeof(info));
     if (!GetAgentConfigInfo(&info))
     {
         goto done;
@@ -1183,7 +1202,8 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 {
     bool succeeded = false;
 
-    ADUC_ConnectionInfo info = {};
+    ADUC_ConnectionInfo info;
+    memset(&info, 0, sizeof(info));
 
     if (!ADUC_D2C_Messaging_Init())
     {
@@ -1328,7 +1348,8 @@ void OnRestartSignal(int sig)
 bool RunAsDesiredUser()
 {
     bool success = false;
-    ADUC_ConfigInfo config = {};
+    ADUC_ConfigInfo config;
+    memset(&config, 0, sizeof(config));
     if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
     {
         Log_Error("Cannot read configuration file.");

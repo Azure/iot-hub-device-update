@@ -9,8 +9,51 @@
 #include <catch2/catch.hpp>
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] S_
+#    define S_ISVTX 01000
+#    define S_ISUID 0004000
+
+#    define S_IRUSR 00400
+#    define S_IWUSR 00200
+#    define S_IXUSR 00100
+
+#    define S_IRGRP 00040
+#    define S_IWGRP 00020
+#    define S_IXGRP 00010
+
+#    define S_IWOTH 00002
+#else
+#    include <sys/stat.h> // S_*
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] mkstemp
+static int mkstemp(char* tmpl)
+{
+    __debugbreak();
+    errno = ENOSYS;
+    return -1;
+}
+#else
+#    include <stdlib.h> //mkstemp
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill: [PAL] fchmod
+static int fchmod(int fd, mode_t mode)
+{
+    __debugbreak();
+
+    errno = ENOSYS;
+    return -1;
+}
+#else
+#    include <sys/stat.h> // fchmod
+#endif
+
+// #include <unistd.h>
 
 //bool PermissionUtils_VerifyFilemodeBits(const char* path, mode_t expectedPermissions, bool isExactMatch);
 TEST_CASE("PermissionUtils_VerifyFilemodeBit*")

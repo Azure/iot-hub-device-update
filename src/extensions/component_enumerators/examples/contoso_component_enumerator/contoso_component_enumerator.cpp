@@ -197,10 +197,10 @@ char* SelectComponents(const char* selectorJson)
     }
 
     // Keep only components that contain all properties (name & value) specified in the selector.
-    for (int i = json_array_get_count(componentsArray) - 1; i >= 0; i--)
+    for (int i = static_cast<int>(json_array_get_count(componentsArray)) - 1; i >= 0; i--)
     {
         JSON_Object* component = json_array_get_object(componentsArray, i);
-        for (int s = json_object_get_count(selector) - 1; s >= 0; s--)
+        for (int s = static_cast<int>(json_object_get_count(selector)) - 1; s >= 0; s--)
         {
             bool matched = _json_object_contains_named_value(
                 component, json_object_get_name(selector, s), json_string(json_object_get_value_at(selector, s)));

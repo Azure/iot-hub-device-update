@@ -18,7 +18,9 @@ if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
     # TODO(JeffMill): [PAL] dirent.h
     find_path (DIRENT_INCLUDE_DIRS "dirent.h")
     target_include_directories (${PROJECT_NAME} PRIVATE ${DIRENT_INCLUDE_DIRS})
+endif ()
 
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
     # TODO(JeffMill): [PAL] pthread
     find_package (PThreads4W REQUIRED)
     target_link_libraries (${PROJECT_NAME} PRIVATE PThreads4W::PThreads4W)

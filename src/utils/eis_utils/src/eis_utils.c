@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h> // time_t
 
 //
 // IdentityService Response FieldNames
@@ -153,6 +154,15 @@ EISUtilityResult BuildSharedAccessSignature(
         goto done;
     }
 
+#if defined(_WIN32) && !defined(_USE_32BIT_TIME_T)
+    // TODO(JeffMill): [PAL] 64-bit time_t
+    char expiryStr[ARRAY_SIZE("9223372036854775807")];
+
+    if (snprintf(expiryStr, ARRAY_SIZE(expiryStr), "%lld", expirySecsSinceEpoch) == 0)
+    {
+        goto done;
+    }
+#else
     // Note: 12 is the maximum amount of characters needed to represent a time_t in string format
     char expiryStr[ARRAY_SIZE("2147483647")];
 
@@ -160,6 +170,7 @@ EISUtilityResult BuildSharedAccessSignature(
     {
         goto done;
     }
+#endif
 
     EISErr keyServiceResult = RequestSignatureFromEIS(keyHandle, resourceUri, expiryStr, timeoutMS, &signResponseStr);
 

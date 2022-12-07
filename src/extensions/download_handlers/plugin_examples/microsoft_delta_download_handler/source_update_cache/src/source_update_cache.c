@@ -20,7 +20,8 @@
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] S_IRUSR
-#    include <dirent.h> // S_IRUSR
+#    define __S_IREAD 0400 /* Read by owner.  */
+#    define S_IRUSR __S_IREAD /* Read by owner.  */
 #else
 #    include <sys/stat.h> // S_IRUSR
 #endif

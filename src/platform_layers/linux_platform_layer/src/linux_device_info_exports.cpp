@@ -16,9 +16,75 @@
 #include <unordered_map>
 
 #include <cstring>
-#include <sys/statvfs.h> // statvfs
-#include <sys/sysinfo.h> // sysinfo
-#include <sys/utsname.h> // uname
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] statvfs
+struct statvfs
+{
+    unsigned int f_blocks;
+    unsigned int f_frsize;
+};
+
+static int statvfs(const char* path, struct statvfs* buf)
+{
+    __debugbreak();
+    return -1;
+}
+#else
+#    include <sys/statvfs.h> // statvfs
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] sysinfo
+struct sysinfo
+{
+    unsigned int totalram;
+    unsigned int mem_unit;
+};
+
+static int sysinfo(struct sysinfo* info)
+{
+    __debugbreak();
+    return -1;
+}
+#else
+#    include <sys/sysinfo.h> // sysinfo
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] uname
+struct utsname
+{
+    char sysname[1];
+    char release[1];
+    char machine[1];
+};
+
+static int uname(struct utsname* __name)
+{
+    __debugbreak();
+    return -1;
+}
+#else
+#    include <sys/utsname.h> // uname
+#endif
+
+#if defined(_WIN32)
+// TODO (JeffMill): [PAL] popen, pclose
+FILE* popen(const char* command, const char* type)
+{
+    __debugbreak();
+    return NULL;
+}
+
+int pclose(FILE* stream)
+{
+    __debugbreak();
+    return -1;
+}
+#else
+#    include <stdio.h> // popen, pclose
+#endif
 
 #include <aduc/config_utils.h>
 #include <aduc/logging.h>
@@ -105,7 +171,8 @@ static char* DeviceInfo_GetModel()
  * @return OsReleaseInfo* The new OS release infol, or nullptr on error.
  * @detail Caller will own OsReleaseInfo instance and must free with delete. Also, values will have surrounding double-quotes removed.
  */
-static OsReleaseInfo* get_os_release_info(const char* path, const char* name_property_name, const char* version_property_name)
+static OsReleaseInfo*
+get_os_release_info(const char* path, const char* name_property_name, const char* version_property_name)
 {
     std::unique_ptr<OsReleaseInfo> result;
 
@@ -178,7 +245,7 @@ static char* DeviceInfo_GetOsName()
     // As per os-release(5) manpage, read the announcement here: http://0pointer.de/blog/projects/os-release
     if (SystemUtils_IsFile(ETC_OS_RELEASE_FILEPATH, nullptr))
     {
-        std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_OS_RELEASE_FILEPATH, "NAME", "VERSION") };
+        std::unique_ptr<OsReleaseInfo> releaseInfo{ get_os_release_info(ETC_OS_RELEASE_FILEPATH, "NAME", "VERSION") };
         if (releaseInfo)
         {
             return strdup(releaseInfo->ExportOsName());
@@ -188,7 +255,8 @@ static char* DeviceInfo_GetOsName()
     // Next, try the Linux Standard Base file present on some systems
     if (SystemUtils_IsFile(ETC_LSB_RELEASE_FILEPATH, nullptr))
     {
-        std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_LSB_RELEASE_FILEPATH, "DISTRIB_ID", "DISTRIB_RELEASE") };
+        std::unique_ptr<OsReleaseInfo> releaseInfo{ get_os_release_info(
+            ETC_LSB_RELEASE_FILEPATH, "DISTRIB_ID", "DISTRIB_RELEASE") };
         if (releaseInfo)
         {
             return strdup(releaseInfo->ExportOsName());
@@ -231,7 +299,7 @@ static char* DeviceInfo_GetOsVersion()
     // As per os-release(5) manpage, read the announcement here: http://0pointer.de/blog/projects/os-release
     if (SystemUtils_IsFile(ETC_OS_RELEASE_FILEPATH, nullptr))
     {
-        std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_OS_RELEASE_FILEPATH, "NAME", "VERSION") };
+        std::unique_ptr<OsReleaseInfo> releaseInfo{ get_os_release_info(ETC_OS_RELEASE_FILEPATH, "NAME", "VERSION") };
         if (releaseInfo)
         {
             return strdup(releaseInfo->ExportOsVersion());
@@ -241,7 +309,8 @@ static char* DeviceInfo_GetOsVersion()
     // Next, try the Linux Standard Base file present on some systems
     if (SystemUtils_IsFile(ETC_LSB_RELEASE_FILEPATH, nullptr))
     {
-        std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_LSB_RELEASE_FILEPATH, "DISTRIB_ID", "DISTRIB_RELEASE") };
+        std::unique_ptr<OsReleaseInfo> releaseInfo{ get_os_release_info(
+            ETC_LSB_RELEASE_FILEPATH, "DISTRIB_ID", "DISTRIB_RELEASE") };
         if (releaseInfo)
         {
             return strdup(releaseInfo->ExportOsVersion());
@@ -322,7 +391,7 @@ static char* DeviceInfo_GetProcessorManufacturer()
     if (pipe != nullptr)
     {
         const char* prefix = "Vendor ID:           ";
-        const unsigned int prefix_cch = strlen(prefix);
+        const unsigned int prefix_cch = static_cast<unsigned int>(strlen(prefix));
         while (fgets(buffer, kBufferSize, pipe) != nullptr)
         {
             if (strncmp(buffer, prefix, prefix_cch) == 0)

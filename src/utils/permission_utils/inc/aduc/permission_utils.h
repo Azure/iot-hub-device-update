@@ -17,8 +17,8 @@ typedef int uid_t;
 typedef int gid_t;
 
 // dirent.h has S_IXGRP, S_IWGRP, S_IRGRP
-#    define S_IRWXG 070 /* group_all */
-#    define S_IRWXU 0700 /* owner_all */
+#    define S_IRWXG 00070
+#    define S_IRWXU 00700
 
 // TODO(JeffMill): [PAL] mode_t
 typedef unsigned int mode_t;

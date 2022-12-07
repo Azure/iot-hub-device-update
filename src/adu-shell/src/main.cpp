@@ -7,7 +7,78 @@
  */
 #include <getopt.h>
 #include <string.h>
-#include <unistd.h> // for getegid, geteuid, and setuid.
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getegid
+typedef int gid_t;
+
+static gid_t getegid(void)
+{
+    __debugbreak();
+    return 0;
+}
+#else
+#    include <unistd.h> // getegid
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getuid
+typedef int uid_t;
+
+static uid_t getuid(void)
+{
+    __debugbreak();
+    return 0;
+}
+#else
+#    include <unistd.h> // getuid
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] geteuid, setuid
+typedef int uid_t;
+
+static uid_t geteuid(void)
+{
+    __debugbreak();
+    return -1;
+}
+
+static int setuid(uid_t uid)
+{
+    __debugbreak();
+    return -1;
+}
+#else
+#    include <unistd.h> // geteuid, setuid
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getpwnam
+
+// This code only references pw_uid
+static struct passwd* getpwnam(const char* name)
+{
+    __debugbreak();
+    return NULL;
+}
+#else
+#    include <pwd.h> // for getpwnam
+#endif
+
+#if defined(_WIN32)
+// TODO(JeffMill): [PAL] getgrnam
+
+// This code only references gr_gid
+static struct group* getgrnam(const char* name)
+{
+    __debugbreak();
+    return NULL;
+}
+#else
+#    include <grp.h> // for getgrnam
+#endif
+
 #include <unordered_map>
 #include <vector>
 
@@ -146,8 +217,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
             launchArgs->logFile = optarg;
             break;
 
-        case 'l':
-        {
+        case 'l': {
             char* endptr;
             errno = 0; /* To distinguish success/failure after call */
             int64_t logLevel = strtol(optarg, &endptr, 10);
@@ -272,7 +342,12 @@ bool ADUShell_PermissionCheck()
     {
         VECTOR_HANDLE aduShellTrustedUsers = ADUC_ConfigInfo_GetAduShellTrustedUsers(&config);
 
+#if defined(_WIN32)
+        // TODO(JeffMill): [PAL] geteuid, getpwnam
+        isTrusted = VerifyProcessEffectiveUser(aduShellTrustedUsers, geteuid, getpwnam);
+#else
         isTrusted = VerifyProcessEffectiveUser(aduShellTrustedUsers);
+#endif
 
         ADUC_ConfigInfo_FreeAduShellTrustedUsers(aduShellTrustedUsers);
         aduShellTrustedUsers = nullptr;
@@ -283,7 +358,12 @@ bool ADUShell_PermissionCheck()
     // check whether the effective user is in the trusted group
     if (!isTrusted)
     {
+#if defined(_WIN32)
+        // TODO(JeffMill): [PAL] getegid, getgrnam
+        isTrusted = VerifyProcessEffectiveGroup(ADUSHELL_EFFECTIVE_GROUP_NAME, getegid, getgrnam);
+#else
         isTrusted = VerifyProcessEffectiveGroup(ADUSHELL_EFFECTIVE_GROUP_NAME);
+#endif
     }
 
     // If a trusted user list is provided, the permission check passes if the user is either in trusted group,
