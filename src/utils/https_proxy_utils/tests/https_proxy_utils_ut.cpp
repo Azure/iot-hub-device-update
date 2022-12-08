@@ -54,15 +54,15 @@ private:
 
 TEST_CASE_METHOD(TestCaseFixture, "Parse https_proxy (escaped)")
 {
-    setenv("https_proxy", "http%3A%2F%2F100.0.0.1%3A8888", 1);
+    setenv("https_proxy", "http://username:update%3B%2F%3F%3A%40%26%3D%2B%24%2C@100.0.0.1:8888", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
     bool proxyOk = InitializeProxyOptions(&proxyOptions);
     CHECK(proxyOk);
     CHECK_THAT(proxyOptions.host_address, Equals("100.0.0.1"));
     CHECK(proxyOptions.port == 8888);
-    CHECK(proxyOptions.username == nullptr);
-    CHECK(proxyOptions.password == nullptr);
+    CHECK_THAT(proxyOptions.username, Equals("username"));
+    CHECK_THAT(proxyOptions.password, Equals("update;/?:@&=+$,"));
     UninitializeProxyOptions(&proxyOptions);
 }
 

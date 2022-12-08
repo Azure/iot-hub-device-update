@@ -111,24 +111,22 @@ bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions)
     proxyOptions->password = NULL;
     proxyOptions->port = 0;
 
-    char* httpsProxyEnvvar = getenv("https_proxy");
-    if (httpsProxyEnvvar == NULL)
+    char* httpsProxyEnvVar = getenv("https_proxy");
+    if (httpsProxyEnvVar == NULL)
     {
-        httpsProxyEnvvar = getenv("HTTPS_PROXY");
+        httpsProxyEnvVar = getenv("HTTPS_PROXY");
     }
-    if (httpsProxyEnvvar == NULL)
+    if (httpsProxyEnvVar == NULL)
     {
         goto done;
     }
 
     // Create read-write copy of environment variable.
-    proxy_copy = strdupe(httpsProxyEnvvar);
+    proxy_copy = strdupe(httpsProxyEnvVar);
     if (proxy_copy == NULL)
     {
         goto done;
     }
-
-    unescape_data_string(proxy_copy);
 
     start = proxy_copy;
 
@@ -158,6 +156,11 @@ bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions)
             // Check for no username
             if (*start != '\0')
             {
+                if (!unescape_data_string(start))
+                {
+                    goto done;
+                }
+
                 proxyOptions->username = strdupe(start);
                 if (proxyOptions->username == NULL)
                 {
@@ -170,6 +173,11 @@ bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions)
             // Check for no password
             if (*start != '\0')
             {
+                if (!unescape_data_string(start))
+                {
+                    goto done;
+                }
+
                 proxyOptions->password = strdupe(start);
                 if (proxyOptions->password == NULL)
                 {
@@ -187,6 +195,11 @@ bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions)
         *end = '\0';
 
         proxyOptions->port = atoi(end + 1);
+    }
+
+    if (!unescape_data_string(start))
+    {
+        goto done;
     }
 
     proxyOptions->host_address = strdupe(start);
