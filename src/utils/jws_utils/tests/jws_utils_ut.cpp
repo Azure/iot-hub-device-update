@@ -167,7 +167,7 @@ TEST_CASE("VerifySJWK")
         const BIGNUM* key_N = nullptr;
         const BIGNUM* key_e = nullptr;
 
-        RSA_get0_key(rsa_key,&key_N,&key_e,nullptr);
+        RSA_get0_key(rsa_key, &key_N, &key_e, nullptr);
 
         int key_N_size = BN_num_bytes(key_N);
         int key_e_size = BN_num_bytes(key_e);

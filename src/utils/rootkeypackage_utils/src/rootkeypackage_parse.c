@@ -1,3 +1,10 @@
+/**
+ * @file rootkeypackage_parse.c
+ * @brief rootkeypackage_parse implementation.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
 
 #include "aduc/rootkeypackage_parse.h"
 #include "aduc/rootkeypackage_json_properties.h"
@@ -501,7 +508,6 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
 
         if (VECTOR_push_back(hashes, &hashElement, 1) != 0)
         {
-
             ADUC_RootKeyPackage_Hash_DeInit(&hashElement);
 
             result.ExtendedResultCode = ADUC_ERC_NOMEM;

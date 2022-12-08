@@ -24,7 +24,7 @@
 _Bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions)
 {
     bool success = false;
-    CURLU *curlHandle = curl_url();
+    CURLU* curlHandle = NULL;
     CURLcode uc;
     char* host = NULL;
     char* port = NULL;

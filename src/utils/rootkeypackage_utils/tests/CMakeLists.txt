@@ -5,11 +5,13 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
+find_package (azure_c_shared_utility REQUIRED)
 find_package (Catch2 REQUIRED)
 find_package (Parson REQUIRED)
 
 add_executable (${target_name})
-target_sources (${target_name} PRIVATE src/main.cpp src/rootkeypackage_utils_ut.cpp)
+target_sources (${target_name} PRIVATE src/main.cpp src/rootkeypackage_utils_ut.cpp
+                                       src/rootkeypackage_download_ut.cpp)
 
 target_include_directories (${target_name} PRIVATE inc)
 
@@ -19,6 +21,8 @@ target_link_libraries (
             aduc::test_utils
             aduc::crypto_utils
             aduc::hash_utils
+            aduc::system_utils
+            aziotsharedutil
             Catch2::Catch2
             Parson::parson)
 
@@ -27,3 +31,5 @@ target_compile_definitions (${target_name} PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC
 include (CTest)
 include (Catch)
 catch_discover_tests (${target_name})
+
+add_subdirectory (testapp)

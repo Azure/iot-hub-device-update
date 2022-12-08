@@ -22,11 +22,7 @@
 #include <azure_c_shared_utility/vector.h>
 
 #include <functional> // for std::function
-#include <iostream>
-#include <sstream>
 #include <string>
-
-#include <chrono>
 
 #include <fcntl.h>
 #include <sys/types.h>
@@ -43,7 +39,10 @@
  *
  * @return An exit code from the command.
  */
-int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string> args, std::string& output) // NOLINT(google-runtime-references)
+int ADUC_LaunchChildProcess(
+    const std::string& command,
+    std::vector<std::string> args,
+    std::string& output) // NOLINT(google-runtime-references)
 {
 #define READ_END 0
 #define WRITE_END 1

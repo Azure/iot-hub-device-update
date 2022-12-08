@@ -706,36 +706,96 @@ const char* _workflow_get_properties_retryTimestamp(ADUC_WorkflowHandle handle)
  *
  * @param updateActionJsonObj The JSON object of the update action JSON.
  * @param outWorkflowUpdateAction The output parameter for receiving the value of "action" under "workflow". May be set to NULL if there was none in the JSON.
- * @param outWorkflowId The output parameter for receiving the value of "id" under "workflow". May be set to NULL if there was none in the JSON.
+ * @param outRootKeyPkgUrl The output parameter for receiving the value of "rootkeyPkgUrl" unprotected property from the updateAction json. Will not be set when error result is returned.
+ * @param outWorkflowId_optional The output parameter for receiving the value of "id" under "workflow". May be set to NULL if there was none in the JSON.
  *
  * @details Caller must never free workflowId.
+ * @returns ADUC_Result The result.
  */
-void workflow_parse_peek_unprotected_workflow_properties(
-    JSON_Object* updateActionJsonObj, ADUCITF_UpdateAction* outWorkflowUpdateAction, char** outWorkflowId)
+ADUC_Result workflow_parse_peek_unprotected_workflow_properties(
+    JSON_Object* updateActionJsonObj,
+    ADUCITF_UpdateAction* outWorkflowUpdateAction,
+    char** outRootKeyPkgUrl_optional,
+    char** outWorkflowId_optional)
 {
+    ADUC_Result result = {
+        .ResultCode = ADUC_GeneralResult_Failure,
+        .ExtendedResultCode = 0,
+    };
+
     ADUCITF_UpdateAction updateAction = ADUCITF_UpdateAction_Undefined;
     const char* workflowId = NULL;
+    const char* rootkeyPkgUrl = NULL;
+
+    char* tmpWorkflowId = NULL;
+    char* tmpRootKeyPkgUrl = NULL;
 
     if (json_object_dothas_value(updateActionJsonObj, ADUCITF_FIELDNAME_WORKFLOW_DOT_ACTION))
     {
         updateAction = json_object_dotget_number(updateActionJsonObj, ADUCITF_FIELDNAME_WORKFLOW_DOT_ACTION);
+        if (updateAction == 0)
+        {
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_WORKFLOW_ACTION;
+            goto done;
+        }
+    }
+
+    rootkeyPkgUrl = json_object_dotget_string(updateActionJsonObj, ADUCITF_FIELDNAME_ROOTKEY_PACKAGE_URL);
+    if (IsNullOrEmpty(rootkeyPkgUrl))
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_EMPTY_OR_MISSING_ROOTKEY_PKG_URL;
+        goto done;
     }
 
     workflowId = json_object_dotget_string(updateActionJsonObj, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID);
+    // workflowId can be NULL in some cases.
 
+    if (outWorkflowId_optional != NULL && workflowId != NULL)
+    {
+        tmpWorkflowId = workflow_copy_string(workflowId);
+        if (tmpWorkflowId == NULL)
+        {
+            result.ExtendedResultCode = ADUC_ERC_NOMEM;
+            goto done;
+        }
+    }
+
+    if (outRootKeyPkgUrl_optional != NULL)
+    {
+        tmpRootKeyPkgUrl = workflow_copy_string(rootkeyPkgUrl);
+        if (tmpRootKeyPkgUrl == NULL)
+        {
+            result.ExtendedResultCode = ADUC_ERC_NOMEM;
+            goto done;
+        }
+    }
+
+    // Commit the optional out parameters now that nothing can goto done.
     if (outWorkflowUpdateAction != NULL)
     {
         *outWorkflowUpdateAction = updateAction;
     }
 
-    if (outWorkflowId != NULL)
+    if (outWorkflowId_optional != NULL && workflowId != NULL)
     {
-        *outWorkflowId = NULL;
-        if (workflowId != NULL)
-        {
-            *outWorkflowId = workflowId == NULL ? NULL : workflow_copy_string(workflowId);
-        }
+        *outWorkflowId_optional = tmpWorkflowId;
+        tmpWorkflowId = NULL;
     }
+
+    if (outRootKeyPkgUrl_optional != NULL)
+    {
+        *outRootKeyPkgUrl_optional = tmpRootKeyPkgUrl;
+        tmpRootKeyPkgUrl = NULL;
+    }
+
+    result.ResultCode = ADUC_GeneralResult_Success;
+    result.ExtendedResultCode = 0;
+
+done:
+    workflow_free_string(tmpWorkflowId);
+    workflow_free_string(tmpRootKeyPkgUrl);
+
+    return result;
 }
 
 /**
@@ -1188,7 +1248,8 @@ ADUC_Result _workflow_parse(JSON_Value* updateActionJson, bool validateManifest,
 
     // 'cancel' action doesn't contains UpdateManifest and UpdateSignature.
     // Skip this part.
-    workflow_parse_peek_unprotected_workflow_properties(updateActionObject, &updateAction, NULL /* outWorkflowId */);
+    workflow_parse_peek_unprotected_workflow_properties(
+        updateActionObject, &updateAction, NULL /* outRootKeyPkgUrl_optional */, NULL /* outWorkflowId_optional */);
     if (updateAction != ADUCITF_UpdateAction_Cancel)
     {
         ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
