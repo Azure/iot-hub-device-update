@@ -496,12 +496,12 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
         {
             goto done;
         }
-
         hashElement.alg = tmpAlg;
         hashElement.hash = hashBuf;
 
         if (VECTOR_push_back(hashes, &hashElement, 1) != 0)
         {
+
             ADUC_RootKeyPackage_Hash_DeInit(&hashElement);
 
             result.ExtendedResultCode = ADUC_ERC_NOMEM;
