@@ -34,15 +34,11 @@ Provide a detailed set of steps to reproduce the bug.
 3.
 4.
 
-## Context (Environment)
-
-
 ### Device Information
 * Host OS [e.g. Ubuntu 18.04, Windows Server IoT 2019]: 
 * Architecture [e.g. amd64, arm32, arm64]: 
-
-### Runtime Versions
-* deviceupdate-agent [run `deviceupdate-agent version`]: 
+* Provisioning Method:
+*DU Agent Version (run 'sudo -u adu /usr/bin/AducIotAgent -v'):
 
 ## Logs
 <!--
