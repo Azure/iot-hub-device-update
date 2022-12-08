@@ -2,10 +2,7 @@
     "protected": {
         "version": 2,
         "published": 1667343602,
-        "disabledRootKeys": [
-            "rootkey1",
-            "rootkey2"
-        ],
+        "disabledRootKeys": ["rootkey1", "rootkey2"],
         "disabledSigningKeys": [
             {
                 "alg": "SHA256",

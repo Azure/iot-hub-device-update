@@ -503,7 +503,6 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
         {
             goto done;
         }
-
         hashElement.alg = tmpAlg;
         hashElement.hash = hashBuf;
 

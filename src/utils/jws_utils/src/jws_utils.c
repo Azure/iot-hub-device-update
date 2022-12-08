@@ -9,6 +9,8 @@
 #include "jws_utils.h"
 #include "base64_utils.h"
 #include "crypto_lib.h"
+#include "root_key_util.h"
+#include <aduc/result.h>
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <parson.h>
@@ -274,7 +276,7 @@ JWSResult VerifySJWK(const char* sjwk)
         goto done;
     }
 
-    rootKey = GetRootKeyForKeyID(kid);
+    RootKeyUtility_GetKeyForKid(&rootKey, kid);
 
     if (rootKey == NULL)
     {
@@ -308,7 +310,7 @@ done:
 
     if (rootKey != NULL)
     {
-        FreeCryptoKeyHandle(rootKey);
+        CryptoUtils_FreeCryptoKeyHandle(rootKey);
     }
 
     return retval;
@@ -389,7 +391,7 @@ done:
 
     if (key != NULL)
     {
-        FreeCryptoKeyHandle(key);
+        CryptoUtils_FreeCryptoKeyHandle(key);
     }
     return result;
 }
@@ -457,7 +459,7 @@ JWSResult VerifyJWSWithKey(const char* blob, CryptoKeyHandle key)
 
     size_t decodedSignatureLen = Base64URLDecode(signature, &decodedSignature);
 
-    if (!IsValidSignature(
+    if (!CryptoUtils_IsValidSignature(
             alg, decodedSignature, decodedSignatureLen, (uint8_t*)headerPlusPayload, strlen(headerPlusPayload), key))
     {
         result = JWSResult_InvalidSignature;

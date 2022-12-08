@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.5)
 
 project (crypto_utils)
 
-add_library (${PROJECT_NAME} STATIC src/crypto_lib.c src/root_key_util.c src/base64_utils.c)
+add_library (${PROJECT_NAME} STATIC src/crypto_lib.c src/base64_utils.c)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc)
@@ -18,7 +18,7 @@ set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::c_utils
-    PRIVATE aziotsharedutil OpenSSL::Crypto)
+    PRIVATE aziotsharedutil aduc::root_key_utils OpenSSL::Crypto )
 
 # Always support test root keys.
 add_definitions (-DBUILD_WITH_TEST_KEYS=1)

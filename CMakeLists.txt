@@ -190,6 +190,17 @@ set (
     ADUC_DOWNLOADS_FOLDER
     "${ADUC_DATA_FOLDER}/downloads"
     CACHE STRING "Path to the folder containing downloaded update artifacts.")
+set (
+    ADUC_ROOTKEY_STORE_PATH
+    "${ADUC_DATA_FOLDER}/rootkeystore/"
+    CACHE STRING "Path to the folder containing the information for the local store of root keys"
+)
+
+SET (
+    ADUC_ROOTKEY_STORE_PACKAGE_PATH
+    "${ADUC_ROOTKEY_STORE_PATH}/rootkeys.json"
+    CACHE STRING "Path to the folder containing the local root keys"
+)
 
 set (
     ADUC_CONTENT_HANDLERS

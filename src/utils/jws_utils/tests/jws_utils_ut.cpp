@@ -167,7 +167,7 @@ TEST_CASE("VerifySJWK")
         const BIGNUM* key_N = nullptr;
         const BIGNUM* key_e = nullptr;
 
-        RSA_get0_key(rsa_key,&key_N,&key_e,nullptr);
+        RSA_get0_key(rsa_key, &key_N, &key_e, nullptr);
 
         int key_N_size = BN_num_bytes(key_N);
         int key_e_size = BN_num_bytes(key_e);
@@ -188,7 +188,7 @@ TEST_CASE("VerifySJWK")
         BUFFER_delete(byteNBuff);
         BUFFER_delete(byteEBuff);
 
-        FreeCryptoKeyHandle(key);
+        CryptoUtils_FreeCryptoKeyHandle(key);
     }
 }
 
@@ -270,7 +270,7 @@ TEST_CASE("VerifyJWSWithKey")
         CryptoKeyHandle key = RSAKey_ObjFromB64Strings(N.c_str(), e.c_str());
 
         CHECK(VerifyJWSWithKey(signedJWT.c_str(), key) == JWSResult_Success);
-        FreeCryptoKeyHandle(key);
+        CryptoUtils_FreeCryptoKeyHandle(key);
     }
 
     SECTION("Validating an InValid JWS")
@@ -350,7 +350,7 @@ TEST_CASE("VerifyJWSWithKey")
 
         CHECK(VerifyJWSWithKey(signedJWT.c_str(), key) == JWSResult_InvalidSignature);
 
-        FreeCryptoKeyHandle(key);
+        CryptoUtils_FreeCryptoKeyHandle(key);
     }
 
     SECTION("Getting the Payload from a JWT")
@@ -446,6 +446,6 @@ TEST_CASE("VerifyJWSWithKey")
         CHECK(payload_len == expected_payload_len);
 
         CHECK(strcmp(payload.get(), expectedDecodedPayloadString) == 0);
-        FreeCryptoKeyHandle(key);
+        CryptoUtils_FreeCryptoKeyHandle(key);
     }
 }
