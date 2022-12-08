@@ -29,6 +29,5 @@ target_link_libraries (
             aduc::logging)
 
 if (ADUC_BUILD_UNIT_TESTS)
-    find_package (umock_c REQUIRED CONFIG)
-    target_link_libraries (${target_name} PRIVATE umock_c)
+    target_link_umock_c (${target_name} PRIVATE)
 endif ()

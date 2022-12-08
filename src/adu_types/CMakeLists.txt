@@ -3,6 +3,7 @@ cmake_minimum_required (VERSION 3.5)
 project (adu_types)
 
 include (agentRules)
+
 compileasc99 ()
 
 add_library (${PROJECT_NAME} STATIC src/adu_types.c)

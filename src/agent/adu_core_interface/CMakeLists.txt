@@ -1,6 +1,7 @@
 project (adu_core_interface)
 
 include (agentRules)
+
 compileasc99 ()
 
 find_package (IotHubClient REQUIRED)

@@ -6,8 +6,9 @@ add_library (diagnostic_utils::${target_name} ALIAS ${target_name})
 target_include_directories (${target_name} PUBLIC inc)
 target_sources (${target_name} PRIVATE src/diagnostics_config_utils.c)
 
-target_link_aziotsharedutil (${target_name} PRIVATE)
 find_package (Parson REQUIRED)
+
+target_link_aziotsharedutil (${target_name} PRIVATE)
 
 target_link_libraries (
     ${target_name}

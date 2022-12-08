@@ -1,6 +1,7 @@
 set (target_name shared_lib)
 
 include (agentRules)
+
 compileasc99 ()
 
 add_library (${target_name} STATIC "")

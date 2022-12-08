@@ -24,6 +24,21 @@ set (agent_c_files ./src/main.c ./src/health_management.c)
 
 add_executable (${target_name} ${agent_c_files})
 
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    # TODO(JeffMill): Avoid LINK : fatal error LNK1104: cannot open file 'iothub_client_mqtt_transport.lib'
+    # e.g. _vcpkg_installed\x64-windows\lib
+    find_library (IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY iothub_client_mqtt_transport REQUIRED)
+    cmake_path (
+        GET
+        IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY
+        PARENT_PATH
+        IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR)
+    message (
+        STATUS
+            "IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR: ${IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR}")
+    target_link_directories (${target_name} PRIVATE ${IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR})
+endif ()
+
 set_target_properties (${target_name} PROPERTIES COMPILE_DEFINITIONS _DEFAULT_SOURCE)
 
 # Pick up Git revision so we can report it in version information.
@@ -146,6 +161,15 @@ if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
     target_compile_definitions (${target_name} PRIVATE ADUC_PLATFORM_SIMULATOR)
 else ()
     target_link_dosdk (${target_name} PRIVATE)
+endif ()
+
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    # TODO(JeffMill): [PAL] getopt.h
+    find_path (GETOPT_INCLUDE_DIR "getopt.h")
+    target_include_directories (${target_name} PRIVATE ${GETOPT_INCLUDE_DIR})
+
+    find_library (GETOPT_LIBRARY "getopt.lib")
+    target_link_libraries (${target_name} PRIVATE ${GETOPT_LIBRARY})
 endif ()
 
 target_link_libraries (${target_name} PRIVATE aduc::platform_layer)

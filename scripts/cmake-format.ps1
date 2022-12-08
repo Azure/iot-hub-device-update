@@ -27,9 +27,12 @@ Push-Location $GITROOT
 
 # Use --cached to only check the staged files before commit.
 # diff-filter=d will exclude deleted files.
-git.exe diff --diff-filter=d --relative --name-only --cached HEAD -- 'CMakeLists.txt' '*/CMakeLists.txt' '*.cmake' '*/*.cmake' ` | ForEach-Object {
-    $FILE = $_
-    "Formatting $FILE"
+$files = @(git.exe diff --diff-filter=d --relative --name-only --cached HEAD -- 'CMakeLists.txt' '*/CMakeLists.txt' '*.cmake' '*/*.cmake')
+for ($i = 0; $i -lt $files.count; $i++) {
+    $FILE = $files[$i]
+
+    "Formatting [{0,2}/{1,2}] {2}" -f ($i + 1), $files.count, $FILE
+
     # Unfortunately, cmake-format doesn't work when piping git cat-file blob
     # into it so that it processes only staged file contents, but we use the
     # --check argument so that a reformatting results in non-zero exit code.

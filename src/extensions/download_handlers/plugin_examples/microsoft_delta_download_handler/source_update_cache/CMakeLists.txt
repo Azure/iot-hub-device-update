@@ -3,6 +3,7 @@ cmake_minimum_required (VERSION 3.5)
 set (target_name source_update_cache)
 
 include (agentRules)
+
 compileasc99 ()
 
 find_package (azure_c_shared_utility REQUIRED)

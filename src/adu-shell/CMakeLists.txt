@@ -60,11 +60,21 @@ target_compile_definitions (
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
+# TODO(JeffMill): Use target_link_umock_c()?
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-    # TODO(JeffMill): This is required for Windows to avoid
-    # fatal  error C1083: Cannot open include file: 'umock_c/umock_c_prod.h': No such file or directory
+    # TODO(JeffMill): [VCPKG] fatal  error C1083: Cannot open include file: 'umock_c/umock_c_prod.h': No such file or directory
     find_package (umock_c REQUIRED CONFIG)
+    message (STATUS "${target_name} UMOCK_C_INC_FOLDER: ${UMOCK_C_INC_FOLDER}")
     target_include_directories (${target_name} PRIVATE ${UMOCK_C_INC_FOLDER})
+endif ()
+
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    # TODO(JeffMill): [PAL] getopt.h
+    find_path (GETOPT_INCLUDE_DIR "getopt.h")
+    target_include_directories (${target_name} PRIVATE ${GETOPT_INCLUDE_DIR})
+
+    find_library (GETOPT_LIBRARY "getopt.lib")
+    target_link_libraries (${target_name} PRIVATE ${GETOPT_LIBRARY})
 endif ()
 
 target_link_libraries (

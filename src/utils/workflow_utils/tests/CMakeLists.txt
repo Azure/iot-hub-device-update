@@ -18,9 +18,7 @@ target_sources (${PROJECT_NAME} PRIVATE main.cpp workflow_utils_ut.cpp
 target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-    # TODO(JeffMill): This is required for Windows to avoid
-    #  fatal  error C1083: Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
-    find_package (azure_c_shared_utility CONFIG REQUIRED)
+    # TODO(JeffMill): [VCPKG] fatal  error C1083: Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
     target_include_directories (${PROJECT_NAME} PRIVATE ${AZURE_C_SHARED_UTILITY_INCLUDES})
 endif ()
 

@@ -1,6 +1,7 @@
 project (microsoft_delta_download_handler_utils)
 
 include (agentRules)
+
 compileasc99 ()
 
 add_library (${PROJECT_NAME} STATIC "")

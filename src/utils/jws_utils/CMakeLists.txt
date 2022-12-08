@@ -2,6 +2,8 @@ cmake_minimum_required (VERSION 3.5)
 
 project (jws_utils)
 
+include (agentRules)
+
 compileasc99 ()
 add_library (${PROJECT_NAME} STATIC src/jws_utils.c)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})

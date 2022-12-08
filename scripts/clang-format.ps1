@@ -18,8 +18,13 @@ if (-not (Test-Path $GITROOT)) {
 Push-Location $GITROOT
 
 # diff-filter=d will exclude deleted files.
-git.exe diff --diff-filter=d --relative --name-only HEAD -- "*.[CcHh]" "*.[CcHh][Pp][Pp]" | ForEach-Object {
-    clang-format.exe --verbose --style=file -i "$_"
+$files = @(git.exe diff --diff-filter=d --relative --name-only HEAD -- '*.[CcHh]' '*.[CcHh][Pp][Pp]')
+for ($i = 0; $i -lt $files.count; $i++) {
+    $FILE = $files[$i]
+
+    "Formatting [{0,2}/{1,2}] {2}" -f ($i + 1), $files.count, $FILE
+
+    clang-format.exe --style=file -i "$FILE"
 }
 
 Pop-Location

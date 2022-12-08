@@ -13,4 +13,6 @@ target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::c_utils
-    PRIVATE aduc::logging Parson::parson umock_c)
+    PRIVATE aduc::logging Parson::parson)
+
+target_link_umock_c (${PROJECT_NAME} PRIVATE)

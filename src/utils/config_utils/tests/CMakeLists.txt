@@ -19,12 +19,12 @@ target_link_libraries (
             Parson::parson
             aduc::c_utils
             aduc::config_utils
-            aduc::string_utils
-            umock_c)
+            aduc::string_utils)
 
-target_compile_definitions (
-    ${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
-                            ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}")
+target_link_umock_c (${PROJECT_NAME} PRIVATE)
+
+target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
+                                                    ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}")
 
 if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
     target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_PLATFORM_SIMULATOR)

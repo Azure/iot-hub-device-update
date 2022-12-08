@@ -1,6 +1,7 @@
 set (target_name download_handler_plugin)
 
 include (agentRules)
+
 compileasc99 ()
 
 add_library (${target_name} STATIC)

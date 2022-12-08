@@ -2,6 +2,8 @@ cmake_minimum_required (VERSION 3.5)
 
 project (permission_utils)
 
+include (agentRules)
+
 compileasc99 ()
 
 add_library (${PROJECT_NAME} STATIC src/permission_utils.c)

@@ -6,6 +6,7 @@
  * Licensed under the MIT License.
  */
 #include <getopt.h>
+
 #include <string.h>
 
 #if defined(_WIN32)

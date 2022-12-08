@@ -372,16 +372,20 @@ $static_analysis_tools | ForEach-Object {
 }
 
 if ($build_clean) {
-    Bullet 'Cleaning repo ...'
+    Header 'Cleaning repo'
 
     if (Test-Path $output_directory) {
+        Bullet $output_directory
         Remove-Item -Recurse -LiteralPath $output_directory
     }
     # TODO(JeffMill): This shouldn't hard code /tmp/adu/testdata -- it should match
     # whatever cmake and tests have.  JW has a bug on this.
     if (Test-Path '/tmp/adu/testdata') {
+        Bullet '/tmp/adu/testdata'
         Remove-Item -Recurse -LiteralPath '/tmp/adu/testdata'
     }
+
+    ''
 }
 
 mkdir -Path $output_directory -Force | Out-Null
@@ -391,7 +395,7 @@ Header 'Generating Makefiles'
 # Troubleshooting CMake dependencies
 # show every find_package call (vcpkg specific):
 # $CMAKE_OPTIONS += '-DVCPKG_TRACE_FIND_PACKAGE:BOOL=ON'
-# Verbose output (very verbose):
+# Verbose output (very verbose, but useful!):
 # $CMAKE_OPTIONS += '--trace-expand'
 # See cmake dependencies (very verbose):
 # $CMAKE_OPTIONS += '--debug-output'

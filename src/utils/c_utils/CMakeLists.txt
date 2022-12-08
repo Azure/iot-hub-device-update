@@ -26,8 +26,7 @@ target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 target_link_libraries (${PROJECT_NAME} PRIVATE aduc::logging)
 
 if (ADUC_BUILD_UNIT_TESTS)
-    find_package (umock_c CONFIG REQUIRED)
-    target_link_libraries (${PROJECT_NAME} PRIVATE umock_c)
+    target_link_umock_c (${PROJECT_NAME} PRIVATE)
 
     add_subdirectory (tests)
 endif ()

@@ -17,15 +17,7 @@ target_link_libraries (
     PRIVATE aduc::logging)
 
 if (ADUC_BUILD_UNIT_TESTS)
-    find_package (umock_c REQUIRED CONFIG)
-
-    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-        # TODO(JeffMill): This is required for Windows to avoid
-        # fatal  error C1083: Cannot open include file: 'umock_c/umock_c_prod.h': No such file or directory
-        target_include_directories (${target_name} PRIVATE ${UMOCK_C_INC_FOLDER})
-    endif ()
-
-    target_link_libraries (${target_name} PRIVATE umock_c)
+    target_link_umock_c (${target_name} PRIVATE)
 
     add_subdirectory (tests)
 endif ()

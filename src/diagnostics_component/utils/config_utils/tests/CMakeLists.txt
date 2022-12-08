@@ -16,9 +16,8 @@ add_executable (${PROJECT_NAME} ${sources})
 target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")
 
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-    # TODO(JeffMill): This is required for Windows to avoid
-    # fatal  error C1083: Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
-    target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+    # TODO(JeffMill): [VCPKG] fatal  error C1083: Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
+    target_include_directories (${PROJECT_NAME} PRIVATE ${AZURE_C_SHARED_UTILITY_INCLUDES})
 endif ()
 
 target_link_libraries (${PROJECT_NAME} PRIVATE diagnostic_utils::diagnostics_config_utils

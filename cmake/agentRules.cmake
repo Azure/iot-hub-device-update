@@ -31,6 +31,18 @@ function (target_link_aziotsharedutil target scope)
     target_link_libraries (${target} ${scope} aziotsharedutil)
 endfunction ()
 
+function (target_link_umock_c target scope)
+    find_package (umock_c REQUIRED CONFIG)
+
+    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+        # TODO(JeffMill): [VCPKG] Don't link to umock_c - will fail due to missing azure_macro_utils library.
+        message (STATUS "${target} UMOCK_C_INC_FOLDER: ${UMOCK_C_INC_FOLDER}")
+        target_include_directories (${target} ${scope} ${UMOCK_C_INC_FOLDER})
+    else ()
+        target_link_libraries (${target} ${scope} umock_c)
+    endif ()
+endfunction ()
+
 function (target_link_iothub_client target scope)
     # NOTE: the call to find_package for azure_c_shared_utility
     # must come before umqtt since their config.cmake files expect
@@ -56,6 +68,6 @@ function (target_link_dosdk target scope)
         find_package (deliveryoptimization_sdk CONFIG REQUIRED)
         target_link_libraries (${target} ${scope} Microsoft::deliveryoptimization)
     else ()
-        message (NOTICE "[Windows] Not referencing deliveryoptimization_sdk")
+        message (NOTICE "[Windows] Not building deliveryoptimization_sdk")
     endif ()
 endfunction (target_link_dosdk)
