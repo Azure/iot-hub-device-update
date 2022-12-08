@@ -1479,6 +1479,7 @@ char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
     char* wf = workflow_get_string_property(handle, WORKFLOW_PROPERTY_FIELD_WORKFOLDER);
     if (wf != NULL)
     {
+        free(id);
         return wf;
     }
 
@@ -1813,7 +1814,8 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
         goto done;
     }
 
-    // transfer tempHash as it has been assigned into newEntity structure now
+    // ADUC_FileEntity_Init makes a deep copy of the hash so must free tempHash to avoid memory leak.
+    ADUC_Hash_FreeArray(tempHashCount, tempHash);
     tempHash = NULL;
 
     if (!ParseFileEntityDownloadHandler(handle, file, newEntity))

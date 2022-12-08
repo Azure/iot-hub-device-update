@@ -19,18 +19,11 @@
 
 #include "parson.h"
 
-#include <algorithm>
-#include <fstream>
-#include <functional>
-#include <memory>
 #include <sstream>
 #include <string>
-#include <unordered_map>
 
 #include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy
 #include <azure_c_shared_utility/strings.h> // STRING_*
-
-#include <dirent.h>
 
 // Note: this requires ${CMAKE_DL_LIBS}
 #include <dlfcn.h>
@@ -1142,7 +1135,7 @@ static ADUC_Result StepsHandler_Apply(const tagADUC_WorkflowData* workflowData)
 {
     if (workflow_is_cancel_requested(workflowData->WorkflowHandle))
     {
-        return { .ResultCode = ADUC_Result_Failure_Cancelled, .ExtendedResultCode = 0};
+        return { .ResultCode = ADUC_Result_Failure_Cancelled, .ExtendedResultCode = 0 };
     }
 
     // Since the child-step's Install and Apply tasks have already been processed in 'StepsHandler_Install' function,
@@ -1190,7 +1183,10 @@ static ADUC_Result StepsHandler_Cancel(const tagADUC_WorkflowData* workflowData)
     int workflowStep = workflow_get_step_index(handle);
 
     Log_Info(
-        "Requesting cancel operation (workflow id '%s', level %d, step %d).", workflow_peek_id(handle), workflowLevel, workflowStep);
+        "Requesting cancel operation (workflow id '%s', level %d, step %d).",
+        workflow_peek_id(handle),
+        workflowLevel,
+        workflowStep);
     if (!workflow_request_cancel(handle))
     {
         Log_Error(
