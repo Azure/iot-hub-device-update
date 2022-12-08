@@ -1479,6 +1479,7 @@ char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
     char* wf = workflow_get_string_property(handle, WORKFLOW_PROPERTY_FIELD_WORKFOLDER);
     if (wf != NULL)
     {
+        free(id);
         return wf;
     }
 
