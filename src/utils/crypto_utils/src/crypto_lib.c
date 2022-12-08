@@ -251,6 +251,10 @@ done:
     {
         BN_free(rsa_N);
         BN_free(rsa_e);
+        if (pkey != NULL)
+        {
+            RSA_free(rsa);
+        }
         EVP_PKEY_free(pkey);
         pkey = NULL;
     }
@@ -268,7 +272,8 @@ done:
  */
 CryptoKeyHandle RSAKey_ObjFromBytes(const uint8_t* N, size_t N_len, const uint8_t* e, size_t e_len)
 {
-    EVP_PKEY* result = NULL;
+    _Bool success = false;
+    EVP_PKEY* pkey = NULL;
 
     BIGNUM* rsa_N = NULL;
     BIGNUM* rsa_e = NULL;
@@ -299,7 +304,7 @@ CryptoKeyHandle RSAKey_ObjFromBytes(const uint8_t* N, size_t N_len, const uint8_
         goto done;
     }
 
-    EVP_PKEY* pkey = EVP_PKEY_new();
+    pkey = EVP_PKEY_new();
 
     if (pkey == NULL)
     {
@@ -311,16 +316,22 @@ CryptoKeyHandle RSAKey_ObjFromBytes(const uint8_t* N, size_t N_len, const uint8_
         goto done;
     }
 
-    result = pkey;
+    success = true;
 done:
 
-    if (result == NULL)
+    if (!success)
     {
         BN_free(rsa_N);
         BN_free(rsa_e);
+        if (pkey != NULL)
+        {
+            RSA_free(rsa);
+        }
+        EVP_PKEY_free(pkey);
+        pkey = NULL;
     }
 
-    return CryptoKeyHandleToEVP_PKEY(result);
+    return CryptoKeyHandleToEVP_PKEY(pkey);
 }
 
 /**
