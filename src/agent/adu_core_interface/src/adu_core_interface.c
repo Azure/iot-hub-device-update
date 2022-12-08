@@ -507,8 +507,8 @@ void OrchestratorUpdateCallback(
     }
 
 done:
-    free(rootKeyPackageFilePath);
-    free(rootKeyPkgUrl);
+    STRING_delete(rootKeyPackageFilePath);
+    workflow_free_string(rootKeyPkgUrl);
     workflow_free_string(workflowId);
     STRING_delete(jsonToSend);
 
