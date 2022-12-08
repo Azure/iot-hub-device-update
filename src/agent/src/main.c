@@ -1266,7 +1266,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     {
         // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
         // fail the startup.
-        Log_Error("Failed to set DO connection string in Nested Edge scenario, result: %d", result);
+        Log_Error("Failed to set DO connection string in Nested Edge scenario, result: 0x%08x", result.ResultCode);
         goto done;
     }
 
