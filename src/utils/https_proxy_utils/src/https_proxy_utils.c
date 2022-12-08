@@ -8,7 +8,6 @@
 #include "aduc/https_proxy_utils.h"
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h"
-#include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy_s
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
