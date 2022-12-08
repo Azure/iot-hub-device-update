@@ -168,9 +168,6 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
     size_t countPayloads = workflow_get_update_files_count(workflowHandle);
     for (size_t index = 0; index < countPayloads; ++index)
     {
-        workflow_free_file_entity(fileEntity);
-        fileEntity = NULL;
-
         if (!workflow_get_update_file(workflowHandle, index, &fileEntity))
         {
             Log_Error("get update file %d", index);
@@ -249,16 +246,26 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
             }
         }
 
+        workflow_free_file_entity(fileEntity);
+        fileEntity = NULL;
+
+        ADUC_UpdateId_UninitAndFree(updateId);
+        updateId = NULL;
+
         STRING_delete(updateCacheFilePath);
         updateCacheFilePath = NULL;
+
+        STRING_delete(sandboxUpdatePayloadFile);
+        sandboxUpdatePayloadFile = NULL;
     }
 
     result.ResultCode = ADUC_Result_Success;
 
 done:
+    workflow_free_file_entity(fileEntity);
+    ADUC_UpdateId_UninitAndFree(updateId);
     STRING_delete(sandboxUpdatePayloadFile);
     STRING_delete(updateCacheFilePath);
-    workflow_free_file_entity(fileEntity);
 
     return result;
 }

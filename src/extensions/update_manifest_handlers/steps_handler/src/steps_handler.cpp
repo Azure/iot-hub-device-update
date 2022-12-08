@@ -19,18 +19,11 @@
 
 #include "parson.h"
 
-#include <algorithm>
-#include <fstream>
-#include <functional>
-#include <memory>
 #include <sstream>
 #include <string>
-#include <unordered_map>
 
 #include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy
 #include <azure_c_shared_utility/strings.h> // STRING_*
-
-#include <dirent.h>
 
 // Note: this requires ${CMAKE_DL_LIBS}
 // #include <dlfcn.h>

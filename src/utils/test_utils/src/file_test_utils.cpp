@@ -8,11 +8,8 @@
 
 #include "aduc/file_test_utils.hpp"
 
-#include <aduc/system_utils.h>
-#include <dirent.h> // opendir, readdir, closedir
 #include <fstream>
 #include <sstream>
-#include <sys/stat.h>
 
 namespace aduc
 {
