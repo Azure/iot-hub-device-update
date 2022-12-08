@@ -1,48 +1,13 @@
 cmake_minimum_required (VERSION 3.5)
 
-# Note: FetchContent needs to occur before project() directive.
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-    message (STATUS "Checking vcpkg")
-    include (FetchContent)
-
-    set (ORIGINAL_FC_DIR ${FETCHCONTENT_BASE_DIR})
-
-    # Change default paths so they're not under "out" which will get cleaned.
-
-    # Rather than ${CMAKE_BINARY_DIR}/_deps (e.g. out/deps)
-    # Use {$CMAKE_SOURCE_DIR}/_fetchcontent
-    # https://cmake.org/cmake/help/v3.11/module/FetchContent.html
-    cmake_path (SET FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/_fetchcontent")
-
-    # Rather than ${CMAKE_BINARY_DIR}/vcpkg_installed/{vcpkg, x64-windows},
-    # use ${CMAKE_SOURCE_DIR}/_vcpkg_installed
-    # https://github.com/microsoft/vcpkg/blob/master/docs/users/buildsystems/cmake-integration.md
-    cmake_path (SET VCPKG_INSTALLED_DIR "${CMAKE_SOURCE_DIR}/_vcpkg_installed")
-
-    fetchcontent_declare (
-        vcpkg
-        GIT_REPOSITORY https://github.com/microsoft/vcpkg.git
-        GIT_TAG origin/master)
-
-    fetchcontent_makeavailable (vcpkg)
-
-    # https://github.com/microsoft/vcpkg/blob/master/docs/users/manifests.md
-    set (
-        CMAKE_TOOLCHAIN_FILE
-        ${vcpkg_SOURCE_DIR}/scripts/buildsystems/vcpkg.cmake
-        CACHE STRING "CMake toolchain file")
-
-    set (
-        VCPKG_TARGET_TRIPLET
-        "x64-windows"
-        CACHE STRING "vcpkg target triplet")
-
-    message (STATUS FETCHCONTENT_BASE_DIR=${FETCHCONTENT_BASE_DIR})
-    message (STATUS VCPKG_INSTALLED_DIR=${VCPKG_INSTALLED_DIR})
-    message (STATUS VCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET})
-    message (STATUS)
-
-    set (FETCHCONTENT_BASE_DIR ${ORIGINAL_FC_DIR})
+    include(cmake/automate-vcpkg.cmake)
+    # Default is ${CMAKE_BINARY_DIR}/vcpkg
+    cmake_path (SET VCPKG_ROOT "${CMAKE_SOURCE_DIR}/.vcpkg")
+    # Default is ${CMAKE_BINARY_DIR}/vcpkg_installed
+    cmake_path (SET VCPKG_INSTALLED_DIR "${CMAKE_SOURCE_DIR}/.vcpkg-installed")
+    # clone the official Vcpkg repository and bootstrap it.
+    vcpkg_bootstrap()
 endif ()
 
 project (azure_device_update_client)
