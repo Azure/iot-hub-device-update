@@ -1,6 +1,6 @@
 /**
  * @file main.cpp
- * @brief c_utils tests main entry point.
+ * @brief url_utils tests main entry point.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.

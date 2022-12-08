@@ -16,13 +16,8 @@ endif ()
 
 include (agentRules)
 
-include (find_curl_and_import_libcurl)
-
 compileasc99 ()
 disablertti ()
-
-# Used to find and include the CURL::libcurl imported libary
-find_curl_and_import_libcurl ()
 
 set (agent_c_files ./src/main.c ./src/health_management.c)
 
@@ -92,13 +87,13 @@ target_link_libraries (
             aduc::eis_utils
             aduc::extension_manager
             aduc::extension_utils
-            aduc::https_proxy_utils
             aduc::iothub_communication_manager
             aduc::logging
             aduc::permission_utils
             aduc::pnp_helper
             aduc::shutdown_service
             aduc::system_utils
+            aduc::url_utils
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
 

@@ -755,10 +755,38 @@ bool workflow_get_force_update(ADUC_WorkflowHandle workflowHandle);
  */
 void workflow_set_force_update(ADUC_WorkflowHandle handle, bool forceUpdate);
 
-void workflow_parse_peek_unprotected_workflow_properties(
-    JSON_Object* updateActionJsonObj, ADUCITF_UpdateAction* outWorkflowUpdateAction, char** outWorkflowId);
+/**
+ * @brief peeks at the properties under the "workflow" unprotected property
+ *
+ * @param updateActionJsonObj The JSON object of the update action JSON.
+ * @param outWorkflowUpdateAction The output parameter for receiving the value of "action" under "workflow". May be set to NULL if there was none in the JSON.
+ * @param outRootKeyPkgUrl_optional The output parameter for receiving the value of "rootkeyPkgUrl" unprotected property from the updateAction json. Will not be set when error result is returned or NULL is passed.
+ * @param outWorkflowId_optional The output parameter for receiving the value of "id" under "workflow". May be set to NULL if there was none in the JSON.
+ *
+ * @details Caller must never free workflowId.
+ * @returns ADUC_Result The result.
+ */
+ADUC_Result workflow_parse_peek_unprotected_workflow_properties(
+    JSON_Object* updateActionJsonObj,
+    ADUCITF_UpdateAction* outWorkflowUpdateAction,
+    char** outRootkeyPkgUrl_optional,
+    char** outWorkflowId_optional);
 
+/**
+ * @brief Allocate and initialize a workflow handle onto the workflow Data.
+ *
+ * @param workflowData The workflow data on which to set the new workflow handle.
+ * @return true on success.
+ */
 bool workflow_init_workflow_handle(ADUC_WorkflowData* workflowData);
+
+/**
+ * @brief Sets the update action json on the workflow handle
+ *
+ * @param handle The workflow handle on which to set the update action json object.
+ * @param jsonObj The update action json object.
+ * @return true on success.
+ */
 bool workflow_set_update_action_object(ADUC_WorkflowHandle handle, JSON_Object* jsonObj);
 
 EXTERN_C_END

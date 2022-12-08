@@ -23,9 +23,9 @@ target_link_libraries (
             aduc::config_utils
             aduc::c_utils
             aduc::eis_utils
-            aduc::https_proxy_utils
             aduc::logging
-            aduc::retry_utils)
+            aduc::retry_utils
+            aduc::url_utils)
 
 target_link_libraries (${target_name} PRIVATE libaducpal)
 

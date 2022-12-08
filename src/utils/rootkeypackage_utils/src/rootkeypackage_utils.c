@@ -8,8 +8,9 @@
 #include "aduc/rootkeypackage_utils.h"
 #include "aduc/rootkeypackage_json_properties.h"
 #include "aduc/rootkeypackage_parse.h"
-#include <aduc/c_utils.h> // for EXTERN_C_BEGIN, EXTERN_C_END
+#include <aduc/c_utils.h> // for EXTERN_C_BEGIN, EXTERN_C_END, HTTP_URL_HANDLE
 #include <aduc/string_c_utils.h> // for IsNullOrEmpty
+#include <azure_c_shared_utility/string_token.h>
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
 #include <base64_utils.h>
@@ -574,17 +575,6 @@ done:
     }
 
     return retString;
-}
-
-/**
- * @brief Downloads the rootkey package
- *
- * @param outPathToRootKeyPackage The resultant path to the root key package file.
- */
-ADUC_Result ADUC_RootKeyPackageUtil_DownloadPackage(char** outPathToRootKeyPackage)
-{
-    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-    return result;
 }
 
 /**
