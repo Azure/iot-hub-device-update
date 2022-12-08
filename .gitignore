@@ -36,9 +36,6 @@ out/
 build/
 Testing/
 
-### FetchContent storage
-_fetchcontent/
-
-### vcpkg installed content
-_vcpkg_installed/
-vcpkg_installed/
+### VCPKG
+.vcpkg/
+.vcpkg-installed/
