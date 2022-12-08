@@ -14,14 +14,24 @@ using Catch::Matchers::Equals;
 // TODO(JeffMill): [PAL] setenv, unsetenv
 static int setenv(const char* name, const char* value, int overwrite)
 {
-    __debugbreak();
-    return -1;
+    const int MAX_PATH = 1024;
+    char string0[MAX_PATH];
+    char* string;
+
+    if (getenv(name) != NULL && overwrite == 0)
+    {
+        return 1;
+    }
+    strcpy(string0, name);
+    strcat(string0, "=");
+    strcat(string0, value);
+    string = strdup(string0);
+    return (putenv(string)) ? 1 : 0;
 }
 
 static int unsetenv(const char* name)
 {
-    __debugbreak();
-    return -1;
+    return (putenv(name)) ? 1 : 0;
 }
 #else
 #    include <stdlib.h> // setenv, unsetenv
@@ -117,8 +127,10 @@ TEST_CASE_METHOD(TestCaseFixture, "Parse HTTPS_PROXY (uppper case)")
 // If both https_proxy and HTTPS_PROXY exist, use https_proxy.
 TEST_CASE_METHOD(TestCaseFixture, "Use https_proxy (lower case)")
 {
-    setenv("https_proxy", "http://127.0.0.1:8888", 1);
+    // Put uppercase first, so that on OS where env is case-insensitive (e.g. Windows)
+    // the second will overwrite the first.
     setenv("HTTPS_PROXY", "http://222.0.0.1:123", 1);
+    setenv("https_proxy", "http://127.0.0.1:8888", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
     bool proxyOk = InitializeProxyOptions(&proxyOptions);
