@@ -1076,12 +1076,16 @@
                 "value": 0
               },
               {
-                "name": "ADUC_ERC_UTILITIES_URL_GET_PATH",
+                "name": "ADUC_ERC_UTILITIES_URL_SET",
                 "value": 1
               },
               {
-                "name": "ADUC_ERC_UTILITIES_URL_BAD_PATH",
+                "name": "ADUC_ERC_UTILITIES_URL_GET_PATH",
                 "value": 2
+              },
+              {
+                "name": "ADUC_ERC_UTILITIES_URL_BAD_PATH",
+                "value": 3
               }
             ]
           }

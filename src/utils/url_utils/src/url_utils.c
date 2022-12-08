@@ -7,52 +7,62 @@
  */
 
 #include "aduc/url_utils.h"
-#include "aduc/http_url.h"
-#include "aduc/string_c_utils.h"
+#include <aduc/logging.h>
+#include <aduc/result.h>
+#include <aduc/string_c_utils.h>
+#include <curl/curl.h>
+#include <string.h>
 
 ADUC_Result ADUC_UrlUtils_GetLastPathSegmentOfUrl(const char* url, STRING_HANDLE* outLastPathSegment)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-
     STRING_HANDLE tmp = NULL;
-    int ret = -1;
-    const char* url_path = NULL;
-    size_t url_path_len = 0;
-    int last_segment_index = -1;
-    int i = -1;
+    char* url_path = NULL;
+    char* p = NULL;
+
+    CURLcode uc;
+    CURLU* curl_handle = NULL;
 
     if (url == NULL || outLastPathSegment == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_INVAL;
-        goto done;
+        return result;
     }
 
-    HTTP_URL_HANDLE url_handle = http_url_create(url);
-    if (url_handle == NULL)
+    curl_handle = curl_url();
+    if (curl_handle == NULL)
     {
-        // http_url_create will fail if no path exists like in "http://a.b/"
+        Log_Error("Cannot create curl handle.");
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_URL_CREATE;
         goto done;
     }
 
-    ret = http_url_get_path(url_handle, &url_path, &url_path_len);
-    if (ret != 0 || url_path_len <= 0 || IsNullOrEmpty(url_path))
+    uc = curl_url_set(curl_handle, CURLUPART_URL, url, 0);
+    if (uc != CURLE_OK)
     {
+        Log_Error("Failed to parse url '%s', uc:%d", url, uc);
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_URL_SET;
+        goto done;
+    }
+
+    uc = curl_url_get(curl_handle, CURLUPART_PATH, &url_path, 0);
+    if (uc != CURLE_OK)
+    {
+        Log_Error("Fail to get path. uc:%d", uc);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_URL_GET_PATH;
         goto done;
     }
 
-    for (i = url_path_len - 1; i >= -1; --i)
+    p = strrchr(url_path, '/');
+    if (p == NULL)
     {
-        // will hit -1 when http_url_get_path() returns "x.y" for URLs with no path segments like "http://a.b/x.y"
-        if (i == -1 || url_path[i] == '/')
-        {
-            last_segment_index = i + 1;
-            break;
-        }
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_URL_BAD_PATH;
+        goto done;
     }
+    // otherwise, move to next char in string, which might even be '\0'.
+    p++;
 
-    tmp = STRING_construct_n(&url_path[last_segment_index], url_path_len - last_segment_index);
+    tmp = STRING_construct(p);
     if (tmp == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_NOMEM;
@@ -65,7 +75,15 @@ ADUC_Result ADUC_UrlUtils_GetLastPathSegmentOfUrl(const char* url, STRING_HANDLE
 
 done:
 
-    http_url_destroy(url_handle);
+    if (url_path != NULL)
+    {
+        curl_free(url_path);
+    }
+
+    if (curl_handle != NULL)
+    {
+        curl_url_cleanup(curl_handle);
+    }
 
     if (tmp != NULL)
     {
