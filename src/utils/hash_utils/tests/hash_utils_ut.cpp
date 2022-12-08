@@ -16,28 +16,16 @@ using Catch::Matchers::Equals;
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] mkstemp
+#include <io.h> // _mktemp
+
 static int mkstemp(char* tmpl)
 {
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
+    strcpy(tmpl, "/tmp/tmpfileXXXXXX");
+
+    return (_mktemp(tmpl) != NULL) ? 0 : -1;
 }
 #else
 #    include <stdlib.h> //mkstemp
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] fchmod
-typedef unsigned int mode_t;
-
-static int fchmod(int fd, mode_t mode)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-#else
-#    include <sys/stat.h> // fchmod
 #endif
 
 // To generate file hashes:
