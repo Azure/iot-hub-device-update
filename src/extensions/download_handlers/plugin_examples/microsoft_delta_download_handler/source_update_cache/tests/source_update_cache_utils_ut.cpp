@@ -60,40 +60,36 @@ EXTERN_C_END
 const std::string updateContentData = "hello\n";
 
 // Setup update manifest in workflow handle
-const std::string updateManifest{
-    R"( {                                                                          )"
-    R"(    "updateId": {                                                           )"
-    R"(        "provider": "TestProvider",                                         )"
-    R"(        "name": "updateName1",                                              )"
-    R"(        "version": "1.0"                                                    )"
-    R"(    },                                                                      )"
-    R"(    "files": {                                                              )"
-    R"(        "fileId1": {                                                        )"
-    R"(            "fileName": "full_target_update.swu",                           )"
-    R"(            "hashes": {                                                     )"
-    R"(                "sha256": "hash1/+=="                                       )"
-    R"(            },                                                              )"
-    R"(            "sizeInBytes": 6,                                               )"
-    R"(            "properties": {                                                 )"
-    R"(            }                                                               )"
-    R"(        }                                                                   )"
-    R"(    }                                                                       )"
-    R"( }                                                                          )"
-};
+const std::string updateManifest{ R"( {                                                                          )"
+                                  R"(    "updateId": {                                                           )"
+                                  R"(        "provider": "TestProvider",                                         )"
+                                  R"(        "name": "updateName1",                                              )"
+                                  R"(        "version": "1.0"                                                    )"
+                                  R"(    },                                                                      )"
+                                  R"(    "files": {                                                              )"
+                                  R"(        "fileId1": {                                                        )"
+                                  R"(            "fileName": "full_target_update.swu",                           )"
+                                  R"(            "hashes": {                                                     )"
+                                  R"(                "sha256": "hash1/+=="                                       )"
+                                  R"(            },                                                              )"
+                                  R"(            "sizeInBytes": 6,                                               )"
+                                  R"(            "properties": {                                                 )"
+                                  R"(            }                                                               )"
+                                  R"(        }                                                                   )"
+                                  R"(    }                                                                       )"
+                                  R"( }                                                                          )" };
 
-const std::string desiredTemplate{
-    R"( {                                                                        )"
-    R"(     "fileUrls": {                                                        )"
-    R"(         "fileId1": "http://hostname:port/path/to/full_target_update.swu" )"
-    R"(     },                                                                   )"
-    R"(     "updateManifest": "UPDATE_MANIFEST",                                 )"
-    R"(     "updateManifestSignature": "SIGNATURE",                              )"
-    R"(     "workflow": {                                                        )"
-    R"(         "action": 3,                                                     )"
-    R"(         "id": "WORKFLOW_ID_GUID"                                         )"
-    R"(     }                                                                    )"
-    R"( }                                                                        )"
-};
+const std::string desiredTemplate{ R"( {                                                                        )"
+                                   R"(     "fileUrls": {                                                        )"
+                                   R"(         "fileId1": "http://hostname:port/path/to/full_target_update.swu" )"
+                                   R"(     },                                                                   )"
+                                   R"(     "updateManifest": "UPDATE_MANIFEST",                                 )"
+                                   R"(     "updateManifestSignature": "SIGNATURE",                              )"
+                                   R"(     "workflow": {                                                        )"
+                                   R"(         "action": 3,                                                     )"
+                                   R"(         "id": "WORKFLOW_ID_GUID"                                         )"
+                                   R"(     }                                                                    )"
+                                   R"( }                                                                        )" };
 
 TEST_CASE("ADUC_SourceUpdateCacheUtils_CreateSourceUpdateCachePath")
 {
@@ -169,6 +165,7 @@ TEST_CASE("ADUC_SourceUpdateCacheUtils_MoveToUpdateCache")
 
     char* serialized = json_serialize_to_string(updateManifestJson);
     REQUIRE(serialized != nullptr);
+    json_value_free(updateManifestJson);
 
     std::string serializedUpdateManifest = serialized;
     json_free_serialized_string(serialized);
@@ -196,199 +193,199 @@ TEST_CASE("ADUC_SourceUpdateCacheUtils_MoveToUpdateCache")
     CHECK_FALSE(SystemUtils_IsFile(payloadFilePath.c_str(), nullptr)); // should no longer be in sandbox
     CHECK(SystemUtils_IsFile(expectedFileInUpdateCache, nullptr)); // and should've been moved to update cache
 
-    workflow_uninit(handle);
+    workflow_free(handle);
 }
 
-// TODO: re-activate this section after this resolves: Bug 40886231: Arm32 UT ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache failed
-// TEST_CASE("ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache")
-// {
-//     //
-//     // Arrange (common)
-//     //
-//     AutoDir testBaseDir(TEST_DIR);
-//     AutoDir testCache(TEST_CACHE_BASE_PROVIDER_PATH);
+TEST_CASE("ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache")
+{
+    //
+    // Arrange (common)
+    //
+    AutoDir testBaseDir(TEST_DIR);
+    AutoDir testCache(TEST_CACHE_BASE_PROVIDER_PATH);
 
-//     off_t nonPayloadFileSize = 0;
+    off_t nonPayloadFileSize = 0;
 
-//     const std::string NonPayloadFileContents = "old source update data\n";
+    const std::string NonPayloadFileContents = "old source update data\n";
 
-//     auto setupCacheFilesFn = [&](bool createUpdatePayloadFile, bool createNonUpdatePayloadFile) {
-//         testCache.RemoveDir();
-//         testCache.CreateDir();
+    auto setupCacheFilesFn = [&](bool createUpdatePayloadFile, bool createNonUpdatePayloadFile) {
+        testCache.RemoveDir();
+        testCache.CreateDir();
 
-//         if (createUpdatePayloadFile)
-//         {
-//             // cache dir file that is part of update payload
-//             const std::string PayloadFilePath = UPDATE_PAYLOAD_ABS_CACHE_PATH;
-//             std::ofstream outStream{ PayloadFilePath };
-//             outStream << updateContentData;
-//         }
+        if (createUpdatePayloadFile)
+        {
+            // cache dir file that is part of update payload
+            const std::string PayloadFilePath = UPDATE_PAYLOAD_ABS_CACHE_PATH;
+            std::ofstream outStream{ PayloadFilePath };
+            outStream << updateContentData;
+        }
 
-//         if (createNonUpdatePayloadFile)
-//         {
-//             // cache dir file that is NOT part of update payload
-//             {
-//                 std::ofstream outStream{ NON_PAYLOAD_ABS_CACHE_PATH };
-//                 outStream << NonPayloadFileContents;
-//             }
+        if (createNonUpdatePayloadFile)
+        {
+            // cache dir file that is NOT part of update payload
+            {
+                std::ofstream outStream{ NON_PAYLOAD_ABS_CACHE_PATH };
+                outStream << NonPayloadFileContents;
+            }
 
-//             struct stat st
-//             {
-//             };
-//             nonPayloadFileSize = (stat(NON_PAYLOAD_ABS_CACHE_PATH, &st) == 0) ? st.st_size : 0;
-//             REQUIRE(nonPayloadFileSize > 0);
-//         }
-//     };
+            struct stat st
+            {
+            };
+            nonPayloadFileSize = (stat(NON_PAYLOAD_ABS_CACHE_PATH, &st) == 0) ? st.st_size : 0;
+            REQUIRE(nonPayloadFileSize > 0);
+        }
+    };
 
-//     auto setupWorkflowHandleFn = [&](ADUC_WorkflowHandle* handle) {
-//         JSON_Value* updateManifestJson = json_parse_string(updateManifest.c_str());
-//         REQUIRE(updateManifestJson != nullptr);
+    auto setupWorkflowHandleFn = [&](ADUC_WorkflowHandle* handle) {
+        JSON_Value* updateManifestJson = json_parse_string(updateManifest.c_str());
+        REQUIRE(updateManifestJson != nullptr);
 
-//         char* serialized = json_serialize_to_string(updateManifestJson);
-//         REQUIRE(serialized != nullptr);
+        char* serialized = json_serialize_to_string(updateManifestJson);
+        REQUIRE(serialized != nullptr);
+        json_value_free(updateManifestJson);
 
-//         std::string serializedUpdateManifest = serialized;
-//         json_free_serialized_string(serialized);
-//         serialized = nullptr;
+        std::string serializedUpdateManifest = serialized;
+        json_free_serialized_string(serialized);
+        serialized = nullptr;
 
-//         serializedUpdateManifest = std::regex_replace(serializedUpdateManifest, std::regex("\""), "\\\"");
-//         std::string desired =
-//             std::regex_replace(desiredTemplate, std::regex("UPDATE_MANIFEST"), serializedUpdateManifest);
-//         desired = std::regex_replace(desired, std::regex("WORKFLOW_ID_GUID"), TEST_WORKFLOW_ID);
-//         ADUC_Result result = workflow_init(desired.c_str(), false, handle);
-//         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-//     };
+        serializedUpdateManifest = std::regex_replace(serializedUpdateManifest, std::regex("\""), "\\\"");
+        std::string desired =
+            std::regex_replace(desiredTemplate, std::regex("UPDATE_MANIFEST"), serializedUpdateManifest);
+        desired = std::regex_replace(desired, std::regex("WORKFLOW_ID_GUID"), TEST_WORKFLOW_ID);
+        ADUC_Result result = workflow_init(desired.c_str(), false, handle);
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+    };
 
-//     SECTION("no cache files exist")
-//     {
-//         //
-//         // Arrange
-//         //
-//         setupCacheFilesFn(false /* createUpdatePayloadFile */, false /* createNonUpdatePayloadFile */);
+    SECTION("no cache files exist")
+    {
+        //
+        // Arrange
+        //
+        setupCacheFilesFn(false /* createUpdatePayloadFile */, false /* createNonUpdatePayloadFile */);
 
-//         ADUC_WorkflowHandle handle = nullptr;
-//         setupWorkflowHandleFn(&handle);
-//         REQUIRE(handle != nullptr);
-//         aduc::AutoWorkflowHandle autoWorkflowHandle{ handle };
-//         ADUC_Workflow* workflow = reinterpret_cast<ADUC_Workflow*>(handle);
+        ADUC_WorkflowHandle handle = nullptr;
+        setupWorkflowHandleFn(&handle);
+        REQUIRE(handle != nullptr);
+        aduc::AutoWorkflowHandle autoWorkflowHandle{ handle };
+        ADUC_Workflow* workflow = reinterpret_cast<ADUC_Workflow*>(handle);
 
-//         //
-//         // Act
-//         //
-//         int res = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
-//             handle, 1 /* totalSize */, testCache.GetDir().c_str() /* updateCacheBasePath */);
-//         REQUIRE(res == 0);
+        //
+        // Act
+        //
+        int res = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
+            handle, 1 /* totalSize */, testCache.GetDir().c_str() /* updateCacheBasePath */);
+        REQUIRE(res == 0);
 
-//         //
-//         // Assert
-//         //
-//         std::vector<std::string> filesInDir;
-//         aduc::findFilesInDir(testCache.GetDir(), &filesInDir);
-//         CHECK(filesInDir.size() == 0);
-//     }
+        //
+        // Assert
+        //
+        std::vector<std::string> filesInDir;
+        aduc::findFilesInDir(testCache.GetDir(), &filesInDir);
+        CHECK(filesInDir.size() == 0);
+    }
 
-//     SECTION("No cache files that are not update payload")
-//     {
-//         //
-//         // Arrange
-//         //
-//         setupCacheFilesFn(true /* createUpdatePayloadFile */, false /* createNonUpdatePayloadFile */);
+    SECTION("No cache files that are not update payload")
+    {
+        //
+        // Arrange
+        //
+        setupCacheFilesFn(true /* createUpdatePayloadFile */, false /* createNonUpdatePayloadFile */);
 
-//         ADUC_WorkflowHandle handle = nullptr;
-//         setupWorkflowHandleFn(&handle);
-//         REQUIRE(handle != nullptr);
-//         aduc::AutoWorkflowHandle autoWorkflowHandle{ handle };
-//         ADUC_Workflow* workflow = reinterpret_cast<ADUC_Workflow*>(handle);
+        ADUC_WorkflowHandle handle = nullptr;
+        setupWorkflowHandleFn(&handle);
+        REQUIRE(handle != nullptr);
+        aduc::AutoWorkflowHandle autoWorkflowHandle{ handle };
+        ADUC_Workflow* workflow = reinterpret_cast<ADUC_Workflow*>(handle);
 
-//         // set inode for payload
-//         struct stat st
-//         {
-//         };
-//         ino_t inodeUpdatePayloadInCache =
-//             (stat(UPDATE_PAYLOAD_ABS_CACHE_PATH, &st) == 0) ? st.st_ino : ADUC_INODE_SENTINEL_VALUE;
-//         REQUIRE(inodeUpdatePayloadInCache != ADUC_INODE_SENTINEL_VALUE);
-//         REQUIRE(workflow_set_update_file_inode(handle, 0, inodeUpdatePayloadInCache));
-//         REQUIRE(workflow_get_update_file_inode(handle, 0) == st.st_ino);
+        // set inode for payload
+        struct stat st
+        {
+        };
+        ino_t inodeUpdatePayloadInCache =
+            (stat(UPDATE_PAYLOAD_ABS_CACHE_PATH, &st) == 0) ? st.st_ino : ADUC_INODE_SENTINEL_VALUE;
+        REQUIRE(inodeUpdatePayloadInCache != ADUC_INODE_SENTINEL_VALUE);
+        REQUIRE(workflow_set_update_file_inode(handle, 0, inodeUpdatePayloadInCache));
+        REQUIRE(workflow_get_update_file_inode(handle, 0) == st.st_ino);
 
-//         //
-//         // Act
-//         //
-//         int res = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
-//             handle, 1 /* totalSize */, testCache.GetDir().c_str() /* updateCacheBasePath */);
-//         REQUIRE(res == 0);
+        //
+        // Act
+        //
+        int res = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
+            handle, 1 /* totalSize */, testCache.GetDir().c_str() /* updateCacheBasePath */);
+        REQUIRE(res == 0);
 
-//         //
-//         // Assert
-//         //
-//         std::vector<std::string> filesInDir;
-//         aduc::findFilesInDir(testCache.GetDir(), &filesInDir);
-//         REQUIRE(filesInDir.size() == 1);
-//         CHECK_THAT(filesInDir[0], Equals(UPDATE_PAYLOAD_ABS_CACHE_PATH));
-//     }
+        //
+        // Assert
+        //
+        std::vector<std::string> filesInDir;
+        aduc::findFilesInDir(testCache.GetDir(), &filesInDir);
+        REQUIRE(filesInDir.size() == 1);
+        CHECK_THAT(filesInDir[0], Equals(UPDATE_PAYLOAD_ABS_CACHE_PATH));
+    }
 
-//     SECTION("not current update payload deleted when < totalSize")
-//     {
-//         //
-//         // Arrange
-//         //
-//         setupCacheFilesFn(true /* createUpdatePayloadFile */, true /* createNonUpdatePayloadFile */);
+    SECTION("not current update payload deleted when < totalSize")
+    {
+        //
+        // Arrange
+        //
+        setupCacheFilesFn(true /* createUpdatePayloadFile */, true /* createNonUpdatePayloadFile */);
 
-//         ADUC_WorkflowHandle handle = nullptr;
-//         setupWorkflowHandleFn(&handle);
-//         REQUIRE(handle != nullptr);
-//         aduc::AutoWorkflowHandle autoWorkflowHandle{ handle };
-//         ADUC_Workflow* workflow = reinterpret_cast<ADUC_Workflow*>(handle);
+        ADUC_WorkflowHandle handle = nullptr;
+        setupWorkflowHandleFn(&handle);
+        REQUIRE(handle != nullptr);
+        aduc::AutoWorkflowHandle autoWorkflowHandle{ handle };
+        ADUC_Workflow* workflow = reinterpret_cast<ADUC_Workflow*>(handle);
 
-//         // set inode for payload
-//         struct stat st
-//         {
-//         };
-//         ino_t inodeUpdatePayloadInCache =
-//             (stat(UPDATE_PAYLOAD_ABS_CACHE_PATH, &st) == 0) ? st.st_ino : ADUC_INODE_SENTINEL_VALUE;
-//         REQUIRE(inodeUpdatePayloadInCache != ADUC_INODE_SENTINEL_VALUE);
-//         REQUIRE(workflow_set_update_file_inode(handle, 0, inodeUpdatePayloadInCache));
-//         REQUIRE(workflow_get_update_file_inode(handle, 0) == st.st_ino);
+        // set inode for payload
+        struct stat st
+        {
+        };
+        ino_t inodeUpdatePayloadInCache =
+            (stat(UPDATE_PAYLOAD_ABS_CACHE_PATH, &st) == 0) ? st.st_ino : ADUC_INODE_SENTINEL_VALUE;
+        REQUIRE(inodeUpdatePayloadInCache != ADUC_INODE_SENTINEL_VALUE);
+        REQUIRE(workflow_set_update_file_inode(handle, 0, inodeUpdatePayloadInCache));
+        REQUIRE(workflow_get_update_file_inode(handle, 0) == st.st_ino);
 
-//         // ensure upfront that there are 2 files in the test cache, the update payload and the non-payload file.
-//         {
-//             std::vector<std::string> filesInDir;
-//             aduc::findFilesInDir(testCache.GetDir(), &filesInDir);
+        // ensure upfront that there are 2 files in the test cache, the update payload and the non-payload file.
+        {
+            std::vector<std::string> filesInDir;
+            aduc::findFilesInDir(testCache.GetDir(), &filesInDir);
 
-//             CHECK(filesInDir.size() == 2);
+            CHECK(filesInDir.size() == 2);
 
-//             bool foundUpdatePayloadInCache = filesInDir.end()
-//                 != std::find_if(filesInDir.begin(), filesInDir.end(), [](const std::string& filePath) {
-//                                                  return filePath == UPDATE_PAYLOAD_ABS_CACHE_PATH;
-//                                              });
-//             bool foundNonPayloadInCache = filesInDir.end()
-//                 != std::find_if(filesInDir.begin(), filesInDir.end(), [](const std::string& filePath) {
-//                                               return filePath == NON_PAYLOAD_ABS_CACHE_PATH;
-//                                           });
+            bool foundUpdatePayloadInCache = filesInDir.end()
+                != std::find_if(filesInDir.begin(), filesInDir.end(), [](const std::string& filePath) {
+                                                 return filePath == UPDATE_PAYLOAD_ABS_CACHE_PATH;
+                                             });
+            bool foundNonPayloadInCache = filesInDir.end()
+                != std::find_if(filesInDir.begin(), filesInDir.end(), [](const std::string& filePath) {
+                                              return filePath == NON_PAYLOAD_ABS_CACHE_PATH;
+                                          });
 
-//             auto item0 = filesInDir[0];
-//             auto item1 = filesInDir[1];
+            auto item0 = filesInDir[0];
+            auto item1 = filesInDir[1];
 
-//             // pre-condition
-//             auto cond = item0 == NON_PAYLOAD_ABS_CACHE_PATH && item1 == UPDATE_PAYLOAD_ABS_CACHE_PATH
-//                 || item0 == UPDATE_PAYLOAD_ABS_CACHE_PATH && item1 == NON_PAYLOAD_ABS_CACHE_PATH;
-//             CHECK(cond);
-//         }
+            // pre-condition
+            auto cond = item0 == NON_PAYLOAD_ABS_CACHE_PATH && item1 == UPDATE_PAYLOAD_ABS_CACHE_PATH
+                || item0 == UPDATE_PAYLOAD_ABS_CACHE_PATH && item1 == NON_PAYLOAD_ABS_CACHE_PATH;
+            CHECK(cond);
+        }
 
-//         //
-//         // Act
-//         //
-//         int res = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
-//             handle, nonPayloadFileSize + 1 /* totalSize */, testCache.GetDir().c_str() /* updateCacheBasePath */);
-//         REQUIRE(res == 0);
+        //
+        // Act
+        //
+        int res = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
+            handle, nonPayloadFileSize + 1 /* totalSize */, testCache.GetDir().c_str() /* updateCacheBasePath */);
+        REQUIRE(res == 0);
 
-//         //
-//         // Assert
-//         //
-//         {
-//             std::vector<std::string> filesInDir;
-//             aduc::findFilesInDir(testCache.GetDir(), &filesInDir);
-//             CHECK(filesInDir.size() == 1);
-//             CHECK_THAT(filesInDir[0], Equals(UPDATE_PAYLOAD_ABS_CACHE_PATH));
-//         }
-//     }
-// }
+        //
+        // Assert
+        //
+        {
+            std::vector<std::string> filesInDir;
+            aduc::findFilesInDir(testCache.GetDir(), &filesInDir);
+            CHECK(filesInDir.size() == 1);
+            CHECK_THAT(filesInDir[0], Equals(UPDATE_PAYLOAD_ABS_CACHE_PATH));
+        }
+    }
+}
