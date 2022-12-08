@@ -30,7 +30,7 @@ RootKeyPackage_ParseProtectedProperties(JSON_Object* protectedPropertiesObj, ADU
 ADUC_Result RootKeyPackage_ParseProtectedPropertiesString(JSON_Object* rootObj, ADUC_RootKeyPackage* outPackage);
 ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* signaturesObj, ADUC_RootKeyPackage* outPackage);
 
-_Bool ADUC_RootKeyPackageUtils_AreEqual(const ADUC_RootKeyPackage* lPack, const ADUC_RootKeyPackage* rPack);
+bool ADUC_RootKeyPackageUtils_AreEqual(const ADUC_RootKeyPackage* lPack, const ADUC_RootKeyPackage* rPack);
 void ADUC_RootKey_DeInit(ADUC_RootKey* node);
 void ADUC_RootKeyPackage_Hash_DeInit(ADUC_RootKeyPackage_Hash* node);
 void ADUC_RootKeyPackage_Signature_DeInit(ADUC_RootKeyPackage_Signature* node);
