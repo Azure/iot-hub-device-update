@@ -16,6 +16,10 @@
                 "value": 12
               },
               {
+                "name": "ADUC_ERC_INVAL",
+                "value": 22
+              },
+              {
                 "name": "ADUC_ERC_NOTRECOVERABLE",
                 "value": 131
               }

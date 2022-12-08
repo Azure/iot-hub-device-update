@@ -444,6 +444,7 @@ void OrchestratorUpdateCallback(
         json_object(propertyValue), &updateAction, &workflowId, &rootKeyPkgUrl);
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
+        Log_Error("Parse of unprotected workflow properties failed, erc: 0x%08x", tmpResult.ExtendedResultCode);
         goto done;
     }
 

@@ -750,28 +750,13 @@ ADUC_Result workflow_parse_peek_unprotected_workflow_properties(
     workflowId = json_object_dotget_string(updateActionJsonObj, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID);
     // workflowId can be NULL in some cases.
 
-    if (outWorkflowUpdateAction != NULL)
+    if (outWorkflowId_optional != NULL && workflowId != NULL)
     {
-        *outWorkflowUpdateAction = updateAction;
-    }
-
-    if (outWorkflowId_optional != NULL)
-    {
-        if (workflowId != NULL)
+        tmpWorkflowId = workflow_copy_string(workflowId);
+        if (tmpWorkflowId == NULL)
         {
-            tmpWorkflowId = workflow_copy_string(workflowId);
-            if (tmpWorkflowId == NULL)
-            {
-                result.ExtendedResultCode = ADUC_ERC_NOMEM;
-                goto done;
-            }
-
-            *outWorkflowId_optional = tmpWorkflowId;
-            tmpWorkflowId = NULL;
-        }
-        else
-        {
-            *outWorkflowId_optional = NULL;
+            result.ExtendedResultCode = ADUC_ERC_NOMEM;
+            goto done;
         }
     }
 
@@ -783,7 +768,22 @@ ADUC_Result workflow_parse_peek_unprotected_workflow_properties(
             result.ExtendedResultCode = ADUC_ERC_NOMEM;
             goto done;
         }
+    }
 
+    // Commit the optional out parameters now that nothing can goto done.
+    if (outWorkflowUpdateAction != NULL)
+    {
+        *outWorkflowUpdateAction = updateAction;
+    }
+
+    if (outWorkflowId_optional != NULL && workflowId != NULL)
+    {
+        *outWorkflowId_optional = tmpWorkflowId;
+        tmpWorkflowId = NULL;
+    }
+
+    if (outRootKeyPkgUrl_optional != NULL)
+    {
         *outRootKeyPkgUrl_optional = tmpRootKeyPkgUrl;
         tmpRootKeyPkgUrl = NULL;
     }

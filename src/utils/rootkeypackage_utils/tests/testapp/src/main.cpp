@@ -45,7 +45,7 @@ int main(int argc, char** argv)
     filepathStr = STRING_c_str(downloadedFile);
     jsonString = aduc::FileTestUtils_slurpFile(filepathStr);
 
-    printf("Parsing root ke package at %s ...\n", STRING_c_str(downloadedFile));
+    printf("Parsing root key package at %s ...\n", STRING_c_str(downloadedFile));
 
     result = ADUC_RootKeyPackageUtils_Parse(jsonString.c_str(), &rootKeyPackage);
 

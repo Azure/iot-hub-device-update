@@ -21,6 +21,12 @@ ADUC_Result ADUC_UrlUtils_GetLastPathSegmentOfUrl(const char* url, STRING_HANDLE
     int last_segment_index = -1;
     int i = -1;
 
+    if (url == NULL || outLastPathSegment == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_INVAL;
+        goto done;
+    }
+
     HTTP_URL_HANDLE url_handle = http_url_create(url);
     if (url_handle == NULL)
     {
