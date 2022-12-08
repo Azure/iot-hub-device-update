@@ -212,12 +212,19 @@ else ()
         ADUC_STEP_HANDLERS
         "microsoft/swupdate_v2,microsoft/swupdate,microsoft/script,microsoft/apt,microsoft/simulator"
         CACHE STRING "The list of step handlers.")
-
-    set (
-        ADUC_STEP_HANDLERS
-        "microsoft/swupdate_v2,microsoft/swupdate,microsoft/script,microsoft/apt,microsoft/simulator"
-        CACHE STRING "The list of step handlers.")
 endif ()
+
+set (
+    ADUC_ROOTKEY_STORE_PATH
+    "${ADUC_DATA_FOLDER}/rootkeystore/"
+    CACHE STRING "Path to the folder containing the information for the local store of root keys"
+)
+
+SET (
+    ADUC_ROOTKEY_STORE_PACKAGE_PATH
+    "${ADUC_ROOTKEY_STORE_PATH}/rootkeys.json"
+    CACHE STRING "Path to the folder containing the local root keys"
+)
 
 set (
     ADUC_COMMANDS_FIFO_NAME

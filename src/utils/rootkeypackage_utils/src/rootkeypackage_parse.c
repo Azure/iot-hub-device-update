@@ -204,11 +204,6 @@ ADUC_Result RootKeyPackage_ParseDisabledRootKeys(JSON_Object* protectedPropertie
     }
 
     count = json_array_get_count(kidsArray);
-    if (count == 0)
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_DISABLEDROOTKEYS_EMPTY;
-        goto done;
-    }
 
     kids = VECTOR_create(sizeof(STRING_HANDLE));
     if (kids == NULL)
@@ -457,11 +452,6 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
     }
 
     count = json_array_get_count(hashesArray);
-    if (count == 0)
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_DISABLEDSIGNINGKEYS_EMPTY;
-        goto done;
-    }
 
     hashes = VECTOR_create(sizeof(ADUC_RootKeyPackage_Hash));
     if (hashes == NULL)
@@ -496,12 +486,12 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
         {
             goto done;
         }
-
         hashElement.alg = tmpAlg;
         hashElement.hash = hashBuf;
 
         if (VECTOR_push_back(hashes, &hashElement, 1) != 0)
         {
+
             ADUC_RootKeyPackage_Hash_DeInit(&hashElement);
 
             result.ExtendedResultCode = ADUC_ERC_NOMEM;

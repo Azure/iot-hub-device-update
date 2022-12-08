@@ -22,7 +22,7 @@ target_link_aziotsharedutil (${target_name} PRIVATE)
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::crypto_utils aduc::c_utils
-    PRIVATE Parson::parson)
+    PRIVATE Parson::parson aziotsharedutil aduc::root_key_utils)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

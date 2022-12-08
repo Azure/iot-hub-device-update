@@ -169,7 +169,7 @@ done:
  * @param keyToSign key that should be used for generating the computed signature. May be NULL depending on the algorithm
  * @returns true if the signature is valid, false if it is invalid
  */
-bool IsValidSignature(
+bool CryptoUtils_IsValidSignature(
     const char* alg,
     const uint8_t* expectedSignature,
     size_t sigLength,
@@ -199,6 +199,76 @@ bool IsValidSignature(
     return result;
 }
 
+CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N_len, const unsigned int e)
+{
+    _Bool success = false;
+    EVP_PKEY* pkey = NULL;
+
+    BIGNUM* rsa_N = NULL;
+    BIGNUM* rsa_e = NULL;
+
+    RSA* rsa = RSA_new();
+
+    if (rsa == NULL)
+    {
+        goto done;
+    }
+
+    rsa_N = BN_bin2bn(N, N_len, NULL);
+
+    if (rsa_N == NULL)
+    {
+        goto done;
+    }
+
+    rsa_e = BN_new();
+
+    if (rsa_e == NULL)
+    {
+        goto done;
+    }
+
+    if (BN_set_word(rsa_e, e) == 0)
+    {
+        goto done;
+    }
+
+    if (RSA_set0_key(rsa, rsa_N, rsa_e, NULL) == 0)
+    {
+        goto done;
+    }
+
+    pkey = EVP_PKEY_new();
+
+    if (pkey == NULL)
+    {
+        goto done;
+    }
+
+    if (EVP_PKEY_assign_RSA(pkey, rsa) == 0)
+    {
+        goto done;
+    }
+
+    success = true;
+
+done:
+
+    if (!success)
+    {
+        BN_free(rsa_N);
+        BN_free(rsa_e);
+        if (pkey != NULL)
+        {
+            RSA_free(rsa);
+        }
+        EVP_PKEY_free(pkey);
+        pkey = NULL;
+    }
+
+    return CryptoKeyHandleToEVP_PKEY(pkey);
+}
+
 /**
  * @brief Makes an RSA Key from the modulus (N) and exponent (e) provided in their byte format
  * @param N a buffer containing the bytes for the modulus
@@ -207,7 +277,7 @@ bool IsValidSignature(
  * @param e_len the length of the exponent buffer
  * @returns NULL on failure and a key on success
  */
-CryptoKeyHandle RSAKey_ObjFromBytes(uint8_t* N, size_t N_len, uint8_t* e, size_t e_len)
+CryptoKeyHandle RSAKey_ObjFromBytes(const uint8_t* N, size_t N_len, const uint8_t* e, size_t e_len)
 {
 #if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
     int status = 0;
@@ -327,7 +397,8 @@ done:
 
     return CryptoKeyHandleToEVP_PKEY(result);
 #else
-    EVP_PKEY* result = NULL;
+    bool success = false;
+    EVP_PKEY* pkey = NULL;
 
     BIGNUM* rsa_N = NULL;
     BIGNUM* rsa_e = NULL;
@@ -358,7 +429,7 @@ done:
         goto done;
     }
 
-    EVP_PKEY* pkey = EVP_PKEY_new();
+    pkey = EVP_PKEY_new();
 
     if (pkey == NULL)
     {
@@ -370,17 +441,24 @@ done:
         goto done;
     }
 
-    result = pkey;
+    success = true;
 done:
 
-    if (result == NULL)
+    if (!success)
     {
         BN_free(rsa_N);
         BN_free(rsa_e);
+        if (pkey != NULL)
+        {
+            RSA_free(rsa);
+        }
+        EVP_PKEY_free(pkey);
+        pkey = NULL;
     }
 
-    return CryptoKeyHandleToEVP_PKEY(result);
-#endif
+    return CryptoKeyHandleToEVP_PKEY(pkey);
+#endif // #if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
+
 }
 
 /**
@@ -602,18 +680,7 @@ done:
  * @details Caller should assume the key is invalid after this call
  * @param key the key to free
  */
-void FreeCryptoKeyHandle(CryptoKeyHandle key)
+void CryptoUtils_FreeCryptoKeyHandle(CryptoKeyHandle key)
 {
     EVP_PKEY_free(CryptoKeyHandleToEVP_PKEY(key));
-}
-
-/**
- * @brief Returns the master key for the provided kid
- * @details this cals into the master_key_utility to get the key
- * @param kid the key identifier
- * @returns NULL on failure and a pointer to a key on success.
- */
-CryptoKeyHandle GetRootKeyForKeyID(const char* kid)
-{
-    return GetKeyForKid(kid);
 }
