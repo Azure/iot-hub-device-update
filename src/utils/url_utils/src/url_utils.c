@@ -7,87 +7,92 @@
  */
 
 #include "aduc/url_utils.h"
-#include <aduc/logging.h>
-#include <aduc/result.h>
-#include <aduc/string_c_utils.h>
-#include <curl/curl.h>
+#include "aduc/http_url.h"
+#include "aduc/string_c_utils.h"
 #include <string.h>
 
-ADUC_Result ADUC_UrlUtils_GetLastPathSegmentOfUrl(const char* url, STRING_HANDLE* outLastPathSegment)
+/**
+ * @brief Gets the filename at the end of URL path, or NULL if no such filename.
+ * @param[in] url The URL.
+ * @param[out] outFileName The out parameter to hold the filename string, or NULL.
+ *
+ * @returns ADUC_Result The result. On success, contents of outFileName will be
+ * the allocated STRING_HANDLE for the filename, or NULL if no trailing path segment.
+ *
+ * @details If no filename at the end, then result will be a failure and
+ * ExtendedResultCode will be ADUC_ERC_UTILITIES_URL_BAD_PATH for e.g.
+ * http://example.com/ or http://example.com
+ *
+ * If there is a query string, it will not include it. e.g.
+ * http://example.com/foo/bar?a=b will result in outFileName of bar.
+ */
+ADUC_Result ADUC_UrlUtils_GetPathFileName(const char* url, STRING_HANDLE* outFileName)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-    STRING_HANDLE tmp = NULL;
-    char* url_path = NULL;
-    char* p = NULL;
 
-    CURLcode uc;
-    CURLU* curl_handle = NULL;
+    const char *p = NULL, *q = NULL;
+    char* filename = NULL;
+    size_t filename_len = 0;
 
-    if (url == NULL || outLastPathSegment == NULL)
+    if (IsNullOrEmpty(url) || outFileName == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_INVAL;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_URL_BAD_ARG;
         return result;
     }
 
-    curl_handle = curl_url();
-    if (curl_handle == NULL)
-    {
-        Log_Error("Cannot create curl handle.");
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_URL_CREATE;
-        goto done;
-    }
-
-    uc = curl_url_set(curl_handle, CURLUPART_URL, url, 0);
-    if (uc != CURLE_OK)
-    {
-        Log_Error("Failed to parse url '%s', uc:%d", url, uc);
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_URL_SET;
-        goto done;
-    }
-
-    uc = curl_url_get(curl_handle, CURLUPART_PATH, &url_path, 0);
-    if (uc != CURLE_OK)
-    {
-        Log_Error("Fail to get path. uc:%d", uc);
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_URL_GET_PATH;
-        goto done;
-    }
-
-    p = strrchr(url_path, '/');
+    p = strstr(url, "://");
     if (p == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_URL_BAD_URL;
+        goto done;
+    }
+
+    p += 2; // Advance to the last fwd slash
+
+    q = strrchr(url, '/');
+    if (p == q)
+    {
+        // No slash after scheme separator so there's no file path
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_URL_BAD_PATH;
+        goto done;
+    }
+
+    p = q + 1; // p is one past the right-most path separator
+
+    while (*q != '\0' && *q != '?' && *q != '#')
+    {
+        q++;
+    }
+
+    filename_len = q - p;
+
+    if (filename_len == 0)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_URL_BAD_PATH;
         goto done;
     }
-    // otherwise, move to next char in string, which might even be '\0'.
-    p++;
 
-    tmp = STRING_construct(p);
-    if (tmp == NULL)
+    filename = malloc(filename_len + 1);
+    if (filename == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
 
-    *outLastPathSegment = tmp;
-    tmp = NULL;
+    memcpy(filename, p, filename_len);
+    filename[filename_len] = '\0';
+
+    // Transfer ownership of memory to the STRING_HANDLE
+    *outFileName = STRING_new_with_memory(filename);
+    filename = NULL;
+
     result.ResultCode = ADUC_GeneralResult_Success;
 
 done:
 
-    if (url_path != NULL)
+    if (IsAducResultCodeFailure(result.ResultCode))
     {
-        curl_free(url_path);
-    }
-
-    if (curl_handle != NULL)
-    {
-        curl_url_cleanup(curl_handle);
-    }
-
-    if (tmp != NULL)
-    {
-        STRING_delete(tmp);
+        *outFileName = NULL;
     }
 
     return result;
