@@ -79,7 +79,6 @@ do_ref=$default_do_ref
 aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=("gcc-[68]")
-do_packages=('libproxy-dev' 'libssl-dev' 'libboost-all-dev')
 
 # Distro and arch info
 OS=""
@@ -91,7 +90,7 @@ is_arm32=false
 print_help() {
     echo "Usage: install-deps.sh [options...]"
     echo "-a, --install-all-deps    Install all dependencies."
-    echo "                          Implies --install-aduc-deps, --install-do, --install-do-deps, --install-packages, --install-cmake, and --install-shellcheck."
+    echo "                          Implies --install-aduc-deps, --install-do, --install-packages, --install-cmake, and --install-shellcheck."
     echo "                          Can be used with --install-packages-only."
     echo "                          This is the default if no options are specified."
     echo ""
@@ -735,7 +734,6 @@ do_list_all_deps() {
     deps_set+=("${aduc_packages[@]}")
     deps_set+=("${compiler_packages[@]}")
     deps_set+=("${static_analysis_packages[@]}")
-    deps_set+=("${do_packages[@]}")
     echo "Listing the state of dependencies:"
     dpkg-query -W -f='${binary:Package} ${Version} (${Architecture})\n' "${deps_set[@]}"
     ret_val=$?
