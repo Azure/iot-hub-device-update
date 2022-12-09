@@ -182,6 +182,7 @@ ADUC_Result DownloadHandlerPlugin::GetContractInfo(ADUC_ExtensionContractInfo* c
     {
         result.ResultCode = ADUC_GeneralResult_Failure;
         result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_EXCEPTION;
+        Log_Error("plugin exception '%s', sym '%s'", pe.what(), pe.Symbol());
     }
     catch (const std::exception& e)
     {
