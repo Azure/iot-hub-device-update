@@ -11,57 +11,58 @@
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
 
-TEST_CASE("ADUC_UrlUtils_GetLastPathSegmentOfUrl - non empty file and intermediate path segments")
+TEST_CASE("ADUC_UrlUtils_GetPathFileName - non empty file and intermediate path segments")
 {
-    STRING_HANDLE lastPathSegment = NULL;
+    STRING_HANDLE urlPathFileName = nullptr;
     REQUIRE(IsAducResultCodeSuccess(
-        ADUC_UrlUtils_GetLastPathSegmentOfUrl("http://somehost.com/path/to/file-v1.1.json", &lastPathSegment)
+        ADUC_UrlUtils_GetPathFileName("http://somehost.com/path/to/file-v1.1.json", &urlPathFileName).ResultCode));
+    CHECK_THAT(STRING_c_str(urlPathFileName), Equals("file-v1.1.json"));
+    STRING_delete(urlPathFileName);
+}
+
+TEST_CASE("ADUC_UrlUtils_GetPathFileName - non empty file and no intermediate path segments")
+{
+    STRING_HANDLE urlPathFileName = nullptr;
+    REQUIRE(IsAducResultCodeSuccess(
+        ADUC_UrlUtils_GetPathFileName("http://somehost.com/file-v1.1.json", &urlPathFileName).ResultCode));
+    CHECK_THAT(STRING_c_str(urlPathFileName), Equals("file-v1.1.json"));
+    STRING_delete(urlPathFileName);
+}
+
+TEST_CASE("ADUC_UrlUtils_GetPathFileName - empty file")
+{
+    STRING_HANDLE urlPathFileName = nullptr;
+    ADUC_Result result = ADUC_UrlUtils_GetPathFileName("http://somehost.com/", &urlPathFileName);
+    REQUIRE(IsAducResultCodeFailure(result.ResultCode));
+    CHECK(urlPathFileName == nullptr);
+    STRING_delete(urlPathFileName);
+}
+
+TEST_CASE("ADUC_UrlUtils_GetPathFileName - empty file, no trailing slash")
+{
+    STRING_HANDLE urlPathFileName = nullptr;
+    ADUC_Result result = ADUC_UrlUtils_GetPathFileName("http://somehost.com", &urlPathFileName);
+    REQUIRE(IsAducResultCodeFailure(result.ResultCode));
+    CHECK(urlPathFileName == nullptr);
+    STRING_delete(urlPathFileName);
+}
+
+TEST_CASE("ADUC_UrlUtils_GetPathFileName - non empty file with query string")
+{
+    STRING_HANDLE urlPathFileName = nullptr;
+    REQUIRE(IsAducResultCodeSuccess(
+        ADUC_UrlUtils_GetPathFileName("http://somehost.com/path/to/file-v1.1.json?a=1&b=2", &urlPathFileName)
             .ResultCode));
-    CHECK_THAT(STRING_c_str(lastPathSegment), Equals("file-v1.1.json"));
-    STRING_delete(lastPathSegment);
+    CHECK_THAT(STRING_c_str(urlPathFileName), Equals("file-v1.1.json"));
+    STRING_delete(urlPathFileName);
 }
 
-TEST_CASE("ADUC_UrlUtils_GetLastPathSegmentOfUrl - non empty file and no intermediate path segments")
+TEST_CASE("ADUC_UrlUtils_GetPathFileName - non empty file with query string and octothorpe anchor")
 {
-    STRING_HANDLE lastPathSegment = NULL;
+    STRING_HANDLE urlPathFileName = nullptr;
     REQUIRE(IsAducResultCodeSuccess(
-        ADUC_UrlUtils_GetLastPathSegmentOfUrl("http://somehost.com/file-v1.1.json", &lastPathSegment).ResultCode));
-    CHECK_THAT(STRING_c_str(lastPathSegment), Equals("file-v1.1.json"));
-    STRING_delete(lastPathSegment);
-}
-
-TEST_CASE("ADUC_UrlUtils_GetLastPathSegmentOfUrl - empty file")
-{
-    STRING_HANDLE lastPathSegment = NULL;
-    ADUC_Result result = ADUC_UrlUtils_GetLastPathSegmentOfUrl("http://somehost.com/", &lastPathSegment);
-    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-    CHECK_THAT(STRING_c_str(lastPathSegment), Equals(""));
-    STRING_delete(lastPathSegment);
-}
-
-TEST_CASE("ADUC_UrlUtils_GetLastPathSegmentOfUrl - empty file, no trailing slash")
-{
-    STRING_HANDLE lastPathSegment = NULL;
-    ADUC_Result result = ADUC_UrlUtils_GetLastPathSegmentOfUrl("http://somehost.com", &lastPathSegment);
-    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-    CHECK_THAT(STRING_c_str(lastPathSegment), Equals(""));
-    STRING_delete(lastPathSegment);
-}
-
-TEST_CASE("ADUC_UrlUtils_GetLastPathSegmentOfUrl - non empty file with query string")
-{
-    STRING_HANDLE lastPathSegment = NULL;
-    REQUIRE(IsAducResultCodeSuccess(ADUC_UrlUtils_GetLastPathSegmentOfUrl("http://somehost.com/path/to/file-v1.1.json?a=1&b=2", &lastPathSegment).ResultCode));
-    CHECK_THAT(STRING_c_str(lastPathSegment), Equals("file-v1.1.json"));
-    STRING_delete(lastPathSegment);
-}
-
-TEST_CASE("ADUC_UrlUtils_GetLastPathSegmentOfUrl - non empty file with query string and octothorpe jump")
-{
-    STRING_HANDLE lastPathSegment = NULL;
-    REQUIRE(IsAducResultCodeSuccess(
-        ADUC_UrlUtils_GetLastPathSegmentOfUrl("http://somehost.com/path/to/file-v1.1.json#jumptosection?a=1&b=2", &lastPathSegment)
+        ADUC_UrlUtils_GetPathFileName("http://somehost.com/path/to/file-v1.1.json#anchor", &urlPathFileName)
             .ResultCode));
-    CHECK_THAT(STRING_c_str(lastPathSegment), Equals("file-v1.1.json"));
-    STRING_delete(lastPathSegment);
+    CHECK_THAT(STRING_c_str(urlPathFileName), Equals("file-v1.1.json"));
+    STRING_delete(urlPathFileName);
 }

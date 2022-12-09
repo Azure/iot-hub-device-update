@@ -74,8 +74,7 @@ ADUC_Result ADUC_RootKeyPackageUtil_DownloadPackage(
         goto done;
     }
 
-    // The filename should be the last path segment of the URL path.
-    result = ADUC_UrlUtils_GetLastPathSegmentOfUrl(STRING_c_str(targetUrl), &targetFileName);
+    result = ADUC_UrlUtils_GetPathFileName(STRING_c_str(targetUrl), &targetFileName);
     if (IsAducResultCodeFailure(result.ResultCode) || IsNullOrEmpty(STRING_c_str(targetFileName)))
     {
         result.ResultCode = ADUC_GeneralResult_Failure;
