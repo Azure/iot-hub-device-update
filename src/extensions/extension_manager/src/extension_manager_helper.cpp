@@ -15,13 +15,12 @@
 #include <aduc/workflow_utils.h>
 
 /**
- * @brief Processes the associated
+ * @brief Processes Download Handler extensibility for the downloadHandlerId in the file entity.
  *
- * @param workflowHandle
- * @param entity
- * @param plugin
- * @param targetUpdateFilePath
- * @return ADUC_Result
+ * @param workflowHandle The workflow handle.
+ * @param entity The file entity with the downloader handler id.
+ * @param targetUpdateFilePath The target file path to which to write the resultant update.
+ * @return ADUC_Result The result.
  */
 ADUC_Result ProcessDownloadHandlerExtensibility(
     ADUC_WorkflowHandle workflowHandle, const ADUC_FileEntity* entity, const char* targetUpdateFilePath) noexcept
