@@ -393,7 +393,7 @@ void zlog_request_flush_buffer(void)
 // or when g_flushRequested is true
 //
 // Caller should NOT hold the lock
-static void* zlog_buffer_flush_thread()
+static void* zlog_buffer_flush_thread(void * arg)
 {
     struct timeval tv;
     time_t lasttime;
