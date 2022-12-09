@@ -1083,19 +1083,19 @@
                   "name": "ADUC_COMPONENT_URL_UTIL",
                   "results": [
                     {
-                      "name": "ADUC_ERC_UTILITIES_URL_CREATE",
+                      "name": "ADUC_ERC_UTILITIES_URL_BAD_ARG",
                       "value": 1
                     },
                     {
-                      "name": "ADUC_ERC_UTILITIES_URL_SET",
+                      "name": "ADUC_ERC_UTILITIES_URL_BAD_URL",
                       "value": 2
                     },
                     {
-                      "name": "ADUC_ERC_UTILITIES_URL_GET_PATH",
+                      "name": "ADUC_ERC_UTILITIES_URL_BAD_PATH",
                       "value": 3
                     },
                     {
-                      "name": "ADUC_ERC_UTILITIES_URL_BAD_PATH",
+                      "name": "ADUC_ERC_UTILITIES_URL_PATH_COPY",
                       "value": 4
                     }
                   ]
