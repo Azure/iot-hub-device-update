@@ -45,3 +45,9 @@ This is exposing executable components. A snap’s executable is exposed to the 
 With layouts, you can make elements in $SNAP, $SNAP_DATA, $SNAP_COMMON accessible from locations such as /usr, /var and /etc. This helps when using pre-compiled binaries and libraries that expect to find files and directories outside of locations referenced by $SNAP or $SNAP_DATA.
 Note that $SNAP is read-only, while $SNAP_DATA is a modifiable data folder.
 
+### File Location
+| Classic DU Agent | Snap DU Agent |
+--- | --- |
+| /var/lib/adu | $SNAP_DATA/data |
+| /etc/adu | $SNAP_DATA/config |
+|/etc/adu|$SNAP_DATA/config|
