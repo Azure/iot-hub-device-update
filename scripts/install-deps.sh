@@ -884,6 +884,7 @@ fi
 
 # Set implied options for aduc deps.
 if [[ $install_aduc_deps == "true" ]]; then
+    install_cmake=true
     install_azure_iot_sdk=true
     install_catch2=true
     install_azure_blob_storage_file_upload_utility=true
