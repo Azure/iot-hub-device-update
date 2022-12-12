@@ -13,6 +13,7 @@
 #include <aduc/hash_utils.h> // ADUC_HashUtils_VerifyWithStrongestHash
 #include <aduc/logging.h> // ADUC_Logging_GetLevel
 #include <aduc/parser_utils.h> // ADUC_FileEntity_Uninit
+#include <aduc/plugin_exception.hpp>
 #include <aduc/types/update_content.h> // ADUC_FileEntity
 #include <cstring> // memset
 #include <unordered_map>
@@ -92,6 +93,11 @@ DownloadHandlerPlugin* DownloadHandlerFactory::LoadDownloadHandler(const std::st
             new DownloadHandlerPlugin(autoFileEntity->TargetFilename, ADUC_Logging_GetLevel()));
         cachedPlugins.insert(std::make_pair(downloadHandlerId, plugin.get()));
         return plugin.release();
+    }
+    catch (const aduc::PluginException& pe)
+    {
+        Log_Error("plugin exception: %s, sym: %s", pe.what(), pe.Symbol());
+        return nullptr;
     }
     catch (const std::exception& e)
     {

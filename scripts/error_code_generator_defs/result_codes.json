@@ -944,6 +944,18 @@
               {
                 "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_PROCESSUPDATE_NONSTDEXCEPTION",
                 "value": 9
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_ONUPDATEWORKFLOWCOMPLETED",
+                "value": 10
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_GETCONTRACTINFO",
+                "value": 11
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_PROCESSUPDATE",
+                "value": 12
               }
             ]
           },

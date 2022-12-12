@@ -95,7 +95,7 @@ ADUC_Result DownloadHandlerPlugin::ProcessUpdate(
     catch (const aduc::PluginException& pe)
     {
         result.ResultCode = ADUC_GeneralResult_Failure;
-        result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_EXCEPTION;
+        result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_PROCESSUPDATE;
     }
     catch (const std::exception& e)
     {
@@ -140,7 +140,7 @@ ADUC_Result DownloadHandlerPlugin::OnUpdateWorkflowCompleted(const ADUC_Workflow
     catch (const aduc::PluginException& pe)
     {
         result.ResultCode = ADUC_GeneralResult_Failure;
-        result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_EXCEPTION;
+        result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_ONUPDATEWORKFLOWCOMPLETED;
     }
     catch (const std::exception& e)
     {
@@ -181,7 +181,7 @@ ADUC_Result DownloadHandlerPlugin::GetContractInfo(ADUC_ExtensionContractInfo* c
     catch (const aduc::PluginException& pe)
     {
         result.ResultCode = ADUC_GeneralResult_Failure;
-        result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_EXCEPTION;
+        result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_GETCONTRACTINFO;
         Log_Error("plugin exception '%s', sym '%s'", pe.what(), pe.Symbol());
     }
     catch (const std::exception& e)
@@ -220,32 +220,12 @@ ADUC_Result ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(
 {
     ADUC_Result result = { ADUC_Result_Failure,
                            ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_ON_UPDATE_WORKFLOW_COMPLETED_FAILURE };
-    try
+
+    // Do not free the DownloadHandlerHandle handle that is owned by DownloadHandlerFactory.
+    if (handle != nullptr)
     {
-        // Do not free the DownloadHandlerHandle handle that is owned by DownloadHandlerFactory.
-        if (handle != nullptr)
-        {
-            auto plugin = reinterpret_cast<DownloadHandlerPlugin*>(handle);
-            result = plugin->OnUpdateWorkflowCompleted(workflowHandle);
-        }
-    }
-    catch (const aduc::PluginException& pe)
-    {
-        result.ResultCode = ADUC_GeneralResult_Failure;
-        result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_EXCEPTION;
-        Log_Error("plugin exception '%s', sym '%s'", pe.what(), pe.Symbol());
-    }
-    catch (const std::exception& e)
-    {
-        result.ResultCode = ADUC_GeneralResult_Failure;
-        result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_ON_UPDATE_WORKFLOW_COMPLETED_STDEXCEPTION;
-        Log_Error("std exception '%s'", e.what());
-    }
-    catch (...)
-    {
-        result.ResultCode = ADUC_Result_Failure;
-        result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_ON_UPDATE_WORKFLOW_COMPLETED_NONSTDEXCEPTION;
-        Log_Error("Non std exception");
+        auto plugin = reinterpret_cast<DownloadHandlerPlugin*>(handle);
+        result = plugin->OnUpdateWorkflowCompleted(workflowHandle);
     }
 
     return result;
