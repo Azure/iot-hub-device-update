@@ -23,6 +23,7 @@ function Header {
     Write-Host -ForegroundColor DarkYellow -BackgroundColor DarkBlue $sep
     Write-Host -ForegroundColor White -BackgroundColor DarkBlue ("  {0}  " -f $message)
     Write-Host -ForegroundColor DarkYellow -BackgroundColor DarkBlue $sep
+    ''
 }
 
 function Bullet {
@@ -418,18 +419,19 @@ if ($build_clean -or (-not (Test-Path '.\out\CMakeFiles' -PathType Container))) 
     }
 }
 
-Header 'Building Product'
+ 'Building Product'
+ ''
 
 # TODO(JeffMill): Scenario 2: Use Ninja
 
 & $cmake_bin --build $output_directory --config $build_type 2>&1 | Tee-Object -Variable build_output
 $ret_val = $LASTEXITCODE
+''
+
 if ($ret_val -ne 0) {
-    Header "Build failed (Error $ret_val)"
+    Write-Host -ForegroundColor Red "ERROR: Build failed (Error $ret_val)"
     ''
 
-    # Display paths relative to repo root
-    $repo_root_len = (git.exe rev-parse --show-toplevel).Length + 1
 
     $regex = '(?<File>.+)\((?<Line>\d+),(?<Column>\d+)\): error (?<Code>C\d+): (?<Description>.+) \[(?<Project>.+)\]'
     $result = $build_output -split "`n" | ForEach-Object {
@@ -442,11 +444,12 @@ if ($ret_val -ne 0) {
         Write-Host -ForegroundColor Red 'Compiler errors:'
 
         $result | ForEach-Object {
-            "{0} ({1},{2}): {3} [{4}]" -f $_.File.SubString($repo_root_len), $_.Line, $_.Column, $_.Description, (Split-Path $_.Project -Leaf)
+            Bullet  ("{0} ({1},{2}): {3} [{4}]" -f $_.File.SubString($root_dir.Length + 1), $_.Line, $_.Column, $_.Description, (Split-Path $_.Project -Leaf))
         }
 
         ''
     }
+
 
     $regex = '.+ error (?<Code>LNK\d+): (?<Description>.+) \[(?<Project>.+)\]'
     $result = $build_output -split "`n" | ForEach-Object {
@@ -459,7 +462,8 @@ if ($ret_val -ne 0) {
         Write-Host -ForegroundColor Red 'Linker errors:'
 
         $result | ForEach-Object {
-            "{0}: {1}" -f (Split-Path $_.Project -Leaf), $_.Description
+            $project = (Split-Path $_.Project.SubString($output_directory.Length + 1) -Parent)
+            Bullet  ("{0}: {1}" -f $project, $_.Description)
         }
         ''
     }
