@@ -448,7 +448,7 @@ if ($ret_val -ne 0) {
         ''
     }
 
-    $regex = '.+ error (?<Code>LNK\d+): (?<Description>.+)\[(?<Project>.+)\]'
+    $regex = '.+ error (?<Code>LNK\d+): (?<Description>.+) \[(?<Project>.+)\]'
     $result = $build_output -split "`n" | ForEach-Object {
         if ($_ -match $regex) {
             $matches
