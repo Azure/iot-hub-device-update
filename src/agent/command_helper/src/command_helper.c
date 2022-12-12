@@ -74,7 +74,7 @@ static ssize_t write(int fildes, const void* buf, size_t nbyte)
     return -1;
 }
 
-int close(int fildes)
+static int close(int fildes)
 {
     __debugbreak();
     errno = ENOSYS;

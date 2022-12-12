@@ -19,18 +19,18 @@ target_link_libraries (
             aduc::config_utils
             aduc::string_utils)
 
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    # TODO(JeffMill): Without this, even when not building UTs, I get:
+    # inc\aduc/http_url.h(19,10): fatal  error C1083: Cannot open include file: 'umock_c/umock_c_prod.h': No such file or directory
+    target_link_umock_c (${PROJECT_NAME} PRIVATE)
+endif ()
+
 if ((NOT
      ${ADUC_PLATFORM_LAYER}
      STREQUAL
      "simulator"
     )
     AND ADUC_BUILD_UNIT_TESTS)
-
-    # TODO(JeffMill): Use target_link_umock_c()?
-    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-        # TODO(JeffMill): [VCPKG] fatal  error C1083: Cannot open include file: 'umock_c/umock_c_prod.h': No such file or directory
-        target_include_directories (${PROJECT_NAME} PRIVATE ${UMOCK_C_INC_FOLDER})
-    endif ()
 
     add_subdirectory (tests)
     add_subdirectory (test_helper)

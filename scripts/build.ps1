@@ -372,8 +372,23 @@ $static_analysis_tools | ForEach-Object {
     }
 }
 
+Header 'Cleaning repo'
+
 if ($build_clean) {
-    Header 'Cleaning repo'
+    # TODO(JeffMill): Temporary prompting as I sometimes unintentionally specify "--clean". Sigh.
+    $decision = $Host.UI.PromptForChoice(
+        'Clean Build',
+        'Are you sure?',
+        @(
+            (New-Object Management.Automation.Host.ChoiceDescription '&Yes', 'Perform clean build'),
+            (New-Object Management.Automation.Host.ChoiceDescription '&No', 'Stop build')
+        ),
+        1)
+    ''
+    if ($decision -ne 0) {
+        exit 1
+    }
+
 
     if (Test-Path $output_directory) {
         Bullet $output_directory
@@ -417,10 +432,11 @@ if ($build_clean -or (-not (Test-Path '.\out\CMakeFiles' -PathType Container))) 
         error "CMake failed to generate build with exit code: $ret_val"
         exit $ret_val
     }
+
+    ''
 }
 
- 'Building Product'
- ''
+Header 'Building Product'
 
 # TODO(JeffMill): Scenario 2: Use Ninja
 
@@ -432,8 +448,9 @@ if ($ret_val -ne 0) {
     Write-Host -ForegroundColor Red "ERROR: Build failed (Error $ret_val)"
     ''
 
+    # Parse compiler errors
 
-    $regex = '(?<File>.+)\((?<Line>\d+),(?<Column>\d+)\): error (?<Code>C\d+): (?<Description>.+) \[(?<Project>.+)\]'
+    $regex = '(?<File>.+)\((?<Line>\d+),(?<Column>\d+)\): .+error (?<Code>C\d+): (?<Description>.+) \[(?<Project>.+)\]'
     $result = $build_output -split "`n" | ForEach-Object {
         if ($_ -match $regex) {
             $matches
@@ -450,6 +467,8 @@ if ($ret_val -ne 0) {
         ''
     }
 
+
+    # Parse linker errors
 
     $regex = '.+ error (?<Code>LNK\d+): (?<Description>.+) \[(?<Project>.+)\]'
     $result = $build_output -split "`n" | ForEach-Object {
