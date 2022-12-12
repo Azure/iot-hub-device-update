@@ -390,36 +390,81 @@ if ($build_clean) {
 
 mkdir -Path $output_directory -Force | Out-Null
 
-Header 'Generating Makefiles'
+# TODO(JeffMill): Only generate makefiles on clean?
+# It seems that dependencies are being generated unnecessarily otherwise?
+if ($build_clean -or (-not (Test-Path '.\out\CMakeFiles' -PathType Container))) {
+    Header 'Generating Makefiles'
 
-# Troubleshooting CMake dependencies
-# show every find_package call (vcpkg specific):
-# $CMAKE_OPTIONS += '-DVCPKG_TRACE_FIND_PACKAGE:BOOL=ON'
-# Verbose output (very verbose, but useful!):
-# $CMAKE_OPTIONS += '--trace-expand'
-# See cmake dependencies (very verbose):
-# $CMAKE_OPTIONS += '--debug-output'
-# See compiler output at build time:
-# $CMAKE_OPTIONS += '-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON'
-# See library search output:
-# $CMAKE_OPTIONS += '-DCMAKE_EXE_LINKER_FLAGS=/VERBOSE:LIB'
+    # Troubleshooting CMake dependencies
+    # show every find_package call (vcpkg specific):
+    # $CMAKE_OPTIONS += '-DVCPKG_TRACE_FIND_PACKAGE:BOOL=ON'
+    # Verbose output (very verbose, but useful!):
+    # $CMAKE_OPTIONS += '--trace-expand'
+    # See cmake dependencies (very verbose):
+    # $CMAKE_OPTIONS += '--debug-output'
+    # See compiler output at build time:
+    # $CMAKE_OPTIONS += '-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON'
+    # See library search output:
+    # $CMAKE_OPTIONS += '-DCMAKE_EXE_LINKER_FLAGS=/VERBOSE:LIB'
 
-& $cmake_bin -S "$root_dir" -B $output_directory @CMAKE_OPTIONS
-# TODO(JeffMill): Scenario 2: Use Ninja
-# & $cmake_bin -S "$root_dir" -B $output_directory  -G Ninja @CMAKE_OPTIONS
-$ret_val = $LASTEXITCODE
-
-if ($ret_val -ne 0) {
-    error "CMake failed to generate build with exit code: $ret_val"
-}
-else {
-    Header 'Building Product'
-
+    & $cmake_bin -S "$root_dir" -B $output_directory @CMAKE_OPTIONS
     # TODO(JeffMill): Scenario 2: Use Ninja
-    # TODO(JeffMill): Do the actual building.
-    # ninja.exe
-    & $cmake_bin --build $output_directory --config $build_type
+    # & $cmake_bin -S "$root_dir" -B $output_directory  -G Ninja @CMAKE_OPTIONS
     $ret_val = $LASTEXITCODE
+
+    if ($ret_val -ne 0) {
+        error "CMake failed to generate build with exit code: $ret_val"
+        exit $ret_val
+    }
+}
+
+Header 'Building Product'
+
+# TODO(JeffMill): Scenario 2: Use Ninja
+
+& $cmake_bin --build $output_directory --config $build_type 2>&1 | Tee-Object -Variable build_output
+$ret_val = $LASTEXITCODE
+if ($ret_val -ne 0) {
+    Header "Build failed (Error $ret_val)"
+    ''
+
+    # Display paths relative to repo root
+    $repo_root_len = (git.exe rev-parse --show-toplevel).Length + 1
+
+    $regex = '(?<File>.+)\((?<Line>\d+),(?<Column>\d+)\): error (?<Code>C\d+): (?<Description>.+) \[(?<Project>.+)\]'
+    $result = $build_output -split "`n" | ForEach-Object {
+        if ($_ -match $regex) {
+            $matches
+        }
+    }
+
+    if ($result.Count -ne 0) {
+        Write-Host -ForegroundColor Red 'Compiler errors:'
+
+        $result | ForEach-Object {
+            "{0} ({1},{2}): {3} [{4}]" -f $_.File.SubString($repo_root_len), $_.Line, $_.Column, $_.Description, (Split-Path $_.Project -Leaf)
+        }
+
+        ''
+    }
+
+    $regex = '.+ error (?<Code>LNK\d+): (?<Description>.+)\[(?<Project>.+)\]'
+    $result = $build_output -split "`n" | ForEach-Object {
+        if ($_ -match $regex) {
+            $matches
+        }
+    }
+
+    if ($result.Count -ne 0) {
+        Write-Host -ForegroundColor Red 'Linker errors:'
+
+        $result | ForEach-Object {
+            "{0}: {1}" -f (Split-Path $_.Project -Leaf), $_.Description
+        }
+        ''
+    }
+
+    exit $ret_val
 }
 
 # if ($ret_val -eq 0 -and $build_packages) {
