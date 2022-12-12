@@ -28,7 +28,7 @@ function Install-WithWinGet {
         winget.exe install $PackageId
     }
     else {
-        Write-Host -ForegroundColor Green "$PackageId already installed."
+        Write-Host -ForegroundColor Cyan "$PackageId already installed."
     }
 }
 
@@ -55,7 +55,7 @@ if (-not (Get-Command 'winget.exe' -CommandType Application -ErrorAction Silentl
     Add-AppxPackage -Path "$env:TEMP/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
 }
 else {
-    Write-Host -ForegroundColor Green "winget already installed."
+    Write-Host -ForegroundColor Cyan "winget already installed."
 }
 
 
@@ -86,7 +86,7 @@ if (-not (Test-Path -LiteralPath "${Env:ProgramFiles(x86)}/Microsoft Visual Stud
     & "$env:TEMP/vs_BuildTools.exe" --passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --remove Microsoft.VisualStudio.Component.VC.CMake.Project
 }
 else {
-    Write-Host -ForegroundColor Green 'VS Build Tools already installed.'
+    Write-Host -ForegroundColor Cyan 'VS Build Tools already installed.'
 }
 
 #
@@ -96,10 +96,21 @@ else {
 Install-WithWinGet -PackageId 'Kitware.CMake' -TestExecutable "$env:ProgramFiles/CMake/bin/cmake.exe"
 
 #
-# PYTHON3
+# PYTHON 3
 #
 
-Install-WithWinGet -PackageId 'Python.Python.3.11' -TestExecutable "$env:LocalAppData/Programs/Python/Python311/python.exe"
+# Use the Windows Store stub, as winget doesn't add to path, and so "python" ends up running the store stub.
+# Install-WithWinGet -PackageId 'Python.Python.3.11' -TestExecutable "$env:LocalAppData/Programs/Python/Python311/python.exe"
+
+$python_exe = "$env:LocalAppData/Microsoft/WindowsApps/PythonSoftwareFoundation.Python.3.10_qbz5n2kfra8p0/python3.exe"
+if (-not (Test-Path $python_exe -PathType Leaf)) {
+    Start-Process -Wait -FilePath "$env:LocalAppData/Microsoft/WindowsApps/python3.exe"
+    Write-Host -ForegroundColor Yellow 'Choose Install when store window appears. Waiting for Install to complete.'
+    while (-not (Test-Path $python_exe -PathType Leaf)) {
+        Sleep -Seconds 1
+    }
+}
+
 
 #
 # CMAKE-FORMAT
@@ -110,7 +121,7 @@ if (-not (Get-Command -Name 'cmake-format.exe' -CommandType Application -ErrorAc
     pip.exe install cmake-format
 }
 else {
-    Write-Host -ForegroundColor Green "cmake-format already installed."
+    Write-Host -ForegroundColor Cyan "cmake-format already installed."
 }
 
 #
@@ -122,7 +133,7 @@ if (-not (Get-Command -Name 'clang-format.exe' -CommandType Application -ErrorAc
     pip.exe install clang-format
 }
 else {
-    Write-Host -ForegroundColor Green "clang-format already installed."
+    Write-Host -ForegroundColor Cyan "clang-format already installed."
 }
 
 #
@@ -138,3 +149,6 @@ Install-WithWinGet -PackageId 'Graphviz.Graphviz' -TestExecutable "$env:ProgramF
 #
 
 Install-WithWinGet -PackageId 'Cppcheck.Cppcheck' -TestExecutable "$env:ProgramFiles\Cppcheck\cppcheck.exe"
+
+''
+Write-Host -ForegroundColor Green 'Done. Before building, open a new terminal window to update PATH.'
