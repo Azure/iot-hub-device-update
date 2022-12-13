@@ -481,7 +481,7 @@ if ($ret_val -ne 0) {
         Write-Host -ForegroundColor Red 'Linker errors:'
 
         $result | ForEach-Object {
-            $project = (Split-Path $_.Project.SubString($output_directory.Length + 1) -Parent)
+            $project = $_.Project.SubString($output_directory.Length + 1)
             Bullet  ("{0}: {1}" -f $project, $_.Description)
         }
         ''
