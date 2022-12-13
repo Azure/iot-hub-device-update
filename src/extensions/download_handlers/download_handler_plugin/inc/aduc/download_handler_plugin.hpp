@@ -27,13 +27,13 @@ public:
     DownloadHandlerPlugin& operator=(DownloadHandlerPlugin&&) = delete;
 
     DownloadHandlerPlugin(const std::string& libPath, ADUC_LOG_SEVERITY logLevel);
-    ~DownloadHandlerPlugin();
+    ~DownloadHandlerPlugin() noexcept;
     ADUC_Result ProcessUpdate(
         const ADUC_WorkflowHandle workflowHandle,
         const ADUC_FileEntity* fileEntity,
-        const char* payloadFilePath) const;
-    ADUC_Result OnUpdateWorkflowCompleted(const ADUC_WorkflowHandle workflowHandle) const;
-    ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo) const;
+        const char* payloadFilePath) const noexcept;
+    ADUC_Result OnUpdateWorkflowCompleted(const ADUC_WorkflowHandle workflowHandle) const noexcept;
+    ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo) const noexcept;
 
 private:
     aduc::SharedLib lib;
