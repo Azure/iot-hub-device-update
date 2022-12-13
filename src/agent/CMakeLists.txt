@@ -24,21 +24,6 @@ set (agent_c_files ./src/main.c ./src/health_management.c)
 
 add_executable (${target_name} ${agent_c_files})
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    # TODO(JeffMill): Avoid LINK : fatal error LNK1104: cannot open file 'iothub_client_mqtt_transport.lib'
-    # e.g. _vcpkg_installed\x64-windows\lib
-    find_library (IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY iothub_client_mqtt_transport REQUIRED)
-    cmake_path (
-        GET
-        IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY
-        PARENT_PATH
-        IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR)
-    message (
-        STATUS
-            "IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR: ${IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR}")
-    target_link_directories (${target_name} PRIVATE ${IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR})
-endif ()
-
 set_target_properties (${target_name} PROPERTIES COMPILE_DEFINITIONS _DEFAULT_SOURCE)
 
 # Pick up Git revision so we can report it in version information.
@@ -85,6 +70,7 @@ find_package (umqtt REQUIRED)
 find_package (Parson REQUIRED)
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
+target_link_iothub_client_mqtt_transport (${target_name} PRIVATE)
 
 target_link_libraries (
     ${target_name}
@@ -112,26 +98,31 @@ target_link_libraries (
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
 
+message (STATUS "ADUC_IOT_HUB_PROTOCOL: ${ADUC_IOT_HUB_PROTOCOL}")
+
 if (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT")
     target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT=1)
     target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_transport)
-
 elseif (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT_over_WebSockets")
     target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT_OVER_WEBSOCKETS=1)
     target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_ws_transport)
-
 elseif (ADUC_IOT_HUB_PROTOCOL STREQUAL "IotHub_Protocol_from_Config")
     target_compile_definitions (${target_name} PRIVATE ADUC_GET_IOTHUB_PROTOCOL_FROM_CONFIG=1)
     target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT=1)
     target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT_OVER_WEBSOCKETS=1)
     target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_transport)
     target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_ws_transport)
-
 else ()
     message (
         FATAL_ERROR,
         "Invalid value '${ADUC_IOT_HUB_PROTOCOL}' for ADUC_IOT_HUB_PROTOCOL. Valid values: MQTT | MQTT_over_WebSockets | IotHub_Protocol_from_Config"
     )
+endif ()
+
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    # TODO(JeffMill): Why only needed on Windows?
+    target_link_libraries (${target_name} PRIVATE prov_auth_client prov_device_client
+                                                  hsm_security_client)
 endif ()
 
 get_filename_component (

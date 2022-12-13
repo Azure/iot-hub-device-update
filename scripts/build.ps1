@@ -4,7 +4,6 @@
 #
 # TODO(JeffMill): Scenario 2:--static-analysis clang-tidy,cppcheck --build-docs
 
-
 function Warn {
     Param([Parameter(mandatory = $true, position = 0)][string]$message)
     Write-Host -ForegroundColor Yellow -NoNewline 'Warning:'
@@ -372,9 +371,15 @@ $static_analysis_tools | ForEach-Object {
     }
 }
 
-Header 'Cleaning repo'
+if (-not (Test-Path '.\out\CMakeCache.txt' -PathType Leaf)) {
+    Warn 'CMakeCache.txt not found - forcing clean build.'
+    ''
+    $build_clean = $true
+}
 
 if ($build_clean) {
+    Header 'Cleaning repo'
+
     # TODO(JeffMill): Temporary prompting as I sometimes unintentionally specify "--clean". Sigh.
     $decision = $Host.UI.PromptForChoice(
         'Clean Build',
@@ -408,7 +413,7 @@ mkdir -Path $output_directory -Force | Out-Null
 
 # TODO(JeffMill): Only generate makefiles on clean?
 # It seems that dependencies are being generated unnecessarily otherwise?
-if ($build_clean -or (-not (Test-Path '.\out\CMakeFiles' -PathType Container))) {
+if ($build_clean) {
     Header 'Generating Makefiles'
 
     # Troubleshooting CMake dependencies
@@ -423,13 +428,33 @@ if ($build_clean -or (-not (Test-Path '.\out\CMakeFiles' -PathType Container))) 
     # See library search output:
     # $CMAKE_OPTIONS += '-DCMAKE_EXE_LINKER_FLAGS=/VERBOSE:LIB'
 
-    & $cmake_bin -S "$root_dir" -B $output_directory @CMAKE_OPTIONS
+    & $cmake_bin -S "$root_dir" -B $output_directory @CMAKE_OPTIONS 2>&1 | Tee-Object -Variable cmake_output
     # TODO(JeffMill): Scenario 2: Use Ninja
     # & $cmake_bin -S "$root_dir" -B $output_directory  -G Ninja @CMAKE_OPTIONS
     $ret_val = $LASTEXITCODE
 
     if ($ret_val -ne 0) {
-        error "CMake failed to generate build with exit code: $ret_val"
+        error "ERROR: CMake failed (Error $ret_val)"
+        ''
+
+        # Parse cmake errors
+
+        $regex = 'CMake Error at (?<File>.+):(?<Line>\d+) \((?<Description>.+)\)'
+        $result = $cmake_output -split "`n" | ForEach-Object {
+            if ($_ -match $regex) {
+                $matches
+            }
+        }
+        if ($result.Count -ne 0) {
+            Write-Host -ForegroundColor Red 'CMake errors:'
+
+            $result | ForEach-Object {
+                Bullet  ("{0} ({1}): {2}" -f $_.File, $_.Line, $_.Description)
+            }
+
+            ''
+        }
+
         exit $ret_val
     }
 
@@ -456,7 +481,6 @@ if ($ret_val -ne 0) {
             $matches
         }
     }
-
     if ($result.Count -ne 0) {
         Write-Host -ForegroundColor Red 'Compiler errors:'
 
@@ -467,7 +491,6 @@ if ($ret_val -ne 0) {
         ''
     }
 
-
     # Parse linker errors
 
     $regex = '.+ error (?<Code>LNK\d+): (?<Description>.+) \[(?<Project>.+)\]'
@@ -476,12 +499,11 @@ if ($ret_val -ne 0) {
             $matches
         }
     }
-
     if ($result.Count -ne 0) {
         Write-Host -ForegroundColor Red 'Linker errors:'
 
         $result | ForEach-Object {
-            $project = $_.Project.SubString($output_directory.Length + 1)
+            $project = $_.Project.SubString($root_dir.Length + 1)
             Bullet  ("{0}: {1}" -f $project, $_.Description)
         }
         ''
@@ -500,3 +522,4 @@ if ($ret_val -ne 0) {
 # }
 
 exit $ret_val
+

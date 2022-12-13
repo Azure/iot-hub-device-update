@@ -1,11 +1,19 @@
 {
+    "$explanation": "See https://github.com/microsoft/vcpkg/blob/master/docs/users/manifests.md",
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
     "name": "iot-hub-device-update",
     "description": "Device Update Client",
     "version-string": "1.0.0",
     "dependencies": [
         "azure-c-shared-utility",
-        "azure-iot-sdk-c",
+        {
+            "name": "azure-iot-sdk-c",
+            "$explanation": "See https://github.com/Azure/azure-iot-sdk-c/blob/main/doc/setting_up_vcpkg.md",
+            "default-features": false,
+            "features": [
+                "use-prov-client"
+            ]
+        },
         "azure-macro-utils-c",
         "azure-storage-blobs-cpp",
         "catch2",
@@ -19,10 +27,12 @@
     "builtin-baseline": "e0e2f13940afa865cbd57bb1d00eacf808696a3a",
     "overrides": [
         {
+            "$explanation": "Linux client is built with catch2 v2",
             "name": "catch2",
             "version": "2.13.9"
         },
         {
+            "$explanation": "Linux client is build with openssl v1",
             "name": "openssl",
             "version-string": "1.1.1n"
         }

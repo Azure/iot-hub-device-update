@@ -13,11 +13,20 @@ target_sources (${PROJECT_NAME} PRIVATE main.cpp d2c_messaging_ut.cpp)
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
-target_link_libraries (
-    ${PROJECT_NAME}
-    PRIVATE aduc::communication_abstraction
-            aduc::d2c_messaging
-            Catch2::Catch2)
+target_link_libraries (${PROJECT_NAME} PRIVATE aduc::communication_abstraction aduc::d2c_messaging
+                                               Catch2::Catch2)
+
+target_link_iothub_client_mqtt_transport (${PROJECT_NAME} PRIVATE)
+
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    # TODO(JeffMill): Why only needed on Windows?
+    target_link_libraries (
+        ${PROJECT_NAME}
+        PRIVATE prov_auth_client
+                prov_device_client
+                hsm_security_client
+                uhttp)
+endif ()
 
 include (CTest)
 include (Catch)

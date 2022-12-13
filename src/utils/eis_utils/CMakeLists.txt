@@ -11,6 +11,15 @@ find_package (Parson REQUIRED)
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    # TODO(JeffMill): Avoid cannot open file 'uhttp.lib'
+    find_library (UHTTP_LIBRARY uhttp REQUIRED)
+    cmake_path (GET UHTTP_LIBRARY PARENT_PATH UHTTP_LIBRARY_DIR)
+    message (STATUS "${target} UHTTP_LIBRARY_DIR: ${UHTTP_LIBRARY_DIR}")
+    target_link_directories (${PROJECT_NAME} PRIVATE ${UHTTP_LIBRARY_DIR})
+endif ()
+
+
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::c_utils
@@ -24,3 +33,4 @@ if (ADUC_BUILD_UNIT_TESTS)
 
     add_subdirectory (tests)
 endif ()
+

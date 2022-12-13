@@ -43,6 +43,23 @@ function (target_link_umock_c target scope)
     endif ()
 endfunction ()
 
+function (target_link_iothub_client_mqtt_transport target scope)
+    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+        # TODO(JeffMill): Avoid cannot open file 'iothub_client_mqtt_transport.lib'
+        find_library (IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY iothub_client_mqtt_transport REQUIRED)
+        cmake_path (
+            GET
+            IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY
+            PARENT_PATH
+            IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR)
+        message (
+            STATUS
+                "${target} IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR: ${IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR}"
+        )
+        target_link_directories (${target} ${scope} ${IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR})
+    endif ()
+endfunction ()
+
 function (target_link_iothub_client target scope)
     # NOTE: the call to find_package for azure_c_shared_utility
     # must come before umqtt since their config.cmake files expect
