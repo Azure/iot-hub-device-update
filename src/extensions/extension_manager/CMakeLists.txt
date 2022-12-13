@@ -2,8 +2,10 @@ cmake_minimum_required (VERSION 3.5)
 
 project (extension_manager)
 
-add_library (${PROJECT_NAME} STATIC src/extension_manager.cpp)
+add_library (${PROJECT_NAME} STATIC)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
+target_sources (${PROJECT_NAME} PRIVATE src/extension_manager.cpp src/extension_manager_helper.cpp)
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES}
                                                    ${ADU_EXTENSION_INCLUDES})
