@@ -54,7 +54,7 @@ macro (
     test_data_path_segment
     output_dir)
 
-    message ("Copying test data from '${base_dir}' to '${output_dir}'")
+    message (STATUS "Copying test data from '${base_dir}' to '${output_dir}'")
 
     file (
         GLOB_RECURSE file_list

@@ -44,9 +44,7 @@ $trace_target_deps = $false
 $content_handlers = 'microsoft/swupdate,microsoft/apt,microsoft/simulator'
 $build_type = 'Debug'
 $adu_log_dir = ''
-# $default_log_dir = '/var/log/adu'
-# TODO(JeffMill): [PAL] Using this path for now due to ADUC bug assuming parent paths exist - cmakelists generates /tmp/adu
-$default_log_dir='/tmp/adu/log'
+$default_log_dir = '/var/log/adu'
 $output_directory = "$root_dir/out"
 $build_unittests = $false
 $static_analysis_tools = @()
@@ -278,6 +276,11 @@ $cmake_bin = 'cmake.exe'
 
 # TODO(JeffMill): Forcing content_handlers in Windows builds.  Bug on Nox for this.
 $content_handlers = 'microsoft/simulator'
+Warn "Forcing content_handlers to $content_handlers"
+
+# TODO(JeffMill): [PAL] Using this path for now due to ADUC bug assuming parent paths exist - cmakelists generates /tmp/adu
+$adu_log_dir = '/var/log/adu'
+Warn "Forcing adu_log_dir to $adu_log_dir"
 
 # Output banner
 ''
