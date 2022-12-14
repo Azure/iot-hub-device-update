@@ -12,12 +12,13 @@
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] getpid()
+#    define getpid() PAL_getpid()
+
 typedef unsigned int pid_t;
 
-static pid_t getpid(void)
+static pid_t PAL_getpid(void)
 {
-    __debugbreak();
-    return 0;
+    return GetCurrentProcessId();
 }
 #else
 #    include <unistd.h> // getpid
@@ -25,12 +26,7 @@ static pid_t getpid(void)
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] isatty
-static int isatty(int fd)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return 0;
-}
+#    include <io.h> // isatty
 #else
 #    include <unistd.h> // isatty
 #endif
@@ -41,25 +37,63 @@ static int isatty(int fd)
 
 static long syscall(long number)
 {
-    __debugbreak();
-    errno = ENOSYS;
-    return 0;
+    if (number != SYS_gettid)
+    {
+        __debugbreak();
+    }
+
+    return GetCurrentThreadId();
 }
 #else
 #    include <sys/syscall.h> // for SYS_gettid
 #endif
 
 #if defined(_WIN32)
+// TODO(JeffMill): [PAL] clock_gettime
+#    include <time.h>
+#    define clock_gettime(clockid, tp) PAL_clock_gettime(clockid, tp)
+
+typedef unsigned int clockid_t;
+#    define CLOCK_REALTIME 0
+
+#    define FILETIME_1970 116444736000000000ull /* seconds between 1/1/1601 and 1/1/1970 */
+#    define HECTONANOSEC_PER_SEC 10000000ull
+
+static int PAL_clock_gettime(clockid_t clk_id, struct timespec* tp)
+{
+    ULARGE_INTEGER fti;
+    GetSystemTimeAsFileTime((FILETIME*)&fti);
+    fti.QuadPart -= FILETIME_1970; /* 100 nano-seconds since 1-1-1970 */
+    tp->tv_sec = fti.QuadPart / HECTONANOSEC_PER_SEC; /* seconds since 1-1-1970 */
+    tp->tv_nsec = (long)(fti.QuadPart % HECTONANOSEC_PER_SEC) * 100; /* nanoseconds */
+    return 0;
+}
+#else
+#    include <time.h> // clock_gettime
+#endif
+
+#if defined(_WIN32)
 // TODO(JeffMill): [PAL] gettimeofday
 struct timeval
 {
-    time_t tv_sec; /* Seconds.  */
+    time_t tv_sec;
+    // tv_nsec not referenced.
 };
 
-static int gettimeofday(struct timeval* restrict tp, void* restrict tzp)
+#    define gettimeofday(tp, tzp) PAL_gettimeofday(tp, tzp)
+
+static int PAL_gettimeofday(struct timeval* tv, void* z)
 {
-    __debugbreak();
-    errno = ENOSYS;
+    if (z != NULL)
+    {
+        __debugbreak();
+    }
+
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+
+    tv->tv_sec = ts.tv_sec;
+    // tv->tv_usec = ts.tv_nsec / 1000;
     return 0;
 }
 #else
@@ -68,37 +102,35 @@ static int gettimeofday(struct timeval* restrict tp, void* restrict tzp)
 
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] gmtime_r
-static struct tm* gmtime_r(const time_t* timep, struct tm* result)
+#    include <time.h>
+#    define gmtime_r(timep, result) PAL_gmtime_r(timep, result)
+
+static struct tm* PAL_gmtime_r(const time_t* timep, struct tm* result)
 {
-    __debugbreak();
-    errno = ENOSYS;
-    return NULL;
+    static struct tm tm;
+    const struct tm* gmtime = _gmtime64(timep);
+    if (gmtime == NULL)
+    {
+        __debugbreak();
+        return NULL;
+    }
+
+    memcpy(&tm, gmtime, sizeof(tm));
+
+    *result = tm;
+    return &tm;
 }
 #else
 #    include <time.h> // gmtime_r
 #endif
 
 #if defined(_WIN32)
-// TODO(JeffMill):[PAL] clock_gettime
-typedef unsigned int clockid_t;
-#    define CLOCK_REALTIME 0
-
-static int clock_gettime(clockid_t clk_id, struct timespec* tp)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-#else
-#    include <time.h> // clock_gettime
-#endif
-
-#if defined(_WIN32)
 // TODO(JeffMill): [PAL] sleep
-static unsigned int sleep(unsigned int seconds)
+#    define sleep(seconds) PAL_sleep(seconds)
+
+static unsigned int PAL_sleep(unsigned int seconds)
 {
-    __debugbreak();
-    errno = ENOSYS;
+    Sleep(seconds);
     return 0;
 }
 #else
@@ -146,6 +178,7 @@ char _zlog_buffer[ZLOG_BUFFER_MAXLINES][ZLOG_BUFFER_LINE_MAXCHARS];
 static int _zlog_buffer_count = 0;
 static pthread_mutex_t _zlog_buffer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t _zlog_flush_thread;
+static bool zlog_buffer_flush_thread_run = false;
 static bool _is_flush_thread_initialized = false;
 
 void zlog_init_flush_thread(void);
@@ -520,12 +553,13 @@ static void* zlog_buffer_flush_thread(void* unused)
             }
             _zlog_buffer_unlock();
         }
-    } while (1);
+    } while (zlog_buffer_flush_thread_run);
     return NULL;
 }
 
 void zlog_init_flush_thread(void)
 {
+    zlog_buffer_flush_thread_run = true;
     if (pthread_create(&_zlog_flush_thread, NULL, zlog_buffer_flush_thread, NULL) == 0)
     {
         _is_flush_thread_initialized = true;
@@ -535,12 +569,11 @@ void zlog_init_flush_thread(void)
 // Caller should NOT hold the lock
 void zlog_stop_flush_thread(void)
 {
-    // To prevent deadlock if flush thread calls zlog_flush_buffer but
-    // gets terminated before calling unlock
-    _zlog_buffer_lock();
     if (_is_flush_thread_initialized)
     {
-        pthread_cancel(_zlog_flush_thread);
+        // Tell zlog_buffer_flush_thread to stop.
+        // pthread_cancel(_zlog_flush_thread);
+        zlog_buffer_flush_thread_run = false;
         pthread_join(_zlog_flush_thread, NULL);
         _is_flush_thread_initialized = false;
     }

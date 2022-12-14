@@ -11,12 +11,19 @@
 #if defined(_WIN32)
 // TODO(JeffMill): [PAL] _mkdir
 typedef unsigned int mode_t;
-#    define S_IRWXU 00700
+#    define S_IRWXU 0070
 
-static int mkdir(const char* path, mode_t mode)
+#    include <direct.h> // mkdir
+#    define mkdir(path, mode) PAL_mkdir(path, mode)
+
+static int PAL_mkdir(const char* path, mode_t mode)
 {
-    __debugbreak();
-    return -1;
+    const int ret = _mkdir(path);
+    if (ret == -1)
+    {
+        // __debugbreak();
+    }
+    return ret;
 }
 #else
 #    include <sys/stat.h> //mkdir
