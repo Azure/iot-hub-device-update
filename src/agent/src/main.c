@@ -1039,8 +1039,6 @@ bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
     }
     memset(info, 0, sizeof(*info));
 
-    Log_Info("Requesting connection string from the Edge Identity Service");
-
     time_t expirySecsSinceEpoch = time(NULL) + EIS_TOKEN_EXPIRY_TIME_IN_SECONDS;
 
     EISUtilityResult eisProvisionResult =
