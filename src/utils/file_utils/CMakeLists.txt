@@ -8,7 +8,7 @@ disablertti ()
 add_library (${PROJECT_NAME} STATIC "")
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
-if (_WIN32)
+if (WIN32)
     # TODO(JeffMill): [PAL] dirent.h
     find_path (DIRENT_INCLUDE_DIRS "dirent.h")
     target_include_directories (${PROJECT_NAME} PRIVATE ${DIRENT_INCLUDE_DIRS})

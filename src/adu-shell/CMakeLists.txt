@@ -60,19 +60,19 @@ target_compile_definitions (
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
-if (_WIN32)
+if (WIN32)
     # TODO(JeffMill): Without this, even when not building UTs, I get:
     # inc\aduc/http_url.h(19,10): fatal  error C1083: Cannot open include file: 'umock_c/umock_c_prod.h': No such file or directory
     target_link_umock_c (${target_name} PRIVATE)
 endif ()
 
-if (_WIN32)
+if (WIN32)
     # TODO(JeffMill): [PAL] getopt.h
     find_path (GETOPT_INCLUDE_DIR "getopt.h")
     target_include_directories (${target_name} PRIVATE ${GETOPT_INCLUDE_DIR})
 endif ()
 
-if (_WIN32)
+if (WIN32)
     find_library (GETOPT_LIBRARY "getopt.lib")
     target_link_libraries (${target_name} PRIVATE ${GETOPT_LIBRARY})
 endif ()

@@ -30,7 +30,7 @@ target_link_libraries (
             Parson::parson
             parson_json_utils)
 
-if (_WIN32)
+if (WIN32)
     # TODO(JeffMill): [PAL] AzureBlobStorageFileUploadUtility_UploadFilesToContainer
     # https://github.com/Azure/azure-blob-storage-file-upload-utility
 else ()

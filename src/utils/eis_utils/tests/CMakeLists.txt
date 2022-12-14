@@ -21,7 +21,7 @@ target_link_libraries (
             aduc::string_utils
             Catch2::Catch2)
 
-if (_WIN32)
+if (WIN32)
     # TODO(JeffMill): Avoid cannot open file 'uhttp.lib'
     find_library (UHTTP_LIBRARY uhttp REQUIRED)
     cmake_path (

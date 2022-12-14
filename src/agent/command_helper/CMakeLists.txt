@@ -11,7 +11,7 @@ target_compile_definitions (
     ${PROJECT_NAME} PRIVATE ADUC_COMMANDS_FIFO_NAME="${ADUC_COMMANDS_FIFO_NAME}"
                             ADUC_FILE_GROUP="${ADUC_FILE_GROUP}" ADUC_FILE_USER="${ADUC_FILE_USER}")
 
-if (_WIN32)
+if (WIN32)
     # TODO(JeffMill): [PAL] pthread
     find_package (PThreads4W REQUIRED)
     target_link_libraries (${PROJECT_NAME} PRIVATE PThreads4W::PThreads4W)

@@ -11,7 +11,7 @@ set (sources main.cpp)
 
 add_executable (${PROJECT_NAME} ${sources})
 
-if (_WIN32)
+if (WIN32)
     # TODO(JeffMill): [PAL] getopt.h
     find_path (GETOPT_INCLUDE_DIR "getopt.h")
     target_include_directories (${PROJECT_NAME} PRIVATE ${GETOPT_INCLUDE_DIR})

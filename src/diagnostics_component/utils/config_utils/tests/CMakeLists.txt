@@ -15,7 +15,7 @@ add_executable (${PROJECT_NAME} ${sources})
 
 target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")
 
-if (_WIN32)
+if (WIN32)
     # TODO(JeffMill): [VCPKG] fatal  error C1083: Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
     target_include_directories (${PROJECT_NAME} PRIVATE ${AZURE_C_SHARED_UTILITY_INCLUDES})
 endif ()

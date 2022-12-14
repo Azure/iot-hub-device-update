@@ -1,14 +1,6 @@
 cmake_minimum_required (VERSION 3.5)
 
-if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-    # For ease of searching - source code uses "#if defined(_WIN32)""
-    set (
-        _WIN32
-        TRUE
-        CACHE BOOL "Set to TRUE if building on Windows")
-endif ()
-
-if (_WIN32)
+if (WIN32)
     include (cmake/automate-vcpkg.cmake)
     # Default is ${CMAKE_BINARY_DIR}/vcpkg
     cmake_path (SET VCPKG_ROOT "${CMAKE_SOURCE_DIR}/.vcpkg")

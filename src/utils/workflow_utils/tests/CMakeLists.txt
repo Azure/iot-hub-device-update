@@ -17,7 +17,7 @@ target_sources (${PROJECT_NAME} PRIVATE main.cpp workflow_utils_ut.cpp
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
-if (_WIN32)
+if (WIN32)
     # TODO(JeffMill): [VCPKG] fatal  error C1083: Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
     target_include_directories (${PROJECT_NAME} PRIVATE ${AZURE_C_SHARED_UTILITY_INCLUDES})
 endif ()

@@ -119,7 +119,7 @@ else ()
     )
 endif ()
 
-if (_WIN32)
+if (WIN32)
     # TODO(JeffMill): Why only needed on Windows?
     target_link_libraries (${target_name} PRIVATE prov_auth_client prov_device_client
                                                   hsm_security_client)
@@ -154,7 +154,7 @@ else ()
     target_link_dosdk (${target_name} PRIVATE)
 endif ()
 
-if (_WIN32)
+if (WIN32)
     # TODO(JeffMill): [PAL] getopt.h
     find_path (GETOPT_INCLUDE_DIR "getopt.h")
     target_include_directories (${target_name} PRIVATE ${GETOPT_INCLUDE_DIR})

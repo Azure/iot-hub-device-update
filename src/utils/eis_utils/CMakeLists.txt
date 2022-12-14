@@ -11,7 +11,7 @@ find_package (Parson REQUIRED)
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
-if (_WIN32)
+if (WIN32)
     # TODO(JeffMill): Avoid cannot open file 'uhttp.lib'
     find_library (UHTTP_LIBRARY uhttp REQUIRED)
     cmake_path (

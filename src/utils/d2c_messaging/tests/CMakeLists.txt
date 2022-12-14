@@ -18,7 +18,7 @@ target_link_libraries (${PROJECT_NAME} PRIVATE aduc::communication_abstraction a
 
 target_link_iothub_client_mqtt_transport (${PROJECT_NAME} PRIVATE)
 
-if (_WIN32)
+if (WIN32)
     # TODO(JeffMill): Why only needed on Windows?
     target_link_libraries (
         ${PROJECT_NAME}
