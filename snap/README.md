@@ -22,9 +22,7 @@ Referencing to the Security Policy and Sandboxing of Snapcraft(https://snapcraft
 When connecting snaps with interfaces, the snaps are typically connected with the default user or "system" user. However, it is possible to connect snaps with a specific user ID by using the `--classic` and `--username` options with the snap connect command.
 
 For example, to connect to Azure Identity Service with a specific user ID called "snap_aziot_adu", you would use the following command:
-
 `snap connect --classic --username=snap_aziot_ad deviceupdate-agent:AIS-interface azureIdentityService-snap:AIS-interface`  
-
 This will connect the two snaps using the "snap_aziot_adu" user ID, allowing the snaps to communicate with each other as that user.
 
 It is important to note that using the `--classic` and `--username` options with the snap connect command can have security implications, as it allows the connected snaps to access each other's data and resources as the specified user. Therefore, it should only be used if necessary and with caution.
@@ -34,15 +32,15 @@ It is important to note that using the `--classic` and `--username` options with
 Parts are used to describe your application, where its various components can be found, its build and run-time requirements, and those of its dependencies.
 
 1. installdeps (Install Dependencies)
-Similar to how to build a debian package, we run `./scripts/install-deps.sh --install-all-deps`.
+    > Similar to how to build a debian package, we run `./scripts/install-deps.sh --install-all-deps`.
 
 2. agent (Build the Agent)
-To support a build for snapcraft, we add an option to build the agent with `--ubuntu-core-snap-only`. To be more specific, inside the agent, we need to make the following changes:
-    a. Currently, the user is `root` instead of `adu` or any specified desired user.
-    b. Bypassed the `healthcheck()`. More details will be discussed in `Snap User/Group Security Model`.
-    c. Exclude DeliveryOptimization as a build dependency, as it will become a separate snap.
-    d. Exclude `InitializeCommandListenerThread()`, as there is no need to register to commands inside the snap sandbox.
-    e. Only include `script handler`, exclude other handlers, as they are not needed in the snapcraft use case.
+    > To support a build for snapcraft, we add an option to build the agent with `--ubuntu-core-snap-only`. To be more specific, inside the agent, we need to make the following changes:
+    > a. Currently, the user is `root` instead of `adu` or any specified desired user.
+    > b. Bypassed the `healthcheck()`. More details will be discussed in `Snap User/Group Security Model`.
+    > c. Exclude DeliveryOptimization as a build dependency, as it will become a separate snap.
+    > d. Exclude `InitializeCommandListenerThread()`, as there is no need to register to commands inside the snap sandbox.
+    > e. Only include `script handler`, exclude other handlers, as they are not needed in the snapcraft use case.
 
 
 ### Snap Apps
