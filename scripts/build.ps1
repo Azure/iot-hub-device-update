@@ -31,6 +31,71 @@ function Bullet {
     Write-Host " $message"
 }
 
+function Display-CMakeErrors {
+    Param([string[]]$BuildOutput)
+
+    $regex = 'CMake Error at (?<File>.+):(?<Line>\d+)\s+\((?<Description>.+)\)'
+    $result = $BuildOutput  | ForEach-Object {
+        if ($_ -match $regex) {
+            $matches
+        }
+    }
+    if ($result.Count -ne 0) {
+        Write-Host -ForegroundColor Red 'CMake errors:'
+
+        $result | ForEach-Object {
+            Bullet  ("{0} ({1}): {2}" -f $_.File, $_.Line, $_.Description)
+        }
+
+        ''
+    }
+}
+
+function Display-CompilerErrors {
+    Param([string[]]$BuildOutput)
+
+    # Parse compiler errors
+    # e.g. C:\wiot-s1\src\logging\zlog\src\zlog.c(13,10): fatal  error C1083: Cannot open include file: 'aducpal/unistd.h': No such file or directory [C:\wiot-s1\out\src\logging\zlog\zlog.vcxproj]
+    $regex = '(?<File>.+)\((?<Line>\d+),(?<Column>\d+)\):.+error (?<Code>C\d+):\s+(?<Description>.+)\s+\[(?<Project>.+)\]'
+    $result = $BuildOutput  | ForEach-Object {
+        if ($_ -match $regex) {
+            $matches
+        }
+    }
+    if ($result.Count -ne 0) {
+        Write-Host -ForegroundColor Red 'Compiler errors:'
+
+        $result | ForEach-Object {
+            Bullet  ("{0} ({1},{2}): {3} [{4}]" -f $_.File.SubString($root_dir.Length + 1), $_.Line, $_.Column, $_.Description, (Split-Path $_.Project -Leaf))
+        }
+
+        ''
+    }
+}
+
+function Display-LinkerErrors {
+    Param([string[]]$BuildOutput)
+
+    # Parse linker errors
+
+    $regex = '.+ error (?<Code>LNK\d+):\s+(?<Description>.+)\s+\[(?<Project>.+)\]'
+    $result = $BuildOutput  | ForEach-Object {
+        if ($_ -match $regex) {
+            $matches
+        }
+    }
+    if ($result.Count -ne 0) {
+        Write-Host -ForegroundColor Red 'Linker errors:'
+
+        $result | ForEach-Object {
+            $project = $_.Project.SubString($root_dir.Length + 1)
+            Bullet  ("{0}: {1}" -f $project, $_.Description)
+        }
+        ''
+    }
+
+}
+
 $root_dir = git.exe rev-parse --show-toplevel
 
 # TODO(JeffMill): Unused variable
@@ -422,15 +487,18 @@ mkdir -Path $output_directory -Force | Out-Null
 if ($build_clean) {
     Header 'Generating Makefiles'
 
-    # Troubleshooting CMake dependencies
     # show every find_package call (vcpkg specific):
     # $CMAKE_OPTIONS += '-DVCPKG_TRACE_FIND_PACKAGE:BOOL=ON'
+
     # Verbose output (very verbose, but useful!):
     # $CMAKE_OPTIONS += '--trace-expand'
+
     # See cmake dependencies (very verbose):
     # $CMAKE_OPTIONS += '--debug-output'
+
     # See compiler output at build time:
     # $CMAKE_OPTIONS += '-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON'
+
     # See library search output:
     # $CMAKE_OPTIONS += '-DCMAKE_EXE_LINKER_FLAGS=/VERBOSE:LIB'
 
@@ -443,23 +511,7 @@ if ($build_clean) {
         error "ERROR: CMake failed (Error $ret_val)"
         ''
 
-        # Parse CMake errors
-
-        $regex = 'CMake Error at (?<File>.+):(?<Line>\d+) \((?<Description>.+)\)'
-        $result = $cmake_output -split "`n" | ForEach-Object {
-            if ($_ -match $regex) {
-                $matches
-            }
-        }
-        if ($result.Count -ne 0) {
-            Write-Host -ForegroundColor Red 'CMake errors:'
-
-            $result | ForEach-Object {
-                Bullet  ("{0} ({1}): {2}" -f $_.File, $_.Line, $_.Description)
-            }
-
-            ''
-        }
+        Display-CMakeErrors -BuildOutput $cmake_output
 
         exit $ret_val
     }
@@ -471,7 +523,7 @@ Header 'Building Product'
 
 # TODO(JeffMill): Scenario 2: Use Ninja
 
-& $cmake_bin --build $output_directory --config $build_type 2>&1 | Tee-Object -Variable build_output
+& $cmake_bin --build $output_directory --config $build_type --parallel 2>&1 | Tee-Object -Variable build_output
 $ret_val = $LASTEXITCODE
 ''
 
@@ -479,59 +531,11 @@ if ($ret_val -ne 0) {
     Write-Host -ForegroundColor Red "ERROR: Build failed (Error $ret_val)"
     ''
 
-    # Parse CMake errors
+    Display-CMakeErrors -BuildOutput $build_output
 
-    $regex = 'CMake Error at (?<File>.+):(?<Line>\d+) \((?<Description>.+)\)'
-    $result = $build_output -split "`n" | ForEach-Object {
-        if ($_ -match $regex) {
-            $matches
-        }
-    }
-    if ($result.Count -ne 0) {
-        Write-Host -ForegroundColor Red 'CMake errors:'
+    Display-CompilerErrors -BuildOutput $build_output
 
-        $result | ForEach-Object {
-            Bullet  ("{0} ({1}): {2}..." -f $_.File, $_.Line, $_.Description)
-        }
-
-        ''
-    }
-
-    # Parse compiler errors
-
-    $regex = '(?<File>.+)\((?<Line>\d+),(?<Column>\d+)\): error (?<Code>C\d+): (?<Description>.+) \[(?<Project>.+)\]'
-    $result = $build_output -split "`n" | ForEach-Object {
-        if ($_ -match $regex) {
-            $matches
-        }
-    }
-    if ($result.Count -ne 0) {
-        Write-Host -ForegroundColor Red 'Compiler errors:'
-
-        $result | ForEach-Object {
-            Bullet  ("{0} ({1},{2}): {3} [{4}]" -f $_.File.SubString($root_dir.Length + 1), $_.Line, $_.Column, $_.Description, (Split-Path $_.Project -Leaf))
-        }
-
-        ''
-    }
-
-    # Parse linker errors
-
-    $regex = '.+ error (?<Code>LNK\d+): (?<Description>.+) \[(?<Project>.+)\]'
-    $result = $build_output -split "`n" | ForEach-Object {
-        if ($_ -match $regex) {
-            $matches
-        }
-    }
-    if ($result.Count -ne 0) {
-        Write-Host -ForegroundColor Red 'Linker errors:'
-
-        $result | ForEach-Object {
-            $project = $_.Project.SubString($root_dir.Length + 1)
-            Bullet  ("{0}: {1}" -f $project, $_.Description)
-        }
-        ''
-    }
+    Display-LinkerErrors -BuildOutput $build_output
 
     exit $ret_val
 }
