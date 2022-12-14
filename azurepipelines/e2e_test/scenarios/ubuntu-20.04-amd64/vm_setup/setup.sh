@@ -43,9 +43,11 @@ sudo apt-get update
 # anything else.
 
 # Handle installing DO from latest build instead of packages.microsoft.com
-wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_x64-packages.tar -O ubuntu20_x64-packages.tar
-tar -xvf ubuntu20_x64-packages.tar
-sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_amd64.deb ./deliveryoptimization-plugin-apt_0.5.1_amd64.deb ./libdeliveryoptimization_1.0.0_amd64.deb
+
+sudo apt-get install -y libboost-dev
+
+# Handle installing DO from latest build instead of packages.microsoft.com
+sudo apt-get install -y deliveryoptimization-agent deliveryoptimization-plugin-apt libdeliveryoptimization
 
 #
 # Install the Device Update Artifact Under Test
@@ -79,7 +81,6 @@ sh ./tools/reset-demo-components.sh
 
 #registers the extension
 sudo /usr/bin/AducIotAgent -l 2 --extension-type componentEnumerator --register-extension /var/lib/adu/extensions/sources/libcontoso_component_enumerator.so
-
 
 #
 # Restart the deviceupdate-agent.service

@@ -42,11 +42,10 @@ sudo apt-get update
 # be added here. You might be installing iotedge, another package to setup for a deployment test, or
 # anything else.
 
-# Handle installing DO from latest build instead of packages.microsoft.com
-wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu1804_x64-packages.tar -O ubuntu18_x64-packages.tar
-tar -xvf ubuntu18_x64-packages.tar
-sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_amd64.deb ./deliveryoptimization-plugin-apt_0.5.1_amd64.deb ./libdeliveryoptimization_1.0.0_amd64.deb
+sudo apt-get install -y libboost-dev
 
+# Handle installing DO from latest build instead of packages.microsoft.com
+sudo apt-get install -y deliveryoptimization-agent deliveryoptimization-plugin-apt libdeliveryoptimization
 
 #
 # Install the Device Update Artifact Under Test
@@ -61,7 +60,6 @@ sudo apt-get install -y ./testsetup/deviceupdate-package.deb
 # another kind of diagnostics file, or other kinds of data
 # this is the area where such things can be added
 sudo cp ./testsetup/du-config.json /etc/adu/du-config.json
-
 
 mkdir ~/adu_srcs/
 
@@ -82,7 +80,6 @@ sh ./tools/reset-demo-components.sh
 sudo /usr/bin/AducIotAgent -l 2 --extension-type componentEnumerator --register-extension /var/lib/adu/extensions/sources/libcontoso_component_enumerator.so
 
 sh ./tools/reset-demo-components.sh
-
 
 #
 # Restart the deviceupdate-agent.service
