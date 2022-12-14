@@ -18,7 +18,7 @@ target_link_libraries (${PROJECT_NAME} PRIVATE aduc::communication_abstraction a
 
 target_link_iothub_client_mqtt_transport (${PROJECT_NAME} PRIVATE)
 
-if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+if (_WIN32)
     # TODO(JeffMill): Why only needed on Windows?
     target_link_libraries (
         ${PROJECT_NAME}

@@ -21,10 +21,14 @@ target_link_libraries (
             aduc::string_utils
             Catch2::Catch2)
 
-if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+if (_WIN32)
     # TODO(JeffMill): Avoid cannot open file 'uhttp.lib'
     find_library (UHTTP_LIBRARY uhttp REQUIRED)
-    cmake_path (GET UHTTP_LIBRARY PARENT_PATH UHTTP_LIBRARY_DIR)
+    cmake_path (
+        GET
+        UHTTP_LIBRARY
+        PARENT_PATH
+        UHTTP_LIBRARY_DIR)
     message (STATUS "${target} UHTTP_LIBRARY_DIR: ${UHTTP_LIBRARY_DIR}")
     target_link_directories (${PROJECT_NAME} PRIVATE ${UHTTP_LIBRARY_DIR})
 endif ()

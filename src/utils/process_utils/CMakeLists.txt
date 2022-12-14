@@ -19,7 +19,7 @@ target_link_libraries (
             aduc::config_utils
             aduc::string_utils)
 
-if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+if (_WIN32)
     # TODO(JeffMill): Without this, even when not building UTs, I get:
     # inc\aduc/http_url.h(19,10): fatal  error C1083: Cannot open include file: 'umock_c/umock_c_prod.h': No such file or directory
     target_link_umock_c (${PROJECT_NAME} PRIVATE)

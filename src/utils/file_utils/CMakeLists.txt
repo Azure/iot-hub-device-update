@@ -8,7 +8,7 @@ disablertti ()
 add_library (${PROJECT_NAME} STATIC "")
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
-if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+if (_WIN32)
     # TODO(JeffMill): [PAL] dirent.h
     find_path (DIRENT_INCLUDE_DIRS "dirent.h")
     target_include_directories (${PROJECT_NAME} PRIVATE ${DIRENT_INCLUDE_DIRS})

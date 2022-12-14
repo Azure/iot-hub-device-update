@@ -1,13 +1,21 @@
 cmake_minimum_required (VERSION 3.5)
 
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-    include(cmake/automate-vcpkg.cmake)
+    # For ease of searching - source code uses "#if defined(_WIN32)""
+    set (
+        _WIN32
+        TRUE
+        CACHE BOOL "Set to TRUE if building on Windows")
+endif ()
+
+if (_WIN32)
+    include (cmake/automate-vcpkg.cmake)
     # Default is ${CMAKE_BINARY_DIR}/vcpkg
     cmake_path (SET VCPKG_ROOT "${CMAKE_SOURCE_DIR}/.vcpkg")
     # Default is ${CMAKE_BINARY_DIR}/vcpkg_installed
     cmake_path (SET VCPKG_INSTALLED_DIR "${CMAKE_SOURCE_DIR}/.vcpkg-installed")
     # clone the official Vcpkg repository and bootstrap it.
-    vcpkg_bootstrap()
+    vcpkg_bootstrap ()
 endif ()
 
 project (azure_device_update_client)
