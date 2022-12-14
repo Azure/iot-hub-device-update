@@ -44,7 +44,9 @@ $trace_target_deps = $false
 $content_handlers = 'microsoft/swupdate,microsoft/apt,microsoft/simulator'
 $build_type = 'Debug'
 $adu_log_dir = ''
-$default_log_dir = '/var/log/adu'
+# $default_log_dir = '/var/log/adu'
+# TODO(JeffMill): [PAL] Using this path for now due to ADUC bug assuming parent paths exist - cmakelists generates /tmp/adu
+$default_log_dir='/tmp/adu/log'
 $output_directory = "$root_dir/out"
 $build_unittests = $false
 $static_analysis_tools = @()
@@ -261,6 +263,7 @@ if ($platform_layer -ne 'linux') {
 # Set default log dir if not specified.
 if (-not $adu_log_dir) {
     if ($platform_layer -eq 'simulator') {
+        Warn "Forcing adu_log_dir to /tmp/aduc-logs"
         $adu_log_dir = '/tmp/aduc-logs'
     }
     else {
@@ -437,7 +440,7 @@ if ($build_clean) {
         error "ERROR: CMake failed (Error $ret_val)"
         ''
 
-        # Parse cmake errors
+        # Parse CMake errors
 
         $regex = 'CMake Error at (?<File>.+):(?<Line>\d+) \((?<Description>.+)\)'
         $result = $cmake_output -split "`n" | ForEach-Object {
@@ -473,9 +476,27 @@ if ($ret_val -ne 0) {
     Write-Host -ForegroundColor Red "ERROR: Build failed (Error $ret_val)"
     ''
 
+    # Parse CMake errors
+
+    $regex = 'CMake Error at (?<File>.+):(?<Line>\d+) \((?<Description>.+)\)'
+    $result = $build_output -split "`n" | ForEach-Object {
+        if ($_ -match $regex) {
+            $matches
+        }
+    }
+    if ($result.Count -ne 0) {
+        Write-Host -ForegroundColor Red 'CMake errors:'
+
+        $result | ForEach-Object {
+            Bullet  ("{0} ({1}): {2}..." -f $_.File, $_.Line, $_.Description)
+        }
+
+        ''
+    }
+
     # Parse compiler errors
 
-    $regex = '(?<File>.+)\((?<Line>\d+),(?<Column>\d+)\): .+error (?<Code>C\d+): (?<Description>.+) \[(?<Project>.+)\]'
+    $regex = '(?<File>.+)\((?<Line>\d+),(?<Column>\d+)\): error (?<Code>C\d+): (?<Description>.+) \[(?<Project>.+)\]'
     $result = $build_output -split "`n" | ForEach-Object {
         if ($_ -match $regex) {
             $matches

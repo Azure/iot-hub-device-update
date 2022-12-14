@@ -44,6 +44,6 @@ catch {
 }
 
 "Launching $windbgx . . ."
-cmd.exe /c start $windbgx $aduciotagent
+cmd.exe /c start $windbgx -c "bp aduciotagent!main; g" $aduciotagent
 
 exit 0
