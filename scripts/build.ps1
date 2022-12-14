@@ -279,7 +279,7 @@ $content_handlers = 'microsoft/simulator'
 Warn "Forcing content_handlers to $content_handlers"
 
 # TODO(JeffMill): [PAL] Using this path for now due to ADUC bug assuming parent paths exist - cmakelists generates /tmp/adu
-$adu_log_dir = '/var/log/adu'
+$adu_log_dir = '/tmp/aduc-logs'
 Warn "Forcing adu_log_dir to $adu_log_dir"
 
 # Output banner

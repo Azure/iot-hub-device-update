@@ -1,3 +1,7 @@
+Param(
+    [switch]$NoDebugger = $false
+)
+
 function Error {
     Param([Parameter(mandatory = $true, position = 0)][string]$message)
     Write-Host -ForegroundColor Red -NoNewline 'Error:'
@@ -35,15 +39,22 @@ if (-not (Test-Path $aduciotagent -PathType Leaf)) {
     exit 1
 }
 
-try {
-    $windbgx = Get-WinDbgX
+if ($NoDebugger) {
+    "Launching $aduciotagent . . ."
+    & $aduciotagent
 }
-catch {
-    Error "$_"
-    exit 1
-}
+else {
+    try {
+        $windbgx = Get-WinDbgX
+    }
+    catch {
+        Error "$_"
+        'To install WinDbg use: winget install --accept-package-agreements ''WinDbg Preview'''
+        exit 1
+    }
 
-"Launching $windbgx . . ."
-cmd.exe /c start $windbgx -c "bp aduciotagent!main; g" $aduciotagent
+    "Launching WinDbg . . ."
+    cmd.exe /c start $windbgx -c "bp aduciotagent!main; g" $aduciotagent
+}
 
 exit 0
