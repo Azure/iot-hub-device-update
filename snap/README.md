@@ -83,5 +83,3 @@ For example, in our reference snap agent, the following table shows the file loc
 | /usr/lib/adu | $SNAP_DATA/config |
 | /var/log/adu | $SNAP_DATA/log |
 | /usr/bin/curl-downloader | $SNAP/usr/bin/curl |
-
-
