@@ -7,6 +7,7 @@
  */
 #include "aduc/script_handler.hpp"
 #include "aduc/extension_manager.hpp"
+#include "aduc/hash_utils.h" // for SHAversion
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp" // ADUC_LaunchChildProcess
 #include "aduc/string_c_utils.h" // IsNullOrEmpty
@@ -106,8 +107,12 @@ static ADUC_Result Script_Handler_DownloadPrimaryScriptFile(ADUC_WorkflowHandle 
     const char* workflowId = nullptr;
     char* workFolder = nullptr;
     ADUC_FileEntity* entity = nullptr;
+    SHAversion algVersion;
     int fileCount = workflow_get_update_files_count(handle);
     int createResult = 0;
+    std::string scriptFilePath;
+    std::stringstream filePath;
+    bool fileExist = false;
 
     // Download the main script file.
     const char* scriptFileName =
@@ -134,25 +139,76 @@ static ADUC_Result Script_Handler_DownloadPrimaryScriptFile(ADUC_WorkflowHandle 
     workflowId = workflow_peek_id(handle);
     workFolder = workflow_get_workfolder(handle);
 
-    createResult = ADUC_SystemUtils_MkSandboxDirRecursive(workFolder);
-    if (createResult != 0)
+    // Construct the primary script file path
+    filePath << workFolder << "/" << scriptFileName;
+    scriptFilePath = filePath.str();
+
+    if (!ADUC_HashUtils_GetShaVersionForTypeString(
+            ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0), &algVersion))
     {
-        Log_Error("Unable to create folder %s, error %d", workFolder, createResult);
-        result = { ADUC_Result_Failure, ADUC_ERC_SCRIPT_HANDLER_CREATE_SANDBOX_FAILURE };
+        Log_Error(
+            "FileEntity for %s has unsupported hash type %s",
+            scriptFilePath.c_str(),
+            ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0));
+        result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_FILE_HASH_TYPE_NOT_SUPPORTED;
         goto done;
     }
 
-    try
-    {
-        ExtensionManager_Download_Options downloadOptions = {
-            .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
-        };
+    // If file exists and has a valid hash, then skip download.
+    // Otherwise, delete an existing file, then download.
+    Log_Debug("Check whether '%s' has already been download into the work folder.", scriptFilePath.c_str());
 
-        result = ExtensionManager::Download(entity, handle, &downloadOptions, nullptr);
-    }
-    catch (...)
+    if (access(scriptFilePath.c_str(), F_OK) == 0)
     {
-        result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_PRIMARY_FILE_FAILURE_UNKNOWNEXCEPTION;
+        char* hashValue = ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0 /* index */);
+        if (hashValue == nullptr)
+        {
+            result = { .ResultCode = ADUC_Result_Failure,
+                       .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_ENTITY_NO_HASHES };
+            goto done;
+        }
+
+        // If target file exists, validate file hash.
+        // If file is valid, then skip the download.
+        bool validHash =
+            ADUC_HashUtils_IsValidFileHash(scriptFilePath.c_str(), hashValue, algVersion, false /* suppressErrorLog */);
+
+        if (!validHash)
+        {
+            // Delete existing file.
+            if (remove(scriptFilePath.c_str()) != 0)
+            {
+                Log_Error("Cannot delete existing file that has invalid hash.");
+                result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_CANNOT_DELETE_EXISTING_FILE;
+                goto done;
+            }
+        }
+
+        fileExist = true;
+    }
+
+    if (!fileExist)
+    {
+        createResult = ADUC_SystemUtils_MkSandboxDirRecursive(workFolder);
+        if (createResult != 0)
+        {
+            Log_Error("Unable to create folder %s, error %d", workFolder, createResult);
+            result = { ADUC_Result_Failure, ADUC_ERC_SCRIPT_HANDLER_CREATE_SANDBOX_FAILURE };
+            goto done;
+        }
+
+        try
+        {
+            ExtensionManager_Download_Options downloadOptions = {
+                .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
+            };
+
+            result = ExtensionManager::Download(entity, handle, &downloadOptions, nullptr);
+        }
+        catch (...)
+        {
+            result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_PRIMARY_FILE_FAILURE_UNKNOWNEXCEPTION;
+        }
     }
 
     workflow_free_file_entity(entity);
