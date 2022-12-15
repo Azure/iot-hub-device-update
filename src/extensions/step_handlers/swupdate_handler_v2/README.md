@@ -8,7 +8,7 @@
 
 SWUpdate Handler is a Device Update Agent extension that provides a local software update capability on an embedded device with payloads delivered over the air via Device Update for IoT Hub.  
 
-See [How To Implement A Custom Content Handler Extension](../../../docs/agent-reference/how-to-implement-custom-update-handler.md) for more information.
+See [How To Implement A Custom Content Handler Extension](../../../../docs/agent-reference/how-to-implement-custom-update-handler.md) for more information.
 
 ## SWUpdate Handler Goals
 
