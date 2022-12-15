@@ -38,6 +38,7 @@ set (ADU_SHELL_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/adu-shell/inc)
 set (ADU_EXTENSION_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/extensions/inc
                             ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc)
 
+add_subdirectory (libaducpal)
 add_subdirectory (adu-shell)
 add_subdirectory (adu_types)
 add_subdirectory (adu_workflow)

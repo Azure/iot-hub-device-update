@@ -29,6 +29,8 @@ else ()
     target_link_libraries (${PROJECT_NAME} PRIVATE Threads::Threads)
 endif ()
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 # _DEFAULT_SOURCE - Needed so DT_REG is defined in dirent.h
 #                   see man page for readdir
 #                   _BSD_SOURCE and _SVID_SOURCE are deprecated aliases for _DEFAULT_SOURCE.

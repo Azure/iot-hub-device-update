@@ -1,0 +1,24 @@
+cmake_minimum_required (VERSION 3.5)
+
+project (libaducpal LANGUAGES C)
+
+# CMake Note:  We do not recommend using GLOB to collect a list of source files from your source tree.
+# If no CMakeLists.txt file changes when a source is added or removed then the generated build system
+# cannot know when to ask CMake to regenerate.
+
+# Build as a static library
+add_library (
+    ${PROJECT_NAME} STATIC
+    "src/sys_stat.c"
+    "src/sys_time.c"
+    "src/time.c"
+    "src/unistd.c")
+
+if (WIN32)
+    # On Windows, any project that links to this will have ADUCPAL_USE_PAL defined
+    # so that the headers bring in the correct includes and function definitions.
+    target_compile_definitions (${PROJECT_NAME} PUBLIC ADUCPAL_USE_PAL)
+endif ()
+
+# Ensure that all projects (including this) have access to this project's inc folder.
+target_include_directories (${PROJECT_NAME} PUBLIC "inc")
