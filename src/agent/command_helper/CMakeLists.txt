@@ -27,3 +27,5 @@ target_include_directories (
     PRIVATE ${ADUC_EXPORT_INCLUDES})
 
 target_link_libraries (${PROJECT_NAME} PRIVATE aduc::logging aduc::permission_utils)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)

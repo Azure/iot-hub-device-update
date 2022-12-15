@@ -12,11 +12,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 
-#if defined(_WIN32)
-#    include <time.h>
-#else
-#    include <sys/time.h> // time_t
-#endif
+#include <aducpal/time.h> // time_t
 
 EXTERN_C_BEGIN
 

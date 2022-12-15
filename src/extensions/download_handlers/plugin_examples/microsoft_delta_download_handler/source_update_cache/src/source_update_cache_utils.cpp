@@ -20,17 +20,7 @@
 #include <sys/types.h> // ino_t
 #include <time.h> // time_t
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] unlink
-static int unlink(const char* path)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-#else
-#    include <unistd.h> // unlink
-#endif
+#include <aducpal/unistd.h> // unlink
 
 #include <vector>
 

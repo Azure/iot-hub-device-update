@@ -35,6 +35,8 @@ target_link_libraries (
             aduc::workflow_data_utils
             aduc::workflow_utils)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 # TODO(JeffMill): Removed this. Unclear when needed (ARM builds?)
 # target_link_libraries(${PROJECT_NAME} PRIVATE -zdef)
 

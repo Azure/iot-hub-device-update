@@ -19,11 +19,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(_WIN32)
-#else
-#    include <unistd.h>
-#endif
-
 static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent);
 
 /**

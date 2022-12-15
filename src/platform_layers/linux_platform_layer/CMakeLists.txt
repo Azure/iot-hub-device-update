@@ -36,6 +36,8 @@ target_link_libraries (
             aduc::workflow_data_utils
             aduc::workflow_utils)
 
+target_link_libraries (${target_name} PRIVATE libaducpal)
+
 #
 # Turn -fPIC on, in order to use this library in another shared library.
 #

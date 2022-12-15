@@ -86,6 +86,8 @@ target_link_libraries (
             aduc::string_utils
             aduc::system_utils)
 
+target_link_libraries (${target_name} PRIVATE libaducpal)
+
 add_subdirectory (scripts)
 
 # Install adu-shell to /usr/lib/adu folder.

@@ -28,6 +28,8 @@ if (WIN32)
                 uhttp)
 endif ()
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 include (CTest)
 include (Catch)
 catch_discover_tests (${PROJECT_NAME})

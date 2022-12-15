@@ -19,17 +19,6 @@
 #include <sys/stat.h> // for stat
 #include <vector>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] strcasecmp
-static int strcasecmp(const char* s1, const char* s2)
-{
-    __debugbreak();
-    return 0;
-}
-#else
-#    include <strings.h> // strcasecmp
-#endif
-
 #include <do_config.h>
 #include <do_download.h>
 

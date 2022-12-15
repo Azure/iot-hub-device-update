@@ -25,6 +25,8 @@ target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (${PROJECT_NAME} PRIVATE aduc::logging)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 if (WIN32)
     # TODO(JeffMill): Without this, even when not building UTs, I get:
     # inc\aduc/http_url.h(19,10): fatal  error C1083: Cannot open include file: 'umock_c/umock_c_prod.h': No such file or directory

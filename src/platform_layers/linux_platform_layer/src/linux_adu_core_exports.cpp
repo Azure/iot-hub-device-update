@@ -12,30 +12,10 @@
 #include "linux_adu_core_impl.hpp"
 #include <memory>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] raise
-#    define SIGUSR1 10
-
-static int raise(int sig)
-{
-    __debugbreak();
-    return -1;
-}
-#else
-#    include <signal.h> // raise()
-#endif
+#include <aducpal/signal.h> // raise
+#include <aducpal/unistd.h> // sync
 
 #include <string>
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] sync
-static void sync()
-{
-    __debugbreak();
-}
-#else
-#    include <unistd.h> // sync()
-#endif
 
 #include <vector>
 
@@ -94,7 +74,7 @@ int ADUC_RebootSystem()
     Log_Info("ADUC_RebootSystem called. Rebooting system.");
 
     // Commit buffer cache to disk.
-    sync();
+    ADUCPAL_sync();
 
     std::string output;
     std::vector<std::string> args{ "--update-type", "common", "--update-action", "reboot" };
@@ -123,10 +103,10 @@ int ADUC_RestartAgent()
     Log_Info("Restarting ADU Agent.");
 
     // Commit buffer cache to disk.
-    sync();
+    ADUCPAL_sync();
 
     // Using SGIUSR1 to indicates a desire for shutdown and restart.
-    const int exitStatus = raise(SIGUSR1);
+    const int exitStatus = ADUCPAL_raise(SIGUSR1);
     if (exitStatus != 0)
     {
         Log_Error("ADU Agent restart failed.");

@@ -5,52 +5,12 @@
 #include <catch2/catch.hpp>
 #include <string.h>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] INT_MAX
+#include <aducpal/time.h> // clock_gettime, nanosleep
+#include <aducpal/unistd.h> // sleep
+
+#ifndef INT_MAX
 #    define INT_MAX 2147483647
-#else
-#    include <sys/param.h> // INT_MAX
 #endif
-
-#if defined(_WIN32)
-// TODO(JeffMill):[PAL] clock_gettime
-typedef unsigned int clockid_t;
-#    define CLOCK_REALTIME 0
-
-static int clock_gettime(clockid_t clk_id, struct timespec* tp)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-#else
-#    include <time.h> // clock_gettime
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] sleep
-static unsigned int sleep(unsigned int seconds)
-{
-    __debugbreak();
-    return 0;
-}
-#else
-#    include <unistd.h> // sleep
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] nanosleep
-static int nanosleep(const struct timespec* rqtp, struct timespec* rmtp)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-#else
-#    include <sys/time.h> // nanosleep
-#endif
-
-// #include <unistd.h> // usleep
 
 static ADUC_D2C_HttpStatus_Retry_Info g_httpStatusRetryInfo_fast_speed[]{
     /* Success responses, no retries needed */
@@ -162,7 +122,7 @@ void* mock_msg_process_thread_routine(void* context)
     // Wait before response.
     if (g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS > 999)
     {
-        sleep(((unsigned int)(g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS) + 500) / 1000);
+        ADUCPAL_sleep(((unsigned int)(g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS) + 500) / 1000);
     }
     else
     {
@@ -170,7 +130,7 @@ void* mock_msg_process_thread_routine(void* context)
         t.tv_sec = 0;
         t.tv_nsec = (long)MILLISECONDS_TO_NANOSECONDS(g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS);
         timespec remain{};
-        int res = nanosleep(&t, &remain);
+        int res = ADUCPAL_nanosleep(&t, &remain);
         if (res == -1)
         {
             switch (errno)
@@ -180,11 +140,11 @@ void* mock_msg_process_thread_routine(void* context)
                 break;
             case EINVAL:
             case EFAULT: {
-                sleep(1); // Let's sleep for 1 second.
+                ADUCPAL_sleep(1); // Let's sleep for 1 second.
                 break;
             }
             default: {
-                sleep(1); // Let's sleep for 1 second
+                ADUCPAL_sleep(1); // Let's sleep for 1 second
                 break;
             }
             }
@@ -275,7 +235,7 @@ void* mock_do_work_thread(void* context)
         pthread_mutex_lock(&g_doWorkMutex);
         ADUC_D2C_Messaging_DoWork();
         pthread_mutex_unlock(&g_doWorkMutex);
-        nanosleep(&t, &rem);
+        ADUCPAL_nanosleep(&t, &rem);
     }
     g_cancelDoWorkThread = false;
     return context;
@@ -291,7 +251,7 @@ static time_t GetTimeSinceEpochInSeconds()
 {
     timespec timeSinceEpoch;
 
-    clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
+    ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
 
     return timeSinceEpoch.tv_sec;
 }
@@ -665,7 +625,7 @@ TEST_CASE("Message replacement test")
         &message1FinalStatus);
 
     // Wait for message 1 to be picked up.
-    sleep(2);
+    ADUCPAL_sleep(2);
 
     message = "Message 2";
     ADUC_D2C_Message_SendAsync(

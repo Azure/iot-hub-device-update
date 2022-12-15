@@ -16,54 +16,9 @@
 #include <ctype.h> // isalnum
 #include <sys/stat.h> // stat
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] S_*GRP
-#    define S_IXGRP 00010
-#    define S_IWGRP 00020
-#    define S_IRGRP 00040
-#else
-#    include <sys/stat.h>
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getgrname
-
-// This code only references gr_gid
-struct group
-{
-    gid_t gr_gid;
-};
-
-static struct group* getgrnam(const char* name)
-{
-    static struct group grp;
-
-    __debugbreak();
-
-    grp.gr_gid = 0;
-    return &grp;
-}
-#else
-#    include <grp.h> // for getgrnam
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getpwnam
-
-// This code only references pw_uid
-struct passwd
-{
-    uid_t pw_uid; /* user uid */
-};
-
-static struct passwd* getpwnam(const char* name)
-{
-    __debugbreak();
-    return NULL;
-}
-#else
-#    include <pwd.h> // for getpwnam
-#endif
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/pwd.h> // getpwnam
+#include <aducpal/sys_stat.h> // S_I*
 
 #include <parson.h> // for JSON_*, json_*
 #include <stdio.h> // for FILE
@@ -257,7 +212,7 @@ static bool RegisterHandlerExtension(
     // Note: the return value may point to a static area,
     // and may be overwritten by subsequent calls to getpwent(3), getpwnam(), or getpwuid().
     // (Do not pass the returned pointer to free(3).)
-    struct passwd* pwd = getpwnam(ADUC_FILE_USER);
+    struct passwd* pwd = ADUCPAL_getpwnam(ADUC_FILE_USER);
     if (pwd == NULL)
     {
         Log_Error("Cannot verify credential of 'adu' user.");
@@ -269,7 +224,7 @@ static bool RegisterHandlerExtension(
     // Note: The return value may point to a static area,
     // and may be overwritten by subsequent calls to getgrent(3), getgrgid(), or getgrnam().
     // (Do not pass the returned pointer to free(3).)
-    struct group* grp = getgrnam(ADUC_FILE_GROUP);
+    struct group* grp = ADUCPAL_getgrnam(ADUC_FILE_GROUP);
     if (grp == NULL)
     {
         Log_Error("Cannot get 'adu' group info.");
@@ -437,7 +392,7 @@ bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
     // Note: the return value may point to a static area,
     // and may be overwritten by subsequent calls to getpwent(3), getpwnam(), or getpwuid().
     // (Do not pass the returned pointer to free(3).)
-    pwd = getpwnam(ADUC_FILE_USER);
+    pwd = ADUCPAL_getpwnam(ADUC_FILE_USER);
     if (pwd == NULL)
     {
         Log_Error("Cannot verify credential of 'adu' user.");
@@ -450,7 +405,7 @@ bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
     // Note: The return value may point to a static area,
     // and may be overwritten by subsequent calls to getgrent(3), getgrgid(), or getgrnam().
     // (Do not pass the returned pointer to free(3).)
-    grp = getgrnam(ADUC_FILE_GROUP);
+    grp = ADUCPAL_getgrnam(ADUC_FILE_GROUP);
     if (grp == NULL)
     {
         Log_Error("Cannot get 'adu' group info.");

@@ -30,3 +30,5 @@ target_link_libraries (
             aduc::logging
             aduc::pnp_helper
             IotHubClient::iothub_client)
+
+target_link_libraries (${target_name} PRIVATE libaducpal)

@@ -30,7 +30,8 @@
 
 #ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
 #    include "aduc/connection_string_utils.h"
-#    if defined(_WIN32)
+
+#    ifdef ADUCPAL_USE_PAL
 // TODO(JeffMill): [PAL] do_config.h
 #    else
 #        include <do_config.h>
@@ -44,10 +45,7 @@
 #include <iothub_client_options.h>
 #include <pnp_protocol.h>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] signal
-#    define SIGUSR1 10
-#endif
+#include <aducpal/signal.h> // SIGUSR1
 
 #ifdef ADUC_ALLOW_MQTT
 #    include <iothubtransportmqtt.h>
@@ -63,11 +61,6 @@
 #include <stdio.h>
 #include <stdlib.h> // strtol
 #include <sys/stat.h>
-
-#if defined(_WIN32)
-#else
-#    include <unistd.h>
-#endif
 
 #include "pnp_protocol.h"
 

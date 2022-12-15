@@ -11,20 +11,9 @@
 #include <aduc/c_utils.h>
 #include <stdbool.h>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] uid_t, gid_t
-typedef int uid_t;
-typedef int gid_t;
-
-// dirent.h has S_IXGRP, S_IWGRP, S_IRGRP
-#    define S_IRWXG 00070
-#    define S_IRWXU 00700
-
-// TODO(JeffMill): [PAL] mode_t
-typedef unsigned int mode_t;
-#else
-#    include <sys/types.h> // for uid_t, gid_t, mode_t
-#endif
+#include <aducpal/sys_stat.h> // mode_t
+#include <aducpal/sys_stat.h> // S_I*
+#include <aducpal/unistd.h> // uid_t, gid_t
 
 EXTERN_C_BEGIN
 

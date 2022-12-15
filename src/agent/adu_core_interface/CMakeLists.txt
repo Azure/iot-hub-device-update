@@ -39,6 +39,8 @@ target_link_libraries (
             aduc::workflow_utils
             Parson::parson)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 target_compile_definitions (
     ${PROJECT_NAME}
     PRIVATE ADUC_DEVICEPROPERTIES_MANUFACTURER="${ADUC_DEVICEPROPERTIES_MANUFACTURER}"

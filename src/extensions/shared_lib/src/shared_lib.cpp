@@ -11,36 +11,8 @@
 
 #include <algorithm> // std::for_each
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] dlopen, dlerror, dlsym, dlclose
-#    define RTLD_LAZY 0
-
-static void* dlopen(const char* filename, int flag)
-{
-    __debugbreak();
-    return NULL;
-}
-
-static char* dlerror(void)
-{
-    __debugbreak();
-    return "NYI";
-}
-
-static void* dlsym(void* handle, const char* symbol)
-{
-    __debugbreak();
-    return NULL;
-}
-
-static int dlclose(void* handle)
-{
-    __debugbreak();
-    return 0;
-}
-#else
-#    include <dlfcn.h> // dlopen
-#endif
+// Note: this requires ${CMAKE_DL_LIBS}
+#include <aducpal/dlfcn.h> // dlopen, dlerror, dlsym, dlclose
 
 #include <stdexcept> // std::runtime_error
 
@@ -48,11 +20,11 @@ namespace aduc
 {
 SharedLib::SharedLib(const std::string& libPath)
 {
-    dlerror(); // clear
-    void* handle = dlopen(libPath.c_str(), RTLD_LAZY);
+    ADUCPAL_dlerror(); // clear
+    void* handle = ADUCPAL_dlopen(libPath.c_str(), RTLD_LAZY);
     if (nullptr == handle)
     {
-        char* error = dlerror();
+        char* error = ADUCPAL_dlerror();
         throw std::runtime_error(error != nullptr ? error : "dlopen");
     }
 
@@ -63,7 +35,7 @@ SharedLib::~SharedLib()
 {
     if (libHandle != nullptr)
     {
-        dlclose(libHandle);
+        ADUCPAL_dlclose(libHandle);
         libHandle = nullptr;
     }
 }
@@ -75,11 +47,11 @@ void SharedLib::EnsureSymbols(std::vector<std::string> symbols) const
 
 void* SharedLib::GetSymbol(const std::string& symbol) const
 {
-    dlerror(); // clear
-    void* sym = dlsym(libHandle, symbol.c_str());
+    ADUCPAL_dlerror(); // clear
+    void* sym = ADUCPAL_dlsym(libHandle, symbol.c_str());
     if (sym == nullptr)
     {
-        char* error = dlerror();
+        char* error = ADUCPAL_dlerror();
         throw std::runtime_error(error != nullptr ? error : "dlsym");
     }
 

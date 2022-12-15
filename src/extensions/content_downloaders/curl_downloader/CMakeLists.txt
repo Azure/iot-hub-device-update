@@ -20,4 +20,6 @@ target_link_libraries (
             aduc::logging
             aduc::process_utils)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 install (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

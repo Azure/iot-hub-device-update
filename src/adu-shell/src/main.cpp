@@ -9,76 +9,9 @@
 
 #include <string.h>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getegid
-typedef int gid_t;
-
-static gid_t getegid(void)
-{
-    __debugbreak();
-    return 0;
-}
-#else
-#    include <unistd.h> // getegid
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getuid
-typedef int uid_t;
-
-static uid_t getuid(void)
-{
-    __debugbreak();
-    return 0;
-}
-#else
-#    include <unistd.h> // getuid
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] geteuid, setuid
-typedef int uid_t;
-
-static uid_t geteuid(void)
-{
-    __debugbreak();
-    return -1;
-}
-
-static int setuid(uid_t uid)
-{
-    __debugbreak();
-    return -1;
-}
-#else
-#    include <unistd.h> // geteuid, setuid
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getpwnam
-
-// This code only references pw_uid
-static struct passwd* getpwnam(const char* name)
-{
-    __debugbreak();
-    return NULL;
-}
-#else
-#    include <pwd.h> // for getpwnam
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getgrnam
-
-// This code only references gr_gid
-static struct group* getgrnam(const char* name)
-{
-    __debugbreak();
-    return NULL;
-}
-#else
-#    include <grp.h> // for getgrnam
-#endif
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/pwd.h> // getpwnam
+#include <aducpal/unistd.h> // getegid, geteuid, getuid, setuid
 
 #include <unordered_map>
 #include <vector>
@@ -343,9 +276,9 @@ bool ADUShell_PermissionCheck()
     {
         VECTOR_HANDLE aduShellTrustedUsers = ADUC_ConfigInfo_GetAduShellTrustedUsers(&config);
 
-#if defined(_WIN32)
+#ifdef ADUCPAL_USE_PAL
         // TODO(JeffMill): [PAL] geteuid, getpwnam
-        isTrusted = VerifyProcessEffectiveUser(aduShellTrustedUsers, geteuid, getpwnam);
+        isTrusted = VerifyProcessEffectiveUser(aduShellTrustedUsers, ADUCPAL_geteuid, ADUCPAL_getpwnam);
 #else
         isTrusted = VerifyProcessEffectiveUser(aduShellTrustedUsers);
 #endif
@@ -359,9 +292,9 @@ bool ADUShell_PermissionCheck()
     // check whether the effective user is in the trusted group
     if (!isTrusted)
     {
-#if defined(_WIN32)
+#ifdef ADUCPAL_USE_PAL
         // TODO(JeffMill): [PAL] getegid, getgrnam
-        isTrusted = VerifyProcessEffectiveGroup(ADUSHELL_EFFECTIVE_GROUP_NAME, getegid, getgrnam);
+        isTrusted = VerifyProcessEffectiveGroup(ADUSHELL_EFFECTIVE_GROUP_NAME, ADUCPAL_getegid, ADUCPAL_getgrnam);
 #else
         isTrusted = VerifyProcessEffectiveGroup(ADUSHELL_EFFECTIVE_GROUP_NAME);
 #endif
@@ -417,17 +350,17 @@ int main(int argc, char** argv)
 
     // Run as 'root'.
     // Note: this requires the file owner to be 'root'.
-    uid_t defaultUserId = getuid();
-    uid_t effectiveUserId = geteuid();
-    ret = setuid(effectiveUserId);
+    uid_t defaultUserId = ADUCPAL_getuid();
+    uid_t effectiveUserId = ADUCPAL_geteuid();
+    ret = ADUCPAL_setuid(effectiveUserId);
     if (ret == 0)
     {
         Log_Info(
             "Run as uid(%d), defaultUid(%d), effectiveUid(%d), effectiveGid(%d)",
-            getuid(),
+            ADUCPAL_getuid(),
             defaultUserId,
             effectiveUserId,
-            getegid());
+            ADUCPAL_getegid());
 
         ret = ADUShell_Dowork(launchArgs);
 

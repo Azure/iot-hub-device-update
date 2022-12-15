@@ -13,3 +13,5 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc)
 target_sources (${PROJECT_NAME} PRIVATE src/auto_dir.cpp src/file_test_utils.cpp)
 
 target_link_libraries (${PROJECT_NAME} PRIVATE aduc::system_utils aduc::workflow_utils)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)

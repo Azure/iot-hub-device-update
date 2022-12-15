@@ -10,63 +10,9 @@
 #include <string.h> // for stat, etc.
 #include <sys/stat.h> // for stat, etc.
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] seteuid, setegid
-static int seteuid(uid_t uid)
-{
-    __debugbreak();
-    return 0;
-}
-
-static int setegid(gid_t gid)
-{
-    __debugbreak();
-    return 0;
-}
-#else
-#    include <unistd.h> // for seteuid, setegid
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getgrname
-
-// This code only references gr_gid and gr_mem
-struct group
-{
-    gid_t gr_gid; /* group id */
-    char** gr_mem; /* group members */
-};
-
-static struct group* getgrnam(const char* name)
-{
-    __debugbreak();
-    return NULL;
-}
-#else
-#    include <grp.h> // for getgrnam
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getpwnam
-
-// This code only references pw_uid
-struct passwd
-{
-    uid_t pw_uid; /* user uid */
-};
-
-static struct passwd* getpwnam(const char* name)
-{
-    static struct passwd pw;
-
-    __debugbreak();
-
-    pw.pw_uid = 0;
-    return &pw;
-}
-#else
-#    include <pwd.h> // for getpwnam
-#endif
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/pwd.h> // getpwnam
+#include <aducpal/unistd.h> // seteuid, setegid
 
 //
 // Internal functions
@@ -128,7 +74,7 @@ bool PermissionUtils_VerifyFilemodeBitmask(const char* path, mode_t bitmask)
  */
 bool PermissionUtils_UserExists(const char* user)
 {
-    return getpwnam(user) != NULL;
+    return ADUCPAL_getpwnam(user) != NULL;
 }
 
 /**
@@ -138,7 +84,7 @@ bool PermissionUtils_UserExists(const char* user)
  */
 bool PermissionUtils_GroupExists(const char* group)
 {
-    return getgrnam(group) != NULL;
+    return ADUCPAL_getgrnam(group) != NULL;
 }
 
 /**
@@ -151,7 +97,7 @@ bool PermissionUtils_UserInSupplementaryGroup(const char* user, const char* grou
 {
     bool result = false;
 
-    struct group* groupEntry = getgrnam(group);
+    struct group* groupEntry = ADUCPAL_getgrnam(group);
     if (groupEntry != NULL && groupEntry->gr_mem != NULL)
     {
         for (int i = 0; groupEntry->gr_mem[i] != NULL; ++i)
@@ -186,7 +132,7 @@ bool PermissionUtils_CheckOwnership(const char* path, const char* user, const ch
 
     if (user != NULL)
     {
-        const struct passwd* pwd = getpwnam(user);
+        const struct passwd* pwd = ADUCPAL_getpwnam(user);
         if (pwd == NULL)
         {
             return false;
@@ -197,7 +143,7 @@ bool PermissionUtils_CheckOwnership(const char* path, const char* user, const ch
 
     if (group != NULL)
     {
-        const struct group* grp = getgrnam(group);
+        const struct group* grp = ADUCPAL_getgrnam(group);
         if (grp == NULL)
         {
             return false;
@@ -250,8 +196,8 @@ bool PermissionUtils_CheckOwnerGid(const char* path, gid_t gid)
  */
 bool PermissionUtils_SetProcessEffectiveUID(const char* name)
 {
-    struct passwd* p = getpwnam(name);
-    return (p != NULL && seteuid(p->pw_uid) == 0);
+    struct passwd* p = ADUCPAL_getpwnam(name);
+    return (p != NULL && ADUCPAL_seteuid(p->pw_uid) == 0);
 }
 
 /**
@@ -263,6 +209,6 @@ bool PermissionUtils_SetProcessEffectiveUID(const char* name)
  */
 bool PermissionUtils_SetProcessEffectiveGID(const char* name)
 {
-    struct group* grp = getgrnam(name);
-    return (grp != NULL && setegid(grp->gr_gid) == 0);
+    struct group* grp = ADUCPAL_getgrnam(name);
+    return (grp != NULL && ADUCPAL_setegid(grp->gr_gid) == 0);
 }

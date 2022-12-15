@@ -17,16 +17,7 @@
 #include <azure_c_shared_utility/strings.h> // STRING_*
 #include <stdlib.h> // free, malloc
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] dirname
-static char* dirname(char* path)
-{
-    __debugbreak();
-    return NULL;
-}
-#else
-#    include <libgen.h> // dirname
-#endif
+#include <aducpal/libgen.h> // dirname
 
 EXTERN_C_BEGIN
 

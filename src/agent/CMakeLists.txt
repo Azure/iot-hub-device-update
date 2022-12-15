@@ -98,6 +98,8 @@ target_link_libraries (
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
 
+target_link_libraries (${target_name} PRIVATE libaducpal)
+
 message (STATUS "ADUC_IOT_HUB_PROTOCOL: ${ADUC_IOT_HUB_PROTOCOL}")
 
 if (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT")

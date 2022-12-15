@@ -41,6 +41,8 @@ target_link_libraries (
             aduc::jws_utils
             Parson::parson)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
 endif ()

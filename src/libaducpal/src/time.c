@@ -5,7 +5,6 @@
 #    include <time.h>
 #    include <windows.h>
 
-// TODO(JeffMill): Implement
 int ADUCPAL_clock_gettime(clockid_t clk_id, struct timespec* tp)
 {
 #    define FILETIME_1970 116444736000000000ull /* seconds between 1/1/1601 and 1/1/1970 */
@@ -19,7 +18,6 @@ int ADUCPAL_clock_gettime(clockid_t clk_id, struct timespec* tp)
     return 0;
 }
 
-// TODO(JeffMill): Implement
 struct tm* ADUCPAL_gmtime_r(const time_t* timep, struct tm* result)
 {
     static struct tm tm;
@@ -34,6 +32,12 @@ struct tm* ADUCPAL_gmtime_r(const time_t* timep, struct tm* result)
 
     *result = tm;
     return &tm;
+}
+
+int ADUCPAL_nanosleep(const struct timespec* rqtp, struct timespec* rmtp)
+{
+    __debugbreak();
+    return -1;
 }
 
 #endif // #ifdef ADUCPAL_USE_PAL

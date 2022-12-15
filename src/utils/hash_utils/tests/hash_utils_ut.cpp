@@ -14,19 +14,7 @@ using Catch::Matchers::Equals;
 #include <fstream>
 #include <unordered_map>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] mkstemp
-#include <io.h> // _mktemp
-
-static int mkstemp(char* tmpl)
-{
-    strcpy(tmpl, "/tmp/tmpfileXXXXXX");
-
-    return (_mktemp(tmpl) != NULL) ? 0 : -1;
-}
-#else
-#    include <stdlib.h> //mkstemp
-#endif
+#include <aducpal/stdlib.h> // mkstemp
 
 // To generate file hashes:
 // openssl dgst -binary -sha256 < test.bin  | openssl base64
@@ -42,7 +30,7 @@ public:
     TestFile()
     {
         // Generate a unique filename.
-        int result = mkstemp(_filePath);
+        int result = ADUCPAL_mkstemp(_filePath);
         REQUIRE(result != -1);
     }
 

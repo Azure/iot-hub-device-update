@@ -32,6 +32,8 @@ target_compile_definitions (
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::adu_types

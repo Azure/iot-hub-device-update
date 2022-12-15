@@ -10,7 +10,7 @@
 
 #include <dirent.h>
 
-#include <aducpal/sys_time.h> //gettimeofday
+#include <aducpal/sys_time.h> // gettimeofday
 #include <aducpal/time.h> // clock_gettime, gmtime_r
 #include <aducpal/unistd.h> // getpid, sleep, syscall
 

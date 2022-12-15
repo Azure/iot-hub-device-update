@@ -1,19 +1,27 @@
 #ifndef ADUCPAL_SYS_TIME_H
 #define ADUCPAL_SYS_TIME_H
 
-#if defined(ADUCPAL_USE_PAL)
+#ifdef ADUCPAL_USE_PAL
 
-#    include <time.h> // time_t
+#    include <aducpal/time.h> // time_t
 
+// This project only references tv_sec
 struct timeval
 {
-    time_t tv_sec;
-    // tv_nsec not referenced in this project.
+    time_t tv_sec; /* seconds */
+    // suseconds_t tv_usec;    /* microseconds */
 };
 
-// Note: unclear if tz is "struct timezone*" or "void*".
-// In any case, it's unused in this project.
-int ADUCPAL_gettimeofday(struct timeval* tv, void* tz);
+#    ifdef __cplusplus
+extern "C"
+{
+#    endif
+    // Note: unclear if tz is "struct timezone*" or "void*".
+    // In any case, it's unused in this project.
+    int ADUCPAL_gettimeofday(struct timeval* tv, void* tz);
+#    ifdef __cplusplus
+}
+#    endif
 
 #else
 
@@ -21,6 +29,6 @@ int ADUCPAL_gettimeofday(struct timeval* tv, void* tz);
 
 #    define ADUCPAL_gettimeofday(tv, tz) gettimeofday(tv, tz)
 
-#endif // defined(ADUCPAL_USE_PAL)
+#endif // #ifdef ADUCPAL_USE_PAL
 
 #endif // ADUCPAL_SYS_TIME_H

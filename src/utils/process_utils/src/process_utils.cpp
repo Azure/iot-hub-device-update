@@ -7,96 +7,15 @@
  */
 #include <errno.h>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getgrnam, struct group
-typedef int gid_t;
-
-// This code only references gr_gid
-struct group
-{
-    gid_t gr_gid;
-};
-#else
-#    include <grp.h> // for getgrnam, struct group
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getpwnam
-typedef int uid_t;
-
-// This code only references pw_uid
-struct passwd
-{
-    uid_t pw_uid; /* user uid */
-};
-#else
-#    include <pwd.h> // for getpwnam
-#endif
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/pwd.h> // getpwnam
+#include <aducpal/unistd.h> // pipe, fork, dup2, close, execvp, read
+#include <aducpal/wait.h> // waitpid
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] pipe, fork, dup2, close, execvp, read
-#    define STDOUT_FILENO 1
-#    define STDERR_FILENO 2
-
-#    define WIFEXITED(stat_val) (((stat_val)&255) == 0)
-#    define WEXITSTATUS(stat_val) ((unsigned)(stat_val) >> 8)
-#    define WIFSIGNALED(stat_val) 0
-#    define WTERMSIG(stat_val) 0
-#    define WCOREDUMP(stat_val) 0
-
-static int pipe(int fildes[2])
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-typedef unsigned int pid_t;
-
-static pid_t fork()
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-
-static int dup2(int fildes, int fildes2)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-
-static int close(int fildes)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-
-static int execvp(const char* file, char* const argv[])
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-
-typedef long ssize_t;
-
-static ssize_t read(int fildes, void* buf, size_t nbyte)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-
-#else
-#    include <unistd.h>
-#endif
 
 #include <aduc/c_utils.h>
 #include <aduc/config_utils.h>
@@ -114,20 +33,6 @@ static ssize_t read(int fildes, void* buf, size_t nbyte)
 
 #include <fcntl.h>
 #include <sys/types.h>
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] waitpid
-typedef unsigned int pid_t;
-
-static pid_t waitpid(pid_t pid, int* stat_loc, int options)
-{
-    __debugbreak();
-    *stat_loc = -1;
-    return -1;
-}
-#else
-#    include <sys/wait.h> // for waitpid
-#endif
 
 /**
  * @brief Runs specified command in a new process and captures output, error messages, and exit code.
@@ -149,25 +54,25 @@ int ADUC_LaunchChildProcess(
 #define WRITE_END 1
 
     int filedes[2];
-    const int ret = pipe(filedes);
+    const int ret = ADUCPAL_pipe(filedes);
     if (ret != 0)
     {
         Log_Error("Cannot create output and error pipes. %s (errno %d).", strerror(errno), errno);
         return ret;
     }
 
-    const int pid = fork();
+    const int pid = ADUCPAL_fork();
 
     if (pid == 0)
     {
         // Running inside child process.
 
         // Redirect stdout and stderr to WRITE_END
-        dup2(filedes[WRITE_END], STDOUT_FILENO);
-        dup2(filedes[WRITE_END], STDERR_FILENO);
+        ADUCPAL_dup2(filedes[WRITE_END], STDOUT_FILENO);
+        ADUCPAL_dup2(filedes[WRITE_END], STDERR_FILENO);
 
-        close(filedes[READ_END]);
-        close(filedes[WRITE_END]);
+        ADUCPAL_close(filedes[READ_END]);
+        ADUCPAL_close(filedes[WRITE_END]);
 
         std::vector<char*> argv;
         argv.reserve(args.size() + 2);
@@ -180,20 +85,20 @@ int ADUC_LaunchChildProcess(
 
         // The exec() functions only return if an error has occurred.
         // The return value is -1, and errno is set to indicate the error.
-        int status = execvp(command.c_str(), &argv[0]);
+        int status = ADUCPAL_execvp(command.c_str(), &argv[0]);
 
         fprintf(stderr, "execvp failed, returned %d, error %d\n", status, errno);
 
         _exit(EXIT_FAILURE);
     }
 
-    close(filedes[WRITE_END]);
+    ADUCPAL_close(filedes[WRITE_END]);
 
     for (;;)
     {
         char buffer[1024];
         ssize_t count;
-        count = read(filedes[READ_END], buffer, sizeof(buffer));
+        count = ADUCPAL_read(filedes[READ_END], buffer, sizeof(buffer));
 
         if (count == -1)
         {
@@ -214,7 +119,7 @@ int ADUC_LaunchChildProcess(
     int wstatus;
     int childExitStatus;
 
-    waitpid(pid, &wstatus, 0);
+    ADUCPAL_waitpid(pid, &wstatus, 0);
 
     // Get the child process exit code.
     if (WIFEXITED(wstatus))
@@ -244,7 +149,7 @@ int ADUC_LaunchChildProcess(
         Log_Error("Child process terminated abnormally.", childExitStatus);
     }
 
-    close(filedes[READ_END]);
+    ADUCPAL_close(filedes[READ_END]);
 
     return childExitStatus;
 }

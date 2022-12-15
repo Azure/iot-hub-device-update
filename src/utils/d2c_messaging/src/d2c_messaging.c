@@ -12,22 +12,7 @@
 #include <math.h>
 #include <stdbool.h>
 
-// #include <unistd.h>
-
-#if defined(_WIN32)
-// TODO(JeffMill):[PAL] clock_gettime
-typedef unsigned int clockid_t;
-#    define CLOCK_REALTIME 0
-
-static int clock_gettime(clockid_t clk_id, struct timespec* tp)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-#else
-#    include <time.h> // clock_gettime
-#endif
+#include <aducpal/sys_time.h> // clock_gettime
 
 #ifndef MAX
 #    define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -57,7 +42,7 @@ static time_t GetTimeSinceEpochInSeconds()
 {
     struct timespec timeSinceEpoch;
 
-    clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
+    ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
 
     return timeSinceEpoch.tv_sec;
 }

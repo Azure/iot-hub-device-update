@@ -13,76 +13,9 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] ssize_t
-typedef long ssize_t;
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getgrnam, group
-
-// This code only references gr_gid
-struct group
-{
-    gid_t gr_gid;
-};
-
-static struct group* getgrnam(const char* name)
-{
-    __debugbreak();
-    return NULL;
-}
-#else
-#    include <grp.h> // for getgrnam
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getegid
-typedef int gid_t;
-
-static gid_t getegid(void)
-{
-    __debugbreak();
-    return 0;
-}
-#else
-#    include <unistd.h>
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] open, read, write, close
-static int open(const char* path, int oflag)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-
-typedef long ssize_t;
-
-static ssize_t read(int fildes, void* buf, size_t nbyte)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-
-static ssize_t write(int fildes, const void* buf, size_t nbyte)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-
-static int close(int fildes)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-#else
-#    include <unistd.h>
-#endif
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/sys_stat.h> // mkfifo
+#include <aducpal/unistd.h> // getegid, open, read, write, close, sleep
 
 #include <pthread.h> // pthread_*
 
@@ -91,37 +24,13 @@ static int close(int fildes)
 #include <stdlib.h> // free
 #include <string.h> // strlen
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] mkfifo
-#    define S_IRUSR 00400
-#    define S_IWUSR 00200
-
-#    define S_IRGRP 00040
-#    define S_IWGRP 00020
-
-#    define EDQUOT 123
-
-static int mkfifo(const char* pathname, mode_t mode)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-#else
-#    include <sys/stat.h> // mkfifo
-#endif
-
 #include <sys/stat.h> // stat
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] sleep
-static unsigned int sleep(unsigned int seconds)
-{
-    __debugbreak();
-    return 0;
-}
-#else
-#    include <unistd.h> // sleep
+#include <aducpal/sys_stat.h> // S_I*
+
+#ifdef ADUCPAL_USE_PAL
+// TODO(JeffMill): [PAL] errno, not defined
+#    define EDQUOT 122 /* Quota exceeded */
 #endif
 
 // For version 1.0, we're supporting only 1 command.
@@ -207,7 +116,7 @@ static bool TryCreateFIFOPipe()
     {
         // Create FIFO pipe for commands.
         // Only write to pipe
-        if (mkfifo(ADUC_COMMANDS_FIFO_NAME, S_IRGRP | S_IWGRP | S_IRUSR | S_IWUSR) != 0)
+        if (ADUCPAL_mkfifo(ADUC_COMMANDS_FIFO_NAME, S_IRGRP | S_IWGRP | S_IRUSR | S_IWUSR) != 0)
         {
             int error_no = errno;
             switch (error_no)
@@ -271,7 +180,7 @@ static bool SecurityChecks()
     }
 
     // Verify current user
-    struct group* grp = getgrnam("adu");
+    struct group* grp = ADUCPAL_getgrnam("adu");
     if (grp == NULL)
     {
         // Failed to get 'adu' group information, bail.
@@ -279,7 +188,7 @@ static bool SecurityChecks()
         return false;
     }
 
-    gid_t gid = getegid();
+    gid_t gid = ADUCPAL_getegid();
     if (gid != 0 /* root */
         && gid != grp->gr_gid /* adu */)
     {
@@ -314,11 +223,11 @@ static void* ADUC_CommandListenerThread(void* unused)
         // Open file for read, if needed.
         if (fileDescriptor <= 0)
         {
-            fileDescriptor = open(ADUC_COMMANDS_FIFO_NAME, O_RDONLY);
+            fileDescriptor = ADUCPAL_open(ADUC_COMMANDS_FIFO_NAME, O_RDONLY);
             if (fileDescriptor <= 0)
             {
                 Log_Error("Cannot open '%s' for read.", ADUC_COMMANDS_FIFO_NAME);
-                sleep(DELAY_BETWEEN_FAILED_OPERATION_SECONDS);
+                ADUCPAL_sleep(DELAY_BETWEEN_FAILED_OPERATION_SECONDS);
                 continue;
             }
         }
@@ -326,15 +235,15 @@ static void* ADUC_CommandListenerThread(void* unused)
         Log_Info("Wait for command...");
         // By default, read() is blocked, until at least one writer open a file descriptor.
         // For simplicity, we are leveraging this behavior instead of loop+sleep or 'select()' or 'poll()'.
-        ssize_t readSize = read(fileDescriptor, commandLine, sizeof(commandLine));
+        ssize_t readSize = ADUCPAL_read(fileDescriptor, commandLine, sizeof(commandLine));
         if (readSize < 0)
         {
             // An error occurred.
             Log_Warn("Read error (error:%d).", errno);
             // Close current file descriptor and retry in next 'DELAY_BETWEEN_FAILED_OPERATION_SECONDS' seconds.
-            close(fileDescriptor);
+            ADUCPAL_close(fileDescriptor);
             fileDescriptor = -1;
-            sleep(DELAY_BETWEEN_FAILED_OPERATION_SECONDS);
+            ADUCPAL_sleep(DELAY_BETWEEN_FAILED_OPERATION_SECONDS);
             continue;
         }
 
@@ -343,7 +252,7 @@ static void* ADUC_CommandListenerThread(void* unused)
             // EOF, in this case, no more data written to the pipe.
             // Close and reopen the reader (above), to reset the block state.
             // Note: regardless of fclose() result, fileDescriptor is no longer valid.
-            close(fileDescriptor);
+            ADUCPAL_close(fileDescriptor);
             fileDescriptor = -1;
             continue;
         }
@@ -394,7 +303,7 @@ static void* ADUC_CommandListenerThread(void* unused)
     } while (!g_terminate_thread_request);
 
 done:
-    close(fileDescriptor);
+    ADUCPAL_close(fileDescriptor);
     if (!threadCreated)
     {
         Log_Error("Cannot start the command listener thread.");
@@ -432,7 +341,7 @@ bool SendCommand(const char* command)
         goto done;
     }
 
-    fd = open(ADUC_COMMANDS_FIFO_NAME, O_WRONLY);
+    fd = ADUCPAL_open(ADUC_COMMANDS_FIFO_NAME, O_WRONLY);
     if (fd < 0)
     {
         Log_Error("Fail to open pipe.");
@@ -441,7 +350,7 @@ bool SendCommand(const char* command)
 
     // Copy command to buffer and fill the remaining buffer (if any) with additional null bytes.
     strncpy(buffer, command, sizeof(buffer));
-    ssize_t size = write(fd, buffer, sizeof(buffer));
+    ssize_t size = ADUCPAL_write(fd, buffer, sizeof(buffer));
     if (size != sizeof(buffer))
     {
         Log_Error("Fail to send command.");
@@ -453,7 +362,7 @@ bool SendCommand(const char* command)
 done:
     if (fd >= 0)
     {
-        close(fd);
+        ADUCPAL_close(fd);
     }
     return success;
 }

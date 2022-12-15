@@ -34,51 +34,9 @@
 #include <cstring>
 #include <unordered_map>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] dlopen, dlerror, dlsym, dlclose
-#    define RTLD_LAZY 0
-
-static void* dlopen(const char* filename, int flag)
-{
-    __debugbreak();
-    return NULL;
-}
-
-static char* dlerror(void)
-{
-    __debugbreak();
-    return "NYI";
-}
-
-static void* dlsym(void* handle, const char* symbol)
-{
-    __debugbreak();
-    return NULL;
-}
-
-static int dlclose(void* handle)
-{
-    __debugbreak();
-    return 0;
-}
-#else
 // Note: this requires ${CMAKE_DL_LIBS}
-#    include <dlfcn.h> // dlopen
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] access
-#    define F_OK 0
-
-static int access(const char* path, int amode)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-#else
-#    include <unistd.h> // for access
-#endif
+#include <aducpal/dlfcn.h> // dlopen, dlerror, dlsym, dlclose
+#include <aducpal/unistd.h> // access
 
 // type aliases
 using UPDATE_CONTENT_HANDLER_CREATE_PROC = ContentHandler* (*)(ADUC_LOG_SEVERITY logLevel);
@@ -189,25 +147,25 @@ ADUC_Result ExtensionManager::LoadExtensionLibrary(
         goto done;
     }
 
-    *libHandle = dlopen(entity.TargetFilename, RTLD_LAZY);
+    *libHandle = ADUCPAL_dlopen(entity.TargetFilename, RTLD_LAZY);
 
     if (*libHandle == nullptr)
     {
-        Log_Error("Cannot load content handler file %s. %s.", entity.TargetFilename, dlerror());
+        Log_Error("Cannot load content handler file %s. %s.", entity.TargetFilename, ADUCPAL_dlerror());
         result.ExtendedResultCode = ADUC_ERC_EXTENSION_CREATE_FAILURE_LOAD(facilityCode, componentCode);
         goto done;
     }
 
-    dlerror(); // Clear any existing error
+    ADUCPAL_dlerror(); // Clear any existing error
 
     // Only check whether required function exist, if specified.
     if (requiredFunction != nullptr && *requiredFunction != '\0')
     {
-        void* reqFunc = dlsym(*libHandle, requiredFunction);
+        void* reqFunc = ADUCPAL_dlsym(*libHandle, requiredFunction);
 
         if (reqFunc == nullptr)
         {
-            Log_Error("The specified function ('%s') doesn't exist. %s\n", requiredFunction, dlerror());
+            Log_Error("The specified function ('%s') doesn't exist. %s\n", requiredFunction, ADUCPAL_dlerror());
             result.ExtendedResultCode =
                 ADUC_ERC_EXTENSION_FAILURE_REQUIRED_FUNCTION_NOTIMPL(facilityCode, componentCode);
             goto done;
@@ -224,7 +182,7 @@ done:
     {
         if (*libHandle != nullptr)
         {
-            dlclose(*libHandle);
+            ADUCPAL_dlclose(*libHandle);
             *libHandle = nullptr;
         }
     }
@@ -306,15 +264,15 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
         goto done;
     }
 
-    dlerror(); // Clear any existing error
+    ADUCPAL_dlerror(); // Clear any existing error
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     createUpdateContentHandlerExtensionFn = reinterpret_cast<UPDATE_CONTENT_HANDLER_CREATE_PROC>(
-        dlsym(libHandle, CONTENT_HANDLER__CreateUpdateContentHandlerExtension__EXPORT_SYMBOL));
+        ADUCPAL_dlsym(libHandle, CONTENT_HANDLER__CreateUpdateContentHandlerExtension__EXPORT_SYMBOL));
 
     if (createUpdateContentHandlerExtensionFn == nullptr)
     {
-        Log_Error("The specified function doesn't exist. %s\n", dlerror());
+        Log_Error("The specified function doesn't exist. %s\n", ADUCPAL_dlerror());
         result.ExtendedResultCode =
             ADUC_ERC_EXTENSION_FAILURE_REQUIRED_FUNCTION_NOTIMPL(ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER, 0);
         goto done;
@@ -342,8 +300,8 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
     Log_Debug("Determining contract version for '%s'.", updateType.c_str());
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    getContractInfoFn =
-        reinterpret_cast<GET_CONTRACT_INFO_PROC>(dlsym(libHandle, CONTENT_HANDLER__GetContractInfo__EXPORT_SYMBOL));
+    getContractInfoFn = reinterpret_cast<GET_CONTRACT_INFO_PROC>(
+        ADUCPAL_dlsym(libHandle, CONTENT_HANDLER__GetContractInfo__EXPORT_SYMBOL));
 
     if (getContractInfoFn == nullptr)
     {
@@ -386,7 +344,7 @@ done:
     {
         if (libHandle != nullptr)
         {
-            dlclose(libHandle);
+            ADUCPAL_dlclose(libHandle);
             libHandle = nullptr;
         }
     }
@@ -446,7 +404,7 @@ void ExtensionManager::UnloadAllExtensions()
 
     for (auto& lib : _libs)
     {
-        dlclose(lib.second);
+        ADUCPAL_dlclose(lib.second);
     }
 
     _libs.clear();
@@ -489,12 +447,12 @@ ADUC_Result ExtensionManager::LoadContentDownloaderLibrary(void** contentDownloa
 
     for (auto& functionName : functionNames)
     {
-        dlerror(); // Clear any existing error
-        void* downloadFunc = dlsym(extensionLib, functionName);
+        ADUCPAL_dlerror(); // Clear any existing error
+        void* downloadFunc = ADUCPAL_dlsym(extensionLib, functionName);
 
         if (downloadFunc == nullptr)
         {
-            Log_Error("The specified function ('%s') doesn't exist. %s\n", functionName, dlerror());
+            Log_Error("The specified function ('%s') doesn't exist. %s\n", functionName, ADUCPAL_dlerror());
             result = { /* .ResultCode = */ ADUC_GeneralResult_Failure,
                        /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_CREATE_FAILURE_NO_SYMBOL };
             goto done;
@@ -505,7 +463,7 @@ ADUC_Result ExtensionManager::LoadContentDownloaderLibrary(void** contentDownloa
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     getContractInfoFn = reinterpret_cast<GET_CONTRACT_INFO_PROC>(
-        dlsym(extensionLib, CONTENT_DOWNLOADER__GetContractInfo__EXPORT_SYMBOL));
+        ADUCPAL_dlsym(extensionLib, CONTENT_DOWNLOADER__GetContractInfo__EXPORT_SYMBOL));
     if (getContractInfoFn == nullptr)
     {
         _contentDownloaderContractVersion.majorVer = ADUC_V1_CONTRACT_MAJOR_VER;
@@ -587,10 +545,10 @@ ADUC_Result ExtensionManager::LoadComponentEnumeratorLibrary(void** componentEnu
         goto done;
     }
 
-    dlerror(); // Clear any existing error
+    ADUCPAL_dlerror(); // Clear any existing error
     try
     {
-        mainFunc = dlsym(extensionLib, requiredFunction);
+        mainFunc = ADUCPAL_dlsym(extensionLib, requiredFunction);
     }
     catch (...)
     {
@@ -599,7 +557,7 @@ ADUC_Result ExtensionManager::LoadComponentEnumeratorLibrary(void** componentEnu
     if (mainFunc == nullptr)
     {
         // Log info instead of error since some extension is optional and may not be registered.
-        Log_Info("The specified function ('%s') doesn't exist. %s\n", requiredFunction, dlerror());
+        Log_Info("The specified function ('%s') doesn't exist. %s\n", requiredFunction, ADUCPAL_dlerror());
         result = { /* .ResultCode = */ ADUC_GeneralResult_Failure,
                    /* .ExtendedResultCode = */ ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_NO_SYMBOL };
         goto done;
@@ -609,7 +567,7 @@ ADUC_Result ExtensionManager::LoadComponentEnumeratorLibrary(void** componentEnu
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     getContractInfoFn = reinterpret_cast<GET_CONTRACT_INFO_PROC>(
-        dlsym(extensionLib, COMPONENT_ENUMERATOR__GetContractInfo__EXPORT_SYMBOL));
+        ADUCPAL_dlsym(extensionLib, COMPONENT_ENUMERATOR__GetContractInfo__EXPORT_SYMBOL));
     if (getContractInfoFn == nullptr)
     {
         _componentEnumeratorContractVersion.majorVer = ADUC_V1_CONTRACT_MAJOR_VER;
@@ -648,7 +606,7 @@ void ExtensionManager::_FreeComponentsDataString(char* componentsJson)
         && ExtensionManager::_componentEnumeratorContractVersion.minorVer == ADUC_V1_CONTRACT_MINOR_VER)
     {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        freeComponentsDataStringProc = reinterpret_cast<FreeComponentsDataStringProc>(dlsym(
+        freeComponentsDataStringProc = reinterpret_cast<FreeComponentsDataStringProc>(ADUCPAL_dlsym(
             lib,
             COMPONENT_ENUMERATOR__FreeComponentsDataString__EXPORT_SYMBOL)); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
@@ -717,7 +675,7 @@ ADUC_Result ExtensionManager::GetAllComponents(std::string& outputComponentsData
         {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             _getAllComponents = reinterpret_cast<GetAllComponentsProc>(
-                dlsym(lib, COMPONENT_ENUMERATOR__GetAllComponents__EXPORT_SYMBOL));
+                ADUCPAL_dlsym(lib, COMPONENT_ENUMERATOR__GetAllComponents__EXPORT_SYMBOL));
             if (_getAllComponents == nullptr)
             {
                 result = { /* .ResultCode = */ ADUC_Result_Failure,
@@ -780,8 +738,8 @@ ADUC_Result ExtensionManager::SelectComponents(const std::string& selector, std:
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    _selectComponents =
-        reinterpret_cast<SelectComponentsProc>(dlsym(lib, COMPONENT_ENUMERATOR__SelectComponents__EXPORT_SYMBOL));
+    _selectComponents = reinterpret_cast<SelectComponentsProc>(
+        ADUCPAL_dlsym(lib, COMPONENT_ENUMERATOR__SelectComponents__EXPORT_SYMBOL));
     if (_selectComponents == nullptr)
     {
         result = { /* .ResultCode = */ ADUC_Result_Failure,
@@ -835,7 +793,7 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    _initialize = reinterpret_cast<InitializeProc>(dlsym(lib, CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL));
+    _initialize = reinterpret_cast<InitializeProc>(ADUCPAL_dlsym(lib, CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL));
     if (_initialize == nullptr)
     {
         result = { /* .ResultCode = */ ADUC_Result_Failure,
@@ -899,7 +857,7 @@ ADUC_Result ExtensionManager::Download(
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    downloadProc = reinterpret_cast<DownloadProc>(dlsym(lib, CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL));
+    downloadProc = reinterpret_cast<DownloadProc>(ADUCPAL_dlsym(lib, CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL));
     if (downloadProc == nullptr)
     {
         result = { /* .ResultCode = */ ADUC_Result_Failure,
@@ -922,7 +880,7 @@ ADUC_Result ExtensionManager::Download(
     // Otherwise, delete an existing file, then download.
     Log_Debug("Check whether '%s' has already been download into the work folder.", targetUpdateFilePath.c_str());
 
-    if (access(targetUpdateFilePath.c_str(), F_OK) == 0)
+    if (ADUCPAL_access(targetUpdateFilePath.c_str(), F_OK) == 0)
     {
         char* hashValue = ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0 /* index */);
         if (hashValue == nullptr)
