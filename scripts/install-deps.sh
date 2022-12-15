@@ -606,7 +606,7 @@ do_install_cmake_from_installer() {
     local cmake_installer_sh="cmake-${install_cmake_version}-linux-${arch}.sh"
     local fullpath_cmake_installer_sh="${work_folder}/${cmake_installer_sh}"
     if [[ -f $fullpath_cmake_installer_sh ]]; then
-        $SUDO rm $fullpath_cmake_installer_sh || return 1
+        $SUDO rm "$fullpath_cmake_installer_sh" || return 1
     fi
 
     local cmake_installer_url="https://github.com/Kitware/CMake/releases/download/v${install_cmake_version}/${cmake_installer_sh}"
@@ -627,7 +627,7 @@ do_install_cmake_from_installer() {
         return $ret_value
     fi
 
-    $SUDO rm $fullpath_cmake_installer_sh || return 1
+    $SUDO rm "$fullpath_cmake_installer_sh" || return 1
 
     ln -sf "$cmake_installer_dir" "$cmake_dir_symlink"
 }
