@@ -691,13 +691,36 @@ static void ADUC_ConnectionStatus_Callback(
     {
         switch (reason)
         {
-        case IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN:
-            Log_Warn("IotHub connection SAS token expired. Attempting refresh.");
-            // Try to refresh the sas token, then set an IotHub client handle on every PnP sub-component.
-            ADUC_Refresh_IotHub_Connection_SAS_Token();
-            break;
         default:
             break;
+        case IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN:
+        case IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL:
+        {
+            Log_Warn("IotHub connection broken (reason:%d), refreshing the connection info.");
+            ADUC_ConfigInfo config = {};
+            if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+            {
+                Log_Error("Cannot read configuration file.");
+                break;
+            }
+
+            const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(&config, 0);
+            if (agent == NULL)
+            {
+                Log_Error("Cannot get the agent information.");
+                break;
+            }
+
+            if (strcmp(agent->connectionType, "AIS") != 0)
+            {
+                Log_Warn("Not using AIS, will not refresh the connection.");
+                break;
+            }
+
+            // Try to refresh the sas token, then set an IotHub client handle on every PnP sub-component.
+            ADUC_Refresh_IotHub_Connection_SAS_Token();
+        }
+        break;
         }
     }
 }
@@ -769,7 +792,7 @@ static IOTHUB_CLIENT_TRANSPORT_PROVIDER GetIotHubProtocolFromConfig()
  * @return true on success, false on failure
  */
 static bool ADUC_DeviceClient_Create(
-    ADUC_ClientHandle clientHandle, ADUC_ConnectionInfo* connInfo, const ADUC_LaunchArguments* launchArgs)
+    ADUC_ClientHandle* clientHandle, ADUC_ConnectionInfo* connInfo, const ADUC_LaunchArguments* launchArgs)
 {
     IOTHUB_CLIENT_RESULT iothubResult;
     HTTP_PROXY_OPTIONS proxyOptions = {};
@@ -785,15 +808,15 @@ static bool ADUC_DeviceClient_Create(
     }
     // Create a connection to IoTHub.
     else if (!ClientHandle_CreateFromConnectionString(
-                 &g_iotHubClientHandle, connInfo->connType, connInfo->connectionString, transportProvider))
+                 clientHandle, connInfo->connType, connInfo->connectionString, transportProvider))
     {
         Log_Error("Failure creating IotHub device client using MQTT protocol. Check your connection string.");
+        *clientHandle = NULL;
         result = false;
     }
     // Sets IoTHub tracing verbosity level.
     else if (
-        (iothubResult =
-             ClientHandle_SetOption(g_iotHubClientHandle, OPTION_LOG_TRACE, &(launchArgs->iotHubTracingEnabled)))
+        (iothubResult = ClientHandle_SetOption(*clientHandle, OPTION_LOG_TRACE, &(launchArgs->iotHubTracingEnabled)))
         != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set IoTHub tracing option, error=%d", iothubResult);
@@ -801,8 +824,7 @@ static bool ADUC_DeviceClient_Create(
     }
     else if (
         connInfo->certificateString != NULL && connInfo->authType == ADUC_AuthType_SASCert
-        && (iothubResult =
-                ClientHandle_SetOption(g_iotHubClientHandle, SU_OPTION_X509_CERT, connInfo->certificateString))
+        && (iothubResult = ClientHandle_SetOption(*clientHandle, SU_OPTION_X509_CERT, connInfo->certificateString))
             != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set IotHub certificate, error=%d", iothubResult);
@@ -810,16 +832,15 @@ static bool ADUC_DeviceClient_Create(
     }
     else if (
         shouldSetProxyOptions
-        && (iothubResult =
-                ClientHandle_SetOption(g_iotHubClientHandle, OPTION_HTTP_PROXY, &proxyOptions) != IOTHUB_CLIENT_OK))
+        && (iothubResult = ClientHandle_SetOption(*clientHandle, OPTION_HTTP_PROXY, &proxyOptions))
+            != IOTHUB_CLIENT_OK)
     {
         Log_Error("Could not set http proxy options, error=%d ", iothubResult);
         result = false;
     }
     else if (
         connInfo->certificateString != NULL && connInfo->authType == ADUC_AuthType_NestedEdgeCert
-        && (iothubResult =
-                ClientHandle_SetOption(g_iotHubClientHandle, OPTION_TRUSTED_CERT, connInfo->certificateString))
+        && (iothubResult = ClientHandle_SetOption(*clientHandle, OPTION_TRUSTED_CERT, connInfo->certificateString))
             != IOTHUB_CLIENT_OK)
     {
         Log_Error("Could not add trusted certificate, error=%d ", iothubResult);
@@ -827,8 +848,7 @@ static bool ADUC_DeviceClient_Create(
     }
     else if (
         connInfo->opensslEngine != NULL && connInfo->authType == ADUC_AuthType_SASCert
-        && (iothubResult =
-                ClientHandle_SetOption(g_iotHubClientHandle, OPTION_OPENSSL_ENGINE, connInfo->opensslEngine))
+        && (iothubResult = ClientHandle_SetOption(*clientHandle, OPTION_OPENSSL_ENGINE, connInfo->opensslEngine))
             != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set IotHub OpenSSL Engine, error=%d", iothubResult);
@@ -837,7 +857,7 @@ static bool ADUC_DeviceClient_Create(
     else if (
         connInfo->opensslPrivateKey != NULL && connInfo->authType == ADUC_AuthType_SASCert
         && (iothubResult =
-                ClientHandle_SetOption(g_iotHubClientHandle, SU_OPTION_X509_PRIVATE_KEY, connInfo->opensslPrivateKey))
+                ClientHandle_SetOption(*clientHandle, SU_OPTION_X509_PRIVATE_KEY, connInfo->opensslPrivateKey))
             != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set IotHub OpenSSL Private Key, error=%d", iothubResult);
@@ -847,7 +867,7 @@ static bool ADUC_DeviceClient_Create(
         connInfo->opensslEngine != NULL && connInfo->opensslPrivateKey != NULL
         && connInfo->authType == ADUC_AuthType_SASCert
         && (iothubResult =
-                ClientHandle_SetOption(g_iotHubClientHandle, OPTION_OPENSSL_PRIVATE_KEY_TYPE, &x509_key_from_engine))
+                ClientHandle_SetOption(*clientHandle, OPTION_OPENSSL_PRIVATE_KEY_TYPE, &x509_key_from_engine))
             != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set IotHub OpenSSL Private Key Type, error=%d", iothubResult);
@@ -856,9 +876,7 @@ static bool ADUC_DeviceClient_Create(
     // Sets the name of ModelId for this PnP device.
     // This *MUST* be set before the client is connected to IoTHub.  We do not automatically connect when the
     // handle is created, but will implicitly connect to subscribe for device method and device twin callbacks below.
-    else if (
-        (iothubResult = ClientHandle_SetOption(g_iotHubClientHandle, OPTION_MODEL_ID, g_aduModelId))
-        != IOTHUB_CLIENT_OK)
+    else if ((iothubResult = ClientHandle_SetOption(*clientHandle, OPTION_MODEL_ID, g_aduModelId)) != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set the Device Twin Model ID, error=%d", iothubResult);
         result = false;
@@ -868,15 +886,14 @@ static bool ADUC_DeviceClient_Create(
     // This will also automatically retrieve the full twin for the application.
     else if (
         (iothubResult = ClientHandle_SetClientTwinCallback(
-             g_iotHubClientHandle, ADUC_PnPDeviceTwin_Callback, &g_iotHubInitiatedPnPPropertyChangeContext))
+             *clientHandle, ADUC_PnPDeviceTwin_Callback, &g_iotHubInitiatedPnPPropertyChangeContext))
         != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set device twin callback, error=%d", iothubResult);
         result = false;
     }
     else if (
-        (iothubResult =
-             ClientHandle_SetConnectionStatusCallback(g_iotHubClientHandle, ADUC_ConnectionStatus_Callback, NULL))
+        (iothubResult = ClientHandle_SetConnectionStatusCallback(*clientHandle, ADUC_ConnectionStatus_Callback, NULL))
         != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set connection status callback, error=%d", iothubResult);
@@ -888,10 +905,10 @@ static bool ADUC_DeviceClient_Create(
         result = true;
     }
 
-    if ((result == false) && (g_iotHubClientHandle != NULL))
+    if ((result == false) && (*clientHandle != NULL))
     {
-        ClientHandle_Destroy(g_iotHubClientHandle);
-        g_iotHubClientHandle = NULL;
+        ClientHandle_Destroy(*clientHandle);
+        *clientHandle = NULL;
     }
 
     if (shouldSetProxyOptions)
@@ -1156,7 +1173,7 @@ static void ADUC_Refresh_IotHub_Connection_SAS_Token()
         goto done;
     }
 
-    if (!ADUC_DeviceClient_Create(g_iotHubClientHandle, &info, &launchArgs))
+    if (!ADUC_DeviceClient_Create(&g_iotHubClientHandle, &info, &launchArgs))
     {
         Log_Error("ADUC_DeviceClient_Create failed");
         goto done;
@@ -1209,7 +1226,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
             goto done;
         }
 
-        if (!ADUC_DeviceClient_Create(g_iotHubClientHandle, &connInfo, launchArgs))
+        if (!ADUC_DeviceClient_Create(&g_iotHubClientHandle, &connInfo, launchArgs))
         {
             Log_Error("ADUC_DeviceClient_Create failed");
             goto done;
@@ -1222,7 +1239,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
             goto done;
         }
 
-        if (!ADUC_DeviceClient_Create(g_iotHubClientHandle, &info, launchArgs))
+        if (!ADUC_DeviceClient_Create(&g_iotHubClientHandle, &info, launchArgs))
         {
             Log_Error("ADUC_DeviceClient_Create failed");
             goto done;
