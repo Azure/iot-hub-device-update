@@ -28,8 +28,7 @@ target_link_libraries (
             aduc::parser_utils
             aduc::system_utils
             aduc::workflow_data_utils
-            aduc::workflow_utils
-            -zdef)
+            aduc::workflow_utils)
 
 target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")
 

@@ -186,6 +186,11 @@ IOTHUB_CLIENT_RESULT ClientHandle_SendEventAsync(
  */
 void ClientHandle_DoWork(ADUC_ClientHandle iotHubClientHandle)
 {
+    if (iotHubClientHandle == NULL)
+    {
+        return;
+    }
+
     if (g_ClientHandleType == ADUC_ConnType_Device)
     {
         IoTHubDeviceClient_LL_DoWork(GetDeviceClientHandle(iotHubClientHandle));
