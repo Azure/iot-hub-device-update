@@ -49,7 +49,7 @@ To install all dependencies run:
 To install only the dependencies necessary for the agent:
 
 ```shell
-./scripts/install-deps.sh --install-aduc-deps --install-packages
+./scripts/install-deps.sh --install-aduc-deps --install-packages --install-do
 ```
 
 `install-deps.sh` also provides several options for installing individual
