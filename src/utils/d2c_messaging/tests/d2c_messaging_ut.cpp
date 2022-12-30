@@ -1,6 +1,7 @@
 
 #include "aduc/client_handle.h"
 #include "aduc/d2c_messaging.h"
+#include "aduc/retry_utils.h"
 
 #include <catch2/catch.hpp>
 #include <string.h>
@@ -19,14 +20,14 @@ static ADUC_D2C_HttpStatus_Retry_Info g_httpStatusRetryInfo_fast_speed[]{
     { .httpStatusMin = 400,
       .httpStatusMax = 499,
       .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
       .maxRetry = INT_MAX },
 
     /* Catch all */
     { .httpStatusMin = 0,
       .httpStatusMax = INT_MAX,
       .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
       .maxRetry = INT_MAX }
 };
 
@@ -69,7 +70,7 @@ static ADUC_D2C_HttpStatus_Retry_Info g_httpStatusRetryInfo_no_calc_func[]{
     { .httpStatusMin = 0,
       .httpStatusMax = INT_MAX,
       .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
       .maxRetry = INT_MAX }
 };
 

@@ -55,14 +55,15 @@ static IOTHUB_CLIENT_DEVICE_TWIN_CALLBACK g_device_twin_callback = NULL;
 /**
  * @brief An additional data context used the caller.
  */
-static ADUC_PnPComponentClient_PropertyUpdate_Context *g_property_update_context = NULL;
+static ADUC_PnPComponentClient_PropertyUpdate_Context* g_property_update_context = NULL;
 
-static time_t g_last_authenticated_time = 0;                // The last authenticated timestamp (since epoch)
-static time_t g_next_authentication_attempt_time = 0;       // Time stamp when we should try to authenticate with the hub.
-static time_t g_first_unauthenticated_time = 0;             // The first unauthenticated timestamp (since epoch)
-static time_t g_last_authentication_attempt_time = 0;       // The last authentication attempt timestamp (since epoch)
-static time_t g_last_connection_status_callback_time = 0;   // The last time the connection callback was called (since epoch)
-static unsigned int g_authentication_retries = 0;           // The total authentication retries count.
+static time_t g_last_authenticated_time = 0; // The last authenticated timestamp (since epoch)
+static time_t g_next_authentication_attempt_time = 0; // Time stamp when we should try to authenticate with the hub.
+static time_t g_first_unauthenticated_time = 0; // The first unauthenticated timestamp (since epoch)
+static time_t g_last_authentication_attempt_time = 0; // The last authentication attempt timestamp (since epoch)
+static time_t g_last_connection_status_callback_time =
+    0; // The last time the connection callback was called (since epoch)
+static unsigned int g_authentication_retries = 0; // The total authentication retries count.
 
 // Engine type for an OpenSSL Engine
 static const OPTION_OPENSSL_KEY_TYPE x509_key_from_engine = KEY_TYPE_ENGINE;
@@ -107,11 +108,11 @@ static time_t GetTimeSinceEpochInSeconds()
  *
  *  @return 'true' if success, 'false' if already initialize.
  */
-bool IoTHub_CommunicationManager_Init(ADUC_ClientHandle* handle_address,
-                                   IOTHUB_CLIENT_DEVICE_TWIN_CALLBACK device_twin_callback,
-                                   ADUC_COMMUNICATION_MANAGER_CLIENT_HANDLE_UPDATED_CALLBACK client_handle_updated_callback,
-                                   ADUC_PnPComponentClient_PropertyUpdate_Context *property_update_context
-                                   )
+bool IoTHub_CommunicationManager_Init(
+    ADUC_ClientHandle* handle_address,
+    IOTHUB_CLIENT_DEVICE_TWIN_CALLBACK device_twin_callback,
+    ADUC_COMMUNICATION_MANAGER_CLIENT_HANDLE_UPDATED_CALLBACK client_handle_updated_callback,
+    ADUC_PnPComponentClient_PropertyUpdate_Context* property_update_context)
 {
     if (g_aduc_client_handle_address != NULL)
     {
@@ -198,9 +199,10 @@ void IoTHub_CommunicationManager_ConnectionStatus_Callback(
         }
         else
         {
-            Log_Error("IoTHub connection is broken for %d seconds (will retry in %d seconds)",
-                    now_time -g_first_unauthenticated_time,
-                    g_next_authentication_attempt_time - now_time);
+            Log_Error(
+                "IoTHub connection is broken for %d seconds (will retry in %d seconds)",
+                now_time - g_first_unauthenticated_time,
+                g_next_authentication_attempt_time - now_time);
         }
         break;
     }
@@ -300,8 +302,7 @@ static bool ADUC_DeviceClient_Create(
     }
     // Sets IoTHub tracing verbosity level.
     else if (
-        (iothubResult =
-             ClientHandle_SetOption(*outClientHandle, OPTION_LOG_TRACE, &iotHubTracingEnabled))
+        (iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_LOG_TRACE, &iotHubTracingEnabled))
         != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set IoTHub tracing option, error=%d", iothubResult);
@@ -309,8 +310,7 @@ static bool ADUC_DeviceClient_Create(
     }
     else if (
         connInfo->certificateString != NULL && connInfo->authType == ADUC_AuthType_SASCert
-        && (iothubResult =
-                ClientHandle_SetOption(*outClientHandle, SU_OPTION_X509_CERT, connInfo->certificateString))
+        && (iothubResult = ClientHandle_SetOption(*outClientHandle, SU_OPTION_X509_CERT, connInfo->certificateString))
             != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set IotHub certificate, error=%d", iothubResult);
@@ -326,8 +326,7 @@ static bool ADUC_DeviceClient_Create(
     }
     else if (
         connInfo->certificateString != NULL && connInfo->authType == ADUC_AuthType_NestedEdgeCert
-        && (iothubResult =
-                ClientHandle_SetOption(*outClientHandle, OPTION_TRUSTED_CERT, connInfo->certificateString))
+        && (iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_TRUSTED_CERT, connInfo->certificateString))
             != IOTHUB_CLIENT_OK)
     {
         Log_Error("Could not add trusted certificate, error=%d ", iothubResult);
@@ -335,8 +334,7 @@ static bool ADUC_DeviceClient_Create(
     }
     else if (
         connInfo->opensslEngine != NULL && connInfo->authType == ADUC_AuthType_SASCert
-        && (iothubResult =
-                ClientHandle_SetOption(*outClientHandle, OPTION_OPENSSL_ENGINE, connInfo->opensslEngine))
+        && (iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_OPENSSL_ENGINE, connInfo->opensslEngine))
             != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set IotHub OpenSSL Engine, error=%d", iothubResult);
@@ -365,8 +363,7 @@ static bool ADUC_DeviceClient_Create(
     // This *MUST* be set before the client is connected to IoTHub.  We do not automatically connect when the
     // handle is created, but will implicitly connect to subscribe for device method and device twin callbacks below.
     else if (
-        (iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_MODEL_ID, g_aduModelId))
-        != IOTHUB_CLIENT_OK)
+        (iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_MODEL_ID, g_aduModelId)) != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set the Device Twin Model ID, error=%d", iothubResult);
         result = false;
@@ -375,16 +372,16 @@ static bool ADUC_DeviceClient_Create(
     // that PnP Properties are transferred over.
     // This will also automatically retrieve the full twin for the application.
     else if (
-        (iothubResult = ClientHandle_SetClientTwinCallback(
-             *outClientHandle, g_device_twin_callback, g_property_update_context))
+        (iothubResult =
+             ClientHandle_SetClientTwinCallback(*outClientHandle, g_device_twin_callback, g_property_update_context))
         != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set device twin callback, error=%d", iothubResult);
         result = false;
     }
     else if (
-        (iothubResult =
-             ClientHandle_SetConnectionStatusCallback(*outClientHandle, IoTHub_CommunicationManager_ConnectionStatus_Callback, NULL))
+        (iothubResult = ClientHandle_SetConnectionStatusCallback(
+             *outClientHandle, IoTHub_CommunicationManager_ConnectionStatus_Callback, NULL))
         != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set connection status callback, error=%d", iothubResult);
@@ -676,21 +673,62 @@ static void Connection_Maintenance()
         return;
     }
 
+    int additionalDelayInSeconds = TIME_SPAN_FIFTEEN_SECONDS_IN_SECONDS;
+
     // If we haven't tried to connect, no need to compute the next retry time.
     // Otherwise, compute next retry time we've attempted to authenticate after the previous time.
-    if (g_last_authentication_attempt_time != 0 &&
-        g_last_authentication_attempt_time >= g_next_authentication_attempt_time)
+    if (g_last_authentication_attempt_time != 0
+        && g_last_authentication_attempt_time >= g_next_authentication_attempt_time)
     {
+        // Decide whether to retry or not.
+        // If retry needed, choose appropriate additional delay base on a nature of error.
+        switch (g_connection_status_reason)
+        {
+        case IOTHUB_CLIENT_CONNECTION_RETRY_EXPIRED:
+        case IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN:
+        case IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL:
+            additionalDelayInSeconds = TIME_SPAN_FIFTEEN_SECONDS_IN_SECONDS;
+            break;
+
+        case IOTHUB_CLIENT_CONNECTION_DEVICE_DISABLED:
+            // If device is disabled, wait for at least 1 hour to retry.
+            Log_Error("IoT Hub reported device disabled.");
+            additionalDelayInSeconds = TIME_SPAN_ONE_HOUR_IN_SECONDS;
+            break;
+
+        case IOTHUB_CLIENT_CONNECTION_NO_PING_RESPONSE:
+            // Could be transient error, wait for at least 5 minutes to retry.
+            Log_Error("No ping response.");
+            additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
+            break;
+        case IOTHUB_CLIENT_CONNECTION_NO_NETWORK:
+            // Could be transient error, wait for at least 5 minutes to retry.
+            Log_Error("No network.");
+            additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
+            break;
+
+        case IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR:
+            // Could be transient error, wait for at least 5 minutes to retry.
+            Log_Error("IoT Hub communication error.");
+            additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
+            break;
+
+        case IOTHUB_CLIENT_CONNECTION_OK:
+            // No need to retry.
+            return;
+        }
+
         // Calculate the next retry time, then continue.
         time_t nextRetryTime = ADUC_Retry_Delay_Calculator(
-                TIME_SPAN_FIFTEEN_SECONDS_IN_SECONDS,
-                g_authentication_retries /* current retires count */,
-                ADUC_RETRY_DEFAULT_INITIAL_DELAY_MS /* initialDelayUnitMilliSecs */,
-                TIME_SPAN_ONE_HOUR_IN_SECONDS,
-                ADUC_RETRY_DEFAULT_MAX_JITTER_PERCENT);
+            additionalDelayInSeconds,
+            g_authentication_retries /* current retires count */,
+            ADUC_RETRY_DEFAULT_INITIAL_DELAY_MS /* initialDelayUnitMilliSecs */,
+            TIME_SPAN_ONE_HOUR_IN_SECONDS,
+            ADUC_RETRY_DEFAULT_MAX_JITTER_PERCENT);
 
         g_next_authentication_attempt_time = (nextRetryTime);
-        Log_Info("The connection is currently broken. Will try to authenticate in %d seconds.", nextRetryTime - now_time);
+        Log_Info(
+            "The connection is currently broken. Will try to authenticate in %d seconds.", nextRetryTime - now_time);
         return;
     }
 
@@ -711,4 +749,3 @@ void IoTHub_CommunicationManager_DoWork(void* user_context)
     Connection_Maintenance();
     ClientHandle_DoWork(*g_aduc_client_handle_address);
 }
-

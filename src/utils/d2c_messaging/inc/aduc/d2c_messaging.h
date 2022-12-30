@@ -122,11 +122,11 @@ typedef struct _tagADUC_D2C_Message
     char* content; /**< The copy of the original content (message) */
     time_t contentSubmitTime; /**< Submit time */
     ADUC_D2C_MESSAGE_HTTP_RESPONSE_CALLBACK
-        responseCallback; /**< A callback that is called when received a http response from the cloud */
+    responseCallback; /**< A callback that is called when received a http response from the cloud */
     ADUC_D2C_MESSAGE_COMPLETED_CALLBACK
-        completedCallback; /**< A callback that is called when the message is no longer being processed */
+    completedCallback; /**< A callback that is called when the message is no longer being processed */
     ADUC_D2C_MESSAGE_STATUS_CHANGED_CALLBACK
-        statusChangedCallback; /**< A callback that is called when the message status has changed  */
+    statusChangedCallback; /**< A callback that is called when the message status has changed  */
     ADUC_D2C_Message_Status status; /**< The current message status */
     void* userData; /**< A data provided by caller */
     int lastHttpStatus; /**< The latest http status code received for this message */
@@ -231,23 +231,6 @@ void ADUC_D2C_Messaging_Set_Retry_Strategy(ADUC_D2C_Message_Type type, ADUC_D2C_
  */
 int ADUC_D2C_Default_Message_Transport_Function(
     void* cloudServiceHandle, void* context, ADUC_C2D_RESPONSE_HANDLER_FUNCTION c2dResponseHandlerFunc);
-
-/**
- * @brief A default retry delay calculator function.
- *
- * @param additionalDelaySecs Additional delay time, in seconds.
- * @param retries A current retries count.
- * @param initialDelayUnitMilliSecs An initial delay time that is used in the calculation function, in milliseconds.
- * @param maxDelaySecs  A max delay time, in seconds.
- * @param maxJitterPercent A maximum jitter percentage.
- * @return time_t Return a timestamp (since epoch) for the next retry.
- */
-time_t ADUC_D2C_RetryDelayCalculator(
-    int additionalDelaySecs,
-    unsigned int retries,
-    long initialDelayUnitMilliSecs,
-    long maxDelaySecs,
-    double maxJitterPercent);
 
 EXTERN_C_END
 
