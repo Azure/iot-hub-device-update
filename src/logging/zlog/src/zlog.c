@@ -53,6 +53,7 @@ char _zlog_buffer[ZLOG_BUFFER_MAXLINES][ZLOG_BUFFER_LINE_MAXCHARS];
 static int _zlog_buffer_count = 0;
 static pthread_mutex_t _zlog_buffer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t _zlog_flush_thread;
+static bool zlog_buffer_flush_thread_run = false;
 static bool _is_flush_thread_initialized = false;
 
 void zlog_init_flush_thread(void);
@@ -423,15 +424,16 @@ static void* zlog_buffer_flush_thread(void * arg)
             }
             _zlog_buffer_unlock();
         }
-    } while (1);
+    } while (zlog_buffer_flush_thread_run);
     return NULL;
 }
 
 void zlog_init_flush_thread(void)
 {
+    zlog_buffer_flush_thread_run = true;
     if (pthread_create(&_zlog_flush_thread, NULL, zlog_buffer_flush_thread, NULL) == 0)
     {
-        _is_flush_thread_initialized = true;
+        _is_flush_thread_initialized  = true;
     }
 }
 
@@ -443,7 +445,7 @@ void zlog_stop_flush_thread(void)
     _zlog_buffer_lock();
     if (_is_flush_thread_initialized)
     {
-        pthread_cancel(_zlog_flush_thread);
+        zlog_buffer_flush_thread_run = false;
         pthread_join(_zlog_flush_thread, NULL);
         _is_flush_thread_initialized = false;
     }
