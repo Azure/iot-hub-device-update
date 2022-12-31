@@ -1,6 +1,7 @@
 
 #include "aduc/client_handle.h"
 #include "aduc/d2c_messaging.h"
+#include "aduc/retry_utils.h"
 
 #include <catch2/catch.hpp>
 #include <stdexcept> // runtime_error
@@ -24,14 +25,14 @@ static ADUC_D2C_HttpStatus_Retry_Info g_httpStatusRetryInfo_fast_speed[]{
     { /* .httpStatusMin = */ 400,
       /* .httpStatusMax = */ 499,
       /* .additionalDelaySecs = */ 0,
-      /* .retryTimestampCalcFunc = */ ADUC_D2C_RetryDelayCalculator,
+      /* .retryTimestampCalcFunc = */ ADUC_Retry_Delay_Calculator,
       /* .maxRetry = */ INT_MAX },
 
     /* Catch all */
     { /* .httpStatusMin = */ 0,
       /* .httpStatusMax = */ INT_MAX,
       /* .additionalDelaySecs = */ 0,
-      /* .retryTimestampCalcFunc = */ ADUC_D2C_RetryDelayCalculator,
+      /* .retryTimestampCalcFunc = */ ADUC_Retry_Delay_Calculator,
       /* .maxRetry = */ INT_MAX }
 };
 
@@ -44,7 +45,7 @@ static ADUC_D2C_RetryStrategy g_defaultRetryStrategy_fast_speed = {
     /* .maxRetries = */ INT_MAX,
     /* .maxDelaySecs = */ 1, // 1 seconds
     /* .fallbackWaitTimeSec = */ 1, // 20 ms
-    /* .initialDelayMS = */ 10 // 50 ms
+    /* .initialDelayUnitMilliSecs = */ 10 // 50 ms
 };
 
 // Bad retry strategy - retry, but no calc function pointer.
@@ -74,7 +75,7 @@ static ADUC_D2C_HttpStatus_Retry_Info g_httpStatusRetryInfo_no_calc_func[]{
     { /* .httpStatusMin = */ 0,
       /* .httpStatusMax = */ INT_MAX,
       /* .additionalDelaySecs = */ 0,
-      /* .retryTimestampCalcFunc = */ ADUC_D2C_RetryDelayCalculator,
+      /* .retryTimestampCalcFunc = */ ADUC_Retry_Delay_Calculator,
       /* .maxRetry = */ INT_MAX }
 };
 
@@ -87,7 +88,7 @@ static ADUC_D2C_RetryStrategy g_defaultRetryStrategy_no_calc_func = {
     /* .maxRetries = */ INT_MAX,
     /* .maxDelaySecs = */ 1 * 24 * 60 * 60, // 1 day
     /* .fallbackWaitTimeSec = */ 1,
-    /* .initialDelayMS = */ 1000
+    /* .initialDelayUnitMilliSecs = */ 1000
 };
 
 typedef struct _tagMockCloudBehavior
@@ -185,15 +186,17 @@ void* mock_msg_process_thread_routine(void* context)
     // Wait before response.
     if (g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS > 999)
     {
-        ADUCPAL_sleep(((unsigned int)(g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS) + 500) / 1000);
+        ADUCPAL_sleep(
+            (static_cast<unsigned int>(g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS + 500) / 1000));
     }
     else
     {
         timespec t;
         t.tv_sec = 0;
-        t.tv_nsec = (long)MILLISECONDS_TO_NANOSECONDS(g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS);
-
-        int res = ADUCPAL_nanosleep(&t, nullptr);
+        t.tv_nsec = MILLISECONDS_TO_NANOSECONDS(
+            static_cast<long>(g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS));
+        timespec remain{};
+        int res = ADUCPAL_nanosleep(&t, &remain);
         if (res == -1)
         {
             switch (errno)
@@ -288,9 +291,12 @@ bool g_cancelDoWorkThread = false;
 
 void* mock_do_work_thread(void* context)
 {
-    timespec t;
+    struct timespec t;
     t.tv_sec = 0;
     t.tv_nsec = MILLISECONDS_TO_NANOSECONDS(200);
+    struct timespec rem
+    {
+    };
     while (!g_cancelDoWorkThread)
     {
         g_doWorkMutex.lock();
@@ -310,10 +316,10 @@ static void create_messaging_do_work_thread(void* name)
 
 static time_t GetTimeSinceEpochInSeconds()
 {
-    timespec timeSinceEpoch;
-
+    struct timespec timeSinceEpoch
+    {
+    };
     ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
-
     return timeSinceEpoch.tv_sec;
 }
 
@@ -365,7 +371,7 @@ TEST_CASE("Deinitialization - in progress message", "[.][functional]")
     expectedAttempts = 0;
     MockCloudBehavior cb1[]{
         { 1000,
-          777 }, // Using 777, which is outside or normal http status code. So that we can retry w/o an additional delay.
+          777 }, // Using 777, which is outside or normal http status code. So that we can retry w/o an aditional datay.
         { 1000, 777 },
         { 2000, 200 }
     };
@@ -749,7 +755,7 @@ TEST_CASE("30 retries - httpStatus 401", "[.][functional]")
     {
         cb1[i].delayBeforeResponseMS = 10;
         cb1[i].httpStatus =
-            777; // Using 777, which is outside or normal http status code. So that we can retry w/o an additional delay.
+            777; // Using 777, which is outside or normal http status code. So that we can retry w/o an aditional datay.
     }
     cb1[expectedAttempts - 1].delayBeforeResponseMS = 5;
     cb1[expectedAttempts - 1].httpStatus = 200;
