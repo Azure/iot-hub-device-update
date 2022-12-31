@@ -7,7 +7,6 @@
  */
 #include "aduc/system_utils.h"
 #include "aduc/logging.h"
-#include "aduc/string_c_utils.h"
 
 // for nftw
 #define __USE_XOPEN_EXTENDED 1
