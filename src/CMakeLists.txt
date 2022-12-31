@@ -28,6 +28,7 @@ add_subdirectory (adu-shell)
 add_subdirectory (adu_types)
 add_subdirectory (adu_workflow)
 add_subdirectory (communication_abstraction)
+add_subdirectory (communication_managers)
 add_subdirectory (diagnostics_component)
 
 if (ADUC_BUILD_DOCUMENTATION)
