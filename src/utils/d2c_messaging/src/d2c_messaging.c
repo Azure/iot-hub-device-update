@@ -7,6 +7,7 @@
  */
 #include "aduc/d2c_messaging.h"
 #include "aduc/client_handle_helper.h"
+#include "aduc/retry_utils.h"
 
 #include <limits.h>
 #include <math.h>
@@ -48,41 +49,6 @@ static time_t GetTimeSinceEpochInSeconds()
 }
 
 /**
- * @brief The default function for calculating the next retry timestamp based on current time (since epoch) and input parameters,
- *        using exponential backoff with jitter algorithm.
- *
- * Algorithm:
- *      next-retry-timestamp = nowTimeSec + additionalDelaySecs + (MIN( ( (2 ^ MIN(MAX_RETRY_EXPONENT, retries))) * initialDelayMS) / 1000), maxDelaySecs ) * (1 + jitter))
- *
- *      where:
- *         -  jitter =  (maxJitterPercent / 100.0) * (rand() / RAND_MAX)
- *         -  MAX_RETRY_EXPONENT help avoid large exponential value (recommended value is 9)
- *         -  additionalDelaySecs can be customized to suits different type of http response error
- *
- * @param additionalDelaySecs An additional delay to add to the regular delay time.
- * @param retries The current retries count.
- * @param initialDelayMS A time unit, in milliseconds, for backoff logic.
- * @param maxDelaySecs  The maximum delay time before retrying. This is useful for the scenario where the delay time cannot be too long.
- * @param maxJitterPercent The maximum jitter percentage. This must be between 0 and 100
- *
- * @return time_t Returns the next retry timestamp in seconds (since epoch).
- */
-
-time_t ADUC_D2C_RetryDelayCalculator(
-    int additionalDelaySecs, unsigned int retries, long initialDelayMS, long maxDelaySecs, double maxJitterPercent)
-{
-    double jitterPercent = (maxJitterPercent / 100.0) * (rand() / ((double)RAND_MAX));
-    double delay = (pow(2, MIN(retries, MAX_RETRY_EXPONENT)) * (double)initialDelayMS) / 1000.0;
-    if (delay > maxDelaySecs)
-    {
-        delay = maxDelaySecs;
-    }
-    time_t retryTimestampSec =
-        GetTimeSinceEpochInSeconds() + additionalDelaySecs + (unsigned long)(delay * (1 + jitterPercent));
-    return retryTimestampSec;
-}
-
-/**
  * @brief The retry strategy for all each http response status code from the Azure IoT Hub.
  */
 static ADUC_D2C_HttpStatus_Retry_Info g_defaultHttpStatusRetryInfo[] = {
@@ -104,42 +70,42 @@ static ADUC_D2C_HttpStatus_Retry_Info g_defaultHttpStatusRetryInfo[] = {
     { .httpStatusMin = 429,
       .httpStatusMax = 429,
       .additionalDelaySecs = 30,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
       .maxRetry = INT_MAX },
 
     /* Message sent to the IoT Hub exceeds the maximum allowable size for IoT Hub messages. (Not retry) */
     { .httpStatusMin = 413,
       .httpStatusMax = 413,
       .additionalDelaySecs = 30,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
       .maxRetry = 0 },
 
     /* Catch all for client error responses*/
     { .httpStatusMin = 400,
       .httpStatusMax = 499,
       .additionalDelaySecs = 5,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
       .maxRetry = INT_MAX },
 
     /* Could be related to throttled, additional wait 30 secs on top of regular backoff time */
     { .httpStatusMin = 503,
       .httpStatusMax = 503,
       .additionalDelaySecs = 30,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
       .maxRetry = INT_MAX },
 
     /* Catch all for server error responses */
     { .httpStatusMin = 500,
       .httpStatusMax = 599,
       .additionalDelaySecs = 30,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
       .maxRetry = INT_MAX },
 
     /* Catch all */
     { .httpStatusMin = 0,
       .httpStatusMax = INT_MAX,
       .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
       .maxRetry = INT_MAX },
 };
 
@@ -157,7 +123,7 @@ static ADUC_D2C_RetryStrategy g_defaultRetryStrategy = {
     .maxDelaySecs = ONE_DAY_IN_SECONDS,
 
     /* backoff factor, 1000 milliseconds */
-    .initialDelayMS = DEFAULT_INITIAL_DELAY_MS,
+    .initialDelayUnitMilliSecs = DEFAULT_INITIAL_DELAY_MS,
 
     /* fallback value when regular calculation failed, 30 seconds */
     .fallbackWaitTimeSec = 30,
@@ -316,7 +282,7 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
             time_t newTime = info->retryTimestampCalcFunc(
                 info->additionalDelaySecs,
                 message_processing_context->retries,
-                message_processing_context->retryStrategy->initialDelayMS,
+                message_processing_context->retryStrategy->initialDelayUnitMilliSecs,
                 message_processing_context->retryStrategy->maxDelaySecs,
                 message_processing_context->retryStrategy->maxJitterPercent);
 

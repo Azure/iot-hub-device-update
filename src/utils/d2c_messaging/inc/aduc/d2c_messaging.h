@@ -16,7 +16,7 @@
 
 EXTERN_C_BEGIN
 
-#define MILLISECONDS_TO_NANOSECONDS(ms) ((ms) * 1000000)
+#define MILLISECONDS_TO_NANOSECONDS(ms) ((ms)*1000000)
 
 /**
  * @brief The message types currently supported by the Device Update Agent.
@@ -48,7 +48,11 @@ typedef enum _tagADUC_D2C_Message_Status
  * A function used for calculating a delay time before the next retry.
  */
 typedef time_t (*ADUC_D2C_NEXT_RETRY_TIMESTAMP_CALC_FUNC)(
-    int additionalDelaySecs, unsigned int retries, long initialDelayMS, long maxDelaySecs, double maxJitterPercent);
+    int additionalDelaySecs,
+    unsigned int retries,
+    long initialDelayUnitMilliSecs,
+    long maxDelaySecs,
+    double maxJitterPercent);
 
 /**
  * @brief The data structure used for deciding how to handle the response from the cloud.
@@ -74,7 +78,7 @@ typedef struct _tagADUC_D2C_RetryStrategy
     unsigned int maxRetries; /**< Maximum number of retries */
     unsigned long maxDelaySecs; /**< Maximum wait time before retry (in seconds) */
     unsigned long fallbackWaitTimeSec; /**< The fallback time when regular timestamp calculation failed. */
-    unsigned long initialDelayMS; /**< Backoff factor (in milliseconds ) */
+    unsigned long initialDelayUnitMilliSecs; /**< Backoff factor (in milliseconds ) */
     double maxJitterPercent; /**< The maximum number of jitter percent (0 - 100)*/
 } ADUC_D2C_RetryStrategy;
 
@@ -228,19 +232,6 @@ void ADUC_D2C_Messaging_Set_Retry_Strategy(ADUC_D2C_Message_Type type, ADUC_D2C_
  */
 int ADUC_D2C_Default_Message_Transport_Function(
     void* cloudServiceHandle, void* context, ADUC_C2D_RESPONSE_HANDLER_FUNCTION c2dResponseHandlerFunc);
-
-/**
- * @brief A default retry delay calculator function.
- *
- * @param additionalDelaySecs Additional delay time, in seconds.
- * @param retries A current retries count.
- * @param initialDelayMS An initial delay time that is used in the calculation function, in milliseconds.
- * @param maxDelaySecs  A max delay time, in seconds.
- * @param maxJitterPercent A maximum jitter percentage.
- * @return time_t Return a timestamp (since epoch) for the next retry.
- */
-time_t ADUC_D2C_RetryDelayCalculator(
-    int additionalDelaySecs, unsigned int retries, long initialDelayMS, long maxDelaySecs, double maxJitterPercent);
 
 EXTERN_C_END
 
