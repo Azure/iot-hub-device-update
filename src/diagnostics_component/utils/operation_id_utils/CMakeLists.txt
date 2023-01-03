@@ -23,3 +23,5 @@ target_link_libraries (
             aduc::system_utils
             aduc::parson_json_utils
             diagnostics_component::diagnostics_interface)
+
+target_link_libraries (${target_name} PRIVATE libaducpal)

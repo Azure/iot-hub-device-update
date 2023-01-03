@@ -9,16 +9,7 @@
 #include <azure_c_shared_utility/vector.h>
 #include <catch2/catch.hpp>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] gethostname
-static int gethostname(char* name, size_t namelen)
-{
-    __debugbreak();
-    return -1;
-}
-#else
-#    include <unistd.h>
-#endif
+#include <aducpal/unistd.h> // gethostname
 
 #include <vector>
 
@@ -81,7 +72,7 @@ TEST_CASE("hostname error")
     std::string output;
 
     char hostname[1024];
-    gethostname(hostname, sizeof(hostname) - 1);
+    ADUCPAL_gethostname(hostname, sizeof(hostname) - 1);
 
     const int exitCode = ADUC_LaunchChildProcess("hostname", args, output);
 

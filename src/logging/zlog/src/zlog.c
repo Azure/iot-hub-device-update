@@ -10,132 +10,9 @@
 
 #include <dirent.h>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getpid()
-#    define getpid() PAL_getpid()
-
-typedef unsigned int pid_t;
-
-static pid_t PAL_getpid(void)
-{
-    return GetCurrentProcessId();
-}
-#else
-#    include <unistd.h> // getpid
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] isatty
-#    include <io.h> // isatty
-#else
-#    include <unistd.h> // isatty
-#endif
-
-#if defined(_WIN32)
-#    define __NR_gettid 178
-#    define SYS_gettid __NR_gettid
-
-static long syscall(long number)
-{
-    if (number != SYS_gettid)
-    {
-        __debugbreak();
-    }
-
-    return GetCurrentThreadId();
-}
-#else
-#    include <sys/syscall.h> // for SYS_gettid
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] clock_gettime
-#    include <time.h>
-#    define clock_gettime(clockid, tp) PAL_clock_gettime(clockid, tp)
-
-typedef unsigned int clockid_t;
-#    define CLOCK_REALTIME 0
-
-#    define FILETIME_1970 116444736000000000ull /* seconds between 1/1/1601 and 1/1/1970 */
-#    define HECTONANOSEC_PER_SEC 10000000ull
-
-static int PAL_clock_gettime(clockid_t clk_id, struct timespec* tp)
-{
-    ULARGE_INTEGER fti;
-    GetSystemTimeAsFileTime((FILETIME*)&fti);
-    fti.QuadPart -= FILETIME_1970; /* 100 nano-seconds since 1-1-1970 */
-    tp->tv_sec = fti.QuadPart / HECTONANOSEC_PER_SEC; /* seconds since 1-1-1970 */
-    tp->tv_nsec = (long)(fti.QuadPart % HECTONANOSEC_PER_SEC) * 100; /* nanoseconds */
-    return 0;
-}
-#else
-#    include <time.h> // clock_gettime
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] gettimeofday
-struct timeval
-{
-    time_t tv_sec;
-    // tv_nsec not referenced.
-};
-
-#    define gettimeofday(tp, tzp) PAL_gettimeofday(tp, tzp)
-
-static int PAL_gettimeofday(struct timeval* tv, void* z)
-{
-    if (z != NULL)
-    {
-        __debugbreak();
-    }
-
-    struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
-
-    tv->tv_sec = ts.tv_sec;
-    // tv->tv_usec = ts.tv_nsec / 1000;
-    return 0;
-}
-#else
-#    include <sys/time.h> // for gettimeofday
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] gmtime_r
-#    include <time.h>
-#    define gmtime_r(timep, result) PAL_gmtime_r(timep, result)
-
-static struct tm* PAL_gmtime_r(const time_t* timep, struct tm* result)
-{
-    static struct tm tm;
-    const struct tm* gmtime = _gmtime64(timep);
-    if (gmtime == NULL)
-    {
-        __debugbreak();
-        return NULL;
-    }
-
-    memcpy(&tm, gmtime, sizeof(tm));
-
-    *result = tm;
-    return &tm;
-}
-#else
-#    include <time.h> // gmtime_r
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] sleep
-#    define sleep(seconds) PAL_sleep(seconds)
-
-static unsigned int PAL_sleep(unsigned int seconds)
-{
-    Sleep(seconds);
-    return 0;
-}
-#else
-#    include <unistd.h> // sleep
-#endif
+#include <aducpal/sys_time.h> // gettimeofday
+#include <aducpal/time.h> // clock_gettime, gmtime_r
+#include <aducpal/unistd.h> // getpid, sleep, syscall
 
 #include <errno.h>
 #include <pthread.h>
@@ -209,7 +86,7 @@ static void zlog_close_file_log()
 
 static bool zlog_is_stdout_a_tty()
 {
-    return (isatty(fileno(stdout)) != 0);
+    return (ADUCPAL_isatty(fileno(stdout)) != 0);
 }
 
 static bool zlog_term_supports_color()
@@ -377,12 +254,12 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
     prelude_buffer[0] = '\0';
 
     struct timespec curtime;
-    clock_gettime(CLOCK_REALTIME, &curtime);
+    ADUCPAL_clock_gettime(CLOCK_REALTIME, &curtime);
 
     const time_t seconds = curtime.tv_sec;
 
     struct tm gmtval;
-    struct tm* tmval = gmtime_r(&seconds, &gmtval);
+    struct tm* tmval = ADUCPAL_gmtime_r(&seconds, &gmtval);
 
     if (tmval != NULL)
     {
@@ -398,8 +275,8 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
             tmval->tm_min % 100,
             tmval->tm_sec % 100,
             (int)(curtime.tv_nsec / 100000),
-            getpid(),
-            (pid_t)syscall(SYS_gettid) /* cannot call gettid() directly */
+            ADUCPAL_getpid(),
+            (pid_t)ADUCPAL_syscall(SYS_gettid) /* cannot call gettid() directly */
         );
 
         if (ret < 0)
@@ -527,15 +404,15 @@ static void* zlog_buffer_flush_thread(void* unused)
     (void)unused; // avoid unused parameter warning
 
     struct timeval tv;
-    gettimeofday(&tv, NULL);
+    ADUCPAL_gettimeofday(&tv, NULL);
     lasttime = tv.tv_sec;
 
     do
     {
         time_t curtime;
 
-        sleep(ZLOG_SLEEP_TIME_SEC);
-        gettimeofday(&tv, NULL);
+        ADUCPAL_sleep(ZLOG_SLEEP_TIME_SEC);
+        ADUCPAL_gettimeofday(&tv, NULL);
         curtime = tv.tv_sec;
 
         if (g_flushRequested || ((curtime - lasttime) >= ZLOG_FLUSH_INTERVAL_SEC))

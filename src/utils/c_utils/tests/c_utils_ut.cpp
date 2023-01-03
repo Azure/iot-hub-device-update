@@ -17,31 +17,7 @@ using ADUC::StringUtils::cstr_wrapper;
 #include <cstring>
 #include <fstream>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] mkstemp
-static int mkstemp(char* tmpl)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-#else
-#    include <stdlib.h> //mkstemp
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] fchmod
-typedef unsigned int mode_t;
-
-static int fchmod(int fd, mode_t mode)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-#else
-#    include <sys/stat.h> // fchmod
-#endif
+#include <aducpal/stdlib.h> // mkstemp
 
 class TemporaryTestFile
 {
@@ -54,7 +30,7 @@ public:
     explicit TemporaryTestFile(const std::vector<std::string>& content)
     {
         // Generate a unique filename.
-        int result = mkstemp(_filePath);
+        int result = ADUCPAL_mkstemp(_filePath);
         REQUIRE(result != -1);
 
         (void)std::remove(Filename());

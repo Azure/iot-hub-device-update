@@ -17,74 +17,10 @@
 
 #include <cstring>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] statvfs
-struct statvfs
-{
-    unsigned int f_blocks;
-    unsigned int f_frsize;
-};
-
-static int statvfs(const char* path, struct statvfs* buf)
-{
-    __debugbreak();
-    return -1;
-}
-#else
-#    include <sys/statvfs.h> // statvfs
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] sysinfo
-struct sysinfo
-{
-    unsigned int totalram;
-    unsigned int mem_unit;
-};
-
-static int sysinfo(struct sysinfo* info)
-{
-    __debugbreak();
-    return -1;
-}
-#else
-#    include <sys/sysinfo.h> // sysinfo
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] uname
-struct utsname
-{
-    char sysname[1];
-    char release[1];
-    char machine[1];
-};
-
-static int uname(struct utsname* __name)
-{
-    __debugbreak();
-    return -1;
-}
-#else
-#    include <sys/utsname.h> // uname
-#endif
-
-#if defined(_WIN32)
-// TODO (JeffMill): [PAL] popen, pclose
-FILE* popen(const char* command, const char* type)
-{
-    __debugbreak();
-    return NULL;
-}
-
-int pclose(FILE* stream)
-{
-    __debugbreak();
-    return -1;
-}
-#else
-#    include <stdio.h> // popen, pclose
-#endif
+#include <aducpal/stdio.h> // popen, pclose
+#include <aducpal/sys_statvfs.h> // statvfs
+#include <aducpal/sys_sysinfo.h> // sysinfo
+#include <aducpal/sys_utsname.h> // uname
 
 #include <aduc/config_utils.h>
 #include <aduc/logging.h>
@@ -266,7 +202,7 @@ static char* DeviceInfo_GetOsName()
     // Finally, fallback to uname strategy
     {
         utsname uts{};
-        if (uname(&uts) < 0)
+        if (ADUCPAL_uname(&uts) < 0)
         {
             Log_Error("uname failed, error: %d", errno);
         }
@@ -325,7 +261,7 @@ static char* DeviceInfo_GetOsVersion()
         // It is "swVersion" on "the wire" in the device info interface, but has been repurposed for OS distro / kernel release version.
         utsname uts{};
 
-        if (uname(&uts) < 0)
+        if (ADUCPAL_uname(&uts) < 0)
         {
             Log_Error("uname failed, error: %d", errno);
         }
@@ -357,7 +293,7 @@ static char* DeviceInfo_GetProcessorArchitecture()
 
     utsname uts{};
 
-    if (uname(&uts) < 0)
+    if (ADUCPAL_uname(&uts) < 0)
     {
         Log_Error("uname failed, error: %d", errno);
         return nullptr;
@@ -387,7 +323,7 @@ static char* DeviceInfo_GetProcessorManufacturer()
     const unsigned int kBufferSize = 256;
     char buffer[kBufferSize];
 
-    FILE* pipe{ popen("/usr/bin/lscpu", "r") }; // NOLINT(cert-env33-c)
+    FILE* pipe{ ADUCPAL_popen("/usr/bin/lscpu", "r") }; // NOLINT(cert-env33-c)
     if (pipe != nullptr)
     {
         const char* prefix = "Vendor ID:           ";
@@ -405,7 +341,7 @@ static char* DeviceInfo_GetProcessorManufacturer()
             }
         }
 
-        pclose(pipe);
+        ADUCPAL_pclose(pipe);
     }
 
     if (manufacturer.empty())
@@ -437,7 +373,7 @@ static char* DeviceInfo_GetTotalMemory()
     struct sysinfo sys_info
     {
     };
-    if (sysinfo(&sys_info) == -1)
+    if (ADUCPAL_sysinfo(&sys_info) == -1)
     {
         Log_Error("sysinfo failed, error: %d", errno);
         return nullptr;
@@ -472,7 +408,7 @@ static char* DeviceInfo_GetTotalStorage()
     {
     };
 
-    if (statvfs("/", &buf) == -1)
+    if (ADUCPAL_statvfs("/", &buf) == -1)
     {
         Log_Error("statvfs failed, error: %d", errno);
         return nullptr;

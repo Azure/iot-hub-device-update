@@ -12,27 +12,7 @@
 
 #include <unordered_map>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] S_*GRP
-#    define S_IXGRP 00010
-#    define S_IRGRP 00040
-#    define S_IRWXU 00700
-#else
-#    include <sys/stat.h>
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] chmod
-typedef unsigned int mode_t;
-
-static int chmod(const char* path, mode_t mode)
-{
-    __debugbreak();
-    return -1;
-}
-#else
-#    include <sys/file.h> // chmod
-#endif
+#include <aducpal/sys_stat.h> // chmod
 
 namespace Adu
 {
@@ -75,7 +55,7 @@ ADUShellTaskResult Execute(const ADUShell_LaunchArguments& launchArgs)
         if (perms != mode)
         {
             // Fix the permissions.
-            if (0 != chmod(path, mode))
+            if (0 != ADUCPAL_chmod(path, mode))
             {
                 filePermissionsChanged = true;
                 stat(path, &st);
@@ -90,7 +70,7 @@ ADUShellTaskResult Execute(const ADUShell_LaunchArguments& launchArgs)
     if (filePermissionsChanged)
     {
         // Restore the permissions.
-        if (0 != chmod(path, mode))
+        if (0 != ADUCPAL_chmod(path, mode))
         {
             stat(path, &st);
             Log_Warn("Failed restore '%s' file permissions", path);

@@ -17,33 +17,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] open, read, close
-static int open(const char* path, int oflag)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-
-typedef long ssize_t;
-
-static ssize_t read(int fildes, void* buf, size_t nbyte)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-
-static int close(int fildes)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-#else
-#    include <unistd.h>
-#endif
+#include <aducpal/unistd.h> // open, read, close
 
 /**
  * @brief Maximum length for the output string of ADUC_StringFormat()
@@ -132,7 +106,7 @@ bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const siz
     bool success = false;
 
     // NOLINTNEXTLINE(android-cloexec-open): We are not guaranteed to have access to O_CLOEXEC on all of our builds so no need to include
-    int fd = open(filePath, O_EXCL | O_RDONLY);
+    int fd = ADUCPAL_open(filePath, O_EXCL | O_RDONLY);
     if (fd == -1)
     {
         goto done;
@@ -152,7 +126,7 @@ bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const siz
         goto done;
     }
 
-    size_t numRead = read(fd, strBuffer, fileSize);
+    size_t numRead = ADUCPAL_read(fd, strBuffer, fileSize);
     if (numRead != fileSize)
     {
         goto done;
@@ -163,7 +137,7 @@ bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const siz
     success = true;
 done:
 
-    close(fd);
+    ADUCPAL_close(fd);
 
     if (!success)
     {

@@ -9,132 +9,12 @@
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h"
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] mkdir
-static int mkdir(const char* path, mode_t mode)
-{
-    __debugbreak();
-    return -1;
-}
-#else
-#    include <sys/file.h>
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] chmod
-static int chmod(const char* path, mode_t mode)
-{
-    __debugbreak();
-    return -1;
-}
-#else
-#    include <sys/file.h> // chmod
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] rmdir
-static int rmdir(const char* path)
-{
-    __debugbreak();
-    return -1;
-}
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] nftw (libgw32c implementation?)
-
-typedef struct _FTW
-{
-    void* unused;
-} FTW;
-
-enum
-{
-    FTW_DEPTH = 1,
-    FTW_PHYS = 2,
-    FTW_MOUNT = 4,
-    FTW_CHDIR = 8
-} FTW_FLAGS;
-
-enum
-{
-    FTW_F = 1,
-    FTW_D = 2,
-    FTW_DNR = 3,
-    FTW_DP = 4,
-    FTW_NS = 5,
-    FTW_SL = 6,
-    FTW_SLN = 7
-} FTW_TYPE;
-
-typedef int (*NFTW_FUNC_T)(const char* fpath, const struct stat* sb, int typeflag, struct FTW* ftwbuf);
-
-static int nftw(const char* path, NFTW_FUNC_T func, int descriptors, int flags)
-{
-    __debugbreak();
-    return -1; // failure
-}
-#else
-// for nftw
-#    define __USE_XOPEN_EXTENDED 1
-#    include <ftw.h> // for nftw
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getgrname
-
-// This code only references gr_gid
-struct group
-{
-    gid_t gr_gid;
-};
-
-static struct group* getgrnam(const char* name)
-{
-    __debugbreak();
-    return NULL;
-}
-#else
-#    include <grp.h> // for getgrnam
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getpwnam
-
-// This code only references pw_uid
-struct passwd
-{
-    uid_t pw_uid; /* user uid */
-};
-
-static struct passwd* getpwnam(const char* name)
-{
-    __debugbreak();
-
-    return NULL;
-}
-#else
-#    include <pwd.h> // for getpwnam
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] child status
-#define WIFEXITED(stat_val) (((stat_val)&255) == 0)
-#define WEXITSTATUS(stat_val) ((unsigned)(stat_val) >> 8)
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] chown
-
-static int chown(const char* file, uid_t owner, gid_t group)
-{
-    __debugbreak();
-
-    return 0;
-}
-#else
-#    include <unistd.h>
-#endif
+#include <aducpal/ftw.h> // nftw
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/pwd.h> // getpwnam
+#include <aducpal/sys_stat.h> // mkdir, chmod
+#include <aducpal/unistd.h> // chown
+#include <aducpal/wait.h> // WIFEXITED, WEXITSTATUS
 
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/strings.h>
@@ -284,7 +164,7 @@ int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t
     if (stat(path, &st) != 0)
     {
         /* Directory does not exist. EEXIST for race condition */
-        if (mkdir(path, mode) != 0 && errno != EEXIST)
+        if (ADUCPAL_mkdir(path, mode) != 0 && errno != EEXIST)
         {
             Log_Error("Could not create directory %s errno: %d", path, errno);
             return errno;
@@ -295,7 +175,7 @@ int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t
             // Now that we have created the directory, take ownership of it.
             // Note: getuid and getgid are always successful.
             // getuid(), getgid()
-            if (chown(path, userId, groupId) != 0)
+            if (ADUCPAL_chown(path, userId, groupId) != 0)
             {
                 Log_Error("Could not change owner of directory %s errno: %d", path, errno);
                 return errno;
@@ -398,7 +278,7 @@ int ADUC_SystemUtils_MkDirRecursive(const char* path, uid_t userId, gid_t groupI
         if (perms != mode)
         {
             // Fix the permissions.
-            if (0 != chmod(path, mode))
+            if (0 != ADUCPAL_chmod(path, mode))
             {
                 stat(path, &st);
                 Log_Warn("Failed to set '%s' folder permissions (expected:0%o, actual: 0%o)", mkdirPath, mode, perms);
@@ -418,7 +298,7 @@ int ADUC_SystemUtils_MkSandboxDirRecursive(const char* path)
     // Note: the return value may point to a static area,
     // and may be overwritten by subsequent calls to getpwent(3), getpwnam(), or getpwuid().
     // (Do not pass the returned pointer to free(3).)
-    struct passwd* pwd = getpwnam(ADUC_FILE_USER);
+    struct passwd* pwd = ADUCPAL_getpwnam(ADUC_FILE_USER);
     if (pwd == NULL)
     {
         Log_Error("adu user doesn't exist.");
@@ -431,7 +311,7 @@ int ADUC_SystemUtils_MkSandboxDirRecursive(const char* path)
     // Note: The return value may point to a static area,
     // and may be overwritten by subsequent calls to getgrent(3), getgrgid(), or getgrnam().
     // (Do not pass the returned pointer to free(3).)
-    struct group* grp = getgrnam(ADUC_FILE_GROUP);
+    struct group* grp = ADUCPAL_getgrnam(ADUC_FILE_GROUP);
     if (grp == NULL)
     {
         Log_Error("adu group doesn't exist.");
@@ -447,7 +327,7 @@ int ADUC_SystemUtils_MkDirRecursiveAduUser(const char* path)
 {
     // Create the sandbox folder with adu:default ownership.
     // Permissions are set to u=rwx.
-    struct passwd* pwd = getpwnam(ADUC_FILE_USER);
+    struct passwd* pwd = ADUCPAL_getpwnam(ADUC_FILE_USER);
     if (pwd == NULL)
     {
         Log_Error("adu user doesn't exist.");
@@ -492,7 +372,7 @@ static int RmDirRecursive_helper(const char* fpath, const struct stat* sb, int t
  */
 int ADUC_SystemUtils_RmDirRecursive(const char* path)
 {
-    return nftw(path, RmDirRecursive_helper, 20 /*nfds*/, FTW_MOUNT | FTW_PHYS | FTW_DEPTH);
+    return ADUCPAL_nftw(path, RmDirRecursive_helper, 20 /*nfds*/, FTW_MOUNT | FTW_PHYS | FTW_DEPTH);
 }
 
 /**
@@ -648,7 +528,7 @@ int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, co
         goto done;
     }
 
-    if (chmod(STRING_c_str(destFilePath), buff.st_mode) != 0)
+    if (ADUCPAL_chmod(STRING_c_str(destFilePath), buff.st_mode) != 0)
     {
         goto done;
     }

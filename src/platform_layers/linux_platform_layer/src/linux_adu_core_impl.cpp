@@ -21,73 +21,10 @@
 
 #include <cstring>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] S_*GRP
-#    define S_IXGRP 00010
-#    define S_IWGRP 00020
-#    define S_IRGRP 00040
-
-#    define __S_IFDIR 0040000 /* Directory.  */
-
-#    define S_ISDIR(x) (((x)&S_IFMT) == S_IFDIR)
-#else
-#    include <sys/stat.h>
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] gettimeofday
-struct timeval
-{
-    time_t tv_sec; /* Seconds.  */
-};
-
-static int gettimeofday(struct timeval* tp, void* tzp)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return 0;
-}
-#else
-#    include <sys/time.h> // for gettimeofday
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getgrnam, group
-
-// This code only references gr_gid
-struct group
-{
-    gid_t gr_gid;
-};
-
-static struct group* getgrnam(const char* name)
-{
-    __debugbreak();
-    return NULL;
-}
-#else
-#    include <grp.h> // for getgrnam
-#endif
-
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] getpwnam
-
-// This code only references pw_uid
-struct passwd
-{
-    uid_t pw_uid; /* user uid */
-};
-
-static struct passwd* getpwnam(const char* name)
-{
-    __debugbreak();
-    return NULL;
-}
-#else
-#    include <pwd.h> // for getpwnam
-#endif
-
-// #include <unistd.h>
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/pwd.h> // getpwnam
+#include <aducpal/sys_stat.h> // S_I*
+#include <aducpal/sys_time.h> // gettimeofday
 
 #include <memory>
 #include <sstream>
@@ -112,7 +49,7 @@ std::unique_ptr<LinuxPlatformLayer> LinuxPlatformLayer::Create()
     struct timeval tv
     {
     };
-    gettimeofday(&tv, nullptr);
+    ADUCPAL_gettimeofday(&tv, nullptr);
     g_lastComponentsCheckTime = tv.tv_sec;
 
     return std::unique_ptr<LinuxPlatformLayer>{ new LinuxPlatformLayer() };
@@ -421,7 +358,7 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* work
     // Note: the return value may point to a static area,
     // and may be overwritten by subsequent calls to getpwent(3), getpwnam(), or getpwuid().
     // (Do not pass the returned pointer to free(3).)
-    pwd = getpwnam(ADUC_FILE_USER);
+    pwd = ADUCPAL_getpwnam(ADUC_FILE_USER);
     if (pwd == nullptr)
     {
         return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_LOWERLEVEL_SANDBOX_CREATE_FAILURE_NO_ADU_USER };
@@ -433,7 +370,7 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* work
     // Note: The return value may point to a static area,
     // and may be overwritten by subsequent calls to getgrent(3), getgrgid(), or getgrnam().
     // (Do not pass the returned pointer to free(3).)
-    grp = getgrnam(ADUC_FILE_GROUP);
+    grp = ADUCPAL_getgrnam(ADUC_FILE_GROUP);
     if (grp == nullptr)
     {
         return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_LOWERLEVEL_SANDBOX_CREATE_FAILURE_NO_ADU_GROUP };

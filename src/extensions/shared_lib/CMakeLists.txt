@@ -15,3 +15,5 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 target_sources (${target_name} PRIVATE src/shared_lib.cpp inc/aduc/plugin_call_helper.hpp)
 
 target_link_libraries (${target_name} PRIVATE aduc::hash_utils ${CMAKE_DL_LIBS})
+
+target_link_libraries (${target_name} PRIVATE libaducpal)

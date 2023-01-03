@@ -11,7 +11,8 @@
 #include <aduc/types/update_content.h>
 
 #ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
-#    if defined(_WIN32)
+
+#    ifdef ADUCPAL_USE_PAL
 // TODO(JeffMill): [PAL] deliveryoptimization_get_components_version
 static char* deliveryoptimization_get_components_version()
 {

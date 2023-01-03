@@ -393,32 +393,27 @@ $CMAKE_OPTIONS = @(
 $static_analysis_tools | ForEach-Object {
     switch ($_) {
         'clang-tidy' {
-            # winget install llvm.llvm :
-            # C:\Program Files\LLVM\bin\clang-tidy.exe
-            # VS Build Tools:
-            # C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\Llvm\bin
-            $clang_tidy_path = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/2022/BuildTools/VC/Tools/Llvm/bin/clang-tidy.exe"
+            # Part of VS Build Tools'
+            $clang_tidy_path = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/2022/BuildTools/VC/Tools/Llvm/x64/bin/clang-tidy.exe"
             if (-not (Test-Path -LiteralPath $clang_tidy_path -PathType Leaf)) {
                 Error 'Can''t run static analysis - clang-tidy is not installed or not in PATH.'
                 exit 1
             }
 
-            $CMAKE_OPTIONS += "-DCMAKE_C_CLANG_TIDY=$clang_tidy_path"
-            $CMAKE_OPTIONS += "-DCMAKE_CXX_CLANG_TIDY=$clang_tidy_path"
+            $CMAKE_OPTIONS += "-DCMAKE_C_CLANG_TIDY:STRING=$clang_tidy_path"
+            $CMAKE_OPTIONS += "-DCMAKE_CXX_CLANG_TIDY:STRING=$clang_tidy_path"
         }
 
         'cppcheck' {
-            # http://cppcheck.sourceforge.net/ (sudo apt install cppcheck)
-
+            # winget install 'Cppcheck.Cppcheck'
             $cppcheck_path = "$env:ProgramFiles\Cppcheck\cppcheck.exe"
             if (-not (Test-Path -LiteralPath $cppcheck_path -PathType Leaf)) {
                 Error 'Can''t run static analysis - cppcheck is not installed or not in PATH.'
                 exit 1
             }
 
-            # TODO(JeffMill): Fix these args for Windows
-            $CMAKE_OPTIONS += "-DCMAKE_CXX_CPPCHECK=$cppcheck_path;--template='{file}:{line}: warning: ({severity}) {message}';--platform=unix64;--inline-suppr;--std=c++11;--enable=all;--suppress=unusedFunction;--suppress=missingIncludeSystem;--suppress=unmatchedSuppression;-I/usr/include;-I/usr/include/openssl"
-            $CMAKE_OPTIONS += "-DCMAKE_C_CPPCHECK=$cppcheck_path;--template='{file}:{line}: warning: ({severity}) {message}';--platform=unix64;--inline-suppr;--std=c99;--enable=all;--suppress=unusedFunction;--suppress=missingIncludeSystem;--suppress=unmatchedSuppression;-I/usr/include;-I/usr/include/openssl"
+            $CMAKE_OPTIONS += "-DCMAKE_CXX_CPPCHECK:STRING=$cppcheck_path;--template='{file}:{line}: warning: ({severity}) {message}';--platform=unix64;--inline-suppr;--std=c++11;--enable=all;--suppress=unusedFunction;--suppress=missingIncludeSystem;--suppress=unmatchedSuppression"
+            $CMAKE_OPTIONS += "-DCMAKE_C_CPPCHECK:STRING=$cppcheck_path;--template='{file}:{line}: warning: ({severity}) {message}';--platform=unix64;--inline-suppr;--std=c99;--enable=all;--suppress=unusedFunction;--suppress=missingIncludeSystem;--suppress=unmatchedSuppression"
         }
 
         'cpplint' {
@@ -501,6 +496,8 @@ if ($build_clean) {
 
     # See library search output:
     # $CMAKE_OPTIONS += '-DCMAKE_EXE_LINKER_FLAGS=/VERBOSE:LIB'
+
+    "CMAKE_OPTIONS:`n  {0}`n" -f ($CMAKE_OPTIONS -join "`n  ")
 
     & $cmake_bin -S "$root_dir" -B $output_directory @CMAKE_OPTIONS 2>&1 | Tee-Object -Variable cmake_output
     # TODO(JeffMill): Scenario 2: Use Ninja

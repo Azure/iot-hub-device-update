@@ -9,17 +9,7 @@
 #include <cstring>
 #include <pthread.h>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] gmtime_r
-static struct tm* gmtime_r(const time_t* timep, struct tm* result)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return NULL;
-}
-#else
-#    include <time.h> // gmtime_r
-#endif
+#include <aducpal/time.h> // gmtime_r
 
 #include "mock_do_download.hpp"
 #include "mock_do_download_status.hpp"
@@ -172,7 +162,7 @@ static void GenerateUniqueId(char* buffer, size_t buffer_cch)
     struct tm tm
     {
     };
-    (void)gmtime_r(&timer, &tm);
+    (void)ADUCPAL_gmtime_r(&timer, &tm);
     (void)strftime(buffer, buffer_cch, "%y%m%d%H%M%S", &tm);
 }
 

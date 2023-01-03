@@ -9,12 +9,8 @@
 
 #include <stdio.h> // for FILE
 #include <stdlib.h> // for calloc
-#if defined(_WIN32)
-#    include <string.h> // _strcmpi
-#    define strcasecmp(string1, string2) _strcmpi(string1, string2)
-#else
-#    include <strings.h> // for strcasecmp
-#endif
+
+#include <aducpal/strings.h> // strcasecmp
 
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/buffer_.h>
@@ -402,23 +398,23 @@ bool ADUC_HashUtils_GetShaVersionForTypeString(const char* hashTypeStr, SHAversi
 {
     bool success = true;
 
-    if (strcasecmp(hashTypeStr, "sha1") == 0)
+    if (ADUCPAL_strcasecmp(hashTypeStr, "sha1") == 0)
     {
         *algorithm = SHA1;
     }
-    else if (strcasecmp(hashTypeStr, "sha224") == 0)
+    else if (ADUCPAL_strcasecmp(hashTypeStr, "sha224") == 0)
     {
         *algorithm = SHA224;
     }
-    else if (strcasecmp(hashTypeStr, "sha256") == 0)
+    else if (ADUCPAL_strcasecmp(hashTypeStr, "sha256") == 0)
     {
         *algorithm = SHA256;
     }
-    else if (strcasecmp(hashTypeStr, "sha384") == 0)
+    else if (ADUCPAL_strcasecmp(hashTypeStr, "sha384") == 0)
     {
         *algorithm = SHA384;
     }
-    else if (strcasecmp(hashTypeStr, "sha512") == 0)
+    else if (ADUCPAL_strcasecmp(hashTypeStr, "sha512") == 0)
     {
         *algorithm = SHA512;
     }

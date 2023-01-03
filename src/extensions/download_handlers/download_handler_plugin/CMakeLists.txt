@@ -22,4 +22,6 @@ target_link_libraries (
            aduc::logging
            aduc::shared_lib)
 
+target_link_libraries (${target_name} PRIVATE libaducpal)
+
 target_compile_features (${target_name} PRIVATE cxx_lambdas cxx_uniform_initialization)

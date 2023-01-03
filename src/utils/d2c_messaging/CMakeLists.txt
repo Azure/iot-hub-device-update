@@ -20,6 +20,8 @@ target_link_libraries (
     PUBLIC aduc::adu_types
     PRIVATE aduc::communication_abstraction aduc::logging)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
 endif ()

@@ -17,17 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] strcasecmp
-static int strcasecmp(const char* s1, const char* s2)
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return 0;
-}
-#else
-#    include <strings.h> // strcasecmp
-#endif
+#include <aducpal/strings.h> // strcasecmp
 
 /**
  * @brief Algorithm_Id values and supported algorithms
@@ -63,7 +53,7 @@ Algorithm_Id AlgorithmIdFromString(const char* alg)
 {
     Algorithm_Id algorithmId = Alg_NotSupported;
 
-    if (strcasecmp(alg, "rs256") == 0)
+    if (ADUCPAL_strcasecmp(alg, "rs256") == 0)
     {
         algorithmId = Alg_RSA256;
     }

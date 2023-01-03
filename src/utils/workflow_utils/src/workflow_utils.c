@@ -28,16 +28,7 @@
 #include <stdlib.h> // for malloc, atoi
 #include <string.h>
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] strcasecmp
-static int strcasecmp(const char* s1, const char* s2)
-{
-    __debugbreak();
-    return 0;
-}
-#else
-#    include <strings.h> // strcasecmp
-#endif
+#include <aducpal/strings.h> // strcasecmp
 
 #define DEFAULT_SANDBOX_ROOT_PATH ADUC_DOWNLOADS_FOLDER
 
@@ -1889,7 +1880,7 @@ bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fi
     for (int i = 0; i < count; i++)
     {
         if ((file = json_value_get_object(json_object_get_value_at(files, i))) != NULL
-            && strcasecmp(json_object_get_string(file, "fileName"), fileName) == 0)
+            && ADUCPAL_strcasecmp(json_object_get_string(file, "fileName"), fileName) == 0)
         {
             fileId = json_object_get_name(files, i);
             break;

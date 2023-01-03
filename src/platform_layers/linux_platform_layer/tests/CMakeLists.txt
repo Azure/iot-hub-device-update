@@ -31,6 +31,8 @@ target_link_libraries (
 
 target_link_iothub_client_mqtt_transport (${PROJECT_NAME} PRIVATE)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 include (CTest)
 include (Catch)
 catch_discover_tests (${PROJECT_NAME})

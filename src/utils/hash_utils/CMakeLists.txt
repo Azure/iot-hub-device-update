@@ -23,6 +23,8 @@ target_link_libraries (
     PUBLIC aduc::c_utils Parson::parson
     PRIVATE aduc::logging aduc::string_utils)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
 endif ()

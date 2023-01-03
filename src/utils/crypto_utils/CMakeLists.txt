@@ -21,6 +21,8 @@ target_link_libraries (
     PUBLIC aduc::c_utils
     PRIVATE OpenSSL::Crypto)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 # Always support test root keys.
 add_definitions (-DBUILD_WITH_TEST_KEYS=1)
 

@@ -8,26 +8,7 @@
 #include "aduc/logging.h"
 #include <stdio.h> // printf
 
-#if defined(_WIN32)
-// TODO(JeffMill): [PAL] _mkdir
-typedef unsigned int mode_t;
-#    define S_IRWXU 0070
-
-#    include <direct.h> // mkdir
-#    define mkdir(path, mode) PAL_mkdir(path, mode)
-
-static int PAL_mkdir(const char* path, mode_t mode)
-{
-    const int ret = _mkdir(path);
-    if (ret == -1)
-    {
-        // __debugbreak();
-    }
-    return ret;
-}
-#else
-#    include <sys/stat.h> //mkdir
-#endif
+#include <aducpal/sys_stat.h> // mkdir
 
 /**
  * @brief Convert ADUC_LOG_SEVERITY to ZLOG_SEVERITY
@@ -87,7 +68,7 @@ void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
 
     // zlog_init doesn't create the log path, so attempt to create it here.
     // If it can't be created, zlogging will send output to console.
-    (void)mkdir(ADUC_LOG_FOLDER, S_IRWXU);
+    (void)ADUCPAL_mkdir(ADUC_LOG_FOLDER, S_IRWXU);
 
     if (zlog_init(
             ADUC_LOG_FOLDER,
