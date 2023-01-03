@@ -32,7 +32,7 @@
 
 #ifndef O_CLOEXEC
 /**
- * @brief Enable the close-on-exec flag for the new file descriptor. pecifying this flag permits a program to avoid additional
+ * @brief Enable the close-on-exec flag for the new file descriptor. Specifying this flag permits a program to avoid additional
  * fcntl(2) F_SETFD operations to set the FD_CLOEXEC flag.
  * @details Included here because not all linux kernels include O_CLOEXEC by default in fcntl.h
  */
