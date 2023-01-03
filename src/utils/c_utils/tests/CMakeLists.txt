@@ -17,6 +17,8 @@ target_link_libraries (${PROJECT_NAME} PRIVATE aduc::c_utils aduc::string_utils 
 
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
+target_link_umock_c (${PROJECT_NAME} PRIVATE)
+
 include (CTest)
 include (Catch)
 catch_discover_tests (${PROJECT_NAME})

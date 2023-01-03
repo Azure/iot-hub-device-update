@@ -18,7 +18,6 @@ disablertti ()
 set (sources main.cpp simulator_handler_unit_tests.cpp ../src/simulator_handler.cpp)
 
 find_package (Catch2 REQUIRED)
-find_package (azure_c_shared_utility REQUIRED)
 find_package (IotHubClient REQUIRED)
 find_package (umqtt REQUIRED)
 

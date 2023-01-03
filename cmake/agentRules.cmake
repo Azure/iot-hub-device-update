@@ -27,20 +27,33 @@ macro (disableRTTI)
 endmacro (disableRTTI)
 
 function (target_link_aziotsharedutil target scope)
-    find_package (azure_c_shared_utility CONFIG REQUIRED)
+    find_package (azure_c_shared_utility REQUIRED CONFIG)
     target_link_libraries (${target} ${scope} aziotsharedutil)
+
+    # azure_c_shared_utility uses azure_macro_utils, but with VCPKG it doesn't have a dependency?
+    # Without this, build errors out with:
+    # azure_c_shared_utility/map.h(18,10): fatal  error C1083: Cannot open include file: 'azure_macro_utils/macro_utils.h'
+    find_package (azure_macro_utils_c REQUIRED CONFIG)
+    target_link_libraries (${target} ${scope} azure_macro_utils_c)
 endfunction ()
 
 function (target_link_umock_c target scope)
     find_package (umock_c REQUIRED CONFIG)
 
-    if (WIN32)
-        # TODO(JeffMill): [VCPKG] Don't link to umock_c - will fail due to missing azure_macro_utils library.
-        message (STATUS "${target} UMOCK_C_INC_FOLDER: ${UMOCK_C_INC_FOLDER}")
-        target_include_directories (${target} ${scope} ${UMOCK_C_INC_FOLDER})
-    else ()
-        target_link_libraries (${target} ${scope} umock_c)
-    endif ()
+    # [START] UMOCK_C VCPKG WORKAROUND
+    get_target_property (umock_c_debug_link_libs umock_c IMPORTED_LINK_INTERFACE_LIBRARIES_DEBUG)
+    list (REMOVE_ITEM umock_c_debug_link_libs azure_macro_utils_c)
+    set_property (TARGET umock_c PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES_DEBUG
+                                          ${umock_c_debug_link_libs})
+
+    get_target_property (umock_c_release_link_libs umock_c
+                         IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE)
+    list (REMOVE_ITEM umock_c_release_link_libs azure_macro_utils_c)
+    set_property (TARGET umock_c PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES_DEBUG
+                                          ${umock_c_release_link_libs})
+    # [END] UMOCK_C VCPKG WORKAROUND
+
+    target_link_libraries (${target} ${scope} umock_c)
 endfunction ()
 
 function (target_link_iothub_client_mqtt_transport target scope)

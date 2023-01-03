@@ -28,15 +28,8 @@ get_filename_component (
     ABSOLUTE
     "/")
 
-find_package (azure_c_shared_utility REQUIRED)
-
 target_compile_definitions (
     ${target_name} PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}")
-
-if (WIN32)
-    # TODO(JeffMill): [VCPKG] fatal  error C1083: Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
-    target_include_directories (${target_name} PRIVATE ${AZURE_C_SHARED_UTILITY_INCLUDES})
-endif ()
 
 target_link_libraries (
     ${target_name}
@@ -47,6 +40,8 @@ target_link_libraries (
             Parson::parson)
 
 target_link_libraries (${target_name} PRIVATE libaducpal)
+
+target_link_aziotsharedutil (${target_name} PRIVATE)
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
 
