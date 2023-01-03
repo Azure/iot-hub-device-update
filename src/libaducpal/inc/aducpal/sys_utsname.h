@@ -27,7 +27,7 @@ extern "C"
 
 #    include <sys/utsname.h>
 
-#    define ADUCPAL_utsname(buf) utsname(buf)
+#    define ADUCPAL_uname(buf) uname(buf)
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

@@ -45,7 +45,7 @@ extern "C"
 #    define __USE_XOPEN_EXTENDED 1
 #    include <ftw.h>
 
-#    define ADUCPAL_nftw(dirpath, fn, nopenfd, flags) , nftw(dirpath, fn, nopenfd, flags)
+#    define ADUCPAL_nftw(dirpath, fn, nopenfd, flags) nftw(dirpath, fn, nopenfd, flags)
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

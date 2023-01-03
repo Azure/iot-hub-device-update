@@ -57,7 +57,7 @@ extern "C"
 #    define ADUCPAL_execvp(file, argv) execvp(file, argv)
 #    define ADUCPAL_fork() fork()
 #    define ADUCPAL_getegid() getegid()
-#    define ADUCPAL_geteuid geteuid()
+#    define ADUCPAL_geteuid() geteuid()
 #    define ADUCPAL_gethostname(name, len) gethostname(name, len)
 #    define ADUCPAL_getpid() getpid()
 #    define ADUCPAL_getuid() getuid()

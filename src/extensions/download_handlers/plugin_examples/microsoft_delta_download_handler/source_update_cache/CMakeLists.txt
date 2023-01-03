@@ -27,6 +27,8 @@ target_link_libraries (
             aduc::system_utils
             aduc::workflow_utils)
 
+target_link_libraries (${target_name} PRIVATE libaducpal)
+
 target_compile_definitions (
     ${target_name}
     PRIVATE
