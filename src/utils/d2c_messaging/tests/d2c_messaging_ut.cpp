@@ -283,14 +283,14 @@ static void OnMessageProcessCompleted_SaveStatus_And_Signal(void* context, ADUC_
     pthread_cond_signal(&g_d2cMessageProcessedCond);
 };
 
-// Make sure that we can uninitialize cleanly while there's a message in-progress.
-TEST_CASE("Uninitialization - in progess message")
+// Make sure that we can deinitialize cleanly while there's a message in-progress.
+TEST_CASE("Deinitialization - in progress message", "[.][functional]")
 {
     pthread_mutex_lock(&g_testCaseSyncMutex);
 
     int expectedAttempts = 0;
     const char* message = nullptr;
-    auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We dont need real handle.
+    auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We don't need real handle.
 
     // Init message processing util, use mock transport, and reduces poll interval to 100ms.
     ADUC_D2C_Messaging_Init();
@@ -300,7 +300,7 @@ TEST_CASE("Uninitialization - in progess message")
     expectedAttempts = 0;
     MockCloudBehavior cb1[]{
         { 1000,
-          777 }, // Using 777, which is outside or normal http status code. So that we can retry w/o an aditional datay.
+          777 }, // Using 777, which is outside or normal http status code. So that we can retry w/o an additional delay.
         { 1000, 777 },
         { 2000, 200 }
     };
@@ -347,14 +347,14 @@ TEST_CASE("Uninitialization - in progess message")
     pthread_mutex_unlock(&g_testCaseSyncMutex);
 }
 
-// Make sure that we can uninitialize cleanly.
-TEST_CASE("Uninitialization - pending message")
+// Make sure that we can deinitialize cleanly.
+TEST_CASE("Deinitialization - pending message", "[.][functional]")
 {
     pthread_mutex_lock(&g_testCaseSyncMutex);
 
     int expectedAttempts = 0;
     const char* message = nullptr;
-    auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We dont need real handle.
+    auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We don't need real handle.
 
     // Init message processing util, use mock transport, and reduces poll interval to 100ms.
     ADUC_D2C_Messaging_Init();
@@ -396,13 +396,13 @@ TEST_CASE("Uninitialization - pending message")
     pthread_mutex_unlock(&g_testCaseSyncMutex);
 }
 
-TEST_CASE("Simple tests")
+TEST_CASE("Simple tests", "[.][functional]")
 {
     pthread_mutex_lock(&g_testCaseSyncMutex);
 
     int expectedAttempts = 0;
     const char* message = nullptr;
-    auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We dont need real handle.
+    auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We don't need real handle.
 
     // Init message processing util, use mock transport, and reduces poll interval to 100ms.
     ADUC_D2C_Messaging_Init();
@@ -495,7 +495,7 @@ TEST_CASE("Simple tests")
     pthread_mutex_unlock(&g_testCaseSyncMutex);
 }
 
-TEST_CASE("Bad http status retry info")
+TEST_CASE("Bad http status retry info", "[.][functional]")
 {
     pthread_mutex_lock(&g_testCaseSyncMutex);
 
@@ -580,7 +580,7 @@ TEST_CASE("Bad http status retry info")
 //     msg#2 replaced
 //     msg#3 success
 
-TEST_CASE("Message replacement test")
+TEST_CASE("Message replacement test", "[.][functional]")
 {
     pthread_mutex_lock(&g_testCaseSyncMutex);
 
@@ -663,7 +663,7 @@ TEST_CASE("30 retries - httpStatus 401")
 
     int expectedAttempts = 0;
     const char* message = nullptr;
-    auto handle = static_cast<ADUC_ClientHandle>((void*)(1)); // We dont need real handle.
+    auto handle = static_cast<ADUC_ClientHandle>((void*)(1)); // We don't need real handle.
 
     // Init message processing util, use mock transport, and reduces poll interval to 100ms.
     ADUC_D2C_Messaging_Init();
@@ -684,7 +684,7 @@ TEST_CASE("30 retries - httpStatus 401")
     {
         cb1[i].delayBeforeResponseMS = 10;
         cb1[i].httpStatus =
-            777; // Using 777, which is outside or normal http status code. So that we can retry w/o an aditional datay.
+            777; // Using 777, which is outside or normal http status code. So that we can retry w/o an additional delay.
     }
     cb1[expectedAttempts - 1].delayBeforeResponseMS = 5;
     cb1[expectedAttempts - 1].httpStatus = 200;
