@@ -21,7 +21,6 @@
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
 #include "aduc/string_utils.hpp"
-#include "aduc/system_utils.h"
 
 #include "adushell.hpp"
 #include "adushell_const.hpp"
