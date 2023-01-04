@@ -2,7 +2,8 @@ Param(
     [Parameter(Position = 0)][string]$FileName = 'AducIotAgent',
     # e.g. "bp aduciotagent!main; g"
     [string]$InitialCommand = 'g',
-    [switch]$NoDebugger = $false
+    [switch]$NoDebugger = $false,
+    [String[]] $Arguments = $null
 )
 
 function Show-Error {
@@ -67,7 +68,7 @@ else {
     }
 
     "Debugging $app . . ."
-    cmd.exe /c start $windbgx -c $InitialCommand $app
+    cmd.exe /c start $windbgx -c $InitialCommand $app @Arguments
 }
 
 exit 0
