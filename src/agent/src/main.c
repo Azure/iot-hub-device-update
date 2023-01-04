@@ -1095,16 +1095,19 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    // Need to set ret and goto done after this to ensure proper shutdown and deinitialization.
     ADUC_Logging_Init(launchArgs.logLevel, "du-agent");
 
     if (launchArgs.healthCheckOnly)
     {
         if (HealthCheck(&launchArgs))
         {
-            return 0;
+            ret = 0;
+            goto done;
         }
 
-        return 1;
+        ret = 1;
+        goto done;
     }
 
     if (launchArgs.extensionFilePath != NULL)
@@ -1113,55 +1116,67 @@ int main(int argc, char** argv)
         {
         case ExtensionRegistrationType_None:
             Log_Error("Missing --extension-type argument.");
-            return 1;
+            ret = 1;
+            goto done;
 
         case ExtensionRegistrationType_UpdateContentHandler:
             if (launchArgs.extensionId == NULL)
             {
                 Log_Error("Missing --extension-id argument.");
-                return 1;
+                ret = 1;
+                goto done;
             }
 
             if (RegisterUpdateContentHandler(launchArgs.extensionId, launchArgs.extensionFilePath))
             {
-                return 0;
+                ret = 0;
+                goto done;
             }
 
-            return 1;
+            ret = 1;
+            goto done;
 
         case ExtensionRegistrationType_ComponentEnumerator:
             if (RegisterComponentEnumeratorExtension(launchArgs.extensionFilePath))
             {
-                return 0;
+                ret = 0;
+                goto done;
             }
 
-            return 1;
+            ret = 1;
+            goto done;
 
         case ExtensionRegistrationType_ContentDownloadHandler:
             if (RegisterContentDownloaderExtension(launchArgs.extensionFilePath))
             {
-                return 0;
+                ret = 0;
+                goto done;
             }
 
-            return 1;
+            ret = 1;
+            goto done;
 
         case ExtensionRegistrationType_DownloadHandler:
             if (launchArgs.extensionId == NULL)
             {
                 Log_Error("Missing --extension-id argument.");
-                return 1;
+                ret = 1;
+                goto done;
             }
 
             if (RegisterDownloadHandler(launchArgs.extensionId, launchArgs.extensionFilePath))
             {
-                return 0;
+                ret = 0;
+                goto done;
             }
 
-            return 1;
+            ret = 1;
+            goto done;
 
         default:
             Log_Error("Unknown ExtensionRegistrationType: %d", launchArgs.extensionRegistrationType);
-            return 1;
+            ret = 1;
+            goto done;
         }
     }
 
@@ -1170,9 +1185,14 @@ int main(int argc, char** argv)
     {
         if (SendCommand(launchArgs.ipcCommand))
         {
-            return 0;
+            ret = 0;
         }
-        return 1;
+        else
+        {
+            ret = 1;
+        }
+
+        goto done;
     }
 
     // Switch to specified agent.runas user.
@@ -1180,7 +1200,8 @@ int main(int argc, char** argv)
     // high-privileged tasks, such as, registering agent's extension(s).
     if (!RunAsDesiredUser())
     {
-        return 0;
+        ret = 0;
+        goto done;
     }
 
     Log_Info("Agent (%s; %s) starting.", ADUC_PLATFORM_LAYER, ADUC_VERSION);
@@ -1203,7 +1224,8 @@ int main(int argc, char** argv)
         {
             Log_Error("Agent health check failed.");
         }
-        return healthy ? 0 : 1;
+        ret = healthy ? 0 : 1;
+        goto done;
     }
 
     // Ensure that the ADU data folder exists.
