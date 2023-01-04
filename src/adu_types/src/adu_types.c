@@ -16,8 +16,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
-
 /**
  * @brief Returns the string associated with @p connType
  * @param connType ADUC_ConnType to be stringified

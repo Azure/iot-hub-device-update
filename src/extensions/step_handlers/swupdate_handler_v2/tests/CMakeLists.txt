@@ -46,6 +46,8 @@ target_link_libraries (
             aduc::workflow_utils
             Catch2::Catch2)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 # Ensure that ctest discovers catch2 tests.
 # Use catch_discover_tests() rather than add_test()
 # See https://github.com/catchorg/Catch2/blob/master/contrib/Catch.cmake

@@ -22,12 +22,7 @@ target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils aduc::adu_types
     PRIVATE aduc::adu_types
-            aziotsharedutil
             IotHubClient::iothub_client
             iothub_client_mqtt_transport
             umqtt
             aduc::logging)
-
-if (ADUC_BUILD_UNIT_TESTS)
-    target_link_umock_c (${target_name} PRIVATE)
-endif ()

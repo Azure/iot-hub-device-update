@@ -17,19 +17,10 @@ target_sources (${PROJECT_NAME} PRIVATE main.cpp workflow_utils_ut.cpp
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
-if (WIN32)
-    # TODO(JeffMill): [VCPKG] fatal  error C1083: Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
-    target_include_directories (${PROJECT_NAME} PRIVATE ${AZURE_C_SHARED_UTILITY_INCLUDES})
-endif ()
-
 target_link_libraries (${PROJECT_NAME} PRIVATE aduc::parser_utils aduc::workflow_utils
                                                Catch2::Catch2)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
-
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
-
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 

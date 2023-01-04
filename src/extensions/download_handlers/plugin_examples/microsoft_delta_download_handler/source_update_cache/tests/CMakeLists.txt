@@ -24,6 +24,8 @@ target_link_libraries (
             Catch2::Catch2
             Parson::parson)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 target_compile_definitions (
     ${PROJECT_NAME}
     PRIVATE

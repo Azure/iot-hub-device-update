@@ -25,8 +25,6 @@ set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories (${target_name} PUBLIC ${ADUC_EXPORT_INCLUDES}
                                                   ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-find_package (azure_c_shared_utility REQUIRED)
-
 target_compile_definitions (
     ${target_name} PRIVATE ADUC_DEVICEINFO_MANUFACTURER="${ADUC_DEVICEINFO_MANUFACTURER}"
                            ADUC_DEVICEINFO_MODEL="${ADUC_DEVICEINFO_MODEL}")
@@ -38,5 +36,4 @@ target_link_libraries (
             aduc::logging
             aduc::string_utils
             aduc::workflow_utils
-            aziotsharedutil
             uhttp)

@@ -6,8 +6,6 @@ include (agentRules)
 
 compileasc99 ()
 
-find_package (azure_c_shared_utility REQUIRED)
-
 add_library (${target_name} STATIC "")
 add_library (aduc::${target_name} ALIAS ${target_name})
 

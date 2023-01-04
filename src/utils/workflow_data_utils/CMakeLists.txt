@@ -14,14 +14,11 @@ target_include_directories (
     PUBLIC inc ${ADUC_EXPORT_INCLUDES}
     PRIVATE src)
 
-if (WIN32)
-    # TODO(JeffMill): [VCPKG] fatal  error C1083: Cannot open include file: 'azure_c_shared_utility/strings.h': No such file or directory
-    target_include_directories (${PROJECT_NAME} PRIVATE ${AZURE_C_SHARED_UTILITY_INCLUDES})
-endif ()
-
 target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::adu_core_export_helpers
             aduc::adu_types
             aduc::c_utils
             aduc::workflow_utils)
+
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)

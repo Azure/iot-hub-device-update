@@ -11,7 +11,6 @@ add_library (diagnostics_component::${target_name} ALIAS ${target_name})
 
 target_include_directories (${target_name} PUBLIC inc)
 
-find_package (azure_c_shared_utility REQUIRED)
 find_package (azure-storage-blobs-cpp CONFIG REQUIRED)
 find_package (Parson REQUIRED)
 
