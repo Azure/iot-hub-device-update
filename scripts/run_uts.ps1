@@ -6,21 +6,16 @@ param(
 $root_dir = git.exe rev-parse --show-toplevel
 Push-Location "$root_dir/out"
 
+$ctest_args = @('--verbose')
 if ($RerunFailed) {
-    if ($ShowCTestOutput) {
-        ctest.exe --rerun-failed --verbose | Tee-Object -Variable out
-    }
-    else {
-        $out = ctest.exe --rerun-failed --verbose
-    }
+    $ctest_args += '--rerun-failed'
+}
+
+if ($ShowCTestOutput) {
+    ctest.exe @ctest_args | Tee-Object -Variable out
 }
 else {
-    if ($ShowCTestOutput) {
-        ctest.exe --verbose | Tee-Object -Variable out
-    }
-    else {
-        $out = ctest.exe --verbose
-    }
+    $out = ctest.exe @ctest_args
 }
 
 $lines = @()
@@ -65,7 +60,13 @@ $out | ForEach-Object {
     }
 }
 
-'{0} failed tests' -f $failure_count
+
+if ($failure_count -ne 0) {
+    Write-Host -ForegroundColor Red ('{0} failed tests' -f $failure_count)
+}
+else {
+    'All tests passed!'
+}
 
 Pop-Location
 
