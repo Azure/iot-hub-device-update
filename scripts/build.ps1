@@ -4,34 +4,34 @@
 #
 # TODO(JeffMill): Scenario 2:--static-analysis clang-tidy,cppcheck --build-docs
 
-function Warn {
-    Param([Parameter(mandatory = $true, position = 0)][string]$message)
+function Show-Warning {
+    Param([Parameter(mandatory = $true, position = 0)][string]$Message)
     Write-Host -ForegroundColor Yellow -NoNewline 'Warning:'
-    Write-Host " $message"
+    Write-Host " $Message"
 }
 
-function Error {
-    Param([Parameter(mandatory = $true, position = 0)][string]$message)
+function Show-Error {
+    Param([Parameter(mandatory = $true, position = 0)][string]$Message)
     Write-Host -ForegroundColor Red -NoNewline 'Error:'
-    Write-Host " $message"
+    Write-Host " $Message"
 }
 
-function Header {
-    Param([Parameter(mandatory = $true, position = 0)][string]$message)
-    $sep = ":{0}:" -f (' ' * ($message.Length + 2))
+function Show-Header {
+    Param([Parameter(mandatory = $true, position = 0)][string]$Message)
+    $sep = ":{0}:" -f (' ' * ($Message.Length + 2))
     Write-Host -ForegroundColor DarkYellow -BackgroundColor DarkBlue $sep
-    Write-Host -ForegroundColor White -BackgroundColor DarkBlue ("  {0}  " -f $message)
+    Write-Host -ForegroundColor White -BackgroundColor DarkBlue ("  {0}  " -f $Message)
     Write-Host -ForegroundColor DarkYellow -BackgroundColor DarkBlue $sep
     ''
 }
 
-function Bullet {
-    Param([Parameter(mandatory = $true, position = 0)][string]$message)
+function Show-Bullet {
+    Param([Parameter(mandatory = $true, position = 0)][string]$Message)
     Write-Host -ForegroundColor Blue -NoNewline '*'
-    Write-Host " $message"
+    Write-Host " $Message"
 }
 
-function Display-CMakeErrors {
+function Show-CMakeErrors {
     Param([string[]]$BuildOutput)
 
     $regex = 'CMake Error at (?<File>.+):(?<Line>\d+)\s+\((?<Description>.+)\)'
@@ -44,14 +44,14 @@ function Display-CMakeErrors {
         Write-Host -ForegroundColor Red 'CMake errors:'
 
         $result | ForEach-Object {
-            Bullet  ("{0} ({1}): {2}" -f $_.File, $_.Line, $_.Description)
+            Show-Bullet  ("{0} ({1}): {2}" -f $_.File, $_.Line, $_.Description)
         }
 
         ''
     }
 }
 
-function Display-CompilerErrors {
+function Show-CompilerErrors {
     Param([string[]]$BuildOutput)
 
     # Parse compiler errors
@@ -66,14 +66,14 @@ function Display-CompilerErrors {
         Write-Host -ForegroundColor Red 'Compiler errors:'
 
         $result | ForEach-Object {
-            Bullet  ("{0} ({1},{2}): {3} [{4}]" -f $_.File.SubString($root_dir.Length + 1), $_.Line, $_.Column, $_.Description, (Split-Path $_.Project -Leaf))
+            Show-Bullet  ("{0} ({1},{2}): {3} [{4}]" -f $_.File.SubString($root_dir.Length + 1), $_.Line, $_.Column, $_.Description, (Split-Path $_.Project -Leaf))
         }
 
         ''
     }
 }
 
-function Display-LinkerErrors {
+function Show-LinkerErrors {
     Param([string[]]$BuildOutput)
 
     # Parse linker errors
@@ -89,7 +89,7 @@ function Display-LinkerErrors {
 
         $result | ForEach-Object {
             $project = $_.Project.SubString($root_dir.Length + 1)
-            Bullet  ("{0}: {1}" -f $project, $_.Description)
+            Show-Bullet  ("{0}: {1}" -f $project, $_.Description)
         }
         ''
     }
@@ -119,7 +119,7 @@ $install_prefix = '/usr/local'
 # TODO(JeffMill): unused variable
 # $install_adu = $false
 
-$work_folder = '/tmp'
+# $work_folder = '/tmp'
 
 # TODO(JeffMill): unused variable
 # $cmake_dir_path = "$work_folder/deviceupdate-cmake"
@@ -162,14 +162,14 @@ Usage: build.ps1 [options...]
 }
 
 # TODO(JeffMill): Unreferenced
-function CopyFile-ExitIfFailed {
+function Invoke-CopyFileExitIfFailed {
     Param(
         [Parameter(mandatory = $true)][string]$Path,
         [Parameter(mandatory = $true)][string]$Destination)
 
-    Header "Copying $Path to $Destination"
+    Show-Header "Copying $Path to $Destination"
     if (-not (Copy-Item -LiteralPath $Path -Destination $Destination -ErrorAction SilentlyContinue)) {
-        Error "Failed to copy $Path to $Destination (exit code: $($Error[0].CategoryInfo))"
+        Show-Error "Failed to copy $Path to $Destination (exit code: $($Error[0].CategoryInfo))"
         exit 1
     }
 }
@@ -193,7 +193,7 @@ while ($arg -lt $args.Count) {
         { $_ -in '-t', '--type' } {
             $arg++
             if (-not $args[$arg]) {
-                Error '-t build type parameter is mandatory.'
+                Show-Error '-t build type parameter is mandatory.'
                 exit 1
             }
             $build_type = $args[$arg]
@@ -214,7 +214,7 @@ while ($arg -lt $args.Count) {
         { $_ -in '-o', '--out-dir' } {
             $arg++
             if (-not $args[$arg]) {
-                Error '-o output directory parameter is mandatory.'
+                Show-Error '-o output directory parameter is mandatory.'
                 exit 1
             }
             $output_directory = $args[$arg]
@@ -223,7 +223,7 @@ while ($arg -lt $args.Count) {
         { $_ -in '-s', '--static-analysis' } {
             $arg++
             if (-not $args[$arg]) {
-                Error '-s static analysis tools parameter is mandatory.'
+                Show-Error '-s static analysis tools parameter is mandatory.'
                 exit 1
             }
             if ($args[$arg] -eq 'all') {
@@ -237,7 +237,7 @@ while ($arg -lt $args.Count) {
         { $_ -in '-p', '--platform-layer' } {
             $arg++
             if (-not $args[$arg]) {
-                Error '-p platform layer parameter is mandatory.'
+                Show-Error '-p platform layer parameter is mandatory.'
                 exit 1
             }
             $platform_layer = $args[$arg]
@@ -250,7 +250,7 @@ while ($arg -lt $args.Count) {
         '--log-lib' {
             $arg++
             if (-not $args[$arg]) {
-                Error '--log-lib parameter is mandatory.'
+                Show-Error '--log-lib parameter is mandatory.'
                 exit 1
             }
             $log_lib = $args[$arg]
@@ -259,7 +259,7 @@ while ($arg -lt $args.Count) {
         { $_ -in '-l', '--log-dir' } {
             $arg++
             if (-not $args[$arg]) {
-                Error '-l log directory  parameter is mandatory.'
+                Show-Error '-l log directory  parameter is mandatory.'
                 exit 1
             }
             $adu_log_dir = $args[$arg]
@@ -268,29 +268,29 @@ while ($arg -lt $args.Count) {
         '--install-prefix' {
             $arg++
             if (-not $args[$arg]) {
-                Error '--install-prefix parameter is mandatory.'
+                Show-Error '--install-prefix parameter is mandatory.'
                 exit 1
             }
             $install_prefix = $args[$arg]
         }
 
-        '--install' {
-            $is_admin = (New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-            if (-not $is_admin) {
-                Error 'Admin required to install ADU components.'
-                exit 1
-            }
-            $install_adu = $true
-        }
+        # '--install' {
+        #     $is_admin = (New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        #     if (-not $is_admin) {
+        #         Show-Error 'Admin required to install ADU components.'
+        #         exit 1
+        #     }
+        #     $install_adu = $true
+        # }
 
-        '--cmake-path' {
-            $arg++
-            if (-not $args[$arg]) {
-                Error '--cmake-path is mandatory.'
-                exit 1
-            }
-            $cmake_dir_path = $args[$arg]
-        }
+        # '--cmake-path' {
+        #     $arg++
+        #     if (-not $args[$arg]) {
+        #         Show-Error '--cmake-path is mandatory.'
+        #         exit 1
+        #     }
+        #     $cmake_dir_path = $args[$arg]
+        # }
 
         { $_ -in '-h', '--help' } {
             print_help
@@ -298,7 +298,7 @@ while ($arg -lt $args.Count) {
         }
 
         default {
-            Error "Invalid argument: $($args[$arg])"
+            Show-Error "Invalid argument: $($args[$arg])"
             exit 1
         }
     }
@@ -307,26 +307,26 @@ while ($arg -lt $args.Count) {
 
 if ($build_documentation) {
     if (-not (Get-Command 'doxygen.exe' -CommandType Application -ErrorAction SilentlyContinue)) {
-        Error 'Can''t build documentation - doxygen is not installed or not in PATH.'
+        Show-Error 'Can''t build documentation - doxygen is not installed or not in PATH.'
         exit 1
     }
 
     if (-not (Get-Command 'dot.exe' -CommandType Application -ErrorAction SilentlyContinue)) {
-        Error 'Can''t build documentation - dot (graphviz) is not installed or not in PATH.'
+        Show-Error 'Can''t build documentation - dot (graphviz) is not installed or not in PATH.'
         exit 1
     }
 }
 
 # TODO(JeffMill): Add a 'windows' platform layer. simulator seems to be broken.
 if ($platform_layer -ne 'linux') {
-    Error 'Only linux platform layer is supported currently!'
+    Show-Error 'Only linux platform layer is supported currently!'
     exit 1
 }
 
 # Set default log dir if not specified.
 if (-not $adu_log_dir) {
     if ($platform_layer -eq 'simulator') {
-        Warn "Forcing adu_log_dir to /tmp/aduc-logs"
+        Show-Warning "Forcing adu_log_dir to /tmp/aduc-logs"
         $adu_log_dir = '/tmp/aduc-logs'
     }
     else {
@@ -341,39 +341,39 @@ $cmake_bin = 'cmake.exe'
 
 # TODO(JeffMill): Forcing content_handlers in Windows builds.  Bug on Nox for this.
 $content_handlers = 'microsoft/simulator'
-Warn "Forcing content_handlers to $content_handlers"
+Show-Warning "Forcing content_handlers to $content_handlers"
 
 # TODO(JeffMill): [PAL] Using this path for now due to ADUC bug assuming parent paths exist - cmakelists generates /tmp/adu
 $adu_log_dir = '/tmp/aduc-logs'
-Warn "Forcing adu_log_dir to $adu_log_dir"
+Show-Warning "Forcing adu_log_dir to $adu_log_dir"
 
 # TODO(JeffMill): Temporary during development
 $build_type = 'RelWithDebInfo'
-Warn "Forcing build_type to $build_type"
+Show-Warning "Forcing build_type to $build_type"
 
 # Output banner
 ''
-Header 'Building ADU Agent'
-Bullet "Clean build: $build_clean"
-Bullet "Documentation: $build_documentation"
-Bullet "Platform layer: $platform_layer"
-Bullet "Trace target deps: $trace_target_deps"
-Bullet "Content handlers: $content_handlers"
-Bullet "Build type: $build_type"
-Bullet "Log directory: $adu_log_dir"
-Bullet "Logging library: $log_lib"
-Bullet "Output directory: $output_directory"
-Bullet "Build unit tests: $build_unittests"
-Bullet "Build packages: $build_packages"
-Bullet "CMake: $cmake_bin"
-Bullet ("CMake version: {0}" -f (& $cmake_bin --version | Select-String  '^cmake version (.*)$').Matches.Groups[1].Value)
-# Bullet "shellcheck: $shellcheck_bin"
-# Bullet "shellcheck version: $("$shellcheck_bin" --version | grep 'version:' | awk '{ print $2 }')"
+Show-Header 'Building ADU Agent'
+Show-Bullet "Clean build: $build_clean"
+Show-Bullet "Documentation: $build_documentation"
+Show-Bullet "Platform layer: $platform_layer"
+Show-Bullet "Trace target deps: $trace_target_deps"
+Show-Bullet "Content handlers: $content_handlers"
+Show-Bullet "Build type: $build_type"
+Show-Bullet "Log directory: $adu_log_dir"
+Show-Bullet "Logging library: $log_lib"
+Show-Bullet "Output directory: $output_directory"
+Show-Bullet "Build unit tests: $build_unittests"
+Show-Bullet "Build packages: $build_packages"
+Show-Bullet "CMake: $cmake_bin"
+Show-Bullet ("CMake version: {0}" -f (& $cmake_bin --version | Select-String  '^cmake version (.*)$').Matches.Groups[1].Value)
+# Show-Bullet "shellcheck: $shellcheck_bin"
+# Show-Bullet "shellcheck version: $("$shellcheck_bin" --version | grep 'version:' | awk '{ print $2 }')"
 if ($static_analysis_tools.Length -eq 0) {
-    Bullet "Static analysis: (none)"
+    Show-Bullet "Static analysis: (none)"
 }
 else {
-    Bullet "Static analysis: $static_analysis_tools"
+    Show-Bullet "Static analysis: $static_analysis_tools"
 }
 ''
 
@@ -400,7 +400,7 @@ $static_analysis_tools | ForEach-Object {
             # Part of VS Build Tools'
             $clang_tidy_path = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/2022/BuildTools/VC/Tools/Llvm/x64/bin/clang-tidy.exe"
             if (-not (Test-Path -LiteralPath $clang_tidy_path -PathType Leaf)) {
-                Error 'Can''t run static analysis - clang-tidy is not installed or not in PATH.'
+                Show-Error 'Can''t run static analysis - clang-tidy is not installed or not in PATH.'
                 exit 1
             }
 
@@ -412,7 +412,7 @@ $static_analysis_tools | ForEach-Object {
             # winget install 'Cppcheck.Cppcheck'
             $cppcheck_path = "$env:ProgramFiles\Cppcheck\cppcheck.exe"
             if (-not (Test-Path -LiteralPath $cppcheck_path -PathType Leaf)) {
-                Error 'Can''t run static analysis - cppcheck is not installed or not in PATH.'
+                Show-Error 'Can''t run static analysis - cppcheck is not installed or not in PATH.'
                 exit 1
             }
 
@@ -421,34 +421,34 @@ $static_analysis_tools | ForEach-Object {
         }
 
         'cpplint' {
-            Error 'cpplint NYI'
+            Show-Error 'cpplint NYI'
             exit 1
         }
 
         'iwyu' {
-            Error 'iwyu NYI'
+            Show-Error 'iwyu NYI'
             exit 1
         }
 
         'lwyu' {
-            Error 'lwyu NYI'
+            Show-Error 'lwyu NYI'
             exit 1
         }
 
         default {
-            Warn "Invalid static analysis tool '$_'. Ignoring."
+            Show-Warning "Invalid static analysis tool '$_'. Ignoring."
         }
     }
 }
 
 if (-not (Test-Path '.\out\CMakeCache.txt' -PathType Leaf)) {
-    Warn 'CMakeCache.txt not found - forcing clean build.'
+    Show-Warning 'CMakeCache.txt not found - forcing clean build.'
     ''
     $build_clean = $true
 }
 
 if ($build_clean) {
-    Header 'Cleaning repo'
+    Show-Header 'Cleaning repo'
 
     # TODO(JeffMill): Temporary prompting as I sometimes unintentionally specify "--clean". Sigh.
     $decision = $Host.UI.PromptForChoice(
@@ -466,13 +466,13 @@ if ($build_clean) {
 
 
     if (Test-Path $output_directory) {
-        Bullet $output_directory
+        Show-Bullet $output_directory
         Remove-Item -Recurse -LiteralPath $output_directory
     }
     # TODO(JeffMill): This shouldn't hard code /tmp/adu/testdata -- it should match
     # whatever cmake and tests have.  JW has a bug on this.
     if (Test-Path '/tmp/adu/testdata') {
-        Bullet '/tmp/adu/testdata'
+        Show-Bullet '/tmp/adu/testdata'
         Remove-Item -Recurse -LiteralPath '/tmp/adu/testdata'
     }
 
@@ -484,7 +484,7 @@ mkdir -Path $output_directory -Force | Out-Null
 # TODO(JeffMill): Only generate makefiles on clean?
 # It seems that dependencies are being generated unnecessarily otherwise?
 if ($build_clean) {
-    Header 'Generating Makefiles'
+    Show-Header 'Generating Makefiles'
 
     # show every find_package call (vcpkg specific):
     # $CMAKE_OPTIONS += '-DVCPKG_TRACE_FIND_PACKAGE:BOOL=ON'
@@ -512,7 +512,7 @@ if ($build_clean) {
         error "ERROR: CMake failed (Error $ret_val)"
         ''
 
-        Display-CMakeErrors -BuildOutput $cmake_output
+        Show-CMakeErrors -BuildOutput $cmake_output
 
         exit $ret_val
     }
@@ -520,7 +520,7 @@ if ($build_clean) {
     ''
 }
 
-Header 'Building Product'
+Show-Header 'Building Product'
 
 # TODO(JeffMill): Scenario 2: Use Ninja
 
@@ -532,11 +532,11 @@ if ($ret_val -ne 0) {
     Write-Host -ForegroundColor Red "ERROR: Build failed (Error $ret_val)"
     ''
 
-    Display-CMakeErrors -BuildOutput $build_output
+    Show-CMakeErrors -BuildOutput $build_output
 
-    Display-CompilerErrors -BuildOutput $build_output
+    Show-CompilerErrors -BuildOutput $build_output
 
-    Display-LinkerErrors -BuildOutput $build_output
+    Show-LinkerErrors -BuildOutput $build_output
 
     exit $ret_val
 }

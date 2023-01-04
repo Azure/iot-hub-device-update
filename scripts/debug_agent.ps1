@@ -1,11 +1,20 @@
 Param(
+    [Parameter(Position = 0)][string]$FileName = 'AducIotAgent',
+    # e.g. "bp aduciotagent!main; g"
+    [string]$InitialCommand = 'g',
     [switch]$NoDebugger = $false
 )
 
-function Error {
-    Param([Parameter(mandatory = $true, position = 0)][string]$message)
+function Show-Error {
+    Param([Parameter(mandatory = $true, position = 0)][string]$Message)
     Write-Host -ForegroundColor Red -NoNewline 'Error:'
-    Write-Host " $message"
+    Write-Host " $Message"
+}
+
+function Show-Bullet {
+    Param([Parameter(mandatory = $true, position = 0)][string]$Message)
+    Write-Host -ForegroundColor Blue -NoNewline '*'
+    Write-Host " $Message"
 }
 
 function Get-WinDbgX {
@@ -31,30 +40,34 @@ function Get-WinDbgX {
 }
 
 $root_dir = git.exe rev-parse --show-toplevel
+$bin_dir = "$root_dir\out\bin\RelWithDebInfo"
+$app = Join-Path $bin_dir "$FileName.exe"
 
-$aduciotagent = "$root_dir\out\bin\RelWithDebInfo\AducIotAgent.exe"
+if (-not (Test-Path $app -PathType Leaf)) {
+    Show-Error "Cannot find $app"
 
-if (-not (Test-Path $aduciotagent -PathType Leaf)) {
-    Error 'Cannot find agent binary'
+    ''
+    'The following apps were found:'
+    (Get-ChildItem -LiteralPath $bin_dir -Filter '*.exe').BaseName | Sort-Object | ForEach-Object { Show-Bullet $_ }
     exit 1
 }
 
 if ($NoDebugger) {
-    "Launching $aduciotagent . . ."
-    & $aduciotagent
+    "Launching $app . . ."
+    & $app
 }
 else {
     try {
         $windbgx = Get-WinDbgX
     }
     catch {
-        Error "$_"
+        Show-Error "$_"
         'To install WinDbg use: winget install --accept-package-agreements ''WinDbg Preview'''
         exit 1
     }
 
-    "Launching WinDbg . . ."
-    cmd.exe /c start $windbgx -c "bp aduciotagent!main; g" $aduciotagent
+    "Debugging $app . . ."
+    cmd.exe /c start $windbgx -c $InitialCommand $app
 }
 
 exit 0
