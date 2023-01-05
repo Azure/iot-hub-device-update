@@ -394,7 +394,7 @@ void zlog_request_flush_buffer(void)
 // or when g_flushRequested is true
 //
 // Caller should NOT hold the lock
-static void* zlog_buffer_flush_thread(void * arg)
+static void* zlog_buffer_flush_thread(void* arg)
 {
     struct timeval tv;
     time_t lasttime;
@@ -433,7 +433,7 @@ void zlog_init_flush_thread(void)
     zlog_buffer_flush_thread_run = true;
     if (pthread_create(&_zlog_flush_thread, NULL, zlog_buffer_flush_thread, NULL) == 0)
     {
-        _is_flush_thread_initialized  = true;
+        _is_flush_thread_initialized = true;
     }
 }
 
@@ -442,14 +442,21 @@ void zlog_stop_flush_thread(void)
 {
     // To prevent deadlock if flush thread calls zlog_flush_buffer but
     // gets terminated before calling unlock
+    bool flush_thread_inited = false;
+
     _zlog_buffer_lock();
-    if (_is_flush_thread_initialized)
+    flush_thread_inited = _is_flush_thread_initialized;
+    _zlog_buffer_unlock();
+
+    if (flush_thread_inited)
     {
         zlog_buffer_flush_thread_run = false;
         pthread_join(_zlog_flush_thread, NULL);
+
+        _zlog_buffer_lock();
         _is_flush_thread_initialized = false;
+        _zlog_buffer_unlock();
     }
-    _zlog_buffer_unlock();
 }
 
 // ------------------------- Helper Functions ---------------------------
