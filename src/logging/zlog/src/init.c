@@ -66,12 +66,18 @@ void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
 {
     g_logLevel = ADUC_LOG_INFO;
 
-    // zlog_init doesn't create the log path, so attempt to create it here.
+    // zlog_init doesn't create the log path, so attempt to create it here if it does not exist.
     // If it can't be created, zlogging will send output to console.
-    int dir_result = ADUC_SystemUtils_MkDirRecursive(ADUC_LOG_FOLDER, -1 /*userId*/, -1 /*groupId*/, S_IRWXU);
-    if (dir_result != 0)
+    struct stat st;
+    if (stat(ADUC_LOG_FOLDER, &st) != 0)
     {
-        printf("WARNING: Cannot create a folder for logging file. ('%s')", ADUC_LOG_FOLDER);
+        // NOTE: permissions must match those in CheckLogDir in health_management.c
+        if (ADUC_SystemUtils_MkDirRecursive(
+                ADUC_LOG_FOLDER, -1 /*userId*/, -1 /*groupId*/, S_IRWXU | S_IRGRP | S_IXGRP)
+            != 0)
+        {
+            printf("WARNING: Cannot create a folder for logging file. ('%s')", ADUC_LOG_FOLDER);
+        }
     }
 
     if (zlog_init(
