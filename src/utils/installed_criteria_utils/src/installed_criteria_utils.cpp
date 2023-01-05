@@ -8,6 +8,9 @@
 #include "aduc/installed_criteria_utils.hpp"
 #include "aduc/adu_core_exports.h"
 #include "aduc/logging.h"
+
+#include "aducpal/stdio.h" // rename
+
 #include <chrono>
 #include <fstream>
 #include <parson.h>
@@ -88,7 +91,7 @@ const JSON_Status safe_json_serialize_to_file_pretty(const JSON_Value* value, co
     JSON_Status status = json_serialize_to_file_pretty(value, tempFilepath.c_str());
     if (status == JSONSuccess)
     {
-        if (rename(tempFilepath.c_str(), filepath) != 0)
+        if (ADUCPAL_rename(tempFilepath.c_str(), filepath) != 0)
         {
             remove(tempFilepath.c_str());
             status = JSONFailure;
@@ -173,11 +176,13 @@ const bool RemoveInstalledCriteria(const char* installedCriteriaFilePath, const 
 {
     bool success = true;
 
-    std::ifstream dataFile(installedCriteriaFilePath);
-    if (!dataFile.good())
     {
-        // File doesn't exist.
-        return true;
+        std::ifstream dataFile(installedCriteriaFilePath);
+        if (!dataFile.good())
+        {
+            // File doesn't exist.
+            return true;
+        }
     }
 
     JSON_Value* rootValue = json_parse_file(installedCriteriaFilePath);
@@ -224,7 +229,7 @@ const bool RemoveInstalledCriteria(const char* installedCriteriaFilePath, const 
     return success;
 }
 
-void RemoveAllInstalledCriteria()
+void RemoveAllInstalledCriteria(const char* installedCriteriaFilePath)
 {
-    remove(ADUC_INSTALLEDCRITERIA_FILE_PATH);
+    remove(installedCriteriaFilePath);
 }
