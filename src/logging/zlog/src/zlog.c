@@ -48,7 +48,7 @@ static const char level_names[] = { 'D', 'I', 'W', 'E' }; // Must align with ZLO
 static FILE* zlog_fout = NULL;
 static char* zlog_file_log_dir = NULL;
 static char* zlog_file_log_prefix = NULL;
-static time_t zlog_last_flushed;
+static time_t zlog_last_flushed = 0;
 
 char _zlog_buffer[ZLOG_BUFFER_MAXLINES][ZLOG_BUFFER_LINE_MAXCHARS];
 static int _zlog_buffer_count = 0;
@@ -370,10 +370,7 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
 
     if (msg_level == ZLOG_ERROR || (seconds - zlog_last_flushed) >= ZLOG_FLUSH_INTERVAL_SEC)
     {
-        _zlog_buffer_lock();
-        _zlog_flush_buffer();
-        _zlog_buffer_unlock();
-
+        zlog_flush_buffer();
         zlog_last_flushed = seconds;
     }
 }
