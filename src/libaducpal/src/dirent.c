@@ -171,40 +171,26 @@ static _WDIR* _wopendir(const wchar_t* dirname)
 
     /*
 	 * Compute the length of full path plus zero terminator
-	 *
-	 * Note that on WinRT there's no way to convert relative paths
-	 * into absolute paths, so just assume it is an absolute path.
 	 */
-#    if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-    /* Desktop */
     DWORD n = GetFullPathNameW(dirname, 0, NULL, NULL);
-#    else
-    /* WinRT */
-    size_t n = wcslen(dirname);
-#    endif
 
     /* Allocate room for absolute directory name and search pattern */
     dirp->patt = (wchar_t*)malloc(sizeof(wchar_t) * n + 16);
     if (dirp->patt == NULL)
+    {
         goto exit_closedir;
+    }
 
-        /*
+    /*
 	 * Convert relative directory name to an absolute one.  This
 	 * allows rewinddir() to function correctly even when current
 	 * working directory is changed between opendir() and rewinddir().
-	 *
-	 * Note that on WinRT there's no way to convert relative paths
-	 * into absolute paths, so just assume it is an absolute path.
 	 */
-#    if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-    /* Desktop */
     n = GetFullPathNameW(dirname, n, dirp->patt, NULL);
     if (n <= 0)
+    {
         goto exit_closedir;
-#    else
-    /* WinRT */
-    wcsncpy_s(dirp->patt, n + 1, dirname, n);
-#    endif
+    }
 
     /* Append search pattern \* to the directory name */
     p = dirp->patt + n;
@@ -226,7 +212,9 @@ static _WDIR* _wopendir(const wchar_t* dirname)
 
     /* Open directory stream and retrieve the first entry */
     if (!dirent_first(dirp))
+    {
         goto exit_closedir;
+    }
 
     /* Success */
     return dirp;
@@ -248,21 +236,27 @@ DIR* ADUCPAL_opendir(const char* dirname)
     }
 
     /* Allocate memory for DIR structure */
-    struct DIR* dirp = (DIR*)malloc(sizeof(struct DIR));
+    DIR* dirp = (DIR*)malloc(sizeof(DIR));
     if (!dirp)
+    {
         return NULL;
+    }
 
     /* Convert directory name to wide-character string */
     wchar_t wname[PATH_MAX + 1];
     size_t n;
     int error = mbstowcs_s(&n, wname, PATH_MAX + 1, dirname, PATH_MAX + 1);
     if (error)
+    {
         goto exit_failure;
+    }
 
     /* Open directory stream using wide-character name */
     dirp->wdirp = _wopendir(wname);
     if (!dirp->wdirp)
+    {
         goto exit_failure;
+    }
 
     /* Success */
     return dirp;
@@ -278,7 +272,9 @@ static WIN32_FIND_DATAW* dirent_next(_WDIR* dirp)
 {
     /* Return NULL if seek position was invalid */
     if (dirp->invalid)
+    {
         return NULL;
+    }
 
     /* Is the next directory entry already in cache? */
     if (dirp->cached)
@@ -361,11 +357,17 @@ static int readdir_r(DIR* dirp, struct dirent* entry, struct dirent** result)
         /* Determine file type */
         DWORD attr = datap->dwFileAttributes;
         if ((attr & FILE_ATTRIBUTE_DEVICE) != 0)
+        {
             entry->d_type = DT_CHR;
+        }
         else if ((attr & FILE_ATTRIBUTE_DIRECTORY) != 0)
+        {
             entry->d_type = DT_DIR;
+        }
         else
+        {
             entry->d_type = DT_REG;
+        }
 
         /* Get offset of next file */
         datap = dirent_next(dirp->wdirp);
@@ -428,7 +430,9 @@ int ADUCPAL_closedir(DIR* dirp)
     int ok;
 
     if (!dirp)
+    {
         goto exit_failure;
+    }
 
     /* Close wide-character directory stream */
     ok = _wclosedir(dirp->wdirp);
@@ -473,21 +477,29 @@ int ADUCPAL_scandir(
         {
             tmp = (struct dirent*)malloc(sizeof(struct dirent));
             if (!tmp)
+            {
                 goto exit_failure;
+            }
         }
 
         /* Read directory entry to temporary area */
         struct dirent* entry;
         if (readdir_r(dir, tmp, &entry) != /*OK*/ 0)
+        {
             goto exit_failure;
+        }
 
         /* Stop if we already read the last directory entry */
         if (entry == NULL)
+        {
             goto exit_success;
+        }
 
         /* Determine whether to include the entry in results */
         if (filter && !filter(tmp))
+        {
             continue;
+        }
 
         /* Enlarge pointer table to make room for another pointer */
         if (size >= allocated)
@@ -498,7 +510,9 @@ int ADUCPAL_scandir(
             /* Allocate new pointer table or enlarge existing */
             void* p = realloc(files, sizeof(void*) * num_entries);
             if (!p)
+            {
                 goto exit_failure;
+            }
 
             /* Got the memory */
             files = (dirent**)p;
@@ -531,7 +545,9 @@ exit_success:
 
     /* Pass pointer table to caller */
     if (namelist)
+    {
         *namelist = files;
+    }
 
     /* Return the number of directory entries read */
     result = (int)size;
