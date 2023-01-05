@@ -1,10 +1,9 @@
 Param(
-    [Parameter(Position = 0)][string]$FileName = 'AducIotAgent',
+    [Parameter(Position = 0)][string]$FileName = $null,
     [string]$Type = 'RelWithDebInfo',
-    # e.g. "bp aduciotagent!main; g"
-    [string]$InitialCommand = 'g',
-    [switch]$NoDebugger = $false,
-    [String[]] $Arguments = $null
+    # Set this to true if debugging a Catch2 Unit Test.
+    [switch]$DebugCatchUT = $false,
+    [switch]$NoDebugger = $false
 )
 
 function Show-Error {
@@ -48,9 +47,14 @@ $app = Join-Path $bin_dir "$FileName.exe"
 if (-not (Test-Path $app -PathType Leaf)) {
     Show-Error "Cannot find $app"
 
-    ''
-    'The following apps were found:'
-    (Get-ChildItem -LiteralPath $bin_dir -Filter '*.exe').BaseName | Sort-Object | ForEach-Object { Show-Bullet $_ }
+    if (-not (Test-Path $bin_dir -PathType Container)) {
+        Show-Error "Folder $bin_dir doesn't exist. Either rebuild or specify -Type"
+    }
+    else {
+        ''
+        'The following apps were found:'
+        (Get-ChildItem -LiteralPath $bin_dir -Filter '*.exe').BaseName | Sort-Object | ForEach-Object { Show-Bullet $_ }
+    }
     exit 1
 }
 
@@ -68,8 +72,21 @@ else {
         exit 1
     }
 
-    "Debugging $app . . ."
-    cmd.exe /c start $windbgx -c $InitialCommand $app @Arguments
+    if ($DebugCatchUT) {
+        "Debugging Unit Test $app ..."
+
+        $InitialCommands = `
+            # e.g. https_proxy_utils_unit_tests!`anonymous namespace'::C_A_T_C_H_T_E_S_T_0::test
+            '-c', "bm $FileName!*::C_A_T_C_H_T_E_S_T_*::test", `
+            # e.g. permission_utils_unit_test!C_A_T_C_H_T_E_S_T_0
+            '-c', "bm $FileName!C_A_T_C_H_T_E_S_T_*", `
+            '-c', 'g'
+        cmd.exe /c start $windbgx @InitialCommands $app --success --break
+    }
+    else {
+        "Debugging $app ..."
+        cmd.exe /c start $windbgx $app
+    }
 }
 
 exit 0
