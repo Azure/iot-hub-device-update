@@ -1153,7 +1153,6 @@ static void ADUC_Workflow_SetUpdateStateHelper(
     }
 
     ADUC_WorkflowData_SetLastReportedState(updateState, workflowData);
-    Log_RequestFlush();
 }
 
 /**
@@ -1219,7 +1218,6 @@ void ADUC_Workflow_SetUpdateStateWithResult(
     ADUC_WorkflowData* workflowData, ADUCITF_State updateState, ADUC_Result result)
 {
     ADUC_Workflow_SetUpdateStateHelper(workflowData, updateState, &result);
-    Log_RequestFlush();
 }
 
 /**
