@@ -1185,7 +1185,6 @@ int main(int argc, char** argv)
     // high-privileged tasks, such as, registering agent's extension(s).
     if (!RunAsDesiredUser())
     {
-        ret = 1;
         goto done;
     }
 
