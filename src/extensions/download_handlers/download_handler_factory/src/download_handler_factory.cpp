@@ -96,7 +96,7 @@ DownloadHandlerPlugin* DownloadHandlerFactory::LoadDownloadHandler(const std::st
     }
     catch (const aduc::PluginException& pe)
     {
-        Log_Error("plugin exception: %s, sym: %s", pe.what(), pe.Symbol());
+        Log_Error("plugin exception: %s, sym: %s", pe.what(), pe.Symbol().c_str());
         return nullptr;
     }
     catch (const std::exception& e)

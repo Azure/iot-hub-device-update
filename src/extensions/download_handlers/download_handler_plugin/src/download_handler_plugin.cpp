@@ -52,7 +52,7 @@ DownloadHandlerPlugin::~DownloadHandlerPlugin() noexcept
     }
     catch (const aduc::PluginException& pe)
     {
-        Log_Error("plugin exception '%s' for sym '%s'", pe.what(), pe.Symbol());
+        Log_Error("plugin exception '%s' for sym '%s'", pe.what(), pe.Symbol().c_str());
     }
     catch (const std::exception& e)
     {
@@ -184,7 +184,7 @@ ADUC_Result DownloadHandlerPlugin::GetContractInfo(ADUC_ExtensionContractInfo* c
     {
         result.ResultCode = ADUC_GeneralResult_Failure;
         result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_GETCONTRACTINFO;
-        Log_Error("plugin exception '%s', sym '%s'", pe.what(), pe.Symbol());
+        Log_Error("plugin exception '%s', sym '%s'", pe.what(), pe.Symbol().c_str());
     }
     catch (const std::exception& e)
     {
