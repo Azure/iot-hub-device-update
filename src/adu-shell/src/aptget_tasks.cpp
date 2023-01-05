@@ -14,7 +14,6 @@
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
 #include "aduc/string_utils.hpp"
-#include "aduc/system_utils.h"
 
 namespace Adu
 {

@@ -18,9 +18,19 @@
 EXTERN_C_BEGIN
 
 /**
+ * @brief The timeout for the Edge Identity Service HTTP requests
+ */
+#   define EIS_PROVISIONING_TIMEOUT 2000
+
+/**
+ * @brief Time after startup the connection string will be provisioned for by the Edge Identity Service
+ */
+#   define EIS_TOKEN_EXPIRY_TIME_IN_SECONDS (12 /* hr */ * 60 /* min/hr */ * 60 /*sec/min */)
+
+/**
  * @brief OpenSSL Key Engine ID to be set within the IotHub connection if using EIS to provision with a cert
  */
-#    define EIS_OPENSSL_KEY_ENGINE_ID "aziot_keys"
+#   define EIS_OPENSSL_KEY_ENGINE_ID "aziot_keys"
 
 /**
  * @brief Creates a connection string using the provisioned data within EIS
