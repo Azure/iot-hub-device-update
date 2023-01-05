@@ -1034,7 +1034,7 @@ void OnRestartSignal(int sig)
  * This to ensure that the agent process is run with the intended privileges, and the resource that
  * created by the agent has the correct ownership.
  *
- * @return bool
+ * @return bool true on success.
  */
 bool RunAsDesiredUser()
 {
@@ -1098,15 +1098,16 @@ int main(int argc, char** argv)
     // Need to set ret and goto done after this to ensure proper shutdown and deinitialization.
     ADUC_Logging_Init(launchArgs.logLevel, "du-agent");
 
+    // default to failure
+    ret = 1;
+
     if (launchArgs.healthCheckOnly)
     {
         if (HealthCheck(&launchArgs))
         {
             ret = 0;
-            goto done;
         }
 
-        ret = 1;
         goto done;
     }
 
@@ -1116,66 +1117,54 @@ int main(int argc, char** argv)
         {
         case ExtensionRegistrationType_None:
             Log_Error("Missing --extension-type argument.");
-            ret = 1;
             goto done;
 
         case ExtensionRegistrationType_UpdateContentHandler:
             if (launchArgs.extensionId == NULL)
             {
                 Log_Error("Missing --extension-id argument.");
-                ret = 1;
                 goto done;
             }
 
             if (RegisterUpdateContentHandler(launchArgs.extensionId, launchArgs.extensionFilePath))
             {
                 ret = 0;
-                goto done;
             }
 
-            ret = 1;
             goto done;
 
         case ExtensionRegistrationType_ComponentEnumerator:
             if (RegisterComponentEnumeratorExtension(launchArgs.extensionFilePath))
             {
                 ret = 0;
-                goto done;
             }
 
-            ret = 1;
             goto done;
 
         case ExtensionRegistrationType_ContentDownloadHandler:
             if (RegisterContentDownloaderExtension(launchArgs.extensionFilePath))
             {
                 ret = 0;
-                goto done;
             }
 
-            ret = 1;
             goto done;
 
         case ExtensionRegistrationType_DownloadHandler:
             if (launchArgs.extensionId == NULL)
             {
                 Log_Error("Missing --extension-id argument.");
-                ret = 1;
                 goto done;
             }
 
             if (RegisterDownloadHandler(launchArgs.extensionId, launchArgs.extensionFilePath))
             {
                 ret = 0;
-                goto done;
             }
 
-            ret = 1;
             goto done;
 
         default:
             Log_Error("Unknown ExtensionRegistrationType: %d", launchArgs.extensionRegistrationType);
-            ret = 1;
             goto done;
         }
     }
@@ -1187,10 +1176,6 @@ int main(int argc, char** argv)
         {
             ret = 0;
         }
-        else
-        {
-            ret = 1;
-        }
 
         goto done;
     }
@@ -1200,7 +1185,7 @@ int main(int argc, char** argv)
     // high-privileged tasks, such as, registering agent's extension(s).
     if (!RunAsDesiredUser())
     {
-        ret = 0;
+        ret = 1;
         goto done;
     }
 
@@ -1219,12 +1204,13 @@ int main(int argc, char** argv)
         if (healthy)
         {
             Log_Info("Agent is healthy.");
+            ret = 0;
         }
         else
         {
             Log_Error("Agent health check failed.");
         }
-        ret = healthy ? 0 : 1;
+
         goto done;
     }
 
