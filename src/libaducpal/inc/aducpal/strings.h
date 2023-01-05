@@ -7,7 +7,9 @@
 extern "C"
 {
 #    endif
+
     int ADUCPAL_strcasecmp(const char* s1, const char* s2);
+
 #    ifdef __cplusplus
 }
 #    endif

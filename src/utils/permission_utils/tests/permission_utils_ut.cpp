@@ -26,6 +26,7 @@ TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
     int file_handle = ADUCPAL_mkstemp(tmpfile_path);
     REQUIRE(file_handle != -1);
     REQUIRE(0 == ADUCPAL_fchmod(file_handle, file_permissions));
+    ADUCPAL_close(file_handle);
 
     CHECK(PermissionUtils_VerifyFilemodeExact(tmpfile_path, file_permissions));
     CHECK_FALSE(PermissionUtils_VerifyFilemodeExact(tmpfile_path, file_permissions | S_IWGRP /* 04772 */));
@@ -36,5 +37,5 @@ TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
         tmpfile_path, S_ISUID | S_ISVTX | S_IRWXU | S_IRGRP | S_IXGRP | S_IWOTH /* 05752 */));
 
     // cleanup
-    unlink(tmpfile_path);
+    ADUCPAL_unlink(tmpfile_path);
 }

@@ -2,8 +2,12 @@
 
 #ifdef ADUCPAL_USE_PAL
 
-#    include <io.h> // _isatty
-#    include <windows.h>
+// clang-format off
+#include <windows.h> // GetCurrentProcessId
+#include <sys/stat.h> // _S_*
+#include <direct.h> // rmdir
+#include <io.h> // isatty, unlink, open, close
+// clang-format on
 
 static unsigned long get_random_ulong()
 {
@@ -28,8 +32,7 @@ int ADUCPAL_chown(const char* path, uid_t owner, gid_t group)
 
 int ADUCPAL_close(int fildes)
 {
-    __debugbreak();
-    return -1;
+    return _close(fildes);
 }
 
 int ADUCPAL_dup2(int fildes, int fildes2)
@@ -69,7 +72,7 @@ int ADUCPAL_gethostname(char* name, size_t len)
 
 pid_t ADUCPAL_getpid()
 {
-    return get_random_ulong();
+    return GetCurrentProcessId();
 }
 
 uid_t ADUCPAL_getuid()
@@ -84,8 +87,14 @@ int ADUCPAL_isatty(int fd)
 
 int ADUCPAL_open(const char* path, int oflag)
 {
-    __debugbreak();
-    return -1;
+    // return _open(path, oflag);
+    int fd;
+    int ret = _sopen_s(&fd, path, oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    if (ret != 0)
+    {
+        return -1;
+    }
+    return fd;
 }
 
 int ADUCPAL_pipe(int fildes[2])
@@ -100,10 +109,10 @@ ssize_t ADUCPAL_read(int fildes, void* buf, size_t nbyte)
     return -1;
 }
 
-int rmdir(const char* path)
+int ADUCPAL_rmdir(const char* path)
 {
     __debugbreak();
-    return -1;
+    return _rmdir(path);
 }
 
 int ADUCPAL_seteuid(uid_t uid)
@@ -125,7 +134,12 @@ int ADUCPAL_setuid(uid_t uid)
 
 unsigned int ADUCPAL_sleep(unsigned int seconds)
 {
-    // Note that unlike Linux, this isn't interruptable!
+    // TODO(JeffMill): [PAL] need to handle case of signal arriving
+
+    // sleep() makes the calling thread sleep until
+    // seconds seconds have elapsed
+    // or a signal arrives which is not ignored.
+
     Sleep(seconds * 1000);
     return 0;
 }
@@ -143,6 +157,18 @@ long ADUCPAL_syscall(long number)
 void ADUCPAL_sync()
 {
     __debugbreak();
+}
+
+int ADUCPAL_unlink(const char* path)
+{
+    // If one or more processes have the file open when the last link is removed,
+    // the link shall be removed before unlink() returns, but the removal of the file contents
+    // shall be postponed until all references to the file are closed.
+
+    // TODO(JeffMill): [PAL] _unlink on Windows doesn't have this behavior.
+    // Perhaps h = CreateFile(file, ... FILE_FLAG_DELETE_ON_CLOSE); CloseHandle(h); ?
+
+    return _unlink(path);
 }
 
 ssize_t ADUCPAL_write(int fildes, const void* buf, size_t nbyte)

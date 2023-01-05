@@ -13,9 +13,11 @@ typedef unsigned int clockid_t;
 extern "C"
 {
 #    endif
+
     int ADUCPAL_clock_gettime(clockid_t clockid, struct timespec* tp);
     struct tm* ADUCPAL_gmtime_r(const time_t* timep, struct tm* result);
     int ADUCPAL_nanosleep(const struct timespec* rqtp, struct timespec* rmtp);
+
 #    ifdef __cplusplus
 }
 #    endif

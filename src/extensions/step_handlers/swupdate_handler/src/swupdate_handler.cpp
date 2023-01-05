@@ -36,7 +36,7 @@
 #include <sstream>
 #include <string>
 
-#include <dirent.h>
+#include <aducpal/dirent.h>
 
 namespace adushconst = Adu::Shell::Const;
 
@@ -202,7 +202,7 @@ ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowDat
 
     Log_Info("Installing from %s", workFolder);
     std::unique_ptr<DIR, std::function<int(DIR*)>> directory(
-        opendir(workFolder), [](DIR* dirp) -> int { return closedir(dirp); });
+        ADUCPAL_opendir(workFolder), [](DIR* dirp) -> int { return ADUCPAL_closedir(dirp); });
     if (directory == nullptr)
     {
         Log_Error("opendir failed, errno = %d", errno);
@@ -326,10 +326,7 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
         CancelApply(ADUC_LOG_FOLDER);
     }
 
-    result = {
-        .ResultCode = ADUC_Result_Success,
-        .ExtendedResultCode = 0
-    };
+    result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
 
 done:
     workflow_free_string(workFolder);

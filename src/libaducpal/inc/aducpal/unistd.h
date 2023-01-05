@@ -17,6 +17,7 @@
 extern "C"
 {
 #    endif
+
     int ADUCPAL_access(const char* pathname, int mode);
     int ADUCPAL_chown(const char* path, uid_t owner, gid_t group);
     int ADUCPAL_close(int fildes);
@@ -32,7 +33,7 @@ extern "C"
     int ADUCPAL_open(const char* path, int oflag);
     int ADUCPAL_pipe(int fildes[2]);
     ssize_t ADUCPAL_read(int fildes, void* buf, size_t nbyte);
-    int rmdir(const char* path);
+    int ADUCPAL_rmdir(const char* path);
     int ADUCPAL_setegid(gid_t gid);
     int ADUCPAL_seteuid(uid_t uid);
     int ADUCPAL_setuid(uid_t uid);
@@ -40,7 +41,9 @@ extern "C"
     // Note: syscall is actually (int number, ...), but the va_arg isn't used in this project.
     long ADUCPAL_syscall(long number);
     void ADUCPAL_sync();
+    int ADUCPAL_unlink(const char* path);
     ssize_t ADUCPAL_write(int fildes, const void* buf, size_t nbyte);
+
 #    ifdef __cplusplus
 }
 #    endif
@@ -72,6 +75,7 @@ extern "C"
 #    define ADUCPAL_sleep(seconds) sleep(seconds)
 #    define ADUCPAL_syscall(number) syscall(number)
 #    define ADUCPAL_sync() sync()
+#    define ADUCPAL_unlink(path) unlink(path)
 #    define ADUCPAL_write(fildes, buf, nbyte) write(fildes, buf, nbyte)
 
 #endif // #ifdef ADUCPAL_USE_PAL

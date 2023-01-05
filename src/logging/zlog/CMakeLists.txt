@@ -15,12 +15,6 @@ target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/inc
                                                    ${ADUC_LOGGING_INCLUDES})
 
 if (WIN32)
-    # TODO(JeffMill): [PAL] dirent.h
-    find_path (DIRENT_INCLUDE_DIRS "dirent.h")
-    target_include_directories (${PROJECT_NAME} PRIVATE ${DIRENT_INCLUDE_DIRS})
-endif ()
-
-if (WIN32)
     # TODO(JeffMill): [PAL] pthread
     find_package (PThreads4W REQUIRED)
     target_link_libraries (${PROJECT_NAME} PRIVATE PThreads4W::PThreads4W)

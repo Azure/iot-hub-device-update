@@ -21,23 +21,36 @@ int ADUCPAL_clock_gettime(clockid_t clk_id, struct timespec* tp)
 struct tm* ADUCPAL_gmtime_r(const time_t* timep, struct tm* result)
 {
     static struct tm tm;
-    const struct tm* gmtime = _gmtime64(timep);
-    if (gmtime == NULL)
+
+    if (gmtime_s(&tm, timep) != 0)
     {
-        __debugbreak();
         return NULL;
     }
 
-    memcpy(&tm, gmtime, sizeof(tm));
-
     *result = tm;
+
     return &tm;
 }
 
 int ADUCPAL_nanosleep(const struct timespec* rqtp, struct timespec* rmtp)
 {
-    __debugbreak();
-    return -1;
+    // TODO(JeffMill): [PAL] need to handle case of signal arriving
+
+    // The nanosleep() function shall cause the current thread to be suspended from execution until either
+    // the time interval specified by the rqtp argument has elapsed
+    // or a signal is delivered to the calling thread, and its action is to invoke a signal-catching function or to terminate the process.
+
+    // TODO(JeffMill): All callers are sending at least 1 ms.  Enforce this.
+    if (rmtp != NULL || rqtp->tv_sec != 0 || rqtp->tv_nsec < 1000000)
+        __debugbreak();
+
+#    define NANOSECONDS_TO_MILLISECONDS(ms) ((ms) / 1000000)
+
+    Sleep(NANOSECONDS_TO_MILLISECONDS(rqtp->tv_nsec));
+
+    // 0: time elapsed
+    // -1: interrupted by a signal (errno set to EINTR)
+    return 0;
 }
 
 #endif // #ifdef ADUCPAL_USE_PAL

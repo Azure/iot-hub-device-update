@@ -14,6 +14,7 @@ extern "C"
     char* ADUCPAL_dlerror(void);
     void* ADUCPAL_dlsym(void* handle, const char* symbol);
     int ADUCPAL_dlclose(void* handle);
+
 #    ifdef __cplusplus
 }
 #    endif

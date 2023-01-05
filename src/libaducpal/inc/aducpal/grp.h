@@ -18,7 +18,9 @@ struct group
 extern "C"
 {
 #    endif
+
     struct group* ADUCPAL_getgrnam(const char* name);
+
 #    ifdef __cplusplus
 }
 #    endif

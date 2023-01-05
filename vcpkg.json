@@ -17,7 +17,6 @@
         "azure-macro-utils-c",
         "azure-storage-blobs-cpp",
         "catch2",
-        "dirent",
         "getopt-win32",
         "openssl",
         "parson",

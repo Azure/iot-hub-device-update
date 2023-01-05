@@ -15,7 +15,9 @@
 extern "C"
 {
 #    endif
+
     pid_t ADUCPAL_waitpid(pid_t pid, int* stat_loc, int options);
+
 #    ifdef __cplusplus
 }
 #    endif

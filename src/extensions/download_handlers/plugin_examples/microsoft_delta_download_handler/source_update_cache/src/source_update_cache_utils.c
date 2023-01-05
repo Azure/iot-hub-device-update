@@ -220,7 +220,7 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
 
         Log_Debug("moving '%s' -> '%s'", STRING_c_str(sandboxUpdatePayloadFile), STRING_c_str(updateCacheFilePath));
 
-        res = rename(STRING_c_str(sandboxUpdatePayloadFile), STRING_c_str(updateCacheFilePath));
+        res = ADUCPAL_rename(STRING_c_str(sandboxUpdatePayloadFile), STRING_c_str(updateCacheFilePath));
         if (res != 0)
         {
             Log_Warn("rename, errno %d", errno);

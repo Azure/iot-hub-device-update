@@ -25,6 +25,7 @@ struct sysinfo
 extern "C"
 {
 #    endif
+
     int ADUCPAL_sysinfo(struct sysinfo* info);
 
 #    ifdef __cplusplus

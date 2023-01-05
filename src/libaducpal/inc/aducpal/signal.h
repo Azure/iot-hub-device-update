@@ -9,6 +9,7 @@
 extern "C"
 {
 #    endif
+
     int ADUCPAL_raise(int sig);
 
 #    ifdef __cplusplus

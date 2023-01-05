@@ -7,9 +7,11 @@
 extern "C"
 {
 #    endif
+
     int ADUCPAL_mkstemp(char* tmpl);
     int ADUCPAL_setenv(const char* name, const char* value, int overwrite);
     int ADUCPAL_unsetenv(const char* name);
+
 #    ifdef __cplusplus
 }
 #    endif

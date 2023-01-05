@@ -25,7 +25,9 @@ struct statvfs
 extern "C"
 {
 #    endif
+
     int ADUCPAL_statvfs(const char* path, struct statvfs* buf);
+
 #    ifdef __cplusplus
 }
 #    endif

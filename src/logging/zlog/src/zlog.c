@@ -8,8 +8,7 @@
  * Licensed under the MIT License.
  */
 
-#include <dirent.h>
-
+#include <aducpal/dirent.h>
 #include <aducpal/sys_time.h> // gettimeofday
 #include <aducpal/time.h> // clock_gettime, gmtime_r
 #include <aducpal/unistd.h> // getpid, sleep, syscall
@@ -572,7 +571,7 @@ void zlog_ensure_at_most_n_logfiles(int max_num)
     struct dirent** logfiles;
 
     // List the files specified by file_select in alphabetical order
-    const int total = scandir(zlog_file_log_dir, &logfiles, file_select, alphasort);
+    const int total = ADUCPAL_scandir(zlog_file_log_dir, &logfiles, file_select, ADUCPAL_alphasort);
     if (total == -1)
     {
         return;

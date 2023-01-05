@@ -16,9 +16,11 @@ struct timeval
 extern "C"
 {
 #    endif
+
     // Note: unclear if tz is "struct timezone*" or "void*".
     // In any case, it's unused in this project.
     int ADUCPAL_gettimeofday(struct timeval* tv, void* tz);
+
 #    ifdef __cplusplus
 }
 #    endif

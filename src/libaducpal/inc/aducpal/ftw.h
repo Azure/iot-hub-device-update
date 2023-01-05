@@ -31,11 +31,13 @@ enum
 extern "C"
 {
 #    endif
+
     int ADUCPAL_nftw(
         const char* dirpath,
         int (*fn)(const char* fpath, const struct stat* sb, int typeflag, struct FTW* ftwbuf),
         int nopenfd,
         int flags);
+
 #    ifdef __cplusplus
 }
 #    endif

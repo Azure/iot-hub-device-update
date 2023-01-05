@@ -17,6 +17,7 @@ struct utsname
 extern "C"
 {
 #    endif
+
     int ADUCPAL_uname(struct utsname* buf);
 
 #    ifdef __cplusplus

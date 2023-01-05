@@ -159,9 +159,7 @@ ADUC_FileEntity fileEntityWithEmptyHash[] = { {
 static void GenerateUniqueId(char* buffer, size_t buffer_cch)
 {
     const time_t timer = time(nullptr);
-    struct tm tm
-    {
-    };
+    struct tm tm;
     (void)ADUCPAL_gmtime_r(&timer, &tm);
     (void)strftime(buffer, buffer_cch, "%y%m%d%H%M%S", &tm);
 }

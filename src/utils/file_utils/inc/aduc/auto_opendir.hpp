@@ -9,11 +9,14 @@
 #ifndef AUTO_OPENDIR_HPP
 #define AUTO_OPENDIR_HPP
 
-#include <dirent.h>
 #include <string>
+
+struct DIR;
+struct dirent;
 
 namespace aduc
 {
+
 class AutoOpenDir
 {
 public:

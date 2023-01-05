@@ -9,10 +9,10 @@ if (ADUC_WARNINGS_AS_ERRORS)
         # TODO(JeffMill): Use /W4 (noisy) instead?
         add_compile_options (/W3 /WX)
 
-        # TODO(JeffMill): allow strcpy, strcat, fopen, etc.
+        # TODO(JeffMill): [PAL] allow strcpy, strcat, fopen, etc.
         add_definitions (-D_CRT_SECURE_NO_WARNINGS)
 
-        # TODO(JeffMill): Avoid C4996: POSIX name for this item is deprecated.
+        # TODO(JeffMill): [PAL] Avoid C4996: POSIX name for this item is deprecated.
         add_definitions (-D_CRT_NONSTDC_NO_WARNINGS)
     else ()
         add_compile_options (-Werror)

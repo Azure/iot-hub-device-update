@@ -9,6 +9,7 @@ project (libaducpal LANGUAGES C)
 # Build as a static library
 add_library (
     ${PROJECT_NAME} STATIC
+    "src/dirent.c"
     "src/dlfcn.c"
     "src/ftw.c"
     "src/grp.c"
@@ -27,13 +28,13 @@ add_library (
     "src/wait.c")
 
 if (WIN32)
+    # Ensure that this project is built with secure and standard CRT APIs.
+    remove_definitions (-D_CRT_SECURE_NO_WARNINGS)
+    remove_definitions (-D_CRT_NONSTDC_NO_WARNINGS)
+
     # On Windows, any project that links to this will have ADUCPAL_USE_PAL defined
     # so that the headers bring in the correct includes and function definitions.
     target_compile_definitions (${PROJECT_NAME} PUBLIC ADUCPAL_USE_PAL)
-
-    # TODO(JeffMill): [PAL] dirent.h
-    find_path (DIRENT_INCLUDE_DIRS "dirent.h")
-    target_include_directories (${PROJECT_NAME} PRIVATE ${DIRENT_INCLUDE_DIRS})
 endif ()
 
 # Ensure that all projects (including this) have access to this project's inc folder.

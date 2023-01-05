@@ -18,6 +18,7 @@ using ADUC::StringUtils::cstr_wrapper;
 #include <fstream>
 
 #include <aducpal/stdlib.h> // mkstemp
+#include <aducpal/unistd.h> // close
 
 class TemporaryTestFile
 {
@@ -32,6 +33,7 @@ public:
         // Generate a unique filename.
         int result = ADUCPAL_mkstemp(_filePath);
         REQUIRE(result != -1);
+        ADUCPAL_close(result);
 
         (void)std::remove(Filename());
         std::ofstream file{ Filename() };

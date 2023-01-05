@@ -9,6 +9,7 @@
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h"
 
+#include <aducpal/dirent.h>
 #include <aducpal/ftw.h> // nftw
 #include <aducpal/grp.h> // getgrnam
 #include <aducpal/pwd.h> // getpwnam
@@ -18,7 +19,6 @@
 
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/strings.h>
-#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h> // for O_CLOEXEC
 #include <limits.h> // for PATH_MAX
@@ -350,12 +350,12 @@ static int RmDirRecursive_helper(const char* fpath, const struct stat* sb, int t
     if (typeflag == FTW_DP)
     {
         // fpath is a directory, and FTW_DEPTH was specified in flags.
-        result = rmdir(fpath);
+        result = ADUCPAL_rmdir(fpath);
     }
     else
     {
         // Assume a file.
-        result = unlink(fpath);
+        result = ADUCPAL_unlink(fpath);
     }
 
     return result;
@@ -558,7 +558,7 @@ done:
  */
 int ADUC_SystemUtils_RemoveFile(const char* path)
 {
-    return unlink(path);
+    return ADUCPAL_unlink(path);
 }
 
 /**
@@ -762,7 +762,7 @@ int SystemUtils_ForEachDir(
         goto done;
     }
 
-    dir = opendir(baseDir);
+    dir = ADUCPAL_opendir(baseDir);
     if (dir == NULL)
     {
         err_ret = errno;
@@ -773,7 +773,7 @@ int SystemUtils_ForEachDir(
     do
     {
         errno = 0;
-        if ((dir_entry = readdir(dir)) != NULL)
+        if ((dir_entry = ADUCPAL_readdir(dir)) != NULL)
         {
             if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0)
             {
@@ -803,7 +803,7 @@ int SystemUtils_ForEachDir(
 done:
     if (dir != NULL)
     {
-        closedir(dir);
+        ADUCPAL_closedir(dir);
         dir = NULL;
     }
 

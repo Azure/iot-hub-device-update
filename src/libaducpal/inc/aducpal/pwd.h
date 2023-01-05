@@ -21,7 +21,9 @@ struct passwd
 extern "C"
 {
 #    endif
+
     struct passwd* ADUCPAL_getpwnam(const char* name);
+
 #    ifdef __cplusplus
 }
 #    endif

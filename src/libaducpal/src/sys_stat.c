@@ -14,10 +14,8 @@ int ADUCPAL_chmod(const char* path, mode_t mode)
 
 int ADUCPAL_fchmod(int fd, mode_t mode)
 {
-    __debugbreak();
-
-    errno = ENOSYS;
-    return -1;
+    // TODO(JeffMill): [PAL] This is only used in a UT, and doesn't have any analog on Windows, so no-op.
+    return 0;
 }
 
 int ADUCPAL_mkdir(const char* path, mode_t mode)

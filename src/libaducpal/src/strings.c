@@ -2,11 +2,11 @@
 
 #ifdef ADUCPAL_USE_PAL
 
-// TODO(JeffMill): [PAL] strcasecmp
+#    include <string.h> // _stricmp
+
 int ADUCPAL_strcasecmp(const char* s1, const char* s2)
 {
-    __debugbreak();
-    return 0;
+    return _stricmp(s1, s2);
 }
 
 #endif // #ifdef ADUCPAL_USE_PAL
