@@ -48,6 +48,11 @@ static std::string& Trim(std::string& s)
  */
 static std::string& RemoveSurrounding(std::string& s, char c) // NOLINT(google-runtime-references)
 {
+    if (s.empty())
+    {
+        return s;
+    }
+
     if (s.front() == c && s.back() == c)
     {
         s.erase(0, 1);
@@ -60,6 +65,12 @@ static std::string& RemoveSurrounding(std::string& s, char c) // NOLINT(google-r
 static std::vector<std::string> Split(const std::string& str, const char separator)
 {
     std::vector<std::string> tokens;
+
+    if (str.empty())
+    {
+        return tokens;
+    }
+
     std::istringstream stream(str);
     std::string token;
     while (std::getline(stream, token, separator))
@@ -74,6 +85,7 @@ static std::vector<std::string> Split(const std::string& str, const char separat
     {
         tokens.emplace_back("");
     }
+
     return tokens;
 }
 } // namespace StringUtils
