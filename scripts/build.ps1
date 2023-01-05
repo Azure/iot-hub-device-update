@@ -347,10 +347,6 @@ Show-Warning "Forcing content_handlers to $content_handlers"
 $adu_log_dir = '/tmp/aduc-logs'
 Show-Warning "Forcing adu_log_dir to $adu_log_dir"
 
-# TODO(JeffMill): Temporary during development
-$build_type = 'RelWithDebInfo'
-Show-Warning "Forcing build_type to $build_type"
-
 # Output banner
 ''
 Show-Header 'Building ADU Agent'
