@@ -221,7 +221,6 @@ void ShowChildProcessLogs(const std::string& output)
             Log_Info("#  %s", token.c_str());
         }
         Log_Info("########## End Child's Logs ##########");
-        Log_RequestFlush();
     }
 }
 
