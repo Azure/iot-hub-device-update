@@ -1,5 +1,6 @@
 Param(
     [Parameter(Position = 0)][string]$FileName = 'AducIotAgent',
+    [string]$Type = 'RelWithDebInfo',
     # e.g. "bp aduciotagent!main; g"
     [string]$InitialCommand = 'g',
     [switch]$NoDebugger = $false,
@@ -41,7 +42,7 @@ function Get-WinDbgX {
 }
 
 $root_dir = git.exe rev-parse --show-toplevel
-$bin_dir = "$root_dir\out\bin\RelWithDebInfo"
+$bin_dir = "$root_dir\out\bin\$Type"
 $app = Join-Path $bin_dir "$FileName.exe"
 
 if (-not (Test-Path $app -PathType Leaf)) {
