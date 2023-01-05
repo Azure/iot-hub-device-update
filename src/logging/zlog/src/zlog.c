@@ -125,7 +125,7 @@ int zlog_init(
     enum ZLOG_SEVERITY file_level)
 {
     struct timeval tv;
-    gettimeofday(&tv, NULL);
+    ADUCPAL_gettimeofday(&tv, NULL);
     zlog_last_flushed = tv.tv_sec;
 
     memset(&log_setting, 0, sizeof(log_setting));
