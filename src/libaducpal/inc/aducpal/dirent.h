@@ -44,13 +44,13 @@ typedef struct dirent dirent;
 
 struct _WDIR;
 
-struct DIR
+struct __dirstream
 {
     struct dirent ent;
     struct _WDIR* wdirp;
 };
 
-typedef struct DIR DIR;
+typedef struct __dirstream DIR;
 
 #    ifdef __cplusplus
 extern "C"
@@ -81,7 +81,7 @@ extern "C"
 #    define ADUCPAL_closedir(dirp) closedir(dirp)
 
 #    define ADUCPAL_scandir(dirname, namelist, filter, compare) scandir(dirname, namelist, filter, compare)
-#    define ADUCPAL_alphasort(a, b) alphasort(a, b)
+#    define ADUCPAL_alphasort alphasort
 
 #endif // #ifdef ADUCPAL_USE_PAL
 
