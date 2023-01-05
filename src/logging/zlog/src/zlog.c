@@ -448,12 +448,10 @@ void zlog_stop_flush_thread(void)
     if (_is_flush_thread_initialized)
     {
         // Tell zlog_buffer_flush_thread to stop.
-        // pthread_cancel(_zlog_flush_thread);
         zlog_buffer_flush_thread_run = false;
         pthread_join(_zlog_flush_thread, NULL);
         _is_flush_thread_initialized = false;
     }
-    _zlog_buffer_unlock();
 }
 
 // ------------------------- Helper Functions ---------------------------
