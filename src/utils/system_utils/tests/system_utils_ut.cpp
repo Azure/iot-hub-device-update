@@ -13,13 +13,16 @@ using Catch::Matchers::Equals;
 #include <sys/stat.h>
 #include <vector>
 
+// fwd-decl
+class TestCaseFixture;
+
 /**
  * @brief A capture of the arguments passed in a call invocation to callback for each sub dir in base dir.
  *
  */
 struct ForEachDirCallRecord
 {
-    void* context;
+    TestCaseFixture* context;
     std::string baseDir;
     std::string subDir;
 };
@@ -58,7 +61,6 @@ bool operator<(const ForEachDirCallRecord& first, const ForEachDirCallRecord& se
 // pointer to TestCaseFixture and the ForEachDir_Callback C-style callback, which has to
 // call into TestCaseFixture class's static AddCallRecord method so that the TestCaseFixture
 // instance can update it's per-testcase vector of callback call records.
-class TestCaseFixture;
 static void ForEachDir_Callback(void* context, const char* baseDir, const char* subDir);
 
 /**
@@ -79,6 +81,11 @@ ADUC_SystemUtils_ForEachDirFunctor CreateCallbackFunctor(TestCaseFixture* fixtur
 class TestCaseFixture
 {
 public:
+    static TestCaseFixture* FromVoidPtr(void* vp)
+    {
+        return static_cast<TestCaseFixture*>(vp);
+    }
+
     TestCaseFixture() : m_testPath{ ADUC_SystemUtils_GetTemporaryPathName() }
     {
         m_testPath += "/system_utils_ut";
@@ -217,7 +224,8 @@ private:
  */
 static void ForEachDir_Callback(void* context, const char* baseDir, const char* subDir)
 {
-    TestCaseFixture::AddCallRecord(context, ForEachDirCallRecord{ context, baseDir, subDir });
+    TestCaseFixture::AddCallRecord(
+        context, ForEachDirCallRecord{ TestCaseFixture::FromVoidPtr(context), baseDir, subDir });
 }
 
 TEST_CASE("ADUC_SystemUtils_GetTemporaryPathName")
