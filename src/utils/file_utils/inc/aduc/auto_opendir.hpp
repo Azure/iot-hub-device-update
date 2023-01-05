@@ -11,12 +11,10 @@
 
 #include <string>
 
-struct DIR;
-struct dirent;
+#include <aducpal/dirent.h>
 
 namespace aduc
 {
-
 class AutoOpenDir
 {
 public:

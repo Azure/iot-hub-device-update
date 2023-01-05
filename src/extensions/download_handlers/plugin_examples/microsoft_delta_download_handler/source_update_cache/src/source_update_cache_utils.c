@@ -17,6 +17,8 @@
 #include <azure_c_shared_utility/strings.h> // STRING_*
 #include <stdlib.h> // free, malloc
 
+#include <aducpal/stdio.h> //rename
+
 #include <libgen.h> // dirname
 
 EXTERN_C_BEGIN
