@@ -17,10 +17,10 @@ target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/inc
 if (WIN32)
     # TODO(JeffMill): [PAL] pthread
     find_package (PThreads4W REQUIRED)
-    target_link_libraries (${PROJECT_NAME} PRIVATE PThreads4W::PThreads4W)
+    target_link_libraries (${PROJECT_NAME} PRIVATE PThreads4W::PThreads4W aduc::system_utils)
 else ()
     find_package (Threads REQUIRED)
-    target_link_libraries (${PROJECT_NAME} PRIVATE Threads::Threads)
+    target_link_libraries (${PROJECT_NAME} PRIVATE Threads::Threads aduc::system_utils)
 endif ()
 
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)

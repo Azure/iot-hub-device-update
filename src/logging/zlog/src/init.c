@@ -6,9 +6,9 @@
  * Licensed under the MIT License.
  */
 #include "aduc/logging.h"
+#include "aduc/system_utils.h"
 #include <stdio.h> // printf
-
-#include <aducpal/sys_stat.h> // mkdir
+#include <sys/stat.h> // stat
 
 /**
  * @brief Convert ADUC_LOG_SEVERITY to ZLOG_SEVERITY
