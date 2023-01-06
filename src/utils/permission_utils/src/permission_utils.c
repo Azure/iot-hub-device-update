@@ -13,6 +13,9 @@
 #include <aducpal/grp.h> // getgrnam
 #include <aducpal/pwd.h> // getpwnam
 #include <aducpal/unistd.h> // seteuid, setegid
+#if defined(WIN32)
+#    include <aducpal/sys_stat.h> // S_ISUID
+#endif
 
 //
 // Internal functions
@@ -36,6 +39,27 @@ static bool PermissionUtils_VerifyFilemodeBits(const char* path, mode_t expected
 
     // keep just the file permission bits (as opposed to file_type bits).
     mode_t permissionBits = st.st_mode & ~S_IFMT;
+
+#if defined(WIN32)
+    // Windows only supports "owner" bits. Remove group and other bits.
+    permissionBits &= ~S_IRWXG;
+    permissionBits &= ~S_IRWXO;
+#endif
+
+#if defined(WIN32)
+    // Not supported on Windows.
+    expectedPermissions &= ~S_ISUID;
+
+    // Windows only supports "owner" bits. Remove group and other bits.
+    expectedPermissions &= ~S_IRWXG;
+    expectedPermissions &= ~S_IRWXO;
+
+    // Windows only sets execute/search permission on a folder.
+    if (!(st.st_mode & S_IFDIR))
+    {
+        expectedPermissions &= ~S_IEXEC;
+    }
+#endif
 
     return isExactMatch ? (permissionBits == expectedPermissions)
                         : BitOps_AreAllBitsSet(permissionBits, expectedPermissions);

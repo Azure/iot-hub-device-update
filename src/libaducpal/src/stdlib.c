@@ -49,6 +49,12 @@ int ADUCPAL_setenv(const char* name, const char* value, int overwrite)
         }
     }
 
+    // On Windows, _putenv_s fails if value is "", so assume a unsetenv is desired in that case.
+    if (*value == '\0')
+    {
+        return ADUCPAL_unsetenv(name);
+    }
+
     return (_putenv_s(name, value) == 0) ? 1 : 0;
 }
 

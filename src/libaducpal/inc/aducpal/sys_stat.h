@@ -54,6 +54,7 @@
 #    define S_IROTH (S_IRGRP >> 3) /* Read by others.  */
 #    define S_IWOTH (S_IWGRP >> 3) /* Write by others.  */
 #    define S_IXOTH (S_IXGRP >> 3) /* Execute by others.  */
+#    define S_IRWXO (S_IRWXG >> 3)
 
 #    ifdef __cplusplus
 extern "C"
