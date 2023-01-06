@@ -21,16 +21,12 @@ extern "C"
     int ADUCPAL_access(const char* pathname, int mode);
     int ADUCPAL_chown(const char* path, uid_t owner, gid_t group);
     int ADUCPAL_close(int fildes);
-    int ADUCPAL_dup2(int fildes, int fildes2);
-    int ADUCPAL_execvp(const char* file, char* const argv[]);
-    pid_t ADUCPAL_fork();
     gid_t ADUCPAL_getegid();
     uid_t ADUCPAL_geteuid();
     pid_t ADUCPAL_getpid();
     uid_t ADUCPAL_getuid();
     int ADUCPAL_isatty(int fd);
     int ADUCPAL_open(const char* path, int oflag);
-    int ADUCPAL_pipe(int fildes[2]);
     ssize_t ADUCPAL_read(int fildes, void* buf, size_t nbyte);
     int ADUCPAL_rmdir(const char* path);
     int ADUCPAL_setegid(gid_t gid);
@@ -55,16 +51,12 @@ extern "C"
 #    define ADUCPAL_access(pathname, mode) access(pathname, mode)
 #    define ADUCPAL_chown(path, owner, group) chown(path, owner, group)
 #    define ADUCPAL_close(fildes) close(fildes)
-#    define ADUCPAL_dup2(fildes, fildes2) dup2(fildes, fildes2)
-#    define ADUCPAL_execvp(file, argv) execvp(file, argv)
-#    define ADUCPAL_fork() fork()
 #    define ADUCPAL_getegid() getegid()
 #    define ADUCPAL_geteuid() geteuid()
 #    define ADUCPAL_getpid() getpid()
 #    define ADUCPAL_getuid() getuid()
 #    define ADUCPAL_isatty(fd) isatty(fd)
 #    define ADUCPAL_open(path, oflag) open(path, oflag)
-#    define ADUCPAL_pipe(fildes) pipe(fildes)
 #    define ADUCPAL_read(fildes, buf, nbyte) read(fildes, buf, nbyte)
 #    define ADUCPAL_rmdir(path) rmdir(path)
 #    define ADUCPAL_setegid(gid) setegid(gid)

@@ -24,8 +24,7 @@ add_library (
     "src/sys_sysinfo.c"
     "src/sys_utsname.c"
     "src/time.c"
-    "src/unistd.c"
-    "src/wait.c")
+    "src/unistd.c")
 
 if (WIN32)
     # Ensure that this project is built with secure and standard CRT APIs.

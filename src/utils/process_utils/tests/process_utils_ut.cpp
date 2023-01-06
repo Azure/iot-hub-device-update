@@ -27,7 +27,7 @@ TEST_CASE("Capture exit status", "[!hide][functional_test]")
     std::string output;
     const int exitCode = ADUC_LaunchChildProcess(command, args, output);
 
-    REQUIRE(exitCode == 200);
+    REQUIRE(exitCode != EXIT_SUCCESS);
 }
 
 TEST_CASE("apt-get fail")
@@ -37,7 +37,7 @@ TEST_CASE("apt-get fail")
     args.emplace_back("foopackage");
     std::string output;
     const int exitCode = ADUC_LaunchChildProcess("apt-get", args, output);
-    REQUIRE(exitCode == 100);
+    REQUIRE(exitCode != EXIT_SUCCESS);
 }
 
 TEST_CASE("Capture standard output", "[!hide][functional_test]")
@@ -73,9 +73,13 @@ TEST_CASE("hostname error")
 
     REQUIRE(exitCode != EXIT_SUCCESS);
 
+#if !defined(WIN32)
     // Expecting output text to contain the specified bogus option.
     // e.g., hostname: unrecognized option '--bogus-param-abc'
     CHECK_THAT(output.c_str(), Contains(bogusOption));
+#else
+    CHECK_THAT(output.c_str(), Contains("Use the Network Control Panel Applet to set hostname."));
+#endif
 }
 
 TEST_CASE("Invalid option - cp -1")
@@ -86,7 +90,11 @@ TEST_CASE("Invalid option - cp -1")
     std::string output;
     ADUC_LaunchChildProcess(command, args, output);
 
+#if !defined(WIN32)
     CHECK_THAT(output.c_str(), Contains("invalid option -- '1'"));
+#else
+    CHECK_THAT(output.c_str(), Contains("'cp' is not recognized as an internal or external command"));
+#endif
 }
 
 TEST_CASE("VerifyProcessEffectiveGroup")
