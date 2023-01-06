@@ -77,10 +77,12 @@ int ADUC_LaunchChildProcess(
     {
         output += buffer;
     }
+
     // Returns 0 if no error occurred.
     ret = ferror(fp);
     if (ret != 0)
     {
+        ADUCPAL_pclose(fp);
         return ret;
     }
 
