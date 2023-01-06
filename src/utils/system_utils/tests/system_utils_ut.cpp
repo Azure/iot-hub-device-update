@@ -237,29 +237,6 @@ TEST_CASE("ADUC_SystemUtils_GetTemporaryPathName")
     }
 }
 
-TEST_CASE("ADUC_SystemUtils_ExecuteShellCommand")
-{
-    SECTION("Run date")
-    {
-#if !defined(WIN32)
-        const std::string command{ "/bin/date" };
-#else
-        const std::string command{ "cmd.exe /c date /t" };
-#endif
-
-        const int ret{ ADUC_SystemUtils_ExecuteShellCommand(command.c_str()) };
-        CHECK(ret == 0);
-    }
-
-    SECTION("Run a directory")
-    {
-        const std::string command{ ADUC_SystemUtils_GetTemporaryPathName() };
-
-        const int ret{ ADUC_SystemUtils_ExecuteShellCommand(command.c_str()) };
-        CHECK_FALSE(ret == 0);
-    }
-}
-
 TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirDefault")
 {
     SECTION("Make a directory under tmp")

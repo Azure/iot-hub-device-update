@@ -19,7 +19,6 @@
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/strings.h>
 #include <errno.h>
-#include <fcntl.h> // for O_CLOEXEC
 #include <limits.h> // for PATH_MAX
 #include <stdio.h>
 #include <stdlib.h> // for getenv
@@ -27,30 +26,13 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#ifndef WIFEXITED
-#    define WIFEXITED(stat_val) (((stat_val)&255) == 0)
-#endif
-
-#ifndef WEXITSTATUS
-#    define WEXITSTATUS(stat_val) ((unsigned)(stat_val) >> 8)
-#endif
-
-#ifndef O_CLOEXEC
-/**
- * @brief Enable the close-on-exec flag for the new file descriptor. Specifying this flag permits a program to avoid additional
- * fcntl(2) F_SETFD operations to set the FD_CLOEXEC flag.
- * @details Included here because not all linux kernels include O_CLOEXEC by default in fcntl.h
- */
-#    define O_CLOEXEC __O_CLOEXEC
-#endif
-
 #ifndef ALL_PERMS
 /**
  * @brief Define all permissions mask if not defined already in octal format
  */
 #    define ALL_PERMS 07777
-
 #endif
+
 /**
  * @brief Retrieve system temporary path with a subfolder.
  *
@@ -84,56 +66,6 @@ const char* ADUC_SystemUtils_GetTemporaryPathName()
     }
 
     return env;
-}
-
-/**
- * @brief Execute shell command.
- *
- * @param command The command to execute as a string.
- * @return 0 for success.
- * @return non-zero status code for failure.
- *
- * The return value is an errno code for system call failures. If all system calls succeed,
- * the return value is the termination status of the child shell used to execute command.
- */
-int ADUC_SystemUtils_ExecuteShellCommand(const char* command)
-{
-    if (IsNullOrEmpty(command))
-    {
-        Log_Error("ExecuteShellCommand failed: command is empty");
-        return EINVAL;
-    }
-
-    Log_Info("Execute shell command: %s", command);
-
-    // TODO(JeffMill): [PAL] This outputs stdout to console.  Is it hidden on Linux? Append "2>&1" ?
-    const int status = system(command); // NOLINT(cert-env33-c)
-    if (status == -1)
-    {
-        Log_Error("ExecuteShellCommand failed: System call failed, errno = %d", errno);
-
-        return errno;
-    }
-
-    if (!WIFEXITED(status))
-    {
-        Log_Error("ExecuteShellCommand failed: Command exited abnormally");
-
-        return ECANCELED;
-    }
-
-    // if child process terminated normally, WEXITSTATUS returns its exit status value.
-    const int executeStatus = WEXITSTATUS(status);
-
-    // A shell command which exits with a zero exit status has succeeded. A non-zero exit status indicates failure.
-    if (executeStatus != 0)
-    {
-        Log_Error("ExecuteShellCommand failed: Command exited with non-zero value, exitStatus = %d", executeStatus);
-
-        return executeStatus;
-    }
-
-    return 0;
 }
 
 /**
