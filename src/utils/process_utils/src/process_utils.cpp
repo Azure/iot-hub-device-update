@@ -65,7 +65,7 @@ int ADUC_LaunchChildProcess(
     // We want to capture stderr as well, so we need to append "2>&1"
     redirected_command += "2>&1";
 
-    FILE* fp = ADUCPAL_popen(redirected_command.c_str(), "rt");
+    FILE* fp = ADUCPAL_popen(redirected_command.c_str(), "r");
     if (fp == NULL)
     {
         return errno;
