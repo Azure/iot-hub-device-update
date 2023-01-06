@@ -80,6 +80,10 @@ else {
             '-c', "bm $FileName!*::C_A_T_C_H_T_E_S_T_*::test", `
             # e.g. permission_utils_unit_test!C_A_T_C_H_T_E_S_T_0
             '-c', "bm $FileName!C_A_T_C_H_T_E_S_T_*", `
+            # e.g. https_proxy_utils_unit_tests!TestCaseFixture::TestCaseFixture
+            '-c', "bm $FileName!TestCaseFixture::TestCaseFixture", `
+            '-c', "bm $FileName!TestCaseFixture::~TestCaseFixture", `
+            # Start test
             '-c', 'g'
         cmd.exe /c start $windbgx @InitialCommands $app --success --break
     }
