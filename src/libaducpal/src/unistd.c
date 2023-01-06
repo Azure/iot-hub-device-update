@@ -36,25 +36,6 @@ int ADUCPAL_close(int fildes)
     return _close(fildes);
 }
 
-int ADUCPAL_dup2(int fildes, int fildes2)
-{
-    __debugbreak();
-    return -1;
-}
-
-int ADUCPAL_execvp(const char* file, char* const argv[])
-{
-    __debugbreak();
-    errno = ENOSYS;
-    return -1;
-}
-
-pid_t ADUCPAL_fork()
-{
-    __debugbreak();
-    return -1;
-}
-
 gid_t ADUCPAL_getegid(void)
 {
     return get_random_ulong();
@@ -90,12 +71,6 @@ int ADUCPAL_open(const char* path, int oflag)
         return -1;
     }
     return fd;
-}
-
-int ADUCPAL_pipe(int fildes[2])
-{
-    __debugbreak();
-    return -1;
 }
 
 ssize_t ADUCPAL_read(int fildes, void* buf, size_t nbyte)

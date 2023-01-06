@@ -15,7 +15,6 @@
 #include <aducpal/pwd.h> // getpwnam
 #include <aducpal/sys_stat.h> // mkdir, chmod
 #include <aducpal/unistd.h> // chown
-#include <aducpal/wait.h> // WIFEXITED, WEXITSTATUS
 
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/strings.h>
@@ -27,6 +26,14 @@
 #include <string.h> // for strncpy, strlen
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#ifndef WIFEXITED
+#    define WIFEXITED(stat_val) (((stat_val)&255) == 0)
+#endif
+
+#ifndef WEXITSTATUS
+#    define WEXITSTATUS(stat_val) ((unsigned)(stat_val) >> 8)
+#endif
 
 #ifndef O_CLOEXEC
 /**
@@ -99,6 +106,7 @@ int ADUC_SystemUtils_ExecuteShellCommand(const char* command)
 
     Log_Info("Execute shell command: %s", command);
 
+    // TODO(JeffMill): [PAL] This outputs stdout to console.  Is it hidden on Linux? Append "2>&1" ?
     const int status = system(command); // NOLINT(cert-env33-c)
     if (status == -1)
     {
@@ -107,7 +115,6 @@ int ADUC_SystemUtils_ExecuteShellCommand(const char* command)
         return errno;
     }
 
-    // WIFEXITED returns zero if the child process terminated abnormally.
     if (!WIFEXITED(status))
     {
         Log_Error("ExecuteShellCommand failed: Command exited abnormally");

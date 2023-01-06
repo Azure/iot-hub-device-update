@@ -9,8 +9,6 @@
 
 #include <aducpal/grp.h> // getgrnam
 #include <aducpal/pwd.h> // getpwnam
-#include <aducpal/unistd.h> // pipe, fork, dup2, close, execvp, read
-#include <aducpal/wait.h> // waitpid
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,6 +19,9 @@
 #include <aduc/config_utils.h>
 #include <aduc/logging.h>
 #include <aduc/string_utils.hpp>
+
+#include <aducpal/stdio.h> // popen,pclose
+
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
 
@@ -43,115 +44,47 @@
  * @param args List of arguments for the command.
  * @param output A standard output from the command.
  *
- * @return An exit code from the command.
+ * @return 0 on success.
  */
 int ADUC_LaunchChildProcess(
     const std::string& command,
     std::vector<std::string> args,
     std::string& output) // NOLINT(google-runtime-references)
 {
-#define READ_END 0
-#define WRITE_END 1
+    int ret = 0;
 
-    int filedes[2];
-    const int ret = ADUCPAL_pipe(filedes);
+    std::string redirected_command{ command };
+    redirected_command += " ";
+
+    for (const std::string& arg : args)
+    {
+        redirected_command += arg;
+        redirected_command += " ";
+    }
+
+    // We want to capture stderr as well, so we need to append "2>&1"
+    redirected_command += "2>&1";
+
+    FILE* fp = ADUCPAL_popen(redirected_command.c_str(), "rt");
+    if (fp == NULL)
+    {
+        return errno;
+    }
+
+    char buffer[1024];
+
+    while (fgets(buffer, sizeof(buffer), fp) != nullptr)
+    {
+        output += buffer;
+    }
+    // Returns 0 if no error occurred.
+    ret = ferror(fp);
     if (ret != 0)
     {
-        Log_Error("Cannot create output and error pipes. %s (errno %d).", strerror(errno), errno);
         return ret;
     }
 
-    const int pid = ADUCPAL_fork();
-
-    if (pid == 0)
-    {
-        // Running inside child process.
-
-        // Redirect stdout and stderr to WRITE_END
-        ADUCPAL_dup2(filedes[WRITE_END], STDOUT_FILENO);
-        ADUCPAL_dup2(filedes[WRITE_END], STDERR_FILENO);
-
-        ADUCPAL_close(filedes[READ_END]);
-        ADUCPAL_close(filedes[WRITE_END]);
-
-        std::vector<char*> argv;
-        argv.reserve(args.size() + 2);
-        argv.emplace_back(const_cast<char*>(command.c_str())); // NOLINT(cppcoreguidelines-pro-type-const-cast)
-        for (const std::string& arg : args)
-        {
-            argv.emplace_back(const_cast<char*>(arg.c_str())); // NOLINT(cppcoreguidelines-pro-type-const-cast)
-        }
-        argv.emplace_back(nullptr);
-
-        // The exec() functions only return if an error has occurred.
-        // The return value is -1, and errno is set to indicate the error.
-        int status = ADUCPAL_execvp(command.c_str(), &argv[0]);
-
-        fprintf(stderr, "execvp failed, returned %d, error %d\n", status, errno);
-
-        _exit(EXIT_FAILURE);
-    }
-
-    ADUCPAL_close(filedes[WRITE_END]);
-
-    for (;;)
-    {
-        char buffer[1024];
-        ssize_t count;
-        count = ADUCPAL_read(filedes[READ_END], buffer, sizeof(buffer));
-
-        if (count == -1)
-        {
-            Log_Error("Read failed, error %d", errno);
-            break;
-        }
-
-        if (count <= 0)
-        {
-            break;
-        }
-
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-        buffer[count] = 0;
-        output += buffer;
-    }
-
-    int wstatus;
-    int childExitStatus;
-
-    ADUCPAL_waitpid(pid, &wstatus, 0);
-
-    // Get the child process exit code.
-    if (WIFEXITED(wstatus))
-    {
-        // Child process terminated normally.
-        // e.g. by calling exit() or _exit(), or by returning from main().
-        childExitStatus = WEXITSTATUS(wstatus);
-    }
-    else if (WIFSIGNALED(wstatus))
-    {
-        // Child process terminated by a signal.
-
-        // Get the number of the signal that caused the child process to terminate.
-        childExitStatus = WTERMSIG(wstatus);
-        Log_Info("Child process terminated, signal %d", childExitStatus);
-    }
-    else if (WCOREDUMP(wstatus))
-    {
-        // Child process produced a core dump
-        childExitStatus = WCOREDUMP(wstatus);
-        Log_Error("Child process terminated, core dump %d", childExitStatus);
-    }
-    else
-    {
-        childExitStatus = EXIT_FAILURE;
-        // Child process terminated abnormally.
-        Log_Error("Child process terminated abnormally.", childExitStatus);
-    }
-
-    ADUCPAL_close(filedes[READ_END]);
-
-    return childExitStatus;
+    return ADUCPAL_pclose(fp);
 }
 
 /**
