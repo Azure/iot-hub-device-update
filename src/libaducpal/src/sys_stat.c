@@ -14,7 +14,10 @@ int ADUCPAL_chmod(const char* path, mode_t mode)
 
 int ADUCPAL_fchmod(int fd, mode_t mode)
 {
-    // TODO(JeffMill): [PAL] This is only used in a UT, and doesn't have any analog on Windows, so no-op.
+    // TODO(JeffMill): [PAL]
+    // Pretty limited what we can do here, as Windows only really supports read-only on a file for owner (S_IRUSR).
+    // Furthermore, Windows doesn't have an implementation of fchmod, and no way to get path from fd for other
+    // chmod APIs.
     return 0;
 }
 

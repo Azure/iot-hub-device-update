@@ -18,7 +18,13 @@
 //bool PermissionUtils_VerifyFilemodeBits(const char* path, mode_t expectedPermissions, bool isExactMatch);
 TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
 {
-    const mode_t file_permissions = S_ISUID | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IWOTH; // 04752
+    // clang-format off
+    const mode_t file_permissions = // 04752
+        S_ISUID | // 04000
+        S_IRUSR | S_IWUSR | S_IXUSR | // 0700
+        S_IRGRP | S_IXGRP | // 050
+        S_IWOTH; // 02
+    // clang-format on
 
     // create temp file with all file permission bits set
     char tmpfile_path[32] = {};
@@ -29,7 +35,11 @@ TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
     ADUCPAL_close(file_handle);
 
     CHECK(PermissionUtils_VerifyFilemodeExact(tmpfile_path, file_permissions));
+
+    // Windows doesn't support group.
+#if !defined(WIN32)
     CHECK_FALSE(PermissionUtils_VerifyFilemodeExact(tmpfile_path, file_permissions | S_IWGRP /* 04772 */));
+#endif
 
     CHECK(PermissionUtils_VerifyFilemodeBitmask(tmpfile_path, file_permissions));
     CHECK(PermissionUtils_VerifyFilemodeBitmask(tmpfile_path, S_IXUSR | S_IRGRP | S_IWOTH /* 00142 */));

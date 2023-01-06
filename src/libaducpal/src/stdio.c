@@ -58,11 +58,7 @@ done:
 int ADUCPAL_rename(const char* old_f, const char* new_f)
 {
     // If the link named by the new argument exists, it shall be removed and old renamed to new.
-    int ret = _unlink(new_f);
-    if (ret != 0)
-    {
-        return ret;
-    }
+    (void)_unlink(new_f);
 
     return rename(old_f, new_f);
 }
