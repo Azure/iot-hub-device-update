@@ -9,6 +9,9 @@ compileasc99 ()
 add_library (${target_name} STATIC "")
 add_library (aduc::${target_name} ALIAS ${target_name})
 
+# Turn -fPIC on, in order to use this library in another shared library.
+set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
 target_sources (${target_name} PRIVATE src/source_update_cache.c src/source_update_cache_utils.cpp
