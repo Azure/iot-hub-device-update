@@ -26,7 +26,6 @@ extern "C"
     pid_t ADUCPAL_fork();
     gid_t ADUCPAL_getegid();
     uid_t ADUCPAL_geteuid();
-    int ADUCPAL_gethostname(char* name, size_t len);
     pid_t ADUCPAL_getpid();
     uid_t ADUCPAL_getuid();
     int ADUCPAL_isatty(int fd);
@@ -61,7 +60,6 @@ extern "C"
 #    define ADUCPAL_fork() fork()
 #    define ADUCPAL_getegid() getegid()
 #    define ADUCPAL_geteuid() geteuid()
-#    define ADUCPAL_gethostname(name, len) gethostname(name, len)
 #    define ADUCPAL_getpid() getpid()
 #    define ADUCPAL_getuid() getuid()
 #    define ADUCPAL_isatty(fd) isatty(fd)

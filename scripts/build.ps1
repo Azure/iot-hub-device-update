@@ -446,7 +446,6 @@ if (-not (Test-Path '.\out\CMakeCache.txt' -PathType Leaf)) {
 if ($build_clean) {
     Show-Header 'Cleaning repo'
 
-    # TODO(JeffMill): Temporary prompting as I sometimes unintentionally specify "--clean". Sigh.
     $decision = $Host.UI.PromptForChoice(
         'Clean Build',
         'Are you sure?',

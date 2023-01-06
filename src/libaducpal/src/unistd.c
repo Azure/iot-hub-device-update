@@ -3,6 +3,7 @@
 #ifdef ADUCPAL_USE_PAL
 
 // clang-format off
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h> // GetCurrentProcessId
 #include <sys/stat.h> // _S_*
 #include <direct.h> // rmdir
@@ -62,12 +63,6 @@ gid_t ADUCPAL_getegid(void)
 uid_t ADUCPAL_geteuid(void)
 {
     return get_random_ulong();
-}
-
-int ADUCPAL_gethostname(char* name, size_t len)
-{
-    __debugbreak();
-    return -1;
 }
 
 pid_t ADUCPAL_getpid()

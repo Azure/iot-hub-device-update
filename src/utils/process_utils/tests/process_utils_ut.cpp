@@ -9,13 +9,11 @@
 #include <azure_c_shared_utility/vector.h>
 #include <catch2/catch.hpp>
 
-#include <aducpal/unistd.h> // gethostname
+#include "aduc/process_utils.hpp" // ADUC_LaunchChildProcess
 
 #include <vector>
 
 using Catch::Matchers::Contains;
-
-#include "aduc/process_utils.hpp"
 
 const char* command = "process_utils_tests_helper";
 
@@ -70,9 +68,6 @@ TEST_CASE("hostname error")
     std::vector<std::string> args;
     args.emplace_back(bogusOption);
     std::string output;
-
-    char hostname[1024];
-    ADUCPAL_gethostname(hostname, sizeof(hostname) - 1);
 
     const int exitCode = ADUC_LaunchChildProcess("hostname", args, output);
 

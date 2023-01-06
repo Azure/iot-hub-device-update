@@ -241,7 +241,11 @@ TEST_CASE("ADUC_SystemUtils_ExecuteShellCommand")
 {
     SECTION("Run date")
     {
+#if !defined(WIN32)
         const std::string command{ "/bin/date" };
+#else
+        const std::string command{ "cmd.exe /c date /t" };
+#endif
 
         const int ret{ ADUC_SystemUtils_ExecuteShellCommand(command.c_str()) };
         CHECK(ret == 0);

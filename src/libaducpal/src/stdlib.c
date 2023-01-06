@@ -3,16 +3,15 @@
 #ifdef ADUCPAL_USE_PAL
 
 // clang-format off
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <corecrt_io.h> //_mktemp_s
 #include <fcntl.h> // _O_*
-#include <stdlib.h> // putenv
+#include <stdlib.h> // getenv, putenv
+#include <string.h>
 // clang-format on
 
 #    include "aducpal/unistd.h" // open
-
-#    include <stdlib.h> // getenv
-#    include <string.h>
 
 int ADUCPAL_mkstemp(char* tmpl)
 {
@@ -23,7 +22,7 @@ int ADUCPAL_mkstemp(char* tmpl)
         return -1;
     }
 
-    // TODO(JefFMill): [PAL] Pass , S_IRUSR | S_IWUSR.  _O_TEMPORARY requires admin access?
+    // TODO(JeffMill): [PAL] Pass , S_IRUSR | S_IWUSR.  _O_TEMPORARY requires admin access?
     return ADUCPAL_open(tmpl, _O_RDWR | _O_CREAT | _O_EXCL);
 }
 
