@@ -81,7 +81,6 @@ ssize_t ADUCPAL_read(int fildes, void* buf, size_t nbyte)
 
 int ADUCPAL_rmdir(const char* path)
 {
-    __debugbreak();
     return _rmdir(path);
 }
 

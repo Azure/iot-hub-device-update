@@ -4,12 +4,13 @@
 
 #    include <direct.h> // _mkdir
 #    include <errno.h> // errno
-#    include <windows.h> // IsDebuggerPresent
 
 int ADUCPAL_chmod(const char* path, mode_t mode)
 {
-    __debugbreak();
-    return -1;
+    // TODO(JeffMill): [PAL]
+    // Pretty limited what we can do here, as Windows only really supports read-only on a file for owner (S_IRUSR).
+    // Maybe set/reset read-only attribute on "path"?
+    return 0;
 }
 
 int ADUCPAL_fchmod(int fd, mode_t mode)
@@ -27,12 +28,9 @@ int ADUCPAL_mkdir(const char* path, mode_t mode)
     if (ret == -1)
     {
         // Folder existing already isn't fatal.
-        if (errno != EEXIST)
+        if (errno == EEXIST)
         {
-            if (IsDebuggerPresent())
-            {
-                __debugbreak();
-            }
+            return 0;
         }
     }
     return ret;
