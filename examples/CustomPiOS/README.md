@@ -200,3 +200,5 @@ This script perform the following important tasks:
     apt install -y deviceupdate-agent
     ```
 
+## How To Test The Image
+The test update can be generated and imported to the Device Update Service by follow this [instruction](./example-ubuntu-a-b-update/README.md).

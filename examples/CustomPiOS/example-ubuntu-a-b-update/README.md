@@ -1,4 +1,4 @@
-# Testing The Scripts
+# How To Test The Scripts And Generate Update(s)
 
 ## How To Test demo-a-b-rootfs-script.sh on Ubuntu Device or VM 
 
