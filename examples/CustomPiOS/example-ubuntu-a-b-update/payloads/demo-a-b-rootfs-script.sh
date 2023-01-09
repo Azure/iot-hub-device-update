@@ -32,13 +32,10 @@ header() { echo -e "\e[4m\e[1m\e[1;32m$*\e[0m"; }
 
 bullet() { echo -e "\e[1;34m*\e[0m $*"; }
 
-warn "*************************************************"
-warn "*                    WARNING                    *"
-warn "*                                               *"
-warn "* THIS FILE IS FOR DEMONSTRATION PURPOSES ONLY. *"
-warn "* DO NOT USE THIS FOR YOUR REAL PRODUCT UPDATE! *"
-warn "*                                               *"
-warn "*************************************************"
+warn "***********************************************************"
+warn "* THIS SCRIPT IS DEMONSTRATING AN A/B ROOT FS UPDATE ONLY *"
+warn "* IT IS NOT SUITABLE FOR PRODUCTION DEVICE                *"
+warn "***********************************************************"
 
 # Log debug prefix - blue
 log_debug_pref="\033[1;30m[D]\033[0m"
@@ -59,6 +56,8 @@ work_folder=
 output_file=/adu/logs/swpupdate.output
 log_file=/adu/logs/swupdate.log
 result_file=/adu/logs/swupdate.result.json
+
+boot_loader_folder=/boot
 
 #
 # For install task, the --image-file <image_file_name> option must be specified.
@@ -84,6 +83,13 @@ do_cancel_action=
 
 restart_device_to_apply=
 restart_agent_to_apply=
+
+#
+# Debug options
+#
+
+# skip actual file copy operation during install action. Useful when already copied the file in previous debug session.
+debug_install_no_file_copy=
 
 #
 # Remaining aguments and parameters
@@ -230,6 +236,16 @@ print_help() {
     echo "--software-version-file   A file contain image version number."
     echo "--public-key-file         A public key file for signature validateion."
     echo "                          See InstallUpdate() function for more details."
+    echo "Advanced Options"
+    echo "================"
+    echo ""
+    echo "--boot-loader-folder      A root folder that stored the boot-loader files (usuall /boot)"
+    echo ""
+    echo ""
+    echo "Debug Options"
+    echo "=============="
+    echo ""
+    echo "--debug-install-no-file-copy  No actuall file copy during installation action"
     echo ""
     echo "--log-level <0-4>         A minimum log level. 0=debug, 1=info, 2=warning, 3=error, 4=none."
     echo "-h, --help                Show this help message."
@@ -321,6 +337,17 @@ while [[ $1 != "" ]]; do
         fi
         work_folder="$1"
         mem_log "work folder: $work_folder"
+        shift
+        ;;
+
+    --boot-loader-folder)
+        shift
+        if [[ -z $1 || $1 == -* ]]; then
+            mem_log "ERROR: --boot-loader-folder parameter is mandatory."
+            $ret 1
+        fi
+        boot_loader_folder="$1"
+        mem_log "boot_loader_folder: $boot_loader_folder"
         shift
         ;;
 
@@ -430,6 +457,11 @@ while [[ $1 != "" ]]; do
         fi
         log_level=$1
         shift
+        ;;
+
+    --debug-install-no-file-copy)
+        shift
+        debug_install_no_file_copy=yes
         ;;
 
     -h | --help)
@@ -619,72 +651,86 @@ InstallUpdate() {
             adu_desired_root_fs='a'
         fi
 
-        umount $new_root_fs_dev
-        log_info "umount result: $?"
-
-        # Copy partition.
-        # NOTE: in real-world scenario, data verification is needed.
-        log_info "#### BEGIN DD####"
-        dd if=$rootfs_dev of=$new_root_fs_dev bs=1M
-        ret_val=$?
-
-        if [[ $ret_val -eq 0 ]]; then
-            resultDetails="Failed to copy partition data"
-            # TODO: set erc.
-            resultCode=0
-        else
-            log_info "Successfully copy file from $rootfs_dev to $new_root_fs_dev"
+        # Unmount the target parition if needed.
+        tmp_out=$(mount | grep "$new_root_fs_dev")
+        if [[ "$tmp_out" != "" ]]; then
+            log_info "Unmounting '$new_root_fs_dev'..."
+            umount $new_root_fs_dev
+            log_info "umount result: $?"
         fi
-        log_info "#### END DD ####"
 
+        if [[ "$debug_install_no_file_copy" != "yes" ]]; then
+            # Copy content from active partition to an update partition.
+            # NOTE: in real-world scenario, data verification is needed.
+            log_info "#### BEGIN DD####"
+            dd if=$rootfs_dev of=$new_root_fs_dev bs=1M
+            ret_val=$?
+
+            if [[ $ret_val -eq 0 ]]; then
+                resultDetails="Failed to copy partition data (err:$ret_val)"
+                log_error "$resultDetails"
+                # TODO: set erc.
+                resultCode=0
+            else
+                log_info "Successfully copied file from $rootfs_dev to $new_root_fs_dev"
+            fi
+            log_info "#### END DD ####"
+        fi
+
+        log_info "Writing a version number to the update partition.."
         mount_dir=/mnt/adu_update_part_b
         mkdir -p $mount_dir
         mount  $new_root_fs_dev $mount_dir
         ret_val=$?
 
         if [[ $ret_val -eq 0 ]]; then
-            resultDetails="Failed to mount new partition"
+            resultDetails="Failed to mount $new_root_fs_dev (to: $mount_dir, error: $ret_val)"
+            log_error "$resultDetails"
             # TODO: set erc.
             resultCode=0
         fi
 
-        # Stamp new image version
-        version_file=$mount_dir$software_version_file
-        touch $version_file
-        ret_val=$?
+        version_file="$mount_dir/$software_version_file"
+
         if [[ $ret_val -eq 0 ]]; then
-            resultDetails="Cannot update $version_file"
-            # TODO: set erc.
-            resultCode=0
-        fi
-        echo "$installed_criteria" | sudo tee $version_file
+            log_info "writing '$install_criteria' to '$version_file'"
+            echo "$installed_criteria" | sudo tee $version_file
 
-        # verify the image version file content.
-        resultCode=0
-        is_installed "$installed_criteria" "$software_version_file" resultCode extendedResultCode resultDetails
-        if [[ ! $resultCode -eq 900 ]]; then
+            # verify the image version file content.
             resultCode=0
-            resultDetails="Cannot write new version to the update partition ( $version_file )"
-            # TODO: set erc.
-            ref_val=1
+            is_installed "$installed_criteria" "$software_version_file" resultCode extendedResultCode resultDetails
+            if [[ ! $resultCode -eq 900 ]]; then
+                resultCode=0
+                resultDetails="Cannot write new version to the update partition ( $version_file )"
+                # TODO: set erc.
+                ref_val=1
+            fi
         fi
 
-        umount $new_root_fs_dev
-        ret_val=$?
-        if [[ $ret_val -eq 0 ]]; then
-            resultDetails="Warning: cannot unmount $new_root_fs_dev"
-        else
-            rm -fr $mount_dir
-            ret_val=$?
+        tmp_out=$(mount | grep "$new_root_fs_dev")
+        if [[ "$tmp_out" != "" ]]; then
+            log_info "Unmounting '$new_root_fs_dev'..."
+            umount $new_root_fs_dev
+            inner_ret_val=$?
+            if [[ $inner_ret_val -eq 0 ]]; then
+                log_warn "cannot unmount $new_root_fs_dev"
+            else
+                rm -fr $mount_dir
+                inner_ret_val=$?
+                if [[ $inner_ret_val -eq 0 ]]; then
+                    log_warn "cannot remove $mount_dir"
+                fi
+            fi
         fi
 
         if [[ $ret_val -eq 0 ]]; then
             log_info "Successfully update the device. Will reboot during apply phase."
+            resultDetails=""
+            extendedResultCode=0
             resultCode=600
         fi
 
         # [ END - Mock Installation]
-        ret_val=0
     else
         # Installed.
         log_info "It appears that this update has already been installed."
@@ -722,20 +768,23 @@ ApplyUpdate() {
     # Tell boot-loader to use new partition after reboot.
 
     # Only delete the desired_root_fs
+    rootfs_indicator_file="$boot_loader_folder/adu_desired_root_fs_$adu_desired_root_fs"
     if [[ $adu_desired_root_fs == 'b' ]]; then
-        touch "/boot/firmware/adu_desired_root_fs_$adu_desired_root_fs"
+        touch "$rootfs_indicator_file"
         ret_val=$?
         if [[ $ret_val -eq 0 ]]; then
-            resultDetails="Cannot create /boot/firmware/adu_desired_root_fs_$adu_desired_root_fs"
+            resultDetails="Cannot create or update $rootfs_indicator_file (error:$ret_val)"
+            log_error "$resultDetails"
             # TODO: set erc.
             resultCode=0
         fi
-    else
-        # Remove the flag to boot to the default parition
-        rm "/boot/firmware/adu_desired_root_fs_$adu_desired_root_fs"
+    elif [ -f "$rootfs_indicator_file" ]; then
+        # Remove the file, to tell the boot-loader to use the default partition.
+        rm "$rootfs_indicator_file"
         ret_val=$?
         if [[ $ret_val -eq 0 ]]; then
-            resultDetails="Cannot delete /boot/firmware/adu_desired_root_fs_*"
+            resultDetails="Cannot delete $rootfs_indicator_file (error:$ret_val)"
+            log_error "$resultDetails"
             # TODO: set erc.
             resultCode=0
         fi
