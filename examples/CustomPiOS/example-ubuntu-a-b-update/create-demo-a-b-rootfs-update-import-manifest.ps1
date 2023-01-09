@@ -75,7 +75,7 @@ $payloadFiles = $parentFile0
 Write-Host "#"
 Write-Host "# Generating an import manifest"
 Write-Host "#"
-Write-Host "# Udate version : $UpdateVersion"
+Write-Host "# Update version : $UpdateVersion"
 Write-Host "#"
 Write-Host "# Payloads :"
 Write-Host "#    $parentFile0"
@@ -112,7 +112,7 @@ Write-Host "#    $parentFile0"
                         -HandlerProperties @{ `
                             'scriptFileName'="$DefaultScriptFileName"; `
                             'installedCriteria'="$InstalledCriteria"; `
-                            'arguments'="--software-version-file /etc/du-image-version " `
+                            'arguments'="--software-version-file /etc/du-image-version --log-file /var/log/adu/demo-rootfs-installer.log --boot-loader-folder /boot/firmware --restart-device-to-apply" `
                         } `
                         -Description 'Update the Root FS using A/B update strategy.'
 

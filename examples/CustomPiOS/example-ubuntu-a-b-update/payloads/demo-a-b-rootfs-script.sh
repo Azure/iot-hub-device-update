@@ -110,10 +110,14 @@ if [[ $rootfs_dev == '/dev/mmcblk0p2' ]]; then
     selection="stable,copy2"
     current_partition=2
     update_partition=3
+    adu_active_root_fs=a
+    adu_desired_root_fs=b
 else
     selection="stable,copy1"
     current_partition=3
     update_partition=2
+    adu_active_root_fs=b
+    adu_desired_root_fs=a
 fi
 
 update_timestamp() {
@@ -842,8 +846,31 @@ CancelUpdate() {
     ret_val=
 
     echo "Revert update." >> "${log_file}"
-    fw_setenv rpipart $current_partition
-    ret_val=$?
+
+    # Tell boot-loader to use active parition.
+
+    # Only delete the desired_root_fs
+    rootfs_indicator_file="$boot_loader_folder/adu_desired_root_fs_$adu_active_root_fs"
+    if [[ $adu_active_root_fs == 'b' ]]; then
+        touch "$rootfs_indicator_file"
+        ret_val=$?
+        if [[ $ret_val -eq 0 ]]; then
+            resultDetails="Cannot create or update $rootfs_indicator_file (error:$ret_val)"
+            log_error "$resultDetails"
+            # TODO: set erc.
+            resultCode=0
+        fi
+    elif [ -f "$rootfs_indicator_file" ]; then
+        # Remove the file, to tell the boot-loader to use the default partition.
+        rm "$rootfs_indicator_file"
+        ret_val=$?
+        if [[ $ret_val -eq 0 ]]; then
+            resultDetails="Cannot delete $rootfs_indicator_file (error:$ret_val)"
+            log_error "$resultDetails"
+            # TODO: set erc.
+            resultCode=0
+        fi
+    fi
 
     if [[ $ret_val -eq 0 ]]; then
         resultCode=800
