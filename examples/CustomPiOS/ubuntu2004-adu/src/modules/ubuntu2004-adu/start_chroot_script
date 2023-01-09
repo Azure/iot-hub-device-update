@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# <Script Name>
+# <Description what this module does>
+# Written by <Author>
+# GPL V3
+########
+
+
+# Source error handling, leave this in place
+set -x
+set -e
+
+source /common.sh
+install_cleanup_trap
+
+check_install_pkgs libcurl4-openssl-dev libboost-filesystem1.71.0 libproxy1v5 u-boot-tools
+
+echo "# Generate the boot.scr file"
+pushd /filesystem/boot
+mkimage -A arm -T script -O linux -d boot.cmd.in boot.scr
+cp boot.scr /filesystem/boot/firmware
+popd
+
+unpack /filesystem/home/pi /home/pi pi
+unpack /filesystem/home/root /root root
+unpack /filesystem/boot /boot
+
+echo "This is an example module, install and set up what you need here!"
+echo "$UBUNTU2004-ADU_VAR"
+
+# Unpack root at the end, so files are modified before
+unpack /filesystem/root /
+
+echo '# Add packages.microsoft.com'
+adu_setup=/tmp/adu-setup
+mkdir -p $adu_setup
+curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > $adu_setup/microsoft-prod.list
+cp $adu_setup/microsoft-prod.list /etc/apt/sources.list.d/
+curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > $adu_setup/microsoft.gpg
+cp $adu_setup/microsoft.gpg /etc/apt/trusted.gpg.d/
+apt-get update
+
+# apt-cache policy deviceupdate-agent
+# apt-cache policy deliveryoptimization-agent
+# apt-cache policy libdeliveryoptimization
+# apt-cache policy libcurl4-openssl-dev
+# apt-cache policy libssl1.1
+
+echo "# Install Device Update Agent and Dependencies "
+
+wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_arm64-packages.tar -O ubuntu2004_arm64-packages.tar
+tar -xvzf ubuntu2004_arm64-packages.tar
+rm ubuntu2004_arm64-packages.tar
+dpkg -i deliveryoptimization-agent_1.0.0_arm64.deb
+rm deliveryoptimization-agent_1.0.0_arm64.deb
+dpkg -i libdeliveryoptimization_1.0.0_arm64.deb
+rm libdeliveryoptimization_1.0.0_arm64.deb
+dpkg -i libdeliveryoptimization-dev_1.0.0_arm64.deb
+rm libdeliveryoptimization-dev_1.0.0_arm64.deb
+
+apt install -y deviceupdate-agent
+
+echo "#"
+echo "# TODO: create a persistent data partition"
+echo "#       move /etc/adu, /var/lib/adu, and /var/log/adu to the data partition"
+echo "#       mount /etc/adu, /var/lib/adu, and /var/log/adu to the data partition with the approriate owners"
+echo "#"

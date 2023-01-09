@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -x
+set -e
+# start_base
+execute_chroot_script '/home/nox/CustomPiOS/src/modules/base' '/home/nox/CustomPiOS/src/modules/base/start_chroot_script'
+# start_network
+execute_chroot_script '/home/nox/CustomPiOS/src/modules/network' '/home/nox/CustomPiOS/src/modules/network/start_chroot_script'
+# end_network
+# start_ubuntu2004-adu
+execute_chroot_script '/home/nox/CustomPiOS/ubuntu2004-adu/src/modules/ubuntu2004-adu' '/home/nox/CustomPiOS/ubuntu2004-adu/src/modules/ubuntu2004-adu/start_chroot_script'
+# end_ubuntu2004-adu
+execute_chroot_script '/home/nox/CustomPiOS/ubuntu2004-adu/src/modules/ubuntu2004-adu' '/home/nox/CustomPiOS/ubuntu2004-adu/src/modules/ubuntu2004-adu/end_chroot_script'
+# end_base
+execute_chroot_script '/home/nox/CustomPiOS/src/modules/base' '/home/nox/CustomPiOS/src/modules/base/end_chroot_script'

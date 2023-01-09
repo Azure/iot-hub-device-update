@@ -1,0 +1,16 @@
+export DIST_NAME=ubuntu2004-adu
+export DIST_VERSION=0.0.1
+export MODULES="base(network,ubuntu2004-adu)"
+
+export BASE_DISTRO=ubuntu
+export BASE_ARCH=arm64
+
+export BASE_ADD_USER=yes
+export BASE_USER=pi
+export BASE_USER_PASSWORD=adupi
+
+export BASE_IMAGE_ENLARGEROOT=4000
+export BASE_IMAGE_RESIZEROOT=200
+
+# TODO: Replace 'CustomePiOS ROOT PATH' with the actual string
+export BASE_ZIP_IMG=[CustomPiOS ROOT PATH]/ubuntu2004-adu/src/image/ubuntu-20.04.5-preinstalled-server-arm64+raspi.img.xz

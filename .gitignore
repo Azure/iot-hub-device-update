@@ -34,3 +34,9 @@ cscope.po.out
 out/
 build/
 Testing/
+
+### Example Artifacts
+examples/CustomPiOS/drops/
+examples/CustomPiOS/example-ubuntu-a-b-update/sandbox/
+examples/CustomPiOS/example-ubuntu-a-b-update/fabrikam.rpi-ubuntu-2004-adu-update*/
+examples/CustomPiOS/ubuntu2004-adu/src/image/*.xz
