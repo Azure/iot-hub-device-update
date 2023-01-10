@@ -251,6 +251,8 @@ TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirDefault")
 
     SECTION("Make recursive structure")
     {
+// Windows doesn't have any issue with creating root folders.
+#if !defined(WIN32)
         std::string dir{ TestPath() };
         dir += "/fail";
 
@@ -260,19 +262,21 @@ TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirDefault")
         struct stat st = {};
         CHECK_FALSE(stat(TestPath(), &st) == 0);
         CHECK_FALSE(S_ISDIR(st.st_mode));
+#endif
     }
 
     // We choose /sys because it will fail for root users and non-root users.
     SECTION("Make directory under /sys")
     {
+#if !defined(WIN32)
         std::string dir{ "/sys/fail" };
+#else
+        // For Windows, try creating a directory under %WINDIR% which will fail.
+        std::string dir{ "c:/windows/fail" };
+#endif
 
         const int ret{ ADUC_SystemUtils_MkDirDefault(dir.c_str()) };
         CHECK_FALSE(ret == 0);
-
-        struct stat st = {};
-        CHECK_FALSE(stat(TestPath(), &st) == 0);
-        CHECK_FALSE(S_ISDIR(st.st_mode));
     }
 }
 
@@ -294,14 +298,15 @@ TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirRecursiveDefault")
     // We choose /sys because it will fail for root users and non-root users.
     SECTION("Make directory off /sys")
     {
+#if !defined(WIN32)
         std::string dir{ "/sys/a/b/c/d/e/f/g/h/i/j" };
+#else
+        // For Windows, try creating a directory under %WINDIR% which will fail.
+        std::string dir{ "c:/windows/a/b/c/d/e/f/g/h/i/j" };
+#endif
 
         const int ret{ ADUC_SystemUtils_MkDirRecursiveDefault(dir.c_str()) };
         CHECK_FALSE(ret == 0);
-
-        struct stat st = {};
-        CHECK_FALSE(stat(TestPath(), &st) == 0);
-        CHECK_FALSE(S_ISDIR(st.st_mode));
     }
 }
 

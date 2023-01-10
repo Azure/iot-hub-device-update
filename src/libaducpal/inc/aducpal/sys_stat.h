@@ -15,6 +15,7 @@
 /* File types.  */
 
 #    define __S_IFDIR 0040000 /* Directory.  */
+#    define __S_IFCHR 0020000 /* Character device.  */
 #    define __S_IFREG 0100000 /* Regular file.  */
 #    define __S_IFLNK 0120000 /* Symbolic link.  */
 
@@ -23,6 +24,7 @@
 #    define __S_ISTYPE(mode, mask) (((mode)&__S_IFMT) == (mask))
 
 #    define S_ISDIR(mode) __S_ISTYPE((mode), __S_IFDIR)
+#    define S_ISCHR(mode) __S_ISTYPE((mode), __S_IFCHR)
 #    define S_ISLNK(mode) __S_ISTYPE((mode), __S_IFLNK)
 #    define S_ISREG(mode) __S_ISTYPE((mode), __S_IFREG)
 

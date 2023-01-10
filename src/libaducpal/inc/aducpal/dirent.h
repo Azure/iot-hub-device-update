@@ -3,6 +3,8 @@
 
 #ifdef ADUCPAL_USE_PAL
 
+#    include "aducpal/sys_stat.h" // S_IF*
+
 /*
  * Dirent interface for Microsoft Visual Studio
  *
@@ -18,7 +20,10 @@
 #    endif
 
 /* File type flags for d_type */
-#    define DT_REG S_IFREG
+#    define DT_UNKNOWN 0
+#    define DT_REG __S_IFREG
+#    define DT_DIR __S_IFDIR
+#    define DT_CHR __S_IFCHR
 
 struct dirent
 {

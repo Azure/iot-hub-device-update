@@ -15,12 +15,6 @@
 #    include <sys/stat.h> // S_*
 #    include <windows.h>
 
-/* File type flags for d_type */
-#    define DT_UNKNOWN 0
-#    define DT_REG S_IFREG
-#    define DT_DIR S_IFDIR
-#    define DT_CHR S_IFCHR
-
 struct _wdirent
 {
     /* Always zero */
