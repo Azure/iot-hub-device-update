@@ -15,8 +15,6 @@
 
 EXTERN_C_BEGIN
 
-#define MILLISECONDS_TO_NANOSECONDS(ms) (ms * 1000000)
-
 /**
  * @brief The message types currently supported by the Device Update Agent.
  */
