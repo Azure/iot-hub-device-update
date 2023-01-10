@@ -12,6 +12,7 @@
 
 // TODO (JeffMill): optimization: remove subdir and filepath allocations.
 // TODO (JeffMill): implement FTW_CHDIR, FTW_MOUNT, FTW_PHYS
+// TODO (JeffMill): respect nopenfd parameter (currently ignored)
 // TODO (JeffMill): Does FTW_SL, FTW_SLN apply to Windows?
 
 // Returns 1 if . or ..
