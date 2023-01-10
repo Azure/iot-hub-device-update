@@ -437,10 +437,22 @@ $static_analysis_tools | ForEach-Object {
     }
 }
 
-if (-not (Test-Path '.\out\CMakeCache.txt' -PathType Leaf)) {
-    Show-Warning 'CMakeCache.txt not found - forcing clean build.'
-    ''
-    $build_clean = $true
+if (-not $build_clean) {
+    # -ErrorAction SilentlyContinue doesn't work on Select-String
+    try {
+        if (-not (Select-String 'CMAKE_PROJECT_NAME:' "$output_directory/CMakeCache.txt")) {
+            $build_clean = $true
+        }
+    }
+    catch {
+        $build_clean = $true
+    }
+
+    if ($build_clean) {
+        Show-Warning 'CMake cache seems out of date - forcing clean build.'
+        ''
+        $build_clean = $true
+    }
 }
 
 if ($build_clean) {
@@ -504,7 +516,7 @@ if ($build_clean) {
     $ret_val = $LASTEXITCODE
 
     if ($ret_val -ne 0) {
-        error "ERROR: CMake failed (Error $ret_val)"
+        Write-Error "ERROR: CMake failed (Error $ret_val)"
         ''
 
         Show-CMakeErrors -BuildOutput $cmake_output
