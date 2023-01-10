@@ -37,6 +37,8 @@ def main():
         print_error("Failed to create the device in the IotHub")
         sys.exit(1)
 
+    print(str(len(connectionString)))
+    print(connectionString)
 
     #
     # Create the du-config.json JSON Object
