@@ -494,6 +494,8 @@ void ADUC_Workflow_HandlePropertyUpdate(
                     goto done;
                 }
 
+                Log_Debug("Retry %s is applicable", newRetryToken);
+
                 // Sets both cancellation type to Retry and updates the current retry token
                 workflow_update_retry_deployment(currentWorkflowData->WorkflowHandle, newRetryToken);
 
@@ -523,6 +525,7 @@ void ADUC_Workflow_HandlePropertyUpdate(
                     // workflow handle of the new deployment into the current workflow data, so that we can handle the update action.
                     bool deferredReplacement =
                         workflow_update_replacement_deployment(currentWorkflowData->WorkflowHandle, nextWorkflow);
+
                     if (deferredReplacement)
                     {
                         Log_Info(
@@ -537,6 +540,8 @@ void ADUC_Workflow_HandlePropertyUpdate(
                         ADUC_Workflow_HandleUpdateAction(currentWorkflowData);
                         goto done;
                     }
+
+                    Log_Debug("deferral not needed. Processing '%s' now", workflow_peek_id(nextWorkflow));
 
                     workflow_transfer_data(
                         currentWorkflowData->WorkflowHandle /* wfTarget */, nextWorkflow /* wfSource */);
@@ -961,6 +966,7 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
                     // Reset workflow state to process deployment and transfer
                     // the deferred workflow to current.
                     workflow_update_for_replacement(workflowData->WorkflowHandle);
+
                 }
                 else
                 {
