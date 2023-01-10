@@ -1,5 +1,5 @@
 Param(
-    [Parameter(Position = 0)][string]$FileName = $null,
+    [Parameter(Position = 0)][string]$FileName = 'AducIotAgent',
     [string]$Type = 'RelWithDebInfo',
     # Set this to true if debugging a Catch2 Unit Test.
     [switch]$DebugCatchUT = $false,
@@ -73,24 +73,37 @@ else {
     }
 
     if ($DebugCatchUT) {
-        "Debugging Unit Test $app ..."
+        $InitialCommands = @( `
+                # e.g. https_proxy_utils_unit_tests!`anonymous namespace'::C_A_T_C_H_T_E_S_T_0::test
+                '-c', "bm $FileName!*::C_A_T_C_H_T_E_S_T_*::test", `
+                # e.g. permission_utils_unit_test!C_A_T_C_H_T_E_S_T_0
+                '-c', "bm $FileName!C_A_T_C_H_T_E_S_T_*", `
+                # e.g. https_proxy_utils_unit_tests!TestCaseFixture::TestCaseFixture
+                '-c', "bm $FileName!TestCaseFixture::TestCaseFixture", `
+                '-c', "bm $FileName!TestCaseFixture::~TestCaseFixture", `
+                # Start test
+                '-c', 'g' `
+        )
 
-        $InitialCommands = `
-            # e.g. https_proxy_utils_unit_tests!`anonymous namespace'::C_A_T_C_H_T_E_S_T_0::test
-            '-c', "bm $FileName!*::C_A_T_C_H_T_E_S_T_*::test", `
-            # e.g. permission_utils_unit_test!C_A_T_C_H_T_E_S_T_0
-            '-c', "bm $FileName!C_A_T_C_H_T_E_S_T_*", `
-            # e.g. https_proxy_utils_unit_tests!TestCaseFixture::TestCaseFixture
-            '-c', "bm $FileName!TestCaseFixture::TestCaseFixture", `
-            '-c', "bm $FileName!TestCaseFixture::~TestCaseFixture", `
-            # Start test
-            '-c', 'g'
-        cmd.exe /c start $windbgx @InitialCommands $app --success --break
+        $arguments = "--success", "--break"
+
+        cmd.exe /c start $windbgx @InitialCommands $app @arguments
     }
     else {
-        "Debugging $app ..."
-        cmd.exe /c start $windbgx $app
+        $InitialCommands = @( `
+                '-c', "bp $FileName!main", `
+                '-c', 'g' `
+        )
+
+        $arguments = @(`
+            # Log level is DEBUG (very verbose) -- useful for debugging.
+                '--log-level', '0', `
+                '--health-check' `
+        )
     }
+
+    "Debugging $app ..."
+    cmd.exe /c start $windbgx @InitialCommands $app @arguments
 }
 
 exit 0
