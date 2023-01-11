@@ -2,22 +2,12 @@
 
 #ifdef ADUCPAL_USE_PAL
 
-// clang-format off
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h> // GetCurrentProcessId
-#include <sys/stat.h> // _S_*
-#include <direct.h> // rmdir
-#include <io.h> // isatty, unlink, open, close
-// clang-format on
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
 
-static unsigned long get_random_ulong()
-{
-    static unsigned long next = 1;
-
-    // From https://pubs.opengroup.org/onlinepubs/009695399/functions/rand.html
-    next = next * 1103515245 + 12345;
-    return ((unsigned)(next / 65536) % 32768);
-}
+#    include <direct.h> // rmdir
+#    include <io.h> // isatty, unlink, open, close
+#    include <sys/stat.h> // _S_*
 
 int ADUCPAL_access(const char* pathname, int mode)
 {
@@ -38,12 +28,14 @@ int ADUCPAL_close(int fildes)
 
 gid_t ADUCPAL_getegid(void)
 {
-    return get_random_ulong();
+    __debugbreak();
+    return -1;
 }
 
 uid_t ADUCPAL_geteuid(void)
 {
-    return get_random_ulong();
+    __debugbreak();
+    return -1;
 }
 
 pid_t ADUCPAL_getpid()
@@ -53,7 +45,8 @@ pid_t ADUCPAL_getpid()
 
 uid_t ADUCPAL_getuid()
 {
-    return get_random_ulong();
+    __debugbreak();
+    return -1;
 }
 
 int ADUCPAL_isatty(int fd)
@@ -115,12 +108,13 @@ unsigned int ADUCPAL_sleep(unsigned int seconds)
 
 long ADUCPAL_syscall(long number)
 {
-    if (number != SYS_gettid)
+    if (number == SYS_gettid)
     {
-        __debugbreak();
+        return GetCurrentThreadId();
     }
 
-    return get_random_ulong();
+    __debugbreak();
+    return -1;
 }
 
 void ADUCPAL_sync()

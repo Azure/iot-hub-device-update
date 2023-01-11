@@ -3,6 +3,8 @@
 #ifdef ADUCPAL_USE_PAL
 
 #    include <time.h>
+
+#    define WIN32_LEAN_AND_MEAN
 #    include <windows.h>
 
 int ADUCPAL_clock_gettime(clockid_t clk_id, struct timespec* tp)

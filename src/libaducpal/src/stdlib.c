@@ -2,14 +2,13 @@
 
 #ifdef ADUCPAL_USE_PAL
 
-// clang-format off
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <corecrt_io.h> //_mktemp_s
-#include <fcntl.h> // _O_*
-#include <stdlib.h> // getenv, putenv
-#include <string.h>
-// clang-format on
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
+
+#    include <corecrt_io.h> //_mktemp_s
+#    include <fcntl.h> // _O_*
+#    include <stdlib.h> // getenv, putenv
+#    include <string.h>
 
 #    include "aducpal/unistd.h" // open
 

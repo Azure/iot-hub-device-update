@@ -11,9 +11,12 @@
  * https://github.com/tronkko/dirent
  */
 
-#    include <malloc.h> // malloc
-#    include <sys/stat.h> // S_*
+#    define WIN32_LEAN_AND_MEAN
 #    include <windows.h>
+
+#    include <malloc.h> // malloc
+#    include <stdlib.h> // mbstowcs_s
+#    include <sys/stat.h> // S_*
 
 struct _wdirent
 {
