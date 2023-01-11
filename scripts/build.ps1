@@ -343,10 +343,6 @@ $cmake_bin = 'cmake.exe'
 $content_handlers = 'microsoft/simulator'
 Show-Warning "Forcing content_handlers to $content_handlers"
 
-# TODO(JeffMill): [PAL] Using this path for now due to ADUC bug assuming parent paths exist - cmakelists generates /tmp/adu
-$adu_log_dir = '/tmp/aduc-logs'
-Show-Warning "Forcing adu_log_dir to $adu_log_dir"
-
 # Output banner
 ''
 Show-Header 'Building ADU Agent'

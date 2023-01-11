@@ -96,13 +96,12 @@ else {
         )
 
         $arguments = @(`
-            # Log level is DEBUG (very verbose) -- useful for debugging.
-                '--log-level', '0', `
-                '--health-check' `
+                # Log level is DEBUG (very verbose) -- useful for debugging.
+                '--log-level', '0'
         )
     }
 
-    "Debugging $app ..."
+    'Debugging: {0} {1}' -f $app, ($arguments -join ' ')
     cmd.exe /c start $windbgx @InitialCommands $app @arguments
 }
 
