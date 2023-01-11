@@ -7,14 +7,20 @@
    and 'nftw'.  */
 enum
 {
-    FTW_F, /* Regular file.  */
-#    define FTW_F FTW_F
-    FTW_D, /* Directory.  */
-#    define FTW_D FTW_D
-    FTW_DNR, /* Unreadable directory.  */
-#    define FTW_DNR FTW_DNR
-    FTW_DP, /* Directory, all subdirs have been visited. */
-#    define FTW_DP FTW_DP
+  FTW_F,		/* Regular file.  */
+#define FTW_F	 FTW_F
+  FTW_D,		/* Directory.  */
+#define FTW_D	 FTW_D
+  FTW_DNR,		/* Unreadable directory.  */
+#define FTW_DNR	 FTW_DNR
+  FTW_NS,		/* Unstatable file.  */
+#define FTW_NS	 FTW_NS
+  FTW_SL,		/* Symbolic link.  */
+# define FTW_SL	 FTW_SL
+/* These flags are only passed from the `nftw' function.  */
+  FTW_DP,		/* Directory, all subdirs have been visited. */
+# define FTW_DP	 FTW_DP
+  FTW_SLN		/* Symbolic link naming non-existing file.  */
 };
 
 /* Flags for fourth argument of `nftw'.  */

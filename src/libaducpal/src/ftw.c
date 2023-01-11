@@ -114,6 +114,12 @@ static int do_nftw(const char* path, NFTW_FUNC_T func, int nopenfd, int flags, i
     // base is the offset of the filename (i.e. basename component) in the pathname given in fpath.
     ftwbuf.base = (int)strlen(path);
 
+    if (!(flags & FTW_DEPTH) && level == 0)
+    {
+        // Do an initial callback for the folder that was initially passed in
+        ret = do_callback(func, path, flags, &ftwbuf);
+    }
+
     struct dirent* entry;
     while ((entry = ADUCPAL_readdir(dp)) != NULL)
     {
@@ -180,7 +186,7 @@ static int do_nftw(const char* path, NFTW_FUNC_T func, int nopenfd, int flags, i
         }
     }
 
-    if (level == 0)
+    if ((flags & FTW_DEPTH) && level == 0)
     {
         // Do a final callback for the folder that was initially passed in
         ret = do_callback(func, path, flags, &ftwbuf);
