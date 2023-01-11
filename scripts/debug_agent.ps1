@@ -1,6 +1,6 @@
 Param(
     [Parameter(Position = 0)][string]$FileName = 'AducIotAgent',
-    [string]$Type = 'RelWithDebInfo',
+    [string]$Type = 'Debug',
     # Set this to true if debugging a Catch2 Unit Test.
     [switch]$DebugCatchUT = $false,
     [switch]$NoDebugger = $false
