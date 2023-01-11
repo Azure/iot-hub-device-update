@@ -86,8 +86,6 @@ else {
         )
 
         $arguments = "--success", "--break"
-
-        cmd.exe /c start $windbgx @InitialCommands $app @arguments
     }
     else {
         $InitialCommands = @( `
