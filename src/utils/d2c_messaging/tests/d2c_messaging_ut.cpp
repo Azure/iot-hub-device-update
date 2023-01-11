@@ -720,7 +720,7 @@ TEST_CASE("Message replacement test", "[.][functional]")
     g_testCaseSyncMutex.unlock();
 }
 
-TEST_CASE("30 retries - httpStatus 401")
+TEST_CASE("30 retries - httpStatus 401", "[.][functional]")
 {
     g_testCaseSyncMutex.lock();
 
@@ -739,7 +739,7 @@ TEST_CASE("30 retries - httpStatus 401")
         ADUC_D2C_Message_Type_Device_Update_Result, &g_defaultRetryStrategy_fast_speed);
 
     // Case 1 - received error 29 times, then success.
-    // The purpose os this test is to exercise threads syncronization with very small polling and retry times.
+    // The purpose of this test is to exercise threads synchronization with very small polling and retry times.
     MockCloudBehavior cb1[30];
     expectedAttempts = sizeof(cb1) / sizeof(MockCloudBehavior);
 
