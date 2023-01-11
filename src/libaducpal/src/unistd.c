@@ -1,13 +1,11 @@
 #include "aducpal/unistd.h"
 
-#ifdef ADUCPAL_USE_PAL
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
-#    define WIN32_LEAN_AND_MEAN
-#    include <windows.h>
-
-#    include <direct.h> // rmdir
-#    include <io.h> // isatty, unlink, open, close
-#    include <sys/stat.h> // _S_*
+#include <direct.h> // rmdir
+#include <io.h> // isatty, unlink, open, close
+#include <sys/stat.h> // _S_*
 
 int ADUCPAL_access(const char* pathname, int mode)
 {
@@ -139,5 +137,3 @@ ssize_t ADUCPAL_write(int fildes, const void* buf, size_t nbyte)
     __debugbreak();
     return -1;
 }
-
-#endif // #ifdef ADUCPAL_USE_PAL

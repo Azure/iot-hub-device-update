@@ -1,16 +1,14 @@
 #include "aducpal/grp.h"
 
-#ifdef ADUCPAL_USE_PAL
-
-#    include <string.h>
+#include <string.h>
 
 struct group* ADUCPAL_getgrnam(const char* name)
 {
 // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return 0 (root).
 
 // From CMakeLists.txt
-#    define ADUC_FILE_GROUP "adu"
-#    define DO_FILE_GROUP "do"
+#define ADUC_FILE_GROUP "adu"
+#define DO_FILE_GROUP "do"
 
     static char* s_gr_mem[] = { ADUC_FILE_GROUP, DO_FILE_GROUP, NULL };
 
@@ -23,5 +21,3 @@ struct group* ADUCPAL_getgrnam(const char* name)
 
     return NULL;
 }
-
-#endif // #ifdef ADUCPAL_USE_PAL

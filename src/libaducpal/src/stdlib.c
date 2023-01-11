@@ -1,16 +1,14 @@
 #include "aducpal/stdlib.h"
 
-#ifdef ADUCPAL_USE_PAL
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
-#    define WIN32_LEAN_AND_MEAN
-#    include <windows.h>
+#include <corecrt_io.h> //_mktemp_s
+#include <fcntl.h> // _O_*
+#include <stdlib.h> // getenv, putenv
+#include <string.h>
 
-#    include <corecrt_io.h> //_mktemp_s
-#    include <fcntl.h> // _O_*
-#    include <stdlib.h> // getenv, putenv
-#    include <string.h>
-
-#    include "aducpal/unistd.h" // open
+#include "aducpal/unistd.h" // open
 
 int ADUCPAL_mkstemp(char* tmpl)
 {
@@ -62,5 +60,3 @@ int ADUCPAL_unsetenv(const char* name)
 {
     return (_putenv(name)) ? 1 : 0;
 }
-
-#endif // #ifdef ADUCPAL_USE_PAL

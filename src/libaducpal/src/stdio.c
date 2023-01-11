@@ -1,12 +1,10 @@
 #include "aducpal/stdio.h"
 
-#ifdef ADUCPAL_USE_PAL
+#include <direct.h> // _rmdir
+#include <io.h> // _unlink
+#include <stdio.h> // popen, pclose
 
-#    include <direct.h> // _rmdir
-#    include <io.h> // _unlink
-#    include <stdio.h> // popen, pclose
-
-#    include <errno.h> // ENOTDIR, _get_errno
+#include <errno.h> // ENOTDIR, _get_errno
 
 FILE* ADUCPAL_popen(const char* command, const char* type)
 {
@@ -62,5 +60,3 @@ int ADUCPAL_rename(const char* old_f, const char* new_f)
 
     return rename(old_f, new_f);
 }
-
-#endif // #ifdef ADUCPAL_USE_PAL

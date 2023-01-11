@@ -1,9 +1,7 @@
 #include "aducpal/sys_stat.h"
 
-#ifdef ADUCPAL_USE_PAL
-
-#    include <direct.h> // _mkdir
-#    include <errno.h> // errno
+#include <direct.h> // _mkdir
+#include <errno.h> // errno
 
 int ADUCPAL_chmod(const char* path, mode_t mode)
 {
@@ -41,5 +39,3 @@ int ADUCPAL_mkfifo(const char* pathname, mode_t mode)
     __debugbreak();
     return -1;
 }
-
-#endif // #ifdef ADUCPAL_USE_PAL

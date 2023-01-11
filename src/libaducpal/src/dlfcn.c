@@ -1,11 +1,9 @@
 #include "aducpal/dlfcn.h"
 
-#ifdef ADUCPAL_USE_PAL
-
 // Avoiding bringing in stdio.h
-#    ifndef NULL
-#        define NULL ((void*)0)
-#    endif
+#ifndef NULL
+#    define NULL ((void*)0)
+#endif
 
 void* ADUCPAL_dlopen(const char* filename, int flag)
 {
@@ -34,5 +32,3 @@ int ADUCPAL_dlclose(void* handle)
     __debugbreak();
     return 0;
 }
-
-#endif // #ifdef ADUCPAL_USE_PAL

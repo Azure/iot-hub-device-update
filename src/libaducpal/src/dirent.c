@@ -1,7 +1,5 @@
 #include "aducpal/dirent.h"
 
-#ifdef ADUCPAL_USE_PAL
-
 /*
  * Dirent interface for Microsoft Visual Studio
  *
@@ -11,12 +9,12 @@
  * https://github.com/tronkko/dirent
  */
 
-#    define WIN32_LEAN_AND_MEAN
-#    include <windows.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
-#    include <malloc.h> // malloc
-#    include <stdlib.h> // mbstowcs_s
-#    include <sys/stat.h> // S_*
+#include <malloc.h> // malloc
+#include <stdlib.h> // mbstowcs_s
+#include <sys/stat.h> // S_*
 
 struct _wdirent
 {
@@ -63,7 +61,7 @@ struct _WDIR
 };
 typedef struct _WDIR _WDIR;
 
-#    define dirent_set_errno _set_errno
+#define dirent_set_errno _set_errno
 
 /* Get first directory entry */
 static WIN32_FIND_DATAW* dirent_first(_WDIR* dirp)
@@ -563,5 +561,3 @@ int ADUCPAL_alphasort(const struct dirent** a, const struct dirent** b)
 {
     return strcoll((*a)->d_name, (*b)->d_name);
 }
-
-#endif // #ifdef ADUCPAL_USE_PAL

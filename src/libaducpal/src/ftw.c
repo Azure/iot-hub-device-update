@@ -1,14 +1,12 @@
 #include "aducpal/ftw.h"
 #include "aducpal/dirent.h"
 
-#ifdef ADUCPAL_USE_PAL
-
-#    include <errno.h>
-#    include <malloc.h>
-#    include <stdio.h>
-#    include <string.h>
-#    include <sys/stat.h>
-#    include <sys/types.h>
+#include <errno.h>
+#include <malloc.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 // TODO (JeffMill): optimization: remove subdir and filepath allocations.
 // TODO (JeffMill): implement FTW_CHDIR, FTW_MOUNT, FTW_PHYS
@@ -205,4 +203,3 @@ int ADUCPAL_nftw(const char* path, NFTW_FUNC_T func, int nopenfd, int flags)
 {
     return do_nftw(path, func, nopenfd, flags, 0 /*level*/);
 }
-#endif // #ifdef ADUCPAL_USE_PAL

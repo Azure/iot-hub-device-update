@@ -1,16 +1,14 @@
 #include "aducpal/time.h"
 
-#ifdef ADUCPAL_USE_PAL
+#include <time.h>
 
-#    include <time.h>
-
-#    define WIN32_LEAN_AND_MEAN
-#    include <windows.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 int ADUCPAL_clock_gettime(clockid_t clk_id, struct timespec* tp)
 {
-#    define FILETIME_1970 116444736000000000ull /* seconds between 1/1/1601 and 1/1/1970 */
-#    define HECTONANOSEC_PER_SEC 10000000ull
+#define FILETIME_1970 116444736000000000ull /* seconds between 1/1/1601 and 1/1/1970 */
+#define HECTONANOSEC_PER_SEC 10000000ull
 
     ULARGE_INTEGER fti;
     GetSystemTimeAsFileTime((FILETIME*)&fti);
@@ -46,7 +44,7 @@ int ADUCPAL_nanosleep(const struct timespec* rqtp, struct timespec* rmtp)
     if (rmtp != NULL || rqtp->tv_sec != 0 || rqtp->tv_nsec < 1000000)
         __debugbreak();
 
-#    define NANOSECONDS_TO_MILLISECONDS(ms) ((ms) / 1000000)
+#define NANOSECONDS_TO_MILLISECONDS(ms) ((ms) / 1000000)
 
     Sleep(NANOSECONDS_TO_MILLISECONDS(rqtp->tv_nsec));
 
@@ -54,5 +52,3 @@ int ADUCPAL_nanosleep(const struct timespec* rqtp, struct timespec* rmtp)
     // -1: interrupted by a signal (errno set to EINTR)
     return 0;
 }
-
-#endif // #ifdef ADUCPAL_USE_PAL
