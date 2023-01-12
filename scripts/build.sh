@@ -38,7 +38,6 @@ output_directory=$root_dir/out
 build_unittests=false
 declare -a static_analysis_tools=()
 log_lib="zlog"
-install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
@@ -66,8 +65,6 @@ print_help() {
     echo ""
     echo "-l, --log-dir <log_dir>               Specify the directory where the ADU Agent will write logs."
     echo "                                      Only valid for logging libraries that support file logging."
-    echo ""
-    echo "--install-prefix <prefix>             Install prefix to pass to CMake."
     echo ""
     echo "--install                             Install the following ADU components."
     echo "                                          From source: deviceupdate-agent.service & adu-swupdate.sh."
@@ -250,14 +247,6 @@ while [[ $1 != "" ]]; do
         fi
         adu_log_dir=$1
         ;;
-    --install-prefix)
-        shift
-        if [[ -z $1 || $1 == -* ]]; then
-            error "--install-prefix parameter is mandatory."
-            $ret 1
-        fi
-        install_prefix=$1
-        ;;
     --install)
         if [[ $EUID -ne 0 ]]; then
             error "Super-user required to install ADU components."
@@ -350,7 +339,6 @@ CMAKE_OPTIONS=(
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
-    "-DCMAKE_INSTALL_PREFIX=$install_prefix"
 )
 
 for i in "${static_analysis_tools[@]}"; do

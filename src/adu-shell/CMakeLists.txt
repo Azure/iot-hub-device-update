@@ -81,14 +81,17 @@ target_link_libraries (
 
 target_link_libraries (${target_name} PRIVATE libaducpal)
 
-add_subdirectory (scripts)
+# TODO(JeffMill): [PAL] adu-swupdate.sh not supported on Windows.
+if (NOT WIN32)
+    add_subdirectory (scripts)
+endif ()
 
 # Install adu-shell to /usr/lib/adu folder.
 # Only owner and group can run adu-shell.
 install (
     TARGETS ${target_name}
     RUNTIME
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/adu
+        DESTINATION ${ADUSHELL_FOLDER}
         PERMISSIONS
             OWNER_EXECUTE
             OWNER_WRITE

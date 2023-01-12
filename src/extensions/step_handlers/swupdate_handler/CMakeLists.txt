@@ -35,4 +35,4 @@ target_link_libraries (${target_name} PRIVATE libaducpal)
 target_compile_definitions (${target_name} PRIVATE ADUC_VERSION_FILE="${ADUC_VERSION_FILE}"
                                                    ADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")
 
-install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+install (TARGETS ${target_name} LIBRARY RUNTIME DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

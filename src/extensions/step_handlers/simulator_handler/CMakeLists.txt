@@ -43,7 +43,7 @@ target_link_libraries (${target_name} PRIVATE libaducpal)
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
-install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+install (TARGETS ${target_name} LIBRARY RUNTIME DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
