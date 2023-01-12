@@ -602,8 +602,7 @@ void ExtensionManager::_FreeComponentsDataString(char* componentsJson)
         goto done;
     }
 
-    if (ExtensionManager::_componentEnumeratorContractVersion.majorVer == ADUC_V1_CONTRACT_MAJOR_VER
-        && ExtensionManager::_componentEnumeratorContractVersion.minorVer == ADUC_V1_CONTRACT_MINOR_VER)
+    if (ADUC_ContractUtils_IsV1Contract(&ExtensionManager::_componentEnumeratorContractVersion))
     {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         freeComponentsDataStringProc = reinterpret_cast<FreeComponentsDataStringProc>(dlsym(
@@ -668,8 +667,7 @@ ADUC_Result ExtensionManager::GetAllComponents(std::string& outputComponentsData
         goto done;
     }
 
-    if (ExtensionManager::_componentEnumeratorContractVersion.majorVer == ADUC_V1_CONTRACT_MAJOR_VER
-        && ExtensionManager::_componentEnumeratorContractVersion.minorVer == ADUC_V1_CONTRACT_MINOR_VER)
+    if (ADUC_ContractUtils_IsV1Contract(&ExtensionManager::_componentEnumeratorContractVersion))
     {
         if (_getAllComponents == nullptr)
         {
@@ -780,8 +778,7 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
         goto done;
     }
 
-    if (ExtensionManager::_contentDownloaderContractVersion.majorVer != ADUC_V1_CONTRACT_MAJOR_VER
-        && ExtensionManager::_contentDownloaderContractVersion.minorVer != ADUC_V1_CONTRACT_MINOR_VER)
+    if (!ADUC_ContractUtils_IsV1Contract(&ExtensionManager::_contentDownloaderContractVersion))
     {
         Log_Error(
             "Unsupported contract version %d.%d",
@@ -844,8 +841,7 @@ ADUC_Result ExtensionManager::Download(
         goto done;
     }
 
-    if (ExtensionManager::_contentDownloaderContractVersion.majorVer != ADUC_V1_CONTRACT_MAJOR_VER
-        && ExtensionManager::_contentDownloaderContractVersion.minorVer != ADUC_V1_CONTRACT_MINOR_VER)
+    if (!ADUC_ContractUtils_IsV1Contract(&ExtensionManager::_contentDownloaderContractVersion))
     {
         Log_Error(
             "Unsupported contract version %d.%d",

@@ -46,7 +46,7 @@ ADUC_Result Initialize(const char* initializeData)
 ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
 {
     contractInfo->majorVer = ADUC_V1_CONTRACT_MAJOR_VER;
-    contractInfo->majorVer = ADUC_V1_CONTRACT_MINOR_VER;
+    contractInfo->minorVer = ADUC_V1_CONTRACT_MINOR_VER;
     return ADUC_Result{ ADUC_GeneralResult_Success, 0 };
 }
 
