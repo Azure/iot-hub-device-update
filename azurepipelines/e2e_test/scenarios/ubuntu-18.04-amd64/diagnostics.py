@@ -69,16 +69,12 @@ class DiagnosticsTest(unittest.TestCase):
         #
         diagnosticJsonStatus = DiagnosticLogCollectionStatusResponse()
 
-        retry_count = 0
-        for retry_count in range(0, diagnostics_operation_status_retries):
+        for i in range(0, diagnostics_operation_status_retries):
             time.sleep(5)
             diagnosticJsonStatus = self.duTestHelper.GetDiagnosticsLogCollectionStatus(self.operationId)
 
             if (diagnosticJsonStatus.status == "Succeeded"):
                 break
-
-        if (retry_count == diagnostics_operation_status_retries and not diagnosticJsonStatus.status == "Succeeded"):
-            self.fail("Timed out of the diagnostics operation")
 
         self.assertEqual(diagnosticJsonStatus.status, "Succeeded")
 
