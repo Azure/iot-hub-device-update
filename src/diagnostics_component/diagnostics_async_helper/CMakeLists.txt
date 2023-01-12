@@ -2,11 +2,6 @@ cmake_minimum_required (VERSION 3.5)
 
 set (target_name diagnostics_async_helper)
 
-include (find_curl_and_import_libcurl)
-
-# Used to find and include the CURL::libcurl imported libary
-find_curl_and_import_libcurl ()
-
 add_library (${target_name} STATIC src/diagnostics_async_helper.cpp)
 add_library (diagnostics_component::${target_name} ALIAS ${target_name})
 

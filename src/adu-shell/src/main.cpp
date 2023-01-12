@@ -31,7 +31,7 @@ namespace AptGetTasks = Adu::Shell::Tasks::AptGet;
 #endif
 
 #ifdef ADUSHELL_SCRIPT
-#   include "script_tasks.hpp"
+#    include "script_tasks.hpp"
 namespace ScriptTasks = Adu::Shell::Tasks::Script;
 #endif
 
@@ -222,6 +222,7 @@ void ShowChildProcessLogs(const std::string& output)
             Log_Info("#  %s", token.c_str());
         }
         Log_Info("########## End Child's Logs ##########");
+        Log_RequestFlush();
     }
 }
 

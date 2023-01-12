@@ -62,8 +62,16 @@ Here is each workflow step and what it does at a high-level:
 - `ADUCITF_WorkflowStep_Download`
     - Sets current state to `ADUCITF_State_DownloadStarted`
     - Kicks off Download worker thread, which will call the content handler's `Download()` method to download the update content to the work folder download sandbox.
-    - On success, it will set the state to `ADUCITF_State_DownloadCompleted` and auto-transitions to `ADUCITF_WorkflowStep_InstallStarted`
+    - On success, it will set the state to `ADUCITF_State_DownloadCompleted` and auto-transitions to `ADUCITF_WorkflowStep_Backup`
     - On failure, it sets the state to `ADUCITF_State_Failed` and reports the failure.
+- `ADUCITF_WorkflowStep_Backup`
+    - Sets current state to `ADUCITF_WorkflowStep_Backup`
+    - Kicks off Backup worker thread, which will call the content handler's `Backup()` method to backup the content needed to 
+    be backed up
+    - On success, it will set the state to `ADUCITF_State_BackupCompleted` and auto-transitions to `ADUCITF_WorkflowStep_InstallStarted`
+    - On failure, it sets the state to `ADUCITF_State_Failed` and reports the failure.
+    Note: The default behavior of backup is that if Backup fails,  the workflow will end and report failure immediately.
+    To opt out of this design, in the content handler, the owner of the content handler will need to persist the result of ADUC_Workflow_MethodCall_Backup and return ADUC_Result_Backup_Success to let the workflow continue.
 - `ADUCITF_WorkflowStep_Install`
     - Sets the current state to `ADUCITF_State_InstallStarted`
     - Kicks off Install worker thread, which will call the content handler's `Install()` method to install the content that is in the work folder
@@ -75,6 +83,7 @@ Here is each workflow step and what it does at a high-level:
             - `ADUC_Result_Install_RequiredImmediateAgentRestart` or
             - `ADUC_Result_Install_RequiredAgentRestart`
         - Otherwise, it will Auto-transition to `ADUCITF_WorkflowStep_Apply`
+    - On failure, it will transit to `ADUCITF_WorkflowStep_Restore`
 - `ADUCITF_WorkflowStep_Apply`
     - Sets the current state to `ADUCITF_State_ApplyStarted`
     - Kicks off Apply worker thread, which will call the content handler's `Apply()` method
@@ -85,6 +94,19 @@ Here is each workflow step and what it does at a high-level:
         - Restart the agent if the result code is either
             - `ADUC_Result_Apply_RequiredImmediateAgentRestart` or
             - `ADUC_Result_Apply_RequiredAgentRestart`
+        - Otherwise, it will auto-transition to idle state
+    - On failure, it will transit to `ADUCITF_WorkflowStep_Restore`
+
+- `ADUCITF_WorkflowStep_Restore`
+    - Sets the current state to `ADUCITF_State_RestoreStarted`
+    - Kicks off Restore worker thread, which will call the content handler's `Restore()` method
+    - On success, it will:
+        - Reboot the system if the result code is either
+            - `ADUC_Result_Restore_RequiredImmediateReboot` or
+            - `ADUC_Result_Restore_RequiredReboot`
+        - Restart the agent if the result code is either
+            - `ADUC_Result_Restore_RequiredImmediateAgentRestart` or
+            - `ADUC_Result_Restore_RequiredAgentRestart`
         - Otherwise, it will auto-transition to idle state
 
 ### State Machine States

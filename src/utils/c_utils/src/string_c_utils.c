@@ -411,3 +411,35 @@ _Bool IsNullOrEmpty(const char* str)
 {
     return str == NULL || *str == '\0';
 }
+
+/**
+ * @brief Allocates memory for @p target and copy @p len characters of @p source into @p target buffer.
+ *
+ * @param[out] target Output string
+ * @param source Source string
+ * @param len Length of string to copy.
+ * @return _Bool Returns true is success.
+ */
+_Bool MallocAndSubstr(char** target, char* source, size_t len)
+{
+    if (target == NULL || source == NULL)
+    {
+        return false;
+    }
+    *target = NULL;
+
+    char* t = malloc((len + 1) * sizeof(*t));
+    if (t == NULL)
+    {
+        return false;
+    }
+    memset(t, 0, (len + 1) * sizeof(*t));
+    if (strncpy(t, source, len) != t)
+    {
+        free(t);
+        return false;
+    }
+
+    *target = t;
+    return true;
+}

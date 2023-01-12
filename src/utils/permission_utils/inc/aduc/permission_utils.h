@@ -22,6 +22,8 @@ _Bool PermissionUtils_UserInSupplementaryGroup(const char* user, const char* gro
 _Bool PermissionUtils_CheckOwnership(const char* path, const char* user, const char* group);
 _Bool PermissionUtils_CheckOwnerUid(const char* path, uid_t uid);
 _Bool PermissionUtils_CheckOwnerGid(const char* path, gid_t gid);
+_Bool PermissionUtils_SetProcessEffectiveUID(const char* name);
+_Bool PermissionUtils_SetProcessEffectiveGID(const char* name);
 
 EXTERN_C_END
 

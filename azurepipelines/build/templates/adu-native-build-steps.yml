@@ -1,0 +1,100 @@
+# Template: Steps to build ADU Agent targeting x86-64 architecture.
+# Consume this steps template in one or more jobs by passing in parameter values.
+
+parameters:
+  - name: targetOs # example: ubuntu1804
+    type: string
+  - name: targetArch # example: amd64
+    type: string
+
+steps:
+  - ${{ if eq(parameters.targetArch, 'amd64') }}:
+    - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+      displayName: "Component Detection"
+      inputs:
+        sourceScanPath: src
+
+  - task: Bash@3
+    displayName: "Install ADUC dependencies"
+    inputs:
+      targetType: "filePath"
+      filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
+      arguments: --install-all-deps
+
+  - task: Bash@3
+    displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
+    inputs:
+      targetType: "filePath"
+      filePath: $(Build.SourcesDirectory)/scripts/build.sh
+      arguments: "--clean --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --build-unit-tests --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
+
+  - bash: |
+      cp $(Build.BinariesDirectory)/*.deb $(Build.ArtifactStagingDirectory)
+      cp $(Build.BinariesDirectory)/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgent
+    displayName: "Stage build artifacts (Deb package, agent and docs)"
+    condition: ne(variables['Build.Reason'], 'PullRequest')
+
+    # Run all unit tests.
+  - bash: |
+      ctest --repeat until-pass:5 --timeout 300 --force-new-ctest-process -T test -V --output-on-failure
+      exit $?
+    displayName: "Run Unit Tests: linux-MinSizeRel"
+    workingDirectory: $(Build.BinariesDirectory)
+
+  - task: PublishTestResults@2
+    displayName: "Publish Unit Test Results: linux-MinSizeRel"
+    condition: succeededOrFailed() # Run this task even if tests fail.
+    inputs:
+      testResultsFormat: cTest
+      testResultsFiles: "Testing/**/*.xml"
+      searchFolder: $(Build.BinariesDirectory)
+      failTaskOnFailedTests: true
+      publishRunAttachments: false # Attachments are not supported for CTest
+
+  - task: Bash@3
+    displayName: "Build Client and Unit Tests: linux-Debug"
+    inputs:
+      targetType: "filePath"
+      filePath: $(Build.SourcesDirectory)/scripts/build.sh
+      arguments: "--clean --build-unit-tests --platform-layer linux --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
+
+    # Run all unit tests.
+  - bash: |
+      ctest --repeat until-pass:5 --timeout 300 --force-new-ctest-process -T test -V --output-on-failure
+      exit $?
+    displayName: "Run Unit Tests: linux-Debug"
+    workingDirectory: $(Build.BinariesDirectory)
+
+  - task: PublishTestResults@2
+    displayName: "Publish Unit Test Results: linux-Debug"
+    condition: succeededOrFailed() # Run this task even if tests fail.
+    inputs:
+      testResultsFormat: cTest
+      testResultsFiles: "Testing/**/*.xml"
+      searchFolder: $(Build.BinariesDirectory)
+      failTaskOnFailedTests: true
+      publishRunAttachments: false # Attachments are not supported for CTest
+
+  - task: PublishPipelineArtifact@0
+    displayName: "Publish Pipeline Artifacts"
+    inputs:
+      artifactName: "adu-client-${{parameters.targetOs}}-${{parameters.targetArch}}"
+      targetPath: "$(Build.ArtifactStagingDirectory)"
+
+    # Ignore SC2164: Use 'cd ... || exit' or 'cd ... || return' in case cd fails.
+    #   We usually want to return an error code from a specific, previous command
+    #   even if popd, pushd, or cd fails.
+    # Ignore SC2209: Use var=$(command) to assign output (or quote to assign string).
+    #   We use 'ret=return' or 'ret=exit' to support dot sourcing.
+  - ${{ if eq(parameters.targetArch, 'amd64') }}:
+    - bash: |
+        /tmp/deviceupdate-shellcheck --shell=bash $(find -name "*.sh" | grep -v -e '^\.\/out')
+        exit $?
+      displayName: "Run ShellCheck"
+
+  - ${{ if eq(parameters.targetArch, 'amd64') }}:
+    - task: ComponentGovernanceComponentDetection@0
+      inputs:
+        scanType: "Register"
+        verbosity: "Verbose"
+        alertWarningLevel: "High"

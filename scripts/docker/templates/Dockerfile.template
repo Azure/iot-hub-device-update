@@ -1,0 +1,19 @@
+
+FROM %%CONTAINER_IMAGE_BASE_IMAGE%%
+
+ADD ./app.tar.gz /
+
+RUN apt-get update && apt-get install -y libcurl4-gnutls-dev \
+&& ln -s /usr/lib/x86_64-linux-gnu/libcurl-gnutls.so.4.5.0 /usr/lib/libcurl.so.4 \
+&& apt-get install -y libxml2 \
+&& apt-get install -y libboost-filesystem1.65.1 \
+&& ln -s /usr/lib/x86_64-linux-gnu/libboost_filesystem.so.1.65.1 /usr/lib/libboost_filesystem.so.1.65.1 \
+&& ln -s /usr/lib/x86_64-linux-gnu/libboost_system.so.1.65.1 /usr/lib/libboost_system.so.1.65.1 \
+&& apt-get install -y libcurl4-openssl-dev %%APT_PACKAGES_FOR_DEBUGGING%%
+
+RUN /bin/sh /usr/lib/adu/setup_container.sh
+
+LABEL version="%%CONTAINER_IMAGE_VERSION%%"
+LABEL description="%%CONTAINER_IMAGE_DESCRIPTION%%"
+
+CMD %%CONTAINER_IMAGE_DOCKER_CMD%%

@@ -9,28 +9,23 @@
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h"
+#include "aduc/path_utils.h" // SanitizePathSegment
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
 
+#include <ctype.h> // isalnum
 #include <grp.h> // for getgrnam
+#include <parson.h> // for JSON_*, json_*
 #include <pwd.h> // for getpwnam
 #include <stdio.h> // for FILE
 #include <stdlib.h> // for calloc
 #include <strings.h> // for strcasecmp
-#include <sys/stat.h>
+#include <sys/stat.h> // for stat, struct stat
 
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/buffer_.h>
 #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
 #include <azure_c_shared_utility/sha.h> // for SHAversion
-
-static STRING_HANDLE FolderNameFromHandlerId(const char* handlerId)
-{
-    STRING_HANDLE name = STRING_construct(handlerId);
-    STRING_replace(name, '/', '_');
-    STRING_replace(name, ':', '_');
-    return name;
-}
 
 /**
  * @brief Get the Extension File Entity object
@@ -49,7 +44,7 @@ _Bool GetExtensionFileEntity(const char* extensionRegFile, ADUC_FileEntity* file
     JSON_Value* rootValue = json_parse_file(extensionRegFile);
     if (rootValue == NULL)
     {
-        Log_Error("Cannot open an extension registration file. ('%s')", extensionRegFile);
+        Log_Info("Cannot open an extension registration file. ('%s')", extensionRegFile);
         goto done;
     }
 
@@ -124,9 +119,9 @@ static _Bool GetHandlerExtensionFileEntity(
 
     memset(fileEntity, 0, sizeof(*fileEntity));
 
-    STRING_HANDLE folderName = FolderNameFromHandlerId(handlerId);
+    STRING_HANDLE folderName = SanitizePathSegment(handlerId);
 
-    STRING_HANDLE path = STRING_construct_sprintf("%s/%s", STRING_c_str(folderName), regFileName);
+    STRING_HANDLE path = STRING_construct_sprintf("%s/%s/%s", extensionDir, STRING_c_str(folderName), regFileName);
 
     found = GetExtensionFileEntity(STRING_c_str(path), fileEntity);
 
@@ -137,7 +132,7 @@ static _Bool GetHandlerExtensionFileEntity(
 }
 
 /**
- * @brief Find a handler for the specified UpdateType @p updateType.
+ * @brief Find a content handler for the specified UpdateType @p updateType.
  *
  * @param updateType Update type string.
  * @param fileEntity An output file entity.
@@ -147,6 +142,19 @@ _Bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity*
 {
     return GetHandlerExtensionFileEntity(
         updateType, ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR, ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME, fileEntity);
+}
+
+/**
+ * @brief Find a download handler for the specified DownloadHandler @p downloadHandlerId.
+ *
+ * @param downloadHandlerId The download handler id string.
+ * @param fileEntity An output file entity.
+ * @return True if an update content handler for the specified @p downloadHandlerId is available.
+ */
+_Bool GetDownloadHandlerFileEntity(const char* downloadHandlerId, ADUC_FileEntity* fileEntity)
+{
+    return GetHandlerExtensionFileEntity(
+        downloadHandlerId, ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR, ADUC_DOWNLOAD_HANDLER_REG_FILENAME, fileEntity);
 }
 
 /**
@@ -186,7 +194,7 @@ static _Bool RegisterHandlerExtension(
         goto done;
     }
 
-    folderName = FolderNameFromHandlerId(handlerId);
+    folderName = SanitizePathSegment(handlerId);
     if (folderName == NULL)
     {
         Log_Error("Cannot generate a folder name from an Update Type.");
@@ -314,6 +322,19 @@ _Bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFi
         handlerFilePath,
         ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR,
         ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME);
+}
+
+/**
+ * @brief Register a Handler for the specified download handler id.
+ *
+ * @param downloadHandlerId The download handler id string.
+ * @param handlerFilePath A full path to the handler shared-library file.
+ * @return Returns true if the handler successfully registered.
+ */
+_Bool RegisterDownloadHandler(const char* downloadHandlerId, const char* handlerFilePath)
+{
+    return RegisterHandlerExtension(
+        downloadHandlerId, handlerFilePath, ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR, ADUC_DOWNLOAD_HANDLER_REG_FILENAME);
 }
 
 /**

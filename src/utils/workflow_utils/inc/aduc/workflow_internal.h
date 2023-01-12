@@ -6,6 +6,9 @@
  * Licensed under the MIT License.
  */
 
+#ifndef WORKFLOW_INTERNAL_H
+#define WORKFLOW_INTERNAL_H
+
 #include <aduc/result.h>
 #include <aduc/types/update_content.h>
 #include <aduc/types/workflow.h>
@@ -33,6 +36,7 @@ typedef struct tagADUC_Workflow
     ADUCITF_State State; /**< The current state machine state of the workflow. */
     ADUCITF_WorkflowStep CurrentWorkflowStep; /**< The current state machine workflow step. */
     ADUC_Result Result; /**< The result of the workflow. */
+    ADUC_Result_t ResultSuccessErc; /**< The ERC to set on workflow success. */
     STRING_HANDLE ResultDetails; /**< The result details of the workflow. */
     STRING_HANDLE InstalledUpdateId; /**< The installed updateId to report on workflow success. */
 
@@ -44,6 +48,7 @@ typedef struct tagADUC_Workflow
     size_t ChildrenMax; /**< The max children. */
     size_t ChildCount; /**< The count of children. */
     int Level; /**< The level of the workflow in the tree. */
+    int StepIndex; /**< The step index for this workflow. */
 
     //
     // Operation worker state including state for handling cancellation and completion.
@@ -53,4 +58,13 @@ typedef struct tagADUC_Workflow
     ADUC_WorkflowCancellationType CancellationType; /**< What type of cancellation is it? */
     struct tagADUC_Workflow*
         DeferredReplacementWorkflow; /**< A replacement workflow that came in while another deployment was in progress. */
+
+    //
+    // Plugin Extension state.
+    //
+    ino_t* UpdateFileInodes;
+
+    bool ForceUpdate; /**< Always process this workflow, even when the previous update was successful. */
 } ADUC_Workflow;
+
+#endif // WORKFLOW_INTERNAL_H

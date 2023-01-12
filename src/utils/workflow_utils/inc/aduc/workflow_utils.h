@@ -12,14 +12,15 @@
 #include "aduc/result.h"
 #include "aduc/types/update_content.h"
 #include "aduc/types/workflow.h"
-
-#include "parson.h"
+#include <azure_c_shared_utility/strings.h>
 
 #include <stdbool.h>
 #include <string.h> // strlen
+#include <sys/types.h> // ino_t
 
 EXTERN_C_BEGIN
 
+// fwd declaration
 typedef void* ADUC_WorkflowHandle;
 
 //
@@ -31,7 +32,7 @@ typedef void* ADUC_WorkflowHandle;
  *
  * @param updateManifestJson A json string containing an update manifest data.
  * @param validateManifest  A indicates whether to validate the manifest signature.
- *  Note that a Components Update maneifest file doesn't contain a signature. We sign at the Bundle-level.
+ *  Note that a referenced step manifest file doesn't contain a signature. We sign at the top level.
  * @param handle A workflow object handle with information about the workflow.
  * @return ADUC_Result
  */
@@ -56,12 +57,11 @@ workflow_init_from_file(const char* updateManifestFile, bool validateManifest, A
  * @param handle A workflow object handle with information about the workflow.
  * @return ADUC_Result
  */
-ADUC_Result
-workflow_create_from_inline_step(const ADUC_WorkflowHandle base, int stepIndex, ADUC_WorkflowHandle* handle);
+ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, int stepIndex, ADUC_WorkflowHandle* handle);
 
 /**
  * @brief Transfer action data from @p sourceHandle to @p targetHandle.
- * The sourceHandle will no longer contains transfered action data.
+ * The sourceHandle will no longer contains transferred action data.
  * Caller should not use sourceHandle for other workflow related purposes.
  *
  * @param targetHandle A target workflow object.
@@ -193,8 +193,7 @@ const char* workflow_peek_retryTimestamp(ADUC_WorkflowHandle handle);
  * @param ... An argument list.
  * @return Return true is succeeded.
  */
-bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* pathFormat, ...);
-
+bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* format, ...);
 
 /**
  * @brief Get the work folder for this workflow.
@@ -202,7 +201,7 @@ bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* pathFormat,
  * @param handle A workflow data object handle.
  * @return char* contains full path to work folder. Caller must call workflow_free_string() to free the memory once done.
  */
-char* workflow_get_workfolder(ADUC_WorkflowHandle handle);
+char* workflow_get_workfolder(const ADUC_WorkflowHandle handle);
 
 /**
  * @brief Sets selected-components (in a form of serialized json string) to be used in this workflow.
@@ -230,25 +229,43 @@ const char* workflow_peek_selected_components(ADUC_WorkflowHandle handle);
 size_t workflow_get_update_files_count(ADUC_WorkflowHandle handle);
 
 /**
- * @brief Gets the update file entity as specified index.
+ * @brief Gets the update file entity at the specified index.
  *
  * @param handle A workflow data object handle.
  * @param index An index of the file to get.
- * @param entity An output file entity object. Caller must free the object with workflow_free_file_entiry().
+ * @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
  * @return true If succeeded.
  */
 bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity** entity);
 
 /**
- * @brief Gets a first file in the update files array that match specified @p fileType.
+ * @brief Gets the update file entity by name.
  *
  * @param handle A workflow data object handle.
- * @param fileType A file type.
- * @param entity An output file entitry object. Caller must free the object with workflow_free_file_entity().
+ * @param fileName File name.
+* @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
  * @return true If succeeded.
  */
-bool workflow_get_first_update_file_of_type(
-    ADUC_WorkflowHandle handle, const char* fileType, ADUC_FileEntity** entity);
+bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fileName, ADUC_FileEntity** entity);
+
+/**
+ * @brief Gets the inode associated with the update file entity at the specified index.
+ *
+ * @param handle A workflow data object handle.
+ * @param index An index of the file to get.
+ * @return ino_t The inode, or ADUC_INODE_SENTINEL_VALUE if inode has not been set yet.
+ */
+ino_t workflow_get_update_file_inode(ADUC_WorkflowHandle handle, size_t index);
+
+/**
+ * @brief Sets the inode associated with the update file entity at the specified index.
+ *
+ * @param handle A workflow data object handle.
+ * @param index An index of the file to get.
+ * @param inode The inode.
+ * @return bool true on success.
+ */
+bool workflow_set_update_file_inode(ADUC_WorkflowHandle handle, size_t index, ino_t inode);
 
 /**
  * @brief Gets a bundle updates count.
@@ -439,6 +456,8 @@ ADUCITF_State workflow_get_state(ADUC_WorkflowHandle handle);
 
 ADUC_Result workflow_get_result(ADUC_WorkflowHandle handle);
 void workflow_set_result(ADUC_WorkflowHandle handle, ADUC_Result result);
+ADUC_Result_t workflow_get_success_erc(ADUC_WorkflowHandle handle);
+void workflow_set_success_erc(ADUC_WorkflowHandle handle, ADUC_Result_t erc);
 
 /**
  * @brief Set workflow resultDetails string.
@@ -463,19 +482,100 @@ const char* workflow_peek_installed_update_id(ADUC_WorkflowHandle handle);
 
 bool workflow_read_state_from_file(ADUC_WorkflowHandle handle, const char* stateFilename);
 
+/**
+ * @brief Request a workflow cancellation.
+ *
+ * @param handle A workflow data object handle.
+ * @return A boolean indicates that the 'WORKFLOW_PROPERTY_FIELD_CANCEL_REQUESTED' property successfully set to 'true'.
+ */
+bool workflow_request_cancel(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Check whether the workflow cancellation is requested.
+ *
+ * @param handle A workflow data object handle.
+ * @return A boolean indicates whether the workflow cancellation is requested.
+ */
 bool workflow_is_cancel_requested(ADUC_WorkflowHandle handle);
 
+/**
+ * @brief Request the agent to restart after the top level workflow is finished.
+ *
+ * @param handle A workflow data object handle.
+ * @return 'True' if request success.
+ */
 bool workflow_request_agent_restart(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Request the agent to restart immediately after current operation (e.g., download, install, or apply) is finished.
+ *
+ * @param handle A workflow data object handle.
+ * @return 'True' if request success.
+ */
 bool workflow_request_immediate_agent_restart(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Check whether the agent restart is requested.
+ *
+ * @param handle A workflow data object handle.
+ * @return A boolean indicates whether the agent restart is requested.
+ */
 bool workflow_is_agent_restart_requested(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Check whether the agent immediate restart is requested.
+ *
+ * @param handle A workflow data object handle.
+ * @return A boolean indicates whether the agent immediate restart is requested.
+ */
 bool workflow_is_immediate_agent_restart_requested(ADUC_WorkflowHandle handle);
 
+/**
+ * @brief Request the agent to reboot the device after the top level workflow is finished.
+ *
+ * @param handle A workflow data object handle.
+ * @return 'True' if request success.
+ */
 bool workflow_request_reboot(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Request the agent to reboot the device immediately  after current operation (e.g., download, install, or apply) is finished.
+ *
+ * @param handle A workflow data object handle.
+ * @return 'True' if request success.
+ */
 bool workflow_request_immediate_reboot(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Check whether the device reboot is requested.
+ *
+ * @param handle A workflow data object handle.
+ * @return A boolean indicates whether the device reboot is requested.
+ */
 bool workflow_is_reboot_requested(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Check whether the immediate device reboot is requested.
+ *
+ * @param handle A workflow data object handle.
+ * @return A boolean indicates whether the immediate device reboot is requested.
+ */
 bool workflow_is_immediate_reboot_requested(ADUC_WorkflowHandle handle);
 
+/**
+ * @brief Set workflow cancellation type.
+ *
+ * @param handle A workflow data object handle.
+ * @param cancellationType A cancellation type.
+ */
 void workflow_set_cancellation_type(ADUC_WorkflowHandle handle, ADUC_WorkflowCancellationType cancellationType);
+
+/**
+ * @brief Set workflow cancellation type.
+ *
+ * @param handle A workflow data object handle.
+ * @param cancellationType A cancellation type.
+ */
 ADUC_WorkflowCancellationType workflow_get_cancellation_type(ADUC_WorkflowHandle handle);
 
 bool workflow_update_retry_deployment(ADUC_WorkflowHandle handle, const char* retryToken);
@@ -488,7 +588,24 @@ void workflow_update_for_retry(ADUC_WorkflowHandle handle);
 //
 // Misc.
 //
+
+/**
+ * @brief Compare id of @p handle0 and @p handle1
+ *
+ * @param handle0 The workflow handle containing the first workflow id.
+ * @param handle1 The workflow handle containing the second workflow id.
+ * @return 0 if ids are equal.
+ */
 int workflow_id_compare(ADUC_WorkflowHandle handle0, ADUC_WorkflowHandle handle1);
+
+/**
+ * @brief Compare id of @p handle and @p workflowId. No memory is allocated or freed by this function.
+ *
+ * @param handle The handle for first workflow id.
+ * @param workflowId The c-string for the second workflow id.
+ * @return bool Returns true if ids are equal.
+ */
+bool workflow_isequal_id(ADUC_WorkflowHandle handle, const char* workflowId);
 
 /**
  * @brief Create a new workflow data handler using base workflow and serialized 'instruction' json string.
@@ -525,12 +642,28 @@ workflow_create_from_instruction_value(ADUC_WorkflowHandle base, JSON_Value* ins
 void workflow_set_level(ADUC_WorkflowHandle handle, int level);
 
 /**
+ * @brief Set workflow step index.
+ *
+ * @param handle A workflow object handle.
+ * @param stepIndex A workflow step index.
+ */
+void workflow_set_step_index(ADUC_WorkflowHandle handle, int stepIndex);
+
+/**
  * @brief Get workflow level.
  *
  * @param handle A workflow object handle.
  * @return Returns -1 if the specified handle is invalid. Otherwise, return the workflow level.
  */
 int workflow_get_level(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Get workflow step index.
+ *
+ * @param handle A workflow object handle.
+ * @return Returns -1 if the specified handle is invalid. Otherwise, return the workflow step index.
+ */
+int workflow_get_step_index(ADUC_WorkflowHandle handle);
 
 /**
  * @brief Get update manifest instructions steps count.
@@ -604,6 +737,31 @@ bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t
  * @return char* An output json string. Caller must free the string with workflow_free_string().
  */
 char* workflow_get_serialized_update_manifest(ADUC_WorkflowHandle handle, bool pretty);
+
+/**
+ * @brief Gets the file path of the entity target update under the download work folder sandbox.
+ *
+ * @param workflowHandle The workflow handle.
+ * @param entity The file entity.
+ * @param outFilePath The resultant work folder file path to the file entity.
+ * @return _Bool true if success
+ * @remark Caller will own the STRING_HANDLE outFilePath and must call STRING_delete on it.
+ */
+_Bool workflow_get_entity_workfolder_filepath(
+    ADUC_WorkflowHandle workflowHandle, const ADUC_FileEntity* entity, STRING_HANDLE* outFilePath);
+
+/**
+ * @brief Gets boolean indicates whether to bypass duplicate workflow check, and always process the update.
+ */
+_Bool workflow_get_force_update(ADUC_WorkflowHandle workflowHandle);
+
+/**
+ * @brief Sets boolean indicates whether to bypass duplicate workflow check, and always process the update.
+ *
+ * @param handle The workflow handle.
+ * @param forceUpdate Set to true to bypass duplicate workflow check.
+ */
+void workflow_set_force_update(ADUC_WorkflowHandle handle, bool forceUpdate);
 
 EXTERN_C_END
 

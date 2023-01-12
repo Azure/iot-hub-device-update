@@ -1,0 +1,72 @@
+variables:
+  version.major: 1
+  version.minor: 0
+  version.patch: 0
+  version.pre-release: ""
+  version.build: $[format('{0:yyyyMMdd}-{0:HHmmss}', pipeline.startTime)]
+
+  # Environment variables for all client builds:
+  ADUC_VERSION_MAJOR: $(version.major)
+  ADUC_VERSION_MINOR: $(version.minor)
+  ADUC_VERSION_PATCH: $(version.patch)
+  ADUC_VERSION_PRERELEASE: $(version.pre-release)
+  ADUC_VERSION_BUILD: $(version.build)
+  ADUC_DEBIAN_PACKAGE_ARCHITECTURE: "arm32"
+
+  ENABLE_ADU_TELEMETRY_REPORTING: true
+  # ADUC_BUILDER_IDENTIFIER will be set to "DU" short for Device Update by default, for Device Update-sourced builder
+  ADUC_BUILDER_IDENTIFIER: DU
+  # DO requires gcc greater than 6 for c++17 support.
+  # gcc-8 matches what is built with poky warrior.
+  CC: gcc-8
+  CXX: g++-8
+
+name: $(version.major).$(version.minor).$(version.patch)-$(version.pre-release)+$(version.build)
+
+resources:
+  - repo: self
+
+trigger:
+  branches:
+    include:
+      - main
+      # - release/*
+  paths:
+    exclude:
+      - docs/*
+      - README.md
+      - LICENSE.md
+      - .clang-format
+      - .cmake-format.json
+      - docker/*
+
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+      # - feature/*
+      #- dev/*
+  paths:
+    exclude:
+      - docs/*
+      - README.md
+      - LICENSE.md
+      - .clang-format
+      - .cmake-format.json
+      - tools/*
+      - docker/*
+      - scripts/*
+      - licenses/*
+
+jobs:
+  - job: BuildAduAgent_debian10
+    displayName: "Build ADU Agent - Debian 10"
+    timeoutInMinutes: 360
+    cancelTimeoutInMinutes: 360
+    pool: aduc_1es_client_pool
+    steps:
+      - template: ../templates/adu-docker-build-steps.yml
+        parameters:
+          targetOs: 'debian10'
+          targetArch: 'arm32'

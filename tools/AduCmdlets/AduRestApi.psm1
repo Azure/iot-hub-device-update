@@ -37,7 +37,7 @@ function Start-AduImportUpdate
 
     .EXAMPLE
         PS > $updateId = New-AduUpdateId -Provider Fabrikam -Name Toaster -Version 2.0
-        PS > $compatInfo = New-AduUpdateCompatibility -DeviceManufacturer Fabrikam -DeviceModel Toaster
+        PS > $compatInfo = New-AduUpdateCompatibility -Manufacturer Fabrikam -Model Toaster
         PS >
         PS > $input = New-AduImportUpdateInput -UpdateId $updateId `
                                                -UpdateType microsoft/swupdate:1 -InstalledCriteria 5 `
