@@ -35,4 +35,13 @@ TEST_CASE("ADUC_ContractUtils_IsV1Contract")
         contractInfo.minorVer = 0;
         CHECK_FALSE(ADUC_ContractUtils_IsV1Contract(&contractInfo));
     }
+
+    SECTION("Is 1.0")
+    {
+        ADUC_ExtensionContractInfo contractInfo{};
+        contractInfo.majorVer = 1;
+        contractInfo.minorVer = 0;
+
+        CHECK(ADUC_ContractUtils_IsV1Contract(&contractInfo));
+    }
 }

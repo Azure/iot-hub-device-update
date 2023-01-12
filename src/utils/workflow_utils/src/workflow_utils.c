@@ -1337,9 +1337,11 @@ bool workflow_set_string_property(ADUC_WorkflowHandle handle, const char* proper
 
     if (value != NULL)
     {
+        Log_Debug("set prop '%s' to '%s'", property, value);
         return JSONSuccess == json_object_set_string(wf->PropertiesObject, property, value);
     }
 
+    Log_Debug("set prop '%s' to null", property);
     return JSONSuccess == json_object_set_null(wf->PropertiesObject, property);
 }
 
@@ -1479,6 +1481,7 @@ char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
     char* wf = workflow_get_string_property(handle, WORKFLOW_PROPERTY_FIELD_WORKFOLDER);
     if (wf != NULL)
     {
+        Log_Debug("Property '%s' not NULL - returning cached workfolder '%s'", WORKFLOW_PROPERTY_FIELD_WORKFOLDER, wf);
         free(id);
         return wf;
     }
@@ -1489,6 +1492,8 @@ char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
     {
         pwf = workflow_get_workfolder(p);
         sprintf(dir, "%s/%s", pwf, id);
+
+        Log_Debug("Using parent workfolder: '%s/%s'", pwf, id);
     }
     else
     {
@@ -2390,6 +2395,10 @@ bool workflow_transfer_data(ADUC_WorkflowHandle targetHandle, ADUC_WorkflowHandl
         return false;
     }
 
+    // Update the cached workfolder to use the source workflow id.
+    // Needs to be done before transferring parsed JSON obj below.
+    workflow_set_workfolder(targetHandle, "%s/%s", ADUC_DOWNLOADS_FOLDER, workflow_peek_id(sourceHandle));
+
     // Transfer over the parsed JSON objects
     wfTarget->UpdateActionObject = wfSource->UpdateActionObject;
     wfSource->UpdateActionObject = NULL;
@@ -3062,9 +3071,9 @@ void workflow_update_for_replacement(ADUC_WorkflowHandle handle)
 {
     ADUC_Workflow* wf = workflow_from_handle(handle);
 
-    ADUC_Workflow* deferred = wf->DeferredReplacementWorkflow;
+    ADUC_Workflow* deferredWorkflow = wf->DeferredReplacementWorkflow;
     wf->DeferredReplacementWorkflow = NULL;
-    workflow_transfer_data(handle /* wfTarget */, deferred /* wfSource */);
+    workflow_transfer_data(handle /* wfTarget */, deferredWorkflow /* wfSource */);
 
     reset_state_for_processing_deployment(wf);
 }
