@@ -167,4 +167,4 @@ endif ()
 
 target_link_libraries (${target_name} PRIVATE aduc::platform_layer)
 
-install (TARGETS ${target_name} RUNTIME DESTINATION "${ADUC_AGENT_FOLDER}")
+install (TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

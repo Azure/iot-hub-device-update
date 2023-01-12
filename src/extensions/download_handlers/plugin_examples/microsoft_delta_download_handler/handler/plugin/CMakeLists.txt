@@ -17,4 +17,4 @@ target_link_libraries (
             aduc::microsoft-delta-download-handler
             aduc::logging)
 
-install (TARGETS ${target_name} LIBRARY RUNTIME DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
