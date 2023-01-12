@@ -1555,6 +1555,12 @@ int main(int argc, char** argv)
     //
     signal(SIGUSR1, OnRestartSignal);
 
+    if (IoTHub_Init() != 0)
+    {
+        Log_Error("Unable to initialize IoTHub");
+        goto done;
+    }
+
     if (!StartupAgent(&launchArgs))
     {
         goto done;
