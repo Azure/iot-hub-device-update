@@ -85,7 +85,7 @@ else {
                 '-c', 'g' `
         )
 
-        $arguments = "--success", "--break"
+        $arguments = @("--success", "--break")
     }
     else {
         $InitialCommands = @( `
@@ -93,9 +93,14 @@ else {
                 '-c', 'g' `
         )
 
-        $arguments = @(`
-                # Log level is DEBUG (very verbose) -- useful for debugging.
-                '--log-level', '0'
+        # TODO: Allow passing add'l args via commandline, e.g.
+        # '--register-extension', '/var/lib/adu/extensions/sources/curl_content_downloader.dll', '--extension-type', 'contentDownloader'
+        # '--register-extension', '/var/lib/adu/extensions/sources/microsoft_steps_1.dll', '--extension-type', 'updateContentHandler', '--extension-id', 'microsoft/steps:1'
+        # "--health-check"
+
+        $arguments = @( `
+            # Log level is DEBUG (very verbose) -- useful for debugging.
+            '--log-level', '0'
         )
     }
 

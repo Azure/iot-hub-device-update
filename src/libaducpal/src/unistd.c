@@ -15,8 +15,8 @@ int ADUCPAL_access(const char* pathname, int mode)
 
 int ADUCPAL_chown(const char* path, uid_t owner, gid_t group)
 {
-    __debugbreak();
-    return -1;
+    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return success.
+    return 0;
 }
 
 int ADUCPAL_close(int fildes)
@@ -54,7 +54,6 @@ int ADUCPAL_isatty(int fd)
 
 int ADUCPAL_open(const char* path, int oflag)
 {
-    // return _open(path, oflag);
     int fd;
     int ret = _sopen_s(&fd, path, oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
     if (ret != 0)
@@ -77,18 +76,19 @@ int ADUCPAL_rmdir(const char* path)
 
 int ADUCPAL_seteuid(uid_t uid)
 {
-    __debugbreak();
+    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return success.
     return 0;
 }
 
 int ADUCPAL_setegid(gid_t gid)
 {
-    __debugbreak();
+    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return success.
     return 0;
 }
 
 int ADUCPAL_setuid(uid_t uid)
 {
+    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return success.
     return 0;
 }
 

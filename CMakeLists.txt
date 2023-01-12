@@ -287,7 +287,7 @@ set (
 
 set (
     ADUC_AGENT_FILENAME
-    "AducIotAgent"
+    "AducIotAgent${CMAKE_EXECUTABLE_SUFFIX}"
     CACHE STRING "The filename of the ADU Agent binary.")
 
 cmake_path (
@@ -318,7 +318,7 @@ set (
 
 set (
     ADUSHELL_FILENAME
-    "adu-shell"
+    "adu-shell${CMAKE_EXECUTABLE_SUFFIX}"
     CACHE STRING "Filename of adu-shell.")
 
 cmake_path (
@@ -532,7 +532,10 @@ if (ADUC_BUILD_UNIT_TESTS)
 endif ()
 
 if (ADUC_INSTALL_DAEMON)
-    add_subdirectory (daemon)
+    # TODO(JeffMill): [PAL] No daemon on Windows.  Make a Windows service?
+    if (NOT WIN32)
+        add_subdirectory (daemon)
+    endif ()
 endif ()
 
 add_subdirectory (src)

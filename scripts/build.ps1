@@ -161,26 +161,169 @@ Usage: build.ps1 [options...]
 '@
 }
 
-# TODO(JeffMill): Unreferenced
-function Invoke-CopyFileExitIfFailed {
+# Copy-Item that stop script on error.
+# TODO(JeffMill): Only copy files that are newer (Get-ChildItem).LastWriteTime
+function Invoke-CopyFile {
     Param(
         [Parameter(mandatory = $true)][string]$Path,
         [Parameter(mandatory = $true)][string]$Destination)
 
-    Show-Header "Copying $Path to $Destination"
-    if (-not (Copy-Item -LiteralPath $Path -Destination $Destination -ErrorAction SilentlyContinue)) {
-        Show-Error "Failed to copy $Path to $Destination (exit code: $($Error[0].CategoryInfo))"
+    "$Path => $Destination"
+    if (-not (Copy-Item -Force -LiteralPath $Path -Destination $Destination -ErrorAction SilentlyContinue)) {
+        Write-Warning "Failed to copy $Path to $Destination (exit code: $($Error[0].CategoryInfo))"
         exit 1
     }
 }
 
-# TODO(JeffMill): Unreferenced
-# function Install-Adu-Components {
-# }
+function Create-Adu-Folders {
+    # TODO(JeffMill): [PAL] Temporary until paths are determined.
 
-# TODO(JeffMill): Unreferenced
-# function Determine-Distro {
-# }
+    mkdir -Force /etc/adu | Out-Null
+    mkdir -Force /tmp/adu/testdata | Out-Null
+    mkdir -Force /usr/bin | Out-Null
+    mkdir -Force /usr/lib/adu | Out-Null
+    mkdir -Force /usr/local/lib/adu | Out-Null
+    mkdir -Force /usr/local/lib/systemd/system | Out-Null
+    mkdir -Force /var/lib/adu | Out-Null
+    mkdir -Force /var/lib/adu/diagnosticsoperationids | Out-Null
+    mkdir -Force /var/lib/adu/downloads | Out-Null
+    mkdir -Force /var/lib/adu/extensions/content_downloader | Out-Null
+    mkdir -Force /var/lib/adu/extensions/sources | Out-Null
+    mkdir -Force /var/lib/adu/sdc | Out-Null
+}
+
+function Register-Components {
+    # TODO(JeffMill): [PAL] Do correct component registration when ready.
+
+    Show-Header 'Registering components'
+
+    # Launch agent to write config files
+    # see postinst : register_reference_extensions
+
+    $adu_bin_path = '/usr/bin/AducIotAgent.exe'
+
+    $adu_data_dir = '/var/lib/adu'
+    $adu_extensions_dir = "$adu_data_dir/extensions"
+    $adu_extensions_sources_dir = "$adu_extensions_dir/sources"
+
+    $adu_steps_handler_file = 'microsoft_steps_1.dll'
+    $curl_downloader_file = 'curl_content_downloader.dll'
+    $adu_simulator_handler_file='microsoft_simulator_1.dll'
+
+    # Will create /var/lib/adu/extensions/content_downloader/extension.json
+    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$curl_downloader_file" --extension-type contentDownloader --log-level 2
+
+    # Will create /var/lib/adu/extensions/update_content_handlers/microsoft_apt_1/content_handler.json
+    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$adu_simulator_handler_file" --extension-type updateContentHandler --extension-id 'microsoft/apt:1'
+
+    # Will create e.g./var/lib/adu/extensions/update_content_handlers/microsoft_steps_1/content_handler.json
+    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$adu_steps_handler_file" --extension-type updateContentHandler --extension-id "microsoft/steps:1" --log-level 2
+    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$adu_steps_handler_file" --extension-type updateContentHandler --extension-id "microsoft/update-manifest" --log-level 2
+    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$adu_steps_handler_file" --extension-type updateContentHandler --extension-id "microsoft/update-manifest:4" --log-level 2
+    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$adu_steps_handler_file" --extension-type updateContentHandler --extension-id "microsoft/update-manifest:5" --log-level 2
+}
+function Install-Adu-Components {
+    # TODO(JeffMill): [PAL] Temporary until paths are determined.
+
+    Show-Header 'Installing ADU Agent'
+
+    Create-Adu-Folders
+
+    # cmake --install should place binaries, but that's not working correctly.
+    # TODO(JWelden): Task 42936258: --install-prefix not working properly
+
+    # & $cmake_bin --install $output_directory --config $build_type --verbose
+    # $ret_val = $LASTEXITCODE
+    # if ($ret_val -ne 0) {
+    #     Write-Error "ERROR: CMake failed (Error $ret_val)"
+    #     exit $ret_val
+    # }
+
+    # Workaround: Manually copy files
+
+    $bin_path = "$runtime_dir/$build_type"
+    # Copy-Item -Verbose -Force  deliveryoptimization_content_downloader
+    # Copy-Item -Verbose -Force  microsoft_apt_1
+    # Copy-Item -Verbose -Force  microsoft_delta_download_handler
+    # Copy-Item -Verbose -Force  microsoft_script_1
+    # Copy-Item -Verbose -Force  microsoft_swupdate_1
+    # Copy-Item -Verbose -Force  microsoft_swupdate_2
+    Copy-Item -Verbose -Force  "$bin_path/adu-shell.exe" /usr/lib/adu
+    Copy-Item -Verbose -Force  "$bin_path/AducIotAgent.exe" /usr/bin
+    Copy-Item -Verbose -Force  "$bin_path/contoso_component_enumerator.dll" /var/lib/adu/extensions/sources
+    Copy-Item -Verbose -Force  "$bin_path/curl_content_downloader.dll" /var/lib/adu/extensions/sources
+    Copy-Item -Verbose -Force  "$bin_path/microsoft_simulator_1.dll" /var/lib/adu/extensions/sources
+    Copy-Item -Verbose -Force  "$bin_path/microsoft_steps_1.dll" /var/lib/adu/extensions/sources
+
+    # IMPORTANT: Windows builds require these DLLS as well!
+    Copy-Item -Verbose -Force "$bin_path/libcrypto-1_1-x64.dll" /usr/lib/adu
+    Copy-Item -Verbose -Force "$bin_path/pthreadVC3d.dll" /usr/lib/adu
+
+    Copy-Item -Verbose -Force "$bin_path/libcrypto-1_1-x64.dll" /usr/bin
+    Copy-Item -Verbose -Force "$bin_path/pthreadVC3d.dll" /usr/bin
+
+    ''
+
+    # Write a template du-diagnostics-config.json file
+    @'
+{
+    "logComponents": [
+        {
+            "componentName": "DU",
+            "logPath": "/var/log/adu/"
+        }
+    ],
+    "maxKilobytesToUploadPerLogPath": 5
+}
+'@ | Out-File -Encoding ASCII '/etc/adu/du-diagnostics-config.json'
+
+    # Healthcheck expects this file to be read-only.
+    Set-ItemProperty -LiteralPath '/usr/lib/adu/adu-shell.exe' -Name IsReadOnly -Value $true
+
+    if (-not (Test-Path -LiteralPath '/etc/adu/du-config.json' -PathType Leaf)) {
+        # Write a template du-config.json file.
+        @'
+{
+    "schemaVersion": "1.1",
+    "aduShellTrustedUsers": [
+        "adu",
+        "do"
+    ],
+    "iotHubProtocol": "mqtt",
+    "compatPropertyNames": "manufacturer,model,location,language",
+    "$manufacturer": "This value is used to classify the IoT device for targeting updates.",
+    "manufacturer": "Contoso",
+    "$model": "This value is used to classify the IoT device for targeting updates.",
+    "model": "Video",
+    "agents": [
+        {
+            "name": "aduagent",
+            "runas": "adu",
+            "connectionSource": {
+                "connectionType": "string",
+                "$connectionData": "Provide the connection string that you copied from the module identity.",
+                "connectionData": "[NOT_SPECIFIED_IN_FILE]"
+            },
+            "manufacturer": "Contoso",
+            "model": "Video",
+            "additionalDeviceProperties": {
+                "location": "USA",
+                "environment": "development"
+            }
+        }
+    ]
+}
+'@ | Out-File -Encoding ASCII '/etc/adu/du-config.json'
+        Write-Warning 'Need to edit /etc/adu/du-config.json'
+    }
+
+    if (-not (Test-Path '/tmp/adu/testdata' -PathType Container)) {
+        ''
+        Write-Warning 'Do clean build to copy test data to /tmp/adu/testdata'
+    }
+
+    Register-Components
+}
 
 # For compatibility with SH script, emulate longopts
 $arg = 0
@@ -274,14 +417,9 @@ while ($arg -lt $args.Count) {
             $install_prefix = $args[$arg]
         }
 
-        # '--install' {
-        #     $is_admin = (New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-        #     if (-not $is_admin) {
-        #         Show-Error 'Admin required to install ADU components.'
-        #         exit 1
-        #     }
-        #     $install_adu = $true
-        # }
+        '--install' {
+            $install_adu = $true
+        }
 
         # '--cmake-path' {
         #     $arg++
@@ -549,9 +687,9 @@ if ($ret_val -ne 0) {
 #     $ret_val=$LASTEXITCODE
 # }
 
-# if ($ret_val -eq 0 -and $install_adu) {
-#     install_adu_components
-# }
+if ($ret_val -eq 0 -and $install_adu) {
+    Install-Adu-Components
+}
 
 exit $ret_val
 

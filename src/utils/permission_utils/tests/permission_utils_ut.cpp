@@ -15,16 +15,14 @@
 #include <aducpal/sys_types.h> // S_I*
 #include <aducpal/unistd.h> // unlink
 
-//bool PermissionUtils_VerifyFilemodeBits(const char* path, mode_t expectedPermissions, bool isExactMatch);
 TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
 {
-    // clang-format off
-    const mode_t file_permissions = // 04752
-        S_ISUID | // 04000
-        S_IRUSR | S_IWUSR | S_IXUSR | // 0700
-        S_IRGRP | S_IXGRP | // 050
-        S_IWOTH; // 02
-    // clang-format on
+    mode_t file_permissions = S_ISUID | S_IRUSR | S_IWUSR | S_IRGRP | S_IWOTH;
+
+    // Windows only has X on folders and .EXE
+#if !defined(WIN32)
+    file_permissions |= (S_IXUSR | S_IXGRP);
+#endif
 
     // create temp file with all file permission bits set
     char tmpfile_path[32] = {};
@@ -42,7 +40,14 @@ TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
 #endif
 
     CHECK(PermissionUtils_VerifyFilemodeBitmask(tmpfile_path, file_permissions));
-    CHECK(PermissionUtils_VerifyFilemodeBitmask(tmpfile_path, S_IXUSR | S_IRGRP | S_IWOTH /* 00142 */));
+
+    // Check some of the bits
+    file_permissions = S_IRGRP | S_IWOTH;
+#if !defined(WIN32)
+    file_permissions |= S_IXUSR;
+#endif
+    CHECK(PermissionUtils_VerifyFilemodeBitmask(tmpfile_path, file_permissions));
+
     CHECK_FALSE(PermissionUtils_VerifyFilemodeBitmask(
         tmpfile_path, S_ISUID | S_ISVTX | S_IRWXU | S_IRGRP | S_IXGRP | S_IWOTH /* 05752 */));
 

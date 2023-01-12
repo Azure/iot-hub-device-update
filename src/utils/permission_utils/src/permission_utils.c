@@ -53,12 +53,6 @@ static bool PermissionUtils_VerifyFilemodeBits(const char* path, mode_t expected
     // Windows only supports "owner" bits. Remove group and other bits.
     expectedPermissions &= ~S_IRWXG;
     expectedPermissions &= ~S_IRWXO;
-
-    // Windows only sets execute/search permission on a folder.
-    if (!(st.st_mode & S_IFDIR))
-    {
-        expectedPermissions &= ~S_IEXEC;
-    }
 #endif
 
     return isExactMatch ? (permissionBits == expectedPermissions)
