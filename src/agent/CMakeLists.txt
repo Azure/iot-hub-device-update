@@ -8,7 +8,11 @@ add_subdirectory (adu_core_export_helpers)
 add_subdirectory (adu_core_interface)
 add_subdirectory (device_info_interface)
 add_subdirectory (pnp_helper)
-add_subdirectory (command_helper)
+
+# TODO(JeffMill): [PAL] I don't think Windows needs command_helper.  Check with Jeff or Nox.
+if (NOT WIN32)
+    add_subdirectory (command_helper)
+endif ()
 
 include (agentRules)
 
@@ -82,7 +86,6 @@ target_link_libraries (
             aduc::agent_orchestration
             aduc::agent_workflow
             aduc::c_utils
-            aduc::command_helper
             aduc::communication_abstraction
             aduc::config_utils
             aduc::d2c_messaging
@@ -97,6 +100,11 @@ target_link_libraries (
             aduc::system_utils
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
+
+# TODO(JeffMill): [PAL] I don't think Windows needs command_helper.  Check with Jeff or Nox.
+if (NOT WIN32)
+    target_link_libraries (${target_name} PRIVATE aduc::command_helper)
+endif ()
 
 target_link_libraries (${target_name} PRIVATE libaducpal)
 

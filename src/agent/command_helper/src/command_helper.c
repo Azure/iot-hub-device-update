@@ -12,26 +12,14 @@
 
 #include <errno.h>
 #include <fcntl.h>
-
-#include <aducpal/grp.h> // getgrnam
-#include <aducpal/sys_stat.h> // mkfifo
-#include <aducpal/unistd.h> // getegid, open, read, write, close, sleep
-
+#include <grp.h> // getgrnm
 #include <pthread.h> // pthread_*
-
 #include <stdbool.h> // bool
 #include <stdio.h> // getline
 #include <stdlib.h> // free
 #include <string.h> // strlen
-
-#include <sys/stat.h> // stat
-
-#include <aducpal/sys_stat.h> // S_I*
-
-#ifdef ADUCPAL_USE_PAL
-// TODO(JeffMill): [PAL] errno, not defined
-#    define EDQUOT 122 /* Quota exceeded */
-#endif
+#include <sys/stat.h> // mkfifo
+#include <unistd.h> // sleep
 
 // For version 1.0, we're supporting only 1 command.
 #define MAX_COMMAND_ARRAY_SIZE 1
@@ -46,7 +34,7 @@ static bool g_terminate_thread_request = false;
 
 bool ADUC_OnReprocessUpdate(const char* command, void* context);
 
-static ADUC_Command* g_commands[MAX_COMMAND_ARRAY_SIZE] = { NULL };
+static ADUC_Command* g_commands[MAX_COMMAND_ARRAY_SIZE] = {};
 
 /**
  * @brief Register command.
@@ -116,7 +104,7 @@ static bool TryCreateFIFOPipe()
     {
         // Create FIFO pipe for commands.
         // Only write to pipe
-        if (ADUCPAL_mkfifo(ADUC_COMMANDS_FIFO_NAME, S_IRGRP | S_IWGRP | S_IRUSR | S_IWUSR) != 0)
+        if (mkfifo(ADUC_COMMANDS_FIFO_NAME, S_IRGRP | S_IWGRP | S_IRUSR | S_IWUSR) != 0)
         {
             int error_no = errno;
             switch (error_no)
@@ -180,7 +168,7 @@ static bool SecurityChecks()
     }
 
     // Verify current user
-    struct group* grp = ADUCPAL_getgrnam("adu");
+    struct group* grp = getgrnam("adu");
     if (grp == NULL)
     {
         // Failed to get 'adu' group information, bail.
@@ -188,7 +176,7 @@ static bool SecurityChecks()
         return false;
     }
 
-    gid_t gid = ADUCPAL_getegid();
+    gid_t gid = getegid();
     if (gid != 0 /* root */
         && gid != grp->gr_gid /* adu */)
     {
@@ -223,11 +211,11 @@ static void* ADUC_CommandListenerThread(void* unused)
         // Open file for read, if needed.
         if (fileDescriptor <= 0)
         {
-            fileDescriptor = ADUCPAL_open(ADUC_COMMANDS_FIFO_NAME, O_RDONLY);
+            fileDescriptor = open(ADUC_COMMANDS_FIFO_NAME, O_RDONLY);
             if (fileDescriptor <= 0)
             {
                 Log_Error("Cannot open '%s' for read.", ADUC_COMMANDS_FIFO_NAME);
-                ADUCPAL_sleep(DELAY_BETWEEN_FAILED_OPERATION_SECONDS);
+                sleep(DELAY_BETWEEN_FAILED_OPERATION_SECONDS);
                 continue;
             }
         }
@@ -235,15 +223,15 @@ static void* ADUC_CommandListenerThread(void* unused)
         Log_Info("Wait for command...");
         // By default, read() is blocked, until at least one writer open a file descriptor.
         // For simplicity, we are leveraging this behavior instead of loop+sleep or 'select()' or 'poll()'.
-        ssize_t readSize = ADUCPAL_read(fileDescriptor, commandLine, sizeof(commandLine));
+        ssize_t readSize = read(fileDescriptor, commandLine, sizeof(commandLine));
         if (readSize < 0)
         {
             // An error occurred.
             Log_Warn("Read error (error:%d).", errno);
             // Close current file descriptor and retry in next 'DELAY_BETWEEN_FAILED_OPERATION_SECONDS' seconds.
-            ADUCPAL_close(fileDescriptor);
+            close(fileDescriptor);
             fileDescriptor = -1;
-            ADUCPAL_sleep(DELAY_BETWEEN_FAILED_OPERATION_SECONDS);
+            sleep(DELAY_BETWEEN_FAILED_OPERATION_SECONDS);
             continue;
         }
 
@@ -252,7 +240,7 @@ static void* ADUC_CommandListenerThread(void* unused)
             // EOF, in this case, no more data written to the pipe.
             // Close and reopen the reader (above), to reset the block state.
             // Note: regardless of fclose() result, fileDescriptor is no longer valid.
-            ADUCPAL_close(fileDescriptor);
+            close(fileDescriptor);
             fileDescriptor = -1;
             continue;
         }
@@ -303,7 +291,7 @@ static void* ADUC_CommandListenerThread(void* unused)
     } while (!g_terminate_thread_request);
 
 done:
-    ADUCPAL_close(fileDescriptor);
+    close(fileDescriptor);
     if (!threadCreated)
     {
         Log_Error("Cannot start the command listener thread.");
@@ -341,7 +329,7 @@ bool SendCommand(const char* command)
         goto done;
     }
 
-    fd = ADUCPAL_open(ADUC_COMMANDS_FIFO_NAME, O_WRONLY);
+    fd = open(ADUC_COMMANDS_FIFO_NAME, O_WRONLY);
     if (fd < 0)
     {
         Log_Error("Fail to open pipe.");
@@ -350,7 +338,7 @@ bool SendCommand(const char* command)
 
     // Copy command to buffer and fill the remaining buffer (if any) with additional null bytes.
     strncpy(buffer, command, sizeof(buffer));
-    ssize_t size = ADUCPAL_write(fd, buffer, sizeof(buffer));
+    ssize_t size = write(fd, buffer, sizeof(buffer));
     if (size != sizeof(buffer))
     {
         Log_Error("Fail to send command.");
@@ -362,7 +350,7 @@ bool SendCommand(const char* command)
 done:
     if (fd >= 0)
     {
-        ADUCPAL_close(fd);
+        close(fd);
     }
     return success;
 }

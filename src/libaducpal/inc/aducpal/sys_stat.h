@@ -66,7 +66,6 @@ extern "C"
     int ADUCPAL_chmod(const char* path, mode_t mode);
     int ADUCPAL_fchmod(int fd, mode_t mode);
     int ADUCPAL_mkdir(const char* path, mode_t mode);
-    int ADUCPAL_mkfifo(const char* pathname, mode_t mode);
 
 #    ifdef __cplusplus
 }
@@ -79,7 +78,6 @@ extern "C"
 #    define ADUCPAL_chmod(path, mode) chmod(path, mode)
 #    define ADUCPAL_fchmod(fd, mode) fchmod(fd, mode)
 #    define ADUCPAL_mkdir(path, mode) mkdir(path, mode)
-#    define ADUCPAL_mkfifo(pathname, mode) mkfifo(pathname, mode)
 
 #endif // #ifdef ADUCPAL_USE_PAL
 
