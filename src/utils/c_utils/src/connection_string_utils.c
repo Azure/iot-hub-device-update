@@ -48,7 +48,7 @@ bool ConnectionStringUtils_DoesKeyExist(const char* connectionString, const char
 {
     bool keyExists = false;
 
-    if (connectionString == NULL || key == NULL)
+    if ( IsNullOrEmpty(connectionString)|| IsNullOrEmpty(key))
     {
         return false;
     }
