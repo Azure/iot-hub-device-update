@@ -26,8 +26,8 @@ target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aduc::c_utils
-    PRIVATE Parson::parson aduc::logging aduc::parson_json_utils)
+    PUBLIC aduc::c_utils Parson::parson
+    PRIVATE aduc::logging aduc::parson_json_utils)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

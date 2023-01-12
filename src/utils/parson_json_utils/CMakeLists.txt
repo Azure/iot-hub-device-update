@@ -8,11 +8,10 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc)
 
 find_package (Parson REQUIRED)
 
-target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
-
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aduc::c_utils
-    PRIVATE aduc::logging Parson::parson)
+    PUBLIC aduc::c_utils Parson::parson
+    PRIVATE aduc::logging)
 
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 target_link_umock_c (${PROJECT_NAME} PRIVATE)

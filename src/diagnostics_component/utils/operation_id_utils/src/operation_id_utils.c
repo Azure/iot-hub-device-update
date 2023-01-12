@@ -44,7 +44,7 @@ bool OperationIdUtils_OperationIsComplete(const char* serviceMsg)
             DIAGNOSTICS_COMPLETED_OPERATION_FILE_PATH, completedOperationId, ARRAY_SIZE(completedOperationId))
         != 0)
     {
-        Log_Info("Failed to read operation-id from file");
+        Log_Info("Operation ID could not be read from the file because it does not exist");
         goto done;
     }
 

@@ -7,7 +7,6 @@
  */
 #include "aduc/system_utils.h"
 #include "aduc/logging.h"
-#include "aduc/string_c_utils.h"
 
 #include <aducpal/dirent.h>
 #include <aducpal/ftw.h> // nftw

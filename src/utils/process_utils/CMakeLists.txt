@@ -19,6 +19,7 @@ target_link_libraries (
             aduc::config_utils
             aduc::string_utils)
 
+target_link_aziotsharedutil (${PROJECT_NAME} PUBLIC)
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
 if ((NOT
@@ -27,7 +28,6 @@ if ((NOT
      "simulator"
     )
     AND ADUC_BUILD_UNIT_TESTS)
-
     add_subdirectory (tests)
     add_subdirectory (test_helper)
 endif ()
