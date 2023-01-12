@@ -33,9 +33,3 @@ int ADUCPAL_mkdir(const char* path, mode_t mode)
     }
     return ret;
 }
-
-int ADUCPAL_mkfifo(const char* pathname, mode_t mode)
-{
-    __debugbreak();
-    return -1;
-}

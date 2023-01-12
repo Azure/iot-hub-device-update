@@ -11,7 +11,10 @@
 #include "aduc/agent_workflow.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
-#include "aduc/command_helper.h"
+// TODO(JeffMill): [PAL] I don't think Windows needs command_helper.  Check with Jeff or Nox.
+#if !defined(WIN32)
+#    include "aduc/command_helper.h"
+#endif
 #include "aduc/config_utils.h"
 #include "aduc/connection_string_utils.h"
 #include "aduc/d2c_messaging.h"
@@ -300,7 +303,9 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             { "extension-type",                required_argument, 0, 't' },
             { "extension-id",                  required_argument, 0, 'i' },
             { "run-as-owner",                  no_argument,       0, 'a' },
+#ifdef ADUC_COMMAND_HELPER_H
             { "command",                       required_argument, 0, 'C' },
+#endif // #ifdef ADUC_COMMAND_HELPER_H
             { 0, 0, 0, 0 }
         };
         // clang-format on
@@ -355,9 +360,11 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             launchArgs->connectionString = optarg;
             break;
 
+#ifdef ADUC_COMMAND_HELPER_H
         case 'C':
             launchArgs->ipcCommand = optarg;
             break;
+#endif // #ifdef ADUC_COMMAND_HELPER_H
 
         case 'E':
             launchArgs->extensionFilePath = optarg;
@@ -1061,6 +1068,8 @@ done:
     return succeeded;
 }
 
+#ifdef ADUC_COMMAND_HELPER_H
+
 /**
  * @brief Invokes PnPHandleCommandCallback on every PnPComponentEntry.
  *
@@ -1082,6 +1091,8 @@ static bool RetryUpdateCommandHandler(const char* command, void* commandContext)
 
 // This command can be use by other process, to tell a DU agent to retry the current update, if exist.
 ADUC_Command redoUpdateCommand = { "retry-update", RetryUpdateCommandHandler };
+
+#endif // #ifdef ADUC_COMMAND_HELPER_H
 
 /**
  * @brief Gets the agent configuration information and loads it according to the provisioning scenario
@@ -1262,6 +1273,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         result = ExtensionManager_InitializeContentDownloader(NULL /*initializeData*/);
     }
 
+#ifdef ADUC_COMMAND_HELPER_H
     if (InitializeCommandListenerThread())
     {
         RegisterCommand(&redoUpdateCommand);
@@ -1273,6 +1285,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         // Note: even though we can't create command listener here, we need to ensure that
         // the agent stay alive and connected to the IoT hub.
     }
+#endif // #ifdef ADUC_COMMAND_HELPER_H
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -1297,7 +1310,9 @@ void ShutdownAgent()
 {
     Log_Info("Agent is shutting down with signal %d.", g_shutdownSignal);
     ADUC_D2C_Messaging_Uninit();
+#ifdef ADUC_COMMAND_HELPER_H
     UninitializeCommandListenerThread();
+#endif
     ADUC_PnP_Components_Destroy();
     ADUC_DeviceClient_Destroy(g_iotHubClientHandle);
     DiagnosticsComponent_DestroyDeviceName();
@@ -1472,6 +1487,7 @@ int main(int argc, char** argv)
         }
     }
 
+#ifdef ADUC_COMMAND_HELPER_H
     // This instance of an agent is launched for sending command to the main agent process.
     if (launchArgs.ipcCommand != NULL)
     {
@@ -1482,6 +1498,7 @@ int main(int argc, char** argv)
 
         goto done;
     }
+#endif // #ifdef ADUC_COMMAND_HELPER_H
 
     // Switch to specified agent.runas user.
     // Note: it's important that we do this only when we're not performing any
