@@ -48,6 +48,11 @@ bool ConnectionStringUtils_DoesKeyExist(const char* connectionString, const char
 {
     bool keyExists = false;
 
+    if (connectionString == NULL || key == NULL)
+    {
+        return false;
+    }
+
     MAP_HANDLE map = connectionstringparser_parse_from_char(connectionString);
     if (map == NULL)
     {
