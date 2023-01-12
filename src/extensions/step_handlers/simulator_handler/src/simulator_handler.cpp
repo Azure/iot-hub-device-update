@@ -27,7 +27,7 @@ EXTERN_C_BEGIN
  * @brief Instantiates an Simulator Update Content Handler
  * @return ContentHandler* The created instance.
  */
-ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
+EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
     ADUC_Logging_Init(logLevel, "simulator-handler");
     Log_Info("Instantiating a Simulator Update Content Handler");
@@ -54,7 +54,7 @@ ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
  * @param[out] contractInfo The extension contract info.
  * @return ADUC_Result The result.
  */
-ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
+EXPORTED_METHOD ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
 {
     contractInfo->majorVer = ADUC_V1_CONTRACT_MAJOR_VER;
     contractInfo->minorVer = ADUC_V1_CONTRACT_MINOR_VER;

@@ -34,7 +34,7 @@ EXTERN_C_BEGIN
  * @param[out] contractInfo The extension contract info.
  * @return ADUC_Result The result.
  */
-ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
+EXPORTED_METHOD ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
 {
     contractInfo->majorVer = ADUC_V1_CONTRACT_MAJOR_VER;
     contractInfo->majorVer = ADUC_V1_CONTRACT_MINOR_VER;
@@ -47,7 +47,7 @@ ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
  * @param initializeData The initialization data.
  * @return ADUC_Result The result.
  */
-ADUC_Result Initialize(const char* initializeData)
+EXPORTED_METHOD ADUC_Result Initialize(const char* initializeData)
 {
     ADUC_Result result{ ADUC_GeneralResult_Success };
 
@@ -87,7 +87,7 @@ done:
  * @param downloadProgressCallback The download progress callback function.
  * @return ADUC_Result The result.
  */
-ADUC_Result Download(
+EXPORTED_METHOD ADUC_Result Download(
     const ADUC_FileEntity* entity,
     const char* workflowId,
     const char* workFolder,

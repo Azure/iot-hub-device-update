@@ -11,7 +11,7 @@ extern "C"
 #    endif
 
     void* ADUCPAL_dlopen(const char* filename, int flag);
-    char* ADUCPAL_dlerror(void);
+    char* ADUCPAL_dlerror();
     void* ADUCPAL_dlsym(void* handle, const char* symbol);
     int ADUCPAL_dlclose(void* handle);
 

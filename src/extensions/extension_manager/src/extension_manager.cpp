@@ -165,7 +165,7 @@ ADUC_Result ExtensionManager::LoadExtensionLibrary(
 
         if (reqFunc == nullptr)
         {
-            Log_Error("The specified function ('%s') doesn't exist. %s\n", requiredFunction, ADUCPAL_dlerror());
+            Log_Error("The specified function ('%s') doesn't exist. %s", requiredFunction, ADUCPAL_dlerror());
             result.ExtendedResultCode =
                 ADUC_ERC_EXTENSION_FAILURE_REQUIRED_FUNCTION_NOTIMPL(facilityCode, componentCode);
             goto done;
@@ -272,7 +272,7 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
 
     if (createUpdateContentHandlerExtensionFn == nullptr)
     {
-        Log_Error("The specified function doesn't exist. %s\n", ADUCPAL_dlerror());
+        Log_Error("The specified function doesn't exist. %s", ADUCPAL_dlerror());
         result.ExtendedResultCode =
             ADUC_ERC_EXTENSION_FAILURE_REQUIRED_FUNCTION_NOTIMPL(ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER, 0);
         goto done;
@@ -452,7 +452,7 @@ ADUC_Result ExtensionManager::LoadContentDownloaderLibrary(void** contentDownloa
 
         if (downloadFunc == nullptr)
         {
-            Log_Error("The specified function ('%s') doesn't exist. %s\n", functionName, ADUCPAL_dlerror());
+            Log_Error("The specified function ('%s') doesn't exist. %s", functionName, ADUCPAL_dlerror());
             result = { /* .ResultCode = */ ADUC_GeneralResult_Failure,
                        /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_CREATE_FAILURE_NO_SYMBOL };
             goto done;
@@ -557,7 +557,7 @@ ADUC_Result ExtensionManager::LoadComponentEnumeratorLibrary(void** componentEnu
     if (mainFunc == nullptr)
     {
         // Log info instead of error since some extension is optional and may not be registered.
-        Log_Info("The specified function ('%s') doesn't exist. %s\n", requiredFunction, ADUCPAL_dlerror());
+        Log_Info("The specified function ('%s') doesn't exist. %s", requiredFunction, ADUCPAL_dlerror());
         result = { /* .ResultCode = */ ADUC_GeneralResult_Failure,
                    /* .ExtendedResultCode = */ ADUC_ERC_UPDATE_CONTENT_HANDLER_CREATE_FAILURE_NO_SYMBOL };
         goto done;

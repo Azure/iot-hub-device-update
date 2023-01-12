@@ -24,13 +24,13 @@ int ADUCPAL_close(int fildes)
     return _close(fildes);
 }
 
-gid_t ADUCPAL_getegid(void)
+gid_t ADUCPAL_getegid()
 {
     __debugbreak();
     return -1;
 }
 
-uid_t ADUCPAL_geteuid(void)
+uid_t ADUCPAL_geteuid()
 {
     __debugbreak();
     return -1;
