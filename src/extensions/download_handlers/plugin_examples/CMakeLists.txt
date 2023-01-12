@@ -1,7 +1,5 @@
 project (plugin_examples)
 
-if (WIN32)
-    message (STATUS "[Windows] Not building microsoft_delta_download_handler")
-else ()
+if (NOT WIN32)
     add_subdirectory (microsoft_delta_download_handler)
 endif ()
