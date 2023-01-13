@@ -236,8 +236,9 @@ function Register-Components {
     # Will create /var/lib/adu/extensions/content_downloader/extension.json
     & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$curl_downloader_file" --extension-type contentDownloader --log-level 2
 
-    # Will create /var/lib/adu/extensions/update_content_handlers/microsoft_apt_1/content_handler.json
-    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$adu_simulator_handler_file" --extension-type updateContentHandler --extension-id 'microsoft/apt:1'
+    # Will create /var/lib/adu/extensions/update_content_handlers/microsoft_swupdate_1/content_handler.json
+    # TODO(JeffMill): Temporary registration as microsoft/swupdate:1
+    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$adu_simulator_handler_file" --extension-type updateContentHandler --extension-id 'microsoft/swupdate:1'
 
     # Will create e.g./var/lib/adu/extensions/update_content_handlers/microsoft_steps_1/content_handler.json
     & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$adu_steps_handler_file" --extension-type updateContentHandler --extension-id "microsoft/steps:1" --log-level 2
