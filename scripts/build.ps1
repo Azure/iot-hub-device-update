@@ -161,19 +161,42 @@ Usage: build.ps1 [options...]
 '@
 }
 
-# Copy-Item that stop script on error.
-# TODO(JeffMill): Only copy files that are newer (Get-ChildItem).LastWriteTime
 function Invoke-CopyFile {
     Param(
-        [Parameter(mandatory = $true)][string]$Path,
+        [Parameter(mandatory = $true)][string]$Source,
         [Parameter(mandatory = $true)][string]$Destination)
 
-    "$Path => $Destination"
-    if (-not (Copy-Item -Force -LiteralPath $Path -Destination $Destination -ErrorAction SilentlyContinue)) {
-        Write-Warning "Failed to copy $Path to $Destination (exit code: $($Error[0].CategoryInfo))"
-        exit 1
+    if (-not (Test-Path -LiteralPath $Source -PathType Leaf)) {
+        throw 'Source is not a file or doesnt exist'
+    }
+
+    if (-not (Test-Path -LiteralPath $Destination -PathType Container)) {
+        throw 'Destination is not a folder'
+    }
+
+    $copyNeeded = $true
+
+    $destinationFile = Join-Path $Destination (Split-Path $Source -Leaf)
+    if (Test-Path $destinationFile -PathType Leaf) {
+        $d_lwt = (Get-ChildItem $destinationFile).LastWriteTime
+        $s_lwt = (Get-ChildItem $Source).LastWriteTime
+
+        if ($d_lwt -ge $s_lwt) {
+            # Destination is up to date or newer
+            $copyNeeded = $false
+        }
+    }
+
+    if ($copyNeeded) {
+        "$Source => $Destination"
+        # Force, in case destination is marked read-only
+        Copy-Item -Force -LiteralPath $Source -Destination $Destination
+    }
+    else {
+        "$destinationFile is same or newer"
     }
 }
+
 
 function Create-Adu-Folders {
     # TODO(JeffMill): [PAL] Temporary until paths are determined.
@@ -208,7 +231,7 @@ function Register-Components {
 
     $adu_steps_handler_file = 'microsoft_steps_1.dll'
     $curl_downloader_file = 'curl_content_downloader.dll'
-    $adu_simulator_handler_file='microsoft_simulator_1.dll'
+    $adu_simulator_handler_file = 'microsoft_simulator_1.dll'
 
     # Will create /var/lib/adu/extensions/content_downloader/extension.json
     & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$curl_downloader_file" --extension-type contentDownloader --log-level 2
@@ -242,29 +265,43 @@ function Install-Adu-Components {
     # Workaround: Manually copy files
 
     $bin_path = "$runtime_dir/$build_type"
-    # Copy-Item -Verbose -Force  deliveryoptimization_content_downloader
-    # Copy-Item -Verbose -Force  microsoft_apt_1
-    # Copy-Item -Verbose -Force  microsoft_delta_download_handler
-    # Copy-Item -Verbose -Force  microsoft_script_1
-    # Copy-Item -Verbose -Force  microsoft_swupdate_1
-    # Copy-Item -Verbose -Force  microsoft_swupdate_2
-    Copy-Item -Verbose -Force  "$bin_path/adu-shell.exe" /usr/lib/adu
-    Copy-Item -Verbose -Force  "$bin_path/AducIotAgent.exe" /usr/bin
-    Copy-Item -Verbose -Force  "$bin_path/contoso_component_enumerator.dll" /var/lib/adu/extensions/sources
-    Copy-Item -Verbose -Force  "$bin_path/curl_content_downloader.dll" /var/lib/adu/extensions/sources
-    Copy-Item -Verbose -Force  "$bin_path/microsoft_simulator_1.dll" /var/lib/adu/extensions/sources
-    Copy-Item -Verbose -Force  "$bin_path/microsoft_steps_1.dll" /var/lib/adu/extensions/sources
+    # Invoke-CopyFile   deliveryoptimization_content_downloader
+    # Invoke-CopyFile   microsoft_apt_1
+    # Invoke-CopyFile   microsoft_delta_download_handler
+    # Invoke-CopyFile   microsoft_script_1
+    # Invoke-CopyFile   microsoft_swupdate_1
+    # Invoke-CopyFile   microsoft_swupdate_2
+    Invoke-CopyFile   "$bin_path/adu-shell.exe" /usr/lib/adu
+    Invoke-CopyFile   "$bin_path/AducIotAgent.exe" /usr/bin
+    Invoke-CopyFile   "$bin_path/contoso_component_enumerator.dll" /var/lib/adu/extensions/sources
+    Invoke-CopyFile   "$bin_path/curl_content_downloader.dll" /var/lib/adu/extensions/sources
+    Invoke-CopyFile   "$bin_path/microsoft_simulator_1.dll" /var/lib/adu/extensions/sources
+    Invoke-CopyFile   "$bin_path/microsoft_steps_1.dll" /var/lib/adu/extensions/sources
 
     # IMPORTANT: Windows builds require these DLLS as well!
-    Copy-Item -Verbose -Force "$bin_path/libcrypto-1_1-x64.dll" /usr/lib/adu
-    Copy-Item -Verbose -Force "$bin_path/pthreadVC3d.dll" /usr/lib/adu
+    # TODO(JeffMill): Any way to build these statically?
 
-    Copy-Item -Verbose -Force "$bin_path/libcrypto-1_1-x64.dll" /usr/bin
-    Copy-Item -Verbose -Force "$bin_path/pthreadVC3d.dll" /usr/bin
+    Invoke-CopyFile  "$bin_path/libcrypto-1_1-x64.dll" /usr/lib/adu
+    Invoke-CopyFile  "$bin_path/libcrypto-1_1-x64.dll" /usr/bin
+
+    if ($build_type -eq 'Debug') {
+        $pthread_dll = 'pthreadVC3d.dll'
+    }
+    else {
+        $pthread_dll = 'pthreadVC3.dll'
+    }
+    Invoke-CopyFile  "$bin_path/$pthread_dll" /usr/lib/adu
+    Invoke-CopyFile  "$bin_path/$pthread_dll" /usr/bin
 
     ''
 
-    # Write a template du-diagnostics-config.json file
+    # Healthcheck expects this file to be read-only.
+    Set-ItemProperty -LiteralPath '/usr/lib/adu/adu-shell.exe' -Name IsReadOnly -Value $true
+
+    #
+    # /etc/adu/du-diagnostics-config.json
+    #
+
     @'
 {
     "logComponents": [
@@ -277,12 +314,12 @@ function Install-Adu-Components {
 }
 '@ | Out-File -Encoding ASCII '/etc/adu/du-diagnostics-config.json'
 
-    # Healthcheck expects this file to be read-only.
-    Set-ItemProperty -LiteralPath '/usr/lib/adu/adu-shell.exe' -Name IsReadOnly -Value $true
+    #
+    # /etc/adu/du-config.json
+    #
 
     if (-not (Test-Path -LiteralPath '/etc/adu/du-config.json' -PathType Leaf)) {
-        # Write a template du-config.json file.
-        @'
+@'
 {
     "schemaVersion": "1.1",
     "aduShellTrustedUsers": [
@@ -290,36 +327,35 @@ function Install-Adu-Components {
         "do"
     ],
     "iotHubProtocol": "mqtt",
-    "compatPropertyNames": "manufacturer,model,location,language",
-    "$manufacturer": "This value is used to classify the IoT device for targeting updates.",
-    "manufacturer": "Contoso",
-    "$model": "This value is used to classify the IoT device for targeting updates.",
-    "model": "Video",
+    "compatPropertyNames": "manufacturer,model",
+    "manufacturer": "manufacturer",
+    "model": "model",
     "agents": [
         {
             "name": "aduagent",
             "runas": "adu",
             "connectionSource": {
                 "connectionType": "string",
-                "$connectionData": "Provide the connection string that you copied from the module identity.",
-                "connectionData": "[NOT_SPECIFIED_IN_FILE]"
+                "connectionData": "[NOT_SPECIFIED]"
             },
-            "manufacturer": "Contoso",
-            "model": "Video",
-            "additionalDeviceProperties": {
-                "location": "USA",
-                "environment": "development"
-            }
+            "$description": "manufacturer, model will be matched against update manifest 'compability' attributes",
+            "manufacturer": "jeffmillmfr",
+            "model": "jeffmillmdl"
         }
     ]
 }
 '@ | Out-File -Encoding ASCII '/etc/adu/du-config.json'
-        Write-Warning 'Need to edit /etc/adu/du-config.json'
+    }
+
+    if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath '/etc/adu/du-config.json' -SimpleMatch) {
+        Show-Warning 'Need to edit connectionData,agents.manufacturer,agents.model in /etc/adu/du-config.json'
+        ''
+        notepad.exe '\etc\adu\du-config.json'
     }
 
     if (-not (Test-Path '/tmp/adu/testdata' -PathType Container)) {
         ''
-        Write-Warning 'Do clean build to copy test data to /tmp/adu/testdata'
+        Show-Warning 'Do clean build to copy test data to /tmp/adu/testdata'
     }
 
     Register-Components
