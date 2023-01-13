@@ -3,7 +3,7 @@
 
 #ifdef ADUCPAL_USE_PAL
 
-// This project onl y references sysname, release, machine
+// This project only references sysname, release, machine
 struct utsname
 {
     char* sysname; /* Operating system name (e.g., "Linux") */

@@ -13,11 +13,16 @@
 #ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
 
 #    ifdef ADUCPAL_USE_PAL
-// TODO(JeffMill): [PAL] deliveryoptimization_get_components_version
 static char* deliveryoptimization_get_components_version()
 {
-    __debugbreak();
-    return NULL;
+    // TODO(JeffMill): [PAL] Ongoing discussion on what this should return.
+    char* version;
+    // Note that this string must be allocated with malloc.
+    if (mallocAndStrcpy_s(&version, "42.42") != 0)
+    {
+        return NULL;
+    }
+    return version;
 }
 #    else
 #        include <do_config.h>
