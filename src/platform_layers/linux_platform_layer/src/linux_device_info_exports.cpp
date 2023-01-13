@@ -382,7 +382,7 @@ static char* DeviceInfo_GetTotalMemory()
     std::stringstream buffer;
 
     const unsigned int bytes_in_kilobyte = 1024;
-    buffer << (sys_info.totalram * sys_info.mem_unit) / bytes_in_kilobyte;
+    buffer << (static_cast<unsigned long long>(sys_info.totalram) * sys_info.mem_unit) / bytes_in_kilobyte;
 
     valueIsDirty = false;
     return strdup(buffer.str().c_str());
@@ -417,7 +417,7 @@ static char* DeviceInfo_GetTotalStorage()
     std::stringstream buffer;
 
     const unsigned int bytes_in_kilobyte = 1024;
-    buffer << (buf.f_blocks * buf.f_frsize) / bytes_in_kilobyte;
+    buffer << (static_cast<unsigned long long>(buf.f_blocks) * buf.f_frsize) / bytes_in_kilobyte;
 
     valueIsDirty = false;
     return strdup(buffer.str().c_str());
