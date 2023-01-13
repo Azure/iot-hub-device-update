@@ -88,11 +88,6 @@ function (target_link_iothub_client target scope)
         uhttp)
 endfunction (target_link_iothub_client)
 
-function (target_link_digital_twin_client target scope)
-    target_link_libraries (${target} ${scope})
-    target_link_iothub_client (${target} ${scope})
-endfunction (target_link_digital_twin_client)
-
 function (target_link_dosdk target scope)
     if (NOT WIN32)
         find_package (deliveryoptimization_sdk CONFIG REQUIRED)
