@@ -25,8 +25,6 @@ target_link_libraries (
             aduc::platform_layer
             Catch2::Catch2)
 
-target_link_iothub_client_mqtt_transport (${PROJECT_NAME} PRIVATE)
-
 # Ensure that ctest discovers catch2 tests.
 # Use catch_discover_tests() rather than add_test()
 # See https://github.com/catchorg/Catch2/blob/master/contrib/Catch.cmake

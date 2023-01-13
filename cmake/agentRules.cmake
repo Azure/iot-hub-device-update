@@ -26,6 +26,26 @@ macro (disableRTTI)
     endif ()
 endmacro (disableRTTI)
 
+function (
+    target_link_libraries_find
+    target
+    scope
+    item)
+    if (WIN32)
+        # TODO(JeffMill): [PAL] Why aren't these libraries being linked with full path?
+        find_library (LIBRARY ${item} REQUIRED)
+        cmake_path (
+            GET
+            LIBRARY
+            PARENT_PATH
+            LIBRARY_DIR)
+        message (STATUS "${target} ${item}: ${LIBRARY_DIR}")
+        target_link_directories (${target} ${scope} ${LIBRARY_DIR})
+    endif ()
+
+    target_link_libraries (${target} ${scope} ${item})
+endfunction ()
+
 function (target_link_aziotsharedutil target scope)
     find_package (azure_c_shared_utility REQUIRED CONFIG)
     target_link_libraries (${target} ${scope} aziotsharedutil)
@@ -54,23 +74,6 @@ function (target_link_umock_c target scope)
     # [END] UMOCK_C VCPKG WORKAROUND
 
     target_link_libraries (${target} ${scope} umock_c)
-endfunction ()
-
-function (target_link_iothub_client_mqtt_transport target scope)
-    if (WIN32)
-        # TODO(JeffMill): Avoid cannot open file 'iothub_client_mqtt_transport.lib'
-        find_library (IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY iothub_client_mqtt_transport REQUIRED)
-        cmake_path (
-            GET
-            IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY
-            PARENT_PATH
-            IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR)
-        message (
-            STATUS
-                "${target} IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR: ${IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR}"
-        )
-        target_link_directories (${target} ${scope} ${IOTHUB_CLIENT_MQTT_TRANSPORT_LIBRARY_DIR})
-    endif ()
 endfunction ()
 
 function (target_link_iothub_client target scope)
