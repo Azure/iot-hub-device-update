@@ -298,7 +298,7 @@ ADUC_Result ScriptHandlerImpl::PrepareScriptArguments(
 
     installedCriteria = workflow_get_installed_criteria(workflowHandle);
 
-    // Parse componenets list. If the list is empty, nothing to download.
+    // Parse components list. If the list is empty, nothing to download.
     selectedComponentsJson = workflow_peek_selected_components(workflowHandle);
 
     if (!IsNullOrEmpty(selectedComponentsJson))
@@ -346,7 +346,7 @@ ADUC_Result ScriptHandlerImpl::PrepareScriptArguments(
     if (IsNullOrEmpty(scriptFileName))
     {
         result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_MISSING_SCRIPTFILENAME_PROPERTY;
-        workflow_set_result_details(workflowHandle, "Missing 'handlerProperies.scriptFileName' property");
+        workflow_set_result_details(workflowHandle, "Missing 'handlerProperties.scriptFileName' property");
         goto done;
     }
 

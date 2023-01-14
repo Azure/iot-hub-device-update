@@ -52,9 +52,9 @@ log_error_pref="\033[1;31m[E]\033[0m"
 # Files and Folders information
 #
 workfolder=
-swu_file=
 output_file=/adu/logs/swpupdate.output
 log_file=/adu/logs/swupdate.log
+swupdate_log_file=/adu/logs/swupdate_log_file
 result_file=/adu/logs/swupdate.result.json
 
 #
@@ -222,9 +222,10 @@ print_help() {
     echo "==========================="
     echo ""
     echo "--workfolder              A work-folder (or sandbox folder)."
-    echo "--swu-file                A swu file to install."
+    echo "--swu-file, --image-file  An image file (.swu) file to install."
     echo "--output-file             An output file."
     echo "--log-file                A log file."
+    echo "--swupdate-log-file       A file contains output from swupdate tool."
     echo "--result-file             A file contain ADUC_Result data (in JSON format)."
     echo "--software-version-file   A file contain image version number."
     echo "--public-key-file         A public key file for signature validateion."
@@ -312,8 +313,8 @@ while [[ $1 != "" ]]; do
             error "--swu-file parameter is mandatory."
             $ret 1
         fi
-        swu_file="$1"
-        echo "swu file: $swu_file"
+        image_file="$1"
+        echo "swu file (image_file): $image_file"
         shift
         ;;
 
@@ -413,6 +414,16 @@ while [[ $1 != "" ]]; do
         shift
         ;;
 
+    --swupdate-log-file)
+        shift
+        if [[ -z $1 || $1 == -* ]]; then
+            error "--swupdate-log-file parameter is mandatory."
+            $ret 1
+        fi
+        swupdate_log_file="$1"
+        shift
+        ;;
+
     --log-level)
         shift
         if [[ -z $1 || $1 == -* ]]; then
@@ -446,7 +457,7 @@ done
 # Usage: is_installed $installedCriteria $imageVersionFile <out resultCode> <out extendedResultCode> <out resultDetails>
 #
 # shellcheck disable=SC2034
-function is_installed {
+function is_installed() {
     local -n rc=$3  # name reference for resultCode
     local -n erc=$4 # name reference for extendedResultCode
     local -n rd=$5  # name reference for resultDetails
@@ -547,7 +558,7 @@ InstallUpdate() {
     #
 
     # Check whether the component is already installed the specified update...
-    is_installed "$software_version_file" "$installed_criteria" resultCode extendedResultCode resultDetails
+    is_installed "$installed_criteria" "$software_version_file" resultCode extendedResultCode resultDetails
 
     is_installed_ret=$?
 
@@ -580,10 +591,10 @@ InstallUpdate() {
 
             if [[ ${public_key_file} -eq "" ]]; then
                 # Call swupdate with the image file and no signature validations
-                swupdate -v -i "${image_file}" -e ${selection} &>> "${log_file}"
+                swupdate -v -i "${image_file}" -e ${selection} &>> "${swupdate_log_file}"
             else
                 # Call swupdate with the image file and the public key for signature validation
-                swupdate -v -i "${image_file}" -k "${public_key_file}" -e ${selection} &>> "${log_file}"
+                swupdate -v -i "${image_file}" -k "${public_key_file}" -e ${selection} &>> "${swupdate_log_file}"
             fi
             ret_val=$?
 
