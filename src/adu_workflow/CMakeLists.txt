@@ -30,11 +30,7 @@ target_link_libraries (
             aduc::workflow_data_utils
             aduc::workflow_utils)
 
-target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")
 
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
-
-# TODO(JeffMill): Removed this. Unclear when needed (ARM builds?)
-# target_link_libraries(${PROJECT_NAME} PRIVATE -zdef)
-
-target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)

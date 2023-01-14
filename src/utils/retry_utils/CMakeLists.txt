@@ -1,8 +1,8 @@
 cmake_minimum_required (VERSION 3.5)
 
-project (d2c_messaging)
+project (retry_utils)
 
-add_library (${PROJECT_NAME} STATIC src/d2c_messaging.c)
+add_library (${PROJECT_NAME} STATIC src/retry_utils.c)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories (${PROJECT_NAME} PUBLIC ./inc ${ADUC_TYPES_INCLUDES}
@@ -13,15 +13,11 @@ target_include_directories (${PROJECT_NAME} PUBLIC ./inc ${ADUC_TYPES_INCLUDES}
 #
 set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+find_package (azure_c_shared_utility REQUIRED)
 
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::adu_types
-    PRIVATE aduc::communication_abstraction aduc::logging aduc::retry_utils)
+    PRIVATE aduc::communication_abstraction aduc::logging)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
-
-if (ADUC_BUILD_UNIT_TESTS)
-    add_subdirectory (tests)
-endif ()
+target_link_libraries (${PROJECT_NAME} PUBLIC libaducpal)
