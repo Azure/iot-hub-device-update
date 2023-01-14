@@ -24,7 +24,8 @@ endif ()
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::c_utils
-    PRIVATE Parson::parson
+           Parson::parson
+    PRIVATE
             aziotsharedutil
             aduc::logging
             aduc::parson_json_utils)

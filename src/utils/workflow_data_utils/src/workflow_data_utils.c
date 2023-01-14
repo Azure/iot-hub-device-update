@@ -65,7 +65,7 @@ void ADUC_WorkflowData_SetLastReportedState(ADUCITF_State newState, ADUC_Workflo
  * @param[out] workflowData The workflow data from which the workflow id will be read(from its WorkflowHandle opaque object) and to which the workflow id will be written.
  * @return true if succeeded in setting the last completed workflow id.
  */
-_Bool ADUC_WorkflowData_SetLastCompletedWorkflowId(const char* completedWorkflowId, ADUC_WorkflowData* workflowData)
+bool ADUC_WorkflowData_SetLastCompletedWorkflowId(const char* completedWorkflowId, ADUC_WorkflowData* workflowData)
 {
     char* copy = workflow_copy_string(completedWorkflowId);
     if (copy == NULL)

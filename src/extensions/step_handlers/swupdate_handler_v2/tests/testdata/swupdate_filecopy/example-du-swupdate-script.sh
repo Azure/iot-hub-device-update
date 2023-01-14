@@ -419,12 +419,12 @@ done
 # Usage: is_installed $installedCriteria $softwareVersionFile <out resultCode> <out extendedResultCode> <out resultDetails>
 #
 # shellcheck disable=SC2034
-function is_installed {
+function is_installed() {
     local -n rc=$3  # name reference for resultCode
     local -n erc=$4 # name reference for extendedResultCode
     local -n rd=$5  # name reference for resultDetails
 
-    if ! [[ -f $2 ]]; then
+    if ! [[ -f $software_version_file ]]; then
         rc=901
         make_swupdate_handler_erc 100 erc
         rd="Software version file doesn't exists."

@@ -7,13 +7,13 @@
  */
 #include "aduc/system_utils.h"
 #include "aduc/logging.h"
-#include "aduc/string_c_utils.h"
 
 // for nftw
 #define __USE_XOPEN_EXTENDED 1
 
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/strings.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h> // for O_CLOEXEC
 #include <ftw.h> // for nftw
@@ -31,7 +31,7 @@
 
 #ifndef O_CLOEXEC
 /**
- * @brief Enable the close-on-exec flag for the new file descriptor. pecifying this flag permits a program to avoid additional
+ * @brief Enable the close-on-exec flag for the new file descriptor. Specifying this flag permits a program to avoid additional
  * fcntl(2) F_SETFD operations to set the FD_CLOEXEC flag.
  * @details Included here because not all linux kernels include O_CLOEXEC by default in fcntl.h
  */
@@ -380,19 +380,19 @@ int ADUC_SystemUtils_RmDirRecursive(const char* path)
  * @param[in] dirPath directoryPath to have @p filePath's file name appended to it
  * @returns true on success; false otherwise
  */
-_Bool ADUC_SystemUtils_FormatFilePathHelper(STRING_HANDLE* newFilePath, const char* filePath, const char* dirPath)
+bool ADUC_SystemUtils_FormatFilePathHelper(STRING_HANDLE* newFilePath, const char* filePath, const char* dirPath)
 {
     if (newFilePath == NULL || filePath == NULL || dirPath == NULL)
     {
         return false;
     }
 
-    _Bool succeeded = false;
+    bool succeeded = false;
     size_t dirPathSize = strlen(dirPath);
 
     STRING_HANDLE tempHandle = STRING_new();
 
-    _Bool needForwardSlash = false;
+    bool needForwardSlash = false;
     if (dirPath[dirPathSize - 2] != '/')
     {
         needForwardSlash = true;
@@ -456,7 +456,7 @@ done:
  * @param overwriteExistingFile if set to true will overwrite the existing file in @p dirPath named with the filename in @p fileName if it exists
  * @returns the result of the operation
  */
-int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, const _Bool overwriteExistingFile)
+int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, const bool overwriteExistingFile)
 {
     int result = -1;
     STRING_HANDLE destFilePath = NULL;
@@ -559,11 +559,11 @@ int ADUC_SystemUtils_RemoveFile(const char* path)
 }
 
 /**
- * @brief Writes @p buff to file at @p path using   
+ * @brief Writes @p buff to file at @p path using
  * @details This function overwrites the current data in @p path with @p buff
- * 
+ *
  * @param path the path to the file to write data
- * @param buff data to be written to the file  
+ * @param buff data to be written to the file
  * @return in On success 0 is returned; otherwise errno or -1 on failure
  */
 int ADUC_SystemUtils_WriteStringToFile(const char* path, const char* buff)
@@ -674,7 +674,7 @@ done:
  * @param err the error code (optional, can be NULL)
  * @returns true if it is a directory, false otherwise.
  */
-_Bool SystemUtils_IsDir(const char* path, int* err)
+bool SystemUtils_IsDir(const char* path, int* err)
 {
     bool is_dir = false;
     int err_ret = 0;
@@ -710,7 +710,7 @@ done:
  * @param err the error code (optional, can be NULL)
  * @returns true if it is a file, false otherwise.
  */
-_Bool SystemUtils_IsFile(const char* path, int* err)
+bool SystemUtils_IsFile(const char* path, int* err)
 {
     bool is_file = false;
     int err_ret = 0;
@@ -738,4 +738,71 @@ done:
         *err = err_ret;
     }
     return is_file;
+}
+
+/**
+ * @brief For each dir_name in the baseDir, it calls the action function with the baseDir and dir_name.
+ * @param baseDir The base dir to list directories in.
+ * @param excludedDir A dir to exclude via exact match in addition to . and .. dirs. NULL means to exclude only . and .. dirs.
+ * @param perDirActionFunctor The functor to apply for each dir in the baseDir.
+ * @returns 0 if succeeded in calling the action func for every dir in baseDir (except . and .. dirs).
+ */
+int SystemUtils_ForEachDir(
+    const char* baseDir, const char* excludedDir, ADUC_SystemUtils_ForEachDirFunctor* perDirActionFunctor)
+{
+    int err_ret = -1;
+    struct dirent* dir_entry = NULL;
+    DIR* dir = NULL;
+
+    if (baseDir == NULL || (perDirActionFunctor == NULL) || (perDirActionFunctor->callbackFn == NULL))
+    {
+        goto done;
+    }
+
+    dir = opendir(baseDir);
+    if (dir == NULL)
+    {
+        err_ret = errno;
+        Log_Error("opendir '%s' failed: %d", baseDir, err_ret);
+        goto done;
+    }
+
+    do
+    {
+        errno = 0;
+        if ((dir_entry = readdir(dir)) != NULL)
+        {
+            if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0)
+            {
+                continue;
+            }
+
+            if (excludedDir != NULL && strcmp(dir_entry->d_name, excludedDir) == 0)
+            {
+                continue;
+            }
+
+            perDirActionFunctor->callbackFn(perDirActionFunctor->context, baseDir, &(dir_entry->d_name)[0]);
+        }
+        else // dir_entry == NULL
+        {
+            if (errno != 0)
+            {
+                // error
+                err_ret = errno;
+                goto done;
+            }
+            // otherwise, it's the end of the stream.
+        }
+    } while (dir_entry != NULL);
+
+    err_ret = 0;
+done:
+    if (dir != NULL)
+    {
+        closedir(dir);
+        dir = NULL;
+    }
+
+    return err_ret;
 }

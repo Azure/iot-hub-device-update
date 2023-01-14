@@ -21,9 +21,9 @@
  * @brief Check to see if a ADUC_UpdateActionCallbacks object is valid.
  *
  * @param updateActionCallbacks Object to verify.
- * @return _Bool True if valid.
+ * @return bool True if valid.
  */
-static _Bool ADUC_UpdateActionCallbacks_VerifyData(const ADUC_UpdateActionCallbacks* updateActionCallbacks)
+static bool ADUC_UpdateActionCallbacks_VerifyData(const ADUC_UpdateActionCallbacks* updateActionCallbacks)
 {
     // Note: Okay for updateActionCallbacks->PlatformLayerHandle to be NULL.
 

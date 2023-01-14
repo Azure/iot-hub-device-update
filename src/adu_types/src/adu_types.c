@@ -64,7 +64,7 @@ void ADUC_ConnectionInfo_DeAlloc(ADUC_ConnectionInfo* info)
  * @param updateId updateId to check
  * @returns True if it is valid, false if not
  */
-_Bool ADUC_IsValidUpdateId(const ADUC_UpdateId* updateId)
+bool ADUC_IsValidUpdateId(const ADUC_UpdateId* updateId)
 {
     return !(
         updateId == NULL || IsNullOrEmpty(updateId->Provider) || IsNullOrEmpty(updateId->Name)

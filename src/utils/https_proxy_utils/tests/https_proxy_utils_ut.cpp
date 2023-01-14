@@ -54,26 +54,29 @@ private:
 
 TEST_CASE_METHOD(TestCaseFixture, "Parse https_proxy (escaped)")
 {
-    setenv("https_proxy", "http%3A%2F%2F100.0.0.1%3A8888", 1);
+    setenv(
+        "https_proxy",
+        "http://%75%73%65%72%6E%61%6De:update%3B%2F%3F%3A%40%26%3D%2B%24%2C@%65x%61%6D%70%6C%65%2E%63%6F%6D:8888",
+        1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
-    _Bool proxyOk = InitializeProxyOptions(&proxyOptions);
+    bool proxyOk = InitializeProxyOptions(&proxyOptions);
     CHECK(proxyOk);
-    CHECK_THAT(proxyOptions.host_address, Equals("100.0.0.1"));
+    CHECK_THAT(proxyOptions.host_address, Equals("example.com"));
     CHECK(proxyOptions.port == 8888);
-    CHECK(proxyOptions.username == nullptr);
-    CHECK(proxyOptions.password == nullptr);
+    CHECK_THAT(proxyOptions.username, Equals("username"));
+    CHECK_THAT(proxyOptions.password, Equals("update;/?:@&=+$,"));
     UninitializeProxyOptions(&proxyOptions);
 }
 
 TEST_CASE_METHOD(TestCaseFixture, "Parse https_proxy")
 {
-    setenv("https_proxy", "http://100.0.0.1:8888", 1);
+    setenv("https_proxy", "http://127.0.0.1:8888", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
-    _Bool proxyOk = InitializeProxyOptions(&proxyOptions);
+    bool proxyOk = InitializeProxyOptions(&proxyOptions);
     CHECK(proxyOk);
-    CHECK_THAT(proxyOptions.host_address, Equals("100.0.0.1"));
+    CHECK_THAT(proxyOptions.host_address, Equals("127.0.0.1"));
     CHECK(proxyOptions.port == 8888);
     CHECK(proxyOptions.username == nullptr);
     CHECK(proxyOptions.password == nullptr);
@@ -82,12 +85,12 @@ TEST_CASE_METHOD(TestCaseFixture, "Parse https_proxy")
 
 TEST_CASE_METHOD(TestCaseFixture, "Parse HTTPS_PROXY (uppper case)")
 {
-    setenv("HTTPS_PROXY", "http://222.0.0.1:123", 1);
+    setenv("HTTPS_PROXY", "http://127.0.0.1:123", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
-    _Bool proxyOk = InitializeProxyOptions(&proxyOptions);
+    bool proxyOk = InitializeProxyOptions(&proxyOptions);
     CHECK(proxyOk);
-    CHECK_THAT(proxyOptions.host_address, Equals("222.0.0.1"));
+    CHECK_THAT(proxyOptions.host_address, Equals("127.0.0.1"));
     CHECK(proxyOptions.port == 123);
     CHECK(proxyOptions.username == nullptr);
     CHECK(proxyOptions.password == nullptr);
@@ -97,13 +100,13 @@ TEST_CASE_METHOD(TestCaseFixture, "Parse HTTPS_PROXY (uppper case)")
 // If both https_proxy and HTTPS_PROXY exist, use https_proxy.
 TEST_CASE_METHOD(TestCaseFixture, "Use https_proxy (lower case)")
 {
-    setenv("https_proxy", "http://100.0.0.1:8888", 1);
+    setenv("https_proxy", "http://127.0.0.1:8888", 1);
     setenv("HTTPS_PROXY", "http://222.0.0.1:123", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
-    _Bool proxyOk = InitializeProxyOptions(&proxyOptions);
+    bool proxyOk = InitializeProxyOptions(&proxyOptions);
     CHECK(proxyOk);
-    CHECK_THAT(proxyOptions.host_address, Equals("100.0.0.1"));
+    CHECK_THAT(proxyOptions.host_address, Equals("127.0.0.1"));
     CHECK(proxyOptions.port == 8888);
     CHECK(proxyOptions.username == nullptr);
     CHECK(proxyOptions.password == nullptr);
@@ -112,12 +115,12 @@ TEST_CASE_METHOD(TestCaseFixture, "Use https_proxy (lower case)")
 
 TEST_CASE_METHOD(TestCaseFixture, "Parse username and password")
 {
-    setenv("https_proxy", "http://username:password@100.0.0.1:8888", 1);
+    setenv("https_proxy", "http://username:password@127.0.0.1:8888", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
-    _Bool proxyOk = InitializeProxyOptions(&proxyOptions);
+    bool proxyOk = InitializeProxyOptions(&proxyOptions);
     CHECK(proxyOk);
-    CHECK_THAT(proxyOptions.host_address, Equals("100.0.0.1"));
+    CHECK_THAT(proxyOptions.host_address, Equals("127.0.0.1"));
     CHECK(proxyOptions.port == 8888);
     CHECK_THAT(proxyOptions.username, Equals("username"));
     CHECK_THAT(proxyOptions.password, Equals("password"));
@@ -126,12 +129,12 @@ TEST_CASE_METHOD(TestCaseFixture, "Parse username and password")
 
 TEST_CASE_METHOD(TestCaseFixture, "No port number")
 {
-    setenv("https_proxy", "http://username:password@100.0.0.1", 1);
+    setenv("https_proxy", "http://username:password@127.0.0.1", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
-    _Bool proxyOk = InitializeProxyOptions(&proxyOptions);
+    bool proxyOk = InitializeProxyOptions(&proxyOptions);
     CHECK(proxyOk);
-    CHECK_THAT(proxyOptions.host_address, Equals("100.0.0.1"));
+    CHECK_THAT(proxyOptions.host_address, Equals("127.0.0.1"));
     CHECK(proxyOptions.port == 0);
     CHECK_THAT(proxyOptions.username, Equals("username"));
     CHECK_THAT(proxyOptions.password, Equals("password"));
@@ -140,12 +143,12 @@ TEST_CASE_METHOD(TestCaseFixture, "No port number")
 
 TEST_CASE_METHOD(TestCaseFixture, "Empty username")
 {
-    setenv("https_proxy", "http://:password@100.0.0.1", 1);
+    setenv("https_proxy", "http://:password@127.0.0.1", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
-    _Bool proxyOk = InitializeProxyOptions(&proxyOptions);
+    bool proxyOk = InitializeProxyOptions(&proxyOptions);
     CHECK(proxyOk);
-    CHECK_THAT(proxyOptions.host_address, Equals("100.0.0.1"));
+    CHECK_THAT(proxyOptions.host_address, Equals("127.0.0.1"));
     CHECK(proxyOptions.port == 0);
     CHECK(proxyOptions.username == nullptr);
     CHECK_THAT(proxyOptions.password, Equals("password"));
@@ -154,12 +157,12 @@ TEST_CASE_METHOD(TestCaseFixture, "Empty username")
 
 TEST_CASE_METHOD(TestCaseFixture, "Empty password (supported)")
 {
-    setenv("https_proxy", "http://username:@100.0.0.1:8888", 1);
+    setenv("https_proxy", "http://username:@127.0.0.1:8888", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
-    _Bool proxyOk = InitializeProxyOptions(&proxyOptions);
+    bool proxyOk = InitializeProxyOptions(&proxyOptions);
     CHECK(proxyOk);
-    CHECK_THAT(proxyOptions.host_address, Equals("100.0.0.1"));
+    CHECK_THAT(proxyOptions.host_address, Equals("127.0.0.1"));
     CHECK(proxyOptions.port == 8888);
     CHECK_THAT(proxyOptions.username, Equals("username"));
     CHECK(proxyOptions.password == nullptr);

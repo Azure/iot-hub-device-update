@@ -132,8 +132,8 @@ Write-Host "#    $parentFile1"
                         -Handler 'microsoft/swupdate:2'     `
                         -Files $payloadFiles  `
                         -HandlerProperties @{               `
-                            'scriptFile'='example-a-b-update.sh'; `
-                            'swuFile'="$SwuFileName"
+                            'scriptFileName'='example-a-b-update.sh'; `
+                            'swuFileName'="$SwuFileName"; `
                             'installedCriteria'="$InstalledCriteria";   `
                             'arguments'='--software-version-file /etc/adu-version --swupdate-log-file /adu/logs/swupdate.log'
                         } `

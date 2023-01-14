@@ -20,9 +20,9 @@ EXTERN_C_BEGIN
 //  * @param updateActionJson The update action JSON.
 //  * @param jsonFieldName The name of the JSON field to get.
 //  * @param value The buffer to fill with the value from the JSON field. Caller must call free().
-//  * @return _Bool true if call succeeded. false otherwise.
+//  * @return bool true if call succeeded. false otherwise.
 //  */
-// _Bool ADUC_JSON_GetStringField(const JSON_Value* updateActionJson, const char* jsonFieldName, char** value);
+// bool ADUC_JSON_GetStringField(const JSON_Value* updateActionJson, const char* jsonFieldName, char** value);
 
 // /**
 //  * @brief Returns the pointer to the @p jsonFieldName from the JSON_Value
@@ -65,7 +65,7 @@ ADUC_Hash* ADUC_HashArray_AllocAndInit(const JSON_Object* hashObj, size_t* hashC
  * @param sizeInBytes file size (in bytes)
  * @returns True on success and false on failure
  */
-_Bool ADUC_FileEntity_Init(
+bool ADUC_FileEntity_Init(
     ADUC_FileEntity* fileEntity,
     const char* fileId,
     const char* targetFileName,
@@ -122,9 +122,9 @@ void ADUC_FileUrlArray_Free(unsigned int fileCount, ADUC_FileUrl* fileUrls);
  *
  * @param updateActionJson UpdateAction JSON to parse.
  * @param updateId The returned installed content ID string. Caller must call free().
- * @return _Bool True if call was successful.
+ * @return bool True if call was successful.
  */
-_Bool ADUC_Json_GetUpdateId(const JSON_Value* updateActionJson, struct tagADUC_UpdateId** updateId);
+bool ADUC_Json_GetUpdateId(const JSON_Value* updateActionJson, struct tagADUC_UpdateId** updateId);
 
 /**
  * @brief Allocates and sets the UpdateId fields

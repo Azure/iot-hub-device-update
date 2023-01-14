@@ -45,7 +45,7 @@ JSON_Value* ADUC_JSON_GetUpdateManifestRoot(const JSON_Value* updateActionJson)
  */
 ADUC_Hash* ADUC_HashArray_AllocAndInit(const JSON_Object* hashObj, size_t* hashCount)
 {
-    _Bool success = false;
+    bool success = false;
 
     ADUC_Hash* tempHashArray = NULL;
 
@@ -150,7 +150,7 @@ void ADUC_FileEntityArray_Free(unsigned int fileCount, ADUC_FileEntity* files)
  * @returns True on success and false on failure
  * @details All strings and hashArray are deep-copied. hashArray ownership is not transferred.
  */
-_Bool ADUC_FileEntity_Init(
+bool ADUC_FileEntity_Init(
     ADUC_FileEntity* fileEntity,
     const char* fileId,
     const char* targetFileName,
@@ -160,7 +160,7 @@ _Bool ADUC_FileEntity_Init(
     size_t hashCount,
     size_t sizeInBytes)
 {
-    _Bool success = false;
+    bool success = false;
     ADUC_Hash* tempHashArray = NULL;
 
     if (fileEntity == NULL)
@@ -254,11 +254,11 @@ done:
  *
  * @param updateActionJson UpdateAction JSON to parse.
  * @param updateId The returned installed content ID string. Caller must call free().
- * @return _Bool True if call was successful.
+ * @return bool True if call was successful.
  */
-_Bool ADUC_Json_GetUpdateId(const JSON_Value* updateActionJson, ADUC_UpdateId** updateId)
+bool ADUC_Json_GetUpdateId(const JSON_Value* updateActionJson, ADUC_UpdateId** updateId)
 {
-    _Bool success = false;
+    bool success = false;
     ADUC_UpdateId* tempUpdateID = NULL;
 
     *updateId = NULL;
@@ -329,7 +329,7 @@ done:
  */
 ADUC_UpdateId* ADUC_UpdateId_AllocAndInit(const char* provider, const char* name, const char* version)
 {
-    _Bool success = false;
+    bool success = false;
     ADUC_UpdateId* updateId = NULL;
 
     if (provider == NULL || name == NULL || version == NULL)

@@ -34,7 +34,7 @@
 #include <pthread.h>
 
 // fwd decl
-void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, _Bool isAsync);
+void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, bool isAsync);
 
 // This lock is used for critical sections where main and worker thread could read/write to ADUC_workflowData
 // It is used only at the top-level coarse granularity operations:
@@ -102,16 +102,87 @@ static const char* ADUCITF_WorkflowStepToString(ADUCITF_WorkflowStep workflowSte
 }
 
 /**
- * @brief Generate a unique identifier.
+ * @brief Cleans up previously created sandboxes, excluding the current workflowId.
  *
- * @param buffer Where to store identifier.
- * @param buffer_cch Number of characters in @p buffer.
+ * @param context The context that is workflow data.
+ * @param baseDir The base of the workflowId work folders, e.g. /var/lib/adu/downloads
+ * @param workflowId The workflow id.
  */
-void GenerateUniqueId(char* buffer, size_t buffer_cch)
+static void CleanupSandbox(void* context, const char* baseDir, const char* workflowId)
 {
-    const time_t timer = time(NULL);
-    const struct tm* ptm = gmtime(&timer);
-    (void)strftime(buffer, buffer_cch, "%y%m%d%H%M%S", ptm);
+    Log_Debug("begin cleanup for wf %s under %s", workflowId, baseDir);
+
+    ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)context;
+    if (!IsNullOrEmpty(baseDir) && !IsNullOrEmpty(workflowId) && workflowData != NULL)
+    {
+        char* workDirPath = ADUC_StringFormat("%s/%s", baseDir, workflowId);
+        if (workDirPath == NULL)
+        {
+            Log_Error("workDirPath failed.");
+        }
+        else
+        {
+            const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
+
+            updateActionCallbacks->SandboxDestroyCallback(
+                updateActionCallbacks->PlatformLayerHandle, workflowId, workDirPath);
+
+            free(workDirPath);
+        }
+    }
+    Log_Debug("end cleanup for wf %s under %s", workflowId, baseDir);
+}
+
+/**
+ * @brief Cleans up previously created sandboxes, excluding the current workflowId.
+ *
+ * @param workflowData The workflow data.
+ */
+static void Cleanup_Previous_Sandboxes(ADUC_WorkflowData* workflowData)
+{
+    const char* current_workflowId = workflow_peek_id(workflowData->WorkflowHandle);
+    char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
+    int err = 0;
+
+    ADUC_SystemUtils_ForEachDirFunctor functor = { .context = workflowData, .callbackFn = CleanupSandbox };
+
+    Log_Debug("begin clean previous sandboxes");
+
+    if (IsNullOrEmpty(workFolder))
+    {
+        Log_Error("Failed getting workFolder.");
+        goto done;
+    }
+
+    // remove the "/<workflowId>" suffix because we want to remove other workflowId dirs
+    char* lastSlash = strrchr(workFolder, '/');
+    if (lastSlash == NULL)
+    {
+        err = -1;
+        goto done;
+    }
+
+    *lastSlash = '\0';
+
+    if (!SystemUtils_IsDir(workFolder, &err) || err != 0)
+    {
+        Log_Error("%s is not a dir", workFolder);
+        goto done;
+    }
+
+    Log_Debug("Cleaning dirs under %s except %s", workFolder, current_workflowId);
+    err = SystemUtils_ForEachDir(
+        workFolder /* baseDir */, current_workflowId /* excludedDir */, &functor /* perDirActionFunctor */);
+    if (err != 0)
+    {
+        Log_Error("foreach CleanupSandbox failed with: %d", err);
+        goto done;
+    }
+
+done:
+    workflow_free_string(workFolder);
+
+    Log_Debug("end clean previous sandboxes");
 }
 
 /**
@@ -421,6 +492,8 @@ void ADUC_Workflow_HandlePropertyUpdate(
                     goto done;
                 }
 
+                Log_Debug("Retry %s is applicable", newRetryToken);
+
                 // Sets both cancellation type to Retry and updates the current retry token
                 workflow_update_retry_deployment(currentWorkflowData->WorkflowHandle, newRetryToken);
 
@@ -448,8 +521,9 @@ void ADUC_Workflow_HandlePropertyUpdate(
                     // replacement deployment instead of going to idle and reporting the results as a cancel failure.
                     // Otherwise, if the operation is not in progress, in the same critical section it transfers the
                     // workflow handle of the new deployment into the current workflow data, so that we can handle the update action.
-                    _Bool deferredReplacement =
+                    bool deferredReplacement =
                         workflow_update_replacement_deployment(currentWorkflowData->WorkflowHandle, nextWorkflow);
+
                     if (deferredReplacement)
                     {
                         Log_Info(
@@ -464,6 +538,8 @@ void ADUC_Workflow_HandlePropertyUpdate(
                         ADUC_Workflow_HandleUpdateAction(currentWorkflowData);
                         goto done;
                     }
+
+                    Log_Debug("deferral not needed. Processing '%s' now", workflow_peek_id(nextWorkflow));
 
                     workflow_transfer_data(
                         currentWorkflowData->WorkflowHandle /* wfTarget */, nextWorkflow /* wfSource */);
@@ -545,7 +621,7 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
     Log_Debug(
         "cancellationType(%d) => %s", cancellationType, ADUC_Workflow_CancellationTypeToString(cancellationType));
 
-    _Bool isReplaceOrRetry = (cancellationType == ADUC_WorkflowCancellationType_Replacement)
+    bool isReplaceOrRetry = (cancellationType == ADUC_WorkflowCancellationType_Replacement)
         || (cancellationType == ADUC_WorkflowCancellationType_Retry);
 
     if (desiredAction == ADUCITF_UpdateAction_Cancel || cancellationType == ADUC_WorkflowCancellationType_Normal
@@ -618,6 +694,22 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
     workflow_set_current_workflowstep(workflowData->WorkflowHandle, nextStep);
 
     //
+    // Cleanup any sandboxes other than the current workflowId.
+    // Previous failed install/apply do not cleanup the sandbox to avoid
+    // redownload of payloads when "retry failed" is issued by service for the
+    // same workflowId.
+    //
+    // Do not cleanup the current workflowId sandbox because it might need a
+    // payload to be able to evaluate IsInstalled and it may be there
+    // already due to a reboot/restart after Apply or if something else caused
+    // agent to restart.
+    //
+    if (nextStep == ADUCITF_WorkflowStep_ProcessDeployment)
+    {
+        Cleanup_Previous_Sandboxes(workflowData);
+    }
+
+    //
     // Transition to the next phase for this workflow
     //
     ADUC_Workflow_TransitionWorkflow(workflowData);
@@ -635,7 +727,7 @@ done:
  * @param workflowData The global context workflow data structure.
  * @param onSuccess Indicate whether it is a transition on success or on failure.
  */
-void ADUC_Workflow_AutoTransitionWorkflow(ADUC_WorkflowData* workflowData, _Bool onSuccess)
+void ADUC_Workflow_AutoTransitionWorkflow(ADUC_WorkflowData* workflowData, bool onSuccess)
 {
     //
     // If the workflow's not complete, then auto-transition to the next step/phase of the workflow.
@@ -753,7 +845,7 @@ done:
  * @param result Result of work.
  * @param result isAsync true if caller is on worker thread, false if from main thread.
  */
-void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, _Bool isAsync)
+void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, bool isAsync)
 {
     // We own these objects, so no issue making them non-const.
     ADUC_MethodCall_Data* methodCallData = (ADUC_MethodCall_Data*)workCompletionToken;
@@ -872,6 +964,7 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
                     // Reset workflow state to process deployment and transfer
                     // the deferred workflow to current.
                     workflow_update_for_replacement(workflowData->WorkflowHandle);
+
                 }
                 else
                 {
@@ -1062,7 +1155,6 @@ static void ADUC_Workflow_SetUpdateStateHelper(
     }
 
     ADUC_WorkflowData_SetLastReportedState(updateState, workflowData);
-    Log_RequestFlush();
 }
 
 /**
@@ -1085,7 +1177,11 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
 
         // NOTE: do not free the handle as it is owned by the DownloadHandlerFactory.
         DownloadHandlerHandle* handle = ADUC_DownloadHandlerFactory_LoadDownloadHandler(fileEntity->DownloadHandlerId);
-        if (handle != NULL)
+        if (handle == NULL)
+        {
+            Log_Error("Failed to load download handler.");
+        }
+        else
         {
             result = ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(handle, workflowHandle);
             if (IsAducResultCodeFailure(result.ResultCode))
@@ -1123,7 +1219,6 @@ void ADUC_Workflow_SetUpdateStateWithResult(
     ADUC_WorkflowData* workflowData, ADUCITF_State updateState, ADUC_Result result)
 {
     ADUC_Workflow_SetUpdateStateHelper(workflowData, updateState, &result);
-    Log_RequestFlush();
 }
 
 /**
@@ -1276,7 +1371,7 @@ ADUC_Result ADUC_Workflow_MethodCall_Download(ADUC_MethodCall_Data* methodCallDa
         goto done;
     }
 
-    Log_Info("Using sandbox %s", workFolder);
+    Log_Info("Using sandbox %s", workFolder != NULL ? workFolder : "(null)");
 
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_DownloadStarted);
 

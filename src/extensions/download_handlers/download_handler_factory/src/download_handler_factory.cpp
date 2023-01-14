@@ -13,6 +13,7 @@
 #include <aduc/hash_utils.h> // ADUC_HashUtils_VerifyWithStrongestHash
 #include <aduc/logging.h> // ADUC_Logging_GetLevel
 #include <aduc/parser_utils.h> // ADUC_FileEntity_Uninit
+#include <aduc/plugin_exception.hpp>
 #include <aduc/types/update_content.h> // ADUC_FileEntity
 #include <cstring> // memset
 #include <unordered_map>
@@ -61,17 +62,19 @@ DownloadHandlerFactory* DownloadHandlerFactory::GetInstance()
     return &s_instance;
 }
 
-DownloadHandlerPlugin* DownloadHandlerFactory::LoadDownloadHandler(const std::string& downloadHandlerId)
+DownloadHandlerPlugin* DownloadHandlerFactory::LoadDownloadHandler(const std::string& downloadHandlerId) noexcept
 {
     auto entry = cachedPlugins.find(downloadHandlerId);
     if (entry != cachedPlugins.end())
     {
+        Log_Debug("Found cached plugin for id %s", downloadHandlerId.c_str());
         return (entry->second).get();
     }
 
     ADUC_FileEntity downloadHandlerFileEntity = {};
     if (!GetDownloadHandlerFileEntity(downloadHandlerId.c_str(), &downloadHandlerFileEntity))
     {
+        Log_Error("Failed to get DownloadHandler for file entity");
         return nullptr;
     }
 
@@ -80,6 +83,7 @@ DownloadHandlerPlugin* DownloadHandlerFactory::LoadDownloadHandler(const std::st
     if (!ADUC_HashUtils_VerifyWithStrongestHash(
             autoFileEntity->TargetFilename, autoFileEntity->Hash, autoFileEntity->HashCount))
     {
+        Log_Error("verify hash failed for %s", autoFileEntity->TargetFilename);
         return nullptr;
     }
 
@@ -90,8 +94,19 @@ DownloadHandlerPlugin* DownloadHandlerFactory::LoadDownloadHandler(const std::st
         cachedPlugins.insert(std::make_pair(downloadHandlerId, plugin.get()));
         return plugin.release();
     }
+    catch (const aduc::PluginException& pe)
+    {
+        Log_Error("plugin exception: %s, sym: %s", pe.what(), pe.Symbol().c_str());
+        return nullptr;
+    }
+    catch (const std::exception& e)
+    {
+        Log_Error("exception: %s", e.what());
+        return nullptr;
+    }
     catch (...)
     {
+        Log_Error("non std exception");
         return nullptr;
     }
 }
@@ -100,19 +115,9 @@ EXTERN_C_BEGIN
 
 DownloadHandlerHandle ADUC_DownloadHandlerFactory_LoadDownloadHandler(const char* downloadHandlerId)
 {
-    DownloadHandlerHandle handle = nullptr;
-
-    try
-    {
-        DownloadHandlerFactory* factory = DownloadHandlerFactory::GetInstance();
-        DownloadHandlerPlugin* plugin = factory->LoadDownloadHandler(downloadHandlerId);
-        handle = reinterpret_cast<DownloadHandlerHandle>(plugin);
-    }
-    catch (...)
-    {
-    }
-
-    return handle;
+    DownloadHandlerFactory* factory = DownloadHandlerFactory::GetInstance();
+    DownloadHandlerPlugin* plugin = factory->LoadDownloadHandler(downloadHandlerId);
+    return reinterpret_cast<DownloadHandlerHandle>(plugin);
 }
 
 EXTERN_C_END

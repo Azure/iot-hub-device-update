@@ -8,29 +8,96 @@
 #include "aduc/https_proxy_utils.h"
 #include "aduc/logging.h"
 #include "aduc/string_c_utils.h"
-#include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy_s
-#include <curl/curl.h> // curl_* functions
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
 /**
+ * @brief Implementation of the non-standard strdup
+ * @param proxyOptions str string to duplicate
+ * @return char* duplicated string, deallocate using free. NULL on failure.
+ */
+static char* strdupe(const char* str)
+{
+    char* dupe = malloc(strlen(str) + 1);
+    if (dupe != NULL)
+    {
+        strcpy(dupe, str);
+    }
+    return dupe;
+}
+
+static int hex_to_int(char ch)
+{
+    if (ch >= '0' && ch <= '9')
+    {
+        return ch - '0';
+    }
+    else if (ch >= 'a' && ch <= 'f')
+    {
+        return ch - 'a' + 10;
+    }
+    else if (ch >= 'A' && ch <= 'F')
+    {
+        return ch - 'A' + 10;
+    }
+
+    return -1;
+}
+
+static bool unescape_data_string(char* input)
+{
+    char* src = input;
+    char* dest = input;
+
+    while (*src != '\0')
+    {
+        if (*src != '%')
+        {
+            *dest = *src;
+            ++src;
+            ++dest;
+            continue;
+        }
+
+        ++src;
+        const int ch1 = hex_to_int(*src);
+        if (ch1 == -1)
+        {
+            return false;
+        }
+
+        ++src;
+        const int ch2 = hex_to_int(*src);
+        if (ch2 == -1)
+        {
+            return false;
+        }
+
+        *dest = (char)((ch1 << 4) + ch2);
+        ++dest;
+        *dest = '\0';
+
+        ++src;
+    }
+    *dest = '\0';
+
+    return true;
+}
+
+/**
  * @brief Initializes @p proxyOptions object by reading and parsing environment variable 'https_proxy' or 'HTTPS_PROXY', in that order.
  * @param proxyOptions HTTP_PROXY_OPTIONS A pointer to HTTP_PROXY_OPTIONS struct to be initialized.
  *                     Caller must call UninitializeProxyOptions() to free memory allocated for the member variables.
- * @return _Bool True when the proxy options successfully initialized.
+ * @return bool True when the proxy options successfully initialized.
  */
-_Bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions)
+bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions)
 {
     bool success = false;
-    CURLU *curlHandle = curl_url();
-    CURLcode uc;
-    char* host = NULL;
-    char* port = NULL;
-    char* user = NULL;
-    char* password = NULL;
-    char* unescapedUrl = NULL;
+    char* proxy_copy = NULL;
+    char* start = NULL;
+    char* end = NULL;
 
     if (proxyOptions == NULL)
     {
@@ -43,119 +110,108 @@ _Bool InitializeProxyOptions(HTTP_PROXY_OPTIONS* proxyOptions)
     proxyOptions->password = NULL;
     proxyOptions->port = 0;
 
-    char* httpsProxyEnvvar = getenv("https_proxy");
-    if (httpsProxyEnvvar == NULL)
+    char* httpsProxyEnvVar = getenv("https_proxy");
+    if (httpsProxyEnvVar == NULL)
     {
-        httpsProxyEnvvar = getenv("HTTPS_PROXY");
+        httpsProxyEnvVar = getenv("HTTPS_PROXY");
     }
-    if (httpsProxyEnvvar == NULL)
+    if (httpsProxyEnvVar == NULL)
     {
         goto done;
     }
 
-    int outLen = 0;
-    unescapedUrl = curl_easy_unescape(NULL, httpsProxyEnvvar, strlen(httpsProxyEnvvar), &outLen);
-
-    curlHandle = curl_url();
-    if (curlHandle == NULL)
+    // Create read-write copy of environment variable.
+    proxy_copy = strdupe(httpsProxyEnvVar);
+    if (proxy_copy == NULL)
     {
-        Log_Error("Cannot create curl handle.");
         goto done;
     }
 
-    uc = curl_url_set(curlHandle, CURLUPART_URL, unescapedUrl, 0);
-    if (uc != CURLE_OK)
+    start = proxy_copy;
+
+    end = strstr(start, "://");
+    if (end == NULL)
     {
-        Log_Error("Failed to parse url. uc:%d", uc);
+        // Can't find "://"
         goto done;
     }
 
-    // Get host address.
-    uc = curl_url_get(curlHandle, CURLUPART_HOST, &host, 0);
-    if (uc != CURLE_OK)
-    {
-        Log_Error("Bad hostname. uc:%d", uc);
-        goto done;
-    }
+    end += 3; // past ""://""
 
-    if (mallocAndStrcpy_s((char**)&(proxyOptions->host_address), host) != 0)
-    {
-        Log_Error("Failed to copy host address.");
-        goto done;
-    }
+    start = end;
 
-    uc = curl_url_get(curlHandle, CURLUPART_PORT, &port, 0);
-    if (uc != CURLE_OK)
+    end = strchr(start, '@');
+    if (end != NULL)
     {
-        Log_Info("No ports. uc:%d", uc);
-    }
-    else
-    {
-        char* endptr;
-        errno = 0; /* To distinguish success/failure after call */
-        proxyOptions->port = strtol(port, &endptr, 10);
-        if (errno != 0 || endptr == port)
+        // Left of '@' is username[:password]
+        *end = '\0';
+        char* after_at = end + 1; // after '@'
+
+        end = strchr(start, ':');
+        if (end != NULL)
         {
-            Log_Error("Invalid port number.");
-            goto done;
+            *end = '\0';
+
+            // Check for no username
+            if (*start != '\0')
+            {
+                if (!unescape_data_string(start))
+                {
+                    goto done;
+                }
+
+                proxyOptions->username = strdupe(start);
+                if (proxyOptions->username == NULL)
+                {
+                    goto done;
+                }
+            }
+
+            start = end + 1;
+
+            // Check for no password
+            if (*start != '\0')
+            {
+                if (!unescape_data_string(start))
+                {
+                    goto done;
+                }
+
+                proxyOptions->password = strdupe(start);
+                if (proxyOptions->password == NULL)
+                {
+                    goto done;
+                }
+            }
         }
+
+        start = after_at;
     }
 
-    uc = curl_url_get(curlHandle, CURLUPART_USER, &user, 0);
-    if (uc != CURLE_OK)
+    end = strchr(start, ':');
+    if (end != NULL)
     {
-        Log_Info("No username. uc:%d", uc);
-    }
-    else
-    {
-        if (mallocAndStrcpy_s((char**)&(proxyOptions->username), user) != 0)
-        {
-            goto done;
-        }
+        *end = '\0';
+
+        proxyOptions->port = atoi(end + 1);
     }
 
-    uc = curl_url_get(curlHandle, CURLUPART_PASSWORD, &password, 0);
-    if (uc != CURLE_OK)
+    if (!unescape_data_string(start))
     {
-        Log_Info("No password. uc:%d", uc);
+        goto done;
     }
-    else
+
+    proxyOptions->host_address = strdupe(start);
+    if (proxyOptions->host_address == NULL)
     {
-        if (mallocAndStrcpy_s((char**)&(proxyOptions->password), password) != 0)
-        {
-            Log_Error("Failed to copy password");
-            goto done;
-        }
+        goto done;
     }
 
     success = true;
 
 done:
 
-    if (password != NULL)
-    {
-        curl_free(password);
-    }
-
-    if (user != NULL)
-    {
-        curl_free(user);
-    }
-
-    if (port != NULL)
-    {
-        curl_free(port);
-    }
-
-    if (host != NULL)
-    {
-        curl_free(host);
-    }
-
-    if (curlHandle != NULL)
-    {
-        curl_url_cleanup(curlHandle);
-    }
+    free(proxy_copy);
 
     if (!success)
     {

@@ -34,7 +34,8 @@ install_packages=false
 install_packages_only=false
 # The folder where source code will be placed
 # for building and installing from source.
-work_folder=/tmp
+DEFAULT_WORKFOLDER=/tmp
+work_folder=$DEFAULT_WORKFOLDER
 keep_source_code=false
 use_ssh=false
 
@@ -62,13 +63,14 @@ install_cmake_version="$supported_cmake_version"
 cmake_force_source=false
 cmake_prefix="$work_folder"
 cmake_installer_dir=""
-cmake_dir_symlink="${work_folder}/deviceupdate-cmake"
+cmake_dir_symlink="/tmp/deviceupdate-cmake"
 
 install_shellcheck=false
 supported_shellcheck_version='0.8.0'
 
 install_githooks=false
 
+du_test_data_dir_path="/tmp/adu/"
 # DO Deps
 default_do_ref=v1.0.0
 install_do=false
@@ -78,7 +80,6 @@ do_ref=$default_do_ref
 aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=("gcc-[68]")
-do_packages=('libproxy-dev' 'libssl-dev' 'libboost-all-dev')
 
 # Distro and arch info
 OS=""
@@ -90,7 +91,7 @@ is_arm32=false
 print_help() {
     echo "Usage: install-deps.sh [options...]"
     echo "-a, --install-all-deps    Install all dependencies."
-    echo "                          Implies --install-aduc-deps, --install-do, --install-do-deps, --install-packages, --install-cmake, and --install-shellcheck."
+    echo "                          Implies --install-aduc-deps, --install-do, --install-packages, --install-cmake, and --install-shellcheck."
     echo "                          Can be used with --install-packages-only."
     echo "                          This is the default if no options are specified."
     echo ""
@@ -184,11 +185,8 @@ do_install_aduc_packages() {
 do_install_azure_iot_sdk() {
     echo "Installing Azure IoT C SDK ..."
     local azure_sdk_dir=$work_folder/azure-iot-sdk-c
-    if [[ $keep_source_code != "true" ]]; then
+    if [[ -d $azure_sdk_dir ]]; then
         $SUDO rm -rf $azure_sdk_dir || return
-    elif [[ -d $azure_sdk_dir ]]; then
-        warn "$azure_sdk_dir already exists! Skipping Azure IoT C SDK."
-        return 0
     fi
 
     local azure_sdk_url
@@ -241,12 +239,8 @@ do_install_azure_iot_sdk() {
 do_install_catch2() {
     echo "Installing Catch2 ..."
     local catch2_dir=$work_folder/catch2
-
-    if [[ $keep_source_code != "true" ]]; then
+    if [[ -d $catch2_dir ]]; then
         $SUDO rm -rf $catch2_dir || return
-    elif [[ -d $catch2_dir ]]; then
-        warn "$catch2_dir already exists! Skipping Catch2."
-        return 0
     fi
 
     local catch2_url
@@ -270,7 +264,7 @@ do_install_catch2() {
     popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $catch2_dir
+        $SUDO rm -rf $catch2_dir || return
     fi
 }
 
@@ -288,12 +282,8 @@ do_install_swupdate() {
     fi
 
     local swupdate_dir=$work_folder/swupdate
-
-    if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $swupdate_dir || return
-    elif [[ -d $swupdate_dir ]]; then
-        warn "$swupdate_dir already exists! Skipping SWUpdate."
-        return 0
+    if [[ -d $swupdate_dir ]]; then
+        $SUDO rm -rf $swupdate_dir || return 1
     fi
 
     local swupdate_url
@@ -321,7 +311,7 @@ do_install_swupdate() {
     popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $swupdate_dir
+        $SUDO rm -rf $swupdate_dir || return 1
     fi
 }
 
@@ -421,6 +411,9 @@ do_install_do_release_tarball() {
 do_install_do() {
     echo "Installing DO ..."
     local do_dir=$work_folder/do
+    if [[ -d $do_dir ]]; then
+        $SUDO rm -rf $do_dir || return
+    fi
 
     if [[ $install_packages == "true" || $install_packages_only == "true" ]]; then
         if do_install_do_release_tarball; then
@@ -487,11 +480,8 @@ do_install_azure_blob_storage_file_upload_utility() {
     echo "Installing azure-blob-storage-file-upload-utility from source."
     local abs_fuu_dir=$work_folder/azure_blob_storage_file_upload_utility
 
-    if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $abs_fuu_dir || return
-    elif [[ -d $abs_fuu_dir ]]; then
-        warn "$abs_fuu_dir already exists! Skipping Azure Storage CPP Lite."
-        return 0
+    if [[ -d $abs_fuu_dir ]]; then
+        $SUDO rm -rf $abs_fuu_dir || return 1
     fi
 
     local azure_storage_cpplite_url
@@ -528,14 +518,14 @@ do_install_azure_blob_storage_file_upload_utility() {
     echo -e "Building Azure Blob Storage File Upload Uility ...\n\tBranch: $azure_blob_storage_file_upload_utility_ref\n\t"
     cmake "${azure_blob_storage_file_upload_utility_cmake_options[@]}" .. || return
 
-    cmake --build . || return
+    cmake --build . || return 1
     $SUDO cmake --build . --target install || return
 
     popd > /dev/null || return
     popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $abs_fuu_dir || return
+        $SUDO rm -rf $abs_fuu_dir || return 1
     fi
 }
 
@@ -558,7 +548,14 @@ do_install_cmake_from_source() {
 
     cmake_src_url="https://cmake.org/files/v${maj_min_ver}/${tarball_filename}"
     cmake_tar_path="$work_folder/${tarball_filename}"
+    if [[ -f $cmake_tar_path ]]; then
+        $SUDO rm -rf $cmake_tar_path || return 1
+    fi
+
     cmake_dir_path="$work_folder/${tarball_name}"
+    if [[ -d $cmake_dir_path ]]; then
+        $SUDO rm -rf $cmake_dir_path || return 1
+    fi
 
     mkdir -p "$cmake_dir_path"
     ret_value=$?
@@ -607,6 +604,11 @@ do_install_cmake_from_installer() {
     fi
 
     local cmake_installer_sh="cmake-${install_cmake_version}-linux-${arch}.sh"
+    local fullpath_cmake_installer_sh="${work_folder}/${cmake_installer_sh}"
+    if [[ -f $fullpath_cmake_installer_sh ]]; then
+        $SUDO rm "$fullpath_cmake_installer_sh" || return 1
+    fi
+
     local cmake_installer_url="https://github.com/Kitware/CMake/releases/download/v${install_cmake_version}/${cmake_installer_sh}"
 
     $SUDO wget -P "$work_folder" "$cmake_installer_url"
@@ -616,16 +618,18 @@ do_install_cmake_from_installer() {
         return $ret_value
     fi
 
-    local fullpath_cmake_installer_sh="${work_folder}/${cmake_installer_sh}"
-    $SUDO chmod u+x "${fullpath_cmake_installer_sh}"
-    $SUDO "${fullpath_cmake_installer_sh}" --include-subdir --skip-license --prefix=${cmake_prefix}
+    $SUDO chown "$(id -un)":"$(id -gn)" "${fullpath_cmake_installer_sh}"
+    chmod u+x "${fullpath_cmake_installer_sh}"
+    "${fullpath_cmake_installer_sh}" --include-subdir --skip-license --prefix=${cmake_prefix}
     ret_value=$?
     if [ $ret_value -ne 0 ]; then
         error "${fullpath_cmake_installer_sh} failed with exit code ${ret_value}"
         return $ret_value
     fi
 
-    $SUDO ln -sf "$cmake_installer_dir" "$cmake_dir_symlink"
+    $SUDO rm "$fullpath_cmake_installer_sh" || return 1
+
+    ln -sf "$cmake_installer_dir" "$cmake_dir_symlink"
 }
 
 do_install_shellcheck() {
@@ -666,13 +670,23 @@ do_install_shellcheck() {
             return $ret_val
         fi
 
-        ln -sf "${HOME}/.cabal/bin/shellcheck" "${work_folder}/deviceupdate-shellcheck" || return 1
+        $SUDO rm "work_folder/$tarball_filename" || return 1
+
+        ln -sf "${HOME}/.cabal/bin/shellcheck" "/tmp/deviceupdate-shellcheck" || return 1
     else
         echo "Installing shellcheck ${scver} from pre-built binaries..."
         local tar_filename="shellcheck-v${scver}.linux.x86_64.tar.xz"
+
+        if [[ -f $tar_filename ]]; then
+            $SUDO rm $tar_filename || return 1
+        fi
+
         wget -P "$work_folder" "${base_url}/releases/download/v${scver}/${tar_filename}" || return 1
         tar -xvf "$work_folder/$tar_filename" -C "$work_folder" || return 1
-        ln -sf "${work_folder}/shellcheck-v0.8.0/shellcheck" "${work_folder}/deviceupdate-shellcheck" || return 1
+
+        $SUDO rm "$work_folder/$tar_filename" || return 1
+
+        ln -sf "${work_folder}/shellcheck-v0.8.0/shellcheck" "/tmp/deviceupdate-shellcheck" || return 1
     fi
 }
 
@@ -733,7 +747,6 @@ do_list_all_deps() {
     deps_set+=("${aduc_packages[@]}")
     deps_set+=("${compiler_packages[@]}")
     deps_set+=("${static_analysis_packages[@]}")
-    deps_set+=("${do_packages[@]}")
     echo "Listing the state of dependencies:"
     dpkg-query -W -f='${binary:Package} ${Version} (${Architecture})\n' "${deps_set[@]}"
     ret_val=$?
@@ -852,6 +865,17 @@ while [[ $1 != "" ]]; do
     shift
 done
 
+# setup workfolder if different from default
+if [[ $work_folder != "$DEFAULT_WORKFOLDER" ]]; then
+    mkdir -pv "$work_folder" || $ret
+    $SUDO chown "$(id -un)":"$(id -gn)" "$work_folder" || $ret
+    chmod ug+rwx,o= "$work_folder" || $ret
+fi
+
+if [[ -d $du_test_data_dir_path ]]; then
+    $SUDO rm -r $du_test_data_dir_path
+fi
+
 # Get OS, VER, machine architecture for use in other parts of the script.
 determine_distro_and_arch
 
@@ -877,6 +901,7 @@ fi
 
 # Set implied options for aduc deps.
 if [[ $install_aduc_deps == "true" ]]; then
+    install_cmake=true
     install_azure_iot_sdk=true
     install_catch2=true
     install_azure_blob_storage_file_upload_utility=true

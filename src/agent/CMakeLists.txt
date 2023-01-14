@@ -90,6 +90,7 @@ target_link_libraries (
             aduc::extension_manager
             aduc::extension_utils
             aduc::https_proxy_utils
+            aduc::iothub_communication_manager
             aduc::logging
             aduc::permission_utils
             aduc::pnp_helper

@@ -20,6 +20,7 @@
 #include "aduc/extension_utils.h"
 #include "aduc/health_management.h"
 #include "aduc/https_proxy_utils.h"
+#include "aduc/iothub_communication_manager.h"
 #include "aduc/logging.h"
 #include "aduc/permission_utils.h"
 #include "aduc/string_c_utils.h"
@@ -59,16 +60,6 @@
 #include "eis_utils.h"
 
 /**
- * @brief The timeout for the Edge Identity Service HTTP requests
- */
-#define EIS_PROVISIONING_TIMEOUT 2000
-
-/**
- * @brief Time after startup the connection string will be provisioned for by the Edge Identity Service
- */
-#define EIS_TOKEN_EXPIRY_TIME_IN_SECONDS (12 /* hr */ * 60 /* min/hr */ * 60 /*sec/min */)
-
-/**
  * @brief Make getopt* stop parsing as soon as non-option argument is encountered.
  * @remark See GETOPT.3 man page for more details.
  */
@@ -81,15 +72,6 @@
  * See GETOPT.3 man page for more details.
  */
 #define RET_COLON_FOR_MISSING_OPTIONARG ":"
-
-/**
- * @brief The Device Twin Model Identifier.
- * This model must contain 'azureDeviceUpdateAgent' and 'deviceInformation' subcomponents.
- *
- * Customers should change this ID to match their device model ID.
- */
-
-static const char g_aduModelId[] = "dtmi:azure:iot:deviceUpdateModel;2";
 
 // Name of ADU Agent subcomponent that this device implements.
 static const char g_aduPnPComponentName[] = "deviceUpdate";
@@ -107,9 +89,6 @@ ADUC_LaunchArguments launchArgs;
  */
 ADUC_ClientHandle g_iotHubClientHandle = NULL;
 
-// Engine type for an OpenSSL Engine
-static const OPTION_OPENSSL_KEY_TYPE x509_key_from_engine = KEY_TYPE_ENGINE;
-
 /**
  * @brief Determines if we're shutting down.
  *
@@ -126,7 +105,7 @@ static int g_shutdownSignal = 0;
 /**
  * @brief Function signature for PnP Handler create method.
  */
-typedef _Bool (*PnPComponentCreateFunc)(void** componentContext, int argc, char** argv);
+typedef bool (*PnPComponentCreateFunc)(void** componentContext, int argc, char** argv);
 
 /**
  * @brief Called once after connected to IoTHub (device client handler is valid).
@@ -226,9 +205,6 @@ static PnPComponentEntry componentList[] = {
 };
 
 // clang-format on
-
-static void ADUC_Refresh_IotHub_Connection_SAS_Token();
-
 ADUC_ExtensionRegistrationType GetRegistrationTypeFromArg(const char* arg)
 {
     if (strcmp(arg, "updateContentHandler") == 0)
@@ -326,7 +302,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
         case 'l':
         {
             unsigned int logLevel = 0;
-            _Bool ret = atoui(optarg, &logLevel);
+            bool ret = atoui(optarg, &logLevel);
             if (!ret || logLevel < ADUC_LOG_DEBUG || logLevel > ADUC_LOG_ERROR)
             {
                 puts("Invalid log level after '--log-level' or '-l' option. Expected value: 0-3.");
@@ -435,9 +411,9 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
  * @param connectionString connectionString to extract the device-id and module-id from
  * @returns true on success; false on failure
  */
-_Bool ADUC_SetDiagnosticsDeviceNameFromConnectionString(const char* connectionString)
+bool ADUC_SetDiagnosticsDeviceNameFromConnectionString(const char* connectionString)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
 
     char* deviceId = NULL;
 
@@ -510,12 +486,12 @@ static void ADUC_PnP_Components_HandleRefresh(ADUC_ClientHandle clientHandle)
  * @param clientHandle the ClientHandle for the IotHub connection
  * @param argc Command-line arguments specific to upper-level handlers.
  * @param argv Size of argc.
- * @return _Bool True on success.
+ * @return bool True on success.
  */
-static _Bool ADUC_PnP_Components_Create(ADUC_ClientHandle clientHandle, int argc, char** argv)
+static bool ADUC_PnP_Components_Create(ADUC_ClientHandle clientHandle, int argc, char** argv)
 {
     Log_Info("Initializing PnP components.");
-    _Bool succeeded = false;
+    bool succeeded = false;
     const unsigned componentCount = ARRAY_SIZE(componentList);
 
     for (unsigned index = 0; index < componentCount; ++index)
@@ -680,241 +656,6 @@ static void ADUC_PnPDeviceTwin_Callback(
     }
 }
 
-static void ADUC_ConnectionStatus_Callback(
-    IOTHUB_CLIENT_CONNECTION_STATUS result, IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason, void* userContextCallback)
-{
-    UNREFERENCED_PARAMETER(userContextCallback);
-
-    Log_Debug("IotHub connection status: %d, reason: %d", result, reason);
-
-    if (result == IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED)
-    {
-        switch (reason)
-        {
-        case IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN:
-            Log_Warn("IotHub connection SAS token expired. Attempting refresh.");
-            // Try to refresh the sas token, then set an IotHub client handle on every PnP sub-component.
-            ADUC_Refresh_IotHub_Connection_SAS_Token();
-            break;
-        default:
-            break;
-        }
-    }
-}
-
-static IOTHUB_CLIENT_TRANSPORT_PROVIDER GetIotHubProtocolFromConfig()
-{
-#ifdef ADUC_GET_IOTHUB_PROTOCOL_FROM_CONFIG
-    IOTHUB_CLIENT_TRANSPORT_PROVIDER transportProvider = NULL;
-
-    ADUC_ConfigInfo config;
-    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
-    {
-        if (config.iotHubProtocol != NULL)
-        {
-            if (strcmp(config.iotHubProtocol, "mqtt") == 0)
-            {
-                transportProvider = MQTT_Protocol;
-                Log_Info("IotHub Protocol: MQTT");
-            }
-            else if (strcmp(config.iotHubProtocol, "mqtt/ws") == 0)
-            {
-                transportProvider = MQTT_WebSocket_Protocol;
-                Log_Info("IotHub Protocol: MQTT/WS");
-            }
-            else
-            {
-                Log_Error(
-                    "Unsupported 'iotHubProtocol' value of '%s' from '" ADUC_CONF_FILE_PATH "'.",
-                    config.iotHubProtocol);
-            }
-        }
-        else
-        {
-            Log_Warn("Missing 'iotHubProtocol' setting from '" ADUC_CONF_FILE_PATH "'. Default to MQTT.");
-            transportProvider = MQTT_Protocol;
-            Log_Info("IotHub Protocol: MQTT");
-        }
-
-        ADUC_ConfigInfo_UnInit(&config);
-    }
-    else
-    {
-        Log_Error("Failed to initialize config file '" ADUC_CONF_FILE_PATH "'.");
-    }
-
-    return transportProvider;
-
-#else
-
-#    ifdef ADUC_ALLOW_MQTT
-    Log_Info("IotHub Protocol: MQTT");
-    return MQTT_Protocol;
-#    endif // ADUC_ALLOW_MQTT
-
-#    ifdef ADUC_ALLOW_MQTT_OVER_WEBSOCKETS
-    Log_Info("IotHub Protocol: MQTT/WS");
-    return MQTT_WebSocket_Protocol;
-#    endif // ADUC_ALLOW_MQTT_OVER_WEBSOCKETS
-
-#endif // ADUC_GET_IOTHUB_PROTOCOL_FROM_CONFIG
-}
-
-/**
- * @brief Creates an IoTHub device client handler and register all callbacks.
- * @details should use ADUC_DeviceClient_Destroy() to uninit clientHandle
- * @param clientHandle clientHandle to be initialized with the connection info and launchArgs
- * @param connInfo struct containing the connection information for the DeviceClient
- * @param launchArgs Launch command-line arguments.
- * @return true on success, false on failure
- */
-static _Bool ADUC_DeviceClient_Create(
-    ADUC_ClientHandle clientHandle, ADUC_ConnectionInfo* connInfo, const ADUC_LaunchArguments* launchArgs)
-{
-    IOTHUB_CLIENT_RESULT iothubResult;
-    HTTP_PROXY_OPTIONS proxyOptions = {};
-    bool result = true;
-    bool shouldSetProxyOptions = InitializeProxyOptions(&proxyOptions);
-
-    Log_Info("Attempting to create connection to IotHub using type: %s ", ADUC_ConnType_ToString(connInfo->connType));
-
-    IOTHUB_CLIENT_TRANSPORT_PROVIDER transportProvider = GetIotHubProtocolFromConfig();
-    if (transportProvider == NULL)
-    {
-        result = false;
-    }
-    // Create a connection to IoTHub.
-    else if (!ClientHandle_CreateFromConnectionString(
-                 &g_iotHubClientHandle, connInfo->connType, connInfo->connectionString, transportProvider))
-    {
-        Log_Error("Failure creating IotHub device client using MQTT protocol. Check your connection string.");
-        result = false;
-    }
-    // Sets IoTHub tracing verbosity level.
-    else if (
-        (iothubResult =
-             ClientHandle_SetOption(g_iotHubClientHandle, OPTION_LOG_TRACE, &(launchArgs->iotHubTracingEnabled)))
-        != IOTHUB_CLIENT_OK)
-    {
-        Log_Error("Unable to set IoTHub tracing option, error=%d", iothubResult);
-        result = false;
-    }
-    else if (
-        connInfo->certificateString != NULL && connInfo->authType == ADUC_AuthType_SASCert
-        && (iothubResult =
-                ClientHandle_SetOption(g_iotHubClientHandle, SU_OPTION_X509_CERT, connInfo->certificateString))
-            != IOTHUB_CLIENT_OK)
-    {
-        Log_Error("Unable to set IotHub certificate, error=%d", iothubResult);
-        result = false;
-    }
-    else if (
-        shouldSetProxyOptions
-        && (iothubResult =
-                ClientHandle_SetOption(g_iotHubClientHandle, OPTION_HTTP_PROXY, &proxyOptions) != IOTHUB_CLIENT_OK))
-    {
-        Log_Error("Could not set http proxy options, error=%d ", iothubResult);
-        result = false;
-    }
-    else if (
-        connInfo->certificateString != NULL && connInfo->authType == ADUC_AuthType_NestedEdgeCert
-        && (iothubResult =
-                ClientHandle_SetOption(g_iotHubClientHandle, OPTION_TRUSTED_CERT, connInfo->certificateString))
-            != IOTHUB_CLIENT_OK)
-    {
-        Log_Error("Could not add trusted certificate, error=%d ", iothubResult);
-        result = false;
-    }
-    else if (
-        connInfo->opensslEngine != NULL && connInfo->authType == ADUC_AuthType_SASCert
-        && (iothubResult =
-                ClientHandle_SetOption(g_iotHubClientHandle, OPTION_OPENSSL_ENGINE, connInfo->opensslEngine))
-            != IOTHUB_CLIENT_OK)
-    {
-        Log_Error("Unable to set IotHub OpenSSL Engine, error=%d", iothubResult);
-        result = false;
-    }
-    else if (
-        connInfo->opensslPrivateKey != NULL && connInfo->authType == ADUC_AuthType_SASCert
-        && (iothubResult =
-                ClientHandle_SetOption(g_iotHubClientHandle, SU_OPTION_X509_PRIVATE_KEY, connInfo->opensslPrivateKey))
-            != IOTHUB_CLIENT_OK)
-    {
-        Log_Error("Unable to set IotHub OpenSSL Private Key, error=%d", iothubResult);
-        result = false;
-    }
-    else if (
-        connInfo->opensslEngine != NULL && connInfo->opensslPrivateKey != NULL
-        && connInfo->authType == ADUC_AuthType_SASCert
-        && (iothubResult =
-                ClientHandle_SetOption(g_iotHubClientHandle, OPTION_OPENSSL_PRIVATE_KEY_TYPE, &x509_key_from_engine))
-            != IOTHUB_CLIENT_OK)
-    {
-        Log_Error("Unable to set IotHub OpenSSL Private Key Type, error=%d", iothubResult);
-        result = false;
-    }
-    // Sets the name of ModelId for this PnP device.
-    // This *MUST* be set before the client is connected to IoTHub.  We do not automatically connect when the
-    // handle is created, but will implicitly connect to subscribe for device method and device twin callbacks below.
-    else if (
-        (iothubResult = ClientHandle_SetOption(g_iotHubClientHandle, OPTION_MODEL_ID, g_aduModelId))
-        != IOTHUB_CLIENT_OK)
-    {
-        Log_Error("Unable to set the Device Twin Model ID, error=%d", iothubResult);
-        result = false;
-    }
-    // Sets the callback function that processes device twin changes from the IoTHub, which is the channel
-    // that PnP Properties are transferred over.
-    // This will also automatically retrieve the full twin for the application.
-    else if (
-        (iothubResult = ClientHandle_SetClientTwinCallback(
-             g_iotHubClientHandle, ADUC_PnPDeviceTwin_Callback, &g_iotHubInitiatedPnPPropertyChangeContext))
-        != IOTHUB_CLIENT_OK)
-    {
-        Log_Error("Unable to set device twin callback, error=%d", iothubResult);
-        result = false;
-    }
-    else if (
-        (iothubResult =
-             ClientHandle_SetConnectionStatusCallback(g_iotHubClientHandle, ADUC_ConnectionStatus_Callback, NULL))
-        != IOTHUB_CLIENT_OK)
-    {
-        Log_Error("Unable to set connection status callback, error=%d", iothubResult);
-        result = false;
-    }
-    else
-    {
-        Log_Info("IoTHub Device Twin callback registered.");
-        result = true;
-    }
-
-    if ((result == false) && (g_iotHubClientHandle != NULL))
-    {
-        ClientHandle_Destroy(g_iotHubClientHandle);
-        g_iotHubClientHandle = NULL;
-    }
-
-    if (shouldSetProxyOptions)
-    {
-        UninitializeProxyOptions(&proxyOptions);
-    }
-
-    return result;
-}
-
-/**
- * @brief Destroy IoTHub device client handle.
- *
- * @param deviceHandle IoTHub device client handle.
- */
-static void ADUC_DeviceClient_Destroy(ADUC_ClientHandle clientHandle)
-{
-    if (clientHandle != NULL)
-    {
-        ClientHandle_Destroy(clientHandle);
-    }
-}
-
 /**
  * @brief Scans the connection string and returns the connection type related to the string
  * @details The connection string must use the valid, correct format for the DeviceId and/or the ModuleId
@@ -959,9 +700,13 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
  *
  * @return true if connection info can be obtained
  */
-_Bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString)
+bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
+
+    ADUC_ConfigInfo config;
+    memset(&config, 0, sizeof(config));
+
     if (info == NULL)
     {
         goto done;
@@ -991,7 +736,6 @@ _Bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const cha
     info->authType = ADUC_AuthType_SASToken;
 
     // Optional: The certificate string is needed for Edge Gateway connection.
-    ADUC_ConfigInfo config = {};
     if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.edgegatewayCertPath != NULL)
     {
         if (!LoadBufferWithFileContents(config.edgegatewayCertPath, certificateString, ARRAY_SIZE(certificateString)))
@@ -1021,16 +765,14 @@ done:
  *
  * @return true if connection info can be obtained
  */
-_Bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
+bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
     if (info == NULL)
     {
         goto done;
     }
     memset(info, 0, sizeof(*info));
-
-    Log_Info("Requesting connection string from the Edge Identity Service");
 
     time_t expirySecsSinceEpoch = time(NULL) + EIS_TOKEN_EXPIRY_TIME_IN_SECONDS;
 
@@ -1057,9 +799,9 @@ done:
  *
  * @param command The string contains command (and options) from other component or process.
  * @param commandContext A data context associated with the command.
- * @return _Bool
+ * @return bool
  */
-static _Bool RetryUpdateCommandHandler(const char* command, void* commandContext)
+static bool RetryUpdateCommandHandler(const char* command, void* commandContext)
 {
     UNREFERENCED_PARAMETER(command);
     UNREFERENCED_PARAMETER(commandContext);
@@ -1080,9 +822,9 @@ ADUC_Command redoUpdateCommand = { "retry-update", RetryUpdateCommandHandler };
  * @param info the connection information that will be configured
  * @return true on success; false on failure
  */
-_Bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
+bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
 {
-    _Bool success = false;
+    bool success = false;
     ADUC_ConfigInfo config = {};
     if (info == NULL)
     {
@@ -1123,12 +865,6 @@ _Bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
         goto done;
     }
 
-    if (!ADUC_SetDiagnosticsDeviceNameFromConnectionString(info->connectionString))
-    {
-        Log_Error("Setting DiagnosticsDeviceName failed");
-        goto done;
-    }
-
     success = true;
 
 done:
@@ -1143,46 +879,15 @@ done:
 }
 
 /**
- * @brief Refresh the IotHub connection, then then set an IotHub client handle on every PnP sub-component.
- *
- * Note: Learn more about IotHub SAS tokens at https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-dev-guide-sas?tabs=node#sas-tokens
- *
- */
-static void ADUC_Refresh_IotHub_Connection_SAS_Token()
-{
-    ADUC_DeviceClient_Destroy(g_iotHubClientHandle);
-
-    ADUC_ConnectionInfo info = {};
-    if (!GetAgentConfigInfo(&info))
-    {
-        goto done;
-    }
-
-    if (!ADUC_DeviceClient_Create(g_iotHubClientHandle, &info, &launchArgs))
-    {
-        Log_Error("ADUC_DeviceClient_Create failed");
-        goto done;
-    }
-
-    ADUC_PnP_Components_HandleRefresh(g_iotHubClientHandle);
-
-    Log_Info("Successfully refreshed SAS Token");
-
-done:
-
-    ADUC_ConnectionInfo_DeAlloc(&info);
-}
-
-/**
  * @brief Handles the startup of the agent
  * @details Provisions the connection string with the CLI or either
  * the Edge Identity Service or the configuration file
  * @param launchArgs CLI arguments passed to the client
- * @returns _Bool true on success.
+ * @returns bool true on success.
  */
-_Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
+bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
 
     ADUC_ConnectionInfo info = {};
 
@@ -1211,9 +916,13 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
             goto done;
         }
 
-        if (!ADUC_DeviceClient_Create(g_iotHubClientHandle, &connInfo, launchArgs))
+        if (!IoTHub_CommunicationManager_Init(
+                &g_iotHubClientHandle,
+                ADUC_PnPDeviceTwin_Callback,
+                ADUC_PnP_Components_HandleRefresh,
+                &g_iotHubInitiatedPnPPropertyChangeContext))
         {
-            Log_Error("ADUC_DeviceClient_Create failed");
+            Log_Error("IoTHub_CommunicationManager_Init failed");
             goto done;
         }
     }
@@ -1224,9 +933,19 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
             goto done;
         }
 
-        if (!ADUC_DeviceClient_Create(g_iotHubClientHandle, &info, launchArgs))
+        if (!ADUC_SetDiagnosticsDeviceNameFromConnectionString(info.connectionString))
         {
-            Log_Error("ADUC_DeviceClient_Create failed");
+            Log_Error("Setting DiagnosticsDeviceName failed");
+            goto done;
+        }
+
+        if (!IoTHub_CommunicationManager_Init(
+                &g_iotHubClientHandle,
+                ADUC_PnPDeviceTwin_Callback,
+                ADUC_PnP_Components_HandleRefresh,
+                &g_iotHubInitiatedPnPPropertyChangeContext))
+        {
+            Log_Error("IoTHub_CommunicationManager_Init failed");
             goto done;
         }
     }
@@ -1266,7 +985,7 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     {
         // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
         // fail the startup.
-        Log_Error("Failed to set DO connection string in Nested Edge scenario, result: %d", result);
+        Log_Error("Failed to set DO connection string in Nested Edge scenario, result: 0x%08x", result.ResultCode);
         goto done;
     }
 
@@ -1287,7 +1006,7 @@ void ShutdownAgent()
     ADUC_D2C_Messaging_Uninit();
     UninitializeCommandListenerThread();
     ADUC_PnP_Components_Destroy();
-    ADUC_DeviceClient_Destroy(g_iotHubClientHandle);
+    IoTHub_CommunicationManager_Deinit();
     DiagnosticsComponent_DestroyDeviceName();
     ADUC_Logging_Uninit();
     ExtensionManager_Uninit();
@@ -1324,11 +1043,11 @@ void OnRestartSignal(int sig)
  * This to ensure that the agent process is run with the intended privileges, and the resource that
  * created by the agent has the correct ownership.
  *
- * @return _Bool
+ * @return bool true on success.
  */
-_Bool RunAsDesiredUser()
+bool RunAsDesiredUser()
 {
-    _Bool success = false;
+    bool success = false;
     ADUC_ConfigInfo config = {};
     if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
     {
@@ -1385,16 +1104,20 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    // Need to set ret and goto done after this to ensure proper shutdown and deinitialization.
     ADUC_Logging_Init(launchArgs.logLevel, "du-agent");
+
+    // default to failure
+    ret = 1;
 
     if (launchArgs.healthCheckOnly)
     {
         if (HealthCheck(&launchArgs))
         {
-            return 0;
+            ret = 0;
         }
 
-        return 1;
+        goto done;
     }
 
     if (launchArgs.extensionFilePath != NULL)
@@ -1403,55 +1126,55 @@ int main(int argc, char** argv)
         {
         case ExtensionRegistrationType_None:
             Log_Error("Missing --extension-type argument.");
-            return 1;
+            goto done;
 
         case ExtensionRegistrationType_UpdateContentHandler:
             if (launchArgs.extensionId == NULL)
             {
                 Log_Error("Missing --extension-id argument.");
-                return 1;
+                goto done;
             }
 
             if (RegisterUpdateContentHandler(launchArgs.extensionId, launchArgs.extensionFilePath))
             {
-                return 0;
+                ret = 0;
             }
 
-            return 1;
+            goto done;
 
         case ExtensionRegistrationType_ComponentEnumerator:
             if (RegisterComponentEnumeratorExtension(launchArgs.extensionFilePath))
             {
-                return 0;
+                ret = 0;
             }
 
-            return 1;
+            goto done;
 
         case ExtensionRegistrationType_ContentDownloadHandler:
             if (RegisterContentDownloaderExtension(launchArgs.extensionFilePath))
             {
-                return 0;
+                ret = 0;
             }
 
-            return 1;
+            goto done;
 
         case ExtensionRegistrationType_DownloadHandler:
             if (launchArgs.extensionId == NULL)
             {
                 Log_Error("Missing --extension-id argument.");
-                return 1;
+                goto done;
             }
 
             if (RegisterDownloadHandler(launchArgs.extensionId, launchArgs.extensionFilePath))
             {
-                return 0;
+                ret = 0;
             }
 
-            return 1;
+            goto done;
 
         default:
             Log_Error("Unknown ExtensionRegistrationType: %d", launchArgs.extensionRegistrationType);
-            return 1;
+            goto done;
         }
     }
 
@@ -1460,9 +1183,10 @@ int main(int argc, char** argv)
     {
         if (SendCommand(launchArgs.ipcCommand))
         {
-            return 0;
+            ret = 0;
         }
-        return 1;
+
+        goto done;
     }
 
     // Switch to specified agent.runas user.
@@ -1470,31 +1194,32 @@ int main(int argc, char** argv)
     // high-privileged tasks, such as, registering agent's extension(s).
     if (!RunAsDesiredUser())
     {
-        return 0;
+        goto done;
     }
 
     Log_Info("Agent (%s; %s) starting.", ADUC_PLATFORM_LAYER, ADUC_VERSION);
 #ifdef ADUC_GIT_INFO
     Log_Info("Git Info: %s", ADUC_GIT_INFO);
 #endif
-    Log_Info("Agent built with handlers: %s.", ADUC_CONTENT_HANDLERS);
     Log_Info(
         "Supported Update Manifest version: min: %d, max: %d",
         SUPPORTED_UPDATE_MANIFEST_VERSION_MIN,
         SUPPORTED_UPDATE_MANIFEST_VERSION_MAX);
 
-    _Bool healthy = HealthCheck(&launchArgs);
+    bool healthy = HealthCheck(&launchArgs);
     if (launchArgs.healthCheckOnly || !healthy)
     {
         if (healthy)
         {
             Log_Info("Agent is healthy.");
+            ret = 0;
         }
         else
         {
             Log_Error("Agent health check failed.");
         }
-        return healthy ? 0 : 1;
+
+        goto done;
     }
 
     // Ensure that the ADU data folder exists.
@@ -1542,8 +1267,8 @@ int main(int argc, char** argv)
             }
         }
 
+        IoTHub_CommunicationManager_DoWork(&g_iotHubClientHandle);
         ADUC_D2C_Messaging_DoWork();
-        ClientHandle_DoWork(g_iotHubClientHandle);
 
         // NOTE: When using low level samples (iothub_ll_*), the IoTHubDeviceClient_LL_DoWork
         // function must be called regularly (eg. every 100 milliseconds) for the IoT device client to work properly.

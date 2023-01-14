@@ -20,15 +20,8 @@ public:
     AutoOpenDir(const std::string& dirPath);
     ~AutoOpenDir();
 
-    DIR* GetDirectoryStreamHandle()
-    {
-        return dirEntry;
-    }
-
-    struct dirent* NextDirEntry()
-    {
-        return readdir(dirEntry);
-    }
+    DIR* GetDirectoryStreamHandle();
+    struct dirent* NextDirEntry();
 
 private:
     DIR* dirEntry;
