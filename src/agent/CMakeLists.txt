@@ -74,7 +74,6 @@ find_package (umqtt REQUIRED)
 find_package (Parson REQUIRED)
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
-target_link_iothub_client_mqtt_transport (${target_name} PRIVATE)
 
 target_link_libraries (
     ${target_name}
@@ -112,27 +111,21 @@ message (STATUS "ADUC_IOT_HUB_PROTOCOL: ${ADUC_IOT_HUB_PROTOCOL}")
 
 if (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT")
     target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT=1)
-    target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_transport)
+    target_link_libraries_find (${target_name} PRIVATE iothub_client_mqtt_transport)
 elseif (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT_over_WebSockets")
     target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT_OVER_WEBSOCKETS=1)
-    target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_ws_transport)
+    target_link_libraries_find (${target_name} PRIVATE iothub_client_mqtt_ws_transport)
 elseif (ADUC_IOT_HUB_PROTOCOL STREQUAL "IotHub_Protocol_from_Config")
     target_compile_definitions (${target_name} PRIVATE ADUC_GET_IOTHUB_PROTOCOL_FROM_CONFIG=1)
     target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT=1)
     target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT_OVER_WEBSOCKETS=1)
-    target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_transport)
-    target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_ws_transport)
+    target_link_libraries_find (${target_name} PRIVATE iothub_client_mqtt_transport)
+    target_link_libraries_find (${target_name} PRIVATE iothub_client_mqtt_ws_transport)
 else ()
     message (
         FATAL_ERROR,
         "Invalid value '${ADUC_IOT_HUB_PROTOCOL}' for ADUC_IOT_HUB_PROTOCOL. Valid values: MQTT | MQTT_over_WebSockets | IotHub_Protocol_from_Config"
     )
-endif ()
-
-if (WIN32)
-    # TODO(JeffMill): Why only needed on Windows?
-    target_link_libraries (${target_name} PRIVATE prov_auth_client prov_device_client
-                                                  hsm_security_client)
 endif ()
 
 get_filename_component (

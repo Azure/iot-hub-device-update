@@ -23,6 +23,14 @@ target_link_libraries (
     PUBLIC aduc::c_utils aduc::adu_types
     PRIVATE aduc::adu_types
             IotHubClient::iothub_client
-            iothub_client_mqtt_transport
             umqtt
             aduc::logging)
+
+target_link_libraries_find (${target_name} PUBLIC iothub_client_mqtt_transport)
+
+if (WIN32)
+    # TODO(JeffMill): Why are these only required on Windows builds?
+    target_link_libraries_find (${target_name} PUBLIC uhttp)
+    target_link_libraries_find (${target_name} PUBLIC prov_auth_client)
+    target_link_libraries_find (${target_name} PUBLIC hsm_security_client)
+endif ()
