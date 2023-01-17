@@ -300,6 +300,39 @@ function Install-Adu-Components {
     Set-ItemProperty -LiteralPath '/usr/lib/adu/adu-shell.exe' -Name IsReadOnly -Value $true
 
     #
+    # $env:TEMP/du-simulator-data.json (SIMULATOR_DATA_FILE)
+    #
+
+    @'
+{
+    "isInstalled": {
+        "*": {
+            "resultCode": 901,
+            "extendedResultCode": 0,
+            "resultDetails": "simulated isInstalled"
+        }
+    },
+    "download": {
+        "*": {
+            "resultCode": 500,
+            "extendedResultCode": 0,
+            "resultDetails": "simulated download"
+        }
+    },
+    "install": {
+        "resultCode": 600,
+        "extendedResultCode": 0,
+        "resultDetails": "simulated install"
+    },
+    "apply": {
+        "resultCode": 700,
+        "extendedResultCode": 0,
+        "resultDetails": "simulated apply"
+    }
+}
+'@ | Out-File -Encoding ASCII "$env:TEMP/du-simulator-data.json"
+
+    #
     # /etc/adu/du-diagnostics-config.json
     #
 
@@ -347,13 +380,11 @@ function Install-Adu-Components {
 }
 '@ | Out-File -Encoding ASCII '/etc/adu/du-config.json'
     }
-
     if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath '/etc/adu/du-config.json' -SimpleMatch) {
         Show-Warning 'Need to edit connectionData,agents.manufacturer,agents.model in /etc/adu/du-config.json'
         ''
         notepad.exe '\etc\adu\du-config.json'
     }
-
     if (-not (Test-Path '/tmp/adu/testdata' -PathType Container)) {
         ''
         Show-Warning 'Do clean build to copy test data to /tmp/adu/testdata'
