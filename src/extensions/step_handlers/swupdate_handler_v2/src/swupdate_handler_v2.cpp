@@ -386,51 +386,22 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
     char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
     Log_Info("Applying data from %s", workFolder);
 
-    // Execute the install command with  "-a" to apply the install by telling
-    // the bootloader to boot to the updated partition.
-
-    // This is equivalent to : command << SWUpdateCommand << " -l " << _logFolder << " -a"
-
-    std::string command = adushconst::adu_shell;
-    std::vector<std::string> args{ adushconst::update_type_opt,
-                                   adushconst::update_type_microsoft_swupdate,
-                                   adushconst::update_action_opt,
-                                   adushconst::update_action_apply };
-
-    args.emplace_back(adushconst::target_log_folder_opt);
-
-    // Note: this implementation of SWUpdate Handler is relying on ADUC_LOG_FOLDER value from build pipeline.
-    // For GA, we should make this configurable in du-config.json.
-    args.emplace_back(ADUC_LOG_FOLDER);
-
-    std::string output;
-
-    const int exitCode = ADUC_LaunchChildProcess(command, args, output);
-
-    if (exitCode != 0)
-    {
-        Log_Error("Apply failed, extendedResultCode = %d", exitCode);
-        result = { ADUC_Result_Failure, exitCode };
-        goto done;
-    }
+    result = PerformAction("--action-apply", workflowData);
 
     // Cancellation requested after applied?
     if (workflow_get_operation_cancel_requested(workflowData->WorkflowHandle))
     {
-        Cancel(workflowData);
-        goto done;
+        result = Cancel(workflowData);
     }
 
-    result = {
-        .ResultCode = ADUC_Result_Success,
-        .ExtendedResultCode = 0
-    };
-
-done:
     workflow_free_string(workFolder);
 
-    // Always require a reboot after successful apply
-    if (IsAducResultCodeSuccess(result.ResultCode))
+    if (IsAducResultCodeSuccess(result.ResultCode) && result.ResultCode == ADUC_Result_Apply_RequiredImmediateAgentRestart)
+    {
+        workflow_request_agent_restart(workflowData->WorkflowHandle);
+        result = { ADUC_Result_Apply_RequiredImmediateAgentRestart };
+    }
+    else if (IsAducResultCodeSuccess(result.ResultCode) && result.ResultCode == ADUC_Result_Apply_RequiredImmediateReboot)
     {
         workflow_request_immediate_reboot(workflowData->WorkflowHandle);
         result = { ADUC_Result_Apply_RequiredImmediateReboot };
@@ -848,30 +819,21 @@ ADUC_Result SWUpdateHandlerImpl::PerformAction(const std::string& action, const 
  *
  * @return ADUC_Result The result of the cancel.
  */
-static ADUC_Result CancelApply(const char* logFolder)
+ADUC_Result SWUpdateHandlerImpl::CancelApply(const tagADUC_WorkflowData* workflowData)
 {
-    // Execute the install command with  "-r" to reverts the apply by
-    // telling the bootloader to boot into the current partition
+    ADUC_Result result;
 
-    // This is equivalent to : command << c_installScript << " -l " << logFolder << " -r"
-
-    std::string command = adushconst::adu_shell;
-    std::vector<std::string> args{ adushconst::update_type_opt,       adushconst::update_type_microsoft_swupdate,
-                                   adushconst::update_action_opt,     adushconst::update_action_apply,
-                                   adushconst::target_log_folder_opt, logFolder };
-
-    std::string output;
-
-    const int exitCode = ADUC_LaunchChildProcess(command, args, output);
-    if (exitCode != 0)
+    result = PerformAction("--action-cancel", workflowData);
+    if (result.ResultCode != ADUC_Result_Cancel_Success)
     {
-        // If failed to cancel apply, apply should return SuccessRebootRequired.
-        Log_Error("Failed to cancel Apply, extendedResultCode = %d", exitCode);
-        return ADUC_Result{ ADUC_Result_Failure, exitCode };
+        Log_Error("Failed to cancel Apply, extendedResultCode = (0x%X)", result.ExtendedResultCode);
+        return ADUC_Result{ ADUC_Result_Failure };
     }
-
-    Log_Info("Apply was cancelled");
-    return ADUC_Result{ ADUC_Result_Failure_Cancelled };
+    else
+    {
+        Log_Info("Apply was cancelled");
+        return ADUC_Result{ ADUC_Result_Failure_Cancelled };
+    }
 }
 
 /**
@@ -899,7 +861,7 @@ ADUC_Result SWUpdateHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData
 ADUC_Result SWUpdateHandlerImpl::Restore(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = { ADUC_Result_Restore_Success };
-    ADUC_Result cancel_result = CancelApply(ADUC_LOG_FOLDER);
+    ADUC_Result cancel_result = CancelApply(workflowData);
     if (cancel_result.ResultCode != ADUC_Result_Failure_Cancelled)
     {
         result = { .ResultCode = ADUC_Result_Failure,
