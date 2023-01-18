@@ -19,6 +19,14 @@
 #include <do_config.h>
 #include <do_download.h>
 
+#if defined(WIN32)
+// DO currently doesn't call CoInitialize, so need to do that here.
+#    define WIN32_LEAN_AND_MEAN
+#    include <objbase.h> // COM
+
+#    include <algorithm> // std::replace
+#endif
+
 EXTERN_C_BEGIN
 
 /////////////////////////////////////////////////////////////////////////////
@@ -50,6 +58,19 @@ EXPORTED_METHOD ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contract
 EXPORTED_METHOD ADUC_Result Initialize(const char* initializeData)
 {
     ADUC_Result result{ ADUC_GeneralResult_Success };
+
+#if defined(WIN32)
+    // Bug 43013508: ContentHandlers have Initialize but no Uninitialize export
+    // (so not calling CoUninitialize)
+    HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    if (FAILED(hr))
+    {
+        Log_Error("Unable to initialize COM");
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = hr;
+        goto done;
+    }
+#endif
 
     if (initializeData == nullptr)
     {
@@ -94,7 +115,22 @@ EXPORTED_METHOD ADUC_Result Download(
     unsigned int retryTimeout,
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
+#if defined(WIN32)
+    // TODO(JeffMill): I'm temporarily using paths like /var/lib/adu/downloads
+    // but DO requires a full path and backslashes, so prepending C:.  Once paths are fixed up, this can be removed.
+    std::string folder;
+    if (workFolder[0] == '/')
+    {
+        folder = "c:";
+    }
+    folder += workFolder;
+
+    std::replace(folder.begin(), folder.end(), '/', '\\');
+
+    return do_download(entity, workflowId, folder.c_str(), retryTimeout, downloadProgressCallback);
+#else
     return do_download(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
+#endif
 }
 
 //

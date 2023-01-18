@@ -106,7 +106,12 @@ $build_documentation = $false
 $build_packages = $false
 $platform_layer = 'linux'
 $trace_target_deps = $false
-$content_handlers = 'microsoft/swupdate,microsoft/apt,microsoft/simulator'
+
+# TODO(JeffMill): Unable to filter handlers at build time:
+# Task 42405545: [P1] No way to selectively build content downloaders should I remove ADUC_CONTENT_HANDLERS for now?
+# Task 42398328: [P1] add the --content-handlers option back.
+# $content_handlers = 'microsoft/swupdate,microsoft/apt,microsoft/simulator'
+
 $build_type = 'Debug'
 $adu_log_dir = ''
 $default_log_dir = '/var/log/adu'
@@ -167,11 +172,11 @@ function Invoke-CopyFile {
         [Parameter(mandatory = $true)][string]$Destination)
 
     if (-not (Test-Path -LiteralPath $Source -PathType Leaf)) {
-        throw 'Source is not a file or doesnt exist'
+        throw "$Source is not a file or doesn't exist"
     }
 
     if (-not (Test-Path -LiteralPath $Destination -PathType Container)) {
-        throw 'Destination is not a folder'
+        throw "$Destination is not a folder"
     }
 
     $copyNeeded = $true
@@ -188,12 +193,12 @@ function Invoke-CopyFile {
     }
 
     if ($copyNeeded) {
-        "$Source => $Destination"
+        "Copied: $Source => $Destination"
         # Force, in case destination is marked read-only
         Copy-Item -Force -LiteralPath $Source -Destination $Destination
     }
     else {
-        "$destinationFile is same or newer"
+        "Same (or newer): $destinationFile"
     }
 }
 
@@ -216,12 +221,12 @@ function Create-Adu-Folders {
 }
 
 function Register-Components {
-    # TODO(JeffMill): [PAL] Do correct component registration when ready.
+    # Ensure that files are copied first in Install-Adu-Components
 
     Show-Header 'Registering components'
 
     # Launch agent to write config files
-    # see postinst : register_reference_extensions
+    # Based on postinst : register_reference_extensions
 
     $adu_bin_path = '/usr/bin/AducIotAgent.exe'
 
@@ -229,22 +234,28 @@ function Register-Components {
     $adu_extensions_dir = "$adu_data_dir/extensions"
     $adu_extensions_sources_dir = "$adu_extensions_dir/sources"
 
-    $adu_steps_handler_file = 'microsoft_steps_1.dll'
-    $curl_downloader_file = 'curl_content_downloader.dll'
-    $adu_simulator_handler_file = 'microsoft_simulator_1.dll'
+    # /var/lib/adu/extensions/content_downloader/extension.json
+    # $curl_content_downloader_file = 'curl_content_downloader.dll'
+    # & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$curl_content_downloader_file" --extension-type contentDownloader --log-level 2
 
-    # Will create /var/lib/adu/extensions/content_downloader/extension.json
-    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$curl_downloader_file" --extension-type contentDownloader --log-level 2
+    # /var/lib/adu/extensions/content_downloader/extension.json
+    $do_content_downloader_file = 'deliveryoptimization_content_downloader.dll'
+    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$do_content_downloader_file" --extension-type contentDownloader --log-level 2
 
-    # Will create /var/lib/adu/extensions/update_content_handlers/microsoft_swupdate_1/content_handler.json
-    # TODO(JeffMill): Temporary registration as microsoft/swupdate:1
-    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$adu_simulator_handler_file" --extension-type updateContentHandler --extension-id 'microsoft/swupdate:1'
+    # /var/lib/adu/extensions/update_content_handlers/microsoft_swupdate_1/content_handler.json
+    # $microsoft_simulator_1_file = 'microsoft_simulator_1.dll'
+    # & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$microsoft_simulator_1_file" --extension-type updateContentHandler --extension-id 'microsoft/swupdate:1'
 
-    # Will create e.g./var/lib/adu/extensions/update_content_handlers/microsoft_steps_1/content_handler.json
-    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$adu_steps_handler_file" --extension-type updateContentHandler --extension-id "microsoft/steps:1" --log-level 2
-    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$adu_steps_handler_file" --extension-type updateContentHandler --extension-id "microsoft/update-manifest" --log-level 2
-    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$adu_steps_handler_file" --extension-type updateContentHandler --extension-id "microsoft/update-manifest:4" --log-level 2
-    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$adu_steps_handler_file" --extension-type updateContentHandler --extension-id "microsoft/update-manifest:5" --log-level 2
+    # /var/lib/adu/extensions/update_content_handlers/microsoft_wiot_1/content_handler.json
+    $microsoft_wiot_1_handler_file = 'microsoft_wiot_1.dll'
+    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$microsoft_wiot_1_handler_file" --extension-type updateContentHandler --extension-id 'microsoft/wiot:1'
+
+    # /var/lib/adu/extensions/update_content_handlers/microsoft_steps_1/content_handler.json
+    $microsoft_steps_1_file = 'microsoft_steps_1.dll'
+    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$microsoft_steps_1_file" --extension-type updateContentHandler --extension-id "microsoft/steps:1" --log-level 2
+    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$microsoft_steps_1_file" --extension-type updateContentHandler --extension-id "microsoft/update-manifest" --log-level 2
+    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$microsoft_steps_1_file" --extension-type updateContentHandler --extension-id "microsoft/update-manifest:4" --log-level 2
+    & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$microsoft_steps_1_file" --extension-type updateContentHandler --extension-id "microsoft/update-manifest:5" --log-level 2
 }
 function Install-Adu-Components {
     # TODO(JeffMill): [PAL] Temporary until paths are determined.
@@ -254,30 +265,29 @@ function Install-Adu-Components {
     Create-Adu-Folders
 
     # cmake --install should place binaries, but that's not working correctly.
-    # TODO(JWelden): Task 42936258: --install-prefix not working properly
-
+    # TODO: Task 42936258: --install-prefix not working properly
     # & $cmake_bin --install $output_directory --config $build_type --verbose
     # $ret_val = $LASTEXITCODE
     # if ($ret_val -ne 0) {
-    #     Write-Error "ERROR: CMake failed (Error $ret_val)"
-    #     exit $ret_val
-    # }
-
-    # Workaround: Manually copy files
+        #     Write-Error "ERROR: CMake failed (Error $ret_val)"
+        #     exit $ret_val
+        # }
+    # Workaround: Manually copy files...
 
     $bin_path = "$runtime_dir/$build_type"
-    # Invoke-CopyFile   deliveryoptimization_content_downloader
-    # Invoke-CopyFile   microsoft_apt_1
-    # Invoke-CopyFile   microsoft_delta_download_handler
-    # Invoke-CopyFile   microsoft_script_1
-    # Invoke-CopyFile   microsoft_swupdate_1
-    # Invoke-CopyFile   microsoft_swupdate_2
+    # contoso_component_enumerator
+    # curl_content_downloader
+    # microsoft_apt_1
+    # microsoft_delta_download_handler
+    # microsoft_script_1
+    # microsoft_simulator_1.dll
+    # microsoft_swupdate_1
+    # microsoft_swupdate_2
     Invoke-CopyFile   "$bin_path/adu-shell.exe" /usr/lib/adu
     Invoke-CopyFile   "$bin_path/AducIotAgent.exe" /usr/bin
-    Invoke-CopyFile   "$bin_path/contoso_component_enumerator.dll" /var/lib/adu/extensions/sources
-    Invoke-CopyFile   "$bin_path/curl_content_downloader.dll" /var/lib/adu/extensions/sources
-    Invoke-CopyFile   "$bin_path/microsoft_simulator_1.dll" /var/lib/adu/extensions/sources
+    Invoke-CopyFile   "$bin_path/deliveryoptimization_content_downloader.dll" /var/lib/adu/extensions/sources
     Invoke-CopyFile   "$bin_path/microsoft_steps_1.dll" /var/lib/adu/extensions/sources
+    Invoke-CopyFile   "$bin_path/microsoft_wiot_1.dll" /var/lib/adu/extensions/sources
 
     # IMPORTANT: Windows builds require these DLLS as well!
     # TODO(JeffMill): Any way to build these statically?
@@ -545,10 +555,6 @@ $library_dir = "$output_directory/lib"
 $cmake_bin = 'cmake.exe'
 # $shellcheck_bin = "$work_folder/deviceupdate-shellcheck"
 
-# TODO(JeffMill): Forcing content_handlers in Windows builds.  Bug on Nox for this.
-$content_handlers = 'microsoft/simulator'
-Show-Warning "Forcing content_handlers to $content_handlers"
-
 # Output banner
 ''
 Show-Header 'Building ADU Agent'
@@ -556,7 +562,7 @@ Show-Bullet "Clean build: $build_clean"
 Show-Bullet "Documentation: $build_documentation"
 Show-Bullet "Platform layer: $platform_layer"
 Show-Bullet "Trace target deps: $trace_target_deps"
-Show-Bullet "Content handlers: $content_handlers"
+# Show-Bullet "Content handlers: $content_handlers"
 Show-Bullet "Build type: $build_type"
 Show-Bullet "Log directory: $adu_log_dir"
 Show-Bullet "Logging library: $log_lib"
@@ -580,7 +586,7 @@ $CMAKE_OPTIONS = @(
     "-DADUC_BUILD_DOCUMENTATION:BOOL=$build_documentation",
     "-DADUC_BUILD_UNIT_TESTS:BOOL=$build_unittests",
     "-DADUC_BUILD_PACKAGES:BOOL=$build_packages",
-    "-DADUC_CONTENT_HANDLERS:STRING=$content_handlers",
+#    "-DADUC_CONTENT_HANDLERS:STRING=$content_handlers",
     "-DADUC_LOG_FOLDER:STRING=$adu_log_dir",
     "-DADUC_LOGGING_LIBRARY:STRING=$log_lib",
     "-DADUC_PLATFORM_LAYER:STRING=$platform_layer",

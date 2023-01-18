@@ -85,7 +85,7 @@ if (WIN32)
     check_type_size ("void*" SIZEOF_VOID_P BUILTIN_TYPES_ONLY)
 
     if (SIZEOF_VOID_P EQUAL 8)
-        message (STATUS "Using Vcpkg triplet 'x64-windows'")
+        message (STATUS "[VCPKG] Using Vcpkg triplet 'x64-windows'")
 
         set (VCPKG_TRIPLET x64-windows)
     endif ()
@@ -128,21 +128,20 @@ endmacro ()
 
 macro (_install_or_update_vcpkg)
     if (NOT EXISTS ${VCPKG_ROOT})
-        message (STATUS "Cloning vcpkg in ${VCPKG_ROOT}")
-        execute_process (COMMAND git clone --quiet https://github.com/Microsoft/vcpkg.git
-                                 ${VCPKG_ROOT})
+        message (STATUS "[VCPKG] Cloning vcpkg in ${VCPKG_ROOT}")
+        execute_process (COMMAND git clone https://github.com/Microsoft/vcpkg.git ${VCPKG_ROOT})
 
         # If a reproducible build is desired (and potentially old libraries are ok), uncomment the
         # following line and pin the vcpkg repository to a specific githash.
         # execute_process(COMMAND git checkout 745a0aea597771a580d0b0f4886ea1e3a94dbca6 WORKING_DIRECTORY ${VCPKG_ROOT})
     else ()
         # The following command has no effect if the vcpkg repository is in a detached head state.
-        message (STATUS "Auto-updating vcpkg in ${VCPKG_ROOT}")
-        execute_process (COMMAND git pull --quiet WORKING_DIRECTORY ${VCPKG_ROOT})
+        message (STATUS "[VCPKG] Auto-updating vcpkg in ${VCPKG_ROOT}")
+        execute_process (COMMAND git pull WORKING_DIRECTORY ${VCPKG_ROOT})
     endif ()
 
     if (NOT EXISTS ${VCPKG_ROOT}/README.md)
-        message (FATAL_ERROR "***** FATAL ERROR: Could not clone vcpkg *****")
+        message (FATAL_ERROR "[VCPKG] Could not clone vcpkg")
     endif ()
 
     if (WIN32)
@@ -154,12 +153,12 @@ macro (_install_or_update_vcpkg)
     endif ()
 
     if (NOT EXISTS ${VCPKG_EXEC})
-        message (STATUS "Bootstrapping vcpkg in ${VCPKG_ROOT}")
+        message (STATUS "[VCPKG] Bootstrapping vcpkg in ${VCPKG_ROOT}")
         execute_process (COMMAND ${VCPKG_BOOTSTRAP} -disableMetrics WORKING_DIRECTORY ${VCPKG_ROOT})
     endif ()
 
     if (NOT EXISTS ${VCPKG_EXEC})
-        message (FATAL_ERROR "***** FATAL ERROR: Could not bootstrap vcpkg *****")
+        message (FATAL_ERROR "[VCPKG] Could not bootstrap vcpkg")
     endif ()
 
 endmacro ()
@@ -170,7 +169,8 @@ macro (vcpkg_install_packages)
     # Need the given list to be space-separated
     #string (REPLACE ";" " " PACKAGES_LIST_STR "${ARGN}")
 
-    message (STATUS "Installing/Updating the following vcpkg-packages: ${PACKAGES_LIST_STR}")
+    message (
+        STATUS "[VCPKG] Installing/Updating the following vcpkg-packages: ${PACKAGES_LIST_STR}")
 
     if (VCPKG_TRIPLET)
         set (ENV{VCPKG_DEFAULT_TRIPLET} "${VCPKG_TRIPLET}")

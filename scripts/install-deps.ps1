@@ -1,15 +1,15 @@
 # TODO(JeffMill): Add commandline params
 
 function Error {
-    Param([Parameter(mandatory = $true, position = 0)][string]$message)
+    Param([Parameter(Mandatory = $true, position = 0)][string]$message)
     Write-Host -ForegroundColor Red -NoNewline 'Error:'
     Write-Host " $message"
 }
 
 function Invoke-WebRequestNoProgress {
     Param(
-        [Parameter(mandatory = $true)][string]$Uri,
-        [Parameter(mandatory = $true)][string]$OutFile)
+        [Parameter(Mandatory = $true)][string]$Uri,
+        [Parameter(Mandatory = $true)][string]$OutFile)
 
     $PrevProgressPreference = $ProgressPreference
 
@@ -20,8 +20,8 @@ function Invoke-WebRequestNoProgress {
 
 function Install-WithWinGet {
     Param(
-        [Parameter(mandatory = $true)][string]$PackageId,
-        [Parameter(mandatory = $true)][string]$TestExecutable)
+        [Parameter(Mandatory = $true)][string]$PackageId,
+        [Parameter(Mandatory = $true)][string]$TestExecutable)
 
     if (-not (Test-Path -LiteralPath $TestExecutable -PathType Leaf -ErrorAction SilentlyContinue)) {
         Write-Host -ForegroundColor Yellow "Installing $PackageId"
@@ -30,6 +30,48 @@ function Install-WithWinGet {
     else {
         Write-Host -ForegroundColor Cyan "$PackageId already installed."
     }
+}
+
+function Install-DeliveryOptimization {
+    Param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Branch,
+        [Parameter(Mandatory = $true)][string]$Commit)
+
+    if (Test-Path -LiteralPath $Path -PathType Container) {
+        Write-Host -ForegroundColor Cyan 'Delivery Optimization already installed.'
+        return
+    }
+
+    'Building Delivery Optimization ...'
+    "Branch: $Branch"
+    "Folder: $Path"
+
+    mkdir $Path | Out-Null
+    Push-Location $Path
+
+    # do_url=git@github.com:Microsoft/do-client.git
+    $do_url = 'https://github.com/Microsoft/do-client.git'
+
+    git clone --recursive --single-branch --branch $Branch --depth 1 $do_url .
+
+    git checkout $Commit
+
+    # Note: bootstrap-windows.ps1 installs CMake and Python, but we already installed those,
+    # so not calling that script.
+
+    # Note: install-vcpkg-deps.ps1 uses vcpkg to install
+    # gtest:x64-windows,boost-filesystem:x64-windows,boost-program-options:x64-windows
+    # but we can't use "vcpkg install" as we're in vcpkg manifest mode.
+
+    mkdir cmake | Out-Null
+    cd cmake
+
+    $CMAKE_OPTIONS = '-DDO_BUILD_TESTS:BOOL=OFF', '-DDO_INCLUDE_SDK=ON', '-DCMAKE_BUILD_TYPE=Release'
+    cmake.exe @CMAKE_OPTIONS ..
+    cmake.exe --build . --parallel
+
+    Pop-Location
 }
 
 #
@@ -105,7 +147,7 @@ Install-WithWinGet -PackageId 'Kitware.CMake' -TestExecutable "$env:ProgramFiles
 $python_exe = "$env:LocalAppData/Microsoft/WindowsApps/PythonSoftwareFoundation.Python.3.10_qbz5n2kfra8p0/python3.exe"
 if (-not (Test-Path $python_exe -PathType Leaf)) {
     Start-Process -Wait -FilePath "$env:LocalAppData/Microsoft/WindowsApps/python3.exe"
-    Write-Host -ForegroundColor Yellow 'Choose Install when store window appears. Waiting for Install to complete.'
+    Write-Host -ForegroundColor Yellow 'Click Get when the store window appears. Waiting for Install to complete.'
     while (-not (Test-Path $python_exe -PathType Leaf)) {
         Sleep -Seconds 1
     }
@@ -151,4 +193,12 @@ Install-WithWinGet -PackageId 'Graphviz.Graphviz' -TestExecutable "$env:ProgramF
 Install-WithWinGet -PackageId 'Cppcheck.Cppcheck' -TestExecutable "$env:ProgramFiles\Cppcheck\cppcheck.exe"
 
 ''
-Write-Host -ForegroundColor Green 'Done. Before building, open a new terminal window to update PATH.'
+
+#
+# Delivery Optimization
+#
+# TODO: Bug 43015575: do-client should be a submodule
+
+# Reusing ".vcpkg-installed" folder ... why not?
+$DoPath = "{0}/.vcpkg-installed/do-client" -f (git.exe rev-parse --show-toplevel)
+Install-DeliveryOptimization -Path $DoPath -Branch 'develop' -Commit 'ad16298e247480c6ed034c957cc3649c75ae6a8c'
