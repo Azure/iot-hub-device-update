@@ -605,6 +605,7 @@ static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowDat
             {
                 const char* errorFmt = "Cannot load a handler for step #%d (handler :%s)";
                 Log_Error(errorFmt, i, stepUpdateType);
+                workflow_set_result(stepHandle, result);
                 workflow_set_result_details(handle, errorFmt, i, stepUpdateType == nullptr ? "NULL" : stepUpdateType);
                 goto done;
             }
@@ -887,6 +888,7 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             {
                 const char* errorFmt = "Cannot load a handler for step #%d (handler :%s)";
                 Log_Error(errorFmt, i, stepUpdateType);
+                workflow_set_result(stepHandle, result);
                 workflow_set_result_details(handle, errorFmt, i, stepUpdateType == nullptr ? "NULL" : stepUpdateType);
                 goto done;
             }
