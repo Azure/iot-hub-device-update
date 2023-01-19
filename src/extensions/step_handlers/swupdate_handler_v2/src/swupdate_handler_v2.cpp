@@ -827,7 +827,7 @@ ADUC_Result SWUpdateHandlerImpl::CancelApply(const tagADUC_WorkflowData* workflo
     if (result.ResultCode != ADUC_Result_Cancel_Success)
     {
         Log_Error("Failed to cancel Apply, extendedResultCode = (0x%X)", result.ExtendedResultCode);
-        return ADUC_Result{ ADUC_Result_Failure };
+        return result;
     }
     else
     {
