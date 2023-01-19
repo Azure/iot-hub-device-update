@@ -327,10 +327,7 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
         CancelApply(ADUC_LOG_FOLDER);
     }
 
-    result = {
-        .ResultCode = ADUC_Result_Success,
-        .ExtendedResultCode = 0
-    };
+    result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
 
 done:
     workflow_free_string(workFolder);
