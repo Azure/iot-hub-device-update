@@ -27,6 +27,11 @@ else ()
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie -z relro -z now")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMPILER_HARDENING_FLAGS}")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMPILER_HARDENING_FLAGS} -Wall")
+
+    # Avoids readdir returning errno 75 EOVERFLOW when running
+    # 32-bit ARM docker/qemu on top of 64-bit host
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FILE_OFFSET_BITS=64")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FILE_OFFSET_BITS=64")
 endif ()
 
 add_definitions (-DADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")
