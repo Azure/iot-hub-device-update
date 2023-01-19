@@ -786,7 +786,8 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
     JSON_Value* updateActionJson = NULL;
     char* workFolder = NULL;
     STRING_HANDLE detachedUpdateManifestFilePath = NULL;
-    ADUC_FileEntity* fileEntity = NULL;
+    ADUC_FileEntity fileEntity;
+    memset(&fileEntity, 0, sizeof(fileEntity));
 
     if (handle == NULL)
     {
@@ -942,7 +943,7 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
 
             // Download the detached update manifest file.
             result = ExtensionManager_Download(
-                fileEntity, handle, &Default_ExtensionManager_Download_Options, NULL /* downloadProgressCallback */);
+                &fileEntity, handle, &Default_ExtensionManager_Download_Options, NULL /* downloadProgressCallback */);
             if (IsAducResultCodeFailure(result.ResultCode))
             {
                 workflow_set_result_details(
@@ -953,7 +954,7 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
             {
                 // Replace existing updateManifest with the one from detached update manifest file.
                 detachedUpdateManifestFilePath =
-                    STRING_construct_sprintf("%s/%s", workFolder, fileEntity->TargetFilename);
+                    STRING_construct_sprintf("%s/%s", workFolder, fileEntity.TargetFilename);
                 JSON_Object* rootObj =
                     json_value_get_object(json_parse_file(STRING_c_str(detachedUpdateManifestFilePath)));
                 const char* updateManifestString = json_object_get_string(rootObj, ADUCITF_FIELDNAME_UPDATEMANIFEST);
@@ -993,8 +994,7 @@ ADUC_Result _workflow_parse(bool isFile, const char* source, bool validateManife
 
 done:
 
-    workflow_free_file_entity(fileEntity);
-    fileEntity = NULL;
+    ADUC_FileEntity_Uninit(&fileEntity);
 
     STRING_delete(detachedUpdateManifestFilePath);
 
@@ -1733,7 +1733,7 @@ size_t workflow_get_update_files_count(ADUC_WorkflowHandle handle)
     return files == NULL ? 0 : json_object_get_count(files);
 }
 
-bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity** entity)
+bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity* entity)
 {
     if (entity == NULL)
     {
@@ -1750,8 +1750,6 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
     const JSON_Object* files = NULL;
     const JSON_Object* file = NULL;
     const JSON_Object* fileUrls = NULL;
-    ADUC_FileEntity* newEntity = NULL;
-    *entity = NULL;
     const char* uri = NULL;
     const char* fileId = NULL;
     const char* name = NULL;
@@ -1807,13 +1805,7 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
         sizeInBytes = json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
     }
 
-    newEntity = calloc(1, sizeof(*newEntity));
-    if (newEntity == NULL)
-    {
-        goto done;
-    }
-
-    if (!ADUC_FileEntity_Init(newEntity, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
+    if (!ADUC_FileEntity_Init(entity, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
     {
         Log_Error("Invalid file entity arguments");
         goto done;
@@ -1823,22 +1815,18 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
     ADUC_Hash_FreeArray(tempHashCount, tempHash);
     tempHash = NULL;
 
-    if (!ParseFileEntityDownloadHandler(handle, file, newEntity))
+    if (!ParseFileEntityDownloadHandler(handle, file, entity))
     {
         goto done;
     }
 
     succeeded = true;
 
-    *entity = newEntity;
-    newEntity = NULL;
-
 done:
-    if (newEntity != NULL)
+    if (!succeeded)
     {
-        newEntity->Hash = NULL; // Manually free hash array below...
-        ADUC_FileEntity_Uninit(newEntity);
-        free(newEntity);
+        entity->Hash = NULL; // Manually free hash array below that is pointed to by tempHash...
+        ADUC_FileEntity_Uninit(entity);
     }
 
     if (tempHash != NULL)
@@ -1849,7 +1837,7 @@ done:
     return succeeded;
 }
 
-bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fileName, ADUC_FileEntity** entity)
+bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fileName, ADUC_FileEntity* entity)
 {
     if (entity == NULL)
     {
@@ -1866,8 +1854,6 @@ bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fi
     const JSON_Object* files = NULL;
     const JSON_Object* file = NULL;
     const JSON_Object* fileUrls = NULL;
-    ADUC_FileEntity* newEntity = NULL;
-    *entity = NULL;
     const char* uri = NULL;
     const char* fileId = NULL;
     const char* name = NULL;
@@ -1931,21 +1917,13 @@ bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fi
         sizeInBytes = json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
     }
 
-    newEntity = calloc(1, sizeof(*newEntity));
-    if (newEntity == NULL)
-    {
-        goto done;
-    }
-
-    if (!ADUC_FileEntity_Init(newEntity, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
+    if (!ADUC_FileEntity_Init(entity, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
     {
         Log_Error("Invalid file entity arguments");
         goto done;
     }
 
-    *entity = newEntity;
-
-    if (!ParseFileEntityDownloadHandler(handle, file, *entity))
+    if (!ParseFileEntityDownloadHandler(handle, file, entity))
     {
         goto done;
     }
@@ -1955,12 +1933,8 @@ bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fi
 done:
     if (!succeeded)
     {
-        if (newEntity != NULL)
-        {
-            newEntity->Hash = NULL; // Manually free hash array below...
-            ADUC_FileEntity_Uninit(newEntity);
-            free(newEntity);
-        }
+        entity->Hash = NULL; // will be freed with tempHash below
+        ADUC_FileEntity_Uninit(entity);
 
         if (tempHash != NULL)
         {

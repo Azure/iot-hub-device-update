@@ -233,20 +233,20 @@ size_t workflow_get_update_files_count(ADUC_WorkflowHandle handle);
  *
  * @param handle A workflow data object handle.
  * @param index An index of the file to get.
- * @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
- * @return true If succeeded.
+ * @param entity An output file entity object. Caller must uninitialize it via ADUC_FileEntity_Uninit when done.
+ * @return true on success.
  */
-bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity** entity);
+bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity* entity);
 
 /**
  * @brief Gets the update file entity by name.
  *
- * @param handle A workflow data object handle.
- * @param fileName File name.
-* @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
- * @return true If succeeded.
+ * @param[in] handle A workflow data object handle.
+ * @param[in] fileName File name.
+ * @param[out] entity An output file entity object. Caller must uninitialize it via ADUC_FileEntity_Uninit().
+ * @return true on success.
  */
-bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fileName, ADUC_FileEntity** entity);
+bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fileName, ADUC_FileEntity* entity);
 
 /**
  * @brief Gets the inode associated with the update file entity at the specified index.
@@ -281,7 +281,7 @@ size_t workflow_get_bundle_updates_count(ADUC_WorkflowHandle handle);
  * @param handle A workflow data object handle.
  * @param index An index of the file to get.
  * @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
- * @return true If succeeded.
+ * @return true on success.
  */
 bool workflow_get_bundle_updates_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity** entity);
 
@@ -438,7 +438,7 @@ ADUC_WorkflowHandle workflow_get_child(ADUC_WorkflowHandle handle, int index);
  * @param index An index indicate the location the @p childHandle will be inserted at.
  *              To insert at the end of the list, pass '-1'.
  * @param childHandle A child workflow object handle.
- * @return true If succeeded.
+ * @return true on success.
  */
 bool workflow_insert_child(ADUC_WorkflowHandle handle, int index, ADUC_WorkflowHandle childHandle);
 
