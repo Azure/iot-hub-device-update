@@ -183,6 +183,7 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
 done:
     workflow_free_string(workFolder);
     workflow_free_file_entity(entity);
+    free(updateName);
 
     return result;
 }
