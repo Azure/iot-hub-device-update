@@ -9,8 +9,16 @@
 
 int ADUCPAL_access(const char* pathname, int mode)
 {
-    __debugbreak();
-    return -1;
+    if (mode != F_OK)
+    {
+        // TODO(JeffMill): [PAL] Only supporting F_OK (file existence)
+        __debugbreak();
+        return -1;
+    }
+
+    // Returns 0 on success, -1 and sets errno on failure.
+    struct stat st;
+    return stat(pathname, &st);
 }
 
 int ADUCPAL_chown(const char* path, uid_t owner, gid_t group)

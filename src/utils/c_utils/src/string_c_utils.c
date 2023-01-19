@@ -300,14 +300,19 @@ size_t ADUC_StrNLen(const char* str, size_t maxsize)
 /**
  * @brief Split updateType string by ':' to return updateTypeName and updateTypeVersion
  * @param[in] updateType - expected "Provider/Name:Version"
- * @param[out] updateTypeName - Caller must call free()
+ * @param[out] updateTypeName - Caller must call free(), can pass NULL if not desired.
  * @param[out] updateTypeVersion
  */
 bool ADUC_ParseUpdateType(const char* updateType, char** updateTypeName, unsigned int* updateTypeVersion)
 {
     bool succeeded = false;
     char* name = NULL;
-    *updateTypeName = NULL;
+
+    if (updateTypeName != NULL)
+    {
+        *updateTypeName = NULL;
+    }
+
     *updateTypeVersion = 0;
 
     if (updateType == NULL)
@@ -331,14 +336,17 @@ bool ADUC_ParseUpdateType(const char* updateType, char** updateTypeName, unsigne
         goto done;
     }
 
-    name = malloc(nameLength + 1);
-    if (name == NULL)
+    if (updateTypeName != NULL)
     {
-        goto done;
-    }
+        name = malloc(nameLength + 1);
+        if (name == NULL)
+        {
+            goto done;
+        }
 
-    memcpy(name, updateType, nameLength);
-    name[nameLength] = '\0';
+        memcpy(name, updateType, nameLength);
+        name[nameLength] = '\0';
+    }
 
     // convert version string to unsigned int
     if (!atoui(delimiter + 1, updateTypeVersion))
@@ -352,11 +360,17 @@ bool ADUC_ParseUpdateType(const char* updateType, char** updateTypeName, unsigne
 done:
     if (succeeded)
     {
-        *updateTypeName = name;
+        if (updateTypeName != NULL)
+        {
+            *updateTypeName = name;
+        }
     }
     else
     {
-        free(name);
+        if (name != NULL)
+        {
+            free(name);
+        }
     }
 
     return succeeded;

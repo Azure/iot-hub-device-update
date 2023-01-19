@@ -95,5 +95,12 @@ function (target_link_dosdk target scope)
     if (NOT WIN32)
         find_package (deliveryoptimization_sdk CONFIG REQUIRED)
         target_link_libraries (${target} ${scope} Microsoft::deliveryoptimization)
+    else ()
+        # TODO: Bug 43015575: do-client should be a submodule
+        target_include_directories (${target} ${scope}
+                                    ${VCPKG_INSTALLED_DIR}/do-client/sdk-cpp/include)
+        target_link_directories (${target} PUBLIC
+                                 ${VCPKG_INSTALLED_DIR}/do-client/cmake/sdk-cpp/Debug)
+        target_link_libraries (${target} ${scope} deliveryoptimization)
     endif ()
 endfunction (target_link_dosdk)
