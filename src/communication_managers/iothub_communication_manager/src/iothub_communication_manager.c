@@ -713,15 +713,13 @@ static void Connection_Maintenance()
             additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
             break;
 
-        case IOTHUB_CLIENT_CONNECTION_QUOTA_EXCEEDED:
-            // Could be transient error, wait for at least 1 hour to retry.
-            Log_Error("IoT Hub communication quota exceeded.");
-            additionalDelayInSeconds = TIME_SPAN_ONE_HOUR_IN_SECONDS;
-            break;
-
         case IOTHUB_CLIENT_CONNECTION_OK:
             // No need to retry.
             return;
+
+        default:
+            Log_Debug("unhandled g_connection_status_reason case: %d", g_connection_status_reason);
+            break;
         }
 
         // Calculate the next retry time, then continue.
