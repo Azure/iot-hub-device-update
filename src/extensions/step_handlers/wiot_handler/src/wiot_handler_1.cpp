@@ -144,9 +144,7 @@ ADUC_Result WiotHandler1::Download(const ADUC_WorkflowData* workflowData)
         }
     }
 
-    // return ADUCResult(ADUC_Result_Download_Success);
-    // TODO(JeffMill): TESTING -- return download failure for now.
-    return ADUCResult(ADUC_Result_Failure, ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_GET_PAYLOAD_FILE_ENTITY);
+    return ADUCResult(ADUC_Result_Download_Success);
 }
 
 /**

@@ -25,6 +25,9 @@ target_link_libraries (
             aduc::workflow_utils
             aduc::logging)
 
+# TODO: version.lib is for demo code in step_handler.cpp. Remove.
+target_link_libraries (${PROJECT_NAME} PRIVATE version)
+
 install (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
 
 # TODO(JeffMill): Add tests
