@@ -25,7 +25,7 @@ static BSTR SysAllocStringA(const char* str)
     return bstr;
 }
 
-std::string GetFileNameWithoutExtension(const std::string& filename)
+static std::string GetFileNameWithoutExtension(const std::string& filename)
 {
     const size_t start = filename.find_last_of('.');
     return (start == std::string::npos) ? "" : filename.substr(0, start);
@@ -108,9 +108,15 @@ bool IsInstalled(const char* installedCriteria)
     bool isInstalled = false;
 
     char exePath[MAX_PATH];
-    // Audacity returns e.g. "3.2.2.0"
-    ExpandEnvironmentStringsA(
-        R"(%LocalAppData%\Programs\audacity\audacity-win-3.2.2-x64\Audacity.exe)", exePath, ARRAYSIZE(exePath));
+
+    // Note: ideally this would be installed to "%LocalAppData%\Programs\audacity" and version there would be checked.
+
+    // e.g. %LocalAppData%\Programs\audacity\audacity-win-3.2.2-x64\Audacity.exe
+    std::string exeString(R"(%LocalAppData%\Programs\audacity\audacity-win-)");
+    exeString += installedCriteria;
+    exeString += R"(-x64\Audacity.exe)";
+
+    ExpandEnvironmentStringsA(exeString.c_str(), exePath, ARRAYSIZE(exePath));
 
     DWORD size = GetFileVersionInfoSize(exePath, 0 /*dwHandle*/);
     if (size == 0)
@@ -148,18 +154,26 @@ bool IsInstalled(const char* installedCriteria)
     return isInstalled;
 }
 
-bool Install(const char* filePath)
+bool Install(const char* workFolder, const std::vector<std::string>& fileList)
 {
     bool success = false;
 
-    // Shell APIs require full paths and backslashes.
+    if (fileList.size() != 1)
+    {
+        // Currently only supporting one file.
+        return 1;
+    }
+
+    // Shell APIs require full path to file and backslashes.
 
     std::string zipfile;
-    if (filePath[0] == '/')
+    if (workFolder[0] == '/')
     {
         zipfile = "c:";
     }
-    zipfile += filePath;
+    zipfile += workFolder;
+    zipfile += "/";
+    zipfile += fileList[0];
     std::replace(zipfile.begin(), zipfile.end(), '/', '\\');
 
     //
@@ -191,9 +205,15 @@ bool Install(const char* filePath)
     return true;
 }
 
-bool Apply(const char* workFolder)
+bool Apply(const char* workFolder, const std::vector<std::string>& fileList)
 {
     bool success = false;
+
+    if (fileList.size() != 1)
+    {
+        // Currently only supporting one file.
+        return 1;
+    }
 
     //
     // Variables
@@ -204,14 +224,12 @@ bool Apply(const char* workFolder)
     ExpandEnvironmentStringsA(R"(%LocalAppData%\Programs\audacity)", destFolder, ARRAYSIZE(destFolder));
 
     // Name of audacity ZIP file.
-    // TODO: This should be captured from the update metadata
-    const char* zip = "audacity-win-3.2.2-x64.zip";
 
     // e.g. %LocalAppData%\Programs\audacity\audacity-win-3.2.3-x64
     std::string instFolder(destFolder);
     // Append e.g. "audacity-win-3.2.2-x64" as zip file contains that as a top-level folder.
     instFolder += "/";
-    instFolder += GetFileNameWithoutExtension(zip);
+    instFolder += GetFileNameWithoutExtension(fileList[0].c_str());
 
     // Local audacity settings folder
     std::string settingsFolder(instFolder);
