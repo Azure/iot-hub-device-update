@@ -29,10 +29,6 @@ int main(int argc, char* argv[])
     }
 
     result = Catch::Session().run(argc, argv);
-    if (result != 0)
-    {
-        std::cerr << "Catch session failed, err=" << result << std::endl;
-    }
 
     // Global cleanup.
     umock_c_deinit();
