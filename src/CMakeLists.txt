@@ -15,8 +15,17 @@ if (ADUC_WARNINGS_AS_ERRORS)
         # TODO(JeffMill): [PAL] Avoid C4996: POSIX name for this item is deprecated.
         add_definitions (-D_CRT_NONSTDC_NO_WARNINGS)
     else ()
-        add_compile_options (-Werror)
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
     endif ()
+endif ()
+
+if (NOT WIN32)
+    # Avoids readdir returning errno 75 EOVERFLOW when running
+    # 32-bit ARM docker/qemu on top of 64-bit host by using this
+    # glibc-specific macro. See https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FILE_OFFSET_BITS=64")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FILE_OFFSET_BITS=64")
 endif ()
 
 if (MSVC)
@@ -27,11 +36,6 @@ else ()
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie -z relro -z now")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMPILER_HARDENING_FLAGS}")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMPILER_HARDENING_FLAGS} -Wall")
-
-    # Avoids readdir returning errno 75 EOVERFLOW when running
-    # 32-bit ARM docker/qemu on top of 64-bit host
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FILE_OFFSET_BITS=64")
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FILE_OFFSET_BITS=64")
 endif ()
 
 add_definitions (-DADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")
