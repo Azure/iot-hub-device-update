@@ -32,48 +32,6 @@ function Install-WithWinGet {
     }
 }
 
-function Install-DeliveryOptimization {
-    Param(
-        [Parameter(Mandatory = $true)][string]$Path,
-        [Parameter(Mandatory = $true)][string]$Branch,
-        [Parameter(Mandatory = $true)][string]$Commit)
-
-    if (Test-Path -LiteralPath $Path -PathType Container) {
-        Write-Host -ForegroundColor Cyan 'Delivery Optimization already installed.'
-        return
-    }
-
-    'Building Delivery Optimization ...'
-    "Branch: $Branch"
-    "Folder: $Path"
-
-    mkdir $Path | Out-Null
-    Push-Location $Path
-
-    # do_url=git@github.com:Microsoft/do-client.git
-    $do_url = 'https://github.com/Microsoft/do-client.git'
-
-    git clone --recursive --single-branch --branch $Branch --depth 1 $do_url .
-
-    git checkout $Commit
-
-    # Note: bootstrap-windows.ps1 installs CMake and Python, but we already installed those,
-    # so not calling that script.
-
-    # Note: install-vcpkg-deps.ps1 uses vcpkg to install
-    # gtest:x64-windows,boost-filesystem:x64-windows,boost-program-options:x64-windows
-    # but we can't use "vcpkg install" as we're in vcpkg manifest mode.
-
-    mkdir cmake | Out-Null
-    cd cmake
-
-    $CMAKE_OPTIONS = '-DDO_BUILD_TESTS:BOOL=OFF', '-DDO_INCLUDE_SDK=ON', '-DCMAKE_BUILD_TYPE=Release'
-    cmake.exe @CMAKE_OPTIONS ..
-    cmake.exe --build . --parallel
-
-    Pop-Location
-}
-
 #
 # OS VERSION CHECK
 #
@@ -194,11 +152,3 @@ Install-WithWinGet -PackageId 'Cppcheck.Cppcheck' -TestExecutable "$env:ProgramF
 
 ''
 
-#
-# Delivery Optimization
-#
-# TODO: Bug 43015575: do-client should be a submodule
-
-# Reusing ".vcpkg-installed" folder ... why not?
-$DoPath = "{0}/.vcpkg-installed/do-client" -f (git.exe rev-parse --show-toplevel)
-Install-DeliveryOptimization -Path $DoPath -Branch 'develop' -Commit 'ad16298e247480c6ed034c957cc3649c75ae6a8c'

@@ -257,6 +257,67 @@ function Register-Components {
     & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$microsoft_steps_1_file" --extension-type updateContentHandler --extension-id "microsoft/update-manifest:4" --log-level 2
     & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$microsoft_steps_1_file" --extension-type updateContentHandler --extension-id "microsoft/update-manifest:5" --log-level 2
 }
+
+function Install-DeliveryOptimization {
+    Param(
+        [Parameter(Mandatory = $true)][string]$BuildType,
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Branch,
+        [Parameter(Mandatory = $true)][string]$Commit)
+
+    'Building Delivery Optimization ...'
+    "Branch: $Branch"
+    "Folder: $Path"
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+        mkdir $Path | Out-Null
+    }
+    Push-Location $Path
+
+    # do_url=git@github.com:Microsoft/do-client.git
+    $do_url = 'https://github.com/Microsoft/do-client.git'
+
+    git clone --recursive --single-branch --branch $Branch --depth 1 $do_url .
+
+    git checkout $Commit
+
+    $build_dir = 'cmake'
+
+    $up_to_date = $false
+    $do_exists = Test-Path -LiteralPath "$Path/$build_dir/sdk-cpp/$BuildType/deliveryoptimization.lib" -PathType Leaf
+    $doversion_exists = Test-Path -LiteralPath "$Path/$build_dir/sdk-cpp/common/lib-doversion/$BuildType/doversion.lib" -PathType Leaf
+    if ($do_exists -and $doversion_exists) {
+        # Both targets exist. If repo is up to date, assume nothing to do.
+        if ((git.exe fetch --dry-run).Length -eq 0)
+        {
+            ''
+            'Delivery Optimization is up to date.'
+            $up_to_date = $true
+        }
+    }
+
+    if (!$up_to_date)
+    {
+        # Note: bootstrap-windows.ps1 installs CMake and Python, but we already installed those,
+        # so not calling that script.
+
+        # Note: install-vcpkg-deps.ps1 uses vcpkg to install
+        # gtest:x64-windows,boost-filesystem:x64-windows,boost-program-options:x64-windows
+        # but we can't use "vcpkg install" as we're in vcpkg manifest mode.
+
+        if (-not (Test-Path -LiteralPath $build_dir -PathType Container)) {
+            mkdir $build_dir | Out-Null
+        }
+
+        # TODO(JeffMill): CMAKE_BUILD_TYPE doesn't have any effect, but do-client makefile depends on it currently. Remove once fixed.
+        $CMAKE_OPTIONS = '-DDO_BUILD_TESTS:BOOL=OFF', '-DDO_INCLUDE_SDK=ON', "-DCMAKE_BUILD_TYPE=$BuildType"
+        cmake.exe -S . -B $build_dir @CMAKE_OPTIONS
+        cmake.exe --build $build_dir --config $BuildType --parallel
+    }
+
+    Pop-Location
+}
+
 function Install-Adu-Components {
     # TODO(JeffMill): [PAL] Temporary until paths are determined.
 
@@ -734,6 +795,17 @@ if ($build_clean) {
 
     ''
 }
+
+Show-Header 'Delivery Optimization Library'
+
+#
+# Delivery Optimization
+#
+# TODO: Bug 43015575: do-client should be a submodule
+
+# Reusing ".vcpkg-installed" folder ... why not?
+$DoPath = "{0}/.vcpkg-installed/do-client" -f (git.exe rev-parse --show-toplevel)
+Install-DeliveryOptimization -BuildType $build_type -Path $DoPath -Branch 'develop' -Commit 'ad16298e247480c6ed034c957cc3649c75ae6a8c'
 
 Show-Header 'Building Product'
 
