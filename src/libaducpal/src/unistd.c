@@ -7,6 +7,10 @@
 #include <io.h> // isatty, unlink, open, close
 #include <sys/stat.h> // _S_*
 
+#ifndef UNREFERENCED_PARAMETER
+#    define UNREFERENCED_PARAMETER(param) (void)(param)
+#endif
+
 int ADUCPAL_access(const char* pathname, int mode)
 {
     if (mode != F_OK)
@@ -24,6 +28,10 @@ int ADUCPAL_access(const char* pathname, int mode)
 int ADUCPAL_chown(const char* path, uid_t owner, gid_t group)
 {
     // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return success.
+    UNREFERENCED_PARAMETER(path);
+    UNREFERENCED_PARAMETER(owner);
+    UNREFERENCED_PARAMETER(group);
+
     return 0;
 }
 
@@ -73,6 +81,9 @@ int ADUCPAL_open(const char* path, int oflag)
 
 ssize_t ADUCPAL_read(int fildes, void* buf, size_t nbyte)
 {
+    UNREFERENCED_PARAMETER(fildes);
+    UNREFERENCED_PARAMETER(buf);
+    UNREFERENCED_PARAMETER(nbyte);
     __debugbreak();
     return -1;
 }
@@ -85,18 +96,24 @@ int ADUCPAL_rmdir(const char* path)
 int ADUCPAL_seteuid(uid_t uid)
 {
     // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return success.
+    UNREFERENCED_PARAMETER(uid);
+
     return 0;
 }
 
 int ADUCPAL_setegid(gid_t gid)
 {
     // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return success.
+    UNREFERENCED_PARAMETER(gid);
+
     return 0;
 }
 
 int ADUCPAL_setuid(uid_t uid)
 {
     // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return success.
+    UNREFERENCED_PARAMETER(uid);
+
     return 0;
 }
 
@@ -142,6 +159,10 @@ int ADUCPAL_unlink(const char* path)
 
 ssize_t ADUCPAL_write(int fildes, const void* buf, size_t nbyte)
 {
+    UNREFERENCED_PARAMETER(fildes);
+    UNREFERENCED_PARAMETER(buf);
+    UNREFERENCED_PARAMETER(nbyte);
+
     __debugbreak();
     return -1;
 }

@@ -132,8 +132,7 @@ TEST_CASE("Get Compatibility")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    const char* expectedValue =
-        R"([{"deviceManufacturer":"contoso","deviceModel":"virtual-vacuum-v1"}])";
+    const char* expectedValue = R"([{"deviceManufacturer":"contoso","deviceModel":"virtual-vacuum-v1"}])";
 
     char* compats = workflow_get_compatibility(handle);
     CHECK_THAT(compats, Equals(expectedValue));
@@ -595,7 +594,6 @@ TEST_CASE("workflow_id_compare")
 {
     ADUC_WorkflowHandle handle0 = nullptr;
     ADUC_WorkflowHandle handle1 = nullptr;
-    ADUC_WorkflowHandle handleNull = nullptr;
 
     ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, false /* validateManifest */, &handle0);
     REQUIRE(result.ResultCode > 0);

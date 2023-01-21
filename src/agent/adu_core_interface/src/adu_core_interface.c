@@ -128,6 +128,8 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
 static bool
 ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_value, ADUC_WorkflowData* workflowData)
 {
+    UNREFERENCED_PARAMETER(workflowData);
+
     bool success = false;
 
     if (g_iotHubClientHandleForADUComponent == NULL)
@@ -320,6 +322,8 @@ void OrchestratorUpdateCallback(
     ADUC_PnPComponentClient_PropertyUpdate_Context* sourceContext,
     void* context)
 {
+    UNREFERENCED_PARAMETER(clientHandle);
+
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)context;
     STRING_HANDLE jsonToSend = NULL;
 

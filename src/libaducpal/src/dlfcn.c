@@ -3,12 +3,18 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+#ifndef UNREFERENCED_PARAMETER
+#    define UNREFERENCED_PARAMETER(param) (void)(param)
+#endif
+
 static char s_dlfcn_errorbuf[256] = { 0 };
 static DWORD s_dlfcn_lasterror = 0;
 
 void* ADUCPAL_dlopen(const char* filename, int flag)
 {
     // TODO(JeffMill): [PAL] flag not supported
+    UNREFERENCED_PARAMETER(flag);
+
     s_dlfcn_lasterror = 0;
 
     HANDLE hlib = LoadLibrary(filename);
@@ -58,13 +64,13 @@ void* ADUCPAL_dlsym(void* handle, const char* symbol)
 {
     s_dlfcn_lasterror = 0;
 
-    void* proc = GetProcAddress(handle, symbol);
+    FARPROC proc = GetProcAddress(handle, symbol);
     if (proc == NULL)
     {
         s_dlfcn_lasterror = GetLastError();
     }
 
-    return proc;
+    return (void*)proc;
 }
 
 int ADUCPAL_dlclose(void* handle)

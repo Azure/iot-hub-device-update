@@ -156,8 +156,6 @@ bool IsInstalled(const char* installedCriteria)
 
 bool Install(const char* workFolder, const std::vector<std::string>& fileList)
 {
-    bool success = false;
-
     if (fileList.size() != 1)
     {
         // Currently only supporting one file.
@@ -207,7 +205,7 @@ bool Install(const char* workFolder, const std::vector<std::string>& fileList)
 
 bool Apply(const char* workFolder, const std::vector<std::string>& fileList)
 {
-    bool success = false;
+    UNREFERENCED_PARAMETER(workFolder);
 
     if (fileList.size() != 1)
     {

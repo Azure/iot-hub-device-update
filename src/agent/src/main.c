@@ -93,8 +93,6 @@ static const char g_deviceInfoPnPComponentName[] = "deviceInformation";
 // Name of the Diagnostics subcomponent that this device is using
 static const char g_diagnosticsPnPComponentName[] = "diagnosticInformation";
 
-ADUC_LaunchArguments launchArgs;
-
 /**
  * @brief Global IoT Hub client handle.
  */
@@ -1116,6 +1114,8 @@ done:
  */
 int main(int argc, char** argv)
 {
+    ADUC_LaunchArguments launchArgs;
+
     InitializeModeledComponents();
 
     int ret = ParseLaunchArguments(argc, argv, &launchArgs);

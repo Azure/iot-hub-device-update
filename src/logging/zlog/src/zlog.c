@@ -359,10 +359,11 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
                 full_log_len + sizeof(MULTILINE_BEGIN_FORMAT) + sizeof(MULTILINE_END_FORMAT)
                 + (PRELUDE_BUFFER_SIZE + MAX_FUNCTION_NAME) * 2);
             fprintf(zlog_fout, MULTILINE_BEGIN_FORMAT, prelude_buffer, level_names[msg_level], func);
-            va_list va;
+
             va_start(va, fmt);
             (void)vfprintf(zlog_fout, fmt, va);
             va_end(va);
+
             fprintf(zlog_fout, MULTILINE_END_FORMAT, prelude_buffer, level_names[msg_level], func);
             fflush(zlog_fout);
 

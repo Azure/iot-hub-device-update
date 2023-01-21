@@ -1,5 +1,6 @@
 #include "aducpal/time.h"
 
+#include <errno.h>
 #include <time.h>
 
 #define WIN32_LEAN_AND_MEAN
@@ -9,6 +10,13 @@ int ADUCPAL_clock_gettime(clockid_t clk_id, struct timespec* tp)
 {
 #define FILETIME_1970 116444736000000000ull /* seconds between 1/1/1601 and 1/1/1970 */
 #define HECTONANOSEC_PER_SEC 10000000ull
+
+    // TODO(JeffMill): [PAL] Only CLOCK_REALTIME supported.
+    if (clk_id != CLOCK_REALTIME)
+    {
+        errno = ENOSYS;
+        return -1;
+    }
 
     ULARGE_INTEGER fti;
     GetSystemTimeAsFileTime((FILETIME*)&fti);

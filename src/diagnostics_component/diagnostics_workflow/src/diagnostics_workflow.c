@@ -23,7 +23,12 @@ typedef struct tagBlobStorageInfo
 static bool AzureBlobStorageFileUploadUtility_UploadFilesToContainer(
     const BlobStorageInfo* blobInfo, const int maxConcurrency, VECTOR_HANDLE fileNames, const char* directoryPath)
 {
+    UNREFERENCED_PARAMETER(blobInfo);
+    UNREFERENCED_PARAMETER(maxConcurrency);
+    UNREFERENCED_PARAMETER(fileNames);
+    UNREFERENCED_PARAMETER(directoryPath);
     __debugbreak();
+
     return false;
 }
 #else

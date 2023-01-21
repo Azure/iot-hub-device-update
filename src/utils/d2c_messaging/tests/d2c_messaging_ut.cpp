@@ -314,15 +314,6 @@ static void create_messaging_do_work_thread(void* name)
     pthread_create(&thread, nullptr, mock_do_work_thread, name);
 }
 
-static time_t GetTimeSinceEpochInSeconds()
-{
-    struct timespec timeSinceEpoch
-    {
-    };
-    ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
-    return timeSinceEpoch.tv_sec;
-}
-
 void OnMessageProcessCompleted_SaveWholeMessage_And_Signal(void* context, ADUC_D2C_Message_Status status)
 {
     UNREFERENCED_PARAMETER(status);
@@ -360,7 +351,6 @@ TEST_CASE("Deinitialization - in progress message", "[.][functional]")
     g_testCaseSyncMutex.lock();
 
     int expectedAttempts = 0;
-    const char* message = nullptr;
     auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We don't need real handle.
 
     // Init message processing util, use mock transport, and reduces poll interval to 100ms.
@@ -431,7 +421,7 @@ TEST_CASE("Deinitialization - pending message", "[.][functional]")
 {
     g_testCaseSyncMutex.lock();
 
-    int expectedAttempts = 0;
+    unsigned int expectedAttempts = 0;
     const char* message = nullptr;
     auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We don't need real handle.
 
@@ -479,7 +469,7 @@ TEST_CASE("Simple tests", "[.][functional]")
 {
     g_testCaseSyncMutex.lock();
 
-    int expectedAttempts = 0;
+    unsigned int expectedAttempts = 0;
     const char* message = nullptr;
     auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We don't need real handle.
 
@@ -578,7 +568,7 @@ TEST_CASE("Bad http status retry info", "[.][functional]")
 {
     g_testCaseSyncMutex.lock();
 
-    int expectedAttempts = 0;
+    unsigned int expectedAttempts = 0;
     const char* message = nullptr;
     g_attempts = 0;
     auto handle = static_cast<ADUC_ClientHandle>((void*)(1)); // We don't need real handle.
@@ -740,7 +730,7 @@ TEST_CASE("30 retries - httpStatus 401", "[.][functional]")
 {
     g_testCaseSyncMutex.lock();
 
-    int expectedAttempts = 0;
+    unsigned int expectedAttempts = 0;
     const char* message = nullptr;
     auto handle = static_cast<ADUC_ClientHandle>((void*)(1)); // We don't need real handle.
 
@@ -759,7 +749,7 @@ TEST_CASE("30 retries - httpStatus 401", "[.][functional]")
     MockCloudBehavior cb1[30];
     expectedAttempts = sizeof(cb1) / sizeof(MockCloudBehavior);
 
-    for (int i = 0; i < expectedAttempts - 1; i++)
+    for (unsigned int i = 0; i < expectedAttempts - 1; i++)
     {
         cb1[i].delayBeforeResponseMS = 10;
         cb1[i].httpStatus =

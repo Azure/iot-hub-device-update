@@ -23,6 +23,7 @@ target_link_libraries (
 
 target_link_libraries_find (${PROJECT_NAME} PRIVATE uhttp)
 target_link_umock_c (${PROJECT_NAME} PRIVATE)
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 include (CTest)
 include (Catch)

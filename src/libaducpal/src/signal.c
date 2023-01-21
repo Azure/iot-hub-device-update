@@ -1,7 +1,14 @@
 #include "aducpal/signal.h"
+#include <errno.h>
+
+#ifndef UNREFERENCED_PARAMETER
+#    define UNREFERENCED_PARAMETER(param) (void)(param)
+#endif
 
 int ADUCPAL_raise(int sig)
 {
-    __debugbreak();
+    // TODO(JeffMill): [PAL] NYI
+    UNREFERENCED_PARAMETER(sig);
+    errno = ENOSYS;
     return -1;
 }

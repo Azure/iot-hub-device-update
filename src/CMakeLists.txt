@@ -6,8 +6,7 @@ endif ()
 
 if (ADUC_WARNINGS_AS_ERRORS)
     if (MSVC)
-        # TODO(JeffMill): Use /W4 (noisy) instead?
-        add_compile_options (/W3 /WX)
+        add_compile_options (/W4 /WX)
 
         # TODO(JeffMill): [PAL] allow strcpy, strcat, fopen, etc.
         add_definitions (-D_CRT_SECURE_NO_WARNINGS)

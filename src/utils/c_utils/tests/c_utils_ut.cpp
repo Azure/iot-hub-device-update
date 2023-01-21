@@ -415,7 +415,6 @@ TEST_CASE("ADUC_StrNLen")
     SECTION("Check string in bounds")
     {
         std::string testStr = "foobar";
-        size_t max = 10;
 
         CHECK(ADUC_StrNLen(testStr.c_str(), 10) == testStr.length());
     }

@@ -279,6 +279,10 @@ static IOTHUB_CLIENT_TRANSPORT_PROVIDER GetIotHubProtocolFromConfig()
  * @param iotHubTracingEnabled A boolean indicates whether to enable the IoTHub tracing.
  * @return true on success, false on failure
  */
+#if defined(_MSC_VER)
+// Avoid warning C4706: assignment within conditional expression
+#    pragma warning(disable : 4706)
+#endif
 static bool ADUC_DeviceClient_Create(
     ADUC_ClientHandle* outClientHandle, ADUC_ConnectionInfo* connInfo, const bool iotHubTracingEnabled)
 {
@@ -747,6 +751,8 @@ static void Connection_Maintenance()
  */
 void IoTHub_CommunicationManager_DoWork(void* user_context)
 {
+    AZURE_UNREFERENCED_PARAMETER(user_context);
+
     Connection_Maintenance();
     ClientHandle_DoWork(*g_aduc_client_handle_address);
 }

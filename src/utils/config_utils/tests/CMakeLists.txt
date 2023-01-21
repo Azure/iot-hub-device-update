@@ -22,6 +22,7 @@ target_link_libraries (
             aduc::string_utils)
 
 target_link_umock_c (${PROJECT_NAME} PRIVATE)
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
                                                     ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}")

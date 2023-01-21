@@ -212,7 +212,7 @@ int ADUC_SystemUtils_MkDirRecursive(const char* path, uid_t userId, gid_t groupI
 
     if (stat(path, &st) == 0)
     {
-        int perms = (st.st_mode & (ALL_PERMS));
+        unsigned short perms = (st.st_mode & (ALL_PERMS));
         if (perms != mode)
         {
             // Fix the permissions.

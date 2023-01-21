@@ -84,11 +84,11 @@ TEST_CASE("hostname error")
 
 TEST_CASE("Invalid option - cp -1")
 {
-    std::string command = "cp";
+    std::string cp_command = "cp";
     std::vector<std::string> args;
     args.emplace_back("-1");
     std::string output;
-    ADUC_LaunchChildProcess(command, args, output);
+    ADUC_LaunchChildProcess(cp_command, args, output);
 
 #if !defined(WIN32)
     CHECK_THAT(output.c_str(), Contains("invalid option -- '1'"));
@@ -158,7 +158,6 @@ TEST_CASE("VerifyProcessEffectiveGroup")
 
     SECTION("it should return true when not root but group matches")
     {
-        int effectiveProcessGroupId = 100; // not root(0)
         const gid_t desiredGroupId = 100;
 
         const std::function<gid_t()> mock_getegid = [&]() { return desiredGroupId; };

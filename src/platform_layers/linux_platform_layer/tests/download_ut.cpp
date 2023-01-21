@@ -36,44 +36,6 @@ static pthread_cond_t downloadCompletedCond;
 static pthread_mutex_t downloadMutex;
 static ADUC_Result downloadTestResult;
 
-/**
- * @brief Mock for workflow idle callback. No-op at the moment.
- */
-static void mockIdleCallback(ADUC_Token /*token*/, const char* /*workflowId*/)
-{
-}
-
-/**
- * @brief Mock for download progress callback. Cache download progress info for test verifications.
- */
-static void mockDownloadProgressCallback(
-    const char* workflowId,
-    const char* fileId,
-    ADUC_DownloadProgressState state,
-    uint64_t bytesTransferred,
-    uint64_t bytesTotal)
-{
-    downloadProgressInfo.workflowId = workflowId;
-    downloadProgressInfo.fileId = fileId;
-    downloadProgressInfo.state = state;
-    downloadProgressInfo.bytesTransferred = bytesTransferred;
-    downloadProgressInfo.bytesTotal = bytesTotal;
-}
-
-/**
- * @brief Mock for completion callback.
- */
-static void mockWorkCompletionCallback(const void* /*workCompletionToken*/, ADUC_Result result)
-{
-    // Save result for test validation.
-    downloadTestResult = result;
-
-    if (result.ResultCode != ADUC_Result_Download_InProgress)
-    {
-        pthread_cond_signal(&downloadCompletedCond);
-    }
-}
-
 static const char* testUrl =
     "http://download.windowsupdate.com/c/msdownload/update/software/secu/2020/07/windows6.0-kb4575904-x64_9272724f637d85a12bfe022191c1ba56cd4bc59e.msu";
 // openssl dgst -binary -sha256 < windows6.0-kb4575904-x64_9272724f637d85a12bfe022191c1ba56cd4bc59e.msu  | openssl base64

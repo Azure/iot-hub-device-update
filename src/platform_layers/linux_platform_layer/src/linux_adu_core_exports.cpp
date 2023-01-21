@@ -105,7 +105,7 @@ int ADUC_RestartAgent()
     // Commit buffer cache to disk.
     ADUCPAL_sync();
 
-    // Using SGIUSR1 to indicates a desire for shutdown and restart.
+    // Using SIGUSR1 to indicates a desire for shutdown and restart.
     const int exitStatus = ADUCPAL_raise(SIGUSR1);
     if (exitStatus != 0)
     {

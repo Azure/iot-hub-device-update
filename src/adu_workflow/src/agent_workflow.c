@@ -966,7 +966,6 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
                     // Reset workflow state to process deployment and transfer
                     // the deferred workflow to current.
                     workflow_update_for_replacement(workflowData->WorkflowHandle);
-
                 }
                 else
                 {
@@ -998,7 +997,6 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
             // Ignore the result of the operation, which most likely is cancelled, e.g. ADUC_Result_Failure_Cancelled.
             Log_Warn("Operation cancelled - returning to Idle state");
 
-            ADUC_Result result;
             result.ResultCode = ADUC_Result_Failure_Cancelled;
             result.ExtendedResultCode = 0;
             ADUC_Workflow_SetUpdateStateWithResult(workflowData, ADUCITF_State_Idle, result);
@@ -1438,6 +1436,8 @@ done:
 
 void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
 {
+    UNREFERENCED_PARAMETER(result);
+
     if (workflow_is_immediate_reboot_requested(methodCallData->WorkflowData->WorkflowHandle)
         || workflow_is_reboot_requested(methodCallData->WorkflowData->WorkflowHandle))
     {

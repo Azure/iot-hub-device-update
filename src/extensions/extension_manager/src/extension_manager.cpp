@@ -770,7 +770,6 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
 {
     void* lib = nullptr;
     InitializeProc _initialize = nullptr;
-    char* components = nullptr;
 
     ADUC_Result result = ExtensionManager::LoadContentDownloaderLibrary(&lib);
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -821,7 +820,6 @@ ADUC_Result ExtensionManager::Download(
 {
     void* lib = nullptr;
     DownloadProc downloadProc = nullptr;
-    char* components = nullptr;
     SHAversion algVersion;
 
     ADUC_Result result = { /* .ResultCode = */ ADUC_Result_Failure, /* .ExtendedResultCode = */ 0 };

@@ -314,6 +314,8 @@ ADUC_Result WiotHandler1::Cancel(const ADUC_WorkflowData* workflowData)
  */
 ADUC_Result WiotHandler1::Backup(const ADUC_WorkflowData* workflowData)
 {
+    UNREFERENCED_PARAMETER(workflowData);
+
     Log_Info(HANDLER_LOG_ID "Backup");
 
     return ADUCResult(ADUC_Result_Backup_Success_Unsupported);
@@ -328,6 +330,8 @@ ADUC_Result WiotHandler1::Backup(const ADUC_WorkflowData* workflowData)
  */
 ADUC_Result WiotHandler1::Restore(const ADUC_WorkflowData* workflowData)
 {
+    UNREFERENCED_PARAMETER(workflowData);
+
     Log_Info(HANDLER_LOG_ID "Restore");
 
     return ADUCResult(ADUC_Result_Restore_Success_Unsupported);

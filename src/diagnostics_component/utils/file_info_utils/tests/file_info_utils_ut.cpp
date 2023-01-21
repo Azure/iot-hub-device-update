@@ -72,7 +72,6 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
         CHECK(strcmp(sortedLogFileArray[0].fileName, secondTestCandidateFileName) == 0);
 
         const char* thirdTestCandidateFileName = "microsoft";
-        size_t thirTestSizeOfCandidateFile = 1024;
 
         // Because the last write time is the same as the first then this file should be rejected and FileInfoUtils_InsertFileInfoIntoArray should be the same as before
         CHECK_FALSE(FileInfoUtils_InsertFileInfoIntoArray(

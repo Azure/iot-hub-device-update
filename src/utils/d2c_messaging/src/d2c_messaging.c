@@ -563,6 +563,8 @@ void ADUC_D2C_Messaging_Set_Transport(ADUC_D2C_Message_Type type, ADUC_D2C_MESSA
 int ADUC_D2C_Default_Message_Transport_Function(
     void* cloudServiceHandle, void* context, ADUC_C2D_RESPONSE_HANDLER_FUNCTION c2dResponseHandlerFunc)
 {
+    UNREFERENCED_PARAMETER(cloudServiceHandle);
+
     ADUC_D2C_Message_Processing_Context* message_processing_context = (ADUC_D2C_Message_Processing_Context*)context;
     if (message_processing_context->message.cloudServiceHandle == NULL
         || *((ADUC_ClientHandle*)message_processing_context->message.cloudServiceHandle) == NULL)

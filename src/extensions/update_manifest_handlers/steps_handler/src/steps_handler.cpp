@@ -102,7 +102,6 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
         for (unsigned int i = 0; i < stepCount; i++)
         {
             STRING_HANDLE childId = nullptr;
-            ADUC_FileEntity* entity = nullptr;
             childHandle = nullptr;
 
             if (workflow_is_inline_step(handle, i))
@@ -1202,7 +1201,6 @@ static ADUC_Result StepsHandler_Cancel(const tagADUC_WorkflowData* workflowData)
     result.ResultCode = ADUC_Result_Cancel_Success;
     result.ExtendedResultCode = 0;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
-    ADUC_WorkflowHandle stepWorkflowHandle = nullptr;
 
     int workflowLevel = workflow_get_level(handle);
     int workflowStep = workflow_get_step_index(handle);
