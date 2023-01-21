@@ -96,48 +96,65 @@ bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* val
  * @param strBuffSize the size of the buffer
  * @returns false on failure, true on success
  */
-bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const size_t strBuffSize)
+bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const size_t strBufferSize)
 {
-    if (filePath == NULL || strBuffer == NULL || strBuffSize == 0)
+    if (filePath == NULL || strBuffer == NULL || strBufferSize == 0)
     {
         return false;
     }
 
     bool success = false;
-
-    // NOLINTNEXTLINE(android-cloexec-open): We are not guaranteed to have access to O_CLOEXEC on all of our builds so no need to include
-    int fd = ADUCPAL_open(filePath, O_EXCL | O_RDONLY);
-    if (fd == -1)
-    {
-        goto done;
-    }
+    FILE* fp = NULL;
 
     struct stat bS;
-
     if (stat(filePath, &bS) != 0)
     {
         goto done;
     }
 
-    long fileSize = bS.st_size;
-
-    if (fileSize == 0 || fileSize > strBuffSize)
+    const long fileSize = bS.st_size;
+    if (fileSize == 0 || fileSize > strBufferSize)
     {
         goto done;
     }
 
-    size_t numRead = ADUCPAL_read(fd, strBuffer, fileSize);
-    if (numRead != fileSize)
+    fp = fopen(filePath, "rt");
+    if (fp == NULL)
     {
         goto done;
     }
 
-    strBuffer[numRead] = '\0';
+    char* readBuff = strBuffer;
+    size_t buffSize = strBufferSize;
+
+    while (true)
+    {
+        const char* line = fgets(readBuff, (int)buffSize, fp);
+        if (line == NULL)
+        {
+            if (feof(fp))
+            {
+                break;
+            }
+
+            // Error
+            goto done;
+        }
+
+        const size_t readSize = strlen(readBuff);
+        readBuff += readSize;
+        buffSize -= readSize;
+    }
+
+    *readBuff = '\0';
 
     success = true;
-done:
 
-    ADUCPAL_close(fd);
+done:
+    if (fp != NULL)
+    {
+        fclose(fp);
+    }
 
     if (!success)
     {

@@ -37,7 +37,6 @@ extern "C"
     long ADUCPAL_syscall(long number);
     void ADUCPAL_sync();
     int ADUCPAL_unlink(const char* path);
-    ssize_t ADUCPAL_write(int fildes, const void* buf, size_t nbyte);
 
 #    ifdef __cplusplus
 }
@@ -66,7 +65,6 @@ extern "C"
 #    define ADUCPAL_syscall(number) syscall(number)
 #    define ADUCPAL_sync() sync()
 #    define ADUCPAL_unlink(path) unlink(path)
-#    define ADUCPAL_write(fildes, buf, nbyte) write(fildes, buf, nbyte)
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

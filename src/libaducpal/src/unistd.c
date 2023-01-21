@@ -81,11 +81,7 @@ int ADUCPAL_open(const char* path, int oflag)
 
 ssize_t ADUCPAL_read(int fildes, void* buf, size_t nbyte)
 {
-    UNREFERENCED_PARAMETER(fildes);
-    UNREFERENCED_PARAMETER(buf);
-    UNREFERENCED_PARAMETER(nbyte);
-    __debugbreak();
-    return -1;
+    return _read(fildes, buf, (unsigned int)nbyte);
 }
 
 int ADUCPAL_rmdir(const char* path)
@@ -155,14 +151,4 @@ int ADUCPAL_unlink(const char* path)
     // Perhaps h = CreateFile(file, ... FILE_FLAG_DELETE_ON_CLOSE); CloseHandle(h); ?
 
     return _unlink(path);
-}
-
-ssize_t ADUCPAL_write(int fildes, const void* buf, size_t nbyte)
-{
-    UNREFERENCED_PARAMETER(fildes);
-    UNREFERENCED_PARAMETER(buf);
-    UNREFERENCED_PARAMETER(nbyte);
-
-    __debugbreak();
-    return -1;
 }
