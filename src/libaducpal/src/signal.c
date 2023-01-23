@@ -9,6 +9,6 @@ int ADUCPAL_raise(int sig)
 {
     // TODO(JeffMill): [PAL] NYI
     UNREFERENCED_PARAMETER(sig);
-    errno = ENOSYS;
+    _set_errno(ENOSYS);
     return -1;
 }

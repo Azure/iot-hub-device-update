@@ -17,17 +17,6 @@ int ADUCPAL_chmod(const char* path, mode_t mode)
     return 0;
 }
 
-int ADUCPAL_fchmod(int fd, mode_t mode)
-{
-    // TODO(JeffMill): [PAL]
-    // Pretty limited what we can do here, as Windows only really supports read-only on a file for owner (S_IRUSR).
-    // Furthermore, Windows doesn't have an implementation of fchmod, and no way to get path from fd for other
-    // chmod APIs.
-    UNREFERENCED_PARAMETER(fd);
-    UNREFERENCED_PARAMETER(mode);
-    return 0;
-}
-
 int ADUCPAL_mkdir(const char* path, mode_t mode)
 {
     // TODO(JeffMill): [PAL]

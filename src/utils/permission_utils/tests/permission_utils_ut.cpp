@@ -28,9 +28,8 @@ TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
     char tmpfile_path[32] = {};
     strncpy(tmpfile_path, "/tmp/permissionUtilsUT_XXXXXX", sizeof(tmpfile_path));
     int file_handle = ADUCPAL_mkstemp(tmpfile_path);
-    REQUIRE(file_handle != -1);
-    REQUIRE(0 == ADUCPAL_fchmod(file_handle, file_permissions));
     ADUCPAL_close(file_handle);
+    REQUIRE(0 == ADUCPAL_chmod(tmpfile_path, file_permissions));
 
     CHECK(PermissionUtils_VerifyFilemodeExact(tmpfile_path, file_permissions));
 
