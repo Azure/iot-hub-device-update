@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <aducpal/stdlib.h> // mkstemp
+#include <aducpal/stdlib.h> // mktemp
 #include <aducpal/sys_stat.h> // fchmod
 #include <aducpal/sys_types.h> // S_I*
 #include <aducpal/unistd.h> // unlink
@@ -25,12 +25,14 @@ TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
 #endif
 
     // create temp file with all file permission bits set
-    char tmpfile_path[32] = {};
+    char tmpfile_path[32];
     strncpy(tmpfile_path, "/tmp/permissionUtilsUT_XXXXXX", sizeof(tmpfile_path));
-    int file_handle = ADUCPAL_mkstemp(tmpfile_path);
-    REQUIRE(file_handle != -1);
-    REQUIRE(0 == ADUCPAL_fchmod(file_handle, file_permissions));
-    ADUCPAL_close(file_handle);
+    (void)ADUCPAL_mktemp(tmpfile_path);
+    REQUIRE(errno == 0);
+    FILE* f = fopen(tmpfile_path, "w");
+    REQUIRE(f != nullptr);
+    fclose(f);
+    REQUIRE(0 == ADUCPAL_chmod(tmpfile_path, file_permissions));
 
     CHECK(PermissionUtils_VerifyFilemodeExact(tmpfile_path, file_permissions));
 

@@ -14,7 +14,7 @@ int ADUCPAL_clock_gettime(clockid_t clk_id, struct timespec* tp)
     // TODO(JeffMill): [PAL] Only CLOCK_REALTIME supported.
     if (clk_id != CLOCK_REALTIME)
     {
-        errno = ENOSYS;
+        _set_errno(ENOSYS);
         return -1;
     }
 
@@ -48,9 +48,11 @@ int ADUCPAL_nanosleep(const struct timespec* rqtp, struct timespec* rmtp)
     // the time interval specified by the rqtp argument has elapsed
     // or a signal is delivered to the calling thread, and its action is to invoke a signal-catching function or to terminate the process.
 
-    // TODO(JeffMill): All callers are sending at least 1 ms.  Enforce this.
+    // TODO(JeffMill): [PAL] Only supporting ms granularity.
     if (rmtp != NULL || rqtp->tv_sec != 0 || rqtp->tv_nsec < 1000000)
-        __debugbreak();
+    {
+        return EINVAL;
+    }
 
 #define NANOSECONDS_TO_MILLISECONDS(ms) ((ms) / 1000000)
 

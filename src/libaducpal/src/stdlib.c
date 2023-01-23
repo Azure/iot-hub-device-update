@@ -10,17 +10,18 @@
 
 #include "aducpal/unistd.h" // open
 
-int ADUCPAL_mkstemp(char* tmpl)
+char* ADUCPAL_mktemp(char* tmpl)
 {
     const errno_t ret = _mktemp_s(tmpl, strlen(tmpl) + 1);
+    // The mktemp() function always returns template.
+    // If a unique name could not be created,
+    // template is made an empty string, and errno is set to indicate the error.
+    _set_errno(ret);
     if (ret != 0)
     {
-        errno = ret;
-        return -1;
+        tmpl[0] = '\0';
     }
-
-    // TODO(JeffMill): [PAL] Pass , S_IRUSR | S_IWUSR.  _O_TEMPORARY requires admin access?
-    return ADUCPAL_open(tmpl, _O_RDWR | _O_CREAT | _O_EXCL);
+    return tmpl;
 }
 
 // Returns 1 on success.

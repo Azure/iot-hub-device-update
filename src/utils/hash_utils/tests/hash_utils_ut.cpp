@@ -14,7 +14,7 @@ using Catch::Matchers::Equals;
 #include <fstream>
 #include <unordered_map>
 
-#include <aducpal/stdlib.h> // mkstemp
+#include <aducpal/stdlib.h> // mktemp
 #include <aducpal/unistd.h> // close
 
 // To generate file hashes:
@@ -31,9 +31,8 @@ public:
     TestFile()
     {
         // Generate a unique filename.
-        int result = ADUCPAL_mkstemp(_filePath);
-        REQUIRE(result != -1);
-        ADUCPAL_close(result);
+        (void)ADUCPAL_mktemp(_filePath);
+        REQUIRE(errno == 0);
     }
 
     virtual ~TestFile()
