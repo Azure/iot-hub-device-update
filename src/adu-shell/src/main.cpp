@@ -291,7 +291,6 @@ bool ADUShell_PermissionCheck()
     if (!isTrusted)
     {
 #ifdef ADUCPAL_USE_PAL
-        // TODO(JeffMill): [PAL] getegid, getgrnam
         isTrusted = VerifyProcessEffectiveGroup(ADUSHELL_EFFECTIVE_GROUP_NAME, ADUCPAL_getegid, ADUCPAL_getgrnam);
 #else
         isTrusted = VerifyProcessEffectiveGroup(ADUSHELL_EFFECTIVE_GROUP_NAME);

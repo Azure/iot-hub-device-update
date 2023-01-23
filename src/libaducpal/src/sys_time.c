@@ -1,16 +1,18 @@
 #include "aducpal/sys_time.h"
 #include "aducpal/time.h" // clock_gettime
 
-// Avoiding bringing in stdio.h
-#ifndef NULL
-#    define NULL ((void*)0)
-#endif
+#include <errno.h>
+#include <string.h> // memset
 
-int ADUCPAL_gettimeofday(struct timeval* tv, void* z)
+int ADUCPAL_gettimeofday(struct timeval* tv, void* tzp)
 {
-    if (z != NULL)
+    memset(tv, 0, sizeof(*tv));
+
+    // If tzp is not a null pointer, the behavior is unspecified.
+    if (tzp != NULL)
     {
-        __debugbreak();
+        // No errors are defined.
+        return ENOSYS;
     }
 
     struct timespec ts;

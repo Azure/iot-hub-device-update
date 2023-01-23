@@ -16,7 +16,7 @@ int ADUCPAL_access(const char* pathname, int mode)
     if (mode != F_OK)
     {
         // TODO(JeffMill): [PAL] Only supporting F_OK (file existence)
-        __debugbreak();
+        _set_errno(EINVAL);
         return -1;
     }
 
@@ -42,14 +42,14 @@ int ADUCPAL_close(int fildes)
 
 gid_t ADUCPAL_getegid()
 {
-    __debugbreak();
-    return -1;
+    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return 0.
+    return 0;
 }
 
 uid_t ADUCPAL_geteuid()
 {
-    __debugbreak();
-    return -1;
+    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return 0.
+    return 0;
 }
 
 pid_t ADUCPAL_getpid()
@@ -59,8 +59,8 @@ pid_t ADUCPAL_getpid()
 
 uid_t ADUCPAL_getuid()
 {
-    __debugbreak();
-    return -1;
+    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return 0.
+    return 0;
 }
 
 int ADUCPAL_isatty(int fd)
@@ -127,13 +127,18 @@ long ADUCPAL_syscall(long number)
         return GetCurrentThreadId();
     }
 
-    __debugbreak();
+    // TODO(JeffMill): [PAL] Only SYS_gettid is supported.
+    // A -1 return value indicates an error, and an error number is stored in errno.
+    _set_errno(ENOSYS);
     return -1;
 }
 
 void ADUCPAL_sync()
 {
-    __debugbreak();
+    // TODO(JeffMill): [PAL] Requires admin privileges.
+
+    // To flush all open files on a volume, call FlushFileBuffers with a handle to the volume.
+    // The caller must have administrative privileges.
 }
 
 int ADUCPAL_unlink(const char* path)

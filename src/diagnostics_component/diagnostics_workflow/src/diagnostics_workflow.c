@@ -12,7 +12,7 @@
 #include <aduc/string_c_utils.h>
 
 #if defined(_WIN32)
-// TODO(JeffMill): [PAL] AzureBlobStorageFileUploadUtility_UploadFilesToContainer
+// TODO(JeffMill): [PAL] AzureBlobStorageFileUploadUtility_UploadFilesToContainer NYI
 // https://github.com/Azure/azure-blob-storage-file-upload-utility
 typedef struct tagBlobStorageInfo
 {
@@ -27,7 +27,6 @@ static bool AzureBlobStorageFileUploadUtility_UploadFilesToContainer(
     UNREFERENCED_PARAMETER(maxConcurrency);
     UNREFERENCED_PARAMETER(fileNames);
     UNREFERENCED_PARAMETER(directoryPath);
-    __debugbreak();
 
     return false;
 }

@@ -12,7 +12,7 @@ static char g_utsname_release[128] = { '\0' };
 static char g_utsname_machine[128] = { '\0' };
 static struct utsname g_utsname;
 
-bool RegQueryStringValue(HKEY hkey, const char* subkey, char* buffer, DWORD buffer_size)
+static bool RegQueryStringValue(HKEY hkey, const char* subkey, char* buffer, DWORD buffer_size)
 {
     DWORD type;
     if (RegQueryValueEx(hkey, subkey, NULL, &type, (BYTE*)buffer, &buffer_size) != 0)
