@@ -1,24 +1,10 @@
 Param(
-    # Filename to debug.
     [Parameter(Position = 0)][string]$FileName = 'AducIotAgent',
-    # Set to build type, e.g. Debug, Release.
     [string]$Type = 'Debug',
-    # Set to true if debugging a Catch2 Unit Test.
+    # Set this to true if debugging a Catch2 Unit Test.
     [switch]$DebugCatchUT = $false,
-    # Set to true if process launch without debugging is desired.
-    [switch]$NoDebugger = $false,
-    # Additional arguments to pass to command line.
-    [string[]] $ArgumentList
+    [switch]$NoDebugger = $false
 )
-
-# Example ArgumentList for AducIotAgent:
-# '--register-extension', '/var/lib/adu/extensions/sources/microsoft_steps_1.dll', '--extension-type', 'updateContentHandler', '--extension-id', 'microsoft/steps:1'
-# "--health-check"
-
-# Example ArgumentList for adu-shell:
-# '--update-type', 'common', '--update-action', 'reboot'
-
-
 
 function Show-Error {
     Param([Parameter(mandatory = $true, position = 0)][string]$Message)
@@ -77,7 +63,6 @@ if ($NoDebugger) {
     & $app
 }
 else {
-
     try {
         $windbgx = Get-WinDbgX
     }
@@ -87,17 +72,15 @@ else {
         exit 1
     }
 
-    $module = $FileName -replace '-','_'
-
     if ($DebugCatchUT) {
         $InitialCommands = @( `
                 # e.g. https_proxy_utils_unit_tests!`anonymous namespace'::C_A_T_C_H_T_E_S_T_0::test
-                '-c', "bm $module!*::C_A_T_C_H_T_E_S_T_*::test", `
+                '-c', "bm $FileName!*::C_A_T_C_H_T_E_S_T_*::test", `
                 # e.g. permission_utils_unit_test!C_A_T_C_H_T_E_S_T_0
-                '-c', "bm $module!C_A_T_C_H_T_E_S_T_*", `
+                '-c', "bm $FileName!C_A_T_C_H_T_E_S_T_*", `
                 # e.g. https_proxy_utils_unit_tests!TestCaseFixture::TestCaseFixture
-                '-c', "bm $module!TestCaseFixture::TestCaseFixture", `
-                '-c', "bm $module!TestCaseFixture::~TestCaseFixture", `
+                '-c', "bm $FileName!TestCaseFixture::TestCaseFixture", `
+                '-c', "bm $FileName!TestCaseFixture::~TestCaseFixture", `
                 # Start test
                 '-c', 'g' `
         )
@@ -106,9 +89,14 @@ else {
     }
     else {
         $InitialCommands = @( `
-                '-c', "bp $module!main", `
+                '-c', "bp $FileName!main", `
                 '-c', 'g' `
         )
+
+        # TODO: Allow passing add'l args via commandline, e.g.
+        # '--register-extension', '/var/lib/adu/extensions/sources/curl_content_downloader.dll', '--extension-type', 'contentDownloader'
+        # '--register-extension', '/var/lib/adu/extensions/sources/microsoft_steps_1.dll', '--extension-type', 'updateContentHandler', '--extension-id', 'microsoft/steps:1'
+        # "--health-check"
 
         $arguments = @( `
             # Log level is DEBUG (very verbose) -- useful for debugging.
@@ -116,8 +104,8 @@ else {
         )
     }
 
-    'Debugging: {0} {1} {2}' -f $app, ($arguments -join ' '), ($ArgumentList -join ' ')
-    cmd.exe /c start $windbgx @InitialCommands $app @arguments @ArgumentList
+    'Debugging: {0} {1}' -f $app, ($arguments -join ' ')
+    cmd.exe /c start $windbgx @InitialCommands $app @arguments
 }
 
 exit 0
