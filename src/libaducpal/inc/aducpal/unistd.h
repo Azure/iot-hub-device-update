@@ -26,6 +26,7 @@ extern "C"
     pid_t ADUCPAL_getpid();
     uid_t ADUCPAL_getuid();
     int ADUCPAL_isatty(int fd);
+    int ADUCPAL_open(const char* path, int oflag);
     int ADUCPAL_rmdir(const char* path);
     int ADUCPAL_setegid(gid_t gid);
     int ADUCPAL_seteuid(uid_t uid);
@@ -53,6 +54,7 @@ extern "C"
 #    define ADUCPAL_getpid() getpid()
 #    define ADUCPAL_getuid() getuid()
 #    define ADUCPAL_isatty(fd) isatty(fd)
+#    define ADUCPAL_open(path, oflag) open(path, oflag)
 #    define ADUCPAL_rmdir(path) rmdir(path)
 #    define ADUCPAL_setegid(gid) setegid(gid)
 #    define ADUCPAL_seteuid(uid) seteuid(uid)
