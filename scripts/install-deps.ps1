@@ -1,5 +1,3 @@
-# TODO(JeffMill): Add commandline params
-
 function Error {
     Param([Parameter(Mandatory = $true, position = 0)][string]$message)
     Write-Host -ForegroundColor Red -NoNewline 'Error:'

@@ -268,6 +268,7 @@ function Install-DeliveryOptimization {
     'Building Delivery Optimization ...'
     "Branch: $Branch"
     "Folder: $Path"
+    ''
 
     if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
         mkdir $Path | Out-Null
@@ -283,39 +284,25 @@ function Install-DeliveryOptimization {
 
     $build_dir = 'cmake'
 
-    $up_to_date = $false
-    $do_exists = Test-Path -LiteralPath "$Path/$build_dir/sdk-cpp/$BuildType/deliveryoptimization.lib" -PathType Leaf
-    $doversion_exists = Test-Path -LiteralPath "$Path/$build_dir/sdk-cpp/common/lib-doversion/$BuildType/doversion.lib" -PathType Leaf
-    if ($do_exists -and $doversion_exists) {
-        # Both targets exist. If repo is up to date, assume nothing to do.
-        if ((git.exe fetch --dry-run).Length -eq 0)
-        {
-            ''
-            'Delivery Optimization is up to date.'
-            $up_to_date = $true
-        }
+    # Note: bootstrap-windows.ps1 installs CMake and Python, but we already installed those,
+    # so not calling that script.
+
+    # Note: install-vcpkg-deps.ps1 uses vcpkg to install
+    # gtest:x64-windows,boost-filesystem:x64-windows,boost-program-options:x64-windows
+    # but we can't use "vcpkg install" as we're in vcpkg manifest mode.
+
+    if (-not (Test-Path -LiteralPath $build_dir -PathType Container)) {
+        mkdir $build_dir | Out-Null
     }
 
-    if (!$up_to_date)
-    {
-        # Note: bootstrap-windows.ps1 installs CMake and Python, but we already installed those,
-        # so not calling that script.
-
-        # Note: install-vcpkg-deps.ps1 uses vcpkg to install
-        # gtest:x64-windows,boost-filesystem:x64-windows,boost-program-options:x64-windows
-        # but we can't use "vcpkg install" as we're in vcpkg manifest mode.
-
-        if (-not (Test-Path -LiteralPath $build_dir -PathType Container)) {
-            mkdir $build_dir | Out-Null
-        }
-
-        # TODO(JeffMill): CMAKE_BUILD_TYPE doesn't have any effect, but do-client makefile depends on it currently. Remove once fixed.
-        $CMAKE_OPTIONS = '-DDO_BUILD_TESTS:BOOL=OFF', '-DDO_INCLUDE_SDK=ON', "-DCMAKE_BUILD_TYPE=$BuildType"
-        cmake.exe -S . -B $build_dir @CMAKE_OPTIONS
-        cmake.exe --build $build_dir --config $BuildType --parallel
-    }
+    # Bug 43044349: DO-client cmakefile not properly building correct type using cmake
+    # -DCMAKE_BUILD_TYPE should ultimately be removed.
+    $CMAKE_OPTIONS = '-DDO_BUILD_TESTS:BOOL=OFF', '-DDO_INCLUDE_SDK=ON', "-DCMAKE_BUILD_TYPE=$BuildType"
+    cmake.exe -S . -B $build_dir @CMAKE_OPTIONS
+    cmake.exe --build $build_dir --config $BuildType --parallel
 
     Pop-Location
+    ''
 }
 
 function Install-Adu-Components {
