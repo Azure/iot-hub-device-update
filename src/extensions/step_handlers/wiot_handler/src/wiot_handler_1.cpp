@@ -12,11 +12,12 @@
 #include "step_handler.hpp"
 #include "workflow_ptr.hpp"
 
-#include <functional> // std::function
-#include <string>
+// #include <functional> // std::function
+// #include <string>
 #include <vector>
 
 #include "aduc/extension_manager.hpp" // ExtensionManager_Download_Options
+#include "aduc/parser_utils.h" // ADUC_FileEntity_Uninit
 #include "aduc/string_c_utils.h" // ADUC_ParseUpdateType
 #include "aduc/workflow_data_utils.h" // ADUC_WorkflowData
 #include "aduc/workflow_utils.h" // workflow_get_*
@@ -31,6 +32,19 @@ EXTERN_C_BEGIN
 extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
 EXTERN_C_END
 
+class ADUCFileEntity : public ADUC_FileEntity
+{
+public:
+    ADUCFileEntity()
+    {
+        memset(this, 0, sizeof(*this));
+    }
+    ~ADUCFileEntity()
+    {
+        ADUC_FileEntity_Uninit(this);
+    }
+};
+
 static std::vector<std::string> workflow_get_update_file_list(const ADUC_WorkflowHandle& workflowHandle)
 {
     std::vector<std::string> fileList;
@@ -38,16 +52,15 @@ static std::vector<std::string> workflow_get_update_file_list(const ADUC_Workflo
 
     for (size_t fileIndex = 0; fileIndex < fileCount; fileIndex++)
     {
-        ADUC_FileEntity* entity_temp;
-        if (!workflow_get_update_file(workflowHandle, fileIndex, &entity_temp))
+        ADUCFileEntity entity;
+        if (!workflow_get_update_file(workflowHandle, fileIndex, &entity))
         {
             // Return empty file list on error.
             fileList.clear();
             break;
         }
 
-        fileList.push_back(entity_temp->TargetFilename);
-        workflow_free_file_entity(entity_temp);
+        fileList.push_back(entity.TargetFilename);
     }
 
     return fileList;
@@ -141,17 +154,16 @@ ADUC_Result WiotHandler1::Download(const ADUC_WorkflowData* workflowData)
 
         Log_Info("Downloading file #%u", fileIndex);
 
-        ADUC_FileEntity* entity_temp;
-        if (!workflow_get_update_file(workflowHandle, fileIndex, &entity_temp))
+        ADUCFileEntity entity;
+        if (!workflow_get_update_file(workflowHandle, fileIndex, &entity))
         {
             return ADUCResult(ADUC_Result_Failure, ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_GET_PAYLOAD_FILE_ENTITY);
         }
-        workflow_file_entity_ptr entity(entity_temp);
 
         try
         {
             ADUCResult result = ExtensionManager::Download(
-                entity.get(),
+                &entity,
                 workflowHandle,
                 &Default_ExtensionManager_Download_Options,
                 nullptr /*downloadProgressCallback*/);

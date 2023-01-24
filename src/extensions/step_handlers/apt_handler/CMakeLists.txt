@@ -37,6 +37,7 @@ target_link_libraries (
             aduc::contract_utils
             aduc::extension_manager
             aduc::installed_criteria_utils
+            aduc::parser_utils
             aduc::process_utils
             aduc::workflow_data_utils
             aduc::workflow_utils
