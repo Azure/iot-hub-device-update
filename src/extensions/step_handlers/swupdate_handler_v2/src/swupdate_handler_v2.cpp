@@ -15,6 +15,7 @@
 #include "aduc/adu_core_exports.h"
 #include "aduc/extension_manager.hpp"
 #include "aduc/logging.h"
+#include "aduc/parser_utils.h" // ADUC_FileEntity_Uninit
 #include "aduc/process_utils.hpp"
 #include "aduc/string_c_utils.h"
 #include "aduc/string_utils.hpp"
@@ -68,7 +69,8 @@ static ADUC_Result SWUpdate_Handler_DownloadScriptFile(ADUC_WorkflowHandle handl
 {
     ADUC_Result result = { ADUC_Result_Failure };
     char* workFolder = nullptr;
-    ADUC_FileEntity* entity = nullptr;
+    ADUC_FileEntity entity;
+    memset(&entity, 0, sizeof(entity));
     int fileCount = workflow_get_update_files_count(handle);
     int createResult = 0;
     // Download the main script file.
@@ -105,17 +107,15 @@ static ADUC_Result SWUpdate_Handler_DownloadScriptFile(ADUC_WorkflowHandle handl
 
     try
     {
-        result = ExtensionManager::Download(entity, handle, &Default_ExtensionManager_Download_Options, nullptr);
+        result = ExtensionManager::Download(&entity, handle, &Default_ExtensionManager_Download_Options, nullptr);
     }
     catch (...)
     {
         result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_PRIMARY_FILE_FAILURE_UNKNOWNEXCEPTION;
     }
 
-    workflow_free_file_entity(entity);
-    entity = nullptr;
-
 done:
+    ADUC_FileEntity_Uninit(&entity);
     workflow_free_string(workFolder);
     return result;
 }
@@ -296,7 +296,8 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
     ADUC_WorkflowHandle workflowHandle = workflowData->WorkflowHandle;
     char* installedCriteria = nullptr;
     char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
-    ADUC_FileEntity* entity = nullptr;
+    ADUC_FileEntity fileEntity;
+    memset(&fileEntity, 0, sizeof(fileEntity));
     int fileCount = workflow_get_update_files_count(workflowHandle);
     ADUC_Result result = SWUpdate_Handler_DownloadScriptFile(workflowHandle);
 
@@ -321,7 +322,7 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
     {
         Log_Info("Downloading file #%d", i);
 
-        if (!workflow_get_update_file(workflowHandle, i, &entity))
+        if (!workflow_get_update_file(workflowHandle, i, &fileEntity))
         {
             result = { .ResultCode = ADUC_Result_Failure,
                        .ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_GET_PAYLOAD_FILE_ENTITY };
@@ -331,7 +332,7 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
         try
         {
             result = ExtensionManager::Download(
-                entity, workflowHandle, &Default_ExtensionManager_Download_Options, nullptr);
+                &fileEntity, workflowHandle, &Default_ExtensionManager_Download_Options, nullptr);
         }
         catch (...)
         {
@@ -339,9 +340,6 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
                        .ExtendedResultCode =
                            ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_PAYLOAD_FILE_FAILURE_UNKNOWNEXCEPTION };
         }
-
-        workflow_free_file_entity(entity);
-        entity = nullptr;
 
         if (IsAducResultCodeFailure(result.ResultCode))
         {
@@ -355,7 +353,7 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
 
 done:
     workflow_free_string(workFolder);
-    workflow_free_file_entity(entity);
+    ADUC_FileEntity_Uninit(&fileEntity);
     workflow_free_string(installedCriteria);
     Log_Info("SWUpdate_Handler download task end.");
     return result;
@@ -394,6 +392,9 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
         result = Cancel(workflowData);
     }
 
+    result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
+
+done:
     workflow_free_string(workFolder);
 
     if (IsAducResultCodeSuccess(result.ResultCode) && result.ResultCode == ADUC_Result_Apply_RequiredImmediateAgentRestart)
