@@ -150,8 +150,6 @@ else ()
     message (FATAL_ERROR "Invalid platform layer specified: ${ADUC_PLATFORM_LAYER}")
 endif ()
 
-endif ()
-
 target_link_libraries (${target_name} PRIVATE aduc::platform_layer)
 
 install (TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
