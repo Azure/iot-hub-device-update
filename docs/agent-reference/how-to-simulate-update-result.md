@@ -156,7 +156,7 @@ The following is an example of how to simulate all download succeeded:
 ```json
     "download" : {
         "*" : {  // A fall back result for all unmatched file names
-            "resultCode" : 600,         // ADUC_Result_Download_Success
+            "resultCode" : 500,         // ADUC_Result_Download_Success
             "extendedResultCode" : 0,   // No extended result
             "resultDetails" : ""
         }
