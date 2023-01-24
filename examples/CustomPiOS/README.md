@@ -821,31 +821,6 @@ By default, the U-Boot script that pre-installed in Ubuntu 20.04 for Raspberry P
     The customized **boot.scr** file will be located in `/boot/firmware` directory and will be invoked at boot time.
     In a nut-shell, we add additional code to determine which Root FS partition is an active partition.
 
-- Install Device Update Agent package and its dependencies
-    ```sh
-    echo '# Add packages.microsoft.com'
-    adu_setup=/tmp/adu-setup
-    mkdir -p $adu_setup
-    curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > $adu_setup/microsoft-prod.list
-    cp $adu_setup/microsoft-prod.list /etc/apt/sources.list.d/
-    curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > $adu_setup/microsoft.gpg
-    cp $adu_setup/microsoft.gpg /etc/apt/trusted.gpg.d/
-    apt-get update
-        
-    echo "# Install Device Update Agent and Dependencies "
-    
-    wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_arm64-packages.tar -O ubuntu2004_arm64-packages.tar
-    tar -xvzf ubuntu2004_arm64-packages.tar
-    rm ubuntu2004_arm64-packages.tar
-    dpkg -i deliveryoptimization-agent_1.0.0_arm64.deb
-    rm deliveryoptimization-agent_1.0.0_arm64.deb
-    dpkg -i libdeliveryoptimization_1.0.0_arm64.deb
-    rm libdeliveryoptimization_1.0.0_arm64.deb
-    dpkg -i libdeliveryoptimization-dev_1.0.0_arm64.deb
-    rm libdeliveryoptimization-dev_1.0.0_arm64.deb
-    
-    apt install -y deviceupdate-agent
-    ```
 
 ## How To Test The Image
 The test update can be generated and imported to the Device Update Service by follow this [instruction](./example-ubuntu-a-b-update/README.md).
