@@ -600,13 +600,11 @@ bool HealthCheck(const ADUC_LaunchArguments* launchArgs)
         goto done;
     }
 
-#ifdef ADUC_PLATFORM_SIMULATOR
     if (IsSimulatingUnhealthyState(&config))
     {
         Log_Error("Simulating an unhealthy state.");
         goto done;
     }
-#endif
 
     isHealthy = true;
 
