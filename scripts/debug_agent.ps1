@@ -32,28 +32,6 @@ function Show-Bullet {
     Write-Host " $Message"
 }
 
-function Get-WinDbgX {
-    Param(
-        [String] $AppxPackage = 'Microsoft.WinDbg',
-        [String] $Executable = 'DbgX.Shell.exe'
-    )
-
-    $pkg = Get-AppxPackage -Name $AppxPackage
-    if (-not $pkg) {
-        throw 'Unknown AppX Package: ' + $AppxPackage
-    }
-    $xml = [xml](Get-Content (Join-Path $pkg.InstallLocation 'AppxManifest.xml'))
-
-    $pfn = $pkg.PackageFamilyName
-
-    $appid = ($xml.Package.Applications.Application | Where-Object Executable -eq $Executable).id
-    if (-not $appid) {
-        throw 'Unknown Executable: ' + $Executable
-    }
-
-    "shell:appsFolder\$pfn!$appid"
-}
-
 $root_dir = git.exe rev-parse --show-toplevel
 $bin_dir = "$root_dir\out\bin\$Type"
 $app = Join-Path $bin_dir "$FileName.exe"
@@ -77,17 +55,13 @@ if ($NoDebugger) {
     & $app
 }
 else {
-
-    try {
-        $windbgx = Get-WinDbgX
-    }
-    catch {
-        Show-Error "$_"
+    if (-not (Get-Command -Name 'WinDbgX.exe' -CommandType Application)) {
+        'WinDbgX not found'
         'To install WinDbg use: winget install --accept-package-agreements ''WinDbg Preview'''
         exit 1
     }
 
-    $module = $FileName -replace '-','_'
+    $module = $FileName -replace '-', '_'
 
     if ($DebugCatchUT) {
         $InitialCommands = @( `
@@ -111,13 +85,13 @@ else {
         )
 
         $arguments = @( `
-            # Log level is DEBUG (very verbose) -- useful for debugging.
-            '--log-level', '0'
+                # Log level is DEBUG (very verbose) -- useful for debugging.
+                '--log-level', '0'
         )
     }
 
     'Debugging: {0} {1} {2}' -f $app, ($arguments -join ' '), ($ArgumentList -join ' ')
-    cmd.exe /c start $windbgx @InitialCommands $app @arguments @ArgumentList
+    WinDbgX.exe @InitialCommands $app @arguments @ArgumentList
 }
 
 exit 0

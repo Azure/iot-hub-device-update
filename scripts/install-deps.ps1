@@ -1,4 +1,39 @@
-function Error {
+<#
+.SYNOPSIS
+Installs dependencies required to build the Device Update product.
+
+.DESCRIPTION
+Will check if dependencies are already installed, so it's okay to run this script multiple times.
+In addition, this script can uninstall the installed dependencies.
+
+It's recommended to run this script elevated.
+
+.EXAMPLE
+PS> ./Scripts/Install-deps.ps1
+#>
+Param(
+    # Uninstall all of the apps that were installed with this script.
+    [switch]$Uninstall,
+    # Don't prompt the user.
+    [switch]$Unattended
+)
+
+function Show-Header {
+    Param([Parameter(mandatory = $true, position = 0)][string]$Message)
+    $sep = ":{0}:" -f (' ' * ($Message.Length + 2))
+    Write-Host -ForegroundColor DarkYellow -BackgroundColor DarkBlue $sep
+    Write-Host -ForegroundColor White -BackgroundColor DarkBlue ("  {0}  " -f $Message)
+    Write-Host -ForegroundColor DarkYellow -BackgroundColor DarkBlue $sep
+    ''
+}
+
+function Show-Bullet {
+    Param([Parameter(mandatory = $true, position = 0)][string]$Message)
+    Write-Host -ForegroundColor Blue -NoNewline '*'
+    Write-Host " $Message"
+}
+
+function Show-Error {
     Param([Parameter(Mandatory = $true, position = 0)][string]$message)
     Write-Host -ForegroundColor Red -NoNewline 'Error:'
     Write-Host " $message"
@@ -35,12 +70,60 @@ function Install-WithWinGet {
 #
 
 if ($env:OS -ne 'Windows_NT') {
-    Error 'This script is intended to be run on Windows.'
+    Show-Error 'This script is intended to be run on Windows.'
     exit 1
 }
 
 if ($PSVersionTable.BuildVersion -lt '10.0.18362.0') {
-    Error 'Requires Windows 10 1903 or later'
+    Show-Error 'Requires Windows 10 1903 or later'
+    exit 1
+}
+
+if ('S-1-5-32-544' -notin ([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups) {
+    Write-Warning 'It''s recommended that you run this script as an administrator.'
+}
+
+if ($Uninstall) {
+    if (!$Unattended) {
+        $decision = $Host.UI.PromptForChoice(
+            'Uninstall dependencies?',
+            'Are you sure?',
+            @(
+            (New-Object Management.Automation.Host.ChoiceDescription '&Yes', 'Perform clean build'),
+            (New-Object Management.Automation.Host.ChoiceDescription '&No', 'Stop build')
+            ),
+            1)
+        if ($decision -ne 0) {
+            return
+        }
+    }
+
+    Show-Header 'Uninstalling'
+
+    Show-Bullet 'CPPCHECK'
+    winget.exe uninstall --disable-interactivity 'Cppcheck.CppCheck'
+    Show-Bullet 'GRAPHVIZ'
+    winget.exe uninstall --disable-interactivity 'Graphviz.Graphviz'
+    Show-Bullet 'DOXYGEN'
+    winget.exe uninstall --disable-interactivity 'DimitriVanHeesch.Doxygen'
+    if ((Get-Command -Name 'pip.exe' -CommandType Application -ErrorAction SilentlyContinue)) {
+        Show-Bullet 'CLANG-FORMAT'
+        pip.exe uninstall --no-input clang-format
+        Show-Bullet 'CMAKE-FORMAT'
+        pip.exe uninstall --no-input cmake-format
+    }
+    Show-Bullet 'PYTHON 3'
+    winget.exe uninstall --disable-interactivity 'Python.Python.3.11'
+    winget.exe uninstall --disable-interactivity '{0E6EEAC9-4913-4C2F-B7D2-761B27C35D7C}' # Python launcher
+    Show-Bullet 'CMAKE'
+    winget.exe uninstall --disable-interactivity 'Kitware.CMake'
+    Show-Bullet 'VS BUILD TOOLS'
+    winget.exe uninstall --disable-interactivity 'Microsoft.VisualStudio.2022.BuildTools'
+    Show-Bullet 'GIT'
+    winget.exe uninstall --disable-interactivity 'Git.Git'
+
+    # Note: Leaving WinGet installed.
+    return
 }
 
 #
@@ -82,6 +165,12 @@ if (-not (Test-Path -LiteralPath "${Env:ProgramFiles(x86)}/Microsoft Visual Stud
     Invoke-WebRequest -Uri 'https://aka.ms/vs/17/release/vs_BuildTools.exe' -OutFile "$env:TEMP/vs_BuildTools.exe"
 
     & "$env:TEMP/vs_BuildTools.exe" --passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --remove Microsoft.VisualStudio.Component.VC.CMake.Project
+
+    'Waiting for installation to complete...'
+    # Not the last file installed, but good enough...
+    while (-not (Test-Path -LiteralPath "${Env:ProgramFiles(x86)}/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x64/cl.exe" -PathType Leaf)) {
+        Start-Sleep -Seconds 1
+    }
 }
 else {
     Write-Host -ForegroundColor Cyan 'VS Build Tools already installed.'
@@ -97,18 +186,11 @@ Install-WithWinGet -PackageId 'Kitware.CMake' -TestExecutable "$env:ProgramFiles
 # PYTHON 3
 #
 
-# Use the Windows Store stub, as winget doesn't add to path, and so "python" ends up running the store stub.
-# Install-WithWinGet -PackageId 'Python.Python.3.11' -TestExecutable "$env:LocalAppData/Programs/Python/Python311/python.exe"
+Install-WithWinget -PackageId 'Python.Python.3.11' -TestExecutable "$env:LocalAppData/Programs/Python/Python311/python.exe"
 
-$python_exe = "$env:LocalAppData/Microsoft/WindowsApps/PythonSoftwareFoundation.Python.3.10_qbz5n2kfra8p0/python3.exe"
-if (-not (Test-Path $python_exe -PathType Leaf)) {
-    Start-Process -Wait -FilePath "$env:LocalAppData/Microsoft/WindowsApps/python3.exe"
-    Write-Host -ForegroundColor Yellow 'Click Get when the store window appears. Waiting for Install to complete.'
-    while (-not (Test-Path $python_exe -PathType Leaf)) {
-        Sleep -Seconds 1
-    }
-}
-
+# Temporarily add python.exe and pip.exe to PATH.
+# Needs to come first to avoid the Windows python stub.
+$env:PATH = "$env:LocalAppData\Programs\Python\Python311;$env:LocalAppData\Programs\Python\Python311\Scripts;" + $env:PATH
 
 #
 # CMAKE-FORMAT
@@ -135,10 +217,14 @@ else {
 }
 
 #
-# DOXYGEN, GRAPHVIZ (for --build_documentation)
+# DOXYGEN (for --build_documentation)
 #
 
 Install-WithWinGet -PackageId 'DimitriVanHeesch.Doxygen' -TestExecutable "$env:ProgramFiles/doxygen/bin/doxygen.exe"
+
+#
+# GRAPHVIZ (for --build_documentation)
+#
 
 Install-WithWinGet -PackageId 'Graphviz.Graphviz' -TestExecutable "$env:ProgramFiles/Graphviz/bin/dot.exe"
 
@@ -150,3 +236,11 @@ Install-WithWinGet -PackageId 'Cppcheck.Cppcheck' -TestExecutable "$env:ProgramF
 
 ''
 
+# https://github.com/microsoft/terminal/issues/1125
+'------------------------------------------------------------------------------'
+'                     YOU MUST NOW COMPLETELY CLOSE AND REOPEN'
+'                   WINDOWS TERMINAL FOR CHANGES TO TAKE EFFECT.'
+'------------------------------------------------------------------------------'
+if (!$Unattended) {
+    while ($true) { }
+}
