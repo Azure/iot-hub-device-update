@@ -2007,17 +2007,6 @@ bool workflow_set_update_file_inode(ADUC_WorkflowHandle handle, size_t index, in
 }
 
 /**
- * @brief Uninitialize and free specified file entity object.
- *
- * @param entity A file entity object.
- */
-void workflow_free_file_entity(ADUC_FileEntity* entity)
-{
-    ADUC_FileEntity_Uninit(entity);
-    free(entity);
-}
-
-/**
  * @brief Get an Update Manifest property (string) without copying the value.
  * Caller must not free the pointer.
  *
@@ -3475,19 +3464,13 @@ const char* workflow_peek_update_manifest_step_handler(ADUC_WorkflowHandle handl
 /**
  * @brief Gets a reference step update manifest file at specified index.
  *
- * @param handle A workflow data object handle.
- * @param stepIndex A step index.
- * @param entity An output reference step update manifest file entity object.
- *               Caller must free the object with workflow_free_file_entity().
- * @return true If succeeded.
+ * @param handle[in] A workflow data object handle.
+ * @param stepIndex[in] A step index.
+ * @param entity[out] An output reference step update manifest file entity object.
+ * @return true on success.
  */
-bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t stepIndex, ADUC_FileEntity** entity)
+bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t stepIndex, ADUC_FileEntity* entity)
 {
-    if (entity == NULL)
-    {
-        return false;
-    }
-
     size_t count = workflow_get_instructions_steps_count(handle);
     if (stepIndex >= count)
     {
@@ -3495,6 +3478,7 @@ bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t
     }
 
     bool succeeded = false;
+    bool fileEntityInited = false;
     JSON_Object* step = json_array_get_object(workflow_get_instructions_steps_array(handle), stepIndex);
     const char* fileId = json_object_get_string(step, STEP_PROPERTY_FIELD_DETACHED_MANIFEST_FILE_ID);
     const JSON_Object* files = _workflow_get_update_manifest_files_map(handle);
@@ -3504,8 +3488,6 @@ bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t
     const char* name = NULL;
     size_t tempHashCount = 0;
     ADUC_Hash* tempHash = NULL;
-
-    *entity = NULL;
 
     // Find fileurls map in this workflow, and its enclosing workflow(s).
     ADUC_WorkflowHandle h = handle;
@@ -3544,19 +3526,15 @@ bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t
         sizeInBytes = json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
     }
 
-    *entity = calloc(1, sizeof(**entity));
-    if (*entity == NULL)
-    {
-        goto done;
-    }
-
-    if (!ADUC_FileEntity_Init(*entity, fileId, name, uri, NULL /*arguments*/, tempHash, tempHashCount, sizeInBytes))
+    if (!ADUC_FileEntity_Init(entity, fileId, name, uri, NULL /*arguments*/, tempHash, tempHashCount, sizeInBytes))
     {
         Log_Error("Invalid file entity arguments");
         goto done;
     }
 
-    if (!ParseFileEntityDownloadHandler(handle, file, *entity))
+    fileEntityInited = true;
+
+    if (!ParseFileEntityDownloadHandler(handle, file, entity))
     {
         goto done;
     }
@@ -3565,14 +3543,9 @@ bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t
 
 done:
 
-    if (!succeeded)
+    if (!succeeded && fileEntityInited)
     {
-        if (*entity != NULL)
-        {
-            ADUC_FileEntity_Uninit(*entity);
-            free(*entity);
-            *entity = NULL;
-        }
+        ADUC_FileEntity_Uninit(entity);
     }
 
     return succeeded;
