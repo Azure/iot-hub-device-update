@@ -143,8 +143,10 @@ target_compile_definitions (
             DO_FILE_USER="${DO_FILE_USER}"
             SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}")
 
-find_package (deliveryoptimization_sdk CONFIG REQUIRED)
-target_link_libraries (${target_name} PRIVATE Microsoft::deliveryoptimization)
+if (ADUC_PLATFORM_LAYER STREQUAL "linux")
+    find_package (deliveryoptimization_sdk CONFIG REQUIRED)
+    target_link_libraries (${target_name} PRIVATE Microsoft::deliveryoptimization)
+endif ()
 
 target_link_libraries (${target_name} PRIVATE aduc::platform_layer)
 
