@@ -11,6 +11,7 @@
 using Catch::Matchers::Equals;
 
 #include "aduc/microsoft_delta_download_handler_utils.h"
+#include <aduc/parser_utils.h>
 #include <aduc/result.h> // ADUC_Result_*
 #include <aduc/types/adu_core.h> // ADUC_Result_*
 #include <aduc/types/update_content.h> // ADUC_RelatedFile, ADUC_FileEntity
@@ -22,63 +23,61 @@ using Catch::Matchers::Equals;
 #define TEST_PAYLOAD_FILE_ID "ac47d3bab772454283ae95f0bbb1a1de"
 #define TEST_DELTA_FILE_ID "312d0351155037c4900d76473d371c35"
 
-const std::string updateManifest{
-    R"( {                                                                         )"
-    R"(     "compatibility": [                                                    )"
-    R"(         {                                                                 )"
-    R"(             "deviceManufacturer": "contoso",                              )"
-    R"(             "deviceModel": "toaster"                                      )"
-    R"(         }                                                                 )"
-    R"(     ],                                                                    )"
-    R"(     "createdDateTime": "2022-03-12T12:22:37.2627901Z",                    )"
-    R"(     "files": {                                                            )"
-    R"(         "PAYLOAD_FILE_ID": {                                              )"
-    R"(             "fileName": "target_update.swu",                              )"
-    R"(             "hashes": {                                                   )"
-    R"(                 "sha256": "PAYLOAD_HASH"                                  )"
-    R"(             },                                                            )"
-    R"(             "sizeInBytes": 98765,                                         )"
-    R"(             "properties": {                                               )"
-    R"(             },                                                            )"
-    R"(             "downloadHandler": {                                          )"
-    R"(                 "id": "microsoft/delta:1"                                 )"
-    R"(             },                                                            )"
-    R"(             "relatedFiles": {                                             )"
-    R"(                 "DELTA_FILE_ID": {                                        )"
-    R"(                     "fileName": "DELTA_UPDATE_FILE_NAME",                 )"
-    R"(                     "sizeInBytes": 1234,                                  )"
-    R"(                     "hashes": {                                           )"
-    R"(                         "sha256": "DELTA_UPDATE_HASH"                     )"
-    R"(                     },                                                    )"
-    R"(                     "properties": {                                       )"
-    R"(                         "microsoft.sourceFileHash": "SOURCE_UPDATE_HASH", )"
-    R"(                         "microsoft.sourceFileHashAlgorithm": "sha256"     )"
-    R"(                     }                                                     )"
-    R"(                 }                                                         )"
-    R"(             }                                                             )"
-    R"(         }                                                                 )"
-    R"(     },                                                                    )"
-    R"(     "instructions": {                                                     )"
-    R"(         "steps": [                                                        )"
-    R"(             {                                                             )"
-    R"(                 "files": [                                                )"
-    R"(                     "f222b9ffefaaac577"                                   )"
-    R"(                 ],                                                        )"
-    R"(                 "handler": "microsoft/swupdate:1",                        )"
-    R"(                 "handlerProperties": {                                    )"
-    R"(                     "installedCriteria": "toaster_firmware-0.1"           )"
-    R"(                 }                                                         )"
-    R"(             }                                                             )"
-    R"(         ]                                                                 )"
-    R"(     },                                                                    )"
-    R"(     "manifestVersion": "5",                                               )"
-    R"(     "updateId": {                                                         )"
-    R"(         "name": "toaster_firmware",                                       )"
-    R"(         "provider": "contoso",                                            )"
-    R"(         "version": "0.1"                                                  )"
-    R"(     }                                                                     )"
-    R"( }                                                                         )"
-};
+const std::string updateManifest{ R"( {                                                                         )"
+                                  R"(     "compatibility": [                                                    )"
+                                  R"(         {                                                                 )"
+                                  R"(             "deviceManufacturer": "contoso",                              )"
+                                  R"(             "deviceModel": "toaster"                                      )"
+                                  R"(         }                                                                 )"
+                                  R"(     ],                                                                    )"
+                                  R"(     "createdDateTime": "2022-03-12T12:22:37.2627901Z",                    )"
+                                  R"(     "files": {                                                            )"
+                                  R"(         "PAYLOAD_FILE_ID": {                                              )"
+                                  R"(             "fileName": "target_update.swu",                              )"
+                                  R"(             "hashes": {                                                   )"
+                                  R"(                 "sha256": "PAYLOAD_HASH"                                  )"
+                                  R"(             },                                                            )"
+                                  R"(             "sizeInBytes": 98765,                                         )"
+                                  R"(             "properties": {                                               )"
+                                  R"(             },                                                            )"
+                                  R"(             "downloadHandler": {                                          )"
+                                  R"(                 "id": "microsoft/delta:1"                                 )"
+                                  R"(             },                                                            )"
+                                  R"(             "relatedFiles": {                                             )"
+                                  R"(                 "DELTA_FILE_ID": {                                        )"
+                                  R"(                     "fileName": "DELTA_UPDATE_FILE_NAME",                 )"
+                                  R"(                     "sizeInBytes": 1234,                                  )"
+                                  R"(                     "hashes": {                                           )"
+                                  R"(                         "sha256": "DELTA_UPDATE_HASH"                     )"
+                                  R"(                     },                                                    )"
+                                  R"(                     "properties": {                                       )"
+                                  R"(                         "microsoft.sourceFileHash": "SOURCE_UPDATE_HASH", )"
+                                  R"(                         "microsoft.sourceFileHashAlgorithm": "sha256"     )"
+                                  R"(                     }                                                     )"
+                                  R"(                 }                                                         )"
+                                  R"(             }                                                             )"
+                                  R"(         }                                                                 )"
+                                  R"(     },                                                                    )"
+                                  R"(     "instructions": {                                                     )"
+                                  R"(         "steps": [                                                        )"
+                                  R"(             {                                                             )"
+                                  R"(                 "files": [                                                )"
+                                  R"(                     "f222b9ffefaaac577"                                   )"
+                                  R"(                 ],                                                        )"
+                                  R"(                 "handler": "microsoft/swupdate:1",                        )"
+                                  R"(                 "handlerProperties": {                                    )"
+                                  R"(                     "installedCriteria": "toaster_firmware-0.1"           )"
+                                  R"(                 }                                                         )"
+                                  R"(             }                                                             )"
+                                  R"(         ]                                                                 )"
+                                  R"(     },                                                                    )"
+                                  R"(     "manifestVersion": "5",                                               )"
+                                  R"(     "updateId": {                                                         )"
+                                  R"(         "name": "toaster_firmware",                                       )"
+                                  R"(         "provider": "contoso",                                            )"
+                                  R"(         "version": "0.1"                                                  )"
+                                  R"(     }                                                                     )"
+                                  R"( }                                                                         )" };
 
 const std::string desiredTemplate{
     R"( {                                                                                 )"
@@ -136,16 +135,17 @@ TEST_CASE("MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile Cache Miss")
     result = workflow_init(desired.c_str(), false, &handle);
     REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
-    ADUC_FileEntity* fileEntity = nullptr;
+    ADUC_FileEntity fileEntity;
+    memset(&fileEntity, 0, sizeof(fileEntity));
     REQUIRE(workflow_get_update_file(handle, 0, &fileEntity));
 
     //
     // Act
     //
     result = MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile(
-        handle, &fileEntity->RelatedFiles[0], "/foo/", "/bar/", MockProcessDeltaUpdateFn, MockDownloadDeltaUpdateFn);
+        handle, &fileEntity.RelatedFiles[0], "/foo/", "/bar/", MockProcessDeltaUpdateFn, MockDownloadDeltaUpdateFn);
 
     CHECK(result.ResultCode == ADUC_Result_Success_Cache_Miss);
 
-    workflow_free_file_entity(fileEntity);
+    ADUC_FileEntity_Uninit(&fileEntity);
 }
