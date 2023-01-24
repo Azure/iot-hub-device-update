@@ -23,7 +23,7 @@ Param(
     # Output directory. Default is {git_root}/out
     [string]$OutputDirectory = "$(git.exe rev-parse --show-toplevel)/out",
     # Static analysis tools to run, e.g. 'clang-tidy', 'cppcheck', 'cpplint', 'iwyu', 'lwyu'
-    [string[]]$StaticAnalysisTools,
+    [string[]]$StaticAnalysisTools = @(),
     # Logging library to use
     [string]$LogLib = 'zlog',
     # Log folder to use for DU logs
@@ -242,7 +242,11 @@ function Install-DeliveryOptimization {
     # do_url=git@github.com:Microsoft/do-client.git
     $do_url = 'https://github.com/Microsoft/do-client.git'
 
-    git.exe clone --recursive --single-branch --branch $Branch --depth 1 $do_url .
+    # Avoid "fatal: destination path '.' already exists and is not an empty directory."
+    if (-not (Test-Path '.git' -PathType Container))
+    {
+        git.exe clone --recursive --single-branch --branch $Branch --depth 1 $do_url .
+    }
 
     git.exe checkout $Commit
 
