@@ -106,16 +106,6 @@ done:
 }
 
 /**
- * @brief Helper function for simulating an unhealthy state.
- *
- * @return true if an ADU configuration file contains simulateUnhealthyState value (any value).
- */
-bool IsSimulatingUnhealthyState(ADUC_ConfigInfo* config)
-{
-    return config->simulateUnhealthyState;
-}
-
-/**
  * @brief Reports which required users do not exist.
  * @remark Goes through the whole list of users to trace any that are missing.
  * @return true if all necessary users exist, or false if any do not exist.
@@ -597,12 +587,6 @@ bool HealthCheck(const ADUC_LaunchArguments* launchArgs)
 
     if (!AreDirAndFilePermissionsValid())
     {
-        goto done;
-    }
-
-    if (IsSimulatingUnhealthyState(&config))
-    {
-        Log_Error("Simulating an unhealthy state.");
         goto done;
     }
 

@@ -296,8 +296,6 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFilePath)
         }
     }
 
-    config->simulateUnhealthyState = ADUC_JSON_GetBooleanField(root_value, "simulateUnhealthyState");
-
     const JSON_Object* root_object = json_value_get_object(root_value);
 
     config->aduShellTrustedUsers = json_object_get_array(root_object, "aduShellTrustedUsers");
