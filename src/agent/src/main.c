@@ -31,17 +31,7 @@
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
-
-#ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
-#    include "aduc/connection_string_utils.h"
-
-#    ifdef ADUCPAL_USE_PAL
-// TODO(JeffMill): [PAL] do_config.h
-#    else
-#        include <do_config.h>
-#    endif
-#endif
-
+#include <do_config.h>
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>
 #include <getopt.h>

@@ -2,14 +2,7 @@
 
 ## What's A Content Handler Extension
 
-Device Update has previously supported four reference Device Update Agent binaries, each designed to work with only 1 Update Type:
-
-- An agent that supports 'microsoft/swupdate:1' update type
-- An agent that supports 'microsoft/apt:1' update type
-- A simulator agent that supports 'microsoft/swupdate:1' update type
-- A simulator agent that supports 'microsoft/apt:1' update type
-
-The Public Preview refresh Agent supports an Update Content Handler extension, which enables the Agent to support multiple Update Types at the same time.
+Device Update agent supports an Update Content Handler (a.k.a, Step Handler) extension, which enables the Agent to support multiple Update Types at the same time.
 
 Device builders can define a custom Update Type, implement the associated custom Update Content Handler, and register it, if needed for their additional device updates and deployment scenarios.
 
@@ -20,7 +13,7 @@ Device builders can define a custom Update Type, implement the associated custom
 ```c
 
 /**
- * @brief Instantiates an Update Content Handler simulator.
+ * @brief Instantiates an Update Content Handler.
  * @return A pointer to an instantiated Update Content Handler object.
  */
 ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);

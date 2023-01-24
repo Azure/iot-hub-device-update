@@ -9,25 +9,7 @@
 #include "device_properties.h"
 #include <aduc/logging.h>
 #include <aduc/types/update_content.h>
-
-#ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
-
-#    ifdef ADUCPAL_USE_PAL
-static char* deliveryoptimization_get_components_version()
-{
-    // TODO(JeffMill): [PAL] Ongoing discussion on what this should return.
-    char* version;
-    // Note that this string must be allocated with malloc.
-    if (mallocAndStrcpy_s(&version, "42.42") != 0)
-    {
-        return NULL;
-    }
-    return version;
-}
-#    else
-#        include <do_config.h>
-#    endif
-#endif
+#include <do_config.h>
 
 #include <stdlib.h>
 
@@ -191,7 +173,6 @@ bool DeviceProperties_AddVersions(JSON_Object* devicePropsObj)
         goto done;
     }
 
-#ifndef ADUC_PLATFORM_SIMULATOR
     do_version = deliveryoptimization_get_components_version();
 
     if (do_version == NULL)
@@ -208,7 +189,6 @@ bool DeviceProperties_AddVersions(JSON_Object* devicePropsObj)
             "Could not serialize JSON field: %s value: %s", ADUCITF_FIELDNAME_DEVICEPROPERTIES_DO_VERSION, do_version);
         goto done;
     }
-#endif
 
     success = true;
 

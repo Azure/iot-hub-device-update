@@ -18,10 +18,6 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc)
 target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
                                                     ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}")
 
-if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
-    target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_PLATFORM_SIMULATOR)
-endif ()
-
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (

@@ -152,13 +152,14 @@ target_compile_definitions (
             DO_FILE_USER="${DO_FILE_USER}"
             SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}")
 
-if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
-    target_compile_definitions (${target_name} PRIVATE ADUC_PLATFORM_SIMULATOR)
-else ()
+if (ADUC_PLATFORM_LAYER STREQUAL "linux")
     target_link_dosdk (${target_name} PRIVATE)
+else ()
+    message (FATAL_ERROR "Invalid platform layer specified: ${ADUC_PLATFORM_LAYER}")
 endif ()
 
 if (WIN32)
+
     # TODO(JeffMill): [PAL] getopt.h
     find_path (GETOPT_INCLUDE_DIR "getopt.h")
     target_include_directories (${target_name} PRIVATE ${GETOPT_INCLUDE_DIR})

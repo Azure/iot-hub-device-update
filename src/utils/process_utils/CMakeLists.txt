@@ -22,12 +22,7 @@ target_link_libraries (
 target_link_aziotsharedutil (${PROJECT_NAME} PUBLIC)
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
-if ((NOT
-     ${ADUC_PLATFORM_LAYER}
-     STREQUAL
-     "simulator"
-    )
-    AND ADUC_BUILD_UNIT_TESTS)
+if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
     add_subdirectory (test_helper)
 endif ()
