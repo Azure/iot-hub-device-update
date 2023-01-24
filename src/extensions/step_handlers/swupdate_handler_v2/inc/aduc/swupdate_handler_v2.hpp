@@ -51,6 +51,9 @@ public:
         std::string& commandFilePath,
         std::vector<std::string>& args);
 
+private:
+    ADUC_Result CancelApply(const tagADUC_WorkflowData* workflowData);
+
 protected:
     // Protected constructor, must call CreateContentHandler factory method or from derived simulator class
     SWUpdateHandlerImpl()
