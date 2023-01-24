@@ -24,9 +24,6 @@
 #include <sstream>
 #include <string>
 
-// Note: this requires ${CMAKE_DL_LIBS}
-// #include <dlfcn.h>
-
 using ADUC::StringUtils::cstr_wrapper;
 
 #define DEFAULT_REF_STEP_HANDLER "microsoft/steps:1"
