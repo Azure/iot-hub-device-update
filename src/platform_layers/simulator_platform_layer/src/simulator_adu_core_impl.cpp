@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "aduc/logging.h"
+#include "aduc/parser_utils.h" // ADUC_FileEntity_Uninit
 #include "aduc/string_utils.hpp"
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
@@ -74,7 +75,8 @@ void SimulatorPlatformLayer::Idle(const char* workflowId)
 ADUC_Result SimulatorPlatformLayer::Download(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = { ADUC_Result_Failure };
-    ADUC_FileEntity* entity = nullptr;
+    ADUC_FileEntity fileEntity;
+    memset(&fileEntity, 0, sizeof(fileEntity));
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     const char* workflowId = workflow_peek_id(handle);
     char* updateType = workflow_get_update_type(handle);
@@ -88,7 +90,7 @@ ADUC_Result SimulatorPlatformLayer::Download(const ADUC_WorkflowData* workflowDa
         workFolder);
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    if (!workflow_get_update_file(handle, 0, &entity))
+    if (!workflow_get_update_file(handle, 0, &fileEntity))
     {
         result = { .ResultCode = ADUC_Result_Failure,
                    .ExtendedResultCode = ADUC_ERC_COMPONENTS_HANDLER_GET_FILE_ENTITY_FAILURE };
@@ -102,20 +104,24 @@ ADUC_Result SimulatorPlatformLayer::Download(const ADUC_WorkflowData* workflowDa
     {
         Log_Warn("Cancellation requested. Cancelling download");
 
-        workflowData->DownloadProgressCallback(workflowId, entity->FileId, ADUC_DownloadProgressState_Cancelled, 0, 0);
+        workflowData->DownloadProgressCallback(
+            workflowId, fileEntity.FileId, ADUC_DownloadProgressState_Cancelled, 0, 0);
 
         result = { ADUC_Result_Failure_Cancelled };
         goto done;
     }
 
     Log_Info(
-        "File Info\n\tHash: %s\n\tUri: %s\n\tFile: %s", entity->FileId, entity->DownloadUri, entity->TargetFilename);
+        "File Info\n\tHash: %s\n\tUri: %s\n\tFile: %s",
+        fileEntity.FileId,
+        fileEntity.DownloadUri,
+        fileEntity.TargetFilename);
 
     if (GetSimulationType() == SimulationType::DownloadFailed)
     {
         Log_Warn("Simulating a download failure");
 
-        workflowData->DownloadProgressCallback(workflowId, entity->FileId, ADUC_DownloadProgressState_Error, 0, 0);
+        workflowData->DownloadProgressCallback(workflowId, fileEntity.FileId, ADUC_DownloadProgressState_Error, 0, 0);
 
         result = { ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
         goto done;
@@ -124,7 +130,7 @@ ADUC_Result SimulatorPlatformLayer::Download(const ADUC_WorkflowData* workflowDa
     // Simulation mode.
 
     workflowData->DownloadProgressCallback(
-        workflowId, entity->FileId, ADUC_DownloadProgressState_Completed, 424242, 424242);
+        workflowId, fileEntity.FileId, ADUC_DownloadProgressState_Completed, 424242, 424242);
 
     Log_Info("Simulator sleeping...");
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -136,7 +142,7 @@ ADUC_Result SimulatorPlatformLayer::Download(const ADUC_WorkflowData* workflowDa
 done:
     workflow_free_string(updateType);
     workflow_free_string(workFolder);
-    workflow_free_file_entity(entity);
+    ADUC_FileEntity_Uninit(&fileEntity);
 
     // Success!
     return result;

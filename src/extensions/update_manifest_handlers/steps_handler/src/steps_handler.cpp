@@ -12,21 +12,17 @@
 #include "aduc/extension_manager.hpp"
 #include "aduc/extension_manager_download_options.h"
 #include "aduc/logging.h"
+#include "aduc/parser_utils.h" // ADUC_FileEntity_Uninit
 #include "aduc/string_c_utils.h" // IsNullOrEmpty
 #include "aduc/string_utils.hpp"
 #include "aduc/system_utils.h"
 #include "aduc/workflow_utils.h"
 
-#include "parson.h"
-
-#include <sstream>
-#include <string>
-
 #include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy
 #include <azure_c_shared_utility/strings.h> // STRING_*
-
-// Note: this requires ${CMAKE_DL_LIBS}
-// #include <dlfcn.h>
+#include <parson.h>
+#include <sstream>
+#include <string>
 
 using ADUC::StringUtils::cstr_wrapper;
 
@@ -84,7 +80,6 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
     auto stepCount = static_cast<unsigned int>(workflow_get_instructions_steps_count(handle));
     char* workFolder = workflow_get_workfolder(handle);
     unsigned int childWorkflowCount = workflow_get_children_count(handle);
-    ADUC_FileEntity* entity = nullptr;
     int workflowLevel = workflow_get_level(handle);
 
     // Child workflow should be either 0 (resuming install phase after agent restarted),
@@ -127,6 +122,9 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
             }
             else
             {
+                ADUC_FileEntity entity;
+                memset(&entity, 0, sizeof(entity));
+
                 // Download detached update manifest file.
                 if (!workflow_get_step_detached_manifest_file(handle, i, &entity))
                 {
@@ -141,7 +139,7 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                     "Downloading a detached Update manifest file for level#%d step#%d (file id:%s).",
                     workflowLevel,
                     i,
-                    entity->FileId);
+                    entity.FileId);
 
                 try
                 {
@@ -149,7 +147,7 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                     memset(&downloadOptions, 0, sizeof(downloadOptions));
                     downloadOptions.retryTimeout = DO_RETRY_TIMEOUT_DEFAULT;
 
-                    result = ExtensionManager::Download(entity, handle, &downloadOptions, nullptr);
+                    result = ExtensionManager::Download(&entity, handle, &downloadOptions, nullptr);
                 }
                 catch (...)
                 {
@@ -157,15 +155,15 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                         "Exception occurred while downloading a detached Update Manifest file for level#%d step#%d (file id:%s).",
                         workflowLevel,
                         i,
-                        entity->FileId);
+                        entity.FileId);
                     result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_DOWNLOAD_FAILURE_UNKNOWNEXCEPTION;
                 }
 
                 std::stringstream childManifestFile;
-                childManifestFile << workFolder << "/" << entity->TargetFilename;
+                childManifestFile << workFolder << "/" << entity.TargetFilename;
 
-                workflow_free_file_entity(entity);
-                entity = nullptr;
+                ADUC_FileEntity_Uninit(&entity);
+                memset(&entity, 0, sizeof(entity));
 
                 // For 'microsoft/steps:1' implementation, abort download task as soon as an error occurs.
                 if (IsAducResultCodeFailure(result.ResultCode))
@@ -260,13 +258,13 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
     result = { ADUC_Result_Success };
 
 done:
+    workflow_free_string(workFolder);
+
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         workflow_free(childHandle);
     }
 
-    workflow_free_string(workFolder);
-    workflow_free_file_entity(entity);
     return result;
 }
 

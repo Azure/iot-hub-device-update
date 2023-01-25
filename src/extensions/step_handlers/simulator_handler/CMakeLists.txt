@@ -36,6 +36,7 @@ target_link_libraries (
     PRIVATE aduc::agent_workflow
             aduc::contract_utils
             aduc::logging
+            aduc::parser_utils
             aduc::workflow_utils
             Parson::parson)
 

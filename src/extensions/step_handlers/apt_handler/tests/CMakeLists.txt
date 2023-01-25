@@ -44,6 +44,7 @@ target_link_libraries (
             aduc::exception_utils
             aduc::extension_manager
             aduc::installed_criteria_utils
+            aduc::parser_utils
             aduc::process_utils
             aduc::string_utils
             aduc::system_utils
