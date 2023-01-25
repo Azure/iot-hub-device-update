@@ -167,10 +167,15 @@ if (-not (Test-Path -LiteralPath "${Env:ProgramFiles(x86)}/Microsoft Visual Stud
     & "$env:TEMP/vs_BuildTools.exe" --passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --remove Microsoft.VisualStudio.Component.VC.CMake.Project
 
     'Waiting for installation to complete...'
-    # Not the last file installed, but good enough...
-    while (-not (Test-Path -LiteralPath "${Env:ProgramFiles(x86)}/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x64/cl.exe" -PathType Leaf)) {
-        Start-Sleep -Seconds 1
+    $anim = '(----------)','(---------*)','(--------*-)','(-------*--)','(------*---)','(-----*----)','(----*-----)','(---*------)','(--*-------)','(-*--------)','(*---------)'
+    $animIndex = 0
+    # Not the last file installed, but close enough...
+    while (-not (Test-Path -LiteralPath "${Env:ProgramFiles(x86)}/Microsoft Visual Studio/2022/BuildTools/Common7/Tools/vsdevcmd/ext/ConnectionManagerExe.bat" -PathType Leaf)) {
+        Write-Host -ForegroundColor Cyan -BackgroundColor Black -NoNewline ("`r{0}" -f $anim[$animIndex])
+        $animIndex = ($animIndex + 1) % $anim.Length
+        Start-Sleep -Milliseconds 500
     }
+    ''
 }
 else {
     Write-Host -ForegroundColor Cyan 'VS Build Tools already installed.'
