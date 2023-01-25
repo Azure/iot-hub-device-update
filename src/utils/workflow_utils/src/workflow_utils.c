@@ -63,8 +63,6 @@
  */
 #define WORKFLOW_RESULT_DETAILS_MAX_LENGTH 1024
 
-EXTERN_C_BEGIN
-
 /* external linkage */
 extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
 
@@ -3632,5 +3630,3 @@ void workflow_set_force_update(ADUC_WorkflowHandle handle, bool forceUpdate)
         wf->ForceUpdate = forceUpdate;
     }
 }
-
-EXTERN_C_END

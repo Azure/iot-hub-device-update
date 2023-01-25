@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.5)
 
 set (target_name microsoft_script_1)
 
-add_library (${target_name} MODULE "")
+add_library (${target_name} SHARED "")
 
 add_library (aduc::${target_name} ALIAS ${target_name})
 
@@ -26,6 +26,6 @@ target_link_libraries (
             aduc::workflow_data_utils
             aduc::workflow_utils)
 
-target_link_libraries (${target_name} PRIVATE libaducpal)
+target_link_libraries (${target_name} PUBLIC libaducpal)
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

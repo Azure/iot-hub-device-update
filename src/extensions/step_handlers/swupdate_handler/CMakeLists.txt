@@ -4,7 +4,7 @@ set (target_name microsoft_swupdate_1)
 
 set (SOURCE_ALL src/swupdate_handler.cpp)
 
-add_library (${target_name} MODULE ${SOURCE_ALL})
+add_library (${target_name} SHARED ${SOURCE_ALL})
 
 add_library (aduc::${target_name} ALIAS ${target_name})
 

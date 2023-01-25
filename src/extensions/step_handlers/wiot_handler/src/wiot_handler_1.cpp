@@ -27,7 +27,9 @@
 // Bug 43012743: Error codes are too content handler specific.
 
 EXTERN_C_BEGIN
+
 extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
+
 EXTERN_C_END
 
 class ADUCFileEntity : public ADUC_FileEntity

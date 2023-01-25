@@ -9,9 +9,8 @@
 #define ADUC_SWUPDATE_HANDLER_HPP
 
 #include "aduc/content_handler.hpp"
-#include "aduc/logging.h"
+#include "aduc/logging.h" // ADUC_LOG_SEVERITY
 #include <aduc/result.h>
-#include <memory>
 #include <string>
 
 EXTERN_C_BEGIN
@@ -20,7 +19,7 @@ EXTERN_C_BEGIN
  * @brief Instantiates an Update Content Handler for 'microsoft/swupdate:1' update type.
  * @return A pointer to an instantiated Update Content Handler object.
  */
-ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
+EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
 
 EXTERN_C_END
 

@@ -4,7 +4,7 @@ include (agentRules)
 
 compileasc99 ()
 
-add_library (${target_name} MODULE "")
+add_library (${target_name} SHARED "")
 
 target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 

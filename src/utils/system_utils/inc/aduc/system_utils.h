@@ -12,7 +12,6 @@
 #include <stdbool.h>
 
 #include <aducpal/sys_stat.h> // mode_t
-#include <aducpal/sys_stat.h> // S_I*
 #include <aducpal/unistd.h> // uid_t, gid_t
 
 EXTERN_C_BEGIN
