@@ -30,7 +30,6 @@ trigger:
         include:
             - main
             - develop
-            - release/*
     paths:
         exclude:
             - docs/*
@@ -46,7 +45,6 @@ pr:
             - main
             - develop
             - feature/*
-            - release/*
     paths:
         exclude:
             - docs/*
