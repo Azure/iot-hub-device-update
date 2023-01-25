@@ -145,7 +145,8 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
     updateTypeOk = ADUC_ParseUpdateType(updateType, &updateName, &updateTypeVersion);
     if (!updateTypeOk)
     {
-        Log_Error("SWUpdate packages download failed. Unknown Handler Version (UpdateDateType:%s)", updateType);
+        Log_Error(
+            "SWUpdate packages download failed. Unable to parse updateName and updateTypeVersion from updateType.");
         result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_UNKNOWN_UPDATE_VERSION;
         goto done;
     }
