@@ -4,7 +4,7 @@ include (agentRules)
 
 compileasc99 ()
 
-add_library (${PROJECT_NAME} SHARED contoso_component_enumerator.cpp)
+add_library (${PROJECT_NAME} MODULE contoso_component_enumerator.cpp)
 
 find_package (Parson REQUIRED)
 
