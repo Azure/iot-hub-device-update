@@ -30,9 +30,9 @@ trigger:
     branches:
         include:
             - main
-            - release/*
+            - develop
             - feature/*
-            - dev/*
+            - release/*
     paths:
         exclude:
             - docs/*
@@ -48,9 +48,9 @@ pr:
     branches:
         include:
             - main
-            - release/*
+            - develop
             - feature/*
-            - dev/*
+            - release/*
     paths:
         exclude:
             - docs/*
