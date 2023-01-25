@@ -10,7 +10,7 @@ set (target_name microsoft_steps_1)
 find_package (Parson REQUIRED)
 find_package (IotHubClient REQUIRED)
 
-add_library (${target_name} SHARED)
+add_library (${target_name} MODULE)
 add_library (aduc::${target_name} ALIAS ${target_name})
 
 target_sources (${target_name} PRIVATE src/steps_handler.cpp src/handler_create.cpp)
