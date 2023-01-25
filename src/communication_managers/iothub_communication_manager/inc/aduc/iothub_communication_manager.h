@@ -28,7 +28,7 @@ typedef void (*ADUC_COMMUNICATION_MANAGER_CLIENT_HANDLE_UPDATED_CALLBACK)(ADUC_C
  * @param client_handle_updated_callback A pointer to a callback function to be invoked when a device client handler has changed.
  * @param property_update_context An ADUC_PnPComponentClient_PropertyUpdate_Context object.
  *
- * @return 'true' if success, 'false' if already initialize.
+ * @return 'true' if success.
  */
 bool IoTHub_CommunicationManager_Init(ADUC_ClientHandle* handle_address,
                                    IOTHUB_CLIENT_DEVICE_TWIN_CALLBACK device_twin_callback,
