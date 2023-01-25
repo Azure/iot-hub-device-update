@@ -123,19 +123,14 @@ bool IoTHub_CommunicationManager_Init(
 
     if (g_iothub_client_initialized)
     {
-        Log_Error("Already initialized.");
+        Log_Info("Already initialized.");
+        return true;
     }
 
     // Before invoking ANY IoTHub Device SDK functionality, IoTHub_Init must be invoked.
     if ((iothubInitResult = IoTHub_Init()) != 0)
     {
         Log_Error("IoTHub_Init failed. Error=%d", iothubInitResult);
-        return false;
-    }
-
-    if (g_aduc_client_handle_address != NULL)
-    {
-        Log_Error("Client handle is not NULL.");
         return false;
     }
 
