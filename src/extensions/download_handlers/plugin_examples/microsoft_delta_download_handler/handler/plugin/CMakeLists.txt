@@ -3,7 +3,7 @@ set (target_name microsoft_delta_download_handler)
 include (agentRules)
 compileasc99 ()
 
-add_library (${target_name} MODULE "")
+add_library (${target_name} MODULE)
 
 target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
