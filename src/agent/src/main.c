@@ -35,7 +35,6 @@
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>
 #include <getopt.h>
-#include <iothub.h>
 #include <iothub_client_options.h>
 #include <pnp_protocol.h>
 
@@ -1309,8 +1308,6 @@ done:
     Log_Info("Agent exited with code %d", ret);
 
     ShutdownAgent();
-
-    IoTHub_Deinit();
 
     return ret;
 }
