@@ -2,14 +2,6 @@ cmake_minimum_required (VERSION 3.5)
 
 project (simulator_handler_unit_tests)
 
-# TODO(JeffMill): Commenting this out for now.
-# if (NOT
-#     ${ADUC_PLATFORM_LAYER}
-#     STREQUAL
-#     "linux")
-#     message (FATAL_ERROR "${PROJECT_NAME} requires the linux platform layer.")
-# endif ()
-
 include (agentRules)
 
 compileasc99 ()

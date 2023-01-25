@@ -216,7 +216,6 @@ ADUC_Result SimulatorHandlerImpl::Download(const tagADUC_WorkflowData* workflowD
     result.ResultCode = ADUC_Result_Download_Success;
     result.ExtendedResultCode = 0;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
-    ADUC_WorkflowHandle childHandle = nullptr;
     ADUC_FileEntity fileEntity;
     memset(&fileEntity, 0, sizeof(fileEntity));
 
@@ -237,7 +236,8 @@ ADUC_Result SimulatorHandlerImpl::Download(const tagADUC_WorkflowData* workflowD
 
     for (size_t i = 0; i < fileCount; i++)
     {
-        result = { .ResultCode = ADUC_Result_Download_Success };
+        result.ResultCode = ADUC_Result_Download_Success;
+        result.ExtendedResultCode = 0;
 
         if (!workflow_get_update_file(handle, i, &fileEntity))
         {
@@ -297,7 +297,6 @@ ADUC_Result SimulatorActionHelper(
     result.ResultCode = defaultResultCode;
     result.ExtendedResultCode = 0;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
-    ADUC_WorkflowHandle childHandle = nullptr;
 
     JSON_Object* resultObject = nullptr;
 
