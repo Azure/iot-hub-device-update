@@ -5,7 +5,7 @@ project (microsoft_wiot_1)
 include (agentRules)
 compileasc99 ()
 
-add_library (${PROJECT_NAME} SHARED src/handler_create.cpp src/wiot_handler_1.cpp
+add_library (${PROJECT_NAME} MODULE src/handler_create.cpp src/wiot_handler_1.cpp
                                     src/step_handler.cpp)
 
 # TODO: Bug 42997914: ADU_EXTENSION_INCLUDES is inconsistent with CMake patterns

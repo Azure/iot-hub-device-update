@@ -185,17 +185,19 @@ function Create-Adu-Folders {
 }
 
 function Register-Components {
-    # Ensure that files are copied first in Install-Adu-Components
+    Param(
+        [Parameter(Mandatory = $true)][string]$BinPath,
+        [Parameter(Mandatory = $true)][string]$DataPath
+    )
 
     Show-Header 'Registering components'
 
     # Launch agent to write config files
     # Based on postinst : register_reference_extensions
 
-    $adu_bin_path = '/usr/bin/AducIotAgent.exe'
+    $aduciotagent_path = $BinPath + '/AducIotAgent.exe'
 
-    $adu_data_dir = '/var/lib/adu'
-    $adu_extensions_dir = "$adu_data_dir/extensions"
+    $adu_extensions_dir = "$DataPath/extensions"
     $adu_extensions_sources_dir = "$adu_extensions_dir/sources"
 
     #
@@ -204,11 +206,11 @@ function Register-Components {
 
     # /var/lib/adu/extensions/content_downloader/extension.json
     # $curl_content_downloader_file = 'curl_content_downloader.dll'
-    # & $adu_bin_path --register-extension "$adu_extensions_sources_dir/$curl_content_downloader_file" --extension-type contentDownloader --log-level 2
+    # & $aduciotagent_path --register-extension "$adu_extensions_sources_dir/$curl_content_downloader_file" --extension-type contentDownloader --log-level 2
 
     # /var/lib/adu/extensions/content_downloader/extension.json
     $do_content_downloader_file = "$adu_extensions_sources_dir/deliveryoptimization_content_downloader.dll"
-    & $adu_bin_path --register-extension $do_content_downloader_file --extension-type contentDownloader --log-level 2
+    & $aduciotagent_path --register-extension $do_content_downloader_file --extension-type contentDownloader --log-level 2
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
     }
@@ -219,50 +221,52 @@ function Register-Components {
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_script_1/content_handler.json
     $microsoft_script_1_handler_file = "$adu_extensions_sources_dir/microsoft_script_1.dll"
-    & $adu_bin_path --register-extension $microsoft_script_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/script:1' --log-level 2
+    & $aduciotagent_path --register-extension $microsoft_script_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/script:1' --log-level 2
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
     }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_simulator_1/content_handler.json
     $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_simulator_1.dll"
-    & $adu_bin_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/simulator:1'
+    & $aduciotagent_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/simulator:1'
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
     }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_steps_1/content_handler.json
     $microsoft_steps_1_file = "$adu_extensions_sources_dir/microsoft_steps_1.dll"
-    & $adu_bin_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/steps:1' --log-level 2
+    & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/steps:1' --log-level 2
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
     }
-    & $adu_bin_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest' --log-level 2
+    & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest' --log-level 2
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
     }
-    & $adu_bin_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest:4' --log-level 2
+    & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest:4' --log-level 2
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
     }
-    & $adu_bin_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest:5' --log-level 2
+    & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest:5' --log-level 2
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
     }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_swupdate_1/content_handler.json
     # $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_swupdate_1.dll"
-    # & $adu_bin_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/swupdate:1'
+    # & $aduciotagent_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/swupdate:1'
     # if ($LASTEXITCODE -ne 0) {
     #     Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
     # }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_wiot_1/content_handler.json
     $microsoft_wiot_1_handler_file = "$adu_extensions_sources_dir/microsoft_wiot_1.dll"
-    & $adu_bin_path --register-extension $microsoft_wiot_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/wiot:1'  --log-level 2
+    & $aduciotagent_path --register-extension $microsoft_wiot_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/wiot:1'  --log-level 2
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
     }
+
+    ''
 }
 
 function Install-DeliveryOptimization {
@@ -272,7 +276,8 @@ function Install-DeliveryOptimization {
         [Parameter(Mandatory = $true)][string]$Branch,
         [Parameter(Mandatory = $true)][string]$Commit)
 
-    'Building Delivery Optimization ...'
+    Show-Header 'Building Delivery Optimization'
+
     "Branch: $Branch"
     "Folder: $Path"
     ''
@@ -316,6 +321,13 @@ function Install-DeliveryOptimization {
 }
 
 function Install-Adu-Components {
+    Param(
+        [Parameter(Mandatory = $true)][string]$OutBinPath,
+        [Parameter(Mandatory = $true)][string]$OutLibPath,
+        [Parameter(Mandatory = $true)][string]$BinPath,
+        [Parameter(Mandatory = $true)][string]$LibPath,
+        [Parameter(Mandatory = $true)][string]$DataPath
+    )
     # TODO(JeffMill): [PAL] Temporary until paths are determined.
 
     Show-Header 'Installing ADU Agent'
@@ -332,26 +344,25 @@ function Install-Adu-Components {
     # }
     # Workaround: Manually copy files...
 
-    $bin_path = "$runtime_dir/$Type"
     # contoso_component_enumerator
     # curl_content_downloader
     # microsoft_apt_1
     # microsoft_delta_download_handler
 
-    Invoke-CopyFile "$bin_path/adu-shell.exe" '/usr/lib/adu'
-    Invoke-CopyFile  "$bin_path/AducIotAgent.exe" '/usr/bin'
+    Invoke-CopyFile "$OutBinPath/adu-shell.exe" $LibPath
+    Invoke-CopyFile  "$OutBinPath/AducIotAgent.exe" $BinPath
 
     # IMPORTANT: Windows builds require these DLLS as well. Any way to build these statically?
     $dependencies = 'getopt', 'pthreadVC3d', 'libcrypto-1_1-x64'
     $dependencies | ForEach-Object {
-        Invoke-CopyFile "$bin_path/$_.dll" '/usr/lib/adu'
-        Invoke-CopyFile "$bin_path/$_.dll" '/usr/bin'
+        Invoke-CopyFile "$OutBinPath/$_.dll" $LibPath
+        Invoke-CopyFile "$OutBinPath/$_.dll" $BinPath
     }
 
     # 'microsoft_swupdate_1', 'microsoft_swupdate_2'
     $extensions = 'deliveryoptimization_content_downloader', 'microsoft_script_1', 'microsoft_simulator_1', 'microsoft_steps_1', 'microsoft_wiot_1'
     $extensions | ForEach-Object {
-        Invoke-CopyFile  "$bin_path/$_.dll" '/var/lib/adu/extensions/sources'
+        Invoke-CopyFile  "$OutLibPath/$_.dll" "$DataPath/extensions/sources"
     }
 
     if ($Type -eq 'Debug') {
@@ -360,13 +371,26 @@ function Install-Adu-Components {
     else {
         $pthread_dll = 'pthreadVC3.dll'
     }
-    Invoke-CopyFile "$bin_path/$pthread_dll" /usr/lib/adu
-    Invoke-CopyFile "$bin_path/$pthread_dll" /usr/bin
+    Invoke-CopyFile "$OutBinPath/$pthread_dll" $LibPath
+    Invoke-CopyFile "$OutBinPath/$pthread_dll" $BinPath
 
     ''
 
     # Healthcheck expects this file to be read-only.
-    Set-ItemProperty -LiteralPath '/usr/lib/adu/adu-shell.exe' -Name IsReadOnly -Value $true
+    Set-ItemProperty -LiteralPath "$LibPath/adu-shell.exe" -Name IsReadOnly -Value $true
+
+    Register-Components -BinPath $BinPath -DataPath $DataPath
+}
+
+function Create-DataFiles {
+    Param(
+        [Parameter(Mandatory = $true)][string]$DataFilePath
+    )
+
+    Show-Header 'Creating data files'
+
+    "Data file path: $DataFilePath"
+    ''
 
     #
     # $env:TEMP/du-simulator-data.json (SIMULATOR_DATA_FILE)
@@ -415,13 +439,13 @@ function Install-Adu-Components {
     ],
     "maxKilobytesToUploadPerLogPath": 5
 }
-'@ | Out-File -Encoding ASCII '/etc/adu/du-diagnostics-config.json'
+'@ | Out-File -Encoding ASCII "$DataFilePath/du-diagnostics-config.json"
 
     #
     # /etc/adu/du-config.json
     #
 
-    if (-not (Test-Path -LiteralPath '/etc/adu/du-config.json' -PathType Leaf)) {
+    if (-not (Test-Path -LiteralPath "$DataFilePath/du-config.json" -PathType Leaf)) {
         @'
 {
     "schemaVersion": "1.1",
@@ -447,20 +471,21 @@ function Install-Adu-Components {
         }
     ]
 }
-'@ | Out-File -Encoding ASCII '/etc/adu/du-config.json'
-    }
-    if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath '/etc/adu/du-config.json' -SimpleMatch) {
-        Show-Warning 'Need to edit connectionData,agents.manufacturer,agents.model in /etc/adu/du-config.json'
-        ''
-        notepad.exe '\etc\adu\du-config.json'
-    }
-    if (-not (Test-Path '/tmp/adu/testdata' -PathType Container)) {
-        ''
-        Show-Warning 'Do clean build to copy test data to /tmp/adu/testdata'
+'@ | Out-File -Encoding ASCII "$DataFilePath/du-config.json"
     }
 
-    Register-Components
+    if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath "$DataFilePath/du-config.json" -SimpleMatch) {
+        Show-Warning "Need to edit connectionData,agents.manufacturer,agents.model in $DataFilePath/du-config.json"
+        ''
+        notepad.exe "$DataFilePath/du-config.json"
+    }
 }
+
+#
+#  _ __  __ _(_)_ _
+# | '  \/ _` | | ' \
+# |_|_|_\__,_|_|_||_|
+#
 
 if ($BuildDocumentation) {
     if (-not (Get-Command 'doxygen.exe' -CommandType Application -ErrorAction SilentlyContinue)) {
@@ -585,8 +610,6 @@ if (-not $Clean) {
 }
 
 if ($Clean) {
-    Show-Header 'Cleaning repo'
-
     $decision = $Host.UI.PromptForChoice(
         'Clean Build',
         'Are you sure?',
@@ -595,17 +618,18 @@ if ($Clean) {
             (New-Object Management.Automation.Host.ChoiceDescription '&No', 'Stop build')
         ),
         1)
-    ''
     if ($decision -ne 0) {
         exit 1
     }
+    ''
 
+    Show-Header 'Cleaning repo'
 
     if (Test-Path $OutputDirectory) {
         Show-Bullet $OutputDirectory
         Remove-Item -Force  -Recurse -LiteralPath $OutputDirectory
     }
-    # TODO(JeffMill): Change when code changes path to /tmp/adu/testdata
+    # TODO(JeffMill): Change when code changes paths (e.g. /tmp/adu/testdata)
     $folders = '/tmp', '/usr', '/var'
     $folders | ForEach-Object {
         if (Test-Path -LiteralPath $_) {
@@ -656,8 +680,6 @@ if ($Clean) {
     ''
 }
 
-Show-Header 'Delivery Optimization Library'
-
 #
 # Delivery Optimization
 #
@@ -694,7 +716,16 @@ if ($ret_val -eq 0 -and $BuildPackages) {
 }
 
 if ($ret_val -eq 0 -and $Install) {
-    Install-Adu-Components
+    Install-Adu-Components `
+        -OutBinPath "$runtime_dir/$Type" -OutLibPath "$library_dir/$Type" `
+        -BinPath '/usr/bin' -LibPath '/usr/lib/adu' -DataPath '/var/lib/adu'
+
+    Create-DataFiles -DataFilePath '/etc/adu'
+
+    if (-not (Test-Path '/tmp/adu/testdata' -PathType Container)) {
+        ''
+        Show-Warning 'Do clean build to copy test data to /tmp/adu/testdata'
+    }
 }
 
 exit $ret_val

@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.5)
 
 set (target_name microsoft_script_1)
 
-add_library (${target_name} SHARED "")
+add_library (${target_name} MODULE "")
 
 add_library (aduc::${target_name} ALIAS ${target_name})
 

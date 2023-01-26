@@ -31,9 +31,9 @@
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
-#include <do_config.h>
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>
+#include <do_config.h>
 #include <getopt.h>
 #include <iothub_client_options.h>
 #include <pnp_protocol.h>
@@ -1260,12 +1260,6 @@ int main(int argc, char** argv)
     // Catch restart (SIGUSR1) signal raised by a workflow.
     //
     signal(SIGUSR1, OnRestartSignal);
-
-    if (IoTHub_Init() != 0)
-    {
-        Log_Error("Unable to initialize IoTHub");
-        goto done;
-    }
 
     if (!StartupAgent(&launchArgs))
     {
