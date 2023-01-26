@@ -251,11 +251,11 @@ function Register-Components {
     }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_swupdate_1/content_handler.json
-    $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_swupdate_1.dll"
-    & $adu_bin_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/simulator:1'
-    if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
-    }
+    # $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_swupdate_1.dll"
+    # & $adu_bin_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/swupdate:1'
+    # if ($LASTEXITCODE -ne 0) {
+    #     Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+    # }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_wiot_1/content_handler.json
     $microsoft_wiot_1_handler_file = "$adu_extensions_sources_dir/microsoft_wiot_1.dll"
@@ -348,7 +348,8 @@ function Install-Adu-Components {
         Invoke-CopyFile "$bin_path/$_.dll" '/usr/bin'
     }
 
-    $extensions = 'deliveryoptimization_content_downloader', 'microsoft_script_1', 'microsoft_simulator_1', 'microsoft_swupdate_1', 'microsoft_swupdate_2', 'microsoft_steps_1', 'microsoft_wiot_1'
+    # 'microsoft_swupdate_1', 'microsoft_swupdate_2'
+    $extensions = 'deliveryoptimization_content_downloader', 'microsoft_script_1', 'microsoft_simulator_1', 'microsoft_steps_1', 'microsoft_wiot_1'
     $extensions | ForEach-Object {
         Invoke-CopyFile  "$bin_path/$_.dll" '/var/lib/adu/extensions/sources'
     }
@@ -602,13 +603,15 @@ if ($Clean) {
 
     if (Test-Path $OutputDirectory) {
         Show-Bullet $OutputDirectory
-        Remove-Item -Recurse -LiteralPath $OutputDirectory
+        Remove-Item -Force  -Recurse -LiteralPath $OutputDirectory
     }
-    # TODO(JeffMill): This shouldn't hard code /tmp/adu/testdata -- it should match
-    # whatever cmake and tests have.  JW has a bug on this.
-    if (Test-Path '/tmp/adu/testdata') {
-        Show-Bullet '/tmp/adu/testdata'
-        Remove-Item -Recurse -LiteralPath '/tmp/adu/testdata'
+    # TODO(JeffMill): Change when code changes path to /tmp/adu/testdata
+    $folders = '/tmp', '/usr', '/var'
+    $folders | ForEach-Object {
+        if (Test-Path -LiteralPath $_) {
+            Show-Bullet $_
+            Remove-Item -Force  -Recurse -LiteralPath $_
+        }
     }
 
     ''

@@ -91,6 +91,7 @@ else {
     }
 
     'Debugging: {0} {1} {2}' -f $app, ($arguments -join ' '), ($ArgumentList -join ' ')
+    # -o : Debugs all processes launched by the target application (child processes).
     WinDbgX.exe @InitialCommands $app @arguments @ArgumentList
 }
 
