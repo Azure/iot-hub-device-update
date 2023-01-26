@@ -73,6 +73,7 @@ int ADUC_LaunchChildProcess(
 
     char buffer[1024];
 
+    // Note that fgets also includes the newline character.
     while (fgets(buffer, sizeof(buffer), fp) != nullptr)
     {
         output += buffer;
