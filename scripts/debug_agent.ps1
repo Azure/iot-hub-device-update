@@ -7,7 +7,7 @@ Param(
     [switch]$DebugCatchUT = $false,
     # Set to true if process launch without debugging is desired.
     [switch]$NoDebugger = $false,
-    # Additional arguments to pass to command line.
+    # Additional appArgs to pass to command line.
     [string[]] $ArgumentList
 )
 
@@ -64,7 +64,9 @@ else {
     $module = $FileName -replace '-', '_'
 
     if ($DebugCatchUT) {
-        $InitialCommands = @( `
+        # Debugging a Catch2 Unit Test
+
+        $debuggerArgs = @( `
                 # e.g. https_proxy_utils_unit_tests!`anonymous namespace'::C_A_T_C_H_T_E_S_T_0::test
                 '-c', "bm $module!*::C_A_T_C_H_T_E_S_T_*::test", `
                 # e.g. permission_utils_unit_test!C_A_T_C_H_T_E_S_T_0
@@ -76,23 +78,20 @@ else {
                 '-c', 'g' `
         )
 
-        $arguments = @("--success", "--break")
+        $appArgs = @("--success", "--break")
     }
     else {
-        $InitialCommands = @( `
-                '-c', "bp $module!main", `
-                '-c', 'g' `
-        )
+        # Debugging an .EXE
+        # -o : Debugs all processes launched by the target application (child processes).
 
-        $arguments = @( `
-                # Log level is DEBUG (very verbose) -- useful for debugging.
-                '--log-level', '0'
-        )
+        $debuggerArgs = @( '-o', '-c', "bp $module!main", '-c', 'g' )
+
+        # Log level is DEBUG (very verbose) -- useful for debugging.
+        $appArgs = @( '--log-level', '0' )
     }
 
-    'Debugging: {0} {1} {2}' -f $app, ($arguments -join ' '), ($ArgumentList -join ' ')
-    # -o : Debugs all processes launched by the target application (child processes).
-    WinDbgX.exe @InitialCommands $app @arguments @ArgumentList
+    'Debugging: {0} {1} {2}' -f $app, ($appArgs -join ' '), ($ArgumentList -join ' ')
+    WinDbgX.exe @debuggerArgs $app @appArgs @ArgumentList
 }
 
 exit 0
