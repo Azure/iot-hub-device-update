@@ -2,6 +2,10 @@
 // TODO(JeffMill): The code in this file is temporary demo code.  NOT FOR PRODUCTION.
 // *** IMPORTANT **
 
+// To uninstall (after demo):
+// Remove-Item -Recurse -Force "$env:LocalAppData/Programs/audacity"
+// Remove-Item -Force "$env:AppData/Microsoft/Windows/Start Menu/Programs/Audacity.lnk"
+
 #include "step_handler.hpp"
 
 #define WIN32_LEAN_AND_MEAN
