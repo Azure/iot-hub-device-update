@@ -123,47 +123,50 @@ bool IsInstalled(const char* installedCriteria)
     ExpandEnvironmentStringsA(exeString.c_str(), exePath, ARRAYSIZE(exePath));
 
     DWORD size = GetFileVersionInfoSize(exePath, 0 /*dwHandle*/);
-    if (size == 0)
+    if (size != 0)
     {
-        return false;
-    }
-    void* pbuf = malloc(size);
-    if (GetFileVersionInfo(exePath, 0 /*dwHandle*/, size, pbuf))
-    {
-        VS_FIXEDFILEINFO* pffi;
-        UINT buflen;
-
-        if (VerQueryValue(pbuf, R"(\)", reinterpret_cast<void**>(&pffi), &buflen))
+        void* pbuf = malloc(size);
+        if (GetFileVersionInfo(exePath, 0 /*dwHandle*/, size, pbuf))
         {
-            char version[100];
-            sprintf_s(
-                version,
-                ARRAYSIZE(version),
-                "%d.%d.%d.%d",
-                HIWORD(pffi->dwProductVersionMS),
-                LOWORD(pffi->dwProductVersionMS),
-                HIWORD(pffi->dwProductVersionLS),
-                LOWORD(pffi->dwProductVersionLS));
+            VS_FIXEDFILEINFO* pffi;
+            UINT buflen;
 
-            // Note: This is NOT how version checks work. Don't copy this!
-            if (strcmp(version, installedCriteria) == 0)
+            if (VerQueryValue(pbuf, R"(\)", reinterpret_cast<void**>(&pffi), &buflen))
             {
-                isInstalled = true;
+                char version[100];
+                sprintf_s(
+                    version,
+                    ARRAYSIZE(version),
+                    "%d.%d.%d.%d",
+                    HIWORD(pffi->dwProductVersionMS),
+                    LOWORD(pffi->dwProductVersionMS),
+                    HIWORD(pffi->dwProductVersionLS),
+                    LOWORD(pffi->dwProductVersionLS));
+
+                // Note: This is NOT how version checks work. Don't copy this!
+                if (strcmp(version, installedCriteria) == 0)
+                {
+                    isInstalled = true;
+                }
             }
         }
+
+        free(pbuf);
     }
 
-    free(pbuf);
-
+    Log_Info(HANDLER_LOG_ID "IsInstalled '%s' %s installed.", exeString.c_str(), isInstalled ? "is" : "is not");
     return isInstalled;
 }
 
 bool Install(const char* workFolder, const std::vector<std::string>& fileList)
 {
+    bool succeeded = false;
+
     if (fileList.size() != 1)
     {
         // Currently only supporting one file.
-        return 1;
+        Log_Error(HANDLER_LOG_ID "Handler only supports one file.");
+        return false;
     }
 
     // Shell APIs require full path to file and backslashes.
@@ -189,32 +192,32 @@ bool Install(const char* workFolder, const std::vector<std::string>& fileList)
 
     // CopyTo requires the destination folder to exist.
     int ret = SHCreateDirectoryEx(nullptr /*hwnd*/, destFolder, nullptr /*psa*/);
-    if (ret != ERROR_SUCCESS && ret != ERROR_ALREADY_EXISTS)
+    if (ret == ERROR_SUCCESS || ret == ERROR_ALREADY_EXISTS)
     {
-        return false;
+        BSTR bstrZipFile = SysAllocStringA(zipfile.c_str());
+
+        succeeded = Unzip(bstrZipFile, bstrDestFolder);
+
+        SysFreeString(bstrZipFile);
+        SysFreeString(bstrDestFolder);
     }
 
-    BSTR bstrZipFile = SysAllocStringA(zipfile.c_str());
+    Log_Info(HANDLER_LOG_ID "Install '%s'->'%s' %s", zipfile.c_str(), destFolder, succeeded ? "succeeded" : "failed");
 
-    if (!Unzip(bstrZipFile, bstrDestFolder))
-    {
-        return false;
-    }
-
-    SysFreeString(bstrZipFile);
-    SysFreeString(bstrDestFolder);
-
-    return true;
+    return succeeded;
 }
 
 bool Apply(const char* workFolder, const std::vector<std::string>& fileList)
 {
+    bool succeeded = false;
+
     UNREFERENCED_PARAMETER(workFolder);
 
     if (fileList.size() != 1)
     {
         // Currently only supporting one file.
-        return 1;
+        Log_Error(HANDLER_LOG_ID "Handler only supports one file.");
+        return false;
     }
 
     //
@@ -244,61 +247,63 @@ bool Apply(const char* workFolder, const std::vector<std::string>& fileList)
         R"(%AppData%\Microsoft\Windows\Start Menu\Programs\Audacity.lnk)", shortcutFile, ARRAYSIZE(shortcutFile));
 
     int ret = SHCreateDirectoryEx(nullptr /*hwnd*/, settingsFolder.c_str(), nullptr /*psa*/);
-    if (ret != ERROR_SUCCESS && ret != ERROR_ALREADY_EXISTS)
+    if (ret == ERROR_SUCCESS || ret == ERROR_ALREADY_EXISTS)
     {
-        return false;
-    }
+        //
+        // Create default audacity.cfg file
+        //
 
-    //
-    // Create default audacity.cfg file
-    //
+        std::string cfgFile(settingsFolder);
+        cfgFile += R"(\audacity.cfg)";
 
-    std::string cfgFile(settingsFolder);
-    cfgFile += R"(\audacity.cfg)";
+        std::fstream file;
+        file.open(cfgFile, std::ios_base::out);
+        if (!file.is_open())
+        {
+            return false;
+        }
+        file << "PrefsVersion = 1.1.1r1\n";
+        file << "WantAssociateFiles = 0\n";
+        file << "[GUI]\n";
+        file << "ShowSplashScreen = 0\n";
+        file << "[Update]\n";
+        file << "DefaultUpdatesChecking = 0\n";
+        file.close();
 
-    std::fstream file;
-    file.open(cfgFile, std::ios_base::out);
-    if (!file.is_open())
-    {
-        return false;
-    }
-    file << "PrefsVersion = 1.1.1r1\n";
-    file << "WantAssociateFiles = 0\n";
-    file << "[GUI]\n";
-    file << "ShowSplashScreen = 0\n";
-    file << "[Update]\n";
-    file << "DefaultUpdatesChecking = 0\n";
-    file.close();
+        //
+        // Create Windows Shell shortcut
+        //
 
-    //
-    // Create Windows Shell shortcut
-    //
-
-    IShellLink* psl;
-    HRESULT hr = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&psl));
-    if (SUCCEEDED(hr))
-    {
-        std::string str(instFolder);
-        str += R"(\Audacity.exe)";
-        hr = psl->SetPath(str.c_str());
-        hr = psl->SetIconLocation(str.c_str(), 0);
-        hr = psl->SetDescription("Audacity");
-        hr = psl->SetWorkingDirectory(instFolder.c_str());
-
-        IPersistFile* pf;
-        hr = psl->QueryInterface(IID_IPersistFile, reinterpret_cast<void**>(&pf));
+        IShellLink* psl;
+        HRESULT hr = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&psl));
         if (SUCCEEDED(hr))
         {
-            BSTR bstr = SysAllocStringA(shortcutFile);
-            hr = pf->Save(bstr, TRUE);
-            SysFreeString(bstr);
+            std::string str(instFolder);
+            str += R"(\Audacity.exe)";
+            hr = psl->SetPath(str.c_str());
+            hr = psl->SetIconLocation(str.c_str(), 0);
+            hr = psl->SetDescription("Audacity");
+            hr = psl->SetWorkingDirectory(instFolder.c_str());
 
-            pf->Release();
+            IPersistFile* pf;
+            hr = psl->QueryInterface(IID_IPersistFile, reinterpret_cast<void**>(&pf));
+            if (SUCCEEDED(hr))
+            {
+                BSTR bstr = SysAllocStringA(shortcutFile);
+                hr = pf->Save(bstr, TRUE);
+                SysFreeString(bstr);
+
+                pf->Release();
+
+                succeeded = true;
+            }
+            psl->Release();
         }
-        psl->Release();
     }
 
-    return true;
+    Log_Info(HANDLER_LOG_ID "Apply %s", succeeded ? "succeeded" : "failed");
+
+    return succeeded;
 }
 
 } // namespace StepHandler
