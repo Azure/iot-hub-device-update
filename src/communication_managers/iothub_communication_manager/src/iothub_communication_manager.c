@@ -739,6 +739,10 @@ static void Connection_Maintenance()
         case IOTHUB_CLIENT_CONNECTION_OK:
             // No need to retry.
             return;
+
+        default:
+            Log_Debug("unhandled g_connection_status_reason case: %d", g_connection_status_reason);
+            break;
         }
 
         // Calculate the next retry time, then continue.
