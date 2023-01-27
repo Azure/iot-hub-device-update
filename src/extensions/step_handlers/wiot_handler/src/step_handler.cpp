@@ -21,18 +21,18 @@
 #include <fstream>
 #include <string>
 
+#include "aduc/logging.h"
+#include "aduc/system_utils.h" // RmDir_Recursive
+
+// Prefix sent to logging for identification
+#define HANDLER_LOG_ID "[microsoft/wiot:1] "
+
 static BSTR SysAllocStringA(const char* str)
 {
     DWORD wsize = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
     BSTR bstr = SysAllocStringLen(NULL, wsize);
     MultiByteToWideChar(CP_UTF8, 0, str, -1, bstr, wsize);
     return bstr;
-}
-
-static std::string GetFileNameWithoutExtension(const std::string& filename)
-{
-    const size_t start = filename.find_last_of('.');
-    return (start == std::string::npos) ? "" : filename.substr(0, start);
 }
 
 bool Unzip(BSTR bstrZipFile, BSTR bstrDestFolder)
@@ -113,14 +113,9 @@ bool IsInstalled(const char* installedCriteria)
 
     char exePath[MAX_PATH];
 
-    // Note: ideally this would be installed to "%LocalAppData%\Programs\audacity" and version there would be checked.
+    std::string exeReference(R"(%LocalAppData%\Programs\audacity\Audacity.exe)");
 
-    // e.g. %LocalAppData%\Programs\audacity\audacity-win-3.2.2-x64\Audacity.exe
-    std::string exeString(R"(%LocalAppData%\Programs\audacity\audacity-win-)");
-    exeString += installedCriteria;
-    exeString += R"(-x64\Audacity.exe)";
-
-    ExpandEnvironmentStringsA(exeString.c_str(), exePath, ARRAYSIZE(exePath));
+    ExpandEnvironmentStringsA(exeReference.c_str(), exePath, ARRAYSIZE(exePath));
 
     DWORD size = GetFileVersionInfoSize(exePath, 0 /*dwHandle*/);
     if (size != 0)
@@ -131,7 +126,7 @@ bool IsInstalled(const char* installedCriteria)
             VS_FIXEDFILEINFO* pffi;
             UINT buflen;
 
-            if (VerQueryValue(pbuf, R"(\)", reinterpret_cast<void**>(&pffi), &buflen))
+            if (VerQueryValue(pbuf, "\\", reinterpret_cast<void**>(&pffi), &buflen))
             {
                 char version[100];
                 sprintf_s(
@@ -154,7 +149,7 @@ bool IsInstalled(const char* installedCriteria)
         free(pbuf);
     }
 
-    Log_Info(HANDLER_LOG_ID "IsInstalled '%s' %s installed.", exeString.c_str(), isInstalled ? "is" : "is not");
+    Log_Info(HANDLER_LOG_ID "IsInstalled '%s' %s installed.", exePath, isInstalled ? "is" : "is not");
     return isInstalled;
 }
 
@@ -184,25 +179,56 @@ bool Install(const char* workFolder, const std::vector<std::string>& fileList)
     //
     // Extract downloaded ZIP to %LocalAppData%\Programs\audacity
     //
+    // Note: audacity zip contains a top level folder named e.g. "audacity-win-3.2.2-x64"
+    // so extract to %LocalAppData%\Programs and rename that folder.
+    //
 
-    char destFolder[MAX_PATH];
-    ExpandEnvironmentStringsA(R"(%LocalAppData%\Programs\audacity)", destFolder, ARRAYSIZE(destFolder));
+    char programsFolder[MAX_PATH];
+    ExpandEnvironmentStringsA(R"(%LocalAppData%\Programs)", programsFolder, ARRAYSIZE(programsFolder));
 
-    BSTR bstrDestFolder = SysAllocStringA(destFolder);
+    BSTR bstrDestFolder = SysAllocStringA(programsFolder);
 
-    // CopyTo requires the destination folder to exist.
-    int ret = SHCreateDirectoryEx(nullptr /*hwnd*/, destFolder, nullptr /*psa*/);
+    // Unzip requires the destination folder to exist.
+    int ret = SHCreateDirectoryEx(nullptr /*hwnd*/, programsFolder, nullptr /*psa*/);
     if (ret == ERROR_SUCCESS || ret == ERROR_ALREADY_EXISTS)
     {
         BSTR bstrZipFile = SysAllocStringA(zipfile.c_str());
 
-        succeeded = Unzip(bstrZipFile, bstrDestFolder);
+        if (Unzip(bstrZipFile, bstrDestFolder))
+        {
+            std::string existingFolder(programsFolder);
+            existingFolder += "\\audacity-win-*-x64";
+
+            WIN32_FIND_DATA ffd;
+            HANDLE hFind = FindFirstFile(existingFolder.c_str(), &ffd);
+            if (hFind != INVALID_HANDLE_VALUE)
+            {
+                // e.g. ...\Programs\audacity-win-3.2.2-x64
+                existingFolder = programsFolder;
+                existingFolder += '\\';
+                existingFolder += ffd.cFileName;
+
+                // ...\Programs\audacity
+                std::string targetFolder(programsFolder);
+                targetFolder += '\\';
+                targetFolder += "audacity";
+
+                // Remove existing folder
+                ADUC_SystemUtils_RmDirRecursive(targetFolder.c_str());
+
+                // Rename the folder that was created.
+                succeeded = MoveFile(existingFolder.c_str(), targetFolder.c_str());
+
+                FindClose(hFind);
+            }
+        }
 
         SysFreeString(bstrZipFile);
         SysFreeString(bstrDestFolder);
     }
 
-    Log_Info(HANDLER_LOG_ID "Install '%s'->'%s' %s", zipfile.c_str(), destFolder, succeeded ? "succeeded" : "failed");
+    Log_Info(
+        HANDLER_LOG_ID "Install '%s'->'%s' %s", zipfile.c_str(), programsFolder, succeeded ? "succeeded" : "failed");
 
     return succeeded;
 }
@@ -224,17 +250,10 @@ bool Apply(const char* workFolder, const std::vector<std::string>& fileList)
     // Variables
     //
 
-    // Audacity will be extracted to a subfolder under this folder
-    char destFolder[MAX_PATH];
-    ExpandEnvironmentStringsA(R"(%LocalAppData%\Programs\audacity)", destFolder, ARRAYSIZE(destFolder));
+    char instFolder[MAX_PATH];
+    ExpandEnvironmentStringsA(R"(%LocalAppData%\Programs\audacity)", instFolder, ARRAYSIZE(instFolder));
 
     // Name of audacity ZIP file.
-
-    // e.g. %LocalAppData%\Programs\audacity\audacity-win-3.2.3-x64
-    std::string instFolder(destFolder);
-    // Append e.g. "audacity-win-3.2.2-x64" as zip file contains that as a top-level folder.
-    instFolder += "/";
-    instFolder += GetFileNameWithoutExtension(fileList[0].c_str());
 
     // Local audacity settings folder
     std::string settingsFolder(instFolder);
@@ -278,12 +297,12 @@ bool Apply(const char* workFolder, const std::vector<std::string>& fileList)
         HRESULT hr = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&psl));
         if (SUCCEEDED(hr))
         {
-            std::string str(instFolder);
-            str += R"(\Audacity.exe)";
-            hr = psl->SetPath(str.c_str());
-            hr = psl->SetIconLocation(str.c_str(), 0);
+            std::string exePath(instFolder);
+            exePath += "\\Audacity.exe";
+            hr = psl->SetPath(exePath.c_str());
+            hr = psl->SetIconLocation(exePath.c_str(), 0);
             hr = psl->SetDescription("Audacity");
-            hr = psl->SetWorkingDirectory(instFolder.c_str());
+            hr = psl->SetWorkingDirectory(instFolder);
 
             IPersistFile* pf;
             hr = psl->QueryInterface(IID_IPersistFile, reinterpret_cast<void**>(&pf));

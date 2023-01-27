@@ -23,7 +23,7 @@ target_link_libraries (
     PUBLIC aduc::c_utils
     PRIVATE aduc::logging)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+target_link_libraries (${PROJECT_NAME} PUBLIC libaducpal)
 
 target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
                                                     ADUC_FILE_USER="${ADUC_FILE_USER}")

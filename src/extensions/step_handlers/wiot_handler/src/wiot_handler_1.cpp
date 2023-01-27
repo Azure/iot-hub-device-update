@@ -225,12 +225,6 @@ ADUC_Result WiotHandler1::Install(const ADUC_WorkflowData* workflowData)
     Log_Info("Installing from %s", workFolder.get());
 
     std::vector<std::string> fileList(workflow_get_update_file_list(workflowHandle));
-    if (fileList.size() != 1)
-    {
-        // For v1, only 1 file is expected.
-        Log_Error("Incorrect file count: %u", fileList.size());
-        return ADUCResult(ADUC_Result_Failure, ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_UNKNOWNEXCEPTION);
-    }
 
     if (!StepHandler::Install(workFolder.get(), fileList))
     {
@@ -270,12 +264,6 @@ ADUC_Result WiotHandler1::Apply(const ADUC_WorkflowData* workflowData)
     Log_Info("Applying from %s", workFolder.get());
 
     std::vector<std::string> fileList(workflow_get_update_file_list(workflowHandle));
-    if (fileList.size() != 1)
-    {
-        // For v1, only 1 file is expected.
-        Log_Error("Incorrect file count: %u", fileList.size());
-        return ADUCResult(ADUC_Result_Failure, ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_UNKNOWNEXCEPTION);
-    }
 
     if (!StepHandler::Apply(workFolder.get(), fileList))
     {
