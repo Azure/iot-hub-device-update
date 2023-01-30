@@ -62,7 +62,7 @@ The SWUpdate Handler support following handler properties (`handlerProperties`) 
 
 | Name | Type | Description |
 |---|---|---|
-|--workfolder| string | Full path to a work (sandbox) folder used by an Agent when performing update-related tasks. |
+|--work-folder| string | Full path to a work (sandbox) folder used by an Agent when performing update-related tasks. |
 |--output-file|string|Full path to an output file that swupdate script should write to|
 |--log-file|string| Full path to a log file that swupdate script should write to. (This is different that Agent's log file)|
 |--result-file|string|Full path to an ADUC_Result file that swupdate script must write the end result of the update tasks to. If this file does not exist or cannot be parsed, the task will be considered failed.|

@@ -139,7 +139,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-install --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --workfolder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
+            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-install --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
     result = SWUpdateHandler_PerformAction(
@@ -151,7 +151,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-apply --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --workfolder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
+            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-apply --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
     result = SWUpdateHandler_PerformAction(
@@ -163,7 +163,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-cancel --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --workfolder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
+            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-cancel --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
     result = SWUpdateHandler_PerformAction(
@@ -175,7 +175,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-is-installed --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --workfolder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
+            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-is-installed --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
     ExtensionManager::Uninit();
@@ -219,7 +219,7 @@ TEST_CASE("SWUpdate sample script --action-is-installed")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/tmp/adu/testdata/swupdate_filecopy/example-du-swupdate-script.sh" --target-options --action-is-installed --target-options --swu-file --target-options "/tmp/adu/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --software-version-file --target-options "/tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --target-options --workfolder --target-options "/tmp/adu/testdata/swupdate_filecopy" --target-options --result-file --target-options "/tmp/adu/testdata/swupdate_filecopy/aduc_result.json" --target-options --installed-criteria --target-options "This is swupdate filecopy test version 1.0")"));
+            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/tmp/adu/testdata/swupdate_filecopy/example-du-swupdate-script.sh" --target-options --action-is-installed --target-options --swu-file --target-options "/tmp/adu/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --software-version-file --target-options "/tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --target-options --work-folder --target-options "/tmp/adu/testdata/swupdate_filecopy" --target-options --result-file --target-options "/tmp/adu/testdata/swupdate_filecopy/aduc_result.json" --target-options --installed-criteria --target-options "This is swupdate filecopy test version 1.0")"));
 
     std::string output;
     int exitCode = ADUC_LaunchChildProcess(commandLineArgs[0], commandLineArgs, output);
@@ -271,7 +271,7 @@ TEST_CASE("SWUpdate sample script --action-download")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/tmp/adu/testdata/swupdate_filecopy/example-du-swupdate-script.sh" --target-options --action-download --target-options --swu-file --target-options "/tmp/adu/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --software-version-file --target-options "/tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --target-options --workfolder --target-options "/tmp/adu/testdata/swupdate_filecopy" --target-options --result-file --target-options "/tmp/adu/testdata/swupdate_filecopy/aduc_result.json" --target-options --installed-criteria --target-options "This is swupdate filecopy test version 1.0")"));
+            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/tmp/adu/testdata/swupdate_filecopy/example-du-swupdate-script.sh" --target-options --action-download --target-options --swu-file --target-options "/tmp/adu/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --software-version-file --target-options "/tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --target-options --work-folder --target-options "/tmp/adu/testdata/swupdate_filecopy" --target-options --result-file --target-options "/tmp/adu/testdata/swupdate_filecopy/aduc_result.json" --target-options --installed-criteria --target-options "This is swupdate filecopy test version 1.0")"));
 
     std::string output;
     int exitCode = ADUC_LaunchChildProcess(commandLineArgs[0], commandLineArgs, output);
@@ -323,7 +323,7 @@ TEST_CASE("SWUpdate sample script --action-install", "[!hide][functional_test]")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/tmp/adu/testdata/swupdate_filecopy/example-du-swupdate-script.sh" --target-options --action-install --target-options --swu-file --target-options "/tmp/adu/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --software-version-file --target-options "/tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --target-options --workfolder --target-options "/tmp/adu/testdata/swupdate_filecopy" --target-options --result-file --target-options "/tmp/adu/testdata/swupdate_filecopy/aduc_result.json" --target-options --installed-criteria --target-options "This is swupdate filecopy test version 1.0")"));
+            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/tmp/adu/testdata/swupdate_filecopy/example-du-swupdate-script.sh" --target-options --action-install --target-options --swu-file --target-options "/tmp/adu/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --software-version-file --target-options "/tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --target-options --work-folder --target-options "/tmp/adu/testdata/swupdate_filecopy" --target-options --result-file --target-options "/tmp/adu/testdata/swupdate_filecopy/aduc_result.json" --target-options --installed-criteria --target-options "This is swupdate filecopy test version 1.0")"));
 
     std::string output;
     int exitCode = ADUC_LaunchChildProcess(commandLineArgs[0], commandLineArgs, output);
