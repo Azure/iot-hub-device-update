@@ -47,7 +47,7 @@ set_cache_with_env_or_default (
 
 set_cache_with_env_or_default (
     ADUC_VERSION_PATCH
-    "1"
+    "2"
     STRING
     "The patch part of the semantic version")
 
