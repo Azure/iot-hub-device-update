@@ -221,7 +221,7 @@ print_help() {
     echo "File and Folder information"
     echo "==========================="
     echo ""
-    echo "--workfolder              A work-folder (or sandbox folder)."
+    echo "--work-folder             A work-folder (or sandbox folder)."
     echo "--swu-file, --image-file  An image file (.swu) file to install."
     echo "--output-file             An output file."
     echo "--log-file                A log file."
@@ -242,7 +242,7 @@ print_help() {
     echo ""
     echo "Scenario: perform install action"
     echo "================================"
-    echo "    <script> --log-level 0 --action-install --intalled-criteria 1.0 --swu-file example-device-update.swu --workfolder <sandbox-folder>"
+    echo "    <script> --log-level 0 --action-install --intalled-criteria 1.0 --swu-file example-device-update.swu --work-folder <sandbox-folder>"
     echo ""
 }
 
@@ -318,10 +318,10 @@ while [[ $1 != "" ]]; do
         shift
         ;;
 
-    --workfolder)
+    --work-folder)
         shift
         if [[ -z $1 || $1 == -* ]]; then
-            error "--workfolder parameter is mandatory."
+            error "--work-folder parameter is mandatory."
             $ret 1
         fi
         workfolder="$1"
