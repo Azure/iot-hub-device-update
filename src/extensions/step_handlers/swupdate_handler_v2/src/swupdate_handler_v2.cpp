@@ -784,10 +784,6 @@ ADUC_Result SWUpdateHandlerImpl::PrepareCommandArguments(
 
     // Default options.
 
-    // Note: Add '--workfolder' option here for backward compatibility.
-    args.emplace_back("--workfolder");
-    args.emplace_back(workFolder);
-
     args.emplace_back("--work-folder");
     args.emplace_back(workFolder);
 
