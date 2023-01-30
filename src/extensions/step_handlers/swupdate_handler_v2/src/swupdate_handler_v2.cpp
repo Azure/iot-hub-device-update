@@ -783,14 +783,26 @@ ADUC_Result SWUpdateHandlerImpl::PrepareCommandArguments(
     }
 
     // Default options.
+
+    // Note: Add '--workfolder' option here for backward compatibility.
     args.emplace_back("--workfolder");
+    args.emplace_back(workFolder);
+
+    args.emplace_back("--work-folder");
     args.emplace_back(workFolder);
 
     args.emplace_back("--result-file");
     args.emplace_back(resultFilePath);
 
-    args.emplace_back("--installed-criteria");
-    args.emplace_back(installedCriteria);
+    if (IsNullOrEmpty(installedCriteria))
+    {
+        Log_Info("--installed-criteria is not specified");
+    }
+    else
+    {
+        args.emplace_back("--installed-criteria");
+        args.emplace_back(installedCriteria);
+    }
 
     result = { ADUC_Result_Success };
 
