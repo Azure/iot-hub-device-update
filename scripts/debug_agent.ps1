@@ -84,7 +84,7 @@ else {
         # Debugging an .EXE
         # -o : Debugs all processes launched by the target application (child processes).
 
-        $debuggerArgs = @( '-o', '-c', "bp $module!main", '-c', 'g' )
+        $debuggerArgs = @( '-c', "bp $module!main", '-c', 'g' )
 
         # Log level is DEBUG (very verbose) -- useful for debugging.
         $appArgs = @( '--log-level', '0' )
