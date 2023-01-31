@@ -28,9 +28,7 @@ target_link_libraries (
 
 target_link_libraries_find (${target_name} PUBLIC iothub_client_mqtt_transport)
 
-if (WIN32)
-    # TODO(JeffMill): Why are these only required on Windows builds?
-    target_link_libraries_find (${target_name} PUBLIC uhttp)
-    target_link_libraries_find (${target_name} PUBLIC prov_auth_client)
-    target_link_libraries_find (${target_name} PUBLIC hsm_security_client)
-endif ()
+# prov_auth_client, hsm_security_client, uhttp are required when azure-iot-sdk-c are compiled using -Duse_edge_modules=ON
+target_link_libraries_find (${target_name} PUBLIC prov_auth_client)
+target_link_libraries_find (${target_name} PUBLIC hsm_security_client)
+target_link_libraries_find (${target_name} PUBLIC uhttp)
