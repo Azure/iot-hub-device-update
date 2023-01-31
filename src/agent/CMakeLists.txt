@@ -9,7 +9,6 @@ add_subdirectory (adu_core_interface)
 add_subdirectory (device_info_interface)
 add_subdirectory (pnp_helper)
 
-# TODO(JeffMill): [PAL] I don't think Windows needs command_helper.  Check with Jeff or Nox.
 if (NOT WIN32)
     add_subdirectory (command_helper)
 endif ()
@@ -101,7 +100,6 @@ target_link_libraries (
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
 
-# TODO(JeffMill): [PAL] I don't think Windows needs command_helper.  Check with Jeff or Nox.
 if (NOT WIN32)
     target_link_libraries (${target_name} PRIVATE aduc::command_helper)
 endif ()
@@ -159,12 +157,11 @@ else ()
 endif ()
 
 if (WIN32)
-
-    # TODO(JeffMill): [PAL] getopt.h
-    find_path (GETOPT_INCLUDE_DIR "getopt.h")
+    # getopt-win32 (vcpkg.json) doesn't have "find_package"
+    find_path (GETOPT_INCLUDE_DIR "getopt.h" REQUIRED)
     target_include_directories (${target_name} PRIVATE ${GETOPT_INCLUDE_DIR})
 
-    find_library (GETOPT_LIBRARY "getopt.lib")
+    find_library (GETOPT_LIBRARY "getopt.lib" REQUIRED)
     target_link_libraries (${target_name} PRIVATE ${GETOPT_LIBRARY})
 endif ()
 

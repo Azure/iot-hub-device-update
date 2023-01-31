@@ -4,7 +4,7 @@
 
 struct passwd* ADUCPAL_getpwnam(const char* name)
 {
-    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, fake "do" and "adu".
+    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return success on "do" and "adu".
 
     // From CMakeLists.txt
 #define ADUC_FILE_USER "adu"

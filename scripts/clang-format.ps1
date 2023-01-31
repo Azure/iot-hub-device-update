@@ -18,7 +18,7 @@ if (-not (Get-Command $clang_format_bin -CommandType Application -ErrorAction Si
         $clang_format_bin = $clang_python_scripts_bin
     }
     else {
-        error "cmake-format is not installed, or not in PATH, possibly C:\Users\jeffmill\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.10_qbz5n2kfra8p0\LocalCache\local-packages\Python310\Scripts"
+        error "cmake-format is not installed, or not in PATH"
         exit 1
     }
 }

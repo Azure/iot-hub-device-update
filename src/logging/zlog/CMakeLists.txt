@@ -15,7 +15,6 @@ target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/inc
                                                    ${ADUC_LOGGING_INCLUDES})
 
 if (WIN32)
-    # TODO(JeffMill): [PAL] pthread
     find_package (PThreads4W REQUIRED)
     target_link_libraries (${PROJECT_NAME} PRIVATE PThreads4W::PThreads4W aduc::system_utils)
 else ()

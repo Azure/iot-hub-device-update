@@ -6,13 +6,8 @@ endif ()
 
 if (ADUC_WARNINGS_AS_ERRORS)
     if (MSVC)
-        add_compile_options (/W4 /WX)
-
-        # TODO(JeffMill): [PAL] allow strcpy, strcat, fopen, etc.
-        add_definitions (-D_CRT_SECURE_NO_WARNINGS)
-
-        # TODO(JeffMill): [PAL] Avoid C4996: POSIX name for this item is deprecated.
-        add_definitions (-D_CRT_NONSTDC_NO_WARNINGS)
+        # Warnings as errors.
+        add_compile_options (/WX)
     else ()
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
         set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
@@ -28,7 +23,12 @@ if (NOT WIN32)
 endif ()
 
 if (MSVC)
-    # TODO(JeffMill): Determine what the equivalent on MSVC is.
+    # Warning level 4
+    add_compile_options (/W4)
+    # allow strcpy, strcat, fopen, etc.
+    add_definitions (-D_CRT_SECURE_NO_WARNINGS)
+    # Avoid C4996: POSIX name for this item is deprecated.
+    add_definitions (-D_CRT_NONSTDC_NO_WARNINGS)
 else ()
     set (COMPILER_HARDENING_FLAGS
          "-fPIE -D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wformat -Werror=format-security")

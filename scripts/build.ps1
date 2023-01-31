@@ -466,8 +466,8 @@ function Create-DataFiles {
                 "connectionData": "[NOT_SPECIFIED]"
             },
             "$description": "manufacturer, model will be matched against update manifest 'compability' attributes",
-            "manufacturer": "jeffmillmfr",
-            "model": "jeffmillmdl"
+            "manufacturer": "[NOT_SPECIFIED]",
+            "model": "[NOT_SPECIFIED]"
         }
     ]
 }
@@ -475,7 +475,7 @@ function Create-DataFiles {
     }
 
     if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath "$DataFilePath/du-config.json" -SimpleMatch) {
-        Show-Warning "Need to edit connectionData,agents.manufacturer,agents.model in $DataFilePath/du-config.json"
+        Show-Warning "Need to edit connectionData, agents.manufacturer and/or agents.model in $DataFilePath/du-config.json"
         ''
         notepad.exe "$DataFilePath/du-config.json"
     }

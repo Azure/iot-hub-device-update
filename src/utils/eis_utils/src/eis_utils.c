@@ -154,23 +154,13 @@ EISUtilityResult BuildSharedAccessSignature(
         goto done;
     }
 
-#if defined(_WIN32) && !defined(_USE_32BIT_TIME_T)
-    // TODO(JeffMill): [PAL] 64-bit time_t
+    // time_t is 64-bit on Windows, so use 64-bit value.
     char expiryStr[ARRAY_SIZE("9223372036854775807")];
 
-    if (snprintf(expiryStr, ARRAY_SIZE(expiryStr), "%lld", expirySecsSinceEpoch) == 0)
+    if (snprintf(expiryStr, ARRAY_SIZE(expiryStr), "%llu", (unsigned long long)expirySecsSinceEpoch) == 0)
     {
         goto done;
     }
-#else
-    // Note: 12 is the maximum amount of characters needed to represent a time_t in string format
-    char expiryStr[ARRAY_SIZE("2147483647")];
-
-    if (snprintf(expiryStr, ARRAY_SIZE(expiryStr), "%ld", expirySecsSinceEpoch) == 0)
-    {
-        goto done;
-    }
-#endif
 
     EISErr keyServiceResult = RequestSignatureFromEIS(keyHandle, resourceUri, expiryStr, timeoutMS, &signResponseStr);
 

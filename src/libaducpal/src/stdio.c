@@ -107,7 +107,6 @@ FILE* ADUCPAL_popen(const char* command, const char* type)
         return NULL;
     }
 
-    // TODO(JeffMill): [PAL] Will this return utf8? If not, additional work is needed.
     return _popen(command, type);
 }
 

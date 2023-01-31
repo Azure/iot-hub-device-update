@@ -16,10 +16,7 @@ find_package (Parson REQUIRED)
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
-if (WIN32)
-    # TODO(JeffMill): [PAL] AzureBlobStorageFileUploadUtility_UploadFilesToContainer
-    # https://github.com/Azure/azure-blob-storage-file-upload-utility
-else ()
+if (NOT WIN32)
     target_link_libraries (${target_name} PRIVATE azure_blob_storage_file_upload_utility
                                                   Azure::azure-storage-blobs)
 endif ()

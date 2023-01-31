@@ -8,10 +8,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-// TODO (JeffMill): optimization: remove subdir and filepath allocations.
-// TODO (JeffMill): implement FTW_CHDIR, FTW_MOUNT, FTW_PHYS
-// TODO (JeffMill): respect nopenfd parameter (currently ignored)
-// TODO (JeffMill): Does FTW_SL, FTW_SLN apply to Windows?
+// TODO (JeffMill):
+// * check FILE_ATTRIBUTE_REPARSE_POINT in is_dots_dir
+// * implement FTW_CHDIR, FTW_MOUNT, FTW_PHYS
+// * Does FTW_SL (fpath is a symbolic link, and FTW_PHYS was set in flags), FTW_SLN apply to Windows?
+// * respect nopenfd parameter (currently ignored)
+// * optimization: remove subdir and filepath allocations; pass stack buffer around
 
 // Returns 1 if . or ..
 static int is_dots_dir(const struct dirent* entry)
@@ -21,7 +23,6 @@ static int is_dots_dir(const struct dirent* entry)
         return 0;
     }
 
-    // TODO(JeffMill): [PAL] also check FILE_ATTRIBUTE_REPARSE_POINT
     if (entry->d_name[0] == '.')
     {
         if ((entry->d_name[1] == '\0') || (entry->d_name[1] == '.' && entry->d_name[2] == '\0'))

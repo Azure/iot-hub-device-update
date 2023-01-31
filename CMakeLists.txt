@@ -532,7 +532,6 @@ if (ADUC_BUILD_UNIT_TESTS)
 endif ()
 
 if (ADUC_INSTALL_DAEMON)
-    # TODO(JeffMill): [PAL] No daemon on Windows.  Make a Windows service?
     if (NOT WIN32)
         add_subdirectory (daemon)
     endif ()

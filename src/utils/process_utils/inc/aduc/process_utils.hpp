@@ -43,14 +43,8 @@ int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string>
  */
 bool VerifyProcessEffectiveGroup(
     const char* groupName,
-#ifdef ADUCPAL_USE_PAL
-    // TODO(JeffMill): [PAL] getegid, getgrnam
     const std::function<gid_t()>& getegidFunc = ADUCPAL_getegid,
     const std::function<struct group*(const char*)>& getgrnamFunc = ADUCPAL_getgrnam);
-#else
-    const std::function<gid_t()>& getegidFunc = getegid,
-    const std::function<struct group*(const char*)>& getgrnamFunc = getgrnam);
-#endif
 
 /**
  * @brief Ensure that the effective user of the process is one of the ADU Shell Trusted Users.
@@ -62,13 +56,6 @@ bool VerifyProcessEffectiveGroup(
  */
 bool VerifyProcessEffectiveUser(
     VECTOR_HANDLE trustedUsersArray,
-#ifdef ADUCPAL_USE_PAL
-    // TODO(JeffMill): [PAL] geteuid, getpwnam
     const std::function<uid_t()>& geteuidFunc = ADUCPAL_geteuid,
     const std::function<struct passwd*(const char*)>& getpwnamFunc = ADUCPAL_getpwnam);
-#else
-    const std::function<uid_t()>& geteuidFunc = geteuid,
-    const std::function<struct passwd*(const char*)>& getpwnamFunc = getpwnam);
-#endif
-
 #endif // ADUC_PROCESS_UTILS_HPP

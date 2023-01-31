@@ -61,12 +61,10 @@ target_compile_definitions (
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
 if (WIN32)
-    # TODO(JeffMill): [PAL] getopt.h
-    find_path (GETOPT_INCLUDE_DIR "getopt.h")
-    target_include_directories (${target_name} PRIVATE ${GETOPT_INCLUDE_DIR})
-endif ()
+    # getopt-win32 (vcpkg.json) doesn't have "find_package"
+    find_path (GETOPT_INCLUDE_DIR "getopt.h" REQUIRED)
+    target_include_directories (${target_name} PRIVATE ${GETOPT_INCLUDE_DIR} REQUIRED)
 
-if (WIN32)
     find_library (GETOPT_LIBRARY "getopt.lib")
     target_link_libraries (${target_name} PRIVATE ${GETOPT_LIBRARY})
 endif ()

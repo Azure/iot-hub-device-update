@@ -12,13 +12,8 @@ target_compile_definitions (
                             ADUC_FILE_GROUP="${ADUC_FILE_GROUP}" ADUC_FILE_USER="${ADUC_FILE_USER}")
 
 if (WIN32)
-    # TODO(JeffMill): [PAL] pthread
     find_package (PThreads4W REQUIRED)
     target_link_libraries (${PROJECT_NAME} PRIVATE PThreads4W::PThreads4W)
-else ()
-    # TODO(JeffMill): command_helper.c uses pthread but this isn't linking to threads?
-    # find_package (Threads REQUIRED)
-    # target_link_libraries (${PROJECT_NAME} PRIVATE Threads::Threads)
 endif ()
 
 target_include_directories (

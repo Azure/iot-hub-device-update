@@ -12,7 +12,6 @@ static DWORD s_dlfcn_lasterror = 0;
 
 void* ADUCPAL_dlopen(const char* filename, int flag)
 {
-    // TODO(JeffMill): [PAL] flag not supported
     UNREFERENCED_PARAMETER(flag);
 
     s_dlfcn_lasterror = 0;

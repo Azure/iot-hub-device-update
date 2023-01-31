@@ -4,7 +4,7 @@
 
 struct group* ADUCPAL_getgrnam(const char* name)
 {
-// TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return 0 (root).
+// TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return 0 (root) for "adu" and "do"
 
 // From CMakeLists.txt
 #define ADUC_FILE_GROUP "adu"
