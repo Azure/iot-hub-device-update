@@ -29,7 +29,7 @@ extern "C"
 
 #    include <sys/time.h>
 
-#    define ADUCPAL_gettimeofday(tv, tz) gettimeofday(tv, tz)
+#    define ADUCPAL_gettimeofday gettimeofday
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

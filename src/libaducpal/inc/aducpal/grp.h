@@ -29,7 +29,7 @@ extern "C"
 
 #    include <grp.h>
 
-#    define ADUCPAL_getgrnam(name) getgrnam(name)
+#    define ADUCPAL_getgrnam getgrnam
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

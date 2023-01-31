@@ -26,9 +26,9 @@ extern "C"
 
 #    include <time.h>
 
-#    define ADUCPAL_clock_gettime(clockid, tp) clock_gettime(clockid, tp)
-#    define ADUCPAL_gmtime_r(timep, result) gmtime_r(timep, result)
-#    define ADUCPAL_nanosleep(rqtp, rmtp) nanosleep(rqtp, rmtp)
+#    define ADUCPAL_clock_gettime clock_gettime
+#    define ADUCPAL_gmtime_r gmtime_r
+#    define ADUCPAL_nanosleep nanosleep
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

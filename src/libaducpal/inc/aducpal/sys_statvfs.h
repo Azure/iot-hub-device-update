@@ -36,7 +36,7 @@ extern "C"
 
 #    include <sys/statvfs.h>
 
-#    define ADUCPAL_statvfs(path, buf) statvfs(path, buf)
+#    define ADUCPAL_statvfs statvfs
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

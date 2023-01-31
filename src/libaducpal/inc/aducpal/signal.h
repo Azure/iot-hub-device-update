@@ -20,7 +20,7 @@ extern "C"
 
 #    include <signal.h>
 
-#    define ADUCPAL_raise(sig) raise(sig)
+#    define ADUCPAL_raise raise
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

@@ -20,9 +20,9 @@ extern "C"
 
 #    include <stdlib.h>
 
-#    define ADUCPAL_mkstemp(tmpl) mkstemp(tmpl)
-#    define ADUCPAL_setenv(name, value, overwrite) setenv(name, value, overwrite)
-#    define ADUCPAL_unsetenv(name) unsetenv(name)
+#    define ADUCPAL_mkstemp mkstemp
+#    define ADUCPAL_setenv setenv
+#    define ADUCPAL_unsetenv unsetenv
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

@@ -22,9 +22,9 @@ extern "C"
 
 #    include <stdio.h>
 
-#    define ADUCPAL_popen(command, type) popen(command, type)
-#    define ADUCPAL_pclose(stream) pclose(stream)
-#    define ADUCPAL_rename(old_f, new_f) rename(old_f, new_f)
+#    define ADUCPAL_popen popen
+#    define ADUCPAL_pclose pclose
+#    define ADUCPAL_rename rename
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

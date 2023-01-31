@@ -23,10 +23,10 @@ extern "C"
 
 #    include <dlfcn.h>
 
-#    define ADUCPAL_dlopen(filename, flag) dlopen(filename, flag)
-#    define ADUCPAL_dlerror() dlerror()
-#    define ADUCPAL_dlsym(handle, symbol) dlsym(handle, symbol)
-#    define ADUCPAL_dlclose(handle) dlclose(handle)
+#    define ADUCPAL_dlopen dlopen
+#    define ADUCPAL_dlerror dlerror
+#    define ADUCPAL_dlsym dlsym
+#    define ADUCPAL_dlclose dlclose
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

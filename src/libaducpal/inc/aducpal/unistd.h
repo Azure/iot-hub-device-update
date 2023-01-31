@@ -46,23 +46,23 @@ extern "C"
 #    include <sys/syscall.h> // SYS_gettid
 #    include <unistd.h>
 
-#    define ADUCPAL_access(pathname, mode) access(pathname, mode)
-#    define ADUCPAL_chown(path, owner, group) chown(path, owner, group)
-#    define ADUCPAL_close(fildes) close(fildes)
-#    define ADUCPAL_getegid() getegid()
-#    define ADUCPAL_geteuid() geteuid()
-#    define ADUCPAL_getpid() getpid()
-#    define ADUCPAL_getuid() getuid()
-#    define ADUCPAL_isatty(fd) isatty(fd)
-#    define ADUCPAL_open(path, oflag) open(path, oflag)
-#    define ADUCPAL_rmdir(path) rmdir(path)
-#    define ADUCPAL_setegid(gid) setegid(gid)
-#    define ADUCPAL_seteuid(uid) seteuid(uid)
-#    define ADUCPAL_setuid(uid) setuid(uid)
-#    define ADUCPAL_sleep(seconds) sleep(seconds)
-#    define ADUCPAL_syscall(number) syscall(number)
-#    define ADUCPAL_sync() sync()
-#    define ADUCPAL_unlink(path) unlink(path)
+#    define ADUCPAL_access access
+#    define ADUCPAL_chown chown
+#    define ADUCPAL_close close
+#    define ADUCPAL_getegid getegid
+#    define ADUCPAL_geteuid geteuid
+#    define ADUCPAL_getpid getpid
+#    define ADUCPAL_getuid getuid
+#    define ADUCPAL_isatty isatty
+#    define ADUCPAL_open open
+#    define ADUCPAL_rmdir rmdir
+#    define ADUCPAL_setegid setegid
+#    define ADUCPAL_seteuid seteuid
+#    define ADUCPAL_setuid setuid
+#    define ADUCPAL_sleep sleep
+#    define ADUCPAL_syscall syscall
+#    define ADUCPAL_sync sync
+#    define ADUCPAL_unlink unlink
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

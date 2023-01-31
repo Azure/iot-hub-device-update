@@ -75,8 +75,8 @@ extern "C"
 
 #    include <sys/stat.h>
 
-#    define ADUCPAL_chmod(path, mode) chmod(path, mode)
-#    define ADUCPAL_mkdir(path, mode) mkdir(path, mode)
+#    define ADUCPAL_chmod chmod
+#    define ADUCPAL_mkdir mkdir
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

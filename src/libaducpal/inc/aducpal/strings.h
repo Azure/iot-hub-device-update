@@ -18,7 +18,7 @@ extern "C"
 
 #    include <strings.h>
 
-#    define ADUCPAL_strcasecmp(s1, s2) strcasecmp(s1, s2)
+#    define ADUCPAL_strcasecmp strcasecmp
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

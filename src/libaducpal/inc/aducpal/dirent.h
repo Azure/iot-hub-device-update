@@ -81,11 +81,11 @@ extern "C"
 
 #    include <dirent.h>
 
-#    define ADUCPAL_opendir(dirname) opendir(dirname)
-#    define ADUCPAL_readdir(dirp) readdir(dirp)
-#    define ADUCPAL_closedir(dirp) closedir(dirp)
+#    define ADUCPAL_opendir opendir
+#    define ADUCPAL_readdir readdir
+#    define ADUCPAL_closedir closedir
 
-#    define ADUCPAL_scandir(dirname, namelist, filter, compare) scandir(dirname, namelist, filter, compare)
+#    define ADUCPAL_scandir scandir
 #    define ADUCPAL_alphasort alphasort
 
 #endif // #ifdef ADUCPAL_USE_PAL

@@ -32,7 +32,7 @@ extern "C"
 
 #    include <pwd.h>
 
-#    define ADUCPAL_getpwnam(name) getpwnam(name)
+#    define ADUCPAL_getpwnam getpwnam
 
 #endif // #ifdef ADUCPAL_USE_PAL
 

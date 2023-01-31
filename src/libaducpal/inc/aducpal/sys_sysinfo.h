@@ -36,7 +36,7 @@ extern "C"
 
 #    include <sys/sysinfo.h>
 
-#    define ADUCPAL_sysinfo(info) sysinfo(info)
+#    define ADUCPAL_sysinfo sysinfo
 
 #endif // #ifdef ADUCPAL_USE_PAL
 
