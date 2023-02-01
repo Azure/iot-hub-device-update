@@ -205,22 +205,72 @@ do_install_azure_iot_sdk() {
     mkdir cmake || return
     pushd cmake > /dev/null || return
 
-    # use_http is required for uHTTP support.
     local azureiotsdkc_cmake_options=(
-        "-Duse_amqp:BOOL=OFF"
-        "-Duse_http:BOOL=ON"
-        "-Duse_mqtt:BOOL=ON"
-        "-Duse_wsio:BOOL=ON"
+        #
+        # Turn ON/OFF samples and upload to blob
+        #
+
+        # skip building samples (default: OFF)
         "-Dskip_samples:BOOL=ON"
+
+        #
+        # Compile options
+        #
+
+        # build the IoT SDK libaries as dynamic (default: OFF)
+        "-Dbuild_as_dynamic:BOOL=OFF"
+
+        #
+        # Turn on/off IoT features
+        #
+
+        # controls whether the iothub_service_client is built or not (default: ON)
         "-Dbuild_service_client:BOOL=OFF"
+        # controls whether the provisioning_service_client is built or not (default: ON)
         "-Dbuild_provisioning_service_client:BOOL=OFF"
+
+        #
+        # Turn on/off IoT features
+        #
+
+        # Enable provisioning client (default: ON)
+        "-Duse_prov_client:BOOL=ON"
+        # Enable support for running modules against Azure IoT Edge (default: OFF)
+        "-Duse_edge_modules:BOOL=ON"
+
+        #
+        # HSM Type
+        #
+
+        # tpm type of hsm used with the Provisioning client (default: ON)
+        "-Dhsm_type_sastoken:BOOL=OFF"
+        # Symmetric key type of hsm used with the Provisioning client (default: ON)
+        "-Dhsm_type_symm_key:BOOL=ON"
+
+        #
+        # Transport
+        #
+
+        # amqp is to be used (default: ON)
+        "-Duse_amqp:BOOL=OFF"
+        # http is to be used (required for uHTTP support) (default: ON)
+        "-Duse_http:BOOL=ON"
+        # mqtt is to be used (default: ON)
+        "-Duse_mqtt:BOOL=ON"
+
+        #
+        # azure-shared-c-utility
+        #
+
+        # Use the out of the box UUID that comes with the SDK (default: OFF)
+        "-Duse_default_uuid:BOOL=ON"
+        # build WebSockets support (default: ON)
+        "-Duse_wsio:BOOL=ON"
     )
 
     if [[ $keep_source_code == "true" ]]; then
-        # If source is wanted, presumably samples and symbols are useful as well.
+        # If source is wanted, presumably symbols are useful as well.
         azureiotsdkc_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Debug")
-    else
-        azureiotsdkc_cmake_options+=("-Dskip_samples=ON")
     fi
 
     cmake "${azureiotsdkc_cmake_options[@]}" .. || return

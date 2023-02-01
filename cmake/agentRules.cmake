@@ -77,9 +77,6 @@ function (target_link_umock_c target scope)
 endfunction ()
 
 function (target_link_iothub_client target scope)
-    # NOTE: the call to find_package for azure_c_shared_utility
-    # must come before umqtt since their config.cmake files expect
-    # the aziotsharedutil target to already have been defined.
     find_package (azure_c_shared_utility REQUIRED)
     find_package (IotHubClient REQUIRED)
     target_link_libraries (
