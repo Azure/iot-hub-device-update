@@ -30,10 +30,7 @@ Param(
     # TODO(JeffMill): Change this when folder structure determined.
     [string]$LogDir = '/var/log/adu',
     # Install the product locally
-    [switch]$Install,
-    # Where to install DU binaries to
-    # TODO(JeffMill): Not working.  Active bug on this.
-    [string]$InstallPrefix = '/usr/local'
+    [switch]$Install
 )
 
 function Show-Warning {
@@ -204,6 +201,7 @@ function Register-Components {
     # contentDownloader
     #
 
+    # curl content downlaoader not used on Windows.
     # /var/lib/adu/extensions/content_downloader/extension.json
     # $curl_content_downloader_file = 'curl_content_downloader.dll'
     # & $aduciotagent_path --register-extension "$adu_extensions_sources_dir/$curl_content_downloader_file" --extension-type contentDownloader --log-level 2
@@ -252,6 +250,7 @@ function Register-Components {
         Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
     }
 
+    # microsoft/swupdate:1 not used on Windows.
     # /var/lib/adu/extensions/update_content_handlers/microsoft_swupdate_1/content_handler.json
     # $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_swupdate_1.dll"
     # & $aduciotagent_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/swupdate:1'
@@ -540,8 +539,7 @@ $CMAKE_OPTIONS = @(
     "-DCMAKE_BUILD_TYPE:STRING=$Type",
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON",
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir",
-    "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir",
-    "-DCMAKE_INSTALL_PREFIX:STRING=$InstallPrefix"
+    "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
 )
 
 $StaticAnalysisTools | ForEach-Object {
@@ -644,22 +642,17 @@ if ($Clean) {
 
 mkdir -Path $OutputDirectory -Force | Out-Null
 
-# It seems that dependencies are being generated unnecessarily otherwise?
 if ($Clean) {
     Show-Header 'Generating Makefiles'
 
     # show every find_package call (vcpkg specific):
     # $CMAKE_OPTIONS += '-DVCPKG_TRACE_FIND_PACKAGE:BOOL=ON'
-
     # Verbose output (very verbose, but useful!):
     # $CMAKE_OPTIONS += '--trace-expand'
-
     # See cmake dependencies (very verbose):
     # $CMAKE_OPTIONS += '--debug-output'
-
     # See compiler output at build time:
     # $CMAKE_OPTIONS += '-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON'
-
     # See library search output:
     # $CMAKE_OPTIONS += '-DCMAKE_EXE_LINKER_FLAGS=/VERBOSE:LIB'
 
