@@ -108,18 +108,6 @@ int ADUCPAL_setuid(uid_t uid)
     return 0;
 }
 
-unsigned int ADUCPAL_sleep(unsigned int seconds)
-{
-    // TODO(JeffMill): [PAL] need to handle case of signal arriving
-
-    // sleep() makes the calling thread sleep until
-    // seconds seconds have elapsed
-    // or a signal arrives which is not ignored.
-
-    Sleep(seconds * 1000);
-    return 0;
-}
-
 long ADUCPAL_syscall(long number)
 {
     if (number == SYS_gettid)

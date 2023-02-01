@@ -42,23 +42,29 @@ struct tm* ADUCPAL_gmtime_r(const time_t* timep, struct tm* result)
 
 int ADUCPAL_nanosleep(const struct timespec* rqtp, struct timespec* rmtp)
 {
-    // TODO(JeffMill): [PAL] need to handle case of signal arriving
+    // Note: unlike nanosleep(), this doesn't handle signal interruption.
 
-    // The nanosleep() function shall cause the current thread to be suspended from execution until either
-    // the time interval specified by the rqtp argument has elapsed
-    // or a signal is delivered to the calling thread, and its action is to invoke a signal-catching function or to terminate the process.
-
-    // Note: Only supporting ms granularity.
-    if (rmtp != NULL || rqtp->tv_sec != 0 || rqtp->tv_nsec < 1000000)
+    // Note: rmtp argument not implemented.
+    if (rmtp != NULL)
     {
-        return EINVAL;
+        _set_errno(EINVAL);
+        return -1;
     }
 
-#define NANOSECONDS_TO_MILLISECONDS(ms) ((ms) / 1000000)
+#define NANOSECONDS_TO_MILLISECONDS(ns) ((ns) / 1000000)
+#define MILLISECONDS_TO_NANOSECONDS(ms) ((ms)*1000000)
 
-    Sleep(NANOSECONDS_TO_MILLISECONDS(rqtp->tv_nsec));
+    const unsigned long ns = rqtp->tv_nsec;
+    const unsigned long ms = NANOSECONDS_TO_MILLISECONDS(ns);
 
-    // 0: time elapsed
-    // -1: interrupted by a signal (errno set to EINTR)
+    // Note: This implementation only supports ms granularity.
+    if (MILLISECONDS_TO_NANOSECONDS(ms) != ns)
+    {
+        _set_errno(EINVAL);
+        return -1;
+    }
+
+    Sleep(ms);
+
     return 0;
 }

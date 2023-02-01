@@ -16,19 +16,17 @@
 
 EXTERN_C_BEGIN
 
-#define MILLISECONDS_TO_NANOSECONDS(ms) ((ms)*1000000)
-
 /**
  * @brief The message types currently supported by the Device Update Agent.
  */
 typedef enum _tagADUC_D2C_Message_Type
 {
     ADUC_D2C_Message_Type_Device_Update_Result = 0, /**< deviceUpdate interface reported property */
-    ADUC_D2C_Message_Type_Device_Update_ACK,        /**< deviceUpdate interface ACK */
-    ADUC_D2C_Message_Type_Device_Information,       /**< deviceInformation interface reported property */
-    ADUC_D2C_Message_Type_Diagnostics,              /**< diagnostics interface reported property */
-    ADUC_D2C_Message_Type_Diagnostics_ACK,          /**< diagnostics interface ACK */
-    ADUC_D2C_Message_Type_Device_Properties,        /**< deviceUpdate interface reported property */
+    ADUC_D2C_Message_Type_Device_Update_ACK, /**< deviceUpdate interface ACK */
+    ADUC_D2C_Message_Type_Device_Information, /**< deviceInformation interface reported property */
+    ADUC_D2C_Message_Type_Diagnostics, /**< diagnostics interface reported property */
+    ADUC_D2C_Message_Type_Diagnostics_ACK, /**< diagnostics interface ACK */
+    ADUC_D2C_Message_Type_Device_Properties, /**< deviceUpdate interface reported property */
     ADUC_D2C_Message_Type_Max
 } ADUC_D2C_Message_Type;
 
