@@ -21,7 +21,6 @@ target_link_libraries (
             aduc::string_utils
             Catch2::Catch2)
 
-target_link_libraries_find (${PROJECT_NAME} PRIVATE uhttp)
 target_link_umock_c (${PROJECT_NAME} PRIVATE)
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 

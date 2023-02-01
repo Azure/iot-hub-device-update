@@ -3,11 +3,35 @@ cmake_minimum_required (VERSION 3.5)
 if (WIN32)
     include (cmake/automate-vcpkg.cmake)
     # Default is ${CMAKE_BINARY_DIR}/vcpkg
-    cmake_path (SET VCPKG_ROOT "${CMAKE_SOURCE_DIR}/.vcpkg")
+    cmake_path (
+        SET
+        VCPKG_ROOT
+        NORMALIZE
+        "${CMAKE_SOURCE_DIR}/.vcpkg")
     # Default is ${CMAKE_BINARY_DIR}/vcpkg_installed
-    cmake_path (SET VCPKG_INSTALLED_DIR "${CMAKE_SOURCE_DIR}/.vcpkg-installed")
+    cmake_path (
+        SET
+        VCPKG_INSTALLED_DIR
+        NORMALIZE
+        "${CMAKE_SOURCE_DIR}/.vcpkg-installed")
     # clone the official Vcpkg repository and bootstrap it.
     vcpkg_bootstrap ()
+
+    # Include vcpkg installed lib folder in library path  (e.g. "".vcpkg-installed\x64-windows\(Debug)\lib")
+    # for  packages that dont have a CMake find_package.
+    cmake_path (
+        SET
+        VCPKG_LIBRARY_DIR
+        NORMALIZE
+        "${VCPKG_INSTALLED_DIR}")
+    cmake_path (
+        APPEND
+        VCPKG_LIBRARY_DIR
+        "${VCPKG_TRIPLET}"
+        "${CMAKE_BUILD_TYPE}"
+        "lib")
+    link_directories (${VCPKG_LIBRARY_DIR})
+    message (STATUS "VCPKG_LIBRARY_DIR: ${VCPKG_LIBRARY_DIR}")
 endif ()
 
 project (azure_device_update_client)

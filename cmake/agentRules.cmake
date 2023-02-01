@@ -26,26 +26,6 @@ macro (disableRTTI)
     endif ()
 endmacro (disableRTTI)
 
-function (
-    target_link_libraries_find
-    target
-    scope
-    item)
-    if (WIN32)
-        # TODO(JeffMill): [PAL] Why aren't these libraries being linked with full path?
-        find_library (LIBRARY ${item} REQUIRED)
-        cmake_path (
-            GET
-            LIBRARY
-            PARENT_PATH
-            LIBRARY_DIR)
-        message (STATUS "${target} ${item}: ${LIBRARY_DIR}")
-        target_link_directories (${target} ${scope} ${LIBRARY_DIR})
-    endif ()
-
-    target_link_libraries (${target} ${scope} ${item})
-endfunction ()
-
 function (target_link_aziotsharedutil target scope)
     find_package (azure_c_shared_utility REQUIRED CONFIG)
     target_link_libraries (${target} ${scope} aziotsharedutil)

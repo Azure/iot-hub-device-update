@@ -25,7 +25,7 @@ target_include_directories (${PROJECT_NAME} PRIVATE ${ADUC_EXPORT_INCLUDES})
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC IotHubClient::iothub_client umqtt
+    PUBLIC IotHubClient::iothub_client iothub_client_mqtt_transport umqtt
     PRIVATE aduc::linux_platform_layer
             aduc::extension_manager
             aduc::logging
@@ -34,7 +34,6 @@ target_link_libraries (
             aduc::c_utils
             Catch2::Catch2)
 
-target_link_libraries_find (${PROJECT_NAME} PUBLIC iothub_client_mqtt_transport)
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
 include (CTest)

@@ -23,12 +23,11 @@ target_link_libraries (
     PUBLIC aduc::c_utils aduc::adu_types
     PRIVATE aduc::adu_types
             IotHubClient::iothub_client
+            iothub_client_mqtt_transport
             umqtt
+            # prov_auth_client, hsm_security_client, uhttp are required when
+            # azure-iot-sdk-c is compiled using -Duse_edge_modules=ON
+            prov_auth_client
+            hsm_security_client
+            uhttp
             aduc::logging)
-
-target_link_libraries_find (${target_name} PUBLIC iothub_client_mqtt_transport)
-
-# prov_auth_client, hsm_security_client, uhttp are required when azure-iot-sdk-c are compiled using -Duse_edge_modules=ON
-target_link_libraries_find (${target_name} PUBLIC prov_auth_client)
-target_link_libraries_find (${target_name} PUBLIC hsm_security_client)
-target_link_libraries_find (${target_name} PUBLIC uhttp)
