@@ -1,36 +1,28 @@
 #include "aducpal/ftw.h"
 #include "aducpal/dirent.h"
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
 #include <errno.h>
 #include <malloc.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
-// TODO (JeffMill):
-// * check FILE_ATTRIBUTE_REPARSE_POINT in is_dots_dir
-// * implement FTW_CHDIR, FTW_MOUNT, FTW_PHYS
-// * Does FTW_SL (fpath is a symbolic link, and FTW_PHYS was set in flags), FTW_SLN apply to Windows?
-// * respect nopenfd parameter (currently ignored)
-// * optimization: remove subdir and filepath allocations; pass stack buffer around
-
-// Returns 1 if . or ..
-static int is_dots_dir(const struct dirent* entry)
+// Returns true if . or ..
+static bool is_dots_dir(const struct dirent* entry)
 {
-    if (entry->d_type != DT_DIR)
-    {
-        return 0;
-    }
-
-    if (entry->d_name[0] == '.')
+    if ((entry->d_type == DT_DIR) && (entry->d_name[0] == '.'))
     {
         if ((entry->d_name[1] == '\0') || (entry->d_name[1] == '.' && entry->d_name[2] == '\0'))
         {
-            return 1;
+            return true;
         }
     }
-    return 0;
+    return false;
 }
 
 static void wstat_to_stat(struct stat* st, struct _stat* st64i32)
@@ -52,6 +44,8 @@ static void wstat_to_stat(struct stat* st, struct _stat* st64i32)
 
 static int typeflag_from_stat(struct stat* st, int flags)
 {
+    // Note: FTW_SL and FTW_SLN not currently implemented.
+
     int typeflag = 0;
 
     if (st->st_mode & _S_IFDIR)
@@ -129,8 +123,24 @@ static int do_nftw(const char* path, NFTW_FUNC_T func, int nopenfd, int flags, i
 
         if (entry->d_type == DT_DIR)
         {
+            if (flags & FTW_MOUNT)
+            {
+                WIN32_FILE_ATTRIBUTE_DATA wfd;
+                if (!GetFileAttributesEx(path, GetFileExInfoStandard, &wfd))
+                {
+                    continue;
+                }
+
+                // If set, stay within the same filesystem (i.e., do not cross mount points).
+                if (wfd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+                {
+                    continue;
+                }
+            }
+
             ret = 0;
 
+            // Future optimization: remove subdir and filepath allocations; pass mutable buffer around
             const size_t buffer_len = ftwbuf.base + 1 + entry->d_namlen + 1;
             char* subdir = malloc(buffer_len);
             sprintf_s(subdir, buffer_len, "%s/%s", path, entry->d_name);
@@ -202,5 +212,18 @@ static int do_nftw(const char* path, NFTW_FUNC_T func, int nopenfd, int flags, i
 // Returns 0 on success, and -1 if an error occurs.
 int ADUCPAL_nftw(const char* path, NFTW_FUNC_T func, int nopenfd, int flags)
 {
+    // returns -1 if an error occurs.
+
+    // Note: Ignoring nopenfd not currently implemented.
+
+    // Note: FTW_PHYS not currently implemetented (code references, so not failing on use)
+
+    if (flags & FTW_CHDIR)
+    {
+        // Note: FTW_CHDIR not currently implemented.
+        _set_errno(ENOSYS);
+        return -1;
+    }
+
     return do_nftw(path, func, nopenfd, flags, 0 /*level*/);
 }

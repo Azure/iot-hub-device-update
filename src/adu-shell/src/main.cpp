@@ -285,11 +285,7 @@ bool ADUShell_PermissionCheck()
     // check whether the effective user is in the trusted group
     if (!isTrusted)
     {
-#ifdef ADUCPAL_USE_PAL
-        isTrusted = VerifyProcessEffectiveGroup(ADUSHELL_EFFECTIVE_GROUP_NAME, ADUCPAL_getegid, ADUCPAL_getgrnam);
-#else
         isTrusted = VerifyProcessEffectiveGroup(ADUSHELL_EFFECTIVE_GROUP_NAME);
-#endif
     }
 
     // If a trusted user list is provided, the permission check passes if the user is either in trusted group,

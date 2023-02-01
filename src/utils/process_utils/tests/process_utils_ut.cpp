@@ -62,39 +62,23 @@ TEST_CASE("Capture standard error", "[!hide][functional_test]")
     CHECK_THAT(output.c_str(), Contains("This is a standard error string.\n"));
 }
 
-TEST_CASE("hostname error")
+TEST_CASE("Bad parameter error")
 {
     const char* bogusOption = "--bogus-param-abc";
     std::vector<std::string> args;
     args.emplace_back(bogusOption);
     std::string output;
 
+#if defined(WIN32)
+    const int exitCode = ADUC_LaunchChildProcess("whoami.exe", args, output);
+#else
     const int exitCode = ADUC_LaunchChildProcess("hostname", args, output);
+#endif
 
     REQUIRE(exitCode != EXIT_SUCCESS);
 
-#if !defined(WIN32)
     // Expecting output text to contain the specified bogus option.
-    // e.g., hostname: unrecognized option '--bogus-param-abc'
     CHECK_THAT(output.c_str(), Contains(bogusOption));
-#else
-    CHECK_THAT(output.c_str(), Contains("Use the Network Control Panel Applet to set hostname."));
-#endif
-}
-
-TEST_CASE("Invalid option - cp -1")
-{
-    std::string cp_command = "cp";
-    std::vector<std::string> args;
-    args.emplace_back("-1");
-    std::string output;
-    ADUC_LaunchChildProcess(cp_command, args, output);
-
-#if !defined(WIN32)
-    CHECK_THAT(output.c_str(), Contains("invalid option -- '1'"));
-#else
-    CHECK_THAT(output.c_str(), Contains("'cp' is not recognized as an internal or external command"));
-#endif
 }
 
 TEST_CASE("VerifyProcessEffectiveGroup")

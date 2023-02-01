@@ -15,7 +15,7 @@ int ADUCPAL_access(const char* pathname, int mode)
 {
     if (mode != F_OK)
     {
-        // TODO(JeffMill): [PAL] Only supporting F_OK (file existence)
+        // Note: Only supporting F_OK (file existence)
         _set_errno(EINVAL);
         return -1;
     }
@@ -127,8 +127,7 @@ long ADUCPAL_syscall(long number)
         return GetCurrentThreadId();
     }
 
-    // TODO(JeffMill): [PAL] Only SYS_gettid is supported.
-    // A -1 return value indicates an error, and an error number is stored in errno.
+    // Note: Only SYS_gettid is supported.
     _set_errno(ENOSYS);
     return -1;
 }

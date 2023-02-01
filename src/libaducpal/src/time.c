@@ -11,7 +11,7 @@ int ADUCPAL_clock_gettime(clockid_t clk_id, struct timespec* tp)
 #define FILETIME_1970 116444736000000000ull /* seconds between 1/1/1601 and 1/1/1970 */
 #define HECTONANOSEC_PER_SEC 10000000ull
 
-    // TODO(JeffMill): [PAL] Only CLOCK_REALTIME supported.
+    // Note: Only CLOCK_REALTIME supported.
     if (clk_id != CLOCK_REALTIME)
     {
         _set_errno(ENOSYS);
@@ -48,7 +48,7 @@ int ADUCPAL_nanosleep(const struct timespec* rqtp, struct timespec* rmtp)
     // the time interval specified by the rqtp argument has elapsed
     // or a signal is delivered to the calling thread, and its action is to invoke a signal-catching function or to terminate the process.
 
-    // TODO(JeffMill): [PAL] Only supporting ms granularity.
+    // Note: Only supporting ms granularity.
     if (rmtp != NULL || rqtp->tv_sec != 0 || rqtp->tv_nsec < 1000000)
     {
         return EINVAL;
