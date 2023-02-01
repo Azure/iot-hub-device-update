@@ -274,12 +274,7 @@ bool ADUShell_PermissionCheck()
     {
         VECTOR_HANDLE aduShellTrustedUsers = ADUC_ConfigInfo_GetAduShellTrustedUsers(&config);
 
-#ifdef ADUCPAL_USE_PAL
-        // TODO(JeffMill): [PAL] geteuid, getpwnam
-        isTrusted = VerifyProcessEffectiveUser(aduShellTrustedUsers, ADUCPAL_geteuid, ADUCPAL_getpwnam);
-#else
         isTrusted = VerifyProcessEffectiveUser(aduShellTrustedUsers);
-#endif
 
         ADUC_ConfigInfo_FreeAduShellTrustedUsers(aduShellTrustedUsers);
         aduShellTrustedUsers = nullptr;

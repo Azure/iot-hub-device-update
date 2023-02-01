@@ -1,5 +1,5 @@
 // *** IMPORTANT **
-// TODO(JeffMill): The code in this file is temporary demo code.  NOT FOR PRODUCTION.
+// The code in this file is temporary demo code.  NOT FOR PRODUCTION.
 // *** IMPORTANT **
 
 // To uninstall (after demo):

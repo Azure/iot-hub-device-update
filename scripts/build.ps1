@@ -643,7 +643,6 @@ if ($Clean) {
 
 mkdir -Path $OutputDirectory -Force | Out-Null
 
-# TODO(JeffMill): Only generate makefiles on clean?
 # It seems that dependencies are being generated unnecessarily otherwise?
 if ($Clean) {
     Show-Header 'Generating Makefiles'
@@ -711,7 +710,6 @@ if ($ret_val -ne 0) {
 if ($ret_val -eq 0 -and $BuildPackages) {
     Show-Header 'Building Package'
 
-    # TODO(JeffMill): Build package for Windows
     Show-Warning 'BuildPackages NYI'
 }
 

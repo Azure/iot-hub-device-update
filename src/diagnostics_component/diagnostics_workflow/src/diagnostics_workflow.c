@@ -12,8 +12,6 @@
 #include <aduc/string_c_utils.h>
 
 #if defined(_WIN32)
-// TODO(JeffMill): [PAL] AzureBlobStorageFileUploadUtility_UploadFilesToContainer NYI
-// https://github.com/Azure/azure-blob-storage-file-upload-utility
 typedef struct tagBlobStorageInfo
 {
     STRING_HANDLE virtualDirectoryPath; //!< Virtual hierarchy for the blobs

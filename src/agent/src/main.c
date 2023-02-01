@@ -11,7 +11,6 @@
 #include "aduc/agent_workflow.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
-// TODO(JeffMill): [PAL] I don't think Windows needs command_helper.  Check with Jeff or Nox.
 #if !defined(WIN32)
 #    include "aduc/command_helper.h"
 #endif
