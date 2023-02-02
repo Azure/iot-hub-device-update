@@ -6,13 +6,16 @@
  * Licensed under the MIT License.
  */
 #include <aduc/permission_utils.h>
+
+#include "aduc/system_utils.h"
+
 #include <catch2/catch.hpp>
 #include <stdio.h>
 #include <string.h>
 
-#include <aducpal/stdlib.h> // mkstemp
-#include <aducpal/sys_stat.h> // fchmod
-#include <aducpal/sys_types.h> // S_I*
+#include <fstream> // ofstream
+
+#include <aducpal/sys_stat.h> // S_I*
 #include <aducpal/unistd.h> // unlink
 
 TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
@@ -25,10 +28,12 @@ TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
 #endif
 
     // create temp file with all file permission bits set
-    char tmpfile_path[32] = {};
+    char tmpfile_path[32];
     strncpy(tmpfile_path, "/tmp/permissionUtilsUT_XXXXXX", sizeof(tmpfile_path));
-    int file_handle = ADUCPAL_mkstemp(tmpfile_path);
-    ADUCPAL_close(file_handle);
+    ADUC_SystemUtils_MkTemp(tmpfile_path);
+    std::ofstream file{ tmpfile_path };
+    file.close();
+
     REQUIRE(0 == ADUCPAL_chmod(tmpfile_path, file_permissions));
 
     CHECK(PermissionUtils_VerifyFilemodeExact(tmpfile_path, file_permissions));

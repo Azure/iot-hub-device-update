@@ -13,7 +13,8 @@ find_package (Catch2 REQUIRED)
 
 add_executable (${PROJECT_NAME} ${sources})
 
-target_link_libraries (${PROJECT_NAME} PRIVATE aduc::permission_utils Catch2::Catch2)
+target_link_libraries (${PROJECT_NAME} PRIVATE aduc::permission_utils aduc::system_utils
+                                               Catch2::Catch2)
 
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 

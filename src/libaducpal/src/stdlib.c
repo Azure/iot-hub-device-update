@@ -8,21 +8,6 @@
 #include <stdlib.h> // getenv, putenv
 #include <string.h>
 
-#include "aducpal/unistd.h" // open
-
-int ADUCPAL_mkstemp(char* tmpl)
-{
-    const errno_t ret = _mktemp_s(tmpl, strlen(tmpl) + 1);
-    if (ret != 0)
-    {
-        errno = ret;
-        return -1;
-    }
-
-    // TODO(JeffMill): [PAL] Pass , S_IRUSR | S_IWUSR.  _O_TEMPORARY requires admin access?
-    return ADUCPAL_open(tmpl, _O_RDWR | _O_CREAT | _O_EXCL);
-}
-
 // Returns 1 on success.
 int ADUCPAL_setenv(const char* name, const char* value, int overwrite)
 {

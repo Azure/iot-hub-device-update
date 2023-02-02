@@ -13,6 +13,7 @@
 #include <aducpal/grp.h> // getgrnam
 #include <aducpal/pwd.h> // getpwnam
 #include <aducpal/sys_stat.h> // mkdir, chmod
+#include <aducpal/time.h> // clock_gettime, CLOCK_REALTIME
 #include <aducpal/unistd.h> // chown
 
 #include <aduc/string_c_utils.h>
@@ -65,6 +66,52 @@ const char* ADUC_SystemUtils_GetTemporaryPathName()
     }
 
     return env;
+}
+
+/**
+ * @brief mktemp() implementation
+ *
+ * mktemp() is generally considered unsafe as the temporary names can be easy to guess, and there are
+ * a limited number of combinations.
+ *
+ * However, for unit tests, it can be useful, so it's highly recommended that this method is only
+ * used for unit tests.
+ *
+ * @param tmpl The last six characters XXXXXX are replaced with a string that makes the filename unique.
+ * @return Returns @param tmpl.
+ */
+char* ADUC_SystemUtils_MkTemp(char* tmpl)
+{
+    const size_t len = strlen(tmpl);
+    if (len < 6)
+    {
+        tmpl[0] = '\0';
+        errno = EINVAL;
+        return tmpl;
+    }
+
+    // Start of XXXXXX
+    char* Xs = tmpl + (len - 6);
+
+    // Get a randomish number from real time clock.
+    struct timespec ts;
+    ADUCPAL_clock_gettime(CLOCK_REALTIME, &ts);
+    unsigned long rnd = ts.tv_nsec ^ (unsigned long)ts.tv_sec;
+
+    while (*Xs == 'X')
+    {
+        // '0'..'9' (10), 'A'..'Z' (26), 'a'..'z' (26)
+        const unsigned short count = 10 + 26 + 26;
+        const unsigned short idx = (rnd % count);
+        *Xs = (idx < 10)      ? (char)('0' + idx)
+            : (idx < 10 + 26) ? (char)('A' + (idx - 10))
+                              : (char)('a' + (idx - (10 + 26)));
+        rnd /= count;
+
+        ++Xs;
+    }
+
+    return tmpl;
 }
 
 /**

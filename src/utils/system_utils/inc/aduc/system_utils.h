@@ -30,6 +30,8 @@ typedef struct tagADUC_SystemUtils_ForEachDirFunctor
 
 const char* ADUC_SystemUtils_GetTemporaryPathName();
 
+char* ADUC_SystemUtils_MkTemp(char* tmpl);
+
 int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t mode);
 
 int ADUC_SystemUtils_MkDirDefault(const char* path);

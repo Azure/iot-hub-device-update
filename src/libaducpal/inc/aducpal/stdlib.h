@@ -8,7 +8,6 @@ extern "C"
 {
 #    endif
 
-    int ADUCPAL_mkstemp(char* tmpl);
     int ADUCPAL_setenv(const char* name, const char* value, int overwrite);
     int ADUCPAL_unsetenv(const char* name);
 
@@ -20,7 +19,6 @@ extern "C"
 
 #    include <stdlib.h>
 
-#    define ADUCPAL_mkstemp mkstemp
 #    define ADUCPAL_setenv setenv
 #    define ADUCPAL_unsetenv unsetenv
 

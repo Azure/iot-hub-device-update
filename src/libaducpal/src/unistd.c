@@ -68,17 +68,6 @@ int ADUCPAL_isatty(int fd)
     return _isatty(fd);
 }
 
-int ADUCPAL_open(const char* path, int oflag)
-{
-    int fd;
-    int ret = _sopen_s(&fd, path, oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
-    if (ret != 0)
-    {
-        return -1;
-    }
-    return fd;
-}
-
 int ADUCPAL_rmdir(const char* path)
 {
     return _rmdir(path);
