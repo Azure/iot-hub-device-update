@@ -176,7 +176,9 @@ static PThreadMutex g_testCaseSyncMutex;
 static void set_timespec_ms(timespec* ts, unsigned long ms)
 {
     memset(ts, 0, sizeof(*ts));
-    ts->tv_nsec = ms * 1000000;
+    ts->tv_sec = ms / 1000;
+    // 1 ms = 1000000 ns
+    ts->tv_nsec = (ms % 1000) * 1000000;
 }
 
 void* mock_msg_process_thread_routine(void* context)

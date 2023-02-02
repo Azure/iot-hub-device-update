@@ -64,7 +64,8 @@ int ADUCPAL_nanosleep(const struct timespec* rqtp, struct timespec* rmtp)
         return -1;
     }
 
-    Sleep(ms);
+    // Add in number of seconds converted to ms.
+    Sleep(ms + (rqtp->tv_sec * 1000));
 
     return 0;
 }
