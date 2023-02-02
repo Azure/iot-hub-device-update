@@ -1,3 +1,4 @@
+// To run functional tests in this UT, add '[functional]' to command line.
 
 #include "aduc/client_handle.h"
 #include "aduc/d2c_messaging.h"
@@ -7,8 +8,7 @@
 #include <stdexcept> // runtime_error
 #include <string.h>
 
-#include <aducpal/time.h> // clock_gettime, nanosleep
-#include <aducpal/unistd.h> // sleep
+#include <aducpal/time.h> // nanosleep
 
 #ifndef INT_MAX
 #    define INT_MAX 2147483647
@@ -93,7 +93,7 @@ static ADUC_D2C_RetryStrategy g_defaultRetryStrategy_no_calc_func = {
 
 typedef struct _tagMockCloudBehavior
 {
-    time_t delayBeforeResponseMS; // in ms.
+    unsigned long delayBeforeResponseMS; // in ms.
     int httpStatus;
 } MockCloudBehavior;
 
@@ -173,6 +173,14 @@ static PThreadCond g_d2cMessageProcessedCond;
 static PThreadMutex g_cloudServiceMutex;
 static PThreadMutex g_testCaseSyncMutex;
 
+static void set_timespec_ms(timespec* ts, unsigned long ms)
+{
+    memset(ts, 0, sizeof(*ts));
+    ts->tv_sec = ms / 1000;
+    // 1 ms = 1000000 ns
+    ts->tv_nsec = (ms % 1000) * 1000000;
+}
+
 void* mock_msg_process_thread_routine(void* context)
 {
     g_cloudBehaviorMutex.lock();
@@ -186,35 +194,15 @@ void* mock_msg_process_thread_routine(void* context)
     // Wait before response.
     if (g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS > 999)
     {
-        ADUCPAL_sleep(
-            (static_cast<unsigned int>(g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS + 500) / 1000));
+        timespec t;
+        set_timespec_ms(&t, g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS + 500);
+        (void)ADUCPAL_nanosleep(&t, nullptr);
     }
     else
     {
         timespec t;
-        t.tv_sec = 0;
-        t.tv_nsec = MILLISECONDS_TO_NANOSECONDS(
-            static_cast<long>(g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS));
-        timespec remain{};
-        int res = ADUCPAL_nanosleep(&t, &remain);
-        if (res == -1)
-        {
-            switch (errno)
-            {
-            case EINTR:
-                // Interrupted by a signal.
-                break;
-            case EINVAL:
-            case EFAULT: {
-                ADUCPAL_sleep(1); // Let's sleep for 1 second.
-                break;
-            }
-            default: {
-                ADUCPAL_sleep(1); // Let's sleep for 1 second
-                break;
-            }
-            }
-        }
+        set_timespec_ms(&t, g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS);
+        (void)ADUCPAL_nanosleep(&t, nullptr);
     }
     g_cloudBehaviorIndex++;
     g_cloudBehaviorMutex.unlock();
@@ -292,11 +280,7 @@ bool g_cancelDoWorkThread = false;
 void* mock_do_work_thread(void* context)
 {
     struct timespec t;
-    t.tv_sec = 0;
-    t.tv_nsec = MILLISECONDS_TO_NANOSECONDS(200);
-    struct timespec rem
-    {
-    };
+    set_timespec_ms(&t, 200);
     while (!g_cancelDoWorkThread)
     {
         g_doWorkMutex.lock();
@@ -689,8 +673,10 @@ TEST_CASE("Message replacement test", "[.][functional]")
         NULL /* statusChangedCallback */,
         &message1FinalStatus);
 
-    // Wait for message 1 to be picked up.
-    ADUCPAL_sleep(2);
+    // Wait 2s for message 1 to be picked up.
+    timespec t;
+    set_timespec_ms(&t, 2 * 1000);
+    (void)ADUCPAL_nanosleep(&t, nullptr);
 
     message = "Message 2";
     ADUC_D2C_Message_SendAsync(

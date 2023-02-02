@@ -6,7 +6,6 @@
  * Licensed under the MIT License.
  */
 #include "aduc/device_info_exports.h"
-#include "os_release_info.hpp"
 
 #include <fstream>
 #include <functional>
@@ -30,6 +29,30 @@
 
 #define ETC_OS_RELEASE_FILEPATH "/etc/os-release"
 #define ETC_LSB_RELEASE_FILEPATH "/etc/lsb-release"
+
+/**
+ * @brief A class for holding OS release information.
+ */
+class OsReleaseInfo
+{
+    std::string os_name;
+    std::string os_version;
+
+public:
+    OsReleaseInfo(const std::string& name, const std::string& ver) : os_name{ name }, os_version{ ver }
+    {
+    }
+
+    const char* ExportOsName()
+    {
+        return os_name.c_str();
+    }
+
+    const char* ExportOsVersion()
+    {
+        return os_version.c_str();
+    }
+};
 
 /**
  * @brief Get manufacturer

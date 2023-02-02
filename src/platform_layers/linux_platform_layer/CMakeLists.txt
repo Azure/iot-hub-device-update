@@ -11,11 +11,8 @@ add_library (${target_name} STATIC)
 add_library (aduc::${target_name} ALIAS ${target_name})
 
 target_sources (
-    ${target_name}
-    PRIVATE src/linux_adu_core_exports.cpp
-            src/linux_device_info_exports.cpp
-            src/linux_adu_core_impl.cpp
-            src/os_release_info.hpp)
+    ${target_name} PRIVATE src/linux_adu_core_exports.cpp src/linux_device_info_exports.cpp
+                           src/linux_adu_core_impl.cpp)
 
 target_include_directories (${target_name} PUBLIC ${ADUC_EXPORT_INCLUDES})
 
