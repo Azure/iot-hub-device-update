@@ -13,7 +13,7 @@
 #include <aducpal/grp.h> // getgrnam
 #include <aducpal/pwd.h> // getpwnam
 #include <aducpal/sys_stat.h> // mkdir, chmod
-#include <aducpal/sys_time.h> // clock_gettime
+#include <aducpal/time.h> // clock_gettime, CLOCK_REALTIME
 #include <aducpal/unistd.h> // chown
 
 #include <aduc/string_c_utils.h>
@@ -86,7 +86,7 @@ char* ADUC_SystemUtils_MkTemp(char* tmpl)
     if (len < 6)
     {
         tmpl[0] = '\0';
-        _set_errno(EINVAL);
+        errno = EINVAL;
         return tmpl;
     }
 
