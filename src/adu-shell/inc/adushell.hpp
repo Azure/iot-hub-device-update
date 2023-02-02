@@ -61,9 +61,11 @@ public:
         return _output;
     }
 
+#pragma region Private
 private:
     int _exitStatus{ EXIT_SUCCESS }; /**< An exit code from child process. Default is EXIT_SUCCESS */
     std::string _output; /**< A string from child process' standard output stream */
+#pragma endregion Private
 };
 
 using ADUShellTaskFuncType = std::function<ADUShellTaskResult(const ADUShell_LaunchArguments&)>;

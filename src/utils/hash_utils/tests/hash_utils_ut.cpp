@@ -7,15 +7,14 @@
  */
 #include <aduc/hash_utils.h>
 
+#include "aduc/system_utils.h"
+
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
 
 #include <array>
 #include <fstream>
 #include <unordered_map>
-
-#include <aducpal/stdlib.h> // mkstemp
-#include <aducpal/unistd.h> // close
 
 // To generate file hashes:
 // openssl dgst -binary -sha256 < test.bin  | openssl base64
@@ -31,9 +30,8 @@ public:
     TestFile()
     {
         // Generate a unique filename.
-        int result = ADUCPAL_mkstemp(_filePath);
-        REQUIRE(result != -1);
-        ADUCPAL_close(result);
+
+        ADUC_SystemUtils_MkTemp(_filePath);
     }
 
     virtual ~TestFile()

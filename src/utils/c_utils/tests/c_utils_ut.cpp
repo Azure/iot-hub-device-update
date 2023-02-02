@@ -10,15 +10,13 @@ using Catch::Matchers::Equals;
 
 #include "aduc/c_utils.h"
 #include "aduc/string_c_utils.h"
+#include "aduc/system_utils.h"
 
 #include "aduc/calloc_wrapper.hpp"
 using ADUC::StringUtils::cstr_wrapper;
 
 #include <cstring>
 #include <fstream>
-
-#include <aducpal/stdlib.h> // mkstemp
-#include <aducpal/unistd.h> // close
 
 class TemporaryTestFile
 {
@@ -31,9 +29,7 @@ public:
     explicit TemporaryTestFile(const std::vector<std::string>& content)
     {
         // Generate a unique filename.
-        int result = ADUCPAL_mkstemp(_filePath);
-        REQUIRE(result != -1);
-        ADUCPAL_close(result);
+        ADUC_SystemUtils_MkTemp(_filePath);
 
         (void)std::remove(Filename());
         std::ofstream file{ Filename() };
