@@ -12,6 +12,7 @@
 #include <aducpal/ftw.h> // nftw
 #include <aducpal/grp.h> // getgrnam
 #include <aducpal/pwd.h> // getpwnam
+#include <aducpal/stdio.h> // remove
 #include <aducpal/sys_stat.h> // mkdir, chmod
 #include <aducpal/time.h> // clock_gettime, CLOCK_REALTIME
 #include <aducpal/unistd.h> // chown
@@ -340,7 +341,7 @@ static int RmDirRecursive_helper(const char* fpath, const struct stat* sb, int t
     else
     {
         // Assume a file.
-        result = ADUCPAL_unlink(fpath);
+        result = ADUCPAL_remove(fpath);
     }
 
     return result;
@@ -531,19 +532,6 @@ done:
 
     STRING_delete(destFilePath);
     return result;
-}
-
-/**
- * @brief Removes the file when caller knows the path refers to a file
- * @remark On POSIX systems, it will remove a link to the name so it might not delete right away if there are other links
- * or another process has it open.
- *
- * @param path The path to the file.
- * @return int On success, 0 is returned. On error -1 is returned, and errno is set appropriately.
- */
-int ADUC_SystemUtils_RemoveFile(const char* path)
-{
-    return ADUCPAL_unlink(path);
 }
 
 /**

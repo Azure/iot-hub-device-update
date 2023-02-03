@@ -15,8 +15,8 @@
 
 #include <fstream> // ofstream
 
+#include <aducpal/stdio.h> // remove
 #include <aducpal/sys_stat.h> // S_I*
-#include <aducpal/unistd.h> // unlink
 
 TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
 {
@@ -56,5 +56,5 @@ TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
         tmpfile_path, S_ISUID | S_ISVTX | S_IRWXU | S_IRGRP | S_IXGRP | S_IWOTH /* 05752 */));
 
     // cleanup
-    ADUCPAL_unlink(tmpfile_path);
+    ADUCPAL_remove(tmpfile_path);
 }

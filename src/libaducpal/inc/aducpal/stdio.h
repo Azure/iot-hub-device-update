@@ -12,6 +12,7 @@ extern "C"
 
     FILE* ADUCPAL_popen(const char* command, const char* type);
     int ADUCPAL_pclose(FILE* stream);
+    int ADUCPAL_remove(const char* pathname);
     int ADUCPAL_rename(const char* old_f, const char* new_f);
 
 #    ifdef __cplusplus
@@ -24,6 +25,7 @@ extern "C"
 
 #    define ADUCPAL_popen popen
 #    define ADUCPAL_pclose pclose
+#    define ADUCPAL_remove remove
 #    define ADUCPAL_rename rename
 
 #endif // #ifdef ADUCPAL_USE_PAL

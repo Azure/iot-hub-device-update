@@ -120,6 +120,7 @@ int ADUCPAL_remove(const char* pathname)
     int ret = 0;
 
     // Unlike Windows implementation, remove() calls unlink(2) for files, and rmdir(2) for directories.
+    // However, remove() generally is used to remove files and rmdir() is used to remove directories.
 
     if (_rmdir(pathname) == 0)
     {

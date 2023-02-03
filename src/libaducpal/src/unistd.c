@@ -116,15 +116,3 @@ void ADUCPAL_sync()
     // To flush all open files on a volume, call FlushFileBuffers with a handle to the volume.
     // The caller must have administrative privileges.
 }
-
-int ADUCPAL_unlink(const char* path)
-{
-    // If one or more processes have the file open when the last link is removed,
-    // the link shall be removed before unlink() returns, but the removal of the file contents
-    // shall be postponed until all references to the file are closed.
-
-    // TODO(JeffMill): [PAL] _unlink on Windows doesn't have this behavior.
-    // Perhaps h = CreateFile(file, ... FILE_FLAG_DELETE_ON_CLOSE); CloseHandle(h); ?
-
-    return _unlink(path);
-}
