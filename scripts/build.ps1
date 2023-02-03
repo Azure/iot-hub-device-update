@@ -22,8 +22,6 @@ Param(
     [switch]$BuildPackages,
     # Output directory. Default is {git_root}/out
     [string]$OutputDirectory = "$(git.exe rev-parse --show-toplevel)/out",
-    # Static analysis tools to run, e.g. 'clang-tidy', 'cppcheck', 'cpplint'
-    [string[]]$StaticAnalysisTools = @(),
     # Logging library to use
     [string]$LogLib = 'zlog',
     # Log folder to use for DU logs
@@ -520,12 +518,6 @@ Show-Bullet "Build unit tests: $BuildUnitTests"
 Show-Bullet "Build packages: $BuildPackages"
 Show-Bullet "CMake: $cmake_bin"
 Show-Bullet ("CMake version: {0}" -f (& $cmake_bin --version | Select-String  '^cmake version (.*)$').Matches.Groups[1].Value)
-if ($StaticAnalysisTools.Length -eq 0) {
-    Show-Bullet "Static analysis: (none)"
-}
-else {
-    Show-Bullet "Static analysis: $StaticAnalysisTools"
-}
 ''
 
 # Store options for CMAKE in an array
@@ -541,54 +533,6 @@ $CMAKE_OPTIONS = @(
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir",
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
 )
-
-$StaticAnalysisTools | ForEach-Object {
-    switch ($_) {
-        # iwyu, lwyu aren't included as they're clang-specific, I believe.
-        'clang-tidy' {
-            # Part of VS Build Tools
-            # e.g. "${env:ProgramFiles(x86)}/Microsoft Visual Studio/2022/BuildTools/VC/Tools/Llvm/x64/bin"
-            $clangtidyExe = 'clang-tidy.exe'
-            if (-not (Get-Command $clangtidyExe -CommandType Application -ErrorAction SilentlyContinue)) {
-                Show-Error "$clangtidyExe is not installed or not in PATH."
-                exit 1
-            }
-
-            $CMAKE_OPTIONS += "-DCMAKE_C_CLANG_TIDY:STRING=$clangtidyExe"
-            $CMAKE_OPTIONS += "-DCMAKE_CXX_CLANG_TIDY:STRING=$clangtidyExe"
-        }
-
-        'cppcheck' {
-            # winget.exe install Cppcheck
-            # e.g. "$env:ProgramFiles\Cppcheck"
-            $cppcheckExe = 'cppcheck.exe'
-            if (-not (Get-Command $cppcheckExe -CommandType Application -ErrorAction SilentlyContinue)) {
-                Show-Error "$cppcheckExe is not installed or not in PATH."
-                exit 1
-            }
-
-            $CMAKE_OPTIONS += "-DCMAKE_CXX_CPPCHECK:STRING=$cppcheckExe;--template='{file}:{line}: warning: ({severity}) {message}';--platform=win64;--inline-suppr;--std=c++11;--enable=all;--suppress=unusedFunction;--suppress=missingIncludeSystem;--suppress=unmatchedSuppression"
-            $CMAKE_OPTIONS += "-DCMAKE_C_CPPCHECK:STRING=$cppcheckExe;--template='{file}:{line}: warning: ({severity}) {message}';--platform=win64;--inline-suppr;--std=c99;--enable=all;--suppress=unusedFunction;--suppress=missingIncludeSystem;--suppress=unmatchedSuppression"
-        }
-
-        'cpplint' {
-            # pip.exe install cpplint
-            # e.g. "$env:LocalAppData\Programs\Python\Python311\Scripts"
-            $cpplintExe = 'cpplint.exe'
-            if (-not (Get-Command $cpplintExe -CommandType Application -ErrorAction SilentlyContinue)) {
-                Show-Error "$cpplintExe is not installed or not in PATH."
-                exit 1
-            }
-
-            $CMAKE_OPTIONS += '-DCMAKE_CXX_CPPLINT=$cpplintExe;--filter=-whitespace,-legal/copyright,-build/include,-build/c++11'
-        }
-
-        default {
-            Show-Error "Invalid static analysis tool '$_'."
-            exit 1
-        }
-    }
-}
 
 if (-not $Clean) {
     # -ErrorAction SilentlyContinue doesn't work on Select-String
