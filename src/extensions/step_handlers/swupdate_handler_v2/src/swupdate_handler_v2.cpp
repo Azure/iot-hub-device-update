@@ -262,10 +262,34 @@ ADUC_Result SWUpdateHandler_PerformAction(
         workflow_peek_result_details(workflowData->WorkflowHandle));
 
 done:
-    if (IsAducResultCodeFailure(result.ResultCode) && workflowData->WorkflowHandle != nullptr)
+    if (IsAducResultCodeFailure(result.ResultCode))
     {
         workflow_set_result(workflowData->WorkflowHandle, result);
         workflow_set_state(workflowData->WorkflowHandle, ADUCITF_State_Failed);
+    }
+
+    // Note: the handler must request a system reboot or agent restart if required.
+    switch (result.ResultCode)
+    {
+    case ADUC_Result_Install_RequiredImmediateReboot:
+    case ADUC_Result_Apply_RequiredImmediateReboot:
+        workflow_request_immediate_reboot(workflowData->WorkflowHandle);
+        break;
+
+    case ADUC_Result_Install_RequiredReboot:
+    case ADUC_Result_Apply_RequiredReboot:
+        workflow_request_reboot(workflowData->WorkflowHandle);
+        break;
+
+    case ADUC_Result_Install_RequiredImmediateAgentRestart:
+    case ADUC_Result_Apply_RequiredImmediateAgentRestart:
+        workflow_request_immediate_agent_restart(workflowData->WorkflowHandle);
+        break;
+
+    case ADUC_Result_Install_RequiredAgentRestart:
+    case ADUC_Result_Apply_RequiredAgentRestart:
+        workflow_request_agent_restart(workflowData->WorkflowHandle);
+        break;
     }
 
     json_value_free(actionResultValue);
@@ -396,18 +420,6 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
 
 done:
     workflow_free_string(workFolder);
-
-    if (IsAducResultCodeSuccess(result.ResultCode) && result.ResultCode == ADUC_Result_Apply_RequiredImmediateAgentRestart)
-    {
-        workflow_request_agent_restart(workflowData->WorkflowHandle);
-        result = { ADUC_Result_Apply_RequiredImmediateAgentRestart };
-    }
-    else if (IsAducResultCodeSuccess(result.ResultCode) && result.ResultCode == ADUC_Result_Apply_RequiredImmediateReboot)
-    {
-        workflow_request_immediate_reboot(workflowData->WorkflowHandle);
-        result = { ADUC_Result_Apply_RequiredImmediateReboot };
-    }
-
     return result;
 }
 
