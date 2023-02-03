@@ -570,7 +570,7 @@ InstallUpdate() {
     elif [[ $resultCode == 0 ]]; then
         # Failed to determine whether the update has been installed or not.
         # Return current ADUC_Result
-        echo "Failed to determine wehther the update has been installed or note."
+        echo "Failed to determine wehther the update has been installed or not."
     elif [[ $resultCode -eq 901 ]]; then
         # Not installed.
 
@@ -667,7 +667,7 @@ ApplyUpdate() {
             log_info "Returning ADUC_Result_Apply_RequiredImmediateReboot(705)"
             resultCode=705
         elif [[ ${restart_agent_to_apply} == "yes" ]]; then
-            log_info "Retrurning ADUC_Result_Apply_RequiredImmediateAgentRestart(707)"
+            log_info "Returning ADUC_Result_Apply_RequiredImmediateAgentRestart(707)"
             resultCode=707
         else
             log_info "Returning ADUC_Result_Apply_Success(700)"
