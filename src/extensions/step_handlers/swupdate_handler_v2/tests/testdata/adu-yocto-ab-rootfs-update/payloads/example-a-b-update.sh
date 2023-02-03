@@ -52,7 +52,7 @@ log_error_pref="\033[1;31m[E]\033[0m"
 # Files and Folders information
 #
 workfolder=
-output_file=/adu/logs/swpupdate.output
+output_file=/adu/logs/swupdate.output
 log_file=/adu/logs/swupdate.log
 swupdate_log_file=/adu/logs/swupdate_log_file
 result_file=/adu/logs/swupdate.result.json
@@ -551,7 +551,7 @@ InstallUpdate() {
     resultCode=0
     extendedResultCode=0
     resultDetails=""
-    ret_val=0
+    ret_val=1
 
     #
     # Note: we could simulate 'component off-line' scenario here.
@@ -589,14 +589,16 @@ InstallUpdate() {
             # Generated RSA public key from private key using command:
             # openssl rsa -in ${WORKDIR}/priv.pem -out ${WORKDIR}/public.pem -outform PEM -pubout
 
+            ret_val=1
             if [[ ${public_key_file} -eq "" ]]; then
                 # Call swupdate with the image file and no signature validations
                 swupdate -v -i "${image_file}" -e ${selection} &>> "${swupdate_log_file}"
+                ret_val=$?
             else
                 # Call swupdate with the image file and the public key for signature validation
                 swupdate -v -i "${image_file}" -k "${public_key_file}" -e ${selection} &>> "${swupdate_log_file}"
+                ret_val=$?
             fi
-            ret_val=$?
 
             if [[ $ret_val -eq 0 ]]; then
                 resultCode=600
@@ -647,7 +649,7 @@ ApplyUpdate() {
     extendedResultCode=0
     resultDetails=""
 
-    echo "Cancelling update." >> "${log_file}"
+    echo "Applying." >> "${log_file}"
 
     # Set the bootloader environment variable
     # to tell the bootloader to boot into the new partition.
@@ -657,14 +659,18 @@ ApplyUpdate() {
     ret_val=$?
 
     if [[ $ret_val -eq 0 ]]; then
-        if [ "$restart_to_apply" == "yes" ]; then
-            # ADUC_Result_Apply_RequiredImmediateReboot = 705
+
+        log_info "restart_to_apply=$restart_to_apply"
+        log_info "restart_agent_to_apply=$restart_agent_to_apply"
+
+        if [[ ${restart_to_apply} == "yes" ]]; then
+            log_info "Returning ADUC_Result_Apply_RequiredImmediateReboot(705)"
             resultCode=705
-        elif [ "$restart_agent_to_apply" == "yes" ]; then
-            # ADUC_Result_Apply_RequiredImmediateAgentRestart = 707
+        elif [[ ${restart_agent_to_apply} == "yes" ]]; then
+            log_info "Retrurning ADUC_Result_Apply_RequiredImmediateAgentRestart(707)"
             resultCode=707
         else
-            # ADUC_Result_Apply_Success = 700
+            log_info "Returning ADUC_Result_Apply_Success(700)"
             resultCode=700
         fi
         extendedResultCode=0
