@@ -273,7 +273,7 @@ ADUC_Result SWUpdateHandler_PerformAction(
         workflow_peek_result_details(workflowData->WorkflowHandle));
 
 done:
-    if (IsAducResultCodeFailure(result.ResultCode) && workflowData->WorkflowHandle != nullptr)
+    if (IsAducResultCodeFailure(result.ResultCode))
     {
         workflow_set_result(workflowData->WorkflowHandle, result);
         workflow_set_state(workflowData->WorkflowHandle, ADUCITF_State_Failed);
@@ -378,6 +378,27 @@ done:
 ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = PerformAction("--action-install", workflowData);
+
+    // Note: the handler must request a system reboot or agent restart if required.
+    switch (result.ResultCode)
+    {
+    case ADUC_Result_Install_RequiredImmediateReboot:
+        workflow_request_immediate_reboot(workflowData->WorkflowHandle);
+        break;
+
+    case ADUC_Result_Install_RequiredReboot:
+        workflow_request_reboot(workflowData->WorkflowHandle);
+        break;
+
+    case ADUC_Result_Install_RequiredImmediateAgentRestart:
+        workflow_request_immediate_agent_restart(workflowData->WorkflowHandle);
+        break;
+
+    case ADUC_Result_Install_RequiredAgentRestart:
+        workflow_request_agent_restart(workflowData->WorkflowHandle);
+        break;
+    }
+
     return result;
 }
 
@@ -402,24 +423,29 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
         result = Cancel(workflowData);
     }
 
-    result.ResultCode = ADUC_Result_Success;
-    result.ExtendedResultCode = 0;
-
-    workflow_free_string(workFolder);
-
-    if (IsAducResultCodeSuccess(result.ResultCode)
-        && result.ResultCode == ADUC_Result_Apply_RequiredImmediateAgentRestart)
+    // Note: the handler must request a system reboot or agent restart if required.
+    switch (result.ResultCode)
     {
-        workflow_request_agent_restart(workflowData->WorkflowHandle);
-        result = { ADUC_Result_Apply_RequiredImmediateAgentRestart };
-    }
-    else if (
-        IsAducResultCodeSuccess(result.ResultCode) && result.ResultCode == ADUC_Result_Apply_RequiredImmediateReboot)
-    {
+    case ADUC_Result_Apply_RequiredImmediateReboot:
         workflow_request_immediate_reboot(workflowData->WorkflowHandle);
-        result = { ADUC_Result_Apply_RequiredImmediateReboot };
-    }
+        break;
 
+    case ADUC_Result_Apply_RequiredReboot:
+        workflow_request_reboot(workflowData->WorkflowHandle);
+        break;
+
+    case ADUC_Result_Apply_RequiredImmediateAgentRestart:
+        workflow_request_immediate_agent_restart(workflowData->WorkflowHandle);
+        break;
+
+    case ADUC_Result_Apply_RequiredAgentRestart:
+        workflow_request_agent_restart(workflowData->WorkflowHandle);
+        break;
+    }
+        IsAducResultCodeSuccess(result.ResultCode) && result.ResultCode == ADUC_Result_Apply_RequiredImmediateReboot)
+
+done:
+    workflow_free_string(workFolder);
     return result;
 }
 
