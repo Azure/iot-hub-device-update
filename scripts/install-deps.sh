@@ -72,7 +72,7 @@ install_githooks=false
 
 du_test_data_dir_path="/tmp/adu/"
 # DO Deps
-default_do_ref=main
+default_do_ref=develop
 install_do=false
 do_ref=$default_do_ref
 
