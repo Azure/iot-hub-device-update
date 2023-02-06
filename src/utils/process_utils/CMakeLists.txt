@@ -16,12 +16,7 @@ find_package (azure_c_shared_utility REQUIRED)
 
 target_link_libraries (${PROJECT_NAME} PUBLIC aziotsharedutil PRIVATE aduc::logging aduc::c_utils aduc::config_utils aduc::string_utils)
 
-if ((NOT
-     ${ADUC_PLATFORM_LAYER}
-     STREQUAL
-     "simulator"
-    )
-    AND ADUC_BUILD_UNIT_TESTS)
+if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
     add_subdirectory (test_helper)
 endif ()

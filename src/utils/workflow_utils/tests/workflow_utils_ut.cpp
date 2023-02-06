@@ -82,20 +82,18 @@ TEST_CASE("Initialization test")
     auto filecount = workflow_get_update_files_count(handle);
     REQUIRE(filecount == 2);
 
-    ADUC_FileEntity* file0 = nullptr;
+    ADUC_FileEntity file0;
+    memset(&file0, 0, sizeof(file0));
     bool success = workflow_get_update_file(handle, 0, &file0);
     REQUIRE(success);
-    REQUIRE(file0 != nullptr);
-    CHECK_THAT(file0->FileId, Equals("f483750ebb885d32c"));
-    CHECK(file0->HashCount == 1);
+    CHECK_THAT(file0.FileId, Equals("f483750ebb885d32c"));
+    CHECK(file0.HashCount == 1);
     CHECK_THAT(
-        file0->DownloadUri,
+        file0.DownloadUri,
         Equals(
             "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/e5cc19d5e9174c93ada35cc315f1fb1d/apt-manifest-tree-1.0.json"));
 
-    ADUC_FileEntity_Uninit(file0);
-    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc)
-    free(file0);
+    ADUC_FileEntity_Uninit(&file0);
 
     char* updateId = workflow_get_expected_update_id_string(handle);
     CHECK_THAT(updateId, Equals("{\"provider\":\"Contoso\",\"name\":\"Virtual-Vacuum\",\"version\":\"20.0\"}"));
@@ -132,8 +130,7 @@ TEST_CASE("Get Compatibility")
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
-    const char* expectedValue =
-        R"([{"deviceManufacturer":"contoso","deviceModel":"virtual-vacuum-v1"}])";
+    const char* expectedValue = R"([{"deviceManufacturer":"contoso","deviceModel":"virtual-vacuum-v1"}])";
 
     char* compats = workflow_get_compatibility(handle);
     CHECK_THAT(compats, Equals(expectedValue));
@@ -183,20 +180,18 @@ TEST_CASE("Child workflow uses fileUrls from parent")
     workflow_insert_child(bundle, 0, leaf0);
 
     // Check that leaf 0 file has the right download uri.
-    ADUC_FileEntity* file0 = nullptr;
+    ADUC_FileEntity file0;
+    memset(&file0, 0, sizeof(file0));
     bool success = workflow_get_update_file(leaf0, 0, &file0);
     REQUIRE(success);
-    REQUIRE(file0 != nullptr);
-    CHECK_THAT(file0->FileId, Equals("f13b5435aab7c18da"));
-    CHECK(file0->HashCount == 1);
+    CHECK_THAT(file0.FileId, Equals("f13b5435aab7c18da"));
+    CHECK(file0.HashCount == 1);
     CHECK_THAT(
-        file0->DownloadUri,
+        file0.DownloadUri,
         Equals(
             "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/c02058a476a242d7bc0e3c576c180051/contoso-motor-installscript.sh"));
 
-    ADUC_FileEntity_Uninit(file0);
-    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc)
-    free(file0);
+    ADUC_FileEntity_Uninit(&file0);
 
     workflow_free(bundle);
 }
@@ -213,22 +208,19 @@ TEST_CASE("Get update file by name")
     REQUIRE(filecount == 2);
 
     // Check that leaf 0 file has the right download uri.
-    ADUC_FileEntity* file0 = nullptr;
+    ADUC_FileEntity file0;
+    memset(&file0, 0, sizeof(file0));
     bool success =
         workflow_get_update_file_by_name(bundle, "contoso.contoso-virtual-motors.1.1.updatemanifest.json", &file0);
     CHECK(success);
-    CHECK(file0 != nullptr);
-    CHECK_THAT(file0->FileId, Equals("f222b9ffefaaac577"));
-    CHECK(file0->HashCount == 1);
+    CHECK_THAT(file0.FileId, Equals("f222b9ffefaaac577"));
+    CHECK(file0.HashCount == 1);
     CHECK_THAT(
-        file0->DownloadUri,
+        file0.DownloadUri,
         Equals(
             "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/31c38c3340a84e38ae8d30ce340f4a49/contoso.contoso-virtual-motors.1.1.updatemanifest.json"));
 
-    ADUC_FileEntity_Uninit(file0);
-    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc)
-    free(file0);
-
+    ADUC_FileEntity_Uninit(&file0);
     workflow_free(bundle);
 }
 
@@ -244,22 +236,19 @@ TEST_CASE("Get update file by name - mixed case")
     REQUIRE(filecount == 2);
 
     // Check that leaf 0 file has the right download uri.
-    ADUC_FileEntity* file0 = nullptr;
+    ADUC_FileEntity file0;
+    memset(&file0, 0, sizeof(file0));
     bool success =
         workflow_get_update_file_by_name(bundle, "contoso.Contoso-virtual-motors.1.1.updatemanifest.json", &file0);
     CHECK(success);
-    CHECK(file0 != nullptr);
-    CHECK_THAT(file0->FileId, Equals("f222b9ffefaaac577"));
-    CHECK(file0->HashCount == 1);
+    CHECK_THAT(file0.FileId, Equals("f222b9ffefaaac577"));
+    CHECK(file0.HashCount == 1);
     CHECK_THAT(
-        file0->DownloadUri,
+        file0.DownloadUri,
         Equals(
             "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/31c38c3340a84e38ae8d30ce340f4a49/contoso.contoso-virtual-motors.1.1.updatemanifest.json"));
 
-    ADUC_FileEntity_Uninit(file0);
-    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc)
-    free(file0);
-
+    ADUC_FileEntity_Uninit(&file0);
     workflow_free(bundle);
 }
 

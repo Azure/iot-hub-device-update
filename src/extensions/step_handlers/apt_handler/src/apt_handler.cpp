@@ -18,6 +18,7 @@
 #include "aduc/extension_manager.hpp"
 #include "aduc/installed_criteria_utils.hpp"
 #include "aduc/logging.h"
+#include "aduc/parser_utils.h" // ADUC_FileEntity_Uninit
 #include "aduc/process_utils.hpp"
 #include "aduc/string_c_utils.h"
 #include "aduc/types/update_content.h"
@@ -158,7 +159,9 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
     }
 
     char* workFolder = workflow_get_workfolder(handle);
-    ADUC_FileEntity* fileEntity = nullptr;
+
+    ADUC_FileEntity fileEntity;
+    memset(&fileEntity, 0, sizeof(fileEntity));
 
     if (!workflow_get_update_file(handle, 0, &fileEntity))
     {
@@ -176,14 +179,11 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    aptManifestFilename << workFolder << "/" << fileEntity->TargetFilename;
+    aptManifestFilename << workFolder << "/" << fileEntity.TargetFilename;
 
     // Download the APT manifest file.
     result = ExtensionManager::Download(
-        fileEntity, workflowData->WorkflowHandle, &Default_ExtensionManager_Download_Options, nullptr);
-
-    workflow_free_file_entity(fileEntity);
-    fileEntity = nullptr;
+        &fileEntity, workflowData->WorkflowHandle, &Default_ExtensionManager_Download_Options, nullptr);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -276,7 +276,7 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
 done:
     workflow_free_string(installedCriteria);
     workflow_free_string(workFolder);
-    workflow_free_file_entity(fileEntity);
+    ADUC_FileEntity_Uninit(&fileEntity);
 
     return result;
 }
@@ -291,7 +291,8 @@ ADUC_Result AptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
     std::string aptOutput;
     int aptExitCode = -1;
     ADUC_Result result = { .ResultCode = ADUC_Result_Download_Success, .ExtendedResultCode = 0 };
-    ADUC_FileEntity* fileEntity = nullptr;
+    ADUC_FileEntity fileEntity;
+    memset(&fileEntity, 0, sizeof(fileEntity));
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     char* workFolder = workflow_get_workfolder(handle);
     std::stringstream aptManifestFilename;
@@ -310,7 +311,7 @@ ADUC_Result AptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    aptManifestFilename << workFolder << "/" << fileEntity->TargetFilename;
+    aptManifestFilename << workFolder << "/" << fileEntity.TargetFilename;
 
     result = ParseContent(aptManifestFilename.str(), aptContent);
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -368,7 +369,7 @@ ADUC_Result AptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
 
 done:
     workflow_free_string(workFolder);
-    workflow_free_file_entity(fileEntity);
+    ADUC_FileEntity_Uninit(&fileEntity);
     return result;
 }
 
@@ -385,7 +386,8 @@ ADUC_Result AptHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
     char* workFolder = workflow_get_workfolder(handle);
     std::unique_ptr<AptContent> aptContent{ nullptr };
     std::stringstream aptManifestFilename;
-    ADUC_FileEntity* entity = nullptr;
+    ADUC_FileEntity fileEntity;
+    memset(&fileEntity, 0, sizeof(fileEntity));
 
     if (workflow_is_cancel_requested(handle))
     {
@@ -400,14 +402,14 @@ ADUC_Result AptHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    if (!workflow_get_update_file(handle, 0, &entity))
+    if (!workflow_get_update_file(handle, 0, &fileEntity))
     {
         result = { .ResultCode = ADUC_Result_Failure,
                    .ExtendedResultCode = ADUC_ERC_APT_HANDLER_GET_FILEENTITY_FAILURE };
         goto done;
     }
 
-    aptManifestFilename << workFolder << "/" << entity->TargetFilename;
+    aptManifestFilename << workFolder << "/" << fileEntity.TargetFilename;
 
     result = ParseContent(aptManifestFilename.str(), aptContent);
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -433,7 +435,7 @@ ADUC_Result AptHandlerImpl::Apply(const ADUC_WorkflowData* workflowData)
 done:
     workflow_free_string(workFolder);
     workflow_free_string(installedCriteria);
-    workflow_free_file_entity(entity);
+    ADUC_FileEntity_Uninit(&fileEntity);
     return result;
 }
 

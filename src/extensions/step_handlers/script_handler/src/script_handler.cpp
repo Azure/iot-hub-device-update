@@ -8,6 +8,7 @@
 #include "aduc/script_handler.hpp"
 #include "aduc/extension_manager.hpp"
 #include "aduc/logging.h"
+#include "aduc/parser_utils.h" // ADUC_FileEntity_Uninit
 #include "aduc/process_utils.hpp" // ADUC_LaunchChildProcess
 #include "aduc/string_c_utils.h" // IsNullOrEmpty
 #include "aduc/string_utils.hpp" // ADUC::StringUtils::Split
@@ -105,7 +106,8 @@ static ADUC_Result Script_Handler_DownloadPrimaryScriptFile(ADUC_WorkflowHandle 
     ADUC_Result result = { ADUC_Result_Failure };
     const char* workflowId = nullptr;
     char* workFolder = nullptr;
-    ADUC_FileEntity* entity = nullptr;
+    ADUC_FileEntity entity;
+    memset(&entity, 0, sizeof(entity));
     int fileCount = workflow_get_update_files_count(handle);
     int createResult = 0;
 
@@ -148,17 +150,15 @@ static ADUC_Result Script_Handler_DownloadPrimaryScriptFile(ADUC_WorkflowHandle 
             .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
         };
 
-        result = ExtensionManager::Download(entity, handle, &downloadOptions, nullptr);
+        result = ExtensionManager::Download(&entity, handle, &downloadOptions, nullptr);
     }
     catch (...)
     {
         result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_PRIMARY_FILE_FAILURE_UNKNOWNEXCEPTION;
     }
 
-    workflow_free_file_entity(entity);
-    entity = nullptr;
-
 done:
+    ADUC_FileEntity_Uninit(&entity);
     workflow_free_string(workFolder);
     return result;
 }
@@ -187,7 +187,8 @@ ADUC_Result ScriptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData
     char* installedCriteria = nullptr;
     const char* workflowId = workflow_peek_id(workflowHandle);
     char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
-    ADUC_FileEntity* entity = nullptr;
+    ADUC_FileEntity fileEntity;
+    memset(&fileEntity, 0, sizeof(fileEntity));
     int fileCount = workflow_get_update_files_count(workflowHandle);
     ADUC_Result result = Script_Handler_DownloadPrimaryScriptFile(workflowHandle);
 
@@ -212,7 +213,7 @@ ADUC_Result ScriptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData
     {
         Log_Info("Downloading file #%d", i);
 
-        if (!workflow_get_update_file(workflowHandle, i, &entity))
+        if (!workflow_get_update_file(workflowHandle, i, &fileEntity))
         {
             result = { .ResultCode = ADUC_Result_Failure,
                        .ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_FAILURE_GET_PAYLOAD_FILE_ENTITY };
@@ -225,16 +226,14 @@ ADUC_Result ScriptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData
                 .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
             };
 
-            result = ExtensionManager::Download(entity, workflowHandle, &downloadOptions, nullptr);
+            result = ExtensionManager::Download(&fileEntity, workflowHandle, &downloadOptions, nullptr);
+            ADUC_FileEntity_Uninit(&fileEntity);
         }
         catch (...)
         {
             result = { .ResultCode = ADUC_Result_Failure,
                        .ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_PAYLOAD_FILE_FAILURE_UNKNOWNEXCEPTION };
         }
-
-        workflow_free_file_entity(entity);
-        entity = nullptr;
 
         if (IsAducResultCodeFailure(result.ResultCode))
         {
@@ -248,7 +247,7 @@ ADUC_Result ScriptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData
 
 done:
     workflow_free_string(workFolder);
-    workflow_free_file_entity(entity);
+    ADUC_FileEntity_Uninit(&fileEntity);
     workflow_free_string(installedCriteria);
     Log_Info("Script_Handler download task end.");
     return result;
@@ -481,16 +480,14 @@ ADUC_Result ScriptHandlerImpl::PrepareScriptArguments(
     args.emplace_back("--result-file");
     args.emplace_back(resultFilePath);
 
-    args.emplace_back("--installed-criteria");
-
-    if (installedCriteria != nullptr)
+    if (IsNullOrEmpty(installedCriteria))
     {
-        args.emplace_back(installedCriteria);
+        Log_Info("Installed criteria is null.");
     }
     else
     {
-        Log_Info("Installed criteria is null.");
-        args.emplace_back("");
+        args.emplace_back("--installed-criteria");
+        args.emplace_back(installedCriteria);
     }
 
     result = { ADUC_Result_Success };

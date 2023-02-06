@@ -295,11 +295,7 @@ fi
 
 # Set default log dir if not specified.
 if [[ $adu_log_dir == "" ]]; then
-    if [[ $platform_layer == "simulator" ]]; then
-        adu_log_dir=/tmp/aduc-logs
-    else
-        adu_log_dir=$default_log_dir
-    fi
+    adu_log_dir=$default_log_dir
 fi
 
 runtime_dir=${output_directory}/bin

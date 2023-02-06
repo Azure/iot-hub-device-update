@@ -61,8 +61,6 @@ typedef struct tagADUC_ConfigInfo
 
     char* model; /**< Device info model. */
 
-    bool simulateUnhealthyState; /**< A configuration for simulator. */
-
     char* edgegatewayCertPath; /**< Edge gateway certificate path */
 
     ADUC_AgentInfo* agents; /**< Array of agents that are configured. */
