@@ -28,14 +28,10 @@
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
-#ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
-#    include "aduc/connection_string_utils.h"
-#    include <do_config.h>
-#endif
+#include <do_config.h>
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>
 #include <getopt.h>
-#include <iothub.h>
 #include <iothub_client_options.h>
 #include <pnp_protocol.h>
 
@@ -1285,8 +1281,6 @@ done:
     Log_Info("Agent exited with code %d", ret);
 
     ShutdownAgent();
-
-    IoTHub_Deinit();
 
     return ret;
 }

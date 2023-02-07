@@ -47,7 +47,7 @@ set_cache_with_env_or_default (
 
 set_cache_with_env_or_default (
     ADUC_VERSION_PATCH
-    "1"
+    "2"
     STRING
     "The patch part of the semantic version")
 
@@ -242,7 +242,7 @@ set (
 set (
     ADUC_PLATFORM_LAYER
     "linux"
-    CACHE STRING "The platform layer to use. Options: simulator linux")
+    CACHE STRING "The platform layer to use. Options: linux")
 
 # By default ADU Agent daemon runs as root.
 # root user home directory should be /root.

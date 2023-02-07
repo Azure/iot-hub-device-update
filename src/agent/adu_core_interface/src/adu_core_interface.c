@@ -120,7 +120,7 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
 /**
  * @brief Reports the client json via PnP so it ends up in the reported section of the twin.
  *
- * @param messageType The message type.`
+ * @param messageType The message type.
  * @param json_value The json value to be reported.
  * @param workflowData The workflow data.
  * @return bool true if call succeeded.

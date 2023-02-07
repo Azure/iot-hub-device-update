@@ -12,18 +12,17 @@
 #include "aduc/extension_manager.hpp"
 #include "aduc/extension_manager_download_options.h"
 #include "aduc/logging.h"
+#include "aduc/parser_utils.h" // ADUC_FileEntity_Uninit
 #include "aduc/string_c_utils.h" // IsNullOrEmpty
 #include "aduc/string_utils.hpp"
 #include "aduc/system_utils.h"
 #include "aduc/workflow_utils.h"
 
-#include "parson.h"
-
-#include <sstream>
-#include <string>
-
 #include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy
 #include <azure_c_shared_utility/strings.h> // STRING_*
+#include <parson.h>
+#include <sstream>
+#include <string>
 
 // Note: this requires ${CMAKE_DL_LIBS}
 #include <dlfcn.h>
@@ -100,8 +99,9 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
         for (unsigned int i = 0; i < stepCount; i++)
         {
             STRING_HANDLE childId = nullptr;
-            ADUC_FileEntity* entity = nullptr;
             childHandle = nullptr;
+            ADUC_FileEntity entity;
+            memset(&entity, 0, sizeof(entity));
 
             if (workflow_is_inline_step(handle, i))
             {
@@ -140,7 +140,7 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                     "Downloading a detached Update manifest file for level#%d step#%d (file id:%s).",
                     workflowLevel,
                     i,
-                    entity->FileId);
+                    entity.FileId);
 
                 try
                 {
@@ -148,7 +148,7 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                         .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
                     };
 
-                    result = ExtensionManager::Download(entity, handle, &downloadOptions, nullptr);
+                    result = ExtensionManager::Download(&entity, handle, &downloadOptions, nullptr);
                 }
                 catch (...)
                 {
@@ -156,15 +156,12 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                         "Exception occurred while downloading a detached Update Manifest file for level#%d step#%d (file id:%s).",
                         workflowLevel,
                         i,
-                        entity->FileId);
+                        entity.FileId);
                     result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_DOWNLOAD_FAILURE_UNKNOWNEXCEPTION;
                 }
 
                 std::stringstream childManifestFile;
-                childManifestFile << workFolder << "/" << entity->TargetFilename;
-
-                workflow_free_file_entity(entity);
-                entity = nullptr;
+                childManifestFile << workFolder << "/" << entity.TargetFilename;
 
                 // For 'microsoft/steps:1' implementation, abort download task as soon as an error occurs.
                 if (IsAducResultCodeFailure(result.ResultCode))
@@ -260,13 +257,14 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
     result = { ADUC_Result_Success };
 
 done:
+    workflow_free_string(workFolder);
+    ADUC_FileEntity_Uninit(entity);
+
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         workflow_free(childHandle);
     }
 
-    workflow_free_string(workFolder);
-    workflow_free_file_entity(entity);
     return result;
 }
 
@@ -605,6 +603,7 @@ static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowDat
             {
                 const char* errorFmt = "Cannot load a handler for step #%d (handler :%s)";
                 Log_Error(errorFmt, i, stepUpdateType);
+                workflow_set_result(stepHandle, result);
                 workflow_set_result_details(handle, errorFmt, i, stepUpdateType == nullptr ? "NULL" : stepUpdateType);
                 goto done;
             }
@@ -887,6 +886,7 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             {
                 const char* errorFmt = "Cannot load a handler for step #%d (handler :%s)";
                 Log_Error(errorFmt, i, stepUpdateType);
+                workflow_set_result(stepHandle, result);
                 workflow_set_result_details(handle, errorFmt, i, stepUpdateType == nullptr ? "NULL" : stepUpdateType);
                 goto done;
             }
