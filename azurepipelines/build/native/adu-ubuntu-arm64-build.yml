@@ -3,7 +3,7 @@ variables:
     version.minor: 0
     version.patch: 2
     version.pre-release: ""
-    version.build: $[format('{0:yyyyMMdd}-{0:HHmmss}', pipeline.startTime)]
+    version.build: ""
     # Environment variables for all client builds:
     ADUC_VERSION_MAJOR: $(version.major)
     ADUC_VERSION_MINOR: $(version.minor)
