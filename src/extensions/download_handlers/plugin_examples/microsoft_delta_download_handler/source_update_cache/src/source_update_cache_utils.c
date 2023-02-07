@@ -254,6 +254,11 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
 
 done:
     ADUC_FileEntity_Uninit(&fileEntity);
+    ADUC_UpdateId_UninitAndFree(updateId);
+    STRING_delete(sandboxUpdatePayloadFile);
+    STRING_delete(updateCacheFilePath);
+
+    return result;
 }
 
 EXTERN_C_END

@@ -433,18 +433,13 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
         break;
     }
 
-    result = {
-        .ResultCode = ADUC_Result_Success,
-        .ExtendedResultCode = 0
-    };
-
 done:
     workflow_free_string(workFolder);
-<<<<<<< HEAD
+    return result;
+}
 
-    // Always require a reboot after successful apply
-    if (IsAducResultCodeSuccess(result.ResultCode))
-    {
+/**
+ * @brief Cancel implementation for swupdate.
  * We don't have many hooks into swupdate to cancel an ongoing install.
  * For A/B update pattern, we can cancel apply by reverting the bootloader flag to boot into the original partition.
  * We defer the cancellation decision to the device builder by call into the swupdate wrapper script to cancel apply.
