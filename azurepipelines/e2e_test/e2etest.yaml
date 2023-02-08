@@ -201,7 +201,7 @@ stages:
       dependsOn:
           - TerraformVMInitialization
       jobs:
-          - job: RunUbuntu18.04_AMD64_VM_E2ETests
+          - job: RunUbuntu18.04Amd64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 18.04 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
@@ -212,7 +212,7 @@ stages:
                   parameters:
                       distroName: ubuntu-18.04-amd64
                       scenarioPath: scenarios/ubuntu-18.04-amd64/
-          - job: RunUbuntu18.04_ARM64_VM_E2ETests
+          - job: RunUbuntu18.04Arm64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 18.04 ARM64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
@@ -223,7 +223,7 @@ stages:
                   parameters:
                       distroName: ubuntu-18.04-arm64
                       scenarioPath: scenarios/ubuntu-18.04-arm64/
-          - job: RunUbuntu20.04_AMD64_VM_E2ETests
+          - job: RunUbuntu20.04Amd64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 20.04 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
@@ -234,7 +234,7 @@ stages:
                   parameters:
                       distroName: ubuntu-20.04-amd64
                       scenarioPath: scenarios/ubuntu-20.04-amd64/
-          - job: RunDebian10_AMD64_VM_E2ETests
+          - job: RunDebian10Amd64VmE2ETests
             displayName: "Running E2E Tests against Debian 10 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
@@ -257,7 +257,7 @@ stages:
       variables:
           TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
       jobs:
-          - job: RunUbuntu18.04_AMD64_VM_E2ETests
+          - job: RunUbuntu18.04Amd64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 18.04 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
@@ -268,7 +268,7 @@ stages:
                   parameters:
                       distroName: ubuntu-18.04-amd64
                       terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-          - job: RunUbuntu18.04_ARM64_VM_E2ETests
+          - job: RunUbuntu18.04Arm64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 18.04 ARM64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
@@ -279,7 +279,7 @@ stages:
                   parameters:
                       distroName: ubuntu-18.04-arm64
                       terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-          - job: RunUbuntu20.04_AMD64_VM_E2ETests
+          - job: RunUbuntu20.04Amd64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 20.04 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
@@ -290,7 +290,7 @@ stages:
                   parameters:
                       distroName: ubuntu-20.04-amd64
                       terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-          - job: RunDebian10_AMD64_VM_E2ETests
+          - job: RunDebian10Amd64VmE2ETests
             displayName: "Running E2E Tests against Debian 10 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
