@@ -28,7 +28,7 @@ steps:
       continueOnError: True
       inputs:
           scriptSource: "filePath"
-          scriptPath: "$(E2E_WORKING_DIR)/$(scenarioPath)/add_device_to_adu_group.py"
+          scriptPath: "$(E2E_WORKING_DIR)/${{parameters.scenarioPath}}/add_device_to_adu_group.py"
           workingDirectory: $(E2E_WORKING_DIR)
       env:
           IOTHUB_URL: $(IOTHUB_URL)
@@ -44,7 +44,7 @@ steps:
       continueOnError: True
       inputs:
           scriptSource: "filePath"
-          scriptPath: "$(E2E_WORKING_DIR)/$(scenarioPath)/apt_deployment.py"
+          scriptPath: "$(E2E_WORKING_DIR)/${{parameters.scenarioPath}}/apt_deployment.py"
           workingDirectory: $(E2E_WORKING_DIR)
       env:
           IOTHUB_URL: $(IOTHUB_URL)
@@ -60,7 +60,7 @@ steps:
       continueOnError: True
       inputs:
           scriptSource: "filePath"
-          scriptPath: "$(E2E_WORKING_DIR)/$(scenarioPath)/diagnostics.py"
+          scriptPath: "$(E2E_WORKING_DIR)/${{parameters.scenarioPath}}/diagnostics.py"
           workingDirectory: $(E2E_WORKING_DIR)
       env:
           IOTHUB_URL: $(IOTHUB_URL)
@@ -76,7 +76,7 @@ steps:
       continueOnError: True
       inputs:
           scriptSource: "filePath"
-          scriptPath: "$(E2E_WORKING_DIR)/$(scenarioPath)/Multi-Component-Update.py"
+          scriptPath: "$(E2E_WORKING_DIR)/${{parameters.scenarioPath}}/Multi-Component-Update.py"
           workingDirectory: $(E2E_WORKING_DIR)
       env:
           IOTHUB_URL: $(IOTHUB_URL)
@@ -92,7 +92,7 @@ steps:
       continueOnError: True
       inputs:
           scriptSource: "filePath"
-          scriptPath: "$(E2E_WORKING_DIR)/$(scenarioPath)/Bundle-update.py"
+          scriptPath: "$(E2E_WORKING_DIR)/${{parameters.scenarioPath}}/Bundle-update.py"
           workingDirectory: $(E2E_WORKING_DIR)
       env:
           IOTHUB_URL: $(IOTHUB_URL)
@@ -108,7 +108,7 @@ steps:
       continueOnError: True
       inputs:
           scriptSource: "filePath"
-          scriptPath: "$(E2E_WORKING_DIR)/$(scenarioPath)/delete_device.py"
+          scriptPath: "$(E2E_WORKING_DIR)/${{parameters.scenarioPath}}/delete_device.py"
           workingDirectory: $(E2E_WORKING_DIR)
       env:
           IOTHUB_URL: $(IOTHUB_URL)
