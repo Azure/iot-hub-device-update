@@ -53,6 +53,11 @@ static ADUC_COMMUNICATION_MANAGER_CLIENT_HANDLE_UPDATED_CALLBACK g_iothub_client
 static IOTHUB_CLIENT_DEVICE_TWIN_CALLBACK g_device_twin_callback = NULL;
 
 /**
+ * @brief A boolean indicates whether the IoT Hub client has been initialized.
+ */
+static bool g_iothub_client_initialized = false;
+
+/**
  * @brief An additional data context used the caller.
  */
 static ADUC_PnPComponentClient_PropertyUpdate_Context* g_property_update_context = NULL;
@@ -106,7 +111,7 @@ static time_t GetTimeSinceEpochInSeconds()
  * @param client_handle_updated_callback A pointer to a callback function to be invoked when a device client handler has changed.
  * @param property_update_context An ADUC_PnPComponentClient_PropertyUpdate_Context object.
  *
- *  @return 'true' if success, 'false' if already initialize.
+ *  @return 'true' if success.
  */
 bool IoTHub_CommunicationManager_Init(
     ADUC_ClientHandle* handle_address,
@@ -114,8 +119,18 @@ bool IoTHub_CommunicationManager_Init(
     ADUC_COMMUNICATION_MANAGER_CLIENT_HANDLE_UPDATED_CALLBACK client_handle_updated_callback,
     ADUC_PnPComponentClient_PropertyUpdate_Context* property_update_context)
 {
-    if (g_aduc_client_handle_address != NULL)
+    IOTHUB_CLIENT_RESULT iothubInitResult;
+
+    if (g_iothub_client_initialized)
     {
+        Log_Info("Already initialized.");
+        return true;
+    }
+
+    // Before invoking ANY IoTHub Device SDK functionality, IoTHub_Init must be invoked.
+    if ((iothubInitResult = IoTHub_Init()) != 0)
+    {
+        Log_Error("IoTHub_Init failed. Error=%d", iothubInitResult);
         return false;
     }
 
@@ -123,6 +138,7 @@ bool IoTHub_CommunicationManager_Init(
     g_device_twin_callback = device_twin_callback;
     g_property_update_context = property_update_context;
     g_iothub_client_handle_changed_callback = client_handle_updated_callback;
+    g_iothub_client_initialized = true;
 
     return true;
 }
@@ -148,6 +164,13 @@ void IoTHub_CommunicationManager_Deinit()
     if (g_aduc_client_handle_address != NULL && *g_aduc_client_handle_address != NULL)
     {
         ClientHandle_Destroy(*g_aduc_client_handle_address);
+        g_aduc_client_handle_address = NULL;
+    }
+
+    if (g_iothub_client_initialized)
+    {
+        IoTHub_Deinit();
+        g_iothub_client_initialized = false;
     }
 }
 
@@ -716,6 +739,10 @@ static void Connection_Maintenance()
         case IOTHUB_CLIENT_CONNECTION_OK:
             // No need to retry.
             return;
+
+        default:
+            Log_Debug("unhandled g_connection_status_reason case: %d", g_connection_status_reason);
+            break;
         }
 
         // Calculate the next retry time, then continue.

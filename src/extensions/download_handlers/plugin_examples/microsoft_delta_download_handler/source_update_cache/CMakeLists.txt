@@ -19,6 +19,7 @@ target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types aduc::c_utils
     PRIVATE aduc::file_utils
+            aduc::parser_utils
             aduc::path_utils
             aduc::permission_utils
             aduc::system_utils

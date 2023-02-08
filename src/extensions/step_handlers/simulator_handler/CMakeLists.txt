@@ -2,12 +2,8 @@ cmake_minimum_required (VERSION 3.5)
 
 set (target_name microsoft_simulator_1)
 
-set (SOURCE_ALL src/simulator_handler.cpp)
-
-#
-# Create a shared library.
-#
-add_library (${target_name} SHARED ${SOURCE_ALL})
+add_library (${target_name} MODULE)
+target_sources (${target_name} PRIVATE src/simulator_handler.cpp)
 
 add_library (aduc::${target_name} ALIAS ${target_name})
 
@@ -38,6 +34,7 @@ target_link_libraries (
     PRIVATE aduc::agent_workflow
             aduc::contract_utils
             aduc::logging
+            aduc::parser_utils
             aduc::workflow_utils
             Parson::parson)
 

@@ -1169,14 +1169,21 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
     for (size_t i = 0; i < payloadCount; ++i)
     {
         ADUC_Result result = {};
-        ADUC_FileEntity* fileEntity = NULL;
-        if (!workflow_get_update_file(workflowHandle, i, &fileEntity) || IsNullOrEmpty(fileEntity->DownloadHandlerId))
+        ADUC_FileEntity fileEntity;
+        memset(&fileEntity, 0, sizeof(fileEntity));
+        if (!workflow_get_update_file(workflowHandle, i, &fileEntity))
         {
             continue;
         }
 
+        if (IsNullOrEmpty(fileEntity.DownloadHandlerId))
+        {
+            ADUC_FileEntity_Uninit(&fileEntity);
+            continue;
+        }
+
         // NOTE: do not free the handle as it is owned by the DownloadHandlerFactory.
-        DownloadHandlerHandle* handle = ADUC_DownloadHandlerFactory_LoadDownloadHandler(fileEntity->DownloadHandlerId);
+        DownloadHandlerHandle* handle = ADUC_DownloadHandlerFactory_LoadDownloadHandler(fileEntity.DownloadHandlerId);
         if (handle == NULL)
         {
             Log_Error("Failed to load download handler.");
@@ -1194,6 +1201,8 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
                 workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
             }
         }
+
+        ADUC_FileEntity_Uninit(&fileEntity);
     }
 }
 

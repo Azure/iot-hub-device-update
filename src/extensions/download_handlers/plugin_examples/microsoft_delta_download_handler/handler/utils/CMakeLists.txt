@@ -20,6 +20,7 @@ target_link_libraries (
     PRIVATE aduc::c_utils
             aduc::extension_manager
             aduc::logging
+            aduc::parser_utils
             aduc::shared_lib
             aduc::source_update_cache
             aduc::workflow_utils)
