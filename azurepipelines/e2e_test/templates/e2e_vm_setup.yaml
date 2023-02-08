@@ -7,6 +7,8 @@ parameters:
       type: string
     - name: image_publisher
       type: string
+    - name: image_offer
+      type: string
     - name: image_sku
       type: string
     - name: image_version
