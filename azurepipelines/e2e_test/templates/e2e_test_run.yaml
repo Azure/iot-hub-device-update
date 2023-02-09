@@ -128,7 +128,7 @@ steps:
     - task: PublishPipelineArtifact@1
       inputs:
           targetPath: "$(Build.ArtifactStagingDirectory)/testresults/"
-          artifact: "TestResults_$(distroName)"
+          artifact: "TestResults_${{parameters.distroName}}"
           publishLocation: "pipeline"
 
     - task: PublishTestResults@2
@@ -136,4 +136,4 @@ steps:
           testRunner: JUnit
           testResultsFiles: "$(E2E_WORKING_DIR)/testresults/*.xml"
           failTaskOnFailedTests: false
-          testRunTitle: $(distroName)
+          testRunTitle: ${{parameters.distroName}}
