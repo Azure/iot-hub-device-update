@@ -79,7 +79,7 @@ function Show-CMakeErrors {
 }
 
 function Show-CompilerErrors {
-    Param([string[]]$BuildOutput)
+    Param([string]$RootDir, [string[]]$BuildOutput)
 
     # Parse compiler errors
     # e.g. C:\wiot-s1\src\logging\zlog\src\zlog.c(13,10): fatal  error C1083: Cannot open include file: 'aducpal/unistd.h': No such file or directory [C:\wiot-s1\out\src\logging\zlog\zlog.vcxproj]
@@ -93,7 +93,7 @@ function Show-CompilerErrors {
         Write-Host -ForegroundColor Red 'Compiler errors:'
 
         $result | ForEach-Object {
-            Show-Bullet  ("{0} ({1},{2}): {3} [{4}]" -f $_.File.SubString($root_dir.Length + 1), $_.Line, $_.Column, $_.Description, (Split-Path $_.Project -Leaf))
+            Show-Bullet  ("{0} ({1},{2}): {3} [{4}]" -f $_.File.SubString($RootDir.Length + 1), $_.Line, $_.Column, $_.Description, (Split-Path $_.Project -Leaf))
         }
 
         ''
@@ -101,7 +101,7 @@ function Show-CompilerErrors {
 }
 
 function Show-LinkerErrors {
-    Param([string[]]$BuildOutput)
+    Param([string]$RootDir, [string[]]$BuildOutput)
 
     # Parse linker errors
 
@@ -115,12 +115,34 @@ function Show-LinkerErrors {
         Write-Host -ForegroundColor Red 'Linker errors:'
 
         $result | ForEach-Object {
-            $project = $_.Project.SubString($root_dir.Length + 1)
+            $project = $_.Project.SubString($RootDir.Length + 1)
             Show-Bullet  ("{0}: {1}" -f $project, $_.Description)
         }
         ''
     }
 
+}
+
+function Show-DoxygenErrors {
+    Param([string]$RootDir, [string[]] $BuildOutput)
+
+    # Parse Doxygen errors
+
+    $regex = '\s*(?<File>.+?):(?<Line>\d+?): warning: (?<Message>.+)'
+    $result = $BuildOutput | ForEach-Object {
+        if ($_ -match $regex) {
+            $matches
+        }
+    }
+    if ($result.Count -ne 0) {
+        Write-Host -ForegroundColor Red 'Doxygen errors:'
+
+        $result | ForEach-Object {
+            $file = $_.File.SubString($RootDir.Length + 1)
+            Show-Bullet  ("{0} ({1}): {2}" -f $file, $_.Line, $_.Message)
+        }
+        ''
+    }
 }
 
 $root_dir = git.exe rev-parse --show-toplevel
@@ -271,7 +293,7 @@ function Install-DeliveryOptimization {
         [Parameter(Mandatory = $true)][string]$Type,
         [Parameter(Mandatory = $true)][string]$Path,
         [Parameter(Mandatory = $true)][string]$Branch,
-        [Parameter(Mandatory = $true)][string]$Commit)
+        [string]$Commit)
 
     Show-Header 'Building Delivery Optimization'
 
@@ -292,7 +314,9 @@ function Install-DeliveryOptimization {
         git.exe clone --recursive --single-branch --branch $Branch --depth 1 $do_url .
     }
 
-    git.exe checkout $Commit
+    if ($Commit) {
+        git.exe checkout $Commit
+    }
 
     $build_dir = 'cmake'
 
@@ -626,7 +650,7 @@ if ($Clean) {
 
 # Reusing ".vcpkg-installed" folder ... why not?
 $DoPath = "{0}/.vcpkg-installed/do-client" -f (git.exe rev-parse --show-toplevel)
-Install-DeliveryOptimization -Type $Type -Path $DoPath -Branch 'develop' -Commit 'ad16298e247480c6ed034c957cc3649c75ae6a8c'
+Install-DeliveryOptimization -Type $Type -Path $DoPath -Branch 'v1.0.1'
 
 Show-Header 'Building Product'
 
@@ -634,15 +658,19 @@ Show-Header 'Building Product'
 $ret_val = $LASTEXITCODE
 ''
 
+if ($BuildDocumentation) {
+    Show-DoxygenErrors -RootDir $root_dir -BuildOutput $build_output
+}
+
 if ($ret_val -ne 0) {
     Write-Host -ForegroundColor Red "ERROR: Build failed (Error $ret_val)"
     ''
 
     Show-CMakeErrors -BuildOutput $build_output
 
-    Show-CompilerErrors -BuildOutput $build_output
+    Show-CompilerErrors -RootDir $root_dir -BuildOutput $build_output
 
-    Show-LinkerErrors -BuildOutput $build_output
+    Show-LinkerErrors -RootDir $root_dir -BuildOutput $build_output
 
     exit $ret_val
 }
