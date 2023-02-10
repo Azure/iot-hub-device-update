@@ -678,7 +678,7 @@ do_install_shellcheck() {
         ln -sf "${HOME}/.cabal/bin/shellcheck" "/tmp/deviceupdate-shellcheck" || return 1
     else
         echo "Installing shellcheck ${scver} from pre-built binaries..."
-        local tar_filename="shellcheck-v${scver}.linux.x86_64.tar.xz"
+        local tar_filename="shellcheck-v${scver}.linux.$arch.tar.xz"
 
         if [[ -f $tar_filename ]]; then
             $SUDO rm $tar_filename || return 1
