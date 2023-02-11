@@ -89,7 +89,7 @@
  * Customers should change this ID to match their device model ID.
  */
 
-static const char g_aduModelId[] = "dtmi:azure:iot:deviceUpdateModel;2";
+static const char g_aduModelId[] = "dtmi:azure:iot:deviceUpdateModel;3";
 
 // Name of ADU Agent subcomponent that this device implements.
 static const char g_aduPnPComponentName[] = "deviceUpdate";
