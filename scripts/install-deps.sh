@@ -166,6 +166,8 @@ do_install_aduc_packages() {
     OS=$(lsb_release --short --id)
     if [[ $OS == "debian" && $VER == "9" ]]; then
         $SUDO apt-get install --yes gcc-6 g++-6 || return
+    elif [[ $OS == "Debian" && $VER == "11" ]]; then
+        $SUDO apt-get install --yes gcc-10 g++-10 || return
     else
         $SUDO apt-get install --yes gcc-8 g++-8 || return
     fi
