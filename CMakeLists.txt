@@ -224,7 +224,7 @@ set (
 # Starting from version 0.8.1, Device Update Agent must support only one version of the update manifest
 # based on the base dtmi model that the Agent announces when connecting to the IoT Hub.
 #
-# For this version, "dtmi:azure:iot:deviceUpdateModel;2" is using the manifest version verison 5.
+# For this version, "dtmi:azure:iot:deviceUpdateModel;3" is using the manifest version 5.
 #
 set (SUPPORTED_UPDATE_MANIFEST_VERSION_MIN 4)
 set (SUPPORTED_UPDATE_MANIFEST_VERSION_MAX 5)
