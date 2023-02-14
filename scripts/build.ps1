@@ -21,7 +21,7 @@ Param(
     # Should deployment package be built?
     [switch]$BuildPackages,
     # Output directory. Default is {git_root}/out
-    [string]$OutputDirectory = "$(git.exe rev-parse --show-toplevel)/out",
+    [string]$OutputDirectory,
     # Logging library to use
     [string]$LogLib = 'zlog',
     # Log folder to use for DU logs
@@ -144,8 +144,6 @@ function Show-DoxygenErrors {
         ''
     }
 }
-
-$root_dir = git.exe rev-parse --show-toplevel
 
 function Invoke-CopyFile {
     Param(
@@ -507,6 +505,16 @@ function Create-DataFiles {
 # | '  \/ _` | | ' \
 # |_|_|_\__,_|_|_||_|
 #
+
+$root_dir = git.exe rev-parse --show-toplevel
+if (!$root_dir) {
+    Show-Error 'Unable to determine repo root.'
+    exit 1
+}
+
+if (!$OutputDirectory) {
+    $OutputDirectory = "$root_dir/out"
+}
 
 if ($BuildDocumentation) {
     if (-not (Get-Command 'doxygen.exe' -CommandType Application -ErrorAction SilentlyContinue)) {
