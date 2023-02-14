@@ -7,28 +7,25 @@ Does all of the work to build the device update product, and provides additional
 such as static checks and building documentation.
 
 .EXAMPLE
-PS> ./Scripts/Build.ps1 -Type Debug -BuildUnitTests -Install -Clean
+PS> .\scripts\build.ps1 -Clean -Type Debug -BuildUnitTests
 #>
 Param(
     # Deletes targets before building.
     [switch]$Clean,
-    # Build type, e.g. Release, RelWithDebInfo, Debug.
+    # Build type
+    [ValidateSet('Release', 'RelWithDebInfo', 'Debug')]
     [string]$Type = 'Debug',
     # Should documentation be built?
     [switch]$BuildDocumentation,
     # Should unit tests be built?
     [switch]$BuildUnitTests,
-    # Should deployment package be built?
-    [switch]$BuildPackages,
     # Output directory. Default is {git_root}/out
-    [string]$OutputDirectory,
+    [string]$BuildOutputPath,
     # Logging library to use
     [string]$LogLib = 'zlog',
     # Log folder to use for DU logs
     # TODO(JeffMill): Change this when folder structure determined.
-    [string]$LogDir = '/var/log/adu',
-    # Install the product locally
-    [switch]$Install
+    [string]$LogDir = '/var/log/adu'
 )
 
 function Show-Warning {
@@ -145,147 +142,6 @@ function Show-DoxygenErrors {
     }
 }
 
-function Invoke-CopyFile {
-    Param(
-        [Parameter(mandatory = $true)][string]$Source,
-        [Parameter(mandatory = $true)][string]$Destination)
-
-    if (-not (Test-Path -LiteralPath $Source -PathType Leaf)) {
-        throw "$Source is not a file or doesn't exist"
-    }
-
-    if (-not (Test-Path -LiteralPath $Destination -PathType Container)) {
-        throw "$Destination is not a folder"
-    }
-
-    $copyNeeded = $true
-
-    $destinationFile = Join-Path $Destination (Split-Path $Source -Leaf)
-    if (Test-Path $destinationFile -PathType Leaf) {
-        $d_lwt = (Get-ChildItem $destinationFile).LastWriteTime
-        $s_lwt = (Get-ChildItem $Source).LastWriteTime
-
-        if ($d_lwt -ge $s_lwt) {
-            # Destination is up to date or newer
-            $copyNeeded = $false
-        }
-    }
-
-    if ($copyNeeded) {
-        "Copied: $Source => $Destination"
-        # Force, in case destination is marked read-only
-        Copy-Item -Force -LiteralPath $Source -Destination $Destination
-    }
-    else {
-        "Same (or newer): $destinationFile"
-    }
-}
-
-
-function Create-Adu-Folders {
-    # TODO(JeffMill): [PAL] Temporary until paths are determined.
-
-    mkdir -Force /etc/adu | Out-Null
-    mkdir -Force /tmp/adu/testdata | Out-Null
-    mkdir -Force /usr/bin | Out-Null
-    mkdir -Force /usr/lib/adu | Out-Null
-    mkdir -Force /usr/local/lib/adu | Out-Null
-    mkdir -Force /usr/local/lib/systemd/system | Out-Null
-    mkdir -Force /var/lib/adu | Out-Null
-    mkdir -Force /var/lib/adu/diagnosticsoperationids | Out-Null
-    mkdir -Force /var/lib/adu/downloads | Out-Null
-    mkdir -Force /var/lib/adu/extensions/content_downloader | Out-Null
-    mkdir -Force /var/lib/adu/extensions/sources | Out-Null
-    mkdir -Force /var/lib/adu/sdc | Out-Null
-}
-
-function Register-Components {
-    Param(
-        [Parameter(Mandatory = $true)][string]$BinPath,
-        [Parameter(Mandatory = $true)][string]$DataPath
-    )
-
-    Show-Header 'Registering components'
-
-    # Launch agent to write config files
-    # Based on postinst : register_reference_extensions
-
-    $aduciotagent_path = $BinPath + '/AducIotAgent.exe'
-
-    $adu_extensions_dir = "$DataPath/extensions"
-    $adu_extensions_sources_dir = "$adu_extensions_dir/sources"
-
-    #
-    # contentDownloader
-    #
-
-    # curl content downlaoader not used on Windows.
-    # /var/lib/adu/extensions/content_downloader/extension.json
-    # $curl_content_downloader_file = 'curl_content_downloader.dll'
-    # & $aduciotagent_path --register-extension "$adu_extensions_sources_dir/$curl_content_downloader_file" --extension-type contentDownloader --log-level 2
-
-    # /var/lib/adu/extensions/content_downloader/extension.json
-    $do_content_downloader_file = "$adu_extensions_sources_dir/deliveryoptimization_content_downloader.dll"
-    & $aduciotagent_path --register-extension $do_content_downloader_file --extension-type contentDownloader --log-level 2
-    if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
-    }
-
-    #
-    # updateContentHandler
-    #
-
-    # /var/lib/adu/extensions/update_content_handlers/microsoft_script_1/content_handler.json
-    $microsoft_script_1_handler_file = "$adu_extensions_sources_dir/microsoft_script_1.dll"
-    & $aduciotagent_path --register-extension $microsoft_script_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/script:1' --log-level 2
-    if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
-    }
-
-    # /var/lib/adu/extensions/update_content_handlers/microsoft_simulator_1/content_handler.json
-    $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_simulator_1.dll"
-    & $aduciotagent_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/simulator:1'
-    if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
-    }
-
-    # /var/lib/adu/extensions/update_content_handlers/microsoft_steps_1/content_handler.json
-    $microsoft_steps_1_file = "$adu_extensions_sources_dir/microsoft_steps_1.dll"
-    & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/steps:1' --log-level 2
-    if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
-    }
-    & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest' --log-level 2
-    if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
-    }
-    & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest:4' --log-level 2
-    if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
-    }
-    & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest:5' --log-level 2
-    if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
-    }
-
-    # microsoft/swupdate:1 not used on Windows.
-    # /var/lib/adu/extensions/update_content_handlers/microsoft_swupdate_1/content_handler.json
-    # $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_swupdate_1.dll"
-    # & $aduciotagent_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/swupdate:1'
-    # if ($LASTEXITCODE -ne 0) {
-    #     Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
-    # }
-
-    # /var/lib/adu/extensions/update_content_handlers/microsoft_wiot_1/content_handler.json
-    $microsoft_wiot_1_handler_file = "$adu_extensions_sources_dir/microsoft_wiot_1.dll"
-    & $aduciotagent_path --register-extension $microsoft_wiot_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/wiot:1'  --log-level 2
-    if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
-    }
-
-    ''
-}
-
 function Install-DeliveryOptimization {
     Param(
         [Parameter(Mandatory = $true)][string]$Type,
@@ -339,167 +195,6 @@ function Install-DeliveryOptimization {
     ''
 }
 
-function Install-Adu-Components {
-    Param(
-        [Parameter(Mandatory = $true)][string]$OutBinPath,
-        [Parameter(Mandatory = $true)][string]$OutLibPath,
-        [Parameter(Mandatory = $true)][string]$BinPath,
-        [Parameter(Mandatory = $true)][string]$LibPath,
-        [Parameter(Mandatory = $true)][string]$DataPath
-    )
-    # TODO(JeffMill): [PAL] Temporary until paths are determined.
-
-    Show-Header 'Installing ADU Agent'
-
-    Create-Adu-Folders
-
-    # cmake --install should place binaries, but that's not working correctly.
-    # TODO: Task 42936258: --install-prefix not working properly
-    # & $cmake_bin --install $OutputDirectory --config $Type --verbose
-    # $ret_val = $LASTEXITCODE
-    # if ($ret_val -ne 0) {
-    #     Write-Error "ERROR: CMake failed (Error $ret_val)"
-    #     exit $ret_val
-    # }
-    # Workaround: Manually copy files...
-
-    # contoso_component_enumerator
-    # curl_content_downloader
-    # microsoft_apt_1
-    # microsoft_delta_download_handler
-
-    Invoke-CopyFile "$OutBinPath/adu-shell.exe" $LibPath
-    Invoke-CopyFile  "$OutBinPath/AducIotAgent.exe" $BinPath
-
-    # IMPORTANT: Windows builds require these DLLS as well. Any way to build these statically?
-    $dependencies = 'getopt', 'pthreadVC3d', 'libcrypto-1_1-x64'
-    $dependencies | ForEach-Object {
-        Invoke-CopyFile "$OutBinPath/$_.dll" $LibPath
-        Invoke-CopyFile "$OutBinPath/$_.dll" $BinPath
-    }
-
-    # 'microsoft_swupdate_1', 'microsoft_swupdate_2'
-    $extensions = 'deliveryoptimization_content_downloader', 'microsoft_script_1', 'microsoft_simulator_1', 'microsoft_steps_1', 'microsoft_wiot_1'
-    $extensions | ForEach-Object {
-        Invoke-CopyFile  "$OutLibPath/$_.dll" "$DataPath/extensions/sources"
-    }
-
-    if ($Type -eq 'Debug') {
-        $pthread_dll = 'pthreadVC3d.dll'
-    }
-    else {
-        $pthread_dll = 'pthreadVC3.dll'
-    }
-    Invoke-CopyFile "$OutBinPath/$pthread_dll" $LibPath
-    Invoke-CopyFile "$OutBinPath/$pthread_dll" $BinPath
-
-    ''
-
-    # Healthcheck expects this file to be read-only.
-    Set-ItemProperty -LiteralPath "$LibPath/adu-shell.exe" -Name IsReadOnly -Value $true
-
-    Register-Components -BinPath $BinPath -DataPath $DataPath
-}
-
-function Create-DataFiles {
-    Param(
-        [Parameter(Mandatory = $true)][string]$DataFilePath
-    )
-
-    Show-Header 'Creating data files'
-
-    "Data file path: $DataFilePath"
-    ''
-
-    #
-    # $env:TEMP/du-simulator-data.json (SIMULATOR_DATA_FILE)
-    #
-
-    @'
-{
-    "isInstalled": {
-        "*": {
-            "resultCode": 901,
-            "extendedResultCode": 0,
-            "resultDetails": "simulated isInstalled"
-        }
-    },
-    "download": {
-        "*": {
-            "resultCode": 500,
-            "extendedResultCode": 0,
-            "resultDetails": "simulated download"
-        }
-    },
-    "install": {
-        "resultCode": 600,
-        "extendedResultCode": 0,
-        "resultDetails": "simulated install"
-    },
-    "apply": {
-        "resultCode": 700,
-        "extendedResultCode": 0,
-        "resultDetails": "simulated apply"
-    }
-}
-'@ | Out-File -Encoding ASCII "$env:TEMP/du-simulator-data.json"
-
-    #
-    # /etc/adu/du-diagnostics-config.json
-    #
-
-    @'
-{
-    "logComponents": [
-        {
-            "componentName": "DU",
-            "logPath": "/var/log/adu/"
-        }
-    ],
-    "maxKilobytesToUploadPerLogPath": 5
-}
-'@ | Out-File -Encoding ASCII "$DataFilePath/du-diagnostics-config.json"
-
-    #
-    # /etc/adu/du-config.json
-    #
-
-    if (-not (Test-Path -LiteralPath "$DataFilePath/du-config.json" -PathType Leaf)) {
-        @'
-{
-    "schemaVersion": "1.1",
-    "aduShellTrustedUsers": [
-        "adu",
-        "do"
-    ],
-    "iotHubProtocol": "mqtt",
-    "compatPropertyNames": "manufacturer,model",
-    "manufacturer": "manufacturer",
-    "model": "model",
-    "agents": [
-        {
-            "name": "aduagent",
-            "runas": "adu",
-            "connectionSource": {
-                "connectionType": "string",
-                "connectionData": "[NOT_SPECIFIED]"
-            },
-            "$description": "manufacturer, model will be matched against update manifest 'compability' attributes",
-            "manufacturer": "[NOT_SPECIFIED]",
-            "model": "[NOT_SPECIFIED]"
-        }
-    ]
-}
-'@ | Out-File -Encoding ASCII "$DataFilePath/du-config.json"
-    }
-
-    if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath "$DataFilePath/du-config.json" -SimpleMatch) {
-        Show-Warning "Need to edit connectionData, agents.manufacturer and/or agents.model in $DataFilePath/du-config.json"
-        ''
-        notepad.exe "$DataFilePath/du-config.json"
-    }
-}
-
 #
 #  _ __  __ _(_)_ _
 # | '  \/ _` | | ' \
@@ -512,8 +207,8 @@ if (!$root_dir) {
     exit 1
 }
 
-if (!$OutputDirectory) {
-    $OutputDirectory = "$root_dir/out"
+if (!$BuildOutputPath) {
+    $BuildOutputPath = "$root_dir/out"
 }
 
 if ($BuildDocumentation) {
@@ -529,8 +224,8 @@ if ($BuildDocumentation) {
 }
 
 # Set default log dir if not specified.
-$runtime_dir = "$OutputDirectory/bin"
-$library_dir = "$OutputDirectory/lib"
+$runtime_dir = "$BuildOutputPath/bin"
+$library_dir = "$BuildOutputPath/lib"
 $cmake_bin = 'cmake.exe'
 
 # TODO(JeffMill): This should be Windows when that plaform layer is ready.
@@ -545,9 +240,8 @@ Show-Bullet "Platform layer: $PlatformLayer"
 Show-Bullet "Build type: $Type"
 Show-Bullet "Log directory: $LogDir"
 Show-Bullet "Logging library: $LogLib"
-Show-Bullet "Output directory: $OutputDirectory"
+Show-Bullet "Output directory: $BuildOutputPath"
 Show-Bullet "Build unit tests: $BuildUnitTests"
-Show-Bullet "Build packages: $BuildPackages"
 Show-Bullet "CMake: $cmake_bin"
 Show-Bullet ("CMake version: {0}" -f (& $cmake_bin --version | Select-String  '^cmake version (.*)$').Matches.Groups[1].Value)
 ''
@@ -556,7 +250,7 @@ Show-Bullet ("CMake version: {0}" -f (& $cmake_bin --version | Select-String  '^
 $CMAKE_OPTIONS = @(
     "-DADUC_BUILD_DOCUMENTATION:BOOL=$BuildDocumentation",
     "-DADUC_BUILD_UNIT_TESTS:BOOL=$BuildUnitTests",
-    "-DADUC_BUILD_PACKAGES:BOOL=$BuildPackages",
+    # "-DADUC_BUILD_PACKAGES:BOOL=$BuildPackages",
     "-DADUC_LOG_FOLDER:STRING=$LogDir",
     "-DADUC_LOGGING_LIBRARY:STRING=$LogLib",
     "-DADUC_PLATFORM_LAYER:STRING=$PlatformLayer",
@@ -569,7 +263,7 @@ $CMAKE_OPTIONS = @(
 if (-not $Clean) {
     # -ErrorAction SilentlyContinue doesn't work on Select-String
     try {
-        if (-not (Select-String 'CMAKE_PROJECT_NAME:' "$OutputDirectory/CMakeCache.txt")) {
+        if (-not (Select-String 'CMAKE_PROJECT_NAME:' "$BuildOutputPath/CMakeCache.txt")) {
             $Clean = $true
         }
     }
@@ -600,9 +294,9 @@ if ($Clean) {
 
     Show-Header 'Cleaning repo'
 
-    if (Test-Path $OutputDirectory) {
-        Show-Bullet $OutputDirectory
-        Remove-Item -Force  -Recurse -LiteralPath $OutputDirectory
+    if (Test-Path $BuildOutputPath) {
+        Show-Bullet $BuildOutputPath
+        Remove-Item -Force  -Recurse -LiteralPath $BuildOutputPath
     }
     # TODO(JeffMill): Change when code changes paths (e.g. /tmp/adu/testdata)
     $folders = '/tmp', '/usr', '/var'
@@ -616,7 +310,7 @@ if ($Clean) {
     ''
 }
 
-mkdir -Path $OutputDirectory -Force | Out-Null
+mkdir -Path $BuildOutputPath -Force | Out-Null
 
 if ($Clean) {
     Show-Header 'Generating Makefiles'
@@ -636,7 +330,7 @@ if ($Clean) {
     $CMAKE_OPTIONS | ForEach-Object { Show-Bullet $_ }
     ''
 
-    & $cmake_bin -S "$root_dir" -B $OutputDirectory @CMAKE_OPTIONS 2>&1 | Tee-Object -Variable cmake_output
+    & $cmake_bin -S "$root_dir" -B $BuildOutputPath @CMAKE_OPTIONS 2>&1 | Tee-Object -Variable cmake_output
     $ret_val = $LASTEXITCODE
 
     if ($ret_val -ne 0) {
@@ -654,7 +348,6 @@ if ($Clean) {
 #
 # Delivery Optimization
 #
-# TODO: Bug 43015575: do-client should be a submodule
 
 # Reusing ".vcpkg-installed" folder ... why not?
 $DoPath = "{0}/.vcpkg-installed/do-client" -f (git.exe rev-parse --show-toplevel)
@@ -662,7 +355,7 @@ Install-DeliveryOptimization -Type $Type -Path $DoPath -Branch 'v1.0.1'
 
 Show-Header 'Building Product'
 
-& $cmake_bin --build $OutputDirectory --config $Type --parallel 2>&1 | Tee-Object -Variable build_output
+& $cmake_bin --build $BuildOutputPath --config $Type --parallel 2>&1 | Tee-Object -Variable build_output
 $ret_val = $LASTEXITCODE
 ''
 
@@ -681,25 +374,6 @@ if ($ret_val -ne 0) {
     Show-LinkerErrors -RootDir $root_dir -BuildOutput $build_output
 
     exit $ret_val
-}
-
-if ($ret_val -eq 0 -and $BuildPackages) {
-    Show-Header 'Building Package'
-
-    Show-Warning 'BuildPackages NYI'
-}
-
-if ($ret_val -eq 0 -and $Install) {
-    Install-Adu-Components `
-        -OutBinPath "$runtime_dir/$Type" -OutLibPath "$library_dir/$Type" `
-        -BinPath '/usr/bin' -LibPath '/usr/lib/adu' -DataPath '/var/lib/adu'
-
-    Create-DataFiles -DataFilePath '/etc/adu'
-
-    if (-not (Test-Path '/tmp/adu/testdata' -PathType Container)) {
-        ''
-        Show-Warning 'Do clean build to copy test data to /tmp/adu/testdata'
-    }
 }
 
 exit $ret_val
