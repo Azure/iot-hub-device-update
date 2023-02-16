@@ -95,6 +95,7 @@ target_link_libraries (
             aduc::permission_utils
             aduc::pnp_helper
             aduc::system_utils
+            atomic
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
 
