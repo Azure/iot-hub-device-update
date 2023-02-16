@@ -21,6 +21,7 @@ target_include_directories (${target_name} PUBLIC ${ADUC_EXPORT_INCLUDES})
 
 target_link_libraries (
     ${target_name}
+    PUBLIC atomic
     PRIVATE aduc::adu_types
             aduc::agent_workflow
             aduc::c_utils
