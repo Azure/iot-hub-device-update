@@ -14,6 +14,11 @@ target_include_directories (
     PUBLIC inc ${ADUC_EXPORT_INCLUDES}
     PRIVATE src)
 
+#
+# Turn -fPIC on, in order to use this library in another shared library.
+#
+set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::adu_core_export_helpers
