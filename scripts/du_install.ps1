@@ -392,7 +392,7 @@ Install-Adu-Components `
 Create-DataFiles -ConfPath $ADUC_CONF_FOLDER
 
 if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath "$ADUC_CONF_FOLDER/du-config.json" -SimpleMatch) {
-    Show-Warning "Need to edit connectionData, agents.manufacturer and/or agents.model in $ConfPath/du-config.json"
+    Show-Warning "Need to edit connectionData, agents.manufacturer and/or agents.model in $ADUC_CONF_FOLDER/du-config.json"
 }
 
 #
