@@ -6,7 +6,7 @@ if (NOT WIN32)
     add_subdirectory (swupdate_handler)
     add_subdirectory (swupdate_handler_v2)
 else ()
-    add_subdirectory (wiot_handler)
+    add_subdirectory (wim_handler)
 endif ()
 
 #

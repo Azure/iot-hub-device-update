@@ -1,15 +1,16 @@
 
 /**
- * @file wiot_handler_1.cpp
- * @brief Implements WiotHandler1
+ * @file wim_handler_1.cpp
+ * @brief Implements WimHandler1
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-#include "wiot_handler_1.hpp"
+#include "wim_handler_1.hpp"
 
 #include "aducresult.hpp"
-#include "step_handler.hpp"
+#include "wim_handler_result_code.hpp" // WimHandlerResultCode
+#include "wim_step_handler.hpp"
 #include "workflow_ptr.hpp"
 
 #include <vector>
@@ -19,12 +20,6 @@
 #include "aduc/string_c_utils.h" // ADUC_ParseUpdateType
 #include "aduc/workflow_data_utils.h" // ADUC_WorkflowData
 #include "aduc/workflow_utils.h" // workflow_get_*
-
-// Prefix sent to logging for identification
-#define HANDLER_LOG_ID "[microsoft/wiot:1] "
-
-// TODO(JeffMill): Currently using SWUPDATE error codes.
-// Bug 43012743: Error codes are too content handler specific.
 
 EXTERN_C_BEGIN
 
@@ -45,31 +40,10 @@ public:
     }
 };
 
-static std::vector<std::string> workflow_get_update_file_list(const ADUC_WorkflowHandle& workflowHandle)
-{
-    std::vector<std::string> fileList;
-    const size_t fileCount = workflow_get_update_files_count(workflowHandle);
-
-    for (size_t fileIndex = 0; fileIndex < fileCount; fileIndex++)
-    {
-        ADUCFileEntity entity;
-        if (!workflow_get_update_file(workflowHandle, fileIndex, &entity))
-        {
-            // Return empty file list on error.
-            fileList.clear();
-            break;
-        }
-
-        fileList.push_back(entity.TargetFilename);
-    }
-
-    return fileList;
-}
-
 /**
  * @brief Destructor
  */
-WiotHandler1::~WiotHandler1()
+WimHandler1::~WimHandler1()
 {
     ADUC_Logging_Uninit();
 }
@@ -81,25 +55,22 @@ WiotHandler1::~WiotHandler1()
  * ADUC_Result_IsInstalled_Installed - already installed.
  * ADUC_Result_IsInstalled_NotInstalled - not installed.
  */
-ADUC_Result WiotHandler1::IsInstalled(const ADUC_WorkflowData* workflowData)
+ADUC_Result WimHandler1::IsInstalled(const ADUC_WorkflowData* workflowData)
 {
-    Log_Info(HANDLER_LOG_ID "IsInstalled");
+    Log_Info("[%s] IsInstalled", ID());
 
     workflow_string_ptr installedCriteria(ADUC_WorkflowData_GetInstalledCriteria(workflowData));
     if (installedCriteria == nullptr)
     {
-        Log_Error("Unable to get installed criteria.");
-        return ADUCResult(ADUC_Result_Failure, ADUC_ERC_SWUPDATE_HANDLER_MISSING_INSTALLED_CRITERIA);
+        Log_Error("[%s] Unable to get installed criteria.", ID());
+        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_MissingInstalledCriteria);
     }
 
-    if (!StepHandler::IsInstalled(installedCriteria.get()))
-    {
-        Log_Info("Not installed");
-        return ADUCResult(ADUC_Result_IsInstalled_NotInstalled);
-    }
+    const bool result = WimStepHandler::IsInstalled(installedCriteria.get());
 
-    Log_Info("Installed");
-    return ADUCResult(ADUC_Result_IsInstalled_Installed);
+    Log_Info("[%s] IsInstalled '%s'? %d", ID(), installedCriteria.get(), result);
+
+    return result ? ADUCResult(ADUC_Result_IsInstalled_Installed) : ADUCResult(ADUC_Result_IsInstalled_NotInstalled);
 }
 
 /**
@@ -108,9 +79,9 @@ ADUC_Result WiotHandler1::IsInstalled(const ADUC_WorkflowData* workflowData)
  * @return ADUC_Result The result of the download
  * ADUC_Result_Download_Success - success
 */
-ADUC_Result WiotHandler1::Download(const ADUC_WorkflowData* workflowData)
+ADUC_Result WimHandler1::Download(const ADUC_WorkflowData* workflowData)
 {
-    Log_Info(HANDLER_LOG_ID "Download");
+    Log_Info("[%s] Download", ID());
 
     const ADUC_WorkflowHandle workflowHandle{ workflowData->WorkflowHandle };
 
@@ -121,15 +92,15 @@ ADUC_Result WiotHandler1::Download(const ADUC_WorkflowData* workflowData)
 
     if (!IsValidUpdateTypeInfo(workflowHandle))
     {
-        return ADUCResult(ADUC_Result_Failure, ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_WRONG_UPDATE_VERSION);
+        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_UnsupportedUpdateVersion);
     }
 
     const size_t fileCount = workflow_get_update_files_count(workflowHandle);
     if (fileCount != 1)
     {
-        // For v1, only 1 file is expected.
-        Log_Error("Incorrect file count: %u", fileCount);
-        return ADUCResult(ADUC_Result_Failure, ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_WRONG_FILECOUNT);
+        // Only supporting a single .WIM file in payload.
+        Log_Error("[%s] Incorrect file count: %u", ID(), fileCount);
+        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_WrongFileCount);
     }
 
     //
@@ -138,6 +109,7 @@ ADUC_Result WiotHandler1::Download(const ADUC_WorkflowData* workflowData)
 
     if (IsInstalled(workflowData).ResultCode == ADUC_Result_IsInstalled_Installed)
     {
+        Log_Info("[%s] Download: Already installed. no-op", ID());
         return ADUCResult(ADUC_Result_Download_Skipped_UpdateAlreadyInstalled);
     }
 
@@ -152,12 +124,12 @@ ADUC_Result WiotHandler1::Download(const ADUC_WorkflowData* workflowData)
             return Cancel(workflowData);
         }
 
-        Log_Info("Downloading file #%u", fileIndex);
+        Log_Info("[%s] Downloading file #%u", ID(), fileIndex);
 
         ADUCFileEntity entity;
         if (!workflow_get_update_file(workflowHandle, fileIndex, &entity))
         {
-            return ADUCResult(ADUC_Result_Failure, ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_GET_PAYLOAD_FILE_ENTITY);
+            return WimHandlerADUCResult(WimHandlerResultCode::Manifest_CantGetFileEntity);
         }
 
         try
@@ -169,14 +141,14 @@ ADUC_Result WiotHandler1::Download(const ADUC_WorkflowData* workflowData)
                 nullptr /*downloadProgressCallback*/);
             if (result.IsResultCodeFailure())
             {
-                Log_Error("Cannot download payload file#%u, error 0x%X", fileIndex, result.ExtendedResultCode());
+                Log_Error(
+                    "[%s] Cannot download payload file#%u, error 0x%X", ID(), fileIndex, result.ExtendedResultCode());
                 return result;
             }
         }
         catch (...)
         {
-            return ADUCResult(
-                ADUC_Result_Failure, ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_PAYLOAD_FILE_FAILURE_UNKNOWNEXCEPTION);
+            return WimHandlerADUCResult(WimHandlerResultCode::Download_UnknownException);
         }
     }
 
@@ -189,9 +161,9 @@ ADUC_Result WiotHandler1::Download(const ADUC_WorkflowData* workflowData)
  * @return ADUC_Result The result of the install.
  * ADUC_Result_Install_Success - success
  */
-ADUC_Result WiotHandler1::Install(const ADUC_WorkflowData* workflowData)
+ADUC_Result WimHandler1::Install(const ADUC_WorkflowData* workflowData)
 {
-    Log_Info(HANDLER_LOG_ID "Install");
+    Log_Info("[%s] Install", ID());
 
     const ADUC_WorkflowHandle workflowHandle{ workflowData->WorkflowHandle };
 
@@ -202,7 +174,7 @@ ADUC_Result WiotHandler1::Install(const ADUC_WorkflowData* workflowData)
 
     if (!IsValidUpdateTypeInfo(workflowHandle))
     {
-        return ADUCResult(ADUC_Result_Failure, ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_UNKNOWNEXCEPTION);
+        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_UnsupportedUpdateVersion);
     }
 
     //
@@ -211,28 +183,39 @@ ADUC_Result WiotHandler1::Install(const ADUC_WorkflowData* workflowData)
 
     if (IsInstalled(workflowData).ResultCode == ADUC_Result_IsInstalled_Installed)
     {
+        Log_Info("[%s] Install: Already installed. no-op", ID());
         return ADUCResult(ADUC_Result_Install_Success);
     }
 
     workflow_string_ptr workFolder(workflow_get_workfolder(workflowHandle));
     if (workFolder.get() == nullptr)
     {
-        Log_Error("Unable to get work folder");
-
-        return ADUCResult(ADUC_Result_Failure, ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_UNKNOWNEXCEPTION);
+        Log_Error("[%s] Unable to get work folder", ID());
+        return WimHandlerADUCResult(WimHandlerResultCode::General_CantGetWorkFolder);
     }
 
-    Log_Info("Installing from %s", workFolder.get());
-
-    std::vector<std::string> fileList(workflow_get_update_file_list(workflowHandle));
-
-    if (!StepHandler::Install(workFolder.get(), fileList))
+    const size_t fileCount = workflow_get_update_files_count(workflowHandle);
+    if (fileCount != 1)
     {
-        Log_Error("Install failed");
-        return ADUCResult(ADUC_Result_Failure, ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_UNKNOWNEXCEPTION);
+        // Only supporting a single .WIM file in payload.
+        Log_Error("[%s] Invalid file count: %u", ID(), fileCount);
+        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_WrongFileCount);
     }
 
-    return ADUCResult(ADUC_Result_Install_Success);
+    ADUCFileEntity entity;
+    if (!workflow_get_update_file(workflowHandle, 0, &entity))
+    {
+        Log_Error("[%s] Unable to get filename", ID());
+        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_CantGetFileEntity);
+    }
+
+    Log_Info("Installing %s from %s", entity.TargetFilename, workFolder.get());
+
+    const WimHandlerResultCode result = WimStepHandler::Install(workFolder.get(), entity.TargetFilename);
+
+    Log_Info("[%s] Install result: %d", ID(), result);
+
+    return WimHandlerADUCResult(result);
 }
 
 /**
@@ -242,9 +225,9 @@ ADUC_Result WiotHandler1::Install(const ADUC_WorkflowData* workflowData)
  * ADUC_Result_Success - success
  * ADUC_Result_Apply_RequiredImmediateReboot - reboot required
  */
-ADUC_Result WiotHandler1::Apply(const ADUC_WorkflowData* workflowData)
+ADUC_Result WimHandler1::Apply(const ADUC_WorkflowData* workflowData)
 {
-    Log_Info(HANDLER_LOG_ID "Apply");
+    Log_Info("[%s] Apply", ID());
 
     const ADUC_WorkflowHandle workflowHandle{ workflowData->WorkflowHandle };
 
@@ -256,22 +239,33 @@ ADUC_Result WiotHandler1::Apply(const ADUC_WorkflowData* workflowData)
     workflow_string_ptr workFolder(workflow_get_workfolder(workflowHandle));
     if (workFolder.get() == nullptr)
     {
-        Log_Error("Unable to get work folder");
+        Log_Error("[%s] Unable to get work folder", ID());
 
-        return ADUCResult(ADUC_Result_Failure, ADUC_ERC_SCRIPT_HANDLER_APPLY_FAILURE_UNKNOWNEXCEPTION);
+        return WimHandlerADUCResult(WimHandlerResultCode::General_CantGetWorkFolder);
     }
 
-    Log_Info("Applying from %s", workFolder.get());
-
-    std::vector<std::string> fileList(workflow_get_update_file_list(workflowHandle));
-
-    if (!StepHandler::Apply(workFolder.get(), fileList))
+    const size_t fileCount = workflow_get_update_files_count(workflowHandle);
+    if (fileCount != 1)
     {
-        Log_Error("Apply failed");
-        return ADUCResult(ADUC_Result_Failure, ADUC_ERC_SCRIPT_HANDLER_APPLY_FAILURE_UNKNOWNEXCEPTION);
+        // Only supporting a single .WIM file in payload.
+        Log_Error("[%s] Invalid file count: %u", ID(), fileCount);
+        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_WrongFileCount);
     }
 
-    return ADUCResult(ADUC_Result_Success);
+    ADUCFileEntity entity;
+    if (!workflow_get_update_file(workflowHandle, 0, &entity))
+    {
+        Log_Error("[%s] Unable to get filename", ID());
+        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_CantGetFileEntity);
+    }
+
+    Log_Info("[%s] Applying %s from %s", ID(), entity.TargetFilename, workFolder.get());
+
+    const WimHandlerResultCode result = WimStepHandler::Apply(workFolder.get(), entity.TargetFilename);
+
+    Log_Info("[%s] Apply result: %d", ID(), result);
+
+    return WimHandlerADUCResult(result);
 }
 
 /**
@@ -281,9 +275,9 @@ ADUC_Result WiotHandler1::Apply(const ADUC_WorkflowData* workflowData)
  * ADUC_Result_Cancel_Success - success
  * ADUC_Result_Cancel_UnableToCancel - unable to cancel
  */
-ADUC_Result WiotHandler1::Cancel(const ADUC_WorkflowData* workflowData)
+ADUC_Result WimHandler1::Cancel(const ADUC_WorkflowData* workflowData)
 {
-    Log_Info(HANDLER_LOG_ID "Cancel");
+    Log_Info("[%s] Cancel", ID());
 
     const ADUC_WorkflowHandle workflowHandle{ workflowData->WorkflowHandle };
     const char* workflowId = workflow_peek_id(workflowHandle);
@@ -291,11 +285,16 @@ ADUC_Result WiotHandler1::Cancel(const ADUC_WorkflowData* workflowData)
     const int workflowStep = workflow_get_step_index(workflowHandle);
 
     Log_Info(
-        "Requesting cancel operation (workflow id '%s', level %d, step %d).", workflowId, workflowLevel, workflowStep);
+        "[%s] Requesting cancel operation (workflow id '%s', level %d, step %d).",
+        ID(),
+        workflowId,
+        workflowLevel,
+        workflowStep);
     if (!workflow_request_cancel(workflowHandle))
     {
         Log_Error(
-            "Cancellation request failed. (workflow id '%s', level %d, step %d)",
+            "[%s] Cancellation request failed. (workflow id '%s', level %d, step %d)",
+            ID(),
             workflowId,
             workflowLevel,
             workflowStep);
@@ -310,13 +309,13 @@ ADUC_Result WiotHandler1::Cancel(const ADUC_WorkflowData* workflowData)
  *
  * @return ADUC_Result The result of the backup.
  * ADUC_Result_Backup_Success - success
- * ADUC_Result_Backup_Success_Unsupported - np-op
+ * ADUC_Result_Backup_Success_Unsupported - no-op
  */
-ADUC_Result WiotHandler1::Backup(const ADUC_WorkflowData* workflowData)
+ADUC_Result WimHandler1::Backup(const ADUC_WorkflowData* workflowData)
 {
     UNREFERENCED_PARAMETER(workflowData);
 
-    Log_Info(HANDLER_LOG_ID "Backup");
+    Log_Info("[%s] Backup", ID());
 
     return ADUCResult(ADUC_Result_Backup_Success_Unsupported);
 }
@@ -328,17 +327,17 @@ ADUC_Result WiotHandler1::Backup(const ADUC_WorkflowData* workflowData)
  * ADUC_Result_Restore_Success - success
  * ADUC_Result_Restore_Success_Unsupported - no-op
  */
-ADUC_Result WiotHandler1::Restore(const ADUC_WorkflowData* workflowData)
+ADUC_Result WimHandler1::Restore(const ADUC_WorkflowData* workflowData)
 {
     UNREFERENCED_PARAMETER(workflowData);
 
-    Log_Info(HANDLER_LOG_ID "Restore");
+    Log_Info("[%s] Restore", ID());
 
     return ADUCResult(ADUC_Result_Restore_Success_Unsupported);
 }
 
 /*static*/
-bool WiotHandler1::IsValidUpdateTypeInfo(const ADUC_WorkflowHandle& workflowHandle)
+bool WimHandler1::IsValidUpdateTypeInfo(const ADUC_WorkflowHandle& workflowHandle)
 {
     //
     // Verify update type info
@@ -347,20 +346,20 @@ bool WiotHandler1::IsValidUpdateTypeInfo(const ADUC_WorkflowHandle& workflowHand
     workflow_string_ptr updateType(workflow_get_update_type(workflowHandle));
     if (updateType.get() == nullptr)
     {
-        Log_Error("Unable to get update type");
+        Log_Error("[%s] Unable to get update type", ID());
         return false;
     }
 
     unsigned int updateTypeVersion;
     if (!ADUC_ParseUpdateType(updateType.get(), NULL /*updateName*/, &updateTypeVersion))
     {
-        Log_Error("Unable to parse update type");
+        Log_Error("[%s] Unable to parse update type", ID());
         return false;
     }
 
     if (updateTypeVersion != 1)
     {
-        Log_Error("Wrong Handler Version %d", updateTypeVersion);
+        Log_Error("[%s] Wrong Handler Version %d", ID(), updateTypeVersion);
         return false;
     }
 

@@ -10,7 +10,7 @@
 
 #include <aduc/logging.h>
 
-#include "wiot_handler_1.hpp"
+#include "wim_handler_1.hpp"
 
 EXTERN_C_BEGIN
 
@@ -27,11 +27,11 @@ EXTERN_C_BEGIN
  */
 EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
-    ADUC_Logging_Init(logLevel, "microsoft/wiot:1");
-    Log_Info("Instantiating an Update Content Handler for 'microsoft/wiot:1'");
+    ADUC_Logging_Init(logLevel, WimHandler1::ID());
+    Log_Info("Instantiating an Update Content Handler for '%s'", WimHandler1::ID());
     try
     {
-        return WiotHandler1::CreateContentHandler();
+        return WimHandler1::CreateContentHandler();
     }
     catch (const std::exception& e)
     {

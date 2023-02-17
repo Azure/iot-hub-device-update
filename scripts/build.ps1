@@ -79,7 +79,7 @@ function Show-CompilerErrors {
     Param([string]$RootDir, [string[]]$BuildOutput)
 
     # Parse compiler errors
-    # e.g. C:\wiot-s1\src\logging\zlog\src\zlog.c(13,10): fatal  error C1083: Cannot open include file: 'aducpal/unistd.h': No such file or directory [C:\wiot-s1\out\src\logging\zlog\zlog.vcxproj]
+    # e.g. C:\du\src\logging\zlog\src\zlog.c(13,10): fatal  error C1083: Cannot open include file: 'aducpal/unistd.h': No such file or directory [C:\du\out\src\logging\zlog\zlog.vcxproj]
     $regex = '(?<File>.+)\((?<Line>\d+),(?<Column>\d+)\):.+error (?<Code>C\d+):\s+(?<Description>.+)\s+\[(?<Project>.+)\]'
     $result = $BuildOutput  | ForEach-Object {
         if ($_ -match $regex) {

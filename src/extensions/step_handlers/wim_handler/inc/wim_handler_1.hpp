@@ -1,12 +1,12 @@
 /**
- * @file wiot_handler_1.hpp
- * @brief Defines WiotHandler1
+ * @file wim_handler_1.hpp
+ * @brief Defines WimHandler1
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-#ifndef ADUC_IOT_HANDLER_HPP
-#define ADUC_IOT_HANDLER_HPP
+#ifndef WIM_HANDLER_1_HPP
+#define WIM_HANDLER_1_HPP
 
 #include "aduc/content_handler.hpp"
 #include <aduc/result.h>
@@ -29,18 +29,23 @@ protected:
 typedef noncopyable_::noncopyable noncopyable;
 
 /**
- * @class WiotHandler1
+ * @class WimHandler1
  * @brief The swupdate specific implementation of ContentHandler interface.
  */
-class WiotHandler1 : public ContentHandler, noncopyable
+class WimHandler1 : public ContentHandler, noncopyable
 {
 public:
     static ContentHandler* CreateContentHandler()
     {
-        return new WiotHandler1;
+        return new WimHandler1;
     }
 
-    ~WiotHandler1() override;
+    ~WimHandler1() override;
+
+    static const char* ID()
+    {
+        return "microsoft/wim:1";
+    }
 
     // ContentHandler methods
 
@@ -56,11 +61,11 @@ public:
 
 protected:
     // Protected constructor, must call CreateContentHandler factory method or from derived simulator class
-    WiotHandler1()
+    WimHandler1()
     {
     }
 
 private:
 };
 
-#endif // ADUC_IOT_HANDLER_HPP
+#endif // WIM_HANDLER_1_HPP

@@ -15,8 +15,6 @@ Param(
     # Build type
     [ValidateSet('Release', 'RelWithDebInfo', 'Debug')]
     [string]$Type = 'Debug',
-    # Install locally?
-    [switch]$Install = $false,
     # Build package?
     [switch]$Package = $false
 )
@@ -161,9 +159,9 @@ function Register-Components {
     #     Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
     # }
 
-    # /var/lib/adu/extensions/update_content_handlers/microsoft_wiot_1/content_handler.json
-    $microsoft_wiot_1_handler_file = "$adu_extensions_sources_dir/microsoft_wiot_1.dll"
-    & $aduciotagent_path --register-extension $microsoft_wiot_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/wiot:1'  --log-level 2
+    # /var/lib/adu/extensions/update_content_handlers/microsoft_wim_1/content_handler.json
+    $microsoft_wim_1_handler_file = "$adu_extensions_sources_dir/microsoft_wim_1.dll"
+    & $aduciotagent_path --register-extension $microsoft_wim_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/wim:1'  --log-level 2
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
     }
@@ -225,7 +223,7 @@ function Install-Adu-Components {
     }
 
     # 'microsoft_swupdate_1', 'microsoft_swupdate_2'
-    $extensions = 'deliveryoptimization_content_downloader', 'microsoft_script_1', 'microsoft_simulator_1', 'microsoft_steps_1', 'microsoft_wiot_1'
+    $extensions = 'deliveryoptimization_content_downloader', 'microsoft_script_1', 'microsoft_simulator_1', 'microsoft_steps_1', 'microsoft_wim_1'
     $extensions | ForEach-Object {
         Invoke-CopyFile  "$BuildLibPath/$_.dll" "$DataPath/extensions/sources"
     }
@@ -376,29 +374,30 @@ $ADUSHELL_FOLDER = "$USR_FOLDER/lib/adu"
 $ADUC_DATA_FOLDER = "$VAR_FOLDER/lib/adu"
 $ADUC_EXTENSIONS_FOLDER = "$ADUC_DATA_FOLDER/extensions"
 
-if ($Package -and !$Install) {
-    Show-Warning '-Package requires -Install'
-    exit 1
+#
+# Install
+#
+
+if (-not (Test-Path '/tmp/adu/testdata' -PathType Container)) {
+    Show-Warning 'Do clean build to copy test data to /tmp/adu/testdata'
 }
 
-if ($Install) {
-    if (-not (Test-Path '/tmp/adu/testdata' -PathType Container)) {
-        Show-Warning 'Do clean build to copy test data to /tmp/adu/testdata'
-    }
+Install-Adu-Components `
+    -BuildBinPath "$runtime_dir/$Type" `
+    -BuildLibPath "$library_dir/$Type" `
+    -BinPath $ADUC_AGENT_FOLDER `
+    -LibPath $ADUSHELL_FOLDER `
+    -DataPath $ADUC_DATA_FOLDER
 
-    Install-Adu-Components `
-        -BuildBinPath "$runtime_dir/$Type" `
-        -BuildLibPath "$library_dir/$Type" `
-        -BinPath $ADUC_AGENT_FOLDER `
-        -LibPath $ADUSHELL_FOLDER `
-        -DataPath $ADUC_DATA_FOLDER
+Create-DataFiles -ConfPath $ADUC_CONF_FOLDER
 
-    Create-DataFiles -ConfPath $ADUC_CONF_FOLDER
-
-    if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath "$ADUC_CONF_FOLDER/du-config.json" -SimpleMatch) {
-        Show-Warning "Need to edit connectionData, agents.manufacturer and/or agents.model in $ConfPath/du-config.json"
-    }
+if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath "$ADUC_CONF_FOLDER/du-config.json" -SimpleMatch) {
+    Show-Warning "Need to edit connectionData, agents.manufacturer and/or agents.model in $ConfPath/du-config.json"
 }
+
+#
+# Package
+#
 
 if ($Package) {
     # /tmp/adu/testdata has test files, but we're not packaging test collateral.
