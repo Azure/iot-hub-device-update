@@ -1,57 +1,87 @@
-name: deviceupdate-agent # you probably want to 'snapcraft register <name>'
-base: core20 # the base snap is the execution environment for this snap
-version: '0.1' # just for humans, typically '1.2+git' or '1.3.2'
-summary: IoT Hub Device Update Agent for Ubuntu Core # 79 char long summary
-description: |
-   A proof-of-concept for the Device Update Agent Ubuntu Core snap.
-
-grade: devel # must be 'stable' to release into candidate/stable channels
-confinement: devmode # use 'strict' once you have the right plugs and slots
-
-#####
-#
-# Keywords
-#
-# after  - Specifies part's dependencies.
-#              See https://snapcraft.io/docs/parts-lifecycle#heading--step-dependencies
-#                  https://snapcraft.io/docs/parts-lifecycle
-# plugin - Specifies a plugin required for building the part.
-#
-# see also:
-#     environment variables - https://snapcraft.io/docs/parts-environment-variables
-#
-#####
+name: deviceupdate-agent
+base: core20
+version: '0.1'
+summary: My Snap Summary
+description: My Snap Description
 
 parts:
   installdeps:
     plugin: nil
-    source: .
+    source: ./scripts
     override-build: |
-      ./scripts/install-deps.sh -a
-      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib
-      cp /usr/local/lib/libdeliveryoptimization.so* $SNAPCRAFT_PART_INSTALL/usr/lib
+      ./install-deps.sh --install-cmake --work-folder $SNAPCRAFT_STAGE/du-workfolder  --install-shellcheck --install-catch2
+    build-packages:
+      - wget
     stage-packages:
       - libboost-filesystem1.71.0
+
+  azure-iot-hub-client-csdk:
+    after:
+      - installdeps
+    source: https://github.com/Azure/azure-iot-sdk-c.git
+    source-type: git
+    source-tag: LTS_07_2021_Ref01
+    plugin: cmake
+    source-depth: 1
+    build-packages:
+      - libcurl4-openssl-dev
+      - libssl-dev
+      - uuid-dev
+    override-build: |
+      cd $SNAPCRAFT_PART_SRC
+      git submodule update --init
+      mkdir -p $SNAPCRAFT_PART_SRC/cmake
+      pushd $SNAPCRAFT_PART_SRC/cmake
+      cmake -Duse_amqp:BOOL=OFF -Duse_http:BOOL=ON -Duse_mqtt:BOOL=ON -Duse_wsio:BOOL=ON -Dskip_samples:BOOL=ON -Dbuild_service_client:BOOL=OFF -Dbuild_provisioning_service_client:BOOL=OFF -DCMAKE_BUILD_TYPE:STRING=Debug -Dskip_samples:BOOL=ON ..
+      cmake --build .
+      cmake --build . --target install
+
+  azure-blob-stroage-file-upload-utility:
+    after:
+      - installdeps
+    plugin: nil
+    source: ./scripts
+    build-packages:
+      - git
+    override-build: |
+      ./install-deps.sh --work-folder $SNAPCRAFT_STAGE/du-workfolder --install-abs-file-upload-utility
+
+  deliveryoptimization-sdk:
+    after:
+      - installdeps
+    plugin: nil
+    source: ./scripts
+    override-build: |
+      ./install-deps.sh --install-do --work-folder $SNAPCRAFT_STAGE/du-workfolder
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp /usr/local/lib/libdeliveryoptimization.so* $SNAPCRAFT_PART_INSTALL/usr/lib
+
   #
   # Agent component
   # This is the main agent application.
   #
-  agent:
+  du-agent:
     plugin: nil
     source: .
     override-build: |
-      ./scripts/build.sh --ubuntu-core-snap-only
+      ./scripts/install-deps.sh --work-folder /tmp --install-cmake
+      ./scripts/build.sh --work-folder /tmp --ubuntu-core-snap-only
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/bin
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib/adu
       mkdir -p $SNAPCRAFT_PART_INSTALL/var/lib/adu/extensions/sources
       mkdir -p $SNAPCRAFT_PART_INSTALL/conf
       cp $SNAPCRAFT_PART_BUILD/out/bin/AducIotAgent $SNAPCRAFT_PART_INSTALL/usr/bin/AducIotAgent
       cp $SNAPCRAFT_PART_BUILD/out/bin/adu-shell $SNAPCRAFT_PART_INSTALL/usr/lib/adu
+      chmod u=rxs $SNAPCRAFT_PART_INSTALL/usr/lib/adu/adu-shell
       cp $SNAPCRAFT_PART_BUILD/out/lib/*.so $SNAPCRAFT_PART_INSTALL/var/lib/adu/extensions/sources
 
     # Require install-deps
     after:
      - installdeps
+     - azure-iot-hub-client-csdk
+     - deliveryoptimization-sdk
+     - azure-blob-stroage-file-upload-utility
+
     stage:
       - usr/bin/*
       - usr/lib/*
@@ -98,8 +128,41 @@ apps:
     restart-condition: on-failure
     restart-delay: 10s
     plugs:
-      - home
-      - network
+        - content
+        - home
+        - network
+# Provides resources to be accssed by other snaps.
+slots:
+  #
+  # A downloads folder.
+  #
+  # Consumer(s):
+  #
+  #    Delivery Optimization : writes downloaded file to this folder and/or sub-folders.
+  #
+  downloads:
+    interface: content
+    content: writeable-data
+    write:
+        - $SNAP_DATA
+
+plugs:
+  do-port-number:
+    interface: content
+    content: writeable-data
+    target: $SNAP_DATA
+
+  do-config-file:
+    interface: content
+    content: config-file
+    target: $SNAP_DATA
+
+#   network:
+#     interface: network
+
+#   home:
+#     interface: content
+#     target: $SNAP_DATA/data/downloads
 
 environment:
   LD_LIBRARY_PATH: "$LD_LIBRARY_PATH:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET"
@@ -108,6 +171,7 @@ layout:
 # adu_data_dir
   /var/lib/adu:
     symlink: $SNAP_DATA/data
+
 # adu_conf_dir
   /etc/adu:
     symlink: $SNAP_DATA/config

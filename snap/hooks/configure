@@ -27,6 +27,7 @@ adu_extensions_sources_dir="$SNAP/var/lib/adu/extensions/sources"
 adu_script_handler_file=libmicrosoft_script_1.so
 adu_steps_handler_file=libmicrosoft_steps_1.so
 adu_curl_downloader_file=libcurl_content_downloader.so
+adu_do_downloader_file=libdeliveryoptimization_content_downloader.so
 
 # The sample du-config.json
 sample_du_config=$(
@@ -235,7 +236,8 @@ register_extensions() {
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/update-manifest:5" --register-extension $adu_extensions_sources_dir/$adu_steps_handler_file
 
     echo "Register content downloader extension..."
-    $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_curl_downloader_file
+    #$adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_curl_downloader_file
+    $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_do_downloader_file
 }
 
 #add_adu_user_and_group
