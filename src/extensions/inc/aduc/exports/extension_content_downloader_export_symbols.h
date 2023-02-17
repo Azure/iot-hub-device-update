@@ -45,4 +45,17 @@ ADUC_Result Download(
  */
 #define CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL "Download"
 
+//
+// V1.1 symbols
+//
+
+/**
+ * @brief Gets the components version string.
+ *
+ * @param[out] outVersion The version string for the underlying downloader components.
+ * @return ADUC_Result The result.
+ * @details ADUC_Result GetComponentsVersion(char** outVersion)
+ */
+#define CONTENT_DOWNLOADER__GetComponentsVersion__EXPORT_SYMBOL "GetComponentsVersion"
+
 #endif // EXTENSION_CONTENT_DOWNLOADER_EXPORT_SYMBOLS_H

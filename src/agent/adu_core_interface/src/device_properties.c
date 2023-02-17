@@ -7,10 +7,10 @@
  */
 
 #include "device_properties.h"
+#include <aduc/extension_manager.h>
 #include <aduc/logging.h>
+#include <aduc/result.h>
 #include <aduc/types/update_content.h>
-#include <do_config.h>
-
 #include <stdlib.h>
 
 /*
@@ -108,15 +108,11 @@ bool DeviceProperties_ClearInterfaceId(JSON_Object* devicePropsObj)
 {
     bool success = false;
 
-    JSON_Status jsonStatus = json_object_set_null(
-        devicePropsObj,
-        ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
+    JSON_Status jsonStatus = json_object_set_null(devicePropsObj, ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
 
     if (jsonStatus != JSONSuccess)
     {
-        Log_Error(
-            "Could not set JSON field '%s' to null",
-            ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
+        Log_Error("Could not set JSON field '%s' to null", ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
         goto done;
     }
 
@@ -164,6 +160,7 @@ bool DeviceProperties_AddVersions(JSON_Object* devicePropsObj)
 {
     bool success = false;
     char* do_version = NULL;
+    ADUC_Result result = { ADUC_GeneralResult_Failure, 0 };
 
     JSON_Status jsonStatus =
         json_object_set_string(devicePropsObj, ADUCITF_FIELDNAME_DEVICEPROPERTIES_ADUC_VERSION, ADUC_BUILDER_VERSION);
@@ -177,11 +174,10 @@ bool DeviceProperties_AddVersions(JSON_Object* devicePropsObj)
         goto done;
     }
 
-    do_version = deliveryoptimization_get_components_version();
-
-    if (do_version == NULL)
+    result = ExtensionManager_GetComponentsVersion(&do_version);
+    if (IsAducResultCodeFailure(result.ResultCode) || do_version == NULL)
     {
-        Log_Warn("Could not get do_version");
+        Log_Warn("Could not get do_version, ERC: %08x", result.ExtendedResultCode);
         goto done;
     }
 

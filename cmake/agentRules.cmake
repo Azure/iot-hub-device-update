@@ -50,10 +50,3 @@ function (target_link_digital_twin_client target scope)
     target_link_iothub_client (${target} ${scope})
 endfunction (target_link_digital_twin_client)
 
-function (target_link_dosdk target scope)
-    find_package (deliveryoptimization_sdk CONFIG REQUIRED)
-    target_link_libraries (
-        ${target}
-        ${scope}
-        Microsoft::deliveryoptimization)
-endfunction (target_link_dosdk)

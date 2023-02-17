@@ -652,6 +652,10 @@
               {
                 "name": "ADUC_ERC_CONTENT_DOWNLOADER_UNSUPPORTED_CONTRACT_VERSION",
                 "value": 13
+              },
+              {
+                "name": "ADUC_ERC_CONTENT_DOWNLOADER_GETCOMPONENTSVERSIONPROC_NOTIMP",
+                "value": 14
               }
             ]
           },

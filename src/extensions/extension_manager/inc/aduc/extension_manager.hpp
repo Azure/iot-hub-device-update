@@ -35,6 +35,7 @@ public:
     static ADUC_Result LoadContentDownloaderLibrary(void** contentDownloaderLibrary);
     static ADUC_Result SetContentDownloaderLibrary(void* contentDownloaderLibrary);
     static ADUC_Result GetContentDownloaderContractVersion(ADUC_ExtensionContractInfo* contractInfo);
+    static ADUC_Result GetComponentsVersion(char** outVersion);
 
     static bool IsComponentsEnumeratorRegistered();
     static ADUC_Result LoadComponentEnumeratorLibrary(void** componentEnumerator);

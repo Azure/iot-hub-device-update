@@ -813,6 +813,47 @@ done:
     return result;
 }
 
+ADUC_Result ExtensionManager::GetComponentsVersion(char** outVersion)
+{
+    ADUC_Result result = { ADUC_Result_Failure, 0 };
+
+    if (outVersion == nullptr)
+    {
+        return result;
+    }
+
+    void* lib = nullptr;
+    result = ExtensionManager::LoadContentDownloaderLibrary(&lib);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        goto done;
+    }
+
+    if (ADUC_ContractUtils_IsVersionGTE(
+            &ExtensionManager::_contentDownloaderContractVersion, 1 /* major */, 1 /* minor */))
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        GetComponentsVersionProc getComponentsVersionProc = reinterpret_cast<GetComponentsVersionProc>(
+            dlsym(lib, CONTENT_DOWNLOADER__GetComponentsVersion__EXPORT_SYMBOL));
+        if (getComponentsVersionProc == nullptr)
+        {
+            result = { /* .ResultCode = */ ADUC_Result_Failure,
+                       /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_GETCOMPONENTSVERSIONPROC_NOTIMP };
+
+            goto done;
+        }
+
+        result = getComponentsVersionProc(outVersion);
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            goto done;
+        }
+    }
+
+done:
+    return result;
+}
+
 ADUC_Result ExtensionManager::Download(
     const ADUC_FileEntity* entity,
     WorkflowHandle workflowHandle,
@@ -959,6 +1000,11 @@ EXTERN_C_BEGIN
 ADUC_Result ExtensionManager_InitializeContentDownloader(const char* initializeData)
 {
     return ExtensionManager::InitializeContentDownloader(initializeData);
+}
+
+ADUC_Result ExtensionManager_GetComponentsVersion(char** outVersion)
+{
+    return ExtensionManager::GetComponentsVersion(outVersion);
 }
 
 ADUC_Result ExtensionManager_Download(

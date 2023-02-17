@@ -18,3 +18,12 @@ bool ADUC_ContractUtils_IsV1Contract(ADUC_ExtensionContractInfo* contractInfo)
         || (contractInfo->majorVer == ADUC_V1_CONTRACT_MAJOR_VER
             && contractInfo->minorVer == ADUC_V1_CONTRACT_MINOR_VER);
 }
+
+bool ADUC_ContractUtils_IsVersionGTE(
+    ADUC_ExtensionContractInfo* contractInfo, unsigned int majorVersion, unsigned int minorVersion)
+{
+    unsigned int contractMajorVersion = contractInfo == NULL ? 1 : contractInfo->majorVer;
+    unsigned int contractMinorVersion = contractInfo == NULL ? 0 : contractInfo->minorVer;
+    return (majorVersion > contractMajorVersion)
+        || (majorVersion == contractMajorVersion && minorVersion >= contractMinorVersion);
+}

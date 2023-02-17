@@ -78,6 +78,19 @@ done:
 }
 
 /**
+ * @brief Get the Components Version string for the underlying downloader components.
+ *
+ * @param[out] outVersion The output components version string.
+ * @return ADUC_Result The result.
+ */
+ADUC_Result GetComponentsVersion(char** outVersion)
+{
+    *outVersion = deliveryoptimization_get_components_version();
+    ADUC_Result result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
+    return result;
+}
+
+/**
  * @brief The download export.
  *
  * @param entity The file entity.

@@ -14,6 +14,8 @@ EXTERN_C_BEGIN
 
 typedef ADUC_Result (*InitializeProc)(const char* initializeData);
 
+typedef ADUC_Result (*GetComponentsVersionProc)(char** outVersion);
+
 typedef ADUC_Result (*DownloadProc)(
     const ADUC_FileEntity* entity,
     const char* workflowId,

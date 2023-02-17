@@ -26,6 +26,14 @@ EXTERN_C_BEGIN
 ADUC_Result ExtensionManager_InitializeContentDownloader(const char* initializeData);
 
 /**
+ * @brief Gets the content downloader extension underlying download library's components version string.
+ *
+ * @param outVersion The output parameter for the components version string.
+ * @return ADUC_Result The result of initialization.
+ */
+ADUC_Result ExtensionManager_GetComponentsVersion(char** outVersion);
+
+/**
  * @brief Downloads by using metadata download handler id and falls back to download with content downloader extension.
  *
  * @param entity The file entity to download.
