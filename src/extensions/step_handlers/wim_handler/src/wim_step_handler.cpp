@@ -18,9 +18,9 @@ bool IsInstalled(const char* installedCriteria)
     return isInstalled;
 }
 
-WimHandlerResultCode Install(const char* workFolder, const char* targetFile)
+RC Install(const char* workFolder, const char* targetFile)
 {
-    WimHandlerResultCode result = WimHandlerResultCode::Install_UnknownException;
+    RC result = RC::Install_UnknownException;
 
     UNREFERENCED_PARAMETER(workFolder);
     UNREFERENCED_PARAMETER(targetFile);
@@ -28,9 +28,10 @@ WimHandlerResultCode Install(const char* workFolder, const char* targetFile)
     return result;
 }
 
-WimHandlerResultCode Apply(const char* workFolder, const char* targetFile)
+// Return Apply_Success_Reboot_Required to indicate reboot is required.
+RC Apply(const char* workFolder, const char* targetFile)
 {
-    WimHandlerResultCode result = WimHandlerResultCode::Apply_UnknownException;
+    RC result = RC::Apply_UnknownException;
 
     UNREFERENCED_PARAMETER(workFolder);
     UNREFERENCED_PARAMETER(targetFile);

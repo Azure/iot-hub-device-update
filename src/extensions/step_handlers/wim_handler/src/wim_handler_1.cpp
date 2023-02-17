@@ -9,7 +9,6 @@
 #include "wim_handler_1.hpp"
 
 #include "aducresult.hpp"
-#include "wim_handler_result_code.hpp" // WimHandlerResultCode
 #include "wim_step_handler.hpp"
 #include "workflow_ptr.hpp"
 
@@ -63,7 +62,7 @@ ADUC_Result WimHandler1::IsInstalled(const ADUC_WorkflowData* workflowData)
     if (installedCriteria == nullptr)
     {
         Log_Error("[%s] Unable to get installed criteria.", ID());
-        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_MissingInstalledCriteria);
+        return ADUCResult(ADUC_Result_IsInstalled_NotInstalled);
     }
 
     const bool result = WimStepHandler::IsInstalled(installedCriteria.get());
@@ -92,7 +91,7 @@ ADUC_Result WimHandler1::Download(const ADUC_WorkflowData* workflowData)
 
     if (!IsValidUpdateTypeInfo(workflowHandle))
     {
-        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_UnsupportedUpdateVersion);
+        return ADUCResult(ADUC_Result_Failure, WimStepHandler::RC::Manifest_UnsupportedUpdateVersion);
     }
 
     const size_t fileCount = workflow_get_update_files_count(workflowHandle);
@@ -100,7 +99,7 @@ ADUC_Result WimHandler1::Download(const ADUC_WorkflowData* workflowData)
     {
         // Only supporting a single .WIM file in payload.
         Log_Error("[%s] Incorrect file count: %u", ID(), fileCount);
-        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_WrongFileCount);
+        return ADUCResult(ADUC_Result_Failure, WimStepHandler::RC::Manifest_WrongFileCount);
     }
 
     //
@@ -129,7 +128,7 @@ ADUC_Result WimHandler1::Download(const ADUC_WorkflowData* workflowData)
         ADUCFileEntity entity;
         if (!workflow_get_update_file(workflowHandle, fileIndex, &entity))
         {
-            return WimHandlerADUCResult(WimHandlerResultCode::Manifest_CantGetFileEntity);
+            return ADUCResult(ADUC_Result_Failure, WimStepHandler::RC::Manifest_CantGetFileEntity);
         }
 
         try
@@ -148,7 +147,7 @@ ADUC_Result WimHandler1::Download(const ADUC_WorkflowData* workflowData)
         }
         catch (...)
         {
-            return WimHandlerADUCResult(WimHandlerResultCode::Download_UnknownException);
+            return ADUCResult(ADUC_Result_Failure, WimStepHandler::RC::Download_UnknownException);
         }
     }
 
@@ -174,7 +173,7 @@ ADUC_Result WimHandler1::Install(const ADUC_WorkflowData* workflowData)
 
     if (!IsValidUpdateTypeInfo(workflowHandle))
     {
-        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_UnsupportedUpdateVersion);
+        return ADUCResult(ADUC_Result_Failure, WimStepHandler::RC::Manifest_UnsupportedUpdateVersion);
     }
 
     //
@@ -191,7 +190,7 @@ ADUC_Result WimHandler1::Install(const ADUC_WorkflowData* workflowData)
     if (workFolder.get() == nullptr)
     {
         Log_Error("[%s] Unable to get work folder", ID());
-        return WimHandlerADUCResult(WimHandlerResultCode::General_CantGetWorkFolder);
+        return ADUCResult(ADUC_Result_Failure, WimStepHandler::RC::General_CantGetWorkFolder);
     }
 
     const size_t fileCount = workflow_get_update_files_count(workflowHandle);
@@ -199,23 +198,28 @@ ADUC_Result WimHandler1::Install(const ADUC_WorkflowData* workflowData)
     {
         // Only supporting a single .WIM file in payload.
         Log_Error("[%s] Invalid file count: %u", ID(), fileCount);
-        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_WrongFileCount);
+        return ADUCResult(ADUC_Result_Failure, WimStepHandler::RC::Manifest_WrongFileCount);
     }
 
     ADUCFileEntity entity;
     if (!workflow_get_update_file(workflowHandle, 0, &entity))
     {
         Log_Error("[%s] Unable to get filename", ID());
-        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_CantGetFileEntity);
+        return ADUCResult(ADUC_Result_Failure, WimStepHandler::RC::Manifest_CantGetFileEntity);
     }
 
     Log_Info("Installing %s from %s", entity.TargetFilename, workFolder.get());
 
-    const WimHandlerResultCode result = WimStepHandler::Install(workFolder.get(), entity.TargetFilename);
+    const WimStepHandler::RC rc = WimStepHandler::Install(workFolder.get(), entity.TargetFilename);
+    ADUCResult result(ADUC_Result_Failure, rc);
+    if (rc == WimStepHandler::RC::Success)
+    {
+        result.Set(ADUC_Result_Success, 0);
+    }
 
-    Log_Info("[%s] Install result: %d", ID(), result);
+    Log_Info("[%s] Install result: %u,%u", ID(), result.ResultCode(), result.ExtendedResultCode());
 
-    return WimHandlerADUCResult(result);
+    return result;
 }
 
 /**
@@ -241,7 +245,7 @@ ADUC_Result WimHandler1::Apply(const ADUC_WorkflowData* workflowData)
     {
         Log_Error("[%s] Unable to get work folder", ID());
 
-        return WimHandlerADUCResult(WimHandlerResultCode::General_CantGetWorkFolder);
+        return ADUCResult(ADUC_Result_Failure, WimStepHandler::RC::General_CantGetWorkFolder);
     }
 
     const size_t fileCount = workflow_get_update_files_count(workflowHandle);
@@ -249,23 +253,32 @@ ADUC_Result WimHandler1::Apply(const ADUC_WorkflowData* workflowData)
     {
         // Only supporting a single .WIM file in payload.
         Log_Error("[%s] Invalid file count: %u", ID(), fileCount);
-        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_WrongFileCount);
+        return ADUCResult(ADUC_Result_Failure, WimStepHandler::RC::Manifest_WrongFileCount);
     }
 
     ADUCFileEntity entity;
     if (!workflow_get_update_file(workflowHandle, 0, &entity))
     {
         Log_Error("[%s] Unable to get filename", ID());
-        return WimHandlerADUCResult(WimHandlerResultCode::Manifest_CantGetFileEntity);
+        return ADUCResult(ADUC_Result_Failure, WimStepHandler::RC::Manifest_CantGetFileEntity);
     }
 
     Log_Info("[%s] Applying %s from %s", ID(), entity.TargetFilename, workFolder.get());
 
-    const WimHandlerResultCode result = WimStepHandler::Apply(workFolder.get(), entity.TargetFilename);
+    const WimStepHandler::RC rc = WimStepHandler::Apply(workFolder.get(), entity.TargetFilename);
+    ADUCResult result(ADUC_Result_Failure, rc);
+    if (rc == WimStepHandler::RC::Success)
+    {
+        result.Set(ADUC_Result_Success, 0);
+    }
+    else if (rc == WimStepHandler::RC::Apply_Success_Reboot_Required)
+    {
+        result.Set(ADUC_Result_Apply_RequiredReboot, 0);
+    }
 
-    Log_Info("[%s] Apply result: %d", ID(), result);
+    Log_Info("[%s] Apply result: %u,%u", ID(), result.ResultCode(), result.ExtendedResultCode());
 
-    return WimHandlerADUCResult(result);
+    return result;
 }
 
 /**
