@@ -442,9 +442,9 @@ do_install_do() {
 
     local do_url
     if [[ $use_ssh == "true" ]]; then
-        do_url=git@github.com:Microsoft/do-client.git
+        do_url=git@github.com:nox-msft/do-client.git
     else
-        do_url=https://github.com/Microsoft/do-client.git
+        do_url=https://github.com/nox-msft/do-client.git
     fi
 
     git clone --recursive --single-branch --branch $do_ref --depth 1 $do_url . || return

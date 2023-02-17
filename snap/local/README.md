@@ -1,4 +1,12 @@
-# SNAP Design Doc
+# Device Update Agent SNAP Devcelopment Design
+
+## Terminology
+
+| Achronym | Description | Note|
+|---|---|---|
+| DO | Delivery Optimization | e.g., DO Agent, DO Agent Snap, DO SDK
+| DU | Device Update | e.g., DU Agent, DU Agent Snap, DU Service
+
 
 ## Ubuntu Core
 
@@ -26,6 +34,85 @@ For example, to connect to Azure Identity Service with a specific user ID called
 This will connect the two snaps using the "snap_aziot_adu" user ID, allowing the snaps to communicate with each other as that user.
 
 It is important to note that using the `--classic` and `--username` options with the snap connect command can have security implications, as it allows the connected snaps to access each other's data and resources as the specified user. Therefore, it should only be used if necessary and with caution.
+
+### Integrating With Another Snaps
+
+The sections below explains how Device Update Agent snap communicate with other snap.
+
+### Delivery Optimization Integration
+
+To download files using DO Agent snap, the DU Agent snap need to connect to the following `slots` provided by the DO Agent snap:
+
+```yaml
+# Note: snippet from https://github.com/microsoft/do-client/blob/develop/snap/snapcraft.yaml
+
+slots:
+    port-number:
+        interface: content
+        content: port-number
+        read: [ $SNAP_DATA/var/run/deliveryoptimization-agent ]
+
+    config-file:
+        interface: content
+        content: config-file
+        write: [ $SNAP_DATA/etc/deliveryoptimization-agent/sdk-config.json ]
+```
+
+You can list a DO client snap's connections by using  the `snap connections` command. This command displays information about the snap's connections, including its slots and plugs.
+
+```shell
+adu-dev@du-ubuntu-core-2004-build:~d$ snap connections 
+
+deliveryoptimization-client
+Interface     Plug                                      Slot                                     Notes
+content       -                                         deliveryoptimization-client:config-file  -
+content       -                                         deliveryoptimization-client:port-number  -
+network       deliveryoptimization-client:network       :network                                 -
+network-bind  deliveryoptimization-client:network-bind  :network-bind                            -
+WARNING: There is 1 new warning. See 'snap warnings'.
+
+```
+
+DU Agent snap will declare the following `plugs`
+
+```yaml
+# Note: from ../snapcraft.yaml
+
+plugs:
+  do-port-number:
+    interface: content
+    content: port-number
+    target: $SNAP_DATA/var/run/deliveryoptimization-agent
+
+  do-config-file:
+    interface: content
+    content: config-file
+    target: $SNAP_DATA/etc/deliveryoptimization-agent/sdk-config.json
+
+```
+
+> Note that above DU's `_plug_name_:content` identifier must match DO's `_slot_name_:content` identifier 
+
+To connect, use following commands:
+
+```shell
+sudo snap connect deviceupdate-agent:do-port-number deliveryoptimization-client:port-number
+
+sudo snap connect deviceupdate-agent:do-config-file deliveryoptimization-client:config-file
+```
+
+Verify that connections are ok:
+
+```shell
+snap connections deviceupdate-agent 
+
+Interface                Plug                               Slot                                     Notes
+content                  -                                  deviceupdate-agent:downloads             -
+content[config-file]     deviceupdate-agent:do-config-file  deliveryoptimization-client:config-file  manual
+content[writeable-data]  deviceupdate-agent:do-port-number  deliveryoptimization-client:port-number  manual
+home                     deviceupdate-agent:home            :home                                    -
+network                  deviceupdate-agent:network         :network                                 -
+```
 
 ### Snap Parts
 
@@ -82,3 +169,68 @@ For example, in our reference snap agent, the following table shows the file loc
 | /usr/lib/adu | $SNAP_DATA/config |
 | /var/log/adu | $SNAP_DATA/log |
 | /usr/bin/curl-downloader | $SNAP/usr/bin/curl |
+
+
+## Building DU Snap
+
+To build the DU Snap, run `snapcraft` command at project root folder.
+
+```bash
+cd project_root
+snapcraft --debug
+````
+
+### Build Output
+
+If build success, you can find `deviceupdate-agent_#.#_amd64.snap` at the project root directory.
+
+### How To View the DU Snap Package Content
+
+You can use `unsquashfs` command to extract `.snap` file.
+
+```shell
+# Run unsquashfs <snap file name>
+# e.g., unsquashfs deviceupdate-agent_0.1_amd64.snap
+rm -fr squashfs-root
+
+unsquashfs deviceupdate-agent_0.1_amd64.snap
+
+# The content will be extracted to 'squashfs-root' directory
+# You can use 'tree' command to view the directory content
+tree squashfs-root
+```
+## Run The Snap
+
+To run a shell in the confined environment:
+
+```shell
+$ sudo snap run --shell deviceupdate-agent
+```
+
+## View Snap Logs using Journalctl
+
+The name of the Device Update agent in the confined environment is `snap.deviceupdate-agent.deviceupdate-agent`.
+
+To view the journal log, use following command:
+
+```shell
+$ journalctl -u snap.deviceupdate-agent.deviceupdate-agent -f --no-tail
+```
+
+To start the daemon:
+
+```shell
+$ sudo systemctl start  snap.deviceupdate-agent.deviceupdate-agent
+```
+
+To stop the daemon:
+
+```shell
+$ sudo systemctl stop  snap.deviceupdate-agent.deviceupdate-agent
+```
+
+To restart the daemon:
+
+```shell
+$ sudo systemctl restart  snap.deviceupdate-agent.deviceupdate-agent
+```

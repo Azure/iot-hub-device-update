@@ -232,7 +232,7 @@ static _Bool RegisterHandlerExtension(
     grp = NULL;
 
     Log_Debug("Creating the extension folder ('%s'), uid:%d, gid:%d", STRING_c_str(dir), aduUserId, aduGroupId);
-#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
+#ifndef ADUC_BUILD_SNAP
     int dir_result = ADUC_SystemUtils_MkDirRecursive(STRING_c_str(dir), aduUserId, aduGroupId, S_IRWXU | S_IRWXG);
 #else
     // Note: for Ubuntu Core, always use default user and group.
@@ -418,7 +418,7 @@ _Bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
     grp = NULL;
 
     Log_Debug("Creating the extension folder ('%s'), uid:%d, gid:%d", extensionDir, aduUserId, aduGroupId);
-#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
+#ifndef ADUC_BUILD_SNAP
     int dir_result =
         ADUC_SystemUtils_MkDirRecursive(extensionDir, aduUserId, aduGroupId, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP);
 #else
