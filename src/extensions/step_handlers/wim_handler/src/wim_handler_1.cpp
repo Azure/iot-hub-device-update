@@ -12,11 +12,13 @@
 #include "wim_step_handler.hpp"
 #include "workflow_ptr.hpp"
 
+#include <inttypes.h> // PRIu64
 #include <vector>
 
 #include "aduc/extension_manager.hpp" // ExtensionManager_Download_Options
 #include "aduc/parser_utils.h" // ADUC_FileEntity_Uninit
 #include "aduc/string_c_utils.h" // ADUC_ParseUpdateType
+#include "aduc/types/download.h" // ADUCDownloadProgressState
 #include "aduc/workflow_data_utils.h" // ADUC_WorkflowData
 #include "aduc/workflow_utils.h" // workflow_get_*
 
@@ -38,6 +40,23 @@ public:
         ADUC_FileEntity_Uninit(this);
     }
 };
+
+static void DownloadProgressCallback(
+    const char* workflowId,
+    const char* fileId,
+    ADUC_DownloadProgressState state,
+    uint64_t bytesTransferred,
+    uint64_t bytesTotal)
+{
+    Log_Info(
+        "[%s] DownloadProgress: %s; %s; %u (%" PRIu64 "/%" PRIu64 ")",
+        WimHandler1::ID(),
+        workflowId,
+        fileId,
+        state,
+        bytesTransferred,
+        bytesTotal);
+}
 
 /**
  * @brief Destructor
@@ -134,10 +153,7 @@ ADUC_Result WimHandler1::Download(const ADUC_WorkflowData* workflowData)
         try
         {
             ADUCResult result = ExtensionManager::Download(
-                &entity,
-                workflowHandle,
-                &Default_ExtensionManager_Download_Options,
-                nullptr /*downloadProgressCallback*/);
+                &entity, workflowHandle, &Default_ExtensionManager_Download_Options, DownloadProgressCallback);
             if (result.IsResultCodeFailure())
             {
                 Log_Error(

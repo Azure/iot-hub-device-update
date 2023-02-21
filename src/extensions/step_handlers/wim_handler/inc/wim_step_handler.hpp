@@ -11,7 +11,8 @@ namespace WimStepHandler
 // Avoiding "enum class" to allow for implicit conversion to ADUC_Result_t
 enum RC
 {
-    Success = 0,
+    // Success = 1 to match ADUC_Result_Success
+    Success = 1,
 
     General_CantGetWorkFolder = 100,
 

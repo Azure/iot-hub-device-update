@@ -22,9 +22,7 @@
 #if defined(WIN32)
 // DO currently doesn't call CoInitialize, so need to do that here.
 #    define WIN32_LEAN_AND_MEAN
-#    include <objbase.h> // COM
-
-#    include <algorithm> // std::replace
+#    include <objbase.h>
 #endif
 
 EXTERN_C_BEGIN
@@ -115,22 +113,7 @@ EXPORTED_METHOD ADUC_Result Download(
     unsigned int retryTimeout,
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
-#if defined(WIN32)
-    // TODO(JeffMill): I'm temporarily using paths like /var/lib/adu/downloads
-    // but DO requires a full path and backslashes, so prepending C:.  Once paths are fixed up, this can be removed.
-    std::string folder;
-    if (workFolder[0] == '/')
-    {
-        folder = "c:";
-    }
-    folder += workFolder;
-
-    std::replace(folder.begin(), folder.end(), '/', '\\');
-
-    return do_download(entity, workflowId, folder.c_str(), retryTimeout, downloadProgressCallback);
-#else
     return do_download(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
-#endif
 }
 
 //

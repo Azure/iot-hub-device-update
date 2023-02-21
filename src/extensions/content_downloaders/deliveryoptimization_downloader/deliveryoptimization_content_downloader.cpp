@@ -13,7 +13,6 @@
 #include "aduc/process_utils.hpp"
 
 #include <atomic>
-#include <sstream>
 #include <stdio.h> // for FILE
 #include <stdlib.h> // for calloc
 #include <sys/stat.h> // for stat
@@ -21,6 +20,11 @@
 
 #include <do_config.h>
 #include <do_download.h>
+
+#if defined(WIN32)
+// DO currently doesn't call CoInitialize, so need to do that here.
+#    include <algorithm> // std::replace
+#endif
 
 namespace MSDO = microsoft::deliveryoptimization;
 
@@ -46,17 +50,30 @@ ADUC_Result do_download(
         return ADUC_Result{ resultCode, extendedResultCode };
     }
 
-    std::stringstream fullFilePath;
-    fullFilePath << workFolder << "/" << entity->TargetFilename;
+    std::string fullFilePath;
+
+#if defined(WIN32)
+    // DO requires a full path. Once paths are fixed up, this can be removed.
+    if (workFolder[0] == '/')
+    {
+        fullFilePath = "c:";
+    }
+#endif
+
+    fullFilePath += workFolder;
+    fullFilePath += "/";
+    fullFilePath += entity->TargetFilename;
+
+#if defined(WIN32)
+    // DO requires backslashes, so convert.
+    std::replace(fullFilePath.begin(), fullFilePath.end(), '/', '\\');
+#endif
 
     Log_Info(
-        "Downloading File '%s' from '%s' to '%s'",
-        entity->TargetFilename,
-        entity->DownloadUri,
-        fullFilePath.str().c_str());
+        "Downloading File '%s' from '%s' to '%s'", entity->TargetFilename, entity->DownloadUri, fullFilePath.c_str());
 
     const std::error_code doErrorCode = MSDO::download::download_url_to_path(
-        entity->DownloadUri, fullFilePath.str(), false, std::chrono::seconds(retryTimeout));
+        entity->DownloadUri, fullFilePath, false, std::chrono::seconds(retryTimeout));
     if (!doErrorCode)
     {
         resultCode = ADUC_Result_Download_Success;
@@ -87,7 +104,7 @@ ADUC_Result do_download(
         {
             Log_Error(
                 "FileEntity for %s has unsupported hash type %s",
-                fullFilePath.str().c_str(),
+                fullFilePath.c_str(),
                 ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0));
             resultCode = ADUC_Result_Failure;
             extendedResultCode = ADUC_ERC_VALIDATION_FILE_HASH_TYPE_NOT_SUPPORTED;
@@ -101,7 +118,7 @@ ADUC_Result do_download(
         }
 
         const bool isValid = ADUC_HashUtils_IsValidFileHash(
-            fullFilePath.str().c_str(),
+            fullFilePath.c_str(),
             ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
             algVersion,
             false /* suppressErrorLog */);
@@ -126,7 +143,7 @@ ADUC_Result do_download(
     struct stat st
     {
     };
-    const off_t fileSize{ (stat(fullFilePath.str().c_str(), &st) == 0) ? st.st_size : 0 };
+    const off_t fileSize{ (stat(fullFilePath.c_str(), &st) == 0) ? st.st_size : 0 };
 
     if (downloadProgressCallback != nullptr)
     {
