@@ -949,14 +949,6 @@
                             "value": 14
                         },
                         {
-                            "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_DISABLEDROOTKEYS_EMPTY",
-                            "value": 15
-                        },
-                        {
-                            "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_DISABLEDSIGNINGKEYS_EMPTY",
-                            "value": 16
-                        },
-                        {
                             "name": "ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_ROOTKEYS_EMPTY",
                             "value": 17
                         },
@@ -1078,27 +1070,27 @@
                     ]
                 },
                 {
-                  "code": 7,
-                  "doc_string": "indicates errors from url utility.",
-                  "name": "ADUC_COMPONENT_URL_UTIL",
-                  "results": [
-                    {
-                      "name": "ADUC_ERC_UTILITIES_URL_BAD_ARG",
-                      "value": 1
-                    },
-                    {
-                      "name": "ADUC_ERC_UTILITIES_URL_BAD_URL",
-                      "value": 2
-                    },
-                    {
-                      "name": "ADUC_ERC_UTILITIES_URL_BAD_PATH",
-                      "value": 3
-                    },
-                    {
-                      "name": "ADUC_ERC_UTILITIES_URL_PATH_COPY",
-                      "value": 4
-                    }
-                  ]
+                    "code": 7,
+                    "doc_string": "indicates errors from url utility.",
+                    "name": "ADUC_COMPONENT_URL_UTIL",
+                    "results": [
+                        {
+                            "name": "ADUC_ERC_UTILITIES_URL_BAD_ARG",
+                            "value": 1
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_URL_BAD_URL",
+                            "value": 2
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_URL_BAD_PATH",
+                            "value": 3
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_URL_PATH_COPY",
+                            "value": 4
+                        }
+                    ]
                 }
             ],
             "code": 8,
