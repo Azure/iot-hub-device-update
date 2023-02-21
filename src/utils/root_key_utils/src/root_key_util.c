@@ -326,25 +326,13 @@ done:
     return result;
 }
 
-//
-// Dummy function while signatures are being validated
-//
-// Bug(42520383: Add valid signatures to the root_key_utils unit tests
-//
-ADUC_Result RootKeyUtility_DummyValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage)
-{
-    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Success, .ExtendedResultCode = 0 };
-
-    return result;
-}
-
 /**
  * @brief Validates the @p rootKeyPackage using the hard coded root keys from the RootKeyList within the agent binary
  *
  * @param rootKeyPackage root key package containing the signatures to validate with the hardcoded root keys
  * @return a value of ADUC_Result
  */
-ADUC_Result RootKeyUtility_RealValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage)
+ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
@@ -352,6 +340,11 @@ ADUC_Result RootKeyUtility_RealValidateRootKeyPackageWithHardcodedKeys(const ADU
 
     const RSARootKey* hardcodedRsaKeys = RootKeyList_GetHardcodedRsaRootKeys();
     const size_t numHardcodedKeys = RootKeyList_numHardcodedKeys();
+    if (hardcodedRsaKeys == NULL || numHardcodedKeys == 0)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_HARDCODED_ROOTKEY_LOAD_FAILED;
+        goto done;
+    }
 
     for (size_t i = 0; i < numHardcodedKeys; ++i)
     {
@@ -383,17 +376,6 @@ done:
     }
 
     return result;
-}
-
-/**
- * @brief Validates the @p rootKeyPackage using the hard coded root keys from the RootKeyList within the agent binary
- *
- * @param rootKeyPackage root key package containing the signatures to validate with the hardcoded root keys
- * @return a value of ADUC_Result
- */
-ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage)
-{
-    return RootKeyUtility_DummyValidateRootKeyPackageWithHardcodedKeys(rootKeyPackage);
 }
 
 /**
@@ -507,7 +489,6 @@ ADUC_Result RootKeyUtility_ReloadPackageFromDisk()
 ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPackage, const char* fileLocation)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-
     JSON_Value* rootKeyPackageValue = NULL;
 
     ADUC_RootKeyPackage* tempPkg = NULL;
@@ -527,7 +508,6 @@ ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPack
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_LOAD_FROM_STORE;
         goto done;
     }
-
     rootKeyPackageJsonString = json_serialize_to_string(rootKeyPackageValue);
 
     if (rootKeyPackageJsonString == NULL)

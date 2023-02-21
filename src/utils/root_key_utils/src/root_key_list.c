@@ -47,7 +47,7 @@ static const RSARootKey HardcodedRSARootKeyList[] =
         "mQ",
         65537
     },
-#ifdef DBUILD_WITH_TEST_KEYS
+#ifdef BUILD_WITH_TEST_KEYS
     {
         "ADU.200702.R.T",
         "ALnCgCTJLJFVSo7VSxXa2jEndHE2tlXJ3ZJXueNLJoN2tr-IWF6B1gWgNLZGY-VT"
