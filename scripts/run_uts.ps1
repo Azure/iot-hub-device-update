@@ -6,7 +6,7 @@ param(
 $root_dir = git.exe rev-parse --show-toplevel
 
 $testdataPath = '/tmp/adu/testdata'
-if (-not (Test-Path $testdataPath -PathType Leaf)) {
+if (-not (Test-Path $testdataPath -PathType Container)) {
     Write-Warning "$testdataPath not found. Rebuild product to regenerate."
     Exit 1
 }
