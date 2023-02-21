@@ -56,64 +56,64 @@ parts:
 
   azure-blob-stroage-file-upload-utility:
     after:
-      - installdeps
+      - azure-iot-hub-client-csdk
     plugin: nil
     source: ./scripts
     build-packages:
       - git
     override-build: |
-      ./install-deps.sh --work-folder $SNAPCRAFT_STAGE/du-workfolder --install-abs-file-upload-utility
-
-#  deliveryoptimization-sdk:
-#    after:
-#      - installdeps
-#    plugin: nil
-#    source: ./scripts
-#    override-build: |
-#      ./install-deps.sh --install-do  --work-folder $SNAPCRAFT_STAGE/du-workfolder
-#      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib
-#      cp /usr/local/lib/libdeliveryoptimization.so* $SNAPCRAFT_PART_INSTALL/usr/lib
-
-  deliveryoptimization-deps:
-    plugin: nil
-    source: https://github.com/nox-msft/do-client.git
-    override-build: |
-      ./build/scripts/bootstrap.sh --platform ubuntu2004 --install build
+      ./install-deps.sh --work-folder $SNAPCRAFT_STAGE/du-workfolder --install-abs-file-upload-utility 6969d0fc9d222a5c132d0b8fb4305697a6017383
 
   deliveryoptimization-sdk:
     after:
-      - deliveryoptimization-deps
-    plugin: python
-    source: https://github.com/nox-msft/do-client.git
+      - installdeps
+    plugin: nil
+    source: ./scripts
     override-build: |
-      python3 ./build/build.py --project sdk --build-for-snap --package-for deb
-      mkdir -p ../install/bin
-      cp /tmp/build-deliveryoptimization-sdk/linux-debug/libdeliveryoptimization*.0.0_amd64.deb ../install/bin
+      ./install-deps.sh --install-do --do-ref du-snap-integration-poc  --work-folder $SNAPCRAFT_STAGE/du-workfolder
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib
       cp /usr/local/lib/libdeliveryoptimization.so* $SNAPCRAFT_PART_INSTALL/usr/lib
-    build-packages:
-      - file
 
-    stage-packages:
-      - libasn1-8-heimdal
-      - libboost-filesystem1.71.0
-      - libbrotli1
-      - libcurl4
-      - libgssapi3-heimdal
-      - libhcrypto4-heimdal
-      - libheimbase1-heimdal
-      - libheimntlm0-heimdal
-      - libhx509-5-heimdal
-      - libkrb5-26-heimdal
-      - libldap-2.4-2
-      - libnghttp2-14
-      - libproxy1v5
-      - libpsl5
-      - libroken18-heimdal
-      - librtmp1
-      - libsasl2-2
-      - libssh-4
-      - libwind0-heimdal
+  # deliveryoptimization-deps:
+  #   plugin: nil
+  #   source: https://github.com/nox-msft/do-client.git
+  #   override-build: |
+  #     ./build/scripts/bootstrap.sh --platform ubuntu2004 --install build
+
+  # deliveryoptimization-sdk:
+  #   after:
+  #     - deliveryoptimization-deps
+  #   plugin: python
+  #   source: https://github.com/nox-msft/do-client.git
+  #   override-build: |
+  #     python3 ./build/build.py --project sdk --build-for-snap --package-for deb
+  #     mkdir -p ../install/bin
+  #     cp /tmp/build-deliveryoptimization-sdk/linux-debug/libdeliveryoptimization*.0.0_amd64.deb ../install/bin
+  #     mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib
+  #     cp /usr/local/lib/libdeliveryoptimization.so* $SNAPCRAFT_PART_INSTALL/usr/lib
+  #   build-packages:
+  #     - file
+
+  #   stage-packages:
+  #     - libasn1-8-heimdal
+  #     - libboost-filesystem1.71.0
+  #     - libbrotli1
+  #     - libcurl4
+  #     - libgssapi3-heimdal
+  #     - libhcrypto4-heimdal
+  #     - libheimbase1-heimdal
+  #     - libheimntlm0-heimdal
+  #     - libhx509-5-heimdal
+  #     - libkrb5-26-heimdal
+  #     - libldap-2.4-2
+  #     - libnghttp2-14
+  #     - libproxy1v5
+  #     - libpsl5
+  #     - libroken18-heimdal
+  #     - librtmp1
+  #     - libsasl2-2
+  #     - libssh-4
+  #     - libwind0-heimdal
 
   #
   # Agent component
