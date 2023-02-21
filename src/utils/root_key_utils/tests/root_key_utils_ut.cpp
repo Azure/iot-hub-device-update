@@ -30,18 +30,32 @@ using ADUC::StringUtils::cstr_wrapper;
 using uint8_t_wrapper = ADUC::StringUtils::calloc_wrapper<uint8_t>;
 
 const RSARootKey testHardcodedRootKeys[] = {
-    { "rootkey1",
-      "AK0s6dGfMRRbOn90osTP4hZ4vhxuRn3bH45u3yjUp0R5guueqGs1k6VIAtBgq87PMWMCEaE8hWyEGQEH-HCaQNhClSJFsT7JR7l1JghkRRraDqfpv2BIGdk9-jRtHWxTrszwxi51MNhMMmaz2aizyiMLFj-qh4CNBUVskexUKBn2Ko4yrG0tl7dqBZA7fNdtVymK8SyFnt4GIFLLcKgnc0_NqwLc6S7zFQ--EbXuah32_Fw9rp7ZZpp6RPYzMoc2DnTarFGLhk8tzQQCTYOToAFQCDVq3KBSWkjY5QWbh2LZO-NeKNg0pG6aSOZlopf5ebuK0mEFoyB1oc6ne3HSem8",
+    { "testrootkey1",
+      "rPMhXSpDY53R8pZJi0oW3qvP9l_9ntRkJo-2US109_wr5_P-t54uCx-EwZs7UkXYNYnyu8GIbzL2dyQp7lMhmLv_cQFIhs6HMlLpSIMtbHYq_v6jMgdGb5ovfbwPbMsiESQiZc0xSEVMq60p8iCw58gIzMK1nWdYeUQMC8mU-G-O8c_z8SXlVjbwZ5AmjVg42Z3NW558gcgez0LxkRnGyALHZCCjJNSUjPTp7AMKL21S-C6aFFVWwFJdeUrhJkf__2cdAB6m3C6-wuO2pq1HRX-epjMmnQ06UjdUmKuIUjB2uyVcMTnkVzXPUD6D2rbBFAy1230Svw20YSP8P7n9xQ",
       65537 },
-    { "rootkey2",
-      "AMmbcWZ5Aa5mcxRexjQPV2FBWgUpdTKnCxIKhlvT1MkuPCyua-zwVwwpxeHubtOFXCidjyjyx8Eb_f2RmEHnlSWFaASKJhDiEl11xyn_dD8GCrMBalyC8wfQGmFL37YKdprm31Y_eBIquRirxcK-8qmN2Ko-rUkljYunlfhSbeMqbYeAiKcmT664sZ7yNNoFDkhdV8MJPD1YDNmv_RSln5RUmHje6fezkZHV5wPNl3mF_YdkRzKJrWTAgrTaY1poqC4FF8kHkukKtUNsHwDzmavmph2sqvw8cuXW_SmyHtdwHWxL9gQqEJci9XykgUFokRoZEsT8KyrrHi6fdI9cY4U",
+    { "testrootkey2",
+      "tKN8mDrKOtLIsUjPC_KHcu6YcyitaG9nKtpR_WQAYT8rNjtlORd5H2TuAsr4DutkX7x6SZv3y5RyTqVZKZNkmlbUALoRR1bJ-pGkEUtntB9Oaga2ZcmtYYOwTy2QdOLEee_fE6UZun-mWNPv2swMhmWJuMTkixUakq8PN4bSPDNjdn_moVowXmfesN31Ioi97zxKSp9XXhU6E92MX2E782-uxqshPFe-xEWRLGCA50-_yJeJMiRJSiMZdjQ4Su9o6D86WdgiTERP9cUoSQFoZWFnG8c76WL_Gn0T6pM47kPOJeGv2ZyDm9hGrLL2bjI2WTevDmOrzCjf8qHw6Kg58Q",
       65537 }
 };
 
-static std::string get_example_rootkey_package_json_path()
+static std::string get_valid_example_rootkey_package_json_path()
 {
     std::string path{ ADUC_TEST_DATA_FOLDER };
-    path += "/root_key_utils/rootkeypackage.json";
+    path += "/root_key_utils/validrootkeypackage.json";
+    return path;
+};
+
+static std::string get_invalid_example_rootkey_package_json_path()
+{
+    std::string path{ ADUC_TEST_DATA_FOLDER };
+    path += "/root_key_utils/invalidrootkeypackage.json";
+    return path;
+};
+
+static std::string get_nonexistent_example_rootkey_package_json_path()
+{
+    std::string path{ ADUC_TEST_DATA_FOLDER };
+    path += "/root_key_utils/doesnotexistrootkeypackage.json";
     return path;
 };
 
@@ -54,16 +68,14 @@ static std::string get_dest_rootkey_package_json_path()
 
 // Correct signature,
 // clang-format off
-std::string validRootKeyPackageJson  =  R"({"protected":{"version":1,"published":1667343602,"disabledRootKeys":["rootkey2"],"disabledSigningKeys":[{"alg":"SHA256","hash":"sVMpGd8aPo17piBBc-f1Bki0iCJPZmKvA43GG3SsG1E"}],"rootKeys":{"rootkey1":{"keyType":"RSA","n":"AK0s6dGfMRRbOn90osTP4hZ4vhxuRn3bH45u3yjUp0R5guueqGs1k6VIAtBgq87PMWMCEaE8hWyEGQEH-HCaQNhClSJFsT7JR7l1JghkRRraDqfpv2BIGdk9-jRtHWxTrszwxi51MNhMMmaz2aizyiMLFj-qh4CNBUVskexUKBn2Ko4yrG0tl7dqBZA7fNdtVymK8SyFnt4GIFLLcKgnc0_NqwLc6S7zFQ--EbXuah32_Fw9rp7ZZpp6RPYzMoc2DnTarFGLhk8tzQQCTYOToAFQCDVq3KBSWkjY5QWbh2LZO-NeKNg0pG6aSOZlopf5ebuK0mEFoyB1oc6ne3HSem8","e":65537},"rootkey2":{"keyType":"RSA","n":"AMmbcWZ5Aa5mcxRexjQPV2FBWgUpdTKnCxIKhlvT1MkuPCyua-zwVwwpxeHubtOFXCidjyjyx8Eb_f2RmEHnlSWFaASKJhDiEl11xyn_dD8GCrMBalyC8wfQGmFL37YKdprm31Y_eBIquRirxcK-8qmN2Ko-rUkljYunlfhSbeMqbYeAiKcmT664sZ7yNNoFDkhdV8MJPD1YDNmv_RSln5RUmHje6fezkZHV5wPNl3mF_YdkRzKJrWTAgrTaY1poqC4FF8kHkukKtUNsHwDzmavmph2sqvw8cuXW_SmyHtdwHWxL9gQqEJci9XykgUFokRoZEsT8KyrrHi6fdI9cY4U","e":65537}}},"signatures":[{"alg":"RS256","sig":"aN94C4nO0mGAa35AR0sC_kUWBTRbT1hFTZgpBdHqE_AmjaP0Otzj2n_-kKTM_qGiNxhc7yfwV-TQanxOO4hFxgmhAIyLNlkDtjMGsSFG1c8aXxgEOctMrxaDvTXmWo45L_qmvOVHbwnzeUc0GcIvCwaA8y8aXiqEsb206yPJexT7gU2LxiGeUbJK8OobdjJPNPh4VF1WLUO9F0tkE2c4SkeqH9gAlJDZPum446NmFCsOCP2a9rCckd2KQOfeprvuYlQ9mdfIyZ59gleWWYBmES0q1lHkX05SnderYZ8cKxAqb8_9GheGM0wTSkrVjJh1Jva2kMY-tDs0bw-v-XL37Q"},{"alg":"RS256","sig":"UStcZ32TV8KmRheCOQO86U4LDG8cLu5qMgkbP-30-Cz4IXXKzM-bD7NadIh8BTAZ4R5bAHjf0UI_Gi5tSKyWdP9Wc_fZqAu-9ZKHbq503hyHQ486gMThP9EfZn3MuRXtiMwWQHeU8SKoq83IIgffZkHEoi-HGlQE7l4yLT62UiG2l2o6u3JBDapsjwWDrtTUrl3EgwnS-ecS5W7cOuuWHbEd8vp2vGulhYNUvsSzDi4gNdDXP7iKA5JZRlrmvIZ9z_Oz0n-CgP5FwG7-izDeyxI-ezYAnZyvUzNW0niDLOa1nIXCZalk-uH3Ag5gOAvlqyxbP2KmeH13GecLW-BCjw"}]})";
+std::string validRootKeyPackageJson  =  R"({"protected":{"version":1,"published":1675972876,"disabledRootKeys":[],"disabledSigningKeys":[],"rootKeys":{"testrootkey1":{"keyType":"RSA","n":"rPMhXSpDY53R8pZJi0oW3qvP9l_9ntRkJo-2US109_wr5_P-t54uCx-EwZs7UkXYNYnyu8GIbzL2dyQp7lMhmLv_cQFIhs6HMlLpSIMtbHYq_v6jMgdGb5ovfbwPbMsiESQiZc0xSEVMq60p8iCw58gIzMK1nWdYeUQMC8mU-G-O8c_z8SXlVjbwZ5AmjVg42Z3NW558gcgez0LxkRnGyALHZCCjJNSUjPTp7AMKL21S-C6aFFVWwFJdeUrhJkf__2cdAB6m3C6-wuO2pq1HRX-epjMmnQ06UjdUmKuIUjB2uyVcMTnkVzXPUD6D2rbBFAy1230Svw20YSP8P7n9xQ","e":65537},"testrootkey2":{"keyType":"RSA","n":"tKN8mDrKOtLIsUjPC_KHcu6YcyitaG9nKtpR_WQAYT8rNjtlORd5H2TuAsr4DutkX7x6SZv3y5RyTqVZKZNkmlbUALoRR1bJ-pGkEUtntB9Oaga2ZcmtYYOwTy2QdOLEee_fE6UZun-mWNPv2swMhmWJuMTkixUakq8PN4bSPDNjdn_moVowXmfesN31Ioi97zxKSp9XXhU6E92MX2E782-uxqshPFe-xEWRLGCA50-_yJeJMiRJSiMZdjQ4Su9o6D86WdgiTERP9cUoSQFoZWFnG8c76WL_Gn0T6pM47kPOJeGv2ZyDm9hGrLL2bjI2WTevDmOrzCjf8qHw6Kg58Q","e":65537}}},"signatures":[{"alg":"RS256","sig":"AjXYiFNj7kN7jbKZckwBQXDBiLKCTPQj8Oh1aqaUteW8tjyg6MZGjev-V8MirIw77e4xTLj7ZgBPt_qgWXH-otVal1zyUJlolPsmicugm8whhS4OVOqGfMJ8jTbT8yjiHGdKR3nWW1EQbRE6y38iAYCETXrHgVA2BM77fkBHj27P1etYPCkkjSdKtN6D-gdAuAzNsRQOv-8YZkIuMeD1d9kZAoHbDYmfpVHjooBd1_iys8f4aRKkhk18_3Alsxx63VtTNK3eSkPqb1v3Z-fpGnpW0rJZbf4XskCuTyysPu_Vgmnxn2CJccfseijlnnQiqpN5jEaNOU4TX_Yhc15wMg"},{"alg":"RS256","sig":"SBWi1Ae0EWrj9EKrL4qQGh_xumhdLl1BhASGX1Jc8QaM9PtreRIOIMxbC7LaZXmpTyjDrxpaNKwwIBVO8poWT5BocchL8vzcn0KTAwbl0OD-zoa5CdvurrtQJkx0L-yr685oz4AP05SiRBRuSYPGCty0D4Pzy09Yp9gHDN_2KGnFfkph5I64GmA6CB9mexXXz26xSucYHpMApO9yUgpkYCBVirdgP7aKyb-c6GK4LLuLCi_nTtrUMfEpfxYNmNp4zm0R2IjQ_C9Jyn7mY3YO3sSPRw88iv5f0QzKTGazRdkOHOnwPbDdsykZ4uSABBKtCKN9VVSUusnuv53ZPkc63Q"}]})";
 // clang-format on
 
 // clang-format off
-std::string invalidRootKeyPackageJson = R"({"protected":{"version":1,"published":1667343602,"disabledRootKeys":["rootkey2"],"disabledSigningKeys":[{"alg":"SHA256","hash":"sVMpGd8aPo17piBBc-f1Bki0iCJPZmKvA43GG3SsG1E"}],"rootKeys":{"rootkey1":{"keyType":"RSA","n":"AK0s6dGfMRRbOn90osTP4hZ4vhxuRn3bH45u3yjUp0R5guueqGs1k6VIAtBgq87PMWMCEaE8hWyEGQEH-HCaQNhClSJFsT7JR7l1JghkRRraDqfpv2BIGdk9-jRtHWxTrszwxi51MNhMMmaz2aizyiMLFj-qh4CNBUVskexUKBn2Ko4yrG0tl7dqBZA7fNdtVymK8SyFnt4GIFLLcKgnc0_NqwLc6S7zFQ--EbXuah32_Fw9rp7ZZpp6RPYzMoc2DnTarFGLhk8tzQQCTYOToAFQCDVq3KBSWkjY5QWbh2LZO-NeKNg0pG6aSOZlopf5ebuK0mEFoyB1oc6ne3HSem8","e":65537},"rootkey2":{"keyType":"RSA","n":"AMmbcWZ5Aa5mcxRexjQPV2FBWgUpdTKnCxIKhlvT1MkuPCyua-zwVwwpxeHubtOFXCidjyjyx8Eb_f2RmEHnlSWFaASKJhDiEl11xyn_dD8GCrMBalyC8wfQGmFL37YKdprm31Y_eBIquRirxcK-8qmN2Ko-rUkljYunlfhSbeMqbYeAiKcmT664sZ7yNNoFDkhdV8MJPD1YDNmv_RSln5RUmHje6fezkZHV5wPNl3mF_YdkRzKJrWTAgrTaY1poqC4FF8kHkukKtUNsHwDzmavmph2sqvw8cuXW_SmyHtdwHWxL9gQqEJci9XykgUFokRoZEsT8KyrrHi6fdI9cY4U","e":65537}}},"signatures":[{"alg":"RS256","sig":"aN94C4nO0mGAa35AR0sC_kUWBTRbT1hFTZgpBdHqE_AmjaP0Otzj2n_-kKTM_qGiNxhc7yfwV-TQanxOO4hFxgmhAIyLNlkDtjMGsSFG1c8aXxgEOctMrxaDvTXmWo45L_qmvOVHbwnzeUc0GcIvCwaA8y8aXiqEsb206yPJexT7gU2LxiGeUbJK8OobdjJPNPh4VF1WLUO9F0tkE2c4SkeqH9gAlJDZPum446NmFCsOCP2a9rCckd2KQOfeprvuYlQ9mdfIyZ59gleWWYBmES0q1lHkX05SnderYZ8cKxAqb8_9GheGM0wTSkrVjJh1Jva2kMY-tDs0bw-v-XL37Q"},{"alg":"RS256","sig":"asdfZ32TV8KmRheCOQO86U4LDG8cLu5qMgkbP-30-Cz4IXXKzM-bD7NadIh8BTAZ4R5bAHjf0UI_Gi5tSKyWdP9Wc_fZqAu-9ZKHbq503hyHQ486gMThP9EfZn3MuRXtiMwWQHeU8SKoq83IIgffZkHEoi-HGlQE7l4yLT62UiG2l2o6u3JBDapsjwWDrtTUrl3EgwnS-ecS5W7cOuuWHbEd8vp2vGulhYNUvsSzDi4gNdDXP7iKA5JZRlrmvIZ9z_Oz0n-CgP5FwG7-izDeyxI-ezYAnZyvUzNW0niDLOa1nIXCZalk-uH3Ag5gOAvlqyxbP2KmeH13GecLW-BCjw"}]})";
-// clang-format on
+std::string invalidRootKeyPackageJson = R"({"protected":{"version":1,"published":1675972876,"disabledRootKeys":[],"disabledSigningKeys":[],"rootKeys":{"testrootkey1":{"keyType":"RSA","n":"rPMhXSpDY53R8pZJi0oW3qvP9l_9ntRkJo-2US109_wr5_P-t54uCx-EwZs7UkXYNYnyu8GIbzL2dyQp7lMhmLv_cQFIhs6HMlLpSIMtbHYq_v6jMgdGb5ovfbwPbMsiESQiZc0xSEVMq60p8iCw58gIzMK1nWdYeUQMC8mU-G-O8c_z8SXlVjbwZ5AmjVg42Z3NW558gcgez0LxkRnGyALHZCCjJNSUjPTp7AMKL21S-C6aFFVWwFJdeUrhJkf__2cdAB6m3C6-wuO2pq1HRX-epjMmnQ06UjdUmKuIUjB2uyVcMTnkVzXPUD6D2rbBFAy1230Svw20YSP8P7n9xQ","e":65537},"testrootkey2":{"keyType":"RSA","n":"tKN8mDrKOtLIsUjPC_KHcu6YcyitaG9nKtpR_WQAYT8rNjtlORd5H2TuAsr4DutkX7x6SZv3y5RyTqVZKZNkmlbUALoRR1bJ-pGkEUtntB9Oaga2ZcmtYYOwTy2QdOLEee_fE6UZun-mWNPv2swMhmWJuMTkixUakq8PN4bSPDNjdn_moVowXmfesN31Ioi97zxKSp9XXhU6E92MX2E782-uxqshPFe-xEWRLGCA50-_yJeJMiRJSiMZdjQ4Su9o6D86WdgiTERP9cUoSQFoZWFnG8c76WL_Gn0T6pM47kPOJeGv2ZyDm9hGrLL2bjI2WTevDmOrzCjf8qHw6Kg58Q","e":65537}}},"signatures":[{"alg":"RS256","sig":"AjXYiFNj7kN7jbKZckwBQXDBiLKCTPQj8Oh1aqaUteW8tjyg6MZGjev-V8MirIw77e4xTLj7ZgBPt_qgWXH-otVal1zyUJlolPsmicugm8whhS4OVOqGfMJ8jTbT8yjiHGdKR3nWW1EQbRE6y38iAYCETXrHgVA2BM77fkBHj27P1etYPCkkjSdKtN6D-gdAuAzNsRQOv-8YZkIuMeD1d9kZAoHbDYmfpVHjooBd1_iys8f4aRKkhk18_3Alsxx63VtTNK3eSkPqb1v3Z-fpGnpW0rJZbf4XskCuTyysPu_Vgmnxn2CJccfseijlnnQiqpN5jEaNOU4TX_Yhc15wMg"},{"alg":"RS256","sig":"SBWi1Ae0EWrj9EKrL4qQGh_xumhdLl1BhASGX1Jc8QaM9PtreRIOIMxbC7LaZXmpTyjDrxpaNKwwIBVO8poWT5BocchL8vzcn0KTAwbl0OD-zoa5CdvurrtQJkx0L-yr685oz4AP05SiRBRuSYPGCty0D4Pzy09Yp9gHDN_2KGnFfkph5I64GmA6CB9mexXXz26xSucYHpMApO9yUgpkYCBVirdgP7aKyb-c6GK4LLuLCi_nTtrUMfEpfxYNmNp4zm0R2IjQ_C9Jyn7mY3YO3sSPRw88iv5f0QzKTGazRdkOHOnwPbDdsykZ4uSABBKtCKN9VVSUusnuv53ZPk1234"}]})";
+// // clang-format on
 
-// clang-format off
-std::string rootKeyPackageWithoutHardcodedRootKeyId =   R"({"protected":{"version":1,"published":1667343602,"disabledRootKeys":["rootkey2"],"disabledSigningKeys":[{"alg":"SHA256","hash":"sVMpGd8aPo17piBBc-f1Bki0iCJPZmKvA43GG3SsG1E"}],"rootKeys":{"rootkey1":{"keyType":"RSA","n":"AK0s6dGfMRRbOn90osTP4hZ4vhxuRn3bH45u3yjUp0R5guueqGs1k6VIAtBgq87PMWMCEaE8hWyEGQEH-HCaQNhClSJFsT7JR7l1JghkRRraDqfpv2BIGdk9-jRtHWxTrszwxi51MNhMMmaz2aizyiMLFj-qh4CNBUVskexUKBn2Ko4yrG0tl7dqBZA7fNdtVymK8SyFnt4GIFLLcKgnc0_NqwLc6S7zFQ--EbXuah32_Fw9rp7ZZpp6RPYzMoc2DnTarFGLhk8tzQQCTYOToAFQCDVq3KBSWkjY5QWbh2LZO-NeKNg0pG6aSOZlopf5ebuK0mEFoyB1oc6ne3HSem8","e":65537}}},"signatures":[{"alg":"RS256","sig":"aN94C4nO0mGAa35AR0sC_kUWBTRbT1hFTZgpBdHqE_AmjaP0Otzj2n_-kKTM_qGiNxhc7yfwV-TQanxOO4hFxgmhAIyLNlkDtjMGsSFG1c8aXxgEOctMrxaDvTXmWo45L_qmvOVHbwnzeUc0GcIvCwaA8y8aXiqEsb206yPJexT7gU2LxiGeUbJK8OobdjJPNPh4VF1WLUO9F0tkE2c4SkeqH9gAlJDZPum446NmFCsOCP2a9rCckd2KQOfeprvuYlQ9mdfIyZ59gleWWYBmES0q1lHkX05SnderYZ8cKxAqb8_9GheGM0wTSkrVjJh1Jva2kMY-tDs0bw-v-XL37Q"},{"alg":"RS256","sig":"UStcZ32TV8KmRheCOQO86U4LDG8cLu5qMgkbP-30-Cz4IXXKzM-bD7NadIh8BTAZ4R5bAHjf0UI_Gi5tSKyWdP9Wc_fZqAu-9ZKHbq503hyHQ486gMThP9EfZn3MuRXtiMwWQHeU8SKoq83IIgffZkHEoi-HGlQE7l4yLT62UiG2l2o6u3JBDapsjwWDrtTUrl3EgwnS-ecS5W7cOuuWHbEd8vp2vGulhYNUvsSzDi4gNdDXP7iKA5JZRlrmvIZ9z_Oz0n-CgP5FwG7-izDeyxI-ezYAnZyvUzNW0niDLOa1nIXCZalk-uH3Ag5gOAvlqyxbP2KmeH13GecLW-BCjw"}]})";
-// clang-format off
+
 
 const RSARootKey* MockRootKeyList_GetHardcodedRsaRootKeys()
 {
@@ -75,71 +87,56 @@ size_t MockRootKeyList_numHardcodedKeys()
     return ARRAY_SIZE(testHardcodedRootKeys);
 }
 
-//
-// Only commented out for unit tests running
-// Bug for Fix: https://microsoft.visualstudio.com/OS/_workitems/edit/42520383
-//
-// class SignatureValidationMockHook
-// {
-// public:
-//     SignatureValidationMockHook()
-//     {
-//         REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_GetHardcodedRsaRootKeys, MockRootKeyList_GetHardcodedRsaRootKeys);
-//         REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_numHardcodedKeys, MockRootKeyList_numHardcodedKeys);
-//     }
-
-//     ~SignatureValidationMockHook() = default;
-
-//     SignatureValidationMockHook(const SignatureValidationMockHook&) = delete;
-//     SignatureValidationMockHook& operator=(const SignatureValidationMockHook&) = delete;
-//     SignatureValidationMockHook(SignatureValidationMockHook&&) = delete;
-//     SignatureValidationMockHook& operator=(SignatureValidationMockHook&&) = delete;
-// };
-
-// TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_ValidateRootKeyPackage Signature Validation")
-// {
-//     SECTION("RootKeyUtility_ValidateRootKeyPackage - Valid RootKeyPackage")
-//     {
-//         ADUC_RootKeyPackage pkg = {};
-
-//         ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(validRootKeyPackageJson.c_str(),&pkg);
-
-//         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-//         ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
-
-//         CHECK(IsAducResultCodeSuccess(validationResult.ResultCode));
-
-//     }
-//     SECTION("RootKeyUtil_ValidateRootKeyPackage - Invalid RootKeyPackage")
-//     {
-//         ADUC_RootKeyPackage pkg = {};
-
-//         ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(invalidRootKeyPackageJson.c_str(),&pkg);
-
-//         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-//         ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
-
-//         CHECK(validationResult.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_VALIDATION_FAILED);
-//     }
-//     SECTION("RootKeyUtil_ValidateRootKeyPackage - Missing Signature")
-//     {
-//         ADUC_RootKeyPackage pkg = {};
-
-//         ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(rootKeyPackageWithoutHardcodedRootKeyId.c_str(),&pkg);
-
-//         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-//         ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
-
-//         CHECK(validationResult.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_FOR_KEY_NOT_FOUND);
-//     }
-// }
-
-
-TEST_CASE("RootKeyUtility_LoadPackageFromDisk")
+class SignatureValidationMockHook
 {
-    SECTION("Success case")
+public:
+    SignatureValidationMockHook()
     {
-        std::string filePath = get_example_rootkey_package_json_path();
+        REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_GetHardcodedRsaRootKeys, MockRootKeyList_GetHardcodedRsaRootKeys);
+        REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_numHardcodedKeys, MockRootKeyList_numHardcodedKeys);
+    }
+
+    ~SignatureValidationMockHook() = default;
+
+    SignatureValidationMockHook(const SignatureValidationMockHook&) = delete;
+    SignatureValidationMockHook& operator=(const SignatureValidationMockHook&) = delete;
+    SignatureValidationMockHook(SignatureValidationMockHook&&) = delete;
+    SignatureValidationMockHook& operator=(SignatureValidationMockHook&&) = delete;
+};
+
+TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_ValidateRootKeyPackage Signature Validation")
+{
+    SECTION("RootKeyUtility_ValidateRootKeyPackage - Valid RootKeyPackage Signature")
+    {
+        ADUC_RootKeyPackage pkg = {};
+
+        ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(validRootKeyPackageJson.c_str(),&pkg);
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
+
+        CHECK(IsAducResultCodeSuccess(validationResult.ResultCode));
+
+    }
+    SECTION("RootKeyUtil_ValidateRootKeyPackage - Invalid RootKeyPackage Signature")
+    {
+        ADUC_RootKeyPackage pkg = {};
+
+        ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(invalidRootKeyPackageJson.c_str(),&pkg);
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
+
+        CHECK(validationResult.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_VALIDATION_FAILED);
+    }
+}
+
+
+TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_LoadPackageFromDisk")
+{
+    SECTION("Success case- valid package with valid signatures")
+    {
+        std::string filePath = get_valid_example_rootkey_package_json_path();
         ADUC_RootKeyPackage* rootKeyPackage = nullptr;
 
         ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&rootKeyPackage,filePath.c_str());
@@ -158,9 +155,32 @@ TEST_CASE("RootKeyUtility_LoadPackageFromDisk")
         ADUC_RootKeyPackageUtils_Destroy(rootKeyPackage);
         free(rootKeyPackage);
     }
+    SECTION ("Fail case - valid test package path, invalid signature")
+    {
+        std::string filePath = get_invalid_example_rootkey_package_json_path();
+        ADUC_RootKeyPackage* rootKeyPackage = nullptr;
+
+        ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&rootKeyPackage,filePath.c_str());
+
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+        REQUIRE(rootKeyPackage == nullptr);
+    }
+    SECTION ("Fail case - invalid test package path")
+    {
+        std::string filePath = get_nonexistent_example_rootkey_package_json_path();
+
+        ADUC_RootKeyPackage* rootKeyPackage = nullptr;
+
+        ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&rootKeyPackage,filePath.c_str());
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+
+        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_LOAD_FROM_STORE);
+
+        REQUIRE(rootKeyPackage == nullptr);
+    }
 }
 
-TEST_CASE("RootKeyUtility_WriteRootKeyPackageToFileAtomically")
+TEST_CASE_METHOD(SignatureValidationMockHook,"RootKeyUtility_WriteRootKeyPackageToFileAtomically")
 {
     SECTION("Success case")
     {
