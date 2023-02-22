@@ -82,7 +82,7 @@ sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_amd64.deb ./deliveryo
 #
 
 if [[ $self_upgrade == "true" ]]; then
-    sudo apt-get install deviceupdate-agent
+    sudo apt-get install deviceupdate-agent -Y
     chmod u+x  ./apt_repo_setup.sh
     ./apt_repo_setup.sh -d ./testsetup/deviceupdate-package.deb
 else
