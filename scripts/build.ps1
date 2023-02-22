@@ -298,14 +298,6 @@ if ($Clean) {
         Show-Bullet $BuildOutputPath
         Remove-Item -Force  -Recurse -LiteralPath $BuildOutputPath
     }
-    # TODO(JeffMill): Change when code changes paths (e.g. /tmp/adu/testdata)
-    $folders = '/tmp', '/usr', '/var'
-    $folders | ForEach-Object {
-        if (Test-Path -LiteralPath $_) {
-            Show-Bullet $_
-            Remove-Item -Force  -Recurse -LiteralPath $_
-        }
-    }
 
     ''
 }

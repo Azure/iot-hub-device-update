@@ -216,7 +216,12 @@ function Install-Adu-Components {
     Invoke-CopyFile  "$BuildBinPath/AducIotAgent.exe" $BinPath
 
     # IMPORTANT: Windows builds require these DLLS as well. Any way to build these statically?
-    $dependencies = 'getopt', 'pthreadVC3d', 'libcrypto-1_1-x64'
+    if ($Type -eq 'Debug') {
+        $dependencies = 'getopt', 'pthreadVC3d', 'libcrypto-1_1-x64'
+    }
+    else {
+        $dependencies = 'getopt', 'pthreadVC3', 'libcrypto-1_1-x64'
+    }
     $dependencies | ForEach-Object {
         Invoke-CopyFile "$BuildBinPath/$_.dll" $LibPath
         Invoke-CopyFile "$BuildBinPath/$_.dll" $BinPath
@@ -368,10 +373,12 @@ $library_dir = "$BuildOutputPath/lib"
 $ETC_FOLDER = '/etc'
 $USR_FOLDER = '/usr'
 $VAR_FOLDER = '/var'
+
 $ADUC_CONF_FOLDER = "$ETC_FOLDER/adu"
 $ADUC_AGENT_FOLDER = "$USR_FOLDER/bin"
 $ADUSHELL_FOLDER = "$USR_FOLDER/lib/adu"
 $ADUC_DATA_FOLDER = "$VAR_FOLDER/lib/adu"
+$ADUC_DOWNLOAD_FOLDER = "$VAR_FOLDER/lib/adu/downloads"
 $ADUC_EXTENSIONS_FOLDER = "$ADUC_DATA_FOLDER/extensions"
 
 #
@@ -400,26 +407,37 @@ if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath "$ADUC_CONF_FOLDER/du-
 #
 
 if ($Package) {
+    Show-Header 'Packaging Agent'
+
+    # Not including:
     # /tmp/adu/testdata has test files, but we're not packaging test collateral.
+    # $ADUC_CONF_FOLDER is configuration, and might have secrets.
 
     # Need to copy everything to a temporary directory, as Compress-Archive
-    # can't persist relative paths.
+    # can't persist relative paths into the archive.
+
+    'Preparing directory . . .'
 
     $temp = New-TemporaryDirectory
-    $paths = $ETC_FOLDER, $USR_FOLDER, $VAR_FOLDER
-    $paths | ForEach-Object {
-        Copy-Item -Path $_ -Destination $temp -Recurse
-    }
 
-    $archive = '{0}/du-{1}.zip' -f ([Environment]::GetFolderPath('Desktop')), (Get-Date -Format FileDateTime)
+    Copy-Item -Recurse -Path $ADUC_AGENT_FOLDER -Destination "$temp$ADUCAGENT_FOLDER"
+    Copy-Item -Recurse -Path $ADUSHELL_FOLDER -Destination "$temp$ADUSHELL_FOLDER"
+    Copy-Item -Recurse -Path $ADUC_EXTENSIONS_FOLDER -Destination "$temp$ADUC_EXTENSIONS_FOLDER"
+
+    # Create empty folders as placeholders
+    New-Item -ItemType Directory -Path "$temp$ADUC_CONF_FOLDER" | Out-Null
+    New-Item -ItemType Directory -Path "$temp$ADUC_DOWNLOAD_FOLDER" | Out-Null
+
+    $archive = '{0}\du-{1}.zip' -f (New-TemporaryDirectory), (Get-Date -Format FileDateTime)
+
+    ''
+    "Archive file: $archive"
 
     Compress-Archive `
         -CompressionLevel Optimal `
         -DestinationPath $archive `
         -Update `
         -Path "$temp/*"
-
-    "Archive: $archive"
 
     Remove-Item -Recurse -Force $temp
 }

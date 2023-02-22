@@ -77,7 +77,7 @@ function (target_link_dosdk target scope)
         target_include_directories (${target} ${scope}
                                     ${VCPKG_INSTALLED_DIR}/do-client/sdk-cpp/include)
         target_link_directories (${target} PUBLIC
-                                 ${VCPKG_INSTALLED_DIR}/do-client/cmake/sdk-cpp/Debug)
+                                 ${VCPKG_INSTALLED_DIR}/do-client/cmake/sdk-cpp/${CMAKE_BUILD_TYPE})
         target_link_libraries (${target} ${scope} deliveryoptimization)
     endif ()
 endfunction (target_link_dosdk)

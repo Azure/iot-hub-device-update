@@ -17,19 +17,29 @@ if (WIN32)
     # clone the official Vcpkg repository and bootstrap it.
     vcpkg_bootstrap ()
 
-    # Include vcpkg installed lib folder in library path  (e.g. "".vcpkg-installed\x64-windows\(Debug)\lib")
-    # for  packages that dont have a CMake find_package.
+    # Include vcpkg installed lib folder in library path
+    # for packages that dont have a CMake find_package.
+    # Release: .vcpkg-installed\x64-windows\lib\
+    # Debug:   .vcpkg-installed\x64-windows\debug\lib\
     cmake_path (
         SET
         VCPKG_LIBRARY_DIR
         NORMALIZE
         "${VCPKG_INSTALLED_DIR}")
-    cmake_path (
-        APPEND
-        VCPKG_LIBRARY_DIR
-        "${VCPKG_TRIPLET}"
-        "${CMAKE_BUILD_TYPE}"
-        "lib")
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "DEBUG")
+        cmake_path (
+            APPEND
+            VCPKG_LIBRARY_DIR
+            "${VCPKG_TRIPLET}"
+            "${CMAKE_BUILD_TYPE}"
+            "lib")
+    else ()
+        cmake_path (
+            APPEND
+            VCPKG_LIBRARY_DIR
+            "${VCPKG_TRIPLET}"
+            "lib")
+    endif ()
     link_directories (${VCPKG_LIBRARY_DIR})
     message (STATUS "VCPKG_LIBRARY_DIR: ${VCPKG_LIBRARY_DIR}")
 endif ()
