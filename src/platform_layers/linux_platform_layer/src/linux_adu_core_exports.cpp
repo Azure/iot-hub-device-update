@@ -77,8 +77,15 @@ int ADUC_RebootSystem()
     ADUCPAL_sync();
 
     std::string output;
+
+#if defined(WIN32)
+    // TODO(JeffMill): Move this to a windows_adu_core_exports file
+    std::vector<std::string> args{ "/r", "/t", "1", "/c", "\"DU initiated reboot\"" };
+    const int exitStatus = ADUC_LaunchChildProcess("shutdown.exe", args, output);
+#else
     std::vector<std::string> args{ "--update-type", "common", "--update-action", "reboot" };
     const int exitStatus = ADUC_LaunchChildProcess("/usr/lib/adu/adu-shell", args, output);
+#endif
 
     if (exitStatus != 0)
     {
