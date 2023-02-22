@@ -83,13 +83,12 @@ static bool ConfigureBcdEntryAsActive(char driveLetter, const char* guid)
     return true;
 }
 
-bool BCDEdit(char driveLetter, const char* identifier)
+bool ConfigureBCD(char driveLetter, const char* identifier)
 {
     BcdEditResult result;
 
     // Enumerate all osloaders.  Check if partition=D: exists.
 
-    std::vector<std::string> output;
     result = LaunchBcdEdit(std::vector<std::string>{ "/enum", "osloader" });
     if (result.exitCode != 0)
     {
@@ -145,6 +144,9 @@ bool BCDEdit(char driveLetter, const char* identifier)
     }
 
     // bcdedit /timeout 5
+
+    // Ignore result, not critical.
+    result = LaunchBcdEdit(std::vector<std::string>{ "/timeout", "5" });
 
     return true;
 }

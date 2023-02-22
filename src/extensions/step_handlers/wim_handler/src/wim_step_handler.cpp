@@ -1,7 +1,7 @@
 #include "wim_step_handler.hpp"
 
 #include "aducresult.hpp"
-#include "bcdedit.hpp" // BCDEdit
+#include "bcdedit.hpp" // ConfigureBCD
 #include "com_helpers.hpp"
 #include "file_version.hpp" // GetFileVersion
 #include "format_drive.hpp" // FormatDrive
@@ -101,7 +101,7 @@ RC Apply(const char* workFolder, const char* targetFile)
     // Check if osloader contains entry for partition D:
     // If not, add entry named "Windows IoT" and set as default.
 
-    if (!BCDEdit(TARGET_DRIVE, "Windows IoT"))
+    if (!ConfigureBCD(TARGET_DRIVE, "Windows IoT"))
     {
         return RC::Apply_UnknownException;
     }
