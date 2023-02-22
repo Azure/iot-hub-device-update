@@ -22,6 +22,35 @@
 #       ~/testsetup/setup.sh
 # So we need to localize the path to that.
 #
+
+#
+# Handling Self-Upgrade Scenario differently
+#
+
+self_upgrade=false
+print_help() {
+    echo "setup.sh [-s]  "
+    echo "-s, --self-upgrade    Testing the self upgrade scenario, setup is different."
+    echo "-h, --help            Show this help message."
+}
+
+while [[ $1 != "" ]]; do
+    case $1 in
+    -s | --self-upgrade)
+        self_upgrade=true
+        ;;
+    -h | --help)
+        print_help
+        $ret 0
+        ;;
+    *)
+        error "Invalid argument: $*"
+        $ret 1
+        ;;
+    esac
+    shift
+done
+
 #
 # Install the Microsoft APT repository
 #
@@ -51,7 +80,14 @@ sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_amd64.deb ./deliveryo
 #
 # Install the Device Update Artifact Under Test
 #
-sudo apt-get install -y ./testsetup/deviceupdate-package.deb
+
+if [[ $self_upgrade == "true" ]]; then
+    sudo apt-get install deviceupdate-agent
+    chmod u+x  ./apt_repo_setup.sh
+    ./apt_repo_setup.sh -d ./testsetup/deviceupdate-package.deb
+elif
+    sudo apt-get install -y ./testsetup/deviceupdate-package.deb
+fi
 
 #
 # Install the du-config.json so the device can be provisioned

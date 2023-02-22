@@ -4,7 +4,7 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
-# Setup Script for Test: Ubuntu-18.04-amd64-APT-deployment
+# Setup Script for Test: Ubuntu-20.04-amd64-APT-deployment
 #
 # Should be run on the Virtual Machine being provisioned for the work.
 
