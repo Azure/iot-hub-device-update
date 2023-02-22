@@ -19,17 +19,13 @@ static BcdEditResult LaunchBcdEdit(std::vector<std::string> args)
     return result;
 }
 
-static bool ConfigureBcdEntryAsActive(char driveLetter, const char* guid)
+static bool ConfigureBcdEntry(char driveLetter, const char* guid)
 {
     BcdEditResult result;
 
-    std::string partitionId("partition=");
-    partitionId += driveLetter;
-    partitionId += ":";
+    const std::string partitionId(std::string("partition=") + driveLetter + ":");
 
-    std::string quotedIdentifier(1, '"');
-    quotedIdentifier += guid;
-    quotedIdentifier += '"';
+    const std::string quotedIdentifier(std::string("\"") + guid + "\"");
 
     // bcdedit /set $guid device partition=D:
 
@@ -64,9 +60,70 @@ static bool ConfigureBcdEntryAsActive(char driveLetter, const char* guid)
         return false;
     }
 
+    return true;
+}
+
+// Returns false if bcd entry exists, but couldn't be removed.
+// Returns true if bcd entry not found, or was removed successfully.
+static bool RemoveExistingBcdEntry(char driveLetter)
+{
+    // Enumerate all osloaders.  Check if partition=D: exists.
+
+    BcdEditResult result = LaunchBcdEdit(std::vector<std::string>{ "/enum", "osloader" });
+    if (result.exitCode != 0)
+    {
+        return false;
+    }
+
+    // Search for string containing "partition=D:"
+
+    const std::string partitionId(std::string("partition=") + driveLetter + ":");
+
+    std::vector<std::string>::iterator it =
+        std::find_if(result.output.begin(), result.output.end(), [&partitionId](const std::string& item) {
+            return item.find(partitionId) != std::string::npos;
+        });
+    if (it == result.output.end())
+    {
+        // Entry not found.
+        return true;
+    }
+
+    it = std::find_if(result.output.begin(), result.output.end(), [](const std::string& item) {
+        // e.g. "identifier              {5dca3a86-a7ec-11ed-a586-00155da00106}"
+        return item.find("identifier ") != std::string::npos;
+    });
+    if (it == result.output.end())
+    {
+        // Unable to determine GUID.
+        return false;
+    }
+
+    const std::string guid = it->substr(24);
+
+    // Found. Remove it - recreate it below to ensure it's valid.
+    const std::string quotedIdentifier(std::string("\"") + guid + "\"");
+
+    // bcdedit /delete "{5dca3a8e-a7ec-11ed-a586-00155da00106}" /cleanup
+
+    result = LaunchBcdEdit(std::vector<std::string>{ "/delete", quotedIdentifier, "/cleanup" });
+    if (result.exitCode != 0)
+    {
+        // Unable to delete. Not much else we can do.
+        return false;
+    }
+
+    // Removed successfully.
+    return true;
+}
+
+bool SetBcdEntryAsDefault(const char* guid)
+{
     // bcdedit /displayorder '{default}' $guid
 
-    result = LaunchBcdEdit(std::vector<std::string>{ "/displayorder", "{default}", quotedIdentifier });
+    const std::string quotedIdentifier(std::string("\"") + guid + "\"");
+
+    BcdEditResult result = LaunchBcdEdit(std::vector<std::string>{ "/displayorder", "{default}", quotedIdentifier });
     if (result.exitCode != 0)
     {
         return false;
@@ -85,38 +142,17 @@ static bool ConfigureBcdEntryAsActive(char driveLetter, const char* guid)
 
 bool ConfigureBCD(char driveLetter, const char* identifier)
 {
-    BcdEditResult result;
-
-    // Enumerate all osloaders.  Check if partition=D: exists.
-
-    result = LaunchBcdEdit(std::vector<std::string>{ "/enum", "osloader" });
-    if (result.exitCode != 0)
+    if (!RemoveExistingBcdEntry(driveLetter))
     {
-        return false;
-    }
-
-    std::string partitionId("partition=");
-    partitionId += driveLetter;
-    partitionId += ":";
-
-    // Search for string containing "partition=D:"
-
-    std::vector<std::string>::iterator it =
-        std::find_if(result.output.begin(), result.output.end(), [&partitionId](const std::string& item) {
-            return item.find(partitionId) != std::string::npos;
-        });
-    if (it != result.output.end())
-    {
-        // Found. Assume it's configured properly.
+        // Unable to remove existing entry, Not much else we can do.
         return true;
     }
 
-    // Not found, create a new entry and get its GUID.
+    // Create a new entry and get its GUID.
 
-    std::string quotedIdentifier(1, '"');
-    quotedIdentifier += identifier;
-    quotedIdentifier += '"';
-    result = LaunchBcdEdit(std::vector<std::string>{ "/create", "/d", quotedIdentifier, "/application", "osloader" });
+    std::string quotedIdentifier(std::string("\"") + identifier + "\"");
+    BcdEditResult result =
+        LaunchBcdEdit(std::vector<std::string>{ "/create", "/d", quotedIdentifier, "/application", "osloader" });
     if (result.exitCode != 0)
     {
         return false;
@@ -124,9 +160,10 @@ bool ConfigureBCD(char driveLetter, const char* identifier)
 
     std::string guid;
 
-    it = std::find_if(result.output.begin(), result.output.end(), [](const std::string& item) {
-        return item.find("} was successfully created") != std::string::npos;
-    });
+    std::vector<std::string>::iterator it =
+        std::find_if(result.output.begin(), result.output.end(), [](const std::string& item) {
+            return item.find("} was successfully created") != std::string::npos;
+        });
     if (it != result.output.end())
     {
         guid = it->substr(10, 38);
@@ -138,7 +175,12 @@ bool ConfigureBCD(char driveLetter, const char* identifier)
         return false;
     }
 
-    if (!ConfigureBcdEntryAsActive(driveLetter, guid.c_str()))
+    if (!ConfigureBcdEntry(driveLetter, guid.c_str()))
+    {
+        return false;
+    }
+
+    if (!SetBcdEntryAsDefault(guid.c_str()))
     {
         return false;
     }
@@ -146,7 +188,7 @@ bool ConfigureBCD(char driveLetter, const char* identifier)
     // bcdedit /timeout 5
 
     // Ignore result, not critical.
-    result = LaunchBcdEdit(std::vector<std::string>{ "/timeout", "5" });
+    (void)LaunchBcdEdit(std::vector<std::string>{ "/timeout", "5" });
 
     return true;
 }
