@@ -17,8 +17,6 @@ target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (${PROJECT_NAME} PRIVATE aduc::process_utils Catch2::Catch2)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
-
 include (CTest)
 include (Catch)
 catch_discover_tests (${PROJECT_NAME})

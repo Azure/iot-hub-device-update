@@ -5,8 +5,15 @@ project (microsoft_wim_1)
 include (agentRules)
 compileasc99 ()
 
-add_library (${PROJECT_NAME} MODULE src/handler_create.cpp src/wim_handler_1.cpp
-                                    src/wim_step_handler.cpp)
+add_library (
+    ${PROJECT_NAME} MODULE
+    src/bcdedit.cpp
+    src/file_version.cpp
+    src/format_drive.cpp
+    src/handler_create.cpp
+    src/wim_handler_1.cpp
+    src/wim_step_handler.cpp
+    src/wimg.cpp)
 
 target_include_directories (
     ${PROJECT_NAME}
@@ -21,13 +28,21 @@ target_link_libraries (
             aduc::contract_utils
             aduc::extension_manager
             aduc::parser_utils
+            aduc::process_utils
             aduc::workflow_data_utils
             aduc::workflow_utils
             aduc::logging)
 
-install (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+# GetFileVersionInfo()
+target_link_libraries (${PROJECT_NAME} PRIVATE Version.lib)
 
-# TODO: Add tests
-# if (ADUC_BUILD_UNIT_TESTS)
-#     add_subdirectory (tests)
-# endif ()
+# Wimgapi
+# TODO: Bring in Wimgapi in a better way, rather than storing SDK in repo.
+target_include_directories (${PROJECT_NAME} PRIVATE Wimgapi/Include)
+target_link_directories (${PROJECT_NAME} PRIVATE Wimgapi/lib/${CMAKE_SYSTEM_PROCESSOR})
+target_link_libraries (${PROJECT_NAME} PRIVATE wimgapi.lib)
+
+# WBEM
+target_link_libraries (${PROJECT_NAME} PRIVATE Wbemuuid.lib)
+
+install (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

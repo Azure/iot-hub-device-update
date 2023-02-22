@@ -37,19 +37,16 @@
 
 /**
  * @brief Runs specified command in a new process and captures output, error messages, and exit code.
- *        The captured output and error messages will be written to ADUC_LOG_FILE.
- *
- * @param comman Name of a command to run. If command doesn't contain '/', this function will
+  *
+ * @param command Name of a command to run. If command doesn't contain '/', this function will
  *               search for the specified command in PATH.
  * @param args List of arguments for the command.
- * @param output A standard output from the command.
+ * @param func Callback function for each line of output.
  *
  * @return 0 on success.
  */
-int ADUC_LaunchChildProcess(
-    const std::string& command,
-    std::vector<std::string> args,
-    std::string& output) // NOLINT(google-runtime-references)
+static int ADUC_LaunchChildProcessHelper(
+    const std::string& command, std::vector<std::string> args, std::function<void(const char*)> func)
 {
     int ret = 0;
 
@@ -73,10 +70,10 @@ int ADUC_LaunchChildProcess(
 
     char buffer[1024];
 
-    // Note that fgets also includes the newline character.
+    // fgets includes the newline character.
     while (fgets(buffer, sizeof(buffer), fp) != nullptr)
     {
-        output += buffer;
+        func(buffer);
     }
 
     // Returns 0 if no error occurred.
@@ -90,6 +87,47 @@ int ADUC_LaunchChildProcess(
     return ADUCPAL_pclose(fp);
 }
 
+/**
+ * @brief Runs specified command in a new process and captures output, error messages, and exit code.
+ *
+ * @param command Name of a command to run. If command doesn't contain '/', this function will
+ *               search for the specified command in PATH.
+ * @param args List of arguments for the command.
+ * @param output A standard output from the command, combined with linefeeds into a string.
+ *
+ * @return An exit code from the command.
+ */
+int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string> args, std::string& output)
+{
+    output.clear();
+
+    return ADUC_LaunchChildProcessHelper(command, args, [&output](const char* line) -> void {
+        // fgets includes the newline character.
+        output += line;
+    });
+}
+
+/**
+ * @brief Runs specified command in a new process and captures output, error messages, and exit code.
+ *
+ * @param command Name of a command to run. If command doesn't contain '/', this function will
+ *               search for the specified command in PATH.
+ * @param args List of arguments for the command.
+ * @param output A standard output from the command, returned as a vector of strings.
+ *
+ * @return An exit code from the command.
+ */
+int ADUC_LaunchChildProcess(
+    const std::string& command, std::vector<std::string> args, std::vector<std::string>& output)
+{
+    output.clear();
+
+    return ADUC_LaunchChildProcessHelper(command, args, [&output](const char* line) -> void {
+        // fgets includes the newline character.
+        std::string str{ line };
+        output.push_back(str.substr(0, str.size() - 1));
+    });
+}
 /**
  * @brief Ensure that the effective group of the process is the given group (or is root).
  * @remark This function is not thread-safe if called with the defaults for the optional args.

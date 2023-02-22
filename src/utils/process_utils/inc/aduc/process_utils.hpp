@@ -22,16 +22,28 @@
 
 /**
  * @brief Runs specified command in a new process and captures output, error messages, and exit code.
- *        The captured output and error messages will be written to ADUC_LOG_FILE.
  *
- * @param comman Name of a command to run. If command doesn't contain '/', this function will
+ * @param command Name of a command to run. If command doesn't contain '/', this function will
  *               search for the specified command in PATH.
  * @param args List of arguments for the command.
- * @param output A standard output from the command.
+ * @param output A standard output from the command, combined with linefeeds into a string.
  *
  * @return An exit code from the command.
  */
 int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string> args, std::string& output);
+
+/**
+ * @brief Runs specified command in a new process and captures output, error messages, and exit code.
+ *
+ * @param command Name of a command to run. If command doesn't contain '/', this function will
+ *               search for the specified command in PATH.
+ * @param args List of arguments for the command.
+ * @param output A standard output from the command, returned as a vector of strings.
+ *
+ * @return An exit code from the command.
+ */
+int ADUC_LaunchChildProcess(
+    const std::string& command, std::vector<std::string> args, std::vector<std::string>& output);
 
 /**
  * @brief Ensure that the effective group of the process is the given group (or is root).

@@ -86,7 +86,7 @@ ADUC_Result WimHandler1::IsInstalled(const ADUC_WorkflowData* workflowData)
 
     const bool result = WimStepHandler::IsInstalled(installedCriteria.get());
 
-    Log_Info("[%s] IsInstalled '%s'? %d", ID(), installedCriteria.get(), result);
+    Log_Info("[%s] IsInstalled '%s'? %s", ID(), installedCriteria.get(), result ? "Yes" : "No");
 
     return result ? ADUCResult(ADUC_Result_IsInstalled_Installed) : ADUCResult(ADUC_Result_IsInstalled_NotInstalled);
 }
@@ -226,11 +226,11 @@ ADUC_Result WimHandler1::Install(const ADUC_WorkflowData* workflowData)
 
     Log_Info("Installing %s from %s", entity.TargetFilename, workFolder.get());
 
-    const WimStepHandler::RC rc = WimStepHandler::Install(workFolder.get(), entity.TargetFilename);
-    ADUCResult result(ADUC_Result_Failure, rc);
-    if (rc == WimStepHandler::RC::Success)
+    const WimStepHandler::RC erc = WimStepHandler::Install(workFolder.get(), entity.TargetFilename);
+    ADUCResult result(ADUC_Result_Failure, erc);
+    if (erc == WimStepHandler::RC::Success)
     {
-        result.Set(ADUC_Result_Success, 0);
+        result.Set(ADUC_Result_Install_Success, 0);
     }
 
     Log_Info("[%s] Install result: %u,%u", ID(), result.ResultCode(), result.ExtendedResultCode());
@@ -281,13 +281,13 @@ ADUC_Result WimHandler1::Apply(const ADUC_WorkflowData* workflowData)
 
     Log_Info("[%s] Applying %s from %s", ID(), entity.TargetFilename, workFolder.get());
 
-    const WimStepHandler::RC rc = WimStepHandler::Apply(workFolder.get(), entity.TargetFilename);
-    ADUCResult result(ADUC_Result_Failure, rc);
-    if (rc == WimStepHandler::RC::Success)
+    const WimStepHandler::RC erc = WimStepHandler::Apply(workFolder.get(), entity.TargetFilename);
+    ADUCResult result(ADUC_Result_Failure, erc);
+    if (erc == WimStepHandler::RC::Success)
     {
         result.Set(ADUC_Result_Success, 0);
     }
-    else if (rc == WimStepHandler::RC::Apply_Success_Reboot_Required)
+    else if (erc == WimStepHandler::RC::Success_Reboot_Required)
     {
         result.Set(ADUC_Result_Apply_RequiredReboot, 0);
     }

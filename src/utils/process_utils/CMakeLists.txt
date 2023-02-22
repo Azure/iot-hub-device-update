@@ -20,7 +20,7 @@ target_link_libraries (
             aduc::string_utils)
 
 target_link_aziotsharedutil (${PROJECT_NAME} PUBLIC)
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+target_link_libraries (${PROJECT_NAME} PUBLIC libaducpal)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
