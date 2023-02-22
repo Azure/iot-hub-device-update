@@ -49,14 +49,18 @@ bool IsInstalled(const char* installedCriteria)
     // Check local drive for kernel32.dll version.  We'll match the file version of that
     // against the installed criteria string.
     char systemFolder[MAX_PATH];
-    GetSystemDirectory(systemFolder, ARRAYSIZE(systemFolder));
+    if (GetSystemDirectory(systemFolder, ARRAYSIZE(systemFolder)) == 0)
+    {
+        return false;
+    }
+
     std::string referenceFile{ systemFolder };
     referenceFile += "\\kernel32.dll";
 
     return GetFileVersion(referenceFile.c_str()) == installedCriteria;
 }
 
-RC Install(const char* workFolder, const char* targetFile)
+ADUC_Result_t Install(const char* workFolder, const char* targetFile)
 {
     HRESULT hr;
 
@@ -68,9 +72,7 @@ RC Install(const char* workFolder, const char* targetFile)
     hr = FormatDrive(TARGET_DRIVE);
     if (FAILED(hr))
     {
-        // TODO: Can't convert ADUC_Result_ to WimStepHandler::RC
-        // return MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ERRNO(hr);
-        return RC::Install_UnknownException;
+        return MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ERRNO(hr);
     }
 
     // Apply imagefile to D:\
@@ -81,20 +83,16 @@ RC Install(const char* workFolder, const char* targetFile)
     hr = ApplyImage(sourceFile.c_str(), driveRoot.c_str(), tempPath.c_str());
     if (FAILED(hr))
     {
-        // TODO: Can't convert ADUC_Result_ to WimStepHandler::RC
-        // return MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ERRNO(hr);
-        return RC::Install_UnknownException;
+        return MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ERRNO(hr);
     }
 
     return WimStepHandler::RC::Success;
 }
 
-RC Apply(const char* workFolder, const char* targetFile)
+ADUC_Result_t Apply(const char* workFolder, const char* targetFile)
 {
     UNREFERENCED_PARAMETER(workFolder);
     UNREFERENCED_PARAMETER(targetFile);
-
-    RC result = RC::Apply_UnknownException;
 
     CCoInitialize coinit;
 
@@ -103,11 +101,10 @@ RC Apply(const char* workFolder, const char* targetFile)
 
     if (!ConfigureBCD(TARGET_DRIVE, "Windows IoT"))
     {
-        return RC::Apply_UnknownException;
+        return RC::Apply_BcdEditFailure;
     }
 
-    // TODO: return WimStepHandler::RC::Success_Reboot_Required to reboot.
-    return result;
+    return WimStepHandler::RC::Success_Reboot_Required;
 }
 
 } // namespace WimStepHandler

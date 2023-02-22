@@ -154,10 +154,9 @@ ADUC_Result WimHandler1::Download(const ADUC_WorkflowData* workflowData)
         {
             ADUCResult result = ExtensionManager::Download(
                 &entity, workflowHandle, &Default_ExtensionManager_Download_Options, DownloadProgressCallback);
+            Log_Info("[%s] Download result: %u,%u", ID(), result.ResultCode(), result.ExtendedResultCode());
             if (result.IsResultCodeFailure())
             {
-                Log_Error(
-                    "[%s] Cannot download payload file#%u, error 0x%X", ID(), fileIndex, result.ExtendedResultCode());
                 return result;
             }
         }
@@ -226,14 +225,13 @@ ADUC_Result WimHandler1::Install(const ADUC_WorkflowData* workflowData)
 
     Log_Info("Installing %s from %s", entity.TargetFilename, workFolder.get());
 
-    const WimStepHandler::RC erc = WimStepHandler::Install(workFolder.get(), entity.TargetFilename);
+    ADUC_Result_t erc = WimStepHandler::Install(workFolder.get(), entity.TargetFilename);
     ADUCResult result(ADUC_Result_Failure, erc);
+    Log_Info("[%s] Install result: %u,%u", ID(), result.ResultCode(), result.ExtendedResultCode());
     if (erc == WimStepHandler::RC::Success)
     {
         result.Set(ADUC_Result_Install_Success, 0);
     }
-
-    Log_Info("[%s] Install result: %u,%u", ID(), result.ResultCode(), result.ExtendedResultCode());
 
     return result;
 }
@@ -281,8 +279,9 @@ ADUC_Result WimHandler1::Apply(const ADUC_WorkflowData* workflowData)
 
     Log_Info("[%s] Applying %s from %s", ID(), entity.TargetFilename, workFolder.get());
 
-    const WimStepHandler::RC erc = WimStepHandler::Apply(workFolder.get(), entity.TargetFilename);
+    ADUC_Result_t erc = WimStepHandler::Apply(workFolder.get(), entity.TargetFilename);
     ADUCResult result(ADUC_Result_Failure, erc);
+    Log_Info("[%s] Apply result: %u,%u", ID(), result.ResultCode(), result.ExtendedResultCode());
     if (erc == WimStepHandler::RC::Success)
     {
         result.Set(ADUC_Result_Success, 0);
@@ -291,8 +290,6 @@ ADUC_Result WimHandler1::Apply(const ADUC_WorkflowData* workflowData)
     {
         result.Set(ADUC_Result_Apply_RequiredReboot, 0);
     }
-
-    Log_Info("[%s] Apply result: %u,%u", ID(), result.ResultCode(), result.ExtendedResultCode());
 
     return result;
 }
