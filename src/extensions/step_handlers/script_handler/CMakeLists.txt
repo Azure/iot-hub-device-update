@@ -13,6 +13,7 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES} ${
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::adu_core_export_helpers
+            aduc::adushell_utils
             aduc::c_utils
             aduc::contract_utils
             aduc::exception_utils

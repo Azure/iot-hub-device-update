@@ -16,7 +16,7 @@
 #include "aduc/types/adu_core.h" // ADUC_Result_*
 #include "aduc/workflow_data_utils.h" // ADUC_WorkflowData_GetWorkFolder
 #include "aduc/workflow_utils.h" // workflow_*
-#include "adushell_const.hpp"
+#include "aduc/adushell_const.hpp"
 #include <sstream>
 #include <string>
 #include <vector>

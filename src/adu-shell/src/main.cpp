@@ -18,7 +18,7 @@
 #include "aduc/string_utils.hpp"
 
 #include "adushell.hpp"
-#include "adushell_const.hpp"
+#include "aduc/adushell_const.hpp"
 #include "azure_c_shared_utility/vector.h"
 #include "common_tasks.hpp"
 

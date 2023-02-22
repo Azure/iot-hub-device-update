@@ -57,7 +57,8 @@ target_compile_definitions (
 
 target_link_libraries (
     ${target_name}
-    PRIVATE aduc::logging
+    PRIVATE aduc::adushell_utils
+            aduc::logging
             aduc::c_utils
             aduc::config_utils
             aduc::process_utils

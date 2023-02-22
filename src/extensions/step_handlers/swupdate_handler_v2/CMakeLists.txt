@@ -28,7 +28,10 @@ target_include_directories (
 
 target_link_libraries (
     ${target_name}
-    PRIVATE aduc::c_utils
+
+    PRIVATE
+            aduc::adushell_utils
+            aduc::c_utils
             aduc::contract_utils
             aduc::exception_utils
             aduc::extension_manager
