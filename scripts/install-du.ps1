@@ -366,8 +366,9 @@ if (!$root_dir) {
 if (!$BuildOutputPath) {
     $BuildOutputPath = "$root_dir/out"
 }
-$runtime_dir = "$BuildOutputPath/bin"
-$library_dir = "$BuildOutputPath/lib"
+
+$BuildBinPath = "$BuildOutputPath/bin/$Type"
+$BuildLibPath = "$BuildOutputPath/lib/$Type"
 
 # Local install folders
 $ETC_FOLDER = '/etc'
@@ -390,8 +391,8 @@ if (-not (Test-Path '/tmp/adu/testdata' -PathType Container)) {
 }
 
 Install-Adu-Components `
-    -BuildBinPath "$runtime_dir/$Type" `
-    -BuildLibPath "$library_dir/$Type" `
+    -BuildBinPath $BuildBinPath `
+    -BuildLibPath $BuildLibPath `
     -BinPath $ADUC_AGENT_FOLDER `
     -LibPath $ADUSHELL_FOLDER `
     -DataPath $ADUC_DATA_FOLDER
@@ -420,15 +421,37 @@ if ($Package) {
 
     $temp = New-TemporaryDirectory
 
-    Copy-Item -Recurse -Path $ADUC_AGENT_FOLDER -Destination "$temp$ADUCAGENT_FOLDER"
-    Copy-Item -Recurse -Path $ADUSHELL_FOLDER -Destination "$temp$ADUSHELL_FOLDER"
-    Copy-Item -Recurse -Path $ADUC_EXTENSIONS_FOLDER -Destination "$temp$ADUC_EXTENSIONS_FOLDER"
+    $dest = Join-Path $temp $ADUC_AGENT_FOLDER
+    "$ADUC_AGENT_FOLDER => $dest"
+    Copy-Item -Recurse -Path $ADUC_AGENT_FOLDER -Destination $dest
+    $dest = Join-Path $temp $ADUSHELL_FOLDER
+    "$ADUSHELL_FOLDER => $dest"
+    Copy-Item -Recurse -Path $ADUSHELL_FOLDER -Destination $dest
+    $dest = Join-Path $temp $ADUC_EXTENSIONS_FOLDER
+    "$ADUC_EXTENSIONS_FOLDER => $dest"
+    Copy-Item -Recurse -Path $ADUC_EXTENSIONS_FOLDER -Destination $dest
+
+    $dest = Join-Path $temp (Join-Path $ADUC_AGENT_FOLDER 'symbols')
+    "Symbols => $dest"
+    New-Item -ItemType Directory -Path $dest | Out-Null
+    Get-ChildItem `
+        -Path $BuildBinPath `
+        -Filter '*.pdb' `
+        -Exclude '*unit_test.pdb', '*unit_tests.pdb', '*_ut.pdb', '*_tests_helper.pdb' `
+        -Recurse `
+    | ForEach-Object {
+        Copy-Item -LiteralPath $_.FullName -Destination $dest
+    }
 
     # Create empty folders as placeholders
-    New-Item -ItemType Directory -Path "$temp$ADUC_CONF_FOLDER" | Out-Null
-    New-Item -ItemType Directory -Path "$temp$ADUC_DOWNLOAD_FOLDER" | Out-Null
 
-    $archive = '{0}\du-{1}.zip' -f (New-TemporaryDirectory), (Get-Date -Format FileDateTime)
+    $dest = Join-Path $temp $ADUC_CONF_FOLDER
+    New-Item -ItemType Directory -Path $dest | Out-Null
+
+    $dest = Join-Path $temp $ADUC_DOWNLOAD_FOLDER
+    New-Item -ItemType Directory -Path $dest | Out-Null
+
+    $archive = Join-Path ([IO.Path]::GetTempPath()) ('du-{0}.zip' -f (Get-Date -Format FileDateTime))
 
     ''
     "Archive file: $archive"
