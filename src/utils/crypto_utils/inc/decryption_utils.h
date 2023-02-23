@@ -5,14 +5,13 @@
  * @copyright Copyright (c) Microsoft Corp.
  */
 
-
 typedef void* DecryptionKey;
 
+typedef void* DecryptionCtx;
 
 bool CryptoUtils_InitialzieDecryptionCtx(void);
 
 void CryptoUtils_DeInitializeDecryptionCtx();
-
 
 /**
  * @brief Decrypts the chunk using the specified decryption key and context and loads the result into the outputBuff up to outputBuffSize
