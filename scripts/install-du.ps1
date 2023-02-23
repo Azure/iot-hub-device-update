@@ -443,6 +443,10 @@ if ($Package) {
         Copy-Item -LiteralPath $_.FullName -Destination $dest
     }
 
+    # Add git info as '_git-info.txt' in symbols folder.
+    "Date: $(Get-Date)", "Head: $(git.exe rev-parse --short HEAD)", "Release: $(git.exe rev-parse --abbrev-ref HEAD)" `
+    | Out-File -Encoding ascii  (Join-Path $dest '_git-info.txt')
+
     # Create empty folders as placeholders
 
     $dest = Join-Path $temp $ADUC_CONF_FOLDER
