@@ -11,6 +11,12 @@
 #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
 #include <ctype.h> // for isalnum
 
+#ifdef _WIN32
+const char* ADUC_OS_PATH_SEP = "\\";
+#else
+const char* ADUC_OS_PATH_SEP = "/";
+#endif
+
 /**
  * @brief Replaces non-alphunumeric chars with _ (underscore) char for use in path segments of a file path.
  * @param unsanitized The string to be sanitized

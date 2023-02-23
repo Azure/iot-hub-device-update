@@ -11,6 +11,8 @@
 #include <aduc/c_utils.h> // EXTERN_C_BEGIN, EXTERN_C_END
 #include <azure_c_shared_utility/strings.h> // STRING_HANDLE
 
+extern const char* ADUC_OS_PATH_SEP;
+
 EXTERN_C_BEGIN
 
 STRING_HANDLE SanitizePathSegment(const char* unsanitized);

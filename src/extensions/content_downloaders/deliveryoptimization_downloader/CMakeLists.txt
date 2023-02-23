@@ -23,6 +23,7 @@ target_link_libraries (
     PRIVATE aziotsharedutil
             aduc::c_utils
             aduc::contract_utils
+            aduc::download_utils
             aduc::hash_utils
             aduc::logging
             aduc::process_utils

@@ -8,17 +8,12 @@
 #include "aduc/connection_string_utils.h"
 #include "aduc/content_downloader_extension.hpp"
 #include "aduc/contract_utils.h"
+#include "aduc/download_utils.hpp"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
 
-#include <atomic>
-#include <sstream>
-#include <stdio.h> // for FILE
-#include <stdlib.h> // for calloc
-#include <strings.h> // for strcasecmp
 #include <sys/stat.h> // for stat
-#include <vector>
 
 #include <do_config.h>
 #include <do_download.h>
@@ -47,17 +42,13 @@ ADUC_Result do_download(
         return ADUC_Result{ resultCode, extendedResultCode };
     }
 
-    std::stringstream fullFilePath;
-    fullFilePath << workFolder << "/" << entity->TargetFilename;
+    const std::string fullFilePath = aduc::download_utils::build_download_filepath(workFolder, entity);
 
     Log_Info(
-        "Downloading File '%s' from '%s' to '%s'",
-        entity->TargetFilename,
-        entity->DownloadUri,
-        fullFilePath.str().c_str());
+        "Downloading File '%s' from '%s' to '%s'", entity->TargetFilename, entity->DownloadUri, fullFilePath.c_str());
 
     const std::error_code doErrorCode = MSDO::download::download_url_to_path(
-        entity->DownloadUri, fullFilePath.str(), false, std::chrono::seconds(retryTimeout));
+        entity->DownloadUri, fullFilePath, false, std::chrono::seconds(retryTimeout));
     if (!doErrorCode)
     {
         resultCode = ADUC_Result_Download_Success;
@@ -67,7 +58,10 @@ ADUC_Result do_download(
     {
         // Note: The call to download_url_to_path() does not make use of a cancellation token,
         // so the download can only timeout or hit a fatal error.
-        Log_Error("DO error, msg: %s, code: %#08x, timeout? %d", doErrorCode.message().c_str(), doErrorCode.value(),
+        Log_Error(
+            "DO error, msg: %s, code: %#08x, timeout? %d",
+            doErrorCode.message().c_str(),
+            doErrorCode.value(),
             (doErrorCode == std::errc::timed_out));
 
         resultCode = ADUC_Result_Failure;
@@ -85,7 +79,7 @@ ADUC_Result do_download(
         {
             Log_Error(
                 "FileEntity for %s has unsupported hash type %s",
-                fullFilePath.str().c_str(),
+                fullFilePath.c_str(),
                 ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0));
             resultCode = ADUC_Result_Failure;
             extendedResultCode = ADUC_ERC_VALIDATION_FILE_HASH_TYPE_NOT_SUPPORTED;
@@ -99,7 +93,7 @@ ADUC_Result do_download(
         }
 
         const bool isValid = ADUC_HashUtils_IsValidFileHash(
-            fullFilePath.str().c_str(),
+            fullFilePath.c_str(),
             ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
             algVersion,
             false /* suppressErrorLog */);
@@ -124,7 +118,7 @@ ADUC_Result do_download(
     struct stat st
     {
     };
-    const off_t fileSize{ (stat(fullFilePath.str().c_str(), &st) == 0) ? st.st_size : 0 };
+    const off_t fileSize{ (stat(fullFilePath.c_str(), &st) == 0) ? st.st_size : 0 };
 
     if (downloadProgressCallback != nullptr)
     {

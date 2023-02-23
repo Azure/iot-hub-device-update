@@ -8,6 +8,7 @@
 
 #include "aduc/content_downloader_extension.hpp"
 #include "aduc/contract_utils.h"
+#include "aduc/download_utils.hpp"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp" // for ADUC_LaunchChildProcess
@@ -29,7 +30,7 @@ ADUC_Result Download_curl(
     std::vector<std::string> args;
     std::string output;
     int exitCode = 1;
-    std::stringstream fullFilePath;
+    std::string fullFilePath;
     bool isValidHash;
     bool reportProgress = false;
 
@@ -61,14 +62,14 @@ ADUC_Result Download_curl(
         goto done;
     }
 
-    fullFilePath << workFolder << "/" << entity->TargetFilename;
+    fullFilePath = aduc::download_utils::build_download_filepath(workFolder, entity);
 
     if (!ADUC_HashUtils_GetShaVersionForTypeString(
             ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0), &algVersion))
     {
         Log_Error(
             "FileEntity for %s has unsupported hash type %s",
-            fullFilePath.str().c_str(),
+            fullFilePath.c_str(),
             ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0));
         result.ExtendedResultCode = ADUC_ERC_VALIDATION_FILE_HASH_TYPE_NOT_SUPPORTED;
 
@@ -87,7 +88,7 @@ ADUC_Result Download_curl(
     // If target file exists, validate file hash.
     // If file is valid, then skip the download.
     isValidHash = ADUC_HashUtils_IsValidFileHash(
-        fullFilePath.str().c_str(),
+        fullFilePath.c_str(),
         ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
         algVersion,
         false /* suppressErrorLog */);
@@ -100,13 +101,10 @@ ADUC_Result Download_curl(
     }
 
     Log_Info(
-        "Downloading File '%s' from '%s' to '%s'",
-        entity->TargetFilename,
-        entity->DownloadUri,
-        fullFilePath.str().c_str());
+        "Downloading File '%s' from '%s' to '%s'", entity->TargetFilename, entity->DownloadUri, fullFilePath.c_str());
 
     args.emplace_back("-o");
-    args.emplace_back(fullFilePath.str().c_str());
+    args.emplace_back(fullFilePath.c_str());
     args.emplace_back("-O");
     args.emplace_back(entity->DownloadUri);
 
@@ -134,7 +132,7 @@ ADUC_Result Download_curl(
         Log_Info("Validating file hash");
 
         const bool isValid = ADUC_HashUtils_IsValidFileHash(
-            fullFilePath.str().c_str(),
+            fullFilePath.c_str(),
             ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
             algVersion,
             true /* suppressErrorLog */);
@@ -159,7 +157,7 @@ done:
             struct stat st
             {
             };
-            const off_t fileSize{ (stat(fullFilePath.str().c_str(), &st) == 0) ? st.st_size : 0 };
+            const off_t fileSize{ (stat(fullFilePath.c_str(), &st) == 0) ? st.st_size : 0 };
             downloadProgressCallback(
                 workflowId, entity->FileId, ADUC_DownloadProgressState_Completed, fileSize, entity->SizeInBytes);
         }
