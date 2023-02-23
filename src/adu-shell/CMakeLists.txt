@@ -61,12 +61,8 @@ target_compile_definitions (
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
 if (WIN32)
-    # getopt-win32 (vcpkg.json) doesn't have "find_package"
-    find_path (GETOPT_INCLUDE_DIR "getopt.h" REQUIRED)
-    target_include_directories (${target_name} PRIVATE ${GETOPT_INCLUDE_DIR} REQUIRED)
-
-    find_library (GETOPT_LIBRARY "getopt.lib")
-    target_link_libraries (${target_name} PRIVATE ${GETOPT_LIBRARY})
+    find_package(unofficial-getopt-win32 REQUIRED)
+    target_link_libraries(${target_name} PRIVATE unofficial::getopt-win32::getopt)
 endif ()
 
 target_link_libraries (
