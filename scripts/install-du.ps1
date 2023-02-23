@@ -215,16 +215,30 @@ function Install-Adu-Components {
     Invoke-CopyFile "$BuildBinPath/adu-shell.exe" $LibPath
     Invoke-CopyFile  "$BuildBinPath/AducIotAgent.exe" $BinPath
 
-    # IMPORTANT: Windows builds require these DLLS as well. Any way to build these statically?
     if ($Type -eq 'Debug') {
-        $dependencies = 'getopt', 'pthreadVC3d', 'libcrypto-1_1-x64'
+        $BuildToolsDPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\debug_nonredist\x64\Microsoft.VC143.DebugCRT"
+        $WindowsKitsDPath = "${env:ProgramFiles(x86)}\Microsoft SDKs\Windows Kits\10\ExtensionSDKs\Microsoft.UniversalCRT.Debug\10.0.22621.0\Redist\Debug\x64"
+
+        # Only needed if dynamically linking: getopt, pthreadVC3d, libcrypto-1_1-x64
+
+        $dependencies = `
+        (Join-Path $BuildBinPath 'getopt'), `
+        (Join-Path $BuildBinPath 'pthreadVC3d'), `
+        (Join-Path $BuildBinPath 'libcrypto-1_1-x64'), `
+        (Join-Path $BuildToolsDPath 'msvcp140d'), `
+        (Join-Path $BuildToolsDPath 'vcruntime140d'), `
+        (Join-Path $BuildToolsDPath 'vcruntime140_1d'), `
+        (Join-Path $WindowsKitsDPath 'ucrtbased')
     }
     else {
-        $dependencies = 'getopt', 'pthreadVC3', 'libcrypto-1_1-x64'
+        $dependencies = `
+        (Join-Path $BuildBinPath 'getopt'), `
+        (Join-Path $BuildBinPath 'pthreadVC3'), `
+        (Join-Path $BuildBinPath 'libcrypto-1_1-x64')
     }
     $dependencies | ForEach-Object {
-        Invoke-CopyFile "$BuildBinPath/$_.dll" $LibPath
-        Invoke-CopyFile "$BuildBinPath/$_.dll" $BinPath
+        Invoke-CopyFile "$_.dll" $LibPath
+        Invoke-CopyFile "$_.dll" $BinPath
     }
 
     # 'microsoft_swupdate_1', 'microsoft_swupdate_2'
@@ -255,7 +269,7 @@ function Create-DataFiles {
         [Parameter(Mandatory = $true)][string]$ConfPath
     )
 
-    Show-Header 'Creating data files'
+    'Creating data files'
 
     "Data file path: $ConfPath"
     ''
@@ -263,41 +277,10 @@ function Create-DataFiles {
     mkdir -Force $ConfPath | Out-Null
 
     #
-    # $env:TEMP/du-simulator-data.json (SIMULATOR_DATA_FILE)
-    #
-    #
-    #     @'
-    # {
-    #     "isInstalled": {
-    #         "*": {
-    #             "resultCode": 901,
-    #             "extendedResultCode": 0,
-    #             "resultDetails": "simulated isInstalled"
-    #         }
-    #     },
-    #     "download": {
-    #         "*": {
-    #             "resultCode": 500,
-    #             "extendedResultCode": 0,
-    #             "resultDetails": "simulated download"
-    #         }
-    #     },
-    #     "install": {
-    #         "resultCode": 600,
-    #         "extendedResultCode": 0,
-    #         "resultDetails": "simulated install"
-    #     },
-    #     "apply": {
-    #         "resultCode": 700,
-    #         "extendedResultCode": 0,
-    #         "resultDetails": "simulated apply"
-    #     }
-    # }
-    # '@ | Out-File -Encoding ASCII "$env:TEMP/du-simulator-data.json"
-
-    #
     # /etc/adu/du-diagnostics-config.json
     #
+
+    $dest = Join-Path $ConfPath 'du-diagnostics-config.json'
 
     @'
 {
@@ -309,13 +292,14 @@ function Create-DataFiles {
     ],
     "maxKilobytesToUploadPerLogPath": 5
 }
-'@ | Out-File -Encoding ASCII "$ConfPath/du-diagnostics-config.json"
+'@ | Out-File -Encoding ASCII $dest
 
     #
     # /etc/adu/du-config.json
     #
 
-    if (-not (Test-Path -LiteralPath "$ConfPath/du-config.json" -PathType Leaf)) {
+    $dest = Join-Path $ConfPath 'du-config.json'
+    if (-not (Test-Path -LiteralPath $dest -PathType Leaf)) {
         @'
 {
     "schemaVersion": "1.1",
@@ -341,7 +325,7 @@ function Create-DataFiles {
         }
     ]
 }
-'@ | Out-File -Encoding ASCII "$ConfPath/du-config.json"
+'@ | Out-File -Encoding ASCII $dest
     }
 }
 
@@ -447,10 +431,10 @@ if ($Package) {
     "Date: $(Get-Date)", "Head: $(git.exe rev-parse --short HEAD)", "Release: $(git.exe rev-parse --abbrev-ref HEAD)" `
     | Out-File -Encoding ascii  (Join-Path $dest '_git-info.txt')
 
-    # Create empty folders as placeholders
-
     $dest = Join-Path $temp $ADUC_CONF_FOLDER
     New-Item -ItemType Directory -Path $dest | Out-Null
+
+    Create-DataFiles -ConfPath $dest
 
     $dest = Join-Path $temp $ADUC_DOWNLOAD_FOLDER
     New-Item -ItemType Directory -Path $dest | Out-Null
