@@ -220,6 +220,7 @@ stages:
 
                 - script: |
                       cp $(scenarioSetupDir)/vm_setup/setup.sh $(scenarioSetupDir)/vm_setup/testsetup/
+                      cp $(scenarioSetupDir)/vm_setup/apt_repo_setup.sh $(scenarioSetupDir)/vm_setup/testsetup/
                   displayName: Copy the setup script to the same location as the artifact
                   continueOnError: False
                   workingDirectory: $(E2E_WORKING_DIR)/
