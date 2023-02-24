@@ -32,9 +32,8 @@ if (MSVC)
 
     # Avoid "warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library"
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /NODEFAULTLIB:libcmtd")
         set (CMAKE_EXE_LINKER_FLAGS
-             "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:msvcrt /NODEFAULTLIB:libcmt /NODEFAULTLIB:libcmtd")
+             "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:msvcrt")
     else ()
         set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
     endif ()

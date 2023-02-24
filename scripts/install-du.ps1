@@ -217,24 +217,31 @@ function Install-Adu-Components {
 
     if ($Type -eq 'Debug') {
         $BuildToolsDPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\debug_nonredist\x64\Microsoft.VC143.DebugCRT"
-        $WindowsKitsDPath = "${env:ProgramFiles(x86)}\Microsoft SDKs\Windows Kits\10\ExtensionSDKs\Microsoft.UniversalCRT.Debug\10.0.22621.0\Redist\Debug\x64"
+        $WindowsKitsDPath = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\ucrt"
 
         # Only needed if dynamically linking: getopt, pthreadVC3d, libcrypto-1_1-x64
 
         $dependencies = `
         (Join-Path $BuildBinPath 'getopt'), `
-        (Join-Path $BuildBinPath 'pthreadVC3d'), `
         (Join-Path $BuildBinPath 'libcrypto-1_1-x64'), `
+        (Join-Path $BuildBinPath 'pthreadVC3d'), `
         (Join-Path $BuildToolsDPath 'msvcp140d'), `
         (Join-Path $BuildToolsDPath 'vcruntime140d'), `
         (Join-Path $BuildToolsDPath 'vcruntime140_1d'), `
         (Join-Path $WindowsKitsDPath 'ucrtbased')
     }
     else {
+        $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\x64\Microsoft.VC143.CRT"
+        $WindowsKitsPath = "${env:ProgramFiles(x86)}\Windows Kits\10\Redist\10.0.22621.0\ucrt\DLLs\x64"
+
         $dependencies = `
         (Join-Path $BuildBinPath 'getopt'), `
+        (Join-Path $BuildBinPath 'libcrypto-1_1-x64'), `
         (Join-Path $BuildBinPath 'pthreadVC3'), `
-        (Join-Path $BuildBinPath 'libcrypto-1_1-x64')
+        (Join-Path $BuildToolsPath 'msvcp140'), `
+        (Join-Path $BuildToolsPath 'vcruntime140'), `
+        (Join-Path $BuildToolsPath 'vcruntime140_1'), `
+        (Join-Path $WindowsKitsPath 'ucrtbase')
     }
     $dependencies | ForEach-Object {
         Invoke-CopyFile "$_.dll" $LibPath
