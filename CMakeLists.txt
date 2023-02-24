@@ -1,7 +1,21 @@
 cmake_minimum_required (VERSION 3.5)
 
 if (WIN32)
+    #
+    # Configure vcpkg
+    #
+
     include (cmake/automate-vcpkg.cmake)
+
+    # Enable static linking of dependencies.
+    # Currently disabled because of:
+    # "LNK4098: defaultlib 'LIBCMTD' conflicts with use of other libs; use /NODEFAULTLIB:library""
+    # and warning about getopt violation if linked statically.
+    # if ("${VCPKG_TRIPLET}" STREQUAL "x64-windows")
+    #     set (VCPKG_TRIPLET "x64-windows-static")
+    #     set (VCPKG_TARGET_TRIPLET "x64-windows-static")
+    # endif ()
+
     # Default is ${CMAKE_BINARY_DIR}/vcpkg
     cmake_path (
         SET
@@ -14,6 +28,7 @@ if (WIN32)
         VCPKG_INSTALLED_DIR
         NORMALIZE
         "${CMAKE_SOURCE_DIR}/.vcpkg-installed")
+
     # clone the official Vcpkg repository and bootstrap it.
     vcpkg_bootstrap ()
 
@@ -41,6 +56,7 @@ if (WIN32)
             "lib")
     endif ()
     link_directories (${VCPKG_LIBRARY_DIR})
+
     message (STATUS "VCPKG_LIBRARY_DIR: ${VCPKG_LIBRARY_DIR}")
 endif ()
 
