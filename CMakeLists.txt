@@ -9,8 +9,8 @@ if (WIN32)
 
     # Enable static linking of dependencies.
     # Currently disabled because of:
-    # "LNK4098: defaultlib 'LIBCMTD' conflicts with use of other libs; use /NODEFAULTLIB:library""
-    # and warning about getopt violation if linked statically.
+    # * "Warning static builds of getopt violate the Lesser GNU Public License"
+    # * d2c_messaging_unit_tests ~PThreadCond crashing on exit.
     # if ("${VCPKG_TRIPLET}" STREQUAL "x64-windows")
     #     set (VCPKG_TRIPLET "x64-windows-static")
     #     set (VCPKG_TARGET_TRIPLET "x64-windows-static")
