@@ -80,7 +80,7 @@ while [[ $1 != "" ]]; do
 done
  
 if [[ $private_packages_dir != "" ]]; then
-    create_repo
+    $SUDO create_repo
 fi
  
 $ret 0
