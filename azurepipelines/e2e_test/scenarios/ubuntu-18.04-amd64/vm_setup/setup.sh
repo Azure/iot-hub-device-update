@@ -183,9 +183,9 @@ configure_apt_repository
 #
 
 if [[ $self_upgrade == "true" ]]; then
-    sudo apt-get install deviceupdate-agent -Y
+    sudo apt-get install -y deviceupdate-agent
     chmod u+x  ./testsetup/apt_repo_setup.sh
-    ./testsetup/apt_repo_setup.sh -d ./testsetup/deviceupdate-package.deb
+    sudo ./testsetup/apt_repo_setup.sh -d ./testsetup/deviceupdate-package.deb
 else
     sudo apt-get install -y ./testsetup/deviceupdate-package.deb
 fi
