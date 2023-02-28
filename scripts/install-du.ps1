@@ -227,7 +227,10 @@ function Install-Adu-Components {
             Show-Error 'No Windows Kits installed'
             exit 1
         }
-        2 {
+        1 {
+
+        }
+        default {
             $WindowsKitsVer = $WindowsKitsVer[0]
             Show-Warning "Multiple Windows Kits installed. Using latest ($WindowsKitsVer)."
         }
@@ -461,7 +464,8 @@ if ($Package) {
     $dest = Join-Path $temp $ADUC_DOWNLOAD_FOLDER
     New-Item -ItemType Directory -Path $dest | Out-Null
 
-    $archive = Join-Path ([IO.Path]::GetTempPath()) ('du-{0}.zip' -f (Get-Date -Format FileDateTime))
+    # -Format FileDateTime includes milliseconds, which is overkill.
+    $archive = Join-Path ([IO.Path]::GetTempPath()) ('du-{0}.zip' -f (Get-Date -Format 'yyyyMMddTHHmmss'))
 
     ''
     "Archive file: $archive"
