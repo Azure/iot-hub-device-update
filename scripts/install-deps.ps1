@@ -79,6 +79,16 @@ if ($PSVersionTable.BuildVersion -lt '10.0.18362.0') {
     exit 1
 }
 
+if (Get-ComputerInfo -Property WindowsEditionId -eq 'IoTEnterpriseS')
+{
+    # Needs:
+    # Microsoft.VCLibs.x64.14.00.Desktop.appx
+    # Microsoft.UI.Xaml.2.7.appx
+    # Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+    Show-Error 'You must first manually install WinGet before running this script.'
+    exit 1
+}
+
 if ('S-1-5-32-544' -notin ([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups) {
     Write-Warning 'It''s recommended that you run this script as an administrator.'
 }

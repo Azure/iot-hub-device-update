@@ -213,11 +213,29 @@ function Install-Adu-Components {
     # microsoft_delta_download_handler
 
     Invoke-CopyFile "$BuildBinPath/adu-shell.exe" $LibPath
+
+    # Healthcheck expects this file to be read-only.
+    'Marking adu-shell.exe as read-only.'
+    Set-ItemProperty -LiteralPath "$LibPath/adu-shell.exe" -Name IsReadOnly -Value $true
+
     Invoke-CopyFile  "$BuildBinPath/AducIotAgent.exe" $BinPath
+
+    # Determine Windows Kits version.
+    $WindowsKitsVer = Get-ChildItem -Path 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots' -Name | Sort-Object -Descending
+    switch ($WindowsKitsVer.Count) {
+        0 {
+            Show-Error 'No Windows Kits installed'
+            exit 1
+        }
+        2 {
+            $WindowsKitsVer = $WindowsKitsVer[0]
+            Show-Warning "Multiple Windows Kits installed. Using latest ($WindowsKitsVer)."
+        }
+    }
 
     if ($Type -eq 'Debug') {
         $BuildToolsDPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\debug_nonredist\x64\Microsoft.VC143.DebugCRT"
-        $WindowsKitsDPath = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\ucrt"
+        $WindowsKitsDPath = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\$WindowsKitsVer\x64\ucrt"
 
         # Only needed if dynamically linking: getopt, pthreadVC3d, libcrypto-1_1-x64
 
@@ -232,7 +250,7 @@ function Install-Adu-Components {
     }
     else {
         $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\x64\Microsoft.VC143.CRT"
-        $WindowsKitsPath = "${env:ProgramFiles(x86)}\Windows Kits\10\Redist\10.0.22621.0\ucrt\DLLs\x64"
+        $WindowsKitsPath = "${env:ProgramFiles(x86)}\Windows Kits\10\Redist\$WindowsKitsVer\ucrt\DLLs\x64"
 
         $dependencies = `
         (Join-Path $BuildBinPath 'getopt'), `
@@ -264,9 +282,6 @@ function Install-Adu-Components {
     Invoke-CopyFile "$BuildBinPath/$pthread_dll" $BinPath
 
     ''
-
-    # Healthcheck expects this file to be read-only.
-    Set-ItemProperty -LiteralPath "$LibPath/adu-shell.exe" -Name IsReadOnly -Value $true
 
     Register-Components -BinPath $BinPath -DataPath $DataPath
 }
