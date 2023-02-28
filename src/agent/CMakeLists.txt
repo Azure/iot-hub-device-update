@@ -149,17 +149,9 @@ target_compile_definitions (
             DO_FILE_USER="${DO_FILE_USER}"
             SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}")
 
-if (ADUC_PLATFORM_LAYER STREQUAL "linux")
-    target_link_dosdk (${target_name} PRIVATE)
-elseif (ADUC_PLATFORM_LAYER STREQUAL "windows")
-    target_link_dosdk (${target_name} PRIVATE)
-else ()
-    message (FATAL_ERROR "Invalid platform layer specified: ${ADUC_PLATFORM_LAYER}")
-endif ()
-
 if (WIN32)
-    find_package (unofficial-getopt-win32 REQUIRED)
-    target_link_libraries (${target_name} PRIVATE unofficial::getopt-win32::getopt)
+    find_package(unofficial-getopt-win32 REQUIRED)
+    target_link_libraries(${target_name} PRIVATE unofficial::getopt-win32::getopt)
 endif ()
 
 target_link_libraries (${target_name} PRIVATE aduc::platform_layer)

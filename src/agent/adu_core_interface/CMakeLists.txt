@@ -49,14 +49,6 @@ target_compile_definitions (
             ADUC_VERSION="${ADUC_VERSION}"
             ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}")
 
-if (ADUC_PLATFORM_LAYER STREQUAL "linux")
-    target_link_dosdk (${PROJECT_NAME} PRIVATE)
-elseif (ADUC_PLATFORM_LAYER STREQUAL "windows")
-    target_link_dosdk (${PROJECT_NAME} PRIVATE)
-else ()
-    message (FATAL_ERROR "Invalid platform layer specified: ${ADUC_PLATFORM_LAYER}")
-endif ()
-
 if (ENABLE_ADU_TELEMETRY_REPORTING)
     target_compile_definitions (${PROJECT_NAME} PRIVATE ENABLE_ADU_TELEMETRY_REPORTING)
 endif ()

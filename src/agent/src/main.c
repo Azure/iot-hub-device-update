@@ -32,7 +32,6 @@
 #include <ctype.h>
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>
-#include <do_config.h>
 #include <getopt.h>
 #include <iothub_client_options.h>
 #include <pnp_protocol.h>

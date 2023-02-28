@@ -66,14 +66,19 @@ function (target_link_iothub_client target scope)
         aziotsharedutil
         iothub_client_http_transport
         uhttp)
+
 endfunction (target_link_iothub_client)
+
+function (target_link_digital_twin_client target scope)
+    target_link_libraries (${target} ${scope})
+    target_link_iothub_client (${target} ${scope})
+endfunction (target_link_digital_twin_client)
 
 function (target_link_dosdk target scope)
     if (NOT WIN32)
         find_package (deliveryoptimization_sdk CONFIG REQUIRED)
         target_link_libraries (${target} ${scope} Microsoft::deliveryoptimization)
     else ()
-        # TODO: Bug 43015575: do-client should be a submodule
         target_include_directories (${target} ${scope}
                                     ${VCPKG_INSTALLED_DIR}/do-client/sdk-cpp/include)
         target_link_directories (${target} PUBLIC
