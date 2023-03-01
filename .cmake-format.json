@@ -1,17 +1,25 @@
 {
-    "_1": "Documentation:",
-    "_2": "https://pypi.org/project/cmake_format/",
-    "_3": " Usage:",
-    "_4": "find . -name CMakeLists.txt -print0 | xargs -0 -n1 -P4 cmake-format --in-place",
-    "line_width": 100,
-    "tab_size": 4,
-    "max_subgroups_hwrap": 2,
-    "max_pargs_hwrap": 3,
-    "separate_ctrl_name_with_space": true,
-    "separate_fn_name_with_space": true,
-    "dangle_parens": false,
-    "line_ending": "windows",
-    "command_case": "lower",
-    "keyword_case": "upper",
-    "enable_markup": false
+    "_1": "Documentation: https://pypi.org/project/cmake_format/",
+    "_2": "find src -name CMakeLists.txt -print0 | xargs -0 -n1 -P4 cmake-format --in-place",
+    "_3": "Get-ChildItem -Path src -Recurse -Include 'CMakeLists.txt' | ForEach-Object { Write-Progress -Activity 'cmake-format' -Status $_; cmake-format.exe  --in-place $_ }",
+    "encode": {
+        "emit_byteorder_mark": false,
+        "input_encoding": "utf-8",
+        "output_encoding": "utf-8"
+    },
+    "format": {
+        "command_case": "lower",
+        "keyword_case": "upper",
+        "line_ending": "windows",
+        "line_width": 100,
+        "max_pargs_hwrap": 6,
+        "max_subgroups_hwrap": 2,
+        "separate_ctrl_name_with_space": true,
+        "separate_fn_name_with_space": true,
+        "tab_size": 4,
+        "use_tabchars": false
+    },
+    "markup": {
+        "enable_markup": false
+    }
 }
