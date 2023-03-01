@@ -211,7 +211,8 @@ void zlog_finish(void)
 #define MAX_FUNCTION_NAME 64
 
 // Note: [%.64s] below match the MAX_FUNCTION_NAME above.
-#define LOG_FORMAT "%s [%c] %s [%.64s]\n"
+// (prelude, level, buffer, func, line)
+#define LOG_FORMAT "%s [%c] %s [%.64s:%u]\n"
 
 // Format: DateTime ProcessID[ThreadID]
 // Note: 4194304 = PID_MAX_LIMIT = 4 * 1024 * 1024 = 2^22
@@ -227,10 +228,12 @@ void zlog_finish(void)
 // Log content buffer must be smaller than the zlog line buffer - reserved info size.
 #define LOG_CONTENT_BUFFER_SIZE (ZLOG_BUFFER_LINE_MAXCHARS - RESERVED_INFO_SIZE)
 
-#define MULTILINE_BEGIN_FORMAT "\n\n%s [%c] [%s] ==== MULTI-LINE LOG BEGIN ====\n"
-#define MULTILINE_END_FORMAT "%s [%c] [%s] ==== MULTI-LINE LOG END ====\n\n"
+// (prelude, level, func, line)
+#define MULTILINE_BEGIN_FORMAT "\n\n%s [%c] [%s:%u] ==== MULTI-LINE LOG BEGIN ====\n"
+// (prelude, level, func, line)
+#define MULTILINE_END_FORMAT "%s [%c] [%s:%u] ==== MULTI-LINE LOG END ====\n\n"
 
-void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, ...)
+void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, unsigned int line, const char* fmt, ...)
 {
     const bool console_log_needed =
         (log_setting.console_logging_mode != ZLOG_CLM_DISABLED) && (msg_level >= log_setting.console_level);
@@ -314,20 +317,21 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
             va_start(va, fmt);
             (void)vfprintf(output, fmt, va);
             va_end(va);
-            fprintf(output, " [%s]\n", func);
+            fprintf(output, " [%s:%u]\n", func, line);
             fflush(output);
         }
         else
         {
             fprintf(
                 msg_level == ZLOG_ERROR ? stderr : stdout,
-                "%s %s[%c]%s %s [%s]\n",
+                "%s %s[%c]%s %s [%s:%u]\n",
                 prelude_buffer,
                 color_prefix,
                 level_names[msg_level],
                 color_suffix,
                 va_buffer,
-                func);
+                func,
+                line);
         }
     }
 
@@ -345,7 +349,8 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
                 prelude_buffer,
                 level_names[msg_level],
                 va_buffer,
-                func);
+                func,
+                line);
 
             zlog_finish_buffer_and_unlock();
         }
@@ -358,13 +363,13 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
             _zlog_roll_over_if_file_size_too_large(
                 full_log_len + sizeof(MULTILINE_BEGIN_FORMAT) + sizeof(MULTILINE_END_FORMAT)
                 + (PRELUDE_BUFFER_SIZE + MAX_FUNCTION_NAME) * 2);
-            fprintf(zlog_fout, MULTILINE_BEGIN_FORMAT, prelude_buffer, level_names[msg_level], func);
+            fprintf(zlog_fout, MULTILINE_BEGIN_FORMAT, prelude_buffer, level_names[msg_level], func, line);
 
             va_start(va, fmt);
             (void)vfprintf(zlog_fout, fmt, va);
             va_end(va);
 
-            fprintf(zlog_fout, MULTILINE_END_FORMAT, prelude_buffer, level_names[msg_level], func);
+            fprintf(zlog_fout, MULTILINE_END_FORMAT, prelude_buffer, level_names[msg_level], func, line);
             fflush(zlog_fout);
 
             _zlog_buffer_unlock();
