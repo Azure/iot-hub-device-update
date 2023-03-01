@@ -33,7 +33,7 @@ function Show-Bullet {
 }
 
 $root_dir = git.exe rev-parse --show-toplevel
-$bin_dir = "$root_dir\out\bin\$Type"
+$bin_dir = "$root_dir\out\$Type\bin\$Type"
 $app = Join-Path $bin_dir "$FileName.exe"
 
 if (-not (Test-Path $app -PathType Leaf)) {

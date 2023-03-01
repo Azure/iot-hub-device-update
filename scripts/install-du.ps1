@@ -10,7 +10,7 @@ PS> .\scripts\du_install.ps1 -Type Debug -Install -Package
 #>
 
 Param(
-    # Output directory. Default is {git_root}/out
+    # Output directory. Default is {git_root}/out/{Type}
     [string]$BuildOutputPath,
     # Build type
     [ValidateSet('Release', 'RelWithDebInfo', 'Debug')]
@@ -373,7 +373,7 @@ if (!$root_dir) {
 
 # Build folders
 if (!$BuildOutputPath) {
-    $BuildOutputPath = "$root_dir/out"
+    $BuildOutputPath = "$root_dir/out/$Type"
 }
 
 $BuildBinPath = "$BuildOutputPath/bin/$Type"
@@ -469,7 +469,7 @@ if ($Package) {
     New-Item -ItemType Directory -Path $dest | Out-Null
 
     # -Format FileDateTime includes milliseconds, which is overkill.
-    $archive = Join-Path ([IO.Path]::GetTempPath()) ('du-{0}.zip' -f (Get-Date -Format 'yyyyMMddTHHmmss'))
+    $archive = Join-Path ([IO.Path]::GetTempPath()) ('du-{0}-{1}.zip' -f $Type, (Get-Date -Format 'yyyyMMddTHHmmss'))
 
     ''
     "Archive file: $archive"

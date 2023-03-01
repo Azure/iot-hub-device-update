@@ -1,4 +1,6 @@
 param(
+    [ValidateSet('Release', 'RelWithDebInfo', 'Debug')]
+    [string]$Type = 'Debug',
     [switch]$ShowCTestOutput = $false,
     [switch]$RerunFailed = $false
 )
@@ -13,9 +15,10 @@ if (-not $root_dir) {
     Write-Warning 'Unable to determine repo folder.'
     Exit 1
 }
-Push-Location "$root_dir/out"
 
-$ctest_args = @('--verbose')
+"Running $Type Unit Tests . . ."
+
+$ctest_args = @('--verbose', '--test-dir', "$root_dir/out/$Type")
 if ($RerunFailed) {
     $ctest_args += '--rerun-failed'
 }
@@ -76,6 +79,4 @@ if ($failure_count -ne 0) {
 else {
     'All tests passed!'
 }
-
-Pop-Location
 

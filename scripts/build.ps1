@@ -19,7 +19,7 @@ Param(
     [switch]$BuildDocumentation,
     # Should unit tests be built?
     [switch]$BuildUnitTests,
-    # Output directory. Default is {git_root}/out
+    # Output directory. Default is {git_root}/out/{Type}
     [string]$BuildOutputPath,
     # Logging library to use
     [string]$LogLib = 'zlog',
@@ -208,7 +208,7 @@ if (!$root_dir) {
 }
 
 if (!$BuildOutputPath) {
-    $BuildOutputPath = "$root_dir/out"
+    $BuildOutputPath = "$root_dir/out/$Type"
 }
 
 if ($BuildDocumentation) {
