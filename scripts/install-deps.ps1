@@ -79,16 +79,6 @@ if ($PSVersionTable.BuildVersion -lt '10.0.18362.0') {
     exit 1
 }
 
-if (Get-ComputerInfo -Property WindowsEditionId -eq 'IoTEnterpriseS')
-{
-    # Needs:
-    # Microsoft.VCLibs.x64.14.00.Desktop.appx
-    # Microsoft.UI.Xaml.2.7.appx
-    # Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
-    Show-Error 'You must first manually install WinGet before running this script.'
-    exit 1
-}
-
 if ('S-1-5-32-544' -notin ([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups) {
     Write-Warning 'It''s recommended that you run this script as an administrator.'
 }
@@ -142,8 +132,39 @@ if ($Uninstall) {
 
 if (-not (Get-Command 'winget.exe' -CommandType Application -ErrorAction SilentlyContinue)) {
     Write-Host -ForegroundColor Yellow 'Installing App Installer (winget)'
-    Invoke-WebRequestNoProgress -Uri 'https://github.com/microsoft/winget-cli/releases/download/v1.3.2691/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle' -OutFile "$env:TEMP/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
-    Add-AppxPackage -Path "$env:TEMP/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
+
+    Push-Location $env:TEMP
+
+    # Prereq: Microsoft.VCLibs.x64.14.00.Desktop.appx
+    $package = Get-AppxPackage | Where-Object { $_.Name -eq 'Microsoft.VCLibs.140.00' -and $_.Architecture -eq 'X64' }
+    if (-not $package) {
+        Invoke-WebRequestNoProgress `
+            -Uri 'https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx' `
+            -OutFile 'Microsoft.VCLibs.x64.14.00.Desktop.appx'
+        Add-AppxPackage -Path 'Microsoft.VCLibs.x64.14.00.Desktop.appx'
+        Remove-Item -Path 'Microsoft.VCLibs.x64.14.00.Desktop.appx'
+    }
+
+    # Prereq:  Microsoft.UI.Xaml.2.7.appx
+    $package = Get-AppxPackage | Where-Object { $_.Name -eq 'Microsoft.UI.Xaml.2.7' -and $_.Architecture -eq 'X64' }
+    if (not $package) {
+        Invoke-WebRequestNoProgress `
+            -Uri 'https://www.nuget.org/api/v2/package/Microsoft.UI.Xaml/2.7.3' `
+            -OutFile 'microsoft.ui.xaml.2.7.3.zip'
+        Expand-Archive 'microsoft.ui.xaml.2.7.3.zip'
+        Remove-Item -Path 'microsoft.ui.xaml.2.7.3.zip'
+        Add-AppxPackage -Path 'microsoft.ui.xaml.2.7.3/tools/AppX/x64/Release/Microsoft.UI.Xaml.2.7.appx'
+        Remove-Item -Recurse -Force 'microsoft.ui.xaml.2.7.3'
+    }
+
+    # Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+    Invoke-WebRequestNoProgress `
+        -Uri 'https://github.com/microsoft/winget-cli/releases/download/v1.3.2691/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle' `
+        -OutFile 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle'
+    Add-AppxPackage -Path 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle'
+    Remove-Item 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle'
+
+    Pop-Location
 }
 else {
     Write-Host -ForegroundColor Cyan "winget already installed."
@@ -177,7 +198,7 @@ if (-not (Test-Path -LiteralPath "${Env:ProgramFiles(x86)}/Microsoft Visual Stud
     & "$env:TEMP/vs_BuildTools.exe" --passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --remove Microsoft.VisualStudio.Component.VC.CMake.Project
 
     'Waiting for installation to complete...'
-    $anim = '(----------)','(---------*)','(--------*-)','(-------*--)','(------*---)','(-----*----)','(----*-----)','(---*------)','(--*-------)','(-*--------)','(*---------)'
+    $anim = '(----------)', '(---------*)', '(--------*-)', '(-------*--)', '(------*---)', '(-----*----)', '(----*-----)', '(---*------)', '(--*-------)', '(-*--------)', '(*---------)'
     $animIndex = 0
     # Not the last file installed, but close enough...
     while (-not (Test-Path -LiteralPath "${Env:ProgramFiles(x86)}/Microsoft Visual Studio/2022/BuildTools/Common7/Tools/vsdevcmd/ext/ConnectionManagerExe.bat" -PathType Leaf)) {
