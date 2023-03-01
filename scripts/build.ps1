@@ -255,6 +255,8 @@ $CMAKE_OPTIONS = @(
     "-DADUC_PLATFORM_LAYER:STRING=$PlatformLayer",
     "-DCMAKE_BUILD_TYPE:STRING=$Type",
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON",
+    # Note: Multi-configuration generators (Visual Studio, Xcode, Ninja Multi-Config) append a
+    # per-configuration subdirectory to the specified directory unless a generator expression is used.
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir",
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
 )
