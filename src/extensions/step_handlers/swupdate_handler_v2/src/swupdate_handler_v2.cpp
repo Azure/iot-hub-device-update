@@ -32,21 +32,13 @@
 
 #include <parson.h>
 
-#if !defined(PATH_MAX)
-#    define PATH_MAX 260
-#endif
-
 #define HANDLER_PROPERTIES_SCRIPT_FILENAME "scriptFileName"
 #define HANDLER_PROPERTIES_SWU_FILENAME "swuFileName"
 
 namespace adushconst = Adu::Shell::Const;
 
-EXTERN_C_BEGIN
-
 /* external linkage */
 extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
-
-EXTERN_C_END
 
 struct JSONValueDeleter
 {
@@ -79,7 +71,7 @@ static ADUC_Result SWUpdate_Handler_DownloadScriptFile(ADUC_WorkflowHandle handl
     char* workFolder = nullptr;
     ADUC_FileEntity entity;
     memset(&entity, 0, sizeof(entity));
-    const size_t fileCount = workflow_get_update_files_count(handle);
+    int fileCount = workflow_get_update_files_count(handle);
     int createResult = 0;
     // Download the main script file.
     const char* scriptFileName =
@@ -223,8 +215,7 @@ ADUC_Result SWUpdateHandler_PerformAction(
         scriptOutput = ss.str();
 
         Log_Debug("Prepare Only! adu-shell Command:\n\n %s", scriptOutput.c_str());
-        result.ResultCode = ADUC_Result_Success;
-        result.ExtendedResultCode = 0;
+        result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
         goto done;
     }
 
@@ -233,8 +224,7 @@ ADUC_Result SWUpdateHandler_PerformAction(
     {
         int extendedCode = ADUC_ERC_SWUPDATE_HANDLER_CHILD_FAILURE_PROCESS_EXITCODE(exitCode);
         Log_Error("Install failed, extendedResultCode:0x%X (exitCode:%d)", extendedCode, exitCode);
-        result.ResultCode = ADUC_Result_Failure;
-        result.ExtendedResultCode = extendedCode;
+        result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = extendedCode };
     }
 
     if (!scriptOutput.empty())
@@ -247,8 +237,8 @@ ADUC_Result SWUpdateHandler_PerformAction(
 
     if (actionResultValue == nullptr)
     {
-        result.ResultCode = ADUC_Result_Failure;
-        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE;
+        result = { .ResultCode = ADUC_Result_Failure,
+                   .ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE };
         workflow_set_result_details(
             workflowData->WorkflowHandle,
             "The install script doesn't create a result file '%s'.",
@@ -258,9 +248,8 @@ ADUC_Result SWUpdateHandler_PerformAction(
     else
     {
         JSON_Object* actionResultObject = json_object(actionResultValue);
-        result.ResultCode = static_cast<ADUC_Result_t>(json_object_get_number(actionResultObject, "resultCode"));
-        result.ExtendedResultCode =
-            static_cast<ADUC_Result_t>(json_object_get_number(actionResultObject, "extendedResultCode"));
+        result.ResultCode = json_object_get_number(actionResultObject, "resultCode");
+        result.ExtendedResultCode = json_object_get_number(actionResultObject, "extendedResultCode");
         const char* details = json_object_get_string(actionResultObject, "resultDetails");
         workflow_set_result_details(workflowData->WorkflowHandle, details);
     }
@@ -309,7 +298,7 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
     char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
     ADUC_FileEntity fileEntity;
     memset(&fileEntity, 0, sizeof(fileEntity));
-    const size_t fileCount = workflow_get_update_files_count(workflowHandle);
+    int fileCount = workflow_get_update_files_count(workflowHandle);
     ADUC_Result result = SWUpdate_Handler_DownloadScriptFile(workflowHandle);
 
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -329,14 +318,14 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
 
     result = { ADUC_Result_Download_Success };
 
-    for (size_t i = 0; i < fileCount; i++)
+    for (int i = 0; i < fileCount; i++)
     {
-        Log_Info("Downloading file #%u", i);
+        Log_Info("Downloading file #%d", i);
 
         if (!workflow_get_update_file(workflowHandle, i, &fileEntity))
         {
-            result.ResultCode = ADUC_Result_Failure;
-            result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_GET_PAYLOAD_FILE_ENTITY;
+            result = { .ResultCode = ADUC_Result_Failure,
+                       .ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_GET_PAYLOAD_FILE_ENTITY };
             goto done;
         }
 
@@ -347,8 +336,9 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
         }
         catch (...)
         {
-            result.ResultCode = ADUC_Result_Failure;
-            result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_PAYLOAD_FILE_FAILURE_UNKNOWNEXCEPTION;
+            result = { .ResultCode = ADUC_Result_Failure,
+                       .ExtendedResultCode =
+                           ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_PAYLOAD_FILE_FAILURE_UNKNOWNEXCEPTION };
         }
 
         if (IsAducResultCodeFailure(result.ResultCode))
@@ -442,7 +432,6 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
         workflow_request_agent_restart(workflowData->WorkflowHandle);
         break;
     }
-        IsAducResultCodeSuccess(result.ResultCode) && result.ResultCode == ADUC_Result_Apply_RequiredImmediateReboot)
 
 done:
     workflow_free_string(workFolder);
@@ -459,10 +448,9 @@ done:
  */
 ADUC_Result SWUpdateHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result;
-    result.ResultCode = ADUC_Result_Cancel_Success;
-    result.ExtendedResultCode = 0;
+    ADUC_Result result = { .ResultCode = ADUC_Result_Cancel_Success, .ExtendedResultCode = 0 };
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
+    ADUC_WorkflowHandle stepWorkflowHandle = nullptr;
 
     const char* workflowId = workflow_peek_id(handle);
     int workflowLevel = workflow_get_level(handle);
@@ -558,9 +546,8 @@ SWUpdateHandlerImpl::ReadConfig(const std::string& configFile, std::unordered_ma
     AutoFreeJsonValue_t rootValue{ json_parse_file(configFile.c_str()) };
     if (!rootValue)
     {
-        ADUC_Result result;
-        result.ResultCode = ADUC_Result_Failure;
-        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_BAD_SWUPDATE_CONFIG_FILE;
+        return ADUC_Result{ .ResultCode = ADUC_Result_Failure,
+                            .ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_BAD_SWUPDATE_CONFIG_FILE };
     }
 
     JSON_Object* rootObject = json_value_get_object(rootValue.get());
@@ -572,10 +559,7 @@ SWUpdateHandlerImpl::ReadConfig(const std::string& configFile, std::unordered_ma
         values[name] = val;
     }
 
-    ADUC_Result result;
-    result.ResultCode = ADUC_Result_Success;
-    result.ExtendedResultCode = 0;
-    return result;
+    return ADUC_Result{ .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
 }
 
 /**
@@ -596,12 +580,13 @@ ADUC_Result SWUpdateHandlerImpl::PrepareCommandArguments(
 {
     ADUC_Result result = { ADUC_GeneralResult_Failure };
     bool isComponentsAware = false;
+    ADUC_FileEntity* scriptFileEntity = nullptr;
 
     const char* selectedComponentsJson = nullptr;
     JSON_Value* selectedComponentsValue = nullptr;
     JSON_Object* selectedComponentsObject = nullptr;
     JSON_Array* componentsArray = nullptr;
-    size_t componentCount = 0;
+    int componentCount = 0;
     JSON_Object* component = nullptr;
 
     std::string fileArgs;
@@ -616,6 +601,7 @@ ADUC_Result SWUpdateHandlerImpl::PrepareCommandArguments(
     char* installedCriteria = nullptr;
     const char* arguments = nullptr;
 
+    bool success = false;
     if (workflowHandle == nullptr)
     {
         result.ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_NULL_WORKFLOW;
@@ -648,7 +634,7 @@ ADUC_Result SWUpdateHandlerImpl::PrepareCommandArguments(
         // Prepare target component info.
         componentCount = json_array_get_count(componentsArray);
 
-        if (componentCount == 0)
+        if (componentCount <= 0)
         {
             result.ResultCode = ADUC_Result_Download_Skipped_NoMatchingComponents;
             goto done;
@@ -656,7 +642,7 @@ ADUC_Result SWUpdateHandlerImpl::PrepareCommandArguments(
 
         if (componentCount > 1)
         {
-            Log_Error("Expecting only 1 component, but got %u", componentCount);
+            Log_Error("Expecting only 1 component, but got %d.", componentCount);
             result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_TOO_MANY_COMPONENTS;
         }
 
@@ -896,8 +882,6 @@ ADUC_Result SWUpdateHandlerImpl::CancelApply(const tagADUC_WorkflowData* workflo
  */
 ADUC_Result SWUpdateHandlerImpl::Backup(const tagADUC_WorkflowData* workflowData)
 {
-    UNREFERENCED_PARAMETER(workflowData);
-
     ADUC_Result result = { ADUC_Result_Backup_Success };
     Log_Info("Swupdate doesn't require a specific operation to backup. (no-op) ");
     return result;
@@ -916,8 +900,8 @@ ADUC_Result SWUpdateHandlerImpl::Restore(const tagADUC_WorkflowData* workflowDat
     ADUC_Result cancel_result = CancelApply(workflowData);
     if (cancel_result.ResultCode != ADUC_Result_Failure_Cancelled)
     {
-        result.ResultCode = ADUC_Result_Failure;
-        result.ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_FAILED_RESTORE_FAILED;
+        result = { .ResultCode = ADUC_Result_Failure,
+                   .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_FAILED_RESTORE_FAILED };
     }
     return result;
 }
