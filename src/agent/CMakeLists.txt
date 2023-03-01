@@ -59,11 +59,10 @@ endif ()
 
 target_compile_definitions (
     ${target_name}
-    PRIVATE ADUC_VERSION="${ADUC_VERSION}"
-            ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
-            ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}"
-            SUPPORTED_UPDATE_MANIFEST_VERSION_MIN=${SUPPORTED_UPDATE_MANIFEST_VERSION_MIN}
-            SUPPORTED_UPDATE_MANIFEST_VERSION_MAX=${SUPPORTED_UPDATE_MANIFEST_VERSION_MAX})
+    PRIVATE ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}"
+            ADUC_VERSION="${ADUC_VERSION}"
+            SUPPORTED_UPDATE_MANIFEST_VERSION_MAX=${SUPPORTED_UPDATE_MANIFEST_VERSION_MAX}
+            SUPPORTED_UPDATE_MANIFEST_VERSION_MIN=${SUPPORTED_UPDATE_MANIFEST_VERSION_MIN})
 
 # NOTE: the call to find_package for azure_c_shared_utility
 # must come before umqtt since their config.cmake files expect the aziotsharedutil target to already have been defined.
@@ -136,11 +135,11 @@ get_filename_component (
 target_compile_definitions (
     ${target_name}
     PRIVATE ADUC_AGENT_FILEPATH="${ADUC_AGENT_FILEPATH}"
+            ADUC_COMMANDS_FIFO_NAME="${ADUC_COMMANDS_FIFO_NAME}"
             ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
             ADUC_CONF_FOLDER="${ADUC_CONF_FOLDER}"
             ADUC_DATA_FOLDER="${ADUC_DATA_FOLDER}"
             ADUC_DOWNLOADS_FOLDER="${ADUC_DOWNLOADS_FOLDER}"
-            ADUC_COMMANDS_FIFO_NAME="${ADUC_COMMANDS_FIFO_NAME}"
             ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
             ADUC_FILE_USER="${ADUC_FILE_USER}"
             ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}"
@@ -152,13 +151,15 @@ target_compile_definitions (
 
 if (ADUC_PLATFORM_LAYER STREQUAL "linux")
     target_link_dosdk (${target_name} PRIVATE)
+elseif (ADUC_PLATFORM_LAYER STREQUAL "windows")
+    target_link_dosdk (${target_name} PRIVATE)
 else ()
     message (FATAL_ERROR "Invalid platform layer specified: ${ADUC_PLATFORM_LAYER}")
 endif ()
 
 if (WIN32)
-    find_package(unofficial-getopt-win32 REQUIRED)
-    target_link_libraries(${target_name} PRIVATE unofficial::getopt-win32::getopt)
+    find_package (unofficial-getopt-win32 REQUIRED)
+    target_link_libraries (${target_name} PRIVATE unofficial::getopt-win32::getopt)
 endif ()
 
 target_link_libraries (${target_name} PRIVATE aduc::platform_layer)

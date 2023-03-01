@@ -16,15 +16,11 @@ if (WIN32)
         "src/ftw.c"
         "src/grp.c"
         "src/pwd.c"
-        "src/signal.c"
         "src/stdio.c"
         "src/stdlib.c"
         "src/strings.c"
         "src/sys_stat.c"
         "src/sys_time.c"
-        "src/sys_statvfs.c"
-        "src/sys_sysinfo.c"
-        "src/sys_utsname.c"
         "src/time.c"
         "src/unistd.c")
 

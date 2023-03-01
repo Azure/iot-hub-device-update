@@ -228,8 +228,7 @@ $runtime_dir = "$BuildOutputPath/bin"
 $library_dir = "$BuildOutputPath/lib"
 $cmake_bin = 'cmake.exe'
 
-# TODO(JeffMill): This should be Windows when that plaform layer is ready.
-$PlatformLayer = 'linux'
+$PlatformLayer = 'windows'
 
 # Output banner
 ''

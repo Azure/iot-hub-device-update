@@ -52,7 +52,6 @@ set_target_properties (${target_name} PROPERTIES COMPILE_DEFINITIONS _DEFAULT_SO
 target_compile_definitions (
     ${target_name}
     PRIVATE ADUC_VERSION="${ADUC_VERSION}"
-            ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
             ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
             ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}"
             ADUSHELL_EFFECTIVE_GROUP_NAME="${ADUSHELL_EFFECTIVE_GROUP_NAME}"
@@ -61,8 +60,8 @@ target_compile_definitions (
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
 if (WIN32)
-    find_package(unofficial-getopt-win32 REQUIRED)
-    target_link_libraries(${target_name} PRIVATE unofficial::getopt-win32::getopt)
+    find_package (unofficial-getopt-win32 REQUIRED)
+    target_link_libraries (${target_name} PRIVATE unofficial::getopt-win32::getopt)
 endif ()
 
 target_link_libraries (

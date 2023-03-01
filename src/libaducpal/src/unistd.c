@@ -108,11 +108,3 @@ long ADUCPAL_syscall(long number)
     _set_errno(ENOSYS);
     return -1;
 }
-
-void ADUCPAL_sync()
-{
-    // TODO(JeffMill): [PAL] Requires admin privileges.
-
-    // To flush all open files on a volume, call FlushFileBuffers with a handle to the volume.
-    // The caller must have administrative privileges.
-}

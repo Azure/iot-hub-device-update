@@ -1,11 +1,10 @@
 /**
- * @file linux_adu_core_impl.cpp
+ * @file windows_adu_core_impl.cpp
  * @brief Implements an ADUC reference implementation library.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-#include "linux_adu_core_impl.hpp"
 #include "aduc/agent_workflow.h"
 #include "aduc/calloc_wrapper.hpp"
 #include "aduc/content_handler.hpp"
@@ -19,40 +18,27 @@
 #include "aduc/workflow_internal.h"
 #include "aduc/workflow_utils.h"
 
-#include <cstring>
+#include "adu_core_impl.hpp"
 
-#include <grp.h> // getgrnam
-#include <pwd.h> // getpwnam
-#include <sys/stat.h> // S_I*
-#include <sys/time.h> // gettimeofday
-
+// #include <cstring>
 #include <memory>
-#include <sstream>
-#include <system_error>
-#include <vector>
+// #include <sstream>
+// #include <system_error>
+// #include <vector>
 
-using ADUC::LinuxPlatformLayer;
+using ADUC::WindowsPlatformLayer;
 using ADUC::StringUtils::cstr_wrapper;
 
 // The update manifest handler type.
 #define UPDATE_MANIFEST_DEFAULT_HANDLER "microsoft/update-manifest"
 
-std::string LinuxPlatformLayer::g_componentsInfo;
-time_t LinuxPlatformLayer::g_lastComponentsCheckTime;
-
 /**
- * @brief Factory method for LinuxPlatformLayer
- * @return std::unique_ptr<LinuxPlatformLayer> The newly created LinuxPlatformLayer object.
+ * @brief Factory method for WindowsPlatformLayer
+ * @return std::unique_ptr<WindowsPlatformLayer> The newly created WindowsPlatformLayer object.
  */
-std::unique_ptr<LinuxPlatformLayer> LinuxPlatformLayer::Create()
+std::unique_ptr<WindowsPlatformLayer> WindowsPlatformLayer::Create()
 {
-    struct timeval tv
-    {
-    };
-    gettimeofday(&tv, nullptr);
-    g_lastComponentsCheckTime = tv.tv_sec;
-
-    return std::unique_ptr<LinuxPlatformLayer>{ new LinuxPlatformLayer() };
+    return std::unique_ptr<WindowsPlatformLayer>{ new WindowsPlatformLayer() };
 }
 
 /**
@@ -61,7 +47,7 @@ std::unique_ptr<LinuxPlatformLayer> LinuxPlatformLayer::Create()
  * @param data Object to set.
  * @return ADUC_Result ResultCode.
  */
-ADUC_Result LinuxPlatformLayer::SetUpdateActionCallbacks(ADUC_UpdateActionCallbacks* data)
+ADUC_Result WindowsPlatformLayer::SetUpdateActionCallbacks(ADUC_UpdateActionCallbacks* data)
 {
     // Message handlers.
     data->IdleCallback = IdleCallback;
@@ -89,7 +75,7 @@ ADUC_Result LinuxPlatformLayer::SetUpdateActionCallbacks(ADUC_UpdateActionCallba
 /**
  * @brief Class implementation of Idle method.
  */
-void LinuxPlatformLayer::Idle(const char* workflowId)
+void WindowsPlatformLayer::Idle(const char* workflowId)
 {
     Log_Info("Now idle. workflowId: %s", workflowId);
     _IsCancellationRequested = false;
@@ -145,7 +131,7 @@ static ContentHandler* GetUpdateManifestHandler(const ADUC_WorkflowData* workflo
  * @brief Class implementation of Download method.
  * @return ADUC_Result
  */
-ADUC_Result LinuxPlatformLayer::Download(const ADUC_WorkflowData* workflowData)
+ADUC_Result WindowsPlatformLayer::Download(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
@@ -170,7 +156,7 @@ done:
  * @brief Class implementation of Install method.
  * @return ADUC_Result
  */
-ADUC_Result LinuxPlatformLayer::Install(const ADUC_WorkflowData* workflowData)
+ADUC_Result WindowsPlatformLayer::Install(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
@@ -194,7 +180,7 @@ done:
  * @brief Class implementation of Apply method.
  * @return ADUC_Result
  */
-ADUC_Result LinuxPlatformLayer::Apply(const ADUC_WorkflowData* workflowData)
+ADUC_Result WindowsPlatformLayer::Apply(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
@@ -218,7 +204,7 @@ done:
  * @brief Class implementation of Backup method.
  * @return ADUC_Result
  */
-ADUC_Result LinuxPlatformLayer::Backup(const ADUC_WorkflowData* workflowData)
+ADUC_Result WindowsPlatformLayer::Backup(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
@@ -243,7 +229,7 @@ done:
  * @brief Class implementation of Restore method.
  * @return ADUC_Result
  */
-ADUC_Result LinuxPlatformLayer::Restore(const ADUC_WorkflowData* workflowData)
+ADUC_Result WindowsPlatformLayer::Restore(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
@@ -264,7 +250,7 @@ done:
 /**
  * @brief Class implementation of Cancel method.
  */
-void LinuxPlatformLayer::Cancel(const ADUC_WorkflowData* workflowData)
+void WindowsPlatformLayer::Cancel(const ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result{ ADUC_Result_Failure };
 
@@ -305,7 +291,7 @@ done:
  * @param workflowData The workflow data object.
  * @return ADUC_Result The result of the IsInstalled call.
  */
-ADUC_Result LinuxPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflowData)
+ADUC_Result WindowsPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflowData)
 {
     ContentHandler* contentHandler = nullptr;
 
@@ -329,11 +315,8 @@ ADUC_Result LinuxPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflowDat
     return contentHandler->IsInstalled(workflowData);
 }
 
-ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* workFolder)
+ADUC_Result WindowsPlatformLayer::SandboxCreate(const char* workflowId, char* workFolder)
 {
-    struct passwd* pwd = nullptr;
-    struct group* grp = nullptr;
-
     if (IsNullOrEmpty(workflowId))
     {
         Log_Error("Invalid workflowId passed to SandboxCreate! Uninitialized workflow?");
@@ -354,10 +337,15 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* work
         }
     }
 
+#if 0
+    // Create the sandbox folder with adu:adu ownership.
+    // Permissions are set to u=rwx,g=rwx. We grant read/write/execute to group owner so that partner
+    // processes like the DO daemon can download files to our sandbox.
+
     // Note: the return value may point to a static area,
     // and may be overwritten by subsequent calls to getpwent(3), getpwnam(), or getpwuid().
     // (Do not pass the returned pointer to free(3).)
-    pwd = getpwnam(ADUC_FILE_USER);
+    struct passwd* pwd = getpwnam(ADUC_FILE_USER);
     if (pwd == nullptr)
     {
         return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_LOWERLEVEL_SANDBOX_CREATE_FAILURE_NO_ADU_USER };
@@ -369,17 +357,18 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* work
     // Note: The return value may point to a static area,
     // and may be overwritten by subsequent calls to getgrent(3), getgrgid(), or getgrnam().
     // (Do not pass the returned pointer to free(3).)
-    grp = getgrnam(ADUC_FILE_GROUP);
+    struct group* grp = getgrnam(ADUC_FILE_GROUP);
     if (grp == nullptr)
     {
         return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_LOWERLEVEL_SANDBOX_CREATE_FAILURE_NO_ADU_GROUP };
     }
     gid_t aduGroupId = grp->gr_gid;
     grp = nullptr;
+#else
+    const uid_t aduUserId = -1; // system default
+    const uid_t aduGroupId = -1; // system default
+#endif
 
-    // Create the sandbox folder with adu:adu ownership.
-    // Permissions are set to u=rwx,g=rwx. We grant read/write/execute to group owner so that partner
-    // processes like the DO daemon can download files to our sandbox.
     dir_result =
         ADUC_SystemUtils_MkDirRecursive(workFolder, aduUserId, aduGroupId, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP);
     if (dir_result != 0)
@@ -393,7 +382,7 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* work
     return ADUC_Result{ ADUC_Result_SandboxCreate_Success };
 }
 
-void LinuxPlatformLayer::SandboxDestroy(const char* workflowId, const char* workFolder)
+void WindowsPlatformLayer::SandboxDestroy(const char* workflowId, const char* workFolder)
 {
     // If SandboxCreate failed or didn't specify a workfolder, we'll get nullptr here.
     if (workFolder == nullptr)

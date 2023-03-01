@@ -15,8 +15,7 @@ find_package (Parson REQUIRED)
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc)
 
-target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
-                                                    ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}")
+target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 

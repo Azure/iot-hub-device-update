@@ -1,23 +1,20 @@
 /**
- * @file linux_adu_core_exports.cpp
+ * @file adu_core_exports.cpp
  * @brief Implements exported methods for platform-specific ADUC agent code.
+ *
+ * Exports "ADUC_RegisterPlatformLayer", "ADUC_Unregister", "ADUC_RebootSystem", "ADUC_RestartAgent"  methods.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
 #include "aduc/adu_core_exports.h"
+#include "adu_core_impl.hpp"
 #include "aduc/c_utils.h"
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
-#include "linux_adu_core_impl.hpp"
-#include <memory>
 
-#include <signal.h> // raise
-#include <unistd.h> // sync
-
-#include <string>
-
-#include <vector>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 EXTERN_C_BEGIN
 
@@ -31,7 +28,7 @@ ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, unsigne
 {
     try
     {
-        std::unique_ptr<ADUC::LinuxPlatformLayer> pImpl{ ADUC::LinuxPlatformLayer::Create() };
+        std::unique_ptr<ADUC::WindowsPlatformLayer> pImpl{ ADUC::WindowsPlatformLayer::Create() };
         ADUC_Result result{ pImpl->SetUpdateActionCallbacks(data) };
         // The platform layer object is now owned by the UpdateActionCallbacks object.
         pImpl.release();
@@ -60,7 +57,7 @@ ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, unsigne
  */
 void ADUC_Unregister(ADUC_Token token)
 {
-    ADUC::LinuxPlatformLayer* pImpl{ static_cast<ADUC::LinuxPlatformLayer*>(token) };
+    ADUC::WindowsPlatformLayer* pImpl{ static_cast<ADUC::WindowsPlatformLayer*>(token) };
     delete pImpl; // NOLINT(cppcoreguidelines-owning-memory)
 }
 
@@ -73,24 +70,41 @@ int ADUC_RebootSystem()
 {
     Log_Info("ADUC_RebootSystem called. Rebooting system.");
 
-    // Commit buffer cache to disk.
-    sync();
+    // Commit buffer cache to disk (No Windows equivalent)
+    // sync();
 
-    std::string output;
+    HANDLE hToken;
 
-    std::vector<std::string> args{ "--update-type", "common", "--update-action", "reboot" };
-    const int exitStatus = ADUC_LaunchChildProcess("/usr/lib/adu/adu-shell", args, output);
-    if (exitStatus != 0)
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
     {
-        Log_Error("Reboot failed. Process exit with code: %d", exitStatus);
+        Log_Error("OpenProcessToken failed, err %d", GetLastError());
+        return ENOSYS;
     }
 
-    if (!output.empty())
+    TOKEN_PRIVILEGES tkp;
+    LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid);
+
+    tkp.PrivilegeCount = 1;
+    tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0);
+    if (GetLastError() != ERROR_SUCCESS)
     {
-        Log_Info(output.c_str());
+        Log_Error("AdjustTokenPrivileges failed, err %d", GetLastError());
+        CloseHandle(hToken);
+        return ENOSYS;
     }
 
-    return exitStatus;
+    if (!ExitWindowsEx(
+            EWX_REBOOT,
+            SHTDN_REASON_MAJOR_OPERATINGSYSTEM | SHTDN_REASON_MINOR_SERVICEPACK | SHTDN_REASON_FLAG_PLANNED))
+    {
+        Log_Error("Reboot failed, err %d", GetLastError());
+        CloseHandle(hToken);
+        return ENOSYS;
+    }
+
+    return 0;
 }
 
 /**
@@ -102,17 +116,18 @@ int ADUC_RestartAgent()
 {
     Log_Info("Restarting ADU Agent.");
 
-    // Commit buffer cache to disk.
-    sync();
+    // Commit buffer cache to disk (No Windows equivalent)
+    // sync();
 
+    // TODO(JeffMill): No need for this on Windows? Bug exists on using raise here.
     // Using SIGUSR1 to indicates a desire for shutdown and restart.
-    const int exitStatus = raise(SIGUSR1);
-    if (exitStatus != 0)
-    {
-        Log_Error("ADU Agent restart failed.");
-    }
+    // const int exitStatus = raise(SIGUSR1);
+    // if (exitStatus != 0)
+    // {
+    //     Log_Error("ADU Agent restart failed.");
+    // }
 
-    return exitStatus;
+    return ENOSYS;
 }
 
 EXTERN_C_END
