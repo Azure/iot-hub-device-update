@@ -453,10 +453,10 @@ static bool CheckAgentBinary()
         }
 
         // clang-format off
-        const mode_t expected_permissions = \
-            S_IRWXU | \             // RWX user
-            S_IROTH | S_IXOTH | \   // R-X other
-            S_IRGRP | S_IXGRP;      // R-X group
+        const mode_t expected_permissions =
+            S_IRWXU |           // RWX user
+            S_IROTH | S_IXOTH | // R-X other
+            S_IRGRP | S_IXGRP;  // R-X group
         // clang-format on
 
         if (!PermissionUtils_VerifyFilemodeExact(path, expected_permissions))
@@ -497,14 +497,13 @@ static bool CheckShellBinary()
             goto done;
         }
 
+        // clang-format off
         // Needs set-uid, user read, and group read + execute.
         // Note: other has no permission bits set.
-
-        // clang-format off
-        const mode_t expected_permissions = \
-            S_ISUID | \             // set-uid
-            S_IRUSR | S_IXUSR | \   // R-X user
-            S_IRGRP | S_IXGRP;      // R-X group
+        const mode_t expected_permissions =
+            S_ISUID |           // set-uid
+            S_IRUSR | S_IXUSR | // R-X user
+            S_IRGRP | S_IXGRP;  // R-X group
         // clang-format on
 
         if (!PermissionUtils_VerifyFilemodeExact(path, expected_permissions))
