@@ -21,6 +21,9 @@ EXTERN_C_BEGIN
 ADUC_Result ProcessDownloadHandlerExtensibility(
     ADUC_WorkflowHandle workflowHandle, const ADUC_FileEntity* entity, const char* targetUpdateFilePath) noexcept;
 
+ADUC_Result
+HandleContentDecryption(ADUC_WorkflowHandle workflowHandle, const char* workFolder, const ADUC_FileEntity* entity);
+
 EXTERN_C_END
 
 #endif // ADUC_EXTENSION_MANAGER_HELPER_HPP

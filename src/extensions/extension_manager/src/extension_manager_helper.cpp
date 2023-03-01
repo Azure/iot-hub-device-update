@@ -10,9 +10,12 @@
 
 #include <aduc/download_handler_factory.hpp>
 #include <aduc/download_handler_plugin.hpp>
+#include <aduc/download_utils.hpp>
 #include <aduc/result.h>
 #include <aduc/string_c_utils.h>
 #include <aduc/workflow_utils.h>
+#include <content_protection_utils.h>
+#include <string>
 
 /**
  * @brief Processes Download Handler extensibility for the downloadHandlerId in the file entity.
@@ -109,6 +112,44 @@ ADUC_Result ProcessDownloadHandlerExtensibility(
 done:
 
     Log_Info("DownloadHandler Extensibility ret %d, erc 0x%08x", result.ResultCode, result.ExtendedResultCode);
+
+    return result;
+}
+
+/**
+ * @brief Handles decryption of the update content paylaod if the update is encrypted.
+ *
+ * @param workflowHandle The workflow handle.
+ * @param workFolder The sandbox work folder.
+ * @param entity The file entity.
+ * @return ADUC_Result The result.
+ */
+ADUC_Result
+HandleContentDecryption(ADUC_WorkflowHandle workflowHandle, const char* workFolder, const ADUC_FileEntity* entity)
+{
+    ADUC_Result result = { ADUC_GeneralResult_Failure, 0 };
+    ADUC_Decryption_Info decryptionInfo{};
+
+    if (workflow_are_payloads_encrypted(workflowHandle))
+    {
+        decryptionInfo.decryptedDEK = workflow_get_dek(workflowHandle);
+        //TODO: decrypt the dek using kek. phase 0 it would be in decrypted form.
+
+        std::string downloadedSandboxFilePath = aduc::download_utils::build_download_filepath(workFolder, entity);
+
+        result = ContentProtectionUtils_DecryptFile(&decryptionInfo, downloadedSandboxFilePath.c_str());
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            Log_Error(
+                "DecryptFile '%s' failed: ERC %08x", downloadedSandboxFilePath.c_str(), result.ExtendedResultCode);
+            goto done;
+        }
+    }
+
+    result.ResultCode = ADUC_Result_Success;
+
+done:
+    DecryptionInfo_Uninit(&decryptionInfo);
 
     return result;
 }

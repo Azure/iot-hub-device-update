@@ -65,6 +65,7 @@ typedef struct tagADUC_Workflow
     ino_t* UpdateFileInodes;
 
     bool ForceUpdate; /**< Always process this workflow, even when the previous update was successful. */
+    STRING_HANDLE dek; /**< The encrypted dek as base64url encoded string. */
 } ADUC_Workflow;
 
 #endif // WORKFLOW_INTERNAL_H

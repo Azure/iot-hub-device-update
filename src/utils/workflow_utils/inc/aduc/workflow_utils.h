@@ -755,6 +755,23 @@ bool workflow_get_force_update(ADUC_WorkflowHandle workflowHandle);
  */
 void workflow_set_force_update(ADUC_WorkflowHandle handle, bool forceUpdate);
 
+/**
+ * @brief Returns whether the payloads of the update are encrypted
+ *
+ * @param handle The workflow handle.
+ * @return true when all the payloads are encrypted and false when all are unencrypted.
+ */
+bool workflow_are_payloads_encrypted(ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Gets the dek string property value.
+ * @details Caller must call free on returned string.
+ *
+ * @param handle The workflow handle.
+ * @return STRING_HANDLE The value of dek property, or NULL if not existent.
+ */
+STRING_HANDLE workflow_get_dek(ADUC_WorkflowHandle handle);
+
 EXTERN_C_END
 
 #endif // ADUC_WORKFLOW_UTILS_H

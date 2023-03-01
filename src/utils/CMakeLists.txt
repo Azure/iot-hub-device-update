@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 3.5)
 
 add_subdirectory (c_utils)
 add_subdirectory (config_utils)
+add_subdirectory (content_protection_utils)
 add_subdirectory (contract_utils)
 add_subdirectory (crypto_utils)
 add_subdirectory (d2c_messaging)

@@ -31,9 +31,11 @@ target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::adu_types # download.h, update_content.h, and workflow.h used by header and impl
     PRIVATE aduc::c_utils
+            aduc::content_protection_utils
             aduc::contract_utils
             aduc::download_handler_factory
             aduc::download_handler_plugin
+            aduc::download_utils
             aduc::exception_utils
             aduc::extension_utils
             aduc::hash_utils

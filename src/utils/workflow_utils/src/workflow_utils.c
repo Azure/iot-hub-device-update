@@ -3631,4 +3631,26 @@ void workflow_set_force_update(ADUC_WorkflowHandle handle, bool forceUpdate)
     }
 }
 
+STRING_HANDLE workflow_get_dek(ADUC_WorkflowHandle handle)
+{
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    if (wf != NULL)
+    {
+        return STRING_clone(wf->dek);
+    }
+
+    return NULL;
+}
+
+bool workflow_are_payloads_encrypted(ADUC_WorkflowHandle handle)
+{
+    ADUC_Workflow* wf = workflow_from_handle(handle);
+    if (wf != NULL)
+    {
+        return wf->dek != NULL;
+    }
+
+    return false;
+}
+
 EXTERN_C_END

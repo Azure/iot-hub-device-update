@@ -14,6 +14,7 @@
 #include <aduc/content_downloader_extension.hpp>
 #include <aduc/content_handler.hpp>
 #include <aduc/contract_utils.h>
+#include <aduc/download_utils.hpp>
 #include <aduc/exceptions.hpp>
 #include <aduc/exports/extension_export_symbols.h>
 #include <aduc/extension_manager.hpp>
@@ -826,6 +827,7 @@ ADUC_Result ExtensionManager::Download(
 
     ADUC_Result result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
     ADUC::StringUtils::STRING_HANDLE_wrapper targetUpdateFilePath{ nullptr };
+    cstr_wrapper workFolder{ workflow_get_workfolder(workflowHandle) };
 
     if (!workflow_get_entity_workfolder_filepath(workflowHandle, entity, targetUpdateFilePath.address_of()))
     {
@@ -921,7 +923,6 @@ ADUC_Result ExtensionManager::Download(
     {
         // Either download handler id did not exist, or download handler failed and doing fallback here.
         const char* workflowId = workflow_peek_id(workflowHandle);
-        cstr_wrapper workFolder{ workflow_get_workfolder(workflowHandle) };
 
         Log_Info("Downloading full target update payload to '%s'", targetUpdateFilePath.c_str());
 
@@ -942,6 +943,12 @@ ADUC_Result ExtensionManager::Download(
             workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
             Log_Error("Successful download of '%s' failed hash check.", targetUpdateFilePath.c_str());
 
+            goto done;
+        }
+
+        result = HandleContentDecryption(workflowHandle, workFolder.get(), entity);
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
             goto done;
         }
     }
