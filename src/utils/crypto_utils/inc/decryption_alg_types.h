@@ -7,13 +7,13 @@
 
 #include <aduc/c_utils.h>
 
-
 #ifndef DECRYPTION_ALG_TYPES_H
 #    define DECRYPTION_ALG_TYPES_H
 
 EXTERN_C_BEGIN
 
-typedef enum _DecryptionAlg{
+typedef enum _DecryptionAlg
+{
     UNSUPPORTED_DECRYPTION_ALG = 0,
     AES_128_CBC = 1,
     AES_192_CBC = 2,

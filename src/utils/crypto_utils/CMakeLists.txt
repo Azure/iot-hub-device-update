@@ -7,6 +7,8 @@ add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc)
 
+target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
+
 find_package (azure_c_shared_utility REQUIRED)
 find_package (OpenSSL REQUIRED)
 find_package (Parson REQUIRED)

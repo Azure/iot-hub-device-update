@@ -9,9 +9,6 @@
 #include "decryption_utils.h"
 #include <catch2/catch.hpp>
 
-
-
-
 /**
  * @brief
  *
@@ -26,5 +23,4 @@
 
 TEST_CASE("Base64 Encoding")
 {
-
 }
