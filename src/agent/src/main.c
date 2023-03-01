@@ -37,8 +37,6 @@
 #include <iothub_client_options.h>
 #include <pnp_protocol.h>
 
-#include <aducpal/signal.h> // SIGUSR1
-
 #ifdef ADUC_ALLOW_MQTT
 #    include <iothubtransportmqtt.h>
 #endif
@@ -1034,6 +1032,7 @@ void OnShutdownSignal(int sig)
     g_shutdownSignal = sig;
 }
 
+#if !defined(WIN32)
 /**
  * @brief Called when a restart (SIGUSR1) signal is detected.
  *
@@ -1046,6 +1045,7 @@ void OnRestartSignal(int sig)
     Log_Info("Restart signal detect.");
     g_shutdownSignal = sig;
 }
+#endif
 
 /**
  * @brief Sets effective user id as specified in du-config.json (agents[#].ranAs property),
@@ -1255,10 +1255,12 @@ int main(int argc, char** argv)
     signal(SIGINT, OnShutdownSignal);
     signal(SIGTERM, OnShutdownSignal);
 
+#if !defined(WIN32)
     //
     // Catch restart (SIGUSR1) signal raised by a workflow.
     //
     signal(SIGUSR1, OnRestartSignal);
+#endif
 
     if (!StartupAgent(&launchArgs))
     {

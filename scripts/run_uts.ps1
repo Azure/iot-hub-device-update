@@ -4,10 +4,8 @@ param(
 )
 
 $root_dir = git.exe rev-parse --show-toplevel
-
-$testdataPath = '/tmp/adu/testdata'
-if (-not (Test-Path $testdataPath -PathType Container)) {
-    Write-Warning "$testdataPath not found. Rebuild product to regenerate."
+if (-not $root_dir) {
+    Write-Warning 'Unable to determine repo folder.'
     Exit 1
 }
 Push-Location "$root_dir/out"

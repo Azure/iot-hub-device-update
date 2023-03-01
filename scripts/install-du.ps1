@@ -391,13 +391,17 @@ $ADUC_DATA_FOLDER = "$VAR_FOLDER/lib/adu"
 $ADUC_DOWNLOAD_FOLDER = "$VAR_FOLDER/lib/adu/downloads"
 $ADUC_EXTENSIONS_FOLDER = "$ADUC_DATA_FOLDER/extensions"
 
+@($ADUC_CONF_FOLDER, $ADUC_AGENT_FOLDER, $ADUSHELL_FOLDER, $ADUC_DATA_FOLDER, $ADUC_DOWNLOAD_FOLDER, $ADUC_EXTENSIONS_FOLDER) `
+| ForEach-Object {
+    if (-not (Test-Path -LiteralPath $_ -PathType Container)) {
+        Show-Error "Path not found: $_"
+        exit 1
+    }
+}
+
 #
 # Install
 #
-
-if (-not (Test-Path '/tmp/adu/testdata' -PathType Container)) {
-    Show-Warning 'Do clean build to copy test data to /tmp/adu/testdata'
-}
 
 Install-Adu-Components `
     -BuildBinPath $BuildBinPath `

@@ -51,6 +51,8 @@ target_compile_definitions (
 
 if (ADUC_PLATFORM_LAYER STREQUAL "linux")
     target_link_dosdk (${PROJECT_NAME} PRIVATE)
+elseif (ADUC_PLATFORM_LAYER STREQUAL "windows")
+    target_link_dosdk (${PROJECT_NAME} PRIVATE)
 else ()
     message (FATAL_ERROR "Invalid platform layer specified: ${ADUC_PLATFORM_LAYER}")
 endif ()

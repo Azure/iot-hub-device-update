@@ -16,10 +16,10 @@
 
 #include <cstring>
 
-#include <aducpal/stdio.h> // popen, pclose
-#include <aducpal/sys_statvfs.h> // statvfs
-#include <aducpal/sys_sysinfo.h> // sysinfo
-#include <aducpal/sys_utsname.h> // uname
+#include <stdio.h> // popen, pclose
+#include <sys/statvfs.h> // statvfs
+#include <sys/sysinfo.h> // sysinfo
+#include <sys/utsname.h> // uname
 
 #include <aduc/config_utils.h>
 #include <aduc/logging.h>
@@ -225,7 +225,7 @@ static char* DeviceInfo_GetOsName()
     // Finally, fallback to uname strategy
     {
         utsname uts{};
-        if (ADUCPAL_uname(&uts) < 0)
+        if (uname(&uts) < 0)
         {
             Log_Error("uname failed, error: %d", errno);
         }
@@ -284,7 +284,7 @@ static char* DeviceInfo_GetOsVersion()
         // It is "swVersion" on "the wire" in the device info interface, but has been repurposed for OS distro / kernel release version.
         utsname uts{};
 
-        if (ADUCPAL_uname(&uts) < 0)
+        if (uname(&uts) < 0)
         {
             Log_Error("uname failed, error: %d", errno);
         }
@@ -316,7 +316,7 @@ static char* DeviceInfo_GetProcessorArchitecture()
 
     utsname uts{};
 
-    if (ADUCPAL_uname(&uts) < 0)
+    if (uname(&uts) < 0)
     {
         Log_Error("uname failed, error: %d", errno);
         return nullptr;
@@ -346,7 +346,7 @@ static char* DeviceInfo_GetProcessorManufacturer()
     const unsigned int kBufferSize = 256;
     char buffer[kBufferSize];
 
-    FILE* pipe{ ADUCPAL_popen("/usr/bin/lscpu", "r") }; // NOLINT(cert-env33-c)
+    FILE* pipe{ popen("/usr/bin/lscpu", "r") }; // NOLINT(cert-env33-c)
     if (pipe != nullptr)
     {
         const char* prefix = "Vendor ID:           ";
@@ -364,7 +364,7 @@ static char* DeviceInfo_GetProcessorManufacturer()
             }
         }
 
-        ADUCPAL_pclose(pipe);
+        pclose(pipe);
     }
 
     if (manufacturer.empty())
@@ -396,7 +396,7 @@ static char* DeviceInfo_GetTotalMemory()
     struct sysinfo sys_info
     {
     };
-    if (ADUCPAL_sysinfo(&sys_info) == -1)
+    if (sysinfo(&sys_info) == -1)
     {
         Log_Error("sysinfo failed, error: %d", errno);
         return nullptr;
@@ -431,7 +431,7 @@ static char* DeviceInfo_GetTotalStorage()
     {
     };
 
-    if (ADUCPAL_statvfs("/", &buf) == -1)
+    if (statvfs("/", &buf) == -1)
     {
         Log_Error("statvfs failed, error: %d", errno);
         return nullptr;
