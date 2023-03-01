@@ -3,11 +3,14 @@ param(
     [switch]$RerunFailed = $false
 )
 
-$root_dir = git.exe rev-parse --show-toplevel
+if ('S-1-5-32-544' -in ([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups) {
+    Write-Warning 'Unit tests should not be run elevated.'
+    exit 1
+}
 
-$testdataPath = '/tmp/adu/testdata'
-if (-not (Test-Path $testdataPath -PathType Container)) {
-    Write-Warning "$testdataPath not found. Rebuild product to regenerate."
+$root_dir = git.exe rev-parse --show-toplevel
+if (-not $root_dir) {
+    Write-Warning 'Unable to determine repo folder.'
     Exit 1
 }
 Push-Location "$root_dir/out"
