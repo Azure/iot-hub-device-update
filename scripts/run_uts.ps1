@@ -3,6 +3,11 @@ param(
     [switch]$RerunFailed = $false
 )
 
+if ('S-1-5-32-544' -in ([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups) {
+    Write-Warning 'Unit tests should not be run elevated.'
+    exit 1
+}
+
 $root_dir = git.exe rev-parse --show-toplevel
 if (-not $root_dir) {
     Write-Warning 'Unable to determine repo folder.'
