@@ -939,11 +939,11 @@ if [[ $install_cmake == "true" ]]; then
 fi
 
 # Install git hooks if requested.
-if [[ $install_githooks == "true" ]]; then
-    if ! do_install_githooks; then
-        warn "Failed to install git hooks."
-    fi
-fi
+# if [[ $install_githooks == "true" ]]; then
+#     if ! do_install_githooks; then
+#         warn "Failed to install git hooks."
+#     fi
+# fi
 
 # Install shellcheck if requested.
 if [[ $install_shellcheck == "true" ]]; then

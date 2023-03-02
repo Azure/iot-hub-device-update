@@ -104,6 +104,12 @@ apps:
 environment:
   LD_LIBRARY_PATH: "$LD_LIBRARY_PATH:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET"
 
+plugs: 
+  identity-service:
+    interface: content
+    content: aziot-identity-service
+    target: $SNAP_DATA
+
 layout:
 # adu_data_dir
   /var/lib/adu:
@@ -120,3 +126,9 @@ layout:
 # curl command
   /usr/bin/curl-downloader:
     symlink: $SNAP/usr/bin/curl
+# aziot config
+  /etc/aziot:
+    symlink: $SNAP_DATA/shared/config/aziot
+# aziot sockets
+  /var/sockets/aziot:
+    symlink: $SNAP_DATA/shared/sockets/aziot
