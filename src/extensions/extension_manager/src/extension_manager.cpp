@@ -6,24 +6,24 @@
  * Licensed under the MIT License.
  */
 
-#include <aduc/component_enumerator_extension.hpp>
-#include <aduc/content_downloader_extension.hpp>
-#include <aduc/content_handler.hpp>
-#include <aduc/download_handler_factory.hpp>
-#include <aduc/download_handler_plugin.hpp>
+#include "aduc/extension_manager.h"
 
 #include <aduc/c_utils.h>
 #include <aduc/calloc_wrapper.hpp> // ADUC::StringUtils::cstr_wrapper
+#include <aduc/component_enumerator_extension.hpp>
+#include <aduc/content_downloader_extension.hpp>
+#include <aduc/content_handler.hpp>
 #include <aduc/contract_utils.h>
 #include <aduc/exceptions.hpp>
 #include <aduc/exports/extension_export_symbols.h>
-#include <aduc/extension_manager.h>
 #include <aduc/extension_manager.hpp>
+#include <aduc/extension_manager_helper.hpp>
 #include <aduc/extension_utils.h>
 #include <aduc/hash_utils.h> // for SHAversion
 #include <aduc/logging.h>
 #include <aduc/parser_utils.h>
 #include <aduc/path_utils.h> // SanitizePathSegment
+#include <aduc/plugin_exception.hpp>
 #include <aduc/result.h>
 #include <aduc/string_c_utils.h>
 #include <aduc/string_handle_wrapper.hpp>
@@ -602,8 +602,7 @@ void ExtensionManager::_FreeComponentsDataString(char* componentsJson)
         goto done;
     }
 
-    if (ExtensionManager::_componentEnumeratorContractVersion.majorVer == ADUC_V1_CONTRACT_MAJOR_VER
-        && ExtensionManager::_componentEnumeratorContractVersion.minorVer == ADUC_V1_CONTRACT_MINOR_VER)
+    if (ADUC_ContractUtils_IsV1Contract(&ExtensionManager::_componentEnumeratorContractVersion))
     {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         freeComponentsDataStringProc = reinterpret_cast<FreeComponentsDataStringProc>(dlsym(
@@ -668,8 +667,7 @@ ADUC_Result ExtensionManager::GetAllComponents(std::string& outputComponentsData
         goto done;
     }
 
-    if (ExtensionManager::_componentEnumeratorContractVersion.majorVer == ADUC_V1_CONTRACT_MAJOR_VER
-        && ExtensionManager::_componentEnumeratorContractVersion.minorVer == ADUC_V1_CONTRACT_MINOR_VER)
+    if (ADUC_ContractUtils_IsV1Contract(&ExtensionManager::_componentEnumeratorContractVersion))
     {
         if (_getAllComponents == nullptr)
         {
@@ -780,8 +778,7 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
         goto done;
     }
 
-    if (ExtensionManager::_contentDownloaderContractVersion.majorVer != ADUC_V1_CONTRACT_MAJOR_VER
-        && ExtensionManager::_contentDownloaderContractVersion.minorVer != ADUC_V1_CONTRACT_MINOR_VER)
+    if (!ADUC_ContractUtils_IsV1Contract(&ExtensionManager::_contentDownloaderContractVersion))
     {
         Log_Error(
             "Unsupported contract version %d.%d",
@@ -844,8 +841,7 @@ ADUC_Result ExtensionManager::Download(
         goto done;
     }
 
-    if (ExtensionManager::_contentDownloaderContractVersion.majorVer != ADUC_V1_CONTRACT_MAJOR_VER
-        && ExtensionManager::_contentDownloaderContractVersion.minorVer != ADUC_V1_CONTRACT_MINOR_VER)
+    if (!ADUC_ContractUtils_IsV1Contract(&ExtensionManager::_contentDownloaderContractVersion))
     {
         Log_Error(
             "Unsupported contract version %d.%d",
@@ -910,91 +906,26 @@ ADUC_Result ExtensionManager::Download(
         goto done;
     }
 
-    try
+    result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+
+    // First, attempt to produce the update using download handler if
+    // download handler exists in the entity (metadata).
+    if (!IsNullOrEmpty(entity->DownloadHandlerId))
     {
+        result = ProcessDownloadHandlerExtensibility(workflowHandle, entity, targetUpdateFilePath.c_str());
+    }
+
+    // If no download handlers specified, or download handler failed to produce the target file.
+    if (IsAducResultCodeFailure(result.ResultCode)
+        || result.ResultCode == ADUC_Result_Download_Handler_RequiredFullDownload)
+    {
+        // Either download handler id did not exist, or download handler failed and doing fallback here.
         const char* workflowId = workflow_peek_id(workflowHandle);
         cstr_wrapper workFolder{ workflow_get_workfolder(workflowHandle) };
 
-        result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        Log_Info("Downloading full target update payload to '%s'", targetUpdateFilePath.c_str());
 
-        // First, attempt to produce the update using download handler if
-        // download handler exists in the entity (metadata).
-        if (!IsNullOrEmpty(entity->DownloadHandlerId))
-        {
-            DownloadHandlerFactory* factory = DownloadHandlerFactory::GetInstance();
-            DownloadHandlerPlugin* plugin = factory->LoadDownloadHandler(entity->DownloadHandlerId);
-            if (plugin == nullptr)
-            {
-                Log_Warn("Load Download Handler %s failed", entity->DownloadHandlerId);
-
-                workflow_set_success_erc(
-                    workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_CREATE_FAILURE_CREATE);
-            }
-            else
-            {
-                ADUC_ExtensionContractInfo contractInfo{};
-
-                Log_Debug("Getting contract info for download handler '%s'.", entity->DownloadHandlerId);
-
-                result = plugin->GetContractInfo(&contractInfo);
-
-                if (IsAducResultCodeFailure(result.ResultCode))
-                {
-                    Log_Error(
-                        "GetContractInfo failed for download handler '%s': result 0x%08x, erc 0x%08x",
-                        entity->DownloadHandlerId,
-                        result.ResultCode,
-                        result.ExtendedResultCode);
-                    goto done;
-                }
-
-                Log_Debug(
-                    "Downloadhandler '%s' Contract Version: %d.%d",
-                    entity->DownloadHandlerId,
-                    contractInfo.majorVer,
-                    contractInfo.minorVer);
-
-                if (contractInfo.majorVer == ADUC_V1_CONTRACT_MAJOR_VER
-                    && contractInfo.minorVer == ADUC_V1_CONTRACT_MINOR_VER)
-                {
-                    result = plugin->ProcessUpdate(workflowHandle, entity, targetUpdateFilePath.c_str());
-                    if (IsAducResultCodeFailure(result.ResultCode))
-                    {
-                        Log_Warn(
-                            "Download handler failed to produce update: result 0x%08x, erc 0x%08x",
-                            result.ResultCode,
-                            result.ExtendedResultCode);
-
-                        workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
-                    }
-                }
-                else
-                {
-                    Log_Error("Unsupported contract %d.%d", contractInfo.majorVer, contractInfo.minorVer);
-
-                    result.ResultCode = ADUC_GeneralResult_Failure;
-                    result.ExtendedResultCode =
-                        ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_UNSUPPORTED_CONTRACT_VERSION;
-
-                    goto done;
-                }
-            }
-        }
-
-        // If no download handlers specified, or download handler failed to produce the target file.
-        if (IsAducResultCodeFailure(result.ResultCode)
-            || result.ResultCode == ADUC_Result_Download_Handler_RequiredFullDownload)
-        {
-            // Either download handler id did not exist, or download handler failed and doing fallback here.
-            result =
-                downloadProc(entity, workflowId, workFolder.get(), options->retryTimeout, downloadProgressCallback);
-        }
-    }
-    catch (...)
-    {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_DOWNLOAD_EXCEPTION };
-        goto done;
+        result = downloadProc(entity, workflowId, workFolder.get(), options->retryTimeout, downloadProgressCallback);
     }
 
     if (IsAducResultCodeSuccess(result.ResultCode))
@@ -1005,10 +936,11 @@ ADUC_Result ExtensionManager::Download(
                 algVersion,
                 false))
         {
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_HASH };
+            result.ResultCode = ADUC_Result_Failure;
+            result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_HASH;
 
             workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
+            Log_Error("Successful download of '%s' failed hash check.", targetUpdateFilePath.c_str());
 
             goto done;
         }

@@ -61,8 +61,7 @@ target_link_libraries (
             aduc::c_utils
             aduc::config_utils
             aduc::process_utils
-            aduc::string_utils
-            aduc::system_utils)
+            aduc::string_utils)
 
 add_subdirectory (scripts)
 

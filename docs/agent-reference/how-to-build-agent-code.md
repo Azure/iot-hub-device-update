@@ -25,7 +25,7 @@ to connect to IoT Hub and call Azure IoT Plug and Play APIs.
 
 The [Delivery Optimization
 SDK](https://github.com/microsoft/do-client)
-SDK provides a robust way for the client to download an update.
+provides a robust way for the client to download an update.
 
 ## Building the Device Update Agent for Linux
 
@@ -49,7 +49,7 @@ To install all dependencies run:
 To install only the dependencies necessary for the agent:
 
 ```shell
-./scripts/install-deps.sh --install-aduc-deps --install-packages
+./scripts/install-deps.sh --install-aduc-deps --install-packages --install-do
 ```
 
 `install-deps.sh` also provides several options for installing individual

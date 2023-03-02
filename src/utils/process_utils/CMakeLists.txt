@@ -12,14 +12,11 @@ set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE aduc::logging aduc::c_utils aduc::config_utils aduc::string_utils)
+find_package (azure_c_shared_utility REQUIRED)
 
-if ((NOT
-     ${ADUC_PLATFORM_LAYER}
-     STREQUAL
-     "simulator"
-    )
-    AND ADUC_BUILD_UNIT_TESTS)
+target_link_libraries (${PROJECT_NAME} PUBLIC aziotsharedutil PRIVATE aduc::logging aduc::c_utils aduc::config_utils aduc::string_utils)
+
+if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
     add_subdirectory (test_helper)
 endif ()

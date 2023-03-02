@@ -21,7 +21,7 @@ EXTERN_C_BEGIN
  * @param agent the ADUC_AgentInfo that contains the agent info
  * @returns true on successful addition, false on failure
  */
-_Bool StartupMsg_AddDeviceProperties(JSON_Object* startupObj, const ADUC_AgentInfo* agent);
+bool StartupMsg_AddDeviceProperties(JSON_Object* startupObj, const ADUC_AgentInfo* agent);
 
 /**
  * @brief Adds the compatPropertyNames to the @p startupObj
@@ -29,7 +29,7 @@ _Bool StartupMsg_AddDeviceProperties(JSON_Object* startupObj, const ADUC_AgentIn
  * @param config the ADUC_ConfigInfo that contains the config info
  * @returns true on successful addition, false on failure
  */
-_Bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj, ADUC_ConfigInfo* config);
+bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj, ADUC_ConfigInfo* config);
 
 EXTERN_C_END
 #endif // STARTUP_MSG_HELPER_H

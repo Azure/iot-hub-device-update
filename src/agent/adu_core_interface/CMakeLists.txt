@@ -47,17 +47,13 @@ target_compile_definitions (
             ADUC_UBUNTU_CORE_SNAP_ONLY="${ADUC_UBUNTU_CORE_SNAP_ONLY}"
             ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}")
 
-if (NOT
-    ADUC_PLATFORM_LAYER
-    STREQUAL
-    "simulator")
-
+if (ADUC_PLATFORM_LAYER STREQUAL "linux")
   if(NOT ADUC_UBUNTU_CORE_SNAP_ONLY)
     find_package (deliveryoptimization_sdk CONFIG REQUIRED)
     target_link_libraries (${PROJECT_NAME} PRIVATE Microsoft::deliveryoptimization)
   endif ()
 else ()
-    target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_PLATFORM_SIMULATOR)
+    message (FATAL_ERROR "Invalid platform layer specified: ${ADUC_PLATFORM_LAYER}")
 endif ()
 
 if (ENABLE_ADU_TELEMETRY_REPORTING)

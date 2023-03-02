@@ -7,12 +7,14 @@
  */
 #include "aduc/d2c_messaging.h"
 #include "aduc/client_handle_helper.h"
+#include "aduc/retry_utils.h"
 
 #include <limits.h>
 #include <math.h>
 #include <stdbool.h>
 #include <sys/param.h> // MIN/MAX
-#include <unistd.h> 
+#include <time.h> // clock_gettime
+#include <unistd.h>
 
 #define DEFAULT_INITIAL_DELAY_MS 1000 // 1 second
 #define DEFAULT_MAX_BACKOFF_TIME_MS (60 * 1000) // 60 seconds
@@ -21,12 +23,11 @@
 #define FATAL_ERROR_WAIT_TIME_SEC 10 // 10 seconds
 #define ONE_DAY_IN_SECONDS (1 * 24 * 60 * 60)
 
-
 static pthread_mutex_t s_pendingMessageStoreMutex = PTHREAD_MUTEX_INITIALIZER;
 static bool s_core_initialized = false;
 
-static ADUC_D2C_Message s_pendingMessageStore[ADUC_D2C_Message_Type_Max] = { };
-static ADUC_D2C_Message_Processing_Context s_messageProcessingContext[ADUC_D2C_Message_Type_Max] = { };
+static ADUC_D2C_Message s_pendingMessageStore[ADUC_D2C_Message_Type_Max] = {};
+static ADUC_D2C_Message_Processing_Context s_messageProcessingContext[ADUC_D2C_Message_Type_Max] = {};
 
 static void ProcessMessage(ADUC_D2C_Message_Processing_Context* context);
 
@@ -35,40 +36,6 @@ static time_t GetTimeSinceEpochInSeconds()
     struct timespec timeSinceEpoch;
     clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
     return timeSinceEpoch.tv_sec;
-}
-
-/**
- * @brief The default function for calculating the next retry timestamp based on current time (since epoch) and input parameters,
- *        using exponential backoff with jitter algorithm.
- *
- * Algorithm:
- *      next-retry-timestamp = nowTimeSec + additionalDelaySecs + (MIN( ( (2 ^ MIN(MAX_RETRY_EXPONENT, retries))) * initialDelayMS) / 1000), maxDelaySecs ) * (1 + jitter))
- *
- *      where:
- *         -  jitter =  (maxJitterPercent / 100.0) * (rand() / RAND_MAX)
- *         -  MAX_RETRY_EXPONENT help avoid large exponential value (recommended value is 9)
- *         -  additionalDelaySecs can be customized to suits different type of http response error
- *
- * @param additionalDelaySecs An additional delay to add to the regular delay time.
- * @param retries The current retries count.
- * @param initialDelayMS A time unit, in milliseconds, for backoff logic.
- * @param maxDelaySecs  The maximum delay time before retrying. This is useful for the scenario where the delay time cannot be too long.
- * @param maxJitterPercent The maximum jitter percentage. This must be between 0 and 100
- *
- * @return time_t Returns the next retry timestamp in seconds (since epoch).
- */
-
-
-time_t ADUC_D2C_RetryDelayCalculator(int additionalDelaySecs, unsigned int retries, long initialDelayMS, long maxDelaySecs, double maxJitterPercent)
-{
-    double jitterPercent = (maxJitterPercent / 100.0) * (rand() / ((double)RAND_MAX));
-    double delay = (pow(2, MIN(retries, MAX_RETRY_EXPONENT)) * (double)initialDelayMS) / 1000.0;
-    if (delay > maxDelaySecs)
-    {
-        delay = maxDelaySecs;
-    }
-    time_t retryTimestampSec = GetTimeSinceEpochInSeconds() + additionalDelaySecs + (unsigned long)(delay * (1 + jitterPercent));
-    return retryTimestampSec;
 }
 
 /**
@@ -93,43 +60,43 @@ static ADUC_D2C_HttpStatus_Retry_Info g_defaultHttpStatusRetryInfo[] = {
     { .httpStatusMin = 429,
       .httpStatusMax = 429,
       .additionalDelaySecs = 30,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
       .maxRetry = INT_MAX },
 
     /* Message sent to the IoT Hub exceeds the maximum allowable size for IoT Hub messages. (Not retry) */
     { .httpStatusMin = 413,
       .httpStatusMax = 413,
       .additionalDelaySecs = 30,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
-      .maxRetry = 0  },
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
+      .maxRetry = 0 },
 
     /* Catch all for client error responses*/
     { .httpStatusMin = 400,
       .httpStatusMax = 499,
       .additionalDelaySecs = 5,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
       .maxRetry = INT_MAX },
 
     /* Could be related to throttled, additional wait 30 secs on top of regular backoff time */
     { .httpStatusMin = 503,
       .httpStatusMax = 503,
       .additionalDelaySecs = 30,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
-      .maxRetry = INT_MAX  },
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
+      .maxRetry = INT_MAX },
 
     /* Catch all for server error responses */
     { .httpStatusMin = 500,
       .httpStatusMax = 599,
       .additionalDelaySecs = 30,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
-      .maxRetry = INT_MAX  },
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
+      .maxRetry = INT_MAX },
 
     /* Catch all */
     { .httpStatusMin = 0,
       .httpStatusMax = INT_MAX,
       .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
-      .maxRetry = INT_MAX  },
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
+      .maxRetry = INT_MAX },
 };
 
 /**
@@ -137,7 +104,7 @@ static ADUC_D2C_HttpStatus_Retry_Info g_defaultHttpStatusRetryInfo[] = {
  */
 static ADUC_D2C_RetryStrategy g_defaultRetryStrategy = {
     .httpStatusRetryInfo = g_defaultHttpStatusRetryInfo,
-    .httpStatusRetryInfoSize = sizeof(g_defaultHttpStatusRetryInfo)/ sizeof(*g_defaultHttpStatusRetryInfo),
+    .httpStatusRetryInfoSize = sizeof(g_defaultHttpStatusRetryInfo) / sizeof(*g_defaultHttpStatusRetryInfo),
 
     /* By default, all D2C message are important and DU Agent should never give up. */
     .maxRetries = INT_MAX,
@@ -146,7 +113,7 @@ static ADUC_D2C_RetryStrategy g_defaultRetryStrategy = {
     .maxDelaySecs = ONE_DAY_IN_SECONDS,
 
     /* backoff factor, 1000 milliseconds */
-    .initialDelayMS = DEFAULT_INITIAL_DELAY_MS,
+    .initialDelayUnitMilliSecs = DEFAULT_INITIAL_DELAY_MS,
 
     /* fallback value when regular calculation failed, 30 seconds */
     .fallbackWaitTimeSec = 30,
@@ -170,7 +137,7 @@ static void DestroyMessageData(ADUC_D2C_Message* message)
 
 /**
  * @brief Set the message status, then call the message.statusChangedCallback (if supplied).
- * 
+ *
  * @param message The message object.
  * @param status  Final message status
  */
@@ -190,7 +157,7 @@ void SetMessageStatus(ADUC_D2C_Message* message, ADUC_D2C_Message_Status status)
 /**
  * @brief A helper function that is called when the message has reach it terminal state.
  *  This function calls SetMessageStatus() then DestroyMessage().
- * 
+ *
  * @param message The message object.
  * @param status  The message status
  */
@@ -241,10 +208,11 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
 
     // Note, stop processing the message if the responseCallback() returned false,
     // or http_status_code is >= 200 and < 300.
-    bool success = (message_processing_context->message.responseCallback != NULL &&
-                    !message_processing_context->message.responseCallback(http_status_code, message_processing_context)) ||
-                   ((http_status_code >= 200 && http_status_code < 300));
-                   
+    bool success =
+        (message_processing_context->message.responseCallback != NULL
+         && !message_processing_context->message.responseCallback(http_status_code, message_processing_context))
+        || ((http_status_code >= 200 && http_status_code < 300));
+
     time_t previousRetryTimeStamp = message_processing_context->nextRetryTimeStampEpoch;
     // Call the responseCallback to allow the message owner to make a decision whether
     // to continue trying, and specified the 'nextRetryTimestamp' if needed.
@@ -263,7 +231,7 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
 
     if (message_processing_context->nextRetryTimeStampEpoch != previousRetryTimeStamp)
     {
-        // It's possible that the next retry time has been set by the responseCallback(), 
+        // It's possible that the next retry time has been set by the responseCallback(),
         // we don't need to do anything here.
         SetMessageStatus(&message_processing_context->message, ADUC_D2C_Message_Status_In_Progress);
         goto done;
@@ -271,8 +239,12 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
 
     if (message_processing_context->retries >= message_processing_context->retryStrategy->maxRetries)
     {
-        Log_Warn("Maximum attempt reached (t:%d, r:%d)", message_processing_context->type, message_processing_context->retries);
-        OnMessageProcessingCompleted(&message_processing_context->message, ADUC_D2C_Message_Status_Max_Retries_Reached);
+        Log_Warn(
+            "Maximum attempt reached (t:%d, r:%d)",
+            message_processing_context->type,
+            message_processing_context->retries);
+        OnMessageProcessingCompleted(
+            &message_processing_context->message, ADUC_D2C_Message_Status_Max_Retries_Reached);
         goto done;
     }
 
@@ -285,7 +257,8 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
             if (message_processing_context->retries >= info->maxRetry)
             {
                 Log_Warn("Max retries reached (httpStatus:%d)", http_status_code);
-                OnMessageProcessingCompleted(&message_processing_context->message, ADUC_D2C_Message_Status_Max_Retries_Reached);
+                OnMessageProcessingCompleted(
+                    &message_processing_context->message, ADUC_D2C_Message_Status_Max_Retries_Reached);
                 goto done;
             }
 
@@ -299,7 +272,7 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
             time_t newTime = info->retryTimestampCalcFunc(
                 info->additionalDelaySecs,
                 message_processing_context->retries,
-                message_processing_context->retryStrategy->initialDelayMS,
+                message_processing_context->retryStrategy->initialDelayUnitMilliSecs,
                 message_processing_context->retryStrategy->maxDelaySecs,
                 message_processing_context->retryStrategy->maxJitterPercent);
 
@@ -318,7 +291,8 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
 
     if (!computed)
     {
-        message_processing_context->nextRetryTimeStampEpoch += message_processing_context->retryStrategy->fallbackWaitTimeSec;
+        message_processing_context->nextRetryTimeStampEpoch +=
+            message_processing_context->retryStrategy->fallbackWaitTimeSec;
         Log_Warn(
             "Failed to calculate the next retry timestamp. Next retry in %d seconds.",
             message_processing_context->retryStrategy->fallbackWaitTimeSec);
@@ -362,8 +336,10 @@ static void ProcessMessage(ADUC_D2C_Message_Processing_Context* message_processi
             }
 
             // Discard old message.
-            Log_Info( "New D2C message content (t:%d, content:0x%x).",
-                message_processing_context->type, s_pendingMessageStore[message_processing_context->type].content);
+            Log_Info(
+                "New D2C message content (t:%d, content:0x%x).",
+                message_processing_context->type,
+                s_pendingMessageStore[message_processing_context->type].content);
             OnMessageProcessingCompleted(&message_processing_context->message, ADUC_D2C_Message_Status_Replaced);
         }
 
@@ -380,9 +356,10 @@ static void ProcessMessage(ADUC_D2C_Message_Processing_Context* message_processi
 
         SetMessageStatus(&message_processing_context->message, ADUC_D2C_Message_Status_In_Progress);
     }
-    else if ((message_processing_context->message.content != NULL) &&
-             (message_processing_context->message.status == ADUC_D2C_Message_Status_In_Progress) &&
-             (now >= message_processing_context->nextRetryTimeStampEpoch))
+    else if (
+        (message_processing_context->message.content != NULL)
+        && (message_processing_context->message.status == ADUC_D2C_Message_Status_In_Progress)
+        && (now >= message_processing_context->nextRetryTimeStampEpoch))
     {
         shouldSend = true;
     }
@@ -400,8 +377,14 @@ static void ProcessMessage(ADUC_D2C_Message_Processing_Context* message_processi
         else
         {
             message_processing_context->message.attempts++;
-            Log_Debug("Sending D2C message (t:%d, retries:%d).", message_processing_context->type, message_processing_context->retries);
-            if (message_processing_context->transportFunc(message_processing_context->message.cloudServiceHandle, message_processing_context, DefaultIoTHubSendReportedStateCompletedCallback)
+            Log_Debug(
+                "Sending D2C message (t:%d, retries:%d).",
+                message_processing_context->type,
+                message_processing_context->retries);
+            if (message_processing_context->transportFunc(
+                    message_processing_context->message.cloudServiceHandle,
+                    message_processing_context,
+                    DefaultIoTHubSendReportedStateCompletedCallback)
                 != 0)
             {
                 message_processing_context->nextRetryTimeStampEpoch += FATAL_ERROR_WAIT_TIME_SEC;
@@ -471,7 +454,6 @@ void ADUC_D2C_Messaging_Uninit()
                 OnMessageProcessingCompleted(&s_pendingMessageStore[i], ADUC_D2C_Message_Status_Canceled);
             }
 
-
             if (s_messageProcessingContext[i].message.content != NULL)
             {
                 OnMessageProcessingCompleted(&s_messageProcessingContext[i].message, ADUC_D2C_Message_Status_Canceled);
@@ -526,12 +508,12 @@ bool ADUC_D2C_Message_SendAsync(
     {
         if (s_pendingMessageStore[type].completedCallback != NULL)
         {
-            Log_Debug("Replacing existing pending message. (t:%d)", type);
+            Log_Debug("Replacing existing pending message. (t:%d, s:%s)", type, s_pendingMessageStore[type].content);
             OnMessageProcessingCompleted(&s_pendingMessageStore[type], ADUC_D2C_Message_Status_Replaced);
         }
     }
 
-    Log_Debug("Queueing message (t:%d, c:0x%x", type, message);
+    Log_Debug("Queueing message (t:%d, c:0x%x, m:%s)", type, message, message);
     memset(&s_pendingMessageStore[type], 0, sizeof(s_pendingMessageStore[0]));
     s_pendingMessageStore[type].cloudServiceHandle = cloudServiceHandle;
     s_pendingMessageStore[type].originalContent = message;
@@ -572,10 +554,12 @@ int ADUC_D2C_Default_Message_Transport_Function(
     void* cloudServiceHandle, void* context, ADUC_C2D_RESPONSE_HANDLER_FUNCTION c2dResponseHandlerFunc)
 {
     ADUC_D2C_Message_Processing_Context* message_processing_context = (ADUC_D2C_Message_Processing_Context*)context;
-    if (message_processing_context->message.cloudServiceHandle == NULL || *((ADUC_ClientHandle*)message_processing_context->message.cloudServiceHandle) == NULL)
+    if (message_processing_context->message.cloudServiceHandle == NULL
+        || *((ADUC_ClientHandle*)message_processing_context->message.cloudServiceHandle) == NULL)
     {
         Log_Warn(
-            "Try to send D2C message but cloudServiceHandle is NULL. Skipped. (content:0x%x)", message_processing_context->message.content);
+            "Try to send D2C message but cloudServiceHandle is NULL. Skipped. (content:0x%x)",
+            message_processing_context->message.content);
         return 1;
     }
     else

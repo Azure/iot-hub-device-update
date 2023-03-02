@@ -64,11 +64,11 @@ static void OnUpdateResultD2CMessageCompleted(void* context, ADUC_D2C_Message_St
  * @param[out] workflowData Workflow metadata.
  * @param argc Count of arguments in @p argv
  * @param argv Command line parameters.
- * @return _Bool True on success.
+ * @return bool True on success.
  */
-_Bool ADUC_WorkflowData_Init(ADUC_WorkflowData* workflowData, int argc, char** argv)
+bool ADUC_WorkflowData_Init(ADUC_WorkflowData* workflowData, int argc, char** argv)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
 
     memset(workflowData, 0, sizeof(*workflowData));
 
@@ -120,13 +120,14 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
 /**
  * @brief Reports the client json via PnP so it ends up in the reported section of the twin.
  *
+ * @param messageType The message type.
  * @param json_value The json value to be reported.
  * @param workflowData The workflow data.
- * @return _Bool true if call succeeded.
+ * @return bool true if call succeeded.
  */
-static _Bool ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData* workflowData)
+static bool ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_value, ADUC_WorkflowData* workflowData)
 {
-    _Bool success = false;
+    bool success = false;
 
     if (g_iotHubClientHandleForADUComponent == NULL)
     {
@@ -144,7 +145,7 @@ static _Bool ReportClientJsonProperty(const char* json_value, ADUC_WorkflowData*
     }
 
     if (!ADUC_D2C_Message_SendAsync(
-            ADUC_D2C_Message_Type_Device_Update_Result,
+            messageType,
             &g_iotHubClientHandleForADUComponent,
             STRING_c_str(jsonToSend),
             NULL /* responseCallback */,
@@ -171,7 +172,7 @@ done:
  * @param workflowData the workflow data.
  * @returns true when the report is sent and false when reporting fails.
  */
-_Bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
+bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
 {
     if (g_iotHubClientHandleForADUComponent == NULL)
     {
@@ -179,7 +180,7 @@ _Bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
         return false;
     }
 
-    _Bool success = false;
+    bool success = false;
 
     char* jsonString = NULL;
 
@@ -226,7 +227,7 @@ _Bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    ReportClientJsonProperty(jsonString, workflowData);
+    ReportClientJsonProperty(ADUC_D2C_Message_Type_Device_Properties, jsonString, workflowData);
 
     success = true;
 done:
@@ -241,9 +242,9 @@ done:
 // AzureDeviceUpdateCoreInterface methods
 //
 
-_Bool AzureDeviceUpdateCoreInterface_Create(void** context, int argc, char** argv)
+bool AzureDeviceUpdateCoreInterface_Create(void** context, int argc, char** argv)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
 
     ADUC_WorkflowData* workflowData = calloc(1, sizeof(ADUC_WorkflowData));
     if (workflowData == NULL)
@@ -461,10 +462,10 @@ done:
  * @param[in] retryTimestamp optional. The retry timestamp that's present for service-initiated retries.
  * @return true if all properties were set successfully; false, otherwise.
  */
-static _Bool set_workflow_properties(
+static bool set_workflow_properties(
     JSON_Value* workflowValue, ADUCITF_UpdateAction updateAction, const char* workflowId, const char* retryTimestamp)
 {
-    _Bool succeeded = false;
+    bool succeeded = false;
 
     JSON_Object* workflowObject = json_value_get_object(workflowValue);
     if (json_object_set_number(workflowObject, ADUCITF_FIELDNAME_ACTION, updateAction) != JSONSuccess)
@@ -616,7 +617,7 @@ JSON_Value* GetReportingJsonValue(
     //
     if (!IsNullOrEmpty(workflow_peek_id(handle)))
     {
-        _Bool success = set_workflow_properties(
+        bool success = set_workflow_properties(
             workflowValue,
             ADUC_WorkflowData_GetCurrentAction(workflowData),
             workflow_peek_id(handle),
@@ -772,13 +773,13 @@ done:
  * @param installedUpdateId Installed update id (if update completed successfully).
  * @return true if succeeded.
  */
-_Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
+bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
     ADUC_WorkflowDataToken workflowDataToken,
     ADUCITF_State updateState,
     const ADUC_Result* result,
     const char* installedUpdateId)
 {
-    _Bool success = false;
+    bool success = false;
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)workflowDataToken;
 
     JSON_Value* rootValue = NULL;
@@ -816,7 +817,7 @@ _Bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
         goto done;
     }
 
-    if (!ReportClientJsonProperty(jsonString, workflowData))
+    if (!ReportClientJsonProperty(ADUC_D2C_Message_Type_Device_Update_Result, jsonString, workflowData))
     {
         goto done;
     }

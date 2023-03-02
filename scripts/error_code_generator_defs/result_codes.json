@@ -39,6 +39,17 @@
                 "value": 3
               }
             ]
+          },
+          {
+            "code": 2,
+            "doc_string": "plugin call helper component",
+            "name": "ADUC_COMPONENT_PLUGIN_CALL",
+            "results": [
+              {
+                "name": "ADUC_ERC_PLUGIN_CALL_RESOLVE_EXPORT_SYMBOL",
+                "value": 1
+              }
+            ]
           }
         ],
         "code": 0,
@@ -878,6 +889,18 @@
               {
                 "name": "ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_UNSUPPORTED_CONTRACT_VERSION",
                 "value": 2
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_CREATE_FACTORY_INSTANCE",
+                "value": 3
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_HELPER_BAD_ARG",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_EXTENSIBILITY_GET_CONTRACT",
+                "value": 5
               }
             ]
           },
@@ -897,6 +920,42 @@
               {
                 "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_EXCEPTION",
                 "value": 3
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_ON_UPDATE_WORKFLOW_COMPLETED_STDEXCEPTION",
+                "value": 4
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_ON_UPDATE_WORKFLOW_COMPLETED_NONSTDEXCEPTION",
+                "value": 5
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_GETCONTRACTINFO_STDEXCEPTION",
+                "value": 6
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_GETCONTRACTINFO_NONSTDEXCEPTION",
+                "value": 7
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_PROCESSUPDATE_STDEXCEPTION",
+                "value": 8
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_PROCESSUPDATE_NONSTDEXCEPTION",
+                "value": 9
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_ONUPDATEWORKFLOWCOMPLETED",
+                "value": 10
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_GETCONTRACTINFO",
+                "value": 11
+              },
+              {
+                "name": "ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_PROCESSUPDATE",
+                "value": 12
               }
             ]
           },

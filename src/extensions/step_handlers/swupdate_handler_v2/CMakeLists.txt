@@ -9,7 +9,7 @@ set (
     "${ADUC_CONF_FOLDER}/${SWUPDATE_HANDLER_CONF_FILE}"
     CACHE STRING "Path to the SWUpdate handler configuration file.")
 
-add_library (${target_name} SHARED "")
+add_library (${target_name} MODULE)
 
 add_library (aduc::${target_name} ALIAS ${target_name})
 
@@ -33,6 +33,7 @@ target_link_libraries (
             aduc::exception_utils
             aduc::extension_manager
             aduc::logging
+            aduc::parser_utils
             aduc::process_utils
             aduc::string_utils
             aduc::system_utils

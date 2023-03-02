@@ -20,14 +20,14 @@ EXTERN_C_BEGIN
  * @param moduleId the moduleId to be used to create the device name
  * @returns true on success; false on failure
  */
-_Bool DiagnosticsComponent_SetDeviceName(const char* deviceId, const char* moduleId);
+bool DiagnosticsComponent_SetDeviceName(const char* deviceId, const char* moduleId);
 
 /**
  * @brief Initializes @p deviceNameHandle with the value stored in g_diagnosticsDeviceName
  * @param deviceNameHandle handle to be initialized with the device name
  * @returns true on success; false on failure
  */
-_Bool DiagnosticsComponent_GetDeviceName(char** deviceNameHandle);
+bool DiagnosticsComponent_GetDeviceName(char** deviceNameHandle);
 
 /**
  * @brief Free's the currently allocated DeviceName if it has been set

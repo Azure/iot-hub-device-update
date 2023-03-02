@@ -1,13 +1,14 @@
 
 #include "aduc/client_handle.h"
 #include "aduc/d2c_messaging.h"
+#include "aduc/retry_utils.h"
 
 #include <catch2/catch.hpp>
+#include <stdexcept> // runtime_error
 #include <string.h>
 #include <sys/param.h> // *_MIN/*_MAX
 #include <sys/time.h> // nanosleep
 #include <unistd.h> // usleep
-
 
 static ADUC_D2C_HttpStatus_Retry_Info g_httpStatusRetryInfo_fast_speed[]{
     /* Success responses, no retries needed */
@@ -20,15 +21,15 @@ static ADUC_D2C_HttpStatus_Retry_Info g_httpStatusRetryInfo_fast_speed[]{
     { .httpStatusMin = 400,
       .httpStatusMax = 499,
       .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
-      .maxRetry = INT_MAX},
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
+      .maxRetry = INT_MAX },
 
     /* Catch all */
     { .httpStatusMin = 0,
       .httpStatusMax = INT_MAX,
       .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
-      .maxRetry = INT_MAX}
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
+      .maxRetry = INT_MAX }
 };
 
 /**
@@ -40,7 +41,7 @@ static ADUC_D2C_RetryStrategy g_defaultRetryStrategy_fast_speed = {
     .maxRetries = INT_MAX,
     .maxDelaySecs = 1, // 1 seconds
     .fallbackWaitTimeSec = 1, // 20 ms.
-    .initialDelayMS = 10 // 50 ms.
+    .initialDelayUnitMilliSecs = 10 // 50 ms.
 };
 
 // Bad retry strategy - retry, but no calc function pointer.
@@ -57,7 +58,7 @@ static ADUC_D2C_HttpStatus_Retry_Info g_httpStatusRetryInfo_no_calc_func[]{
       .httpStatusMax = 599,
       .additionalDelaySecs = 0,
       .retryTimestampCalcFunc = nullptr,
-      .maxRetry = 0  },
+      .maxRetry = 0 },
 
     /* Mock errors, retry required, but no retryTimestampCalcFunc specified.*/
     { .httpStatusMin = 600,
@@ -70,7 +71,7 @@ static ADUC_D2C_HttpStatus_Retry_Info g_httpStatusRetryInfo_no_calc_func[]{
     { .httpStatusMin = 0,
       .httpStatusMax = INT_MAX,
       .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = ADUC_D2C_RetryDelayCalculator,
+      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
       .maxRetry = INT_MAX }
 };
 
@@ -83,7 +84,7 @@ static ADUC_D2C_RetryStrategy g_defaultRetryStrategy_no_calc_func = { .httpStatu
                                                                       .maxRetries = INT_MAX,
                                                                       .maxDelaySecs = 1 * 24 * 60 * 60, // 1 day
                                                                       .fallbackWaitTimeSec = 1,
-                                                                      .initialDelayMS = 1000 };
+                                                                      .initialDelayUnitMilliSecs = 1000 };
 
 typedef struct _tagMockCloudBehavior
 {
@@ -91,8 +92,71 @@ typedef struct _tagMockCloudBehavior
     int httpStatus;
 } MockCloudBehavior;
 
-static pthread_mutex_t g_cloudBehaviorMutex;
-static pthread_mutex_t g_doWorkMutex;
+class PThreadMutex
+{
+public:
+    PThreadMutex(const pthread_mutexattr_t* attr = nullptr)
+    {
+        if (pthread_mutex_init(&_mutex, attr) != 0)
+        {
+            throw std::runtime_error("pthread_mutex_init failed");
+        }
+    }
+    ~PThreadMutex()
+    {
+        pthread_mutex_destroy(&_mutex);
+    }
+
+    pthread_mutex_t* ptr()
+    {
+        return &_mutex;
+    }
+
+    void lock()
+    {
+        pthread_mutex_lock(&_mutex);
+    }
+
+    void unlock()
+    {
+        pthread_mutex_unlock(&_mutex);
+    }
+
+private:
+    pthread_mutex_t _mutex;
+};
+
+class PThreadCond
+{
+public:
+    PThreadCond(const pthread_condattr_t* attr = nullptr)
+    {
+        if (pthread_cond_init(&_cond, attr) != 0)
+        {
+            throw std::runtime_error("pthread_cond_init failed");
+        }
+    }
+    ~PThreadCond()
+    {
+        pthread_cond_destroy(&_cond);
+    }
+
+    void signal()
+    {
+        pthread_cond_signal(&_cond);
+    }
+
+    void wait(PThreadMutex& mutex)
+    {
+        pthread_cond_wait(&_cond, mutex.ptr());
+    }
+
+private:
+    pthread_cond_t _cond;
+};
+
+static PThreadMutex g_cloudBehaviorMutex;
+static PThreadMutex g_doWorkMutex;
 const MockCloudBehavior* g_cloudBehavior = nullptr;
 size_t g_cloudBehaviorCount = 0;
 size_t g_cloudBehaviorIndex = 0;
@@ -100,29 +164,30 @@ size_t g_cloudBehaviorIndex = 0;
 ADUC_C2D_RESPONSE_HANDLER_FUNCTION g_c2dResponseHandlerFunc = nullptr;
 int g_attempts = 0;
 
-static pthread_cond_t g_d2cMessageProcessedCond;
-static pthread_mutex_t g_testSequenceMutex;
-static pthread_mutex_t g_cloudServiceMutex;
-static pthread_mutex_t g_testCaseSyncMutex;
+static PThreadCond g_d2cMessageProcessedCond;
+static PThreadMutex g_cloudServiceMutex;
+static PThreadMutex g_testCaseSyncMutex;
 
 void* mock_msg_process_thread_routine(void* context)
 {
-    pthread_mutex_lock(&g_cloudBehaviorMutex);
+    g_cloudBehaviorMutex.lock();
     if (g_cloudBehaviorIndex >= g_cloudBehaviorCount)
     {
         INFO("Invalid g_cloudBehaviorIndex!");
-        pthread_mutex_unlock(&g_cloudBehaviorMutex);
+        g_cloudBehaviorMutex.unlock();
         return context;
     }
 
     // Wait before response.
     if (g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS > 999)
     {
-        sleep ((g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS + 500) / 1000);
+        sleep((g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS + 500) / 1000);
     }
     else
     {
-        timespec t = { .tv_sec = 0, .tv_nsec = MILLISECONDS_TO_NANOSECONDS(g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS) };
+        timespec t;
+        t.tv_sec = 0;
+        t.tv_nsec = (long)MILLISECONDS_TO_NANOSECONDS(g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS);
         timespec remain{};
         int res = nanosleep(&t, &remain);
         if (res == -1)
@@ -147,7 +212,7 @@ void* mock_msg_process_thread_routine(void* context)
         }
     }
     g_cloudBehaviorIndex++;
-    pthread_mutex_unlock(&g_cloudBehaviorMutex);
+    g_cloudBehaviorMutex.unlock();
 
     // Response with canned http status code.
     g_c2dResponseHandlerFunc(g_cloudBehavior[g_cloudBehaviorIndex - 1].httpStatus, context);
@@ -156,7 +221,7 @@ void* mock_msg_process_thread_routine(void* context)
 
 /**
  * @brief Set the message status, then call the message.statusChangedCallback (if supplied).
- * 
+ *
  * @param message The message object.
  * @param status  Final message status
  */
@@ -184,8 +249,8 @@ int MockMessageTransportFunc(
     g_c2dResponseHandlerFunc = c2dResponseHandlerFunc;
     CAPTURE(g_c2dResponseHandlerFunc);
     auto message_processing_context = static_cast<ADUC_D2C_Message_Processing_Context*>(context);
-    if (message_processing_context->message.cloudServiceHandle == nullptr || 
-        *(static_cast<ADUC_ClientHandle*>(message_processing_context->message.cloudServiceHandle)) == nullptr)
+    if (message_processing_context->message.cloudServiceHandle == nullptr
+        || *(static_cast<ADUC_ClientHandle*>(message_processing_context->message.cloudServiceHandle)) == nullptr)
     {
         return 1;
     }
@@ -206,29 +271,30 @@ int MockMessageTransportFunc(
     return createResult;
 }
 
-
 static void _SetMockCloudBehavior(MockCloudBehavior* b, size_t size, size_t initialIndex, size_t attempts)
 {
     UNREFERENCED_PARAMETER(attempts);
-    pthread_mutex_lock(&g_cloudBehaviorMutex);
+    g_cloudBehaviorMutex.lock();
     g_cloudBehavior = b;
     g_cloudBehaviorCount = size;
     g_cloudBehaviorIndex = initialIndex;
     g_attempts = 0;
-    pthread_mutex_unlock(&g_cloudBehaviorMutex);
+    g_cloudBehaviorMutex.unlock();
 }
 
 bool g_cancelDoWorkThread = false;
+
 void* mock_do_work_thread(void* context)
 {
-    struct timespec t = { .tv_sec = 0, .tv_nsec = MILLISECONDS_TO_NANOSECONDS(200) };
-    struct timespec rem{};
+    timespec t;
+    t.tv_sec = 0;
+    t.tv_nsec = MILLISECONDS_TO_NANOSECONDS(200);
     while (!g_cancelDoWorkThread)
     {
-        pthread_mutex_lock(&g_doWorkMutex);
+        g_doWorkMutex.lock();
         ADUC_D2C_Messaging_DoWork();
-        pthread_mutex_unlock(&g_doWorkMutex);
-        nanosleep(&t, &rem);
+        g_doWorkMutex.unlock();
+        nanosleep(&t, nullptr);
     }
     g_cancelDoWorkThread = false;
     return context;
@@ -242,7 +308,9 @@ static void create_messaging_do_work_thread(void* name)
 
 static time_t GetTimeSinceEpochInSeconds()
 {
-    struct timespec timeSinceEpoch{};
+    struct timespec timeSinceEpoch
+    {
+    };
     clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
     return timeSinceEpoch.tv_sec;
 }
@@ -253,7 +321,7 @@ void OnMessageProcessCompleted_SaveWholeMessage_And_Signal(void* context, ADUC_D
     auto message = static_cast<ADUC_D2C_Message*>(context);
     *static_cast<ADUC_D2C_Message*>(message->userData) = *message;
     // Must signal after done updating global state.
-    pthread_cond_signal(&g_d2cMessageProcessedCond);
+    g_d2cMessageProcessedCond.signal();
 };
 
 void OnMessageStatusChanged_SaveWholeMessage_And_Signal(void* context, ADUC_D2C_Message_Status status)
@@ -262,7 +330,7 @@ void OnMessageStatusChanged_SaveWholeMessage_And_Signal(void* context, ADUC_D2C_
     auto message = static_cast<ADUC_D2C_Message*>(context);
     *static_cast<ADUC_D2C_Message*>(message->userData) = *message;
     // Must signal after done updating global state.
-    pthread_cond_signal(&g_d2cMessageProcessedCond);
+    g_d2cMessageProcessedCond.signal();
 };
 
 static void OnMessageProcessCompleted_SaveStatus(void* context, ADUC_D2C_Message_Status status)
@@ -275,37 +343,38 @@ static void OnMessageProcessCompleted_SaveStatus(void* context, ADUC_D2C_Message
 static void OnMessageProcessCompleted_SaveStatus_And_Signal(void* context, ADUC_D2C_Message_Status status)
 {
     OnMessageProcessCompleted_SaveStatus(context, status);
-    pthread_cond_signal(&g_d2cMessageProcessedCond);
+    g_d2cMessageProcessedCond.signal();
 };
 
-// Make sure that we can uninitialize cleanly while there's a message in-progress.
-TEST_CASE("Uninitialization - in progess message")
+// Make sure that we can deinitialize cleanly while there's a message in-progress.
+TEST_CASE("Deinitialization - in progress message", "[.][functional]")
 {
-    pthread_mutex_lock(&g_testCaseSyncMutex);
+    g_testCaseSyncMutex.lock();
 
     int expectedAttempts = 0;
     const char* message = nullptr;
-    auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We dont need real handle.
+    auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We don't need real handle.
 
     // Init message processing util, use mock transport, and reduces poll interval to 100ms.
     ADUC_D2C_Messaging_Init();
-    ADUC_D2C_Messaging_Set_Transport(
-        ADUC_D2C_Message_Type_Device_Update_Result, MockMessageTransportFunc);
+    ADUC_D2C_Messaging_Set_Transport(ADUC_D2C_Message_Type_Device_Update_Result, MockMessageTransportFunc);
 
     // Case 1
     expectedAttempts = 0;
     MockCloudBehavior cb1[]{
-        { 1000, 777 },  // Using 777, which is outside or normal http status code. So that we can retry w/o an aditional datay.
-        { 1000, 777 },  
-        { 2000, 200 } };
+        { 1000,
+          777 }, // Using 777, which is outside or normal http status code. So that we can retry w/o an additional delay.
+        { 1000, 777 },
+        { 2000, 200 }
+    };
 
     // Ensure that the cloud service is not busy.
-    pthread_mutex_lock(&g_cloudServiceMutex);
+    g_cloudServiceMutex.lock();
     _SetMockCloudBehavior(cb1, sizeof(cb1) / sizeof(MockCloudBehavior), 0, 0);
     // Let's the cloud service continue.
-    pthread_mutex_unlock(&g_cloudServiceMutex);
+    g_cloudServiceMutex.unlock();
 
-    pthread_mutex_lock(&g_doWorkMutex);
+    g_doWorkMutex.lock();
 
     ADUC_D2C_Message resultMessage;
     memset(&resultMessage, 0, sizeof(resultMessage));
@@ -334,26 +403,25 @@ TEST_CASE("Uninitialization - in progess message")
     CHECK(1 == resultMessage.attempts);
     CHECK(resultMessage.status == ADUC_D2C_Message_Status_Canceled);
 
-    pthread_mutex_unlock(&g_doWorkMutex);
+    g_doWorkMutex.unlock();
 
     // Done
-    pthread_mutex_unlock(&g_cloudServiceMutex);
-    pthread_mutex_unlock(&g_testCaseSyncMutex);
+    g_cloudServiceMutex.unlock();
+    g_testCaseSyncMutex.unlock();
 }
 
-// Make sure that we can uninitialize cleanly.
-TEST_CASE("Uninitialization - pending message")
+// Make sure that we can deinitialize cleanly.
+TEST_CASE("Deinitialization - pending message", "[.][functional]")
 {
-    pthread_mutex_lock(&g_testCaseSyncMutex);
+    g_testCaseSyncMutex.lock();
 
     int expectedAttempts = 0;
     const char* message = nullptr;
-    auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We dont need real handle.
+    auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We don't need real handle.
 
     // Init message processing util, use mock transport, and reduces poll interval to 100ms.
     ADUC_D2C_Messaging_Init();
-    ADUC_D2C_Messaging_Set_Transport(
-        ADUC_D2C_Message_Type_Device_Update_Result, MockMessageTransportFunc);
+    ADUC_D2C_Messaging_Set_Transport(ADUC_D2C_Message_Type_Device_Update_Result, MockMessageTransportFunc);
 
     // Case 1
     message = "Case1 - uninit while message is pending.";
@@ -361,10 +429,10 @@ TEST_CASE("Uninitialization - pending message")
     MockCloudBehavior cb1[]{ { 2000 /* wait 200ms before response*/, 200 } };
 
     // Ensure that the cloud service is not busy.
-    pthread_mutex_lock(&g_cloudServiceMutex);
+    g_cloudServiceMutex.lock();
     _SetMockCloudBehavior(cb1, sizeof(cb1) / sizeof(MockCloudBehavior), 0, 0);
     // Let's the cloud service continue.
-    pthread_mutex_unlock(&g_cloudServiceMutex);
+    g_cloudServiceMutex.unlock();
 
     ADUC_D2C_Message resultMessage;
     memset(&resultMessage, 0, sizeof(resultMessage));
@@ -382,27 +450,26 @@ TEST_CASE("Uninitialization - pending message")
 
     // Un-init.
     ADUC_D2C_Messaging_Uninit();
-    
+
     // Expected 0 attempts, and cancel state.
     CHECK(expectedAttempts == resultMessage.attempts);
     CHECK(resultMessage.status == ADUC_D2C_Message_Status_Canceled);
 
     // Done
-    pthread_mutex_unlock(&g_testCaseSyncMutex);
+    g_testCaseSyncMutex.unlock();
 }
 
-TEST_CASE("Simple tests")
+TEST_CASE("Simple tests", "[.][functional]")
 {
-    pthread_mutex_lock(&g_testCaseSyncMutex);
+    g_testCaseSyncMutex.lock();
 
     int expectedAttempts = 0;
     const char* message = nullptr;
-    auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We dont need real handle.
+    auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We don't need real handle.
 
     // Init message processing util, use mock transport, and reduces poll interval to 100ms.
     ADUC_D2C_Messaging_Init();
-    ADUC_D2C_Messaging_Set_Transport(
-        ADUC_D2C_Message_Type_Device_Update_Result, MockMessageTransportFunc);
+    ADUC_D2C_Messaging_Set_Transport(ADUC_D2C_Message_Type_Device_Update_Result, MockMessageTransportFunc);
 
     create_messaging_do_work_thread((void*)"simple tests");
 
@@ -412,7 +479,7 @@ TEST_CASE("Simple tests")
     MockCloudBehavior cb1[]{ { 1, 200 } };
 
     // Ensure that the cloud service is not busy.
-    pthread_mutex_lock(&g_cloudServiceMutex);
+    g_cloudServiceMutex.lock();
 
     _SetMockCloudBehavior(cb1, sizeof(cb1) / sizeof(MockCloudBehavior), 0, 0);
 
@@ -428,8 +495,8 @@ TEST_CASE("Simple tests")
         &result);
 
     // Wait until the message has been processed.
-    pthread_cond_wait(&g_d2cMessageProcessedCond, &g_cloudServiceMutex);
-    pthread_mutex_unlock(&g_cloudServiceMutex);
+    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    g_cloudServiceMutex.unlock();
 
     CHECK(expectedAttempts == result.attempts);
 
@@ -439,7 +506,7 @@ TEST_CASE("Simple tests")
     MockCloudBehavior cb2[]{ { 200, 404 }, { 200, 200 } };
 
     // Ensure that the cloud service is not busy.
-    pthread_mutex_lock(&g_cloudServiceMutex);
+    g_cloudServiceMutex.lock();
 
     _SetMockCloudBehavior(cb2, sizeof(cb2) / sizeof(MockCloudBehavior), 0, 0);
 
@@ -454,8 +521,8 @@ TEST_CASE("Simple tests")
         &result);
 
     // Wait until the message has been processed.
-    pthread_cond_wait(&g_d2cMessageProcessedCond, &g_cloudServiceMutex);
-    pthread_mutex_unlock(&g_cloudServiceMutex);
+    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    g_cloudServiceMutex.unlock();
 
     CHECK(expectedAttempts == result.attempts);
 
@@ -465,7 +532,7 @@ TEST_CASE("Simple tests")
     MockCloudBehavior cb3[]{ { 100, 403 }, { 100, 404 }, { 100, 403 }, { 100, 200 } };
 
     // Ensure that the cloud service is not busy.
-    pthread_mutex_lock(&g_cloudServiceMutex);
+    g_cloudServiceMutex.lock();
 
     _SetMockCloudBehavior(cb3, sizeof(cb3) / sizeof(MockCloudBehavior), 0, 0);
 
@@ -480,20 +547,20 @@ TEST_CASE("Simple tests")
         &result);
 
     // Wait until the message has been processed.
-    pthread_cond_wait(&g_d2cMessageProcessedCond, &g_cloudServiceMutex);
-    pthread_mutex_unlock(&g_cloudServiceMutex);
+    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    g_cloudServiceMutex.unlock();
 
     CHECK(expectedAttempts == result.attempts);
 
     // Done
     g_cancelDoWorkThread = true;
     ADUC_D2C_Messaging_Uninit();
-    pthread_mutex_unlock(&g_testCaseSyncMutex);
+    g_testCaseSyncMutex.unlock();
 }
 
-TEST_CASE("Bad http status retry info")
+TEST_CASE("Bad http status retry info", "[.][functional]")
 {
-    pthread_mutex_lock(&g_testCaseSyncMutex);
+    g_testCaseSyncMutex.lock();
 
     int expectedAttempts = 0;
     const char* message = nullptr;
@@ -502,8 +569,7 @@ TEST_CASE("Bad http status retry info")
 
     // Init message processing util, use mock transport, and reduces poll interval to 100ms.
     ADUC_D2C_Messaging_Init();
-    ADUC_D2C_Messaging_Set_Transport(
-        ADUC_D2C_Message_Type_Device_Update_Result, MockMessageTransportFunc);
+    ADUC_D2C_Messaging_Set_Transport(ADUC_D2C_Message_Type_Device_Update_Result, MockMessageTransportFunc);
 
     create_messaging_do_work_thread((void*)"bad retry info");
 
@@ -517,7 +583,7 @@ TEST_CASE("Bad http status retry info")
     MockCloudBehavior cb1[]{ { 100, 555 }, { 100, 200 } };
 
     // Ensure that the cloud service is not busy.
-    pthread_mutex_lock(&g_cloudServiceMutex);
+    g_cloudServiceMutex.lock();
 
     _SetMockCloudBehavior(cb1, sizeof(cb1) / sizeof(MockCloudBehavior), 0, 0);
 
@@ -533,8 +599,8 @@ TEST_CASE("Bad http status retry info")
         &result);
 
     // Wait until the message has been processed.
-    pthread_cond_wait(&g_d2cMessageProcessedCond, &g_cloudServiceMutex);
-    pthread_mutex_unlock(&g_cloudServiceMutex);
+    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    g_cloudServiceMutex.unlock();
 
     CHECK(expectedAttempts == result.attempts);
 
@@ -544,7 +610,7 @@ TEST_CASE("Bad http status retry info")
     MockCloudBehavior cb2[]{ { 100, 601 }, { 100, 200 } };
 
     // Ensure that the cloud service is not busy.
-    pthread_mutex_lock(&g_cloudServiceMutex);
+    g_cloudServiceMutex.lock();
 
     _SetMockCloudBehavior(cb2, sizeof(cb2) / sizeof(MockCloudBehavior), 0, 0);
 
@@ -559,15 +625,15 @@ TEST_CASE("Bad http status retry info")
         &result);
 
     // Wait until the message has been processed.
-    pthread_cond_wait(&g_d2cMessageProcessedCond, &g_cloudServiceMutex);
-    pthread_mutex_unlock(&g_cloudServiceMutex);
+    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    g_cloudServiceMutex.unlock();
 
     CHECK(expectedAttempts == result.attempts);
 
     // Done
     g_cancelDoWorkThread = true;
     ADUC_D2C_Messaging_Uninit();
-    pthread_mutex_unlock(&g_testCaseSyncMutex);
+    g_testCaseSyncMutex.unlock();
 }
 
 // Send message #1 message (service will took 5 seconds to process)
@@ -577,9 +643,9 @@ TEST_CASE("Bad http status retry info")
 //     msg#2 replaced
 //     msg#3 success
 
-TEST_CASE("Message replacement test")
+TEST_CASE("Message replacement test", "[.][functional]")
 {
-    pthread_mutex_lock(&g_testCaseSyncMutex);
+    g_testCaseSyncMutex.lock();
 
     const char* message = nullptr;
 
@@ -591,8 +657,7 @@ TEST_CASE("Message replacement test")
 
     // Init message processing util, use mock transport, and reduces poll interval to 100ms.
     ADUC_D2C_Messaging_Init();
-    ADUC_D2C_Messaging_Set_Transport(
-        ADUC_D2C_Message_Type_Device_Update_Result, MockMessageTransportFunc);
+    ADUC_D2C_Messaging_Set_Transport(ADUC_D2C_Message_Type_Device_Update_Result, MockMessageTransportFunc);
 
     create_messaging_do_work_thread((void*)"replacement test");
 
@@ -605,7 +670,7 @@ TEST_CASE("Message replacement test")
     message = "Message 1";
 
     // Ensure that the cloud service is not busy.
-    pthread_mutex_lock(&g_cloudServiceMutex);
+    g_cloudServiceMutex.lock();
 
     _SetMockCloudBehavior(cb1, sizeof(cb1) / sizeof(MockCloudBehavior), 0, 0);
 
@@ -642,8 +707,8 @@ TEST_CASE("Message replacement test")
         &message3FinalStatus);
 
     // Wait until the message has been processed.
-    pthread_cond_wait(&g_d2cMessageProcessedCond, &g_cloudServiceMutex);
-    pthread_mutex_unlock(&g_cloudServiceMutex);
+    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    g_cloudServiceMutex.unlock();
 
     CHECK(message1FinalStatus == ADUC_D2C_Message_Status_Success);
     CHECK(message2FinalStatus == ADUC_D2C_Message_Status_Replaced);
@@ -652,21 +717,20 @@ TEST_CASE("Message replacement test")
     // Done
     g_cancelDoWorkThread = true;
     ADUC_D2C_Messaging_Uninit();
-    pthread_mutex_unlock(&g_testCaseSyncMutex);
+    g_testCaseSyncMutex.unlock();
 }
 
-TEST_CASE("30 retries - httpStatus 401")
+TEST_CASE("30 retries - httpStatus 401", "[.][functional]")
 {
-    pthread_mutex_lock(&g_testCaseSyncMutex);
+    g_testCaseSyncMutex.lock();
 
     int expectedAttempts = 0;
     const char* message = nullptr;
-    auto handle = static_cast<ADUC_ClientHandle>((void*)(1)); // We dont need real handle.
+    auto handle = static_cast<ADUC_ClientHandle>((void*)(1)); // We don't need real handle.
 
     // Init message processing util, use mock transport, and reduces poll interval to 100ms.
     ADUC_D2C_Messaging_Init();
-    ADUC_D2C_Messaging_Set_Transport(
-        ADUC_D2C_Message_Type_Device_Update_Result, MockMessageTransportFunc);
+    ADUC_D2C_Messaging_Set_Transport(ADUC_D2C_Message_Type_Device_Update_Result, MockMessageTransportFunc);
 
     create_messaging_do_work_thread((void*)"30 retries");
 
@@ -675,14 +739,15 @@ TEST_CASE("30 retries - httpStatus 401")
         ADUC_D2C_Message_Type_Device_Update_Result, &g_defaultRetryStrategy_fast_speed);
 
     // Case 1 - received error 29 times, then success.
-    // The purpose os this test is to exercise threads syncronization with very small polling and retry times.
+    // The purpose of this test is to exercise threads synchronization with very small polling and retry times.
     MockCloudBehavior cb1[30];
     expectedAttempts = sizeof(cb1) / sizeof(MockCloudBehavior);
 
     for (int i = 0; i < expectedAttempts - 1; i++)
     {
         cb1[i].delayBeforeResponseMS = 10;
-        cb1[i].httpStatus = 777; // Using 777, which is outside or normal http status code. So that we can retry w/o an aditional datay.
+        cb1[i].httpStatus =
+            777; // Using 777, which is outside or normal http status code. So that we can retry w/o an additional delay.
     }
     cb1[expectedAttempts - 1].delayBeforeResponseMS = 5;
     cb1[expectedAttempts - 1].httpStatus = 200;
@@ -690,7 +755,7 @@ TEST_CASE("30 retries - httpStatus 401")
     message = "Case 1 - 29 error responses, then 1 success response.";
 
     // Ensure that the cloud service is not busy.
-    pthread_mutex_lock(&g_cloudServiceMutex);
+    g_cloudServiceMutex.lock();
 
     _SetMockCloudBehavior(cb1, sizeof(cb1) / sizeof(MockCloudBehavior), 0, 0);
 
@@ -706,13 +771,13 @@ TEST_CASE("30 retries - httpStatus 401")
         &result);
 
     // Wait until the message has been processed.
-    pthread_cond_wait(&g_d2cMessageProcessedCond, &g_cloudServiceMutex);
-    pthread_mutex_unlock(&g_cloudServiceMutex);
+    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    g_cloudServiceMutex.unlock();
 
     CHECK(expectedAttempts == result.attempts);
 
     // Done
     g_cancelDoWorkThread = true;
     ADUC_D2C_Messaging_Uninit();
-    pthread_mutex_unlock(&g_testCaseSyncMutex);
+    g_testCaseSyncMutex.unlock();
 }
