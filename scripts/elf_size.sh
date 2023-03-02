@@ -74,6 +74,7 @@ for elf_filpath in "${ELF_FILEPATHS[@]}"; do
     result="$(nm -C --print-size --size-sort --radix=d "$elf_filpath")"
 
     if [[ -n $PATTERN ]]; then
+        echo Pattern: "$PATTERN"
         result="$(echo "$result" | grep "${PATTERN}")"
     fi
 
