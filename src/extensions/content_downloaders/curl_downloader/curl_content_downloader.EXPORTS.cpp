@@ -25,10 +25,10 @@ ADUC_Result Download(
     const ADUC_FileEntity* entity,
     const char* workflowId,
     const char* workFolder,
-    unsigned int retryTimeout,
+    unsigned int maxTimeoutInSeconds,
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
-    return Download_curl(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
+    return Download_curl(entity, workflowId, workFolder, maxTimeoutInSeconds, downloadProgressCallback);
 }
 
 ADUC_Result Initialize(const char* initializeData)

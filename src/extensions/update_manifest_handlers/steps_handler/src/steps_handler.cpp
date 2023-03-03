@@ -145,7 +145,7 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                 try
                 {
                     ExtensionManager_Download_Options downloadOptions = {
-                        .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
+                        .maxTimeoutInSeconds = CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_SECONDS_DEFAULT,
                     };
 
                     result = ExtensionManager::Download(&entity, handle, &downloadOptions, nullptr);

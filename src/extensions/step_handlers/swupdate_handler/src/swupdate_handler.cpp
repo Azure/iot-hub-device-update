@@ -177,7 +177,7 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
 
     {
         ExtensionManager_Download_Options downloadOptions = {
-            .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
+            .maxTimeoutInSeconds = CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_SECONDS_DEFAULT,
         };
 
         result = ExtensionManager::Download(&fileEntity, workflowHandle, &downloadOptions, nullptr);

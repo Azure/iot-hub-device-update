@@ -32,7 +32,7 @@
  * @param entity The file entity.
  * @param workflowId The workflow id.
  * @param workFolder The work folder for the update payloads.
- * @param retryTimeout The retry timeout.
+ * @param maxTimeoutInSeconds The maximum number of seconds before the download times out.
  * @param downloadProgressCallback The download progress callback function.
  * @return ADUC_Result The result.
  * @details
@@ -40,7 +40,7 @@ ADUC_Result Download(
     const ADUC_FileEntity* entity,
     const char* workflowId,
     const char* workFolder,
-    unsigned int retryTimeout,
+    unsigned int maxTimeoutInSeconds,
     ADUC_DownloadProgressCallback downloadProgressCallback)
  */
 #define CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL "Download"

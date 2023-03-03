@@ -46,7 +46,7 @@ using ADUC::StringUtils::cstr_wrapper;
 
 EXTERN_C_BEGIN
 ExtensionManager_Download_Options Default_ExtensionManager_Download_Options = {
-    .retryTimeout = 60 * 60 * 24 /* default : 24 hour */,
+    .maxTimeoutInSeconds = 60 * 60 * 24 /* default : 24 hour */,
 };
 EXTERN_C_END
 
@@ -925,7 +925,8 @@ ADUC_Result ExtensionManager::Download(
 
         Log_Info("Downloading full target update payload to '%s'", targetUpdateFilePath.c_str());
 
-        result = downloadProc(entity, workflowId, workFolder.get(), options->retryTimeout, downloadProgressCallback);
+        result =
+            downloadProc(entity, workflowId, workFolder.get(), options->maxTimeoutInSeconds, downloadProgressCallback);
     }
 
     if (IsAducResultCodeSuccess(result.ResultCode))

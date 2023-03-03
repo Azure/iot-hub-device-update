@@ -21,8 +21,8 @@
 #include <string>
 #include <unordered_map>
 
-// Default DO retry timeout is 24 hours.
-#define DO_RETRY_TIMEOUT_DEFAULT (60 * 60 * 24)
+// Default Content Downloader Maximum Timeout in seconds before the downloader gives up trying to download.
+#define CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_SECONDS_DEFAULT (60 * 60 * 24)
 
 // Forward declaration.
 class ContentHandler;
