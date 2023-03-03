@@ -437,10 +437,10 @@ done:
  * @param[out] provisioningInfo the pointer to the struct which will be initialized with the information for creating a connection to IotHub using the EIS supported provisioning information
  * @returns on success a null terminated connection string, otherwise NULL
  */
-void EISConnectionFileWriter(uint32_t timeoutMS, char* identityResponseStr)
+void EISConnectionFileWriter(uint32_t timeoutMS)
 {
     // printf("Child process (PID %d) was created by parent process (PID %d).\n", getpid(), getppid());
-
+    char* identityResponseStr;
     struct passwd* pw = getpwnam("snap_aziot_du"); // get user information for aziot-snap-du
     if (pw == NULL)
     {
@@ -486,8 +486,9 @@ void EISConnectionFileWriter(uint32_t timeoutMS, char* identityResponseStr)
     }
 }
 
-EISErr EISConnectionFileReader()
+EISErr EISConnectionFileReader(char** identityResponseBuffer)
 {
+    EISErr result=0;
     FILE* fp = fopen(FILENAME, "r");
     if (fp == NULL)
     {
@@ -496,17 +497,24 @@ EISErr EISConnectionFileReader()
     }
 
     // read JSON data from file and print it out
-    char readidentityResponseStr[1024];
     char readidentityResult[1024];
     // while (fgets(buffer, 1024, fp) != NULL) {
     //     printf("%s", buffer);
     // }
-    fgets(readidentityResponseStr, 1024, fp);
+    *identityResponseBuffer = malloc(1024 * sizeof(char));
+    if (*identityResponseBuffer == NULL) {
+        printf("Failed to allocate memory\n");
+        fclose(fp);
+        return result;
+    }
+    fgets(*identityResponseBuffer, 1024, fp);
     fgets(readidentityResult, 1024, fp);
+    // fgets(readidentityResponseStr, 1024, fp);
+    // fgets(readidentityResult, 1024, fp);
 
     fclose(fp);
     int readidentityResultNum = atoi(readidentityResult);
-    EISErr result = (EISErr)readidentityResultNum;
+    result = (EISErr)readidentityResultNum;
     return result;
 }
 /**
@@ -580,7 +588,7 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
 
         printf("Parent process (PID %d) reading data from file %s...\n", getpid(), FILENAME);
 
-        EISErr EISResult = EISConnectionFileReader();
+        EISErr EISResult = EISConnectionFileReader(&identityResponseStr);
 
         if (EISResult != EISErr_Ok)
         {
