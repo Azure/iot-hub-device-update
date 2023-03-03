@@ -68,6 +68,7 @@ class DiagnosticsTest(unittest.TestCase):
         # device status represent Log upload status, operatin status represent background operation status
         #
         diagnosticJsonStatus = DiagnosticLogCollectionStatusResponse()
+
         for i in range(0, diagnostics_operation_status_retries):
             time.sleep(5)
             diagnosticJsonStatus = self.duTestHelper.GetDiagnosticsLogCollectionStatus(self.operationId)

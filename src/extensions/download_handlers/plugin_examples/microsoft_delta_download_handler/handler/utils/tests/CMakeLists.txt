@@ -14,6 +14,7 @@ target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::adu_types
             aduc::microsoft_delta_download_handler_utils
+            aduc::parser_utils
             aduc::workflow_utils
             Catch2::Catch2)
 

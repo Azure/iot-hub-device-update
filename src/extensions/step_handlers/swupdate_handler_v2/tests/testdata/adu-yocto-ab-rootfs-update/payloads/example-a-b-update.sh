@@ -52,9 +52,9 @@ log_error_pref="\033[1;31m[E]\033[0m"
 # Files and Folders information
 #
 workfolder=
-swu_file=
-output_file=/adu/logs/swpupdate.output
+output_file=/adu/logs/swupdate.output
 log_file=/adu/logs/swupdate.log
+swupdate_log_file=/adu/logs/swupdate_log_file
 result_file=/adu/logs/swupdate.result.json
 
 #
@@ -221,10 +221,11 @@ print_help() {
     echo "File and Folder information"
     echo "==========================="
     echo ""
-    echo "--workfolder              A work-folder (or sandbox folder)."
-    echo "--swu-file                A swu file to install."
+    echo "--work-folder             A work-folder (or sandbox folder)."
+    echo "--swu-file, --image-file  An image file (.swu) file to install."
     echo "--output-file             An output file."
     echo "--log-file                A log file."
+    echo "--swupdate-log-file       A file contains output from swupdate tool."
     echo "--result-file             A file contain ADUC_Result data (in JSON format)."
     echo "--software-version-file   A file contain image version number."
     echo "--public-key-file         A public key file for signature validateion."
@@ -241,7 +242,7 @@ print_help() {
     echo ""
     echo "Scenario: perform install action"
     echo "================================"
-    echo "    <script> --log-level 0 --action-install --intalled-criteria 1.0 --swu-file example-device-update.swu --workfolder <sandbox-folder>"
+    echo "    <script> --log-level 0 --action-install --intalled-criteria 1.0 --swu-file example-device-update.swu --work-folder <sandbox-folder>"
     echo ""
 }
 
@@ -312,15 +313,15 @@ while [[ $1 != "" ]]; do
             error "--swu-file parameter is mandatory."
             $ret 1
         fi
-        swu_file="$1"
-        echo "swu file: $swu_file"
+        image_file="$1"
+        echo "swu file (image_file): $image_file"
         shift
         ;;
 
-    --workfolder)
+    --work-folder)
         shift
         if [[ -z $1 || $1 == -* ]]; then
-            error "--workfolder parameter is mandatory."
+            error "--work-folder parameter is mandatory."
             $ret 1
         fi
         workfolder="$1"
@@ -413,6 +414,16 @@ while [[ $1 != "" ]]; do
         shift
         ;;
 
+    --swupdate-log-file)
+        shift
+        if [[ -z $1 || $1 == -* ]]; then
+            error "--swupdate-log-file parameter is mandatory."
+            $ret 1
+        fi
+        swupdate_log_file="$1"
+        shift
+        ;;
+
     --log-level)
         shift
         if [[ -z $1 || $1 == -* ]]; then
@@ -446,7 +457,7 @@ done
 # Usage: is_installed $installedCriteria $imageVersionFile <out resultCode> <out extendedResultCode> <out resultDetails>
 #
 # shellcheck disable=SC2034
-function is_installed {
+function is_installed() {
     local -n rc=$3  # name reference for resultCode
     local -n erc=$4 # name reference for extendedResultCode
     local -n rd=$5  # name reference for resultDetails
@@ -540,14 +551,14 @@ InstallUpdate() {
     resultCode=0
     extendedResultCode=0
     resultDetails=""
-    ret_val=0
+    ret_val=1
 
     #
     # Note: we could simulate 'component off-line' scenario here.
     #
 
     # Check whether the component is already installed the specified update...
-    is_installed "$software_version_file" "$installed_criteria" resultCode extendedResultCode resultDetails
+    is_installed "$installed_criteria" "$software_version_file" resultCode extendedResultCode resultDetails
 
     is_installed_ret=$?
 
@@ -559,7 +570,7 @@ InstallUpdate() {
     elif [[ $resultCode == 0 ]]; then
         # Failed to determine whether the update has been installed or not.
         # Return current ADUC_Result
-        echo "Failed to determine wehther the update has been installed or note."
+        echo "Failed to determine wehther the update has been installed or not."
     elif [[ $resultCode -eq 901 ]]; then
         # Not installed.
 
@@ -578,14 +589,16 @@ InstallUpdate() {
             # Generated RSA public key from private key using command:
             # openssl rsa -in ${WORKDIR}/priv.pem -out ${WORKDIR}/public.pem -outform PEM -pubout
 
+            ret_val=1
             if [[ ${public_key_file} -eq "" ]]; then
                 # Call swupdate with the image file and no signature validations
-                swupdate -v -i "${image_file}" -e ${selection} &>> "${log_file}"
+                swupdate -v -i "${image_file}" -e ${selection} &>> "${swupdate_log_file}"
+                ret_val=$?
             else
                 # Call swupdate with the image file and the public key for signature validation
-                swupdate -v -i "${image_file}" -k "${public_key_file}" -e ${selection} &>> "${log_file}"
+                swupdate -v -i "${image_file}" -k "${public_key_file}" -e ${selection} &>> "${swupdate_log_file}"
+                ret_val=$?
             fi
-            ret_val=$?
 
             if [[ $ret_val -eq 0 ]]; then
                 resultCode=600
@@ -636,7 +649,7 @@ ApplyUpdate() {
     extendedResultCode=0
     resultDetails=""
 
-    echo "Cancelling update." >> "${log_file}"
+    echo "Applying." >> "${log_file}"
 
     # Set the bootloader environment variable
     # to tell the bootloader to boot into the new partition.
@@ -646,14 +659,18 @@ ApplyUpdate() {
     ret_val=$?
 
     if [[ $ret_val -eq 0 ]]; then
-        if [ "$restart_to_apply" == "yes" ]; then
-            # ADUC_Result_Apply_RequiredImmediateReboot = 705
+
+        log_info "restart_to_apply=$restart_to_apply"
+        log_info "restart_agent_to_apply=$restart_agent_to_apply"
+
+        if [[ ${restart_to_apply} == "yes" ]]; then
+            log_info "Returning ADUC_Result_Apply_RequiredImmediateReboot(705)"
             resultCode=705
-        elif [ "$restart_agent_to_apply" == "yes" ]; then
-            # ADUC_Result_Apply_RequiredImmediateAgentRestart = 707
+        elif [[ ${restart_agent_to_apply} == "yes" ]]; then
+            log_info "Returning ADUC_Result_Apply_RequiredImmediateAgentRestart(707)"
             resultCode=707
         else
-            # ADUC_Result_Apply_Success = 700
+            log_info "Returning ADUC_Result_Apply_Success(700)"
             resultCode=700
         fi
         extendedResultCode=0

@@ -11,6 +11,7 @@
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
 
+#include <aduc/parser_utils.h> // ADUC_FileEntity_Uninit
 #include <aduc/workflow_utils.h>
 #include <fstream>
 #include <parson.h>
@@ -78,15 +79,16 @@ TEST_CASE("workflow_get_update_file with download handler")
     size_t filecount = workflow_get_update_files_count(handle);
     REQUIRE(filecount == 1);
 
-    ADUC_FileEntity* file = nullptr;
-    REQUIRE(workflow_get_update_file(handle, 0, &file));
+    ADUC_FileEntity fileEntity;
+    memset(&fileEntity, 0, sizeof(fileEntity));
+    REQUIRE(workflow_get_update_file(handle, 0, &fileEntity));
 
-    CHECK_THAT(file->DownloadHandlerId, Equals("microsoft/delta:1"));
+    CHECK_THAT(fileEntity.DownloadHandlerId, Equals("microsoft/delta:1"));
 
-    CHECK(file->RelatedFileCount == 1);
-    CHECK(file->RelatedFiles != nullptr);
+    CHECK(fileEntity.RelatedFileCount == 1);
+    CHECK(fileEntity.RelatedFiles != nullptr);
 
-    const auto& relatedFile = file->RelatedFiles[0];
+    const auto& relatedFile = fileEntity.RelatedFiles[0];
 
     CHECK_THAT(relatedFile.FileId, Equals(deltaUpdateFileId));
     CHECK_THAT(relatedFile.DownloadUri, Equals(deltaUpdateFileUrl));
@@ -103,6 +105,8 @@ TEST_CASE("workflow_get_update_file with download handler")
     CHECK_THAT(relatedFile.Properties[0].Value, Equals("SOURCE_UPDATE_HASH"));
     CHECK_THAT(relatedFile.Properties[1].Name, Equals("microsoft.sourceFileHashAlgorithm"));
     CHECK_THAT(relatedFile.Properties[1].Value, Equals("sha256"));
+
+    ADUC_FileEntity_Uninit(&fileEntity);
 }
 
 // clang-format off
@@ -126,10 +130,13 @@ TEST_CASE("workflow_get_update_file - upd metadata missing relatedFile URL")
     {
         ADUC_WorkflowHandle handle = nullptr;
 
-        ADUC_Result result = workflow_init(manifest_missing_related_file_file_url, true /* validateManifest */, &handle);
+        ADUC_Result result =
+            workflow_init(manifest_missing_related_file_file_url, true /* validateManifest */, &handle);
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
-        ADUC_FileEntity* file = nullptr;
-        CHECK_FALSE(workflow_get_update_file(handle, 0, &file));
+        ADUC_FileEntity fileEntity;
+        memset(&fileEntity, 0, sizeof(fileEntity));
+        CHECK_FALSE(workflow_get_update_file(handle, 0, &fileEntity));
+        ADUC_FileEntity_Uninit(&fileEntity);
     }
 }

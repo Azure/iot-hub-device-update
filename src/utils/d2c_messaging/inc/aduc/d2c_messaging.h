@@ -15,8 +15,6 @@
 
 EXTERN_C_BEGIN
 
-#define MILLISECONDS_TO_NANOSECONDS(ms) (ms * 1000000)
-
 /**
  * @brief The message types currently supported by the Device Update Agent.
  */
@@ -27,38 +25,43 @@ typedef enum _tagADUC_D2C_Message_Type
     ADUC_D2C_Message_Type_Device_Information,       /**< deviceInformation interface reported property */
     ADUC_D2C_Message_Type_Diagnostics,              /**< diagnostics interface reported property */
     ADUC_D2C_Message_Type_Diagnostics_ACK,          /**< diagnostics interface ACK */
+    ADUC_D2C_Message_Type_Device_Properties,        /**< deviceUpdate interface reported property */
     ADUC_D2C_Message_Type_Max
 } ADUC_D2C_Message_Type;
 
 typedef enum _tagADUC_D2C_Message_Status
 {
-    ADUC_D2C_Message_Status_Pending = 0,            /**< Waiting to be processed */
-    ADUC_D2C_Message_Status_In_Progress,            /**< Being processed by the messages processor */
-    ADUC_D2C_Message_Status_Waiting_For_Response,   /**< Sent to the cloud, waiting for response */
-    ADUC_D2C_Message_Status_Success,                /**< Message has been processed successfully */
-    ADUC_D2C_Message_Status_Failed,                 /**< A failure occurred. No longer process */
-    ADUC_D2C_Message_Status_Replaced,               /**< Message was replaced by a new one */
-    ADUC_D2C_Message_Status_Canceled,               /**< Message was canceled */
-    ADUC_D2C_Message_Status_Max_Retries_Reached,    /**< Maximum number of retries reached */
+    ADUC_D2C_Message_Status_Pending = 0, /**< Waiting to be processed */
+    ADUC_D2C_Message_Status_In_Progress, /**< Being processed by the messages processor */
+    ADUC_D2C_Message_Status_Waiting_For_Response, /**< Sent to the cloud, waiting for response */
+    ADUC_D2C_Message_Status_Success, /**< Message has been processed successfully */
+    ADUC_D2C_Message_Status_Failed, /**< A failure occurred. No longer process */
+    ADUC_D2C_Message_Status_Replaced, /**< Message was replaced by a new one */
+    ADUC_D2C_Message_Status_Canceled, /**< Message was canceled */
+    ADUC_D2C_Message_Status_Max_Retries_Reached, /**< Maximum number of retries reached */
 } ADUC_D2C_Message_Status;
 
 /**
  * A function used for calculating a delay time before the next retry.
  */
 typedef time_t (*ADUC_D2C_NEXT_RETRY_TIMESTAMP_CALC_FUNC)(
-    int additionalDelaySecs, unsigned int retries, long initialDelayMS, long maxDelaySecs, double maxJitterPercent);
+    int additionalDelaySecs,
+    unsigned int retries,
+    long initialDelayUnitMilliSecs,
+    long maxDelaySecs,
+    double maxJitterPercent);
 
 /**
  * @brief The data structure used for deciding how to handle the response from the cloud.
  */
 typedef struct _tagADUC_D2C_HttpStatus_Retry_Info
 {
-    int httpStatusMin;          /**< Indicates minimum boundary of the http status code */
-    int httpStatusMax;          /**< Indicates minimum boundary of the http status code */
-    int additionalDelaySecs;    /**< An additional wait time before retrying the request */
+    int httpStatusMin; /**< Indicates minimum boundary of the http status code */
+    int httpStatusMax; /**< Indicates minimum boundary of the http status code */
+    int additionalDelaySecs; /**< An additional wait time before retrying the request */
     ADUC_D2C_NEXT_RETRY_TIMESTAMP_CALC_FUNC
-        retryTimestampCalcFunc; /**< A function used to calculate the next retry timestamp */
-    unsigned int maxRetry;      /**< Maximum retries */
+    retryTimestampCalcFunc; /**< A function used to calculate the next retry timestamp */
+    unsigned int maxRetry; /**< Maximum retries */
 } ADUC_D2C_HttpStatus_Retry_Info;
 
 /**
@@ -67,25 +70,25 @@ typedef struct _tagADUC_D2C_HttpStatus_Retry_Info
 typedef struct _tagADUC_D2C_RetryStrategy
 {
     ADUC_D2C_HttpStatus_Retry_Info*
-        httpStatusRetryInfo;            /**< A collection of retry info for each group of of http status codes */
-    size_t httpStatusRetryInfoSize;     /**< Size of httpStatusRetryInfo array */
-    unsigned int maxRetries;            /**< Maximum number of retries */
-    unsigned long maxDelaySecs;         /**< Maximum wait time before retry (in seconds) */
-    unsigned long fallbackWaitTimeSec;  /**< The fallback time when regular timestamp calculation failed. */
-    unsigned long initialDelayMS;       /**< Backoff factor (in milliseconds ) */
-    double maxJitterPercent;            /**< The maximum number of jitter percent (0 - 100)*/
+        httpStatusRetryInfo; /**< A collection of retry info for each group of of http status codes */
+    size_t httpStatusRetryInfoSize; /**< Size of httpStatusRetryInfo array */
+    unsigned int maxRetries; /**< Maximum number of retries */
+    unsigned long maxDelaySecs; /**< Maximum wait time before retry (in seconds) */
+    unsigned long fallbackWaitTimeSec; /**< The fallback time when regular timestamp calculation failed. */
+    unsigned long initialDelayUnitMilliSecs; /**< Backoff factor (in milliseconds ) */
+    double maxJitterPercent; /**< The maximum number of jitter percent (0 - 100)*/
 } ADUC_D2C_RetryStrategy;
 
 /**
  * @brief A callback that is called when the device received a response from the cloud.
- * 
+ *
  */
 typedef bool (*ADUC_D2C_MESSAGE_HTTP_RESPONSE_CALLBACK)(int http_status_code, void* userDataContext);
 
 /**
  * @brief A callback that is called when the message is no longer being processed.
- *        
- *  
+ *
+ *
  */
 typedef void (*ADUC_D2C_MESSAGE_COMPLETED_CALLBACK)(void* message, ADUC_D2C_Message_Status status);
 
@@ -112,17 +115,20 @@ typedef int (*ADUC_D2C_MESSAGE_TRANSPORT_FUNCTION)(
  */
 typedef struct _tagADUC_D2C_Message
 {
-    void* cloudServiceHandle;       /**< The cloud service handle. e.g. ADUC_ClientHandle */
-    const char* originalContent;    /**< The original content (message) */
-    char* content;                  /**< The copy of the original content (message) */
-    time_t contentSubmitTime;       /**< Submit time */
-    ADUC_D2C_MESSAGE_HTTP_RESPONSE_CALLBACK responseCallback;       /**< A callback that is called when received a http response from the cloud */
-    ADUC_D2C_MESSAGE_COMPLETED_CALLBACK completedCallback;          /**< A callback that is called when the message is no longer being processed */
-    ADUC_D2C_MESSAGE_STATUS_CHANGED_CALLBACK statusChangedCallback; /**< A callback that is called when the message status has changed  */
+    void* cloudServiceHandle; /**< The cloud service handle. e.g. ADUC_ClientHandle */
+    const char* originalContent; /**< The original content (message) */
+    char* content; /**< The copy of the original content (message) */
+    time_t contentSubmitTime; /**< Submit time */
+    ADUC_D2C_MESSAGE_HTTP_RESPONSE_CALLBACK
+    responseCallback; /**< A callback that is called when received a http response from the cloud */
+    ADUC_D2C_MESSAGE_COMPLETED_CALLBACK
+    completedCallback; /**< A callback that is called when the message is no longer being processed */
+    ADUC_D2C_MESSAGE_STATUS_CHANGED_CALLBACK
+    statusChangedCallback; /**< A callback that is called when the message status has changed  */
     ADUC_D2C_Message_Status status; /**< The current message status */
-    void* userData;                 /**< A data provided by caller */
-    int lastHttpStatus;             /**< The latest http status code received for this message */
-    unsigned int attempts;          /**< Total number of a send attempts */
+    void* userData; /**< A data provided by caller */
+    int lastHttpStatus; /**< The latest http status code received for this message */
+    unsigned int attempts; /**< Total number of a send attempts */
 } ADUC_D2C_Message;
 
 /**
@@ -132,15 +138,15 @@ typedef struct _tagADUC_D2C_Message_Processing_Context
 {
     ADUC_D2C_Message_Type type; /**< The property type */
 
-    bool initialized;       /**< Indicates whether this thread context is initialized */
-    
-    pthread_mutex_t mutex;  /**< Mutex to protect the thread state */
+    bool initialized; /**< Indicates whether this thread context is initialized */
+
+    pthread_mutex_t mutex; /**< Mutex to protect the thread state */
 
     ADUC_D2C_MESSAGE_TRANSPORT_FUNCTION transportFunc; /**< The function used for sending message to the cloud */
 
-    ADUC_D2C_Message message;       /**< The message data to be send to the cloud service */
+    ADUC_D2C_Message message; /**< The message data to be send to the cloud service */
     ADUC_D2C_RetryStrategy* retryStrategy; /**< Retry strategy information */
-    unsigned int retries;           /**< Number of retries */
+    unsigned int retries; /**< Number of retries */
     time_t nextRetryTimeStampEpoch; /**< The next retry time stamp. This is the time since epoch, in seconds */
 } ADUC_D2C_Message_Processing_Context;
 
@@ -166,10 +172,10 @@ void ADUC_D2C_Messaging_DoWork();
 
 /**
  * @brief Submits the message to messaging utility queue. If the message for specified @p type already exist, it will be replaced by the latest message.
- * 
+ *
  *        IMPORTANT: The implementation of @p responseCallback, @p completedCallback, and @p statusChangedCallback MUST NOT
  *        call any ADUC_D2C_* functions. Otherwise, a dead-lock may occurs.
- * 
+ *
  * @param type The message type.
  * @param cloudServiceHandle An opaque pointer to the underlying cloud service handle.
  *                           By default, this is the handle to an Azure Iot C PnP device client.
@@ -194,9 +200,9 @@ bool ADUC_D2C_Message_SendAsync(
 /**
  * @brief Sets the messaging transport. By default, the messaging utility will send messages to IoT Hub.
  *
- *        IMPORTANT: The implementation of @p transportFunc MUST NOT call any ADUC_D2C_* functions. 
+ *        IMPORTANT: The implementation of @p transportFunc MUST NOT call any ADUC_D2C_* functions.
  *         Otherwise, a dead-lock may occurs.
- * 
+ *
  * @param type The message type.
  * @param transportFunc The message transport function.
  */
@@ -215,7 +221,7 @@ void ADUC_D2C_Messaging_Set_Retry_Strategy(ADUC_D2C_Message_Type type, ADUC_D2C_
  *
  *        IMPORTANT: The implementation of @p c2dResponseHandlerFunc MUST NOT call any ADUC_D2C_* functions.
  *        Otherwise, a dead-lock may occurs.
- * 
+ *
  * @param cloudServiceHandle A pointer to the cloud service handle.
  * @param context The D2C messaging context.
  * @param c2dResponseHandlerFunc The D2C response handler.
@@ -223,19 +229,6 @@ void ADUC_D2C_Messaging_Set_Retry_Strategy(ADUC_D2C_Message_Type type, ADUC_D2C_
  */
 int ADUC_D2C_Default_Message_Transport_Function(
     void* cloudServiceHandle, void* context, ADUC_C2D_RESPONSE_HANDLER_FUNCTION c2dResponseHandlerFunc);
-
-/**
- * @brief A default retry delay calculator function. 
- * 
- * @param additionalDelaySecs Additional delay time, in seconds.
- * @param retries A current retries count.
- * @param initialDelayMS An initial delay time that is used in the calculation function, in milliseconds.     
- * @param maxDelaySecs  A max delay time, in seconds.
- * @param maxJitterPercent A maximum jitter percentage.
- * @return time_t Return a timestamp (since epoch) for the next retry.
- */
-time_t ADUC_D2C_RetryDelayCalculator(int additionalDelaySecs, unsigned int retries, long initialDelayMS, long maxDelaySecs, double maxJitterPercent);
-
 
 EXTERN_C_END
 

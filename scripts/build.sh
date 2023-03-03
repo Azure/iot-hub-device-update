@@ -28,7 +28,7 @@ root_dir=$script_dir/..
 build_clean=false
 build_documentation=false
 build_packages=false
-ubuntu_core_snap_only=false;
+ubuntu_core_snap_only=false
 platform_layer="linux"
 trace_target_deps=false
 content_handlers="microsoft/swupdate,microsoft/apt,microsoft/simulator"
@@ -76,7 +76,7 @@ print_help() {
     echo ""
     echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
     echo ""
-    echo "-u, --ubuntu-core-snap-only           Only build components and features those required for the Ubuntu Core snap."
+    echo "--ubuntu-core-snap-only           Only build components and features those required for the Ubuntu Core snap."
     echo ""
     echo "-h, --help                            Show this help message."
 }
@@ -272,7 +272,7 @@ while [[ $1 != "" ]]; do
         shift
         cmake_dir_path=$1
         ;;
-    -u | --ubuntu-core-snap-only)
+    --ubuntu-core-snap-only)
         shift
         ubuntu_core_snap_only=true
         ;;
@@ -302,11 +302,7 @@ fi
 
 # Set default log dir if not specified.
 if [[ $adu_log_dir == "" ]]; then
-    if [[ $platform_layer == "simulator" ]]; then
-        adu_log_dir=/tmp/aduc-logs
-    else
-        adu_log_dir=$default_log_dir
-    fi
+    adu_log_dir=$default_log_dir
 fi
 
 # For ubuntu core snap...

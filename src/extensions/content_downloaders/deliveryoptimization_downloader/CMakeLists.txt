@@ -6,7 +6,7 @@ compileasc99 ()
 
 find_package (deliveryoptimization_sdk CONFIG REQUIRED)
 
-add_library (${PROJECT_NAME} SHARED)
+add_library (${PROJECT_NAME} MODULE)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_sources (

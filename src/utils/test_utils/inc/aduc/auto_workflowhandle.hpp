@@ -24,7 +24,7 @@ struct AutoWorkflowHandle
     {
         if (handle != nullptr)
         {
-            workflow_uninit(handle);
+            workflow_free(handle);
             handle = nullptr;
         }
     }

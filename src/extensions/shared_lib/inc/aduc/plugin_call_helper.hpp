@@ -8,6 +8,7 @@
 #ifndef PLUGIN_CALL_HELPER
 #define PLUGIN_CALL_HELPER
 
+#include "aduc/plugin_exception.hpp"
 #include "aduc/shared_lib.hpp"
 #include <aduc/result.h>
 
@@ -71,7 +72,8 @@ void CallExportHandlerInternal(IntToType<true>, void* resolvedSym, ADUC_Result* 
 template<typename FunctionSignature, bool ExportReturnsAducResult, typename... Arguments>
 void CallExportHandler(void* resolvedSymbol, ADUC_Result* outResult, Arguments... args)
 {
-    CallExportHandlerInternal<FunctionSignature>(IntToType<ExportReturnsAducResult>(), resolvedSymbol, outResult, args...);
+    CallExportHandlerInternal<FunctionSignature>(
+        IntToType<ExportReturnsAducResult>(), resolvedSymbol, outResult, args...);
 }
 
 /**
@@ -89,9 +91,10 @@ void CallExportHandler(void* resolvedSymbol, ADUC_Result* outResult, Arguments..
  * @param[out] outResult Optional. The ADUC_Result out to set if
  * ExportReturnsAducResult is true.
  * @param args The variadic arguments to pass on to the invoked export function.
+ * @details Can throw aduc::PluginException if it is unable to resolve an export symbol.
  */
 template<typename FunctionSignature, bool ExportReturnsAducResult, typename... Arguments>
-static void CallExport(const char* exportSymbol, const aduc::SharedLib& lib, ADUC_Result* outResult, Arguments... args)
+void CallExport(const char* exportSymbol, const aduc::SharedLib& lib, ADUC_Result* outResult, Arguments... args)
 {
     void* resolvedSymbol = nullptr;
 
@@ -99,15 +102,25 @@ static void CallExport(const char* exportSymbol, const aduc::SharedLib& lib, ADU
     {
         Log_Debug("Looking up symbol '%s'", exportSymbol);
         resolvedSymbol = lib.GetSymbol(exportSymbol);
+    }
+    catch (const std::exception& ex)
+    {
+        Log_Error("Exception calling symbol '%s': %s", exportSymbol, ex.what());
+    }
+    catch (...)
+    {
+        Log_Error("Non std exception when calling symbol '%s'.", exportSymbol);
+    }
 
-        if (resolvedSymbol == nullptr)
-        {
-            Log_Error("Could not resolve export symbol '%s'", exportSymbol);
-        }
-        else
-        {
-            CallExportHandler<FunctionSignature, ExportReturnsAducResult>(resolvedSymbol, outResult, args...);
-        }
+    if (resolvedSymbol == nullptr)
+    {
+        Log_Error("Could not resolve export symbol '%s'", exportSymbol);
+        throw aduc::PluginException("unresolved symbol", exportSymbol);
+    }
+
+    try
+    {
+        CallExportHandler<FunctionSignature, ExportReturnsAducResult>(resolvedSymbol, outResult, args...);
     }
     catch (const std::exception& ex)
     {

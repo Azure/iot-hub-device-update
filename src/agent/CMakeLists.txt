@@ -90,6 +90,7 @@ target_link_libraries (
             aduc::extension_manager
             aduc::extension_utils
             aduc::https_proxy_utils
+            aduc::iothub_communication_manager
             aduc::logging
             aduc::permission_utils
             aduc::pnp_helper
@@ -143,9 +144,8 @@ target_compile_definitions (
             ADUC_UBUNTU_CORE_SNAP_ONLY="${ADUC_UBUNTU_CORE_SNAP_ONLY}"
             SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}")
 
-if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
-    target_compile_definitions (${target_name} PRIVATE ADUC_PLATFORM_SIMULATOR)
-elseif (NOT ADUC_UBUNTU_CORE_SNAP_ONLY)
+
+if (NOT ADUC_UBUNTU_CORE_SNAP_ONLY)
     find_package (deliveryoptimization_sdk CONFIG REQUIRED)
     target_link_libraries (${target_name} PRIVATE Microsoft::deliveryoptimization)
 else ()

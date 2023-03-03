@@ -13,20 +13,20 @@
 
 #include "azure_c_shared_utility/sha.h" // for SHAversion
 
-#include <stdbool.h> // for _Bool
+#include <stdbool.h> // for bool
 #include <stddef.h> // for size_t
 
 EXTERN_C_BEGIN
 
-_Bool ADUC_HashUtils_IsValidFileHash(
+bool ADUC_HashUtils_IsValidFileHash(
     const char* path, const char* hashBase64, SHAversion algorithm, bool suppressErrorLog);
 
-_Bool ADUC_HashUtils_IsValidBufferHash(
+bool ADUC_HashUtils_IsValidBufferHash(
     const uint8_t* buffer, size_t bufferLen, const char* hashBase64, SHAversion algorithm);
 
-_Bool ADUC_HashUtils_GetShaVersionForTypeString(const char* hashTypeStr, SHAversion* algorithm);
+bool ADUC_HashUtils_GetShaVersionForTypeString(const char* hashTypeStr, SHAversion* algorithm);
 
-_Bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** hash);
+bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** hash);
 
 /**
  * @brief Get file hash type at specified index.
@@ -55,7 +55,7 @@ char* ADUC_HashUtils_GetHashValue(const ADUC_Hash* hashArray, size_t arraySize, 
  * @param hashType The type of the hash
  * @returns True if successfully allocated, False if failure
  */
-_Bool ADUC_Hash_Init(ADUC_Hash* hash, const char* hashValue, const char* hashType);
+bool ADUC_Hash_Init(ADUC_Hash* hash, const char* hashValue, const char* hashType);
 
 /**
  * @brief Free the ADUC_Hash struct members
@@ -76,9 +76,9 @@ void ADUC_Hash_FreeArray(size_t hashCount, ADUC_Hash* hashArray);
  * @param filePath The path to the file with contents to hash.
  * @param hashes The array of ADUC_Hash objects.
  * @param hashCount The length of the array.
- * @return _Bool true if the hash with the strongest algorithm matches the hash of the file at the given path.
+ * @return bool true if the hash with the strongest algorithm matches the hash of the file at the given path.
  */
-_Bool ADUC_HashUtils_VerifyWithStrongestHash(const char* filePath, const ADUC_Hash* hashes, size_t hashCount);
+bool ADUC_HashUtils_VerifyWithStrongestHash(const char* filePath, const ADUC_Hash* hashes, size_t hashCount);
 
 EXTERN_C_END
 

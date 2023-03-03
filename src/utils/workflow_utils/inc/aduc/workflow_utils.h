@@ -233,20 +233,20 @@ size_t workflow_get_update_files_count(ADUC_WorkflowHandle handle);
  *
  * @param handle A workflow data object handle.
  * @param index An index of the file to get.
- * @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
- * @return true If succeeded.
+ * @param entity An output file entity object. Caller must uninitialize it via ADUC_FileEntity_Uninit when done.
+ * @return true on success.
  */
-bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity** entity);
+bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity* entity);
 
 /**
  * @brief Gets the update file entity by name.
  *
- * @param handle A workflow data object handle.
- * @param fileName File name.
-* @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
- * @return true If succeeded.
+ * @param[in] handle A workflow data object handle.
+ * @param[in] fileName File name.
+ * @param[out] entity An output file entity object. Caller must uninitialize it via ADUC_FileEntity_Uninit().
+ * @return true on success.
  */
-bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fileName, ADUC_FileEntity** entity);
+bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fileName, ADUC_FileEntity* entity);
 
 /**
  * @brief Gets the inode associated with the update file entity at the specified index.
@@ -278,19 +278,12 @@ size_t workflow_get_bundle_updates_count(ADUC_WorkflowHandle handle);
 /**
  * @brief Gets a bundle update file at specified index.
  *
- * @param handle A workflow data object handle.
- * @param index An index of the file to get.
- * @param entity An output file entity object. Caller must free the object with workflow_free_file_entity().
- * @return true If succeeded.
+ * @param[in] handle A workflow data object handle.
+ * @param[in] index An index of the file to get.
+ * @param[out] entity An output file entity object.
+ * @return true on success.
  */
-bool workflow_get_bundle_updates_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity** entity);
-
-/**
- * @brief Free specified file entity object.
- *
- * @param entity A pointer to file entity object to be freed.
- */
-void workflow_free_file_entity(ADUC_FileEntity* entity);
+bool workflow_get_bundle_updates_file(ADUC_WorkflowHandle handle, size_t index, ADUC_FileEntity* entity);
 
 /**
  * @brief Get an Update Manifest property (string) without copying the value.
@@ -438,7 +431,7 @@ ADUC_WorkflowHandle workflow_get_child(ADUC_WorkflowHandle handle, int index);
  * @param index An index indicate the location the @p childHandle will be inserted at.
  *              To insert at the end of the list, pass '-1'.
  * @param childHandle A child workflow object handle.
- * @return true If succeeded.
+ * @return true on success.
  */
 bool workflow_insert_child(ADUC_WorkflowHandle handle, int index, ADUC_WorkflowHandle childHandle);
 
@@ -721,13 +714,12 @@ workflow_peek_update_manifest_handler_properties_string(ADUC_WorkflowHandle hand
 /**
  * @brief Gets a reference step update manifest file at specified index.
  *
- * @param handle A workflow data object handle.
- * @param stepIndex A step index.
- * @param entity An output reference step update manifest file entity object.
- *               Caller must free the object with workflow_free_file_entity().
- * @return Returns true if succeeded.
+ * @param[in] handle A workflow data object handle.
+ * @param[in] stepIndex A step index.
+ * @param[out] entity An output reference step update manifest file entity object.
+ * @return Returns true on success.
  */
-bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t stepIndex, ADUC_FileEntity** entity);
+bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t stepIndex, ADUC_FileEntity* entity);
 
 /**
  * @brief Gets a serialized json string of the specified workflow's Update Manifest.
@@ -744,16 +736,16 @@ char* workflow_get_serialized_update_manifest(ADUC_WorkflowHandle handle, bool p
  * @param workflowHandle The workflow handle.
  * @param entity The file entity.
  * @param outFilePath The resultant work folder file path to the file entity.
- * @return _Bool true if success
+ * @return bool true if success
  * @remark Caller will own the STRING_HANDLE outFilePath and must call STRING_delete on it.
  */
-_Bool workflow_get_entity_workfolder_filepath(
+bool workflow_get_entity_workfolder_filepath(
     ADUC_WorkflowHandle workflowHandle, const ADUC_FileEntity* entity, STRING_HANDLE* outFilePath);
 
 /**
  * @brief Gets boolean indicates whether to bypass duplicate workflow check, and always process the update.
  */
-_Bool workflow_get_force_update(ADUC_WorkflowHandle workflowHandle);
+bool workflow_get_force_update(ADUC_WorkflowHandle workflowHandle);
 
 /**
  * @brief Sets boolean indicates whether to bypass duplicate workflow check, and always process the update.

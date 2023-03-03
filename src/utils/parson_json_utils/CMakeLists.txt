@@ -6,9 +6,14 @@ add_library (${PROJECT_NAME} STATIC src/parson_json_utils.c)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories (${PROJECT_NAME} PUBLIC inc)
 
+#
+# Turn -fPIC on, in order to use this library in another shared library.
+#
+set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 find_package (Parson REQUIRED)
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aduc::c_utils
-    PRIVATE aduc::logging aziotsharedutil Parson::parson umock_c)
+    PUBLIC aduc::c_utils Parson::parson
+    PRIVATE aduc::logging aziotsharedutil umock_c)

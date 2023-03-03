@@ -203,7 +203,7 @@ print_help() {
     echo "File and Folderinformation"
     echo "=========================="
     echo ""
-    echo "--workfolder            A work-folder (or sandbox folder)."
+    echo "--work-folder           A work-folder (or sandbox folder)."
     echo "--swu-file              A swu file to install."
     echo "--swu-log-file          A log file for swupdate command."
     echo "--output-file           An output file."
@@ -290,10 +290,10 @@ while [[ $1 != "" ]]; do
         shift
         ;;
 
-    --workfolder)
+    --work-folder)
         shift
         if [[ -z $1 || $1 == -* ]]; then
-            error "--workfolder parameter is mandatory."
+            error "--work-folder parameter is mandatory."
             $ret 1
         fi
         workfolder="$1"
@@ -419,12 +419,12 @@ done
 # Usage: is_installed $installedCriteria $softwareVersionFile <out resultCode> <out extendedResultCode> <out resultDetails>
 #
 # shellcheck disable=SC2034
-function is_installed {
+function is_installed() {
     local -n rc=$3  # name reference for resultCode
     local -n erc=$4 # name reference for extendedResultCode
     local -n rd=$5  # name reference for resultDetails
 
-    if ! [[ -f $2 ]]; then
+    if ! [[ -f $software_version_file ]]; then
         rc=901
         make_swupdate_handler_erc 100 erc
         rd="Software version file doesn't exists."

@@ -48,17 +48,14 @@ static const char level_names[] = { 'D', 'I', 'W', 'E' }; // Must align with ZLO
 static FILE* zlog_fout = NULL;
 static char* zlog_file_log_dir = NULL;
 static char* zlog_file_log_prefix = NULL;
+static time_t zlog_last_flushed = 0;
 
 char _zlog_buffer[ZLOG_BUFFER_MAXLINES][ZLOG_BUFFER_LINE_MAXCHARS];
 static int _zlog_buffer_count = 0;
 static pthread_mutex_t _zlog_buffer_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_t _zlog_flush_thread;
-static _Bool _is_flush_thread_initialized = false;
 
-void zlog_init_flush_thread(void);
-void zlog_stop_flush_thread(void);
 struct tm* get_current_utctime();
-_Bool get_current_utctime_filename(char* fullpath, size_t fullpath_len);
+bool get_current_utctime_filename(char* fullpath, size_t fullpath_len);
 static inline void _zlog_buffer_lock(void);
 static inline void _zlog_buffer_unlock(void);
 static void _zlog_roll_over_if_file_size_too_large(int additional_log_len);
@@ -67,7 +64,7 @@ static inline char* zlog_lock_and_get_buffer(void);
 static inline void zlog_finish_buffer_and_unlock(void);
 void zlog_ensure_at_most_n_logfiles(int max_num);
 
-static _Bool zlog_is_file_log_open()
+static bool zlog_is_file_log_open()
 {
     return zlog_fout != NULL;
 }
@@ -81,12 +78,12 @@ static void zlog_close_file_log()
     }
 }
 
-static _Bool zlog_is_stdout_a_tty()
+static bool zlog_is_stdout_a_tty()
 {
     return (isatty(fileno(stdout)) != 0);
 }
 
-static _Bool zlog_term_supports_color()
+static bool zlog_term_supports_color()
 {
     const char* term = getenv("TERM");
     if (term != NULL)
@@ -126,6 +123,10 @@ int zlog_init(
     enum ZLOG_SEVERITY console_level,
     enum ZLOG_SEVERITY file_level)
 {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    zlog_last_flushed = tv.tv_sec;
+
     memset(&log_setting, 0, sizeof(log_setting));
     log_setting.console_level = console_level;
     log_setting.file_level = file_level;
@@ -183,10 +184,6 @@ int zlog_init(
         log_debug("Log file created: %s", zlog_file_log_fullpath);
 
         zlog_ensure_at_most_n_logfiles(ZLOG_MAX_FILE_COUNT);
-
-#ifndef ZLOG_FORCE_FLUSH_BUFFER
-        zlog_init_flush_thread();
-#endif
     }
     return 0;
 }
@@ -202,9 +199,6 @@ void zlog_flush_buffer(void)
 // Caller should NOT hold the lock
 void zlog_finish(void)
 {
-#ifndef ZLOG_FORCE_FLUSH_BUFFER
-    zlog_stop_flush_thread();
-#endif
     zlog_flush_buffer();
 
     zlog_close_file_log();
@@ -237,9 +231,9 @@ void zlog_finish(void)
 
 void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, ...)
 {
-    const _Bool console_log_needed =
+    const bool console_log_needed =
         (log_setting.console_logging_mode != ZLOG_CLM_DISABLED) && (msg_level >= log_setting.console_level);
-    const _Bool file_log_needed = zlog_is_file_log_open() && (msg_level >= log_setting.file_level);
+    const bool file_log_needed = zlog_is_file_log_open() && (msg_level >= log_setting.file_level);
 
     if (!console_log_needed && !file_log_needed)
     {
@@ -286,7 +280,7 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
     va_start(va, fmt);
     int full_log_len = vsnprintf(va_buffer, sizeof(va_buffer) / sizeof(va_buffer[0]), fmt, va);
     // A return value of size or more means that the output was truncated.
-    _Bool log_truncated = full_log_len >= (sizeof(va_buffer) / sizeof(va_buffer[0]));
+    bool log_truncated = full_log_len >= (sizeof(va_buffer) / sizeof(va_buffer[0]));
     va_end(va);
 
     if (console_log_needed)
@@ -374,80 +368,11 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
         }
     }
 
-    if (msg_level == ZLOG_ERROR)
+    if (msg_level == ZLOG_ERROR || (seconds - zlog_last_flushed) >= ZLOG_FLUSH_INTERVAL_SEC)
     {
-        zlog_request_flush_buffer();
+        zlog_flush_buffer();
+        zlog_last_flushed = seconds;
     }
-}
-
-bool g_flushRequested = false;
-
-void zlog_request_flush_buffer(void)
-{
-    g_flushRequested = true;
-}
-
-// Buffer flushing thread
-// Flush the thread every ZLOG_FLUSH_INTERVAL_SEC seconds
-// or when buffer is 80% full
-// or when g_flushRequested is true
-//
-// Caller should NOT hold the lock
-static void* zlog_buffer_flush_thread()
-{
-    struct timeval tv;
-    time_t lasttime;
-
-    gettimeofday(&tv, NULL);
-    lasttime = tv.tv_sec;
-
-    do
-    {
-        time_t curtime;
-
-        sleep(ZLOG_SLEEP_TIME_SEC);
-        gettimeofday(&tv, NULL);
-        curtime = tv.tv_sec;
-        if (g_flushRequested || ((curtime - lasttime) >= ZLOG_FLUSH_INTERVAL_SEC))
-        {
-            g_flushRequested = false;
-            zlog_flush_buffer();
-            lasttime = curtime;
-        }
-        else
-        {
-            _zlog_buffer_lock();
-            if (_zlog_buffer_count >= ZLOG_BUFFER_FLUSH_MAXLINES)
-            {
-                _zlog_flush_buffer();
-            }
-            _zlog_buffer_unlock();
-        }
-    } while (1);
-    return NULL;
-}
-
-void zlog_init_flush_thread(void)
-{
-    if (pthread_create(&_zlog_flush_thread, NULL, zlog_buffer_flush_thread, NULL) == 0)
-    {
-        _is_flush_thread_initialized = true;
-    }
-}
-
-// Caller should NOT hold the lock
-void zlog_stop_flush_thread(void)
-{
-    // To prevent deadlock if flush thread calls zlog_flush_buffer but
-    // gets terminated before calling unlock
-    _zlog_buffer_lock();
-    if (_is_flush_thread_initialized)
-    {
-        pthread_cancel(_zlog_flush_thread);
-        pthread_join(_zlog_flush_thread, NULL);
-        _is_flush_thread_initialized = false;
-    }
-    _zlog_buffer_unlock();
 }
 
 // ------------------------- Helper Functions ---------------------------
@@ -467,7 +392,7 @@ static inline void _zlog_buffer_unlock(void)
     pthread_mutex_unlock(&_zlog_buffer_mutex);
 }
 
-_Bool get_current_utctime_filename(char* fullpath, size_t fullpath_len)
+bool get_current_utctime_filename(char* fullpath, size_t fullpath_len)
 {
     // Timestamp the log file
     char timebuf[sizeof("20200819-19181597864683")];

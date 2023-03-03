@@ -10,23 +10,23 @@
 
 #include "aduc/types/update_content.h" // ADUC_FileEntity
 #include "aduc/types/workflow.h" // ADUC_WorkflowHandle
-#include <stdbool.h> // _Bool
+#include <stdbool.h> // bool
 
 EXTERN_C_BEGIN
 
-_Bool GetDownloadHandlerFileEntity(const char* downloadHandlerId, ADUC_FileEntity* fileEntity);
+bool GetDownloadHandlerFileEntity(const char* downloadHandlerId, ADUC_FileEntity* fileEntity);
 
-_Bool GetExtensionFileEntity(const char* extensionRegFile, ADUC_FileEntity* fileEntity);
+bool GetExtensionFileEntity(const char* extensionRegFile, ADUC_FileEntity* fileEntity);
 
-_Bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFilePath);
+bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFilePath);
 
-_Bool RegisterDownloadHandler(const char* downloadHandlerId, const char* handlerFilePath);
+bool RegisterDownloadHandler(const char* downloadHandlerId, const char* handlerFilePath);
 
-_Bool RegisterComponentEnumeratorExtension(const char* extensionFilePath);
+bool RegisterComponentEnumeratorExtension(const char* extensionFilePath);
 
-_Bool RegisterContentDownloaderExtension(const char* extensionFilePath);
+bool RegisterContentDownloaderExtension(const char* extensionFilePath);
 
-_Bool RegisterExtension(const char* extensionDir, const char* extensionFilePath);
+bool RegisterExtension(const char* extensionDir, const char* extensionFilePath);
 
 EXTERN_C_END
 

@@ -28,10 +28,10 @@ typedef struct tagFileInfo
     time_t lastWrite; //!< the last time the file was modified
 } FileInfo;
 
-_Bool FileInfoUtils_GetNewestFilesInDirUnderSize(
+bool FileInfoUtils_GetNewestFilesInDirUnderSize(
     VECTOR_HANDLE* fileNameVector, const char* directoryPath, const unsigned int maxFileSize);
 
-_Bool FileInfoUtils_InsertFileInfoIntoArray(
+bool FileInfoUtils_InsertFileInfoIntoArray(
     FileInfo* sortedLogFiles,
     size_t sortedLogFileLength,
     const char* candidateFileName,

@@ -8,6 +8,7 @@
  */
 
 #include "aduc/source_update_cache_utils.h"
+#include <aduc/parser_utils.h> // ADUC_FileEntity_Uninit
 #include <aduc/path_utils.h> // SanitizePathSegment
 #include <aduc/string_c_utils.h> // IsNullOrEmpty
 #include <aduc/system_utils.h> // ADUC_SystemUtils_*
@@ -149,7 +150,8 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
 {
     ADUC_Result result = { .ResultCode = ADUC_Result_Failure };
     int res = -1;
-    ADUC_FileEntity* fileEntity = NULL;
+    ADUC_FileEntity fileEntity;
+    memset(&fileEntity, 0, sizeof(fileEntity));
     STRING_HANDLE sandboxUpdatePayloadFile = NULL;
     ADUC_UpdateId* updateId = NULL;
     STRING_HANDLE updateCacheFilePath = NULL;
@@ -158,16 +160,13 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
     size_t countPayloads = workflow_get_update_files_count(workflowHandle);
     for (size_t index = 0; index < countPayloads; ++index)
     {
-        workflow_free_file_entity(fileEntity);
-        fileEntity = NULL;
-
         if (!workflow_get_update_file(workflowHandle, index, &fileEntity))
         {
             Log_Error("get update file %d", index);
             goto done;
         }
 
-        workflow_get_entity_workfolder_filepath(workflowHandle, fileEntity, &sandboxUpdatePayloadFile);
+        workflow_get_entity_workfolder_filepath(workflowHandle, &fileEntity, &sandboxUpdatePayloadFile);
 
         result = workflow_get_expected_update_id(workflowHandle, &updateId);
         if (IsAducResultCodeFailure(result.ResultCode))
@@ -186,8 +185,8 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
         }
 
         const char* provider = updateId->Provider;
-        const char* hash = (fileEntity->Hash[0]).value;
-        const char* alg = (fileEntity->Hash[0]).type;
+        const char* hash = (fileEntity.Hash[0]).value;
+        const char* alg = (fileEntity.Hash[0]).type;
 
         updateCacheFilePath =
             ADUC_SourceUpdateCacheUtils_CreateSourceUpdateCachePath(provider, hash, alg, updateCacheBasePath);
@@ -220,8 +219,7 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
         // errno EXDEV would be common if copying across different mount points.
         // For any failure, it falls back to copy.
 
-        Log_Debug(
-            "moving '%s' -> '%s'", STRING_c_str(sandboxUpdatePayloadFile), STRING_c_str(updateCacheFilePath));
+        Log_Debug("moving '%s' -> '%s'", STRING_c_str(sandboxUpdatePayloadFile), STRING_c_str(updateCacheFilePath));
 
         res = rename(STRING_c_str(sandboxUpdatePayloadFile), STRING_c_str(updateCacheFilePath));
         if (res != 0)
@@ -240,16 +238,25 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
             }
         }
 
+        ADUC_FileEntity_Uninit(&fileEntity);
+
+        ADUC_UpdateId_UninitAndFree(updateId);
+        updateId = NULL;
+
         STRING_delete(updateCacheFilePath);
         updateCacheFilePath = NULL;
+
+        STRING_delete(sandboxUpdatePayloadFile);
+        sandboxUpdatePayloadFile = NULL;
     }
 
     result.ResultCode = ADUC_Result_Success;
 
 done:
+    ADUC_FileEntity_Uninit(&fileEntity);
+    ADUC_UpdateId_UninitAndFree(updateId);
     STRING_delete(sandboxUpdatePayloadFile);
     STRING_delete(updateCacheFilePath);
-    workflow_free_file_entity(fileEntity);
 
     return result;
 }
