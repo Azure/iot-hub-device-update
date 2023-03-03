@@ -21,7 +21,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define FILENAME "/home/shiyi/tmp_eis/test.txt"
+#define FILENAME "/etc/adu/ais-data.json"
 
 //
 // IdentityService Response FieldNames
@@ -441,7 +441,7 @@ void EISConnectionFileWriter(uint32_t timeoutMS, char* identityResponseStr)
 {
     // printf("Child process (PID %d) was created by parent process (PID %d).\n", getpid(), getppid());
 
-    struct passwd* pw = getpwnam("aziot-snap-du"); // get user information for aziot-snap-du
+    struct passwd* pw = getpwnam("snap_aziot_du"); // get user information for aziot-snap-du
     if (pw == NULL)
     {
         fprintf(stderr, "Error: could not get user information for aziot-snap-du.\n");
@@ -454,9 +454,13 @@ void EISConnectionFileWriter(uint32_t timeoutMS, char* identityResponseStr)
         fprintf(stderr, "Error: could not change effective user ID to aziot-snap-du. Error code: %d\n", errno);
         exit(1);
     }
+    printf("Current UID calling AIS: %d\n", uid);
 
     EISErr identityResult = RequestIdentitiesFromEIS(timeoutMS, &identityResponseStr);
 
+    printf("identityResponseStr: %s\n", identityResponseStr);
+    printf("identityResult: %d\n", identityResult);
+    
     if (identityResponseStr != NULL)
     {
         FILE* fp = fopen(FILENAME, "w+");
@@ -566,6 +570,7 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
     }
     else if (pid == 0)
     { // child process
+        printf("Child process (PID %d) running...\n", getpid());
         EISConnectionFileWriter(timeoutMS, identityResponseStr);
     }
     else
