@@ -8,6 +8,7 @@
 #include "file_info_utils.h"
 
 #include <aduc/c_utils.h>
+#include <aduc/calloc_wrapper.hpp>
 #include <catch2/catch.hpp>
 #include <ctime>
 #include <time.h>
@@ -37,9 +38,8 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
             testSizeOfCandidateFile,
             testCandidateLastWrite));
 
+        ADUC::StringUtils::cstr_wrapper fileNameSentinel{ sortedLogFileArray[0].fileName };
         CHECK(strcmp(sortedLogFileArray[0].fileName, testCandidateFileName) == 0);
-
-        free(sortedLogFileArray[0].fileName);
     }
 
     SECTION("Insert files up to limit and try and add another")
@@ -51,77 +51,82 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
         size_t testSizeOfCandidateFile = 1024;
         const auto testCandidateLastWrite = static_cast<time_t>(time(nullptr));
 
-        CHECK(FileInfoUtils_InsertFileInfoIntoArray(
-            sortedLogFileArray,
-            sortedLogFileArraySize,
-            testCandidateFileName,
-            testSizeOfCandidateFile,
-            testCandidateLastWrite));
+        {
+            CHECK(FileInfoUtils_InsertFileInfoIntoArray(
+                sortedLogFileArray,
+                sortedLogFileArraySize,
+                testCandidateFileName,
+                testSizeOfCandidateFile,
+                testCandidateLastWrite));
 
-        CHECK(strcmp(sortedLogFileArray[0].fileName, testCandidateFileName) == 0);
-        free(sortedLogFileArray[0].fileName);
-        sortedLogFileArray[0].fileName = nullptr;
+            ADUC::StringUtils::cstr_wrapper fileNameSentinel{ sortedLogFileArray[0].fileName };
+            CHECK(strcmp(sortedLogFileArray[0].fileName, testCandidateFileName) == 0);
+        }
 
-        const char* secondTestCandidateFileName = "bar";
-        const auto secondTestCandidateLastWrite = static_cast<time_t>(
-            time(nullptr)
-            + 1); // Note: set 1 second in the future so we know this value will be put before the current values
+        {
+            const char* secondTestCandidateFileName = "bar";
+            const auto secondTestCandidateLastWrite = static_cast<time_t>(
+                time(nullptr)
+                + 1); // Note: set 1 second in the future so we know this value will be put before the current values
 
-        CHECK(FileInfoUtils_InsertFileInfoIntoArray(
-            sortedLogFileArray,
-            sortedLogFileArraySize,
-            secondTestCandidateFileName,
-            testCandidateLastWrite,
-            secondTestCandidateLastWrite));
+            CHECK(FileInfoUtils_InsertFileInfoIntoArray(
+                sortedLogFileArray,
+                sortedLogFileArraySize,
+                secondTestCandidateFileName,
+                testCandidateLastWrite,
+                secondTestCandidateLastWrite));
 
-        CHECK(strcmp(sortedLogFileArray[0].fileName, secondTestCandidateFileName) == 0);
-        // do not free here since next call to FileInfoUtils_InsertFileInfoIntoArray
-        // is supposed to fail so will not be changing sortedLogFileArray.
+            ADUC::StringUtils::cstr_wrapper fileNameSentinel{ sortedLogFileArray[0].fileName };
+            CHECK(strcmp(sortedLogFileArray[0].fileName, secondTestCandidateFileName) == 0);
+            // do not free here since next call to FileInfoUtils_InsertFileInfoIntoArray
+            // is supposed to fail so will not be changing sortedLogFileArray.
 
-        const char* thirdTestCandidateFileName = "microsoft";
-        size_t thirTestSizeOfCandidateFile = 1024;
+            const char* thirdTestCandidateFileName = "microsoft";
 
-        // Because the last write time is the same as the first then this file should be rejected and FileInfoUtils_InsertFileInfoIntoArray should be the same as before
-        CHECK_FALSE(FileInfoUtils_InsertFileInfoIntoArray(
-            sortedLogFileArray,
-            sortedLogFileArraySize,
-            thirdTestCandidateFileName,
-            testSizeOfCandidateFile,
-            testCandidateLastWrite));
+            // Because the last write time is the same as the first then this file should be rejected and FileInfoUtils_InsertFileInfoIntoArray should be the same as before
+            CHECK_FALSE(FileInfoUtils_InsertFileInfoIntoArray(
+                sortedLogFileArray,
+                sortedLogFileArraySize,
+                thirdTestCandidateFileName,
+                testSizeOfCandidateFile,
+                testCandidateLastWrite));
 
-        // With no change secondTestCandidateFileName should still be at the front
-        CHECK(strcmp(sortedLogFileArray[0].fileName, secondTestCandidateFileName) == 0);
-        free(sortedLogFileArray[0].fileName);
-        sortedLogFileArray[0].fileName = nullptr;
+            // With no change secondTestCandidateFileName should still be at the front
+            CHECK(strcmp(sortedLogFileArray[0].fileName, secondTestCandidateFileName) == 0);
+        }
     }
     SECTION("Replace an older file with a newer one")
     {
-        const size_t sortedLogFileArraySize = 1;
-        FileInfo sortedLogFileArray[sortedLogFileArraySize] = {};
+        constexpr size_t sortedLogFileArraySize = 1;
 
         const char* oldFileName = "foo";
         const size_t oldFileSize = 512;
         const auto oldFileLastWrite = static_cast<time_t>(time(nullptr)); // Note: set time to now
 
-        CHECK(FileInfoUtils_InsertFileInfoIntoArray(
-            sortedLogFileArray, sortedLogFileArraySize, oldFileName, oldFileSize, oldFileLastWrite));
+        {
+            FileInfo sortedLogFileArray[sortedLogFileArraySize] = {};
+            CHECK(FileInfoUtils_InsertFileInfoIntoArray(
+                sortedLogFileArray, sortedLogFileArraySize, oldFileName, oldFileSize, oldFileLastWrite));
 
-        CHECK(strcmp(sortedLogFileArray[0].fileName, oldFileName) == 0);
-        free(sortedLogFileArray[0].fileName);
-        sortedLogFileArray[0].fileName = nullptr;
+            ADUC::StringUtils::cstr_wrapper fileNameSentinel{ sortedLogFileArray[0].fileName };
+            CHECK(strcmp(sortedLogFileArray[0].fileName, oldFileName) == 0);
+        }
 
         const char* newerFileName = "bar";
         const size_t newerFileSize = 512;
         const auto newFileLastWrite =
             static_cast<time_t>(time(nullptr) + 10); // Note: ensure the new file is newer than the old
 
-        CHECK(FileInfoUtils_InsertFileInfoIntoArray(
-            sortedLogFileArray, sortedLogFileArraySize, newerFileName, newerFileSize, newFileLastWrite));
+        {
+            FileInfo sortedLogFileArray[sortedLogFileArraySize] = {};
+            CHECK(FileInfoUtils_InsertFileInfoIntoArray(
+                sortedLogFileArray, sortedLogFileArraySize, newerFileName, newerFileSize, newFileLastWrite));
 
-        CHECK(strcmp(sortedLogFileArray[0].fileName, newerFileName) == 0);
-        CHECK(sortedLogFileArray[0].lastWrite == newFileLastWrite);
-        CHECK(sortedLogFileArray[0].fileSize == newerFileSize);
-        free(sortedLogFileArray[0].fileName);
-        sortedLogFileArray[0].fileName = nullptr;
+            ADUC::StringUtils::cstr_wrapper fileNameSentinel{ sortedLogFileArray[0].fileName };
+
+            CHECK(strcmp(sortedLogFileArray[0].fileName, newerFileName) == 0);
+            CHECK(sortedLogFileArray[0].lastWrite == newFileLastWrite);
+            CHECK(sortedLogFileArray[0].fileSize == newerFileSize);
+        }
     }
 }

@@ -10,6 +10,7 @@
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
 
+#include <aduc/calloc_wrapper.hpp>
 #include <array>
 #include <fstream>
 #include <unordered_map>
@@ -114,12 +115,9 @@ TEST_CASE("ADUC_HashUtils_GetFileHash - SmallFile")
     SECTION("Verify file hash")
     {
         INFO("SHAversion: " << version);
-        char* hash = nullptr;
-        REQUIRE(ADUC_HashUtils_GetFileHash(testFile.Filename(), version, &hash));
-        CHECK_THAT(hash, Equals(testFile.GetDataHashBase64(version)));
-        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc)
-        free(hash);
-        hash = nullptr;
+        ADUC::StringUtils::cstr_wrapper hash;
+        REQUIRE(ADUC_HashUtils_GetFileHash(testFile.Filename(), version, hash.address_of()));
+        CHECK_THAT(hash.get(), Equals(testFile.GetDataHashBase64(version)));
     }
 }
 
@@ -301,11 +299,8 @@ TEST_CASE("ADUC_HashUtils_GetFileHash - LargeFile")
     SECTION("Verify file hash")
     {
         INFO("SHAversion: " << version);
-        char* hash = nullptr;
-        REQUIRE(ADUC_HashUtils_GetFileHash(testFile.Filename(), version, &hash));
-        CHECK_THAT(hash, Equals(testFile.GetDataHashBase64(version)));
-        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc)
-        free(hash);
-        hash = nullptr;
+        ADUC::StringUtils::cstr_wrapper hash;
+        REQUIRE(ADUC_HashUtils_GetFileHash(testFile.Filename(), version, hash.address_of()));
+        CHECK_THAT(hash.get(), Equals(testFile.GetDataHashBase64(version)));
     }
 }

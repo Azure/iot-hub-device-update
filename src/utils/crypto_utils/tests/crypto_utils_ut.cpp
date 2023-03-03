@@ -11,9 +11,6 @@
 #include <catch2/catch.hpp>
 #include <cstring>
 
-using ADUC::StringUtils::cstr_wrapper;
-using uint8_t_wrapper = ADUC::StringUtils::calloc_wrapper<uint8_t>;
-
 TEST_CASE("Base64 Encoding")
 {
     SECTION("Encoding a Base64 URL ")
@@ -23,7 +20,7 @@ TEST_CASE("Base64 Encoding")
 
         const char* expected_output = "fHx8fFxcXC8vLy8_fX1-fg";
 
-        cstr_wrapper output{ Base64URLEncode(test_bytes.data(), test_bytes.size()) };
+        ADUC::StringUtils::cstr_wrapper output{ Base64URLEncode(test_bytes.data(), test_bytes.size()) };
 
         CHECK(output.get() != nullptr);
 
@@ -39,7 +36,7 @@ TEST_CASE("Base64 Decoding")
                                                        '/', '/', '/', '?', '}',  '}',  '~',  '~' };
         const std::string test_input = "fHx8fFxcXC8vLy8_fX1-fg==";
 
-        uint8_t_wrapper output_handle;
+        ADUC::StringUtils::calloc_wrapper<uint8_t> output_handle;
         size_t out_len = Base64URLDecode(test_input.c_str(), output_handle.address_of());
 
         CHECK(out_len == expected_output.size());
