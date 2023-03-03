@@ -38,7 +38,10 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
             testCandidateLastWrite));
 
         CHECK(strcmp(sortedLogFileArray[0].fileName, testCandidateFileName) == 0);
+
+        free(sortedLogFileArray[0].fileName);
     }
+
     SECTION("Insert files up to limit and try and add another")
     {
         const size_t sortedLogFileArraySize = 2;
@@ -56,6 +59,8 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
             testCandidateLastWrite));
 
         CHECK(strcmp(sortedLogFileArray[0].fileName, testCandidateFileName) == 0);
+        free(sortedLogFileArray[0].fileName);
+        sortedLogFileArray[0].fileName = nullptr;
 
         const char* secondTestCandidateFileName = "bar";
         const auto secondTestCandidateLastWrite = static_cast<time_t>(
@@ -70,6 +75,8 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
             secondTestCandidateLastWrite));
 
         CHECK(strcmp(sortedLogFileArray[0].fileName, secondTestCandidateFileName) == 0);
+        // do not free here since next call to FileInfoUtils_InsertFileInfoIntoArray
+        // is supposed to fail so will not be changing sortedLogFileArray.
 
         const char* thirdTestCandidateFileName = "microsoft";
         size_t thirTestSizeOfCandidateFile = 1024;
@@ -84,6 +91,8 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
 
         // With no change secondTestCandidateFileName should still be at the front
         CHECK(strcmp(sortedLogFileArray[0].fileName, secondTestCandidateFileName) == 0);
+        free(sortedLogFileArray[0].fileName);
+        sortedLogFileArray[0].fileName = nullptr;
     }
     SECTION("Replace an older file with a newer one")
     {
@@ -98,6 +107,8 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
             sortedLogFileArray, sortedLogFileArraySize, oldFileName, oldFileSize, oldFileLastWrite));
 
         CHECK(strcmp(sortedLogFileArray[0].fileName, oldFileName) == 0);
+        free(sortedLogFileArray[0].fileName);
+        sortedLogFileArray[0].fileName = nullptr;
 
         const char* newerFileName = "bar";
         const size_t newerFileSize = 512;
@@ -110,5 +121,7 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
         CHECK(strcmp(sortedLogFileArray[0].fileName, newerFileName) == 0);
         CHECK(sortedLogFileArray[0].lastWrite == newFileLastWrite);
         CHECK(sortedLogFileArray[0].fileSize == newerFileSize);
+        free(sortedLogFileArray[0].fileName);
+        sortedLogFileArray[0].fileName = nullptr;
     }
 }
