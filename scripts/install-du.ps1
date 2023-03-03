@@ -294,8 +294,6 @@ function Create-DataFiles {
         [Parameter(Mandatory = $true)][string]$ConfPath
     )
 
-    'Creating data files'
-
     "Data file path: $ConfPath"
     ''
 
@@ -307,7 +305,9 @@ function Create-DataFiles {
 
     $dest = Join-Path $ConfPath 'du-diagnostics-config.json'
 
-    @'
+    if (-not (Test-Path -LiteralPath $dest -PathType Leaf)) {
+        "Creating $dest"
+        @'
 {
     "logComponents": [
         {
@@ -318,6 +318,7 @@ function Create-DataFiles {
     "maxKilobytesToUploadPerLogPath": 5
 }
 '@ | Out-File -Encoding ASCII $dest
+    }
 
     #
     # /etc/adu/du-config.json
@@ -325,6 +326,7 @@ function Create-DataFiles {
 
     $dest = Join-Path $ConfPath 'du-config.json'
     if (-not (Test-Path -LiteralPath $dest -PathType Leaf)) {
+        "Creating $dest"
         @'
 {
     "schemaVersion": "1.1",
@@ -391,18 +393,10 @@ $ADUC_DATA_FOLDER = "$VAR_FOLDER/lib/adu"
 $ADUC_DOWNLOAD_FOLDER = "$VAR_FOLDER/lib/adu/downloads"
 $ADUC_EXTENSIONS_FOLDER = "$ADUC_DATA_FOLDER/extensions"
 
-@($ADUC_CONF_FOLDER, $ADUC_AGENT_FOLDER, $ADUSHELL_FOLDER, $ADUC_DATA_FOLDER, $ADUC_DOWNLOAD_FOLDER, $ADUC_EXTENSIONS_FOLDER) `
-| ForEach-Object {
-    if (-not (Test-Path -LiteralPath $_ -PathType Container)) {
-        Show-Error "Path not found: $_"
-        exit 1
-    }
-}
+# Create template data files, if they don't exist already.
+Create-DataFiles -ConfPath $ADUC_CONF_FOLDER
 
-#
-# Install
-#
-
+# Install binaries locally
 Install-Adu-Components `
     -BuildBinPath $BuildBinPath `
     -BuildLibPath $BuildLibPath `
@@ -410,8 +404,16 @@ Install-Adu-Components `
     -LibPath $ADUSHELL_FOLDER `
     -DataPath $ADUC_DATA_FOLDER
 
-Create-DataFiles -ConfPath $ADUC_CONF_FOLDER
-
+# Sanity check
+@($ADUC_CONF_FOLDER, $ADUC_AGENT_FOLDER, $ADUSHELL_FOLDER, $ADUC_DATA_FOLDER, $ADUC_DOWNLOAD_FOLDER, $ADUC_EXTENSIONS_FOLDER) `
+| ForEach-Object {
+    if (-not (Test-Path -LiteralPath $_ -PathType Container)) {
+        Show-Error "Path not found: $_"
+        exit 1
+    }
+}
+   
+    
 if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath "$ADUC_CONF_FOLDER/du-config.json" -SimpleMatch) {
     Show-Warning "Need to edit connectionData, agents.manufacturer and/or agents.model in $ADUC_CONF_FOLDER/du-config.json"
 }
