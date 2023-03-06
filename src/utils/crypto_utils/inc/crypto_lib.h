@@ -7,6 +7,7 @@
  */
 
 #include "crypto_key.h"
+#include "decryption_alg_types.h"
 #include "key_data.h"
 #include <aduc/c_utils.h>
 #include <aduc/result.h>
@@ -49,37 +50,49 @@ void FreeCryptoKeyHandle(CryptoKeyHandle key);
 // Encryption/Decryption Functions
 //
 
-ADUC_Result CryptoUtils_DecryptBuffer(
-    const char* alg,
+ADUC_Result CryptoUtils_DecryptBlock(
+    unsigned char** destBuff,
+    const DecryptionAlg alg,
     const KeyData* dKey,
-    const char* iv,
-    const unsigned char* encryptedBuff,
-    const size_t encryptedBuffSize,
-    unsigned char** destBuff,
-    size_t* destBuffSize);
+    const unsigned char* iv,
+    const unsigned char* block,
+    const int encryptedBlockSize);
 
-ADUC_Result CryptoUtils_EncryptBuffer(
-    const char* alg,
+ADUC_Result CryptoUtils_DecryptBufferBlockByBlock(
+    unsigned char** destBuff,
+    size_t* destBuffSize,
+    const DecryptionAlg alg,
+    const KeyData* dKey,
+    const unsigned char* encryptedBuffer,
+    const size_t encryptedBufferSize);
+
+ADUC_Result CryptoUtils_EncryptBlock(
+    unsigned char** destBuff,
+    const DecryptionAlg alg,
     const KeyData* eKey,
-    const char* iv,
-    const unsigned char* plainTextBuff,
-    const size_t plainTextBuffSize,
-    unsigned char** destBuff,
-    size_t* destBuffSize);
+    const unsigned char* iv,
+    const unsigned char* block,
+    const int plainTextBlockSize);
 
+ADUC_Result CryptoUtils_EncryptBufferBlockByBlock(
+    unsigned char** destBuff,
+    size_t* destBuffSize,
+    const DecryptionAlg alg,
+    const KeyData* eKey,
+    const char* plainTextBuffer,
+    const size_t plainTextBufferSize);
+
+//
+// TODO: Reorganize outputs so they are even with inputs and outputs
+//
 ADUC_Result CryptoUtils_CalculateIV(
-    unsigned char** destIvBuffer,
-    size_t destIvBufferSize,
-    const char* alg,
-    const KeyData* eKey,
-    const unsigned char* inputForIv,
-    const size_t sizeOfInputIv);
+    unsigned char** destIvBuffer, size_t blockSize, const DecryptionAlg alg, const KeyData* eKey, const size_t offSet);
 
 //
 // Helper Functions for KeyData
 //
 
-bool CryptoUtils_InitializeKeyData(const char* keyBytes, const size_t keySize, KeyData** dKey);
+bool CryptoUtils_InitializeKeyDataFromB64String(KeyData** dKey, const char* b64UrlEncodedKeyBytes);
 
 bool CryptoUtils_IsKeyNullOrEmpty(const KeyData* key);
 

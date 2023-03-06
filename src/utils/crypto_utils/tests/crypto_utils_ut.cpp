@@ -7,9 +7,11 @@
  */
 #include "base64_utils.h"
 #include "crypto_lib.h"
+#include "decryption_alg_types.h"
 #include <aduc/calloc_wrapper.hpp>
 #include <catch2/catch.hpp>
 #include <cstring>
+#include <iostream>
 
 using ADUC::StringUtils::cstr_wrapper;
 using uint8_t_wrapper = ADUC::StringUtils::calloc_wrapper<uint8_t>;
@@ -163,5 +165,152 @@ TEST_CASE("Signature Verification")
             reinterpret_cast<const uint8_t*>(blob.c_str()), // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
             blob.length(),
             key));
+    }
+}
+
+TEST_CASE("CryptoUtils_InitializeKeyDataFromB64String")
+{
+    SECTION("Successful Init")
+    {
+        std::string b64EncodedKeyData = "urq6usAMCRI0VnjL2voQAg==";
+
+        std::array<uint8_t, 16> decodedBytes = { 0xBA, 0xBA, 0xBA, 0xBA, 0xC0, 0x0C, 0x09, 0x12,
+                                                 0x34, 0x56, 0x78, 0xCB, 0xDA, 0xFA, 0x10, 0x02 };
+
+        KeyData* key = nullptr;
+
+        REQUIRE(CryptoUtils_InitializeKeyDataFromB64String(&key, b64EncodedKeyData.c_str()));
+
+        CHECK(key != nullptr);
+
+        REQUIRE(key->keyData != nullptr);
+
+        const CONSTBUFFER* keyBytes = CONSTBUFFER_GetContent(key->keyData);
+
+        REQUIRE(keyBytes != nullptr);
+
+        CHECK(keyBytes->size == decodedBytes.size());
+
+        for (int i = 0; i < keyBytes->size; ++i)
+        {
+            CHECK(keyBytes->buffer[i] == decodedBytes.at(i));
+        }
+
+        CryptoUtils_DeInitializeKeyData(&key);
+    }
+
+    SECTION("Bad Init")
+    {
+        KeyData* key = nullptr;
+
+        CHECK_FALSE(CryptoUtils_InitializeKeyDataFromB64String(&key, nullptr));
+
+        CHECK(key == nullptr);
+    }
+}
+
+TEST_CASE("CryptoUtils_IsKeyNullOrEmpty")
+{
+    SECTION("Check- Non Empty")
+    {
+        std::string b64EncodedKeyData = "urq6usAMCRI0VnjL2vo=";
+
+        KeyData* key = nullptr;
+
+        REQUIRE(CryptoUtils_InitializeKeyDataFromB64String(&key, b64EncodedKeyData.c_str()));
+
+        REQUIRE(key != nullptr);
+
+        CHECK_FALSE(CryptoUtils_IsKeyNullOrEmpty(key));
+
+        CryptoUtils_DeInitializeKeyData(&key);
+    }
+
+    SECTION("Check - Null KeyData")
+    {
+        KeyData* key = nullptr;
+
+        CHECK(CryptoUtils_IsKeyNullOrEmpty(key));
+    }
+}
+
+TEST_CASE("CryptoUtils_EncryptBufferBlockByBlock")
+{
+    SECTION("Encrypt One Block to a Buffer")
+    {
+        //
+        // Script for generating content: openssl enc -aes-128-cbc -in ./test-content.txt -out ./test-content.txt.enc -p -K BABABABAC00C0912345678CBDAFA1002 -iv 00000000000000000000000000000000 -v -nosalt -a
+        // Website to help with shit: https://cryptii.com/pipes/hex-to-base64
+        //
+        std::string content = "abcdefghijklmno\n";
+        std::string b64EncodedKeyData = "urq6usAMCRI0VnjL2voQAg==";
+
+        KeyData* key = nullptr;
+
+        REQUIRE(CryptoUtils_InitializeKeyDataFromB64String(&key, b64EncodedKeyData.c_str()));
+
+        cstr_wrapper encryptedContent;
+        size_t encryptedOutSize = 0;
+
+        ADUC_Result result = CryptoUtils_EncryptBufferBlockByBlock(
+            (unsigned char**)encryptedContent.address_of(),
+            &encryptedOutSize,
+            AES_128_CBC,
+            key,
+            content.c_str(),
+            content.length());
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+
+        CHECK(encryptedContent.get() != nullptr);
+        CHECK(encryptedOutSize != 0);
+
+        cstr_wrapper encodedOutput { Base64URLEncode((uint8_t*)encryptedContent.get(),outputSize) };
+
+        CHECK(encodedOutput.get() != nullptr);
+
+        std::cout << encodedOutput.get() << std::endl;
+        // std::string encodedOutputStr {encodedOutput.get()};
+
+        // CHECK(encodedOutputStr == expectedB64EncodedOutput)
+
+        cstr_wrapper decryptedContent;
+        size_t decryptedOutSize = 0;
+
+        result = CryptoUtils_DecryptBufferBlockByBlock(
+            (unsigned char**)decryptedContent.address_of(),
+            &decryptedOutSize,
+            AES_128_CBC,
+            key,
+            (const unsigned char*)encryptedContent.get(),
+            encryptedOutSize);
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+
+        CHECK(decryptedContent.get() != nullptr);
+        CHECK(decryptedOutSize != 0);
+
+        std::string decryptedContentStr{ decryptedContent.get() };
+
+        CHECK(decryptedContentStr == content);
+
+        CryptoUtils_DeInitializeKeyData(&key);
+    }
+    SECTION("Encrypt Multiple Even Blocks to a Buffer")
+    {
+        std::string content =
+            "AQuickBrownFoxJumpedOverTheFenceAndStoleATortoisesShellToSellBecauseFoxesAreFrustratedWithTheCurrentStateOfPublicTransport.Yes.";
+    }
+    SECTION("Encrypt Multiple Blocks that Needs Padding")
+    {
+        std::string content =
+            "AQuickBrownFoxJumpedOverTheFenceAndStoleATortoisesShellToSellBecauseFoxesAreFrustratedWithTheCurrentStateOfPublicTransp";
+    }
+}
+
+TEST_CASE("CryptoUtils_DecryptBufferBlockByBlock")
+{
+    SECTION("Decrypt Content to a Buffer")
+    {
     }
 }

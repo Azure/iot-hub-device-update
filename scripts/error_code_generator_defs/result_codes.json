@@ -65,6 +65,14 @@
                         {
                             "name": "ADUC_ERC_ENCRYPTION_FINAL_FAILED",
                             "value": 10
+                        },
+                        {
+                            "name": "ADUC_ERC_INCORRECT_BLOCK_SIZE",
+                            "value": 11
+                        },
+                        {
+                            "name": "ADUC_ERC_ZERO_BLOCK_SIZE",
+                            "value": 12
                         }
                     ]
                 },
