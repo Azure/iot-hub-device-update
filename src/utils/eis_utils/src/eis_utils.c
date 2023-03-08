@@ -9,14 +9,20 @@
 #include "eis_utils.h"
 #include "eis_coms.h"
 #include <aduc/string_c_utils.h>
+#include <aduc/permission_utils.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/urlencode.h>
+#include <errno.h>
 #include <parson.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
+#define EIS_DATA_FILE "/etc/adu/ais-data.json"
 //
 // IdentityService Response FieldNames
 //
@@ -418,6 +424,90 @@ done:
     return result;
 }
 
+/**
+ * @brief Writing EIS Identities information to a EIS data file
+ * @details Calls into the EIS Identity and get the identities response, saves to a file
+ * @param[in] timeoutMS the timeoutMS in milliseconds for each call to EIS
+ */
+void EISIdentitiesFileWriter(uint32_t timeoutMS)
+{
+    // printf("Child process (PID %d) was created by parent process (PID %d).\n", getpid(), getppid());
+    char* identityResponseStr;
+
+
+    EISErr identityResult = RequestIdentitiesFromEIS(timeoutMS, &identityResponseStr);
+
+    printf("identityResponseStr: %s\n", identityResponseStr);
+    printf("identityResult: %d\n", identityResult);
+    
+    if (identityResponseStr != NULL)
+    {
+        FILE* fp = fopen(EIS_DATA_FILE, "w+");
+        if (fp == NULL)
+        {
+            fprintf(stderr, "Error: could not open file %s for writing.\n", EIS_DATA_FILE);
+            exit(1);
+        }
+
+        // fwrite(identityResponseStr, strlen(identityResponseStr), 1, fp);  // write connection data to file
+        // fwrite(&identityResult, sizeof(identityResult), 1, fp);
+        fprintf(fp, "%s\n", identityResponseStr);
+        fprintf(fp, "%d\n", identityResult);
+        fclose(fp);
+
+        printf("Connection data saved to file %s.\n", EIS_DATA_FILE);
+        exit(0); // exit child process with success code
+    }
+    else
+    {
+        printf("Connection data is NULL.\n");
+        exit(1); // exit child process with error code
+    }
+}
+
+/**
+ * @brief Reads EIS Identities information from a EIS data file
+ * @details Reads EIS Identity from a file, first line being the identity response, 
+ * and the second line being the EIS Error Code.
+ * @param[in,out] identityResponseBuffer the pointer to Identity response string
+ * @returns a value of EISErr
+ */
+EISErr EISIdentitiesFileReader(char** identityResponseBuffer)
+{
+    EISErr result=0;
+    FILE* fp = fopen(EIS_DATA_FILE, "r");
+    if (fp == NULL)
+    {
+        fprintf(stderr, "Error: could not open file %s for reading.\n", EIS_DATA_FILE);
+        exit(1);
+    }
+
+    *identityResponseBuffer = malloc(1024 * sizeof(char));
+    if (*identityResponseBuffer == NULL) {
+        printf("Failed to allocate memory\n");
+        goto done;
+    }
+    if (fgets(*identityResponseBuffer, 1024, fp) == NULL) {
+        fprintf(stderr, "Error: could not read JSON data from file.\n");
+        free(*identityResponseBuffer);
+        goto done;
+    }
+
+    char readidentityResult[1024];
+    if (fgets(readidentityResult, 1024, fp) == NULL) {
+        fprintf(stderr, "Error: could not read error code from file.\n");
+        free(*identityResponseBuffer);
+        goto done;
+    }
+
+    int readidentityResultNum = atoi(readidentityResult);
+    result = (EISErr)readidentityResultNum;
+
+done:
+    fclose(fp);
+    return result;
+}
+
 //
 // External Functions
 //
@@ -468,208 +558,254 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
     JSON_Value* certResponseJson = NULL;
     char* certString = NULL;
 
-    EISErr identityResult = RequestIdentitiesFromEIS(timeoutMS, &identityResponseStr);
+    //pid_t pid;
 
-    if (identityResult != EISErr_Ok)
+    //uid_t uid;
+
+    printf("Parent process (PID %d) is about to fork a child process...\n", getpid());
+
+    pid_t pid = fork(); // create a new child process
+
+    if (pid < 0)
     {
-        result.service = EISService_IdentityService;
-        result.err = identityResult;
-        goto done;
+        fprintf(stderr, "Fork failed.\n");
+        exit(1);
     }
+    else if (pid == 0)
+    { // child process
+        printf("Child process (PID %d) running...\n", getpid());
+        if (!PermissionUtils_SetProcessEffectiveUID("snap_aziot_du"))
+        {        
+            fprintf(stderr, "Error: could not change effective user ID to aziot-snap-du. Error code: %d\n", errno);
+            exit(1);
+        }
+        // struct passwd* pw = getpwnam("snap_aziot_du"); // get user information for aziot-snap-du
+        // if (pw == NULL)
+        // {
+        //     fprintf(stderr, "Error: could not get user information for aziot-snap-du.\n");
+        //     exit(1);
+        // }
+        // uid_t uid = pw->pw_uid; // get user ID for aziot-snap-du
 
-    identityResponseJson = json_parse_string(identityResponseStr);
-
-    if (identityResponseJson == NULL)
-    {
-        result.err = EISErr_InvalidJsonRespErr;
-        result.service = EISService_IdentityService;
-        goto done;
-    }
-
-    const JSON_Object* identityResponseJsonObj = json_value_get_object(identityResponseJson);
-
-    if (identityResponseJsonObj == NULL)
-    {
-        goto done;
-    }
-
-    const JSON_Object* specJson =
-        json_value_get_object(json_object_get_value(identityResponseJsonObj, EIS_IDENTITY_RESP_SPEC_FIELD));
-
-    if (specJson == NULL)
-    {
-        result.err = EISErr_InvalidJsonRespErr;
-        result.service = EISService_IdentityService;
-        goto done;
-    }
-
-    const char* hubName = json_object_get_string(specJson, EIS_IDENTITY_RESP_HUBNAME_FIELD);
-
-    if (hubName == NULL)
-    {
-        result.err = EISErr_InvalidJsonRespErr;
-        result.service = EISService_IdentityService;
-        goto done;
-    }
-
-    const char* deviceId = json_object_get_string(specJson, EIS_IDENTITY_RESP_DEVICEID_FIELD);
-
-    if (deviceId == NULL)
-    {
-        result.err = EISErr_InvalidJsonRespErr;
-        result.service = EISService_IdentityService;
-        goto done;
-    }
-
-    connType = ADUC_ConnType_Device;
-
-    const char* moduleId = json_object_get_string(specJson, EIS_IDENTITY_RESP_MODULEID_FIELD);
-
-    if (moduleId != NULL)
-    {
-        connType = ADUC_ConnType_Module;
-    }
-
-    // Build request for the signature
-    if (connType == ADUC_ConnType_Device)
-    {
-        resourceUri = ADUC_StringFormat("%s/devices/%s", hubName, deviceId);
-    }
-    else if (connType == ADUC_ConnType_Module)
-    {
-        resourceUri = ADUC_StringFormat("%s/devices/%s/modules/%s", hubName, deviceId, moduleId);
+        // if (seteuid(uid) < 0)
+        // { // change effective user ID to aziot-snap-du
+        //     fprintf(stderr, "Error: could not change effective user ID to aziot-snap-du. Error code: %d\n", errno);
+        //     exit(1);
+        // }
+        printf("Current UID calling Azure Identity Service: %d\n", getuid());
+        EISIdentitiesFileWriter(timeoutMS);
     }
     else
-    {
-        goto done;
-    }
+    { // parent process
+        int status;
+        waitpid(pid, &status, 0); // wait for child process to exit
 
-    if (resourceUri == NULL)
-    {
-        goto done;
-    }
+        printf("Parent process (PID %d) reading data from file %s...\n", getpid(), EIS_DATA_FILE);
 
-    const char* gatewayHostName = json_object_get_string(specJson, EIS_IDENTITY_RESP_GATEWAYHOSTNAME_FIELD);
+        EISErr EISResult = EISIdentitiesFileReader(&identityResponseStr);
 
-    const JSON_Object* authJson = json_value_get_object(json_object_get_value(specJson, EIS_IDENTITY_RESP_AUTH_FIELD));
-
-    if (authJson == NULL)
-    {
-        result.err = EISErr_InvalidJsonRespErr;
-        result.service = EISService_IdentityService;
-        goto done;
-    }
-
-    const char* authTypeStr = json_object_get_string(authJson, EIS_IDENTITY_RESP_AUTH_TYPE_FIELD);
-
-    if (authTypeStr == NULL)
-    {
-        result.err = EISErr_InvalidJsonRespErr;
-        result.service = EISService_IdentityService;
-        goto done;
-    }
-
-    const char* keyHandle = json_object_get_string(authJson, EIS_IDENTITY_RESP_AUTH_KEYHANDLE_FIELD);
-
-    if (keyHandle == NULL)
-    {
-        result.err = EISErr_InvalidJsonRespErr;
-        result.service = EISService_KeyService;
-        goto done;
-    }
-
-    if (strcmp(authTypeStr, "sas") == 0)
-    {
-        authType = ADUC_AuthType_SASToken;
-
-        result =
-            BuildSharedAccessSignature(resourceUri, keyHandle, expirySecsSinceEpoch, timeoutMS, &sharedSignatureStr);
-
-        if (result.err != EISErr_Ok)
+        if (EISResult != EISErr_Ok)
         {
+            result.service = EISService_IdentityService;
+            result.err = EISResult;
             goto done;
         }
 
-        result.err = BuildSasTokenConnectionString(
-            hubName, deviceId, moduleId, connType, sharedSignatureStr, gatewayHostName, &connectionStr);
+        identityResponseJson = json_parse_string(identityResponseStr);
 
-        if (result.err != EISErr_Ok)
-        {
-            goto done;
-        }
-    }
-    else if (strcmp(authTypeStr, "x509") == 0)
-    {
-        authType = ADUC_AuthType_SASCert;
-
-        if (mallocAndStrcpy_s(&keyHandlePtr, keyHandle) != 0)
-        {
-            result.err = EISErr_ContentAllocErr;
-            goto done;
-        }
-
-        const char* certId = json_object_get_string(authJson, EIS_IDENTITY_RESP_AUTH_CERTID_FIELD);
-
-        if (certId == NULL)
+        if (identityResponseJson == NULL)
         {
             result.err = EISErr_InvalidJsonRespErr;
             result.service = EISService_IdentityService;
             goto done;
         }
 
-        EISErr certResult = RequestCertificateFromEIS(certId, timeoutMS, &certResponseStr);
+        const JSON_Object* identityResponseJsonObj = json_value_get_object(identityResponseJson);
 
-        if (certResult != EISErr_Ok)
+        if (identityResponseJsonObj == NULL)
         {
-            result.err = certResult;
-            result.service = EISService_CertService;
             goto done;
         }
 
-        certResponseJson = json_parse_string(certResponseStr);
+        const JSON_Object* specJson =
+            json_value_get_object(json_object_get_value(identityResponseJsonObj, EIS_IDENTITY_RESP_SPEC_FIELD));
 
-        if (certResponseJson == NULL)
-        {
-            result.err = EISErr_InvalidJsonRespErr;
-            result.service = EISService_CertService;
-            goto done;
-        }
-
-        const JSON_Object* certResponseJsonObj = json_value_get_object(certResponseJson);
-
-        const char* certificateStr = json_object_get_string(certResponseJsonObj, EIS_CERT_RESP_PEM);
-
-        if (certificateStr == NULL)
+        if (specJson == NULL)
         {
             result.err = EISErr_InvalidJsonRespErr;
-            result.service = EISService_CertService;
+            result.service = EISService_IdentityService;
             goto done;
         }
 
-        if (mallocAndStrcpy_s(&certString, certificateStr) != 0)
+        const char* hubName = json_object_get_string(specJson, EIS_IDENTITY_RESP_HUBNAME_FIELD);
+
+        if (hubName == NULL)
         {
-            result.err = EISErr_ContentAllocErr;
+            result.err = EISErr_InvalidJsonRespErr;
+            result.service = EISService_IdentityService;
             goto done;
         }
 
-        result.err =
-            BuildSasCertConnectionString(hubName, deviceId, moduleId, connType, gatewayHostName, &connectionStr);
+        const char* deviceId = json_object_get_string(specJson, EIS_IDENTITY_RESP_DEVICEID_FIELD);
 
-        if (result.err != EISErr_Ok)
+        if (deviceId == NULL)
+        {
+            result.err = EISErr_InvalidJsonRespErr;
+            result.service = EISService_IdentityService;
+            goto done;
+        }
+
+        connType = ADUC_ConnType_Device;
+
+        const char* moduleId = json_object_get_string(specJson, EIS_IDENTITY_RESP_MODULEID_FIELD);
+
+        if (moduleId != NULL)
+        {
+            connType = ADUC_ConnType_Module;
+        }
+
+        // Build request for the signature
+        if (connType == ADUC_ConnType_Device)
+        {
+            resourceUri = ADUC_StringFormat("%s/devices/%s", hubName, deviceId);
+        }
+        else if (connType == ADUC_ConnType_Module)
+        {
+            resourceUri = ADUC_StringFormat("%s/devices/%s/modules/%s", hubName, deviceId, moduleId);
+        }
+        else
         {
             goto done;
         }
-    }
-    else
-    {
-        // Authentication type not supported
-        result.err = EISErr_RecvInvalidValueErr;
-        result.service = EISService_IdentityService;
-        goto done;
-    }
 
-    success = true;
-    result.err = EISErr_Ok;
+        if (resourceUri == NULL)
+        {
+            goto done;
+        }
+
+        const char* gatewayHostName = json_object_get_string(specJson, EIS_IDENTITY_RESP_GATEWAYHOSTNAME_FIELD);
+
+        const JSON_Object* authJson =
+            json_value_get_object(json_object_get_value(specJson, EIS_IDENTITY_RESP_AUTH_FIELD));
+
+        if (authJson == NULL)
+        {
+            result.err = EISErr_InvalidJsonRespErr;
+            result.service = EISService_IdentityService;
+            goto done;
+        }
+
+        const char* authTypeStr = json_object_get_string(authJson, EIS_IDENTITY_RESP_AUTH_TYPE_FIELD);
+
+        if (authTypeStr == NULL)
+        {
+            result.err = EISErr_InvalidJsonRespErr;
+            result.service = EISService_IdentityService;
+            goto done;
+        }
+
+        const char* keyHandle = json_object_get_string(authJson, EIS_IDENTITY_RESP_AUTH_KEYHANDLE_FIELD);
+
+        if (keyHandle == NULL)
+        {
+            result.err = EISErr_InvalidJsonRespErr;
+            result.service = EISService_KeyService;
+            goto done;
+        }
+
+        if (strcmp(authTypeStr, "sas") == 0)
+        {
+            authType = ADUC_AuthType_SASToken;
+
+            result = BuildSharedAccessSignature(
+                resourceUri, keyHandle, expirySecsSinceEpoch, timeoutMS, &sharedSignatureStr);
+
+            if (result.err != EISErr_Ok)
+            {
+                goto done;
+            }
+
+            result.err = BuildSasTokenConnectionString(
+                hubName, deviceId, moduleId, connType, sharedSignatureStr, gatewayHostName, &connectionStr);
+
+            if (result.err != EISErr_Ok)
+            {
+                goto done;
+            }
+        }
+        else if (strcmp(authTypeStr, "x509") == 0)
+        {
+            authType = ADUC_AuthType_SASCert;
+
+            if (mallocAndStrcpy_s(&keyHandlePtr, keyHandle) != 0)
+            {
+                result.err = EISErr_ContentAllocErr;
+                goto done;
+            }
+
+            const char* certId = json_object_get_string(authJson, EIS_IDENTITY_RESP_AUTH_CERTID_FIELD);
+
+            if (certId == NULL)
+            {
+                result.err = EISErr_InvalidJsonRespErr;
+                result.service = EISService_IdentityService;
+                goto done;
+            }
+
+            EISErr certResult = RequestCertificateFromEIS(certId, timeoutMS, &certResponseStr);
+
+            if (certResult != EISErr_Ok)
+            {
+                result.err = certResult;
+                result.service = EISService_CertService;
+                goto done;
+            }
+
+            certResponseJson = json_parse_string(certResponseStr);
+
+            if (certResponseJson == NULL)
+            {
+                result.err = EISErr_InvalidJsonRespErr;
+                result.service = EISService_CertService;
+                goto done;
+            }
+
+            const JSON_Object* certResponseJsonObj = json_value_get_object(certResponseJson);
+
+            const char* certificateStr = json_object_get_string(certResponseJsonObj, EIS_CERT_RESP_PEM);
+
+            if (certificateStr == NULL)
+            {
+                result.err = EISErr_InvalidJsonRespErr;
+                result.service = EISService_CertService;
+                goto done;
+            }
+
+            if (mallocAndStrcpy_s(&certString, certificateStr) != 0)
+            {
+                result.err = EISErr_ContentAllocErr;
+                goto done;
+            }
+
+            result.err =
+                BuildSasCertConnectionString(hubName, deviceId, moduleId, connType, gatewayHostName, &connectionStr);
+
+            if (result.err != EISErr_Ok)
+            {
+                goto done;
+            }
+        }
+        else
+        {
+            // Authentication type not supported
+            result.err = EISErr_RecvInvalidValueErr;
+            result.service = EISService_IdentityService;
+            goto done;
+        }
+
+        success = true;
+        result.err = EISErr_Ok;
+    }
 done:
 
     json_value_free(identityResponseJson);

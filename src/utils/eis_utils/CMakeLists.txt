@@ -15,6 +15,7 @@ target_link_libraries (
     PUBLIC aduc::c_utils
     PRIVATE aduc::adu_types
             aduc::logging
+            aduc::permission_utils
             Parson::parson
             aziotsharedutil
             uhttp)
