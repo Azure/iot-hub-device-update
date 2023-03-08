@@ -431,15 +431,10 @@ done:
  */
 void EISIdentitiesFileWriter(uint32_t timeoutMS)
 {
-    // printf("Child process (PID %d) was created by parent process (PID %d).\n", getpid(), getppid());
     char* identityResponseStr;
-
 
     EISErr identityResult = RequestIdentitiesFromEIS(timeoutMS, &identityResponseStr);
 
-    printf("identityResponseStr: %s\n", identityResponseStr);
-    printf("identityResult: %d\n", identityResult);
-    
     if (identityResponseStr != NULL)
     {
         FILE* fp = fopen(EIS_DATA_FILE, "w+");
@@ -448,9 +443,6 @@ void EISIdentitiesFileWriter(uint32_t timeoutMS)
             fprintf(stderr, "Error: could not open file %s for writing.\n", EIS_DATA_FILE);
             exit(1);
         }
-
-        // fwrite(identityResponseStr, strlen(identityResponseStr), 1, fp);  // write connection data to file
-        // fwrite(&identityResult, sizeof(identityResult), 1, fp);
         fprintf(fp, "%s\n", identityResponseStr);
         fprintf(fp, "%d\n", identityResult);
         fclose(fp);
@@ -484,7 +476,7 @@ EISErr EISIdentitiesFileReader(char** identityResponseBuffer)
 
     *identityResponseBuffer = malloc(1024 * sizeof(char));
     if (*identityResponseBuffer == NULL) {
-        printf("Failed to allocate memory\n");
+        fprintf(stderr, "Failed to allocate memory.\n");
         goto done;
     }
     if (fgets(*identityResponseBuffer, 1024, fp) == NULL) {
@@ -558,13 +550,9 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
     JSON_Value* certResponseJson = NULL;
     char* certString = NULL;
 
-    //pid_t pid;
-
-    //uid_t uid;
-
     printf("Parent process (PID %d) is about to fork a child process...\n", getpid());
 
-    pid_t pid = fork(); // create a new child process
+    pid_t pid = fork();
 
     if (pid < 0)
     {
@@ -572,27 +560,18 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
         exit(1);
     }
     else if (pid == 0)
-    { // child process
+    { 
+        // child process
         printf("Child process (PID %d) running...\n", getpid());
+
         if (!PermissionUtils_SetProcessEffectiveUID("snap_aziot_du"))
         {        
             fprintf(stderr, "Error: could not change effective user ID to aziot-snap-du. Error code: %d\n", errno);
             exit(1);
         }
-        // struct passwd* pw = getpwnam("snap_aziot_du"); // get user information for aziot-snap-du
-        // if (pw == NULL)
-        // {
-        //     fprintf(stderr, "Error: could not get user information for aziot-snap-du.\n");
-        //     exit(1);
-        // }
-        // uid_t uid = pw->pw_uid; // get user ID for aziot-snap-du
 
-        // if (seteuid(uid) < 0)
-        // { // change effective user ID to aziot-snap-du
-        //     fprintf(stderr, "Error: could not change effective user ID to aziot-snap-du. Error code: %d\n", errno);
-        //     exit(1);
-        // }
         printf("Current UID calling Azure Identity Service: %d\n", getuid());
+
         EISIdentitiesFileWriter(timeoutMS);
     }
     else
