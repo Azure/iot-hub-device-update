@@ -445,7 +445,7 @@ bool CryptoUtils_IsKeyNullOrEmpty(const KeyData* key)
  * @return true
  * @return false
  */
-bool CryptoUtils_InitializeKeyDataFromB64String(KeyData** dKey, const char* b64UrlEncodedKeyBytes)
+bool CryptoUtils_InitializeKeyDataFromUrlEncodedB64String(KeyData** dKey, const char* b64UrlEncodedKeyBytes)
 {
     bool success = false;
     KeyData* tempKey = NULL;

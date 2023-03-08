@@ -92,7 +92,7 @@ ADUC_Result CryptoUtils_CalculateIV(
 // Helper Functions for KeyData
 //
 
-bool CryptoUtils_InitializeKeyDataFromB64String(KeyData** dKey, const char* b64UrlEncodedKeyBytes);
+bool CryptoUtils_InitializeKeyDataFromUrlEncodedB64String(KeyData** dKey, const char* b64UrlEncodedKeyBytes);
 
 bool CryptoUtils_IsKeyNullOrEmpty(const KeyData* key);
 
