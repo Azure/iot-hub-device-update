@@ -59,7 +59,7 @@ ADUC_Result CryptoUtils_DecryptBlock(
     const int encryptedBlockSize);
 
 ADUC_Result CryptoUtils_DecryptBufferBlockByBlock(
-    unsigned char** destBuff,
+    char** destBuff,
     size_t* destBuffSize,
     const DecryptionAlg alg,
     const KeyData* dKey,
