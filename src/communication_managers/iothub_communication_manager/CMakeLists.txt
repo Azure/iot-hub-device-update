@@ -19,7 +19,8 @@ find_package (umqtt REQUIRED)
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::adu_types
-    PRIVATE aduc::communication_abstraction
+    PRIVATE aduc::adu_core_export_helpers
+            aduc::communication_abstraction
             aduc::config_utils
             aduc::c_utils
             aduc::eis_utils
