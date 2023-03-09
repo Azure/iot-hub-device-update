@@ -17,7 +17,7 @@
 
 EXTERN_C_BEGIN
 
-ADUC_Result ADUC_RootKeyPackageUtil_DownloadPackage(
+ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
     const char* rootKeyPkgUrl,
     const char* workflowId,
     ADUC_RootKeyPkgDownloaderInfo* downloaderInfo,

@@ -5,7 +5,6 @@ set (target_name root_key_utils)
 include (agentRules)
 compileasc99 ()
 
-find_package (azure_c_shared_utility REQUIRED)
 
 add_library (${target_name} STATIC)
 add_library (aduc::${target_name} ALIAS ${target_name})
@@ -13,6 +12,8 @@ add_library (aduc::${target_name} ALIAS ${target_name})
 target_sources (${target_name} PRIVATE src/root_key_util.c src/root_key_list.c)
 
 target_include_directories (${target_name} PUBLIC inc)
+
+find_package (azure_c_shared_utility REQUIRED)
 
 #
 # Turn -fPIC on, in order to use this library in another shared library.
