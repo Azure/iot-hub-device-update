@@ -15,8 +15,6 @@
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
 
-using ADUC::StringUtils::cstr_wrapper;
-
 #if OPENSSL_VERSION_NUMBER < 0x1010000fL
 #    define RSA_get0_n(x) ((x)->n)
 #    define RSA_get0_e(x) ((x)->e)
@@ -167,7 +165,7 @@ TEST_CASE("VerifySJWK")
         const BIGNUM* key_N = nullptr;
         const BIGNUM* key_e = nullptr;
 
-        RSA_get0_key(rsa_key,&key_N,&key_e,nullptr);
+        RSA_get0_key(rsa_key, &key_N, &key_e, nullptr);
 
         int key_N_size = BN_num_bytes(key_N);
         int key_e_size = BN_num_bytes(key_e);
@@ -437,7 +435,7 @@ TEST_CASE("VerifyJWSWithKey")
         // Build the key
         CryptoKeyHandle key = RSAKey_ObjFromB64Strings(N.c_str(), e.c_str());
 
-        cstr_wrapper payload;
+        ADUC::StringUtils::cstr_wrapper payload;
         CHECK(GetPayloadFromJWT(signedJWT.c_str(), payload.address_of()) == JWSResult_Success);
         CHECK(payload.get() != nullptr);
 
