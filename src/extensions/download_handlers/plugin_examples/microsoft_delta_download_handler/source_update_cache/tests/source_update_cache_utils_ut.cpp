@@ -15,7 +15,6 @@ using Catch::Matchers::Equals;
 #include <aduc/auto_workflowhandle.hpp> // aduc::AutoWorkflowHandle
 #include <aduc/c_utils.h> // EXTERN_C_BEGIN, EXTERN_C_END
 #include <aduc/file_utils.hpp> // aduc::findFilesInDir
-#include <aduc/free_deleter.hpp> // aduc::FreeDeleter<T>
 #include <aduc/string_c_utils.h> // IsNullOrEmpty
 #include <aduc/system_utils.h> // SystemUtils_IsFile
 #include <aduc/workflow_internal.h> // ADUC_Workflow
@@ -49,7 +48,6 @@ using Catch::Matchers::Equals;
 #define WORKFLOW_PROPERTY_FIELD_WORKFOLDER "_workFolder"
 #define TEST_WORKFLOW_ID "6f4d0e93-de4d-b3ef-85f0-ba0cfe1030f3"
 
-using Deleter = aduc::FreeDeleter<char>;
 using AutoDir = aduc::AutoDir;
 
 // fwd decls

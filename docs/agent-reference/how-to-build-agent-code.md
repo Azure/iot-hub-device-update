@@ -104,7 +104,7 @@ To build and run the unit tests:
 ```shell
 ./scripts/build.sh -c -u
 pushd out
-ctest
+ctest # or ninja test
 ```
 
 For more test run options:
@@ -112,6 +112,24 @@ For more test run options:
 ```shell
 ctest -h
 ```
+
+### Run the Unit Tests under Valgrind
+
+The current supported valgrind is 3.19.0 and can be built from sources via:
+
+```sh
+
+```
+
+There is a top-level `DartConfiguration.tcl` in the source tree that contains valgrind path and arguments.
+Running memcheck with following command will result in CTest generating a `DartConfiguration.tcl` under the `out` dir and running all the tests using valgrind:
+
+```sh
+cd out
+ctest -T memcheck
+```
+
+No suppression file is currently used, so the goal is for all the unit tests to run valgrind-clean and to fix even the false-positives.
 
 ### Build the Debian package
 

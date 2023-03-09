@@ -27,3 +27,46 @@ Device Update for IoT Hub features provide a powerful and flexible experience, i
 
 * [Device Update for IoT Hub](https://aka.ms/iot-hub-device-update-docs)
 * [Getting Started with Device Update Agent](./docs/agent-reference)
+
+## Quick Start
+
+### Build and Install
+
+```sh
+./scripts/install-deps.sh -a
+./scripts/build.sh -c -u --build-packages
+cd out
+sudo cmake --build . --target install
+```
+
+### Incremental Build
+
+```sh
+cd out
+ninja
+```
+
+### Run Tests
+
+```sh
+cd out
+ctest
+```
+
+or, alternatively:
+
+```sh
+ninja test
+```
+
+### Run tests under valgrind memcheck
+
+Ensure /usr/bin/valgrind is a valid symlink
+e.g. `sudo ln -s /opt/valgrind.3.19.0/bin/valgrind /usr/bin/valgrind`
+
+```sh
+cd out
+ctest -T memcheck
+```
+
+Results will be in `out/Testing/Temporary/MemoryChecker.*.log`

@@ -9,6 +9,7 @@
 
 #include "aduc/connection_string_utils.h"
 #include <aduc/c_utils.h> // ARRAY_SIZE
+#include <aduc/calloc_wrapper.hpp>
 
 TEST_CASE("ConnectionStringUtils_DoesKeyExist")
 {
@@ -31,13 +32,11 @@ TEST_CASE("ConnectionStringUtils_GetValue_key_missing")
 
 TEST_CASE("ConnectionStringUtils_GetValue_key_exists")
 {
-    char* ptr;
-    CHECK(ConnectionStringUtils_GetValue("a=1;c=2", "c", &ptr));
-    std::unique_ptr<char, decltype(&free)> managed(ptr, free);
-    ptr = nullptr;
+    ADUC::StringUtils::cstr_wrapper connectionStringValue;
+    CHECK(ConnectionStringUtils_GetValue("a=1;c=2", "c", connectionStringValue.address_of()));
 
-    CHECK(managed != nullptr);
-    CHECK(std::string("2") == std::string(managed.get()));
+    CHECK_FALSE(connectionStringValue.is_null());
+    CHECK_THAT("2", Catch::Matchers::Equals(connectionStringValue.get()));
 }
 
 TEST_CASE("ConnectionStringUtils_IsNestedEdge nullptr connection string returns false")
@@ -84,50 +83,46 @@ TEST_CASE("ConnectionStringUtils_IsNestedEdge returns true", "[generators]")
 }
 TEST_CASE("ConnectionStringUtils_GetModuleIdFromConnectionString Success Case")
 {
-    char* ptr;
+    ADUC::StringUtils::cstr_wrapper connectionStringValue;
     std::string connectionString{
         "HostName=some-iot-device.io;DeviceId=somedeviceid;ModuleId=somemoduleid;SharedAccessKey=asdfasdfasdf;"
     };
-    CHECK(ConnectionStringUtils_GetModuleIdFromConnectionString(connectionString.c_str(), &ptr));
-    std::unique_ptr<char, decltype(&free)> managed(ptr, free);
-    ptr = nullptr;
+    CHECK(ConnectionStringUtils_GetModuleIdFromConnectionString(
+        connectionString.c_str(), connectionStringValue.address_of()));
 
-    CHECK(managed != nullptr);
-    CHECK(std::string("somemoduleid") == std::string(managed.get()));
+    CHECK_FALSE(connectionStringValue.is_null());
+    CHECK(std::string("somemoduleid") == std::string(connectionStringValue.get()));
 }
 
 TEST_CASE("ConnectionStringUtils_GetModuleIdFromConnectionString Failure Case")
 {
-    char* ptr;
+    ADUC::StringUtils::cstr_wrapper connectionStringValue;
     std::string connectionString{ "HostName=some-iot-device.io;DeviceId=somedeviceid;SharedAccessKey=asdfasdfasdf;" };
-    CHECK_FALSE(ConnectionStringUtils_GetModuleIdFromConnectionString(connectionString.c_str(), &ptr));
-    std::unique_ptr<char, decltype(&free)> managed(ptr, free);
-    ptr = nullptr;
+    CHECK_FALSE(ConnectionStringUtils_GetModuleIdFromConnectionString(
+        connectionString.c_str(), connectionStringValue.address_of()));
 
-    CHECK(managed == nullptr);
+    CHECK(connectionStringValue.is_null());
 }
 
 TEST_CASE("ConnectionStringUtils_GetDeviceIdFromConnectionString Success Case")
 {
-    char* ptr;
+    ADUC::StringUtils::cstr_wrapper connectionStringValue;
     std::string connectionString{
         "HostName=some-iot-device.io;DeviceId=somedeviceid;ModuleId=somemoduleid;SharedAccessKey=asdfasdfasdf;"
     };
-    CHECK(ConnectionStringUtils_GetDeviceIdFromConnectionString(connectionString.c_str(), &ptr));
-    std::unique_ptr<char, decltype(&free)> managed(ptr, free);
-    ptr = nullptr;
+    CHECK(ConnectionStringUtils_GetDeviceIdFromConnectionString(
+        connectionString.c_str(), connectionStringValue.address_of()));
 
-    CHECK(managed != nullptr);
-    CHECK(std::string("somedeviceid") == std::string(managed.get()));
+    CHECK_FALSE(connectionStringValue.is_null());
+    CHECK(std::string("somedeviceid") == std::string(connectionStringValue.get()));
 }
 
 TEST_CASE("ConnectionStringUtils_GetDeviceIdFromConnectionString Failure Case")
 {
-    char* ptr;
+    ADUC::StringUtils::cstr_wrapper connectionStringValue;
     std::string connectionString{ "HostName=some-iot-device.io;SharedAccessKey=asdfasdfasdf;" };
-    CHECK_FALSE(ConnectionStringUtils_GetDeviceIdFromConnectionString(connectionString.c_str(), &ptr));
-    std::unique_ptr<char, decltype(&free)> managed(ptr, free);
-    ptr = nullptr;
+    CHECK_FALSE(ConnectionStringUtils_GetDeviceIdFromConnectionString(
+        connectionString.c_str(), connectionStringValue.address_of()));
 
-    CHECK(managed == nullptr);
+    CHECK(connectionStringValue.is_null());
 }
