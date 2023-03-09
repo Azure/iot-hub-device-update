@@ -564,7 +564,7 @@ ADUC_Result CryptoUtils_EncryptBufferBlockByBlock(
 
             memcpy(paddedPlainTextBuffer, (plainTextBuffer + blockOffSet), hangingBytes);
 
-            memset(paddedPlainTextBuffer, bytesToPad, bytesToPad);
+            memset((unsigned char*)(paddedPlainTextBuffer+hangingBytes), bytesToPad, bytesToPad);
 
             result = CryptoUtils_EncryptBlock(&blockBuffer, alg, eKey, iv, paddedPlainTextBuffer, blockSize);
 
@@ -573,9 +573,7 @@ ADUC_Result CryptoUtils_EncryptBufferBlockByBlock(
                 goto done;
             }
 
-            memcpy((encryptedBuffer + blockOffSet), blockBuffer, hangingBytes);
-
-            encryptedBufferSize += hangingBytes;
+            memcpy((encryptedBuffer + blockOffSet), blockBuffer, blockSize);
 
             //
             // Cleanup
@@ -595,9 +593,9 @@ ADUC_Result CryptoUtils_EncryptBufferBlockByBlock(
             }
 
             memcpy((encryptedBuffer + blockOffSet), blockBuffer, blockSize);
-
-            encryptedBufferSize += blockSize;
         }
+
+        encryptedBufferSize += blockSize;
 
         free(blockBuffer);
         blockBuffer = NULL;
@@ -628,9 +626,6 @@ done:
     return result;
 }
 
-//
-// TODO: IV Must be Pre-Calculated
-//
 ADUC_Result CryptoUtils_EncryptBlock(
     unsigned char** destBuff,
     const DecryptionAlg alg,
@@ -764,9 +759,7 @@ ADUC_Result CryptoUtils_CalculateIV(
     {
         goto done;
     }
-    //
-    // Creat the buffer of data with the values in the offset
-    //
+
     ivByteBuff = (unsigned char*)malloc(blockSize);
 
     memset(ivByteBuff, 0, blockSize);
@@ -791,12 +784,12 @@ done:
 
     free(ivByteBuff);
 
+    *destIvBuffer = tempDestIvBuff;
+
     return result;
 }
 
-//
-// Every block should be stored in an already allocated buffer of size block size
-// Anything that is not included must be pre-padded
+
 ADUC_Result CryptoUtils_DecryptBlock(
     unsigned char** destBuff,
     const DecryptionAlg alg,
@@ -912,17 +905,6 @@ done:
     return result;
 }
 
-// blockSize is indicative of how large in bytes buffToFill is
-// for 128 it should be 16
-//
-// offset = 0xF0F
-//
-//
-// mask = 0xFF
-//
-// buffToFill[15] = 0xFF & 0F0F , 0x0F
-//
-// buffToFill[14] = 0xFF00 & 0xFOF, 0xF
 
 ADUC_Result CryptoUtils_DecryptBufferBlockByBlock(
     unsigned char** destBuff,

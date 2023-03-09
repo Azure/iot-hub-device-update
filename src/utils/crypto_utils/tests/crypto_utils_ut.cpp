@@ -21,7 +21,7 @@ std::string testDirectoryPath = "/tmp/usr/aduc/testdata";
 static std::string get_plaintext_content_path()
 {
     std::string path{ ADUC_TEST_DATA_FOLDER };
-    path += "/crypto_utils/OriginalFile.txt";
+    path += "/crypto_utils/test-content.txt";
     return path;
 }
 
@@ -276,21 +276,20 @@ TEST_CASE("CryptoUtils_IsKeyNullOrEmpty")
 
 TEST_CASE("CryptoUtils_EncryptBufferBlockByBlock")
 {
-    SECTION("Encrypt One Block to a Buffer")
+    SECTION("Encrypt a Buffer")
     {
         //
         // Script for generating content: openssl enc -aes-128-cbc -in ./test-content.txt -out ./test-content.txt.enc -p -K BABABABAC00C0912345678CBDAFA1002 -iv 00000000000000000000000000000000 -v -nosalt -a
         // Website to help with shit: https://cryptii.com/pipes/hex-to-base64
         //
-        std::string b64UrlEncodedKeyData = "emWQ2fUjLE+6MPefoRxMfdgtj2hOvRN4PsxWdLVP4ZXud+yZnJ5opQJEoX4NTJpb";
+        // Actual Key Data  BIltO+l5mkKpPGANKtX0nCaYAo90gARHo7M8y/RSx2s=
+        std::string b64UrlEncodedKeyData = "BIltO-l5mkKpPGANKtX0nCaYAo90gARHo7M8y_RSx2s";
 
-        std::string content = ReadContentFromFile(get_plaintext_content_path());
+        std::string content = "MicrosoftDevsRule!\n";
 
-        std::string expectedBase64UrlEncodedEncryptedContent =
-            ReadContentFromFile(get_b64_url_encoded_encrypted_content_path());
+        std::string expectedEncodedOutput = "oAHfa0HqwjPO3_25WKhKbUWE0PLuXc1P8CiCPyOpcMw";
 
-        // {"KeyData":"emWQ2fUjLE+6MPefoRxMfdgtj2hOvRN4PsxWdLVP4ZXud+yZnJ5opQJEoX4NTJpb","EncryptionBufferSize":65536,"AlgorithmName":"AES","ChainingMode":"ChainingModeCBC"}
-        KeyData* key = nullptr;
+        KeyData* key = NULL;
 
         REQUIRE(CryptoUtils_InitializeKeyDataFromUrlEncodedB64String(&key, b64UrlEncodedKeyData.c_str()));
 
@@ -298,7 +297,7 @@ TEST_CASE("CryptoUtils_EncryptBufferBlockByBlock")
         size_t encryptedOutSize = 0;
 
         ADUC_Result result = CryptoUtils_EncryptBufferBlockByBlock(
-            encryptedContent.address_of(), &encryptedOutSize, AES_128_CBC, key, content.c_str(), content.length());
+            encryptedContent.address_of(), &encryptedOutSize, AES_256_CBC, key, content.c_str(), content.length());
 
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
@@ -311,25 +310,44 @@ TEST_CASE("CryptoUtils_EncryptBufferBlockByBlock")
 
         std::string encodedEncryptedContentStr{ encodedEncryptedContent.get() };
 
-        CHECK(encodedEncryptedContentStr == expectedBase64UrlEncodedEncryptedContent);
+        CHECK(encodedEncryptedContentStr == expectedEncodedOutput);
 
         CryptoUtils_DeInitializeKeyData(&key);
     }
-    SECTION("Encrypt Multiple Even Blocks to a Buffer")
+    SECTION("Decrypt a Buffer")
     {
-        std::string content =
-            "AQuickBrownFoxJumpedOverTheFenceAndStoleATortoisesShellToSellBecauseFoxesAreFrustratedWithTheCurrentStateOfPublicTransport.Yes.";
-    }
-    SECTION("Encrypt Multiple Blocks that Needs Padding")
-    {
-        std::string content =
-            "AQuickBrownFoxJumpedOverTheFenceAndStoleATortoisesShellToSellBecauseFoxesAreFrustratedWithTheCurrentStateOfPublicTransp";
-    }
-}
+       std::string b64UrlEncodedKeyData = "BIltO-l5mkKpPGANKtX0nCaYAo90gARHo7M8y_RSx2s";
 
-TEST_CASE("CryptoUtils_DecryptBufferBlockByBlock")
-{
-    SECTION("Decrypt Content to a Buffer")
-    {
+        std::string expectedOutput = "MicrosoftDevs!";
+
+        std::string encryptedContent = "oAHfa0HqwjPO3_25WKhKbUWE0PLuXc1P8CiCPyOpcMw";
+
+        KeyData* key = nullptr;
+
+        char* decodedContent = nullptr;
+
+        REQUIRE(CryptoUtils_InitializeKeyDataFromUrlEncodedB64String(&key, b64UrlEncodedKeyData.c_str()));
+
+        uint8_t_wrapper decryptedContent;
+        size_t decryptedOutSize = 0;
+
+        uint8_t_wrapper decodedContent_w;
+        size_t decodedContentLength = Base64URLDecode(encryptedContent.c_str(),decodedContent_w.address_of());
+
+        REQUIRE (decodedContent_w.get() != nullptr);
+        REQUIRE (decodedContentLength == 32);
+
+        ADUC_Result result = CryptoUtils_DecryptBufferBlockByBlock(
+            (unsigned char**)decryptedContent.address_of(), &decryptedOutSize, AES_256_CBC, key, (const unsigned char*)decodedContent_w.get(), decodedContentLength);
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+
+        CHECK(decryptedContent.get() != nullptr);
+        CHECK(decryptedOutSize != 0);
+
+        std::string decryptedContentStr {(const char*)decryptedContent.get()};
+        CHECK(decryptedContentStr == expectedOutput);
+
+        CryptoUtils_DeInitializeKeyData(&key);
     }
 }
