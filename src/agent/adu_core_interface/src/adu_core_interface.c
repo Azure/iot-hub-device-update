@@ -426,7 +426,7 @@ void OrchestratorUpdateCallback(
 
     // Get the unprotected properties, including rootkey package URL.
     tmpResult = workflow_parse_peek_unprotected_workflow_properties(
-        json_object(propertyValue), &updateAction, &workflowId, &rootKeyPkgUrl);
+        json_object(propertyValue), &updateAction, &rootKeyPkgUrl, &workflowId);
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
         Log_Error("Parse of unprotected workflow properties failed, erc: 0x%08x", tmpResult.ExtendedResultCode);
