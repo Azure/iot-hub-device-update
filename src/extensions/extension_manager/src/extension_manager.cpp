@@ -46,7 +46,7 @@ using ADUC::StringUtils::cstr_wrapper;
 
 EXTERN_C_BEGIN
 ExtensionManager_Download_Options Default_ExtensionManager_Download_Options = {
-    .maxTimeoutInSeconds = 60 * 60 * 24 /* default : 24 hour */,
+    CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT /* timeoutInMinutes */
 };
 EXTERN_C_END
 
@@ -925,8 +925,13 @@ ADUC_Result ExtensionManager::Download(
 
         Log_Info("Downloading full target update payload to '%s'", targetUpdateFilePath.c_str());
 
-        result =
-            downloadProc(entity, workflowId, workFolder.get(), options->maxTimeoutInSeconds, downloadProgressCallback);
+        unsigned int timeoutInMinutes = GetDownloadTimeoutInMinutes(options);
+
+        // Note: extension manager download options max timeout is in minutes,
+        // but the content downloader contract version is in terms of seconds.
+        unsigned int timeoutInSeconds = 60 * timeoutInMinutes;
+
+        result = downloadProc(entity, workflowId, workFolder.get(), timeoutInSeconds, downloadProgressCallback);
     }
 
     if (IsAducResultCodeSuccess(result.ResultCode))

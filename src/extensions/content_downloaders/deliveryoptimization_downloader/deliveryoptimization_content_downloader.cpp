@@ -29,7 +29,7 @@ ADUC_Result do_download(
     const ADUC_FileEntity* entity,
     const char* workflowId,
     const char* workFolder,
-    unsigned int maxTimeoutInSeconds,
+    unsigned int timeoutInSeconds,
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
     ADUC_Result_t resultCode = ADUC_Result_Failure;
@@ -57,7 +57,7 @@ ADUC_Result do_download(
         fullFilePath.str().c_str());
 
     const std::error_code doErrorCode = MSDO::download::download_url_to_path(
-        entity->DownloadUri, fullFilePath.str(), false, std::chrono::seconds(maxTimeoutInSeconds));
+        entity->DownloadUri, fullFilePath.str(), false, std::chrono::seconds(timeoutInSeconds));
     if (!doErrorCode)
     {
         resultCode = ADUC_Result_Download_Success;

@@ -10,6 +10,7 @@
 #define ADUC_EXTENSION_MANAGER_HELPER_HPP
 
 #include <aduc/c_utils.h>
+#include <aduc/extension_manager_download_options.h>
 #include <aduc/result.h>
 
 #include <aduc/types/update_content.h>
@@ -20,6 +21,8 @@ EXTERN_C_BEGIN
 
 ADUC_Result ProcessDownloadHandlerExtensibility(
     ADUC_WorkflowHandle workflowHandle, const ADUC_FileEntity* entity, const char* targetUpdateFilePath) noexcept;
+
+unsigned int GetDownloadTimeoutInMinutes(const ExtensionManager_Download_Options* downloadOptions) noexcept;
 
 EXTERN_C_END
 

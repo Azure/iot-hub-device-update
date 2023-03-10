@@ -274,6 +274,71 @@ static const char* validConfigContentAdditionalPropertyNames =
         R"(])"
     R"(})";
 
+static const char* validConfigContentDownloadTimeout =
+    R"({)"
+        R"("schemaVersion": "1.1",)"
+        R"("aduShellTrustedUsers": ["adu","do"],)"
+        R"("manufacturer": "device_info_manufacturer",)"
+        R"("model": "device_info_model",)"
+        R"("downloadTimeoutInMinutes": 1440,)"
+        R"("compatPropertyNames": "manufacturer,model",)"
+        R"("agents": [)"
+            R"({ )"
+            R"("name": "host-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "AIS",)"
+                R"("connectionData": "iotHubDeviceUpdate")"
+            R"(},)"
+            R"("manufacturer": "Contoso",)"
+            R"("model": "Smart-Box")"
+            R"(},)"
+            R"({)"
+            R"("name": "leaf-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "string",)"
+                R"("connectionData": "HOSTNAME=...")"
+            R"(},)"
+            R"("manufacturer": "Fabrikam",)"
+            R"("model": "Camera")"
+            R"(})"
+        R"(])"
+    R"(})";
+
+static const char* invalidConfigContentDownloadTimeout =
+    R"({)"
+        R"("schemaVersion": "1.1",)"
+        R"("aduShellTrustedUsers": ["adu","do"],)"
+        R"("manufacturer": "device_info_manufacturer",)"
+        R"("model": "device_info_model",)"
+        R"("downloadTimeoutInMinutes": -1,)"
+        R"("compatPropertyNames": "manufacturer,model",)"
+        R"("agents": [)"
+            R"({ )"
+            R"("name": "host-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "AIS",)"
+                R"("connectionData": "iotHubDeviceUpdate")"
+            R"(},)"
+            R"("manufacturer": "Contoso",)"
+            R"("model": "Smart-Box")"
+            R"(},)"
+            R"({)"
+            R"("name": "leaf-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "string",)"
+                R"("connectionData": "HOSTNAME=...")"
+            R"(},)"
+            R"("manufacturer": "Fabrikam",)"
+            R"("model": "Camera")"
+            R"(})"
+        R"(])"
+    R"(})";
+
+
 static char* g_configContentString = nullptr;
 
 static JSON_Value* MockParse_JSON_File(const char* configFilePath)
@@ -369,7 +434,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(!ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -381,7 +446,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(!ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -393,7 +458,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(!ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -405,7 +470,32 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(!ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+
+        ADUC_ConfigInfo_UnInit(&config);
+    }
+
+    SECTION("Valid config content, downloadTimeoutInMinutes")
+    {
+        REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentDownloadTimeout) == 0);
+        cstr_wrapper configStr{ g_configContentString };
+
+        ADUC_ConfigInfo config = {};
+
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(config.downloadTimeoutInMinutes == 1440);
+
+        ADUC_ConfigInfo_UnInit(&config);
+    }
+
+    SECTION("Invalid config content, downloadTimeoutInMinutes")
+    {
+        REQUIRE(mallocAndStrcpy_s(&g_configContentString, invalidConfigContentDownloadTimeout) == 0);
+        cstr_wrapper configStr{ g_configContentString };
+
+        ADUC_ConfigInfo config = {};
+
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
