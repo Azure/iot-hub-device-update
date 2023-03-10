@@ -2,7 +2,7 @@
 #define ADUC_EXTENSION_MANAGER_DOWNLOAD_OPTIONS_H
 
 // Default Content Downloader Download Timeout of 8 hours.
-#define CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT 8 * 60
+#define CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT (8 * 60)
 
 typedef struct tagADUC_ExtensionManager_Download_Options
 {
