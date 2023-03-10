@@ -478,7 +478,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     SECTION("Valid config content, downloadTimeoutInMinutes")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentDownloadTimeout) == 0);
-        cstr_wrapper configStr{ g_configContentString };
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
 
         ADUC_ConfigInfo config = {};
 
@@ -491,7 +491,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     SECTION("Invalid config content, downloadTimeoutInMinutes")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, invalidConfigContentDownloadTimeout) == 0);
-        cstr_wrapper configStr{ g_configContentString };
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
 
         ADUC_ConfigInfo config = {};
 
