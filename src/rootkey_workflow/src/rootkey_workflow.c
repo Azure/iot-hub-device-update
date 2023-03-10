@@ -48,7 +48,7 @@ bool RootKeyWorkflow_NeedToUpdateRootKeys(void)
     return false;
 }
 
-ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId)
+ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* rootKeyPkgUrl)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
@@ -66,7 +66,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId)
     }
 
     result = ADUC_RootKeyPackageUtils_DownloadPackage(
-        ADUC_ROOTKEY_PKG_URL_OVERRIDE, workflowId, &s_default_rootkey_downloader, &downloadedFilePath);
+        rootKeyPkgUrl, workflowId, &s_default_rootkey_downloader, &downloadedFilePath);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {

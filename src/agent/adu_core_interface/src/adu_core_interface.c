@@ -446,7 +446,7 @@ void OrchestratorUpdateCallback(
         // TODO: Replace the following if-block with the real RootKeyUtil
         if (RootKeyWorkflow_NeedToUpdateRootKeys())
         {
-            tmpResult = RootKeyWorkflow_UpdateRootKeys(workflowId);
+            tmpResult = RootKeyWorkflow_UpdateRootKeys(workflowId, rootKeyPkgUrl);
 
             if (IsAducResultCodeFailure(tmpResult.ResultCode))
             {
