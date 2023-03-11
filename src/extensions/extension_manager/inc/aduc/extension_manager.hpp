@@ -21,9 +21,6 @@
 #include <string>
 #include <unordered_map>
 
-// Default DO retry timeout is 24 hours.
-#define DO_RETRY_TIMEOUT_DEFAULT (60 * 60 * 24)
-
 // Forward declaration.
 class ContentHandler;
 

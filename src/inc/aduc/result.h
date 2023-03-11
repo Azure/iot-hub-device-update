@@ -37,7 +37,7 @@ typedef enum tagADUC_GeneralResult
 /**
 * @brief Determines if a result code is succeeded.
 */
-static inline _Bool IsAducResultCodeSuccess(const ADUC_Result_t resultCode)
+static inline bool IsAducResultCodeSuccess(const ADUC_Result_t resultCode)
 {
     return (resultCode > 0);
 }
@@ -45,7 +45,7 @@ static inline _Bool IsAducResultCodeSuccess(const ADUC_Result_t resultCode)
 /**
 * @brief Determines if a result code is failed.
 */
-static inline _Bool IsAducResultCodeFailure(const ADUC_Result_t resultCode)
+static inline bool IsAducResultCodeFailure(const ADUC_Result_t resultCode)
 {
     return (resultCode <= 0);
 }

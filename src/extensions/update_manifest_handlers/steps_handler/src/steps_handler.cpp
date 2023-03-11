@@ -31,6 +31,8 @@ using ADUC::StringUtils::cstr_wrapper;
 
 #define DEFAULT_REF_STEP_HANDLER "microsoft/steps:1"
 
+extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
+
 /**
  * @brief Check whether to show additional debug logs.
  *
@@ -144,11 +146,8 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
 
                 try
                 {
-                    ExtensionManager_Download_Options downloadOptions = {
-                        .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
-                    };
-
-                    result = ExtensionManager::Download(&entity, handle, &downloadOptions, nullptr);
+                    result = ExtensionManager::Download(
+                        &entity, handle, &Default_ExtensionManager_Download_Options, nullptr);
                 }
                 catch (...)
                 {

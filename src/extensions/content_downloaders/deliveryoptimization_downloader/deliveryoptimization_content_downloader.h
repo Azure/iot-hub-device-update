@@ -9,7 +9,7 @@ ADUC_Result do_download(
     const ADUC_FileEntity* entity,
     const char* workflowId,
     const char* workFolder,
-    unsigned int retryTimeout,
+    unsigned int timeoutInSeconds,
     ADUC_DownloadProgressCallback downloadProgressCallback);
 
 #endif // DELIVERYOPTIMIZATION_CONTENT_DOWNLOADER_HELPERS_H

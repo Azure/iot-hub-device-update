@@ -18,7 +18,7 @@ typedef ADUC_Result (*DownloadProc)(
     const ADUC_FileEntity* entity,
     const char* workflowId,
     const char* workFolder,
-    unsigned int retryTimeout,
+    unsigned int timeoutInSeconds,
     ADUC_DownloadProgressCallback downloadProgressCallback);
 
 EXTERN_C_END

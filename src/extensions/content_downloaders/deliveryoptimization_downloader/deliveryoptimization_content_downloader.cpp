@@ -29,7 +29,7 @@ ADUC_Result do_download(
     const ADUC_FileEntity* entity,
     const char* workflowId,
     const char* workFolder,
-    unsigned int retryTimeout,
+    unsigned int timeoutInSeconds,
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
     ADUC_Result_t resultCode = ADUC_Result_Failure;
@@ -57,7 +57,7 @@ ADUC_Result do_download(
         fullFilePath.str().c_str());
 
     const std::error_code doErrorCode = MSDO::download::download_url_to_path(
-        entity->DownloadUri, fullFilePath.str(), false, std::chrono::seconds(retryTimeout));
+        entity->DownloadUri, fullFilePath.str(), false, std::chrono::seconds(timeoutInSeconds));
     if (!doErrorCode)
     {
         resultCode = ADUC_Result_Download_Success;
@@ -67,7 +67,10 @@ ADUC_Result do_download(
     {
         // Note: The call to download_url_to_path() does not make use of a cancellation token,
         // so the download can only timeout or hit a fatal error.
-        Log_Error("DO error, msg: %s, code: %#08x, timeout? %d", doErrorCode.message().c_str(), doErrorCode.value(),
+        Log_Error(
+            "DO error, msg: %s, code: %#08x, timeout? %d",
+            doErrorCode.message().c_str(),
+            doErrorCode.value(),
             (doErrorCode == std::errc::timed_out));
 
         resultCode = ADUC_Result_Failure;
