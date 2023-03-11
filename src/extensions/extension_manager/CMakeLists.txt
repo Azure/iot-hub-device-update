@@ -13,6 +13,7 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES}
 target_compile_definitions (
     ${PROJECT_NAME}
     PRIVATE
+        ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
         ADUC_EXTENSIONS_FOLDER="${ADUC_EXTENSIONS_FOLDER}"
         ADUC_EXTENSIONS_INSTALL_FOLDER="${ADUC_EXTENSIONS_INSTALL_FOLDER}"
         ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME="${ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME}"
@@ -31,6 +32,7 @@ target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::adu_types # download.h, update_content.h, and workflow.h used by header and impl
     PRIVATE aduc::c_utils
+            aduc::config_utils
             aduc::contract_utils
             aduc::download_handler_factory
             aduc::download_handler_plugin

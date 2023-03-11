@@ -20,10 +20,10 @@ ADUC_Result Download_curl(
     const ADUC_FileEntity* entity,
     const char* workflowId,
     const char* workFolder,
-    unsigned int retryTimeout,
+    unsigned int timeoutInSeconds,
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
-    UNREFERENCED_PARAMETER(retryTimeout);
+    UNREFERENCED_PARAMETER(timeoutInSeconds);
     ADUC_Result result = { ADUC_Result_Failure };
     SHAversion algVersion;
     std::vector<std::string> args;

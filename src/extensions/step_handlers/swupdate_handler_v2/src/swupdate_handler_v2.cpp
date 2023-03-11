@@ -37,8 +37,10 @@
 
 namespace adushconst = Adu::Shell::Const;
 
+EXTERN_C_BEGIN
 /* external linkage */
 extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
+EXTERN_C_END
 
 struct JSONValueDeleter
 {
