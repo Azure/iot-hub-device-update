@@ -189,7 +189,7 @@ set (
 if (ADUC_BUILD_SNAP)
     set (
         ADUC_DOWNLOADS_FOLDER
-        /var/lib/deliveryoptimization-snap-downloads-root
+        /var/lib/deviceupdate-agent-downloads
         CACHE STRING "Path to the folder containing downloaded update artifacts.")
 else()
     set (
