@@ -1,4 +1,4 @@
-# Device Update Agent SNAP Devcelopment Design
+# Device Update Agent Snap for Ubuntu Core
 
 ## Terminology
 
@@ -18,9 +18,17 @@ In addition to the snap packaging system, Ubuntu Core also includes a number of 
 
 Visit [Ubunt Core Official Page](https://ubuntu.com/core) for more information.
 
+## Inside Ubuntu Core
+
+The Ubuntu Core architecture overview diagram below depicts the delivery of the kernel, boot assets, runtime environment, applications, and device enablement capabilities as snaps. These snaps are managed by the snap daemon (snapd) and the daemon itself is packaged as a snap.  
+Visit [Ubuntu Core](https://ubuntu.com/core/docs/uc20/inside) page for more details
+
+![Inside Ubunut Core - Diagram](https://ubuntucommunity.s3.dualstack.us-east-2.amazonaws.com/original/3X/e/9/e9bba73072d97485b71b2e079f7859d52a25eaa1.png)
+
+
 ## Device Update Agent Snap for Ubuntu Core
 
-The Device Update Agent is an important component of Ubuntu Core for managing updates and maintaining the security and reliability of devices running the operating system. There are several reasons why the Device Update Agent is necessary:
+The Device Update Agent, also known as the DU Agent, is a crucial `application` snap  specifically designed for Ubuntu Core. Its primary purpose is to manage updates and ensure the security and reliability of devices that run on this operating system. There are several reasons why the DU Agent is essential:
 
 - Simplified update management: The Device Update Agent provides a simplified way to manage updates for all the applications and packages installed on a device running Ubuntu Core. It ensures that updates are installed in a timely and efficient manner, and helps to prevent errors or conflicts that can arise when updating software manually.
 
@@ -30,7 +38,19 @@ The Device Update Agent is an important component of Ubuntu Core for managing up
 
 - Rollback: In the event of a failed update, the Device Update Agent can roll back to the previous version of the software, ensuring that the device remains operational and minimizing the risk of data loss or corruption.
 
----
+### Device Update Agent and Dependencies
+
+The diagram below illustrates the relationship between the DU Agent Snap, DO Agent Snap, Azure Identity Service Snap, and the snapd daemon.
+
+![DU Snap Architecture Overview](./assets/du-agent-snap-overview.svg)
+
+### Snap Dependencies
+There are two snaps that DU snap needs to run with.
+1. Azure Identity Service Snap: This is the snap for configuring the Edge device. Alternatively, we can use the connection string stored on du-config.json for the configuration.
+2. Delivery Optimization Client Snap: This is the downloader we use. Alternatively, we can use `curl` as the downloader.
+3. Snapd: This is the system daemon that supervises all other snaps on Ubuntu Core. It exposes a REST API that makes Ubuntu Core appliances IP-addressable by default. Ubuntu Core exposes a built-in REST API for secure device command and control. Authenticated and authorised clients can perform software management and configuration tasks on their Ubuntu Core devices remotely. Devices running Ubuntu Core can be configured remotely via the REST API.
+
+See [Install Snap using Device Update Script Handler](./examples/install-snap/README.md) example for more details.
 
 ### Snap User/Group Security Model
 
@@ -50,18 +70,33 @@ Overall, the snap user and group security model in Ubuntu Core provides a high d
 
 For more information, see [Security Policy and Sandboxing of Snapcraft](https://snapcraft.io/docs/security-policy-and-sandboxing), a snap is run inside a isolated sandbox, so the user accessing Device Update Agent will always be `root`. 
 
-#### DU Snap User and Group
+#### DU Agent Snap User and Group
 Keys different between Device Update Agent and Device Update Agent Snap:
 
 | | Device Upate Agent | Device Update Agent Snap |
 |---|---|---|
-| user id| adu | aziot-snap-du | 
-| group id| du | aziot-snap-du |
+| user id| adu | snap-aziot-du | 
+| group id| du | snap-aziot-du |
 
-### Snap Dependencies
-There are two snaps that DU snap needs to run with.
-1. Azure Identity Service: This is the snap for configuring the Edge device. Alternatively, we can use the connection string stored on du-config.json for the configuration.
-2. Delivery Optimization: This is the downloader we use. Alternatively, we can use `curl` as the downloader.
+### How DU Agent Acquire the IoT Hub Connection Information
+
+Typically, the IoT Hub connection information is obtained by the Device Update Agent from the Azure Identity Service Agent via a secure communication channel that is established between the two agents. By providing the required IoT Hub connection details to the Device Update Agent, the Azure Identity Service Agent enables it to connect to the IoT Hub and receive updates securely.
+
+To configure the DU Agent Module principal file (.toml) in Ubuntu jCore, you need to create the file at /etc/aziot/identityd/snap-aziot-du.toml. The file should contain the following information:
+
+```toml
+[[principal]]
+name = "IoTHubDeviceUpdate"
+idtype = ["module"]
+uid = <SNAP_AZIOT_DU_USER_ID>
+```
+
+Replace `SNAP_AZIOT_DU_USER_ID` with the actual user id of `snap-aziot-du`
+
+To access `/etc/aziot/identityd` folder, we need to map
+
+This specifies the principal information for the DU Agent Module, including its name, ID type, and user ID. It is important to ensure that the file is created with the correct filename and location, and that the specified values are appropriate for your specific use case.
+
 
 #### Connect to Other Snap with Specific User ID
 When connecting snaps with interfaces, the snaps are typically connected with the default user or "system" user. However, it is possible to connect snaps with a specific user ID by using the `--classic` and `--username` options with the snap connect command.
@@ -81,43 +116,43 @@ The sections below explains how Device Update Agent snap communicate with other 
 To download files using DO Agent snap, the DU Agent snap need to connect to the following `slots` provided by the DO Agent snap:
 
 ```yaml
-# Note: snippet from https://github.com/microsoft/do-client/blob/develop/snap/snapcraft.yaml
+# Note: snippet from https://github.com/microsoft/do-client/blob/develop/snapcraft-options/snapcraft-agent.yaml
 
 slots:
-  port-number:
+  do-port-numbers:
     interface: content
-    content: port-number
-    read: [ $SNAP_DATA/var/run/deliveryoptimization-agent ]
+    content: do-port-numbers
+    read: [ $SNAP_DATA/run ]
 
-  # Share a folder containing sdk-config.json
-  config-file:
+  do-configs:
     interface: content
-    content: config-file
-    write: [ $SNAP_DATA/etc/deliveryoptimization-agent/configs ]
+    content: do-configs
+    write: [ $SNAP_DATA/etc ]
 
 plugs:
-  client-downloads-folder:
+  deviceupdate-agent-downloads:
     interface: content
-    content: client-downloads-folder
-    target: $SNAP_DATA/deliveryoptimization-snap-downloads-root
+    content: deviceupdate-agent-downloads
+    target: $SNAP_DATA/deviceupdate-agent-downloads
 
 layout:
-# adu_data_dir
-  /var/lib/deliveryoptimization-snap-downloads-root:
-    symlink: $SNAP_DATA/deliveryoptimization-snap-downloads-root
+  # DU agent will provide the /var/lib path as download location.
+  # Map it to the correct path within this snap.
+  /var/lib/deviceupdate-agent-downloads:
+    symlink: $SNAP_DATA/deviceupdate-agent-downloads
 ```
 
 You can list a DO client snap's connections by using  the `snap connections` command. This command displays information about the snap's connections, including its slots and plugs.
 
 ```shell
-adu-dev@du-ubuntu-core-2004-build:~d$ snap connections 
+adu-dev@du-ubuntu-core-2004-build:~$ snap connections deliveryoptimization-client
 
-Interface                         Plug                                                 Slot                                     Notes
-content[client-downloads-folder]  deliveryoptimization-client:client-downloads-folder  -      manual
-content[do-config-file]           -                   deliveryoptimization-client:config-file  manual
-content[do-port-number]           -                   deliveryoptimization-client:port-number  manual
-network                           deliveryoptimization-client:network                  :network                                 -
-network-bind                      deliveryoptimization-client:network-bind             :network-bind                            -
+Interface     Plug                                                      Slot                                         Notes
+content       -                                                         deliveryoptimization-client:do-configs       -
+content       -                                                         deliveryoptimization-client:do-port-numbers  -
+content       deliveryoptimization-client:deviceupdate-agent-downloads  -                                            -
+network       deliveryoptimization-client:network                       :network                                     -
+network-bind  deliveryoptimization-client:network-bind                  :network-bind                                -
 
 ```
 
@@ -126,16 +161,18 @@ DU Agent snap will declare the following `plugs` and `layout`
 ```yaml
 # Note: from ../snapcraft.yaml
 plugs:
-  do-port-number:
+  do-port-numbers:
     interface: content
-    content: do-port-number
-    target: $SNAP_DATA/do-port-number
+    content: do-port-numbers
+    target: $SNAP_DATA/do-port-numbers
 
-  do-config-file:
+  do-configs:
     interface: content
-    content: do-config-file
-    target: $SNAP_DATA/do-config-file
+    content: do-configs
+    target: $SNAP_DATA/do-configs
 
+  snapd-control:
+    interface: snapd-control
 
 # Provides resources to be accssed by other snaps.
 slots:
@@ -152,14 +189,12 @@ slots:
     write:
         - $SNAP_DATA/data/downloads
 
-...
-
 layout:
 # adu_data_dir
   /var/lib/adu:
     symlink: $SNAP_DATA/data
 
-  /var/lib/deliveryoptimization-snap-downloads-root:
+  /var/lib/deviceupdate-agent-downloads:
     symlink: $SNAP_DATA/data/downloads
 
 # adu_conf_dir
@@ -177,29 +212,30 @@ layout:
 
 ```
 
-> Note that above DU's `_plug_name_:downloads-folder` identifier must match DO's `_slot_name_:client-downloads-folder` identifier 
+> Note that above DU's `_plug_name_:downloads-folder` identifier must match DO's `_slot_name_:deviceupdate-agent-downloads` identifier 
 
 To connect, use following commands:
 
 ```shell
-sudo snap connect deviceupdate-agent:do-port-number deliveryoptimization-client:port-number
+sudo snap connect deviceupdate-agent:do-port-numbers deliveryoptimization-client:port-numbers
 
-sudo snap connect deviceupdate-agent:do-config-file deliveryoptimization-client:config-file
+sudo snap connect deviceupdate-agent:do-configs deliveryoptimization-client:configs
 
-sudo snap connect deliveryoptimization-client:client-downloads-folder deviceupdate-agent:downloads-folder
+sudo snap connect deliveryoptimization-client:deviceupdate-agent-downloads deviceupdate-agent:downloads-folder
 ```
 
 Verify that connections are ok:
 
 ```shell
-snap connections deviceupdate-agent 
+adu-dev@du-ubuntu-core-2004-build:~$ snap connections deviceupdate-agent 
 
-Interface                         Plug                                                 Slot                                     Notes
-content[client-downloads-folder]  deliveryoptimization-client:client-downloads-folder  deviceupdate-agent:downloads-folder      manual
-content[do-config-file]           deviceupdate-agent:do-config-file                    deliveryoptimization-client:config-file  manual
-content[do-port-number]           deviceupdate-agent:do-port-number                    deliveryoptimization-client:port-number  manual
-home                              deviceupdate-agent:home                              :home                                    -
-network                           deviceupdate-agent:network                           :network                                 -
+Interface                              Plug                                                      Slot                                         Notes
+content[deviceupdate-agent-downloads]  deliveryoptimization-client:deviceupdate-agent-downloads  deviceupdate-agent:downloads-folder          manual
+content[do-configs]                    deviceupdate-agent:do-configs                             deliveryoptimization-client:do-configs       manual
+content[do-port-numbers]               deviceupdate-agent:do-port-numbers                        deliveryoptimization-client:do-port-numbers  manual
+home                                   deviceupdate-agent:home                                   :home                                        -
+network                                deviceupdate-agent:network                                :network                                     -
+snapd-control                          deviceupdate-agent:snapd-control                          -                                            -
 ```
 
 ### Snap Parts
@@ -330,8 +366,8 @@ Keys different between Device Update Agent and Device Update Agent Snap:
 
 | | Device Upate Agent | Device Update Agent Snap |
 |---|---|---|
-| user id| adu | aziot-snap-du | 
-| group id| du | aziot-snap-du |
+| user id| adu | snap-aziot-du | 
+| group id| du | snap-aziot-du |
 | downloads folder | /var/lib/adu/downloads | $SNAP_DATA/data/downloads |
 | configs file | /etc/adu/du-config.json | $SNAP_DATA/configs/du-config.json|
 | logs folder | /var/log/adu | $SNAP_DATA/log 
