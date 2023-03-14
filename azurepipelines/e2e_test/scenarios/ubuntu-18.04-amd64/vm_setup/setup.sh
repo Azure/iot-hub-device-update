@@ -71,14 +71,6 @@ function register_extensions() {
     sh ./tools/reset-demo-components.sh
 }
 
-#
-# Restart the deviceupdate-agent.service
-#
-# Note: We expect that everything should be setup for the deviceupdate agent at this point. Once
-# we restart the agent we expect it to be able to boot back up and connect to the IotHub. Otherwise
-# this test will be considered a failure.
-sudo systemctl restart deviceupdate-agent.service
-
 function verify_user_group_permissions() {
     # Get the UID and GID for the "adu" user
     adu_uid=$(id -u adu)

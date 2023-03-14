@@ -22,18 +22,6 @@
 #       ~/testsetup/setup.sh
 # So we need to localize the path to that.
 #
-#
-# Install the Microsoft APT repository
-#
-
-wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-sudo dpkg -i packages-microsoft-prod.deb
-rm packages-microsoft-prod.deb
-
-#
-# Update the apt repositories
-#
-sudo apt-get update
 
 #
 # Install Device Update Dependencies from APT
@@ -43,10 +31,134 @@ sudo apt-get update
 # anything else.
 
 # Handle installing DO from latest build instead of packages.microsoft.com
-wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_x64-packages.tar -O ubuntu20_x64-packages.tar
-tar -xvf ubuntu20_x64-packages.tar
-sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_amd64.deb ./deliveryoptimization-plugin-apt_0.5.1_amd64.deb ./libdeliveryoptimization_1.0.0_amd64.deb
+function configure_apt_repository() {
+    wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+    sudo dpkg -i packages-microsoft-prod.deb
+    rm packages-microsoft-prod.deb
+    #
+    # Update the apt repositories
+    #
+    sudo apt-get update
+}
 
+#
+# Install Device Update Dependencies from APT
+#
+# Note: If there are other dependencies tht need to be installed via APT or other means they should
+# be added here. You might be installing iotedge, another package to setup for a deployment test, or
+# anything else.
+
+function install_do() {
+    # Handle installing DO from latest build instead of packages.microsoft.com
+    wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_x64-packages.tar -O ubuntu20_x64-packages.tar
+    tar -xvf ubuntu20_x64-packages.tar
+    sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_amd64.deb ./deliveryoptimization-plugin-apt_0.5.1_amd64.deb ./libdeliveryoptimization_1.0.0_amd64.deb
+}
+
+function register_extensions() {
+    mkdir ~/adu_srcs/
+
+    tar -xvf ./testsetup/adu_srcs_repo.tar.gz -C ~/adu_srcs/
+
+    sudo mkdir -p ~/demo/demo-devices/contoso-devices
+
+    cd ~/adu_srcs/src/extensions/component_enumerators/examples/contoso_component_enumerator/demo || exit
+
+    chmod 755 ./tools/reset-demo-components.sh
+
+    #copy components-inventory.json and adds it to the /usr/local/contoso-devices folder
+    sudo cp -a ./demo-devices/contoso-devices/. ~/demo/demo-devices/contoso-devices/
+
+    sh ./tools/reset-demo-components.sh
+
+    #registers the extension
+    sudo /usr/bin/AducIotAgent -l 2 --extension-type componentEnumerator --register-extension /var/lib/adu/extensions/sources/libcontoso_component_enumerator.so
+
+    sh ./tools/reset-demo-components.sh
+}
+
+function verify_user_group_permissions() {
+    # Get the UID and GID for the "adu" user
+    adu_uid=$(id -u adu)
+    adu_gid=$(id -g adu)
+
+    # Find the main PID of the "AducIotAgent" service
+    systemctl start deviceupdate-agent.service
+    status_output=$(systemctl status deviceupdate-agent.service)
+
+    main_pid=$(echo "$status_output" | awk '/Main PID/ {print $3}')
+
+    # Check if the user and group for the process are "adu"
+    process_user=$(stat -c %u "/proc/$main_pid")
+    process_group=$(stat -c %g "/proc/$main_pid")
+
+    if [ "$process_user" -eq "$adu_uid" ] && [ "$process_group" -eq "$adu_gid" ]; then
+        echo "User and group for AducIotAgent service are adu:adu."
+    else
+        echo "User and group for AducIotAgent service are not adu:adu."
+        exit 1
+    fi
+}
+
+function verify_log_files() {
+    log_dir="/var/log/adu"
+    if [ -d "$log_dir" ]; then
+        log_files=$(ls "$log_dir")
+        for log_file in $log_files; do
+            log_path="$log_dir/$log_file"
+            if [ -f "$log_path" ]; then
+                continue
+            else
+                echo "$log_path is not a regular file."
+                exit 1
+            fi
+        done
+    else
+        echo "$log_dir does not exist."
+        exit 1
+    fi
+}
+
+function test_shutdown_service() {
+    # Stop the service
+    systemctl stop deviceupdate-agent.service
+
+    # Check the service status
+    timeout=5 # Timeout in seconds
+    start_time=$(date +%s)
+    while true; do
+        # Check the service status
+        status=$(systemctl status deviceupdate-agent.service)
+        # Check if the service is in a failed state
+        if echo "$status" | grep -q "failed"; then
+            echo "Service failed to shut down."
+            exit 1
+        fi
+
+        # Check if the service has stopped running
+        if echo "$status" | grep -q "inactive (dead)"; then
+            echo "Service successfully shut down."
+        fi
+
+        daemon_status=$(pgrep AducIotAgent)
+
+        # Check if the daemon has been killed
+        if [ -z "$daemon_status" ]; then
+            echo "The Daemon has been killed successfully."
+        fi
+
+        # Check if the timeout has been exceeded
+        if [ $(($(date +%s) - start_time)) -gt $timeout ]; then
+            echo "Timeout exceeded."
+            exit 1
+        fi
+
+        # Wait for a bit before checking again
+        sleep 1
+    done
+}
+
+configure_apt_repository
 #
 # Install the Device Update Artifact Under Test
 #
@@ -59,27 +171,11 @@ sudo apt-get install -y ./testsetup/deviceupdate-package.deb
 # go here. For instance you might have the config.toml for IotEdge,
 # another kind of diagnostics file, or other kinds of data
 # this is the area where such things can be added
-
 sudo cp ./testsetup/du-config.json /etc/adu/du-config.json
 
-mkdir ~/adu_srcs/
+install_do
 
-tar -xvf ./testsetup/adu_srcs_repo.tar.gz -C ~/adu_srcs/
-
-sudo mkdir -p ~/demo/demo-devices/contoso-devices
-
-cd ~/adu_srcs/src/extensions/component_enumerators/examples/contoso_component_enumerator/demo || exit
-
-chmod 755 ./tools/reset-demo-components.sh
-
-#copy components-inventory.json and adds it to the /usr/local/contoso-devices folder
-sudo cp -a ./demo-devices/contoso-devices/. ~/demo/demo-devices/contoso-devices/
-
-sh ./tools/reset-demo-components.sh
-
-#registers the extension
-sudo /usr/bin/AducIotAgent -l 2 --extension-type componentEnumerator --register-extension /var/lib/adu/extensions/sources/libcontoso_component_enumerator.so
-
+register_extensions
 
 #
 # Restart the deviceupdate-agent.service
@@ -87,5 +183,12 @@ sudo /usr/bin/AducIotAgent -l 2 --extension-type componentEnumerator --register-
 # Note: We expect that everything should be setup for the deviceupdate agent at this point. Once
 # we restart the agent we expect it to be able to boot back up and connect to the IotHub. Otherwise
 # this test will be considered a failure.
+sudo systemctl restart deviceupdate-agent.service
+
+verify_user_group_permissions
+
+verify_log_files
+
+test_shutdown_service
 
 sudo systemctl restart deviceupdate-agent.service
