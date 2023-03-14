@@ -98,6 +98,7 @@ function verify_user_group_permissions() {
         echo "User and group for AducIotAgent service are adu:adu."
     else
         echo "User and group for AducIotAgent service are not adu:adu."
+        exit 1
     fi
 }
 
@@ -111,10 +112,12 @@ function verify_log_files() {
                 continue
             else
                 echo "$log_path is not a regular file."
+                exit 1
             fi
         done
     else
         echo "$log_dir does not exist."
+        exit 1
     fi
 }
 
@@ -131,19 +134,25 @@ function test_shutdown_service() {
         # Check if the service is in a failed state
         if echo "$status" | grep -q "failed"; then
             echo "Service failed to shut down."
-            return 1
+            exit 1
         fi
 
         # Check if the service has stopped running
         if echo "$status" | grep -q "inactive (dead)"; then
             echo "Service successfully shut down."
-            return 0
+        fi
+
+        daemon_status=$(pgrep AducIotAgent)
+
+        # Check if the daemon has been killed
+        if [ -z "$daemon_status" ]; then
+            echo "The Daemon has been killed successfully."
         fi
 
         # Check if the timeout has been exceeded
         if [ $(($(date +%s) - start_time)) -gt $timeout ]; then
             echo "Timeout exceeded."
-            return 1
+            exit 1
         fi
 
         # Wait for a bit before checking again
