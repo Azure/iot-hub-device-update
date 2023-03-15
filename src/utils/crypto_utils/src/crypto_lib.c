@@ -415,28 +415,25 @@ const size_t CryptoUtils_GetBlockSizeForAlg(const DecryptionAlg alg)
 }
 
 /**
- * @brief DeInit function for a KeyData structure
+ * @brief Cleans up the member values of the KeyData structure
  *
  * @param dKey the key to be de-intialized
  */
-void CryptoUtils_DeInitializeKeyData(KeyData** dKey)
+void CryptoUtils_DeAllocKeyData(const KeyData* dKey)
 {
-    if (*dKey == NULL)
+    if (dKey == NULL)
     {
         return;
     }
 
-    if ((*dKey)->keyData != NULL)
+    if ((dKey)->keyData != NULL)
     {
-        CONSTBUFFER_DecRef((*dKey)->keyData);
+        CONSTBUFFER_DecRef((dKey)->keyData);
     }
-
-    free(*dKey);
-    *dKey = NULL;
 }
 
 /**
- * @brief Checks if a KeyData strucure is null or empty
+ * @brief Checks if a KeyData structure is null or empty
  *
  * @param key the key to check
  * @return true if it is null or empty; false otherwise
@@ -458,7 +455,7 @@ bool CryptoUtils_IsKeyNullOrEmpty(const KeyData* key)
  * @param b64UrlEncodedKeyBytes the base 64 url encoded key bytes to be turned into a KeyData structure
  * @return true on success; false on failure
  */
-bool CryptoUtils_InitializeKeyDataFromUrlEncodedB64String(KeyData** dKey, const char* b64UrlEncodedKeyBytes)
+bool CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String(KeyData** dKey, const char* b64UrlEncodedKeyBytes)
 {
     bool success = false;
     KeyData* tempKey = NULL;
@@ -496,7 +493,10 @@ done:
 
     if (!success)
     {
-        CryptoUtils_DeInitializeKeyData(&tempKey);
+        CryptoUtils_DeAllocKeyData(tempKey);
+
+        free(tempKey);
+        tempKey = NULL;
     }
 
     *dKey = tempKey;
@@ -504,7 +504,83 @@ done:
 }
 
 /**
+ * @brief Creates a BUFFER_HANDLE of size @p blockSize with the padded last block of @p contentToPad according to PKCS#7
+ * @details The returned buffer handle can be freed using BUFFER_delete()
+ * @param contentToPad the content from which to take the last bytes to use for creating the padded buffer
+ * @param blockSize the blockSize for the cipher to be used for the size of the buffer
+ * @param offSet the offset to the last block in the buffer
+ * @return A valid BUFFER_HANDLE of size @p blockSize will always be returned for any valid buffer, blockSize, and offSet. NULL otherwise
+ */
+BUFFER_HANDLE
+CryptoUtils_CreatePkcs7PaddedBuffer(CONSTBUFFER_HANDLE contentToPad, const size_t blockSize, const size_t offSet)
+{
+    bool success = false;
+
+    BUFFER_HANDLE outputBuffer = NULL;
+    BUFFER_HANDLE paddedBuffer = NULL;
+    unsigned char* contentBuff = NULL;
+
+    if (contentToPad == NULL || blockSize == 0)
+    {
+        return NULL;
+    }
+
+    const CONSTBUFFER* contentBuffer = CONSTBUFFER_GetContent(contentToPad);
+
+    if (contentBuffer->size == 0)
+    {
+        goto done;
+    }
+
+    const size_t hangingBytes = contentBuffer->size % blockSize;
+
+    if (offSet + hangingBytes != contentBuffer->size)
+    {
+        goto done;
+    }
+
+    if (hangingBytes == 0)
+    {
+        outputBuffer = BUFFER_create_with_size(blockSize);
+
+        if (BUFFER_fill(outputBuffer, blockSize) != 0)
+        {
+            goto done;
+        }
+    }
+    else
+    {
+        paddedBuffer = BUFFER_create_with_size(blockSize - hangingBytes);
+        if (BUFFER_fill(paddedBuffer, blockSize - hangingBytes) != 0)
+        {
+            goto done;
+        }
+
+        outputBuffer = BUFFER_create((contentBuffer->buffer + offSet), hangingBytes);
+        if (BUFFER_append(outputBuffer, paddedBuffer) != 0)
+        {
+            goto done;
+        }
+    }
+
+    success = true;
+done:
+
+    if (!success)
+    {
+        BUFFER_delete(outputBuffer);
+        outputBuffer = NULL;
+    }
+
+    free(contentBuff);
+    BUFFER_delete(paddedBuffer);
+
+    return outputBuffer;
+}
+
+/**
  * @brief Encrypts a buffer block by block and stores the result in @p destBuff
+ * @details Free the return buffer with BUFFER_delete()
  * @param destBuff the destination buffer to be allocated with the encrypted contents of @p plainTextBuffer
  * @param destBuffSize the size of @p destBuff after encryption
  * @param alg the algorithm to use for encryption
@@ -514,38 +590,24 @@ done:
  * @return a value of ADUC_Result
  */
 ADUC_Result CryptoUtils_EncryptBufferBlockByBlock(
-    unsigned char** destBuff,
-    size_t* destBuffSize,
-    const DecryptionAlg alg,
-    const KeyData* eKey,
-    const char* plainTextBuffer,
-    const size_t plainTextBufferSize)
+    BUFFER_HANDLE* destBuff, const DecryptionAlg alg, const KeyData* eKey, CONSTBUFFER_HANDLE plainText)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    ADUC_Result tempResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    CONSTBUFFER_HANDLE iv = NULL;
 
-    unsigned char* encryptedBuffer = NULL;
-    size_t encryptedBufferSize = 0;
+    BUFFER_HANDLE encryptedBuffer = NULL;
+    BUFFER_HANDLE blockBuffer = NULL;
+    BUFFER_HANDLE inputBuffer = NULL;
 
-    unsigned char* iv = NULL;
-    unsigned char* blockBuffer = NULL;
-    unsigned char* paddedPlainTextBuffer = NULL;
-
-    if (CryptoUtils_IsKeyNullOrEmpty(eKey) || plainTextBuffer == NULL || destBuff == NULL)
+    if (CryptoUtils_IsKeyNullOrEmpty(eKey) || plainText == NULL || destBuff == NULL
+        || alg == UNSUPPORTED_DECRYPTION_ALG)
     {
-        result.ExtendedResultCode = ADUC_ERC_NOMEM;
-        goto done;
+        return result;
     }
 
-    const size_t hangingBytes = plainTextBufferSize % 16;
-    const size_t maxEncryptedBuffSize = plainTextBufferSize + 16 - hangingBytes;
-
-    encryptedBuffer = (unsigned char*)malloc(maxEncryptedBuffSize);
-
-    if (encryptedBuffer == NULL)
-    {
-        result.ExtendedResultCode = ADUC_ERC_NOMEM;
-        goto done;
-    }
+    const CONSTBUFFER* plainTextBuff = CONSTBUFFER_GetContent(plainText);
+    const size_t plainTextBufferSize = plainTextBuff->size;
 
     const size_t blockSize = CryptoUtils_GetBlockSizeForAlg(alg);
 
@@ -555,65 +617,82 @@ ADUC_Result CryptoUtils_EncryptBufferBlockByBlock(
         goto done;
     }
 
+    const size_t hangingBytes = plainTextBufferSize % blockSize;
+
     size_t blockOffSet = 0;
 
     do
     {
-        result = CryptoUtils_CalculateIV(&iv, blockSize, alg, eKey, blockOffSet);
+        tempResult = CryptoUtils_CalculateIV(&iv, blockSize, alg, eKey, blockOffSet);
 
-        if (IsAducResultCodeFailure(result.ResultCode))
+        if (IsAducResultCodeFailure(tempResult.ResultCode))
         {
+            result = tempResult;
             goto done;
         }
 
         if (hangingBytes != 0 && blockOffSet == (plainTextBufferSize - hangingBytes))
         {
-            paddedPlainTextBuffer = (unsigned char*)malloc(blockSize);
+            inputBuffer = CryptoUtils_CreatePkcs7PaddedBuffer(plainText, blockSize, blockOffSet);
 
-            if (paddedPlainTextBuffer == NULL)
+            if (inputBuffer == NULL)
+            {
+                goto done;
+            }
+
+            tempResult = CryptoUtils_EncryptBlock(&blockBuffer, alg, eKey, iv, inputBuffer);
+
+            if (IsAducResultCodeFailure(tempResult.ResultCode))
+            {
+                result = tempResult;
+                goto done;
+            }
+        }
+        else
+        {
+            inputBuffer = BUFFER_create((unsigned char*)(plainTextBuff->buffer + blockOffSet), blockSize);
+
+            if (inputBuffer == NULL)
             {
                 result.ExtendedResultCode = ADUC_ERC_NOMEM;
                 goto done;
             }
 
-            size_t bytesToPad = blockSize - hangingBytes;
+            tempResult = CryptoUtils_EncryptBlock(&blockBuffer, alg, eKey, iv, inputBuffer);
 
-            memcpy(paddedPlainTextBuffer, (plainTextBuffer + blockOffSet), hangingBytes);
-
-            memset((unsigned char*)(paddedPlainTextBuffer + hangingBytes), bytesToPad, bytesToPad);
-
-            result = CryptoUtils_EncryptBlock(&blockBuffer, alg, eKey, iv, paddedPlainTextBuffer, blockSize);
-
-            if (IsAducResultCodeFailure(result.ResultCode))
+            if (IsAducResultCodeFailure(tempResult.ResultCode))
             {
+                result = tempResult;
                 goto done;
             }
+        }
 
-            memcpy((encryptedBuffer + blockOffSet), blockBuffer, blockSize);
-
-            free(paddedPlainTextBuffer);
-            paddedPlainTextBuffer = NULL;
+        if (encryptedBuffer == NULL)
+        {
+            encryptedBuffer = BUFFER_clone(blockBuffer);
+            if (encryptedBuffer == NULL)
+            {
+                result.ExtendedResultCode = ADUC_ERC_NOMEM;
+                goto done;
+            }
         }
         else
         {
-            result = CryptoUtils_EncryptBlock(
-                &blockBuffer, alg, eKey, iv, (unsigned char*)(plainTextBuffer + blockOffSet), blockSize);
-
-            if (IsAducResultCodeFailure(result.ResultCode))
+            if (BUFFER_append(encryptedBuffer, blockBuffer) != 0)
             {
+                result.ExtendedResultCode = ADUC_ERC_NOMEM;
                 goto done;
             }
-
-            memcpy((encryptedBuffer + blockOffSet), blockBuffer, blockSize);
         }
 
-        encryptedBufferSize += blockSize;
-
-        free(blockBuffer);
+        BUFFER_delete(blockBuffer);
         blockBuffer = NULL;
 
-        free(iv);
+        CONSTBUFFER_DecRef(iv);
         iv = NULL;
+
+        BUFFER_delete(inputBuffer);
+        inputBuffer = NULL;
 
         blockOffSet += blockSize;
     } while (blockOffSet < plainTextBufferSize);
@@ -625,22 +704,31 @@ done:
     {
         free(encryptedBuffer);
         encryptedBuffer = NULL;
-
-        encryptedBufferSize = 0;
     }
 
-    free(iv);
-    free(blockBuffer);
-    free(paddedPlainTextBuffer);
+    if (iv != NULL)
+    {
+        CONSTBUFFER_DecRef(iv);
+    }
+
+    if (blockBuffer != NULL)
+    {
+        BUFFER_delete(blockBuffer);
+    }
+
+    if (inputBuffer != NULL)
+    {
+        BUFFER_delete(inputBuffer);
+    }
 
     *destBuff = encryptedBuffer;
-    *destBuffSize = encryptedBufferSize;
+
     return result;
 }
 
 /**
  * @brief Encrypts a singular block from @p block into @p destBuff of size @p plainTextblockSize using the @p alg and @p eKey
- * @details if the block size of the algorithm does not match @p plainTextBlockSize the function will fail
+ * @details if the block size of the algorithm does not match @p plainTextBlockSize the function will fail, Free the return buffer with BUFFER_delete()
  * @param destBuff the destination buffer allocated of size @p plainTextBlockSize that will contain the encrypted block
  * @param alg the algorithm to use for encryption
  * @param eKey the encryption key to be used for the encryption
@@ -650,23 +738,20 @@ done:
  * @return a value of ADUC_Result
  */
 ADUC_Result CryptoUtils_EncryptBlock(
-    unsigned char** destBuff,
-    const DecryptionAlg alg,
-    const KeyData* eKey,
-    const unsigned char* iv,
-    const unsigned char* block,
-    const int plainTextBlockSize)
+    BUFFER_HANDLE* destBuff, const DecryptionAlg alg, const KeyData* eKey, CONSTBUFFER_HANDLE iv, BUFFER_HANDLE block)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
+    BUFFER_HANDLE tempDestBuff = NULL;
     unsigned char* encryptedBuffer = NULL;
+    EVP_CIPHER_CTX* ctx = NULL;
 
     if (alg == UNSUPPORTED_DECRYPTION_ALG || CryptoUtils_IsKeyNullOrEmpty(eKey) || block == NULL || destBuff == NULL)
     {
-        goto done;
+        return result;
     }
 
-    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    ctx = EVP_CIPHER_CTX_new();
 
     if (ctx == NULL)
     {
@@ -682,19 +767,50 @@ ADUC_Result CryptoUtils_EncryptBlock(
         goto done;
     }
 
-    const size_t blockSize = EVP_CIPHER_block_size(cipherType);
+    const size_t cipherBlockSize = EVP_CIPHER_block_size(cipherType);
 
-    if (blockSize != plainTextBlockSize)
+    const size_t blockSize = BUFFER_length(block);
+
+    if (cipherBlockSize != blockSize && blockSize > 0)
     {
         result.ExtendedResultCode = ADUC_ERC_INCORRECT_BLOCK_SIZE;
         goto done;
     }
 
     const CONSTBUFFER* keyData = CONSTBUFFER_GetContent(eKey->keyData);
-    if (EVP_EncryptInit_ex(ctx, cipherType, NULL, keyData->buffer, iv) != 1)
+
+    if (keyData == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_ENCRYPTION_INIT_FAILED;
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
+    }
+
+    if (iv != NULL)
+    {
+        const CONSTBUFFER* ivBuff = CONSTBUFFER_GetContent(iv);
+
+        if (ivBuff == NULL)
+        {
+            result.ExtendedResultCode = ADUC_ERC_NOMEM;
+            goto done;
+        }
+
+        if (EVP_EncryptInit_ex(ctx, cipherType, NULL, keyData->buffer, ivBuff->buffer) != 1)
+        {
+            result.ExtendedResultCode = ADUC_ERC_ENCRYPTION_INIT_FAILED;
+            goto done;
+        }
+    }
+    else
+    {
+        //
+        // Must allow for situations when the IV is NULL
+        //
+        if (EVP_EncryptInit_ex(ctx, cipherType, NULL, keyData->buffer, NULL) != 1)
+        {
+            result.ExtendedResultCode = ADUC_ERC_ENCRYPTION_INIT_FAILED;
+            goto done;
+        }
     }
 
     if (EVP_CIPHER_CTX_set_padding(ctx, 0) != 1)
@@ -704,7 +820,7 @@ ADUC_Result CryptoUtils_EncryptBlock(
 
     size_t outSize = 0;
 
-    encryptedBuffer = (unsigned char*)malloc(blockSize);
+    encryptedBuffer = (unsigned char*)malloc(cipherBlockSize);
 
     if (encryptedBuffer == NULL)
     {
@@ -712,8 +828,15 @@ ADUC_Result CryptoUtils_EncryptBlock(
         goto done;
     }
 
+    unsigned char* blockData = BUFFER_u_char(block);
+
+    if (blockData == NULL)
+    {
+        goto done;
+    }
+
     int encryptedLength = 0;
-    if (EVP_EncryptUpdate(ctx, encryptedBuffer, &encryptedLength, block, plainTextBlockSize) != 1)
+    if (EVP_EncryptUpdate(ctx, encryptedBuffer, &encryptedLength, blockData, blockSize) != 1)
     {
         result.ExtendedResultCode = ADUC_ERC_ENCRYPTION_UPDATE_FAILED;
         goto done;
@@ -721,7 +844,7 @@ ADUC_Result CryptoUtils_EncryptBlock(
 
     outSize += encryptedLength;
 
-    if (outSize > plainTextBlockSize)
+    if (outSize > cipherBlockSize)
     {
         result.ExtendedResultCode = ADUC_ERC_INCORRECT_BLOCK_SIZE;
         goto done;
@@ -735,27 +858,34 @@ ADUC_Result CryptoUtils_EncryptBlock(
         goto done;
     }
 
-    EVP_CIPHER_CTX_cleanup(ctx);
-
     outSize += finalEncryptedLength;
 
-    if (outSize != plainTextBlockSize)
+    if (outSize != cipherBlockSize)
     {
         result.ExtendedResultCode = ADUC_ERC_INCORRECT_BLOCK_SIZE;
         goto done;
     }
 
+    tempDestBuff = BUFFER_create(encryptedBuffer, outSize);
+
     result.ResultCode = ADUC_GeneralResult_Success;
 done:
 
-    if (IsAducResultCodeFailure(result.ResultCode))
+    if (ctx != NULL)
     {
-        free(encryptedBuffer);
-        encryptedBuffer = NULL;
-        outSize = 0;
+        EVP_CIPHER_CTX_cleanup(ctx);
+        EVP_CIPHER_CTX_free(ctx);
     }
 
-    *destBuff = encryptedBuffer;
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        BUFFER_delete(tempDestBuff);
+        tempDestBuff = NULL;
+    }
+
+    free(encryptedBuffer);
+
+    *destBuff = tempDestBuff;
 
     return result;
 }
@@ -763,23 +893,42 @@ done:
 /**
  * @brief Helper function that loads the @p buffToFill with the offset bytes
  *
- * @param buffToFill the buffer to allocated with the bytes of offset
  * @param blockSize the blockSize for the block who's offset is being loading into the buffer
  * @param offset the offset to be loaded into @p buffToFill
+ * @returns A buffer of size @p blockSize containing the output
  */
-void LoadIvBufferWithOffsetHelper(unsigned char* buffToFill, size_t blockSize, unsigned long long offset)
+BUFFER_HANDLE LoadIvBufferWithOffsetHelper(size_t blockSize, unsigned long long offset)
 {
+    BUFFER_HANDLE outputBuffer = NULL;
+
+    outputBuffer = BUFFER_create_with_size(blockSize);
+
+    if (outputBuffer == NULL)
+    {
+        return NULL;
+    }
+
+    if (BUFFER_fill(outputBuffer, 0) != 0)
+    {
+        BUFFER_delete(outputBuffer);
+        return NULL;
+    }
+
+    unsigned char* bufferBytes = BUFFER_u_char(outputBuffer);
+
     unsigned long long mask = 0xFF;
     for (int i = blockSize - 1; i >= 0; --i)
     {
-        buffToFill[i] = mask & offset;
+        bufferBytes[i] = mask & offset;
         mask <<= 8; // shift left 8 bytes to select the next value
     }
+
+    return outputBuffer;
 }
 
 /**
- * @brief Helper fucntion for calculating the intialization vector for a certain block
- * @details the IV is calculated as the Encrypt(<offSet-in-a-byte-buffer-of-block-size>, eKey)
+ * @brief Helper function for calculating the intialization vector for a certain block
+ * @details the IV is calculated as the Encrypt(<offSet-in-a-byte-buffer-of-block-size>, eKey) Free the input buffer with BUFFER_delete()
  * @param destIvBuffer the buffer to store the bytes of the iv in
  * @param blockSize the size of the block for the algorithm, indicates the size that @p destIvBuffer must be
  * @param alg the algorithm the IV is being generated for
@@ -788,41 +937,67 @@ void LoadIvBufferWithOffsetHelper(unsigned char* buffToFill, size_t blockSize, u
  * @return a value of ADUC_Result
  */
 ADUC_Result CryptoUtils_CalculateIV(
-    unsigned char** destIvBuffer, size_t blockSize, const DecryptionAlg alg, const KeyData* eKey, const size_t offSet)
+    CONSTBUFFER_HANDLE* destIvBuffer,
+    size_t blockSize,
+    const DecryptionAlg alg,
+    const KeyData* eKey,
+    const size_t offSet)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
-    unsigned char* tempDestIvBuff = NULL;
-    unsigned char* ivByteBuff = NULL;
+    ADUC_Result tempResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    CONSTBUFFER_HANDLE tempDestIvBuff = NULL;
+    BUFFER_HANDLE ivInputBuff = NULL;
+    BUFFER_HANDLE tempDestIvByteBuff = NULL;
 
-    if (CryptoUtils_IsKeyNullOrEmpty(eKey) || destIvBuffer == NULL)
+    if (CryptoUtils_IsKeyNullOrEmpty(eKey) || destIvBuffer == NULL || alg == UNSUPPORTED_DECRYPTION_ALG)
     {
+        return result;
+    }
+
+    ivInputBuff = LoadIvBufferWithOffsetHelper(blockSize, offSet);
+
+    if (ivInputBuff == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
 
-    ivByteBuff = (unsigned char*)malloc(blockSize);
+    tempResult = CryptoUtils_EncryptBlock(&tempDestIvByteBuff, alg, eKey, NULL, ivInputBuff);
 
-    memset(ivByteBuff, 0, blockSize);
-
-    LoadIvBufferWithOffsetHelper(ivByteBuff, blockSize, offSet);
-
-    result = CryptoUtils_EncryptBlock(&tempDestIvBuff, alg, eKey, NULL, ivByteBuff, blockSize);
-
-    if (IsAducResultCodeFailure(result.ResultCode))
+    if (IsAducResultCodeFailure(tempResult.ResultCode))
     {
+        result = tempResult;
+        goto done;
+    }
+
+    tempDestIvBuff = CONSTBUFFER_CreateFromBuffer(tempDestIvByteBuff);
+
+    if (tempDestIvBuff == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
 
     result.ResultCode = ADUC_GeneralResult_Success;
+
 done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        free(tempDestIvBuff);
+        CONSTBUFFER_DecRef(tempDestIvBuff);
         tempDestIvBuff = NULL;
     }
 
-    free(ivByteBuff);
+    if (ivInputBuff != NULL)
+    {
+        BUFFER_delete(ivInputBuff);
+    }
+
+    if (tempDestIvByteBuff != NULL)
+    {
+        BUFFER_delete(tempDestIvByteBuff);
+    }
 
     *destIvBuffer = tempDestIvBuff;
 
@@ -836,13 +1011,17 @@ done:
  * @param blockSize the size of the block
  * @return the number of bytes that are padding in @p searchBlock
  */
-size_t FindPKCS7BytesPadded(char* searchBlock, const size_t blockSize)
+size_t FindPKCS7BytesPadded(const unsigned char* searchBlock, const size_t blockSize)
 {
+    if (blockSize < 2)
+    {
+        return 0;
+    }
     size_t paddingCandidate = searchBlock[blockSize - 1];
 
-    if (paddingCandidate > 0 && paddingCandidate <= 0x10)
+    if (paddingCandidate > 0 && paddingCandidate <= blockSize)
     {
-        size_t index;
+        int index;
         for (index = blockSize - 1; index >= 0; --index)
         {
             if (searchBlock[index] != paddingCandidate)
@@ -863,63 +1042,89 @@ size_t FindPKCS7BytesPadded(char* searchBlock, const size_t blockSize)
 
 /**
  * @brief Helper function that trims @p decryptedBuffer according to PKCS#7 padding and stores the result in @p trimmedBufferHandle of size @p trimmedSize
- *
+ * @details Free the return buffer with BUFFER_delete()
  * @param trimmedBufferHandle the handle for storing the trimmed content
- * @param trimmedSize the size of @p trimmedBufferHandle
  * @param decryptedBuffer the buffer holding the data to be trimmed
- * @param bufferSize the size of @p decryptedBuffer
  * @param blockSize the block size of the algorithm being used
  * @return true on success; false on failure
  */
 bool CryptoUtils_TrimPKCS7Padding(
-    char** trimmedBufferHandle,
-    size_t* trimmedSize,
-    const char* decryptedBuffer,
-    const size_t bufferSize,
-    const size_t blockSize)
+    BUFFER_HANDLE* trimmedBufferHandle, const BUFFER_HANDLE decryptedBuffer, const size_t blockSize)
 {
     bool success = false;
 
-    char* tempBuff = NULL;
-    size_t tempTrimmedSize = 0;
+    BUFFER_HANDLE tempTrimmedBuff = NULL;
 
-    char* possiblePaddedBlock = (char*)(decryptedBuffer + bufferSize - blockSize);
+    unsigned char* tempBuff = NULL;
+
+    if (trimmedBufferHandle == NULL || decryptedBuffer == NULL || blockSize == 0)
+    {
+        goto done;
+    }
+
+    unsigned char* decryptedBufferBytes = BUFFER_u_char(decryptedBuffer);
+
+    if (decryptedBuffer == NULL)
+    {
+        goto done;
+    }
+
+    const size_t bufferSize = BUFFER_length(decryptedBuffer);
+
+    if (blockSize > bufferSize)
+    {
+        goto done;
+    }
+
+    unsigned char* possiblePaddedBlock = (unsigned char*)(decryptedBufferBytes + bufferSize - blockSize);
 
     size_t numBytesPadded = FindPKCS7BytesPadded(possiblePaddedBlock, blockSize);
 
+    //
+    // Note: According to PKCS#7 all buffers will have padding, no padded bytes means this buffer
+    // has not been padding according to PKCS#7's standard.
+    //
     if (numBytesPadded == 0)
     {
         goto done;
     }
 
-    tempTrimmedSize = bufferSize - numBytesPadded;
+    const size_t trimmedSize = bufferSize - numBytesPadded;
 
-    tempBuff = (char*)malloc(tempTrimmedSize);
+    tempBuff = (unsigned char*)malloc(trimmedSize);
 
     if (tempBuff == NULL)
     {
         goto done;
     }
 
-    memcpy(tempBuff, decryptedBuffer, tempTrimmedSize);
+    memcpy(tempBuff, decryptedBufferBytes, trimmedSize);
+
+    tempTrimmedBuff = BUFFER_create(tempBuff, trimmedSize);
+
+    if (tempTrimmedBuff == NULL)
+    {
+        goto done;
+    }
 
     success = true;
 done:
 
     if (!success)
     {
-        free(tempBuff);
-        tempBuff = NULL;
-        tempTrimmedSize = 0;
+        BUFFER_delete(tempTrimmedBuff);
+        tempTrimmedBuff = NULL;
     }
-    *trimmedBufferHandle = tempBuff;
-    *trimmedSize = tempTrimmedSize;
+
+    free(tempBuff);
+
+    *trimmedBufferHandle = tempTrimmedBuff;
     return success;
 }
 
 /**
  * @brief Decrypts a singular @p block of data to @p destBuff using the specified algorithm, key, and iv
- * @details function will fail if @p encryptedBlockSize does not match the expected block size of the @p alg
+ * @details function will fail if @p encryptedBlockSize does not match the expected block size of the @p alg, Free the return buffer with BUFFER_delete()
  *
  * @param destBuff A buffer that will be allocated with the decrypted block (size will be the same as the encrypted block)
  * @param alg A value of DecryptionAlg that indicates the algorithm to be used for the decryption
@@ -930,24 +1135,24 @@ done:
  * @return a value of ADUC_Result
  */
 ADUC_Result CryptoUtils_DecryptBlock(
-    unsigned char** destBuff,
+    BUFFER_HANDLE* destBuff,
     const DecryptionAlg alg,
     const KeyData* dKey,
-    const unsigned char* iv,
-    const unsigned char* block,
-    const int encryptedBlockSize)
+    CONSTBUFFER_HANDLE iv,
+    const BUFFER_HANDLE block)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
+    BUFFER_HANDLE tempDestBuff = NULL;
     unsigned char* decryptedBuffer = NULL;
+    EVP_CIPHER_CTX* ctx = NULL;
 
-    if (CryptoUtils_IsKeyNullOrEmpty(dKey) || block == NULL || destBuff == NULL)
+    if (CryptoUtils_IsKeyNullOrEmpty(dKey) || block == NULL || destBuff == NULL || alg == UNSUPPORTED_DECRYPTION_ALG)
     {
-        result.ExtendedResultCode = ADUC_ERC_NOMEM;
-        goto done;
+        return result;
     }
 
-    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    ctx = EVP_CIPHER_CTX_new();
 
     if (ctx == NULL)
     {
@@ -963,24 +1168,51 @@ ADUC_Result CryptoUtils_DecryptBlock(
         goto done;
     }
 
+    const int cipherBlockSize = EVP_CIPHER_block_size(cipherType);
+
+    const size_t blockSize = BUFFER_length(block);
+
+    if (cipherBlockSize != blockSize)
+    {
+        result.ExtendedResultCode = ADUC_ERC_INCORRECT_BLOCK_SIZE;
+        goto done;
+    }
+
     const CONSTBUFFER* keyData = CONSTBUFFER_GetContent(dKey->keyData);
 
-    if (EVP_DecryptInit_ex(ctx, cipherType, NULL, keyData->buffer, iv) != 1)
+    if (keyData == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
 
-    if (EVP_CIPHER_CTX_set_padding(ctx, 0) != 1)
+    if (iv != NULL)
     {
-        goto done;
+        const CONSTBUFFER* ivBuff = CONSTBUFFER_GetContent(iv);
+
+        if (ivBuff == NULL)
+        {
+            result.ExtendedResultCode = ADUC_ERC_NOMEM;
+            goto done;
+        }
+
+        if (EVP_DecryptInit_ex(ctx, cipherType, NULL, keyData->buffer, ivBuff->buffer) != 1)
+        {
+            result.ExtendedResultCode = ADUC_ERC_DECRYPTION_INIT_FAILED;
+            goto done;
+        }
+    }
+    else
+    {
+        if (EVP_DecryptInit_ex(ctx, cipherType, NULL, keyData->buffer, NULL) != 1)
+        {
+            result.ExtendedResultCode = ADUC_ERC_DECRYPTION_INIT_FAILED;
+            goto done;
+        }
     }
 
-    const int blockSize = EVP_CIPHER_CTX_block_size(ctx);
-
-    if (blockSize != encryptedBlockSize)
+    if (EVP_CIPHER_CTX_set_padding(ctx, 0) != 1)
     {
-        result.ExtendedResultCode = ADUC_ERC_INCORRECT_BLOCK_SIZE;
         goto done;
     }
 
@@ -994,9 +1226,16 @@ ADUC_Result CryptoUtils_DecryptBlock(
         goto done;
     }
 
+    unsigned char* blockData = BUFFER_u_char(block);
+
+    if (blockData == NULL)
+    {
+        goto done;
+    }
+
     int decryptedLength = 0;
 
-    if (EVP_DecryptUpdate(ctx, decryptedBuffer, &decryptedLength, block, encryptedBlockSize) != 1)
+    if (EVP_DecryptUpdate(ctx, decryptedBuffer, &decryptedLength, blockData, cipherBlockSize) != 1)
     {
         result.ExtendedResultCode = ADUC_ERC_DECRYPTION_UPDATE_FAILED;
         goto done;
@@ -1004,10 +1243,7 @@ ADUC_Result CryptoUtils_DecryptBlock(
 
     outSize += decryptedLength;
 
-    //
-    // Can be less than here if there is residual data in the context
-    //
-    if (outSize > encryptedBlockSize)
+    if (outSize > cipherBlockSize)
     {
         result.ExtendedResultCode = ADUC_ERC_INCORRECT_BLOCK_SIZE;
         goto done;
@@ -1019,34 +1255,41 @@ ADUC_Result CryptoUtils_DecryptBlock(
         goto done;
     }
 
-    EVP_CIPHER_CTX_cleanup(ctx);
-
     outSize += decryptedLength;
 
-    if (outSize != encryptedBlockSize)
+    if (outSize != cipherBlockSize)
     {
         result.ExtendedResultCode = ADUC_ERC_INCORRECT_BLOCK_SIZE;
         goto done;
     }
 
+    tempDestBuff = BUFFER_create(decryptedBuffer, outSize);
+
     result.ResultCode = ADUC_GeneralResult_Success;
 done:
 
-    if (IsAducResultCodeFailure(result.ResultCode))
+    if (ctx != NULL)
     {
-        free(decryptedBuffer);
-        decryptedBuffer = NULL;
+        EVP_CIPHER_CTX_cleanup(ctx);
+        EVP_CIPHER_CTX_free(ctx);
     }
 
-    *destBuff = decryptedBuffer;
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        BUFFER_delete(tempDestBuff);
+        tempDestBuff = NULL;
+    }
 
-    EVP_CIPHER_CTX_free(ctx);
+    free(decryptedBuffer);
+
+    *destBuff = tempDestBuff;
+
     return result;
 }
 
 /**
  * @brief Decrypts @p encryptedBuffer and allocates the result to @p destbuff with size @p destBuffSize
- * @details During the decryption process any padding is trimmed and removed before the result is returned to the caller.
+ * @details During the decryption process any padding is trimmed and removed before the result is returned to the caller. Free the return buffer with BUFFER_delete()
  * @param destBuff the destination for the decrypted data
  * @param destBuffSize the size of the data allocated to @p destBuff
  * @param alg the algorithm to use for decryption
@@ -1056,35 +1299,22 @@ done:
  * @return a value of ADUC_Result
  */
 ADUC_Result CryptoUtils_DecryptBufferBlockByBlock(
-    char** destBuff,
-    size_t* destBuffSize,
-    const DecryptionAlg alg,
-    const KeyData* dKey,
-    const unsigned char* encryptedBuffer,
-    const size_t encryptedBufferSize)
+    BUFFER_HANDLE* destBuff, const DecryptionAlg alg, const KeyData* dKey, const CONSTBUFFER_HANDLE encryptedBuffer)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    ADUC_Result tempResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
-    char* decryptedBuffer = NULL;
-    size_t decryptedBufferSize = 0;
-    char* trimmedBuffer = NULL;
-    size_t trimmedBufferSize = 0;
+    BUFFER_HANDLE decryptedBuffer = NULL;
+    BUFFER_HANDLE trimmedBuffer = NULL;
 
-    unsigned char* iv = NULL;
-    unsigned char* blockBuffer = NULL;
+    CONSTBUFFER_HANDLE iv = NULL;
+    BUFFER_HANDLE blockBuffer = NULL;
+    BUFFER_HANDLE inputBuff = NULL;
 
-    if (CryptoUtils_IsKeyNullOrEmpty(dKey) || encryptedBuffer == NULL || destBuff == NULL)
+    if (CryptoUtils_IsKeyNullOrEmpty(dKey) || encryptedBuffer == NULL || destBuff == NULL
+        || alg == UNSUPPORTED_DECRYPTION_ALG)
     {
-        result.ExtendedResultCode = ADUC_ERC_NOMEM;
-        goto done;
-    }
-
-    decryptedBuffer = (char*)malloc(encryptedBufferSize);
-
-    if (decryptedBuffer == NULL)
-    {
-        result.ExtendedResultCode = ADUC_ERC_NOMEM;
-        goto done;
+        return result;
     }
 
     const size_t blockSize = CryptoUtils_GetBlockSizeForAlg(alg);
@@ -1095,45 +1325,75 @@ ADUC_Result CryptoUtils_DecryptBufferBlockByBlock(
         goto done;
     }
 
+    const CONSTBUFFER* encryptedBuff = CONSTBUFFER_GetContent(encryptedBuffer);
+    const size_t encryptedBufferSize = encryptedBuff->size;
+
+    if (encryptedBufferSize % blockSize != 0)
+    {
+        result.ExtendedResultCode = ADUC_ENCRYPTED_CONTENT_DEFORMED;
+        goto done;
+    }
+
     size_t blockOffSet = 0;
 
     do
     {
-        result = CryptoUtils_CalculateIV(&iv, blockSize, alg, dKey, blockOffSet);
+        tempResult = CryptoUtils_CalculateIV(&iv, blockSize, alg, dKey, blockOffSet);
 
-        if (IsAducResultCodeFailure(result.ResultCode))
+        if (IsAducResultCodeFailure(tempResult.ResultCode))
         {
+            result = tempResult;
             goto done;
         }
 
-        result = CryptoUtils_DecryptBlock(&blockBuffer, alg, dKey, iv, (encryptedBuffer + blockOffSet), blockSize);
+        inputBuff = BUFFER_create(encryptedBuff->buffer + blockOffSet, blockSize);
 
-        if (IsAducResultCodeFailure(result.ResultCode))
+        tempResult = CryptoUtils_DecryptBlock(&blockBuffer, alg, dKey, iv, inputBuff);
+
+        if (IsAducResultCodeFailure(tempResult.ResultCode))
         {
+            result = tempResult;
             goto done;
         }
 
-        memcpy((decryptedBuffer + blockOffSet), blockBuffer, blockSize);
+        if (decryptedBuffer == NULL)
+        {
+            decryptedBuffer = BUFFER_clone(blockBuffer);
 
-        decryptedBufferSize += blockSize;
+            if (decryptedBuffer == NULL)
+            {
+                result.ExtendedResultCode = ADUC_ERC_NOMEM;
+                goto done;
+            }
+        }
+        else
+        {
+            if (BUFFER_append(decryptedBuffer, blockBuffer) != 0)
+            {
+                result.ExtendedResultCode = ADUC_ERC_NOMEM;
+                goto done;
+            }
+        }
 
-        free(blockBuffer);
+        BUFFER_delete(blockBuffer);
         blockBuffer = NULL;
 
-        free(iv);
+        BUFFER_delete(inputBuff);
+        inputBuff = NULL;
+
+        CONSTBUFFER_DecRef(iv);
         iv = NULL;
 
         blockOffSet += blockSize;
 
     } while (blockOffSet < encryptedBufferSize);
 
-    if (!CryptoUtils_TrimPKCS7Padding(
-            &trimmedBuffer, &trimmedBufferSize, decryptedBuffer, decryptedBufferSize, blockSize))
+    if (!CryptoUtils_TrimPKCS7Padding(&trimmedBuffer, decryptedBuffer, blockSize))
     {
         goto done;
     }
 
-    if (trimmedBuffer == NULL || trimmedBufferSize == 0)
+    if (trimmedBuffer == NULL)
     {
         goto done;
     }
@@ -1144,16 +1404,24 @@ done:
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         free(decryptedBuffer);
-        decryptedBuffer = NULL;
-        decryptedBufferSize = 0;
     }
 
-    free(iv);
-    free(blockBuffer);
-    free(decryptedBuffer);
+    if (blockBuffer != NULL)
+    {
+        BUFFER_delete(blockBuffer);
+    }
+
+    if (decryptedBuffer != NULL)
+    {
+        BUFFER_delete(decryptedBuffer);
+    }
+
+    if (iv != NULL)
+    {
+        CONSTBUFFER_DecRef(iv);
+    }
 
     *destBuff = trimmedBuffer;
-    *destBuffSize = trimmedBufferSize;
 
     return result;
 }

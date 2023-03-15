@@ -5,12 +5,8 @@
  * @copyright Copyright (c) Microsoft Corp.
  */
 
-#include <aduc/c_utils.h>
-
 #ifndef DECRYPTION_ALG_TYPES_H
-#    define DECRYPTION_ALG_TYPES_H
-
-EXTERN_C_BEGIN
+#define DECRYPTION_ALG_TYPES_H
 
 /**
  * Example JSON:
@@ -46,38 +42,37 @@ EXTERN_C_BEGIN
  * @brief Field name for the Base64 encoded, encrypted dek key
  * @details Field type string
 */
-#    define DEK_BYTES_FIELD "dek"
+#define DEK_BYTES_FIELD "dek"
 /**
  * @brief Field name for the DEK decrpytion algorithm
  * @details Field type string
  */
-#    define DEK_CRYPT_ALG_FIELD "dekCryptAlg"
+#define DEK_CRYPT_ALG_FIELD "dekCryptAlg"
 /**
  * @brief Field name for the decryption information for the content coming down
  * @details Field type json object
  */
-#    define DECRYPT_INFO_FIELD "decryptInfo"
+#define DECRYPT_INFO_FIELD "decryptInfo"
 /**
  * @brief Field name for the Decryption Information's algorithm type
  * @details Field type string
  */
-#    define DECRYPT_INFO_ALG_FIELD "alg"
+#define DECRYPT_INFO_ALG_FIELD "alg"
 /**
  * @brief Field name for the Decryption Information's decryption mode
  * @details Field type string
  */
-#    define DECRYPT_INFO_MODE_FIELD "mode"
+#define DECRYPT_INFO_MODE_FIELD "mode"
 /**
  * @brief Field name for the Decryption Information's key length
  * @details Field type string
  */
-#    define DECRYPT_INFO_KEY_LENGTH_FIELD "keyLen"
+#define DECRYPT_INFO_KEY_LENGTH_FIELD "keyLen"
 
 /**
  * @brief Field name for the props field
  * @details Field type json object
  */
-#    define PROPS_FIELD "props"
-EXTERN_C_END
+#define PROPS_FIELD "props"
 
 #endif

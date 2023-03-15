@@ -15,6 +15,8 @@
 #include <iostream>
 using ADUC::StringUtils::cstr_wrapper;
 using uint8_t_wrapper = ADUC::StringUtils::calloc_wrapper<uint8_t>;
+using keydata_wrapper = ADUC::StringUtils::calloc_wrapper<KeyData>;
+using bufferhandle_wrapper = ADUC::StringUtils::calloc_wrapper<BUFFER_HANDLE>;
 
 TEST_CASE("Base64 Encoding")
 {
@@ -82,6 +84,7 @@ TEST_CASE("RSA Keys")
         CHECK(key == nullptr);
     }
 }
+
 TEST_CASE("Signature Verification")
 {
     SECTION("Validating a Valid Signature")
@@ -168,7 +171,7 @@ TEST_CASE("Signature Verification")
     }
 }
 
-TEST_CASE("CryptoUtils_InitializeKeyDataFromUrlEncodedB64String")
+TEST_CASE("CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String")
 {
     SECTION("Successful Init")
     {
@@ -177,15 +180,15 @@ TEST_CASE("CryptoUtils_InitializeKeyDataFromUrlEncodedB64String")
         std::array<uint8_t, 16> decodedBytes = { 0xBA, 0xBA, 0xBA, 0xBA, 0xC0, 0x0C, 0x09, 0x12,
                                                  0x34, 0x56, 0x78, 0xCB, 0xDA, 0xFA, 0x10, 0x02 };
 
-        KeyData* key = nullptr;
+        keydata_wrapper key;
 
-        REQUIRE(CryptoUtils_InitializeKeyDataFromUrlEncodedB64String(&key, b64EncodedKeyData.c_str()));
+        REQUIRE(CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String(key.address_of(), b64EncodedKeyData.c_str()));
 
-        CHECK(key != nullptr);
+        CHECK(key.get() != nullptr);
 
-        REQUIRE(key->keyData != nullptr);
+        REQUIRE(key.get()->keyData != nullptr);
 
-        const CONSTBUFFER* keyBytes = CONSTBUFFER_GetContent(key->keyData);
+        const CONSTBUFFER* keyBytes = CONSTBUFFER_GetContent(key.get()->keyData);
 
         REQUIRE(keyBytes != nullptr);
 
@@ -196,14 +199,14 @@ TEST_CASE("CryptoUtils_InitializeKeyDataFromUrlEncodedB64String")
             CHECK(keyBytes->buffer[i] == decodedBytes.at(i));
         }
 
-        CryptoUtils_DeInitializeKeyData(&key);
+        CryptoUtils_DeAllocKeyData(key.get());
     }
 
     SECTION("Bad Init")
     {
         KeyData* key = nullptr;
 
-        CHECK_FALSE(CryptoUtils_InitializeKeyDataFromUrlEncodedB64String(&key, nullptr));
+        CHECK_FALSE(CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String(&key, nullptr));
 
         CHECK(key == nullptr);
     }
@@ -215,22 +218,22 @@ TEST_CASE("CryptoUtils_IsKeyNullOrEmpty")
     {
         std::string b64EncodedKeyData = "urq6usAMCRI0VnjL2vo=";
 
-        KeyData* key = nullptr;
+        keydata_wrapper key;
 
-        REQUIRE(CryptoUtils_InitializeKeyDataFromUrlEncodedB64String(&key, b64EncodedKeyData.c_str()));
+        REQUIRE(CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String(key.address_of(), b64EncodedKeyData.c_str()));
 
-        REQUIRE(key != nullptr);
+        REQUIRE(key.get() != nullptr);
 
-        CHECK_FALSE(CryptoUtils_IsKeyNullOrEmpty(key));
+        CHECK_FALSE(CryptoUtils_IsKeyNullOrEmpty(key.get()));
 
-        CryptoUtils_DeInitializeKeyData(&key);
+        CryptoUtils_DeAllocKeyData(key.get());
     }
 
     SECTION("Check - Null KeyData")
     {
-        KeyData* key = nullptr;
+        keydata_wrapper key;
 
-        CHECK(CryptoUtils_IsKeyNullOrEmpty(key));
+        CHECK(CryptoUtils_IsKeyNullOrEmpty(key.get()));
     }
 }
 
@@ -244,22 +247,25 @@ TEST_CASE("CryptoUtils_EncryptBufferBlockByBlock")
 
         std::string expectedEncodedOutput = "oAHfa0HqwjPO3_25WKhKbUWE0PLuXc1P8CiCPyOpcMw";
 
-        KeyData* key = NULL;
+        keydata_wrapper key;
 
-        REQUIRE(CryptoUtils_InitializeKeyDataFromUrlEncodedB64String(&key, b64UrlEncodedKeyData.c_str()));
+        REQUIRE(
+            CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String(key.address_of(), b64UrlEncodedKeyData.c_str()));
 
-        uint8_t_wrapper encryptedContent;
-        size_t encryptedOutSize = 0;
+        BUFFER_HANDLE encryptedContent = nullptr;
 
-        ADUC_Result result = CryptoUtils_EncryptBufferBlockByBlock(
-            encryptedContent.address_of(), &encryptedOutSize, AES_256_CBC, key, content.c_str(), content.length());
+        CONSTBUFFER_HANDLE contentBuffer = CONSTBUFFER_Create((unsigned char*)content.c_str(), content.length());
+
+        ADUC_Result result =
+            CryptoUtils_EncryptBufferBlockByBlock(&encryptedContent, AES_256_CBC, key.get(), contentBuffer);
 
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
-        CHECK(encryptedContent.get() != nullptr);
-        CHECK(encryptedOutSize != 0);
+        CHECK(encryptedContent != nullptr);
+        CHECK(BUFFER_length(encryptedContent) != 0);
 
-        char* b64UrlEncodedEncryptedContent = Base64URLEncode(encryptedContent.get(), encryptedOutSize);
+        char* b64UrlEncodedEncryptedContent =
+            Base64URLEncode(BUFFER_u_char(encryptedContent), BUFFER_length(encryptedContent));
 
         cstr_wrapper encodedEncryptedContent{ b64UrlEncodedEncryptedContent };
 
@@ -267,7 +273,9 @@ TEST_CASE("CryptoUtils_EncryptBufferBlockByBlock")
 
         CHECK(encodedEncryptedContentStr == expectedEncodedOutput);
 
-        CryptoUtils_DeInitializeKeyData(&key);
+        BUFFER_delete(encryptedContent);
+        CryptoUtils_DeAllocKeyData(key.get());
+        CONSTBUFFER_DecRef(contentBuffer);
     }
     SECTION("Decrypt a Buffer")
     {
@@ -277,14 +285,12 @@ TEST_CASE("CryptoUtils_EncryptBufferBlockByBlock")
 
         std::string encryptedContent = "oAHfa0HqwjPO3_25WKhKbUWE0PLuXc1P8CiCPyOpcMw";
 
-        KeyData* key = nullptr;
+        keydata_wrapper key;
 
         char* decodedContent = nullptr;
 
-        REQUIRE(CryptoUtils_InitializeKeyDataFromUrlEncodedB64String(&key, b64UrlEncodedKeyData.c_str()));
-
-        cstr_wrapper decryptedContent;
-        size_t decryptedOutSize = 0;
+        REQUIRE(
+            CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String(key.address_of(), b64UrlEncodedKeyData.c_str()));
 
         uint8_t_wrapper decodedContent_w;
         size_t decodedContentLength = Base64URLDecode(encryptedContent.c_str(), decodedContent_w.address_of());
@@ -292,23 +298,32 @@ TEST_CASE("CryptoUtils_EncryptBufferBlockByBlock")
         REQUIRE(decodedContent_w.get() != nullptr);
         REQUIRE(decodedContentLength == 32);
 
-        ADUC_Result result = CryptoUtils_DecryptBufferBlockByBlock(
-            decryptedContent.address_of(),
-            &decryptedOutSize,
-            AES_256_CBC,
-            key,
-            decodedContent_w.get(),
-            decodedContentLength);
+        BUFFER_HANDLE decryptedContent = NULL;
+        CONSTBUFFER_HANDLE encryptedContentBuffer = CONSTBUFFER_Create(decodedContent_w.get(), decodedContentLength);
+
+        ADUC_Result result =
+            CryptoUtils_DecryptBufferBlockByBlock(&decryptedContent, AES_256_CBC, key.get(), encryptedContentBuffer);
 
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
-        CHECK(decryptedContent.get() != nullptr);
-        CHECK(decryptedOutSize != 0);
+        CHECK(decryptedContent != nullptr);
 
-        std::string decryptedContentStr{ (const char*)decryptedContent.get() };
+        const size_t decryptedContentLength = BUFFER_length(decryptedContent);
+
+        CHECK(decryptedContentLength == expectedOutput.length());
+
+        //
+        // turn the decrypted content into a string
+        //
+        uint8_t* decryptedContentBytes = BUFFER_u_char(decryptedContent);
+
+        std::string decryptedContentStr{ decryptedContentBytes, decryptedContentBytes + decryptedContentLength };
+
         CHECK(decryptedContentStr == expectedOutput);
 
-        CryptoUtils_DeInitializeKeyData(&key);
+        BUFFER_delete(decryptedContent);
+        CryptoUtils_DeAllocKeyData(key.get());
+        CONSTBUFFER_DecRef(encryptedContentBuffer);
     }
 }
 
@@ -322,14 +337,12 @@ TEST_CASE("CryptoUtils_DecryptBufferBlockByBlock")
 
         std::string encryptedContent = "oAHfa0HqwjPO3_25WKhKbUWE0PLuXc1P8CiCPyOpcMw";
 
-        KeyData* key = nullptr;
+        keydata_wrapper key;
 
         char* decodedContent = nullptr;
 
-        REQUIRE(CryptoUtils_InitializeKeyDataFromUrlEncodedB64String(&key, b64UrlEncodedKeyData.c_str()));
-
-        cstr_wrapper decryptedContent;
-        size_t decryptedOutSize = 0;
+        REQUIRE(
+            CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String(key.address_of(), b64UrlEncodedKeyData.c_str()));
 
         uint8_t_wrapper decodedContent_w;
         size_t decodedContentLength = Base64URLDecode(encryptedContent.c_str(), decodedContent_w.address_of());
@@ -337,22 +350,26 @@ TEST_CASE("CryptoUtils_DecryptBufferBlockByBlock")
         REQUIRE(decodedContent_w.get() != nullptr);
         REQUIRE(decodedContentLength == 32);
 
-        ADUC_Result result = CryptoUtils_DecryptBufferBlockByBlock(
-            decryptedContent.address_of(),
-            &decryptedOutSize,
-            AES_256_CBC,
-            key,
-            decodedContent_w.get(),
-            decodedContentLength);
+        BUFFER_HANDLE decryptedContent = NULL;
+        CONSTBUFFER_HANDLE encryptedContentBuffer = CONSTBUFFER_Create(decodedContent_w.get(), decodedContentLength);
+
+        ADUC_Result result =
+            CryptoUtils_DecryptBufferBlockByBlock(&decryptedContent, AES_256_CBC, key.get(), encryptedContentBuffer);
 
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
-        CHECK(decryptedContent.get() != nullptr);
-        CHECK(decryptedOutSize != 0);
+        const size_t decryptedContentLength = BUFFER_length(decryptedContent);
 
-        std::string decryptedContentStr{ (const char*)decryptedContent.get() };
+        uint8_t* decryptedContentBytes = BUFFER_u_char(decryptedContent);
+
+        CHECK(decryptedContentBytes != nullptr);
+        CHECK(decryptedContentLength != 0);
+
+        std::string decryptedContentStr{ decryptedContentBytes, decryptedContentBytes + decryptedContentLength };
         CHECK(decryptedContentStr == expectedOutput);
 
-        CryptoUtils_DeInitializeKeyData(&key);
+        BUFFER_delete(decryptedContent);
+        CryptoUtils_DeAllocKeyData(key.get());
+        CONSTBUFFER_DecRef(encryptedContentBuffer);
     }
 }

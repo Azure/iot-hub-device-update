@@ -73,6 +73,10 @@
                         {
                             "name": "ADUC_ERC_ZERO_BLOCK_SIZE",
                             "value": 12
+                        },
+                        {
+                            "name": "ADUC_ENCRYPTED_CONTENT_DEFORMED",
+                            "value": 13
                         }
                     ]
                 },

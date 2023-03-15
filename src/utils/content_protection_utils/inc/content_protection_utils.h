@@ -1,6 +1,6 @@
 /**
- * @file base64_utils.h
- * @brief Provides an implementation for Base64 encoding and decoding
+ * @file content_protection_utils.h
+ * @brief Provides an implementation for interacting with the content protection section of a deployment's json
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
@@ -10,8 +10,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifndef BASE64_UTILS_H
-#    define BASE64_UTILS_H
+#ifndef CONTENT_PROTECTION_UTILS_H
+#    define CONTENT_PROTECTION_UTILS_H
 
 EXTERN_C_BEGIN
 
@@ -21,4 +21,4 @@ bool ContentProtectionUtils_GetDecryptAlgFromDecryptionInfo(const JSON_Object* d
 
 EXTERN_C_END
 
-#endif // BASE64_UTILS_H
+#endif // CONTENT_PROTECTION_UTILS_H

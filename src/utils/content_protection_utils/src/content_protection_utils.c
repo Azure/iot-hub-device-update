@@ -12,8 +12,17 @@
 #include <stdbool.h>
 #include <strings.h>
 
-bool ContentProtectionUtils_DecryptDek(const STRING_HANDLE dek, const STRING_HANDLE dekCryptAlg);
+bool ContentProtectionUtils_DecryptDek(const STRING_HANDLE dek, const STRING_HANDLE dekCryptAlg)
+{
+    return false;
+}
 
+/**
+ * @brief Consumes the JSON that describes the algorithm and data that the content was encrypted with so that it can be decrypted
+ *
+ * @param decryptInfo JSON section that describes the encryption/decryption scheme of the content in the dpeloyment
+ * @return A DecryptionAlg type
+ */
 DecryptionAlg ContentProtectionUtils_GetDecryptAlgFromDecryptionInfo(const JSON_Object* decryptInfo)
 {
     DecryptionAlg alg = UNSUPPORTED_DECRYPTION_ALG;
@@ -48,4 +57,6 @@ DecryptionAlg ContentProtectionUtils_GetDecryptAlgFromDecryptionInfo(const JSON_
             }
         }
     }
+
+    return UNSUPPORTED_DECRYPTION_ALG;
 }

@@ -5,12 +5,8 @@
  * @copyright Copyright (c) Microsoft Corp.
  */
 
-#include <aduc/c_utils.h>
-
 #ifndef DECRYPTION_ALG_TYPES_H
-#    define DECRYPTION_ALG_TYPES_H
-
-EXTERN_C_BEGIN
+#define DECRYPTION_ALG_TYPES_H
 
 typedef enum _DecryptionAlg
 {
@@ -22,7 +18,5 @@ typedef enum _DecryptionAlg
     // New supported types can be added here
     //
 } DecryptionAlg;
-
-EXTERN_C_END
 
 #endif
