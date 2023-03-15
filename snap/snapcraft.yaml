@@ -11,7 +11,7 @@ description: |
     This snap provides a command called "set-config" that takes configuration file name and base64-encoded binary data as input and saves the decoded data to the $SNAP_DATA/config folder.
 
     Example usage:
-      sudo deviceupdate-agent.set-config -f du-config.json -d "$(base64 /path/to/your/du-config.json)"
+      sudo deviceupdate-agent.set-config --config-file du-config.json -d "$(base64 /path/to/your/du-config.json)"
 
     For more information:
       deviceupdate-agent.set-config --help
