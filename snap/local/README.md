@@ -215,11 +215,16 @@ layout:
 To connect, use following commands:
 
 ```shell
-sudo snap connect deviceupdate-agent:do-port-numbers deliveryoptimization-client:port-numbers
+# Required connections for content downloading using Delivery Optimization snap.
+sudo snap connect deviceupdate-agent:do-port-numbers deliveryoptimization-client:do-port-numbers
 
-sudo snap connect deviceupdate-agent:do-configs deliveryoptimization-client:configs
+sudo snap connect deviceupdate-agent:do-configs deliveryoptimization-client:do-configs
 
 sudo snap connect deliveryoptimization-client:deviceupdate-agent-downloads deviceupdate-agent:downloads-folder
+
+# Required interface for Snapd RestFul requests. 
+sudo snap connect deviceupdate-agent:snapd-control
+
 ```
 
 Verify that connections are ok:
