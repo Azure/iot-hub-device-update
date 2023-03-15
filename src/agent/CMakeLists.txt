@@ -145,9 +145,6 @@ target_compile_definitions (
 
 if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
     target_compile_definitions (${target_name} PRIVATE ADUC_PLATFORM_SIMULATOR)
-#else ()
-#    find_package (deliveryoptimization_sdk CONFIG REQUIRED)
-#    target_link_libraries (${target_name} PRIVATE Microsoft::deliveryoptimization)
 endif ()
 
 target_link_libraries (${target_name} PRIVATE aduc::platform_layer)
