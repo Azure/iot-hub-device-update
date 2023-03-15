@@ -25,54 +25,6 @@
 
 namespace MSDO = microsoft::deliveryoptimization;
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <limits.h>
-#include <libgen.h>
-#include <errno.h>
-
-char * resolve_symlinks(const char * path)
-{
-    char resolved[PATH_MAX];
-    char * result = NULL;
-    char * dir = NULL;
-    char * base = NULL;
-    size_t len = 0;
-
-    if (realpath(path, resolved) != NULL)
-    {
-        // get the directory part of the resolved path
-        dir = dirname(resolved);
-        // get the base part of the resolved path
-        base = basename(resolved);
-        printf("path: %s\n ", path);
-        printf("resoved: %s\n", resolved);
-        printf("dir: %s\n", dir);
-        printf("base: %s\n", base);
-        // calculate the length of the absolute path
-        len = strlen(dir) + strlen(base) + 1; // +1 for the terminating null character
-        // allocate memory for the absolute path
-        result = (char*) malloc(len);
-        if (result != NULL)
-        {
-            // concatenate the directory and base parts of the resolved path to form the absolute path
-            snprintf(result, len, "%s/%s", dir, base);
-        }
-        else
-        {
-            fprintf(stderr, "Error: failed to allocate memory for absolute path.\n");
-        }
-    }
-    else
-    {
-        fprintf(stderr, "Error: %s.\n", strerror(errno));
-    }
-
-    return result;
-}
-
 ADUC_Result do_download(
     const ADUC_FileEntity* entity,
     const char* workflowId,
@@ -96,11 +48,9 @@ ADUC_Result do_download(
     }
 
     std::stringstream fullFilePath;
-    //fullFilePath << resolve_symlinks(workFolder) << "/" << entity->TargetFilename;
-
     fullFilePath << workFolder << "/" << entity->TargetFilename;
 
-    printf(
+    Log_Info(
         "Downloading File '%s' from '%s' to '%s' (workfolder:%s)",
         entity->TargetFilename,
         entity->DownloadUri,
