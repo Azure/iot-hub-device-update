@@ -136,16 +136,12 @@ function test_shutdown_service() {
             exit 1
         fi
 
-        # Check if the service has stopped running
-        if echo "$status" | grep -q "inactive (dead)"; then
-            echo "Service successfully shut down."
-        fi
-
         daemon_status=$(pgrep AducIotAgent)
 
         # Check if the daemon has been killed
         if [ -z "$daemon_status" ]; then
             echo "The Daemon has been killed successfully."
+            return
         fi
 
         # Check if the timeout has been exceeded
