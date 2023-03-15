@@ -84,7 +84,7 @@ function verify_user_group_permissions() {
     adu_gid=$(id -g adu)
 
     # Find the main PID of the "AducIotAgent" service
-    systemctl start deviceupdate-agent.service
+    sudo systemctl start deviceupdate-agent.service
     status_output=$(systemctl status deviceupdate-agent.service)
 
     main_pid=$(echo "$status_output" | awk '/Main PID/ {print $3}')
@@ -122,7 +122,7 @@ function verify_log_files() {
 
 function test_shutdown_service() {
     # Stop the service
-    systemctl stop deviceupdate-agent.service
+    sudo systemctl stop deviceupdate-agent.service
 
     # Check the service status
     timeout=5 # Timeout in seconds
