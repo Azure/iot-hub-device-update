@@ -328,6 +328,11 @@ set (
     "adu"
     CACHE STRING "The effective group name for adu-shell process.")
 
+set (
+    EIS_PIPE_PATH
+    "/tmp/eis_pipe"
+    CACHE STRING "The named pipe for eis identities.")
+
 if (ADUC_UBUNTU_CORE_SNAP_ONLY)
     set (
         ADUC_FILE_USER
@@ -348,6 +353,11 @@ if (ADUC_UBUNTU_CORE_SNAP_ONLY)
         DO_FILE_GROUP
         "snap_aziot_do"
         CACHE STRING "The group for do file ownership.")
+
+    set (
+        EIS_USER
+        "snap_aziot_du"
+        CACHE STRING "The uid to call eis service.")
 else ()
     set (
         ADUC_FILE_USER
@@ -368,6 +378,11 @@ else ()
         DO_FILE_GROUP
         "do"
         CACHE STRING "The group for do file ownership.")
+
+    set (
+        EIS_USER
+        "adu"
+        CACHE STRING "The uid to call eis service.")
 endif ()
 
 set (

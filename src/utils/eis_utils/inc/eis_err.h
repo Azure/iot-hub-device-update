@@ -27,6 +27,7 @@ typedef enum tagEISErr
     EISErr_RecvRespOutOfLimitsErr = 7, /**< Service returned a response out of the EIS Utility Limits */
     EISErr_ContentAllocErr = 8, /**< EisComs could not allocate enough memory for the content*/
     EISErr_InvalidJsonRespErr = 9, /**< Service returned invalid JSON */
+    EISErr_NamedPipeFailure = 10, /**< Failure on EIS Named Pipe */
 } EISErr;
 
 /**

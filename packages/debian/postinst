@@ -47,9 +47,6 @@ eis_idservice_dir=/etc/aziot/identityd/config.d
 # ADU Agent daemon needs to run as 'adu' user to be able to perform high-privilege tasks via adu-shell.
 adu_user=adu
 
-# ais_user is the user that calls into the AIS service snap
-ais_user=snap_aziot_du
-
 # The adu_group is the group that gives admins and partner users like DO user
 # access to ADU resources like sandbox folder.
 adu_group=adu
@@ -242,22 +239,22 @@ register_reference_extensions() {
 
 register_adu_user_and_process_with_eis() {
         if getent group "aziotid" > /dev/null; then
-            usermod -aG aziotid $ais_user
+            usermod -aG aziotid $adu_user
         fi
 
         if getent group "aziotcs" > /dev/null; then
-            usermod -aG aziotcs $ais_user
+            usermod -aG aziotcs $adu_user
         fi
 
         if getent group "aziotks" > /dev/null; then
-            usermod -aG aziotks $ais_user
+            usermod -aG aziotks $adu_user
         fi
 
         # Register our process with EIS
         if [ -d "$eis_idservice_dir" ]; then
 
             if [ ! -f "$eis_idservice_dir/$adu_eis_conf_file" ]; then
-                printf "[[principal]]\n name=\"IoTHubDeviceUpdate\"\n idtype=[\"module\"]\n uid= $(id -u $ais_user)\n" > "$eis_idservice_dir/$adu_eis_conf_file"
+                printf "[[principal]]\n name=\"IoTHubDeviceUpdate\"\n idtype=[\"module\"]\n uid= $(id -u $adu_user)\n" > "$eis_idservice_dir/$adu_eis_conf_file"
                 chown aziotid:aziotid "$eis_idservice_dir/$adu_eis_conf_file"
                 chmod u=rw "$eis_idservice_dir/$adu_eis_conf_file"
             fi
