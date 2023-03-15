@@ -126,6 +126,11 @@
  */
 #define EIS_CERT_RESP_PEM "pem"
 
+/**
+ * @brief Maximum amount of bytes for any EIS response
+ */
+#define EIS_RESP_SIZE_MAX 4096
+
 //
 // Internal Functions
 //
@@ -486,20 +491,20 @@ EISErr EISIdentitiesPipeReader(const char* pipePath, char** identityResponseBuff
         return result;
     }
 
-    *identityResponseBuffer = malloc(1024 * sizeof(char));
+    *identityResponseBuffer = malloc(EIS_RESP_SIZE_MAX * sizeof(char));
     if (*identityResponseBuffer == NULL) {
         *childErrno = errno;
         goto done;
     }
     
-    if (read(pipeFd, *identityResponseBuffer, 1024) < 0) {
+    if (read(pipeFd, *identityResponseBuffer, EIS_RESP_SIZE_MAX) < 0) {
         *childErrno = errno;
         free(*identityResponseBuffer);
         goto done;
     }
 
-    char readidentityResult[1024];
-    if (read(pipeFd, readidentityResult, 1024) < 0) {
+    char readidentityResult[EIS_RESP_SIZE_MAX];
+    if (read(pipeFd, readidentityResult, EIS_RESP_SIZE_MAX) < 0) {
         *childErrno = errno;
         free(*identityResponseBuffer);
         goto done;
