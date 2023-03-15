@@ -75,8 +75,8 @@ Keys different between Device Update Agent and Device Update Agent Snap:
 
 | | Device Upate Agent | Device Update Agent Snap |
 |---|---|---|
-| user id| adu | snap-aziot-du | 
-| group id| du | snap-aziot-du |
+| user id| adu | snap_aziot_du | 
+| group id| du | snap_aziot_du |
 
 ### How DU Agent Acquire the IoT Hub Connection Information
 
@@ -91,9 +91,7 @@ idtype = ["module"]
 uid = <SNAP_AZIOT_DU_USER_ID>
 ```
 
-Replace `SNAP_AZIOT_DU_USER_ID` with the actual user id of `snap-aziot-du`
-
-To access `/etc/aziot/identityd` folder, we need to map
+Replace `SNAP_AZIOT_DU_USER_ID` with the actual user id of `snap_aziot_du`
 
 This specifies the principal information for the DU Agent Module, including its name, ID type, and user ID. It is important to ensure that the file is created with the correct filename and location, and that the specified values are appropriate for your specific use case.
 
@@ -102,7 +100,7 @@ This specifies the principal information for the DU Agent Module, including its 
 When connecting snaps with interfaces, the snaps are typically connected with the default user or "system" user. However, it is possible to connect snaps with a specific user ID by using the `--classic` and `--username` options with the snap connect command.
 
 For example, to connect to Azure Identity Service with a specific user ID called "snap_aziot_adu", you would use the following command:
-`snap connect --classic --username=snap_aziot_ad deviceupdate-agent:AIS-interface azureIdentityService-snap:AIS-interface`  
+`snap connect --classic --username=snap_aziot_du deviceupdate-agent:AIS-interface azureIdentityService-snap:AIS-interface`  
 This will connect the two snaps using the "snap_aziot_adu" user ID, allowing the snaps to communicate with each other as that user.
 
 It is important to note that using the `--classic` and `--username` options with the snap connect command can have security implications, as it allows the connected snaps to access each other's data and resources as the specified user. Therefore, it should only be used if necessary and with caution.
@@ -341,6 +339,8 @@ To view the journal log, use following command:
 $ journalctl -u snap.deviceupdate-agent.deviceupdate-agent -f --no-tail
 ```
 
+## Start and Stop The Device Update Snap Daemon
+
 To start the daemon:
 
 ```shell
@@ -359,6 +359,39 @@ To restart the daemon:
 $ sudo systemctl restart  snap.deviceupdate-agent.deviceupdate-agent
 ```
 
+## Provisioning Device Update Agent Snap
+
+> NOTE | To obtain comprehensive information on provisioning the Device Update Agent, please refer to the following link: [Device Update Agent Provisioning](https://learn.microsoft.com/en-us/azure/iot-hub-device-update/device-update-agent-provisioning)
+
+To configure the DU Agent, you can use `deviceupdate-agent.set-config` command.
+
+  This command decodes and saves base64 encoded configuration data to a file with the given name in the `\$SNAP_DATA/config` directory.  
+
+  The script takes two required options - the name of the config file and the base64 encoded data - and saves the data to the specified file.  
+
+  > NOTE | Only two config file names are allowed: `du-config.json` and `du-diagnostics-config.json`.
+
+| Options | Arguments | Description |
+|---|---|---|
+|-c, --config-file | \<config file name\> |  Specifies the name of the configuration file to be created or updated.<br/><br/>The only valid values for the config file name are \"du-config.json\" and \"du-diagnostics-config.json\".|
+| -d, --data  | \<base64 encoded data\> | Specifies the base64 encoded configuration data to be saved to the specified config file. |
+| -h, --help  | | Displays this usage information |
+
+Examples:
+
+```shell
+# Save the base64 encoded configuration data to the \"du-config.json\" file:
+
+$ sudo snap $COMMAND_NAME --config-file du-config.json --data "$(base64 /path/to/du-config.json)"
+```
+
+```shell
+# Save the base64 encoded configuration data to the "du-diagnostics-config.json" file:
+
+$ sudo snap $COMMAND_NAME -c du-diagnostics-config.json -d $(base64 /path/to/du-diagnostics-config.json)"
+```
+
+> IMPORTANT | After updating the configuration file(s), it is necessary to restart the agent.
 
 ## Summary
 
@@ -366,8 +399,8 @@ Keys different between Device Update Agent and Device Update Agent Snap:
 
 | | Device Upate Agent | Device Update Agent Snap |
 |---|---|---|
-| user id| adu | snap-aziot-du | 
-| group id| du | snap-aziot-du |
+| user id| adu | snap_aziot_du | 
+| group id| adu | snap_aziot_du |
 | downloads folder | /var/lib/adu/downloads | $SNAP_DATA/data/downloads |
 | configs file | /etc/adu/du-config.json | $SNAP_DATA/configs/du-config.json|
 | logs folder | /var/log/adu | $SNAP_DATA/log 
