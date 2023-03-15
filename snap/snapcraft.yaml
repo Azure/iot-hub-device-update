@@ -213,7 +213,7 @@ slots:
         - $SNAP_DATA/data/downloads
 
 environment:
- LD_LIBRARY_PATH: "$LD_LIBRARY_PATH:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET"
+ LD_LIBRARY_PATH: "$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET"
 
 layout:
 # adu_data_dir
