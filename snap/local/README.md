@@ -12,14 +12,14 @@
 
 Ubuntu Core is a secure and reliable operating system that is tailored for use in IoT and embedded devices. It employs the "snap" packaging system, which simplifies software installation, updates, and rollbacks for individual packages and apps. Ubuntu Core is designed with app isolation and containerization to provide enhanced security features, making it a preferred choice for IoT and other embedded devices.
 
-Visit [Ubunt Core Official Page](https://ubuntu.com/core) for more information.
+Visit [Ubuntu Core Official Page](https://ubuntu.com/core) for more information.
 
 ## Inside Ubuntu Core
 
 The Ubuntu Core architecture overview diagram below depicts the delivery of the kernel, boot assets, runtime environment, applications, and device enablement capabilities as snaps. These snaps are managed by the snap daemon (snapd) and the daemon itself is packaged as a snap.  
 Visit [Ubuntu Core](https://ubuntu.com/core/docs/uc20/inside) page for more details.
 
-![Inside Ubunut Core - Diagram](./assets/du-agent-snap-inside-ubuntu-core.svg)
+![Inside Ubuntu Core - Diagram](./assets/du-agent-snap-inside-ubuntu-core.svg)
 
 > Credit: the diagram above is adapted from [Inside Ubuntu Core](https://ubuntu.com/core/docs/uc20/inside) diagram.
 ## Device Update Agent Snap for Ubuntu Core
