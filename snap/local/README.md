@@ -1,6 +1,6 @@
 # Device Update Agent Snap for Ubuntu Core
 
-## Terminology
+## Achronym
 
 | Achronym | Description | Note|
 |---|---|---|
@@ -10,33 +10,21 @@
 
 ## Ubuntu Core
 
-Ubuntu Core is a minimalist version of the Ubuntu operating system designed for use in embedded devices and Internet of Things (IoT) devices. It is based on the same Ubuntu operating system as desktop and server versions, but with a much smaller footprint and a focus on security, reliability, and easy management.
-
-Ubuntu Core uses a "snap" packaging system to deliver software, which allows for easy installation, updates, and rollbacks of individual packages and applications. This makes it easier to manage and maintain embedded devices that may not have the same resources or capabilities as traditional computing devices.
-
-In addition to the snap packaging system, Ubuntu Core also includes a number of security features, such as app isolation and containerization, to help ensure that the system and its applications remain secure and protected from attacks. These security features make Ubuntu Core a popular choice for use in IoT and other embedded devices where security is a critical concern.
+Ubuntu Core is a secure and reliable operating system that is tailored for use in IoT and embedded devices. It employs the "snap" packaging system, which simplifies software installation, updates, and rollbacks for individual packages and apps. Ubuntu Core is designed with app isolation and containerization to provide enhanced security features, making it a preferred choice for IoT and other embedded devices.
 
 Visit [Ubunt Core Official Page](https://ubuntu.com/core) for more information.
 
 ## Inside Ubuntu Core
 
 The Ubuntu Core architecture overview diagram below depicts the delivery of the kernel, boot assets, runtime environment, applications, and device enablement capabilities as snaps. These snaps are managed by the snap daemon (snapd) and the daemon itself is packaged as a snap.  
-Visit [Ubuntu Core](https://ubuntu.com/core/docs/uc20/inside) page for more details
+Visit [Ubuntu Core](https://ubuntu.com/core/docs/uc20/inside) page for more details.
 
-![Inside Ubunut Core - Diagram](https://ubuntucommunity.s3.dualstack.us-east-2.amazonaws.com/original/3X/e/9/e9bba73072d97485b71b2e079f7859d52a25eaa1.png)
+![Inside Ubunut Core - Diagram](./assets/du-agent-snap-inside-ubuntu-core.svg)
 
-
+> Credit: the diagram above is adapted from [Inside Ubuntu Core](https://ubuntu.com/core/docs/uc20/inside) diagram.
 ## Device Update Agent Snap for Ubuntu Core
 
-The Device Update Agent, also known as the DU Agent, is a crucial `application` snap  specifically designed for Ubuntu Core. Its primary purpose is to manage updates and ensure the security and reliability of devices that run on this operating system. There are several reasons why the DU Agent is essential:
-
-- Simplified update management: The Device Update Agent provides a simplified way to manage updates for all the applications and packages installed on a device running Ubuntu Core. It ensures that updates are installed in a timely and efficient manner, and helps to prevent errors or conflicts that can arise when updating software manually.
-
-- Automatic updates: The Device Update Agent can be configured to automatically download and install updates as soon as they become available. This ensures that devices are always up to date with the latest security patches and bug fixes, without requiring any manual intervention from users or administrators.
-
-- Security: Keeping software up to date is essential for maintaining the security of devices running Ubuntu Core. The Device Update Agent provides an additional layer of security by verifying the authenticity of updates and ensuring that only trusted packages are installed on the device.
-
-- Rollback: In the event of a failed update, the Device Update Agent can roll back to the previous version of the software, ensuring that the device remains operational and minimizing the risk of data loss or corruption.
+The Device Update Agent, also known as the DU Agent, is a crucial `application` snap  specifically designed for Ubuntu Core. Its primary purpose is to manage updates and ensure the security and reliability of devices that run on this operating system. 
 
 ### Device Update Agent and Dependencies
 
@@ -56,27 +44,19 @@ See [Install Snap using Device Update Script Handler](./examples/install-snap/RE
 
 In Ubuntu Core, each snap is packaged in a container-like environment called a snap package, which contains all of the dependencies and libraries required to run the application. The snap package is isolated from the rest of the system and runs with its own set of user and group permissions.
 
-Here are some key points about the snap user and group security model in Ubuntu Core:
-
-- Snap user accounts: When a snap is installed, a dedicated user account is created for that snap. The user account has its own unique UID and GID, and is used to run the snap's processes and access its resources. This helps to ensure that each snap is isolated from other snaps and from the rest of the system.
-
-- Snap groups: In addition to the user account, snaps can also define one or more snap groups. These groups are used to manage permissions and access to system resources. For example, a snap that needs access to network resources might define a "network" snap group, and any user or process associated with that snap would need to be a member of that group in order to access network resources.
-
-- Interfaces: To allow snaps to access resources and services outside of their own container, Ubuntu Core uses a system of interfaces. An interface is a predefined set of permissions that allows a snap to access certain system resources or services. For example, the "network" interface allows a snap to access the network, while the "camera" interface allows a snap to access the device's camera.
-
-- AppArmor: Ubuntu Core also uses AppArmor, a Linux security module, to further isolate snaps and restrict their access to system resources. AppArmor profiles can be created for each snap, which define the set of resources that the snap is allowed to access. This helps to prevent a compromised snap from accessing or modifying other parts of the system.
+In a nutshell, `snaps` are isolated from other snaps and the rest of the system with dedicated user accounts and groups. `Snap groups` manage permissions and access to system resources. `Interfaces` allow snaps to access resources outside of their own container, while `AppArmor` profiles restrict snap access to system resources, preventing any compromised snap from affecting other parts of the system.
 
 Overall, the snap user and group security model in Ubuntu Core provides a high degree of isolation and security for individual applications, while still allowing them to access the resources they need to function properly.
 
 For more information, see [Security Policy and Sandboxing of Snapcraft](https://snapcraft.io/docs/security-policy-and-sandboxing), a snap is run inside a isolated sandbox, so the user accessing Device Update Agent will always be `root`. 
 
 #### DU Agent Snap User and Group
-Keys different between Device Update Agent and Device Update Agent Snap:
+Key differences between Device Update Agent and Device Update Agent Snap:
 
 | | Device Upate Agent | Device Update Agent Snap |
 |---|---|---|
 | user id| adu | snap_aziot_du | 
-| group id| du | snap_aziot_du |
+| group id| adu | snap_aziot_du |
 
 ### How DU Agent Acquire the IoT Hub Connection Information
 
@@ -99,13 +79,13 @@ This specifies the principal information for the DU Agent Module, including its 
 #### Connect to Other Snap with Specific User ID
 When connecting snaps with interfaces, the snaps are typically connected with the default user or "system" user. However, it is possible to connect snaps with a specific user ID by using the `--classic` and `--username` options with the snap connect command.
 
-For example, to connect to Azure Identity Service with a specific user ID called "snap_aziot_adu", you would use the following command:
+For example, to connect to Azure Identity Service with a specific user ID called "snap_aziot_du", you would use the following command:
 `snap connect --classic --username=snap_aziot_du deviceupdate-agent:AIS-interface azureIdentityService-snap:AIS-interface`  
-This will connect the two snaps using the "snap_aziot_adu" user ID, allowing the snaps to communicate with each other as that user.
+This will connect the two snaps using the "snap_aziot_du" user ID, allowing the snaps to communicate with each other as that user.
 
 It is important to note that using the `--classic` and `--username` options with the snap connect command can have security implications, as it allows the connected snaps to access each other's data and resources as the specified user. Therefore, it should only be used if necessary and with caution.
 
-### Integrating With Another Snaps
+### Integrating With Other Snaps
 
 The sections below explains how Device Update Agent snap communicate with other snap.
 
@@ -143,7 +123,7 @@ layout:
 You can list a DO client snap's connections by using  the `snap connections` command. This command displays information about the snap's connections, including its slots and plugs.
 
 ```shell
-adu-dev@du-ubuntu-core-2004-build:~$ snap connections deliveryoptimization-client
+$ snap connections deliveryoptimization-client
 
 Interface     Plug                                                      Slot                                         Notes
 content       -                                                         deliveryoptimization-client:do-configs       -
@@ -230,7 +210,7 @@ sudo snap connect deviceupdate-agent:snapd-control
 Verify that connections are ok:
 
 ```shell
-adu-dev@du-ubuntu-core-2004-build:~$ snap connections deviceupdate-agent 
+$ snap connections deviceupdate-agent 
 
 Interface                              Plug                                                      Slot                                         Notes
 content[deviceupdate-agent-downloads]  deliveryoptimization-client:deviceupdate-agent-downloads  deviceupdate-agent:downloads-folder          manual
@@ -393,14 +373,14 @@ $ sudo snap $COMMAND_NAME --config-file du-config.json --data "$(base64 /path/to
 ```shell
 # Save the base64 encoded configuration data to the "du-diagnostics-config.json" file:
 
-$ sudo snap $COMMAND_NAME -c du-diagnostics-config.json -d $(base64 /path/to/du-diagnostics-config.json)"
+$ sudo snap $COMMAND_NAME -c du-diagnostics-config.json -d "$(base64 /path/to/du-diagnostics-config.json)"
 ```
 
 > IMPORTANT | After updating the configuration file(s), it is necessary to restart the agent.
 
 ## Summary
 
-Keys different between Device Update Agent and Device Update Agent Snap:
+Key differences between Device Update Agent and Device Update Agent Snap:
 
 | | Device Upate Agent | Device Update Agent Snap |
 |---|---|---|

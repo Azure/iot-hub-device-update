@@ -9,16 +9,17 @@ COMMAND_NAME="deviceupdate-agent.set-config"
 
 function show_usage() {
 
-echo "Usage: $COMMAND_NAME [OPTIONS]
+cat << EOS
+Usage: $(basename $0) [OPTIONS]
 
 Description:
-  This script decodes and saves base64 encoded configuration data to a file with the given name in the \$SNAP_DATA/config directory.
+  This script decodes and saves base64 encoded configuration data to a file with the given name in the $SNAP_DATA/config directory.
   The script takes two required options - the name of the config file and the base64 encoded data - and saves the data to the specified file.
-  Only two config file names are allowed: \"du-config.json\" and \"du-diagnostics-config.json\".
+  Only two config file names are allowed: "du-config.json" and "du-diagnostics-config.json".
 
 Options:
   -c, --config-file <config file name>   Specifies the name of the configuration file to be created or updated.
-                                         The only valid values for the config file name are \"du-config.json\" and \"du-diagnostics-config.json\".
+                                         The only valid values for the config file name are "du-config.json" and "du-diagnostics-config.json".
                                          This option is required.
 
   -d, --data <base64 encoded data>       Specifies the base64 encoded configuration data to be saved to the specified config file.
@@ -27,13 +28,14 @@ Options:
   -h, --help                             Displays this usage information.
 
 Examples:
-  Save the base64 encoded configuration data to the \"du-config.json\" file:
+  Save the base64 encoded configuration data to the "du-config.json" file:
 
-    $ sudo snap $COMMAND_NAME --config-file du-config.json --data ABCDEF==
+    $ sudo snap $COMMAND_NAME --config-file du-config.json --data "ABCDEF=="
 
-  Save the base64 encoded configuration data to the \"du-diagnostics-config.json\" file:
+  Save the base64 encoded configuration data to the "du-diagnostics-config.json" file:
 
-    $ sudo snap $COMMAND_NAME -c du-diagnostics-config.json -d UVWXYZ=="
+    $ sudo snap $COMMAND_NAME -c du-diagnostics-config.json -d "UVWXYZ=="
+EOS
 }
 
 while [[ $# -gt 0 ]]
