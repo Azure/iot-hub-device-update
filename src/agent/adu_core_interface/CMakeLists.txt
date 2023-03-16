@@ -44,14 +44,14 @@ target_compile_definitions (
             ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
             ADUC_DEVICEPROPERTIES_MODEL="${ADUC_DEVICEPROPERTIES_MODEL}"
             ADUC_VERSION="${ADUC_VERSION}"
-            ADUC_UBUNTU_CORE_SNAP_ONLY="${ADUC_UBUNTU_CORE_SNAP_ONLY}"
+            ADUC_BUILD_SNAP="${ADUC_BUILD_SNAP}"
             ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}")
 
 
-
-if(NOT ADUC_UBUNTU_CORE_SNAP_ONLY)
-  find_package (deliveryoptimization_sdk CONFIG REQUIRED)
-  target_link_libraries (${PROJECT_NAME} PRIVATE Microsoft::deliveryoptimization)
+    find_package (deliveryoptimization_sdk CONFIG REQUIRED)
+    target_link_libraries (${PROJECT_NAME} PRIVATE Microsoft::deliveryoptimization)
+else ()
+    target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_PLATFORM_SIMULATOR)
 endif ()
 
 

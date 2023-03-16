@@ -186,10 +186,17 @@ set (
     "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS}"
     CACHE STRING "Path for the download handler extensions")
 
-set (
-    ADUC_DOWNLOADS_FOLDER
-    "${ADUC_DATA_FOLDER}/downloads"
-    CACHE STRING "Path to the folder containing downloaded update artifacts.")
+if (ADUC_BUILD_SNAP)
+    set (
+        ADUC_DOWNLOADS_FOLDER
+        /var/lib/deviceupdate-agent-downloads
+        CACHE STRING "Path to the folder containing downloaded update artifacts.")
+else()
+    set (
+        ADUC_DOWNLOADS_FOLDER
+        "${ADUC_DATA_FOLDER}/downloads"
+        CACHE STRING "Path to the folder containing downloaded update artifacts.")
+endif()
 
 set (
     ADUC_CONTENT_HANDLERS
@@ -333,7 +340,7 @@ set (
     "/var/lib/adu/eis_conn_info"
     CACHE STRING "The named pipe for eis identities.")
 
-if (ADUC_UBUNTU_CORE_SNAP_ONLY)
+if (ADUC_BUILD_SNAP)
     set (
         ADUC_FILE_USER
         "root"

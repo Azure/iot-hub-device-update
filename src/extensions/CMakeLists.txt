@@ -1,5 +1,5 @@
 
-if (NOT ADUC_UBUNTU_CORE_SNAP_ONLY)
+if (NOT ADUC_BUILD_SNAP)
     add_subdirectory (component_enumerators/examples/contoso_component_enumerator)
 endif()
 
