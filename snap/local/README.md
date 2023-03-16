@@ -298,7 +298,7 @@ You can use `unsquashfs` command to extract `.snap` file.
 ```shell
 # Run unsquashfs <snap file name>
 # e.g., unsquashfs deviceupdate-agent_0.1_amd64.snap
-rm -fr squashfs-root
+rm -rf squashfs-root
 
 unsquashfs deviceupdate-agent_0.1_amd64.snap
 
