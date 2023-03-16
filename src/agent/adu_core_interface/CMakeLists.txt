@@ -47,6 +47,10 @@ target_compile_definitions (
             ADUC_BUILD_SNAP="${ADUC_BUILD_SNAP}"
             ADUC_BUILDER_IDENTIFIER="${ADUC_BUILDER_IDENTIFIER}")
 
+if (NOT
+    ADUC_PLATFORM_LAYER
+    STREQUAL
+    "simulator")
 
     find_package (deliveryoptimization_sdk CONFIG REQUIRED)
     target_link_libraries (${PROJECT_NAME} PRIVATE Microsoft::deliveryoptimization)

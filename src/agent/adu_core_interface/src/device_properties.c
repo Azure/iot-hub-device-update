@@ -163,9 +163,10 @@ done:
  * @param devicePropsObj the JSON_Object the versions will be added to
  * @returns true on successful addition and false on failure
  */
-bool DeviceProperties_AddVersions(JSON_Object* devicePropsObj)
+_Bool DeviceProperties_AddVersions(JSON_Object* devicePropsObj)
 {
-    bool success = false;
+    _Bool success = false;
+    char* do_version = NULL;
 
     JSON_Status jsonStatus =
         json_object_set_string(devicePropsObj, ADUCITF_FIELDNAME_DEVICEPROPERTIES_ADUC_VERSION, ADUC_BUILDER_VERSION);
@@ -198,10 +199,12 @@ bool DeviceProperties_AddVersions(JSON_Object* devicePropsObj)
         goto done;
     }
 #endif
+#endif
 
     success = true;
 
 done:
+    free(do_version);
     return success;
 }
 
