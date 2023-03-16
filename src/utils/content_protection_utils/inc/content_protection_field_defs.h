@@ -5,8 +5,8 @@
  * @copyright Copyright (c) Microsoft Corp.
  */
 
-#ifndef DECRYPTION_ALG_TYPES_H
-#define DECRYPTION_ALG_TYPES_H
+#ifndef CONTENT_PROTECTION_FIELD_DEFS_H
+#define CONTENT_PROTECTION_FIELD_DEFS_H
 
 /**
  * Example JSON:
@@ -67,12 +67,12 @@
  * @brief Field name for the Decryption Information's key length
  * @details Field type string
  */
-#define DECRYPT_INFO_KEY_LENGTH_FIELD "keyLen"
+#define DECRYPT_INFO_KEY_LEN_FIELD "keyLen"
 
 /**
  * @brief Field name for the props field
  * @details Field type json object
  */
-#define PROPS_FIELD "props"
+#define DECRYPT_INFO_PROPS_FIELD "props"
 
-#endif
+#endif // CONTENT_PROTECTION_FIELD_DEFS_H

@@ -16,7 +16,6 @@
 using ADUC::StringUtils::cstr_wrapper;
 using uint8_t_wrapper = ADUC::StringUtils::calloc_wrapper<uint8_t>;
 using keydata_wrapper = ADUC::StringUtils::calloc_wrapper<KeyData>;
-using bufferhandle_wrapper = ADUC::StringUtils::calloc_wrapper<BUFFER_HANDLE>;
 
 TEST_CASE("Base64 Encoding")
 {

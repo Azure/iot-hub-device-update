@@ -17,7 +17,7 @@ EXTERN_C_BEGIN
 
 bool ContentProtectionUtils_DecryptDek(const STRING_HANDLE dek, const STRING_HANDLE dekCryptAlg);
 
-bool ContentProtectionUtils_GetDecryptAlgFromDecryptionInfo(const JSON_Object* decryptInfo, DecryptionAlg* alg);
+DecryptionAlg ContentProtectionUtils_GetDecryptAlgFromDecryptionInfo(const JSON_Object* decryptInfo);
 
 EXTERN_C_END
 

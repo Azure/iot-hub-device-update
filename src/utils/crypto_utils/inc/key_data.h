@@ -9,10 +9,10 @@
 #include <azure_c_shared_utility/constbuffer.h>
 
 #ifndef KEY_DATA_H
-#define KEY_DATA_H
+#    define KEY_DATA_H
 
 /***
- * @brief Opaque type for callers to transfer KeyData, has the ability to add other keys and information depending on the input
+ * @brief Data for callers to transfer KeyData, has the ability to add other keys and information depending on the input
 */
 typedef struct KeyData
 {
@@ -20,4 +20,3 @@ typedef struct KeyData
 } KeyData;
 
 #endif // KEY_DATA_H
-

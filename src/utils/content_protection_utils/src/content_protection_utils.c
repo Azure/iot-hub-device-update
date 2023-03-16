@@ -12,8 +12,14 @@
 #include <stdbool.h>
 #include <strings.h>
 
+//
+// Stub function for workflow implementation for decrypting the DEK
+//
 bool ContentProtectionUtils_DecryptDek(const STRING_HANDLE dek, const STRING_HANDLE dekCryptAlg)
 {
+    UNREFERENCED_PARAMETER(dek);
+    UNREFERENCED_PARAMETER(dekCryptAlg);
+
     return false;
 }
 
@@ -31,7 +37,7 @@ DecryptionAlg ContentProtectionUtils_GetDecryptAlgFromDecryptionInfo(const JSON_
 
     const char* mode = json_object_get_string(decryptInfo, DECRYPT_INFO_MODE_FIELD);
 
-    const char* keyLen = json_object_get_string(decryptInfo, DECRYPT_INFO_KEY_LENGTH_FIELD);
+    const char* keyLen = json_object_get_string(decryptInfo, DECRYPT_INFO_KEY_LEN_FIELD);
 
     if (strcasecmp(alg, "aes") == 0)
     {
