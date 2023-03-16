@@ -16,7 +16,7 @@
 #include <sys/stat.h> // for stat
 #include <vector>
 
-#ifdef ADUC_UBUNTU_CORE_SNAP_ONLY
+#ifdef ADUC_BUILD_SNAP
 #    define CURL_PATH "/usr/bin/curl-downloader"
 #else
 #    define CURL_PATH "/usr/bin/curl"

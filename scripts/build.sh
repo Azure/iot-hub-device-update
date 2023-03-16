@@ -28,7 +28,7 @@ root_dir=$script_dir/..
 build_clean=false
 build_documentation=false
 build_packages=false
-ubuntu_core_snap_only=false;
+build_snap=false;
 platform_layer="linux"
 trace_target_deps=false
 step_handlers="microsoft/apt,microsoft/script,microsoft/simulator,microsoft/swupdate,microsoft/swupdate_v2"
@@ -42,7 +42,7 @@ log_lib="zlog"
 install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
-cmake_dir_path="${work_folder}/deviceupdate-cmake"
+cmake_dir_path=
 
 print_help() {
     echo "Usage: build.sh [options...]"
@@ -86,6 +86,9 @@ print_help() {
     echo ""
     echo "--patch-version                       Patch version of ADU"
     echo "-u, --ubuntu-core-snap-only           Only build components and features those required for the Ubuntu Core snap."
+    echo ""
+    echo "--work-folder <work_folder>           Specifies the folder where source code will be cloned or downloaded."
+    echo "                                      Default is /tmp."
     echo ""
     echo "-h, --help                            Show this help message."
 }
@@ -310,7 +313,11 @@ while [[ $1 != "" ]]; do
         patch_version=$1
     -u | --ubuntu-core-snap-only)
         shift
-        ubuntu_core_snap_only=true
+        build_snap=true
+        ;;
+    --work-folder)
+        shift
+        work_folder=$(realpath "$1")
         ;;
     -h | --help)
         print_help
@@ -342,12 +349,17 @@ if [[ $adu_log_dir == "" ]]; then
 fi
 
 # For ubuntu core snap...
-if [[ $ubuntu_core_snap_only == "true" ]]; then
+if [[ $build_snap == "true" ]]; then
     build_packages=false
 fi
 
 runtime_dir=${output_directory}/bin
 library_dir=${output_directory}/lib
+
+if [[ "$cmake_dir_path" == "" ]]; then
+    cmake_dir_path="${work_folder}/deviceupdate-cmake"
+fi
+
 cmake_bin="${cmake_dir_path}/bin/cmake"
 shellcheck_bin="${work_folder}/deviceupdate-shellcheck"
 
@@ -365,7 +377,7 @@ bullet "Logging library: $log_lib"
 bullet "Output directory: $output_directory"
 bullet "Build unit tests: $build_unittests"
 bullet "Build packages: $build_packages"
-bullet "Build Ubuntu Core snap features only: $ubuntu_core_snap_only"
+bullet "Build Ubuntu Core Snap package: $build_snap"
 bullet "CMake: $cmake_bin"
 bullet "CMake version: $(${cmake_bin} --version | grep version | awk '{ print $3 }')"
 bullet "shellcheck: $shellcheck_bin"
@@ -392,7 +404,7 @@ CMAKE_OPTIONS=(
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
     "-DCMAKE_INSTALL_PREFIX=$install_prefix"
-    "-DADUC_UBUNTU_CORE_SNAP_ONLY:BOOL=$ubuntu_core_snap_only"
+    "-DADUC_BUILD_SNAP:BOOL=$build_snap"
 )
 
 if [[ $major_version != "" ]]; then
