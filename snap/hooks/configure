@@ -27,6 +27,7 @@ adu_extensions_sources_dir="$SNAP/var/lib/adu/extensions/sources"
 adu_script_handler_file=libmicrosoft_script_1.so
 adu_steps_handler_file=libmicrosoft_steps_1.so
 adu_curl_downloader_file=libcurl_content_downloader.so
+adu_do_downloader_file=libdeliveryoptimization_content_downloader.so
 
 # The sample du-config.json
 sample_du_config=$(
@@ -38,18 +39,18 @@ sample_du_config=$(
     "snap_aziot_do"
   ],
   "iotHubProtocol": "mqtt",
-  "manufacturer": <Place your device info manufacturer here>,
-  "model": <Place your device info model here>,
+  "manufacturer": "<Place your device info manufacturer here>",
+  "model": "<Place your device info model here>",
   "agents": [
     {
-      "name": <Place your agent name here>,
+      "name": "main",
       "runas": "snap_aziot_du",
       "connectionSource": {
         "connectionType": "string",
-        "connectionData": <Place your Azure IoT device connection string here>
+        "connectionData": "<Place your Azure IoT device connection string here>"
       },
-      "manufacturer": <Place your device property manufacturer here>,
-      "model": <Place your device property model here>
+      "manufacturer": "<Place your device property manufacturer here>",
+      "model": "<Place your device property model here>"
     }
   ]
 }
@@ -81,35 +82,6 @@ exitcode_pre_ppr_installed=3 # pre-ppr agent binary is installed
 exitcode_pre_ppr_unpurged=4  # pre-ppr config exists
 exitcode_unknown_argument=5
 
-add_adu_user_and_group() {
-    echo "Create the 'adu' group."
-    if ! getent group "$adu_group" > /dev/null; then
-        addgroup --system "$adu_group"
-    else
-        # For security purposes, it's extremely important that there's no existing 'adu' user and 'adu' group.
-        # This ensures the account and group are setup by our package installation process only,
-        # and no other actor can pre-create the user/group with nefarious intentions.
-        echo "Error: 'adu' group already exists." >&2
-        exit $exitcode_adu_group_already_exists
-    fi
-
-    echo "Create the 'adu' user." # With no shell and no login, in 'adu' group.
-    if ! getent passwd "$adu_user" > /dev/null; then
-        adduser --system "$adu_user" --ingroup "$adu_group" --no-create-home --shell /bin/false
-    else
-        # For security purposes, it's extremely important that there's no existing 'adu' user and 'adu' group.
-        # This to ensures the account and group are setup by our package installation process only,
-        # and no other actor can pre-create the user/group with nefarious intentions.
-        echo "Error: 'adu' user already exists." >&2
-        exit $exitcode_adu_user_already_exists
-    fi
-
-    echo "Add the 'adu' user to the 'syslog' group." # To allow ADU to write to /var/log folder
-    if getent group "syslog" > /dev/null; then
-        usermod -aG "syslog" "$adu_user"
-    fi
-}
-
 setup_dirs_and_files() {
     echo "Setting directories and files..."
     # Note on linux permissions
@@ -129,36 +101,25 @@ setup_dirs_and_files() {
     if id -u "$adu_user" > /dev/null 2>&1; then
         mkdir -p "$adu_conf_dir"
 
-        # Ensure the right owners and permissions
-        #chown "$adu_user:$adu_group" "$adu_conf_dir"
-        #chmod u=rwx,g=rx,o= "$adu_conf_dir"
-
         # Generate the template configuration file
         echo "Generate the template configuration file..."
         if [ ! -f "$adu_conf_dir/${adu_conf_file}.template" ]; then
             echo "$sample_du_config" > "$adu_conf_dir/${adu_conf_file}.template"
-            #chown "$adu_user:$adu_group" "$adu_conf_dir/${adu_conf_file}.template"
-            #chmod u=r,g=r,o= "$adu_conf_dir/${adu_conf_file}.template"
         fi
 
         # Create configuration file from template
         if [ ! -f "$adu_conf_dir/$adu_conf_file" ]; then
             cp -a "$adu_conf_dir/${adu_conf_file}.template" "$adu_conf_dir/$adu_conf_file"
-            #chmod u=rw,g=r,o= "$adu_conf_dir/$adu_conf_file"
         fi
 
         echo "Generating the diagnostics configuration file..."
         if [ ! -f "$adu_conf_dir/$adu_diagnostics_conf_file" ]; then
             echo "$sample_du_diagnostics_config" > "$adu_conf_dir/$adu_diagnostics_conf_file"
-            #chown "$adu_user:$adu_group" "$adu_conf_dir/$adu_diagnostics_conf_file"
-            #chmod u=r,g=r,o= "$adu_conf_dir/$adu_diagnostics_conf_file"
         fi
 
         # Create home dir
         if [ ! -d "$adu_home_dir" ]; then
             mkdir -p "$adu_home_dir"
-            #chown "$adu_user:$adu_group" "$adu_home_dir"
-            #chmod u=rwx,g=rx "$adu_home_dir"
         fi
 
         # Create log dir
@@ -167,20 +128,11 @@ setup_dirs_and_files() {
             mkdir -p "$adu_log_dir"
         fi
 
-        # Ensure the right owners and permissions
-        #chown "$adu_user:$adu_group" "$adu_log_dir"
-        #chmod u=rwx,g=rx "$adu_log_dir"
-
         # Create data dir
         if [ ! -d "$adu_data_dir" ]; then
             echo "Create data dir ($adu_data_dir)..."
             mkdir -p "$adu_data_dir"
         fi
-
-        # Ensure the right owners and permissions
-        #chown "$adu_user:$adu_group" "$adu_data_dir"
-        #chmod u=rwx,g=rwx,o= "$adu_data_dir"
-        ls -ld "$adu_data_dir"
 
         # Create downloads dir
         if [ ! -d "$adu_downloads_dir" ]; then
@@ -188,36 +140,10 @@ setup_dirs_and_files() {
             mkdir -p "$adu_downloads_dir"
         fi
 
-        # Ensure the right owners and permissions
-        #chown "$adu_user:$adu_group" "$adu_downloads_dir"
-        #chmod u=rwx,g=rwx,o= "$adu_downloads_dir"
-        ls -ld "$adu_downloads_dir"
-
         # Create extensions dir
         if [ ! -d "$adu_extensions_dir" ]; then
             echo "Create extensions dir ($adu_extensions_dir)..."
             mkdir -p "$adu_extensions_dir"
-        fi
-
-        # Ensure the right owners and permissions
-        #chown "$adu_user:$adu_group" "$adu_extensions_dir"
-        #chmod u=rwx,g=rwx,o= "$adu_extensions_dir"
-
-        # Create extensions sources dir
-        # if [ ! -d "$adu_extensions_sources_dir" ]; then
-        #     mkdir -p "$adu_extensions_sources_dir"
-        # fi
-
-        # Ensure the right owners and permissions
-        #chown "$adu_user:$adu_group" "$adu_extensions_sources_dir"
-        #chmod u=rwx,g=rwx,o= "$adu_extensions_sources_dir"
-
-        #Set deviceupdate-agent owner and permission
-        if [ ! -f "$adu_shell_dir/$adu_shell_file" ]; then
-           echo "ERROR! $adu_shell_dir/$adu_shell_file does not exists." >&2
-        #else
-        #   chown "root:$adu_group" "$adu_shell_dir/$adu_shell_file"
-        #   chmod u=rxs "$adu_shell_dir/$adu_shell_file"
         fi
     else
         echo "ERROR! $adu_user does not exist." >&2
@@ -235,9 +161,10 @@ register_extensions() {
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/update-manifest:5" --register-extension $adu_extensions_sources_dir/$adu_steps_handler_file
 
     echo "Register content downloader extension..."
-    $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_curl_downloader_file
+    # 2 Content downloader options:
+    # $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_curl_downloader_file
+    $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_do_downloader_file
 }
 
-#add_adu_user_and_group
 setup_dirs_and_files
 register_extensions

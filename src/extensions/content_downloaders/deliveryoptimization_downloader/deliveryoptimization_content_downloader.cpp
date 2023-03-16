@@ -51,10 +51,11 @@ ADUC_Result do_download(
     fullFilePath << workFolder << "/" << entity->TargetFilename;
 
     Log_Info(
-        "Downloading File '%s' from '%s' to '%s'",
+        "Downloading File '%s' from '%s' to '%s' (workfolder:%s)",
         entity->TargetFilename,
         entity->DownloadUri,
-        fullFilePath.str().c_str());
+        fullFilePath.str().c_str(),
+        workFolder);
 
     const std::error_code doErrorCode = MSDO::download::download_url_to_path(
         entity->DownloadUri, fullFilePath.str(), false, std::chrono::seconds(retryTimeout));

@@ -1,6 +1,5 @@
 # How To Build the Device Update Agent Snap (for Ubuntu 20.04)
 
-> NOTE: This document is a work-in-progress
 
 ## Prerequisites
 - Learn about Snapcraft here https://snapcraft.io/docs/getting-started#heading--learning
@@ -41,6 +40,11 @@ snapcraft
 
 ```
 
+## Incremental Build
+
+To rebuild on specific part(s), you can use `snapcraft clean <PART_NAME>` command follow by `snapcraft build` command
+
+
 ### Build Output
 
 If build success, you can find `deviceupdate-agent_#.#_amd64.snap` at the project root directory.
@@ -68,6 +72,20 @@ sudo snap install --devmode ./deviceupdate-agent_0.1_amd64.snap
 ```
 
 > NOTE | This will installs the snap content to /snap/<'snap name'>/ directory on the host device
+
+Although installing and running a snap in dev_mode is useful, it is advisable to test the snap's functionality under strict confinement. This will help verify that all necessary permissions and connections have been correctly configured.
+
+In order to achieve this, the confinement setting should be modified to strict. After rebuilding the snap, it can be installed using the --dangerous option.
+
+For example:
+
+```shell
+sudo snap install --dangerous ./deviceupdate-agent_0.1_amd64.snap 
+```
+
+> NOTE | You can find more information about the --dangerous option and other snap installation options in the official Snapcraft documentation:<br/>
+https://snapcraft.io/docs/install-modes#heading--dangerous
+
 
 ## Configure The Device Update Agent Snap
 
@@ -139,32 +157,40 @@ For example:
     }
     ```
 
+> NOTE | Please refer to [Provisioning Device Update Agent Snap](../../snap/local/README.md#provisioning-device-update-agent-snap) for an alternative approach, as the method described earlier may not be effective when using snap in 'strict' confinement.
 
-## Run The Snap
+## Run The DU Agent Snap
 
-To run a shell in the confined environment:
+To run the "deviceupdate-agent" snap package with elevated privileges (using sudo command) in a Linux-based operating system that supports snap package management, use following command:
+
+```shell
+$ sudo snap run deviceupdate-agent
+```
+To run the "deviceupdate-agent' snap and open a shell environment:
 
 ```shell
 $ sudo snap run --shell deviceupdate-agent
 ```
 
-Optionally, copy the prepared `du-config.json` from [host machine] home directory to `$SNAP_DATA/config` directory
+When you run the snap run --shell command followed by the name of a snap package, it launches a shell with an environment set up for that specific snap. This allows you to execute commands and access files within the snap package's environment, as if you were running them directly on the host system.
+
+Optionally (for --devmode), copy the prepared `du-config.json` from [host machine] home directory to `$SNAP_DATA/config` directory
 
 ```shell
-$ cp <home-dir>/du-config.json $SNAP_DATA/config
+$ cp /path/to/your/du-config.json $SNAP_DATA/config
 ```
 
 Inspect some snap variables:
 
 ```shell
 root@myhost:~# printenv SNAP
-/snap/deviceupdate-agent/x2
+/snap/deviceupdate-agent/x1
 
 root@myhost:~# printenv SNAP_COMMON
 /var/snap/deviceupdate-agent/common
 
 root@myhost:~# printenv SNAP_DATA  
-/var/snap/deviceupdate-agent/x2
+/var/snap/deviceupdate-agent/x1
 ```
 
 For testing purposes, you can manually run `$SNAP/usr/bin/AducIotAgent -l 0 -e` to verify that the Device Update agent is successfully connected to, and communicated with, the Azure Iot Hub.

@@ -15,7 +15,7 @@ target_include_directories (${PROJECT_NAME} PUBLIC ${ADU_EXTENSION_INCLUDES} ${A
 
 target_compile_definitions (
     ${PROJECT_NAME}
-    PRIVATE ADUC_UBUNTU_CORE_SNAP_ONLY="${ADUC_UBUNTU_CORE_SNAP_ONLY}")
+    PRIVATE ADUC_BUILD_SNAP="${ADUC_BUILD_SNAP}")
 
 target_link_libraries (
     ${PROJECT_NAME}

@@ -1,4 +1,4 @@
-if (NOT ADUC_UBUNTU_CORE_SNAP_ONLY)
+if (NOT ADUC_BUILD_SNAP)
     # Don't need these handlers when build for Ubuntu Core snap.
     add_subdirectory (apt_handler)
     add_subdirectory (simulator_handler)
