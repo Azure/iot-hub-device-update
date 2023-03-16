@@ -141,15 +141,11 @@ target_compile_definitions (
             ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}"
             DO_FILE_GROUP="${DO_FILE_GROUP}"
             DO_FILE_USER="${DO_FILE_USER}"
-            ADUC_UBUNTU_CORE_SNAP_ONLY="${ADUC_UBUNTU_CORE_SNAP_ONLY}"
+            ADUC_BUILD_SNAP="${ADUC_BUILD_SNAP}"
             SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}")
 
 if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
     target_compile_definitions (${target_name} PRIVATE ADUC_PLATFORM_SIMULATOR)
-elseif (NOT ADUC_UBUNTU_CORE_SNAP_ONLY)
-    find_package (deliveryoptimization_sdk CONFIG REQUIRED)
-    target_link_libraries (${target_name} PRIVATE Microsoft::deliveryoptimization)
-else ()
 endif ()
 
 target_link_libraries (${target_name} PRIVATE aduc::platform_layer)

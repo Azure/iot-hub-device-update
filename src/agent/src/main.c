@@ -29,10 +29,7 @@
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
 #ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
-#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
 #    include "aduc/connection_string_utils.h"
-#    include <do_config.h>
-#endif
 #endif
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>
@@ -770,7 +767,12 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         result = ExtensionManager_InitializeContentDownloader(NULL /*initializeData*/);
     }
 
-#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error("Failed to initialize Content Downloader. (erc:%d)", result.ExtendedResultCode);
+    }
+
+#ifndef ADUC_BUILD_SNAP
     if (InitializeCommandListenerThread())
     {
         RegisterCommand(&redoUpdateCommand);
@@ -807,7 +809,7 @@ void ShutdownAgent()
 {
     Log_Info("Agent is shutting down with signal %d.", g_shutdownSignal);
     ADUC_D2C_Messaging_Uninit();
-#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
+#ifndef ADUC_BUILD_SNAP
     UninitializeCommandListenerThread();
 #endif
     ADUC_PnP_Components_Destroy();
@@ -994,7 +996,7 @@ int main(int argc, char** argv)
         goto done;
     }
 
-#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
+#ifndef ADUC_BUILD_SNAP
     // Switch to specified agent.runas user.
     // Note: it's important that we do this only when we're not performing any
     // high-privileged tasks, such as, registering agent's extension(s).
@@ -1013,7 +1015,7 @@ int main(int argc, char** argv)
         SUPPORTED_UPDATE_MANIFEST_VERSION_MIN,
         SUPPORTED_UPDATE_MANIFEST_VERSION_MAX);
 
-#ifndef ADUC_UBUNTU_CORE_SNAP_ONLY
+#ifndef ADUC_BUILD_SNAP
     _Bool healthy = HealthCheck(&launchArgs);
     if (launchArgs.healthCheckOnly || !healthy)
     {
