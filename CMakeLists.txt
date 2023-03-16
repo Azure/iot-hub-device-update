@@ -330,7 +330,7 @@ set (
 
 set (
     EIS_PIPE_PATH
-    "/tmp/eis_pipe"
+    "/var/lib/adu/eis_conn_info"
     CACHE STRING "The named pipe for eis identities.")
 
 if (ADUC_UBUNTU_CORE_SNAP_ONLY)

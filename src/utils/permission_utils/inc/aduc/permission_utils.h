@@ -24,6 +24,8 @@ bool PermissionUtils_CheckOwnerUid(const char* path, uid_t uid);
 bool PermissionUtils_CheckOwnerGid(const char* path, gid_t gid);
 bool PermissionUtils_SetProcessEffectiveUID(const char* name);
 bool PermissionUtils_SetProcessEffectiveGID(const char* name);
+bool PermissionUtils_SetFileOwner(const char* path, const char* name);
+
 
 EXTERN_C_END
 

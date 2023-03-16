@@ -211,3 +211,34 @@ bool PermissionUtils_SetProcessEffectiveGID(const char* name)
     struct group* grp = getgrnam(name);
     return (grp != NULL && setegid(grp->gr_gid) == 0);
 }
+
+/**
+ * @brief Sets the owner and group of the specified file.
+ * 
+ * @param[in] filePath The path of the file to set the owner and group for.
+ * @param[in] ownerName The username of the owner to set.
+ * @returns true if the owner and group are set successfully, false otherwise.
+ */
+bool PermissionUtils_SetFileOwner(const char* path, const char* name)
+{
+    if (path == NULL || name == NULL)
+    {
+        return false;
+    }
+
+    struct passwd* owner = getpwnam(name);
+    if (owner == NULL)
+    {
+        return false;
+    }
+
+    uid_t owner_uid = owner->pw_uid;
+    gid_t owner_gid = owner->pw_gid;
+
+    if (chown(path, owner_uid, owner_gid) == -1)
+    {
+        return false;
+    }
+
+    return true;
+}

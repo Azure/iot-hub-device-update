@@ -8,8 +8,8 @@
 
 #include "eis_utils.h"
 #include "eis_coms.h"
-#include <aduc/string_c_utils.h>
 #include <aduc/permission_utils.h>
+#include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/urlencode.h>
@@ -431,90 +431,111 @@ done:
 }
 
 /**
- * @brief Writing EIS Identities information to a EIS data file
- * @details Calls into the EIS Identity and get the identities response, saves to a file
+ * @brief Writing EIS Identities information to a EIS named pipe
+ * @details Calls into the EIS Identity and get the identities response, saves to a named pipe
  * @param[in] timeoutMS the timeoutMS in milliseconds for each call to EIS
+ * @param[in] pipePath the path of the EIS response named pipe
  * returns EISErr value
  */
 EISErr EISIdentitiesPipeWriter(uint32_t timeoutMS, const char* pipePath)
 {
     char* identityResponseStr;
 
-    EISErr retCode = EISErr_Ok;
+    EISErr result = EISErr_Ok;
 
     EISErr identityResult = RequestIdentitiesFromEIS(timeoutMS, &identityResponseStr);
 
+    if (identityResult != EISErr_Ok)
+    {
+        return identityResult;
+    }
+
     if (identityResponseStr != NULL)
     {
-        int pipeFd = open(pipePath, O_WRONLY);
-        if (pipeFd < 0)
+        FILE* pipeFile = fopen(pipePath, "w");
+        if (pipeFile == NULL)
         {
-            retCode = EISErr_NamedPipeFailure;
+            result = EISErr_RespNamedPipeInitErr;
             goto done;
         }
-        // dprintf(pipeFd, "%s\n", identityResponseStr);
-        // dprintf(pipeFd, "%d\n", identityResult);
-        write(pipeFd, identityResponseStr, strlen(identityResponseStr));
-        write(pipeFd, "\n", 1);
 
-        char identityResultStr[32];
-        snprintf(identityResultStr, sizeof(identityResultStr), "%d\n", identityResult);
-        write(pipeFd, identityResultStr, strlen(identityResultStr));
+        if (fprintf(pipeFile, "%s\n", identityResponseStr) < 0)
+        {
+            result = EISErr_RespNamedPipeReadWriteErr;
+            fclose(pipeFile);
+            goto done;
+        }
 
-        close(pipeFd);
+        if (fprintf(pipeFile, "%d\n", identityResult) < 0)
+        {
+            result = EISErr_RespNamedPipeReadWriteErr;
+            fclose(pipeFile);
+            goto done;
+        }
 
-        printf("Connection data written to named pipe %s.\n", pipePath);
+        fclose(pipeFile);
     }
     else
     {
-        retCode = EISErr_ConnErr;
+        result = EISErr_ConnErr;
     }
 done:
-    return retCode;
+    return result;
 }
 
 /**
- * @brief Reads EIS Identities information from a EIS data file
- * @details Reads EIS Identity from a file, first line being the identity response, 
+ * @brief Reads EIS Identities information from a EIS named pipe
+ * @details Reads EIS Identity from a named pipe, first line being the identity response, 
  * and the second line being the EIS Error Code.
+ * @param[in] pipePath the path of the EIS response named pipe
  * @param[in,out] identityResponseBuffer the pointer to Identity response string
  * @param[in,out] childErrno the errno to bubble up to the caller
  * @returns a value of EISErr
  */
+
 EISErr EISIdentitiesPipeReader(const char* pipePath, char** identityResponseBuffer, int* childErrno)
 {
-    EISErr result=0;
-    int pipeFd = open(pipePath, O_RDONLY);
-    if (pipeFd < 0)
+    EISErr result = EISErr_Ok;
+    *identityResponseBuffer = NULL;
+
+    FILE* pipeFile = fopen(pipePath, "r");
+    if (pipeFile == NULL)
     {
-        *childErrno = errno;
+        result = EISErr_RespNamedPipeInitErr;
         return result;
     }
 
-    *identityResponseBuffer = malloc(EIS_RESP_SIZE_MAX * sizeof(char));
-    if (*identityResponseBuffer == NULL) {
-        *childErrno = errno;
-        goto done;
-    }
-    
-    if (read(pipeFd, *identityResponseBuffer, EIS_RESP_SIZE_MAX) < 0) {
-        *childErrno = errno;
-        free(*identityResponseBuffer);
-        goto done;
+    char tempBuffer[EIS_RESP_SIZE_MAX];
+    if (fscanf(pipeFile, "%s", tempBuffer) == EOF)
+    {
+        result = EISErr_RespNamedPipeReadWriteErr;
+        fclose(pipeFile);
+        return result;
     }
 
-    char readidentityResult[EIS_RESP_SIZE_MAX];
-    if (read(pipeFd, readidentityResult, EIS_RESP_SIZE_MAX) < 0) {
-        *childErrno = errno;
-        free(*identityResponseBuffer);
-        goto done;
+    int readidentityResultNum;
+    if (fscanf(pipeFile, "%d", &readidentityResultNum) == EOF)
+    {
+        result = EISErr_RespNamedPipeReadWriteErr;
+        fclose(pipeFile);
+        return result;
     }
 
-    int readidentityResultNum = atoi(readidentityResult);
     result = (EISErr)readidentityResultNum;
 
-done:
-    close(pipeFd);
+    if (result == EISErr_Ok)
+    {
+        *identityResponseBuffer = malloc((strlen(tempBuffer) + 1) * sizeof(char));
+        if (*identityResponseBuffer == NULL)
+        {
+            *childErrno = errno;
+            fclose(pipeFile);
+            return result;
+        }
+        strcpy(*identityResponseBuffer, tempBuffer);
+    }
+
+    fclose(pipeFile);
     return result;
 }
 
@@ -529,7 +550,11 @@ done:
  * @param[in] timeoutMS the timeout in milliseconds for each call to EIS
  * @returns EISErr_Ok on success, otherwise an error code indicating the type of failure
  */
-EISUtilityResult ProcessIdentityResponse(ADUC_ConnectionInfo* provisioningInfo, const char* identityResponseStr, const time_t expirySecsSinceEpoch, uint32_t timeoutMS)
+EISUtilityResult ProcessIdentityResponse(
+    ADUC_ConnectionInfo* provisioningInfo,
+    const char* identityResponseStr,
+    const time_t expirySecsSinceEpoch,
+    uint32_t timeoutMS)
 {
     EISUtilityResult result = { EISErr_Failed, EISService_Utils };
 
@@ -626,8 +651,7 @@ EISUtilityResult ProcessIdentityResponse(ADUC_ConnectionInfo* provisioningInfo, 
 
     const char* gatewayHostName = json_object_get_string(specJson, EIS_IDENTITY_RESP_GATEWAYHOSTNAME_FIELD);
 
-    const JSON_Object* authJson =
-        json_value_get_object(json_object_get_value(specJson, EIS_IDENTITY_RESP_AUTH_FIELD));
+    const JSON_Object* authJson = json_value_get_object(json_object_get_value(specJson, EIS_IDENTITY_RESP_AUTH_FIELD));
 
     if (authJson == NULL)
     {
@@ -658,8 +682,8 @@ EISUtilityResult ProcessIdentityResponse(ADUC_ConnectionInfo* provisioningInfo, 
     {
         authType = ADUC_AuthType_SASToken;
 
-        result = BuildSharedAccessSignature(
-            resourceUri, keyHandle, expirySecsSinceEpoch, timeoutMS, &sharedSignatureStr);
+        result =
+            BuildSharedAccessSignature(resourceUri, keyHandle, expirySecsSinceEpoch, timeoutMS, &sharedSignatureStr);
 
         if (result.err != EISErr_Ok)
         {
@@ -808,12 +832,16 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
 
     char* identityResponseStr = NULL;
 
-
-    printf("Parent process (PID %d) is about to fork a child process...\n", getpid());
-
     // Create a named pipe (FIFO)
-    if (mkfifo(EIS_PIPE_PATH, 0666) == -1) {
-        result.err = EISErr_NamedPipeFailure;
+    if (mkfifo(EIS_PIPE_PATH, 0666) == -1)
+    {
+        result.err = EISErr_RespNamedPipeInitErr;
+        goto done;
+    }
+
+    if (!PermissionUtils_SetFileOwner(EIS_PIPE_PATH, EIS_USER))
+    {
+        result.err = errno;
         goto done;
     }
 
@@ -838,11 +866,16 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
         printf("Current UID calling Azure Identity Service: %d\n", getuid());
 
         EISErr errorCode = EISIdentitiesPipeWriter(timeoutMS, EIS_PIPE_PATH);
-        if (errorCode == EISErr_Ok) {
+        if (errorCode == EISErr_Ok)
+        {
             exit(0);
-        } else if (errorCode == EISErr_Failed) {
+        }
+        else if (errorCode == EISErr_Failed)
+        {
             exit(1);
-        } else {
+        }
+        else
+        {
             exit(errorCode);
         }
     }
@@ -865,7 +898,6 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
         }
 
         result = ProcessIdentityResponse(provisioningInfo, identityResponseStr, expirySecsSinceEpoch, timeoutMS);
-
     }
 done:
     free(identityResponseStr);
