@@ -15,6 +15,7 @@ target_link_libraries (
     PUBLIC aduc::c_utils
     PRIVATE aduc::adu_types
             aduc::logging
+            aduc::permission_utils
             Parson::parson
             aziotsharedutil
             uhttp)
@@ -22,6 +23,8 @@ target_link_libraries (
 target_compile_definitions (
     ${PROJECT_NAME}
     PRIVATE ADUC_BUILD_SNAP="${ADUC_BUILD_SNAP}"
+            EIS_DATA_PATH="${EIS_DATA_PATH}"
+            EIS_USER="${EIS_USER}"
 )
 
 if (ADUC_BUILD_UNIT_TESTS)
@@ -29,4 +32,8 @@ if (ADUC_BUILD_UNIT_TESTS)
     target_link_libraries (${PROJECT_NAME} PRIVATE umock_c)
 
     add_subdirectory (tests)
+endif ()
+
+if (ADUC_BUILD_SNAP)
+    target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_BUILD_SNAP)
 endif ()

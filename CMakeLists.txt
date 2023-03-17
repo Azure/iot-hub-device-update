@@ -186,16 +186,37 @@ set (
     "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS}"
     CACHE STRING "Path for the download handler extensions")
 
+if (ADUC_BUILD_UNIT_TESTS)
+    set (
+        EIS_DATA_PATH
+        "/tmp/eis_conn_info.txt"
+        CACHE STRING "The file for eis identities.")
+else()
+    set (
+        EIS_DATA_PATH
+        "/var/lib/adu/eis_conn_info.txt"
+        CACHE STRING "The file for eis identities.")
+endif()
+
 if (ADUC_BUILD_SNAP)
     set (
         ADUC_DOWNLOADS_FOLDER
         /var/lib/deviceupdate-agent-downloads
         CACHE STRING "Path to the folder containing downloaded update artifacts.")
+    set (
+        EIS_USER
+        "snap_aziotdu"
+        CACHE STRING "The uid to call eis service.")
+
 else()
     set (
         ADUC_DOWNLOADS_FOLDER
         "${ADUC_DATA_FOLDER}/downloads"
         CACHE STRING "Path to the folder containing downloaded update artifacts.")
+    set (
+        EIS_USER
+        "adu"
+        CACHE STRING "The uid to call eis service.")
 endif()
 
 set (
@@ -389,6 +410,7 @@ set (
         STRING
         "The protocol for Azure IotHub SDK communication. Options are MQTT, MQTT_over_WebSockets, and IotHub_Protocol_from_Config"
 )
+
 
 # Device Update Repo Locations
 

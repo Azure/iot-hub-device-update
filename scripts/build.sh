@@ -275,7 +275,7 @@ while [[ $1 != "" ]]; do
         shift
         cmake_dir_path=$1
         ;;
-    -u | --ubuntu-core-snap-only)
+    --ubuntu-core-snap-only)
         shift
         build_snap=true
         ;;
