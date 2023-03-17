@@ -105,7 +105,6 @@ private:
  * @brief Specialization for char* buffers allocated with malloc.
  */
 using cstr_wrapper = calloc_wrapper<char>;
-
 } // namespace StringUtils
 } // namespace ADUC
 

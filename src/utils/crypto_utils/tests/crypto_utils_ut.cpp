@@ -7,12 +7,15 @@
  */
 #include "base64_utils.h"
 #include "crypto_lib.h"
+#include "decryption_alg_types.h"
 #include <aduc/calloc_wrapper.hpp>
 #include <catch2/catch.hpp>
 #include <cstring>
-
+#include <fstream>
+#include <iostream>
 using ADUC::StringUtils::cstr_wrapper;
 using uint8_t_wrapper = ADUC::StringUtils::calloc_wrapper<uint8_t>;
+using keydata_wrapper = ADUC::StringUtils::calloc_wrapper<KeyData>;
 
 TEST_CASE("Base64 Encoding")
 {
@@ -80,6 +83,7 @@ TEST_CASE("RSA Keys")
         CHECK(key == nullptr);
     }
 }
+
 TEST_CASE("Signature Verification")
 {
     SECTION("Validating a Valid Signature")
@@ -163,5 +167,208 @@ TEST_CASE("Signature Verification")
             reinterpret_cast<const uint8_t*>(blob.c_str()), // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
             blob.length(),
             key));
+    }
+}
+
+TEST_CASE("CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String")
+{
+    SECTION("Successful Init")
+    {
+        std::string b64EncodedKeyData = "urq6usAMCRI0VnjL2voQAg==";
+
+        std::array<uint8_t, 16> decodedBytes = { 0xBA, 0xBA, 0xBA, 0xBA, 0xC0, 0x0C, 0x09, 0x12,
+                                                 0x34, 0x56, 0x78, 0xCB, 0xDA, 0xFA, 0x10, 0x02 };
+
+        keydata_wrapper key;
+
+        REQUIRE(CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String(key.address_of(), b64EncodedKeyData.c_str()));
+
+        CHECK(key.get() != nullptr);
+
+        REQUIRE(key.get()->keyData != nullptr);
+
+        const CONSTBUFFER* keyBytes = CONSTBUFFER_GetContent(key.get()->keyData);
+
+        REQUIRE(keyBytes != nullptr);
+
+        CHECK(keyBytes->size == decodedBytes.size());
+
+        for (int i = 0; i < keyBytes->size; ++i)
+        {
+            CHECK(keyBytes->buffer[i] == decodedBytes.at(i));
+        }
+
+        CryptoUtils_DeAllocKeyData(key.get());
+    }
+
+    SECTION("Bad Init")
+    {
+        KeyData* key = nullptr;
+
+        CHECK_FALSE(CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String(&key, nullptr));
+
+        CHECK(key == nullptr);
+    }
+}
+
+TEST_CASE("CryptoUtils_IsKeyNullOrEmpty")
+{
+    SECTION("Check- Non Empty")
+    {
+        std::string b64EncodedKeyData = "urq6usAMCRI0VnjL2vo=";
+
+        keydata_wrapper key;
+
+        REQUIRE(CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String(key.address_of(), b64EncodedKeyData.c_str()));
+
+        REQUIRE(key.get() != nullptr);
+
+        CHECK_FALSE(CryptoUtils_IsKeyNullOrEmpty(key.get()));
+
+        CryptoUtils_DeAllocKeyData(key.get());
+    }
+
+    SECTION("Check - Null KeyData")
+    {
+        keydata_wrapper key;
+
+        CHECK(CryptoUtils_IsKeyNullOrEmpty(key.get()));
+    }
+}
+
+TEST_CASE("CryptoUtils_EncryptBufferBlockByBlock")
+{
+    SECTION("Encrypt a Buffer")
+    {
+        std::string b64UrlEncodedKeyData = "BIltO-l5mkKpPGANKtX0nCaYAo90gARHo7M8y_RSx2s";
+
+        std::string content = "MicrosoftDevsRule!\n";
+
+        std::string expectedEncodedOutput = "oAHfa0HqwjPO3_25WKhKbUWE0PLuXc1P8CiCPyOpcMw";
+
+        keydata_wrapper key;
+
+        REQUIRE(
+            CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String(key.address_of(), b64UrlEncodedKeyData.c_str()));
+
+        BUFFER_HANDLE encryptedContent = nullptr;
+
+        CONSTBUFFER_HANDLE contentBuffer = CONSTBUFFER_Create((unsigned char*)content.c_str(), content.length());
+
+        ADUC_Result result =
+            CryptoUtils_EncryptBufferBlockByBlock(&encryptedContent, AES_256_CBC, key.get(), contentBuffer);
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+
+        CHECK(encryptedContent != nullptr);
+        CHECK(BUFFER_length(encryptedContent) != 0);
+
+        char* b64UrlEncodedEncryptedContent =
+            Base64URLEncode(BUFFER_u_char(encryptedContent), BUFFER_length(encryptedContent));
+
+        cstr_wrapper encodedEncryptedContent{ b64UrlEncodedEncryptedContent };
+
+        std::string encodedEncryptedContentStr{ encodedEncryptedContent.get() };
+
+        CHECK(encodedEncryptedContentStr == expectedEncodedOutput);
+
+        BUFFER_delete(encryptedContent);
+        CryptoUtils_DeAllocKeyData(key.get());
+        CONSTBUFFER_DecRef(contentBuffer);
+    }
+    SECTION("Decrypt a Buffer")
+    {
+        std::string b64UrlEncodedKeyData = "BIltO-l5mkKpPGANKtX0nCaYAo90gARHo7M8y_RSx2s";
+
+        std::string expectedOutput = "MicrosoftDevsRule!\n";
+
+        std::string encryptedContent = "oAHfa0HqwjPO3_25WKhKbUWE0PLuXc1P8CiCPyOpcMw";
+
+        keydata_wrapper key;
+
+        char* decodedContent = nullptr;
+
+        REQUIRE(
+            CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String(key.address_of(), b64UrlEncodedKeyData.c_str()));
+
+        uint8_t_wrapper decodedContent_w;
+        size_t decodedContentLength = Base64URLDecode(encryptedContent.c_str(), decodedContent_w.address_of());
+
+        REQUIRE(decodedContent_w.get() != nullptr);
+        REQUIRE(decodedContentLength == 32);
+
+        BUFFER_HANDLE decryptedContent = NULL;
+        CONSTBUFFER_HANDLE encryptedContentBuffer = CONSTBUFFER_Create(decodedContent_w.get(), decodedContentLength);
+
+        ADUC_Result result =
+            CryptoUtils_DecryptBufferBlockByBlock(&decryptedContent, AES_256_CBC, key.get(), encryptedContentBuffer);
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+
+        CHECK(decryptedContent != nullptr);
+
+        const size_t decryptedContentLength = BUFFER_length(decryptedContent);
+
+        CHECK(decryptedContentLength == expectedOutput.length());
+
+        //
+        // turn the decrypted content into a string
+        //
+        uint8_t* decryptedContentBytes = BUFFER_u_char(decryptedContent);
+
+        std::string decryptedContentStr{ decryptedContentBytes, decryptedContentBytes + decryptedContentLength };
+
+        CHECK(decryptedContentStr == expectedOutput);
+
+        BUFFER_delete(decryptedContent);
+        CryptoUtils_DeAllocKeyData(key.get());
+        CONSTBUFFER_DecRef(encryptedContentBuffer);
+    }
+}
+
+TEST_CASE("CryptoUtils_DecryptBufferBlockByBlock")
+{
+    SECTION("Decrypt a valid Buffer")
+    {
+        std::string b64UrlEncodedKeyData = "BIltO-l5mkKpPGANKtX0nCaYAo90gARHo7M8y_RSx2s";
+
+        std::string expectedOutput = "MicrosoftDevsRule!\n";
+
+        std::string encryptedContent = "oAHfa0HqwjPO3_25WKhKbUWE0PLuXc1P8CiCPyOpcMw";
+
+        keydata_wrapper key;
+
+        char* decodedContent = nullptr;
+
+        REQUIRE(
+            CryptoUtils_InitAndAllocKeyDataFromUrlEncodedB64String(key.address_of(), b64UrlEncodedKeyData.c_str()));
+
+        uint8_t_wrapper decodedContent_w;
+        size_t decodedContentLength = Base64URLDecode(encryptedContent.c_str(), decodedContent_w.address_of());
+
+        REQUIRE(decodedContent_w.get() != nullptr);
+        REQUIRE(decodedContentLength == 32);
+
+        BUFFER_HANDLE decryptedContent = NULL;
+        CONSTBUFFER_HANDLE encryptedContentBuffer = CONSTBUFFER_Create(decodedContent_w.get(), decodedContentLength);
+
+        ADUC_Result result =
+            CryptoUtils_DecryptBufferBlockByBlock(&decryptedContent, AES_256_CBC, key.get(), encryptedContentBuffer);
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+
+        const size_t decryptedContentLength = BUFFER_length(decryptedContent);
+
+        uint8_t* decryptedContentBytes = BUFFER_u_char(decryptedContent);
+
+        CHECK(decryptedContentBytes != nullptr);
+        CHECK(decryptedContentLength != 0);
+
+        std::string decryptedContentStr{ decryptedContentBytes, decryptedContentBytes + decryptedContentLength };
+        CHECK(decryptedContentStr == expectedOutput);
+
+        BUFFER_delete(decryptedContent);
+        CryptoUtils_DeAllocKeyData(key.get());
+        CONSTBUFFER_DecRef(encryptedContentBuffer);
     }
 }
