@@ -367,13 +367,13 @@ Examples:
 ```shell
 # Save the base64 encoded configuration data to the \"du-config.json\" file:
 
-$ sudo snap $COMMAND_NAME --config-file du-config.json --data "$(base64 /path/to/du-config.json)"
+$ sudo deviceupdate-agent.set-config --config-file du-config.json --data "$(base64 /path/to/du-config.json)"
 ```
 
 ```shell
 # Save the base64 encoded configuration data to the "du-diagnostics-config.json" file:
 
-$ sudo snap $COMMAND_NAME -c du-diagnostics-config.json -d "$(base64 /path/to/du-diagnostics-config.json)"
+$ sudo deviceupdate-agent.set-config -c du-diagnostics-config.json -d "$(base64 /path/to/du-diagnostics-config.json)"
 ```
 
 > IMPORTANT | After updating the configuration file(s), it is necessary to restart the agent.
