@@ -19,6 +19,11 @@ target_link_libraries (
             aziotsharedutil
             uhttp)
 
+target_compile_definitions (
+    ${PROJECT_NAME}
+    PRIVATE ADUC_BUILD_SNAP="${ADUC_BUILD_SNAP}"
+)
+
 if (ADUC_BUILD_UNIT_TESTS)
     find_package (umock_c REQUIRED CONFIG)
     target_link_libraries (${PROJECT_NAME} PRIVATE umock_c)
