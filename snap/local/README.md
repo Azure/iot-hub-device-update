@@ -216,14 +216,12 @@ sudo snap connect azure-iot-identity:system-observe
 
 sudo snap connect azure-iot-identity:tpm 
 ```
-This guide will walk you through the process of configuring Azure IoT Edge using a `config.toml` file and creating a `testing.toml` file for identity management. 
+Here is the process of configuring AIS using a `config.toml` file and creating a `testing.toml` file for cloud identity creation. 
 
-First, create a new file named `.config.toml` in the home directory for your Azure IoT Edge Snap configuration. 
-
-Use the following command to set the configuration for the Azure IoT Edge Snap:
+Use the following commands:
 
 ```shell
-sudo snap set azure-iot-identity raw-config="$(cat ~/config.toml)"
+sudo snap set azure-iot-identity raw-config="$(cat /path/to/config.toml)"
 ```
 ```shell
 $ sudo cat testing.toml 
@@ -237,7 +235,7 @@ sudo chmod 0600 testing.toml
 
 sudo mv testing.toml /var/snap/azure-iot-identity/current/shared/config/aziot/identityd/config.d/testing.toml 
 ```
-then use the following command:
+then use the following command to connect Device Update and AIS:
 
 ```shell
 sudo snap connect deviceupdate-agent:identity-service azure-iot-identity:identity-service
