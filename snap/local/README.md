@@ -207,6 +207,40 @@ sudo snap connect deviceupdate-agent:snapd-control
 
 ```
 
+### Azure Identity Service Integration
+To connect to Azure Identity Service, install AIS with this command `sudo snap install --edge azure-iot-identity`, wiring it up with the following command,
+```shell
+sudo snap connect azure-iot-identity:log-observe 
+
+sudo snap connect azure-iot-identity:system-observe 
+
+sudo snap connect azure-iot-identity:tpm 
+```
+Here is the process of configuring AIS using a `config.toml` file and creating a `testing.toml` file for cloud identity creation. 
+
+Use the following commands:
+
+```shell
+sudo snap set azure-iot-identity raw-config="$(cat /path/to/config.toml)"
+```
+```shell
+$ sudo cat testing.toml 
+[[principal]] 
+uid = <REPLACE WITH uid> 
+name = "testing" 
+idtype = ["module"] 
+
+sudo chown root:root testing.toml 
+sudo chmod 0600 testing.toml 
+
+sudo mv testing.toml /var/snap/azure-iot-identity/current/shared/config/aziot/identityd/config.d/testing.toml 
+```
+then use the following command to connect Device Update and AIS:
+
+```shell
+sudo snap connect deviceupdate-agent:identity-service azure-iot-identity:identity-service
+```
+
 Verify that connections are ok:
 
 ```shell
@@ -216,6 +250,7 @@ Interface                              Plug                                     
 content[deviceupdate-agent-downloads]  deliveryoptimization-client:deviceupdate-agent-downloads  deviceupdate-agent:downloads-folder          manual
 content[do-configs]                    deviceupdate-agent:do-configs                             deliveryoptimization-client:do-configs       manual
 content[do-port-numbers]               deviceupdate-agent:do-port-numbers                        deliveryoptimization-client:do-port-numbers  manual
+content[aziot-identity-service]        deviceupdate-agent:identity-service                       azure-iot-identity:identity-service          manual
 home                                   deviceupdate-agent:home                                   :home                                        -
 network                                deviceupdate-agent:network                                :network                                     -
 snapd-control                          deviceupdate-agent:snapd-control                          -                                            -

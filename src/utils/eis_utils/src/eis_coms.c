@@ -32,17 +32,29 @@
 /**
  * @brief Unix Domain Socket (UDS) for the Identity Service API
  */
-#define EIS_UDS_IDENTITY_SOCKET_PATH "/run/aziot/identityd.sock"
+#ifdef ADUC_BUILD_SNAP
+#    define EIS_UDS_IDENTITY_SOCKET_PATH "/var/sockets/aziot/identityd.sock"
+#else
+#    define EIS_UDS_IDENTITY_SOCKET_PATH "/run/aziot/identityd.sock"
+#endif
 
 /**
  * @brief Unix Domain Socket (UDS) for the KeyServices API
  */
-#define EIS_UDS_SIGN_SOCKET_PATH "/run/aziot/keyd.sock"
+#ifdef ADUC_BUILD_SNAP
+#    define EIS_UDS_SIGN_SOCKET_PATH "/var/sockets/aziot/keyd.sock"
+#else
+#    define EIS_UDS_SIGN_SOCKET_PATH "/run/aziot/keyd.sock"
+#endif
 
 /**
  * @brief Unix Domain Socket (UDS) for the Certificate API
  */
-#define EIS_UDS_CERT_SOCKET_PATH "/run/aziot/certd.sock"
+#ifdef ADUC_BUILD_SNAP
+#    define EIS_UDS_CERT_SOCKET_PATH "/var/sockets/aziot/certd.sock"
+#else
+#    define EIS_UDS_CERT_SOCKET_PATH "/run/aziot/certd.sock"
+#endif
 
 /**
  * @brief EIS API version for all calls to EIS

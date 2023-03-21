@@ -196,6 +196,12 @@ plugs:
   snapd-control:
     interface: snapd-control
 
+  identity-service:
+    interface: content
+    content: aziot-identity-service
+    target: $SNAP_DATA
+
+
 
 # Provides resources to be accssed by other snaps.
 slots:
@@ -235,3 +241,9 @@ layout:
 # curl command
   /usr/bin/curl-downloader:
     symlink: $SNAP/usr/bin/curl
+# aziot config
+  /etc/aziot:
+    symlink: $SNAP_DATA/shared/config/aziot
+# aziot sockets
+  /var/sockets/aziot:
+    symlink: $SNAP_DATA/shared/sockets/aziot
