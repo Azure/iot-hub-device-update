@@ -324,6 +324,12 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFilePath)
         }
     }
 
+    if (!ADUC_JSON_GetUnsignedIntegerField(
+            root_value, "downloadTimeoutInMinutes", &(config->downloadTimeoutInMinutes)))
+    {
+        goto done;
+    }
+
     succeeded = true;
 
 done:

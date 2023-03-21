@@ -9,7 +9,6 @@
 #include "umock_c/umock_c.h"
 #include <aduc/adu_types.h>
 #include <aduc/c_utils.h>
-#include <aduc/calloc_wrapper.hpp>
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <catch2/catch.hpp>
 #include <cstring>
@@ -21,8 +20,6 @@
 #define ENABLE_MOCKS
 #include "eis_coms.h"
 #undef ENABLE_MOCKS
-
-using ADUC::StringUtils::cstr_wrapper;
 
 //
 // UMock Enum Type Definitions

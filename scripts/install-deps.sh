@@ -72,7 +72,7 @@ install_githooks=false
 
 du_test_data_dir_path="/tmp/adu/"
 # DO Deps
-default_do_ref=v1.0.0
+default_do_ref=v1.0.1
 install_do=false
 do_ref=$default_do_ref
 
@@ -166,6 +166,8 @@ do_install_aduc_packages() {
     OS=$(lsb_release --short --id)
     if [[ $OS == "debian" && $VER == "9" ]]; then
         $SUDO apt-get install --yes gcc-6 g++-6 || return
+    elif [[ $OS == "Debian" && $VER == "11" ]]; then
+        $SUDO apt-get install --yes gcc-10 g++-10 || return
     else
         $SUDO apt-get install --yes gcc-8 g++-8 || return
     fi
@@ -675,7 +677,7 @@ do_install_shellcheck() {
         ln -sf "${HOME}/.cabal/bin/shellcheck" "/tmp/deviceupdate-shellcheck" || return 1
     else
         echo "Installing shellcheck ${scver} from pre-built binaries..."
-        local tar_filename="shellcheck-v${scver}.linux.x86_64.tar.xz"
+        local tar_filename="shellcheck-v${scver}.linux.${arch}.tar.xz"
 
         if [[ -f $tar_filename ]]; then
             $SUDO rm $tar_filename || return 1

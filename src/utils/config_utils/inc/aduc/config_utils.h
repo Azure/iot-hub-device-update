@@ -70,6 +70,9 @@ typedef struct tagADUC_ConfigInfo
     char* compatPropertyNames; /**< Compat property names. */
 
     char* iotHubProtocol; /**< The IotHub transport protocol to use. */
+
+    unsigned int
+        downloadTimeoutInMinutes; /**< The timeout for downloading an update payload. A value of zero means to use the default. */
 } ADUC_ConfigInfo;
 
 /**
