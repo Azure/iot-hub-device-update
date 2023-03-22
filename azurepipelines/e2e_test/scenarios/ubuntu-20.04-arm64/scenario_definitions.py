@@ -16,9 +16,9 @@ from testingtoolkit import UpdateId
 #
 # Base Device Definitions
 #
-test_device_id = "ubuntu20.04-amd64-deployment-test-device"
+test_device_id = "ubuntu20.04-arm64-deployment-test-device"
 
-test_adu_group = "Ubuntu2004AMD64TestGroup"
+test_adu_group = "Ubuntu2004ARM64TestGroup"
 
 test_apt_deployment_id = str(uuid.uuid4())
 
@@ -28,7 +28,7 @@ test_mcu_deployment_id = str(uuid.uuid4())
 
 test_bundle_update_deployment_id = str(uuid.uuid4())
 
-test_result_file_prefix = 'ubuntu20.04-amd64'
+test_result_file_prefix = 'ubuntu20.04-arm64'
 
 test_connection_timeout_tries = 10
 
