@@ -265,7 +265,7 @@ stages:
                   parameters:
                       distroName: ubuntu-20.04-amd64
                       scenarioPath: scenarios/ubuntu-20.04-amd64/
-          - job: RunUbuntu_2004_Amd64VmE2ETests
+          - job: RunUbuntu_2004_Arm64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 20.04 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
