@@ -189,7 +189,7 @@ stages:
             steps:
                 - template: ./templates/e2e_vm_setup.yaml
                   parameters:
-                      distroName: ubuntu-20.04-amd64
+                      distroName: ubuntu-20.04-arm64
                       vm_size: Standard_D2plds_v5
                       image_publisher: canonical
                       image_offer: 0001-com-ubuntu-server-focal
