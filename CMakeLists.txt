@@ -364,17 +364,17 @@ if (ADUC_BUILD_SNAP)
 
     set (
         ADUC_FILE_GROUP
-        "snap_aziot_du"
+        "snap_aziotdu"
         CACHE STRING "The group for adu file ownership.")
 
     set (
         DO_FILE_USER
-        "snap_aziot_do"
+        "snap_aziotdo"
         CACHE STRING "The user for do file ownership.")
 
     set (
         DO_FILE_GROUP
-        "snap_aziot_do"
+        "snap_aziotdo"
         CACHE STRING "The group for do file ownership.")
 else ()
     set (
