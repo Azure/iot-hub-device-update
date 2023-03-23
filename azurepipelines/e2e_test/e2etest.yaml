@@ -51,7 +51,7 @@ stages:
                       targetOs: ubuntu2004
                       targetArch: amd64
           - job: BuildUbuntu_2004_ARM64
-            displayName: Building the Device Update Package for Ubuntu 20.04 AMD64
+            displayName: Building the Device Update Package for Ubuntu 20.04 ARM64
             continueOnError: False
             pool: aduc_1es_client_pool
             steps:
@@ -197,7 +197,7 @@ stages:
                       image_version: latest
                       packagePattern: "*ubuntu2004-arm64*/*.deb"
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
-                      scenarioSetupDir: "./scenarios/ubuntu-20.04-amd64"
+                      scenarioSetupDir: "./scenarios/ubuntu-20.04-arm64"
                       du_tarball_script: >-
                           tar -xvf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
