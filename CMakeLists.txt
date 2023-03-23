@@ -411,7 +411,6 @@ set (
         "The protocol for Azure IotHub SDK communication. Options are MQTT, MQTT_over_WebSockets, and IotHub_Protocol_from_Config"
 )
 
-
 # Device Update Repo Locations
 
 set (

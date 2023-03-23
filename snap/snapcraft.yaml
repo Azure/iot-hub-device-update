@@ -208,11 +208,6 @@ plugs:
     content: aziot-identity-service
     target: $SNAP_DATA
 
-<<<<<<< HEAD
-
-=======
->>>>>>> parent b448671f2df7abcd821de3f75073683cfff88ec2
-
 # Provides resources to be accssed by other snaps.
 slots:
   #
