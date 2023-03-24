@@ -311,7 +311,8 @@ while [[ $1 != "" ]]; do
     --patch-version)
         shift
         patch_version=$1
-    -u | --ubuntu-core-snap-only)
+        ;;
+    --ubuntu-core-snap-only)
         shift
         build_snap=true
         ;;

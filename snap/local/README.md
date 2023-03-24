@@ -55,8 +55,8 @@ Key differences between Device Update Agent and Device Update Agent Snap:
 
 | | Device Upate Agent | Device Update Agent Snap |
 |---|---|---|
-| user id| adu | snap_aziot_du | 
-| group id| adu | snap_aziot_du |
+| user id| adu | snap_aziotdu | 
+| group id| adu | snap_aziotdu |
 
 ### How DU Agent Acquire the IoT Hub Connection Information
 
@@ -71,7 +71,7 @@ idtype = ["module"]
 uid = <SNAP_AZIOT_DU_USER_ID>
 ```
 
-Replace `SNAP_AZIOT_DU_USER_ID` with the actual user id of `snap_aziot_du`
+Replace `SNAP_AZIOT_DU_USER_ID` with the actual user id of `snap_aziotdu`
 
 This specifies the principal information for the DU Agent Module, including its name, ID type, and user ID. It is important to ensure that the file is created with the correct filename and location, and that the specified values are appropriate for your specific use case.
 
@@ -79,9 +79,9 @@ This specifies the principal information for the DU Agent Module, including its 
 #### Connect to Other Snap with Specific User ID
 When connecting snaps with interfaces, the snaps are typically connected with the default user or "system" user. However, it is possible to connect snaps with a specific user ID by using the `--classic` and `--username` options with the snap connect command.
 
-For example, to connect to Azure Identity Service with a specific user ID called "snap_aziot_du", you would use the following command:
-`snap connect --classic --username=snap_aziot_du deviceupdate-agent:AIS-interface azureIdentityService-snap:AIS-interface`  
-This will connect the two snaps using the "snap_aziot_du" user ID, allowing the snaps to communicate with each other as that user.
+For example, to connect to Azure Identity Service with a specific user ID called "snap_aziotdu", you would use the following command:
+`snap connect --classic --username=snap_aziotdu deviceupdate-agent:AIS-interface azureIdentityService-snap:AIS-interface`  
+This will connect the two snaps using the "snap_aziotdu" user ID, allowing the snaps to communicate with each other as that user.
 
 It is important to note that using the `--classic` and `--username` options with the snap connect command can have security implications, as it allows the connected snaps to access each other's data and resources as the specified user. Therefore, it should only be used if necessary and with caution.
 
@@ -419,8 +419,8 @@ Key differences between Device Update Agent and Device Update Agent Snap:
 
 | | Device Upate Agent | Device Update Agent Snap |
 |---|---|---|
-| user id| adu | snap_aziot_du | 
-| group id| adu | snap_aziot_du |
+| user id| adu | snap_aziotdu | 
+| group id| adu | snap_aziotdu |
 | downloads folder | /var/lib/adu/downloads | $SNAP_DATA/data/downloads |
 | configs file | /etc/adu/du-config.json | $SNAP_DATA/configs/du-config.json|
 | logs folder | /var/log/adu | $SNAP_DATA/log 
