@@ -20,6 +20,13 @@ description: |
 grade: devel
 confinement: strict
 
+# Use passthrough for the moment, until the appropriate snapcraft release lands
+# system-usernames:
+#   snap_aziotedge: shared
+passthrough:
+  system-usernames:
+    snap_aziotdu: shared
+
 #####
 #
 # Keywords
@@ -200,8 +207,6 @@ plugs:
     interface: content
     content: aziot-identity-service
     target: $SNAP_DATA
-
-
 
 # Provides resources to be accssed by other snaps.
 slots:
