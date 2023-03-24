@@ -95,8 +95,8 @@ Specify an agent settings, such as, manufacturer, model, agent.name, agent.conne
 {
   "schemaVersion": "1.1",
   "aduShellTrustedUsers": [
-    "snap_aziot_du",
-    "snap_aziot_do"
+    "snap_aziotdu",
+    "snap_aziotdo"
   ],
   "iotHubProtocol": "mqtt",
   "manufacturer":"<Place your device info manufacturer here>",
@@ -104,7 +104,7 @@ Specify an agent settings, such as, manufacturer, model, agent.name, agent.conne
   "agents": [
     {
       "name": "<Place your agent name here>",
-      "runas": "snap_aziot_du",
+      "runas": "snap_aziotdu",
       "connectionSource": {
         "connectionType": "string",
         "connectionData": "HostName=...HIDDEN..."
@@ -136,8 +136,8 @@ For example:
     {
         "schemaVersion": "1.1",
         "aduShellTrustedUsers": [
-            "snap_aziot_du",
-            "snap_aziot_do"
+            "snap_aziotdu",
+            "snap_aziotdo"
         ],
         "iotHubProtocol": "mqtt",
         "manufacturer": "contoso",
@@ -145,7 +145,7 @@ For example:
         "agents": [
             {
             "name": "main",
-            "runas": "snap_aziot_du",
+            "runas": "snap_aziotdu",
             "connectionSource": {
                 "connectionType": "string",
                 "connectionData": "HostName=...HIDDEN..."

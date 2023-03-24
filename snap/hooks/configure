@@ -2,11 +2,11 @@
 
 # adu_user is the user that the ADU Agent daemon will run as.
 # ADU Agent daemon needs to run as 'adu' to be able to perform high-privilege tasks via adu-shell.
-adu_user=snap_aziot_du
+adu_user=snap_aziotdu
 
 # The adu_group is the group that gives partner users like DO user
 # access to ADU resources like download sandbox folder.
-adu_group=snap_aziot_du
+adu_group=snap_aziotdu
 
 # Use getent and cut to get the info for the adu user and parse out the home directory.
 adu_home_dir=$(getent passwd $adu_user | cut -d: -f6)
@@ -35,8 +35,8 @@ sample_du_config=$(
 {
   "schemaVersion": "1.1",
   "aduShellTrustedUsers": [
-    "snap_aziot_du",
-    "snap_aziot_do"
+    "snap_aziotdu",
+    "snap_aziotdo"
   ],
   "iotHubProtocol": "mqtt",
   "manufacturer": "<Place your device info manufacturer here>",
@@ -44,7 +44,7 @@ sample_du_config=$(
   "agents": [
     {
       "name": "main",
-      "runas": "snap_aziot_du",
+      "runas": "snap_aziotdu",
       "connectionSource": {
         "connectionType": "string",
         "connectionData": "<Place your Azure IoT device connection string here>"
