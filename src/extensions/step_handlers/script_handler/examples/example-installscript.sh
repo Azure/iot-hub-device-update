@@ -634,7 +634,7 @@ InstallUpdate() {
     ret_val=0
 
     #
-    # PLACEHOLDER : Evaluate 'installCriteria' to determine if there is anything to do.
+    # PLACEHOLDER : Evaluate 'installedCriteria' to determine if there is anything to do.
     #               If not, return ADUC_Result_Install_Success (600). Otherwise, continue.
     #
 
