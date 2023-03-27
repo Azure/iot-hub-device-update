@@ -25,8 +25,8 @@ target_link_libraries (
     PUBLIC aduc::c_utils
     PRIVATE OpenSSL::Crypto libaducpal aziotsharedutil aduc::root_key_utils)
 
-# Always support test root keys.
-add_definitions (-DBUILD_WITH_TEST_KEYS=1)
+include (aduc_security)
+embed_test_root_keys_if_applicable (${target_name})
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
