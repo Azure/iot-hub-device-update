@@ -9,6 +9,7 @@
 #define ADUC_SYSTEM_UTILS_H
 
 #include <aduc/c_utils.h>
+#include <azure_c_shared_utility/strings.h>
 #include <stdbool.h>
 #include <sys/types.h>
 
@@ -58,6 +59,8 @@ bool SystemUtils_IsFile(const char* path, int* err);
 
 int SystemUtils_ForEachDir(
     const char* baseDir, const char* excludeDir, ADUC_SystemUtils_ForEachDirFunctor* perDirActionFunctor);
+
+bool ADUC_SystemUtils_FormatFilePathHelper(STRING_HANDLE* newFilePath, const char* filePath, const char* dirPath);
 
 EXTERN_C_END
 
