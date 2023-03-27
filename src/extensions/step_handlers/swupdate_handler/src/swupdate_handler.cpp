@@ -43,8 +43,6 @@ namespace adushconst = Adu::Shell::Const;
 
 EXTERN_C_BEGIN
 
-extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
-
 /////////////////////////////////////////////////////////////////////////////
 // BEGIN Shared Library Export Functions
 //

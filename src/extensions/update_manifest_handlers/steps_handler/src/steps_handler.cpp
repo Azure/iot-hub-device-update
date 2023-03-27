@@ -31,8 +31,6 @@ using ADUC::StringUtils::cstr_wrapper;
 
 #define DEFAULT_REF_STEP_HANDLER "microsoft/steps:1"
 
-extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
-
 /**
  * @brief Check whether to show additional debug logs.
  *
