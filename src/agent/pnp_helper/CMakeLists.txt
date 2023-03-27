@@ -4,7 +4,7 @@ include (agentRules)
 
 compileasc99 ()
 
-add_library (${PROJECT_NAME} STATIC ./src/pnp_protocol.c )
+add_library (${PROJECT_NAME} STATIC ./src/pnp_protocol.c)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 #
 # Turn -fPIC on, in order to use this library in another shared library.
@@ -18,6 +18,10 @@ target_include_directories (
 
 target_link_digital_twin_client (${PROJECT_NAME} PUBLIC)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE IotHubClient::iothub_client
-                                               aduc::communication_abstraction
-                                               iothub_client_mqtt_transport umqtt)
+target_link_libraries (
+    ${PROJECT_NAME}
+    PRIVATE IotHubClient::iothub_client
+            aduc::communication_abstraction
+            aduc::logging
+            iothub_client_mqtt_transport
+            umqtt)
