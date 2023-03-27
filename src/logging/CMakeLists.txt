@@ -21,3 +21,5 @@ elseif (ADUC_LOGGING_LIBRARY STREQUAL "zlog")
 else ()
     message (FATAL_ERROR "Unknown logging library ${ADUC_LOGGING_LIBRARY} specified.")
 endif ()
+
+add_subdirectory (manager)

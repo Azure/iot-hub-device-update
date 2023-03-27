@@ -11,11 +11,11 @@
 #include <aduc/c_utils.h> // EXTERN_C_{BEGIN,END}
 #include <aduc/extension_utils.h> // GetDownloadHandlerFileEntity
 #include <aduc/hash_utils.h> // ADUC_HashUtils_VerifyWithStrongestHash
-#include <aduc/logging.h> // ADUC_Logging_GetLevel
 #include <aduc/parser_utils.h> // ADUC_FileEntity_Uninit
 #include <aduc/plugin_exception.hpp>
 #include <aduc/types/update_content.h> // ADUC_FileEntity
 #include <cstring> // memset
+#include <logging_manager.h>
 #include <unordered_map>
 
 using DownloadHandlerHandle = void*;
@@ -90,7 +90,7 @@ DownloadHandlerPlugin* DownloadHandlerFactory::LoadDownloadHandler(const std::st
     try
     {
         auto plugin = std::unique_ptr<DownloadHandlerPlugin>(
-            new DownloadHandlerPlugin(autoFileEntity->TargetFilename, ADUC_Logging_GetLevel()));
+            new DownloadHandlerPlugin(autoFileEntity->TargetFilename, LoggingManager_GetLogLevel()));
         cachedPlugins.insert(std::make_pair(downloadHandlerId, plugin.get()));
         return plugin.release();
     }

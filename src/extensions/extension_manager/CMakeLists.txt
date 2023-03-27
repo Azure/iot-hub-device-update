@@ -40,6 +40,7 @@ target_link_libraries (
             aduc::extension_utils
             aduc::hash_utils
             aduc::logging
+            aduc::loggingmanager
             aduc::parser_utils
             aduc::path_utils
             aduc::string_utils

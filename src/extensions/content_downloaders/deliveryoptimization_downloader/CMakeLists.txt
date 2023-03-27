@@ -25,6 +25,7 @@ target_link_libraries (
             aduc::contract_utils
             aduc::hash_utils
             aduc::logging
+            aduc::loggingmanager
             aduc::process_utils
             aduc::string_utils
             atomic

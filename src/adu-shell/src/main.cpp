@@ -49,7 +49,7 @@ namespace adushconst = Adu::Shell::Const;
  *
  * @return 0 if succeeded.
  */
-int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* launchArgs)
+static int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* launchArgs)
 {
     if (launchArgs == nullptr)
     {
@@ -145,8 +145,9 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
             launchArgs->logFile = optarg;
             break;
 
+        // clang-format off
         case 'l':
-        {
+        { // clang-format on
             char* endptr;
             errno = 0; /* To distinguish success/failure after call */
             int64_t logLevel = strtol(optarg, &endptr, 10);
@@ -209,7 +210,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
     return result;
 }
 
-void ShowChildProcessLogs(const std::string& output)
+static void ShowChildProcessLogs(const std::string& output)
 {
     if (!output.empty())
     {
@@ -227,7 +228,7 @@ void ShowChildProcessLogs(const std::string& output)
 /**
  * @brief Starts a child process for task(s) for a given update actions.
  */
-int ADUShell_Dowork(const ADUShell_LaunchArguments& launchArgs)
+static int ADUShell_Dowork(const ADUShell_LaunchArguments& launchArgs)
 {
     ADUShellTaskResult taskResult;
 
@@ -260,7 +261,7 @@ int ADUShell_Dowork(const ADUShell_LaunchArguments& launchArgs)
  * @return true if the process is either in the trusted Group, or is one of the adu shell trusted users.
  * @return false otherwise
  */
-bool ADUShell_PermissionCheck()
+static bool ADUShell_PermissionCheck()
 {
     bool isTrusted = false;
 

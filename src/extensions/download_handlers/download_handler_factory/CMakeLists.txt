@@ -20,7 +20,7 @@ target_link_libraries (
             aduc::download_handler_plugin
             aduc::extension_utils
             aduc::hash_utils
-            aduc::logging
+            aduc::loggingmanager
             aduc::parser_utils
             aduc::shared_lib)
 

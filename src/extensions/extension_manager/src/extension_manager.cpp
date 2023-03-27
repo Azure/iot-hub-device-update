@@ -20,7 +20,6 @@
 #include <aduc/extension_manager_helper.hpp>
 #include <aduc/extension_utils.h>
 #include <aduc/hash_utils.h> // for SHAversion
-#include <aduc/logging.h>
 #include <aduc/parser_utils.h>
 #include <aduc/path_utils.h> // SanitizePathSegment
 #include <aduc/plugin_exception.hpp>
@@ -30,6 +29,7 @@
 #include <aduc/string_utils.hpp>
 #include <aduc/types/workflow.h> // ADUC_WorkflowHandle
 #include <aduc/workflow_utils.h>
+#include <logging_manager.h>
 
 #include <cstring>
 #include <unordered_map>
@@ -274,7 +274,7 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
 
     try
     {
-        *handler = createUpdateContentHandlerExtensionFn(ADUC_Logging_GetLevel());
+        *handler = createUpdateContentHandlerExtensionFn(LoggingManager_GetLogLevel());
     }
     catch (const std::exception& ex)
     {
@@ -763,7 +763,7 @@ done:
 ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initializeData)
 {
     void* lib = nullptr;
-    InitializeProc _initialize = nullptr;
+    InitializeProc initializeFn = nullptr;
     char* components = nullptr;
 
     ADUC_Result result = ExtensionManager::LoadContentDownloaderLibrary(&lib);
@@ -784,8 +784,8 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    _initialize = reinterpret_cast<InitializeProc>(dlsym(lib, CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL));
-    if (_initialize == nullptr)
+    initializeFn = reinterpret_cast<InitializeProc>(dlsym(lib, CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL));
+    if (initializeFn == nullptr)
     {
         result = { .ResultCode = ADUC_Result_Failure,
                    .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP };
@@ -794,7 +794,7 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
 
     try
     {
-        result = _initialize(initializeData);
+        result = initializeFn(initializeData);
     }
     catch (...)
     {

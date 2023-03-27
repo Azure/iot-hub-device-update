@@ -9,8 +9,10 @@
 #include "curl_content_downloader.h" // for Download_curl
 #include <aduc/c_utils.h> // for EXTERN_C_BEGIN, EXTERN_C_END
 #include <aduc/contract_utils.h> // for ADUC_ExtensionContractInfo
+#include <aduc/logging.h>
 #include <aduc/types/download.h> // for ADUC_DownloadProgressCallback
 #include <aduc/types/update_content.h> // for ADUC_FileEntity
+#include <logging_manager.h>
 
 EXTERN_C_BEGIN
 
@@ -28,6 +30,15 @@ ADUC_Result Download(
     unsigned int timeoutInSeconds,
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
+    // JIT init since Initialize is called by main thread and
+    // each logging file per area is per-thread currently.
+    static bool logging_initialized = false;
+    if (!logging_initialized)
+    {
+        ADUC_Logging_Init(LoggingManager_GetLogLevel(), "curl-content-downloader");
+        logging_initialized = true;
+    }
+
     return Download_curl(entity, workflowId, workFolder, timeoutInSeconds, downloadProgressCallback);
 }
 

@@ -40,7 +40,6 @@ typedef enum tagADUC_LOG_SEVERITY
 // These are implemented for each logging library.
 void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix);
 void ADUC_Logging_Uninit();
-ADUC_LOG_SEVERITY ADUC_Logging_GetLevel();
 
 /**
  * @brief Detailed informational events that are useful to debug an application.
@@ -75,7 +74,6 @@ ADUC_LOG_SEVERITY ADUC_Logging_GetLevel();
 // These are implemented for each logging library.
 #    define ADUC_Logging_Init(...)
 #    define ADUC_Logging_Uninit(...)
-#    define ADUC_Logging_GetLevel(...) (0)
 
 /**
  * @brief Detailed informational events that are useful to debug an application.

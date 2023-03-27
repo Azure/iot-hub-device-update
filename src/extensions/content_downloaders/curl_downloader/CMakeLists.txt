@@ -18,6 +18,7 @@ target_link_libraries (
     PRIVATE aduc::contract_utils
             aduc::hash_utils
             aduc::logging
+            aduc::loggingmanager
             aduc::process_utils)
 
 install (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

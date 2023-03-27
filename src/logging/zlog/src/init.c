@@ -56,16 +56,13 @@ ADUC_LOG_SEVERITY ZLogLevelToAducLogSeverity(enum ZLOG_SEVERITY logLevel)
     }
 }
 
-ADUC_LOG_SEVERITY g_logLevel = ADUC_LOG_INFO;
-
 /**
- * @brief Initialize logging.
- * @param logLevel log level.
+ * @brief Initializes logging.
+ * @param logLevel The log level.
+ * @param filePrefix The file prefix.
  */
 void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
 {
-    g_logLevel = ADUC_LOG_INFO;
-
     // zlog_init doesn't create the log path, so attempt to create it here if it does not exist.
     // If it can't be created, zlogging will send output to console.
     struct stat st;
@@ -100,9 +97,4 @@ void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
 void ADUC_Logging_Uninit()
 {
     zlog_finish();
-}
-
-ADUC_LOG_SEVERITY ADUC_Logging_GetLevel()
-{
-    return g_logLevel;
 }

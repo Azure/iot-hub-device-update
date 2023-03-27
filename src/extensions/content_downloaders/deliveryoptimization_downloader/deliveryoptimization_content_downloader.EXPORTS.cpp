@@ -13,6 +13,7 @@
 #include <aduc/hash_utils.h>
 #include <aduc/logging.h>
 #include <aduc/types/adu_core.h>
+#include <logging_manager.h>
 
 #include <sys/stat.h> // for stat
 
@@ -94,6 +95,15 @@ ADUC_Result Download(
     unsigned int timeoutInSeconds,
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
+    // JIT init since Initialize is called by main thread and
+    // each logging file per area is per-thread currently.
+    static bool logging_initialized = false;
+    if (!logging_initialized)
+    {
+        ADUC_Logging_Init(LoggingManager_GetLogLevel(), "do-content-downloader");
+        logging_initialized = true;
+    }
+
     return do_download(entity, workflowId, workFolder, timeoutInSeconds, downloadProgressCallback);
 }
 

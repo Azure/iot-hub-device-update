@@ -25,6 +25,7 @@
 #include "aduc/permission_utils.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
+#include "logging_manager.h"
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
@@ -235,7 +236,7 @@ ADUC_ExtensionRegistrationType GetRegistrationTypeFromArg(const char* arg)
  * -1 on failure,
  *  or positive index to argv index where additional args start on success with additional args.
  */
-int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* launchArgs)
+static int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* launchArgs)
 {
     int result = 0;
     memset(launchArgs, 0, sizeof(*launchArgs));
@@ -294,8 +295,9 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             launchArgs->iotHubTracingEnabled = true;
             break;
 
+        // clang-format off
         case 'l':
-        {
+        { // clang-format on
             unsigned int logLevel = 0;
             bool ret = atoui(optarg, &logLevel);
             if (!ret || logLevel < ADUC_LOG_DEBUG || logLevel > ADUC_LOG_ERROR)
@@ -397,6 +399,8 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
     {
         ADUC_StringUtils_Trim(launchArgs->connectionString);
     }
+
+    LoggingManager_SetLogLevel(launchArgs->logLevel);
 
     return result;
 }
