@@ -27,6 +27,7 @@ target_link_libraries (
             aduc::logging
             aduc::process_utils
             aduc::string_utils
+            atomic
             Microsoft::deliveryoptimization)
 
 install (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
