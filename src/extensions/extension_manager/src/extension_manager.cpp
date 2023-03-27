@@ -44,12 +44,6 @@ using GET_CONTRACT_INFO_PROC = ADUC_Result (*)(ADUC_ExtensionContractInfo* contr
 using WorkflowHandle = void*;
 using ADUC::StringUtils::cstr_wrapper;
 
-EXTERN_C_BEGIN
-ExtensionManager_Download_Options Default_ExtensionManager_Download_Options = {
-    CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT /* timeoutInMinutes */
-};
-EXTERN_C_END
-
 // Static members.
 std::unordered_map<std::string, void*> ExtensionManager::_libs;
 std::unordered_map<std::string, ContentHandler*> ExtensionManager::_contentHandlers;
