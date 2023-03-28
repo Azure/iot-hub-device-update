@@ -17,7 +17,7 @@
 #include <aduc/types/download.h> // ADUC_DownloadProgressCallback
 #include <aduc/types/update_content.h> // ADUC_FileEntity
 
-#include <memory>
+#include <dlfcn.h>
 #include <string>
 #include <unordered_map>
 
@@ -63,6 +63,20 @@ public:
     static ADUC_Result InitializeContentDownloader(const char* initializeData);
 
     /**
+     * @brief Handles initialization at begin of download thread execution.
+     *
+     * @return ADUC_Result The result.
+     */
+    static ADUC_Result OnDownloadBegin();
+
+    /**
+     * @brief Handles uninitialization at end of download thread execution.
+     *
+     * @return ADUC_Result The result.
+     */
+    static ADUC_Result OnDownloadEnd();
+
+    /**
      * @brief
      *
      * @param entity An #ADUC_FileEntity object with information of the file to be downloaded.
@@ -100,5 +114,27 @@ private:
     static void* _componentEnumerator;
     static ADUC_ExtensionContractInfo _componentEnumeratorContractVersion;
 };
+
+/**
+ * @brief Loads the content downloader shared library and returns the exported procedure.
+ *
+ * @tparam TProc The type of the exported procedure.
+ * @param exportName The symbol of the export.
+ * @param outProc The output parameter for the exported procedure.
+ * @return ADUC_Result The result.
+ */
+template<typename TProc>
+ADUC_Result LoadContentDownloaderLibraryProc(const char* exportName, TProc* outProc)
+{
+    void* lib = nullptr;
+    ADUC_Result result = ExtensionManager::LoadContentDownloaderLibrary(&lib);
+    if (IsAducResultCodeSuccess(result.ResultCode))
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        *outProc = reinterpret_cast<TProc>(dlsym(lib, exportName));
+    }
+
+    return result;
+}
 
 #endif // ADUC_EXTENSION_MANAGER_HPP

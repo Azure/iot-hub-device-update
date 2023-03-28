@@ -79,6 +79,26 @@ done:
 }
 
 /**
+ * @brief Called on the worker context when execution is beginning.
+ *
+ */
+ADUC_Result OnDownloadBegin()
+{
+    ADUC_Logging_Init(LoggingManager_GetLogLevel(), "do-content-downloader");
+    return ADUC_Result{ ADUC_GeneralResult_Success, 0 };
+}
+
+/**
+ * @brief Called on the worker context when execution is ending.
+ *
+ */
+ADUC_Result OnDownloadEnd()
+{
+    ADUC_Logging_Uninit();
+    return ADUC_Result{ ADUC_GeneralResult_Success, 0 };
+}
+
+/**
  * @brief The download export.
  *
  * @param entity The file entity.
@@ -95,15 +115,6 @@ ADUC_Result Download(
     unsigned int timeoutInSeconds,
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
-    // JIT init since Initialize is called by main thread and
-    // each logging file per area is per-thread currently.
-    static bool logging_initialized = false;
-    if (!logging_initialized)
-    {
-        ADUC_Logging_Init(LoggingManager_GetLogLevel(), "do-content-downloader");
-        logging_initialized = true;
-    }
-
     return do_download(entity, workflowId, workFolder, timeoutInSeconds, downloadProgressCallback);
 }
 

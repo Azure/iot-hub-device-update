@@ -34,8 +34,6 @@
 #include <cstring>
 #include <unordered_map>
 
-// Note: this requires ${CMAKE_DL_LIBS}
-#include <dlfcn.h>
 #include <unistd.h>
 
 // type aliases
@@ -805,6 +803,32 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
 
 done:
     return result;
+}
+
+ADUC_Result ExtensionManager::OnDownloadBegin()
+{
+    OnDownloadBeginProc proc{};
+    ADUC_Result result =
+        LoadContentDownloaderLibraryProc<decltype(proc)>(CONTENT_DOWNLOADER__OnDownloadBegin__EXPORT_SYMBOL, &proc);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        return result;
+    }
+
+    return proc();
+}
+
+ADUC_Result ExtensionManager::OnDownloadEnd()
+{
+    OnDownloadEndProc proc{};
+    ADUC_Result result =
+        LoadContentDownloaderLibraryProc<decltype(proc)>(CONTENT_DOWNLOADER__OnDownloadEnd__EXPORT_SYMBOL, &proc);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        return result;
+    }
+
+    return proc();
 }
 
 ADUC_Result ExtensionManager::Download(

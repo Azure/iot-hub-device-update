@@ -28,6 +28,8 @@ public:
 
     ~StepsHandlerImpl() override;
 
+    ADUC_Result OnDownloadBegin() override;
+    ADUC_Result OnDownloadEnd() override;
     ADUC_Result Download(const tagADUC_WorkflowData* workflowData) override;
     ADUC_Result Backup(const tagADUC_WorkflowData* workflowData) override;
     ADUC_Result Install(const tagADUC_WorkflowData* workflowData) override;

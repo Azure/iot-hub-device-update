@@ -13,6 +13,8 @@
 EXTERN_C_BEGIN
 
 typedef ADUC_Result (*InitializeProc)(const char* initializeData);
+typedef ADUC_Result (*OnDownloadBeginProc)();
+typedef ADUC_Result (*OnDownloadEndProc)();
 
 typedef ADUC_Result (*DownloadProc)(
     const ADUC_FileEntity* entity,

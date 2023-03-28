@@ -115,15 +115,14 @@ static ContentHandler* GetUpdateManifestHandler(const ADUC_WorkflowData* workflo
             updateManifestVersion,
             updateManifestHandler.get());
 
-        loadResult =
-            ExtensionManager::LoadUpdateContentHandlerExtension(updateManifestHandler.get(), &contentHandler);
+        loadResult = ExtensionManager::LoadUpdateContentHandlerExtension(updateManifestHandler.get(), &contentHandler);
 
         // If handler for the current manifest version is not available,
         // fallback to the V4 default handler.
         if (IsAducResultCodeFailure(loadResult.ResultCode))
         {
-            loadResult = ExtensionManager::LoadUpdateContentHandlerExtension(
-                UPDATE_MANIFEST_DEFAULT_HANDLER, &contentHandler);
+            loadResult =
+                ExtensionManager::LoadUpdateContentHandlerExtension(UPDATE_MANIFEST_DEFAULT_HANDLER, &contentHandler);
         }
     }
     else
@@ -156,11 +155,23 @@ ADUC_Result LinuxPlatformLayer::Download(const ADUC_WorkflowData* workflowData)
         goto done;
     }
 
+    result = contentHandler->OnDownloadBegin();
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        goto done;
+    }
+
     result = contentHandler->Download(workflowData);
     if (_IsCancellationRequested)
     {
         result = ADUC_Result{ ADUC_Result_Failure_Cancelled };
         _IsCancellationRequested = false; // For replacement, we can't call Idle so reset here
+    }
+
+    result = contentHandler->OnDownloadEnd();
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        goto done;
     }
 
 done:

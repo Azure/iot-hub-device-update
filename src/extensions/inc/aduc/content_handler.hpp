@@ -28,6 +28,16 @@ public:
     ContentHandler(ContentHandler&&) = delete;
     ContentHandler& operator=(ContentHandler&&) = delete;
 
+    virtual ADUC_Result OnDownloadBegin()
+    {
+        return ADUC_Result{ ADUC_GeneralResult_Success, 0 };
+    }
+
+    virtual ADUC_Result OnDownloadEnd()
+    {
+        return ADUC_Result{ ADUC_GeneralResult_Success, 0 };
+    }
+
     virtual ADUC_Result Download(const tagADUC_WorkflowData* workflowData) = 0;
     virtual ADUC_Result Backup(const tagADUC_WorkflowData* workflowData) = 0;
     virtual ADUC_Result Install(const tagADUC_WorkflowData* workflowData) = 0;

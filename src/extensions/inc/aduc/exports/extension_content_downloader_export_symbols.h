@@ -27,6 +27,20 @@
 #define CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL "Initialize"
 
 /**
+ * @brief The OnDownloadBegin export.
+ * @return ADUC_Result The result.
+ *
+ */
+#define CONTENT_DOWNLOADER__OnDownloadBegin__EXPORT_SYMBOL "OnDownloadBegin"
+
+/**
+ * @brief The OnDownloadEnd export.
+ * @return ADUC_Result The result.
+ *
+ */
+#define CONTENT_DOWNLOADER__OnDownloadEnd__EXPORT_SYMBOL "OnDownloadEnd"
+
+/**
  * @brief The download export.
  *
  * @param entity The file entity.

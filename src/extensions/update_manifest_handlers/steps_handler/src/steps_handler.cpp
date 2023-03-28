@@ -676,6 +676,26 @@ done:
 }
 
 /**
+ * @brief Runs at the begin of download thread execution.
+ *
+ * @return ADUC_Result The result.
+ */
+ADUC_Result StepsHandlerImpl::OnDownloadBegin()
+{
+    return ExtensionManager::OnDownloadBegin();
+}
+
+/**
+ * @brief Runs at the end of download thread execution.
+ *
+ * @return ADUC_Result The result.
+ */
+ADUC_Result StepsHandlerImpl::OnDownloadEnd()
+{
+    return ExtensionManager::OnDownloadEnd();
+}
+
+/**
  * @brief Performs 'Download' task by iterating through all steps and invoke each step's handler
  * to download file(s), if needed.
  *
