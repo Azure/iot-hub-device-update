@@ -145,9 +145,7 @@ static int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArgu
             launchArgs->logFile = optarg;
             break;
 
-        // clang-format off
-        case 'l':
-        { // clang-format on
+        case 'l': {
             char* endptr;
             errno = 0; /* To distinguish success/failure after call */
             int64_t logLevel = strtol(optarg, &endptr, 10);

@@ -295,9 +295,7 @@ static int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArgument
             launchArgs->iotHubTracingEnabled = true;
             break;
 
-        // clang-format off
-        case 'l':
-        { // clang-format on
+        case 'l': {
             unsigned int logLevel = 0;
             bool ret = atoui(optarg, &logLevel);
             if (!ret || logLevel < ADUC_LOG_DEBUG || logLevel > ADUC_LOG_ERROR)
