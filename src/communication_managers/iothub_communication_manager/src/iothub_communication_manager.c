@@ -222,10 +222,11 @@ void IoTHub_CommunicationManager_ConnectionStatus_Callback(
         }
         else
         {
+            int time_until_next_retry = g_next_authentication_attempt_time - now_time;
             Log_Error(
                 "IoTHub connection is broken for %d seconds (will retry in %d seconds)",
                 now_time - g_first_unauthenticated_time,
-                g_next_authentication_attempt_time - now_time);
+                time_until_next_retry);
         }
         break;
     }
