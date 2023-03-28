@@ -45,7 +45,7 @@ ADUC_Result Initialize(const char* initializeData)
  */
 ADUC_Result OnDownloadBegin()
 {
-    ADUC_Logging_Init(LoggingManager_GetLogLevel(), "do-content-downloader");
+    ADUC_Logging_Init(LoggingManager_GetLogLevel(), "curl-content-downloader");
     return ADUC_Result{ ADUC_GeneralResult_Success, 0 };
 }
 
