@@ -440,7 +440,7 @@ static bool ADUC_DeviceClient_Create(
  * @param connectionString the connection string to scan
  * @returns the connection type for @p connectionString
  */
-static ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
+ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
 {
     ADUC_ConnType result = ADUC_ConnType_NotSet;
 
@@ -474,7 +474,7 @@ static ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionStrin
  *
  * @return true if connection info can be obtained
  */
-static bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString)
+bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString)
 {
     bool succeeded = false;
     if (info == NULL)
@@ -536,7 +536,7 @@ done:
  *
  * @return true if connection info can be obtained
  */
-static bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
+bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
 {
     bool succeeded = false;
     if (info == NULL)
@@ -571,7 +571,7 @@ done:
  * @param info the connection information that will be configured
  * @return true on success; false on failure
  */
-static bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
+bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
 {
     bool success = false;
     ADUC_ConfigInfo config = {};
