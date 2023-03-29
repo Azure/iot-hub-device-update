@@ -71,8 +71,7 @@ stages:
 
     - stage: TerraformSetup
       displayName: Initializes and installs Terraform into the VM
-      pool:
-          vmImage: "ubuntu-18.04"
+      pool: aduc_1es_client_pool
       jobs:
           - job: TerraformInstall
             displayName: "Install Terraform Into the VM and Create the Resource Group"
@@ -108,15 +107,13 @@ stages:
           - PerformNativeBuilds
       variables:
           TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
-      pool:
-          vmImage: "ubuntu-18.04"
+      pool: aduc_1es_client_pool
       jobs:
           - job: SetupUbuntu1804_AMD64_VM
             displayName: "Setting up VM for Ubuntu 18.04 AMD64 Test VM"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_vm_setup.yaml
                   parameters:
@@ -138,8 +135,7 @@ stages:
             displayName: "Setting up VM for Ubuntu 18.04 ARM64 Test VM"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_vm_setup.yaml
                   parameters:
@@ -161,8 +157,7 @@ stages:
             displayName: "Setting up VM for Ubuntu 20.04 AMD64 Test VM"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_vm_setup.yaml
                   parameters:
@@ -184,8 +179,7 @@ stages:
             displayName: "Setting up VM for Ubuntu 20.04 AMD64 Test VM"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_vm_setup.yaml
                   parameters:
@@ -207,8 +201,7 @@ stages:
             displayName: "Setting up VM for Debain 10 AMD64 Test VM"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_vm_setup.yaml
                   parameters:
@@ -236,8 +229,7 @@ stages:
             displayName: "Running E2E Tests against Ubuntu 18.04 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
@@ -247,8 +239,7 @@ stages:
             displayName: "Running E2E Tests against Ubuntu 18.04 ARM64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
@@ -258,19 +249,17 @@ stages:
             displayName: "Running E2E Tests against Ubuntu 20.04 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: ubuntu-20.04-amd64
                       scenarioPath: scenarios/ubuntu-20.04-amd64/
           - job: RunUbuntu_2004_Arm64VmE2ETests
-            displayName: "Running E2E Tests against Ubuntu 20.04 AMD64"
+            displayName: "Running E2E Tests against Ubuntu 20.04 ARM64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
@@ -294,8 +283,7 @@ stages:
           - TerraformSetup
           - TerraformVMInitialization
           - RunTestsAndPostResults
-      pool:
-          vmImage: "ubuntu-18.04"
+      pool: aduc_1es_client_pool
       variables:
           TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
       jobs:
@@ -303,8 +291,7 @@ stages:
             displayName: "Running E2E Tests against Ubuntu 18.04 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_test_vm_cleanup.yaml
                   parameters:
@@ -314,8 +301,7 @@ stages:
             displayName: "Running E2E Tests against Ubuntu 18.04 ARM64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_test_vm_cleanup.yaml
                   parameters:
@@ -325,8 +311,7 @@ stages:
             displayName: "Running E2E Tests against Ubuntu 20.04 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_test_vm_cleanup.yaml
                   parameters:
@@ -336,8 +321,7 @@ stages:
             displayName: "Running E2E Tests against Debian 10 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_test_vm_cleanup.yaml
                   parameters:
@@ -350,8 +334,7 @@ stages:
           - TerraformVMInitialization
           - RunTestsAndPostResults
           - TerraformDestroyVm
-      pool:
-          vmImage: "ubuntu-18.04"
+      pool: aduc_1es_client_pool
       variables:
           TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
       jobs:
