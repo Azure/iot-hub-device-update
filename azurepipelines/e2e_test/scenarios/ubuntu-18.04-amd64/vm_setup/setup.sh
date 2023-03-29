@@ -41,11 +41,11 @@ while [[ $1 != "" ]]; do
         ;;
     -h | --help)
         print_help
-        $ret 0
+        return 0
         ;;
     *)
         error "Invalid argument: $*"
-        $ret 1
+        return 1
         ;;
     esac
     shift
@@ -184,8 +184,8 @@ configure_apt_repository
 
 if [[ $self_upgrade == "true" ]]; then
     sudo apt-get install -y deviceupdate-agent
-    chmod u+x  ./testsetup/apt_repo_setup.sh
-    sudo ./testsetup/apt_repo_setup.sh -d ./testsetup/deviceupdate-package.deb
+    chmod u+x ./testsetup/apt_repo_setup.sh
+    sudo ./testsetup/apt_repo_setup.sh -d ./testsetup/
 else
     sudo apt-get install -y ./testsetup/deviceupdate-package.deb
 fi

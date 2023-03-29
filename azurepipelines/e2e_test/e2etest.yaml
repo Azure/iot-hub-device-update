@@ -465,12 +465,12 @@ stages:
                 matrix:
                     ubuntu-18.04-amd64:
                         distroName: ubuntu-18.04-amd64
-                    ubuntu-18.04-arm64:
-                        distroName: ubuntu-18.04-arm64
-                    ubuntu-20.04:
-                        distroName: ubuntu-20.04-amd64
-                    debian-10:
-                        distroName: debian-10-amd64
+                    # ubuntu-18.04-arm64:
+                    #     distroName: ubuntu-18.04-arm64
+                    # ubuntu-20.04:
+                    #     distroName: ubuntu-20.04-amd64
+                    # debian-10:
+                    #     distroName: debian-10-amd64
             steps:
                 - script: echo "$(TERRAFORM_RESOURCE_GROUP_NAME)"
                   displayName: Checking terraform resource group name
