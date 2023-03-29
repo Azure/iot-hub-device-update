@@ -27,6 +27,14 @@ The [Delivery Optimization
 SDK](https://github.com/microsoft/do-client)
 provides a robust way for the client to download an update.
 
+### Azure Blob Storage File Upload Utility
+
+The [Azure Blob Storage File Update Utility](https://github.com/Azure/azure-blob-storage-file-upload-utility) provides the functions necessary to upload files passed to the utility to an Azure Blob Storage account using a SAS url by exposing a C interface.
+
+### IoT Hub Device Update Delta
+
+The [IoT Hub Device Update Delta](https://github.com/Azure/iot-hub-device-update-delta) contains code for generating and applying Azure Device Update Diffs.
+
 ## Building the Device Update Agent for Linux
 
 ### Installing Dependencies
@@ -58,26 +66,6 @@ dependencies. To see the usage info:
 ```shell
 ./scripts/install-deps.sh -h
 ```
-
-#### Build Azure IotHub SDK for C WebSockets static library
-
-By default, both MQTT (`libiothub_client_mqtt_transport.a`) and MQTT over WebSockets(`libiothub_client_mqtt_ws_transport.a`) static libraries are built by `install-deps.sh` via the `use_mqtt` and `use_wsio` -D configs.
-
-```shell
-# Verify mqtt transport static lib exists
-$ locate libiothub_client_mqtt_transport.a | \
-    grep '/usr/local/lib/'
-/usr/local/lib/libiothub_client_mqtt_transport.a
-```
-
-```shell
-# Verify mqtt over websockets static lib exists
-$ locate libiothub_client_mqtt_ws_transport.a | \
-    grep '/usr/local/lib/'
-/usr/local/lib/libiothub_client_mqtt_ws_transport.a
-```
-
-## As a standalone solution
 
 ### Device Update Linux Build System
 
@@ -216,6 +204,22 @@ set (
 Doing ./build.sh after setting this to `"MQTT_over_WebSockets"` will have the MQTT traffic go over a websocket on port `443`.
 Using `"MQTT"` will use SecureMQTT over port `8883`.
 
+Please note that, by default, both MQTT (`libiothub_client_mqtt_transport.a`) and MQTT over WebSockets(`libiothub_client_mqtt_ws_transport.a`) static libraries are built by `install-deps.sh` via the `use_mqtt` and `use_wsio` -D configs.
+
+```shell
+# Verify mqtt transport static lib exists
+$ locate libiothub_client_mqtt_transport.a | \
+    grep '/usr/local/lib/'
+/usr/local/lib/libiothub_client_mqtt_transport.a
+```
+
+```shell
+# Verify mqtt over websockets static lib exists
+$ locate libiothub_client_mqtt_ws_transport.a | \
+    grep '/usr/local/lib/'
+/usr/local/lib/libiothub_client_mqtt_ws_transport.a
+```
+
 ## Install the Device Update Agent
 
 ### Install the Device Update Agent after building
@@ -269,34 +273,3 @@ tcp        0      0 <LOCAL IP ADDR>:<LOCAL PORT>       <REMOTE IP ADDR>:443     
 $ fg
 <ctrl-c>
 ```
-
-## Integrate the Device Update agent in your existing application or solution
-
-### Pre-concepts
-
-Before integrating the Device Update agent in your existing application or solution review the below concepts.
-
--   Learn how the Device Update service will communicate with the device client using IoT Hub Plug and Play properties to orchestrate over-the-air update actions from [here](../../src/adu_workflow/src/agent_workflow.c).
--   Understand the update manifest to be able to write code to [respond to update actions from your client](update-manifest.md).
--   Understand how to implement 'ADU Core' interface for the Device Update service to [communicate with your client on the Device](device-update-plug-and-play.md).
-
-### Steps
-
-1. Create an IoT Hub C-SDK Plug and Play client: Your application needs to support IoT Hub Plug and Play as shown in this [example](https://docs.microsoft.com/en-us/azure/iot-pnp/tutorial-multiple-components?pivots=programming-language-ansi-c) to be used by Device Update for over-the-air updating.
-2. Once you have a IoT Hub Plug and Play enabled device, implement the 'ADU Core' interfaces for your application, see reference code [here](../../src/adu_workflow/src/agent_workflow.c).
-3. Review the below Device Update agent implementation and source code so that you can modify your application to replicate the same behaviors:
-
--   Workflow phases and source code
-
-Download phase:
-![Download phase](images/download-phase.png)
-
-Install phase:
-![Install phase](images/install-phase.png)
-
-Apply phase:
-![Apply phase](images/apply-phase.png)
-
--   [Source code](../../src/adu_workflow/src/agent_workflow.c)
-
-    4.The result reported from your application should be in this format so that the Device Update service can work with your application. Learn more about [plug and play format](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-plug-and-play), and Device Update agent [workflow](../../src/adu_workflow/src/agent_workflow.c).
