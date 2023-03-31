@@ -17,7 +17,7 @@ from testingtoolkit import UpdateId
 from testingtoolkit import DeploymentStatusResponse
 from testingtoolkit import DuAutomatedTestConfigurationManager
 
-sys.path.append('./scenarios/ubuntu-20.04-amd64/')
+sys.path.append('./scenarios/ubuntu-20.04-arm64/')
 from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, test_connection_timeout_tries, retry_wait_time_in_seconds
 
 class AddDeviceToGroupTest(unittest.TestCase):

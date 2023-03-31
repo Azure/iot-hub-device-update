@@ -23,7 +23,7 @@ from testingtoolkit import DeviceUpdateTestHelper
 
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/testscript.py
-sys.path.append('./scenarios/ubuntu-20.04-amd64/')
+sys.path.append('./scenarios/ubuntu-20.04-arm64/')
 from scenario_definitions import test_device_id, test_result_file_prefix, test_operation_id, test_connection_timeout_tries, retry_wait_time_in_seconds
 
 diagnostics_operation_status_retries = 15

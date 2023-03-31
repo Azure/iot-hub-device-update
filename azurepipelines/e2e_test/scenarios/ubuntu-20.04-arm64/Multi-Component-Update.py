@@ -20,7 +20,7 @@ from xmlrunner.extra.xunit_plugin import transform
 
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/<test-script-name>.py
-sys.path.append('./scenarios/ubuntu-20.04-amd64/')
+sys.path.append('./scenarios/ubuntu-20.04-arm64/')
 from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, test_mcu_deployment_id, test_connection_timeout_tries, retry_wait_time_in_seconds
 
 #
