@@ -176,7 +176,7 @@ stages:
                           ./testsetup/setup.sh
                       image_working_directory: $(E2E_WORKING_DIR)
           - job: SetupUbuntu2004_ARM64_VM
-            displayName: "Setting up VM for Ubuntu 20.04 AMD64 Test VM"
+            displayName: "Setting up VM for Ubuntu 20.04 ARM64 Test VM"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
             pool: aduc_1es_client_pool

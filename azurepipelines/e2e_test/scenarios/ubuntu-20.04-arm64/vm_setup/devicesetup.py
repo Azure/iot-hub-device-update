@@ -13,7 +13,7 @@ from testingtoolkit import DeviceUpdateTestHelper,DuAutomatedTestConfigurationMa
 
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/<test-script-name>.py
-sys.path.append('./scenarios/ubuntu-20.04-amd64/')
+sys.path.append('./scenarios/ubuntu-20.04-arm64/')
 from scenario_definitions import test_device_id
 
 
