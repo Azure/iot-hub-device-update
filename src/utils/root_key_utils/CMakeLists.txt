@@ -26,12 +26,11 @@ target_link_libraries (
     PRIVATE
            aduc::logging aduc::system_utils aziotsharedutil)
 
+include (aduc_security)
+embed_test_root_keys_if_applicable (${target_name})
 
-# Always support test root keys.
-add_definitions (-DBUILD_WITH_TEST_KEYS=1)
-
-target_compile_definitions (${target_name}
-                            PRIVATE ADUC_ROOTKEY_STORE_PACKAGE_PATH="${ADUC_ROOTKEY_STORE_PACKAGE_PATH}")
+target_compile_definitions (
+    ${target_name} PRIVATE ADUC_ROOTKEY_STORE_PACKAGE_PATH="${ADUC_ROOTKEY_STORE_PACKAGE_PATH}")
 
 if (ADUC_BUILD_UNIT_TESTS)
     find_package (umock_c REQUIRED CONFIG)
