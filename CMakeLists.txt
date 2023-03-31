@@ -244,13 +244,6 @@ set (
     "linux"
     CACHE STRING "The platform layer to use. Options: linux")
 
-# By default ADU Agent daemon runs as root.
-# root user home directory should be /root.
-set (
-    ADUC_HOME_FOLDER
-    "/root"
-    CACHE STRING "Path to the ADU Agent home folder.")
-
 set (
     ADUC_INSTALLEDCRITERIA_FILE
     "installedcriteria"
