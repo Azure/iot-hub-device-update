@@ -195,6 +195,7 @@ stages:
                       du_tarball_script: >-
                           tar -xvf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
+                          cat ./testsetup/du-config.json &&
                           ./testsetup/setup.sh
                       image_working_directory: $(E2E_WORKING_DIR)
           - job: SetupDebian10_AMD64_VM
