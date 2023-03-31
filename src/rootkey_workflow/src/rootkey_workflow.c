@@ -12,6 +12,7 @@
 #include <aduc/rootkeypackage_download.h>
 #include <aduc/rootkeypackage_parse.h>
 #include <aduc/rootkeypackage_utils.h>
+#include <aduc/system_utils.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <azure_c_shared_utility/strings.h>
 #include <parson.h>
@@ -101,6 +102,14 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         goto done;
+    }
+
+    if ( ! ADUC_SystemUtils_Exists(ADUC_ROOTKEY_STORE_PATH) )
+    {
+        if ( ADUC_SystemUtils_MkDirRecursiveDefault(ADUC_ROOTKEY_STORE_PATH) != 0)
+        {
+            goto done;
+        }
     }
 
     fileDest = STRING_construct(ADUC_ROOTKEY_STORE_PACKAGE_PATH);

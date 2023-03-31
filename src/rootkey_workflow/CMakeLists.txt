@@ -27,4 +27,4 @@ target_compile_definitions (${target_name}
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils
-    PRIVATE aduc::rootkeypackage_utils aduc::root_key_utils aziotsharedutil)
+    PRIVATE aduc::rootkeypackage_utils aduc::root_key_utils aziotsharedutil aduc::system_utils)

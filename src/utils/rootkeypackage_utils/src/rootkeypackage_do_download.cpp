@@ -20,7 +20,7 @@ ADUC_Result DownloadRootKeyPkg_DO(const char* url, const char* targetFilePath)
     Log_Info("Downloading File '%s' to '%s'", url, targetFilePath);
 
     const std::error_code ret = microsoft::deliveryoptimization::download::download_url_to_path(url, targetFilePath);
-    if (ret == std::error_code())
+    if (! ret)
     {
         result.ResultCode = ADUC_GeneralResult_Success;
     }
