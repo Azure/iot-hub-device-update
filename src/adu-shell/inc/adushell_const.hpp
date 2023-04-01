@@ -13,8 +13,6 @@ namespace Shell
 {
 namespace Const
 {
-const char* adu_shell = "/usr/lib/adu/adu-shell";
-
 const char* update_type_opt = "--update-type";
 const char* update_type_microsoft_apt = "microsoft/apt";
 const char* update_type_microsoft_swupdate = "microsoft/swupdate";

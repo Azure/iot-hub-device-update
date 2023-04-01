@@ -207,7 +207,7 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
                                                     adushconst::update_action_opt,
                                                     adushconst::update_action_initialize };
 
-            aptExitCode = ADUC_LaunchChildProcess(adushconst::adu_shell, args, aptOutput);
+            aptExitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, aptOutput);
 
             if (!aptOutput.empty())
             {
@@ -246,7 +246,7 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
             args.emplace_back(adushconst::target_data_opt);
             args.emplace_back(data.str());
 
-            aptExitCode = ADUC_LaunchChildProcess(adushconst::adu_shell, args, aptOutput);
+            aptExitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, aptOutput);
 
             if (!aptOutput.empty())
             {
@@ -341,7 +341,7 @@ ADUC_Result AptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
         args.emplace_back(adushconst::target_data_opt);
         args.emplace_back(data.str());
 
-        aptExitCode = ADUC_LaunchChildProcess(adushconst::adu_shell, args, aptOutput);
+        aptExitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, aptOutput);
 
         if (!aptOutput.empty())
         {
