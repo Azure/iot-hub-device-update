@@ -195,7 +195,6 @@ stages:
                       du_tarball_script: >-
                           tar -xvf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          cat ./testsetup/du-config.json &&
                           ./testsetup/setup.sh
                       image_working_directory: $(E2E_WORKING_DIR)
           - job: SetupDebian10_AMD64_VM
@@ -270,8 +269,7 @@ stages:
             displayName: "Running E2E Tests against Debian 10 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
-            pool:
-                vmImage: "ubuntu-18.04"
+            pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:

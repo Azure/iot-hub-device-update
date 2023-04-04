@@ -60,6 +60,8 @@ sudo apt-get install -y ./testsetup/deviceupdate-package.deb
 # another kind of diagnostics file, or other kinds of data
 # this is the area where such things can be added
 
+sudo cat ./testsetup/du-config.json
+
 sudo cp ./testsetup/du-config.json /etc/adu/du-config.json
 
 mkdir ~/adu_srcs/
