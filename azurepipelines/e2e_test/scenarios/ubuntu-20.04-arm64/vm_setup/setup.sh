@@ -154,13 +154,13 @@ function test_shutdown_service() {
     done
 }
 
+sudo cat ./testsetup/du-config.json
+
 configure_apt_repository
 #
 # Install the Device Update Artifact Under Test
 #
 sudo apt-get install -y ./testsetup/deviceupdate-package.deb
-
-sudo cat ./testsetup/du-config.json
 
 #
 # Install the du-config.json so the device can be provisioned
