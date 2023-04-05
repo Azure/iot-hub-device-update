@@ -50,8 +50,8 @@ function configure_apt_repository() {
 
 function install_do() {
     # Handle installing DO from latest build instead of packages.microsoft.com
-    wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_x64-packages.tar -O ubuntu20_x64-packages.tar
-    tar -xvf ubuntu20_x64-packages.tar
+    wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_arm64-packages.tar -O ubuntu20_arm64-packages.tar
+    tar -xvf ubuntu20_arm64-packages.tar
     sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_amd64.deb ./deliveryoptimization-plugin-apt_0.5.1_amd64.deb ./libdeliveryoptimization_1.0.0_amd64.deb
 }
 
@@ -154,9 +154,13 @@ function test_shutdown_service() {
     done
 }
 
+echo "Attempting to cat the configuration file"
+
 sudo cat ./testsetup/du-config.json
 
 configure_apt_repository
+
+install_do
 #
 # Install the Device Update Artifact Under Test
 #
@@ -170,8 +174,6 @@ sudo apt-get install -y ./testsetup/deviceupdate-package.deb
 # another kind of diagnostics file, or other kinds of data
 # this is the area where such things can be added
 sudo cp ./testsetup/du-config.json /etc/adu/du-config.json
-
-install_do
 
 register_extensions
 
