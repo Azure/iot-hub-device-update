@@ -210,6 +210,31 @@ int ADUC_SystemUtils_MkDirRecursiveDefault(const char* path)
 }
 
 /**
+ * @brief Checks if the file or directory at @p path exists
+ *
+ * @param path the path to the directory or file
+ * @return true if path exists, false otherwise
+ */
+bool ADUC_SystemUtils_Exists(const char* path)
+{
+    if (path == NULL)
+    {
+        return false;
+    }
+
+    int result = 0;
+    struct stat buff;
+
+    result  = stat(path,&buff);
+
+    if (result != 0)
+    {
+        return false;
+    }
+
+    return true;
+}
+/**
  * @brief Create a directory tree.
  *
  * On error, none of the partially created tree is cleaned up.

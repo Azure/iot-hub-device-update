@@ -77,7 +77,7 @@ TEST_CASE_METHOD(TestCaseFixture, "RootKeyPackageUtils_DownloadPackage")
     const std::string rootKeyPkgUrl{ "http://localhost:8080/path/fake.json" };
     const std::string workflowId{ "afc5140e-b253-4f37-a810-d9593bd7fc0c" };
     STRING_HANDLE downloadedFile = nullptr;
-    ADUC_Result result{ ADUC_RootKeyPackageUtil_DownloadPackage(
+    ADUC_Result result{ ADUC_RootKeyPackageUtils_DownloadPackage(
         "http://localhost:8080/path/fake.json", workflowId.c_str(), &downloaderInfo, &downloadedFile) };
 
     REQUIRE(IsAducResultCodeSuccess(result.ResultCode));

@@ -31,7 +31,7 @@ int main(int argc, char** argv)
         .downloadBaseDir = "/tmp/deviceupdate/rootkey_download_test_app",
     };
 
-    result = ADUC_RootKeyPackageUtil_DownloadPackage(ROOTKEY_PKG_URL, WORKFLOW_ID, &downloaderInfo, &downloadedFile);
+    result = ADUC_RootKeyPackageUtils_DownloadPackage(ROOTKEY_PKG_URL, WORKFLOW_ID, &downloaderInfo, &downloadedFile);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
