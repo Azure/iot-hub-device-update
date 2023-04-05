@@ -1,6 +1,6 @@
 /**
  * @file rootkeypackage_download.c
- * @brief Implements ADUC_RootKeyPackageUtil_DownloadPackage of rootkeypackage_utils interface.
+ * @brief Implements ADUC_RootKeyPackageUtils_DownloadPackage of rootkeypackage_utils interface.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
@@ -26,7 +26,7 @@ EXTERN_C_BEGIN
  *
  * @result ADUC_Result On success, the outPathToRootKey with contain the path to the downloaded file.
  */
-ADUC_Result ADUC_RootKeyPackageUtil_DownloadPackage(
+ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
     const char* rootKeyPkgUrl,
     const char* workflowId,
     ADUC_RootKeyPkgDownloaderInfo* downloaderInfo,

@@ -19,6 +19,7 @@
 #include <aduc/logging.h>
 #include <aduc/result.h>
 #include <aduc/string_c_utils.h>
+#include <aduc/system_utils.h>
 #include <azure_c_shared_utility/constbuffer.h>
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
@@ -449,11 +450,14 @@ done:
 
     if (tempFileName != NULL)
     {
-        if (remove(STRING_c_str(tempFileName)) != 0)
+        if (ADUC_SystemUtils_Exists(STRING_c_str(tempFileName)))
         {
-            Log_Info(
-                "RootKeyUtility_WriteRootKeyPackageToFileAtomically failed to remove temp file at %s",
-                STRING_c_str(tempFileName));
+            if (remove(STRING_c_str(tempFileName)) != 0)
+            {
+                Log_Info(
+                    "RootKeyUtility_WriteRootKeyPackageToFileAtomically failed to remove temp file at %s",
+                    STRING_c_str(tempFileName));
+            }
         }
 
         STRING_delete(tempFileName);
