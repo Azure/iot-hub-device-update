@@ -37,11 +37,7 @@ static ADUC_RootKeyPkgDownloaderInfo s_default_rootkey_downloader = {
 
 bool RootKeyWorkflow_NeedToUpdateRootKeys(void)
 {
-    if (lastUpdateTime == 0)
-    {
-        return true;
-    }
-    else if (difftime(lastUpdateTime, time(0)) >= ROOTKEY_UPDATE_PERIOD)
+    if (difftime(lastUpdateTime, time(0)) >= ROOTKEY_UPDATE_PERIOD)
     {
         return true;
     }
@@ -104,9 +100,9 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
         goto done;
     }
 
-    if ( ! ADUC_SystemUtils_Exists(ADUC_ROOTKEY_STORE_PATH) )
+    if (!ADUC_SystemUtils_Exists(ADUC_ROOTKEY_STORE_PATH))
     {
-        if ( ADUC_SystemUtils_MkDirRecursiveDefault(ADUC_ROOTKEY_STORE_PATH) != 0)
+        if (ADUC_SystemUtils_MkDirRecursiveDefault(ADUC_ROOTKEY_STORE_PATH) != 0)
         {
             goto done;
         }
