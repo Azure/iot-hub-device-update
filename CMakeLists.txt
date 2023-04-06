@@ -56,16 +56,17 @@ if (WIN32)
             "lib")
     endif ()
     link_directories (${VCPKG_LIBRARY_DIR})
-
-    message (STATUS "VCPKG_LIBRARY_DIR: ${VCPKG_LIBRARY_DIR}")
-    message (STATUS "VCPKG_TRIPLET: ${VCPKG_TRIPLET}")
-    message (STATUS "VCPKG_TARGET_TRIPLET: ${VCPKG_TARGET_TRIPLET}")
-    message (STATUS "[VCPKG] Bootstrap complete.")
 endif ()
 
 project (azure_device_update_client)
 
-# Print out CMake build variables.
+if (WIN32)
+    message (STATUS)
+    message (STATUS "VCPKG_INSTALLED_DIR: ${VCPKG_INSTALLED_DIR}")
+    message (STATUS "VCPKG_LIBRARY_DIR: ${VCPKG_LIBRARY_DIR}")
+    message (STATUS "VCPKG_TARGET_TRIPLET: ${VCPKG_TARGET_TRIPLET}")
+endif ()
+
 message (STATUS)
 message (STATUS "CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")
 message (STATUS "CMAKE_SYSTEM_VERSION: ${CMAKE_SYSTEM_VERSION}")

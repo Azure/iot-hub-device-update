@@ -76,22 +76,20 @@ endif ()
 # On Windows, Vcpkg defaults to x86, even on x64 systems. If we're
 # doing a 64-bit build, we need to fix that.
 if (WIN32)
-    # ARM64 has pointer size of 8 as well, so special case that.
-    if ("$ENV{PROCESSOR_ARCHITECTURE}" STREQUAL "ARM64")
-        set (VCPKG_TRIPLET arm64-windows)
-        set (VCPKG_TARGET_TRIPLET arm64-windows)
-    else ()
-        # Since the compiler checks haven't run yet, we need to figure
-        # out the value of CMAKE_SIZEOF_VOID_P ourselfs
+    # Since the compiler checks haven't run yet, we need to figure
+    # out the value of CMAKE_SIZEOF_VOID_P ourselfs
 
-        include (CheckTypeSize)
-        enable_language (C)
-        check_type_size ("void*" SIZEOF_VOID_P BUILTIN_TYPES_ONLY)
+    include (CheckTypeSize)
+    enable_language (C)
+    check_type_size ("void*" SIZEOF_VOID_P BUILTIN_TYPES_ONLY)
 
-        if (SIZEOF_VOID_P EQUAL 8)
-            message (STATUS "[VCPKG] Using Vcpkg triplet 'x64-windows'")
+    if (SIZEOF_VOID_P EQUAL 8)
+        if ("$ENV{PROCESSOR_ARCHITECTURE}" STREQUAL "ARM64")
+            set (VCPKG_TRIPLET arm64-windows)
+        else ()
             set (VCPKG_TRIPLET x64-windows)
         endif ()
+        message (STATUS "[VCPKG] Using Vcpkg triplet ${VCPKG_TRIPLET}")
     endif ()
 endif ()
 
@@ -137,7 +135,9 @@ macro (_install_or_update_vcpkg)
 
         # If a reproducible build is desired (and potentially old libraries are ok), uncomment the
         # following line and pin the vcpkg repository to a specific githash.
-        # execute_process(COMMAND git checkout 745a0aea597771a580d0b0f4886ea1e3a94dbca6 WORKING_DIRECTORY ${VCPKG_ROOT})
+
+        # 2023.02.24 Release: a7b6122
+        # execute_process(COMMAND git checkout a7b6122 WORKING_DIRECTORY ${VCPKG_ROOT})
     else ()
         # The following command has no effect if the vcpkg repository is in a detached head state.
         message (STATUS "[VCPKG] Auto-updating vcpkg in ${VCPKG_ROOT}")
