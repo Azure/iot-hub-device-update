@@ -48,7 +48,7 @@ steps:
           if [ -n "${{parameters.patchVersion}}" ]; then
             sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/build.sh --clean --build-unit-tests --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --patch-version ${{parameters.patchVersion}} --out-dir out-${{parameters.targetOs}}-${{parameters.targetArch}}
           else
-            sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/build.sh --clean --build-unit-tests --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages--out-dir out-${{parameters.targetOs}}-${{parameters.targetArch}}
+            sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/build.sh --clean --build-unit-tests --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --out-dir out-${{parameters.targetOs}}-${{parameters.targetArch}}
           fi
       displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
     - bash: |
