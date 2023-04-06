@@ -86,6 +86,7 @@ function verify_user_group_permissions() {
     sudo systemctl start deviceupdate-agent.service
     status_output=$(systemctl status deviceupdate-agent.service)
 
+    echo "Agent Status:: ${status_output}"
     main_pid=$(echo "$status_output" | awk '/Main PID/ {print $3}')
 
     # Check if the user and group for the process are "adu"
