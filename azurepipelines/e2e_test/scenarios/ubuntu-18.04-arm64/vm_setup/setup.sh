@@ -164,6 +164,9 @@ function test_shutdown_service() {
 }
 
 configure_apt_repository
+
+install_do
+
 #
 # Install the Device Update Artifact Under Test
 #
@@ -178,7 +181,7 @@ sudo apt-get install -y ./testsetup/deviceupdate-package.deb
 # this is the area where such things can be added
 sudo cp ./testsetup/du-config.json /etc/adu/du-config.json
 
-install_do
+sudo -u adu /usr/bin/AducIotAgent -l 0 -e
 
 register_extensions
 
