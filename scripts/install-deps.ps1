@@ -8,6 +8,8 @@ In addition, this script can uninstall the installed dependencies.
 
 It's recommended to run this script elevated.
 
+You might need to use "Set-ExecutionPolicy -Scope CurrentUser Unrestricted" before running this.
+
 .EXAMPLE
 PS> ./Scripts/Install-deps.ps1
 #>
@@ -182,29 +184,31 @@ Install-WithWinGet -PackageId 'Git.Git' -TestExecutable "$env:ProgramFiles/Git/b
 #
 
 if (-not (Test-Path -LiteralPath "${Env:ProgramFiles(x86)}/Microsoft Visual Studio/2022/BuildTools" -PathType Container)) {
-    # Note:
-    # Build Tools includes CMake, but it won't be in the path if Developer Tools
-    # command window isn't open, so we'll install separately.
-    # In addition, the website CMake is newer.
-
-    # Note:
-    # It would be nice to use "winget install 'Microsoft.VisualStudio.2022.BuildTools'"
-    # but that installs C# tools, not C++ tools.
-    # See https://github.com/microsoft/winget-pkgs/issues/87944
-
     Write-Host -ForegroundColor Yellow 'Installing VS Build Tools'
     Invoke-WebRequest -Uri 'https://aka.ms/vs/17/release/vs_BuildTools.exe' -OutFile "$env:TEMP/vs_BuildTools.exe"
 
-    & "$env:TEMP/vs_BuildTools.exe" --passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --remove Microsoft.VisualStudio.Component.VC.CMake.Project
+    # Notes:
+    #
+    # It would be nice to use "winget install 'Microsoft.VisualStudio.2022.BuildTools'" here,
+    # but that installs C# tools, not C++ tools.
+    # See https://github.com/microsoft/winget-pkgs/issues/87944
+    #
+    # Build Tools includes CMake, but it won't be in the path by default.
+    # Could optionally remove this component using "--remove Microsoft.VisualStudio.Component.VC.CMake.Project"
+    #
+    # "--add Microsoft.VisualStudio.Component.VC.Tools.ARM64":
+    # Allow for ARM64 native and cross-compile builds.
+
+    & "$env:TEMP/vs_BuildTools.exe" --passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --add Microsoft.VisualStudio.Component.VC.Tools.ARM64
 
     'Waiting for installation to complete...'
-    $anim = '(----------)', '(---------*)', '(--------*-)', '(-------*--)', '(------*---)', '(-----*----)', '(----*-----)', '(---*------)', '(--*-------)', '(-*--------)', '(*---------)'
+    $anim = ">))'>        ", "    >))'>    ", "        >))'>", "        <'((<", "    <'((<    ", "<'((<        "
     $animIndex = 0
-    # Not the last file installed, but close enough...
+    # "ConnectionManagerExe.bat" isn't the last file installed, but close enough...
     while (-not (Test-Path -LiteralPath "${Env:ProgramFiles(x86)}/Microsoft Visual Studio/2022/BuildTools/Common7/Tools/vsdevcmd/ext/ConnectionManagerExe.bat" -PathType Leaf)) {
         Write-Host -ForegroundColor Cyan -BackgroundColor Black -NoNewline ("`r{0}" -f $anim[$animIndex])
         $animIndex = ($animIndex + 1) % $anim.Length
-        Start-Sleep -Milliseconds 500
+        Start-Sleep -Seconds 1
     }
     ''
 }
@@ -222,11 +226,16 @@ Install-WithWinGet -PackageId 'Kitware.CMake' -TestExecutable "$env:ProgramFiles
 # PYTHON 3
 #
 
-Install-WithWinget -PackageId 'Python.Python.3.11' -TestExecutable "$env:LocalAppData/Programs/Python/Python311/python.exe"
+$pythonPath = "$env:LocalAppData\Programs\Python\Python311"
+if ($Env:PROCESSOR_ARCHITECTURE -eq 'ARM64') {
+    $pythonPath += '-arm64'
+}
+
+Install-WithWinget -PackageId 'Python.Python.3.11' -TestExecutable "$pythonPath\python.exe"
 
 # Temporarily add python.exe and pip.exe to PATH.
 # Needs to come first to avoid the Windows python stub.
-$env:PATH = "$env:LocalAppData\Programs\Python\Python311;$env:LocalAppData\Programs\Python\Python311\Scripts;" + $env:PATH
+$env:PATH = "$pythonPath;$pythonPath\Scripts;" + $env:PATH
 
 #
 # CMAKE-FORMAT
@@ -244,19 +253,33 @@ else {
 # CLANG-FORMAT
 #
 
-if (-not (Get-Command -Name 'clang-format.exe' -CommandType Application -ErrorAction SilentlyContinue)) {
-    python.exe -m pip install --upgrade pip
-    pip.exe install clang-format
+if ($Env:PROCESSOR_ARCHITECTURE -ne 'ARM64') {
+    if (-not (Get-Command -Name 'clang-format.exe' -CommandType Application -ErrorAction SilentlyContinue)) {
+        python.exe -m pip install --upgrade pip
+        pip.exe install clang-format
+    }
+    else {
+        Write-Host -ForegroundColor Cyan "clang-format already installed."
+    }
 }
 else {
-    Write-Host -ForegroundColor Cyan "clang-format already installed."
+    # clang-format takes a LONG time to install on ARM64, and it's not essential,
+    # so skipping it for now.
+    Write-Warning 'Not installing clang-format on ARM64.'
 }
 
 #
 # DOXYGEN (for --build_documentation)
 #
 
-Install-WithWinGet -PackageId 'DimitriVanHeesch.Doxygen' -TestExecutable "$env:ProgramFiles/doxygen/bin/doxygen.exe"
+if ($Env:PROCESSOR_ARCHITECTURE -ne 'ARM64') {
+    $doxygenPath = "$env:ProgramFiles/doxygen/bin/doxygen.exe"
+}
+else {
+    $doxygenPath = "${Env:ProgramFiles(x86)}/doxygen/bin/doxygen.exe"
+}
+
+Install-WithWinGet -PackageId 'DimitriVanHeesch.Doxygen' -TestExecutable $doxygenPath
 
 #
 # GRAPHVIZ (for --build_documentation)
@@ -272,11 +295,9 @@ Install-WithWinGet -PackageId 'Cppcheck.Cppcheck' -TestExecutable "$env:ProgramF
 
 ''
 
-# https://github.com/microsoft/terminal/issues/1125
+# See https://github.com/microsoft/terminal/issues/1125
 '------------------------------------------------------------------------------'
 '                     YOU MUST NOW COMPLETELY CLOSE AND REOPEN'
 '                   WINDOWS TERMINAL FOR CHANGES TO TAKE EFFECT.'
 '------------------------------------------------------------------------------'
-if (!$Unattended) {
-    while ($true) { }
-}
+Start-Sleep -Seconds 5

@@ -76,18 +76,22 @@ endif ()
 # On Windows, Vcpkg defaults to x86, even on x64 systems. If we're
 # doing a 64-bit build, we need to fix that.
 if (WIN32)
+    # ARM64 has pointer size of 8 as well, so special case that.
+    if ("$ENV{PROCESSOR_ARCHITECTURE}" STREQUAL "ARM64")
+        set (VCPKG_TRIPLET arm64-windows)
+        set (VCPKG_TARGET_TRIPLET arm64-windows)
+    else ()
+        # Since the compiler checks haven't run yet, we need to figure
+        # out the value of CMAKE_SIZEOF_VOID_P ourselfs
 
-    # Since the compiler checks haven't run yet, we need to figure
-    # out the value of CMAKE_SIZEOF_VOID_P ourselfs
+        include (CheckTypeSize)
+        enable_language (C)
+        check_type_size ("void*" SIZEOF_VOID_P BUILTIN_TYPES_ONLY)
 
-    include (CheckTypeSize)
-    enable_language (C)
-    check_type_size ("void*" SIZEOF_VOID_P BUILTIN_TYPES_ONLY)
-
-    if (SIZEOF_VOID_P EQUAL 8)
-        message (STATUS "[VCPKG] Using Vcpkg triplet 'x64-windows'")
-
-        set (VCPKG_TRIPLET x64-windows)
+        if (SIZEOF_VOID_P EQUAL 8)
+            message (STATUS "[VCPKG] Using Vcpkg triplet 'x64-windows'")
+            set (VCPKG_TRIPLET x64-windows)
+        endif ()
     endif ()
 endif ()
 
