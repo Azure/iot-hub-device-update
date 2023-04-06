@@ -89,6 +89,8 @@ function verify_user_group_permissions() {
     echo "Agent Status:: ${status_output}"
     main_pid=$(echo "$status_output" | awk '/Main PID/ {print $3}')
 
+    sudo journalctl -u deviceupdate-agent.service
+
     # Check if the user and group for the process are "adu"
     process_user=$(stat -c %u "/proc/$main_pid")
     process_group=$(stat -c %g "/proc/$main_pid")
