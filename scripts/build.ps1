@@ -15,6 +15,9 @@ Param(
     # Build type
     [ValidateSet('Release', 'RelWithDebInfo', 'Debug')]
     [string]$Type = 'Debug',
+    # Cross-compilation target
+    [ValidateSet('ARM64')]
+    [string]$GeneratorPlatform,
     # Should documentation be built?
     [switch]$BuildDocumentation,
     # Should unit tests be built?
@@ -147,6 +150,7 @@ function Install-DeliveryOptimization {
         [Parameter(Mandatory = $true)][string]$Type,
         [Parameter(Mandatory = $true)][string]$Path,
         [Parameter(Mandatory = $true)][string]$Branch,
+        [string]$GeneratorPlatform,
         [string]$Commit)
 
     Show-Header 'Building Delivery Optimization'
@@ -187,8 +191,21 @@ function Install-DeliveryOptimization {
 
     # Bug 43044349: DO-client cmakefile not properly building correct type using cmake
     # -DCMAKE_BUILD_TYPE should ultimately be removed.
-    $CMAKE_OPTIONS = '-DDO_BUILD_TESTS:BOOL=OFF', '-DDO_INCLUDE_SDK=ON', "-DCMAKE_BUILD_TYPE=$Type"
-    cmake.exe -S . -B $build_dir @CMAKE_OPTIONS
+    $DO_CMAKE_OPTIONS = @(
+        '-DDO_BUILD_TESTS:BOOL=OFF',
+        '-DDO_INCLUDE_SDK=ON',
+        "-DCMAKE_BUILD_TYPE=$Type"
+    )
+
+    if ($GeneratorPlatform) {
+        $DO_CMAKE_OPTIONS += "-A$GeneratorPlatform"
+    }
+
+    'CMAKE_OPTIONS:'
+    $DO_CMAKE_OPTIONS | ForEach-Object { Show-Bullet $_ }
+    ''
+
+    cmake.exe -S . -B $build_dir @DO_CMAKE_OPTIONS
     cmake.exe --build $build_dir --config $Type --parallel
 
     Pop-Location
@@ -208,7 +225,13 @@ if (!$root_dir) {
 }
 
 if (!$BuildOutputPath) {
-    $BuildOutputPath = "$root_dir/out/$Type"
+    if (!$GeneratorPlatform) {
+        $BuildOutputPath = "$root_dir/out/$Type"
+    }
+    else {
+        $BuildOutputPath = "$root_dir/out/$GeneratorPlatform-$Type"
+    }
+
 }
 
 if ($BuildDocumentation) {
@@ -246,10 +269,9 @@ Show-Bullet ("CMake version: {0}" -f (& $cmake_bin --version | Select-String  '^
 ''
 
 # Store options for CMAKE in an array
-$CMAKE_OPTIONS = @(
+$DU_CMAKE_OPTIONS = @(
     "-DADUC_BUILD_DOCUMENTATION:BOOL=$BuildDocumentation",
     "-DADUC_BUILD_UNIT_TESTS:BOOL=$BuildUnitTests",
-    # "-DADUC_BUILD_PACKAGES:BOOL=$BuildPackages",
     "-DADUC_LOG_FOLDER:STRING=$LogDir",
     "-DADUC_LOGGING_LIBRARY:STRING=$LogLib",
     "-DADUC_PLATFORM_LAYER:STRING=$PlatformLayer",
@@ -309,21 +331,25 @@ if ($Clean) {
     Show-Header 'Generating Makefiles'
 
     # show every find_package call (vcpkg specific):
-    # $CMAKE_OPTIONS += '-DVCPKG_TRACE_FIND_PACKAGE:BOOL=ON'
+    # $DU_CMAKE_OPTIONS += '-DVCPKG_TRACE_FIND_PACKAGE:BOOL=ON'
     # Verbose output (very verbose, but useful!):
-    # $CMAKE_OPTIONS += '--trace-expand'
+    # $DU_CMAKE_OPTIONS += '--trace-expand'
     # See cmake dependencies (very verbose):
-    # $CMAKE_OPTIONS += '--debug-output'
+    # $DU_CMAKE_OPTIONS += '--debug-output'
     # See compiler output at build time:
-    # $CMAKE_OPTIONS += '-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON'
+    # $DU_CMAKE_OPTIONS += '-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON'
     # See library search output:
-    # $CMAKE_OPTIONS += '-DCMAKE_EXE_LINKER_FLAGS=/VERBOSE:LIB'
+    # $DU_CMAKE_OPTIONS += '-DCMAKE_EXE_LINKER_FLAGS=/VERBOSE:LIB'
+
+    if ($GeneratorPlatform) {
+        $DU_CMAKE_OPTIONS += "-A$GeneratorPlatform"
+    }
 
     'CMAKE_OPTIONS:'
-    $CMAKE_OPTIONS | ForEach-Object { Show-Bullet $_ }
+    $DU_CMAKE_OPTIONS | ForEach-Object { Show-Bullet $_ }
     ''
 
-    & $cmake_bin -S "$root_dir" -B $BuildOutputPath @CMAKE_OPTIONS 2>&1 | Tee-Object -Variable cmake_output
+    & $cmake_bin -S "$root_dir" -B $BuildOutputPath @DU_CMAKE_OPTIONS 2>&1 | Tee-Object -Variable cmake_output
     $ret_val = $LASTEXITCODE
 
     if ($ret_val -ne 0) {
@@ -344,7 +370,10 @@ if ($Clean) {
 
 # Reusing ".vcpkg-installed" folder ... why not?
 $DoPath = "{0}/.vcpkg-installed/do-client" -f (git.exe rev-parse --show-toplevel)
-Install-DeliveryOptimization -Type $Type -Path $DoPath -Branch 'v1.0.1'
+if ($GeneratorPlatform) {
+    $DoPath += "-$GeneratorPlatform"
+}
+Install-DeliveryOptimization -Type $Type -Path $DoPath -Branch 'v1.0.1' -GeneratorPlatform $GeneratorPlatform
 
 Show-Header 'Building Product'
 

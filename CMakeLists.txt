@@ -7,15 +7,6 @@ if (WIN32)
 
     include (cmake/automate-vcpkg.cmake)
 
-    # Enable static linking of dependencies.
-    # Currently disabled because of:
-    # * "Warning static builds of getopt violate the Lesser GNU Public License"
-    # * d2c_messaging_unit_tests ~PThreadCond crashing on exit.
-    # if ("${VCPKG_TRIPLET}" STREQUAL "x64-windows")
-    #     set (VCPKG_TRIPLET "x64-windows-static")
-    #     set (VCPKG_TARGET_TRIPLET "x64-windows-static")
-    # endif ()
-
     # Default is ${CMAKE_BINARY_DIR}/vcpkg
     cmake_path (
         SET
@@ -45,14 +36,14 @@ if (WIN32)
         cmake_path (
             APPEND
             VCPKG_LIBRARY_DIR
-            "${VCPKG_TRIPLET}"
+            "${VCPKG_TARGET_TRIPLET}"
             "${CMAKE_BUILD_TYPE}"
             "lib")
     else ()
         cmake_path (
             APPEND
             VCPKG_LIBRARY_DIR
-            "${VCPKG_TRIPLET}"
+            "${VCPKG_TARGET_TRIPLET}"
             "lib")
     endif ()
     link_directories (${VCPKG_LIBRARY_DIR})
@@ -65,12 +56,21 @@ if (WIN32)
     message (STATUS "VCPKG_INSTALLED_DIR: ${VCPKG_INSTALLED_DIR}")
     message (STATUS "VCPKG_LIBRARY_DIR: ${VCPKG_LIBRARY_DIR}")
     message (STATUS "VCPKG_TARGET_TRIPLET: ${VCPKG_TARGET_TRIPLET}")
+
+    # CMAKE_SYSTEM_PROCESSOR is broken on Windows.
+    # See https://gitlab.kitware.com/cmake/cmake/-/issues/15170
+    # if "-A ARM64" is specified, CMAKE_SYSTEM_PROCESSOR will still have
+    # the host (e.g. AMD64) value.
+    if (MSVC AND NOT CMAKE_GENERATOR_PLATFORM STREQUAL "")
+        set (CMAKE_SYSTEM_PROCESSOR ${CMAKE_GENERATOR_PLATFORM})
+    endif ()
 endif ()
+
 
 message (STATUS)
 message (STATUS "CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")
 message (STATUS "CMAKE_SYSTEM_VERSION: ${CMAKE_SYSTEM_VERSION}")
-message (STATUS "CMAKE_HOST_SYSTEM_NAME: ${CMAKE_HOST_SYSTEM_NAME}")
+message (STATUS "CMAKE_SYSTEM_PROCESSOR: ${CMAKE_SYSTEM_PROCESSOR}")
 message (STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 message (STATUS "CMAKE_GENERATOR_PLATFORM: ${CMAKE_GENERATOR_PLATFORM}")
 message (STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")

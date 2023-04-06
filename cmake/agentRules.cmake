@@ -79,10 +79,17 @@ function (target_link_dosdk target scope)
         find_package (deliveryoptimization_sdk CONFIG REQUIRED)
         target_link_libraries (${target} ${scope} Microsoft::deliveryoptimization)
     else ()
+        if (CMAKE_GENERATOR_PLATFORM STREQUAL "")
+            set (DO_CLIENT_INSTALL_FOLDER "${VCPKG_INSTALLED_DIR}/do-client")
+        else ()
+            # Different install folder if cross-compiling - see build.ps1
+            set (DO_CLIENT_INSTALL_FOLDER "${VCPKG_INSTALLED_DIR}/do-client-${CMAKE_GENERATOR_PLATFORM}")
+        endif ()
+
         target_include_directories (${target} ${scope}
-                                    ${VCPKG_INSTALLED_DIR}/do-client/sdk-cpp/include)
+                                    ${DO_CLIENT_INSTALL_FOLDER}/sdk-cpp/include)
         target_link_directories (${target} PUBLIC
-                                 ${VCPKG_INSTALLED_DIR}/do-client/cmake/sdk-cpp/${CMAKE_BUILD_TYPE})
+                                 ${DO_CLIENT_INSTALL_FOLDER}/cmake/sdk-cpp/${CMAKE_BUILD_TYPE})
         target_link_libraries (${target} ${scope} deliveryoptimization)
     endif ()
 endfunction (target_link_dosdk)
