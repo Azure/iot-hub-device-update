@@ -75,6 +75,12 @@ print_help() {
     echo ""
     echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
     echo ""
+    echo "--major-version                       Major version of ADU"
+    echo ""
+    echo "--minor-version                       Minor version of ADU"
+    echo ""
+    echo "--patch-version                       Patch version of ADU"
+    echo ""
     echo "-h, --help                            Show this help message."
 }
 
@@ -269,6 +275,18 @@ while [[ $1 != "" ]]; do
         shift
         cmake_dir_path=$1
         ;;
+    --major-version)
+        shift
+        major_version=$1
+        ;;
+    --minor-version)
+        shift
+        minor_version=$1
+        ;;
+    --patch-version)
+        shift
+        patch_version=$1
+        ;;
     -h | --help)
         print_help
         $ret 0
@@ -344,6 +362,16 @@ CMAKE_OPTIONS=(
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
     "-DCMAKE_INSTALL_PREFIX=$install_prefix"
 )
+
+if [[ $major_version != "" ]]; then
+    CMAKE_OPTIONS+=("-DADUC_VERSION_MAJOR=$major_version")
+fi
+if [[ $minor_version != "" ]]; then
+    CMAKE_OPTIONS+=("-DADUC_VERSION_MINOR=$minor_version")
+fi
+if [[ $patch_version != "" ]]; then
+    CMAKE_OPTIONS+=("-DADUC_VERSION_PATCH=$patch_version")
+fi
 
 for i in "${static_analysis_tools[@]}"; do
     case $i in
