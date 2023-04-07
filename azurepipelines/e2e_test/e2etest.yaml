@@ -290,15 +290,15 @@ stages:
                     ubuntu-18.04-amd64:
                         distroName: ubuntu-18.04-amd64
                         scenarioPath: scenarios/ubuntu-18.04-amd64/
-                    # ubuntu-18.04-arm64:
-                    #     distroName: ubuntu-18.04-arm64
-                    #     scenarioPath: scenarios/ubuntu-18.04-arm64/
-                    # ubuntu-20.04-amd64:
-                    #     distroName: ubuntu-20.04-amd64
-                    #     scenarioPath: scenarios/ubuntu-20.04-amd64/
-                    # debian-10-amd64:
-                    #     distroName: debian-10-amd64
-                    #     scenarioPath: scenarios/debian-10-amd64/
+                    ubuntu-18.04-arm64:
+                        distroName: ubuntu-18.04-arm64
+                        scenarioPath: scenarios/ubuntu-18.04-arm64/
+                    ubuntu-20.04-amd64:
+                        distroName: ubuntu-20.04-amd64
+                        scenarioPath: scenarios/ubuntu-20.04-amd64/
+                    debian-10-amd64:
+                        distroName: debian-10-amd64
+                        scenarioPath: scenarios/debian-10-amd64/
             pool:
                 vmImage: "ubuntu-18.04"
             steps:
