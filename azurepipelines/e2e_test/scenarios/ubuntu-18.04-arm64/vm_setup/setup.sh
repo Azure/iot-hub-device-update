@@ -181,8 +181,6 @@ sudo apt-get install -y ./testsetup/deviceupdate-package.deb
 # this is the area where such things can be added
 sudo cp ./testsetup/du-config.json /etc/adu/du-config.json
 
-sudo -u adu /usr/bin/AducIotAgent -l 0 -e
-
 register_extensions
 
 #
