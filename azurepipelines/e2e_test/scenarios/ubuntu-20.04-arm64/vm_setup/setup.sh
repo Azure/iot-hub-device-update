@@ -51,14 +51,14 @@ function configure_apt_repository() {
 function install_do() {
     # Handle installing DO from latest build instead of packages.microsoft.com
     wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_arm64-packages.tar -O ubuntu20_arm64-packages.tar
-    tar -xvf ubuntu20_arm64-packages.tar
-    sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_amd64.deb ./deliveryoptimization-plugin-apt_0.5.1_amd64.deb ./libdeliveryoptimization_1.0.0_amd64.deb
+    tar -xf ubuntu20_arm64-packages.tar
+    sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_arm64.deb ./deliveryoptimization-plugin-apt_0.5.1_arm64.deb ./libdeliveryoptimization_1.0.0_arm64.deb
 }
 
 function register_extensions() {
     mkdir ~/adu_srcs/
 
-    tar -xvf ./testsetup/adu_srcs_repo.tar.gz -C ~/adu_srcs/
+    tar -xf ./testsetup/adu_srcs_repo.tar.gz -C ~/adu_srcs/
 
     sudo mkdir -p ~/demo/demo-devices/contoso-devices
 
@@ -86,10 +86,7 @@ function verify_user_group_permissions() {
     sudo systemctl start deviceupdate-agent.service
     status_output=$(systemctl status deviceupdate-agent.service)
 
-    echo "Agent Status:: ${status_output}"
     main_pid=$(echo "$status_output" | awk '/Main PID/ {print $3}')
-
-    sudo journalctl -u deviceupdate-agent.service
 
     # Check if the user and group for the process are "adu"
     process_user=$(stat -c %u "/proc/$main_pid")
@@ -157,10 +154,6 @@ function test_shutdown_service() {
     done
 }
 
-echo "Attempting to cat the configuration file"
-
-sudo cat ./testsetup/du-config.json
-
 configure_apt_repository
 
 install_do
@@ -180,21 +173,18 @@ sudo cp ./testsetup/du-config.json /etc/adu/du-config.json
 
 register_extensions
 
-sudo -u adu /usr/bin/AducIotAgent -h
-
-sudo -u adu /usr/bin/AducIotAgent -l 0 -e
 #
 # Restart the deviceupdate-agent.service
 #
 # Note: We expect that everything should be setup for the deviceupdate agent at this point. Once
 # we restart the agent we expect it to be able to boot back up and connect to the IotHub. Otherwise
 # this test will be considered a failure.
-# sudo systemctl restart deviceupdate-agent.service
+sudo systemctl restart deviceupdate-agent.service
 
-# verify_user_group_permissions
+verify_user_group_permissions
 
-# verify_log_files
+verify_log_files
 
-# test_shutdown_service
+test_shutdown_service
 
-# sudo systemctl restart deviceupdate-agent.service
+sudo systemctl restart deviceupdate-agent.service

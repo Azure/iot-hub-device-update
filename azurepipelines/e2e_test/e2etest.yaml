@@ -55,7 +55,7 @@ stages:
             continueOnError: False
             pool: aduc_1es_client_pool
             steps:
-                - template: ../build/templates/adu-docker-build-steps.yml
+                - template: ../build/templates/adu-native-build-steps.yml
                   parameters:
                       targetOs: ubuntu2004
                       targetArch: arm64
