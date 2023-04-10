@@ -57,7 +57,7 @@ stages:
             steps:
                 - template: ../build/templates/adu-native-build-steps.yml
                   parameters:
-                      targetOs: ubuntu2004
+                      targetOs: ubuntu2004_arm_pool
                       targetArch: arm64
           #   - job: BuildDebian_10_AMD64
           #     displayName: Building the Device Update Package for Debian 10 amd64
