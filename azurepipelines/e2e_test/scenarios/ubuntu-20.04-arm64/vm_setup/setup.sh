@@ -92,7 +92,7 @@ function verify_user_group_permissions() {
     process_user=$(stat -c %u "/proc/$main_pid")
     process_group=$(stat -c %g "/proc/$main_pid")
 
-    if [ "$process_user" -neq "$adu_uid" ] && [ "$process_group" -neq "$adu_gid" ]; then
+    if [ "$process_user" -ne "$adu_uid" ] && [ "$process_group" -ne "$adu_gid" ]; then
         echo "User and group for AducIotAgent service are not adu:adu."
         exit 1
     fi
