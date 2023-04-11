@@ -20,6 +20,10 @@ description: |
 grade: devel
 confinement: strict
 
+architectures:
+  - build-on: amd64
+    run-on: [amd64, armhf, arm64]
+
 # Use passthrough for the moment, until the appropriate snapcraft release lands
 # system-usernames:
 #   snap_aziotedge: shared
@@ -50,7 +54,8 @@ parts:
     build-packages:
       - wget
     stage-packages:
-      - libboost-filesystem1.71.0
+      - to amd64:
+          - libboost-filesystem1.71.0
 
   azure-iot-hub-client-csdk:
     after:
@@ -127,27 +132,28 @@ parts:
       - conf/*.*
 
     stage-packages:
-      - curl
-      - libasn1-8-heimdal
-      - libboost-filesystem1.71.0
-      - libbrotli1
-      - libcurl4
-      - libgssapi3-heimdal
-      - libhcrypto4-heimdal
-      - libheimbase1-heimdal
-      - libheimntlm0-heimdal
-      - libhx509-5-heimdal
-      - libicu66
-      - libkrb5-26-heimdal
-      - libldap-2.4-2
-      - libnghttp2-14
-      - libpsl5
-      - libroken18-heimdal
-      - librtmp1
-      - libsasl2-2
-      - libssh-4
-      - libwind0-heimdal
-      - libxml2
+      - to amd64:
+        - libboost-filesystem1.71.0
+        - libhcrypto4-heimdal
+        - libkrb5-26-heimdal
+        - libicu66
+        - libcurl4
+        - libssh-4
+        - libpsl5
+        - curl
+        - libgssapi3-heimdal
+        - librtmp1
+        - libbrotli1
+        - libasn1-8-heimdal
+        - libheimbase1-heimdal
+        - libheimntlm0-heimdal
+        - libhx509-5-heimdal
+        - libnghttp2-14
+        - libroken18-heimdal
+        - libsasl2-2
+        - libwind0-heimdal
+        - libldap-2.4-2
+        - libxml2
 
   du-agent-commands:
     source: .
@@ -162,7 +168,8 @@ parts:
   jq:
     plugin: nil
     stage-packages:
-      - jq
+      - to amd64:
+        - jq
 
 apps:
   # high-privilege tasks broker

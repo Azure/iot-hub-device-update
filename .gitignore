@@ -33,6 +33,9 @@ cscope.po.out
 ### ADU build environment
 out/
 build/
-Testing/
+parts/
+prime/
 squashfs-root/
+stage/
+Testing/
 *.snap
