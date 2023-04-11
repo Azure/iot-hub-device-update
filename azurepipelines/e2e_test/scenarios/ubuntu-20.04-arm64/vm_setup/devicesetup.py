@@ -17,6 +17,9 @@ sys.path.append('./scenarios/ubuntu-20.04-arm64/')
 from scenario_definitions import test_device_id
 
 
+def print_error(msg):
+    print(msg, file=sys.stderr)
+
 def main():
     duTestConfig = DuAutomatedTestConfigurationManager.FromOSEnvironment()
     #
@@ -74,9 +77,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-def print_error(msg):
-    print(msg, file=sys.stderr)
 
 #
 # Output is now a newly created device and a du-config.json file that will work with it

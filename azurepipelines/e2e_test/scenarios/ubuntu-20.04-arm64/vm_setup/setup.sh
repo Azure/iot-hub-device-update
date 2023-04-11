@@ -4,7 +4,7 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
-# Setup Script for Test: Ubuntu-18.04-amd64-APT-deployment
+# Setup Script for Test: Ubuntu-20.04-arm64
 #
 # Should be run on the Virtual Machine being provisioned for the work.
 
@@ -64,10 +64,10 @@ function register_extensions() {
 
     cd ~/adu_srcs/src/extensions/component_enumerators/examples/contoso_component_enumerator/demo || exit
 
-    chmod 755 ./tools/reset-demo-components.sh
+    chmod u+x ./tools/reset-demo-components.sh
 
-    #copy components-inventory.json and adds it to the /usr/local/contoso-devices folder
-    sudo cp -a ./demo-devices/contoso-devices/. ~/demo/demo-devices/contoso-devices/
+    #copy components-inventory.json and adds it to the ~/demo/demo-devices/contoso-devices folder
+    cp -a ./demo-devices/contoso-devices/. ~/demo/demo-devices/contoso-devices/
 
     sh ./tools/reset-demo-components.sh
 
@@ -92,9 +92,7 @@ function verify_user_group_permissions() {
     process_user=$(stat -c %u "/proc/$main_pid")
     process_group=$(stat -c %g "/proc/$main_pid")
 
-    if [ "$process_user" -eq "$adu_uid" ] && [ "$process_group" -eq "$adu_gid" ]; then
-        echo "User and group for AducIotAgent service are adu:adu."
-    else
+    if [ "$process_user" -neq "$adu_uid" ] && [ "$process_group" -neq "$adu_gid" ]; then
         echo "User and group for AducIotAgent service are not adu:adu."
         exit 1
     fi
