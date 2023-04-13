@@ -28,7 +28,6 @@
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
-#include <do_config.h>
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>
 #include <getopt.h>

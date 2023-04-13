@@ -8,11 +8,16 @@
 
 #include "aduc/extension_manager_helper.hpp"
 
+#include <aduc/config_utils.h>
 #include <aduc/download_handler_factory.hpp>
 #include <aduc/download_handler_plugin.hpp>
 #include <aduc/result.h>
 #include <aduc/string_c_utils.h>
 #include <aduc/workflow_utils.h>
+
+ExtensionManager_Download_Options Default_ExtensionManager_Download_Options = {
+    CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT /* timeoutInMinutes */
+};
 
 /**
  * @brief Processes Download Handler extensibility for the downloadHandlerId in the file entity.
@@ -111,4 +116,23 @@ done:
     Log_Info("DownloadHandler Extensibility ret %d, erc 0x%08x", result.ResultCode, result.ExtendedResultCode);
 
     return result;
+}
+
+/**
+ * @brief Get the download timeout in minutes from compile-time download options, or the override from config file.
+ *
+ * @param downloadOptions The download options.
+ * @return unsigned int The download timeout that should be used.
+ */
+unsigned int GetDownloadTimeoutInMinutes(const ExtensionManager_Download_Options* downloadOptions) noexcept
+{
+    ADUC_ConfigInfo config{};
+    if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) || (config.downloadTimeoutInMinutes == 0))
+    {
+        return (downloadOptions == nullptr) ? CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT
+                                            : downloadOptions->timeoutInMinutes;
+    }
+
+    Log_Info("downloadTimeoutInMinutes override from config: %u", config.downloadTimeoutInMinutes);
+    return config.downloadTimeoutInMinutes;
 }

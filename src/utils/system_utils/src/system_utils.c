@@ -393,7 +393,7 @@ bool ADUC_SystemUtils_FormatFilePathHelper(STRING_HANDLE* newFilePath, const cha
     STRING_HANDLE tempHandle = STRING_new();
 
     bool needForwardSlash = false;
-    if (dirPath[dirPathSize - 2] != '/')
+    if (dirPath[dirPathSize - 1] != '/')
     {
         needForwardSlash = true;
     }

@@ -34,9 +34,6 @@
 
 namespace adushconst = Adu::Shell::Const;
 
-/* external linkage */
-extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
-
 EXTERN_C_BEGIN
 
 /////////////////////////////////////////////////////////////////////////////

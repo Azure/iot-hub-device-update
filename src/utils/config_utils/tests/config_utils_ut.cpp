@@ -12,7 +12,6 @@
 
 #include <aduc/c_utils.h>
 #include <aduc/calloc_wrapper.hpp>
-#include <aduc/string_utils.hpp>
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <parson.h>
 #include <string.h>
@@ -21,7 +20,6 @@
 #include "aduc/config_utils.h"
 #undef ENABLE_MOCKS
 
-using ADUC::StringUtils::cstr_wrapper;
 using Catch::Matchers::Equals;
 
 // clang-format off
@@ -276,6 +274,71 @@ static const char* validConfigContentAdditionalPropertyNames =
         R"(])"
     R"(})";
 
+static const char* validConfigContentDownloadTimeout =
+    R"({)"
+        R"("schemaVersion": "1.1",)"
+        R"("aduShellTrustedUsers": ["adu","do"],)"
+        R"("manufacturer": "device_info_manufacturer",)"
+        R"("model": "device_info_model",)"
+        R"("downloadTimeoutInMinutes": 1440,)"
+        R"("compatPropertyNames": "manufacturer,model",)"
+        R"("agents": [)"
+            R"({ )"
+            R"("name": "host-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "AIS",)"
+                R"("connectionData": "iotHubDeviceUpdate")"
+            R"(},)"
+            R"("manufacturer": "Contoso",)"
+            R"("model": "Smart-Box")"
+            R"(},)"
+            R"({)"
+            R"("name": "leaf-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "string",)"
+                R"("connectionData": "HOSTNAME=...")"
+            R"(},)"
+            R"("manufacturer": "Fabrikam",)"
+            R"("model": "Camera")"
+            R"(})"
+        R"(])"
+    R"(})";
+
+static const char* invalidConfigContentDownloadTimeout =
+    R"({)"
+        R"("schemaVersion": "1.1",)"
+        R"("aduShellTrustedUsers": ["adu","do"],)"
+        R"("manufacturer": "device_info_manufacturer",)"
+        R"("model": "device_info_model",)"
+        R"("downloadTimeoutInMinutes": -1,)"
+        R"("compatPropertyNames": "manufacturer,model",)"
+        R"("agents": [)"
+            R"({ )"
+            R"("name": "host-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "AIS",)"
+                R"("connectionData": "iotHubDeviceUpdate")"
+            R"(},)"
+            R"("manufacturer": "Contoso",)"
+            R"("model": "Smart-Box")"
+            R"(},)"
+            R"({)"
+            R"("name": "leaf-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "string",)"
+                R"("connectionData": "HOSTNAME=...")"
+            R"(},)"
+            R"("manufacturer": "Fabrikam",)"
+            R"("model": "Camera")"
+            R"(})"
+        R"(])"
+    R"(})";
+
+
 static char* g_configContentString = nullptr;
 
 static JSON_Value* MockParse_JSON_File(const char* configFilePath)
@@ -307,7 +370,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     SECTION("Valid config content, Success Test")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentStr) == 0);
-        cstr_wrapper configStr{ g_configContentString };
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
 
         ADUC_ConfigInfo config = {};
 
@@ -341,7 +404,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     SECTION("Valid config content without compatPropertyNames, Success Test")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentNoCompatPropertyNames) == 0);
-        cstr_wrapper configStr{ g_configContentString };
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
 
         ADUC_ConfigInfo config = {};
 
@@ -354,6 +417,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     SECTION("Config content with customized additional device properties, Successful Test")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentAdditionalPropertyNames) == 0);
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
 
         ADUC_ConfigInfo config = {};
 
@@ -361,19 +425,16 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         const ADUC_AgentInfo* first_agent_info = ADUC_ConfigInfo_GetAgent(&config, 0);
         CHECK(first_agent_info->additionalDeviceProperties != nullptr);
         ADUC_ConfigInfo_UnInit(&config);
-
-        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc): g_configContentString is a basic C-string so it must be freed by a call to free()
-        free(g_configContentString);
     }
 
     SECTION("Valid config content without device info, Failure Test")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, invalidConfigContentNoDeviceInfoStr) == 0);
-        cstr_wrapper configStr{ g_configContentString };
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(!ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -381,11 +442,11 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     SECTION("Valid config content without device properties, Failure Test")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, invalidConfigContentNoDevicePropertiesStr) == 0);
-        cstr_wrapper configStr{ g_configContentString };
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(!ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -393,11 +454,11 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     SECTION("Empty config content, Failure Test")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, invalidConfigContentStrEmpty) == 0);
-        cstr_wrapper configStr{ g_configContentString };
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(!ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -405,11 +466,36 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     SECTION("Invalid config content, Failure Test")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, invalidConfigContentStr) == 0);
-        cstr_wrapper configStr{ g_configContentString };
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(!ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+
+        ADUC_ConfigInfo_UnInit(&config);
+    }
+
+    SECTION("Valid config content, downloadTimeoutInMinutes")
+    {
+        REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentDownloadTimeout) == 0);
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
+
+        ADUC_ConfigInfo config = {};
+
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(config.downloadTimeoutInMinutes == 1440);
+
+        ADUC_ConfigInfo_UnInit(&config);
+    }
+
+    SECTION("Invalid config content, downloadTimeoutInMinutes")
+    {
+        REQUIRE(mallocAndStrcpy_s(&g_configContentString, invalidConfigContentDownloadTimeout) == 0);
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
+
+        ADUC_ConfigInfo config = {};
+
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -417,7 +503,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     SECTION("Valid config content, mqtt iotHubProtocol")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentMqttIotHubProtocol) == 0);
-        cstr_wrapper configStr{ g_configContentString };
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
 
         ADUC_ConfigInfo config = {};
 
@@ -430,7 +516,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     SECTION("Valid config content, mqtt/ws iotHubProtocol")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentMqttWebSocketsIotHubProtocol) == 0);
-        cstr_wrapper configStr{ g_configContentString };
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
 
         ADUC_ConfigInfo config = {};
 
@@ -443,7 +529,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     SECTION("Valid config content, missing iotHubProtocol defaults to mqtt.")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentMissingIotHubProtocol) == 0);
-        cstr_wrapper configStr{ g_configContentString };
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
 
         ADUC_ConfigInfo config = {};
 

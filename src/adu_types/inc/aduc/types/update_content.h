@@ -125,11 +125,6 @@ EXTERN_C_BEGIN
 #define ADUCITF_FIELDNAME_DEVICEPROPERTIES_ADUC_VERSION "aduVer"
 
 /**
- * @brief JSON field name for DeviceProperties DO version
- */
-#define ADUCITF_FIELDNAME_DEVICEPROPERTIES_DO_VERSION "doVer"
-
-/**
  * @brief JSON field name for the updateManifest
  */
 #define ADUCITF_FIELDNAME_UPDATEMANIFEST "updateManifest"

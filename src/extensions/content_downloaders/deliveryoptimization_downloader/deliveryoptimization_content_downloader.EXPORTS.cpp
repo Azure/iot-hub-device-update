@@ -83,7 +83,7 @@ done:
  * @param entity The file entity.
  * @param workflowId The workflow id.
  * @param workFolder The work folder for the update payloads.
- * @param retryTimeout The retry timeout.
+ * @param timeoutInSeconds * The maximum number of seconds the content downloader should wait for receiving data (whilst the network interface stays up).
  * @param downloadProgressCallback The download progress callback function.
  * @return ADUC_Result The result.
  */
@@ -91,10 +91,10 @@ ADUC_Result Download(
     const ADUC_FileEntity* entity,
     const char* workflowId,
     const char* workFolder,
-    unsigned int retryTimeout,
+    unsigned int timeoutInSeconds,
     ADUC_DownloadProgressCallback downloadProgressCallback)
 {
-    return do_download(entity, workflowId, workFolder, retryTimeout, downloadProgressCallback);
+    return do_download(entity, workflowId, workFolder, timeoutInSeconds, downloadProgressCallback);
 }
 
 //

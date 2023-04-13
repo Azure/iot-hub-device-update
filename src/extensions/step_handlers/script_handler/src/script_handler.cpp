@@ -146,11 +146,7 @@ static ADUC_Result Script_Handler_DownloadPrimaryScriptFile(ADUC_WorkflowHandle 
 
     try
     {
-        ExtensionManager_Download_Options downloadOptions = {
-            .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
-        };
-
-        result = ExtensionManager::Download(&entity, handle, &downloadOptions, nullptr);
+        result = ExtensionManager::Download(&entity, handle, &Default_ExtensionManager_Download_Options, nullptr);
     }
     catch (...)
     {
@@ -222,11 +218,8 @@ ADUC_Result ScriptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData
 
         try
         {
-            ExtensionManager_Download_Options downloadOptions = {
-                .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
-            };
-
-            result = ExtensionManager::Download(&fileEntity, workflowHandle, &downloadOptions, nullptr);
+            result = ExtensionManager::Download(
+                &fileEntity, workflowHandle, &Default_ExtensionManager_Download_Options, nullptr);
             ADUC_FileEntity_Uninit(&fileEntity);
         }
         catch (...)

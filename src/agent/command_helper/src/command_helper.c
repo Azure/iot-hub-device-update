@@ -168,7 +168,7 @@ static bool SecurityChecks()
     }
 
     // Verify current user
-    struct group* grp = getgrnam("adu");
+    struct group* grp = getgrnam(ADUC_FILE_GROUP);
     if (grp == NULL)
     {
         // Failed to get 'adu' group information, bail.

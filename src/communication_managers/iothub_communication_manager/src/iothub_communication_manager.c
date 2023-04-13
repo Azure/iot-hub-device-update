@@ -5,6 +5,7 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+#include "aduc/adu_core_export_helpers.h" // ADUC_MethodCall_RestartAgent
 #include "aduc/adu_types.h"
 #include "aduc/client_handle_helper.h"
 #include "aduc/config_utils.h"
@@ -725,9 +726,14 @@ static void Connection_Maintenance()
             additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
             break;
         case IOTHUB_CLIENT_CONNECTION_NO_NETWORK:
-            // Could be transient error, wait for at least 5 minutes to retry.
+            // 1) try to restart agent to prevent empty reported properties in module twin 
+            // 2) if restart agent could not be performed, wait for at least 5 minutes to retry.
             Log_Error("No network.");
-            additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
+            if (ADUC_MethodCall_RestartAgent() != 0)
+            {
+                additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
+                Log_Error("Agent restart attempt failed.");
+            }
             break;
 
         case IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR:

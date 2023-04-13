@@ -44,12 +44,6 @@ using GET_CONTRACT_INFO_PROC = ADUC_Result (*)(ADUC_ExtensionContractInfo* contr
 using WorkflowHandle = void*;
 using ADUC::StringUtils::cstr_wrapper;
 
-EXTERN_C_BEGIN
-ExtensionManager_Download_Options Default_ExtensionManager_Download_Options = {
-    .retryTimeout = 60 * 60 * 24 /* default : 24 hour */,
-};
-EXTERN_C_END
-
 // Static members.
 std::unordered_map<std::string, void*> ExtensionManager::_libs;
 std::unordered_map<std::string, ContentHandler*> ExtensionManager::_contentHandlers;
@@ -925,7 +919,13 @@ ADUC_Result ExtensionManager::Download(
 
         Log_Info("Downloading full target update payload to '%s'", targetUpdateFilePath.c_str());
 
-        result = downloadProc(entity, workflowId, workFolder.get(), options->retryTimeout, downloadProgressCallback);
+        unsigned int timeoutInMinutes = GetDownloadTimeoutInMinutes(options);
+
+        // Note: extension manager download options max timeout is in minutes,
+        // but the content downloader contract version is in terms of seconds.
+        unsigned int timeoutInSeconds = 60 * timeoutInMinutes;
+
+        result = downloadProc(entity, workflowId, workFolder.get(), timeoutInSeconds, downloadProgressCallback);
     }
 
     if (IsAducResultCodeSuccess(result.ResultCode))

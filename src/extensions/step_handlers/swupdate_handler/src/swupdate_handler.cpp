@@ -176,11 +176,8 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
     updateFilename << workFolder << "/" << fileEntity.TargetFilename;
 
     {
-        ExtensionManager_Download_Options downloadOptions = {
-            .retryTimeout = DO_RETRY_TIMEOUT_DEFAULT,
-        };
-
-        result = ExtensionManager::Download(&fileEntity, workflowHandle, &downloadOptions, nullptr);
+        result = ExtensionManager::Download(
+            &fileEntity, workflowHandle, &Default_ExtensionManager_Download_Options, nullptr);
     }
 
 done:
