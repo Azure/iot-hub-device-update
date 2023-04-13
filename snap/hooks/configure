@@ -162,8 +162,8 @@ register_extensions() {
 
     echo "Register content downloader extension..."
     # 2 Content downloader options:
-    # $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_curl_downloader_file
-    $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_do_downloader_file
+    $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_curl_downloader_file
+    #$adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_do_downloader_file
 }
 
 setup_dirs_and_files

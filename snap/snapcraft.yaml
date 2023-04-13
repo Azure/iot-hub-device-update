@@ -21,7 +21,7 @@ grade: devel
 confinement: strict
 
 architectures:
-  - build-on: amd64
+  - build-on: [amd64, arm64]
     run-on: [amd64, armhf, arm64]
 
 # Use passthrough for the moment, until the appropriate snapcraft release lands
@@ -69,6 +69,9 @@ parts:
       - libcurl4-openssl-dev
       - libssl-dev
       - uuid-dev
+      - to arm64:
+        - make
+        - g++
     override-build: |
       cd $SNAPCRAFT_PART_SRC
       git submodule update --init
@@ -132,15 +135,16 @@ parts:
       - conf/*.*
 
     stage-packages:
+      - curl
+      - libcurl4
+      - libxml2
+      - libicu66
       - to amd64:
         - libboost-filesystem1.71.0
         - libhcrypto4-heimdal
         - libkrb5-26-heimdal
-        - libicu66
-        - libcurl4
         - libssh-4
         - libpsl5
-        - curl
         - libgssapi3-heimdal
         - librtmp1
         - libbrotli1
@@ -153,7 +157,6 @@ parts:
         - libsasl2-2
         - libwind0-heimdal
         - libldap-2.4-2
-        - libxml2
 
   du-agent-commands:
     source: .
@@ -168,8 +171,7 @@ parts:
   jq:
     plugin: nil
     stage-packages:
-      - to amd64:
-        - jq
+      - jq
 
 apps:
   # high-privilege tasks broker

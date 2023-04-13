@@ -969,13 +969,13 @@ if [[ $install_packages_only == "false" ]]; then
         do_install_azure_iot_sdk || $ret
     fi
 
-    if [[ $install_catch2 == "true" ]]; then
-        do_install_catch2 || $ret
-    fi
+    #if [[ $install_catch2 == "true" ]]; then
+        #do_install_catch2 || $ret
+    #fi
 
-    if [[ $install_swupdate == "true" ]]; then
-        do_install_swupdate || $ret
-    fi
+    #if [[ $install_swupdate == "true" ]]; then
+        #do_install_swupdate || $ret
+    #fi
 
     if [[ $install_do == "true" ]]; then
         do_install_do || $ret
