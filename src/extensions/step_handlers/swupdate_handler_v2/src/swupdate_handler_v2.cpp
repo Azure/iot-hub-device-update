@@ -216,7 +216,7 @@ ADUC_Result SWUpdateHandler_PerformAction(
         goto done;
     }
 
-    exitCode = ADUC_LaunchChildProcess(adushconst::adu_shell, aduShellArgs, scriptOutput);
+    exitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, aduShellArgs, scriptOutput);
     if (exitCode != 0)
     {
         int extendedCode = ADUC_ERC_SWUPDATE_HANDLER_CHILD_FAILURE_PROCESS_EXITCODE(exitCode);

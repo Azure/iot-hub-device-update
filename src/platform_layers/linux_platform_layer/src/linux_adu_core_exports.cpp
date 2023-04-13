@@ -75,7 +75,7 @@ int ADUC_RebootSystem()
 
     std::string output;
     std::vector<std::string> args{ "--update-type", "common", "--update-action", "reboot" };
-    const int exitStatus = ADUC_LaunchChildProcess("/usr/lib/adu/adu-shell", args, output);
+    const int exitStatus = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, output);
 
     if (exitStatus != 0)
     {
