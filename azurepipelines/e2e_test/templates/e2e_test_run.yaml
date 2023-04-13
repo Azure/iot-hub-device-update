@@ -1,0 +1,139 @@
+# Template: Template for running E2E Tests against the Virtual Machines
+
+parameters:
+    - name: distroName
+      type: string
+    - name: scenarioPath
+      type: string
+steps:
+    - script: |
+          mkdir testresults
+      displayName: Creating the test results directory
+      continueOnError: False
+      workingDirectory: $(E2E_WORKING_DIR)
+
+    - task: UsePythonVersion@0
+      displayName: Set the python version to Python 3.10
+      inputs:
+          versionSpec: 3.10
+
+    - script: |
+          python -m pip install -r scenarios/testingtoolkit/requirements.txt
+      workingDirectory: $(E2E_WORKING_DIR)
+      displayName: Installing the toolkit dependencies
+      continueOnError: False
+
+    - task: PythonScript@0
+      displayName: Run script to add the device to the ADU group
+      continueOnError: True
+      inputs:
+          scriptSource: "filePath"
+          scriptPath: "$(E2E_WORKING_DIR)/${{parameters.scenarioPath}}/add_device_to_adu_group.py"
+          workingDirectory: $(E2E_WORKING_DIR)
+      env:
+          IOTHUB_URL: $(IOTHUB_URL)
+          IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+          ADU_ENDPOINT: $(ADU_ENDPOINT)
+          ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+          AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+          AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+          AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+    - task: PythonScript@0
+      displayName: Run script to test apt-deployment
+      continueOnError: True
+      inputs:
+          scriptSource: "filePath"
+          scriptPath: "$(E2E_WORKING_DIR)/${{parameters.scenarioPath}}/apt_deployment.py"
+          workingDirectory: $(E2E_WORKING_DIR)
+      env:
+          IOTHUB_URL: $(IOTHUB_URL)
+          IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+          ADU_ENDPOINT: $(ADU_ENDPOINT)
+          ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+          AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+          AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+          AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+    - task: PythonScript@0
+      displayName: Run script to test diagnostics
+      continueOnError: True
+      inputs:
+          scriptSource: "filePath"
+          scriptPath: "$(E2E_WORKING_DIR)/${{parameters.scenarioPath}}/diagnostics.py"
+          workingDirectory: $(E2E_WORKING_DIR)
+      env:
+          IOTHUB_URL: $(IOTHUB_URL)
+          IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+          ADU_ENDPOINT: $(ADU_ENDPOINT)
+          ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+          AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+          AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+          AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+    - task: PythonScript@0
+      displayName: Run script to test mcu
+      continueOnError: True
+      inputs:
+          scriptSource: "filePath"
+          scriptPath: "$(E2E_WORKING_DIR)/${{parameters.scenarioPath}}/Multi-Component-Update.py"
+          workingDirectory: $(E2E_WORKING_DIR)
+      env:
+          IOTHUB_URL: $(IOTHUB_URL)
+          IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+          ADU_ENDPOINT: $(ADU_ENDPOINT)
+          ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+          AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+          AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+          AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+    - task: PythonScript@0
+      displayName: Run script to test bundle-update
+      continueOnError: True
+      inputs:
+          scriptSource: "filePath"
+          scriptPath: "$(E2E_WORKING_DIR)/${{parameters.scenarioPath}}/Bundle-update.py"
+          workingDirectory: $(E2E_WORKING_DIR)
+      env:
+          IOTHUB_URL: $(IOTHUB_URL)
+          IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+          ADU_ENDPOINT: $(ADU_ENDPOINT)
+          ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+          AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+          AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+          AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+    - task: PythonScript@0
+      displayName: Run script to clean up the device
+      continueOnError: True
+      inputs:
+          scriptSource: "filePath"
+          scriptPath: "$(E2E_WORKING_DIR)/${{parameters.scenarioPath}}/delete_device.py"
+          workingDirectory: $(E2E_WORKING_DIR)
+      env:
+          IOTHUB_URL: $(IOTHUB_URL)
+          IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+          ADU_ENDPOINT: $(ADU_ENDPOINT)
+          ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+          AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+          AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+          AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+
+    - script: |
+          mkdir -p $(Build.ArtifactStagingDirectory)/testresults/
+          cp -R ./testresults/* $(Build.ArtifactStagingDirectory)/testresults/
+      displayName: Copy terraform state (vm)
+      workingDirectory: $(E2E_WORKING_DIR)
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+          targetPath: "$(Build.ArtifactStagingDirectory)/testresults/"
+          artifact: "TestResults_${{parameters.distroName}}"
+          publishLocation: "pipeline"
+
+    - task: PublishTestResults@2
+      inputs:
+          testRunner: JUnit
+          testResultsFiles: "$(E2E_WORKING_DIR)/testresults/*.xml"
+          failTaskOnFailedTests: false
+          testRunTitle: ${{parameters.distroName}}

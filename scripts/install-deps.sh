@@ -72,7 +72,7 @@ install_githooks=false
 
 du_test_data_dir_path="/tmp/adu/"
 # DO Deps
-default_do_ref=v1.0.1
+default_do_ref=develop
 install_do=false
 do_ref=$default_do_ref
 
@@ -444,14 +444,11 @@ do_install_do() {
 
     git clone --recursive --single-branch --branch $do_ref --depth 1 $do_url . || return
 
-    distro=$OS$VER
-    install_do_deps_distro="${distro//./}"
-
-    if [[ $install_do_deps_distro != "" ]]; then
-        local bootstrap_file=$do_dir/build/scripts/bootstrap.sh
-        chmod +x $bootstrap_file || return
-        $SUDO $bootstrap_file --platform "$install_do_deps_distro" --install build || return
-    fi
+    #TODO: Remove the sepecif commit once DO publishs a new tag
+    git checkout 02c9ae2c7484182903c66ad986a834762fc569e6
+    bootstrap_file=$do_dir/build/scripts/bootstrap.sh
+    chmod +x $bootstrap_file || return
+    $SUDO $bootstrap_file --install build || return
 
     mkdir cmake || return
     pushd cmake > /dev/null || return

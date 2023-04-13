@@ -14,6 +14,40 @@
 EXTERN_C_BEGIN
 
 /**
+ * @brief Scans the connection string and returns the connection type related to the string
+ * @details The connection string must use the valid, correct format for the DeviceId and/or the ModuleId
+ * e.g.
+ * "DeviceId=some-device-id;ModuleId=some-module-id;"
+ * If the connection string contains the DeviceId it is an ADUC_ConnType_Device
+ * If the connection string contains the DeviceId AND the ModuleId it is an ADUC_ConnType_Module
+ * @param connectionString the connection string to scan
+ * @returns the connection type for @p connectionString
+ */
+ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString);
+
+/**
+ * @brief Get the Connection Info from connection string, if a connection string is provided in configuration file
+ *
+ * @return true if connection info can be obtained
+ */
+bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString);
+
+/**
+ * @brief Get the Connection Info from Identity Service
+ *
+ * @return true if connection info can be obtained
+ */
+bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info);
+
+/**
+ * @brief Gets the agent configuration information and loads it according to the provisioning scenario
+ *
+ * @param info the connection information that will be configured
+ * @return true on success; false on failure
+ */
+bool GetAgentConfigInfo(ADUC_ConnectionInfo* info);
+
+/**
  * @brief A callback function to be invoked when a device client handler has changed.
  *
  * @param client_handle A new device client handler.

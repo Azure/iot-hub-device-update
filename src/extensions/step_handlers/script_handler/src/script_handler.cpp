@@ -572,7 +572,7 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
         Log_Debug("##########\n# ADU-SHELL ARGS:\n##########\n %s", ss.str().c_str());
     }
 
-    exitCode = ADUC_LaunchChildProcess(adushconst::adu_shell, aduShellArgs, scriptOutput);
+    exitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, aduShellArgs, scriptOutput);
 
     if (!scriptOutput.empty())
     {
