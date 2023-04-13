@@ -4,7 +4,7 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
-# Setup Script for Test: Ubuntu-18.04-arm64-APT-deployment
+# Setup Script for Test: Ubuntu-20.04-arm64
 #
 # Should be run on the Virtual Machine being provisioned for the work.
 
@@ -31,17 +31,8 @@
 # anything else.
 
 # Handle installing DO from latest build instead of packages.microsoft.com
-
-#
-# Install Device Update Dependencies from APT
-#
-# Note: If there are other dependencies tht need to be installed via APT or other means they should
-# be added here. You might be installing iotedge, another package to setup for a deployment test, or
-# anything else.
-
-# Handle installing DO from latest build instead of packages.microsoft.com
 function configure_apt_repository() {
-    wget https://packages.microsoft.com/config/ubuntu/18.04/multiarch/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+    wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
     sudo dpkg -i packages-microsoft-prod.deb
     rm packages-microsoft-prod.deb
     #
@@ -59,24 +50,24 @@ function configure_apt_repository() {
 
 function install_do() {
     # Handle installing DO from latest build instead of packages.microsoft.com
-    wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu1804_arm64-packages.tar -O ubuntu1804_arm64-packages.tar
-    tar -xvf ubuntu1804_arm64-packages.tar
+    wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_arm64-packages.tar -O ubuntu20_arm64-packages.tar
+    tar -xf ubuntu20_arm64-packages.tar
     sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_arm64.deb ./deliveryoptimization-plugin-apt_0.5.1_arm64.deb ./libdeliveryoptimization_1.0.0_arm64.deb
 }
 
 function register_extensions() {
     mkdir ~/adu_srcs/
 
-    tar -xvf ./testsetup/adu_srcs_repo.tar.gz -C ~/adu_srcs/
+    tar -xf ./testsetup/adu_srcs_repo.tar.gz -C ~/adu_srcs/
 
     sudo mkdir -p ~/demo/demo-devices/contoso-devices
 
     cd ~/adu_srcs/src/extensions/component_enumerators/examples/contoso_component_enumerator/demo || exit
 
-    chmod 755 ./tools/reset-demo-components.sh
+    chmod u+x ./tools/reset-demo-components.sh
 
-    #copy components-inventory.json and adds it to the /usr/local/contoso-devices folder
-    sudo cp -a ./demo-devices/contoso-devices/. ~/demo/demo-devices/contoso-devices/
+    #copy components-inventory.json and adds it to the ~/demo/demo-devices/contoso-devices folder
+    cp -a ./demo-devices/contoso-devices/. ~/demo/demo-devices/contoso-devices/
 
     sh ./tools/reset-demo-components.sh
 
@@ -101,9 +92,7 @@ function verify_user_group_permissions() {
     process_user=$(stat -c %u "/proc/$main_pid")
     process_group=$(stat -c %g "/proc/$main_pid")
 
-    if [ "$process_user" -eq "$adu_uid" ] && [ "$process_group" -eq "$adu_gid" ]; then
-        echo "User and group for AducIotAgent service are adu:adu."
-    else
+    if [ "$process_user" -ne "$adu_uid" ] && [ "$process_group" -ne "$adu_gid" ]; then
         echo "User and group for AducIotAgent service are not adu:adu."
         exit 1
     fi
@@ -166,7 +155,6 @@ function test_shutdown_service() {
 configure_apt_repository
 
 install_do
-
 #
 # Install the Device Update Artifact Under Test
 #
