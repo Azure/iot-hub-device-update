@@ -22,6 +22,35 @@
 #       ~/testsetup/setup.sh
 # So we need to localize the path to that.
 #
+
+#
+# Handling Self-Upgrade Scenario differently
+#
+
+self_upgrade=false
+print_help() {
+    echo "setup.sh [-s]  "
+    echo "-s, --self-upgrade    Testing the self upgrade scenario, setup is different."
+    echo "-h, --help            Show this help message."
+}
+
+while [[ $1 != "" ]]; do
+    case $1 in
+    -s | --self-upgrade)
+        self_upgrade=true
+        ;;
+    -h | --help)
+        print_help
+        return 0
+        ;;
+    *)
+        error "Invalid argument: $*"
+        return 1
+        ;;
+    esac
+    shift
+done
+
 #
 # Install the Microsoft APT repository
 #
@@ -152,7 +181,14 @@ configure_apt_repository
 #
 # Install the Device Update Artifact Under Test
 #
-sudo apt-get install -y ./testsetup/deviceupdate-package.deb
+
+if [[ $self_upgrade == "true" ]]; then
+    sudo apt-get install -y deviceupdate-agent
+    chmod u+x ./testsetup/apt_repo_setup.sh
+    sudo ./testsetup/apt_repo_setup.sh -d ./testsetup/
+else
+    sudo apt-get install -y ./testsetup/deviceupdate-package.deb
+fi
 
 #
 # Install the du-config.json so the device can be provisioned

@@ -31,6 +31,7 @@ stages:
                   parameters:
                       targetOs: ubuntu1804
                       targetArch: amd64
+                      patchVersion: 4
           - job: BuildUbuntu_1804_ARM64
             displayName: Building the Device Update Package for Ubuntu 18.04 ARM64
             continueOnError: False
@@ -129,7 +130,7 @@ stages:
                       du_tarball_script: >-
                           tar -xvf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh
+                          ./testsetup/setup.sh --self-upgrade
                       image_working_directory: $(E2E_WORKING_DIR)
           - job: SetupUbuntu1804_ARM64_VM
             displayName: "Setting up VM for Ubuntu 18.04 ARM64 Test VM"

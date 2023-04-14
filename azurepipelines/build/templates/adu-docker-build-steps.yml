@@ -6,6 +6,9 @@ parameters:
       type: string
     - name: targetArch # example: amd64
       type: string
+    - name: patchVersion # exmaple: 3
+      default: ''
+      type: string
 
 steps:
     - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
@@ -42,7 +45,11 @@ steps:
           sudo docker run -d -t --rm -v $(Build.SourcesDirectory):/iot-hub-device-update -v ~/.gitconfig:/etc/.gitconfig --name ARMcontainer aduccontainerregistry.azurecr.io/${{parameters.targetOs}}-${{parameters.targetArch}}:latest bash
       displayName: "Run docker container"
     - bash: |
-          sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/build.sh --clean --build-unit-tests --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --out-dir out-${{parameters.targetOs}}-${{parameters.targetArch}}
+          if [ -n "${{parameters.patchVersion}}" ]; then
+            sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/build.sh --clean --build-unit-tests --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --patch-version ${{parameters.patchVersion}} --out-dir out-${{parameters.targetOs}}-${{parameters.targetArch}}
+          else
+            sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/build.sh --clean --build-unit-tests --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --out-dir out-${{parameters.targetOs}}-${{parameters.targetArch}}
+          fi
       displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
     - bash: |
           cp out-${{parameters.targetOs}}-${{parameters.targetArch}}/*.deb $(Build.ArtifactStagingDirectory)
