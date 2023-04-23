@@ -266,7 +266,7 @@ const ADUC_WorkflowHandlerMapEntry workflowHandlerMap[] = {
         /* on success auto-transitions to workflow step */  ADUCITF_WorkflowStep_Install,
         /* Note: The default behavior of backup is that if Backup fails,
         the workflow will end and report failure immediately.
-        To opt out of this design, in the content handler, the owner of the content handler
+        To opt out of this design, in the step handler, the owner of the step handler
         will need to persist the result of ADUC_Workflow_MethodCall_Backup and return
         ADUC_Result_Backup_Success to let the workflow continue. */
         /* on failure, transitions to state */              ADUCITF_State_Failed,

@@ -35,13 +35,13 @@ EXTERN_C_BEGIN
 //
 
 /**
- * @brief Instantiates an Update Content Handler for 'microsoft/script:1' update type.
+ * @brief Instantiates an Step Handler for 'microsoft/script:1' update type.
  * @return ContentHandler* The created instance.
  */
 ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
     ADUC_Logging_Init(logLevel, "script-handler");
-    Log_Info("Instantiating an Update Content Handler for 'microsoft/script:1' update type.");
+    Log_Info("Instantiating an Step Handler for 'microsoft/script:1' update type.");
     try
     {
         return ScriptHandlerImpl::CreateContentHandler();

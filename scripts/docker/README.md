@@ -14,14 +14,14 @@ The DU Agent (/usr/bin/AducIotAgent) in the container image can be setup to incl
 
 - Content Downloader(one of following)
   - download update content using libcurl
-  - (Not available yet) download update content using DeliveryOptimization (DO)
-- Update Content Handler
+  - download update content using DeliveryOptimization (DO)
+- Step Handler
   - APT Package-based updates
-  - (Not yet available) Simulator update content handler
-  - (Not yet available) Script handler updates
-  - (Not yet available) SWUpdate V2 handler
+  - Simulator handler
+  - Script handler updates
+  - SWUpdate V2 handler
 - Download handler
-  - (Not yet available) Microsoft Delta Update Download handler
+  - [Beta] Microsoft Delta Update Download handler
 - Connectivity
   - get connection string from du-config.json (NOT from AIS)
 

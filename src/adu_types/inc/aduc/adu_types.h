@@ -36,7 +36,7 @@ typedef struct tagADUC_LaunchArguments
     char* contentDownloaderFilePath; /**< A full path of a content downloader to be registered. */
     char* extensionFilePath; /**< The path to the extension shared library file. */
     char* extensionId; /**< The extension id for an extension registration type like
-                            downloadHandlerId for download handlers and updateType for content handlers. */
+                            downloadHandlerId for download handlers and updateType for step handlers. */
     int argc; /**< Size of argv */
     ADUC_LOG_SEVERITY logLevel; /**< Log level */
     ADUC_ExtensionRegistrationType extensionRegistrationType; /**< The type of extension being registered. */

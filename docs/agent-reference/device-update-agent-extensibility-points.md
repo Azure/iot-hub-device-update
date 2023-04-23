@@ -23,11 +23,11 @@ See the [Registering Device Update Extensions doc](./registering-device-update-e
 
 There are currently 5 extension types:
 
-1. Content Handler, also known as Step Handler (Note: singular Step, not plural Steps)
+1. Step Handler, formerly known as Update Content Handler (Note: singular Step, not plural Steps)
     - This is the "installer technology" for the update content type, but it actually handles all aspects of the update (Is the update installed? How to download it in addition to installing/applying the update).
 2. Update Manifest Handler,
     - Deals with how to handle one or more steps in the multi-step update.
-    - It is also a Content Handler.
+    - It is also a Step Handler.
 3. Content Downloader,
     - The wrapper for the "download technology" that will actually download update payload files and detached update manifests.
 4. Download Handler,
@@ -35,13 +35,13 @@ There are currently 5 extension types:
 5. and Component Enumerator
     - Allows getting and querying of component hardware modules for proxy updates.
 
-## Content Handler extension type
+## Step Handler extension type
 
-The agent defers the business logic for `IsInstalled`, `Download`, `Install`, `Apply`, `Backup`, `Rollback`, and `Cancel` actions to the content handler registered for the update type.
+The agent defers the business logic for `IsInstalled`, `Download`, `Install`, `Apply`, `Backup`, `Rollback`, and `Cancel` actions to the step handler registered for the update type.
 
-### List of 1st-Party Registered Content Handlers
+### List of 1st-Party Registered Step Handlers
 
-These are the content handlers that come pre-registered when installing the Debian package and can be found under [src/extensions/step_handlers/](../../src/extensions/step_handlers/):
+These are the step handlers that come pre-registered when installing the Debian package and can be found under [src/extensions/step_handlers/](../../src/extensions/step_handlers/):
 
 - apt handler ( [README.md](../../src/extensions/step_handlers/apt_handler/README.md) )
   - limited example that can install/remove one or more APT package updates specified in an apt-manifest.json update payload,
@@ -53,7 +53,7 @@ These are the content handlers that come pre-registered when installing the Debi
   - runs a script (specified as "scriptFileName" in the "handlerProperites") that's included as an update payload and that invokes swupdate command-line.
   - Agent will also pass it the path to the downloaded .swu file included as "swuFileName" in the "handlerProperties"
 
-### Implementing a custom content handler
+### Implementing a custom step handler
 
 See [How to implement custom update handler](./how-to-implement-custom-update-handler.md) and examples under [src/extensions/step_handlers](../../src/extensions/step_handlers/)
 
@@ -65,7 +65,7 @@ The update manifest handler handles the processing of steps in the instructions 
 
 The default Update Manifest Handler registered in deviceupdate-agent Debian package is the [Steps Handler](../../src/extensions/update_manifest_handlers/steps_handler/README.md) (Note: Plural Steps). The implementation is in [steps_handler.cpp](../../src/extensions/update_manifest_handlers/steps_handler/src/steps_handler.cpp).
 
-[Steps Handler](../../src/extensions/update_manifest_handlers/steps_handler/README.md) is a content handler that applies each action aggregated across every step:
+[Steps Handler](../../src/extensions/update_manifest_handlers/steps_handler/README.md) is a handler that applies each action aggregated across every step:
 
 - IsInstalled() is true if every step has been installed (and recursively if there are children component updates),
 - Download() downloads the update payloads for every step
@@ -74,11 +74,11 @@ The default Update Manifest Handler registered in deviceupdate-agent Debian pack
 
 ### Custom steps handling example
 
-If, for example, not every update payload should be downloaded upfront, then a custom UpdateManifest Handler would need to be authored and registered to do the content handler actions for the first step, and then for the next step, and so on. Each step could decide to skip it's actions under certain conditions to avoid unnecessary downloads/processing.
+If, for example, not every update payload should be downloaded upfront, then a custom UpdateManifest Handler would need to be authored and registered to do the step handler actions for the first step, and then for the next step, and so on. Each step could decide to skip it's actions under certain conditions to avoid unnecessary downloads/processing.
 
 ### Implementing a custom Update Manifest Handler
 
-To implement a custom Update Manifest Handler, which is a Content Handler, export the function symbols with signatures defined in [extension_content_handler_export_symbols.h](../../src/extensions/inc/aduc/exports/extension_content_handler_export_symbols.h).
+To implement a custom Update Manifest Handler, which is a Step Handler, export the function symbols with signatures defined in [extension_content_handler_export_symbols.h](../../src/extensions/inc/aduc/exports/extension_content_handler_export_symbols.h).
 
 For detailed information, see:
 

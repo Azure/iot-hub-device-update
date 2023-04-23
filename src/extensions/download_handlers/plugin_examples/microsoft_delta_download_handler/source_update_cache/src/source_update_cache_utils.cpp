@@ -159,7 +159,7 @@ int ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
             }
         });
 
-        // delete files until made enough room as per totalSize needed for new upate payloads
+        // delete files until made enough room as per totalSize needed for new update payloads
         while (!oldestCacheFiles.empty() && totalSize > 0)
         {
             UpdateCachePurgeFile cachePurgeFile = oldestCacheFiles.top();

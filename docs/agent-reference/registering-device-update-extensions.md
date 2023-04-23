@@ -2,7 +2,7 @@
 
 For the 5 extension types, here is the breakdown of registration multiplicity:
 
-1. Content Handler - Multiple can be registered, each associated with updateType key
+1. Step Handler - Multiple can be registered, each associated with updateType key
 2. Update Manifest Handler - Multiple can be registered, with update manifest version key
 3. Content Downloader - Exactly one can be registered
 4. Download Handler - Multiple can be registered, each associated with `downloadHandlerId`
@@ -18,7 +18,7 @@ openssl dgst -sha256 -binary /path/to/lib.so | openssl base64
 
 See `register_reference_extensions()` in the Debian package [postinst script](../../packages/debian/postinst)
 
-## Registering Content Handler extension shared library
+## Registering Step Handler extension shared library
 
 ### Agent Command-line
 

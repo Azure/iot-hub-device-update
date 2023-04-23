@@ -17,8 +17,8 @@
 EXTERN_C_BEGIN
 
 /**
- * @brief Instantiates an Update Content Handler for 'microsoft/swupdate:1' update type.
- * @return A pointer to an instantiated Update Content Handler object.
+ * @brief Instantiates a Step Handler for 'microsoft/swupdate:1' update type.
+ * @return A pointer to an instantiated Step Handler object.
  */
 ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
 

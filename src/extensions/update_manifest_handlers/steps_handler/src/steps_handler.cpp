@@ -405,7 +405,7 @@ static ADUC_Result handleUnsupportedContractVersion(
     const ADUC_ExtensionContractInfo* contractInfo, const char* stepUpdateType, ADUC_WorkflowHandle handle)
 {
     ADUC_Result result{ ADUC_Result_Failure, ADUC_ERC_UPDATE_CONTENT_HANDLER_UNSUPPORTED_CONTRACT_VERSION };
-    const char* errorFmt = "Unsupported content handler contract version %d.%d for '%s'";
+    const char* errorFmt = "Unsupported step handler contract version %d.%d for '%s'";
     Log_Error(errorFmt, contractInfo->majorVer, contractInfo->minorVer, stepUpdateType);
     workflow_set_result_details(
         handle,
@@ -700,7 +700,7 @@ ADUC_Result StepsHandlerImpl::Download(const tagADUC_WorkflowData* workflowData)
  * Algorithm:
  *      - Top-level inline step is intended for the host.
  *          - [Process the step]
- *              - Load content handler
+ *              - Load step handler
  *              - Invoke contentHandler::Install
  *                  - If failed, return with 'Install' result.
  *                  - If success with Reboot or Agent Restart request, then call workflow api accordingly, then return with 'Install' result.
@@ -715,7 +715,7 @@ ADUC_Result StepsHandlerImpl::Download(const tagADUC_WorkflowData* workflowData)
  *              - If no components matched, the reference step are considered "optional".
  *                   - Install resultCode for optional step is ADUC_Result_Install_Skipped_NoMatchingComponents (604)
  *              - For each selected component [Process the step]
- *                   - Load content handler
+ *                   - Load step handler
  *                   - Invoke contentHandler::Install
  *                      - If failed, return with 'Install' result.
  *                      - If success with Reboot or Agent Restart request, then call workflow api accordingly, then return with 'Install' result.
@@ -1157,11 +1157,11 @@ ADUC_Result StepsHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
  *    When cancel requested, we will set every step's workflow handle 'WORKFLOW_PROPERTY_FIELD_CANCEL_REQUESTED' property
  *  to 'true', if the step is not 'installed'.
  *
- *    Each step's content handler responsible for checking the 'WORKFLOW_PROPERTY_FIELD_CANCEL_REQUESTED' before performing
+ *    Each step's handler responsible for checking the 'WORKFLOW_PROPERTY_FIELD_CANCEL_REQUESTED' before performing
  *  an update action (e.g., download, install, apply) and try to cancel its workflow accordingly.
  *
- *    A content handler implementors can decide to implement 'cancel' operation as they see fit. This may include restoring
- *  a device to its original state before applying the step (if the content handler support backup and restore operations).
+ *    A step handler implementors can decide to implement 'cancel' operation as they see fit. This may include restoring
+ *  a device to its original state before applying the step (if the step handler support backup and restore operations).
  *
  *    For a step that successfully canceled, the final workflow handle result should be set to 'ADUC_Result_Failure_Cancelled'
  *

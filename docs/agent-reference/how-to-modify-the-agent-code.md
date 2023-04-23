@@ -15,12 +15,12 @@ and
 
 You may want to implement your own version of IsInstalled, Download, Install and Apply for
 your device or installer. You can provide your own implementation of the
-[Content Handler APIs](../../src/extensions/inc/aduc/content_handler.hpp)
+[Step Handler APIs](../../src/extensions/inc/aduc/content_handler.hpp)
 in [src/extensions/step_handlers](../../src/extensions/step_handlers)
 
 ## Customize extensibility points
 
-In addition to customizing content handlers, you can customize:
+In addition to customizing step handlers, you can customize:
 - How update steps in the update metadata are orchestrated/processed,
 - How update payloads and detached v4 update manifest files are downloaded,
 - How hardware sub-module "components" are enumerated and queried,
