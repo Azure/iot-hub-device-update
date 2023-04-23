@@ -30,7 +30,7 @@ build_documentation=false
 build_packages=false
 platform_layer="linux"
 trace_target_deps=false
-content_handlers="microsoft/swupdate,microsoft/apt,microsoft/simulator"
+step_handlers="microsoft/apt,microsoft/script,microsoft/simulator,microsoft/swupdate,microsoft/swupdate_v2"
 build_type=Debug
 adu_log_dir=""
 default_log_dir=/var/log/adu
@@ -72,6 +72,10 @@ print_help() {
     echo "--install                             Install the following ADU components."
     echo "                                          From source: deviceupdate-agent.service & adu-swupdate.sh."
     echo "                                          From build output directory: AducIotAgent & adu-shell."
+    echo ""
+    echo "--content-handlers <handlers>         [Deprecated] use '--step-handlers' option instead."
+    echo "--step-hanlders <handlers>            Specify a comma-delimited list of the step handlers to build."
+    echo "                                          Default is \"${step_handlers}\"."
     echo ""
     echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
     echo ""
@@ -188,6 +192,22 @@ while [[ $1 != "" ]]; do
     case $1 in
     -c | --clean)
         build_clean=true
+        ;;
+    --step-handlers)
+        shift
+        if [[ -z $1 || $1 == -* ]]; then
+            error "--step-handlers parameter is mandatory."
+            $ret 1
+        fi
+        step_handlers=$1
+        ;;
+    --content-handlers)
+        shift
+        if [[ -z $1 || $1 == -* ]]; then
+            error "--content-handlers parameter is mandatory."
+            $ret 1
+        fi
+        step_handlers=$1
         ;;
     -t | --type)
         shift
@@ -328,7 +348,7 @@ bullet "Clean build: $build_clean"
 bullet "Documentation: $build_documentation"
 bullet "Platform layer: $platform_layer"
 bullet "Trace target deps: $trace_target_deps"
-bullet "Content handlers: $content_handlers"
+bullet "Step handlers: $step_handlers"
 bullet "Build type: $build_type"
 bullet "Log directory: $adu_log_dir"
 bullet "Logging library: $log_lib"
@@ -351,7 +371,7 @@ CMAKE_OPTIONS=(
     "-DADUC_BUILD_DOCUMENTATION:BOOL=$build_documentation"
     "-DADUC_BUILD_UNIT_TESTS:BOOL=$build_unittests"
     "-DADUC_BUILD_PACKAGES:BOOL=$build_packages"
-    "-DADUC_CONTENT_HANDLERS:STRING=$content_handlers"
+    "-DADUC_STEP_HANDLERS:STRING=$step_handlers"
     "-DADUC_LOG_FOLDER:STRING=$adu_log_dir"
     "-DADUC_LOGGING_LIBRARY:STRING=$log_lib"
     "-DADUC_PLATFORM_LAYER:STRING=$platform_layer"

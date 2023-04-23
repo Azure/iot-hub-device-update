@@ -17,9 +17,9 @@ set (agent_swupdate_c_files ./src/swupdate_tasks.cpp)
 
 set (agent_script_c_files ./src/script_tasks.cpp)
 
-list (LENGTH ADUC_CONTENT_HANDLERS num_content_handlers)
-if (num_content_handlers EQUAL 0)
-    message (FATAL_ERROR "No content handler specified.")
+list (LENGTH ADUC_STEP_HANDLERS num_step_handlers)
+if (num_step_handlers EQUAL 0)
+    message (FATAL_ERROR "No step handlers specified.")
 endif ()
 
 # Replace comma delimiter with semicolon to form a list
@@ -28,8 +28,8 @@ endif ()
 string (
     REPLACE ","
             ";"
-            ADUC_CONTENT_HANDLER_LIST
-            ${ADUC_CONTENT_HANDLERS})
+            ADUC_STEP_HANDLER_LIST
+            ${ADUC_STEP_HANDLERS})
 
 set (source_files ${agent_c_files})
 
@@ -51,7 +51,7 @@ target_compile_definitions (
     PRIVATE ADUC_VERSION="${ADUC_VERSION}"
             ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
             ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
-            ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}"
+            ADUC_STEP_HANDLERS="${ADUC_STEP_HANDLERS}"
             ADUSHELL_EFFECTIVE_GROUP_NAME="${ADUSHELL_EFFECTIVE_GROUP_NAME}"
             ${adushell_def})
 
