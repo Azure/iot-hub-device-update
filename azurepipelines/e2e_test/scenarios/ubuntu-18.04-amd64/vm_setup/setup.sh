@@ -69,7 +69,7 @@ function configure_apt_repository() {
 #
 function install_and_configure_ais() {
     sudo apt-get install aziot-identity-service
-    cp ./testsetup/config.toml /etc/aziot/config.toml
+    sudo cp ./testsetup/config.toml /etc/aziot/config.toml
     sudo aziotctl config apply -c /etc/aziot/config.toml
 }
 
