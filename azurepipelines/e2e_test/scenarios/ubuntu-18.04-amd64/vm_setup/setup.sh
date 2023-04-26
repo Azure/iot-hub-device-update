@@ -65,6 +65,15 @@ function configure_apt_repository() {
 }
 
 #
+# Installs and Configures AIS with the pre-generated config.toml
+#
+function install_and_configure_ais() {
+    sudo apt-get install aziot-identity-service
+    cp ./testsetup/config.toml /etc/aziot/config.toml
+    sudo aziotctl config apply -c /etc/aziot/config.toml
+}
+
+#
 # Install Device Update Dependencies from APT
 #
 # Note: If there are other dependencies tht need to be installed via APT or other means they should
@@ -178,6 +187,8 @@ function test_shutdown_service() {
 }
 
 configure_apt_repository
+
+install_and_configure_ais
 #
 # Install the Device Update Artifact Under Test
 #

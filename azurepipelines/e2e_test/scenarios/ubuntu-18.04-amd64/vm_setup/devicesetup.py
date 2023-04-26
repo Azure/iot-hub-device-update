@@ -53,8 +53,8 @@ def main():
                         "name": "main",
                         "runas": "adu",
                         "connectionSource": {
-                            "connectionType": "string",
-                            "connectionData": connectionString
+                            "connectionType": "AIS",
+                            "connectionData": ""
                         },
                         "manufacturer": "contoso",
                         "model": "virtual-vacuum-v2"
@@ -63,12 +63,33 @@ def main():
                     }
 
     #
-    # Write the configuration out to disk so we can install it as a part of the test
+    # Write the DU configuration out to disk so we can install it as a part of the test
     #
 
     with open('du-config.json','w') as jsonFile:
         configJson = json.dumps(duConfigJson)
         jsonFile.write(configJson)
+
+    #
+    # Create the config.toml contents
+    #
+    configTomlInfo = """\
+[provisioning]
+source = "manual"
+connection_string = "{connectionString}"
+
+[aziot_keys]
+
+[preloaded_keys]
+
+[cert_issuance]
+
+[preloaded_certs]
+
+""".format(connectionString=connectionString)
+
+    with open('config.toml','w') as configToml:
+        configToml.write(configTomlInfo)
 
 #
 # Output is now a newly created device and a du-config.json file that will work with it
