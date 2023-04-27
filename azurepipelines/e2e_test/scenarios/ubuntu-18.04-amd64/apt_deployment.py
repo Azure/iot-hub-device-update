@@ -119,7 +119,7 @@ class AptDeploymentTest(unittest.TestCase):
         # deployment we need to check that the device itself has reported it
         # is back in the idle state.
         #
-        twin = self.duTestHelper.GetDeviceTwinForDevice(test_device_id)
+        twin = self.duTestHelper.GetModuleTwinForModule(test_device_id,"IoTHubDeviceUpdate")
 
         self.assertEqual(twin.properties.reported["deviceUpdate"]["agent"]["state"],0)
 
