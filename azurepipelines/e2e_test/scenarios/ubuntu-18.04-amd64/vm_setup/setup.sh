@@ -230,5 +230,3 @@ verify_log_files
 test_shutdown_service
 
 sudo systemctl restart deviceupdate-agent.service
-
-sudo -u adu /usr/bin/AducIotAgent -h
