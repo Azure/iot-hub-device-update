@@ -63,7 +63,7 @@ class AptDeploymentTest(unittest.TestCase):
         #
         connectionStatus = ""
         for i in range(0,test_connection_timeout_tries):
-            connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
+            connectionStatus = self.duTestHelper.GetConnectionStatusForModule(test_device_id,"IotHubDeviceUpdate")
             if (connectionStatus == "Connected"):
                 break
             time.sleep(retry_wait_time_in_seconds)
