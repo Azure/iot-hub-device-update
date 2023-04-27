@@ -15,8 +15,12 @@ Param(
     # Build type
     [ValidateSet('Release', 'RelWithDebInfo', 'Debug')]
     [string]$Type = 'Debug',
+    [ValidateSet('x64', 'arm64')]
+    [string]$Arch = 'x64',
     # Build package?
-    [switch]$Package = $false
+    [switch]$Package = $false,
+    # Run registration of components on this device?
+    [switch]$RegisterComponents = $false
 )
 
 function Show-Warning {
@@ -237,14 +241,14 @@ function Install-Adu-Components {
     }
 
     if ($Type -eq 'Debug') {
-        $BuildToolsDPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\debug_nonredist\x64\Microsoft.VC143.DebugCRT"
-        $WindowsKitsDPath = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\$WindowsKitsVer\x64\ucrt"
+        $BuildToolsDPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\debug_nonredist\$Arch\Microsoft.VC143.DebugCRT"
+        $WindowsKitsDPath = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\$WindowsKitsVer\$Arch\ucrt"
 
         # Only needed if dynamically linking: getopt, pthreadVC3d, libcrypto-1_1-x64
 
         $dependencies = `
         (Join-Path $BuildBinPath 'getopt'), `
-        (Join-Path $BuildBinPath 'libcrypto-1_1-x64'), `
+        (Join-Path $BuildBinPath "libcrypto-1_1-$Arch"), `
         (Join-Path $BuildBinPath 'pthreadVC3d'), `
         (Join-Path $BuildToolsDPath 'msvcp140d'), `
         (Join-Path $BuildToolsDPath 'vcruntime140d'), `
@@ -252,12 +256,12 @@ function Install-Adu-Components {
         (Join-Path $WindowsKitsDPath 'ucrtbased')
     }
     else {
-        $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\x64\Microsoft.VC143.CRT"
-        $WindowsKitsPath = "${env:ProgramFiles(x86)}\Windows Kits\10\Redist\$WindowsKitsVer\ucrt\DLLs\x64"
+        $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\$Arch\Microsoft.VC143.CRT"
+        $WindowsKitsPath = "${env:ProgramFiles(x86)}\Windows Kits\10\Redist\$WindowsKitsVer\ucrt\DLLs\$Arch"
 
         $dependencies = `
         (Join-Path $BuildBinPath 'getopt'), `
-        (Join-Path $BuildBinPath 'libcrypto-1_1-x64'), `
+        (Join-Path $BuildBinPath "libcrypto-1_1-$Arch"), `
         (Join-Path $BuildBinPath 'pthreadVC3'), `
         (Join-Path $BuildToolsPath 'msvcp140'), `
         (Join-Path $BuildToolsPath 'vcruntime140'), `
@@ -286,7 +290,9 @@ function Install-Adu-Components {
 
     ''
 
-    Register-Components -BinPath $BinPath -DataPath $DataPath
+    if ($RegisterComponents) {
+        Register-Components -BinPath $BinPath -DataPath $DataPath
+    }
 }
 
 function Create-DataFiles {
@@ -412,8 +418,8 @@ Install-Adu-Components `
         exit 1
     }
 }
-   
-    
+
+
 if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath "$ADUC_CONF_FOLDER/du-config.json" -SimpleMatch) {
     Show-Warning "Need to edit connectionData, agents.manufacturer and/or agents.model in $ADUC_CONF_FOLDER/du-config.json"
 }
