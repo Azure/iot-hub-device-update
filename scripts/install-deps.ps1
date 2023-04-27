@@ -71,12 +71,12 @@ function Install-WithWinGet {
 # OS VERSION CHECK
 #
 
-if ($env:OS -ne 'Windows_NT') {
+if ([Environment]::OSVersion.Platform -ne 'Win32NT') {
     Show-Error 'This script is intended to be run on Windows.'
     exit 1
 }
 
-if ($PSVersionTable.BuildVersion -lt '10.0.18362.0') {
+if ([Environment]::OSVersion.Version -lt '10.0.18362.0') {
     Show-Error 'Requires Windows 10 1903 or later'
     exit 1
 }
