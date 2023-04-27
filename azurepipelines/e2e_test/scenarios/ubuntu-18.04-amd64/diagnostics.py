@@ -46,7 +46,7 @@ class DiagnosticsTest(unittest.TestCase):
         #
         connectionStatus = ""
         for i in range(0, 5):
-            connectionStatus = self.duTestHelper.GetConnectionStatusForModule(test_device_id,"IotHubDeviceUpdate")
+            connectionStatus = self.duTestHelper.GetConnectionStatusForModule(test_device_id,"IoTHubDeviceUpdate")
             if (connectionStatus == "Connected"):
                 break
             time.sleep(30)
