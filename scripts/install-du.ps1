@@ -18,9 +18,7 @@ Param(
     [ValidateSet('x64', 'arm64')]
     [string]$Arch = 'x64',
     # Build package?
-    [switch]$Package = $false,
-    # Run registration of components on this device?
-    [switch]$RegisterComponents = $false
+    [switch]$Package = $false
 )
 
 function Show-Warning {
@@ -86,13 +84,44 @@ function Invoke-CopyFile {
     }
 }
 
+function CalcHash {
+    Param(
+        [Parameter(Mandatory = $true)][string]$FilePath
+    )
+
+    Show-Header "Computing base64 hash of $FilePath bytes" | Out-Null
+    $hashAlg = [System.Security.Cryptography.HashAlgorithm]::Create('sha256')
+    [Convert]::ToBase64String($hashAlg.ComputeHash([System.IO.File]::ReadAllBytes($FilePath)))
+}
+
+function WriteExtensionRegistration {
+    Param(
+        [Parameter(Mandatory = $true)][string]$BinaryFilePath,
+        [Parameter(Mandatory = $true)][string]$OutputJsonFilePath
+    )
+
+    $fileSizeInBytes = (Get-Item $BinaryFilePath).Length
+    $fileHash = CalcHash -FilePath $BinaryFilePath
+
+    $registration = [ordered]@{
+        fileName="$BinaryFilePath"
+        sizeInBytes=$FileSizeInBytes
+        hashes = @{
+            sha256="$fileHash"
+        }
+    }
+
+    $registration | ConvertTo-Json | Set-Content $OutputJsonFilePath
+}
+
 function Register-Components {
     Param(
         [Parameter(Mandatory = $true)][string]$BinPath,
-        [Parameter(Mandatory = $true)][string]$DataPath
+        [Parameter(Mandatory = $true)][string]$DataPath,
+        [Parameter(Mandatory = $true)][string]$TargetArch
     )
 
-    Show-Header 'Registering components'
+    Show-Header 'Registering components' | Out-Null
 
     # Launch agent to write config files
     # Based on postinst : register_reference_extensions
@@ -101,6 +130,43 @@ function Register-Components {
 
     $adu_extensions_dir = "$DataPath/extensions"
     $adu_extensions_sources_dir = "$adu_extensions_dir/sources"
+
+    $do_content_downloader_file = "$adu_extensions_sources_dir/deliveryoptimization_content_downloader.dll"
+    $microsoft_script_1_handler_file = "$adu_extensions_sources_dir/microsoft_script_1.dll"
+    $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_simulator_1.dll"
+    $microsoft_steps_1_file = "$adu_extensions_sources_dir/microsoft_steps_1.dll"
+    $microsoft_wim_1_handler_file = "$adu_extensions_sources_dir/microsoft_wim_1.dll"
+
+    if ($TargetArch -eq "arm64") {
+        $adu_extensions_update_content_handlers_dir = "$adu_extensions_dir/update_content_handlers"
+
+        WriteExtensionRegistration -BinaryFilePath $do_content_downloader_file `
+            -OutputJsonFilePath "$adu_extensions_dir/content_downloader/extension.json"
+
+        $chName = 'content_handler.json'
+        WriteExtensionRegistration -BinaryFilePath $microsoft_script_1_handler_file `
+            -OutputJsonFilePath "$adu_extensions_update_content_handlers_dir/microsoft_script_1/$chName"
+
+        WriteExtensionRegistration -BinaryFilePath $microsoft_simulator_1_file `
+            -OutputJsonFilePath "$adu_extensions_update_content_handlers_dir/microsoft_simulator_1/$chName"
+
+        $stepsContentHandlerSegments = @(
+            "microsoft_steps_1",
+            "microsoft_update-manifest",
+            "microsoft_update-manifest_4",
+            "microsoft_update-manifest_5"
+        )
+
+        foreach ($stepsPathSegment in $stepsContentHandlerSegments) {
+            WriteExtensionRegistration -BinaryFilePath $microsoft_steps_1_file `
+                -OutputJsonFilePath "$adu_extensions_update_content_handlers_dir/$stepsPathSegment/$chName"
+        }
+
+        WriteExtensionRegistration -BinaryFilePath $microsoft_wim_1_handler_file `
+            -OutputJsonFilePath "$adu_extensions_update_content_handlers_dir/microsoft_wim_1/$chName"
+
+        return
+    }
 
     #
     # contentDownloader
@@ -112,7 +178,7 @@ function Register-Components {
     # & $aduciotagent_path --register-extension "$adu_extensions_sources_dir/$curl_content_downloader_file" --extension-type contentDownloader --log-level 2
 
     # /var/lib/adu/extensions/content_downloader/extension.json
-    $do_content_downloader_file = "$adu_extensions_sources_dir/deliveryoptimization_content_downloader.dll"
+
     & $aduciotagent_path --register-extension $do_content_downloader_file --extension-type contentDownloader --log-level 2
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
@@ -123,36 +189,33 @@ function Register-Components {
     #
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_script_1/content_handler.json
-    $microsoft_script_1_handler_file = "$adu_extensions_sources_dir/microsoft_script_1.dll"
     & $aduciotagent_path --register-extension $microsoft_script_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/script:1' --log-level 2
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_script_1_handler_file' failed: $LASTEXITCODE"
     }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_simulator_1/content_handler.json
-    $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_simulator_1.dll"
     & $aduciotagent_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/simulator:1'
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_simulator_1_file' failed: $LASTEXITCODE"
     }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_steps_1/content_handler.json
-    $microsoft_steps_1_file = "$adu_extensions_sources_dir/microsoft_steps_1.dll"
     & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/steps:1' --log-level 2
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_steps_1_file' failed: $LASTEXITCODE"
     }
     & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest' --log-level 2
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_steps_1_file' failed: $LASTEXITCODE"
     }
     & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest:4' --log-level 2
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_steps_1_file' failed: $LASTEXITCODE"
     }
     & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest:5' --log-level 2
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_steps_1_file' failed: $LASTEXITCODE"
     }
 
     # microsoft/swupdate:1 not used on Windows.
@@ -160,14 +223,13 @@ function Register-Components {
     # $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_swupdate_1.dll"
     # & $aduciotagent_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/swupdate:1'
     # if ($LASTEXITCODE -ne 0) {
-    #     Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+    #     Show-Error "Registration of '$microsoft_simulator_1_file' failed: $LASTEXITCODE"
     # }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_wim_1/content_handler.json
-    $microsoft_wim_1_handler_file = "$adu_extensions_sources_dir/microsoft_wim_1.dll"
     & $aduciotagent_path --register-extension $microsoft_wim_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/wim:1'  --log-level 2
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_wim_1_handler_file' failed: $LASTEXITCODE"
     }
     ''
 }
@@ -204,7 +266,7 @@ function Install-Adu-Components {
         [Parameter(Mandatory = $true)][string]$DataPath
     )
 
-    Show-Header 'Installing ADU Agent'
+    Show-Header 'Installing ADU Agent' | Out-Null
 
     Create-Adu-Folders `
         -BinPath $BinPath `
@@ -290,9 +352,7 @@ function Install-Adu-Components {
 
     ''
 
-    if ($RegisterComponents) {
-        Register-Components -BinPath $BinPath -DataPath $DataPath
-    }
+    Register-Components -BinPath $BinPath -DataPath $DataPath -TargetArch $Arch
 }
 
 function Create-DataFiles {
@@ -419,7 +479,6 @@ Install-Adu-Components `
     }
 }
 
-
 if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath "$ADUC_CONF_FOLDER/du-config.json" -SimpleMatch) {
     Show-Warning "Need to edit connectionData, agents.manufacturer and/or agents.model in $ADUC_CONF_FOLDER/du-config.json"
 }
@@ -429,7 +488,7 @@ if (Select-String -Pattern '[NOT_SPECIFIED]' -LiteralPath "$ADUC_CONF_FOLDER/du-
 #
 
 if ($Package) {
-    Show-Header 'Packaging Agent'
+    Show-Header 'Packaging Agent' | Out-Null
 
     # Not including:
     # /tmp/adu/testdata has test files, but we're not packaging test collateral.
