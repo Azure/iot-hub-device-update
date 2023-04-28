@@ -204,7 +204,7 @@ stages:
             cancelTimeoutInMinutes: 360
             pool: aduc_1es_client_pool
             steps:
-              - template: ./templates/e2e_vm_setup.yaml
+                - template: ./templates/e2e_vm_setup.yaml
                   parameters:
                       distroName: debian-10-amd64
                       vm_size: Standard_DS1_v2
