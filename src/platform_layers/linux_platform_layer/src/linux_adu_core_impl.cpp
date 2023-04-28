@@ -274,15 +274,15 @@ void LinuxPlatformLayer::Cancel(const ADUC_WorkflowData* workflowData)
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
-        Log_Error("Could not get content handler!");
+        Log_Error("Could not get update manifest handler!");
         goto done;
     }
 
-    // Since this is coming in from main thread, let the content handler know that a cancel has been requested
+    // Since this is coming in from main thread, let the handler know that a cancel has been requested
     // so that it can interrupt the current operation (download, install, apply) that's occurring on the
-    // worker thread. Cancel on the contentHandler is blocking call and once content handler confirms the
+    // worker thread. Cancel on the contentHandler is blocking call and once handler confirms the
     // operation has been cancelled, it returns success or failure for the cancel.
-    // After each blocking Download, Install, Apply calls above into content handler, it checks if
+    // After each blocking Download, Install, Apply calls above into handler, it checks if
     // _IsCancellationRequested is true and sets result to ADUC_Result_Failure_Cancelled
     result = contentHandler->Cancel(workflowData);
     if (IsAducResultCodeSuccess(result.ResultCode))
@@ -300,7 +300,7 @@ done:
 
 /**
  * @brief Class implementation of the IsInstalled callback.
- * Calls into the content handler or step handler to determine if the update in the given workflow
+ * Calls into the step handler to determine if the update in the given workflow
  * is installed.
  *
  * @param workflowData The workflow data object.

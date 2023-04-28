@@ -176,7 +176,7 @@ create_app_tarball() {
     cp $USR_BIN_SRC/AducIotAgent $APP_BIN_DIR
     cp $USR_LIB_SRC/adu-shell $APP_LIB_DIR
 
-    # Copy update content handler plugin modules
+    # Copy step handler plugin modules
     supported_extensions="
         apt
         steps

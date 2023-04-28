@@ -35,7 +35,7 @@ typedef struct tagADUC_ContentData
 } ADUC_ContentData;
 
 /**
- * @brief An Update Content Handler can set this state to indicates whether an agent restart is required.
+ * @brief A Step Handler can set this state to indicates whether an agent restart is required.
  */
 typedef enum tagADUC_AgentRestartState
 {
@@ -45,7 +45,7 @@ typedef enum tagADUC_AgentRestartState
 } ADUC_AgentRestartState;
 
 /**
- * @brief An Update Content Handler can set this state to indicates whether a device reboot is required.
+ * @brief A Step Handler can set this state to indicates whether a device reboot is required.
  */
 typedef enum tagADUC_SystemRebootState
 {

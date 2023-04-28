@@ -124,7 +124,7 @@
         "components": [
           {
             "code": 0,
-            "doc_string": "General error codes that can come from any content handler",
+            "doc_string": "General error codes that can come from any step handler",
             "name": "ADUC_CONTENT_HANDLER_COMMON",
             "results": [
               {
@@ -223,7 +223,7 @@
           },
           {
             "code": 1,
-            "doc_string": "Results that originate from the SwUpdate Content Handler",
+            "doc_string": "Results that originate from the SwUpdate Step Handler",
             "name": "ADUC_CONTENT_HANDLER_SWUPDATE",
             "results": [
               {
@@ -342,7 +342,7 @@
           },
           {
             "code": 2,
-            "doc_string": "Results that originate from the APT Content Handler",
+            "doc_string": "Results that originate from the APT Step Handler",
             "name": "ADUC_CONTENT_HANDLER_APT",
             "results": [
               {
@@ -399,7 +399,7 @@
           },
           {
             "code": 4,
-            "doc_string": "Results that originate from the steps handler part of the content handlers",
+            "doc_string": "Results that originate from the steps handler part of the step handlers",
             "name": "ADUC_CONTENT_HANDLER_STEPS",
             "results": [
               {
@@ -490,7 +490,7 @@
           },
           {
             "code": 5,
-            "doc_string": "Results that originate from the script handler part of the content handlers",
+            "doc_string": "Results that originate from the script handler part of the step handlers",
             "name": "ADUC_CONTENT_HANDLER_SCRIPT",
             "results": [
               {
@@ -585,13 +585,13 @@
           },
           {
             "code": 32,
-            "doc_string": "indicates errors from Custom Update handlers, only included here for completeness",
+            "doc_string": "indicates errors from custom step handlers, only included here for completeness",
             "name": "ADUC_CONTENT_HANDLER_EXTERNAL",
             "results": []
           }
         ],
         "code": 3,
-        "doc_string": "indicates errors from an update content handler",
+        "doc_string": "indicates errors from a step handler",
         "name": "ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER"
       },
       {

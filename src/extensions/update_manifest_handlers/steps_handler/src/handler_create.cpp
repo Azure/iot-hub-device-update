@@ -1,6 +1,6 @@
 /**
  * @file handler_create.cpp
- * @brief Create update content handler extension.
+ * @brief Create step handler extension.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
@@ -27,7 +27,7 @@ EXTERN_C_BEGIN
 ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
     ADUC_Logging_Init(logLevel, "steps-handler");
-    Log_Info("Instantiating an Update Content Handler for MSOE");
+    Log_Info("Instantiating an Update Manifest Handler for MSOE");
     try
     {
         return StepsHandlerImpl::CreateContentHandler();

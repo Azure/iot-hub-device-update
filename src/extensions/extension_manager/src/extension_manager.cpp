@@ -145,7 +145,7 @@ ADUC_Result ExtensionManager::LoadExtensionLibrary(
 
     if (*libHandle == nullptr)
     {
-        Log_Error("Cannot load content handler file %s. %s.", entity.TargetFilename, dlerror());
+        Log_Error("Cannot load handler file %s. %s.", entity.TargetFilename, dlerror());
         result.ExtendedResultCode = ADUC_ERC_EXTENSION_CREATE_FAILURE_LOAD(facilityCode, componentCode);
         goto done;
     }
@@ -203,7 +203,7 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
     void* libHandle = nullptr;
     ADUC_ExtensionContractInfo contractInfo{};
 
-    Log_Info("Loading Update Content Handler for '%s'.", updateType.c_str());
+    Log_Info("Loading handler for '%s'.", updateType.c_str());
 
     if (handler == nullptr)
     {
@@ -320,7 +320,7 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
         }
 
         Log_Debug(
-            "Got %d.%d contract version for '%s' content handler",
+            "Got %d.%d contract version for '%s' handler",
             contractInfo.majorVer,
             contractInfo.minorVer,
             updateType.c_str());
@@ -328,7 +328,7 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
 
     (*handler)->SetContractInfo(contractInfo);
 
-    Log_Debug("Caching new content handler for '%s'.", updateType.c_str());
+    Log_Debug("Caching new handler for '%s'.", updateType.c_str());
     _contentHandlers.emplace(updateType, *handler);
 
     result = { ADUC_GeneralResult_Success };
@@ -356,7 +356,7 @@ ADUC_Result ExtensionManager::SetUpdateContentHandlerExtension(const std::string
 {
     ADUC_Result result = { ADUC_Result_Failure };
 
-    Log_Info("Setting Content Handler for '%s'.", updateType.c_str());
+    Log_Info("Setting handler for '%s'.", updateType.c_str());
 
     if (handler == nullptr)
     {

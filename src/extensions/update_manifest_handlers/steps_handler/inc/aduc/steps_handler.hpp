@@ -13,7 +13,7 @@
 
 /**
  * @class StepsHandlerImpl
- * @brief The Update Content Handler that performs 'Multi-Steps Ordered Execution'.
+ * @brief The Step Handler that performs 'Multi-Steps Ordered Execution'.
  */
 class StepsHandlerImpl : public ContentHandler
 {

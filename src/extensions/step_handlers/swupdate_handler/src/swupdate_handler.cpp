@@ -51,13 +51,13 @@ EXTERN_C_BEGIN
 //
 
 /**
- * @brief Instantiates an Update Content Handler for 'microsoft/swupdate:1' update type.
+ * @brief Instantiates a Step Handler for 'microsoft/swupdate:1' update type.
  * @return ContentHandler* The created instance.
  */
 ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
     ADUC_Logging_Init(logLevel, "swupdate-handler");
-    Log_Info("Instantiating an Update Content Handler for 'microsoft/swupdate:1'");
+    Log_Info("Instantiating a Step Handler for 'microsoft/swupdate:1'");
     try
     {
         return SWUpdateHandlerImpl::CreateContentHandler();
