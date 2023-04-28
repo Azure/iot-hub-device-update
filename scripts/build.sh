@@ -74,7 +74,7 @@ print_help() {
     echo "                                          From build output directory: AducIotAgent & adu-shell."
     echo ""
     echo "--content-handlers <handlers>         [Deprecated] use '--step-handlers' option instead."
-    echo "--step-hanlders <handlers>            Specify a comma-delimited list of the step handlers to build."
+    echo "--step-handlers <handlers>            Specify a comma-delimited list of the step handlers to build."
     echo "                                          Default is \"${step_handlers}\"."
     echo ""
     echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
