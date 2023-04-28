@@ -7,6 +7,7 @@ Assumes the product has been built locally using build.ps1
 
 .EXAMPLE
 PS> .\scripts\du_install.ps1 -Type Debug -Install -Package
+PS> .\scripts\du_install.ps1 -Type Debug -TargetArch arm64 -Package -BuildOutputPath c:\src\iot-hub-device-update\out\ARM64-Debug
 #>
 
 Param(
@@ -16,7 +17,9 @@ Param(
     [ValidateSet('Release', 'RelWithDebInfo', 'Debug')]
     [string]$Type = 'Debug',
     [ValidateSet('x64', 'arm64')]
-    [string]$Arch = 'x64',
+    [string]$HostArch = 'x64',
+    [ValidateSet('x64', 'arm64')]
+    [string]$TargetArch = 'x64',
     # Build package?
     [switch]$Package = $false
 )
@@ -94,30 +97,71 @@ function CalcHash {
     [Convert]::ToBase64String($hashAlg.ComputeHash([System.IO.File]::ReadAllBytes($FilePath)))
 }
 
-function WriteExtensionRegistration {
+function WriteContentDownloaderRegistration{
     Param(
-        [Parameter(Mandatory = $true)][string]$BinaryFilePath,
-        [Parameter(Mandatory = $true)][string]$OutputJsonFilePath
+        [Parameter(Mandatory = $true)][string]$BinaryFileNameNoExt,
+        [Parameter(Mandatory = $true)][string]$ExtensionsDir
     )
 
-    $fileSizeInBytes = (Get-Item $BinaryFilePath).Length
-    $fileHash = CalcHash -FilePath $BinaryFilePath
+    $adu_extensions_sources_dir = "$ExtensionsDir/sources"
+    $binaryFilePath = "$adu_extensions_sources_dir/${BinaryFileNameNoExt}.dll"
+
+    $fileSizeInBytes = (Get-Item $binaryFilePath).Length
+    $fileHash = CalcHash -FilePath $binaryFilePath
 
     $registration = [ordered]@{
-        fileName="$BinaryFilePath"
-        sizeInBytes=$FileSizeInBytes
+        fileName="$binaryFilePath"
+        sizeInBytes=$fileSizeInBytes
         hashes = @{
             sha256="$fileHash"
         }
     }
 
-    $registration | ConvertTo-Json | Set-Content $OutputJsonFilePath
+    $registration | ConvertTo-Json | Set-Content "$ExtensionsDir/content_downloader/extensions.json"
+}
+
+function WriteContentHandlerRegistration{
+    Param(
+        [Parameter(Mandatory = $true)][string]$BinaryFileNameNoExt,
+        [Parameter(Mandatory = $true)][string]$ExtensionName,
+        [Parameter(Mandatory = $true)][string]$ExtensionsDir
+    )
+
+    $adu_extensions_sources_dir = "$ExtensionsDir/sources"
+
+    $binaryFilePath = "$adu_extensions_sources_dir/${BinaryFileNameNoExt}.dll"
+    $fileSizeInBytes = (Get-Item $binaryFilePath).Length
+    $fileHash = CalcHash -FilePath $binaryFilePath
+
+    $numUnderscore = ($ExtensionName | Select-String -Pattern '_' -AllMatches).Matches.Count
+    $handlerId = $ExtensionName
+    if ($numUnderscore -eq 2) {
+        $handlerId = $ExtensionName -replace '(.+?)_(.+?)_(.+)', '$1/${2}:$3'
+    }
+    elseif ($numUnderscore -eq 1) {
+        $handlerId = $ExtensionName -replace '(.+?)_(.+)', '$1/$2'
+    }
+    else {
+        Show-Warning -Message "Expected 1 or 2 underscores in content handler name '$ExtensionName'"
+    }
+
+    $registration = [ordered]@{
+        fileName="$binaryFilePath"
+        sizeInBytes=$fileSizeInBytes
+        hashes = @{
+            sha256="$fileHash"
+        }
+        handlerId = "$handlerId"
+    }
+
+    $registration | ConvertTo-Json | Set-Content "$ExtensionsDir/update_content_handlers/$ExtensionName/content_handler.json"
 }
 
 function Register-Components {
     Param(
         [Parameter(Mandatory = $true)][string]$BinPath,
         [Parameter(Mandatory = $true)][string]$DataPath,
+        [Parameter(Mandatory = $true)][string]$HostArch,
         [Parameter(Mandatory = $true)][string]$TargetArch
     )
 
@@ -131,39 +175,28 @@ function Register-Components {
     $adu_extensions_dir = "$DataPath/extensions"
     $adu_extensions_sources_dir = "$adu_extensions_dir/sources"
 
-    $do_content_downloader_file = "$adu_extensions_sources_dir/deliveryoptimization_content_downloader.dll"
-    $microsoft_script_1_handler_file = "$adu_extensions_sources_dir/microsoft_script_1.dll"
-    $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_simulator_1.dll"
-    $microsoft_steps_1_file = "$adu_extensions_sources_dir/microsoft_steps_1.dll"
-    $microsoft_wim_1_handler_file = "$adu_extensions_sources_dir/microsoft_wim_1.dll"
 
-    if ($TargetArch -eq "arm64") {
-        $adu_extensions_update_content_handlers_dir = "$adu_extensions_dir/update_content_handlers"
+    # Cross-compiled target means we cannot use agent binary to create the registrations, so create them in script.
+    if ($HostArch -ne $TargetArch) {
+        # Register Content Downloader
+        WriteContentDownloaderRegistration -ExtensionsDir $adu_extensions_dir -BinaryFileNameNoExt 'deliveryoptimization_content_downloader'
 
-        WriteExtensionRegistration -BinaryFilePath $do_content_downloader_file `
-            -OutputJsonFilePath "$adu_extensions_dir/content_downloader/extension.json"
-
-        $chName = 'content_handler.json'
-        WriteExtensionRegistration -BinaryFilePath $microsoft_script_1_handler_file `
-            -OutputJsonFilePath "$adu_extensions_update_content_handlers_dir/microsoft_script_1/$chName"
-
-        WriteExtensionRegistration -BinaryFilePath $microsoft_simulator_1_file `
-            -OutputJsonFilePath "$adu_extensions_update_content_handlers_dir/microsoft_simulator_1/$chName"
-
-        $stepsContentHandlerSegments = @(
+        # Register Update Manifest steps handlers
+        $stepsContentHandlers = @(
             "microsoft_steps_1",
             "microsoft_update-manifest",
             "microsoft_update-manifest_4",
             "microsoft_update-manifest_5"
         )
 
-        foreach ($stepsPathSegment in $stepsContentHandlerSegments) {
-            WriteExtensionRegistration -BinaryFilePath $microsoft_steps_1_file `
-                -OutputJsonFilePath "$adu_extensions_update_content_handlers_dir/$stepsPathSegment/$chName"
+        foreach ($contentHandlerName in $stepsContentHandlers) {
+            WriteContentHandlerRegistration -ExtensionsDir $adu_extensions_dir -BinaryFileNameNoExt 'microsoft_steps_1' -ExtensionName $contentHandlerName
         }
 
-        WriteExtensionRegistration -BinaryFilePath $microsoft_wim_1_handler_file `
-            -OutputJsonFilePath "$adu_extensions_update_content_handlers_dir/microsoft_wim_1/$chName"
+        # Register Content Handlers
+        WriteContentHandlerRegistration -ExtensionsDir $adu_extensions_dir -BinaryFileNameNoExt 'microsoft_script_1' -ExtensionName 'microsoft_script_1'
+        WriteContentHandlerRegistration -ExtensionsDir $adu_extensions_dir -BinaryFileNameNoExt 'microsoft_simulator_1' -ExtensionName 'microsoft_simulator_1'
+        WriteContentHandlerRegistration -ExtensionsDir $adu_extensions_dir -BinaryFileNameNoExt 'microsoft_wim_1' -ExtensionName 'microsoft_wim_1'
 
         return
     }
@@ -179,6 +212,7 @@ function Register-Components {
 
     # /var/lib/adu/extensions/content_downloader/extension.json
 
+    $do_content_downloader_file = "$adu_extensions_sources_dir/deliveryoptimization_content_downloader.dll"
     & $aduciotagent_path --register-extension $do_content_downloader_file --extension-type contentDownloader --log-level 2
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
@@ -189,18 +223,21 @@ function Register-Components {
     #
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_script_1/content_handler.json
+    $microsoft_script_1_handler_file = "$adu_extensions_sources_dir/microsoft_script_1.dll"
     & $aduciotagent_path --register-extension $microsoft_script_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/script:1' --log-level 2
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$microsoft_script_1_handler_file' failed: $LASTEXITCODE"
     }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_simulator_1/content_handler.json
+    $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_simulator_1.dll"
     & $aduciotagent_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/simulator:1'
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$microsoft_simulator_1_file' failed: $LASTEXITCODE"
     }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_steps_1/content_handler.json
+    $microsoft_steps_1_file = "$adu_extensions_sources_dir/microsoft_steps_1.dll"
     & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/steps:1' --log-level 2
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$microsoft_steps_1_file' failed: $LASTEXITCODE"
@@ -227,6 +264,7 @@ function Register-Components {
     # }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_wim_1/content_handler.json
+    $microsoft_wim_1_handler_file = "$adu_extensions_sources_dir/microsoft_wim_1.dll"
     & $aduciotagent_path --register-extension $microsoft_wim_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/wim:1'  --log-level 2
     if ($LASTEXITCODE -ne 0) {
         Show-Error "Registration of '$microsoft_wim_1_handler_file' failed: $LASTEXITCODE"
@@ -303,14 +341,14 @@ function Install-Adu-Components {
     }
 
     if ($Type -eq 'Debug') {
-        $BuildToolsDPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\debug_nonredist\$Arch\Microsoft.VC143.DebugCRT"
-        $WindowsKitsDPath = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\$WindowsKitsVer\$Arch\ucrt"
+        $BuildToolsDPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\debug_nonredist\$TargetArch\Microsoft.VC143.DebugCRT"
+        $WindowsKitsDPath = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\$WindowsKitsVer\$TargetArch\ucrt"
 
         # Only needed if dynamically linking: getopt, pthreadVC3d, libcrypto-1_1-x64
 
         $dependencies = `
         (Join-Path $BuildBinPath 'getopt'), `
-        (Join-Path $BuildBinPath "libcrypto-1_1-$Arch"), `
+        (Join-Path $BuildBinPath "libcrypto-1_1-$TargetArch"), `
         (Join-Path $BuildBinPath 'pthreadVC3d'), `
         (Join-Path $BuildToolsDPath 'msvcp140d'), `
         (Join-Path $BuildToolsDPath 'vcruntime140d'), `
@@ -318,12 +356,12 @@ function Install-Adu-Components {
         (Join-Path $WindowsKitsDPath 'ucrtbased')
     }
     else {
-        $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\$Arch\Microsoft.VC143.CRT"
-        $WindowsKitsPath = "${env:ProgramFiles(x86)}\Windows Kits\10\Redist\$WindowsKitsVer\ucrt\DLLs\$Arch"
+        $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\$TargetArch\Microsoft.VC143.CRT"
+        $WindowsKitsPath = "${env:ProgramFiles(x86)}\Windows Kits\10\Redist\$WindowsKitsVer\ucrt\DLLs\$TargetArch"
 
         $dependencies = `
         (Join-Path $BuildBinPath 'getopt'), `
-        (Join-Path $BuildBinPath "libcrypto-1_1-$Arch"), `
+        (Join-Path $BuildBinPath "libcrypto-1_1-$TargetArch"), `
         (Join-Path $BuildBinPath 'pthreadVC3'), `
         (Join-Path $BuildToolsPath 'msvcp140'), `
         (Join-Path $BuildToolsPath 'vcruntime140'), `
@@ -352,7 +390,7 @@ function Install-Adu-Components {
 
     ''
 
-    Register-Components -BinPath $BinPath -DataPath $DataPath -TargetArch $Arch
+    Register-Components -BinPath $BinPath -DataPath $DataPath -HostArch $HostArch -TargetArch $TargetArch
 }
 
 function Create-DataFiles {
