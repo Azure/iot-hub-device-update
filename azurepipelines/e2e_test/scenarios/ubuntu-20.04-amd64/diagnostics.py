@@ -45,7 +45,7 @@ class DiagnosticsTest(unittest.TestCase):
         #
         connectionStatus = ""
         for i in range(0, test_connection_timeout_tries):
-            connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
+            connectionStatus = self.duTestHelper.GetConnectionStatusForModule(test_device_id,"IoTHubDeviceUpdate")
             if (connectionStatus == "Connected"):
                 break
             time.sleep(retry_wait_time_in_seconds)
@@ -58,7 +58,7 @@ class DiagnosticsTest(unittest.TestCase):
         # 201 indicate the device diagnostics log collection operation is created
         #
         diagnosticResponseStatus_code = self.duTestHelper.RunDiagnosticsOnDeviceOrModule(
-            test_device_id, operationId=self.operationId, description="")
+            test_device_id, operationId=self.operationId,moduleId="IoTHubDeviceUpdate", description="")
 
         self.assertEqual(diagnosticResponseStatus_code, 201)
 

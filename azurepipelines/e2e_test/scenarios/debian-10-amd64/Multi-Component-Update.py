@@ -63,7 +63,7 @@ class MCUDeploymentTest(unittest.TestCase):
         #
         connectionStatus = ""
         for i in range(0,test_connection_timeout_tries):
-            connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
+            connectionStatus = self.duTestHelper.GetConnectionStatusForModule(test_device_id,"IoTHubDeviceUpdate")
             if (connectionStatus == "Connected"):
                 break
             time.sleep(retry_wait_time_in_seconds)
@@ -124,7 +124,7 @@ class MCUDeploymentTest(unittest.TestCase):
         # deployment we need to check that the device itself has reported it
         # is back in the idle state.
         #
-        twin = self.duTestHelper.GetDeviceTwinForDevice(test_device_id)
+        twin = self.duTestHelper.GetModuleTwinForModule(test_device_id,"IoTHubDeviceUpdate")
 
         self.assertEqual(twin.properties.reported["deviceUpdate"]["agent"]["state"],0)
 
