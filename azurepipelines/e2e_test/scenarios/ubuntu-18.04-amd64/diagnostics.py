@@ -59,7 +59,7 @@ class DiagnosticsTest(unittest.TestCase):
         # 201 indicate the device diagnostics log collection operation is created
         #
         diagnosticResponseStatus_code = self.duTestHelper.RunDiagnosticsOnDeviceOrModule(
-            test_device_id, operationId=self.operationId, description="")
+            test_device_id, operationId=self.operationId,moduleId="IoTHubDeviceUpdate", description="")
 
         self.assertEqual(diagnosticResponseStatus_code, 201)
 
