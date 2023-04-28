@@ -400,7 +400,7 @@ do_install_do_release_tarball() {
         echo "extracting $tarball_filename tarball ..."
         pushd "$do_dir" || return
         ls -latr || return
-        tar -xvf "$tarball_filename" || return
+        tar -xf "$tarball_filename" || return
 
         echo "apt-get installing DO .deb ..."
         $SUDO apt-get install -y ./deliveryoptimization-agent_*.deb ./libdeliveryoptimization_*.deb ./libdeliveryoptimization-dev*.deb || return
@@ -681,7 +681,7 @@ do_install_shellcheck() {
         fi
 
         wget -P "$work_folder" "${base_url}/releases/download/v${scver}/${tar_filename}" || return 1
-        tar -xvf "$work_folder/$tar_filename" -C "$work_folder" || return 1
+        tar -xf "$work_folder/$tar_filename" -C "$work_folder" || return 1
 
         $SUDO rm "$work_folder/$tar_filename" || return 1
 

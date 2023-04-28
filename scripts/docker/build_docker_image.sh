@@ -44,7 +44,7 @@ mkdir_cmd="mkdir -p"
 wget_cmd="wget -q"
 extract_debian_archive_cmd="ar x"
 extract_tarball_cmd="tar -xzvf"
-untar_cmd="tar -xvf"
+untar_cmd="tar -xf"
 create_tarball_cmd="tar -czvf"
 
 #container image
