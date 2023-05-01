@@ -3,6 +3,8 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
+from testingtoolkit import DeviceUpdateTestHelper, DuAutomatedTestConfigurationManager
+from scenario_definitions import test_device_id
 import json
 import sys
 
@@ -13,8 +15,7 @@ sys.path.append('./scenarios/')
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/<test-script-name>.py
 sys.path.append('./scenarios/ubuntu-18.04-amd64/')
-from scenario_definitions import test_device_id
-from testingtoolkit import DeviceUpdateTestHelper, DuAutomatedTestConfigurationManager
+
 
 def main():
     duTestConfig = DuAutomatedTestConfigurationManager.FromOSEnvironment()
@@ -30,7 +31,8 @@ def main():
     #
     # Create the Device
     #
-    connectionString = duTestWrapper.CreateDevice(test_device_id,isIotEdge=True)
+    connectionString = duTestWrapper.CreateDevice(
+        test_device_id, isIotEdge=True)
 
     if (len(connectionString) == 0):
         print_error("Failed to create the device in the IotHub")
@@ -40,33 +42,33 @@ def main():
     # Create the du-config.json JSON Object
     #
     duConfigJson = {
-                    "schemaVersion": "1.1",
-                    "aduShellTrustedUsers": [
-                        "adu",
-                        "do"
-                    ],
-                    "iotHubProtocol": "mqtt",
-                    "manufacturer": "contoso",
-                    "model": "virtual-vacuum-v2",
-                    "agents": [
+        "schemaVersion": "1.1",
+        "aduShellTrustedUsers": [
+            "adu",
+            "do"
+        ],
+        "iotHubProtocol": "mqtt",
+        "manufacturer": "contoso",
+        "model": "virtual-vacuum-v2",
+        "agents": [
                         {
-                        "name": "main",
-                        "runas": "adu",
-                        "connectionSource": {
-                            "connectionType": "AIS",
-                            "connectionData": ""
-                        },
-                        "manufacturer": "contoso",
-                        "model": "virtual-vacuum-v2"
+                            "name": "main",
+                            "runas": "adu",
+                            "connectionSource": {
+                                "connectionType": "AIS",
+                                "connectionData": ""
+                            },
+                            "manufacturer": "contoso",
+                            "model": "virtual-vacuum-v2"
                         }
-                    ]
-                    }
+        ]
+    }
 
     #
     # Write the DU configuration out to disk so we can install it as a part of the test
     #
 
-    with open('du-config.json','w') as jsonFile:
+    with open('du-config.json', 'w') as jsonFile:
         configJson = json.dumps(duConfigJson)
         jsonFile.write(configJson)
 
@@ -88,7 +90,7 @@ connection_string = "{connectionString}"
 
 """.format(connectionString=connectionString)
 
-    with open('config.toml','w') as configToml:
+    with open('config.toml', 'w') as configToml:
         configToml.write(configTomlInfo)
 
 #
@@ -99,5 +101,6 @@ connection_string = "{connectionString}"
 if __name__ == '__main__':
     main()
 
+
 def print_error(msg):
-        print(msg, file=sys.stderr)
+    print(msg, file=sys.stderr)

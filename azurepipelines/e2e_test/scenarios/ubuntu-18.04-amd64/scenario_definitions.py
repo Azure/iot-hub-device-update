@@ -31,7 +31,8 @@ test_result_file_prefix = 'ubuntu18.04-amd64'
 
 test_connection_timeout_tries = 10
 
-retry_wait_time_in_seconds = 60 # For all retries this is the total amount of time we wait for all operations
+# For all retries this is the total amount of time we wait for all operations
+retry_wait_time_in_seconds = 60
 
 
 #
