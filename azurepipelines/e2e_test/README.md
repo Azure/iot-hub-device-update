@@ -162,7 +162,7 @@ The process for adapting or adding a new scenario can be accomplished by followi
 3. After creating the setup files for the VMs you need to add the scenario to the `TerraformVMInitialization` and `RunTestsAndPostResults` matrices. For both you need to modify the `matrix:` section to include the information for Terraform to create the VM an example of how Debian 10 might be added to the `TerraformVMInitialization` stage below. An explanation of what these are for and how they're used is provided in the sections above.
 
     ```yaml
-    debian-9-amd64:
+    debian-10-amd64:
         distroName: debian-10
         image_publisher: CentOS
         image_offer: Debian10
