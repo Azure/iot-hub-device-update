@@ -130,7 +130,7 @@ stages:
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh --self-upgrade
+                          ./testsetup/setup.sh --distro ubuntu-18.04 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
           - job: SetupUbuntu1804_ARM64_VM
             displayName: "Setting up VM for Ubuntu 18.04 ARM64 Test VM"
@@ -152,7 +152,7 @@ stages:
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh
+                          ./testsetup/setup.sh --distro ubuntu-18.04 --architecture arm64
                       image_working_directory: $(E2E_WORKING_DIR)
           - job: SetupUbuntu2004_AMD64_VM
             displayName: "Setting up VM for Ubuntu 20.04 AMD64 Test VM"
@@ -174,7 +174,7 @@ stages:
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh
+                          ./testsetup/setup.sh --distro ubuntu-20.04 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
           - job: SetupUbuntu2004_ARM64_VM
             displayName: "Setting up VM for Ubuntu 20.04 ARM64 Test VM"
@@ -196,7 +196,7 @@ stages:
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh
+                          ./testsetup/setup.sh --distro ubuntu-20.04 --architecture arm64
                       image_working_directory: $(E2E_WORKING_DIR)
           - job: SetupDebian10_AMD64_VM
             displayName: "Setting up VM for Debain 10 AMD64 Test VM"
@@ -218,7 +218,7 @@ stages:
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh
+                          ./testsetup/setup.sh --distro debian-10 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
 
     - stage: RunTestsAndPostResults
@@ -235,7 +235,6 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: ubuntu-18.04-amd64
-                      scenarioPath: scenarios/ubuntu-18.04-amd64/
           - job: RunUbuntu_1804_Arm64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 18.04 ARM64"
             timeoutInMinutes: 360
@@ -245,7 +244,6 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: ubuntu-18.04-arm64
-                      scenarioPath: scenarios/ubuntu-18.04-arm64/
           - job: RunUbuntu_2004_Amd64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 20.04 AMD64"
             timeoutInMinutes: 360
@@ -255,7 +253,6 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: ubuntu-20.04-amd64
-                      scenarioPath: scenarios/ubuntu-20.04-amd64/
           - job: RunUbuntu_2004_Arm64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 20.04 ARM64"
             timeoutInMinutes: 360
@@ -265,7 +262,6 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: ubuntu-20.04-arm64
-                      scenarioPath: scenarios/ubuntu-20.04-arm64/
           - job: RunDebian_10_Amd64VmE2ETests
             displayName: "Running E2E Tests against Debian 10 AMD64"
             timeoutInMinutes: 360
@@ -275,7 +271,6 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: debian-10-amd64
-                      scenarioPath: scenarios/debian-10-amd64/
 
     - stage: TerraformDestroyVm
       displayName: Tear down cloud resources (VMs) and destroy the resource group

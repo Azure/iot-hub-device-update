@@ -4,7 +4,7 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
-# Setup Script for Test: Ubuntu-20.04-arm64
+# Setup Script for Test
 #
 # Should be run on the Virtual Machine being provisioned for the work.
 
@@ -23,6 +23,51 @@
 # So we need to localize the path to that.
 #
 
+print_help() {
+    echo "Usage: setup.sh [OPTIONS]"
+    echo "Options:"
+    echo "  -d, --distro       Distribution and version (e.g. ubuntu-18.04, debian-10)"
+    echo "  -a, --architecture Architecture (e.g. amd64, arm64)"
+    echo "  -s, --self-upgrade Testing the self upgrade scenario, setup is different."
+    echo "  -h, --help         Show this help message."
+}
+
+distro=""
+architecture=""
+self_upgrade=false
+
+while [[ $1 != "" ]]; do
+    case $1 in
+    -d | --distro)
+        shift
+        distro=$1
+        ;;
+    -a | --architecture)
+        shift
+        architecture=$1
+        ;;
+    -s | --self-upgrade)
+        self_upgrade=true
+        ;;
+    -h | --help)
+        print_help
+        exit 0
+        ;;
+    *)
+        echo "Invalid argument: $*"
+        print_help
+        exit 1
+        ;;
+    esac
+    shift
+done
+
+if [ -z "$distro" ] || [ -z "$architecture" ]; then
+    echo "Error: Both distro and architecture must be provided"
+    print_help
+    exit 1
+fi
+
 #
 # Install Device Update Dependencies from APT
 #
@@ -32,13 +77,46 @@
 
 # Handle installing DO from latest build instead of packages.microsoft.com
 function configure_apt_repository() {
-    wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-    sudo dpkg -i packages-microsoft-prod.deb
-    rm packages-microsoft-prod.deb
-    #
-    # Update the apt repositories
-    #
-    sudo apt-get update
+    local distro_full=$1
+    local architecture=$2
+    local package_url=""
+
+    local distro
+    distro=$(echo "$distro_full" | cut -d'-' -f1)
+    local version
+    version=$(echo "$distro_full" | cut -d'-' -f2)
+
+    if [ "$distro" == "ubuntu" ]; then
+        if [ "$version" == "18.04" ]; then
+            package_url="https://packages.microsoft.com/config/ubuntu/18.04/multiarch/packages-microsoft-prod.deb"
+        elif [ "$version" == "20.04" ]; then
+            package_url="https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb"
+        fi
+    elif [ "$distro" == "debian" ] && [ "$version" == "10" ]; then
+        package_url="https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb"
+    fi
+
+    if [ -n "$package_url" ]; then
+        wget "$package_url" -O packages-microsoft-prod.deb
+        sudo dpkg -i packages-microsoft-prod.deb
+        rm packages-microsoft-prod.deb
+
+        # Update the apt repositories
+        sudo apt-get update
+    else
+        echo "Unsupported distro or version"
+        exit 1
+    fi
+}
+
+#
+# Installs and Configures AIS with the pre-generated config.toml
+#
+function install_and_configure_ais() {
+    sudo apt-get install aziot-identity-service
+    sudo cp ./testsetup/config.toml /etc/aziot/config.toml
+    sudo aziotctl config apply -c /etc/aziot/config.toml
+    sudo aziotctl check
 }
 
 #
@@ -49,10 +127,43 @@ function configure_apt_repository() {
 # anything else.
 
 function install_do() {
-    # Handle installing DO from latest build instead of packages.microsoft.com
-    wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_arm64-packages.tar -O ubuntu20_arm64-packages.tar
-    tar -xf ubuntu20_arm64-packages.tar
-    sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_arm64.deb ./deliveryoptimization-plugin-apt_0.5.1_arm64.deb ./libdeliveryoptimization_1.0.0_arm64.deb
+    local distro_full=$1
+    local architecture=$2
+    local package_url=""
+    local package_filename=""
+
+    local distro
+    distro=$(echo "$distro_full" | cut -d'-' -f1)
+    local version
+    version=$(echo "$distro_full" | cut -d'-' -f2)
+
+    if [ "$distro" == "ubuntu" ]; then
+        if [ "$version" == "18.04" ] && [ "$architecture" == "amd64" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu1804_x64-packages.tar"
+            package_filename="ubuntu18_x64-packages.tar"
+        elif [ "$version" == "18.04" ] && [ "$architecture" == "arm64" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu1804_arm64-packages.tar"
+            package_filename="ubuntu1804_arm64-packages.tar"
+        elif [ "$version" == "20.04" ] && [ "$architecture" == "amd64" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_x64-packages.tar"
+            package_filename="ubuntu20_x64-packages.tar"
+        elif [ "$version" == "20.04" ] && [ "$architecture" == "arm64" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_arm64-packages.tar"
+            package_filename="ubuntu20_arm64-packages.tar"
+        fi
+    elif [ "$distro" == "debian" ] && [ "$version" == "10" ] && [ "$architecture" == "amd64" ]; then
+        package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/debian10_x64-packages.tar"
+        package_filename="debian10_x64-packages.tar"
+    fi
+
+    if [ -n "$package_url" ] && [ -n "$package_filename" ]; then
+        wget "$package_url" -O "$package_filename"
+        tar -xf "$package_filename"
+        sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_"$architecture".deb ./deliveryoptimization-plugin-apt_0.5.1_"$architecture".deb ./libdeliveryoptimization_1.0.0_"$architecture".deb
+    else
+        echo "Unsupported distro, version or architecture"
+        exit 1
+    fi
 }
 
 function register_extensions() {
@@ -64,10 +175,10 @@ function register_extensions() {
 
     cd ~/adu_srcs/src/extensions/component_enumerators/examples/contoso_component_enumerator/demo || exit
 
-    chmod u+x ./tools/reset-demo-components.sh
+    chmod 755 ./tools/reset-demo-components.sh
 
-    #copy components-inventory.json and adds it to the ~/demo/demo-devices/contoso-devices folder
-    cp -a ./demo-devices/contoso-devices/. ~/demo/demo-devices/contoso-devices/
+    #copy components-inventory.json and adds it to the /usr/local/contoso-devices folder
+    sudo cp -a ./demo-devices/contoso-devices/. ~/demo/demo-devices/contoso-devices/
 
     sh ./tools/reset-demo-components.sh
 
@@ -92,7 +203,9 @@ function verify_user_group_permissions() {
     process_user=$(stat -c %u "/proc/$main_pid")
     process_group=$(stat -c %g "/proc/$main_pid")
 
-    if [ "$process_user" -ne "$adu_uid" ] && [ "$process_group" -ne "$adu_gid" ]; then
+    if [ "$process_user" -eq "$adu_uid" ] && [ "$process_group" -eq "$adu_gid" ]; then
+        echo "User and group for AducIotAgent service are adu:adu."
+    else
         echo "User and group for AducIotAgent service are not adu:adu."
         exit 1
     fi
@@ -152,13 +265,19 @@ function test_shutdown_service() {
     done
 }
 
-configure_apt_repository
+configure_apt_repository "$distro" "$architecture"
 
-install_do
+install_and_configure_ais
 #
 # Install the Device Update Artifact Under Test
 #
-sudo apt-get install -y ./testsetup/deviceupdate-package.deb
+if [[ $self_upgrade == "true" ]]; then
+    sudo apt-get install -y deviceupdate-agent
+    chmod u+x ./testsetup/apt_repo_setup.sh
+    sudo ./testsetup/apt_repo_setup.sh -d ./testsetup/
+else
+    sudo apt-get install -y ./testsetup/deviceupdate-package.deb
+fi
 
 #
 # Install the du-config.json so the device can be provisioned
@@ -168,6 +287,8 @@ sudo apt-get install -y ./testsetup/deviceupdate-package.deb
 # another kind of diagnostics file, or other kinds of data
 # this is the area where such things can be added
 sudo cp ./testsetup/du-config.json /etc/adu/du-config.json
+
+install_do "$distro" "$architecture"
 
 register_extensions
 
