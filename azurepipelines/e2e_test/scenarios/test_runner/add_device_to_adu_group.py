@@ -3,6 +3,11 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
+from scenario_definitions import DuScenarioDefinitionManager
+from testingtoolkit import DuAutomatedTestConfigurationManager
+from testingtoolkit import DeploymentStatusResponse
+from testingtoolkit import UpdateId
+from testingtoolkit import DeviceUpdateTestHelper
 import io
 import sys
 import time
@@ -10,28 +15,36 @@ import unittest
 import xmlrunner
 from xmlrunner.extra.xunit_plugin import transform
 # Note: the intention is that this script is called like:
-# python ./scenarios/<scenario-name>/<test-script-name>.py
+# python ./scenarios/test_runner/testscript.py
 sys.path.append('./scenarios/')
-from testingtoolkit import DeviceUpdateTestHelper
-from testingtoolkit import UpdateId
-from testingtoolkit import DeploymentStatusResponse
-from testingtoolkit import DuAutomatedTestConfigurationManager
 
-sys.path.append('./scenarios/ubuntu-20.04-arm64/')
-from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, test_connection_timeout_tries, retry_wait_time_in_seconds
+sys.path.append('./scenarios/test_runner/')
+
+test_result_file_prefix = ""
 
 class AddDeviceToGroupTest(unittest.TestCase):
 
     def test_AddDeviceToGroup(self):
         self.aduTestConfig = DuAutomatedTestConfigurationManager.FromOSEnvironment()
         self.duTestHelper = self.aduTestConfig.CreateDeviceUpdateTestHelper()
+
+        self.aduScenarioDefinition = DuScenarioDefinitionManager.FromOSEnvironment()
+
+        test_device_id = self.aduScenarioDefinition.test_device_id
+        test_adu_group = self.aduScenarioDefinition.test_adu_group
+        global test_result_file_prefix
+        test_result_file_prefix = self.aduScenarioDefinition.test_result_file_prefix
+        test_connection_timeout_tries = self.aduScenarioDefinition.test_connection_timeout_tries
+        retry_wait_time_in_seconds = self.aduScenarioDefinition.retry_wait_time_in_seconds
+
         #
         # Before anything else we need to wait and check the device connection status
         # We expect the device to connect within the configured amount of time of setting up the device in the step previous
         #
         connectionStatus = ""
         for i in range(0, test_connection_timeout_tries):
-            connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
+            connectionStatus = self.duTestHelper.GetConnectionStatusForModule(
+                test_device_id, "IoTHubDeviceUpdate")
             if (connectionStatus == "Connected"):
                 break
             time.sleep(retry_wait_time_in_seconds)
@@ -43,8 +56,8 @@ class AddDeviceToGroupTest(unittest.TestCase):
         # the device before we make the ADUGroup which we can then use to target the deployment
         # to the device.
         #
-        success = self.duTestHelper.AddDeviceToGroup(test_device_id, test_adu_group)
-
+        success = self.duTestHelper.AddModuleToGroup(
+            test_device_id, "IoTHubDeviceUpdate", test_adu_group)
         self.assertTrue(success)
         time.sleep(retry_wait_time_in_seconds)
 
