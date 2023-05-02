@@ -65,6 +65,16 @@ function configure_apt_repository() {
 }
 
 #
+# Installs and Configures AIS with the pre-generated config.toml
+#
+function install_and_configure_ais() {
+    sudo apt-get install aziot-identity-service
+    sudo cp ./testsetup/config.toml /etc/aziot/config.toml
+    sudo aziotctl config apply -c /etc/aziot/config.toml
+    sudo aziotctl check
+}
+
+#
 # Install Device Update Dependencies from APT
 #
 # Note: If there are other dependencies tht need to be installed via APT or other means they should
@@ -74,14 +84,14 @@ function configure_apt_repository() {
 function install_do() {
     # Handle installing DO from latest build instead of packages.microsoft.com
     wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu1804_x64-packages.tar -O ubuntu18_x64-packages.tar
-    tar -xvf ubuntu18_x64-packages.tar
+    tar -xf ubuntu18_x64-packages.tar
     sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_amd64.deb ./deliveryoptimization-plugin-apt_0.5.1_amd64.deb ./libdeliveryoptimization_1.0.0_amd64.deb
 }
 
 function register_extensions() {
     mkdir ~/adu_srcs/
 
-    tar -xvf ./testsetup/adu_srcs_repo.tar.gz -C ~/adu_srcs/
+    tar -xf ./testsetup/adu_srcs_repo.tar.gz -C ~/adu_srcs/
 
     sudo mkdir -p ~/demo/demo-devices/contoso-devices
 
@@ -178,6 +188,8 @@ function test_shutdown_service() {
 }
 
 configure_apt_repository
+
+install_and_configure_ais
 #
 # Install the Device Update Artifact Under Test
 #

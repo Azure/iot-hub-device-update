@@ -60,14 +60,14 @@ function configure_apt_repository() {
 function install_do() {
     # Handle installing DO from latest build instead of packages.microsoft.com
     wget https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu1804_arm64-packages.tar -O ubuntu1804_arm64-packages.tar
-    tar -xvf ubuntu1804_arm64-packages.tar
+    tar -xf ubuntu1804_arm64-packages.tar
     sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_arm64.deb ./deliveryoptimization-plugin-apt_0.5.1_arm64.deb ./libdeliveryoptimization_1.0.0_arm64.deb
 }
 
 function register_extensions() {
     mkdir ~/adu_srcs/
 
-    tar -xvf ./testsetup/adu_srcs_repo.tar.gz -C ~/adu_srcs/
+    tar -xf ./testsetup/adu_srcs_repo.tar.gz -C ~/adu_srcs/
 
     sudo mkdir -p ~/demo/demo-devices/contoso-devices
 

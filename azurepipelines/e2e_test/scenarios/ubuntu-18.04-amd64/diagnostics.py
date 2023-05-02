@@ -3,6 +3,13 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
+from scenario_definitions import test_device_id, test_result_file_prefix, test_operation_id
+from xmlrunner.extra.xunit_plugin import transform
+from testingtoolkit import DuAutomatedTestConfigurationManager
+from testingtoolkit import DiagnosticLogCollectionStatusResponse
+from testingtoolkit import DeploymentStatusResponse
+from testingtoolkit import UpdateId
+from testingtoolkit import DeviceUpdateTestHelper
 import io
 import sys
 import time
@@ -15,19 +22,14 @@ import xmlrunner
 # from testingtoolkit import UpdateId
 # from azure.identity import DefaultAzureCredential
 sys.path.append('./scenarios/')
-from testingtoolkit import DeviceUpdateTestHelper
-from testingtoolkit import UpdateId
-from testingtoolkit import DeploymentStatusResponse
-from testingtoolkit import DiagnosticLogCollectionStatusResponse
-from testingtoolkit import DuAutomatedTestConfigurationManager
-from xmlrunner.extra.xunit_plugin import transform
 
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/<test-script-name>.py
 sys.path.append('./scenarios/ubuntu-18.04-amd64/')
-from scenario_definitions import test_device_id, test_result_file_prefix, test_operation_id
 
 diagnostics_operation_status_retries = 15
+
+
 class DiagnosticsTest(unittest.TestCase):
     def test_diagnostics(self):
         self.aduTestConfig = DuAutomatedTestConfigurationManager.FromOSEnvironment()
@@ -46,7 +48,8 @@ class DiagnosticsTest(unittest.TestCase):
         #
         connectionStatus = ""
         for i in range(0, 5):
-            connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
+            connectionStatus = self.duTestHelper.GetConnectionStatusForModule(
+                test_device_id, "IoTHubDeviceUpdate")
             if (connectionStatus == "Connected"):
                 break
             time.sleep(30)
@@ -59,7 +62,7 @@ class DiagnosticsTest(unittest.TestCase):
         # 201 indicate the device diagnostics log collection operation is created
         #
         diagnosticResponseStatus_code = self.duTestHelper.RunDiagnosticsOnDeviceOrModule(
-            test_device_id, operationId=self.operationId, description="")
+            test_device_id, operationId=self.operationId, moduleId="IoTHubDeviceUpdate", description="")
 
         self.assertEqual(diagnosticResponseStatus_code, 201)
 
@@ -71,18 +74,19 @@ class DiagnosticsTest(unittest.TestCase):
 
         for i in range(0, diagnostics_operation_status_retries):
             time.sleep(5)
-            diagnosticJsonStatus = self.duTestHelper.GetDiagnosticsLogCollectionStatus(self.operationId)
+            diagnosticJsonStatus = self.duTestHelper.GetDiagnosticsLogCollectionStatus(
+                self.operationId)
 
             if (diagnosticJsonStatus.status == "Succeeded"):
                 break
 
         self.assertEqual(diagnosticJsonStatus.status, "Succeeded")
 
-        self.assertEqual(len(diagnosticJsonStatus.deviceStatus),1)
-        self.assertEqual(diagnosticJsonStatus.deviceStatus[0].status, "Succeeded")
-        self.assertEqual(diagnosticJsonStatus.deviceStatus[0].resultCode, "200")
-
-
+        self.assertEqual(len(diagnosticJsonStatus.deviceStatus), 1)
+        self.assertEqual(
+            diagnosticJsonStatus.deviceStatus[0].status, "Succeeded")
+        self.assertEqual(
+            diagnosticJsonStatus.deviceStatus[0].resultCode, "200")
 
 
 #
