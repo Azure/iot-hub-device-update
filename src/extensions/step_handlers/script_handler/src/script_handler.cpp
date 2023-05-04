@@ -22,6 +22,8 @@
 #include <vector>
 
 #define HANDLER_PROPERTIES_SCRIPT_FILENAME "scriptFileName"
+#define HANDLER_PROPERTIES_API_VERSION "apiVersion"
+#define HANDLER_ARG_ACTION "--action"
 
 namespace adushconst = Adu::Shell::Const;
 
@@ -236,7 +238,7 @@ ADUC_Result ScriptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData
     }
 
     // Invoke primary script to download additional files, if required.
-    result = PerformAction("--action-download", workflowData);
+    result = PerformAction("download", workflowData);
 
 done:
     workflow_free_string(workFolder);
@@ -501,19 +503,38 @@ done:
  */
 ADUC_Result ScriptHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result = PerformAction("--action-install", workflowData);
+    ADUC_Result result = PerformAction("install", workflowData);
     return result;
 }
 
-static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowData* workflowData)
+/**
+ * @brief Perform a workflow action. If @p prepareArgsOnly is true, only prepare data, but not actually
+ *        perform any action.
+ *
+ * @param action Indicate an action to perform. This can be 'download', 'install',
+ *               'apply', "cancel", and "is-installed".
+ * @param workflowData An object containing workflow data.
+ * @param prepareArgsOnly  Boolean indicates whether to prepare action data only.
+ * @param[out] scriptFilePath Output string contains a script to be run.
+ * @param[in] args List of options and arguments.
+ * @param[out] commandLineArgs An output command-line arguments.
+ * @param[out] scriptOutput If @p prepareArgsOnly is false, this will contains the action output string.
+ * @return ADUC_Result
+ */
+ADUC_Result ScriptHandler_PerformAction(
+    const std::string& action,
+    const tagADUC_WorkflowData* workflowData,
+    bool prepareArgsOnly,
+    std::string& scriptFilePath,
+    std::vector<std::string>& args,
+    std::vector<std::string>& commandLineArgs,
+    std::string& scriptOutput)
 {
     Log_Info("Action (%s) begin", action.c_str());
     ADUC_Result result = { ADUC_GeneralResult_Failure };
 
-    std::string scriptFilePath;
-    std::vector<std::string> args;
-    std::string scriptOutput;
     int exitCode = 0;
+    commandLineArgs.clear();
 
     if (workflowData == nullptr || workflowData->WorkflowHandle == nullptr)
     {
@@ -522,9 +543,12 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
         return result;
     }
 
+    const char* apiVer = workflow_peek_update_manifest_handler_properties_string(
+        workflowData->WorkflowHandle, HANDLER_PROPERTIES_API_VERSION);
+
     char* workFolder = ADUC_WorkflowData_GetWorkFolder(workflowData);
     std::string scriptWorkfolder = workFolder;
-    std::string scriptResultFile = scriptWorkfolder + "/action" + action + "_aduc_result.json";
+    std::string scriptResultFile = scriptWorkfolder + "/action_" + action + "_aduc_result.json";
     JSON_Value* actionResultValue = nullptr;
     JSON_Object* actionResultObject = nullptr;
 
@@ -532,6 +556,8 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
                                               adushconst::update_type_microsoft_script,
                                               adushconst::update_action_opt,
                                               adushconst::update_action_execute };
+
+    std::stringstream ss;
 
     result = ScriptHandlerImpl::PrepareScriptArguments(
         workflowData->WorkflowHandle, scriptResultFile, scriptWorkfolder, scriptFilePath, args);
@@ -552,14 +578,32 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
 
     aduShellArgs.emplace_back(adushconst::target_data_opt);
     aduShellArgs.emplace_back(scriptFilePath);
+    commandLineArgs.emplace_back(scriptFilePath);
 
-    aduShellArgs.emplace_back(adushconst::target_options_opt);
-    aduShellArgs.emplace_back(action.c_str());
+    // Prepare arguments based on specified api version.
+    if (apiVer == nullptr || strcmp(apiVer, "2.0") == 0)
+    {
+        std::string backcompatAction = "--action-" + action;
+        aduShellArgs.emplace_back(adushconst::target_options_opt);
+        aduShellArgs.emplace_back(backcompatAction.c_str());
+        commandLineArgs.emplace_back(backcompatAction.c_str());
+    }
+    else if (strcmp(apiVer, "2.1") == 0)
+    {
+        aduShellArgs.emplace_back(adushconst::target_options_opt);
+        aduShellArgs.emplace_back(HANDLER_ARG_ACTION);
+        commandLineArgs.emplace_back(HANDLER_ARG_ACTION);
 
-    for (auto a : args)
+        aduShellArgs.emplace_back(adushconst::target_options_opt);
+        aduShellArgs.emplace_back(action.c_str());
+        commandLineArgs.emplace_back(action.c_str());
+    }
+
+    for (const auto& a : args)
     {
         aduShellArgs.emplace_back(adushconst::target_options_opt);
         aduShellArgs.emplace_back(a);
+        commandLineArgs.emplace_back(a);
     }
 
     if (IsExtraDebugLogEnabled())
@@ -570,6 +614,26 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
             ss << " " << a;
         }
         Log_Debug("##########\n# ADU-SHELL ARGS:\n##########\n %s", ss.str().c_str());
+    }
+
+    if (prepareArgsOnly)
+    {
+        for (const auto& a : aduShellArgs)
+        {
+            if (a[0] != '-')
+            {
+                ss << " \"" << a << "\"";
+            }
+            else
+            {
+                ss << " " << a;
+            }
+        }
+        scriptOutput = ss.str();
+
+        Log_Debug("Prepare Only! adu-shell Command:\n\n %s", scriptOutput.c_str());
+        result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
+        goto done;
     }
 
     exitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, aduShellArgs, scriptOutput);
@@ -594,7 +658,9 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
         result = { .ResultCode = ADUC_Result_Failure,
                    .ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE };
         workflow_set_result_details(
-            workflowData->WorkflowHandle, "Cannot parse the script result file '%s'.", scriptResultFile.c_str());
+            workflowData->WorkflowHandle,
+            "The install script doesn't create a result file '%s'.",
+            scriptResultFile.c_str());
         goto done;
     }
 
@@ -646,6 +712,7 @@ done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
+        workflow_set_result(workflowData->WorkflowHandle, result);
         workflow_set_state(workflowData->WorkflowHandle, ADUCITF_State_Failed);
     }
 
@@ -656,12 +723,22 @@ done:
 
 ADUC_Result ScriptHandlerImpl::PerformAction(const std::string& action, const tagADUC_WorkflowData* workflowData)
 {
-    return ScriptHandler_PerformAction(action, workflowData);
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    std::vector<std::string> commandLineArgs;
+    std::string scriptOutput;
+    return ScriptHandler_PerformAction(
+        action, workflowData, false, scriptFilePath, args, commandLineArgs, scriptOutput);
 }
 
 static ADUC_Result DoCancel(const tagADUC_WorkflowData* workflowData)
 {
-    return ScriptHandler_PerformAction("--action-cancel", workflowData);
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    std::vector<std::string> commandLineArgs;
+    std::string scriptOutput;
+    return ScriptHandler_PerformAction(
+        "cancel", workflowData, false, scriptFilePath, args, commandLineArgs, scriptOutput);
 }
 
 /**
@@ -670,7 +747,7 @@ static ADUC_Result DoCancel(const tagADUC_WorkflowData* workflowData)
  */
 ADUC_Result ScriptHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result = PerformAction("--action-apply", workflowData);
+    ADUC_Result result = PerformAction("apply", workflowData);
     return result;
 }
 
@@ -712,7 +789,7 @@ ADUC_Result ScriptHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflowD
     ADUC_Result result = Script_Handler_DownloadPrimaryScriptFile(workflowData->WorkflowHandle);
     if (IsAducResultCodeSuccess(result.ResultCode))
     {
-        result = PerformAction("--action-is-installed", workflowData);
+        result = PerformAction("is-installed", workflowData);
     }
     return result;
 }

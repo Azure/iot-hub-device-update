@@ -51,6 +51,7 @@ The SWUpdate Handler support following handler properties (`handlerProperties`) 
 | scriptFileName | string | Name of a script file that perform additional logics related to A/B system update. This property should be specified only when performing A/B System Update.<br/><br/> See [A/B Update Script](#ab-update-script) below for more information. |
 | arguments | string | A space delimited options and arguments that will be passed directly to SWUpdate command.
 | installedCriteria | string | String interpreted by the specified `scriptFileName` to determine if the update completed successfully. <br/> This value will be passed to the underlying update script in this format: `--installed-criteria <value>` |
+| apiVersion | string | An API version. Default value is <*empty*> which implies "2.0". Current supported value is "2.0" and "2.1". |
 
 #### List of Supported handlerProperties.arguments
 
@@ -66,7 +67,7 @@ The SWUpdate Handler support following handler properties (`handlerProperties`) 
 |--output-file|string|Full path to an output file that swupdate script should write to|
 |--log-file|string| Full path to a log file that swupdate script should write to. (This is different that Agent's log file)|
 |--result-file|string|Full path to an ADUC_Result file that swupdate script must write the end result of the update tasks to. If this file does not exist or cannot be parsed, the task will be considered failed.|
-|--action-download,<br/>--action-install,<br/>--action-apply,<br/>--action-cancel,<br/>--action-is-installed| (no arguments)| An option indicates the current update task.
+|--action-download,<br/>--action-install,<br/>--action-apply,<br/>--action-cancel,<br/>--action-is-installed| (no arguments)| An option indicates the current update task.<br/><br/>**NOTE:** If **"apiVersion"** set to **"2.1"**, the handler will pass following arguments instead:<br/>"--action **download**", "--action **install**", "--action **apply**", "--action **cancel**", "--action **is-installed**"
 
 ### Example: A/B Update Script
 
@@ -93,17 +94,17 @@ In [./tests/testdata](./tests/testdata/) folder you will find an example script 
 
 #### Evaluating 'installedCriteria'
 
-For this example, to determine whether the new image has been installed on the device successfully, the SWUpdate Handler will run the specified `scriptFileName` with `--action-is-installed '<installedCriteria>'` option.
+For this example, to determine whether the new image has been installed on the device successfully, the SWUpdate Handler will run the specified `scriptFileName` with `--action is-installed '<installedCriteria>'` option.
 
 For example:
 
 ```sh
 
-/adu/downloads/workflow-01234567/example-a-b-update.sh --action-is-installed --installed-criteria '8.0.1.0001'
+/adu/downloads/workflow-01234567/example-a-b-update.sh --action is-installed --installed-criteria '8.0.1.0001'
 
 ```
 
-In this [example update script](./tests/testdata/adu-yocto-ab-rootfs-update/example-a-b-update.sh), it simply compares the given 'installedCriteria' value (8.0.1.0001) to a content of `adu-version` file (located at /etc/adu-version folder).
+In this [example update script](./tests/testdata/adu-yocto-ab-rootfs-update/example-a-b-update-2.1.sh), it simply compares the given 'installedCriteria' value (8.0.1.0001) to a content of `adu-version` file (located at /etc/adu-version folder).
 
 The algorithm for evaluating `installedCriteria` can be 100% customized to fit your device design and requirements.
 

@@ -34,6 +34,8 @@
 
 #define HANDLER_PROPERTIES_SCRIPT_FILENAME "scriptFileName"
 #define HANDLER_PROPERTIES_SWU_FILENAME "swuFileName"
+#define HANDLER_PROPERTIES_API_VERSION "apiVersion"
+#define HANDLER_ARG_ACTION "--action"
 
 namespace adushconst = Adu::Shell::Const;
 
@@ -121,8 +123,8 @@ done:
  * @brief Perform a workflow action. If @p prepareArgsOnly is true, only prepare data, but not actually
  *        perform any action.
  *
- * @param action Indicate an action to perform. This can be '--action-download', '--action-install',
- *               '--action-apply', "--action-cancel", and "--action-is-installed".
+ * @param action Indicate an action to perform. This can be 'download', 'install',
+ *               'apply', "cancel", and "is-installed".
  * @param workflowData An object containing workflow data.
  * @param prepareArgsOnly  Boolean indicates whether to prepare action data only.
  * @param[out] scriptFilePath Output string contains a script to be run.
@@ -151,6 +153,9 @@ ADUC_Result SWUpdateHandler_PerformAction(
         result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_INSTALL_ERROR_NULL_WORKFLOW;
         return result;
     }
+
+    const char* apiVer = workflow_peek_update_manifest_handler_properties_string(
+        workflowData->WorkflowHandle, HANDLER_PROPERTIES_API_VERSION);
 
     char* workFolder = ADUC_WorkflowData_GetWorkFolder(workflowData);
     std::string scriptWorkfolder = workFolder;
@@ -185,9 +190,24 @@ ADUC_Result SWUpdateHandler_PerformAction(
     aduShellArgs.emplace_back(scriptFilePath);
     commandLineArgs.emplace_back(scriptFilePath);
 
-    aduShellArgs.emplace_back(adushconst::target_options_opt);
-    aduShellArgs.emplace_back(action.c_str());
-    commandLineArgs.emplace_back(action.c_str());
+    // Prepare arguments based on specified api version.
+    if (apiVer == nullptr || strcmp(apiVer, "2.0") == 0)
+    {
+        std::string backcompatAction = "--action-" + action;
+        aduShellArgs.emplace_back(adushconst::target_options_opt);
+        aduShellArgs.emplace_back(backcompatAction.c_str());
+        commandLineArgs.emplace_back(backcompatAction.c_str());
+    }
+    else if (strcmp(apiVer, "2.1") == 0)
+    {
+        aduShellArgs.emplace_back(adushconst::target_options_opt);
+        aduShellArgs.emplace_back(HANDLER_ARG_ACTION);
+        commandLineArgs.emplace_back(HANDLER_ARG_ACTION);
+
+        aduShellArgs.emplace_back(adushconst::target_options_opt);
+        aduShellArgs.emplace_back(action.c_str());
+        commandLineArgs.emplace_back(action.c_str());
+    }
 
     for (const auto& a : args)
     {
@@ -346,7 +366,7 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
     }
 
     // Invoke primary script to download additional files, if required.
-    result = PerformAction("--action-download", workflowData);
+    result = PerformAction("download", workflowData);
 
 done:
     workflow_free_string(workFolder);
@@ -364,7 +384,7 @@ done:
  */
 ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result = PerformAction("--action-install", workflowData);
+    ADUC_Result result = PerformAction("install", workflowData);
 
     // Note: the handler must request a system reboot or agent restart if required.
     switch (result.ResultCode)
@@ -402,7 +422,7 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
     char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
     Log_Info("Applying data from %s", workFolder);
 
-    result = PerformAction("--action-apply", workflowData);
+    result = PerformAction("apply", workflowData);
 
     // Cancellation requested after applied?
     if (workflow_get_operation_cancel_requested(workflowData->WorkflowHandle))
@@ -525,7 +545,7 @@ ADUC_Result SWUpdateHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflo
     ADUC_Result result = SWUpdate_Handler_DownloadScriptFile(workflowData->WorkflowHandle);
     if (IsAducResultCodeSuccess(result.ResultCode))
     {
-        result = PerformAction("--action-is-installed", workflowData);
+        result = PerformAction("is-installed", workflowData);
     }
     return result;
 }
@@ -856,7 +876,7 @@ ADUC_Result SWUpdateHandlerImpl::CancelApply(const tagADUC_WorkflowData* workflo
 {
     ADUC_Result result;
 
-    result = PerformAction("--action-cancel", workflowData);
+    result = PerformAction("cancel", workflowData);
     if (result.ResultCode != ADUC_Result_Cancel_Success)
     {
         Log_Error("Failed to cancel Apply, extendedResultCode = (0x%X)", result.ExtendedResultCode);
