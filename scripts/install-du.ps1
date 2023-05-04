@@ -117,7 +117,7 @@ function WriteContentDownloaderRegistration{
         }
     }
 
-    $registration | ConvertTo-Json | Set-Content "$ExtensionsDir/content_downloader/extensions.json"
+    $registration | ConvertTo-Json | Set-Content "$ExtensionsDir/content_downloader/extension.json"
 }
 
 function WriteContentHandlerRegistration{
