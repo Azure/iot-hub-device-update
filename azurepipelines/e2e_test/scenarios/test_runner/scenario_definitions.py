@@ -47,6 +47,42 @@ class DuScenarioDefinitionManager:
         self.test_adu_group = f"{distro_version_name}{architecture.upper()}TestGroup"
         self.test_result_file_prefix = distro_name
 
+    @property
+    def test_device_id(self):
+        return self._test_device_id
+
+    @property
+    def test_adu_group(self):
+        return self._test_adu_group
+
+    @property
+    def test_apt_deployment_id(self):
+        return self._test_apt_deployment_id
+
+    @property
+    def test_operation_id(self):
+        return self._test_operation_id
+
+    @property
+    def test_mcu_deployment_id(self):
+        return self._test_mcu_deployment_id
+
+    @property
+    def test_bundle_update_deployment_id(self):
+        return self._test_bundle_update_deployment_id
+
+    @property
+    def test_result_file_prefix(self):
+        return self._test_result_file_prefix
+
+    @property
+    def test_connection_timeout_tries(self):
+        return self._test_connection_timeout_tries
+
+    @property
+    def retry_wait_time_in_seconds(self):
+        return self._retry_wait_time_in_seconds
+
 
 #
 # Other variables that should be available to all tests in this scenario may be added here
