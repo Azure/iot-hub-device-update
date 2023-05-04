@@ -71,7 +71,7 @@ fi
 #
 # Install Device Update Dependencies from APT
 #
-# Note: If there are other dependencies tht need to be installed via APT or other means they should
+# Note: If there are other dependencies that need to be installed via APT or other means they should
 # be added here. You might be installing iotedge, another package to setup for a deployment test, or
 # anything else.
 
@@ -122,7 +122,7 @@ function install_and_configure_ais() {
 #
 # Install Device Update Dependencies from APT
 #
-# Note: If there are other dependencies tht need to be installed via APT or other means they should
+# Note: If there are other dependencies that need to be installed via APT or other means they should
 # be added here. You might be installing iotedge, another package to setup for a deployment test, or
 # anything else.
 
