@@ -3,18 +3,18 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
-from testingtoolkit import DeviceUpdateTestHelper,DuAutomatedTestConfigurationManager
-from scenario_definitions import DuScenarioDefinitionManager
 import json
 import sys
 
 # Note: the intention is that this script is called like:
 # python ./<scenario-name>/vm-setup/devicesetup.py
 sys.path.append('./scenarios/')
+from testingtoolkit import DeviceUpdateTestHelper,DuAutomatedTestConfigurationManager
 
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/<test-script-name>.py
 sys.path.append('./scenarios/test_runner/')
+from scenario_definitions import DuScenarioDefinitionManager
 
 def main():
     duTestConfig = DuAutomatedTestConfigurationManager.FromOSEnvironment()
