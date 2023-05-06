@@ -47,41 +47,77 @@ class DuScenarioDefinitionManager:
         self.test_adu_group = f"{distro_version_name}{architecture.upper()}TestGroup"
         self.test_result_file_prefix = distro_name
 
+    # test_device_id
     @property
     def test_device_id(self):
         return self._test_device_id
 
+    @test_device_id.setter
+    def test_device_id(self, value):
+        self._test_device_id = value
+
+    # test_adu_group
     @property
     def test_adu_group(self):
         return self._test_adu_group
 
+    @test_adu_group.setter
+    def test_adu_group(self, value):
+        self._test_adu_group = value
+
+    # test_apt_deployment_id
     @property
     def test_apt_deployment_id(self):
         return self._test_apt_deployment_id
 
+    @test_apt_deployment_id.setter
+    def test_apt_deployment_id(self, value):
+        self._test_apt_deployment_id = value
+
+    # test_operation_id
     @property
     def test_operation_id(self):
         return self._test_operation_id
 
+    @test_operation_id.setter
+    def test_operation_id(self, value):
+        self._test_operation_id = value
+
+    # test_mcu_deployment_id
     @property
     def test_mcu_deployment_id(self):
         return self._test_mcu_deployment_id
 
+    @test_mcu_deployment_id.setter
+    def test_mcu_deployment_id(self, value):
+        self._test_mcu_deployment_id = value
+
+    # test_bundle_update_deployment_id
     @property
     def test_bundle_update_deployment_id(self):
         return self._test_bundle_update_deployment_id
 
+    @test_bundle_update_deployment_id.setter
+    def test_bundle_update_deployment_id(self, value):
+        self._test_bundle_update_deployment_id = value
+
+    # test_result_file_prefix
     @property
     def test_result_file_prefix(self):
         return self._test_result_file_prefix
 
+    @test_result_file_prefix.setter
+    def test_result_file_prefix(self, value):
+        self._test_result_file_prefix = value
+
+    # test_connection_timeout_tries
     @property
     def test_connection_timeout_tries(self):
         return self._test_connection_timeout_tries
 
-    @property
-    def retry_wait_time_in_seconds(self):
-        return self._retry_wait_time_in_seconds
+    @test_connection_timeout_tries.setter
+    def test_connection_timeout_tries(self, value):
+        self._test_connection_timeout_tries = value
 
 
 #
