@@ -33,7 +33,3 @@ if (ADUC_BUILD_UNIT_TESTS)
 
     add_subdirectory (tests)
 endif ()
-
-if (ADUC_BUILD_SNAP)
-    target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_BUILD_SNAP)
-endif ()
