@@ -2,15 +2,6 @@
 if (NOT ADUC_STEP_HANDLERS)
     message(FATAL_ERROR "No step handler specified.")
 endif()
-if (NOT ADUC_BUILD_SNAP)
-    # Don't need these handlers when build for Ubuntu Core snap.
-    add_subdirectory (apt_handler)
-    add_subdirectory (simulator_handler)
-    add_subdirectory (swupdate_handler)
-    add_subdirectory (swupdate_handler_v2)
-endif()
-
-add_subdirectory (script_handler)
 
 # Iterate through the step handler list and add the corresponding subdirectories
 message("   Step handler to build:")
