@@ -165,13 +165,6 @@ parts:
       - jq
 
 apps:
-  # high-privilege tasks broker
-  adu-shell:
-    command: usr/lib/adu/adu-shell
-    plugs:
-      - home
-      - network
-
   # 'deviceupdate-agent' service
   # See document: https://forum.snapcraft.io/t/snapcraft-app-and-service-metadata/8335
   deviceupdate-agent:
@@ -183,6 +176,9 @@ apps:
     plugs:
       - home
       - network
+      - snapd-control
+      - account-control
+      - hardware-observe
 
   set-config:
     command: usr/bin/adu/set-config.sh
@@ -202,11 +198,21 @@ plugs:
 
   snapd-control:
     interface: snapd-control
+    allow-auto-connection: true
 
   identity-service:
     interface: content
     content: aziot-identity-service
     target: $SNAP_DATA
+
+  account-control:
+    interface: account-control
+
+  hardware-observe:
+    interface: hardware-observe
+
+  home:
+    interface: home
 
 # Provides resources to be accssed by other snaps.
 slots:
