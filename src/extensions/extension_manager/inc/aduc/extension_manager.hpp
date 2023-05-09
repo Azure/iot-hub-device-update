@@ -10,6 +10,7 @@
 #define ADUC_EXTENSION_MANAGER_HPP
 
 #include <aduc/component_enumerator_extension.hpp>
+#include <aduc/content_downloader_extension.hpp> // DownloadProc
 #include <aduc/contract_utils.h>
 #include <aduc/extension_manager_download_options.h>
 #include <aduc/logging.h> // ADUC_LOG_SEVERITY
@@ -25,6 +26,7 @@
 class ContentHandler;
 
 using ADUC_WorkflowHandle = void*;
+using ADUC_DownloadProcResolver = DownloadProc (*)(void* lib, const char* symbol);
 
 class ExtensionManager
 {
@@ -32,6 +34,7 @@ public:
     static ADUC_Result LoadContentDownloaderLibrary(void** contentDownloaderLibrary);
     static ADUC_Result SetContentDownloaderLibrary(void* contentDownloaderLibrary);
     static ADUC_Result GetContentDownloaderContractVersion(ADUC_ExtensionContractInfo* contractInfo);
+    static void SetContentDownloaderContractVersion(const ADUC_ExtensionContractInfo& contractInfo);
 
     static bool IsComponentsEnumeratorRegistered();
     static ADUC_Result LoadComponentEnumeratorLibrary(void** componentEnumerator);
@@ -63,19 +66,30 @@ public:
     static ADUC_Result InitializeContentDownloader(const char* initializeData);
 
     /**
+     * @brief The default download proc resolver.
+     *
+     * @param lib The dynamic library.
+     * @param symbol The symbol to resolve.
+     * @return DownloadProc The resolved download proc.
+     */
+    static DownloadProc DefaultDownloadProcResolver(void* lib, const char* symbol);
+
+    /**
      * @brief
      *
      * @param entity An #ADUC_FileEntity object with information of the file to be downloaded.
      * @param workflowHandle The workflow handle opaque object for per-workflow workflow data.
      * @param downloadOptions The download options.
      * @param downloadProgressCallback A download progress reporting callback.
+     * @param downloadProcResolver The resolver that resolves the library's symbol to a @p DownloadProc. Defaults to DefaultDownloadProcResolver.
      * @return ADUC_Result
      */
     static ADUC_Result Download(
         const ADUC_FileEntity* entity,
         ADUC_WorkflowHandle workflowHandle,
         ExtensionManager_Download_Options* downloadOptions,
-        ADUC_DownloadProgressCallback downloadProgressCallback);
+        ADUC_DownloadProgressCallback downloadProgressCallback,
+        ADUC_DownloadProcResolver downloadProcResolver = DefaultDownloadProcResolver);
 
 private:
     static void UnloadAllUpdateContentHandlers();

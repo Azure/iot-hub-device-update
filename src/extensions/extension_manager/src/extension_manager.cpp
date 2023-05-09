@@ -495,6 +495,11 @@ ADUC_Result ExtensionManager::GetContentDownloaderContractVersion(ADUC_Extension
     return ADUC_Result{ ADUC_GeneralResult_Success, 0 };
 }
 
+void ExtensionManager::SetContentDownloaderContractVersion(const ADUC_ExtensionContractInfo& info)
+{
+    _contentDownloaderContractVersion = info;
+}
+
 ADUC_Result ExtensionManager::GetComponentEnumeratorContractVersion(ADUC_ExtensionContractInfo* contractInfo)
 {
     ADUC_Result result = { ADUC_Result_Success };
@@ -807,11 +812,18 @@ done:
     return result;
 }
 
+DownloadProc ExtensionManager::DefaultDownloadProcResolver(void* lib, const char* symbol)
+{
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    return reinterpret_cast<DownloadProc>(dlsym(lib, CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL));
+}
+
 ADUC_Result ExtensionManager::Download(
     const ADUC_FileEntity* entity,
     WorkflowHandle workflowHandle,
     ExtensionManager_Download_Options* options,
-    ADUC_DownloadProgressCallback downloadProgressCallback)
+    ADUC_DownloadProgressCallback downloadProgressCallback,
+    ADUC_DownloadProcResolver downloadProcResolver)
 {
     void* lib = nullptr;
     DownloadProc downloadProc = nullptr;
@@ -846,8 +858,7 @@ ADUC_Result ExtensionManager::Download(
         goto done;
     }
 
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    downloadProc = reinterpret_cast<DownloadProc>(dlsym(lib, CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL));
+    downloadProc = downloadProcResolver(lib, CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL);
     if (downloadProc == nullptr)
     {
         result = { .ResultCode = ADUC_Result_Failure,

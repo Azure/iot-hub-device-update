@@ -31,9 +31,9 @@ target_compile_definitions (
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::adu_types # download.h, update_content.h, and workflow.h used by header and impl
+           aduc::contract_utils
     PRIVATE aduc::c_utils
             aduc::config_utils
-            aduc::contract_utils
             aduc::download_handler_factory
             aduc::download_handler_plugin
             aduc::exception_utils
@@ -50,3 +50,7 @@ target_link_libraries (
 # Turn -fPIC on, in order to use this library in another shared library.
 #
 set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

@@ -10,50 +10,15 @@
 #include "aduc/download_handler_plugin.hpp" // DownloadHandlerPlugin
 #include <aduc/c_utils.h> // EXTERN_C_{BEGIN,END}
 #include <aduc/extension_utils.h> // GetDownloadHandlerFileEntity
+#include <aduc/file_entity_wrapper.hpp> // FileEntityWrapper
 #include <aduc/hash_utils.h> // ADUC_HashUtils_VerifyWithStrongestHash
 #include <aduc/logging.h> // ADUC_Logging_GetLevel
 #include <aduc/parser_utils.h> // ADUC_FileEntity_Uninit
 #include <aduc/plugin_exception.hpp>
 #include <aduc/types/update_content.h> // ADUC_FileEntity
-#include <cstring> // memset
 #include <unordered_map>
 
 using DownloadHandlerHandle = void*;
-
-class FileEntityWrapper
-{
-    ADUC_FileEntity entity = {};
-    bool inited = false;
-
-public:
-    FileEntityWrapper() = delete;
-    FileEntityWrapper(const FileEntityWrapper&) = delete;
-    FileEntityWrapper& operator=(const FileEntityWrapper&) = delete;
-    FileEntityWrapper(FileEntityWrapper&&) = delete;
-    FileEntityWrapper& operator=(FileEntityWrapper&&) = delete;
-
-    FileEntityWrapper(ADUC_FileEntity* sourceFileEntity)
-    {
-        // transfer ownership
-        entity = *sourceFileEntity;
-        memset(sourceFileEntity, 0, sizeof(ADUC_FileEntity));
-        inited = true;
-    }
-
-    ~FileEntityWrapper()
-    {
-        if (inited)
-        {
-            inited = false;
-            ADUC_FileEntity_Uninit(&entity);
-        }
-    }
-
-    const ADUC_FileEntity* operator->()
-    {
-        return &entity;
-    }
-};
 
 // static
 DownloadHandlerFactory* DownloadHandlerFactory::GetInstance()
