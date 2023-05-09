@@ -159,9 +159,6 @@ static ADUC_Result Script_Handler_DownloadPrimaryScriptFile(ADUC_WorkflowHandle 
         Log_Error("Cannot download the primary script file, error %d", result.ExtendedResultCode);
     }
 
-    workflow_free_file_entity(entity);
-    entity = nullptr;
-
 done:
     ADUC_FileEntity_Uninit(&entity);
     workflow_free_string(workFolder);
@@ -626,7 +623,7 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
 
     // Execute the script using adu-shell or directly.
     exitCode = ADUC_LaunchChildProcess(
-        useAduShell ? adushconst::adu_shell : scriptFilePath.c_str(), aduShellArgs, scriptOutput);
+        useAduShell ? ADUSHELL_FILE_PATH : scriptFilePath.c_str(), aduShellArgs, scriptOutput);
 
     if (!scriptOutput.empty())
     {
