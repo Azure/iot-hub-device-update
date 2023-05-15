@@ -11,8 +11,7 @@
 
 bool operator==(ADUC_Result a, ADUC_Result b)
 {
-    return a.ResultCode == b.ResultCode;
-    return a.ExtendedResultCode == b.ExtendedResultCode;
+    return a.ResultCode == b.ResultCode && a.ExtendedResultCode == b.ExtendedResultCode;
 }
 
 TEST_CASE("ExtensionManager::Download success should return success ResultCode")
