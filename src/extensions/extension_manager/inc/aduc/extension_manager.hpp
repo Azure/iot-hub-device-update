@@ -26,7 +26,7 @@
 class ContentHandler;
 
 using ADUC_WorkflowHandle = void*;
-using ADUC_DownloadProcResolver = DownloadProc (*)(void* lib, const char* symbol);
+using ADUC_DownloadProcResolver = DownloadProc (*)(void* lib);
 
 class ExtensionManager
 {
@@ -69,10 +69,9 @@ public:
      * @brief The default download proc resolver.
      *
      * @param lib The dynamic library.
-     * @param symbol The symbol to resolve.
      * @return DownloadProc The resolved download proc.
      */
-    static DownloadProc DefaultDownloadProcResolver(void* lib, const char* symbol);
+    static DownloadProc DefaultDownloadProcResolver(void* lib);
 
     /**
      * @brief

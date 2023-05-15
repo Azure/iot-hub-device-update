@@ -812,7 +812,7 @@ done:
     return result;
 }
 
-DownloadProc ExtensionManager::DefaultDownloadProcResolver(void* lib, const char* symbol)
+DownloadProc ExtensionManager::DefaultDownloadProcResolver(void* lib)
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     return reinterpret_cast<DownloadProc>(dlsym(lib, CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL));
@@ -858,7 +858,7 @@ ADUC_Result ExtensionManager::Download(
         goto done;
     }
 
-    downloadProc = downloadProcResolver(lib, CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL);
+    downloadProc = downloadProcResolver(lib);
     if (downloadProc == nullptr)
     {
         result = { .ResultCode = ADUC_Result_Failure,

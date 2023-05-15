@@ -74,12 +74,12 @@ static ADUC_Result MockDownloadFailureProc(
     return result;
 }
 
-static DownloadProc mockDownloadSuccessProcResolver(void* _lib, const char* _symbol)
+static DownloadProc mockDownloadSuccessProcResolver(void* _lib)
 {
     return MockDownloadSuccessProc;
 }
 
-static DownloadProc mockDownloadFailureProcResolver(void* _lib, const char* _symbol)
+static DownloadProc mockDownloadFailureProcResolver(void* _lib)
 {
     return MockDownloadFailureProc;
 }
