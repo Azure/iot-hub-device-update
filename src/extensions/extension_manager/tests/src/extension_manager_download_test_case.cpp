@@ -10,7 +10,7 @@
 #include <aduc/auto_workflowhandle.hpp> // aduc::AutoWorkflowHandle
 #include <aduc/calloc_wrapper.hpp> // ADUC::StringUtils::cstr_wrapper
 #include <aduc/extension_manager.hpp>
-#include <aduc/file_entity_wrapper.hpp>
+#include <aduc/auto_file_entity.hpp>
 #include <aduc/result.h> // ADUC_Result, ADUC_Result_t
 #include <aduc/system_utils.h> // ADUC_SystemUtils_GetTemporaryPathName
 #include <aduc/types/workflow.h>
@@ -146,13 +146,12 @@ void ExtensionManagerDownloadTestCase::InitCommon()
 
 void ExtensionManagerDownloadTestCase::RunCommon()
 {
-    ADUC_FileEntity fileEntity{};
-    FileEntityWrapper autoFileEntity(&fileEntity);
-    REQUIRE(workflow_get_update_file(workflowHandle, 0, &fileEntity));
+    AutoFileEntity fileEntity;
+    REQUIRE(workflow_get_update_file(workflowHandle, 0, fileEntity.address_of()));
 
     ExtensionManager_Download_Options downloadOptions{ 1 /*timeoutInMinutes*/ };
     actual_result = ExtensionManager::Download(
-        &fileEntity,
+        fileEntity.get(),
         workflowHandle,
         &downloadOptions,
         nullptr, // downloadProgressCallback
@@ -162,4 +161,5 @@ void ExtensionManagerDownloadTestCase::RunCommon()
 void ExtensionManagerDownloadTestCase::Cleanup()
 {
     ADUC_SystemUtils_RemoveFile(downloaded_file_path.c_str());
+    workflow_free(workflowHandle);
 }
