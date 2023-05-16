@@ -17,6 +17,7 @@
 
 // TODO: This should be set in the update metadata.
 static const char TARGET_DRIVE = 'd';
+static const std::string TARGET_VOLUME_LABEL{ "IOT" };
 
 static std::string make_preferred(const char* path, const char* file = nullptr)
 {
@@ -49,7 +50,7 @@ bool IsInstalled(const char* installedCriteria)
     // Check local drive for kernel32.dll version.  We'll match the file version of that
     // against the installed criteria string.
     char systemFolder[MAX_PATH];
-    if (GetSystemDirectory(systemFolder, ARRAYSIZE(systemFolder)) == 0)
+    if (GetSystemDirectoryA(systemFolder, ARRAYSIZE(systemFolder)) == 0)
     {
         return false;
     }
@@ -69,7 +70,7 @@ ADUC_Result_t Install(const char* workFolder, const char* targetFile)
     const std::string tempPath{ make_preferred(workFolder) };
     const std::string sourceFile{ make_preferred(workFolder, targetFile) };
 
-    hr = FormatDrive(TARGET_DRIVE);
+    hr = FormatDrive(TARGET_DRIVE, TARGET_VOLUME_LABEL);
     if (FAILED(hr))
     {
         return MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ERRNO(hr);

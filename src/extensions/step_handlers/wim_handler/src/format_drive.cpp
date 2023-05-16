@@ -5,7 +5,8 @@
 #include <windows.h>
 
 #include <cstdio>
-
+#include <intsafe.h>
+#include <string>
 #include <WbemCli.h>
 
 #define CHR(cmd)             \
@@ -17,8 +18,36 @@
         }                    \
     }
 
-HRESULT FormatDrive(char driveLetter)
+static HRESULT DoesVolumeLabelExist(char driveLetter, const std::string& volumeLabel)
 {
+    char rootPathName[] = "X:\\";
+    rootPathName[0] = driveLetter;
+
+    LPSTR volumeName = const_cast<LPSTR>(volumeLabel.c_str());
+    DWORD nVolumeNameSize;
+    CHR(SizeTToDWord(volumeLabel.length(), &nVolumeNameSize));
+    CHR(DWordAdd(nVolumeNameSize, 1, &nVolumeNameSize));
+
+    if(!GetVolumeInformationA(
+        rootPathName,
+        volumeName,
+        nVolumeNameSize,
+        nullptr, // lpVolumeSerialNumber
+        nullptr, // lpMaxComponentLen
+        nullptr, // lpFileSystemFlags
+        nullptr, // lpFileSystemNameBuffer
+        0)) // nFileSystemNameSize
+    {
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    return S_OK;
+}
+
+HRESULT FormatDrive(char driveLetter, const std::string& volumeLabel)
+{
+    CHR(DoesVolumeLabelExist(driveLetter, volumeLabel));
+
     CComPtr<IWbemLocator> spLocator;
     CHR(CoCreateInstance(CLSID_WbemLocator, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&spLocator)));
 
@@ -84,7 +113,7 @@ HRESULT FormatDrive(char driveLetter)
     CHR(spClassInstance->Put(L"FileSystem", 0, &varFileSystem, 0));
     CComVariant varQuickFormat(true);
     CHR(spClassInstance->Put(L"QuickFormat", 0, &varQuickFormat, 0));
-    CComVariant varLabel(L"IOT");
+    CComVariant varLabel(volumeLabel.c_str());
     CHR(spClassInstance->Put(L"Label", 0, &varLabel, 0));
 
     CComPtr<IWbemClassObject> spOutParams;
@@ -98,7 +127,7 @@ HRESULT FormatDrive(char driveLetter)
     int formatResult = varReturnValue.intVal();
     if (formatResult != 0)
     {
-        return E_FAIL;
+        return HRESULT_FROM_WIN32(formatResult);
     }
 
     return S_OK;
