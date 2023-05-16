@@ -3,18 +3,13 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
+import sys
+
+# Note: the intention is that this script is called like:
+# python ./scenarios/<scenario-name>/<test-script-name>.py
+sys.path.append('./scenarios/ubuntu-18.04-amd64/')
 from scenario_definitions import test_device_id, test_result_file_prefix, test_operation_id
 from xmlrunner.extra.xunit_plugin import transform
-from testingtoolkit import DuAutomatedTestConfigurationManager
-from testingtoolkit import DiagnosticLogCollectionStatusResponse
-from testingtoolkit import DeploymentStatusResponse
-from testingtoolkit import UpdateId
-from testingtoolkit import DeviceUpdateTestHelper
-import io
-import sys
-import time
-import unittest
-import xmlrunner
 
 # Import testingtoolkit module from parent directory
 # sys.path.append('../')
@@ -22,10 +17,16 @@ import xmlrunner
 # from testingtoolkit import UpdateId
 # from azure.identity import DefaultAzureCredential
 sys.path.append('./scenarios/')
+from testingtoolkit import DuAutomatedTestConfigurationManager
+from testingtoolkit import DiagnosticLogCollectionStatusResponse
+from testingtoolkit import DeploymentStatusResponse
+from testingtoolkit import UpdateId
+from testingtoolkit import DeviceUpdateTestHelper
+import io
+import time
+import unittest
+import xmlrunner
 
-# Note: the intention is that this script is called like:
-# python ./scenarios/<scenario-name>/<test-script-name>.py
-sys.path.append('./scenarios/ubuntu-18.04-amd64/')
 
 diagnostics_operation_status_retries = 15
 
