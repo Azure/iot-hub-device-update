@@ -3,26 +3,24 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
-import io
-import sys
-import time
-import unittest
-import xmlrunner
-from xmlrunner.extra.xunit_plugin import transform
 
-# Note: the intention is that this script is called like:
-# python ./scenarios/test_runner/testscript.py
-sys.path.append('./scenarios/')
-from testingtoolkit import DuAutomatedTestConfigurationManager
-from testingtoolkit import DeploymentStatusResponse
-from testingtoolkit import UpdateId
-from testingtoolkit import DeviceUpdateTestHelper
+import sys
 
 # Note: the intention is that this script is called like:
 # python ./scenarios/test_runner/testscript.py
 sys.path.append('./scenarios/test_runner/')
 from scenario_definitions import DuScenarioDefinitionManager
+from xmlrunner.extra.xunit_plugin import transform
 
+sys.path.append('./scenarios/')
+from testingtoolkit import DuAutomatedTestConfigurationManager
+from testingtoolkit import DeploymentStatusResponse
+from testingtoolkit import UpdateId
+from testingtoolkit import DeviceUpdateTestHelper
+import io
+import time
+import unittest
+import xmlrunner
 
 #
 # Global Test Variables
