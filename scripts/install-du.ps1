@@ -577,6 +577,16 @@ if ($Package) {
         Copy-Item -LiteralPath $_.FullName -Destination $dest
     }
 
+    $dest = Join-Path $temp (Join-Path $ADUSHELL_FOLDER 'symbols')
+    New-Item -ItemType Directory -Path $dest | Out-Null
+    Get-ChildItem `
+        -Path $BuildLibPath `
+        -Filter '*.pdb' `
+        -Recurse `
+    | ForEach-Object {
+        Copy-Item -LiteralPath $_.FullName -Destination $dest
+    }
+
     # Add git info as '_git-info.txt' in symbols folder.
     "Date: $(Get-Date)", "Head: $(git.exe rev-parse --short HEAD)", "Release: $(git.exe rev-parse --abbrev-ref HEAD)" `
     | Out-File -Encoding ascii  (Join-Path $dest '_git-info.txt')
