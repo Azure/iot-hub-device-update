@@ -154,7 +154,23 @@ function WriteContentHandlerRegistration{
         handlerId = "$handlerId"
     }
 
-    $registration | ConvertTo-Json | Set-Content "$ExtensionsDir/update_content_handlers/$ExtensionName/content_handler.json"
+    $adu_extensions_update_content_handlers_dir = "$ExtensionsDir/update_content_handlers"
+    if (-not (Test-Path $adu_extensions_update_content_handlers_dir)) {
+        New-Item -Path $adu_extensions_update_content_handlers_dir -ItemType Directory
+    }
+    elseif (-not (Test-Path $adu_extensions_update_content_handlers_dir -PathType Container)) {
+        throw "$adu_extensions_update_content_handlers_dir is not a folder."
+    }
+
+    $content_handler_registration_dir = "$adu_extensions_update_content_handlers_dir/$ExtensionName"
+    if (-not (Test-Path $content_handler_registration_dir)) {
+        New-Item -Path $content_handler_registration_dir -ItemType Directory
+    }
+    elseif (-not (Test-Path $content_handler_registration_dir -PathType Container)) {
+        throw "$content_handler_registration_dir is not a folder."
+    }
+
+    $registration | ConvertTo-Json | Set-Content "$content_handler_registration_dir/content_handler.json"
 }
 
 function Register-Components {
