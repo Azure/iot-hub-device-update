@@ -3,8 +3,7 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
-from testingtoolkit import DeviceUpdateTestHelper, DuAutomatedTestConfigurationManager
-from scenario_definitions import test_device_id
+
 import json
 import sys
 
@@ -15,6 +14,9 @@ sys.path.append('./scenarios/')
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/<test-script-name>.py
 sys.path.append('./scenarios/ubuntu-18.04-amd64/')
+
+from testingtoolkit import DeviceUpdateTestHelper, DuAutomatedTestConfigurationManager
+from scenario_definitions import test_device_id
 
 
 def main():

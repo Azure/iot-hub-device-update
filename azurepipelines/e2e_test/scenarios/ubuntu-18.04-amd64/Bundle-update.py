@@ -3,25 +3,27 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
+
+import sys
+
+# Note: the intention is that this script is called like:
+# python ./scenarios/<scenario-name>/testscript.py
+sys.path.append('./scenarios/ubuntu-18.04-amd64/')
 from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, test_bundle_update_deployment_id, test_connection_timeout_tries, retry_wait_time_in_seconds
 from xmlrunner.extra.xunit_plugin import transform
+# Note: the intention is that this script is called like:
+# python ./scenarios/<scenario-name>/testscript.py
+sys.path.append('./scenarios/')
 from testingtoolkit import DuAutomatedTestConfigurationManager
 from testingtoolkit import DeploymentStatusResponse
 from testingtoolkit import UpdateId
 from testingtoolkit import DeviceUpdateTestHelper
 import io
-import sys
 import time
 import unittest
 import xmlrunner
 
-# Note: the intention is that this script is called like:
-# python ./scenarios/<scenario-name>/testscript.py
-sys.path.append('./scenarios/')
 
-# Note: the intention is that this script is called like:
-# python ./scenarios/<scenario-name>/testscript.py
-sys.path.append('./scenarios/ubuntu-18.04-amd64/')
 
 #
 # Global Test Variables

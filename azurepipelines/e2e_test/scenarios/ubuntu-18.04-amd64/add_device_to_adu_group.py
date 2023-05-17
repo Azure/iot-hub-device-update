@@ -3,17 +3,8 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
-from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, test_connection_timeout_tries, retry_wait_time_in_seconds
-from testingtoolkit import DuAutomatedTestConfigurationManager
-from testingtoolkit import DeploymentStatusResponse
-from testingtoolkit import UpdateId
-from testingtoolkit import DeviceUpdateTestHelper
-import io
+
 import sys
-import time
-import unittest
-import xmlrunner
-from xmlrunner.extra.xunit_plugin import transform
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/testscript.py
 sys.path.append('./scenarios/')
@@ -21,6 +12,16 @@ sys.path.append('./scenarios/')
 # Note: the intention is that this script is called like:
 # python ./scenarios/<scenario-name>/<test-script-name>.py
 sys.path.append('./scenarios/ubuntu-18.04-amd64/')
+from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix, test_connection_timeout_tries, retry_wait_time_in_seconds
+from testingtoolkit import DuAutomatedTestConfigurationManager
+from testingtoolkit import DeploymentStatusResponse
+from testingtoolkit import UpdateId
+from testingtoolkit import DeviceUpdateTestHelper
+import io
+import time
+import unittest
+import xmlrunner
+from xmlrunner.extra.xunit_plugin import transform
 
 
 class AddDeviceToGroupTest(unittest.TestCase):
