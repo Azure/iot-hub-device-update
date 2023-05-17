@@ -5,7 +5,7 @@
 #include <windows.h>
 
 #include <cstdio>
-
+#include <string>
 #include <WbemCli.h>
 
 #define CHR(cmd)             \
@@ -17,7 +17,7 @@
         }                    \
     }
 
-HRESULT FormatDrive(char driveLetter)
+HRESULT FormatDrive(char driveLetter, const std::string& driveLabel)
 {
     CComPtr<IWbemLocator> spLocator;
     CHR(CoCreateInstance(CLSID_WbemLocator, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&spLocator)));
@@ -84,7 +84,7 @@ HRESULT FormatDrive(char driveLetter)
     CHR(spClassInstance->Put(L"FileSystem", 0, &varFileSystem, 0));
     CComVariant varQuickFormat(true);
     CHR(spClassInstance->Put(L"QuickFormat", 0, &varQuickFormat, 0));
-    CComVariant varLabel(L"IOT");
+    CComVariant varLabel(driveLabel.c_str());
     CHR(spClassInstance->Put(L"Label", 0, &varLabel, 0));
 
     CComPtr<IWbemClassObject> spOutParams;
@@ -98,7 +98,7 @@ HRESULT FormatDrive(char driveLetter)
     int formatResult = varReturnValue.intVal();
     if (formatResult != 0)
     {
-        return E_FAIL;
+        return HRESULT_FROM_WIN32(formatResult);
     }
 
     return S_OK;
