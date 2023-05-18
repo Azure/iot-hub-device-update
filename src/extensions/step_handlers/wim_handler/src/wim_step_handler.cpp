@@ -17,6 +17,7 @@
 
 // TODO: This should be set in the update metadata.
 static const char TARGET_DRIVE = 'd';
+static const std::string TARGET_VOLUME_LABEL{ "IOT" };
 
 static std::string make_preferred(const char* path, const char* file = nullptr)
 {
@@ -39,6 +40,50 @@ static std::string make_preferred(const char* path, const char* file = nullptr)
     return preferred;
 }
 
+/**
+ * @brief Whether file exists.
+ *
+ * @param filepath The file path.
+ * @return true when file exists
+ * @details throws an HRESULT when failing to get attributes of the file.
+ */
+static bool FileExists(const std::string& filepath)
+{
+    const DWORD dwAttrib = GetFileAttributes(filepath.c_str());
+    if (dwAttrib == INVALID_FILE_ATTRIBUTES)
+    {
+        throw HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    return !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+/**
+ * @brief Get the volume label for the drive.
+ *
+ * @param driveRoot The drive root, such as "D:\\"
+ * @return std::string The volume label
+ * @details throws an HRESULT on failure to get volume info.
+ */
+static std::string GetDriveLabel(const std::string& driveRoot)
+{
+    char volumeName[MAX_PATH + 1];
+    if(!GetVolumeInformationA(
+        driveRoot.c_str(),
+        volumeName,
+        sizeof(volumeName),
+        nullptr, // lpVolumeSerialNumber
+        nullptr, // lpMaxComponentLen
+        nullptr, // lpFileSystemFlags
+        nullptr, // lpFileSystemNameBuffer
+        0)) // nFileSystemNameSize
+    {
+        throw HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    return std::string{ volumeName };
+}
+
 namespace WimStepHandler
 {
 
@@ -49,7 +94,7 @@ bool IsInstalled(const char* installedCriteria)
     // Check local drive for kernel32.dll version.  We'll match the file version of that
     // against the installed criteria string.
     char systemFolder[MAX_PATH];
-    if (GetSystemDirectory(systemFolder, ARRAYSIZE(systemFolder)) == 0)
+    if (GetSystemDirectoryA(systemFolder, ARRAYSIZE(systemFolder)) == 0)
     {
         return false;
     }
@@ -63,24 +108,52 @@ bool IsInstalled(const char* installedCriteria)
 ADUC_Result_t Install(const char* workFolder, const char* targetFile)
 {
     HRESULT hr;
-
-    CCoInitialize coinit;
-
-    const std::string tempPath{ make_preferred(workFolder) };
-    const std::string sourceFile{ make_preferred(workFolder, targetFile) };
-
-    hr = FormatDrive(TARGET_DRIVE);
-    if (FAILED(hr))
+    try
     {
-        return MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ERRNO(hr);
+        CCoInitialize coinit;
+
+        const std::string tempPath{ make_preferred(workFolder) };
+        const std::string sourceFile{ make_preferred(workFolder, targetFile) };
+
+        std::string driveRoot(1, TARGET_DRIVE);
+        driveRoot += ":\\";
+
+        if (!FileExists(sourceFile))
+        {
+            hr = HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+            goto done;
+        }
+
+        if (GetDriveLabel(driveRoot) != TARGET_VOLUME_LABEL)
+        {
+            hr = HRESULT_FROM_WIN32(ERROR_NO_VOLUME_ID);
+            goto done;
+        }
+
+        hr = FormatDrive(TARGET_DRIVE, TARGET_VOLUME_LABEL);
+        if (FAILED(hr))
+        {
+            goto done;
+        }
+
+        hr = ApplyImage(sourceFile.c_str(), driveRoot.c_str(), tempPath.c_str());
+        if (FAILED(hr))
+        {
+            goto done;
+        }
+    }
+    catch (HRESULT errorHResult)
+    {
+        hr = errorHResult;
+        goto done;
+    }
+    catch (...)
+    {
+        hr = E_UNEXPECTED;
+        goto done;
     }
 
-    // Apply imagefile to D:\
-
-    std::string driveRoot(1, TARGET_DRIVE);
-    driveRoot += ":\\";
-
-    hr = ApplyImage(sourceFile.c_str(), driveRoot.c_str(), tempPath.c_str());
+done:
     if (FAILED(hr))
     {
         return MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ERRNO(hr);
