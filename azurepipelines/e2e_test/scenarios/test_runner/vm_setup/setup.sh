@@ -199,16 +199,21 @@ function verify_user_group_permissions() {
 
     main_pid=$(echo "$status_output" | awk '/Main PID/ {print $3}')
 
-    # Check if the user and group for the process are "adu"
-    process_user=$(stat -c %u "/proc/$main_pid")
-    process_group=$(stat -c %g "/proc/$main_pid")
+    if [ -d "/proc/$main_pid" ]; then
+        process_user=$(stat -c %u "/proc/$main_pid")
+        process_group=$(stat -c %g "/proc/$main_pid")
 
-    if [ "$process_user" -eq "$adu_uid" ] && [ "$process_group" -eq "$adu_gid" ]; then
-        echo "User and group for AducIotAgent service are adu:adu."
+        if [ "$process_user" -eq "$adu_uid" ] && [ "$process_group" -eq "$adu_gid" ]; then
+            echo "User and group for AducIotAgent service are adu:adu."
+        else
+            echo "User and group for AducIotAgent service are not adu:adu."
+            exit 1
+        fi
     else
-        echo "User and group for AducIotAgent service are not adu:adu."
+        echo "Process with PID $main_pid does not exist."
         exit 1
     fi
+
 }
 
 function verify_log_files() {
