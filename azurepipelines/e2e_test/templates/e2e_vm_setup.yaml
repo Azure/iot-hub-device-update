@@ -17,8 +17,6 @@ parameters:
       type: string
     - name: package_pipeline
       type: string
-    - name: scenarioSetupDir
-      type: string
     - name: du_tarball_script
       type: string
     - name: image_working_directory

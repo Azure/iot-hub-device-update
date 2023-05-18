@@ -126,7 +126,6 @@ stages:
                       image_version: latest
                       packagePattern: "*ubuntu1804-amd64*/*.deb"
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
-                      scenarioSetupDir: "./scenarios/ubuntu-18.04-amd64"
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
@@ -148,7 +147,6 @@ stages:
                       image_version: latest
                       packagePattern: "*ubuntu1804-arm64*/*.deb"
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
-                      scenarioSetupDir: "./scenarios/ubuntu-18.04-arm64"
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
@@ -170,7 +168,6 @@ stages:
                       image_version: latest
                       packagePattern: "*ubuntu2004-amd64*/*.deb"
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
-                      scenarioSetupDir: "./scenarios/ubuntu-20.04-amd64"
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
@@ -192,7 +189,6 @@ stages:
                       image_version: latest
                       packagePattern: "*ubuntu2004-arm64*/*.deb"
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
-                      scenarioSetupDir: "./scenarios/ubuntu-20.04-arm64"
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
@@ -214,7 +210,6 @@ stages:
                       image_version: latest
                       packagePattern: "*debian10-amd64*/*.deb"
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
-                      scenarioSetupDir: "./scenarios/debian-10-amd64"
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
