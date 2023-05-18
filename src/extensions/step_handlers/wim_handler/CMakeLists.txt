@@ -31,8 +31,7 @@ target_link_libraries (
             aduc::process_utils
             aduc::workflow_data_utils
             aduc::workflow_utils
-            aduc::logging
-            libaducpal)
+            aduc::logging)
 
 # GetFileVersionInfo()
 target_link_libraries (${PROJECT_NAME} PRIVATE Version.lib)

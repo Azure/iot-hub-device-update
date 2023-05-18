@@ -14,7 +14,6 @@
 #include <string>
 
 #include "aduc/logging.h"
-#include "aducpal/unistd.h" // ADUCPAL_access
 
 // TODO: This should be set in the update metadata.
 static const char TARGET_DRIVE = 'd';
@@ -42,32 +41,31 @@ static std::string make_preferred(const char* path, const char* file = nullptr)
 }
 
 /**
- * @brief Verifies that the file path exists.
+ * @brief Whether file exists.
  *
- * @param payloadFilePath The path to the file.
- * @return HRESULT S_OK when the file exists; an error hresult, otherwise.
+ * @param filepath The file path.
+ * @return true when file exists
+ * @details throws an HRESULT when failing to get attributes of the file.
  */
-static HRESULT EnsurePayloadExists(const std::string& payloadFilePath)
+static bool FileExists(const std::string& filepath)
 {
-    if (ADUCPAL_access(payloadFilePath.c_str(), F_OK) != 0)
+    const DWORD dwAttrib = GetFileAttributes(filepath.c_str());
+    if (dwAttrib == INVALID_FILE_ATTRIBUTES)
     {
-        int err;
-        _get_errno(&err);
-        return HRESULT_FROM_WIN32(err);
+        throw HRESULT_FROM_WIN32(GetLastError());
     }
 
-    return S_OK;
+    return !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 /**
- * @brief Get the volume label for the drive
+ * @brief Get the volume label for the drive.
  *
- * @param[in] driveRoot The drive root path name, e.g. "C:\\" or "D:\\"
- * @param[out] outLabel The pointer to an existing std::string object to receive the resulting volume label.
- * @return HRESULT The value of GetLastError() as processed by HRESULT_FROM_WIN32 macro on error, or S_OK on success.
- * @details For failed returned HRESULT, the std::string object pointed to by outLabel will not be affected.
+ * @param driveRoot The drive root, such as "D:\\"
+ * @return std::string The volume label
+ * @details throws an HRESULT on failure to get volume info.
  */
-static HRESULT GetDriveLabel(const std::string& driveRoot, std::string* outLabel)
+static std::string GetDriveLabel(const std::string& driveRoot)
 {
     char volumeName[MAX_PATH + 1];
     if(!GetVolumeInformationA(
@@ -80,35 +78,10 @@ static HRESULT GetDriveLabel(const std::string& driveRoot, std::string* outLabel
         nullptr, // lpFileSystemNameBuffer
         0)) // nFileSystemNameSize
     {
-        return HRESULT_FROM_WIN32(GetLastError());
+        throw HRESULT_FROM_WIN32(GetLastError());
     }
 
-    *outLabel = volumeName;
-    return S_OK;
-}
-
-/**
- * @brief Verifies that the expected volume label exists on the given drive.
- *
- * @param driveRoot The drive root, such as "C:\\" or "D:\\".
- * @param expectedVolumeLabel The expected volume label.
- * @return HRESULT S_OK when the give volume label matches that of the drive; an error HRESULT, otherwise.
- */
-static HRESULT EnsureExpectedDriveLabel(const std::string& driveRoot, const std::string& expectedVolumeLabel)
-{
-    std::string driveLabel;
-    HRESULT hr = GetDriveLabel(driveRoot, &driveLabel);
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    if (driveLabel != expectedVolumeLabel)
-    {
-        return HRESULT_FROM_WIN32(ERROR_NO_VOLUME_ID);
-    }
-
-    return S_OK;
+    return std::string{ volumeName };
 }
 
 namespace WimStepHandler
@@ -135,36 +108,48 @@ bool IsInstalled(const char* installedCriteria)
 ADUC_Result_t Install(const char* workFolder, const char* targetFile)
 {
     HRESULT hr;
-
-    CCoInitialize coinit;
-
-    const std::string tempPath{ make_preferred(workFolder) };
-    const std::string sourceFile{ make_preferred(workFolder, targetFile) };
-
-    std::string driveRoot(1, TARGET_DRIVE);
-    driveRoot += ":\\";
-
-    hr = EnsurePayloadExists(sourceFile);
-    if (FAILED(hr))
+    try
     {
+        CCoInitialize coinit;
+
+        const std::string tempPath{ make_preferred(workFolder) };
+        const std::string sourceFile{ make_preferred(workFolder, targetFile) };
+
+        std::string driveRoot(1, TARGET_DRIVE);
+        driveRoot += ":\\";
+
+        if (!FileExists(sourceFile))
+        {
+            hr = HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+            goto done;
+        }
+
+        if (GetDriveLabel(driveRoot) != TARGET_VOLUME_LABEL)
+        {
+            hr = HRESULT_FROM_WIN32(ERROR_NO_VOLUME_ID);
+            goto done;
+        }
+
+        hr = FormatDrive(TARGET_DRIVE, TARGET_VOLUME_LABEL);
+        if (FAILED(hr))
+        {
+            goto done;
+        }
+
+        hr = ApplyImage(sourceFile.c_str(), driveRoot.c_str(), tempPath.c_str());
+        if (FAILED(hr))
+        {
+            goto done;
+        }
+    }
+    catch (HRESULT errorHResult)
+    {
+        hr = errorHResult;
         goto done;
     }
-
-    hr = EnsureExpectedDriveLabel(driveRoot, TARGET_VOLUME_LABEL);
-    if (FAILED(hr))
+    catch (...)
     {
-        goto done;
-    }
-
-    hr = FormatDrive(TARGET_DRIVE, TARGET_VOLUME_LABEL);
-    if (FAILED(hr))
-    {
-        goto done;
-    }
-
-    hr = ApplyImage(sourceFile.c_str(), driveRoot.c_str(), tempPath.c_str());
-    if (FAILED(hr))
-    {
+        hr = E_UNEXPECTED;
         goto done;
     }
 
