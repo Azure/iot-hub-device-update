@@ -108,6 +108,26 @@ int main(int argc, char** argv)
     UNREFERENCED_PARAMETER(argc);
     UNREFERENCED_PARAMETER(argv);
 
+    CCoInitialize coinit;
+
+    if(argc > 1) {
+        HRESULT hrCoInitSec =  CoInitializeSecurity(
+            NULL,
+            -1,                          // COM authentication
+            NULL,                        // Authentication services
+            NULL,                        // Reserved
+            RPC_C_AUTHN_LEVEL_DEFAULT,   // Default authentication
+            RPC_C_IMP_LEVEL_IMPERSONATE, // Default Impersonation
+            NULL,                        // Authentication info
+            EOAC_NONE,                   // Additional capabilities
+            NULL                         // Reserved
+        );
+
+        if(FAILED(hrCoInitSec)) {
+            return 1;
+        }
+    }
+
     HRESULT hr = FormatDrive('D', std::string{ "IOT" });
 
     printf("FormatDrive returned: 0x%08X\n", hr);
