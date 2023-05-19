@@ -65,8 +65,10 @@ class AptDeploymentTest(unittest.TestCase):
         # tests in the scenario_definitions.py file.
         #
         self.deploymentId = test_apt_deployment_id
+
         self.deploymentUpdateId = UpdateId(
             provider="Contoso1", name="Virtual", version="1.0.2")
+
         #
         # Before anything else we need to wait and check the device connection status
         # We expect the device to connect within the configured amount of time of setting up the device in the step previous
@@ -85,6 +87,8 @@ class AptDeploymentTest(unittest.TestCase):
         # The assumption is that we've already imported the update targeting the manufacturer and
         # model for the device created in the devicesetup.py. Now we have to create the deployment for
         # the device using the update-id for the update
+        #
+        # Note: ALL UPDATES SHOULD BE UPLOADED TO THE TEST AUTOMATION HUB NOTHING SHOULD BE IMPORTED AT TEST TIME
         #
         status_code = self.duTestHelper.StartDeploymentForGroup(
             deploymentId=self.deploymentId, groupName=test_adu_group, updateId=self.deploymentUpdateId)
@@ -119,6 +123,7 @@ class AptDeploymentTest(unittest.TestCase):
         #
         self.assertEqual(deploymentStatus.subgroupStatuses[0].totalDevices,
                          deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount)
+
         # Sleep to give time for changes to propagate and for DU to switch it's state back to idle
         time.sleep(retry_wait_time_in_seconds)
 
@@ -139,12 +144,15 @@ class AptDeploymentTest(unittest.TestCase):
         #
         time.sleep(retry_wait_time_in_seconds)
 
-        # self.assertEqual(self.duTestHelper.StopDeployment(self.deploymentId, test_adu_group), 200)
+        deviceClassId = deploymentStatus.subgroupStatuses[0].deviceClassId
+
+        # self.assertEqual(self.duTestHelper.StopDeployment(self.deploymentId,test_adu_group,deviceClassId),200)
         # time.sleep(retry_wait_time_in_seconds)
 
         # Once stopped we can delete the deployment
         self.assertEqual(self.duTestHelper.DeleteDeployment(
             self.deploymentId, test_adu_group), 204)
+
 
 #
 # Below is the section of code that uses the above class to run the test. It starts by running the test, capturing the output, transforming

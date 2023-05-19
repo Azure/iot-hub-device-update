@@ -43,7 +43,7 @@ class DiagnosticsTest(unittest.TestCase):
         retry_wait_time_in_seconds = self.aduScenarioDefinition.retry_wait_time_in_seconds
 
         #
-        # We retrieve the apt deployment id to be used by the script from the scenario definitions file. It's important to keep
+        # We retrieve the test operation id to be used by the script from the scenario definitions file. It's important to keep
         # things like the deployment id, device-id, module-id, and other scenario level definitions that might effect other
         # tests in the scenario_definitions.py file.
         #
@@ -54,12 +54,12 @@ class DiagnosticsTest(unittest.TestCase):
         # We expect the device to connect within the configured amount of time of setting up the device in the step previous
         #
         connectionStatus = ""
-        for i in range(0, test_connection_timeout_tries):
+        for i in range(0, 5):
             connectionStatus = self.duTestHelper.GetConnectionStatusForModule(
                 test_device_id, "IoTHubDeviceUpdate")
             if (connectionStatus == "Connected"):
                 break
-            time.sleep(retry_wait_time_in_seconds)
+            time.sleep(30)
 
         self.assertEqual(connectionStatus, "Connected")
 
@@ -77,16 +77,18 @@ class DiagnosticsTest(unittest.TestCase):
         # Get device diagnostics log collection operatio status and device status
         # device status represent Log upload status, operatin status represent background operation status
         #
+        diagnosticJsonStatus = DiagnosticLogCollectionStatusResponse()
+
         for i in range(0, diagnostics_operation_status_retries):
+            time.sleep(5)
             diagnosticJsonStatus = self.duTestHelper.GetDiagnosticsLogCollectionStatus(
                 self.operationId)
 
             if (diagnosticJsonStatus.status == "Succeeded"):
                 break
-            time.sleep(retry_wait_time_in_seconds)
-
 
         self.assertEqual(diagnosticJsonStatus.status, "Succeeded")
+
         self.assertEqual(len(diagnosticJsonStatus.deviceStatus), 1)
         self.assertEqual(
             diagnosticJsonStatus.deviceStatus[0].status, "Succeeded")

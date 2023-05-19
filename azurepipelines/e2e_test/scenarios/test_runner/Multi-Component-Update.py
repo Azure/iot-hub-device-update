@@ -105,11 +105,9 @@ class AptDeploymentTest(unittest.TestCase):
         #
         deploymentStatus = None
 
-
         for i in range(0, mcu_deployment_status_retries):
             deploymentStatus = self.duTestHelper.GetDeploymentStatusForGroup(
                 self.deploymentId, test_adu_group)
-
 
             #
             # If we see all the devices have completed the deployment then we can exit early
@@ -118,8 +116,6 @@ class AptDeploymentTest(unittest.TestCase):
                 if (deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount == 1):
                     break
             time.sleep(retry_wait_time_in_seconds)
-
-
 
         #
         # Should only be one device group in the deployment
@@ -158,6 +154,7 @@ class AptDeploymentTest(unittest.TestCase):
         # Once stopped we can delete the deployment
         self.assertEqual(self.duTestHelper.DeleteDeployment(
             self.deploymentId, test_adu_group), 204)
+
 
 #
 # Below is the section of code that uses the above class to run the test. It starts by running the test, capturing the output, transforming

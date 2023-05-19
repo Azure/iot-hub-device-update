@@ -28,7 +28,7 @@ from scenario_definitions import DuScenarioDefinitionManager
 # Global Test Variables
 #
 
-bundle_update_deployment_retries = 15
+bundle_update_status_retries = 15
 test_result_file_prefix = ""
 
 class AptDeploymentTest(unittest.TestCase):
@@ -108,22 +108,20 @@ class AptDeploymentTest(unittest.TestCase):
         #
         deploymentStatus = None
 
-
         for i in range(0, bundle_update_status_retries):
             deploymentStatus = self.duTestHelper.GetDeploymentStatusForGroup(
                 self.deploymentId, test_adu_group)
 
             #
-            # If we see the device has completed the deployment then we can exit early
+            # If we see all the devices have completed the deployment then we can exit early
             #
             if (len(deploymentStatus.subgroupStatuses) != 0):
                 if (deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount == 1):
                     break
             time.sleep(retry_wait_time_in_seconds)
 
-
         #
-        # Do the check to make sure the device in the subgroup have succeeded
+        # Should only be one device group in the deployment
         #
         self.assertEqual(len(deploymentStatus.subgroupStatuses), 1)
 
@@ -146,6 +144,7 @@ class AptDeploymentTest(unittest.TestCase):
 
         self.assertEqual(
             twin.properties.reported["deviceUpdate"]["agent"]["state"], 0)
+
         #
         # In case of a succeeded deployment we need to clean up the resources we created.
         # mainly the deletion of the deployment
@@ -156,7 +155,8 @@ class AptDeploymentTest(unittest.TestCase):
         # time.sleep(retry_wait_time_in_seconds)
 
         # Once stopped we can delete the deployment
-        self.assertEqual(self.duTestHelper.DeleteDeployment(self.deploymentId,test_adu_group),204)
+        self.assertEqual(self.duTestHelper.DeleteDeployment(
+            self.deploymentId, test_adu_group), 204)
 
 
 #
@@ -175,6 +175,7 @@ if (__name__ == "__main__"):
     #
     unittest.main(testRunner=xmlrunner.XMLTestRunner(output=out),
                   failfast=False, buffer=False, catchbreak=False, exit=False)
+
     #
     # Finally transform the output unto the X/JUnit XML file format
     #
