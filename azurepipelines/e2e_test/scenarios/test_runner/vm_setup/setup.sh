@@ -303,12 +303,12 @@ register_extensions
 # Note: We expect that everything should be setup for the deviceupdate agent at this point. Once
 # we restart the agent we expect it to be able to boot back up and connect to the IotHub. Otherwise
 # this test will be considered a failure.
-# sudo systemctl restart deviceupdate-agent.service
+sudo systemctl restart deviceupdate-agent.service
 
-# verify_user_group_permissions
+verify_user_group_permissions
 
-# verify_log_files
+verify_log_files
 
-# test_shutdown_service
+test_shutdown_service
 
-# sudo systemctl restart deviceupdate-agent.service
+sudo systemctl restart deviceupdate-agent.service

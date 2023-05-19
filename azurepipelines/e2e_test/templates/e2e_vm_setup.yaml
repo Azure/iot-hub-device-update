@@ -78,6 +78,11 @@ steps:
       continueOnError: True
       workingDirectory: ${{parameters.image_working_directory}}/
     - script: |
+          mv config.toml ./scenarios/test_runner/vm_setup/testsetup/
+      displayName: Copy the AIS configuration file to the same location as the artifact if it exists
+      continueOnError: True
+      workingDirectory: ${{parameters.image_working_directory}}/
+    - script: |
           cp ./scenarios/test_runner/vm_setup/setup.sh ./scenarios/test_runner/vm_setup/testsetup/
       displayName: Copy the setup script to the same location as the artifact
       continueOnError: False

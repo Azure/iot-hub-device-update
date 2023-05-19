@@ -59,16 +59,16 @@ class AddDeviceToGroupTest(unittest.TestCase):
         #
         success = self.duTestHelper.AddModuleToGroup(
             test_device_id, "IoTHubDeviceUpdate", test_adu_group)
+
         self.assertTrue(success)
         time.sleep(retry_wait_time_in_seconds)
 
 
 if (__name__ == "__main__"):
-
     out = io.BytesIO()
 
     unittest.main(testRunner=xmlrunner.XMLTestRunner(output=out),
                   failfast=False, buffer=False, catchbreak=False, exit=False)
 
-    with open('./testresults/' + test_result_file_prefix + '-add-device-to-adu-group-test.xml', 'wb') as report:
+    with open('./testresults/' + test_result_file_prefix + 'add-device-to-adu-group-test.xml', 'wb') as report:
         report.write(transform(out.getvalue()))
