@@ -46,3 +46,7 @@ target_link_libraries (${PROJECT_NAME} PRIVATE wimgapi.lib)
 target_link_libraries (${PROJECT_NAME} PRIVATE Wbemuuid.lib)
 
 install (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+
+if (WIN32)
+    add_subdirectory (testapp)
+endif ()
