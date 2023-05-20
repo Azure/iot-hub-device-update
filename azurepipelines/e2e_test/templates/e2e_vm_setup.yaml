@@ -68,7 +68,11 @@ steps:
           DISTRONAME: ${{ parameters.distroName }}
 
     - script: |
-          mv du-config.json ./scenarios/test_runner/vm_setup/testsetup/
+          if [ "${{ parameters.distroName }}" = "debian-10-amd64" ]; then
+              mv du-config-connectionstr.json ./scenarios/test_runner/vm_setup/testsetup/du-config.json
+          else
+              mv du-config-ais.json ./scenarios/test_runner/vm_setup/testsetup/du-config.json
+          fi
       displayName: Copy the DU configuration file to the same location as the artifact
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}/

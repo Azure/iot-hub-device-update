@@ -12,7 +12,7 @@ sys.path.append('./scenarios/')
 from testingtoolkit import DeviceUpdateTestHelper,DuAutomatedTestConfigurationManager
 
 # Note: the intention is that this script is called like:
-# python ./scenarios/<scenario-name>/<test-script-name>.py
+# python ./scenarios/test_runner/<test-script-name>.py
 sys.path.append('./scenarios/test_runner/')
 from scenario_definitions import DuScenarioDefinitionManager
 
@@ -42,9 +42,9 @@ def main():
         sys.exit(1)
 
     #
-    # Create the du-config.json JSON Object
+    # Create the du-config-ais.json JSON Object
     #
-    duConfigJson = {
+    duConfigAISJson = {
         "schemaVersion": "1.1",
         "aduShellTrustedUsers": [
             "adu",
@@ -71,8 +71,38 @@ def main():
     # Write the DU configuration out to disk so we can install it as a part of the test
     #
 
-    with open('du-config.json', 'w',encoding="utf-8") as jsonFile:
-        configJson = json.dumps(duConfigJson)
+    with open('du-config-ais.json', 'w',encoding="utf-8") as jsonFile:
+        configJson = json.dumps(duConfigAISJson)
+        jsonFile.write(configJson)
+
+    #
+    # Create the du-config-connectionstr.json JSON Object
+    #
+    duConfigConnectionStrJson = {
+                    "schemaVersion": "1.1",
+                    "aduShellTrustedUsers": [
+                        "adu",
+                        "do"
+                    ],
+                    "iotHubProtocol": "mqtt",
+                    "manufacturer": "contoso",
+                    "model": "virtual-vacuum-v2",
+                    "agents": [
+                        {
+                        "name": "main",
+                        "runas": "adu",
+                        "connectionSource": {
+                            "connectionType": "string",
+                            "connectionData": connectionString
+                        },
+                        "manufacturer": "contoso",
+                        "model": "virtual-vacuum-v2"
+                        }
+                    ]
+                    }
+
+    with open('du-config-connectionstr.json', 'w',encoding="utf-8") as jsonFile:
+        configJson = json.dumps(duConfigConnectionStrJson)
         jsonFile.write(configJson)
 
     #
