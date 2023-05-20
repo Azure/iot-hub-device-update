@@ -30,6 +30,7 @@ class DuScenarioDefinitionManager:
         self.test_connection_timeout_tries = 10
 # For all retries this is the total amount of time we wait for all operations
         self.retry_wait_time_in_seconds = 60
+        self.config_method = ''
 
     @classmethod
     def FromOSEnvironment(cls):
@@ -46,6 +47,10 @@ class DuScenarioDefinitionManager:
         self.test_device_id = f"{distro_name}-deployment-test-device"
         self.test_adu_group = f"{distro_version_name}{architecture.upper()}TestGroup"
         self.test_result_file_prefix = distro_name
+        if distro_name == "debian-10-amd64":
+            self.config_method = "string"
+        else:
+            self.config_method = "AIS"
 
 
 #

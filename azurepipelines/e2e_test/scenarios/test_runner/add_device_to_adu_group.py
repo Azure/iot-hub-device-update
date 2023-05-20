@@ -37,6 +37,7 @@ class AddDeviceToGroupTest(unittest.TestCase):
         test_result_file_prefix = self.aduScenarioDefinition.test_result_file_prefix
         test_connection_timeout_tries = self.aduScenarioDefinition.test_connection_timeout_tries
         retry_wait_time_in_seconds = self.aduScenarioDefinition.retry_wait_time_in_seconds
+        config_method = self.aduScenarioDefinition.config_method
 
         #
         # Before anything else we need to wait and check the device connection status
@@ -44,8 +45,11 @@ class AddDeviceToGroupTest(unittest.TestCase):
         #
         connectionStatus = ""
         for i in range(0, test_connection_timeout_tries):
-            connectionStatus = self.duTestHelper.GetConnectionStatusForModule(
-                test_device_id, "IoTHubDeviceUpdate")
+            if config_method == "AIS":
+                connectionStatus = self.duTestHelper.GetConnectionStatusForModule(test_device_id, "IoTHubDeviceUpdate")
+            else:
+                connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
+
             if (connectionStatus == "Connected"):
                 break
             time.sleep(retry_wait_time_in_seconds)
@@ -57,8 +61,12 @@ class AddDeviceToGroupTest(unittest.TestCase):
         # the device before we make the ADUGroup which we can then use to target the deployment
         # to the device.
         #
-        success = self.duTestHelper.AddModuleToGroup(
-            test_device_id, "IoTHubDeviceUpdate", test_adu_group)
+        if config_method == "AIS":
+            success = self.duTestHelper.AddModuleToGroup(
+                test_device_id, "IoTHubDeviceUpdate", test_adu_group)
+        else:
+            success = self.duTestHelper.AddDeviceToGroup(test_device_id, test_adu_group)
+
 
         self.assertTrue(success)
         time.sleep(retry_wait_time_in_seconds)

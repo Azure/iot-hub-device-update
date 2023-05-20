@@ -41,6 +41,7 @@ class DiagnosticsTest(unittest.TestCase):
         test_operation_id = self.aduScenarioDefinition.test_operation_id
         test_connection_timeout_tries = self.aduScenarioDefinition.test_connection_timeout_tries
         retry_wait_time_in_seconds = self.aduScenarioDefinition.retry_wait_time_in_seconds
+        config_method = self.aduScenarioDefinition.config_method
 
         #
         # We retrieve the test operation id to be used by the script from the scenario definitions file. It's important to keep
@@ -55,8 +56,11 @@ class DiagnosticsTest(unittest.TestCase):
         #
         connectionStatus = ""
         for i in range(0, 5):
-            connectionStatus = self.duTestHelper.GetConnectionStatusForModule(
-                test_device_id, "IoTHubDeviceUpdate")
+            if config_method == "AIS":
+                connectionStatus = self.duTestHelper.GetConnectionStatusForModule(test_device_id, "IoTHubDeviceUpdate")
+            else:
+                connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
+
             if (connectionStatus == "Connected"):
                 break
             time.sleep(30)
@@ -68,8 +72,13 @@ class DiagnosticsTest(unittest.TestCase):
         # Start a diagnostics log collection operation
         # 201 indicate the device diagnostics log collection operation is created
         #
-        diagnosticResponseStatus_code = self.duTestHelper.RunDiagnosticsOnDeviceOrModule(
-            test_device_id, operationId=self.operationId, moduleId="IoTHubDeviceUpdate", description="")
+
+        if config_method == "AIS":
+            diagnosticResponseStatus_code = self.duTestHelper.RunDiagnosticsOnDeviceOrModule(
+                test_device_id, operationId=self.operationId, moduleId="IoTHubDeviceUpdate", description="")
+        else:
+            diagnosticResponseStatus_code = self.duTestHelper.RunDiagnosticsOnDeviceOrModule(
+            test_device_id, operationId=self.operationId, description="")
 
         self.assertEqual(diagnosticResponseStatus_code, 201)
 

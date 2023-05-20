@@ -60,6 +60,7 @@ class AptDeploymentTest(unittest.TestCase):
         test_bundle_update_deployment_id = self.aduScenarioDefinition.test_bundle_update_deployment_id
         test_connection_timeout_tries = self.aduScenarioDefinition.test_connection_timeout_tries
         retry_wait_time_in_seconds = self.aduScenarioDefinition.retry_wait_time_in_seconds
+        config_method = self.aduScenarioDefinition.config_method
 
 
         #
@@ -75,8 +76,12 @@ class AptDeploymentTest(unittest.TestCase):
         #
         connectionStatus = ""
         for i in range(0, test_connection_timeout_tries):
-            connectionStatus = self.duTestHelper.GetConnectionStatusForModule(
-                test_device_id, "IoTHubDeviceUpdate")
+            if config_method == "AIS":
+                connectionStatus = self.duTestHelper.GetConnectionStatusForModule(
+                    test_device_id, "IoTHubDeviceUpdate")
+            else:
+                connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
+
             if (connectionStatus == "Connected"):
                 break
             time.sleep(retry_wait_time_in_seconds)
@@ -139,8 +144,10 @@ class AptDeploymentTest(unittest.TestCase):
         # deployment we need to check that the device itself has reported it
         # is back in the idle state.
         #
-        twin = self.duTestHelper.GetModuleTwinForModule(
-            test_device_id, "IoTHubDeviceUpdate")
+        if config_method == "AIS":
+            twin = self.duTestHelper.GetModuleTwinForModule(test_device_id, "IoTHubDeviceUpdate")
+        else:
+            twin = self.duTestHelper.GetDeviceTwinForDevice(test_device_id)
 
         self.assertEqual(
             twin.properties.reported["deviceUpdate"]["agent"]["state"], 0)
