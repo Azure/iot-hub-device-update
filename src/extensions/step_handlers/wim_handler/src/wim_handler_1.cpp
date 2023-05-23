@@ -289,6 +289,7 @@ ADUC_Result WimHandler1::Apply(const ADUC_WorkflowData* workflowData)
     else if (erc == WimStepHandler::RC::Success_Reboot_Required)
     {
         result.Set(ADUC_Result_Apply_RequiredReboot, 0);
+        workflow_request_reboot(workflowData->WorkflowHandle);
     }
 
     return result;
