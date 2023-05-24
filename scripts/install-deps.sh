@@ -43,7 +43,7 @@ use_ssh=false
 
 install_aduc_deps=false
 install_azure_iot_sdk=false
-azure_sdk_ref=LTS_07_2021_Ref01
+azure_sdk_ref=LTS_01_2023_Ref02
 
 # ADUC Test Deps
 
@@ -216,6 +216,7 @@ do_install_azure_iot_sdk() {
         "-Dskip_samples:BOOL=ON"
         "-Dbuild_service_client:BOOL=OFF"
         "-Dbuild_provisioning_service_client:BOOL=OFF"
+        "-Duse_prov_client:BOOL=OFF"
     )
 
     if [[ $keep_source_code == "true" ]]; then
