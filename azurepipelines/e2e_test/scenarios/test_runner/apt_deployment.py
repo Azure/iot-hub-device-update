@@ -10,7 +10,7 @@ import unittest
 import xmlrunner
 
 # Note: the intention is that this script is called like:
-# python ./scenarios/<scenario-name>/testscript.py
+# python ./scenarios/test_runner/testscript.py
 sys.path.append('./scenarios/')
 from testingtoolkit import DeviceUpdateTestHelper
 from testingtoolkit import UpdateId
@@ -19,15 +19,15 @@ from testingtoolkit import DuAutomatedTestConfigurationManager
 from xmlrunner.extra.xunit_plugin import transform
 
 # Note: the intention is that this script is called like:
-# python ./scenarios/<scenario-name>/<test-script-name>.py
-sys.path.append('./scenarios/ubuntu-20.04-amd64/')
-from scenario_definitions import test_device_id, test_adu_group, test_result_file_prefix,test_bundle_update_deployment_id, test_connection_timeout_tries , retry_wait_time_in_seconds
+# python ./scenarios/test_runner/<test-script-name>.py
+sys.path.append('./scenarios/test_runner/')
+from scenario_definitions import DuScenarioDefinitionManager
 
 #
 # Global Test Variables
 #
-
-bundle_update_deployment_retries = 15
+apt_deployment_status_retries = 15
+test_result_file_prefix = ""
 
 class AptDeploymentTest(unittest.TestCase):
 
@@ -49,32 +49,43 @@ class AptDeploymentTest(unittest.TestCase):
         self.aduTestConfig = DuAutomatedTestConfigurationManager.FromOSEnvironment()
         self.duTestHelper = self.aduTestConfig.CreateDeviceUpdateTestHelper()
 
+        self.aduScenarioDefinition = DuScenarioDefinitionManager.FromOSEnvironment()
+
+        test_device_id = self.aduScenarioDefinition.test_device_id
+        test_adu_group = self.aduScenarioDefinition.test_adu_group
+        global test_result_file_prefix
+        test_result_file_prefix = self.aduScenarioDefinition.test_result_file_prefix
+        test_apt_deployment_id = self.aduScenarioDefinition.test_apt_deployment_id
+        test_connection_timeout_tries = self.aduScenarioDefinition.test_connection_timeout_tries
+        retry_wait_time_in_seconds = self.aduScenarioDefinition.retry_wait_time_in_seconds
+        config_method = self.aduScenarioDefinition.config_method
 
         #
         # We retrieve the apt deployment id to be used by the script from the scenario definitions file. It's important to keep
         # things like the deployment id, device-id, module-id, and other scenario level definitions that might effect other
         # tests in the scenario_definitions.py file.
         #
-        self.deploymentId = test_bundle_update_deployment_id
+        self.deploymentId = test_apt_deployment_id
+
+        self.deploymentUpdateId = UpdateId(
+            provider="Contoso1", name="Virtual", version="1.0.2")
 
         #
         # Before anything else we need to wait and check the device connection status
         # We expect the device to connect within the configured amount of time of setting up the device in the step previous
         #
         connectionStatus = ""
-        for i in range(0,test_connection_timeout_tries):
-            connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
-            if (connectionStatus == "Connected"):
+        for i in range(0, test_connection_timeout_tries):
+            if config_method == "AIS":
+                connectionStatus = self.duTestHelper.GetConnectionStatusForModule(test_device_id, "IoTHubDeviceUpdate")
+            else:
+                connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
+
+            if connectionStatus == "Connected":
                 break
             time.sleep(retry_wait_time_in_seconds)
 
-        self.assertEqual(connectionStatus,"Connected")
-        #
-        # For every deployment we need to create an Update Id. For all tests running in the DeviceUpdate for IotHub Test Automation
-        # pipeline we use Fabrikaam as a provider and Vaccuum as the name for the update. You'll see the same values supplied as the
-        # manufacturer and model in the devicesetup.py script.
-        #
-        self.deploymentUpdateId = UpdateId(provider="Contoso1", name="Virtual", version="3.0")
+        self.assertEqual(connectionStatus, "Connected")
 
         #
         # The assumption is that we've already imported the update targeting the manufacturer and
@@ -83,9 +94,10 @@ class AptDeploymentTest(unittest.TestCase):
         #
         # Note: ALL UPDATES SHOULD BE UPLOADED TO THE TEST AUTOMATION HUB NOTHING SHOULD BE IMPORTED AT TEST TIME
         #
-        status_code = self.duTestHelper.StartDeploymentForGroup(deploymentId=self.deploymentId,groupName=test_adu_group,updateId=self.deploymentUpdateId)
+        status_code = self.duTestHelper.StartDeploymentForGroup(
+            deploymentId=self.deploymentId, groupName=test_adu_group, updateId=self.deploymentUpdateId)
 
-        self.assertEqual(status_code,200)
+        self.assertEqual(status_code, 200)
 
         #
         # Once we've started the deployment for the group we can then query for the status of the deployment
@@ -93,28 +105,28 @@ class AptDeploymentTest(unittest.TestCase):
         #
         deploymentStatus = None
 
-
-        for i in range(0,bundle_update_deployment_retries):
-            deploymentStatus = self.duTestHelper.GetDeploymentStatusForGroup(self.deploymentId,test_adu_group)
+        for i in range(0, apt_deployment_status_retries):
+            deploymentStatus = self.duTestHelper.GetDeploymentStatusForGroup(
+                self.deploymentId, test_adu_group)
 
             #
-            # If we see the device has completed the deployment then we can exit early
+            # If we see all the devices have completed the deployment then we can exit early
             #
             if (len(deploymentStatus.subgroupStatuses) != 0):
                 if (deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount == 1):
                     break
             time.sleep(retry_wait_time_in_seconds)
 
-
         #
-        # Do the check to make sure the device in the subgroup have succeeded
+        # Should only be one device group in the deployment
         #
-        self.assertEqual(len(deploymentStatus.subgroupStatuses),1)
+        self.assertEqual(len(deploymentStatus.subgroupStatuses), 1)
 
         #
         # Devices in the group should have succeeded
         #
-        self.assertEqual(deploymentStatus.subgroupStatuses[0].totalDevices,deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount)
+        self.assertEqual(deploymentStatus.subgroupStatuses[0].totalDevices,
+                         deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount)
 
         # Sleep to give time for changes to propagate and for DU to switch it's state back to idle
         time.sleep(retry_wait_time_in_seconds)
@@ -124,9 +136,13 @@ class AptDeploymentTest(unittest.TestCase):
         # deployment we need to check that the device itself has reported it
         # is back in the idle state.
         #
-        twin = self.duTestHelper.GetDeviceTwinForDevice(test_device_id)
+        if config_method == "AIS":
+            twin = self.duTestHelper.GetModuleTwinForModule(test_device_id, "IoTHubDeviceUpdate")
+        else:
+            twin = self.duTestHelper.GetDeviceTwinForDevice(test_device_id)
 
-        self.assertEqual(twin.properties.reported["deviceUpdate"]["agent"]["state"],0)
+        self.assertEqual(
+            twin.properties.reported["deviceUpdate"]["agent"]["state"], 0)
 
         #
         # In case of a succeeded deployment we need to clean up the resources we created.
@@ -134,11 +150,14 @@ class AptDeploymentTest(unittest.TestCase):
         #
         time.sleep(retry_wait_time_in_seconds)
 
-        # self.assertEqual(self.duTestHelper.StopDeployment(self.deploymentId,test_adu_group),200)
+        deviceClassId = deploymentStatus.subgroupStatuses[0].deviceClassId
+
+        # self.assertEqual(self.duTestHelper.StopDeployment(self.deploymentId,test_adu_group,deviceClassId),200)
         # time.sleep(retry_wait_time_in_seconds)
 
         # Once stopped we can delete the deployment
-        self.assertEqual(self.duTestHelper.DeleteDeployment(self.deploymentId,test_adu_group),204)
+        self.assertEqual(self.duTestHelper.DeleteDeployment(
+            self.deploymentId, test_adu_group), 204)
 
 
 #
@@ -155,10 +174,11 @@ if (__name__ == "__main__"):
     #
     # Exercise the TestCase and all the tests within it.
     #
-    unittest.main(testRunner = xmlrunner.XMLTestRunner(output=out),failfast=False,buffer=False,catchbreak=False,exit=False)
+    unittest.main(testRunner=xmlrunner.XMLTestRunner(output=out),
+                  failfast=False, buffer=False, catchbreak=False, exit=False)
 
     #
     # Finally transform the output unto the X/JUnit XML file format
     #
-    with open('./testresults/' + test_result_file_prefix + '-bundle-update-deployment-test.xml','wb') as report:
+    with open('./testresults/' + test_result_file_prefix + '-apt-deployment-test.xml', 'wb') as report:
         report.write(transform(out.getvalue()))

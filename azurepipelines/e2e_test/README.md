@@ -170,7 +170,6 @@ The process for adapting or adding a new scenario can be accomplished by followi
         image_version: latest
         packagePattern: "*debian-90-amd64*/*.deb"
         package_pipeline: "Azure.adu-private-preview.e2e-test"
-        scenarioSetupDir: "./scenarios/debian-10-amd64/"
         du_tarball_script: >-
             tar -xf /tmp/testsetup.tar.gz -C ./ &&
             u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
