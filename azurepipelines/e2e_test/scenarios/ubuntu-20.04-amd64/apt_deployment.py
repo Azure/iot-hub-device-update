@@ -93,7 +93,7 @@ class AptDeploymentTest(unittest.TestCase):
             # If we see all the devices have completed the deployment then we can exit early
             #
             if (len(deploymentStatus.subgroupStatuses) != 0):
-                if (deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount == 1):
+                if (deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount == deploymentStatus.subgroupStatuses[0].totalDevices):
                     break
             time.sleep(retry_wait_time_in_seconds)
 
