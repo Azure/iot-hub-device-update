@@ -42,12 +42,15 @@ install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
+target_arch=
 
 print_help() {
     echo "Usage: build.sh [options...]"
     echo "-c, --clean                           Does a clean build."
     echo "-t, --type <build_type>               The type of build to produce. Passed to CMAKE_BUILD_TYPE. Default is Debug."
-    echo "                                      Options: Release Debug RelWithDebInfo MinSizeRel"
+    echo "                                        Options: Release Debug RelWithDebInfo MinSizeRel"
+    echo "-g, --target_arch <arch>              The optional target architecture to cross-compile from x64 compiler host."
+    echo "                                        Options: ARM64"
     echo "-d, --build-docs                      Builds the documentation."
     echo "-u, --build-unit-tests                Builds unit tests."
     echo "--build-packages                      Builds and packages the client in various package formats e.g debian."
@@ -217,6 +220,14 @@ while [[ $1 != "" ]]; do
         fi
         build_type=$1
         ;;
+    -A | --target-arch)
+        shift
+        if [[ -z $1 || $1 == -* ]]; then
+            error "-A target architecture parameter is mandatory."
+            $ret 1
+        fi
+        target_arch=$1
+        ;;
     -d | --build-docs)
         build_documentation=true
         ;;
@@ -319,6 +330,10 @@ while [[ $1 != "" ]]; do
     shift
 done
 
+if [[ -n $target_arch ]]; then
+    output_directory="$output_directory/$target_arch-$build_type"
+fi
+
 if [[ $build_documentation == "true" ]]; then
     if ! [ -x "$(command -v doxygen)" ]; then
         error "Can't build documentation - doxygen is not installed. Try: apt install doxygen"
@@ -350,6 +365,7 @@ bullet "Platform layer: $platform_layer"
 bullet "Trace target deps: $trace_target_deps"
 bullet "Step handlers: $step_handlers"
 bullet "Build type: $build_type"
+bullet "Target Architecture: $target_arch"
 bullet "Log directory: $adu_log_dir"
 bullet "Logging library: $log_lib"
 bullet "Output directory: $output_directory"
@@ -391,6 +407,11 @@ if [[ $minor_version != "" ]]; then
 fi
 if [[ $patch_version != "" ]]; then
     CMAKE_OPTIONS+=("-DADUC_VERSION_PATCH=$patch_version")
+fi
+if [[ $target_arch == "ARM64" ]]; then
+    script_path=$(dirname "$(realpath "$0")")
+    CMAKE_TOOLCHAIN_PATH="$script_path/arm64-cross-compiler-toolchain.cmake"
+    CMAKE_OPTIONS+=("-DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_PATH")
 fi
 
 for i in "${static_analysis_tools[@]}"; do
@@ -468,6 +489,8 @@ fi
 
 mkdir -p "$output_directory"
 pushd "$output_directory" > /dev/null || return
+
+export cross_compilation_staging_dir="$root_dir/staging" # used by cmake toolchain file for cross-compilation
 
 # Generate build using cmake with options
 if [ ! -f "$cmake_bin" ]; then
