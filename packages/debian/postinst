@@ -98,7 +98,7 @@ sample_du_diagnostics_config=$(
             "logPath":"/var/log/deliveryoptimization-agent/"
         }
     ],
-    "maxKilobytesToUploadPerLogPath":50
+    "maxKilobytesToUploadPerLogPath":512
 }
 END_OF_JSON
 )
