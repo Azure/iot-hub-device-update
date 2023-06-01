@@ -13,7 +13,6 @@
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
 #include "aduc/shutdown_service.h"
-#include "aduc/system_utils.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
