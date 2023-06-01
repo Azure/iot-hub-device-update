@@ -12,12 +12,7 @@
 #include "aduc/shutdown_service.h"
 #include "linux_adu_core_impl.hpp"
 #include <memory>
-
-#include <signal.h> // raise
-#include <unistd.h> // sync
-
 #include <string>
-
 #include <vector>
 
 EXTERN_C_BEGIN
@@ -102,9 +97,6 @@ int ADUC_RebootSystem()
 int ADUC_RestartAgent()
 {
     Log_Info("Restarting ADU Agent.");
-
-    // Commit buffer cache to disk.
-    sync();
 
     ADUC_ShutdownService_RequestShutdown();
 

@@ -118,7 +118,6 @@ int ADUC_RestartAgent()
 {
     Log_Info("Restarting ADU Agent.");
 
-    SystemUtils_SyncFileSystem(); // Commit buffer cache to disk
     ADUC_ShutdownService_RequestShutdown();
 
     return 0;

@@ -97,25 +97,6 @@ int ADUCPAL_setuid(uid_t uid)
     return 0;
 }
 
-void ADUCPAL_sync(void)
-{
-    // Flush all open files on volume by getting volume handle to C: and calling FlushFileBuffers as per fileapi.h docs
-    HANDLE handle = CreateFile(
-        "\\\\.\\C:", // lpFileName -- NOTE: no trailing slash to indicate entire volume
-        GENERIC_READ | GENERIC_WRITE, // dwDesiredAccess
-        FILE_SHARE_READ | FILE_SHARE_WRITE, // dwShareMode
-        NULL, // lpSecurityAttributes
-        OPEN_EXISTING, // dwCreationDisposition
-        FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH, // dwFlagsAndAttributes
-        NULL); // hTemplateFile
-
-    if (handle != INVALID_HANDLE_VALUE)
-    {
-        FlushFileBuffers(handle);
-        CloseHandle(handle);
-    }
-}
-
 long ADUCPAL_syscall(long number)
 {
     if (number == SYS_gettid)

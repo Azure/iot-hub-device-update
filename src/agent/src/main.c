@@ -27,7 +27,7 @@
 #include "aduc/permission_utils.h"
 #include "aduc/shutdown_service.h"
 #include "aduc/string_c_utils.h"
-#include "aduc/system_utils.h"
+#include "aduc/system_utils.h" // ADUC_SystemUtils_MkDirRecursiveDefault
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
@@ -46,7 +46,7 @@
 #endif
 
 #include <limits.h>
-#include <signal.h>
+#include <signal.h> // signal
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h> // strtol
