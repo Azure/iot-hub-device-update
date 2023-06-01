@@ -28,6 +28,7 @@ target_link_libraries (
             aduc::hash_utils
             aduc::logging
             aduc::process_utils
+            aduc::shutdown_service
             aduc::string_utils
             aduc::system_utils
             aduc::workflow_data_utils
@@ -41,10 +42,8 @@ set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions (
     ${target_name}
     PRIVATE ADUC_DEVICEINFO_MANUFACTURER="${ADUC_DEVICEINFO_MANUFACTURER}"
-            ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
-            ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
-            ADUC_FILE_USER="${ADUC_FILE_USER}"
-            ADUC_DEVICEINFO_MODEL="${ADUC_DEVICEINFO_MODEL}")
+            ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}" ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
+            ADUC_FILE_USER="${ADUC_FILE_USER}" ADUC_DEVICEINFO_MODEL="${ADUC_DEVICEINFO_MODEL}")
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

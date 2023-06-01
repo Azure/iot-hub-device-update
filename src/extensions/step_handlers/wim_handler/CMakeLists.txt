@@ -29,6 +29,7 @@ target_link_libraries (
             aduc::extension_manager
             aduc::parser_utils
             aduc::process_utils
+            aduc::shutdown_service
             aduc::workflow_data_utils
             aduc::workflow_utils
             aduc::logging)

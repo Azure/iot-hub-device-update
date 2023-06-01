@@ -9,9 +9,7 @@
 
 int ADUCPAL_chmod(const char* path, mode_t mode)
 {
-    // TODO(JeffMill): [PAL]
-    // Pretty limited what we can do here, as Windows only really supports read-only on a file for owner (S_IRUSR).
-    // Maybe set/reset read-only attribute on "path"?
+    // For Windows, do nothing with mode for now.
     UNREFERENCED_PARAMETER(path);
     UNREFERENCED_PARAMETER(mode);
     return 0;
@@ -19,9 +17,7 @@ int ADUCPAL_chmod(const char* path, mode_t mode)
 
 int ADUCPAL_mkdir(const char* path, mode_t mode)
 {
-    // TODO(JeffMill): [PAL]
-    // Pretty limited what we can do here, as Windows only really supports read-only on a file for owner (S_IRUSR).
-    // Maybe set/reset read-only attribute on "path"?
+    // For Windows, do nothing with mode for now.
     UNREFERENCED_PARAMETER(mode);
 
     const int ret = _mkdir(path);

@@ -59,6 +59,8 @@ bool SystemUtils_IsFile(const char* path, int* err);
 int SystemUtils_ForEachDir(
     const char* baseDir, const char* excludeDir, ADUC_SystemUtils_ForEachDirFunctor* perDirActionFunctor);
 
+void SystemUtils_SyncFileSystem();
+
 EXTERN_C_END
 
 #endif // ADUC_SYSTEM_UTILS_H

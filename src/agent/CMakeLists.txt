@@ -8,6 +8,7 @@ add_subdirectory (adu_core_export_helpers)
 add_subdirectory (adu_core_interface)
 add_subdirectory (device_info_interface)
 add_subdirectory (pnp_helper)
+add_subdirectory (shutdown_service)
 
 if (NOT WIN32)
     add_subdirectory (command_helper)
@@ -59,8 +60,7 @@ endif ()
 
 target_compile_definitions (
     ${target_name}
-    PRIVATE ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}"
-            ADUC_VERSION="${ADUC_VERSION}"
+    PRIVATE ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}" ADUC_VERSION="${ADUC_VERSION}"
             SUPPORTED_UPDATE_MANIFEST_VERSION_MAX=${SUPPORTED_UPDATE_MANIFEST_VERSION_MAX}
             SUPPORTED_UPDATE_MANIFEST_VERSION_MIN=${SUPPORTED_UPDATE_MANIFEST_VERSION_MIN})
 
@@ -95,6 +95,7 @@ target_link_libraries (
             aduc::logging
             aduc::permission_utils
             aduc::pnp_helper
+            aduc::shutdown_service
             aduc::system_utils
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
@@ -126,11 +127,8 @@ else ()
     )
 endif ()
 
-get_filename_component (
-    ADUC_INSTALLEDCRITERIA_FILE_PATH
-    "${ADUC_DATA_FOLDER}/${ADUC_INSTALLEDCRITERIA_FILE}"
-    ABSOLUTE
-    "/")
+get_filename_component (ADUC_INSTALLEDCRITERIA_FILE_PATH
+                        "${ADUC_DATA_FOLDER}/${ADUC_INSTALLEDCRITERIA_FILE}" ABSOLUTE "/")
 
 target_compile_definitions (
     ${target_name}
@@ -150,8 +148,8 @@ target_compile_definitions (
             SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}")
 
 if (WIN32)
-    find_package(unofficial-getopt-win32 REQUIRED)
-    target_link_libraries(${target_name} PRIVATE unofficial::getopt-win32::getopt)
+    find_package (unofficial-getopt-win32 REQUIRED)
+    target_link_libraries (${target_name} PRIVATE unofficial::getopt-win32::getopt)
 endif ()
 
 target_link_libraries (${target_name} PRIVATE aduc::platform_layer)

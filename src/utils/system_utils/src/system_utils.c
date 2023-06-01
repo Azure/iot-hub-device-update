@@ -782,3 +782,8 @@ done:
 
     return err_ret;
 }
+
+void SystemUtils_SyncFileSystem()
+{
+    ADUCPAL_sync();
+}

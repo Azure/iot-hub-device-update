@@ -30,6 +30,7 @@ extern "C"
     int ADUCPAL_setegid(gid_t gid);
     int ADUCPAL_seteuid(uid_t uid);
     int ADUCPAL_setuid(uid_t uid);
+    void ADUCPAL_sync(void);
     // Note: syscall is actually (int number, ...), but the va_arg isn't used in this project.
     long ADUCPAL_syscall(long number);
 
@@ -54,6 +55,7 @@ extern "C"
 #    define ADUCPAL_setegid setegid
 #    define ADUCPAL_seteuid seteuid
 #    define ADUCPAL_setuid setuid
+#    define ADUCPAL_sync sync
 #    define ADUCPAL_syscall syscall
 
 #endif // #ifdef ADUCPAL_USE_PAL
