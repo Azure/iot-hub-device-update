@@ -27,7 +27,7 @@ int ADUCPAL_access(const char* pathname, int mode)
 
 int ADUCPAL_chown(const char* path, uid_t owner, gid_t group)
 {
-    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return success.
+    // For Windows, just return 0.
     UNREFERENCED_PARAMETER(path);
     UNREFERENCED_PARAMETER(owner);
     UNREFERENCED_PARAMETER(group);
@@ -42,13 +42,13 @@ int ADUCPAL_close(int fildes)
 
 gid_t ADUCPAL_getegid()
 {
-    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return 0.
+    // For Windows, just return 0.
     return 0;
 }
 
 uid_t ADUCPAL_geteuid()
 {
-    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return 0.
+    // For Windows, just return 0.
     return 0;
 }
 
@@ -59,7 +59,7 @@ pid_t ADUCPAL_getpid()
 
 uid_t ADUCPAL_getuid()
 {
-    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return 0.
+    // For Windows, just return 0.
     return 0;
 }
 
@@ -75,7 +75,7 @@ int ADUCPAL_rmdir(const char* path)
 
 int ADUCPAL_seteuid(uid_t uid)
 {
-    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return success.
+    // For Windows, just return 0.
     UNREFERENCED_PARAMETER(uid);
 
     return 0;
@@ -83,7 +83,7 @@ int ADUCPAL_seteuid(uid_t uid)
 
 int ADUCPAL_setegid(gid_t gid)
 {
-    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return success.
+    // For Windows, just return 0.
     UNREFERENCED_PARAMETER(gid);
 
     return 0;
@@ -91,7 +91,7 @@ int ADUCPAL_setegid(gid_t gid)
 
 int ADUCPAL_setuid(uid_t uid)
 {
-    // TODO (JeffMill): [PAL] Can't really do anything here for Windows. For now, return success.
+    // For Windows, just return 0.
     UNREFERENCED_PARAMETER(uid);
 
     return 0;

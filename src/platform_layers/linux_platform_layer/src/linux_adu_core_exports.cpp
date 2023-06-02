@@ -9,14 +9,10 @@
 #include "aduc/c_utils.h"
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
+#include "aduc/shutdown_service.h"
 #include "linux_adu_core_impl.hpp"
 #include <memory>
-
-#include <signal.h> // raise
-#include <unistd.h> // sync
-
 #include <string>
-
 #include <vector>
 
 EXTERN_C_BEGIN
@@ -102,15 +98,7 @@ int ADUC_RestartAgent()
 {
     Log_Info("Restarting ADU Agent.");
 
-    // Commit buffer cache to disk.
-    sync();
-
-    // Using SIGUSR1 to indicates a desire for shutdown and restart.
-    const int exitStatus = raise(SIGUSR1);
-    if (exitStatus != 0)
-    {
-        Log_Error("ADU Agent restart failed.");
-    }
+    ADUC_ShutdownService_RequestShutdown();
 
     return exitStatus;
 }

@@ -12,6 +12,7 @@
 #include "aduc/c_utils.h"
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
+#include "aduc/shutdown_service.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -116,18 +117,9 @@ int ADUC_RestartAgent()
 {
     Log_Info("Restarting ADU Agent.");
 
-    // Commit buffer cache to disk (No Windows equivalent)
-    // sync();
+    ADUC_ShutdownService_RequestShutdown();
 
-    // TODO(JeffMill): No need for this on Windows? Bug exists on using raise here.
-    // Using SIGUSR1 to indicates a desire for shutdown and restart.
-    // const int exitStatus = raise(SIGUSR1);
-    // if (exitStatus != 0)
-    // {
-    //     Log_Error("ADU Agent restart failed.");
-    // }
-
-    return ENOSYS;
+    return 0;
 }
 
 EXTERN_C_END

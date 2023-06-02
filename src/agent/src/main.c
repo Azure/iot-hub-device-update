@@ -25,8 +25,9 @@
 #include "aduc/iothub_communication_manager.h"
 #include "aduc/logging.h"
 #include "aduc/permission_utils.h"
+#include "aduc/shutdown_service.h"
 #include "aduc/string_c_utils.h"
-#include "aduc/system_utils.h"
+#include "aduc/system_utils.h" // ADUC_SystemUtils_MkDirRecursiveDefault
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
@@ -45,7 +46,7 @@
 #endif
 
 #include <limits.h>
-#include <signal.h>
+#include <signal.h> // signal
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h> // strtol
@@ -82,15 +83,6 @@ static const char g_diagnosticsPnPComponentName[] = "diagnosticInformation";
  * @brief Global IoT Hub client handle.
  */
 ADUC_ClientHandle g_iotHubClientHandle = NULL;
-
-/**
- * @brief Determines if we're shutting down.
- *
- * Value indicates the shutdown signal if shutdown requested.
- *
- * Do not shutdown = 0; SIGINT = 2; SIGTERM = 15;
- */
-static int g_shutdownSignal = 0;
 
 //
 // Components that this agent supports.
@@ -1008,7 +1000,7 @@ done:
  */
 void ShutdownAgent()
 {
-    Log_Info("Agent is shutting down with signal %d.", g_shutdownSignal);
+    Log_Warn("Agent is shutting down.");
     ADUC_D2C_Messaging_Uninit();
 #ifdef ADUC_COMMAND_HELPER_H
     UninitializeCommandListenerThread();
@@ -1027,24 +1019,18 @@ void ShutdownAgent()
  */
 void OnShutdownSignal(int sig)
 {
-    // Main loop will break once this becomes true.
-    g_shutdownSignal = sig;
+    Log_Warn("Shutdown signal detected: %s", sig);
+    ADUC_ShutdownService_RequestShutdown();
 }
 
-#if !defined(WIN32)
 /**
- * @brief Called when a restart (SIGUSR1) signal is detected.
- *
- * @param sig Signal value.
+ * @brief Called when a restart signal is issued.
  */
-void OnRestartSignal(int sig)
+void OnRestartSignal()
 {
-    // Note: Main loop will break once this becomes true. We rely on the 'Restart' setting in
-    // deviceupdate-agent.service file to instruct systemd to restart the agent.
-    Log_Info("Restart signal detect.");
-    g_shutdownSignal = sig;
+    Log_Warn("Restart signal detected.");
+    ADUC_ShutdownService_RequestShutdown();
 }
-#endif
 
 /**
  * @brief Sets effective user id as specified in du-config.json (agents[#].ranAs property),
@@ -1254,13 +1240,6 @@ int main(int argc, char** argv)
     signal(SIGINT, OnShutdownSignal);
     signal(SIGTERM, OnShutdownSignal);
 
-#if !defined(WIN32)
-    //
-    // Catch restart (SIGUSR1) signal raised by a workflow.
-    //
-    signal(SIGUSR1, OnRestartSignal);
-#endif
-
     if (!StartupAgent(&launchArgs))
     {
         goto done;
@@ -1271,7 +1250,7 @@ int main(int argc, char** argv)
     //
 
     Log_Info("Agent running.");
-    while (g_shutdownSignal == 0)
+    while (ADUC_ShutdownService_ShouldKeepRunning())
     {
         // If any components have requested a DoWork callback, regularly call it.
         for (unsigned index = 0; index < ARRAY_SIZE(componentList); ++index)
