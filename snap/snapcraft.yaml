@@ -88,10 +88,12 @@ parts:
       - installdeps
     plugin: nil
     source: ./scripts
+    stage-packages:
+      - libdeliveryoptimization
     override-build: |
       ./install-deps.sh --install-do --do-ref develop --do-cmake-option "-DDO_BUILD_FOR_SNAP=1"  --work-folder $SNAPCRAFT_STAGE/du-workfolder
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/lib
-      cp /usr/local/lib/libdeliveryoptimization.so* $SNAPCRAFT_PART_INSTALL/usr/lib
+    #   cp /usr/local/lib/libdeliveryoptimization.so* $SNAPCRAFT_PART_INSTALL/usr/lib
 
   #
   # Agent component
