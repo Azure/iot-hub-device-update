@@ -761,16 +761,24 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     if (ConnectionStringUtils_IsNestedEdge(info.connectionString))
     {
         result = ExtensionManager_InitializeContentDownloader(info.connectionString);
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
+            // fail the startup.
+            Log_Error("Failed to set DO connection string in Nested Edge scenario, result: 0x%08x", result.ResultCode);
+            goto done;
+        }
     }
     else
     {
         result = ExtensionManager_InitializeContentDownloader(NULL /*initializeData*/);
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            Log_Error("Failed to initialize Content Downloader. (erc:%d)", result.ExtendedResultCode);
+        }
     }
 
-    if (IsAducResultCodeFailure(result.ResultCode))
-    {
-        Log_Error("Failed to initialize Content Downloader. (erc:%d)", result.ExtendedResultCode);
-    }
+
 
 #ifndef ADUC_BUILD_SNAP
     if (InitializeCommandListenerThread())
@@ -786,13 +794,6 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     }
 #endif
 
-    if (IsAducResultCodeFailure(result.ResultCode))
-    {
-        // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
-        // fail the startup.
-        Log_Error("Failed to set DO connection string in Nested Edge scenario, result: 0x%08x", result.ResultCode);
-        goto done;
-    }
 
     succeeded = true;
 
