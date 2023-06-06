@@ -320,7 +320,14 @@ To build the DU Snap, run `snapcraft` command at project root folder.
 ```bash
 cd project_root
 snapcraft --debug
-````
+```
+
+If you are building it on ARM64 environment, use the following command.
+
+```bash
+cd project_root
+sudo snapcraft --target-arch=arm64 --destructive-mode --enable-experimental-target-arch
+```
 
 ### Build Output
 
