@@ -26,10 +26,10 @@ target_link_libraries (
             aduc::download_handler_plugin
             aduc::logging
             aduc::parser_utils
+            aduc::root_key_utils
             aduc::system_utils
             aduc::workflow_data_utils
             aduc::workflow_utils
             -zdef)
 
 target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")
-

@@ -81,7 +81,7 @@ ADUC_Result MicrosoftDeltaDownloadHandler_ProcessUpdate(
         if (relatedFileResult.ResultCode == ADUC_Result_Success_Cache_Miss)
         {
             Log_Warn("src update cache miss for Delta %d", index);
-            workflow_set_success_erc(workflowHandle, ADUC_ERC_DDH_SOURCE_UPDATE_CACHE_MISS);
+            workflow_add_erc(workflowHandle, ADUC_ERC_DDH_SOURCE_UPDATE_CACHE_MISS);
             continue;
         }
 
@@ -93,7 +93,7 @@ ADUC_Result MicrosoftDeltaDownloadHandler_ProcessUpdate(
         }
 
         Log_Warn("Delta %d failed, ERC: 0x%08x.", index, relatedFileResult.ExtendedResultCode);
-        workflow_set_success_erc(workflowHandle, relatedFileResult.ExtendedResultCode);
+        workflow_add_erc(workflowHandle, relatedFileResult.ExtendedResultCode);
         // continue processing the next relatedFile
     }
 

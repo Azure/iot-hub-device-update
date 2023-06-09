@@ -43,6 +43,17 @@
                             "value": 3
                         }
                     ]
+                },
+                {
+                    "code": 2,
+                    "doc_string": "Errors that are common across the codebase but are not ERRNO errors",
+                    "name": "ADUC_COMPONENT_COMMON_ERRORS",
+                    "results": [
+                        {
+                            "name": "ADUC_ERC_INVALIDARG",
+                            "value": 1
+                        }
+                    ]
                 }
             ],
             "code": 0,
@@ -1219,10 +1230,41 @@
             "name": "ADUC_FACILITY_DOWNLOAD_HANDLER"
         },
         {
-            "components": [],
+            "components": [
+                {
+                    "code": 0,
+                    "doc_string": "indicates extended result codes for root key workflow.",
+                    "name": "ADUC_COMPONENT_ROOTKEY_WORKFLOW",
+                    "results": [
+                        {
+                            "name": "ADUC_ERC_ROOTKEY_PKG_FAIL_JSON_PARSE",
+                            "value": 1
+                        },
+                        {
+                            "name": "ADUC_ERC_ROOTKEY_PKG_FAIL_JSON_SERIALIZE",
+                            "value": 2
+                        },
+                        {
+                            "name": "ADUC_ERC_ROOTKEY_STORE_PATH_CREATE",
+                            "value": 3
+                        },
+                        {
+                            "name": "ADUC_ERC_ROOTKEY_PKG_UNCHANGED",
+                            "value": 4095
+                        }
+                    ]
+                },
+                {
+                    "code": 1,
+                    "doc_string": "indicates extended result codes for repacking root key downloader ones.",
+                    "name": "ADUC_COMPONENT_ROOTKEY_DOWNLOADER",
+                    "results": [
+                    ]
+                }
+            ],
             "code": 10,
-            "doc_string": "unused",
-            "name": "ADUC_FACILITY_UNUSED_A"
+            "doc_string": "Indicates extended result codes for infrastructure management needed for proper functioning/integrity of update deployments.",
+            "name": "ADUC_FACILITY_INFRA_MGMT"
         },
         {
             "components": [],

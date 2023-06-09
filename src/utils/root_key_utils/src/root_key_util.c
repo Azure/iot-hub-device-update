@@ -36,6 +36,7 @@
 //
 
 static ADUC_RootKeyPackage* localStore = NULL;
+ADUC_Result_t s_rootKeyErc = 0;
 
 /**
  * @brief Helper function for making a CryptoKeyHandle from an ADUC_RootKey
@@ -493,6 +494,7 @@ ADUC_Result RootKeyUtility_ReloadPackageFromDisk()
 ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPackage, const char* fileLocation)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     JSON_Value* rootKeyPackageValue = NULL;
 
     ADUC_RootKeyPackage* tempPkg = NULL;
@@ -505,18 +507,10 @@ ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPack
         goto done;
     }
 
-    rootKeyPackageValue = json_parse_file(fileLocation);
-
-    if (rootKeyPackageValue == NULL)
+    tmpResult = RootKeyUtility_LoadSerializedPackage(fileLocation, &rootKeyPackageJsonString);
+    if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_LOAD_FROM_STORE;
-        goto done;
-    }
-    rootKeyPackageJsonString = json_serialize_to_string(rootKeyPackageValue);
-
-    if (rootKeyPackageJsonString == NULL)
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_FAILED_SERIALIZE_TO_STRING;
+        result = tmpResult;
         goto done;
     }
 
@@ -545,7 +539,6 @@ ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPack
     }
 
     result.ResultCode = ADUC_GeneralResult_Success;
-
 done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -721,4 +714,79 @@ done:
     *key = tempKey;
 
     return result;
+}
+
+ADUC_Result RootKeyUtility_LoadSerializedPackage(const char* fileLocation, char** outSerializePackage)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    JSON_Value* rootKeyPackageValue = json_parse_file(fileLocation);
+    char* rootKeyPackageJsonString = NULL;
+
+    if (rootKeyPackageValue == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_LOAD_FROM_STORE;
+        goto done;
+    }
+
+    rootKeyPackageJsonString = json_serialize_to_string(rootKeyPackageValue);
+
+    if (rootKeyPackageJsonString == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_FAILED_SERIALIZE_TO_STRING;
+        goto done;
+    }
+
+    result.ResultCode = ADUC_GeneralResult_Success;
+    *outSerializePackage = rootKeyPackageJsonString;
+    rootKeyPackageJsonString = NULL;
+done:
+
+    free(rootKeyPackageJsonString);
+
+    return result;
+}
+
+void RootKeyUtility_SetReportingErc(ADUC_Result_t erc)
+{
+    s_rootKeyErc = erc;
+}
+
+void RootKeyUtility_ClearReportingErc()
+{
+    s_rootKeyErc = 0;
+}
+
+ADUC_Result_t RootKeyUtility_GetReportingErc()
+{
+    return s_rootKeyErc;
+}
+
+bool ADUC_RootKeyPackageUtils_IsUpdateStoreNeeded(const STRING_HANDLE storePath, const char* rootKeyPackageJsonString)
+{
+    bool update_needed = true;
+    char* storePackageJsonString = NULL;
+
+    JSON_Value* storePkgJsonValue = json_parse_file(STRING_c_str(storePath));
+
+    if (storePkgJsonValue == NULL)
+    {
+        goto done;
+    }
+
+    storePackageJsonString = json_serialize_to_string(storePkgJsonValue);
+
+    if (storePackageJsonString == NULL)
+    {
+        goto done;
+    }
+
+    if (strcmp(storePackageJsonString, rootKeyPackageJsonString) == 0)
+    {
+        update_needed = false;
+    }
+
+done:
+    free(storePackageJsonString);
+
+    return update_needed;
 }

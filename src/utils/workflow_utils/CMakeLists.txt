@@ -29,16 +29,15 @@ target_compile_definitions (
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aduc::adu_types
+    PUBLIC aduc::adu_types aziotsharedutil
     PRIVATE aduc::c_utils
             aduc::extension_manager
             aduc::hash_utils
             aduc::logging
             aduc::parser_utils
+            aduc::reporting_utils
             aduc::system_utils
-            aduc::workflow_utils
             aduc::jws_utils
-            aziotsharedutil
             Parson::parson)
 
 if (ADUC_BUILD_UNIT_TESTS)

@@ -12,6 +12,7 @@
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h"
+#include "aduc/reporting_utils.h"
 #include "aduc/result.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
@@ -56,6 +57,7 @@
 #define STEP_PROPERTY_FIELD_HANDLER_PROPERTIES "handlerProperties"
 
 #define WORKFLOW_CHILDREN_BLOCK_SIZE 10
+#define WORKFLOW_MAX_SUCCESS_ERC 8
 
 /**
  * @brief Maximum length for the 'resultDetails' string.
@@ -2431,14 +2433,14 @@ ADUC_Result _workflow_init_helper(ADUC_WorkflowHandle* handle)
     wf->PropertiesObject = json_value_get_object(json_value_init_object());
     if (wf->PropertiesObject == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_ERROR_NO_MEM;
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
 
     wf->ResultsObject = json_value_get_object(json_value_init_object());
     if (wf->ResultsObject == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_ERROR_NO_MEM;
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
 
@@ -2446,7 +2448,12 @@ ADUC_Result _workflow_init_helper(ADUC_WorkflowHandle* handle)
     wf->InstalledUpdateId = STRING_new();
     wf->Result.ResultCode = ADUC_Result_Failure;
     wf->Result.ExtendedResultCode = 0;
-    wf->ResultSuccessErc = 0;
+
+    if ((wf->ResultExtraExtendedResultCodes = VECTOR_create(sizeof(ADUC_Result_t))) == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
+        goto done;
+    }
 
     wf->UpdateFileInodes = NULL;
 
@@ -2932,6 +2939,12 @@ void workflow_uninit(ADUC_WorkflowHandle handle)
         wf->ResultDetails = NULL;
         STRING_delete(wf->InstalledUpdateId);
         wf->InstalledUpdateId = NULL;
+
+        if(wf->ResultExtraExtendedResultCodes != NULL)
+        {
+            VECTOR_destroy(wf->ResultExtraExtendedResultCodes);
+            wf->ResultExtraExtendedResultCodes = NULL;
+        }
     }
 
     _workflow_free_updateaction(handle);
@@ -3271,24 +3284,28 @@ ADUC_Result workflow_get_result(ADUC_WorkflowHandle handle)
     return wf->Result;
 }
 
-void workflow_set_success_erc(ADUC_WorkflowHandle handle, ADUC_Result_t erc)
+void workflow_add_erc(ADUC_WorkflowHandle handle, ADUC_Result_t erc)
 {
     ADUC_Workflow* wf = workflow_from_handle(handle);
-    if (wf != NULL)
+    if (wf != NULL && wf->ResultExtraExtendedResultCodes != NULL)
     {
-        wf->ResultSuccessErc = erc;
+        if (VECTOR_push_back(wf->ResultExtraExtendedResultCodes, &erc, 1) != 0)
+        {
+            Log_Warn("push ", wf->Level);
+        }
     }
 }
 
-ADUC_Result_t workflow_get_success_erc(ADUC_WorkflowHandle handle)
+STRING_HANDLE workflow_get_extra_ercs(ADUC_WorkflowHandle handle)
 {
     ADUC_Workflow* wf = workflow_from_handle(handle);
-    if (wf == NULL)
+    if (wf == NULL || wf->ResultExtraExtendedResultCodes == NULL)
     {
-        return 0;
+        return NULL;
     }
 
-    return wf->ResultSuccessErc;
+    return ADUC_ReportingUtils_StringHandleFromVectorInt32(
+        wf->ResultExtraExtendedResultCodes, WORKFLOW_MAX_SUCCESS_ERC);
 }
 
 const char* workflow_peek_result_details(ADUC_WorkflowHandle handle)

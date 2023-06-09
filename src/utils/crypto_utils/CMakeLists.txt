@@ -20,8 +20,7 @@ target_link_libraries (
     PUBLIC aduc::c_utils
     PRIVATE aziotsharedutil aduc::root_key_utils OpenSSL::Crypto)
 
-include (aduc_security)
-embed_test_root_keys_if_applicable (${PROJECT_NAME})
+target_compile_definitions (${PROJECT_NAME} PRIVATE EMBED_TEST_ROOT_KEYS=${EMBED_TEST_ROOT_KEYS})
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

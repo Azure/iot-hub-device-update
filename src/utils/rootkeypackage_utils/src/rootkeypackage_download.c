@@ -13,6 +13,7 @@
 #include <aduc/string_c_utils.h>
 #include <aduc/system_utils.h>
 #include <aduc/url_utils.h>
+#include <unistd.h> // unlink
 
 EXTERN_C_BEGIN
 
@@ -33,6 +34,7 @@ ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
     STRING_HANDLE* outRootKeyPackageDownloadedFile)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    int err = 0;
 
     STRING_HANDLE targetDir = NULL;
     STRING_HANDLE targetFileName = NULL;
@@ -88,6 +90,16 @@ ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
         result.ResultCode = ADUC_GeneralResult_Failure;
         result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
+    }
+
+    if (SystemUtils_IsFile(STRING_c_str(targetFilePath), &err))
+    {
+        Log_Warn("rootkey package '%s' in sandbox. Try deletion...", STRING_c_str(targetFileName));
+        if (unlink(STRING_c_str(targetFilePath)) != 0)
+        {
+            Log_Warn("Fail unlink '%s': %d", STRING_c_str(targetFilePath), errno);
+            // continue below and try to download anyways.
+        }
     }
 
     // There is no hash to check so it is a forced download without lookup of

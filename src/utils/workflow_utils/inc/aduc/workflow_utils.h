@@ -456,8 +456,9 @@ ADUCITF_State workflow_get_state(ADUC_WorkflowHandle handle);
 
 ADUC_Result workflow_get_result(ADUC_WorkflowHandle handle);
 void workflow_set_result(ADUC_WorkflowHandle handle, ADUC_Result result);
-ADUC_Result_t workflow_get_success_erc(ADUC_WorkflowHandle handle);
-void workflow_set_success_erc(ADUC_WorkflowHandle handle, ADUC_Result_t erc);
+
+void workflow_add_erc(ADUC_WorkflowHandle handle, ADUC_Result_t erc);
+STRING_HANDLE workflow_get_extra_ercs(ADUC_WorkflowHandle handle);
 
 /**
  * @brief Set workflow resultDetails string.
