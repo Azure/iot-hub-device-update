@@ -639,6 +639,12 @@ JSON_Value* GetReportingJsonValue(
     const char* installedUpdateId)
 {
     JSON_Value* resultValue = NULL;
+
+    // Declare and init here to avoid maybe-uninitialized static analysis errors
+    JSON_Value* rootValue = NULL;
+    JSON_Value* lastInstallResultValue = NULL;
+    JSON_Value* stepResultsValue = NULL;
+    JSON_Value* workflowValue = NULL;
     STRING_HANDLE rootResultERCs = NULL;
 
     //
@@ -670,7 +676,7 @@ JSON_Value* GetReportingJsonValue(
         goto done;
     }
 
-    JSON_Value* rootValue = json_value_init_object();
+    rootValue = json_value_init_object();
     JSON_Object* rootObject = json_value_get_object(rootValue);
     int stepsCount = workflow_get_children_count(handle);
 
@@ -707,13 +713,13 @@ JSON_Value* GetReportingJsonValue(
     //     }
     // }
 
-    JSON_Value* lastInstallResultValue = json_value_init_object();
+    lastInstallResultValue = json_value_init_object();
     JSON_Object* lastInstallResultObject = json_object(lastInstallResultValue);
 
-    JSON_Value* stepResultsValue = json_value_init_object();
+    stepResultsValue = json_value_init_object();
     JSON_Object* stepResultsObject = json_object(stepResultsValue);
 
-    JSON_Value* workflowValue = json_value_init_object();
+    workflowValue = json_value_init_object();
 
     if (lastInstallResultValue == NULL || stepResultsValue == NULL || workflowValue == NULL)
     {

@@ -729,8 +729,8 @@ ADUC_Result RootKeyPackage_ParseRootKeys(JSON_Object* protectedPropertiesObj, AD
 done:
     if (rootKeys != NULL)
     {
-        size_t cnt = VECTOR_size(rootKeys);
-        for (size_t i = 0; i < cnt; ++i)
+        size_t root_key_vec_size = VECTOR_size(rootKeys);
+        for (size_t i = 0; i < root_key_vec_size; ++i)
         {
             ADUC_RootKey* node = (ADUC_RootKey*)VECTOR_element(rootKeys, i);
             ADUC_RootKey_DeInit(node);
