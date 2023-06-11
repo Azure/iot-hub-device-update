@@ -876,6 +876,8 @@ done:
 static ADUC_Result workflow_validate_update_manifest_signature(JSON_Object* updateActionObject)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    const char* manifestSignature = NULL;
+    JWSResult jwsResult = JWSResult_Failed;
 
     if (updateActionObject == NULL)
     {
@@ -883,8 +885,7 @@ static ADUC_Result workflow_validate_update_manifest_signature(JSON_Object* upda
         return result;
     }
 
-    const char* manifestSignature =
-        json_object_get_string(updateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFESTSIGNATURE);
+    manifestSignature = json_object_get_string(updateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFESTSIGNATURE);
     if (manifestSignature == NULL)
     {
         Log_Error("Invalid manifest. Does not contain a signature");
@@ -892,11 +893,12 @@ static ADUC_Result workflow_validate_update_manifest_signature(JSON_Object* upda
         goto done;
     }
 
-    JWSResult jwsResult = VerifyJWSWithSJWK(manifestSignature);
+    jwsResult = VerifyJWSWithSJWK(manifestSignature);
     if (jwsResult != JWSResult_Success)
     {
-        Log_Error("Manifest signature validation failed with result: %u", jwsResult);
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MANIFEST_VALIDATION_FAILED;
+        Log_Error("Manifest signature validation failed with result: '%s' (%u). ERC: ADUC_COMPONENT_JWS_UPDATE_MANIFEST_VALIDATION", jws_result_to_str(jwsResult), jwsResult);
+
+        result.ExtendedResultCode = MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_INFRA_MGMT(ADUC_COMPONENT_JWS_UPDATE_MANIFEST_VALIDATION, jwsResult);
         goto done;
     }
 

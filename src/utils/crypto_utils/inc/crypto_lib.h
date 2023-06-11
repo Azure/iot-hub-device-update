@@ -50,6 +50,8 @@ CryptoKeyHandle GetRootKeyForKeyID(const char* kid);
 
 void CryptoUtils_FreeCryptoKeyHandle(CryptoKeyHandle key);
 
+CryptoKeyHandle CryptoUtils_GeneratePublicKey(const char* modulus_b64url, const char* exponent_b64url);
+
 EXTERN_C_END
 
 #endif // CRYPTO_LIB_H

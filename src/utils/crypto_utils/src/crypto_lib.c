@@ -337,15 +337,15 @@ done:
 /**
  *@brief Makes an RSA Key from the base64 encoded strings of the modulus and exponent
  *@param encodedN a string of the modulus encoded in base64
- *@param encodede a string of the exponent encoded in base64
+ *@param encodedE a string of the exponent encoded in base64
  *@return NULL on failure and a pointer to a key on success
  */
-CryptoKeyHandle RSAKey_ObjFromStrings(const char* N, const char* e)
+CryptoKeyHandle RSAKey_ObjFromStrings(const char* encodedN, const char* encodedE)
 {
     EVP_PKEY* result = NULL;
     EVP_PKEY* pkey = NULL;
-    BIGNUM* M = NULL;
-    BIGNUM* E = NULL;
+    BIGNUM* modulus = NULL;
+    BIGNUM* exponent = NULL;
 
     RSA* rsa = RSA_new();
     if (rsa == NULL)
@@ -353,29 +353,29 @@ CryptoKeyHandle RSAKey_ObjFromStrings(const char* N, const char* e)
         goto done;
     }
 
-    M = BN_new();
-    if (M == NULL)
+    modulus = BN_new();
+    if (modulus == NULL)
     {
         goto done;
     }
 
-    E = BN_new();
-    if (E == NULL)
+    exponent = BN_new();
+    if (exponent == NULL)
     {
         goto done;
     }
 
-    if (BN_hex2bn(&M, N) == 0)
+    if (BN_hex2bn(&modulus, encodedN) == 0)
     {
         goto done;
     }
 
-    if (BN_hex2bn(&E, e) == 0)
+    if (BN_hex2bn(&exponent, encodedE) == 0)
     {
         goto done;
     }
 
-    if (RSA_set0_key(rsa, M, E, NULL) == 0)
+    if (RSA_set0_key(rsa, modulus, exponent, NULL) == 0)
     {
         goto done;
     }
@@ -391,8 +391,8 @@ CryptoKeyHandle RSAKey_ObjFromStrings(const char* N, const char* e)
 done:
     if (result == NULL)
     {
-        BN_free(M);
-        BN_free(E);
+        BN_free(modulus);
+        BN_free(exponent);
         EVP_PKEY_free(pkey);
     }
 
@@ -440,4 +440,72 @@ done:
 void CryptoUtils_FreeCryptoKeyHandle(CryptoKeyHandle key)
 {
     EVP_PKEY_free(CryptoKeyHandleToEVP_PKEY(key));
+}
+
+BUFFER_HANDLE CryptoUtils_GeneratePublicKey(const char* encodedModulus, const char* encodedExponent)
+{
+    BUFFER_HANDLE publicKeyData = NULL;
+
+    unsigned char *modulus_bytes, *exponent_bytes;
+    int modulus_length, exponent_length;
+    BIGNUM* bn_modulus = NULL;
+    BIGNUM* bn_exponent = NULL;
+    RSA* rsa = NULL;
+    unsigned char *der_encoded_bytes = NULL;
+    int der_length = 0;
+
+    modulus_length = Base64URLDecode(encodedModulus, &modulus_bytes);
+    if (modulus_length == 0)
+    {
+        goto done;
+    }
+
+    exponent_length = Base64URLDecode(encodedExponent, &exponent_bytes);
+    if (exponent_length == 0)
+    {
+        goto done;
+    }
+
+    bn_modulus = BN_bin2bn(modulus_bytes, modulus_length, NULL);
+    if (bn_modulus == NULL)
+    {
+        goto done;
+    }
+
+    bn_exponent = BN_bin2bn(exponent_bytes, exponent_length, NULL);
+    if (bn_exponent == NULL)
+    {
+        goto done;
+    }
+
+    rsa = RSA_new();
+    if (rsa == NULL)
+    {
+        goto done;
+    }
+
+    if (RSA_set0_key(rsa, bn_modulus, bn_exponent, NULL) == 0);
+    {
+        goto done;
+    }
+
+    der_encoded_bytes = NULL;
+    der_length = i2d_RSAPublicKey(rsa, &der_encoded_bytes); // DER PKCS#1
+    if (der_length == 0)
+    {
+        goto done;
+    }
+    // der_length = i2d_RSA_PUBKEY(rsa, &der_encoded_bytes); // cert format?
+
+    publicKeyData = BUFFER_create(der_encoded_bytes, der_length);
+
+done:
+
+    // Clean up
+    free(modulus_bytes);
+    free(exponent_bytes);
+    // Do not explicitly free bn_modulus and bn_exponent
+    RSA_free(rsa);
+
+    return publicKeyData;
 }

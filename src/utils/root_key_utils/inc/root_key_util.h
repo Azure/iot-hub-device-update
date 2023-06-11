@@ -32,7 +32,9 @@ ADUC_Result RootKeyUtility_LoadSerializedPackage(const char* fileLocation, char*
 void RootKeyUtility_SetReportingErc(ADUC_Result_t erc);
 void RootKeyUtility_ClearReportingErc();
 ADUC_Result_t RootKeyUtility_GetReportingErc();
-bool ADUC_RootKeyPackageUtils_IsUpdateStoreNeeded(const STRING_HANDLE fileDest, const char* rootKeyPackageJsonString);
+bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE fileDest, const char* rootKeyPackageJsonString);
+ADUC_Result RootKeyUtility_IsSigningKeyDisallowed(const char* payload_alg, const CONSTBUFFER payload_hashPublicKeySigningKey, bool* is_signing_key_disallowed);
+ADUC_Result RootKeyUtility_GetAlgAndPublicKeyHashSigningKeyFromSigningKeyPayload(const char* decodedSigningKeyPayload, char* outHashAlgStr, CONSTBUFFER* outHashPublicKey);
 
 EXTERN_C_END
 #endif // ROOT_KEY_UTIL_H
