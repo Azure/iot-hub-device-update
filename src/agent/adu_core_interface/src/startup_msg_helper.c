@@ -92,13 +92,20 @@ done:
 /**
  * @brief Adds the compatPropertyNames to the @p startupObj
  * @param startupObj the JSON Object which will have the compatPropertyNames from config added to it
- * @param config the ADUC_ConfigInfo that contains the config info
+ * @remark This function requires that the ADUC_ConfigInfo singleton has been initialized.
  * @returns true on successful addition, false on failure
  */
-bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj, ADUC_ConfigInfo* config)
+bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj)
 {
     if (startupObj == NULL)
     {
+        return false;
+    }
+
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
+    {
+        Log_Error("ADUC_ConfigInfo singleton hasn't been initialized");
         return false;
     }
 
@@ -107,7 +114,8 @@ bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj, ADUC_ConfigInfo*
     JSON_Status jsonStatus = json_object_set_string(
         startupObj,
         ADUCITF_FIELDNAME_COMPAT_PROPERTY_NAMES,
-        IsNullOrEmpty(config->compatPropertyNames) ? DEFAULT_COMPAT_PROPERTY_NAMES_VALUE : config->compatPropertyNames);
+        IsNullOrEmpty(config->compatPropertyNames) ? DEFAULT_COMPAT_PROPERTY_NAMES_VALUE
+                                                   : config->compatPropertyNames);
 
     if (jsonStatus != JSONSuccess)
     {
@@ -118,6 +126,9 @@ bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj, ADUC_ConfigInfo*
     success = true;
 
 done:
-
+    if (config != NULL)
+    {
+        ADUC_ConfigInfo_ReleaseInstance(config);
+    }
     return success;
 }

@@ -5,6 +5,7 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+#include "aduc/config_utils.h"
 #include "aduc/extension_utils.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
@@ -140,8 +141,15 @@ static bool GetHandlerExtensionFileEntity(
  */
 bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity* fileEntity)
 {
-    return GetHandlerExtensionFileEntity(
-        updateType, ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR, ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME, fileEntity);
+    bool ret = false;
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL)
+    {
+        ret = GetHandlerExtensionFileEntity(
+            updateType, config->extensionsStepHandlerFolder, ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME, fileEntity);
+        ADUC_ConfigInfo_ReleaseInstance(config);
+    }
+    return ret;
 }
 
 /**
@@ -317,11 +325,20 @@ done:
  */
 bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFilePath)
 {
-    return RegisterHandlerExtension(
-        updateType,
-        handlerFilePath,
-        ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR,
-        ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME);
+    bool ret = false;
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL)
+    {
+        ret = RegisterHandlerExtension(
+            updateType,
+            handlerFilePath,
+            config->extensionsStepHandlerFolder,
+            ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME);
+
+        ADUC_ConfigInfo_ReleaseInstance(config);
+    }
+
+    return ret;
 }
 
 /**

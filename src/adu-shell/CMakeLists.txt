@@ -50,7 +50,7 @@ target_compile_definitions (
     ${target_name}
     PRIVATE ADUC_VERSION="${ADUC_VERSION}"
             ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
-            ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
+            ADUC_CONF_FOLDER="${ADUC_CONF_FOLDER}"
             ADUC_STEP_HANDLERS="${ADUC_STEP_HANDLERS}"
             ADUSHELL_EFFECTIVE_GROUP_NAME="${ADUSHELL_EFFECTIVE_GROUP_NAME}"
             ${adushell_def})

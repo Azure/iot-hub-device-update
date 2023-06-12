@@ -125,7 +125,8 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
  * @param workflowData The workflow data.
  * @return bool true if call succeeded.
  */
-static bool ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_value, ADUC_WorkflowData* workflowData)
+static bool
+ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_value, ADUC_WorkflowData* workflowData)
 {
     bool success = false;
 
@@ -198,14 +199,14 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    ADUC_ConfigInfo config = {};
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
 
-    if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    if (config == NULL)
     {
         goto done;
     }
 
-    const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(&config, 0);
+    const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(config, 0);
 
     if (!StartupMsg_AddDeviceProperties(startupMsgObj, agent))
     {
@@ -213,7 +214,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    if (!StartupMsg_AddCompatPropertyNames(startupMsgObj, &config))
+    if (!StartupMsg_AddCompatPropertyNames(startupMsgObj))
     {
         Log_Error("Could not add compatPropertyNames to the startup message");
         goto done;
@@ -234,7 +235,11 @@ done:
     json_value_free(startupMsgValue);
     json_free_serialized_string(jsonString);
 
-    ADUC_ConfigInfo_UnInit(&config);
+    if (config != NULL)
+    {
+        ADUC_ConfigInfo_ReleaseInstance(config);
+    }
+
     return success;
 }
 

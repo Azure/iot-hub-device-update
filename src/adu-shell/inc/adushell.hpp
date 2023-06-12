@@ -29,6 +29,7 @@ typedef struct tagADUShell_LaunchArguments
     std::vector<char*> targetOptions; /**< Additional options to pass to target command */
     char* logFile; /**< Custom log file path */
     bool showVersion; /**< Show an agent version */
+    const char* configFolder; /**< Custom config folder. Default is /etc/adu */
 } ADUShell_LaunchArguments;
 
 /**

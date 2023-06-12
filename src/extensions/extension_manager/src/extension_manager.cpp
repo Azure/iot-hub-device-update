@@ -11,6 +11,7 @@
 #include <aduc/c_utils.h>
 #include <aduc/calloc_wrapper.hpp> // ADUC::StringUtils::cstr_wrapper
 #include <aduc/component_enumerator_extension.hpp>
+#include <aduc/config_utils.h>
 #include <aduc/content_downloader_extension.hpp>
 #include <aduc/content_handler.hpp>
 #include <aduc/contract_utils.h>
@@ -202,6 +203,7 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
     GET_CONTRACT_INFO_PROC getContractInfoFn = nullptr;
     void* libHandle = nullptr;
     ADUC_ExtensionContractInfo contractInfo{};
+    const ADUC_ConfigInfo* config = nullptr;
 
     Log_Info("Loading handler for '%s'.", updateType.c_str());
 
@@ -243,9 +245,16 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
         goto done;
     }
 
+    config = ADUC_ConfigInfo_GetInstance();
+    if (config == nullptr)
+    {
+        Log_Error("ADUC_ConfigInfo singleton hasn't been initialized.");
+        goto done;
+    }
+
     result = LoadExtensionLibrary(
         updateType.c_str(),
-        ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR,
+        config->extensionsStepHandlerFolder,
         folderName.c_str(),
         ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME,
         "CreateUpdateContentHandlerExtension",
@@ -334,6 +343,11 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
     result = { ADUC_GeneralResult_Success };
 
 done:
+
+    if (config != nullptr)
+    {
+        ADUC_ConfigInfo_ReleaseInstance(config);
+    }
     if (result.ResultCode == 0)
     {
         if (libHandle != nullptr)

@@ -20,7 +20,7 @@ adu_diagnostics_conf_file=du-diagnostics-config.json
 adu_log_dir=/var/log/adu
 adu_data_dir=/var/lib/adu
 adu_downloads_dir="$adu_data_dir/downloads"
-adu_shell_dir=/usr/lib/adu
+adu_shell_dir=/usr/bin
 adu_shell_file=adu-shell
 
 adu_bin_path=/usr/bin/AducIotAgent

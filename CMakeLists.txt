@@ -129,7 +129,7 @@ set (
 set (
     ADUC_EXTENSIONS_INSTALL_FOLDER
     "${ADUC_EXTENSIONS_FOLDER}/sources"
-    CACHE STRING "Path to the folder containing extensions .so file(s).")
+    CACHE STRING "Path to the folder containing extensions .so file(s). This value can not be overridden by du-config.json.")
 
 set (
     ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME
@@ -170,11 +170,6 @@ set (
     ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR
     "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER}"
     CACHE STRING "Path for content downloader extension.")
-
-set (
-    ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS}"
-    CACHE STRING "Sub folder for update step handler extensions.")
 
 set (
     ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS
@@ -306,19 +301,13 @@ set (
 
 set (
     ADUSHELL_FOLDER
-    "/usr/lib/adu"
+    "/usr/bin"
     CACHE STRING "The directory of the adu-shell binary.")
 
 set (
     ADUSHELL_FILENAME
     "adu-shell"
     CACHE STRING "Filename of adu-shell.")
-
-get_filename_component (
-    ADUSHELL_FILE_PATH
-    "${ADUSHELL_FOLDER}/${ADUSHELL_FILENAME}"
-    ABSOLUTE
-    "/")
 
 set (
     ADUSHELL_FILE_PATH

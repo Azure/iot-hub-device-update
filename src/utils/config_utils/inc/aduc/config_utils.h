@@ -37,7 +37,7 @@ typedef struct tagADUC_AgentInfo
 
     char* connectionType; /**< It can be either AIS or string. */
 
-    char* connectionData; /**< the name in AIS principal (AIS); or the connectionString (conncetionType string). */
+    char* connectionData; /**< the name in AIS principal (AIS); or the connectionString (connectionType string). */
 
     char* manufacturer; /**< Device property manufacturer. */
 
@@ -53,6 +53,8 @@ typedef struct tagADUC_AgentInfo
 
 typedef struct tagADUC_ConfigInfo
 {
+    int refCount; /**< A reference count for this object. */
+
     char* schemaVersion;
 
     JSON_Array* aduShellTrustedUsers; /**< All the trusted users for ADU shell. */
@@ -73,7 +75,55 @@ typedef struct tagADUC_ConfigInfo
 
     unsigned int
         downloadTimeoutInMinutes; /**< The timeout for downloading an update payload. A value of zero means to use the default. */
+
+    char* aduShellFolder; /**< The folder where ADU shell is installed. */
+
+    char* aduShellFilePath; /**< The full path to ADU shell binary. */
+
+    char* configFolder; /**< The folder where ADU stores its configuration. */
+
+    char* dataFolder; /**< The folder where ADU stores its data. */
+
+    char* downloadsFolder; /**< The folder where ADU stores downloaded payloads. */
+
+    char* extensionsFolder; /**< The folder where ADU stores its extensions. */
+
+    char* extensionsComponentEnumeratorFolder; /**< The folder where ADU stores its component enumerator extensions. */
+
+    char* extensionsContentDownloaderFolder; /**< The folder where ADU stores its content downloader extensions. */
+
+    char* extensionsStepHandlerFolder; /**< The folder where ADU stores its step handler extensions. */
+
+    char* extensionsDownloadHandlerFolder; /**< The folder where ADU stores its downloader handler extensions. */
+
+    char* logsFolder; /**< The folder where ADU stores its logs. */
+
 } ADUC_ConfigInfo;
+
+/**
+ * @brief Create the ADUC_ConfigInfo object.
+ *
+ * @param configFilePath a pointer to the configuration file path
+ * @return const ADUC_ConfigInfo* a pointer to ADUC_ConfigInfo object. NULL if failure.
+ * Caller must call ADUC_ConfigInfo_Release to free the object.
+ */
+const ADUC_ConfigInfo* ADUC_ConfigInfo_CreateInstance(const char* configFilePath);
+
+/**
+ * @brief Create the ADUC_ConfigInfo object.
+ *
+ * @return const ADUC_ConfigInfo* a pointer to ADUC_ConfigInfo object. NULL if failure.
+ * Caller must call ADUC_ConfigInfo_Release to free the object.
+ */
+const ADUC_ConfigInfo* ADUC_ConfigInfo_GetInstance();
+
+/**
+ * @brief Release the ADUC_ConfigInfo object.
+ *
+ * @param configInfo a pointer to ADUC_ConfigInfo object
+ * @return int The reference count of the ADUC_ConfigInfo object after released.
+ */
+int ADUC_ConfigInfo_ReleaseInstance(const ADUC_ConfigInfo* configInfo);
 
 /**
  * @brief Allocates the memory for the ADUC_ConfigInfo struct member values
@@ -97,7 +147,7 @@ void ADUC_ConfigInfo_UnInit(ADUC_ConfigInfo* config);
  * @param index
  * @return const ADUC_AgentInfo*, NULL if failure
  */
-const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(ADUC_ConfigInfo* config, unsigned int index);
+const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(const ADUC_ConfigInfo* config, unsigned int index);
 
 /**
  * @brief Get the adu trusted user list
