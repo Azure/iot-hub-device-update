@@ -335,7 +335,7 @@ TEST_CASE("RootKeyPackageUtils_Parse")
 
         std::string protectedProperties = get_serialized_protectedProperties(pkgJson);
 
-        CHECK_THAT(STRING_c_str(pkg.protectedPropertiesJsonString),Equals(protectedProperties.c_str()));
+        CHECK_THAT(STRING_c_str(pkg.protectedPropertiesJsonString), Equals(protectedProperties.c_str()));
 
         json_value_free(pkgJson);
 
@@ -384,4 +384,27 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(rootkey_pkg_json.c_str(), &pkg);
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
     }
+}
+
+TEST_CASE("ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList")
+{
+    SECTION("Missing - Empty list")
+    {
+        // bool found = false;
+        // ADUC_Result result = ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(
+        //     &pkg,
+        //     const char* signingKeyAlg,
+        //     const CONSTBUFFER_HANDLE signingKeyHashOfPublicKey,
+        //     &found);
+    }
+
+    SECTION("Missing - Non-empty list")
+    {
+        // ADUC_Result ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(const ADUC_RootKeyPackage* rootKeyPackage, const char* signingKeyAlg, const CONSTBUFFER_HANDLE signingKeyHashOfPublicKey, bool* outWasFound)
+    }
+
+    SECTION("Found")
+
+    // ADUC_Result ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(const ADUC_RootKeyPackage* rootKeyPackage, const char* signingKeyAlg, const CONSTBUFFER_HANDLE signingKeyHashOfPublicKey, bool* outWasFound)
+}
 }

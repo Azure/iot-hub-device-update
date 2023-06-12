@@ -248,7 +248,7 @@ done:
  */
 const char* jws_result_to_str(JWSResult r)
 {
-    switch(r)
+    switch (r)
     {
     case JWSResult_Failed:
         return "Failed";
@@ -297,439 +297,448 @@ const char* jws_result_to_str(JWSResult r)
 
     default:
         return "???";
-}
+    }
 
-/**
+    /**
  * @brief Verifies the Base64URL encoded @p sjwk in Signed JSON Web Key (SJWK) format using the KiD found within the encoded JWKs Header
  * @details A Signed JSON Web Key (SJWK) is JWK in JSON Web Signature (JWS) format. The function parses the header for the kid, builds the associated key, and then verifies the signature of the JWK
  * @param sjwk a base64URL encoded string that contains the Signed JSON Web Key
  * @returns a value of JWSResult
  */
-JWSResult VerifySJWK(const char* sjwk)
-{
-    JWSResult retval = JWSResult_Failed;
-    ADUC_Result result = { ADUC_GeneralResult_Failure, 0};
-
-    char* header = NULL;
-
-    char* jsonHeader = NULL;
-    char* kid = NULL;
-    void* rootKey = NULL;
-
-    if (!ExtractJWSHeader(sjwk, &header))
+    JWSResult VerifySJWK(const char* sjwk)
     {
-        retval = JWSResult_BadStructure;
-        goto done;
-    }
+        JWSResult retval = JWSResult_Failed;
+        ADUC_Result result = { ADUC_GeneralResult_Failure, 0 };
 
-    jsonHeader = Base64URLDecodeToString(header);
+        char* header = NULL;
 
-    if (jsonHeader == NULL)
-    {
-        retval = JWSResult_Failed;
-        goto done;
-    }
+        char* jsonHeader = NULL;
+        char* kid = NULL;
+        void* rootKey = NULL;
 
-    kid = GetStringValueFromJSON(jsonHeader, "kid");
-
-    if (kid == NULL)
-    {
-        retval = JWSResult_Failed;
-        goto done;
-    }
-
-    result = RootKeyUtility_GetKeyForKid(&rootKey, kid);
-
-    if (IsAducResultCodeFailure(result.ResultCode))
-    {
-        if (result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_ROOTKEY_IS_DISABLED)
+        if (!ExtractJWSHeader(sjwk, &header))
         {
-            retval = JWSResult_DisallowedRootKid;
+            retval = JWSResult_BadStructure;
+            goto done;
         }
-        else if (result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID)
+
+        jsonHeader = Base64URLDecodeToString(header);
+
+        if (jsonHeader == NULL)
         {
-            retval = JWSResult_MissingRootKid;
+            retval = JWSResult_Failed;
+            goto done;
         }
-        else
+
+        kid = GetStringValueFromJSON(jsonHeader, "kid");
+
+        if (kid == NULL)
         {
-            retval = JWSResult_InvalidRootKid;
+            retval = JWSResult_Failed;
+            goto done;
         }
-        goto done;
+
+        result = RootKeyUtility_GetKeyForKid(&rootKey, kid);
+
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            if (result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_ROOTKEY_IS_DISABLED)
+            {
+                retval = JWSResult_DisallowedRootKid;
+            }
+            else if (result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID)
+            {
+                retval = JWSResult_MissingRootKid;
+            }
+            else
+            {
+                retval = JWSResult_InvalidRootKid;
+            }
+            goto done;
+        }
+
+        retval = VerifyJWSWithKey(sjwk, rootKey);
+
+        if (retval != JWSResult_Success)
+        {
+            goto done;
+        }
+
+    done:
+
+        if (header != NULL)
+        {
+            free(header);
+        }
+
+        if (kid != NULL)
+        {
+            free(kid);
+        }
+
+        if (jsonHeader != NULL)
+        {
+            free(jsonHeader);
+        }
+
+        if (rootKey != NULL)
+        {
+            CryptoUtils_FreeCryptoKeyHandle(rootKey);
+        }
+
+        return retval;
     }
 
-    retval = VerifyJWSWithKey(sjwk, rootKey);
-
-    if (retval != JWSResult_Success)
-    {
-        goto done;
-    }
-
-done:
-
-    if (header != NULL)
-    {
-        free(header);
-    }
-
-    if (kid != NULL)
-    {
-        free(kid);
-    }
-
-    if (jsonHeader != NULL)
-    {
-        free(jsonHeader);
-    }
-
-    if (rootKey != NULL)
-    {
-        CryptoUtils_FreeCryptoKeyHandle(rootKey);
-    }
-
-    return retval;
-}
-
-/**
+    /**
  * @brief Verifies the BASE64URL encoded @p blob JSON Web Signature (JWS) using the key held within the Signed JSON Web Key header parameter
  * @details Verifies the Signed JSON Web Key (SJWK) and uses the key from the SJWK to validate the JSON Web Signature @p blob
  * @param jws a Base64URL encoded JSON Web Token in JSON Web Signature format with a Signed JSON Web Key within the header
  * @returns a value of JWSResult
  */
-JWSResult VerifyJWSWithSJWK(const char* jws)
-{
-    JWSResult result = JWSResult_Failed;
-    JWSResult resultVerifyJwsWithkey = JWSResult_Failed;
-
-    char* header = NULL;
-    char* jsonHeader = NULL;
-    char* sjwk = NULL;
-    CryptoKeyHandle key = NULL;
-
-    if (!ExtractJWSHeader(jws, &header))
+    JWSResult VerifyJWSWithSJWK(const char* jws)
     {
-        result = JWSResult_BadStructure;
-        goto done;
+        JWSResult result = JWSResult_Failed;
+        JWSResult resultVerifyJwsWithkey = JWSResult_Failed;
+
+        char* header = NULL;
+        char* jsonHeader = NULL;
+        char* sjwk = NULL;
+        CryptoKeyHandle key = NULL;
+
+        if (!ExtractJWSHeader(jws, &header))
+        {
+            result = JWSResult_BadStructure;
+            goto done;
+        }
+
+        jsonHeader = Base64URLDecodeToString(header);
+
+        if (jsonHeader == NULL)
+        {
+            result = JWSResult_InvalidEncodingJWSHeader;
+            goto done;
+        }
+
+        sjwk = GetStringValueFromJSON(jsonHeader, "sjwk");
+
+        result = VerifySJWK(sjwk);
+        if (result != JWSResult_Success)
+        {
+            goto done;
+        }
+
+        key = GetKeyFromBase64EncodedJWK(sjwk);
+        if (key == NULL)
+        {
+            result = JWSResult_BadStructure;
+            goto done;
+        }
+
+        resultVerifyJwsWithkey = VerifyJWSWithKey(jws, key);
+
+        if (result != JWSResult_Success)
+        {
+            result = resultVerifyJwsWithkey;
+            goto done;
+        }
+
+    done:
+        if (header != NULL)
+        {
+            free(header);
+        }
+
+        if (jsonHeader != NULL)
+        {
+            free(jsonHeader);
+        }
+
+        if (sjwk != NULL)
+        {
+            free(sjwk);
+        }
+
+        if (key != NULL)
+        {
+            CryptoUtils_FreeCryptoKeyHandle(key);
+        }
+        return result;
     }
 
-    jsonHeader = Base64URLDecodeToString(header);
-
-    if (jsonHeader == NULL)
-    {
-        result = JWSResult_InvalidEncodingJWSHeader;
-        goto done;
-    }
-
-    sjwk = GetStringValueFromJSON(jsonHeader, "sjwk");
-
-    result = VerifySJWK(sjwk);
-    if (result != JWSResult_Success)
-    {
-        goto done;
-    }
-
-    key = GetKeyFromBase64EncodedJWK(sjwk);
-    if (key == NULL)
-    {
-        result = JWSResult_BadStructure;
-        goto done;
-    }
-
-    resultVerifyJwsWithkey = VerifyJWSWithKey(jws, key);
-
-    if (result != JWSResult_Success)
-    {
-        result = resultVerifyJwsWithkey;
-        goto done;
-    }
-
-done:
-    if (header != NULL)
-    {
-        free(header);
-    }
-
-    if (jsonHeader != NULL)
-    {
-        free(jsonHeader);
-    }
-
-    if (sjwk != NULL)
-    {
-        free(sjwk);
-    }
-
-    if (key != NULL)
-    {
-        CryptoUtils_FreeCryptoKeyHandle(key);
-    }
-    return result;
-}
-
-/**
+    /**
  * @brief Verifies the Base64URL encoded @p blob JSON Web Signature (JWS) using @p key
  * @details Function expects a Base64URL encoded @p blob in JSON Web Signature format and verifies its signature using @p key
  * @param blob a Base64URL encoded JSON Web Token in JSON Web Signature format
  * @param key the public key created with the crypto_lib functions that corresponds to the one used to sign the @p blob
  * @returns a value of JWSResult
  */
-JWSResult VerifyJWSWithKey(const char* blob, CryptoKeyHandle key)
-{
-    JWSResult result = JWSResult_Failed;
-    ADUC_Result getAlgAndPubKeyHashResult = { ADUC_GeneralResult_Failure, 0 };
-    ADUC_Result signingKeyDisallowedResult = { ADUC_GeneralResult_Failure, 0 };
-
-    // Check for structure
-    char* header = NULL;
-    char* payload = NULL;
-    char* signature = NULL;
-
-    char* headerJson = NULL;
-    char* alg = NULL;
-    char* headerPlusPayload = NULL;
-    char* decodedPayload = NULL;
-    uint8_t* decodedSignature = NULL;
-
-    char* payload_alg = NULL;
-    CONSTBUFFER_HANDLE publicKeySigningKey = NULL;
-    CONSTBUFFER_HANDLE payload_hashPublicKeySigningKey = NULL;
-
-    if (!ExtractJWSSections(blob, &header, &payload, &signature))
+    JWSResult VerifyJWSWithKey(const char* blob, CryptoKeyHandle key)
     {
-        result = JWSResult_BadStructure;
-        goto done;
+        JWSResult result = JWSResult_Failed;
+        ADUC_Result getAlgAndPubKeyHashResult = { ADUC_GeneralResult_Failure, 0 };
+        ADUC_Result signingKeyDisallowedResult = { ADUC_GeneralResult_Failure, 0 };
+
+        // Check for structure
+        char* header = NULL;
+        char* payload = NULL;
+        char* signature = NULL;
+
+        char* headerJson = NULL;
+        char* alg = NULL;
+        char* headerPlusPayload = NULL;
+        char* decodedPayload = NULL;
+        uint8_t* decodedSignature = NULL;
+
+        STRING_HANDLE* payload_alg = NULL;
+        CONSTBUFFER_HANDLE publicKeySigningKey = NULL;
+        CONSTBUFFER_HANDLE payload_hashPublicKeySigningKey = NULL;
+
+        if (!ExtractJWSSections(blob, &header, &payload, &signature))
+        {
+            result = JWSResult_BadStructure;
+            goto done;
+        }
+
+        decodedPayload = Base64URLDecodeToString(payload);
+
+        if (decodedPayload == NULL)
+        {
+            result = JWSResult_InvalidSWJKPayload;
+            goto done;
+        }
+
+        getAlgAndPubKeyHashResult = RootKeyUtility_GetAlgAndPublicKeyHashSigningKeyFromSigningKeyPayload(
+            decodedPayload, &payload_alg, &payload_hashPublicKeySigningKey);
+        if (IsAducResultCodeFailure(getAlgAndPubKeyHashResult.ResultCode))
+        {
+            result = JWSResult_InvalidSigningKey;
+            goto done;
+        }
+
+        signingKeyDisallowedResult = RootKeyUtility_IsSigningKeyDisallowed(
+            payload_alg, payload_hashPublicKeySigningKey, &is_signing_key_disallowed);
+        if (IsAducResultCodeFailure(signingKeyDisallowedResult.ResultCode))
+        {
+            result = JWSResult_FailedEvalDisabledSigningKey;
+            goto done;
+        }
+
+        if (is_signing_key_disallowed)
+        {
+            result = JWSResult_DisallowedSigningKey;
+            goto done;
+        }
+
+        headerJson = Base64URLDecodeToString(header);
+
+        if (headerJson == NULL)
+        {
+            result = JWSResult_InvalidEncodingSWJKHeader;
+            goto done;
+        }
+
+        alg = GetStringValueFromJSON(headerJson, "alg");
+
+        if (alg == NULL)
+        {
+            result = JWSResult_BadStructure;
+            goto done;
+        }
+
+        // Note: The +2 is for the "." between the header and the payload
+        // and the null terminator at the end of the string.
+        size_t headerLen = strlen(header);
+        size_t payloadLen = strlen(payload);
+        size_t hppSize = headerLen + payloadLen + 2;
+        headerPlusPayload = (char*)calloc(1, hppSize);
+
+        if (headerPlusPayload == NULL)
+        {
+            result = JWSResult_Failed;
+            goto done;
+        }
+
+        memcpy(headerPlusPayload, header, headerLen);
+        headerPlusPayload[headerLen] = '.';
+        memcpy(headerPlusPayload + headerLen + 1, payload, payloadLen);
+        headerPlusPayload[headerLen + payloadLen + 1] = '\0';
+
+        size_t decodedSignatureLen = Base64URLDecode(signature, &decodedSignature);
+
+        if (!CryptoUtils_IsValidSignature(
+                alg,
+                decodedSignature,
+                decodedSignatureLen,
+                (uint8_t*)headerPlusPayload,
+                strlen(headerPlusPayload),
+                key))
+        {
+            result = JWSResult_InvalidSignature;
+        }
+        else
+        {
+            result = JWSResult_Success;
+        }
+
+    done:
+
+        if (header != NULL)
+        {
+            free(header);
+        }
+
+        if (payload != NULL)
+        {
+            free(payload);
+        }
+
+        if (signature != NULL)
+        {
+            free(signature);
+        }
+
+        if (headerJson != NULL)
+        {
+            free(headerJson);
+        }
+
+        if (alg != NULL)
+        {
+            free(alg);
+        }
+
+        if (headerPlusPayload != NULL)
+        {
+            free(headerPlusPayload);
+        }
+
+        if (decodedSignature != NULL)
+        {
+            free(decodedSignature);
+        }
+
+        if (decodedPayload != NULL)
+        {
+            free(decodedPayload);
+        }
+
+        STRING_delete(payload_alg);
+
+        return result;
     }
 
-    decodedPayload = Base64URLDecodeToString(payload);
-
-    if (decodedPayload == NULL)
-    {
-        result = JWSResult_InvalidSWJKPayload;
-        goto done;
-    }
-
-    getAlgAndPubKeyHashResult = RootKeyUtility_GetAlgAndPublicKeyHashSigningKeyFromSigningKeyPayload(decodedPayload, &payload_alg, &payload_hashPublicKeySigningKey);
-    if (IsAducResultCodeFailure(getAlgAndPubKeyHashResult.ResultCode))
-    {
-        result = JWSResult_InvalidSigningKey;
-        goto done;
-    }
-
-    signingKeyDisallowedResult = RootKeyUtility_IsSigningKeyDisallowed(payload_alg, payload_hashPublicKeySigningKey, &is_signing_key_disallowed);
-    if (IsAducResultCodeFailure(signingKeyDisallowedResult.ResultCode))
-    {
-        result = JWSResult_FailedEvalDisabledSigningKey;
-        goto done;
-    }
-
-    if (is_signing_key_disallowed)
-    {
-        result = JWSResult_DisallowedSigningKey;
-        goto done;
-    }
-
-    headerJson = Base64URLDecodeToString(header);
-
-    if (headerJson == NULL)
-    {
-        result = JWSResult_InvalidEncodingSWJKHeader;
-        goto done;
-    }
-
-    alg = GetStringValueFromJSON(headerJson, "alg");
-
-    if (alg == NULL)
-    {
-        result = JWSResult_BadStructure;
-        goto done;
-    }
-
-    // Note: The +2 is for the "." between the header and the payload
-    // and the null terminator at the end of the string.
-    size_t headerLen = strlen(header);
-    size_t payloadLen = strlen(payload);
-    size_t hppSize = headerLen + payloadLen + 2;
-    headerPlusPayload = (char*)calloc(1, hppSize);
-
-    if (headerPlusPayload == NULL)
-    {
-        result = JWSResult_Failed;
-        goto done;
-    }
-
-    memcpy(headerPlusPayload, header, headerLen);
-    headerPlusPayload[headerLen] = '.';
-    memcpy(headerPlusPayload + headerLen + 1, payload, payloadLen);
-    headerPlusPayload[headerLen + payloadLen + 1] = '\0';
-
-    size_t decodedSignatureLen = Base64URLDecode(signature, &decodedSignature);
-
-    if (!CryptoUtils_IsValidSignature(
-            alg, decodedSignature, decodedSignatureLen, (uint8_t*)headerPlusPayload, strlen(headerPlusPayload), key))
-    {
-        result = JWSResult_InvalidSignature;
-    }
-    else
-    {
-        result = JWSResult_Success;
-    }
-
-done:
-
-    if (header != NULL)
-    {
-        free(header);
-    }
-
-    if (payload != NULL)
-    {
-        free(payload);
-    }
-
-    if (signature != NULL)
-    {
-        free(signature);
-    }
-
-    if (headerJson != NULL)
-    {
-        free(headerJson);
-    }
-
-    if (alg != NULL)
-    {
-        free(alg);
-    }
-
-    if (headerPlusPayload != NULL)
-    {
-        free(headerPlusPayload);
-    }
-
-    if (decodedSignature != NULL)
-    {
-        free(decodedSignature);
-    }
-
-    if (decodedPayload != NULL)
-    {
-        free(decodedPayload);
-    }
-
-    return result;
-}
-
-/**
+    /**
  * @brief Pulls the payload out of the JWT and converts it from base64 to a string DOES NOT VALIDATE IT
  * @param blob a Base64URL encoded JSON Web Token (JWT) in JSON Web Signature format
  * @param destBuff the destination buffer for the JWT's payload, allocated within the function
  * @returns a value of JWSResult
  */
-bool GetPayloadFromJWT(const char* blob, char** destBuff)
-{
-    bool result = false;
-
-    *destBuff = NULL;
-
-    char* header = NULL;
-    char* payload = NULL;
-    char* signature = NULL;
-    char* tempStr = NULL;
-
-    if (!ExtractJWSSections(blob, &header, &payload, &signature))
+    bool GetPayloadFromJWT(const char* blob, char** destBuff)
     {
-        goto done;
+        bool result = false;
+
+        *destBuff = NULL;
+
+        char* header = NULL;
+        char* payload = NULL;
+        char* signature = NULL;
+        char* tempStr = NULL;
+
+        if (!ExtractJWSSections(blob, &header, &payload, &signature))
+        {
+            goto done;
+        }
+
+        tempStr = Base64URLDecodeToString(payload);
+
+        if (tempStr == NULL)
+        {
+            goto done;
+        }
+
+        result = true;
+
+    done:
+
+        free(header);
+        free(payload);
+        free(signature);
+
+        *destBuff = tempStr;
+        return result;
     }
 
-    tempStr = Base64URLDecodeToString(payload);
-
-    if (tempStr == NULL)
-    {
-        goto done;
-    }
-
-    result = true;
-
-done:
-
-    free(header);
-    free(payload);
-    free(signature);
-
-    *destBuff = tempStr;
-    return result;
-}
-
-/**
+    /**
  * @brief parses the key from the JWK into a usable CryptoLib key
  * @details Only supports RSA keys right now, more support will be added later. DOES VALIDATE THE JWK
  * @param blob a Base64 encoded JSON Web Key which contains the parameters for creating a key
  * @returns a pointer to the key on success, NULL on failure
  */
-void* GetKeyFromBase64EncodedJWK(const char* blob)
-{
-    CryptoKeyHandle key = NULL;
-
-    char* header = NULL;
-    char* payload = NULL;
-    char* signature = NULL;
-
-    char* strN = NULL;
-    char* stre = NULL;
-    char* payloadJson = NULL;
-
-    if (!ExtractJWSSections(blob, &header, &payload, &signature))
+    void* GetKeyFromBase64EncodedJWK(const char* blob)
     {
-        goto done;
+        CryptoKeyHandle key = NULL;
+
+        char* header = NULL;
+        char* payload = NULL;
+        char* signature = NULL;
+
+        char* strN = NULL;
+        char* stre = NULL;
+        char* payloadJson = NULL;
+
+        if (!ExtractJWSSections(blob, &header, &payload, &signature))
+        {
+            goto done;
+        }
+
+        payloadJson = Base64URLDecodeToString(payload);
+
+        if (payloadJson == NULL)
+        {
+            goto done;
+        }
+
+        strN = GetStringValueFromJSON(payloadJson, "n");
+        stre = GetStringValueFromJSON(payloadJson, "e");
+
+        if (strN == NULL || stre == NULL)
+        {
+            goto done;
+        }
+
+        key = RSAKey_ObjFromB64Strings(strN, stre);
+
+    done:
+
+        if (header != NULL)
+        {
+            free(header);
+        }
+
+        if (payload != NULL)
+        {
+            free(payload);
+        }
+
+        if (signature != NULL)
+        {
+            free(signature);
+        }
+
+        if (payloadJson != NULL)
+        {
+            free(payloadJson);
+        }
+
+        if (strN != NULL)
+        {
+            free(strN);
+        }
+
+        if (stre != NULL)
+        {
+            free(stre);
+        }
+
+        return key;
     }
-
-    payloadJson = Base64URLDecodeToString(payload);
-
-    if (payloadJson == NULL)
-    {
-        goto done;
-    }
-
-    strN = GetStringValueFromJSON(payloadJson, "n");
-    stre = GetStringValueFromJSON(payloadJson, "e");
-
-    if (strN == NULL || stre == NULL)
-    {
-        goto done;
-    }
-
-    key = RSAKey_ObjFromB64Strings(strN, stre);
-
-done:
-
-    if (header != NULL)
-    {
-        free(header);
-    }
-
-    if (payload != NULL)
-    {
-        free(payload);
-    }
-
-    if (signature != NULL)
-    {
-        free(signature);
-    }
-
-    if (payloadJson != NULL)
-    {
-        free(payloadJson);
-    }
-
-    if (strN != NULL)
-    {
-        free(strN);
-    }
-
-    if (stre != NULL)
-    {
-        free(stre);
-    }
-
-    return key;
-}

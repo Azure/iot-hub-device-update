@@ -28,7 +28,11 @@ ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyP
 
 char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPackage* rootKeyPackage);
 
-ADUC_Result ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(const ADUC_RootKeyPackage* rootKeyPackage, const char* signingKeyAlg, const CONSTBUFFER_HANDLE signingKeyHashOfPublicKey, bool* outWasFound);
+ADUC_Result ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(
+    const ADUC_RootKeyPackage* rootKeyPackage,
+    const char* signingKeyIdentityHashAlg,
+    const CONSTBUFFER_HANDLE signingKeyHashOfPublicKey,
+    bool* outWasFound);
 
 void ADUC_RootKeyPackageUtils_DisabledRootKeys_Destroy(ADUC_RootKeyPackage* rootKeyPackage);
 void ADUC_RootKeyPackageUtils_DisabledSigningKeys_Destroy(ADUC_RootKeyPackage* rootKeyPackage);

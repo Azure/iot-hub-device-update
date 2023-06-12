@@ -577,19 +577,25 @@ done:
     return retString;
 }
 
-ADUC_Result ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(const ADUC_RootKeyPackage* rootKeyPackage, const char* signingKeyAlg, const CONSTBUFFER_HANDLE signingKeyHashOfPublicKey, bool* outWasFound)
+ADUC_Result ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(
+    const ADUC_RootKeyPackage* rootKeyPackage,
+    const char* signingKeyIdentityHashAlg,
+    const CONSTBUFFER_HANDLE signingKeyHashOfPublicKey,
+    bool* outWasFound)
 {
     bool found = false;
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
-    if (rootKeyPackage == NULL || IsNullOrEmpty(signingKeyAlg) || signingKeyHashOfPublicKey == NULL || err == NULL)
+    if (rootKeyPackage == NULL || IsNullOrEmpty(signingKeyIdentityHashAlg) || signingKeyHashOfPublicKey == NULL
+        || err == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_INVALIDARG;
         goto done;
     }
 
     SHAversion signingKeyBlobAlg = SHA256;
-    if (!ADUC_HashUtils_GetShaVersionForTypeString(signingKeyAlg, &signingKeyBlobAlg) || !ADUC_HashUtils_IsValidHashAlgorithm(signingKeyBlobAlg))
+    if (!ADUC_HashUtils_GetShaVersionForTypeString(signingKeyIdentityHashAlg, &signingKeyBlobAlg)
+        || !ADUC_HashUtils_IsValidHashAlgorithm(signingKeyBlobAlg))
     {
         result.ExtendedResultCode = ADUC_ERC_ROOTKEY_SIGNINGKEY_DISABLE_EVAL_INVALID_HASHALG;
         goto done;
@@ -597,10 +603,12 @@ ADUC_Result ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(const ADUC_RootK
 
     for (size_t i = 0; i < VECTOR_size(rootKeyPackage->disabledSigningKeys); ++i)
     {
-        ADUC_RootKeyPackage_Hash* disabledSigningKeyEntry = (ADUC_RootKeyPackage_Hash*)VECTOR_element(rootKeyPackage->disabledSigningKeys, i);
+        ADUC_RootKeyPackage_Hash* disabledSigningKeyEntry =
+            (ADUC_RootKeyPackage_Hash*)VECTOR_element(rootKeyPackage->disabledSigningKeys, i);
 
         bool algMatch = (signingKeyBlobAlg == disabledSigningKeyEntry->alg);
-        bool hashPublicKeyMatch = CONSTBUFFER_HANDLE_contain_same(signingKeyHashOfPublicKey, disabledSigningKeyEntry->hash);
+        bool hashPublicKeyMatch =
+            CONSTBUFFER_HANDLE_contain_same(signingKeyHashOfPublicKey, disabledSigningKeyEntry->hash);
         if (algMatch && hashPublicKeyMatch)
         {
             found = true;
