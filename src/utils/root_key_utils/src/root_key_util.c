@@ -761,7 +761,7 @@ ADUC_Result_t RootKeyUtility_GetReportingErc()
     return s_rootKeyErc;
 }
 
-bool ADUC_RootKeyPackageUtils_IsUpdateStoreNeeded(const STRING_HANDLE storePath, const char* rootKeyPackageJsonString)
+bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE storePath, const char* rootKeyPackageJsonString)
 {
     bool update_needed = true;
     char* storePackageJsonString = NULL;
@@ -789,4 +789,177 @@ done:
     free(storePackageJsonString);
 
     return update_needed;
+}
+
+ADUC_Result RootKeyUtility_GetAlgAndPublicKeyHashSigningKeyFromSigningKeyPayload(
+    const char* decodedSigningKeyPayload, STRING_HANDLE* outHashAlgStr, CONSTBUFFER_HANDLE* outHashPublicKey)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
+    STRING_HANDLE hashAlg = NULL;
+    CONSTBUFFER_HANDLE hashPubKeyBuf = NULL;
+
+    // Sections of JWS Payload
+    const char* c_payload_modulus = NULL;
+    const char* c_payload_exponent = NULL;
+
+    JSON_Value* rootJsonValue = NULL;
+    JSON_Object* rootJsonObj = NULL;
+    const char* jsonStrVal = NULL;
+    CONSTBUFFER_HANDLE pubkey_buf = NULL;
+
+    if (IsNullOrEmpty(decodedSigningKeyPayload) || outHashAlgStr == NULL || outHashPublicKey == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_INVALIDARG;
+        goto done;
+    }
+
+    // Example structure of the signingKeyPayload:
+    // {
+    //     "kty": "RSA",
+    //     "alg": "RS256",
+    //     "kid": "ADU.210609.R.S"
+    //     "n": "<URLUInt encoded bytes>",
+    //     "e": "AQAB",
+    // }
+    rootJsonValue = json_parse_string(decodedSigningKeyPayload);
+    if (rootJsonValue == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_PAYLOAD_BAD_JSON;
+        goto done;
+    }
+
+    rootJsonObj = json_value_get_object(rootJsonValue);
+
+    // kty, or Key Type
+    jsonStrVal = json_object_get_string(rootJsonObj, "kty");
+    Log_Debug("kty: '%s'", jsonStrVal);
+    if (IsNullOrEmpty(jsonStrVal) || strcmp(jsonStrVal, "RSA") != 0)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_INVALID_KEY_TYPE;
+        goto done;
+    }
+
+    // alg, or signing key algorithm
+    jsonStrVal = json_object_get_string(rootJsonObj, "alg");
+    Log_Debug("alg: '%s'", jsonStrVal);
+    if (IsNullOrEmpty(jsonStrVal) || strcmp(jsonStrVal, CRYPTO_UTILS_SIGNATURE_VALIDATION_ALG_RS256) != 0)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_INVALID_ALG;
+        goto done;
+    }
+
+    hashAlg = STRING_construct(jsonStrVal);
+    if (hashAlg == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
+        goto done;
+    }
+
+    // kid, or signing key id
+    jsonStrVal = json_object_get_string(rootJsonObj, "kid");
+    Log_Debug("kid: '%s'", jsonStrVal);
+
+    // n, or modulus
+    c_payload_modulus = json_object_get_string(rootJsonObj, "n");
+    if (IsNullOrEmpty(c_payload_modulus))
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_INVALID_N;
+        goto done;
+    }
+
+    Log_Debug("n: '%s'", c_payload_modulus);
+
+    // e, or exponent. We only support 65537, which is ubiquitous.
+    c_payload_exponent = json_object_get_string(rootJsonObj, "e");
+    if (IsNullOrEmpty(jsonStrVal) || strcmp(jsonStrVal, "AQAB") != 0) // AQAB is 65537, or 0x00 0x01 0x00 0x01.
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_INVALID_EXPONENT;
+        goto done;
+    }
+
+    Log_Debug("e: '%s'", c_payload_exponent);
+
+    // The public key can be constructed from the exponent and modulus.
+    pubkey_buf = CryptoUtils_GeneratePublicKey(c_payload_modulus, c_payload_exponent);
+    if (pubkey_buf == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ERR_GEN_PUBKEY;
+        goto done;
+    }
+
+    hashPubKeyBuf = CryptoUtils_CreateSha256Hash(pubkey_buf);
+    if (hashPubKeyBuf == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ERR_CREATE_HASH_PUBKEY;
+        goto done;
+    }
+
+    result.ResultCode = ADUC_GeneralResult_Success;
+
+    *outHashAlgStr = hashAlg;
+    hashAlg = NULL;
+
+    *outHashPublicKey = hashPubKeyBuf;
+    hashPubKeyBuf = NULL;
+done:
+
+    json_value_free(rootJsonValue);
+    STRING_delete(hashAlg);
+
+    if (pubkey_buf != NULL)
+    {
+        CONSTBUFFER_DecRef(pubkey_buf);
+    }
+
+    if (hashPubKeyBuf != NULL)
+    {
+        CONSTBUFFER_DecRef(hashPubKeyBuf);
+    }
+
+    return result;
+}
+
+ADUC_Result RootKeyUtility_IsSigningKeyDisallowed(
+    const char* payload_alg, const CONSTBUFFER_HANDLE payload_hashPublicKeySigningKey, bool* is_signing_key_disallowed)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    bool isDisallowed = false;
+
+    if (payload_alg == NULL || payload_hashPublicKeySigningKey == NULL || is_signing_key_disallowed == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_INVALIDARG;
+        goto done;
+    }
+
+    if (localStore == NULL)
+    {
+#ifdef USE_LOCAL_STORE
+        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH);
+
+        if (IsAducResultCodeFailure(loadResult.ResultCode))
+        {
+            Log_Error("Fail load pkg from disk: 0x%08x", loadResult.ExtendedResultCode);
+            result = loadResult;
+            goto done;
+        }
+#else
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_LOCAL_STORE_UNINITIALIZED;
+        goto done;
+#endif
+    }
+
+    result = ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(
+        localStore, payload_alg, payload_hashPublicKeySigningKey, &isDisallowed);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error("Err disabled lookup of signing key: 0x%08x", result.ExtendedResultCode);
+        goto done;
+    }
+
+    result.ResultCode = ADUC_GeneralResult_Success;
+    *is_signing_key_disallowed = isDisallowed;
+done:
+
+    return result;
 }

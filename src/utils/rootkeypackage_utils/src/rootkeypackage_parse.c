@@ -26,12 +26,7 @@
     returns 0 when the json property value is not json number type and because 0 is
     not one of the 5 known Fermat primes of 3, 5, 17, 257 and 65537 for base b = 2
     n generalized Fermat primes. The current root keys use the industry standard of
-    65537. For reference:
-    https://www.quora.com/Why-is-e-65537-used-for-most-RSA-encryption
-    https://crypto.stackexchange.com/questions/3110/impacts-of-not-using-rsa-exponent-of-65537
-    https://en.wikipedia.org/wiki/65,537
-    https://crypto.stanford.edu/~dabo/pubs/papers/RSA-survey.pdf
-
+    65537 (0x010001), or "QAQD" as base64 url encoded string.
  */
 #define INVALID_EXPONENT 0
 

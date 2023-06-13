@@ -12,6 +12,7 @@
 #include "root_key_util.h"
 #include <aduc/result.h>
 #include <azure_c_shared_utility/azure_base64.h>
+#include <azure_c_shared_utility/constbuffer.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <parson.h>
 #include <stdio.h>
@@ -239,14 +240,76 @@ done:
 //
 
 /**
- * @brief Verifies the Base64URL encoded @p sjwk in Signed JSON Web Key (SJWK) format using the KiD found within the encoded JWKs Header
- * @details A Signed JSON Web Key (SJWK) is JWK in JSON Web Signature (JWS) format. The function parses the header for the kid, builds the associated key, and then verifies the signature of the JWK
- * @param sjwk a base64URL encoded string that contains the Signed JSON Web Key
- * @returns a value of JWSResult
+ * @brief converts JWSResult to const C string.
+ *
+ * @param r The jws result to convert.
+ * @return const char* The mapped-to string.
+ * @details NOTE: Needs to be kept in sync with JWSResult enum in jws_utils.h
  */
+const char* jws_result_to_str(JWSResult r)
+{
+    switch (r)
+    {
+    case JWSResult_Failed:
+        return "Failed";
+
+    case JWSResult_Success:
+        return "Success";
+
+    case JWSResult_BadStructure:
+        return "BadStructure";
+
+    case JWSResult_UnsupportedAlg:
+        return "UnsupportedAlg";
+
+    case JWSResult_InvalidSignature:
+        return "InvalidSignature";
+
+    case JWSResult_DisallowedRootKid:
+        return "DisallowedRootKid";
+
+    case JWSResult_MissingRootKid:
+        return "MissingRootKid";
+
+    case JWSResult_InvalidRootKid:
+        return "InvalidRootKid";
+
+    case JWSResult_InvalidEncodingJWSHeader:
+        return "InvalidEncodingJWSHeader";
+
+    case JWSResult_InvalidEncodingSWJKHeader:
+        return "InvalidEncodingSWJKHeader";
+
+    case JWSResult_InvalidEncodingSWJKPayload:
+        return "InvalidEncodingSWJKPayload";
+
+    case JWSResult_InvalidSWJKPayload:
+        return "JWSResult_InvalidSWJKPayload";
+
+    case JWSResult_InvalidSWJKPayloadSections:
+        return "InvalidSWJKPayloadSections";
+
+    case JWSResult_DisallowedSigningKey:
+        return "DisallowedSigningKey";
+
+    case JWSResult_InvalidSigningKey:
+        return "InvalidSigningKey";
+
+    default:
+        return "???";
+    }
+}
+
+/**
+* @brief Verifies the Base64URL encoded @p sjwk in Signed JSON Web Key (SJWK) format using the KiD found within the encoded JWKs Header
+* @details A Signed JSON Web Key (SJWK) is JWK in JSON Web Signature (JWS) format. The function parses the header for the kid, builds the associated key, and then verifies the signature of the JWK
+* @param sjwk a base64URL encoded string that contains the Signed JSON Web Key
+* @returns a value of JWSResult
+*/
 JWSResult VerifySJWK(const char* sjwk)
 {
     JWSResult retval = JWSResult_Failed;
+    ADUC_Result result = { ADUC_GeneralResult_Failure, 0 };
 
     char* header = NULL;
 
@@ -276,11 +339,22 @@ JWSResult VerifySJWK(const char* sjwk)
         goto done;
     }
 
-    RootKeyUtility_GetKeyForKid(&rootKey, kid);
+    result = RootKeyUtility_GetKeyForKid(&rootKey, kid);
 
-    if (rootKey == NULL)
+    if (IsAducResultCodeFailure(result.ResultCode))
     {
-        retval = JWSResult_InvalidKid;
+        if (result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_ROOTKEY_IS_DISABLED)
+        {
+            retval = JWSResult_DisallowedRootKid;
+        }
+        else if (result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID)
+        {
+            retval = JWSResult_MissingRootKid;
+        }
+        else
+        {
+            retval = JWSResult_InvalidRootKid;
+        }
         goto done;
     }
 
@@ -325,6 +399,7 @@ done:
 JWSResult VerifyJWSWithSJWK(const char* jws)
 {
     JWSResult result = JWSResult_Failed;
+    JWSResult resultVerifyJwsWithkey = JWSResult_Failed;
 
     char* header = NULL;
     char* jsonHeader = NULL;
@@ -341,17 +416,11 @@ JWSResult VerifyJWSWithSJWK(const char* jws)
 
     if (jsonHeader == NULL)
     {
-        result = JWSResult_Failed;
+        result = JWSResult_InvalidEncodingJWSHeader;
         goto done;
     }
 
     sjwk = GetStringValueFromJSON(jsonHeader, "sjwk");
-
-    if (sjwk == NULL || *sjwk == '\0')
-    {
-        result = JWSResult_BadStructure;
-        goto done;
-    }
 
     result = VerifySJWK(sjwk);
     if (result != JWSResult_Success)
@@ -366,10 +435,11 @@ JWSResult VerifyJWSWithSJWK(const char* jws)
         goto done;
     }
 
-    result = VerifyJWSWithKey(jws, key);
+    resultVerifyJwsWithkey = VerifyJWSWithKey(jws, key);
 
     if (result != JWSResult_Success)
     {
+        result = resultVerifyJwsWithkey;
         goto done;
     }
 
@@ -406,6 +476,8 @@ done:
 JWSResult VerifyJWSWithKey(const char* blob, CryptoKeyHandle key)
 {
     JWSResult result = JWSResult_Failed;
+    ADUC_Result getAlgAndPubKeyHashResult = { ADUC_GeneralResult_Failure, 0 };
+    ADUC_Result signingKeyDisallowedResult = { ADUC_GeneralResult_Failure, 0 };
 
     // Check for structure
     char* header = NULL;
@@ -415,7 +487,12 @@ JWSResult VerifyJWSWithKey(const char* blob, CryptoKeyHandle key)
     char* headerJson = NULL;
     char* alg = NULL;
     char* headerPlusPayload = NULL;
+    char* decodedPayload = NULL;
     uint8_t* decodedSignature = NULL;
+
+    STRING_HANDLE payload_alg = NULL;
+    CONSTBUFFER_HANDLE payload_hashPublicKeySigningKey = NULL;
+    bool is_signing_key_disallowed = false;
 
     if (!ExtractJWSSections(blob, &header, &payload, &signature))
     {
@@ -423,11 +500,43 @@ JWSResult VerifyJWSWithKey(const char* blob, CryptoKeyHandle key)
         goto done;
     }
 
+    decodedPayload = Base64URLDecodeToString(payload);
+
+    if (decodedPayload == NULL)
+    {
+        result = JWSResult_InvalidSWJKPayload;
+        goto done;
+    }
+
+    getAlgAndPubKeyHashResult = RootKeyUtility_GetAlgAndPublicKeyHashSigningKeyFromSigningKeyPayload(
+        decodedPayload, &payload_alg, &payload_hashPublicKeySigningKey);
+
+    if (IsAducResultCodeFailure(getAlgAndPubKeyHashResult.ResultCode))
+    {
+        result = JWSResult_InvalidSigningKey;
+        goto done;
+    }
+
+    signingKeyDisallowedResult = RootKeyUtility_IsSigningKeyDisallowed(
+        STRING_c_str(payload_alg), payload_hashPublicKeySigningKey, &is_signing_key_disallowed);
+
+    if (IsAducResultCodeFailure(signingKeyDisallowedResult.ResultCode))
+    {
+        result = JWSResult_FailedEvalDisabledSigningKey;
+        goto done;
+    }
+
+    if (is_signing_key_disallowed)
+    {
+        result = JWSResult_DisallowedSigningKey;
+        goto done;
+    }
+
     headerJson = Base64URLDecodeToString(header);
 
     if (headerJson == NULL)
     {
-        result = JWSResult_Failed;
+        result = JWSResult_InvalidEncodingSWJKHeader;
         goto done;
     }
 
@@ -505,6 +614,14 @@ done:
     {
         free(decodedSignature);
     }
+
+    if (decodedPayload != NULL)
+    {
+        free(decodedPayload);
+    }
+
+    STRING_delete(payload_alg);
+
     return result;
 }
 
@@ -550,11 +667,11 @@ done:
 }
 
 /**
- * @brief parses the key from the JWK into a usable CryptoLib key
- * @details Only supports RSA keys right now, more support will be added later. DOES VALIDATE THE JWK
- * @param blob a Base64 encoded JSON Web Key which contains the parameters for creating a key
- * @returns a pointer to the key on success, NULL on failure
- */
+* @brief parses the key from the JWK into a usable CryptoLib key
+* @details Only supports RSA keys right now, more support will be added later. DOES VALIDATE THE JWK
+* @param blob a Base64 encoded JSON Web Key which contains the parameters for creating a key
+* @returns a pointer to the key on success, NULL on failure
+*/
 void* GetKeyFromBase64EncodedJWK(const char* blob)
 {
     CryptoKeyHandle key = NULL;

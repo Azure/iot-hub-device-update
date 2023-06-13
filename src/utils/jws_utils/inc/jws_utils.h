@@ -42,16 +42,29 @@ EXTERN_C_BEGIN
 
 /**
  * @brief Return Value for JWS Verification Calls
+ * @details NOTE: Needs to be kept in sync with jws_result_to_str() function.
  */
 typedef enum tagJWSResult
 {
-    JWSResult_Failed = 0, /**< Failed*/
+    JWSResult_Failed = 0, /**< Failed */
     JWSResult_Success, /**< Succeeded */
-    JWSResult_BadStructure, /**< JWS structure is not correct*/
+    JWSResult_BadStructure, /**< JWS structure is not correct */
     JWSResult_UnsupportedAlg, /**< Algorithm used to sign the JWS is not supported */
     JWSResult_InvalidSignature, /**<Signature of the JWS is invalid */
-    JWSResult_InvalidKid /**< Key Identifier invalid */
+    JWSResult_DisallowedRootKid, /**< Root Key Identifier disallowed */
+    JWSResult_MissingRootKid, /**< Root Key Identifier missing */
+    JWSResult_InvalidRootKid, /**< Root Key Identifier invalid */
+    JWSResult_InvalidEncodingJWSHeader, /**< Invalid encoding of JWS Header */
+    JWSResult_InvalidEncodingSWJKHeader, /**< Invalid encoding of SWJK Header */
+    JWSResult_InvalidEncodingSWJKPayload, /**< Invalid encoding of SWJK Payload */
+    JWSResult_InvalidSWJKPayload, /**< Invalid SWJK Payload */
+    JWSResult_InvalidSWJKPayloadSections, /**< Invalid SWJK Payload Sections */
+    JWSResult_DisallowedSigningKey, /**< Disallowed signing key */
+    JWSResult_InvalidSigningKey, /**< Invalid signing key */
+    JWSResult_FailedEvalDisabledSigningKey, /**< Failed evaluating if the signing key is disabled. */
 } JWSResult;
+
+const char* jws_result_to_str(JWSResult r);
 
 JWSResult VerifySJWK(const char* sjwk);
 

@@ -14,6 +14,7 @@
 #include <aduc/c_utils.h>
 #include <aduc/result.h>
 #include <azure_c_shared_utility/strings.h>
+#include <stdbool.h>
 
 EXTERN_C_BEGIN
 
@@ -26,6 +27,12 @@ ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
 ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyPackage* outRootKeyPackage);
 
 char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPackage* rootKeyPackage);
+
+ADUC_Result ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(
+    const ADUC_RootKeyPackage* rootKeyPackage,
+    const char* signingKeyIdentityHashAlg,
+    const CONSTBUFFER_HANDLE signingKeyHashOfPublicKey,
+    bool* outIsDisabled);
 
 void ADUC_RootKeyPackageUtils_DisabledRootKeys_Destroy(ADUC_RootKeyPackage* rootKeyPackage);
 void ADUC_RootKeyPackageUtils_DisabledSigningKeys_Destroy(ADUC_RootKeyPackage* rootKeyPackage);
