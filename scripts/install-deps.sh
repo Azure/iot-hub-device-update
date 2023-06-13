@@ -80,7 +80,7 @@ do_ref=$default_do_ref
 # removed  'libssl-dev'
 aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
-compiler_packages=("gcc-[68]")
+compiler_packages=("gcc-{6,8,12}")
 
 # Distro and arch info
 OS=""
