@@ -472,8 +472,6 @@ do_install_do() {
 
     git clone --recursive --single-branch --branch user/andretoyama-msft/support-ubuntu2204 --depth 1 $do_url . || return
 
-    #TODO: Remove the sepecif commit once DO publishs a new tag
-    git checkout 02c9ae2c7484182903c66ad986a834762fc569e6
     bootstrap_file=$do_dir/build/scripts/bootstrap.sh
     chmod +x $bootstrap_file || return
     $SUDO $bootstrap_file --install build || return
