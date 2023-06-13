@@ -192,7 +192,7 @@ do_install_aduc_packages() {
     elif [[ $OS == "Ubuntu" && $VER == "22.04" ]]; then
         $SUDO apt-get install --yes gcc-10 g++-10 || return
     else
-        $SUDO apt-get install --yes gcc-10 g++-10 || return
+        $SUDO apt-get install --yes gcc-8 g++-8 || return
     fi
 
     echo "Installing packages required for static analysis..."
