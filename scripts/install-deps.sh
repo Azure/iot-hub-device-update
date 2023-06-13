@@ -159,7 +159,7 @@ do_install_githooks() {
 
 do_install_openssl() {
     local openssl_dir=$work_folder/openssl-1.1.1f
-    local openssl_install_dir=$work_folder/localSSL
+    local openssl_install_dir=$work_folder/deviceupdate-openssl
     echo "Installing OpenSSL ..."
 
     $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
@@ -171,8 +171,8 @@ do_install_openssl() {
     make || return
 
     $SUDO make install || return
-    export LD_LIBRARY_PATH="$work_folder/localSSL/lib:$LD_LIBRARY_PATH" || return
-    echo "OpenSSL has been installed in $work_folder/localSSL"
+    export LD_LIBRARY_PATH="$work_folder/deviceupdate-openssl/lib:$LD_LIBRARY_PATH" || return
+    echo "OpenSSL has been installed in $work_folder/deviceupdate-openssl"
 
     popd > /dev/null || return
 }
@@ -241,7 +241,7 @@ do_install_azure_iot_sdk() {
         "-Dskip_samples:BOOL=ON"
         "-Dbuild_service_client:BOOL=OFF"
         "-Dbuild_provisioning_service_client:BOOL=OFF"
-        "-DOPENSSL_ROOT_DIR=$work_folder/localSSL"
+        "-DOPENSSL_ROOT_DIR=$work_folder/deviceupdate-openssl"
     )
 
     if [[ $keep_source_code == "true" ]]; then
@@ -482,7 +482,7 @@ do_install_do() {
     local do_cmake_options=(
         "-DDO_BUILD_TESTS:BOOL=OFF"
         "-DDO_INCLUDE_SDK=ON"
-        "-DOPENSSL_ROOT_DIR=$work_folder/localSSL"
+        "-DOPENSSL_ROOT_DIR=$work_folder/deviceupdate-openssl"
     )
 
     if [[ $keep_source_code == "true" ]]; then
@@ -541,7 +541,7 @@ do_install_azure_blob_storage_file_upload_utility() {
         azure_blob_storage_file_upload_utility_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
     fi
 
-    azure_blob_storage_file_upload_utility_cmake_options+=("-DOPENSSL_ROOT_DIR=$work_folder/localSSL")
+    azure_blob_storage_file_upload_utility_cmake_options+=("-DOPENSSL_ROOT_DIR=$work_folder/deviceupdate-openssl")
 
     echo -e "Building Azure Blob Storage File Upload Uility ...\n\tBranch: $azure_blob_storage_file_upload_utility_ref\n\t"
     cmake "${azure_blob_storage_file_upload_utility_cmake_options[@]}" .. || return
