@@ -157,6 +157,27 @@ do_install_githooks() {
     fi
 }
 
+do_install_openssl() {
+    local openssl_dir=$work_folder/openssl-1.1.1f
+    local openssl_install_dir=$work_folder/localSSL
+    echo "Installing OpenSSL ..."
+
+    $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
+    wget https://www.openssl.org/source/openssl-1.1.1f.tar.gz || return
+    mkdir -p $openssl_dir || return
+    tar -xf openssl-1.1.1f.tar.gz -C $openssl_dir --strip-components=1 || return
+    pushd $openssl_dir > /dev/null || return
+    ./config --prefix=$openssl_install_dir --openssldir=$openssl_install_dir shared zlib || return
+    make || return
+
+    $SUDO make install || return
+    export LD_LIBRARY_PATH="$work_folder/localSSL/lib:$LD_LIBRARY_PATH" || return
+    echo "OpenSSL has been installed in $work_folder/localSSL"
+
+    popd > /dev/null || return
+    popd > /dev/null || return
+}
+
 do_install_aduc_packages() {
     echo "Installing dependency packages for ADU Agent..."
 
@@ -185,27 +206,8 @@ do_install_aduc_packages() {
 
     # Note that clang-tidy requires clang to be installed so that it can find clang headers.
     $SUDO apt-get install --yes "${static_analysis_packages[@]}" || return
-}
 
-do_install_openssl() {
-    local openssl_dir=$work_folder/openssl-1.1.1f
-    local openssl_install_dir=$work_folder/localSSL
-    echo "Installing OpenSSL ..."
-
-    $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
-    wget https://www.openssl.org/source/openssl-1.1.1f.tar.gz || return
-    mkdir -p $openssl_dir || return
-    tar -xf openssl-1.1.1f.tar.gz -C $openssl_dir --strip-components=1 || return
-    pushd $openssl_dir > /dev/null || return
-    ./config --prefix=$openssl_install_dir --openssldir=$openssl_install_dir shared zlib || return
-    make || return
-
-    $SUDO make install || return
-    export LD_LIBRARY_PATH="$work_folder/localSSL/lib:$LD_LIBRARY_PATH" || return
-    echo "OpenSSL has been installed in $work_folder/localSSL"
-
-    popd > /dev/null || return
-    popd > /dev/null || return
+    do_install_openssl || $ret
 }
 
 do_install_azure_iot_sdk() {
