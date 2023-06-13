@@ -65,6 +65,8 @@ cmake_prefix="$work_folder"
 cmake_installer_dir=""
 cmake_dir_symlink="/tmp/deviceupdate-cmake"
 
+openssl_dir_path="${work_folder}/deviceupdate-openssl"
+
 install_shellcheck=false
 supported_shellcheck_version='0.8.0'
 
@@ -159,7 +161,6 @@ do_install_githooks() {
 
 do_install_openssl() {
     local openssl_dir=$work_folder/openssl-1.1.1f
-    local openssl_install_dir=$work_folder/deviceupdate-openssl
     echo "Installing OpenSSL ..."
 
     $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
@@ -167,7 +168,7 @@ do_install_openssl() {
     mkdir -p $openssl_dir || return
     tar -xf openssl-1.1.1f.tar.gz -C $openssl_dir --strip-components=1 || return
     pushd $openssl_dir > /dev/null || return
-    ./config --prefix=$openssl_install_dir --openssldir=$openssl_install_dir shared zlib || return
+    ./config --prefix="$openssl_dir_path" --openssldir="$openssl_dir_path" shared zlib || return
     make || return
 
     $SUDO make install || return
@@ -206,7 +207,11 @@ do_install_aduc_packages() {
     # Note that clang-tidy requires clang to be installed so that it can find clang headers.
     $SUDO apt-get install --yes "${static_analysis_packages[@]}" || return
 
-    do_install_openssl || $ret
+    # Check if the directory exists
+    if [ ! -d "$openssl_dir_path" ]; then
+        echo "OpenSSL directory not found. Invoking installation..."
+        do_install_openssl || $ret
+    fi
 }
 
 do_install_azure_iot_sdk() {
