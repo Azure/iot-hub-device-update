@@ -175,7 +175,6 @@ do_install_openssl() {
     echo "OpenSSL has been installed in $work_folder/localSSL"
 
     popd > /dev/null || return
-    popd > /dev/null || return
 }
 
 do_install_aduc_packages() {
