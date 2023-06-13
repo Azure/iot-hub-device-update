@@ -381,6 +381,7 @@ CMAKE_OPTIONS=(
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
     "-DCMAKE_INSTALL_PREFIX=$install_prefix"
+    "-DOPENSSL_ROOT_DIR=$work_folder/localSSL"
 )
 
 if [[ $major_version != "" ]]; then
