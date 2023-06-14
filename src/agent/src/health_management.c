@@ -416,10 +416,17 @@ static bool CheckDataDir()
  */
 static bool CheckDownloadsDir()
 {
+    bool ret = false;
     // Note: "Other" bits are cleared to align with ADUC_SystemUtils_MkDirRecursiveDefault and packaging.
     const mode_t expected_permissions = S_IRWXU | S_IRWXG;
-    return CheckDirOwnershipAndVerifyFilemodeExact(
-        ADUC_DOWNLOADS_FOLDER, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL)
+    {
+        ret = CheckDirOwnershipAndVerifyFilemodeExact(
+            config->downloadsFolder, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
+        ADUC_ConfigInfo_ReleaseInstance(config);
+    }
+    return ret;
 }
 
 /**
@@ -497,7 +504,10 @@ static bool CheckShellBinary()
 
         if (!PermissionUtils_VerifyFilemodeExact(config->aduShellFilePath, expected_permissions))
         {
-            Log_Error("Lookup failed or '%s' has incorrect permissions (expected: 0%o)", config->aduShellFilePath, expected_permissions);
+            Log_Error(
+                "Lookup failed or '%s' has incorrect permissions (expected: 0%o)",
+                config->aduShellFilePath,
+                expected_permissions);
             goto done;
         }
     }

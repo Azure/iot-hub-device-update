@@ -162,29 +162,9 @@ set (
     CACHE STRING "Sub folder for update step handler extensions.")
 
 set (
-    ADUC_COMPONENT_ENUMERATOR_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR}"
-    CACHE STRING "Path for component enumerator extension.")
-
-set (
-    ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER}"
-    CACHE STRING "Path for content downloader extension.")
-
-set (
     ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS
     "download_handlers"
     CACHE STRING "Sub folder for download handler extensions.")
-
-set (
-    ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS}"
-    CACHE STRING "Path for the download handler extensions")
-
-set (
-    ADUC_DOWNLOADS_FOLDER
-    "${ADUC_DATA_FOLDER}/downloads"
-    CACHE STRING "Path to the folder containing downloaded update artifacts.")
 
 # Define the mapping from step handler names to subdirectory names
 set(ADUC_STEP_HANDLER_NAME_TO_DIRECOTRY_MAP

@@ -5,8 +5,8 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-#include "aduc/config_utils.h"
 #include "aduc/extension_utils.h"
+#include "aduc/config_utils.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h"
@@ -161,8 +161,18 @@ bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity* 
  */
 bool GetDownloadHandlerFileEntity(const char* downloadHandlerId, ADUC_FileEntity* fileEntity)
 {
-    return GetHandlerExtensionFileEntity(
-        downloadHandlerId, ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR, ADUC_DOWNLOAD_HANDLER_REG_FILENAME, fileEntity);
+    bool ret = false;
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL)
+    {
+        ret = GetHandlerExtensionFileEntity(
+            downloadHandlerId,
+            config->extensionsDownloadHandlerFolder,
+            ADUC_DOWNLOAD_HANDLER_REG_FILENAME,
+            fileEntity);
+        ADUC_ConfigInfo_ReleaseInstance(config);
+    }
+    return ret;
 }
 
 /**
@@ -350,8 +360,19 @@ bool RegisterUpdateContentHandler(const char* updateType, const char* handlerFil
  */
 bool RegisterDownloadHandler(const char* downloadHandlerId, const char* handlerFilePath)
 {
-    return RegisterHandlerExtension(
-        downloadHandlerId, handlerFilePath, ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR, ADUC_DOWNLOAD_HANDLER_REG_FILENAME);
+    bool ret = false;
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL)
+    {
+        ret = RegisterHandlerExtension(
+            downloadHandlerId,
+            handlerFilePath,
+            config->extensionsDownloadHandlerFolder,
+            ADUC_DOWNLOAD_HANDLER_REG_FILENAME);
+
+        ADUC_ConfigInfo_ReleaseInstance(config);
+    }
+    return ret;
 }
 
 /**
@@ -361,7 +382,15 @@ bool RegisterDownloadHandler(const char* downloadHandlerId, const char* handlerF
  */
 bool RegisterComponentEnumeratorExtension(const char* extensionFilePath)
 {
-    return RegisterExtension(ADUC_COMPONENT_ENUMERATOR_EXTENSION_DIR, extensionFilePath);
+    bool ret = false;
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL)
+    {
+        ret = RegisterExtension(config->extensionsComponentEnumeratorFolder, extensionFilePath);
+
+        ADUC_ConfigInfo_ReleaseInstance(config);
+    }
+    return ret;
 }
 
 /**
@@ -371,7 +400,15 @@ bool RegisterComponentEnumeratorExtension(const char* extensionFilePath)
  */
 bool RegisterContentDownloaderExtension(const char* extensionFilePath)
 {
-    return RegisterExtension(ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR, extensionFilePath);
+    bool ret = false;
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL)
+    {
+        ret = RegisterExtension(config->extensionsContentDownloaderFolder, extensionFilePath);
+
+        ADUC_ConfigInfo_ReleaseInstance(config);
+    }
+    return ret;
 }
 
 /**
