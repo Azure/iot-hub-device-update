@@ -73,9 +73,9 @@ jobs:
       displayName: "Build ADU Agent - Ubuntu 20.04 (arm64)"
       timeoutInMinutes: 120
       cancelTimeoutInMinutes: 120
-      pool: ubuntu2004_arm_pool
+      pool: aduc_1es_client_pool
       steps:
-          - template: ../templates/adu-native-build-steps.yml
+          - template: ../templates/adu-docker-build-steps.yml
             parameters:
                 targetOs: "ubuntu2004"
                 targetArch: "arm64"
@@ -84,9 +84,9 @@ jobs:
       displayName: "Build ADU Agent - Ubuntu 18.04 (arm64)"
       timeoutInMinutes: 120
       cancelTimeoutInMinutes: 120
-      pool: ubuntu1804_arm_pool
+      pool: aduc_1es_client_pool
       steps:
-          - template: ../templates/adu-native-build-steps.yml
+          - template: ../templates/adu-docker-build-steps.yml
             parameters:
                 targetOs: "ubuntu1804"
                 targetArch: "arm64"
