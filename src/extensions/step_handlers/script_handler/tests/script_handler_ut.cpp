@@ -24,15 +24,6 @@ ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
 
 EXTERN_C_END
 
-ADUC_Result ScriptHandler_PerformAction(
-    const std::string& action,
-    const tagADUC_WorkflowData* workflowData,
-    bool prepareArgsOnly,
-    std::string& scriptFilePath,
-    std::vector<std::string>& args,
-    std::vector<std::string>& commandLineArgs,
-    std::string& scriptOutput);
-
 ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle);
 
 // clang-format off
@@ -122,61 +113,52 @@ TEST_CASE("Script Handler Prepare Arguments Test")
     ADUC_WorkflowData stepWorkflow = {};
     stepWorkflow.WorkflowHandle = stepHandle;
 
-    std::string scriptFilePath;
-    std::vector<std::string> args;
-    std::vector<std::string> commandLineArgs;
-    std::string scriptOutput;
+    ADUC_PerformAction_Results results = ScriptHandler_PerformAction("install", &stepWorkflow, true);
 
-    result = ScriptHandler_PerformAction(
-        "install", &stepWorkflow, true, scriptFilePath, args, commandLineArgs, scriptOutput);
-
-    CHECK(result.ResultCode != 0);
-    CHECK(result.ExtendedResultCode == 0);
+    CHECK(results.result.ResultCode != 0);
+    CHECK(results.result.ExtendedResultCode == 0);
 
     CHECK_THAT(
-        scriptFilePath,
+        results.scriptFilePath,
         Equals("/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh"));
     CHECK_THAT(
-        scriptOutput,
+        results.scriptOutput,
         Equals(
             R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-install --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/action_install_aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
-    args.clear();
+    results.args.clear();
 
-    result =
-        ScriptHandler_PerformAction("apply", &stepWorkflow, true, scriptFilePath, args, commandLineArgs, scriptOutput);
+    results = ScriptHandler_PerformAction("apply", &stepWorkflow, true);
 
-    CHECK(result.ResultCode != 0);
-    CHECK(result.ExtendedResultCode == 0);
+    CHECK(results.result.ResultCode != 0);
+    CHECK(results.result.ExtendedResultCode == 0);
 
     CHECK_THAT(
-        scriptOutput,
+        results.scriptOutput,
         Equals(
             R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-apply --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/action_apply_aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
-    args.clear();
+    results.args.clear();
 
-    result = ScriptHandler_PerformAction(
-        "cancel", &stepWorkflow, true, scriptFilePath, args, commandLineArgs, scriptOutput);
+    results = ScriptHandler_PerformAction("cancel", &stepWorkflow, true);
 
-    CHECK(result.ResultCode != 0);
-    CHECK(result.ExtendedResultCode == 0);
+    CHECK(results.result.ResultCode != 0);
+    CHECK(results.result.ExtendedResultCode == 0);
 
     CHECK_THAT(
-        scriptOutput,
+        results.scriptOutput,
         Equals(
             R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-cancel --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/action_cancel_aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
-    args.clear();
+    results.args.clear();
 
-    result = ScriptHandler_PerformAction(
-        "is-installed", &stepWorkflow, true, scriptFilePath, args, commandLineArgs, scriptOutput);
+    results = ScriptHandler_PerformAction("is-installed", &stepWorkflow, true);
 
-    CHECK(result.ResultCode != 0);
-    CHECK(result.ExtendedResultCode == 0);
+    CHECK(results.result.ResultCode != 0);
+    CHECK(results.result.ExtendedResultCode == 0);
 
     CHECK_THAT(
-        scriptOutput,
+        results.scriptOutput,
         Equals(
             R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-is-installed --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/action_is-installed_aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
-    args.clear();
+    results.args.clear();
 
     ExtensionManager::Uninit();
 }
@@ -210,61 +192,52 @@ TEST_CASE("Script Handler Prepare Arguments Test v2.1")
     ADUC_WorkflowData stepWorkflow = {};
     stepWorkflow.WorkflowHandle = stepHandle;
 
-    std::string scriptFilePath;
-    std::vector<std::string> args;
-    std::vector<std::string> commandLineArgs;
-    std::string scriptOutput;
-
-    result = ScriptHandler_PerformAction(
-        "install", &stepWorkflow, true, scriptFilePath, args, commandLineArgs, scriptOutput);
+    ADUC_PerformAction_Results results = ScriptHandler_PerformAction("install", &stepWorkflow, true);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
     CHECK_THAT(
-        scriptFilePath,
+        results.scriptFilePath,
         Equals("/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh"));
     CHECK_THAT(
-        scriptOutput,
+        results.scriptOutput,
         Equals(
             R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh" --target-options --action --target-options "install" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/action_install_aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test api version 2.1$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
-    args.clear();
+    results.args.clear();
 
-    result =
-        ScriptHandler_PerformAction("apply", &stepWorkflow, true, scriptFilePath, args, commandLineArgs, scriptOutput);
+    results = ScriptHandler_PerformAction("apply", &stepWorkflow, true);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
     CHECK_THAT(
-        scriptOutput,
+        results.scriptOutput,
         Equals(
             R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh" --target-options --action --target-options "apply" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/action_apply_aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test api version 2.1$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
-    args.clear();
+    results.args.clear();
 
-    result = ScriptHandler_PerformAction(
-        "cancel", &stepWorkflow, true, scriptFilePath, args, commandLineArgs, scriptOutput);
+    results = ScriptHandler_PerformAction("cancel", &stepWorkflow, true);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
     CHECK_THAT(
-        scriptOutput,
+        results.scriptOutput,
         Equals(
             R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh" --target-options --action --target-options "cancel" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/action_cancel_aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test api version 2.1$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
-    args.clear();
+    results.args.clear();
 
-    result = ScriptHandler_PerformAction(
-        "is-installed", &stepWorkflow, true, scriptFilePath, args, commandLineArgs, scriptOutput);
+    results = ScriptHandler_PerformAction("is-installed", &stepWorkflow, true);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
     CHECK_THAT(
-        scriptOutput,
+        results.scriptOutput,
         Equals(
             R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh" --target-options --action --target-options "is-installed" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/action_is-installed_aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test api version 2.1$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
-    args.clear();
+    results.args.clear();
 
     ExtensionManager::Uninit();
 }

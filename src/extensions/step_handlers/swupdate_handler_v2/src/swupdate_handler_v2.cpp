@@ -167,8 +167,6 @@ ADUC_Result SWUpdateHandler_PerformAction(
                                               adushconst::update_action_opt,
                                               adushconst::update_action_execute };
 
-    std::stringstream ss;
-
     result = SWUpdateHandlerImpl::PrepareCommandArguments(
         workflowData->WorkflowHandle, scriptResultFile, scriptWorkfolder, scriptFilePath, args);
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -218,6 +216,7 @@ ADUC_Result SWUpdateHandler_PerformAction(
 
     if (prepareArgsOnly)
     {
+        std::stringstream ss;
         for (const auto& a : aduShellArgs)
         {
             if (a[0] != '-')
