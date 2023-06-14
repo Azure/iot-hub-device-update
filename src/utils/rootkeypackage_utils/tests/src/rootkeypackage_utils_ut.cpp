@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <base64_utils.h>
 #include <catch2/catch.hpp>
+#include <crypto_lib.h>
 #include <parson.h>
 #include <regex>
 #include <sstream>
@@ -131,6 +132,7 @@ static std::string convert_hexcolon_to_URLUIntBase64String(const std::string& he
     free(encoded);
     return base64url;
 }
+
 static std::string get_valid_rootkey_package(
     const char* disabledHashPublicSigningKey,
     const char* modulus_1,
@@ -386,25 +388,111 @@ TEST_CASE("RootKeyPackageUtils_Parse")
     }
 }
 
+const char* AllowedSigningKey =
+    "ucKAJMkskVVKjtVLFdraMSd0cTa2Vcndkle540smg3a2v4hYXoHWBaA0tkZj5VM1fWR-XcjHJ9NRh74TzsHqPJODXn085tWGMwOzUEPhOSAzRaY-FCr23SIqM6AHCYPxziKbz9kEcD6e043UyCRMyLf8fQJ3SOvBXCNoVSkiQ8rwcDeHjFiSzk_BLy0JGRjfzJZF8l-q1N-Vqpq3VtOmQJphblSL6bC9AR1GNrvaJbHiSciaFvuiucneVBu3B6bY0wEin20x_CrjTNmiWEtuY_zoUxJGLGQVHkzJRRAQweHxw_FDSMd3UhiINRuN7Qb3r_S9HPoFNkZvaOUVOVe7WUY0jAFIzVUEcq2CTx43p0XvaLeYEz-DsG-RlPkkT2i-1ykEhwtJfsKGDTIP5mPDslZkTUScgZFRMToJdwOtGKkAzGXQPlvtf3IL49fUTM4r8dpIc7E1N2Djt94__kcdY1e8JxfgRH7RoiQCATHep6-mQW5UKq_onJW2bNo7i9Gb";
+const char* DisallowedSigningKey =
+    "2WisuSoVDzKsz02BmP2bulWJzwrDH4hBIgKaz4Ithol_LYOSpk0knonvCiEB5Zb9kKMUAlOdKluvO2nGKp95kqZzm77thqjUbe5bZyFOCqPlPH-0nUHhg_oHXvX_5Oz3l-7KhMG0bUWzQ72nkmUHViexAPBpY-u4zZTRr8MONbGtMInrVI7SJTbToZ1zzM-b04o8wxlNfNJspjY2P_82mmJXZKlRlGdWuLYLoeXhKosfSu9MP1aLjC-puEmYmZ-dsoMg3_DHhluC-7VN2r8dAm3e3cTKuL3bNvGguTwTnccMEw1VxLMUsnpsDtxFHjebwpRVvs76JJsW3fllYZZ2T1l5WWxQbWDCdui7dDvnAfEww7Juxw4dKdXnlSorBGa5-QxZ0OnfKQTYbQweA_GehkKPPvku9mzK-n0PxfsaQMLS1-JfXgiVNQ4erhu_625iKFwWKlfuqOuZWiJMkFTK-NBmpDKAaBtxdH_5Xgc3ZA7SMymyVfw-9UmWv-ooK1F9";
+
+static CONSTBUFFER_HANDLE GetHashPubKey(const char* n)
+{
+    CONSTBUFFER_HANDLE pubkey = CryptoUtils_GeneratePublicKey(n, "AQAB");
+    REQUIRE(pubkey != nullptr);
+
+    CONSTBUFFER_HANDLE hashed = CryptoUtils_CreateSha256Hash(pubkey);
+    CONSTBUFFER_DecRef(pubkey);
+    REQUIRE(hashed != nullptr);
+
+    return hashed;
+}
+
+static ADUC_RootKeyPackage GetTestRootKeyPackage()
+{
+    ADUC_RootKeyPackage rootKeyPkg;
+    memset(&rootKeyPkg, 0, sizeof(rootKeyPkg));
+
+    rootKeyPkg.protectedProperties.disabledSigningKeys = VECTOR_create(sizeof(ADUC_RootKeyPackage_Hash));
+    REQUIRE(rootKeyPkg.protectedProperties.disabledSigningKeys != nullptr);
+
+    return rootKeyPkg;
+}
+
+static ADUC_RootKeyPackage GetTestRootKeyPackage(const char* n_signing_key)
+{
+    ADUC_RootKeyPackage rootKeyPkg;
+    memset(&rootKeyPkg, 0, sizeof(rootKeyPkg));
+
+    rootKeyPkg.protectedProperties.disabledSigningKeys = VECTOR_create(sizeof(ADUC_RootKeyPackage_Hash));
+    REQUIRE(rootKeyPkg.protectedProperties.disabledSigningKeys != nullptr);
+
+    CONSTBUFFER_HANDLE hashPubKey = GetHashPubKey(n_signing_key);
+    REQUIRE(hashPubKey != NULL);
+
+    ADUC_RootKeyPackage_Hash hash = { SHA256, hashPubKey };
+
+    REQUIRE(VECTOR_push_back(rootKeyPkg.protectedProperties.disabledSigningKeys, &hash, 1) == 0);
+
+    return rootKeyPkg;
+}
+
 TEST_CASE("ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList")
 {
     SECTION("Missing - Empty list")
     {
-        // bool found = false;
-        // ADUC_Result result = ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(
-        //     &pkg,
-        //     const char* signingKeyAlg,
-        //     const CONSTBUFFER_HANDLE signingKeyHashOfPublicKey,
-        //     &found);
+        ADUC_RootKeyPackage rootKeyPkg = GetTestRootKeyPackage();
+        const CONSTBUFFER_HANDLE hashPubKey = GetHashPubKey(AllowedSigningKey);
+
+        bool isDisabled = true;
+        ADUC_Result result =
+            ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(&rootKeyPkg, "sha256", hashPubKey, &isDisabled);
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        CHECK_FALSE(isDisabled);
+
+        ADUC_RootKeyPackageUtils_Destroy(&rootKeyPkg);
     }
 
     SECTION("Missing - Non-empty list")
     {
-        // ADUC_Result ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(const ADUC_RootKeyPackage* rootKeyPackage, const char* signingKeyAlg, const CONSTBUFFER_HANDLE signingKeyHashOfPublicKey, bool* outWasFound)
+        ADUC_RootKeyPackage rootKeyPkg = GetTestRootKeyPackage(DisallowedSigningKey);
+        const CONSTBUFFER_HANDLE hashPubKey = GetHashPubKey(AllowedSigningKey);
+
+        bool isDisabled = true;
+        ADUC_Result result =
+            ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(&rootKeyPkg, "sha256", hashPubKey, &isDisabled);
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        CHECK_FALSE(isDisabled);
+
+        ADUC_RootKeyPackageUtils_Destroy(&rootKeyPkg);
     }
 
     SECTION("Found")
     {
-        // ADUC_Result ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(const ADUC_RootKeyPackage* rootKeyPackage, const char* signingKeyAlg, const CONSTBUFFER_HANDLE signingKeyHashOfPublicKey, bool* outWasFound)
+        ADUC_RootKeyPackage rootKeyPkg = GetTestRootKeyPackage(DisallowedSigningKey);
+        const CONSTBUFFER_HANDLE hashPubKey = GetHashPubKey(DisallowedSigningKey);
+
+        bool isDisabled = false;
+        ADUC_Result result =
+            ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(&rootKeyPkg, "sha256", hashPubKey, &isDisabled);
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        CHECK(isDisabled); // It is found when it is disabled (due to being found on disabled list)
+
+        ADUC_RootKeyPackageUtils_Destroy(&rootKeyPkg);
+    }
+
+    SECTION("Unsupported Hash Alg")
+    {
+        ADUC_RootKeyPackage rootKeyPkg = GetTestRootKeyPackage(AllowedSigningKey);
+        const CONSTBUFFER_HANDLE hashPubKey = GetHashPubKey(AllowedSigningKey);
+
+        bool isDisabled = false;
+        ADUC_Result result =
+            ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(&rootKeyPkg, "md5", hashPubKey, &isDisabled);
+
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+        CHECK(result.ExtendedResultCode == ADUC_ERC_ROOTKEY_SIGNINGKEY_DISABLE_EVAL_INVALID_HASHALG);
+
+        ADUC_RootKeyPackageUtils_Destroy(&rootKeyPkg);
     }
 }

@@ -135,7 +135,7 @@ static bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const 
         goto done;
     }
 
-    rootKey->rsaParameters.n = CONSTBUFFER_CreateWithMoveMemory(modulus, modulusSize);
+    rootKey->rsaParameters.n = CONSTBUFFER_Create(modulus, modulusSize);
 
     if (rootKey->rsaParameters.n == NULL)
     {

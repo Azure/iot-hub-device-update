@@ -508,17 +508,13 @@ CONSTBUFFER_HANDLE CryptoUtils_CreateSha256Hash(const CONSTBUFFER_HANDLE buf)
     {
         memcpy(output_digest, &hashBuf[0], Sha256DigestNumBytes);
 
-        // Transfer the ownership of the allocated memory to the CONSTBUFFER_HANDLE.
-        out_handle = CONSTBUFFER_CreateWithMoveMemory(output_digest, Sha256DigestNumBytes);
+        out_handle = CONSTBUFFER_Create(output_digest, Sha256DigestNumBytes);
         output_digest = NULL;
     }
 
 done:
     EVP_MD_CTX_free(mdctx);
-    if (output_digest != NULL)
-    {
-        free(output_digest);
-    }
+    free(output_digest);
 
     return out_handle;
 }
@@ -578,14 +574,8 @@ CONSTBUFFER_HANDLE CryptoUtils_GeneratePublicKey(const char* modulus_b64url, con
     }
     // der_length = i2d_RSA_PUBKEY(rsa, &der_encoded_bytes); // cert format?
 
-    // When CONSTBUFFER_HANDLE refcount goes to zero, it will call free on the buffer
-    // since it is the owner now.
-    publicKeyData = CONSTBUFFER_CreateWithMoveMemory(der_encoded_bytes, der_length);
-    if (publicKeyData != NULL)
-    {
-        der_encoded_bytes = NULL;
-        der_length = 0;
-    }
+    // copies bytes into new buffer, so let it free after done:
+    publicKeyData = CONSTBUFFER_Create(der_encoded_bytes, der_length);
 
 done:
 

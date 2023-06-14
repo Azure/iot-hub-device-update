@@ -14,6 +14,7 @@
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
 #include <base64_utils.h>
+#include <ctype.h> // tolower
 #include <parson.h>
 
 EXTERN_C_BEGIN
@@ -551,6 +552,7 @@ ADUC_Result ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     VECTOR_HANDLE signingKeyBlacklist = NULL;
     SHAversion signingKeyBlobAlg = SHA256;
+    char* lc_alg = NULL;
 
     if (rootKeyPackage == NULL || IsNullOrEmpty(signingKeyIdentityHashAlg) || signingKeyHashOfPublicKey == NULL
         || outIsDisabled == NULL || (rootKeyPackage->protectedProperties).disabledSigningKeys == NULL)
@@ -559,7 +561,14 @@ ADUC_Result ADUC_RootKeyPackageUtils_IsSigningKeyInDisabledList(
         goto done;
     }
 
-    if (!ADUC_HashUtils_GetShaVersionForTypeString(signingKeyIdentityHashAlg, &signingKeyBlobAlg)
+    lc_alg = ADUC_StringUtils_Map(signingKeyIdentityHashAlg, tolower);
+    if (lc_alg == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
+        goto done;
+    }
+
+    if (!ADUC_HashUtils_GetShaVersionForTypeString(lc_alg, &signingKeyBlobAlg)
         || !ADUC_HashUtils_IsValidHashAlgorithm(signingKeyBlobAlg))
     {
         result.ExtendedResultCode = ADUC_ERC_ROOTKEY_SIGNINGKEY_DISABLE_EVAL_INVALID_HASHALG;
@@ -714,6 +723,12 @@ void ADUC_RootKeyPackageUtils_Destroy(ADUC_RootKeyPackage* rootKeyPackage)
     ADUC_RootKeyPackageUtils_RootKeys_Destroy(rootKeyPackage);
 
     ADUC_RootKeyPackageUtils_Signatures_Destroy(rootKeyPackage);
+
+    if (rootKeyPackage->protectedPropertiesJsonString != NULL)
+    {
+        STRING_delete(rootKeyPackage->protectedPropertiesJsonString);
+        rootKeyPackage->protectedPropertiesJsonString = NULL;
+    }
 
     memset(rootKeyPackage, 0, sizeof(*rootKeyPackage));
 }
