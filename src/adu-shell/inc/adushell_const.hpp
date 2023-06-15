@@ -13,12 +13,6 @@ namespace Shell
 {
 namespace Const
 {
-#if defined(WIN32)
-const char* adu_shell = "/usr/lib/adu/adu-shell.exe";
-#else
-const char* adu_shell = "/usr/lib/adu/adu-shell";
-#endif
-
 const char* update_type_opt = "--update-type";
 const char* update_type_microsoft_apt = "microsoft/apt";
 const char* update_type_microsoft_swupdate = "microsoft/swupdate";

@@ -16,7 +16,7 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc)
 #
 set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+target_link_aziotsharedutil (${PROJECT_NAME} PUBLIC)
 
 target_link_libraries (
     ${PROJECT_NAME}

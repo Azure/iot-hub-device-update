@@ -9,6 +9,7 @@
 #define ADUC_SYSTEM_UTILS_H
 
 #include <aduc/c_utils.h>
+#include <azure_c_shared_utility/strings.h>
 #include <stdbool.h>
 
 #include <aducpal/sys_stat.h> // mode_t
@@ -47,6 +48,9 @@ int ADUC_SystemUtils_MkDirRecursiveAduUser(const char* path);
 int ADUC_SystemUtils_RmDirRecursive(const char* path);
 
 int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, bool overwriteExistingFile);
+int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, bool overwriteExistingFile);
+
+int ADUC_SystemUtils_RemoveFile(const char* path);
 
 int ADUC_SystemUtils_WriteStringToFile(const char* path, const char* buff);
 
@@ -58,6 +62,8 @@ bool SystemUtils_IsFile(const char* path, int* err);
 
 int SystemUtils_ForEachDir(
     const char* baseDir, const char* excludeDir, ADUC_SystemUtils_ForEachDirFunctor* perDirActionFunctor);
+
+bool ADUC_SystemUtils_FormatFilePathHelper(STRING_HANDLE* newFilePath, const char* filePath, const char* dirPath);
 
 EXTERN_C_END
 

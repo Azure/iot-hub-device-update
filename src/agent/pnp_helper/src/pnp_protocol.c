@@ -17,7 +17,8 @@
 
 // IoT core utility related header files
 #include "azure_c_shared_utility/strings.h"
-#include "azure_c_shared_utility/xlogging.h"
+#include <aduc/logging.h>
+#include <stdlib.h>
 
 // Format used when building a response for a root property that does not contain metadata
 static const char g_propertyWithoutResponseSchemaWithoutComponent[] = "{\"%s\":%s}";
@@ -66,7 +67,7 @@ PnP_CreateReportedProperty(const char* componentName, const char* propertyName, 
 
     if (jsonToSend == NULL)
     {
-        LogError("Unable to allocate JSON buffer");
+        Log_Error("Unable to allocate JSON buffer");
     }
 
     return jsonToSend;
@@ -106,7 +107,7 @@ STRING_HANDLE PnP_CreateReportedPropertyWithStatus(
 
     if (jsonToSend == NULL)
     {
-        LogError("Unable to allocate JSON buffer");
+        Log_Error("Unable to allocate JSON buffer");
     }
 
     return jsonToSend;
@@ -146,7 +147,7 @@ IOTHUB_MESSAGE_HANDLE PnP_CreateTelemetryMessageHandle(const char* componentName
 
     if ((messageHandle = IoTHubMessage_CreateFromString(telemetryData)) == NULL)
     {
-        LogError("IoTHubMessage_CreateFromString failed");
+        Log_Error("IoTHubMessage_CreateFromString failed");
         result = false;
     }
     // If the component will be used, then specify this as a property of the message.
@@ -156,7 +157,8 @@ IOTHUB_MESSAGE_HANDLE PnP_CreateTelemetryMessageHandle(const char* componentName
                 IoTHubMessage_SetProperty(messageHandle, PnP_TelemetryComponentProperty, componentName))
             != IOTHUB_MESSAGE_OK)
     {
-        LogError("IoTHubMessage_SetProperty=%s failed, error=%d", PnP_TelemetryComponentProperty, iothubMessageResult);
+        Log_Error(
+            "IoTHubMessage_SetProperty=%s failed, error=%d", PnP_TelemetryComponentProperty, iothubMessageResult);
         result = false;
     }
     else
@@ -195,7 +197,7 @@ static void VisitComponentProperties(
         if ((propertyName == NULL) || (propertyValue == NULL))
         {
             // This should never happen because we are simply accessing parson tree.  Do not pass NULL to application in case it does occur.
-            LogError(
+            Log_Error(
                 "Unexpected error retrieving the property name and/or value of component=%s at element at index=%zu",
                 objectName,
                 i);
@@ -253,12 +255,12 @@ static bool VisitDesiredObject(
 
     if ((versionValue = json_object_get_value(desiredObject, g_IoTHubTwinDesiredVersion)) == NULL)
     {
-        LogError("Cannot retrieve %s field for twin", g_IoTHubTwinDesiredVersion);
+        Log_Error("Cannot retrieve %s field for twin", g_IoTHubTwinDesiredVersion);
         result = false;
     }
     else if (json_value_get_type(versionValue) != JSONNumber)
     {
-        LogError("JSON field %s is not a number", g_IoTHubTwinDesiredVersion);
+        Log_Error("JSON field %s is not a number", g_IoTHubTwinDesiredVersion);
         result = false;
     }
     else
@@ -310,7 +312,7 @@ static JSON_Object* GetDesiredJson(DEVICE_TWIN_UPDATE_STATE updateState, JSON_Va
 
     if ((rootObject = json_value_get_object(rootValue)) == NULL)
     {
-        LogError("Unable to get root object of JSON");
+        Log_Error("Unable to get root object of JSON");
         desiredObject = NULL;
     }
     else
@@ -348,17 +350,17 @@ bool PnP_ProcessTwinData(
 
     if ((jsonStr = PnP_CopyPayloadToString(payload, size)) == NULL)
     {
-        LogError("Unable to allocate twin buffer");
+        Log_Error("Unable to allocate twin buffer");
         result = false;
     }
     else if ((rootValue = json_parse_string(jsonStr)) == NULL)
     {
-        LogError("Unable to parse device twin JSON");
+        Log_Error("Unable to parse device twin JSON");
         result = false;
     }
     else if ((desiredObject = GetDesiredJson(updateState, rootValue)) == NULL)
     {
-        LogError("Cannot retrieve desired JSON object");
+        Log_Error("Cannot retrieve desired JSON object");
         result = false;
     }
     else
@@ -381,7 +383,7 @@ char* PnP_CopyPayloadToString(const unsigned char* payload, size_t size)
 
     if ((jsonStr = (char*)malloc(sizeToAllocate)) == NULL)
     {
-        LogError("Unable to allocate %lu size buffer", (unsigned long)(sizeToAllocate));
+        Log_Error("Unable to allocate %lu size buffer", (unsigned long)(sizeToAllocate));
     }
     else
     {

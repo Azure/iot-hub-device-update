@@ -19,13 +19,16 @@ find_package (umqtt REQUIRED)
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::adu_types
-    PRIVATE aduc::communication_abstraction
+    PRIVATE aduc::adu_core_export_helpers
+            aduc::communication_abstraction
             aduc::config_utils
             aduc::c_utils
             aduc::eis_utils
             aduc::https_proxy_utils
             aduc::logging
             aduc::retry_utils)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
 if (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT")
     target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_ALLOW_MQTT=1)

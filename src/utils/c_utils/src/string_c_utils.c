@@ -96,9 +96,9 @@ bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* val
  * @param strBuffSize the size of the buffer
  * @returns false on failure, true on success
  */
-bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const size_t strBufferSize)
+bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const size_t strBuffSize)
 {
-    if (filePath == NULL || strBuffer == NULL || strBufferSize == 0)
+    if (filePath == NULL || strBuffer == NULL || strBuffSize == 0)
     {
         return false;
     }
@@ -113,7 +113,7 @@ bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const siz
     }
 
     const long fileSize = bS.st_size;
-    if (fileSize == 0 || fileSize > strBufferSize)
+    if (fileSize == 0 || fileSize > strBuffSize)
     {
         goto done;
     }
@@ -125,7 +125,7 @@ bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const siz
     }
 
     char* readBuff = strBuffer;
-    size_t buffSize = strBufferSize;
+    size_t buffSize = strBuffSize;
 
     while (true)
     {

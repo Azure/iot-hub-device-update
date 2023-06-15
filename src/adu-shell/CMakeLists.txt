@@ -17,29 +17,21 @@ set (agent_swupdate_c_files ./src/swupdate_tasks.cpp)
 
 set (agent_script_c_files ./src/script_tasks.cpp)
 
-list (LENGTH ADUC_CONTENT_HANDLERS num_content_handlers)
-if (num_content_handlers EQUAL 0)
-    message (FATAL_ERROR "No content handler specified.")
+list (LENGTH ADUC_STEP_HANDLERS num_step_handlers)
+if (num_step_handlers EQUAL 0)
+    message (FATAL_ERROR "No step handlers specified.")
 endif ()
 
 # Replace comma delimiter with semicolon to form a list
 # Converts the list passed in on the command line to a CMake list.
 
-string (
-    REPLACE ","
-            ";"
-            ADUC_CONTENT_HANDLER_LIST
-            ${ADUC_CONTENT_HANDLERS})
+string (REPLACE "," ";" ADUC_STEP_HANDLER_LIST ${ADUC_STEP_HANDLERS})
 
 set (source_files ${agent_c_files})
 
 # Support all microsoft/* update types by default.
-set (
-    source_files
-    ${agent_c_files}
-    ${agent_apt_c_files}
-    ${agent_swupdate_c_files}
-    ${agent_script_c_files})
+set (source_files ${agent_c_files} ${agent_apt_c_files} ${agent_swupdate_c_files}
+                  ${agent_script_c_files})
 
 set (adushell_def ADUSHELL_SWUPDATE="yes" ADUSHELL_APT="yes" ADUSHELL_SCRIPT="yes")
 
@@ -51,11 +43,9 @@ set_target_properties (${target_name} PROPERTIES COMPILE_DEFINITIONS _DEFAULT_SO
 
 target_compile_definitions (
     ${target_name}
-    PRIVATE ADUC_VERSION="${ADUC_VERSION}"
-            ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
-            ADUC_CONTENT_HANDLERS="${ADUC_CONTENT_HANDLERS}"
-            ADUSHELL_EFFECTIVE_GROUP_NAME="${ADUSHELL_EFFECTIVE_GROUP_NAME}"
-            ${adushell_def})
+    PRIVATE ADUC_VERSION="${ADUC_VERSION}" ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
+            ADUC_STEP_HANDLERS="${ADUC_STEP_HANDLERS}"
+            ADUSHELL_EFFECTIVE_GROUP_NAME="${ADUSHELL_EFFECTIVE_GROUP_NAME}" ${adushell_def})
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
@@ -64,27 +54,13 @@ if (WIN32)
     target_link_libraries (${target_name} PRIVATE unofficial::getopt-win32::getopt)
 endif ()
 
-target_link_libraries (
-    ${target_name}
-    PRIVATE aduc::logging
-            aduc::c_utils
-            aduc::config_utils
-            aduc::process_utils
-            aduc::string_utils)
-
-target_link_libraries (${target_name} PRIVATE libaducpal)
+target_link_libraries (${target_name} PRIVATE aduc::logging aduc::c_utils aduc::config_utils
+                                              aduc::process_utils aduc::string_utils)
 
 add_subdirectory (scripts)
 
 # Install adu-shell to /usr/lib/adu folder.
 # Only owner and group can run adu-shell.
-install (
-    TARGETS ${target_name}
-    RUNTIME
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/adu
-        PERMISSIONS
-            OWNER_EXECUTE
-            OWNER_WRITE
-            OWNER_READ
-            GROUP_READ
-            GROUP_EXECUTE)
+install (TARGETS ${target_name}
+         RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}/adu
+                 PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_READ GROUP_EXECUTE)

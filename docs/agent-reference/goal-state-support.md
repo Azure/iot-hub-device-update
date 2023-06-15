@@ -32,14 +32,14 @@ Another change is the client only reports the status of workflow processing when
 ##### High-level summary
 When the agent receives a property update from PnP either on agent process startup or when the desired action in the digital twin changes, the agent will:
 - Parse the desired update metadata in the twin
-- Load the appropriate content handler extension for the update type
-- Call IsInstalled exported function on the content handler
+- Load the appropriate step handler extension for the update type
+- Call IsInstalled exported function on the step handler
 - If not installed, the agent will:
   - report the deployment is in progress
-  - initiate download, install, and apply operations in that order, which will invoke the corresponding exports on the content handler.
+  - initiate download, install, and apply operations in that order, which will invoke the corresponding exports on the step handler.
   - it will report the final status to the cloud upon failure or success.
 
-If an install or apply requires agent restart or system reboot (as dictated by return status from the content handler), then it will do so. Upon startup, the goal state in the twin is processed as before (it is treated idempotently). If the content handler deems that there is still more work to do, processing will continue from the beginning (it is up to the content handler to return success for any steps already done such as download); otherwise, it will report the results of workflow processing to the cloud.
+If an install or apply requires agent restart or system reboot (as dictated by return status from the step handler), then it will do so. Upon startup, the goal state in the twin is processed as before (it is treated idempotently). If the step handler deems that there is still more work to do, processing will continue from the beginning (it is up to the step handler to return success for any steps already done such as download); otherwise, it will report the results of workflow processing to the cloud.
 
 Processing of the goal state update workflow starts with the service updating the digital twin's desired section
 with the `ProcessDeployment ( 3 )` ProcessWorkflow UpdateAction. See `ADUCITF_UpdateAction` enum in [update_content.h](../../src/adu_types/inc/aduc/types/update_content.h).
@@ -61,20 +61,20 @@ Here is each workflow step and what it does at a high-level:
     - Auto-Transitions to `ADUCITF_WorkflowStep_Download`
 - `ADUCITF_WorkflowStep_Download`
     - Sets current state to `ADUCITF_State_DownloadStarted`
-    - Kicks off Download worker thread, which will call the content handler's `Download()` method to download the update content to the work folder download sandbox.
+    - Kicks off Download worker thread, which will call the step handler's `Download()` method to download the update content to the work folder download sandbox.
     - On success, it will set the state to `ADUCITF_State_DownloadCompleted` and auto-transitions to `ADUCITF_WorkflowStep_Backup`
     - On failure, it sets the state to `ADUCITF_State_Failed` and reports the failure.
 - `ADUCITF_WorkflowStep_Backup`
     - Sets current state to `ADUCITF_WorkflowStep_Backup`
-    - Kicks off Backup worker thread, which will call the content handler's `Backup()` method to backup the content needed to 
+    - Kicks off Backup worker thread, which will call the step handler's `Backup()` method to backup the content needed to 
     be backed up
     - On success, it will set the state to `ADUCITF_State_BackupCompleted` and auto-transitions to `ADUCITF_WorkflowStep_InstallStarted`
     - On failure, it sets the state to `ADUCITF_State_Failed` and reports the failure.
     Note: The default behavior of backup is that if Backup fails,  the workflow will end and report failure immediately.
-    To opt out of this design, in the content handler, the owner of the content handler will need to persist the result of ADUC_Workflow_MethodCall_Backup and return ADUC_Result_Backup_Success to let the workflow continue.
+    To opt out of this design, in the step handler, the owner of the step handler will need to persist the result of ADUC_Workflow_MethodCall_Backup and return ADUC_Result_Backup_Success to let the workflow continue.
 - `ADUCITF_WorkflowStep_Install`
     - Sets the current state to `ADUCITF_State_InstallStarted`
-    - Kicks off Install worker thread, which will call the content handler's `Install()` method to install the content that is in the work folder
+    - Kicks off Install worker thread, which will call the step handler's `Install()` method to install the content that is in the work folder
     - On success, it will:
         - Reboot the system if the result code is either
             - `ADUC_Result_Install_RequiredImmediateReboot` or
@@ -86,7 +86,7 @@ Here is each workflow step and what it does at a high-level:
     - On failure, it will transit to `ADUCITF_WorkflowStep_Restore`
 - `ADUCITF_WorkflowStep_Apply`
     - Sets the current state to `ADUCITF_State_ApplyStarted`
-    - Kicks off Apply worker thread, which will call the content handler's `Apply()` method
+    - Kicks off Apply worker thread, which will call the step handler's `Apply()` method
     - On success, it will:
         - Reboot the system if the result code is either
             - `ADUC_Result_Apply_RequiredImmediateReboot` or
@@ -99,7 +99,7 @@ Here is each workflow step and what it does at a high-level:
 
 - `ADUCITF_WorkflowStep_Restore`
     - Sets the current state to `ADUCITF_State_RestoreStarted`
-    - Kicks off Restore worker thread, which will call the content handler's `Restore()` method
+    - Kicks off Restore worker thread, which will call the step handler's `Restore()` method
     - On success, it will:
         - Reboot the system if the result code is either
             - `ADUC_Result_Restore_RequiredImmediateReboot` or
@@ -129,7 +129,7 @@ Once processing is done, or cancel completes, it will start processing the new w
 
 Note:
 
-Ideally, the content handler's Cancel method should be able to send a cancel message/signal to the thread/process executing the current operation (e.g. install operation). If the cancellation is successful, the thread/process should still call `WorkCompletionCallback` so that the state machine can transition to the next state and report to the cloud as appropriate for final states (failure, cancellation, success).
+Ideally, the step handler's Cancel method should be able to send a cancel message/signal to the thread/process executing the current operation (e.g. install operation). If the cancellation is successful, the thread/process should still call `WorkCompletionCallback` so that the state machine can transition to the next state and report to the cloud as appropriate for final states (failure, cancellation, success).
 
 ## Handling Service-Initiated Retry
 
@@ -139,6 +139,6 @@ Similarly, if the service operator issues a retry, the agent will cancel any cur
 
 When a service operator issues a cancellation of the current workflow processing, the agent will attempt to cancel it. This leads to a call to the Cancel method of the ContentHandler that is registered for the update's update type.
 
-The content handler should interupt the current in-progress operation (e.g. Download) so that the operation exits and calls WorkCompletionCallback to complete the current operation.
+The step handler should interrupt the current in-progress operation (e.g. Download) so that the operation exits and calls WorkCompletionCallback to complete the current operation.
 
 The agent will then report to the cloud a result code of ADUC_Result_Failure_Cancelled(-1) and transition to Idle state.

@@ -1,4 +1,4 @@
-# Steps Content Handler
+# Steps Handler (or Update Manifest Handler)
 
 ## Introducing Install Instructions Step
 
@@ -6,7 +6,7 @@ At the Device Update Public Preview Refresh, the top level Update Manifest versi
 
 ### Example Update Manifest with Steps
 
-The following is an example of the Update Manifest version v4 that contains two instuction steps. In this example, both steps are `inline` step. 'Inline' step is the default value if not specified.
+The following is an example of the Update Manifest version v4 that contains two instruction steps. In this example, both steps are `inline` step. 'Inline' step is the default value if not specified.
 
 > Note: see [Multi Step Ordered Execution](../../../docs/agent-reference/update-manifest-v4-schema.md#multi-step-ordered-execution-msoe-support) for more information about `step`. The step's `handler` property is equivalent to an `Update Type` that was introduced in the previous version of the Update Manifest.
 
@@ -69,13 +69,13 @@ A **Reference Step** is a step that contains Update Identifier of another Update
 
 Next, Steps Handler will parse the Child Update Manifest and create ADUC_Workflow object (aka. Child Workflow Data) by combining the data from Child Update Manifest and File URLs information from the Parent Update Manifest.  This Child Workflow Data also has a 'level' property set to '1'.
 
-> Note: For Update Manfiest version v4, the Child Udpate cannot contain any Reference Steps.
+> Note: For Update Manifest version v4, the Child Update cannot contain any Reference Steps.
 
 ## Handling Reference Steps (Child Updates)
 
 **Figure 2** - Overview of Steps Handler Sequence Diagram With Parent and Child Updates
 
-![Steps Handler Sequence Diagram - Parent and Chlld](./assets/steps-handler-child-update-sequence-overview.svg)
+![Steps Handler Sequence Diagram - Parent and Child](./assets/steps-handler-child-update-sequence-overview.svg)
 
 ### Things To Know
 
@@ -87,7 +87,7 @@ Next, Steps Handler will parse the Child Update Manifest and create ADUC_Workflo
 
 ## Related Topics
 
-- [How To Implement Custom Update Content Handler](../../../docs/agent-reference/how-to-implement-custom-update-handler.md.md)
+- [How To Implement Custom Step  Handler](../../../docs/agent-reference/how-to-implement-custom-update-handler.md.md)
 - [Multi Component Updating](../../../docs/agent-reference/multi-component-updating.md)
 - [Contoso Component Enumerator Example](../../extensions/component_enumerators/examples/contoso_component_enumerator/README.md)
 - [What's MSOE](../../../docs/agent-reference/update-manifest-v4-schema.md#multi-step-ordered-execution-msoe-support)

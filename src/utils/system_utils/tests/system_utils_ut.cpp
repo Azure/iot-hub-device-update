@@ -10,6 +10,7 @@ using Catch::Matchers::Equals;
 
 #include "aduc/system_utils.h"
 #include <aduc/auto_opendir.hpp>
+#include <aduc/string_handle_wrapper.hpp>
 #include <sys/stat.h>
 #include <vector>
 
@@ -72,10 +73,7 @@ static void ForEachDir_Callback(void* context, const char* baseDir, const char* 
 
 ADUC_SystemUtils_ForEachDirFunctor CreateCallbackFunctor(TestCaseFixture* fixture)
 {
-    ADUC_SystemUtils_ForEachDirFunctor functor;
-    functor.context = fixture;
-    functor.callbackFn = ForEachDir_Callback;
-    return functor;
+    return ADUC_SystemUtils_ForEachDirFunctor{ /*.context = */ fixture, /*.callbackFn = */ ForEachDir_Callback };
 };
 
 class TestCaseFixture
@@ -451,5 +449,34 @@ TEST_CASE_METHOD(TestCaseFixture, "SystemUtils_ForEachDir")
                 CreateCallRecord("subdir1"),
                 CreateCallRecord("subdir2"),
             });
+    }
+}
+
+TEST_CASE("ADUC_SystemUtils_FormatFilePathHelper")
+{
+    SECTION("ADUC_SystemUtils_FormatFilePathHelper without trailing forward slash")
+    {
+        const char* filePath = "/path/to/file.ext";
+        const char* dirPath = "/path/to/folder";
+
+        ADUC::StringUtils::STRING_HANDLE_wrapper newFilePath{ nullptr };
+
+        REQUIRE(ADUC_SystemUtils_FormatFilePathHelper(newFilePath.address_of(), filePath, dirPath));
+        REQUIRE_FALSE(newFilePath.is_null());
+
+        CHECK_THAT(STRING_c_str(newFilePath.get()), Equals("/path/to/folder/file.ext"));
+    }
+
+    SECTION("ADUC_SystemUtils_FormatFilePathHelper with trailing forward slash")
+    {
+        const char* filePath = "/path/to/file.ext";
+        const char* dirPath = "/path/to/folder/";
+
+        ADUC::StringUtils::STRING_HANDLE_wrapper newFilePath{ nullptr };
+
+        REQUIRE(ADUC_SystemUtils_FormatFilePathHelper(newFilePath.address_of(), filePath, dirPath));
+        REQUIRE_FALSE(newFilePath.is_null());
+
+        CHECK_THAT(STRING_c_str(newFilePath.get()), Equals("/path/to/folder/file.ext"));
     }
 }

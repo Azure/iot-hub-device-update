@@ -1,0 +1,141 @@
+# Template: Steps to setup the virtual machines for running the ADU Agent E2E Tests
+
+parameters:
+    - name: distroName
+      type: string
+    - name: vm_size
+      type: string
+    - name: image_publisher
+      type: string
+    - name: image_offer
+      type: string
+    - name: image_sku
+      type: string
+    - name: image_version
+      type: string
+    - name: packagePattern
+      type: string
+    - name: package_pipeline
+      type: string
+    - name: du_tarball_script
+      type: string
+    - name: image_working_directory
+      type: string
+steps:
+    - task: DownloadPipelineArtifact@2
+      displayName: "Download DeviceUpdate Package from pipeline"
+      inputs:
+          source: "current"
+          project: "adu-linux-client"
+          pipeline: ${{parameters.package_pipeline}}
+          itemPattern: "${{parameters.packagePattern}}"
+          path: ${{parameters.image_working_directory}}/
+    - script: |
+          mkdir -p ./scenarios/test_runner/vm_setup/testsetup/
+      displayName: "Create the test setup directory that will contain all of the values needed for the setup tarball"
+      continueOnError: false
+      workingDirectory: ${{parameters.image_working_directory}}/
+
+    - script: |
+          cp `find . -name '*.deb'` ./scenarios/test_runner/vm_setup/testsetup/deviceupdate-package.deb
+      displayName: Stage DU Artifact for Preparing the VM Tarball
+      continueOnError: false
+      workingDirectory: ${{parameters.image_working_directory}}/
+
+    - task: UsePythonVersion@0
+      displayName: Using Python version 3.10
+      inputs:
+          versionSpec: 3.10
+    - script: |
+          python3 -m pip install -r scenarios/testingtoolkit/requirements.txt
+      workingDirectory: ${{parameters.image_working_directory}}/
+      displayName: Installing the toolkits requirements
+
+    - task: PythonScript@0
+      displayName: "Run the script to create the device and output a configuration file"
+      inputs:
+          scriptSource: "filePath"
+          scriptPath: "${{parameters.image_working_directory}}/scenarios/test_runner/vm_setup/devicesetup.py"
+          workingDirectory: ${{parameters.image_working_directory}}/
+      env:
+          IOTHUB_URL: $(IOTHUB_URL)
+          IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+          ADU_ENDPOINT: $(ADU_ENDPOINT)
+          ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+          AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+          AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+          AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+          DISTRONAME: ${{ parameters.distroName }}
+
+    - script: |
+          if [ "${{ parameters.distroName }}" = "debian-10-amd64" ]; then
+              mv du-config-connectionstr.json ./scenarios/test_runner/vm_setup/testsetup/du-config.json
+          else
+              mv du-config-ais.json ./scenarios/test_runner/vm_setup/testsetup/du-config.json
+          fi
+      displayName: Copy the DU configuration file to the same location as the artifact
+      continueOnError: False
+      workingDirectory: ${{parameters.image_working_directory}}/
+    - script: |
+          mv config.toml ./scenarios/test_runner/vm_setup/testsetup/
+      displayName: Copy the AIS configuration file to the same location as the artifact if it exists
+      continueOnError: True
+      workingDirectory: ${{parameters.image_working_directory}}/
+    - script: |
+          cp ./scenarios/test_runner/vm_setup/setup.sh ./scenarios/test_runner/vm_setup/testsetup/
+      displayName: Copy the setup script to the same location as the artifact
+      continueOnError: False
+      workingDirectory: ${{parameters.image_working_directory}}/
+
+    - script: |
+          tar -czvf ./scenarios/test_runner/vm_setup/testsetup/adu_srcs_repo.tar.gz -C $(Build.SourcesDirectory) ./src ./scripts ./tools
+      displayName: Taring the repo for access on the virtual machine
+      continueOnError: False
+      workingDirectory: ${{parameters.image_working_directory}}
+
+      #
+      # At this point /testsetup/
+      #                          du-agent.deb
+      #                          du-config.json
+      #                          setup.sh
+      #                          adu_srcs_repo.tar.gz
+    - script: |
+          tar -czvf ./scenarios/test_runner/testsetup.tar.gz -C ./scenarios/test_runner/vm_setup ./testsetup/
+      displayName: Creating the test scenario tar ball with just the contents of ./scenarios/<scenario-name>/vm_setup/testsetup/
+      continueOnError: False
+      workingDirectory: ${{parameters.image_working_directory}}/
+
+    - script: |
+          cp ./scenarios/test_runner/testsetup.tar.gz terraform/host/
+      workingDirectory: ${{parameters.image_working_directory}}
+      continueOnError: False
+      displayName: "Copying tarball over to the terraform host"
+
+    - script: |
+          sudo apt update && sudo apt install curl
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+          sudo apt-add-repository "deb [arch=$(dpkg --print-architecture)] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+          sudo apt install terraform
+      displayName: "Installing Terraform"
+
+    - script: "terraform init"
+      displayName: terraform init (VM)
+      continueOnError: False
+      workingDirectory: ${{parameters.image_working_directory}}/terraform/host/
+
+    - script: terraform apply -var subscription_id="$(SUBSCRIPTION_ID)" -var tenant_id="$(TERRAFORM_TENANT_ID)" -var client_id="$(TERRAFORM_CLIENT_ID)" -var client_secret="$(TERRAFORM_CLIENT_SECRET)" -var key_vault_id="$(Azure_Key_Vault_ID)" -var resource_group_name=$(TERRAFORM_RESOURCE_GROUP_NAME) -var vm_name=${{parameters.distroName}} -var vm_size=${{parameters.vm_size}} -var image_offer=${{parameters.image_offer}} -var image_publisher=${{parameters.image_publisher}} -var image_sku=${{parameters.image_sku}} -var image_version=${{parameters.image_version}} -var test_setup_tarball="./testsetup.tar.gz" -var vm_du_tarball_script="${{parameters.du_tarball_script}}" -auto-approve
+      displayName: Creating the Virtual Machines
+      continueOnError: False
+      workingDirectory: ${{parameters.image_working_directory}}/terraform/host/
+
+    - script: |
+          mkdir -p $(Build.ArtifactStagingDirectory)/terraform/host
+          cp -R ./terraform/host/* $(Build.ArtifactStagingDirectory)/terraform/host
+      displayName: Copy terraform state (vm)
+      continueOnError: False
+      workingDirectory: ${{parameters.image_working_directory}}
+
+    - publish: "$(Build.ArtifactStagingDirectory)/terraform/host"
+      displayName: "Publish Terraform state for destroy stage (vm)"
+      continueOnError: False
+      artifact: terraformStateVM_${{parameters.distroName}}

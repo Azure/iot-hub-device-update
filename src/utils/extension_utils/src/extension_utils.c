@@ -134,11 +134,11 @@ static bool GetHandlerExtensionFileEntity(
 }
 
 /**
- * @brief Find a content handler for the specified UpdateType @p updateType.
+ * @brief Find a step handler for the specified UpdateType @p updateType.
  *
  * @param updateType Update type string.
  * @param fileEntity An output file entity.
- * @return True if an update content handler for the specified @p updateType is available.
+ * @return True if a step handler for the specified @p updateType is available.
  */
 bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity* fileEntity)
 {
@@ -151,7 +151,7 @@ bool GetUpdateContentHandlerFileEntity(const char* updateType, ADUC_FileEntity* 
  *
  * @param downloadHandlerId The download handler id string.
  * @param fileEntity An output file entity.
- * @return True if an update content handler for the specified @p downloadHandlerId is available.
+ * @return True if a step handler for the specified @p downloadHandlerId is available.
  */
 bool GetDownloadHandlerFileEntity(const char* downloadHandlerId, ADUC_FileEntity* fileEntity)
 {

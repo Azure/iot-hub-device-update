@@ -64,7 +64,7 @@ The Device Update Agent is device and component agnostic. By itself, Device Upda
 
 To enable Proxy Updates, device builders must identify all components that can be updated on the device and assign a unique name to each component. Also, group name can be assigned to components of the same hardware class, so that, the same update can be installed onto all components in the same group.  
 
-After doing this the Update Content Handler can install and apply the update to the correct component(s).  
+After doing this the Step Handler can install and apply the update to the correct component(s).  
 
 **Figure 2** - Proxy Update Flow Diagram
 
@@ -90,7 +90,7 @@ After doing this the Update Content Handler can install and apply the update to 
   - Iterate through a list of **instances of component** that are compatible with the **Child Update** content.
   - See [Steps Handler](../../../../extensions/update_manifest_handlers/steps_handler/README.md) for more information.
 - **SWUpdate Installer** and **Motors Firmware Installer**
-  - See [How To Implement Custom Update Content Handler](../../../../../docs/agent-reference/how-to-implement-custom-update-handler.md) for more details.
+  - See [How To Implement Custom Step Handler](../../../../../docs/agent-reference/how-to-implement-custom-update-handler.md) for more details.
 
 ## How To Implement Component Enumerator for Device Update Agent (C language)
 

@@ -32,6 +32,7 @@ target_link_libraries (
             aduc::system_utils
             aduc::exception_utils
             aduc::c_utils
+            atomic
             Catch2::Catch2)
 
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)

@@ -13,18 +13,11 @@ find_package (Catch2 REQUIRED)
 
 add_executable (${PROJECT_NAME} ${sources})
 
-target_link_libraries (
-    ${PROJECT_NAME}
-    PRIVATE Catch2::Catch2
-            Parson::parson
-            aduc::c_utils
-            aduc::config_utils
-            aduc::string_utils)
+target_link_libraries (${PROJECT_NAME} PRIVATE Catch2::Catch2 Parson::parson aduc::c_utils
+                                               aduc::config_utils aduc::string_utils)
 
 target_link_umock_c (${PROJECT_NAME} PRIVATE)
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
-
-target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")
 
 include (CTest)
 include (Catch)

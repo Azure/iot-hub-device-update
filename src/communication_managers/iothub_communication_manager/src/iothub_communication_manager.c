@@ -6,6 +6,7 @@
  * Licensed under the MIT License.
  */
 #include "aduc/iothub_communication_manager.h"
+#include "aduc/adu_core_export_helpers.h" // ADUC_MethodCall_RestartAgent
 #include "aduc/adu_types.h"
 #include "aduc/client_handle_helper.h"
 #include "aduc/config_utils.h"
@@ -30,12 +31,13 @@
 #endif
 
 #include <limits.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h> // strtol
 #include <sys/stat.h>
-
-#include "aducpal/time.h" // clock_gettime
+#include <aducpal/unistd.h>
+#include <aducpal/sys_time.h> // ADUCPAL_clock_gettime
 
 /**
  * @brief A pointer to ADUC_ClientHandle data. This must be initialize by the component that creates the IoT Hub connection.
@@ -301,15 +303,12 @@ static IOTHUB_CLIENT_TRANSPORT_PROVIDER GetIotHubProtocolFromConfig()
  * @param iotHubTracingEnabled A boolean indicates whether to enable the IoTHub tracing.
  * @return true on success, false on failure
  */
-#if defined(_MSC_VER)
-// Avoid warning C4706: assignment within conditional expression
-#    pragma warning(disable : 4706)
-#endif
 static bool ADUC_DeviceClient_Create(
     ADUC_ClientHandle* outClientHandle, ADUC_ConnectionInfo* connInfo, const bool iotHubTracingEnabled)
 {
     IOTHUB_CLIENT_RESULT iothubResult;
-    HTTP_PROXY_OPTIONS proxyOptions = { 0 };
+    HTTP_PROXY_OPTIONS proxyOptions;
+    memset(&proxyOptions, 0, sizeof(proxyOptions));
     bool result = true;
     bool shouldSetProxyOptions = InitializeProxyOptions(&proxyOptions);
 
@@ -345,8 +344,7 @@ static bool ADUC_DeviceClient_Create(
     }
     else if (
         shouldSetProxyOptions
-        && (iothubResult =
-                ClientHandle_SetOption(*outClientHandle, OPTION_HTTP_PROXY, &proxyOptions) != IOTHUB_CLIENT_OK))
+        && ((iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_HTTP_PROXY, &proxyOptions)) != IOTHUB_CLIENT_OK))
     {
         Log_Error("Could not set http proxy options, error=%d ", iothubResult);
         result = false;
@@ -444,7 +442,7 @@ static bool ADUC_DeviceClient_Create(
  * @param connectionString the connection string to scan
  * @returns the connection type for @p connectionString
  */
-static ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
+ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
 {
     ADUC_ConnType result = ADUC_ConnType_NotSet;
 
@@ -478,7 +476,7 @@ static ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionStrin
  *
  * @return true if connection info can be obtained
  */
-static bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString)
+bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString)
 {
     bool succeeded = false;
     if (info == NULL)
@@ -510,7 +508,8 @@ static bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, con
     info->authType = ADUC_AuthType_SASToken;
 
     // Optional: The certificate string is needed for Edge Gateway connection.
-    ADUC_ConfigInfo config = { 0 };
+    ADUC_ConfigInfo config;
+    memset(&config, 0, sizeof(config));
     if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.edgegatewayCertPath != NULL)
     {
         if (!LoadBufferWithFileContents(config.edgegatewayCertPath, certificateString, ARRAY_SIZE(certificateString)))
@@ -540,7 +539,7 @@ done:
  *
  * @return true if connection info can be obtained
  */
-static bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
+bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
 {
     bool succeeded = false;
     if (info == NULL)
@@ -575,10 +574,11 @@ done:
  * @param info the connection information that will be configured
  * @return true on success; false on failure
  */
-static bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
+bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
 {
     bool success = false;
-    ADUC_ConfigInfo config = { 0 };
+    ADUC_ConfigInfo config;
+    memset(&config, 0, sizeof(config));
     if (info == NULL)
     {
         return false;
@@ -655,7 +655,8 @@ static void ADUC_Refresh_IotHub_Connection_SAS_Token()
         }
     }
 
-    ADUC_ConnectionInfo info = { 0 };
+    ADUC_ConnectionInfo info;
+    memset(&info, 0, sizeof(info));
     if (!GetAgentConfigInfo(&info))
     {
         goto done;
@@ -729,9 +730,14 @@ static void Connection_Maintenance()
             additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
             break;
         case IOTHUB_CLIENT_CONNECTION_NO_NETWORK:
-            // Could be transient error, wait for at least 5 minutes to retry.
+            // 1) try to restart agent to prevent empty reported properties in module twin
+            // 2) if restart agent could not be performed, wait for at least 5 minutes to retry.
             Log_Error("No network.");
-            additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
+            if (ADUC_MethodCall_RestartAgent() != 0)
+            {
+                additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
+                Log_Error("Agent restart attempt failed.");
+            }
             break;
 
         case IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR:
@@ -777,8 +783,7 @@ static void Connection_Maintenance()
  */
 void IoTHub_CommunicationManager_DoWork(void* user_context)
 {
-    AZURE_UNREFERENCED_PARAMETER(user_context);
-
+    UNREFERENCED_PARAMETER(user_context);
     Connection_Maintenance();
     ClientHandle_DoWork(*g_aduc_client_handle_address);
 }

@@ -82,7 +82,7 @@ typedef enum tagADUC_Facility
     ADUC_FACILITY_UNKNOWN=0, //!< ADUC_FACILITY_UNKNOWN : 0, indicates errors from unknown sources
     ADUC_FACILITY_LOWERLAYER=1, //!< ADUC_FACILITY_LOWERLAYER : 1, indicates errors from the lower layer
     ADUC_FACILITY_UPPERLAYER=2, //!< ADUC_FACILITY_UPPERLAYER : 2, indicates errors from the upper layer.
-    ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER=3, //!< ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER : 3, indicates errors from an update content handler
+    ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER=3, //!< ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER : 3, indicates errors from a step handler
     ADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER=4, //!< ADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER : 4, indicates errors from CONTENT_DOWNLOADER Extension
     ADUC_FACILITY_EXTENSION_COMMUNICATION_PROVIDER=5, //!< ADUC_FACILITY_EXTENSION_COMMUNICATION_PROVIDER : 5, indicates errors from COMMUNICATION PROVIDER Extension.
     ADUC_FACILITY_EXTENSION_LOG_PROVIDER=6, //!< ADUC_FACILITY_EXTENSION_LOG_PROVIDER : 6, indicates errors from LOG PROVIDER Extension.
@@ -116,13 +116,13 @@ typedef enum tagADUC_FACILITY_UPPERLAYER_Components
 
 typedef enum tagADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER_Components
 {
-    ADUC_CONTENT_HANDLER_COMMON=0, //!< ADUC_CONTENT_HANDLER_COMMON : 0, General error codes that can come from any content handler
-    ADUC_CONTENT_HANDLER_SWUPDATE=1, //!< ADUC_CONTENT_HANDLER_SWUPDATE : 1, Results that originate from the SwUpdate Content Handler
-    ADUC_CONTENT_HANDLER_APT=2, //!< ADUC_CONTENT_HANDLER_APT : 2, Results that originate from the APT Content Handler
+    ADUC_CONTENT_HANDLER_COMMON=0, //!< ADUC_CONTENT_HANDLER_COMMON : 0, General error codes that can come from any step handler
+    ADUC_CONTENT_HANDLER_SWUPDATE=1, //!< ADUC_CONTENT_HANDLER_SWUPDATE : 1, Results that originate from the SwUpdate Step Handler
+    ADUC_CONTENT_HANDLER_APT=2, //!< ADUC_CONTENT_HANDLER_APT : 2, Results that originate from the APT Step Handler
     ADUC_CONTENT_HANDLER_SIMULATOR=3, //!< ADUC_CONTENT_HANDLER_SIMULATOR : 3, Results that originate from the simulator, only included here for completeness
-    ADUC_CONTENT_HANDLER_STEPS=4, //!< ADUC_CONTENT_HANDLER_STEPS : 4, Results that originate from the steps handler part of the content handlers
-    ADUC_CONTENT_HANDLER_SCRIPT=5, //!< ADUC_CONTENT_HANDLER_SCRIPT : 5, Results that originate from the script handler part of the content handlers
-    ADUC_CONTENT_HANDLER_EXTERNAL=32, //!< ADUC_CONTENT_HANDLER_EXTERNAL : 32, indicates errors from Custom Update handlers, only included here for completeness
+    ADUC_CONTENT_HANDLER_STEPS=4, //!< ADUC_CONTENT_HANDLER_STEPS : 4, Results that originate from the steps handler part of the step handlers
+    ADUC_CONTENT_HANDLER_SCRIPT=5, //!< ADUC_CONTENT_HANDLER_SCRIPT : 5, Results that originate from the script handler part of the step handlers
+    ADUC_CONTENT_HANDLER_EXTERNAL=32, //!< ADUC_CONTENT_HANDLER_EXTERNAL : 32, indicates errors from custom step handlers, only included here for completeness
 } ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER_Components;
 
 typedef enum tagADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER_Components

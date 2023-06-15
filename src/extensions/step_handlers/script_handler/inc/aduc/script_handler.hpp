@@ -17,7 +17,7 @@ typedef void* ADUC_WorkflowHandle;
 
 /**
  * @class ScriptHandlerImpl
- * @brief The Update Content Handler implementation for 'microsoft/script:1' update type.
+ * @brief The Step Handler implementation for 'microsoft/script:1' update type.
  */
 class ScriptHandlerImpl : public ContentHandler
 {

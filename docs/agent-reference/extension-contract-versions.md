@@ -10,7 +10,7 @@ Every Extension Type shared library plugin includes a "GetContractInfo" function
 
 The `GetContractInfo` symbol is defined in [extension_common_export_symbols.h](../../src/extensions/inc/aduc/exports/extension_common_export_symbols.h) but the signature is documented separately for each extension type--look for `GetContractInfo` in:
 
-- [content handler and update manifest handler exports](../../src/extensions/inc/aduc/exports/extension_content_handler_export_symbols.h)
+- [step handler and update manifest handler exports](../../src/extensions/inc/aduc/exports/extension_content_handler_export_symbols.h)
 - [content download exports](../../src/extensions/inc/aduc/exports/extension_content_downloader_export_symbols.h)
 - [download handler exports](../../src/extensions/inc/aduc/exports/extension_download_handler_export_symbols.h)
 - [component enumerator exports](../../src/extensions/inc/aduc/exports/extension_component_enumerator_export_symbols.h)

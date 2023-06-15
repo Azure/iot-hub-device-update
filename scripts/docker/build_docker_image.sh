@@ -44,7 +44,7 @@ mkdir_cmd="mkdir -p"
 wget_cmd="wget -q"
 extract_debian_archive_cmd="ar x"
 extract_tarball_cmd="tar -xzvf"
-untar_cmd="tar -xvf"
+untar_cmd="tar -xf"
 create_tarball_cmd="tar -czvf"
 
 #container image
@@ -176,7 +176,7 @@ create_app_tarball() {
     cp $USR_BIN_SRC/AducIotAgent $APP_BIN_DIR
     cp $USR_LIB_SRC/adu-shell $APP_LIB_DIR
 
-    # Copy update content handler plugin modules
+    # Copy step handler plugin modules
     supported_extensions="
         apt
         steps
