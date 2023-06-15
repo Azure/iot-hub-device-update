@@ -205,7 +205,7 @@ function Install-DeliveryOptimization {
     $DO_CMAKE_OPTIONS | ForEach-Object { Show-Bullet $_ }
     ''
 
-    cmake.exe -S . --trace-expand --debug-find --trace-source=src/extensions/content_downloaders/deliveryoptimization_downloader/CMakeLists.txt -B $build_dir @DO_CMAKE_OPTIONS
+    cmake.exe -S . -B $build_dir @DO_CMAKE_OPTIONS
     cmake.exe --build $build_dir --config $Type --parallel
 
     Pop-Location
