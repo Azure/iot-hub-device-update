@@ -291,7 +291,7 @@ set (
 
 set (
     ADUSHELL_FILE_PATH
-    ${ADUSHELL_FILE_PATH}
+    "${ADUSHELL_FOLDER}/${ADUSHELL_FILENAME}"
     CACHE STRING "The absolute path to the adu-shell file path.")
 
 set (
