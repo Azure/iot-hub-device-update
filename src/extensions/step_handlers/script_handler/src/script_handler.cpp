@@ -213,8 +213,8 @@ ADUC_Result ScriptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData
 
         if (!workflow_get_update_file(workflowHandle, i, &fileEntity))
         {
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_FAILURE_GET_PAYLOAD_FILE_ENTITY };
+            result.ResultCode = ADUC_Result_Failure;
+            result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_FAILURE_GET_PAYLOAD_FILE_ENTITY;
             goto done;
         }
 
@@ -226,8 +226,8 @@ ADUC_Result ScriptHandlerImpl::Download(const tagADUC_WorkflowData* workflowData
         }
         catch (...)
         {
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_PAYLOAD_FILE_FAILURE_UNKNOWNEXCEPTION };
+            result.ResultCode = ADUC_Result_Failure;
+            result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_PAYLOAD_FILE_FAILURE_UNKNOWNEXCEPTION;
         }
 
         if (IsAducResultCodeFailure(result.ResultCode))
@@ -571,14 +571,14 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
     results.commandLineArgs.emplace_back(results.scriptFilePath);
 
     // Prepare arguments based on specified api version.
-    if (apiVer == nullptr || strcmp(apiVer, "2.0") == 0)
+    if (apiVer == nullptr || strcmp(apiVer, "1.0") == 0)
     {
         std::string backcompatAction = "--action-" + action;
         aduShellArgs.emplace_back(adushconst::target_options_opt);
         aduShellArgs.emplace_back(backcompatAction.c_str());
         results.commandLineArgs.emplace_back(backcompatAction.c_str());
     }
-    else if (strcmp(apiVer, "2.1") == 0)
+    else if (strcmp(apiVer, "1.1") == 0)
     {
         aduShellArgs.emplace_back(adushconst::target_options_opt);
         aduShellArgs.emplace_back(HANDLER_ARG_ACTION);
@@ -635,7 +635,8 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
         results.scriptOutput = ss.str();
 
         Log_Debug("Prepare arguments only! adu-shell command:\n\n %s", results.scriptOutput.c_str());
-        results.result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
+        results.result.ResultCode = ADUC_Result_Success;
+        results.result.ExtendedResultCode = 0;
         goto done;
     }
 
@@ -650,7 +651,8 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
     {
         int extendedCode = ADUC_ERC_SCRIPT_HANDLER_CHILD_PROCESS_FAILURE_EXITCODE(exitCode);
         Log_Error("Script failed (%s), extendedResultCode:0x%X (exitCode:%d)", action.c_str(), extendedCode, exitCode);
-        results.result = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = extendedCode };
+        results.result.ResultCode = ADUC_Result_Failure;
+        results.result.ExtendedResultCode = extendedCode;
         goto done;
     }
 
@@ -658,8 +660,8 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
     actionResultValue = json_parse_file(scriptResultFile.c_str());
     if (actionResultValue == nullptr)
     {
-        results.result = { .ResultCode = ADUC_Result_Failure,
-                           .ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE };
+        results.result.ResultCode = ADUC_Result_Failure;
+        results.result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE;
         workflow_set_result_details(
             workflowData->WorkflowHandle,
             "The install script doesn't create a result file '%s'.",
@@ -753,7 +755,8 @@ ADUC_Result ScriptHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
  */
 ADUC_Result ScriptHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
 {
-    ADUC_Result result = { .ResultCode = ADUC_Result_Cancel_Success, .ExtendedResultCode = 0 };
+    ADUC_Result result;
+    result.ResultCode = ADUC_Result_Cancel_Success;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     ADUC_WorkflowHandle stepWorkflowHandle = nullptr;
 
