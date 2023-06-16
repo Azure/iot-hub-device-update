@@ -7,7 +7,12 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-set (sources main.cpp script_handler_ut.cpp ../src/script_handler.cpp)
+set (
+    sources
+    main.cpp
+    script_handler_ut.cpp
+    ../src/script_handler.cpp
+    ../../../update_manifest_handlers/steps_handler/src/steps_handler.cpp)
 
 find_package (Catch2 REQUIRED)
 find_package (azure_c_shared_utility REQUIRED)
@@ -19,22 +24,29 @@ add_executable (${PROJECT_NAME} ${sources})
 target_include_directories (
     ${PROJECT_NAME}
     PUBLIC inc
-           ${ADUC_EXPORT_INCLUDES}
-           ${SCRIPT_HANDLER_INCLUDES}
-           ${ADU_EXTENSION_INCLUDES}
-           ${ADU_SHELL_INCLUDES})
+    PRIVATE ${PROJECT_SOURCE_DIR}/inc
+            ${PROJECT_SOURCE_DIR}/../inc
+            ${ADUC_EXPORT_INCLUDES}
+            ${SCRIPT_HANDLER_INCLUDES}
+            ${ADU_EXTENSION_INCLUDES}
+            ${ADU_SHELL_INCLUDES}
+            ${PROJECT_SOURCE_DIR}/../../../update_manifest_handlers/steps_handler/inc)
 
 target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::adu_types
+            aduc::contract_utils
             aduc::extension_manager
             aduc::parser_utils
             aduc::process_utils
             aduc::string_utils
+            aduc::system_utils
             aduc::workflow_data_utils
             aduc::workflow_utils
             Catch2::Catch2
             aziotsharedutil)
+
+target_compile_definitions (${PROJECT_NAME} PRIVATE ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}")
 
 include (CTest)
 include (Catch)

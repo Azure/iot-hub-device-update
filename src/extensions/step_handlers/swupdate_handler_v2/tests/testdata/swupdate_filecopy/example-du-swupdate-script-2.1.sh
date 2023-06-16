@@ -187,20 +187,18 @@ print_help() {
     echo "Device Update reserved argument"
     echo "==============================="
     echo ""
-    echo "--action <ACTION>                         Perform specified 'ACTION'."
-    echo "                                          Where ACTION is one of the following:"
-    echo "                                              is-installed, download, install, apply,"
-    echo "                                              cancel, backup, restore."
+    echo "--action <ACTION>       Perform specified 'ACTION'."
+    echo "                        Where ACTION is one of the following:"
+    echo "                          is-installed - Check whether the selected component [or primary device] current states"
+    echo "                                         satisfies specified 'installedCriteria' data."
+    echo "                          download     - Perform 'download' action."
+    echo "                          install      - Perform 'install' action."
+    echo "                          apply        - Perform 'apply' action."
+    echo "                          cancel       - Perform 'cancel' action."
+    echo "                          backup       - Perform 'backup' action."
+    echo "                          restore      - Perform 'restore' action."
     echo ""
-    echo "--action-is-installed                     Perform 'is-installed' check."
-    echo "                                          Check whether the selected component [or primary device] current states"
-    echo "                                          satisfies specified 'installedCriteria' data."
     echo "--installed-criteria                      Specify the Installed-Criteria string."
-    echo ""
-    echo "--action-download                         Perform 'download' action."
-    echo "--action-install                          Perform 'install' action."
-    echo "--action-apply                            Perform 'apply' action."
-    echo "--action-cancel                           Perform 'cancel' action."
     echo ""
     echo "--restart-to-apply                        Request the host device to restart when applying update to this component."
     echo "--restart-agent-to-apply                  Request the DU Agent to restart when applying update to this component."
@@ -271,21 +269,6 @@ while [[ $1 != "" ]]; do
                 ;;
         esac
         ;;
-    --action-download)
-        shift
-        do_download_action=yes
-        ;;
-
-    --action-install)
-        shift
-        log_info "Will runscript as 'installer' script."
-        do_install_action=yes
-        ;;
-
-    --action-apply)
-        shift
-        do_apply_action=yes
-        ;;
 
     --restart-to-apply)
         shift
@@ -295,16 +278,6 @@ while [[ $1 != "" ]]; do
     --restart-agent-to-apply)
         shift
         restart_agent_to_apply=yes
-        ;;
-
-    --action-cancel)
-        shift
-        do_cancel_action=yes
-        ;;
-
-    --action-is-installed)
-        shift
-        check_is_installed=yes
         ;;
 
     --installed-criteria)
