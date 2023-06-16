@@ -344,10 +344,8 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
 
 done:
 
-    if (config != nullptr)
-    {
-        ADUC_ConfigInfo_ReleaseInstance(config);
-    }
+    ADUC_ConfigInfo_ReleaseInstance(config);
+
     if (result.ResultCode == 0)
     {
         if (libHandle != nullptr)

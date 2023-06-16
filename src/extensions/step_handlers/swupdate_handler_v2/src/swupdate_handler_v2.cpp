@@ -13,6 +13,7 @@
 #include "aduc/swupdate_handler_v2.hpp"
 
 #include "aduc/adu_core_exports.h"
+#include "aduc/config_utils.h"
 #include "aduc/extension_manager.hpp"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h" // ADUC_FileEntity_Uninit
@@ -142,6 +143,7 @@ ADUC_Result SWUpdateHandler_PerformAction(
 {
     Log_Info("Action (%s) begin", action.c_str());
     ADUC_Result result = { ADUC_GeneralResult_Failure };
+    const ADUC_ConfigInfo* config = nullptr;
 
     int exitCode = 0;
     commandLineArgs.clear();
@@ -156,13 +158,22 @@ ADUC_Result SWUpdateHandler_PerformAction(
     std::string scriptWorkfolder = workFolder;
     std::string scriptResultFile = scriptWorkfolder + "/" + "aduc_result.json";
     JSON_Value* actionResultValue = nullptr;
+    std::vector<std::string> aduShellArgs;
 
-    std::vector<std::string> aduShellArgs = { adushconst::update_type_opt,
-                                              adushconst::update_type_microsoft_script,
-                                              adushconst::update_action_opt,
-                                              adushconst::update_action_execute };
+    config = ADUC_ConfigInfo_GetInstance();
+    if (config == nullptr)
+    {
+        Log_Error("Failed to get config info instance.");
+        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_PERFORM_ACTION_FAILED_TO_GET_CONFIG_INSTANCE;
+        goto done;
+    }
 
-    std::stringstream ss;
+    aduShellArgs.emplace_back(adushconst::config_folder_opt);
+    aduShellArgs.emplace_back(config->configFolder);
+    aduShellArgs.emplace_back(adushconst::update_type_opt);
+    aduShellArgs.emplace_back(adushconst::update_type_microsoft_script);
+    aduShellArgs.emplace_back(adushconst::update_action_opt);
+    aduShellArgs.emplace_back(adushconst::update_action_execute);
 
     result = SWUpdateHandlerImpl::PrepareCommandArguments(
         workflowData->WorkflowHandle, scriptResultFile, scriptWorkfolder, scriptFilePath, args);
@@ -198,6 +209,8 @@ ADUC_Result SWUpdateHandler_PerformAction(
 
     if (prepareArgsOnly)
     {
+        std::stringstream ss;
+
         for (const auto& a : aduShellArgs)
         {
             if (a[0] != '-')
@@ -216,7 +229,7 @@ ADUC_Result SWUpdateHandler_PerformAction(
         goto done;
     }
 
-    exitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, aduShellArgs, scriptOutput);
+    exitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, aduShellArgs, scriptOutput);
     if (exitCode != 0)
     {
         int extendedCode = ADUC_ERC_SWUPDATE_HANDLER_CHILD_FAILURE_PROCESS_EXITCODE(exitCode);
@@ -259,6 +272,7 @@ ADUC_Result SWUpdateHandler_PerformAction(
         workflow_peek_result_details(workflowData->WorkflowHandle));
 
 done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         workflow_set_result(workflowData->WorkflowHandle, result);

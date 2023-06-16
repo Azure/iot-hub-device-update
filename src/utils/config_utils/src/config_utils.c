@@ -35,7 +35,6 @@ static inline void s_config_unlock(void)
     pthread_mutex_unlock(&s_config_mutex);
 }
 
-//static const char* CONFIG_LOG_FOLDER = "logFolder";
 static const char* CONFIG_ADU_SHELL_FOLDER = "aduShellFolder";
 static const char* CONFIG_ADU_DATA_FOLDER = "dataFolder";
 static const char* CONFIG_ADU_EXTENSIONS_FOLDER = "extensionsFolder";
@@ -279,6 +278,15 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
 {
     bool succeeded = false;
 
+    // Initialize out parameter.
+    memset(config, 0, sizeof(*config));
+
+    if (mallocAndStrcpy_s(&(config->configFolder), configFolder) != 0)
+    {
+        Log_Error("Failed to allocate memory for config file folder");
+        goto done;
+    }
+
     char* configFilePath = NULL;
 
     if (IsNullOrEmpty(configFolder))
@@ -295,9 +303,6 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
         Log_Error("Failed to allocate memory for config file path");
         goto done;
     }
-
-    // Initialize out parameter.
-    memset(config, 0, sizeof(*config));
 
     JSON_Value* root_value = Parse_JSON_File(configFilePath);
 
@@ -463,34 +468,37 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
         }
     }
 
-    if (NULL == (config->extensionsComponentEnumeratorFolder =
-        ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR )))
+    if (NULL
+        == (config->extensionsComponentEnumeratorFolder =
+                ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR)))
     {
         Log_Error("Failed to allocate memory for component enumerator extension folder");
         goto done;
     }
 
-    if (NULL == (config->extensionsContentDownloaderFolder =
-        ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER)))
+    if (NULL
+        == (config->extensionsContentDownloaderFolder =
+                ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER)))
     {
         Log_Error("Failed to allocate memory for content downloader extension folder");
         goto done;
     }
 
-    if (NULL == (config->extensionsStepHandlerFolder =
-        ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS)))
+    if (NULL
+        == (config->extensionsStepHandlerFolder =
+                ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS)))
     {
         Log_Error("Failed to allocate memory for step handler extension folder");
         goto done;
     }
 
-    if (NULL == (config->extensionsDownloadHandlerFolder =
-        ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS)))
+    if (NULL
+        == (config->extensionsDownloadHandlerFolder =
+                ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS)))
     {
         Log_Error("Failed to allocate memory for download handler extension folder");
         goto done;
     }
-
 
     succeeded = true;
 
@@ -636,17 +644,17 @@ void ADUC_ConfigInfo_FreeAduShellTrustedUsers(VECTOR_HANDLE users)
 /**
  * @brief Create the ADUC_ConfigInfo object.
  *
- * @param configFilePath a pointer to the configuration file path
+ * @param configFolder a pointer to the folder containing the du-config.json file.
  * @return const ADUC_ConfigInfo* a pointer to ADUC_ConfigInfo object. NULL if failure.
  * Caller must call ADUC_ConfigInfo_Release to free the object.
  */
-const ADUC_ConfigInfo* ADUC_ConfigInfo_CreateInstance(const char* configFilePath)
+const ADUC_ConfigInfo* ADUC_ConfigInfo_CreateInstance(const char* configFolder)
 {
     const ADUC_ConfigInfo* config = NULL;
     s_config_lock();
     if (s_configInfo.refCount == 0)
     {
-        if (!ADUC_ConfigInfo_Init(&s_configInfo, configFilePath))
+        if (!ADUC_ConfigInfo_Init(&s_configInfo, configFolder))
         {
             goto done;
         }

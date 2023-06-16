@@ -521,10 +521,7 @@ static bool CheckShellBinary()
 
 done:
 
-    if (config != NULL)
-    {
-        ADUC_ConfigInfo_ReleaseInstance(config);
-    }
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return result;
 }
 
@@ -616,10 +613,7 @@ bool HealthCheck(const ADUC_LaunchArguments* launchArgs)
 
 done:
     Log_Info("Health check %s.", isHealthy ? "passed" : "failed");
-    if (config != NULL)
-    {
-        ADUC_ConfigInfo_ReleaseInstance(config);
-    }
+    ADUC_ConfigInfo_ReleaseInstance(config);
 
     return isHealthy;
 }

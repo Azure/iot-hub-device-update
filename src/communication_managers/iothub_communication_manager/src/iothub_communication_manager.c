@@ -480,6 +480,7 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
 bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString)
 {
     bool succeeded = false;
+    const ADUC_ConfigInfo* config = NULL;
     if (info == NULL)
     {
         goto done;
@@ -509,7 +510,7 @@ bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char
     info->authType = ADUC_AuthType_SASToken;
 
     // Optional: The certificate string is needed for Edge Gateway connection.
-    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    config = ADUC_ConfigInfo_GetInstance();
     if (config != NULL && config->edgegatewayCertPath != NULL)
     {
         if (!LoadBufferWithFileContents(config->edgegatewayCertPath, certificateString, ARRAY_SIZE(certificateString)))
@@ -530,10 +531,7 @@ bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char
     succeeded = true;
 
 done:
-    if (config != NULL)
-    {
-        ADUC_ConfigInfo_ReleaseInstance(config);
-    }
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return succeeded;
 }
 
@@ -628,10 +626,7 @@ done:
         ADUC_ConnectionInfo_DeAlloc(info);
     }
 
-    if (config != NULL)
-    {
-        ADUC_ConfigInfo_ReleaseInstance(config);
-    }
+    ADUC_ConfigInfo_ReleaseInstance(config);
 
     return success;
 }

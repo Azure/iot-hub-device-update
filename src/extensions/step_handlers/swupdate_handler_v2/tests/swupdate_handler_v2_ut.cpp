@@ -6,6 +6,7 @@
  * Licensed under the MIT License.
  */
 
+#include "aduc/config_utils.h"
 #include "aduc/extension_manager.hpp"
 #include "aduc/process_utils.hpp"
 #include "aduc/swupdate_handler_v2.hpp"
@@ -93,8 +94,18 @@ bool ReadResultFile(const char* resultFile, ADUC_Result* result)
     return true;
 }
 
+static std::string get_test_config_folder()
+{
+    std::string path{ ADUC_TEST_DATA_FOLDER };
+    path += "/swupdate_handler_v2_test_config";
+    return path;
+}
+
 TEST_CASE("SWUpdate Prepare Arguments Test")
 {
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(get_test_config_folder().c_str());
+    CHECK(config != nullptr);
+
     ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
     CHECK(swupdateHandler != nullptr);
     ExtensionManager::SetUpdateContentHandlerExtension("microsoft/swupdate:2", swupdateHandler);
@@ -139,7 +150,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-install --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
+            R"( --config-folder "/tmp/adu/testdata/swupdate_handler_v2_test_config" --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-install --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
     result = SWUpdateHandler_PerformAction(
@@ -151,7 +162,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-apply --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
+            R"( --config-folder "/tmp/adu/testdata/swupdate_handler_v2_test_config" --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-apply --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
     result = SWUpdateHandler_PerformAction(
@@ -163,7 +174,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-cancel --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
+            R"( --config-folder "/tmp/adu/testdata/swupdate_handler_v2_test_config" --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-cancel --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
     result = SWUpdateHandler_PerformAction(
@@ -175,14 +186,18 @@ TEST_CASE("SWUpdate Prepare Arguments Test")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-is-installed --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
+            R"( --config-folder "/tmp/adu/testdata/swupdate_handler_v2_test_config" --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-is-installed --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
     ExtensionManager::Uninit();
+    ADUC_ConfigInfo_ReleaseInstance(config);
 }
 
 TEST_CASE("SWUpdate sample script --action-is-installed")
 {
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(get_test_config_folder().c_str());
+    CHECK(config != nullptr);
+
     ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
     CHECK(swupdateHandler != nullptr);
     ExtensionManager::SetUpdateContentHandlerExtension("microsoft/swupdate:2", swupdateHandler);
@@ -219,7 +234,7 @@ TEST_CASE("SWUpdate sample script --action-is-installed")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/tmp/adu/testdata/swupdate_filecopy/example-du-swupdate-script.sh" --target-options --action-is-installed --target-options --swu-file --target-options "/tmp/adu/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --software-version-file --target-options "/tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --target-options --work-folder --target-options "/tmp/adu/testdata/swupdate_filecopy" --target-options --result-file --target-options "/tmp/adu/testdata/swupdate_filecopy/aduc_result.json" --target-options --installed-criteria --target-options "This is swupdate filecopy test version 1.0")"));
+            R"( --config-folder "/tmp/adu/testdata/swupdate_handler_v2_test_config" --update-type "microsoft/script" --update-action "execute" --target-data "/tmp/adu/testdata/swupdate_filecopy/example-du-swupdate-script.sh" --target-options --action-is-installed --target-options --swu-file --target-options "/tmp/adu/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --software-version-file --target-options "/tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --target-options --work-folder --target-options "/tmp/adu/testdata/swupdate_filecopy" --target-options --result-file --target-options "/tmp/adu/testdata/swupdate_filecopy/aduc_result.json" --target-options --installed-criteria --target-options "This is swupdate filecopy test version 1.0")"));
 
     std::string output;
     int exitCode = ADUC_LaunchChildProcess(commandLineArgs[0], commandLineArgs, output);
@@ -233,10 +248,14 @@ TEST_CASE("SWUpdate sample script --action-is-installed")
     CHECK(result.ExtendedResultCode == 806359140); // (0x30101064)
 
     ExtensionManager::Uninit();
+    ADUC_ConfigInfo_ReleaseInstance(config);
 }
 
 TEST_CASE("SWUpdate sample script --action-download")
 {
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(get_test_config_folder().c_str());
+    CHECK(config != nullptr);
+
     ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
     CHECK(swupdateHandler != nullptr);
     ExtensionManager::SetUpdateContentHandlerExtension("microsoft/swupdate:2", swupdateHandler);
@@ -271,7 +290,7 @@ TEST_CASE("SWUpdate sample script --action-download")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/tmp/adu/testdata/swupdate_filecopy/example-du-swupdate-script.sh" --target-options --action-download --target-options --swu-file --target-options "/tmp/adu/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --software-version-file --target-options "/tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --target-options --work-folder --target-options "/tmp/adu/testdata/swupdate_filecopy" --target-options --result-file --target-options "/tmp/adu/testdata/swupdate_filecopy/aduc_result.json" --target-options --installed-criteria --target-options "This is swupdate filecopy test version 1.0")"));
+            R"( --config-folder "/tmp/adu/testdata/swupdate_handler_v2_test_config" --update-type "microsoft/script" --update-action "execute" --target-data "/tmp/adu/testdata/swupdate_filecopy/example-du-swupdate-script.sh" --target-options --action-download --target-options --swu-file --target-options "/tmp/adu/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --software-version-file --target-options "/tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --target-options --work-folder --target-options "/tmp/adu/testdata/swupdate_filecopy" --target-options --result-file --target-options "/tmp/adu/testdata/swupdate_filecopy/aduc_result.json" --target-options --installed-criteria --target-options "This is swupdate filecopy test version 1.0")"));
 
     std::string output;
     int exitCode = ADUC_LaunchChildProcess(commandLineArgs[0], commandLineArgs, output);
@@ -285,10 +304,14 @@ TEST_CASE("SWUpdate sample script --action-download")
     CHECK(result.ExtendedResultCode == 0);
 
     ExtensionManager::Uninit();
+    ADUC_ConfigInfo_ReleaseInstance(config);
 }
 
 TEST_CASE("SWUpdate sample script --action-install", "[!hide][functional_test]")
 {
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(get_test_config_folder().c_str());
+    CHECK(config != nullptr);
+
     ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
     CHECK(swupdateHandler != nullptr);
     ExtensionManager::SetUpdateContentHandlerExtension("microsoft/swupdate:2", swupdateHandler);
@@ -323,7 +346,7 @@ TEST_CASE("SWUpdate sample script --action-install", "[!hide][functional_test]")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/tmp/adu/testdata/swupdate_filecopy/example-du-swupdate-script.sh" --target-options --action-install --target-options --swu-file --target-options "/tmp/adu/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --software-version-file --target-options "/tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --target-options --work-folder --target-options "/tmp/adu/testdata/swupdate_filecopy" --target-options --result-file --target-options "/tmp/adu/testdata/swupdate_filecopy/aduc_result.json" --target-options --installed-criteria --target-options "This is swupdate filecopy test version 1.0")"));
+            R"(--config-folder "/tmp/adu/testdata/swupdate_handler_v2_test_config" --update-type "microsoft/script" --update-action "execute" --target-data "/tmp/adu/testdata/swupdate_filecopy/example-du-swupdate-script.sh" --target-options --action-install --target-options --swu-file --target-options "/tmp/adu/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --software-version-file --target-options "/tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --target-options --work-folder --target-options "/tmp/adu/testdata/swupdate_filecopy" --target-options --result-file --target-options "/tmp/adu/testdata/swupdate_filecopy/aduc_result.json" --target-options --installed-criteria --target-options "This is swupdate filecopy test version 1.0")"));
 
     std::string output;
     int exitCode = ADUC_LaunchChildProcess(commandLineArgs[0], commandLineArgs, output);
@@ -339,10 +362,14 @@ TEST_CASE("SWUpdate sample script --action-install", "[!hide][functional_test]")
     CHECK(result.ExtendedResultCode == 0);
 
     ExtensionManager::Uninit();
+    ADUC_ConfigInfo_ReleaseInstance(config);
 }
 
 TEST_CASE("SWUpdate sample script --action-apply")
 {
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(get_test_config_folder().c_str());
+    CHECK(config != nullptr);
+
     ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
     CHECK(swupdateHandler != nullptr);
     ExtensionManager::SetUpdateContentHandlerExtension("microsoft/swupdate:2", swupdateHandler);
@@ -388,10 +415,14 @@ TEST_CASE("SWUpdate sample script --action-apply")
     CHECK(result.ExtendedResultCode == 0);
 
     ExtensionManager::Uninit();
+    ADUC_ConfigInfo_ReleaseInstance(config);
 }
 
 TEST_CASE("SWUpdate sample script --action-cancel")
 {
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(get_test_config_folder().c_str());
+    CHECK(config != nullptr);
+
     ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
     CHECK(swupdateHandler != nullptr);
     ExtensionManager::SetUpdateContentHandlerExtension("microsoft/swupdate:2", swupdateHandler);
@@ -437,4 +468,5 @@ TEST_CASE("SWUpdate sample script --action-cancel")
     CHECK(result.ExtendedResultCode == 0);
 
     ExtensionManager::Uninit();
+    ADUC_ConfigInfo_ReleaseInstance(config);
 }

@@ -126,9 +126,7 @@ bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj)
     success = true;
 
 done:
-    if (config != NULL)
-    {
-        ADUC_ConfigInfo_ReleaseInstance(config);
-    }
+
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return success;
 }

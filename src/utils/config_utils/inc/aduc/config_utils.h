@@ -103,11 +103,11 @@ typedef struct tagADUC_ConfigInfo
 /**
  * @brief Create the ADUC_ConfigInfo object.
  *
- * @param configFilePath a pointer to the configuration file path
+ * @param configFolder a pointer to the folder containing the du-config.json file.
  * @return const ADUC_ConfigInfo* a pointer to ADUC_ConfigInfo object. NULL if failure.
  * Caller must call ADUC_ConfigInfo_Release to free the object.
  */
-const ADUC_ConfigInfo* ADUC_ConfigInfo_CreateInstance(const char* configFilePath);
+const ADUC_ConfigInfo* ADUC_ConfigInfo_CreateInstance(const char* configFolder);
 
 /**
  * @brief Create the ADUC_ConfigInfo object.

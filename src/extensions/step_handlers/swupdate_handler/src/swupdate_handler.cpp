@@ -18,6 +18,7 @@
 #include "aduc/swupdate_handler.hpp"
 
 #include "aduc/adu_core_exports.h"
+#include "aduc/config_utils.h"
 #include "aduc/extension_manager.hpp"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h" // ADUC_FileEntity_Uninit
@@ -201,6 +202,7 @@ ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowDat
     memset(&fileEntity, 0, sizeof(fileEntity));
     ADUC_WorkflowHandle workflowHandle = workflowData->WorkflowHandle;
     char* workFolder = workflow_get_workfolder(workflowHandle);
+    const ADUC_ConfigInfo* config = nullptr;
 
     Log_Info("Installing from %s", workFolder);
     std::unique_ptr<DIR, std::function<int(DIR*)>> directory(
@@ -226,6 +228,14 @@ ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowDat
         goto done;
     }
 
+    config = ADUC_ConfigInfo_GetInstance();
+    if (config == nullptr)
+    {
+        Log_Error("Failed to get config info instance.");
+        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILED_TO_GET_CONFIG_INSTANCE;
+        goto done;
+    }
+
     // For 'microsoft/swupdate:1', we are only support 1 image file.
 
     // Execute the install command with  "-i <image_file>"  to install the update image file.
@@ -234,22 +244,23 @@ ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowDat
     // This is equivalent to: command << c_installScript << " -l " << _logFolder << " -i '" << _workFolder << "/" << filename << "'"
 
     {
-        std::vector<std::string> args{ adushconst::update_type_opt,
-                                       adushconst::update_type_microsoft_swupdate,
-                                       adushconst::update_action_opt,
-                                       adushconst::update_action_install };
+        std::vector<std::string> aduShellArgs = {
+            adushconst::config_folder_opt, config->configFolder,
+            adushconst::update_type_opt,   adushconst::update_type_microsoft_swupdate,
+            adushconst::update_action_opt, adushconst::update_action_install
+        };
 
         std::stringstream data;
         data << workFolder << "/" << fileEntity.TargetFilename;
-        args.emplace_back(adushconst::target_data_opt);
-        args.emplace_back(data.str().c_str());
+        aduShellArgs.emplace_back(adushconst::target_data_opt);
+        aduShellArgs.emplace_back(data.str().c_str());
 
-        args.emplace_back(adushconst::target_log_folder_opt);
+        aduShellArgs.emplace_back(adushconst::target_log_folder_opt);
 
-        args.emplace_back(ADUC_LOG_FOLDER);
+        aduShellArgs.emplace_back(ADUC_LOG_FOLDER);
 
         std::string output;
-        const int exitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, output);
+        const int exitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, aduShellArgs, output);
 
         if (exitCode != 0)
         {
@@ -263,6 +274,7 @@ ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowDat
     result.ResultCode = ADUC_Result_Install_Success;
 
 done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
     workflow_free_string(workFolder);
     ADUC_FileEntity_Uninit(&fileEntity);
     return result;
@@ -278,38 +290,50 @@ done:
 ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
 {
     ADUC_Result result = { ADUC_Result_Failure };
-    char* workFolder = NULL;
+    const ADUC_ConfigInfo* config = nullptr;
+    char* workFolder = nullptr;
 
     if (workflow_is_cancel_requested(workflowData->WorkflowHandle))
     {
         return this->Cancel(workflowData);
     }
 
+    config = ADUC_ConfigInfo_GetInstance();
+    if (config == nullptr)
+    {
+        Log_Error("Failed to get config info instance.");
+        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_APPLY_FAILED_TO_GET_CONFIG_INSTANCE;
+        goto done;
+    }
+
     workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
     Log_Info("Applying data from %s", workFolder);
 
-    // Execute the install command with  "-a" to apply the install by telling
-    // the bootloader to boot to the updated partition.
-
-    // This is equivalent to : command << c_installScript << " -l " << _logFolder << " -a"
-
-    std::vector<std::string> args{ adushconst::update_type_opt,
-                                   adushconst::update_type_microsoft_swupdate,
-                                   adushconst::update_action_opt,
-                                   adushconst::update_action_apply };
-
-    args.emplace_back(adushconst::target_log_folder_opt);
-    args.emplace_back(ADUC_LOG_FOLDER);
-
-    std::string output;
-
-    const int exitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, output);
-
-    if (exitCode != 0)
     {
-        Log_Error("Apply failed, extendedResultCode = %d", exitCode);
-        result = { ADUC_Result_Failure, exitCode };
-        goto done;
+        // Execute the install command with  "-a" to apply the install by telling
+        // the bootloader to boot to the updated partition.
+
+        // This is equivalent to : command << c_installScript << " -l " << _logFolder << " -a"
+
+        std::vector<std::string> aduShellArgs{
+            adushconst::config_folder_opt, config->configFolder,
+            adushconst::update_type_opt,   adushconst::update_type_microsoft_swupdate,
+            adushconst::update_action_opt, adushconst::update_action_apply
+        };
+
+        aduShellArgs.emplace_back(adushconst::target_log_folder_opt);
+        aduShellArgs.emplace_back(ADUC_LOG_FOLDER);
+
+        std::string output;
+
+        const int exitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, aduShellArgs, output);
+
+        if (exitCode != 0)
+        {
+            Log_Error("Apply failed, extendedResultCode = %d", exitCode);
+            result = { ADUC_Result_Failure, exitCode };
+            goto done;
+        }
     }
 
     // Cancel requested?
@@ -329,6 +353,7 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
     result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
 
 done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
     workflow_free_string(workFolder);
 
     // Always require a reboot after successful apply
@@ -467,27 +492,46 @@ done:
  */
 static ADUC_Result CancelApply(const char* logFolder)
 {
-    // Execute the install command with  "-r" to reverts the apply by
-    // telling the bootloader to boot into the current partition
-
-    // This is equivalent to : command << c_installScript << " -l " << logFolder << " -r"
-
-    std::vector<std::string> args{ adushconst::update_type_opt,       adushconst::update_type_microsoft_swupdate,
-                                   adushconst::update_action_opt,     adushconst::update_action_apply,
-                                   adushconst::target_log_folder_opt, logFolder };
-
     std::string output;
+    ADUC_Result result = { ADUC_Result_Failure_Cancelled, 0 };
 
-    const int exitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, output);
-    if (exitCode != 0)
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == nullptr)
     {
-        // If failed to cancel apply, apply should return SuccessRebootRequired.
-        Log_Error("Failed to cancel Apply, extendedResultCode = %d", exitCode);
-        return ADUC_Result{ ADUC_Result_Failure, exitCode };
+        Log_Error("Failed to get config info instance.");
+        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_CANCEL_FAILED_TO_GET_CONFIG_INSTANCE;
+        goto done;
+    }
+
+    {
+        // Execute the install command with  "-r" to reverts the apply by
+        // telling the bootloader to boot into the current partition
+        // This is equivalent to : command << c_installScript << " -l " << logFolder << " -r"
+
+        const std::vector<std::string> aduShellArgs{
+            adushconst::config_folder_opt,     config->configFolder,
+            adushconst::update_type_opt,       adushconst::update_type_microsoft_swupdate,
+            adushconst::update_action_opt,     adushconst::update_action_apply,
+            adushconst::target_log_folder_opt, logFolder
+        };
+
+        const int exitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, aduShellArgs, output);
+        if (exitCode != 0)
+        {
+            // If failed to cancel apply, apply should return SuccessRebootRequired.
+            Log_Error("Failed to cancel Apply, extendedResultCode = %d", exitCode);
+            result.ResultCode = ADUC_Result_Failure;
+            result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_CANCEL_FAILED_TO_CANCEL_APPLIED_UPDATE;
+            goto done;
+        }
     }
 
     Log_Info("Apply was cancelled");
-    return ADUC_Result{ ADUC_Result_Failure_Cancelled };
+    result.ResultCode = ADUC_Result_Failure_Cancelled;
+
+done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    return result;
 }
 
 /**

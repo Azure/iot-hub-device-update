@@ -876,10 +876,7 @@ bool RunAsDesiredUser()
 
     success = true;
 done:
-    if (config != NULL)
-    {
-        ADUC_ConfigInfo_ReleaseInstance(config);
-    }
+    ADUC_ConfigInfo_ReleaseInstance(config);
 
     return success;
 }
@@ -914,6 +911,8 @@ int main(int argc, char** argv)
         puts(ADUC_VERSION);
         return 0;
     }
+
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(launchArgs.configFolder);
 
     // Need to set ret and goto done after this to ensure proper shutdown and deinitialization.
     ADUC_Logging_Init(launchArgs.logLevel, "du-agent");
@@ -1096,6 +1095,8 @@ done:
     Log_Info("Agent exited with code %d", ret);
 
     ShutdownAgent();
+
+    ADUC_ConfigInfo_ReleaseInstance(config);
 
     return ret;
 }

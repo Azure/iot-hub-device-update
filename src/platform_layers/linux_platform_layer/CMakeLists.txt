@@ -49,8 +49,7 @@ target_compile_definitions (
             ADUC_DEVICEINFO_MODEL="${ADUC_DEVICEINFO_MODEL}"
             ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
             ADUC_FILE_USER="${ADUC_FILE_USER}"
-            ADUC_VERSION_FILE="${ADUC_VERSION_FILE}"
-            ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}")
+            ADUC_VERSION_FILE="${ADUC_VERSION_FILE}")
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

@@ -69,10 +69,7 @@ static char* DeviceInfo_GetManufacturer()
 
     valueIsDirty = false;
 done:
-    if (config != NULL)
-    {
-        ADUC_ConfigInfo_ReleaseInstance(config);
-    }
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return result;
 }
 
@@ -114,10 +111,7 @@ static char* DeviceInfo_GetModel()
 
     valueIsDirty = false;
 done:
-    if (config != NULL)
-    {
-        ADUC_ConfigInfo_ReleaseInstance(config);
-    }
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return result;
 }
 

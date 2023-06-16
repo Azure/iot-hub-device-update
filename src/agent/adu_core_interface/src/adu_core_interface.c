@@ -234,12 +234,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
 done:
     json_value_free(startupMsgValue);
     json_free_serialized_string(jsonString);
-
-    if (config != NULL)
-    {
-        ADUC_ConfigInfo_ReleaseInstance(config);
-    }
-
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return success;
 }
 
