@@ -28,3 +28,9 @@ target_link_libraries (
             aduc::workflow_utils)
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+
+if (ADUC_BUILD_UNIT_TESTS)
+
+    add_subdirectory (tests)
+
+endif ()

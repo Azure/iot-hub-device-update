@@ -568,4 +568,3 @@ class DeviceUpdateTestHelper:
 
         return deleteAduGroupResponse.status_code
 
-

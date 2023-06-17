@@ -17,8 +17,6 @@ parameters:
       type: string
     - name: package_pipeline
       type: string
-    - name: scenarioSetupDir
-      type: string
     - name: du_tarball_script
       type: string
     - name: image_working_directory
@@ -33,13 +31,13 @@ steps:
           itemPattern: "${{parameters.packagePattern}}"
           path: ${{parameters.image_working_directory}}/
     - script: |
-          mkdir ${{parameters.scenarioSetupDir}}/vm_setup/testsetup/
+          mkdir -p ./scenarios/test_runner/vm_setup/testsetup/
       displayName: "Create the test setup directory that will contain all of the values needed for the setup tarball"
       continueOnError: false
       workingDirectory: ${{parameters.image_working_directory}}/
 
     - script: |
-          cp `find . -name '*.deb'` ${{parameters.scenarioSetupDir}}/vm_setup/testsetup/deviceupdate-package.deb
+          cp `find . -name '*.deb'` ./scenarios/test_runner/vm_setup/testsetup/deviceupdate-package.deb
       displayName: Stage DU Artifact for Preparing the VM Tarball
       continueOnError: false
       workingDirectory: ${{parameters.image_working_directory}}/
@@ -57,7 +55,7 @@ steps:
       displayName: "Run the script to create the device and output a configuration file"
       inputs:
           scriptSource: "filePath"
-          scriptPath: "${{parameters.image_working_directory}}/${{parameters.scenarioSetupDir}}/vm_setup/devicesetup.py"
+          scriptPath: "${{parameters.image_working_directory}}/scenarios/test_runner/vm_setup/devicesetup.py"
           workingDirectory: ${{parameters.image_working_directory}}/
       env:
           IOTHUB_URL: $(IOTHUB_URL)
@@ -67,24 +65,30 @@ steps:
           AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+          DISTRONAME: ${{ parameters.distroName }}
+
     - script: |
-          mv du-config.json ${{parameters.scenarioSetupDir}}/vm_setup/testsetup/
-      displayName: Copy the DU Configuration file to the same location as the artifact
+          if [ "${{ parameters.distroName }}" = "debian-10-amd64" ]; then
+              mv du-config-connectionstr.json ./scenarios/test_runner/vm_setup/testsetup/du-config.json
+          else
+              mv du-config-ais.json ./scenarios/test_runner/vm_setup/testsetup/du-config.json
+          fi
+      displayName: Copy the DU configuration file to the same location as the artifact
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}/
     - script: |
-          mv config.toml ${{parameters.scenarioSetupDir}}/vm_setup/testsetup/
+          mv config.toml ./scenarios/test_runner/vm_setup/testsetup/
       displayName: Copy the AIS configuration file to the same location as the artifact if it exists
       continueOnError: True
       workingDirectory: ${{parameters.image_working_directory}}/
     - script: |
-          cp ${{parameters.scenarioSetupDir}}/vm_setup/setup.sh ${{parameters.scenarioSetupDir}}/vm_setup/testsetup/
+          cp ./scenarios/test_runner/vm_setup/setup.sh ./scenarios/test_runner/vm_setup/testsetup/
       displayName: Copy the setup script to the same location as the artifact
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}/
 
     - script: |
-          tar -czvf ${{parameters.scenarioSetupDir}}/vm_setup/testsetup/adu_srcs_repo.tar.gz -C $(Build.SourcesDirectory) ./src ./scripts ./tools
+          tar -czvf ./scenarios/test_runner/vm_setup/testsetup/adu_srcs_repo.tar.gz -C $(Build.SourcesDirectory) ./src ./scripts ./tools
       displayName: Taring the repo for access on the virtual machine
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}
@@ -96,13 +100,13 @@ steps:
       #                          setup.sh
       #                          adu_srcs_repo.tar.gz
     - script: |
-          tar -czvf ${{parameters.scenarioSetupDir}}/testsetup.tar.gz -C ${{parameters.scenarioSetupDir}}/vm_setup ./testsetup/
+          tar -czvf ./scenarios/test_runner/testsetup.tar.gz -C ./scenarios/test_runner/vm_setup ./testsetup/
       displayName: Creating the test scenario tar ball with just the contents of ./scenarios/<scenario-name>/vm_setup/testsetup/
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}/
 
     - script: |
-          cp ${{parameters.scenarioSetupDir}}/testsetup.tar.gz terraform/host/
+          cp ./scenarios/test_runner/testsetup.tar.gz terraform/host/
       workingDirectory: ${{parameters.image_working_directory}}
       continueOnError: False
       displayName: "Copying tarball over to the terraform host"

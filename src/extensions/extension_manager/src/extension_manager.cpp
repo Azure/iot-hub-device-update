@@ -919,6 +919,7 @@ ADUC_Result ExtensionManager::Download(
     if (!IsNullOrEmpty(entity->DownloadHandlerId))
     {
         result = ProcessDownloadHandlerExtensibility(workflowHandle, entity, targetUpdateFilePath.c_str());
+        // continue on to fallback to full content download if necessary
     }
 
     // If no download handlers specified, or download handler failed to produce the target file.
@@ -938,6 +939,10 @@ ADUC_Result ExtensionManager::Download(
         unsigned int timeoutInSeconds = 60 * timeoutInMinutes;
 
         result = downloadProc(entity, workflowId, workFolder.get(), timeoutInSeconds, downloadProgressCallback);
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            goto done;
+        }
     }
 
     if (IsAducResultCodeSuccess(result.ResultCode))
@@ -956,6 +961,11 @@ ADUC_Result ExtensionManager::Download(
 
             goto done;
         }
+    }
+    else
+    {
+        // this is defensive in case a goto done was missed above.
+        goto done;
     }
 
     result.ResultCode = ADUC_GeneralResult_Success;
