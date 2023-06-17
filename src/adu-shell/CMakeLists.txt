@@ -65,12 +65,12 @@ target_link_libraries (
 
 add_subdirectory (scripts)
 
-# Install adu-shell to /usr/lib/adu folder.
+# Install adu-shell to /usr/bin folder.
 # Only owner and group can run adu-shell.
 install (
     TARGETS ${target_name}
     RUNTIME
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/adu
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
         PERMISSIONS
             OWNER_EXECUTE
             OWNER_WRITE

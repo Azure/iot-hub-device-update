@@ -51,9 +51,9 @@ static char* DeviceInfo_GetManufacturer()
     char* result = nullptr;
 
     const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
-    if (config != NULL)
+    if (config == NULL)
     {
-        Log_Error("ADUC_ConfigInfo singleton hasn't been initialized.");
+        Log_Error("Failed to get config info instance");
         goto done;
     }
 
@@ -93,9 +93,9 @@ static char* DeviceInfo_GetModel()
 
     char* result = nullptr;
     const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
-    if (config != NULL)
+    if (config == NULL)
     {
-        Log_Error("ADUC_ConfigInfo singleton hasn't been initialized.");
+        Log_Error("Failed to get config info instance");
         goto done;
     }
 

@@ -333,10 +333,11 @@ int main(int argc, char** argv)
         goto done;
     }
 
-    config = ADUC_ConfigInfo_CreateInstance(launchArgs.configFolder);
-    if (config != NULL)
+    setenv(ADUC_CONFIG_FOLDER_ENV, launchArgs.configFolder, 1);
+    config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
     {
-        printf("Cannot read configuration from '%s' folder.", launchArgs.configFolder);
+        Log_Error("Cannot read configuration from '%s' folder.", launchArgs.configFolder);
         ret = EXIT_FAILURE;
         goto done;
     }
@@ -379,9 +380,6 @@ int main(int argc, char** argv)
 
     Log_Error("Cannot set user identity. (code: %d, errno: %d)", ret, errno);
 done:
-    if (config != NULL)
-    {
-        ADUC_ConfigInfo_ReleaseInstance(config);
-    }
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return ret;
 }

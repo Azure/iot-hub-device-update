@@ -94,16 +94,17 @@ bool ReadResultFile(const char* resultFile, ADUC_Result* result)
     return true;
 }
 
-static std::string get_test_config_folder()
+static void set_test_config_folder()
 {
     std::string path{ ADUC_TEST_DATA_FOLDER };
     path += "/swupdate_handler_v2_test_config";
-    return path;
+    setenv(ADUC_CONFIG_FOLDER_ENV, path.c_str(), 1);
 }
 
 TEST_CASE("SWUpdate Prepare Arguments Test")
 {
-    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(get_test_config_folder().c_str());
+    set_test_config_folder();
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
     CHECK(config != nullptr);
 
     ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
@@ -195,7 +196,8 @@ TEST_CASE("SWUpdate Prepare Arguments Test")
 
 TEST_CASE("SWUpdate sample script --action-is-installed")
 {
-    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(get_test_config_folder().c_str());
+    set_test_config_folder();
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
     CHECK(config != nullptr);
 
     ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
@@ -253,7 +255,8 @@ TEST_CASE("SWUpdate sample script --action-is-installed")
 
 TEST_CASE("SWUpdate sample script --action-download")
 {
-    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(get_test_config_folder().c_str());
+    set_test_config_folder();
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
     CHECK(config != nullptr);
 
     ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
@@ -309,7 +312,8 @@ TEST_CASE("SWUpdate sample script --action-download")
 
 TEST_CASE("SWUpdate sample script --action-install", "[!hide][functional_test]")
 {
-    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(get_test_config_folder().c_str());
+    set_test_config_folder();
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
     CHECK(config != nullptr);
 
     ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
@@ -367,7 +371,8 @@ TEST_CASE("SWUpdate sample script --action-install", "[!hide][functional_test]")
 
 TEST_CASE("SWUpdate sample script --action-apply")
 {
-    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(get_test_config_folder().c_str());
+    set_test_config_folder();
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
     CHECK(config != nullptr);
 
     ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
@@ -420,7 +425,8 @@ TEST_CASE("SWUpdate sample script --action-apply")
 
 TEST_CASE("SWUpdate sample script --action-cancel")
 {
-    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(get_test_config_folder().c_str());
+    set_test_config_folder();
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
     CHECK(config != nullptr);
 
     ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);

@@ -642,18 +642,24 @@ void ADUC_ConfigInfo_FreeAduShellTrustedUsers(VECTOR_HANDLE users)
 }
 
 /**
- * @brief Create the ADUC_ConfigInfo object.
+ * @brief Get the existing ADUC_ConfigInfo object, or create one if it doesn't exist.
  *
- * @param configFolder a pointer to the folder containing the du-config.json file.
  * @return const ADUC_ConfigInfo* a pointer to ADUC_ConfigInfo object. NULL if failure.
  * Caller must call ADUC_ConfigInfo_Release to free the object.
  */
-const ADUC_ConfigInfo* ADUC_ConfigInfo_CreateInstance(const char* configFolder)
+const ADUC_ConfigInfo* ADUC_ConfigInfo_GetInstance()
 {
     const ADUC_ConfigInfo* config = NULL;
+
     s_config_lock();
     if (s_configInfo.refCount == 0)
     {
+        char* configFolder = getenv(ADUC_CONFIG_FOLDER_ENV);
+        if (configFolder == NULL)
+        {
+            Log_Error("%s environment variable not set", ADUC_CONFIG_FOLDER_ENV);
+            goto done;
+        }
         if (!ADUC_ConfigInfo_Init(&s_configInfo, configFolder))
         {
             goto done;
@@ -667,25 +673,6 @@ done:
 }
 
 /**
- * @brief Get the existing ADUC_ConfigInfo object.
- *
- * @return const ADUC_ConfigInfo* a pointer to ADUC_ConfigInfo object. NULL if failure.
- * Caller must call ADUC_ConfigInfo_Release to free the object.
- */
-const ADUC_ConfigInfo* ADUC_ConfigInfo_GetInstance()
-{
-    ADUC_ConfigInfo* config = NULL;
-    s_config_lock();
-    if (s_configInfo.refCount > 0)
-    {
-        s_configInfo.refCount++;
-        config = &s_configInfo;
-    }
-    s_config_unlock();
-    return config;
-}
-
-/**
  * @brief Release the ADUC_ConfigInfo object.
  *
  * @param configInfo a pointer to ADUC_ConfigInfo object
@@ -694,7 +681,7 @@ const ADUC_ConfigInfo* ADUC_ConfigInfo_GetInstance()
 int ADUC_ConfigInfo_ReleaseInstance(const ADUC_ConfigInfo* configInfo)
 {
     int ret = -1;
-    if (configInfo == NULL)
+    if (configInfo != &s_configInfo)
     {
         return ret;
     }

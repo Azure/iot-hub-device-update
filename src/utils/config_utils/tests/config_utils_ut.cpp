@@ -578,8 +578,8 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentDownloadTimeout) == 0);
         ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
-
-        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance("/etc/adu/du-config.json");
+        setenv(ADUC_CONFIG_FOLDER_ENV, "/etc/adu/du-config.json", 1);
+        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
         CHECK(config != NULL);
         CHECK(config->refCount == 1);
 
@@ -600,7 +600,8 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentDownloadTimeout) == 0);
         ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
 
-        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance("/etc/adu/du-config.json");
+        setenv(ADUC_CONFIG_FOLDER_ENV, "/etc/adu/du-config.json", 1);
+        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
         CHECK(config != NULL);
         CHECK_THAT(config->aduShellFolder, Equals("/usr/bin"));
         CHECK_THAT(config->aduShellFilePath, Equals("/usr/bin/adu-shell"));
@@ -619,9 +620,8 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigWithOverrideFolder) == 0);
         ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
-
-        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance("/etc/adu/du-config.json");
-        CHECK(config != NULL);
+        setenv(ADUC_CONFIG_FOLDER_ENV, "/etc/adu/du-config.json", 1);
+        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
         CHECK_THAT(config->aduShellFolder, Equals("/usr/mybin"));
         CHECK_THAT(config->aduShellFilePath, Equals("/usr/mybin/adu-shell"));
         CHECK_THAT(config->dataFolder, Equals("/var/lib/adu/mydata"));
@@ -634,5 +634,4 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         ADUC_ConfigInfo_ReleaseInstance(config);
         CHECK(config->refCount == 0);
     }
-
 }

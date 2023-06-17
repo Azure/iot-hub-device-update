@@ -912,10 +912,17 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_CreateInstance(launchArgs.configFolder);
-
     // Need to set ret and goto done after this to ensure proper shutdown and deinitialization.
     ADUC_Logging_Init(launchArgs.logLevel, "du-agent");
+
+    setenv(ADUC_CONFIG_FOLDER_ENV, launchArgs.configFolder, 1);
+
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
+    {
+        Log_Error("Cannot initialize config info.");
+        return -1;
+    }
 
     // default to failure
     ret = 1;

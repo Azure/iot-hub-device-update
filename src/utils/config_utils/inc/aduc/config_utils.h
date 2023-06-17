@@ -27,6 +27,8 @@
 #include <stdbool.h>
 #include <umock_c/umock_c_prod.h>
 
+#define ADUC_CONFIG_FOLDER_ENV "ADUC_CONF_FOLDER"
+
 EXTERN_C_BEGIN
 
 typedef struct tagADUC_AgentInfo
@@ -99,15 +101,6 @@ typedef struct tagADUC_ConfigInfo
     char* logsFolder; /**< The folder where ADU stores its logs. */
 
 } ADUC_ConfigInfo;
-
-/**
- * @brief Create the ADUC_ConfigInfo object.
- *
- * @param configFolder a pointer to the folder containing the du-config.json file.
- * @return const ADUC_ConfigInfo* a pointer to ADUC_ConfigInfo object. NULL if failure.
- * Caller must call ADUC_ConfigInfo_Release to free the object.
- */
-const ADUC_ConfigInfo* ADUC_ConfigInfo_CreateInstance(const char* configFolder);
 
 /**
  * @brief Create the ADUC_ConfigInfo object.

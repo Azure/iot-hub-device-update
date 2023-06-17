@@ -66,18 +66,18 @@ sample_du_config=$(
     "do"
   ],
   "iotHubProtocol": "mqtt",
-  "manufacturer": <Place your device info manufacturer here>,
-  "model": <Place your device info model here>,
+  "manufacturer": "<Place your device info manufacturer here>",
+  "model": "<Place your device info model here>",
   "agents": [
     {
-      "name": <Place your agent name here>,
+      "name": "main",
       "runas": "adu",
       "connectionSource": {
         "connectionType": "string",
-        "connectionData": <Place your Azure IoT device connection string here>
+        "connectionData": "<Place your Azure IoT device connection string here>"
       },
-      "manufacturer": <Place your device property manufacturer here>,
-      "model": <Place your device property model here>
+      "manufacturer": "<Place your device property manufacturer here>",
+      "model": "<Place your device property model here>"
     }
   ]
 }
