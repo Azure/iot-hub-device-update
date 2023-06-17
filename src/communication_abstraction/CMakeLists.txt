@@ -21,13 +21,11 @@ find_package (umqtt REQUIRED)
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils aduc::adu_types
-    PRIVATE aduc::adu_types
-            IotHubClient::iothub_client
-            iothub_client_mqtt_transport
-            umqtt
-            # prov_auth_client, hsm_security_client, uhttp are required when
-            # azure-iot-sdk-c is compiled using -Duse_edge_modules=ON
-            prov_auth_client
-            hsm_security_client
-            uhttp
+    PRIVATE aduc::adu_types IotHubClient::iothub_client iothub_client_mqtt_transport umqtt uhttp
             aduc::logging)
+
+if (WIN32)
+    # prov_auth_client, hsm_security_client, uhttp are required when
+    # azure-iot-sdk-c is compiled using -Duse_edge_modules=ON
+    target_link_libraries (${target_name} PRIVATE prov_auth_client hsm_security_client)
+endif ()

@@ -30,14 +30,14 @@
 #    include <iothubtransportmqtt_websockets.h>
 #endif
 
+#include <aducpal/time.h> // ADUCPAL_clock_gettime
+#include <aducpal/unistd.h>
 #include <limits.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h> // strtol
 #include <sys/stat.h>
-#include <aducpal/unistd.h>
-#include <aducpal/sys_time.h> // ADUCPAL_clock_gettime
 
 /**
  * @brief A pointer to ADUC_ClientHandle data. This must be initialize by the component that creates the IoT Hub connection.
@@ -344,7 +344,8 @@ static bool ADUC_DeviceClient_Create(
     }
     else if (
         shouldSetProxyOptions
-        && ((iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_HTTP_PROXY, &proxyOptions)) != IOTHUB_CLIENT_OK))
+        && ((iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_HTTP_PROXY, &proxyOptions))
+            != IOTHUB_CLIENT_OK))
     {
         Log_Error("Could not set http proxy options, error=%d ", iothubResult);
         result = false;

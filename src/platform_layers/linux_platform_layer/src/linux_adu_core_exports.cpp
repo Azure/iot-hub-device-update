@@ -101,7 +101,7 @@ int ADUC_RestartAgent()
 
     ADUC_ShutdownService_RequestShutdown();
 
-    return exitStatus;
+    return 0;
 }
 
 EXTERN_C_END

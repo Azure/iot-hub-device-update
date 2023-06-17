@@ -41,6 +41,8 @@ namespace adushconst = Adu::Shell::Const;
 // lookup and call.
 //
 
+EXTERN_C_BEGIN
+
 /**
  * @brief Instantiates a Step Handler for 'microsoft/apt:1' update type.
  * @return ContentHandler* The created instance.

@@ -645,7 +645,7 @@ static void ADUC_PnPDeviceTwin_Callback(
     }
 }
 
-#ifdef ADUC_COMMAND_HELPER
+#ifdef ADUC_COMMAND_HELPER_H
 
 /**
  * @brief Invokes PnPHandleCommandCallback on every PnPComponentEntry.
