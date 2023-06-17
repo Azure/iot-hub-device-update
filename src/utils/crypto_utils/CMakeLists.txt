@@ -17,8 +17,8 @@ set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aduc::c_utils
-    PRIVATE aziotsharedutil aduc::root_key_utils OpenSSL::Crypto)
+    PUBLIC aduc::c_utils aziotsharedutil
+    PRIVATE aduc::root_key_utils OpenSSL::Crypto)
 
 target_compile_definitions (${PROJECT_NAME} PRIVATE EMBED_TEST_ROOT_KEYS=${EMBED_TEST_ROOT_KEYS})
 

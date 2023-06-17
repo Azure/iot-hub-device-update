@@ -26,12 +26,7 @@
     returns 0 when the json property value is not json number type and because 0 is
     not one of the 5 known Fermat primes of 3, 5, 17, 257 and 65537 for base b = 2
     n generalized Fermat primes. The current root keys use the industry standard of
-    65537. For reference:
-    https://www.quora.com/Why-is-e-65537-used-for-most-RSA-encryption
-    https://crypto.stackexchange.com/questions/3110/impacts-of-not-using-rsa-exponent-of-65537
-    https://en.wikipedia.org/wiki/65,537
-    https://crypto.stanford.edu/~dabo/pubs/papers/RSA-survey.pdf
-
+    65537 (0x010001), or "QAQD" as base64 url encoded string.
  */
 #define INVALID_EXPONENT 0
 
@@ -401,13 +396,12 @@ ADUC_Result RootKeyPackage_ParseBase64URLUIntJsonString(
         goto done;
     }
 
-    buffer = CONSTBUFFER_CreateWithMoveMemory(buf, out_len);
+    buffer = CONSTBUFFER_Create(buf, out_len);
     if (buffer == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
-    buf = NULL;
 
     *outHashBuffer = buffer;
     buffer = NULL;
@@ -415,10 +409,7 @@ ADUC_Result RootKeyPackage_ParseBase64URLUIntJsonString(
     result.ResultCode = ADUC_GeneralResult_Success;
 done:
 
-    if (buf != NULL)
-    {
-        free(buf);
-    }
+    free(buf);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -602,10 +593,6 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
 
         rsa_exponent = (unsigned int)e_exponent;
 
-        // Base64URLDecode uses malloc when creating the buffers, so using
-        // CONSTBUFFER_CreateWithMoveMemory to transfer ownership to the
-        // CONSTBUFFER will free correctly when refcount goes to 0 after a
-        // CONSTBUFFER DecRef() call.
         modulus_len = Base64URLDecode(n_modulusStr, &modulus_buf);
         if (modulus_len == 0)
         {
@@ -613,15 +600,12 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
             goto done;
         }
 
-        rsa_modulus = CONSTBUFFER_CreateWithMoveMemory(modulus_buf, modulus_len);
+        rsa_modulus = CONSTBUFFER_Create(modulus_buf, modulus_len);
         if (rsa_modulus == NULL)
         {
             result.ExtendedResultCode = ADUC_ERC_NOMEM;
             goto done;
         }
-
-        // commit the transfer of ownership
-        modulus_buf = NULL;
     }
     else
     {
@@ -652,10 +636,7 @@ done:
         STRING_delete(kidStrHandle);
     }
 
-    if (modulus_buf != NULL)
-    {
-        free(modulus_buf);
-    }
+    free(modulus_buf);
 
     if (rsa_modulus != NULL)
     {
@@ -834,7 +815,7 @@ ADUC_Result RootKeyPackage_ParseProtectedPropertiesString(JSON_Object* rootObj, 
         goto done;
     }
 
-    const char* protectedPropertiesString = json_serialize_to_string(protectedPropertiesValue);
+    char* protectedPropertiesString = json_serialize_to_string(protectedPropertiesValue);
 
     protectedPropertiesStringHandle = STRING_construct(protectedPropertiesString);
 
@@ -845,21 +826,17 @@ ADUC_Result RootKeyPackage_ParseProtectedPropertiesString(JSON_Object* rootObj, 
     }
 
     result.ResultCode = ADUC_GeneralResult_Success;
+    outPackage->protectedPropertiesJsonString = protectedPropertiesStringHandle;
+    protectedPropertiesStringHandle = NULL;
 
 done:
+    free(protectedPropertiesString);
+    STRING_delete(protectedPropertiesStringHandle);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         Log_Error("ERC %d parsing 'protected' property to string", result.ResultCode);
-
-        if (protectedPropertiesStringHandle != NULL)
-        {
-            STRING_delete(protectedPropertiesStringHandle);
-            protectedPropertiesStringHandle = NULL;
-        }
     }
-
-    outPackage->protectedPropertiesJsonString = protectedPropertiesStringHandle;
 
     return result;
 }

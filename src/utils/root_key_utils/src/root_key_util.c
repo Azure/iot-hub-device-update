@@ -23,6 +23,7 @@
 #include <azure_c_shared_utility/constbuffer.h>
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
+#include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -135,7 +136,7 @@ static bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const 
         goto done;
     }
 
-    rootKey->rsaParameters.n = CONSTBUFFER_CreateWithMoveMemory(modulus, modulusSize);
+    rootKey->rsaParameters.n = CONSTBUFFER_Create(modulus, modulusSize);
 
     if (rootKey->rsaParameters.n == NULL)
     {
@@ -470,9 +471,10 @@ done:
 /**
  * @brief Reloads the package from disk into the local store
  *
+ * @param filepath The path to the package on disk, or use the default with NULL.
  * @return a value of ADUC_Result
  */
-ADUC_Result RootKeyUtility_ReloadPackageFromDisk()
+ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath)
 {
     if (localStore != NULL)
     {
@@ -481,7 +483,7 @@ ADUC_Result RootKeyUtility_ReloadPackageFromDisk()
         localStore = NULL;
     }
 
-    return RootKeyUtility_LoadPackageFromDisk(&localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH);
+    return RootKeyUtility_LoadPackageFromDisk(&localStore, filepath == NULL ? ADUC_ROOTKEY_STORE_PACKAGE_PATH : filepath);
 }
 
 /**
@@ -660,7 +662,7 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
 #ifdef USE_LOCAL_STORE
     if (localStore == NULL)
     {
-        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH);
+        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(&localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH);
 
         if (IsAducResultCodeFailure(loadResult.ResultCode))
         {
@@ -761,7 +763,7 @@ ADUC_Result_t RootKeyUtility_GetReportingErc()
     return s_rootKeyErc;
 }
 
-bool ADUC_RootKeyPackageUtils_IsUpdateStoreNeeded(const STRING_HANDLE storePath, const char* rootKeyPackageJsonString)
+bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE storePath, const char* rootKeyPackageJsonString)
 {
     bool update_needed = true;
     char* storePackageJsonString = NULL;
@@ -789,4 +791,181 @@ done:
     free(storePackageJsonString);
 
     return update_needed;
+}
+
+/**
+ * @brief Gets the hash of a pub key created from n and e of the payload section of the SJWK that is the header section of the JWS(JSON web signature).
+ *
+ * @param sjwkPayloadJsonStr The decoded base64-url json string of the payload section of the SJWK.
+ */
+ADUC_Result RootKeyUtility_GetHashPubKeyFromSJWKPayload(
+    const char* sjwkPayloadJsonStr, CONSTBUFFER_HANDLE* outHashPublicKey)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
+    CONSTBUFFER_HANDLE hashPubKeyBuf = NULL;
+
+    // Sections of JWS Payload
+    const char* c_payload_modulus = NULL;
+    const char* c_payload_exponent = NULL;
+
+    JSON_Value* rootJsonValue = NULL;
+    JSON_Object* rootJsonObj = NULL;
+    const char* jsonStrVal = NULL;
+    CONSTBUFFER_HANDLE pubkey_buf = NULL;
+    char* alg_lc = NULL;
+
+    if (IsNullOrEmpty(sjwkPayloadJsonStr) || outHashPublicKey == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_INVALIDARG;
+        goto done;
+    }
+
+    // Example structure of the signingKeyPayload:
+    // {
+    //     "kty": "RSA",
+    //     "alg": "RS256",
+    //     "kid": "ADU.210609.R.S"
+    //     "n": "<URLUInt encoded bytes>",
+    //     "e": "AQAB",
+    // }
+    rootJsonValue = json_parse_string(sjwkPayloadJsonStr);
+    if (rootJsonValue == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_PAYLOAD_BAD_JSON;
+        goto done;
+    }
+
+    rootJsonObj = json_value_get_object(rootJsonValue);
+
+    // kty, or Key Type
+    jsonStrVal = json_object_get_string(rootJsonObj, "kty");
+    Log_Debug("kty: '%s'", jsonStrVal);
+    if (IsNullOrEmpty(jsonStrVal) || strcmp(jsonStrVal, "RSA") != 0)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_INVALID_KEY_TYPE;
+        goto done;
+    }
+
+    // alg, or signing key algorithm
+    jsonStrVal = json_object_get_string(rootJsonObj, "alg");
+    alg_lc = ADUC_StringUtils_Map(jsonStrVal, tolower);
+    Log_Debug("alg: '%s'", jsonStrVal);
+    if (IsNullOrEmpty(jsonStrVal) || strcmp(alg_lc, CRYPTO_UTILS_SIGNATURE_VALIDATION_ALG_RS256) != 0)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_INVALID_ALG;
+        goto done;
+    }
+
+    // kid, or signing key id
+    jsonStrVal = json_object_get_string(rootJsonObj, "kid");
+    Log_Debug("kid: '%s'", jsonStrVal);
+
+    // n, or modulus
+    c_payload_modulus = json_object_get_string(rootJsonObj, "n");
+    if (IsNullOrEmpty(c_payload_modulus))
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_INVALID_N;
+        goto done;
+    }
+
+    Log_Debug("n: '%s'", c_payload_modulus);
+
+    // e, or exponent. We only support 65537, which is ubiquitous.
+    c_payload_exponent = json_object_get_string(rootJsonObj, "e");
+    if (IsNullOrEmpty(c_payload_exponent) || strcmp(c_payload_exponent, "AQAB") != 0) // AQAB is 65537, or 0x00 0x01 0x00 0x01.
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_INVALID_EXPONENT;
+        goto done;
+    }
+
+    Log_Debug("e: '%s'", c_payload_exponent);
+
+    // The public key can be constructed from the exponent and modulus.
+    pubkey_buf = CryptoUtils_GeneratePublicKey(c_payload_modulus, c_payload_exponent);
+    if (pubkey_buf == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ERR_GEN_PUBKEY;
+        goto done;
+    }
+
+    hashPubKeyBuf = CryptoUtils_CreateSha256Hash(pubkey_buf);
+    if (hashPubKeyBuf == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ERR_CREATE_HASH_PUBKEY;
+        goto done;
+    }
+
+    result.ResultCode = ADUC_GeneralResult_Success;
+
+    *outHashPublicKey = hashPubKeyBuf;
+    hashPubKeyBuf = NULL;
+done:
+
+    json_value_free(rootJsonValue);
+    free(alg_lc);
+
+    if (pubkey_buf != NULL)
+    {
+        CONSTBUFFER_DecRef(pubkey_buf);
+    }
+
+    if (hashPubKeyBuf != NULL)
+    {
+        CONSTBUFFER_DecRef(hashPubKeyBuf);
+    }
+
+    return result;
+}
+
+ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSigningKeyList)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    VECTOR_HANDLE disabledSigningKeyList = NULL;
+
+    if (localStore == NULL)
+    {
+#ifdef USE_LOCAL_STORE
+        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(&localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH);
+
+        if (IsAducResultCodeFailure(loadResult.ResultCode))
+        {
+            Log_Error("Fail load pkg from disk: 0x%08x", loadResult.ExtendedResultCode);
+            result = loadResult;
+            goto done;
+        }
+#else
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_LOCAL_STORE_UNINITIALIZED;
+        goto done;
+#endif
+    }
+
+    disabledSigningKeyList = VECTOR_create(sizeof(ADUC_RootKeyPackage_Signature));
+    if (disabledSigningKeyList == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
+        goto done;
+    }
+
+    for(size_t i=0; i<VECTOR_size(localStore->protectedProperties.disabledSigningKeys); ++i)
+    {
+        if (VECTOR_push_back(disabledSigningKeyList, VECTOR_element(localStore->protectedProperties.disabledSigningKeys, i), 1) != 0)
+        {
+            result.ExtendedResultCode = ADUC_ERC_NOMEM;
+            goto done;
+        }
+    }
+
+    *outDisabledSigningKeyList = disabledSigningKeyList;
+    disabledSigningKeyList = NULL;
+    result.ResultCode = ADUC_GeneralResult_Success;
+
+done:
+    if (disabledSigningKeyList != NULL)
+    {
+        VECTOR_destroy(disabledSigningKeyList);
+        disabledSigningKeyList = NULL;
+    }
+
+    return result;
 }

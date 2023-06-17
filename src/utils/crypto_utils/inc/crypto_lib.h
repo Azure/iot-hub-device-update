@@ -8,6 +8,7 @@
 
 #include "crypto_key.h"
 #include <aduc/c_utils.h>
+#include <azure_c_shared_utility/constbuffer.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -49,6 +50,10 @@ CryptoKeyHandle RSAKey_ObjFromStrings(const char* N, const char* e);
 CryptoKeyHandle GetRootKeyForKeyID(const char* kid);
 
 void CryptoUtils_FreeCryptoKeyHandle(CryptoKeyHandle key);
+
+CONSTBUFFER_HANDLE CryptoUtils_CreateSha256Hash(const CONSTBUFFER_HANDLE buf);
+
+CONSTBUFFER_HANDLE CryptoUtils_GeneratePublicKey(const char* modulus_b64url, const char* exponent_b64url);
 
 EXTERN_C_END
 

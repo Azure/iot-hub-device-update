@@ -8,6 +8,7 @@
 #include "aduc/workflow_utils.h"
 #include "aduc/adu_types.h"
 #include "aduc/aduc_inode.h" // ADUC_INODE_SENTINEL_VALUE
+#include "aduc/c_utils.h"
 #include "aduc/extension_manager.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
@@ -19,11 +20,11 @@
 #include "aduc/types/update_content.h"
 #include "aduc/types/workflow.h"
 #include "aduc/workflow_internal.h"
+#include "azure_c_shared_utility/crt_abstractions.h" // for mallocAndStrcpy_s
+#include "azure_c_shared_utility/strings.h" // for STRING_*
 #include "jws_utils.h"
-#include <aduc/c_utils.h>
+#include "root_key_util.h"
 
-#include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
-#include <azure_c_shared_utility/strings.h> // for STRING_*
 #include <parson.h>
 #include <stdarg.h> // for va_*
 #include <stdlib.h> // for malloc, atoi
@@ -876,6 +877,8 @@ done:
 static ADUC_Result workflow_validate_update_manifest_signature(JSON_Object* updateActionObject)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    const char* manifestSignature = NULL;
+    JWSResult jwsResult = JWSResult_Failed;
 
     if (updateActionObject == NULL)
     {
@@ -883,8 +886,7 @@ static ADUC_Result workflow_validate_update_manifest_signature(JSON_Object* upda
         return result;
     }
 
-    const char* manifestSignature =
-        json_object_get_string(updateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFESTSIGNATURE);
+    manifestSignature = json_object_get_string(updateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFESTSIGNATURE);
     if (manifestSignature == NULL)
     {
         Log_Error("Invalid manifest. Does not contain a signature");
@@ -892,11 +894,20 @@ static ADUC_Result workflow_validate_update_manifest_signature(JSON_Object* upda
         goto done;
     }
 
-    JWSResult jwsResult = VerifyJWSWithSJWK(manifestSignature);
+    jwsResult = VerifyJWSWithSJWK(manifestSignature);
     if (jwsResult != JWSResult_Success)
     {
-        Log_Error("Manifest signature validation failed with result: %u", jwsResult);
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MANIFEST_VALIDATION_FAILED;
+        if (jwsResult == JWSResult_DisallowedSigningKey)
+        {
+            Log_Error("Signing Key for the update metadata was on the disallowed signing key list");
+            result.ExtendedResultCode = ADUC_ERC_ROOTKEY_SIGNING_KEY_IS_DISABLED;
+        }
+        else
+        {
+            result.ExtendedResultCode = MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_INFRA_MGMT(
+                ADUC_COMPONENT_JWS_UPDATE_MANIFEST_VALIDATION, jwsResult);
+        }
+
         goto done;
     }
 
@@ -910,6 +921,13 @@ static ADUC_Result workflow_validate_update_manifest_signature(JSON_Object* upda
 
     result.ResultCode = ADUC_GeneralResult_Success;
 done:
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error(
+            "Manifest signature validation failed with result: '%s' (%u). ERC: ADUC_COMPONENT_JWS_UPDATE_MANIFEST_VALIDATION",
+            jws_result_to_str(jwsResult),
+            jwsResult);
+    }
 
     return result;
 }
@@ -2940,7 +2958,7 @@ void workflow_uninit(ADUC_WorkflowHandle handle)
         STRING_delete(wf->InstalledUpdateId);
         wf->InstalledUpdateId = NULL;
 
-        if(wf->ResultExtraExtendedResultCodes != NULL)
+        if (wf->ResultExtraExtendedResultCodes != NULL)
         {
             VECTOR_destroy(wf->ResultExtraExtendedResultCodes);
             wf->ResultExtraExtendedResultCodes = NULL;
