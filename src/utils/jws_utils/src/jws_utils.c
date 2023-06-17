@@ -260,9 +260,6 @@ const char* jws_result_to_str(JWSResult r)
     case JWSResult_BadStructure:
         return "BadStructure";
 
-    case JWSResult_UnsupportedAlg:
-        return "UnsupportedAlg";
-
     case JWSResult_InvalidSignature:
         return "InvalidSignature";
 
@@ -276,25 +273,22 @@ const char* jws_result_to_str(JWSResult r)
         return "InvalidRootKid";
 
     case JWSResult_InvalidEncodingJWSHeader:
-        return "InvalidEncodingJWSHeader";
-
-    case JWSResult_InvalidEncodingSJWKHeader:
-        return "InvalidEncodingSJWKHeader";
-
-    case JWSResult_InvalidEncodingSJWKPayload:
-        return "InvalidEncodingSJWKPayload";
+        return "JWSResult_InvalidEncodingJWSHeader";
 
     case JWSResult_InvalidSJWKPayload:
         return "JWSResult_InvalidSJWKPayload";
 
-    case JWSResult_InvalidSJWKPayloadSections:
-        return "InvalidSJWKPayloadSections";
-
     case JWSResult_DisallowedSigningKey:
         return "DisallowedSigningKey";
 
-    case JWSResult_InvalidSigningKey:
-        return "InvalidSigningKey";
+    case JWSResult_FailedGetDisabledSigningKeys:
+        return "JWSResult_FailedGetDisabledSigningKeys";
+
+    case JWSResult_FailGenPubKey:
+        return "JWSResult_FailGenPubKey";
+
+    case JWSResult_HashPubKeyFailed:
+        return "JWSResult_HashPubKeyFailed";
 
     default:
         return "???";

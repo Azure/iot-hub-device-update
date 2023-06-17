@@ -50,22 +50,16 @@ typedef enum tagJWSResult
     JWSResult_Failed = 0, /**< Failed */
     JWSResult_Success = 1, /**< Succeeded */
     JWSResult_BadStructure = 2, /**< JWS structure is not correct */
-    JWSResult_UnsupportedAlg = 3, /**< Algorithm used to sign the JWS is not supported */
     JWSResult_InvalidSignature = 4, /**<Signature of the JWS is invalid */
-    JWSResult_InvalidKid = 5, /**< Key Identifier invalid */
-    JWSResult_DisallowedRootKid = 6, /**< Root Key Identifier disallowed */
-    JWSResult_MissingRootKid = 7, /**< Root Key Identifier missing */
-    JWSResult_InvalidRootKid = 8, /**< Root Key Identifier invalid */
-    JWSResult_InvalidEncodingJWSHeader = 9, /**< Invalid encoding of JWS Header */
-    JWSResult_InvalidEncodingSJWKHeader = 10, /**< Invalid encoding of SJWK Header */
-    JWSResult_InvalidEncodingSJWKPayload = 11, /**< Invalid encoding of SJWK Payload */
-    JWSResult_InvalidSJWKPayload = 12, /**< Invalid SJWK Payload */
-    JWSResult_InvalidSJWKPayloadSections = 13, /**< Invalid SJWK Payload Sections */
-    JWSResult_DisallowedSigningKey = 14, /**< Disallowed signing key */
-    JWSResult_InvalidSigningKey = 15, /**< Invalid signing key */
-    JWSResult_FailedGetDisabledSigningKeys = 16, /**< Failed getting disabled signing keys from rootkey pkg. */
-    JWSResult_FailGenPubKey = 17, /**< Failed during generate public key from N and e. */
-    JWSResult_HashPubKeyFailed = 18, /**< Failed during hash of public key. */
+    JWSResult_DisallowedRootKid = 5, /**< Root Key Identifier disallowed */
+    JWSResult_MissingRootKid = 6, /**< Root Key Identifier missing */
+    JWSResult_InvalidRootKid = 7, /**< Root Key Identifier invalid */
+    JWSResult_InvalidEncodingJWSHeader = 8, /**< Invalid encoding of JWS Header */
+    JWSResult_InvalidSJWKPayload = 9, /**< Invalid SJWK Payload */
+    JWSResult_DisallowedSigningKey = 10, /**< Disallowed signing key */
+    JWSResult_FailedGetDisabledSigningKeys = 11, /**< Failed getting disabled signing keys from rootkey pkg. */
+    JWSResult_FailGenPubKey = 12, /**< Failed during generate public key from N and e. */
+    JWSResult_HashPubKeyFailed = 13, /**< Failed during hash of public key. */
 } JWSResult;
 
 const char* jws_result_to_str(JWSResult r);
