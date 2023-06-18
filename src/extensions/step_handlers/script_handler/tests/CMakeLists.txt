@@ -35,6 +35,7 @@ target_include_directories (
 target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::adu_types
+            aduc::config_utils
             aduc::contract_utils
             aduc::extension_manager
             aduc::parser_utils
@@ -46,7 +47,7 @@ target_link_libraries (
             Catch2::Catch2
             aziotsharedutil)
 
-target_compile_definitions (${PROJECT_NAME} PRIVATE ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}")
+target_compile_definitions (${PROJECT_NAME} PRIVATE ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}" ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
 include (CTest)
 include (Catch)

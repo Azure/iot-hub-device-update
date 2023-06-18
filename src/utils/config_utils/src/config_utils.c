@@ -284,7 +284,7 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
     if (mallocAndStrcpy_s(&(config->configFolder), configFolder) != 0)
     {
         Log_Error("Failed to allocate memory for config file folder");
-        goto done;
+        return false;
     }
 
     char* configFilePath = NULL;

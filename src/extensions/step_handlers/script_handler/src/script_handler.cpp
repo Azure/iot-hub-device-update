@@ -540,10 +540,10 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
     if (config == nullptr)
     {
         Log_Error("Failed to get config info instance");
-        result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILED_TO_GET_CONFIG_INSTANCE;
-        return result;
+        results.result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILED_TO_GET_CONFIG_INSTANCE;
+        return results;
     }
-  
+
     const char* apiVer = workflow_peek_update_manifest_handler_properties_string(
         workflowData->WorkflowHandle, HANDLER_PROPERTIES_API_VERSION);
 
@@ -648,8 +648,8 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
         goto done;
     }
 
-    exitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, aduShellArgs, scriptOutput);
-   
+    exitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, aduShellArgs, results.scriptOutput);
+
     if (!results.scriptOutput.empty())
     {
         Log_Info(results.scriptOutput.c_str());

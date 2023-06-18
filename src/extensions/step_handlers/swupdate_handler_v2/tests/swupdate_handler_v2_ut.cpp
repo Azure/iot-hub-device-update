@@ -210,6 +210,10 @@ TEST_CASE("SWUpdate Prepare Arguments Test")
 
 TEST_CASE("SWUpdate Prepare Arguments Test v2.1")
 {
+    set_test_config_folder();
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    CHECK(config != nullptr);
+
     ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
     CHECK(swupdateHandler != nullptr);
     ExtensionManager::SetUpdateContentHandlerExtension("microsoft/swupdate:2", swupdateHandler);
@@ -254,7 +258,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test v2.1")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh" --target-options --action --target-options "install" --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test api version 2.1$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
+            R"( --config-folder "/tmp/adu/testdata/swupdate_handler_v2_test_config" --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh" --target-options --action --target-options "install" --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test api version 2.1$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
     result = SWUpdateHandler_PerformAction(
@@ -266,7 +270,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test v2.1")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh" --target-options --action --target-options "apply" --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test api version 2.1$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
+            R"( --config-folder "/tmp/adu/testdata/swupdate_handler_v2_test_config" --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh" --target-options --action --target-options "apply" --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test api version 2.1$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
     result = SWUpdateHandler_PerformAction(
@@ -278,7 +282,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test v2.1")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh" --target-options --action --target-options "cancel" --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test api version 2.1$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
+            R"( --config-folder "/tmp/adu/testdata/swupdate_handler_v2_test_config" --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh" --target-options --action --target-options "cancel" --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test api version 2.1$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
     result = SWUpdateHandler_PerformAction(
@@ -290,9 +294,10 @@ TEST_CASE("SWUpdate Prepare Arguments Test v2.1")
     CHECK_THAT(
         scriptOutput,
         Equals(
-            R"( --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh" --target-options --action --target-options "is-installed" --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test api version 2.1$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
+            R"( --config-folder "/tmp/adu/testdata/swupdate_handler_v2_test_config" --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh" --target-options --action --target-options "is-installed" --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test api version 2.1$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
+    ADUC_ConfigInfo_ReleaseInstance(config);
     ExtensionManager::Uninit();
 }
 
