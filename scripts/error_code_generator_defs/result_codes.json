@@ -1045,10 +1045,30 @@
         "name": "ADUC_FACILITY_DOWNLOAD_HANDLER"
       },
       {
-        "components": [],
+        "components": [
+          {
+            "code": 0,
+            "doc_string": "The Device Provisioning subsystem.",
+            "name": "ADUC_COMPONENT_DEVICE_PROVISIONING",
+            "results": [
+              {
+                "name": "ADUC_ERC_DEVICE_PROVISIONING_PROV_SECURITY_INIT",
+                "value": 1
+              },
+              {
+                "name": "ADUC_ERC_DEVICE_PROVISIONING_GET_SYMMETRIC_INFO",
+                "value": 2
+              },
+              {
+                "name": "ADUC_ERC_DEVICE_PROVISIONING_PROV_DEVICE_CREATE",
+                "value": 3
+              }
+            ]
+          }
+        ],
         "code": 10,
-        "doc_string": "unused",
-        "name": "ADUC_FACILITY_UNUSED_A"
+        "doc_string": "Indicates error from subsystems that are independent of core update deployment mechanisms.",
+        "name": "ADUC_FACILITY_SUBSYSTEMS"
       },
       {
         "components": [],

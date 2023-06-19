@@ -72,3 +72,7 @@ add_subdirectory (utils)
 add_subdirectory (extensions)
 add_subdirectory (agent)
 add_subdirectory (agent_orchestration)
+
+if (ADUC_USE_SDK_PROVISIONING)
+    add_subdirectory (device_provisioning_client)
+endif ()

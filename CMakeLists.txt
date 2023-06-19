@@ -469,6 +469,10 @@ set (
 # END Delta Downloader Handler Source Update Cache Configurations
 #######
 
+if (WIN32)
+    option (ADUC_USE_SDK_PROVISIONING "Use SDK device provisioning instead of AIS" ON)
+endif ()
+
 option (ADUC_WARNINGS_AS_ERRORS "Treat warnings as errors (-Werror)" ON)
 option (ADUC_BUILD_UNIT_TESTS "Build unit tests and mock some functionality" OFF)
 option (ADUC_BUILD_DOCUMENTATION "Build documentation files" OFF)
