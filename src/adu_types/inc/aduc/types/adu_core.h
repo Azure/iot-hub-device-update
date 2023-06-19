@@ -260,11 +260,11 @@ typedef enum tagADUC_ResultCode
     ADUC_Result_IsInstalled_NotInstalled = 901,  /**< Succeeded and content is not installed */
 
     ADUC_Result_Backup_Success = 1000,                       /**< Succeeded. */
-    ADUC_Result_Backup_Success_Unsupported = 1001,           /**< Succeeded to proceed with the workflow, but the action is not implemented/supported in the content handler. */
+    ADUC_Result_Backup_Success_Unsupported = 1001,           /**< Succeeded to proceed with the workflow, but the action is not implemented/supported in the step handler. */
     ADUC_Result_Backup_InProgress = 1002,                    /**< Async operation started. CompletionCallback will be called when complete. */
 
     ADUC_Result_Restore_Success = 1100,                      /**< Succeeded. */
-    ADUC_Result_Restore_Success_Unsupported = 1101,          /**< Succeeded to proceed with the workflow, but the action is not implemented/supported in the content handler. */
+    ADUC_Result_Restore_Success_Unsupported = 1101,          /**< Succeeded to proceed with the workflow, but the action is not implemented/supported in the step handler. */
     ADUC_Result_Restore_InProgress = 1102,                   /**< Async operation started. CompletionCallback will be called when complete. */
 
     ADUC_Result_Restore_RequiredImmediateReboot = 1105,         /**< Succeeded. An immediate device reboot is required, to complete the task. */

@@ -13,7 +13,8 @@
 #include <math.h>
 #include <stdbool.h>
 
-#include <aducpal/sys_time.h> // clock_gettime
+#include <aducpal/sys_time.h> // ADUCPAL_clock_gettime
+#include <aducpal/unistd.h>
 
 #ifndef MAX
 #    define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -33,7 +34,6 @@
 static pthread_mutex_t s_pendingMessageStoreMutex = PTHREAD_MUTEX_INITIALIZER;
 static bool s_core_initialized = false;
 
-// Initialized in ADUC_D2C_Messaging_Init
 static ADUC_D2C_Message s_pendingMessageStore[ADUC_D2C_Message_Type_Max];
 static ADUC_D2C_Message_Processing_Context s_messageProcessingContext[ADUC_D2C_Message_Type_Max];
 

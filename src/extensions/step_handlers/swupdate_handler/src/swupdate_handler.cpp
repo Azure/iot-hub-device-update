@@ -53,13 +53,13 @@ extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Optio
 //
 
 /**
- * @brief Instantiates an Update Content Handler for 'microsoft/swupdate:1' update type.
+ * @brief Instantiates a Step Handler for 'microsoft/swupdate:1' update type.
  * @return ContentHandler* The created instance.
  */
 EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
     ADUC_Logging_Init(logLevel, "swupdate-handler");
-    Log_Info("Instantiating an Update Content Handler for 'microsoft/swupdate:1'");
+    Log_Info("Instantiating a Step Handler for 'microsoft/swupdate:1'");
     try
     {
         return SWUpdateHandlerImpl::CreateContentHandler();
@@ -236,7 +236,6 @@ ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowDat
     // This is equivalent to: command << c_installScript << " -l " << _logFolder << " -i '" << _workFolder << "/" << filename << "'"
 
     {
-        std::string command = adushconst::adu_shell;
         std::vector<std::string> args{ adushconst::update_type_opt,
                                        adushconst::update_type_microsoft_swupdate,
                                        adushconst::update_action_opt,
@@ -252,7 +251,7 @@ ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowDat
         args.emplace_back(ADUC_LOG_FOLDER);
 
         std::string output;
-        const int exitCode = ADUC_LaunchChildProcess(command, args, output);
+        const int exitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, output);
 
         if (exitCode != 0)
         {
@@ -297,7 +296,6 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
 
     // This is equivalent to : command << c_installScript << " -l " << _logFolder << " -a"
 
-    std::string command = adushconst::adu_shell;
     std::vector<std::string> args{ adushconst::update_type_opt,
                                    adushconst::update_type_microsoft_swupdate,
                                    adushconst::update_action_opt,
@@ -308,7 +306,7 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
 
     std::string output;
 
-    const int exitCode = ADUC_LaunchChildProcess(command, args, output);
+    const int exitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, output);
 
     if (exitCode != 0)
     {
@@ -479,14 +477,13 @@ static ADUC_Result CancelApply(const char* logFolder)
 
     // This is equivalent to : command << c_installScript << " -l " << logFolder << " -r"
 
-    std::string command = adushconst::adu_shell;
     std::vector<std::string> args{ adushconst::update_type_opt,       adushconst::update_type_microsoft_swupdate,
                                    adushconst::update_action_opt,     adushconst::update_action_apply,
                                    adushconst::target_log_folder_opt, logFolder };
 
     std::string output;
 
-    const int exitCode = ADUC_LaunchChildProcess(command, args, output);
+    const int exitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, output);
     if (exitCode != 0)
     {
         // If failed to cancel apply, apply should return SuccessRebootRequired.

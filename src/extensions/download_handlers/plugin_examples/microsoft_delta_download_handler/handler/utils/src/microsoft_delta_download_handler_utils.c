@@ -16,11 +16,6 @@
 #include <azure_c_shared_utility/strings.h> // STRING_*
 #include <stdlib.h> // free
 
-EXTERN_C_BEGIN
-
-/* external linkage */
-extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
-
 /**
  * @brief Processes a related file of an update for delta download handling.
  *

@@ -44,12 +44,6 @@ using GET_CONTRACT_INFO_PROC = ADUC_Result (*)(ADUC_ExtensionContractInfo* contr
 using WorkflowHandle = void*;
 using ADUC::StringUtils::cstr_wrapper;
 
-EXTERN_C_BEGIN
-ExtensionManager_Download_Options Default_ExtensionManager_Download_Options = {
-    CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT /* timeoutInMinutes */
-};
-EXTERN_C_END
-
 // Static members.
 std::unordered_map<std::string, void*> ExtensionManager::_libs;
 std::unordered_map<std::string, ContentHandler*> ExtensionManager::_contentHandlers;
@@ -151,7 +145,7 @@ ADUC_Result ExtensionManager::LoadExtensionLibrary(
 
     if (*libHandle == nullptr)
     {
-        Log_Error("Cannot load content handler file %s. %s.", entity.TargetFilename, ADUCPAL_dlerror());
+        Log_Error("Cannot load handler file %s. %s.", entity.TargetFilename, ADUCPAL_dlerror());
         result.ExtendedResultCode = ADUC_ERC_EXTENSION_CREATE_FAILURE_LOAD(facilityCode, componentCode);
         goto done;
     }
@@ -209,7 +203,7 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
     void* libHandle = nullptr;
     ADUC_ExtensionContractInfo contractInfo{};
 
-    Log_Info("Loading Update Content Handler for '%s'.", updateType.c_str());
+    Log_Info("Loading handler for '%s'.", updateType.c_str());
 
     if (handler == nullptr)
     {
@@ -326,7 +320,7 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
         }
 
         Log_Debug(
-            "Got %d.%d contract version for '%s' content handler",
+            "Got %d.%d contract version for '%s' handler",
             contractInfo.majorVer,
             contractInfo.minorVer,
             updateType.c_str());
@@ -334,7 +328,7 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
 
     (*handler)->SetContractInfo(contractInfo);
 
-    Log_Debug("Caching new content handler for '%s'.", updateType.c_str());
+    Log_Debug("Caching new handler for '%s'.", updateType.c_str());
     _contentHandlers.emplace(updateType, *handler);
 
     result = { ADUC_GeneralResult_Success };
@@ -362,7 +356,7 @@ ADUC_Result ExtensionManager::SetUpdateContentHandlerExtension(const std::string
 {
     ADUC_Result result = { ADUC_Result_Failure };
 
-    Log_Info("Setting Content Handler for '%s'.", updateType.c_str());
+    Log_Info("Setting handler for '%s'.", updateType.c_str());
 
     if (handler == nullptr)
     {

@@ -18,6 +18,7 @@ target_include_directories (${target_name} PUBLIC ${ADUC_EXPORT_INCLUDES})
 
 target_link_libraries (
     ${target_name}
+    PUBLIC atomic
     PRIVATE aduc::adu_types
             aduc::agent_workflow
             aduc::c_utils
@@ -41,9 +42,13 @@ set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_compile_definitions (
     ${target_name}
-    PRIVATE ADUC_DEVICEINFO_MANUFACTURER="${ADUC_DEVICEINFO_MANUFACTURER}"
-            ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}" ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
-            ADUC_FILE_USER="${ADUC_FILE_USER}" ADUC_DEVICEINFO_MODEL="${ADUC_DEVICEINFO_MODEL}")
+    PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
+            ADUC_DEVICEINFO_MANUFACTURER="${ADUC_DEVICEINFO_MANUFACTURER}"
+            ADUC_DEVICEINFO_MODEL="${ADUC_DEVICEINFO_MODEL}"
+            ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
+            ADUC_FILE_USER="${ADUC_FILE_USER}"
+            ADUC_VERSION_FILE="${ADUC_VERSION_FILE}"
+            ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}")
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

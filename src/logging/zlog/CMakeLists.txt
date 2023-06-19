@@ -22,7 +22,7 @@ else ()
     target_link_libraries (${PROJECT_NAME} PRIVATE Threads::Threads aduc::system_utils)
 endif ()
 
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal aduc::system_utils)
 
 # _DEFAULT_SOURCE - Needed so DT_REG is defined in dirent.h
 #                   see man page for readdir

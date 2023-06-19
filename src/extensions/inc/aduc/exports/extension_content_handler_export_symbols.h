@@ -4,8 +4,8 @@
 #include <aduc/exports/extension_common_export_symbols.h> // for GetContractInfo__EXPORT_SYMBOL
 
 //
-// Update Content Handler Extension export V1 symbols.
-// These are the V1.0 symbols that must be implemented by update content handlers (AKA step handlers).
+// Step Handler Extension export V1 symbols.
+// These are the V1.0 symbols that must be implemented by step handlers.
 //
 
 /**
@@ -17,7 +17,7 @@
 #define CONTENT_HANDLER__GetContractInfo__EXPORT_SYMBOL GetContractInfo__EXPORT_SYMBOL
 
 /**
- * @brief Instantiates an Update Content Handler.
+ * @brief Instantiates a Step Handler.
  * @return ContentHandler* The created instance.
  * @details ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
  */

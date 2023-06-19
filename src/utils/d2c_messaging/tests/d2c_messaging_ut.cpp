@@ -22,7 +22,7 @@ static ADUC_D2C_HttpStatus_Retry_Info g_httpStatusRetryInfo_fast_speed[]{
       /* .retryTimestampCalcFunc = */ nullptr,
       /* .maxRetry = */ 0 },
 
-    { /* .httpStatusMin = */ 400,
+    { /*.httpStatusMin = */ 400,
       /* .httpStatusMax = */ 499,
       /* .additionalDelaySecs = */ 0,
       /* .retryTimestampCalcFunc = */ ADUC_Retry_Delay_Calculator,
@@ -390,14 +390,6 @@ TEST_CASE("Deinitialization - in progress message", "[.][functional]")
     // Done
     g_cloudServiceMutex.unlock();
     g_testCaseSyncMutex.unlock();
-}
-
-TEST_CASE("Empty test")
-{
-    // Bug 43043345: d2c_messaging_ut isn't a UT (it only has functional tests) and should be moved out.
-    // All of the tests in this UT are currently functional tests. Hence this isn't really a UT.
-    // To avoid returning "d2c_messaging_unit_test contains no tests!"
-    // I've temporarily added this empty test.
 }
 
 // Make sure that we can deinitialize cleanly.

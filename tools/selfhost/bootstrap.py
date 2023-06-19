@@ -96,7 +96,7 @@ def install_do(script_dir):
         f"mkdir -p {tmp_dir} "
         f"&& cp {script_tar_file} {tmp_dir} "
         f"&& cd {tmp_dir} "
-        f"&& tar -xvf ./{filename}"
+        f"&& tar -xf ./{filename}"
         )
     if ret_code != 0:
         return ret_code

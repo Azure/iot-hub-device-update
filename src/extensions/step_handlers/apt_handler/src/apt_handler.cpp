@@ -34,11 +34,6 @@
 
 namespace adushconst = Adu::Shell::Const;
 
-EXTERN_C_BEGIN
-
-/* external linkage */
-extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
-
 /////////////////////////////////////////////////////////////////////////////
 // BEGIN Shared Library Export Functions
 //
@@ -46,14 +41,16 @@ extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Optio
 // lookup and call.
 //
 
+EXTERN_C_BEGIN
+
 /**
- * @brief Instantiates an Update Content Handler for 'microsoft/apt:1' update type.
+ * @brief Instantiates a Step Handler for 'microsoft/apt:1' update type.
  * @return ContentHandler* The created instance.
  */
 EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
     ADUC_Logging_Init(logLevel, "apt-handler");
-    Log_Info("Instantiating an Update Content Handler for 'microsoft/apt:1'");
+    Log_Info("Instantiating a Step Handler for 'microsoft/apt:1'");
     try
     {
         return AptHandlerImpl::CreateContentHandler();
@@ -210,7 +207,7 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
                                                     adushconst::update_action_opt,
                                                     adushconst::update_action_initialize };
 
-            aptExitCode = ADUC_LaunchChildProcess(adushconst::adu_shell, args, aptOutput);
+            aptExitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, aptOutput);
 
             if (!aptOutput.empty())
             {
@@ -249,7 +246,7 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
             args.emplace_back(adushconst::target_data_opt);
             args.emplace_back(data.str());
 
-            aptExitCode = ADUC_LaunchChildProcess(adushconst::adu_shell, args, aptOutput);
+            aptExitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, aptOutput);
 
             if (!aptOutput.empty())
             {
@@ -344,7 +341,7 @@ ADUC_Result AptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
         args.emplace_back(adushconst::target_data_opt);
         args.emplace_back(data.str());
 
-        aptExitCode = ADUC_LaunchChildProcess(adushconst::adu_shell, args, aptOutput);
+        aptExitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, aptOutput);
 
         if (!aptOutput.empty())
         {

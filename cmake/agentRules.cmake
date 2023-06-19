@@ -8,20 +8,10 @@ endmacro (compileAsC99)
 
 macro (disableRTTI)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        string (
-            REGEX
-            REPLACE "/GR"
-                    ""
-                    CMAKE_CXX_FLAGS
-                    "${CMAKE_CXX_FLAGS}")
+        string (REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
     else ()
-        string (
-            REGEX
-            REPLACE "-frtti"
-                    ""
-                    CMAKE_CXX_FLAGS
-                    "${CMAKE_CXX_FLAGS}")
+        string (REGEX REPLACE "-frtti" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
     endif ()
 endmacro (disableRTTI)
@@ -40,18 +30,21 @@ endfunction ()
 function (target_link_umock_c target scope)
     find_package (umock_c REQUIRED CONFIG)
 
-    # [START] UMOCK_C VCPKG WORKAROUND
-    get_target_property (umock_c_debug_link_libs umock_c IMPORTED_LINK_INTERFACE_LIBRARIES_DEBUG)
-    list (REMOVE_ITEM umock_c_debug_link_libs azure_macro_utils_c)
-    set_property (TARGET umock_c PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES_DEBUG
-                                          ${umock_c_debug_link_libs})
+    if (WIN32)
+        # [START] UMOCK_C VCPKG WORKAROUND
+        get_target_property (umock_c_debug_link_libs umock_c
+                             IMPORTED_LINK_INTERFACE_LIBRARIES_DEBUG)
+        list (REMOVE_ITEM umock_c_debug_link_libs azure_macro_utils_c)
+        set_property (TARGET umock_c PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES_DEBUG
+                                              ${umock_c_debug_link_libs})
 
-    get_target_property (umock_c_release_link_libs umock_c
-                         IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE)
-    list (REMOVE_ITEM umock_c_release_link_libs azure_macro_utils_c)
-    set_property (TARGET umock_c PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES_DEBUG
-                                          ${umock_c_release_link_libs})
-    # [END] UMOCK_C VCPKG WORKAROUND
+        get_target_property (umock_c_release_link_libs umock_c
+                             IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE)
+        list (REMOVE_ITEM umock_c_release_link_libs azure_macro_utils_c)
+        set_property (TARGET umock_c PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES_DEBUG
+                                              ${umock_c_release_link_libs})
+        # [END] UMOCK_C VCPKG WORKAROUND
+    endif ()
 
     target_link_libraries (${target} ${scope} umock_c)
 endfunction ()
@@ -59,13 +52,8 @@ endfunction ()
 function (target_link_iothub_client target scope)
     find_package (azure_c_shared_utility REQUIRED)
     find_package (IotHubClient REQUIRED)
-    target_link_libraries (
-        ${target}
-        ${scope}
-        IotHubClient::iothub_client
-        aziotsharedutil
-        iothub_client_http_transport
-        uhttp)
+    target_link_libraries (${target} ${scope} IotHubClient::iothub_client aziotsharedutil
+                           iothub_client_http_transport uhttp)
 
 endfunction (target_link_iothub_client)
 
@@ -83,11 +71,11 @@ function (target_link_dosdk target scope)
             set (DO_CLIENT_INSTALL_FOLDER "${VCPKG_INSTALLED_DIR}/do-client")
         else ()
             # Different install folder if cross-compiling - see build.ps1
-            set (DO_CLIENT_INSTALL_FOLDER "${VCPKG_INSTALLED_DIR}/do-client-${CMAKE_GENERATOR_PLATFORM}")
+            set (DO_CLIENT_INSTALL_FOLDER
+                 "${VCPKG_INSTALLED_DIR}/do-client-${CMAKE_GENERATOR_PLATFORM}")
         endif ()
 
-        target_include_directories (${target} ${scope}
-                                    ${DO_CLIENT_INSTALL_FOLDER}/sdk-cpp/include)
+        target_include_directories (${target} ${scope} ${DO_CLIENT_INSTALL_FOLDER}/sdk-cpp/include)
         target_link_directories (${target} PUBLIC
                                  ${DO_CLIENT_INSTALL_FOLDER}/cmake/sdk-cpp/${CMAKE_BUILD_TYPE})
         target_link_libraries (${target} ${scope} deliveryoptimization)

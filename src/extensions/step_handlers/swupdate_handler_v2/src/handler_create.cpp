@@ -1,6 +1,6 @@
 /**
  * @file handler_create.cpp
- * @brief Create update content handler extension.
+ * @brief Create step handler extension.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
@@ -21,13 +21,13 @@ EXTERN_C_BEGIN
 //
 
 /**
- * @brief Instantiates an Update Content Handler for 'microsoft/swupdate:2' update type.
+ * @brief Instantiates a Step Handler for 'microsoft/swupdate:2' update type.
  * @return ContentHandler* The created instance.
  */
 EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
     ADUC_Logging_Init(logLevel, "swupdate-handler-v2");
-    Log_Info("Instantiating an Update Content Handler for 'microsoft/swupdate:2'");
+    Log_Info("Instantiating a Step Handler for 'microsoft/swupdate:2'");
     try
     {
         return SWUpdateHandlerImpl::CreateContentHandler();

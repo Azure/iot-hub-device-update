@@ -216,7 +216,7 @@ setup_dirs_and_files() {
 }
 
 register_reference_extensions() {
-    echo "Register all reference update content handlers..."
+    echo "Register all reference step handlers..."
 
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/apt:1" --register-extension $adu_extensions_sources_dir/$adu_apt_handler_file
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/swupdate:1" --register-extension $adu_extensions_sources_dir/$adu_swupdate_handler_file

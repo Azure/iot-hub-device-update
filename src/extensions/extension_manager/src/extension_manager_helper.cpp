@@ -15,6 +15,10 @@
 #include <aduc/string_c_utils.h>
 #include <aduc/workflow_utils.h>
 
+ExtensionManager_Download_Options Default_ExtensionManager_Download_Options = {
+    CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT /* timeoutInMinutes */
+};
+
 /**
  * @brief Processes Download Handler extensibility for the downloadHandlerId in the file entity.
  *

@@ -63,9 +63,9 @@ Follow this [instruction](#generate-example-updates) to generate the example upd
 From the example import manifest above, you will notice the following:
 - The `instructions.steps` property (array) contains only 1 step.
 - The `type` property indicates that this is an inline step.
-- A `handler` property informs the Device Update agent which Content Handler to be used to process this step.
-- The `files` property contains a single file entity. This file is called an APT manifest. The current implementation of APT Content Handler requires one APT manifest. (See [apt-manifest-1.0.json](./sample-updates/data-files/APT/apt-manifest-1.0.json))
-- An `handlerProperties.installedCriteria` is a string used by APT Content Handler to determine whether this 'step' has been installed (or processed) on the target device.
+- A `handler` property informs the Device Update agent which Step Handler to be used to process this step.
+- The `files` property contains a single file entity. This file is called an APT manifest. The current implementation of APT Step Handler requires one APT manifest. (See [apt-manifest-1.0.json](./sample-updates/data-files/APT/apt-manifest-1.0.json))
+- An `handlerProperties.installedCriteria` is a string used by APT Step Handler to determine whether this 'step' has been installed (or processed) on the target device.
 
 ---
 ## Tutorial 2 - Multi Step Update
@@ -153,7 +153,7 @@ A **Bundle Update** is an update that contains at least one reference step.
 
 A **Multi Component Update** is a Bundle Update intended for a device with a registered `Component Enumerator Extension`.
 
-> If the target device doesn't have a registered component enumerator, the Device Update Agent will assume that every step is intended to be installed onto the host device and will not pass any 'Component Context' to a Content Handler when processing steps.
+> If the target device doesn't have a registered component enumerator, the Device Update Agent will assume that every step is intended to be installed onto the host device and will not pass any 'Component Context' to the Step Handler when processing steps.
 >
 > See [Steps Handler](../../../../../extensions/update_manifest_handlers/steps_handler/) for more information.
 

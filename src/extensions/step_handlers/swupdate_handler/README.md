@@ -1,6 +1,6 @@
 # SWUpdate Update Handler
 
-SWUpdate handler is a reference implementation of an Update Content Handler that enables a device to support an Image-based Update (A/B)
+SWUpdate handler is a reference implementation of a Step Handler that enables a device to support an Image-based Update (A/B)
 
 > Note | This handler is provided for demonstration purposes only.
 

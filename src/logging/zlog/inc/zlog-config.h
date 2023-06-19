@@ -15,8 +15,16 @@
 // enabling this will slow down the log
 // #define ZLOG_FORCE_FLUSH_BUFFER
 
-#define ZLOG_BUFFER_LINE_MAXCHARS 512
-#define ZLOG_BUFFER_MAXLINES 1024
+// Determined maxchars and maxlines for zlog buffer based on analysis of log files
+// in the log directory after a 1 GB update payload was downloaded and installed.
+// The average line length was around 200 chars with a standard deviation of 100,
+// so a value of 328 (41 * 8) was chosen to ensure adequate buffer size and avoid
+// unnecessary flushing and direct FD writes. The majority of logs had between
+// a dozen and 64 lines, with du-agent.* logs having 100-300 lines. A value of
+// 128 was chosen to balance a smaller working set (41 KB) with log responsiveness
+// when tailing logs and allowing for diagnostics upload.
+#define ZLOG_BUFFER_LINE_MAXCHARS 328
+#define ZLOG_BUFFER_MAXLINES 128
 
 #define ZLOG_FLUSH_INTERVAL_SEC 30
 #define ZLOG_SLEEP_TIME_SEC 2

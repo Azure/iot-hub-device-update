@@ -14,8 +14,8 @@
 EXTERN_C_BEGIN
 
 /**
- * @brief Instantiates an Update Content Handler simulator.
- * @return A pointer to an instantiated Update Content Handler object.
+ * @brief Instantiates a Step Handler simulator.
+ * @return A pointer to an instantiated Step Handler object.
  */
 EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
 

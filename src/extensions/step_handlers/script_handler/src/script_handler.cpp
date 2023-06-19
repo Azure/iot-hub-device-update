@@ -37,13 +37,13 @@ extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Optio
 //
 
 /**
- * @brief Instantiates an Update Content Handler for 'microsoft/script:1' update type.
+ * @brief Instantiates an Step Handler for 'microsoft/script:1' update type.
  * @return ContentHandler* The created instance.
  */
 EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
     ADUC_Logging_Init(logLevel, "script-handler");
-    Log_Info("Instantiating an Update Content Handler for 'microsoft/script:1' update type.");
+    Log_Info("Instantiating an Step Handler for 'microsoft/script:1' update type.");
     try
     {
         return ScriptHandlerImpl::CreateContentHandler();
@@ -571,7 +571,7 @@ static ADUC_Result ScriptHandler_PerformAction(const std::string& action, const 
         Log_Debug("##########\n# ADU-SHELL ARGS:\n##########\n %s", ss.str().c_str());
     }
 
-    exitCode = ADUC_LaunchChildProcess(adushconst::adu_shell, aduShellArgs, scriptOutput);
+    exitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, aduShellArgs, scriptOutput);
 
     if (!scriptOutput.empty())
     {

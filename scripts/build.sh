@@ -30,7 +30,7 @@ build_documentation=false
 build_packages=false
 platform_layer="linux"
 trace_target_deps=false
-content_handlers="microsoft/swupdate,microsoft/apt,microsoft/simulator"
+step_handlers="microsoft/apt,microsoft/script,microsoft/simulator,microsoft/swupdate,microsoft/swupdate_v2"
 build_type=Debug
 adu_log_dir=""
 default_log_dir=/var/log/adu
@@ -73,7 +73,17 @@ print_help() {
     echo "                                          From source: deviceupdate-agent.service & adu-swupdate.sh."
     echo "                                          From build output directory: AducIotAgent & adu-shell."
     echo ""
+    echo "--content-handlers <handlers>         [Deprecated] use '--step-handlers' option instead."
+    echo "--step-handlers <handlers>            Specify a comma-delimited list of the step handlers to build."
+    echo "                                          Default is \"${step_handlers}\"."
+    echo ""
     echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
+    echo ""
+    echo "--major-version                       Major version of ADU"
+    echo ""
+    echo "--minor-version                       Minor version of ADU"
+    echo ""
+    echo "--patch-version                       Patch version of ADU"
     echo ""
     echo "-h, --help                            Show this help message."
 }
@@ -183,6 +193,22 @@ while [[ $1 != "" ]]; do
     -c | --clean)
         build_clean=true
         ;;
+    --step-handlers)
+        shift
+        if [[ -z $1 || $1 == -* ]]; then
+            error "--step-handlers parameter is mandatory."
+            $ret 1
+        fi
+        step_handlers=$1
+        ;;
+    --content-handlers)
+        shift
+        if [[ -z $1 || $1 == -* ]]; then
+            error "--content-handlers parameter is mandatory."
+            $ret 1
+        fi
+        step_handlers=$1
+        ;;
     -t | --type)
         shift
         if [[ -z $1 || $1 == -* ]]; then
@@ -273,6 +299,18 @@ while [[ $1 != "" ]]; do
         fi
         cmake_dir_path=$1
         ;;
+    --major-version)
+        shift
+        major_version=$1
+        ;;
+    --minor-version)
+        shift
+        minor_version=$1
+        ;;
+    --patch-version)
+        shift
+        patch_version=$1
+        ;;
     -h | --help)
         print_help
         $ret 0
@@ -314,7 +352,7 @@ bullet "Clean build: $build_clean"
 bullet "Documentation: $build_documentation"
 bullet "Platform layer: $platform_layer"
 bullet "Trace target deps: $trace_target_deps"
-bullet "Content handlers: $content_handlers"
+bullet "Step handlers: $step_handlers"
 bullet "Build type: $build_type"
 bullet "Log directory: $adu_log_dir"
 bullet "Logging library: $log_lib"
@@ -337,7 +375,7 @@ CMAKE_OPTIONS=(
     "-DADUC_BUILD_DOCUMENTATION:BOOL=$build_documentation"
     "-DADUC_BUILD_UNIT_TESTS:BOOL=$build_unittests"
     "-DADUC_BUILD_PACKAGES:BOOL=$build_packages"
-    "-DADUC_CONTENT_HANDLERS:STRING=$content_handlers"
+    "-DADUC_STEP_HANDLERS:STRING=$step_handlers"
     "-DADUC_LOG_FOLDER:STRING=$adu_log_dir"
     "-DADUC_LOGGING_LIBRARY:STRING=$log_lib"
     "-DADUC_PLATFORM_LAYER:STRING=$platform_layer"
@@ -348,6 +386,16 @@ CMAKE_OPTIONS=(
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
     "-DCMAKE_INSTALL_PREFIX=$install_prefix"
 )
+
+if [[ $major_version != "" ]]; then
+    CMAKE_OPTIONS+=("-DADUC_VERSION_MAJOR=$major_version")
+fi
+if [[ $minor_version != "" ]]; then
+    CMAKE_OPTIONS+=("-DADUC_VERSION_MINOR=$minor_version")
+fi
+if [[ $patch_version != "" ]]; then
+    CMAKE_OPTIONS+=("-DADUC_VERSION_PATCH=$patch_version")
+fi
 
 for i in "${static_analysis_tools[@]}"; do
     case $i in

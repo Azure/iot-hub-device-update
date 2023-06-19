@@ -25,13 +25,13 @@ EXTERN_C_BEGIN
 //
 
 /**
- * @brief Instantiates an Simulator Update Content Handler
+ * @brief Instantiates an Simulator Step Handler
  * @return ContentHandler* The created instance.
  */
 EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
     ADUC_Logging_Init(logLevel, "simulator-handler");
-    Log_Info("Instantiating a Simulator Update Content Handler");
+    Log_Info("Instantiating a Simulator Step Handler");
     try
     {
         return SimulatorHandlerImpl::CreateContentHandler();

@@ -266,7 +266,7 @@ while [[ $1 != "" ]]; do
     #
     # Component-related arguments.
     #
-    # Following arguments and parameters will be populated by the Script Update Content Handler.
+    # Following arguments and parameters will be populated by the Script Step Handler.
     #
     --component-id)
         shift
