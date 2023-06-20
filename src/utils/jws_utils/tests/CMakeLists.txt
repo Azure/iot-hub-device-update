@@ -19,7 +19,10 @@ target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::jws_utils
             aduc::crypto_utils
+            aduc::root_key_utils
+            aduc::rootkeypackage_utils
             aduc::string_utils
+            aduc::system_utils
             Catch2::Catch2
             OpenSSL::Crypto
             aziotsharedutil)

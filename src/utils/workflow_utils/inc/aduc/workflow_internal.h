@@ -13,6 +13,7 @@
 #include <aduc/types/update_content.h>
 #include <aduc/types/workflow.h>
 #include <azure_c_shared_utility/strings.h>
+#include <azure_c_shared_utility/vector.h>
 #include <parson.h>
 
 /**
@@ -36,7 +37,7 @@ typedef struct tagADUC_Workflow
     ADUCITF_State State; /**< The current state machine state of the workflow. */
     ADUCITF_WorkflowStep CurrentWorkflowStep; /**< The current state machine workflow step. */
     ADUC_Result Result; /**< The result of the workflow. */
-    ADUC_Result_t ResultSuccessErc; /**< The ERC to set on workflow success. */
+    VECTOR_HANDLE ResultExtraExtendedResultCodes; /**< The extra ERCs. */
     STRING_HANDLE ResultDetails; /**< The result details of the workflow. */
     STRING_HANDLE InstalledUpdateId; /**< The installed updateId to report on workflow success. */
 

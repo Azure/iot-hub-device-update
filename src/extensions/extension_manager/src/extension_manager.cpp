@@ -927,8 +927,7 @@ ADUC_Result ExtensionManager::Download(
             {
                 Log_Warn("Load Download Handler %s failed", entity->DownloadHandlerId);
 
-                workflow_set_success_erc(
-                    workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_CREATE_FAILURE_CREATE);
+                workflow_add_erc(workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_CREATE_FAILURE_CREATE);
             }
             else
             {
@@ -965,7 +964,7 @@ ADUC_Result ExtensionManager::Download(
                             result.ResultCode,
                             result.ExtendedResultCode);
 
-                        workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
+                        workflow_add_erc(workflowHandle, result.ExtendedResultCode);
                     }
                 }
                 else
@@ -1008,7 +1007,7 @@ ADUC_Result ExtensionManager::Download(
             result = { .ResultCode = ADUC_Result_Failure,
                        .ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_HASH };
 
-            workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
+            workflow_add_erc(workflowHandle, result.ExtendedResultCode);
 
             goto done;
         }

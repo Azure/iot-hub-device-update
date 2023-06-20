@@ -7,6 +7,7 @@
  */
 #include "aduc/parser_utils.h"
 #include "aduc/result.h"
+#include "aduc/string_handle_wrapper.hpp"
 #include "aduc/workflow_utils.h"
 
 #include <catch2/catch.hpp>
@@ -633,28 +634,53 @@ TEST_CASE("workflow_isequal_id")
     workflow_free(handle0);
 }
 
-TEST_CASE("result success erc")
+TEST_CASE("result additonal erc")
 {
-    SECTION("Not set is zero")
+    SECTION("None")
     {
         ADUC_WorkflowHandle h = nullptr;
 
         ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, false /* validateManifest */, &h);
         REQUIRE(result.ResultCode == ADUC_Result_Success);
 
-        ADUC_Result_t erc = workflow_get_success_erc(h);
-        CHECK(erc == 0);
+        STRING_HANDLE extra_erc_handle = workflow_get_extra_ercs(h);
+        CHECK(extra_erc_handle != nullptr);
+
+        ADUC::StringUtils::STRING_HANDLE_wrapper extra_erc{ extra_erc_handle };
+        CHECK_THAT(STRING_c_str(extra_erc.get()), Equals(""));
     }
-    SECTION("set and get")
+
+    SECTION("add and get")
     {
         ADUC_WorkflowHandle h = nullptr;
 
         ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, false /* validateManifest */, &h);
         REQUIRE(result.ResultCode == ADUC_Result_Success);
 
-        workflow_set_success_erc(h, ADUC_ERC_NOMEM);
-        ADUC_Result_t erc = workflow_get_success_erc(h);
-        CHECK(erc == ADUC_ERC_NOMEM);
+        workflow_add_erc(h, ADUC_ERC_NOMEM);
+
+        STRING_HANDLE extra_erc_handle = workflow_get_extra_ercs(h);
+        REQUIRE(extra_erc_handle != nullptr);
+
+        ADUC::StringUtils::STRING_HANDLE_wrapper extra_erc{ extra_erc_handle };
+        CHECK_THAT(STRING_c_str(extra_erc_handle), Equals(",0000000C"));
+    }
+
+    SECTION("add 2 and get")
+    {
+        ADUC_WorkflowHandle h = nullptr;
+
+        ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, false /* validateManifest */, &h);
+        REQUIRE(result.ResultCode == ADUC_Result_Success);
+
+        workflow_add_erc(h, ADUC_ERC_NOMEM);
+        workflow_add_erc(h, ADUC_ERC_UTILITIES_ROOTKEYPKG_DOWNLOAD_URL_BAD_PATH);
+
+        STRING_HANDLE extra_erc_handle = workflow_get_extra_ercs(h);
+        REQUIRE(extra_erc_handle != nullptr);
+
+        ADUC::StringUtils::STRING_HANDLE_wrapper extra_erc{ extra_erc_handle };
+        CHECK_THAT(STRING_c_str(extra_erc_handle), Equals(",0000000C,8050001F"));
     }
 }
 

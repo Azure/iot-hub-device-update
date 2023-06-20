@@ -34,7 +34,8 @@ ADUC_Result DownloadRootKeyPkg_DO(const char* url, const char* targetFilePath)
             ret.value(),
             ret == std::errc::timed_out);
 
-        result.ExtendedResultCode = MAKE_ADUC_DELIVERY_OPTIMIZATION_EXTENDEDRESULTCODE(ret.value());
+        result.ExtendedResultCode = MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_INFRA_MGMT(
+            ADUC_COMPONENT_ROOTKEY_DOWNLOADER, ret.value());
     }
 
     Log_Info("Download erc: 0x%08x", result.ExtendedResultCode);

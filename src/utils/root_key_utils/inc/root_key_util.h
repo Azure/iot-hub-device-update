@@ -10,6 +10,7 @@
 #include "aduc/result.h"
 #include "aduc/rootkeypackage_types.h"
 #include "crypto_key.h"
+#include <stdbool.h>
 
 #ifndef ROOT_KEY_UTIL_H
 #    define ROOT_KEY_UTIL_H
@@ -23,9 +24,16 @@ ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
 
 ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPackage, const char* fileLocation);
 
-ADUC_Result RootKeyUtility_ReloadPackageFromDisk();
+ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath);
 
 ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid);
+
+ADUC_Result RootKeyUtility_LoadSerializedPackage(const char* fileLocation, char** outSerializePackage);
+void RootKeyUtility_SetReportingErc(ADUC_Result_t erc);
+void RootKeyUtility_ClearReportingErc();
+ADUC_Result_t RootKeyUtility_GetReportingErc();
+bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE fileDest, const char* rootKeyPackageJsonString);
+ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSigningKeyList);
 
 EXTERN_C_END
 #endif // ROOT_KEY_UTIL_H
