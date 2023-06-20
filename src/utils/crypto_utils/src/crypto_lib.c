@@ -474,7 +474,6 @@ CONSTBUFFER_HANDLE CryptoUtils_CreateSha256Hash(const CONSTBUFFER_HANDLE buf)
 
     CONSTBUFFER_HANDLE out_handle = NULL;
 
-    unsigned char* output_digest = NULL;
     const EVP_MD* msg_digest = NULL;
     EVP_MD_CTX* mdctx;
 
@@ -509,18 +508,10 @@ CONSTBUFFER_HANDLE CryptoUtils_CreateSha256Hash(const CONSTBUFFER_HANDLE buf)
         goto done;
     }
 
-    output_digest = (unsigned char*)malloc(Sha256DigestNumBytes);
-    if (output_digest != NULL)
-    {
-        memcpy(output_digest, &hashBuf[0], Sha256DigestNumBytes);
-
-        out_handle = CONSTBUFFER_Create(output_digest, Sha256DigestNumBytes);
-        output_digest = NULL;
-    }
+    out_handle = CONSTBUFFER_Create(hashBuf, sizeof(hashBuf));
 
 done:
     EVP_MD_CTX_free(mdctx);
-    free(output_digest);
 
     return out_handle;
 }
