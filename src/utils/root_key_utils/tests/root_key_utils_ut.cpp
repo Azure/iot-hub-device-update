@@ -1,6 +1,6 @@
 /**
- * @file crypto_utils_ut.cpp
- * @brief Unit Tests for c_utils library
+ * @file root_key_utils_ut.cpp
+ * @brief Unit Tests for root_key_utils library
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.

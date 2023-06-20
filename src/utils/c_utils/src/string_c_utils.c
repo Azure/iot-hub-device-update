@@ -473,3 +473,35 @@ bool MallocAndSubstr(char** target, char* source, size_t len)
     *target = t;
     return true;
 }
+
+/**
+ * @brief Produces a new string where each character is replaced with output of @p mapFn call.
+ *
+ * @param src The source string (will not be mutated).
+ * @param mapFn The mapping function.
+ * @return char* The new string with characters mapped. Caller owns and must call free(). NULL is returned on failures.
+ * @details returns NULL if string is null or empty. e.g. char* mapped = ADUC_StringUtils_Map(str, tolower);
+ */
+char* ADUC_StringUtils_Map(const char* src, int (*mapFn)(int))
+{
+    char* tgt = NULL;
+    size_t len = strlen(src);
+
+    if (src == NULL || len == 0)
+    {
+        return NULL;
+    }
+
+    tgt = (char*)calloc(1, len + 1);
+    if (tgt == NULL)
+    {
+        return NULL;
+    }
+
+    for (int i = 0; i <= len; ++i)
+    {
+        tgt[i] = mapFn(src[i]);
+    }
+
+    return tgt;
+}

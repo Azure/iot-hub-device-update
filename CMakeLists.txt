@@ -217,14 +217,12 @@ endif ()
 set (
     ADUC_ROOTKEY_STORE_PATH
     "${ADUC_DATA_FOLDER}/rootkeystore/"
-    CACHE STRING "Path to the folder containing the information for the local store of root keys"
-)
+    CACHE STRING "Path to the folder containing the information for the local store of root keys")
 
-SET (
+set (
     ADUC_ROOTKEY_STORE_PACKAGE_PATH
     "${ADUC_ROOTKEY_STORE_PATH}/rootkeys.json"
-    CACHE STRING "Path to the folder containing the local root keys"
-)
+    CACHE STRING "Path to the folder containing the local root keys")
 
 set (
     ADUC_COMMANDS_FIFO_NAME
@@ -479,6 +477,7 @@ option (ADUC_BUILD_PACKAGES "Build the ADU Agent packages" OFF)
 option (ADUC_INSTALL_DAEMON "Install the ADU Agent as a daemon" ON)
 option (ADUC_REGISTER_DAEMON "Register the ADU Agent daemon with the system" ON)
 option (ADUC_TRACE_TARGET_DEPS "Trace target dependencies" OFF)
+option (ADUC_INCLUDE_TEST_ROOT_KEYS "Include test root keys" OFF)
 
 ### End CMake Options
 

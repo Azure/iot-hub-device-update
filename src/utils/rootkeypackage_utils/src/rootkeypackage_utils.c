@@ -14,6 +14,7 @@
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
 #include <base64_utils.h>
+#include <ctype.h> // tolower
 #include <parson.h>
 
 EXTERN_C_BEGIN
@@ -92,42 +93,6 @@ done:
 }
 
 /**
- * @brief Helper function for comparing two constbuffers
- *
- * @param lConstBuff left constbuffer to compare
- * @param rConstBuff right constbuffer to compare
- * @return True if equal; false if not
- */
-_Bool CompareConstBuffers(CONSTBUFFER_HANDLE lConstBuff, CONSTBUFFER_HANDLE rConstBuff)
-{
-    const CONSTBUFFER* lBuff = CONSTBUFFER_GetContent(lConstBuff);
-    const CONSTBUFFER* rBuff = CONSTBUFFER_GetContent(rConstBuff);
-
-    if (lBuff == rBuff)
-    {
-        return true;
-    }
-    else if (lBuff == NULL || rBuff == NULL)
-    {
-        return false;
-    }
-
-    if (lBuff->size != rBuff->size)
-    {
-        return false;
-    }
-
-    for (size_t j = 0; j < lBuff->size; ++j)
-    {
-        if (lBuff->buffer[j] != rBuff->buffer[j])
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-/**
  * @brief Helper function for comparing two ADUC_RootKeys
  *
  * @param lKey left root key to compare
@@ -160,7 +125,7 @@ _Bool ADUC_RootKeyPackageUtils_RootKeysAreEqual(const ADUC_RootKey* lKey, const 
         return false;
     }
 
-    return CompareConstBuffers(lKey->rsaParameters.n, rKey->rsaParameters.n);
+    return CONSTBUFFER_HANDLE_contain_same(lKey->rsaParameters.n, rKey->rsaParameters.n);
 }
 
 /**
@@ -187,7 +152,7 @@ _Bool ADUC_RootKeyPackageUtils_RootKeyPackage_Hash_AreEqual(
         return false;
     }
 
-    return CompareConstBuffers(lHash->hash, rHash->hash);
+    return CONSTBUFFER_HANDLE_contain_same(lHash->hash, rHash->hash);
 }
 
 /**
@@ -301,7 +266,7 @@ _Bool ADUC_RootKeyPackageUtils_RootKeyPackage_Signatures_AreEqual(
     {
         return false;
     }
-    return CompareConstBuffers(lSigs->signature, rSigs->signature);
+    return CONSTBUFFER_HANDLE_contain_same(lSigs->signature, rSigs->signature);
 }
 
 /**
@@ -703,6 +668,12 @@ void ADUC_RootKeyPackageUtils_Destroy(ADUC_RootKeyPackage* rootKeyPackage)
     ADUC_RootKeyPackageUtils_RootKeys_Destroy(rootKeyPackage);
 
     ADUC_RootKeyPackageUtils_Signatures_Destroy(rootKeyPackage);
+
+    if (rootKeyPackage->protectedPropertiesJsonString != NULL)
+    {
+        STRING_delete(rootKeyPackage->protectedPropertiesJsonString);
+        rootKeyPackage->protectedPropertiesJsonString = NULL;
+    }
 
     memset(rootKeyPackage, 0, sizeof(*rootKeyPackage));
 }

@@ -31,6 +31,7 @@
 #include "aduc/types/workflow.h"
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
+#include "root_key_util.h" // RootKeyUtility_GetReportingErc
 
 #include <pthread.h>
 
@@ -398,10 +399,6 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowD
     }
 
     // There's a pending ProcessDeployment action in the twin.
-    // We need to make sure we don't report an 'idle' state, if we can resume or retry the action.
-    // In this case, we will set last reportedState to 'idle', so that we can continue.
-    ADUC_WorkflowData_SetLastReportedState(ADUCITF_State_Idle, currentWorkflowData);
-
     ADUC_Workflow_HandleUpdateAction(currentWorkflowData);
 
 done:
@@ -425,6 +422,12 @@ void ADUC_Workflow_HandlePropertyUpdate(
     ADUC_Result result = workflow_init((const char*)propertyUpdateValue, true /* shouldValidate */, &nextWorkflow);
 
     workflow_set_force_update(nextWorkflow, forceUpdate);
+
+    ADUC_Result_t rootkeyErc = RootKeyUtility_GetReportingErc();
+    if (rootkeyErc != 0)
+    {
+        workflow_add_erc(nextWorkflow, rootkeyErc);
+    }
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -1202,7 +1205,7 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
                     result.ResultCode,
                     result.ExtendedResultCode);
 
-                workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
+                workflow_add_erc(workflowHandle, result.ExtendedResultCode);
             }
         }
     }

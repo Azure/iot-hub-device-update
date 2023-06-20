@@ -12,19 +12,27 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 find_package (azure_c_shared_utility REQUIRED)
 find_package (Parson)
 
-
 #
 # Turn -fPIC on, in order to use this library in another shared library.
 #
 set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-target_compile_definitions (${target_name}
-                            PRIVATE ADUC_ROOTKEY_STORE_PACKAGE_PATH="${ADUC_ROOTKEY_STORE_PACKAGE_PATH}"
-                                    ADUC_ROOTKEY_STORE_PATH="${ADUC_ROOTKEY_STORE_PATH}"
-                                    ADUC_DOWNLOADS_FOLDER="${ADUC_DOWNLOADS_FOLDER}"
-                                    ADUC_ROOTKEY_PKG_URL_OVERRIDE="${ADUC_ROOTKEY_PKG_URL_OVERRIDE}")
+target_compile_definitions (
+    ${target_name}
+    PRIVATE ADUC_ROOTKEY_STORE_PACKAGE_PATH="${ADUC_ROOTKEY_STORE_PACKAGE_PATH}"
+            ADUC_ROOTKEY_STORE_PATH="${ADUC_ROOTKEY_STORE_PATH}"
+            ADUC_DOWNLOADS_FOLDER="${ADUC_DOWNLOADS_FOLDER}"
+            ADUC_ROOTKEY_PKG_URL_OVERRIDE="${ADUC_ROOTKEY_PKG_URL_OVERRIDE}")
 
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils
-    PRIVATE aduc::rootkeypackage_utils aduc::root_key_utils aziotsharedutil aduc::system_utils)
+    PRIVATE aduc::rootkeypackage_utils
+            aduc::root_key_utils
+            aduc::logging
+            aduc::system_utils
+            aziotsharedutil)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

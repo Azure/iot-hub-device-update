@@ -271,6 +271,7 @@ typedef enum tagADUC_ResultCode
     ADUC_Result_Restore_RequiredReboot = 1106,                  /**< Succeeded. A deferred device reboot is required, to complete the task. */
     ADUC_Result_Restore_RequiredImmediateAgentRestart = 1107,   /**< Succeeded. An immediate agent restart is required, to complete the task. */
     ADUC_Result_Restore_RequiredAgentRestart = 1108,            /**< Succeeded. A deferred agent restart is required, to complete the task. */
+    ADUC_Result_RootKey_Continue = 1200, /**< Succeeded. Rootkey package is current so continue with update processing. */
 } ADUC_ResultCode;
 
 #define AducResultCodeIndicatesInProgress(resultCode)                                                  \

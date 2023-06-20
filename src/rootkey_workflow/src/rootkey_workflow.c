@@ -8,22 +8,19 @@
 
 #include "aduc/rootkey_workflow.h"
 
+#include <aduc/logging.h>
 #include <aduc/rootkeypackage_do_download.h>
 #include <aduc/rootkeypackage_download.h>
 #include <aduc/rootkeypackage_parse.h>
 #include <aduc/rootkeypackage_utils.h>
 #include <aduc/system_utils.h>
+#include <aduc/types/adu_core.h> // ADUC_Result_RootKey_Continue
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <azure_c_shared_utility/strings.h>
 #include <parson.h>
 #include <root_key_util.h>
 
 #include <stdlib.h>
-#include <time.h>
-
-static time_t lastUpdateTime = 0;
-
-#define ROOTKEY_UPDATE_PERIOD 24 /* hours in a day*/ * 60 /* minutes in an hour*/ * 60 /* seconds in an minute*/
 
 /**
  * @brief The info for each rootkey package downloader.
@@ -35,19 +32,17 @@ static ADUC_RootKeyPkgDownloaderInfo s_default_rootkey_downloader = {
     .downloadBaseDir = ADUC_DOWNLOADS_FOLDER,
 };
 
-bool RootKeyWorkflow_NeedToUpdateRootKeys(void)
-{
-    if (difftime(lastUpdateTime, time(0)) >= ROOTKEY_UPDATE_PERIOD)
-    {
-        return true;
-    }
-
-    return false;
-}
-
+/**
+ * @brief Downloads the root key package and updates local store with it if different from current.
+ * @param[in] workflowId The workflow Id for use in loca dir path of the rootkey package download.
+ * @param[in] rootKeyPkgUrl The URL of the rootkey package from the deployment metadata.
+ * @returns ADUC_Result the result.
+ * @details If local storage is not being used then the contents of outLocalStoreChanged will always be true.
+ */
 ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* rootKeyPkgUrl)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
     STRING_HANDLE downloadedFilePath = NULL;
     STRING_HANDLE fileDest = NULL;
@@ -59,14 +54,18 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
 
     if (workflowId == NULL)
     {
+        result.ExtendedResultCode = ADUC_ERC_INVALIDARG;
         goto done;
     }
 
-    result = ADUC_RootKeyPackageUtils_DownloadPackage(
+    RootKeyUtility_ClearReportingErc();
+
+    tmpResult = ADUC_RootKeyPackageUtils_DownloadPackage(
         rootKeyPkgUrl, workflowId, &s_default_rootkey_downloader, &downloadedFilePath);
 
-    if (IsAducResultCodeFailure(result.ResultCode))
+    if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
+        result = tmpResult;
         goto done;
     }
 
@@ -74,7 +73,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
 
     if (rootKeyPackageJsonValue == NULL)
     {
-        // TODO: Error Code
+        result.ExtendedResultCode = ADUC_ERC_ROOTKEY_PKG_FAIL_JSON_PARSE;
         goto done;
     }
 
@@ -82,21 +81,23 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
 
     if (rootKeyPackageJsonString == NULL)
     {
-        // TODO: Error Code
+        result.ExtendedResultCode = ADUC_ERC_ROOTKEY_PKG_FAIL_JSON_SERIALIZE;
         goto done;
     }
 
-    result = ADUC_RootKeyPackageUtils_Parse(rootKeyPackageJsonString, &rootKeyPackage);
+    tmpResult = ADUC_RootKeyPackageUtils_Parse(rootKeyPackageJsonString, &rootKeyPackage);
 
-    if (IsAducResultCodeFailure(result.ResultCode))
+    if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
+        result = tmpResult;
         goto done;
     }
 
-    result = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&rootKeyPackage);
+    tmpResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&rootKeyPackage);
 
-    if (IsAducResultCodeFailure(result.ResultCode))
+    if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
+        result = tmpResult;
         goto done;
     }
 
@@ -104,6 +105,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
     {
         if (ADUC_SystemUtils_MkDirRecursiveDefault(ADUC_ROOTKEY_STORE_PATH) != 0)
         {
+            result.ExtendedResultCode = ADUC_ERC_ROOTKEY_STORE_PATH_CREATE;
             goto done;
         }
     }
@@ -112,28 +114,54 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
 
     if (fileDest == NULL)
     {
-        //TODO: Error Code
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
 
-    result = RootKeyUtility_WriteRootKeyPackageToFileAtomically(&rootKeyPackage, fileDest);
-
-    if (IsAducResultCodeFailure(result.ResultCode))
+    if (!ADUC_RootKeyUtility_IsUpdateStoreNeeded(fileDest, rootKeyPackageJsonString))
     {
+        // This is a success, but skips writing to local store and includes informational ERC.
+        result.ResultCode = ADUC_Result_RootKey_Continue;
+        result.ExtendedResultCode = ADUC_ERC_ROOTKEY_PKG_UNCHANGED;
         goto done;
     }
 
-    result = RootKeyUtility_ReloadPackageFromDisk();
+    tmpResult = RootKeyUtility_WriteRootKeyPackageToFileAtomically(&rootKeyPackage, fileDest);
 
-    if (IsAducResultCodeFailure(result.ResultCode))
+    if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
+        result = tmpResult;
         goto done;
     }
 
-    lastUpdateTime = time(0);
+    tmpResult = RootKeyUtility_ReloadPackageFromDisk(STRING_c_str(fileDest));
+
+    if (IsAducResultCodeFailure(tmpResult.ResultCode))
+    {
+        result = tmpResult;
+        goto done;
+    }
 
     result.ResultCode = ADUC_GeneralResult_Success;
 done:
+
+    if (IsAducResultCodeFailure(result.ResultCode) || result.ResultCode == ADUC_Result_RootKey_Continue)
+    {
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            Log_Error("Fail update root keys, ERC 0x%08x", result.ExtendedResultCode);
+        }
+        else
+        {
+            Log_Debug("No root key change.");
+        }
+
+        RootKeyUtility_SetReportingErc(result.ExtendedResultCode);
+    }
+    else
+    {
+        Log_Info("Update RootKey, ResultCode %d, ERC 0x%08x", result.ResultCode, result.ExtendedResultCode);
+    }
 
     STRING_delete(downloadedFilePath);
     STRING_delete(fileDest);

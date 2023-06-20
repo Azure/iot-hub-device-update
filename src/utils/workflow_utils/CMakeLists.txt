@@ -29,15 +29,16 @@ target_link_aziotsharedutil (${target_name} PRIVATE)
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::adu_types
+    PUBLIC aduc::adu_types aziotsharedutil
     PRIVATE aduc::c_utils
             aduc::config_utils
             aduc::extension_manager
             aduc::hash_utils
             aduc::logging
             aduc::parser_utils
+            aduc::reporting_utils
+            aduc::root_key_utils
             aduc::system_utils
-            aduc::workflow_utils
             aduc::jws_utils
             Parson::parson)
 

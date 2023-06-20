@@ -8,6 +8,12 @@ if (ADUC_TRACE_TARGET_DEPS)
     set_property (GLOBAL PROPERTY GLOBAL_DEPENDS_DEBUG_MODE 1)
 endif ()
 
+if (ADUC_INCLUDE_TEST_ROOT_KEYS)
+    set (EMBED_TEST_ROOT_KEYS 1)
+else ()
+    set (EMBED_TEST_ROOT_KEYS 0)
+endif ()
+
 if (ADUC_WARNINGS_AS_ERRORS)
     if (MSVC)
         # Warnings as errors.

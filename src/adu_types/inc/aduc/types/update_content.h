@@ -65,9 +65,9 @@ EXTERN_C_BEGIN
 #define ADUCITF_FIELDNAME_RESULTCODE "resultCode"
 
 /**
- * @brief JSON field name for ExtendedResultCode property.
+ * @brief JSON field name for ExtendedResultCodes property.
  */
-#define ADUCITF_FIELDNAME_EXTENDEDRESULTCODE "extendedResultCode"
+#define ADUCITF_FIELDNAME_EXTENDEDRESULTCODES "extendedResultCodes"
 
 /**
  * @brief JSON field name for ResultDetails property.

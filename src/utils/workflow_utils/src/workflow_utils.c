@@ -9,21 +9,23 @@
 #include "aduc/adu_types.h"
 #include "aduc/aduc_inode.h" // ADUC_INODE_SENTINEL_VALUE
 #include "aduc/config_utils.h"
+#include "aduc/c_utils.h"
 #include "aduc/extension_manager.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h"
+#include "aduc/reporting_utils.h"
 #include "aduc/result.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
 #include "aduc/types/update_content.h"
 #include "aduc/types/workflow.h"
 #include "aduc/workflow_internal.h"
+#include "azure_c_shared_utility/crt_abstractions.h" // for mallocAndStrcpy_s
+#include "azure_c_shared_utility/strings.h" // for STRING_*
 #include "jws_utils.h"
-#include <aduc/c_utils.h>
+#include "root_key_util.h"
 
-#include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
-#include <azure_c_shared_utility/strings.h> // for STRING_*
 #include <parson.h>
 #include <stdarg.h> // for va_*
 #include <stdlib.h> // for malloc, atoi
@@ -58,6 +60,7 @@
 #define STEP_PROPERTY_FIELD_HANDLER_PROPERTIES "handlerProperties"
 
 #define WORKFLOW_CHILDREN_BLOCK_SIZE 10
+#define WORKFLOW_MAX_SUCCESS_ERC 8
 
 /**
  * @brief Maximum length for the 'resultDetails' string.
@@ -874,6 +877,8 @@ done:
 static ADUC_Result workflow_validate_update_manifest_signature(JSON_Object* updateActionObject)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    const char* manifestSignature = NULL;
+    JWSResult jwsResult = JWSResult_Failed;
 
     if (updateActionObject == NULL)
     {
@@ -881,8 +886,7 @@ static ADUC_Result workflow_validate_update_manifest_signature(JSON_Object* upda
         return result;
     }
 
-    const char* manifestSignature =
-        json_object_get_string(updateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFESTSIGNATURE);
+    manifestSignature = json_object_get_string(updateActionObject, ADUCITF_FIELDNAME_UPDATEMANIFESTSIGNATURE);
     if (manifestSignature == NULL)
     {
         Log_Error("Invalid manifest. Does not contain a signature");
@@ -890,11 +894,20 @@ static ADUC_Result workflow_validate_update_manifest_signature(JSON_Object* upda
         goto done;
     }
 
-    JWSResult jwsResult = VerifyJWSWithSJWK(manifestSignature);
+    jwsResult = VerifyJWSWithSJWK(manifestSignature);
     if (jwsResult != JWSResult_Success)
     {
-        Log_Error("Manifest signature validation failed with result: %u", jwsResult);
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MANIFEST_VALIDATION_FAILED;
+        if (jwsResult == JWSResult_DisallowedSigningKey)
+        {
+            Log_Error("Signing Key for the update metadata was on the disallowed signing key list");
+            result.ExtendedResultCode = ADUC_ERC_ROOTKEY_SIGNING_KEY_IS_DISABLED;
+        }
+        else
+        {
+            result.ExtendedResultCode = MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_INFRA_MGMT(
+                ADUC_COMPONENT_JWS_UPDATE_MANIFEST_VALIDATION, jwsResult);
+        }
+
         goto done;
     }
 
@@ -908,6 +921,13 @@ static ADUC_Result workflow_validate_update_manifest_signature(JSON_Object* upda
 
     result.ResultCode = ADUC_GeneralResult_Success;
 done:
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error(
+            "Manifest signature validation failed with result: '%s' (%u). ERC: ADUC_COMPONENT_JWS_UPDATE_MANIFEST_VALIDATION",
+            jws_result_to_str(jwsResult),
+            jwsResult);
+    }
 
     return result;
 }
@@ -2415,14 +2435,14 @@ ADUC_Result _workflow_init_helper(ADUC_WorkflowHandle* handle)
     wf->PropertiesObject = json_value_get_object(json_value_init_object());
     if (wf->PropertiesObject == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_ERROR_NO_MEM;
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
 
     wf->ResultsObject = json_value_get_object(json_value_init_object());
     if (wf->ResultsObject == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_WORKFLOW_UTIL_ERROR_NO_MEM;
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
 
@@ -2430,7 +2450,12 @@ ADUC_Result _workflow_init_helper(ADUC_WorkflowHandle* handle)
     wf->InstalledUpdateId = STRING_new();
     wf->Result.ResultCode = ADUC_Result_Failure;
     wf->Result.ExtendedResultCode = 0;
-    wf->ResultSuccessErc = 0;
+
+    if ((wf->ResultExtraExtendedResultCodes = VECTOR_create(sizeof(ADUC_Result_t))) == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
+        goto done;
+    }
 
     wf->UpdateFileInodes = NULL;
 
@@ -2936,6 +2961,12 @@ void workflow_uninit(ADUC_WorkflowHandle handle)
         wf->ResultDetails = NULL;
         STRING_delete(wf->InstalledUpdateId);
         wf->InstalledUpdateId = NULL;
+
+        if (wf->ResultExtraExtendedResultCodes != NULL)
+        {
+            VECTOR_destroy(wf->ResultExtraExtendedResultCodes);
+            wf->ResultExtraExtendedResultCodes = NULL;
+        }
     }
 
     _workflow_free_updateaction(handle);
@@ -3272,24 +3303,28 @@ ADUC_Result workflow_get_result(ADUC_WorkflowHandle handle)
     return wf->Result;
 }
 
-void workflow_set_success_erc(ADUC_WorkflowHandle handle, ADUC_Result_t erc)
+void workflow_add_erc(ADUC_WorkflowHandle handle, ADUC_Result_t erc)
 {
     ADUC_Workflow* wf = workflow_from_handle(handle);
-    if (wf != NULL)
+    if (wf != NULL && wf->ResultExtraExtendedResultCodes != NULL)
     {
-        wf->ResultSuccessErc = erc;
+        if (VECTOR_push_back(wf->ResultExtraExtendedResultCodes, &erc, 1) != 0)
+        {
+            Log_Warn("push ", wf->Level);
+        }
     }
 }
 
-ADUC_Result_t workflow_get_success_erc(ADUC_WorkflowHandle handle)
+STRING_HANDLE workflow_get_extra_ercs(ADUC_WorkflowHandle handle)
 {
     ADUC_Workflow* wf = workflow_from_handle(handle);
-    if (wf == NULL)
+    if (wf == NULL || wf->ResultExtraExtendedResultCodes == NULL)
     {
-        return 0;
+        return NULL;
     }
 
-    return wf->ResultSuccessErc;
+    return ADUC_ReportingUtils_StringHandleFromVectorInt32(
+        wf->ResultExtraExtendedResultCodes, WORKFLOW_MAX_SUCCESS_ERC);
 }
 
 const char* workflow_peek_result_details(ADUC_WorkflowHandle handle)
