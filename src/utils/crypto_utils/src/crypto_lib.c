@@ -578,7 +578,6 @@ CONSTBUFFER_HANDLE CryptoUtils_GeneratePublicKey(const char* modulus_b64url, con
     {
         goto done;
     }
-    // der_length = i2d_RSA_PUBKEY(rsa, &der_encoded_bytes); // cert format?
 
     // copies bytes into new buffer, so let it free after done:
     publicKeyData = CONSTBUFFER_Create(der_encoded_bytes, der_length);
