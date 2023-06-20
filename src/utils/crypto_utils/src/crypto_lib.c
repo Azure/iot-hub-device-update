@@ -489,6 +489,10 @@ CONSTBUFFER_HANDLE CryptoUtils_CreateSha256Hash(const CONSTBUFFER_HANDLE buf)
     }
 
     msg_digest = GetEvpMdFromShaAlg("sha256");
+    if (msg_digest == NULL)
+    {
+        goto done;
+    }
 
     // Initialize OpenSSL digest operation
     if (1 != EVP_DigestInit_ex(mdctx, msg_digest, NULL))
