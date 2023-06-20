@@ -532,33 +532,35 @@ JWSResult IsSigningKeyDisallowed(const char* sjwkJsonStr, VECTOR_HANDLE disabled
 
     char* N = GetStringValueFromJSON(sjwkJsonStr, "n");
     char* e = GetStringValueFromJSON(sjwkJsonStr, "e");
-    if (IsNullOrEmpty(N) || IsNullOrEmpty(e) || strcmp(e, "AQAB") != 0) // AQAB is 65337 or 0x010001, the ubiquitous RSA exponent.
+    if (IsNullOrEmpty(N) || IsNullOrEmpty(e)
+        || strcmp(e, "AQAB") != 0) // AQAB is 65337 or 0x010001, the ubiquitous RSA exponent.
     {
         result = JWSResult_InvalidSJWKPayload;
         goto done;
     }
 
     pubkey = CryptoUtils_GeneratePublicKey(N, e);
-    if(pubkey == NULL)
+    if (pubkey == NULL)
     {
         result = JWSResult_FailGenPubKey;
         goto done;
     }
 
     sha256HashPubKey = CryptoUtils_CreateSha256Hash(pubkey);
-    if(pubkey == NULL)
+    if (pubkey == NULL)
     {
         result = JWSResult_HashPubKeyFailed;
         goto done;
     }
 
     // See if the hash of public key is on the Disallowed.
-    for(int i=0; i<VECTOR_size(disabledHashOfPubKeysList); ++i)
+    for (int i = 0; i < VECTOR_size(disabledHashOfPubKeysList); ++i)
     {
         const ADUC_RootKeyPackage_Hash* DisallowedEntry =
             (ADUC_RootKeyPackage_Hash*)VECTOR_element(disabledHashOfPubKeysList, i);
 
-        if ((DisallowedEntry->alg == SHA256) && CONSTBUFFER_HANDLE_contain_same(sha256HashPubKey, DisallowedEntry->hash))
+        if ((DisallowedEntry->alg == SHA256)
+            && CONSTBUFFER_HANDLE_contain_same(sha256HashPubKey, DisallowedEntry->hash))
         {
             result = JWSResult_DisallowedSigningKey;
             goto done;
