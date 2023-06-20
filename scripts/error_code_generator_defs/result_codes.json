@@ -1077,6 +1077,42 @@
                         {
                             "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_ROOTKEY_IS_DISABLED",
                             "value": 13
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_MISSING_SIGNING_KEY",
+                            "value": 14
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_LOCAL_STORE_UNINITIALIZED",
+                            "value": 15
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_PAYLOAD_BAD_JSON",
+                            "value": 16
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_INVALID_KEY_TYPE",
+                            "value": 17
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_INVALID_ALG",
+                            "value": 18
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_INVALID_N",
+                            "value": 19
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_INVALID_EXPONENT",
+                            "value": 20
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_ERR_GEN_PUBKEY",
+                            "value": 21
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_ERR_CREATE_HASH_PUBKEY",
+                            "value": 22
                         }
                     ]
                 },
@@ -1249,6 +1285,14 @@
                             "value": 3
                         },
                         {
+                            "name": "ADUC_ERC_ROOTKEY_SIGNINGKEY_DISABLE_EVAL_INVALID_HASHALG",
+                            "value": 4
+                        },
+                        {
+                            "name": "ADUC_ERC_ROOTKEY_SIGNING_KEY_IS_DISABLED",
+                            "value": 5
+                        },
+                        {
                             "name": "ADUC_ERC_ROOTKEY_PKG_UNCHANGED",
                             "value": 4095
                         }
@@ -1258,6 +1302,13 @@
                     "code": 1,
                     "doc_string": "indicates extended result codes for repacking root key downloader ones.",
                     "name": "ADUC_COMPONENT_ROOTKEY_DOWNLOADER",
+                    "results": [
+                    ]
+                },
+                {
+                    "code": 2,
+                    "doc_string": "indicates extended result codes to pack JWSResult during update manifest validation.",
+                    "name": "ADUC_COMPONENT_JWS_UPDATE_MANIFEST_VALIDATION",
                     "results": [
                     ]
                 }

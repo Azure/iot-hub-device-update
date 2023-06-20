@@ -32,6 +32,23 @@ typedef enum tagAlgorithm_Id
 //
 
 /**
+ * @brief Get the Evp Md (message digest) from Sha Alg string.
+ *
+ * @param alg The sha alg str, e.g. "sha256"
+ * @return const EVP_MD* The corresponding sha alg EVP_MD, or NULL if not supported.
+ */
+static const EVP_MD* GetEvpMdFromShaAlg(const char* alg)
+{
+    if (strcmp(alg, "sha256") == 0)
+    {
+        return EVP_sha256();
+    }
+
+    // unsupported
+    return NULL;
+}
+
+/**
  * @brief Helper function that casts the CryptoKeyHandle to the EVP_PKEY struct
  * @details The CryptoKey pointed to by handle MUST have been created using one of the crypto_lib function
  * @param key the CryptoKeyHandle to be cast
@@ -440,4 +457,140 @@ done:
 void CryptoUtils_FreeCryptoKeyHandle(CryptoKeyHandle key)
 {
     EVP_PKEY_free(CryptoKeyHandleToEVP_PKEY(key));
+}
+
+/**
+ * @brief Computes a SHA256 hash from bytes.
+ *
+ * @param buf The handle to the input bytes to be hashed.
+ * @return CONSTBUFFER_HANDLE The digest buffer handle. Caller will own it and need to call CONSTBUFFER_DecRef() to free.
+ */
+CONSTBUFFER_HANDLE CryptoUtils_CreateSha256Hash(const CONSTBUFFER_HANDLE buf)
+{
+    const size_t Sha256DigestNumBytes = 32;
+    unsigned char hashBuf[Sha256DigestNumBytes];
+    memset(hashBuf, 0, sizeof(hashBuf));
+    const CONSTBUFFER* constbuf = CONSTBUFFER_GetContent(buf);
+
+    CONSTBUFFER_HANDLE out_handle = NULL;
+
+    unsigned char* output_digest = NULL;
+    const EVP_MD* msg_digest = NULL;
+    EVP_MD_CTX* mdctx;
+
+    if (buf == NULL)
+    {
+        return NULL;
+    }
+
+    // Initialize OpenSSL digest context
+    if ((mdctx = EVP_MD_CTX_new()) == NULL)
+    {
+        goto done;
+    }
+
+    msg_digest = GetEvpMdFromShaAlg("sha256");
+
+    // Initialize OpenSSL digest operation
+    if (1 != EVP_DigestInit_ex(mdctx, msg_digest, NULL))
+    {
+        goto done;
+    }
+
+    // Hash the input data
+    if (1 != EVP_DigestUpdate(mdctx, constbuf->buffer, constbuf->size))
+    {
+        goto done;
+    }
+
+    // Finalize the digest and get the output
+    if (1 != EVP_DigestFinal_ex(mdctx, &hashBuf[0], NULL))
+    {
+        goto done;
+    }
+
+    output_digest = (unsigned char*)malloc(Sha256DigestNumBytes);
+    if (output_digest != NULL)
+    {
+        memcpy(output_digest, &hashBuf[0], Sha256DigestNumBytes);
+
+        out_handle = CONSTBUFFER_Create(output_digest, Sha256DigestNumBytes);
+        output_digest = NULL;
+    }
+
+done:
+    EVP_MD_CTX_free(mdctx);
+    free(output_digest);
+
+    return out_handle;
+}
+
+CONSTBUFFER_HANDLE CryptoUtils_GeneratePublicKey(const char* modulus_b64url, const char* exponent_b64url)
+{
+    CONSTBUFFER_HANDLE publicKeyData = NULL;
+
+    unsigned char *modulus_bytes, *exponent_bytes;
+    int modulus_length, exponent_length;
+    BIGNUM* bn_modulus = NULL;
+    BIGNUM* bn_exponent = NULL;
+    RSA* rsa = NULL;
+    unsigned char* der_encoded_bytes = NULL;
+    int der_length = 0;
+
+    modulus_length = Base64URLDecode(modulus_b64url, &modulus_bytes);
+    if (modulus_length == 0)
+    {
+        goto done;
+    }
+
+    exponent_length = Base64URLDecode(exponent_b64url, &exponent_bytes);
+    if (exponent_length == 0)
+    {
+        goto done;
+    }
+
+    bn_modulus = BN_bin2bn(modulus_bytes, modulus_length, NULL);
+    if (bn_modulus == NULL)
+    {
+        goto done;
+    }
+
+    bn_exponent = BN_bin2bn(exponent_bytes, exponent_length, NULL);
+    if (bn_exponent == NULL)
+    {
+        goto done;
+    }
+
+    rsa = RSA_new();
+    if (rsa == NULL)
+    {
+        goto done;
+    }
+
+    if (RSA_set0_key(rsa, bn_modulus, bn_exponent, NULL) == 0)
+    {
+        goto done;
+    }
+
+    der_encoded_bytes = NULL;
+    der_length = i2d_RSAPublicKey(rsa, &der_encoded_bytes); // DER PKCS#1
+    if (der_length == 0)
+    {
+        goto done;
+    }
+    // der_length = i2d_RSA_PUBKEY(rsa, &der_encoded_bytes); // cert format?
+
+    // copies bytes into new buffer, so let it free after done:
+    publicKeyData = CONSTBUFFER_Create(der_encoded_bytes, der_length);
+
+done:
+
+    free(der_encoded_bytes);
+    free(modulus_bytes);
+    free(exponent_bytes);
+
+    // Do not explicitly free bn_modulus and bn_exponent
+    RSA_free(rsa);
+
+    return publicKeyData;
 }

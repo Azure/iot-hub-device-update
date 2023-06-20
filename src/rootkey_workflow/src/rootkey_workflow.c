@@ -118,7 +118,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
         goto done;
     }
 
-    if (!ADUC_RootKeyPackageUtils_IsUpdateStoreNeeded(fileDest, rootKeyPackageJsonString))
+    if (!ADUC_RootKeyUtility_IsUpdateStoreNeeded(fileDest, rootKeyPackageJsonString))
     {
         // This is a success, but skips writing to local store and includes informational ERC.
         result.ResultCode = ADUC_Result_RootKey_Continue;
@@ -134,7 +134,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
         goto done;
     }
 
-    tmpResult = RootKeyUtility_ReloadPackageFromDisk();
+    tmpResult = RootKeyUtility_ReloadPackageFromDisk(STRING_c_str(fileDest));
 
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
