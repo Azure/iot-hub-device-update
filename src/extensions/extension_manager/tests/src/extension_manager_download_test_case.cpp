@@ -147,11 +147,11 @@ void ExtensionManagerDownloadTestCase::InitCommon()
 void ExtensionManagerDownloadTestCase::RunCommon()
 {
     AutoFileEntity fileEntity;
-    REQUIRE(workflow_get_update_file(workflowHandle, 0, fileEntity.address_of()));
+    REQUIRE(workflow_get_update_file(workflowHandle, 0, &fileEntity));
 
     ExtensionManager_Download_Options downloadOptions{ 1 /*timeoutInMinutes*/ };
     actual_result = ExtensionManager::Download(
-        fileEntity.get(),
+        &fileEntity,
         workflowHandle,
         &downloadOptions,
         nullptr, // downloadProgressCallback

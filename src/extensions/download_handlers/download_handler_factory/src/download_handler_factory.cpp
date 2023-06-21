@@ -13,7 +13,6 @@
 #include <aduc/auto_file_entity.hpp> // AutoFileEntity
 #include <aduc/hash_utils.h> // ADUC_HashUtils_VerifyWithStrongestHash
 #include <aduc/logging.h> // ADUC_Logging_GetLevel
-#include <aduc/parser_utils.h> // ADUC_FileEntity_Uninit
 #include <aduc/plugin_exception.hpp>
 #include <aduc/types/update_content.h> // ADUC_FileEntity
 #include <unordered_map>
@@ -37,7 +36,7 @@ DownloadHandlerPlugin* DownloadHandlerFactory::LoadDownloadHandler(const std::st
     }
 
     AutoFileEntity downloadHandlerFileEntity;
-    if (!GetDownloadHandlerFileEntity(downloadHandlerId.c_str(), downloadHandlerFileEntity.address_of()))
+    if (!GetDownloadHandlerFileEntity(downloadHandlerId.c_str(), &downloadHandlerFileEntity))
     {
         Log_Error("Failed to get DownloadHandler for file entity");
         return nullptr;
@@ -45,16 +44,16 @@ DownloadHandlerPlugin* DownloadHandlerFactory::LoadDownloadHandler(const std::st
 
 
     if (!ADUC_HashUtils_VerifyWithStrongestHash(
-            downloadHandlerFileEntity->TargetFilename, downloadHandlerFileEntity->Hash, downloadHandlerFileEntity->HashCount))
+            downloadHandlerFileEntity.TargetFilename, downloadHandlerFileEntity.Hash, downloadHandlerFileEntity.HashCount))
     {
-        Log_Error("verify hash failed for %s", downloadHandlerFileEntity->TargetFilename);
+        Log_Error("verify hash failed for %s", downloadHandlerFileEntity.TargetFilename);
         return nullptr;
     }
 
     try
     {
         auto plugin = std::unique_ptr<DownloadHandlerPlugin>(
-            new DownloadHandlerPlugin(downloadHandlerFileEntity->TargetFilename, ADUC_Logging_GetLevel()));
+            new DownloadHandlerPlugin(downloadHandlerFileEntity.TargetFilename, ADUC_Logging_GetLevel()));
         cachedPlugins.insert(std::make_pair(downloadHandlerId, plugin.get()));
         return plugin.release();
     }
