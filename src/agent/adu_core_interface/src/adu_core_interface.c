@@ -182,7 +182,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
     }
 
     bool success = false;
-
+    const ADUC_ConfigInfo* config = NULL;
     char* jsonString = NULL;
 
     JSON_Value* startupMsgValue = json_value_init_object();
@@ -199,7 +199,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    config = ADUC_ConfigInfo_GetInstance();
 
     if (config == NULL)
     {
