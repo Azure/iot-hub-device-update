@@ -241,7 +241,7 @@ function Install-Adu-Components {
     }
 
     if ($Type -eq 'Debug') {
-        $BuildToolsDPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\debug_nonredist\$Arch\Microsoft.VC143.DebugCRT"
+        $BuildToolsDPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.36.32532\debug_nonredist\$Arch\Microsoft.VC143.DebugCRT"
         $WindowsKitsDPath = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\$WindowsKitsVer\$Arch\ucrt"
 
         # Only needed if dynamically linking: getopt, pthreadVC3d, libcrypto-1_1-x64
@@ -256,7 +256,7 @@ function Install-Adu-Components {
         (Join-Path $WindowsKitsDPath 'ucrtbased')
     }
     else {
-        $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.34.31931\$Arch\Microsoft.VC143.CRT"
+        $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.36.32532\$Arch\Microsoft.VC143.CRT"
         $WindowsKitsPath = "${env:ProgramFiles(x86)}\Windows Kits\10\Redist\$WindowsKitsVer\ucrt\DLLs\$Arch"
 
         $dependencies = `
