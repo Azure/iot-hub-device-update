@@ -409,7 +409,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK_THAT(json_array_get_string(config.aduShellTrustedUsers, 0), Equals("adu"));
         CHECK_THAT(json_array_get_string(config.aduShellTrustedUsers, 1), Equals("do"));
         CHECK_THAT(config.schemaVersion, Equals("1.1"));
@@ -443,7 +443,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK(config.compatPropertyNames == nullptr);
 
         ADUC_ConfigInfo_UnInit(&config);
@@ -456,7 +456,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         const ADUC_AgentInfo* first_agent_info = ADUC_ConfigInfo_GetAgent(&config, 0);
         CHECK(first_agent_info->additionalDeviceProperties != nullptr);
         ADUC_ConfigInfo_UnInit(&config);
@@ -469,7 +469,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -481,7 +481,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -493,7 +493,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -505,7 +505,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -517,7 +517,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK(config.downloadTimeoutInMinutes == 1440);
 
         ADUC_ConfigInfo_UnInit(&config);
@@ -530,7 +530,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -542,7 +542,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK_THAT(config.iotHubProtocol, Equals("mqtt"));
 
         ADUC_ConfigInfo_UnInit(&config);
@@ -555,7 +555,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK_THAT(config.iotHubProtocol, Equals("mqtt/ws"));
 
         ADUC_ConfigInfo_UnInit(&config);
@@ -568,7 +568,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK(config.iotHubProtocol == nullptr);
 
         ADUC_ConfigInfo_UnInit(&config);
@@ -578,7 +578,6 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentDownloadTimeout) == 0);
         ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
-        setenv(ADUC_CONFIG_FOLDER_ENV, "/etc/adu/du-config.json", 1);
         const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
         CHECK(config != NULL);
         CHECK(config->refCount == 1);
@@ -599,8 +598,6 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentDownloadTimeout) == 0);
         ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
-
-        setenv(ADUC_CONFIG_FOLDER_ENV, "/etc/adu/du-config.json", 1);
         const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
         CHECK(config != NULL);
         CHECK_THAT(config->aduShellFolder, Equals("/usr/bin"));
@@ -620,7 +617,6 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigWithOverrideFolder) == 0);
         ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
-        setenv(ADUC_CONFIG_FOLDER_ENV, "/etc/adu/du-config.json", 1);
         const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
         CHECK_THAT(config->aduShellFolder, Equals("/usr/mybin"));
         CHECK_THAT(config->aduShellFilePath, Equals("/usr/mybin/adu-shell"));

@@ -57,38 +57,40 @@ typedef struct tagADUC_ConfigInfo
 {
     int refCount; /**< A reference count for this object. */
 
-    char* schemaVersion;
+    JSON_Value* rootJsonValue; /**< The root value of the configuration. */
+
+    const char* schemaVersion;
 
     JSON_Array* aduShellTrustedUsers; /**< All the trusted users for ADU shell. */
 
-    char* manufacturer; /**< Device info manufacturer. */
+    const char* manufacturer; /**< Device info manufacturer. */
 
-    char* model; /**< Device info model. */
+    const char* model; /**< Device info model. */
 
-    char* edgegatewayCertPath; /**< Edge gateway certificate path */
+    const char* edgegatewayCertPath; /**< Edge gateway certificate path */
 
     ADUC_AgentInfo* agents; /**< Array of agents that are configured. */
 
     unsigned int agentCount; /**< Total number of agents configured. */
 
-    char* compatPropertyNames; /**< Compat property names. */
+    const char* compatPropertyNames; /**< Compat property names. */
 
-    char* iotHubProtocol; /**< The IotHub transport protocol to use. */
+    const char* iotHubProtocol; /**< The IotHub transport protocol to use. */
 
     unsigned int
         downloadTimeoutInMinutes; /**< The timeout for downloading an update payload. A value of zero means to use the default. */
 
-    char* aduShellFolder; /**< The folder where ADU shell is installed. */
+    const char* aduShellFolder; /**< The folder where ADU shell is installed. */
 
     char* aduShellFilePath; /**< The full path to ADU shell binary. */
 
     char* configFolder; /**< The folder where ADU stores its configuration. */
 
-    char* dataFolder; /**< The folder where ADU stores its data. */
+    const char* dataFolder; /**< The folder where ADU stores its data. */
 
-    char* downloadsFolder; /**< The folder where ADU stores downloaded payloads. */
+    const char* downloadsFolder; /**< The folder where ADU stores downloaded payloads. */
 
-    char* extensionsFolder; /**< The folder where ADU stores its extensions. */
+    const char* extensionsFolder; /**< The folder where ADU stores its extensions. */
 
     char* extensionsComponentEnumeratorFolder; /**< The folder where ADU stores its component enumerator extensions. */
 
@@ -97,9 +99,6 @@ typedef struct tagADUC_ConfigInfo
     char* extensionsStepHandlerFolder; /**< The folder where ADU stores its step handler extensions. */
 
     char* extensionsDownloadHandlerFolder; /**< The folder where ADU stores its downloader handler extensions. */
-
-    char* logsFolder; /**< The folder where ADU stores its logs. */
-
 } ADUC_ConfigInfo;
 
 /**

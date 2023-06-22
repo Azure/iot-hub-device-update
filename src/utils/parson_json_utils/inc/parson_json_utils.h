@@ -20,6 +20,8 @@ EXTERN_C_BEGIN
 //
 const char* ADUC_JSON_GetStringFieldPtr(const JSON_Value* jsonValue, const char* jsonFieldName);
 
+bool ADUC_JSON_SetStringField(const JSON_Value* jsonValue, const char* jsonFieldName, const char* value);
+
 bool ADUC_JSON_GetStringField(const JSON_Value* jsonValue, const char* jsonFieldName, char** value);
 
 bool ADUC_JSON_GetBooleanField(const JSON_Value* jsonValue, const char* jsonFieldName);
