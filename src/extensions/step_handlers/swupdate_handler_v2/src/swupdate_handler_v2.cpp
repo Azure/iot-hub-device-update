@@ -168,11 +168,10 @@ ADUC_Result SWUpdateHandler_PerformAction(
     config = ADUC_ConfigInfo_GetInstance();
     if (config == nullptr)
     {
-        Log_Error("Failed to get config info instance.");
         result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_PERFORM_ACTION_FAILED_TO_GET_CONFIG_INSTANCE;
         goto done;
     }
-  
+
     aduShellArgs.emplace_back(adushconst::config_folder_opt);
     aduShellArgs.emplace_back(config->configFolder);
     aduShellArgs.emplace_back(adushconst::update_type_opt);

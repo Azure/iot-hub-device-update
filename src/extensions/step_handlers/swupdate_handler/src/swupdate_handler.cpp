@@ -231,7 +231,6 @@ ADUC_Result SWUpdateHandlerImpl::Install(const tagADUC_WorkflowData* workflowDat
     config = ADUC_ConfigInfo_GetInstance();
     if (config == nullptr)
     {
-        Log_Error("Failed to get config info instance.");
         result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILED_TO_GET_CONFIG_INSTANCE;
         goto done;
     }
@@ -301,7 +300,6 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
     config = ADUC_ConfigInfo_GetInstance();
     if (config == nullptr)
     {
-        Log_Error("Failed to get config info instance.");
         result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_APPLY_FAILED_TO_GET_CONFIG_INSTANCE;
         goto done;
     }
@@ -331,7 +329,7 @@ ADUC_Result SWUpdateHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
         if (exitCode != 0)
         {
             Log_Error("Apply failed, extendedResultCode = %d", exitCode);
-            result = { ADUC_Result_Failure, exitCode };
+            result = { ADUC_Result_Failure, ADUC_ERC_SWUPDATE_HANDLER_CHILD_FAILURE_PROCESS_EXITCODE(exitCode) };
             goto done;
         }
     }
@@ -498,7 +496,6 @@ static ADUC_Result CancelApply(const char* logFolder)
     const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
     if (config == nullptr)
     {
-        Log_Error("Failed to get config info instance.");
         result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_CANCEL_FAILED_TO_GET_CONFIG_INSTANCE;
         goto done;
     }
