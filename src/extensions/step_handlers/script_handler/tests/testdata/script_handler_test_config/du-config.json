@@ -11,7 +11,7 @@
       "runas": "adu",
       "connectionSource": {
         "connectionType": "string",
-        "connectionData": "HostName=adu-client-test-hub.azure-devices.net;DeviceId=contoso-expresso-v1-1;SharedAccessKey=000000000000000000000000000000="
+        "connectionData": "HostName=adu-client-test-hub.azure-devices.net;DeviceId=contoso-espresso-v1-1;SharedAccessKey=000000000000000000000000000000="
       },
       "manufacturer": "contoso",
       "model": "espresso-v1"
