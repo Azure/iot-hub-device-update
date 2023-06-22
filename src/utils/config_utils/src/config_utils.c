@@ -39,6 +39,8 @@ static const char* CONFIG_ADU_SHELL_FOLDER = "aduShellFolder";
 static const char* CONFIG_ADU_DATA_FOLDER = "dataFolder";
 static const char* CONFIG_ADU_EXTENSIONS_FOLDER = "extensionsFolder";
 static const char* CONFIG_ADU_DOWNLOADS_FOLDER = "downloadsFolder";
+static const char* DOWNLOADS_PATH_SEGMENT = "downloads";
+static const char* EXTENSIONS_PATH_SEGMENT = "extensions";
 
 static const char* CONFIG_IOT_HUB_PROTOCOL = "iotHubProtocol";
 static const char* CONFIG_COMPAT_PROPERTY_NAMES = "compatPropertyNames";
@@ -446,7 +448,7 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
             CONFIG_ADU_DOWNLOADS_FOLDER,
             &config->downloadsFolder,
             config->dataFolder,
-            "downloads"))
+            DOWNLOADS_PATH_SEGMENT))
     {
         goto done;
     }
@@ -456,39 +458,40 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
             CONFIG_ADU_EXTENSIONS_FOLDER,
             &config->extensionsFolder,
             config->dataFolder,
-            "extensions"))
+            EXTENSIONS_PATH_SEGMENT))
     {
         goto done;
     }
 
     // Since we're only allow overriding of 'extensions' folder, let's populate all extensions sub-folders.
-    if (NULL
-        == (config->extensionsComponentEnumeratorFolder =
-                ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR)))
+    config->extensionsComponentEnumeratorFolder =
+        ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR);
+
+    if (config->extensionsComponentEnumeratorFolder == NULL)
     {
         Log_Error("Failed to allocate memory for component enumerator extension folder");
         goto done;
     }
 
-    if (NULL
-        == (config->extensionsContentDownloaderFolder =
-                ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER)))
+    config->extensionsContentDownloaderFolder =
+        ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER);
+    if (config->extensionsContentDownloaderFolder == NULL)
     {
         Log_Error("Failed to allocate memory for content downloader extension folder");
         goto done;
     }
 
-    if (NULL
-        == (config->extensionsStepHandlerFolder =
-                ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS)))
+    config->extensionsStepHandlerFolder =
+        ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS);
+    if (config->extensionsStepHandlerFolder == NULL)
     {
         Log_Error("Failed to allocate memory for step handler extension folder");
         goto done;
     }
 
-    if (NULL
-        == (config->extensionsDownloadHandlerFolder =
-                ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS)))
+    config->extensionsDownloadHandlerFolder =
+        ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS);
+    if (config->extensionsDownloadHandlerFolder == NULL)
     {
         Log_Error("Failed to allocate memory for download handler extension folder");
         goto done;
