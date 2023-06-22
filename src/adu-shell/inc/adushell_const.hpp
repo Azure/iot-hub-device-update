@@ -31,6 +31,8 @@ const char* update_action_execute = "execute";
 const char* target_data_opt = "--target-data";
 const char* target_options_opt = "--target-options";
 const char* target_log_folder_opt = "--target-log-folder";
+
+const char* config_folder_opt = "--config-folder";
 } // namespace Const
 } // namespace Shell
 } // namespace Adu

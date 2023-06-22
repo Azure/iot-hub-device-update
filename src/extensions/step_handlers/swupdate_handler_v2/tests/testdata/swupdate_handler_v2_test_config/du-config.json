@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "aduShellTrustedUsers": [
+    "adu"
+  ],
+  "manufacturer": "contoso",
+  "model": "espresso-v1",
+  "agents": [
+    {
+      "name": "main",
+      "runas": "adu",
+      "connectionSource": {
+        "connectionType": "string",
+        "connectionData": "HostName=adu-client-test-hub.azure-devices.net;DeviceId=contoso-espresso-v1-1;SharedAccessKey=000000000000000000000000000000="
+      },
+      "manufacturer": "contoso",
+      "model": "espresso-v1"
+    }
+  ]
+}

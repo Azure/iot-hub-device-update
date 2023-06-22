@@ -50,7 +50,7 @@ target_compile_definitions (
     ${target_name}
     PRIVATE ADUC_VERSION="${ADUC_VERSION}"
             ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
-            ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
+            ADUC_CONF_FOLDER="${ADUC_CONF_FOLDER}"
             ADUC_STEP_HANDLERS="${ADUC_STEP_HANDLERS}"
             ADUSHELL_EFFECTIVE_GROUP_NAME="${ADUSHELL_EFFECTIVE_GROUP_NAME}"
             ${adushell_def})
@@ -65,12 +65,12 @@ target_link_libraries (
 
 add_subdirectory (scripts)
 
-# Install adu-shell to /usr/lib/adu folder.
+# Install adu-shell to /usr/bin folder.
 # Only owner and group can run adu-shell.
 install (
     TARGETS ${target_name}
     RUNTIME
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/adu
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
         PERMISSIONS
             OWNER_EXECUTE
             OWNER_WRITE

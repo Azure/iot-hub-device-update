@@ -6,6 +6,7 @@
  * Licensed under the MIT License.
  */
 #include "aduc/script_handler.hpp"
+#include "aduc/config_utils.h" // ADUC_ConfigInfo*
 #include "aduc/extension_manager.hpp"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h" // ADUC_FileEntity_Uninit
@@ -535,6 +536,14 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
         return results;
     }
 
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == nullptr)
+    {
+        Log_Error("Failed to get config info instance");
+        results.result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILED_TO_GET_CONFIG_INSTANCE;
+        return results;
+    }
+
     const char* apiVer = workflow_peek_update_manifest_handler_properties_string(
         workflowData->WorkflowHandle, HANDLER_PROPERTIES_API_VERSION);
 
@@ -544,10 +553,9 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
     JSON_Value* actionResultValue = nullptr;
     JSON_Object* actionResultObject = nullptr;
 
-    std::vector<std::string> aduShellArgs = { adushconst::update_type_opt,
-                                              adushconst::update_type_microsoft_script,
-                                              adushconst::update_action_opt,
-                                              adushconst::update_action_execute };
+    std::vector<std::string> aduShellArgs = { adushconst::config_folder_opt, config->configFolder,
+                                              adushconst::update_type_opt,   adushconst::update_type_microsoft_script,
+                                              adushconst::update_action_opt, adushconst::update_action_execute };
 
     results.result = ScriptHandlerImpl::PrepareScriptArguments(
         workflowData->WorkflowHandle, scriptResultFile, scriptWorkfolder, results.scriptFilePath, results.args);
@@ -640,7 +648,7 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
         goto done;
     }
 
-    exitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, aduShellArgs, results.scriptOutput);
+    exitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, aduShellArgs, results.scriptOutput);
 
     if (!results.scriptOutput.empty())
     {
@@ -690,6 +698,7 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
         workflow_peek_result_details(workflowData->WorkflowHandle));
 
 done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
     workflow_set_result(workflowData->WorkflowHandle, results.result);
 
     // Note: the handler must request a system reboot or agent restart if required.

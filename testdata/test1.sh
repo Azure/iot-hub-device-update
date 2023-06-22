@@ -1,5 +1,0 @@
-PROJDIR=/home/nox/projects/develop-scripthandler-options
-
-#$PROJDIR/testdata/swupdate_filecopy/example-du-swupdate-script.sh --action "is-installed" --swu-file "$PROJDIR/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --software-version-file "$PROJDIR/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --work-folder "$PROJDIR/testdata/swupdate_filecopy" --result-file "$PROJDIR/testdata/swupdate_filecopy/aduc_result.json" --installed-criteria "This is swupdate filecopy test version 1.0"
-
-$PROJDIR/testdata/swupdate_filecopy/example-du-swupdate-script.sh --action "is-installed" --swu-file "$PROJDIR/testdata/swupdate_filecopy/du-agent-swupdate-filecopy-test-1_1.0.swu" --software-version-file "$PROJDIR/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt" --work-folder "$PROJDIR/testdata/swupdate_filecopy" --result-file "$PROJDIR/testdata/swupdate_filecopy/aduc_result.json" --installed-criteria "This is swupdate filecopy test version 1.0"

@@ -15,6 +15,7 @@
  */
 #include "aduc/apt_handler.hpp"
 #include "aduc/adu_core_exports.h"
+#include "aduc/config_utils.h"
 #include "aduc/extension_manager.hpp"
 #include "aduc/installed_criteria_utils.hpp"
 #include "aduc/logging.h"
@@ -138,6 +139,7 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
     std::stringstream aptManifestFilename;
     std::unique_ptr<AptContent> aptContent{ nullptr };
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
+    const ADUC_ConfigInfo* config = nullptr;
     int fileCount = 0;
     char* installedCriteria = nullptr;
 
@@ -176,6 +178,16 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
         goto done;
     }
 
+    // Let's get the config instance before downloading the APT manifest file
+    // because this is less expensive.
+    config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
+    {
+        Log_Error("Failed to get config instance.");
+        result = { ADUC_Result_Failure, ADUC_ERC_APT_HANDLER_DOWNLOAD_FAILED_TO_GET_CONFIG_INSTANCE };
+        goto done;
+    }
+
     aptManifestFilename << workFolder << "/" << fileEntity.TargetFilename;
 
     // Download the APT manifest file.
@@ -202,12 +214,13 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
         try
         {
             // Perform apt-get update.
-            const std::vector<std::string> args = { adushconst::update_type_opt,
-                                                    adushconst::update_type_microsoft_apt,
-                                                    adushconst::update_action_opt,
-                                                    adushconst::update_action_initialize };
+            const std::vector<std::string> args = {
+                adushconst::config_folder_opt, config->configFolder,
+                adushconst::update_type_opt,   adushconst::update_type_microsoft_apt,
+                adushconst::update_action_opt, adushconst::update_action_initialize
+            };
 
-            aptExitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, aptOutput);
+            aptExitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, args, aptOutput);
 
             if (!aptOutput.empty())
             {
@@ -229,10 +242,9 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
         result = { ADUC_Result_Download_Success };
         try
         {
-            std::vector<std::string> args = { adushconst::update_type_opt,
-                                              adushconst::update_type_microsoft_apt,
-                                              adushconst::update_action_opt,
-                                              adushconst::update_action_download };
+            std::vector<std::string> args = { adushconst::config_folder_opt, config->configFolder,
+                                              adushconst::update_type_opt,   adushconst::update_type_microsoft_apt,
+                                              adushconst::update_action_opt, adushconst::update_action_download };
 
             // For microsoft/apt, target-data is a list of packages.
             std::stringstream data;
@@ -246,7 +258,7 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
             args.emplace_back(adushconst::target_data_opt);
             args.emplace_back(data.str());
 
-            aptExitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, aptOutput);
+            aptExitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, args, aptOutput);
 
             if (!aptOutput.empty())
             {
@@ -271,6 +283,7 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
     result = { .ResultCode = ADUC_Result_Download_Success, .ExtendedResultCode = 0 };
 
 done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
     workflow_free_string(installedCriteria);
     workflow_free_string(workFolder);
     ADUC_FileEntity_Uninit(&fileEntity);
@@ -294,6 +307,7 @@ ADUC_Result AptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
     char* workFolder = workflow_get_workfolder(handle);
     std::stringstream aptManifestFilename;
     std::unique_ptr<AptContent> aptContent;
+    const ADUC_ConfigInfo* config = nullptr;
 
     if (workflow_is_cancel_requested(handle))
     {
@@ -316,19 +330,22 @@ ADUC_Result AptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
         goto done;
     }
 
+    config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
+    {
+        Log_Error("Failed to get config instance.");
+        result = { ADUC_Result_Failure, ADUC_ERC_APT_HANDLER_INSTALL_FAILED_TO_GET_CONFIG_INSTANCE };
+        goto done;
+    }
+
     try
     {
-        std::vector<std::string> args = { adushconst::update_type_opt,
-                                          adushconst::update_type_microsoft_apt,
-                                          adushconst::update_action_opt,
-                                          adushconst::update_action_install };
+        std::vector<std::string> args = { adushconst::config_folder_opt, config->configFolder,
+                                          adushconst::update_type_opt,   adushconst::update_type_microsoft_apt,
+                                          adushconst::update_action_opt, adushconst::update_action_install };
 
-        //
-        // For public preview, we're passing following additional options to apt-get.
-        //
-        // '-y' (assumed yes)
-        //  -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold" (preserve existing config.yaml file by default)
-        //
+        // -o Dpkg::Options::=--force-confdef (force configuration file default)
+        // -o Dpkg::Options::=--force-confold (preserve existing config.yaml file by default)
         args.emplace_back(adushconst::target_options_opt);
         args.emplace_back("-o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold");
 
@@ -341,7 +358,7 @@ ADUC_Result AptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
         args.emplace_back(adushconst::target_data_opt);
         args.emplace_back(data.str());
 
-        aptExitCode = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, aptOutput);
+        aptExitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, args, aptOutput);
 
         if (!aptOutput.empty())
         {
@@ -362,9 +379,11 @@ ADUC_Result AptHandlerImpl::Install(const ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    result = { .ResultCode = ADUC_Result_Install_Success, .ExtendedResultCode = 0 };
+    result.ResultCode = ADUC_Result_Install_Success;
+    result.ExtendedResultCode = 0;
 
 done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
     workflow_free_string(workFolder);
     ADUC_FileEntity_Uninit(&fileEntity);
     return result;
