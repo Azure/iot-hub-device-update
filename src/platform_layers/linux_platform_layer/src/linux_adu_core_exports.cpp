@@ -11,6 +11,7 @@
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
 #include "linux_adu_core_impl.hpp"
+#include "errno.h"
 #include <memory>
 #include <signal.h> // raise()
 #include <string>
@@ -80,7 +81,7 @@ int ADUC_RebootSystem()
     if (config == NULL)
     {
         Log_Error("Failed to get config info instance.");
-        exitStatus = 126; // Command invoked cannot execute.
+        exitStatus = ENOMEM;
     }
     else
     {

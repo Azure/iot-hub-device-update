@@ -504,6 +504,8 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
 
 done:
 
+    json_value_free(root_value);
+
     if (configFilePath != NULL)
     {
         free(configFilePath);
