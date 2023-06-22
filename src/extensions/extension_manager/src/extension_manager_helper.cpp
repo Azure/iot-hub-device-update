@@ -139,9 +139,11 @@ unsigned int GetDownloadTimeoutInMinutes(const ExtensionManager_Download_Options
         ret = (downloadOptions == nullptr) ? CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT
                                            : downloadOptions->timeoutInMinutes;
     }
-
-    Log_Info("downloadTimeoutInMinutes override from config: %u", config->downloadTimeoutInMinutes);
-    ret = config->downloadTimeoutInMinutes;
+    else
+    {
+        Log_Info("downloadTimeoutInMinutes override from config: %u", config->downloadTimeoutInMinutes);
+        ret = config->downloadTimeoutInMinutes;
+    }
 done:
     return ret;
 }
