@@ -39,6 +39,7 @@ static const char* CONFIG_ADU_SHELL_FOLDER = "aduShellFolder";
 static const char* CONFIG_ADU_DATA_FOLDER = "dataFolder";
 static const char* CONFIG_ADU_EXTENSIONS_FOLDER = "extensionsFolder";
 static const char* CONFIG_ADU_DOWNLOADS_FOLDER = "downloadsFolder";
+
 static const char* DOWNLOADS_PATH_SEGMENT = "downloads";
 static const char* EXTENSIONS_PATH_SEGMENT = "extensions";
 
@@ -49,6 +50,7 @@ static const char* CONFIG_EDGE_GATEWAY_CERT_PATH = "edgegatewayCertPath";
 static const char* CONFIG_MANUFACTURER = "manufacturer";
 static const char* CONFIG_MODEL = "model";
 static const char* CONFIG_SCHEMA_VERSION = "schemaVersion";
+static const char* CONFIG_DOWNLOAD_TIMEOUT_IN_MINUTES = "downloadTimeoutInMinutes";
 
 static const char* CONFIG_NAME = "name";
 static const char* CONFIG_RUN_AS = "runas";
@@ -57,6 +59,8 @@ static const char* CONFIG_CONNECTION_TYPE = "connectionType";
 static const char* CONFIG_CONNECTION_DATA = "connectionData";
 static const char* CONFIG_ADDITIONAL_DEVICE_PROPERTIES = "additionalDeviceProperties";
 static const char* CONFIG_AGENTS = "agents";
+
+static const char* INVALID_OR_MISSING_FIELD_ERROR_FMT = "Invalid json - '%s' missing or incorrect";
 
 static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent);
 
@@ -218,7 +222,7 @@ bool ADUC_Json_GetAgents(JSON_Value* root_value, unsigned int* agentCount, ADUC_
 
     if (agents_array == NULL)
     {
-        Log_Error("Invalid json - '%s' missing or incorrect", CONFIG_AGENTS);
+        Log_Error(INVALID_OR_MISSING_FIELD_ERROR_FMT, CONFIG_AGENTS);
         goto done;
     }
 
@@ -343,7 +347,7 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
         configFilePath = ADUC_StringFormat("%s/%s", configFolder, ADUC_CONF_FILE);
     }
 
-    if (configFilePath == NULL)
+    if (IsNullOrEmpty(configFilePath))
     {
         Log_Error("Failed to allocate memory for config file path");
         goto done;
@@ -364,25 +368,25 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
 
     config->schemaVersion = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_SCHEMA_VERSION);
 
-    if (config->schemaVersion == NULL)
+    if (IsNullOrEmpty(config->schemaVersion))
     {
-        Log_Error("Invalid json - '%s' missing or incorrect", CONFIG_SCHEMA_VERSION);
+        Log_Error(INVALID_OR_MISSING_FIELD_ERROR_FMT, CONFIG_SCHEMA_VERSION);
         goto done;
     }
 
     config->manufacturer = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_MANUFACTURER);
 
-    if (config->manufacturer == NULL)
+    if (IsNullOrEmpty(config->manufacturer))
     {
-        Log_Error("Invalid json - '%s' missing or incorrect", CONFIG_MANUFACTURER);
+        Log_Error(INVALID_OR_MISSING_FIELD_ERROR_FMT, CONFIG_MANUFACTURER);
         goto done;
     }
 
     config->model = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_MODEL);
 
-    if (config->model == NULL)
+    if (IsNullOrEmpty(config->model))
     {
-        Log_Error("Invalid json - '%s' missing or incorrect", CONFIG_MODEL);
+        Log_Error(INVALID_OR_MISSING_FIELD_ERROR_FMT, CONFIG_MODEL);
         goto done;
     }
 
@@ -395,7 +399,7 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
 
     if (config->aduShellTrustedUsers == NULL)
     {
-        Log_Error("Invalid json - '%s' missing or incorrect", CONFIG_ADU_SHELL_TRUSTED_USERS);
+        Log_Error(INVALID_OR_MISSING_FIELD_ERROR_FMT, CONFIG_ADU_SHELL_TRUSTED_USERS);
         goto done;
     }
 
@@ -405,11 +409,9 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
     // Note: IoT Hub protocol is is optional.
     config->iotHubProtocol = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_IOT_HUB_PROTOCOL);
 
-    if (!ADUC_JSON_GetUnsignedIntegerField(
-            config->rootJsonValue, "downloadTimeoutInMinutes", &(config->downloadTimeoutInMinutes)))
-    {
-        goto done;
-    }
+    // Note: download timeout is optional.
+    ADUC_JSON_GetUnsignedIntegerField(
+            config->rootJsonValue, CONFIG_DOWNLOAD_TIMEOUT_IN_MINUTES, &(config->downloadTimeoutInMinutes));
 
     // Ensure that adu-shell folder is valid.
     config->aduShellFolder = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_ADU_SHELL_FOLDER);

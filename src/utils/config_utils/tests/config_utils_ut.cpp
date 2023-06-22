@@ -530,8 +530,8 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
-
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
+        CHECK(config.downloadTimeoutInMinutes == 0);
         ADUC_ConfigInfo_UnInit(&config);
     }
 
