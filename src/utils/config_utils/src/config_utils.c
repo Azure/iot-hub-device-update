@@ -287,6 +287,7 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
         return false;
     }
 
+    JSON_Value* root_value = NULL;
     char* configFilePath = NULL;
 
     if (IsNullOrEmpty(configFolder))
@@ -304,7 +305,7 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
         goto done;
     }
 
-    JSON_Value* root_value = Parse_JSON_File(configFilePath);
+    root_value = Parse_JSON_File(configFilePath);
 
     if (root_value == NULL)
     {
