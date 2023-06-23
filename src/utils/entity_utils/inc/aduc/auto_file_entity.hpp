@@ -14,6 +14,13 @@
 
 struct AutoFileEntity : public ADUC_FileEntity
 {
+    AutoFileEntity() = default;
+
+    AutoFileEntity(const AutoFileEntity&) = delete;
+    AutoFileEntity& operator=(const AutoFileEntity&) = delete;
+    AutoFileEntity(AutoFileEntity&&) = delete;
+    AutoFileEntity& operator=(AutoFileEntity&&) = delete;
+
     ~AutoFileEntity()
     {
         ADUC_FileEntity_Uninit(this);
