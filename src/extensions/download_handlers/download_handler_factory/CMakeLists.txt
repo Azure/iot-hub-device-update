@@ -18,6 +18,7 @@ target_link_libraries (
     PRIVATE aduc::adu_types
             aduc::c_utils
             aduc::download_handler_plugin
+            aduc::entity_utils
             aduc::extension_utils
             aduc::hash_utils
             aduc::logging
