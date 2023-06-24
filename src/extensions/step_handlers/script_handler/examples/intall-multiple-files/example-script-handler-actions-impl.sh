@@ -209,11 +209,6 @@ print_help() {
     echo "--action-apply                    Perform 'apply' action."
     echo "--action-cancel                   Perform 'cancel' action."
     echo ""
-    echo "Example of a custome argument specified in 'handlerProperties' section of the import manifest:"
-    echo "----------------------------------------"
-    echo ""
-    echo "--data-brick-file-name            Name of the output data brick file to be generated."
-    echo ""
     echo "File and Folder information"
     echo "==========================="
     echo ""
@@ -279,16 +274,6 @@ while [[ $1 != "" ]]; do
             $ret 1
         fi
         installed_criteria="$1"
-        shift
-        ;;
-
-    --data-brick-file-name)
-        shift
-        if [[ -z $1 || $1 == -* ]]; then
-            log_error "--data-brick-file-name requires a file name parameter."
-            $ret 1
-        fi
-        data_brick_file_name="$1"
         shift
         ;;
 
@@ -566,6 +551,9 @@ InstallUpdate() {
         # Let's copy the data files and run the process-data-file.sh script.
         cp $work_folder/$data_file_1_name $install_folder
         cp $work_folder/$data_file_2_name $install_folder
+
+        # Ensure that the process-data-file.sh script is executable.
+        chmod +x $work_folder/process-data-file.sh
 
         # Run the process-data-file.sh script.
         echo "Running Command:" $work_folder/process-data-file.sh "$install_folder/$data_file_1_name" "$install_folder/$data_file_2_name" "$install_folder/$data_brick_file_name"

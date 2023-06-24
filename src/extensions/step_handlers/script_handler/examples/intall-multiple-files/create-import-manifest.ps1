@@ -32,8 +32,7 @@ $payloadFile3= 'process-data-file.sh'
 
 $installedCriteria = 'Hello World!!!'
 
-## The following demonstrates how to specify a custom script handler property named "outputDataBrickFile" that will be passed to the script handler.
-$handlerProperties = "{ 'scriptFileName': '$scriptFile', 'installedCriteria': '$installedCriteria', 'data-brick-file-name': 'data-3.brick' }"
+$handlerProperties = "{ 'scriptFileName': '$scriptFile', 'installedCriteria': '$installedCriteria' }"
 
 az iot du update init v5 `
     --update-provider $updMeta.Provider `
