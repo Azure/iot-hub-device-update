@@ -189,11 +189,11 @@ ADUC_Result_t Apply(const char* workFolder, const char* targetFile)
 
     if (!ConfigureBCD(TARGET_DRIVE, "Windows IoT"))
     {
-        Log_Error("ConfigureBCD of target drive '%s' failing with RC::Apply_BcdEditFailure", TARGET_DRIVE);
+        Log_Error("ConfigureBCD of target drive '%c' failing with RC::Apply_BcdEditFailure", TARGET_DRIVE);
         return RC::Apply_BcdEditFailure;
     }
 
-    Log_Info("ConfigureBCD of target drive '%s' succeeded", TARGET_DRIVE);
+    Log_Info("ConfigureBCD of target drive '%c' succeeded", TARGET_DRIVE);
     return WimStepHandler::RC::Success_Reboot_Required;
 }
 
