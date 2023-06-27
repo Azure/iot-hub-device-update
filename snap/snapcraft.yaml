@@ -190,11 +190,13 @@ plugs:
     interface: content
     content: do-port-numbers
     target: $SNAP_DATA/do-port-numbers
+    allow-auto-connection: true
 
   do-configs:
     interface: content
     content: do-configs
     target: $SNAP_DATA/do-configs
+    allow-auto-connection: true
 
   snapd-control:
     interface: snapd-control
@@ -204,12 +206,11 @@ plugs:
     interface: content
     content: aziot-identity-service
     target: $SNAP_DATA
+    allow-auto-connection: true
 
   account-control:
     interface: account-control
-
-  hardware-observe:
-    interface: hardware-observe
+    allow-auto-connection: true
 
   home:
     interface: home
