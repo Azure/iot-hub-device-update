@@ -74,7 +74,7 @@ install_githooks=false
 
 du_test_data_dir_path="/tmp/adu/"
 # DO Deps
-default_do_ref=user/andretoyama-msft/support-ubuntu2204
+default_do_ref=develop
 install_do=false
 do_ref=$default_do_ref
 
@@ -475,7 +475,7 @@ do_install_do() {
         do_url=https://github.com/Microsoft/do-client.git
     fi
 
-    git clone --recursive --single-branch --branch user/andretoyama-msft/support-ubuntu2204 --depth 1 $do_url . || return
+    git clone --recursive --single-branch --branch $do_ref --depth 1 $do_url . || return
 
     bootstrap_file=$do_dir/build/scripts/bootstrap.sh
     chmod +x $bootstrap_file || return
