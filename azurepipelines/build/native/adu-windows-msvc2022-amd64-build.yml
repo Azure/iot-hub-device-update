@@ -1,0 +1,55 @@
+
+trigger:
+    branches:
+        include:
+            - user/jw-msft/win-pipeline
+    paths:
+        exclude:
+            - docs/*
+            - README.md
+            - LICENSE.md
+            - .clang-format
+            - .cmake-format.json
+            - tools/*
+            - docker/*
+            - scripts/*
+
+pool:
+    vmImage: windows-2022
+
+steps:
+
+    - task: PowerShell@2
+      displayName: "Build Client, Unit Tests: Debug"
+      inputs:
+          targetType: "filePath"
+          filePath: $(Build.SourcesDirectory)\scripts\build.ps1
+          arguments: >
+              -Type Debug
+              -Clean
+              -BuildUnitTests
+              -Pipeline
+
+    - task: PowerShell@2
+      displayName: "Run Unit Tests"
+      inputs:
+          targetType: inline
+          script: $(Build.SourcesDirectory)\scripts\run_uts.ps1 -Pipeline
+
+    - task: PublishTestResults@2
+      inputs:
+          testResultsFormat: 'JUnit'
+          testResultsFiles: '**/TEST-*.xml'
+          failTaskOnFailedTests: true
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: 'out/Debug/bin/Debug'
+        artifact: 'bin'
+        publishLocation: 'pipeline'
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: 'out/Debug/lib/Debug'
+        artifact: 'lib'
+        publishLocation: 'pipeline'
