@@ -100,6 +100,8 @@ parts:
   du-agent:
     plugin: nil
     source: .
+    stage-snaps:
+      - deliveryoptimization-agent
     override-build: |
       ./scripts/install-deps.sh --work-folder /tmp --install-cmake
       ./scripts/build.sh --work-folder /tmp --ubuntu-core-snap-only
@@ -211,6 +213,9 @@ plugs:
   account-control:
     interface: account-control
     allow-auto-connection: true
+
+  hardware-observe:
+    interface: hardware-observe
 
   home:
     interface: home
