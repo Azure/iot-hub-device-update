@@ -4,7 +4,6 @@ Take a look at [dependencies](how-to-build-agent-code.md#dependencies-of-device-
 
 -   [Dependencies](how-to-build-agent-code.md#dependencies-of-device-update-agent)
 -   [As a standalone solution](how-to-build-agent-code.md#as-a-standalone-solution)
--   [Integrate the Device Update agent in your existing application or solution](how-to-build-agent-code.md#integrate-the-device-update-agent-in-your-existing-application-or-solution)
 
 ## Dependencies of Device Update Agent
 
