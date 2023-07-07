@@ -65,7 +65,7 @@ cmake_prefix="$work_folder"
 cmake_installer_dir=""
 cmake_dir_symlink="/tmp/deviceupdate-cmake"
 
-openssl_dir_path="${work_folder}/deviceupdate-openssl"
+openssl_dir_path="/usr/local/lib/deviceupdate-openssl"
 
 install_shellcheck=false
 supported_shellcheck_version='0.8.0'
@@ -80,9 +80,9 @@ do_ref=$default_do_ref
 
 # Dependencies packages
 # removed  'libssl-dev'
-aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
+aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
-compiler_packages=("gcc-{6,8,12}")
+compiler_packages=('gcc' 'g++')
 
 # Distro and arch info
 OS=""
@@ -137,6 +137,9 @@ print_help() {
     echo "-k, --keep-source-code            Indicates that source code should not be deleted after install from work_folder."
     echo ""
     echo "--use-ssh                 Use ssh URLs to clone instead of https URLs."
+    echo ""
+    echo "--openssl-dir-path        Specific path to install OpenSSL 1.1"
+    echo ""
     echo "--list-deps               List the states of the dependencies."
     echo "-h, --help                Show this help message."
     echo ""
@@ -172,8 +175,8 @@ do_install_openssl() {
     make || return
 
     $SUDO make install || return
-    export LD_LIBRARY_PATH="$work_folder/deviceupdate-openssl/lib:$LD_LIBRARY_PATH" || return
-    echo "OpenSSL has been installed in $work_folder/deviceupdate-openssl"
+    export LD_LIBRARY_PATH="$openssl_dir_path/lib:$LD_LIBRARY_PATH" || return
+    echo "OpenSSL has been installed in $openssl_dir_path"
 
     popd > /dev/null || return
 }
@@ -881,6 +884,10 @@ while [[ $1 != "" ]]; do
         ;;
     --use-ssh)
         use_ssh=true
+        ;;
+    --openssl-dir-path)
+        shift
+        openssl_dir_path=$1
         ;;
     --list-deps)
         do_list_all_deps

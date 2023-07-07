@@ -42,7 +42,7 @@ install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
-openssl_dir_path="${work_folder}/deviceupdate-openssl"
+openssl_dir_path="/usr/local/lib/deviceupdate-openssl"
 
 print_help() {
     echo "Usage: build.sh [options...]"
