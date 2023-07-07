@@ -79,7 +79,6 @@ install_do=false
 do_ref=$default_do_ref
 
 # Dependencies packages
-# removed  'libssl-dev'
 aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=('gcc' 'g++')
@@ -249,7 +248,7 @@ do_install_azure_iot_sdk() {
         "-Dskip_samples:BOOL=ON"
         "-Dbuild_service_client:BOOL=OFF"
         "-Dbuild_provisioning_service_client:BOOL=OFF"
-        "-DOPENSSL_ROOT_DIR=$work_folder/deviceupdate-openssl"
+        "-DOPENSSL_ROOT_DIR=$openssl_dir_path"
     )
 
     if [[ $keep_source_code == "true" ]]; then
@@ -490,7 +489,7 @@ do_install_do() {
     local do_cmake_options=(
         "-DDO_BUILD_TESTS:BOOL=OFF"
         "-DDO_INCLUDE_SDK=ON"
-        "-DOPENSSL_ROOT_DIR=$work_folder/deviceupdate-openssl"
+        "-DOPENSSL_ROOT_DIR=$openssl_dir_path"
     )
 
     if [[ $keep_source_code == "true" ]]; then
@@ -549,7 +548,7 @@ do_install_azure_blob_storage_file_upload_utility() {
         azure_blob_storage_file_upload_utility_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
     fi
 
-    azure_blob_storage_file_upload_utility_cmake_options+=("-DOPENSSL_ROOT_DIR=$work_folder/deviceupdate-openssl")
+    azure_blob_storage_file_upload_utility_cmake_options+=("-DOPENSSL_ROOT_DIR=$openssl_dir_path")
 
     echo -e "Building Azure Blob Storage File Upload Uility ...\n\tBranch: $azure_blob_storage_file_upload_utility_ref\n\t"
     cmake "${azure_blob_storage_file_upload_utility_cmake_options[@]}" .. || return

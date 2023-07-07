@@ -386,8 +386,8 @@ do_install_openssl() {
     make || return
 
     $SUDO make install || return
-    export LD_LIBRARY_PATH="$work_folder/deviceupdate-openssl/lib:$LD_LIBRARY_PATH" || return
-    echo "OpenSSL has been installed in $work_folder/deviceupdate-openssl"
+    export LD_LIBRARY_PATH="$openssl_dir_path/lib:$LD_LIBRARY_PATH" || return
+    echo "OpenSSL has been installed in $openssl_dir_path"
 
     popd > /dev/null || return
 }
