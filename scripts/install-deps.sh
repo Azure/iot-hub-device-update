@@ -162,13 +162,13 @@ do_install_githooks() {
 }
 
 do_install_openssl() {
-    local openssl_dir=$work_folder/openssl-1.1.1f
+    local openssl_dir=$work_folder/openssl-1.1.1u
     echo "Installing OpenSSL ..."
 
     $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
-    wget https://www.openssl.org/source/openssl-1.1.1f.tar.gz || return
+    wget https://www.openssl.org/source/openssl-1.1.1u.tar.gz || return
     mkdir -p $openssl_dir || return
-    tar -xf openssl-1.1.1f.tar.gz -C $openssl_dir --strip-components=1 || return
+    tar -xf openssl-1.1.1u.tar.gz -C $openssl_dir --strip-components=1 || return
     pushd $openssl_dir > /dev/null || return
     ./config --prefix="$openssl_dir_path" --openssldir="$openssl_dir_path" shared zlib || return
     make || return
