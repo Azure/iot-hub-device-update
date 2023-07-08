@@ -23,7 +23,7 @@ on:
 jobs:
   analyze:
     name: Analyze
-    runs-on: ${{ 'ubuntu-18.04' }}
+    runs-on: ${{ 'ubuntu-latest' }}
     timeout-minutes: ${{ 360 }}
     permissions:
       actions: read
