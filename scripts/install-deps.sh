@@ -169,7 +169,7 @@ do_install_aduc_packages() {
     elif [[ $OS == "Debian" && $VER == "11" ]]; then
         $SUDO apt-get install --yes gcc-10 g++-10 || return
     else
-        $SUDO apt-get install --yes gcc-8 g++-8 || return
+        $SUDO apt-get install --yes gcc g++ || return
     fi
 
     echo "Installing packages required for static analysis..."
