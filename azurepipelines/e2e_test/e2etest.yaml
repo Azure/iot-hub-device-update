@@ -33,6 +33,7 @@ stages:
                       targetArch: amd64
                       patchVersion: 4
           - job: BuildUbuntu_1804_ARM64
+            timeoutInMinutes: 360
             displayName: Building the Device Update Package for Ubuntu 18.04 ARM64
             continueOnError: False
             pool: aduc_1es_client_pool
@@ -52,6 +53,7 @@ stages:
                       targetOs: ubuntu2004
                       targetArch: amd64
           - job: BuildUbuntu_2004_ARM64
+            timeoutInMinutes: 360
             displayName: Building the Device Update Package for Ubuntu 20.04 ARM64
             continueOnError: False
             pool: aduc_1es_client_pool
@@ -70,6 +72,7 @@ stages:
           #             targetOs: ubuntu2204
           #             targetArch: amd64
           # - job: BuildUbuntu_2204_ARM64
+            # timeoutInMinutes: 360
             # displayName: Building the Device Update Package for Ubuntu 22.04 ARM64
             # continueOnError: False
             # pool: aduc_1es_client_pool
