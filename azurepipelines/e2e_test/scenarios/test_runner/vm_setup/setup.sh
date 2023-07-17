@@ -194,7 +194,6 @@ function verify_user_group_permissions() {
     adu_gid=$(id -g adu)
 
     # Find the main PID of the "AducIotAgent" service
-    sudo systemctl start deviceupdate-agent.service
     status_output=$(systemctl status deviceupdate-agent.service)
 
     main_pid=$(echo "$status_output" | awk '/Main PID/ {print $3}')
