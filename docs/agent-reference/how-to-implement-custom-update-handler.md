@@ -72,7 +72,7 @@ The component data is provided by Component Enumerator Extension, which usually 
 
 ## How To Build A Step Handler Extension
 
-To get started, take a look at existing Step Handler Extensions in [src/extensions/step_handlers](../../src/extension/stept_handlers) folder for reference.
+To get started, take a look at existing Step Handler Extensions in [src/extensions/step_handlers](../../src/extensions/stept_handlers) folder for reference.
 
 ## How To Register A Step Handler Extension
 
