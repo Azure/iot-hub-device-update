@@ -5,14 +5,12 @@ pr:
             - feature/wiot-s1
     paths:
         exclude:
-            - docs/*
-            - README.md
-            - LICENSE.md
-            - .clang-format
-            - .cmake-format.json
-            - tools/*
-            - docker/*
-            - licenses/*
+            - daemon
+            - docker
+            - docs
+            - licenses
+            - tools
+            - "**/*.md"
 
 trigger:
     branches:
@@ -20,14 +18,12 @@ trigger:
             - feature/wiot-s1
     paths:
         exclude:
-            - docs/*
-            - README.md
-            - LICENSE.md
-            - .clang-format
-            - .cmake-format.json
-            - tools/*
-            - docker/*
-            - licenses/*
+            - daemon
+            - docker
+            - docs
+            - licenses
+            - tools
+            - "**/*.md"
 
 pool:
     vmImage: windows-2022
