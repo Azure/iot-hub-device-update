@@ -3,7 +3,6 @@ pr:
     branches:
         include:
             - feature/wiot-s1
-            - user/jw-msft/win-pipeline
     paths:
         exclude:
             - docs/*
@@ -19,7 +18,6 @@ trigger:
     branches:
         include:
             - feature/wiot-s1
-            - user/jw-msft/win-pipeline
     paths:
         exclude:
             - docs/*
@@ -37,7 +35,7 @@ pool:
 steps:
 
     - task: PowerShell@2
-      displayName: "Build Client, Unit Tests: Debug"
+      displayName: "Build Client, Unit Tests: amd64_debug"
       inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)\scripts\build.ps1
@@ -48,7 +46,7 @@ steps:
               -Pipeline
 
     - task: PowerShell@2
-      displayName: "Run Unit Tests"
+      displayName: "Run Unit Tests - amd64_debug"
       inputs:
           targetType: inline
           script: $(Build.SourcesDirectory)\scripts\run_uts.ps1 -Pipeline
@@ -62,11 +60,36 @@ steps:
     - task: PublishPipelineArtifact@1
       inputs:
         targetPath: 'out/Debug/bin/Debug'
-        artifact: 'bin'
+        artifact: 'bin-amd64_debug'
         publishLocation: 'pipeline'
 
     - task: PublishPipelineArtifact@1
       inputs:
         targetPath: 'out/Debug/lib/Debug'
-        artifact: 'lib'
+        artifact: 'lib-Debug-amd64'
         publishLocation: 'pipeline'
+
+    - task: PowerShell@2
+      displayName: "Build Client, Unit Tests: arm64_release"
+      inputs:
+          targetType: "filePath"
+          filePath: $(Build.SourcesDirectory)\scripts\build.ps1
+          arguments: >
+              -Type Release
+              -GeneratorPlatform ARM64
+              -Clean
+              -BuildUnitTests
+              -Pipeline
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: 'out/ARM64-Release/bin/Release'
+        artifact: 'bin-arm64_release'
+        publishLocation: 'pipeline'
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: 'out/ARM64-Release/lib/Release'
+        artifact: 'lib-arm64_release'
+        publishLocation: 'pipeline'
+
