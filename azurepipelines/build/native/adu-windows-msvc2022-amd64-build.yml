@@ -30,7 +30,7 @@ pool:
 
 steps:
     - task: PowerShell@2
-      displayName: "Build Client, Unit Tests: amd64_debug"
+      displayName: "Build Client + UTs - amd64_debug"
       inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)\scripts\build.ps1
@@ -65,7 +65,7 @@ steps:
         publishLocation: 'pipeline'
 
     - task: PowerShell@2
-      displayName: "Build Client, Unit Tests: arm64_release"
+      displayName: "Build Client + UTs - arm64_release"
       inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)\scripts\build.ps1
