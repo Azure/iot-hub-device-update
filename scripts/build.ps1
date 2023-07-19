@@ -29,8 +29,8 @@ Param(
     # Log folder to use for DU logs
     # TODO(JeffMill): Change this when folder structure determined.
     [string]$LogDir = '/var/log/adu',
-    # Running in pipeline?
-    [switch]$Pipeline
+    # Non-Interactive?
+    [switch]$NoPrompt
 )
 
 function Show-Warning {
@@ -308,7 +308,7 @@ if (-not $Clean) {
 }
 
 if ($Clean) {
-    if (-not $Pipeline) {
+    if (-not $NoPrompt) {
         $decision = $Host.UI.PromptForChoice(
             'Clean Build',
             'Are you sure?',

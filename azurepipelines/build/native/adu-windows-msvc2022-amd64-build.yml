@@ -43,7 +43,7 @@ steps:
               -Type Debug
               -Clean
               -BuildUnitTests
-              -Pipeline
+              -NoPrompt
 
     - task: PowerShell@2
       displayName: "Run Unit Tests - amd64_debug"
@@ -79,7 +79,7 @@ steps:
               -GeneratorPlatform ARM64
               -Clean
               -BuildUnitTests
-              -Pipeline
+              -NoPrompt
 
     - task: PublishPipelineArtifact@1
       inputs:
