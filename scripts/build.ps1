@@ -253,9 +253,9 @@ $runtime_dir = "$BuildOutputPath/bin"
 $library_dir = "$BuildOutputPath/lib"
 
 $cmake_bin = 'cmake.exe'
-$cmake_cmd = Get-Command cmake.exe
+$cmake_cmd = Get-Command -CommandType Application cmake.exe
 $cmake_bin = $cmake_cmd.Path
-Write-Verbose ('Using $cmake_cmd.Path')
+Write-Verbose "Using CMake path: $cmake_bin"
 
 $PlatformLayer = 'windows'
 
