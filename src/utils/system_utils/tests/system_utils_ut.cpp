@@ -263,6 +263,11 @@ TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirDefault")
 #endif
     }
 
+}
+
+// TODO: Remove intrinsic !mayfail tag once windows pipeline is using self-hosted vmImage
+TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirDefault negative", "[!mayfail]")
+{
     // We choose /sys because it will fail for root users and non-root users.
     SECTION("Make directory under /sys")
     {

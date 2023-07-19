@@ -2,10 +2,12 @@ param(
     [ValidateSet('Release', 'RelWithDebInfo', 'Debug')]
     [string]$Type = 'Debug',
     [switch]$ShowCTestOutput = $false,
-    [switch]$RerunFailed = $false
+    [switch]$RerunFailed = $false,
+    [switch]$Pipeline = $false
 )
 
-if ('S-1-5-32-544' -in ([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups) {
+# S-1-5-32-544 is local admins group
+if (-not $Pipeline -and 'S-1-5-32-544' -in ([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups) {
     Write-Warning 'Unit tests should not be run elevated.'
     exit 1
 }
@@ -18,16 +20,22 @@ if (-not $root_dir) {
 
 "Running $Type Unit Tests . . ."
 
-$ctest_args = @('--verbose', '--test-dir', "$root_dir/out/$Type")
+$ctest_args = @('--verbose', '--test-dir', "$root_dir/out/$Type", "--output-junit", "$root_dir/out/TEST-$Type.xml")
 if ($RerunFailed) {
     $ctest_args += '--rerun-failed'
 }
 
+$ctest_cmd = (Get-Command 'ctest.exe')
+$ctest_bin = $ctest_cmd.Path
+
+"Using CTest executable: $ctest_bin"
+"Using CTest args: $ctest_args"
+
 if ($ShowCTestOutput) {
-    ctest.exe @ctest_args | Tee-Object -Variable out
+    & $ctest_bin @ctest_args | Tee-Object -Variable out
 }
 else {
-    $out = ctest.exe @ctest_args
+    $out = & $ctest_bin @ctest_args
 }
 
 $lines = @()

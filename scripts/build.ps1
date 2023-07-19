@@ -28,7 +28,9 @@ Param(
     [string]$LogLib = 'zlog',
     # Log folder to use for DU logs
     # TODO(JeffMill): Change this when folder structure determined.
-    [string]$LogDir = '/var/log/adu'
+    [string]$LogDir = '/var/log/adu',
+    # Running in pipeline?
+    [switch]$Pipeline
 )
 
 function Show-Warning {
@@ -205,8 +207,8 @@ function Install-DeliveryOptimization {
     $DO_CMAKE_OPTIONS | ForEach-Object { Show-Bullet $_ }
     ''
 
-    cmake.exe -S . -B $build_dir @DO_CMAKE_OPTIONS
-    cmake.exe --build $build_dir --config $Type --parallel
+    & $cmake_bin -S . -B $build_dir @DO_CMAKE_OPTIONS
+    & $cmake_bin --build $build_dir --config $Type --parallel
 
     Pop-Location
     ''
@@ -249,7 +251,11 @@ if ($BuildDocumentation) {
 # Set default log dir if not specified.
 $runtime_dir = "$BuildOutputPath/bin"
 $library_dir = "$BuildOutputPath/lib"
+
 $cmake_bin = 'cmake.exe'
+$cmake_cmd = Get-Command cmake.exe
+$cmake_bin = $cmake_cmd.Path
+Write-Verbose ('Using $cmake_cmd.Path')
 
 $PlatformLayer = 'windows'
 
@@ -302,18 +308,20 @@ if (-not $Clean) {
 }
 
 if ($Clean) {
-    $decision = $Host.UI.PromptForChoice(
-        'Clean Build',
-        'Are you sure?',
-        @(
-            (New-Object Management.Automation.Host.ChoiceDescription '&Yes', 'Perform clean build'),
-            (New-Object Management.Automation.Host.ChoiceDescription '&No', 'Stop build')
-        ),
-        1)
-    if ($decision -ne 0) {
-        exit 1
+    if (-not $Pipeline) {
+        $decision = $Host.UI.PromptForChoice(
+            'Clean Build',
+            'Are you sure?',
+            @(
+                (New-Object Management.Automation.Host.ChoiceDescription '&Yes', 'Perform clean build'),
+                (New-Object Management.Automation.Host.ChoiceDescription '&No', 'Stop build')
+            ),
+            1)
+        if ($decision -ne 0) {
+            exit 1
+        }
+        ''
     }
-    ''
 
     Show-Header 'Cleaning repo'
 
@@ -349,7 +357,7 @@ if ($Clean) {
     $DU_CMAKE_OPTIONS | ForEach-Object { Show-Bullet $_ }
     ''
 
-    & $cmake_bin -S "$root_dir" -B $BuildOutputPath @DU_CMAKE_OPTIONS 2>&1 | Tee-Object -Variable cmake_output
+    & $cmake_bin -S "$root_dir" -B $BuildOutputPath @DU_CMAKE_OPTIONS
     $ret_val = $LASTEXITCODE
 
     if ($ret_val -ne 0) {

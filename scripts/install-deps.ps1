@@ -149,7 +149,7 @@ if (-not (Get-Command 'winget.exe' -CommandType Application -ErrorAction Silentl
 
     # Prereq:  Microsoft.UI.Xaml.2.7.appx
     $package = Get-AppxPackage | Where-Object { $_.Name -eq 'Microsoft.UI.Xaml.2.7' -and $_.Architecture -eq 'X64' }
-    if (not $package) {
+    if (-not $package) {
         Invoke-WebRequestNoProgress `
             -Uri 'https://www.nuget.org/api/v2/package/Microsoft.UI.Xaml/2.7.3' `
             -OutFile 'microsoft.ui.xaml.2.7.3.zip'
