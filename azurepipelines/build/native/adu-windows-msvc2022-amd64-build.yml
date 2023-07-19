@@ -1,7 +1,8 @@
 
-trigger:
+pr:
     branches:
         include:
+            - feature/wiot-s1
             - user/jw-msft/win-pipeline
     paths:
         exclude:
@@ -12,7 +13,23 @@ trigger:
             - .cmake-format.json
             - tools/*
             - docker/*
-            - scripts/*
+            - licenses/*
+
+trigger:
+    branches:
+        include:
+            - feature/wiot-s1
+            - user/jw-msft/win-pipeline
+    paths:
+        exclude:
+            - docs/*
+            - README.md
+            - LICENSE.md
+            - .clang-format
+            - .cmake-format.json
+            - tools/*
+            - docker/*
+            - licenses/*
 
 pool:
     vmImage: windows-2022
