@@ -33,7 +33,6 @@ pool:
     vmImage: windows-2022
 
 steps:
-
     - task: PowerShell@2
       displayName: "Build Client, Unit Tests: amd64_debug"
       inputs:
