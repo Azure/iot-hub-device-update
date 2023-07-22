@@ -31,8 +31,8 @@ pool:
 jobs:
     - job: BuildAduAgent_WindowsServer2022_msvc2022_amd64
       displayName: "Build ADU Agent - Windows Server 2022 - MSVC 2022 (amd64)"
-      timeoutInMinutes: 45
-      cancelTimeoutInMinutes: 45
+      timeoutInMinutes: 60
+      cancelTimeoutInMinutes: 60
       steps:
           - task: PowerShell@2
             displayName: "Build Client + UTs - amd64_debug"
@@ -71,8 +71,8 @@ jobs:
 
     - job: BuildAduAgent_WindowsServer2022_msvc2022_arm64
       displayName: "Build ADU Agent - Windows Server 2022 - MSVC 2022 (arm64)"
-      timeoutInMinutes: 45
-      cancelTimeoutInMinutes: 45
+      timeoutInMinutes: 60
+      cancelTimeoutInMinutes: 60
       steps:
           - task: PowerShell@2
             displayName: "Build Client + UTs - arm64_release"
