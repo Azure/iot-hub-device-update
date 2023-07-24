@@ -29,8 +29,8 @@ Param(
     # Log folder to use for DU logs
     # TODO(JeffMill): Change this when folder structure determined.
     [string]$LogDir = '/var/log/adu',
-    # Running in pipeline?
-    [switch]$Pipeline
+    # Non-Interactive?
+    [switch]$NoPrompt
 )
 
 function Show-Warning {
@@ -253,9 +253,9 @@ $runtime_dir = "$BuildOutputPath/bin"
 $library_dir = "$BuildOutputPath/lib"
 
 $cmake_bin = 'cmake.exe'
-$cmake_cmd = Get-Command cmake.exe
+$cmake_cmd = Get-Command -CommandType Application cmake.exe
 $cmake_bin = $cmake_cmd.Path
-Write-Verbose ('Using $cmake_cmd.Path')
+Write-Verbose "Using CMake path: $cmake_bin"
 
 $PlatformLayer = 'windows'
 
@@ -308,7 +308,7 @@ if (-not $Clean) {
 }
 
 if ($Clean) {
-    if (-not $Pipeline) {
+    if (-not $NoPrompt) {
         $decision = $Host.UI.PromptForChoice(
             'Clean Build',
             'Are you sure?',
