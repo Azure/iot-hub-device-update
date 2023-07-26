@@ -18,5 +18,10 @@ target_include_directories (
 
 target_link_iothub_client (${PROJECT_NAME} PUBLIC)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE IotHubClient::iothub_client
-                                               aduc::communication_abstraction aduc::logging)
+target_link_libraries (
+    ${PROJECT_NAME}
+    PRIVATE IotHubClient::iothub_client
+            aduc::communication_abstraction
+            aduc::logging
+            iothub_client_mqtt_transport
+            umqtt)

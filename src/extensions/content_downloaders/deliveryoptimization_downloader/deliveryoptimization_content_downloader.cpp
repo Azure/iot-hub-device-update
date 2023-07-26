@@ -72,7 +72,7 @@ ADUC_Result do_download(
         "Downloading File '%s' from '%s' to '%s'", entity->TargetFilename, entity->DownloadUri, fullFilePath.c_str());
 
     const std::error_code doErrorCode = MSDO::download::download_url_to_path(
-        entity->DownloadUri, fullFilePath.c_str(), false, std::chrono::seconds(timeoutInSeconds));
+        entity->DownloadUri, fullFilePath.str(), false, std::chrono::seconds(timeoutInSeconds));
     if (!doErrorCode)
     {
         resultCode = ADUC_Result_Download_Success;

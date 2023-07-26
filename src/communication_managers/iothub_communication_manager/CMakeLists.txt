@@ -52,5 +52,8 @@ else ()
     )
 endif ()
 
-target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_AGENT_FILEPATH="${ADUC_AGENT_FILEPATH}"
-                                                    ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")
+target_compile_definitions (
+    ${PROJECT_NAME}
+    PRIVATE ADUC_AGENT_FILEPATH="${ADUC_AGENT_FILEPATH}"
+            ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
+)

@@ -20,6 +20,7 @@
 
 #include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy
 #include <azure_c_shared_utility/strings.h> // STRING_*
+                                            //
 #include <parson.h>
 #include <sstream>
 #include <string>
@@ -161,7 +162,6 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
 
                 std::stringstream childManifestFile;
                 childManifestFile << workFolder << "/" << entity.TargetFilename;
-
                 ADUC_FileEntity_Uninit(&entity);
 
                 // For 'microsoft/steps:1' implementation, abort download task as soon as an error occurs.
@@ -258,6 +258,7 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
 
 done:
     workflow_free_string(workFolder);
+    ADUC_FileEntity_Uninit(entity);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {

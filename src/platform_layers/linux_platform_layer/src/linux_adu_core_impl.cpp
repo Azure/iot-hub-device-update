@@ -103,7 +103,7 @@ static ContentHandler* GetUpdateManifestHandler(const ADUC_WorkflowData* workflo
 
     // Starting from version 4, the top-level update manifest doesn't contains the 'updateType' property.
     // The manifest contains an Instruction (steps) data, which requires special processing.
-    // For backword compatibility and avoid code complexity, for V4, we will process the top level update content
+    // For backward compatibility and avoid code complexity, for V4, we will process the top level update content
     // using 'microsoft/update-manifest:4'
     int updateManifestVersion = workflow_get_update_manifest_version(workflowData->WorkflowHandle);
     if (updateManifestVersion >= 4)

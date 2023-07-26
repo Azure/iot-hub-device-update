@@ -25,7 +25,11 @@ endif ()
 # Replace comma delimiter with semicolon to form a list
 # Converts the list passed in on the command line to a CMake list.
 
-string (REPLACE "," ";" ADUC_STEP_HANDLER_LIST ${ADUC_STEP_HANDLERS})
+string (
+    REPLACE ","
+            ";"
+            ADUC_STEP_HANDLER_LIST
+            ${ADUC_STEP_HANDLERS})
 
 set (source_files ${agent_c_files})
 
@@ -43,9 +47,12 @@ set_target_properties (${target_name} PROPERTIES COMPILE_DEFINITIONS _DEFAULT_SO
 
 target_compile_definitions (
     ${target_name}
-    PRIVATE ADUC_VERSION="${ADUC_VERSION}" ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
+    PRIVATE ADUC_VERSION="${ADUC_VERSION}"
+            ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
+            ADUC_CONF_FOLDER="${ADUC_CONF_FOLDER}"
             ADUC_STEP_HANDLERS="${ADUC_STEP_HANDLERS}"
-            ADUSHELL_EFFECTIVE_GROUP_NAME="${ADUSHELL_EFFECTIVE_GROUP_NAME}" ${adushell_def})
+            ADUSHELL_EFFECTIVE_GROUP_NAME="${ADUSHELL_EFFECTIVE_GROUP_NAME}"
+            ${adushell_def})
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
@@ -54,13 +61,25 @@ if (WIN32)
     target_link_libraries (${target_name} PRIVATE unofficial::getopt-win32::getopt)
 endif ()
 
-target_link_libraries (${target_name} PRIVATE aduc::logging aduc::c_utils aduc::config_utils
-                                              aduc::process_utils aduc::string_utils)
+target_link_libraries (
+    ${target_name}
+    PRIVATE aduc::logging
+            aduc::c_utils
+            aduc::config_utils
+            aduc::process_utils
+            aduc::string_utils)
 
 add_subdirectory (scripts)
 
-# Install adu-shell to /usr/lib/adu folder.
+# Install adu-shell to /usr/bin folder.
 # Only owner and group can run adu-shell.
-install (TARGETS ${target_name}
-         RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}/adu
-                 PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_READ GROUP_EXECUTE)
+install (
+    TARGETS ${target_name}
+    RUNTIME
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+        PERMISSIONS
+            OWNER_EXECUTE
+            OWNER_WRITE
+            OWNER_READ
+            GROUP_READ
+            GROUP_EXECUTE)

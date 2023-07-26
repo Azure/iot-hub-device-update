@@ -18,7 +18,9 @@ target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::adu_types
-    PRIVATE aduc::communication_abstraction aduc::logging aduc::retry_utils)
+    PRIVATE aduc::communication_abstraction
+            aduc::logging
+            aduc::retry_utils)
 
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 

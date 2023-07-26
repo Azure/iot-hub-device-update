@@ -15,14 +15,26 @@ find_package (Parson REQUIRED)
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc)
 
-target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")
+target_compile_definitions (${PROJECT_NAME} PRIVATE ADUSHELL_FOLDER="${ADUSHELL_FOLDER}"
+                                                    ADUSHELL_FILENAME="${ADUSHELL_FILENAME}"
+                                                    ADUC_CONF_FILE="${ADUC_CONF_FILE}"
+                                                    ADUC_CONF_FOLDER="${ADUC_CONF_FOLDER}"
+                                                    ADUC_DATA_FOLDER="${ADUC_DATA_FOLDER}"
+                                                    ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR="${ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR}"
+                                                    ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER="${ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER}"
+                                                    ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS="${ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS}"
+                                                    ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS="${ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS}"
+                                                    ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}")
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC aduc::c_utils Parson::parson
-    PRIVATE aduc::logging aduc::parson_json_utils)
+    PUBLIC aduc::c_utils
+           Parson::parson
+    PRIVATE
+            aduc::logging
+            aduc::parson_json_utils)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

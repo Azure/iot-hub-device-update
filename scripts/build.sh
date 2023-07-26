@@ -42,6 +42,7 @@ install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
+openssl_dir_path="/usr/local/lib/deviceupdate-openssl"
 
 print_help() {
     echo "Usage: build.sh [options...]"
@@ -78,6 +79,8 @@ print_help() {
     echo "                                          Default is \"${step_handlers}\"."
     echo ""
     echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
+    echo ""
+    echo "--openssl-path                        Override the openssl path"
     echo ""
     echo "--major-version                       Major version of ADU"
     echo ""
@@ -299,6 +302,10 @@ while [[ $1 != "" ]]; do
         fi
         cmake_dir_path=$1
         ;;
+    --openssl-path)
+        shift
+        openssl_dir_path=$1
+        ;;
     --major-version)
         shift
         major_version=$1
@@ -370,7 +377,31 @@ else
 fi
 echo ''
 
-# Store options for CMAKE in an array
+do_install_openssl() {
+    local openssl_dir=$work_folder/openssl-1.1.1u
+    echo "Installing OpenSSL ..."
+
+    $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
+    wget https://www.openssl.org/source/openssl-1.1.1u.tar.gz || return
+    mkdir -p $openssl_dir || return
+    tar -xf openssl-1.1.1u.tar.gz -C $openssl_dir --strip-components=1 || return
+    pushd $openssl_dir > /dev/null || return
+    ./config --prefix="$openssl_dir_path" --openssldir="$openssl_dir_path" shared zlib || return
+    make || return
+
+    $SUDO make install || return
+    export LD_LIBRARY_PATH="$openssl_dir_path/lib:$LD_LIBRARY_PATH" || return
+    echo "OpenSSL has been installed in $openssl_dir_path"
+
+    popd > /dev/null || return
+}
+
+# Check if the directory exists
+if [ ! -d "$openssl_dir_path" ]; then
+    echo "OpenSSL directory not found. Invoking installation..."
+    do_install_openssl || return
+fi
+
 CMAKE_OPTIONS=(
     "-DADUC_BUILD_DOCUMENTATION:BOOL=$build_documentation"
     "-DADUC_BUILD_UNIT_TESTS:BOOL=$build_unittests"
@@ -385,6 +416,7 @@ CMAKE_OPTIONS=(
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
     "-DCMAKE_INSTALL_PREFIX=$install_prefix"
+    "-DOPENSSL_ROOT_DIR=$openssl_dir_path"
 )
 
 if [[ $major_version != "" ]]; then

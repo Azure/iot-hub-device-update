@@ -306,6 +306,41 @@ static const char* validConfigContentDownloadTimeout =
         R"(])"
     R"(})";
 
+static const char* validConfigWithOverrideFolder =
+    R"({)"
+        R"("schemaVersion": "1.1",)"
+        R"("aduShellTrustedUsers": ["adu","do"],)"
+        R"("manufacturer": "device_info_manufacturer",)"
+        R"("model": "device_info_model",)"
+        R"("downloadTimeoutInMinutes": 1440,)"
+        R"("aduShellFolder": "/usr/mybin",)"
+        R"("dataFolder": "/var/lib/adu/mydata",)"
+        R"("extensionsFolder": "/var/lib/adu/myextensions",)"
+        R"("compatPropertyNames": "manufacturer,model",)"
+        R"("agents": [)"
+            R"({ )"
+            R"("name": "host-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "AIS",)"
+                R"("connectionData": "iotHubDeviceUpdate")"
+            R"(},)"
+            R"("manufacturer": "Contoso",)"
+            R"("model": "Smart-Box")"
+            R"(},)"
+            R"({)"
+            R"("name": "leaf-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "string",)"
+                R"("connectionData": "HOSTNAME=...")"
+            R"(},)"
+            R"("manufacturer": "Fabrikam",)"
+            R"("model": "Camera")"
+            R"(})"
+        R"(])"
+    R"(})";
+
 static const char* invalidConfigContentDownloadTimeout =
     R"({)"
         R"("schemaVersion": "1.1",)"
@@ -374,7 +409,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK_THAT(json_array_get_string(config.aduShellTrustedUsers, 0), Equals("adu"));
         CHECK_THAT(json_array_get_string(config.aduShellTrustedUsers, 1), Equals("do"));
         CHECK_THAT(config.schemaVersion, Equals("1.1"));
@@ -408,7 +443,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK(config.compatPropertyNames == nullptr);
 
         ADUC_ConfigInfo_UnInit(&config);
@@ -421,7 +456,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         const ADUC_AgentInfo* first_agent_info = ADUC_ConfigInfo_GetAgent(&config, 0);
         CHECK(first_agent_info->additionalDeviceProperties != nullptr);
         ADUC_ConfigInfo_UnInit(&config);
@@ -434,7 +469,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -446,7 +481,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -458,7 +493,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -470,7 +505,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -482,7 +517,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK(config.downloadTimeoutInMinutes == 1440);
 
         ADUC_ConfigInfo_UnInit(&config);
@@ -495,8 +530,8 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK_FALSE(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
-
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
+        CHECK(config.downloadTimeoutInMinutes == 0);
         ADUC_ConfigInfo_UnInit(&config);
     }
 
@@ -507,7 +542,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK_THAT(config.iotHubProtocol, Equals("mqtt"));
 
         ADUC_ConfigInfo_UnInit(&config);
@@ -520,7 +555,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK_THAT(config.iotHubProtocol, Equals("mqtt/ws"));
 
         ADUC_ConfigInfo_UnInit(&config);
@@ -533,9 +568,66 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         ADUC_ConfigInfo config = {};
 
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu/du-config.json"));
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK(config.iotHubProtocol == nullptr);
 
         ADUC_ConfigInfo_UnInit(&config);
+    }
+
+    SECTION("Refcount Test")
+    {
+        REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentDownloadTimeout) == 0);
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
+        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+        CHECK(config != NULL);
+        CHECK(config->refCount == 1);
+
+        const ADUC_ConfigInfo* config2 = ADUC_ConfigInfo_GetInstance();
+        CHECK(config2 != NULL);
+        CHECK(config2->refCount == 2);
+
+        ADUC_ConfigInfo_ReleaseInstance(config2);
+        CHECK(config2->refCount == 1);
+        CHECK(config->refCount == 1);
+
+        ADUC_ConfigInfo_ReleaseInstance(config);
+        CHECK(config->refCount == 0);
+    }
+
+    SECTION("User folders from build configs")
+    {
+        REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentDownloadTimeout) == 0);
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
+        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+        CHECK(config != NULL);
+        CHECK_THAT(config->aduShellFolder, Equals("/usr/bin"));
+        CHECK_THAT(config->aduShellFilePath, Equals("/usr/bin/adu-shell"));
+        CHECK_THAT(config->dataFolder, Equals("/var/lib/adu"));
+        CHECK_THAT(config->extensionsFolder, Equals("/var/lib/adu/extensions"));
+        CHECK_THAT(config->extensionsComponentEnumeratorFolder, Equals("/var/lib/adu/extensions/component_enumerator"));
+        CHECK_THAT(config->extensionsContentDownloaderFolder, Equals("/var/lib/adu/extensions/content_downloader"));
+        CHECK_THAT(config->extensionsStepHandlerFolder, Equals("/var/lib/adu/extensions/update_content_handlers"));
+        CHECK_THAT(config->extensionsDownloadHandlerFolder, Equals("/var/lib/adu/extensions/download_handlers"));
+        CHECK_THAT(config->downloadsFolder, Equals("/var/lib/adu/downloads"));
+        ADUC_ConfigInfo_ReleaseInstance(config);
+        CHECK(config->refCount == 0);
+    }
+
+    SECTION("User folders from du-config file")
+    {
+        REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigWithOverrideFolder) == 0);
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
+        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+        CHECK_THAT(config->aduShellFolder, Equals("/usr/mybin"));
+        CHECK_THAT(config->aduShellFilePath, Equals("/usr/mybin/adu-shell"));
+        CHECK_THAT(config->dataFolder, Equals("/var/lib/adu/mydata"));
+        CHECK_THAT(config->extensionsFolder, Equals("/var/lib/adu/myextensions"));
+        CHECK_THAT(config->extensionsComponentEnumeratorFolder, Equals("/var/lib/adu/myextensions/component_enumerator"));
+        CHECK_THAT(config->extensionsContentDownloaderFolder, Equals("/var/lib/adu/myextensions/content_downloader"));
+        CHECK_THAT(config->extensionsStepHandlerFolder, Equals("/var/lib/adu/myextensions/update_content_handlers"));
+        CHECK_THAT(config->extensionsDownloadHandlerFolder, Equals("/var/lib/adu/myextensions/download_handlers"));
+        CHECK_THAT(config->downloadsFolder, Equals("/var/lib/adu/mydata/downloads"));
+        ADUC_ConfigInfo_ReleaseInstance(config);
+        CHECK(config->refCount == 0);
     }
 }

@@ -216,6 +216,7 @@ ADUC_Result SimulatorHandlerImpl::Download(const tagADUC_WorkflowData* workflowD
     result.ResultCode = ADUC_Result_Download_Success;
     result.ExtendedResultCode = 0;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
+    ADUC_WorkflowHandle childHandle = nullptr;
     ADUC_FileEntity fileEntity;
     memset(&fileEntity, 0, sizeof(fileEntity));
 

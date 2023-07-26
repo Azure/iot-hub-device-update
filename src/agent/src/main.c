@@ -237,6 +237,8 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
     launchArgs->logLevel = ADUC_LOG_INFO;
 #endif
 
+    launchArgs->configFolder = ADUC_CONF_FOLDER;
+
     launchArgs->argc = argc;
     launchArgs->argv = argv;
 
@@ -257,6 +259,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
 #ifdef ADUC_COMMAND_HELPER_H
             { "command",                       required_argument, 0, 'C' },
 #endif // #ifdef ADUC_COMMAND_HELPER_H
+            { "config-folder",                 required_argument, 0, 'F' },
             { 0, 0, 0, 0 }
         };
         // clang-format on
@@ -267,7 +270,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
         int option = getopt_long(
             argc,
             argv,
-            STOP_PARSE_ON_NONOPTION_ARG RET_COLON_FOR_MISSING_OPTIONARG "avehcu:l:d:n:E:t:i:C:",
+            STOP_PARSE_ON_NONOPTION_ARG RET_COLON_FOR_MISSING_OPTIONARG "avehcu:l:d:n:E:t:i:C:F:",
             long_options,
             &option_index);
 
@@ -329,6 +332,10 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             launchArgs->extensionId = optarg;
             break;
 
+        case 'F':
+            launchArgs->configFolder = optarg;
+            break;
+
         case ':':
             switch (optopt)
             {
@@ -337,6 +344,9 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
                 break;
             case 'l':
                 puts("Invalid log level after '--log-level' or '-l' option. Expected value: 0-3.");
+                break;
+            case 'F':
+                puts("Missing folder path after '--config-folder' or '-F' option.");
                 break;
             default:
                 printf("Missing an option value after -%c.\n", optopt);
@@ -837,16 +847,17 @@ void OnRestartSignal()
  * This to ensure that the agent process is run with the intended privileges, and the resource that
  * created by the agent has the correct ownership.
  *
+ * @remark This function requires that the ADUC_ConfigInfo singleton has been initialized.
+ *
  * @return bool true on success.
  */
 bool RunAsDesiredUser()
 {
     bool success = false;
-    ADUC_ConfigInfo config;
-    memset(&config, 0, sizeof(config));
-    if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
     {
-        Log_Error("Cannot read configuration file.");
+        Log_Error("ADUC_ConfigInfo_GetInstance failed.");
         return false;
     }
 
@@ -856,15 +867,16 @@ bool RunAsDesiredUser()
         goto done;
     }
 
-    if (!PermissionUtils_SetProcessEffectiveUID(config.agents[0].runas))
+    if (!PermissionUtils_SetProcessEffectiveUID(config->agents[0].runas))
     {
-        Log_Error("Failed to set process effective user to '%s'. (errno:%d)", config.agents[0].runas, errno);
+        Log_Error("Failed to set process effective user to '%s'. (errno:%d)", config->agents[0].runas, errno);
         goto done;
     }
 
     success = true;
 done:
-    ADUC_ConfigInfo_UnInit(&config);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+
     return success;
 }
 
@@ -903,6 +915,15 @@ int main(int argc, char** argv)
 
     // Need to set ret and goto done after this to ensure proper shutdown and deinitialization.
     ADUC_Logging_Init(launchArgs.logLevel, "du-agent");
+
+    setenv(ADUC_CONFIG_FOLDER_ENV, launchArgs.configFolder, 1);
+
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
+    {
+        Log_Error("Cannot initialize config info.");
+        return -1;
+    }
 
     // default to failure
     ret = 1;
@@ -1079,6 +1100,8 @@ done:
     Log_Info("Agent exited with code %d", ret);
 
     ShutdownAgent();
+
+    ADUC_ConfigInfo_ReleaseInstance(config);
 
     return ret;
 }

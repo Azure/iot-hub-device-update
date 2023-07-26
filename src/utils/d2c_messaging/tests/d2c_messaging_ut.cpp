@@ -345,7 +345,7 @@ TEST_CASE("Deinitialization - in progress message", "[.][functional]")
     expectedAttempts = 0;
     MockCloudBehavior cb1[]{
         { 1000,
-          777 }, // Using 777, which is outside or normal http status code. So that we can retry w/o an aditional datay.
+          777 }, // Using 777, which is outside or normal http status code. So that we can retry w/o an additional delay.
         { 1000, 777 },
         { 2000, 200 }
     };
@@ -731,7 +731,7 @@ TEST_CASE("30 retries - httpStatus 401", "[.][functional]")
     {
         cb1[i].delayBeforeResponseMS = 10;
         cb1[i].httpStatus =
-            777; // Using 777, which is outside or normal http status code. So that we can retry w/o an aditional datay.
+            777; // Using 777, which is outside or normal http status code. So that we can retry w/o an additional delay.
     }
     cb1[expectedAttempts - 1].delayBeforeResponseMS = 5;
     cb1[expectedAttempts - 1].httpStatus = 200;

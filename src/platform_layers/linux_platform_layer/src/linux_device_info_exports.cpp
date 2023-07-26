@@ -60,6 +60,8 @@ public:
  * This could be the same as the name of the original equipment manufacturer (OEM).
  * e.g. Contoso
  *
+ * @remark This function requires that ADUC_ConfigInfo singleton has been initialized.
+ *
  * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
 static char* DeviceInfo_GetManufacturer()
@@ -73,19 +75,26 @@ static char* DeviceInfo_GetManufacturer()
 
     char* result = nullptr;
 
-    ADUC_ConfigInfo config = {};
-    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.manufacturer != nullptr)
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
     {
-        result = strdup(config.manufacturer);
+        Log_Error("Failed to get config info instance");
+        goto done;
+    }
+
+    if (config->manufacturer != nullptr)
+    {
+        result = strdup(config->manufacturer);
     }
     else
     {
-        // If file doesn't exist, or value wasn't specified, use build default.
+        // If value wasn't specified, use build default.
         result = strdup(ADUC_DEVICEINFO_MANUFACTURER);
     }
 
     valueIsDirty = false;
-    ADUC_ConfigInfo_UnInit(&config);
+done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return result;
 }
 
@@ -93,6 +102,8 @@ static char* DeviceInfo_GetManufacturer()
  * @brief Get device model.
  * Device model name or ID.
  * e.g. Surface Book 2
+ *
+ * @remark This function requires that ADUC_ConfigInfo singleton has been initialized.
  *
  * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
@@ -106,19 +117,26 @@ static char* DeviceInfo_GetModel()
     }
 
     char* result = nullptr;
-    ADUC_ConfigInfo config = {};
-    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.model != nullptr)
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
     {
-        result = strdup(config.model);
+        Log_Error("Failed to get config info instance");
+        goto done;
+    }
+
+    if (config->model != nullptr)
+    {
+        result = strdup(config->model);
     }
     else
     {
-        // If file doesn't exist, or value wasn't specified, use build default.
+        // If value wasn't specified, use build default.
         result = strdup(ADUC_DEVICEINFO_MODEL);
     }
 
     valueIsDirty = false;
-    ADUC_ConfigInfo_UnInit(&config);
+done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return result;
 }
 
@@ -127,7 +145,7 @@ static char* DeviceInfo_GetModel()
  * @param path The path to the file of name-value pair lines
  * @param name_property_name The identifier for the property that represents the os name.
  * @param version_property_name The identifier for the property that represents the os version.
- * @return OsReleaseInfo* The new OS release infol, or nullptr on error.
+ * @return OsReleaseInfo* The new OS release info, or nullptr on error.
  * @detail Caller will own OsReleaseInfo instance and must free with delete. Also, values will have surrounding double-quotes removed.
  */
 static OsReleaseInfo*
