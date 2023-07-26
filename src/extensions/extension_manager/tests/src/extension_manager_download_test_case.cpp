@@ -16,6 +16,7 @@
 #include <aduc/types/workflow.h>
 #include <aduc/workflow_internal.h>
 #include <aduc/workflow_utils.h>
+#include <aducpal/stdio.h> // remove
 #include <catch2/catch.hpp>
 #include <fstream>
 #include <memory>
@@ -160,6 +161,6 @@ void ExtensionManagerDownloadTestCase::RunCommon()
 
 void ExtensionManagerDownloadTestCase::Cleanup()
 {
-    ADUC_SystemUtils_RemoveFile(downloaded_file_path.c_str());
+    ADUCPAL_remove(downloaded_file_path.c_str());
     workflow_free(workflowHandle);
 }

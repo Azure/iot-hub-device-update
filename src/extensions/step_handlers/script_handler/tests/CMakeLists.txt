@@ -14,11 +14,13 @@ set (
     ../src/script_handler.cpp
     ../../../update_manifest_handlers/steps_handler/src/steps_handler.cpp)
 
+add_executable (${PROJECT_NAME} ${sources})
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+
 find_package (Catch2 REQUIRED)
 find_package (IotHubClient REQUIRED)
 find_package (umqtt REQUIRED)
 
-add_executable (${PROJECT_NAME} ${sources})
 
 target_include_directories (
     ${PROJECT_NAME}
@@ -30,8 +32,6 @@ target_include_directories (
             ${ADU_EXTENSION_INCLUDES}
             ${ADU_SHELL_INCLUDES}
             ${PROJECT_SOURCE_DIR}/../../../update_manifest_handlers/steps_handler/inc)
-
-target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (
     ${PROJECT_NAME}

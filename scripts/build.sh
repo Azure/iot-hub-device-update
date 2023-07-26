@@ -6,6 +6,12 @@
 # Ensure that getopt starts from first option if ". <script.sh>" was used.
 OPTIND=1
 
+# Use sudo if user is not root
+SUDO=""
+if [ "$(id -u)" != "0" ]; then
+    SUDO="sudo"
+fi
+
 ret='exit'
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then

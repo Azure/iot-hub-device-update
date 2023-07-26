@@ -208,6 +208,7 @@ else ()
         "microsoft/swupdate_v2,microsoft/swupdate,microsoft/script,microsoft/apt,microsoft/simulator"
         CACHE STRING "The list of step handlers.")
 
+    set (
         ADUC_STEP_HANDLERS
         "microsoft/swupdate_v2,microsoft/swupdate,microsoft/script,microsoft/apt,microsoft/simulator"
         CACHE STRING "The list of step handlers.")

@@ -157,11 +157,14 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                         workflowLevel,
                         i,
                         entity.FileId);
+
+                    result.ResultCode = ADUC_Result_Failure;
                     result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_DOWNLOAD_FAILURE_UNKNOWNEXCEPTION;
                 }
 
                 std::stringstream childManifestFile;
                 childManifestFile << workFolder << "/" << entity.TargetFilename;
+
                 ADUC_FileEntity_Uninit(&entity);
 
                 // For 'microsoft/steps:1' implementation, abort download task as soon as an error occurs.
@@ -258,7 +261,6 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
 
 done:
     workflow_free_string(workFolder);
-    ADUC_FileEntity_Uninit(entity);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {

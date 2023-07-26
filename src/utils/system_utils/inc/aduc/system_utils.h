@@ -49,8 +49,6 @@ int ADUC_SystemUtils_RmDirRecursive(const char* path);
 
 int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, bool overwriteExistingFile);
 
-int ADUC_SystemUtils_RemoveFile(const char* path);
-
 int ADUC_SystemUtils_WriteStringToFile(const char* path, const char* buff);
 
 int ADUC_SystemUtils_ReadStringFromFile(const char* path, char* buff, size_t buffLen);
