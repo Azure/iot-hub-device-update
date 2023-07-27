@@ -25,8 +25,10 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMPILER_HARDENING_FLAGS} -Wall")
 
 add_definitions (-DADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")
 
+# Temporary set ADUC_SDK_INCLUDES to inc folder. This should be organized in to a proper SDK folder in the future.
+set (ADUC_SDK_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/sdk/inc)
 set (ADUC_TYPES_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc)
-set (ADUC_EXPORT_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/inc ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc)
+set (ADUC_EXPORT_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/inc ${ADUC_SDK_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc)
 set (ADU_SHELL_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/adu-shell/inc)
 set (ADU_EXTENSION_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/extensions/inc
                             ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc)

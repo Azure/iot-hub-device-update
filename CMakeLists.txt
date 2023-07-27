@@ -353,7 +353,7 @@ set (
 # Error Code Definition Folder and Filename
 set (
     ADUC_ERROR_CODE_DEFS_FOLDER
-    "/src/inc/aduc/"
+    "/src/sdk/inc/aduc/"
     CACHE STRING "The folder within Device Update to generate the result.h file to")
 
 set (
