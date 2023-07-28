@@ -47,6 +47,8 @@ target_link_libraries (
             aduc::workflow_utils
             Catch2::Catch2)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 target_compile_definitions (${PROJECT_NAME} PRIVATE ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}" ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
 include (CTest)

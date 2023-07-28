@@ -18,12 +18,22 @@ TEST_CASE("ExtensionManager::Download success should return success ResultCode")
 {
     ExtensionManagerDownloadTestCase testCase{ DownloadTestScenario::BasicDownloadSuccess };
     REQUIRE_NOTHROW(testCase.RunScenario());
-    CHECK(testCase.GetActualResult() == testCase.GetExpectedResult());
+
+    ADUC_Result actual_result = testCase.GetActualResult();
+    ADUC_Result expected_result = testCase.GetExpectedResult();
+
+    CHECK(actual_result.ResultCode == expected_result.ResultCode);
+    CHECK(actual_result.ExtendedResultCode == expected_result.ExtendedResultCode);
 }
 
 TEST_CASE("ExtensionManager::Download failure should return failure ResultCode and ERC")
 {
     ExtensionManagerDownloadTestCase testCase{ DownloadTestScenario::BasicDownloadFailure };
     REQUIRE_NOTHROW(testCase.RunScenario());
-    CHECK(testCase.GetActualResult() == testCase.GetExpectedResult());
+
+    ADUC_Result actual_result = testCase.GetActualResult();
+    ADUC_Result expected_result = testCase.GetExpectedResult();
+
+    CHECK(actual_result.ResultCode == expected_result.ResultCode);
+    CHECK(actual_result.ExtendedResultCode == expected_result.ExtendedResultCode);
 }

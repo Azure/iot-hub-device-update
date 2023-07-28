@@ -619,8 +619,6 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
         for (const auto& a : aduShellArgs)
         {
             char quote = '\"';
-            char whitespace = ' ';
-
             // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
             if (a[0] != '-')
             {
@@ -677,8 +675,8 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
     }
 
     actionResultObject = json_object(actionResultValue);
-    results.result.ResultCode = json_object_get_number(actionResultObject, "resultCode");
-    results.result.ExtendedResultCode = json_object_get_number(actionResultObject, "extendedResultCode");
+    results.result.ResultCode = static_cast<int32_t>(json_object_get_number(actionResultObject, "resultCode"));
+    results.result.ExtendedResultCode = static_cast<int32_t>(json_object_get_number(actionResultObject, "extendedResultCode"));
     workflow_set_result_details(
         workflowData->WorkflowHandle, json_object_get_string(actionResultObject, "resultDetails"));
 
@@ -738,12 +736,6 @@ done:
 ADUC_Result ScriptHandlerImpl::PerformAction(const std::string& action, const tagADUC_WorkflowData* workflowData)
 {
     ADUC_PerformAction_Results results = ScriptHandler_PerformAction(action, workflowData, false);
-    return results.result;
-}
-
-static ADUC_Result DoCancel(const tagADUC_WorkflowData* workflowData)
-{
-    ADUC_PerformAction_Results results = ScriptHandler_PerformAction("cancel", workflowData, false);
     return results.result;
 }
 

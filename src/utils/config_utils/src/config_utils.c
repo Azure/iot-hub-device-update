@@ -11,6 +11,7 @@
 #include <aduc/c_utils.h>
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
+#include <aducpal/stdlib.h> // setenv
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <azure_c_shared_utility/strings_types.h>
 #include <parson.h>
@@ -651,7 +652,7 @@ const ADUC_ConfigInfo* ADUC_ConfigInfo_GetInstance()
                 "%s environment variable not set, fallback to the default value %s.",
                 ADUC_CONFIG_FOLDER_ENV,
                 ADUC_CONF_FOLDER);
-            setenv(ADUC_CONFIG_FOLDER_ENV, configFolder = ADUC_CONF_FOLDER, 1);
+            ADUCPAL_setenv(ADUC_CONFIG_FOLDER_ENV, configFolder = ADUC_CONF_FOLDER, 1);
         }
         if (!ADUC_ConfigInfo_Init(&s_configInfo, configFolder))
         {

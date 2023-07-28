@@ -36,6 +36,8 @@ target_link_libraries (
             aduc::logging
             aduc::parson_json_utils)
 
+target_link_libraries (${PROJECT_NAME} PUBLIC libaducpal)
+
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
 endif ()

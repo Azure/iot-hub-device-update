@@ -11,6 +11,7 @@
 
 #include <aducpal/grp.h> // getgrnam
 #include <aducpal/pwd.h> // getpwnam
+#include <aducpal/stdlib.h> // setenv
 #include <aducpal/unistd.h> // getegid, geteuid, getuid, setuid
 
 #include <unordered_map>
@@ -337,7 +338,7 @@ int main(int argc, char** argv)
         goto done;
     }
 
-    setenv(ADUC_CONFIG_FOLDER_ENV, launchArgs.configFolder, 1);
+    ADUCPAL_setenv(ADUC_CONFIG_FOLDER_ENV, launchArgs.configFolder, 1);
     config = ADUC_ConfigInfo_GetInstance();
     if (config == NULL)
     {

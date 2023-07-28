@@ -26,8 +26,12 @@ target_link_libraries (
             aduc::hash_utils
             aduc::logging
             aduc::process_utils
-            aduc::string_utils
-            atomic
-            Microsoft::deliveryoptimization)
+            aduc::string_utils)
+
+if (WIN32)
+    target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+else ()
+    target_link_libraries (${PROJECT_NAME} PRIVATE Microsoft::deliveryoptimization atomic)
+endif ()
 
 install (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

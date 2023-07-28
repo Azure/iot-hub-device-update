@@ -28,6 +28,7 @@
 #include "aduc/shutdown_service.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h" // ADUC_SystemUtils_MkDirRecursiveDefault
+#include "aducpal/stdlib.h" // setenv
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
@@ -916,7 +917,7 @@ int main(int argc, char** argv)
     // Need to set ret and goto done after this to ensure proper shutdown and deinitialization.
     ADUC_Logging_Init(launchArgs.logLevel, "du-agent");
 
-    setenv(ADUC_CONFIG_FOLDER_ENV, launchArgs.configFolder, 1);
+    ADUCPAL_setenv(ADUC_CONFIG_FOLDER_ENV, launchArgs.configFolder, 1);
 
     const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
     if (config == NULL)
