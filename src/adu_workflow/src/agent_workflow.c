@@ -20,6 +20,7 @@
 
 #include "aduc/adu_core_export_helpers.h" // ADUC_MethodCall_RestartAgent
 #include "aduc/agent_orchestration.h"
+#include "aduc/config_utils.h"
 #include "aduc/download_handler_factory.h" // ADUC_DownloadHandlerFactory_LoadDownloadHandler
 #include "aduc/download_handler_plugin.h" // ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted
 #include "aduc/logging.h"
@@ -557,7 +558,17 @@ void ADUC_Workflow_HandlePropertyUpdate(
     else
     {
         // This is a top level workflow, make sure that we set the working folder correctly.
-        workflow_set_workfolder(nextWorkflow, "%s/%s", ADUC_DOWNLOADS_FOLDER, workflow_peek_id(nextWorkflow));
+        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+        if (config != NULL)
+        {
+            workflow_set_workfolder(nextWorkflow, "%s/%s", config->downloadsFolder, workflow_peek_id(nextWorkflow));
+            ADUC_ConfigInfo_ReleaseInstance(config);
+        }
+        else
+        {
+            Log_Error("Cannot set workfolder. Config is NULL.");
+            goto done;
+        }
     }
 
     // Continue with the new workflow.
@@ -1174,6 +1185,7 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
         memset(&result, 0, sizeof(result));
         ADUC_FileEntity fileEntity;
         memset(&fileEntity, 0, sizeof(fileEntity));
+
         if (!workflow_get_update_file(workflowHandle, i, &fileEntity))
         {
             continue;

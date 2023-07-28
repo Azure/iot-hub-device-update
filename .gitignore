@@ -8,7 +8,7 @@
 .gdbinit
 .gdb_history
 
-### etags, ctags, gtags (GNU global) and cscope
+### etags, ctags, gtags (GNU global), cscope, and cquery.
 TAGS
 .TAGS
 !TAGS/
@@ -22,6 +22,8 @@ GTAGS
 GRTAGS
 GPATH
 GSYMS
+.cquery
+compile_commands.json
 cscope.files
 cscope.out
 cscope.in.out

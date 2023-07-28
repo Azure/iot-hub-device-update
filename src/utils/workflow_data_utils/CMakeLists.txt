@@ -19,7 +19,11 @@ target_include_directories (
 #
 set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE aduc::adu_core_export_helpers aduc::adu_types
-                                               aduc::c_utils aduc::workflow_utils)
+target_link_libraries (
+    ${PROJECT_NAME}
+    PRIVATE aduc::adu_core_export_helpers
+            aduc::adu_types
+            aduc::c_utils
+            aduc::workflow_utils)
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)

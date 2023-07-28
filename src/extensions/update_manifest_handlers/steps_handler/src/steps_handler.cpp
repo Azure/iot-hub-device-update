@@ -20,6 +20,7 @@
 
 #include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy
 #include <azure_c_shared_utility/strings.h> // STRING_*
+                                            //
 #include <parson.h>
 #include <sstream>
 #include <string>
@@ -156,6 +157,8 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                         workflowLevel,
                         i,
                         entity.FileId);
+
+                    result.ResultCode = ADUC_Result_Failure;
                     result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_DOWNLOAD_FAILURE_UNKNOWNEXCEPTION;
                 }
 

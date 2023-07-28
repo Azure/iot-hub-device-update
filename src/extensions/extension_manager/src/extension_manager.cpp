@@ -11,6 +11,7 @@
 #include <aduc/c_utils.h>
 #include <aduc/calloc_wrapper.hpp> // ADUC::StringUtils::cstr_wrapper
 #include <aduc/component_enumerator_extension.hpp>
+#include <aduc/config_utils.h>
 #include <aduc/content_downloader_extension.hpp>
 #include <aduc/content_handler.hpp>
 #include <aduc/contract_utils.h>
@@ -202,6 +203,7 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
     GET_CONTRACT_INFO_PROC getContractInfoFn = nullptr;
     void* libHandle = nullptr;
     ADUC_ExtensionContractInfo contractInfo{};
+    const ADUC_ConfigInfo* config = nullptr;
 
     Log_Info("Loading handler for '%s'.", updateType.c_str());
 
@@ -243,9 +245,16 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
         goto done;
     }
 
+    config = ADUC_ConfigInfo_GetInstance();
+    if (config == nullptr)
+    {
+        Log_Error("ADUC_ConfigInfo singleton hasn't been initialized.");
+        goto done;
+    }
+
     result = LoadExtensionLibrary(
         updateType.c_str(),
-        ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR,
+        config->extensionsStepHandlerFolder,
         folderName.c_str(),
         ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME,
         "CreateUpdateContentHandlerExtension",
@@ -334,6 +343,9 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
     result = { ADUC_GeneralResult_Success };
 
 done:
+
+    ADUC_ConfigInfo_ReleaseInstance(config);
+
     if (result.ResultCode == 0)
     {
         if (libHandle != nullptr)
@@ -493,6 +505,11 @@ ADUC_Result ExtensionManager::GetContentDownloaderContractVersion(ADUC_Extension
 {
     *contractInfo = _contentDownloaderContractVersion;
     return ADUC_Result{ ADUC_GeneralResult_Success, 0 };
+}
+
+void ExtensionManager::SetContentDownloaderContractVersion(const ADUC_ExtensionContractInfo& info)
+{
+    _contentDownloaderContractVersion = info;
 }
 
 ADUC_Result ExtensionManager::GetComponentEnumeratorContractVersion(ADUC_ExtensionContractInfo* contractInfo)
@@ -806,11 +823,18 @@ done:
     return result;
 }
 
+DownloadProc ExtensionManager::DefaultDownloadProcResolver(void* lib)
+{
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    return reinterpret_cast<DownloadProc>(ADUCPAL_dlsym(lib, CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL));
+}
+
 ADUC_Result ExtensionManager::Download(
     const ADUC_FileEntity* entity,
     WorkflowHandle workflowHandle,
     ExtensionManager_Download_Options* options,
-    ADUC_DownloadProgressCallback downloadProgressCallback)
+    ADUC_DownloadProgressCallback downloadProgressCallback,
+    ADUC_DownloadProcResolver downloadProcResolver)
 {
     void* lib = nullptr;
     DownloadProc downloadProc = nullptr;
@@ -844,8 +868,7 @@ ADUC_Result ExtensionManager::Download(
         goto done;
     }
 
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    downloadProc = reinterpret_cast<DownloadProc>(ADUCPAL_dlsym(lib, CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL));
+    downloadProc = downloadProcResolver(lib);
     if (downloadProc == nullptr)
     {
         result = { /* .ResultCode = */ ADUC_Result_Failure,

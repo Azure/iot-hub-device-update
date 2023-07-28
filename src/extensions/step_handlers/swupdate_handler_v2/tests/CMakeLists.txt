@@ -28,12 +28,13 @@ target_include_directories (
 target_compile_definitions (
     ${PROJECT_NAME}
     PRIVATE ADUC_SWUPDATE_HANDLER_CONF_FILE_PATH="${ADUC_SWUPDATE_HANDLER_CONF_FILE_PATH}"
-            ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}")
+            ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
 target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::contract_utils
             aduc::c_utils
+            aduc::config_utils
             aduc::exception_utils
             aduc::extension_manager
             aduc::parser_utils

@@ -26,6 +26,7 @@ target_include_directories (
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::c_utils
+            aduc::config_utils
             aduc::contract_utils
             aduc::exception_utils
             aduc::extension_manager
@@ -44,7 +45,7 @@ target_compile_definitions (
     ${target_name}
     PRIVATE ADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}"
             ADUC_SWUPDATE_HANDLER_CONF_FILE_PATH="${ADUC_SWUPDATE_HANDLER_CONF_FILE_PATH}"
-            ADUC_VERSION_FILE="${ADUC_VERSION_FILE}" ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}")
+            ADUC_VERSION_FILE="${ADUC_VERSION_FILE}")
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
 

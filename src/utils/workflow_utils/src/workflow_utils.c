@@ -8,6 +8,7 @@
 #include "aduc/workflow_utils.h"
 #include "aduc/adu_types.h"
 #include "aduc/aduc_inode.h" // ADUC_INODE_SENTINEL_VALUE
+#include "aduc/config_utils.h"
 #include "aduc/extension_manager.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
@@ -30,7 +31,7 @@
 
 #include <aducpal/strings.h> // strcasecmp
 
-#define DEFAULT_SANDBOX_ROOT_PATH ADUC_DOWNLOADS_FOLDER
+#define DEFAULT_SANDBOX_ROOT_PATH "/var/lib/adu/downloads"
 
 #define WORKFLOW_PROPERTY_FIELD_ID "_id"
 #define WORKFLOW_PROPERTY_FIELD_RETRYTIMESTAMP "_retryTimestamp"
@@ -701,7 +702,7 @@ const char* _workflow_get_properties_retryTimestamp(ADUC_WorkflowHandle handle)
 }
 
 /**
- * @brief Helper function for checking the hash of the updatemanifest is equal to the
+ * @brief Helper function for checking the hash of the update manifest is equal to the
  * hash held within the signature
  * @param updateActionJson JSON value created form an updateActionJsonString and contains
  * both the updateManifest and the updateManifestSignature
@@ -1496,8 +1497,18 @@ char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
     }
     else
     {
-        Log_Info("Sandbox root path not set. Use default: '%s'", DEFAULT_SANDBOX_ROOT_PATH);
-        sprintf(dir, "%s/%s", DEFAULT_SANDBOX_ROOT_PATH, id);
+        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+        if (config != NULL)
+        {
+            Log_Info("Sandbox root path not set. Use default: '%s'", config->downloadsFolder);
+            sprintf(dir, "%s/%s", config->downloadsFolder, id);
+            ADUC_ConfigInfo_ReleaseInstance(config);
+        }
+        else
+        {
+            Log_Warn("Config is null. Use default sandbox root path: '%s'", DEFAULT_SANDBOX_ROOT_PATH);
+            sprintf(dir, "%s/%s", DEFAULT_SANDBOX_ROOT_PATH, id);
+        }
     }
 
     free(pwf);
@@ -2359,7 +2370,17 @@ bool workflow_transfer_data(ADUC_WorkflowHandle targetHandle, ADUC_WorkflowHandl
 
     // Update the cached workfolder to use the source workflow id.
     // Needs to be done before transferring parsed JSON obj below.
-    workflow_set_workfolder(targetHandle, "%s/%s", ADUC_DOWNLOADS_FOLDER, workflow_peek_id(sourceHandle));
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL)
+    {
+        workflow_set_workfolder(targetHandle, "%s/%s", config->downloadsFolder, workflow_peek_id(sourceHandle));
+        ADUC_ConfigInfo_ReleaseInstance(config);
+    }
+    else
+    {
+        Log_Error("Failed to set workfolder for target workflow. ConfigInfo is NULL.");
+        return false;
+    }
 
     // Transfer over the parsed JSON objects
     wfTarget->UpdateActionObject = wfSource->UpdateActionObject;

@@ -150,7 +150,7 @@ set (
 set (
     ADUC_EXTENSIONS_INSTALL_FOLDER
     "${ADUC_EXTENSIONS_FOLDER}/sources"
-    CACHE STRING "Path to the folder containing extensions .so file(s).")
+    CACHE STRING "Path to the folder containing extensions .so file(s). This value can not be overridden by du-config.json.")
 
 set (
     ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME
@@ -183,41 +183,19 @@ set (
     CACHE STRING "Sub folder for update step handler extensions.")
 
 set (
-    ADUC_COMPONENT_ENUMERATOR_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR}"
-    CACHE STRING "Path for component enumerator extension.")
-
-set (
-    ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER}"
-    CACHE STRING "Path for content downloader extension.")
-
-set (
-    ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS}"
-    CACHE STRING "Sub folder for update step handler extensions.")
-
-set (
     ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS
     "download_handlers"
     CACHE STRING "Sub folder for download handler extensions.")
 
-set (
-    ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS}"
-    CACHE STRING "Path for the download handler extensions")
-
-set (
-    ADUC_DOWNLOADS_FOLDER
-    "${ADUC_DATA_FOLDER}/downloads"
-    CACHE STRING "Path to the folder containing downloaded update artifacts.")
-
 # Define the mapping from step handler names to subdirectory names
-set (
-    ADUC_STEP_HANDLER_NAME_TO_DIRECOTRY_MAP
-    "microsoft/apt,apt_handler" "microsoft/script,script_handler"
-    "microsoft/simulator,simulator_handler" "microsoft/swupdate,swupdate_handler"
-    "microsoft/swupdate_v2,swupdate_handler_v2" "microsoft/wim,wim_handler")
+set(ADUC_STEP_HANDLER_NAME_TO_DIRECOTRY_MAP
+    "microsoft/apt,apt_handler"
+    "microsoft/script,script_handler"
+    "microsoft/simulator,simulator_handler"
+    "microsoft/swupdate,swupdate_handler"
+    "microsoft/swupdate_v2,swupdate_handler_v2"
+    "microsoft/wim,wim_handler"
+)
 
 if (WIN32)
     set (
@@ -225,6 +203,11 @@ if (WIN32)
         "microsoft/script,microsoft/simulator,microsoft/wim"
         CACHE STRING "The list of step handlers.")
 else ()
+    set (
+        ADUC_STEP_HANDLERS
+        "microsoft/swupdate_v2,microsoft/swupdate,microsoft/script,microsoft/apt,microsoft/simulator"
+        CACHE STRING "The list of step handlers.")
+
     set (
         ADUC_STEP_HANDLERS
         "microsoft/swupdate_v2,microsoft/swupdate,microsoft/script,microsoft/apt,microsoft/simulator"
@@ -277,7 +260,7 @@ set (
 set (
     ADUC_PLATFORM_LAYER
     "linux"
-    CACHE STRING "The platform layer to use. Options: linux,windows")
+    CACHE STRING "The platform layer to use. Options: linux windows")
 
 # By default ADU Agent daemon runs as root.
 # root user home directory should be /root.
@@ -335,7 +318,7 @@ set (
 
 set (
     ADUSHELL_FOLDER
-    "/usr/lib/adu"
+    "/usr/bin"
     CACHE STRING "The directory of the adu-shell binary.")
 
 set (

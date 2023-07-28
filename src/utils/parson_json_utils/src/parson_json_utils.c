@@ -62,6 +62,26 @@ bool ADUC_JSON_GetBooleanField(const JSON_Value* jsonValue, const char* jsonFiel
 }
 
 /**
+ * @brief Sets a string field to the a JSON Value.
+ *
+ * @param jsonValue The JSON Value.
+ * @param jsonFieldName The name of the JSON field to set.
+ * @param value The value fo the JSON field.
+ * @return bool true if call succeeded. false otherwise.
+ */
+bool ADUC_JSON_SetStringField(const JSON_Value* jsonValue, const char* jsonFieldName, const char* value)
+{
+    JSON_Object* object = json_value_get_object(jsonValue);
+
+    if (object == NULL)
+    {
+        return false;
+    }
+
+    return json_object_set_string(object, jsonFieldName, value) == JSONSuccess;
+}
+
+/**
  * @brief Gets a string field from the a JSON Value.
  *
  * @param jsonValue The JSON Value.
