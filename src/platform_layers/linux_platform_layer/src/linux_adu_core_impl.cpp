@@ -20,10 +20,11 @@
 #include "aduc/workflow_utils.h"
 
 #include <cstring>
-#include <grp.h> // for getgrnam
-#include <pwd.h> // for getpwnam
-#include <sys/stat.h>
-#include <unistd.h>
+
+#include <grp.h> // getgrnam
+#include <pwd.h> // getpwnam
+#include <sys/stat.h> // S_I*
+#include <sys/time.h> // gettimeofday
 
 #include <memory>
 #include <sstream>
@@ -127,9 +128,8 @@ static ContentHandler* GetUpdateManifestHandler(const ADUC_WorkflowData* workflo
     }
     else
     {
-        loadResult = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode =
-                           ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION };
+        loadResult.ResultCode = ADUC_Result_Failure;
+        loadResult.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION;
     }
 
     if (IsAducResultCodeFailure(loadResult.ResultCode))
@@ -311,16 +311,19 @@ ADUC_Result LinuxPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflowDat
 
     if (workflowData == nullptr)
     {
-        return ADUC_Result{ .ResultCode = ADUC_Result_Failure,
-                            .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_NULL_WORKFLOW };
+        ADUC_Result result;
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_NULL_WORKFLOW;
+        return result;
     }
 
     ADUC_Result result;
     contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
-        return ADUC_Result{ .ResultCode = ADUC_Result_Failure,
-                            .ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_BAD_UPDATETYPE };
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_BAD_UPDATETYPE;
+        return result;
     }
 
     return contentHandler->IsInstalled(workflowData);
@@ -339,9 +342,8 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* work
 
     // Try to delete existing directory.
     int dir_result;
-    struct stat sb
-    {
-    };
+    struct stat sb;
+
     if (stat(workFolder, &sb) == 0 && S_ISDIR(sb.st_mode))
     {
         dir_result = ADUC_SystemUtils_RmDirRecursive(workFolder);

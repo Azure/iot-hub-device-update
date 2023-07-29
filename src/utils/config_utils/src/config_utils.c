@@ -11,6 +11,7 @@
 #include <aduc/c_utils.h>
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
+#include <aducpal/stdlib.h> // setenv
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <azure_c_shared_utility/strings_types.h>
 #include <parson.h>
@@ -19,7 +20,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 static pthread_mutex_t s_config_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -240,7 +240,7 @@ bool ADUC_Json_GetAgents(JSON_Value* root_value, unsigned int* agentCount, ADUC_
         goto done;
     }
 
-    *agentCount = agents_count;
+    *agentCount = (unsigned int)agents_count;
 
     for (size_t index = 0; index < agents_count; ++index)
     {
@@ -652,7 +652,7 @@ const ADUC_ConfigInfo* ADUC_ConfigInfo_GetInstance()
                 "%s environment variable not set, fallback to the default value %s.",
                 ADUC_CONFIG_FOLDER_ENV,
                 ADUC_CONF_FOLDER);
-            setenv(ADUC_CONFIG_FOLDER_ENV, configFolder = ADUC_CONF_FOLDER, 1);
+            ADUCPAL_setenv(ADUC_CONFIG_FOLDER_ENV, configFolder = ADUC_CONF_FOLDER, 1);
         }
         if (!ADUC_ConfigInfo_Init(&s_configInfo, configFolder))
         {

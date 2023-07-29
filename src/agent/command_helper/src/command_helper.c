@@ -191,10 +191,12 @@ static bool SecurityChecks()
  *
  * @return void*
  */
-static void* ADUC_CommandListenerThread()
+static void* ADUC_CommandListenerThread(void* unused)
 {
     bool threadCreated = false;
     int fileDescriptor = 0;
+
+    (void)unused; // avoid unused parameter warning
 
     if (!TryCreateFIFOPipe() || !SecurityChecks())
     {

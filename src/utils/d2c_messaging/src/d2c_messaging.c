@@ -12,9 +12,17 @@
 #include <limits.h>
 #include <math.h>
 #include <stdbool.h>
-#include <sys/param.h> // MIN/MAX
-#include <time.h> // clock_gettime
-#include <unistd.h>
+
+#include <aducpal/sys_time.h> // ADUCPAL_clock_gettime
+#include <aducpal/unistd.h>
+
+#ifndef MAX
+#    define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef MIN
+#    define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
 
 #define DEFAULT_INITIAL_DELAY_MS 1000 // 1 second
 #define DEFAULT_MAX_BACKOFF_TIME_MS (60 * 1000) // 60 seconds
@@ -26,15 +34,17 @@
 static pthread_mutex_t s_pendingMessageStoreMutex = PTHREAD_MUTEX_INITIALIZER;
 static bool s_core_initialized = false;
 
-static ADUC_D2C_Message s_pendingMessageStore[ADUC_D2C_Message_Type_Max] = {};
-static ADUC_D2C_Message_Processing_Context s_messageProcessingContext[ADUC_D2C_Message_Type_Max] = {};
+static ADUC_D2C_Message s_pendingMessageStore[ADUC_D2C_Message_Type_Max];
+static ADUC_D2C_Message_Processing_Context s_messageProcessingContext[ADUC_D2C_Message_Type_Max];
 
 static void ProcessMessage(ADUC_D2C_Message_Processing_Context* context);
 
 static time_t GetTimeSinceEpochInSeconds()
 {
     struct timespec timeSinceEpoch;
-    clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
+
+    ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
+
     return timeSinceEpoch.tv_sec;
 }
 
@@ -553,6 +563,8 @@ void ADUC_D2C_Messaging_Set_Transport(ADUC_D2C_Message_Type type, ADUC_D2C_MESSA
 int ADUC_D2C_Default_Message_Transport_Function(
     void* cloudServiceHandle, void* context, ADUC_C2D_RESPONSE_HANDLER_FUNCTION c2dResponseHandlerFunc)
 {
+    UNREFERENCED_PARAMETER(cloudServiceHandle);
+
     ADUC_D2C_Message_Processing_Context* message_processing_context = (ADUC_D2C_Message_Processing_Context*)context;
     if (message_processing_context->message.cloudServiceHandle == NULL
         || *((ADUC_ClientHandle*)message_processing_context->message.cloudServiceHandle) == NULL)

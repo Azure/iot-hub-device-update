@@ -8,6 +8,7 @@
 #include "base64_utils.h"
 #include "crypto_lib.h"
 #include <aduc/calloc_wrapper.hpp>
+#include <array>
 #include <catch2/catch.hpp>
 #include <cstring>
 

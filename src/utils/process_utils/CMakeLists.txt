@@ -12,9 +12,15 @@ set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc)
 
-find_package (azure_c_shared_utility REQUIRED)
+target_link_libraries (
+    ${PROJECT_NAME}
+    PRIVATE aduc::logging
+            aduc::c_utils
+            aduc::config_utils
+            aduc::string_utils)
 
-target_link_libraries (${PROJECT_NAME} PUBLIC aziotsharedutil PRIVATE aduc::logging aduc::c_utils aduc::config_utils aduc::string_utils)
+target_link_aziotsharedutil (${PROJECT_NAME} PUBLIC)
+target_link_libraries (${PROJECT_NAME} PUBLIC libaducpal)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

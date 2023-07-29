@@ -35,7 +35,7 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
             sortedLogFileArray,
             sortedLogFileArraySize,
             testCandidateFileName,
-            testSizeOfCandidateFile,
+            static_cast<unsigned long>(testSizeOfCandidateFile),
             testCandidateLastWrite));
 
         ADUC::StringUtils::cstr_wrapper fileNameSentinel{ sortedLogFileArray[0].fileName };
@@ -56,7 +56,7 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
                 sortedLogFileArray,
                 sortedLogFileArraySize,
                 testCandidateFileName,
-                testSizeOfCandidateFile,
+                static_cast<unsigned long>(testSizeOfCandidateFile),
                 testCandidateLastWrite));
 
             ADUC::StringUtils::cstr_wrapper fileNameSentinel{ sortedLogFileArray[0].fileName };
@@ -73,7 +73,7 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
                 sortedLogFileArray,
                 sortedLogFileArraySize,
                 secondTestCandidateFileName,
-                testCandidateLastWrite,
+                static_cast<unsigned long>(testCandidateLastWrite),
                 secondTestCandidateLastWrite));
 
             ADUC::StringUtils::cstr_wrapper fileNameSentinel{ sortedLogFileArray[0].fileName };
@@ -88,7 +88,7 @@ TEST_CASE("FileInfoUtils_FillFileInfoWithNewestFilesInDir")
                 sortedLogFileArray,
                 sortedLogFileArraySize,
                 thirdTestCandidateFileName,
-                testSizeOfCandidateFile,
+                static_cast<unsigned long>(testSizeOfCandidateFile),
                 testCandidateLastWrite));
 
             // With no change secondTestCandidateFileName should still be at the front

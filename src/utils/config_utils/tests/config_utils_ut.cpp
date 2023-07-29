@@ -601,7 +601,12 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
         CHECK(config != NULL);
         CHECK_THAT(config->aduShellFolder, Equals("/usr/bin"));
+
+#if defined(WIN32)
+        CHECK_THAT(config->aduShellFilePath, Equals("/usr/bin/adu-shell.exe"));
+#else
         CHECK_THAT(config->aduShellFilePath, Equals("/usr/bin/adu-shell"));
+#endif
         CHECK_THAT(config->dataFolder, Equals("/var/lib/adu"));
         CHECK_THAT(config->extensionsFolder, Equals("/var/lib/adu/extensions"));
         CHECK_THAT(config->extensionsComponentEnumeratorFolder, Equals("/var/lib/adu/extensions/component_enumerator"));
@@ -619,7 +624,13 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
         const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
         CHECK_THAT(config->aduShellFolder, Equals("/usr/mybin"));
+
+#if defined(WIN32)
+        CHECK_THAT(config->aduShellFilePath, Equals("/usr/mybin/adu-shell.exe"));
+#else
         CHECK_THAT(config->aduShellFilePath, Equals("/usr/mybin/adu-shell"));
+#endif
+
         CHECK_THAT(config->dataFolder, Equals("/var/lib/adu/mydata"));
         CHECK_THAT(config->extensionsFolder, Equals("/var/lib/adu/myextensions"));
         CHECK_THAT(config->extensionsComponentEnumeratorFolder, Equals("/var/lib/adu/myextensions/component_enumerator"));

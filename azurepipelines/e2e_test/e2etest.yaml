@@ -52,6 +52,7 @@ stages:
                   parameters:
                       targetOs: ubuntu2004
                       targetArch: amd64
+
           - job: BuildUbuntu_2004_ARM64
             timeoutInMinutes: 360
             displayName: Building the Device Update Package for Ubuntu 20.04 ARM64
@@ -81,6 +82,7 @@ stages:
             #       parameters:
             #           targetOs: ubuntu2204
             #           targetArch: arm64
+
           - job: BuildDebian_10_AMD64
             displayName: Building the Device Update Package for Debian 10 amd64
             continueOnError: False

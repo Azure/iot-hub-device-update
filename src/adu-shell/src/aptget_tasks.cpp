@@ -62,7 +62,7 @@ ADUShellTaskResult DoAptGetTask(const ADUShell_LaunchArguments& launchArgs)
 
         taskProc = actionMap.at(launchArgs.action);
     }
-    catch (const std::exception& ex)
+    catch (const std::exception& /* ex */)
     {
         Log_Error("Unsupported action: '%s'", launchArgs.action);
         taskResult.SetExitStatus(ADUSHELL_EXIT_UNSUPPORTED);

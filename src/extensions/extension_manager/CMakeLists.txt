@@ -44,6 +44,8 @@ target_link_libraries (
             aduc::workflow_utils
             ${CMAKE_DL_LIBS})
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 #
 # Turn -fPIC on, in order to use this library in another shared library.
 #

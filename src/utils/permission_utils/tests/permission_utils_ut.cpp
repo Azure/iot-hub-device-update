@@ -6,33 +6,55 @@
  * Licensed under the MIT License.
  */
 #include <aduc/permission_utils.h>
+
+#include "aduc/system_utils.h"
+
 #include <catch2/catch.hpp>
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
-//bool PermissionUtils_VerifyFilemodeBits(const char* path, mode_t expectedPermissions, bool isExactMatch);
+#include <fstream> // ofstream
+
+#include <aducpal/stdio.h> // remove
+#include <aducpal/sys_stat.h> // S_I*
+
 TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
 {
-    const mode_t file_permissions = S_ISUID | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IWOTH; // 04752
+    mode_t file_permissions = S_ISUID | S_IRUSR | S_IWUSR | S_IRGRP | S_IWOTH;
+
+    // Windows only has X on folders and .EXE
+#if !defined(WIN32)
+    file_permissions |= (S_IXUSR | S_IXGRP);
+#endif
 
     // create temp file with all file permission bits set
-    char tmpfile_path[32] = {};
+    char tmpfile_path[32];
     strncpy(tmpfile_path, "/tmp/permissionUtilsUT_XXXXXX", sizeof(tmpfile_path));
-    int file_handle = mkstemp(tmpfile_path);
-    REQUIRE(file_handle != -1);
-    REQUIRE(0 == fchmod(file_handle, file_permissions));
+    ADUC_SystemUtils_MkTemp(tmpfile_path);
+    std::ofstream file{ tmpfile_path };
+    file.close();
+
+    REQUIRE(0 == ADUCPAL_chmod(tmpfile_path, file_permissions));
 
     CHECK(PermissionUtils_VerifyFilemodeExact(tmpfile_path, file_permissions));
+
+    // Windows doesn't support group.
+#if !defined(WIN32)
     CHECK_FALSE(PermissionUtils_VerifyFilemodeExact(tmpfile_path, file_permissions | S_IWGRP /* 04772 */));
+#endif
 
     CHECK(PermissionUtils_VerifyFilemodeBitmask(tmpfile_path, file_permissions));
-    CHECK(PermissionUtils_VerifyFilemodeBitmask(tmpfile_path, S_IXUSR | S_IRGRP | S_IWOTH /* 00142 */));
+
+    // Check some of the bits
+    file_permissions = S_IRGRP | S_IWOTH;
+#if !defined(WIN32)
+    file_permissions |= S_IXUSR;
+#endif
+    CHECK(PermissionUtils_VerifyFilemodeBitmask(tmpfile_path, file_permissions));
+
     CHECK_FALSE(PermissionUtils_VerifyFilemodeBitmask(
-        tmpfile_path,
-        S_ISUID | S_ISVTX | S_IRWXU | S_IRGRP | S_IXGRP | S_IWOTH /* 05752 */));
+        tmpfile_path, S_ISUID | S_ISVTX | S_IRWXU | S_IRGRP | S_IXGRP | S_IWOTH /* 05752 */));
 
     // cleanup
-    unlink(tmpfile_path);
+    ADUCPAL_remove(tmpfile_path);
 }

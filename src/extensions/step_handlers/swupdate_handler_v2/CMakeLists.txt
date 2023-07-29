@@ -20,11 +20,8 @@ target_sources (${target_name} PRIVATE src/handler_create.cpp src/swupdate_handl
 target_include_directories (
     ${target_name}
     PUBLIC inc
-    PRIVATE ${PROJECT_SOURCE_DIR}/inc
-            ${ADUC_TYPES_INCLUDES}
-            ${ADUC_EXPORT_INCLUDES}
-            ${ADU_SHELL_INCLUDES}
-            ${ADU_EXTENSION_INCLUDES})
+    PRIVATE ${PROJECT_SOURCE_DIR}/inc ${ADUC_TYPES_INCLUDES} ${ADUC_EXPORT_INCLUDES}
+            ${ADU_SHELL_INCLUDES} ${ADU_EXTENSION_INCLUDES})
 
 target_link_libraries (
     ${target_name}
@@ -42,6 +39,8 @@ target_link_libraries (
             aduc::workflow_utils
             Parson::parson)
 
+target_link_libraries (${target_name} PRIVATE libaducpal)
+
 target_compile_definitions (
     ${target_name}
     PRIVATE ADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}"
@@ -51,7 +50,5 @@ target_compile_definitions (
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
 
 if (ADUC_BUILD_UNIT_TESTS)
-
     add_subdirectory (tests)
-
 endif ()

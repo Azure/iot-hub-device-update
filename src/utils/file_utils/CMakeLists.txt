@@ -1,6 +1,7 @@
 project (file_utils)
 
 include (agentRules)
+
 compileasc99 ()
 disablertti ()
 
@@ -15,3 +16,5 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc)
 target_sources (${PROJECT_NAME} PRIVATE src/auto_opendir.cpp src/file_utils.cpp)
 
 target_link_libraries (${PROJECT_NAME} PRIVATE aduc::system_utils)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)

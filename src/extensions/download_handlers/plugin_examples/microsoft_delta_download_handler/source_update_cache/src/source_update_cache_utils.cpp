@@ -19,7 +19,9 @@
 #include <sys/stat.h> // stat
 #include <sys/types.h> // ino_t
 #include <time.h> // time_t
-#include <unistd.h> // unlink
+
+#include <aducpal/unistd.h> // unlink
+
 #include <vector>
 
 struct LessThan_UpdateCachePurgeFile
@@ -170,7 +172,8 @@ int ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
             int res = unlink(filePathForDelete.c_str());
             if (res != 0)
             {
-                Log_Error("unlink '%s', inode %d - errno: %d", filePathForDelete.c_str(), cachePurgeFile.GetInode(), errno);
+                Log_Error(
+                    "unlink '%s', inode %d - errno: %d", filePathForDelete.c_str(), cachePurgeFile.GetInode(), errno);
                 result = -1; // overall it is a failure, but keep going to attempt to free up space.
                 continue;
             }

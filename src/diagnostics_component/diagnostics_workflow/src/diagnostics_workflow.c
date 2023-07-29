@@ -10,7 +10,28 @@
 
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
-#include <azure_blob_storage_file_upload_utility.h>
+
+#if defined(_WIN32)
+typedef struct tagBlobStorageInfo
+{
+    STRING_HANDLE virtualDirectoryPath; //!< Virtual hierarchy for the blobs
+    STRING_HANDLE storageSasCredential; //!< Combined SAS URI and SAS Token for connecting to storage
+} BlobStorageInfo;
+
+static bool AzureBlobStorageFileUploadUtility_UploadFilesToContainer(
+    const BlobStorageInfo* blobInfo, const int maxConcurrency, VECTOR_HANDLE fileNames, const char* directoryPath)
+{
+    UNREFERENCED_PARAMETER(blobInfo);
+    UNREFERENCED_PARAMETER(maxConcurrency);
+    UNREFERENCED_PARAMETER(fileNames);
+    UNREFERENCED_PARAMETER(directoryPath);
+
+    return false;
+}
+#else
+#    include <azure_blob_storage_file_upload_utility.h>
+#endif
+
 #include <diagnostics_config_utils.h>
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>
@@ -137,7 +158,8 @@ Diagnostics_Result DiagnosticsWorkflow_UploadFilesForComponent(
     char* storageSasCredentialMemory = NULL;
     Diagnostics_Result result = Diagnostics_Result_Failure;
 
-    BlobStorageInfo blobInfo = {};
+    BlobStorageInfo blobInfo;
+    memset(&blobInfo, 0, sizeof(blobInfo));
 
     if (logComponent->componentName == NULL || logComponent->logPath == NULL)
     {
@@ -177,6 +199,7 @@ Diagnostics_Result DiagnosticsWorkflow_UploadFilesForComponent(
     }
 
     result = Diagnostics_Result_Success;
+
 done:
 
     STRING_delete(blobInfo.virtualDirectoryPath);
@@ -312,7 +335,8 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
     //
     for (size_t i = 0; i < numComponents; ++i)
     {
-        const DiagnosticsLogComponent* logComponent = DiagnosticsConfigUtils_GetLogComponentElem(workflowData, i);
+        const DiagnosticsLogComponent* logComponent =
+            DiagnosticsConfigUtils_GetLogComponentElem(workflowData, (unsigned int)i);
 
         if (logComponent == NULL || logComponent->componentName == NULL || logComponent->logPath == NULL)
         {
@@ -340,7 +364,8 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
     //
     for (size_t i = 0; i < numComponents; ++i)
     {
-        const DiagnosticsLogComponent* logComponent = DiagnosticsConfigUtils_GetLogComponentElem(workflowData, i);
+        const DiagnosticsLogComponent* logComponent =
+            DiagnosticsConfigUtils_GetLogComponentElem(workflowData, (unsigned int)i);
 
         if (logComponent == NULL || logComponent->componentName == NULL || logComponent->logPath == NULL)
         {

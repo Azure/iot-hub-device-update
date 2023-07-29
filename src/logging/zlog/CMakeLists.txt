@@ -14,11 +14,17 @@ set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/inc
                                                    ${ADUC_LOGGING_INCLUDES})
 
-find_package (Threads REQUIRED)
+if (WIN32)
+    find_package (PThreads4W REQUIRED)
+    target_link_libraries (${PROJECT_NAME} PRIVATE PThreads4W::PThreads4W aduc::system_utils)
+else ()
+    find_package (Threads REQUIRED)
+    target_link_libraries (${PROJECT_NAME} PRIVATE Threads::Threads aduc::system_utils)
+endif ()
 
-target_link_libraries (${PROJECT_NAME} PRIVATE Threads::Threads aduc::system_utils)
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal aduc::system_utils)
 
-# _DEAFULT_SOURCE - Needed so DT_REG is defined in dirent.h
+# _DEFAULT_SOURCE - Needed so DT_REG is defined in dirent.h
 #                   see man page for readdir
 #                   _BSD_SOURCE and _SVID_SOURCE are deprecated aliases for _DEFAULT_SOURCE.
 #

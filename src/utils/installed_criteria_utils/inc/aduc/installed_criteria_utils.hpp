@@ -55,6 +55,6 @@ const bool RemoveInstalledCriteria(const char* installedCriteriaFilePath, const 
  * @brief Remove all installed criteria data.
  *
  */
-void RemoveAllInstalledCriteria();
+void RemoveAllInstalledCriteria(const char* installedCriteriaFilePath);
 
 #endif // ADUC_INSTALLED_CRITERIA_UTILS_HPP

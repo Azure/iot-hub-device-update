@@ -132,6 +132,8 @@ static void OnDiagnosticsD2CMessageCompleted(void* context, ADUC_D2C_Message_Sta
  */
 static bool SendPnPMessageToIotHub(ADUC_ClientHandle clientHandle, const char* jsonString)
 {
+    UNREFERENCED_PARAMETER(clientHandle);
+
     bool success = false;
     // Reporting just a message
     STRING_HANDLE jsonToSend = PnP_CreateReportedProperty(
@@ -175,6 +177,8 @@ done:
 static bool SendPnPMessageToIotHubWithStatus(
     ADUC_ClientHandle clientHandle, const char* jsonString, int status, int propertyVersion)
 {
+    UNREFERENCED_PARAMETER(clientHandle);
+
     STRING_HANDLE jsonToSend = NULL;
     bool success = false;
 

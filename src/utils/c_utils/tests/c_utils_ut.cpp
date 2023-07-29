@@ -10,12 +10,14 @@ using Catch::Matchers::Equals;
 
 #include "aduc/c_utils.h"
 #include "aduc/string_c_utils.h"
+#include "aduc/system_utils.h"
 
 #include "aduc/calloc_wrapper.hpp"
 using ADUC::StringUtils::cstr_wrapper;
 
 #include <cstring>
 #include <fstream>
+
 class TemporaryTestFile
 {
 public:
@@ -27,8 +29,7 @@ public:
     explicit TemporaryTestFile(const std::vector<std::string>& content)
     {
         // Generate a unique filename.
-        int result = mkstemp(_filePath);
-        REQUIRE(result != -1);
+        ADUC_SystemUtils_MkTemp(_filePath);
 
         (void)std::remove(Filename());
         std::ofstream file{ Filename() };
@@ -106,17 +107,17 @@ TEST_CASE("ARRAY_SIZE")
 {
     SECTION("Inferred array size")
     {
-        int array0[] = {};
+        int array1[] = { 1 };
         int array3[] = { 1, 2, 3 };
-        CHECK(ARRAY_SIZE(array0) == 0);
+        CHECK(ARRAY_SIZE(array1) == 1);
         CHECK(ARRAY_SIZE(array3) == 3);
     }
 
     SECTION("Explicit array size")
     {
-        int array0[0];
+        int array1[1];
         int array3[3];
-        CHECK(ARRAY_SIZE(array0) == 0);
+        CHECK(ARRAY_SIZE(array1) == 1);
         CHECK(ARRAY_SIZE(array3) == 3);
     }
 
@@ -410,7 +411,6 @@ TEST_CASE("ADUC_StrNLen")
     SECTION("Check string in bounds")
     {
         std::string testStr = "foobar";
-        size_t max = 10;
 
         CHECK(ADUC_StrNLen(testStr.c_str(), 10) == testStr.length());
     }

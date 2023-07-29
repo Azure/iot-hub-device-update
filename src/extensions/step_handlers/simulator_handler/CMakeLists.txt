@@ -24,8 +24,6 @@ get_filename_component (
     ABSOLUTE
     "/")
 
-find_package (azure_c_shared_utility REQUIRED)
-
 target_compile_definitions (
     ${target_name} PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}")
 
@@ -37,6 +35,10 @@ target_link_libraries (
             aduc::parser_utils
             aduc::workflow_utils
             Parson::parson)
+
+target_link_libraries (${target_name} PRIVATE libaducpal)
+
+target_link_aziotsharedutil (${target_name} PRIVATE)
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
 
