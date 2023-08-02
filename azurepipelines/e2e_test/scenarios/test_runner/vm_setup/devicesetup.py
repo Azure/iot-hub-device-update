@@ -51,21 +51,22 @@ def main():
             "do"
         ],
         "iotHubProtocol": "mqtt",
-        "manufacturer": "contoso",
-        "model": "virtual-vacuum-v2",
+        "manufacturer": "contôsô"* 10000, # Including special characters
+        "model": "虚拟-vacuum-v2",  # Including different language characters
         "agents": [
-                        {
-                            "name": "main",
-                            "runas": "adu",
-                            "connectionSource": {
-                                "connectionType": "AIS",
-                                "connectionData": ""
-                            },
-                            "manufacturer": "contoso",
-                            "model": "virtual-vacuum-v2"
-                        }
+            {
+                "name": "main",
+                "runas": "adu",
+                "connectionSource": {
+                    "connectionType": "AIS",
+                    "connectionData": ""
+                },
+                "manufacturer": "contôsô" * 10000,
+                "model": "虚拟-vacuum-v2"
+            }
         ]
     }
+
 
     #
     # Write the DU configuration out to disk so we can install it as a part of the test
@@ -85,8 +86,8 @@ def main():
                         "do"
                     ],
                     "iotHubProtocol": "mqtt",
-                    "manufacturer": "contoso",
-                    "model": "virtual-vacuum-v2",
+                    "manufacturer": "contôsô" * 10000, # Including special characters
+                    "model": "虚拟-vacuum-v2",  # Including different language characters
                     "agents": [
                         {
                         "name": "main",
@@ -95,8 +96,8 @@ def main():
                             "connectionType": "string",
                             "connectionData": connectionString
                         },
-                        "manufacturer": "contoso",
-                        "model": "virtual-vacuum-v2"
+                        "manufacturer": "contôsô"* 10000,
+                        "model": "虚拟-vacuum-v2"
                         }
                     ]
                     }
@@ -111,7 +112,7 @@ def main():
     configTomlInfo = """\
 [provisioning]
 source = "manual"
-connection_string = "{connectionString}"
+connection_string = "{connectionString}" # Test adding comments
 [aziot_keys]
 [preloaded_keys]
 [cert_issuance]
