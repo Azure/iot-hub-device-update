@@ -1,11 +1,11 @@
 cmake_minimum_required (VERSION 3.5)
 
-project (crypto_utils)
+set (target_name crypto_utils)
 
-add_library (${PROJECT_NAME} STATIC src/crypto_lib.c src/root_key_util.c src/base64_utils.c)
-add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library (${target_name} STATIC src/crypto_lib.c src/root_key_util.c src/base64_utils.c)
+add_library (aduc::${target_name} ALIAS ${target_name})
 
-target_include_directories (${PROJECT_NAME} PUBLIC inc)
+target_include_directories (${target_name} PUBLIC inc)
 
 find_package (azure_c_shared_utility REQUIRED)
 find_package (OpenSSL REQUIRED)
@@ -13,10 +13,10 @@ find_package (OpenSSL REQUIRED)
 #
 # Turn -fPIC on, in order to use this library in another shared library.
 #
-set_property (TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_link_libraries (
-    ${PROJECT_NAME}
+    ${target_name}
     PUBLIC aduc::c_utils
     PRIVATE aziotsharedutil OpenSSL::Crypto)
 

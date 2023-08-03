@@ -1,7 +1,5 @@
 cmake_minimum_required (VERSION 3.5)
 
-project (azure_iot_aduc_shell)
-
 set (target_name adu-shell)
 
 include (agentRules)
@@ -34,7 +32,12 @@ string (
 set (source_files ${agent_c_files})
 
 # Support all microsoft/* update types by default.
-set (source_files ${agent_c_files} ${agent_apt_c_files} ${agent_swupdate_c_files} ${agent_script_c_files})
+set (
+    source_files
+    ${agent_c_files}
+    ${agent_apt_c_files}
+    ${agent_swupdate_c_files}
+    ${agent_script_c_files})
 
 set (adushell_def ADUSHELL_SWUPDATE="yes" ADUSHELL_APT="yes" ADUSHELL_SCRIPT="yes")
 

@@ -1,23 +1,22 @@
-project (curl_content_downloader)
-
+set (target_name curl_content_downloader)
 include (agentRules)
 
 compileasc99 ()
 
-add_library (${PROJECT_NAME} MODULE)
-add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library (${target_name} MODULE)
+add_library (aduc::${target_name} ALIAS ${target_name})
 
 target_sources (
-    ${PROJECT_NAME} PRIVATE curl_content_downloader.cpp curl_content_downloader.EXPORTS.cpp
-                            curl_content_downloader.h)
+    ${target_name} PRIVATE curl_content_downloader.cpp curl_content_downloader.EXPORTS.cpp
+                           curl_content_downloader.h)
 
-target_include_directories (${PROJECT_NAME} PUBLIC ${ADU_EXTENSION_INCLUDES} ${ADU_EXPORT_INCLUDES})
+target_include_directories (${target_name} PUBLIC ${ADU_EXTENSION_INCLUDES} ${ADU_EXPORT_INCLUDES})
 
 target_link_libraries (
-    ${PROJECT_NAME}
+    ${target_name}
     PRIVATE aduc::contract_utils
             aduc::hash_utils
             aduc::logging
             aduc::process_utils)
 
-install (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

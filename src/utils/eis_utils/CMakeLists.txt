@@ -1,17 +1,16 @@
 cmake_minimum_required (VERSION 3.5)
 
-project (eis_utils)
+set (target_name eis_utils)
+add_library (${target_name} STATIC src/eis_utils.c src/eis_coms.c src/eis_err.c)
+add_library (aduc::${target_name} ALIAS ${target_name})
 
-add_library (${PROJECT_NAME} STATIC src/eis_utils.c src/eis_coms.c src/eis_err.c)
-add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
-
-target_include_directories (${PROJECT_NAME} PUBLIC inc)
+target_include_directories (${target_name} PUBLIC inc)
 
 find_package (azure_c_shared_utility REQUIRED)
 find_package (Parson REQUIRED)
 
 target_link_libraries (
-    ${PROJECT_NAME}
+    ${target_name}
     PUBLIC aduc::c_utils
     PRIVATE aduc::adu_types
             aduc::logging
@@ -21,7 +20,7 @@ target_link_libraries (
 
 if (ADUC_BUILD_UNIT_TESTS)
     find_package (umock_c REQUIRED CONFIG)
-    target_link_libraries (${PROJECT_NAME} PRIVATE umock_c)
+    target_link_libraries (${target_name} PRIVATE umock_c)
 
     add_subdirectory (tests)
 endif ()
