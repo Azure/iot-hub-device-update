@@ -48,7 +48,7 @@ azure_sdk_ref=LTS_07_2021_Ref01
 # ADUC Test Deps
 
 install_catch2=false
-default_catch2_ref=v2.11.0
+default_catch2_ref=v2.13.9
 catch2_ref=$default_catch2_ref
 install_swupdate=false
 default_swupdate_ref=2021.11
@@ -65,6 +65,8 @@ cmake_prefix="$work_folder"
 cmake_installer_dir=""
 cmake_dir_symlink="/tmp/deviceupdate-cmake"
 
+openssl_dir_path="/usr/local/lib/deviceupdate-openssl"
+
 install_shellcheck=false
 supported_shellcheck_version='0.8.0'
 
@@ -79,7 +81,7 @@ do_ref=$default_do_ref
 # Dependencies packages
 aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
-compiler_packages=("gcc-[68]")
+compiler_packages=('gcc' 'g++')
 
 # Distro and arch info
 OS=""
@@ -134,6 +136,9 @@ print_help() {
     echo "-k, --keep-source-code            Indicates that source code should not be deleted after install from work_folder."
     echo ""
     echo "--use-ssh                 Use ssh URLs to clone instead of https URLs."
+    echo ""
+    echo "--openssl-dir-path        Specific path to install OpenSSL 1.1"
+    echo ""
     echo "--list-deps               List the states of the dependencies."
     echo "-h, --help                Show this help message."
     echo ""
@@ -156,6 +161,25 @@ do_install_githooks() {
     fi
 }
 
+do_install_openssl() {
+    local openssl_dir=$work_folder/openssl-1.1.1u
+    echo "Installing OpenSSL ..."
+
+    $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
+    wget https://www.openssl.org/source/openssl-1.1.1u.tar.gz || return
+    mkdir -p $openssl_dir || return
+    tar -xf openssl-1.1.1u.tar.gz -C $openssl_dir --strip-components=1 || return
+    pushd $openssl_dir > /dev/null || return
+    ./config --prefix="$openssl_dir_path" --openssldir="$openssl_dir_path" shared zlib || return
+    make || return
+
+    $SUDO make install || return
+    export LD_LIBRARY_PATH="$openssl_dir_path/lib:$LD_LIBRARY_PATH" || return
+    echo "OpenSSL has been installed in $openssl_dir_path"
+
+    popd > /dev/null || return
+}
+
 do_install_aduc_packages() {
     echo "Installing dependency packages for ADU Agent..."
 
@@ -164,9 +188,11 @@ do_install_aduc_packages() {
     # The latest version of gcc available on Debian is gcc-6. We install that version if we are
     # building for Debian, otherwise we install gcc-8 for Ubuntu.
     OS=$(lsb_release --short --id)
-    if [[ $OS == "debian" && $VER == "9" ]]; then
+    if [[ $OS == "Debian" && $VER == "9" ]]; then
         $SUDO apt-get install --yes gcc-6 g++-6 || return
     elif [[ $OS == "Debian" && $VER == "11" ]]; then
+        $SUDO apt-get install --yes gcc-10 g++-10 || return
+    elif [[ $OS == "Ubuntu" && $VER == "22.04" ]]; then
         $SUDO apt-get install --yes gcc-10 g++-10 || return
     else
         $SUDO apt-get install --yes gcc-8 g++-8 || return
@@ -182,6 +208,12 @@ do_install_aduc_packages() {
 
     # Note that clang-tidy requires clang to be installed so that it can find clang headers.
     $SUDO apt-get install --yes "${static_analysis_packages[@]}" || return
+
+    # Check if the directory exists
+    if [ ! -d "$openssl_dir_path" ]; then
+        echo "OpenSSL directory not found. Invoking installation..."
+        do_install_openssl || $ret
+    fi
 }
 
 do_install_azure_iot_sdk() {
@@ -216,6 +248,7 @@ do_install_azure_iot_sdk() {
         "-Dskip_samples:BOOL=ON"
         "-Dbuild_service_client:BOOL=OFF"
         "-Dbuild_provisioning_service_client:BOOL=OFF"
+        "-DOPENSSL_ROOT_DIR=$openssl_dir_path"
     )
 
     if [[ $keep_source_code == "true" ]]; then
@@ -259,7 +292,9 @@ do_install_catch2() {
 
     mkdir cmake || return
     pushd cmake > /dev/null || return
+
     cmake .. || return
+
     cmake --build . || return
     $SUDO cmake --build . --target install || return
     popd > /dev/null || return
@@ -444,8 +479,6 @@ do_install_do() {
 
     git clone --recursive --single-branch --branch $do_ref --depth 1 $do_url . || return
 
-    #TODO: Remove the sepecif commit once DO publishs a new tag
-    git checkout 02c9ae2c7484182903c66ad986a834762fc569e6
     bootstrap_file=$do_dir/build/scripts/bootstrap.sh
     chmod +x $bootstrap_file || return
     $SUDO $bootstrap_file --install build || return
@@ -456,6 +489,7 @@ do_install_do() {
     local do_cmake_options=(
         "-DDO_BUILD_TESTS:BOOL=OFF"
         "-DDO_INCLUDE_SDK=ON"
+        "-DOPENSSL_ROOT_DIR=$openssl_dir_path"
     )
 
     if [[ $keep_source_code == "true" ]]; then
@@ -513,6 +547,8 @@ do_install_azure_blob_storage_file_upload_utility() {
     else
         azure_blob_storage_file_upload_utility_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
     fi
+
+    azure_blob_storage_file_upload_utility_cmake_options+=("-DOPENSSL_ROOT_DIR=$openssl_dir_path")
 
     echo -e "Building Azure Blob Storage File Upload Uility ...\n\tBranch: $azure_blob_storage_file_upload_utility_ref\n\t"
     cmake "${azure_blob_storage_file_upload_utility_cmake_options[@]}" .. || return
@@ -847,6 +883,10 @@ while [[ $1 != "" ]]; do
         ;;
     --use-ssh)
         use_ssh=true
+        ;;
+    --openssl-dir-path)
+        shift
+        openssl_dir_path=$1
         ;;
     --list-deps)
         do_list_all_deps

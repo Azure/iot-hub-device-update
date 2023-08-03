@@ -21,9 +21,7 @@ target_compile_definitions (
         ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS="${ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS}"
         ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER="${ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER}"
         ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR="${ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR}"
-        ADUC_COMPONENT_ENUMERATOR_EXTENSION_DIR="${ADUC_COMPONENT_ENUMERATOR_EXTENSION_DIR}"
-        ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR="${ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR}"
-        ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR="${ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR}")
+        )
 
 #
 # Note: add ${CMAKE_DL_LIBS} for dynamic library loading support.
@@ -31,9 +29,9 @@ target_compile_definitions (
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types # download.h, update_content.h, and workflow.h used by header and impl
+           aduc::contract_utils
     PRIVATE aduc::c_utils
             aduc::config_utils
-            aduc::contract_utils
             aduc::download_handler_factory
             aduc::download_handler_plugin
             aduc::exception_utils
@@ -50,3 +48,7 @@ target_link_libraries (
 # Turn -fPIC on, in order to use this library in another shared library.
 #
 set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

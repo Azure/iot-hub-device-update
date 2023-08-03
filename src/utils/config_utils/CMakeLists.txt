@@ -13,8 +13,16 @@ find_package (azure_c_shared_utility REQUIRED)
 
 target_include_directories (${target_name} PUBLIC inc)
 
-target_compile_definitions (${target_name} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
-                                                   ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}")
+target_compile_definitions (${target_name} PRIVATE ADUSHELL_FOLDER="${ADUSHELL_FOLDER}"
+                                                    ADUSHELL_FILENAME="${ADUSHELL_FILENAME}"
+                                                    ADUC_CONF_FILE="${ADUC_CONF_FILE}"
+                                                    ADUC_CONF_FOLDER="${ADUC_CONF_FOLDER}"
+                                                    ADUC_DATA_FOLDER="${ADUC_DATA_FOLDER}"
+                                                    ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR="${ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR}"
+                                                    ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER="${ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER}"
+                                                    ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS="${ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS}"
+                                                    ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS="${ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS}"
+                                                    ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}")
 
 target_link_libraries (
     ${target_name}

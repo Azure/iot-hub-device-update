@@ -129,7 +129,7 @@ set (
 set (
     ADUC_EXTENSIONS_INSTALL_FOLDER
     "${ADUC_EXTENSIONS_FOLDER}/sources"
-    CACHE STRING "Path to the folder containing extensions .so file(s).")
+    CACHE STRING "Path to the folder containing extensions .so file(s). This value can not be overridden by du-config.json.")
 
 set (
     ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME
@@ -162,34 +162,9 @@ set (
     CACHE STRING "Sub folder for update step handler extensions.")
 
 set (
-    ADUC_COMPONENT_ENUMERATOR_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR}"
-    CACHE STRING "Path for component enumerator extension.")
-
-set (
-    ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER}"
-    CACHE STRING "Path for content downloader extension.")
-
-set (
-    ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS}"
-    CACHE STRING "Sub folder for update step handler extensions.")
-
-set (
     ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS
     "download_handlers"
     CACHE STRING "Sub folder for download handler extensions.")
-
-set (
-    ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS}"
-    CACHE STRING "Path for the download handler extensions")
-
-set (
-    ADUC_DOWNLOADS_FOLDER
-    "${ADUC_DATA_FOLDER}/downloads"
-    CACHE STRING "Path to the folder containing downloaded update artifacts.")
 
 # Define the mapping from step handler names to subdirectory names
 set(ADUC_STEP_HANDLER_NAME_TO_DIRECOTRY_MAP
@@ -306,7 +281,7 @@ set (
 
 set (
     ADUSHELL_FOLDER
-    "/usr/lib/adu"
+    "/usr/bin"
     CACHE STRING "The directory of the adu-shell binary.")
 
 set (
@@ -314,15 +289,9 @@ set (
     "adu-shell"
     CACHE STRING "Filename of adu-shell.")
 
-get_filename_component (
-    ADUSHELL_FILE_PATH
-    "${ADUSHELL_FOLDER}/${ADUSHELL_FILENAME}"
-    ABSOLUTE
-    "/")
-
 set (
     ADUSHELL_FILE_PATH
-    ${ADUSHELL_FILE_PATH}
+    "${ADUSHELL_FOLDER}/${ADUSHELL_FILENAME}"
     CACHE STRING "The absolute path to the adu-shell file path.")
 
 set (

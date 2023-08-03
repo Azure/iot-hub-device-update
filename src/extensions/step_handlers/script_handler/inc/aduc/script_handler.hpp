@@ -16,6 +16,20 @@
 typedef void* ADUC_WorkflowHandle;
 
 /**
+ * @brief Contains the result of a call to ScriptHandler_PerformAction.
+ *
+ */
+typedef struct ADUC_PerformAction_Results
+{
+    ADUC_Result result; // Result of the action
+    std::vector<std::string> args; // Arguments to the action
+    std::string scriptFilePath; // Path to the script file
+    std::vector<std::string> commandLineArgs; // Command line arguments
+    std::string
+        scriptOutput; // When calling ScriptHandler_PerformAction, if prepareArgsOnly is false, this will contains the action output string.
+} ADUC_PerformActionResult;
+
+/**
  * @class ScriptHandlerImpl
  * @brief The Step Handler implementation for 'microsoft/script:1' update type.
  */
@@ -54,5 +68,16 @@ private:
 
     static ADUC_Result PerformAction(const std::string& action, const tagADUC_WorkflowData* workflowData);
 };
+
+/**
+ * @brief Perform the specified action.
+ *
+ * @param action Name of the action to perform
+ * @param workflowData The workflow data
+ * @param prepareArgsOnly if true, only prepare the arguments and return them in the result
+ * @return ADUC_PerformAction_Results The result of the action and outputs of the script.
+ */
+ADUC_PerformAction_Results
+ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowData* workflowData, bool prepareArgsOnly);
 
 #endif // ADUC_SCRIPT_HANDLER_HPP

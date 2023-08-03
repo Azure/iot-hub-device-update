@@ -1,0 +1,11 @@
+{
+    "workflow": {
+           "action": 3,
+           "id": "92d4d0d6-8211-41c2-8a1d-0ed5d81d2441"
+       },
+       "updateManifest": "UPDATE_MANIFEST",
+       "updateManifestSignature": "invalid_signature",
+       "fileUrls": {
+           "f722b9ffefaaac577": "dntp://example.com:1337/mock_update_payload.txt"
+       }
+}

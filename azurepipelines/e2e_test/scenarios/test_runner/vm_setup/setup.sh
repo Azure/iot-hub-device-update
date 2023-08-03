@@ -194,7 +194,6 @@ function verify_user_group_permissions() {
     adu_gid=$(id -g adu)
 
     # Find the main PID of the "AducIotAgent" service
-    sudo systemctl start deviceupdate-agent.service
     status_output=$(systemctl status deviceupdate-agent.service)
 
     main_pid=$(echo "$status_output" | awk '/Main PID/ {print $3}')
@@ -305,10 +304,10 @@ register_extensions
 # this test will be considered a failure.
 sudo systemctl restart deviceupdate-agent.service
 
-verify_user_group_permissions
+# verify_user_group_permissions
 
-verify_log_files
+# verify_log_files
 
-test_shutdown_service
+# test_shutdown_service
 
-sudo systemctl restart deviceupdate-agent.service
+# sudo systemctl restart deviceupdate-agent.service

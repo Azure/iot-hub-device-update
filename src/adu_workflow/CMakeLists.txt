@@ -23,6 +23,7 @@ target_link_libraries (
     PRIVATE aduc::adu_core_export_helpers
             aduc::agent_orchestration
             aduc::c_utils
+            aduc::config_utils
             aduc::download_handler_factory
             aduc::download_handler_plugin
             aduc::logging

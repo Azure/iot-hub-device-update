@@ -11,7 +11,7 @@ echo "******************** Running $0 $1 $2 ***********************"
 adu_conf_dir=/etc/adu
 adu_log_dir=/var/log/adu
 adu_data_dir=/var/lib/adu
-adu_shell_bin_path=/usr/lib/adu/adu-shell
+adu_shell_bin_path=/usr/bin/adu-shell
 
 adu_eis_conf_file=adu.toml
 eis_idservice_dir=/etc/aziot/identityd/config.d

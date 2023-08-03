@@ -12,7 +12,7 @@
 #include <aduc/contract_utils.h>
 #include <aduc/result.h>
 
-// Forward declation.
+// Forward declaration.
 struct tagADUC_WorkflowData;
 
 /**

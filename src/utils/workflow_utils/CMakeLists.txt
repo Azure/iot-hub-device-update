@@ -30,6 +30,7 @@ target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types
     PRIVATE aduc::c_utils
+            aduc::config_utils
             aduc::extension_manager
             aduc::hash_utils
             aduc::logging

@@ -5,13 +5,13 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+#include "aduc/iothub_communication_manager.h"
 #include "aduc/adu_core_export_helpers.h" // ADUC_MethodCall_RestartAgent
 #include "aduc/adu_types.h"
 #include "aduc/client_handle_helper.h"
 #include "aduc/config_utils.h"
 #include "aduc/connection_string_utils.h" // ConnectionStringUtils_DoesKeyExist
 #include "aduc/https_proxy_utils.h"
-#include "aduc/iothub_communication_manager.h"
 #include "aduc/logging.h"
 #include "aduc/retry_utils.h"
 #include "aduc/string_c_utils.h" // LoadBufferWithFileContents
@@ -241,17 +241,17 @@ static IOTHUB_CLIENT_TRANSPORT_PROVIDER GetIotHubProtocolFromConfig()
 #ifdef ADUC_GET_IOTHUB_PROTOCOL_FROM_CONFIG
     IOTHUB_CLIENT_TRANSPORT_PROVIDER transportProvider = NULL;
 
-    ADUC_ConfigInfo config;
-    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL)
     {
-        if (config.iotHubProtocol != NULL)
+        if (config->iotHubProtocol != NULL)
         {
-            if (strcmp(config.iotHubProtocol, "mqtt") == 0)
+            if (strcmp(config->iotHubProtocol, "mqtt") == 0)
             {
                 transportProvider = MQTT_Protocol;
                 Log_Info("IotHub Protocol: MQTT");
             }
-            else if (strcmp(config.iotHubProtocol, "mqtt/ws") == 0)
+            else if (strcmp(config->iotHubProtocol, "mqtt/ws") == 0)
             {
                 transportProvider = MQTT_WebSocket_Protocol;
                 Log_Info("IotHub Protocol: MQTT/WS");
@@ -260,7 +260,7 @@ static IOTHUB_CLIENT_TRANSPORT_PROVIDER GetIotHubProtocolFromConfig()
             {
                 Log_Error(
                     "Unsupported 'iotHubProtocol' value of '%s' from '" ADUC_CONF_FILE_PATH "'.",
-                    config.iotHubProtocol);
+                    config->iotHubProtocol);
             }
         }
         else
@@ -270,11 +270,11 @@ static IOTHUB_CLIENT_TRANSPORT_PROVIDER GetIotHubProtocolFromConfig()
             Log_Info("IotHub Protocol: MQTT");
         }
 
-        ADUC_ConfigInfo_UnInit(&config);
+        ADUC_ConfigInfo_ReleaseInstance(config);
     }
     else
     {
-        Log_Error("Failed to initialize config file '" ADUC_CONF_FILE_PATH "'.");
+        Log_Error("ADUC_ConfigInfo singleton hasn't been initialized.");
     }
 
     return transportProvider;
@@ -473,11 +473,14 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
 /**
  * @brief Get the Connection Info from connection string, if a connection string is provided in configuration file
  *
+ * @remarks This function requires that ADUC_ConfigInfo singleton has been initialized.
+ *
  * @return true if connection info can be obtained
  */
 bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString)
 {
     bool succeeded = false;
+    const ADUC_ConfigInfo* config = NULL;
     if (info == NULL)
     {
         goto done;
@@ -507,12 +510,12 @@ bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char
     info->authType = ADUC_AuthType_SASToken;
 
     // Optional: The certificate string is needed for Edge Gateway connection.
-    ADUC_ConfigInfo config = {};
-    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.edgegatewayCertPath != NULL)
+    config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL && config->edgegatewayCertPath != NULL)
     {
-        if (!LoadBufferWithFileContents(config.edgegatewayCertPath, certificateString, ARRAY_SIZE(certificateString)))
+        if (!LoadBufferWithFileContents(config->edgegatewayCertPath, certificateString, ARRAY_SIZE(certificateString)))
         {
-            Log_Error("Failed to read the certificate from path: %s", config.edgegatewayCertPath);
+            Log_Error("Failed to read the certificate from path: %s", config->edgegatewayCertPath);
             goto done;
         }
 
@@ -528,7 +531,7 @@ bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char
     succeeded = true;
 
 done:
-    ADUC_ConfigInfo_UnInit(&config);
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return succeeded;
 }
 
@@ -575,19 +578,19 @@ done:
 bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
 {
     bool success = false;
-    ADUC_ConfigInfo config = {};
     if (info == NULL)
     {
         return false;
     }
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
 
-    if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    if (config == NULL)
     {
-        Log_Error("No connection string set from launch arguments or configuration file");
+        Log_Error("ADUC_ConfigInfo singleton hasn't been initialized.");
         goto done;
     }
 
-    const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(&config, 0);
+    const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(config, 0);
     if (agent == NULL)
     {
         Log_Error("ADUC_ConfigInfo_GetAgent failed to get the agent information.");
@@ -623,7 +626,7 @@ done:
         ADUC_ConnectionInfo_DeAlloc(info);
     }
 
-    ADUC_ConfigInfo_UnInit(&config);
+    ADUC_ConfigInfo_ReleaseInstance(config);
 
     return success;
 }
@@ -726,7 +729,7 @@ static void Connection_Maintenance()
             additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
             break;
         case IOTHUB_CLIENT_CONNECTION_NO_NETWORK:
-            // 1) try to restart agent to prevent empty reported properties in module twin 
+            // 1) try to restart agent to prevent empty reported properties in module twin
             // 2) if restart agent could not be performed, wait for at least 5 minutes to retry.
             Log_Error("No network.");
             if (ADUC_MethodCall_RestartAgent() != 0)
