@@ -287,12 +287,6 @@ while [[ $1 != "" ]]; do
         cancel)
             do_cancel_action=yes
             ;;
-        backup)
-            do_backup_action=yes
-            ;;
-        restore)
-            do_restore_action=yes
-            ;;
         *)
             error "Unknown action: $action"
             $ret 1
