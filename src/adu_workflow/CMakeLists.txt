@@ -1,4 +1,3 @@
-project (agent_workflow)
 set (target_name agent_workflow)
 
 include (agentRules)

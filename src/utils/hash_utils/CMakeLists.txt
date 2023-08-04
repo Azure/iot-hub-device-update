@@ -4,8 +4,6 @@ set (target_name hash_utils)
 add_library (${target_name} STATIC src/hash_utils.c)
 add_library (aduc::${target_name} ALIAS ${target_name})
 
-target_include_directories (${target_name} PUBLIC inc)
-
 target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
 #

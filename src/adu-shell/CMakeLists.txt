@@ -29,8 +29,6 @@ string (
             ADUC_STEP_HANDLER_LIST
             ${ADUC_STEP_HANDLERS})
 
-set (source_files ${agent_c_files})
-
 # Support all microsoft/* update types by default.
 set (
     source_files
