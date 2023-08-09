@@ -27,6 +27,8 @@ target_link_libraries (
             Catch2::Catch2
             Parson::parson)
 
+target_link_libraries (${target_name} PRIVATE libaducpal)
+
 target_compile_definitions (${target_name} PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
 include (CTest)

@@ -16,7 +16,8 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
-#include <sys/stat.h>
+
+#include <aducpal/sys_stat.h> // S_I*
 
 /**
  * @brief The users that must exist on the system.
@@ -41,7 +42,7 @@ static const char* aduc_optional_groups[] = { DO_FILE_GROUP };
 /**
  * @brief The supplementary groups for ADUC_FILE_USER
  */
-static const char* aduc_required_group_memberships[] = {};
+static const char* aduc_required_group_memberships[] = { NULL };
 
 /**
  * @brief The supplementary groups for ADUC_FILE_USER
@@ -73,7 +74,8 @@ bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs, const ADUC_Co
 {
     bool validInfo = false;
 
-    ADUC_ConnectionInfo info = {};
+    ADUC_ConnectionInfo info;
+    memset(&info, 0, sizeof(info));
 
     if (launchArgs->connectionString != NULL)
     {
@@ -179,6 +181,11 @@ static bool ReportMissingGroupMemberships()
     // ADUC group memberships
     for (int i = 0; i < ARRAY_SIZE(aduc_required_group_memberships); ++i)
     {
+        if (aduc_required_group_memberships[i] == NULL)
+        {
+            continue;
+        }
+
         if (!PermissionUtils_UserInSupplementaryGroup(ADUC_FILE_USER, aduc_required_group_memberships[i]))
         {
             Log_Error("User '%s' is not a member of '%s' group.", ADUC_FILE_USER, aduc_required_group_memberships[i]);
@@ -452,7 +459,12 @@ static bool CheckAgentBinary()
             goto done;
         }
 
-        const mode_t expected_permissions = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+        // clang-format off
+        const mode_t expected_permissions =
+            S_IRWXU |           // RWX user
+            S_IROTH | S_IXOTH | // R-X other
+            S_IRGRP | S_IXGRP;  // R-X group
+        // clang-format on
 
         if (!PermissionUtils_VerifyFilemodeExact(path, expected_permissions))
         {
@@ -498,9 +510,14 @@ static bool CheckShellBinary()
             goto done;
         }
 
+        // clang-format off
         // Needs set-uid, user read, and group read + execute.
         // Note: other has no permission bits set.
-        const mode_t expected_permissions = S_ISUID | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP;
+        const mode_t expected_permissions =
+            S_ISUID |           // set-uid
+            S_IRUSR | S_IXUSR | // R-X user
+            S_IRGRP | S_IXGRP;  // R-X group
+        // clang-format on
 
         if (!PermissionUtils_VerifyFilemodeExact(config->aduShellFilePath, expected_permissions))
         {

@@ -6,7 +6,6 @@
  * Licensed under the MIT License.
  */
 #include "aduc/device_info_exports.h"
-#include "os_release_info.hpp"
 
 #include <fstream>
 #include <functional>
@@ -16,6 +15,8 @@
 #include <unordered_map>
 
 #include <cstring>
+
+#include <stdio.h> // popen, pclose
 #include <sys/statvfs.h> // statvfs
 #include <sys/sysinfo.h> // sysinfo
 #include <sys/utsname.h> // uname
@@ -28,6 +29,30 @@
 
 #define ETC_OS_RELEASE_FILEPATH "/etc/os-release"
 #define ETC_LSB_RELEASE_FILEPATH "/etc/lsb-release"
+
+/**
+ * @brief A class for holding OS release information.
+ */
+class OsReleaseInfo
+{
+    std::string os_name;
+    std::string os_version;
+
+public:
+    OsReleaseInfo(const std::string& name, const std::string& ver) : os_name{ name }, os_version{ ver }
+    {
+    }
+
+    const char* ExportOsName()
+    {
+        return os_name.c_str();
+    }
+
+    const char* ExportOsVersion()
+    {
+        return os_version.c_str();
+    }
+};
 
 /**
  * @brief Get manufacturer
@@ -343,7 +368,7 @@ static char* DeviceInfo_GetProcessorManufacturer()
     if (pipe != nullptr)
     {
         const char* prefix = "Vendor ID:           ";
-        const unsigned int prefix_cch = strlen(prefix);
+        const unsigned int prefix_cch = static_cast<unsigned int>(strlen(prefix));
         while (fgets(buffer, kBufferSize, pipe) != nullptr)
         {
             if (strncmp(buffer, prefix, prefix_cch) == 0)
@@ -398,7 +423,7 @@ static char* DeviceInfo_GetTotalMemory()
     std::stringstream buffer;
 
     const unsigned int bytes_in_kilobyte = 1024;
-    buffer << (sys_info.totalram * sys_info.mem_unit) / bytes_in_kilobyte;
+    buffer << (static_cast<unsigned long long>(sys_info.totalram) * sys_info.mem_unit) / bytes_in_kilobyte;
 
     valueIsDirty = false;
     return strdup(buffer.str().c_str());
@@ -433,7 +458,7 @@ static char* DeviceInfo_GetTotalStorage()
     std::stringstream buffer;
 
     const unsigned int bytes_in_kilobyte = 1024;
-    buffer << (buf.f_blocks * buf.f_frsize) / bytes_in_kilobyte;
+    buffer << (static_cast<unsigned long long>(buf.f_blocks) * buf.f_frsize) / bytes_in_kilobyte;
 
     valueIsDirty = false;
     return strdup(buffer.str().c_str());

@@ -44,7 +44,6 @@ public:
     }
 };
 
-
 // clang-format off
 
 const char* action_process_deployment =

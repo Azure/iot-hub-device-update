@@ -9,8 +9,9 @@
 #ifndef AUTO_OPENDIR_HPP
 #define AUTO_OPENDIR_HPP
 
-#include <dirent.h>
 #include <string>
+
+#include <aducpal/dirent.h>
 
 namespace aduc
 {

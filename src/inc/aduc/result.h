@@ -8,7 +8,7 @@
 #ifndef ADUC_RESULT_H
 #define ADUC_RESULT_H
 
-#include <stdbool.h> // _Bool
+#include <stdbool.h> // bool
 #include <stdint.h> // int32_t
 
 /**

@@ -1,6 +1,7 @@
 set (target_name download_handler_plugin)
 
 include (agentRules)
+
 compileasc99 ()
 
 add_library (${target_name} STATIC)
@@ -20,5 +21,7 @@ target_link_libraries (
            aduc::contract_utils
            aduc::logging
            aduc::shared_lib)
+
+target_link_libraries (${target_name} PRIVATE libaducpal)
 
 target_compile_features (${target_name} PRIVATE cxx_lambdas cxx_uniform_initialization)

@@ -2,13 +2,6 @@ cmake_minimum_required (VERSION 3.5)
 
 project (simulator_handler_unit_tests)
 
-if (NOT
-    ${ADUC_PLATFORM_LAYER}
-    STREQUAL
-    "linux")
-    message (FATAL_ERROR "${PROJECT_NAME} requires the linux platform layer.")
-endif ()
-
 include (agentRules)
 
 compileasc99 ()
@@ -17,7 +10,6 @@ disablertti ()
 set (sources main.cpp simulator_handler_unit_tests.cpp ../src/simulator_handler.cpp)
 
 find_package (Catch2 REQUIRED)
-find_package (azure_c_shared_utility REQUIRED)
 find_package (IotHubClient REQUIRED)
 find_package (umqtt REQUIRED)
 
@@ -46,6 +38,8 @@ target_link_libraries (
             aduc::workflow_data_utils
             aduc::workflow_utils
             Parson::parson)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
 # Ensure that ctest discovers catch2 tests.
 # Use catch_discover_tests() rather than add_test()

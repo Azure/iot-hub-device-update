@@ -33,7 +33,7 @@
  *
  * @param logLevel The desired loglevel if logging is used.
  */
-void Initialize(ADUC_LOG_SEVERITY logLevel)
+EXPORTED_METHOD void Initialize(ADUC_LOG_SEVERITY logLevel)
 {
     ADUC_Logging_Init(logLevel, "delta-download-handler");
 }
@@ -41,7 +41,7 @@ void Initialize(ADUC_LOG_SEVERITY logLevel)
 /**
  * @brief Cleanup logic before library is unloaded.
  */
-void Cleanup()
+EXPORTED_METHOD void Cleanup()
 {
     ADUC_Logging_Uninit();
 }
@@ -60,7 +60,7 @@ void Cleanup()
  * Returning ADUC_Result_Download_Handler_SuccessSkipDownload ResultCode tells the agent to skip downloading the update content (since this download handler able to produce it at the targetUpdateFilePath).
  * Returning ADUC_Result_Download_Handler_RequiredFullDownload ResultCode tells the agent to download the update content (this download handler did not produce it by other means).
  */
-ADUC_Result ProcessUpdate(
+EXPORTED_METHOD ADUC_Result ProcessUpdate(
     const ADUC_WorkflowHandle workflowHandle, const ADUC_FileEntity* fileEntity, const char* targetUpdateFilePath)
 {
     return MicrosoftDeltaDownloadHandler_ProcessUpdate(
@@ -75,7 +75,7 @@ ADUC_Result ProcessUpdate(
  * @param[in] workflowHandle The workflow handle.
  * @return ADUC_Result The result.
  */
-ADUC_Result OnUpdateWorkflowCompleted(const ADUC_WorkflowHandle workflowHandle)
+EXPORTED_METHOD ADUC_Result OnUpdateWorkflowCompleted(const ADUC_WorkflowHandle workflowHandle)
 {
     return MicrosoftDeltaDownloadHandler_OnUpdateWorkflowCompleted(workflowHandle, NULL /* updateCacheBasePath */);
 }
@@ -86,7 +86,7 @@ ADUC_Result OnUpdateWorkflowCompleted(const ADUC_WorkflowHandle workflowHandle)
  * @param[out] contractInfo The extension contract info.
  * @return ADUC_Result The result.
  */
-ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
+EXPORTED_METHOD ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
 {
     ADUC_Result result = { ADUC_GeneralResult_Success, 0 };
     contractInfo->majorVer = ADUC_V1_CONTRACT_MAJOR_VER;

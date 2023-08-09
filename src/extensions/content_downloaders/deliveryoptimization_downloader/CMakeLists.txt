@@ -4,8 +4,6 @@ include (agentRules)
 
 compileasc99 ()
 
-find_package (deliveryoptimization_sdk CONFIG REQUIRED)
-
 add_library (${PROJECT_NAME} MODULE)
 add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
@@ -18,16 +16,22 @@ target_sources (
 target_include_directories (${PROJECT_NAME} PUBLIC ${ADU_EXTENSION_INCLUDES}
                                                    ${ADUC_EXPORT_INCLUDES})
 
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+target_link_dosdk (${PROJECT_NAME} PRIVATE)
+
 target_link_libraries (
     ${PROJECT_NAME}
-    PRIVATE aziotsharedutil
-            aduc::c_utils
+    PRIVATE aduc::c_utils
             aduc::contract_utils
             aduc::hash_utils
             aduc::logging
             aduc::process_utils
-            aduc::string_utils
-            atomic
-            Microsoft::deliveryoptimization)
+            aduc::string_utils)
+
+if (WIN32)
+    target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+else ()
+    target_link_libraries (${PROJECT_NAME} PRIVATE Microsoft::deliveryoptimization atomic)
+endif ()
 
 install (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

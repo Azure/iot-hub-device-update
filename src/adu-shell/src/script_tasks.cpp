@@ -10,8 +10,9 @@
 #include "aduc/process_utils.hpp"
 #include "common_tasks.hpp"
 
-#include <sys/stat.h>
 #include <unordered_map>
+
+#include <aducpal/sys_stat.h> // chmod
 
 namespace Adu
 {
@@ -54,7 +55,7 @@ ADUShellTaskResult Execute(const ADUShell_LaunchArguments& launchArgs)
         if (perms != mode)
         {
             // Fix the permissions.
-            if (0 != chmod(path, mode))
+            if (0 != ADUCPAL_chmod(path, mode))
             {
                 filePermissionsChanged = true;
                 stat(path, &st);
@@ -69,7 +70,7 @@ ADUShellTaskResult Execute(const ADUShell_LaunchArguments& launchArgs)
     if (filePermissionsChanged)
     {
         // Restore the permissions.
-        if (0 != chmod(path, mode))
+        if (0 != ADUCPAL_chmod(path, mode))
         {
             stat(path, &st);
             Log_Warn("Failed restore '%s' file permissions", path);
@@ -97,7 +98,7 @@ ADUShellTaskResult DoScriptTask(const ADUShell_LaunchArguments& launchArgs)
 
         taskProc = actionMap.at(launchArgs.action);
     }
-    catch (const std::exception& ex)
+    catch (const std::exception& /* ex*/)
     {
         Log_Error("Unsupported action: '%s'", launchArgs.updateAction);
         taskResult.SetExitStatus(ADUSHELL_EXIT_UNSUPPORTED);

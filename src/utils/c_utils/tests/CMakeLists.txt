@@ -13,7 +13,14 @@ find_package (Catch2 REQUIRED)
 
 add_executable (${PROJECT_NAME} ${sources})
 
-target_link_libraries (${PROJECT_NAME} PRIVATE aduc::c_utils aduc::string_utils Catch2::Catch2)
+target_link_libraries (
+    ${PROJECT_NAME}
+    PRIVATE aduc::c_utils
+            aduc::string_utils
+            aduc::system_utils
+            Catch2::Catch2)
+
+target_link_umock_c (${PROJECT_NAME} PRIVATE)
 
 include (CTest)
 include (Catch)

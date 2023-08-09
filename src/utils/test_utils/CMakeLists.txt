@@ -1,6 +1,7 @@
 project (test_utils)
 
 include (agentRules)
+
 compileasc99 ()
 disablertti ()
 
@@ -15,3 +16,5 @@ target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::system_utils
     PUBLIC aduc::workflow_utils)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)

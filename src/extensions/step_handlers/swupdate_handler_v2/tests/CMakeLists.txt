@@ -7,13 +7,9 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-set (
-    sources
-    main.cpp
-    swupdate_handler_v2_ut.cpp
-    ../src/handler_create.cpp
-    ../src/swupdate_handler_v2.cpp
-    ../../../update_manifest_handlers/steps_handler/src/steps_handler.cpp)
+set (sources
+     main.cpp swupdate_handler_v2_ut.cpp ../src/handler_create.cpp ../src/swupdate_handler_v2.cpp
+     ../../../update_manifest_handlers/steps_handler/src/steps_handler.cpp)
 
 find_package (Catch2 REQUIRED)
 
@@ -48,6 +44,8 @@ target_link_libraries (
             aduc::workflow_data_utils
             aduc::workflow_utils
             Catch2::Catch2)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
 # Ensure that ctest discovers catch2 tests.
 # Use catch_discover_tests() rather than add_test()

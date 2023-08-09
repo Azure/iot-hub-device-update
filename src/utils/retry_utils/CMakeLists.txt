@@ -20,3 +20,5 @@ target_link_libraries (
     PUBLIC aduc::adu_types
     PRIVATE aduc::communication_abstraction
             aduc::logging)
+
+target_link_libraries (${PROJECT_NAME} PUBLIC libaducpal)

@@ -21,7 +21,7 @@ EXTERN_C_BEGIN
  * @brief Instantiates a Step Handler for 'microsoft/apt:1' update type.
  * @return A pointer to an instantiated Step Handler object.
  */
-ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
+EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
 
 /**
  * @brief Gets the extension contract info.

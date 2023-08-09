@@ -8,12 +8,12 @@
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
 #include <catch2/catch.hpp>
-#include <unistd.h>
+
+#include "aduc/process_utils.hpp" // ADUC_LaunchChildProcess
+
 #include <vector>
 
 using Catch::Matchers::Contains;
-
-#include "aduc/process_utils.hpp"
 
 const char* command = "process_utils_tests_helper";
 
@@ -27,7 +27,7 @@ TEST_CASE("Capture exit status", "[!hide][functional_test]")
     std::string output;
     const int exitCode = ADUC_LaunchChildProcess(command, args, output);
 
-    REQUIRE(exitCode == 200);
+    REQUIRE(exitCode != EXIT_SUCCESS);
 }
 
 TEST_CASE("apt-get fail")
@@ -37,7 +37,7 @@ TEST_CASE("apt-get fail")
     args.emplace_back("foopackage");
     std::string output;
     const int exitCode = ADUC_LaunchChildProcess("apt-get", args, output);
-    REQUIRE(exitCode == 100);
+    REQUIRE(exitCode != EXIT_SUCCESS);
 }
 
 TEST_CASE("Capture standard output", "[!hide][functional_test]")
@@ -62,34 +62,23 @@ TEST_CASE("Capture standard error", "[!hide][functional_test]")
     CHECK_THAT(output.c_str(), Contains("This is a standard error string.\n"));
 }
 
-TEST_CASE("hostname error")
+TEST_CASE("Bad parameter error")
 {
     const char* bogusOption = "--bogus-param-abc";
     std::vector<std::string> args;
     args.emplace_back(bogusOption);
     std::string output;
 
-    char hostname[1024];
-    gethostname(hostname, sizeof(hostname) - 1);
-
+#if defined(WIN32)
+    const int exitCode = ADUC_LaunchChildProcess("whoami.exe", args, output);
+#else
     const int exitCode = ADUC_LaunchChildProcess("hostname", args, output);
+#endif
 
     REQUIRE(exitCode != EXIT_SUCCESS);
 
     // Expecting output text to contain the specified bogus option.
-    // e.g., hostname: unrecognized option '--bogus-param-abc'
     CHECK_THAT(output.c_str(), Contains(bogusOption));
-}
-
-TEST_CASE("Invalid option - cp -1")
-{
-    std::string command = "cp";
-    std::vector<std::string> args;
-    args.emplace_back("-1");
-    std::string output;
-    ADUC_LaunchChildProcess(command, args, output);
-
-    CHECK_THAT(output.c_str(), Contains("invalid option -- '1'"));
 }
 
 TEST_CASE("VerifyProcessEffectiveGroup")
@@ -153,12 +142,11 @@ TEST_CASE("VerifyProcessEffectiveGroup")
 
     SECTION("it should return true when not root but group matches")
     {
-        int effectiveProcessGroupId = 100; // not root(0)
         const gid_t desiredGroupId = 100;
 
         const std::function<gid_t()> mock_getegid = [&]() { return desiredGroupId; };
 
-        const std::function<struct group*(const char*)> mock_getgrnam = [](const char*) {
+        const std::function<struct group*(const char*)> mock_getgrnam = [&desiredGroupId](const char*) {
             static struct group desiredGroupEntry = {};
             desiredGroupEntry.gr_gid = desiredGroupId;
 

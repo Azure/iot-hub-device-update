@@ -6,8 +6,14 @@
  * Licensed under the MIT License.
  */
 #include <getopt.h>
+
 #include <string.h>
-#include <unistd.h> // for getegid, geteuid, and setuid.
+
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/pwd.h> // getpwnam
+#include <aducpal/stdlib.h> // setenv
+#include <aducpal/unistd.h> // getegid, geteuid, getuid, setuid
+
 #include <unordered_map>
 #include <vector>
 
@@ -154,8 +160,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
             launchArgs->logFile = optarg;
             break;
 
-        case 'l':
-        {
+        case 'l': {
             char* endptr;
             errno = 0; /* To distinguish success/failure after call */
             int64_t logLevel = strtol(optarg, &endptr, 10);
@@ -316,8 +321,8 @@ int main(int argc, char** argv)
 {
     ADUShell_LaunchArguments launchArgs;
     const ADUC_ConfigInfo* config = NULL;
-    uid_t defaultUserId = getuid();
-    uid_t effectiveUserId = geteuid();
+    uid_t defaultUserId = ADUCPAL_getuid();
+    uid_t effectiveUserId = ADUCPAL_geteuid();
 
     int ret = ParseLaunchArguments(argc, argv, &launchArgs);
     if (ret != 0)
@@ -333,7 +338,7 @@ int main(int argc, char** argv)
         goto done;
     }
 
-    setenv(ADUC_CONFIG_FOLDER_ENV, launchArgs.configFolder, 1);
+    ADUCPAL_setenv(ADUC_CONFIG_FOLDER_ENV, launchArgs.configFolder, 1);
     config = ADUC_ConfigInfo_GetInstance();
     if (config == NULL)
     {
@@ -361,15 +366,15 @@ int main(int argc, char** argv)
 
     // Run as 'root'.
     // Note: this requires the file owner to be 'root'.
-    ret = setuid(effectiveUserId);
+    ret = ADUCPAL_setuid(effectiveUserId);
     if (ret == 0)
     {
         Log_Info(
             "Run as uid(%d), defaultUid(%d), effectiveUid(%d), effectiveGid(%d)",
-            getuid(),
+            ADUCPAL_getuid(),
             defaultUserId,
             effectiveUserId,
-            getegid());
+            ADUCPAL_getegid());
 
         ret = ADUShell_Dowork(launchArgs);
 

@@ -9,7 +9,8 @@
 
 #include <stdio.h> // for FILE
 #include <stdlib.h> // for calloc
-#include <strings.h> // for strcasecmp
+
+#include <aducpal/strings.h> // strcasecmp
 
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/buffer_.h>
@@ -100,7 +101,7 @@ static bool ADUC_HashUtils_GetIndexStrongestValidHash(
         return false;
     }
 
-    size_t strongestIndex = -1; // Assume hashes array is not sorted by strength ordering.
+    size_t strongestIndex = (size_t)-1; // Assume hashes array is not sorted by strength ordering.
     SHAversion curBestAlg = SHA1;
 
     for (size_t i = 0; i < hashCount; ++i)
@@ -128,7 +129,7 @@ static bool ADUC_HashUtils_GetIndexStrongestValidHash(
         }
     }
 
-    if (strongestIndex >= 0)
+    if (strongestIndex != (size_t)-1)
     {
         *outIndexStrongestAlgorithm = strongestIndex;
         *outBestShaVersion = curBestAlg;
@@ -222,7 +223,7 @@ bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** h
             break;
         }
 
-        if (USHAInput(&context, buffer, readSize) != 0)
+        if (USHAInput(&context, buffer, (unsigned int)readSize) != 0)
         {
             Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
             goto done;
@@ -334,7 +335,7 @@ bool ADUC_HashUtils_IsValidFileHash(
             break;
         }
 
-        if (USHAInput(&context, buffer, readSize) != 0)
+        if (USHAInput(&context, buffer, (unsigned int)readSize) != 0)
         {
             if (!suppressErrorLog)
             {
@@ -378,7 +379,7 @@ bool ADUC_HashUtils_IsValidBufferHash(
         return false;
     }
 
-    if (USHAInput(&context, buffer, bufferLen) != 0)
+    if (USHAInput(&context, buffer, (unsigned int)bufferLen) != 0)
     {
         Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
         return false;
@@ -397,23 +398,23 @@ bool ADUC_HashUtils_GetShaVersionForTypeString(const char* hashTypeStr, SHAversi
 {
     bool success = true;
 
-    if (strcasecmp(hashTypeStr, "sha1") == 0)
+    if (ADUCPAL_strcasecmp(hashTypeStr, "sha1") == 0)
     {
         *algorithm = SHA1;
     }
-    else if (strcasecmp(hashTypeStr, "sha224") == 0)
+    else if (ADUCPAL_strcasecmp(hashTypeStr, "sha224") == 0)
     {
         *algorithm = SHA224;
     }
-    else if (strcasecmp(hashTypeStr, "sha256") == 0)
+    else if (ADUCPAL_strcasecmp(hashTypeStr, "sha256") == 0)
     {
         *algorithm = SHA256;
     }
-    else if (strcasecmp(hashTypeStr, "sha384") == 0)
+    else if (ADUCPAL_strcasecmp(hashTypeStr, "sha384") == 0)
     {
         *algorithm = SHA384;
     }
-    else if (strcasecmp(hashTypeStr, "sha512") == 0)
+    else if (ADUCPAL_strcasecmp(hashTypeStr, "sha512") == 0)
     {
         *algorithm = SHA512;
     }
