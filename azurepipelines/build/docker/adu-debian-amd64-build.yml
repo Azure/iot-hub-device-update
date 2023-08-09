@@ -58,7 +58,7 @@ pr:
             - licenses/*
 
 jobs:
-    - job: BuildAduAgent
+    - job: BuildAduAgent_debian10
       displayName: "Build ADU Agent - Debian 10 AMD64"
       timeoutInMinutes: 360
       cancelTimeoutInMinutes: 360
@@ -69,7 +69,7 @@ jobs:
                 targetOs: "debian10"
                 targetArch: "amd64"
 
-    - job: BuildAduAgent
+    - job: BuildAduAgent_debian11
       displayName: "Build ADU Agent - Debian 11 AMD64"
       timeoutInMinutes: 360
       cancelTimeoutInMinutes: 360
