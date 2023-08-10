@@ -27,6 +27,10 @@ target_link_libraries (
             aduc::workflow_data_utils
             aduc::workflow_utils)
 
+target_link_libraries (${target_name} PUBLIC libaducpal)
+
+target_compile_definitions (${target_name} PRIVATE ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}")
+
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
 
 if (ADUC_BUILD_UNIT_TESTS)

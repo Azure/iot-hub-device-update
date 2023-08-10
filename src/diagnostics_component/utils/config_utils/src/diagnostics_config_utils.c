@@ -189,7 +189,8 @@ bool DiagnosticsConfigUtils_InitFromJSON(DiagnosticsWorkflowData* workflowData, 
     {
         JSON_Object* componentObj = json_array_get_object(componentArray, i);
 
-        DiagnosticsLogComponent logComponent = {};
+        DiagnosticsLogComponent logComponent;
+        memset(&logComponent, 0, sizeof(logComponent));
 
         if (!DiagnosticsConfigUtils_LogComponentInitFromObj(&logComponent, componentObj))
         {

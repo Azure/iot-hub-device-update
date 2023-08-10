@@ -584,7 +584,6 @@ TEST_CASE("workflow_id_compare")
 {
     ADUC_WorkflowHandle handle0 = nullptr;
     ADUC_WorkflowHandle handle1 = nullptr;
-    ADUC_WorkflowHandle handleNull = nullptr;
 
     ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, false /* validateManifest */, &handle0);
     REQUIRE(result.ResultCode > 0);

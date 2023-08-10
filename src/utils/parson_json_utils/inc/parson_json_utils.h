@@ -11,7 +11,7 @@
 
 #include <aduc/c_utils.h>
 #include <parson.h>
-#include <stdbool.h>
+#include <stdbool.h> // bool
 
 EXTERN_C_BEGIN
 

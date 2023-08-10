@@ -28,7 +28,8 @@
 #include <stdarg.h> // for va_*
 #include <stdlib.h> // for malloc, atoi
 #include <string.h>
-#include <strings.h> // for strcasecmp
+
+#include <aducpal/strings.h> // strcasecmp
 
 #define DEFAULT_SANDBOX_ROOT_PATH "/var/lib/adu/downloads"
 
@@ -62,8 +63,6 @@
  * @brief Maximum length for the 'resultDetails' string.
  */
 #define WORKFLOW_RESULT_DETAILS_MAX_LENGTH 1024
-
-EXTERN_C_BEGIN
 
 /* external linkage */
 extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
@@ -1881,7 +1880,7 @@ bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fi
     for (size_t i = 0; i < count; i++)
     {
         if ((file = json_value_get_object(json_object_get_value_at(files, i))) != NULL
-            && strcasecmp(json_object_get_string(file, "fileName"), fileName) == 0)
+            && ADUCPAL_strcasecmp(json_object_get_string(file, "fileName"), fileName) == 0)
         {
             fileId = json_object_get_name(files, i);
             break;
@@ -2700,7 +2699,7 @@ ADUC_WorkflowHandle workflow_get_parent(ADUC_WorkflowHandle handle)
 size_t workflow_get_children_count(ADUC_WorkflowHandle handle)
 {
     ADUC_Workflow* wf = workflow_from_handle(handle);
-    return wf != NULL ? wf->ChildCount : 0;
+    return wf != NULL ? (int)wf->ChildCount : 0;
 }
 
 /**
@@ -2915,7 +2914,8 @@ ADUC_Result workflow_get_result(ADUC_WorkflowHandle handle)
     ADUC_Workflow* wf = workflow_from_handle(handle);
     if (wf == NULL)
     {
-        ADUC_Result result = {};
+        ADUC_Result result;
+        memset(&result, 0, sizeof(result));
         return result;
     }
 
@@ -3659,5 +3659,3 @@ void workflow_set_force_update(ADUC_WorkflowHandle handle, bool forceUpdate)
         wf->ForceUpdate = forceUpdate;
     }
 }
-
-EXTERN_C_END

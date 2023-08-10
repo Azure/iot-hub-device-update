@@ -12,6 +12,7 @@
 #include "aduc/script_handler.hpp"
 #include "aduc/system_utils.h"
 #include "aduc/workflow_utils.h"
+#include "aducpal/stdlib.h" // setenv
 
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
@@ -79,8 +80,8 @@ bool ReadResultFile(const char* resultFile, ADUC_Result* result)
     }
 
     JSON_Object* actionResultObject = json_object(actionResultValue);
-    result->ResultCode = json_object_get_number(actionResultObject, "resultCode");
-    result->ExtendedResultCode = json_object_get_number(actionResultObject, "extendedResultCode");
+    result->ResultCode = static_cast<int32_t>(json_object_get_number(actionResultObject, "resultCode"));
+    result->ExtendedResultCode = static_cast<int32_t>(json_object_get_number(actionResultObject, "extendedResultCode"));
     json_value_free(actionResultValue);
     return true;
 }
@@ -89,7 +90,7 @@ static void set_test_config_folder()
 {
     std::string path{ ADUC_TEST_DATA_FOLDER };
     path += "/script_handler_test_config";
-    setenv(ADUC_CONFIG_FOLDER_ENV, path.c_str(), 1);
+    ADUCPAL_setenv(ADUC_CONFIG_FOLDER_ENV, path.c_str(), 1);
 }
 
 TEST_CASE("Script Handler Prepare Arguments Test")

@@ -19,6 +19,12 @@
 #include <do_config.h>
 #include <do_download.h>
 
+#if defined(WIN32)
+// DO currently doesn't call CoInitialize, so need to do that here.
+#    define WIN32_LEAN_AND_MEAN
+#    include <objbase.h>
+#endif
+
 EXTERN_C_BEGIN
 
 /////////////////////////////////////////////////////////////////////////////
@@ -34,7 +40,7 @@ EXTERN_C_BEGIN
  * @param[out] contractInfo The extension contract info.
  * @return ADUC_Result The result.
  */
-ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
+EXPORTED_METHOD ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
 {
     contractInfo->majorVer = ADUC_V1_CONTRACT_MAJOR_VER;
     contractInfo->minorVer = ADUC_V1_CONTRACT_MINOR_VER;
@@ -47,9 +53,22 @@ ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
  * @param initializeData The initialization data.
  * @return ADUC_Result The result.
  */
-ADUC_Result Initialize(const char* initializeData)
+EXPORTED_METHOD ADUC_Result Initialize(const char* initializeData)
 {
     ADUC_Result result{ ADUC_GeneralResult_Success };
+
+#if defined(WIN32)
+    // Bug 43013508: ContentHandlers have Initialize but no Uninitialize export
+    // (so not calling CoUninitialize)
+    HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    if (FAILED(hr))
+    {
+        Log_Error("Unable to initialize COM");
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = hr;
+        goto done;
+    }
+#endif
 
     if (initializeData == nullptr)
     {
@@ -87,7 +106,7 @@ done:
  * @param downloadProgressCallback The download progress callback function.
  * @return ADUC_Result The result.
  */
-ADUC_Result Download(
+EXPORTED_METHOD ADUC_Result Download(
     const ADUC_FileEntity* entity,
     const char* workflowId,
     const char* workFolder,

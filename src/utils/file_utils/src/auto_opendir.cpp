@@ -9,11 +9,13 @@
 #include "aduc/auto_opendir.hpp"
 #include <stdexcept>
 
+#include <aducpal/dirent.h>
+
 namespace aduc
 {
 AutoOpenDir::AutoOpenDir(const std::string& dirPath)
 {
-    DIR* d = opendir(dirPath.c_str());
+    DIR* d = ADUCPAL_opendir(dirPath.c_str());
     if (d == nullptr)
     {
         throw std::invalid_argument("opendir failed");
@@ -26,7 +28,7 @@ AutoOpenDir::~AutoOpenDir()
 {
     if (dirEntry != nullptr)
     {
-        closedir(dirEntry);
+        ADUCPAL_closedir(dirEntry);
         dirEntry = nullptr;
     }
 }
@@ -38,7 +40,7 @@ DIR* AutoOpenDir::GetDirectoryStreamHandle()
 
 struct dirent* AutoOpenDir::NextDirEntry()
 {
-    return readdir(dirEntry);
+    return ADUCPAL_readdir(dirEntry);
 }
 
 } // namespace aduc

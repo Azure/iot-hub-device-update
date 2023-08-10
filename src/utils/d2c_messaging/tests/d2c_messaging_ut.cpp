@@ -1,3 +1,4 @@
+// To run functional tests in this UT, add '[functional]' to command line.
 
 #include "aduc/client_handle.h"
 #include "aduc/d2c_messaging.h"
@@ -6,89 +7,93 @@
 #include <catch2/catch.hpp>
 #include <stdexcept> // runtime_error
 #include <string.h>
-#include <sys/param.h> // *_MIN/*_MAX
-#include <sys/time.h> // nanosleep
-#include <unistd.h> // usleep
+
+#include <aducpal/time.h> // nanosleep
+
+#ifndef INT_MAX
+#    define INT_MAX 2147483647
+#endif
 
 static ADUC_D2C_HttpStatus_Retry_Info g_httpStatusRetryInfo_fast_speed[]{
     /* Success responses, no retries needed */
-    { .httpStatusMin = 200,
-      .httpStatusMax = 299,
-      .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = nullptr,
-      .maxRetry = 0 },
+    { /* .httpStatusMin = */ 200,
+      /* .httpStatusMax = */ 299,
+      /* .additionalDelaySecs = */ 0,
+      /* .retryTimestampCalcFunc = */ nullptr,
+      /* .maxRetry = */ 0 },
 
-    { .httpStatusMin = 400,
-      .httpStatusMax = 499,
-      .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
-      .maxRetry = INT_MAX },
+    { /*.httpStatusMin = */ 400,
+      /* .httpStatusMax = */ 499,
+      /* .additionalDelaySecs = */ 0,
+      /* .retryTimestampCalcFunc = */ ADUC_Retry_Delay_Calculator,
+      /* .maxRetry = */ INT_MAX },
 
     /* Catch all */
-    { .httpStatusMin = 0,
-      .httpStatusMax = INT_MAX,
-      .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
-      .maxRetry = INT_MAX }
+    { /* .httpStatusMin = */ 0,
+      /* .httpStatusMax = */ INT_MAX,
+      /* .additionalDelaySecs = */ 0,
+      /* .retryTimestampCalcFunc = */ ADUC_Retry_Delay_Calculator,
+      /* .maxRetry = */ INT_MAX }
 };
 
 /**
  * @brief The default retry strategy for all Device-to-Cloud message requests to the Azure IoT Hub.
  */
 static ADUC_D2C_RetryStrategy g_defaultRetryStrategy_fast_speed = {
-    .httpStatusRetryInfo = g_httpStatusRetryInfo_fast_speed,
-    .httpStatusRetryInfoSize = 3,
-    .maxRetries = INT_MAX,
-    .maxDelaySecs = 1, // 1 seconds
-    .fallbackWaitTimeSec = 1, // 20 ms.
-    .initialDelayUnitMilliSecs = 10 // 50 ms.
+    /* .httpStatusRetryInfo = */ g_httpStatusRetryInfo_fast_speed,
+    /* .httpStatusRetryInfoSize = */ 3,
+    /* .maxRetries = */ INT_MAX,
+    /* .maxDelaySecs = */ 1, // 1 seconds
+    /* .fallbackWaitTimeSec = */ 1, // 20 ms
+    /* .initialDelayUnitMilliSecs = */ 10 // 50 ms
 };
 
 // Bad retry strategy - retry, but no calc function pointer.
 static ADUC_D2C_HttpStatus_Retry_Info g_httpStatusRetryInfo_no_calc_func[]{
     /* Success responses, no retries needed */
-    { .httpStatusMin = 200,
-      .httpStatusMax = 299,
-      .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = nullptr,
-      .maxRetry = 0 },
+    { /* .httpStatusMin = */ 200,
+      /* .httpStatusMax = */ 299,
+      /* .additionalDelaySecs = */ 0,
+      /* .retryTimestampCalcFunc = */ nullptr,
+      /* .maxRetry = */ 0 },
 
     /* Server error, no retries needed, but no retryTimestampCalcFunc specified.*/
-    { .httpStatusMin = 500,
-      .httpStatusMax = 599,
-      .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = nullptr,
-      .maxRetry = 0 },
+    { /* .httpStatusMin = */ 500,
+      /* .httpStatusMax = */ 599,
+      /* .additionalDelaySecs = */ 0,
+      /* .retryTimestampCalcFunc = */ nullptr,
+      /* .maxRetry = */ 0 },
 
     /* Mock errors, retry required, but no retryTimestampCalcFunc specified.*/
-    { .httpStatusMin = 600,
-      .httpStatusMax = 699,
-      .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = nullptr,
-      .maxRetry = INT_MAX },
+    { /* .httpStatusMin = */ 600,
+      /* .httpStatusMax = */ 699,
+      /* .additionalDelaySecs = */ 0,
+      /* .retryTimestampCalcFunc = */ nullptr,
+      /* .maxRetry = */ INT_MAX },
 
     /* Catch all */
-    { .httpStatusMin = 0,
-      .httpStatusMax = INT_MAX,
-      .additionalDelaySecs = 0,
-      .retryTimestampCalcFunc = ADUC_Retry_Delay_Calculator,
-      .maxRetry = INT_MAX }
+    { /* .httpStatusMin = */ 0,
+      /* .httpStatusMax = */ INT_MAX,
+      /* .additionalDelaySecs = */ 0,
+      /* .retryTimestampCalcFunc = */ ADUC_Retry_Delay_Calculator,
+      /* .maxRetry = */ INT_MAX }
 };
 
 /**
  * @brief The default retry strategy for all Device-to-Cloud message requests to the Azure IoT Hub.
  */
-static ADUC_D2C_RetryStrategy g_defaultRetryStrategy_no_calc_func = { .httpStatusRetryInfo =
-                                                                          g_httpStatusRetryInfo_no_calc_func,
-                                                                      .httpStatusRetryInfoSize = 3,
-                                                                      .maxRetries = INT_MAX,
-                                                                      .maxDelaySecs = 1 * 24 * 60 * 60, // 1 day
-                                                                      .fallbackWaitTimeSec = 1,
-                                                                      .initialDelayUnitMilliSecs = 1000 };
+static ADUC_D2C_RetryStrategy g_defaultRetryStrategy_no_calc_func = {
+    /* .httpStatusRetryInfo = */ g_httpStatusRetryInfo_no_calc_func,
+    /* .httpStatusRetryInfoSize = */ 3,
+    /* .maxRetries = */ INT_MAX,
+    /* .maxDelaySecs = */ 1 * 24 * 60 * 60, // 1 day
+    /* .fallbackWaitTimeSec = */ 1,
+    /* .initialDelayUnitMilliSecs = */ 1000
+};
 
 typedef struct _tagMockCloudBehavior
 {
-    time_t delayBeforeResponseMS; // in ms.
+    unsigned long delayBeforeResponseMS; // in ms.
     int httpStatus;
 } MockCloudBehavior;
 
@@ -168,6 +173,14 @@ static PThreadCond g_d2cMessageProcessedCond;
 static PThreadMutex g_cloudServiceMutex;
 static PThreadMutex g_testCaseSyncMutex;
 
+static void set_timespec_ms(timespec* ts, unsigned long ms)
+{
+    memset(ts, 0, sizeof(*ts));
+    ts->tv_sec = ms / 1000;
+    // 1 ms = 1000000 ns
+    ts->tv_nsec = (ms % 1000) * 1000000;
+}
+
 void* mock_msg_process_thread_routine(void* context)
 {
     g_cloudBehaviorMutex.lock();
@@ -181,35 +194,15 @@ void* mock_msg_process_thread_routine(void* context)
     // Wait before response.
     if (g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS > 999)
     {
-        sleep((g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS + 500) / 1000);
+        timespec t;
+        set_timespec_ms(&t, g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS + 500);
+        (void)ADUCPAL_nanosleep(&t, nullptr);
     }
     else
     {
         timespec t;
-        t.tv_sec = 0;
-        t.tv_nsec = (long)MILLISECONDS_TO_NANOSECONDS(g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS);
-        timespec remain{};
-        int res = nanosleep(&t, &remain);
-        if (res == -1)
-        {
-            switch (errno)
-            {
-            case EINTR:
-                // Interrupted by a signal.
-                break;
-            case EINVAL:
-            case EFAULT:
-            {
-                sleep(1); // Let's sleep for 1 second.
-                break;
-            }
-            default:
-            {
-                sleep(1); // Let's sleep for 1 second
-                break;
-            }
-            }
-        }
+        set_timespec_ms(&t, g_cloudBehavior[g_cloudBehaviorIndex].delayBeforeResponseMS);
+        (void)ADUCPAL_nanosleep(&t, nullptr);
     }
     g_cloudBehaviorIndex++;
     g_cloudBehaviorMutex.unlock();
@@ -286,15 +279,14 @@ bool g_cancelDoWorkThread = false;
 
 void* mock_do_work_thread(void* context)
 {
-    timespec t;
-    t.tv_sec = 0;
-    t.tv_nsec = MILLISECONDS_TO_NANOSECONDS(200);
+    struct timespec t;
+    set_timespec_ms(&t, 200);
     while (!g_cancelDoWorkThread)
     {
         g_doWorkMutex.lock();
         ADUC_D2C_Messaging_DoWork();
         g_doWorkMutex.unlock();
-        nanosleep(&t, nullptr);
+        ADUCPAL_nanosleep(&t, nullptr);
     }
     g_cancelDoWorkThread = false;
     return context;
@@ -304,15 +296,6 @@ static void create_messaging_do_work_thread(void* name)
 {
     pthread_t thread;
     pthread_create(&thread, nullptr, mock_do_work_thread, name);
-}
-
-static time_t GetTimeSinceEpochInSeconds()
-{
-    struct timespec timeSinceEpoch
-    {
-    };
-    clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
-    return timeSinceEpoch.tv_sec;
 }
 
 void OnMessageProcessCompleted_SaveWholeMessage_And_Signal(void* context, ADUC_D2C_Message_Status status)
@@ -352,7 +335,6 @@ TEST_CASE("Deinitialization - in progress message", "[.][functional]")
     g_testCaseSyncMutex.lock();
 
     int expectedAttempts = 0;
-    const char* message = nullptr;
     auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We don't need real handle.
 
     // Init message processing util, use mock transport, and reduces poll interval to 100ms.
@@ -415,7 +397,7 @@ TEST_CASE("Deinitialization - pending message", "[.][functional]")
 {
     g_testCaseSyncMutex.lock();
 
-    int expectedAttempts = 0;
+    unsigned int expectedAttempts = 0;
     const char* message = nullptr;
     auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We don't need real handle.
 
@@ -463,7 +445,7 @@ TEST_CASE("Simple tests", "[.][functional]")
 {
     g_testCaseSyncMutex.lock();
 
-    int expectedAttempts = 0;
+    unsigned int expectedAttempts = 0;
     const char* message = nullptr;
     auto handle = reinterpret_cast<ADUC_ClientHandle>(-1); // We don't need real handle.
 
@@ -562,7 +544,7 @@ TEST_CASE("Bad http status retry info", "[.][functional]")
 {
     g_testCaseSyncMutex.lock();
 
-    int expectedAttempts = 0;
+    unsigned int expectedAttempts = 0;
     const char* message = nullptr;
     g_attempts = 0;
     auto handle = static_cast<ADUC_ClientHandle>((void*)(1)); // We don't need real handle.
@@ -683,8 +665,10 @@ TEST_CASE("Message replacement test", "[.][functional]")
         NULL /* statusChangedCallback */,
         &message1FinalStatus);
 
-    // Wait for message 1 to be picked up.
-    sleep(2);
+    // Wait 2s for message 1 to be picked up.
+    timespec t;
+    set_timespec_ms(&t, 2 * 1000);
+    (void)ADUCPAL_nanosleep(&t, nullptr);
 
     message = "Message 2";
     ADUC_D2C_Message_SendAsync(
@@ -724,7 +708,7 @@ TEST_CASE("30 retries - httpStatus 401", "[.][functional]")
 {
     g_testCaseSyncMutex.lock();
 
-    int expectedAttempts = 0;
+    unsigned int expectedAttempts = 0;
     const char* message = nullptr;
     auto handle = static_cast<ADUC_ClientHandle>((void*)(1)); // We don't need real handle.
 
@@ -743,7 +727,7 @@ TEST_CASE("30 retries - httpStatus 401", "[.][functional]")
     MockCloudBehavior cb1[30];
     expectedAttempts = sizeof(cb1) / sizeof(MockCloudBehavior);
 
-    for (int i = 0; i < expectedAttempts - 1; i++)
+    for (unsigned int i = 0; i < expectedAttempts - 1; i++)
     {
         cb1[i].delayBeforeResponseMS = 10;
         cb1[i].httpStatus =

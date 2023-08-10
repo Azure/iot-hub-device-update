@@ -369,10 +369,6 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowD
     }
     else
     {
-        // The default result for Idle state.
-        // This will reset twin status code to 200 to indicate that we're successful (so far).
-        const ADUC_Result result = { .ResultCode = ADUC_Result_Idle_Success };
-
         int desiredAction = workflow_get_action(currentWorkflowData->WorkflowHandle);
         if (desiredAction == ADUCITF_UpdateAction_Undefined)
         {
@@ -382,6 +378,12 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowD
         if (desiredAction == ADUCITF_UpdateAction_Cancel)
         {
             Log_Info("Received 'cancel' action on startup, reporting Idle state.");
+
+            // The default result for Idle state.
+            // This will reset twin status code to 200 to indicate that we're successful (so far).
+            ADUC_Result result;
+            result.ResultCode = ADUC_Result_Idle_Success;
+            result.ExtendedResultCode = 0;
 
             ADUC_WorkflowData_SetCurrentAction(desiredAction, currentWorkflowData);
 
@@ -1006,7 +1008,8 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
             // Ignore the result of the operation, which most likely is cancelled, e.g. ADUC_Result_Failure_Cancelled.
             Log_Warn("Operation cancelled - returning to Idle state");
 
-            const ADUC_Result result = { .ResultCode = ADUC_Result_Failure_Cancelled };
+            result.ResultCode = ADUC_Result_Failure_Cancelled;
+            result.ExtendedResultCode = 0;
             ADUC_Workflow_SetUpdateStateWithResult(workflowData, ADUCITF_State_Idle, result);
         }
         else
@@ -1178,9 +1181,11 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
     size_t payloadCount = workflow_get_update_files_count(workflowHandle);
     for (size_t i = 0; i < payloadCount; ++i)
     {
-        ADUC_Result result = {};
+        ADUC_Result result;
+        memset(&result, 0, sizeof(result));
         ADUC_FileEntity fileEntity;
         memset(&fileEntity, 0, sizeof(fileEntity));
+
         if (!workflow_get_update_file(workflowHandle, i, &fileEntity))
         {
             continue;
@@ -1248,7 +1253,9 @@ void ADUC_Workflow_SetUpdateStateWithResult(
  */
 void ADUC_Workflow_SetInstalledUpdateIdAndGoToIdle(ADUC_WorkflowData* workflowData, const char* updateId)
 {
-    ADUC_Result idleResult = { .ResultCode = ADUC_Result_Apply_Success, .ExtendedResultCode = 0 };
+    ADUC_Result idleResult;
+    idleResult.ResultCode = ADUC_Result_Apply_Success;
+    idleResult.ExtendedResultCode = 0;
 
     if (!workflowData->ReportStateAndResultAsyncCallback(
             (ADUC_WorkflowDataToken)workflowData, ADUCITF_State_Idle, &idleResult, updateId))
@@ -1423,7 +1430,8 @@ ADUC_Result ADUC_Workflow_MethodCall_Install(ADUC_MethodCall_Data* methodCallDat
 {
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
-    ADUC_Result result = {};
+    ADUC_Result result;
+    memset(&result, 0, sizeof(result));
 
     Log_Info("Workflow step: Install");
 
@@ -1449,6 +1457,8 @@ done:
 
 void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
 {
+    UNREFERENCED_PARAMETER(result);
+
     if (workflow_is_immediate_reboot_requested(methodCallData->WorkflowData->WorkflowHandle)
         || workflow_is_reboot_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
@@ -1498,7 +1508,8 @@ ADUC_Result ADUC_Workflow_MethodCall_Backup(ADUC_MethodCall_Data* methodCallData
 {
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
-    ADUC_Result result = {};
+    ADUC_Result result;
+    memset(&result, 0, sizeof(result));
 
     Log_Info("Workflow step: backup");
 
@@ -1538,7 +1549,8 @@ ADUC_Result ADUC_Workflow_MethodCall_Apply(ADUC_MethodCall_Data* methodCallData)
 {
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
-    ADUC_Result result = {};
+    ADUC_Result result;
+    memset(&result, 0, sizeof(result));
 
     Log_Info("Workflow step: Apply");
 
@@ -1618,7 +1630,8 @@ ADUC_Result ADUC_Workflow_MethodCall_Restore(ADUC_MethodCall_Data* methodCallDat
 {
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
-    ADUC_Result result = {};
+    ADUC_Result result;
+    memset(&result, 0, sizeof(result));
 
     Log_Info("Workflow step: Restore");
 

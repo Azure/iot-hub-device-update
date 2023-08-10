@@ -7,8 +7,9 @@ add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc)
 
-find_package (azure_c_shared_utility REQUIRED)
 find_package (Parson REQUIRED)
+
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (
     ${PROJECT_NAME}
@@ -16,12 +17,8 @@ target_link_libraries (
     PRIVATE aduc::adu_types
             aduc::logging
             Parson::parson
-            aziotsharedutil
             uhttp)
 
 if (ADUC_BUILD_UNIT_TESTS)
-    find_package (umock_c REQUIRED CONFIG)
-    target_link_libraries (${PROJECT_NAME} PRIVATE umock_c)
-
     add_subdirectory (tests)
 endif ()

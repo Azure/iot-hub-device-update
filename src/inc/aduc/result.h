@@ -8,8 +8,8 @@
 #ifndef ADUC_RESULT_H
 #define ADUC_RESULT_H
 
-#include <stdbool.h> // _Bool
-#include <stdint.h> // uint32_t
+#include <stdbool.h> // bool
+#include <stdint.h> // int32_t
 
 /**
 * @brief Defines the type of an ADUC_Result.
@@ -86,7 +86,7 @@ typedef enum tagADUC_Facility
     ADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER=4, //!< ADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER : 4, indicates errors from CONTENT_DOWNLOADER Extension
     ADUC_FACILITY_EXTENSION_COMMUNICATION_PROVIDER=5, //!< ADUC_FACILITY_EXTENSION_COMMUNICATION_PROVIDER : 5, indicates errors from COMMUNICATION PROVIDER Extension.
     ADUC_FACILITY_EXTENSION_LOG_PROVIDER=6, //!< ADUC_FACILITY_EXTENSION_LOG_PROVIDER : 6, indicates errors from LOG PROVIDER Extension.
-    ADUC_FACILITY_EXTENSION_COMPONENT_ENUMERATOR=7, //!< ADUC_FACILITY_EXTENSION_COMPONENT_ENUMERATOR : 7, indicates errors from COMPONENT ENUMERATOR Extension. 
+    ADUC_FACILITY_EXTENSION_COMPONENT_ENUMERATOR=7, //!< ADUC_FACILITY_EXTENSION_COMPONENT_ENUMERATOR : 7, indicates errors from COMPONENT ENUMERATOR Extension.
     ADUC_FACILITY_UTILITY=8, //!< ADUC_FACILITY_UTILITY : 8, indicates errors from utility functions.
     ADUC_FACILITY_DOWNLOAD_HANDLER=9, //!< ADUC_FACILITY_DOWNLOAD_HANDLER : 9, Indicates errors from download handler infrastructure or download handler extensions.
     ADUC_FACILITY_UNUSED_A=10, //!< ADUC_FACILITY_UNUSED_A : 10, unused
@@ -128,8 +128,8 @@ typedef enum tagADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER_Components
 typedef enum tagADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER_Components
 {
     ADUC_CONTENT_DOWNLOADER_COMMON=0, //!< ADUC_CONTENT_DOWNLOADER_COMMON : 0, indicates common errors from the downloader extension
-    ADUC_CONTENT_DOWNLOADER_DELIVERY_OPTIMIZATION=1, //!< ADUC_CONTENT_DOWNLOADER_DELIVERY_OPTIMIZATION : 1, indicates errors from Delivery Optimization agent. 
-    ADUC_CONTENT_DOWNLOADER_SIMPLE_HTTP_DOWNLOADER=2, //!< ADUC_CONTENT_DOWNLOADER_SIMPLE_HTTP_DOWNLOADER : 2, indicates errors from Simple Http Downloader.  
+    ADUC_CONTENT_DOWNLOADER_DELIVERY_OPTIMIZATION=1, //!< ADUC_CONTENT_DOWNLOADER_DELIVERY_OPTIMIZATION : 1, indicates errors from Delivery Optimization agent.
+    ADUC_CONTENT_DOWNLOADER_SIMPLE_HTTP_DOWNLOADER=2, //!< ADUC_CONTENT_DOWNLOADER_SIMPLE_HTTP_DOWNLOADER : 2, indicates errors from Simple Http Downloader.
     ADUC_CONTENT_DOWNLOADER_CURL_DOWNLOADER=3, //!< ADUC_CONTENT_DOWNLOADER_CURL_DOWNLOADER : 3, indicates errors from Curl Downloader.
 } ADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER_Components;
 

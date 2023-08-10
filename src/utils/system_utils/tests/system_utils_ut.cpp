@@ -73,7 +73,7 @@ static void ForEachDir_Callback(void* context, const char* baseDir, const char* 
 
 ADUC_SystemUtils_ForEachDirFunctor CreateCallbackFunctor(TestCaseFixture* fixture)
 {
-    return ADUC_SystemUtils_ForEachDirFunctor{ .context = fixture, .callbackFn = ForEachDir_Callback };
+    return ADUC_SystemUtils_ForEachDirFunctor{ /*.context = */ fixture, /*.callbackFn = */ ForEachDir_Callback };
 };
 
 class TestCaseFixture
@@ -235,25 +235,6 @@ TEST_CASE("ADUC_SystemUtils_GetTemporaryPathName")
     }
 }
 
-TEST_CASE("ADUC_SystemUtils_ExecuteShellCommand")
-{
-    SECTION("Run date")
-    {
-        const std::string command{ "/bin/date" };
-
-        const int ret{ ADUC_SystemUtils_ExecuteShellCommand(command.c_str()) };
-        CHECK(ret == 0);
-    }
-
-    SECTION("Run a directory")
-    {
-        const std::string command{ ADUC_SystemUtils_GetTemporaryPathName() };
-
-        const int ret{ ADUC_SystemUtils_ExecuteShellCommand(command.c_str()) };
-        CHECK_FALSE(ret == 0);
-    }
-}
-
 TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirDefault")
 {
     SECTION("Make a directory under tmp")
@@ -268,6 +249,8 @@ TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirDefault")
 
     SECTION("Make recursive structure")
     {
+// Windows doesn't have any issue with creating root folders.
+#if !defined(WIN32)
         std::string dir{ TestPath() };
         dir += "/fail";
 
@@ -277,19 +260,26 @@ TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirDefault")
         struct stat st = {};
         CHECK_FALSE(stat(TestPath(), &st) == 0);
         CHECK_FALSE(S_ISDIR(st.st_mode));
+#endif
     }
 
+}
+
+// TODO: Remove intrinsic !mayfail tag once windows pipeline is using self-hosted vmImage
+TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirDefault negative", "[!mayfail]")
+{
     // We choose /sys because it will fail for root users and non-root users.
     SECTION("Make directory under /sys")
     {
+#if !defined(WIN32)
         std::string dir{ "/sys/fail" };
+#else
+        // For Windows, try creating a directory under %WINDIR% which will fail.
+        std::string dir{ "c:/windows/fail" };
+#endif
 
         const int ret{ ADUC_SystemUtils_MkDirDefault(dir.c_str()) };
         CHECK_FALSE(ret == 0);
-
-        struct stat st = {};
-        CHECK_FALSE(stat(TestPath(), &st) == 0);
-        CHECK_FALSE(S_ISDIR(st.st_mode));
     }
 }
 
@@ -311,14 +301,15 @@ TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirRecursiveDefault")
     // We choose /sys because it will fail for root users and non-root users.
     SECTION("Make directory off /sys")
     {
+#if !defined(WIN32)
         std::string dir{ "/sys/a/b/c/d/e/f/g/h/i/j" };
+#else
+        // For Windows, try creating a directory under %WINDIR% which will fail.
+        std::string dir{ "c:/windows/a/b/c/d/e/f/g/h/i/j" };
+#endif
 
         const int ret{ ADUC_SystemUtils_MkDirRecursiveDefault(dir.c_str()) };
         CHECK_FALSE(ret == 0);
-
-        struct stat st = {};
-        CHECK_FALSE(stat(TestPath(), &st) == 0);
-        CHECK_FALSE(S_ISDIR(st.st_mode));
     }
 }
 

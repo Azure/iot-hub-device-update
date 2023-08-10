@@ -26,3 +26,4 @@ target_link_libraries (
             aduc::c_utils
             aduc::workflow_utils)
 
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)

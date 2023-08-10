@@ -33,20 +33,20 @@ endmacro ()
 # test_data_path_segment - the path segment, e.g. testdata of test data dirs
 # output_dir - absolute output path base directory to put testdata files
 #
-# For example, if base_dir is $SRC, test_data_path_segment is "testdata", and output path is /var/adu/testdata, then
+# For example, if base_dir is $SRC, test_data_path_segment is "testdata", and output path is /var/adu/out, then
 # if the following exist
-#     $SRC/.../foo/tests/testdata/testsuite1/testdata1.json
-#                                            testdata2.json
+#     $SRC/.../foo/tests /testdata /testsuite1/testfile1.json
+#                                             testfile2.json
 #
-#     $SRC/.../bar/tests/testdata/testsuite2/testdata1.json
-#                                            testdata2.txt
+#     $SRC/.../bar/tests /testdata /testsuite2/testfile1.json
+#                                             testfile2.txt
 #
 # then the files would get copied as follows:
-#     /var/adu/testdata/testsuite1/testdata1.json
-#                                  testdata2.json
+#                     /var/adu/out /testsuite1/testfile1.json
+#                                              testfile2.json
 #
-#     /var/adu/testdata/testsuite2/testdata1.json
-#                                  testdata2.txt
+#                     /var/adu/out /testsuite2/testfile1.json
+#                                              testfile2.txt
 #
 macro (
     copy_test_data
@@ -54,48 +54,33 @@ macro (
     test_data_path_segment
     output_dir)
 
-    string (CONCAT PATH_PATTERN "*/" ${test_data_path_segment} "/*")
-    execute_process(
-        COMMAND find "${base_dir}" -path ${PATH_PATTERN} -name *.* -print
-        OUTPUT_VARIABLE EXEC_OUTPUT_TEST_DATA_FILES
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        WORKING_DIRECTORY ${base_dir}
-        #COMMAND_ECHO STDOUT
-    )
+    message (STATUS "Copying test data from '${base_dir}' to '${output_dir}'")
 
-    string(REPLACE "\n" ";" TEST_DATA_FILE_LIST ${EXEC_OUTPUT_TEST_DATA_FILES})
-
-    foreach (test_data_file_path ${TEST_DATA_FILE_LIST})
-
-        execute_process(
-            COMMAND echo ${test_data_file_path}
-            COMMAND sed -e "s\/^.\\+${test_data_path_segment}\\/\/\/"
-            OUTPUT_VARIABLE FILE_PATH_AFTER_TEST_DATA_PATH_SEGMENT
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            WORKING_DIRECTORY ${base_dir}
-            #COMMAND_ECHO STDOUT
-        )
-
-        execute_process(
-            COMMAND dirname ${output_dir}/${FILE_PATH_AFTER_TEST_DATA_PATH_SEGMENT}
-            OUTPUT_VARIABLE DIR_PATH_AFTER_TEST_DATA_PATH_SEGMENT
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            WORKING_DIRECTORY ${base_dir}
-            #COMMAND_ECHO STDOUT
-        )
-
-        execute_process(
-            COMMAND mkdir -p ${DIR_PATH_AFTER_TEST_DATA_PATH_SEGMENT}
-            WORKING_DIRECTORY ${base_dir}
-            #COMMAND_ECHO STDOUT
-        )
-
-        execute_process(
-            COMMAND cp ${test_data_file_path} ${DIR_PATH_AFTER_TEST_DATA_PATH_SEGMENT}/
-            WORKING_DIRECTORY ${base_dir}
-            #COMMAND_ECHO STDOUT
-        )
-
-    endforeach()
+    file (
+        GLOB_RECURSE file_list
+        LIST_DIRECTORIES true
+        RELATIVE ${base_dir}
+        ${base_dir}/*)
+    foreach (child ${file_list})
+        if (child MATCHES "\/testdata\/(.*)$")
+            set (TARGET_DIR "${output_dir}/${CMAKE_MATCH_1}")
+            if (IS_DIRECTORY ${base_dir}/${child})
+                file (MAKE_DIRECTORY ${TARGET_DIR})
+            else ()
+                file (
+                    COPY_FILE
+                    "${base_dir}/${child}"
+                    ${TARGET_DIR}
+                    RESULT
+                    result)
+                if (NOT
+                    result
+                    EQUAL
+                    "0")
+                    message (FATAL_ERROR "COPY_FILE failed: ${result}")
+                endif ()
+            endif ()
+        endif ()
+    endforeach ()
 
 endmacro ()

@@ -287,7 +287,8 @@ EISErr SendEISRequest(
     HTTP_CLIENT_RESULT clientResult;
     HTTP_CLIENT_REQUEST_TYPE clientRequestType = HTTP_CLIENT_REQUEST_GET;
 
-    SOCKETIO_CONFIG config = {};
+    SOCKETIO_CONFIG config;
+    memset(&config, 0, sizeof(config));
     config.accepted_socket = NULL;
     config.hostname = udsSocketPath;
     config.port = port; // Check on this

@@ -16,7 +16,7 @@ target_include_directories (
     PUBLIC inc
     PRIVATE ${ADUC_EXPORT_INCLUDES})
 
-target_link_digital_twin_client (${PROJECT_NAME} PUBLIC)
+target_link_iothub_client (${PROJECT_NAME} PUBLIC)
 
 target_link_libraries (
     ${PROJECT_NAME}

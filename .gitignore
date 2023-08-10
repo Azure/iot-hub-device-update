@@ -32,7 +32,12 @@ cscope.po.out
 ### Python Module Files
 *__pycache__
 *__pycache__/*
+
 ### ADU build environment
 out/
 build/
 Testing/
+
+### VCPKG
+.vcpkg/
+.vcpkg-installed/

@@ -16,8 +16,11 @@
 #include <aduc/workflow_utils.h> // workflow_*
 #include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy_s, strcat_s
 #include <azure_c_shared_utility/strings.h> // STRING_*
-#include <libgen.h> // dirname
 #include <stdlib.h> // free, malloc
+
+#include <aducpal/stdio.h> //rename
+
+#include <libgen.h> // dirname
 
 EXTERN_C_BEGIN
 
@@ -221,7 +224,7 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
 
         Log_Debug("moving '%s' -> '%s'", STRING_c_str(sandboxUpdatePayloadFile), STRING_c_str(updateCacheFilePath));
 
-        res = rename(STRING_c_str(sandboxUpdatePayloadFile), STRING_c_str(updateCacheFilePath));
+        res = ADUCPAL_rename(STRING_c_str(sandboxUpdatePayloadFile), STRING_c_str(updateCacheFilePath));
         if (res != 0)
         {
             Log_Warn("rename, errno %d", errno);

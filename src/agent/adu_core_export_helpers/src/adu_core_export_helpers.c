@@ -11,7 +11,6 @@
 #include <parson.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <sys/wait.h> // for waitpid
 
 //
 // ADUC_UpdateActionCallbacks helpers.

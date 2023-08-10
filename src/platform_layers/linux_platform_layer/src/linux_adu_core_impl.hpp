@@ -12,7 +12,6 @@
 #include <exception>
 #include <thread>
 
-#include <sys/time.h> // for gettimeofday
 #include <time.h>
 
 #include "aduc/adu_core_exports.h"

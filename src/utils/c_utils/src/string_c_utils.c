@@ -16,7 +16,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <unistd.h>
+
+#include <aducpal/unistd.h> // open, read, close
 
 /**
  * @brief Maximum length for the output string of ADUC_StringFormat()
@@ -37,8 +38,8 @@
 bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* value, unsigned int valueLen)
 {
     bool foundKey = false;
-    int bufferLen = 1024;
-    char buffer[bufferLen];
+    char buffer[1024];
+    const unsigned int bufferLen = ARRAY_SIZE(buffer);
 
     if (valueLen < 2)
     {
@@ -103,42 +104,57 @@ bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const siz
     }
 
     bool success = false;
-
-    // NOLINTNEXTLINE(android-cloexec-open): We are not guaranteed to have access to O_CLOEXEC on all of our builds so no need to include
-    int fd = open(filePath, O_EXCL | O_RDONLY);
-
-    if (fd == -1)
-    {
-        goto done;
-    }
+    FILE* fp = NULL;
 
     struct stat bS;
-
     if (stat(filePath, &bS) != 0)
     {
         goto done;
     }
 
-    long fileSize = bS.st_size;
-
+    const long fileSize = bS.st_size;
     if (fileSize == 0 || fileSize > strBuffSize)
     {
         goto done;
     }
 
-    ssize_t numRead = read(fd, strBuffer, (size_t)fileSize);
-
-    if (numRead != fileSize)
+    fp = fopen(filePath, "rt");
+    if (fp == NULL)
     {
         goto done;
     }
 
-    strBuffer[numRead] = '\0';
+    char* readBuff = strBuffer;
+    size_t buffSize = strBuffSize;
+
+    while (true)
+    {
+        const char* line = fgets(readBuff, (int)buffSize, fp);
+        if (line == NULL)
+        {
+            if (feof(fp))
+            {
+                break;
+            }
+
+            // Error
+            goto done;
+        }
+
+        const size_t readSize = strlen(readBuff);
+        readBuff += readSize;
+        buffSize -= readSize;
+    }
+
+    *readBuff = '\0';
 
     success = true;
-done:
 
-    close(fd);
+done:
+    if (fp != NULL)
+    {
+        fclose(fp);
+    }
 
     if (!success)
     {
@@ -301,14 +317,19 @@ size_t ADUC_StrNLen(const char* str, size_t maxsize)
 /**
  * @brief Split updateType string by ':' to return updateTypeName and updateTypeVersion
  * @param[in] updateType - expected "Provider/Name:Version"
- * @param[out] updateTypeName - Caller must call free()
+ * @param[out] updateTypeName - Caller must call free(), can pass NULL if not desired.
  * @param[out] updateTypeVersion
  */
 bool ADUC_ParseUpdateType(const char* updateType, char** updateTypeName, unsigned int* updateTypeVersion)
 {
     bool succeeded = false;
     char* name = NULL;
-    *updateTypeName = NULL;
+
+    if (updateTypeName != NULL)
+    {
+        *updateTypeName = NULL;
+    }
+
     *updateTypeVersion = 0;
 
     if (updateType == NULL)
@@ -332,14 +353,17 @@ bool ADUC_ParseUpdateType(const char* updateType, char** updateTypeName, unsigne
         goto done;
     }
 
-    name = malloc(nameLength + 1);
-    if (name == NULL)
+    if (updateTypeName != NULL)
     {
-        goto done;
-    }
+        name = malloc(nameLength + 1);
+        if (name == NULL)
+        {
+            goto done;
+        }
 
-    memcpy(name, updateType, nameLength);
-    name[nameLength] = '\0';
+        memcpy(name, updateType, nameLength);
+        name[nameLength] = '\0';
+    }
 
     // convert version string to unsigned int
     if (!atoui(delimiter + 1, updateTypeVersion))
@@ -353,11 +377,17 @@ bool ADUC_ParseUpdateType(const char* updateType, char** updateTypeName, unsigne
 done:
     if (succeeded)
     {
-        *updateTypeName = name;
+        if (updateTypeName != NULL)
+        {
+            *updateTypeName = name;
+        }
     }
     else
     {
-        free(name);
+        if (name != NULL)
+        {
+            free(name);
+        }
     }
 
     return succeeded;

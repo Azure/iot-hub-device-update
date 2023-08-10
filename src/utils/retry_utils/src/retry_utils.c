@@ -10,14 +10,18 @@
 #include <limits.h>
 #include <math.h>
 #include <stdbool.h>
-#include <stdlib.h>     // rand
-#include <sys/param.h>  // MIN/MAX
-#include <unistd.h>
+#include <stdlib.h> // rand
+
+#include <aducpal/time.h> // clock_gettime
+
+#ifndef MIN
+#    define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
 
 static time_t GetTimeSinceEpochInSeconds()
 {
     struct timespec timeSinceEpoch;
-    clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
+    ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
     return timeSinceEpoch.tv_sec;
 }
 

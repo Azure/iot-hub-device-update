@@ -14,6 +14,8 @@ target_include_directories (
 
 target_link_libraries (${PROJECT_NAME} PUBLIC aduc::c_utils)
 
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
 endif ()
