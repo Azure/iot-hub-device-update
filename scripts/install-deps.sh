@@ -190,12 +190,17 @@ do_install_aduc_packages() {
     OS=$(lsb_release --short --id)
     if [[ $OS == "Debian" && $VER == "9" ]]; then
         $SUDO apt-get install --yes gcc-6 g++-6 || return
-    elif [[ $OS == "Debian" && $VER == "11" ]]; then
+    elif [[ ($OS == "Debian" && $VER == "11") || (\
+        $OS == "Ubuntu" && $VER == "20.04") || (\
+        $OS == "Ubuntu" && $VER == "22.04") ]] \
+            ; then
         $SUDO apt-get install --yes gcc-10 g++-10 || return
-    elif [[ $OS == "Ubuntu" && $VER == "20.04" ]]; then
-        $SUDO apt-get install --yes gcc-10 g++-10 || return
-    elif [[ $OS == "Ubuntu" && $VER == "22.04" ]]; then
-        $SUDO apt-get install --yes gcc-10 g++-10 || return
+
+        # used for dependencies like catch2 that will find system default
+        # (e.g. g++-9) despite g++-10 installed, so use CC and CXX env
+        # vars that CMake will honor.
+        export CC=/usr/bin/gcc-10
+        export CXX=/usr/bin/g++-10
     else
         $SUDO apt-get install --yes gcc-8 g++-8 || return
     fi
@@ -295,6 +300,7 @@ do_install_catch2() {
     mkdir cmake || return
     pushd cmake > /dev/null || return
 
+    export CC=/usr/bin/gcc-10 CXX=/usr/bin/g++-10
     cmake .. || return
 
     cmake --build . || return
