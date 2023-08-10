@@ -192,6 +192,8 @@ do_install_aduc_packages() {
         $SUDO apt-get install --yes gcc-6 g++-6 || return
     elif [[ $OS == "Debian" && $VER == "11" ]]; then
         $SUDO apt-get install --yes gcc-10 g++-10 || return
+    elif [[ $OS == "Ubuntu" && $VER == "20.04" ]]; then
+        $SUDO apt-get install --yes gcc-10 g++-10 || return
     elif [[ $OS == "Ubuntu" && $VER == "22.04" ]]; then
         $SUDO apt-get install --yes gcc-10 g++-10 || return
     else
