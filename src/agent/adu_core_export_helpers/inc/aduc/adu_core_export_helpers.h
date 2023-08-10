@@ -29,7 +29,7 @@ EXTERN_C_BEGIN
  * @param argv Command line parameters.
  */
 ADUC_Result
-ADUC_MethodCall_Register(ADUC_UpdateActionCallbacks* updateActionCallbacks, unsigned int argc, const char** argv);
+ADUC_MethodCall_Register(ADUC_UpdateActionCallbacks* updateActionCallbacks, int argc, const char** argv);
 
 /**
  * @brief Call Unregister method to indicate shutdown.

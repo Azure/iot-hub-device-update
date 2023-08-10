@@ -5,6 +5,7 @@
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
 #include <parson.h>
+#include <stdlib.h>
 
 EXTERN_C_BEGIN
 
@@ -60,7 +61,7 @@ void DiagnosticsConfigUtils_UnInit(DiagnosticsWorkflowData* workflowData);
  * @returns NULL if index is out of range; the DiagnosticsComponent otherwise
  */
 const DiagnosticsLogComponent*
-DiagnosticsConfigUtils_GetLogComponentElem(const DiagnosticsWorkflowData* workflowData, unsigned int index);
+DiagnosticsConfigUtils_GetLogComponentElem(const DiagnosticsWorkflowData* workflowData, size_t index);
 
 /**
  * @brief Uninitializes a logComponent pointer

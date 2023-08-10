@@ -47,8 +47,8 @@ typedef enum _tagADUC_D2C_Message_Status
 typedef time_t (*ADUC_D2C_NEXT_RETRY_TIMESTAMP_CALC_FUNC)(
     int additionalDelaySecs,
     unsigned int retries,
-    long initialDelayUnitMilliSecs,
-    long maxDelaySecs,
+    unsigned long initialDelayUnitMilliSecs,
+    unsigned long maxDelaySecs,
     double maxJitterPercent);
 
 /**

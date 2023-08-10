@@ -9,7 +9,7 @@
 #define ADUC_RESULT_H
 
 #include <stdbool.h> // _Bool
-#include <stdint.h> // int32_t
+#include <stdint.h> // uint32_t
 
 /**
 * @brief Defines the type of an ADUC_Result.
@@ -66,7 +66,7 @@ static inline bool IsAducResultCodeFailure(const ADUC_Result_t resultCode)
 *    +--------------- Facility code (4 bits)
 */
 static inline ADUC_Result_t
-MAKE_ADUC_EXTENDEDRESULTCODE(const unsigned int facility, const unsigned int component, const unsigned int value)
+MAKE_ADUC_EXTENDEDRESULTCODE(const int32_t facility, const int32_t component, const int32_t value)
 {
     return ((facility & 0xF) << 0x1C) | ((component & 0xFF) << 0x14) | (value & 0xFFFFF);
 }
@@ -160,7 +160,7 @@ typedef enum tagADUC_FACILITY_DOWNLOAD_HANDLER_Components
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_UNKNOWN Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UNKNOWN(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UNKNOWN(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_UNKNOWN, component, value);
 }
@@ -192,7 +192,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ADUC_COMP
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_LOWERLAYER Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_LOWERLAYER(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_LOWERLAYER(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_LOWERLAYER, component, value);
 }
@@ -208,7 +208,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ADUC_LOWE
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_UPPERLAYER Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UPPERLAYER(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UPPERLAYER(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_UPPERLAYER, component, value);
 }
@@ -224,7 +224,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ADUC_UPPE
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER, component, value);
 }
@@ -288,7 +288,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ADUC_CONT
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_EXTENSION_CONTENT_DOWNLOADER, component, value);
 }
@@ -328,7 +328,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ADUC_CONT
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_EXTENSION_COMMUNICATION_PROVIDER Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_EXTENSION_COMMUNICATION_PROVIDER(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_EXTENSION_COMMUNICATION_PROVIDER(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_EXTENSION_COMMUNICATION_PROVIDER, component, value);
 }
@@ -336,7 +336,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACIL
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_EXTENSION_LOG_PROVIDER Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_EXTENSION_LOG_PROVIDER(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_EXTENSION_LOG_PROVIDER(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_EXTENSION_LOG_PROVIDER, component, value);
 }
@@ -344,7 +344,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACIL
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_EXTENSION_COMPONENT_ENUMERATOR Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_EXTENSION_COMPONENT_ENUMERATOR(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_EXTENSION_COMPONENT_ENUMERATOR(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_EXTENSION_COMPONENT_ENUMERATOR, component, value);
 }
@@ -360,7 +360,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ADUC_COMP
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_UTILITY Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UTILITY(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UTILITY(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_UTILITY, component, value);
 }
@@ -384,7 +384,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ADUC_COMP
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_DOWNLOAD_HANDLER Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_DOWNLOAD_HANDLER(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_DOWNLOAD_HANDLER(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_DOWNLOAD_HANDLER, component, value);
 }
@@ -432,7 +432,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_ADUC_COMP
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_UNUSED_A Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UNUSED_A(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UNUSED_A(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_UNUSED_A, component, value);
 }
@@ -440,7 +440,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACIL
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_UNUSED_B Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UNUSED_B(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UNUSED_B(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_UNUSED_B, component, value);
 }
@@ -448,7 +448,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACIL
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_UNUSED_C Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UNUSED_C(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UNUSED_C(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_UNUSED_C, component, value);
 }
@@ -456,7 +456,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACIL
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_DELIVERY_OPTIMIZATION Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_DELIVERY_OPTIMIZATION(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_DELIVERY_OPTIMIZATION(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_DELIVERY_OPTIMIZATION, component, value);
 }
@@ -464,7 +464,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACIL
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_UNUSED_E Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UNUSED_E(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UNUSED_E(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_UNUSED_E, component, value);
 }
@@ -472,7 +472,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACIL
 /**
  * @brief Extended Result Codes for ADUC_FACILITY_UNUSED_F Facility
 */
-static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UNUSED_F(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_UNUSED_F(const int32_t component, const int32_t value)
 {
     return MAKE_ADUC_EXTENDEDRESULTCODE(ADUC_FACILITY_UNUSED_F, component, value);
 }
@@ -1570,7 +1570,7 @@ static inline ADUC_Result_t MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACIL
  */
 static inline ADUC_Result_t MAKE_ADUC_DELIVERY_OPTIMIZATION_EXTENDEDRESULTCODE(const int32_t value)
 {
-    return ((ADUC_FACILITY_DELIVERY_OPTIMIZATION & 0xF) << 0x1C) | (value & 0xFFFFFFF);
+    return (int32_t)((ADUC_FACILITY_DELIVERY_OPTIMIZATION & 0xF) << 0x1C) | (value & 0xFFFFFFF);
 }
 
 //

@@ -250,7 +250,7 @@ bool DiagnosticsConfigUtils_InitFromFile(DiagnosticsWorkflowData* workflowData, 
  * @returns NULL if index is out of range; the DiagnosticsComponent otherwise
  */
 const DiagnosticsLogComponent*
-DiagnosticsConfigUtils_GetLogComponentElem(const DiagnosticsWorkflowData* workflowData, unsigned int index)
+DiagnosticsConfigUtils_GetLogComponentElem(const DiagnosticsWorkflowData* workflowData, size_t index)
 {
     if (workflowData == NULL || index >= VECTOR_size(workflowData->components))
     {

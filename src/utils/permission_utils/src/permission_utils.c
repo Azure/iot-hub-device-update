@@ -34,7 +34,7 @@ static bool PermissionUtils_VerifyFilemodeBits(const char* path, mode_t expected
     }
 
     // keep just the file permission bits (as opposed to file_type bits).
-    mode_t permissionBits = st.st_mode & ~S_IFMT;
+    mode_t permissionBits = st.st_mode & ~ (mode_t) S_IFMT;
 
     return isExactMatch ? (permissionBits == expectedPermissions)
                         : BitOps_AreAllBitsSet(permissionBits, expectedPermissions);
@@ -188,7 +188,7 @@ bool PermissionUtils_CheckOwnerGid(const char* path, gid_t gid)
 
 /**
  * @brief Set effective user of the calling process.
- * 
+ *
  * @param name The username
  * @return bool Returns true if user @p name exist and the effective user successfully set.
  *  If failed, additional error is stored in errno.
@@ -201,7 +201,7 @@ bool PermissionUtils_SetProcessEffectiveUID(const char* name)
 
 /**
  * @brief Set effective group of the calling process.
- * 
+ *
  * @param name The username
  * @return bool Returns true if group @p name exist and the effective group successfully set.
  * If failed, additional error is stored in errno.

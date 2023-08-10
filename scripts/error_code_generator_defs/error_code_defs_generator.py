@@ -18,7 +18,7 @@ error_code_definition_file = """\
 #define ADUC_RESULT_H
 
 #include <stdbool.h> // _Bool
-#include <stdint.h> // int32_t
+#include <stdint.h> // uint32_t
 
 /**
 * @brief Defines the type of an ADUC_Result.
@@ -75,7 +75,7 @@ static inline bool IsAducResultCodeFailure(const ADUC_Result_t resultCode)
 *    +--------------- Facility code (4 bits)
 */
 static inline ADUC_Result_t
-MAKE_ADUC_EXTENDEDRESULTCODE(const unsigned int facility, const unsigned int component, const unsigned int value)
+MAKE_ADUC_EXTENDEDRESULTCODE(const int32_t facility, const int32_t component, const int32_t value)
 {{
     return ((facility & 0xF) << 0x1C) | ((component & 0xFF) << 0x14) | (value & 0xFFFFF);
 }}
@@ -115,7 +115,7 @@ MAKE_ADUC_EXTENDEDRESULTCODE(const unsigned int facility, const unsigned int com
  */
 static inline ADUC_Result_t MAKE_ADUC_DELIVERY_OPTIMIZATION_EXTENDEDRESULTCODE(const int32_t value)
 {{
-    return ((ADUC_FACILITY_DELIVERY_OPTIMIZATION & 0xF) << 0x1C) | (value & 0xFFFFFFF);
+    return (int32_t)((ADUC_FACILITY_DELIVERY_OPTIMIZATION & 0xF) << 0x1C) | (value & 0xFFFFFFF);
 }}
 
 //
@@ -157,7 +157,7 @@ facility_func_definition = """\
 /**
  * @brief Extended Result Codes for {FacilityName} Facility
 */
-static inline ADUC_Result_t {FacilityFuncDeclString}(const unsigned int component, const int32_t value)
+static inline ADUC_Result_t {FacilityFuncDeclString}(const int32_t component, const int32_t value)
 {{
     return MAKE_ADUC_EXTENDEDRESULTCODE({FacilityName}, component, value);
 }}

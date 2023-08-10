@@ -201,13 +201,13 @@ void DiagnosticsWorkflow_UnInitLogComponentFileNames(VECTOR_HANDLE logComponentF
 
     const size_t logComponentFileNamesSize = VECTOR_size(logComponentFileNames);
 
-    for (int i = 0; i < logComponentFileNamesSize; ++i)
+    for (size_t i = 0; i < logComponentFileNamesSize; ++i)
     {
         VECTOR_HANDLE* fileNames = VECTOR_element(logComponentFileNames, i);
 
         const size_t fileNamesSize = VECTOR_size(*fileNames);
 
-        for (int j = 0; j < fileNamesSize; ++j)
+        for (size_t j = 0; j < fileNamesSize; ++j)
         {
             STRING_HANDLE* fileName = VECTOR_element(*fileNames, j);
 

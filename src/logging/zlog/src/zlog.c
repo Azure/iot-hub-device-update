@@ -58,7 +58,7 @@ struct tm* get_current_utctime();
 bool get_current_utctime_filename(char* fullpath, size_t fullpath_len);
 static inline void _zlog_buffer_lock(void);
 static inline void _zlog_buffer_unlock(void);
-static void _zlog_roll_over_if_file_size_too_large(int additional_log_len);
+static void _zlog_roll_over_if_file_size_too_large(size_t additional_log_len);
 static void _zlog_flush_buffer(void);
 static inline char* zlog_lock_and_get_buffer(void);
 static inline void zlog_finish_buffer_and_unlock(void);
@@ -278,7 +278,18 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, .
     char va_buffer[LOG_CONTENT_BUFFER_SIZE];
     va_list va;
     va_start(va, fmt);
-    int full_log_len = vsnprintf(va_buffer, sizeof(va_buffer) / sizeof(va_buffer[0]), fmt, va);
+    int full_log_len_ret = vsnprintf(va_buffer, sizeof(va_buffer) / sizeof(va_buffer[0]), fmt, va);
+
+    //
+    // If value is velow zero we've encountered some fatal error in vsnprintf
+    //
+    if (full_log_len_ret < 0)
+    {
+        return;
+    }
+
+    size_t full_log_len = (size_t)full_log_len_ret;
+
     // A return value of size or more means that the output was truncated.
     bool log_truncated = full_log_len >= (sizeof(va_buffer) / sizeof(va_buffer[0]));
     va_end(va);
@@ -410,15 +421,23 @@ bool get_current_utctime_filename(char* fullpath, size_t fullpath_len)
 }
 
 // Roll over to a new log file if the current file size + additional_log_len exceeds ZLOG_FILE_MAX_SIZE_KB * 1024.
-static void _zlog_roll_over_if_file_size_too_large(int additional_log_len)
+static void _zlog_roll_over_if_file_size_too_large(size_t additional_log_len)
 {
     if (!zlog_is_file_log_open())
     {
         return;
     }
 
+    long ftellVal = ftell(zlog_fout);
+
+    // Some error occurred
+    if (ftellVal < 0 )
+    {
+        return;
+    }
+
     // Roll over to new log file once the current file size exceeds the limit
-    if ((ftell(zlog_fout) + additional_log_len) > (ZLOG_FILE_MAX_SIZE_KB * 1024))
+    if (((size_t)ftellVal + additional_log_len) > (ZLOG_FILE_MAX_SIZE_KB * 1024))
     {
         zlog_close_file_log();
 

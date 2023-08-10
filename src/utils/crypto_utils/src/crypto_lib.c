@@ -214,14 +214,14 @@ CryptoKeyHandle RSAKey_ObjFromBytes(uint8_t* N, size_t N_len, uint8_t* e, size_t
         goto done;
     }
 
-    rsa_N = BN_bin2bn(N, N_len, NULL);
+    rsa_N = BN_bin2bn(N, (int)N_len, NULL);
 
     if (rsa_N == NULL)
     {
         goto done;
     }
 
-    rsa_e = BN_bin2bn(e, e_len, NULL);
+    rsa_e = BN_bin2bn(e, (int)e_len, NULL);
 
     if (rsa_e == NULL)
     {
