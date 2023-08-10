@@ -570,6 +570,47 @@ done:
 }
 
 /**
+ * @brief Checks whether we can obtain a device or module connection string.
+ *
+ * @return true if connection string can be obtained.
+ */
+bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs, const ADUC_ConfigInfo* config)
+{
+    bool validInfo = false;
+
+    ADUC_ConnectionInfo info = {};
+
+    if (launchArgs->connectionString != NULL)
+    {
+        validInfo = true;
+        goto done;
+    }
+
+    const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(config, 0);
+    if (agent == NULL)
+    {
+        Log_Error("ADUC_ConfigInfo_GetAgent failed to get the agent information.");
+        goto done;
+    }
+    if (strcmp(agent->connectionType, "AIS") == 0)
+    {
+        validInfo = GetConnectionInfoFromIdentityService(&info);
+    }
+    else if (strcmp(agent->connectionType, "string") == 0)
+    {
+        validInfo = GetConnectionInfoFromConnectionString(&info, agent->connectionData);
+    }
+    else
+    {
+        Log_Error("The connection type %s is not supported", agent->connectionType);
+    }
+
+done:
+    ADUC_ConnectionInfo_DeAlloc(&info);
+    return validInfo;
+}
+
+/**
  * @brief Gets the agent configuration information and loads it according to the provisioning scenario
  *
  * @param info the connection information that will be configured

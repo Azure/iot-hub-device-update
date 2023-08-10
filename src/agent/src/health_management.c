@@ -51,61 +51,6 @@ static const char* aduc_optional_group_memberships[] = {
 };
 
 /**
- * @brief Get the Connection Info from Identity Service
- *
- * @return true if connection info can be obtained
- */
-bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info);
-
-/**
- * @brief Get the Connection Info from connection string, if a connection string is provided in configuration file
- *
- * @return true if connection info can be obtained
- */
-bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString);
-
-/**
- * @brief Checks whether we can obtain a device or module connection string.
- *
- * @return true if connection string can be obtained.
- */
-bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs, const ADUC_ConfigInfo* config)
-{
-    bool validInfo = false;
-
-    ADUC_ConnectionInfo info = {};
-
-    if (launchArgs->connectionString != NULL)
-    {
-        validInfo = true;
-        goto done;
-    }
-
-    const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(config, 0);
-    if (agent == NULL)
-    {
-        Log_Error("ADUC_ConfigInfo_GetAgent failed to get the agent information.");
-        goto done;
-    }
-    if (strcmp(agent->connectionType, "AIS") == 0)
-    {
-        validInfo = GetConnectionInfoFromIdentityService(&info);
-    }
-    else if (strcmp(agent->connectionType, "string") == 0)
-    {
-        validInfo = GetConnectionInfoFromConnectionString(&info, agent->connectionData);
-    }
-    else
-    {
-        Log_Error("The connection type %s is not supported", agent->connectionType);
-    }
-
-done:
-    ADUC_ConnectionInfo_DeAlloc(&info);
-    return validInfo;
-}
-
-/**
  * @brief Reports which required users do not exist.
  * @remark Goes through the whole list of users to trace any that are missing.
  * @return true if all necessary users exist, or false if any do not exist.
@@ -598,11 +543,10 @@ bool HealthCheck(const ADUC_LaunchArguments* launchArgs)
         goto done;
     }
 
-    if (!IsConnectionInfoValid(launchArgs, config))
-    {
-        Log_Error("Invalid connection info.");
-        goto done;
-    }
+    // TODO (nox-msft) - Call into the agent workflow extension to perform additional checks such as:
+    //   - Check that the agent can connect to the service. (v1 - call IsConnectionInfoValid function)
+    //   - Check that the agent can download file
+    //   - Check that the agent can install a package
 
     if (!AreDirAndFilePermissionsValid())
     {
