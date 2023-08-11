@@ -286,7 +286,7 @@ TEST_CASE("Add and remove children")
         auto p = workflow_get_parent(childWorkflow[i]);
         CHECK(p == handle);
 
-        int childCount = workflow_get_children_count(handle);
+        size_t childCount = workflow_get_children_count(handle);
         CHECK(childCount == (i + 1));
     }
 
@@ -676,7 +676,7 @@ TEST_CASE("Request workflow cancellation")
         auto p = workflow_get_parent(childWorkflow[i]);
         CHECK(p == handle);
 
-        int childCount = workflow_get_children_count(handle);
+        size_t childCount = workflow_get_children_count(handle);
         CHECK(childCount == (i + 1));
 
         CHECK(!workflow_is_cancel_requested(childWorkflow[i]));

@@ -2699,7 +2699,7 @@ ADUC_WorkflowHandle workflow_get_parent(ADUC_WorkflowHandle handle)
 size_t workflow_get_children_count(ADUC_WorkflowHandle handle)
 {
     ADUC_Workflow* wf = workflow_from_handle(handle);
-    return wf != NULL ? (int)wf->ChildCount : 0;
+    return wf != NULL ? (size_t)wf->ChildCount : 0;
 }
 
 /**

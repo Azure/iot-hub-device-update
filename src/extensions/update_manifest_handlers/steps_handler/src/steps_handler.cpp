@@ -84,7 +84,7 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
 
     auto stepCount = static_cast<size_t>(workflow_get_instructions_steps_count(handle));
     char* workFolder = workflow_get_workfolder(handle);
-    unsigned int childWorkflowCount = workflow_get_children_count(handle);
+    size_t childWorkflowCount = workflow_get_children_count(handle);
     int workflowLevel = workflow_get_level(handle);
 
     // Child workflow should be either 0 (resuming install phase after agent restarted),
@@ -553,7 +553,7 @@ static ADUC_Result StepsHandler_Download(const tagADUC_WorkflowData* workflowDat
     }
 
     // For each selected component, perform step's backup, install & apply phase, restore phase if needed, in order.
-    for (int iCom = 0, stepsCount = workflow_get_children_count(handle); iCom < selectedComponentsCount; iCom++)
+    for (size_t iCom = 0, stepsCount = workflow_get_children_count(handle); iCom < selectedComponentsCount; iCom++)
     {
         serializedComponentString = CreateComponentSerializedString(selectedComponentsArray, iCom);
 
@@ -841,7 +841,7 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
     }
 
     // For each selected component, perform step's backup, install & apply phase, restore phase if needed, in order.
-    for (int iCom = 0, stepsCount = workflow_get_children_count(handle); iCom < selectedComponentsCount; iCom++)
+    for (size_t iCom = 0, stepsCount = workflow_get_children_count(handle); iCom < selectedComponentsCount; iCom++)
     {
         serializedComponentString = CreateComponentSerializedString(selectedComponentsArray, iCom);
 
@@ -1332,7 +1332,7 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
     }
 
     // For each selected component, check whether the update has been installed.
-    for (int iCom = 0, stepsCount = workflow_get_children_count(handle); iCom < selectedComponentsCount; iCom++)
+    for (size_t iCom = 0, stepsCount = workflow_get_children_count(handle); iCom < selectedComponentsCount; iCom++)
     {
         serializedComponentString = CreateComponentSerializedString(selectedComponentsArray, iCom);
 

@@ -39,7 +39,7 @@ bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* val
 {
     bool foundKey = false;
     char buffer[1024];
-    const unsigned int bufferLen = ARRAY_SIZE(buffer);
+    const size_t bufferLen = ARRAY_SIZE(buffer);
 
     if (valueLen < 2)
     {
@@ -53,7 +53,7 @@ bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* val
         return false;
     }
 
-    while (!foundKey && fgets(buffer, bufferLen, fp) != NULL)
+    while (!foundKey && fgets(buffer, (int)bufferLen, fp) != NULL)
     {
         char* delimiter = strchr(buffer, '=');
         if (delimiter == NULL)
