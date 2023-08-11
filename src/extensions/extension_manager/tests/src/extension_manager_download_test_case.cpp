@@ -16,11 +16,14 @@
 #include <aduc/types/workflow.h>
 #include <aduc/workflow_internal.h>
 #include <aduc/workflow_utils.h>
+#include <aducpal/stdio.h> // remove
+#include <aducpal/unistd.h> // UNREFERENCED_PARAMETER
 #include <catch2/catch.hpp>
 #include <fstream>
 #include <memory>
 #include <parson.h>
 #include <stdexcept>
+#include <stdio.h>
 #include <string>
 
 struct json_value_deleter
@@ -49,12 +52,18 @@ const std::string downloaded_file_path = testWorkfolder + "/" + mockTargetFilena
 using unique_json_value = std::unique_ptr<JSON_Value, json_value_deleter>;
 
 static ADUC_Result MockDownloadSuccessProc(
-    const ADUC_FileEntity* _entity,
-    const char* _workflowId,
-    const char* _workFolder,
-    unsigned int _timeoutInSeconds,
-    ADUC_DownloadProgressCallback _downloadProgressCallback)
+    const ADUC_FileEntity* entity,
+    const char* workflowId,
+    const char* workFolder,
+    unsigned int timeoutInSeconds,
+    ADUC_DownloadProgressCallback downloadProgressCallback)
 {
+    UNREFERENCED_PARAMETER(entity);
+    UNREFERENCED_PARAMETER(workflowId);
+    UNREFERENCED_PARAMETER(workFolder);
+    UNREFERENCED_PARAMETER(timeoutInSeconds);
+    UNREFERENCED_PARAMETER(downloadProgressCallback);
+
     std::ofstream fileStream;
     fileStream.open(downloaded_file_path.c_str(), std::ios::out | std::ios::trunc);
     fileStream << mockPayloadContent;
@@ -64,23 +73,31 @@ static ADUC_Result MockDownloadSuccessProc(
 }
 
 static ADUC_Result MockDownloadFailureProc(
-    const ADUC_FileEntity* _entity,
-    const char* _workflowId,
-    const char* _workFolder,
-    unsigned int _timeoutInSeconds,
-    ADUC_DownloadProgressCallback _downloadProgressCallback)
+    const ADUC_FileEntity* entity,
+    const char* workflowId,
+    const char* workFolder,
+    unsigned int timeoutInSeconds,
+    ADUC_DownloadProgressCallback downloadProgressCallback)
 {
+    UNREFERENCED_PARAMETER(entity);
+    UNREFERENCED_PARAMETER(workflowId);
+    UNREFERENCED_PARAMETER(workFolder);
+    UNREFERENCED_PARAMETER(timeoutInSeconds);
+    UNREFERENCED_PARAMETER(downloadProgressCallback);
+
     ADUC_Result result{ 0, FailureERC };
     return result;
 }
 
-static DownloadProc mockDownloadSuccessProcResolver(void* _lib)
+static DownloadProc mockDownloadSuccessProcResolver(void* lib)
 {
+    UNREFERENCED_PARAMETER(lib);
     return MockDownloadSuccessProc;
 }
 
-static DownloadProc mockDownloadFailureProcResolver(void* _lib)
+static DownloadProc mockDownloadFailureProcResolver(void* lib)
 {
+    UNREFERENCED_PARAMETER(lib);
     return MockDownloadFailureProc;
 }
 
@@ -160,6 +177,6 @@ void ExtensionManagerDownloadTestCase::RunCommon()
 
 void ExtensionManagerDownloadTestCase::Cleanup()
 {
-    ADUC_SystemUtils_RemoveFile(downloaded_file_path.c_str());
+    remove(downloaded_file_path.c_str());
     workflow_free(workflowHandle);
 }

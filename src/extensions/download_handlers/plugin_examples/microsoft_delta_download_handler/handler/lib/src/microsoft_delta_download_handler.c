@@ -61,7 +61,8 @@ ADUC_Result MicrosoftDeltaDownloadHandler_ProcessUpdate(
     // will cause the agent to not fail and download the original, full update.
     for (int index = 0; index < fileEntity->RelatedFileCount; ++index)
     {
-        ADUC_Result relatedFileResult = {};
+        ADUC_Result relatedFileResult;
+        memset(&relatedFileResult, 0, sizeof(relatedFileResult));
         ADUC_RelatedFile* relatedFile = &fileEntity->RelatedFiles[index];
 
         if (relatedFile->Properties == NULL || relatedFile->PropertiesCount < 1)

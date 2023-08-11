@@ -13,15 +13,19 @@ target_include_directories (${target_name} PUBLIC inc)
 #
 # Turn -fPIC on, in order to use this library in another shared library.
 #
-find_package (azure_c_shared_utility REQUIRED)
 set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+target_link_aziotsharedutil (${target_name} PUBLIC)
+
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::c_utils aziotsharedutil
+    PUBLIC aduc::c_utils
     PRIVATE aduc::logging)
 
+target_link_libraries (${target_name} PUBLIC libaducpal)
+
 target_compile_definitions (${target_name} PRIVATE ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
-                                                   ADUC_FILE_USER="${ADUC_FILE_USER}")
+                                                    ADUC_FILE_USER="${ADUC_FILE_USER}")
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

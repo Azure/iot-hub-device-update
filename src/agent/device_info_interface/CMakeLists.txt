@@ -12,7 +12,7 @@ target_include_directories (
     PUBLIC inc
     PRIVATE ${ADUC_EXPORT_INCLUDES})
 
-target_link_digital_twin_client (${target_name} PUBLIC)
+target_link_iothub_client (${target_name} PUBLIC)
 
 target_link_libraries (
     ${target_name}
@@ -21,3 +21,5 @@ target_link_libraries (
             aduc::logging
             aduc::pnp_helper
             IotHubClient::iothub_client)
+
+target_link_libraries (${target_name} PRIVATE libaducpal)

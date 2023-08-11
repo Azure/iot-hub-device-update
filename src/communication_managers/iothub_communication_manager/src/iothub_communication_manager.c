@@ -30,13 +30,14 @@
 #    include <iothubtransportmqtt_websockets.h>
 #endif
 
+#include <aducpal/time.h> // ADUCPAL_clock_gettime
+#include <aducpal/unistd.h>
 #include <limits.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h> // strtol
 #include <sys/stat.h>
-#include <unistd.h>
 
 /**
  * @brief A pointer to ADUC_ClientHandle data. This must be initialize by the component that creates the IoT Hub connection.
@@ -100,7 +101,7 @@ IOTHUB_CLIENT_CONNECTION_STATUS_REASON g_connection_status_reason = IOTHUB_CLIEN
 static time_t GetTimeSinceEpochInSeconds()
 {
     struct timespec timeSinceEpoch;
-    clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
+    ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
     return timeSinceEpoch.tv_sec;
 }
 
@@ -306,7 +307,8 @@ static bool ADUC_DeviceClient_Create(
     ADUC_ClientHandle* outClientHandle, ADUC_ConnectionInfo* connInfo, const bool iotHubTracingEnabled)
 {
     IOTHUB_CLIENT_RESULT iothubResult;
-    HTTP_PROXY_OPTIONS proxyOptions = {};
+    HTTP_PROXY_OPTIONS proxyOptions;
+    memset(&proxyOptions, 0, sizeof(proxyOptions));
     bool result = true;
     bool shouldSetProxyOptions = InitializeProxyOptions(&proxyOptions);
 
@@ -342,8 +344,8 @@ static bool ADUC_DeviceClient_Create(
     }
     else if (
         shouldSetProxyOptions
-        && (iothubResult =
-                ClientHandle_SetOption(*outClientHandle, OPTION_HTTP_PROXY, &proxyOptions) != IOTHUB_CLIENT_OK))
+        && ((iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_HTTP_PROXY, &proxyOptions))
+            != IOTHUB_CLIENT_OK))
     {
         Log_Error("Could not set http proxy options, error=%d ", iothubResult);
         result = false;
@@ -655,7 +657,8 @@ static void ADUC_Refresh_IotHub_Connection_SAS_Token()
         }
     }
 
-    ADUC_ConnectionInfo info = {};
+    ADUC_ConnectionInfo info;
+    memset(&info, 0, sizeof(info));
     if (!GetAgentConfigInfo(&info))
     {
         goto done;
@@ -782,6 +785,7 @@ static void Connection_Maintenance()
  */
 void IoTHub_CommunicationManager_DoWork(void* user_context)
 {
+    UNREFERENCED_PARAMETER(user_context);
     Connection_Maintenance();
     ClientHandle_DoWork(*g_aduc_client_handle_address);
 }

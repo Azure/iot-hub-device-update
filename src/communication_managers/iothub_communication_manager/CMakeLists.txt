@@ -27,6 +27,8 @@ target_link_libraries (
             aduc::logging
             aduc::retry_utils)
 
+target_link_libraries (${target_name} PRIVATE libaducpal)
+
 if (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT")
     target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT=1)
     target_link_libraries (${target_name} PRIVATE iothub_client_mqtt_transport)
@@ -49,5 +51,8 @@ else ()
     )
 endif ()
 
-target_compile_definitions (${target_name} PRIVATE ADUC_AGENT_FILEPATH="${ADUC_AGENT_FILEPATH}"
-                                                   ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")
+target_compile_definitions (
+    ${target_name}
+    PRIVATE ADUC_AGENT_FILEPATH="${ADUC_AGENT_FILEPATH}"
+            ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
+)

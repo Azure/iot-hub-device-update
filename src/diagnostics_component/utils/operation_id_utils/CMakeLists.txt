@@ -12,10 +12,16 @@ target_compile_definitions (
     PRIVATE DIAGNOSTICS_COMPLETED_OPERATION_FILE_PATH="${DIAGNOSTICS_COMPLETED_OPERATION_FILE_PATH}"
 )
 
-find_package (azure_c_shared_utility REQUIRED)
 find_package (Parson REQUIRED)
+
+target_link_aziotsharedutil (${target_name} PUBLIC)
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::c_utils Parson::parson aziotsharedutil
-    PRIVATE aduc::logging aduc::system_utils aduc::parson_json_utils diagnostics_component::diagnostics_interface)
+    PUBLIC aduc::c_utils Parson::parson
+    PRIVATE aduc::logging
+            aduc::system_utils
+            aduc::parson_json_utils
+            diagnostics_component::diagnostics_interface)
+
+target_link_libraries (${target_name} PRIVATE libaducpal)

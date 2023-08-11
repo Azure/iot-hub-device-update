@@ -12,12 +12,9 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 #
 set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-find_package (azure_c_shared_utility REQUIRED)
+target_link_libraries (${target_name} PUBLIC aduc::c_utils)
 
-target_link_libraries (
-    ${target_name}
-    PUBLIC aduc::c_utils
-    PRIVATE aziotsharedutil)
+target_link_aziotsharedutil (${target_name} PRIVATE)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

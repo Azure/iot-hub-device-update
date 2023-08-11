@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 /**
  * @brief Returns the pointer to the @p jsonFieldName from the JSON_Value

@@ -7,6 +7,8 @@
  */
 #include <aduc/hash_utils.h>
 
+#include "aduc/system_utils.h" // ADUC_SystemUtils_MkTemp
+
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
 
@@ -29,8 +31,8 @@ public:
     TestFile()
     {
         // Generate a unique filename.
-        int result = mkstemp(_filePath);
-        REQUIRE(result != -1);
+
+        ADUC_SystemUtils_MkTemp(_filePath);
     }
 
     virtual ~TestFile()

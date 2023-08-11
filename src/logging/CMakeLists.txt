@@ -11,8 +11,7 @@ set (ADUC_LOGGING_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/inc)
 
 if (ADUC_LOGGING_LIBRARY STREQUAL "xlog")
     # xlogging requires the azure iot shared util library.
-    find_package (azure_c_shared_utility REQUIRED)
-    target_link_libraries (${target_name} INTERFACE aziotsharedutil)
+    target_link_aziotsharedutil (${target_name} INTERFACE)
     target_compile_definitions (${target_name} INTERFACE ADUC_USE_XLOGGING=1)
 elseif (ADUC_LOGGING_LIBRARY STREQUAL "zlog")
     add_subdirectory (zlog)

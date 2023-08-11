@@ -12,19 +12,15 @@ find_package (Parson REQUIRED)
 target_include_directories (
     ${target_name}
     PUBLIC inc
-    PRIVATE ${PROJECT_SOURCE_DIR}/inc
-            ${ADU_EXTENSION_INCLUDES}
-            ${ADU_SHELL_INCLUDES}
+    PRIVATE ${PROJECT_SOURCE_DIR}/inc ${ADU_EXTENSION_INCLUDES} ${ADU_SHELL_INCLUDES}
             ${ADUC_EXPORT_INCLUDES})
 
-get_filename_component (
-    ADUC_INSTALLEDCRITERIA_FILE_PATH
-    "${ADUC_DATA_FOLDER}/${ADUC_INSTALLEDCRITERIA_FILE}"
-    ABSOLUTE
-    "/")
+get_filename_component (ADUC_INSTALLEDCRITERIA_FILE_PATH
+                        "${ADUC_DATA_FOLDER}/${ADUC_INSTALLEDCRITERIA_FILE}" ABSOLUTE "/")
 
 target_compile_definitions (
-    ${target_name} PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}")
+    ${target_name} PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}"
+                           ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}")
 
 target_link_libraries (
     ${target_name}
@@ -40,10 +36,10 @@ target_link_libraries (
             aduc::workflow_utils
             Parson::parson)
 
+target_link_libraries (${target_name} PRIVATE libaducpal)
+
 if (ADUC_BUILD_UNIT_TESTS)
-
     add_subdirectory (tests)
-
 endif ()
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

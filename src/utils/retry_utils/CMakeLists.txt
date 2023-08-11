@@ -17,4 +17,7 @@ find_package (azure_c_shared_utility REQUIRED)
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types
-    PRIVATE aduc::communication_abstraction aduc::logging)
+    PRIVATE aduc::communication_abstraction
+            aduc::logging)
+
+target_link_libraries (${target_name} PUBLIC libaducpal)

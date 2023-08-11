@@ -20,6 +20,10 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 target_link_libraries (${PROJECT_NAME} PRIVATE aduc::parser_utils aduc::workflow_utils
                                                Catch2::Catch2)
 
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+
 target_compile_definitions (${PROJECT_NAME}
                             PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 

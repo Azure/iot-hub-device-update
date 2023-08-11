@@ -21,7 +21,7 @@ using Catch::Matchers::Equals;
 
 EXTERN_C_BEGIN
 
-ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
+EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
 
 EXTERN_C_END
 
@@ -102,8 +102,9 @@ bool ReadResultFile(const char* resultFile, ADUC_Result* result)
     }
 
     JSON_Object* actionResultObject = json_object(actionResultValue);
-    result->ResultCode = json_object_get_number(actionResultObject, "resultCode");
-    result->ExtendedResultCode = json_object_get_number(actionResultObject, "extendedResultCode");
+    result->ResultCode = static_cast<ADUC_Result_t>(json_object_get_number(actionResultObject, "resultCode"));
+    result->ExtendedResultCode =
+        static_cast<ADUC_Result_t>(json_object_get_number(actionResultObject, "extendedResultCode"));
     json_value_free(actionResultValue);
     return true;
 }

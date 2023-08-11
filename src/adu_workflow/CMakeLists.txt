@@ -32,3 +32,6 @@ target_link_libraries (
             aduc::workflow_utils)
 
 target_compile_definitions (${target_name} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")
+
+target_link_libraries (${target_name} PRIVATE libaducpal)
+target_link_aziotsharedutil (${target_name} PRIVATE)

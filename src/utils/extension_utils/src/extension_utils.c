@@ -15,13 +15,15 @@
 #include "aduc/system_utils.h"
 
 #include <ctype.h> // isalnum
-#include <grp.h> // for getgrnam
+#include <sys/stat.h> // stat
+
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/pwd.h> // getpwnam
+#include <aducpal/sys_stat.h> // S_I*
+
 #include <parson.h> // for JSON_*, json_*
-#include <pwd.h> // for getpwnam
 #include <stdio.h> // for FILE
 #include <stdlib.h> // for calloc
-#include <strings.h> // for strcasecmp
-#include <sys/stat.h> // for stat, struct stat
 
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/buffer_.h>
@@ -228,7 +230,7 @@ static bool RegisterHandlerExtension(
     // Note: the return value may point to a static area,
     // and may be overwritten by subsequent calls to getpwent(3), getpwnam(), or getpwuid().
     // (Do not pass the returned pointer to free(3).)
-    struct passwd* pwd = getpwnam(ADUC_FILE_USER);
+    struct passwd* pwd = ADUCPAL_getpwnam(ADUC_FILE_USER);
     if (pwd == NULL)
     {
         Log_Error("Cannot verify credential of 'adu' user.");
@@ -240,7 +242,7 @@ static bool RegisterHandlerExtension(
     // Note: The return value may point to a static area,
     // and may be overwritten by subsequent calls to getgrent(3), getgrgid(), or getgrnam().
     // (Do not pass the returned pointer to free(3).)
-    struct group* grp = getgrnam(ADUC_FILE_GROUP);
+    struct group* grp = ADUCPAL_getgrnam(ADUC_FILE_GROUP);
     if (grp == NULL)
     {
         Log_Error("Cannot get 'adu' group info.");
@@ -444,7 +446,7 @@ bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
     // Note: the return value may point to a static area,
     // and may be overwritten by subsequent calls to getpwent(3), getpwnam(), or getpwuid().
     // (Do not pass the returned pointer to free(3).)
-    pwd = getpwnam(ADUC_FILE_USER);
+    pwd = ADUCPAL_getpwnam(ADUC_FILE_USER);
     if (pwd == NULL)
     {
         Log_Error("Cannot verify credential of 'adu' user.");
@@ -457,7 +459,7 @@ bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
     // Note: The return value may point to a static area,
     // and may be overwritten by subsequent calls to getgrent(3), getgrgid(), or getgrnam().
     // (Do not pass the returned pointer to free(3).)
-    grp = getgrnam(ADUC_FILE_GROUP);
+    grp = ADUCPAL_getgrnam(ADUC_FILE_GROUP);
     if (grp == NULL)
     {
         Log_Error("Cannot get 'adu' group info.");

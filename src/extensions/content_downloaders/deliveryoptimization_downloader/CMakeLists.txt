@@ -16,16 +16,22 @@ target_sources (
 
 target_include_directories (${target_name} PUBLIC ${ADU_EXTENSION_INCLUDES} ${ADUC_EXPORT_INCLUDES})
 
+target_link_aziotsharedutil (${target_name} PRIVATE)
+target_link_dosdk (${target_name} PRIVATE)
+
 target_link_libraries (
     ${target_name}
-    PRIVATE aziotsharedutil
-            aduc::c_utils
+    PRIVATE aduc::c_utils
             aduc::contract_utils
             aduc::hash_utils
             aduc::logging
             aduc::process_utils
-            aduc::string_utils
-            atomic
-            Microsoft::deliveryoptimization)
+            aduc::string_utils)
+
+if (WIN32)
+    target_link_libraries (${target_name} PRIVATE libaducpal)
+else ()
+    target_link_libraries (${target_name} PRIVATE Microsoft::deliveryoptimization atomic)
+endif ()
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

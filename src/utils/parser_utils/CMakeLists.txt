@@ -13,15 +13,13 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_TYPES_INCLUDES}
 set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 find_package (Parson REQUIRED)
-find_package (azure_c_shared_utility REQUIRED)
+
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types Parson::parson
-    PRIVATE aduc::hash_utils
-            aduc::logging
-            aduc::parson_json_utils
-            aziotsharedutil)
+    PRIVATE aduc::hash_utils aduc::logging aduc::parson_json_utils)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

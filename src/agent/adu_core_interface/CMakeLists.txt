@@ -1,9 +1,9 @@
 set (target_name adu_core_interface)
 
 include (agentRules)
+
 compileasc99 ()
 
-find_package (azure_c_shared_utility REQUIRED)
 find_package (IotHubClient REQUIRED)
 find_package (Parson REQUIRED)
 
@@ -16,6 +16,8 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
 target_sources (${target_name} PRIVATE src/adu_core_interface.c src/device_properties.c
                                        src/startup_msg_helper.c)
+
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (
     ${target_name}
@@ -35,8 +37,9 @@ target_link_libraries (
             aduc::pnp_helper
             aduc::workflow_data_utils
             aduc::workflow_utils
-            aziotsharedutil
             Parson::parson)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
 target_compile_definitions (
     ${target_name}

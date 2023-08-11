@@ -7,7 +7,6 @@ add_library (aduc::${target_name} ALIAS ${target_name})
 
 target_include_directories (${target_name} PUBLIC inc)
 
-find_package (azure_c_shared_utility REQUIRED)
 find_package (OpenSSL REQUIRED)
 
 #
@@ -15,10 +14,14 @@ find_package (OpenSSL REQUIRED)
 #
 set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils
-    PRIVATE aziotsharedutil OpenSSL::Crypto)
+    PRIVATE OpenSSL::Crypto)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
 # Always support test root keys.
 add_definitions (-DBUILD_WITH_TEST_KEYS=1)
