@@ -35,7 +35,7 @@ bool FileInfoUtils_InsertFileInfoIntoArray(
     FileInfo* sortedLogFiles,
     size_t sortedLogFileLength,
     const char* candidateFileName,
-    unsigned long sizeOfCandidateFile,
+    long long sizeOfCandidateFile,
     time_t candidateLastWrite);
 
 EXTERN_C_END
