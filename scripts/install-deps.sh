@@ -78,6 +78,14 @@ default_do_ref=develop
 install_do=false
 do_ref=$default_do_ref
 
+# catch2 build
+#
+# used for dependencies like catch2 that will find system default
+# (e.g. g++-9) despite g++-10 installed, so use CC and CXX env
+# vars that CMake will honor.
+catch2_cc=""
+catch2_cxx=""
+
 # Dependencies packages
 aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
@@ -190,19 +198,19 @@ do_install_aduc_packages() {
     OS=$(lsb_release --short --id)
     if [[ $OS == "Debian" && $VER == "9" ]]; then
         $SUDO apt-get install --yes gcc-6 g++-6 || return
+        catch2_cc=/usr/bin/gcc-6
+        catch2_cxx=/usr/bin/g++-6
     elif [[ ($OS == "Debian" && $VER == "11") || (\
         $OS == "Ubuntu" && $VER == "20.04") || (\
         $OS == "Ubuntu" && $VER == "22.04") ]] \
             ; then
         $SUDO apt-get install --yes gcc-10 g++-10 || return
-
-        # used for dependencies like catch2 that will find system default
-        # (e.g. g++-9) despite g++-10 installed, so use CC and CXX env
-        # vars that CMake will honor.
-        export CC=/usr/bin/gcc-10
-        export CXX=/usr/bin/g++-10
+        catch2_cc=/usr/bin/gcc-10
+        catch2_cxx=/usr/bin/g++-10
     else
         $SUDO apt-get install --yes gcc-8 g++-8 || return
+        catch2_cc=/usr/bin/gcc-8
+        catch2_cxx=/usr/bin/g++-8
     fi
 
     echo "Installing packages required for static analysis..."
@@ -300,10 +308,8 @@ do_install_catch2() {
     mkdir cmake || return
     pushd cmake > /dev/null || return
 
-    export CC=/usr/bin/gcc-10 CXX=/usr/bin/g++-10
-    cmake .. || return
-
-    cmake --build . || return
+    CC="$catch2_cc" CXX="$catch2_cxx" cmake .. || return
+    CC="$catch2_cc" CXX="$catch2_cxx" cmake --build . || return
     $SUDO cmake --build . --target install || return
     popd > /dev/null || return
     popd > /dev/null || return
