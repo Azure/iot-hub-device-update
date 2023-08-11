@@ -14,7 +14,7 @@ set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 find_package (Parson REQUIRED)
 
-target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+target_link_aziotsharedutil (${target_name} PRIVATE)
 
 target_link_libraries (
     ${target_name}

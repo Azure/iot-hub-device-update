@@ -21,7 +21,7 @@ target_compile_definitions (
         ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS="${ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS}"
         ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER="${ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER}"
         ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR="${ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR}"
-        )
+)
 
 #
 # Note: add ${CMAKE_DL_LIBS} for dynamic library loading support.
@@ -44,7 +44,7 @@ target_link_libraries (
             aduc::workflow_utils
             ${CMAKE_DL_LIBS})
 
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+target_link_libraries (${target_name} PRIVATE libaducpal)
 
 #
 # Turn -fPIC on, in order to use this library in another shared library.

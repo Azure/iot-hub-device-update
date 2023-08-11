@@ -17,14 +17,11 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 target_sources (${target_name} PRIVATE src/adu_core_interface.c src/device_properties.c
                                        src/startup_msg_helper.c)
 
-target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+target_link_aziotsharedutil (${target_name} PRIVATE)
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::adu_types
-           aduc::c_utils
-           aduc::communication_abstraction
-           IotHubClient::iothub_client
+    PUBLIC aduc::adu_types aduc::c_utils aduc::communication_abstraction IotHubClient::iothub_client
     PRIVATE aduc::adu_core_export_helpers
             aduc::agent_orchestration
             aduc::agent_workflow
@@ -39,7 +36,7 @@ target_link_libraries (
             aduc::workflow_utils
             Parson::parson)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+target_link_libraries (${target_name} PRIVATE libaducpal)
 
 target_compile_definitions (
     ${target_name}

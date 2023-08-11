@@ -26,9 +26,9 @@ target_compile_definitions (
         ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
         ADUC_FILE_USER="${ADUC_FILE_USER}")
 
-target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+target_link_aziotsharedutil (${target_name} PRIVATE)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+target_link_libraries (${target_name} PRIVATE libaducpal)
 
 target_link_libraries (
     ${target_name}

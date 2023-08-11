@@ -12,14 +12,14 @@ target_include_directories (${target_name} PUBLIC ./inc ${ADUC_TYPES_INCLUDES}
 #
 set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+target_link_aziotsharedutil (${target_name} PRIVATE)
 
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types
     PRIVATE aduc::communication_abstraction aduc::logging aduc::retry_utils)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+target_link_libraries (${target_name} PRIVATE libaducpal)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

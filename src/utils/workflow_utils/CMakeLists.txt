@@ -25,7 +25,7 @@ target_compile_definitions (
     PRIVATE SUPPORTED_UPDATE_MANIFEST_VERSION_MIN=${SUPPORTED_UPDATE_MANIFEST_VERSION_MIN}
             SUPPORTED_UPDATE_MANIFEST_VERSION_MAX=${SUPPORTED_UPDATE_MANIFEST_VERSION_MAX})
 
-target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+target_link_aziotsharedutil (${target_name} PRIVATE)
 
 target_link_libraries (
     ${target_name}
@@ -41,7 +41,7 @@ target_link_libraries (
             aduc::jws_utils
             Parson::parson)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+target_link_libraries (${target_name} PRIVATE libaducpal)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

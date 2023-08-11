@@ -18,7 +18,7 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
 target_link_libraries (${target_name} PRIVATE aduc::adu_core_interface aduc::logging Parson::parson)
 
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+target_link_libraries (${target_name} PRIVATE libaducpal)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
