@@ -2,6 +2,7 @@
 
 This dir is for HCL configs used by [Hashicorp packer](https://www.packer.io/) for building VM and Docker images for various purposes.
 
-## BuildContainers
+## build dir
 
-Builds VMs and Docker images for building DeviceUpdate agent on various Distros and cpu architectures.
+The `build` dir contains HCL for building docker images that will contain the build artifacts of building DU Agent, Unit tests, and .deb package during image creation time.
+See README.md in `build` dir for more details.
