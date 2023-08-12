@@ -8,6 +8,8 @@
 # Some dependencies are installed via packages and
 # others are installed from source code.
 
+set -x
+
 # Ensure that getopt starts from first option if ". <script.sh>" was used.
 OPTIND=1
 
@@ -87,9 +89,10 @@ catch2_cc=""
 catch2_cxx=""
 
 # Dependencies packages
-aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
+aduc_debian_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=('gcc' 'g++')
+aduc_rhel_packages=('tar' 'git' 'gcc' 'cmake' 'libcurl-devel' 'openssl-devel' 'curl' 'wget' 'cpan' 'libuuid' 'libuuid-devel')
 
 # Distro and arch info
 OS=""
@@ -173,7 +176,12 @@ do_install_openssl() {
     local openssl_dir=$work_folder/openssl-1.1.1u
     echo "Installing OpenSSL ..."
 
-    $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
+    if [[ $OS == "rhel" ]]; then
+        $SUDO dnf install -y zlib-devel || return
+    else
+        $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
+    fi
+
     wget https://www.openssl.org/source/openssl-1.1.1u.tar.gz || return
     mkdir -p $openssl_dir || return
     tar -xf openssl-1.1.1u.tar.gz -C $openssl_dir --strip-components=1 || return
@@ -191,38 +199,47 @@ do_install_openssl() {
 do_install_aduc_packages() {
     echo "Installing dependency packages for ADU Agent..."
 
-    $SUDO apt-get install --yes "${aduc_packages[@]}" || return
-
-    # The latest version of gcc available on Debian is gcc-6. We install that version if we are
-    # building for Debian, otherwise we install gcc-8 for Ubuntu.
-    OS=$(lsb_release --short --id)
-    if [[ $OS == "Debian" && $VER == "9" ]]; then
-        $SUDO apt-get install --yes gcc-6 g++-6 || return
-        catch2_cc=/usr/bin/gcc-6
-        catch2_cxx=/usr/bin/g++-6
-    elif [[ ($OS == "Debian" && $VER == "11") || (\
-        $OS == "Ubuntu" && $VER == "20.04") || (\
-        $OS == "Ubuntu" && $VER == "22.04") ]] \
-            ; then
-        $SUDO apt-get install --yes gcc-10 g++-10 || return
-        catch2_cc=/usr/bin/gcc-10
-        catch2_cxx=/usr/bin/g++-10
+    if [[ $OS == "rhel" ]]; then
+        $SUDO dnf upgrade -y --refresh
+        $SUDO dnf install -y "${aduc_rhel_packages[@]}" || return
+        catch2_cc=/usr/bin/gcc
+        catch2_cxx=/usr/bin/gcc
     else
-        $SUDO apt-get install --yes gcc-8 g++-8 || return
-        catch2_cc=/usr/bin/gcc-8
-        catch2_cxx=/usr/bin/g++-8
+        $SUDO apt-get install --yes "${aduc_debian_packages[@]}" || return
+
+        # The latest version of gcc available on Debian is gcc-6. We install that version if we are
+        # building for Debian, otherwise we install gcc-8 for Ubuntu.
+        OS=$(lsb_release --short --id)
+        if [[ $OS == "Debian" && $VER == "9" ]]; then
+            $SUDO apt-get install --yes gcc-6 g++-6 || return
+            catch2_cc=/usr/bin/gcc-6
+            catch2_cxx=/usr/bin/g++-6
+        elif [[ ($OS == "Debian" && $VER == "11") || (\
+            $OS == "Ubuntu" && $VER == "20.04") || (\
+            $OS == "Ubuntu" && $VER == "22.04") ]] \
+                ; then
+            $SUDO apt-get install --yes gcc-10 g++-10 || return
+            catch2_cc=/usr/bin/gcc-10
+            catch2_cxx=/usr/bin/g++-10
+        else
+            $SUDO apt-get install --yes gcc-8 g++-8 || return
+            catch2_cc=/usr/bin/gcc-8
+            catch2_cxx=/usr/bin/g++-8
+        fi
+
+        echo "Installing packages required for static analysis..."
+
+        # The following is a workaround as IoT SDK references the following paths which don't exist
+        # on our target platforms, and without these folders existing, static analysis will report:
+        # (information) Couldn't find path given by -I '/usr/local/inc/'
+        # (information) Couldn't find path given by -I '/usr/local/pal/linux/'
+        $SUDO mkdir --parents /usr/local/inc /usr/local/pal/linux
+
+        if [[ $OS != "rhel" ]]; then
+            # Note that clang-tidy requires clang to be installed so that it can find clang headers.
+            $SUDO apt-get install --yes "${static_analysis_packages[@]}" || return
+        fi
     fi
-
-    echo "Installing packages required for static analysis..."
-
-    # The following is a workaround as IoT SDK references the following paths which don't exist
-    # on our target platforms, and without these folders existing, static analysis will report:
-    # (information) Couldn't find path given by -I '/usr/local/inc/'
-    # (information) Couldn't find path given by -I '/usr/local/pal/linux/'
-    $SUDO mkdir --parents /usr/local/inc /usr/local/pal/linux
-
-    # Note that clang-tidy requires clang to be installed so that it can find clang headers.
-    $SUDO apt-get install --yes "${static_analysis_packages[@]}" || return
 
     # Check if the directory exists
     if [ ! -d "$openssl_dir_path" ]; then
@@ -428,6 +445,17 @@ do_install_do_release_tarball() {
                 return 1
             fi
         fi
+        #    elif [[ $os_lowercase == "rhel" && $VER == "9.2" ]]; then
+        #        echo "extracting DO for RHEL 9.2 compatible distro using ubuntu 20.04 .deb pkg contents..."
+        #        # TODO: Use .rpm package once available and dist of 'rhel9.2' or whatever it ends up being.
+        #        dist='ubuntu2004'
+        #
+        #        if [[ $is_amd64 == "true" ]]; then
+        #            arch='x64'
+        #        else
+        #            warn "unsupported arch for DO release asset on RHEL 9.2. Supported: amd64"
+        #            return 1
+        #        fi
     fi
 
     if [[ $dist != '' && $arch != '' ]]; then
@@ -439,10 +467,6 @@ do_install_do_release_tarball() {
             mkdir -p "$do_dir" || return
         fi
 
-        # v0.9.0 DO has libboost-filesystem and libboost-system deps
-        echo "Installing libboost-filesystem-dev and libboost-system-dev DO deps for ${dist} ..."
-        $SUDO apt-get install -y libboost-filesystem-dev libboost-system-dev || return
-
         echo "wget DO release tarball from $do_release_tarball_url ..."
         wget -P "$do_dir" "${do_release_tarball_url}" || return
 
@@ -451,8 +475,14 @@ do_install_do_release_tarball() {
         ls -latr || return
         tar -xf "$tarball_filename" || return
 
+        #        if [[ $os_lowercase == "rhel" ]]; then
+        #            # extract binaries from the .deb pkg and install
+        #
+        #        else
         echo "apt-get installing DO .deb ..."
         $SUDO apt-get install -y ./deliveryoptimization-agent_*.deb ./libdeliveryoptimization_*.deb ./libdeliveryoptimization-dev*.deb || return
+        #        fi
+
         popd || return
     fi
 
@@ -471,6 +501,10 @@ do_install_do() {
             echo "Install libdeliveryoptimization from tarball succeeded!"
             return 0
         fi
+    elif [[ $OS == "rhel" ]]; then
+        echo "Installing DO libdeliveryoptimization and deps for RHEL ..."
+        echo "    -> Installing boost-filesystem and boost-system DO deps ..."
+        $SUDO dnf install -y boost-filesystem boost-system || return
     fi
 
     if [[ $keep_source_code != "true" ]]; then
@@ -762,11 +796,17 @@ determine_machine_architecture() {
 
 determine_distro_and_arch() {
     # Checking distro name and version
-    if [ -r /etc/os-release ]; then
-        # freedesktop.org and systemd
-        OS=$(grep "^ID\s*=\s*" /etc/os-release | sed -e "s/^ID\s*=\s*//")
-        VER=$(grep "^VERSION_ID=" /etc/os-release | sed -e "s/^VERSION_ID=//")
-        VER=$(sed -e 's/^"//' -e 's/"$//' <<< "$VER")
+    if [ -r /etc/os-release ]; then # freedesktop.org and systemd
+        if grep REDHAT_SUPPORT_PRODUCT_VERSION /etc/os-release; then
+            # For Rocky Linux 9 and RHEL9.2, it will have:
+            #     REDHAT_SUPPORT_PRODUCT_VERSION="9.2"
+            OS='RHEL'
+            VER=$(grep ^REDHAT_SUPPORT_PRODUCT_VERSION /etc/os-release | cut -d= -f2 | sed -e 's/"//g')
+        else
+            OS=$(grep "^ID\s*=\s*" /etc/os-release | sed -e "s/^ID\s*=\s*//")
+            VER=$(grep "^VERSION_ID=" /etc/os-release | sed -e "s/^VERSION_ID=//")
+            VER=$(sed -e 's/^"//' -e 's/"$//' <<< "$VER")
+        fi
     elif type lsb_release > /dev/null 2>&1; then
         # linuxbase.org
         OS=$(lsb_release -si)
@@ -793,7 +833,7 @@ determine_distro_and_arch() {
 
 do_list_all_deps() {
     declare -a deps_set=()
-    deps_set+=("${aduc_packages[@]}")
+    deps_set+=("${aduc_debian_packages[@]}")
     deps_set+=("${compiler_packages[@]}")
     deps_set+=("${static_analysis_packages[@]}")
     echo "Listing the state of dependencies:"
@@ -1055,5 +1095,7 @@ fi
 
 # After installation, it prints out the states of dependencies
 if [[ $install_aduc_deps == "true" || $install_do == "true" || $install_packages_only == "true" || $install_packages == "true" ]]; then
-    do_list_all_deps || $ret $?
+    if [[ $OS != "rhel" ]]; then
+        do_list_all_deps || $ret $?
+    fi
 fi
