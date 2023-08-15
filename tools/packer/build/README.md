@@ -42,7 +42,7 @@ ctest
 docker run -it --platform=linux/arm64 --rm --name container 112a56
 ```
 
-Detach with <CTRL>-P <CTRL>-Q
+Detach with CTRL-P CTRL-Q
 
 ```sh
 $ docker ps
