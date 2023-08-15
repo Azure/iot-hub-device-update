@@ -1,76 +1,69 @@
-# Build Container for Debian 11 stable
+# Build Container for Debian 11 using Packer
 
 The .HCL will build a docker image that contains the results of building DU agent, its unit test, and the debian package.
 
 ## How to run Packer to build the Dockerfile
 
+(Below was tested with Packer v1.9.1)
+
 ### Build only arm64 debian 11
 
+```sh
 packer build -only=duagent.docker.debian_arm64 .
+```
 
-### Build all arch (arm64 and amd64) debian 11
+## Build Artifacts Produced
 
-packer build .
+The `packer build .` will result in the following build artifact in the docker container:
+- /iot-hub-device-update/out/deviceupdate-agent_*_arm64.deb
 
-## Build Artifacts Produced from packer build
+It depends on deliveryoptimization-agent pkg that can be built using Dockerfile introduced with [6459cc5](https://github.com/microsoft/do-client/commit/6459cc59426d38990ed75a6f103460ae148a95db) that can be built from within vscode with the docker extension.
 
-The `packer build .` will result in the following build artifacts in the docker container:
-- /usr/local/lib/ artifacts
-  - deviceupdate-openssl
-  - libparson.a
-  - libumock_c.a
-  - libaziotsharedutil.a
-  - libumqtt.a
-  - libuhttp.a
-  - libiothub_client_http_transport.a
-  - libiothub_client_mqtt_ws_transport.a
-  - libiothub_client_mqtt_transport.a
-  - libiothub_client.a
-  - libserializer.a
-  - libgtest.a
-  - libgmock.a
-  - libgmock_main.a
-  - libgtest_main.a
-  - libdeliveryoptimization.so.1.0.0
-  - libdeliveryoptimization.so.1 -> libdeliveryoptimization.so.1.0.0
-  - libdeliveryoptimization.so -> libdeliveryoptimization.so.1
-  - libazure-core.a
-  - libazure-security-attestation.a
-  - libazure-identity.a
-  - libazure-security-keyvault-keys.a
-  - libazure-security-keyvault-secrets.a
-  - libazure-security-keyvault-certificates.a
-  - libazure-storage-common.a
-  - libazure-storage-blobs.a
-  - libazure-storage-files-datalake.a
-  - libazure-storage-files-shares.a
-  - libazure-storage-queues.a
-  - libazure-template.a
-  - libazure_blob_storage_file_upload_utility.a
+## Resultant docker image
 
-- /iot-hub-device-update/out/ artifacts
-  - deviceupdate-agent_1.0.2_arm64.deb
-
-## The resultant docker image
-
+```sh
 $ docker image ls
 REPOSITORY                   TAG            IMAGE ID       CREATED         SIZE
 <none>                       <none>         112a56228b1a   5 hours ago     2.52GB
 arm64v8/debian               11             2c4d303cc7f7   2 weeks ago     118MB
+```
 
-The correct IMAGE ID would be 112a56228b1a in the above.
+## Running the unit tests
 
-## How to run the unit tests in the docker container
-
-docker run -it --platform=linux/arm64 --rm --name container 112a56228b1a
+```sh
+docker run -it --platform=linux/arm64 --rm --name container 112a56
 cd /iot-hub-device-update/out
 ctest
+```
 
-## How to get the artifacts off of docker container
+## Get DU Agent arm64 build artifact off of docker container
 
-docker run -it --platform=linux/arm64 --rm --name container 112a56228b1a
-bash
-apt-get install -y rsync
-pushd / && tar czvf ./iot-hub-device-update/out/* /usr/local/lib/* ./device-update-debian11-arm64-build-artifacts.tgz
-rsync -av --progress ./device-update-debian11-arm64-build-artifacts.tgz user@myhost:~/
+```sh
+docker run -it --platform=linux/arm64 --rm --name container 112a56
+```
+
+Detach with <CTRL>-P <CTRL>-Q
+
+```sh
+$ docker ps
+CONTAINER ID   IMAGE          COMMAND     CREATED         STATUS         PORTS     NAMES
+dc3e62308c48   112a56228b1a   /bin/sh   6 seconds ago   Up 5 seconds             container
+```
+
+Copy from container to host
+
+```sh
+docker cp dc3e623:/iot-hub-device-update/out/deviceupdate-agent_1.0.2_arm64.deb .
+```
+
+## Install onto target ARM64 device
+
+Transfer the following from host to target and run apt-get install in that order:
+- deliveryoptimization-agent_1.0.0_arm64.deb
+- libdeliveryoptimization_1.0.0_arm64.deb
+- deviceupdate-agent_1.0.2_arm64.deb
+
+Installing from packages built from source is recommended until Debian 11 packages are released on packages.microsoft.com. However, for the 1st DO pkg, if installing from the [do-client main branch v1.0.0 github release](https://github.com/microsoft/do-client/releases/tag/v1.0.0) instead of from built .deb from develop branch, one may need to do local .deb install the following deps from buster in the order shown:
+- [libboost-system1.67.0_1.67.0-13+deb10u1_arm64.deb](http://http.us.debian.org/debian/pool/main/b/boost1.67/libboost-system1.67.0_1.67.0-13+deb10u1_arm64.deb)
+- [libboost-filesystem1.67.0_1.67.0-13+deb10u1_arm64.deb](http://http.us.debian.org/debian/pool/main/b/boost1.67/libboost-filesystem1.67.0_1.67.0-13+deb10u1_arm64.deb)
 
