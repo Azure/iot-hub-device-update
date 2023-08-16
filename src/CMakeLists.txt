@@ -1,5 +1,9 @@
 cmake_minimum_required (VERSION 3.5)
 
+include (agentRules)
+
+compileasc99 ()
+
 if (ADUC_TRACE_TARGET_DEPS)
     set_property (GLOBAL PROPERTY GLOBAL_DEPENDS_DEBUG_MODE 1)
 endif ()
@@ -32,8 +36,7 @@ if (MSVC)
 
     # Avoid "warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library"
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set (CMAKE_EXE_LINKER_FLAGS
-             "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:msvcrt")
+        set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:msvcrt")
     else ()
         set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
     endif ()
