@@ -1,12 +1,12 @@
 cmake_minimum_required (VERSION 3.5)
 
-project (microsoft_wim_1)
+set (target_name microsoft_wim_1)
 
 include (agentRules)
 compileasc99 ()
 
 add_library (
-    ${PROJECT_NAME} MODULE
+    ${target_name} MODULE
     src/bcdedit.cpp
     src/file_version.cpp
     src/format_drive.cpp
@@ -16,14 +16,14 @@ add_library (
     src/wimg.cpp)
 
 target_include_directories (
-    ${PROJECT_NAME}
+    ${target_name}
     PUBLIC inc
     PRIVATE ${ADU_EXTENSION_INCLUDES} ${ADUC_TYPES_INCLUDES})
 
-target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+target_link_aziotsharedutil (${target_name} PRIVATE)
 
 target_link_libraries (
-    ${PROJECT_NAME}
+    ${target_name}
     PRIVATE aduc::c_utils
             aduc::contract_utils
             aduc::extension_manager
@@ -34,15 +34,15 @@ target_link_libraries (
             aduc::logging)
 
 # GetFileVersionInfo()
-target_link_libraries (${PROJECT_NAME} PRIVATE Version.lib)
+target_link_libraries (${target_name} PRIVATE Version.lib)
 
 # Wimgapi
 # TODO: Bring in Wimgapi in a better way, rather than storing SDK in repo.
-target_include_directories (${PROJECT_NAME} PRIVATE Wimgapi/Include)
-target_link_directories (${PROJECT_NAME} PRIVATE Wimgapi/lib/${CMAKE_SYSTEM_PROCESSOR})
-target_link_libraries (${PROJECT_NAME} PRIVATE wimgapi.lib)
+target_include_directories (${target_name} PRIVATE Wimgapi/Include)
+target_link_directories (${target_name} PRIVATE Wimgapi/lib/${CMAKE_SYSTEM_PROCESSOR})
+target_link_libraries (${target_name} PRIVATE wimgapi.lib)
 
 # WBEM
-target_link_libraries (${PROJECT_NAME} PRIVATE Wbemuuid.lib)
+target_link_libraries (${target_name} PRIVATE Wbemuuid.lib)
 
-install (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
