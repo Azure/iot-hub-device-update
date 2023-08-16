@@ -45,7 +45,7 @@ bool FileInfoUtils_InsertFileInfoIntoArray(
     FileInfo* sortedLogFiles,
     size_t sortedLogFileLength,
     const char* candidateFileName,
-    long sizeOfCandidateFile,
+    long long sizeOfCandidateFile,
     time_t candidateLastWrite)
 {
     if (sortedLogFiles == NULL || sortedLogFileLength < 1 || candidateFileName == NULL || sizeOfCandidateFile == 0)
@@ -224,7 +224,7 @@ bool FileInfoUtils_GetNewestFilesInDirUnderSize(
     }
 
     int fileIndex = 0;
-    long currentFileMaxCount = 0;
+    long long currentFileMaxCount = 0;
     while (currentFileMaxCount < maxFileSize && fileIndex < discoveredFilesSize)
     {
         if (discoveredFiles[fileIndex].fileName == NULL)

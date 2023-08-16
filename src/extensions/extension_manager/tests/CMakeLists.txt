@@ -12,8 +12,8 @@ add_executable (${target_name})
 target_sources (${target_name} PRIVATE src/main.cpp src/extension_manager_ut.cpp
                                        src/extension_manager_download_test_case.cpp)
 
-target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES}
-                                                   ${ADU_EXTENSION_INCLUDES})
+target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES}
+                                                  ${ADU_EXTENSION_INCLUDES})
 
 target_link_libraries (
     ${target_name}

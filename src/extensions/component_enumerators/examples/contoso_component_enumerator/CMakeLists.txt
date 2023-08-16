@@ -1,17 +1,17 @@
-project (contoso_component_enumerator)
+set (target_name contoso_component_enumerator)
 
 include (agentRules)
 
 compileasc99 ()
 
-add_library (${PROJECT_NAME} MODULE contoso_component_enumerator.cpp)
+add_library (${target_name} MODULE contoso_component_enumerator.cpp)
 
 find_package (Parson REQUIRED)
 
-add_library (aduc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library (aduc::${target_name} ALIAS ${target_name})
 
-target_include_directories (${PROJECT_NAME} PUBLIC ${ADU_EXTENSION_INCLUDES} ${ADU_EXPORT_INCLUDES})
+target_include_directories (${target_name} PUBLIC ${ADU_EXTENSION_INCLUDES} ${ADU_EXPORT_INCLUDES})
 
-target_link_libraries (${PROJECT_NAME} PUBLIC Parson::parson aduc::contract_utils)
+target_link_libraries (${target_name} PUBLIC Parson::parson aduc::contract_utils)
 
-install (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
