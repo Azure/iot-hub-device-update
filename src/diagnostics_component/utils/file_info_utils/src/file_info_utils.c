@@ -224,7 +224,7 @@ bool FileInfoUtils_GetNewestFilesInDirUnderSize(
     }
 
     int fileIndex = 0;
-    unsigned long currentFileMaxCount = 0;
+    long long currentFileMaxCount = 0;
     while (currentFileMaxCount < maxFileSize && fileIndex < discoveredFilesSize)
     {
         if (discoveredFiles[fileIndex].fileName == NULL)
