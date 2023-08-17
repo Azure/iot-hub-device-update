@@ -1812,7 +1812,7 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
     size_t sizeInBytes = 0;
     if (json_object_has_value(file, ADUCITF_FIELDNAME_SIZEINBYTES))
     {
-        sizeInBytes = (size_t) json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
+        sizeInBytes = (size_t)json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
     }
 
     if (!ADUC_FileEntity_Init(entity, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
@@ -1924,7 +1924,7 @@ bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fi
     size_t sizeInBytes = 0;
     if (json_object_has_value(file, ADUCITF_FIELDNAME_SIZEINBYTES))
     {
-        sizeInBytes = (size_t) json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
+        sizeInBytes = (size_t)json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
     }
 
     if (!ADUC_FileEntity_Init(entity, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
@@ -2293,7 +2293,8 @@ ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, size_t st
     JSON_Object* baseFiles = json_object_get_object(updateManifestObject, ADUCITF_FIELDNAME_FILES);
 
     size_t fileCount = json_object_get_count(baseFiles);
-    do {
+    while (fileCount > 0)
+    {
         fileCount--;
 
         const char* baseFileId = json_object_get_name(baseFiles, fileCount);
@@ -2302,7 +2303,8 @@ ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, size_t st
         bool fileRequired = false;
 
         size_t stepFilesCount = json_array_get_count(stepFiles);
-        do{
+        while (stepFilesCount > 0)
+        {
             stepFilesCount--;
 
             // Note: step's files is an array of file ids.
@@ -2317,16 +2319,14 @@ ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, size_t st
                 json_array_remove(stepFiles, stepFilesCount);
                 break;
             }
-
-        }while(stepFilesCount > 0);
+        }
 
         // Remove file from base files list, if no longer needed.
         if (!fileRequired)
         {
             json_object_remove(baseFiles, json_object_get_name(baseFiles, fileCount));
         }
-
-    }while (fileCount > 0);
+    }
 
     // Remove 'instructions' list...
     json_object_set_null(updateManifestObject, "instructions");
@@ -2748,12 +2748,12 @@ bool workflow_insert_child(ADUC_WorkflowHandle handle, int index, ADUC_WorkflowH
 
     if (index < 0 || index >= wf->ChildCount)
     {
-        index = (int) wf->ChildCount;
+        index = (int)wf->ChildCount;
     }
     else
     {
         // Make room for the new child.
-        size_t bytes = (wf->ChildCount - (size_t) index) * sizeof(ADUC_Workflow*);
+        size_t bytes = (wf->ChildCount - (size_t)index) * sizeof(ADUC_Workflow*);
         memmove(wf->Children + (index + 1), wf->Children + index, bytes);
     }
 
@@ -3324,7 +3324,8 @@ workflow_create_from_instruction_value(ADUC_WorkflowHandle base, JSON_Value* ins
     JSON_Object* baseFiles = json_object_get_object(updateManifestObject, ADUCITF_FIELDNAME_FILES);
     size_t fileCount = json_object_get_count(baseFiles);
 
-    do{
+    do
+    {
         fileCount--;
         JSON_Object* baseFile = json_object(json_object_get_value_at(baseFiles, fileCount));
 
@@ -3332,7 +3333,8 @@ workflow_create_from_instruction_value(ADUC_WorkflowHandle base, JSON_Value* ins
         bool fileRequired = false;
         size_t instFilesCount = json_array_get_count(instFiles);
 
-        do{
+        do
+        {
             instFilesCount--;
 
             const char* baseFilename = json_object_get_string(baseFile, ADUCITF_FIELDNAME_FILENAME);
@@ -3346,18 +3348,19 @@ workflow_create_from_instruction_value(ADUC_WorkflowHandle base, JSON_Value* ins
                 fileRequired = true;
 
                 size_t valuesCount = json_object_get_count(instFile);
-                do{
+                do
+                {
                     valuesCount--;
                     const char* key = json_object_get_name(instFile, valuesCount);
                     JSON_Value* val = json_value_deep_copy(json_object_get_value_at(instFile, valuesCount));
                     json_object_set_value(baseFile, key, val);
-                }while(valuesCount > 0);
+                } while (valuesCount > 0);
 
                 // Done with this file, remove it (and free).
                 json_array_remove(instFiles, instFilesCount);
                 break;
             }
-        }while(instFilesCount > 0);
+        } while (instFilesCount > 0);
 
         // Remove file from base files list, if no longer needed.
         if (!fileRequired)
@@ -3365,7 +3368,7 @@ workflow_create_from_instruction_value(ADUC_WorkflowHandle base, JSON_Value* ins
             json_object_remove(baseFiles, json_object_get_name(baseFiles, fileCount));
         }
 
-    }while (fileCount > 0);
+    } while (fileCount > 0);
 
     wf->UpdateActionObject = updateActionObject;
     wf->UpdateManifestObject = updateManifestObject;

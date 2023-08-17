@@ -138,9 +138,9 @@ bool DiagnosticsConfigUtils_InitFromJSON(DiagnosticsWorkflowData* workflowData, 
         goto done;
     }
 
-    unsigned int maxKilobytesToUploadPerLogPath = 0;
+    long long maxKilobytesToUploadPerLogPath = 0;
 
-    if (!ADUC_JSON_GetUnsignedIntegerField(
+    if (!ADUC_JSON_GetLongLongField(
             fileJsonValue,
             DIAGNOSTICS_CONFIG_FILE_FIELDNAME_MAXKILOBYTESTOUPLOADPERLOGPATH,
             &maxKilobytesToUploadPerLogPath))

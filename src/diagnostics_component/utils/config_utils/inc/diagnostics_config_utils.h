@@ -29,7 +29,7 @@ typedef struct tagDiagnosticLogComponent
 typedef struct tagDiagnosticWorkflowData
 {
     VECTOR_HANDLE components; //!< Vector of DiagnosticLogComponent pointers for which to collect logs
-    unsigned int maxBytesToUploadPerLogPath; //!< The maximum number of bytes to upload per log file path
+    long long maxBytesToUploadPerLogPath; //!< The maximum number of bytes to upload per log file path
 } DiagnosticsWorkflowData;
 
 /**
