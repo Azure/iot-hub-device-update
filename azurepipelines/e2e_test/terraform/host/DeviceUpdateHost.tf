@@ -167,12 +167,6 @@ resource "azurerm_linux_virtual_machine" "deviceupdatevm" {
     #
     # Changes to provide the setup information should go here
     #
-    # There may already be a system apt or apt-get process running that is
-    # using fcntl to take an exclusive write file lock on /var/lib/apt/lists/lock.
-    # For fcntl, the lock will be released once the process dies.
-    # We use pgrep to find all processes with pattern of "apt" and only execute
-    # the apt update once those processes no longer exist.
-    #
     provisioner "remote-exec" {
         inline = [
         "while pgrep apt > /dev/null; do sleep 1; done; sudo apt update",
