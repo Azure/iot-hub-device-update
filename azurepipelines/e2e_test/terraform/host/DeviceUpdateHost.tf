@@ -175,7 +175,7 @@ resource "azurerm_linux_virtual_machine" "deviceupdatevm" {
     #
     provisioner "remote-exec" {
         inline = [
-        "while pgrep apt > /dev/null; do sleep 1; done; sudo apt update"
+        "while pgrep apt > /dev/null; do sleep 1; done; sudo apt update",
         var.vm_du_tarball_script
         ]
     }
