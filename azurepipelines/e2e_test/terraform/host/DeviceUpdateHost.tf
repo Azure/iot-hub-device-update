@@ -169,7 +169,7 @@ resource "azurerm_linux_virtual_machine" "deviceupdatevm" {
     #
     provisioner "remote-exec" {
         inline = [
-        "sudo apt update",
+        "sudo pkill apt; sudo pkill apt-get; rm -f /var/lib/apt/lists/lock; sudo apt update",
         var.vm_du_tarball_script
         ]
     }
