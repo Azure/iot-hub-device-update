@@ -12,29 +12,19 @@ find_package (Parson REQUIRED)
 target_include_directories (
     ${target_name}
     PUBLIC inc
-    PRIVATE ${PROJECT_SOURCE_DIR}/inc
-            ${ADU_EXTENSION_INCLUDES}
-            ${ADU_SHELL_INCLUDES}
-            ${ADUC_EXPORT_INCLUDES}
-            ${ADUC_TYPES_INCLUDES})
+    PRIVATE ${PROJECT_SOURCE_DIR}/inc ${ADU_EXTENSION_INCLUDES} ${ADU_SHELL_INCLUDES}
+            ${ADUC_EXPORT_INCLUDES} ${ADUC_TYPES_INCLUDES})
 
-get_filename_component (
-    ADUC_INSTALLEDCRITERIA_FILE_PATH
-    "${ADUC_DATA_FOLDER}/${ADUC_INSTALLEDCRITERIA_FILE}"
-    ABSOLUTE
-    "/")
+get_filename_component (ADUC_INSTALLEDCRITERIA_FILE_PATH
+                        "${ADUC_DATA_FOLDER}/${ADUC_INSTALLEDCRITERIA_FILE}" ABSOLUTE "/")
 
 target_compile_definitions (
-    ${target_name} PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}")
+    ${target_name} PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}"
+                           ADUC_TMP_DIR_PATH="${ADUC_TMP_DIR_PATH}")
 
 target_link_libraries (
-    ${target_name}
-    PRIVATE aduc::agent_workflow
-            aduc::contract_utils
-            aduc::logging
-            aduc::parser_utils
-            aduc::workflow_utils
-            Parson::parson)
+    ${target_name} PRIVATE aduc::agent_workflow aduc::contract_utils aduc::logging
+                           aduc::parser_utils aduc::workflow_utils Parson::parson)
 
 target_link_libraries (${target_name} PRIVATE libaducpal)
 

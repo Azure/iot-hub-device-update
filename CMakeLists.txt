@@ -135,8 +135,13 @@ set (
           "The path segment in source tree where testdata for various test folders will be found.")
 
 set (
+    ADUC_TMP_DIR_PATH
+    "/tmp"
+    CACHE STRING "Path to the temporary directory")
+
+set (
     ADUC_TEST_DATA_FOLDER
-    "/tmp/adu/${ADUC_TEST_DATA_PATH_SEGMENT}"
+    "${ADUC_TMP_DIR_PATH}/adu/${ADUC_TEST_DATA_PATH_SEGMENT}"
     CACHE
         STRING
         "Path to the folder containing test data file(s) copied from tests/testdata/<testname> folders in the source tree."
@@ -150,7 +155,10 @@ set (
 set (
     ADUC_EXTENSIONS_INSTALL_FOLDER
     "${ADUC_EXTENSIONS_FOLDER}/sources"
-    CACHE STRING "Path to the folder containing extensions .so file(s). This value can not be overridden by du-config.json.")
+    CACHE
+        STRING
+        "Path to the folder containing extensions .so file(s). This value can not be overridden by du-config.json."
+)
 
 set (
     ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME
@@ -188,14 +196,11 @@ set (
     CACHE STRING "Sub folder for download handler extensions.")
 
 # Define the mapping from step handler names to subdirectory names
-set(ADUC_STEP_HANDLER_NAME_TO_DIRECOTRY_MAP
-    "microsoft/apt,apt_handler"
-    "microsoft/script,script_handler"
-    "microsoft/simulator,simulator_handler"
-    "microsoft/swupdate,swupdate_handler"
-    "microsoft/swupdate_v2,swupdate_handler_v2"
-    "microsoft/wim,wim_handler"
-)
+set (
+    ADUC_STEP_HANDLER_NAME_TO_DIRECOTRY_MAP
+    "microsoft/apt,apt_handler" "microsoft/script,script_handler"
+    "microsoft/simulator,simulator_handler" "microsoft/swupdate,swupdate_handler"
+    "microsoft/swupdate_v2,swupdate_handler_v2" "microsoft/wim,wim_handler")
 
 if (WIN32)
     set (

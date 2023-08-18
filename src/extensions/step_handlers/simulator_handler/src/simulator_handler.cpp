@@ -91,7 +91,7 @@ const char* _GetTemporaryPathName()
                 env = getenv("TEMPDIR");
                 if (env == nullptr)
                 {
-                    static const char* root_tmp_folder = "/tmp";
+                    static const char* root_tmp_folder = ADUC_TMP_DIR_PATH;
                     env = root_tmp_folder;
                 }
             }
