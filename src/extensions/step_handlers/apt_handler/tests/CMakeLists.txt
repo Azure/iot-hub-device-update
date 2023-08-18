@@ -24,7 +24,8 @@ target_include_directories (
 
 target_compile_definitions (
     ${PROJECT_NAME}
-    PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="/${ADUC_TMP_DIR_PATH}/adu-test-installedcriteria")
+    PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="/${ADUC_TMP_DIR_PATH}/adu-test-installedcriteria"
+            ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}")
 
 target_link_libraries (
     ${PROJECT_NAME}
