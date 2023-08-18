@@ -97,13 +97,13 @@ char* ADUC_SystemUtils_MkTemp(char* tmpl)
     // Get a randomish number from real time clock.
     struct timespec ts;
     ADUCPAL_clock_gettime(CLOCK_REALTIME, &ts);
-    unsigned long rnd = ts.tv_nsec ^ (unsigned long)ts.tv_sec;
+    unsigned long rnd = (unsigned long)ts.tv_nsec ^ (unsigned long)ts.tv_sec;
 
     while (*Xs == 'X')
     {
         // '0'..'9' (10), 'A'..'Z' (26), 'a'..'z' (26)
         const unsigned short count = 10 + 26 + 26;
-        const unsigned short idx = (rnd % count);
+        const unsigned short idx = (unsigned short)(rnd % count);
         *Xs = (idx < 10)      ? (char)('0' + idx)
             : (idx < 10 + 26) ? (char)('A' + (idx - 10))
                               : (char)('a' + (idx - (10 + 26)));
@@ -129,7 +129,7 @@ char* ADUC_SystemUtils_MkTemp(char* tmpl)
  */
 int ADUC_SystemUtils_MkDirDefault(const char* path)
 {
-    return ADUC_SystemUtils_MkDir(path, -1 /*userId*/, -1 /*groupId*/, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP /*mode*/);
+    return ADUC_SystemUtils_MkDir(path, (uid_t) -1 /*userId*/, (gid_t) -1 /*groupId*/, (mode_t) S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP /*mode*/);
 }
 
 /**
@@ -192,7 +192,7 @@ int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t
  */
 int ADUC_SystemUtils_MkDirRecursiveDefault(const char* path)
 {
-    return ADUC_SystemUtils_MkDirRecursive(path, -1 /*userId*/, -1 /*groupId*/, S_IRWXU | S_IRWXG /*mode*/);
+    return ADUC_SystemUtils_MkDirRecursive(path, (uid_t) -1 /*userId*/, (gid_t) -1 /*groupId*/, (mode_t) S_IRWXU | S_IRWXG /*mode*/);
 }
 
 /**
@@ -323,7 +323,7 @@ int ADUC_SystemUtils_MkDirRecursiveAduUser(const char* path)
     uid_t aduUserId = pwd->pw_uid;
     pwd = NULL;
 
-    return ADUC_SystemUtils_MkDirRecursive(path, aduUserId, -1, S_IRWXU);
+    return ADUC_SystemUtils_MkDirRecursive(path, aduUserId, (gid_t) -1, (mode_t) S_IRWXU);
 }
 
 static int RmDirRecursive_helper(const char* fpath, const struct stat* sb, int typeflag, struct FTW* info)

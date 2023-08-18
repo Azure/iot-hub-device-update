@@ -140,7 +140,7 @@ ADUC_Result AptHandlerImpl::Download(const ADUC_WorkflowData* workflowData)
     std::unique_ptr<AptContent> aptContent{ nullptr };
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
     const ADUC_ConfigInfo* config = nullptr;
-    int fileCount = 0;
+    size_t fileCount = 0;
     char* installedCriteria = nullptr;
 
     if (workflow_is_cancel_requested(handle))

@@ -25,6 +25,12 @@ endif ()
 if (MSVC)
     # Warning level 4
     add_compile_options (/W4)
+
+    if (NOT ADUC_BUILD_UNIT_TESTS)
+        # Treat Conversion Warnings as Errors
+        add_compile_options (/W4242)
+    endif()
+
     # allow strcpy, strcat, fopen, etc.
     add_definitions (-D_CRT_SECURE_NO_WARNINGS)
     # Avoid C4996: POSIX name for this item is deprecated.
@@ -38,8 +44,14 @@ if (MSVC)
         set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
     endif ()
 else ()
+
     set (COMPILER_HARDENING_FLAGS
          "-fPIE -D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wformat -Werror=format-security")
+
+    if (NOT ADUC_BUILD_UNIT_TESTS)
+        set (COMPILER_HARDENING_FLAGS "${COMPILER_HARDENING_FLAGS}  -Wconversion")
+    endif ()
+
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie -z relro -z now")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMPILER_HARDENING_FLAGS}")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMPILER_HARDENING_FLAGS} -Wall")

@@ -71,7 +71,7 @@ typedef struct tagADUC_ConfigInfo
 
     ADUC_AgentInfo* agents; /**< Array of agents that are configured. */
 
-    unsigned int agentCount; /**< Total number of agents configured. */
+    size_t agentCount; /**< Total number of agents configured. */
 
     const char* compatPropertyNames; /**< Compat property names. */
 

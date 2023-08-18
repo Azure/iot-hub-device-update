@@ -44,7 +44,7 @@ static bool GetResultAndCompareHashes(
         goto done;
     }
 
-    encoded_file_hash = Azure_Base64_Encode_Bytes((unsigned char*)buffer_hash, USHAHashSize(algorithm));
+    encoded_file_hash = Azure_Base64_Encode_Bytes((unsigned char*)buffer_hash, (size_t) USHAHashSize(algorithm));
     if (encoded_file_hash == NULL)
     {
         if (!suppressErrorLog)
@@ -101,13 +101,13 @@ static bool ADUC_HashUtils_GetIndexStrongestValidHash(
         return false;
     }
 
-    size_t strongestIndex = (size_t)-1; // Assume hashes array is not sorted by strength ordering.
+    int strongestIndex = -1; // Assume hashes array is not sorted by strength ordering.
     SHAversion curBestAlg = SHA1;
 
-    for (size_t i = 0; i < hashCount; ++i)
+    for (int i = 0; i < hashCount; ++i)
     {
         SHAversion algVersion = SHA1;
-        char* hashType = ADUC_HashUtils_GetHashType(hashes, hashCount, i);
+        char* hashType = ADUC_HashUtils_GetHashType(hashes, hashCount, (size_t)i);
         if (!ADUC_HashUtils_GetShaVersionForTypeString(hashType, &algVersion))
         {
             Log_Error("Unsupported algorithm: %s", hashType);
@@ -131,7 +131,7 @@ static bool ADUC_HashUtils_GetIndexStrongestValidHash(
 
     if (strongestIndex != (size_t)-1)
     {
-        *outIndexStrongestAlgorithm = strongestIndex;
+        *outIndexStrongestAlgorithm = (size_t) strongestIndex;
         *outBestShaVersion = curBestAlg;
         return true;
     }
@@ -223,7 +223,7 @@ bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** h
             break;
         }
 
-        if (USHAInput(&context, buffer, (unsigned int)readSize) != 0)
+        if (USHAInput(&context, buffer,(unsigned int) readSize) != 0)
         {
             Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
             goto done;
@@ -335,7 +335,7 @@ bool ADUC_HashUtils_IsValidFileHash(
             break;
         }
 
-        if (USHAInput(&context, buffer, (unsigned int)readSize) != 0)
+        if (USHAInput(&context, buffer,(unsigned int) readSize) != 0)
         {
             if (!suppressErrorLog)
             {
@@ -379,7 +379,7 @@ bool ADUC_HashUtils_IsValidBufferHash(
         return false;
     }
 
-    if (USHAInput(&context, buffer, (unsigned int)bufferLen) != 0)
+    if (USHAInput(&context, buffer,(unsigned int) bufferLen) != 0)
     {
         Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
         return false;

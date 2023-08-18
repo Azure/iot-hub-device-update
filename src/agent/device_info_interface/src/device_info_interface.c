@@ -223,7 +223,7 @@ void DeviceInfoInterface_ReportChangedPropertiesAsync()
                 Log_Error("Cannot convert property value to number. Value: %s", propertyValue);
                 goto done;
             }
-            json_object_set_number(root_object, propertyName, val);
+            json_object_set_number(root_object, propertyName, (double)val);
         }
     }
 

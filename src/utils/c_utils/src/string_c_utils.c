@@ -39,7 +39,7 @@ bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* val
 {
     bool foundKey = false;
     char buffer[1024];
-    const unsigned int bufferLen = ARRAY_SIZE(buffer);
+    const size_t bufferLen = ARRAY_SIZE(buffer);
 
     if (valueLen < 2)
     {
@@ -53,7 +53,7 @@ bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* val
         return false;
     }
 
-    while (!foundKey && fgets(buffer, bufferLen, fp) != NULL)
+    while (!foundKey && fgets(buffer, (int)bufferLen, fp) != NULL)
     {
         char* delimiter = strchr(buffer, '=');
         if (delimiter == NULL)
@@ -236,7 +236,7 @@ bool atoul(const char* str, unsigned long* converted)
         }
 
         const unsigned long previous = res;
-        res = (res * 10) + (*str - '0');
+        res = (res * 10) + (unsigned long)(*str - '0');
 
         if (res < previous)
         {
@@ -275,7 +275,7 @@ bool atoui(const char* str, unsigned int* ui)
         }
 
         const unsigned int previous = res;
-        res = (res * 10) + (*str - '0');
+        res = (res * 10) + (unsigned int)(*str - '0');
 
         if (res < previous)
         {
@@ -345,7 +345,7 @@ bool ADUC_ParseUpdateType(const char* updateType, char** updateTypeName, unsigne
         goto done;
     }
 
-    const size_t nameLength = delimiter - updateType;
+    const size_t nameLength = (size_t)(delimiter - updateType);
 
     //name is empty
     if (nameLength == 0)

@@ -25,7 +25,7 @@ EXTERN_C_BEGIN
  * @param data Information about this module (e.g. callback methods)
  * @return ADUC_Result Result code.
  */
-ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, unsigned int /*argc*/, const char** /*argv*/)
+ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, int /*argc*/, const char** /*argv*/)
 {
     try
     {

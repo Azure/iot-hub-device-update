@@ -42,11 +42,7 @@ typedef struct _tagADUC_Retry_Params
  * A function used for calculating a delay time before the next retry.
  */
 typedef time_t (*ADUC_NEXT_RETRY_TIMESTAMP_CALC_FUNC)(
-    int additionalDelaySecs,
-    unsigned int retries,
-    long initialDelayUnitMilliSecs,
-    long maxDelaySecs,
-    double maxJitterPercent);
+    int additionalDelaySecs, unsigned int retries, unsigned long initialDelayUnitMilliSecs, unsigned long maxDelaySecs, double maxJitterPercent);
 
 /**
  * @brief A default retry delay calculator function.
@@ -58,12 +54,7 @@ typedef time_t (*ADUC_NEXT_RETRY_TIMESTAMP_CALC_FUNC)(
  * @param maxJitterPercent A maximum jitter percentage.
  * @return time_t Return a timestamp (since epoch) for the next retry.
  */
-time_t ADUC_Retry_Delay_Calculator(
-    int additionalDelaySecs,
-    unsigned int retries,
-    long initialDelayUnitMilliSecs,
-    long maxDelaySecs,
-    double maxJitterPercent);
+time_t ADUC_Retry_Delay_Calculator(int additionalDelaySecs, unsigned int retries, unsigned long initialDelayUnitMilliSecs, unsigned long maxDelaySecs, double maxJitterPercent);
 
 EXTERN_C_END
 

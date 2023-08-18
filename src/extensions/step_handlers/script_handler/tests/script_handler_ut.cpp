@@ -116,7 +116,7 @@ TEST_CASE("Script Handler Prepare Arguments Test")
     result = PrepareStepsWorkflowDataObject(handle);
     CHECK(result.ResultCode != 0);
 
-    int childCount = workflow_get_children_count(handle);
+    size_t childCount = workflow_get_children_count(handle);
     CHECK(childCount == 1);
 
     ADUC_WorkflowHandle stepHandle = workflow_get_child(handle, 0);
@@ -200,7 +200,7 @@ TEST_CASE("Script Handler Prepare Arguments Test v2.1")
     result = PrepareStepsWorkflowDataObject(handle);
     CHECK(result.ResultCode != 0);
 
-    int childCount = workflow_get_children_count(handle);
+    size_t childCount = workflow_get_children_count(handle);
     CHECK(childCount == 1);
 
     ADUC_WorkflowHandle stepHandle = workflow_get_child(handle, 0);

@@ -108,7 +108,7 @@ done:
  * @returns a value of Diagnostics_Result indicating the status of this component's upload
  */
 Diagnostics_Result DiagnosticsWorkflow_GetFilesForComponent(
-    VECTOR_HANDLE* fileNames, const DiagnosticsLogComponent* logComponent, const unsigned int maxUploadSize)
+    VECTOR_HANDLE* fileNames, const DiagnosticsLogComponent* logComponent, const long long maxUploadSize)
 {
     if (logComponent == NULL || maxUploadSize == 0 || fileNames == 0)
     {
@@ -224,13 +224,13 @@ void DiagnosticsWorkflow_UnInitLogComponentFileNames(VECTOR_HANDLE logComponentF
 
     const size_t logComponentFileNamesSize = VECTOR_size(logComponentFileNames);
 
-    for (int i = 0; i < logComponentFileNamesSize; ++i)
+    for (size_t i = 0; i < logComponentFileNamesSize; ++i)
     {
         VECTOR_HANDLE* fileNames = VECTOR_element(logComponentFileNames, i);
 
         const size_t fileNamesSize = VECTOR_size(*fileNames);
 
-        for (int j = 0; j < fileNamesSize; ++j)
+        for (size_t j = 0; j < fileNamesSize; ++j)
         {
             STRING_HANDLE* fileName = VECTOR_element(*fileNames, j);
 
@@ -311,7 +311,7 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
         goto done;
     }
 
-    const unsigned int uploadSizePerComponent = workflowData->maxBytesToUploadPerLogPath;
+    const long long uploadSizePerComponent = workflowData->maxBytesToUploadPerLogPath;
 
     if (uploadSizePerComponent == 0)
     {

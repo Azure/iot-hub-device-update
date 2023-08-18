@@ -24,7 +24,7 @@ EXTERN_C_BEGIN
  * @param argv Initialization arguments, size is argc.
  * @return ADUC_Result Result code.
  */
-ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, unsigned int argc, const char** argv);
+ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, int argc, const char** argv);
 
 /**
  * @brief Unregister the callback module.
