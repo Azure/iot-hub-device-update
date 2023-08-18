@@ -3,6 +3,7 @@ cmake_minimum_required (VERSION 3.5)
 set (target_name microsoft_simulator_1)
 
 add_library (${target_name} MODULE)
+
 target_sources (${target_name} PRIVATE src/simulator_handler.cpp)
 
 add_library (aduc::${target_name} ALIAS ${target_name})
