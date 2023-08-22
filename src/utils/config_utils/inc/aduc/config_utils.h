@@ -37,9 +37,11 @@ typedef struct tagADUC_AgentInfo
 
     char* runas; /**< Run as a trusted user. */
 
-    char* connectionType; /**< It can be either AIS or string. */
+    char* connectionType; /**< It can be AIS, MQTTBroker, or string. */
 
-    char* connectionData; /**< the name in AIS principal (AIS); or the connectionString (connectionType string). */
+    char* connectionData; /**< the name in AIS principal (AIS); the connectionString (connectionType string). */
+
+    JSON_Value* connectionDataJson; /**< The connection data as a JSON object. (MQTTBroker)*/
 
     char* manufacturer; /**< Device property manufacturer. */
 
@@ -155,6 +157,37 @@ VECTOR_HANDLE ADUC_ConfigInfo_GetAduShellTrustedUsers(const ADUC_ConfigInfo* con
  * @param users Object to free. The vector (type VECTOR_HANDLE) containing users (type STRING_HANDLE)
  */
 void ADUC_ConfigInfo_FreeAduShellTrustedUsers(VECTOR_HANDLE users);
+
+/**
+ * @brief Get DU AGent's connection data field of type string.
+ *
+ * @param agent Pointer to ADUC_AgentInfo object.
+ * @param fieldName The field name to get. This can be null or a nested field name, e.g. "name" or "updateId.name".
+ *                  If fieldName not null, this function will return a connectionDataJson
+ * @param value Pointer to a char* to receive the value. Caller must free.
+ * @return bool True if successful.
+ */
+bool ADUC_AgentInfo_ConnectionData_GetStringField(const ADUC_AgentInfo* agent, const char* fieldName,  char** value);
+
+/**
+ * @brief Get DU AGent's connection data field of type boolean.
+ *
+ * @param agent Pointer to ADUC_AgentInfo object.
+ * @param fieldName The field name to get. This can be a nested field name, e.g. "useSTL" or "options.keepAlive".
+ * @param value Pointer to a bool to receive the value.
+ * @return bool True if successful.
+ */
+bool ADUC_AgentInfo_ConnectionData_GetBooleanField(const ADUC_AgentInfo* agent, const char* fieldName, bool* value);
+
+/**
+ * @brief Get DU AGent's connection data field of type unsigned int.
+ *
+ * @param agent Pointer to ADUC_AgentInfo object.
+ * @param fieldName The field name to get. This can be a nested field name, e.g. "port" or "options.maxRetry".
+ * @param value Pointer to an unsigned int to receive the value.
+ * @return bool True if successful.
+ */
+bool ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(const ADUC_AgentInfo* agent, const char* fieldName, unsigned int* value);
 
 // clang-format off
 // NOLINTNEXTLINE: clang-tidy doesn't like UMock macro expansions

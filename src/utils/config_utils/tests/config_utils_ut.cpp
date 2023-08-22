@@ -373,6 +373,37 @@ static const char* invalidConfigContentDownloadTimeout =
         R"(])"
     R"(})";
 
+static const char* validConfigMQTTBrokerConnectionData =
+    R"({)"
+        R"("schemaVersion": "2.0",)"
+        R"("aduShellTrustedUsers": ["adu","do"],)"
+        R"("manufacturer": "device_info_manufacturer",)"
+        R"("model": "device_info_model",)"
+        R"("downloadTimeoutInMinutes": 1440,)"
+        R"("compatPropertyNames": "manufacturer,model",)"
+        R"("agents": [)"
+            R"({ )"
+            R"("name": "host-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "MQTTBroker",)"
+                R"("connectionData": {"hostName":"mqtt.fabrikam.com", "port":1234})"
+            R"(},)"
+            R"("manufacturer": "Contoso",)"
+            R"("model": "Smart-Box")"
+            R"(},)"
+            R"({)"
+            R"("name": "leaf-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "string",)"
+                R"("connectionData": "HOSTNAME=...")"
+            R"(},)"
+            R"("manufacturer": "Fabrikam",)"
+            R"("model": "Camera")"
+            R"(})"
+        R"(])"
+    R"(})";
 
 static char* g_configContentString = nullptr;
 
@@ -630,4 +661,38 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         ADUC_ConfigInfo_ReleaseInstance(config);
         CHECK(config->refCount == 0);
     }
+
+    SECTION("Valid config content, MQTTBroker with hostName and port.")
+    {
+        REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigMQTTBrokerConnectionData) == 0);
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
+
+        ADUC_ConfigInfo config = {};
+
+        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
+
+        CHECK(config.agentCount == 2);
+        const ADUC_AgentInfo* first_agent_info = ADUC_ConfigInfo_GetAgent(&config, 0);
+        CHECK_THAT(first_agent_info->connectionType, Equals("MQTTBroker"));
+
+        // for MQTTBroker the connectionData is a JSON object.
+        CHECK(first_agent_info->connectionData == nullptr);
+        CHECK(first_agent_info->connectionDataJson != nullptr);
+
+        char* hostName = nullptr;
+        bool success = ADUC_AgentInfo_ConnectionData_GetStringField(first_agent_info, "hostName", &hostName);
+        CHECK(success);
+        CHECK_THAT(hostName, Equals("mqtt.fabrikam.com"));
+
+        // Expecting false if fieldName is nullptr.
+        success = ADUC_AgentInfo_ConnectionData_GetStringField(first_agent_info, nullptr, &hostName);
+        CHECK(!success);
+
+        unsigned int port = 0;
+        success = ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(first_agent_info, "port", &port);
+        CHECK(port == 1234);
+
+        ADUC_ConfigInfo_UnInit(&config);
+    }
+
 }
