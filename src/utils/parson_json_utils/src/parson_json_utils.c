@@ -34,7 +34,7 @@ const char* ADUC_JSON_GetStringFieldPtr(const JSON_Value* jsonValue, const char*
         return NULL;
     }
 
-    return json_object_get_string(object, jsonFieldName);
+    return json_object_dotget_string(object, jsonFieldName);
 }
 
 /**
@@ -42,24 +42,27 @@ const char* ADUC_JSON_GetStringFieldPtr(const JSON_Value* jsonValue, const char*
  *
  * @param jsonValue The JSON Value.
  * @param jsonFieldName The name of the JSON field to get.
- * @return the boolean value of the jsonFieldName, returns false on fail and logs error
+ * @param value Pointer to a bool to receive the value.
+ * @return bool Tree if successful.
  */
-bool ADUC_JSON_GetBooleanField(const JSON_Value* jsonValue, const char* jsonFieldName)
+bool ADUC_JSON_GetBooleanField(const JSON_Value* jsonValue, const char* jsonFieldName, bool* value)
 {
     JSON_Object* object = json_value_get_object(jsonValue);
 
-    if (object == NULL)
+    if (object == NULL || value == NULL)
     {
         return false;
     }
 
-    int result = json_object_get_boolean(object, jsonFieldName);
+    int result = json_object_dotget_boolean(object, jsonFieldName);
     if (result == -1)
     {
         Log_Error("Cannot get json field name %s, default to false.", jsonFieldName);
         return false;
     }
-    return result;
+
+    *value = (result != 0);
+    return true;
 }
 
 /**
@@ -79,7 +82,7 @@ bool ADUC_JSON_SetStringField(const JSON_Value* jsonValue, const char* jsonField
         return false;
     }
 
-    return json_object_set_string(object, jsonFieldName, value) == JSONSuccess;
+    return json_object_dotset_string(object, jsonFieldName, value) == JSONSuccess;
 }
 
 /**
@@ -102,7 +105,7 @@ bool ADUC_JSON_GetStringField(const JSON_Value* jsonValue, const char* jsonField
         goto done;
     }
 
-    const char* value_val = json_object_get_string(root_object, jsonFieldName);
+    const char* value_val = json_object_dotget_string(root_object, jsonFieldName);
     if (value_val == NULL)
     {
         goto done;
@@ -143,7 +146,7 @@ bool ADUC_JSON_GetStringFieldFromObj(const JSON_Object* jsonObj, const char* jso
         return false;
     }
 
-    const char* fieldValue = json_object_get_string(jsonObj, jsonFieldName);
+    const char* fieldValue = json_object_dotget_string(jsonObj, jsonFieldName);
 
     if (mallocAndStrcpy_s(value, fieldValue) != 0)
     {
@@ -180,7 +183,7 @@ bool ADUC_JSON_GetUnsignedIntegerField(const JSON_Value* jsonValue, const char* 
     }
 
     // Note: cannot determine failure in this call as 0 is a valid return, always assume succeeded at this point
-    val = json_object_get_number(jsonObj, jsonFieldName);
+    val = json_object_dotget_number(jsonObj, jsonFieldName);
 
     // Note: check value is not negative and is a whole number for safe casting to an unsigned int
     if (val < 0 || ((int)val) != val)
