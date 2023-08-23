@@ -368,7 +368,7 @@ JWSResult VerifySJWK(const char* sjwk)
         goto done;
     }
 
-    // Now, verify that signing key is not on the rootkey packages's Disallowed
+    // Now, verify that signing key is not on the rootkey packages's Disallowed list
     resultGetDisabledSigningKeys = RootKeyUtility_GetDisabledSigningKeys(&signingKeyDisallowed);
     if (IsAducResultCodeFailure(resultGetDisabledSigningKeys.ResultCode))
     {
@@ -553,7 +553,7 @@ JWSResult IsSigningKeyDisallowed(const char* sjwkJsonStr, VECTOR_HANDLE disabled
         goto done;
     }
 
-    // See if the hash of public key is on the Disallowed.
+    // See if the hash of public key is on the Disallowed list.
     for (int i = 0; i < VECTOR_size(disabledHashOfPubKeysList); ++i)
     {
         const ADUC_RootKeyPackage_Hash* DisallowedEntry =

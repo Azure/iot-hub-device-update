@@ -16,6 +16,9 @@ target_link_libraries (
             aduc::rootkey_workflow
             aduc::root_key_utils)
 
+target_compile_definitions (${target_name}
+                            PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
+
 include (CTest)
 include (Catch)
 catch_discover_tests (${target_name})

@@ -36,6 +36,15 @@ static std::string get_example_rootkey_package_json_path()
     return path;
 }
 
+static std::string get_prod_rootkey_package_json_path(bool isSigningKeyDisabled)
+{
+    std::string path{ ADUC_TEST_DATA_FOLDER };
+    path += isSigningKeyDisabled
+        ? "/rootkeypackage_utils/rootkeypackage_disabled_signingkey.json"
+        : "/rootkeypackage_utils/rootkeypackage_disabled_rootkey.json";
+    return path;
+}
+
 static std::string get_serialized_protectedProperties(JSON_Value* rootkeyPkgJsonValue)
 {
     JSON_Object* pkgJsonObj = json_object(rootkeyPkgJsonValue);
@@ -327,7 +336,7 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         VerifyRsaParams(rootkey3->rsaParameters, ROOTKEY_3_MODULUS, ROOTKEY_3_EXPONENT);
 
         //
-        // Verify "protected" properties tring
+        // Verify "protected" properties string
         //
         JSON_Value* pkgJson = json_parse_string(rootKeyPkgJsonStr.c_str());
 
@@ -382,6 +391,24 @@ TEST_CASE("RootKeyPackageUtils_Parse")
 
         ADUC_RootKeyPackage pkg{};
         ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(rootkey_pkg_json.c_str(), &pkg);
-        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        CHECK(IsAducResultCodeSuccess(result.ResultCode));
+    }
+
+    SECTION("prod disabled rootkey")
+    {
+        std::string rootkey_pkg_json = aduc::FileTestUtils_slurpFile(get_prod_rootkey_package_json_path(false /* isSigningKeyDisabled */));
+
+        ADUC_RootKeyPackage pkg{};
+        ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(rootkey_pkg_json.c_str(), &pkg);
+        CHECK(IsAducResultCodeSuccess(result.ResultCode));
+    }
+
+    SECTION("prod disabled signing key")
+    {
+        std::string rootkey_pkg_json = aduc::FileTestUtils_slurpFile(get_prod_rootkey_package_json_path(true /* isSigningKeyDisabled */));
+
+        ADUC_RootKeyPackage pkg{};
+        ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(rootkey_pkg_json.c_str(), &pkg);
+        CHECK(IsAducResultCodeSuccess(result.ResultCode));
     }
 }

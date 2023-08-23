@@ -1,0 +1,25 @@
+{
+    "version": 2,
+    "published": 1680544187,
+    "disabledRootKeys": [],
+    "disabledSigningKeys": [
+        {
+            "alg": "SHA256",
+            "hash": ""
+        }
+//        "ADU.220503.R.ST"
+    ],
+    "rootKeys": {
+        "ADU.200702.R.T": {
+            "keyType": "RSA",
+            "n": "ucKAJMkskVVKjtVLFdraMSd0cTa2Vcndkle540smg3a2v4hYXoHWBaA0tkZj5VM1fWR-XcjHJ9NRh74TzsHqPJODXn085tWGMwOzUEPhOSAzRaY-FCr23SIqM6AHCYPxziKbz9kEcD6e043UyCRMyLf8fQJ3SOvBXCNoVSkiQ8rwcDeHjFiSzk_BLy0JGRjfzJZF8l-q1N-Vqpq3VtOmQJphblSL6bC9AR1GNrvaJbHiSciaFvuiucneVBu3B6bY0wEin20x_CrjTNmiWEtuY_zoUxJGLGQVHkzJRRAQweHxw_FDSMd3UhiINRuN7Qb3r_S9HPoFNkZvaOUVOVe7WUY0jAFIzVUEcq2CTx43p0XvaLeYEz-DsG-RlPkkT2i-1ykEhwtJfsKGDTIP5mPDslZkTUScgZFRMToJdwOtGKkAzGXQPlvtf3IL49fUTM4r8dpIc7E1N2Djt94__kcdY1e8JxfgRH7RoiQCATHep6-mQW5UKq_onJW2bNo7i9Gb",
+            "e": 65537
+        },
+        "ADU.200703.R.T": {
+            "keyType": "RSA",
+            "n": "2WisuSoVDzKsz02BmP2bulWJzwrDH4hBIgKaz4Ithol_LYOSpk0knonvCiEB5Zb9kKMUAlOdKluvO2nGKp95kqZzm77thqjUbe5bZyFOCqPlPH-0nUHhg_oHXvX_5Oz3l-7KhMG0bUWzQ72nkmUHViexAPBpY-u4zZTRr8MONbGtMInrVI7SJTbToZ1zzM-b04o8wxlNfNJspjY2P_82mmJXZKlRlGdWuLYLoeXhKosfSu9MP1aLjC-puEmYmZ-dsoMg3_DHhluC-7VN2r8dAm3e3cTKuL3bNvGguTwTnccMEw1VxLMUsnpsDtxFHjebwpRVvs76JJsW3fllYZZ2T1l5WWxQbWDCdui7dDvnAfEww7Juxw4dKdXnlSorBGa5-QxZ0OnfKQTYbQweA_GehkKPPvku9mzK-n0PxfsaQMLS1-JfXgiVNQ4erhu_625iKFwWKlfuqOuZWiJMkFTK-NBmpDKAaBtxdH_5Xgc3ZA7SMymyVfw-9UmWv-ooK1F9",
+            "e": 65537
+        }
+    }
+}
+

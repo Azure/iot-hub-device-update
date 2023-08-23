@@ -32,4 +32,3 @@ include (CTest)
 include (Catch)
 catch_discover_tests (${target_name})
 
-add_subdirectory (testapp)

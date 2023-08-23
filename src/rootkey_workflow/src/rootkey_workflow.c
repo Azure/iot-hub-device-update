@@ -36,10 +36,18 @@ static ADUC_RootKeyPkgDownloaderInfo s_default_rootkey_downloader = {
  * @brief Downloads the root key package and updates local store with it if different from current.
  * @param[in] workflowId The workflow Id for use in loca dir path of the rootkey package download.
  * @param[in] rootKeyPkgUrl The URL of the rootkey package from the deployment metadata.
+ * @param[in] rootKeyStoreDirPath The directory of the root key store file. NULL to use default.
+ * @param[in] rootKeyStorePkgFilePath The path to the root key store file. NULL to use default.
+ * @param[in] downloaderInfo The downloader info to use for downloading rootkey package. NULL to use default.
  * @returns ADUC_Result the result.
  * @details If local storage is not being used then the contents of outLocalStoreChanged will always be true.
  */
-ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* rootKeyPkgUrl)
+ADUC_Result RootKeyWorkflow_UpdateRootKeys(
+    const char* workflowId,
+    const char* rootKeyPkgUrl,
+    const char* rootKeyStoreDirPath,
+    const char* rootKeyStorePkgFilePath,
+    const ADUC_RootKeyPkgDownloaderInfo* downloaderInfo)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
@@ -58,10 +66,25 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
         goto done;
     }
 
+    if (rootKeyStoreDirPath == NULL)
+    {
+        rootKeyStoreDirPath = ADUC_ROOTKEY_STORE_PATH;
+    }
+
+    if (rootKeyStorePkgFilePath == NULL)
+    {
+        rootKeyStorePkgFilePath = ADUC_ROOTKEY_STORE_PACKAGE_PATH;
+    }
+
+    if (downloaderInfo == NULL)
+    {
+        downloaderInfo = &s_default_rootkey_downloader;
+    }
+
     RootKeyUtility_ClearReportingErc();
 
     tmpResult = ADUC_RootKeyPackageUtils_DownloadPackage(
-        rootKeyPkgUrl, workflowId, &s_default_rootkey_downloader, &downloadedFilePath);
+        rootKeyPkgUrl, workflowId, downloaderInfo, &downloadedFilePath);
 
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
@@ -101,16 +124,16 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
         goto done;
     }
 
-    if (!ADUC_SystemUtils_Exists(ADUC_ROOTKEY_STORE_PATH))
+    if (!ADUC_SystemUtils_Exists(rootKeyStoreDirPath))
     {
-        if (ADUC_SystemUtils_MkDirRecursiveDefault(ADUC_ROOTKEY_STORE_PATH) != 0)
+        if (ADUC_SystemUtils_MkDirRecursiveDefault(rootKeyStoreDirPath) != 0)
         {
             result.ExtendedResultCode = ADUC_ERC_ROOTKEY_STORE_PATH_CREATE;
             goto done;
         }
     }
 
-    fileDest = STRING_construct(ADUC_ROOTKEY_STORE_PACKAGE_PATH);
+    fileDest = STRING_construct(rootKeyStorePkgFilePath);
 
     if (fileDest == NULL)
     {

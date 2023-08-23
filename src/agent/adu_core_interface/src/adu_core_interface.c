@@ -439,7 +439,8 @@ void OrchestratorUpdateCallback(
         }
 
         // Ensure update to latest rootkey pkg, which is required for validating the update metadata.
-        tmpResult = RootKeyWorkflow_UpdateRootKeys(workflowId, rootKeyPkgUrl);
+        tmpResult = RootKeyWorkflow_UpdateRootKeys(workflowId, rootKeyPkgUrl, NULL /* rootKeyStoreDirPath */, NULL /* rootKeyStorePkgFilePath */, NULL /* downloaderInfo */);
+
         if (IsAducResultCodeFailure(tmpResult.ResultCode))
         {
             Log_Error("Update Rootkey failed, 0x%08x. Deployment cannot proceed.", tmpResult.ExtendedResultCode);
