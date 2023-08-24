@@ -1,0 +1,9 @@
+<map id="src/extensions/shared_lib/inc/aduc/shared_lib.hpp" name="src/extensions/shared_lib/inc/aduc/shared_lib.hpp">
+<area shape="rect" id="node1" title="header for aduc::shared_lib class." alt="" coords="481,5,645,61"/>
+<area shape="rect" id="node2" href="$download__handler__plugin_8hpp.html" title="header for DownloadHandlerPlugin class that abstracts using a download handler extension shared libra..." alt="" coords="245,109,453,180"/>
+<area shape="rect" id="node6" href="$plugin__call__helper_8hpp.html" title="header for helper functions when calling plugin export functions." alt="" coords="481,117,645,173"/>
+<area shape="rect" id="node7" href="$shared__lib_8cpp.html" title="Implementation for utility class that wraps loading a dynamic shared library and allows ensuring/gett..." alt="" coords="669,124,835,165"/>
+<area shape="rect" id="node3" href="$download__handler__factory_8cpp.html" title="Implementation of the DownloadHandlerFactory." alt="" coords="5,228,227,299"/>
+<area shape="rect" id="node4" href="$download__handler__plugin_8cpp.html" title="Implements the download handler plugin." alt="" coords="459,228,674,299"/>
+<area shape="rect" id="node5" href="$extension__manager__helper_8cpp.html" title="Implementation of ExtensionManager helpers." alt="" coords="251,235,435,291"/>
+</map>

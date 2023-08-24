@@ -1,0 +1,6 @@
+<map id="src/extensions/step_handlers/apt_handler/inc/aduc/apt_parser.hpp" name="src/extensions/step_handlers/apt_handler/inc/aduc/apt_parser.hpp">
+<area shape="rect" id="node1" title="Defines types and methods required to parse APT file (JSON format)." alt="" coords="121,5,301,61"/>
+<area shape="rect" id="node2" href="$apt__handler_8hpp.html" title="Defines types and methods for APT handler plug&#45;in for APT (Advanced Package Tool)" alt="" coords="5,109,193,165"/>
+<area shape="rect" id="node4" href="$apt__parser_8cpp.html" title="Implements a parser for APT file." alt="" coords="241,109,408,165"/>
+<area shape="rect" id="node3" href="$apt__handler_8cpp.html" title="Implementation of APT handler plug&#45;in for APT (Advanced Package Tool)" alt="" coords="16,213,183,269"/>
+</map>

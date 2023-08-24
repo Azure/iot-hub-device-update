@@ -1,0 +1,39 @@
+<map id="src/extensions/download_handlers/plugin_examples/microsoft_delta_download_handler" name="src/extensions/download_handlers/plugin_examples/microsoft_delta_download_handler">
+<area shape="rect" id="node2" href="dir_e9e4c1d30cea4d13b7c5178c1375e37d.html" title="handler" alt="" coords="277,63,349,111"/>
+<area shape="rect" id="node4" href="dir_6bc6ad22483805bbbda55258ad2a62ea.html" title="inc" alt="" coords="212,159,284,207"/>
+<area shape="rect" id="edge1-headlabel" href="dir_000105_000153.html" title="2" alt="" coords="277,141,286,156"/>
+<area shape="rect" id="node5" href="dir_2fa9b52a3673ed0f8fcfc3f4f3ae93e3.html" title="adu_types" alt="" coords="94,255,183,303"/>
+<area shape="rect" id="edge2-headlabel" href="dir_000105_000007.html" title="7" alt="" coords="154,233,164,247"/>
+<area shape="rect" id="node6" href="dir_76edb0a872d73d4312979d52eefe6155.html" title="extension_manager" alt="" coords="221,447,371,495"/>
+<area shape="rect" id="edge3-headlabel" href="dir_000105_000120.html" title="1" alt="" coords="306,422,315,437"/>
+<area shape="rect" id="node7" href="dir_b3320b59a4aa4a7431bc8488b87009bf.html" title="logging" alt="" coords="84,543,156,591"/>
+<area shape="rect" id="edge4-headlabel" href="dir_000105_000159.html" title="3" alt="" coords="170,560,180,574"/>
+<area shape="rect" id="node8" href="dir_8d7f4a599028c5844c1d7e3964964518.html" title="shared_lib" alt="" coords="333,543,422,591"/>
+<area shape="rect" id="edge5-headlabel" href="dir_000105_000127.html" title="1" alt="" coords="435,533,445,547"/>
+<area shape="rect" id="node9" href="dir_313caf1132e152dd9b58bea13a4052ca.html" title="utils" alt="" coords="136,351,208,399"/>
+<area shape="rect" id="edge6-headlabel" href="dir_000105_000004.html" title="8" alt="" coords="212,337,221,351"/>
+<area shape="rect" id="node3" href="dir_474aa6ac2691ff6f19a804b2c1d01fbe.html" title="source_update_cache" alt="" coords="91,63,253,111"/>
+<area shape="rect" id="edge17-headlabel" href="dir_000116_000153.html" title="3" alt="" coords="220,132,229,146"/>
+<area shape="rect" id="edge18-headlabel" href="dir_000116_000007.html" title="4" alt="" coords="148,230,157,245"/>
+<area shape="rect" id="edge19-headlabel" href="dir_000116_000159.html" title="1" alt="" coords="83,516,92,531"/>
+<area shape="rect" id="edge20-headlabel" href="dir_000116_000004.html" title="10" alt="" coords="116,331,133,346"/>
+<area shape="rect" id="edge7-headlabel" href="dir_000153_000007.html" title="1" alt="" coords="172,241,181,256"/>
+<area shape="rect" id="edge8-headlabel" href="dir_000153_000004.html" title="2" alt="" coords="184,328,193,343"/>
+<area shape="rect" id="edge9-headlabel" href="dir_000007_000153.html" title="2" alt="" coords="205,206,214,220"/>
+<area shape="rect" id="edge10-headlabel" href="dir_000007_000159.html" title="2" alt="" coords="122,516,132,531"/>
+<area shape="rect" id="edge11-headlabel" href="dir_000007_000004.html" title="4" alt="" coords="152,323,161,338"/>
+<area shape="rect" id="edge12-headlabel" href="dir_000120_000153.html" title="5" alt="" coords="242,219,251,233"/>
+<area shape="rect" id="edge13-headlabel" href="dir_000120_000007.html" title="7" alt="" coords="173,313,182,328"/>
+<area shape="rect" id="edge14-headlabel" href="dir_000120_000159.html" title="2" alt="" coords="171,538,181,553"/>
+<area shape="rect" id="edge15-headlabel" href="dir_000120_000127.html" title="1" alt="" coords="347,516,357,531"/>
+<area shape="rect" id="edge16-headlabel" href="dir_000120_000004.html" title="19" alt="" coords="209,407,227,422"/>
+<area shape="rect" id="edge21-headlabel" href="dir_000159_000004.html" title="1" alt="" coords="155,408,165,422"/>
+<area shape="rect" id="edge22-headlabel" href="dir_000127_000153.html" title="1" alt="" coords="263,219,273,234"/>
+<area shape="rect" id="edge23-headlabel" href="dir_000127_000004.html" title="1" alt="" coords="162,411,172,425"/>
+<area shape="rect" id="edge24-headlabel" href="dir_000004_000153.html" title="9" alt="" coords="227,214,236,229"/>
+<area shape="rect" id="edge25-headlabel" href="dir_000004_000007.html" title="17" alt="" coords="145,316,163,330"/>
+<area shape="rect" id="edge26-headlabel" href="dir_000004_000120.html" title="1" alt="" coords="243,422,253,436"/>
+<area shape="rect" id="edge27-headlabel" href="dir_000004_000159.html" title="13" alt="" coords="123,519,141,534"/>
+<area shape="rect" id="clust2" href="dir_501536a4684818e7955e733f956e333e.html" alt="" coords="80,52,633,121"/>
+<area shape="rect" id="clust1" href="dir_e4455ccd2e5d3a3321e45fa96ec0443d.html" title="plugin_examples" alt="" coords="69,16,644,132"/>
+</map>

@@ -1,0 +1,6 @@
+<map id="src/inc/aduc/device_info_exports.h" name="src/inc/aduc/device_info_exports.h">
+<area shape="rect" id="node1" title="Describes methods to be exported from platform&#45;specific ADUC agent code for the device information in..." alt="" coords="199,5,346,47"/>
+<area shape="rect" id="node2" href="$device__info__interface_8c.html" title="Methods to communicate with &quot;dtmi:azure:DeviceManagement:DeviceInformation;1&quot; interface." alt="" coords="5,102,167,158"/>
+<area shape="rect" id="node3" href="$linux__device__info__exports_8cpp.html" title="DeviceInfo implementation for Linux platform." alt="" coords="191,95,354,165"/>
+<area shape="rect" id="node4" href="$device__info__exports_8cpp.html" title="DeviceInfo implementation for Windows platform." alt="" coords="379,102,585,158"/>
+</map>

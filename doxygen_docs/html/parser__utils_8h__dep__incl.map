@@ -1,0 +1,18 @@
+<map id="src/utils/parser_utils/inc/aduc/parser_utils.h" name="src/utils/parser_utils/inc/aduc/parser_utils.h">
+<area shape="rect" id="node1" title="Utilities for the Device Update Agent extensibility." alt="" coords="1387,5,1559,47"/>
+<area shape="rect" id="node2" href="$agent__workflow_8c.html" title="Handles workflow requests coming in from the hub." alt="" coords="5,117,164,158"/>
+<area shape="rect" id="node3" href="$source__update__cache__utils_8c.html" title="utils for source_update_cache" alt="" coords="189,95,423,180"/>
+<area shape="rect" id="node4" href="$extension__manager_8cpp.html" title="Implementation of ExtensionManager." alt="" coords="447,109,631,165"/>
+<area shape="rect" id="node5" href="$apt__handler_8cpp.html" title="Implementation of APT handler plug&#45;in for APT (Advanced Package Tool)" alt="" coords="656,109,823,165"/>
+<area shape="rect" id="node6" href="$script__handler_8cpp.html" title="Implementation of ContentHandler API for &#39;microsoft/script:1&#39; update type." alt="" coords="847,109,1029,165"/>
+<area shape="rect" id="node7" href="$simulator__handler_8cpp.html" title="Implementation of ContentHandler API for update content simulator." alt="" coords="1053,102,1220,173"/>
+<area shape="rect" id="node8" href="$swupdate__handler_8cpp.html" title="Implementation of ContentHandler API for swupdate." alt="" coords="1245,109,1453,165"/>
+<area shape="rect" id="node9" href="$swupdate__handler__v2_8cpp.html" title="Implementation of ContentHandler API for swupdate wrapper script." alt="" coords="1477,109,1719,165"/>
+<area shape="rect" id="node10" href="$wim__handler__1_8cpp.html" title="Implements WimHandler1." alt="" coords="1743,109,1917,165"/>
+<area shape="rect" id="node11" href="$steps__handler_8cpp.html" title="Implementation of ContentHandler API for the MSOE (Multi Steps Ordered Execution) Steps." alt="" coords="1941,109,2164,165"/>
+<area shape="rect" id="node12" href="$auto__file__entity_8hpp_source.html" title=" " alt="" coords="2187,117,2398,158"/>
+<area shape="rect" id="node14" href="$extension__utils_8c.html" title="Implements utilities for working with Device Update extension." alt="" coords="2421,109,2569,165"/>
+<area shape="rect" id="node15" href="$parser__utils_8c.html" title="Implements utilities for parsing the common data types." alt="" coords="2593,117,2747,158"/>
+<area shape="rect" id="node16" href="$workflow__utils_8c.html" title="Utility functions for workflow data." alt="" coords="2771,109,2913,165"/>
+<area shape="rect" id="node13" href="$download__handler__factory_8cpp.html" title="Implementation of the DownloadHandlerFactory." alt="" coords="2182,228,2403,299"/>
+</map>

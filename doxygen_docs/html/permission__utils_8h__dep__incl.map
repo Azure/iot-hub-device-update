@@ -1,0 +1,8 @@
+<map id="src/utils/permission_utils/inc/aduc/permission_utils.h" name="src/utils/permission_utils/inc/aduc/permission_utils.h">
+<area shape="rect" id="node1" title="Utilities for working with user, group, and file permissions." alt="" coords="384,5,575,61"/>
+<area shape="rect" id="node2" href="$command__helper_8c.html" title="A helper library for inter&#45;agent commands support." alt="" coords="5,131,204,173"/>
+<area shape="rect" id="node3" href="$health__management_8c.html" title="Implements functions that determine whether ADU Agent can function properly." alt="" coords="228,131,379,173"/>
+<area shape="rect" id="node4" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="403,139,556,165"/>
+<area shape="rect" id="node5" href="$source__update__cache_8c.html" title="The source update cache for delta download handler update payloads." alt="" coords="580,109,803,195"/>
+<area shape="rect" id="node6" href="$permission__utils_8c.html" title="Implements utilities for working with user, group, and file permissions." alt="" coords="827,124,983,180"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="src/extensions/download_handlers/plugin_examples/microsoft_delta_download_handler/handler/lib/inc/aduc/microsoft_delta_download_handler.h" name="src/extensions/download_handlers/plugin_examples/microsoft_delta_download_handler/handler/lib/inc/aduc/microsoft_delta_download_handler.h">
+<area shape="rect" id="node1" title="Function prototypes for the delta download handler library functions used by the sample libmicrosoft_..." alt="" coords="127,5,391,91"/>
+<area shape="rect" id="node2" href="$microsoft__delta__download__handler_8c.html" title="Implementation for the delta download handler library functions used by the sample libmicrosoft_delta..." alt="" coords="5,146,244,231"/>
+<area shape="rect" id="node3" href="$microsoft__delta__download__handler__plugin_8EXPORTS_8c.html" title="An example implementation of a DownloadHandler plugin module that produces full target updates using ..." alt="" coords="269,139,522,239"/>
+</map>

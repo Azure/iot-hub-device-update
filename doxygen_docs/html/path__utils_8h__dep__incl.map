@@ -1,0 +1,7 @@
+<map id="src/utils/path_utils/inc/aduc/path_utils.h" name="src/utils/path_utils/inc/aduc/path_utils.h">
+<area shape="rect" id="node1" title="Utilities for working with paths." alt="" coords="371,5,531,47"/>
+<area shape="rect" id="node2" href="$source__update__cache__utils_8c.html" title="utils for source_update_cache" alt="" coords="5,95,240,180"/>
+<area shape="rect" id="node3" href="$extension__manager_8cpp.html" title="Implementation of ExtensionManager." alt="" coords="264,109,448,165"/>
+<area shape="rect" id="node4" href="$extension__utils_8c.html" title="Implements utilities for working with Device Update extension." alt="" coords="473,109,621,165"/>
+<area shape="rect" id="node5" href="$path__utils_8c.html" title="Utilities for working with paths implementation." alt="" coords="645,117,787,158"/>
+</map>

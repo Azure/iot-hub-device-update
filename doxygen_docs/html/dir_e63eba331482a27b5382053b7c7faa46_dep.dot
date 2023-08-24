@@ -1,0 +1,11 @@
+digraph "src/adu-shell/inc" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_f621f8ac6cda939256aab4bb2e64c1c1 {
+    graph [ bgcolor="#ddddee", pencolor="black", label="adu-shell" fontname="Helvetica", fontsize="10", URL="dir_f621f8ac6cda939256aab4bb2e64c1c1.html"]
+  dir_e63eba331482a27b5382053b7c7faa46 [shape=box, label="inc", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_e63eba331482a27b5382053b7c7faa46.html"];
+  }
+  dir_b3320b59a4aa4a7431bc8488b87009bf [shape=box label="logging" fillcolor="white" style="filled" color="red" URL="dir_b3320b59a4aa4a7431bc8488b87009bf.html"];
+  dir_e63eba331482a27b5382053b7c7faa46->dir_b3320b59a4aa4a7431bc8488b87009bf [headlabel="1", labeldistance=1.5 headhref="dir_000002_000143.html"];
+}

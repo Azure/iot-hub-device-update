@@ -1,0 +1,9 @@
+digraph "src/extensions/inc/aduc/component_enumerator_extension.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="src/extensions/inc\l/aduc/component_enumerator\l_extension.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="The header for component enumerator extension."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="src/extensions/extension\l_manager/inc/aduc/extension\l_manager.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$extension__manager_8hpp.html",tooltip="Definition of the ExtensionManager."];
+}

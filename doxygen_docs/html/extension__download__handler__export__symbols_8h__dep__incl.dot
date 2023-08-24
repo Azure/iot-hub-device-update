@@ -1,0 +1,9 @@
+digraph "src/extensions/inc/aduc/exports/extension_download_handler_export_symbols.h"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="src/extensions/inc\l/aduc/exports/extension\l_download_handler_export\l_symbols.h",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="The function export symbols for download handler extensions."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="src/extensions/inc\l/aduc/exports/extension\l_export_symbols.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$extension__export__symbols_8h.html",tooltip="The common function export symbols used by specific extension export symbols headers."];
+}

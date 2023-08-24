@@ -1,0 +1,27 @@
+digraph "src/utils/system_utils/inc/aduc/system_utils.h"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="src/utils/system_utils\l/inc/aduc/system_utils.h",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="System level utilities, e.g. directory management, reboot, etc."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="src/adu_workflow/src\l/agent_workflow.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$agent__workflow_8c.html",tooltip="Handles workflow requests coming in from the hub."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="src/agent/src/health\l_management.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$health__management_8c.html",tooltip="Implements functions that determine whether ADU Agent can function properly."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="src/agent/src/main.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$main_8c.html",tooltip="Implements the main code for the Device Update Agent."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="src/diagnostics_component\l/utils/operation_id_utils\l/src/operation_id_utils.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$operation__id__utils_8c.html",tooltip="Implementation file for utilities for operations such as storing the operation id or checking if the ..."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="src/extensions/download\l_handlers/plugin_examples\l/microsoft_delta_download\l_handler/source_update_cache\l/src/source_update_cache.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$source__update__cache_8c.html",tooltip="The source update cache for delta download handler update payloads."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="src/extensions/download\l_handlers/plugin_examples\l/microsoft_delta_download\l_handler/source_update_cache\l/src/source_update_cache_utils.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$source__update__cache__utils_8c.html",tooltip="utils for source_update_cache"];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="src/logging/zlog/src\l/init.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$init_8c.html",tooltip="Implements the logging init and uninit functions."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="src/utils/extension\l_utils/src/extension\l_utils.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$extension__utils_8c.html",tooltip="Implements utilities for working with Device Update extension."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="src/utils/system_utils\l/src/system_utils.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$system__utils_8c.html",tooltip="System level utilities, e.g. directory management, reboot, etc."];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="src/utils/workflow\l_utils/src/workflow\l_utils.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$workflow__utils_8c.html",tooltip="Utility functions for workflow data."];
+}

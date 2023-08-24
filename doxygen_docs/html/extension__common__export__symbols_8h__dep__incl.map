@@ -1,0 +1,10 @@
+<map id="src/extensions/inc/aduc/exports/extension_common_export_symbols.h" name="src/extensions/inc/aduc/exports/extension_common_export_symbols.h">
+<area shape="rect" id="node1" title="The common function export symbols used by specific extension export symbols headers." alt="" coords="375,5,585,61"/>
+<area shape="rect" id="node2" href="$extension__component__enumerator__export__symbols_8h.html" title="The function export symbols for component enumerator extensions." alt="" coords="5,109,240,180"/>
+<area shape="rect" id="node6" href="$extension__content__downloader__export__symbols_8h_source.html" title=" " alt="" coords="264,109,475,180"/>
+<area shape="rect" id="node7" href="$extension__content__handler__export__symbols_8h_source.html" title=" " alt="" coords="499,109,682,180"/>
+<area shape="rect" id="node8" href="$extension__download__handler__export__symbols_8h.html" title="The function export symbols for download handler extensions." alt="" coords="707,109,904,180"/>
+<area shape="rect" id="node3" href="$extension__export__symbols_8h.html" title="The common function export symbols used by specific extension export symbols headers." alt="" coords="391,228,569,284"/>
+<area shape="rect" id="node4" href="$download__handler__plugin_8cpp.html" title="Implements the download handler plugin." alt="" coords="261,332,475,403"/>
+<area shape="rect" id="node5" href="$extension__manager_8cpp.html" title="Implementation of ExtensionManager." alt="" coords="500,339,684,395"/>
+</map>

@@ -27,9 +27,9 @@ EXTERN_C_BEGIN
  * @param updateActionCallbacks UpdateActionCallbacks object.
  * @param argc Count of arguments in @p argv
  * @param argv Command line parameters.
+ * @returns a value of ADUC_Result
  */
-ADUC_Result
-ADUC_MethodCall_Register(ADUC_UpdateActionCallbacks* updateActionCallbacks, unsigned int argc, const char** argv);
+ADUC_Result ADUC_MethodCall_Register(ADUC_UpdateActionCallbacks* updateActionCallbacks, unsigned int argc, const char** argv);
 
 /**
  * @brief Call Unregister method to indicate shutdown.
@@ -41,13 +41,22 @@ void ADUC_MethodCall_Unregister(const ADUC_UpdateActionCallbacks* updateActionCa
 //
 // Reboot system
 //
-
+/**
+ * @brief Method call for rebooting the system
+ *
+ * @returns a value of @p errno
+ */
 int ADUC_MethodCall_RebootSystem();
 
 //
 // Restart the ADU Agent.
 //
 
+/**
+ * @brief Method call for restarting the system
+ *
+ * @returns a value of @p errno
+ */
 int ADUC_MethodCall_RestartAgent();
 
 EXTERN_C_END

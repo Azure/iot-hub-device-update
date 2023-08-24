@@ -1,0 +1,36 @@
+<map id="src/utils/c_utils/inc/aduc/string_c_utils.h" name="src/utils/c_utils/inc/aduc/string_c_utils.h">
+<area shape="rect" id="node1" title="String utilities for C code." alt="" coords="3533,5,3691,47"/>
+<area shape="rect" id="node2" href="$adu__types_8c.html" title="Implements helper functions related to ConnectionInfo." alt="" coords="5,117,168,158"/>
+<area shape="rect" id="node3" href="$agent__workflow_8c.html" title="Handles workflow requests coming in from the hub." alt="" coords="193,117,351,158"/>
+<area shape="rect" id="node4" href="$adu__core__interface_8c.html" title="Methods to communicate with &quot;urn:azureiot:AzureDeviceUpdateCore:1&quot; interface." alt="" coords="376,109,549,165"/>
+<area shape="rect" id="node5" href="$device__info__interface_8c.html" title="Methods to communicate with &quot;dtmi:azure:DeviceManagement:DeviceInformation;1&quot; interface." alt="" coords="574,109,735,165"/>
+<area shape="rect" id="node6" href="$health__management_8c.html" title="Implements functions that determine whether ADU Agent can function properly." alt="" coords="759,117,910,158"/>
+<area shape="rect" id="node7" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="934,124,1087,151"/>
+<area shape="rect" id="node8" href="$agent__orchestration_8c.html" title="Contains business logic implementation for agent&#45;driven workflow orchestration processing." alt="" coords="1111,117,1302,158"/>
+<area shape="rect" id="node9" href="$iothub__communication__manager_8c.html" title="Implements the IoT Hub communication manager utility." alt="" coords="1326,109,1599,165"/>
+<area shape="rect" id="node10" href="$diagnostics__interface_8c.html" title="Methods to communicate with &quot;dtmi:azure:iot:deviceUpdateDiagnosticModel;1&quot; interface." alt="" coords="1623,109,1822,165"/>
+<area shape="rect" id="node11" href="$diagnostics__workflow_8c.html" title="Implementation for functions handling the Diagnostic Log Upload workflow." alt="" coords="1846,109,2045,165"/>
+<area shape="rect" id="node12" href="$microsoft__delta__download__handler_8c.html" title="Implementation for the delta download handler library functions used by the sample libmicrosoft_delta..." alt="" coords="2069,95,2307,180"/>
+<area shape="rect" id="node13" href="$microsoft__delta__download__handler__utils_8c.html" title="The Microsoft delta download handler helper function implementations." alt="" coords="2332,95,2631,180"/>
+<area shape="rect" id="node14" href="$source__update__cache__utils_8c.html" title="utils for source_update_cache" alt="" coords="2655,95,2889,180"/>
+<area shape="rect" id="node15" href="$extension__manager_8cpp.html" title="Implementation of ExtensionManager." alt="" coords="2913,109,3097,165"/>
+<area shape="rect" id="node16" href="$extension__manager__helper_8cpp.html" title="Implementation of ExtensionManager helpers." alt="" coords="3121,109,3305,165"/>
+<area shape="rect" id="node17" href="$apt__handler_8cpp.html" title="Implementation of APT handler plug&#45;in for APT (Advanced Package Tool)" alt="" coords="3330,109,3497,165"/>
+<area shape="rect" id="node18" href="$script__handler_8cpp.html" title="Implementation of ContentHandler API for &#39;microsoft/script:1&#39; update type." alt="" coords="3521,109,3703,165"/>
+<area shape="rect" id="node19" href="$swupdate__handler_8cpp.html" title="Implementation of ContentHandler API for swupdate." alt="" coords="3727,109,3935,165"/>
+<area shape="rect" id="node20" href="$swupdate__handler__v2_8cpp.html" title="Implementation of ContentHandler API for swupdate wrapper script." alt="" coords="3959,109,4201,165"/>
+<area shape="rect" id="node21" href="$wim__handler__1_8cpp.html" title="Implements WimHandler1." alt="" coords="4225,109,4399,165"/>
+<area shape="rect" id="node22" href="$steps__handler_8cpp.html" title="Implementation of ContentHandler API for the MSOE (Multi Steps Ordered Execution) Steps." alt="" coords="4423,109,4646,165"/>
+<area shape="rect" id="node23" href="$linux__adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="4669,109,4880,165"/>
+<area shape="rect" id="node24" href="$linux__device__info__exports_8cpp.html" title="DeviceInfo implementation for Linux platform." alt="" coords="4904,102,5067,173"/>
+<area shape="rect" id="node25" href="$string__c__utils_8c.html" title="Implementation of string utilities for C code." alt="" coords="5091,117,5234,158"/>
+<area shape="rect" id="node26" href="$config__utils_8c.html" title="Implements the Configuration Utility for reading, parsing the ADUC configuration file." alt="" coords="5258,117,5409,158"/>
+<area shape="rect" id="node27" href="$eis__coms_8c.html" title="Implements the HTTP communication with EIS over UDS." alt="" coords="5433,117,5564,158"/>
+<area shape="rect" id="node28" href="$eis__utils_8c.html" title="Implements the EIS Utility for connecting to EIS and requesting a provisioned SaS token." alt="" coords="5588,117,5719,158"/>
+<area shape="rect" id="node29" href="$extension__utils_8c.html" title="Implements utilities for working with Device Update extension." alt="" coords="5743,109,5891,165"/>
+<area shape="rect" id="node30" href="$https__proxy__utils_8c.html" title="Functions for initialize and uninitialize HTTP_PROXY_OPTIONS struct." alt="" coords="5915,109,6077,165"/>
+<area shape="rect" id="node31" href="$parson__json__utils_8c.html" title="Provides set of functions for reading json." alt="" coords="6101,109,6264,165"/>
+<area shape="rect" id="node32" href="$path__utils_8c.html" title="Utilities for working with paths implementation." alt="" coords="6288,117,6429,158"/>
+<area shape="rect" id="node33" href="$system__utils_8c.html" title="System level utilities, e.g. directory management, reboot, etc." alt="" coords="6453,117,6613,158"/>
+<area shape="rect" id="node34" href="$workflow__utils_8c.html" title="Utility functions for workflow data." alt="" coords="6638,109,6781,165"/>
+</map>

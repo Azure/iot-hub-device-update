@@ -1,0 +1,7 @@
+<map id="src/adu_types/inc/aduc/adu_types.h" name="src/adu_types/inc/aduc/adu_types.h">
+<area shape="rect" id="node1" title="Defines common types used throughout Device Update agent components." alt="" coords="123,5,293,47"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,95,88,121"/>
+<area shape="rect" id="node3" title=" " alt="" coords="112,95,187,121"/>
+<area shape="rect" id="node4" href="$c__utils_8h.html" title="Helpers and macros for C code." alt="" coords="211,95,322,121"/>
+<area shape="rect" id="node5" href="$logging_8h.html" title="Maps logging macros to the appropriate logging library functions." alt="" coords="347,95,464,121"/>
+</map>

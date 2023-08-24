@@ -1,0 +1,7 @@
+<map id="src/extensions/shared_lib/inc/aduc/plugin_exception.hpp" name="src/extensions/shared_lib/inc/aduc/plugin_exception.hpp">
+<area shape="rect" id="node1" title="header for aduc plug exception thrown for issues with plugin/shared lib." alt="" coords="261,5,425,61"/>
+<area shape="rect" id="node2" href="$download__handler__factory_8cpp.html" title="Implementation of the DownloadHandlerFactory." alt="" coords="5,109,227,180"/>
+<area shape="rect" id="node3" href="$extension__manager_8cpp.html" title="Implementation of ExtensionManager." alt="" coords="251,117,435,173"/>
+<area shape="rect" id="node4" href="$plugin__call__helper_8hpp.html" title="header for helper functions when calling plugin export functions." alt="" coords="459,117,623,173"/>
+<area shape="rect" id="node5" href="$download__handler__plugin_8cpp.html" title="Implements the download handler plugin." alt="" coords="434,228,649,299"/>
+</map>

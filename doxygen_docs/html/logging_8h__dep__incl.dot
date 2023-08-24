@@ -1,0 +1,50 @@
+digraph "src/logging/inc/aduc/logging.h"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="src/logging/inc/aduc\l/logging.h",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Maps logging macros to the appropriate logging library functions."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="src/adu-shell/inc/adushell.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$adushell_8hpp.html",tooltip="Private header for ADU Shell types and helper functions."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="src/adu-shell/inc/aptget\l_tasks.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$aptget__tasks_8h.html",tooltip="Implements functions related to microsoft/apt update type."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="src/adu-shell/inc/common\l_tasks.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$common__tasks_8hpp.html",tooltip="Implements a set of common tasks for most update type."];
+  Node2 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="src/adu-shell/inc/script\l_tasks.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$script__tasks_8hpp.html",tooltip="Implements functions related to microsoft/script update type."];
+  Node2 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="src/adu-shell/inc/swupdate\l_tasks.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$swupdate__tasks_8hpp.html",tooltip="Implements functions related to microsoft/swupdate update type."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="src/adu_types/inc/aduc\l/adu_types.h",height=0.2,width=0.4,color="red", fillcolor="white", style="filled",URL="$adu__types_8h.html",tooltip="Defines common types used throughout Device Update agent components."];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="src/adu_types/inc/aduc\l/types/adu_core.h",height=0.2,width=0.4,color="red", fillcolor="white", style="filled",URL="$adu__core_8h.html",tooltip="Describes types used in ADUC agent code."];
+  Node8 -> Node22 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="src/extensions/download\l_handlers/plugin_examples\l/microsoft_delta_download\l_handler/handler/lib/src/microsoft\l_delta_download_handler.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$microsoft__delta__download__handler_8c.html",tooltip="Implementation for the delta download handler library functions used by the sample libmicrosoft_delta..."];
+  Node8 -> Node23 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node23 [label="src/extensions/download\l_handlers/plugin_examples\l/microsoft_delta_download\l_handler/handler/plugin/src\l/microsoft_delta_download_handler\l_plugin.EXPORTS.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$microsoft__delta__download__handler__plugin_8EXPORTS_8c.html",tooltip="An example implementation of a DownloadHandler plugin module that produces full target updates using ..."];
+  Node7 -> Node44 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node44 [label="src/adu_types/src/adu\l_types.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$adu__types_8c.html",tooltip="Implements helper functions related to ConnectionInfo."];
+  Node7 -> Node45 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node45 [label="src/agent/adu_core\l_interface/inc/aduc\l/health_management.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$health__management_8h.html",tooltip="Implements functions that determine whether ADU Agent can function properly."];
+  Node45 -> Node46 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node46 [label="src/agent/src/health\l_management.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$health__management_8c.html",tooltip="Implements functions that determine whether ADU Agent can function properly."];
+  Node45 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="src/agent/src/main.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$main_8c.html",tooltip="Implements the main code for the Device Update Agent."];
+  Node7 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 -> Node47 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node47 [label="src/communication_abstraction\l/inc/aduc/client_handle_helper.h",height=0.2,width=0.4,color="red", fillcolor="white", style="filled",URL="$client__handle__helper_8h.html",tooltip="Declares an abstract interface for communicating through the ModuleClient or DeviceClient libraries."];
+  Node47 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="src/agent/adu_core\l_interface/src/adu_core\l_interface.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$adu__core__interface_8c.html",tooltip="Methods to communicate with \"urn:azureiot:AzureDeviceUpdateCore:1\" interface."];
+  Node47 -> Node48 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node48 [label="src/agent/device_info\l_interface/src/device\l_info_interface.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$device__info__interface_8c.html",tooltip="Methods to communicate with \"dtmi:azure:DeviceManagement:DeviceInformation;1\" interface."];
+  Node47 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node47 -> Node49 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node49 [label="src/communication_abstraction\l/src/client_handle_helper.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$client__handle__helper_8c.html",tooltip="Implements an abstract interface for communicating through the ModuleClient or DeviceClient libraries..."];
+  Node47 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="src/communication_managers\l/iothub_communication_manager\l/src/iothub_communication_manager.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$iothub__communication__manager_8c.html",tooltip="Implements the IoT Hub communication manager utility."];
+  Node47 -> Node51 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node51 [label="src/diagnostics_component\l/diagnostics_interface\l/src/diagnostics_interface.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$diagnostics__interface_8c.html",tooltip="Methods to communicate with \"dtmi:azure:iot:deviceUpdateDiagnosticModel;1\" interface."];
+  Node7 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 -> Node53 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node53 [label="src/diagnostics_component\l/diagnostics_interface\l/inc/diagnostics_interface.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$diagnostics__interface_8h.html",tooltip="Methods to communicate with \"dtmi:azure:iot:deviceUpdateDiagnosticModel;1\" interface."];
+  Node53 -> Node13 [dir="

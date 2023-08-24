@@ -1,5 +1,5 @@
 /**
- * @file apt_handler.h
+ * @file apt_handler.hpp
  * @brief Defines types and methods for APT handler plug-in for APT (Advanced Package Tool)
  *
  * @copyright Copyright (c) Microsoft Corporation.

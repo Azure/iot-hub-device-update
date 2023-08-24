@@ -1,0 +1,8 @@
+<map id="src/agent/adu_core_interface/inc/aduc/health_management.h" name="src/agent/adu_core_interface/inc/aduc/health_management.h">
+<area shape="rect" id="node1" title="Implements functions that determine whether ADU Agent can function properly." alt="" coords="12,5,185,61"/>
+<area shape="rect" id="node2" href="$adu__types_8h.html" title="Defines common types used throughout Device Update agent components." alt="" coords="84,109,220,136"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,184,88,211"/>
+<area shape="rect" id="node4" title=" " alt="" coords="112,184,187,211"/>
+<area shape="rect" id="node5" href="$c__utils_8h.html" title="Helpers and macros for C code." alt="" coords="211,184,322,211"/>
+<area shape="rect" id="node6" href="$logging_8h.html" title="Maps logging macros to the appropriate logging library functions." alt="" coords="347,184,464,211"/>
+</map>

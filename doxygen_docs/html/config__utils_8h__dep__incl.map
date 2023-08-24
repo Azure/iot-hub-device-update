@@ -1,0 +1,25 @@
+<map id="src/utils/config_utils/inc/aduc/config_utils.h" name="src/utils/config_utils/inc/aduc/config_utils.h">
+<area shape="rect" id="node1" title="Header file for the Configuration Utility for reading, parsing the ADUC configuration file." alt="" coords="1887,5,2057,47"/>
+<area shape="rect" id="node2" href="$adu-shell_2src_2main_8cpp.html" title="Implements the main code for the ADU Shell." alt="" coords="5,117,197,143"/>
+<area shape="rect" id="node3" href="$agent__workflow_8c.html" title="Handles workflow requests coming in from the hub." alt="" coords="222,109,381,151"/>
+<area shape="rect" id="node4" href="$adu__core__interface_8c.html" title="Methods to communicate with &quot;urn:azureiot:AzureDeviceUpdateCore:1&quot; interface." alt="" coords="388,213,561,269"/>
+<area shape="rect" id="node5" href="$startup__msg__helper_8h.html" title="Implements helper functions for building the startup message." alt="" coords="456,102,616,158"/>
+<area shape="rect" id="node6" href="$device__properties_8h.html" title="The header for device properties functions." alt="" coords="640,102,797,158"/>
+<area shape="rect" id="node8" href="$health__management_8c.html" title="Implements functions that determine whether ADU Agent can function properly." alt="" coords="822,109,973,151"/>
+<area shape="rect" id="node9" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="997,117,1150,143"/>
+<area shape="rect" id="node10" href="$iothub__communication__manager_8c.html" title="Implements the IoT Hub communication manager utility." alt="" coords="1174,102,1447,158"/>
+<area shape="rect" id="node11" href="$extension__manager_8cpp.html" title="Implementation of ExtensionManager." alt="" coords="1472,102,1656,158"/>
+<area shape="rect" id="node12" href="$extension__manager__helper_8cpp.html" title="Implementation of ExtensionManager helpers." alt="" coords="1680,102,1864,158"/>
+<area shape="rect" id="node13" href="$apt__handler_8cpp.html" title="Implementation of APT handler plug&#45;in for APT (Advanced Package Tool)" alt="" coords="1889,102,2055,158"/>
+<area shape="rect" id="node14" href="$script__handler_8cpp.html" title="Implementation of ContentHandler API for &#39;microsoft/script:1&#39; update type." alt="" coords="2080,102,2261,158"/>
+<area shape="rect" id="node15" href="$swupdate__handler_8cpp.html" title="Implementation of ContentHandler API for swupdate." alt="" coords="2285,102,2493,158"/>
+<area shape="rect" id="node16" href="$swupdate__handler__v2_8cpp.html" title="Implementation of ContentHandler API for swupdate wrapper script." alt="" coords="2518,102,2759,158"/>
+<area shape="rect" id="node17" href="$linux__adu__core__exports_8cpp.html" title="Implements exported methods for platform&#45;specific ADUC agent code." alt="" coords="2783,102,3014,158"/>
+<area shape="rect" id="node18" href="$linux__device__info__exports_8cpp.html" title="DeviceInfo implementation for Linux platform." alt="" coords="3039,95,3201,165"/>
+<area shape="rect" id="node19" href="$device__info__exports_8cpp.html" title="DeviceInfo implementation for Windows platform." alt="" coords="3226,102,3433,158"/>
+<area shape="rect" id="node20" href="$config__parsefile_8c.html" title="Implements parsing the config file." alt="" coords="3457,109,3620,151"/>
+<area shape="rect" id="node21" href="$config__utils_8c.html" title="Implements the Configuration Utility for reading, parsing the ADUC configuration file." alt="" coords="3645,109,3795,151"/>
+<area shape="rect" id="node22" href="$extension__utils_8c.html" title="Implements utilities for working with Device Update extension." alt="" coords="3819,102,3967,158"/>
+<area shape="rect" id="node23" href="$workflow__utils_8c.html" title="Utility functions for workflow data." alt="" coords="3991,102,4134,158"/>
+<area shape="rect" id="node7" href="$device__properties_8c.html" title="The implementation of device properties functions." alt="" coords="640,213,797,269"/>
+</map>

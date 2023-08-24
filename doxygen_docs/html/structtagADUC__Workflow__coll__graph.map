@@ -1,0 +1,4 @@
+<map id="tagADUC_Workflow" name="tagADUC_Workflow">
+<area shape="rect" id="node1" title="A struct containing data needed for an update workflow." alt="" coords="5,103,153,130"/>
+<area shape="rect" id="node2" href="$structtagADUC__Result.html" title="Defines an ADUC_Result object which is used to indicate status." alt="" coords="15,5,144,32"/>
+</map>

@@ -1,0 +1,52 @@
+<map id="src/inc/aduc/result.h" name="src/inc/aduc/result.h">
+<area shape="rect" id="node1" title="Describes the ADUC result type. Generated from result_codes.json by ErrorCodeDefinitionGenerator...." alt="" coords="4308,5,4460,32"/>
+<area shape="rect" id="node2" href="$adu__core_8h.html" title="Describes types used in ADUC agent code." alt="" coords="2937,95,3108,136"/>
+<area shape="rect" id="node3" href="$workflow_8h.html" title="Define types for Device Update agent workflow." alt="" coords="1776,213,1947,255"/>
+<area shape="rect" id="node5" href="$agent__workflow_8c.html" title="Handles workflow requests coming in from the hub." alt="" coords="695,487,854,529"/>
+<area shape="rect" id="node9" href="$adu__core__interface_8h.html" title="Methods to communicate with &quot;urn:azureiot:AzureDeviceUpdateCore:1&quot; interface." alt="" coords="991,339,1153,395"/>
+<area shape="rect" id="node12" href="$download__handler__plugin_8h_source.html" title=" " alt="" coords="263,332,471,403"/>
+<area shape="rect" id="node13" href="$microsoft__delta__download__handler_8h.html" title="Function prototypes for the delta download handler library functions used by the sample libmicrosoft_..." alt="" coords="2228,325,2492,410"/>
+<area shape="rect" id="node16" href="$source__update__cache_8h_source.html" title=" " alt="" coords="3059,325,3295,410"/>
+<area shape="rect" id="node18" href="$source__update__cache__utils_8h_source.html" title=" " alt="" coords="3319,325,3590,410"/>
+<area shape="rect" id="node19" href="$extension__manager_8h.html" title="Definition of the ExtensionManager (for C)" alt="" coords="2516,339,2729,395"/>
+<area shape="rect" id="node20" href="$extension__manager_8cpp.html" title="Implementation of ExtensionManager." alt="" coords="4353,480,4537,536"/>
+<area shape="rect" id="node21" href="$workflow__utils_8c.html" title="Utility functions for workflow data." alt="" coords="1925,480,2067,536"/>
+<area shape="rect" id="node22" href="$linux__adu__core__impl_8hpp.html" title="Implements the ADU Core interface functionality for linux platform." alt="" coords="403,480,613,536"/>
+<area shape="rect" id="node23" href="$adu__core__impl_8hpp.html" title="Implements the ADU Core interface functionality for Windows platform." alt="" coords="5,480,192,536"/>
+<area shape="rect" id="node27" href="$workflow__internal_8h.html" title="internal workflow structures and function signatures for use in tests." alt="" coords="2025,339,2204,395"/>
+<area shape="rect" id="node28" href="$workflow__utils_8h.html" title="Util functions for ADUC_Workflow data." alt="" coords="1671,339,1849,395"/>
+<area shape="rect" id="node29" href="$extension__manager__helper_8cpp.html" title="Implementation of ExtensionManager helpers." alt="" coords="5749,480,5933,536"/>
+<area shape="rect" id="node30" href="$adu__core__exports_8h.html" title="Describes methods to be exported from platform&#45;specific ADUC agent code." alt="" coords="111,213,273,255"/>
+<area shape="rect" id="node31" href="$curl__content__downloader_8h_source.html" title=" " alt="" coords="5570,87,5793,143"/>
+<area shape="rect" id="node32" href="$deliveryoptimization__content__downloader_8h_source.html" title=" " alt="" coords="5817,80,6068,151"/>
+<area shape="rect" id="node33" href="$download__handler__plugin_8hpp_source.html" title=" " alt="" coords="5255,199,5463,269"/>
+<area shape="rect" id="node34" href="$extension__manager_8hpp.html" title="Definition of the ExtensionManager." alt="" coords="4201,339,4415,395"/>
+<area shape="rect" id="node35" href="$extension__manager__helper_8hpp.html" title="Headers for ExtensionManager helpers." alt="" coords="5663,339,5876,395"/>
+<area shape="rect" id="node36" href="$content__handler_8hpp.html" title="Defines ContentHandler interface." alt="" coords="4834,213,5027,255"/>
+<area shape="rect" id="node37" href="$apt__handler_8hpp_source.html" title=" " alt="" coords="6002,339,6190,395"/>
+<area shape="rect" id="node38" href="$script__handler_8hpp.html" title="Defines ScriptHandlerImpl." alt="" coords="3975,339,4177,395"/>
+<area shape="rect" id="node39" href="$swupdate__handler_8hpp.html" title="Defines SWUpdateHandlerImpl." alt="" coords="4591,339,4822,395"/>
+<area shape="rect" id="node40" href="$swupdate__handler__v2_8hpp_source.html" title=" " alt="" coords="4948,339,5225,395"/>
+<area shape="rect" id="node41" href="$wim__handler__1_8hpp.html" title="Defines WimHandler1." alt="" coords="5249,339,5425,395"/>
+<area shape="rect" id="node42" href="$steps__handler_8hpp.html" title="Defines StepsHandlerImpl." alt="" coords="5449,332,5639,403"/>
+<area shape="rect" id="node43" href="$plugin__call__helper_8hpp.html" title="header for helper functions when calling plugin export functions." alt="" coords="6093,87,6257,143"/>
+<area shape="rect" id="node44" href="$apt__parser_8hpp.html" title="Defines types and methods required to parse APT file (JSON format)." alt="" coords="5538,206,5718,262"/>
+<area shape="rect" id="node45" href="$aducresult_8hpp_source.html" title=" " alt="" coords="6281,87,6455,143"/>
+<area shape="rect" id="node46" href="$wim__step__handler_8hpp_source.html" title=" " alt="" coords="6479,87,6673,143"/>
+<area shape="rect" id="node47" href="$contract__utils_8h.html" title="The header for contract utils." alt="" coords="4298,87,4470,143"/>
+<area shape="rect" id="node48" href="$contract__utils_8c.html" title="The implementation for contract utils." alt="" coords="4215,206,4353,262"/>
+<area shape="rect" id="node49" href="$exceptions_8hpp.html" title="Defines ADU Agent exceptions." alt="" coords="4540,213,4759,255"/>
+<area shape="rect" id="node50" href="$installed__criteria__utils_8hpp.html" title="Contains utilities for managing Installed&#45;Criteria data." alt="" coords="6697,80,6868,151"/>
+<area shape="rect" id="node14" href="$microsoft__delta__download__handler_8c.html" title="Implementation for the delta download handler library functions used by the sample libmicrosoft_delta..." alt="" coords="2750,465,2989,551"/>
+<area shape="rect" id="node15" href="$microsoft__delta__download__handler__utils_8h.html" title="The microsoft delta download handler helper function prototypes." alt="" coords="2753,317,2985,417"/>
+<area shape="rect" id="node17" href="$source__update__cache_8c.html" title="The source update cache for delta download handler update payloads." alt="" coords="3343,465,3566,551"/>
+<area shape="rect" id="node26" href="$script__handler_8cpp.html" title="Implementation of ContentHandler API for &#39;microsoft/script:1&#39; update type." alt="" coords="3847,480,4028,536"/>
+<area shape="rect" id="node4" href="$agent__workflow_8h.html" title="Handles workflow requests coming in from the hub." alt="" coords="791,347,966,388"/>
+<area shape="rect" id="node7" href="$linux__adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="1753,599,1964,655"/>
+<area shape="rect" id="node8" href="$adu__core__export__helpers_8h.html" title="Provides set of helpers for creating objects defined in adu_core_exports.h." alt="" coords="546,332,715,403"/>
+<area shape="rect" id="node10" href="$agent__orchestration_8h.html" title="The header declarations for business logic for agent&#45;driven workflow orchestration processing." alt="" coords="1177,347,1404,388"/>
+<area shape="rect" id="node11" href="$agent__orchestration_8c.html" title="Contains business logic implementation for agent&#45;driven workflow orchestration processing." alt="" coords="1550,487,1741,529"/>
+<area shape="rect" id="node24" href="$extension__utils_8h.html" title="Utilities for the Device Update Agent extensibility." alt="" coords="3666,339,3849,395"/>
+<area shape="rect" id="node25" href="$workflow__data__utils_8h.html" title="Util functions for working with ADUC_WorkflowData objects." alt="" coords="1428,339,1596,395"/>
+<area shape="rect" id="node6" href="$adu__core__interface_8c.html" title="Methods to communicate with &quot;urn:azureiot:AzureDeviceUpdateCore:1&quot; interface." alt="" coords="1095,480,1268,536"/>
+</map>

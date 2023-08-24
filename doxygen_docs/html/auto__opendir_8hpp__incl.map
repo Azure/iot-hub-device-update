@@ -1,0 +1,5 @@
+<map id="src/utils/file_utils/inc/aduc/auto_opendir.hpp" name="src/utils/file_utils/inc/aduc/auto_opendir.hpp">
+<area shape="rect" id="node1" title="header for AutoOpenDir. On scope exit, deletes directory if exists and is a directory." alt="" coords="5,5,201,47"/>
+<area shape="rect" id="node2" title=" " alt="" coords="15,95,74,121"/>
+<area shape="rect" id="node3" href="$dirent_8h_source.html" title=" " alt="" coords="99,95,225,121"/>
+</map>

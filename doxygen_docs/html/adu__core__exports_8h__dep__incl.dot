@@ -1,0 +1,27 @@
+digraph "src/inc/aduc/adu_core_exports.h"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="src/inc/aduc/adu_core\l_exports.h",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Describes methods to be exported from platform-specific ADUC agent code."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="src/agent/adu_core\l_export_helpers/inc\l/aduc/adu_core_export\l_helpers.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$adu__core__export__helpers_8h.html",tooltip="Provides set of helpers for creating objects defined in adu_core_exports.h."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="src/adu_workflow/src\l/agent_workflow.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$agent__workflow_8c.html",tooltip="Handles workflow requests coming in from the hub."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="src/agent/adu_core\l_export_helpers/src\l/adu_core_export_helpers.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$adu__core__export__helpers_8c.html",tooltip="Provides set of helpers for creating objects defined in adu_core_exports.h."];
+  Node2 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="src/agent/adu_core\l_interface/src/adu_core\l_interface.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$adu__core__interface_8c.html",tooltip="Methods to communicate with \"urn:azureiot:AzureDeviceUpdateCore:1\" interface."];
+  Node2 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="src/agent/src/main.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$main_8c.html",tooltip="Implements the main code for the Device Update Agent."];
+  Node2 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="src/communication_managers\l/iothub_communication_manager\l/src/iothub_communication_manager.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$iothub__communication__manager_8c.html",tooltip="Implements the IoT Hub communication manager utility."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="src/extensions/inc\l/aduc/content_downloader\l_extension.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$content__downloader__extension_8hpp.html",tooltip="Defines APIs for Device Update Content Downloader."];
+  Node8 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="src/extensions/extension\l_manager/inc/aduc/extension\l_manager.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$extension__manager_8hpp.html",tooltip="Definition of the ExtensionManager."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="src/platform_layers\l/linux_platform_layer\l/src/linux_adu_core_impl.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$linux__adu__core__impl_8hpp.html",tooltip="Implements the ADU Core interface functionality for linux platform."];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="src/platform_layers\l/windows_platform_layer\l/src/adu_core_impl.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$adu__core__impl_8hpp.html",tooltip="Implements the ADU Core interface functionality for Windows platform."];
+}

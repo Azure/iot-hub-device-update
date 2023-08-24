@@ -1,0 +1,19 @@
+<map id="src/extensions/download_handlers/plugin_examples/microsoft_delta_download_handler/handler/plugin/src/microsoft_delta_download_handler_plugin.EXPORTS.c" name="src/extensions/download_handlers/plugin_examples/microsoft_delta_download_handler/handler/plugin/src/microsoft_delta_download_handler_plugin.EXPORTS.c">
+<area shape="rect" id="node1" title="An example implementation of a DownloadHandler plugin module that produces full target updates using ..." alt="" coords="717,5,970,105"/>
+<area shape="rect" id="node2" href="$microsoft__delta__download__handler_8h.html" title="Function prototypes for the delta download handler library functions used by the sample libmicrosoft_..." alt="" coords="544,153,703,195"/>
+<area shape="rect" id="node12" href="$adu__core_8h.html" title="Describes types used in ADUC agent code." alt="" coords="647,317,815,344"/>
+<area shape="rect" id="node14" href="$logging_8h.html" title="Maps logging macros to the appropriate logging library functions." alt="" coords="902,541,1019,568"/>
+<area shape="rect" id="node17" href="$contract__utils_8h.html" title="The header for contract utils." alt="" coords="63,317,221,344"/>
+<area shape="rect" id="node3" href="$result_8h.html" title="Describes the ADUC result type. Generated from result_codes.json by ErrorCodeDefinitionGenerator...." alt="" coords="177,392,283,419"/>
+<area shape="rect" id="node6" href="$update__content_8h.html" title="Defines types related to Update Content data." alt="" coords="769,392,979,419"/>
+<area shape="rect" id="node10" href="$workflow_8h.html" title="Define types for Device Update agent workflow." alt="" coords="431,243,597,269"/>
+<area shape="rect" id="node4" title=" " alt="" coords="227,541,310,568"/>
+<area shape="rect" id="node5" title=" " alt="" coords="301,467,372,493"/>
+<area shape="rect" id="node7" href="$hash_8h.html" title="Defines types related to hashing functionality." alt="" coords="448,467,588,493"/>
+<area shape="rect" id="node8" title=" " alt="" coords="695,541,770,568"/>
+<area shape="rect" id="node9" href="$c__utils_8h.html" title="Helpers and macros for C code." alt="" coords="463,541,573,568"/>
+<area shape="rect" id="node11" title=" " alt="" coords="552,317,623,344"/>
+<area shape="rect" id="node15" href="$download_8h.html" title="Defines types related to file download functionality." alt="" coords="308,392,480,419"/>
+<area shape="rect" id="node16" title=" " alt="" coords="397,317,476,344"/>
+<area shape="rect" id="node13" href="$adu__types_8h.html" title="Defines common types used throughout Device Update agent components." alt="" coords="613,467,749,493"/>
+</map>

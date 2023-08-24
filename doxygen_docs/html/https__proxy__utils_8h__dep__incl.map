@@ -1,0 +1,6 @@
+<map id="src/utils/https_proxy_utils/inc/aduc/https_proxy_utils.h" name="src/utils/https_proxy_utils/inc/aduc/https_proxy_utils.h">
+<area shape="rect" id="node1" title="inline functions that for initialize and free IOTHUB_PROXY_OPTIONS struct." alt="" coords="242,5,397,61"/>
+<area shape="rect" id="node2" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="5,124,159,151"/>
+<area shape="rect" id="node3" href="$iothub__communication__manager_8c.html" title="Implements the IoT Hub communication manager utility." alt="" coords="183,109,456,165"/>
+<area shape="rect" id="node4" href="$https__proxy__utils_8c.html" title="Functions for initialize and uninitialize HTTP_PROXY_OPTIONS struct." alt="" coords="480,109,641,165"/>
+</map>

@@ -1,0 +1,16 @@
+digraph "src/extensions/step_handlers/apt_handler/inc/aduc" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_a87fa345a492753969a6da553dd48228 {
+    graph [ bgcolor="#ddddee", pencolor="black", label="inc" fontname="Helvetica", fontsize="10", URL="dir_a87fa345a492753969a6da553dd48228.html"]
+  dir_ba325ecd71f2fa8c0dd66446dba9fe5b [shape=box, label="aduc", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_ba325ecd71f2fa8c0dd66446dba9fe5b.html"];
+  }
+  dir_5ec935d27ce007f1101fc862d8e60cc5 [shape=box label="inc" fillcolor="white" style="filled" color="red" URL="dir_5ec935d27ce007f1101fc862d8e60cc5.html"];
+  dir_6bc6ad22483805bbbda55258ad2a62ea [shape=box label="inc" fillcolor="white" style="filled" color="red" URL="dir_6bc6ad22483805bbbda55258ad2a62ea.html"];
+  dir_b3320b59a4aa4a7431bc8488b87009bf [shape=box label="logging" fillcolor="white" style="filled" color="red" URL="dir_b3320b59a4aa4a7431bc8488b87009bf.html"];
+  dir_5ec935d27ce007f1101fc862d8e60cc5->dir_6bc6ad22483805bbbda55258ad2a62ea [headlabel="2", labeldistance=1.5 headhref="dir_000116_000137.html"];
+  dir_ba325ecd71f2fa8c0dd66446dba9fe5b->dir_5ec935d27ce007f1101fc862d8e60cc5 [headlabel="1", labeldistance=1.5 headhref="dir_000123_000116.html"];
+  dir_ba325ecd71f2fa8c0dd66446dba9fe5b->dir_6bc6ad22483805bbbda55258ad2a62ea [headlabel="2", labeldistance=1.5 headhref="dir_000123_000137.html"];
+  dir_ba325ecd71f2fa8c0dd66446dba9fe5b->dir_b3320b59a4aa4a7431bc8488b87009bf [headlabel="1", labeldistance=1.5 headhref="dir_000123_000143.html"];
+}

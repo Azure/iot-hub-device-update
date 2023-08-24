@@ -1,0 +1,46 @@
+<map id="src/communication_managers/iothub_communication_manager/src/iothub_communication_manager.c" name="src/communication_managers/iothub_communication_manager/src/iothub_communication_manager.c">
+<area shape="rect" id="node1" title="Implements the IoT Hub communication manager utility." alt="" coords="1711,5,1985,61"/>
+<area shape="rect" id="node2" href="$iothub__communication__manager_8h.html" title="Implements the IoT Hub communication manager utility." alt="" coords="2026,288,2233,329"/>
+<area shape="rect" id="node4" href="$client__handle__helper_8h.html" title="Declares an abstract interface for communicating through the ModuleClient or DeviceClient libraries." alt="" coords="1976,377,2120,419"/>
+<area shape="rect" id="node6" href="$adu__types_8h_source.html" title=" " alt="" coords="521,474,657,501"/>
+<area shape="rect" id="node7" title=" " alt="" coords="1216,556,1299,583"/>
+<area shape="rect" id="node9" href="$logging_8h.html" title="Maps logging macros to the appropriate logging library functions." alt="" coords="127,556,244,583"/>
+<area shape="rect" id="node11" href="$stdlib_8h_source.html" title=" " alt="" coords="1746,474,1817,501"/>
+<area shape="rect" id="node13" href="$adu__core__export__helpers_8h.html" title="Provides set of helpers for creating objects defined in adu_core_exports.h." alt="" coords="893,109,1059,151"/>
+<area shape="rect" id="node22" title=" " alt="" coords="1173,295,1243,322"/>
+<area shape="rect" id="node24" href="$config__utils_8h.html" title="Header file for the Configuration Utility for reading, parsing the ADUC configuration file." alt="" coords="2603,385,2746,411"/>
+<area shape="rect" id="node27" href="$connection__string__utils_8h.html" title="connection string utilities." alt="" coords="1397,467,1569,508"/>
+<area shape="rect" id="node28" href="$https__proxy__utils_8h.html" title="inline functions that for initialize and free IOTHUB_PROXY_OPTIONS struct." alt="" coords="1911,117,2092,143"/>
+<area shape="rect" id="node29" title=" " alt="" coords="1860,199,2028,240"/>
+<area shape="rect" id="node30" href="$retry__utils_8h.html" title="Utilities for retry timestamp calculation." alt="" coords="3291,474,3426,501"/>
+<area shape="rect" id="node34" href="$string__c__utils_8h.html" title="String utilities for C code." alt="" coords="1580,385,1735,411"/>
+<area shape="rect" id="node35" href="$eis__utils_8h.html" title="Header file for the Edge Identity Service (EIS) Utility." alt="" coords="1163,385,1251,411"/>
+<area shape="rect" id="node37" href="$time_8h_source.html" title=" " alt="" coords="1132,474,1196,501"/>
+<area shape="rect" id="node38" title=" " alt="" coords="2463,117,2537,143"/>
+<area shape="rect" id="node39" title=" " alt="" coords="2561,117,2735,143"/>
+<area shape="rect" id="node40" href="$unistd_8h_source.html" title=" " alt="" coords="2759,117,2889,143"/>
+<area shape="rect" id="node42" title=" " alt="" coords="2937,117,3010,143"/>
+<area shape="rect" id="node43" href="$stdio_8h_source.html" title=" " alt="" coords="3035,117,3101,143"/>
+<area shape="rect" id="node44" title=" " alt="" coords="3149,117,3235,143"/>
+<area shape="rect" id="node3" href="$c__utils_8h.html" title="Helpers and macros for C code." alt="" coords="1602,556,1713,583"/>
+<area shape="rect" id="node5" href="$client__handle_8h.html" title="Declares the ClientHandle type." alt="" coords="2154,474,2310,501"/>
+<area shape="rect" id="node10" title=" " alt="" coords="1967,467,2129,508"/>
+<area shape="rect" id="node12" title=" " alt="" coords="2487,474,2678,501"/>
+<area shape="rect" id="node8" title=" " alt="" coords="392,556,467,583"/>
+<area shape="rect" id="node14" href="$adu__core__exports_8h.html" title="Describes methods to be exported from platform&#45;specific ADUC agent code." alt="" coords="684,206,868,233"/>
+<area shape="rect" id="node19" href="$update__content_8h.html" title="Defines types related to Update Content data." alt="" coords="195,385,405,411"/>
+<area shape="rect" id="node20" href="$hash_8h.html" title="Defines types related to hashing functionality." alt="" coords="306,474,446,501"/>
+<area shape="rect" id="node21" href="$workflow_8h.html" title="Define types for Device Update agent workflow." alt="" coords="893,206,1059,233"/>
+<area shape="rect" id="node15" href="$result_8h.html" title="Describes the ADUC result type. Generated from result_codes.json by ErrorCodeDefinitionGenerator...." alt="" coords="931,385,1037,411"/>
+<area shape="rect" id="node16" title=" " alt="" coords="733,474,803,501"/>
+<area shape="rect" id="node17" href="$adu__core_8h.html" title="Describes types used in ADUC agent code." alt="" coords="561,295,729,322"/>
+<area shape="rect" id="node18" href="$download_8h.html" title="Defines types related to file download functionality." alt="" coords="683,385,855,411"/>
+<area shape="rect" id="node23" title=" " alt="" coords="2702,474,2781,501"/>
+<area shape="rect" id="node25" title=" " alt="" coords="3099,467,3267,508"/>
+<area shape="rect" id="node26" title=" " alt="" coords="2907,467,3075,508"/>
+<area shape="rect" id="node31" href="$sys__time_8h_source.html" title=" " alt="" coords="3214,556,3362,583"/>
+<area shape="rect" id="node33" title=" " alt="" coords="3386,556,3470,583"/>
+<area shape="rect" id="node32" title=" " alt="" coords="3243,631,3333,657"/>
+<area shape="rect" id="node36" href="$eis__err_8h.html" title="Header file defining the errors which can occur within the Edge Identity Service (EIS) Utility." alt="" coords="1031,474,1108,501"/>
+<area shape="rect" id="node41" title=" " alt="" coords="2771,206,2877,233"/>
+</map>

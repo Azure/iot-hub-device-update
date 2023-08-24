@@ -313,6 +313,14 @@ void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext)
     *componentContext = NULL;
 }
 
+/**
+ * @brief Callback for the orchestrator that allows the new patches coming down from the cloud to be organized
+ * @param clientHandle the client handle being used for the connection
+ * @param propertyValue the value of the property being routed
+ * @param propertyVersion the version of the property being routed
+ * @param sourceContext the context of the origination point for the callback
+ * @param context context for re-entering upon completion of the function
+ */
 void OrchestratorUpdateCallback(
     ADUC_ClientHandle clientHandle,
     JSON_Value* propertyValue,

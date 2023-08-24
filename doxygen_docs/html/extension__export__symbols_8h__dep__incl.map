@@ -1,0 +1,5 @@
+<map id="src/extensions/inc/aduc/exports/extension_export_symbols.h" name="src/extensions/inc/aduc/exports/extension_export_symbols.h">
+<area shape="rect" id="node1" title="The common function export symbols used by specific extension export symbols headers." alt="" coords="135,5,314,61"/>
+<area shape="rect" id="node2" href="$download__handler__plugin_8cpp.html" title="Implements the download handler plugin." alt="" coords="5,109,220,180"/>
+<area shape="rect" id="node3" href="$extension__manager_8cpp.html" title="Implementation of ExtensionManager." alt="" coords="245,117,429,173"/>
+</map>

@@ -1,0 +1,10 @@
+<map id="src/utils/system_utils/inc/aduc/system_utils.h" name="src/utils/system_utils/inc/aduc/system_utils.h">
+<area shape="rect" id="node1" title="System level utilities, e.g. directory management, reboot, etc." alt="" coords="285,5,463,47"/>
+<area shape="rect" id="node2" href="$c__utils_8h.html" title="Helpers and macros for C code." alt="" coords="5,102,116,129"/>
+<area shape="rect" id="node3" title=" " alt="" coords="141,95,309,136"/>
+<area shape="rect" id="node4" title=" " alt="" coords="333,102,415,129"/>
+<area shape="rect" id="node5" href="$sys__stat_8h_source.html" title=" " alt="" coords="440,102,583,129"/>
+<area shape="rect" id="node7" href="$unistd_8h_source.html" title=" " alt="" coords="607,102,736,129"/>
+<area shape="rect" id="node6" title=" " alt="" coords="469,184,554,211"/>
+<area shape="rect" id="node8" title=" " alt="" coords="619,184,724,211"/>
+</map>

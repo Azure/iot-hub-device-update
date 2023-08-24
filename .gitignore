@@ -38,6 +38,9 @@ out/
 build/
 Testing/
 
+### Documentation Build Environment ###
+*/doxygen_docs/*
+
 ### VCPKG
 .vcpkg/
 .vcpkg-installed/

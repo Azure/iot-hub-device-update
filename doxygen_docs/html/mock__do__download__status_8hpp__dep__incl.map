@@ -1,0 +1,5 @@
+<map id="src/platform_layers/linux_platform_layer/tests/mock_do_download_status.hpp" name="src/platform_layers/linux_platform_layer/tests/mock_do_download_status.hpp">
+<area shape="rect" id="node1" title="Implements a mock download_status class used in unit tests." alt="" coords="19,5,210,76"/>
+<area shape="rect" id="node2" href="$mock__do__download_8hpp.html" title="Implements a mock download class used in unit tests." alt="" coords="5,124,224,180"/>
+<area shape="rect" id="node3" href="$mock__do__download_8cpp.html" title="Mock download service." alt="" coords="5,228,224,284"/>
+</map>

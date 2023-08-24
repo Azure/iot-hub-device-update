@@ -1,0 +1,14 @@
+<map id="src/extensions/inc/aduc/component_enumerator_extension.hpp" name="src/extensions/inc/aduc/component_enumerator_extension.hpp">
+<area shape="rect" id="node1" title="The header for component enumerator extension." alt="" coords="783,5,1001,61"/>
+<area shape="rect" id="node2" href="$contoso__component__enumerator_8cpp.html" title="Implementation of an example component enumerator." alt="" coords="543,109,783,180"/>
+<area shape="rect" id="node3" href="$extension__manager_8hpp.html" title="Definition of the ExtensionManager." alt="" coords="857,117,1071,173"/>
+<area shape="rect" id="node4" href="$extension__manager_8cpp.html" title="Implementation of ExtensionManager." alt="" coords="5,228,189,284"/>
+<area shape="rect" id="node10" href="$steps__handler_8cpp.html" title="Implementation of ContentHandler API for the MSOE (Multi Steps Ordered Execution) Steps." alt="" coords="1754,228,1977,284"/>
+<area shape="rect" id="node5" href="$apt__handler_8cpp.html" title="Implementation of APT handler plug&#45;in for APT (Advanced Package Tool)" alt="" coords="214,228,381,284"/>
+<area shape="rect" id="node6" href="$script__handler_8cpp.html" title="Implementation of ContentHandler API for &#39;microsoft/script:1&#39; update type." alt="" coords="405,228,587,284"/>
+<area shape="rect" id="node7" href="$swupdate__handler_8cpp.html" title="Implementation of ContentHandler API for swupdate." alt="" coords="611,228,819,284"/>
+<area shape="rect" id="node8" href="$swupdate__handler__v2_8cpp.html" title="Implementation of ContentHandler API for swupdate wrapper script." alt="" coords="843,228,1085,284"/>
+<area shape="rect" id="node9" href="$wim__handler__1_8cpp.html" title="Implements WimHandler1." alt="" coords="1109,228,1283,284"/>
+<area shape="rect" id="node11" href="$linux__adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="1308,228,1519,284"/>
+<area shape="rect" id="node12" href="$adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="1543,228,1729,284"/>
+</map>

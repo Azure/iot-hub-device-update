@@ -1,0 +1,5 @@
+<map id="TestFile" name="TestFile">
+<area shape="rect" id="node1" title=" " alt="" coords="64,5,135,32"/>
+<area shape="rect" id="node2" href="$classLargeFile.html" title=" " alt="" coords="5,80,87,107"/>
+<area shape="rect" id="node3" href="$classSmallFile.html" title=" " alt="" coords="111,80,194,107"/>
+</map>

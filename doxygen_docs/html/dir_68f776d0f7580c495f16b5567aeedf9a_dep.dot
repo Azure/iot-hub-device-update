@@ -1,0 +1,15 @@
+digraph "src/extensions/download_handlers/plugin_examples/microsoft_delta_download_handler/handler/lib/inc/aduc" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_0be3997be201b2c0e08bde7e23835abc {
+    graph [ bgcolor="#ddddee", pencolor="black", label="inc" fontname="Helvetica", fontsize="10", URL="dir_0be3997be201b2c0e08bde7e23835abc.html"]
+  dir_68f776d0f7580c495f16b5567aeedf9a [shape=box, label="aduc", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_68f776d0f7580c495f16b5567aeedf9a.html"];
+  }
+  dir_6bc6ad22483805bbbda55258ad2a62ea [shape=box label="inc" fillcolor="white" style="filled" color="red" URL="dir_6bc6ad22483805bbbda55258ad2a62ea.html"];
+  dir_2fa9b52a3673ed0f8fcfc3f4f3ae93e3 [shape=box label="adu_types" fillcolor="white" style="filled" color="red" URL="dir_2fa9b52a3673ed0f8fcfc3f4f3ae93e3.html"];
+  dir_6bc6ad22483805bbbda55258ad2a62ea->dir_2fa9b52a3673ed0f8fcfc3f4f3ae93e3 [headlabel="1", labeldistance=1.5 headhref="dir_000137_000003.html"];
+  dir_2fa9b52a3673ed0f8fcfc3f4f3ae93e3->dir_6bc6ad22483805bbbda55258ad2a62ea [headlabel="2", labeldistance=1.5 headhref="dir_000003_000137.html"];
+  dir_68f776d0f7580c495f16b5567aeedf9a->dir_6bc6ad22483805bbbda55258ad2a62ea [headlabel="1", labeldistance=1.5 headhref="dir_000101_000137.html"];
+  dir_68f776d0f7580c495f16b5567aeedf9a->dir_2fa9b52a3673ed0f8fcfc3f4f3ae93e3 [headlabel="2", labeldistance=1.5 headhref="dir_000101_000003.html"];
+}

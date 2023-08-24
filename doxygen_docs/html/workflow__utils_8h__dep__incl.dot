@@ -1,0 +1,29 @@
+digraph "src/utils/workflow_utils/inc/aduc/workflow_utils.h"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="src/utils/workflow\l_utils/inc/aduc/workflow\l_utils.h",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Util functions for ADUC_Workflow data."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="src/adu_workflow/src\l/agent_workflow.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$agent__workflow_8c.html",tooltip="Handles workflow requests coming in from the hub."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="src/agent/adu_core\l_interface/src/adu_core\l_interface.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$adu__core__interface_8c.html",tooltip="Methods to communicate with \"urn:azureiot:AzureDeviceUpdateCore:1\" interface."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="src/agent_orchestration\l/src/agent_orchestration.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$agent__orchestration_8c.html",tooltip="Contains business logic implementation for agent-driven workflow orchestration processing."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="src/extensions/download\l_handlers/plugin_examples\l/microsoft_delta_download\l_handler/handler/lib/src/microsoft\l_delta_download_handler.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$microsoft__delta__download__handler_8c.html",tooltip="Implementation for the delta download handler library functions used by the sample libmicrosoft_delta..."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="src/extensions/download\l_handlers/plugin_examples\l/microsoft_delta_download\l_handler/handler/utils/src\l/microsoft_delta_download_handler_utils.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$microsoft__delta__download__handler__utils_8c.html",tooltip="The Microsoft delta download handler helper function implementations."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="src/extensions/download\l_handlers/plugin_examples\l/microsoft_delta_download\l_handler/source_update_cache\l/src/source_update_cache_utils.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$source__update__cache__utils_8c.html",tooltip="utils for source_update_cache"];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="src/extensions/step\l_handlers/wim_handler\l/inc/workflow_ptr.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$workflow__ptr_8hpp_source.html",tooltip=" "];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="src/platform_layers\l/linux_platform_layer\l/src/linux_adu_core_impl.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$linux__adu__core__impl_8hpp.html",tooltip="Implements the ADU Core interface functionality for linux platform."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="src/platform_layers\l/windows_platform_layer\l/src/adu_core_impl.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$adu__core__impl_8hpp.html",tooltip="Implements the ADU Core interface functionality for Windows platform."];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="src/utils/test_utils\l/inc/aduc/auto_workflowhandle.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$auto__workflowhandle_8hpp.html",tooltip="header for AutoWorkflowHandle. On scope exit, uninitializes the ADUC_WorkflowHandle."];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="src/utils/workflow\l_utils/src/workflow\l_utils.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$workflow__utils_8c.html",tooltip="Utility functions for workflow data."];
+}

@@ -1,0 +1,5 @@
+<map id="src/extensions/update_manifest_handlers/steps_handler/inc/aduc/steps_handler.hpp" name="src/extensions/update_manifest_handlers/steps_handler/inc/aduc/steps_handler.hpp">
+<area shape="rect" id="node1" title="Defines StepsHandlerImpl." alt="" coords="151,5,340,76"/>
+<area shape="rect" id="node2" href="$update__manifest__handlers_2steps__handler_2src_2handler__create_8cpp.html" title="Create step handler extension." alt="" coords="5,124,235,180"/>
+<area shape="rect" id="node3" href="$steps__handler_8cpp.html" title="Implementation of ContentHandler API for the MSOE (Multi Steps Ordered Execution) Steps." alt="" coords="259,124,482,180"/>
+</map>

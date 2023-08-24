@@ -1,5 +1,5 @@
 /**
- * @file operation_id_utils.cpp
+ * @file operation_id_utils.c
  * @brief Implementation file for utilities for operations such as storing the operation id or checking if the operation has already been completed
  * @details This utility is required to prevent the processing of duplicate requests coming down from the service after a restart or a connection refresh
  * @copyright Copyright (c) Microsoft Corporation.

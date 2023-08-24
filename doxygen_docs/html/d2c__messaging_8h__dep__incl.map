@@ -1,0 +1,8 @@
+<map id="src/utils/d2c_messaging/inc/aduc/d2c_messaging.h" name="src/utils/d2c_messaging/inc/aduc/d2c_messaging.h">
+<area shape="rect" id="node1" title="Utilities for the Device Update Agent Device&#45;to&#45;Cloud messaging." alt="" coords="367,5,564,47"/>
+<area shape="rect" id="node2" href="$adu__core__interface_8c.html" title="Methods to communicate with &quot;urn:azureiot:AzureDeviceUpdateCore:1&quot; interface." alt="" coords="5,95,179,151"/>
+<area shape="rect" id="node3" href="$device__info__interface_8c.html" title="Methods to communicate with &quot;dtmi:azure:DeviceManagement:DeviceInformation;1&quot; interface." alt="" coords="203,95,365,151"/>
+<area shape="rect" id="node4" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="389,109,542,136"/>
+<area shape="rect" id="node5" href="$diagnostics__interface_8c.html" title="Methods to communicate with &quot;dtmi:azure:iot:deviceUpdateDiagnosticModel;1&quot; interface." alt="" coords="566,95,765,151"/>
+<area shape="rect" id="node6" href="$d2c__messaging_8c.html" title="Implements utilities for the Device Update Agent Device&#45;to&#45;Cloud messaging." alt="" coords="789,102,968,143"/>
+</map>

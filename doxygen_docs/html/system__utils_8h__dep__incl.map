@@ -1,0 +1,21 @@
+<map id="src/utils/system_utils/inc/aduc/system_utils.h" name="src/utils/system_utils/inc/aduc/system_utils.h">
+<area shape="rect" id="node1" title="System level utilities, e.g. directory management, reboot, etc." alt="" coords="1865,5,2043,47"/>
+<area shape="rect" id="node2" href="$agent__workflow_8c.html" title="Handles workflow requests coming in from the hub." alt="" coords="5,117,164,158"/>
+<area shape="rect" id="node3" href="$health__management_8c.html" title="Implements functions that determine whether ADU Agent can function properly." alt="" coords="188,117,339,158"/>
+<area shape="rect" id="node4" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="363,124,516,151"/>
+<area shape="rect" id="node5" href="$operation__id__utils_8c.html" title="Implementation file for utilities for operations such as storing the operation id or checking if the ..." alt="" coords="540,109,739,165"/>
+<area shape="rect" id="node6" href="$source__update__cache_8c.html" title="The source update cache for delta download handler update payloads." alt="" coords="763,95,985,180"/>
+<area shape="rect" id="node7" href="$source__update__cache__utils_8c.html" title="utils for source_update_cache" alt="" coords="1009,95,1243,180"/>
+<area shape="rect" id="node8" href="$script__handler_8cpp.html" title="Implementation of ContentHandler API for &#39;microsoft/script:1&#39; update type." alt="" coords="1267,109,1449,165"/>
+<area shape="rect" id="node9" href="$swupdate__handler_8cpp.html" title="Implementation of ContentHandler API for swupdate." alt="" coords="1473,109,1681,165"/>
+<area shape="rect" id="node10" href="$swupdate__handler__v2_8cpp.html" title="Implementation of ContentHandler API for swupdate wrapper script." alt="" coords="1705,109,1947,165"/>
+<area shape="rect" id="node11" href="$steps__handler_8cpp.html" title="Implementation of ContentHandler API for the MSOE (Multi Steps Ordered Execution) Steps." alt="" coords="1971,109,2193,165"/>
+<area shape="rect" id="node12" href="$init_8c.html" title="Implements the logging init and uninit functions." alt="" coords="2218,117,2365,158"/>
+<area shape="rect" id="node13" href="$linux__adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="2389,109,2599,165"/>
+<area shape="rect" id="node14" href="$linux__device__info__exports_8cpp.html" title="DeviceInfo implementation for Linux platform." alt="" coords="2623,102,2786,173"/>
+<area shape="rect" id="node15" href="$adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="2810,109,2997,165"/>
+<area shape="rect" id="node16" href="$extension__utils_8c.html" title="Implements utilities for working with Device Update extension." alt="" coords="3021,109,3169,165"/>
+<area shape="rect" id="node17" href="$file__utils_8cpp.html" title="The implementation of file utilities." alt="" coords="3193,117,3325,158"/>
+<area shape="rect" id="node18" href="$system__utils_8c.html" title="System level utilities, e.g. directory management, reboot, etc." alt="" coords="3350,117,3510,158"/>
+<area shape="rect" id="node19" href="$workflow__utils_8c.html" title="Utility functions for workflow data." alt="" coords="3535,109,3677,165"/>
+</map>

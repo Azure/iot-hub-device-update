@@ -41,8 +41,8 @@ ADUC_Result MicrosoftDeltaDownloadHandler_ProcessUpdate(
  * @brief Called when the update workflow successfully completes.
  * In the case of Delta download handler plugin, it moves all the payload files from download sandbox to the cache.
  *
- * @param[in] workflowHandle The workflow handle.
- * @param[in] updateCacheBasePath The update cache base path. Use NULL for default.
+ * @param workflowHandle The workflow handle.
+ * @param updateCacheBasePath The update cache base path. Use NULL for default.
  * @return ADUC_Result The result.
  */
 ADUC_Result MicrosoftDeltaDownloadHandler_OnUpdateWorkflowCompleted(

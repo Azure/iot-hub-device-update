@@ -1,0 +1,11 @@
+digraph "src/extensions/shared_lib/inc/aduc/shared_lib.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="src/extensions/shared\l_lib/inc/aduc/shared\l_lib.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="header for aduc::shared_lib class."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="src/extensions/download\l_handlers/download_handler\l_plugin/inc/aduc/download\l_handler_plugin.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$download__handler__plugin_8hpp.html",tooltip="header for DownloadHandlerPlugin class that abstracts using a download handler extension shared libra..."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="src/extensions/shared\l_lib/inc/aduc/plugin\l_call_helper.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$plugin__call__helper_8hpp.html",tooltip="header for helper functions when calling plugin export functions."];
+}

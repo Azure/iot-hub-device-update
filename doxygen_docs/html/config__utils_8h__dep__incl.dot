@@ -1,0 +1,32 @@
+digraph "src/utils/config_utils/inc/aduc/config_utils.h"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="src/utils/config_utils\l/inc/aduc/config_utils.h",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Header file for the Configuration Utility for reading, parsing the ADUC configuration file."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="src/adu_workflow/src\l/agent_workflow.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$agent__workflow_8c.html",tooltip="Handles workflow requests coming in from the hub."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="src/agent/adu_core\l_interface/src/adu_core\l_interface.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$adu__core__interface_8c.html",tooltip="Methods to communicate with \"urn:azureiot:AzureDeviceUpdateCore:1\" interface."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="src/agent/adu_core\l_interface/src/startup\l_msg_helper.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$startup__msg__helper_8h.html",tooltip="Implements helper functions for building the startup message."];
+  Node4 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="src/agent/adu_core\l_interface/src/device\l_properties.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$device__properties_8h.html",tooltip="The header for device properties functions."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="src/agent/adu_core\l_interface/src/device\l_properties.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$device__properties_8c.html",tooltip="The implementation of device properties functions."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="src/agent/src/health\l_management.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$health__management_8c.html",tooltip="Implements functions that determine whether ADU Agent can function properly."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="src/agent/src/main.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$main_8c.html",tooltip="Implements the main code for the Device Update Agent."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="src/communication_managers\l/iothub_communication_manager\l/src/iothub_communication_manager.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$iothub__communication__manager_8c.html",tooltip="Implements the IoT Hub communication manager utility."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="src/utils/config_utils\l/src/config_parsefile.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$config__parsefile_8c.html",tooltip="Implements parsing the config file."];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="src/utils/config_utils\l/src/config_utils.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$config__utils_8c.html",tooltip="Implements the Configuration Utility for reading, parsing the ADUC configuration file."];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="src/utils/extension\l_utils/src/extension\l_utils.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$extension__utils_8c.html",tooltip="Implements utilities for working with Device Update extension."];
+  Node1 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="src/utils/workflow\l_utils/src/workflow\l_utils.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$workflow__utils_8c.html",tooltip="Utility functions for workflow data."];
+}

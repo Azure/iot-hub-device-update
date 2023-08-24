@@ -1,0 +1,13 @@
+<map id="src/extensions/step_handlers/apt_handler/src/apt_parser.cpp" name="src/extensions/step_handlers/apt_handler/src/apt_parser.cpp">
+<area shape="rect" id="node1" title="Implements a parser for APT file." alt="" coords="407,5,574,61"/>
+<area shape="rect" id="node2" href="$apt__parser_8hpp.html" title="Defines types and methods required to parse APT file (JSON format)." alt="" coords="235,109,389,136"/>
+<area shape="rect" id="node8" title=" " alt="" coords="431,184,489,211"/>
+<area shape="rect" id="node10" href="$logging_8h.html" title="Maps logging macros to the appropriate logging library functions." alt="" coords="480,109,597,136"/>
+<area shape="rect" id="node11" title=" " alt="" coords="622,109,701,136"/>
+<area shape="rect" id="node3" href="$result_8h.html" title="Describes the ADUC result type. Generated from result_codes.json by ErrorCodeDefinitionGenerator...." alt="" coords="44,184,151,211"/>
+<area shape="rect" id="node6" title=" " alt="" coords="175,184,217,211"/>
+<area shape="rect" id="node7" title=" " alt="" coords="241,184,319,211"/>
+<area shape="rect" id="node9" title=" " alt="" coords="343,184,406,211"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,259,88,285"/>
+<area shape="rect" id="node5" title=" " alt="" coords="113,259,183,285"/>
+</map>

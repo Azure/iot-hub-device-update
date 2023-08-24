@@ -1,0 +1,15 @@
+digraph "src/adu_types/inc/aduc/types" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_cfe6b93b457c021fc0231faccb541fc4 {
+    graph [ bgcolor="#ddddee", pencolor="black", label="aduc" fontname="Helvetica", fontsize="10", URL="dir_cfe6b93b457c021fc0231faccb541fc4.html"]
+  dir_4a2b081d5680e6304cf30002b25fbb99 [shape=box, label="types", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_4a2b081d5680e6304cf30002b25fbb99.html"];
+  }
+  dir_6bc6ad22483805bbbda55258ad2a62ea [shape=box label="inc" fillcolor="white" style="filled" color="red" URL="dir_6bc6ad22483805bbbda55258ad2a62ea.html"];
+  dir_313caf1132e152dd9b58bea13a4052ca [shape=box label="utils" fillcolor="white" style="filled" color="red" URL="dir_313caf1132e152dd9b58bea13a4052ca.html"];
+  dir_6bc6ad22483805bbbda55258ad2a62ea->dir_313caf1132e152dd9b58bea13a4052ca [headlabel="2", labeldistance=1.5 headhref="dir_000137_000154.html"];
+  dir_4a2b081d5680e6304cf30002b25fbb99->dir_6bc6ad22483805bbbda55258ad2a62ea [headlabel="2", labeldistance=1.5 headhref="dir_000006_000137.html"];
+  dir_4a2b081d5680e6304cf30002b25fbb99->dir_313caf1132e152dd9b58bea13a4052ca [headlabel="1", labeldistance=1.5 headhref="dir_000006_000154.html"];
+  dir_313caf1132e152dd9b58bea13a4052ca->dir_6bc6ad22483805bbbda55258ad2a62ea [headlabel="8", labeldistance=1.5 headhref="dir_000154_000137.html"];
+}

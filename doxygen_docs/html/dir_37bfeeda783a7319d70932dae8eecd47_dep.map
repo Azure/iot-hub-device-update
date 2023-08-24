@@ -1,0 +1,21 @@
+<map id="src/extensions/download_handlers/download_handler_plugin/src" name="src/extensions/download_handlers/download_handler_plugin/src">
+<area shape="rect" id="node1" href="dir_37bfeeda783a7319d70932dae8eecd47.html" title="src" alt="" coords="73,52,145,100"/>
+<area shape="rect" id="node2" href="dir_5ec935d27ce007f1101fc862d8e60cc5.html" title="inc" alt="" coords="73,148,145,196"/>
+<area shape="rect" id="edge2-headlabel" href="dir_000102_000124.html" title="1" alt="" coords="113,122,122,137"/>
+<area shape="rect" id="node3" href="dir_b3320b59a4aa4a7431bc8488b87009bf.html" title="logging" alt="" coords="96,436,168,484"/>
+<area shape="rect" id="edge3-headlabel" href="dir_000102_000159.html" title="1" alt="" coords="104,409,114,424"/>
+<area shape="rect" id="node4" href="dir_8d7f4a599028c5844c1d7e3964964518.html" title="shared_lib" alt="" coords="129,244,218,292"/>
+<area shape="rect" id="edge4-headlabel" href="dir_000102_000127.html" title="1" alt="" coords="176,218,186,232"/>
+<area shape="rect" id="node5" href="dir_313caf1132e152dd9b58bea13a4052ca.html" title="utils" alt="" coords="96,340,168,388"/>
+<area shape="rect" id="edge5-headlabel" href="dir_000102_000004.html" title="1" alt="" coords="113,313,122,327"/>
+<area shape="rect" id="node6" href="dir_66f822e644dd4b5c69ba038279102dfa.html" title="inc" alt="" coords="220,148,292,196"/>
+<area shape="rect" id="edge6-headlabel" href="dir_000102_000100.html" title="1" alt="" coords="205,124,214,138"/>
+<area shape="rect" id="edge1-headlabel" href="dir_000124_000004.html" title="3" alt="" coords="126,313,135,328"/>
+<area shape="rect" id="edge7-headlabel" href="dir_000159_000004.html" title="1" alt="" coords="128,400,137,414"/>
+<area shape="rect" id="edge8-headlabel" href="dir_000127_000004.html" title="1" alt="" coords="153,319,162,334"/>
+<area shape="rect" id="edge9-headlabel" href="dir_000004_000159.html" title="13" alt="" coords="123,410,140,425"/>
+<area shape="rect" id="edge10-headlabel" href="dir_000100_000159.html" title="1" alt="" coords="171,422,181,436"/>
+<area shape="rect" id="edge11-headlabel" href="dir_000100_000127.html" title="1" alt="" coords="207,229,217,243"/>
+<area shape="rect" id="edge12-headlabel" href="dir_000100_000004.html" title="2" alt="" coords="184,336,193,351"/>
+<area shape="rect" id="clust1" href="dir_3f67ffc1db653de8014ee11d13276b89.html" title="download_handler_plugin" alt="" coords="16,16,204,111"/>
+</map>

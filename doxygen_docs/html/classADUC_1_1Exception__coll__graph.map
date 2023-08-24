@@ -1,0 +1,4 @@
+<map id="ADUC::Exception" name="ADUC::Exception">
+<area shape="rect" id="node1" title="Exception class for ADU Agent exceptions. Inherits from std::exception." alt="" coords="5,80,137,107"/>
+<area shape="rect" id="node2" title=" " alt="" coords="14,5,129,32"/>
+</map>

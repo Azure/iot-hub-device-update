@@ -1,0 +1,6 @@
+<map id="src/utils/eis_utils/inc/eis_utils.h" name="src/utils/eis_utils/inc/eis_utils.h">
+<area shape="rect" id="node1" title="Header file for the Edge Identity Service (EIS) Utility." alt="" coords="254,5,385,47"/>
+<area shape="rect" id="node2" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="5,109,159,136"/>
+<area shape="rect" id="node3" href="$iothub__communication__manager_8c.html" title="Implements the IoT Hub communication manager utility." alt="" coords="183,95,456,151"/>
+<area shape="rect" id="node4" href="$eis__utils_8c.html" title="Implements the EIS Utility for connecting to EIS and requesting a provisioned SaS token." alt="" coords="479,102,610,143"/>
+</map>

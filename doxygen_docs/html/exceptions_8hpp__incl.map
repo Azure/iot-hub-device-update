@@ -1,0 +1,10 @@
+<map id="src/utils/exception_utils/inc/aduc/exceptions.hpp" name="src/utils/exception_utils/inc/aduc/exceptions.hpp">
+<area shape="rect" id="node1" title="Defines ADU Agent exceptions." alt="" coords="203,5,421,47"/>
+<area shape="rect" id="node2" href="$logging_8h.html" title="Maps logging macros to the appropriate logging library functions." alt="" coords="5,95,123,121"/>
+<area shape="rect" id="node3" href="$result_8h.html" title="Describes the ADUC result type. Generated from result_codes.json by ErrorCodeDefinitionGenerator...." alt="" coords="147,95,253,121"/>
+<area shape="rect" id="node6" title=" " alt="" coords="278,95,346,121"/>
+<area shape="rect" id="node7" title=" " alt="" coords="370,95,457,121"/>
+<area shape="rect" id="node8" title=" " alt="" coords="481,95,589,121"/>
+<area shape="rect" id="node4" title=" " alt="" coords="108,169,191,196"/>
+<area shape="rect" id="node5" title=" " alt="" coords="215,169,286,196"/>
+</map>

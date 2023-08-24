@@ -1,0 +1,11 @@
+<map id="src/communication_abstraction/inc/aduc/client_handle_helper.h" name="src/communication_abstraction/inc/aduc/client_handle_helper.h">
+<area shape="rect" id="node1" title="Declares an abstract interface for communicating through the ModuleClient or DeviceClient libraries." alt="" coords="566,5,797,47"/>
+<area shape="rect" id="node2" href="$adu__core__interface_8c.html" title="Methods to communicate with &quot;urn:azureiot:AzureDeviceUpdateCore:1&quot; interface." alt="" coords="5,102,179,158"/>
+<area shape="rect" id="node3" href="$device__info__interface_8c.html" title="Methods to communicate with &quot;dtmi:azure:DeviceManagement:DeviceInformation;1&quot; interface." alt="" coords="203,102,365,158"/>
+<area shape="rect" id="node4" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="490,228,643,255"/>
+<area shape="rect" id="node5" href="$client__handle__helper_8c.html" title="Implements an abstract interface for communicating through the ModuleClient or DeviceClient libraries..." alt="" coords="440,109,667,151"/>
+<area shape="rect" id="node6" href="$iothub__communication__manager_8h.html" title="Implements the IoT Hub communication manager utility." alt="" coords="691,95,931,165"/>
+<area shape="rect" id="node7" href="$iothub__communication__manager_8c.html" title="Implements the IoT Hub communication manager utility." alt="" coords="753,213,1026,269"/>
+<area shape="rect" id="node8" href="$diagnostics__interface_8c.html" title="Methods to communicate with &quot;dtmi:azure:iot:deviceUpdateDiagnosticModel;1&quot; interface." alt="" coords="1005,102,1203,158"/>
+<area shape="rect" id="node9" href="$d2c__messaging_8c.html" title="Implements utilities for the Device Update Agent Device&#45;to&#45;Cloud messaging." alt="" coords="1228,109,1407,151"/>
+</map>

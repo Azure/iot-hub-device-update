@@ -1,0 +1,11 @@
+digraph "src/diagnostics_component/diagnostics_devicename/src" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_7cdf5b57916807e0abe5beee04f98da7 {
+    graph [ bgcolor="#ddddee", pencolor="black", label="diagnostics_devicename" fontname="Helvetica", fontsize="10", URL="dir_7cdf5b57916807e0abe5beee04f98da7.html"]
+  dir_68b9a3d5a650a4247d85f5ee9a37fc41 [shape=box, label="src", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_68b9a3d5a650a4247d85f5ee9a37fc41.html"];
+  }
+  dir_1d586b1f08415f4c06e2f3cfb2e0c95c [shape=box label="inc" URL="dir_1d586b1f08415f4c06e2f3cfb2e0c95c.html"];
+  dir_68b9a3d5a650a4247d85f5ee9a37fc41->dir_1d586b1f08415f4c06e2f3cfb2e0c95c [headlabel="1", labeldistance=1.5 headhref="dir_000055_000054.html"];
+}

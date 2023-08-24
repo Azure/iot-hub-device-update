@@ -1,0 +1,11 @@
+digraph "src/utils/https_proxy_utils/inc/aduc" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_33f54c4ba9fbe9f283f7231c7ceea52c {
+    graph [ bgcolor="#ddddee", pencolor="black", label="inc" fontname="Helvetica", fontsize="10", URL="dir_33f54c4ba9fbe9f283f7231c7ceea52c.html"]
+  dir_dd957840c509ef1e199b025c301fc511 [shape=box, label="aduc", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_dd957840c509ef1e199b025c301fc511.html"];
+  }
+  dir_defa76d82d084e8131791c5f3e6d181e [shape=box label="c_utils" fillcolor="white" style="filled" color="red" URL="dir_defa76d82d084e8131791c5f3e6d181e.html"];
+  dir_dd957840c509ef1e199b025c301fc511->dir_defa76d82d084e8131791c5f3e6d181e [headlabel="1", labeldistance=1.5 headhref="dir_000196_000155.html"];
+}

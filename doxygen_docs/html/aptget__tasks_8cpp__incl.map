@@ -1,0 +1,22 @@
+<map id="src/adu&#45;shell/src/aptget_tasks.cpp" name="src/adu&#45;shell/src/aptget_tasks.cpp">
+<area shape="rect" id="node1" title="Implements functions related to microsoft/apt update tasks." alt="" coords="256,5,431,47"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,95,129,121"/>
+<area shape="rect" id="node3" href="$aptget__tasks_8h.html" title="Implements functions related to microsoft/apt update type." alt="" coords="205,95,324,121"/>
+<area shape="rect" id="node5" href="$logging_8h.html" title="Maps logging macros to the appropriate logging library functions." alt="" coords="7,251,125,278"/>
+<area shape="rect" id="node10" href="$common__tasks_8hpp.html" title="Implements a set of common tasks for most update type." alt="" coords="347,95,497,121"/>
+<area shape="rect" id="node11" href="$process__utils_8hpp.html" title="Contains utilities for managing child processes." alt="" coords="789,169,959,196"/>
+<area shape="rect" id="node18" href="$string__utils_8hpp.html" title="String utilities for C++ code." alt="" coords="455,169,613,196"/>
+<area shape="rect" id="node4" href="$adushell_8hpp.html" title="Private header for ADU Shell types and helper functions." alt="" coords="304,169,409,196"/>
+<area shape="rect" id="node6" href="$adushell__action_8hpp.html" title="Private header for ADU Shell Actions enum and helper functions." alt="" coords="149,251,301,278"/>
+<area shape="rect" id="node7" title=" " alt="" coords="621,251,708,278"/>
+<area shape="rect" id="node8" title=" " alt="" coords="733,251,791,278"/>
+<area shape="rect" id="node9" title=" " alt="" coords="325,251,388,278"/>
+<area shape="rect" id="node12" href="$grp_8h_source.html" title=" " alt="" coords="1471,251,1581,278"/>
+<area shape="rect" id="node13" href="$pwd_8h_source.html" title=" " alt="" coords="816,251,932,278"/>
+<area shape="rect" id="node14" href="$unistd_8h_source.html" title=" " alt="" coords="980,251,1109,278"/>
+<area shape="rect" id="node16" title=" " alt="" coords="1158,244,1326,285"/>
+<area shape="rect" id="node17" title=" " alt="" coords="1350,251,1446,278"/>
+<area shape="rect" id="node15" title=" " alt="" coords="992,333,1097,360"/>
+<area shape="rect" id="node19" title=" " alt="" coords="511,251,597,278"/>
+<area shape="rect" id="node20" title=" " alt="" coords="413,251,487,278"/>
+</map>

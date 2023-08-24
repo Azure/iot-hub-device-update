@@ -1,0 +1,5 @@
+<map id="src/communication_managers/iothub_communication_manager/inc/aduc/iothub_communication_manager.h" name="src/communication_managers/iothub_communication_manager/inc/aduc/iothub_communication_manager.h">
+<area shape="rect" id="node1" title="Implements the IoT Hub communication manager utility." alt="" coords="81,5,321,76"/>
+<area shape="rect" id="node2" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="5,139,159,165"/>
+<area shape="rect" id="node3" href="$iothub__communication__manager_8c.html" title="Implements the IoT Hub communication manager utility." alt="" coords="183,124,456,180"/>
+</map>

@@ -1,0 +1,28 @@
+<map id="src/utils/workflow_utils/inc/aduc/workflow_utils.h" name="src/utils/workflow_utils/inc/aduc/workflow_utils.h">
+<area shape="rect" id="node1" title="Util functions for ADUC_Workflow data." alt="" coords="2529,5,2707,61"/>
+<area shape="rect" id="node2" href="$agent__workflow_8c.html" title="Handles workflow requests coming in from the hub." alt="" coords="5,131,164,173"/>
+<area shape="rect" id="node3" href="$adu__core__interface_8c.html" title="Methods to communicate with &quot;urn:azureiot:AzureDeviceUpdateCore:1&quot; interface." alt="" coords="189,124,362,180"/>
+<area shape="rect" id="node4" href="$agent__orchestration_8c.html" title="Contains business logic implementation for agent&#45;driven workflow orchestration processing." alt="" coords="387,131,577,173"/>
+<area shape="rect" id="node5" href="$microsoft__delta__download__handler_8c.html" title="Implementation for the delta download handler library functions used by the sample libmicrosoft_delta..." alt="" coords="601,109,840,195"/>
+<area shape="rect" id="node6" href="$microsoft__delta__download__handler__utils_8c.html" title="The Microsoft delta download handler helper function implementations." alt="" coords="865,109,1163,195"/>
+<area shape="rect" id="node7" href="$source__update__cache__utils_8c.html" title="utils for source_update_cache" alt="" coords="1187,109,1422,195"/>
+<area shape="rect" id="node8" href="$source__update__cache__utils_8cpp.html" title="utils for source_update_cache" alt="" coords="1446,109,1697,195"/>
+<area shape="rect" id="node9" href="$extension__manager_8cpp.html" title="Implementation of ExtensionManager." alt="" coords="1721,124,1905,180"/>
+<area shape="rect" id="node10" href="$extension__manager__helper_8cpp.html" title="Implementation of ExtensionManager helpers." alt="" coords="1929,124,2113,180"/>
+<area shape="rect" id="node11" href="$apt__handler_8cpp.html" title="Implementation of APT handler plug&#45;in for APT (Advanced Package Tool)" alt="" coords="2137,124,2304,180"/>
+<area shape="rect" id="node12" href="$script__handler_8cpp.html" title="Implementation of ContentHandler API for &#39;microsoft/script:1&#39; update type." alt="" coords="2329,124,2510,180"/>
+<area shape="rect" id="node13" href="$simulator__handler_8cpp.html" title="Implementation of ContentHandler API for update content simulator." alt="" coords="2535,117,2701,187"/>
+<area shape="rect" id="node14" href="$swupdate__handler_8cpp.html" title="Implementation of ContentHandler API for swupdate." alt="" coords="2726,124,2934,180"/>
+<area shape="rect" id="node15" href="$swupdate__handler__v2_8cpp.html" title="Implementation of ContentHandler API for swupdate wrapper script." alt="" coords="2959,124,3200,180"/>
+<area shape="rect" id="node16" href="$workflow__ptr_8hpp_source.html" title=" " alt="" coords="3225,124,3398,180"/>
+<area shape="rect" id="node17" href="$wim__handler__1_8cpp.html" title="Implements WimHandler1." alt="" coords="3268,243,3443,299"/>
+<area shape="rect" id="node18" href="$steps__handler_8cpp.html" title="Implementation of ContentHandler API for the MSOE (Multi Steps Ordered Execution) Steps." alt="" coords="3472,124,3695,180"/>
+<area shape="rect" id="node19" href="$linux__adu__core__impl_8hpp.html" title="Implements the ADU Core interface functionality for linux platform." alt="" coords="3718,124,3929,180"/>
+<area shape="rect" id="node21" href="$linux__adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="3742,243,3953,299"/>
+<area shape="rect" id="node22" href="$adu__core__impl_8hpp.html" title="Implements the ADU Core interface functionality for Windows platform." alt="" coords="4003,124,4190,180"/>
+<area shape="rect" id="node24" href="$adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="4193,243,4379,299"/>
+<area shape="rect" id="node25" href="$auto__workflowhandle_8hpp.html" title="header for AutoWorkflowHandle. On scope exit, uninitializes the ADUC_WorkflowHandle." alt="" coords="4265,131,4515,173"/>
+<area shape="rect" id="node26" href="$workflow__utils_8c.html" title="Utility functions for workflow data." alt="" coords="4540,124,4683,180"/>
+<area shape="rect" id="node20" href="$linux__adu__core__exports_8cpp.html" title="Implements exported methods for platform&#45;specific ADUC agent code." alt="" coords="3487,243,3717,299"/>
+<area shape="rect" id="node23" href="$adu__core__exports_8cpp.html" title="Implements exported methods for platform&#45;specific ADUC agent code." alt="" coords="3977,243,4168,299"/>
+</map>

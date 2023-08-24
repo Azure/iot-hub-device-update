@@ -1,0 +1,5 @@
+<map id="src/utils/eis_utils/inc/eis_coms.h" name="src/utils/eis_utils/inc/eis_coms.h">
+<area shape="rect" id="node1" title="Header file for HTTP communication with Edge Identity Service (EIS) over UDS." alt="" coords="83,5,213,47"/>
+<area shape="rect" id="node2" href="$eis__coms_8c.html" title="Implements the HTTP communication with EIS over UDS." alt="" coords="5,95,136,136"/>
+<area shape="rect" id="node3" href="$eis__utils_8c.html" title="Implements the EIS Utility for connecting to EIS and requesting a provisioned SaS token." alt="" coords="160,95,291,136"/>
+</map>

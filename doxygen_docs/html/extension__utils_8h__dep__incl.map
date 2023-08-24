@@ -1,0 +1,7 @@
+<map id="src/utils/extension_utils/inc/aduc/extension_utils.h" name="src/utils/extension_utils/inc/aduc/extension_utils.h">
+<area shape="rect" id="node1" title="Utilities for the Device Update Agent extensibility." alt="" coords="316,5,499,61"/>
+<area shape="rect" id="node2" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="5,131,159,158"/>
+<area shape="rect" id="node3" href="$download__handler__factory_8cpp.html" title="Implementation of the DownloadHandlerFactory." alt="" coords="183,109,405,180"/>
+<area shape="rect" id="node4" href="$extension__manager_8cpp.html" title="Implementation of ExtensionManager." alt="" coords="429,117,613,173"/>
+<area shape="rect" id="node5" href="$extension__utils_8c.html" title="Implements utilities for working with Device Update extension." alt="" coords="637,117,785,173"/>
+</map>

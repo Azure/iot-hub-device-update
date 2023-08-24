@@ -1,0 +1,5 @@
+<map id="src/platform_layers/windows_platform_layer/src/adu_core_impl.hpp" name="src/platform_layers/windows_platform_layer/src/adu_core_impl.hpp">
+<area shape="rect" id="node1" title="Implements the ADU Core interface functionality for Windows platform." alt="" coords="114,5,301,61"/>
+<area shape="rect" id="node2" href="$adu__core__exports_8cpp.html" title="Implements exported methods for platform&#45;specific ADUC agent code." alt="" coords="5,109,196,165"/>
+<area shape="rect" id="node3" href="$adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="221,109,407,165"/>
+</map>

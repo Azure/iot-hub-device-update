@@ -1,0 +1,15 @@
+digraph "src/adu-shell/inc/adushell.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="src/adu-shell/inc/adushell.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Private header for ADU Shell types and helper functions."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="src/adu-shell/inc/aptget\l_tasks.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$aptget__tasks_8h.html",tooltip="Implements functions related to microsoft/apt update type."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="src/adu-shell/inc/common\l_tasks.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$common__tasks_8hpp.html",tooltip="Implements a set of common tasks for most update type."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="src/adu-shell/inc/script\l_tasks.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$script__tasks_8hpp.html",tooltip="Implements functions related to microsoft/script update type."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="src/adu-shell/inc/swupdate\l_tasks.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$swupdate__tasks_8hpp.html",tooltip="Implements functions related to microsoft/swupdate update type."];
+}
