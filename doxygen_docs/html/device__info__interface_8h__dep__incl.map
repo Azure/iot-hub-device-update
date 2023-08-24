@@ -1,5 +1,0 @@
-<map id="src/agent/device_info_interface/inc/aduc/device_info_interface.h" name="src/agent/device_info_interface/inc/aduc/device_info_interface.h">
-<area shape="rect" id="node1" title="Methods to communicate with &quot;dtmi:azure:DeviceManagement:DeviceInformation;1&quot; interface." alt="" coords="81,5,273,61"/>
-<area shape="rect" id="node2" href="$device__info__interface_8c.html" title="Methods to communicate with &quot;dtmi:azure:DeviceManagement:DeviceInformation;1&quot; interface." alt="" coords="5,109,167,165"/>
-<area shape="rect" id="node3" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="191,124,344,151"/>
-</map>

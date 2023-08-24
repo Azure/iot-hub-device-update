@@ -1,9 +1,0 @@
-digraph "src/extensions/shared_lib/inc/aduc/plugin_exception.hpp"
-{
- // LATEX_PDF_SIZE
-  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
-  node [fontname="Helvetica",fontsize="10",shape=record];
-  Node1 [label="src/extensions/shared\l_lib/inc/aduc/plugin\l_exception.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="header for aduc plug exception thrown for issues with plugin/shared lib."];
-  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node2 [label="src/extensions/shared\l_lib/inc/aduc/plugin\l_call_helper.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$plugin__call__helper_8hpp.html",tooltip="header for helper functions when calling plugin export functions."];
-}

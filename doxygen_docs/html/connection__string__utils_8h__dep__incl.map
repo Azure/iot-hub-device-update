@@ -1,7 +1,0 @@
-<map id="src/utils/c_utils/inc/aduc/connection_string_utils.h" name="src/utils/c_utils/inc/aduc/connection_string_utils.h">
-<area shape="rect" id="node1" title="connection string utilities." alt="" coords="300,5,476,61"/>
-<area shape="rect" id="node2" href="$adu__types_8c.html" title="Implements helper functions related to ConnectionInfo." alt="" coords="5,124,168,165"/>
-<area shape="rect" id="node3" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="193,131,346,158"/>
-<area shape="rect" id="node4" href="$iothub__communication__manager_8c.html" title="Implements the IoT Hub communication manager utility." alt="" coords="370,117,643,173"/>
-<area shape="rect" id="node5" href="$deliveryoptimization__content__downloader_8cpp.html" title="Content Downloader Extension using Microsoft Delivery Optimization Agent." alt="" coords="668,109,919,180"/>
-</map>

@@ -1,9 +1,0 @@
-<map id="src/utils/parson_json_utils/inc/parson_json_utils.h" name="src/utils/parson_json_utils/inc/parson_json_utils.h">
-<area shape="rect" id="node1" title="Implements the JSON Utility for parsing json." alt="" coords="567,5,730,61"/>
-<area shape="rect" id="node2" href="$diagnostics__workflow_8c.html" title="Implementation for functions handling the Diagnostic Log Upload workflow." alt="" coords="5,109,204,165"/>
-<area shape="rect" id="node3" href="$diagnostics__config__utils_8c.html" title="Implementation for functions handling the Diagnostic config." alt="" coords="228,109,427,165"/>
-<area shape="rect" id="node4" href="$operation__id__utils_8c.html" title="Implementation file for utilities for operations such as storing the operation id or checking if the ..." alt="" coords="451,109,649,165"/>
-<area shape="rect" id="node5" href="$config__utils_8c.html" title="Implements the Configuration Utility for reading, parsing the ADUC configuration file." alt="" coords="673,117,824,158"/>
-<area shape="rect" id="node6" href="$parser__utils_8c.html" title="Implements utilities for parsing the common data types." alt="" coords="848,117,1001,158"/>
-<area shape="rect" id="node7" href="$parson__json__utils_8c.html" title="Provides set of functions for reading json." alt="" coords="1026,109,1189,165"/>
-</map>

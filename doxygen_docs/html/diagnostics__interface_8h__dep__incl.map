@@ -1,7 +1,0 @@
-<map id="src/diagnostics_component/diagnostics_interface/inc/diagnostics_interface.h" name="src/diagnostics_component/diagnostics_interface/inc/diagnostics_interface.h">
-<area shape="rect" id="node1" title="Methods to communicate with &quot;dtmi:azure:iot:deviceUpdateDiagnosticModel;1&quot; interface." alt="" coords="293,5,493,61"/>
-<area shape="rect" id="node2" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="5,124,159,151"/>
-<area shape="rect" id="node3" href="$diagnostics__interface_8c.html" title="Methods to communicate with &quot;dtmi:azure:iot:deviceUpdateDiagnosticModel;1&quot; interface." alt="" coords="183,109,381,165"/>
-<area shape="rect" id="node4" href="$diagnostics__workflow_8c.html" title="Implementation for functions handling the Diagnostic Log Upload workflow." alt="" coords="405,109,604,165"/>
-<area shape="rect" id="node5" href="$operation__id__utils_8c.html" title="Implementation file for utilities for operations such as storing the operation id or checking if the ..." alt="" coords="628,109,827,165"/>
-</map>

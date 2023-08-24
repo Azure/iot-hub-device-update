@@ -1,5 +1,0 @@
-<map id="src/utils/jws_utils/inc/jws_utils.h" name="src/utils/jws_utils/inc/jws_utils.h">
-<area shape="rect" id="node1" title="Provides helper methods for parsing and verifying JSON Web Keys and JSON Web Tokens." alt="" coords="87,5,221,47"/>
-<area shape="rect" id="node2" href="$jws__utils_8c.html" title="Provides methods for verifying Signed JSON Web Keys, JSON Web Tokens in JSON Web Signature Format,..." alt="" coords="5,102,140,143"/>
-<area shape="rect" id="node3" href="$workflow__utils_8c.html" title="Utility functions for workflow data." alt="" coords="164,95,307,151"/>
-</map>

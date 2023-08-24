@@ -1,9 +1,0 @@
-<map id="src/diagnostics_component/diagnostics_devicename/src/diagnostics_devicename.c" name="src/diagnostics_component/diagnostics_devicename/src/diagnostics_devicename.c">
-<area shape="rect" id="node1" title="Implements function necessary for getting and setting the devicename for the diagnostics_component." alt="" coords="311,5,533,61"/>
-<area shape="rect" id="node2" href="$diagnostics__devicename_8h.html" title="Header file describing the methods for setting the static global device name for use in the diagnosti..." alt="" coords="23,117,218,143"/>
-<area shape="rect" id="node5" title=" " alt="" coords="242,109,410,151"/>
-<area shape="rect" id="node6" title=" " alt="" coords="434,109,602,151"/>
-<area shape="rect" id="node7" title=" " alt="" coords="627,117,697,143"/>
-<area shape="rect" id="node3" href="$c__utils_8h.html" title="Helpers and macros for C code." alt="" coords="5,199,116,225"/>
-<area shape="rect" id="node4" title=" " alt="" coords="141,199,223,225"/>
-</map>

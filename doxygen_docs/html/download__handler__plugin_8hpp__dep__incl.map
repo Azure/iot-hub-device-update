@@ -1,6 +1,0 @@
-<map id="src/extensions/download_handlers/download_handler_plugin/inc/aduc/download_handler_plugin.hpp" name="src/extensions/download_handlers/download_handler_plugin/inc/aduc/download_handler_plugin.hpp">
-<area shape="rect" id="node1" title="header for DownloadHandlerPlugin class that abstracts using a download handler extension shared libra..." alt="" coords="255,5,463,76"/>
-<area shape="rect" id="node2" href="$download__handler__factory_8cpp.html" title="Implementation of the DownloadHandlerFactory." alt="" coords="5,124,227,195"/>
-<area shape="rect" id="node3" href="$download__handler__plugin_8cpp.html" title="Implements the download handler plugin." alt="" coords="251,124,466,195"/>
-<area shape="rect" id="node4" href="$extension__manager__helper_8cpp.html" title="Implementation of ExtensionManager helpers." alt="" coords="491,131,675,187"/>
-</map>

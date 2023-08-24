@@ -1,7 +1,0 @@
-<map id="src/extensions/extension_manager/inc/aduc/extension_manager.h" name="src/extensions/extension_manager/inc/aduc/extension_manager.h">
-<area shape="rect" id="node1" title="Definition of the ExtensionManager (for C)" alt="" coords="358,5,571,61"/>
-<area shape="rect" id="node2" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="5,139,159,165"/>
-<area shape="rect" id="node3" href="$microsoft__delta__download__handler__utils_8c.html" title="The Microsoft delta download handler helper function implementations." alt="" coords="183,109,482,195"/>
-<area shape="rect" id="node4" href="$extension__manager_8cpp.html" title="Implementation of ExtensionManager." alt="" coords="506,124,690,180"/>
-<area shape="rect" id="node5" href="$workflow__utils_8c.html" title="Utility functions for workflow data." alt="" coords="715,124,857,180"/>
-</map>

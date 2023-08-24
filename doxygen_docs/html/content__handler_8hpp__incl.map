@@ -1,8 +1,0 @@
-<map id="src/extensions/inc/aduc/content_handler.hpp" name="src/extensions/inc/aduc/content_handler.hpp">
-<area shape="rect" id="node1" title="Defines ContentHandler interface." alt="" coords="68,5,261,47"/>
-<area shape="rect" id="node2" href="$c__utils_8h.html" title="Helpers and macros for C code." alt="" coords="5,169,116,196"/>
-<area shape="rect" id="node3" href="$contract__utils_8h.html" title="The header for contract utils." alt="" coords="86,95,243,121"/>
-<area shape="rect" id="node4" href="$result_8h.html" title="Describes the ADUC result type. Generated from result_codes.json by ErrorCodeDefinitionGenerator...." alt="" coords="207,169,314,196"/>
-<area shape="rect" id="node5" title=" " alt="" coords="123,244,206,271"/>
-<area shape="rect" id="node6" title=" " alt="" coords="231,244,301,271"/>
-</map>

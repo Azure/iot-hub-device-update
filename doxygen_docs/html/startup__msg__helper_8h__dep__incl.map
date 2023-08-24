@@ -1,4 +1,0 @@
-<map id="src/agent/adu_core_interface/src/startup_msg_helper.h" name="src/agent/adu_core_interface/src/startup_msg_helper.h">
-<area shape="rect" id="node1" title="Implements helper functions for building the startup message." alt="" coords="12,5,172,61"/>
-<area shape="rect" id="node2" href="$adu__core__interface_8c.html" title="Methods to communicate with &quot;urn:azureiot:AzureDeviceUpdateCore:1&quot; interface." alt="" coords="5,109,179,165"/>
-</map>

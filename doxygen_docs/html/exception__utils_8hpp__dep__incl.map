@@ -1,9 +1,0 @@
-<map id="src/utils/exception_utils/inc/aduc/exception_utils.hpp" name="src/utils/exception_utils/inc/aduc/exception_utils.hpp">
-<area shape="rect" id="node1" title="Contains utilities for handling C++ exceptions." alt="" coords="387,5,569,61"/>
-<area shape="rect" id="node2" href="$linux__adu__core__impl_8hpp.html" title="Implements the ADU Core interface functionality for linux platform." alt="" coords="261,109,471,165"/>
-<area shape="rect" id="node5" href="$adu__core__impl_8hpp.html" title="Implements the ADU Core interface functionality for Windows platform." alt="" coords="498,109,685,165"/>
-<area shape="rect" id="node3" href="$linux__adu__core__exports_8cpp.html" title="Implements exported methods for platform&#45;specific ADUC agent code." alt="" coords="5,213,236,269"/>
-<area shape="rect" id="node4" href="$linux__adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="261,213,471,269"/>
-<area shape="rect" id="node6" href="$adu__core__exports_8cpp.html" title="Implements exported methods for platform&#45;specific ADUC agent code." alt="" coords="496,213,687,269"/>
-<area shape="rect" id="node7" href="$adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="711,213,898,269"/>
-</map>

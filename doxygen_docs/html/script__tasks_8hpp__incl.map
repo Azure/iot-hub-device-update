@@ -1,9 +1,0 @@
-<map id="src/adu&#45;shell/inc/script_tasks.hpp" name="src/adu&#45;shell/inc/script_tasks.hpp">
-<area shape="rect" id="node1" title="Implements functions related to microsoft/script update type." alt="" coords="283,5,451,47"/>
-<area shape="rect" id="node2" href="$adushell_8hpp.html" title="Private header for ADU Shell types and helper functions." alt="" coords="314,95,419,121"/>
-<area shape="rect" id="node3" href="$logging_8h.html" title="Maps logging macros to the appropriate logging library functions." alt="" coords="5,169,123,196"/>
-<area shape="rect" id="node4" href="$adushell__action_8hpp.html" title="Private header for ADU Shell Actions enum and helper functions." alt="" coords="147,169,299,196"/>
-<area shape="rect" id="node5" title=" " alt="" coords="323,169,410,196"/>
-<area shape="rect" id="node6" title=" " alt="" coords="435,169,493,196"/>
-<area shape="rect" id="node7" title=" " alt="" coords="518,169,581,196"/>
-</map>

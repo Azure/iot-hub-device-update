@@ -1,6 +1,0 @@
-<map id="_tagADUC_D2C_Message_Processing_Context" name="_tagADUC_D2C_Message_Processing_Context">
-<area shape="rect" id="node1" title="A data structure that contains information about the message processing job." alt="" coords="187,199,373,240"/>
-<area shape="rect" id="node2" href="$struct__tagADUC__D2C__RetryStrategy.html" title="The data structure that contains information about the retry strategy for each message type." alt="" coords="5,109,224,136"/>
-<area shape="rect" id="node3" href="$struct__tagADUC__D2C__HttpStatus__Retry__Info.html" title="The data structure used for deciding how to handle the response from the cloud." alt="" coords="15,5,214,47"/>
-<area shape="rect" id="node4" href="$struct__tagADUC__D2C__Message.html" title="A device to cloud message data structure." alt="" coords="248,109,435,136"/>
-</map>

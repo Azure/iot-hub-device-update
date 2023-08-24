@@ -1,8 +1,0 @@
-<map id="src/adu&#45;shell/inc/common_tasks.hpp" name="src/adu&#45;shell/inc/common_tasks.hpp">
-<area shape="rect" id="node1" title="Implements a set of common tasks for most update type." alt="" coords="419,5,609,47"/>
-<area shape="rect" id="node2" href="$aptget__tasks_8cpp.html" title="Implements functions related to microsoft/apt update tasks." alt="" coords="5,95,180,136"/>
-<area shape="rect" id="node3" href="$common__tasks_8cpp.html" title="Implements set of common tasks for most update type." alt="" coords="205,95,394,136"/>
-<area shape="rect" id="node4" href="$adu-shell_2src_2main_8cpp.html" title="Implements the main code for the ADU Shell." alt="" coords="418,102,610,129"/>
-<area shape="rect" id="node5" href="$script__tasks_8cpp.html" title="Implements tasks for microsoft/script actions." alt="" coords="634,95,802,136"/>
-<area shape="rect" id="node6" href="$swupdate__tasks_8cpp.html" title="Implements tasks for microsoft/swupdate actions." alt="" coords="826,95,1021,136"/>
-</map>

@@ -1,5 +1,0 @@
-<map id="src/agent/adu_core_interface/inc/aduc/health_management.h" name="src/agent/adu_core_interface/inc/aduc/health_management.h">
-<area shape="rect" id="node1" title="Implements functions that determine whether ADU Agent can function properly." alt="" coords="82,5,255,61"/>
-<area shape="rect" id="node2" href="$health__management_8c.html" title="Implements functions that determine whether ADU Agent can function properly." alt="" coords="5,109,156,151"/>
-<area shape="rect" id="node3" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="180,117,333,143"/>
-</map>

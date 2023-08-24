@@ -1,9 +1,0 @@
-<map id="tagADUC_MethodCall_Data" name="tagADUC_MethodCall_Data">
-<area shape="rect" id="node1" title=" " alt="" coords="171,391,371,417"/>
-<area shape="rect" id="node2" href="$structtagADUC__WorkCompletionData.html" title=" " alt="" coords="5,251,232,277"/>
-<area shape="rect" id="node3" href="$structtagADUC__Result.html" title="Defines an ADUC_Result object which is used to indicate status." alt="" coords="215,5,345,32"/>
-<area shape="rect" id="node4" href="$structtagADUC__WorkflowData.html" title="Data shared across the agent workflow." alt="" coords="453,301,632,328"/>
-<area shape="rect" id="node5" href="$structtagADUC__UpdateActionCallbacks.html" title="Defines methods that respond to an UpdateAction." alt="" coords="491,191,730,218"/>
-<area shape="rect" id="node6" href="$structtagADUC__ContentData.html" title="Update Manifest data for the workflow." alt="" coords="755,191,925,218"/>
-<area shape="rect" id="node7" href="$structtagADUC__UpdateId.html" title="Describes an update identity." alt="" coords="767,5,913,32"/>
-</map>

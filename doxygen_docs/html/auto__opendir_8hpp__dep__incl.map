@@ -1,4 +1,0 @@
-<map id="src/utils/file_utils/inc/aduc/auto_opendir.hpp" name="src/utils/file_utils/inc/aduc/auto_opendir.hpp">
-<area shape="rect" id="node1" title="header for AutoOpenDir. On scope exit, deletes directory if exists and is a directory." alt="" coords="5,5,201,47"/>
-<area shape="rect" id="node2" href="$file__utils_8cpp.html" title="The implementation of file utilities." alt="" coords="37,95,169,136"/>
-</map>

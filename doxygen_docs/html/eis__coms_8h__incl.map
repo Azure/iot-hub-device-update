@@ -1,7 +1,0 @@
-<map id="src/utils/eis_utils/inc/eis_coms.h" name="src/utils/eis_utils/inc/eis_coms.h">
-<area shape="rect" id="node1" title="Header file for HTTP communication with Edge Identity Service (EIS) over UDS." alt="" coords="81,5,211,47"/>
-<area shape="rect" id="node2" href="$c__utils_8h.html" title="Helpers and macros for C code." alt="" coords="5,169,116,196"/>
-<area shape="rect" id="node3" href="$eis__err_8h.html" title="Header file defining the errors which can occur within the Edge Identity Service (EIS) Utility." alt="" coords="61,95,138,121"/>
-<area shape="rect" id="node4" href="$time_8h_source.html" title=" " alt="" coords="162,95,226,121"/>
-<area shape="rect" id="node5" title=" " alt="" coords="275,95,465,121"/>
-</map>

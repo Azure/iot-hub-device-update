@@ -1,6 +1,0 @@
-<map id="ADUCFileEntity" name="ADUCFileEntity">
-<area shape="rect" id="node1" title=" " alt="" coords="9,260,130,287"/>
-<area shape="rect" id="node2" href="$structtagADUC__FileEntity.html" title="Describes a specific file to download." alt="" coords="5,184,133,211"/>
-<area shape="rect" id="node3" href="$structtagRelatedFile.html" title="Describes a related file." alt="" coords="11,95,127,121"/>
-<area shape="rect" id="node4" href="$structtagProperty.html" title="Describes a name value pair property." alt="" coords="20,5,119,32"/>
-</map>

@@ -1,8 +1,0 @@
-<map id="src/agent/pnp_helper/inc/pnp_protocol.h" name="src/agent/pnp_helper/inc/pnp_protocol.h">
-<area shape="rect" id="node1" title="Header for PNP Protocol helper PnP is a convention built on top of existing IoTHub device transport p..." alt="" coords="389,5,547,47"/>
-<area shape="rect" id="node2" href="$adu__core__interface_8c.html" title="Methods to communicate with &quot;urn:azureiot:AzureDeviceUpdateCore:1&quot; interface." alt="" coords="5,95,179,151"/>
-<area shape="rect" id="node3" href="$device__info__interface_8c.html" title="Methods to communicate with &quot;dtmi:azure:DeviceManagement:DeviceInformation;1&quot; interface." alt="" coords="203,95,365,151"/>
-<area shape="rect" id="node4" href="$pnp__protocol_8c.html" title="PNP Protocol helper PnP is a convention built on top of existing IoTHub device transport primitives...." alt="" coords="389,102,547,143"/>
-<area shape="rect" id="node5" href="$main_8c.html" title="Implements the main code for the Device Update Agent." alt="" coords="571,109,725,136"/>
-<area shape="rect" id="node6" href="$diagnostics__interface_8c.html" title="Methods to communicate with &quot;dtmi:azure:iot:deviceUpdateDiagnosticModel;1&quot; interface." alt="" coords="749,95,947,151"/>
-</map>

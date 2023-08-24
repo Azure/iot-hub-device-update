@@ -1,6 +1,0 @@
-<map id="src/utils/workflow_utils/inc/aduc/workflow_internal.h" name="src/utils/workflow_utils/inc/aduc/workflow_internal.h">
-<area shape="rect" id="node1" title="internal workflow structures and function signatures for use in tests." alt="" coords="244,5,423,61"/>
-<area shape="rect" id="node2" href="$linux__adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="5,109,216,165"/>
-<area shape="rect" id="node3" href="$adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="240,109,427,165"/>
-<area shape="rect" id="node4" href="$workflow__utils_8c.html" title="Utility functions for workflow data." alt="" coords="451,109,594,165"/>
-</map>

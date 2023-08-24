@@ -1,5 +1,0 @@
-<map id="src/platform_layers/linux_platform_layer/src/linux_adu_core_impl.hpp" name="src/platform_layers/linux_platform_layer/src/linux_adu_core_impl.hpp">
-<area shape="rect" id="node1" title="Implements the ADU Core interface functionality for linux platform." alt="" coords="138,5,349,61"/>
-<area shape="rect" id="node2" href="$linux__adu__core__exports_8cpp.html" title="Implements exported methods for platform&#45;specific ADUC agent code." alt="" coords="5,109,236,165"/>
-<area shape="rect" id="node3" href="$linux__adu__core__impl_8cpp.html" title="Implements an ADUC reference implementation library." alt="" coords="261,109,471,165"/>
-</map>

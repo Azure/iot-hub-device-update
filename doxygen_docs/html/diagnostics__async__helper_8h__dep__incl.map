@@ -1,4 +1,0 @@
-<map id="src/diagnostics_component/diagnostics_async_helper/inc/diagnostics_async_helper.h" name="src/diagnostics_component/diagnostics_async_helper/inc/diagnostics_async_helper.h">
-<area shape="rect" id="node1" title="Header file for the asynchronous runner for the DiagnosticsWorkflow log upload." alt="" coords="5,5,232,61"/>
-<area shape="rect" id="node2" href="$diagnostics__interface_8c.html" title="Methods to communicate with &quot;dtmi:azure:iot:deviceUpdateDiagnosticModel;1&quot; interface." alt="" coords="19,109,218,165"/>
-</map>

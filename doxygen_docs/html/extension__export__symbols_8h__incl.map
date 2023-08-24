@@ -1,8 +1,0 @@
-<map id="src/extensions/inc/aduc/exports/extension_export_symbols.h" name="src/extensions/inc/aduc/exports/extension_export_symbols.h">
-<area shape="rect" id="node1" title="The common function export symbols used by specific extension export symbols headers." alt="" coords="342,5,521,61"/>
-<area shape="rect" id="node2" href="$extension__component__enumerator__export__symbols_8h.html" title="The function export symbols for component enumerator extensions." alt="" coords="5,109,191,165"/>
-<area shape="rect" id="node4" href="$extension__content__downloader__export__symbols_8h_source.html" title=" " alt="" coords="215,109,426,165"/>
-<area shape="rect" id="node5" href="$extension__content__handler__export__symbols_8h_source.html" title=" " alt="" coords="451,109,633,165"/>
-<area shape="rect" id="node6" href="$extension__download__handler__export__symbols_8h.html" title="The function export symbols for download handler extensions." alt="" coords="658,109,855,165"/>
-<area shape="rect" id="node3" href="$extension__common__export__symbols_8h.html" title="The common function export symbols used by specific extension export symbols headers." alt="" coords="327,213,536,255"/>
-</map>
