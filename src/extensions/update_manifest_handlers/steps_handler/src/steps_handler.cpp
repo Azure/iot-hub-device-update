@@ -20,7 +20,6 @@
 
 #include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy
 #include <azure_c_shared_utility/strings.h> // STRING_*
-          //
 #include <parson.h>
 #include <sstream>
 #include <string>

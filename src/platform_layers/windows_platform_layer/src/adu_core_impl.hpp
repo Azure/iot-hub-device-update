@@ -30,7 +30,8 @@ class WindowsPlatformLayer
 {
 public:
     /**
-     * @brief 
+     * @brief Factory method for WindowsPlatformLayer
+     * @returns std::unique_ptr<WindowsPlatformLayer> The unique_ptr instance of the WindowsPlatformLayer
      */
     static std::unique_ptr<WindowsPlatformLayer> Create();
 
