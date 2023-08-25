@@ -302,9 +302,9 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
     if (!computed)
     {
         message_processing_context->nextRetryTimeStampEpoch +=
-            message_processing_context->retryStrategy->fallbackWaitTimeSec;
+            (time_t)message_processing_context->retryStrategy->fallbackWaitTimeSec;
         Log_Warn(
-            "Failed to calculate the next retry timestamp. Next retry in %d seconds.",
+            "Failed to calculate the next retry timestamp. Next retry in %lu seconds.",
             message_processing_context->retryStrategy->fallbackWaitTimeSec);
         SetMessageStatus(&message_processing_context->message, ADUC_D2C_Message_Status_In_Progress);
     }

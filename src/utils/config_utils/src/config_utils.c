@@ -190,11 +190,11 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent)
  * @param agentCount Count of objects in agents.
  * @param agents Array of ADUC_AgentInfo objects to free.
  */
-static void ADUC_AgentInfoArray_Free(unsigned int agentCount, ADUC_AgentInfo* agents)
+static void ADUC_AgentInfoArray_Free(size_t agentCount, ADUC_AgentInfo* agents)
 {
-    for (unsigned int index = 0; index < agentCount; ++index)
+    for (size_t index = 0; index < agentCount; ++index)
     {
-        ADUC_AgentInfo* agent = agents + index;
+        ADUC_AgentInfo* agent = (ADUC_AgentInfo*)(agents + index);
         ADUC_AgentInfo_Free(agent);
     }
     free(agents);
@@ -206,7 +206,7 @@ static void ADUC_AgentInfoArray_Free(unsigned int agentCount, ADUC_AgentInfo* ag
  * @param agents ADUC_AgentInfo (size agentCount). Array to be freed using free(), objects must also be freed.
  * @return bool Success state.
  */
-bool ADUC_Json_GetAgents(JSON_Value* root_value, unsigned int* agentCount, ADUC_AgentInfo** agents)
+bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentInfo** agents)
 {
     bool succeeded = false;
     if ((agentCount == NULL) || (agents == NULL))
@@ -411,7 +411,7 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
 
     // Note: download timeout is optional.
     ADUC_JSON_GetUnsignedIntegerField(
-            config->rootJsonValue, CONFIG_DOWNLOAD_TIMEOUT_IN_MINUTES, &(config->downloadTimeoutInMinutes));
+        config->rootJsonValue, CONFIG_DOWNLOAD_TIMEOUT_IN_MINUTES, &(config->downloadTimeoutInMinutes));
 
     // Ensure that adu-shell folder is valid.
     config->aduShellFolder = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_ADU_SHELL_FOLDER);

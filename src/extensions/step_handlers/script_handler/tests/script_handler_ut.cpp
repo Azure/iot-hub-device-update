@@ -81,7 +81,8 @@ bool ReadResultFile(const char* resultFile, ADUC_Result* result)
 
     JSON_Object* actionResultObject = json_object(actionResultValue);
     result->ResultCode = static_cast<int32_t>(json_object_get_number(actionResultObject, "resultCode"));
-    result->ExtendedResultCode = static_cast<int32_t>(json_object_get_number(actionResultObject, "extendedResultCode"));
+    result->ExtendedResultCode =
+        static_cast<int32_t>(json_object_get_number(actionResultObject, "extendedResultCode"));
     json_value_free(actionResultValue);
     return true;
 }
@@ -116,7 +117,7 @@ TEST_CASE("Script Handler Prepare Arguments Test")
     result = PrepareStepsWorkflowDataObject(handle);
     CHECK(result.ResultCode != 0);
 
-    int childCount = workflow_get_children_count(handle);
+    size_t childCount = workflow_get_children_count(handle);
     CHECK(childCount == 1);
 
     ADUC_WorkflowHandle stepHandle = workflow_get_child(handle, 0);
@@ -200,7 +201,7 @@ TEST_CASE("Script Handler Prepare Arguments Test v2.1")
     result = PrepareStepsWorkflowDataObject(handle);
     CHECK(result.ResultCode != 0);
 
-    int childCount = workflow_get_children_count(handle);
+    size_t childCount = workflow_get_children_count(handle);
     CHECK(childCount == 1);
 
     ADUC_WorkflowHandle stepHandle = workflow_get_child(handle, 0);

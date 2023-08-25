@@ -29,7 +29,7 @@ typedef struct tagFileInfo
 } FileInfo;
 
 bool FileInfoUtils_GetNewestFilesInDirUnderSize(
-    VECTOR_HANDLE* fileNameVector, const char* directoryPath, const unsigned int maxFileSize);
+    VECTOR_HANDLE* fileNameVector, const char* directoryPath, const long long maxFileSize);
 
 bool FileInfoUtils_InsertFileInfoIntoArray(
     FileInfo* sortedLogFiles,
