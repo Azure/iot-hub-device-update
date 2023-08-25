@@ -30,7 +30,7 @@ class WindowsPlatformLayer
 {
 public:
     /**
-     * 
+     * @brief 
      */
     static std::unique_ptr<WindowsPlatformLayer> Create();
 
