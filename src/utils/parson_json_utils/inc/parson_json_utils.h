@@ -28,6 +28,7 @@ bool ADUC_JSON_GetBooleanField(const JSON_Value* jsonValue, const char* jsonFiel
 
 bool ADUC_JSON_GetUnsignedIntegerField(const JSON_Value* jsonValue, const char* jsonFieldName, unsigned int* value);
 
+bool ADUC_JSON_GetLongLongField(const JSON_Value* jsonValue, const char* jsonFieldName, long long* value);
 //
 // JSON_Object Helper Utils
 //

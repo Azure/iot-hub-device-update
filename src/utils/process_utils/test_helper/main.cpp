@@ -65,7 +65,7 @@ int main(int argc, char** argv)
         case 'n': {
             char* endptr;
             errno = 0; /* To distinguish success/failure after call */
-            exitErrno = strtol(optarg, &endptr, 10);
+            exitErrno = (int)strtol(optarg, &endptr, 10);
             if (errno != 0 || endptr == optarg)
             {
                 printf("Invalid errno %d\n", exitErrno);
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
         case 'x': {
             char* endptr;
             errno = 0; /* To distinguish success/failure after call */
-            exitStatus = strtol(optarg, &endptr, 10);
+            exitStatus = (int)strtol(optarg, &endptr, 10);
             if (errno != 0 || endptr == optarg || exitStatus < 0 || exitStatus > 255)
             {
                 printf("Invalid exit status %s (expecting 0-255).\n", optarg);

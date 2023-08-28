@@ -1,7 +1,6 @@
 cmake_minimum_required (VERSION 3.5)
 
-project (libaducpal LANGUAGES C)
-
+set (target_name libaducpal)
 # CMake Note:  We do not recommend using GLOB to collect a list of source files from your source tree.
 # If no CMakeLists.txt file changes when a source is added or removed then the generated build system
 # cannot know when to ask CMake to regenerate.
@@ -10,7 +9,7 @@ if (WIN32)
 
     # Build as a static library
     add_library (
-        ${PROJECT_NAME} STATIC
+        ${target_name} STATIC
         "src/dirent.c"
         "src/dlfcn.c"
         "src/ftw.c"
@@ -30,15 +29,15 @@ if (WIN32)
 
     # On Windows, any project that links to this will have ADUCPAL_USE_PAL defined
     # so that the headers bring in the correct includes and function definitions.
-    target_compile_definitions (${PROJECT_NAME} PUBLIC ADUCPAL_USE_PAL)
+    target_compile_definitions (${target_name} PUBLIC ADUCPAL_USE_PAL)
 
     # Ensure that all projects (including this) have access to this project's inc folder.
-    target_include_directories (${PROJECT_NAME} PUBLIC "inc")
+    target_include_directories (${target_name} PUBLIC "inc")
 
 else ()
 
     # Build as header-only library
-    add_library (${PROJECT_NAME} INTERFACE)
+    add_library (${target_name} INTERFACE)
 
-    target_include_directories (${PROJECT_NAME} INTERFACE "inc")
+    target_include_directories (${target_name} INTERFACE "inc")
 endif ()

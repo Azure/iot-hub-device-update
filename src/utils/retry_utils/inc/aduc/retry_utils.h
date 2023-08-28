@@ -44,8 +44,8 @@ typedef struct _tagADUC_Retry_Params
 typedef time_t (*ADUC_NEXT_RETRY_TIMESTAMP_CALC_FUNC)(
     int additionalDelaySecs,
     unsigned int retries,
-    long initialDelayUnitMilliSecs,
-    long maxDelaySecs,
+    unsigned long initialDelayUnitMilliSecs,
+    unsigned long maxDelaySecs,
     double maxJitterPercent);
 
 /**
@@ -61,8 +61,8 @@ typedef time_t (*ADUC_NEXT_RETRY_TIMESTAMP_CALC_FUNC)(
 time_t ADUC_Retry_Delay_Calculator(
     int additionalDelaySecs,
     unsigned int retries,
-    long initialDelayUnitMilliSecs,
-    long maxDelaySecs,
+    unsigned long initialDelayUnitMilliSecs,
+    unsigned long maxDelaySecs,
     double maxJitterPercent);
 
 EXTERN_C_END

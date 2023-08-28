@@ -45,7 +45,7 @@ bool FileInfoUtils_InsertFileInfoIntoArray(
     FileInfo* sortedLogFiles,
     size_t sortedLogFileLength,
     const char* candidateFileName,
-    unsigned long sizeOfCandidateFile,
+    long long sizeOfCandidateFile,
     time_t candidateLastWrite)
 {
     if (sortedLogFiles == NULL || sortedLogFileLength < 1 || candidateFileName == NULL || sizeOfCandidateFile == 0)
@@ -194,7 +194,7 @@ done:
  * @returns true on successful scanning and populating of filePathVectorHandle; false on failure
  */
 bool FileInfoUtils_GetNewestFilesInDirUnderSize(
-    VECTOR_HANDLE* fileNameVector, const char* directoryPath, const unsigned int maxFileSize)
+    VECTOR_HANDLE* fileNameVector, const char* directoryPath, const long long maxFileSize)
 {
     bool succeeded = false;
 
@@ -224,7 +224,7 @@ bool FileInfoUtils_GetNewestFilesInDirUnderSize(
     }
 
     int fileIndex = 0;
-    unsigned long currentFileMaxCount = 0;
+    long long currentFileMaxCount = 0;
     while (currentFileMaxCount < maxFileSize && fileIndex < discoveredFilesSize)
     {
         if (discoveredFiles[fileIndex].fileName == NULL)

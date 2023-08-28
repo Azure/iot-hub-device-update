@@ -1,5 +1,5 @@
 /**
- * @file file_utils.c
+ * @file file_utils.cpp
  * @brief The implementation of file utilities.
  *
  * @copyright Copyright (c) Microsoft Corporation.

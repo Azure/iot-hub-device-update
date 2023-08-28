@@ -283,7 +283,18 @@ void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, unsigned int line,
     char va_buffer[LOG_CONTENT_BUFFER_SIZE];
     va_list va;
     va_start(va, fmt);
-    int full_log_len = vsnprintf(va_buffer, sizeof(va_buffer) / sizeof(va_buffer[0]), fmt, va);
+    int full_log_len_ret = vsnprintf(va_buffer, sizeof(va_buffer) / sizeof(va_buffer[0]), fmt, va);
+
+    //
+    // If value is velow zero we've encountered some fatal error in vsnprintf
+    //
+    if (full_log_len_ret < 0)
+    {
+        return;
+    }
+
+    size_t full_log_len = (size_t)full_log_len_ret;
+
     // A return value of size or more means that the output was truncated.
     bool log_truncated = full_log_len >= (sizeof(va_buffer) / sizeof(va_buffer[0]));
     va_end(va);
@@ -425,8 +436,16 @@ static void _zlog_roll_over_if_file_size_too_large(size_t additional_log_len)
         return;
     }
 
+    long ftellVal = ftell(zlog_fout);
+
+    // Some error occurred
+    if (ftellVal < 0)
+    {
+        return;
+    }
+
     // Roll over to new log file once the current file size exceeds the limit
-    if ((ftell(zlog_fout) + additional_log_len) > (ZLOG_FILE_MAX_SIZE_KB * 1024))
+    if (((size_t)ftellVal + additional_log_len) > (ZLOG_FILE_MAX_SIZE_KB * 1024))
     {
         zlog_close_file_log();
 

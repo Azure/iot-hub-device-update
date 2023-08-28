@@ -1,6 +1,6 @@
 
 /**
- * @file source_update_cache.cpp
+ * @file source_update_cache.c
  * @brief File cache for updates used as a source for delta update processing.
  *
  * @copyright Copyright (c) Microsoft Corporation.

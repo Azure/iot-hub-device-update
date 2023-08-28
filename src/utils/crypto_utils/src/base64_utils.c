@@ -98,7 +98,7 @@ size_t Base64URLDecode(const char* base64_encoded_blob, unsigned char** decoded_
         goto done;
     }
 
-    unsigned int i = 0;
+    size_t i = 0;
     for (i = 0; i < blob_len; ++i)
     {
         if (base64_encoded_blob[i] == '-')

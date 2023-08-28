@@ -244,31 +244,25 @@ while [[ $1 != "" ]]; do
         action=$1
         shift
         case $action in
-            is-installed)
-                check_is_installed=yes
-                ;;
-            download)
-                do_download_action=yes
-                ;;
-            install)
-                do_install_action=yes
-                ;;
-            apply)
-                do_apply_action=yes
-                ;;
-            cancel)
-                do_cancel_action=yes
-                ;;
-            backup)
-                do_backup_action=yes
-                ;;
-            restore)
-                do_restore_action=yes
-                ;;
-            *)
-                error "Unknown action: $action"
-                $ret 1
-                ;;
+        is-installed)
+            check_is_installed=yes
+            ;;
+        download)
+            do_download_action=yes
+            ;;
+        install)
+            do_install_action=yes
+            ;;
+        apply)
+            do_apply_action=yes
+            ;;
+        cancel)
+            do_cancel_action=yes
+            ;;
+        *)
+            error "Unknown action: $action"
+            $ret 1
+            ;;
         esac
         ;;
     --action-download)

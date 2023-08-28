@@ -7,8 +7,12 @@
 
 namespace ptr_deleters
 {
-struct workflow_string
+struct workflow_string // !< wrapper for the workflow struct so we can keep free the workflow_string ptr
 {
+    /**
+     * @brief Frees the @p ptr parameter using workflow_free_string()
+     * @param ptr the workflow string to be freed 
+     */
     void operator()(char* ptr)
     {
         workflow_free_string(ptr);

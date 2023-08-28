@@ -27,11 +27,14 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowD
 //
 // Device Update Action data type and methods.
 //
+
+/** @brief MethdoCall_Data struct wrapper */
 typedef struct tagADUC_MethodCall_Data
 {
-    ADUC_WorkCompletionData WorkCompletionData;
-    ADUC_WorkflowData* WorkflowData;
+    ADUC_WorkCompletionData WorkCompletionData; //!< data for the work completion
+    ADUC_WorkflowData* WorkflowData; //!< The data for the workflow
 } ADUC_MethodCall_Data;
+
 
 void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData);
 

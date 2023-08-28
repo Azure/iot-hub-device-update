@@ -57,7 +57,7 @@ workflow_init_from_file(const char* updateManifestFile, bool validateManifest, A
  * @param handle A workflow object handle with information about the workflow.
  * @return ADUC_Result
  */
-ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, int stepIndex, ADUC_WorkflowHandle* handle);
+ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, size_t stepIndex, ADUC_WorkflowHandle* handle);
 
 /**
  * @brief Transfer action data from @p sourceHandle to @p targetHandle.
@@ -408,7 +408,7 @@ ADUC_WorkflowHandle workflow_get_parent(ADUC_WorkflowHandle handle);
  * @param handle A workflow data object handle.
  * @return A total count of child workflows.
  */
-int workflow_get_children_count(ADUC_WorkflowHandle handle);
+size_t workflow_get_children_count(ADUC_WorkflowHandle handle);
 
 /**
  * @brief Get child workflow at specified @p index.
@@ -418,7 +418,7 @@ int workflow_get_children_count(ADUC_WorkflowHandle handle);
  * @param index Index of child to get.
  * @return ADUC_WorkflowHandle A child workflow object handle.
  */
-ADUC_WorkflowHandle workflow_get_child(ADUC_WorkflowHandle handle, int index);
+ADUC_WorkflowHandle workflow_get_child(ADUC_WorkflowHandle handle, size_t index);
 
 /**
  * @brief Insert @p childHandle into @p handle children list.
@@ -640,7 +640,7 @@ void workflow_set_level(ADUC_WorkflowHandle handle, int level);
  * @param handle A workflow object handle.
  * @param stepIndex A workflow step index.
  */
-void workflow_set_step_index(ADUC_WorkflowHandle handle, int stepIndex);
+void workflow_set_step_index(ADUC_WorkflowHandle handle, size_t stepIndex);
 
 /**
  * @brief Get workflow level.

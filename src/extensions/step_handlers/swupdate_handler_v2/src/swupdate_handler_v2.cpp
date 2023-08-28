@@ -71,7 +71,7 @@ static ADUC_Result SWUpdate_Handler_DownloadScriptFile(ADUC_WorkflowHandle handl
     char* workFolder = nullptr;
     ADUC_FileEntity entity;
     memset(&entity, 0, sizeof(entity));
-    int fileCount = workflow_get_update_files_count(handle);
+    size_t fileCount = workflow_get_update_files_count(handle);
     int createResult = 0;
     // Download the main script file.
     const char* scriptFileName =
@@ -279,8 +279,8 @@ ADUC_Result SWUpdateHandler_PerformAction(
     else
     {
         JSON_Object* actionResultObject = json_object(actionResultValue);
-        result.ResultCode = json_object_get_number(actionResultObject, "resultCode");
-        result.ExtendedResultCode = json_object_get_number(actionResultObject, "extendedResultCode");
+        result.ResultCode = (ADUC_Result_t)json_object_get_number(actionResultObject, "resultCode");
+        result.ExtendedResultCode = (ADUC_Result_t)json_object_get_number(actionResultObject, "extendedResultCode");
         const char* details = json_object_get_string(actionResultObject, "resultDetails");
         workflow_set_result_details(workflowData->WorkflowHandle, details);
     }
@@ -330,7 +330,7 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
     char* workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
     ADUC_FileEntity fileEntity;
     memset(&fileEntity, 0, sizeof(fileEntity));
-    int fileCount = workflow_get_update_files_count(workflowHandle);
+    size_t fileCount = workflow_get_update_files_count(workflowHandle);
     ADUC_Result result = SWUpdate_Handler_DownloadScriptFile(workflowHandle);
 
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -552,7 +552,7 @@ std::string SWUpdateHandlerImpl::ReadValueFromFile(const std::string& filePath)
  *   - Device builder defines the how to evaluate wither the current step can be considered 'completed'.
  *     Note that the term 'IsInstalled' was carried over from the original design where the agent would
  *     ask the handler that "Is an 'update' is currently installed on the device.".
- *   -
+ * @param workflowData workflowData to perform the IsInstalled check on 
  * @return ADUC_Result The result based on evaluating the workflow data.
  */
 ADUC_Result SWUpdateHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflowData)
@@ -617,7 +617,7 @@ ADUC_Result SWUpdateHandlerImpl::PrepareCommandArguments(
     JSON_Value* selectedComponentsValue = nullptr;
     JSON_Object* selectedComponentsObject = nullptr;
     JSON_Array* componentsArray = nullptr;
-    int componentCount = 0;
+    size_t componentCount = 0;
     JSON_Object* component = nullptr;
 
     std::string fileArgs;

@@ -59,7 +59,7 @@ typedef struct tagADUC_ConfigInfo
 
     JSON_Value* rootJsonValue; /**< The root value of the configuration. */
 
-    const char* schemaVersion;
+    const char* schemaVersion; /**< The version of the schema for the configuration. */
 
     JSON_Array* aduShellTrustedUsers; /**< All the trusted users for ADU shell. */
 
@@ -71,7 +71,7 @@ typedef struct tagADUC_ConfigInfo
 
     ADUC_AgentInfo* agents; /**< Array of agents that are configured. */
 
-    unsigned int agentCount; /**< Total number of agents configured. */
+    size_t agentCount; /**< Total number of agents configured. */
 
     const char* compatPropertyNames; /**< Compat property names. */
 

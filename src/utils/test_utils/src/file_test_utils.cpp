@@ -1,5 +1,5 @@
 /**
- * @file file_test_utils.c
+ * @file file_test_utils.cpp
  * @brief The implementation of file test utilities.
  *
  * @copyright Copyright (c) Microsoft Corporation.

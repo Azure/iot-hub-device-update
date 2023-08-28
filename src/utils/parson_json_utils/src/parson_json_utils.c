@@ -196,3 +196,48 @@ done:
 
     return succeeded;
 }
+
+/**
+ * @brief Gets the long long int representation of a the value of @p jsonFieldName from @p jsonValue and assigns it to @p value
+ *
+ * @details All values in json are doubles this function only returns true if the value read is a whole,
+ * @param jsonValue value to extract the @p jsonFieldName value from
+ * @param value the parameter to store @p jsonFieldName's value in
+ * @returns true on success; false on failure
+ */
+bool ADUC_JSON_GetLongLongField(const JSON_Value* jsonValue, const char* jsonFieldName, long long* value)
+{
+    if (jsonValue == NULL || jsonFieldName == NULL)
+    {
+        return false;
+    }
+
+    bool succeeded = false;
+    double val = 0;
+    long long castVal = 0;
+
+    JSON_Object* jsonObj = json_value_get_object(jsonValue);
+
+    if (jsonObj == NULL)
+    {
+        goto done;
+    }
+
+    // Note: cannot determine failure in this call as 0 is a valid return, always assume succeeded at this point
+    val = json_object_get_number(jsonObj, jsonFieldName);
+
+    // Note: check value is a whole number for safe casting to an unsigned int
+    if (((long long)val) != val)
+    {
+        goto done;
+    }
+
+    castVal = (long long)val;
+
+    succeeded = true;
+done:
+
+    *value = castVal;
+
+    return succeeded;
+}
