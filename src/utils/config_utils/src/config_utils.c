@@ -411,7 +411,7 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
 
     // Note: download timeout is optional.
     ADUC_JSON_GetUnsignedIntegerField(
-            config->rootJsonValue, CONFIG_DOWNLOAD_TIMEOUT_IN_MINUTES, &(config->downloadTimeoutInMinutes));
+        config->rootJsonValue, CONFIG_DOWNLOAD_TIMEOUT_IN_MINUTES, &(config->downloadTimeoutInMinutes));
 
     // Ensure that adu-shell folder is valid.
     config->aduShellFolder = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_ADU_SHELL_FOLDER);

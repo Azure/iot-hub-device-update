@@ -1,5 +1,5 @@
 /**
- * @file auto_file_entity.h
+ * @file auto_file_entity.hpp
  * @brief Defines AutoFileEntity class that houses and manages an ADUC_FileEntity member.
  *
  * @copyright Copyright (c) Microsoft Corporation.

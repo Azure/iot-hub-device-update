@@ -207,7 +207,7 @@ typedef struct tagADUC_WorkflowHandlerMapEntry
 
     const ADUC_Workflow_OperationFunc OperationFunc; /**< Calls upper-level operation */
 
-    const ADUC_Workflow_OperationCompleteFunc OperationCompleteFunc;
+    const ADUC_Workflow_OperationCompleteFunc OperationCompleteFunc; /**< Function called upon operation completion */
 
     const ADUCITF_State NextStateOnSuccess; /**< State to transition to on successful operation */
 

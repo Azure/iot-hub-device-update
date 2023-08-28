@@ -1,6 +1,6 @@
 
 /**
- * @file microsoft_delta_download_handler_plugin.c
+ * @file microsoft_delta_download_handler_plugin.EXPORTS.c
  * @brief An example implementation of a DownloadHandler plugin module
  * that produces full target updates using a source update update cache and
  * can cache updates once they've been verified to be good upon workflow success.

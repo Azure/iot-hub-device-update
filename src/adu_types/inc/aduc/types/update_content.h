@@ -328,7 +328,7 @@ typedef struct tagADUC_FileEntity
     ADUC_Hash* Hash; /**< Array of ADUC_Hashes containing the hash options for the file*/
     size_t HashCount; /**< Total number of hashes in the array of hashes */
     char* TargetFilename; /**< File name to store content in DownloadUri to. */
-    char* Arguments; //**< Arguments associate with this file. */
+    char* Arguments; /**< Arguments associate with this file. */
     size_t SizeInBytes; /**< File size. */
     ADUC_RelatedFile* RelatedFiles; /**< The related files for this update payload. */
     size_t RelatedFileCount; /**< The count of related files. */

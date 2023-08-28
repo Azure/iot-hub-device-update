@@ -29,8 +29,17 @@ namespace ADUC
 class WindowsPlatformLayer
 {
 public:
+    /**
+     * @brief Factory method for WindowsPlatformLayer
+     * @returns std::unique_ptr<WindowsPlatformLayer> The unique_ptr instance of the WindowsPlatformLayer
+     */
     static std::unique_ptr<WindowsPlatformLayer> Create();
 
+    /**
+    * @brief Callback for setting the update action
+    * @param data the callbacks to set up the update action callbacks
+    * @returns a value of ADUC_Result
+    */
     ADUC_Result SetUpdateActionCallbacks(ADUC_UpdateActionCallbacks* data);
 
 private:

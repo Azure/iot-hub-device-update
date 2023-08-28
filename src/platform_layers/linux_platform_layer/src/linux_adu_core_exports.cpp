@@ -11,8 +11,8 @@
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
 #include "aduc/shutdown_service.h"
-#include "linux_adu_core_impl.hpp"
 #include "errno.h"
+#include "linux_adu_core_impl.hpp"
 #include <memory>
 #include <string>
 #include <vector>

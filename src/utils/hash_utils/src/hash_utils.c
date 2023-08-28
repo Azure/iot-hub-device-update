@@ -44,7 +44,7 @@ static bool GetResultAndCompareHashes(
         goto done;
     }
 
-    encoded_file_hash = Azure_Base64_Encode_Bytes((unsigned char*)buffer_hash, (size_t) USHAHashSize(algorithm));
+    encoded_file_hash = Azure_Base64_Encode_Bytes((unsigned char*)buffer_hash, (size_t)USHAHashSize(algorithm));
     if (encoded_file_hash == NULL)
     {
         if (!suppressErrorLog)
@@ -131,7 +131,7 @@ static bool ADUC_HashUtils_GetIndexStrongestValidHash(
 
     if (strongestIndex != (size_t)-1)
     {
-        *outIndexStrongestAlgorithm = (size_t) strongestIndex;
+        *outIndexStrongestAlgorithm = (size_t)strongestIndex;
         *outBestShaVersion = curBestAlg;
         return true;
     }
@@ -223,7 +223,7 @@ bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** h
             break;
         }
 
-        if (USHAInput(&context, buffer,(unsigned int) readSize) != 0)
+        if (USHAInput(&context, buffer, (unsigned int)readSize) != 0)
         {
             Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
             goto done;
@@ -335,7 +335,7 @@ bool ADUC_HashUtils_IsValidFileHash(
             break;
         }
 
-        if (USHAInput(&context, buffer,(unsigned int) readSize) != 0)
+        if (USHAInput(&context, buffer, (unsigned int)readSize) != 0)
         {
             if (!suppressErrorLog)
             {
@@ -379,7 +379,7 @@ bool ADUC_HashUtils_IsValidBufferHash(
         return false;
     }
 
-    if (USHAInput(&context, buffer,(unsigned int) bufferLen) != 0)
+    if (USHAInput(&context, buffer, (unsigned int)bufferLen) != 0)
     {
         Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
         return false;

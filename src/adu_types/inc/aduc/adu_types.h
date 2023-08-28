@@ -1,5 +1,5 @@
 /**
- * @file adu_type.h
+ * @file adu_types.h
  * @brief Defines common types used throughout Device Update agent components.
  *
  * @copyright Copyright (c) Microsoft Corporation.

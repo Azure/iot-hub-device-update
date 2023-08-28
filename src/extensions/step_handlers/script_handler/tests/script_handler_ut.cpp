@@ -81,7 +81,8 @@ bool ReadResultFile(const char* resultFile, ADUC_Result* result)
 
     JSON_Object* actionResultObject = json_object(actionResultValue);
     result->ResultCode = static_cast<int32_t>(json_object_get_number(actionResultObject, "resultCode"));
-    result->ExtendedResultCode = static_cast<int32_t>(json_object_get_number(actionResultObject, "extendedResultCode"));
+    result->ExtendedResultCode =
+        static_cast<int32_t>(json_object_get_number(actionResultObject, "extendedResultCode"));
     json_value_free(actionResultValue);
     return true;
 }

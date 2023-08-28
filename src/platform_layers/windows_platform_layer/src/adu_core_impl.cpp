@@ -1,5 +1,5 @@
 /**
- * @file windows_adu_core_impl.cpp
+ * @file adu_core_impl.cpp
  * @brief Implements an ADUC reference implementation library.
  *
  * @copyright Copyright (c) Microsoft Corporation.

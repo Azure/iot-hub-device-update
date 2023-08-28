@@ -12,12 +12,12 @@
 
 #include <stdlib.h>
 
-/*
+/**
  * @brief The ADU contract model id associated with the modelId for agent-orchestrated updates.
  */
 #define ADUC_DEVICEPROPERTIES_DEVICEUPDATE_CONTRACT_MODEL_ID "dtmi:azure:iot:deviceUpdateContractModel;2"
 
-/* @brief The adu client builder and version.
+/** @brief The adu client builder and version.
  * Consisting of BUILDER; component and ADUC_VERSION
  * e.g. DU;agent/0.3.0-private-preview
  */

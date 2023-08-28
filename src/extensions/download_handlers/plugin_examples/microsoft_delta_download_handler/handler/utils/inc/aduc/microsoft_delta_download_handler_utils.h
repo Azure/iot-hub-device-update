@@ -17,9 +17,22 @@
 
 EXTERN_C_BEGIN
 
+/**
+ * @brief Function prototype for the function to process a delta update.
+ * @param sourceUpdateFilePath The source update path.
+ * @param deltaUpdateFilePath The path for the delta update
+ * @param targetUpdatePath The file path to the target for the update
+ * @return ADUC_Result The result.
+*/
 typedef ADUC_Result (*ProcessDeltaUpdateFn)(
     const char* sourceUpdateFilePath, const char* deltaUpdateFilePath, const char* targetUpdateFilePath);
 
+/**
+ * @brief Function prototype for the function to download a delta update.
+ * @param workflowHandle The workflow handle.
+ * @param relatedFile The related file for the delta download
+ * @return ADUC_Result The result.
+ */
 typedef ADUC_Result (*DownloadDeltaUpdateFn)(
     const ADUC_WorkflowHandle workflowHandle, const ADUC_RelatedFile* relatedFile);
 
@@ -96,7 +109,7 @@ ADUC_Result MicrosoftDeltaDownloadHandlerUtils_GetDeltaUpdateDownloadSandboxPath
  *
  * @param sourceUpdateFilePath The source update path.
  * @param deltaUpdateFilePath The delta update path.
- * @param targetUpdatePath The target update path.
+ * @param targetUpdateFilePath The target update path.
  * @return ADUC_Result The result.
  */
 ADUC_Result MicrosoftDeltaDownloadHandlerUtils_ProcessDeltaUpdate(

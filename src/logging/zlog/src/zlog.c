@@ -439,7 +439,7 @@ static void _zlog_roll_over_if_file_size_too_large(size_t additional_log_len)
     long ftellVal = ftell(zlog_fout);
 
     // Some error occurred
-    if (ftellVal < 0 )
+    if (ftellVal < 0)
     {
         return;
     }

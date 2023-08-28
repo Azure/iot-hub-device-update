@@ -38,7 +38,7 @@ static bool PermissionUtils_VerifyFilemodeBits(const char* path, mode_t expected
     }
 
     // keep just the file permission bits (as opposed to file_type bits).
-    mode_t permissionBits = st.st_mode & ~ (mode_t) S_IFMT;
+    mode_t permissionBits = st.st_mode & ~(mode_t)S_IFMT;
 
 #if defined(WIN32)
     // Windows only supports "owner" bits. Remove group and other bits.

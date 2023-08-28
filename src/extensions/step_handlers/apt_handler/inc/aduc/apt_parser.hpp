@@ -68,28 +68,43 @@ std::unique_ptr<AptContent> ParseAptContentFromString(const std::string& aptStri
 class ParserException : public std::exception
 {
 public:
+    /**
+     * @brief ParserException Explicit constructor
+     * @param message Exception message
+    */
     explicit ParserException(const std::string& message) : _message(message), _extendedResultCode(0)
     {
     }
 
+    /**
+     * @brief ParserException default constructor
+     * @param message Exception message
+     * @param extendedResultCode ADU_Result_t Extended result code
+    */
     ParserException(const std::string& message, const int extendedResultCode) :
         _message(message), _extendedResultCode(extendedResultCode)
     {
     }
 
+    /**
+     * @brief what Returns exception message
+     * @return const char* Exception message
+    */
     const char* what() const noexcept override
     {
         return _message.c_str();
     }
-
+    /**
+     * @brief extendedResultCode Returns extended result code
+    */
     const int extendedResultCode()
     {
         return _extendedResultCode;
     }
 
 private:
-    std::string _message;
-    int _extendedResultCode;
+    std::string _message; //!< Message for the exception
+    int _extendedResultCode; //!< Extended result code for the exception
 };
 
 }; // namespace AptParser

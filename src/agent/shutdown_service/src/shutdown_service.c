@@ -1,6 +1,6 @@
 
 /**
- * @file shutdown_service.cpp
+ * @file shutdown_service.c
  * @brief Implementation for agent shutdown services.
  *
  * @copyright Copyright (c) Microsoft Corporation.
