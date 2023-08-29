@@ -543,7 +543,7 @@ do_install_azure_storage_sdk() {
 
     echo -e "Building Azure Storage SDK ...\n\tBranch: $azure_storage_sdk_branch_ref\n\t Folder: $azure_storage_sdk_dir"
     mkdir -p $azure_storage_sdk_dir || return
-    pushd $azure_storage_sdk_dir > /dev/null
+    pushd $azure_storage_sdk_dir > /dev/null || return
     git clone --recursive --single-branch --branch $azure_storage_sdk_branch_ref $azure_storage_sdk_url . || return
 
     git checkout tags/$azure_storage_sdk_tag_ref
@@ -561,7 +561,7 @@ do_install_azure_storage_sdk() {
     cmake --build . || return
     $SUDO cmake --build . --target install || return
 
-    popd > /dev/null
+    popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf $azure_storage_sdk_dir || return
