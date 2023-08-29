@@ -18,7 +18,7 @@ typedef struct tagBlobStorageInfo
     STRING_HANDLE storageSasCredential; //!< Combined SAS URI and SAS Token for connecting to storage
 } BlobStorageInfo;
 
-static bool AzureBlobStorageFileUploadUtility_UploadFilesToContainer(
+static bool FileUploadUtility_UploadFilesToContainer(
     const BlobStorageInfo* blobInfo, const int maxConcurrency, VECTOR_HANDLE fileNames, const char* directoryPath)
 {
     UNREFERENCED_PARAMETER(blobInfo);
@@ -29,7 +29,7 @@ static bool AzureBlobStorageFileUploadUtility_UploadFilesToContainer(
     return false;
 }
 #else
-#    include <azure_blob_storage_file_upload_utility.h>
+#    include <file_upload_utility.h>
 #endif
 
 #include <diagnostics_config_utils.h>
@@ -188,8 +188,7 @@ Diagnostics_Result DiagnosticsWorkflow_UploadFilesForComponent(
         goto done;
     }
 
-    if (!AzureBlobStorageFileUploadUtility_UploadFilesToContainer(
-            &blobInfo, 1, fileNames, STRING_c_str(logComponent->logPath)))
+    if (!FileUploadUtility_UploadFilesToContainer(&blobInfo, 1, fileNames, STRING_c_str(logComponent->logPath)))
     {
         result = Diagnostics_Result_UploadFailed;
         Log_Warn(
