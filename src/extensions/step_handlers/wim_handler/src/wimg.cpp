@@ -13,10 +13,21 @@ public:
     WString(const char* utf8str)
     {
         // Convert from utf8 -> wchar_t*
-        using utf8_to_wchar_t = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>;
+        int convertResult = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, -1, nullptr, 0);
 
-        utf8_to_wchar_t wchar_t_converter;
-        m_str = wchar_t_converter.from_bytes(utf8str);
+        if (convertResult <= 0)
+        {
+            throw HRESULT_FROM_WIN32(convertResult);
+        }
+
+        m_str.resize(convertResult);
+
+        convertResult = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, -1, m_str.data(), convertResult);
+
+        if (convertResult <= 0)
+        {
+            throw HRESULT_FROM_WIN32(convertResult);
+        }
     }
 
     const wchar_t* c_str() const
