@@ -93,7 +93,7 @@ int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string>
     {
         char buffer[1024];
         ssize_t count;
-        count = read(filedes[READ_END], buffer, sizeof(buffer));
+        count = read(filedes[READ_END], buffer, sizeof(buffer) - 1);
 
         if (count == -1)
         {
