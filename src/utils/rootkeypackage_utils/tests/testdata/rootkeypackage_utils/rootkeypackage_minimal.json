@@ -1,0 +1,14 @@
+{
+    "protected": {
+        "version": 1,
+        "published": 1680544698,
+        "disabledRootKeys": [
+        ],
+        "disabledSigningKeys": [
+        ],
+        "rootKeys": {
+        }
+    },
+    "signatures": [
+    ]
+}

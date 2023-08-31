@@ -11,7 +11,8 @@ find_package (Parson REQUIRED)
 
 add_executable (${target_name})
 target_sources (${target_name} PRIVATE src/main.cpp src/rootkeypackage_utils_ut.cpp
-                                       src/rootkeypackage_download_ut.cpp)
+                                       src/rootkeypackage_download_ut.cpp
+                                       src/rootkeypkgtestutils.cpp)
 
 target_include_directories (${target_name} PRIVATE inc)
 

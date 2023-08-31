@@ -20,7 +20,7 @@ EXTERN_C_BEGIN
 ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
     const char* rootKeyPkgUrl,
     const char* workflowId,
-    ADUC_RootKeyPkgDownloaderInfo* downloaderInfo,
+    const ADUC_RootKeyPkgDownloaderInfo* downloaderInfo,
     STRING_HANDLE* outRootKeyPackageDownloadedFile);
 
 ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyPackage* outRootKeyPackage);

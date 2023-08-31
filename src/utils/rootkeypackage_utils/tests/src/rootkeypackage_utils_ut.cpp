@@ -9,6 +9,7 @@
 #include "rootkeypkgtestutils.hpp"
 #include <aduc/file_test_utils.hpp>
 #include <aduc/hash_utils.h>
+#include <aduc/result.h>
 #include <aduc/rootkeypackage_types.h>
 #include <aduc/rootkeypackage_utils.h>
 #include <algorithm>
@@ -207,17 +208,23 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_JSON);
     }
 
+    SECTION("bad parse - no rootkeys")
+    {
+        ADUC_Result result = { ADUC_GeneralResult_Failure, 0 };
+        ADUC_RootKeyPackage pkg{};
+        std::string json_str = get_minimal_rootkeypkg_json_str();
+        result = ADUC_RootKeyPackageUtils_Parse(json_str.c_str(), &pkg);
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_ROOTKEYS_EMPTY);
+    }
+
     SECTION("valid template")
     {
-        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair1{ aduc::rootkeypkgtestutils::rootkeys::rootkey1 };
-        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair2{ aduc::rootkeypkgtestutils::rootkeys::rootkey2 };
-        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair3{ aduc::rootkeypkgtestutils::rootkeys::rootkey3 };
+        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair1{};
+        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair2{};
+        aduc::rootkeypkgtestutils::TestRSAKeyPair rootKeyPair3{};
 
-        const auto& rootkey1_publickey = rootKeyPair1.GetPublicKey();
-        const auto& rootkey2_publickey = rootKeyPair2.GetPublicKey();
-        const auto& rootkey3_publickey = rootKeyPair3.GetPublicKey();
-
-        std::string urlIntBase64EncodedHash_of_rootkey3_public_key = rootkey3_publickey.getSha256HashOfPublicKey();
+        std::string urlIntBase64EncodedHash_of_rootkey3_public_key = rootKeyPair3.getSha256HashOfPublicKey();
         const char* PUBLIC_SIGNING_KEY_CHAINING_UP_TO_ROOTKEY_3 =
             urlIntBase64EncodedHash_of_rootkey3_public_key.c_str();
 
@@ -394,21 +401,45 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         CHECK(IsAducResultCodeSuccess(result.ResultCode));
     }
 
-    SECTION("prod disabled rootkey")
+    SECTION("single disabled rootkey")
     {
-        std::string rootkey_pkg_json = aduc::FileTestUtils_slurpFile(get_prod_rootkey_package_json_path(false /* isSigningKeyDisabled */));
-
+        ADUC_Result result = { ADUC_GeneralResult_Failure, 0 };
         ADUC_RootKeyPackage pkg{};
-        ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(rootkey_pkg_json.c_str(), &pkg);
-        CHECK(IsAducResultCodeSuccess(result.ResultCode));
+
+        std::string path = get_minimal_rootkey_package_json_path();
+        JSON_Value* root_val = json_parse_file(path.c_str());
+        REQUIRE(root_val != nullptr);
+
+        aduc::rootkeypkgtestutils::TestRSAKeyPair key_pair{}
+
+        REQUIRE(add_test_rootkeypkg_rootkey(root_val, "bad_kid", bad_kid_modulus));
+        REQUIRE(add_test_rootkeypkg_rootkey(root_val, "good_kid", good_kid_modulus));
+
+        REQUIRE(add_test_rootkeypkg_disabledRootKey(root_val, "bad_kid"));
+
+
+        result = ADUC_RootKeyPackageUtils_Parse(json_str.c_str(), &pkg);
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_ROOTKEYS_EMPTY);
     }
 
-    SECTION("prod disabled signing key")
+    SECTION("single disabled signing key")
     {
-        std::string rootkey_pkg_json = aduc::FileTestUtils_slurpFile(get_prod_rootkey_package_json_path(true /* isSigningKeyDisabled */));
-
+        ADUC_Result result = { ADUC_GeneralResult_Failure, 0 };
         ADUC_RootKeyPackage pkg{};
-        ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(rootkey_pkg_json.c_str(), &pkg);
-        CHECK(IsAducResultCodeSuccess(result.ResultCode));
+        std::string json_str = get_minimal_rootkeypkg_json_str();
+        result = ADUC_RootKeyPackageUtils_Parse(json_str.c_str(), &pkg);
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_ROOTKEYS_EMPTY);
+    }
+
+    SECTION("single disabled rootkey and disabled signing key")
+    {
+        ADUC_Result result = { ADUC_GeneralResult_Failure, 0 };
+        ADUC_RootKeyPackage pkg{};
+        std::string json_str = get_minimal_rootkeypkg_json_str();
+        result = ADUC_RootKeyPackageUtils_Parse(json_str.c_str(), &pkg);
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_ROOTKEYS_EMPTY);
     }
 }

@@ -11,10 +11,12 @@ target_sources (${target_name} PRIVATE main.cpp rootkey_workflow_ut.cpp)
 
 target_link_libraries (
     ${target_name}
-    PRIVATE Catch2::Catch2
-            aduc::c_utils
+    PRIVATE aduc::c_utils
+            aduc::logging
             aduc::rootkey_workflow
-            aduc::root_key_utils)
+            aduc::root_key_utils
+            Catch2::Catch2
+            Parson::parson)
 
 target_compile_definitions (${target_name}
                             PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")

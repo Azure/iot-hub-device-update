@@ -31,6 +31,9 @@ cscope.po.out
 *.sig
 *.pem
 
+### clangd cache for some editors
+.cache
+
 ### Python Module Files
 *__pycache__
 *__pycache__/*

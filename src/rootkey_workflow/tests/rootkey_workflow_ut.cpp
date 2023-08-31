@@ -9,9 +9,12 @@
 #include "aduc/rootkey_workflow.h" // RootKeyWorkflow_UpdateRootKeys
 #include <aduc/c_utils.h>
 #include <aduc/result.h>
+#include <aduc/logging.h>
+#include <aduc/types/adu_core.h>
 #include <catch2/catch.hpp>
+#include <parson.h>
 #include <root_key_util.h> // RootKeyUtility_GetReportingErc
-#include <random> // std::mt19937, std::random_device
+#include <random>
 
 using Catch::Matchers::Equals;
 
@@ -22,6 +25,9 @@ using Catch::Matchers::Equals;
 #define TEST_ROOTKEY_STORE_DIR_PATH TEST_BASE_PATH "/test_rootkey_store_path"
 
 #define TEST_ROOTKEY_STORE_PKG_FILE_PATH TEST_ROOTKEY_STORE_DIR_PATH "/test_rootkeypkg.json"
+
+#define TEST_WORKFLOW_ID "cf6dbc7c-98fb-4479-bcbf-16c79efd0d79"
+#define TEST_ROOTKEYPKG_URL "http://localhost.knoxjonesi.pizza:70/rootkeypkg.json"
 
 static std::string get_test_rootkeypkg_path()
 {
@@ -41,7 +47,7 @@ static void ParseAndSerializeJsonFile(const char* src, const char* tgt)
 
 static ADUC_Result MockDownload(const char* rootKeyPkgUrl, const char* targetFilePath)
 {
-    ParseAndSerializeJsonFile(get_test_rootkeypkg_path(), targetFilePath)
+    ParseAndSerializeJsonFile(get_test_rootkeypkg_path().c_str(), targetFilePath);
     return { ADUC_GeneralResult_Success, 0 };
 }
 
@@ -49,7 +55,7 @@ TEST_CASE("RootKeyWorkflow_UpdateRootKeys")
 {
     SECTION("rootkeyutil reporting erc set on failure")
     {
-        ADUC_Result result = RootKeyWorkflow_UpdateRootKeys(nullptr /* workflowId */, nullptr /* rootKeyPkgUrl */);
+        ADUC_Result result = RootKeyWorkflow_UpdateRootKeys(nullptr /* workflowId */, nullptr /* rootKeyPkgUrl */, nullptr /* rootkeyStoreDirPath*/, nullptr /* rootKeyStorePkgFilePath */, nullptr /* downloaderInfo */);
         REQUIRE(IsAducResultCodeFailure(result.ResultCode));
         CHECK(result.ExtendedResultCode == ADUC_ERC_INVALIDARG);
 
@@ -59,18 +65,22 @@ TEST_CASE("RootKeyWorkflow_UpdateRootKeys")
 
     SECTION("rootkey success flow - upd store NOT needed")
     {
-        const ADUC_RootKeyPkgDownloaderInfo downloaderInfo{
+        ADUC_RootKeyPkgDownloaderInfo downloaderInfo = {
             /* .name = */ "test-rootkeypkg-downloader",
             /* .downloadFn = */ MockDownload,
             /* .downloadBaseDir = */ TEST_DOWNLOAD_DIR,
         };
 
+        std::string targetFilePath{ TEST_DOWNLOAD_DIR };
+        targetFilePath += TEST_WORKFLOW_ID;
+        targetFilePath += "/rootkeypkg.json";
+
         // Ensure rootkey pkg store file exists so that update store is not needed
-        ParseAndSerializeJsonFile(get_test_rootkeypkg_path(), targetFilePath);
+        ParseAndSerializeJsonFile(get_test_rootkeypkg_path().c_str(), targetFilePath.c_str());
 
         ADUC_Result result = RootKeyWorkflow_UpdateRootKeys(
-            "cf6dbc7c-98fb-4479-bcbf-16c79efd0d79",
-            "http://localhost.knoxjonesi.pizza:70/rootkeypkg.json",
+            TEST_WORKFLOW_ID,
+            TEST_ROOTKEYPKG_URL,
             TEST_ROOTKEY_STORE_DIR_PATH, // rootKeyStoreDirPath
             TEST_ROOTKEY_STORE_PKG_FILE_PATH, // rootKeyStorePkgFilePath
             &downloaderInfo);
@@ -82,7 +92,7 @@ TEST_CASE("RootKeyWorkflow_UpdateRootKeys")
 
     SECTION("rootkey success flow - upd store *is* needed")
     {
-        const ADUC_RootKeyPkgDownloaderInfo downloaderInfo{
+        ADUC_RootKeyPkgDownloaderInfo downloaderInfo = {
             /* .name = */ "test-rootkeypkg-downloader",
             /* .downloadFn = */ MockDownload,
             /* .downloadBaseDir = */ TEST_DOWNLOAD_DIR,
@@ -90,20 +100,12 @@ TEST_CASE("RootKeyWorkflow_UpdateRootKeys")
 
         const char* path_to_pkg_store_file = TEST_ROOTKEY_STORE_PKG_FILE_PATH;
 
-        // Ensure rootkey pkg store file is removed so that update store *is* needed
-        if(remove(path_to_pkg_store_file) != 0)
-        {
-            std::mt19937 rg(std::random_device{});
-            char chars[] = "1234wxyz";
-            std::shuffle(std::begin(chars), std::end(chars), rg);
-
-            path_to_pkg_store_file += chars;
-            path_to_pkg_store_file += ".json";
-        }
+        // Remove rootkey pkg store file so that update store *is* needed
+        remove(path_to_pkg_store_file);
 
         ADUC_Result result = RootKeyWorkflow_UpdateRootKeys(
-            "cf6dbc7c-98fb-4479-bcbf-16c79efd0d79",
-            "http://localhost.knoxjonesi.pizza:70/rootkeypkg.json",
+            TEST_WORKFLOW_ID,
+            TEST_ROOTKEYPKG_URL,
             TEST_ROOTKEY_STORE_DIR_PATH, // rootKeyStoreDirPath
             TEST_ROOTKEY_STORE_PKG_FILE_PATH, // rootKeyStorePkgFilePath
             &downloaderInfo);

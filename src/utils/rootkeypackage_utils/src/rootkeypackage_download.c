@@ -30,7 +30,7 @@ EXTERN_C_BEGIN
 ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
     const char* rootKeyPkgUrl,
     const char* workflowId,
-    ADUC_RootKeyPkgDownloaderInfo* downloaderInfo,
+    const ADUC_RootKeyPkgDownloaderInfo* downloaderInfo,
     STRING_HANDLE* outRootKeyPackageDownloadedFile)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
