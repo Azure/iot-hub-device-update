@@ -92,12 +92,12 @@ bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* val
  * @brief Function that sets @p strBuffers to the contents of the file at @p filePath if the contents are smaller in size than the buffer
  * @param filePath path to the file who's contents will be read
  * @param strBuffer buffer which will be loaded with the contents of @p filePath
- * @param strBuffSize the size of the buffer
+ * @param strBuffSize the size of the buffer to hold file contents plus a null terminator.
  * @returns false on failure, true on success
  */
 bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const size_t strBuffSize)
 {
-    if (filePath == NULL || strBuffer == NULL || strBuffSize == 0)
+    if (filePath == NULL || strBuffer == NULL || strBuffSize < 2)
     {
         return false;
     }
@@ -121,7 +121,7 @@ bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const siz
 
     long fileSize = bS.st_size;
 
-    if (fileSize == 0 || fileSize > strBuffSize)
+    if (fileSize == 0 || fileSize > (strBuffSize - 1))
     {
         goto done;
     }
