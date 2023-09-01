@@ -12,21 +12,29 @@ class WString
 public:
     WString(const char* utf8str)
     {
-        // Convert from utf8 -> wchar_t*
-        int convertResult = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, -1, nullptr, 0);
+        size_t utf8strLen;
+        HRESULT hr = StringCchLengthA(utf8str, STRSAFE_MAX_CCH, &utf8strLen);
 
-        if (convertResult <= 0)
+        if (hr != S_OK)
         {
-            throw HRESULT_FROM_WIN32(convertResult);
+            throw hr;
+        }
+
+        // Convert from utf8 -> wchar_t*
+        int countWideChars = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, utf8strLen, nullptr, 0);
+
+        if (countWideChars <= 0)
+        {
+            throw HRESULT_FROM_WIN32(GetLastError());
         }
 
         m_str.resize(convertResult);
 
-        convertResult = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, -1, m_str.data(), convertResult);
+        convertResult = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, utf8strLen, m_str.data(), convertResult);
 
         if (convertResult <= 0)
         {
-            throw HRESULT_FROM_WIN32(convertResult);
+            throw HRESULT_FROM_WIN32(GetLastError());
         }
     }
 

@@ -2,10 +2,11 @@
  * @file blob_storage_helper.cpp
  * @brief Implements the interface for interacting with Azure Blob Storage
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corp.
  */
 #include "blob_storage_helper.hpp"
 
+#include <aduc/exception_utils.hpp>
 #include <azure_c_shared_utility/string_token.h>
 #include <azure_c_shared_utility/urlencode.h>
 #include <cstring>
@@ -16,14 +17,13 @@
  * @param blobInfo information related to the blob storage account
  * @param maxConcurrency the maximum number of threads that can be working at one time for the client connection
  */
-AzureBlobStorageHelper::AzureBlobStorageHelper(const BlobStorageInfo& blobInfo, const unsigned int maxConcurrency)
+AzureBlobStorageHelper::AzureBlobStorageHelper(const BlobStorageInfo& blobInfo)
 {
     if (blobInfo.storageSasCredential == nullptr)
     {
         throw std::invalid_argument("Container name invalid");
     }
 
-    // NOLINTNEXTLINE (modernize-make-unique): There is no std::make_unique in c++11
     client = std::make_unique<Azure::Storage::Blobs::BlobContainerClient>(STRING_c_str(blobInfo.storageSasCredential));
 }
 
@@ -38,10 +38,10 @@ AzureBlobStorageHelper::CreatePathFromFileAndDirectory(const std::string& fileNa
 {
     if (fileName.empty() || directoryPath.empty())
     {
-        throw std::runtime_error("Invalid Arguments to CreatePathFromFileAndDirectory");
+        throw std::invalid_argument(__FUNCTION__);
     }
 
-    _Bool needsSeperator = false;
+    bool needsSeperator = false;
     if (directoryPath.find_last_of('/') != directoryPath.length() - 1)
     {
         needsSeperator = true;
@@ -66,7 +66,7 @@ bool AzureBlobStorageHelper::UploadFilesToContainer(
 {
     if (VECTOR_size(fileNames) == 0)
     {
-        throw std::runtime_error("Invalid Arguments to CreatePathFromFileAndDirectory");
+        throw std::invalid_argument("blobInfo.storageSasCredential");
     }
 
     std::string virtualDirectoryPath = virtualDirectory;
@@ -83,22 +83,18 @@ bool AzureBlobStorageHelper::UploadFilesToContainer(
 
         std::string filePath;
 
-        try
-        {
-            filePath = CreatePathFromFileAndDirectory(fileName, directoryPath);
-        }
-        catch (std::exception& e)
-        {
-            continue;
-        }
+        ADUC::ExceptionUtils::CallVoidMethodAndHandleExceptions(
+            [fileName, directoryPath, virtualDirectoryPath, client]() -> void {
+                filePath = CreatePathFromFileAndDirectory(fileName, directoryPath);
 
-        Azure::Core::IO::FileBodyStream fileStream(filePath);
+                Azure::Core::IO::FileBodyStream fileStream(filePath);
 
-        std::string blobName = virtualDirectoryPath + fileName;
+                std::string blobName = virtualDirectoryPath + fileName;
 
-        std::vector<std::pair<std::string, std::string>> metadata;
+                std::vector<std::pair<std::string, std::string>> metadata;
 
-        client->UploadBlob(blobName, fileStream);
+                client->UploadBlob(blobName, fileStream);
+            });
     }
 
     return true;

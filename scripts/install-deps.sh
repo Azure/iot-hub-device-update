@@ -527,11 +527,8 @@ do_install_azure_storage_sdk() {
     echo "Installing azure-storage-sdk"
     local azure_storage_sdk_dir=$work_folder/azure_storage_sdk_dir
 
-    if [[ $keep_source_code != "true" ]]; then
+    if [[ -d $azure_storage_sdk_dir ]]; then
         $SUDO rm -rf $azure_storage_sdk_dir || return
-    elif [[ -d $azure_storage_sdk_dir ]]; then
-        warn "$azure_storage_sdk_dir already exists! Skipping Azure Storage SDK."
-        return 0
     fi
 
     local azure_storage_sdk_url

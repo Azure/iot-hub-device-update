@@ -2,12 +2,13 @@
  * @file file_upload_utility.cpp
  * @brief Implements the interface for interacting with Azure Blob Storage
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corp.
  */
 
 #include "file_upload_utility.h"
 #include "blob_storage_helper.hpp"
 
+#include <aduc/exception_utils.hpp>
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <azure_c_shared_utility/strings.h>
 #include <exception>
@@ -26,31 +27,22 @@ extern "C"
  * @param directoryPath path to the directory which holds the files listed in @p fileNames
  * @returns true on successful upload of all files; false on any failure
  */
-    _Bool FileUploadUtility_UploadFilesToContainer(
-        const BlobStorageInfo* blobInfo, const int maxConcurrency, VECTOR_HANDLE fileNames, const char* directoryPath)
+    bool FileUploadUtility_UploadFilesToContainer(
+        const BlobStorageInfo* blobInfo, VECTOR_HANDLE fileNames, const char* directoryPath)
     {
-        if (blobInfo == nullptr || maxConcurrency == 0 || fileNames == nullptr || directoryPath == nullptr)
+        if (blobInfo == nullptr || fileNames == nullptr || directoryPath == nullptr)
         {
             return false;
         }
 
-        _Bool succeeded = false;
+        bool succeeded = false;
 
-        try
-        {
-            AzureBlobStorageHelper storageHelper(*blobInfo, maxConcurrency);
-
-            succeeded = storageHelper.UploadFilesToContainer(
-                fileNames, directoryPath, STRING_c_str(blobInfo->virtualDirectoryPath));
-        }
-        catch (std::exception& e)
-        {
-            return false;
-        }
-        catch (...)
-        {
-            return false;
-        }
+        ADUC::ExceptionUtils::CallVoidMethodAndHandleExceptions(
+            [blobInfo, maxConcurrency, &fileNames, directoryPath, &succeeded]() -> void {
+                AzureBlobStorageHelper storageHelper(*blobInfo);
+                succeeded = storageHelper.UploadFilesToContainer(
+                    fileNames, directoryPath, STRING_c_str(blobInfo->virtualDirectoryPath));
+            });
 
         return succeeded;
     }

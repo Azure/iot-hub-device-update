@@ -2,7 +2,7 @@
  * @file blob_storage_helper.hpp
  * @brief Implements the interface for interacting with Azure Blob Storage
  *
- * @copyright Copyright (c) 2021, Microsoft Corp.
+ * @copyright Copyright (c) Microsoft Corp.
  */
 #include "file_upload_utility.h"
 
@@ -23,7 +23,7 @@ private:
     std::string CreatePathFromFileAndDirectory(const std::string& fileName, const std::string& directoryPath);
 
 public:
-    AzureBlobStorageHelper(const BlobStorageInfo& blobInfo, const unsigned int maxConcurrency);
+    AzureBlobStorageHelper(const BlobStorageInfo& blobInfo);
 
     bool UploadFilesToContainer(
         const VECTOR_HANDLE fileNames, const std::string& directoryPath, const std::string& virtualDirectory);
