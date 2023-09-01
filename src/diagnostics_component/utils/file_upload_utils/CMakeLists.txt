@@ -1,12 +1,13 @@
 cmake_minimum_required (VERSION 3.13)
 
-set(target_name file_upload_utility)
+set (target_name file_upload_utility)
 
-add_library(${target_name} STATIC src/file_upload_utility.cpp src/blob_storage_helper.cpp src/blob_storage_helper.hpp )
+add_library (${target_name} STATIC src/file_upload_utility.cpp src/blob_storage_helper.cpp
+                                   src/blob_storage_helper.hpp)
 add_library (diagnostic_utils::${target_name} ALIAS ${target_name})
 
 find_package (azure_c_shared_utility REQUIRED)
-find_package(azure-storage-blobs-cpp CONFIG REQUIRED)
+find_package (azure-storage-blobs-cpp CONFIG REQUIRED)
 
 include (agentRules)
 
@@ -19,4 +20,5 @@ target_include_directories (${target_name} PUBLIC inc)
 target_link_libraries (
     ${target_name}
     PUBLIC aziotsharedutil
-    PRIVATE  Azure::azure-storage-blobs Azure::azure-core CURL::libcurl aduc::exception_utils)
+    PRIVATE aduc::c_utils aduc::exception_utils Azure::azure-storage-blobs Azure::azure-core
+            CURL::libcurl)

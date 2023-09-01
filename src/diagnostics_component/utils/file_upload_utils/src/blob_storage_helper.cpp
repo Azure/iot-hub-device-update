@@ -81,11 +81,9 @@ bool AzureBlobStorageHelper::UploadFilesToContainer(
         auto fileNameHandle = static_cast<const STRING_HANDLE*>(VECTOR_element(fileNames, i));
         const char* fileName = STRING_c_str(*fileNameHandle);
 
-        std::string filePath;
-
         ADUC::ExceptionUtils::CallVoidMethodAndHandleExceptions(
-            [fileName, directoryPath, virtualDirectoryPath, client]() -> void {
-                filePath = CreatePathFromFileAndDirectory(fileName, directoryPath);
+            [fileName, directoryPath, virtualDirectoryPath, this]() -> void {
+                std::string filePath = CreatePathFromFileAndDirectory(fileName, directoryPath);
 
                 Azure::Core::IO::FileBodyStream fileStream(filePath);
 
@@ -93,7 +91,7 @@ bool AzureBlobStorageHelper::UploadFilesToContainer(
 
                 std::vector<std::pair<std::string, std::string>> metadata;
 
-                client->UploadBlob(blobName, fileStream);
+                this->client->UploadBlob(blobName, fileStream);
             });
     }
 

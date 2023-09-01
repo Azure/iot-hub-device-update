@@ -14,12 +14,9 @@
 #include <exception>
 #include <string.h>
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+EXTERN_C_BEGIN
 
-    /**
+/**
  * @brief Uploads all the files listed in @p files using the storage information in @p blobInfo
  * @param blobInfo struct describing the connection information
  * @param maxConcurrency the max amount of concurrent threads for storage operations
@@ -27,26 +24,24 @@ extern "C"
  * @param directoryPath path to the directory which holds the files listed in @p fileNames
  * @returns true on successful upload of all files; false on any failure
  */
-    bool FileUploadUtility_UploadFilesToContainer(
-        const BlobStorageInfo* blobInfo, VECTOR_HANDLE fileNames, const char* directoryPath)
+bool FileUploadUtility_UploadFilesToContainer(
+    const BlobStorageInfo* blobInfo, VECTOR_HANDLE fileNames, const char* directoryPath)
+{
+    if (blobInfo == nullptr || fileNames == nullptr || directoryPath == nullptr)
     {
-        if (blobInfo == nullptr || fileNames == nullptr || directoryPath == nullptr)
-        {
-            return false;
-        }
-
-        bool succeeded = false;
-
-        ADUC::ExceptionUtils::CallVoidMethodAndHandleExceptions(
-            [blobInfo, maxConcurrency, &fileNames, directoryPath, &succeeded]() -> void {
-                AzureBlobStorageHelper storageHelper(*blobInfo);
-                succeeded = storageHelper.UploadFilesToContainer(
-                    fileNames, directoryPath, STRING_c_str(blobInfo->virtualDirectoryPath));
-            });
-
-        return succeeded;
+        return false;
     }
 
-#ifdef __cplusplus
+    bool succeeded = false;
+
+    ADUC::ExceptionUtils::CallVoidMethodAndHandleExceptions(
+        [blobInfo, &fileNames, directoryPath, &succeeded]() -> void {
+            AzureBlobStorageHelper storageHelper(*blobInfo);
+            succeeded = storageHelper.UploadFilesToContainer(
+                fileNames, directoryPath, STRING_c_str(blobInfo->virtualDirectoryPath));
+        });
+
+    return succeeded;
 }
-#endif
+
+EXTERN_C_END
