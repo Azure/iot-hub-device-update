@@ -6,7 +6,6 @@
  * Licensed under the MIT License.
  */
 #include "aduc/device_info_exports.h"
-#include "os_release_info.hpp"
 
 #include <fstream>
 #include <functional>
@@ -16,6 +15,8 @@
 #include <unordered_map>
 
 #include <cstring>
+
+#include <stdio.h> // popen, pclose
 #include <sys/statvfs.h> // statvfs
 #include <sys/sysinfo.h> // sysinfo
 #include <sys/utsname.h> // uname
@@ -30,10 +31,36 @@
 #define ETC_LSB_RELEASE_FILEPATH "/etc/lsb-release"
 
 /**
+ * @brief A class for holding OS release information.
+ */
+class OsReleaseInfo
+{
+    std::string os_name;
+    std::string os_version;
+
+public:
+    OsReleaseInfo(const std::string& name, const std::string& ver) : os_name{ name }, os_version{ ver }
+    {
+    }
+
+    const char* ExportOsName()
+    {
+        return os_name.c_str();
+    }
+
+    const char* ExportOsVersion()
+    {
+        return os_version.c_str();
+    }
+};
+
+/**
  * @brief Get manufacturer
  * Company name of the device manufacturer.
  * This could be the same as the name of the original equipment manufacturer (OEM).
  * e.g. Contoso
+ *
+ * @remark This function requires that ADUC_ConfigInfo singleton has been initialized.
  *
  * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
@@ -48,19 +75,26 @@ static char* DeviceInfo_GetManufacturer()
 
     char* result = nullptr;
 
-    ADUC_ConfigInfo config = {};
-    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.manufacturer != nullptr)
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
     {
-        result = strdup(config.manufacturer);
+        Log_Error("Failed to get config info instance");
+        goto done;
+    }
+
+    if (config->manufacturer != nullptr)
+    {
+        result = strdup(config->manufacturer);
     }
     else
     {
-        // If file doesn't exist, or value wasn't specified, use build default.
+        // If value wasn't specified, use build default.
         result = strdup(ADUC_DEVICEINFO_MANUFACTURER);
     }
 
     valueIsDirty = false;
-    ADUC_ConfigInfo_UnInit(&config);
+done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return result;
 }
 
@@ -68,6 +102,8 @@ static char* DeviceInfo_GetManufacturer()
  * @brief Get device model.
  * Device model name or ID.
  * e.g. Surface Book 2
+ *
+ * @remark This function requires that ADUC_ConfigInfo singleton has been initialized.
  *
  * @return char* Value of property allocated with malloc, or nullptr on error or value not changed since last call.
  */
@@ -81,19 +117,26 @@ static char* DeviceInfo_GetModel()
     }
 
     char* result = nullptr;
-    ADUC_ConfigInfo config = {};
-    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) && config.model != nullptr)
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
     {
-        result = strdup(config.model);
+        Log_Error("Failed to get config info instance");
+        goto done;
+    }
+
+    if (config->model != nullptr)
+    {
+        result = strdup(config->model);
     }
     else
     {
-        // If file doesn't exist, or value wasn't specified, use build default.
+        // If value wasn't specified, use build default.
         result = strdup(ADUC_DEVICEINFO_MODEL);
     }
 
     valueIsDirty = false;
-    ADUC_ConfigInfo_UnInit(&config);
+done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return result;
 }
 
@@ -102,10 +145,11 @@ static char* DeviceInfo_GetModel()
  * @param path The path to the file of name-value pair lines
  * @param name_property_name The identifier for the property that represents the os name.
  * @param version_property_name The identifier for the property that represents the os version.
- * @return OsReleaseInfo* The new OS release infol, or nullptr on error.
+ * @return OsReleaseInfo* The new OS release info, or nullptr on error.
  * @detail Caller will own OsReleaseInfo instance and must free with delete. Also, values will have surrounding double-quotes removed.
  */
-static OsReleaseInfo* get_os_release_info(const char* path, const char* name_property_name, const char* version_property_name)
+static OsReleaseInfo*
+get_os_release_info(const char* path, const char* name_property_name, const char* version_property_name)
 {
     std::unique_ptr<OsReleaseInfo> result;
 
@@ -178,7 +222,7 @@ static char* DeviceInfo_GetOsName()
     // As per os-release(5) manpage, read the announcement here: http://0pointer.de/blog/projects/os-release
     if (SystemUtils_IsFile(ETC_OS_RELEASE_FILEPATH, nullptr))
     {
-        std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_OS_RELEASE_FILEPATH, "NAME", "VERSION") };
+        std::unique_ptr<OsReleaseInfo> releaseInfo{ get_os_release_info(ETC_OS_RELEASE_FILEPATH, "NAME", "VERSION") };
         if (releaseInfo)
         {
             return strdup(releaseInfo->ExportOsName());
@@ -188,7 +232,8 @@ static char* DeviceInfo_GetOsName()
     // Next, try the Linux Standard Base file present on some systems
     if (SystemUtils_IsFile(ETC_LSB_RELEASE_FILEPATH, nullptr))
     {
-        std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_LSB_RELEASE_FILEPATH, "DISTRIB_ID", "DISTRIB_RELEASE") };
+        std::unique_ptr<OsReleaseInfo> releaseInfo{ get_os_release_info(
+            ETC_LSB_RELEASE_FILEPATH, "DISTRIB_ID", "DISTRIB_RELEASE") };
         if (releaseInfo)
         {
             return strdup(releaseInfo->ExportOsName());
@@ -231,7 +276,7 @@ static char* DeviceInfo_GetOsVersion()
     // As per os-release(5) manpage, read the announcement here: http://0pointer.de/blog/projects/os-release
     if (SystemUtils_IsFile(ETC_OS_RELEASE_FILEPATH, nullptr))
     {
-        std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_OS_RELEASE_FILEPATH, "NAME", "VERSION") };
+        std::unique_ptr<OsReleaseInfo> releaseInfo{ get_os_release_info(ETC_OS_RELEASE_FILEPATH, "NAME", "VERSION") };
         if (releaseInfo)
         {
             return strdup(releaseInfo->ExportOsVersion());
@@ -241,7 +286,8 @@ static char* DeviceInfo_GetOsVersion()
     // Next, try the Linux Standard Base file present on some systems
     if (SystemUtils_IsFile(ETC_LSB_RELEASE_FILEPATH, nullptr))
     {
-        std::unique_ptr<OsReleaseInfo> releaseInfo { get_os_release_info(ETC_LSB_RELEASE_FILEPATH, "DISTRIB_ID", "DISTRIB_RELEASE") };
+        std::unique_ptr<OsReleaseInfo> releaseInfo{ get_os_release_info(
+            ETC_LSB_RELEASE_FILEPATH, "DISTRIB_ID", "DISTRIB_RELEASE") };
         if (releaseInfo)
         {
             return strdup(releaseInfo->ExportOsVersion());
@@ -322,7 +368,7 @@ static char* DeviceInfo_GetProcessorManufacturer()
     if (pipe != nullptr)
     {
         const char* prefix = "Vendor ID:           ";
-        const unsigned int prefix_cch = strlen(prefix);
+        const unsigned int prefix_cch = static_cast<unsigned int>(strlen(prefix));
         while (fgets(buffer, kBufferSize, pipe) != nullptr)
         {
             if (strncmp(buffer, prefix, prefix_cch) == 0)
@@ -377,7 +423,7 @@ static char* DeviceInfo_GetTotalMemory()
     std::stringstream buffer;
 
     const unsigned int bytes_in_kilobyte = 1024;
-    buffer << (sys_info.totalram * sys_info.mem_unit) / bytes_in_kilobyte;
+    buffer << (static_cast<unsigned long long>(sys_info.totalram) * sys_info.mem_unit) / bytes_in_kilobyte;
 
     valueIsDirty = false;
     return strdup(buffer.str().c_str());
@@ -412,7 +458,7 @@ static char* DeviceInfo_GetTotalStorage()
     std::stringstream buffer;
 
     const unsigned int bytes_in_kilobyte = 1024;
-    buffer << (buf.f_blocks * buf.f_frsize) / bytes_in_kilobyte;
+    buffer << (static_cast<unsigned long long>(buf.f_blocks) * buf.f_frsize) / bytes_in_kilobyte;
 
     valueIsDirty = false;
     return strdup(buffer.str().c_str());

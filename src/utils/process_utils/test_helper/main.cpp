@@ -62,23 +62,21 @@ int main(int argc, char** argv)
             fprintf(stderr, "%s\n", optarg);
             break;
 
-        case 'n':
-        {
+        case 'n': {
             char* endptr;
             errno = 0; /* To distinguish success/failure after call */
-            exitErrno = strtol(optarg, &endptr, 10);
+            exitErrno = (int)strtol(optarg, &endptr, 10);
             if (errno != 0 || endptr == optarg)
             {
-                printf("Invalid \errno %d\n", exitErrno);
+                printf("Invalid errno %d\n", exitErrno);
             }
         }
         break;
 
-        case 'x':
-        {
+        case 'x': {
             char* endptr;
             errno = 0; /* To distinguish success/failure after call */
-            exitStatus = strtol(optarg, &endptr, 10);
+            exitStatus = (int)strtol(optarg, &endptr, 10);
             if (errno != 0 || endptr == optarg || exitStatus < 0 || exitStatus > 255)
             {
                 printf("Invalid exit status %s (expecting 0-255).\n", optarg);
@@ -86,8 +84,7 @@ int main(int argc, char** argv)
         }
         break;
 
-        case 's':
-        {
+        case 's': {
             // NOLINTNEXTLINE(google-readability-casting,cppcoreguidelines-pro-type-cstyle-cast)
             auto foo = (char*)"hello world";
             for (int i = 20; i < 10000; i++)

@@ -120,19 +120,30 @@ done:
 
 /**
  * @brief Get the download timeout in minutes from compile-time download options, or the override from config file.
- *
+ * @remark This function requires that the ADUC_ConfigInfo singleton has been initialized.
  * @param downloadOptions The download options.
  * @return unsigned int The download timeout that should be used.
  */
 unsigned int GetDownloadTimeoutInMinutes(const ExtensionManager_Download_Options* downloadOptions) noexcept
 {
-    ADUC_ConfigInfo config{};
-    if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) || (config.downloadTimeoutInMinutes == 0))
+    unsigned int ret = CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT;
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == nullptr)
     {
-        return (downloadOptions == nullptr) ? CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT
-                                            : downloadOptions->timeoutInMinutes;
+        Log_Error("ADUC_ConfigInfo singleton hasn't been initialized.");
+        goto done;
     }
 
-    Log_Info("downloadTimeoutInMinutes override from config: %u", config.downloadTimeoutInMinutes);
-    return config.downloadTimeoutInMinutes;
+    if (config == nullptr || (config->downloadTimeoutInMinutes == 0))
+    {
+        ret = (downloadOptions == nullptr) ? CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT
+                                           : downloadOptions->timeoutInMinutes;
+    }
+    else
+    {
+        Log_Info("downloadTimeoutInMinutes override from config: %u", config->downloadTimeoutInMinutes);
+        ret = config->downloadTimeoutInMinutes;
+    }
+done:
+    return ret;
 }

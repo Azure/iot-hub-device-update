@@ -1,5 +1,5 @@
 /**
- * @file excpetion_utils.hpp
+ * @file exception_utils.hpp
  * @brief Contains utilities for handling C++ exceptions.
  *
  * @copyright Copyright (c) Microsoft Corporation.

@@ -205,12 +205,17 @@ print_help() {
     echo "Device Update reserved argument"
     echo "==============================="
     echo ""
+    echo "--action <ACTION>                         Perform specified 'ACTION'."
+    echo "                                          Where ACTION is one of the following:"
+    echo "                                              is-installed, download, install, apply,"
+    echo "                                              cancel, backup, restore."
+    echo ""
     echo "--action-is-installed                     Perform 'is-installed' check."
     echo "                                          Check whether the selected component [or primary device] current states"
     echo "                                          satisfies specified 'installedCriteria' data."
     echo "--installed-criteria                      Specify the Installed-Criteria string."
     echo ""
-    echo "--action-download                         Perform 'download' aciton."
+    echo "--action-download                         Perform 'download' action."
     echo "--action-install                          Perform 'install' action."
     echo "--action-apply                            Perform 'apply' action."
     echo "--action-cancel                           Perform 'cancel' action."
@@ -258,6 +263,36 @@ while [[ $1 != "" ]]; do
     #
     # Device Update specific arguments.
     #
+    --action)
+        shift
+        if [[ -z $1 || $1 == -* ]]; then
+            error "--action requires an action parameter."
+            $ret 1
+        fi
+        action=$1
+        shift
+        case $action in
+        is-installed)
+            check_is_installed=yes
+            ;;
+        download)
+            do_download_action=yes
+            ;;
+        install)
+            do_install_action=yes
+            ;;
+        apply)
+            do_apply_action=yes
+            ;;
+        cancel)
+            do_cancel_action=yes
+            ;;
+        *)
+            error "Unknown action: $action"
+            $ret 1
+            ;;
+        esac
+        ;;
     --action-download)
         shift
         do_download_action=yes

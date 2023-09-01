@@ -8,7 +8,7 @@
 
 #include "diagnostics_devicename.h"
 
-#include <azure_c_shared_utility/crt_abstractions.h>
+#include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy_s
 #include <azure_c_shared_utility/strings.h>
 #include <string.h>
 

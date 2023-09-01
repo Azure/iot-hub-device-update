@@ -10,7 +10,8 @@
 
 #include <aduc/c_utils.h> // for EXTERN_C_*
 #include <stdbool.h> // for bool
-#include <sys/types.h> // for uid_t, gid_t, mode_t
+
+#include <aducpal/sys_types.h> // uid_t, gid_t, mode_t
 
 EXTERN_C_BEGIN
 

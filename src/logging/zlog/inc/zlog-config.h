@@ -1,5 +1,5 @@
 /**
- * @file zlog-config.c
+ * @file zlog-config.h
  * @brief Config header for Zlog utility
  * Adapted from the public domain "zlog" by Zhiqiang Ma
  * https://github.com/zma/zlog/

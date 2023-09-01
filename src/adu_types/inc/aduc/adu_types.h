@@ -1,5 +1,5 @@
 /**
- * @file adu_type.h
+ * @file adu_types.h
  * @brief Defines common types used throughout Device Update agent components.
  *
  * @copyright Copyright (c) Microsoft Corporation.
@@ -43,6 +43,7 @@ typedef struct tagADUC_LaunchArguments
     bool iotHubTracingEnabled; /**< Whether to enable logging from IoT Hub SDK. */
     bool showVersion; /**< Show an agent version */
     bool healthCheckOnly; /**< Only check agent health. Doesn't process any data or messages from services. */
+    char* configFolder; /**< Custom config folder. Default is /etc/adu */
 } ADUC_LaunchArguments;
 
 typedef enum tagADUC_ConnType

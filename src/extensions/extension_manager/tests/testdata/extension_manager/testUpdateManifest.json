@@ -1,0 +1,40 @@
+
+{
+    "compatibility": [
+        {
+            "deviceManufacturer": "man",
+            "deviceModel": "mod"
+        }
+    ],
+    "createdDateTime": "2023-05-04T12:22:37.2627901Z",
+    "files": {
+        "f722b9ffefaaac577": {
+            "fileName": "mock_update_payload.txt",
+            "hashes": {
+                "sha256": "LPJNul+wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ="
+            },
+            "sizeInBytes": 5,
+            "properties": {
+            }
+        }
+    },
+    "instructions": {
+        "steps": [
+            {
+                "files": [
+                    "f722b9ffefaaac577"
+                ],
+                "handler": "microsoft/foo:1",
+                "handlerProperties": {
+                    "installedCriteria": "0.1"
+                }
+            }
+        ]
+    },
+    "manifestVersion": "5",
+    "updateId": {
+        "name": "update",
+        "provider": "prov1",
+        "version": "0.1"
+    }
+}

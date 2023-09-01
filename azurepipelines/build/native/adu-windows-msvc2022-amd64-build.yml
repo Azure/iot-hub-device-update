@@ -1,0 +1,100 @@
+
+pr:
+    branches:
+        include:
+            - develop
+    paths:
+        exclude:
+            - daemon
+            - docker
+            - docs
+            - licenses
+            - tools
+            - "**/*.md"
+
+trigger:
+    branches:
+        include:
+            - develop
+    paths:
+        exclude:
+            - daemon
+            - docker
+            - docs
+            - licenses
+            - tools
+            - "**/*.md"
+
+pool:
+    vmImage: windows-2022
+
+jobs:
+    - job: BuildAduAgent_WindowsServer2022_msvc2022_amd64
+      displayName: "Build ADU Agent - Windows Server 2022 - MSVC 2022 (amd64)"
+      timeoutInMinutes: 60
+      cancelTimeoutInMinutes: 60
+      steps:
+          - task: PowerShell@2
+            displayName: "Build Client + UTs - amd64_debug"
+            inputs:
+                targetType: "filePath"
+                filePath: $(Build.SourcesDirectory)\scripts\build.ps1
+                arguments: >
+                    -Type Debug
+                    -Clean
+                    -BuildUnitTests
+                    -NoPrompt
+
+          - task: PowerShell@2
+            displayName: "Run Unit Tests - amd64_debug"
+            inputs:
+                targetType: inline
+                script: $(Build.SourcesDirectory)\scripts\run_uts.ps1 -Pipeline
+
+          - task: PublishTestResults@2
+            inputs:
+                testResultsFormat: 'JUnit'
+                testResultsFiles: '**/TEST-*.xml'
+                failTaskOnFailedTests: true
+
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: 'out/Debug/bin/Debug'
+              artifact: 'bin-amd64_debug'
+              publishLocation: 'pipeline'
+
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: 'out/Debug/lib/Debug'
+              artifact: 'lib-Debug-amd64'
+              publishLocation: 'pipeline'
+
+    - job: BuildAduAgent_WindowsServer2022_msvc2022_arm64
+      displayName: "Build ADU Agent - Windows Server 2022 - MSVC 2022 (arm64)"
+      timeoutInMinutes: 60
+      cancelTimeoutInMinutes: 60
+      steps:
+          - task: PowerShell@2
+            displayName: "Build Client + UTs - arm64_release"
+            inputs:
+                targetType: "filePath"
+                filePath: $(Build.SourcesDirectory)\scripts\build.ps1
+                arguments: >
+                    -Type Release
+                    -GeneratorPlatform ARM64
+                    -Clean
+                    -BuildUnitTests
+                    -NoPrompt
+
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: 'out/ARM64-Release/bin/Release'
+              artifact: 'bin-arm64_release'
+              publishLocation: 'pipeline'
+
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: 'out/ARM64-Release/lib/Release'
+              artifact: 'lib-arm64_release'
+              publishLocation: 'pipeline'
+

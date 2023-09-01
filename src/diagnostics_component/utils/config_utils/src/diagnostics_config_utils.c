@@ -138,9 +138,9 @@ bool DiagnosticsConfigUtils_InitFromJSON(DiagnosticsWorkflowData* workflowData, 
         goto done;
     }
 
-    unsigned int maxKilobytesToUploadPerLogPath = 0;
+    long long maxKilobytesToUploadPerLogPath = 0;
 
-    if (!ADUC_JSON_GetUnsignedIntegerField(
+    if (!ADUC_JSON_GetLongLongField(
             fileJsonValue,
             DIAGNOSTICS_CONFIG_FILE_FIELDNAME_MAXKILOBYTESTOUPLOADPERLOGPATH,
             &maxKilobytesToUploadPerLogPath))
@@ -189,7 +189,8 @@ bool DiagnosticsConfigUtils_InitFromJSON(DiagnosticsWorkflowData* workflowData, 
     {
         JSON_Object* componentObj = json_array_get_object(componentArray, i);
 
-        DiagnosticsLogComponent logComponent = {};
+        DiagnosticsLogComponent logComponent;
+        memset(&logComponent, 0, sizeof(logComponent));
 
         if (!DiagnosticsConfigUtils_LogComponentInitFromObj(&logComponent, componentObj))
         {
@@ -250,7 +251,7 @@ bool DiagnosticsConfigUtils_InitFromFile(DiagnosticsWorkflowData* workflowData, 
  * @returns NULL if index is out of range; the DiagnosticsComponent otherwise
  */
 const DiagnosticsLogComponent*
-DiagnosticsConfigUtils_GetLogComponentElem(const DiagnosticsWorkflowData* workflowData, unsigned int index)
+DiagnosticsConfigUtils_GetLogComponentElem(const DiagnosticsWorkflowData* workflowData, size_t index)
 {
     if (workflowData == NULL || index >= VECTOR_size(workflowData->components))
     {

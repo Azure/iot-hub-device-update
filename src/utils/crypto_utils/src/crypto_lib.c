@@ -16,7 +16,8 @@
 #include <openssl/rsa.h>
 #include <stdio.h>
 #include <string.h>
-#include <strings.h>
+
+#include <aducpal/strings.h> // strcasecmp
 
 /**
  * @brief Algorithm_Id values and supported algorithms
@@ -51,7 +52,8 @@ EVP_PKEY* CryptoKeyHandleToEVP_PKEY(CryptoKeyHandle key)
 Algorithm_Id AlgorithmIdFromString(const char* alg)
 {
     Algorithm_Id algorithmId = Alg_NotSupported;
-    if (strcasecmp(alg, "rs256") == 0)
+
+    if (ADUCPAL_strcasecmp(alg, "rs256") == 0)
     {
         algorithmId = Alg_RSA256;
     }
@@ -80,8 +82,8 @@ bool VerifyRS256Signature(
     EVP_MD_CTX* mdctx = NULL;
     EVP_PKEY_CTX* ctx = NULL;
 
-    const size_t digest_len = 32;
-    uint8_t digest[digest_len];
+    uint8_t digest[32];
+    const size_t digest_len = ARRAY_SIZE(digest);
 
     if ((mdctx = EVP_MD_CTX_new()) == NULL)
     {
@@ -214,15 +216,13 @@ CryptoKeyHandle RSAKey_ObjFromBytes(uint8_t* N, size_t N_len, uint8_t* e, size_t
         goto done;
     }
 
-    rsa_N = BN_bin2bn(N, N_len, NULL);
-
+    rsa_N = BN_bin2bn(N, (int)N_len, NULL);
     if (rsa_N == NULL)
     {
         goto done;
     }
 
-    rsa_e = BN_bin2bn(e, e_len, NULL);
-
+    rsa_e = BN_bin2bn(e, (int)e_len, NULL);
     if (rsa_e == NULL)
     {
         goto done;

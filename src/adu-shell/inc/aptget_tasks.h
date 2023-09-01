@@ -1,5 +1,5 @@
 /**
- * @file aptget_tasks.hpp
+ * @file aptget_tasks.h
  * @brief Implements functions related to microsoft/apt update type.
  *
  * @copyright Copyright (c) Microsoft Corporation.

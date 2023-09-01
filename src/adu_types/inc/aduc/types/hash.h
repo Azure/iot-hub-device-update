@@ -21,8 +21,8 @@ EXTERN_C_BEGIN
  */
 typedef struct tagADUC_Hash
 {
-    char* value; /** The value of the actual hash */
-    char* type; /** The type of hash held in the entry*/
+    char* value; /**< The value of the actual hash */
+    char* type; /**< The type of hash held in the entry*/
 } ADUC_Hash;
 
 EXTERN_C_END

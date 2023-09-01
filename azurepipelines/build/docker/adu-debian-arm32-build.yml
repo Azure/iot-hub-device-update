@@ -69,3 +69,14 @@ jobs:
             parameters:
                 targetOs: "debian10"
                 targetArch: "arm32"
+
+    - job: BuildAduAgent_debian11
+      displayName: "Build ADU Agent - Debian 11"
+      timeoutInMinutes: 360
+      cancelTimeoutInMinutes: 360
+      pool: aduc_1es_client_pool
+      steps:
+          - template: ../templates/adu-docker-build-steps.yml
+            parameters:
+                targetOs: "debian11"
+                targetArch: "arm32"

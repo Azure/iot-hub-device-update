@@ -1,5 +1,5 @@
 /**
- * @file root_key_utility.c
+ * @file root_key_util.c
  * @brief Implements a static list of root keys used to verify keys and messages within crypto_lib and it's callers.
  * these have exponents and parameters that have been extracted from their certs
  * to ease the computation process but remain the same as the ones issued by the Authority
@@ -14,7 +14,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #include "crypto_lib.h"
 #include "root_key_util.h"

@@ -10,36 +10,52 @@
 
 using Catch::Matchers::Equals;
 
+#include <aducpal/stdlib.h> // setenv, unsetenv
+
 class TestCaseFixture
 {
 public:
     TestCaseFixture()
     {
-        existing_https_proxy = getenv("https_proxy");
-        existing_HTTPS_PROXY = getenv("HTTPS_PROXY");
-        unsetenv("https_proxy");
-        unsetenv("HTTPS_PROXY");
+        const char* proxy;
+
+        proxy = getenv("https_proxy");
+        if (proxy != nullptr)
+        {
+            existing_https_proxy = proxy;
+        }
+        ADUCPAL_unsetenv("https_proxy");
+#if !defined(WIN32)
+        proxy = getenv("HTTPS_PROXY");
+        if (proxy != nullptr)
+        {
+            existing_HTTPS_PROXY = proxy;
+        }
+        ADUCPAL_unsetenv("HTTPS_PROXY");
+#endif
     }
 
     ~TestCaseFixture()
     {
-        if (existing_https_proxy != nullptr)
+        if (!existing_https_proxy.empty())
         {
-            setenv("https_proxy", existing_https_proxy, 1);
+            ADUCPAL_setenv("https_proxy", existing_https_proxy.c_str(), 1);
         }
         else
         {
-            unsetenv("https_proxy");
+            ADUCPAL_unsetenv("https_proxy");
         }
 
-        if (existing_HTTPS_PROXY != nullptr)
+#if !defined(WIN32)
+        if (!existing_HTTPS_PROXY.empty())
         {
-            setenv("HTTPS_PROXY", existing_HTTPS_PROXY, 1);
+            ADUCPAL_setenv("HTTPS_PROXY", existing_HTTPS_PROXY.c_str(), 1);
         }
         else
         {
-            unsetenv("HTTPS_PROXY");
+            ADUCPAL_unsetenv("HTTPS_PROXY");
         }
+#endif
     }
 
     TestCaseFixture(const TestCaseFixture&) = delete;
@@ -48,13 +64,16 @@ public:
     TestCaseFixture& operator=(TestCaseFixture&&) = delete;
 
 private:
-    char* existing_https_proxy;
-    char* existing_HTTPS_PROXY;
+    std::string existing_https_proxy;
+#if !defined(WIN32)
+    // Windows environment variables aren't case sensitive.
+    std::string existing_HTTPS_PROXY;
+#endif
 };
 
 TEST_CASE_METHOD(TestCaseFixture, "Parse https_proxy (escaped)")
 {
-    setenv(
+    ADUCPAL_setenv(
         "https_proxy",
         "http://%75%73%65%72%6E%61%6De:update%3B%2F%3F%3A%40%26%3D%2B%24%2C@%65x%61%6D%70%6C%65%2E%63%6F%6D:8888",
         1);
@@ -71,7 +90,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Parse https_proxy (escaped)")
 
 TEST_CASE_METHOD(TestCaseFixture, "Parse https_proxy")
 {
-    setenv("https_proxy", "http://127.0.0.1:8888", 1);
+    ADUCPAL_setenv("https_proxy", "http://127.0.0.1:8888", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
     bool proxyOk = InitializeProxyOptions(&proxyOptions);
@@ -85,7 +104,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Parse https_proxy")
 
 TEST_CASE_METHOD(TestCaseFixture, "Parse HTTPS_PROXY (uppper case)")
 {
-    setenv("HTTPS_PROXY", "http://127.0.0.1:123", 1);
+    ADUCPAL_setenv("HTTPS_PROXY", "http://127.0.0.1:123", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
     bool proxyOk = InitializeProxyOptions(&proxyOptions);
@@ -100,8 +119,10 @@ TEST_CASE_METHOD(TestCaseFixture, "Parse HTTPS_PROXY (uppper case)")
 // If both https_proxy and HTTPS_PROXY exist, use https_proxy.
 TEST_CASE_METHOD(TestCaseFixture, "Use https_proxy (lower case)")
 {
-    setenv("https_proxy", "http://127.0.0.1:8888", 1);
-    setenv("HTTPS_PROXY", "http://222.0.0.1:123", 1);
+    // Put uppercase first, so that on OS where env is case-insensitive (e.g. Windows)
+    // the second will overwrite the first.
+    ADUCPAL_setenv("HTTPS_PROXY", "http://222.0.0.1:123", 1);
+    ADUCPAL_setenv("https_proxy", "http://127.0.0.1:8888", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
     bool proxyOk = InitializeProxyOptions(&proxyOptions);
@@ -115,7 +136,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Use https_proxy (lower case)")
 
 TEST_CASE_METHOD(TestCaseFixture, "Parse username and password")
 {
-    setenv("https_proxy", "http://username:password@127.0.0.1:8888", 1);
+    ADUCPAL_setenv("https_proxy", "http://username:password@127.0.0.1:8888", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
     bool proxyOk = InitializeProxyOptions(&proxyOptions);
@@ -129,7 +150,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Parse username and password")
 
 TEST_CASE_METHOD(TestCaseFixture, "No port number")
 {
-    setenv("https_proxy", "http://username:password@127.0.0.1", 1);
+    ADUCPAL_setenv("https_proxy", "http://username:password@127.0.0.1", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
     bool proxyOk = InitializeProxyOptions(&proxyOptions);
@@ -143,7 +164,7 @@ TEST_CASE_METHOD(TestCaseFixture, "No port number")
 
 TEST_CASE_METHOD(TestCaseFixture, "Empty username")
 {
-    setenv("https_proxy", "http://:password@127.0.0.1", 1);
+    ADUCPAL_setenv("https_proxy", "http://:password@127.0.0.1", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
     bool proxyOk = InitializeProxyOptions(&proxyOptions);
@@ -157,7 +178,7 @@ TEST_CASE_METHOD(TestCaseFixture, "Empty username")
 
 TEST_CASE_METHOD(TestCaseFixture, "Empty password (supported)")
 {
-    setenv("https_proxy", "http://username:@127.0.0.1:8888", 1);
+    ADUCPAL_setenv("https_proxy", "http://username:@127.0.0.1:8888", 1);
 
     HTTP_PROXY_OPTIONS proxyOptions = {};
     bool proxyOk = InitializeProxyOptions(&proxyOptions);

@@ -14,7 +14,7 @@ target_include_directories (${target_name} PUBLIC inc)
 target_compile_definitions (${target_name}
                             PRIVATE DIAGNOSTICS_CONFIG_FILE_PATH="${DIAGNOSTICS_CONFIG_FILE_PATH}")
 
-target_link_digital_twin_client (${target_name} PUBLIC)
+target_link_iothub_client (${target_name} PUBLIC)
 
 find_package (Parson REQUIRED)
 
@@ -30,3 +30,5 @@ target_link_libraries (
             aduc::logging
             aduc::pnp_helper
             IotHubClient::iothub_client)
+
+target_link_libraries (${target_name} PRIVATE libaducpal)

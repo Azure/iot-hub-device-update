@@ -8,6 +8,7 @@
 #include "aduc/workflow_utils.h"
 #include "aduc/adu_types.h"
 #include "aduc/aduc_inode.h" // ADUC_INODE_SENTINEL_VALUE
+#include "aduc/config_utils.h"
 #include "aduc/extension_manager.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
@@ -27,9 +28,10 @@
 #include <stdarg.h> // for va_*
 #include <stdlib.h> // for malloc, atoi
 #include <string.h>
-#include <strings.h> // for strcasecmp
 
-#define DEFAULT_SANDBOX_ROOT_PATH ADUC_DOWNLOADS_FOLDER
+#include <aducpal/strings.h> // strcasecmp
+
+#define DEFAULT_SANDBOX_ROOT_PATH "/var/lib/adu/downloads"
 
 #define WORKFLOW_PROPERTY_FIELD_ID "_id"
 #define WORKFLOW_PROPERTY_FIELD_RETRYTIMESTAMP "_retryTimestamp"
@@ -61,8 +63,6 @@
  * @brief Maximum length for the 'resultDetails' string.
  */
 #define WORKFLOW_RESULT_DETAILS_MAX_LENGTH 1024
-
-EXTERN_C_BEGIN
 
 /* external linkage */
 extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;
@@ -702,7 +702,7 @@ const char* _workflow_get_properties_retryTimestamp(ADUC_WorkflowHandle handle)
 }
 
 /**
- * @brief Helper function for checking the hash of the updatemanifest is equal to the
+ * @brief Helper function for checking the hash of the update manifest is equal to the
  * hash held within the signature
  * @param updateActionJson JSON value created form an updateActionJsonString and contains
  * both the updateManifest and the updateManifestSignature
@@ -1190,7 +1190,7 @@ void workflow_set_level(ADUC_WorkflowHandle handle, int level)
  * @param handle A workflow object handle.
  * @param step A workflow step index.
  */
-void workflow_set_step_index(ADUC_WorkflowHandle handle, int stepIndex)
+void workflow_set_step_index(ADUC_WorkflowHandle handle, size_t stepIndex)
 {
     if (handle == NULL)
     {
@@ -1232,7 +1232,7 @@ int workflow_get_step_index(ADUC_WorkflowHandle handle)
     }
 
     ADUC_Workflow* wf = workflow_from_handle(handle);
-    return wf->StepIndex;
+    return (int)wf->StepIndex;
 }
 
 /**
@@ -1497,8 +1497,18 @@ char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
     }
     else
     {
-        Log_Info("Sandbox root path not set. Use default: '%s'", DEFAULT_SANDBOX_ROOT_PATH);
-        sprintf(dir, "%s/%s", DEFAULT_SANDBOX_ROOT_PATH, id);
+        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+        if (config != NULL)
+        {
+            Log_Info("Sandbox root path not set. Use default: '%s'", config->downloadsFolder);
+            sprintf(dir, "%s/%s", config->downloadsFolder, id);
+            ADUC_ConfigInfo_ReleaseInstance(config);
+        }
+        else
+        {
+            Log_Warn("Config is null. Use default sandbox root path: '%s'", DEFAULT_SANDBOX_ROOT_PATH);
+            sprintf(dir, "%s/%s", DEFAULT_SANDBOX_ROOT_PATH, id);
+        }
     }
 
     free(pwf);
@@ -1802,7 +1812,7 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
     size_t sizeInBytes = 0;
     if (json_object_has_value(file, ADUCITF_FIELDNAME_SIZEINBYTES))
     {
-        sizeInBytes = json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
+        sizeInBytes = (size_t)json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
     }
 
     if (!ADUC_FileEntity_Init(entity, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
@@ -1867,10 +1877,10 @@ bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fi
     }
 
     // Find file by name.
-    for (int i = 0; i < count; i++)
+    for (size_t i = 0; i < count; i++)
     {
         if ((file = json_value_get_object(json_object_get_value_at(files, i))) != NULL
-            && strcasecmp(json_object_get_string(file, "fileName"), fileName) == 0)
+            && ADUCPAL_strcasecmp(json_object_get_string(file, "fileName"), fileName) == 0)
         {
             fileId = json_object_get_name(files, i);
             break;
@@ -1914,7 +1924,7 @@ bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fi
     size_t sizeInBytes = 0;
     if (json_object_has_value(file, ADUCITF_FIELDNAME_SIZEINBYTES))
     {
-        sizeInBytes = json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
+        sizeInBytes = (size_t)json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
     }
 
     if (!ADUC_FileEntity_Init(entity, fileId, name, uri, arguments, tempHash, tempHashCount, sizeInBytes))
@@ -2194,7 +2204,7 @@ static JSON_Array* workflow_get_instructions_steps_array(ADUC_WorkflowHandle han
  * @param handle An output workflow handle.
  * @return ADUC_Result
  */
-ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, int stepIndex, ADUC_WorkflowHandle* handle)
+ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, size_t stepIndex, ADUC_WorkflowHandle* handle)
 {
     ADUC_Result result = { ADUC_GeneralResult_Failure };
     JSON_Status jsonStatus = JSONFailure;
@@ -2281,18 +2291,24 @@ ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, int stepI
     // Keep only file needed by this step entry. Remove the rest.
     JSON_Array* stepFiles = json_object_get_array(stepObject, ADUCITF_FIELDNAME_FILES);
     JSON_Object* baseFiles = json_object_get_object(updateManifestObject, ADUCITF_FIELDNAME_FILES);
-    int fileCount = json_object_get_count(baseFiles);
-    for (int b = fileCount - 1; b >= 0; b--)
+
+    size_t fileCount = json_object_get_count(baseFiles);
+    while (fileCount > 0)
     {
-        const char* baseFileId = json_object_get_name(baseFiles, b);
+        fileCount--;
+
+        const char* baseFileId = json_object_get_name(baseFiles, fileCount);
 
         // If file is in the instruction, merge their properties.
         bool fileRequired = false;
-        int stepFilesCount = json_array_get_count(stepFiles);
-        for (int i = stepFilesCount - 1; i >= 0; i--)
+
+        size_t stepFilesCount = json_array_get_count(stepFiles);
+        while (stepFilesCount > 0)
         {
+            stepFilesCount--;
+
             // Note: step's files is an array of file ids.
-            const char* stepFileId = json_array_get_string(stepFiles, i);
+            const char* stepFileId = json_array_get_string(stepFiles, stepFilesCount);
 
             if (baseFileId != NULL && stepFileId != NULL && strcmp(baseFileId, stepFileId) == 0)
             {
@@ -2300,7 +2316,7 @@ ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, int stepI
                 fileRequired = true;
 
                 // Done with this file, remove it (and free).
-                json_array_remove(stepFiles, i);
+                json_array_remove(stepFiles, stepFilesCount);
                 break;
             }
         }
@@ -2308,7 +2324,7 @@ ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, int stepI
         // Remove file from base files list, if no longer needed.
         if (!fileRequired)
         {
-            json_object_remove(baseFiles, json_object_get_name(baseFiles, b));
+            json_object_remove(baseFiles, json_object_get_name(baseFiles, fileCount));
         }
     }
 
@@ -2360,7 +2376,17 @@ bool workflow_transfer_data(ADUC_WorkflowHandle targetHandle, ADUC_WorkflowHandl
 
     // Update the cached workfolder to use the source workflow id.
     // Needs to be done before transferring parsed JSON obj below.
-    workflow_set_workfolder(targetHandle, "%s/%s", ADUC_DOWNLOADS_FOLDER, workflow_peek_id(sourceHandle));
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL)
+    {
+        workflow_set_workfolder(targetHandle, "%s/%s", config->downloadsFolder, workflow_peek_id(sourceHandle));
+        ADUC_ConfigInfo_ReleaseInstance(config);
+    }
+    else
+    {
+        Log_Error("Failed to set workfolder for target workflow. ConfigInfo is NULL.");
+        return false;
+    }
 
     // Transfer over the parsed JSON objects
     wfTarget->UpdateActionObject = wfSource->UpdateActionObject;
@@ -2670,20 +2696,20 @@ ADUC_WorkflowHandle workflow_get_parent(ADUC_WorkflowHandle handle)
  * @param handle A workflow object handle.
  * @return Total child workflow count.
  */
-int workflow_get_children_count(ADUC_WorkflowHandle handle)
+size_t workflow_get_children_count(ADUC_WorkflowHandle handle)
 {
     ADUC_Workflow* wf = workflow_from_handle(handle);
-    return wf != NULL ? wf->ChildCount : 0;
+    return wf != NULL ? (size_t)wf->ChildCount : 0;
 }
 
 /**
  * @brief Get child workflow at specified @p index.
  *
  * @param handle A workflow object handle.
- * @param index Index of a child workflow to get.
+ * @param index Index of a child workflow to get. -1 indicates getting the handle at the end of the list
  * @return A child workflow object handle, or NULL if index out of range.
  */
-ADUC_WorkflowHandle workflow_get_child(ADUC_WorkflowHandle handle, int index)
+ADUC_WorkflowHandle workflow_get_child(ADUC_WorkflowHandle handle, size_t index)
 {
     if (handle == NULL)
     {
@@ -2691,12 +2717,8 @@ ADUC_WorkflowHandle workflow_get_child(ADUC_WorkflowHandle handle, int index)
     }
 
     ADUC_Workflow* wf = workflow_from_handle(handle);
-    if (index == -1)
-    {
-        index = wf->ChildCount - 1;
-    }
 
-    if (index < 0 || index >= wf->ChildCount)
+    if (index >= wf->ChildCount)
     {
         return NULL;
     }
@@ -2726,12 +2748,12 @@ bool workflow_insert_child(ADUC_WorkflowHandle handle, int index, ADUC_WorkflowH
 
     if (index < 0 || index >= wf->ChildCount)
     {
-        index = wf->ChildCount;
+        index = (int)wf->ChildCount;
     }
     else
     {
         // Make room for the new child.
-        size_t bytes = (wf->ChildCount - index) * sizeof(ADUC_Workflow*);
+        size_t bytes = (wf->ChildCount - (size_t)index) * sizeof(ADUC_Workflow*);
         memmove(wf->Children + (index + 1), wf->Children + index, bytes);
     }
 
@@ -2757,7 +2779,7 @@ ADUC_WorkflowHandle workflow_remove_child(ADUC_WorkflowHandle handle, int index)
     // Remove last?
     if (index == -1)
     {
-        index = wf->ChildCount - 1;
+        index = (int)wf->ChildCount - 1;
     }
 
     if (index < 0 || index >= wf->ChildCount)
@@ -2769,7 +2791,7 @@ ADUC_WorkflowHandle workflow_remove_child(ADUC_WorkflowHandle handle, int index)
 
     if (index < wf->ChildCount - 1)
     {
-        int bytes = sizeof(ADUC_Workflow*) * wf->ChildCount - (index + 1);
+        size_t bytes = sizeof(ADUC_Workflow*) * wf->ChildCount - (size_t)(index + 1);
         memmove(wf->Children + index, wf->Children + (index + 1), bytes);
     }
 
@@ -2892,7 +2914,8 @@ ADUC_Result workflow_get_result(ADUC_WorkflowHandle handle)
     ADUC_Workflow* wf = workflow_from_handle(handle);
     if (wf == NULL)
     {
-        ADUC_Result result = {};
+        ADUC_Result result;
+        memset(&result, 0, sizeof(result));
         return result;
     }
 
@@ -3085,8 +3108,8 @@ bool workflow_request_cancel(ADUC_WorkflowHandle handle)
     }
 
     bool success = workflow_set_boolean_property(handle, WORKFLOW_PROPERTY_FIELD_CANCEL_REQUESTED, true);
-    int childCount = workflow_get_children_count(handle);
-    for (int i = 0; i < childCount; i++)
+    size_t childCount = workflow_get_children_count(handle);
+    for (size_t i = 0; i < childCount; i++)
     {
         success = success && workflow_request_cancel(workflow_get_child(handle, i));
     }
@@ -3299,44 +3322,53 @@ workflow_create_from_instruction_value(ADUC_WorkflowHandle base, JSON_Value* ins
     // Keep only file needed by this entry. Remove the rest.
     JSON_Array* instFiles = json_object_get_array(instructionObject, ADUCITF_FIELDNAME_FILES);
     JSON_Object* baseFiles = json_object_get_object(updateManifestObject, ADUCITF_FIELDNAME_FILES);
-    int fileCount = json_object_get_count(baseFiles);
-    for (int b = fileCount - 1; b >= 0; b--)
+    size_t fileCount = json_object_get_count(baseFiles);
+
+    do
     {
-        JSON_Object* baseFile = json_object(json_object_get_value_at(baseFiles, b));
+        fileCount--;
+        JSON_Object* baseFile = json_object(json_object_get_value_at(baseFiles, fileCount));
 
         // If file is in the instruction, merge their properties.
         bool fileRequired = false;
-        int instFilesCount = json_array_get_count(instFiles);
-        for (int i = instFilesCount - 1; i >= 0; i--)
+        size_t instFilesCount = json_array_get_count(instFiles);
+
+        do
         {
+            instFilesCount--;
+
             const char* baseFilename = json_object_get_string(baseFile, ADUCITF_FIELDNAME_FILENAME);
 
-            JSON_Object* instFile = json_array_get_object(instFiles, i);
+            JSON_Object* instFile = json_array_get_object(instFiles, instFilesCount);
             const char* instFilename = json_object_get_string(instFile, ADUCITF_FIELDNAME_FILENAME);
 
             if (baseFilename != NULL && instFilename != NULL && strcmp(baseFilename, instFilename) == 0)
             {
                 // Found.
                 fileRequired = true;
-                int valuesCount = json_object_get_count(instFile);
-                for (int v = valuesCount - 1; v >= 0; v--)
+
+                size_t valuesCount = json_object_get_count(instFile);
+                do
                 {
-                    const char* key = json_object_get_name(instFile, v);
-                    JSON_Value* val = json_value_deep_copy(json_object_get_value_at(instFile, v));
+                    valuesCount--;
+                    const char* key = json_object_get_name(instFile, valuesCount);
+                    JSON_Value* val = json_value_deep_copy(json_object_get_value_at(instFile, valuesCount));
                     json_object_set_value(baseFile, key, val);
-                }
+                } while (valuesCount > 0);
+
                 // Done with this file, remove it (and free).
-                json_array_remove(instFiles, i);
+                json_array_remove(instFiles, instFilesCount);
                 break;
             }
-        }
+        } while (instFilesCount > 0);
 
         // Remove file from base files list, if no longer needed.
         if (!fileRequired)
         {
-            json_object_remove(baseFiles, json_object_get_name(baseFiles, b));
+            json_object_remove(baseFiles, json_object_get_name(baseFiles, fileCount));
         }
-    }
+
+    } while (fileCount > 0);
 
     wf->UpdateActionObject = updateActionObject;
     wf->UpdateManifestObject = updateManifestObject;
@@ -3523,7 +3555,7 @@ bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t
     size_t sizeInBytes = 0;
     if (json_object_has_value(file, ADUCITF_FIELDNAME_SIZEINBYTES))
     {
-        sizeInBytes = json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
+        sizeInBytes = (size_t)json_object_get_number(file, ADUCITF_FIELDNAME_SIZEINBYTES);
     }
 
     if (!ADUC_FileEntity_Init(entity, fileId, name, uri, NULL /*arguments*/, tempHash, tempHashCount, sizeInBytes))
@@ -3630,5 +3662,3 @@ void workflow_set_force_update(ADUC_WorkflowHandle handle, bool forceUpdate)
         wf->ForceUpdate = forceUpdate;
     }
 }
-
-EXTERN_C_END

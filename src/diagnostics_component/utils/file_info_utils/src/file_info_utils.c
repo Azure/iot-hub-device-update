@@ -12,12 +12,14 @@
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <azure_c_shared_utility/strings.h>
-#include <dirent.h>
 #include <math.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
+
+#include <aducpal/dirent.h>
+#include <aducpal/sys_stat.h>
 
 /**
  * @brief Maximum amount of files to scan before we quit
@@ -43,7 +45,7 @@ bool FileInfoUtils_InsertFileInfoIntoArray(
     FileInfo* sortedLogFiles,
     size_t sortedLogFileLength,
     const char* candidateFileName,
-    unsigned long sizeOfCandidateFile,
+    long long sizeOfCandidateFile,
     time_t candidateLastWrite)
 {
     if (sortedLogFiles == NULL || sortedLogFileLength < 1 || candidateFileName == NULL || sizeOfCandidateFile == 0)
@@ -105,7 +107,7 @@ bool FileInfoUtils_FillFileInfoWithNewestFilesInDir(FileInfo* logFiles, size_t l
     memset(logFiles, 0, sizeof(FileInfo) * logFileSize);
 
     unsigned int totalFilesRead = 0;
-    DIR* dp = opendir(directoryPath);
+    DIR* dp = ADUCPAL_opendir(directoryPath);
 
     if (dp == NULL)
     {
@@ -115,7 +117,7 @@ bool FileInfoUtils_FillFileInfoWithNewestFilesInDir(FileInfo* logFiles, size_t l
     // Walk through each file and find each top level file
     do
     {
-        struct dirent* entry = readdir(dp); //Note: No need to free according to man readdir is static
+        struct dirent* entry = ADUCPAL_readdir(dp); //Note: No need to free according to man readdir is static
         struct stat statbuf;
 
         STRING_HANDLE filePath = STRING_new();
@@ -178,7 +180,7 @@ done:
 
     if (dp != NULL)
     {
-        closedir(dp);
+        ADUCPAL_closedir(dp);
     }
 
     return succeeded;
@@ -192,14 +194,15 @@ done:
  * @returns true on successful scanning and populating of filePathVectorHandle; false on failure
  */
 bool FileInfoUtils_GetNewestFilesInDirUnderSize(
-    VECTOR_HANDLE* fileNameVector, const char* directoryPath, const unsigned int maxFileSize)
+    VECTOR_HANDLE* fileNameVector, const char* directoryPath, const long long maxFileSize)
 {
     bool succeeded = false;
 
     VECTOR_HANDLE fileVector = NULL;
 
     // Note: Total amount of files set to MAX_FILES_TO_REPORT to ease diagnostics and scanning efforts.
-    FileInfo discoveredFiles[MAX_FILES_TO_REPORT] = {};
+    FileInfo discoveredFiles[MAX_FILES_TO_REPORT];
+    memset(&discoveredFiles, 0, sizeof(discoveredFiles));
 
     const size_t discoveredFilesSize = ARRAY_SIZE(discoveredFiles);
 
@@ -221,7 +224,7 @@ bool FileInfoUtils_GetNewestFilesInDirUnderSize(
     }
 
     int fileIndex = 0;
-    unsigned long currentFileMaxCount = 0;
+    long long currentFileMaxCount = 0;
     while (currentFileMaxCount < maxFileSize && fileIndex < discoveredFilesSize)
     {
         if (discoveredFiles[fileIndex].fileName == NULL)

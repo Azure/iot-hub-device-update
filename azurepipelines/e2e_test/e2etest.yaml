@@ -33,11 +33,12 @@ stages:
                       targetArch: amd64
                       patchVersion: 4
           - job: BuildUbuntu_1804_ARM64
+            timeoutInMinutes: 360
             displayName: Building the Device Update Package for Ubuntu 18.04 ARM64
             continueOnError: False
-            pool: ubuntu1804_arm_pool
+            pool: aduc_1es_client_pool
             steps:
-                - template: ../build/templates/adu-native-build-steps.yml
+                - template: ../build/templates/adu-docker-build-steps.yml
                   parameters:
                       targetOs: ubuntu1804
                       targetArch: arm64
@@ -51,15 +52,37 @@ stages:
                   parameters:
                       targetOs: ubuntu2004
                       targetArch: amd64
+
           - job: BuildUbuntu_2004_ARM64
+            timeoutInMinutes: 360
             displayName: Building the Device Update Package for Ubuntu 20.04 ARM64
             continueOnError: False
-            pool: ubuntu2004_arm_pool
+            pool: aduc_1es_client_pool
             steps:
-                - template: ../build/templates/adu-native-build-steps.yml
+                - template: ../build/templates/adu-docker-build-steps.yml
                   parameters:
                       targetOs: ubuntu2004
                       targetArch: arm64
+          # - job: BuildUbuntu_2204_AMD64
+          #   displayName: Building the Device Update Package for Ubuntu 22.04 AMD64
+          #   continueOnError: False
+          #   pool: aduc_1es_client_pool
+          #   steps:
+          #       - template: ../build/templates/adu-docker-build-steps.yml
+          #         parameters:
+          #             targetOs: ubuntu2204
+          #             targetArch: amd64
+          # - job: BuildUbuntu_2204_ARM64
+            # timeoutInMinutes: 360
+            # displayName: Building the Device Update Package for Ubuntu 22.04 ARM64
+            # continueOnError: False
+            # pool: aduc_1es_client_pool
+            # steps:
+            #     - template: ../build/templates/adu-docker-build-steps.yml
+            #       parameters:
+            #           targetOs: ubuntu2204
+            #           targetArch: arm64
+
           - job: BuildDebian_10_AMD64
             displayName: Building the Device Update Package for Debian 10 amd64
             continueOnError: False
@@ -79,7 +102,7 @@ stages:
             continueOnError: False
             steps:
                 - script: |
-                      sudo apt update && sudo apt install curl
+                      while pgrep apt > /dev/null; do sleep 1; done; sudo apt update && sudo apt install curl
                       curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
                       sudo apt-add-repository "deb [arch=$(dpkg --print-architecture)] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
                       sudo apt install terraform
@@ -126,11 +149,10 @@ stages:
                       image_version: latest
                       packagePattern: "*ubuntu1804-amd64*/*.deb"
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
-                      scenarioSetupDir: "./scenarios/ubuntu-18.04-amd64"
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh --self-upgrade
+                          ./testsetup/setup.sh --distro ubuntu-18.04 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
           - job: SetupUbuntu1804_ARM64_VM
             displayName: "Setting up VM for Ubuntu 18.04 ARM64 Test VM"
@@ -148,11 +170,10 @@ stages:
                       image_version: latest
                       packagePattern: "*ubuntu1804-arm64*/*.deb"
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
-                      scenarioSetupDir: "./scenarios/ubuntu-18.04-arm64"
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh
+                          ./testsetup/setup.sh --distro ubuntu-18.04 --architecture arm64
                       image_working_directory: $(E2E_WORKING_DIR)
           - job: SetupUbuntu2004_AMD64_VM
             displayName: "Setting up VM for Ubuntu 20.04 AMD64 Test VM"
@@ -170,11 +191,10 @@ stages:
                       image_version: latest
                       packagePattern: "*ubuntu2004-amd64*/*.deb"
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
-                      scenarioSetupDir: "./scenarios/ubuntu-20.04-amd64"
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh
+                          ./testsetup/setup.sh --distro ubuntu-20.04 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
           - job: SetupUbuntu2004_ARM64_VM
             displayName: "Setting up VM for Ubuntu 20.04 ARM64 Test VM"
@@ -192,12 +212,53 @@ stages:
                       image_version: latest
                       packagePattern: "*ubuntu2004-arm64*/*.deb"
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
-                      scenarioSetupDir: "./scenarios/ubuntu-20.04-arm64"
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh
+                          ./testsetup/setup.sh --distro ubuntu-20.04 --architecture arm64
                       image_working_directory: $(E2E_WORKING_DIR)
+          # - job: SetupUbuntu2204_AMD64_VM
+          #   displayName: "Setting up VM for Ubuntu 22.04 AMD64 Test VM"
+          #   timeoutInMinutes: 360
+          #   cancelTimeoutInMinutes: 360
+          #   pool: aduc_1es_client_pool
+          #   steps:
+          #       - template: ./templates/e2e_vm_setup.yaml
+          #         parameters:
+          #             distroName: ubuntu-22.04-amd64
+          #             vm_size: Standard_DS1_v2
+          #             image_publisher: canonical
+          #             image_offer: 0001-com-ubuntu-server-focal
+          #             image_sku: 22_04-lts
+          #             image_version: latest
+          #             packagePattern: "*ubuntu2204-amd64*/*.deb"
+          #             package_pipeline: "Azure.adu-private-preview.e2e-test"
+          #             du_tarball_script: >-
+          #                 tar -xf /tmp/testsetup.tar.gz -C ./ &&
+          #                 chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
+          #                 ./testsetup/setup.sh --distro ubuntu-22.04 --architecture amd64
+          #             image_working_directory: $(E2E_WORKING_DIR)
+          # - job: SetupUbuntu2204_ARM64_VM
+            # displayName: "Setting up VM for Ubuntu 22.04 ARM64 Test VM"
+            # timeoutInMinutes: 360
+            # cancelTimeoutInMinutes: 360
+            # pool: aduc_1es_client_pool
+            # steps:
+            #     - template: ./templates/e2e_vm_setup.yaml
+            #       parameters:
+            #           distroName: ubuntu-22.04-arm64
+            #           vm_size: Standard_D2plds_v5
+            #           image_publisher: canonical
+            #           image_offer: 0001-com-ubuntu-server-focal
+            #           image_sku: 22_04-lts-arm64
+            #           image_version: latest
+            #           packagePattern: "*ubuntu2204-arm64*/*.deb"
+            #           package_pipeline: "Azure.adu-private-preview.e2e-test"
+            #           du_tarball_script: >-
+            #               tar -xf /tmp/testsetup.tar.gz -C ./ &&
+            #               chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
+            #               ./testsetup/setup.sh --distro ubuntu-22.04 --architecture arm64
+            #           image_working_directory: $(E2E_WORKING_DIR)
           - job: SetupDebian10_AMD64_VM
             displayName: "Setting up VM for Debain 10 AMD64 Test VM"
             timeoutInMinutes: 360
@@ -214,11 +275,10 @@ stages:
                       image_version: latest
                       packagePattern: "*debian10-amd64*/*.deb"
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
-                      scenarioSetupDir: "./scenarios/debian-10-amd64"
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh
+                          ./testsetup/setup.sh --distro debian-10 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
 
     - stage: RunTestsAndPostResults
@@ -235,7 +295,6 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: ubuntu-18.04-amd64
-                      scenarioPath: scenarios/ubuntu-18.04-amd64/
           - job: RunUbuntu_1804_Arm64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 18.04 ARM64"
             timeoutInMinutes: 360
@@ -245,7 +304,6 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: ubuntu-18.04-arm64
-                      scenarioPath: scenarios/ubuntu-18.04-arm64/
           - job: RunUbuntu_2004_Amd64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 20.04 AMD64"
             timeoutInMinutes: 360
@@ -255,7 +313,6 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: ubuntu-20.04-amd64
-                      scenarioPath: scenarios/ubuntu-20.04-amd64/
           - job: RunUbuntu_2004_Arm64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 20.04 ARM64"
             timeoutInMinutes: 360
@@ -265,7 +322,24 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: ubuntu-20.04-arm64
-                      scenarioPath: scenarios/ubuntu-20.04-arm64/
+          # - job: RunUbuntu_2204_Amd64VmE2ETests
+          #   displayName: "Running E2E Tests against Ubuntu 22.04 AMD64"
+          #   timeoutInMinutes: 360
+          #   cancelTimeoutInMinutes: 360
+          #   pool: aduc_1es_client_pool
+          #   steps:
+          #       - template: ./templates/e2e_test_run.yaml
+          #         parameters:
+          #             distroName: ubuntu-22.04-amd64
+          # - job: RunUbuntu_2204_Arm64VmE2ETests
+            # displayName: "Running E2E Tests against Ubuntu 22.04 ARM64"
+            # timeoutInMinutes: 360
+            # cancelTimeoutInMinutes: 360
+            # pool: aduc_1es_client_pool
+            # steps:
+            #     - template: ./templates/e2e_test_run.yaml
+            #       parameters:
+            #           distroName: ubuntu-22.04-arm64
           - job: RunDebian_10_Amd64VmE2ETests
             displayName: "Running E2E Tests against Debian 10 AMD64"
             timeoutInMinutes: 360
@@ -275,7 +349,6 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: debian-10-amd64
-                      scenarioPath: scenarios/debian-10-amd64/
 
     - stage: TerraformDestroyVm
       displayName: Tear down cloud resources (VMs) and destroy the resource group
@@ -287,8 +360,8 @@ stages:
       variables:
           TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
       jobs:
-          - job: RunUbuntu_1804_Amd64VmE2ETests
-            displayName: "Running E2E Tests against Ubuntu 18.04 AMD64"
+          - job: DeleteUbuntu_1804_Amd64Vms
+            displayName: "Deletes the VM for Ubuntu 18.04 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
             pool: aduc_1es_client_pool
@@ -297,8 +370,8 @@ stages:
                   parameters:
                       distroName: ubuntu-18.04-amd64
                       terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-          - job: RunUbuntu_1804_Arm64VmE2ETests
-            displayName: "Running E2E Tests against Ubuntu 18.04 ARM64"
+          - job: DeleteUbuntu_1804_Arm64Vms
+            displayName: "Deletes the VM for Ubuntu 18.04 ARM64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
             pool: aduc_1es_client_pool
@@ -307,8 +380,8 @@ stages:
                   parameters:
                       distroName: ubuntu-18.04-arm64
                       terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-          - job: RunUbuntu_2004_Amd64VmE2ETests
-            displayName: "Running E2E Tests against Ubuntu 20.04 AMD64"
+          - job: DeleteUbuntu_2004_Amd64Vms
+            displayName: "Deletes the VM for Ubuntu 20.04 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
             pool: aduc_1es_client_pool
@@ -317,7 +390,7 @@ stages:
                   parameters:
                       distroName: ubuntu-20.04-amd64
                       terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-          - job: DeleteUbuntu_2004_Amd64Vms
+          - job: DeleteUbuntu_2004_Arm64Vms
             displayName: "Deletes the VM for Ubuntu 20.04 ARM64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
@@ -327,8 +400,28 @@ stages:
                   parameters:
                       distroName: ubuntu-20.04-arm64
                       terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-          - job: RunDebian_10_Amd64VmE2ETests
-            displayName: "Running E2E Tests against Debian 10 AMD64"
+          # - job: DeleteUbuntu_2204_Amd64Vms
+          #   displayName: "Deletes the VM for Ubuntu 22.04 AMD64"
+          #   timeoutInMinutes: 360
+          #   cancelTimeoutInMinutes: 360
+          #   pool: aduc_1es_client_pool
+          #   steps:
+          #       - template: ./templates/e2e_test_vm_cleanup.yaml
+          #         parameters:
+          #             distroName: ubuntu-22.04-amd64
+          #             terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
+          # - job: DeleteUbuntu_2204_Arm64Vms
+            # displayName: "Deletes the VM for Ubuntu 22.04 ARM64"
+            # timeoutInMinutes: 360
+            # cancelTimeoutInMinutes: 360
+            # pool: aduc_1es_client_pool
+            # steps:
+            #     - template: ./templates/e2e_test_vm_cleanup.yaml
+            #       parameters:
+            #           distroName: ubuntu-22.04-arm64
+            #           terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
+          - job: DeleteDebian_10_Amd64Vms
+            displayName: "Deletes the VM for Debian 10 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
             pool: aduc_1es_client_pool

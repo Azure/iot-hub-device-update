@@ -6,8 +6,14 @@
  * Licensed under the MIT License.
  */
 #include <getopt.h>
+
 #include <string.h>
-#include <unistd.h> // for getegid, geteuid, and setuid.
+
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/pwd.h> // getpwnam
+#include <aducpal/stdlib.h> // setenv
+#include <aducpal/unistd.h> // getegid, geteuid, getuid, setuid
+
 #include <unordered_map>
 #include <vector>
 
@@ -72,6 +78,8 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
     launchArgs->argc = argc;
     launchArgs->argv = argv;
 
+    launchArgs->configFolder = ADUC_CONF_FOLDER;
+
     while (result == 0)
     {
         // clang-format off
@@ -94,6 +102,8 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
         //
         // "--log-level"         |   Log verbosity level.
         //
+        // "--config-folder"     |   Path to the folder containing the ADU configuration files.
+        //
         static struct option long_options[] =
         {
             { "version",           no_argument,       nullptr, 'v' },
@@ -103,6 +113,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
             { "target-options",    required_argument, nullptr, 'o' },
             { "target-log-folder", required_argument, nullptr, 'f' },
             { "log-level",         required_argument, nullptr, 'l' },
+            { "config-folder",     required_argument, nullptr, 'F' },
             { nullptr, 0, nullptr, 0 }
         };
 
@@ -110,7 +121,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
 
         /* getopt_long stores the option index here. */
         int option_index = 0;
-        int option = getopt_long(argc, argv, "vt:a:d:o:f:l:", long_options, &option_index);
+        int option = getopt_long(argc, argv, "vt:a:d:o:f:l:F;", long_options, &option_index);
 
         /* Detect the end of the options. */
         if (option == -1)
@@ -126,6 +137,10 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
 
         case 't':
             launchArgs->updateType = optarg;
+            break;
+
+        case 'F':
+            launchArgs->configFolder = optarg;
             break;
 
         case 'a':
@@ -145,8 +160,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
             launchArgs->logFile = optarg;
             break;
 
-        case 'l':
-        {
+        case 'l': {
             char* endptr;
             errno = 0; /* To distinguish success/failure after call */
             int64_t logLevel = strtol(optarg, &endptr, 10);
@@ -181,6 +195,9 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
                 break;
             case 'f':
                 printf("Missing a log folder path after '--target-log-folder' or '-f' option.");
+                break;
+            case 'F':
+                printf("Missing a config folder path after '--config-folder' or '-c' option.");
                 break;
             default:
                 printf("Missing an option value after -%c.\n", optopt);
@@ -265,16 +282,16 @@ bool ADUShell_PermissionCheck()
     bool isTrusted = false;
 
     // If config file is provided, check if user is in trusted user list.
-    ADUC_ConfigInfo config = {};
-    if (ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL)
     {
-        VECTOR_HANDLE aduShellTrustedUsers = ADUC_ConfigInfo_GetAduShellTrustedUsers(&config);
+        VECTOR_HANDLE aduShellTrustedUsers = ADUC_ConfigInfo_GetAduShellTrustedUsers(config);
 
         isTrusted = VerifyProcessEffectiveUser(aduShellTrustedUsers);
 
         ADUC_ConfigInfo_FreeAduShellTrustedUsers(aduShellTrustedUsers);
         aduShellTrustedUsers = nullptr;
-        ADUC_ConfigInfo_UnInit(&config);
+        ADUC_ConfigInfo_ReleaseInstance(config);
     }
 
     // If config file not provided or user not in the trusted users list, then
@@ -302,23 +319,38 @@ bool ADUShell_PermissionCheck()
  */
 int main(int argc, char** argv)
 {
-    if (!ADUShell_PermissionCheck())
-    {
-        return EPERM;
-    }
-
     ADUShell_LaunchArguments launchArgs;
+    const ADUC_ConfigInfo* config = NULL;
+    uid_t defaultUserId = ADUCPAL_getuid();
+    uid_t effectiveUserId = ADUCPAL_geteuid();
 
     int ret = ParseLaunchArguments(argc, argv, &launchArgs);
     if (ret != 0)
     {
-        return ret;
+        printf("Failed to parse launch arguments.\n");
+        goto done;
     }
 
     if (launchArgs.showVersion)
     {
         printf("%s\n", ADUC_VERSION);
-        return 0;
+        ret = 0;
+        goto done;
+    }
+
+    ADUCPAL_setenv(ADUC_CONFIG_FOLDER_ENV, launchArgs.configFolder, 1);
+    config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
+    {
+        Log_Error("Cannot read configuration from '%s' folder.", launchArgs.configFolder);
+        ret = EXIT_FAILURE;
+        goto done;
+    }
+
+    if (!ADUShell_PermissionCheck())
+    {
+        ret = EPERM;
+        goto done;
     }
 
     ADUC_Logging_Init(launchArgs.logLevel, "adu-shell");
@@ -334,25 +366,25 @@ int main(int argc, char** argv)
 
     // Run as 'root'.
     // Note: this requires the file owner to be 'root'.
-    uid_t defaultUserId = getuid();
-    uid_t effectiveUserId = geteuid();
-    ret = setuid(effectiveUserId);
+    ret = ADUCPAL_setuid(effectiveUserId);
     if (ret == 0)
     {
         Log_Info(
             "Run as uid(%d), defaultUid(%d), effectiveUid(%d), effectiveGid(%d)",
-            getuid(),
+            ADUCPAL_getuid(),
             defaultUserId,
             effectiveUserId,
-            getegid());
+            ADUCPAL_getegid());
 
         ret = ADUShell_Dowork(launchArgs);
 
         ADUC_Logging_Uninit();
 
-        return ret;
+        goto done;
     }
 
     Log_Error("Cannot set user identity. (code: %d, errno: %d)", ret, errno);
+done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return ret;
 }

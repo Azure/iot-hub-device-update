@@ -1,23 +1,14 @@
 find_package (Doxygen REQUIRED)
 if (DOXYGEN_FOUND)
-    set (DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR}/)
-    set (DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR})
-    set (DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/html/index.html)
-    set (DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
-    set (DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+    set (DOXYGEN_PROJECT_NAME "Device Update for IotHub")
+    set (DOXYGEN_PROJECT_NUMBER "1.0.2")
+    set (
+        DOXYGEN_PROJECT_BRIEF
+        "Device Update for IoTHub delivers client update from the Device Update for IotHub service."
+    )
+    set (DOXYGEN_EXCLUDE_PATTERNS "*/src/deliveryoptimization/* */tests/* *.sh *.ps1 *.cpp *.c")
 
-    message ("Docs INPUT_DIR: ${DOXYGEN_INPUT_DIR}")
-    message ("Docs OUTPUT_DIR: ${DOXYGEN_OUTPUT_DIR}")
-
-    configure_file (${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
-    file (MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}) #Doxygen won't create this for us
-
-    add_custom_command (
-        OUTPUT ${DOXYGEN_INDEX_FILE}
-        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
-        MAIN_DEPENDENCY ${DOXYFILE_OUT}
-        ${DOXYFILE_IN}
-        COMMENT "Generating docs")
-
-    add_custom_target (Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
+    set (DOXYGEN_GENERATE_HTML YES)
+    set (DOXYGEN_GENERATE_MAN YES)
+    doxygen_add_docs (doxygen_docs ${PROJECT_SOURCE_DIR} ALL COMMENT "Generating doxygen")
 endif ()

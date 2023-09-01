@@ -7,6 +7,9 @@
  */
 #include <catch2/catch.hpp>
 #include <cstring>
+#include <pthread.h>
+
+#include <aducpal/time.h> // gmtime_r
 
 #include "mock_do_download.hpp"
 #include "mock_do_download_status.hpp"
@@ -32,44 +35,6 @@ static DownloadProgressInfo downloadProgressInfo;
 static pthread_cond_t downloadCompletedCond;
 static pthread_mutex_t downloadMutex;
 static ADUC_Result downloadTestResult;
-
-/**
- * @brief Mock for workflow idle callback. No-op at the moment.
- */
-static void mockIdleCallback(ADUC_Token /*token*/, const char* /*workflowId*/)
-{
-}
-
-/**
- * @brief Mock for download progress callback. Cache download progress info for test verifications.
- */
-static void mockDownloadProgressCallback(
-    const char* workflowId,
-    const char* fileId,
-    ADUC_DownloadProgressState state,
-    uint64_t bytesTransferred,
-    uint64_t bytesTotal)
-{
-    downloadProgressInfo.workflowId = workflowId;
-    downloadProgressInfo.fileId = fileId;
-    downloadProgressInfo.state = state;
-    downloadProgressInfo.bytesTransferred = bytesTransferred;
-    downloadProgressInfo.bytesTotal = bytesTotal;
-}
-
-/**
- * @brief Mock for completion callback.
- */
-static void mockWorkCompletionCallback(const void* /*workCompletionToken*/, ADUC_Result result)
-{
-    // Save result for test validation.
-    downloadTestResult = result;
-
-    if (result.ResultCode != ADUC_Result_Download_InProgress)
-    {
-        pthread_cond_signal(&downloadCompletedCond);
-    }
-}
 
 static const char* testUrl =
     "http://download.windowsupdate.com/c/msdownload/update/software/secu/2020/07/windows6.0-kb4575904-x64_9272724f637d85a12bfe022191c1ba56cd4bc59e.msu";
@@ -97,7 +62,10 @@ ADUC_Hash unsupportedHash[] = { {
     const_cast<char*>("sha1024"), // type
 } };
 
-ADUC_Hash emptyHash[] = {};
+ADUC_Hash emptyHash[] = {
+    /* .value = */ nullptr,
+    /* .type = */ nullptr
+};
 
 ADUC_FileEntity fileEntityWithGoodHash[] = { {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
@@ -153,9 +121,7 @@ ADUC_FileEntity fileEntityWithEmptyHash[] = { {
 static void GenerateUniqueId(char* buffer, size_t buffer_cch)
 {
     const time_t timer = time(nullptr);
-    struct tm tm
-    {
-    };
+    struct tm tm;
     (void)gmtime_r(&timer, &tm);
     (void)strftime(buffer, buffer_cch, "%y%m%d%H%M%S", &tm);
 }

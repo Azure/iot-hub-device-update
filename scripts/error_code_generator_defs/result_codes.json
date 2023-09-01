@@ -271,6 +271,10 @@
                 "value": 32
               },
               {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_PERFORM_ACTION_FAILED_TO_GET_CONFIG_INSTANCE",
+                "value": 33
+              },
+              {
                 "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_UNKNOWN_UPDATE_VERSION",
                 "value": 257
               },
@@ -335,8 +339,32 @@
                 "value": 518
               },
               {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILED_TO_GET_CONFIG_INSTANCE",
+                "value": 519
+              },
+              {
                 "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_UNKNOWNEXCEPTION",
                 "value": 767
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_APPLY_FAILURE",
+                "value": 768
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_APPLY_FAILED_TO_GET_CONFIG_INSTANCE",
+                "value": 769
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_CANCEL_FAILURE",
+                "value": 1024
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_CANCEL_FAILED_TO_GET_CONFIG_INSTANCE",
+                "value": 1025
+              },
+              {
+                "name": "ADUC_ERC_SWUPDATE_HANDLER_CANCEL_FAILED_TO_CANCEL_APPLIED_UPDATE",
+                "value": 1026
               }
             ]
           },
@@ -382,12 +410,20 @@
                 "value": 256
               },
               {
+                "name": "ADUC_ERC_APT_HANDLER_DOWNLOAD_FAILED_TO_GET_CONFIG_INSTANCE",
+                "value": 257
+              },
+              {
                 "name": "ADUC_ERC_APT_HANDLER_PACKAGE_INSTALL_FAILURE",
                 "value": 512
               },
               {
+                "name": "ADUC_ERC_APT_HANDLER_INSTALL_FAILED_TO_GET_CONFIG_INSTANCE",
+                "value": 513
+              },
+              {
                 "name": "ADUC_ERC_APT_HANDLER_PACKAGE_CANCEL_FAILURE",
-                "value": 768
+                "value": 1024
               }
             ]
           },
@@ -572,6 +608,10 @@
               {
                 "name": "ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_SCRIPT_RESULT_EXTENDEDRESULTCODE_ZERO",
                 "value": 518
+              },
+              {
+                "name": "ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILED_TO_GET_CONFIG_INSTANCE",
+                "value": 519
               },
               {
                 "name": "ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_UNKNOWNEXCEPTION",

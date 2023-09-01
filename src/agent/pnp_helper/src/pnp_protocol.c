@@ -126,7 +126,7 @@ void PnP_ParseCommandName(
         // If a separator character is present in the device method name, then a command on a subcomponent of
         // the model is being targeted (e.g. thermostat1*getMaxMinReport).
         *componentName = (unsigned const char*)deviceMethodName;
-        *componentNameSize = separator - deviceMethodName;
+        *componentNameSize = (size_t)(separator - deviceMethodName);
         *pnpCommandName = separator + 1;
     }
     else

@@ -1,5 +1,5 @@
 /**
- * @file calloc_wrapper.h
+ * @file calloc_wrapper.hpp
  * @brief Defines calloc_wrapper class, which performs RAII for malloc'd pointers.
  *
  * @copyright Copyright (c) Microsoft Corporation.

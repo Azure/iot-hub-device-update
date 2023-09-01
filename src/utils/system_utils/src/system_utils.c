@@ -1,5 +1,5 @@
 /**
- * @file system_utils.c
+  * @file system_utils.c
  * @brief System level utilities, e.g. directory management, reboot, etc.
  *
  * @copyright Copyright (c) Microsoft Corporation.
@@ -8,43 +8,32 @@
 #include "aduc/system_utils.h"
 #include "aduc/logging.h"
 
-// for nftw
-#define __USE_XOPEN_EXTENDED 1
+#include <aducpal/dirent.h>
+#include <aducpal/ftw.h> // nftw
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/pwd.h> // getpwnam
+#include <aducpal/stdio.h> // remove
+#include <aducpal/sys_stat.h> // mkdir, chmod
+#include <aducpal/time.h> // clock_gettime, CLOCK_REALTIME
+#include <aducpal/unistd.h> // chown
 
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/strings.h>
-#include <dirent.h>
 #include <errno.h>
-#include <fcntl.h> // for O_CLOEXEC
-#include <ftw.h> // for nftw
-#include <grp.h> // for getgrnam
 #include <limits.h> // for PATH_MAX
-#include <pwd.h> // for getpwnam
 #include <stdio.h>
 #include <stdlib.h> // for getenv
 #include <string.h> // for strncpy, strlen
-#include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h> // for waitpid
-#include <unistd.h>
-
-#ifndef O_CLOEXEC
-/**
- * @brief Enable the close-on-exec flag for the new file descriptor. Specifying this flag permits a program to avoid additional
- * fcntl(2) F_SETFD operations to set the FD_CLOEXEC flag.
- * @details Included here because not all linux kernels include O_CLOEXEC by default in fcntl.h
- */
-#    define O_CLOEXEC __O_CLOEXEC
-#endif
 
 #ifndef ALL_PERMS
 /**
  * @brief Define all permissions mask if not defined already in octal format
  */
 #    define ALL_PERMS 07777
-
 #endif
+
 /**
  * @brief Retrieve system temporary path with a subfolder.
  *
@@ -81,53 +70,48 @@ const char* ADUC_SystemUtils_GetTemporaryPathName()
 }
 
 /**
- * @brief Execute shell command.
+ * @brief mktemp() implementation
  *
- * @param command The command to execute as a string.
- * @return 0 for success.
- * @return non-zero status code for failure.
+ * mktemp() is generally considered unsafe as the temporary names can be easy to guess, and there are
+ * a limited number of combinations.
  *
- * The return value is an errno code for system call failures. If all system calls succeed,
- * the return value is the termination status of the child shell used to execute command.
+ * However, for unit tests, it can be useful, so it's highly recommended that this method is only
+ * used for unit tests.
+ *
+ * @param tmpl The last six characters XXXXXX are replaced with a string that makes the filename unique.
+ * @return Returns @param tmpl.
  */
-int ADUC_SystemUtils_ExecuteShellCommand(const char* command)
+char* ADUC_SystemUtils_MkTemp(char* tmpl)
 {
-    if (IsNullOrEmpty(command))
+    const size_t len = strlen(tmpl);
+    if (len < 6)
     {
-        Log_Error("ExecuteShellCommand failed: command is empty");
-        return EINVAL;
+        tmpl[0] = '\0';
+        errno = EINVAL;
+        return tmpl;
     }
 
-    Log_Info("Execute shell command: %s", command);
+    // Start of XXXXXX
+    char* Xs = tmpl + (len - 6);
 
-    const int status = system(command); // NOLINT(cert-env33-c)
-    if (status == -1)
+    // Get a randomish number from real time clock.
+    struct timespec ts;
+    ADUCPAL_clock_gettime(CLOCK_REALTIME, &ts);
+    unsigned long rnd = (unsigned long)ts.tv_nsec ^ (unsigned long)ts.tv_sec;
+
+    while (*Xs == 'X')
     {
-        Log_Error("ExecuteShellCommand failed: System call failed, errno = %d", errno);
+        // '0'..'9' (10), 'A'..'Z' (26), 'a'..'z' (26)
+        const unsigned short count = 10 + 26 + 26;
+        const unsigned short idx = (unsigned short)(rnd % count);
+        *Xs = (idx < 10) ? (char)('0' + idx)
+                         : (idx < 10 + 26) ? (char)('A' + (idx - 10)) : (char)('a' + (idx - (10 + 26)));
+        rnd /= count;
 
-        return errno;
+        ++Xs;
     }
 
-    // WIFEXITED returns zero if the child process terminated abnormally.
-    if (!WIFEXITED(status))
-    {
-        Log_Error("ExecuteShellCommand failed: Command exited abnormally");
-
-        return ECANCELED;
-    }
-
-    // if child process terminated normally, WEXITSTATUS returns its exit status value.
-    const int executeStatus = WEXITSTATUS(status);
-
-    // A shell command which exits with a zero exit status has succeeded. A non-zero exit status indicates failure.
-    if (executeStatus != 0)
-    {
-        Log_Error("ExecuteShellCommand failed: Command exited with non-zero value, exitStatus = %d", executeStatus);
-
-        return executeStatus;
-    }
-
-    return 0;
+    return tmpl;
 }
 
 /**
@@ -144,7 +128,8 @@ int ADUC_SystemUtils_ExecuteShellCommand(const char* command)
  */
 int ADUC_SystemUtils_MkDirDefault(const char* path)
 {
-    return ADUC_SystemUtils_MkDir(path, -1 /*userId*/, -1 /*groupId*/, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP /*mode*/);
+    return ADUC_SystemUtils_MkDir(
+        path, (uid_t)-1 /*userId*/, (gid_t)-1 /*groupId*/, (mode_t)S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP /*mode*/);
 }
 
 /**
@@ -159,11 +144,13 @@ int ADUC_SystemUtils_MkDirDefault(const char* path)
  */
 int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t mode)
 {
-    struct stat st = {};
+    struct stat st;
+    memset(&st, 0, sizeof(st));
+
     if (stat(path, &st) != 0)
     {
         /* Directory does not exist. EEXIST for race condition */
-        if (mkdir(path, mode) != 0 && errno != EEXIST)
+        if (ADUCPAL_mkdir(path, mode) != 0 && errno != EEXIST)
         {
             Log_Error("Could not create directory %s errno: %d", path, errno);
             return errno;
@@ -174,7 +161,7 @@ int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t
             // Now that we have created the directory, take ownership of it.
             // Note: getuid and getgid are always successful.
             // getuid(), getgid()
-            if (chown(path, userId, groupId) != 0)
+            if (ADUCPAL_chown(path, userId, groupId) != 0)
             {
                 Log_Error("Could not change owner of directory %s errno: %d", path, errno);
                 return errno;
@@ -205,7 +192,8 @@ int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t
  */
 int ADUC_SystemUtils_MkDirRecursiveDefault(const char* path)
 {
-    return ADUC_SystemUtils_MkDirRecursive(path, -1 /*userId*/, -1 /*groupId*/, S_IRWXU | S_IRWXG /*mode*/);
+    return ADUC_SystemUtils_MkDirRecursive(
+        path, (uid_t)-1 /*userId*/, (gid_t)-1 /*groupId*/, (mode_t)S_IRWXU | S_IRWXG /*mode*/);
 }
 
 /**
@@ -268,14 +256,16 @@ int ADUC_SystemUtils_MkDirRecursive(const char* path, uid_t userId, gid_t groupI
     }
 
     // Let's make sure that we set this correct permission on the leaf folder.
-    struct stat st = {};
+    struct stat st;
+    memset(&st, 0, sizeof(st));
+
     if (stat(path, &st) == 0)
     {
-        int perms = (st.st_mode & (ALL_PERMS));
+        unsigned short perms = (st.st_mode & (ALL_PERMS));
         if (perms != mode)
         {
             // Fix the permissions.
-            if (0 != chmod(path, mode))
+            if (0 != ADUCPAL_chmod(path, mode))
             {
                 stat(path, &st);
                 Log_Warn("Failed to set '%s' folder permissions (expected:0%o, actual: 0%o)", mkdirPath, mode, perms);
@@ -295,7 +285,7 @@ int ADUC_SystemUtils_MkSandboxDirRecursive(const char* path)
     // Note: the return value may point to a static area,
     // and may be overwritten by subsequent calls to getpwent(3), getpwnam(), or getpwuid().
     // (Do not pass the returned pointer to free(3).)
-    struct passwd* pwd = getpwnam(ADUC_FILE_USER);
+    struct passwd* pwd = ADUCPAL_getpwnam(ADUC_FILE_USER);
     if (pwd == NULL)
     {
         Log_Error("adu user doesn't exist.");
@@ -308,7 +298,7 @@ int ADUC_SystemUtils_MkSandboxDirRecursive(const char* path)
     // Note: The return value may point to a static area,
     // and may be overwritten by subsequent calls to getgrent(3), getgrgid(), or getgrnam().
     // (Do not pass the returned pointer to free(3).)
-    struct group* grp = getgrnam(ADUC_FILE_GROUP);
+    struct group* grp = ADUCPAL_getgrnam(ADUC_FILE_GROUP);
     if (grp == NULL)
     {
         Log_Error("adu group doesn't exist.");
@@ -324,7 +314,7 @@ int ADUC_SystemUtils_MkDirRecursiveAduUser(const char* path)
 {
     // Create the sandbox folder with adu:default ownership.
     // Permissions are set to u=rwx.
-    struct passwd* pwd = getpwnam(ADUC_FILE_USER);
+    struct passwd* pwd = ADUCPAL_getpwnam(ADUC_FILE_USER);
     if (pwd == NULL)
     {
         Log_Error("adu user doesn't exist.");
@@ -334,7 +324,7 @@ int ADUC_SystemUtils_MkDirRecursiveAduUser(const char* path)
     uid_t aduUserId = pwd->pw_uid;
     pwd = NULL;
 
-    return ADUC_SystemUtils_MkDirRecursive(path, aduUserId, -1, S_IRWXU);
+    return ADUC_SystemUtils_MkDirRecursive(path, aduUserId, (gid_t)-1, (mode_t)S_IRWXU);
 }
 
 static int RmDirRecursive_helper(const char* fpath, const struct stat* sb, int typeflag, struct FTW* info)
@@ -347,12 +337,12 @@ static int RmDirRecursive_helper(const char* fpath, const struct stat* sb, int t
     if (typeflag == FTW_DP)
     {
         // fpath is a directory, and FTW_DEPTH was specified in flags.
-        result = rmdir(fpath);
+        result = ADUCPAL_rmdir(fpath);
     }
     else
     {
         // Assume a file.
-        result = unlink(fpath);
+        result = ADUCPAL_remove(fpath);
     }
 
     return result;
@@ -369,7 +359,7 @@ static int RmDirRecursive_helper(const char* fpath, const struct stat* sb, int t
  */
 int ADUC_SystemUtils_RmDirRecursive(const char* path)
 {
-    return nftw(path, RmDirRecursive_helper, 20 /*nfds*/, FTW_MOUNT | FTW_PHYS | FTW_DEPTH);
+    return ADUCPAL_nftw(path, RmDirRecursive_helper, 20 /*nfds*/, FTW_MOUNT | FTW_PHYS | FTW_DEPTH);
 }
 
 /**
@@ -463,8 +453,8 @@ int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, co
 
     FILE* sourceFile = NULL;
     FILE* destFile = NULL;
-    const size_t readMaxBuffSize = 1024;
-    unsigned char readBuff[readMaxBuffSize];
+    unsigned char readBuff[1024];
+    const size_t readMaxBuffSize = ARRAY_SIZE(readBuff);
 
     memset(readBuff, 0, readMaxBuffSize);
 
@@ -525,7 +515,7 @@ int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, co
         goto done;
     }
 
-    if (chmod(STRING_c_str(destFilePath), buff.st_mode) != 0)
+    if (ADUCPAL_chmod(STRING_c_str(destFilePath), buff.st_mode) != 0)
     {
         goto done;
     }
@@ -543,19 +533,6 @@ done:
 
     STRING_delete(destFilePath);
     return result;
-}
-
-/**
- * @brief Removes the file when caller knows the path refers to a file
- * @remark On POSIX systems, it will remove a link to the name so it might not delete right away if there are other links
- * or another process has it open.
- *
- * @param path The path to the file.
- * @return int On success, 0 is returned. On error -1 is returned, and errno is set appropriately.
- */
-int ADUC_SystemUtils_RemoveFile(const char* path)
-{
-    return unlink(path);
 }
 
 /**
@@ -759,7 +736,7 @@ int SystemUtils_ForEachDir(
         goto done;
     }
 
-    dir = opendir(baseDir);
+    dir = ADUCPAL_opendir(baseDir);
     if (dir == NULL)
     {
         err_ret = errno;
@@ -770,7 +747,7 @@ int SystemUtils_ForEachDir(
     do
     {
         errno = 0;
-        if ((dir_entry = readdir(dir)) != NULL)
+        if ((dir_entry = ADUCPAL_readdir(dir)) != NULL)
         {
             if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0)
             {
@@ -800,7 +777,7 @@ int SystemUtils_ForEachDir(
 done:
     if (dir != NULL)
     {
-        closedir(dir);
+        ADUCPAL_closedir(dir);
         dir = NULL;
     }
 

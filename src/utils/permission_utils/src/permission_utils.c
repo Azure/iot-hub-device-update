@@ -7,11 +7,15 @@
  */
 #include "aduc/permission_utils.h"
 #include "aduc/bit_ops.h" // for BitOps_AreAllBitsSet
-#include <grp.h> // for getgrnam
-#include <pwd.h> // for getpwnam
 #include <string.h> // for stat, etc.
 #include <sys/stat.h> // for stat, etc.
-#include <unistd.h> // for access
+
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/pwd.h> // getpwnam
+#include <aducpal/unistd.h> // seteuid, setegid
+#if defined(WIN32)
+#    include <aducpal/sys_stat.h> // S_ISUID
+#endif
 
 //
 // Internal functions
@@ -34,7 +38,22 @@ static bool PermissionUtils_VerifyFilemodeBits(const char* path, mode_t expected
     }
 
     // keep just the file permission bits (as opposed to file_type bits).
-    mode_t permissionBits = st.st_mode & ~S_IFMT;
+    mode_t permissionBits = st.st_mode & ~(mode_t)S_IFMT;
+
+#if defined(WIN32)
+    // Windows only supports "owner" bits. Remove group and other bits.
+    permissionBits &= ~S_IRWXG;
+    permissionBits &= ~S_IRWXO;
+#endif
+
+#if defined(WIN32)
+    // Not supported on Windows.
+    expectedPermissions &= ~S_ISUID;
+
+    // Windows only supports "owner" bits. Remove group and other bits.
+    expectedPermissions &= ~S_IRWXG;
+    expectedPermissions &= ~S_IRWXO;
+#endif
 
     return isExactMatch ? (permissionBits == expectedPermissions)
                         : BitOps_AreAllBitsSet(permissionBits, expectedPermissions);
@@ -73,7 +92,7 @@ bool PermissionUtils_VerifyFilemodeBitmask(const char* path, mode_t bitmask)
  */
 bool PermissionUtils_UserExists(const char* user)
 {
-    return getpwnam(user) != NULL;
+    return ADUCPAL_getpwnam(user) != NULL;
 }
 
 /**
@@ -83,7 +102,7 @@ bool PermissionUtils_UserExists(const char* user)
  */
 bool PermissionUtils_GroupExists(const char* group)
 {
-    return getgrnam(group) != NULL;
+    return ADUCPAL_getgrnam(group) != NULL;
 }
 
 /**
@@ -96,7 +115,7 @@ bool PermissionUtils_UserInSupplementaryGroup(const char* user, const char* grou
 {
     bool result = false;
 
-    struct group* groupEntry = getgrnam(group);
+    struct group* groupEntry = ADUCPAL_getgrnam(group);
     if (groupEntry != NULL && groupEntry->gr_mem != NULL)
     {
         for (int i = 0; groupEntry->gr_mem[i] != NULL; ++i)
@@ -131,7 +150,7 @@ bool PermissionUtils_CheckOwnership(const char* path, const char* user, const ch
 
     if (user != NULL)
     {
-        const struct passwd* pwd = getpwnam(user);
+        const struct passwd* pwd = ADUCPAL_getpwnam(user);
         if (pwd == NULL)
         {
             return false;
@@ -142,7 +161,7 @@ bool PermissionUtils_CheckOwnership(const char* path, const char* user, const ch
 
     if (group != NULL)
     {
-        const struct group* grp = getgrnam(group);
+        const struct group* grp = ADUCPAL_getgrnam(group);
         if (grp == NULL)
         {
             return false;
@@ -188,26 +207,26 @@ bool PermissionUtils_CheckOwnerGid(const char* path, gid_t gid)
 
 /**
  * @brief Set effective user of the calling process.
- * 
+ *
  * @param name The username
  * @return bool Returns true if user @p name exist and the effective user successfully set.
  *  If failed, additional error is stored in errno.
  */
 bool PermissionUtils_SetProcessEffectiveUID(const char* name)
 {
-    struct passwd* p = getpwnam(name);
-    return (p != NULL && seteuid(p->pw_uid) == 0);
+    struct passwd* p = ADUCPAL_getpwnam(name);
+    return (p != NULL && ADUCPAL_seteuid(p->pw_uid) == 0);
 }
 
 /**
  * @brief Set effective group of the calling process.
- * 
+ *
  * @param name The username
  * @return bool Returns true if group @p name exist and the effective group successfully set.
  * If failed, additional error is stored in errno.
  */
 bool PermissionUtils_SetProcessEffectiveGID(const char* name)
 {
-    struct group* grp = getgrnam(name);
-    return (grp != NULL && setegid(grp->gr_gid) == 0);
+    struct group* grp = ADUCPAL_getgrnam(name);
+    return (grp != NULL && ADUCPAL_setegid(grp->gr_gid) == 0);
 }

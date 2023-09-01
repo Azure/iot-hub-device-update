@@ -1,5 +1,5 @@
 /**
- * @file file_utils.c
+ * @file file_utils.cpp
  * @brief The implementation of file utilities.
  *
  * @copyright Copyright (c) Microsoft Corporation.
@@ -10,11 +10,12 @@
 #include "aduc/auto_opendir.hpp"
 
 #include <aduc/system_utils.h>
-#include <dirent.h>
 #include <queue>
 #include <sstream>
 #include <stdexcept>
 #include <sys/stat.h>
+
+#include <aducpal/dirent.h>
 
 namespace aduc
 {

@@ -24,7 +24,7 @@ EXTERN_C_BEGIN
  * @param argv Initialization arguments, size is argc.
  * @return ADUC_Result Result code.
  */
-ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, unsigned int argc, const char** argv);
+ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, int argc, const char** argv);
 
 /**
  * @brief Unregister the callback module.
@@ -48,9 +48,9 @@ int ADUC_RebootSystem();
 int ADUC_RestartAgent();
 
 #define AducResultCodeIndicatesInProgress(resultCode)                                                  \
-    ((resultCode) == ADUC_Result_Download_InProgress || (resultCode) == ADUC_Result_Backup_InProgress || \
-    (resultCode) == ADUC_Result_Install_InProgress || (resultCode) == ADUC_Result_Apply_InProgress || \
-    (resultCode) == ADUC_Result_Restore_InProgress)
+    ((resultCode) == ADUC_Result_Download_InProgress || (resultCode) == ADUC_Result_Backup_InProgress  \
+     || (resultCode) == ADUC_Result_Install_InProgress || (resultCode) == ADUC_Result_Apply_InProgress \
+     || (resultCode) == ADUC_Result_Restore_InProgress)
 
 EXTERN_C_END
 

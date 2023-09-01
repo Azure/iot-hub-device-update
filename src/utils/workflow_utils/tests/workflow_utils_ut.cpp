@@ -286,7 +286,7 @@ TEST_CASE("Add and remove children")
         auto p = workflow_get_parent(childWorkflow[i]);
         CHECK(p == handle);
 
-        int childCount = workflow_get_children_count(handle);
+        size_t childCount = workflow_get_children_count(handle);
         CHECK(childCount == (i + 1));
     }
 
@@ -584,7 +584,6 @@ TEST_CASE("workflow_id_compare")
 {
     ADUC_WorkflowHandle handle0 = nullptr;
     ADUC_WorkflowHandle handle1 = nullptr;
-    ADUC_WorkflowHandle handleNull = nullptr;
 
     ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, false /* validateManifest */, &handle0);
     REQUIRE(result.ResultCode > 0);
@@ -677,7 +676,7 @@ TEST_CASE("Request workflow cancellation")
         auto p = workflow_get_parent(childWorkflow[i]);
         CHECK(p == handle);
 
-        int childCount = workflow_get_children_count(handle);
+        size_t childCount = workflow_get_children_count(handle);
         CHECK(childCount == (i + 1));
 
         CHECK(!workflow_is_cancel_requested(childWorkflow[i]));

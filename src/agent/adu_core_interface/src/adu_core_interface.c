@@ -125,8 +125,11 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
  * @param workflowData The workflow data.
  * @return bool true if call succeeded.
  */
-static bool ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_value, ADUC_WorkflowData* workflowData)
+static bool
+ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_value, ADUC_WorkflowData* workflowData)
 {
+    UNREFERENCED_PARAMETER(workflowData);
+
     bool success = false;
 
     if (g_iotHubClientHandleForADUComponent == NULL)
@@ -181,7 +184,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
     }
 
     bool success = false;
-
+    const ADUC_ConfigInfo* config = NULL;
     char* jsonString = NULL;
 
     JSON_Value* startupMsgValue = json_value_init_object();
@@ -198,14 +201,14 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    ADUC_ConfigInfo config = {};
+    config = ADUC_ConfigInfo_GetInstance();
 
-    if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    if (config == NULL)
     {
         goto done;
     }
 
-    const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(&config, 0);
+    const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(config, 0);
 
     if (!StartupMsg_AddDeviceProperties(startupMsgObj, agent))
     {
@@ -213,7 +216,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    if (!StartupMsg_AddCompatPropertyNames(startupMsgObj, &config))
+    if (!StartupMsg_AddCompatPropertyNames(startupMsgObj))
     {
         Log_Error("Could not add compatPropertyNames to the startup message");
         goto done;
@@ -233,8 +236,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
 done:
     json_value_free(startupMsgValue);
     json_free_serialized_string(jsonString);
-
-    ADUC_ConfigInfo_UnInit(&config);
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return success;
 }
 
@@ -311,6 +313,14 @@ void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext)
     *componentContext = NULL;
 }
 
+/**
+ * @brief Callback for the orchestrator that allows the new patches coming down from the cloud to be organized
+ * @param clientHandle the client handle being used for the connection
+ * @param propertyValue the value of the property being routed
+ * @param propertyVersion the version of the property being routed
+ * @param sourceContext the context of the origination point for the callback
+ * @param context context for re-entering upon completion of the function
+ */
 void OrchestratorUpdateCallback(
     ADUC_ClientHandle clientHandle,
     JSON_Value* propertyValue,
@@ -318,6 +328,8 @@ void OrchestratorUpdateCallback(
     ADUC_PnPComponentClient_PropertyUpdate_Context* sourceContext,
     void* context)
 {
+    UNREFERENCED_PARAMETER(clientHandle);
+
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)context;
     STRING_HANDLE jsonToSend = NULL;
 
@@ -543,7 +555,7 @@ JSON_Value* GetReportingJsonValue(
 
     JSON_Value* rootValue = json_value_init_object();
     JSON_Object* rootObject = json_value_get_object(rootValue);
-    int stepsCount = workflow_get_children_count(handle);
+    size_t stepsCount = workflow_get_children_count(handle);
 
     //
     // Prepare 'lastInstallResult', 'stepResults' data.
@@ -692,7 +704,7 @@ JSON_Value* GetReportingJsonValue(
     if (updateState != ADUCITF_State_DownloadStarted)
     {
         stepsCount = workflow_get_children_count(handle);
-        for (int i = 0; i < stepsCount; i++)
+        for (size_t i = 0; i < stepsCount; i++)
         {
             ADUC_WorkflowHandle childHandle = workflow_get_child(handle, i);
             ADUC_Result childResult;

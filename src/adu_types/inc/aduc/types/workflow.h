@@ -31,7 +31,7 @@ typedef struct tagADUC_ContentData
     char* InstalledCriteria; /**< The installed criteria string used to evaluate if content is installed. Required. */
     char* UpdateType; /**< The content type string. Required. */
     char* UpdateTypeName; /**< The provider/name part of the Update Type. */
-    unsigned int UpdateTypeVersion; /** The version number of the Update Type. */
+    unsigned int UpdateTypeVersion; /**< The version number of the Update Type. */
 } ADUC_ContentData;
 
 /**

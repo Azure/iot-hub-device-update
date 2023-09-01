@@ -1,6 +1,7 @@
 set (target_name microsoft_delta_download_handler_utils)
 
 include (agentRules)
+
 compileasc99 ()
 
 add_library (${target_name} STATIC "")
@@ -14,9 +15,11 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 target_sources (${target_name} PRIVATE src/microsoft_delta_download_handler_utils.c
                                        src/microsoft_delta_download_handler_utils.cpp)
 
+target_link_aziotsharedutil (${target_name} PUBLIC)
+
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::adu_types aziotsharedutil
+    PUBLIC aduc::adu_types
     PRIVATE aduc::c_utils
             aduc::extension_manager
             aduc::logging

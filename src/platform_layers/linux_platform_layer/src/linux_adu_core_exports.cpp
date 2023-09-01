@@ -7,24 +7,25 @@
  */
 #include "aduc/adu_core_exports.h"
 #include "aduc/c_utils.h"
+#include "aduc/config_utils.h" // ADUC_ConfigInfo*
 #include "aduc/logging.h"
 #include "aduc/process_utils.hpp"
+#include "aduc/shutdown_service.h"
+#include "errno.h"
 #include "linux_adu_core_impl.hpp"
 #include <memory>
-#include <signal.h> // raise()
 #include <string>
-#include <unistd.h> // sync()
 #include <vector>
 
 EXTERN_C_BEGIN
 
 /**
- * @brief Register this platform layer and approriate callbacks for all update actions.
+ * @brief Register this platform layer and appropriate callbacks for all update actions.
  *
  * @param data Information about this module (e.g. callback methods)
  * @return ADUC_Result Result code.
  */
-ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, unsigned int /*argc*/, const char** /*argv*/)
+ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, int /*argc*/, const char** /*argv*/)
 {
     try
     {
@@ -68,14 +69,26 @@ void ADUC_Unregister(ADUC_Token token)
  */
 int ADUC_RebootSystem()
 {
+    int exitStatus = 0;
+    std::string output;
     Log_Info("ADUC_RebootSystem called. Rebooting system.");
 
     // Commit buffer cache to disk.
     sync();
 
-    std::string output;
-    std::vector<std::string> args{ "--update-type", "common", "--update-action", "reboot" };
-    const int exitStatus = ADUC_LaunchChildProcess(ADUSHELL_FILE_PATH, args, output);
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
+    {
+        Log_Error("Failed to get config info instance.");
+        exitStatus = ENOMEM;
+    }
+    else
+    {
+        const std::vector<std::string> args = { "--config-folder", config->configFolder, "--update-type",
+                                                "common",          "--update-action",    "reboot" };
+
+        exitStatus = ADUC_LaunchChildProcess(config->aduShellFilePath, args, output);
+    }
 
     if (exitStatus != 0)
     {
@@ -87,6 +100,7 @@ int ADUC_RebootSystem()
         Log_Info(output.c_str());
     }
 
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return exitStatus;
 }
 
@@ -99,17 +113,9 @@ int ADUC_RestartAgent()
 {
     Log_Info("Restarting ADU Agent.");
 
-    // Commit buffer cache to disk.
-    sync();
+    ADUC_ShutdownService_RequestShutdown();
 
-    // Using SGIUSR1 to indicates a desire for shutdown and restart.
-    const int exitStatus = raise(SIGUSR1);
-    if (exitStatus != 0)
-    {
-        Log_Error("ADU Agent restart failed.");
-    }
-
-    return exitStatus;
+    return 0;
 }
 
 EXTERN_C_END
