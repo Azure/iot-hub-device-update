@@ -19,26 +19,33 @@ ADUC_Result DownloadRootKeyPkg_DO(const char* url, const char* targetFilePath)
 
     Log_Info("Downloading File '%s' to '%s'", url, targetFilePath);
 
-    const std::error_code ret = microsoft::deliveryoptimization::download::download_url_to_path(url, targetFilePath);
-    if (ret.value() == 0)
+    try
     {
-        result.ResultCode = ADUC_GeneralResult_Success;
+        const std::error_code ret = microsoft::deliveryoptimization::download::download_url_to_path(url, targetFilePath);
+        if (ret.value() == 0)
+        {
+            result.ResultCode = ADUC_GeneralResult_Success;
+        }
+        else
+        {
+            // Note: The call to download_url_to_path() does not make use of a cancellation token,
+            // so the download can only timeout or hit a fatal error.
+            Log_Error(
+                "DO error, msg: %s, code: %#08x, timeout? %d",
+                ret.message().c_str(),
+                ret.value(),
+                ret == std::errc::timed_out);
+
+            result.ExtendedResultCode = MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_INFRA_MGMT(
+                ADUC_COMPONENT_ROOTKEY_DOWNLOADER, ret.value());
+        }
     }
-    else
+    catch (...)
     {
-        // Note: The call to download_url_to_path() does not make use of a cancellation token,
-        // so the download can only timeout or hit a fatal error.
-        Log_Error(
-            "DO error, msg: %s, code: %#08x, timeout? %d",
-            ret.message().c_str(),
-            ret.value(),
-            ret == std::errc::timed_out);
-
-        result.ExtendedResultCode = MAKE_ADUC_EXTENDEDRESULTCODE_FOR_FACILITY_ADUC_FACILITY_INFRA_MGMT(
-            ADUC_COMPONENT_ROOTKEY_DOWNLOADER, ret.value());
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_DOWNLOAD_EXCEPTION;
     }
-
-    Log_Info("Download erc: 0x%08x", result.ExtendedResultCode);
+ 
+    Log_Info("Download rc: %d, erc: 0x%08x", result.ResultCode, result.ExtendedResultCode);
 
     return result;
 }

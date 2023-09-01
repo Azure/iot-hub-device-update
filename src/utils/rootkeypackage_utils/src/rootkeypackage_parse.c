@@ -800,6 +800,8 @@ ADUC_Result RootKeyPackage_ParseProtectedPropertiesString(JSON_Object* rootObj, 
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
     STRING_HANDLE protectedPropertiesStringHandle = NULL;
+    JSON_Value* protectedPropertiesValue = NULL;
+    char* protectedPropertiesString = NULL;
 
     if (rootObj == NULL || outPackage == NULL)
     {
@@ -807,7 +809,7 @@ ADUC_Result RootKeyPackage_ParseProtectedPropertiesString(JSON_Object* rootObj, 
         goto done;
     }
 
-    JSON_Value* protectedPropertiesValue = json_object_get_value(rootObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_PROTECTED);
+    protectedPropertiesValue = json_object_get_value(rootObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_PROTECTED);
 
     if (protectedPropertiesValue == NULL)
     {
@@ -815,7 +817,13 @@ ADUC_Result RootKeyPackage_ParseProtectedPropertiesString(JSON_Object* rootObj, 
         goto done;
     }
 
-    char* protectedPropertiesString = json_serialize_to_string(protectedPropertiesValue);
+    protectedPropertiesString = json_serialize_to_string(protectedPropertiesValue);
+
+    if (protectedPropertiesString == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_NOMEM;
+        goto done;
+    }
 
     protectedPropertiesStringHandle = STRING_construct(protectedPropertiesString);
 
