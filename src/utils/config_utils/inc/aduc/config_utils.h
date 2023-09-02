@@ -31,15 +31,69 @@
 
 EXTERN_C_BEGIN
 
+#define ADUC_CONNECTION_TYPE_AIS "AIS"
+#define ADUC_CONNECTION_TYPE_MQTTBROKER "MQTTBroker"
+#define ADUC_CONNECTION_TYPE_ADPS2 "ADPS2"
+#define ADUC_CONNECTION_TYPE_STRING "string"
+
+/**
+ * @brief ADUC_AgentInfo that stores all the agent information from configuration file.
+ *
+ * Fields:
+ *  `name` : The user-defined friendly name of the agent.
+ *  `runas` : The user name to run the agent as.
+ *
+ *  `connectionType` can be 'AIS' (Azure Identity Service), MQTTBroker, ADPS2 (Azure Device Provisioning Service v2), or string.
+ *           If it is 'AIS', the `connectionData` is the name of the principal in AIS.
+ *
+ *           If it is 'MQTTBroker', the `connectionData` is not used. The `connectionDataJson` is used instead. It contains
+ *           the following fields:
+ *             `hostName` : The fully qualified domain name of the MQTT broker.
+ *             `tcpPort` : The port number of the MQTT broker.
+ *             `useTLS` : Whether to use TLS for the MQTT connection.
+ *             `cleanSession` : Whether to use a clean session for the MQTT connection.
+ *             `keepAliveInSeconds` : The keep alive interval in seconds for the MQTT connection.
+ *             `clientId` : The client ID for the MQTT connection.
+ *             `userName` : The user name for the MQTT connection.
+ *             `password` : The password for the MQTT connection.
+ *             `caFile` : The path to the CA certificate file for the MQTT connection.
+ *             `certFile` : The path to the client certificate file for the MQTT connection.
+ *             `keyFile` : The path to the client key file for the MQTT connection.
+ *
+ *           If it is 'ADPS2', the `connectionData` is not used. The `connectionDataJson` is used instead. It contains fields:
+ *             `idScope`: The ID scope of the device provisioning service.
+ *             `registrationId`: The registration ID of the device.
+ *             `globalDeviceEndpoint`: The global device endpoint of the device provisioning service.
+ *
+ *             `tcpPort` : The port number of the MQTT broker.
+ *             `useTLS` : Whether to use TLS for the MQTT connection.
+ *             `cleanSession` : Whether to use a clean session for the MQTT connection.
+ *             `keepAliveInSeconds` : The keep alive interval in seconds for the MQTT connection.
+ *             `clientId` : The client ID for the MQTT connection.
+ *             `userName` : The user name for the MQTT connection.
+ *             `password` : The password for the MQTT connection.
+ *             `caFile` : The path to the CA certificate file for the MQTT connection.
+ *             `certFile` : The path to the client certificate file for the MQTT connection.
+ *             `keyFile` : The path to the client key file for the MQTT connection.
+ *
+ *          If it is 'string', the `connectionData` is used as a string. For Device Update Agent V1, this is the connection string from the IoT Hub.
+ *
+ *  `manufacturer` : The manufacturer of the device.
+ *  `model` : The model of the device.
+ *  `additionalDeviceProperties` : Additional device properties.
+ *
+ */
 typedef struct tagADUC_AgentInfo
 {
     char* name; /**< The name of the agent. */
 
     char* runas; /**< Run as a trusted user. */
 
-    char* connectionType; /**< It can be either AIS or string. */
+    char* connectionType; /**< It can be AIS, MQTTBroker, ADPS2, or string. */
 
-    char* connectionData; /**< the name in AIS principal (AIS); or the connectionString (connectionType string). */
+    char* connectionData; /**< the name in AIS principal (AIS); the connectionString (connectionType string). */
+
+    JSON_Value* connectionDataJson; /**< The connection data as a JSON object. (for MQTTBroker and ADPS2)*/
 
     char* manufacturer; /**< Device property manufacturer. */
 
@@ -71,7 +125,7 @@ typedef struct tagADUC_ConfigInfo
 
     ADUC_AgentInfo* agents; /**< Array of agents that are configured. */
 
-    size_t agentCount; /**< Total number of agents configured. */
+    unsigned int agentCount; /**< Total number of agents configured. */
 
     const char* compatPropertyNames; /**< Compat property names. */
 
@@ -155,6 +209,38 @@ VECTOR_HANDLE ADUC_ConfigInfo_GetAduShellTrustedUsers(const ADUC_ConfigInfo* con
  * @param users Object to free. The vector (type VECTOR_HANDLE) containing users (type STRING_HANDLE)
  */
 void ADUC_ConfigInfo_FreeAduShellTrustedUsers(VECTOR_HANDLE users);
+
+/**
+ * @brief Get DU AGent's connection data field of type string.
+ *
+ * @param agent Pointer to ADUC_AgentInfo object.
+ * @param fieldName The field name to get. This can be null or a nested field name, e.g. "name" or "updateId.name".
+ *                  If fieldName not null, this function will return a connectionDataJson
+ * @param value Pointer to a char* to receive the value. Caller must free.
+ * @return bool True if successful.
+ */
+bool ADUC_AgentInfo_ConnectionData_GetStringField(const ADUC_AgentInfo* agent, const char* fieldName, char** value);
+
+/**
+ * @brief Get DU AGent's connection data field of type boolean.
+ *
+ * @param agent Pointer to ADUC_AgentInfo object.
+ * @param fieldName The field name to get. This can be a nested field name, e.g. "useSTL" or "options.keepAlive".
+ * @param value Pointer to a bool to receive the value.
+ * @return bool True if successful.
+ */
+bool ADUC_AgentInfo_ConnectionData_GetBooleanField(const ADUC_AgentInfo* agent, const char* fieldName, bool* value);
+
+/**
+ * @brief Get DU AGent's connection data field of type unsigned int.
+ *
+ * @param agent Pointer to ADUC_AgentInfo object.
+ * @param fieldName The field name to get. This can be a nested field name, e.g. "port" or "options.maxRetry".
+ * @param value Pointer to an unsigned int to receive the value.
+ * @return bool True if successful.
+ */
+bool ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
+    const ADUC_AgentInfo* agent, const char* fieldName, unsigned int* value);
 
 // clang-format off
 // NOLINTNEXTLINE: clang-tidy doesn't like UMock macro expansions

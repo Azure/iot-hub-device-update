@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static pthread_mutex_t s_config_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -101,11 +102,26 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
     }
 
     connection_type = json_object_get_string(connection_source, CONFIG_CONNECTION_TYPE);
-    connection_data = json_object_get_string(connection_source, CONFIG_CONNECTION_DATA);
+
+    // For v2.0, the connection data can be string or complex value (object)
+    agent->connectionDataJson = json_object_get_value(connection_source, CONFIG_CONNECTION_DATA);
+
+    if (json_value_get_type(agent->connectionDataJson) == JSONString)
+    {
+        connection_data = json_object_get_string(connection_source, CONFIG_CONNECTION_DATA);
+        if (mallocAndStrcpy_s(&(agent->connectionData), connection_data) != 0)
+        {
+            goto done;
+        }
+    }
+    else
+    {
+        agent->connectionData = NULL;
+    }
 
     // As these fields are mandatory, if any of the fields doesn't exist, the agent will fail to be constructed.
-    if (name == NULL || runas == NULL || connection_type == NULL || connection_data == NULL || manufacturer == NULL
-        || model == NULL)
+    if (name == NULL || runas == NULL || connection_type == NULL
+        || (connection_data == NULL && agent->connectionDataJson == NULL) || manufacturer == NULL || model == NULL)
     {
         goto done;
     }
@@ -121,11 +137,6 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
     }
 
     if (mallocAndStrcpy_s(&(agent->connectionType), connection_type) != 0)
-    {
-        goto done;
-    }
-
-    if (mallocAndStrcpy_s(&(agent->connectionData), connection_data) != 0)
     {
         goto done;
     }
@@ -173,12 +184,16 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent)
     free(agent->connectionData);
     agent->connectionData = NULL;
 
+    // connectionDataJson is not allocated, so no need to free it.
+    agent->connectionDataJson = NULL;
+
     free(agent->manufacturer);
     agent->manufacturer = NULL;
 
     free(agent->model);
     agent->model = NULL;
 
+    // additionalDeviceProperties is not allocated, so no need to free it.
     agent->additionalDeviceProperties = NULL;
 }
 
@@ -190,11 +205,11 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent)
  * @param agentCount Count of objects in agents.
  * @param agents Array of ADUC_AgentInfo objects to free.
  */
-static void ADUC_AgentInfoArray_Free(size_t agentCount, ADUC_AgentInfo* agents)
+static void ADUC_AgentInfoArray_Free(unsigned int agentCount, ADUC_AgentInfo* agents)
 {
-    for (size_t index = 0; index < agentCount; ++index)
+    for (unsigned int index = 0; index < agentCount; ++index)
     {
-        ADUC_AgentInfo* agent = (ADUC_AgentInfo*)(agents + index);
+        ADUC_AgentInfo* agent = agents + index;
         ADUC_AgentInfo_Free(agent);
     }
     free(agents);
@@ -206,7 +221,7 @@ static void ADUC_AgentInfoArray_Free(size_t agentCount, ADUC_AgentInfo* agents)
  * @param agents ADUC_AgentInfo (size agentCount). Array to be freed using free(), objects must also be freed.
  * @return bool Success state.
  */
-bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentInfo** agents)
+bool ADUC_Json_GetAgents(JSON_Value* root_value, unsigned int* agentCount, ADUC_AgentInfo** agents)
 {
     bool succeeded = false;
     if ((agentCount == NULL) || (agents == NULL))
@@ -240,7 +255,7 @@ bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentI
         goto done;
     }
 
-    *agentCount = (unsigned int)agents_count;
+    *agentCount = agents_count;
 
     for (size_t index = 0; index < agents_count; ++index)
     {
@@ -698,4 +713,164 @@ int ADUC_ConfigInfo_ReleaseInstance(const ADUC_ConfigInfo* configInfo)
 done:
     s_config_unlock();
     return ret;
+}
+
+/**
+ * @brief Get DU AGent's connection data field of type string.
+ *
+ * @param agent Pointer to ADUC_AgentInfo object.
+ * @param fieldName The field name to get. This can be null or a nested field name, e.g. "name" or "updateId.name".
+ *                  If fieldName not null, this function will return a connectionDataJson
+ * @param value Pointer to a char* to receive the value. Caller must free.
+ * @return bool True if successful.
+ */
+bool ADUC_AgentInfo_ConnectionData_GetStringField(const ADUC_AgentInfo* agent, const char* fieldName, char** value)
+{
+    bool succeeded = false;
+
+    if (agent == NULL)
+    {
+        Log_Error("AgentInfo is NULL.");
+        return false;
+    }
+
+    if (value == NULL)
+    {
+        Log_Error("Value is NULL.");
+        return false;
+    }
+
+    *value = NULL;
+
+    if (fieldName == NULL)
+    {
+        if (agent->connectionData == NULL)
+        {
+            Log_Error("Connection data is not a string.");
+            return false;
+        }
+
+        if (mallocAndStrcpy_s(value, agent->connectionData) != 0)
+        {
+            Log_Error("Failed to allocate memory for connectionData return value.");
+            return false;
+        }
+    }
+    else
+    {
+        if (agent->connectionDataJson == NULL)
+        {
+            Log_Error("Connection data is not an object.");
+            return false;
+        }
+
+        if (!ADUC_JSON_GetStringField(agent->connectionDataJson, fieldName, value))
+        {
+            Log_Error("Failed to get connection data field %s.", fieldName);
+            goto done;
+        }
+    }
+
+    succeeded = true;
+
+done:
+    if (!succeeded)
+    {
+        if (*value != NULL)
+        {
+            free(*value);
+            *value = NULL;
+        }
+    }
+
+    return succeeded;
+}
+
+/**
+ * @brief Get DU AGent's connection data field of type boolean.
+ *
+ * @param agent Pointer to ADUC_AgentInfo object.
+ * @param fieldName The field name to get. This can be a nested field name, e.g. "useSTL" or "options.keepAlive".
+ * @param value Pointer to a bool to receive the value.
+ * @return bool True if successful.
+ */
+bool ADUC_AgentInfo_ConnectionData_GetBooleanField(const ADUC_AgentInfo* agent, const char* fieldName, bool* value)
+{
+    bool succeeded = false;
+
+    if (agent == NULL)
+    {
+        Log_Error("AgentInfo is NULL.");
+        return false;
+    }
+
+    if (value == NULL)
+    {
+        Log_Error("Value is NULL.");
+        return false;
+    }
+
+    *value = false;
+
+    if (agent->connectionDataJson == NULL)
+    {
+        Log_Error("Connection data is not an object.");
+        return false;
+    }
+
+    if (!ADUC_JSON_GetBooleanField(agent->connectionDataJson, fieldName, value))
+    {
+        Log_Error("Failed to get connection data field %s.", fieldName);
+        goto done;
+    }
+
+    succeeded = true;
+
+done:
+    return succeeded;
+}
+
+/**
+ * @brief Get DU AGent's connection data field of type unsigned int.
+ *
+ * @param agent Pointer to ADUC_AgentInfo object.
+ * @param fieldName The field name to get. This can be a nested field name, e.g. "port" or "options.maxRetry".
+ * @param value Pointer to an unsigned int to receive the value.
+ * @return bool True if successful.
+ */
+bool ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
+    const ADUC_AgentInfo* agent, const char* fieldName, unsigned int* value)
+{
+    bool succeeded = false;
+
+    if (agent == NULL)
+    {
+        Log_Error("AgentInfo is NULL.");
+        return false;
+    }
+
+    if (value == NULL)
+    {
+        Log_Error("Value is NULL.");
+        return false;
+    }
+
+    *value = 0;
+
+    if (agent->connectionDataJson == NULL)
+    {
+        Log_Error("Connection data is not an object.");
+        return false;
+    }
+
+    if (!ADUC_JSON_GetUnsignedIntegerField(agent->connectionDataJson, fieldName, value))
+    {
+        Log_Error("Failed to get connection data field %s.", fieldName);
+        goto done;
+    }
+
+    succeeded = true;
+
+done:
+    return succeeded;
 }
