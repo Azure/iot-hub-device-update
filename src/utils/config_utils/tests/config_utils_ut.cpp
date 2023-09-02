@@ -388,9 +388,10 @@ static const char* testADSP2Config =
             R"("connectionSource": {)"
             R"("connectionType": "ADPS2",)"
             R"("connectionData": {)"
+              R"("dps" : {)"
                 R"("idScope" : "0ne0123456789abcdef",)"
                 R"("registrationId" : "adu-dps-client-unit-test-device",)"
-                R"("dpsApiVersion" : "2021-06-01",)"
+                R"("apiVersion" : "2021-06-01",)"
                 R"("globalDeviceEndpoint" : "global.azure-devices-provisioning.net",)"
                 R"("tcpPort" : 8883,)"
                 R"("useTLS": true,)"
@@ -403,6 +404,7 @@ static const char* testADSP2Config =
                 R"("certFile" : "adu-dps-client-unit-test-cert-1.pem",)"
                 R"("keyFile" : "adu-dps-client-unit-test-key-1.pem",)"
                 R"("keyFilePassword" : "adu-dps-client-unit-test-key-password-1")"
+              R"(})"
             R"(})"
             R"(},)"
             R"("manufacturer": "contoso",)"
@@ -424,6 +426,7 @@ static const char* testMQTTBrokerConfig =
             R"("connectionSource": {)"
             R"("connectionType": "MQTTBroker",)"
             R"("connectionData": {)"
+              R"("mqttBroker" : {)"
                 R"("hostName" : "contoso-red-devbox-wus3-eg.westus2-1.ts.eventgrid.azure.net",)"
                 R"("tcpPort" : 8883,)"
                 R"("useTLS": true,)"
@@ -436,6 +439,7 @@ static const char* testMQTTBrokerConfig =
                 R"("certFile" : "adu-mqtt-client-unit-test-cert-1.pem",)"
                 R"("keyFile" : "adu-mqtt-client-unit-test-key-1.pem",)"
                 R"("keyFilePassword" : "adu-mqtt-client-unit-test-key-password-1")"
+              R"(})"
             R"(})"
             R"(},)"
             R"("manufacturer": "contoso",)"
@@ -540,81 +544,81 @@ static bool _read_mock_adps_settings(Mock_ADPS_Settings* settings)
     }
 
     // NOTE: This is the 'globalDeviceEndpoint' field in the config file.
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "globalDeviceEndpoint", &settings->hostname))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.globalDeviceEndpoint", &settings->hostname))
     {
         printf("Failed to get hostname");
         goto done;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "idScope", &settings->idScope))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.idScope", &settings->idScope))
     {
         printf("Failed to get idScope");
         goto done;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dpsApiVersion", &settings->dpsApiVersion))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.apiVersion", &settings->dpsApiVersion))
     {
         printf("Failed to get dpsApiVersion");
         goto done;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "registrationId", &settings->registrationId))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.registrationId", &settings->registrationId))
     {
         printf("Failed to get registrationId");
         goto done;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "tcpPort", &settings->tcpPort))
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "dps.tcpPort", &settings->tcpPort))
     {
         settings->tcpPort = DEFAULT_TCP_PORT;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "useTLS", &settings->useTLS))
+    if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "dps.useTLS", &settings->useTLS))
     {
         settings->useTLS = DEFAULT_USE_TLS;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "cleanSession", &settings->cleanSession))
+    if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "dps.cleanSession", &settings->cleanSession))
     {
         settings->cleanSession = DEFAULT_CLEAN_SESSION;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "keepAliveInSeconds", &settings->keepAliveInSeconds))
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "dps.keepAliveInSeconds", &settings->keepAliveInSeconds))
     {
         settings->keepAliveInSeconds = DEFAULT_KEEP_ALIVE_IN_SECONDS;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "clientId", &settings->clientId))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.clientId", &settings->clientId))
     {
         settings->clientId = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "userName", &settings->username))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.userName", &settings->username))
     {
         settings->username = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "password", &settings->password))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.password", &settings->password))
     {
         settings->password = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "caFile", &settings->caFile))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.caFile", &settings->caFile))
     {
         settings->caFile = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "certFile", &settings->certFile))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.certFile", &settings->certFile))
     {
         settings->certFile = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "keyFile", &settings->keyFile))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.keyFile", &settings->keyFile))
     {
         settings->keyFile = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "keyFilePassword", &settings->keyFilePassword))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.keyFilePassword", &settings->keyFilePassword))
     {
         settings->keyFilePassword = NULL;
     }
@@ -697,63 +701,63 @@ static bool _read_mock_mqtt_broker_settings(Mock_MQTT_Broker_Settings* settings)
         goto done;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "hostName", &settings->hostname))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "mqttBroker.hostName", &settings->hostname))
     {
         printf("Failed to get hostname");
         goto done;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "tcpPort", &settings->tcpPort))
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "mqttBroker.tcpPort", &settings->tcpPort))
     {
         settings->tcpPort = DEFAULT_TCP_PORT;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "useTLS", &settings->useTLS))
+    if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "mqttBroker.useTLS", &settings->useTLS))
     {
         settings->useTLS = DEFAULT_USE_TLS;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "cleanSession", &settings->cleanSession))
+    if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "mqttBroker.cleanSession", &settings->cleanSession))
     {
         settings->cleanSession = DEFAULT_MQTTBROKER_CLEAN_SESSION;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "keepAliveInSeconds", &settings->keepAliveInSeconds))
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "mqttBroker.keepAliveInSeconds", &settings->keepAliveInSeconds))
     {
         settings->keepAliveInSeconds = DEFAULT_KEEP_ALIVE_IN_SECONDS;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "clientId", &settings->clientId))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "mqttBroker.clientId", &settings->clientId))
     {
         settings->clientId = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "userName", &settings->username))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "mqttBroker.userName", &settings->username))
     {
         settings->username = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "password", &settings->password))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "mqttBroker.password", &settings->password))
     {
         settings->password = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "caFile", &settings->caFile))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "mqttBroker.caFile", &settings->caFile))
     {
         settings->caFile = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "certFile", &settings->certFile))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "mqttBroker.certFile", &settings->certFile))
     {
         settings->certFile = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "keyFile", &settings->keyFile))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "mqttBroker.keyFile", &settings->keyFile))
     {
         settings->keyFile = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "keyFilePassword", &settings->keyFilePassword))
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "mqttBroker.keyFilePassword", &settings->keyFilePassword))
     {
         settings->keyFilePassword = NULL;
     }
