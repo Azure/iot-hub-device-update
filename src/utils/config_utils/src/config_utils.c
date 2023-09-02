@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static pthread_mutex_t s_config_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -204,9 +205,9 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent)
  * @param agentCount Count of objects in agents.
  * @param agents Array of ADUC_AgentInfo objects to free.
  */
-static void ADUC_AgentInfoArray_Free(size_t agentCount, ADUC_AgentInfo* agents)
+static void ADUC_AgentInfoArray_Free(unsigned int agentCount, ADUC_AgentInfo* agents)
 {
-    for (size_t index = 0; index < agentCount; ++index)
+    for (unsigned int index = 0; index < agentCount; ++index)
     {
         ADUC_AgentInfo* agent = agents + index;
         ADUC_AgentInfo_Free(agent);
@@ -220,7 +221,7 @@ static void ADUC_AgentInfoArray_Free(size_t agentCount, ADUC_AgentInfo* agents)
  * @param agents ADUC_AgentInfo (size agentCount). Array to be freed using free(), objects must also be freed.
  * @return bool Success state.
  */
-bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentInfo** agents)
+bool ADUC_Json_GetAgents(JSON_Value* root_value, unsigned int* agentCount, ADUC_AgentInfo** agents)
 {
     bool succeeded = false;
     if ((agentCount == NULL) || (agents == NULL))
