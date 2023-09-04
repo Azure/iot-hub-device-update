@@ -4,10 +4,6 @@ project (azure_iot_aduc_agent)
 
 set (target_name AducIotAgent)
 
-add_subdirectory (adu_core_export_helpers)
-add_subdirectory (adu_core_interface)
-add_subdirectory (device_info_interface)
-add_subdirectory (pnp_helper)
 add_subdirectory (shutdown_service)
 
 if (NOT WIN32)
