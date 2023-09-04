@@ -1,15 +1,14 @@
 /**
- * @file main.c
- * @brief Implements the main code for the Device Update Agent.
+ * @file iothub-communication-module.c
+ * @brief Implementation for the IoTHub Communication module.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-#include "aduc/adu_core_export_helpers.h"
+
+#include "du_agent_sdk/agent_module_interface.h"
 #include "aduc/adu_core_interface.h"
 #include "aduc/adu_types.h"
-#include "aduc/agent_workflow.h"
-#include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
 #if !defined(WIN32)
 #    include "aduc/command_helper.h"
@@ -19,57 +18,15 @@
 #include "aduc/d2c_messaging.h"
 #include "aduc/device_info_interface.h"
 #include "aduc/extension_manager.h"
-#include "aduc/extension_utils.h"
-#include "aduc/health_management.h"
-#include "aduc/https_proxy_utils.h"
 #include "aduc/iothub_communication_manager.h"
 #include "aduc/logging.h"
-#include "aduc/permission_utils.h"
-#include "aduc/shutdown_service.h"
-#include "aduc/string_c_utils.h"
-#include "aduc/system_utils.h" // ADUC_SystemUtils_MkDirRecursiveDefault
-#include "aducpal/stdlib.h" // setenv
-#include <azure_c_shared_utility/shared_util_options.h>
-#include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
-#include <ctype.h>
-#include <diagnostics_devicename.h>
-#include <diagnostics_interface.h>
-#include <getopt.h>
-#include <iothub_client_options.h>
-#include <pnp_protocol.h>
-
-#ifdef ADUC_ALLOW_MQTT
-#    include <iothubtransportmqtt.h>
-#endif
-
-#ifdef ADUC_ALLOW_MQTT_OVER_WEBSOCKETS
-#    include <iothubtransportmqtt_websockets.h>
-#endif
-
-#include <limits.h>
-#include <signal.h> // signal
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h> // strtol
-#include <sys/stat.h>
-
 #include "pnp_protocol.h"
 
-#include "eis_utils.h"
+#include <diagnostics_devicename.h>
+#include <diagnostics_interface.h>
 
-/**
- * @brief Make getopt* stop parsing as soon as non-option argument is encountered.
- * @remark See GETOPT.3 man page for more details.
- */
-#define STOP_PARSE_ON_NONOPTION_ARG "+"
 
-/**
- * @brief Make getopt* return a colon instead of question mark when an option is missing its corresponding option argument, so we can distinguish these scenarios.
- * Also, this suppresses printing of an error message.
- * @remark It must come directly after a '+' or '-' first character in the optionstring.
- * See GETOPT.3 man page for more details.
- */
-#define RET_COLON_FOR_MISSING_OPTIONARG ":"
+// --- NOTE: Following block are codes ported from agent/src/main.c
 
 // Name of ADU Agent subcomponent that this device implements.
 static const char g_aduPnPComponentName[] = "deviceUpdate";
@@ -191,220 +148,8 @@ static PnPComponentEntry componentList[] = {
     },
 };
 
-// clang-format on
-ADUC_ExtensionRegistrationType GetRegistrationTypeFromArg(const char* arg)
-{
-    if (strcmp(arg, "updateContentHandler") == 0)
-    {
-        return ExtensionRegistrationType_UpdateContentHandler;
-    }
 
-    if (strcmp(arg, "contentDownloader") == 0)
-    {
-        return ExtensionRegistrationType_ContentDownloadHandler;
-    }
 
-    if (strcmp(arg, "componentEnumerator") == 0)
-    {
-        return ExtensionRegistrationType_ComponentEnumerator;
-    }
-
-    if (strcmp(arg, "downloadHandler") == 0)
-    {
-        return ExtensionRegistrationType_DownloadHandler;
-    }
-
-    return ExtensionRegistrationType_None;
-}
-
-/**
- * @brief Parse command-line arguments.
- * @param argc arguments count.
- * @param argv arguments array.
- * @param launchArgs a struct to store the parsed arguments.
- *
- * @return 0 if succeeded without additional non-option args,
- * -1 on failure,
- *  or positive index to argv index where additional args start on success with additional args.
- */
-int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* launchArgs)
-{
-    int result = 0;
-    memset(launchArgs, 0, sizeof(*launchArgs));
-
-#if _ADU_DEBUG
-    launchArgs->logLevel = ADUC_LOG_DEBUG;
-#else
-    launchArgs->logLevel = ADUC_LOG_INFO;
-#endif
-
-    launchArgs->configFolder = ADUC_CONF_FOLDER;
-
-    launchArgs->argc = argc;
-    launchArgs->argv = argv;
-
-    while (result == 0)
-    {
-        // clang-format off
-        static struct option long_options[] =
-        {
-            { "version",                       no_argument,       0, 'v' },
-            { "enable-iothub-tracing",         no_argument,       0, 'e' },
-            { "health-check",                  no_argument,       0, 'h' },
-            { "log-level",                     required_argument, 0, 'l' },
-            { "connection-string",             required_argument, 0, 'c' },
-            { "register-extension",            required_argument, 0, 'E' },
-            { "extension-type",                required_argument, 0, 't' },
-            { "extension-id",                  required_argument, 0, 'i' },
-            { "run-as-owner",                  no_argument,       0, 'a' },
-#ifdef ADUC_COMMAND_HELPER_H
-            { "command",                       required_argument, 0, 'C' },
-#endif // #ifdef ADUC_COMMAND_HELPER_H
-            { "config-folder",                 required_argument, 0, 'F' },
-            { 0, 0, 0, 0 }
-        };
-        // clang-format on
-
-        /* getopt_long stores the option index here. */
-        int option_index = 0;
-
-        int option = getopt_long(
-            argc,
-            argv,
-            STOP_PARSE_ON_NONOPTION_ARG RET_COLON_FOR_MISSING_OPTIONARG "avehcu:l:d:n:E:t:i:C:F:",
-            long_options,
-            &option_index);
-
-        /* Detect the end of the options. */
-        if (option == -1)
-        {
-            break;
-        }
-
-        switch (option)
-        {
-        case 'h':
-            launchArgs->healthCheckOnly = true;
-            break;
-
-        case 'e':
-            launchArgs->iotHubTracingEnabled = true;
-            break;
-
-        case 'l': {
-            unsigned int logLevel = 0;
-            bool ret = atoui(optarg, &logLevel);
-            if (!ret || logLevel < ADUC_LOG_DEBUG || logLevel > ADUC_LOG_ERROR)
-            {
-                puts("Invalid log level after '--log-level' or '-l' option. Expected value: 0-3.");
-                result = -1;
-            }
-            else
-            {
-                launchArgs->logLevel = (ADUC_LOG_SEVERITY)logLevel;
-            }
-
-            break;
-        }
-
-        case 'v':
-            launchArgs->showVersion = true;
-            break;
-
-        case 'c':
-            launchArgs->connectionString = optarg;
-            break;
-
-#ifdef ADUC_COMMAND_HELPER_H
-        case 'C':
-            launchArgs->ipcCommand = optarg;
-            break;
-#endif // #ifdef ADUC_COMMAND_HELPER_H
-
-        case 'E':
-            launchArgs->extensionFilePath = optarg;
-            break;
-
-        case 't':
-            launchArgs->extensionRegistrationType = GetRegistrationTypeFromArg(optarg);
-            break;
-
-        case 'i':
-            launchArgs->extensionId = optarg;
-            break;
-
-        case 'F':
-            launchArgs->configFolder = optarg;
-            break;
-
-        case ':':
-            switch (optopt)
-            {
-            case 'c':
-                puts("Missing connection string after '--connection-string' or '-c' option.");
-                break;
-            case 'l':
-                puts("Invalid log level after '--log-level' or '-l' option. Expected value: 0-3.");
-                break;
-            case 'F':
-                puts("Missing folder path after '--config-folder' or '-F' option.");
-                break;
-            default:
-                printf("Missing an option value after -%c.\n", optopt);
-                break;
-            }
-            result = -1;
-            break;
-
-        case '?':
-            if (optopt)
-            {
-                printf("Unsupported short argument -%c.\n", optopt);
-            }
-            else
-            {
-                printf(
-                    "Unsupported option '%s'. Try preceding with -- to separate options and additional args.\n",
-                    argv[optind - 1]);
-            }
-            result = -1;
-            break;
-        default:
-            printf("Unknown argument.");
-            result = -1;
-        }
-    }
-
-    if (result != -1 && optind < argc)
-    {
-        if (launchArgs->connectionString == NULL)
-        {
-            // Assuming first unknown option not starting with '-' is a connection string.
-            for (int i = optind; i < argc; ++i)
-            {
-                if (argv[i][0] != '-')
-                {
-                    launchArgs->connectionString = argv[i];
-                    ++optind;
-                    break;
-                }
-            }
-        }
-
-        if (optind < argc)
-        {
-            // Still have unknown arg(s) on the end so return the index in argv where these start.
-            result = optind;
-        }
-    }
-
-    if (result == 0 && launchArgs->connectionString)
-    {
-        ADUC_StringUtils_Trim(launchArgs->connectionString);
-    }
-
-    return result;
-}
 
 /**
  * @brief Sets the Diagnostic DeviceName for creating the device's diagnostic container
@@ -656,6 +401,7 @@ static void ADUC_PnPDeviceTwin_Callback(
     }
 }
 
+
 #ifdef ADUC_COMMAND_HELPER_H
 
 /**
@@ -682,25 +428,59 @@ ADUC_Command redoUpdateCommand = { "retry-update", RetryUpdateCommandHandler };
 
 #endif // #ifdef ADUC_COMMAND_HELPER_H
 
-/**
- * @brief Handles the startup of the agent
- * @details Provisions the connection string with the CLI or either
- * the Edge Identity Service or the configuration file
- * @param launchArgs CLI arguments passed to the client
- * @returns bool true on success.
- */
-bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
-{
-    bool succeeded = false;
+ADUC_AGENT_CONTRACT_INFO g_iotHubClientContractInfo = {
+    "Microsoft",
+    "IoT Hub Client Module",
+    1,
+    "Microsoft/IotHubClientModule:1"
+};
 
-    ADUC_ConnectionInfo info;
-    memset(&info, 0, sizeof(info));
+/**
+ * @brief Gets the extension contract info.
+ * @param handle The handle to the module. This is the same handle that was returned by the Create function.
+ * @return ADUC_AGENT_CONTRACT_INFO The extension contract info.
+ */
+const ADUC_AGENT_CONTRACT_INFO* IoTHubClientModule_GetContractInfo(ADUC_AGENT_MODULE_HANDLE handle)
+{
+    IGNORED_PARAMETER(handle);
+    return &g_iotHubClientContractInfo;
+}
+
+/**
+ * @brief Initialize the IoTHub Client module.
+*/
+int IoTHubClientModule_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* moduleInitData)
+{
+    IGNORED_PARAMETER(handle);
+    IGNORED_PARAMETER(moduleInitData);
+
+    ADUC_Result result = { ADUC_GeneralResult_Failure };
+
+    ADUC_ConnectionInfo info = {};
+
+    // Need to set ret and goto done after this to ensure proper shutdown and deinitialization.
+    // TODO (nox-msft) - set log level according to global config.
+    ADUC_Logging_Init(0, "iothub-client-module");
+
+    InitializeModeledComponents();
+
+    if (!IoTHub_CommunicationManager_Init(
+                &g_iotHubClientHandle,
+                ADUC_PnPDeviceTwin_Callback,
+                ADUC_PnP_Components_HandleRefresh,
+                &g_iotHubInitiatedPnPPropertyChangeContext))
+    {
+        Log_Error("IoTHub_CommunicationManager_Init failed");
+        goto done;
+    }
 
     if (!ADUC_D2C_Messaging_Init())
     {
         goto done;
     }
 
+// REVIEW: IMPORTANT: Deprecating the use of connection string command line argument.
+#if ADUC_SUPPORT_CONNECTION_STRING_CMD_ARG
     if (launchArgs->connectionString != NULL)
     {
         ADUC_ConnType connType = GetConnTypeFromConnectionString(launchArgs->connectionString);
@@ -732,6 +512,8 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         }
     }
     else
+#endif
+
     {
         if (!GetAgentConfigInfo(&info))
         {
@@ -755,13 +537,13 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         }
     }
 
-    if (!ADUC_PnP_Components_Create(g_iotHubClientHandle, launchArgs->argc, launchArgs->argv))
+    // TODO: nox-msft - Instead of passing launchArgs, we should configure agent behaviors (e.g. IoTHub logging)
+    // via a configuration file. This will allow us to remove the launchArgs parameter from this function.
+    if (!ADUC_PnP_Components_Create(g_iotHubClientHandle, 0, NULL))
     {
         Log_Error("ADUC_PnP_Components_Create failed");
         goto done;
     }
-
-    ADUC_Result result;
 
     // The connection string is valid (IoT hub connection successful) and we are ready for further processing.
     // Send connection string to DO SDK for it to discover the Edge gateway if present.
@@ -796,20 +578,25 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         goto done;
     }
 
-    succeeded = true;
+    result.ResultCode = ADUC_GeneralResult_Success;
+    result.ExtendedResultCode = 0;
 
 done:
 
     ADUC_ConnectionInfo_DeAlloc(&info);
-    return succeeded;
+    return result.ResultCode == ADUC_GeneralResult_Success ? 0 : -1;
 }
 
 /**
- * @brief Called at agent shutdown.
+ * @brief
+ *
+ * @param module
+ *
+ * @return ADUC_Result
  */
-void ShutdownAgent()
+int IoTHubClientModule_Deinitialize(ADUC_AGENT_MODULE_HANDLE module)
 {
-    Log_Warn("Agent is shutting down.");
+    Log_Info("Deinitialize");
     ADUC_D2C_Messaging_Uninit();
 #ifdef ADUC_COMMAND_HELPER_H
     UninitializeCommandListenerThread();
@@ -818,291 +605,90 @@ void ShutdownAgent()
     IoTHub_CommunicationManager_Deinit();
     DiagnosticsComponent_DestroyDeviceName();
     ADUC_Logging_Uninit();
-    ExtensionManager_Uninit();
+    // TODO: nox-msft Unload all extension
+    return 0;
 }
 
 /**
- * @brief Called when a terminate (SIGINT, SIGTERM) signal is detected.
+ * @brief Create a Device Update Agent Module for IoT Hub PnP Client.
  *
- * @param sig Signal value.
+ * @return ADUC_AGENT_MODULE_HANDLE The handle to the module.
  */
-void OnShutdownSignal(int sig)
+ADUC_AGENT_MODULE_HANDLE IoTHubClientModule_Create()
 {
-    Log_Warn("Shutdown signal detected: %s", sig);
-    ADUC_ShutdownService_RequestShutdown();
+    ADUC_AGENT_MODULE_HANDLE handle = &g_iotHubClientHandle;
+    return handle;
+}
+
+void IoTHubClientModule_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
+{
+    IGNORED_PARAMETER(handle);
 }
 
 /**
- * @brief Called when a restart signal is issued.
+ * @brief Perform the work for the extension. This must be a non-blocking operation.
+ *
+ * @return ADUC_Result
  */
-void OnRestartSignal()
+int IoTHubClientModule_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
 {
-    Log_Warn("Restart signal detected.");
-    ADUC_ShutdownService_RequestShutdown();
-}
-
-/**
- * @brief Sets effective user id as specified in du-config.json (agents[#].ranAs property),
- * and Sets effective group id to as ADUC_FILE_GROUP.
- *
- * This to ensure that the agent process is run with the intended privileges, and the resource that
- * created by the agent has the correct ownership.
- *
- * @remark This function requires that the ADUC_ConfigInfo singleton has been initialized.
- *
- * @return bool true on success.
- */
-bool RunAsDesiredUser()
-{
-    bool success = false;
-    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
-    if (config == NULL)
+    if (handle != &g_iotHubClientHandle)
     {
-        Log_Error("ADUC_ConfigInfo_GetInstance failed.");
-        return false;
-    }
-
-    if (!PermissionUtils_SetProcessEffectiveGID(ADUC_FILE_GROUP))
-    {
-        Log_Error("Failed to set process effective group to '%s'. (errno:%d)", ADUC_FILE_GROUP, errno);
         goto done;
     }
 
-    if (!PermissionUtils_SetProcessEffectiveUID(config->agents[0].runas))
+    // If any components have requested a DoWork callback, regularly call it.
+    for (unsigned index = 0; index < ARRAY_SIZE(componentList); ++index)
     {
-        Log_Error("Failed to set process effective user to '%s'. (errno:%d)", config->agents[0].runas, errno);
-        goto done;
-    }
+        PnPComponentEntry* entry = componentList + index;
 
-    success = true;
-done:
-    ADUC_ConfigInfo_ReleaseInstance(config);
-
-    return success;
-}
-
-//
-// Main.
-//
-
-/**
- * @brief Main method.
- *
- * @param argc Count of arguments in @p argv.
- * @param argv Arguments, first is the process name.
- * @return int Return value. 0 for succeeded.
- *
- * @note argv[0]: process name
- * @note argv[1]: connection string.
- * @note argv[2..n]: optional parameters for upper layer.
- */
-int main(int argc, char** argv)
-{
-    ADUC_LaunchArguments launchArgs;
-
-    InitializeModeledComponents();
-
-    int ret = ParseLaunchArguments(argc, argv, &launchArgs);
-    if (ret < 0)
-    {
-        return ret;
-    }
-
-    if (launchArgs.showVersion)
-    {
-        puts(ADUC_VERSION);
-        return 0;
-    }
-
-    // Need to set ret and goto done after this to ensure proper shutdown and deinitialization.
-    ADUC_Logging_Init(launchArgs.logLevel, "du-agent");
-
-    ADUCPAL_setenv(ADUC_CONFIG_FOLDER_ENV, launchArgs.configFolder, 1);
-
-    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
-    if (config == NULL)
-    {
-        Log_Error("Cannot initialize config info.");
-        return -1;
-    }
-
-    // default to failure
-    ret = 1;
-
-    if (launchArgs.healthCheckOnly)
-    {
-        if (HealthCheck(&launchArgs))
+        if (entry->DoWork != NULL)
         {
-            ret = 0;
-        }
-
-        goto done;
-    }
-
-    if (launchArgs.extensionFilePath != NULL)
-    {
-        switch (launchArgs.extensionRegistrationType)
-        {
-        case ExtensionRegistrationType_None:
-            Log_Error("Missing --extension-type argument.");
-            goto done;
-
-        case ExtensionRegistrationType_UpdateContentHandler:
-            if (launchArgs.extensionId == NULL)
-            {
-                Log_Error("Missing --extension-id argument.");
-                goto done;
-            }
-
-            if (RegisterUpdateContentHandler(launchArgs.extensionId, launchArgs.extensionFilePath))
-            {
-                ret = 0;
-            }
-
-            goto done;
-
-        case ExtensionRegistrationType_ComponentEnumerator:
-            if (RegisterComponentEnumeratorExtension(launchArgs.extensionFilePath))
-            {
-                ret = 0;
-            }
-
-            goto done;
-
-        case ExtensionRegistrationType_ContentDownloadHandler:
-            if (RegisterContentDownloaderExtension(launchArgs.extensionFilePath))
-            {
-                ret = 0;
-            }
-
-            goto done;
-
-        case ExtensionRegistrationType_DownloadHandler:
-            if (launchArgs.extensionId == NULL)
-            {
-                Log_Error("Missing --extension-id argument.");
-                goto done;
-            }
-
-            if (RegisterDownloadHandler(launchArgs.extensionId, launchArgs.extensionFilePath))
-            {
-                ret = 0;
-            }
-
-            goto done;
-
-        default:
-            Log_Error("Unknown ExtensionRegistrationType: %d", launchArgs.extensionRegistrationType);
-            goto done;
+            entry->DoWork(entry->Context);
         }
     }
 
-#ifdef ADUC_COMMAND_HELPER_H
-    // This instance of an agent is launched for sending command to the main agent process.
-    if (launchArgs.ipcCommand != NULL)
-    {
-        if (SendCommand(launchArgs.ipcCommand))
-        {
-            ret = 0;
-        }
+    ADUC_D2C_Messaging_DoWork();
 
-        goto done;
-    }
-#endif // #ifdef ADUC_COMMAND_HELPER_H
-
-    // Switch to specified agent.runas user.
-    // Note: it's important that we do this only when we're not performing any
-    // high-privileged tasks, such as, registering agent's extension(s).
-    if (!RunAsDesiredUser())
-    {
-        goto done;
-    }
-
-    Log_Info("Agent (%s; %s) starting.", ADUC_PLATFORM_LAYER, ADUC_VERSION);
-#ifdef ADUC_GIT_INFO
-    Log_Info("Git Info: %s", ADUC_GIT_INFO);
-#endif
-    Log_Info(
-        "Supported Update Manifest version: min: %d, max: %d",
-        SUPPORTED_UPDATE_MANIFEST_VERSION_MIN,
-        SUPPORTED_UPDATE_MANIFEST_VERSION_MAX);
-
-    bool healthy = HealthCheck(&launchArgs);
-    if (launchArgs.healthCheckOnly || !healthy)
-    {
-        if (healthy)
-        {
-            Log_Info("Agent is healthy.");
-            ret = 0;
-        }
-        else
-        {
-            Log_Error("Agent health check failed.");
-        }
-
-        goto done;
-    }
-
-    // Ensure that the ADU data folder exists.
-    // Normally, ADUC_DATA_FOLDER is created by install script.
-    // However, if we want to run the Agent without installing the package, we need to manually
-    // create the folder. (e.g. when running UTs in build pipelines, side-loading for testing, etc.)
-    int dir_result = ADUC_SystemUtils_MkDirRecursiveDefault(ADUC_DATA_FOLDER);
-    if (dir_result != 0)
-    {
-        Log_Error("Cannot create data folder.");
-        goto done;
-    }
-
-    //
-    // Catch ctrl-C and shutdown signals so we do a best effort of cleanup.
-    //
-    signal(SIGINT, OnShutdownSignal);
-    signal(SIGTERM, OnShutdownSignal);
-
-    if (!StartupAgent(&launchArgs))
-    {
-        goto done;
-    }
-
-    //
-    // Main Loop
-    //
-
-    Log_Info("Agent running.");
-    while (ADUC_ShutdownService_ShouldKeepRunning())
-    {
-        // If any components have requested a DoWork callback, regularly call it.
-        for (unsigned index = 0; index < ARRAY_SIZE(componentList); ++index)
-        {
-            PnPComponentEntry* entry = componentList + index;
-
-            if (entry->DoWork != NULL)
-            {
-                entry->DoWork(entry->Context);
-            }
-        }
-
-        IoTHub_CommunicationManager_DoWork(&g_iotHubClientHandle);
-        ADUC_D2C_Messaging_DoWork();
-
-        // NOTE: When using low level samples (iothub_ll_*), the IoTHubDeviceClient_LL_DoWork
-        // function must be called regularly (eg. every 100 milliseconds) for the IoT device client to work properly.
-        // See: https://github.com/Azure/azure-iot-sdk-c/tree/master/iothub_client/samples
-        // NOTE: For this example the above has been wrapped to support module and device client methods using
-        // the client_handle_helper.h function ClientHandle_DoWork()
-
-        ThreadAPI_Sleep(100);
-    };
-
-    ret = 0; // Success.
+    // NOTE: When using low level samples (iothub_ll_*), the IoTHubDeviceClient_LL_DoWork
+    // function must be called regularly (eg. every 100 milliseconds) for the IoT device client to work properly.
+    // See: https://github.com/Azure/azure-iot-sdk-c/tree/master/iothub_client/samples
+    // NOTE: For this example the above has been wrapped to support module and device client methods using
+    // the client_handle_helper.h function ClientHandle_DoWork()
+    IoTHub_CommunicationManager_DoWork(&g_iotHubClientHandle);
 
 done:
-    Log_Info("Agent exited with code %d", ret);
+    return 0;
+}
 
-    ShutdownAgent();
-
-    ADUC_ConfigInfo_ReleaseInstance(config);
-
+/**
+ * @brief Get the Data object for the specified key.
+ *
+ * @param handle agent module handle
+ * @param dataType data type
+ * @param key data key/name
+ * @param buffer return buffer (call must free the memory of the return value once done with it)
+ * @param size return size of the return value
+ * @return int 0 on success
+*/
+int IoTHubClientModule_GetData(ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, const char* key, void** buffer, int* size)
+{
+    IGNORED_PARAMETER(handle);
+    IGNORED_PARAMETER(dataType);
+    IGNORED_PARAMETER(key);
+    IGNORED_PARAMETER(buffer);
+    IGNORED_PARAMETER(size);
+    int ret = 0;
     return ret;
 }
+
+ADUC_AGENT_MODULE_INTERFACE IoTHubClientModuleInterface = {
+    &g_iotHubClientHandle,
+    IoTHubClientModule_Create,
+    IoTHubClientModule_Destroy,
+    IoTHubClientModule_GetContractInfo,
+    IoTHubClientModule_DoWork,
+    IoTHubClientModule_Initialize,
+    IoTHubClientModule_Deinitialize,
+    IoTHubClientModule_GetData,
+};
