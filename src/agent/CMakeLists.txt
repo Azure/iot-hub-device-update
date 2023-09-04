@@ -74,29 +74,14 @@ target_link_aziotsharedutil (${target_name} PRIVATE)
 target_link_libraries (
     ${target_name}
     PRIVATE aziotsharedutil
-            IotHubClient::iothub_client
-            umqtt
-            aduc::adu_core_export_helpers
-            aduc::adu_core_interface
-            aduc::agent_orchestration
-            aduc::agent_workflow
             aduc::c_utils
-            aduc::communication_abstraction
             aduc::config_utils
-            aduc::d2c_messaging
-            aduc::device_info_interface
-            aduc::eis_utils
-            aduc::extension_manager
             aduc::extension_utils
-            aduc::https_proxy_utils
-            aduc::iothub_communication_manager
             aduc::logging
             aduc::permission_utils
-            aduc::pnp_helper
             aduc::shutdown_service
             aduc::system_utils
-            diagnostics_component::diagnostics_interface
-            diagnostics_component::diagnostics_devicename)
+            aduc::iothub_client_module)
 
 if (NOT WIN32)
     target_link_libraries (${target_name} PRIVATE aduc::command_helper)
@@ -127,6 +112,8 @@ endif ()
 
 get_filename_component (ADUC_INSTALLEDCRITERIA_FILE_PATH
                         "${ADUC_DATA_FOLDER}/${ADUC_INSTALLEDCRITERIA_FILE}" ABSOLUTE "/")
+
+target_include_directories (${target_name} PRIVATE inc ${ADU_AGENT_SDK_INCLUDES})
 
 target_compile_definitions (
     ${target_name}
