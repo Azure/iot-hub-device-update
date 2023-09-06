@@ -9,13 +9,8 @@
 
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
-#include <azure_c_shared_utility/crt_abstractions.h>
+#include <azure_c_shared_utility/crt_abstractions.h> // For mallocAndStrcpy_s
 #include <azure_c_shared_utility/strings.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
 
 /**
  * @brief Returns the pointer to the @p jsonFieldName from the JSON_Value

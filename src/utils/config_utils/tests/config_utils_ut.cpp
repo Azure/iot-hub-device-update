@@ -494,7 +494,7 @@ typedef struct _mock_adps_settings
 #define DEFAULT_CLEAN_SESSION false
 #define DEFAULT_MQTTBROKER_CLEAN_SESSION true
 
-static void _free_mock_adps_settings(Mock_ADPS_Settings* settings)
+static void free_mock_adps_settings(Mock_ADPS_Settings* settings)
 {
     if (settings == NULL)
     {
@@ -539,32 +539,27 @@ static bool _read_mock_adps_settings(Mock_ADPS_Settings* settings)
     // Currently only support 'ADPS2/MQTT' connection data.
     if (strcmp(agent_info->connectionType, ADUC_CONNECTION_TYPE_ADPS2_MQTT) != 0)
     {
-        printf("Connection type is not ADPS2/MQTT");
         goto done;
     }
 
     // NOTE: This is the 'globalDeviceEndpoint' field in the config file.
     if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.globalDeviceEndpoint", &settings->hostname))
     {
-        printf("Failed to get hostname");
         goto done;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.idScope", &settings->idScope))
     {
-        printf("Failed to get idScope");
         goto done;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.apiVersion", &settings->dpsApiVersion))
     {
-        printf("Failed to get dpsApiVersion");
         goto done;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.registrationId", &settings->registrationId))
     {
-        printf("Failed to get registrationId");
         goto done;
     }
 
@@ -629,7 +624,7 @@ done:
     ADUC_ConfigInfo_ReleaseInstance(config);
     if (!result)
     {
-        _free_mock_adps_settings(settings);
+        free_mock_adps_settings(settings);
     }
     return result;
 }
@@ -656,7 +651,7 @@ typedef struct _mock_mqtt_broker_settings
   bool useTLS;             /*< Disable TLS negotiation (not recommended for production)*/
 } Mock_MQTT_Broker_Settings;
 
-static void _free_mock_mqtt_broker_settings(Mock_MQTT_Broker_Settings* settings)
+static void free_mock_mqtt_broker_settings(Mock_MQTT_Broker_Settings* settings)
 {
     if (settings == NULL)
     {
@@ -697,13 +692,11 @@ static bool _read_mock_mqtt_broker_settings(Mock_MQTT_Broker_Settings* settings)
     // Currently only support "MQTTBroker" connection data. (DPS Gen2 support will be available after 2023/Q4)
     if (strcmp(agent_info->connectionType, ADUC_CONNECTION_TYPE_MQTTBROKER) != 0)
     {
-        printf("Connection type is not MQTTBroker");
         goto done;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "mqttBroker.hostName", &settings->hostname))
     {
-        printf("Failed to get hostname");
         goto done;
     }
 
@@ -768,7 +761,7 @@ done:
     ADUC_ConfigInfo_ReleaseInstance(config);
     if (!result)
     {
-        _free_mock_mqtt_broker_settings(settings);
+        free_mock_mqtt_broker_settings(settings);
     }
     return result;
 }
@@ -1059,7 +1052,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK(settings.cleanSession == false);
         CHECK(settings.useTLS == true);
 
-        _free_mock_adps_settings(&settings);
+        free_mock_adps_settings(&settings);
     }
 
     SECTION("MQTTBroker connection config test")
@@ -1085,6 +1078,6 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK(settings.cleanSession == true);
         CHECK(settings.useTLS == true);
 
-        _free_mock_mqtt_broker_settings(&settings);
+        free_mock_mqtt_broker_settings(&settings);
     }
 }

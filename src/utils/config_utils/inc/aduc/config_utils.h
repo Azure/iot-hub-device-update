@@ -224,7 +224,7 @@ void ADUC_ConfigInfo_FreeAduShellTrustedUsers(VECTOR_HANDLE users);
 bool ADUC_AgentInfo_ConnectionData_GetStringField(const ADUC_AgentInfo* agent, const char* fieldName, char** value);
 
 /**
- * @brief Get DU AGent's connection data field of type boolean.
+ * @brief Get DU Agent's connection data field of type boolean.
  *
  * @param agent Pointer to ADUC_AgentInfo object.
  * @param fieldName The field name to get. This can be a nested field name, e.g. "useSTL" or "options.keepAlive".
@@ -234,7 +234,7 @@ bool ADUC_AgentInfo_ConnectionData_GetStringField(const ADUC_AgentInfo* agent, c
 bool ADUC_AgentInfo_ConnectionData_GetBooleanField(const ADUC_AgentInfo* agent, const char* fieldName, bool* value);
 
 /**
- * @brief Get DU AGent's connection data field of type unsigned int.
+ * @brief Get DU Agent's connection data field of type unsigned int.
  *
  * @param agent Pointer to ADUC_AgentInfo object.
  * @param fieldName The field name to get. This can be a nested field name, e.g. "port" or "options.maxRetry".

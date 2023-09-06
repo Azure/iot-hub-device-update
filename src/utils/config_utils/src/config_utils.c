@@ -20,7 +20,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 static pthread_mutex_t s_config_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -716,7 +715,7 @@ done:
 }
 
 /**
- * @brief Get DU AGent's connection data field of type string.
+ * @brief Get DU Agent's connection data field of type string.
  *
  * @param agent Pointer to ADUC_AgentInfo object.
  * @param fieldName The field name to get. This can be null or a nested field name, e.g. "name" or "updateId.name".
@@ -787,7 +786,7 @@ done:
 }
 
 /**
- * @brief Get DU AGent's connection data field of type boolean.
+ * @brief Get DU Agent's connection data field of type boolean.
  *
  * @param agent Pointer to ADUC_AgentInfo object.
  * @param fieldName The field name to get. This can be a nested field name, e.g. "useSTL" or "options.keepAlive".
@@ -831,7 +830,7 @@ done:
 }
 
 /**
- * @brief Get DU AGent's connection data field of type unsigned int.
+ * @brief Get DU Agent's connection data field of type unsigned int.
  *
  * @param agent Pointer to ADUC_AgentInfo object.
  * @param fieldName The field name to get. This can be a nested field name, e.g. "port" or "options.maxRetry".
