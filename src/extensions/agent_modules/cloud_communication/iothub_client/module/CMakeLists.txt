@@ -28,7 +28,6 @@ target_link_libraries (
             aduc::adu_core_interface
             aduc::c_utils
             aduc::config_utils
-            aduc::command_helper
             aduc::communication_abstraction
             aduc::d2c_messaging
             aduc::device_info_interface
@@ -39,6 +38,10 @@ target_link_libraries (
             Parson::parson
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
+
+if (NOT WIN32)
+    target_link_libraries (${target_name} PRIVATE aduc::command_helper)
+endif ()
 
 if (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT")
     target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT=1)

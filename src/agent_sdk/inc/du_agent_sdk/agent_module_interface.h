@@ -65,64 +65,6 @@ typedef struct ADUC_AGENT_MODULE_INTERFACE_TAG
     ADUC_AGENT_MODULE_GET_DATA getData;
 } ADUC_AGENT_MODULE_INTERFACE;
 
-
-// /**
-//  * @brief Gets the extension contract info.
-//  *
-//  * @param[out] contractInfo The extension contract info.
-//  * @return ADUC_Result The result.
-//  */
-// ADUC_Result GetContractInfo(char** contractInfo);
-
-// /**
-//  * @brief Create a Device Update Agent Module object
-//  *
-//  * @param deviceUpdateAgentModule A pointer to the Device Update Agent Module object.
-//  * @return ADUC_Result
-//  */
-// typedef ADUC_Result (*CreateDeviceUpdateAgentWorkflowModuleFunc)(ADUC_DeviceUpdateAgentModule** deviceUpdateAgentModule);
-
-// /**
-//  * @brief Perform the work for the extension. This must be a non-blocking operation.
-//  *
-//  * @return ADUC_Result
-//  */
-// ADUC_Result DoWork(ADUC_DeviceUpdateAgentModule* module);
-
-// /**
-//  * @brief Initialize the module. This is called once when the module is loaded.
-//  *
-//  * @param module The module to initialize.
-//  * @param moduleInitData The module initialization data. Consult the documentation for the specific module for details.
-//  * @return ADUC_Result
-//  */
-// ADUC_Result InitializeModule(ADUC_DeviceUpdateAgentModule* module, void *moduleInitData);
-
-// /**
-//  * @brief
-//  *
-//  * @param module
-//  *
-//  * @return ADUC_Result
-//  */
-// ADUC_Result DeinitializeModule(ADUC_DeviceUpdateAgentModule* module);
-
-
-// /**
-//  * @brief Get the Data object for the specified key.
-//  *
-//  * @param moduleId  name of the module
-//  * @param dataType data type
-//  * @param key data key/name
-//  * @param value return value (call must free the memory of the return value once done with it)
-//  * @param size return size of the return value
-//  * @return ADUC_Result
-//  */
-// ADUC_Result ModuleManager_GetData(const char* moduleId, ADUC_ModuleDataType dataType, const char* key, void** value, int* size);
-// ADUC_Result ModuleManager_InitializeAgentWorkflowModule(const char* moduleId, int moduleVersion, const char* initializeData, ADUC_DeviceUpdateAgentModule **module);
-// ADUC_Result ModuleManager_DeinitializeAgentWorkflowModule(const ADUC_DeviceUpdateAgentModule *module);
-//
-
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
