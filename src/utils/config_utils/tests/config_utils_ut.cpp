@@ -386,7 +386,7 @@ static const char* testADSP2Config =
             R"("name": "main",)"
             R"("runas": "adu",)"
             R"("connectionSource": {)"
-            R"("connectionType": "ADPS2",)"
+            R"("connectionType": "ADPS2/MQTT",)"
             R"("connectionData": {)"
               R"("dps" : {)"
                 R"("idScope" : "0ne0123456789abcdef",)"
@@ -536,10 +536,10 @@ static bool _read_mock_adps_settings(Mock_ADPS_Settings* settings)
 
     agent_info = ADUC_ConfigInfo_GetAgent(config, 0);
 
-    // Currently only support "ADPS2" connection data.
-    if (strcmp(agent_info->connectionType, ADUC_CONNECTION_TYPE_ADPS2) != 0)
+    // Currently only support 'ADPS2/MQTT' connection data.
+    if (strcmp(agent_info->connectionType, ADUC_CONNECTION_TYPE_ADPS2_MQTT) != 0)
     {
-        printf("Connection type is not ADPS2");
+        printf("Connection type is not ADPS2/MQTT");
         goto done;
     }
 
@@ -1033,7 +1033,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK(config->refCount == 0);
     }
 
-    SECTION("ADPS2 connection config test")
+    SECTION("ADPS2/MQTT connection config test")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, testADSP2Config) == 0);
         ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
