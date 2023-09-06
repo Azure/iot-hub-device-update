@@ -7,7 +7,6 @@
  */
 
 #include "aduc/adu_types.h"
-//#include "aduc/agent_workflow.h"
 #include "aduc/c_utils.h"
 #if !defined(WIN32)
 #    include "aduc/command_helper.h"
@@ -394,7 +393,7 @@ int main(int argc, char** argv)
     ret = IoTHubClientModuleInterface.initializeModule(g_iotHubClientModuleHandle, NULL);
     if (ret != 0)
     {
-        Log_Error("IoTHubClientModuleInterface.initialize failed.");
+        Log_Error("IoTHubClientModuleInterface.initialize failed. (ret:%d)", ret);
         goto done;
     }
 
