@@ -174,9 +174,9 @@ do_install_openssl() {
     echo "Installing OpenSSL ..."
 
     $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
-    wget https://www.openssl.org/source/openssl-1.1.1u.tar.gz || return
+    wget https://www.openssl.org/source/openssl-3.1.2.tar.gz || return
     mkdir -p $openssl_dir || return
-    tar -xf openssl-1.1.1u.tar.gz -C $openssl_dir --strip-components=1 || return
+    tar -xf openssl-3.1.2.tar.gz -C $openssl_dir --strip-components=1 || return
     pushd $openssl_dir > /dev/null || return
     ./config --prefix="$openssl_dir_path" --openssldir="$openssl_dir_path" shared zlib || return
     make || return
@@ -226,9 +226,10 @@ do_install_aduc_packages() {
 
     # Check if the directory exists
     if [ ! -d "$openssl_dir_path" ]; then
-        echo "OpenSSL directory not found. Invoking installation..."
-        do_install_openssl || $ret
+        rm $openssl_dir_path || return
     fi
+
+    do_install_openssl || $ret
 }
 
 do_install_azure_iot_sdk() {
