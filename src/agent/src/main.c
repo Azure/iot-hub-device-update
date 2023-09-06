@@ -1557,7 +1557,7 @@ int main(int argc, char** argv)
     ret = 0; // Success.
 
 done:
-    Log_Info("Agent exited with code %d", ret);
+    log_info("Agent exited with code %d", ret);
 
     ShutdownAgent();
 

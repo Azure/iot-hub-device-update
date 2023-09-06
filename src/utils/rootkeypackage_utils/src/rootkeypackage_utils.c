@@ -336,10 +336,12 @@ STRING_HANDLE RootKeyPackage_SigningAlgToString(const ADUC_RootKeySigningAlgorit
 
 JSON_Value* ADUC_RootKeyPackageUtils_SignatureToJsonValue(const ADUC_RootKeyPackage_Signature* signature)
 {
-    _Bool success = true;
+    _Bool success = false;
+
     JSON_Value* sigJsonValue = NULL;
     char* encodedSignature = NULL;
     STRING_HANDLE algString = NULL;
+    JSON_Status jsonStatus;
 
     sigJsonValue = json_value_init_object();
 
@@ -364,7 +366,7 @@ JSON_Value* ADUC_RootKeyPackageUtils_SignatureToJsonValue(const ADUC_RootKeyPack
         goto done;
     }
 
-    JSON_Status jsonStatus = json_object_set_string(sigJsonObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_SIG, encodedSignature);
+    jsonStatus = json_object_set_string(sigJsonObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_SIG, encodedSignature);
 
     if (jsonStatus != JSONSuccess)
     {
@@ -379,6 +381,12 @@ JSON_Value* ADUC_RootKeyPackageUtils_SignatureToJsonValue(const ADUC_RootKeyPack
     }
 
     jsonStatus = json_object_set_string(sigJsonObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_ALG, STRING_c_str(algString));
+    if (jsonStatus != JSONSuccess)
+    {
+        goto done;
+    }
+
+    success = true;
 
 done:
 
@@ -528,9 +536,7 @@ done:
 
     if (sigJsonValueVector != NULL)
     {
-        const size_t numSignatures = VECTOR_size(sigJsonValueVector);
-
-        for (size_t i = 0; i < numSignatures; ++i)
+        for (size_t i = 0; i < VECTOR_size(sigJsonValueVector); ++i)
         {
             JSON_Value** sigValuePtr = (JSON_Value**)VECTOR_element(sigJsonValueVector, i);
 

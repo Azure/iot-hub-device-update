@@ -27,6 +27,14 @@ include (GNUInstallDirs)
 
 include (aduc_helpers)
 
+set(CMAKE_C_CLANG_TIDY
+    clang-tidy;
+        -header-filter=.*;
+        -checks=*,-llvmlibc-restrict-system-libc-headers;
+        -warnings-as-errors=*;)
+
+
+
 #
 # Version information
 #

@@ -377,7 +377,7 @@ static _Bool CheckDirOwnershipAndVerifyFilemodeExact(
 {
     _Bool result = false;
 
-    int err;
+    int err = 0;
     if (!SystemUtils_IsDir(path, &err))
     {
         if (err != 0)

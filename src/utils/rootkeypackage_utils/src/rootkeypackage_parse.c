@@ -924,8 +924,7 @@ done:
 
     if (signatures != NULL)
     {
-        size_t cnt = VECTOR_size(signatures);
-        for (size_t i = 0; i < cnt; ++i)
+        for (size_t i = 0; i < VECTOR_size(signatures); ++i)
         {
             ADUC_RootKeyPackage_Signature* node = (ADUC_RootKeyPackage_Signature*)VECTOR_element(signatures, i);
             ADUC_RootKeyPackage_Signature_DeInit(node);
