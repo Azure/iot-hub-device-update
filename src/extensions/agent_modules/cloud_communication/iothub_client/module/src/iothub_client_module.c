@@ -6,10 +6,10 @@
  * Licensed under the MIT License.
  */
 
-#include "du_agent_sdk/agent_module_interface.h"
 #include "aduc/adu_core_interface.h"
 #include "aduc/adu_types.h"
 #include "aduc/client_handle_helper.h"
+#include "du_agent_sdk/agent_module_interface.h"
 #if !defined(WIN32)
 #    include "aduc/command_helper.h"
 #endif
@@ -24,7 +24,6 @@
 
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>
-
 
 // --- NOTE: Following block are codes ported from agent/src/main.c
 
@@ -148,9 +147,6 @@ static PnPComponentEntry componentList[] = {
     },
 };
 
-
-
-
 /**
  * @brief Sets the Diagnostic DeviceName for creating the device's diagnostic container
  * @param connectionString connectionString to extract the device-id and module-id from
@@ -180,15 +176,10 @@ bool ADUC_SetDiagnosticsDeviceNameFromConnectionString(const char* connectionStr
     succeeded = true;
 
 done:
-
     free(deviceId);
     free(moduleId);
     return succeeded;
 }
-
-//
-// IotHub methods.
-//
 
 /**
  * @brief Uninitialize all PnP components' handler.
@@ -262,9 +253,15 @@ done:
     return succeeded;
 }
 
-//
-// ADUC_PnP_ComponentClient_PropertyUpdate_Callback is the callback function that the PnP helper layer invokes per property update.
-//
+/**
+ * @brief Callback invoked when a PnP property is updated.
+ * @param componentName The name of the component that owns the property.
+ * @param propertyName The name of the property.
+ * @param propertyValue The value of the property.
+ * @param version The version of the property.
+ * @param userContextCallback The user context that will be passed to the callback.
+ * @return void
+ **/
 static void ADUC_PnP_ComponentClient_PropertyUpdate_Callback(
     const char* componentName,
     const char* propertyName,
@@ -323,6 +320,9 @@ static const size_t g_numModeledComponents = ARRAY_SIZE(g_modeledComponents);
 
 static bool g_firstDeviceTwinDataProcessed = false;
 
+/*
+ * @brief Initialize the modeled components list.
+ */
 static void InitializeModeledComponents()
 {
     const size_t numModeledComponents = ARRAY_SIZE(g_modeledComponents);
@@ -335,9 +335,14 @@ static void InitializeModeledComponents()
     }
 }
 
-//
-// ADUC_PnP_DeviceTwin_Callback is invoked by IoT SDK when a twin - either full twin or a PATCH update - arrives.
-//
+/*
+ * @brief This function is called when the the 'retry-update' command is received.
+ * @param updateState The update state.
+ * @param payload The twin payload.
+ * @param size The size of the payload.
+ * @param userContextCallback The user context that will be passed to the callback.
+ * @return void
+ */
 static void ADUC_PnPDeviceTwin_RetryUpdateCommand_Callback(
     DEVICE_TWIN_UPDATE_STATE updateState, const unsigned char* payload, size_t size, void* userContextCallback)
 {
@@ -359,9 +364,15 @@ static void ADUC_PnPDeviceTwin_RetryUpdateCommand_Callback(
     }
 }
 
-//
-// ADUC_PnP_DeviceTwin_Callback is invoked by IoT SDK when a twin - either full twin or a PATCH update - arrives.
-//
+/**
+ * @brief Callback invoked when a PnP property is updated.
+ * @param updateState The update state.
+ * @param payload The twin payload.
+ * @param size The size of the payload.
+ * @param userContextCallback The user context that will be passed to the callback.
+ * @return void
+ *
+ */
 static void ADUC_PnPDeviceTwin_Callback(
     DEVICE_TWIN_UPDATE_STATE updateState, const unsigned char* payload, size_t size, void* userContextCallback)
 {
@@ -400,7 +411,6 @@ static void ADUC_PnPDeviceTwin_Callback(
         }
     }
 }
-
 
 #ifdef ADUC_COMMAND_HELPER_H
 
@@ -479,62 +489,25 @@ int IoTHubClientModule_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* moduleI
         goto done;
     }
 
-// REVIEW: IMPORTANT: Deprecating the use of connection string command line argument.
-#if ADUC_SUPPORT_CONNECTION_STRING_CMD_ARG
-    if (launchArgs->connectionString != NULL)
+    if (!GetAgentConfigInfo(&info))
     {
-        ADUC_ConnType connType = GetConnTypeFromConnectionString(launchArgs->connectionString);
-
-        if (connType == ADUC_ConnType_NotSet)
-        {
-            Log_Error("Connection string is invalid");
-            goto done;
-        }
-
-        ADUC_ConnectionInfo connInfo = {
-            ADUC_AuthType_NotSet, connType, launchArgs->connectionString, NULL, NULL, NULL
-        };
-
-        if (!ADUC_SetDiagnosticsDeviceNameFromConnectionString(connInfo.connectionString))
-        {
-            Log_Error("Setting DiagnosticsDeviceName failed");
-            goto done;
-        }
-
-        if (!IoTHub_CommunicationManager_Init(
-                &g_iotHubClientHandle,
-                ADUC_PnPDeviceTwin_Callback,
-                ADUC_PnP_Components_HandleRefresh,
-                &g_iotHubInitiatedPnPPropertyChangeContext))
-        {
-            Log_Error("IoTHub_CommunicationManager_Init failed");
-            goto done;
-        }
+        goto done;
     }
-    else
-#endif
 
+    if (!ADUC_SetDiagnosticsDeviceNameFromConnectionString(info.connectionString))
     {
-        if (!GetAgentConfigInfo(&info))
-        {
-            goto done;
-        }
+        Log_Error("Setting DiagnosticsDeviceName failed");
+        goto done;
+    }
 
-        if (!ADUC_SetDiagnosticsDeviceNameFromConnectionString(info.connectionString))
-        {
-            Log_Error("Setting DiagnosticsDeviceName failed");
-            goto done;
-        }
-
-        if (!IoTHub_CommunicationManager_Init(
-                &g_iotHubClientHandle,
-                ADUC_PnPDeviceTwin_Callback,
-                ADUC_PnP_Components_HandleRefresh,
-                &g_iotHubInitiatedPnPPropertyChangeContext))
-        {
-            Log_Error("IoTHub_CommunicationManager_Init failed");
-            goto done;
-        }
+    if (!IoTHub_CommunicationManager_Init(
+            &g_iotHubClientHandle,
+            ADUC_PnPDeviceTwin_Callback,
+            ADUC_PnP_Components_HandleRefresh,
+            &g_iotHubInitiatedPnPPropertyChangeContext))
+    {
+        Log_Error("IoTHub_CommunicationManager_Init failed");
+        goto done;
     }
 
     // TODO: nox-msft - Instead of passing launchArgs, we should configure agent behaviors (e.g. IoTHub logging)
@@ -582,17 +555,16 @@ int IoTHubClientModule_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* moduleI
     result.ExtendedResultCode = 0;
 
 done:
-
     ADUC_ConnectionInfo_DeAlloc(&info);
     return result.ResultCode == ADUC_GeneralResult_Success ? 0 : -1;
 }
 
 /**
- * @brief
+ * @brief Deinitialize the IoTHub Client module.
  *
- * @param module
+ * @param module The handle to the module. This is the same handle that was returned by the Create function.
  *
- * @return ADUC_Result
+ * @return int 0 on success.
  */
 int IoTHubClientModule_Deinitialize(ADUC_AGENT_MODULE_HANDLE module)
 {
@@ -620,6 +592,10 @@ ADUC_AGENT_MODULE_HANDLE IoTHubClientModule_Create()
     return handle;
 }
 
+/*
+ * @brief Destroy the Device Update Agent Module for IoT Hub PnP Client.
+ * @param handle The handle to the module. This is the same handle that was returned by the Create function.
+ */
 void IoTHubClientModule_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 {
     IGNORED_PARAMETER(handle);
