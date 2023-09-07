@@ -7,7 +7,8 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-set (sources main.cpp config_utils_ut.cpp)
+set (sources main.cpp
+             config_utils_ut.cpp)
 
 find_package (Catch2 REQUIRED)
 
