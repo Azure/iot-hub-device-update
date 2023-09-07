@@ -12,6 +12,7 @@
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
 #include <aducpal/stdlib.h> // setenv
+#include <aducpal/unistd.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <azure_c_shared_utility/strings_types.h>
 #include <parson.h>
@@ -564,7 +565,7 @@ void ADUC_ConfigInfo_UnInit(ADUC_ConfigInfo* config)
  * @param index the index of the Agent array in config that we want to access
  * @return const ADUC_AgentInfo*, NULL if failure
  */
-const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(const ADUC_ConfigInfo* config, unsigned int index)
+const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(const ADUC_ConfigInfo* config, size_t index)
 {
     if (config == NULL)
     {

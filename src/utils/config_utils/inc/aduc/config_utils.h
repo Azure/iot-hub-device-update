@@ -195,7 +195,7 @@ void ADUC_ConfigInfo_UnInit(ADUC_ConfigInfo* config);
  * @param index
  * @return const ADUC_AgentInfo*, NULL if failure
  */
-const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(const ADUC_ConfigInfo* config, unsigned int index);
+const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(const ADUC_ConfigInfo* config, size_t index);
 
 /**
  * @brief Get the adu trusted user list

@@ -70,3 +70,16 @@ ctest -T memcheck
 ```
 
 Results will be in `out/Testing/Temporary/MemoryChecker.*.log`
+
+
+## Version History
+
+### Version 2.0 Release Notes
+
+#### Breaking Changes:
+- **Removed**: `-c` command-line option has been removed.
+
+#### New Features & Enhancements:
+- Introduced support for `connectionType` in `du-config.json`:
+    - Now supports `MQTTBroker` and `ADPS2/MQTT` connection types.
+- Enhanced modularity: The core agent application is now more decoupled from extensible components, ensuring cleaner and more maintainable code.

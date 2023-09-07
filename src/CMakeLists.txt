@@ -29,7 +29,7 @@ if (MSVC)
     if (NOT ADUC_BUILD_UNIT_TESTS)
         # Treat Conversion Warnings as Errors
         add_compile_options (/W4242)
-    endif()
+    endif ()
 
     # allow strcpy, strcat, fopen, etc.
     add_definitions (-D_CRT_SECURE_NO_WARNINGS)
@@ -38,8 +38,7 @@ if (MSVC)
 
     # Avoid "warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library"
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set (CMAKE_EXE_LINKER_FLAGS
-             "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:msvcrt")
+        set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:msvcrt")
     else ()
         set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:libcmt")
     endif ()
@@ -64,14 +63,12 @@ set (ADUC_EXPORT_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/inc ${CMAKE_CURRENT_SOURCE
 set (ADU_SHELL_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/adu-shell/inc)
 set (ADU_EXTENSION_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/extensions/inc
                             ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc)
+set (ADU_AGENT_SDK_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/agent_sdk/inc)
 
 add_subdirectory (libaducpal)
 add_subdirectory (adu-shell)
 add_subdirectory (adu_types)
 add_subdirectory (adu_workflow)
-add_subdirectory (communication_abstraction)
-add_subdirectory (communication_managers)
-add_subdirectory (diagnostics_component)
 
 if (ADUC_BUILD_DOCUMENTATION)
     add_subdirectory (docs)

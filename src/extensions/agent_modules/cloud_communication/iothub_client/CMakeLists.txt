@@ -1,0 +1,10 @@
+cmake_minimum_required (VERSION 3.5)
+
+add_subdirectory (adu_core_export_helpers)
+add_subdirectory (adu_core_interface)
+add_subdirectory (communication_abstraction)
+add_subdirectory (communication_managers)
+add_subdirectory (device_info_interface)
+add_subdirectory (diagnostics_component)
+add_subdirectory (pnp_helper)
+add_subdirectory (module)
