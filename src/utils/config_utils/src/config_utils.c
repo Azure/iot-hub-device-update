@@ -12,6 +12,7 @@
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
 #include <aducpal/stdlib.h> // setenv
+#include <aducpal/unistd.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <azure_c_shared_utility/strings_types.h>
 #include <parson.h>
@@ -20,7 +21,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 static pthread_mutex_t s_config_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -205,9 +205,9 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent)
  * @param agentCount Count of objects in agents.
  * @param agents Array of ADUC_AgentInfo objects to free.
  */
-static void ADUC_AgentInfoArray_Free(unsigned int agentCount, ADUC_AgentInfo* agents)
+static void ADUC_AgentInfoArray_Free(size_t agentCount, ADUC_AgentInfo* agents)
 {
-    for (unsigned int index = 0; index < agentCount; ++index)
+    for (size_t index = 0; index < agentCount; ++index)
     {
         ADUC_AgentInfo* agent = agents + index;
         ADUC_AgentInfo_Free(agent);
@@ -221,7 +221,7 @@ static void ADUC_AgentInfoArray_Free(unsigned int agentCount, ADUC_AgentInfo* ag
  * @param agents ADUC_AgentInfo (size agentCount). Array to be freed using free(), objects must also be freed.
  * @return bool Success state.
  */
-bool ADUC_Json_GetAgents(JSON_Value* root_value, unsigned int* agentCount, ADUC_AgentInfo** agents)
+bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentInfo** agents)
 {
     bool succeeded = false;
     if ((agentCount == NULL) || (agents == NULL))
@@ -565,7 +565,7 @@ void ADUC_ConfigInfo_UnInit(ADUC_ConfigInfo* config)
  * @param index the index of the Agent array in config that we want to access
  * @return const ADUC_AgentInfo*, NULL if failure
  */
-const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(const ADUC_ConfigInfo* config, unsigned int index)
+const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(const ADUC_ConfigInfo* config, size_t index)
 {
     if (config == NULL)
     {

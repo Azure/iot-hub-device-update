@@ -127,7 +127,7 @@ typedef struct tagADUC_ConfigInfo
 
     ADUC_AgentInfo* agents; /**< Array of agents that are configured. */
 
-    unsigned int agentCount; /**< Total number of agents configured. */
+    size_t agentCount; /**< Total number of agents configured. */
 
     const char* compatPropertyNames; /**< Compat property names. */
 
@@ -195,7 +195,7 @@ void ADUC_ConfigInfo_UnInit(ADUC_ConfigInfo* config);
  * @param index
  * @return const ADUC_AgentInfo*, NULL if failure
  */
-const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(const ADUC_ConfigInfo* config, unsigned int index);
+const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(const ADUC_ConfigInfo* config, size_t index);
 
 /**
  * @brief Get the adu trusted user list

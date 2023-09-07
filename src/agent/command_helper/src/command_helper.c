@@ -10,6 +10,7 @@
 #include "aduc/logging.h"
 #include "aduc/permission_utils.h"
 
+#include <aducpal/unistd.h> // sleep
 #include <errno.h>
 #include <fcntl.h>
 #include <grp.h> // getgrnm
@@ -19,16 +20,19 @@
 #include <stdlib.h> // free
 #include <string.h> // strlen
 #include <sys/stat.h> // mkfifo
-#include <unistd.h> // sleep
 
 #define MAX_COMMAND_ARRAY_SIZE 1 // !< For version 1.0, we're supporting only 1 command.
 #define COMMAND_MAX_LEN 64 // !< Max command length including NULL
 #define DELAY_BETWEEN_FAILED_OPERATION_SECONDS 10 // !< delay allowed between failed operations
 
-static pthread_mutex_t g_commandQueueMutex = PTHREAD_MUTEX_INITIALIZER; // !< Static defintion for the mutex to be used for communciating with the command threads
-static pthread_t g_commandListenerThread; // !<  Static handle for the listener thread for routing info back from the child process
-static bool g_commandListenerThreadCreated = false; // !< Static boolean switch to tell if the listener thread has been created
-static bool g_terminate_thread_request = false; // !< Static boolean switch to tell if the thread needs to be terminated
+static pthread_mutex_t g_commandQueueMutex =
+    PTHREAD_MUTEX_INITIALIZER; // !< Static defintion for the mutex to be used for communciating with the command threads
+static pthread_t
+    g_commandListenerThread; // !<  Static handle for the listener thread for routing info back from the child process
+static bool g_commandListenerThreadCreated =
+    false; // !< Static boolean switch to tell if the listener thread has been created
+static bool g_terminate_thread_request =
+    false; // !< Static boolean switch to tell if the thread needs to be terminated
 
 /**
  * @brief Callback for reprocessing updates as they come in
@@ -38,7 +42,8 @@ static bool g_terminate_thread_request = false; // !< Static boolean switch to t
 */
 bool ADUC_OnReprocessUpdate(const char* command, void* context);
 
-static ADUC_Command* g_commands[MAX_COMMAND_ARRAY_SIZE] = {}; // !< Static list of commands being exectued of MAX_COMMAND_ARRAY_SIZE
+static ADUC_Command*
+    g_commands[MAX_COMMAND_ARRAY_SIZE] = {}; // !< Static list of commands being exectued of MAX_COMMAND_ARRAY_SIZE
 
 /**
  * @brief Register command.
