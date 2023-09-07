@@ -100,6 +100,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
 
     while (result == 0)
     {
+        // NOTE: Do not add 'c' to the short options. It was used for "connection-string" option in V1, and is now removed.
         // clang-format off
         static struct option long_options[] =
         {
@@ -107,8 +108,6 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             { "enable-iothub-tracing",         no_argument,       0, 'e' },
             { "health-check",                  no_argument,       0, 'h' },
             { "log-level",                     required_argument, 0, 'l' },
-            // -c Is deprecated. DO NOT REUSE
-            // { "connection-string",             required_argument, 0, 'c' },
             { "register-extension",            required_argument, 0, 'E' },
             { "extension-type",                required_argument, 0, 't' },
             { "extension-id",                  required_argument, 0, 'i' },

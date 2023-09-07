@@ -77,7 +77,7 @@ Results will be in `out/Testing/Temporary/MemoryChecker.*.log`
 ### Version 2.0 Release Notes
 
 #### Breaking Changes:
-- **Deprecated**: `-c` command-line option has been removed.
+- **Removed**: `-c` command-line option has been removed.
 
 #### New Features & Enhancements:
 - Introduced support for `connectionType` in `du-config.json`:
