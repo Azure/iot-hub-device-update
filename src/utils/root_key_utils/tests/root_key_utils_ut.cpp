@@ -12,6 +12,7 @@
 #include "root_key_list.h"
 #undef ENABLE_MOCKS
 
+#include "aduc/result.h"
 #include "aduc/rootkeypackage_parse.h"
 #include "aduc/rootkeypackage_utils.h"
 #include "root_key_util.h"
@@ -215,3 +216,17 @@ TEST_CASE_METHOD(SignatureValidationMockHook,"RootKeyUtility_WriteRootKeyPackage
     }
 }
 
+TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_GetKeyForKid")
+{
+    SECTION("rootkey not disabled, found in hard-coded list")
+    {
+        CryptoKeyHandle rootKeyCryptoKey = nullptr;
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(&rootKeyCryptoKey, "testrootkey1");
+        CHECK(IsAducResultCodeSuccess(result.ResultCode));
+        CHECK(rootKeyCryptoKey != nullptr);
+        if (rootKeyCryptoKey != nullptr)
+        {
+            CryptoUtils_FreeCryptoKeyHandle(rootKeyCryptoKey);
+        }
+    }
+}
