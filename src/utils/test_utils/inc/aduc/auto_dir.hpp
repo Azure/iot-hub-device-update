@@ -13,6 +13,9 @@
 
 namespace aduc
 {
+namespace testutils
+{
+
 struct AutoDir
 {
     AutoDir(const char* dirPath) : dir(dirPath)
@@ -33,6 +36,7 @@ private:
     std::string dir;
 };
 
+} // namespace testutils
 } // namespace aduc
 
 #endif // AUTO_DIR_HPP

@@ -17,6 +17,9 @@
 
 namespace aduc
 {
+namespace testutils
+{
+
 std::string FileTestUtils_slurpFile(const std::string& path)
 {
     std::ifstream file_stream{ path };
@@ -34,4 +37,5 @@ FileTestUtils_applyTemplateParam(const std::string& templateStr, const char* par
     return std::regex_replace(templateStr, std::regex(placeholder.c_str()), parameterValue);
 }
 
+} // namespace testutils
 } // namespace aduc

@@ -436,6 +436,8 @@ if [ ! -f "$cmake_bin" ]; then
     error "No '${cmake_bin}' file."
     ret_val=1
 else
+    echo Running command: "$cmake_bin" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
+
     "$cmake_bin" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
     ret_val=$?
 fi

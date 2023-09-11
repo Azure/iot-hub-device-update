@@ -91,5 +91,5 @@ TEST_CASE_METHOD(TestCaseFixture, "RootKeyPackageUtils_DownloadPackage")
     ssExpectedContent << "rootKeyPkgUrl=" << rootKeyPkgUrl << ", targetFilePath=" << expectedDownloadFilePath;
     const std::string expectedDownloadContent{ ssExpectedContent.str() };
     CHECK_THAT(
-        aduc::FileTestUtils_slurpFile(std::string(STRING_c_str(downloadedFile))), Equals(expectedDownloadContent));
+        aduc::testutils::FileTestUtils_slurpFile(std::string(STRING_c_str(downloadedFile))), Equals(expectedDownloadContent));
 }

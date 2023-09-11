@@ -11,6 +11,9 @@
 
 namespace aduc
 {
+namespace testutils
+{
+
 AutoDir::~AutoDir()
 {
     if (SystemUtils_IsDir(dir.c_str(), nullptr))
@@ -39,4 +42,5 @@ bool AutoDir::CreateDir() const
     return 0 == ADUC_SystemUtils_MkDirRecursiveDefault(dir.c_str());
 }
 
+} // namespace testutils
 } // namespace aduc

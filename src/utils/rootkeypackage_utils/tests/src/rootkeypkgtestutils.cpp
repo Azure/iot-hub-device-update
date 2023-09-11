@@ -1,98 +1,18 @@
 #include "rootkeypkgtestutils.hpp"
+#include <catch2/catch.hpp>
 #include <parson.h>
 #include <string>
 
-/*
+namespace aduc
 {
-    "protected": {
-        "version": 3,
-        "published": 1680544698,
-        "disabledRootKeys": [
-            "ADU.200702.R.T"
-        ],
-        "disabledSigningKeys": [
-            {
-                "alg": "SHA256",
-                "hash": "abc123"
-            }
-        ],
-        "rootKeys": {
-            "ADU.200702.R.T": {
-                "keyType": "RSA",
-                "n": "ucKAJMkskVVKjtVLFdraMSd0cTa2Vcndkle540smg3a2v4hYXoHWBaA0tkZj5VM1fWR-XcjHJ9NRh74TzsHqPJODXn085tWGMwOzUEPhOSAzRaY-FCr23SIqM6AHCYPxziKbz9kEcD6e043UyCRMyLf8fQJ3SOvBXCNoVSkiQ8rwcDeHjFiSzk_BLy0JGRjfzJZF8l-q1N-Vqpq3VtOmQJphblSL6bC9AR1GNrvaJbHiSciaFvuiucneVBu3B6bY0wEin20x_CrjTNmiWEtuY_zoUxJGLGQVHkzJRRAQweHxw_FDSMd3UhiINRuN7Qb3r_S9HPoFNkZvaOUVOVe7WUY0jAFIzVUEcq2CTx43p0XvaLeYEz-DsG-RlPkkT2i-1ykEhwtJfsKGDTIP5mPDslZkTUScgZFRMToJdwOtGKkAzGXQPlvtf3IL49fUTM4r8dpIc7E1N2Djt94__kcdY1e8JxfgRH7RoiQCATHep6-mQW5UKq_onJW2bNo7i9Gb",
-                "e": 65537
-            },
-            "ADU.200703.R.T": {
-                "keyType": "RSA",
-                "n": "2WisuSoVDzKsz02BmP2bulWJzwrDH4hBIgKaz4Ithol_LYOSpk0knonvCiEB5Zb9kKMUAlOdKluvO2nGKp95kqZzm77thqjUbe5bZyFOCqPlPH-0nUHhg_oHXvX_5Oz3l-7KhMG0bUWzQ72nkmUHViexAPBpY-u4zZTRr8MONbGtMInrVI7SJTbToZ1zzM-b04o8wxlNfNJspjY2P_82mmJXZKlRlGdWuLYLoeXhKosfSu9MP1aLjC-puEmYmZ-dsoMg3_DHhluC-7VN2r8dAm3e3cTKuL3bNvGguTwTnccMEw1VxLMUsnpsDtxFHjebwpRVvs76JJsW3fllYZZ2T1l5WWxQbWDCdui7dDvnAfEww7Juxw4dKdXnlSorBGa5-QxZ0OnfKQTYbQweA_GehkKPPvku9mzK-n0PxfsaQMLS1-JfXgiVNQ4erhu_625iKFwWKlfuqOuZWiJMkFTK-NBmpDKAaBtxdH_5Xgc3ZA7SMymyVfw-9UmWv-ooK1F9",
-                "e": 65537
-            }
-        }
-    },
-    "signatures": [
-        {
-            "alg": "RS256",
-            "sig": ""
-        },
-        {
-            "alg": "RS256",
-            "sig": ""
-        }
-    ]
-}
-
-*/
-
-/**
- * @brief Gets the public key modulus.
- * @return std::string The modulus as base64 url encoding.
- */
-std::string TestRSAKeyPair::GetPubKeyModulus() const
+namespace rootkeypkgtestutils
 {
-    return "";
-}
 
-/**
- * @brief Gets the public key exponent.
- * @return size_t The exponent.
- */
-size_t TestRSAKeyPair::GetPubKeyExponent() const
-{
-    return 0;
-}
-
-/**
- * @brief Gets the SHA256 hash of the public key.
- * @return std::string The SHA256 hash as base64.
- */
-std::string TestRSAKeyPair::getSha256HashOfPublicKey() const
-{
-    return "";
-}
-
-/**
- * @brief Signs the protected properties json obj string.
- * @param data the snippet of serialized json that is the value of protected property.
- * @return std::string The signature as base64 url encoding.
- */
-std::string TestRSAKeyPair::SignData(const std::string& data) const
-{
-    return "";
-}
-
-/**
- * @brief Verifies a signature
- * @param signature The base64 url encoded signature to verify.
- * @return bool true when signature is good.
- */
-bool TestRSAKeyPair::VerifySignature(const std::string& signature) const
-{
-    return false;
-}
+const int KeyBitLen = 2048;
 
 /**
  * @brief Gets the path to minimal rootkey package json with correct structure
- * @return std::string the path to the test json file.
+ * @return std::string The path to the test json file.
  */
 std::string get_minimal_rootkey_package_json_path()
 {
@@ -102,55 +22,146 @@ std::string get_minimal_rootkey_package_json_path()
 }
 
 /**
- * @brief Gets a json value of minimal rootkey package template json file that
- * has empty arrays for following properties:
+ * @brief Gets the serialized, non-formatted "protected" property value object.
+ * @param rootkeyPkgJsonValue The parsed rootkey package JSON.
+ * @return std::string The serialized JSON for protected property.
+ */
+std::string get_serialized_protectedProperties(JSON_Value* rootkeyPkgJsonValue)
+{
+    JSON_Object* pkgJsonObj = json_object(rootkeyPkgJsonValue);
+    REQUIRE(pkgJsonObj != nullptr);
+
+    JSON_Object* protectedProperties = json_object_get_object(pkgJsonObj, "protected");
+    REQUIRE(protectedProperties != nullptr);
+
+    auto serializedProtectedProperties_cstr = std::unique_ptr<char, void(*)(void*)>(
+        json_serialize_to_string(json_object_get_wrapping_value(protectedProperties),
+        json_value_free);
+    REQUIRE(serializedProtectedProperties_cstr.get() != nullptr);
+
+    return std::string{ serializedProtectedProperties_cstr.get() };
+}
+
+/**
+ * @brief Gets a valid json string for a minimal rootkey package
+ * with empty arrays for following properties:
  * disabledRootKeys, disabledSigningKeys, rootKeys, signatures
- * @return JSON_Value* The json value, or nullptr on error.
+ * @return std::string The json string, or zero-length string on error.
  */
-JSON_Value* get_minimal_rootkeypkg_json_value()
+std::string get_minimal_rootkey_package_json_str()
 {
-    return json_parse_file(get_minimal_rootkey_package_json_path().c_str());
+    std::string json_str{};
+    auto parsed = json_parse_file(aduc::rootkeypkgtestutils::get_minimal_rootkey_package_json_path().c_str());
+    if (parsed != nullptr)
+    {
+        json_str = json_serialize_to_string(parsed);
+    }
+
+    return json_str;
 }
 
 /**
- * @brief Adds a rootkey to the rootKeys array of the rootkey package json.
- * @param root_value The JSON root value
- * @param kid The kid string of the rootkey
- * @param rsa_n_modulus_base64url The RSA modulus of the public key, encoded as base64 url format.
- * @return bool true on success.
+ * @brief Adds a root key to the test root key package
+ * @param rootkey_id The rootkey identifier to use in the package.
+ * @param disallowed Adds the @p rootkey_id to the disallowed rootkey list if true.
  */
-bool add_test_rootkeypkg_rootkey(JSON_Value* root_value, const std::string& kid, const std::string& rsa_n_modulus_base64url)
+void TestRootkeyPackage::AddRootkey(std::string rootkey_id, bool disallowed)
 {
-    return true;
+    aduc::testutils::KeyPair key_pair{ KeyBitLen };
+    key_pair.Generate();
+    root_keys.push_back(key_pair);
 }
 
 /**
- * @brief Adds a kid of disabled rootkey to the disabledRootKeys array of the rootkey package json.
- * @param kid The kid string of the disabled rootkey
- * @return bool true on success.
+ * @brief Adds a signing key to the test root key package
+ * @param signingkey_id The signingkey identifier to use in the package.
+ * @param allowed Adds the @p signingkey_id to the disallowed signing key list if false.
  */
-bool add_test_rootkeypkg_disabledRootKey(JSON_Value* root_value, const std::string& kid)
+void TestRootkeyPackage::AddCodeSigningKey(std::string signingkey_id, bool disallowed)
 {
-    return true;
+    aduc::testutils::KeyPair key_pair{ KeyBitLen };
+    key_pair.Generate();
+    signing_keys.push_back(key_pair);
 }
 
 /**
- * @brief Adds a kid of disabled signing key to the disabledSigningKeys array of the rootkey package json.
- * @param sha256_hash The sha256 hash of the public key of the disabled signing key.
- * @return bool true on success.
+ * @brief Generate the signatures for each rootkey that's been added.
+ * @details Must be called before @p GetProtectedPropertiesDataToSign if rootkey package having populated signatures array is desired.
  */
-bool add_test_rootkeypkg_disabledSigningKey(JSON_Value* root_value, const std::string& sha256_hash)
+void TestRootkeyPackage::GenerateSignatures()
 {
-    return true;
+    std::string data_for_signing = GetProtectedPropertiesDataToSign();
+    for(const auto& rootkey_pair : root_keys)
+    {
+        std::string signature = rootkey_pair.SignData(data_for_signing);
+        signatures.push_back(signature);
+    }
 }
 
 /**
- * @brief Adds a signature of the rootkey package protected element to the signatures property.
- * @param rs256_signature The RS256 signature of the rootkey package's protected property.
- * @return bool true on success.
+ * @brief Get the entire rootkey package as serialized JSON string (non-formatted)
+ * @return std::string The package as serialized JSON.
  */
-bool add_test_rootkeypkg_signature(JSON_Value* root_value, const std::string& rs256_signature)
+std::string TestRootkeyPackage::GetSerialized() const
 {
-    return true;
+    json_serialize_to_string(const JSON_Value *value)
 }
 
+JSON_Value* GetPackageJson
+
+/**
+ * @brief Get the rootkey package "protected" property value as a serialized JSON string.
+ * @return std::string The serialized JSON string in the rootkey package format.
+ */
+std::string TestRootkeyPackage::GetProtectedPropertiesDataToSign()
+{
+    // Start from template boiler-plate for convenience.
+    std::string pkg_json_str{ aduc::testutils::FileTestUtils_slurpFile(aduc::rootkeypkgtestutils::get_minimal_rootkey_package_json_path()) };
+    auto root_value = std::unique_ptr<JSON_Value, void(*)(JSON_Value*)>{ json_parse_string(pkg_json_str.c_str()), json_value_free };
+    REQUIRE(root_value != nullptr);
+
+    std::string data_for_signing = get_serialized_protectedProperties(root_value);
+    json_array_append_value()
+
+    return "";
+}
+
+/**
+ * @brief Get the modulus for the rootkey package index.
+ * @return std::string The modulus encoded as base64url.
+ */
+std::string TestRootkeyPackage::GetModulus(size_t idx) const
+{
+    return root_keys[idx].GetModulus();
+}
+
+/**
+ * @brief Get the exponent for the rootkey package index.
+ * @return int The exponent.
+ */
+int TestRootkeyPackage::GetExponent(size_t idx) const
+{
+    return root_keys[idx].GetExponent();
+}
+
+/**
+ * @brief Get the i-th signature.
+ * @return int The signature.
+ */
+std::string TestRootkeyPackage::GetSignature(size_t idx) const
+{
+    return signatures[idx];
+}
+
+/**
+ * @brief Get the sha256 hash of the public key for the rootkey index.
+ * @return std::string The hash of the public key.
+ */
+std::string TestRootkeyPackage::GetHashPublicKey(size_t idx) const
+{
+    // TODO
+    return "";
+}
+
+} // namespace rootkeypkgtestutils
+} // namespace aduc

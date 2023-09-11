@@ -56,7 +56,7 @@ TEST_CASE("workflow_get_update_file with download handler")
         std::regex_replace(serializedUpdateManifest, std::regex("DELTA_UPDATE_FILE_ID"), deltaUpdateFileId);
     serializedUpdateManifest = std::regex_replace(serializedUpdateManifest, std::regex("\""), "\\\"");
 
-    std::string desired = aduc::FileTestUtils_slurpFile(get_twin_desired_json_path());
+    std::string desired = aduc::testutils::FileTestUtils_slurpFile(get_twin_desired_json_path());
     desired = std::regex_replace(desired, std::regex("UPDATE_MANIFEST_SIGNATURE"), "foo");
     desired = std::regex_replace(desired, std::regex("TARGET_UPDATE_FILE_ID"), targetUpdateFileId);
     desired = std::regex_replace(desired, std::regex("DELTA_UPDATE_FILE_ID"), deltaUpdateFileId);

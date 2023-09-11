@@ -3,8 +3,9 @@
 
 namespace aduc
 {
-namespace cryptotestutils
+namespace testutils
 {
+
 
 KeyPair::KeyPair(int keyBitLen)
 {
@@ -50,5 +51,35 @@ void KeyPair::Generate()
     }
 }
 
-} // namespace cryptotestutils
+std::string KeyPair::GetHashOfPublicKey() const
+{
+    std::string hashPubKey;
+    return hashPubKey;
+}
+
+std::string KeyPair::GetModulus() const
+{
+    std::string modulus;
+    return modulus;
+}
+
+int KeyPair::GetExponent() const
+{
+    int exp = -1;
+    return exp;
+}
+
+std::string KeyPair::SignData(const std::string& data) const
+{
+    std::string signature;
+    return signature;
+}
+
+bool KeyPair::VerifySignature(const std::string& signature) const
+{
+    bool verified = false;
+    return verified;
+}
+
+} // namespace testutils
 } // namespace aduc
