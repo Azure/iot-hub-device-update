@@ -151,10 +151,10 @@ function install_do() {
             package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_arm64-packages.tar"
             package_filename="ubuntu20_arm64-packages.tar"
         elif [ "$version" == "22.04" ] && [ "$architecture" == "amd64" ]; then
-            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.2/ubuntu2204_x64-packages.tar"
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2204_x64-packages.tar"
             package_filename="ubuntu22_x64-packages.tar"
         elif [ "$version" == "22.04" ] && [ "$architecture" == "arm64" ]; then
-            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.2/ubuntu2204_arm64-packages.tar"
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2204_arm64-packages.tar"
             package_filename="ubuntu22_arm64-packages.tar"
         fi
     elif [ "$distro" == "debian" ] && [ "$version" == "10" ] && [ "$architecture" == "amd64" ]; then
