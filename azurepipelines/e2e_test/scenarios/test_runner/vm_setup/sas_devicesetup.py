@@ -34,7 +34,7 @@ def main():
     #
     # Create the Device
     #
-    connectionString = duTestWrapper.CreateDevice(
+    connectionString = duTestWrapper.CreateSaSDevice(
         test_device_id, isIotEdge=True)
 
     if (len(connectionString) == 0):
