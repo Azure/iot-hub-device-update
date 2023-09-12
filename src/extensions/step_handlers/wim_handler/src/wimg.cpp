@@ -1,8 +1,8 @@
 #include "wimg.hpp"
 
-#include <wimgapi.h>
-
 #include <codecvt>
+#include <strsafe.h>
+#include <wimgapi.h>
 
 class WString
 {
@@ -28,11 +28,12 @@ public:
             throw HRESULT_FROM_WIN32(GetLastError());
         }
 
-        m_str.resize(convertResult);
+        m_str.resize(countWideChars);
 
-        convertResult = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, utf8strLen, m_str.data(), convertResult);
+        countWideChars =
+            MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, utf8strLen, m_str.data(), countWideChars);
 
-        if (convertResult <= 0)
+        if (countWideChars <= 0)
         {
             throw HRESULT_FROM_WIN32(GetLastError());
         }
