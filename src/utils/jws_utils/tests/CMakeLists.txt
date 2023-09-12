@@ -10,6 +10,7 @@ disablertti ()
 set (sources main.cpp jws_utils_ut.cpp)
 
 find_package (Catch2 REQUIRED)
+# find_package (umock_c REQUIRED CONFIG)
 find_package (OpenSSL REQUIRED)
 find_package (azure_c_shared_utility REQUIRED)
 
@@ -26,6 +27,7 @@ target_link_libraries (
             Catch2::Catch2
             OpenSSL::Crypto
             aziotsharedutil)
+            # umock_c)
 
 include (CTest)
 include (Catch)

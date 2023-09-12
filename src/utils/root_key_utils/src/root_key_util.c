@@ -9,6 +9,7 @@
  */
 
 #include "root_key_util.h"
+#include "root_key_util_helper.h"
 
 #include "aduc/rootkeypackage_parse.h"
 #include "aduc/rootkeypackage_types.h"
@@ -20,9 +21,19 @@
 #include <aduc/result.h>
 #include <aduc/string_c_utils.h>
 #include <aduc/system_utils.h>
-#include <azure_c_shared_utility/constbuffer.h>
-#include <azure_c_shared_utility/strings.h>
-#include <azure_c_shared_utility/vector.h>
+
+#ifdef ENABLE_MOCKS
+#    undef ENABLE_MOCKS
+#    include <azure_c_shared_utility/constbuffer.h>
+#    include <azure_c_shared_utility/strings.h>
+#    include <azure_c_shared_utility/vector.h>
+#    define ENABLE_MOCKS
+#else
+#    include <azure_c_shared_utility/constbuffer.h>
+#    include <azure_c_shared_utility/strings.h>
+#    include <azure_c_shared_utility/vector.h>
+#endif // ENABLE_MOCKS
+
 #include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -32,12 +43,30 @@
 #include <string.h>
 #include <strings.h>
 
+#ifdef ENABLE_MOCKS
+#    include <umock_c/umock_c_prod.h>
+#endif
+
 //
 // Root Key Validation Helper Functions
 //
 
 static ADUC_RootKeyPackage* localStore = NULL;
 ADUC_Result_t s_rootKeyErc = 0;
+
+ADUC_Result RootKeyUtility_SetLocalStore(const char* pkg_json_str)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+
+    localStore = (ADUC_RootKeyPackage*)malloc(sizeof(ADUC_RootKeyPackage));
+    if (localStore == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ERRNOMEM;
+        return result;
+    }
+
+    return ADUC_RootKeyPackageUtils_Parse(pkg_json_str, localStore);
+}
 
 /**
  * @brief Helper function for making a CryptoKeyHandle from an ADUC_RootKey
@@ -483,120 +512,18 @@ ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath)
         localStore = NULL;
     }
 
-    return RootKeyUtility_LoadPackageFromDisk(&localStore, filepath == NULL ? ADUC_ROOTKEY_STORE_PACKAGE_PATH : filepath);
-}
-
-/**
- * @brief Loads the RootKeyPackage from disk at file location @p fileLocation
- *
- * @param rootKeyPackage the address of the pointer to the root key package to be set
- * @param fileLocation the file location to read the data from
- * @return a value of ADUC_Result
- */
-ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPackage, const char* fileLocation)
-{
-    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-    ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-    JSON_Value* rootKeyPackageValue = NULL;
-
-    ADUC_RootKeyPackage* tempPkg = NULL;
-
-    char* rootKeyPackageJsonString = NULL;
-
-    if (fileLocation == NULL || rootKeyPackage == NULL)
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_BAD_ARGS;
-        goto done;
-    }
-
-    tmpResult = RootKeyUtility_LoadSerializedPackage(fileLocation, &rootKeyPackageJsonString);
-    if (IsAducResultCodeFailure(tmpResult.ResultCode))
-    {
-        result = tmpResult;
-        goto done;
-    }
-
-    tempPkg = (ADUC_RootKeyPackage*)malloc(sizeof(ADUC_RootKeyPackage));
-
-    if (tempPkg == NULL)
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ERRNOMEM;
-        goto done;
-    }
-
-    ADUC_Result parseResult = ADUC_RootKeyPackageUtils_Parse(rootKeyPackageJsonString, tempPkg);
-
-    if (IsAducResultCodeFailure(parseResult.ResultCode))
-    {
-        result = parseResult;
-        goto done;
-    }
-
-    ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(tempPkg);
-
-    if (IsAducResultCodeFailure(result.ResultCode))
-    {
-        result = validationResult;
-        goto done;
-    }
-
-    result.ResultCode = ADUC_GeneralResult_Success;
-done:
-
-    if (IsAducResultCodeFailure(result.ResultCode))
-    {
-        ADUC_RootKeyPackageUtils_Destroy(tempPkg);
-        free(tempPkg);
-        tempPkg = NULL;
-    }
-
-    if (rootKeyPackageValue != NULL)
-    {
-        json_value_free(rootKeyPackageValue);
-    }
-
-    free(rootKeyPackageJsonString);
-
-    *rootKeyPackage = tempPkg;
-
-    return result;
-}
-
-/**
- * @brief Checks if the rootkey represented by @p keyId is in the disabledRootKeys of @p rootKeyPackage
- *
- * @param keyId the id of the key to check
- * @return true if the key is in the disabledKeys section, false if it isn't
- */
-bool RootKeyUtility_RootKeyIsDisabled(const ADUC_RootKeyPackage* rootKeyPackage, const char* keyId)
-{
-    if (rootKeyPackage == NULL)
-    {
-        return true;
-    }
-
-    const size_t numDisabledKeys = VECTOR_size(rootKeyPackage->protectedProperties.disabledRootKeys);
-
-    for (size_t i = 0; i < numDisabledKeys; ++i)
-    {
-        STRING_HANDLE* disabledKey = VECTOR_element(rootKeyPackage->protectedProperties.disabledRootKeys, i);
-
-        if (strcmp(STRING_c_str(*disabledKey), keyId) == 0)
-        {
-            return true;
-        }
-    }
-
-    return false;
+    return RootKeyUtility_LoadPackageFromDisk(
+        &localStore, filepath == NULL ? ADUC_ROOTKEY_STORE_PACKAGE_PATH : filepath);
 }
 
 /**
  * @brief Searches the local store for the key with the keyId @p keyId and returns it as a CryptoKeyHandle
  *
  * @param keyId the keyId for the root key to look for
+ * @param outFoundButDisabled if non-null, will set to true if key was found but it is disallowed.
  * @return the CryptoKeyHandle associated with the keyId on success; NULL on failure
  */
-CryptoKeyHandle RootKeyUtility_SearchLocalStoreForKey(const char* keyId)
+static CryptoKeyHandle RootKeyUtility_SearchLocalStoreForKey(const char* keyId, bool* outFoundButDisabled)
 {
     CryptoKeyHandle key = NULL;
 
@@ -611,9 +538,26 @@ CryptoKeyHandle RootKeyUtility_SearchLocalStoreForKey(const char* keyId)
     {
         ADUC_RootKey* rootKey = VECTOR_element(localStore->protectedProperties.rootKeys, i);
 
-        if (strcmp(STRING_c_str(rootKey->kid), keyId) == 0 && !RootKeyUtility_RootKeyIsDisabled(localStore, keyId))
+        if (strcmp(STRING_c_str(rootKey->kid), keyId) == 0)
         {
-            key = MakeCryptoKeyHandleFromADUC_RootKey(rootKey);
+            if (RootKeyUtility_RootKeyIsDisabled(localStore, keyId))
+            {
+                key = NULL;
+                if (outFoundButDisabled != NULL)
+                {
+                    *outFoundButDisabled = true;
+                }
+            }
+            else
+            {
+                key = MakeCryptoKeyHandleFromADUC_RootKey(rootKey);
+                if (outFoundButDisabled != NULL)
+                {
+                    *outFoundButDisabled = false;
+                }
+            }
+
+            break;
         }
     }
 
@@ -632,11 +576,19 @@ ADUC_Result RootKeyUtility_GetKeyForKeyIdFromLocalStore(CryptoKeyHandle* key, co
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     CryptoKeyHandle tempKey = NULL;
 
-    tempKey = RootKeyUtility_SearchLocalStoreForKey(keyId);
+    bool foundButDisabled = false;
+    tempKey = RootKeyUtility_SearchLocalStoreForKey(keyId, &foundButDisabled);
 
     if (tempKey == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID;
+        if (foundButDisabled)
+        {
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEY_KID_FOUND_BUT_DISABLED;
+        }
+        else
+        {
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID;
+        }
         goto done;
     }
 
@@ -662,6 +614,9 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
 #ifdef USE_LOCAL_STORE
     if (localStore == NULL)
     {
+        // NOTE: It is expected for rootkey pkg file to exist due to invocation
+        // of RootKeyWorkflow_UpdateRootKeys invoked from Orchestrator update
+        // callback.
         ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(&localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH);
 
         if (IsAducResultCodeFailure(loadResult.ResultCode))
@@ -685,6 +640,7 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
         if (strcmp(hardcodedRsaRootKeys[i].kid, kid) == 0)
         {
             tempKey = MakeCryptoKeyHandleFromRSARootkey(hardcodedRsaRootKeys[i]);
+            break;
         }
     }
 
@@ -798,8 +754,8 @@ done:
  *
  * @param sjwkPayloadJsonStr The decoded base64-url json string of the payload section of the SJWK.
  */
-ADUC_Result RootKeyUtility_GetHashPubKeyFromSJWKPayload(
-    const char* sjwkPayloadJsonStr, CONSTBUFFER_HANDLE* outHashPublicKey)
+ADUC_Result
+RootKeyUtility_GetHashPubKeyFromSJWKPayload(const char* sjwkPayloadJsonStr, CONSTBUFFER_HANDLE* outHashPublicKey)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
@@ -873,7 +829,8 @@ ADUC_Result RootKeyUtility_GetHashPubKeyFromSJWKPayload(
 
     // e, or exponent. We only support 65537, which is ubiquitous.
     c_payload_exponent = json_object_get_string(rootJsonObj, "e");
-    if (IsNullOrEmpty(c_payload_exponent) || strcmp(c_payload_exponent, "AQAB") != 0) // AQAB is 65537, or 0x00 0x01 0x00 0x01.
+    if (IsNullOrEmpty(c_payload_exponent)
+        || strcmp(c_payload_exponent, "AQAB") != 0) // AQAB is 65537, or 0x00 0x01 0x00 0x01.
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_KEY_INVALID_EXPONENT;
         goto done;
@@ -947,9 +904,11 @@ ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSign
         goto done;
     }
 
-    for(size_t i=0; i<VECTOR_size(localStore->protectedProperties.disabledSigningKeys); ++i)
+    for (size_t i = 0; i < VECTOR_size(localStore->protectedProperties.disabledSigningKeys); ++i)
     {
-        if (VECTOR_push_back(disabledSigningKeyList, VECTOR_element(localStore->protectedProperties.disabledSigningKeys, i), 1) != 0)
+        if (VECTOR_push_back(
+                disabledSigningKeyList, VECTOR_element(localStore->protectedProperties.disabledSigningKeys, i), 1)
+            != 0)
         {
             result.ExtendedResultCode = ADUC_ERC_NOMEM;
             goto done;

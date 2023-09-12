@@ -10,6 +10,7 @@
 #include "jws_utils.h"
 #include <aduc/calloc_wrapper.hpp>
 #include <aduc/result.h>
+#include <aduc/rootkeypackage_utils.h>
 #include <aduc/system_utils.h>
 #include <azure_c_shared_utility/azure_base64.h>
 #include <catch2/catch.hpp>
@@ -19,8 +20,8 @@
 #include <openssl/rsa.h>
 #include <regex>
 #include <root_key_util.h>
+#include <root_key_util_helper.h>
 #include <stdio.h>
-#include <aduc/rootkeypackage_utils.h>
 
 using ADUC::StringUtils::cstr_wrapper;
 
@@ -29,37 +30,16 @@ using ADUC::StringUtils::cstr_wrapper;
 #    define RSA_get0_e(x) ((x)->e)
 #endif
 
-
 class TestCaseFixture
 {
 public:
     TestCaseFixture() : m_testPath{ ADUC_SystemUtils_GetTemporaryPathName() }
     {
-        m_testPath += "/adu/jws_utils_ut";
-        (void)ADUC_SystemUtils_RmDirRecursive(m_testPath.c_str());
-        REQUIRE(ADUC_SystemUtils_MkDirRecursiveDefault(m_testPath.c_str()) == 0);
-
-        std::string filePath{ m_testPath };
-        filePath += "/testrootkeypkg.json";
-
-        FILE* outFile = fopen(filePath.c_str(), "w");
-        REQUIRE(outFile != nullptr);
-        REQUIRE(fputs(m_pkg.c_str(), outFile) > 0);
-        fclose(outFile);
-
-        ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&m_rootKeyPackage, filePath.c_str());
-        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-
-        result = RootKeyUtility_ReloadPackageFromDisk(filePath.c_str());
-        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        RootKeyUtility_SetLocalStore(m_pkg.c_str());
     }
 
     ~TestCaseFixture()
     {
-        (void)ADUC_SystemUtils_RmDirRecursive(m_testPath.c_str());
-        ADUC_RootKeyPackageUtils_Destroy(m_rootKeyPackage);
-        free(m_rootKeyPackage);
-        m_rootKeyPackage = nullptr;
     }
 
     /**
@@ -71,7 +51,6 @@ public:
     {
         return m_testPath.c_str();
     }
-
 
     /**
      * @brief provides the instance to this text fixture object for asserting
@@ -85,7 +64,6 @@ public:
         return this;
     }
 
-
 private:
     TestCaseFixture(const TestCaseFixture&) = delete;
     TestCaseFixture& operator=(const TestCaseFixture&) = delete;
@@ -97,9 +75,7 @@ private:
     };
 
     std::string m_testPath;
-    ADUC_RootKeyPackage* m_rootKeyPackage;
 };
-
 
 TEST_CASE_METHOD(TestCaseFixture, "VerifySJWK")
 {
@@ -550,14 +526,14 @@ static VECTOR_HANDLE GetSigningKeyDisallowedList(const char* signing_key_N)
     VECTOR_HANDLE disallowedSigningPubKeyHashes = VECTOR_create(sizeof(ADUC_RootKeyPackage_Hash));
     REQUIRE(disallowedSigningPubKeyHashes != nullptr);
 
-    if(signing_key_N != nullptr)
+    if (signing_key_N != nullptr)
     {
         CONSTBUFFER_HANDLE hashPubKeyHandle = GetHashPubKey(signing_key_N);
         REQUIRE(hashPubKeyHandle != nullptr);
 
         ADUC_RootKeyPackage_Hash rootkeypkg_hash = {
             SHA256, /* alg */
-            hashPubKeyHandle/* hash */
+            hashPubKeyHandle /* hash */
         };
 
         VECTOR_push_back(disallowedSigningPubKeyHashes, &rootkeypkg_hash, 1);
@@ -568,16 +544,14 @@ static VECTOR_HANDLE GetSigningKeyDisallowedList(const char* signing_key_N)
 
 static std::string GetSJWKJson(const char* signing_key_N)
 {
-    const std::string sjwk_template {
-        R"( {                        )"
-        R"( "kty": "RSA",            )"
-        R"( "alg": "RS256",          )"
-        R"( "kid": "ADU.210609.R.S", )"
-        R"( "n": "<%MODULUS%>",      )"
-        R"( "e": "AQAB"              )"
-        R"( }                        )"
-    };
-    return std::regex_replace(sjwk_template, std::regex("<%MODULUS%>"), std::string{signing_key_N});
+    const std::string sjwk_template{ R"( {                        )"
+                                     R"( "kty": "RSA",            )"
+                                     R"( "alg": "RS256",          )"
+                                     R"( "kid": "ADU.210609.R.S", )"
+                                     R"( "n": "<%MODULUS%>",      )"
+                                     R"( "e": "AQAB"              )"
+                                     R"( }                        )" };
+    return std::regex_replace(sjwk_template, std::regex("<%MODULUS%>"), std::string{ signing_key_N });
 }
 
 TEST_CASE("IsSigningKeyDisallowed")

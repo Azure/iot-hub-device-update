@@ -33,6 +33,7 @@
 
 #include "crypto_key.h"
 #include <aduc/c_utils.h>
+#include <aduc/result.h>
 #include <azure_c_shared_utility/vector.h>
 #include <stdbool.h>
 
@@ -75,6 +76,8 @@ JWSResult VerifyJWSWithSJWK(const char* jws);
 bool GetPayloadFromJWT(const char* blob, char** destBuff);
 
 void* GetKeyFromBase64EncodedJWK(const char* blob);
+
+ADUC_Result RootKeyUtility_SetLocalStore(const char* pkg_json_str);
 
 EXTERN_C_END
 

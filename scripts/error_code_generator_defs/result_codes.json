@@ -1117,6 +1117,10 @@
                         {
                             "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_DOWNLOAD_EXCEPTION",
                             "value": 23
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEY_KID_FOUND_BUT_DISABLED",
+                            "value": 24
                         }
                     ]
                 },

@@ -15,7 +15,7 @@ set (sources main.cpp root_key_utils_ut.cpp)
 
 add_executable (${target_name})
 
-target_sources(${target_name} PRIVATE main.cpp root_key_utils_ut.cpp)
+target_sources(${target_name} PRIVATE main.cpp root_key_utils_ut.cpp root_key_utils_load_package_ut.cpp root_key_utils_load_package_ut.cpp)
 
 target_compile_definitions (${target_name} PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}" USE_LOCAL_STORE=1)
 

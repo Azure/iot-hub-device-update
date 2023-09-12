@@ -8,7 +8,7 @@ compileasc99 ()
 add_library (${target_name} STATIC)
 add_library (aduc::${target_name} ALIAS ${target_name})
 
-target_sources (${target_name} PRIVATE src/root_key_util.c src/root_key_list.c)
+target_sources (${target_name} PRIVATE src/root_key_util.c src/root_key_util_helper.c src/root_key_list.c)
 
 target_include_directories (${target_name} PUBLIC inc)
 

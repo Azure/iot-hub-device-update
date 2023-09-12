@@ -9,8 +9,8 @@
 #include "aduc/c_utils.h"
 #include "aduc/result.h"
 #include "aduc/rootkeypackage_types.h"
-#include "crypto_key.h"
-#include <stdbool.h>
+#include "crypto_lib.h"
+#include <umock_c/umock_c_prod.h>
 
 #ifndef ROOT_KEY_UTIL_H
 #    define ROOT_KEY_UTIL_H
@@ -21,8 +21,6 @@ ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_Ro
 
 ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
     const ADUC_RootKeyPackage* rootKeyPackage, const STRING_HANDLE fileDest);
-
-ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPackage, const char* fileLocation);
 
 ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath);
 
