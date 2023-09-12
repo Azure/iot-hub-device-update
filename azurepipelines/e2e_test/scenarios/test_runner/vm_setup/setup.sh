@@ -161,6 +161,10 @@ function install_do() {
         package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/debian10_x64-packages.tar"
         package_filename="debian10_x64-packages.tar"
     fi
+    elif [ "$distro" == "debian" ] && [ "$version" == "10" ] && [ "$architecture" == "arm32" ]; then
+        package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/debian10_arm32-packages.tar"
+        package_filename="debian10_arm32-packages.tar"
+    fi
 
     if [ -n "$package_url" ] && [ -n "$package_filename" ]; then
         wget "$package_url" -O "$package_filename"
