@@ -278,6 +278,16 @@ _Bool ADUC_RootKeyPackageUtils_RootKeyPackage_Signatures_AreEqual(
  */
 _Bool ADUC_RootKeyPackageUtils_AreEqual(const ADUC_RootKeyPackage* lPack, const ADUC_RootKeyPackage* rPack)
 {
+    if (lPack == NULL && rPack == NULL)
+    {
+        return true;
+    }
+
+    if ((lPack == NULL && rPack != NULL) || (lPack != NULL && rPack == NULL))
+    {
+        return false;
+    }
+
     if (STRING_compare(lPack->protectedPropertiesJsonString, rPack->protectedPropertiesJsonString) != 0)
     {
         return false;
