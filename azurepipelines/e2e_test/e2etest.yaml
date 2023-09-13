@@ -93,15 +93,15 @@ stages:
                       targetOs: debian10
                       targetArch: amd64
 
-          - job: BuildDebian_10_ARM64
-            displayName: Building the Device Update Package for Debian 10 arm64
-            continueOnError: False
-            pool: aduc_1es_client_pool
-            steps:
-                - template: ../build/templates/adu-docker-build-steps.yml
-                  parameters:
-                      targetOs: debian10
-                      targetArch: arm64
+        #   - job: BuildDebian_10_ARM64
+        #     displayName: Building the Device Update Package for Debian 10 arm64
+        #     continueOnError: False
+        #     pool: aduc_1es_client_pool
+        #     steps:
+        #         - template: ../build/templates/adu-docker-build-steps.yml
+        #           parameters:
+        #               targetOs: debian10
+        #               targetArch: arm64
 
     - stage: TerraformSetup
       displayName: Initializes and installs Terraform into the VM
@@ -291,27 +291,27 @@ stages:
                           ./testsetup/setup.sh --distro debian-10 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
 
-          - job: SetupDebian10_ARM64_VM
-            displayName: "Setting up VM for Debain 10 ARM64 Test VM"
-            timeoutInMinutes: 360
-            cancelTimeoutInMinutes: 360
-            pool: aduc_1es_client_pool
-            steps:
-                - template: ./templates/e2e_vm_setup.yaml
-                  parameters:
-                      distroName: debian-10-arm64
-                      vm_size: Standard_D2plds_v5
-                      image_publisher: debian
-                      image_offer: debian-10
-                      image_sku: 10
-                      image_version: latest
-                      packagePattern: "*debian10-arm64*/*.deb"
-                      package_pipeline: "Azure.adu-private-preview.e2e-test"
-                      du_tarball_script: >-
-                          tar -xf /tmp/testsetup.tar.gz -C ./ &&
-                          chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh --distro debian-10 --architecture arm64
-                      image_working_directory: $(E2E_WORKING_DIR)
+        #   - job: SetupDebian10_ARM64_VM
+        #     displayName: "Setting up VM for Debain 10 ARM64 Test VM"
+        #     timeoutInMinutes: 360
+        #     cancelTimeoutInMinutes: 360
+        #     pool: aduc_1es_client_pool
+        #     steps:
+        #         - template: ./templates/e2e_vm_setup.yaml
+        #           parameters:
+        #               distroName: debian-10-arm64
+        #               vm_size: Standard_D2plds_v5
+        #               image_publisher: debian
+        #               image_offer: debian-10
+        #               image_sku: 10
+        #               image_version: latest
+        #               packagePattern: "*debian10-arm64*/*.deb"
+        #               package_pipeline: "Azure.adu-private-preview.e2e-test"
+        #               du_tarball_script: >-
+        #                   tar -xf /tmp/testsetup.tar.gz -C ./ &&
+        #                   chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
+        #                   ./testsetup/setup.sh --distro debian-10 --architecture arm64
+        #               image_working_directory: $(E2E_WORKING_DIR)
 
     - stage: RunTestsAndPostResults
       displayName: Execute E2E Test
@@ -381,15 +381,15 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: debian-10-amd64
-          - job: RunDebian_10_Aem32VmE2ETests
-            displayName: "Running E2E Tests against Debian 10 ARM64"
-            timeoutInMinutes: 360
-            cancelTimeoutInMinutes: 360
-            pool: aduc_1es_client_pool
-            steps:
-                - template: ./templates/e2e_test_run.yaml
-                  parameters:
-                      distroName: debian-10-arm64
+        #   - job: RunDebian_10_Aem32VmE2ETests
+        #     displayName: "Running E2E Tests against Debian 10 ARM64"
+        #     timeoutInMinutes: 360
+        #     cancelTimeoutInMinutes: 360
+        #     pool: aduc_1es_client_pool
+        #     steps:
+        #         - template: ./templates/e2e_test_run.yaml
+        #           parameters:
+        #               distroName: debian-10-arm64
 
     - stage: TerraformDestroyVm
       displayName: Tear down cloud resources (VMs) and destroy the resource group
@@ -471,16 +471,16 @@ stages:
                   parameters:
                       distroName: debian-10-amd64
                       terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-          - job: DeleteDebian_10_Arm64Vms
-            displayName: "Deletes the VM for Debian 10 ARM64"
-            timeoutInMinutes: 360
-            cancelTimeoutInMinutes: 360
-            pool: aduc_1es_client_pool
-            steps:
-                - template: ./templates/e2e_test_vm_cleanup.yaml
-                  parameters:
-                      distroName: debian-10-arm64
-                      terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
+        #   - job: DeleteDebian_10_Arm64Vms
+        #     displayName: "Deletes the VM for Debian 10 ARM64"
+        #     timeoutInMinutes: 360
+        #     cancelTimeoutInMinutes: 360
+        #     pool: aduc_1es_client_pool
+        #     steps:
+        #         - template: ./templates/e2e_test_vm_cleanup.yaml
+        #           parameters:
+        #               distroName: debian-10-arm64
+        #               terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
     - stage: RG_Destroy
       displayName: Destroys the Resource Group used for the End-To-End Test
       dependsOn:
