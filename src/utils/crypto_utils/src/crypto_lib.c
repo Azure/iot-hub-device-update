@@ -8,7 +8,7 @@
 
 #include "crypto_lib.h"
 #include "base64_utils.h"
-#include "root_key_util.h"
+// #include "root_key_util.h"
 #include <azure_c_shared_utility/azure_base64.h>
 #include <ctype.h>
 #include <openssl/bn.h>

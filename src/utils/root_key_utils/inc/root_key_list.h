@@ -5,11 +5,12 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-#include "aduc/c_utils.h"
-#include <umock_c/umock_c_prod.h>
 
 #ifndef ROOT_KEY_LIST_H
 #    define ROOT_KEY_LIST_H
+
+#include "aduc/c_utils.h"
+#include <umock_c/umock_c_prod.h>
 
 EXTERN_C_BEGIN
 

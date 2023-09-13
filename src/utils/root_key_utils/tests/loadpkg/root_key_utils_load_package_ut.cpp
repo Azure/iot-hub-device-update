@@ -5,15 +5,14 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-#include "base64_utils.h"
-#include "crypto_lib.h"
-
-#include "aduc/rootkeypackage_utils.h"
-#include "root_key_util_helper.h"
 
 #include <aduc/calloc_wrapper.hpp>
 #include <aduc/result.h>
+#include <aduc/rootkeypackage_utils.h> // ADUC_RootKeyPackageUtils_Destroy
+#include <base64_utils.h>
 #include <catch2/catch.hpp>
+#include <crypto_lib.h>
+#include <root_key_util_helper.h>
 
 static std::string get_valid_example_rootkey_package_json_path()
 {
@@ -35,7 +34,6 @@ static std::string get_nonexistent_example_rootkey_package_json_path()
     path += "/root_key_utils/doesnotexistrootkeypackage.json";
     return path;
 };
-
 
 TEST_CASE("RootKeyUtility_LoadPackageFromDisk")
 {

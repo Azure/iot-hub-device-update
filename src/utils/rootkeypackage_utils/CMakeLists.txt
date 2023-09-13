@@ -22,12 +22,11 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::c_utils aduc::hash_utils aziotsharedutil
+    PUBLIC aduc::c_utils aduc::hash_utils aziotsharedutil Parson::parson
     PRIVATE aduc::crypto_utils
             aduc::logging
             aduc::system_utils
             aduc::url_utils
-            Parson::parson
             Microsoft::deliveryoptimization)
 
 target_compile_definitions (

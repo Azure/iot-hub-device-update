@@ -5,15 +5,15 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-#include "base64_utils.h"
-#include "crypto_lib.h"
-#include "jws_utils.h"
+#include "catch2/catch.hpp"
+#include <base64_utils.h>
+#include <crypto_lib.h>
+#include <jws_utils.h>
 #include <aduc/calloc_wrapper.hpp>
 #include <aduc/result.h>
 #include <aduc/rootkeypackage_utils.h>
 #include <aduc/system_utils.h>
 #include <azure_c_shared_utility/azure_base64.h>
-#include <catch2/catch.hpp>
 #include <cstring>
 #include <fstream>
 #include <openssl/evp.h>

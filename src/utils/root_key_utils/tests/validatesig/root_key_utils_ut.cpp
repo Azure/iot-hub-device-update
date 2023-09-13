@@ -5,26 +5,25 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-#include "base64_utils.h"
-#include "crypto_lib.h"
-
-#define ENABLE_MOCKS
-#include "root_key_list.h"
-#undef ENABLE_MOCKS
-
-#include "root_key_util.h"
-
-#define ENABLE_MOCKS
-#include "root_key_util_helper.h"
-#undef ENABLE_MOCKS
-
-#include "aduc/result.h"
-#include "aduc/rootkeypackage_parse.h"
-#include "aduc/rootkeypackage_utils.h"
+#include "catch2/catch.hpp"
+#include "umock_c/umock_c.h"
 
 #include <aduc/calloc_wrapper.hpp>
 #include <aduc/result.h>
-#include <catch2/catch.hpp>
+#include <aduc/rootkeypackage_parse.h>
+#include <aduc/rootkeypackage_utils.h>
+#include <base64_utils.h>
+#include <crypto_lib.h>
+
+#define ENABLE_MOCKS
+#include <root_key_list.h>
+#undef ENABLE_MOCKS
+
+#include <root_key_util.h>
+
+#define ENABLE_MOCKS
+#include <root_key_util_helper.h>
+#undef ENABLE_MOCKS
 
 using ADUC::StringUtils::cstr_wrapper;
 using uint8_t_wrapper = ADUC::StringUtils::calloc_wrapper<uint8_t>;

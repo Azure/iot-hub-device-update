@@ -6,14 +6,13 @@
  * Licensed under the MIT License.
  */
 
+#ifndef ROOT_KEY_UTIL_H
+#    define ROOT_KEY_UTIL_H
+
 #include "aduc/c_utils.h"
 #include "aduc/result.h"
 #include "aduc/rootkeypackage_types.h"
 #include "crypto_lib.h"
-#include <umock_c/umock_c_prod.h>
-
-#ifndef ROOT_KEY_UTIL_H
-#    define ROOT_KEY_UTIL_H
 
 EXTERN_C_BEGIN
 
@@ -34,4 +33,5 @@ bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE fileDest, const
 ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSigningKeyList);
 
 EXTERN_C_END
+
 #endif // ROOT_KEY_UTIL_H

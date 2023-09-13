@@ -1,6 +1,6 @@
 /**
  * @file main.cpp
- * @brief jws_utils tests main entry point.
+ * @brief root_key_utils load package tests main entry point.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
