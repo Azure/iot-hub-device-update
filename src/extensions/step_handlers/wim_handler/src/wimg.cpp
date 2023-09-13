@@ -21,7 +21,7 @@ public:
         }
 
         // Convert from utf8 -> wchar_t*
-        int countWideChars = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, utf8strLen, nullptr, 0);
+        int countWideChars = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, (int)utf8strLen, nullptr, 0);
 
         if (countWideChars <= 0)
         {
@@ -31,7 +31,7 @@ public:
         m_str.resize(countWideChars);
 
         countWideChars =
-            MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, utf8strLen, m_str.data(), countWideChars);
+            MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, (int)utf8strLen, m_str.data(), countWideChars);
 
         if (countWideChars <= 0)
         {
