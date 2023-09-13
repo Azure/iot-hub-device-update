@@ -91,7 +91,10 @@ function configure_apt_repository() {
             package_url="https://packages.microsoft.com/config/ubuntu/18.04/multiarch/packages-microsoft-prod.deb"
         elif [ "$version" == "20.04" ]; then
             package_url="https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb"
+        elif [ "$version" == "22.04" ]; then
+            package_url="https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb"
         fi
+    fi
     elif [ "$distro" == "debian" ] && [ "$version" == "10" ]; then
         package_url="https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb"
     fi
@@ -161,9 +164,9 @@ function install_do() {
         if [ "$version" == "10" ] && [ "$architecture" == "amd64" ]; then
             package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/debian10_x64-packages.tar"
             package_filename="debian10_x64-packages.tar"
-        elif [ "$version" == "10" ] && [ "$architecture" == "arm32" ]; then
-            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/debian10_arm32-packages.tar"
-            package_filename="debian10_arm32-packages.tar"
+        elif [ "$version" == "10" ] && [ "$architecture" == "arm64" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/debian10_arm64-packages.tar"
+            package_filename="debian10_arm64-packages.tar"
         fi
     fi
 
