@@ -43,7 +43,7 @@ use_ssh=false
 
 install_aduc_deps=false
 install_azure_iot_sdk=false
-azure_sdk_ref=lts_08_2023
+azure_sdk_ref=LTS_08_2023
 
 # ADUC Test Deps
 
