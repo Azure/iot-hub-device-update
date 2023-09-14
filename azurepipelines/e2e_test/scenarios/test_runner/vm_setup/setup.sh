@@ -172,6 +172,7 @@ function install_do() {
     if [ -n "$package_url" ] && [ -n "$package_filename" ]; then
         wget "$package_url" -O "$package_filename"
         tar -xf "$package_filename"
+        sudo chown _apt:root ./*.deb
         sudo apt-get install -y ./deliveryoptimization-agent_1.1.0_"$architecture".deb ./deliveryoptimization-plugin-apt_0.5.1_"$architecture".deb ./libdeliveryoptimization_1.1.0_"$architecture".deb
     else
         echo "Unsupported distro, version or architecture"
