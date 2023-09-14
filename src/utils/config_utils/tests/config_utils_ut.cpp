@@ -492,7 +492,7 @@ typedef struct _mock_adps_settings
 #define DEFAULT_KEEP_ALIVE_IN_SECONDS 30
 #define DEFAULT_USE_TLS true
 #define DEFAULT_CLEAN_SESSION false
-#define DEFAULT_MQTTBROKER_CLEAN_SESSION true
+#define DEFAULT_MQTT_BROKER_CLEAN_SESSION true
 
 static void free_mock_adps_settings(Mock_ADPS_Settings* settings)
 {
@@ -712,7 +712,7 @@ static bool _read_mock_mqtt_broker_settings(Mock_MQTT_Broker_Settings* settings)
 
     if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "mqttBroker.cleanSession", &settings->cleanSession))
     {
-        settings->cleanSession = DEFAULT_MQTTBROKER_CLEAN_SESSION;
+        settings->cleanSession = DEFAULT_MQTT_BROKER_CLEAN_SESSION;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "mqttBroker.keepAliveInSeconds", &settings->keepAliveInSeconds))

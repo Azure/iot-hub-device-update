@@ -12,7 +12,7 @@
 #include <exception>
 #include <thread>
 
-#include <time.h>
+#include <aducpal/time.h>
 
 #include "aduc/adu_core_exports.h"
 #include "aduc/exception_utils.hpp"

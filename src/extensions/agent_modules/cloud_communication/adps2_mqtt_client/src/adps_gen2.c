@@ -1,0 +1,195 @@
+/**
+ * @file adps_gen2.c
+ * @brief Implements the Azure DPS Gen2 communication utility.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+#include "aduc/adps_gen2.h"
+#include "aduc/config_utils.h"
+#include "aduc/logging.h"
+#include "aduc/string_c_utils.h" // ADUC_StringFormat
+#include "stdlib.h" // memset
+
+#define DEFAULT_DPS_API_VERSION "2021-06-01"
+#define DEFAULT_DPS_GLOBAL_ENDPOINT "global.azure-devices-provisioning.net"
+
+// Default MQTT protocol version for Azure DPS Gen2 is v3.1.1 (4)
+#define DEFAULT_DPS_MQTT_PROTOCOL_VERSION 4
+
+/**
+ * @brief Read the Azure DPS Gen2 connection data from the config file.
+ *        This follow MQTT protocol describe at https://learn.microsoft.com/azure/iot/iot-mqtt-connect-to-iot-dps
+ *
+ * @remark The caller is responsible for freeing the returned settings by calling FreeAzureDPS2MqttSettings function.
+*/
+bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
+{
+    bool result = false;
+    const ADUC_ConfigInfo* config = NULL;
+    const ADUC_AgentInfo* agent_info = NULL;
+
+    if (settings == NULL)
+    {
+        goto done;
+    }
+
+    memset(settings, 0, sizeof(*settings));
+
+    config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
+    {
+        goto done;
+    }
+
+    agent_info = ADUC_ConfigInfo_GetAgent(config, 0);
+
+    // Currently only support 'ADPS2/MQTT' connection data.
+    if (strcmp(agent_info->connectionType, ADUC_CONNECTION_TYPE_ADPS2_MQTT) != 0)
+    {
+        goto done;
+    }
+
+    // Read the x.506 certificate authentication data.
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.caFile", &settings->mqttSettings.caFile))
+    {
+        settings->mqttSettings.caFile = NULL;
+    }
+
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.certFile", &settings->mqttSettings.certFile))
+    {
+        settings->mqttSettings.certFile = NULL;
+    }
+
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.keyFile", &settings->mqttSettings.keyFile))
+    {
+        settings->mqttSettings.keyFile = NULL;
+    }
+
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(
+            agent_info, "dps.keyFilePassword", &settings->mqttSettings.keyFilePassword))
+    {
+        settings->mqttSettings.keyFilePassword = NULL;
+    }
+
+    // NOTE: If you use X.509 certificate authentication, the registration ID is provided by
+    // the subject common name (CN) of the device leaf (end-entity) certificate.
+    // {registration_id} in the Username field must match the common name.
+
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.registrationId", &settings->registrationId))
+    {
+        // TODO (nox-msft) : read common name from certificate.
+        Log_Error("Cannot read registrationId field.");
+        goto done;
+    }
+
+    // For DPS connection, the clientId and registrationId fields are the same.
+    settings->mqttSettings.clientId = strdup(settings->registrationId);
+    if (settings->mqttSettings.clientId == NULL)
+    {
+        Log_Error("Cannot allocate clientId field.");
+        goto done;
+    }
+
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.idScope", &settings->idScope))
+    {
+        Log_Error("Cannot read idScope field.");
+        goto done;
+    }
+
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.apiVersion", &settings->dpsApiVersion))
+    {
+        Log_Info("Using default DPS api version: %s", DEFAULT_DPS_API_VERSION);
+        goto done;
+    }
+
+    // 'username' field is generated from the idScope, clientId and dps.apiVersion fields.
+    // Format: <idScope>/registrations/<registrationId>/api-version=<apiVersion>
+    // NOTE: registrationId is the same as clientId and must match the common name in the certificate.
+    settings->mqttSettings.username = ADUC_StringFormat(
+        "%s/registrations/%s/api-version=%s", settings->idScope, settings->registrationId, settings->dpsApiVersion);
+
+    if (settings->mqttSettings.username == NULL)
+    {
+        Log_Error("Cannot generate username field. (idScope:%s, registrationId:%s, apiVersion:%s)");
+        goto done;
+    }
+
+    // NOTE: the password field is intentionally left blank.
+    settings->mqttSettings.password = NULL;
+
+    // NOTE: This is the 'globalDeviceEndpoint' field in the config file.
+    if (!ADUC_AgentInfo_ConnectionData_GetStringField(
+            agent_info, "dps.globalDeviceEndpoint", &settings->mqttSettings.hostname))
+    {
+        settings->mqttSettings.hostname = strdup(DEFAULT_DPS_GLOBAL_ENDPOINT);
+        goto done;
+    }
+
+    // Common MQTT connection data fields.
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
+            agent_info, "dps.mqttVersion", &settings->mqttSettings.mqttVersion))
+    {
+        Log_Info("Using default MQTT protocol version: %d", DEFAULT_DPS_MQTT_PROTOCOL_VERSION);
+        settings->mqttSettings.mqttVersion = DEFAULT_DPS_MQTT_PROTOCOL_VERSION;
+    }
+
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
+            agent_info, "dps.tcpPort", &settings->mqttSettings.tcpPort))
+    {
+        Log_Info("Using default TCP port: %d", DEFAULT_TCP_PORT);
+        settings->mqttSettings.tcpPort = DEFAULT_TCP_PORT;
+    }
+
+    if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "dps.useTLS", &settings->mqttSettings.useTLS))
+    {
+        Log_Info("UseTLS: %d", DEFAULT_USE_TLS);
+        settings->mqttSettings.useTLS = DEFAULT_USE_TLS;
+    }
+
+    if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(
+            agent_info, "dps.cleanSession", &settings->mqttSettings.cleanSession))
+    {
+        Log_Info("CleanSession: %d", DEFAULT_ADPS_CLEAN_SESSION);
+        settings->mqttSettings.cleanSession = DEFAULT_ADPS_CLEAN_SESSION;
+    }
+
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
+            agent_info, "dps.keepAliveInSeconds", &settings->mqttSettings.keepAliveInSeconds))
+    {
+        Log_Info("Keep alive: %d sec.", DEFAULT_KEEP_ALIVE_IN_SECONDS);
+        settings->mqttSettings.keepAliveInSeconds = DEFAULT_KEEP_ALIVE_IN_SECONDS;
+    }
+
+    result = true;
+
+done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    if (!result)
+    {
+        FreeAzureDPS2MqttSettings(settings);
+    }
+    return result;
+}
+
+void FreeAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
+{
+    if (settings == NULL)
+    {
+        return;
+    }
+
+    free(settings->idScope);
+    free(settings->registrationId);
+    free(settings->dpsApiVersion);
+
+    free(settings->mqttSettings.hostname);
+    free(settings->mqttSettings.clientId);
+    free(settings->mqttSettings.username);
+    free(settings->mqttSettings.password);
+    free(settings->mqttSettings.caFile);
+    free(settings->mqttSettings.certFile);
+    free(settings->mqttSettings.keyFile);
+    free(settings->mqttSettings.keyFilePassword);
+    memset(settings, 0, sizeof(*settings));
+}

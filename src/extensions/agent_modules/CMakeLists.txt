@@ -1,3 +1,4 @@
 cmake_minimum_required (VERSION 3.5)
 
+add_subdirectory (shared)
 add_subdirectory (cloud_communication)

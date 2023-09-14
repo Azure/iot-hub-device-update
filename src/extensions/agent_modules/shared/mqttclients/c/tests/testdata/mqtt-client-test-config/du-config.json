@@ -1,0 +1,88 @@
+{
+    "schemaVersion": "2.0",
+    "aduShellTrustedUsers": [
+      "adu"
+    ],
+
+    "manufacturer": "contoso",
+    "model": "espresso-v1",
+
+    "agents" : [{
+        "name": "main",
+        "runas": "adu",
+        "connectionSource": {
+          "connectionType": "MQTTBroker",
+          "connectionData": {
+              "hostName" : "contoso-red-devbox-wus3-eg.westus2-1.ts.eventgrid.azure.net",
+              "tcpPort" : 8883,
+              "useTLS": true,
+              "cleanSession" : true,
+              "keepAliveInSeconds" : 3600,
+              "clientId" : "adu-mqtt-client-unit-test-device",
+              "userName" : "adu-matt-client-unit-test-user-1",
+              "password" : "adu-matt-client-unit-test-password-1",
+              "caFile" : "adu-mqtt-client-unit-test-ca-1",
+              "certFile" : "adu-mqtt-client-unit-test-cert-1.pem",
+              "keyFile" : "adu-mqtt-client-unit-test-key-1.pem",
+              "keyFilePassword" : "adu-mqtt-client-unit-test-key-password-1"
+          }
+        },
+        "manufacturer": "contoso",
+        "model": "espresso-v1",
+
+        "operationSettings" : "/etc/adu/adu-operation-settings.json"
+    }
+}
+
+
+{
+    "operationSettings" : {
+          "deviceRegistrationRequest" : {
+              "intervalSec" : 3600,
+              "retryStrategy" : [
+                  {
+                    "result" : 400,
+                    "resultRange" : {
+                          "min" : 404,
+                          "max" : 404
+                      },
+                      "params" : {
+                          "maxRetries" : 10,
+                          "maxDelaySec" : 36000,
+                          "fallbackWaitTimeSec" : 3600,
+                          "initialDelayUnitMS" :3600000,
+                          "maxJitterPercentage" : 9
+                      }
+                  },
+                  {
+                    "resultRange" : {
+                        "min" : 500,
+                        "max" : 599
+                    },
+                    "params" : {
+                        "maxRetries" : 10,
+                        "maxDelaySec" : 36000,
+                        "fallbackWaitTimeSec" : 3600,
+                        "initialDelayUnitMS" :3600000,
+                        "maxJitterPercentage" : 9
+                    }
+                },
+                {
+                    "resultRange" : {
+                        "min" : 0,
+                        "max" : MAX_INT,
+                    },
+                    "params" : {
+                        "maxRetries" : 10,
+                        "maxDelaySec" : 36000,
+                        "fallbackWaitTimeSec" : 3600,
+                        "initialDelayUnitMS" :3600000,
+                        "maxJitterPercentage" : 9
+                    }
+                }
+              ]
+          }
+        }
+      }
+    ]
+  }

@@ -492,18 +492,23 @@ find_package (
 set (ERROR_CODE_GENERATOR_ARGS "--json-file-path" "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}"
                                "--result-file-path" "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}")
 
-execute_process (
-    COMMAND ${Python3_EXECUTABLE} ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}
-            ${ERROR_CODE_GENERATOR_ARGS}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    RESULT_VARIABLE GENERATE_ERROR_CODE_DEFS_RESULT)
+if (ADUC_RESULT_CODE_GENERATION)
+    message (STATUS "Generating error code definition file using ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}")
+    execute_process (
+        COMMAND ${Python3_EXECUTABLE} ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}
+                ${ERROR_CODE_GENERATOR_ARGS}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        RESULT_VARIABLE GENERATE_ERROR_CODE_DEFS_RESULT)
 
-if (NOT GENERATE_ERROR_CODE_DEFS_RESULT EQUAL "0")
-    message (
-        FATAL_ERROR
-            "Failed to generate error code definition file using ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}"
-    )
-endif ()
+    if (NOT GENERATE_ERROR_CODE_DEFS_RESULT EQUAL "0")
+        message (
+            FATAL_ERROR
+                "Failed to generate error code definition file using ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}"
+        )
+    endif ()
+elseif()
+    message (STATUS "Skippoing error code definition file generation.")
+endif()
 
 if (ADUC_BUILD_UNIT_TESTS)
     # Need to be in the root directory to place CTestTestfile.cmake in root

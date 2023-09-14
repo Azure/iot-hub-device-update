@@ -17,6 +17,7 @@
 #include <cstring>
 
 #include <stdio.h> // popen, pclose
+#include <string.h> // strdup
 #include <sys/statvfs.h> // statvfs
 #include <sys/sysinfo.h> // sysinfo
 #include <sys/utsname.h> // uname

@@ -16,7 +16,7 @@
 #include <inttypes.h> // PRIu64
 #include <stdlib.h>
 
-#include <time.h>
+#include <aducpal/time.h>
 
 #include "aduc/adu_core_export_helpers.h" // ADUC_MethodCall_RestartAgent
 #include "aduc/agent_orchestration.h"

@@ -1,0 +1,67 @@
+{
+    "schemaVersion": "2.0",
+    "aduShellTrustedUsers": [
+      "adu"
+    ],
+    "manufacturer": "contoso",
+    "model": "espresso-v1",
+    "agents": [
+      {
+        "name": "main",
+        "runas": "adu",
+        "connectionSource": {
+          "connectionType": "ADPS2/MQTT",
+          "connectionData": {
+              "dps": {
+                "globalDeviceEndpoint" : "global.azure-devices-provisioning.net",
+                "idScope" : "0ne00ABF077",
+                "registrationId" : "contoso-blue-device03-devbox-wus3",
+                "apiVersion" : "2021-06-01",
+                "tcpPort" : 8883,
+                "useTLS": true,
+                "mqttVersion" : 4,
+                "cleanSession" : false,
+                "keepAliveInSeconds" : 3600,
+                "clientId" : "contoso-blue-device03-devbox-wus3",
+                "certFilex" : "/home/nox/aducerts/contoso-blue-device03-devbox-wus3.cer",
+                "keyFilex" : "/home/nox/aducerts/contoso-blue-device03-devbox-wus3.key"
+            },
+            "mqttBroker" : {
+                "host" : "contoso-blue-device03-devbox-wus3.azure-devices.net",
+                "tcpPort" : 8883,
+                "useTLS": true,
+                "mqttVersion" : 4,
+                "cleanSession" : false,
+                "keepAliveInSeconds" : 3600,
+                "username" : "contoso-blue-device03-devbox-wus3",
+                "clientId" : "contoso-blue-device03-devbox-wus3",
+                "certFile" : "/home/nox/aducerts/contoso-blue-device03-devbox-wus3.cer",
+                "keyFile" : "/home/nox/aducerts/contoso-blue-device03-devbox-wus3.key"
+            }
+          }
+        },
+        "manufacturer": "contoso",
+        "model": "espresso-v1",
+        "operationSettings" : {
+          "deviceRegistrationRequest" : {
+              "intervalSec" : 3600,
+              "retryStrategy" : [
+                  {
+                      "resultRange" : {
+                          "min" : 0,
+                          "max" : 1
+                      },
+                      "params" : {
+                          "maxRetries" : 10,
+                          "maxDelaySec" : 36000,
+                          "fallbackWaitTimeSec" : 3600,
+                          "initialDelayUnitMS" :3600000,
+                          "maxJitterPercentage" : 9
+                      }
+                  }
+              ]
+          }
+        }
+      }
+    ]
+  }
