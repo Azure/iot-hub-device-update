@@ -11,14 +11,13 @@ add_library (diagnostics_component::${target_name} ALIAS ${target_name})
 
 target_include_directories (${target_name} PUBLIC inc)
 
-find_package (azure-storage-blobs-cpp CONFIG REQUIRED)
 find_package (Parson REQUIRED)
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
 if (NOT WIN32)
     target_link_libraries (${target_name} PRIVATE azure_blob_storage_file_upload_utility
-                                                  Azure::azure-storage-blobs)
+                                                  diagnostic_utils::file_upload_utility)
 endif ()
 
 target_link_libraries (
