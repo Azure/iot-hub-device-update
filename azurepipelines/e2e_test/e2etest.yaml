@@ -178,6 +178,7 @@ stages:
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
                           ./testsetup/setup.sh --distro ubuntu-18.04 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
+                      device_id_under_test: "ubuntu-18.04-amd64-x509"
           - job: SetupUbuntu1804_ARM64_VM
             displayName: "Setting up VM for Ubuntu 18.04 ARM64 Test VM"
             timeoutInMinutes: 360
@@ -199,6 +200,7 @@ stages:
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
                           ./testsetup/setup.sh --distro ubuntu-18.04 --architecture arm64
                       image_working_directory: $(E2E_WORKING_DIR)
+                      device_id_under_test: "ubuntu-18.04-arm64-sas"
           - job: SetupUbuntu2004_AMD64_VM
             displayName: "Setting up VM for Ubuntu 20.04 AMD64 Test VM"
             timeoutInMinutes: 360
@@ -220,6 +222,7 @@ stages:
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
                           ./testsetup/setup.sh --distro ubuntu-20.04 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
+                      device_id_under_test: "ubuntu-20.04-amd64-sas"
           - job: SetupUbuntu2004_ARM64_VM
             displayName: "Setting up VM for Ubuntu 20.04 ARM64 Test VM"
             timeoutInMinutes: 360
@@ -241,6 +244,7 @@ stages:
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
                           ./testsetup/setup.sh --distro ubuntu-20.04 --architecture arm64
                       image_working_directory: $(E2E_WORKING_DIR)
+                      device_id_under_test: "ubuntu-20.04-arm64-sas"
           # - job: SetupUbuntu2204_AMD64_VM
           #   displayName: "Setting up VM for Ubuntu 22.04 AMD64 Test VM"
           #   timeoutInMinutes: 360
@@ -304,6 +308,7 @@ stages:
                           chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
                           ./testsetup/setup.sh --distro debian-10 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
+                      device_id_under_test: "debian10-amd64-sas"
 
     - stage: RunTestsAndPostResults
       displayName: Execute E2E Test
