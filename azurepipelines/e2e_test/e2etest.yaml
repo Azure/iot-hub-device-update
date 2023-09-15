@@ -133,7 +133,7 @@ stages:
           TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
       pool: aduc_1es_client_pool
       jobs:
-          - job: SetupUbuntu1804_AMD64_VM
+          - job: SetupUbuntu1804_AMD64_VM_sas
             displayName: "Setting up VM for Ubuntu 18.04 AMD64 Test VM"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
@@ -156,7 +156,7 @@ stages:
                           ./testsetup/setup.sh --distro ubuntu-18.04 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
                       device_id_under_test: "ubuntu-18.04-amd64-sas"
-          - job: SetupUbuntu1804_AMD64_VM
+          - job: SetupUbuntu1804_AMD64_VM_x509
             displayName: "Setting up VM for Ubuntu 18.04 AMD64 Test VM"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
@@ -319,7 +319,7 @@ stages:
       dependsOn:
           - TerraformVMInitialization
       jobs:
-          - job: RunUbuntu_1804_Amd64VmE2ETests
+          - job: RunUbuntu_1804_Amd64VmE2ETests_sas
             displayName: "Running E2E Tests against Ubuntu 18.04 AMD64"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
@@ -328,6 +328,19 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: ubuntu-18.04-amd64
+                      device_id_under_test: "ubuntu-18.04-amd64-sas"
+
+          - job: RunUbuntu_1804_Amd64VmE2ETests_x509
+            displayName: "Running E2E Tests against Ubuntu 18.04 AMD64"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_test_run.yaml
+                  parameters:
+                      distroName: ubuntu-18.04-amd64
+                      device_id_under_test: "ubuntu-18.04-amd64-x509"
+
           - job: RunUbuntu_1804_Arm64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 18.04 ARM64"
             timeoutInMinutes: 360
@@ -337,6 +350,7 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: ubuntu-18.04-arm64
+                      device_id_under_test: "ubuntu-18.04-arm64-sas"
           - job: RunUbuntu_2004_Amd64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 20.04 AMD64"
             timeoutInMinutes: 360
@@ -346,6 +360,7 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: ubuntu-20.04-amd64
+                      device_id_under_test: "ubuntu-20.04-amd64-sas"
           - job: RunUbuntu_2004_Arm64VmE2ETests
             displayName: "Running E2E Tests against Ubuntu 20.04 ARM64"
             timeoutInMinutes: 360
@@ -355,6 +370,7 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: ubuntu-20.04-arm64
+                      device_id_under_test: "ubuntu-20.04-arm64-sas"
           # - job: RunUbuntu_2204_Amd64VmE2ETests
           #   displayName: "Running E2E Tests against Ubuntu 22.04 AMD64"
           #   timeoutInMinutes: 360
@@ -382,6 +398,7 @@ stages:
                 - template: ./templates/e2e_test_run.yaml
                   parameters:
                       distroName: debian-10-amd64
+                      device_id_under_test: "debian-10-amd64-sas"
 
     - stage: TerraformDestroyVm
       displayName: Tear down cloud resources (VMs) and destroy the resource group
