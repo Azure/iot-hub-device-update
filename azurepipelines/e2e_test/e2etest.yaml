@@ -188,6 +188,7 @@ stages:
                 - template: ./templates/e2e_vm_setup.yaml
                   parameters:
                       distroName: ubuntu-18.04-arm64
+                      provisioning_type: "sas"
                       vm_size: Standard_D2plds_v5
                       image_publisher: Canonical
                       image_offer: UbuntuServer
@@ -210,6 +211,7 @@ stages:
                 - template: ./templates/e2e_vm_setup.yaml
                   parameters:
                       distroName: ubuntu-20.04-amd64
+                      provisioning_type: "sas"
                       vm_size: Standard_DS1_v2
                       image_publisher: canonical
                       image_offer: 0001-com-ubuntu-server-focal
@@ -232,6 +234,7 @@ stages:
                 - template: ./templates/e2e_vm_setup.yaml
                   parameters:
                       distroName: ubuntu-20.04-arm64
+                      provisioning_type: "sas"
                       vm_size: Standard_D2plds_v5
                       image_publisher: canonical
                       image_offer: 0001-com-ubuntu-server-focal
@@ -296,6 +299,7 @@ stages:
                 - template: ./templates/e2e_vm_setup.yaml
                   parameters:
                       distroName: debian-10-amd64
+                      provisioning_type: "sas"
                       vm_size: Standard_DS1_v2
                       image_publisher: debian
                       image_offer: debian-10
