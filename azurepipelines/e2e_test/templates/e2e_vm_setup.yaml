@@ -51,7 +51,7 @@ steps:
           ./scenarios/test_runner/vm_setup/create_x509_certificates.sh -d ${{parameters.device_id_under_test}} -p ./scenarios/test_runner/vm_setup/testsetup/
       workingDirectory: ${{parameters.image_working_directory}}/
       displayName: Creating x509 device certificates for device under test
-      condition: eq(parameters['provisioning_type'], 'x509')
+      condition: eq('${{ parameters.provisioning_type }}', 'x509')
 
 
     - task: UsePythonVersion@0
@@ -66,7 +66,7 @@ steps:
     # SAS Device Setup
     - task: PythonScript@0
       displayName: "Run the script to create a sas device and output a configuration file"
-      condition: eq(parameters['provisioning_type'], 'sas')
+      condition: eq('${{ parameters.provisioning_type }}', 'sas')
       inputs:
           scriptSource: "filePath"
           scriptPath: "${{parameters.image_working_directory}}/scenarios/test_runner/vm_setup/sas_devicesetup.py"
@@ -85,7 +85,7 @@ steps:
     # X509 Device Setup
     - task: PythonScript@0
       displayName: "Run the script to create a x509 device and output a configuration file"
-      condition: eq(parameters['provisioning_type'], 'x509')
+      condition: eq('${{ parameters.provisioning_type }}', 'x509')
       inputs:
           scriptSource: "filePath"
           scriptPath: "${{parameters.image_working_directory}}/scenarios/test_runner/vm_setup/x509_devicesetup.py"
@@ -123,14 +123,14 @@ steps:
       displayName: Copy the setup script to the same location as the artifact
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}/
-      condition: eq(parameters['provisioning_type'], 'sas')
+      condition: eq('${{ parameters.provisioning_type }}', 'sas')
 
     - script: |
           cp ./scenarios/test_runner/vm_setup/x509_vm_setup.sh ./scenarios/test_runner/vm_setup/testsetup/
       displayName: Copy the setup script to the same location as the artifact
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}/
-      condition: eq(parameters['provisioning_type'], 'x509')
+      condition: eq('${{ parameters.provisioning_type }}', 'x509')
 
     - script: |
           tar -czvf ./scenarios/test_runner/vm_setup/testsetup/adu_srcs_repo.tar.gz -C $(Build.SourcesDirectory) ./src ./scripts ./tools
