@@ -10,7 +10,7 @@
 
 # This file should be included in an archive that is created at provisioning time
 # with the following structure:
-#       setup.sh (this file)
+#       sas_vm_setup.sh (this file)
 #       deviceupdate-package.deb (debian package under test)
 #       <other-supporting-files>
 # where the archive is named:
@@ -19,12 +19,12 @@
 #       ~/testsetup.tar.gz
 # Once the script has been extracted we'll be running from
 # ~ while the script itself is at
-#       ~/testsetup/setup.sh
+#       ~/testsetup/sas_vm_setup.sh
 # So we need to localize the path to that.
 #
 
 print_help() {
-    echo "Usage: setup.sh [OPTIONS]"
+    echo "Usage: sas_vm_setup.sh [OPTIONS]"
     echo "Options:"
     echo "  -d, --distro       Distribution and version (e.g. ubuntu-18.04, debian-10)"
     echo "  -a, --architecture Architecture (e.g. amd64, arm64)"

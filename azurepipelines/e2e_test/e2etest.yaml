@@ -152,8 +152,8 @@ stages:
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
-                          chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh --distro ubuntu-18.04 --architecture amd64
+                          chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
+                          ./testsetup/sas_vm_setup.sh --distro ubuntu-18.04 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
                       device_id_under_test: "ubuntu-18.04-amd64-sas"
           - job: SetupUbuntu1804_AMD64_VM_x509
@@ -175,8 +175,8 @@ stages:
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
                       du_tarball_script: >-
                           tar -xf /tmp/testsetup.tar.gz -C ./ &&
-                          chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-                          ./testsetup/setup.sh --distro ubuntu-18.04 --architecture amd64
+                          chmod u=rwx,g=rwx,o=rx ./testsetup/x509_vm_setup.sh &&
+                          ./testsetup/x509_vm_setup.sh --distro ubuntu-18.04 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
                       device_id_under_test: "ubuntu-18.04-amd64-x509"
         #   - job: SetupUbuntu1804_ARM64_VM
@@ -198,8 +198,8 @@ stages:
         #               package_pipeline: "Azure.adu-private-preview.e2e-test"
         #               du_tarball_script: >-
         #                   tar -xf /tmp/testsetup.tar.gz -C ./ &&
-        #                   chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-        #                   ./testsetup/setup.sh --distro ubuntu-18.04 --architecture arm64
+        #                   chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
+        #                   ./testsetup/sas_vm_setup.sh --distro ubuntu-18.04 --architecture arm64
         #               image_working_directory: $(E2E_WORKING_DIR)
         #               device_id_under_test: "ubuntu-18.04-arm64-sas"
         #   - job: SetupUbuntu2004_AMD64_VM
@@ -221,8 +221,8 @@ stages:
         #               package_pipeline: "Azure.adu-private-preview.e2e-test"
         #               du_tarball_script: >-
         #                   tar -xf /tmp/testsetup.tar.gz -C ./ &&
-        #                   chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-        #                   ./testsetup/setup.sh --distro ubuntu-20.04 --architecture amd64
+        #                   chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
+        #                   ./testsetup/sas_vm_setup.sh --distro ubuntu-20.04 --architecture amd64
         #               image_working_directory: $(E2E_WORKING_DIR)
         #               device_id_under_test: "ubuntu-20.04-amd64-sas"
         #   - job: SetupUbuntu2004_ARM64_VM
@@ -244,8 +244,8 @@ stages:
         #               package_pipeline: "Azure.adu-private-preview.e2e-test"
         #               du_tarball_script: >-
         #                   tar -xf /tmp/testsetup.tar.gz -C ./ &&
-        #                   chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-        #                   ./testsetup/setup.sh --distro ubuntu-20.04 --architecture arm64
+        #                   chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
+        #                   ./testsetup/sas_vm_setup.sh --distro ubuntu-20.04 --architecture arm64
         #               image_working_directory: $(E2E_WORKING_DIR)
         #               device_id_under_test: "ubuntu-20.04-arm64-sas"
         #   # - job: SetupUbuntu2204_AMD64_VM
@@ -266,8 +266,8 @@ stages:
         #   #             package_pipeline: "Azure.adu-private-preview.e2e-test"
         #   #             du_tarball_script: >-
         #   #                 tar -xf /tmp/testsetup.tar.gz -C ./ &&
-        #   #                 chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-        #   #                 ./testsetup/setup.sh --distro ubuntu-22.04 --architecture amd64
+        #   #                 chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
+        #   #                 ./testsetup/sas_vm_setup.sh --distro ubuntu-22.04 --architecture amd64
         #   #             image_working_directory: $(E2E_WORKING_DIR)
         #   # - job: SetupUbuntu2204_ARM64_VM
         #     # displayName: "Setting up VM for Ubuntu 22.04 ARM64 Test VM"
@@ -287,8 +287,8 @@ stages:
         #     #           package_pipeline: "Azure.adu-private-preview.e2e-test"
         #     #           du_tarball_script: >-
         #     #               tar -xf /tmp/testsetup.tar.gz -C ./ &&
-        #     #               chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-        #     #               ./testsetup/setup.sh --distro ubuntu-22.04 --architecture arm64
+        #     #               chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
+        #     #               ./testsetup/sas_vm_setup.sh --distro ubuntu-22.04 --architecture arm64
         #     #           image_working_directory: $(E2E_WORKING_DIR)
         #   - job: SetupDebian10_AMD64_VM
         #     displayName: "Setting up VM for Debain 10 AMD64 Test VM"
@@ -309,8 +309,8 @@ stages:
         #               package_pipeline: "Azure.adu-private-preview.e2e-test"
         #               du_tarball_script: >-
         #                   tar -xf /tmp/testsetup.tar.gz -C ./ &&
-        #                   chmod u=rwx,g=rwx,o=rx ./testsetup/setup.sh &&
-        #                   ./testsetup/setup.sh --distro debian-10 --architecture amd64
+        #                   chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
+        #                   ./testsetup/sas_vm_setup.sh --distro debian-10 --architecture amd64
         #               image_working_directory: $(E2E_WORKING_DIR)
         #               device_id_under_test: "debian10-amd64-sas"
 
