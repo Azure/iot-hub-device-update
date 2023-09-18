@@ -103,7 +103,7 @@ copyfile_exit_if_failed() {
     ret_val=$?
     if [[ $ret_val != 0 ]]; then
         error "failed to copy $1 to $2 (exit code:$ret_val)"
-        return $ret_val
+        $ret $ret_val
     fi
 }
 
@@ -383,30 +383,13 @@ else
 fi
 echo ''
 
-do_install_openssl() {
-    local openssl_dir=$work_folder/openssl-1.1.1u
-    echo "Installing OpenSSL ..."
-
-    $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
-    wget https://www.openssl.org/source/openssl-1.1.1u.tar.gz || return
-    mkdir -p $openssl_dir || return
-    tar -xf openssl-1.1.1u.tar.gz -C $openssl_dir --strip-components=1 || return
-    pushd $openssl_dir > /dev/null || return
-    ./config --prefix="$openssl_dir_path" --openssldir="$openssl_dir_path" shared zlib || return
-    make || return
-
-    $SUDO make install || return
-    export LD_LIBRARY_PATH="$openssl_dir_path/lib:$LD_LIBRARY_PATH" || return
-    echo "OpenSSL has been installed in $openssl_dir_path"
-
-    popd > /dev/null || return
-}
-
 # Check if the directory exists
 if [ ! -d "$openssl_dir_path" ]; then
-    echo "OpenSSL directory not found. Invoking installation..."
-    do_install_openssl || return
+    echo "OpenSSL directory not. Please run install-deps.sh with the OpenSSL installation option."
+    exit 1
 fi
+
+echo "OpenSSL exists at $openssl_dir_path"
 
 CMAKE_OPTIONS=(
     "-DADUC_BUILD_DOCUMENTATION:BOOL=$build_documentation"
@@ -509,7 +492,7 @@ if [[ $build_clean == "true" ]]; then
 fi
 
 mkdir -p "$output_directory"
-pushd "$output_directory" > /dev/null || return
+pushd "$output_directory" > /dev/null || $ret
 
 # Generate build using cmake with options
 if [ ! -f "$cmake_bin" ]; then
@@ -533,7 +516,7 @@ if [[ $ret_val == 0 && $build_packages == "true" ]]; then
     ret_val=$?
 fi
 
-popd > /dev/null || return
+popd > /dev/null || $ret
 
 if [[ $ret_val == 0 && $install_adu == "true" ]]; then
     install_adu_components

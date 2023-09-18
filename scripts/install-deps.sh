@@ -66,7 +66,7 @@ cmake_installer_dir=""
 cmake_dir_symlink="/tmp/deviceupdate-cmake"
 
 openssl_dir_path="/usr/local/lib/deviceupdate-openssl"
-
+openssl_version="3.1.2"
 install_shellcheck=false
 supported_shellcheck_version='0.8.0'
 
@@ -174,9 +174,9 @@ do_install_openssl() {
     echo "Installing OpenSSL ..."
 
     $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
-    wget https://www.openssl.org/source/openssl-3.1.2.tar.gz || return
+    wget https://www.openssl.org/source/openssl-${openssl_version}.tar.gz || return
     mkdir -p $openssl_dir || return
-    tar -xf openssl-3.1.2.tar.gz -C $openssl_dir --strip-components=1 || return
+    tar -xf openssl-${openssl_version}.tar.gz -C $openssl_dir --strip-components=1 || return
     pushd $openssl_dir > /dev/null || return
     ./config --prefix="$openssl_dir_path" --openssldir="$openssl_dir_path" shared zlib || return
     make || return
@@ -225,7 +225,7 @@ do_install_aduc_packages() {
     $SUDO apt-get install --yes "${static_analysis_packages[@]}" || return
 
     # Check if the directory exists
-    if [ ! -d "$openssl_dir_path" ]; then
+    if [ -d "$openssl_dir_path" ]; then
         rm $openssl_dir_path || return
     fi
 
@@ -266,6 +266,7 @@ do_install_azure_iot_sdk() {
         "-Dbuild_provisioning_service_client:BOOL=OFF"
         "-Duse_prov_client:BOOL=OFF"
         "-DOPENSSL_ROOT_DIR=$openssl_dir_path"
+        "-DOPENSSL_VERSION=$openssl_version"
     )
 
     if [[ $keep_source_code == "true" ]]; then

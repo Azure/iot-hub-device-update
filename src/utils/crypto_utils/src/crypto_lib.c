@@ -13,6 +13,7 @@
 #include <ctype.h>
 #include <openssl/bn.h>
 #include <openssl/evp.h>
+#include <openssl/param_build.h>
 #include <openssl/rsa.h>
 #include <stdio.h>
 #include <string.h>
@@ -204,54 +205,119 @@ bool IsValidSignature(
  */
 CryptoKeyHandle RSAKey_ObjFromBytes(uint8_t* N, size_t N_len, uint8_t* e, size_t e_len)
 {
+    int status = 0;
     EVP_PKEY* result = NULL;
+    EVP_PKEY_CTX* ctx = NULL;
+    OSSL_PARAM_BLD* param_bld = NULL;
+    OSSL_PARAM* params = NULL;
+    BIGNUM* bn_N = NULL;
+    BIGNUM* bn_e = NULL;
 
-    BIGNUM* rsa_N = NULL;
-    BIGNUM* rsa_e = NULL;
+    ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
 
-    RSA* rsa = RSA_new();
-
-    if (rsa == NULL)
+    if (ctx == NULL)
     {
         goto done;
     }
 
-    rsa_N = BN_bin2bn(N, (int)N_len, NULL);
-    if (rsa_N == NULL)
+    bn_N = BN_new();
+
+    if (bn_N == NULL)
     {
         goto done;
     }
 
-    rsa_e = BN_bin2bn(e, (int)e_len, NULL);
-    if (rsa_e == NULL)
+    bn_e = BN_new();
+
+    if (bn_e == NULL)
     {
         goto done;
     }
 
-    if (RSA_set0_key(rsa, rsa_N, rsa_e, NULL) == 0)
+    if (BN_bin2bn(N, (int)N_len, bn_N) == 0)
     {
         goto done;
     }
 
-    EVP_PKEY* pkey = EVP_PKEY_new();
-
-    if (pkey == NULL)
+    if (BN_bin2bn(e, (int)e_len, bn_e) == 0)
     {
         goto done;
     }
 
-    if (EVP_PKEY_assign_RSA(pkey, rsa) == 0)
+    param_bld = OSSL_PARAM_BLD_new();
+
+    if (param_bld == NULL)
     {
         goto done;
     }
 
-    result = pkey;
+    status = OSSL_PARAM_BLD_push_BN(param_bld, "n", bn_N);
+    if (status != 1)
+    {
+        goto done;
+    }
+
+    status = OSSL_PARAM_BLD_push_BN(param_bld, "e", bn_e);
+    if (status != 1)
+    {
+        goto done;
+    }
+
+    status = OSSL_PARAM_BLD_push_BN(param_bld, "d", NULL);
+    if (status != 1)
+    {
+        goto done;
+    }
+
+    params = OSSL_PARAM_BLD_to_param(param_bld);
+    if (params == NULL)
+    {
+        goto done;
+    }
+
+    status = EVP_PKEY_fromdata_init(ctx);
+    if (status != 1)
+    {
+        goto done;
+    }
+
+    status = EVP_PKEY_fromdata(ctx, &result, EVP_PKEY_PUBLIC_KEY, params);
+    if (status != 1)
+    {
+        goto done;
+    }
+
 done:
 
-    if (result == NULL)
+    if (ctx != NULL)
     {
-        BN_free(rsa_N);
-        BN_free(rsa_e);
+        EVP_PKEY_CTX_free(ctx);
+    }
+
+    if (param_bld != NULL)
+    {
+        OSSL_PARAM_BLD_free(param_bld);
+    }
+
+    if (params != NULL)
+    {
+        OSSL_PARAM_free(params);
+    }
+
+    if (bn_N != NULL)
+    {
+        BN_free(bn_N);
+    }
+
+    if (bn_e != NULL)
+    {
+        BN_free(bn_e);
+    }
+
+    if (status == 0 && result != NULL)
+    {
+        EVP_PKEY_free(result);
+        result = NULL;
     }
 
     return CryptoKeyHandleToEVP_PKEY(result);
@@ -265,58 +331,116 @@ done:
  */
 CryptoKeyHandle RSAKey_ObjFromStrings(const char* N, const char* e)
 {
+    int status = 0;
     EVP_PKEY* result = NULL;
-    EVP_PKEY* pkey = NULL;
-    BIGNUM* M = NULL;
-    BIGNUM* E = NULL;
+    EVP_PKEY_CTX* ctx = NULL;
+    OSSL_PARAM_BLD* param_bld = NULL;
+    OSSL_PARAM* params = NULL;
+    BIGNUM* bn_N = NULL;
+    BIGNUM* bn_e = NULL;
 
-    RSA* rsa = RSA_new();
-    if (rsa == NULL)
+    ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
+
+    if (ctx == NULL)
     {
         goto done;
     }
 
-    M = BN_new();
-    if (M == NULL)
+    bn_N = BN_new();
+    if (bn_N == NULL)
     {
         goto done;
     }
 
-    E = BN_new();
-    if (E == NULL)
+    bn_e = BN_new();
+    if (bn_e == NULL)
     {
         goto done;
     }
 
-    if (BN_hex2bn(&M, N) == 0)
+    if (BN_hex2bn(&bn_N, N) == 0)
     {
         goto done;
     }
 
-    if (BN_hex2bn(&E, e) == 0)
+    if (BN_hex2bn(&bn_e, e) == 0)
     {
         goto done;
     }
 
-    if (RSA_set0_key(rsa, M, E, NULL) == 0)
+    param_bld = OSSL_PARAM_BLD_new();
+    if (param_bld == NULL)
     {
         goto done;
     }
 
-    pkey = EVP_PKEY_new();
-    if (EVP_PKEY_assign_RSA(pkey, rsa) == 0)
+    status = OSSL_PARAM_BLD_push_BN(param_bld, "n", bn_N);
+    if (status != 1)
     {
         goto done;
     }
 
-    result = pkey;
+    status = OSSL_PARAM_BLD_push_BN(param_bld, "e", bn_e);
+    if (status != 1)
+    {
+        goto done;
+    }
+
+    status = OSSL_PARAM_BLD_push_BN(param_bld, "d", NULL);
+    if (status != 1)
+    {
+        goto done;
+    }
+
+    params = OSSL_PARAM_BLD_to_param(param_bld);
+    if (params == NULL)
+    {
+        goto done;
+    }
+
+    status = EVP_PKEY_fromdata_init(ctx);
+    if (status != 1)
+    {
+        goto done;
+    }
+
+    status = EVP_PKEY_fromdata(ctx, &result, EVP_PKEY_PUBLIC_KEY, params);
+    if (status != 1)
+    {
+        goto done;
+    }
 
 done:
-    if (result == NULL)
+
+    if (ctx != NULL)
     {
-        BN_free(M);
-        BN_free(E);
-        EVP_PKEY_free(pkey);
+        EVP_PKEY_CTX_free(ctx);
+    }
+
+    if (param_bld != NULL)
+    {
+        OSSL_PARAM_BLD_free(param_bld);
+    }
+
+    if (params != NULL)
+    {
+        OSSL_PARAM_free(params);
+    }
+
+    if (bn_N != NULL)
+    {
+        BN_free(bn_N);
+    }
+
+    if (bn_e != NULL)
+    {
+        BN_free(bn_e);
+    }
+
+    if (status == 0 && result != NULL)
+    {
+        EVP_PKEY_free(result);
+        result = NULL;
     }
 
     return CryptoKeyHandleToEVP_PKEY(result);

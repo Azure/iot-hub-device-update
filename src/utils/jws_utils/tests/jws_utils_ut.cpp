@@ -158,14 +158,13 @@ TEST_CASE("VerifySJWK")
         CryptoKeyHandle key = GetKeyFromBase64EncodedJWK(signedJSONWebKey.c_str());
 
         // Check the key
-        RSA* rsa_key = EVP_PKEY_get0_RSA(static_cast<EVP_PKEY*>(key));
+        CHECK(key != nullptr);
 
-        CHECK(rsa_key != nullptr);
+        BIGNUM* key_N = nullptr;
+        BIGNUM* key_e = nullptr;
 
-        const BIGNUM* key_N = nullptr;
-        const BIGNUM* key_e = nullptr;
-
-        RSA_get0_key(rsa_key, &key_N, &key_e, nullptr);
+        REQUIRE(EVP_PKEY_get_bn_param(static_cast<EVP_PKEY*>(key), "n", &key_N) == 1);
+        REQUIRE(EVP_PKEY_get_bn_param(static_cast<EVP_PKEY*>(key), "e", &key_e) == 1);
 
         int key_N_size = BN_num_bytes(key_N);
         int key_e_size = BN_num_bytes(key_e);
