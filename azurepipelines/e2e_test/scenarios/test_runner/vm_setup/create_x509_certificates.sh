@@ -90,7 +90,14 @@ do_create_certificates() {
     echo "Creating the output directory"
     $SUDO mkdir -p "${script_dir}/${work_directory}" || $ret
 
-    pushd $work_directory || $ret
+    if [[ -d "${script_dir}/${work_directory}" ]]; then
+        echo "Directory was created successfully."
+    else
+        echo "Directory creation failed."
+        exit 1
+    fi
+
+    pushd "${script_dir}/${work_directory}" || $ret
 
     echo "Cloning the iotedge repo"
     git clone "${iotedge_repo_link}"
