@@ -1,8 +1,8 @@
 #include "wimg.hpp"
 
-#include <wimgapi.h>
-
 #include <codecvt>
+#include <strsafe.h>
+#include <wimgapi.h>
 
 class WString
 {
@@ -12,11 +12,31 @@ class WString
 public:
     WString(const char* utf8str)
     {
-        // Convert from utf8 -> wchar_t*
-        using utf8_to_wchar_t = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>;
+        size_t utf8strLen;
+        HRESULT hr = StringCchLengthA(utf8str, STRSAFE_MAX_CCH, &utf8strLen);
 
-        utf8_to_wchar_t wchar_t_converter;
-        m_str = wchar_t_converter.from_bytes(utf8str);
+        if (hr != S_OK)
+        {
+            throw hr;
+        }
+
+        // Convert from utf8 -> wchar_t*
+        int countWideChars = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, (int)utf8strLen, nullptr, 0);
+
+        if (countWideChars <= 0)
+        {
+            throw HRESULT_FROM_WIN32(GetLastError());
+        }
+
+        m_str.resize(countWideChars);
+
+        countWideChars =
+            MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, utf8str, (int)utf8strLen, m_str.data(), countWideChars);
+
+        if (countWideChars <= 0)
+        {
+            throw HRESULT_FROM_WIN32(GetLastError());
+        }
     }
 
     const wchar_t* c_str() const
