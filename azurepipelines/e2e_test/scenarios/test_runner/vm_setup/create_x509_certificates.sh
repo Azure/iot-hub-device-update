@@ -34,7 +34,7 @@ error() { echo -e "\033[1;31mError:\033[0m $*" >&2; }
 device_id=""
 output_directory=""
 work_directory="x509_provisioning_work_dir"
-iotedge_repo_link="git clone https://github.com/Azure/iotedge.git"
+iotedge_repo_link="https://github.com/Azure/iotedge.git"
 
 print_help() {
     echo "Usage: create_x509_device.sh [options...]"
@@ -140,7 +140,7 @@ do_extract_thumbprints() {
     echo "Extracting the thumbprints from the certificates"
     $SUDO openssl x509 -in "${output_directory}/${device_id}-primary.pem" -noout -sha256 -fingerprint | sed 's/[:]//g' > "${output_directory}/${device_id}-primary-thumbprint.txt" || $ret
 
-    $SUDO openssl x509 -in "${output_directory}/${device_id}-secondary.pem" -noout -sha256 -fingerprint | sed 's/[:]//g' > "${output_directory}/${device_id}-primary-thumbprint.txt" || $ret
+    $SUDO openssl x509 -in "${output_directory}/${device_id}-secondary.pem" -noout -sha256 -fingerprint | sed 's/[:]//g' > "${output_directory}/${device_id}-secondary-thumbprint.txt" || $ret
 }
 
 do_create_certificates || $ret
