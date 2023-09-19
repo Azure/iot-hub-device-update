@@ -383,8 +383,6 @@ if [ ! -d "$openssl_dir_path" ]; then
     exit 1
 fi
 
-echo "OpenSSL exists at $openssl_dir_path"
-
 CMAKE_OPTIONS=(
     "-DADUC_BUILD_DOCUMENTATION:BOOL=$build_documentation"
     "-DADUC_BUILD_UNIT_TESTS:BOOL=$build_unittests"

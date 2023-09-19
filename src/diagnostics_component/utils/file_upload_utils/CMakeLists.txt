@@ -20,5 +20,4 @@ target_include_directories (${target_name} PUBLIC inc)
 target_link_libraries (
     ${target_name}
     PUBLIC aziotsharedutil
-    PRIVATE aduc::c_utils aduc::exception_utils Azure::azure-storage-blobs Azure::azure-core
-            CURL::libcurl)
+    PRIVATE aduc::c_utils aduc::exception_utils Azure::azure-storage-blobs CURL::libcurl)

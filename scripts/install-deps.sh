@@ -170,7 +170,12 @@ do_install_githooks() {
 }
 
 do_install_openssl() {
-    local openssl_dir=$work_folder/openssl-1.1.1u
+    local openssl_dir="$work_folder/openss$openssl_version"
+
+    if [[ -d $openssl_dir ]]; then
+        $SUDO rm -rf "$openssl_dir" || return
+    fi
+
     echo "Installing OpenSSL ..."
 
     $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
@@ -182,10 +187,33 @@ do_install_openssl() {
     make || return
 
     $SUDO make install || return
-    export LD_LIBRARY_PATH="$openssl_dir_path/lib:$LD_LIBRARY_PATH" || return
+    export LD_LIBRARY_PATH="$openssl_dir_path/lib:$openssl_dir_path/lib64:$LD_LIBRARY_PATH" || return
     echo "OpenSSL has been installed in $openssl_dir_path"
 
     popd > /dev/null || return
+
+    echo "Creating legacy lib/libcrypto.so and lib/libssl.so symlink for backward compatibility"
+
+    $SUDO mkdir $openssl_dir_path/lib || return
+
+    # Create the symlinks for libcrypto
+    $SUDO ln -sf $openssl_dir_path/lib64/libcrypto.so.3 $openssl_dir_path/lib/libcrypto.so || return
+    $SUDO ln -sf $openssl_dir_path/lib64/libcrypto.so.3 $openssl_dir_path/lib/libcrypto.so.3 || return
+
+    # Create the symlinks for libssl
+    $SUDO ln -sf $openssl_dir_path/lib64/libssl.so.3 $openssl_dir_path/lib/libssl.so || return
+    $SUDO ln -sf $openssl_dir_path/lib64/libssl.so.3 $openssl_dir_path/lib/libssl.so.3 || return
+
+    # Create the symlinks for the packages
+    $SUDO ln -sf $openssl_dir_path/lib64/libcrypto.so.3 /usr/lib/libcrypto.so.3 || return
+    $SUDO ln -sf $openssl_dir_path/lib64/libssl.so.3 /usr/lib/libssl.so.3 || return
+
+    echo "Adding OpenSSL to ldconfig's configuration"
+    $SUDO ldconfig $openssl_dir_path/lib64/ || return
+    $SUDO ldconfig $openssl_dir_path/lib/ || return
+
+    $SUDO rm -r $openssl_dir || return
+    $SUDO rm openssl-${openssl_version}.tar.gz || return
 }
 
 do_install_aduc_packages() {
@@ -226,7 +254,7 @@ do_install_aduc_packages() {
 
     # Check if the directory exists
     if [ -d "$openssl_dir_path" ]; then
-        rm $openssl_dir_path || return
+        $SUDO rm -rf $openssl_dir_path || return
     fi
 
     do_install_openssl || $ret
@@ -548,15 +576,17 @@ do_install_azure_storage_sdk() {
 
     git checkout tags/$azure_storage_sdk_tag_ref
 
-    local azure_blob_storage_file_upload_utility_cmake_options
+    local azure_storage_sdk_cmake_options=("-DOPENSSL_ROOT_DIR=$openssl_dir_path"
+        "-DOPENSSL_VERSION=$openssl_version")
+
     if [[ $keep_source_code == "true" ]]; then
         # If source is wanted, presumably samples and symbols are useful as well.
-        azure_blob_storage_file_upload_utility_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Debug")
+        azure_storage_sdk_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Debug")
     else
-        azure_blob_storage_file_upload_utility_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
+        azure_storage_sdk_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
     fi
 
-    cmake "${azure_blob_storage_file_upload_utility_cmake_options[@]}" . || return
+    cmake "${azure_storage_sdk_cmake_options[@]}" . || return
 
     cmake --build . || return
     $SUDO cmake --build . --target install || return
