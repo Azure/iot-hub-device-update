@@ -120,12 +120,12 @@ do_create_certificates() {
     echo "Copying the certificates from ${script_dir}/${work_directory}/certs to ${output_directory}"
 
     # Copy over the certificates to the output directory
-    $SUDO cp "./certs/iot-device-${device_id}-primary.cert.pem" "${output_directory}/${device_id}-primary.pem" || $ret
-    $SUDO cp "./certs/iot-device-${device_id}-secondary.cert.pem" "${output_directory}/${device_id}-secondary.pem" || $ret
+    $SUDO cp "${script_dir}/${work_directory}/certs/iot-device-${device_id}-primary.cert.pem" "${output_directory}/${device_id}-primary.pem" || $ret
+    $SUDO cp "${script_dir}/${work_directory}/certs/iot-device-${device_id}-secondary.cert.pem" "${output_directory}/${device_id}-secondary.pem" || $ret
 
     echo "Copying the keys from ${script_dir}/${work_directory}/private to ${output_directory}"
-    $SUDO cp "./private/iot-device-${device_id}-primary.key.pem" "${output_directory}/${device_id}-primary-key.pem" || $ret
-    $SUDO cp "./private/iot-device-${device_id}-secondary.key.pem" "${output_directory}/${device_id}-secondary-key.pem" || $ret
+    $SUDO cp "${script_dir}/${work_directory}/private/iot-device-${device_id}-primary.key.pem" "${output_directory}/${device_id}-primary-key.pem" || $ret
+    $SUDO cp "${script_dir}/${work_directory}/private/iot-device-${device_id}-secondary.key.pem" "${output_directory}/${device_id}-secondary-key.pem" || $ret
 
     popd || $ret
 
