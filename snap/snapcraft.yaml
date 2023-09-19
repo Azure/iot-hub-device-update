@@ -101,7 +101,7 @@ parts:
     plugin: nil
     source: .
     stage-snaps:
-      - deliveryoptimization-agent
+      - deliveryoptimization-agent/beta
     override-build: |
       ./scripts/install-deps.sh --work-folder /tmp --install-cmake
       ./scripts/build.sh --work-folder /tmp --ubuntu-core-snap-only
@@ -111,7 +111,7 @@ parts:
       mkdir -p $SNAPCRAFT_PART_INSTALL/conf
       cp $SNAPCRAFT_PART_BUILD/out/bin/AducIotAgent $SNAPCRAFT_PART_INSTALL/usr/bin/AducIotAgent
       cp $SNAPCRAFT_PART_BUILD/out/bin/adu-shell $SNAPCRAFT_PART_INSTALL/usr/lib/adu
-      chmod u=rxs $SNAPCRAFT_PART_INSTALL/usr/lib/adu/adu-shell
+      chmod u=rx $SNAPCRAFT_PART_INSTALL/usr/lib/adu/adu-shell
       cp $SNAPCRAFT_PART_BUILD/out/lib/*.so $SNAPCRAFT_PART_INSTALL/var/lib/adu/extensions/sources
 
     # Require install-deps
@@ -192,27 +192,22 @@ plugs:
     interface: content
     content: do-port-numbers
     target: $SNAP_DATA/do-port-numbers
-    allow-auto-connection: true
 
   do-configs:
     interface: content
     content: do-configs
     target: $SNAP_DATA/do-configs
-    allow-auto-connection: true
 
   snapd-control:
     interface: snapd-control
-    allow-auto-connection: true
 
   identity-service:
     interface: content
     content: aziot-identity-service
     target: $SNAP_DATA
-    allow-auto-connection: true
 
   account-control:
     interface: account-control
-    allow-auto-connection: true
 
   hardware-observe:
     interface: hardware-observe
