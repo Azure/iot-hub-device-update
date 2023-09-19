@@ -110,17 +110,12 @@ do_create_certificates() {
 
     $SUDO chmod +x ./certGen.sh || $ret
 
-    # Add the line here to set the environment variable
-    export FORCE_NO_PROD_WARNING=true
-
-    $SUDO ./certGen.sh create_root_and_intermediate || $ret
-
-    $SUDO ./certGen.sh create_device_certificate "${device_id}" || $ret
+    $SUDO FORCE_NO_PROD_WARNING=true ./certGen.sh create_root_and_intermediate || $ret
+    $SUDO FORCE_NO_PROD_WARNING=true ./certGen.sh create_device_certificate "${device_id}" || $ret
 
     echo "Creating the certificates"
-    $SUDO ./certGen.sh create_device_certificate "${device_id}-primary" || $ret
-
-    $SUDO ./certGen.sh create_device_certificate "${device_id}-secondary" || $ret
+    $SUDO FORCE_NO_PROD_WARNING=true ./certGen.sh create_device_certificate "${device_id}-primary" || $ret
+    $SUDO FORCE_NO_PROD_WARNING=true ./certGen.sh create_device_certificate "${device_id}-secondary" || $ret
 
     echo "Copying the certificates from ${script_dir}/${work_directory}/certs to ${output_directory}"
 
