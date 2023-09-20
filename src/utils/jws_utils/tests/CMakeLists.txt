@@ -19,6 +19,7 @@ target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::jws_utils
             aduc::crypto_utils
+            aduc::logging
             aduc::root_key_utils
             aduc::rootkeypackage_utils
             aduc::string_utils

@@ -59,7 +59,7 @@ const char* action_no_update_action_data =
 TEST_CASE("Initialization test")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(action_parent_update, &handle, nullptr);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
@@ -116,7 +116,7 @@ TEST_CASE("Initialization test")
 TEST_CASE("Undefined update action")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_no_update_action_data, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(action_no_update_action_data, &handle, nullptr);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
@@ -130,7 +130,7 @@ TEST_CASE("Undefined update action")
 TEST_CASE("Get Compatibility")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(action_parent_update, &handle, nullptr);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
@@ -147,7 +147,7 @@ TEST_CASE("Get Compatibility")
 TEST_CASE("Update Id")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(action_parent_update, &handle, nullptr);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
@@ -169,7 +169,7 @@ TEST_CASE("Update Id")
 TEST_CASE("Child workflow uses fileUrls from parent")
 {
     ADUC_WorkflowHandle bundle = nullptr;
-    ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &bundle);
+    ADUC_Result result = workflow_init(action_parent_update, &bundle, nullptr);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
@@ -178,7 +178,7 @@ TEST_CASE("Child workflow uses fileUrls from parent")
     REQUIRE(filecount == 2);
 
     ADUC_WorkflowHandle leaf0 = nullptr;
-    result = workflow_init(action_child_update_0, false /* validateManifest */, &leaf0);
+    result = workflow_init(action_child_update_0, &leaf0, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -206,7 +206,7 @@ TEST_CASE("Child workflow uses fileUrls from parent")
 TEST_CASE("Get update file by name")
 {
     ADUC_WorkflowHandle bundle = nullptr;
-    ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &bundle);
+    ADUC_Result result = workflow_init(action_parent_update, &bundle, nullptr);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
@@ -237,7 +237,7 @@ TEST_CASE("Get update file by name")
 TEST_CASE("Get update file by name - mixed case")
 {
     ADUC_WorkflowHandle bundle = nullptr;
-    ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &bundle);
+    ADUC_Result result = workflow_init(action_parent_update, &bundle, nullptr);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
@@ -268,7 +268,7 @@ TEST_CASE("Get update file by name - mixed case")
 TEST_CASE("Add and remove children")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(action_parent_update, &handle, nullptr);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
@@ -282,7 +282,7 @@ TEST_CASE("Add and remove children")
     for (int i = 0; i < ARRAY_SIZE(childWorkflow); i++)
     {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-        result = workflow_init(action_child_update_0, false /* validateManifest */, &childWorkflow[i]);
+        result = workflow_init(action_child_update_0, &childWorkflow[i], nullptr);
         CHECK(result.ResultCode != 0);
         CHECK(result.ExtendedResultCode == 0);
 
@@ -343,7 +343,7 @@ TEST_CASE("Add and remove children")
 TEST_CASE("Set workflow result")
 {
     ADUC_WorkflowHandle bundle = nullptr;
-    ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &bundle);
+    ADUC_Result result = workflow_init(action_parent_update, &bundle, nullptr);
     workflow_set_id(bundle, "testWorkflow_001");
     workflow_set_workfolder(bundle, "/tmp/workflow_ut/testWorkflow_001");
 
@@ -354,7 +354,7 @@ TEST_CASE("Set workflow result")
     REQUIRE(filecount == 2);
 
     ADUC_WorkflowHandle leaf0 = nullptr;
-    result = workflow_init(action_child_update_0, false /* validateManifest */, &leaf0);
+    result = workflow_init(action_child_update_0, &leaf0, nullptr);
     workflow_set_id(leaf0, "testLeaf_0");
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
@@ -384,7 +384,7 @@ const char* manifest_1_0 =
 TEST_CASE("Get update manifest version - 1.0")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(manifest_1_0, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(manifest_1_0, &handle, nullptr);
     CHECK(result.ResultCode > 0);
     int versionNumber = workflow_get_update_manifest_version(handle);
     CHECK(versionNumber == 1);
@@ -406,7 +406,7 @@ const char* manifest_2_0 =
 TEST_CASE("Get update manifest version - 2.0")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(manifest_2_0, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(manifest_2_0, &handle, nullptr);
     CHECK(result.ResultCode > 0);
     int versionNumber = workflow_get_update_manifest_version(handle);
     CHECK(versionNumber == 2);
@@ -428,7 +428,7 @@ const char* manifest_2 =
 TEST_CASE("Get update manifest version - 2")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(manifest_2, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(manifest_2, &handle, nullptr);
     CHECK(result.ResultCode > 0);
     int versionNumber = workflow_get_update_manifest_version(handle);
     CHECK(versionNumber == 2);
@@ -450,7 +450,7 @@ const char* manifest_3 =
 TEST_CASE("Get update manifest version - 3")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(manifest_3, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(manifest_3, &handle, nullptr);
     CHECK(result.ResultCode > 0);
     int versionNumber = workflow_get_update_manifest_version(handle);
     CHECK(versionNumber == 3);
@@ -472,7 +472,7 @@ const char* manifest_x =
 TEST_CASE("Get update manifest version - x")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(manifest_x, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(manifest_x, &handle, nullptr);
     CHECK(result.ResultCode > 0);
 
     // Non-number version will return 0.
@@ -496,7 +496,7 @@ const char* manifest_empty =
 TEST_CASE("Get update manifest version - empty")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(manifest_empty, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(manifest_empty, &handle, nullptr);
     CHECK(result.ResultCode > 0);
     int versionNumber = workflow_get_update_manifest_version(handle);
     CHECK(versionNumber == -1);
@@ -518,7 +518,7 @@ const char* manifest_missing_version =
 TEST_CASE("Get update manifest version - missing")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(manifest_missing_version, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(manifest_missing_version, &handle, nullptr);
     CHECK(result.ResultCode > 0);
     int versionNumber = workflow_get_update_manifest_version(handle);
     CHECK(versionNumber == -1);
@@ -528,7 +528,7 @@ TEST_CASE("Get update manifest version - missing")
 TEST_CASE("Mininum update manifest version check - 5")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(action_parent_update, &handle, nullptr);
     CHECK(result.ResultCode > 0);
     int versionNumber = workflow_get_update_manifest_version(handle);
     CHECK(versionNumber == 5);
@@ -550,7 +550,7 @@ const char* manifest_old_1_0 =
 TEST_CASE("Mininum update manifest version check - 1")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(manifest_old_1_0, true /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(manifest_old_1_0, &handle, nullptr);
     CHECK(result.ResultCode == 0);
     CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_UNSUPPORTED_UPDATE_MANIFEST_VERSION);
     workflow_free(handle);
@@ -599,10 +599,10 @@ TEST_CASE("workflow_id_compare")
     ADUC_WorkflowHandle handle1 = nullptr;
     ADUC_WorkflowHandle handleNull = nullptr;
 
-    ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, false /* validateManifest */, &handle0);
+    ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, &handle0, nullptr);
     REQUIRE(result.ResultCode > 0);
 
-    result = workflow_init(manifest_workflow_id_compare_1, false /* validateManifest */, &handle1);
+    result = workflow_init(manifest_workflow_id_compare_1, &handle1, nullptr);
     REQUIRE(result.ResultCode > 0);
 
     // different
@@ -619,7 +619,7 @@ TEST_CASE("workflow_isequal_id")
 {
     ADUC_WorkflowHandle handle0 = nullptr;
 
-    ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, false /* validateManifest */, &handle0);
+    ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, &handle0, nullptr);
     REQUIRE(result.ResultCode > 0);
 
     // NULL
@@ -640,7 +640,7 @@ TEST_CASE("result additonal erc")
     {
         ADUC_WorkflowHandle h = nullptr;
 
-        ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, false /* validateManifest */, &h);
+        ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, &h, nullptr);
         REQUIRE(result.ResultCode == ADUC_Result_Success);
 
         STRING_HANDLE extra_erc_handle = workflow_get_extra_ercs(h);
@@ -654,7 +654,7 @@ TEST_CASE("result additonal erc")
     {
         ADUC_WorkflowHandle h = nullptr;
 
-        ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, false /* validateManifest */, &h);
+        ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, &h, nullptr);
         REQUIRE(result.ResultCode == ADUC_Result_Success);
 
         workflow_add_erc(h, ADUC_ERC_NOMEM);
@@ -670,7 +670,7 @@ TEST_CASE("result additonal erc")
     {
         ADUC_WorkflowHandle h = nullptr;
 
-        ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, false /* validateManifest */, &h);
+        ADUC_Result result = workflow_init(manifest_workflow_id_compare_0, &h, nullptr);
         REQUIRE(result.ResultCode == ADUC_Result_Success);
 
         workflow_add_erc(h, ADUC_ERC_NOMEM);
@@ -687,7 +687,7 @@ TEST_CASE("result additonal erc")
 TEST_CASE("Request workflow cancellation")
 {
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(action_parent_update, &handle, nullptr);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
@@ -698,7 +698,7 @@ TEST_CASE("Request workflow cancellation")
     for (int i = 0; i < ARRAY_SIZE(childWorkflow); i++)
     {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-        result = workflow_init(action_child_update_0, false /* validateManifest */, &childWorkflow[i]);
+        result = workflow_init(action_child_update_0, &childWorkflow[i], nullptr);
         CHECK(result.ResultCode != 0);
         CHECK(result.ExtendedResultCode == 0);
 

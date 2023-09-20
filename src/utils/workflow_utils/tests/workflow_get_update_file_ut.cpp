@@ -18,6 +18,7 @@ using Catch::Matchers::Equals;
 #include <regex>
 #include <sstream>
 #include <string>
+#include <trust_utils.h> // validate_update_manifest_signature
 
 static std::string get_update_manifest_json_path()
 {
@@ -65,7 +66,7 @@ TEST_CASE("workflow_get_update_file with download handler")
 
     ADUC_WorkflowHandle handle = nullptr;
 
-    ADUC_Result result = workflow_init(desired.c_str(), false /* validateManifest */, &handle);
+    ADUC_Result result = workflow_init(desired.c_str(), &handle, nullptr);
     REQUIRE(result.ResultCode > 0);
 
     size_t filecount = workflow_get_update_files_count(handle);
@@ -120,7 +121,7 @@ TEST_CASE("workflow_get_update_file - upd metadata missing relatedFile URL")
         ADUC_WorkflowHandle handle = nullptr;
 
         ADUC_Result result =
-            workflow_init(manifest_missing_related_file_file_url, true /* validateManifest */, &handle);
+            workflow_init(manifest_missing_related_file_file_url, &handle, validate_update_manifest_signature);
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
         ADUC_FileEntity* file = nullptr;

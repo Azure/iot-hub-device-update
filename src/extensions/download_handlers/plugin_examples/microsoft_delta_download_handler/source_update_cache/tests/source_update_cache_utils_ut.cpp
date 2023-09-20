@@ -177,7 +177,7 @@ TEST_CASE("ADUC_SourceUpdateCacheUtils_MoveToUpdateCache")
     serializedUpdateManifest = std::regex_replace(serializedUpdateManifest, std::regex("\""), "\\\"");
     std::string desired = std::regex_replace(desiredTemplate, std::regex("UPDATE_MANIFEST"), serializedUpdateManifest);
     desired = std::regex_replace(desired, std::regex("WORKFLOW_ID_GUID"), TEST_WORKFLOW_ID);
-    result = workflow_init(desired.c_str(), false, &handle);
+    result = workflow_init(desired.c_str(), &handle, nullptr);
     REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
     // Override work folder to be test sandbox dir
@@ -255,7 +255,7 @@ TEST_CASE("ADUC_SourceUpdateCacheUtils_MoveToUpdateCache")
 //         std::string desired =
 //             std::regex_replace(desiredTemplate, std::regex("UPDATE_MANIFEST"), serializedUpdateManifest);
 //         desired = std::regex_replace(desired, std::regex("WORKFLOW_ID_GUID"), TEST_WORKFLOW_ID);
-//         ADUC_Result result = workflow_init(desired.c_str(), false, handle);
+//         ADUC_Result result = workflow_init(desired.c_str(), handle, nullptr);
 //         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 //     };
 

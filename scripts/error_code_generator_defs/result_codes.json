@@ -1121,6 +1121,18 @@
                         {
                             "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEY_KID_FOUND_BUT_DISABLED",
                             "value": 24
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_FAILED_TO_CREATE_CONTEXT",
+                            "value": 25
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_STORE_HANDLE_MISSING_IN_CONTEXT",
+                            "value": 26
+                        },
+                        {
+                            "name": "ADUC_ERC_UTILITIES_ROOTKEYUTIL_STORE_TEMPFILENAME",
+                            "value": 27
                         }
                     ]
                 },

@@ -12,25 +12,30 @@
 #include "aduc/c_utils.h"
 #include "aduc/result.h"
 #include "aduc/rootkeypackage_types.h"
+#include "rootkey_store_types.h"
 #include "crypto_lib.h"
+
+typedef struct tagRootKeyUtilContext
+{
+    RootKeyStoreHandle rootKeyStoreHandle;
+    ADUC_Result_t rootKeyExtendedResult;
+} RootKeyUtilContext;
 
 EXTERN_C_BEGIN
 
-ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage);
+RootKeyUtilContext* RootKeyUtility_InitContext();
+void RootKeyUtility_UninitContext(RootKeyUtilContext* context);
 
-ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
-    const ADUC_RootKeyPackage* rootKeyPackage, const STRING_HANDLE fileDest);
+ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(RootKeyUtilContext* rootKeyUtilContext, const ADUC_RootKeyPackage* rootKeyPackage);
 
-ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath);
+ADUC_Result RootKeyUtility_SaveRootKeyPackageToStore(const RootKeyUtilContext* rootKeyUtilContext, const ADUC_RootKeyPackage* rootKeyPackage);
 
-ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid);
+ADUC_Result RootKeyUtility_GetKeyForKid(const RootKeyUtilContext* context, CryptoKeyHandle* key, const char* kid);
 
-ADUC_Result RootKeyUtility_LoadSerializedPackage(const char* fileLocation, char** outSerializePackage);
-void RootKeyUtility_SetReportingErc(ADUC_Result_t erc);
-void RootKeyUtility_ClearReportingErc();
-ADUC_Result_t RootKeyUtility_GetReportingErc();
-bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE fileDest, const char* rootKeyPackageJsonString);
-ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSigningKeyList);
+void RootKeyUtility_SetReportingErc(RootKeyUtilContext* context, ADUC_Result_t erc);
+void RootKeyUtility_ClearReportingErc(RootKeyUtilContext* context);
+ADUC_Result_t RootKeyUtility_GetReportingErc(const RootKeyUtilContext* context);
+ADUC_Result RootKeyUtility_GetDisabledSigningKeys(const RootKeyUtilContext* context, VECTOR_HANDLE* outDisabledSigningKeyList);
 
 EXTERN_C_END
 

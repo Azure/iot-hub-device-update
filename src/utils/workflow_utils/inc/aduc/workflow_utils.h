@@ -31,23 +31,21 @@ typedef void* ADUC_WorkflowHandle;
  * @brief Instantiate and initialize workflow object with info from @p updateManifestJson
  *
  * @param updateManifestJson A json string containing an update manifest data.
- * @param validateManifest  A indicates whether to validate the manifest signature.
  *  Note that a referenced step manifest file doesn't contain a signature. We sign at the top level.
  * @param handle A workflow object handle with information about the workflow.
  * @return ADUC_Result
  */
-ADUC_Result workflow_init(const char* updateManifestJson, bool validateManifest, ADUC_WorkflowHandle* handle);
+ADUC_Result workflow_init(const char* updateManifestJsonStr, ADUC_WorkflowHandle* handle, ADUC_Result (*workflow_validate_fn)(JSON_Object* updateActionObject));
 
 /**
- * @brief Instantiate and initialize workflow object with info from specified file.
+ * @brief Instantiate and initialize workflow object with info from specified file without update manifest validation.
  *
  * @param updateManifestFile Full path to a file containing an update manifest data.
- * @param validateManifest A boolean indicates whether to validate the manifest signature.
  * @param handle A workflow object handle with information about the workflow.
  * @return ADUC_Result
  */
 ADUC_Result
-workflow_init_from_file(const char* updateManifestFile, bool validateManifest, ADUC_WorkflowHandle* handle);
+workflow_init_from_file(const char* updateManifestFile, ADUC_WorkflowHandle* handle);
 
 /**
  * @brief Instantiate and initialize workflow object with info from the @p sourceHandle inline step.

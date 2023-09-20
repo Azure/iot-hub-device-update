@@ -24,6 +24,7 @@
 #include "aduc/permission_utils.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
+#include "aduc/types/adu_core.h"
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
@@ -37,6 +38,7 @@
 #include <iothub.h>
 #include <iothub_client_options.h>
 #include <pnp_protocol.h>
+#include <default_rootkeyutil_contextprovider.h>
 
 #ifdef ADUC_ALLOW_MQTT
 #    include <iothubtransportmqtt.h>
@@ -1260,6 +1262,13 @@ _Bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
             "Cannot initialize the command listener thread. Running another instance of DU Agent with --command will not work correctly.");
         // Note: even though we can't create command listener here, we need to ensure that
         // the agent stay alive and connected to the IoT hub.
+    }
+
+    if (!RootKeyContextProvider_CreateRootKeyUtilContext())
+    {
+        Log_Error("Failed to create rootkey util context");
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_FAILED_TO_CREATE_CONTEXT;
     }
 
     if (IsAducResultCodeFailure(result.ResultCode))

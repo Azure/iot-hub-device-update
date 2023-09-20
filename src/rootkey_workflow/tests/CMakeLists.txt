@@ -13,6 +13,7 @@ target_link_libraries (
     ${target_name}
     PRIVATE Catch2::Catch2
             aduc::c_utils
+            aduc::logging
             aduc::rootkey_workflow
             aduc::root_key_utils)
 

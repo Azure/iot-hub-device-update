@@ -36,9 +36,7 @@ target_link_libraries (
             aduc::logging
             aduc::parser_utils
             aduc::reporting_utils
-            aduc::root_key_utils
             aduc::system_utils
-            aduc::jws_utils
             Parson::parson)
 
 if (ADUC_BUILD_UNIT_TESTS)

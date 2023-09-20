@@ -17,7 +17,7 @@
 #include "base64_utils.h"
 #include "crypto_lib.h"
 #include "root_key_list.h"
-#include <aduc/logging.h>
+#include "rootkey_store.h"
 #include <aduc/result.h>
 #include <aduc/string_c_utils.h>
 #include <aduc/system_utils.h>
@@ -50,24 +50,6 @@
 //
 // Root Key Validation Helper Functions
 //
-
-static ADUC_RootKeyPackage* localStore = NULL;
-ADUC_Result_t s_rootKeyErc = 0;
-
-ADUC_Result RootKeyUtility_SetLocalStore(const char* pkg_json_str)
-{
-    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-
-    localStore = (ADUC_RootKeyPackage*)malloc(sizeof(ADUC_RootKeyPackage));
-    if (localStore == NULL)
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ERRNOMEM;
-        return result;
-    }
-
-    return ADUC_RootKeyPackageUtils_Parse(pkg_json_str, localStore);
-}
-
 /**
  * @brief Helper function for making a CryptoKeyHandle from an ADUC_RootKey
  *
@@ -186,6 +168,74 @@ done:
 }
 
 /**
+ * @brief Initialize RootKeyUtility Context for use with RootKeyUtility API that interact with RootKey store.
+ *
+ * @param rootkey_store_path The path to the rootkey store, or NULL for default.
+ * @return RootKeyUtilContext* The rootkey utility context.
+ */
+RootKeyUtilContext* RootKeyUtility_InitContext(const char* rootkey_store_path)
+{
+    bool succeeded = false;
+    RootKeyStoreHandle store_handle = NULL;
+    RootKeyUtilContext* context = (RootKeyUtilContext*)malloc(sizeof(*context));
+    if (context == NULL)
+    {
+        return NULL;
+    }
+    memset(context, 0, sizeof(*context));
+
+    if (rootkey_store_path == NULL)
+    {
+        rootkey_store_path = ADUC_ROOTKEY_STORE_PACKAGE_PATH;
+    }
+
+    store_handle = RootKeyStore_CreateInstance();
+    if (store_handle == NULL)
+    {
+        goto done;
+    }
+
+    if (!RootKeyStore_SetConfig(store_handle, RootKeyStoreConfig_StorePath, STRING_construct(rootkey_store_path)))
+    {
+        goto done;
+    }
+
+    if (!RootKeyStore_Load(store_handle))
+    {
+        goto done;
+    }
+
+    context->rootKeyStoreHandle = store_handle;
+    store_handle = NULL;
+
+done:
+    if (!succeeded)
+    {
+        RootKeyStore_DestroyInstance(store_handle);
+        store_handle = NULL;
+
+        RootKeyUtility_UninitContext(context);
+        context = NULL;
+    }
+
+    return context;
+}
+
+/**
+ * @brief Uninitializes the rootkey utility context.
+ *
+ * @param context The context to uninitialize.
+ */
+void RootKeyUtility_UninitContext(RootKeyUtilContext* context)
+{
+    if (context != NULL && context->rootKeyStoreHandle != NULL)
+    {
+        RootKeyStore_DestroyInstance(context->rootKeyStoreHandle);
+        memset(context, 0, sizeof(*context));
+    }
+}
+
+/**
  * @brief Returns the index for the signature associated with the key
  *
  * @param foundIndex index that will be set with the index for the signature
@@ -290,11 +340,12 @@ done:
 /**
  * @brief Validates the @p rootKeyPackage using a hardcoded root key
  * @details Helper function for RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys()
- * @param rootKeyPackage package to be validated
- * @param rootKey the key to use to validate the package
- * @return a value of ADUC_Result
+ * @param rootKeyUtilContext The rootkey utility context
+ * @param rootKeyPackage The package to be validated
+ * @param rootKey The key to use to validate the package
+ * @return ADUC_Result The result
  */
-ADUC_Result RootKeyUtility_ValidatePackageWithKey(const ADUC_RootKeyPackage* rootKeyPackage, const RSARootKey rootKey)
+static ADUC_Result RootKeyUtility_ValidatePackageWithKey(RootKeyUtilContext* rootKeyUtilContext, const ADUC_RootKeyPackage* rootKeyPackage, const RSARootKey rootKey)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     CryptoKeyHandle rootKeyCryptoKey = NULL;
@@ -321,7 +372,7 @@ ADUC_Result RootKeyUtility_ValidatePackageWithKey(const ADUC_RootKeyPackage* roo
         goto done;
     }
 
-    ADUC_Result kidResult = RootKeyUtility_GetKeyForKid(&rootKeyCryptoKey, rootKey.kid);
+    ADUC_Result kidResult = RootKeyUtility_GetKeyForKid(rootKeyUtilContext, &rootKeyCryptoKey, rootKey.kid);
 
     if (IsAducResultCodeFailure(kidResult.ResultCode))
     {
@@ -364,7 +415,7 @@ done:
  * @param rootKeyPackage root key package containing the signatures to validate with the hardcoded root keys
  * @return a value of ADUC_Result
  */
-ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage)
+ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(RootKeyUtilContext* rootKeyUtilContext, const ADUC_RootKeyPackage* rootKeyPackage)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
@@ -382,7 +433,7 @@ ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_Ro
     {
         const RSARootKey rootKey = hardcodedRsaKeys[i];
 
-        ADUC_Result validationResult = RootKeyUtility_ValidatePackageWithKey(rootKeyPackage, rootKey);
+        ADUC_Result validationResult = RootKeyUtility_ValidatePackageWithKey(rootKeyUtilContext, rootKeyPackage, rootKey);
 
         if (IsAducResultCodeFailure(validationResult.ResultCode))
         {
@@ -410,228 +461,60 @@ done:
     return result;
 }
 
-/**
- * @brief Writes the package @p rootKeyPackage to file location @p fileDest atomically
- * @details creates a temp file with the content of @p rootKeyPackage and renames it to @p fileDest
- * @param rootKeyPackage the root key package to be written to the file
- * @param fileDest the destination for the file
- * @return a value of ADUC_Result
- */
-ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
-    const ADUC_RootKeyPackage* rootKeyPackage, const STRING_HANDLE fileDest)
+
+ADUC_Result RootKeyUtility_SaveRootKeyPackageToStore(const RootKeyUtilContext* rootKeyUtilContext, const ADUC_RootKeyPackage* rootKeyPackage)
 {
-    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-    JSON_Value* rootKeyPackageValue = NULL;
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, ADUC_ERC_INVALIDARG };
 
-    char* rootKeyPackageSerializedString = NULL;
-    STRING_HANDLE tempFileName = NULL;
+    RootKeyStoreHandle store_handle = NULL;
 
-    if (rootKeyPackage == NULL || fileDest == NULL || STRING_length(fileDest) == 0)
+    if (rootKeyPackage == NULL || rootKeyUtilContext == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_BAD_ARGS;
-        goto done;
+        return result;
     }
 
-    rootKeyPackageSerializedString = ADUC_RootKeyPackageUtils_SerializePackageToJsonString(rootKeyPackage);
-
-    if (rootKeyPackageSerializedString == NULL)
+    store_handle = rootKeyUtilContext->rootKeyStoreHandle;
+    if (store_handle == NULL)
     {
-        goto done;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_STORE_HANDLE_MISSING_IN_CONTEXT;
+        return result;
     }
 
-    rootKeyPackageValue = json_parse_string(rootKeyPackageSerializedString);
-
-    if (rootKeyPackageValue == NULL)
+    if (!RootKeyStore_SetRootKeyPackage(store_handle, rootKeyPackage))
     {
-        goto done;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_FAILED_SERIALIZE_TO_STRING;
+        return result;
     }
 
-    tempFileName = STRING_construct_sprintf("%s-temp", STRING_c_str(fileDest));
-
-    if (tempFileName == NULL)
-    {
-        goto done;
-    }
-
-    if (json_serialize_to_file(rootKeyPackageValue, STRING_c_str(tempFileName)) != JSONSuccess)
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANNOT_WRITE_PACKAGE_TO_STORE;
-        goto done;
-    }
-
-    if (rename(STRING_c_str(tempFileName), STRING_c_str(fileDest)) != 0)
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_RENAME_TO_STORE;
-        goto done;
-    }
-
-    result.ResultCode = ADUC_GeneralResult_Success;
-
-done:
-
-    if (rootKeyPackageSerializedString != NULL)
-    {
-        free(rootKeyPackageSerializedString);
-    }
-
-    if (rootKeyPackageValue != NULL)
-    {
-        json_value_free(rootKeyPackageValue);
-    }
-
-    if (tempFileName != NULL)
-    {
-        if (ADUC_SystemUtils_Exists(STRING_c_str(tempFileName)))
-        {
-            if (remove(STRING_c_str(tempFileName)) != 0)
-            {
-                Log_Info(
-                    "RootKeyUtility_WriteRootKeyPackageToFileAtomically failed to remove temp file at %s",
-                    STRING_c_str(tempFileName));
-            }
-        }
-
-        STRING_delete(tempFileName);
-    }
-
-    return result;
-}
-
-/**
- * @brief Reloads the package from disk into the local store
- *
- * @param filepath The path to the package on disk, or use the default with NULL.
- * @return a value of ADUC_Result
- */
-ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath)
-{
-    if (localStore != NULL)
-    {
-        ADUC_RootKeyPackageUtils_Destroy(localStore);
-        free(localStore);
-        localStore = NULL;
-    }
-
-    return RootKeyUtility_LoadPackageFromDisk(
-        &localStore, filepath == NULL ? ADUC_ROOTKEY_STORE_PACKAGE_PATH : filepath);
-}
-
-/**
- * @brief Searches the local store for the key with the keyId @p keyId and returns it as a CryptoKeyHandle
- *
- * @param keyId the keyId for the root key to look for
- * @param outFoundButDisabled if non-null, will set to true if key was found but it is disallowed.
- * @return the CryptoKeyHandle associated with the keyId on success; NULL on failure
- */
-static CryptoKeyHandle RootKeyUtility_SearchLocalStoreForKey(const char* keyId, bool* outFoundButDisabled)
-{
-    CryptoKeyHandle key = NULL;
-
-    if (localStore == NULL)
-    {
-        return key;
-    }
-
-    const size_t numStoreRootKeys = VECTOR_size(localStore->protectedProperties.rootKeys);
-
-    for (size_t i = 0; i < numStoreRootKeys; ++i)
-    {
-        ADUC_RootKey* rootKey = VECTOR_element(localStore->protectedProperties.rootKeys, i);
-
-        if (strcmp(STRING_c_str(rootKey->kid), keyId) == 0)
-        {
-            if (RootKeyUtility_RootKeyIsDisabled(localStore, keyId))
-            {
-                key = NULL;
-                if (outFoundButDisabled != NULL)
-                {
-                    *outFoundButDisabled = true;
-                }
-            }
-            else
-            {
-                key = MakeCryptoKeyHandleFromADUC_RootKey(rootKey);
-                if (outFoundButDisabled != NULL)
-                {
-                    *outFoundButDisabled = false;
-                }
-            }
-
-            break;
-        }
-    }
-
-    return key;
-}
-
-/**
- * @brief GEts the key for @p keyId from the local store and allocates @p key
- * @details the caller must free key using CryptoUtils_FreeCryptoKeyHandle() on key
- * @param key the handle to allocate the CryptoKeyHandle for @p kid
- * @param keyId
- * @return ADUC_Result
- */
-ADUC_Result RootKeyUtility_GetKeyForKeyIdFromLocalStore(CryptoKeyHandle* key, const char* keyId)
-{
-    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-    CryptoKeyHandle tempKey = NULL;
-
-    bool foundButDisabled = false;
-    tempKey = RootKeyUtility_SearchLocalStoreForKey(keyId, &foundButDisabled);
-
-    if (tempKey == NULL)
-    {
-        if (foundButDisabled)
-        {
-            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEY_KID_FOUND_BUT_DISABLED;
-        }
-        else
-        {
-            result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID;
-        }
-        goto done;
-    }
-
-    result.ResultCode = ADUC_GeneralResult_Success;
-
-done:
-
-    return result;
+    return RootKeyStore_Persist(store_handle);
 }
 
 /**
  * @brief Helper function that returns a CryptoKeyHandle associated with the kid
  * @details The caller must free the returned Key with the CryptoUtils_FreeCryptoKeyHandle() function
+ * @param context The root key util context.
  * @param key the handle to allocate the CryptoKeyHandle for @p kid
  * @param kid the key identifier associated with the key
  * @returns a value of ADUC_Result
  */
-ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
+ADUC_Result RootKeyUtility_GetKeyForKid(const RootKeyUtilContext* context, CryptoKeyHandle* key, const char* kid)
 {
-    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID };
 
     CryptoKeyHandle tempKey = NULL;
-#ifdef USE_LOCAL_STORE
-    if (localStore == NULL)
-    {
-        // NOTE: It is expected for rootkey pkg file to exist due to invocation
-        // of RootKeyWorkflow_UpdateRootKeys invoked from Orchestrator update
-        // callback.
-        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(&localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH);
 
-        if (IsAducResultCodeFailure(loadResult.ResultCode))
-        {
-            result = loadResult;
-            goto done;
-        }
+    ADUC_RootKeyPackage* store_package = NULL;
+    if (!RootKeyStore_GetRootKeyPackage(context->rootKeyStoreHandle, &store_package))
+    {
+        goto done;
     }
 
-    if (RootKeyUtility_RootKeyIsDisabled(localStore, kid))
+    if (RootKeyUtility_RootKeyIsDisabled(store_package, kid))
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_ROOTKEY_IS_DISABLED;
         goto done;
     }
-#endif
+
     const RSARootKey* hardcodedRsaRootKeys = RootKeyList_GetHardcodedRsaRootKeys();
 
     const unsigned numberKeys = RootKeyList_numHardcodedKeys();
@@ -644,131 +527,76 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
         }
     }
 
-#ifdef USE_LOCAL_STORE
     if (tempKey == NULL)
     {
-        ADUC_Result fetchResult = RootKeyUtility_GetKeyForKeyIdFromLocalStore(&tempKey, kid);
-
-        if (IsAducResultCodeFailure(fetchResult.ResultCode))
+        for (size_t i = 0; i < VECTOR_size(store_package->protectedProperties.rootKeys); ++i)
         {
-            result = fetchResult;
-            goto done;
+            ADUC_RootKey* rootKey = VECTOR_element(store_package->protectedProperties.rootKeys, i);
+
+            if (strcmp(STRING_c_str(rootKey->kid), kid) == 0)
+            {
+                if (RootKeyUtility_RootKeyIsDisabled(store_package, kid))
+                {
+                    tempKey = NULL;
+                    result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEY_KID_FOUND_BUT_DISABLED;
+                }
+                else
+                {
+                    tempKey = MakeCryptoKeyHandleFromADUC_RootKey(rootKey);
+                }
+
+                break;
+            }
         }
     }
 
-#else
-
-    if (tempKey == NULL)
+    if (tempKey != NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID;
-        goto done;
+        result.ResultCode = ADUC_GeneralResult_Success;
+        result.ExtendedResultCode = 0;
+        *key = tempKey;
+        tempKey = NULL;
     }
 
-#endif
-
-    result.ResultCode = ADUC_GeneralResult_Success;
 done:
-
-    *key = tempKey;
+    ADUC_RootKeyPackageUtils_Destroy(store_package);
 
     return result;
 }
 
-ADUC_Result RootKeyUtility_LoadSerializedPackage(const char* fileLocation, char** outSerializePackage)
+void RootKeyUtility_SetReportingErc(RootKeyUtilContext* context, ADUC_Result_t erc)
 {
-    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-    JSON_Value* rootKeyPackageValue = json_parse_file(fileLocation);
-    char* rootKeyPackageJsonString = NULL;
-
-    if (rootKeyPackageValue == NULL)
+    if (context != NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_LOAD_FROM_STORE;
-        goto done;
+        context->rootKeyExtendedResult = erc;
     }
-
-    rootKeyPackageJsonString = json_serialize_to_string(rootKeyPackageValue);
-
-    if (rootKeyPackageJsonString == NULL)
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_FAILED_SERIALIZE_TO_STRING;
-        goto done;
-    }
-
-    result.ResultCode = ADUC_GeneralResult_Success;
-    *outSerializePackage = rootKeyPackageJsonString;
-    rootKeyPackageJsonString = NULL;
-done:
-
-    free(rootKeyPackageJsonString);
-
-    return result;
 }
 
-void RootKeyUtility_SetReportingErc(ADUC_Result_t erc)
+void RootKeyUtility_ClearReportingErc(RootKeyUtilContext* context)
 {
-    s_rootKeyErc = erc;
-}
-
-void RootKeyUtility_ClearReportingErc()
-{
-    s_rootKeyErc = 0;
-}
-
-ADUC_Result_t RootKeyUtility_GetReportingErc()
-{
-    return s_rootKeyErc;
-}
-
-bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE storePath, const char* rootKeyPackageJsonString)
-{
-    bool update_needed = true;
-    char* storePackageJsonString = NULL;
-
-    JSON_Value* storePkgJsonValue = json_parse_file(STRING_c_str(storePath));
-
-    if (storePkgJsonValue == NULL)
+    if (context != NULL)
     {
-        goto done;
+        context->rootKeyExtendedResult = 0;
     }
-
-    storePackageJsonString = json_serialize_to_string(storePkgJsonValue);
-
-    if (storePackageJsonString == NULL)
-    {
-        goto done;
-    }
-
-    if (strcmp(storePackageJsonString, rootKeyPackageJsonString) == 0)
-    {
-        update_needed = false;
-    }
-
-done:
-    free(storePackageJsonString);
-
-    return update_needed;
 }
 
-ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSigningKeyList)
+ADUC_Result_t RootKeyUtility_GetReportingErc(const RootKeyUtilContext* context)
+{
+    return context != NULL
+        ? context->rootKeyExtendedResult
+        : 0;
+}
+
+ADUC_Result RootKeyUtility_GetDisabledSigningKeys(const RootKeyUtilContext* context, VECTOR_HANDLE* outDisabledSigningKeyList)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     VECTOR_HANDLE disabledSigningKeyList = NULL;
+    ADUC_RootKeyPackage* store_package = NULL;
 
-    if (localStore == NULL)
+    if (context == NULL)
     {
-#ifdef USE_LOCAL_STORE
-        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(&localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH);
-
-        if (IsAducResultCodeFailure(loadResult.ResultCode))
-        {
-            Log_Error("Fail load pkg from disk: 0x%08x", loadResult.ExtendedResultCode);
-            result = loadResult;
-            goto done;
-        }
-#else
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_LOCAL_STORE_UNINITIALIZED;
-        goto done;
-#endif
+        result.ExtendedResultCode = ADUC_ERC_INVALIDARG;
+        return result;
     }
 
     disabledSigningKeyList = VECTOR_create(sizeof(ADUC_RootKeyPackage_Signature));
@@ -778,10 +606,15 @@ ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSign
         goto done;
     }
 
-    for (size_t i = 0; i < VECTOR_size(localStore->protectedProperties.disabledSigningKeys); ++i)
+    if (!RootKeyStore_GetRootKeyPackage(context->rootKeyStoreHandle, &store_package))
+    {
+        goto done;
+    }
+
+    for (size_t i = 0; i < VECTOR_size(store_package->protectedProperties.disabledSigningKeys); ++i)
     {
         if (VECTOR_push_back(
-                disabledSigningKeyList, VECTOR_element(localStore->protectedProperties.disabledSigningKeys, i), 1)
+                disabledSigningKeyList, VECTOR_element(store_package->protectedProperties.disabledSigningKeys, i), 1)
             != 0)
         {
             result.ExtendedResultCode = ADUC_ERC_NOMEM;
@@ -798,6 +631,11 @@ done:
     {
         VECTOR_destroy(disabledSigningKeyList);
         disabledSigningKeyList = NULL;
+    }
+
+    if (store_package != NULL)
+    {
+        ADUC_RootKeyPackageUtils_Destroy(store_package);
     }
 
     return result;

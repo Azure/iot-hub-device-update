@@ -21,6 +21,7 @@ target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils
            aduc::crypto_utils
+           aduc::rootkey_store
            aduc::rootkeypackage_utils
            aziotsharedutil
     PRIVATE aduc::logging aduc::system_utils)
@@ -29,7 +30,8 @@ target_compile_definitions (
     ${target_name} PRIVATE ADUC_ROOTKEY_STORE_PACKAGE_PATH="${ADUC_ROOTKEY_STORE_PACKAGE_PATH}"
                            EMBED_TEST_ROOT_KEYS=${EMBED_TEST_ROOT_KEYS})
 
+add_subdirectory(contextprovider)
+
 if (ADUC_BUILD_UNIT_TESTS)
-    add_subdirectory (tests/loadpkg)
     add_subdirectory (tests/validatesig)
 endif ()

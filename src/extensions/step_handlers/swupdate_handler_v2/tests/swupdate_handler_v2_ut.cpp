@@ -101,7 +101,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test")
 
     // Create test workflow data.
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(filecopy_workflow, false, &handle);
+    ADUC_Result result = workflow_init(filecopy_workflow, &handle, nullptr);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
@@ -191,7 +191,7 @@ TEST_CASE("SWUpdate sample script --action-is-installed")
 
     // Create test workflow data.
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(filecopy_workflow_2, false, &handle);
+    ADUC_Result result = workflow_init(filecopy_workflow_2, &handle, nullptr);
     CHECK(result.ResultCode != 0);
 
     workflow_set_workfolder(handle, "/tmp/adu/testdata/swupdate_filecopy");
@@ -243,7 +243,7 @@ TEST_CASE("SWUpdate sample script --action-download")
 
     // Create test workflow data.
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(filecopy_workflow_2, false, &handle);
+    ADUC_Result result = workflow_init(filecopy_workflow_2, &handle, nullptr);
     CHECK(result.ResultCode != 0);
 
     workflow_set_workfolder(handle, "/tmp/adu/testdata/swupdate_filecopy");
@@ -295,7 +295,7 @@ TEST_CASE("SWUpdate sample script --action-install", "[!hide][functional_test]")
 
     // Create test workflow data.
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(filecopy_workflow_2, false, &handle);
+    ADUC_Result result = workflow_init(filecopy_workflow_2, &handle, nullptr);
     CHECK(result.ResultCode != 0);
 
     workflow_set_workfolder(handle, "/tmp/adu/testdata/swupdate_filecopy");
@@ -349,7 +349,7 @@ TEST_CASE("SWUpdate sample script --action-apply")
 
     // Create test workflow data.
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(filecopy_workflow_2, false, &handle);
+    ADUC_Result result = workflow_init(filecopy_workflow_2, &handle, nullptr);
     CHECK(result.ResultCode != 0);
 
     workflow_set_workfolder(handle, "/tmp/adu/testdata/swupdate_filecopy");
@@ -398,7 +398,7 @@ TEST_CASE("SWUpdate sample script --action-cancel")
 
     // Create test workflow data.
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(filecopy_workflow_2, false, &handle);
+    ADUC_Result result = workflow_init(filecopy_workflow_2, &handle, nullptr);
     CHECK(result.ResultCode != 0);
 
     workflow_set_workfolder(handle, "/tmp/adu/testdata/swupdate_filecopy");

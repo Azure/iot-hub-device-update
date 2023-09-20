@@ -22,6 +22,7 @@ target_link_libraries (
     PRIVATE aduc::parser_utils
             aduc::string_utils
             aduc::test_utils
+            aduc::trust_utils
             aduc::workflow_utils
             Catch2::Catch2)
 

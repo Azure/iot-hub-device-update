@@ -201,7 +201,7 @@ TEST_CASE("Download Succeeded 500")
     SimulatorHandlerDataFile simData(downloadSucceeded500);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -224,7 +224,7 @@ TEST_CASE("Download Failed 12345")
     SimulatorHandlerDataFile simData(downloadFailed12345);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -248,7 +248,7 @@ TEST_CASE("Download Catch-All 22222")
     SimulatorHandlerDataFile simData(catchAlldownloadResultFailed22222);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -272,7 +272,7 @@ TEST_CASE("Download - No Results - Succeeded 500")
     SimulatorHandlerDataFile simData(noResultsSpecified);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -295,7 +295,7 @@ TEST_CASE("Install Skipped 603")
     SimulatorHandlerDataFile simData(installSucceeded603);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -318,7 +318,7 @@ TEST_CASE("Install Failed 333333")
     SimulatorHandlerDataFile simData(installFailed33333);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -342,7 +342,7 @@ TEST_CASE("Install - No Results - Succeeded 600")
     SimulatorHandlerDataFile simData(noResultsSpecified);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -365,7 +365,7 @@ TEST_CASE("Apply failed 44444")
     SimulatorHandlerDataFile simData(applyFailed44444);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -389,7 +389,7 @@ TEST_CASE("Apply - No Results - Succeeded 700")
     SimulatorHandlerDataFile simData(noResultsSpecified);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -412,7 +412,7 @@ TEST_CASE("Cancel failed 55555")
     SimulatorHandlerDataFile simData(cancelFailed55555);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -436,7 +436,7 @@ TEST_CASE("Cancel - No Results - Succeeded 800")
     SimulatorHandlerDataFile simData(noResultsSpecified);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -459,7 +459,7 @@ TEST_CASE("IsInstalled - installed")
     SimulatorHandlerDataFile simData(isInstalled_installed);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -482,7 +482,7 @@ TEST_CASE("IsInstalled - notInstalled")
     SimulatorHandlerDataFile simData(isInstalled_notInstalled);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -506,7 +506,7 @@ TEST_CASE("Backup Succeeded 1000")
     SimulatorHandlerDataFile simData(backupSucceed1000);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 
@@ -530,7 +530,7 @@ TEST_CASE("Restore Succeeded 1100")
     SimulatorHandlerDataFile simData(restoreSucceed1100);
 
     ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_process_deployment, false, &handle);
+    ADUC_Result result = workflow_init(action_process_deployment, &handle, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 

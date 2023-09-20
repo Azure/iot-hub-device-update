@@ -11,6 +11,7 @@
 #include <jws_utils.h>
 #include <aduc/calloc_wrapper.hpp>
 #include <aduc/result.h>
+#include <aduc/types/adu_core.h>
 #include <aduc/rootkeypackage_utils.h>
 #include <aduc/system_utils.h>
 #include <azure_c_shared_utility/azure_base64.h>
@@ -19,6 +20,7 @@
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
 #include <regex>
+#include <rootkey_store.hpp>
 #include <root_key_util.h>
 #include <root_key_util_helper.h>
 #include <stdio.h>
@@ -30,12 +32,38 @@ using ADUC::StringUtils::cstr_wrapper;
 #    define RSA_get0_e(x) ((x)->e)
 #endif
 
+class MockRootKeyStore : public IRootKeyStoreInternal
+{
+public:
+    MockRootKeyStore() : m_pkg(nullptr) {}
+    bool SetConfig(RootKeyStoreConfigProperty propertyName, const char* propertyValue) noexcept override { return true; }
+    const std::string* GetConfig(RootKeyStoreConfigProperty propertyName) const noexcept override { return new std::string{""}; }
+    bool SetRootKeyPackage(const ADUC_RootKeyPackage* package) noexcept override
+    {
+        m_pkg = const_cast<ADUC_RootKeyPackage*>(package);
+        return true;
+    }
+
+    bool GetRootKeyPackage(ADUC_RootKeyPackage* outPackage) noexcept override
+    {
+        *outPackage = *m_pkg;
+        m_pkg = nullptr;
+        return true;
+    }
+    bool Load() noexcept override { return true; }
+    ADUC_Result Persist() noexcept override { return { ADUC_Result_Success, 0 }; }
+
+private:
+    ADUC_RootKeyPackage* m_pkg;
+};
+
 class TestCaseFixture
 {
 public:
     TestCaseFixture() : m_testPath{ ADUC_SystemUtils_GetTemporaryPathName() }
     {
-        RootKeyUtility_SetLocalStore(m_pkg.c_str());
+        memset(&m_rootkey_util_context, 0, sizeof(m_rootkey_util_context));
+        m_rootkey_util_context.rootKeyStoreHandle = &m_store;
     }
 
     ~TestCaseFixture()
@@ -50,6 +78,11 @@ public:
     const char* TestPath() const
     {
         return m_testPath.c_str();
+    }
+
+    RootKeyUtilContext* GetRootKeyUtilityContext()
+    {
+        return &m_rootkey_util_context;
     }
 
     /**
@@ -69,6 +102,9 @@ private:
     TestCaseFixture& operator=(const TestCaseFixture&) = delete;
     TestCaseFixture(TestCaseFixture&&) = delete;
     TestCaseFixture& operator=(TestCaseFixture&&) = delete;
+
+    RootKeyUtilContext m_rootkey_util_context;
+    MockRootKeyStore m_store;
 
     std::string m_pkg{
         R"( {"protected":{"version":1,"published":1675972876,"disabledRootKeys":[],"disabledSigningKeys":[],"rootKeys":{"ADU.200702.R":{"keyType":"RSA","n":"1UIurxFUo1Blh6JNW7oa-6ky3-mZXwVFyK-9NR2J6CcnWKOo7sXFHk_3kqYSBn09fbAH9ix_3m0q9bxJvBXv8IHLP4hPJx2IcShgCLYZ0tI50AUfPHaGcbtZWLyxiHurVii_MXNEMhD9PdOWXP9OXLNr_4uEm4uAuEnQffrWQFh2TcByJ3XLmi-btJ8PJfEcxRsLWjB9L7jvpyZYU6_VHVUBUQ3pG6IPP9fpHSBBpuYUCq7-8hwq1uQEe_YUfuwPl4P6WPqBNiG5oyv62WELGpT3wb5_QBRKyfo1f-9mcACx_dvXYQ07WHRnlIl1dpZ8kYfSjhGX7nuHbJovRdhlP1JwmCrLyARj9clHz3D07WSndKUjj7bt9xzTsBxkVxJaqYGEH6DnUBmWtIKxrEjj4TKCy0AfrMRZvBA0UYL5KI2oHpv1eUV1styaEUMIvmHMmsTLdzb_g92ocU9Rjg57Tfp5mI2-_IJ-QEipEgGo2X7zpRvx-5B3PkCHGMmr2fd5","e":65537},"ADU.200703.R":{"keyType":"RSA","n":"sqOydBb6uyD5UnbmJz6AQcb-zzD5yJb1WQqqgedRg4rE9Rc6LyrmV9Rxzoo975pVdj6Z4sKuTO4tuHj1ok4o8pxOOWW87OQN5eM4qFmrCKQbtPSgUqM4s0YhE8w8aAbe_gCmkm7eTEcQ1hycJPXNcOH1anxoEx3hxfaoTyGfhnxExYqZHMXTBptacZ0JHMNkMWrFF5UdXSrxVcdm1Oj12albjKJsYmAFN9cysHPL90s2JyQhjDgKuBj-9RVgNYs17x4PiKYTjXt977PnsMmmHHB7zPIpi4f3vZ22iG-sc_9y8u9IJ5ZyhgaiXON9zrCe5cLZTsTzf3gHS2WIRQwR5ZZWNIgtFg5ZQtL32e0d7ck3d0R-44Q2n1gT72_kw0TUdwaKz1vIgByimGULNdxzyGnQXuglQ5722KsFr1EpI1VAWBDquOLNXXnM7N-0W5jH-uPSbCbOLixW4M-N7v2TEi8ASY0cgjhWpl15REoa89wWELPBLScR_huYBeSjYDGZ","e":65537}}},"signatures":[{"alg":"RS256","sig":"eW8Cn256fBmV0DfintpvKLKBJJ2estNVeBvriVcazxE0-R_eFfpA1lYFpaOTmVx1g8dcRFYCmCXnmqLcrEZFLRJ26GezCQxkMtgo5NhlzLAc5BhaWn4_HDx1Y1yObWvQf1ZYfMFIntEtCDYLK1DxmmtqFy-0uLBIC4vPXLCdW0g4sGlXskMt0caszgYSduHgAI6AicQqSGjAy6Sms3gWELR4xbSK765IDp4rWqXns_aLy8pbOgar4Uxusmz5ydmJ9p3epMIhthe1D_kNwhzg5egi5B_S3LgEbm5DiJwyewwNPdZH-xNzP4KhLUK0sZjXk21OE3pj5Ia-Eydkrm4K6puf_ZR1G_XwhLO8s0QKZnjYqIL_EldJdwcKnW6lZDOnkYYGb7NYYS8FxIP4AG8FannN0xD503fhd7bsyIQGaXEQwRZgV88oKQy_-EQFUZ2MvzAKq2Cg7_KoBFEfSmU5MZgPD-4OycU98bAtBVcK-3phFQPdtKPkqjaDqBF3pTK3"},{"alg":"RS256","sig":"Mj9AZXSqwu6NUWUvdLIbSMy--Yp68wWPOcsKSZ-9qToD0RIF7Q3rbgKCYC9FFzHzwBolBwsqZogHeEv0wGbj4EuCKRHrD1onc8AiBpUWD9QrySP8Ca3QzBeE1jDkGVJvmuYsviLzletYT-6GCEBBWuQyUSmbA0Az9x4sUg9BNF7M2_zyd4GGyHDSt9YVYJekv9IQwEinEUGW6wB8St_V3x4w1Pujl69azOI0VpTtXXTlw7xwyhq_gO4mCO40b8KBGdTdD1pHz_4UT4hHvoRl9nVRi4lKBCSEzpLr_Oqs2s7TwS13GEg-XMMkzd3jGVkFS9C9ezcJC8osaxg0i5z0g_lc785Rg1yXM-gytOYFn2xyWIzqvJ5CQn3XgkCO9lduYkEF78xHFNbsorup2c2GRZTdWpTwLEi0v6bv303CxhNMGJYiZull-lRVLANFVO_pewduE3DqDTs3PF2InX0m9_ve9XouDvooaw1q3Zk_BgNgcxQxSQv2ifP4EFrNvPg2"}]} )"

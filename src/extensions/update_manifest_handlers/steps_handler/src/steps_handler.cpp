@@ -184,7 +184,7 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                 }
 
                 // Create child workflow from file.
-                result = workflow_init_from_file(childManifestFile.str().c_str(), false, &childHandle);
+                result = workflow_init_from_file(childManifestFile.str().c_str(), &childHandle);
 
                 if (IsAducResultCodeSuccess(result.ResultCode))
                 {

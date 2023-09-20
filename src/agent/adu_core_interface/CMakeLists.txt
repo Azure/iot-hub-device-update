@@ -36,6 +36,8 @@ target_link_libraries (
             aduc::reporting_utils
             aduc::rootkeypackage_utils
             aduc::rootkey_workflow
+            aduc::root_key_utils
+            aduc::root_key_utils_default_context_provider
             aduc::workflow_data_utils
             aduc::workflow_utils
             aziotsharedutil

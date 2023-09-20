@@ -27,6 +27,9 @@ cscope.out
 cscope.in.out
 cscope.po.out
 
+### clangd
+.cache
+
 ### openssl output
 *.sig
 *.pem

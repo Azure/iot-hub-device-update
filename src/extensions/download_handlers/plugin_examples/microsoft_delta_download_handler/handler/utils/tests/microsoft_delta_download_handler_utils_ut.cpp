@@ -133,7 +133,7 @@ TEST_CASE("MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile Cache Miss")
     desired = std::regex_replace(desired, std::regex("DELTA_FILE_ID"), TEST_DELTA_FILE_ID);
 
     ADUC_WorkflowHandle handle = nullptr;
-    result = workflow_init(desired.c_str(), false, &handle);
+    result = workflow_init(desired.c_str(), &handle, nullptr);
     REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
     ADUC_FileEntity* fileEntity = nullptr;

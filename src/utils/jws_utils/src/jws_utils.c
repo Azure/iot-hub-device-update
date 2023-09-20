@@ -10,6 +10,7 @@
 #include "base64_utils.h"
 #include "crypto_lib.h"
 #include "root_key_util.h"
+#include "default_rootkeyutil_contextprovider.h"
 #include <aduc/result.h>
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/azure_base64.h>
@@ -319,6 +320,8 @@ JWSResult VerifySJWK(const char* sjwk)
     char* kid = NULL;
     void* rootKey = NULL;
 
+    RootKeyUtilContext* rootKeyUtilContext = NULL;
+
     if (!ExtractJWSSections(sjwk, &header, &payload, &signature))
     {
         retval = JWSResult_BadStructure;
@@ -341,7 +344,14 @@ JWSResult VerifySJWK(const char* sjwk)
         goto done;
     }
 
-    result = RootKeyUtility_GetKeyForKid(&rootKey, kid);
+    rootKeyUtilContext = GetRootKeyUtilContext();
+    if (rootKeyUtilContext == NULL)
+    {
+        retval = JWSResult_Failed;
+        goto done;
+    }
+
+    result = RootKeyUtility_GetKeyForKid(rootKeyUtilContext, &rootKey, kid);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -369,7 +379,7 @@ JWSResult VerifySJWK(const char* sjwk)
     }
 
     // Now, verify that signing key is not on the rootkey packages's Disallowed
-    resultGetDisabledSigningKeys = RootKeyUtility_GetDisabledSigningKeys(&signingKeyDisallowed);
+    resultGetDisabledSigningKeys = RootKeyUtility_GetDisabledSigningKeys(rootKeyUtilContext, &signingKeyDisallowed);
     if (IsAducResultCodeFailure(resultGetDisabledSigningKeys.ResultCode))
     {
         retval = JWSResult_FailedGetDisabledSigningKeys;

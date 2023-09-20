@@ -11,10 +11,11 @@
 #include <aduc/c_utils.h>
 #include <aduc/result.h>
 #include <stdbool.h>
+#include <root_key_util.h>
 
 EXTERN_C_BEGIN
 
-ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* rootKeyPkgUrl);
+ADUC_Result RootKeyWorkflow_UpdateRootKeys(RootKeyUtilContext* rootKeyUtilContext, const char* workflowId, const char* rootKeyPkgUrl);
 
 EXTERN_C_END
 

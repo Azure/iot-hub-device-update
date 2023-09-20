@@ -12,6 +12,7 @@
 #include <aduc/result.h>
 #include <aduc/rootkeypackage_parse.h>
 #include <aduc/rootkeypackage_utils.h>
+#include <aduc/types/adu_core.h>
 #include <base64_utils.h>
 #include <crypto_lib.h>
 
@@ -20,6 +21,7 @@
 #undef ENABLE_MOCKS
 
 #include <root_key_util.h>
+#include <rootkey_store.hpp>
 
 #define ENABLE_MOCKS
 #include <root_key_util_helper.h>
@@ -84,18 +86,6 @@ size_t MockRootKeyList_numHardcodedKeys()
     return ARRAY_SIZE(testHardcodedRootKeys);
 }
 
-ADUC_Result MockRootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPackage, const char* fileLocation)
-{
-    UNREFERENCED_PARAMETER(fileLocation);
-    ADUC_Result result{ 1, 0 };
-    ADUC_RootKeyPackage* tempPkg = (ADUC_RootKeyPackage*)malloc(sizeof(ADUC_RootKeyPackage));
-    REQUIRE(tempPkg != nullptr);
-    ADUC_Result pkgResult = ADUC_RootKeyPackageUtils_Parse(validRootKeyPackageJson.c_str(), tempPkg);
-    REQUIRE(IsAducResultCodeSuccess(pkgResult.ResultCode));
-    *rootKeyPackage = tempPkg;
-    return result;
-}
-
 bool MockRootKeyUtility_RootKeyIsDisabled(const ADUC_RootKeyPackage* rootKeyPackage, const char* keyId)
 {
     if (strcmp(keyId, "testrootkey2") == 0 || strcmp(keyId, "testrootkey_from_package") == 0)
@@ -104,6 +94,31 @@ bool MockRootKeyUtility_RootKeyIsDisabled(const ADUC_RootKeyPackage* rootKeyPack
     }
     return false;
 }
+
+class MockRootKeyStore : public IRootKeyStoreInternal
+{
+public:
+    MockRootKeyStore() : m_pkg(nullptr) {}
+    bool SetConfig(RootKeyStoreConfigProperty propertyName, const char* propertyValue) noexcept override { return true; }
+    const std::string* GetConfig(RootKeyStoreConfigProperty propertyName) const noexcept override { return new std::string{""}; }
+    bool SetRootKeyPackage(const ADUC_RootKeyPackage* package) noexcept override
+    {
+        m_pkg = const_cast<ADUC_RootKeyPackage*>(package);
+        return true;
+    }
+
+    bool GetRootKeyPackage(ADUC_RootKeyPackage* outPackage) noexcept override
+    {
+        *outPackage = *m_pkg;
+        m_pkg = nullptr;
+        return true;
+    }
+    bool Load() noexcept override { return true; }
+    ADUC_Result Persist() noexcept override { return { ADUC_Result_Success, 0 }; }
+
+private:
+    ADUC_RootKeyPackage* m_pkg;
+};
 
 class SignatureValidationMockHook
 {
@@ -124,6 +139,17 @@ public:
     SignatureValidationMockHook& operator=(const SignatureValidationMockHook&) = delete;
     SignatureValidationMockHook(SignatureValidationMockHook&&) = delete;
     SignatureValidationMockHook& operator=(SignatureValidationMockHook&&) = delete;
+
+    RootKeyUtilContext* GetRootKeyUtilityContext()
+    {
+        m_context.rootKeyStoreHandle = &m_rootkey_store;
+        m_context.rootKeyExtendedResult = 0;
+        return &m_context;
+    }
+
+private:
+    MockRootKeyStore m_rootkey_store;
+    RootKeyUtilContext m_context;
 };
 
 class GetKeyForKidMockHook
@@ -134,7 +160,6 @@ public:
         REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_GetHardcodedRsaRootKeys, MockRootKeyList_GetHardcodedRsaRootKeys);
         REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_numHardcodedKeys, MockRootKeyList_numHardcodedKeys);
         REGISTER_GLOBAL_MOCK_HOOK(RootKeyUtility_RootKeyIsDisabled, MockRootKeyUtility_RootKeyIsDisabled);
-        REGISTER_GLOBAL_MOCK_HOOK(RootKeyUtility_LoadPackageFromDisk, MockRootKeyUtility_LoadPackageFromDisk);
     }
 
     ~GetKeyForKidMockHook()
@@ -142,13 +167,23 @@ public:
         REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_GetHardcodedRsaRootKeys, nullptr);
         REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_numHardcodedKeys, nullptr);
         REGISTER_GLOBAL_MOCK_HOOK(RootKeyUtility_RootKeyIsDisabled, nullptr);
-        REGISTER_GLOBAL_MOCK_HOOK(RootKeyUtility_LoadPackageFromDisk, nullptr);
     }
 
     GetKeyForKidMockHook(const GetKeyForKidMockHook&) = delete;
     GetKeyForKidMockHook& operator=(const GetKeyForKidMockHook&) = delete;
     GetKeyForKidMockHook(GetKeyForKidMockHook&&) = delete;
     GetKeyForKidMockHook& operator=(GetKeyForKidMockHook&&) = delete;
+
+    RootKeyUtilContext* GetRootKeyUtilityContext()
+    {
+        m_context.rootKeyStoreHandle = &m_rootkey_store;
+        m_context.rootKeyExtendedResult = 0;
+        return &m_context;
+    }
+
+private:
+    MockRootKeyStore m_rootkey_store;
+    RootKeyUtilContext m_context;
 };
 
 TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_ValidateRootKeyPackage Signature Validation")
@@ -158,12 +193,13 @@ TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_ValidateRootKeyPac
         ADUC_RootKeyPackage pkg = {};
 
         ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(validRootKeyPackageJson.c_str(), &pkg);
-
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-        ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
+
+        ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(GetRootKeyUtilityContext(), &pkg);
 
         CHECK(IsAducResultCodeSuccess(validationResult.ResultCode));
     }
+
     SECTION("RootKeyUtil_ValidateRootKeyPackage - Invalid RootKeyPackage Signature")
     {
         ADUC_RootKeyPackage pkg = {};
@@ -171,45 +207,9 @@ TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_ValidateRootKeyPac
         ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(invalidRootKeyPackageJson.c_str(), &pkg);
 
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-        ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
+        ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(GetRootKeyUtilityContext(), &pkg);
 
         CHECK(validationResult.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_VALIDATION_FAILED);
-    }
-}
-
-TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_WriteRootKeyPackageToFileAtomically")
-{
-    SECTION("Success case")
-    {
-        std::string filePath = get_dest_rootkey_package_json_path();
-        ADUC_RootKeyPackage loadedRootKeyPackage = {};
-        ADUC_RootKeyPackage* writtenRootKeyPackage = nullptr;
-
-        STRING_HANDLE destPath = STRING_construct(filePath.c_str());
-        REQUIRE(destPath != nullptr);
-
-        ADUC_Result pResult = ADUC_RootKeyPackageUtils_Parse(validRootKeyPackageJson.c_str(), &loadedRootKeyPackage);
-
-        REQUIRE(IsAducResultCodeSuccess(pResult.ResultCode));
-
-        ADUC_Result wResult = RootKeyUtility_WriteRootKeyPackageToFileAtomically(&loadedRootKeyPackage, destPath);
-
-        CHECK(IsAducResultCodeSuccess(wResult.ResultCode));
-
-        REGISTER_GLOBAL_MOCK_HOOK(RootKeyUtility_LoadPackageFromDisk, nullptr);
-        ADUC_Result lResult = RootKeyUtility_LoadPackageFromDisk(&writtenRootKeyPackage, filePath.c_str());
-
-        REQUIRE(IsAducResultCodeSuccess(lResult.ResultCode));
-        REQUIRE(writtenRootKeyPackage != nullptr);
-
-        CHECK(ADUC_RootKeyPackageUtils_AreEqual(writtenRootKeyPackage, &loadedRootKeyPackage));
-
-        ADUC_RootKeyPackageUtils_Destroy(&loadedRootKeyPackage);
-        ADUC_RootKeyPackageUtils_Destroy(writtenRootKeyPackage);
-
-        free(writtenRootKeyPackage);
-
-        STRING_delete(destPath);
     }
 }
 
@@ -218,7 +218,7 @@ TEST_CASE_METHOD(GetKeyForKidMockHook, "RootKeyUtility_GetKeyForKid - not disabl
     SECTION("rootkey not disabled, found in hard-coded list")
     {
         CryptoKeyHandle rootKeyCryptoKey = nullptr;
-        ADUC_Result result = RootKeyUtility_GetKeyForKid(&rootKeyCryptoKey, "testrootkey1");
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(GetRootKeyUtilityContext(), &rootKeyCryptoKey, "testrootkey1");
         CHECK(IsAducResultCodeSuccess(result.ResultCode));
         CHECK(rootKeyCryptoKey != nullptr);
         if (rootKeyCryptoKey != nullptr)
@@ -230,7 +230,7 @@ TEST_CASE_METHOD(GetKeyForKidMockHook, "RootKeyUtility_GetKeyForKid - not disabl
     SECTION("rootkey not found in either hard-coded list, or local store")
     {
         CryptoKeyHandle rootKeyCryptoKey = nullptr;
-        ADUC_Result result = RootKeyUtility_GetKeyForKid(&rootKeyCryptoKey, "testrootkey_does_not_exist");
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(GetRootKeyUtilityContext(), &rootKeyCryptoKey, "testrootkey_does_not_exist");
         CHECK(IsAducResultCodeFailure(result.ResultCode));
         CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID);
         CHECK(rootKeyCryptoKey == nullptr);
@@ -243,7 +243,7 @@ TEST_CASE_METHOD(GetKeyForKidMockHook, "RootKeyUtility_GetKeyForKid - not disabl
     SECTION("disabled hard-coded rootkey")
     {
         CryptoKeyHandle rootKeyCryptoKey = nullptr;
-        ADUC_Result result = RootKeyUtility_GetKeyForKid(&rootKeyCryptoKey, "testrootkey2");
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(GetRootKeyUtilityContext(), &rootKeyCryptoKey, "testrootkey2");
         CHECK(IsAducResultCodeFailure(result.ResultCode));
         CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_ROOTKEY_IS_DISABLED);
         CHECK(rootKeyCryptoKey == nullptr);
@@ -256,7 +256,7 @@ TEST_CASE_METHOD(GetKeyForKidMockHook, "RootKeyUtility_GetKeyForKid - not disabl
     SECTION("disabled non-hardcoded rootkey")
     {
         CryptoKeyHandle rootKeyCryptoKey = nullptr;
-        ADUC_Result result = RootKeyUtility_GetKeyForKid(&rootKeyCryptoKey, "testrootkey_from_package");
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(GetRootKeyUtilityContext(), &rootKeyCryptoKey, "testrootkey_from_package");
         CHECK(IsAducResultCodeFailure(result.ResultCode));
         CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_ROOTKEY_IS_DISABLED);
         CHECK(rootKeyCryptoKey == nullptr);

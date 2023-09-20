@@ -15,7 +15,6 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h> // PRIu64
 #include <stdlib.h>
-
 #include <time.h>
 
 #include "aduc/adu_core_export_helpers.h" // ADUC_MethodCall_RestartAgent
@@ -30,7 +29,10 @@
 #include "aduc/types/workflow.h"
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
+#include "jws_utils.h"
 #include "root_key_util.h" // RootKeyUtility_GetReportingErc
+#include "default_rootkeyutil_contextprovider.h" // GetRootKeyUtilContext
+#include "trust_utils.h" // validate_update_manifest_signature
 
 #include <pthread.h>
 
@@ -416,11 +418,11 @@ void ADUC_Workflow_HandlePropertyUpdate(
 {
     ADUC_WorkflowHandle nextWorkflow;
 
-    ADUC_Result result = workflow_init((const char*)propertyUpdateValue, true /* shouldValidate */, &nextWorkflow);
+    ADUC_Result result = workflow_init((const char*)propertyUpdateValue, &nextWorkflow, validate_update_manifest_signature);
 
     workflow_set_force_update(nextWorkflow, forceUpdate);
 
-    ADUC_Result_t rootkeyErc = RootKeyUtility_GetReportingErc();
+    ADUC_Result_t rootkeyErc = RootKeyUtility_GetReportingErc(GetRootKeyUtilContext());
     if (rootkeyErc != 0)
     {
         workflow_add_erc(nextWorkflow, rootkeyErc);

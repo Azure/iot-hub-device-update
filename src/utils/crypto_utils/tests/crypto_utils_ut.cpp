@@ -6,8 +6,10 @@
  * Licensed under the MIT License.
  */
 #include "aduc/result.h"
+#include "aduc/types/adu_core.h"
 #include "base64_utils.h"
 #include "crypto_lib.h"
+#include "rootkey_store.hpp"
 #include "root_key_util.h"
 #include <aduc/calloc_wrapper.hpp>
 #include <catch2/catch.hpp>
@@ -15,6 +17,51 @@
 
 using ADUC::StringUtils::cstr_wrapper;
 using uint8_t_wrapper = ADUC::StringUtils::calloc_wrapper<uint8_t>;
+
+class MockRootKeyStore : public IRootKeyStoreInternal
+{
+public:
+    MockRootKeyStore() : m_pkg(nullptr) {}
+    bool SetConfig(RootKeyStoreConfigProperty propertyName, const char* propertyValue) noexcept override { return true; }
+    const std::string* GetConfig(RootKeyStoreConfigProperty propertyName) const noexcept override { return new std::string{""}; }
+    bool SetRootKeyPackage(const ADUC_RootKeyPackage* package) noexcept override
+    {
+        m_pkg = const_cast<ADUC_RootKeyPackage*>(package);
+        return true;
+    }
+
+    bool GetRootKeyPackage(ADUC_RootKeyPackage* outPackage) noexcept override
+    {
+        *outPackage = *m_pkg;
+        m_pkg = nullptr;
+        return true;
+    }
+
+    bool Load() noexcept override { return true; }
+    ADUC_Result Persist() noexcept override { return { ADUC_Result_Success, 0 }; }
+
+private:
+    ADUC_RootKeyPackage* m_pkg;
+};
+
+class TestCaseFixture
+{
+public:
+    TestCaseFixture()
+    {
+        memset(&m_rootkey_util_context, 0, sizeof(m_rootkey_util_context));
+        m_rootkey_util_context.rootKeyStoreHandle = &m_store;
+    }
+
+    const RootKeyUtilContext* GetRootKeyUtilityContext() const
+    {
+        return &m_rootkey_util_context;
+    }
+
+private:
+    RootKeyUtilContext m_rootkey_util_context;
+    MockRootKeyStore m_store;
+};
 
 TEST_CASE("Base64 Encoding")
 {
@@ -51,7 +98,7 @@ TEST_CASE("Base64 Decoding")
     }
 }
 
-TEST_CASE("RSA Keys")
+TEST_CASE_METHOD(TestCaseFixture, "RSA Keys")
 {
     SECTION("Making an RSA Key From a String")
     {
@@ -71,7 +118,7 @@ TEST_CASE("RSA Keys")
     {
         CryptoKeyHandle key = nullptr;
 
-        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, "ADU.200702.R");
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(GetRootKeyUtilityContext(), &key, "ADU.200702.R");
 
         CHECK(IsAducResultCodeSuccess(result.ResultCode));
 
@@ -84,12 +131,12 @@ TEST_CASE("RSA Keys")
     {
         CryptoKeyHandle key = nullptr;
 
-        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, "foo");
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(GetRootKeyUtilityContext(), &key, "foo");
         CHECK(IsAducResultCodeFailure(result.ResultCode));
         CHECK(key == nullptr);
     }
 }
-TEST_CASE("Signature Verification")
+TEST_CASE_METHOD(TestCaseFixture, "Signature Verification")
 {
     SECTION("Validating a Valid Signature")
     {
@@ -120,7 +167,7 @@ TEST_CASE("Signature Verification")
 
         CryptoKeyHandle key = nullptr;
 
-        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, "ADU.200702.R");
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(GetRootKeyUtilityContext(), &key, "ADU.200702.R");
 
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
@@ -166,7 +213,7 @@ TEST_CASE("Signature Verification")
 
         CryptoKeyHandle key = NULL;
 
-        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, "ADU.200702.R");
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(GetRootKeyUtilityContext(), &key, "ADU.200702.R");
 
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
         REQUIRE(key != nullptr);

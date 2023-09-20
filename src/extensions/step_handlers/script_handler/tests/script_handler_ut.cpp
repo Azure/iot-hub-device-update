@@ -111,7 +111,7 @@ TEST_CASE("Install helper test")
 {
     // Init bundle workflow.
     ADUC_WorkflowHandle bundle = nullptr;
-    ADUC_Result result = workflow_init(action_bundle, false, &bundle);
+    ADUC_Result result = workflow_init(action_bundle, &bundle, nullptr);
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
@@ -126,7 +126,7 @@ TEST_CASE("Install helper test")
 
     // Init leaf workflow
     ADUC_WorkflowHandle leaf0 = nullptr;
-    result = workflow_init(action_leaf0, false, &leaf0);
+    result = workflow_init(action_leaf0, &leaf0, nullptr);
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
 

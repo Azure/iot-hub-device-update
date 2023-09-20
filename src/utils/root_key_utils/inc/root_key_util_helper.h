@@ -16,13 +16,4 @@
 MOCKABLE_FUNCTION(
     , bool, RootKeyUtility_RootKeyIsDisabled, const ADUC_RootKeyPackage*, rootKeyPackage, const char*, keyId);
 
-MOCKABLE_FUNCTION(
-    ,
-    ADUC_Result,
-    RootKeyUtility_LoadPackageFromDisk,
-    ADUC_RootKeyPackage**,
-    rootKeyPackage,
-    const char*,
-    fileLocation);
-
 #endif // #define ROOT_KEY_UTILS_HELPER

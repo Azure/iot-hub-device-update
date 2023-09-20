@@ -19,6 +19,7 @@
 #include <azure_c_shared_utility/strings.h>
 #include <parson.h>
 #include <root_key_util.h>
+#include <rootkeyutil_contextprovider.h>
 
 #include <stdlib.h>
 
@@ -34,12 +35,13 @@ static ADUC_RootKeyPkgDownloaderInfo s_default_rootkey_downloader = {
 
 /**
  * @brief Downloads the root key package and updates local store with it if different from current.
+ * @param[in] rootKeyUtilContext The rootkey utility context.
  * @param[in] workflowId The workflow Id for use in loca dir path of the rootkey package download.
  * @param[in] rootKeyPkgUrl The URL of the rootkey package from the deployment metadata.
  * @returns ADUC_Result the result.
  * @details If local storage is not being used then the contents of outLocalStoreChanged will always be true.
  */
-ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* rootKeyPkgUrl)
+ADUC_Result RootKeyWorkflow_UpdateRootKeys(RootKeyUtilContext* rootKeyUtilContext, const char* workflowId, const char* rootKeyPkgUrl)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
@@ -49,7 +51,6 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
     JSON_Value* rootKeyPackageJsonValue = NULL;
     char* rootKeyPackageJsonString = NULL;
     ADUC_RootKeyPackage rootKeyPackage;
-
     memset(&rootKeyPackage, 0, sizeof(ADUC_RootKeyPackage));
 
     if (workflowId == NULL)
@@ -58,7 +59,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
         goto done;
     }
 
-    RootKeyUtility_ClearReportingErc();
+    RootKeyUtility_ClearReportingErc(rootKeyUtilContext);
 
     tmpResult = ADUC_RootKeyPackageUtils_DownloadPackage(
         rootKeyPkgUrl, workflowId, &s_default_rootkey_downloader, &downloadedFilePath);
@@ -93,7 +94,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
         goto done;
     }
 
-    tmpResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&rootKeyPackage);
+    tmpResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(rootKeyUtilContext, &rootKeyPackage);
 
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
@@ -101,40 +102,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
         goto done;
     }
 
-    if (!ADUC_SystemUtils_Exists(ADUC_ROOTKEY_STORE_PATH))
-    {
-        if (ADUC_SystemUtils_MkDirRecursiveDefault(ADUC_ROOTKEY_STORE_PATH) != 0)
-        {
-            result.ExtendedResultCode = ADUC_ERC_ROOTKEY_STORE_PATH_CREATE;
-            goto done;
-        }
-    }
-
-    fileDest = STRING_construct(ADUC_ROOTKEY_STORE_PACKAGE_PATH);
-
-    if (fileDest == NULL)
-    {
-        result.ExtendedResultCode = ADUC_ERC_NOMEM;
-        goto done;
-    }
-
-    if (!ADUC_RootKeyUtility_IsUpdateStoreNeeded(fileDest, rootKeyPackageJsonString))
-    {
-        // This is a success, but skips writing to local store and includes informational ERC.
-        result.ResultCode = ADUC_Result_RootKey_Continue;
-        result.ExtendedResultCode = ADUC_ERC_ROOTKEY_PKG_UNCHANGED;
-        goto done;
-    }
-
-    tmpResult = RootKeyUtility_WriteRootKeyPackageToFileAtomically(&rootKeyPackage, fileDest);
-
-    if (IsAducResultCodeFailure(tmpResult.ResultCode))
-    {
-        result = tmpResult;
-        goto done;
-    }
-
-    tmpResult = RootKeyUtility_ReloadPackageFromDisk(STRING_c_str(fileDest));
+    tmpResult = RootKeyUtility_SaveRootKeyPackageToStore(rootKeyUtilContext, &rootKeyPackage);
 
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
@@ -156,7 +124,7 @@ done:
             Log_Debug("No root key change.");
         }
 
-        RootKeyUtility_SetReportingErc(result.ExtendedResultCode);
+        RootKeyUtility_SetReportingErc(rootKeyUtilContext, result.ExtendedResultCode);
     }
     else
     {

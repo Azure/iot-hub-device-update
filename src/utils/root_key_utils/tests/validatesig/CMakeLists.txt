@@ -10,7 +10,7 @@ target_sources(${target_name} PRIVATE main.cpp root_key_utils_ut.cpp)
 
 target_compile_definitions (${target_name} PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}" USE_LOCAL_STORE=1)
 
-target_link_libraries (${target_name} PRIVATE aduc::root_key_utils aduc::rootkeypackage_utils aduc::string_utils)
+target_link_libraries (${target_name} PRIVATE aduc::logging aduc::rootkey_store aduc::root_key_utils aduc::rootkeypackage_utils aduc::string_utils)
 
 find_package (Catch2 REQUIRED)
 target_link_libraries (${target_name} PRIVATE Catch2::Catch2)

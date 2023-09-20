@@ -29,6 +29,8 @@ target_link_libraries (
     PUBLIC aduc::c_utils
     PRIVATE aduc::rootkeypackage_utils
             aduc::root_key_utils
+            aduc::root_key_utils_context_provider
+            aduc::root_key_utils_default_context_provider
             aduc::logging
             aduc::system_utils
             aziotsharedutil)

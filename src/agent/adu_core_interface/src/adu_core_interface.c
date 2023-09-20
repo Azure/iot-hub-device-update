@@ -27,6 +27,8 @@
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 
+#include "root_key_util.h"
+#include "rootkeyutil_contextprovider.h"
 #include "startup_msg_helper.h"
 
 #include <azure_c_shared_utility/strings.h> // STRING_*
@@ -398,13 +400,20 @@ void OrchestratorUpdateCallback(
     char* rootKeyPkgUrl = NULL;
     STRING_HANDLE rootKeyPackageFilePath = NULL;
 
+    RootKeyUtilContext* rootKeyUtilContext = GetRootKeyUtilContext();
+    if (rootKeyUtilContext == NULL)
+    {
+        Log_Error("failed to get root key util context");
+        goto done;
+    }
+
     // Reads out the json string so we can Log Out what we've got.
     // The value will be parsed and handled in ADUC_Workflow_HandlePropertyUpdate.
     char* jsonString = json_serialize_to_string(propertyValue);
     if (jsonString == NULL)
     {
         Log_Error(
-            "OrchestratorUpdateCallback failed to convert property JSON value to string, property version (%d)",
+            "failed to convert property JSON value to string, property version (%d)",
             propertyVersion);
         goto done;
     }
@@ -439,7 +448,7 @@ void OrchestratorUpdateCallback(
         }
 
         // Ensure update to latest rootkey pkg, which is required for validating the update metadata.
-        tmpResult = RootKeyWorkflow_UpdateRootKeys(workflowId, rootKeyPkgUrl);
+        tmpResult = RootKeyWorkflow_UpdateRootKeys(rootKeyUtilContext, workflowId, rootKeyPkgUrl);
         if (IsAducResultCodeFailure(tmpResult.ResultCode))
         {
             Log_Error("Update Rootkey failed, 0x%08x. Deployment cannot proceed.", tmpResult.ExtendedResultCode);
@@ -492,6 +501,7 @@ done:
     STRING_delete(jsonToSend);
 
     free(jsonString);
+    RootKeyUtility_UninitContext(rootKeyUtilContext);
 
     Log_Info("OrchestratorPropertyUpdateCallback ended");
 }

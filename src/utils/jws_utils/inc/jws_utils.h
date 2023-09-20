@@ -35,6 +35,7 @@
 #include <aduc/c_utils.h>
 #include <aduc/result.h>
 #include <azure_c_shared_utility/vector.h>
+#include <root_key_util.h>
 #include <stdbool.h>
 
 #ifndef JWS_UTILS_H

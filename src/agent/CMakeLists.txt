@@ -87,6 +87,8 @@ target_link_libraries (
             aduc::logging
             aduc::permission_utils
             aduc::pnp_helper
+            aduc::rootkey_store
+            aduc::root_key_utils_default_context_provider
             aduc::system_utils
             aduc::url_utils
             diagnostics_component::diagnostics_interface
@@ -145,5 +147,6 @@ else ()
 endif ()
 
 target_link_libraries (${target_name} PRIVATE aduc::platform_layer)
+target_link_libraries (${target_name} PRIVATE aduc::root_key_utils_default_context_provider)
 
 install (TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
