@@ -12,6 +12,7 @@
 #include "aduc/adu_types.h"
 #include "aduc/config_utils.h"
 #include "aduc/logging.h"
+#include "aduc/retry_utils.h" // ADUC_GetTimeSinceEpochInSeconds
 #include "aduc/string_c_utils.h" // IsNullOrEmpty
 #include "aducpal/time.h" // time_t
 
@@ -33,6 +34,7 @@
 // Enrollment request message content, which is always an empty JSON object.
 static const char* s_enr_req_message_content = "{}";
 static const size_t s_enr_req_message_content_len = 2;
+static char* s_mqtt_topic_a2s_oto = NULL;
 
 #define CONST_TIME_5_SECONDS 5
 #define CONST_TIME_30_SECONDS 30
@@ -278,14 +280,16 @@ bool ADUC_Enrollment_Management_Initialize()
     agent_info = ADUC_ConfigInfo_GetAgent(config, 0);
 
     if (!ADUC_AgentInfo_GetUnsignedIntegerField(
-            agent_info, "enrollmentSettings.enrollmentRequestTimeout", &s_enrMgrState.enr_req_timeOutSeconds))
+            agent_info, "enrollmentSettings.enrollmentRequestTimeout", &s_enrMgrState.enr_req_timeOutSeconds)
+        || s_enrMgrState.enr_req_timeOutSeconds == 0)
     {
         Log_Info("Using default enrollment request timeout: %d", DEFAULT_ENR_REQ_TIMEOUT_SECONDS);
         s_enrMgrState.enr_req_timeOutSeconds = DEFAULT_ENR_REQ_TIMEOUT_SECONDS;
     }
 
     if (!ADUC_AgentInfo_GetUnsignedIntegerField(
-            agent_info, "enrollmentSettings.minimumRetryDelay", &s_enrMgrState.enr_req_minRetryDelaySeconds))
+            agent_info, "enrollmentSettings.minimumRetryDelay", &s_enrMgrState.enr_req_minRetryDelaySeconds)
+        || s_enrMgrState.enr_req_minRetryDelaySeconds == 0)
     {
         Log_Info("Using default minimum retry delay: %d", DEFAULT_ENR_REQ_MIN_RETRY_DELAY_SECONDS);
         s_enrMgrState.enr_req_minRetryDelaySeconds = DEFAULT_ENR_REQ_MIN_RETRY_DELAY_SECONDS;
@@ -375,6 +379,7 @@ bool ADUC_Enrollment_Management_DoWork()
             int mid = 0;
 
             mqtt_res = ADUC_CommunicationChannel_MQTT_Publish(
+                s_mqtt_topic_a2s_oto /* topic */,
                 &mid /* mid */,
                 s_enr_req_message_content_len,
                 s_enr_req_message_content, // "{}"
@@ -386,7 +391,7 @@ bool ADUC_Enrollment_Management_DoWork()
                 SetEnrollmentState(ADU_ENROLLMENT_STATE_ENROLLING, "enr_req submitted");
                 s_enrMgrState.enr_req_lastAttemptTime = nowTime;
                 Log_Info(
-                    "Submiting 'enr_req' (mid:%d, cid:%s, t:%ld, expired:%ld)",
+                    "Submitting 'enr_req' (mid:%d, cid:%s, t:%ld, expired:%ld)",
                     mid,
                     cid,
                     nowTime,
@@ -440,6 +445,43 @@ bool ADUC_Enrollment_Management_DoWork()
 
             return result;
         }
+    }
+
+    return false;
+}
+
+bool ADUC_Enrollment_Management_IsEnrolled()
+{
+    return s_enrMgrState.enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED;
+}
+
+/**
+ * @brief Set the MQTT publishing topic for communication from the Agent to the Service.
+ *
+ * This function allows setting the MQTT publishing topic for messages sent from the Agent to the Service.
+ * If the previous topic was set, it is freed to avoid memory leaks. If the provided 'topic' is not empty or NULL,
+ * it is duplicated and assigned to the internal MQTT topic variable.
+ *
+ * @param topic A pointer to the MQTT publishing topic string to be set.
+ *
+ * @return true if the MQTT topic was successfully set or updated; false if 'topic' is empty or NULL.
+ *
+ * @note The memory allocated for the previous topic (if any) is freed to prevent memory leaks.
+ * @note If 'topic' is empty or NULL, the function returns false.
+ */
+bool ADUC_Enrollment_Management_SetAgentToServiceTopic(const char* topic)
+{
+    if (s_mqtt_topic_a2s_oto != NULL)
+    {
+        free(s_mqtt_topic_a2s_oto);
+        s_mqtt_topic_a2s_oto = NULL;
+    }
+
+    if (!IsNullOrEmpty(topic))
+    {
+        s_mqtt_topic_a2s_oto = strdup(topic);
+        Log_Info("Changed publishing topic to '%s'", s_mqtt_topic_a2s_oto);
+        return true;
     }
 
     return false;

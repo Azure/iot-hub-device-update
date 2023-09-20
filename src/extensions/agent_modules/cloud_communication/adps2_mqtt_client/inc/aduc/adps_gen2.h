@@ -29,12 +29,16 @@ typedef struct AZURE_DPS_2_MQTT_SETTINGS_TAG
 } AZURE_DPS_2_MQTT_SETTINGS;
 
 /**
- * @brief Reads the Azure DPS 2 MQTT settings from the config file.
+ * @brief Read the Azure DPS Gen2 connection data from the config file.
+ *        This follow MQTT protocol describe at https://learn.microsoft.com/azure/iot/iot-mqtt-connect-to-iot-dps
+ * @param settings The Azure DPS Gen2 MQTT settings to populate. The caller is responsible for freeing the returned settings by calling FreeAzureDPS2MqttSettings function.
+ * @return true if the settings were read successfully, false otherwise.
  */
 bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings);
 
 /**
- * @brief Frees the Azure DPS 2 MQTT settings.
+ * @brief Free resources allocated for the Azure DPS Gen2 MQTT settings.
+ * @param settings The Azure DPS Gen2 MQTT settings to free.
  */
 void FreeAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings);
 

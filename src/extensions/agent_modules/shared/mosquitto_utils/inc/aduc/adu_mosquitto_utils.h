@@ -49,12 +49,6 @@ typedef enum ADUC_MQTT_DISCONNECTION_CATEGORY_TAG
 ADUC_MQTT_DISCONNECTION_CATEGORY CategorizeMQTTDisconnection(int rc);
 
 /**
- * @brief Get the current time in seconds since the epoch.
- * @return The current time in seconds since the epoch.
- */
-time_t ADUC_GetTimeSinceEpochInSeconds();
-
-/**
  * @brief Generate a correlation ID from a time value.
  * @param[in] t The time value to use.
  * @return A string containing the correlation ID. The caller is responsible for free()'ing the returned string.
@@ -84,7 +78,7 @@ char* GenerateCorrelationIdFromTimeWithPrefix(time_t t, const char* prefix);
  * @note If the function fails to retrieve the correlation data or if any of the input parameters is NULL,
  *       an error message will be logged.
  */
-bool ADU_mosquitto_get_correlation_data(const mosquitto_property* props, char**value);
+bool ADU_mosquitto_get_correlation_data(const mosquitto_property* props, char** value);
 
 /**
  * @brief Retrieve the value of a specific user property from an MQTT v5 property list.
@@ -105,7 +99,7 @@ bool ADU_mosquitto_get_correlation_data(const mosquitto_property* props, char**v
  *
  * @warning If any of the input pointers are NULL, the function will log an error and return false.
  */
-bool ADU_mosquitto_read_user_property_string(const mosquitto_property* props, const char *key, char **value);
+bool ADU_mosquitto_read_user_property_string(const mosquitto_property* props, const char* key, char** value);
 
 /**
  * @brief Check if a specific user property exists within a property list.
@@ -122,6 +116,6 @@ bool ADU_mosquitto_read_user_property_string(const mosquitto_property* props, co
  * @note If there are multiple properties with the same key, this function will
  * return true upon finding the first key-value match.
  */
-bool ADU_mosquitto_has_user_property(const mosquitto_property* props, const char *key, const char *value);
+bool ADU_mosquitto_has_user_property(const mosquitto_property* props, const char* key, const char* value);
 
 #endif

@@ -1,18 +1,15 @@
 /**
- * @file swupdate_handler_v2_ut.cpp
- * @brief SWUpdate handler unit tests
+ * @file adps2mqtt_client_module_ft.cpp
+ * @brief Azure DPS MQTT Client module functional tests
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
 
-#include "du_agent_sdk/agent_module_interface.h"
 #include "aduc/config_utils.h"
 #include "aduc/logging.h"
-//#include "aduc/mqtt_callbacks.h"
-//#include "aduc/mqtt_setup.h"
 #include "aduc/system_utils.h"
-//#include <mosquitto.h>
+#include "du_agent_sdk/agent_module_interface.h"
 
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
@@ -40,7 +37,7 @@ static void _SignalHandler(int signum)
 
 extern ADUC_AGENT_MODULE_INTERFACE ADPS_MQTT_Client_ModuleInterface;
 
-TEST_CASE("ADPS2MQTT Device Registration")
+TEST_CASE("ADPS2MQTT Device Registration", "[.][functional]")
 {
     set_test_config_folder();
 
@@ -55,7 +52,6 @@ TEST_CASE("ADPS2MQTT Device Registration")
     // Initialize the module
     int result = ADPS_MQTT_Client_ModuleInterface.initializeModule(handle, nullptr);
     CHECK(result == 0);
-
 
     keep_running_ft = true;
 

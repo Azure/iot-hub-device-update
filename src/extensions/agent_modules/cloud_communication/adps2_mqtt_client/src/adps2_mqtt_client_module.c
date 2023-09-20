@@ -5,24 +5,36 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-
 #include "aduc/adps_gen2.h"
+#include "aduc/adu_communication_channel.h"
 #include "aduc/adu_types.h"
 #include "aduc/config_utils.h"
 #include "aduc/logging.h"
-#include "aduc/mqtt_setup.h"
+#include "aduc/retry_utils.h" // ADUC_GetTimeSinceEpochInSeconds
 #include "aduc/string_c_utils.h"
 #include "du_agent_sdk/agent_module_interface.h"
 
-#include <aducpal/time.h> // clock_gettime
+#include "parson.h"
+#include <aducpal/time.h> // time_t
 #include <mosquitto.h> // mosquitto related functions
 
+#define ADPS_MQTT_TOPIC_REGISTRATIONS_RESULT "$dps/registrations/res/#"
+#define ADPS_MQTT_TOPIC_REGISTRATIONS_RESULT_200 "$dps/registrations/res/200/#"
+#define ADPS_MQTT_TOPIC_REGISTRATIONS_RESULT_202 "$dps/registrations/res/202/#"
+
+#define ADPS_DEFAULT_REGISTER_REQUEST_DELAY_SECONDS 60
+
+/**
+ * @brief Enumeration of registration states for Azure DPS device registration management.
+ */
 typedef enum ADPS_REGISTER_STATE_TAG
 {
-    ADPS_REGISTER_STATE_NONE = 0,
-    ADPS_REGISTER_STATE_REGISTERING = 1,
-    ADPS_REGISTER_STATE_REGISTERED = 2,
-    ADPS_REGISTER_STATE_FAILED = 3,
+    ADPS_REGISTER_STATE_FAILED = -1, /**< Device registration failed. */
+    ADPS_REGISTER_STATE_UNKNOWN = 0, /**< Registration state is unknown. */
+    ADPS_REGISTER_STATE_REGISTERING = 1, /**< Device is currently registering. */
+    ADPS_REGISTER_STATE_WAIT_TO_POLL = 2, /**< Waiting for a polling event. */
+    ADPS_REGISTER_STATE_POLLING = 3, /**< Device is currently polling. */
+    ADPS_REGISTER_STATE_REGISTERED = 4 /**< Device registration is successful. */
 } ADPS_REGISTER_STATE;
 
 /**
@@ -39,8 +51,14 @@ typedef struct ADPS_MQTT_CLIENT_MODULE_STATE_TAG
     bool subscribed; //!< Device is subscribed to DPS topics
 
     ADPS_REGISTER_STATE registerState; //!< Registration state
+    char* operationId; //!< Operation ID for registration
+    time_t lastRegisterAttemptTime; //!< Last time a registration attempt was made
+    time_t lastRegisterResponseTime; //!< Last time a registration response was received
+    time_t nextRegisterAttemptTime; //!< Next time to attempt registration
+    int registerRetries; //!< Number of registration retries
 
-    char* regRequestId; //!< Registration request ID
+    JSON_Value* registrationData; //!< Registration data
+
     time_t lastErrorTime; //!< Last time an error occurred
     ADUC_Result lastAducResult; //!< Last ADUC result
     int lastError; //!< Last error code
@@ -49,7 +67,7 @@ typedef struct ADPS_MQTT_CLIENT_MODULE_STATE_TAG
 
 } ADPS_MQTT_CLIENT_MODULE_STATE;
 
-static ADPS_MQTT_CLIENT_MODULE_STATE g_moduleState = { 0 };
+static ADPS_MQTT_CLIENT_MODULE_STATE s_moduleState = { 0 };
 
 /**
  * @brief The contract info for the module.
@@ -62,53 +80,16 @@ ADUC_AGENT_CONTRACT_INFO g_adpsMqttClientContractInfo = {
 #    define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
-static time_t GetTimeSinceEpochInSeconds()
+static void SetRegisterState(ADPS_REGISTER_STATE state, const char* reason)
 {
-    struct timespec timeSinceEpoch;
-    ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
-    return timeSinceEpoch.tv_sec;
+    if (s_moduleState.registerState == state)
+    {
+        return;
+    }
+
+    Log_Info("Register state changed from %d to %d (%s)", s_moduleState.registerState, state, reason);
+    s_moduleState.registerState = state;
 }
-
-/* Example config file:
-static const char* testADSP2Config =
-    R"({)"
-        R"("schemaVersion": "2.0",)"
-        R"("aduShellTrustedUsers": [)"
-        R"("adu")"
-        R"(],)"
-        R"("manufacturer": "contoso",)"
-        R"("model": "espresso-v1",)"
-        R"("agents" : [{)"
-            R"("name": "main",)"
-            R"("runas": "adu",)"
-            R"("connectionSource": {)"
-            R"("connectionType": "ADPS2/MQTT",)"
-            R"("connectionData": {)"
-              R"("dps" : {)"
-                R"("idScope" : "0ne0123456789abcdef",)"
-                R"("registrationId" : "adu-dps-client-unit-test-device",)"
-                R"("apiVersion" : "2021-06-01",)"
-                R"("globalDeviceEndpoint" : "global.azure-devices-provisioning.net",)"
-                R"("tcpPort" : 8883,)"
-                R"("useTLS": true,)"
-                R"("cleanSession" : false,)"
-                R"("keepAliveInSeconds" : 3600,)"
-                R"("clientId" : "adu-dps-client-unit-test-device",)"
-                R"("userName" : "adu-dps-client-unit-test-user-1",)"
-                R"("password" : "adu-dps-client-unit-test-password-1",)"
-                R"("caFile" : "adu-dps-client-unit-test-ca-1",)"
-                R"("certFile" : "adu-dps-client-unit-test-cert-1.pem",)"
-                R"("keyFile" : "adu-dps-client-unit-test-key-1.pem",)"
-                R"("keyFilePassword" : "adu-dps-client-unit-test-key-password-1")"
-              R"(})"
-            R"(})"
-            R"(},)"
-            R"("manufacturer": "contoso",)"
-            R"("model": "espresso-v1")"
-        R"(}])"
-    R"(})";
-*/
-
 /**
  * @brief Gets the extension contract info.
  * @param handle The handle to the module. This is the same handle that was returned by the Create function.
@@ -132,76 +113,182 @@ enum ADPS_ERROR
     ADPS_ERROR_UNKNOWN = 7,
 };
 
-/**
- * @brief Set the last error code and log the error message.
- */
-void SetError(int error, const char* message)
+// Forward declarations
+void ADPS_MQTT_Client_Module_OnMessage(
+    struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props);
+void ADPS_MQTT_Client_Module_OnPublish(
+    struct mosquitto* mosq, void* obj, int mid, int reason_code, const mosquitto_property* props);
+
+const char* topicArray[1] = { "$dps/registrations/res/#" };
+
+static bool ADPS_MQTT_Client_Module_GetSubscriptTopics(int* count, char*** topics)
 {
-    g_moduleState.lastError = error;
-    g_moduleState.lastErrorTime = GetTimeSinceEpochInSeconds();
-    if (message != NULL)
+    bool success = false;
+    if (count == NULL || topics == NULL)
     {
-        Log_Error(message);
+        Log_Error("Invalid parameter");
+        goto done;
     }
+
+    *count = 1;
+    *topics = (char**)topicArray;
+
+    success = true;
+done:
+    return success;
 }
 
-/* Callback called when the client receives a CONNACK message from the broker. */
-void ADPS_OnConnect(struct mosquitto* mosq, void* obj, int reason_code, int flags, const mosquitto_property* props)
-{
-    ADPS_MQTT_CLIENT_MODULE_STATE* state = (ADPS_MQTT_CLIENT_MODULE_STATE*)obj;
-    state->connected = true;
+/**
+ * @brief Callbacks for various event from the communication channel.
+ */
+ADUC_MQTT_CALLBACKS s_commChannelCallbacks = {
+    NULL /*on_connect*/,
+    NULL /*on_disconnect*/,
+    ADPS_MQTT_Client_Module_GetSubscriptTopics /*get_subscription_topics*/,
+    NULL /*on_subscribe*/,
+    NULL /*on_unsubscribe*/,
+    ADPS_MQTT_Client_Module_OnPublish,
+    ADPS_MQTT_Client_Module_OnMessage,
+    NULL /*on_log*/
+};
 
-    /* Print out the connection result. mosquitto_connack_string() produces an
-   * appropriate string for MQTT v3.x clients, the equivalent for MQTT v5.0
-   * clients is mosquitto_reason_string().
-   */
-    if ((int)state->settings.mqttSettings.mqttVersion == MQTT_PROTOCOL_V5)
+/**
+ * @brief A helper function used for processing a device registration response payload.
+ *
+ * Example payload:
+ *   {
+ *      "operationId": "5.4501502c51dab402.6a8fa100-82f6-44fc-ae51-f90c2811abf5",
+ *      "status": "assigned",
+ *      "registrationState": {
+ *      "x509": {
+ *        "enrollmentGroupId": "contoso-blue-devbox-wus3"
+ *      },
+ *      "registrationId": "contoso-blue-device03-devbox-wus3",
+ *      "createdDateTimeUtc": "2023-09-18T23:29:30.4838175Z",
+ *      "assignedEndpoint": {
+ *          "type": "mqttBroker",
+ *          "hostName": "contoso-blue-devbox-wus3-eg.westus2-1.ts.eventgrid.azure.net"
+ *      },
+ *      "deviceId": "contoso-blue-device03-devbox-wus3",
+ *      "status": "assigned",
+ *      "substatus": "initialAssignment",
+ *      "lastUpdatedDateTimeUtc": "2023-09-18T23:29:53.4296572Z",
+ *      "etag": "IjJmMDBjNjEzLTAwMDAtNGQwMC0wMDAwLTY1MDhkZDcxMDAwMCI="
+ *   }
+ *
+ * If the registration status is "assigned", then the device is registered
+ *
+ *
+ */
+bool ProcessDeviceRegistrationResponse(const char* payload, size_t payload_len)
+{
+    bool result = false;
+
+    JSON_Value* root_value = json_parse_string(payload);
+    if (root_value == NULL)
     {
-        Log_Info("on_connect: %s", mosquitto_reason_string(reason_code));
+        Log_Error("Failed to parse JSON payload");
+        goto done;
+    }
+
+    const char* status = json_object_get_string(json_object(root_value), "status");
+    if (status == NULL)
+    {
+        Log_Error("Failed to get status from JSON payload");
+        goto done;
+    }
+
+    if (strncmp(status, "assigned", 8) == 0)
+    {
+        Log_Info("Device is registered.");
+        SetRegisterState(ADPS_REGISTER_STATE_REGISTERED, "received assigned status");
+    }
+    else if (strncmp(status, "assigning", 9) == 0)
+    {
+        Log_Info("Device is registering.");
+        SetRegisterState(ADPS_REGISTER_STATE_REGISTERING, "received assigning status");
     }
     else
     {
-        Log_Info("on_connect: %s", mosquitto_connack_string(reason_code));
+        Log_Error("Unknown status: %s", status);
+        SetRegisterState(ADPS_REGISTER_STATE_FAILED, "received unknown status");
+        // TODO (nox-msft) : determine whether to retry or bail
     }
 
-    //   if (reason_code != 0)
-    //   {
-    //     keep_running = 0;
-    //     /* If the connection fails for any reason, we don't want to keep on
-    //      * retrying in this example, so disconnect. Without this, the client
-    //      * will attempt to reconnect. */
-    //     int rc;
-    //     if ((rc = mosquitto_disconnect_v5(mosq, reason_code, NULL)) != MOSQ_ERR_SUCCESS)
-    //     {
-    //       Log_Error("Failure on disconnect: %s", mosquitto_strerror(rc));
-    //     }
-    //   }
-}
-
-/* Callback called when the broker has received the DISCONNECT command and has disconnected the
- * client. */
-void ADPS_OnDisconnect(struct mosquitto* mosq, void* obj, int rc, const mosquitto_property* props)
-{
-    connection_ok = 0;
-    Log_Info("on_disconnect: reason=%s", mosquitto_strerror(rc));
+done:
+    return result;
 }
 
 /* Callback called when the client receives a message. */
-void ADPS_OnMessage(
+void ADPS_MQTT_Client_Module_OnMessage(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
+    bool result = false;
+    char** topics = NULL;
+    int count = 0;
     Log_Info("on_message: Topic: %s; QOS: %d; mid: %d", msg->topic, msg->qos, msg->mid);
 
-    //ADPS_MQTT_CLIENT_MODULE_STATE* state = (ADPS_MQTT_CLIENT_MODULE_STATE*)obj;
+    if (msg != NULL && msg->topic != NULL)
+    {
+        time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
 
-    // TODO (nox-msft) : Handle the message.
+        int mqtt_ret = mosquitto_topic_matches_sub(ADPS_MQTT_TOPIC_REGISTRATIONS_RESULT, msg->topic, &result);
+        if (mqtt_ret != MQTT_RC_SUCCESS || !result)
+        {
+            goto done;
+        }
 
-    // if (state != NULL && state->handle_message != NULL)
-    // {
-    //     client_obj->handle_message(mosq, msg, props);
-    // }
+        // Get http status code from topic sub segment
+        // e.g., "$dps/registrations/res/200/?$rid=1&..."
+        mqtt_ret = mosquitto_sub_topic_tokenise(msg->topic, &topics, &count);
+        if (mqtt_ret != MQTT_RC_SUCCESS && count <= 3)
+        {
+            // Cant get the http status code.
+            goto done;
+        }
 
-    /* This blindly prints the payload, but the payload can be anything so take care. */
+        int http_status_code = atoi(topics[3]);
+        if (http_status_code == 200)
+        {
+            Log_Info("Device is registered.");
+            s_moduleState.lastRegisterResponseTime = nowTime;
+            ProcessDeviceRegistrationResponse(msg->payload, msg->payloadlen);
+        }
+        else if (http_status_code == 202)
+        {
+            Log_Info("Sending status polling request.");
+            // const char* status = NULL;
+            JSON_Value* root_value = json_parse_string(msg->payload);
+            if (root_value != NULL)
+            {
+                free(s_moduleState.operationId);
+                s_moduleState.operationId = NULL;
+                const char* optId = json_object_get_string(json_object(root_value), "operationId");
+                s_moduleState.operationId = strdup(optId);
+                json_value_free(root_value);
+                root_value = NULL;
+
+                //status = json_object_get_string(json_object(root_value), "status");
+
+                SetRegisterState(ADPS_REGISTER_STATE_WAIT_TO_POLL, "received 202 response");
+                // TODO (nox-msft) parst next-retry time from the topic string.
+                s_moduleState.nextRegisterAttemptTime = nowTime + 3;
+                goto done;
+            }
+        }
+        else if (http_status_code == 404)
+        {
+            // TODO (nox-msft) : determine whether to retry or bail
+        }
+        else
+        {
+            // TODO (nox-msft) : determine whether to retry or bail
+        }
+    }
+
+done:
+
+    free(topics);
     Log_Info("\tPayload: %s\n", (char*)msg->payload);
 }
 
@@ -210,361 +297,155 @@ void ADPS_OnMessage(
  * been completely written to the operating system. For QoS 1 this means we
  * have received a PUBACK from the broker. For QoS 2 this means we have
  * received a PUBCOMP from the broker. */
-void ADPS_OnPublish(struct mosquitto* mosq, void* obj, int mid, int reason_code, const mosquitto_property* props)
+void ADPS_MQTT_Client_Module_OnPublish(
+    struct mosquitto* mosq, void* obj, int mid, int reason_code, const mosquitto_property* props)
 {
     Log_Info("on_publish: Message with mid %d has been published.", mid);
 }
-
-/* Callback called when the broker sends a SUBACK in response to a SUBSCRIBE. */
-void ADPS_OnSubscribe(
-    struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos, const mosquitto_property* props)
-{
-    Log_Info("on_subscribe: Subscribed with mid %d; %d topics.", mid, qos_count);
-
-    /* In this example we only subscribe to a single topic at once, but a
-   * SUBSCRIBE can contain many topics at once, so this is one way to check
-   * them all. */
-    for (int i = 0; i < qos_count; i++)
-    {
-        Log_Info("\tQoS %d\n", granted_qos[i]);
-    }
-}
-
-void ADPS_OnLog(struct mosquitto* mosq, void* obj, int level, const char* str)
-{
-#ifndef LOG_ALL_MOSQUITTO
-    if (level == MOSQ_LOG_ERR || strstr(str, "PINGREQ") != NULL || strstr(str, "PINGRESP") != NULL)
-    {
-        Log_Info("%s", str);
-    }
-#else
-    {
-        char* log_level_str;
-        switch (level)
-        {
-        case MOSQ_LOG_DEBUG:
-            log_level_str = "DEBUG";
-            break;
-        case MOSQ_LOG_INFO:
-            log_level_str = "INFO";
-            break;
-        case MOSQ_LOG_NOTICE:
-            log_level_str = "NOTICE";
-            break;
-        case MOSQ_LOG_WARNING:
-            log_level_str = "WARNING";
-            break;
-        case MOSQ_LOG_ERR:
-            log_level_str = "ERROR";
-            break;
-        default:
-            log_level_str = "";
-            break;
-        }
-        Log_Info("[%s] %s", log_level_str, str);
-    }
-#endif
-}
-
-// /* Callback called when the client receives a CONNACK message from the broker and we want to
-//  * subscribe on connect. */
-// void ADPS_OnConnect_WithSubscribe(
-//     struct mosquitto* mosq,
-//     void* obj,
-//     int reason_code,
-//     int flags,
-//     const mosquitto_property* props)
-// {
-//   ADPS_On_Connect(mosq, obj, reason_code, flags, props);
-
-//   connection_ok = 1;
-//   int result;
-
-//   /* Making subscriptions in the on_connect() callback means that if the
-//    * connection drops and is automatically resumed by the client, then the
-//    * subscriptions will be recreated when the client reconnects. */
-//   if (keep_running
-//       && (result = mosquitto_subscribe_v5(mosq, NULL, SUB_TOPIC, QOS_LEVEL, 0, NULL))
-//           != MOSQ_ERR_SUCCESS)
-//   {
-//     LOG_ERROR("Failed to subscribe: %s", mosquitto_strerror(result));
-//     keep_running = 0;
-//     /* We might as well disconnect if we were unable to subscribe */
-//     if ((result = mosquitto_disconnect_v5(mosq, reason_code, props)) != MOSQ_ERR_SUCCESS)
-//     {
-//         LOG_ERROR("Failed to disconnect: %s", mosquitto_strerror(result));
-//     }
-//   }
-// }
-
-#define REQUIRED_TLS_SET_CERT_PATH "L"
 
 /**
  * @brief Initialize the IoTHub Client module.
 */
 int ADPS_MQTT_Client_Module_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* moduleInitData)
 {
+    bool success = false;
+
     IGNORED_PARAMETER(handle);
     IGNORED_PARAMETER(moduleInitData);
-
-    ADUC_Result result = { ADUC_GeneralResult_Failure };
-
-    int mqtt_res = 0;
-    bool use_OS_cert = false;
 
     // Need to set ret and goto done after this to ensure proper shutdown and deinitialization.
     // TODO (nox-msft) - set log level according to global config.
     ADUC_Logging_Init(0, "adps2-mqtt-client-module");
 
-    if (!ReadAzureDPS2MqttSettings(&g_moduleState.settings))
+    if (!ReadAzureDPS2MqttSettings(&s_moduleState.settings))
     {
-        SetError(-1, "Failed to read Azure DPS2 MQTT settings");
+        Log_Error("Failed to read Azure DPS2 MQTT settings");
         goto done;
     }
 
-    Log_Info("Initialize Mosquitto library");
-    mosquitto_lib_init();
+    success = ADUC_CommunicationChannel_Initialize(
+        s_moduleState.settings.registrationId,
+        handle,
+        &s_moduleState.settings.mqttSettings,
+        &s_commChannelCallbacks,
+        NULL);
 
-    g_moduleState.mqttClient = mosquitto_new(
-        g_moduleState.settings.registrationId, g_moduleState.settings.mqttSettings.cleanSession, &g_moduleState);
-    if (!g_moduleState.mqttClient)
+    if (!success)
     {
-        //Log_Error("Failed to create Mosquitto client");
-        SetError(-1, "Failed to create Mosquitto client");
-        return -1; // Initialization failed
-    }
-
-    mqtt_res = mosquitto_int_option(
-        g_moduleState.mqttClient, MOSQ_OPT_PROTOCOL_VERSION, g_moduleState.settings.mqttSettings.mqttVersion);
-    if (mqtt_res != MOSQ_ERR_SUCCESS)
-    {
-        Log_Error("Failed to set MQTT protocol version (%d)", mqtt_res);
+        Log_Error("Failed to initialize the communication channel");
         goto done;
     }
 
-    use_OS_cert = IsNullOrEmpty(g_moduleState.settings.mqttSettings.caFile);
-    if (use_OS_cert)
+done:
+    return success ? 0 : -1;
+}
+
+/*
+ Azure Device Registration Process
+ =================================
+ See : https://learn.microsoft.com/azure/iot/iot-mqtt-connect-to-iot-dps?toc=%2Fazure%2Fiot-dps%2Ftoc.json&bc=%2Fazure%2Fiot-dps%2Fbreadcrumb%2Ftoc.json
+
+ Polling for registration operation status
+ =========================================
+    - The device must poll the service periodically to receive the result of the device registration operation.
+    - Subscribe to the $dps/registrations/res/# topic
+    - Publish a get operation status message to $dps/registrations/GET/iotdps-get-operationstatus/?$rid={request_id}&operationId={operationId}
+        - The operation ID in this message should be the value received in the RegistrationOperationStatus
+          response message in the previous step.
+    - In the successful case, the service responds on the $dps/registrations/res/200/?$rid={request_id} topic.
+    - The payload of the response contains the RegistrationOperationStatus object.
+    - The device should keep polling the service if the response code is 202 after a delay equal to the retry-after period.
+    - The device registration operation is successful if the service returns a 200 status code.
+*/
+
+bool DeviceRegistration_DoWork(/*const char* request_id, const char* connect_json*/)
+{
+    if (s_moduleState.registerState == ADPS_REGISTER_STATE_REGISTERED)
     {
-        mqtt_res = mosquitto_int_option(g_moduleState.mqttClient, MOSQ_OPT_TLS_USE_OS_CERTS, true);
-        if (mqtt_res != MOSQ_ERR_SUCCESS)
+        return true;
+    }
+
+    time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
+
+    if (s_moduleState.registerState == ADPS_REGISTER_STATE_REGISTERING)
+    {
+        if (nowTime > s_moduleState.nextRegisterAttemptTime)
         {
-            Log_Error("Failed to set TLS use OS certs (%d)", mqtt_res);
-            // TODO (nox-msft) - Handle all error codes.
+            SetRegisterState(ADPS_REGISTER_STATE_UNKNOWN, "time out");
+        }
+    }
+
+    if (s_moduleState.registerState == ADPS_REGISTER_STATE_WAIT_TO_POLL)
+    {
+        if (nowTime > s_moduleState.nextRegisterAttemptTime)
+        {
+            char* pollTopic = ADUC_StringFormat(
+                "$dps/registrations/GET/iotdps-get-operationstatus/?$rid=%s&operationId=%s",
+                s_moduleState.settings.registrationId,
+                s_moduleState.operationId);
+            if (pollTopic == NULL)
+            {
+                Log_Error("Cannot allocate memory for registration status polling topic");
+            }
+            else
+            {
+                int mid = 0;
+                int mqtt_ret = ADUC_CommunicationChannel_MQTT_Publish(
+                    pollTopic,
+                    &mid,
+                    0,
+                    NULL,
+                    s_moduleState.settings.mqttSettings.qos,
+                    false /* retain */,
+                    NULL /* props */);
+
+                if (mqtt_ret != MOSQ_ERR_SUCCESS)
+                {
+                    Log_Error("Failed to publish registration polling request (%d)", mqtt_ret);
+                    // TODO (nox-msft) : determine whether to retry or bail
+                }
+                else
+                {
+                    SetRegisterState(ADPS_REGISTER_STATE_POLLING, "publishing message");
+                    s_moduleState.nextRegisterAttemptTime = nowTime + ADPS_DEFAULT_REGISTER_REQUEST_DELAY_SECONDS;
+                    s_moduleState.registerRetries++;
+                }
+            }
+            free(pollTopic);
+        }
+        else
+        {
             goto done;
         }
     }
 
-    // TODO (nox-msft) - Set X.509 certificate here (if using certificate-based authentication)
-    mqtt_res = mosquitto_tls_set(
-        g_moduleState.mqttClient,
-        g_moduleState.settings.mqttSettings.caFile,
-        use_OS_cert ? "/etc/ssl/certs" : NULL,
-        g_moduleState.settings.mqttSettings.certFile,
-        g_moduleState.settings.mqttSettings.keyFile,
-        NULL);
-    if (mqtt_res != MOSQ_ERR_SUCCESS)
-    {
-        Log_Error("Failed to set TLS settings (%d)", mqtt_res);
-
-        // Handle all error codes.
-        switch (mqtt_res)
-        {
-        case MOSQ_ERR_INVAL:
-            Log_Error("Invalid parameter");
-            break;
-
-        case MOSQ_ERR_NOMEM:
-            Log_Error("Out of memory");
-            break;
-        }
-
-        goto done;
-    }
-
-    /*callbacks */
-    mosquitto_connect_v5_callback_set(g_moduleState.mqttClient, ADPS_OnConnect /*ADPS_OnConnect_WithSubscribe*/);
-    mosquitto_disconnect_v5_callback_set(g_moduleState.mqttClient, ADPS_OnDisconnect);
-    mosquitto_subscribe_v5_callback_set(g_moduleState.mqttClient, ADPS_OnSubscribe);
-    mosquitto_publish_v5_callback_set(g_moduleState.mqttClient, ADPS_OnPublish);
-    mosquitto_message_v5_callback_set(g_moduleState.mqttClient, ADPS_OnMessage);
-    mosquitto_log_callback_set(g_moduleState.mqttClient, ADPS_OnLog);
-
-    g_moduleState.initialized = true;
-    result.ResultCode = ADUC_GeneralResult_Success;
-    result.ExtendedResultCode = 0;
-
-done:
-    return result.ResultCode == ADUC_GeneralResult_Success ? 0 : -1;
-}
-
-/**
- * @brief Deinitialize the IoTHub Client module.
- */
-bool ADUC_EnsureValidCommunicationChannel()
-{
-    if (!g_moduleState.initialized)
-    {
-        return false;
-    }
-
-    if (g_moduleState.connected)
-    {
-        return true;
-    }
-
-    // Connect to DPS
-    int mqtt_res = mosquitto_connect(
-        g_moduleState.mqttClient,
-        g_moduleState.settings.mqttSettings.hostname,
-        (int)g_moduleState.settings.mqttSettings.tcpPort,
-        (int)g_moduleState.settings.mqttSettings.keepAliveInSeconds);
-
-    if (mqtt_res != MOSQ_ERR_SUCCESS)
-    {
-        int errno_copy = errno;
-        if (mqtt_res == MOSQ_ERR_ERRNO)
-        {
-            Log_Error("mosquitto_connect failed (%d) - %s", mqtt_res, strerror(errno_copy));
-        }
-        else
-        {
-            Log_Error("mosquitto_connect failed (%d)", mqtt_res);
-        }
-        // TODO (nox-msft): Determine whether to retry to bail according to error code
-        /*
-        	MOSQ_ERR_AUTH_CONTINUE = -4,
-            MOSQ_ERR_NO_SUBSCRIBERS = -3,
-            MOSQ_ERR_SUB_EXISTS = -2,
-            MOSQ_ERR_CONN_PENDING = -1,
-            MOSQ_ERR_SUCCESS = 0,
-            MOSQ_ERR_NOMEM = 1,
-            MOSQ_ERR_PROTOCOL = 2,
-            MOSQ_ERR_INVAL = 3,
-            MOSQ_ERR_NO_CONN = 4,
-            MOSQ_ERR_CONN_REFUSED = 5,
-            MOSQ_ERR_NOT_FOUND = 6,
-            MOSQ_ERR_CONN_LOST = 7,
-            MOSQ_ERR_TLS = 8,
-            MOSQ_ERR_PAYLOAD_SIZE = 9,
-            MOSQ_ERR_NOT_SUPPORTED = 10,
-            MOSQ_ERR_AUTH = 11,
-            MOSQ_ERR_ACL_DENIED = 12,
-            MOSQ_ERR_UNKNOWN = 13,
-            MOSQ_ERR_ERRNO = 14,
-            MOSQ_ERR_EAI = 15,
-            MOSQ_ERR_PROXY = 16,
-            MOSQ_ERR_PLUGIN_DEFER = 17,
-            MOSQ_ERR_MALFORMED_UTF8 = 18,
-            MOSQ_ERR_KEEPALIVE = 19,
-            MOSQ_ERR_LOOKUP = 20,
-            MOSQ_ERR_MALFORMED_PACKET = 21,
-            MOSQ_ERR_DUPLICATE_PROPERTY = 22,
-            MOSQ_ERR_TLS_HANDSHAKE = 23,
-            MOSQ_ERR_QOS_NOT_SUPPORTED = 24,
-            MOSQ_ERR_OVERSIZE_PACKET = 25,
-            MOSQ_ERR_OCSP = 26,
-            MOSQ_ERR_TIMEOUT = 27,
-            MOSQ_ERR_RETAIN_NOT_SUPPORTED = 28,
-            MOSQ_ERR_TOPIC_ALIAS_INVALID = 29,
-            MOSQ_ERR_ADMINISTRATIVE_ACTION = 30,
-            MOSQ_ERR_ALREADY_EXISTS = 31,*/
-        return false; // Connection failed
-    }
-
-    g_moduleState.connected = true;
-    g_moduleState.lastConnectedTime = time(NULL);
-
-    //mqtt_res = mosquitto_loop(g_moduleState.mqttClient, 100 /*timeout*/, 1 /*max_packets*/);
-    mqtt_res = mosquitto_loop_start(g_moduleState.mqttClient);
-    if (mqtt_res != MOSQ_ERR_SUCCESS)
-    {
-        Log_Error("Failed to start Mosquitto loop (%d)", mqtt_res);
-        // TODO (nox-msft) - Handle all error codes.
-        return false;
-    }
-
-    return true;
-}
-
-/**
- * @brief Ensure that the device is subscribed to DPS topics.
- * @return true if the device is subscribed to DPS topics.
- */
-bool EnsureSubscribed()
-{
-    if (g_moduleState.subscribed)
-    {
-        return true;
-    }
-
-    int mqtt_ret = mosquitto_subscribe(g_moduleState.mqttClient, NULL, "$dps/registrations/res/#", 0);
-    if (mqtt_ret != MOSQ_ERR_SUCCESS)
-    {
-        Log_Error("Failed to subscribe to DPS topics (%d)", mqtt_ret);
-        // TODO (nox-msft) : Determine whether to retry or bail according to error code
-        /*
-            MOSQ_ERR_INVAL - if the input parameters were invalid.
-            MOSQ_ERR_NOMEM - if an out of memory condition occurred.
-            MOSQ_ERR_NO_CONN - if the client isn't connected to a broker.
-            MOSQ_ERR_MALFORMED_UTF8 - if the topic is not valid UTF-8
-            MOSQ_ERR_OVERSIZE_PACKET - if the resulting packet would be larger than
-            supported by the broker.)
-        */
-    }
-    else
-    {
-        g_moduleState.subscribed = true;
-    }
-
-    return g_moduleState.subscribed;
-}
-
-bool EnsureDeviceRegistered(/*const char* request_id, const char* connect_json*/)
-{
-    if (g_moduleState.registerState == ADPS_REGISTER_STATE_REGISTERED)
-    {
-        //     // TODO: check current registration status by sending a polling request
-        //     char topic_name[256];
-        //     snprintf(topic_name, sizeof(topic_name), "$dps/registrations/GET/iotdps-get-operationstatus/?$rid=%s&operationId=%s", request_id, operationId);
-        // mosquitto_publish(mqtt_client, NULL, topic_name, 0, "", 0, false);
-        //       snprintf(topic_name, sizeof(topic_name), "$dps/registrations/PUT/iotdps-register/?$rid=%s", request_id);
-        //     mosquitto_publish(g_moduleState.mqttClient, NULL, topic_name, strlen(connect_json), connect_json, 0, false);
-
-        return true;
-    }
-
-    if (g_moduleState.registerState == ADPS_REGISTER_STATE_REGISTERING)
-    {
-        // TODO (nox-msft) : Check for timeout
-        return false;
-    }
-
-    if (g_moduleState.registerState == ADPS_REGISTER_STATE_FAILED)
+    if (s_moduleState.registerState == ADPS_REGISTER_STATE_FAILED)
     {
         // TODO (nox-msft) : determine whether to retry or bail
         return false;
     }
 
-    if (g_moduleState.registerState == ADPS_REGISTER_STATE_NONE && g_moduleState.nextOperationTime > time(NULL))
+    if (s_moduleState.registerState == ADPS_REGISTER_STATE_UNKNOWN && nowTime > s_moduleState.nextRegisterAttemptTime)
     {
         char topic_name[256];
         char device_registration_json[1024];
-        time_t request_id = GetTimeSinceEpochInSeconds();
+        time_t request_id = nowTime;
         snprintf(
             topic_name, sizeof(topic_name), "$dps/registrations/PUT/iotdps-register/?$rid=adps_req_%ld", request_id);
         snprintf(
             device_registration_json,
             sizeof(device_registration_json),
             "{\"registrationId\":\"%s\"}",
-            g_moduleState.settings.registrationId);
-        int mqtt_ret = mosquitto_publish(
-            g_moduleState.mqttClient,
-            NULL,
+            s_moduleState.settings.registrationId);
+        int mid = 0;
+        int mqtt_ret = ADUC_CommunicationChannel_MQTT_Publish(
             topic_name,
+            &mid,
             strlen(device_registration_json),
             device_registration_json,
-            0,
-            false);
+            s_moduleState.settings.mqttSettings.qos,
+            false /* retain */,
+            NULL /* props */);
 
         if (mqtt_ret != MOSQ_ERR_SUCCESS)
         {
@@ -574,10 +455,13 @@ bool EnsureDeviceRegistered(/*const char* request_id, const char* connect_json*/
         }
         else
         {
-            g_moduleState.registerState = ADPS_REGISTER_STATE_REGISTERING;
+            SetRegisterState(ADPS_REGISTER_STATE_REGISTERING, "publishing message");
+            s_moduleState.nextRegisterAttemptTime = nowTime + ADPS_DEFAULT_REGISTER_REQUEST_DELAY_SECONDS;
+            s_moduleState.registerRetries++;
         }
     }
 
+done:
     return false;
 }
 
@@ -592,16 +476,12 @@ int ADPS_MQTT_Client_Module_Deinitialize(ADUC_AGENT_MODULE_HANDLE module)
 {
     Log_Info("Deinitialize");
 
-    if (g_moduleState.mqttClient != NULL)
-    {
-        Log_Info("Disconnecting MQTT client");
-        mosquitto_disconnect(g_moduleState.mqttClient);
-        Log_Info("Destroying MQTT client");
-        mosquitto_destroy(g_moduleState.mqttClient);
-        g_moduleState.mqttClient = NULL;
-    }
+    ADUC_CommunicationChannel_Deinitialize();
 
-    mosquitto_lib_cleanup();
+    FreeAzureDPS2MqttSettings(&s_moduleState.settings);
+    free(s_moduleState.operationId);
+    json_value_free(s_moduleState.registrationData);
+
     ADUC_Logging_Uninit();
     return 0;
 }
@@ -613,7 +493,7 @@ int ADPS_MQTT_Client_Module_Deinitialize(ADUC_AGENT_MODULE_HANDLE module)
  */
 ADUC_AGENT_MODULE_HANDLE ADPS_MQTT_Client_Module_Create()
 {
-    ADUC_AGENT_MODULE_HANDLE handle = &g_moduleState;
+    ADUC_AGENT_MODULE_HANDLE handle = &s_moduleState;
     return handle;
 }
 
@@ -658,8 +538,8 @@ bool IsConnectionResetRequested()
 void ResetConnection()
 {
     // TODO (nox-msft): ensure that we tear down the connection and re-establish it.
-    g_moduleState.connected = g_moduleState.subscribed = false;
-    g_moduleState.registerState = ADPS_REGISTER_STATE_NONE;
+    s_moduleState.connected = s_moduleState.subscribed = false;
+    s_moduleState.registerState = ADPS_REGISTER_STATE_UNKNOWN;
 }
 
 /**
@@ -669,39 +549,11 @@ void ResetConnection()
  */
 int ADPS_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
 {
-    int mqtt_ret = MOSQ_ERR_UNKNOWN;
+    ADUC_CommunicationChannel_DoWork();
 
-    if (!ADUC_EnsureValidCommunicationChannel())
+    if (ADUC_CommunicationChannel_IsConnected())
     {
-        return -1;
-    }
-
-    // // Executes mosquitto network loop. Setting time 0 value to immediately return when network connection is not available.
-    // // NOTE: max_packets is unused.
-    // int mqtt_ret = MOSQ_ERR_UNKNOWN;
-
-    // mqtt_ret = mosquitto_loop(g_moduleState.mqttClient, 0 /*timeout*/, 1 /*max_packets*/);
-    if (mqtt_ret != MOSQ_ERR_SUCCESS)
-    {
-        // Log_Error("Failed to execute mosquitto loop (%d)", mqtt_ret);
-        // TODO (nox-msft) : determine whether to retry or bail
-        return -1;
-    }
-
-    if (IsConnectionResetRequested())
-    {
-        Log_Info("Connection reset requested");
-        ResetConnection();
-    }
-
-    if (!EnsureSubscribed())
-    {
-        return -1;
-    }
-
-    if (!EnsureDeviceRegistered())
-    {
-        return -1;
+        DeviceRegistration_DoWork();
     }
 
     return 0;
@@ -713,24 +565,45 @@ int ADPS_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
  * @param handle agent module handle
  * @param dataType data type
  * @param key data key/name
- * @param buffer return buffer (call must free the memory of the return value once done with it)
+ * @param data return data
  * @param size return size of the return value
  * @return int 0 on success
 */
 int ADPS_MQTT_Client_Module_GetData(
-    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, const char* key, void** buffer, int* size)
+    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int* size)
 {
     IGNORED_PARAMETER(handle);
     IGNORED_PARAMETER(dataType);
     IGNORED_PARAMETER(key);
-    IGNORED_PARAMETER(buffer);
+    IGNORED_PARAMETER(data);
+    IGNORED_PARAMETER(size);
+    int ret = 0;
+    return ret;
+}
+
+/**
+ * @brief Set the Data object for the specified key.
+ *
+ * @param handle agent module handle
+ * @param dataType data type
+ * @param key data key/name
+ * @param data data buffer
+ * @package size size of the data buffer
+ */
+int ADPS_MQTT_Client_Module_SetData(
+    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size)
+{
+    IGNORED_PARAMETER(handle);
+    IGNORED_PARAMETER(dataType);
+    IGNORED_PARAMETER(key);
+    IGNORED_PARAMETER(data);
     IGNORED_PARAMETER(size);
     int ret = 0;
     return ret;
 }
 
 ADUC_AGENT_MODULE_INTERFACE ADPS_MQTT_Client_ModuleInterface = {
-    &g_moduleState,
+    &s_moduleState,
     ADPS_MQTT_Client_Module_Create,
     ADPS_MQTT_Client_Module_Destroy,
     ADPS_MQTT_Client_Module_GetContractInfo,
@@ -738,4 +611,16 @@ ADUC_AGENT_MODULE_INTERFACE ADPS_MQTT_Client_ModuleInterface = {
     ADPS_MQTT_Client_Module_Initialize,
     ADPS_MQTT_Client_Module_Deinitialize,
     ADPS_MQTT_Client_Module_GetData,
+    ADPS_MQTT_Client_Module_SetData,
 };
+
+bool ADPS_MQTT_CLIENT_MODULE_IsDeviceRegistered(ADUC_AGENT_MODULE_HANDLE handle)
+{
+    return (s_moduleState.registerState == ADPS_REGISTER_STATE_REGISTERED);
+}
+
+const char* ADPS_MQTT_CLIENT_MODULE_GetMQTTBrokerEndpoint(ADUC_AGENT_MODULE_HANDLE handle)
+{
+    return json_object_dotget_string(
+        json_value_get_object(s_moduleState.registrationData), "assignedEnpoint.hostName");
+}

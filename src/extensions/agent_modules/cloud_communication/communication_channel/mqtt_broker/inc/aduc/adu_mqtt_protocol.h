@@ -64,7 +64,6 @@
 
 #define ADU_MQTT_PROTOCOL_MESSAGE_TYPE_UPDATE_RESULT_REPORT_ACK "updrslt_ack"
 
-
 typedef struct ADU_MQTT_MESSAGE_INFO_TAG
 {
     char* correlationData; //!< Correlation data. This a epoch time in seconds.
@@ -83,9 +82,10 @@ typedef struct ADU_MQTT_MESSAGE_INFO_TAG
 typedef enum ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_TAG
 {
     ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_DISCONNECTED = -1, /**< The communication channel is disconnected. */
-    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_UNKNOWN = 0,       /**< The communication channel state is unknown. */
-    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTING = 1,    /**< The communication channel is currently connecting. */
-    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTED = 2,     /**< The communication channel is connected. */
+    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_UNKNOWN = 0, /**< The communication channel state is unknown. */
+    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTING =
+        1, /**< The communication channel is currently connecting. */
+    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTED = 2, /**< The communication channel is connected. */
 } ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE;
 
 /**
@@ -97,22 +97,28 @@ typedef enum ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_TAG
 typedef enum ADU_ENROLLMENT_STATE_TAG
 {
     ADU_ENROLLMENT_STATE_NOT_ENROLLED = -1, /**< The client is not enrolled. */
-    ADU_ENROLLMENT_STATE_UNKNOWN = 0,       /**< The enrollment state of the client is unknown. */
-    ADU_ENROLLMENT_STATE_ENROLLING = 1,     /**< The client is currently in the process of enrolling. */
-    ADU_ENROLLMENT_STATE_ENROLLED = 2,      /**< The client is successfully enrolled. */
+    ADU_ENROLLMENT_STATE_UNKNOWN = 0, /**< The enrollment state of the client is unknown. */
+    ADU_ENROLLMENT_STATE_ENROLLING = 1, /**< The client is currently in the process of enrolling. */
+    ADU_ENROLLMENT_STATE_ENROLLED = 2, /**< The client is successfully enrolled. */
 } ADU_ENROLLMENT_STATE;
 
-/*
- * @brief Represents the MQTT topics used by the ADU client.
+/**
+ * @brief Enumeration representing the initialization states of the ADU MQTT client module.
  *
- * This structure contains the MQTT topics required for the ADU client's
- * communication, including topics for sending messages to the service
- * and for receiving messages from the service.
+ * This enumeration defines various states that the ADU MQTT client module can be in during initialization.
+ * - `ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_FAILED`: Initialization has failed.
+ * - `ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_NONE`: No initialization state.
+ * - `ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL`: Partial initialization.
+ * - `ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_COMPLETED`: Initialization has been successfully completed.
+ *
+ * @note This enumeration is used to track the initialization progress of the ADU MQTT client module.
  */
-typedef struct ADUC_MQTT_TOPICS_TAG
+typedef enum ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_TAG
 {
-    char* agentOTO;     //!< An MQTT topic for the agent to send messages to the service.
-    char* serviceOTO;   //!< An MQTT topic for the agent to receive messages from the service.
-} ADUC_MQTT_TOPICS;
+    ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_FAILED = -1,
+    ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_NONE = 0,
+    ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL = 1,
+    ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_COMPLETED = 2,
+} ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE;
 
 #endif /* __ADU_MQTT_PROTOCOL_H__ */

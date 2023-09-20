@@ -54,4 +54,20 @@ void OnMessage_enr_cn(
  */
 bool IsDeviceEnrolled();
 
+/**
+ * @brief Set the MQTT publishing topic for communication from the Agent to the Service.
+ *
+ * This function allows setting the MQTT publishing topic for messages sent from the Agent to the Service.
+ * If the previous topic was set, it is freed to avoid memory leaks. If the provided 'topic' is not empty or NULL,
+ * it is duplicated and assigned to the internal MQTT topic variable.
+ *
+ * @param topic A pointer to the MQTT publishing topic string to be set.
+ *
+ * @return true if the MQTT topic was successfully set or updated; false if 'topic' is empty or NULL.
+ *
+ * @note The memory allocated for the previous topic (if any) is freed to prevent memory leaks.
+ * @note If 'topic' is empty or NULL, the function returns false.
+ */
+bool ADUC_Enrollment_Management_SetAgentToServiceTopic(const char* topic);
+
 #endif // __ADU_ENROLLMENT_MANAGEMENT_H__

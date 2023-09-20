@@ -1,18 +1,24 @@
-#ifndef __ADPS2_MQTT_CLIENT_MODULE_INTERNAL_H__
-#define __ADPS2_MQTT_CLIENT_MODULE_INTERNAL_H__
+#ifndef __ADPS2_MQTT_CLIENT_MODULE_H__
+#define __ADPS2_MQTT_CLIENT_MODULE_H__
 
 /**
- * @file adps2-client-module-internal.h
+ * @file adps2-mqtt-client-module.h
  * @brief Implementation for the device provisioning using Azure DPS V2.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
 
-#include "du_agent_sdk/agent_module_interface.h"
 #include "aduc/adps_gen2.h"
 #include "aduc/adu_types.h"
+#include "du_agent_sdk/agent_module_interface.h"
 #include <mosquitto.h> // mosquitto related functions
+
+typedef enum ADPS_MQTT_CLIENT_MODULE_DATA_KEY_TAG
+{
+    ADPS_MQTT_CLIENT_MODULE_DATA_KEY_REGISTER_STATE = 0,
+    ADPS_MQTT_CLIENT_MODULE_DATA_KEY_MQTT_BROKER_ENDPOINT = 100
+} ADPS_MQTT_CLIENT_MODULE_DATA_KEY;
 
 /**
  * @brief Gets the extension contract info.
@@ -45,7 +51,12 @@ void ADPS_OnPublish(struct mosquitto* mosq, void* obj, int mid, int reason_code,
 
 /* Callback called when the broker sends a SUBACK in response to a SUBSCRIBE. */
 void ADPS_OnSubscribe(
-    struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos, const mosquitto_property* props);
+    struct mosquitto* mosq,
+    void* obj,
+    int mid,
+    int qos_count,
+    const int* granted_qos,
+    const mosquitto_property* props);
 
 void ADPS_OnLog(struct mosquitto* mosq, void* obj, int level, const char* str);
 
@@ -73,8 +84,6 @@ ADUC_AGENT_MODULE_HANDLE ADPS_MQTT_Client_Module_Create();
  */
 void ADPS_MQTT_Client_Module_Destroy(ADUC_AGENT_MODULE_HANDLE handle);
 
-void ResetConnection();
-
 /**
  * @brief Perform the work for the extension. This must be a non-blocking operation.
  *
@@ -88,11 +97,23 @@ int ADPS_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
  * @param handle agent module handle
  * @param dataType data type
  * @param key data key/name
- * @param buffer return buffer (call must free the memory of the return value once done with it)
+ * @param data output data
  * @param size return size of the return value
  * @return int 0 on success
 */
 int ADPS_MQTT_Client_Module_GetData(
-    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, const char* key, void** buffer, int* size);
+    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int* size);
 
-#endif // __ADPS2_MQTT_CLIENT_MODULE_INTERNAL_H__
+/**
+ * @brief Set the Data object for the specified key.
+ *
+ * @param handle agent module handle
+ * @param dataType data type
+ * @param key data key/name
+ * @param data data buffer
+ * @package size size of the data buffer
+ */
+int ADPS_MQTT_Client_Module_SetData(
+    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size);
+
+#endif // __ADPS2_MQTT_CLIENT_MODULE_H__

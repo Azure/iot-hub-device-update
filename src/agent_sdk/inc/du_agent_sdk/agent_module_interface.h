@@ -39,15 +39,17 @@ extern "C"
         ADUC_ModuleDataType_None = 0, /**< No module data*/
         ADUC_ModuleDataType_String = 1, /**< String data */
         ADUC_ModuleDataType_Json = 2, /**< JSON string data */
-        ADUC_ModuleDataType_Binary = 3, /**< Binary data */
+        ADUC_ModuleDataType_Int64 = 3, /**< 64-bit integer data */
+        ADUC_ModuleDataType_Boolean = 4, /**< Boolean data */
+        ADUC_ModuleDataType_Binary = 5, /**< Binary data */
     } ADUC_MODULE_DATA_TYPE;
 
     typedef const ADUC_AGENT_CONTRACT_INFO* (*ADUC_AGENT_MODULE_GET_CONTRACT_INFO)(ADUC_AGENT_MODULE_HANDLE);
     typedef int (*ADUC_AGENT_MODULE_DO_WORK)(ADUC_AGENT_MODULE_HANDLE);
     typedef int (*ADUC_AGENT_MODULE_INITIALIZE)(ADUC_AGENT_MODULE_HANDLE, void*);
     typedef int (*ADUC_AGENT_MODULE_DEINITIALIZE)(ADUC_AGENT_MODULE_HANDLE);
-    typedef int (*ADUC_AGENT_MODULE_GET_DATA)(
-        ADUC_AGENT_MODULE_HANDLE, ADUC_MODULE_DATA_TYPE, const char*, void**, int*);
+    typedef int (*ADUC_AGENT_MODULE_GET_DATA)(ADUC_AGENT_MODULE_HANDLE, ADUC_MODULE_DATA_TYPE, int, void*, int*);
+    typedef int (*ADUC_AGENT_MODULE_SET_DATA)(ADUC_AGENT_MODULE_HANDLE, ADUC_MODULE_DATA_TYPE, int, void*, int);
 
     /**
  * @brief The Device Update agent module interface contains the function pointers for
@@ -64,6 +66,7 @@ extern "C"
         ADUC_AGENT_MODULE_INITIALIZE initializeModule;
         ADUC_AGENT_MODULE_DEINITIALIZE deinitializeModule;
         ADUC_AGENT_MODULE_GET_DATA getData;
+        ADUC_AGENT_MODULE_SET_DATA setData;
     } ADUC_AGENT_MODULE_INTERFACE;
 
 #ifdef __cplusplus

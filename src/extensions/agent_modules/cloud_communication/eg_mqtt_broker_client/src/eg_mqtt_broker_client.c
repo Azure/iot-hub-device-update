@@ -1,25 +1,48 @@
 /**
- * @file adps_gen2.c
- * @brief Implements the Azure DPS Gen2 communication utility.
+ * @file eg_mqtt_broker_client.c
+ * @brief Implement the Event Grid MQTT Broker client helper functions
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-#include "aduc/mqtt_client.h"
-#include "aduc/ADUC_MQTT_Client_client.h"
+#include "aduc/eg_mqtt_broker_client.h"
 #include "aduc/config_utils.h"
 #include "aduc/logging.h"
+#include "aduc/mqtt_client.h"
 #include "aduc/string_c_utils.h" // ADUC_StringFormat
 #include "stdlib.h" // memset
 
-// Default MQTT protocol version for Event Grid MQTT Broker is v5 (5)
-#define DEFAULT_EG_MQTT_PROTOCOL_VERSION 5
+/**
+ * @brief Free resources allocated the MQTT broker settings
+ */
+void FreeMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
+{
+    if (settings == NULL)
+    {
+        return;
+    }
+
+    free(settings->hostname);
+    free(settings->clientId);
+    free(settings->username);
+    free(settings->caFile);
+    free(settings->certFile);
+    free(settings->keyFile);
+    memset(settings, 0, sizeof(*settings));
+}
 
 /**
- * @brief Read the MQTT broker connection data from the config file.
+ * @brief Reads MQTT broker connection settings from the configuration file.
  *
- * @remark The caller is responsible for freeing the returned settings by calling FreeMqttBrokerSettings function.
-*/
+ * This function reads the MQTT client settings for communicating with the Azure Device Update service
+ * from the configuration file.
+ *
+ * @param settings A pointer to an `ADUC_MQTT_SETTINGS` structure to populate with the MQTT broker settings.
+ *
+ * @return Returns `true` if the settings were successfully read and populated, otherwise `false`.
+ *
+ * @remark The caller is responsible for freeing the returned settings by calling `FreeMqttBrokerSettings` function.
+ */
 bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
 {
     bool result = false;
@@ -41,9 +64,17 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
 
     agent_info = ADUC_ConfigInfo_GetAgent(config, 0);
 
-    // Currently only support 'ADPS2/MQTT' connection data.
-    if (strcmp(agent_info->connectionType, ADUC_CONNECTION_TYPE_MQTTBROKER) != 0)
+    if (strcmp(agent_info->connectionType, ADUC_CONNECTION_TYPE_ADPS2_MQTT) == 0)
     {
+        settings->hostnameSource = ADUC_MQTT_HOSTNAME_SOURCE_DPS;
+    }
+    else if (strcmp(agent_info->connectionType, ADUC_CONNECTION_TYPE_MQTTBROKER) == 0)
+    {
+        settings->hostnameSource = ADUC_MQTT_HOSTNAME_SOURCE_CONFIG_FILE;
+    }
+    else
+    {
+        Log_Error("Invalid connection type: %s", agent_info->connectionType);
         goto done;
     }
 
@@ -63,14 +94,6 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
         settings->keyFile = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(
-            agent_info, "mqttBroker.keyFilePassword", &settings->keyFilePassword))
-    {
-        settings->keyFilePassword = NULL;
-    }
-
-
-    // TODO (nox-msft) - For MQTT broker, userName must match the device Id (usually the CN of the device's certificate)
     if (IsNullOrEmpty(settings->username))
     {
         if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "mqttBroker.username", &settings->username))
@@ -81,15 +104,17 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
         }
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "mqttBroker.password", &settings->password))
+    if (settings->hostnameSource == ADUC_MQTT_HOSTNAME_SOURCE_DPS)
     {
-        settings->password = NULL;
+        Log_Info("Using DPS module to retrieve MQTT broker endpoint data");
     }
-
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(
-            agent_info, "mqttBroker.hostname", &settings->hostname))
+    else
     {
-        Log_Info("MQTT Broker hostname is not specified");
+        // Expecting MQTT hostname to be specified in the config file.
+        if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "mqttBroker.hostname", &settings->hostname))
+        {
+            Log_Error("MQTT Broker hostname is not specified");
+        }
     }
 
     // Common MQTT connection data fields.
@@ -100,8 +125,7 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
         settings->mqttVersion = DEFAULT_MQTT_BROKER_PROTOCOL_VERSION;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
-            agent_info, "mqttBroker.tcpPort", &settings->tcpPort))
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "mqttBroker.tcpPort", &settings->tcpPort))
     {
         Log_Info("Using default TCP port: %d", DEFAULT_TCP_PORT);
         settings->tcpPort = DEFAULT_TCP_PORT;
@@ -113,8 +137,13 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
         settings->useTLS = DEFAULT_USE_TLS;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(
-            agent_info, "mqttBroker.cleanSession", &settings->cleanSession))
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "mqttBroker.qos", &settings->qos))
+    {
+        Log_Info("QoS: %d", DEFAULT_QOS);
+        settings->qos = DEFAULT_QOS;
+    }
+
+    if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "mqttBroker.cleanSession", &settings->cleanSession))
     {
         Log_Info("CleanSession: %d", DEFAULT_ADPS_CLEAN_SESSION);
         settings->cleanSession = DEFAULT_ADPS_CLEAN_SESSION;
@@ -136,22 +165,4 @@ done:
         FreeMqttBrokerSettings(settings);
     }
     return result;
-}
-
-void FreeMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
-{
-    if (settings == NULL)
-    {
-        return;
-    }
-
-    free(settings->hostname);
-    free(settings->clientId);
-    free(settings->username);
-    free(settings->password);
-    free(settings->caFile);
-    free(settings->certFile);
-    free(settings->keyFile);
-    free(settings->keyFilePassword);
-    memset(settings, 0, sizeof(*settings));
 }

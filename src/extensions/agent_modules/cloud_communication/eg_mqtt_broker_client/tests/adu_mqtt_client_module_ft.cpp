@@ -6,10 +6,10 @@
  * Licensed under the MIT License.
  */
 
-#include "du_agent_sdk/agent_module_interface.h"
 #include "aduc/config_utils.h"
 #include "aduc/logging.h"
 #include "aduc/system_utils.h"
+#include "du_agent_sdk/agent_module_interface.h"
 
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
@@ -26,7 +26,6 @@ static void set_test_config_folder()
     setenv(ADUC_CONFIG_FOLDER_ENV, path.c_str(), 1);
 }
 
-
 bool keep_running_ft = true;
 
 // Signal handler for Ctrl-C
@@ -38,7 +37,7 @@ static void _SignalHandler(int signum)
 
 extern ADUC_AGENT_MODULE_INTERFACE ADUC_MQTT_Client_ModuleInterface;
 
-TEST_CASE("EGBroker Device Enrollment")
+TEST_CASE("EGBroker Device Enrollment", "[.][functional]")
 {
     set_test_config_folder();
 
@@ -54,13 +53,12 @@ TEST_CASE("EGBroker Device Enrollment")
     int result = ADUC_MQTT_Client_ModuleInterface.initializeModule(handle, nullptr);
     CHECK(result == 0);
 
-
     keep_running_ft = true;
 
     while (keep_running_ft)
     {
         // Call do_work
-            result = ADUC_MQTT_Client_ModuleInterface.doWork(handle);
+        result = ADUC_MQTT_Client_ModuleInterface.doWork(handle);
 
         // Sleep for 200ms
         usleep(100000);
@@ -73,5 +71,4 @@ TEST_CASE("EGBroker Device Enrollment")
 
     // Destroy the module
     ADUC_MQTT_Client_ModuleInterface.destroy(handle);
-
 }

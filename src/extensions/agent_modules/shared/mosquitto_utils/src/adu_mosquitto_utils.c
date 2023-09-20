@@ -7,26 +7,13 @@
  */
 
 #include "aduc/adu_mosquitto_utils.h"
-#include "aduc/adu_mqtt_protocol.h"
-#include "aduc/logging.h"
-#include "aduc/string_c_utils.h"
+#include "aduc/string_c_utils.h" // ADUC_StringFormat
 #include "stddef.h"
 #include "stdlib.h"
 #include "string.h"
 #include <aducpal/time.h> // time_t, CLOCK_REALTIME
 #include <mosquitto.h> // mosquitto related functions
 #include <mqtt_protocol.h>
-
-/**
- * @brief Get the current time in seconds since the epoch.
- * @return The current time in seconds since the epoch.
- */
-time_t ADUC_GetTimeSinceEpochInSeconds()
-{
-    struct timespec timeSinceEpoch;
-    ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
-    return timeSinceEpoch.tv_sec;
-}
 
 /**
  * @brief Generate a correlation ID from a time value.
@@ -68,7 +55,6 @@ bool ADU_mosquitto_get_correlation_data(const mosquitto_property* props, char** 
 {
     if (props == NULL || value == NULL)
     {
-        Log_Error("Null pointer (props=%p, value=%p)", props, value);
         return false;
     }
 
@@ -78,7 +64,6 @@ bool ADU_mosquitto_get_correlation_data(const mosquitto_property* props, char** 
     const mosquitto_property* p = mosquitto_property_read_string(props, MQTT_PROP_CORRELATION_DATA, value, false);
     if (p == NULL)
     {
-        Log_Error("Failed to read correlation data");
         return false;
     }
 
@@ -147,7 +132,6 @@ bool ADU_mosquitto_read_user_property_string(const mosquitto_property* props, co
     bool found = false;
     if (props == NULL || value == NULL || key == NULL)
     {
-        Log_Error("Null pointer (props=%p, value=%p, key=%p)", props, value, key);
         return found;
     }
     *value = NULL;

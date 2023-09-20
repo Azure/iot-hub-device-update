@@ -18,7 +18,7 @@
 #    define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
-static time_t GetTimeSinceEpochInSeconds()
+time_t ADUC_GetTimeSinceEpochInSeconds()
 {
     struct timespec timeSinceEpoch;
     ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
@@ -58,7 +58,7 @@ time_t ADUC_Retry_Delay_Calculator(
     {
         delay = (double)maxDelaySecs;
     }
-    time_t retryTimestampSec =
-        (time_t)(GetTimeSinceEpochInSeconds() + (time_t)additionalDelaySecs + (time_t)(delay * (1 + jitterPercent)));
+    time_t retryTimestampSec = (time_t)(
+        ADUC_GetTimeSinceEpochInSeconds() + (time_t)additionalDelaySecs + (time_t)(delay * (1 + jitterPercent)));
     return retryTimestampSec;
 }

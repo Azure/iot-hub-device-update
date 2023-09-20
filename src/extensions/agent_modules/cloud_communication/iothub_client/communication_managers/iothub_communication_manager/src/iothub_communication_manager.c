@@ -13,7 +13,7 @@
 #include "aduc/connection_string_utils.h" // ConnectionStringUtils_DoesKeyExist
 #include "aduc/https_proxy_utils.h"
 #include "aduc/logging.h"
-#include "aduc/retry_utils.h"
+#include "aduc/retry_utils.h" // ADUC_GetTimeSinceEpochInSeconds
 #include "aduc/string_c_utils.h" // LoadBufferWithFileContents
 #include <azure_c_shared_utility/shared_util_options.h>
 
@@ -92,18 +92,6 @@ IOTHUB_CLIENT_CONNECTION_STATUS g_connection_status = IOTHUB_CLIENT_CONNECTION_U
  * @brief Current connection status reason.
  */
 IOTHUB_CLIENT_CONNECTION_STATUS_REASON g_connection_status_reason = IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL;
-
-/**
- * @brief Get the elapsed time since Epoch, on seconds.
- *
- * @return time_t contains the elapsed time since Epoch.
- */
-static time_t GetTimeSinceEpochInSeconds()
-{
-    struct timespec timeSinceEpoch;
-    ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
-    return timeSinceEpoch.tv_sec;
-}
 
 /**
  * @brief Initializes the IoT Hub connection manager.
@@ -207,7 +195,7 @@ void IoTHub_CommunicationManager_ConnectionStatus_Callback(
     void* user_context_callback)
 {
     UNREFERENCED_PARAMETER(user_context_callback);
-    time_t now_time = GetTimeSinceEpochInSeconds();
+    time_t now_time = ADUC_GetTimeSinceEpochInSeconds();
 
     Log_Debug("IotHub connection status: %d, reason: %d", status, status_reason);
     switch (status)
@@ -696,7 +684,7 @@ static void Connection_Maintenance()
     // Try to (re)connect to the IoT Hub if:
     //   1. The connection is broken (or unauthenticated)
     //   2. It has been long enough since the last authentication attemps
-    time_t now_time = GetTimeSinceEpochInSeconds();
+    time_t now_time = ADUC_GetTimeSinceEpochInSeconds();
 
     if (now_time < g_next_authentication_attempt_time)
     {

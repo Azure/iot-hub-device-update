@@ -65,6 +65,11 @@ time_t ADUC_Retry_Delay_Calculator(
     unsigned long maxDelaySecs,
     double maxJitterPercent);
 
+/**
+ * @brief Get current time since epoch in seconds.
+ */
+time_t ADUC_GetTimeSinceEpochInSeconds();
+
 EXTERN_C_END
 
 #endif // RETRY_UTILS_H

@@ -23,11 +23,11 @@
                 "cleanSession" : false,
                 "keepAliveInSeconds" : 3600,
                 "clientId" : "contoso-blue-device03-devbox-wus3",
-                "certFilex" : "/home/nox/aducerts/contoso-blue-device03-devbox-wus3.cer",
-                "keyFilex" : "/home/nox/aducerts/contoso-blue-device03-devbox-wus3.key"
+                "certFile" : "/home/contoso/aducerts/contoso-blue-device03-devbox-wus3.cer",
+                "keyFile" : "/home/contoso/aducerts/contoso-blue-device03-devbox-wus3.key"
             },
             "mqttBroker" : {
-                "host" : "contoso-blue-device03-devbox-wus3.azure-devices.net",
+                "hostname" : "contoso-blue-devbox-wus3-eg.westus2-1.ts.eventgrid.azure.net",
                 "tcpPort" : 8883,
                 "useTLS": true,
                 "mqttVersion" : 4,
@@ -35,8 +35,8 @@
                 "keepAliveInSeconds" : 3600,
                 "username" : "contoso-blue-device03-devbox-wus3",
                 "clientId" : "contoso-blue-device03-devbox-wus3",
-                "certFile" : "/home/nox/aducerts/contoso-blue-device03-devbox-wus3.cer",
-                "keyFile" : "/home/nox/aducerts/contoso-blue-device03-devbox-wus3.key"
+                "certFile" : "/home/contoso/aducerts/contoso-blue-device03-devbox-wus3.cer",
+                "keyFile" : "/home/contoso/aducerts/contoso-blue-device03-devbox-wus3.key"
             }
           }
         },

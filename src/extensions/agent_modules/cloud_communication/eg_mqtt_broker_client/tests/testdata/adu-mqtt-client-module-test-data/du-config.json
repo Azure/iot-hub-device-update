@@ -23,8 +23,8 @@
                 "cleanSession" : true,
                 "keepAliveInSeconds" : 3600,
                 "clientId" : "contoso-blue-device03-devbox-wus3",
-                "certFilex" : "/home/contoso/aducerts/contoso-blue-device03-devbox-wus3.cer",
-                "keyFilex" : "/home/contoso/aducerts/contoso-blue-device03-devbox-wus3.key"
+                "certFile" : "/home/contoso/aducerts/contoso-blue-device03-devbox-wus3.cer",
+                "keyFile" : "/home/contoso/aducerts/contoso-blue-device03-devbox-wus3.key"
             },
             "mqttBroker" : {
                 "hostname" : "contoso-blue-devbox-wus3-eg.westus2-1.ts.eventgrid.azure.net",

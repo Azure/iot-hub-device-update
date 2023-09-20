@@ -11,18 +11,17 @@
 #include "aduc/string_c_utils.h" // ADUC_StringFormat
 #include "stdlib.h" // memset
 
-#define DEFAULT_DPS_API_VERSION "2021-06-01"
+#define DEFAULT_DPS_API_VERSION "2023-02-01-preview"
 #define DEFAULT_DPS_GLOBAL_ENDPOINT "global.azure-devices-provisioning.net"
-
 // Default MQTT protocol version for Azure DPS Gen2 is v3.1.1 (4)
 #define DEFAULT_DPS_MQTT_PROTOCOL_VERSION 4
 
 /**
  * @brief Read the Azure DPS Gen2 connection data from the config file.
  *        This follow MQTT protocol describe at https://learn.microsoft.com/azure/iot/iot-mqtt-connect-to-iot-dps
- *
- * @remark The caller is responsible for freeing the returned settings by calling FreeAzureDPS2MqttSettings function.
-*/
+ * @param settings The Azure DPS Gen2 MQTT settings to populate. The caller is responsible for freeing the returned settings by calling FreeAzureDPS2MqttSettings function.
+ * @return true if the settings were read successfully, false otherwise.
+ */
 bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
 {
     bool result = false;
@@ -43,8 +42,6 @@ bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
     }
 
     agent_info = ADUC_ConfigInfo_GetAgent(config, 0);
-
-    // Currently only support 'ADPS2/MQTT' connection data.
     if (strcmp(agent_info->connectionType, ADUC_CONNECTION_TYPE_ADPS2_MQTT) != 0)
     {
         goto done;
@@ -66,16 +63,9 @@ bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
         settings->mqttSettings.keyFile = NULL;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetStringField(
-            agent_info, "dps.keyFilePassword", &settings->mqttSettings.keyFilePassword))
-    {
-        settings->mqttSettings.keyFilePassword = NULL;
-    }
-
     // NOTE: If you use X.509 certificate authentication, the registration ID is provided by
     // the subject common name (CN) of the device leaf (end-entity) certificate.
     // {registration_id} in the Username field must match the common name.
-
     if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.registrationId", &settings->registrationId))
     {
         // TODO (nox-msft) : read common name from certificate.
@@ -115,9 +105,6 @@ bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
         goto done;
     }
 
-    // NOTE: the password field is intentionally left blank.
-    settings->mqttSettings.password = NULL;
-
     // NOTE: This is the 'globalDeviceEndpoint' field in the config file.
     if (!ADUC_AgentInfo_ConnectionData_GetStringField(
             agent_info, "dps.globalDeviceEndpoint", &settings->mqttSettings.hostname))
@@ -147,6 +134,12 @@ bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
         settings->mqttSettings.useTLS = DEFAULT_USE_TLS;
     }
 
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "dps.qos", &settings->mqttSettings.qos))
+    {
+        Log_Info("QoS: %d", DEFAULT_QOS);
+        settings->mqttSettings.qos = DEFAULT_QOS;
+    }
+
     if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(
             agent_info, "dps.cleanSession", &settings->mqttSettings.cleanSession))
     {
@@ -172,6 +165,10 @@ done:
     return result;
 }
 
+/**
+ * @brief Free resources allocated for the Azure DPS Gen2 MQTT settings.
+ * @param settings The Azure DPS Gen2 MQTT settings to free.
+ */
 void FreeAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
 {
     if (settings == NULL)
@@ -186,10 +183,8 @@ void FreeAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
     free(settings->mqttSettings.hostname);
     free(settings->mqttSettings.clientId);
     free(settings->mqttSettings.username);
-    free(settings->mqttSettings.password);
     free(settings->mqttSettings.caFile);
     free(settings->mqttSettings.certFile);
     free(settings->mqttSettings.keyFile);
-    free(settings->mqttSettings.keyFilePassword);
     memset(settings, 0, sizeof(*settings));
 }

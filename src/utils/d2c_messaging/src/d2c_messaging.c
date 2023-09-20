@@ -39,15 +39,6 @@ static ADUC_D2C_Message_Processing_Context s_messageProcessingContext[ADUC_D2C_M
 
 static void ProcessMessage(ADUC_D2C_Message_Processing_Context* context);
 
-static time_t GetTimeSinceEpochInSeconds()
-{
-    struct timespec timeSinceEpoch;
-
-    ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
-
-    return timeSinceEpoch.tv_sec;
-}
-
 /**
  * @brief The retry strategy for all each http response status code from the Azure IoT Hub.
  */
@@ -331,7 +322,7 @@ void ADUC_D2C_Messaging_DoWork()
 static void ProcessMessage(ADUC_D2C_Message_Processing_Context* message_processing_context)
 {
     bool shouldSend = false;
-    time_t now = GetTimeSinceEpochInSeconds();
+    time_t now = ADUC_GetTimeSinceEpochInSeconds();
     pthread_mutex_lock(&s_pendingMessageStoreMutex);
     pthread_mutex_lock(&message_processing_context->mutex);
 
@@ -531,7 +522,7 @@ bool ADUC_D2C_Message_SendAsync(
     s_pendingMessageStore[type].responseCallback = responseCallback;
     s_pendingMessageStore[type].completedCallback = completedCallback;
     s_pendingMessageStore[type].statusChangedCallback = statusChangedCallback;
-    s_pendingMessageStore[type].contentSubmitTime = GetTimeSinceEpochInSeconds();
+    s_pendingMessageStore[type].contentSubmitTime = ADUC_GetTimeSinceEpochInSeconds();
     s_pendingMessageStore[type].userData = userData;
     SetMessageStatus(&s_pendingMessageStore[type], ADUC_D2C_Message_Status_Pending);
     pthread_mutex_unlock(&s_pendingMessageStoreMutex);
