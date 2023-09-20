@@ -525,6 +525,8 @@ ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPack
         goto done;
     }
 
+    memset(tempPkg, 0, sizeof(*tempPkg));
+
     ADUC_Result parseResult = ADUC_RootKeyPackageUtils_Parse(rootKeyPackageJsonString, tempPkg);
 
     if (IsAducResultCodeFailure(parseResult.ResultCode))
