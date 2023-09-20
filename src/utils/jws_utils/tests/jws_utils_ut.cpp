@@ -47,7 +47,7 @@ public:
         REQUIRE(fputs(m_pkg.c_str(), outFile) > 0);
         fclose(outFile);
 
-        ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&m_rootKeyPackage, filePath.c_str());
+        ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&m_rootKeyPackage, filePath.c_str(), true /* validateSignatures */);
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
         result = RootKeyUtility_ReloadPackageFromDisk(filePath.c_str());

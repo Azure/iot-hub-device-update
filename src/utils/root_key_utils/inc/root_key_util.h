@@ -22,7 +22,7 @@ ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_Ro
 ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
     const ADUC_RootKeyPackage* rootKeyPackage, const STRING_HANDLE fileDest);
 
-ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPackage, const char* fileLocation);
+ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPackage, const char* fileLocation, bool validateSignatures);
 
 ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath);
 
@@ -34,6 +34,7 @@ void RootKeyUtility_ClearReportingErc();
 ADUC_Result_t RootKeyUtility_GetReportingErc();
 bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE fileDest, const char* rootKeyPackageJsonString);
 ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSigningKeyList);
+bool RootKeyUtility_RootKeyIsDisabled(const ADUC_RootKeyPackage* rootKeyPackage, const char* keyId);
 
 EXTERN_C_END
 #endif // ROOT_KEY_UTIL_H

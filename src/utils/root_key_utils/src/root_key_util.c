@@ -483,7 +483,7 @@ ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath)
         localStore = NULL;
     }
 
-    return RootKeyUtility_LoadPackageFromDisk(&localStore, filepath == NULL ? ADUC_ROOTKEY_STORE_PACKAGE_PATH : filepath);
+    return RootKeyUtility_LoadPackageFromDisk(&localStore, filepath == NULL ? ADUC_ROOTKEY_STORE_PACKAGE_PATH : filepath, true /* validateSignatures */);
 }
 
 /**
@@ -491,9 +491,10 @@ ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath)
  *
  * @param rootKeyPackage the address of the pointer to the root key package to be set
  * @param fileLocation the file location to read the data from
+ * @param validateSignatures whether to validate the package with hard-coded keys
  * @return a value of ADUC_Result
  */
-ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPackage, const char* fileLocation)
+ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPackage, const char* fileLocation, bool validateSignatures)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
@@ -532,12 +533,15 @@ ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPack
         goto done;
     }
 
-    ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(tempPkg);
-
-    if (IsAducResultCodeFailure(result.ResultCode))
+    if (validateSignatures)
     {
-        result = validationResult;
-        goto done;
+        ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(tempPkg);
+
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            result = validationResult;
+            goto done;
+        }
     }
 
     result.ResultCode = ADUC_GeneralResult_Success;
@@ -662,7 +666,7 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
 #ifdef USE_LOCAL_STORE
     if (localStore == NULL)
     {
-        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(&localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH);
+        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(&localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH, true /* validateSignatures */);
 
         if (IsAducResultCodeFailure(loadResult.ResultCode))
         {
@@ -926,7 +930,7 @@ ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSign
     if (localStore == NULL)
     {
 #ifdef USE_LOCAL_STORE
-        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(&localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH);
+        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(&localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH, true /* validateSignatures */);
 
         if (IsAducResultCodeFailure(loadResult.ResultCode))
         {
