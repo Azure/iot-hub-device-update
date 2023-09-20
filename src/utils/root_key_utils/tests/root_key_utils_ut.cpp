@@ -26,6 +26,7 @@
 #include <stdexcept>
 #include <vector>
 
+using Catch::Matchers::Equals;
 using ADUC::StringUtils::cstr_wrapper;
 using uint8_t_wrapper = ADUC::StringUtils::calloc_wrapper<uint8_t>;
 
@@ -70,6 +71,13 @@ static std::string get_prod_disabled_rootkey_package_json_path()
 {
     std::string path{ ADUC_TEST_DATA_FOLDER };
     path += "/root_key_utils/disabledRootKeyProd.json";
+    return path;
+};
+
+static std::string get_prod_disabled_signingkey_package_json_path()
+{
+    std::string path{ ADUC_TEST_DATA_FOLDER };
+    path += "/root_key_utils/disabledSigningKeyProd.json";
     return path;
 };
 
@@ -246,7 +254,7 @@ TEST_CASE("RootKeyUtility_ReloadPackageFromDisk")
 
 TEST_CASE("RootKeyUtility_GetDisabledSigningKeys")
 {
-    SECTION("no disabled signing keys")
+    SECTION("prod - no disabled signing keys")
     {
         std::string filePath = get_prod_disabled_rootkey_package_json_path();
         ADUC_Result lResult = RootKeyUtility_ReloadPackageFromDisk(filePath.c_str(), false /* validateSignatures */);
@@ -256,5 +264,24 @@ TEST_CASE("RootKeyUtility_GetDisabledSigningKeys")
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
         CHECK(disabledSigningKeyList != nullptr);
         CHECK(VECTOR_size(disabledSigningKeyList) == 0);
+    }
+
+    SECTION("prod - one disabled signing key")
+    {
+        std::string filePath = get_prod_disabled_signingkey_package_json_path();
+        ADUC_Result lResult = RootKeyUtility_ReloadPackageFromDisk(filePath.c_str(), false /* validateSignatures */);
+        REQUIRE(IsAducResultCodeSuccess(lResult.ResultCode));
+        VECTOR_HANDLE disabledSigningKeyList = nullptr;
+        ADUC_Result result = RootKeyUtility_GetDisabledSigningKeys(&disabledSigningKeyList);
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        CHECK(disabledSigningKeyList != nullptr);
+        CHECK(VECTOR_size(disabledSigningKeyList) == 1);
+        CHECK(VECTOR_element(disabledSigningKeyList, 0) != nullptr);
+        auto hashElement = (ADUC_RootKeyPackage_Hash*)VECTOR_element(disabledSigningKeyList, 0);
+        CHECK(hashElement->alg == SHA256);
+        CHECK(hashElement->hash != nullptr);
+
+        cstr_wrapper base64url{ Base64URLEncode(CONSTBUFFER_GetContent(hashElement->hash)->buffer, CONSTBUFFER_GetContent(hashElement->hash)->size) };
+        CHECK_THAT(base64url.get(), Equals("q5xF2ARjhdtH-kaLNTwZAMoXdy0iJQjziQ_AyZWDPRA"));
     }
 }
