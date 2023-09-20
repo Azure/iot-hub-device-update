@@ -18,16 +18,11 @@
 EXTERN_C_BEGIN
 
 ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_RootKeyPackage* rootKeyPackage);
-
 ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
     const ADUC_RootKeyPackage* rootKeyPackage, const STRING_HANDLE fileDest);
-
 ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPackage, const char* fileLocation, bool validateSignatures);
-
-ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath);
-
+ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath, bool validateSignatures);
 ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid);
-
 ADUC_Result RootKeyUtility_LoadSerializedPackage(const char* fileLocation, char** outSerializePackage);
 void RootKeyUtility_SetReportingErc(ADUC_Result_t erc);
 void RootKeyUtility_ClearReportingErc();

@@ -233,3 +233,28 @@ TEST_CASE("RootKeyUtility_RootKeyIsDisabled")
     CHECK_FALSE(RootKeyUtility_RootKeyIsDisabled(pkg, "ADU.200703.R"));
     free(pkg);
 }
+
+TEST_CASE("RootKeyUtility_ReloadPackageFromDisk")
+{
+    SECTION("bad signature should fail")
+    {
+        std::string filePath = get_prod_disabled_rootkey_package_json_path();
+        ADUC_Result lResult = RootKeyUtility_ReloadPackageFromDisk(filePath.c_str(), true /* validateSignatures */);
+        CHECK(IsAducResultCodeFailure(lResult.ResultCode));
+    }
+}
+
+TEST_CASE("RootKeyUtility_GetDisabledSigningKeys")
+{
+    SECTION("no disabled signing keys")
+    {
+        std::string filePath = get_prod_disabled_rootkey_package_json_path();
+        ADUC_Result lResult = RootKeyUtility_ReloadPackageFromDisk(filePath.c_str(), false /* validateSignatures */);
+        REQUIRE(IsAducResultCodeSuccess(lResult.ResultCode));
+        VECTOR_HANDLE disabledSigningKeyList = nullptr;
+        ADUC_Result result = RootKeyUtility_GetDisabledSigningKeys(&disabledSigningKeyList);
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        CHECK(disabledSigningKeyList != nullptr);
+        CHECK(VECTOR_size(disabledSigningKeyList) == 0);
+    }
+}

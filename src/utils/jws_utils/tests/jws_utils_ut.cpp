@@ -50,7 +50,7 @@ public:
         ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&m_rootKeyPackage, filePath.c_str(), true /* validateSignatures */);
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
-        result = RootKeyUtility_ReloadPackageFromDisk(filePath.c_str());
+        result = RootKeyUtility_ReloadPackageFromDisk(filePath.c_str(), true /* validateSignatures */);
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
     }
 

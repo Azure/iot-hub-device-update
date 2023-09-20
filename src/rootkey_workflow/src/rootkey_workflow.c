@@ -134,7 +134,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
         goto done;
     }
 
-    tmpResult = RootKeyUtility_ReloadPackageFromDisk(STRING_c_str(fileDest));
+    tmpResult = RootKeyUtility_ReloadPackageFromDisk(STRING_c_str(fileDest), true /* validateSignatures */);
 
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {

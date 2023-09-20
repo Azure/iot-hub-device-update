@@ -472,9 +472,10 @@ done:
  * @brief Reloads the package from disk into the local store
  *
  * @param filepath The path to the package on disk, or use the default with NULL.
+ * @param validateSignatures Whether to validate root key pkg signatures.
  * @return a value of ADUC_Result
  */
-ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath)
+ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath, bool validateSignatures)
 {
     if (localStore != NULL)
     {
@@ -483,7 +484,7 @@ ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath)
         localStore = NULL;
     }
 
-    return RootKeyUtility_LoadPackageFromDisk(&localStore, filepath == NULL ? ADUC_ROOTKEY_STORE_PACKAGE_PATH : filepath, true /* validateSignatures */);
+    return RootKeyUtility_LoadPackageFromDisk(&localStore, filepath == NULL ? ADUC_ROOTKEY_STORE_PACKAGE_PATH : filepath, validateSignatures);
 }
 
 /**
