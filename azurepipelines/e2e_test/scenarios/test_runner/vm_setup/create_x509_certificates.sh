@@ -131,9 +131,6 @@ do_create_certificates() {
     $SUDO cp "${script_dir}/${work_directory}/private/iot-device-${device_id}-primary.key.pem" "${output_directory}/${device_id}-primary-key.pem" || $ret
     $SUDO cp "${script_dir}/${work_directory}/private/iot-device-${device_id}-secondary.key.pem" "${output_directory}/${device_id}-secondary-key.pem" || $ret
 
-
-    popd || $ret
-
     echo "Cleaning out work directory..."
     $SUDO rm -rf "${script_dir}/${work_directory}" || $ret
 }
@@ -141,9 +138,8 @@ do_create_certificates() {
 do_extract_thumbprints() {
 
     echo "Extracting the thumbprints from the certificates"
-    $SUDO openssl x509 -in "${output_directory}/${device_id}-primary.pem" -noout -sha256 -fingerprint | sed 's/[:]//g' > "${output_directory}/${device_id}-primary-thumbprint.txt" || $ret
-
-    $SUDO openssl x509 -in "${output_directory}/${device_id}-secondary.pem" -noout -sha256 -fingerprint | sed 's/[:]//g' > "${output_directory}/${device_id}-secondary-thumbprint.txt" || $ret
+    $SUDO openssl x509 -in "${output_directory}/${device_id}-primary.pem" -noout -sha256 -fingerprint | sed 's/[:]//g' | sed 's/SHA256 Fingerprint=//' > "${output_directory}/${device_id}-primary-thumbprint.txt" || $ret
+    $SUDO openssl x509 -in "${output_directory}/${device_id}-secondary.pem" -noout -sha256 -fingerprint | sed 's/[:]//g' | sed 's/SHA256 Fingerprint=//' > "${output_directory}/${device_id}-secondary-thumbprint.txt" || $ret
 }
 
 do_create_certificates || $ret
