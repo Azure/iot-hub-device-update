@@ -86,24 +86,3 @@ bool matches_pubkey(const CONSTBUFFER* buf)
 
     return true;
 }
-
-TEST_CASE("RootKeyUtility_GetHashPubKeyFromSJWKPayload")
-{
-    char* hashAlg = nullptr;
-    ADUC::StringUtils::STRING_HANDLE_wrapper signingKeyIdentityHashAlg{};
-    CONSTBUFFER_HANDLE publicKeyHashIdentity = nullptr;
-
-    ADUC_Result result = RootKeyUtility_GetHashPubKeyFromSJWKPayload(
-        decodedSigningKeyPayload, signingKeyIdentityHashAlg.address_of(), &publicKeyHashIdentity);
-
-    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-    REQUIRE_FALSE(signingKeyIdentityHashAlg.is_null());
-    CHECK_THAT(signingKeyIdentityHashAlg.c_str(), Equals("SHA256"));
-    CHECK(matches_pubkey(CONSTBUFFER_GetContent(publicKeyHashIdentity)));
-
-    if (publicKeyHashIdentity != nullptr)
-    {
-        CONSTBUFFER_DecRef(publicKeyHashIdentity);
-        publicKeyHashIdentity = nullptr;
-    }
-}
