@@ -91,7 +91,7 @@ steps:
           scriptSource: "filePath"
           scriptPath: "${{parameters.image_working_directory}}/scenarios/test_runner/vm_setup/x509_devicesetup.py"
           workingDirectory: ${{parameters.image_working_directory}}/
-          arguments: "-p ./scenarios/test_runner/vm_setup/testsetup/${{parameters.device_id_under_test}}-primary-thumbprint.txt -s ./scenarios/test_runner/vm_setup/testsetup/${{parameters.device_id_under_test}}-secondary-thumbprint.txt -k /etc/prov_info/${{parameters.device_id_under_test}}-primary-key.pem -c /etc/prov_info/${{parameters.device_id_under_test}}-primary.pem"
+          arguments: "-p ./scenarios/test_runner/vm_setup/testsetup/${{parameters.device_id_under_test}}-primary-thumbprint.txt -s ./scenarios/test_runner/vm_setup/testsetup/${{parameters.device_id_under_test}}-secondary-thumbprint.txt -d ${{parameters.device_id_under_test}} -k /etc/prov_info/${{parameters.device_id_under_test}}-primary-key.pem -c /etc/prov_info/${{parameters.device_id_under_test}}-primary.pem"
       env:
           IOTHUB_URL: $(IOTHUB_URL)
           IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
