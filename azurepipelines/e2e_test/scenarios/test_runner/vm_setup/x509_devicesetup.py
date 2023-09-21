@@ -17,6 +17,9 @@ from testingtoolkit import DeviceUpdateTestHelper,DuAutomatedTestConfigurationMa
 sys.path.append('./scenarios/test_runner/')
 from scenario_definitions import DuScenarioDefinitionManager
 
+def print_error(msg):
+    print(msg, file=sys.stderr)
+
 def read_thumbprint_from_file(thumbprint_file):
     thumbprint = ""
     with open(thumbprint_file, 'r') as thumbprintFile:
@@ -166,8 +169,6 @@ identity_cert = "file://{cert_path}"
 if __name__ == '__main__':
     main()
 
-def print_error(msg):
-    print(msg, file=sys.stderr)
 
 #
 # Output is now a newly created device and a du-config.json file that will work with it
