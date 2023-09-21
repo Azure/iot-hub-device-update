@@ -119,6 +119,7 @@ do_create_certificates() {
 
     # Check and create the output directory if it doesn't exist
     echo "Current directory: $(pwd)"
+    echo "output directory: ${output_directory}"
     if [[ ! -d "${output_directory}" ]]; then
         $SUDO mkdir -p "${output_directory}"
     fi
