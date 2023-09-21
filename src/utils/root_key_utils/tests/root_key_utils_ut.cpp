@@ -26,6 +26,7 @@
 #include <stdexcept>
 #include <vector>
 
+using Catch::Matchers::Equals;
 using ADUC::StringUtils::cstr_wrapper;
 using uint8_t_wrapper = ADUC::StringUtils::calloc_wrapper<uint8_t>;
 
@@ -63,6 +64,20 @@ static std::string get_dest_rootkey_package_json_path()
 {
     std::string path{ ADUC_TEST_DATA_FOLDER };
     path += "/root_key_utils/test-rootkeypackage-write.json";
+    return path;
+};
+
+static std::string get_prod_disabled_rootkey_package_json_path()
+{
+    std::string path{ ADUC_TEST_DATA_FOLDER };
+    path += "/root_key_utils/disabledRootKeyProd.json";
+    return path;
+};
+
+static std::string get_prod_disabled_signingkey_package_json_path()
+{
+    std::string path{ ADUC_TEST_DATA_FOLDER };
+    path += "/root_key_utils/disabledSigningKeyProd.json";
     return path;
 };
 
@@ -139,7 +154,7 @@ TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_LoadPackageFromDis
         std::string filePath = get_valid_example_rootkey_package_json_path();
         ADUC_RootKeyPackage* rootKeyPackage = nullptr;
 
-        ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&rootKeyPackage,filePath.c_str());
+        ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&rootKeyPackage,filePath.c_str(), true /* validateSignatures */);
 
         CHECK(IsAducResultCodeSuccess(result.ResultCode));
         CHECK(rootKeyPackage != nullptr);
@@ -160,7 +175,7 @@ TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_LoadPackageFromDis
         std::string filePath = get_invalid_example_rootkey_package_json_path();
         ADUC_RootKeyPackage* rootKeyPackage = nullptr;
 
-        ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&rootKeyPackage,filePath.c_str());
+        ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&rootKeyPackage,filePath.c_str(), true /* validateSignatures */);
 
         CHECK(IsAducResultCodeFailure(result.ResultCode));
         REQUIRE(rootKeyPackage == nullptr);
@@ -171,7 +186,7 @@ TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_LoadPackageFromDis
 
         ADUC_RootKeyPackage* rootKeyPackage = nullptr;
 
-        ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&rootKeyPackage,filePath.c_str());
+        ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&rootKeyPackage,filePath.c_str(), true /* validateSignatures */);
         CHECK(IsAducResultCodeFailure(result.ResultCode));
 
         CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_LOAD_FROM_STORE);
@@ -199,7 +214,7 @@ TEST_CASE_METHOD(SignatureValidationMockHook,"RootKeyUtility_WriteRootKeyPackage
 
         CHECK(IsAducResultCodeSuccess(wResult.ResultCode));
 
-        ADUC_Result lResult = RootKeyUtility_LoadPackageFromDisk(&writtenRootKeyPackage,filePath.c_str());
+        ADUC_Result lResult = RootKeyUtility_LoadPackageFromDisk(&writtenRootKeyPackage,filePath.c_str(), true /* validateSignatures */);
 
         REQUIRE(IsAducResultCodeSuccess(lResult.ResultCode));
         REQUIRE(writtenRootKeyPackage != nullptr);
@@ -215,3 +230,58 @@ TEST_CASE_METHOD(SignatureValidationMockHook,"RootKeyUtility_WriteRootKeyPackage
     }
 }
 
+TEST_CASE("RootKeyUtility_RootKeyIsDisabled")
+{
+    ADUC_RootKeyPackage* pkg = nullptr;
+    std::string filePath = get_prod_disabled_rootkey_package_json_path();
+    ADUC_Result lResult = RootKeyUtility_LoadPackageFromDisk(&pkg, filePath.c_str(), false /* validateSignatures */);
+    REQUIRE(IsAducResultCodeSuccess(lResult.ResultCode));
+    REQUIRE(pkg != nullptr);
+    CHECK(RootKeyUtility_RootKeyIsDisabled(pkg, "ADU.200702.R"));
+    CHECK_FALSE(RootKeyUtility_RootKeyIsDisabled(pkg, "ADU.200703.R"));
+    free(pkg);
+}
+
+TEST_CASE("RootKeyUtility_ReloadPackageFromDisk")
+{
+    SECTION("bad signature should fail")
+    {
+        std::string filePath = get_prod_disabled_rootkey_package_json_path();
+        ADUC_Result lResult = RootKeyUtility_ReloadPackageFromDisk(filePath.c_str(), true /* validateSignatures */);
+        CHECK(IsAducResultCodeFailure(lResult.ResultCode));
+    }
+}
+
+TEST_CASE("RootKeyUtility_GetDisabledSigningKeys")
+{
+    SECTION("prod - no disabled signing keys")
+    {
+        std::string filePath = get_prod_disabled_rootkey_package_json_path();
+        ADUC_Result lResult = RootKeyUtility_ReloadPackageFromDisk(filePath.c_str(), false /* validateSignatures */);
+        REQUIRE(IsAducResultCodeSuccess(lResult.ResultCode));
+        VECTOR_HANDLE disabledSigningKeyList = nullptr;
+        ADUC_Result result = RootKeyUtility_GetDisabledSigningKeys(&disabledSigningKeyList);
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        CHECK(disabledSigningKeyList != nullptr);
+        CHECK(VECTOR_size(disabledSigningKeyList) == 0);
+    }
+
+    SECTION("prod - one disabled signing key")
+    {
+        std::string filePath = get_prod_disabled_signingkey_package_json_path();
+        ADUC_Result lResult = RootKeyUtility_ReloadPackageFromDisk(filePath.c_str(), false /* validateSignatures */);
+        REQUIRE(IsAducResultCodeSuccess(lResult.ResultCode));
+        VECTOR_HANDLE disabledSigningKeyList = nullptr;
+        ADUC_Result result = RootKeyUtility_GetDisabledSigningKeys(&disabledSigningKeyList);
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        CHECK(disabledSigningKeyList != nullptr);
+        CHECK(VECTOR_size(disabledSigningKeyList) == 1);
+        CHECK(VECTOR_element(disabledSigningKeyList, 0) != nullptr);
+        auto hashElement = (ADUC_RootKeyPackage_Hash*)VECTOR_element(disabledSigningKeyList, 0);
+        CHECK(hashElement->alg == SHA256);
+        CHECK(hashElement->hash != nullptr);
+
+        cstr_wrapper base64url{ Base64URLEncode(CONSTBUFFER_GetContent(hashElement->hash)->buffer, CONSTBUFFER_GetContent(hashElement->hash)->size) };
+        CHECK_THAT(base64url.get(), Equals("q5xF2ARjhdtH-kaLNTwZAMoXdy0iJQjziQ_AyZWDPRA"));
+    }
+}
