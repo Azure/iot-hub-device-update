@@ -117,15 +117,20 @@ do_create_certificates() {
     $SUDO FORCE_NO_PROD_WARNING=true ./certGen.sh create_device_certificate "${device_id}-primary" || $ret
     $SUDO FORCE_NO_PROD_WARNING=true ./certGen.sh create_device_certificate "${device_id}-secondary" || $ret
 
-    echo "Copying the certificates from ${script_dir}/${work_directory}/certs to ${output_directory}"
+    # Check and create the output directory if it doesn't exist
+    echo "Current directory: $(pwd)"
+    if [[ ! -d "${output_directory}" ]]; then
+        $SUDO mkdir -p "${output_directory}"
+    fi
 
-    # Copy over the certificates to the output directory
+    echo "Copying the certificates from ${script_dir}/${work_directory}/certs to ${output_directory}"
     $SUDO cp "${script_dir}/${work_directory}/certs/iot-device-${device_id}-primary.cert.pem" "${output_directory}/${device_id}-primary.pem" || $ret
     $SUDO cp "${script_dir}/${work_directory}/certs/iot-device-${device_id}-secondary.cert.pem" "${output_directory}/${device_id}-secondary.pem" || $ret
 
     echo "Copying the keys from ${script_dir}/${work_directory}/private to ${output_directory}"
     $SUDO cp "${script_dir}/${work_directory}/private/iot-device-${device_id}-primary.key.pem" "${output_directory}/${device_id}-primary-key.pem" || $ret
     $SUDO cp "${script_dir}/${work_directory}/private/iot-device-${device_id}-secondary.key.pem" "${output_directory}/${device_id}-secondary-key.pem" || $ret
+
 
     popd || $ret
 
