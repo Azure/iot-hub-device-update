@@ -8,14 +8,14 @@
 #ifndef __ADU_ENROLLMENT_MANAGEMENT_H__
 #define __ADU_ENROLLMENT_MANAGEMENT_H__
 
+#include "du_agent_sdk/agent_module_interface.h"
 #include <mosquitto.h>
 #include <mqtt_protocol.h>
-
 /**
  * @brief Initialize the enrollment management.
  * @return true if the enrollment management was successfully initialized; otherwise, false.
  */
-bool ADUC_Enrollment_Management_Initialize();
+bool ADUC_Enrollment_Management_Initialize(ADUC_AGENT_MODULE_HANDLE communicationModule);
 
 /**
  * @brief Deinitialize the enrollment management.
@@ -49,10 +49,16 @@ void OnMessage_enr_cn(
 
 /**
  * @brief Retrieve the device enrollment state.
- *
+ * @return true if the device is enrolled with the Device Update service; otherwise, false.
  * @note This function will be replaced with the Inter-module communication (IMC) mechanism.
  */
-bool IsDeviceEnrolled();
+bool ADUC_Enrollment_Management_IsEnrolled();
+
+/**
+ * @brief Retrieve the Azure Device Update service instance.
+ * @return The Azure Device Update service instance.
+ */
+const char* ADUC_Enrollment_Management_GetDUInstance();
 
 /**
  * @brief Set the MQTT publishing topic for communication from the Agent to the Service.

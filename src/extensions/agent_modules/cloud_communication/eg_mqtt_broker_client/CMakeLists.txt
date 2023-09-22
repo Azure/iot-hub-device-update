@@ -10,8 +10,10 @@ find_package (Parson REQUIRED)
 
 target_sources (
     ${target_name}
-    PRIVATE src/adu_agent_info_management.c src/adu_enrollment_management.c
-            src/adu_mqtt_client_module.c src/adu_updates_management.c src/eg_mqtt_broker_client.c)
+    PRIVATE src/adu_enrollment_management.c
+            src/adu_mqtt_client_module.c
+            src/adu_updates_management.c
+            src/eg_mqtt_broker_client.c)
 
 target_include_directories (
     ${target_name}
@@ -26,12 +28,8 @@ target_link_libraries (
             aduc::logging
             aduc::mosquitto_utils
             aduc::retry_utils
-            #   aduc::workflow_data_utils
-            #   aduc::workflow_utils
             Parson::parson)
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
 
-if (ADUC_BUILD_UNIT_TESTS)
-    add_subdirectory (tests)
-endif ()
+add_subdirectory (tests)

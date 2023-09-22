@@ -10,7 +10,7 @@
 #include "aduc/logging.h"
 #include "aduc/mqtt_client.h"
 #include "aduc/string_c_utils.h" // ADUC_StringFormat
-#include "stdlib.h" // memset
+#include "aducpal/stdlib.h" // memset
 
 /**
  * @brief Free resources allocated the MQTT broker settings

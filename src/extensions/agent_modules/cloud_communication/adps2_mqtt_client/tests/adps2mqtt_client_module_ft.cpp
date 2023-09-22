@@ -6,24 +6,18 @@
  * Licensed under the MIT License.
  */
 
+#include "aduc/adps2_mqtt_client_module.h"
 #include "aduc/config_utils.h"
 #include "aduc/logging.h"
 #include "aduc/system_utils.h"
 #include "du_agent_sdk/agent_module_interface.h"
 
-#include <catch2/catch.hpp>
-using Catch::Matchers::Equals;
-
 #include <aducpal/unistd.h>
 #include <signal.h>
-#include <sstream>
-#include <string>
 
 static void set_test_config_folder()
 {
-    std::string path{ ADUC_TEST_DATA_FOLDER };
-    path += "/adps2mqtt-client-module-test-data";
-    setenv(ADUC_CONFIG_FOLDER_ENV, path.c_str(), 1);
+    setenv(ADUC_CONFIG_FOLDER_ENV, "/tmp/adu/testdata/adps2mqtt-client-module-test-data", 1);
 }
 
 bool keep_running_ft = true;
@@ -35,40 +29,33 @@ static void _SignalHandler(int signum)
     keep_running_ft = 0;
 }
 
-extern ADUC_AGENT_MODULE_INTERFACE ADPS_MQTT_Client_ModuleInterface;
-
-TEST_CASE("ADPS2MQTT Device Registration", "[.][functional]")
+int main()
 {
     set_test_config_folder();
 
-    ADUC_AGENT_MODULE_HANDLE handle = ADPS_MQTT_Client_ModuleInterface.create();
+    ADUC_AGENT_MODULE_HANDLE handle = ADPS_MQTT_Client_Module_Create();
+    ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)handle;
 
     // Register signal handler function so that we can exit cleanly
     // SGININT is defined in signal.h and is the signal sent by Ctrl-C
     signal(SIGINT, _SignalHandler);
 
-    CHECK(handle != nullptr);
-
     // Initialize the module
-    int result = ADPS_MQTT_Client_ModuleInterface.initializeModule(handle, nullptr);
-    CHECK(result == 0);
-
+    int result = interface->initializeModule(handle, nullptr);
     keep_running_ft = true;
 
     while (keep_running_ft)
     {
         // Call do_work
-        result = ADPS_MQTT_Client_ModuleInterface.doWork(handle);
+        result = interface->doWork(handle);
 
         // Sleep for 200ms
         usleep(100000);
     }
 
     // Deinitialize the module
-    result = ADPS_MQTT_Client_ModuleInterface.deinitializeModule(handle);
-
-    CHECK(result == 0);
+    result = interface->deinitializeModule(handle);
 
     // Destroy the module
-    ADPS_MQTT_Client_ModuleInterface.destroy(handle);
+    ADPS_MQTT_Client_Module_Destroy(handle);
 }

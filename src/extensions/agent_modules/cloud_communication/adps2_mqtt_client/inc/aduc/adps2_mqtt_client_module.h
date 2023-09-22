@@ -1,19 +1,20 @@
-#ifndef __ADPS2_MQTT_CLIENT_MODULE_H__
-#define __ADPS2_MQTT_CLIENT_MODULE_H__
-
 /**
- * @file adps2-mqtt-client-module.h
+ * @file adps2_mqtt_client_module.h
  * @brief Implementation for the device provisioning using Azure DPS V2.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
 
+#ifndef __ADPS2_MQTT_CLIENT_MODULE_H__
+#define __ADPS2_MQTT_CLIENT_MODULE_H__
+
 #include "aduc/adps_gen2.h"
 #include "aduc/adu_types.h"
 #include "du_agent_sdk/agent_module_interface.h"
 #include <mosquitto.h> // mosquitto related functions
 
+EXTERN_C_BEGIN
 typedef enum ADPS_MQTT_CLIENT_MODULE_DATA_KEY_TAG
 {
     ADPS_MQTT_CLIENT_MODULE_DATA_KEY_REGISTER_STATE = 0,
@@ -115,5 +116,7 @@ int ADPS_MQTT_Client_Module_GetData(
  */
 int ADPS_MQTT_Client_Module_SetData(
     ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size);
+
+EXTERN_C_END
 
 #endif // __ADPS2_MQTT_CLIENT_MODULE_H__

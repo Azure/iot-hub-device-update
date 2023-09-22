@@ -11,6 +11,7 @@
 
 #include "aduc/c_utils.h" // EXTERN_C_* macros
 #include "aduc/mqtt_client.h" // ADUC_MQTT_SETTINGS
+#include "du_agent_sdk/agent_module_interface.h" // ADUC_AGENT_MODULE_HANDLE
 #include "stdbool.h" // bool
 #include <mosquitto.h> // mosquitto related functions
 #include <mqtt_protocol.h> // mosquitto_property
@@ -61,7 +62,7 @@ typedef void (*MQTT_ON_DISCONNECT_V5_CALLBACK)(struct mosquitto*, void*, int, co
  *                     has allocated sufficient memory for the topics.
  * @return true if the topics were successfully fetched; otherwise, false.
  */
-typedef bool (*GET_MQTT_SUBSCRIPTION_TOPICS_FUNC)(int* count, char*** topics);
+typedef bool (*GET_MQTT_SUBSCRIPTION_TOPICS_FUNC)(void* obj, int* count, char*** topics);
 
 /**
  * @brief Typedef for the MQTT on unsubscribe callback.
@@ -187,36 +188,14 @@ typedef struct ADUC_MQTT_MQTT_CALLBACKS_TAG
     MQTT_ON_LOG_CALLBACK on_log;
 } ADUC_MQTT_CALLBACKS;
 
-/*
- * @brief  Initialize the communication channel.
- * @param[in] session_id The session ID to use for the MQTT client.
- * @param[in] module_state The module state to use for the MQTT client.
- * @param[in] mqtt_settings The MQTT settings to use for the MQTT client.
- * @param[in] callbacks The MQTT callbacks to use for the MQTT client.
- * @param[in] pw_callback The password callback to use for the MQTT client.
- * @return true if the communication channel was successfully initialized; otherwise, false.
- */
-bool ADUC_CommunicationChannel_Initialize(
-    const char* session_id,
-    void* module_state,
-    const ADUC_MQTT_SETTINGS* mqtt_settings,
-    ADUC_MQTT_CALLBACKS* callbacks,
-    ADUC_MQTT_KEYFILE_PASSWORD_CALLBACK pw_callback);
-
-/*
- * @brief Deinitialize the communication channel.
- */
-void ADUC_CommunicationChannel_Deinitialize();
-
-/**
- * @brief Ensure that the communication channel to the DU service is valid.
- *
- * @remark This function requires that the MQTT client is initialized.
- * @remark This function requires that the MQTT connection settings are valid.
- *
- * @return true if the communication channel state is ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTED.
- */
-bool ADUC_CommunicationChannel_DoWork();
+typedef struct ADUC_COMMUNICATION_CHANNEL_INIT_DATA_TAG
+{
+    const char* session_id;
+    void* ownerModuleContext;
+    const ADUC_MQTT_SETTINGS* mqtt_settings;
+    ADUC_MQTT_CALLBACKS* callbacks;
+    ADUC_MQTT_KEYFILE_PASSWORD_CALLBACK pw_callback;
+} ADUC_COMMUNICATION_CHANNEL_INIT_DATA;
 
 /**
  * @brief Publishes a message to a the 'adu/oto/#/a' topic using version 5 of the MQTT protocol.
@@ -235,7 +214,8 @@ bool ADUC_CommunicationChannel_DoWork();
  * @return MOSQ_ERR_SUCCESS upon successful completion.
  *         For other return values, refer to the documentation of `mosquitto_publish_v5`.
  */
-int ADUC_CommunicationChannel_MQTT_Publish(
+int ADUC_Communication_Channel_MQTT_Publish(
+    ADUC_AGENT_MODULE_HANDLE commModule,
     const char* topic,
     int* mid,
     size_t payload_len,
@@ -244,10 +224,20 @@ int ADUC_CommunicationChannel_MQTT_Publish(
     bool retain,
     const mosquitto_property* props);
 
+/**
+ * @brief Create a new communication channel management module instance.
+ */
+ADUC_AGENT_MODULE_HANDLE ADUC_Communication_Channel_Create();
+
+/**
+ * @brief Create a new communication channel management module instance.
+ */
+void ADUC_Communication_Channel_Destroy();
+
 /*
  * @brief Check if the communication channel is in connected state.
  */
-bool ADUC_CommunicationChannel_IsConnected();
+bool ADUC_Communication_Channel_IsConnected(ADUC_AGENT_MODULE_HANDLE handle);
 
 EXTERN_C_END
 

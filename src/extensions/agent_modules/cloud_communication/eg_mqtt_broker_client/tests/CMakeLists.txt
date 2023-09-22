@@ -7,9 +7,7 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-set (sources main.cpp adu_mqtt_client_module_ft.cpp)
-
-find_package (Catch2 REQUIRED)
+set (sources adu_mqtt_client_module_ft.cpp)
 
 add_executable (${PROJECT_NAME} ${sources})
 
@@ -24,11 +22,4 @@ target_compile_definitions (${PROJECT_NAME}
 
 target_link_libraries (
     ${PROJECT_NAME} PRIVATE aduc::config_utils aduc::microsoft_du_mqttbroker_client;
-                            aduc::parser_utils aduc::system_utils Catch2::Catch2)
-
-# Ensure that ctest discovers catch2 tests.
-# Use catch_discover_tests() rather than add_test()
-# See https://github.com/catchorg/Catch2/blob/master/contrib/Catch.cmake
-include (CTest)
-include (Catch)
-catch_discover_tests (${PROJECT_NAME})
+                            aduc::parser_utils aduc::system_utils)

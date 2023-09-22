@@ -31,16 +31,18 @@
 
 // This is a topic template for the device to publish messages to the broker.
 #define PUBLISH_TOPIC_TEMPLATE_ADU_OTO "adu/oto/%s/a"
+#define PUBLISH_TOPIC_TEMPLATE_ADU_OTO_WITH_DU_INSTANCE "adu/oto/%s/a/%s"
 
 // This is a topic template for the device to subscribe to listen for messages from the broker.
 #define SUBSCRIBE_TOPIC_TEMPLATE_ADU_OTO "adu/oto/%s/s"
+#define SUBSCRIBE_TOPIC_TEMPLATE_ADU_OTO_WITH_DU_INSTANCE "adu/oto/%s/s/%s"
 
 #define ADU_MQTT_PROTOCOL_VERSION "1"
 
 #define ADU_MQTT_PROTOCOL_VERSION_PROPERTY_NAME "pid"
 
 #define ADU_MQTT_PROTOCOL_MESSAGE_TYPE_PROPERTY_NAME "mt"
-#define ADU_MQTT_PROTOCOL_MESSAGE_CONTENT_TYPE_JSON "application/json"
+#define ADU_MQTT_PROTOCOL_MESSAGE_CONTENT_TYPE_JSON "json"
 
 #define ADU_MQTT_PROTOCOL_MESSAGE_TYPE_ENROLLMENT_REQUEST "enr_req"
 

@@ -32,8 +32,8 @@
 #define DEFAULT_ENR_REQ_MIN_RETRY_DELAY_SECONDS (60 * 5)
 
 // Enrollment request message content, which is always an empty JSON object.
-static const char* s_enr_req_message_content = "{}";
-static const size_t s_enr_req_message_content_len = 2;
+//static const char* s_enr_req_message_content = "{}";
+//static const size_t s_enr_req_message_content_len = 2;
 static char* s_mqtt_topic_a2s_oto = NULL;
 
 #define CONST_TIME_5_SECONDS 5
@@ -87,6 +87,8 @@ typedef struct ADU_ENROLLMENT_DATA_TAG
 
     /// Description of the enrollment response result.
     char* enr_resp_resultDescription;
+
+    ADUC_AGENT_MODULE_HANDLE commModule; //!< Communication module handle.
 } ADU_ENROLLMENT_DATA;
 
 static ADU_ENROLLMENT_DATA s_enrMgrState = { 0 }; //!< Enrollment state
@@ -263,7 +265,7 @@ void OnPublished_enr_req(struct mosquitto* mosq, void* obj, int mid, int reason_
  * @brief Initialize the enrollment management.
  * @return true if the enrollment management was successfully initialized; otherwise, false.
  */
-bool ADUC_Enrollment_Management_Initialize()
+bool ADUC_Enrollment_Management_Initialize(ADUC_AGENT_MODULE_HANDLE communicationModule)
 {
     memset(&s_enrMgrState, 0, sizeof(s_enrMgrState));
 
@@ -294,6 +296,8 @@ bool ADUC_Enrollment_Management_Initialize()
         Log_Info("Using default minimum retry delay: %d", DEFAULT_ENR_REQ_MIN_RETRY_DELAY_SECONDS);
         s_enrMgrState.enr_req_minRetryDelaySeconds = DEFAULT_ENR_REQ_MIN_RETRY_DELAY_SECONDS;
     }
+
+    s_enrMgrState.commModule = communicationModule;
 
     result = true;
 
@@ -344,7 +348,7 @@ bool ADUC_Enrollment_Management_DoWork()
     {
         if ((s_enrMgrState.enr_req_lastAttemptTime + s_enrMgrState.enr_req_timeOutSeconds) < nowTime)
         {
-            Log_Info("Enrollment request timeout");
+            Log_Warn("Enrollment request timeout");
             SetCorrelationId(NULL);
             SetEnrollmentState(ADU_ENROLLMENT_STATE_UNKNOWN, "enr_req timeout");
             s_enrMgrState.enr_req_lastErrorTime = nowTime;
@@ -378,12 +382,13 @@ bool ADUC_Enrollment_Management_DoWork()
 
             int mid = 0;
 
-            mqtt_res = ADUC_CommunicationChannel_MQTT_Publish(
+            mqtt_res = ADUC_Communication_Channel_MQTT_Publish(
+                s_enrMgrState.commModule /* handle */,
                 s_mqtt_topic_a2s_oto /* topic */,
                 &mid /* mid */,
-                s_enr_req_message_content_len,
-                s_enr_req_message_content, // "{}"
-                0 /* qos */,
+                0, //s_enr_req_message_content_len,
+                NULL, //s_enr_req_message_content, // "{}"
+                1 /* qos */,
                 false /* retain */,
                 props);
             if (mqtt_res == MOSQ_ERR_SUCCESS)
@@ -402,10 +407,11 @@ bool ADUC_Enrollment_Management_DoWork()
             else
             {
                 Log_Error(
-                    "Failed to publish enrollment status request message. (mid:%d, cid:%s, err:%d)",
+                    "Failed to publish enrollment status request message. (mid:%d, cid:%s, err:%d - %s)",
                     mid,
                     cid,
-                    mqtt_res);
+                    mqtt_res,
+                    mosquitto_strerror(mqtt_res));
                 switch (mqtt_res)
                 {
                 case MOSQ_ERR_INVAL:
@@ -450,9 +456,27 @@ bool ADUC_Enrollment_Management_DoWork()
     return false;
 }
 
+/**
+ * @brief Retrieve the device enrollment state.
+ * @return true if the device is enrolled with the Device Update service; otherwise, false.
+ * @note This function will be replaced with the Inter-module communication (IMC) mechanism.
+ */
 bool ADUC_Enrollment_Management_IsEnrolled()
 {
     return s_enrMgrState.enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED;
+}
+
+/**
+ * @brief Retrieve the Azure Device Update service instance.
+ * @return The Azure Device Update service instance.
+ */
+const char* ADUC_Enrollment_Management_GetDUInstance()
+{
+    if (ADUC_Enrollment_Management_IsEnrolled())
+    {
+        return s_enrMgrState.enr_resp_duInstance;
+    }
+    return NULL;
 }
 
 /**

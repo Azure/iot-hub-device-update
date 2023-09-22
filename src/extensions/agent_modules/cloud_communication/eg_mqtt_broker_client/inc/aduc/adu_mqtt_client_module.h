@@ -16,6 +16,8 @@
 #include <mosquitto.h> // for mosquitto related functions
 #include <mqtt_protocol.h> // for mosquitto_property
 
+EXTERN_C_BEGIN
+
 /**
  * @brief The module state.
  */
@@ -37,7 +39,19 @@ typedef struct ADUC_MQTT_CLIENT_MODULE_STATE_TAG
     int lastError; //!< Last error code
     time_t nextOperationTime; //!< Next time to perform an operation
 
+    ADUC_AGENT_MODULE_HANDLE commModule; //!< The communication module handle
+
 } ADUC_MQTT_CLIENT_MODULE_STATE;
+
+/**
+ * @brief Create the MQTT client module instance.
+ */
+ADUC_AGENT_MODULE_HANDLE ADUC_MQTT_Client_Module_Create();
+
+/**
+ * @brief Destroy the MQTT client module instance.
+ */
+void ADUC_MQTT_Client_Module_Destroy(ADUC_AGENT_MODULE_HANDLE handle);
 
 /**
  * @brief Sets the MQTT broker endpoint.
@@ -49,5 +63,7 @@ int ADUC_MQTT_CLIENT_MODULE_SetMQTTBrokerEndpoint(ADUC_AGENT_MODULE_HANDLE* hand
  * @param state The module state to free.
  */
 void ADUC_MQTT_CLIENT_MODULE_STATE_Free(ADUC_MQTT_CLIENT_MODULE_STATE* state);
+
+EXTERN_C_END
 
 #endif /* __ADU_MQTT_CLIENT_MODULE_H__ */

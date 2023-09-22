@@ -29,10 +29,23 @@
 
 // Forward declarations
 static int ADUC_MQTT_Client_Module_Initialize_DoWork(ADUC_MQTT_CLIENT_MODULE_STATE* state);
+void ADUC_MQTT_Client_Module_Destroy(ADUC_AGENT_MODULE_HANDLE handle);
+int ADUC_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
+int ADUC_MQTT_Client_Module_GetData(
+    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int* size);
+int ADUC_MQTT_Client_Module_SetData(
+    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size);
 
 #define DEFAULT_OPERATION_INTERVAL_SECONDS (5)
 
-static ADUC_MQTT_CLIENT_MODULE_STATE s_moduleState = { 0 };
+static ADUC_MQTT_CLIENT_MODULE_STATE* ModuleStateFromModuleHandle(ADUC_AGENT_MODULE_HANDLE handle)
+{
+    if ((handle != NULL) && (((ADUC_AGENT_MODULE_INTERFACE*)handle)->moduleData != NULL))
+    {
+        return (ADUC_MQTT_CLIENT_MODULE_STATE*)((ADUC_AGENT_MODULE_INTERFACE*)handle)->moduleData;
+    }
+    return NULL;
+}
 
 /**
  * @brief Get the device ID to use for MQTT client identification.
@@ -73,12 +86,12 @@ done:
  * @brief Deinitialize the MQTT topics used for Azure Device Update communication.
  * @return `true` if MQTT topics were successfully de-initialized; otherwise, `false`.
 */
-static void DeinitMqttTopics()
+static void DeinitMqttTopics(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
 {
-    free(s_moduleState.mqtt_topic_service2agent);
-    s_moduleState.mqtt_topic_service2agent = NULL;
-    free(s_moduleState.mqtt_topic_agent2service);
-    s_moduleState.mqtt_topic_agent2service = NULL;
+    free(moduleState->mqtt_topic_service2agent);
+    moduleState->mqtt_topic_service2agent = NULL;
+    free(moduleState->mqtt_topic_agent2service);
+    moduleState->mqtt_topic_agent2service = NULL;
 }
 
 /**
@@ -89,13 +102,12 @@ static void DeinitMqttTopics()
  *
  * @return `true` if MQTT topics were successfully prepared; otherwise, `false`.
  */
-bool InitMqttTopics()
+bool InitMqttTopics(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
 {
     bool result = false;
     const char* deviceId;
 
-    if (!IsNullOrEmpty(s_moduleState.mqtt_topic_service2agent)
-        && !IsNullOrEmpty(s_moduleState.mqtt_topic_agent2service))
+    if (!IsNullOrEmpty(moduleState->mqtt_topic_service2agent) && !IsNullOrEmpty(moduleState->mqtt_topic_agent2service))
     {
         return true;
     }
@@ -109,15 +121,15 @@ bool InitMqttTopics()
     }
 
     // Create string for agent to service topic, from PUBLISH_TOPIC_TEMPLATE_ADU_OTO and the device id.
-    s_moduleState.mqtt_topic_agent2service = ADUC_StringFormat(PUBLISH_TOPIC_TEMPLATE_ADU_OTO, deviceId);
-    if (s_moduleState.mqtt_topic_agent2service == NULL)
+    moduleState->mqtt_topic_agent2service = ADUC_StringFormat(PUBLISH_TOPIC_TEMPLATE_ADU_OTO, deviceId);
+    if (moduleState->mqtt_topic_agent2service == NULL)
     {
         goto done;
     }
 
     // Create string for service to agent topic, from SUBSCRIBE_TOPIC_TEMPLATE_ADU_OTO and the device id.
-    s_moduleState.mqtt_topic_service2agent = ADUC_StringFormat(SUBSCRIBE_TOPIC_TEMPLATE_ADU_OTO, deviceId);
-    if (s_moduleState.mqtt_topic_service2agent == NULL)
+    moduleState->mqtt_topic_service2agent = ADUC_StringFormat(SUBSCRIBE_TOPIC_TEMPLATE_ADU_OTO, deviceId);
+    if (moduleState->mqtt_topic_service2agent == NULL)
     {
         goto done;
     }
@@ -127,7 +139,7 @@ bool InitMqttTopics()
 done:
     if (!result)
     {
-        DeinitMqttTopics();
+        DeinitMqttTopics(moduleState);
     }
     return result;
 }
@@ -138,7 +150,7 @@ done:
  */
 void ADUC_MQTT_CLIENT_MODULE_STATE_Free(ADUC_MQTT_CLIENT_MODULE_STATE* state)
 {
-    DeinitMqttTopics();
+    DeinitMqttTopics(state);
     FreeMqttBrokerSettings(&state->mqttSettings);
 }
 
@@ -203,11 +215,11 @@ void ADUC_MQTT_Client_OnMessage(
         goto done;
     }
 
-    if (strcmp(msg_type, "ainfo_resp") == 0)
-    {
-        OnMessage_ainfo_resp(mosq, obj, msg, props);
-        goto done;
-    }
+    // if (strcmp(msg_type, "ainfo_resp") == 0)
+    // {
+    //     OnMessage_ainfo_resp(mosq, obj, msg, props);
+    //     goto done;
+    // }
 
     if (strcmp(msg_type, "upd_cn") == 0)
     {
@@ -244,15 +256,17 @@ static char* s_subscriptionTopics[1];
  *
  * @note The caller MUST NOTE freeing the memory allocated for 'topics' and its contents.
  */
-bool ADUC_MQTT_Client_GetSubscriptionTopics(int* count, char*** topics)
+bool ADUC_MQTT_Client_GetSubscriptionTopics(void* obj, int* count, char*** topics)
 {
-    if (count == NULL || topics == NULL)
+    if (count == NULL || topics == NULL || obj == NULL)
     {
-        Log_Error("NULL parameter");
+        Log_Error("NULL parameter. (count=%p, topics=%p, obj=%p)", count, topics, obj);
         return false;
     }
 
-    if (!InitMqttTopics())
+    ADUC_MQTT_CLIENT_MODULE_STATE* moduleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
+
+    if (!InitMqttTopics(moduleState))
     {
         Log_Error("Failed to initialize MQTT topics");
         return false;
@@ -260,7 +274,8 @@ bool ADUC_MQTT_Client_GetSubscriptionTopics(int* count, char*** topics)
 
     // Always have only 1 topic to subscribe.
     *count = 1;
-    s_subscriptionTopics[0] = s_moduleState.mqtt_topic_service2agent;
+
+    s_subscriptionTopics[0] = moduleState->mqtt_topic_service2agent;
     *topics = s_subscriptionTopics;
     return true;
 }
@@ -277,13 +292,24 @@ void ADUC_MQTT_Client_OnPublish(
     Log_Info("on_publish: Message with mid %d has been published.", mid);
 }
 
+/* Callback called when the broker sends a CONNACK message in response to a
+ * connection. */
+void ADUC_MQTT_Client_OnConnect(
+    struct mosquitto* mosq, void* obj, int reason_code, int flags, const mosquitto_property* props)
+{
+    if (reason_code == 0)
+    {
+        Log_Info("on_connect: Connection succeeded.");
+    }
+}
+
 /**
  * @brief Callbacks for various event from the communication channel.
  */
 ADUC_MQTT_CALLBACKS s_commChannelCallbacks = {
-    NULL /*on_connect*/,
+    ADUC_MQTT_Client_OnConnect /*on_connect*/,
     NULL /*on_disconnect*/,
-    ADUC_MQTT_Client_GetSubscriptionTopics,
+    ADUC_MQTT_Client_GetSubscriptionTopics /* get_subscription_topics */,
     NULL /*on_subscribe*/,
     NULL /*on_unsubscribe*/,
     ADUC_MQTT_Client_OnPublish,
@@ -296,88 +322,100 @@ ADUC_MQTT_CALLBACKS s_commChannelCallbacks = {
  */
 int ADUC_MQTT_Client_Module_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* moduleInitData)
 {
-    ADUC_MQTT_CLIENT_MODULE_STATE* state = (ADUC_MQTT_CLIENT_MODULE_STATE*)handle;
-    if (state == NULL)
+    ADUC_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(handle);
+    if (moduleState == NULL)
     {
         Log_Error("handle is NULL");
         return -1;
     }
 
-    state->moduleInitData = moduleInitData;
+    moduleState->moduleInitData = moduleInitData;
 
     // Need to set ret and goto done after this to ensure proper shutdown and deinitialization.
     // TODO (nox-msft) - set log level according to global config.
     ADUC_Logging_Init(0, "du-mqtt-client-module");
 
-    bool success = ReadMqttBrokerSettings(&s_moduleState.mqttSettings);
+    bool success = ReadMqttBrokerSettings(&moduleState->mqttSettings);
     if (!success)
     {
         Log_Error("Failed to read MQTT settings");
-        state->initializeState = ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_FAILED;
+        moduleState->initializeState = ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_FAILED;
         goto done;
     }
 
-    if (s_moduleState.mqttSettings.hostnameSource == ADUC_MQTT_HOSTNAME_SOURCE_DPS)
+    if (moduleState->mqttSettings.hostnameSource == ADUC_MQTT_HOSTNAME_SOURCE_DPS)
     {
         Log_Info("Hostname source will be provided by DPS.");
-        state->initializeState = ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL;
+        moduleState->initializeState = ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL;
         success = true;
     }
 
-    success = ADUC_MQTT_Client_Module_Initialize_DoWork(state);
+    success = ADUC_MQTT_Client_Module_Initialize_DoWork(moduleState);
 done:
     return success ? 0 : -1;
 }
 
-static int ADUC_MQTT_Client_Module_Initialize_DoWork(ADUC_MQTT_CLIENT_MODULE_STATE* state)
+static int ADUC_MQTT_Client_Module_Initialize_DoWork(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
 {
     bool success = false;
-    if (state->initializeState == ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_FAILED)
+    if (moduleState->initializeState == ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_FAILED)
     {
         goto done;
     }
 
-    if (state->mqttSettings.hostnameSource == ADUC_MQTT_HOSTNAME_SOURCE_DPS)
+    if (moduleState->mqttSettings.hostnameSource == ADUC_MQTT_HOSTNAME_SOURCE_DPS)
     {
         // Ensure that we have hostName.
-        if (IsNullOrEmpty(state->mqttSettings.hostname))
+        if (IsNullOrEmpty(moduleState->mqttSettings.hostname))
         {
             Log_Info("MQTT broker hostname is empty. Retry in %d seconds", DEFAULT_OPERATION_INTERVAL_SECONDS);
-            state->initializeState = ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL;
+            moduleState->initializeState = ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL;
             // TODO (nox-msft) : use retry_utils
-            state->nextOperationTime = ADUC_GetTimeSinceEpochInSeconds() + DEFAULT_OPERATION_INTERVAL_SECONDS;
+            moduleState->nextOperationTime = ADUC_GetTimeSinceEpochInSeconds() + DEFAULT_OPERATION_INTERVAL_SECONDS;
             goto done;
         }
     }
 
-    success = InitMqttTopics();
+    success = InitMqttTopics(moduleState);
     if (!success)
     {
         Log_Error("Failed to initialize MQTT topics");
-        state->initializeState = ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_FAILED;
+        moduleState->initializeState = ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_FAILED;
         goto done;
     }
 
     // Ensure that the communication channel is valid.
-    if (IsNullOrEmpty(state->mqttSettings.hostname))
+    if (IsNullOrEmpty(moduleState->mqttSettings.hostname))
     {
         Log_Error("MQTT broker hostname is not specified");
-        state->initializeState = ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL;
+        moduleState->initializeState = ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL;
         // TODO (nox-msft) : use retry_utils
-        state->nextOperationTime = ADUC_GetTimeSinceEpochInSeconds() + DEFAULT_OPERATION_INTERVAL_SECONDS;
+        moduleState->nextOperationTime = ADUC_GetTimeSinceEpochInSeconds() + DEFAULT_OPERATION_INTERVAL_SECONDS;
         success = false;
         goto done;
     }
 
-    success = ADUC_CommunicationChannel_Initialize(
-        GetDeviceIdHelper(), state, &s_moduleState.mqttSettings, &s_commChannelCallbacks, NULL);
+    moduleState->commModule = ADUC_Communication_Channel_Create();
+    if (moduleState->commModule == NULL)
+    {
+        Log_Error("Failed to create the communication channel");
+        goto done;
+    }
+    ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
+
+    ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = {
+        GetDeviceIdHelper(), moduleState, &moduleState->mqttSettings, &s_commChannelCallbacks, NULL
+    };
+
+    success = commInterface->initializeModule(moduleState->commModule, &commInitData) == 0;
+
     if (!success)
     {
         Log_Error("Failed to initialize the communication channel");
         goto done;
     }
 
-    success = ADUC_Enrollment_Management_Initialize();
+    success = ADUC_Enrollment_Management_Initialize(moduleState->commModule);
 
     if (!success)
     {
@@ -385,19 +423,19 @@ static int ADUC_MQTT_Client_Module_Initialize_DoWork(ADUC_MQTT_CLIENT_MODULE_STA
         goto done;
     }
 
-    success = ADUC_Enrollment_Management_SetAgentToServiceTopic(s_moduleState.mqtt_topic_agent2service);
+    success = ADUC_Enrollment_Management_SetAgentToServiceTopic(moduleState->mqtt_topic_agent2service);
     if (!success)
     {
         Log_Error("Failed to set the agent to service topic");
         goto done;
     }
 
-    success = ADUC_Agent_Info_Management_Initialize();
-    if (!success)
-    {
-        Log_Error("Failed to initialize the agent info management");
-        goto done;
-    }
+    // success = ADUC_Agent_Info_Management_Initialize();
+    // if (!success)
+    // {
+    //     Log_Error("Failed to initialize the agent info management");
+    //     goto done;
+    // }
 
     success = ADUC_Updates_Management_Initialize();
     if (!success)
@@ -417,18 +455,19 @@ done:
  */
 int ADUC_MQTT_CLIENT_MODULE_SetMQTTBrokerEndpoint(ADUC_AGENT_MODULE_HANDLE* handle, const char* mqttBrokerEndpoint)
 {
-    ADUC_MQTT_CLIENT_MODULE_STATE* state = (ADUC_MQTT_CLIENT_MODULE_STATE*)handle;
-    if (state == NULL || IsNullOrEmpty(mqttBrokerEndpoint))
+    ADUC_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(handle);
+
+    if (moduleState == NULL || IsNullOrEmpty(mqttBrokerEndpoint))
     {
-        Log_Error("Invalid parameter (state=%p, mqttBrokerEndpoint=%p)", state, mqttBrokerEndpoint);
+        Log_Error("Invalid parameter (state=%p, mqttBrokerEndpoint=%p)", moduleState, mqttBrokerEndpoint);
         return -1;
     }
 
-    free(state->mqttSettings.hostname);
-    state->mqttSettings.hostname = NULL;
+    free(moduleState->mqttSettings.hostname);
+    moduleState->mqttSettings.hostname = NULL;
 
-    state->mqttSettings.hostname = strdup(mqttBrokerEndpoint);
-    if (state->mqttSettings.hostname == NULL)
+    moduleState->mqttSettings.hostname = strdup(mqttBrokerEndpoint);
+    if (moduleState->mqttSettings.hostname == NULL)
     {
         Log_Error("Failed to allocate memory for the MQTT broker endpoint");
         return -1;
@@ -443,13 +482,18 @@ int ADUC_MQTT_CLIENT_MODULE_SetMQTTBrokerEndpoint(ADUC_AGENT_MODULE_HANDLE* hand
  *
  * @return int 0 on success.
  */
-int ADUC_MQTT_Client_Module_Deinitialize(ADUC_AGENT_MODULE_HANDLE module)
+int ADUC_MQTT_Client_Module_Deinitialize(ADUC_AGENT_MODULE_HANDLE handle)
 {
     Log_Info("Deinitialize");
+    ADUC_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(handle);
 
-    ADUC_CommunicationChannel_Deinitialize();
+    if (moduleState->commModule != NULL)
+    {
+        ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
+        commInterface->deinitializeModule(moduleState->commModule);
+    }
 
-    ADUC_MQTT_CLIENT_MODULE_STATE_Free(&s_moduleState);
+    ADUC_MQTT_CLIENT_MODULE_STATE_Free(moduleState);
 
     ADUC_Logging_Uninit();
     return 0;
@@ -462,7 +506,42 @@ int ADUC_MQTT_Client_Module_Deinitialize(ADUC_AGENT_MODULE_HANDLE module)
  */
 ADUC_AGENT_MODULE_HANDLE ADUC_MQTT_Client_Module_Create()
 {
-    ADUC_AGENT_MODULE_HANDLE handle = &s_moduleState;
+    ADUC_AGENT_MODULE_HANDLE handle = NULL;
+
+    ADUC_MQTT_CLIENT_MODULE_STATE* moduleState = malloc(sizeof(ADUC_MQTT_CLIENT_MODULE_STATE));
+    if (moduleState == NULL)
+    {
+        Log_Error("Failed to allocate memory for module state");
+        goto done;
+    }
+    memset(moduleState, 0, sizeof(ADUC_MQTT_CLIENT_MODULE_STATE));
+
+    ADUC_AGENT_MODULE_INTERFACE* moduleInterface = malloc(sizeof(ADUC_AGENT_MODULE_INTERFACE));
+    if (moduleInterface == NULL)
+    {
+        Log_Error("Failed to allocate memory for module interface");
+        goto done;
+    }
+
+    memset(moduleInterface, 0, sizeof(ADUC_AGENT_MODULE_INTERFACE));
+    moduleInterface->moduleData = moduleState;
+    moduleInterface->create = ADUC_MQTT_Client_Module_Create;
+    moduleInterface->destroy = ADUC_MQTT_Client_Module_Destroy;
+    moduleInterface->getContractInfo = ADUC_MQTT_Client_Module_GetContractInfo;
+    moduleInterface->doWork = ADUC_MQTT_Client_Module_DoWork;
+    moduleInterface->initializeModule = ADUC_MQTT_Client_Module_Initialize;
+    moduleInterface->deinitializeModule = ADUC_MQTT_Client_Module_Deinitialize;
+    moduleInterface->getData = ADUC_MQTT_Client_Module_GetData;
+    moduleInterface->setData = ADUC_MQTT_Client_Module_SetData;
+
+    handle = moduleInterface;
+
+done:
+    if (handle == NULL)
+    {
+        free(moduleState);
+        free(moduleInterface);
+    }
     return handle;
 }
 
@@ -483,44 +562,50 @@ void ADUC_MQTT_Client_Module_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
  */
 int ADUC_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
 {
-    ADUC_MQTT_CLIENT_MODULE_STATE* state = (ADUC_MQTT_CLIENT_MODULE_STATE*)handle;
-    if (handle == NULL)
+    ADUC_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(handle);
+    if (moduleState == NULL)
     {
-        Log_Error("handle is NULL");
+        Log_Error("moduleState is NULL");
         return -1;
     }
 
     time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
-    if (state->mqttSettings.hostnameSource == ADUC_MQTT_HOSTNAME_SOURCE_DPS
-        && state->initializeState == ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL)
+    if (moduleState->mqttSettings.hostnameSource == ADUC_MQTT_HOSTNAME_SOURCE_DPS
+        && moduleState->initializeState == ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL)
     {
-        if (state->nextOperationTime > nowTime)
+        if (moduleState->nextOperationTime > nowTime)
         {
             goto done;
         }
 
-        if (ADUC_MQTT_Client_Module_Initialize_DoWork(state) != 0)
+        if (ADUC_MQTT_Client_Module_Initialize_DoWork(moduleState) != 0)
         {
-            state->nextOperationTime = nowTime + DEFAULT_OPERATION_INTERVAL_SECONDS;
+            moduleState->nextOperationTime = nowTime + DEFAULT_OPERATION_INTERVAL_SECONDS;
             goto done;
         }
         else
         {
-            state->nextOperationTime = 0;
+            moduleState->nextOperationTime = 0;
         }
     }
 
-    ADUC_CommunicationChannel_DoWork();
-    if (!ADUC_CommunicationChannel_IsConnected())
+    ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
+    commInterface->doWork(moduleState->commModule);
+    if (!ADUC_Communication_Channel_IsConnected(moduleState->commModule))
     {
         // TODO: (nox-msft) - use retry utils.
-        state->nextOperationTime = nowTime + 5;
+        moduleState->nextOperationTime = nowTime + 5;
         goto done;
     }
 
     ADUC_Enrollment_Management_DoWork();
-    ADUC_Agent_Info_Management_DoWork();
-    ADUC_Updates_Management_DoWork();
+
+    if (ADUC_Enrollment_Management_IsEnrolled())
+    {
+        // ADUC_Agent_Info_Management_DoWork();
+        // ADUC_Updates_Management_DoWork();
+    }
+
 done:
     return 0;
 }
@@ -567,15 +652,3 @@ int ADUC_MQTT_Client_Module_SetData(
     int ret = 0;
     return ret;
 }
-
-ADUC_AGENT_MODULE_INTERFACE ADUC_MQTT_Client_ModuleInterface = {
-    &s_moduleState,
-    ADUC_MQTT_Client_Module_Create,
-    ADUC_MQTT_Client_Module_Destroy,
-    ADUC_MQTT_Client_Module_GetContractInfo,
-    ADUC_MQTT_Client_Module_DoWork,
-    ADUC_MQTT_Client_Module_Initialize,
-    ADUC_MQTT_Client_Module_Deinitialize,
-    ADUC_MQTT_Client_Module_GetData,
-    ADUC_MQTT_Client_Module_SetData,
-};

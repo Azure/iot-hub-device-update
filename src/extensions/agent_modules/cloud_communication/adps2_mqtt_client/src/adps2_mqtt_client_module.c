@@ -37,6 +37,18 @@ typedef enum ADPS_REGISTER_STATE_TAG
     ADPS_REGISTER_STATE_REGISTERED = 4 /**< Device registration is successful. */
 } ADPS_REGISTER_STATE;
 
+enum ADPS_ERROR
+{
+    ADPS_ERROR_NONE = 0,
+    ADPS_ERROR_INVALID_PARAMETER = 1,
+    ADPS_ERROR_INVALID_STATE = 2,
+    ADPS_ERROR_OUT_OF_MEMORY = 3,
+    ADPS_ERROR_MQTT_ERROR = 4,
+    ADPS_ERROR_DPS_ERROR = 5,
+    ADPS_ERROR_TIMEOUT = 6,
+    ADPS_ERROR_UNKNOWN = 7,
+};
+
 /**
  * @brief The module state.
  */
@@ -65,9 +77,11 @@ typedef struct ADPS_MQTT_CLIENT_MODULE_STATE_TAG
     AZURE_DPS_2_MQTT_SETTINGS settings; //!< DPS settings
     time_t nextOperationTime; //!< Next time to perform an operation
 
+    ADUC_AGENT_MODULE_HANDLE commModule; //!< Communication module
+
 } ADPS_MQTT_CLIENT_MODULE_STATE;
 
-static ADPS_MQTT_CLIENT_MODULE_STATE s_moduleState = { 0 };
+// static ADPS_MQTT_CLIENT_MODULE_STATE s_moduleState = { 0 };
 
 /**
  * @brief The contract info for the module.
@@ -76,20 +90,106 @@ ADUC_AGENT_CONTRACT_INFO g_adpsMqttClientContractInfo = {
     "Microsoft", "Azure DPS2 MQTT Client  Module", 1, "Microsoft/AzureDPS2MQTTClientModule:1"
 };
 
+// Forward declarations
+ADUC_AGENT_MODULE_HANDLE ADPS_MQTT_Client_Module_Create();
+void ADPS_MQTT_Client_Module_Destroy(ADUC_AGENT_MODULE_HANDLE handle);
+const ADUC_AGENT_CONTRACT_INFO* ADPS_MQTT_Client_Module_GetContractInfo(ADUC_AGENT_MODULE_HANDLE handle);
+int ADPS_MQTT_Client_Module_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* moduleInitData);
+int ADPS_MQTT_Client_Module_Deinitialize(ADUC_AGENT_MODULE_HANDLE handle);
+int ADPS_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
+int ADPS_MQTT_Client_Module_GetData(
+    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int dataCount, void* data, int* dataCopied);
+int ADPS_MQTT_Client_Module_SetData(
+    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size);
+
+static ADPS_MQTT_CLIENT_MODULE_STATE* ModuleStateFromModuleHandle(ADUC_AGENT_MODULE_HANDLE handle)
+{
+    if ((handle != NULL) && (((ADUC_AGENT_MODULE_INTERFACE*)handle)->moduleData != NULL))
+    {
+        return (ADPS_MQTT_CLIENT_MODULE_STATE*)(((ADUC_AGENT_MODULE_INTERFACE*)handle)->moduleData);
+    }
+    return NULL;
+}
+
+/**
+ * @brief Create a Device Update Agent Module for IoT Hub PnP Client.
+ *
+ * @return ADUC_AGENT_MODULE_HANDLE The handle to the module.
+ */
+ADUC_AGENT_MODULE_HANDLE ADPS_MQTT_Client_Module_Create()
+{
+    ADUC_AGENT_MODULE_HANDLE handle = NULL;
+
+    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = malloc(sizeof(ADPS_MQTT_CLIENT_MODULE_STATE));
+    if (moduleState == NULL)
+    {
+        Log_Error("Failed to allocate memory for module state");
+        goto done;
+    }
+    memset(moduleState, 0, sizeof(ADPS_MQTT_CLIENT_MODULE_STATE));
+
+    ADUC_AGENT_MODULE_INTERFACE* moduleInterface = malloc(sizeof(ADUC_AGENT_MODULE_INTERFACE));
+    if (moduleInterface == NULL)
+    {
+        Log_Error("Failed to allocate memory for module interface");
+        goto done;
+    }
+    memset(moduleInterface, 0, sizeof(ADUC_AGENT_MODULE_INTERFACE));
+    moduleInterface->moduleData = moduleState;
+    moduleInterface->create = ADPS_MQTT_Client_Module_Create;
+    moduleInterface->destroy = ADPS_MQTT_Client_Module_Destroy;
+    moduleInterface->getContractInfo = ADPS_MQTT_Client_Module_GetContractInfo;
+    moduleInterface->doWork = ADPS_MQTT_Client_Module_DoWork;
+    moduleInterface->initializeModule = ADPS_MQTT_Client_Module_Initialize;
+    moduleInterface->deinitializeModule = ADPS_MQTT_Client_Module_Deinitialize;
+    moduleInterface->getData = ADPS_MQTT_Client_Module_GetData;
+    moduleInterface->setData = ADPS_MQTT_Client_Module_SetData;
+
+    handle = moduleInterface;
+
+done:
+    if (handle == NULL)
+    {
+        free(moduleState);
+        free(moduleInterface);
+    }
+    return handle;
+}
+
+/*
+ * @brief Destroy the Device Update Agent Module for IoT Hub PnP Client.
+ * @param handle The handle to the module. This is the same handle that was returned by the Create function.
+ */
+void ADPS_MQTT_Client_Module_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
+{
+    Log_Info("DPS mqtt model destroy");
+    ADUC_AGENT_MODULE_INTERFACE* moduleInterface = (ADUC_AGENT_MODULE_INTERFACE*)handle;
+    if (moduleInterface != NULL)
+    {
+        free(moduleInterface->moduleData);
+        free(moduleInterface);
+    }
+    else
+    {
+        Log_Error("Invalid handle");
+    }
+}
+
 #ifndef MIN
 #    define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
-static void SetRegisterState(ADPS_REGISTER_STATE state, const char* reason)
+static void SetRegisterState(ADPS_MQTT_CLIENT_MODULE_STATE* moduleState, ADPS_REGISTER_STATE state, const char* reason)
 {
-    if (s_moduleState.registerState == state)
+    if (moduleState->registerState == state)
     {
         return;
     }
 
-    Log_Info("Register state changed from %d to %d (%s)", s_moduleState.registerState, state, reason);
-    s_moduleState.registerState = state;
+    Log_Info("Register state changed from %d to %d (%s)", moduleState->registerState, state, reason);
+    moduleState->registerState = state;
 }
+
 /**
  * @brief Gets the extension contract info.
  * @param handle The handle to the module. This is the same handle that was returned by the Create function.
@@ -101,18 +201,6 @@ const ADUC_AGENT_CONTRACT_INFO* ADPS_MQTT_Client_Module_GetContractInfo(ADUC_AGE
     return &g_adpsMqttClientContractInfo;
 }
 
-enum ADPS_ERROR
-{
-    ADPS_ERROR_NONE = 0,
-    ADPS_ERROR_INVALID_PARAMETER = 1,
-    ADPS_ERROR_INVALID_STATE = 2,
-    ADPS_ERROR_OUT_OF_MEMORY = 3,
-    ADPS_ERROR_MQTT_ERROR = 4,
-    ADPS_ERROR_DPS_ERROR = 5,
-    ADPS_ERROR_TIMEOUT = 6,
-    ADPS_ERROR_UNKNOWN = 7,
-};
-
 // Forward declarations
 void ADPS_MQTT_Client_Module_OnMessage(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props);
@@ -121,7 +209,7 @@ void ADPS_MQTT_Client_Module_OnPublish(
 
 const char* topicArray[1] = { "$dps/registrations/res/#" };
 
-static bool ADPS_MQTT_Client_Module_GetSubscriptTopics(int* count, char*** topics)
+static bool ADPS_MQTT_Client_Module_GetSubscriptTopics(void* obj, int* count, char*** topics)
 {
     bool success = false;
     if (count == NULL || topics == NULL)
@@ -180,7 +268,8 @@ ADUC_MQTT_CALLBACKS s_commChannelCallbacks = {
  *
  *
  */
-bool ProcessDeviceRegistrationResponse(const char* payload, size_t payload_len)
+bool ProcessDeviceRegistrationResponse(
+    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState, const char* payload, size_t payload_len)
 {
     bool result = false;
 
@@ -201,17 +290,17 @@ bool ProcessDeviceRegistrationResponse(const char* payload, size_t payload_len)
     if (strncmp(status, "assigned", 8) == 0)
     {
         Log_Info("Device is registered.");
-        SetRegisterState(ADPS_REGISTER_STATE_REGISTERED, "received assigned status");
+        SetRegisterState(moduleState, ADPS_REGISTER_STATE_REGISTERED, "received assigned status");
     }
     else if (strncmp(status, "assigning", 9) == 0)
     {
         Log_Info("Device is registering.");
-        SetRegisterState(ADPS_REGISTER_STATE_REGISTERING, "received assigning status");
+        SetRegisterState(moduleState, ADPS_REGISTER_STATE_REGISTERING, "received assigning status");
     }
     else
     {
         Log_Error("Unknown status: %s", status);
-        SetRegisterState(ADPS_REGISTER_STATE_FAILED, "received unknown status");
+        SetRegisterState(moduleState, ADPS_REGISTER_STATE_FAILED, "received unknown status");
         // TODO (nox-msft) : determine whether to retry or bail
     }
 
@@ -226,7 +315,15 @@ void ADPS_MQTT_Client_Module_OnMessage(
     bool result = false;
     char** topics = NULL;
     int count = 0;
+
     Log_Info("on_message: Topic: %s; QOS: %d; mid: %d", msg->topic, msg->qos, msg->mid);
+
+    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(obj);
+    if (moduleState == NULL)
+    {
+        Log_Error("Invalid module state");
+        goto done;
+    }
 
     if (msg != NULL && msg->topic != NULL)
     {
@@ -251,8 +348,8 @@ void ADPS_MQTT_Client_Module_OnMessage(
         if (http_status_code == 200)
         {
             Log_Info("Device is registered.");
-            s_moduleState.lastRegisterResponseTime = nowTime;
-            ProcessDeviceRegistrationResponse(msg->payload, msg->payloadlen);
+            moduleState->lastRegisterResponseTime = nowTime;
+            ProcessDeviceRegistrationResponse(moduleState, msg->payload, msg->payloadlen);
         }
         else if (http_status_code == 202)
         {
@@ -261,18 +358,18 @@ void ADPS_MQTT_Client_Module_OnMessage(
             JSON_Value* root_value = json_parse_string(msg->payload);
             if (root_value != NULL)
             {
-                free(s_moduleState.operationId);
-                s_moduleState.operationId = NULL;
+                free(moduleState->operationId);
+                moduleState->operationId = NULL;
                 const char* optId = json_object_get_string(json_object(root_value), "operationId");
-                s_moduleState.operationId = strdup(optId);
+                moduleState->operationId = strdup(optId);
                 json_value_free(root_value);
                 root_value = NULL;
 
                 //status = json_object_get_string(json_object(root_value), "status");
 
-                SetRegisterState(ADPS_REGISTER_STATE_WAIT_TO_POLL, "received 202 response");
-                // TODO (nox-msft) parst next-retry time from the topic string.
-                s_moduleState.nextRegisterAttemptTime = nowTime + 3;
+                SetRegisterState(moduleState, ADPS_REGISTER_STATE_WAIT_TO_POLL, "received 202 response");
+                // TODO (nox-msft) parse next-retry time from the topic string.
+                moduleState->nextRegisterAttemptTime = nowTime + 3;
                 goto done;
             }
         }
@@ -308,36 +405,52 @@ void ADPS_MQTT_Client_Module_OnPublish(
 */
 int ADPS_MQTT_Client_Module_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* moduleInitData)
 {
-    bool success = false;
-
-    IGNORED_PARAMETER(handle);
     IGNORED_PARAMETER(moduleInitData);
+    int ret = -1;
+
+    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(handle);
+    if (moduleState == NULL)
+    {
+        Log_Error("Invalid module state");
+        goto done;
+    }
 
     // Need to set ret and goto done after this to ensure proper shutdown and deinitialization.
     // TODO (nox-msft) - set log level according to global config.
     ADUC_Logging_Init(0, "adps2-mqtt-client-module");
 
-    if (!ReadAzureDPS2MqttSettings(&s_moduleState.settings))
+    if (!ReadAzureDPS2MqttSettings(&moduleState->settings))
     {
         Log_Error("Failed to read Azure DPS2 MQTT settings");
         goto done;
     }
 
-    success = ADUC_CommunicationChannel_Initialize(
-        s_moduleState.settings.registrationId,
-        handle,
-        &s_moduleState.settings.mqttSettings,
-        &s_commChannelCallbacks,
-        NULL);
+    moduleState->commModule = ADUC_Communication_Channel_Create();
+    if (moduleState->commModule == NULL)
+    {
+        Log_Error("Failed to create communication channel");
+        goto done;
+    }
 
-    if (!success)
+    ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
+    commInterface->deinitializeModule(moduleState->commModule);
+
+    ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = { moduleState->settings.registrationId,
+                                                          handle,
+                                                          &moduleState->settings.mqttSettings,
+                                                          &s_commChannelCallbacks,
+                                                          NULL };
+
+    ret = commInterface->initializeModule(moduleState->commModule, &commInitData);
+
+    if (ret != 0)
     {
         Log_Error("Failed to initialize the communication channel");
         goto done;
     }
 
 done:
-    return success ? 0 : -1;
+    return ret;
 }
 
 /*
@@ -358,31 +471,40 @@ done:
     - The device registration operation is successful if the service returns a 200 status code.
 */
 
-bool DeviceRegistration_DoWork(/*const char* request_id, const char* connect_json*/)
+bool DeviceRegistration_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
 {
-    if (s_moduleState.registerState == ADPS_REGISTER_STATE_REGISTERED)
+    bool result = false;
+    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(handle);
+    if (moduleState == NULL)
     {
-        return true;
+        Log_Error("Invalid module state");
+        goto done;
+    }
+
+    if (moduleState->registerState == ADPS_REGISTER_STATE_REGISTERED)
+    {
+        result = true;
+        goto done;
     }
 
     time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
 
-    if (s_moduleState.registerState == ADPS_REGISTER_STATE_REGISTERING)
+    if (moduleState->registerState == ADPS_REGISTER_STATE_REGISTERING)
     {
-        if (nowTime > s_moduleState.nextRegisterAttemptTime)
+        if (nowTime > moduleState->nextRegisterAttemptTime)
         {
-            SetRegisterState(ADPS_REGISTER_STATE_UNKNOWN, "time out");
+            SetRegisterState(moduleState, ADPS_REGISTER_STATE_UNKNOWN, "time out");
         }
     }
 
-    if (s_moduleState.registerState == ADPS_REGISTER_STATE_WAIT_TO_POLL)
+    if (moduleState->registerState == ADPS_REGISTER_STATE_WAIT_TO_POLL)
     {
-        if (nowTime > s_moduleState.nextRegisterAttemptTime)
+        if (nowTime > moduleState->nextRegisterAttemptTime)
         {
             char* pollTopic = ADUC_StringFormat(
                 "$dps/registrations/GET/iotdps-get-operationstatus/?$rid=%s&operationId=%s",
-                s_moduleState.settings.registrationId,
-                s_moduleState.operationId);
+                moduleState->settings.registrationId,
+                moduleState->operationId);
             if (pollTopic == NULL)
             {
                 Log_Error("Cannot allocate memory for registration status polling topic");
@@ -390,12 +512,13 @@ bool DeviceRegistration_DoWork(/*const char* request_id, const char* connect_jso
             else
             {
                 int mid = 0;
-                int mqtt_ret = ADUC_CommunicationChannel_MQTT_Publish(
+                int mqtt_ret = ADUC_Communication_Channel_MQTT_Publish(
+                    moduleState->commModule,
                     pollTopic,
                     &mid,
                     0,
                     NULL,
-                    s_moduleState.settings.mqttSettings.qos,
+                    moduleState->settings.mqttSettings.qos,
                     false /* retain */,
                     NULL /* props */);
 
@@ -406,9 +529,9 @@ bool DeviceRegistration_DoWork(/*const char* request_id, const char* connect_jso
                 }
                 else
                 {
-                    SetRegisterState(ADPS_REGISTER_STATE_POLLING, "publishing message");
-                    s_moduleState.nextRegisterAttemptTime = nowTime + ADPS_DEFAULT_REGISTER_REQUEST_DELAY_SECONDS;
-                    s_moduleState.registerRetries++;
+                    SetRegisterState(moduleState, ADPS_REGISTER_STATE_POLLING, "publishing message");
+                    moduleState->nextRegisterAttemptTime = nowTime + ADPS_DEFAULT_REGISTER_REQUEST_DELAY_SECONDS;
+                    moduleState->registerRetries++;
                 }
             }
             free(pollTopic);
@@ -419,13 +542,13 @@ bool DeviceRegistration_DoWork(/*const char* request_id, const char* connect_jso
         }
     }
 
-    if (s_moduleState.registerState == ADPS_REGISTER_STATE_FAILED)
+    if (moduleState->registerState == ADPS_REGISTER_STATE_FAILED)
     {
-        // TODO (nox-msft) : determine whether to retry or bail
-        return false;
+        result = false;
+        goto done;
     }
 
-    if (s_moduleState.registerState == ADPS_REGISTER_STATE_UNKNOWN && nowTime > s_moduleState.nextRegisterAttemptTime)
+    if (moduleState->registerState == ADPS_REGISTER_STATE_UNKNOWN && nowTime > moduleState->nextRegisterAttemptTime)
     {
         char topic_name[256];
         char device_registration_json[1024];
@@ -436,14 +559,15 @@ bool DeviceRegistration_DoWork(/*const char* request_id, const char* connect_jso
             device_registration_json,
             sizeof(device_registration_json),
             "{\"registrationId\":\"%s\"}",
-            s_moduleState.settings.registrationId);
+            moduleState->settings.registrationId);
         int mid = 0;
-        int mqtt_ret = ADUC_CommunicationChannel_MQTT_Publish(
+        int mqtt_ret = ADUC_Communication_Channel_MQTT_Publish(
+            moduleState->commModule,
             topic_name,
             &mid,
             strlen(device_registration_json),
             device_registration_json,
-            s_moduleState.settings.mqttSettings.qos,
+            moduleState->settings.mqttSettings.qos,
             false /* retain */,
             NULL /* props */);
 
@@ -451,18 +575,20 @@ bool DeviceRegistration_DoWork(/*const char* request_id, const char* connect_jso
         {
             Log_Error("Failed to publish registration request (%d)", mqtt_ret);
             // TODO (nox-msft) : determine whether to retry or bail
-            return false;
+            goto done;
         }
         else
         {
-            SetRegisterState(ADPS_REGISTER_STATE_REGISTERING, "publishing message");
-            s_moduleState.nextRegisterAttemptTime = nowTime + ADPS_DEFAULT_REGISTER_REQUEST_DELAY_SECONDS;
-            s_moduleState.registerRetries++;
+            SetRegisterState(moduleState, ADPS_REGISTER_STATE_REGISTERING, "publishing message");
+            moduleState->nextRegisterAttemptTime = nowTime + ADPS_DEFAULT_REGISTER_REQUEST_DELAY_SECONDS;
+            moduleState->registerRetries++;
         }
     }
 
+    result = true;
+
 done:
-    return false;
+    return result;
 }
 
 /**
@@ -476,70 +602,28 @@ int ADPS_MQTT_Client_Module_Deinitialize(ADUC_AGENT_MODULE_HANDLE module)
 {
     Log_Info("Deinitialize");
 
-    ADUC_CommunicationChannel_Deinitialize();
+    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(module);
+    if (moduleState == NULL)
+    {
+        Log_Error("Invalid moduleState");
+        return -1;
+    }
 
-    FreeAzureDPS2MqttSettings(&s_moduleState.settings);
-    free(s_moduleState.operationId);
-    json_value_free(s_moduleState.registrationData);
+    ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
+    commInterface->deinitializeModule(moduleState->commModule);
+
+    FreeAzureDPS2MqttSettings(&moduleState->settings);
+    free(moduleState->operationId);
+    json_value_free(moduleState->registrationData);
 
     ADUC_Logging_Uninit();
     return 0;
-}
-
-/**
- * @brief Create a Device Update Agent Module for IoT Hub PnP Client.
- *
- * @return ADUC_AGENT_MODULE_HANDLE The handle to the module.
- */
-ADUC_AGENT_MODULE_HANDLE ADPS_MQTT_Client_Module_Create()
-{
-    ADUC_AGENT_MODULE_HANDLE handle = &s_moduleState;
-    return handle;
-}
-
-/*
- * @brief Destroy the Device Update Agent Module for IoT Hub PnP Client.
- * @param handle The handle to the module. This is the same handle that was returned by the Create function.
- */
-void ADPS_MQTT_Client_Module_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
-{
-    IGNORED_PARAMETER(handle);
-    Log_Info("DPS mqtt model destroy");
 }
 
 void OnCommandReceived(const char* commandName, const char* commandPayload, size_t payloadSize, void* context)
 {
     IGNORED_PARAMETER(context);
     Log_Info("Received command %s with payload %s (size:%d)", commandName, commandPayload, payloadSize);
-}
-
-bool SubscribeToDSPModuleCommands()
-{
-    // TODO (nox-msft): subscribe to DPS module commands.
-    // return InterModuleCommand_Subscribe("module.microsoft.dpsclient.ipcCommands", OnCommandReceived, NULL);
-    return true;
-}
-
-void UnsubScribeToDSPModuleCommands()
-{
-    // TODO (nox-msft): unsubscribe to DPS module commands.
-    // InterModuleCommand_Unsubscribe("module.microsoft.dpsclient.ipcCommands", OnCommandReceived, NULL);
-}
-
-bool IsConnectionResetRequested()
-{
-    // TODO (nox-msft): listen for a signal to reset the connection.
-    return false;
-}
-
-/**
- * @brief Reset the connection.
- */
-void ResetConnection()
-{
-    // TODO (nox-msft): ensure that we tear down the connection and re-establish it.
-    s_moduleState.connected = s_moduleState.subscribed = false;
-    s_moduleState.registerState = ADPS_REGISTER_STATE_UNKNOWN;
 }
 
 /**
@@ -549,11 +633,17 @@ void ResetConnection()
  */
 int ADPS_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
 {
-    ADUC_CommunicationChannel_DoWork();
+    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(handle);
 
-    if (ADUC_CommunicationChannel_IsConnected())
+    ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
+    if (commInterface != NULL)
     {
-        DeviceRegistration_DoWork();
+        commInterface->doWork(commInterface);
+    }
+
+    if (ADUC_Communication_Channel_IsConnected(moduleState->commModule))
+    {
+        DeviceRegistration_DoWork(handle);
     }
 
     return 0;
@@ -602,25 +692,16 @@ int ADPS_MQTT_Client_Module_SetData(
     return ret;
 }
 
-ADUC_AGENT_MODULE_INTERFACE ADPS_MQTT_Client_ModuleInterface = {
-    &s_moduleState,
-    ADPS_MQTT_Client_Module_Create,
-    ADPS_MQTT_Client_Module_Destroy,
-    ADPS_MQTT_Client_Module_GetContractInfo,
-    ADPS_MQTT_Client_Module_DoWork,
-    ADPS_MQTT_Client_Module_Initialize,
-    ADPS_MQTT_Client_Module_Deinitialize,
-    ADPS_MQTT_Client_Module_GetData,
-    ADPS_MQTT_Client_Module_SetData,
-};
-
 bool ADPS_MQTT_CLIENT_MODULE_IsDeviceRegistered(ADUC_AGENT_MODULE_HANDLE handle)
 {
-    return (s_moduleState.registerState == ADPS_REGISTER_STATE_REGISTERED);
+    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(handle);
+    return (moduleState->registerState == ADPS_REGISTER_STATE_REGISTERED);
 }
 
 const char* ADPS_MQTT_CLIENT_MODULE_GetMQTTBrokerEndpoint(ADUC_AGENT_MODULE_HANDLE handle)
 {
+    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(handle);
+
     return json_object_dotget_string(
-        json_value_get_object(s_moduleState.registrationData), "assignedEnpoint.hostName");
+        json_value_get_object(moduleState->registrationData), "assignedEndpoint.hostName");
 }

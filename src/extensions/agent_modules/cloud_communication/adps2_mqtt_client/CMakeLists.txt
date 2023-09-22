@@ -21,6 +21,4 @@ target_link_libraries (
     PRIVATE aduc::adu_types aduc::config_utils aduc::logging aduc::mosquitto_utils
             aduc::retry_utils Parson::parson)
 
-if (ADUC_BUILD_UNIT_TESTS)
-    add_subdirectory (tests)
-endif ()
+add_subdirectory (tests)
