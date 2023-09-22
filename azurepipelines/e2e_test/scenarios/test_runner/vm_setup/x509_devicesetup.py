@@ -150,16 +150,17 @@ def main():
     # Create the config.toml contents
     #
     configTomlInfo = """\
-# [provisioning]
+[provisioning]
 source = "manual"
 iothub_hostname = "test-automation-iothub.azure-devices.net"
 device_id = "{device_id}"
-#
+
 [provisioning.authentication]
 method = "x509"
 identity_pk = "file://{key_path}"
 identity_cert = "file://{cert_path}"
-""".format(device_id=args.device_id,key_path=args.key_file_path,cert_path=args.certificate_file_path)
+""".format(device_id=args.device_id, key_path=args.key_file_path, cert_path=args.certificate_file_path)
+
 
     with open('config.toml', 'w') as configToml:
         configToml.write(configTomlInfo)
