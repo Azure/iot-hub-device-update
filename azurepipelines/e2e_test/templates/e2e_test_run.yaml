@@ -141,7 +141,7 @@ steps:
     - task: PublishPipelineArtifact@1
       inputs:
           targetPath: "$(Build.ArtifactStagingDirectory)/testresults/"
-          artifact: "TestResults_${{parameters.distroName}}"
+          artifact: "TestResults_${{parameters.device_id_under_test}}"
           publishLocation: "pipeline"
 
     - task: PublishTestResults@2
@@ -149,4 +149,4 @@ steps:
           testRunner: JUnit
           testResultsFiles: "$(E2E_WORKING_DIR)/testresults/*.xml"
           failTaskOnFailedTests: false
-          testRunTitle: ${{parameters.distroName}}
+          testRunTitle: ${{parameters.device_id_under_test}}
