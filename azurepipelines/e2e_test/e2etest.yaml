@@ -410,7 +410,7 @@ stages:
       variables:
           TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
       jobs:
-          - job: DeleteUbuntu_1804_Amd64Vms
+          - job: DeleteUbuntu_1804_Amd64Vms_sas
             displayName: "Deletes the VM for Ubuntu 18.04 AMD64 - sas"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
@@ -420,7 +420,7 @@ stages:
                   parameters:
                       device_id_under_test: ubuntu-18.04-amd64-sas
                       terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-          - job: DeleteUbuntu_1804_Amd64Vms
+          - job: DeleteUbuntu_1804_Amd64Vms_x509
             displayName: "Deletes the VM for Ubuntu 18.04 AMD64 - x509"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
