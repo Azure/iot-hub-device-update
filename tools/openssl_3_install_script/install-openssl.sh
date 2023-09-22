@@ -39,6 +39,11 @@ print_help() {
     echo "--openssl-dir-path        Specific path to install OpenSSL 1.1"
     echo ""
     echo "--openssl-version         Specific version of OpenSSL to install. Only supports installations of 1.1x and 3.x"
+    echo "                          Suggested versions are: 1.1.1w, 3.0.11, or 3.1.3"
+    echo "                          If you absolutely want to live on the edge you can use this script to install 3.2.0-alpha1"
+    echo "                          but results are unpredictable"
+    echo " DO NOT USE THIS SCRIPT IF YOU DO NOT KNOW IF THE OPENSSL VERSION YOU ARE INSTALLING IS COMPATIBLE WITH YOUR CURRENT SYSTEM"
+    echo " *********************** THIS CAN BRICK YOUR SSH CONNECTION TO A REMOTE MACHINE ***********************"
     echo "-h, --help                Show this help message."
     echo ""
     echo "Example: ${BASH_SOURCE[0]} --install-all-deps --work-folder ~/adu-linux-client-deps --keep-source-code"
@@ -139,6 +144,10 @@ while [[ $1 != "" ]]; do
         shift
         openssl_dir_path=$1
         ;;
+    --openssl-version)
+        shift
+        openssl_version=$1
+        ;;
     -h | --help)
         print_help
         $ret 0
@@ -150,3 +159,7 @@ while [[ $1 != "" ]]; do
     esac
     shift
 done
+
+do_install_openssl || $ret 1
+
+$ret 0
