@@ -169,7 +169,7 @@ steps:
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}/terraform/host/
 
-    - script: terraform apply -var subscription_id="$(SUBSCRIPTION_ID)" -var tenant_id="$(TERRAFORM_TENANT_ID)" -var client_id="$(TERRAFORM_CLIENT_ID)" -var client_secret="$(TERRAFORM_CLIENT_SECRET)" -var key_vault_id="$(Azure_Key_Vault_ID)" -var resource_group_name=$(TERRAFORM_RESOURCE_GROUP_NAME) -var vm_name=${{parameters.distroName}} -var vm_size=${{parameters.vm_size}} -var image_offer=${{parameters.image_offer}} -var image_publisher=${{parameters.image_publisher}} -var image_sku=${{parameters.image_sku}} -var image_version=${{parameters.image_version}} -var test_setup_tarball="./testsetup.tar.gz" -var vm_du_tarball_script="${{parameters.du_tarball_script}}" -auto-approve
+    - script: terraform apply -var subscription_id="$(SUBSCRIPTION_ID)" -var tenant_id="$(TERRAFORM_TENANT_ID)" -var client_id="$(TERRAFORM_CLIENT_ID)" -var client_secret="$(TERRAFORM_CLIENT_SECRET)" -var key_vault_id="$(Azure_Key_Vault_ID)" -var resource_group_name=$(TERRAFORM_RESOURCE_GROUP_NAME) -var vm_name=${{parameters.device_id_under_test}} -var vm_size=${{parameters.vm_size}} -var image_offer=${{parameters.image_offer}} -var image_publisher=${{parameters.image_publisher}} -var image_sku=${{parameters.image_sku}} -var image_version=${{parameters.image_version}} -var test_setup_tarball="./testsetup.tar.gz" -var vm_du_tarball_script="${{parameters.du_tarball_script}}" -auto-approve
       displayName: Creating the Virtual Machines
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}/terraform/host/
@@ -184,4 +184,4 @@ steps:
     - publish: "$(Build.ArtifactStagingDirectory)/terraform/host"
       displayName: "Publish Terraform state for destroy stage (vm)"
       continueOnError: False
-      artifact: terraformStateVM_${{parameters.distroName}}
+      artifact: terraformStateVM_${{parameters.device_id_under_test}}

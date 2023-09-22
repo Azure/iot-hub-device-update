@@ -133,29 +133,29 @@ stages:
           TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
       pool: aduc_1es_client_pool
       jobs:
-        #   - job: SetupUbuntu1804_AMD64_VM_sas
-        #     displayName: "Setting up VM for Ubuntu 18.04 AMD64 Test VM"
-        #     timeoutInMinutes: 360
-        #     cancelTimeoutInMinutes: 360
-        #     pool: aduc_1es_client_pool
-        #     steps:
-        #         - template: ./templates/e2e_vm_setup.yaml
-        #           parameters:
-        #               distroName: ubuntu-18.04-amd64
-        #               provisioning_type: "sas"
-        #               vm_size: Standard_DS1_v2
-        #               image_publisher: "Canonical"
-        #               image_offer: "UbuntuServer"
-        #               image_sku: 18.04-LTS
-        #               image_version: latest
-        #               packagePattern: "*ubuntu1804-amd64*/*.deb"
-        #               package_pipeline: "Azure.adu-private-preview.e2e-test"
-        #               du_tarball_script: >-
-        #                   tar -xf /tmp/testsetup.tar.gz -C ./ &&
-        #                   chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
-        #                   ./testsetup/sas_vm_setup.sh --distro ubuntu-18.04 --architecture amd64
-        #               image_working_directory: $(E2E_WORKING_DIR)
-        #               device_id_under_test: "ubuntu-18.04-amd64-sas"
+          - job: SetupUbuntu1804_AMD64_VM_sas
+            displayName: "Setting up VM for Ubuntu 18.04 AMD64 Test VM"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_vm_setup.yaml
+                  parameters:
+                      distroName: ubuntu-18.04-amd64
+                      provisioning_type: "sas"
+                      vm_size: Standard_DS1_v2
+                      image_publisher: "Canonical"
+                      image_offer: "UbuntuServer"
+                      image_sku: 18.04-LTS
+                      image_version: latest
+                      packagePattern: "*ubuntu1804-amd64*/*.deb"
+                      package_pipeline: "Azure.adu-private-preview.e2e-test"
+                      du_tarball_script: >-
+                          tar -xf /tmp/testsetup.tar.gz -C ./ &&
+                          chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
+                          ./testsetup/sas_vm_setup.sh --distro ubuntu-18.04 --architecture amd64
+                      image_working_directory: $(E2E_WORKING_DIR)
+                      device_id_under_test: "ubuntu-18.04-amd64-sas"
           - job: SetupUbuntu1804_AMD64_VM_x509
             displayName: "Setting up VM for Ubuntu 18.04 AMD64 Test VM"
             timeoutInMinutes: 360
@@ -319,16 +319,16 @@ stages:
       dependsOn:
           - TerraformVMInitialization
       jobs:
-        #   - job: RunUbuntu_1804_Amd64VmE2ETests_sas
-        #     displayName: "Running E2E Tests against Ubuntu 18.04 AMD64"
-        #     timeoutInMinutes: 360
-        #     cancelTimeoutInMinutes: 360
-        #     pool: aduc_1es_client_pool
-        #     steps:
-        #         - template: ./templates/e2e_test_run.yaml
-        #           parameters:
-        #               distroName: ubuntu-18.04-amd64
-        #               device_id_under_test: "ubuntu-18.04-amd64-sas"
+          - job: RunUbuntu_1804_Amd64VmE2ETests_sas
+            displayName: "Running E2E Tests against Ubuntu 18.04 AMD64"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_test_run.yaml
+                  parameters:
+                      distroName: ubuntu-18.04-amd64
+                      device_id_under_test: "ubuntu-18.04-amd64-sas"
 
           - job: RunUbuntu_1804_Amd64VmE2ETests_x509
             displayName: "Running E2E Tests against Ubuntu 18.04 AMD64"
@@ -411,14 +411,24 @@ stages:
           TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
       jobs:
           - job: DeleteUbuntu_1804_Amd64Vms
-            displayName: "Deletes the VM for Ubuntu 18.04 AMD64"
+            displayName: "Deletes the VM for Ubuntu 18.04 AMD64 - sas"
             timeoutInMinutes: 360
             cancelTimeoutInMinutes: 360
             pool: aduc_1es_client_pool
             steps:
                 - template: ./templates/e2e_test_vm_cleanup.yaml
                   parameters:
-                      distroName: ubuntu-18.04-amd64
+                      device_id_under_test: ubuntu-18.04-amd64-sas
+                      terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
+          - job: DeleteUbuntu_1804_Amd64Vms
+            displayName: "Deletes the VM for Ubuntu 18.04 AMD64 - x509"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_test_vm_cleanup.yaml
+                  parameters:
+                      device_id_under_test: ubuntu-18.04-amd64-x509
                       terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
         #   - job: DeleteUbuntu_1804_Arm64Vms
         #     displayName: "Deletes the VM for Ubuntu 18.04 ARM64"
@@ -428,7 +438,7 @@ stages:
         #     steps:
         #         - template: ./templates/e2e_test_vm_cleanup.yaml
         #           parameters:
-        #               distroName: ubuntu-18.04-arm64
+        #               device_id_under_test: ubuntu-18.04-arm64-sas
         #               terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
         #   - job: DeleteUbuntu_2004_Amd64Vms
         #     displayName: "Deletes the VM for Ubuntu 20.04 AMD64"
@@ -448,7 +458,7 @@ stages:
         #     steps:
         #         - template: ./templates/e2e_test_vm_cleanup.yaml
         #           parameters:
-        #               distroName: ubuntu-20.04-arm64
+        #               device_id_under_test: ubuntu-20.04-arm64-sas
         #               terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
         #   # - job: DeleteUbuntu_2204_Amd64Vms
         #   #   displayName: "Deletes the VM for Ubuntu 22.04 AMD64"
@@ -458,7 +468,7 @@ stages:
         #   #   steps:
         #   #       - template: ./templates/e2e_test_vm_cleanup.yaml
         #   #         parameters:
-        #   #             distroName: ubuntu-22.04-amd64
+        #   #             device_id_under_test: ubuntu-22.04-amd64-sas
         #   #             terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
         #   # - job: DeleteUbuntu_2204_Arm64Vms
         #     # displayName: "Deletes the VM for Ubuntu 22.04 ARM64"
@@ -468,7 +478,7 @@ stages:
         #     # steps:
         #     #     - template: ./templates/e2e_test_vm_cleanup.yaml
         #     #       parameters:
-        #     #           distroName: ubuntu-22.04-arm64
+        #     #           device_id_under_test: ubuntu-22.04-arm64-sas
         #     #           terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
         #   - job: DeleteDebian_10_Amd64Vms
         #     displayName: "Deletes the VM for Debian 10 AMD64"
@@ -478,7 +488,7 @@ stages:
         #     steps:
         #         - template: ./templates/e2e_test_vm_cleanup.yaml
         #           parameters:
-        #               distroName: debian-10-amd64
+        #               device_id_under_test: debian-10-amd64-sas
         #               terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
     - stage: RG_Destroy
       displayName: Destroys the Resource Group used for the End-To-End Test
