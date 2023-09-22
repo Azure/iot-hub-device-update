@@ -153,7 +153,7 @@ def main():
 # [provisioning]
 source = "manual"
 iothub_hostname = "test-automation-iothub.azure-devices.net"
-device_id = "{device_id}}"
+device_id = "{device_id}"
 #
 [provisioning.authentication]
 method = "x509"
