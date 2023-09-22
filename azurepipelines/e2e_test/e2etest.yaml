@@ -269,6 +269,7 @@ stages:
         #   #                 chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
         #   #                 ./testsetup/sas_vm_setup.sh --distro ubuntu-22.04 --architecture amd64
         #   #             image_working_directory: $(E2E_WORKING_DIR)
+        #   #             device_id_under_test: "ubuntu-22.04-amd64-sas"
         #   # - job: SetupUbuntu2204_ARM64_VM
         #     # displayName: "Setting up VM for Ubuntu 22.04 ARM64 Test VM"
         #     # timeoutInMinutes: 360
@@ -290,6 +291,7 @@ stages:
         #     #               chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
         #     #               ./testsetup/sas_vm_setup.sh --distro ubuntu-22.04 --architecture arm64
         #     #           image_working_directory: $(E2E_WORKING_DIR)
+        #   #             device_id_under_test: "ubuntu-22.04-arm64-sas"
           - job: SetupDebian10_AMD64_VM
             displayName: "Setting up VM for Debain 10 AMD64 Test VM"
             timeoutInMinutes: 360
@@ -380,6 +382,7 @@ stages:
           #       - template: ./templates/e2e_test_run.yaml
           #         parameters:
           #             distroName: ubuntu-22.04-amd64
+          #             device_id_under_test: "ubuntu-22.04-amd64-sas"
           # - job: RunUbuntu_2204_Arm64VmE2ETests
             # displayName: "Running E2E Tests against Ubuntu 22.04 ARM64"
             # timeoutInMinutes: 360
@@ -389,6 +392,7 @@ stages:
             #     - template: ./templates/e2e_test_run.yaml
             #       parameters:
             #           distroName: ubuntu-22.04-arm64
+            #           device_id_under_test: "ubuntu-22.04-arm64-sas"
           - job: RunDebian_10_Amd64VmE2ETests
             displayName: "Running E2E Tests against Debian 10 AMD64"
             timeoutInMinutes: 360
@@ -448,7 +452,7 @@ stages:
             steps:
                 - template: ./templates/e2e_test_vm_cleanup.yaml
                   parameters:
-                      distroName: ubuntu-20.04-amd64
+                      device_id_under_test: ubuntu-20.04-amd64-sas
                       terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
           - job: DeleteUbuntu_2004_Arm64Vms
             displayName: "Deletes the VM for Ubuntu 20.04 ARM64"
