@@ -303,6 +303,18 @@ void ADUC_MQTT_Client_OnConnect(
     }
 }
 
+/* Callback called when the broker sends a SUBACK in response to a SUBSCRIBE. */
+void ADUC_MQTT_Client_OnSubscribe(
+    struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos, const mosquitto_property* props)
+{
+    ADUC_MQTT_CLIENT_MODULE_STATE* moduleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
+    if (moduleState->enrollmentState <= ADU_ENROLLMENT_STATE_UNKNOWN)
+    {
+        Log_Info("on_subscribe: Subscribing succeeded.");
+        moduleState->enrollmentState = ADU_ENROLLMENT_STATE_SUBSCRIBED;
+    }
+}
+
 /**
  * @brief Callbacks for various event from the communication channel.
  */
@@ -310,7 +322,7 @@ ADUC_MQTT_CALLBACKS s_commChannelCallbacks = {
     ADUC_MQTT_Client_OnConnect /*on_connect*/,
     NULL /*on_disconnect*/,
     ADUC_MQTT_Client_GetSubscriptionTopics /* get_subscription_topics */,
-    NULL /*on_subscribe*/,
+    ADUC_MQTT_Client_OnSubscribe /*on_subscribe*/,
     NULL /*on_unsubscribe*/,
     ADUC_MQTT_Client_OnPublish,
     ADUC_MQTT_Client_OnMessage,
@@ -597,6 +609,13 @@ int ADUC_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
         moduleState->nextOperationTime = nowTime + 5;
         goto done;
     }
+
+    // if (moduleState->enrollmentState < ADU_ENROLLMENT_STATE_SUBSCRIBED)
+    // {
+    //     // Wait until we subscribed.
+    //     moduleState->nextOperationTime = nowTime + 5;
+    //     goto done;
+    // }
 
     ADUC_Enrollment_Management_DoWork();
 

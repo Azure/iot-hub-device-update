@@ -100,27 +100,22 @@ typedef enum ADU_ENROLLMENT_STATE_TAG
 {
     ADU_ENROLLMENT_STATE_NOT_ENROLLED = -1, /**< The client is not enrolled. */
     ADU_ENROLLMENT_STATE_UNKNOWN = 0, /**< The enrollment state of the client is unknown. */
-    ADU_ENROLLMENT_STATE_ENROLLING = 1, /**< The client is currently in the process of enrolling. */
-    ADU_ENROLLMENT_STATE_ENROLLED = 2, /**< The client is successfully enrolled. */
+    ADU_ENROLLMENT_STATE_SUBSCRIBED = 1, /**< The client is subscribed. */
+    ADU_ENROLLMENT_STATE_ENROLLING = 2, /**< The client is currently in the process of enrolling. */
+    ADU_ENROLLMENT_STATE_ENROLLED = 3, /**< The client is successfully enrolled. */
 } ADU_ENROLLMENT_STATE;
 
 /**
  * @brief Enumeration representing the initialization states of the ADU MQTT client module.
  *
- * This enumeration defines various states that the ADU MQTT client module can be in during initialization.
- * - `ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_FAILED`: Initialization has failed.
- * - `ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_NONE`: No initialization state.
- * - `ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL`: Partial initialization.
- * - `ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_COMPLETED`: Initialization has been successfully completed.
- *
  * @note This enumeration is used to track the initialization progress of the ADU MQTT client module.
  */
 typedef enum ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_TAG
 {
-    ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_FAILED = -1,
-    ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_NONE = 0,
-    ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL = 1,
-    ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_COMPLETED = 2,
+    ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_FAILED = -1, /**< Initialization has failed. */
+    ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_NONE = 0, /**< No initialization state. */
+    ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL = 1, /**< Partial initialization. */
+    ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_COMPLETED = 2, /**< Initialization has been successfully completed. */
 } ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE;
 
 #endif /* __ADU_MQTT_PROTOCOL_H__ */

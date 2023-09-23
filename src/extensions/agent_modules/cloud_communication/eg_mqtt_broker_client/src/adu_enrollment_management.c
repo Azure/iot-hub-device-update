@@ -32,8 +32,8 @@
 #define DEFAULT_ENR_REQ_MIN_RETRY_DELAY_SECONDS (60 * 5)
 
 // Enrollment request message content, which is always an empty JSON object.
-//static const char* s_enr_req_message_content = "{}";
-//static const size_t s_enr_req_message_content_len = 2;
+static const char* s_enr_req_message_content = "{}";
+static const size_t s_enr_req_message_content_len = 2;
 static char* s_mqtt_topic_a2s_oto = NULL;
 
 #define CONST_TIME_5_SECONDS 5
@@ -386,8 +386,8 @@ bool ADUC_Enrollment_Management_DoWork()
                 s_enrMgrState.commModule /* handle */,
                 s_mqtt_topic_a2s_oto /* topic */,
                 &mid /* mid */,
-                0, //s_enr_req_message_content_len,
-                NULL, //s_enr_req_message_content, // "{}"
+                s_enr_req_message_content_len,
+                s_enr_req_message_content, // "{}"
                 1 /* qos */,
                 false /* retain */,
                 props);

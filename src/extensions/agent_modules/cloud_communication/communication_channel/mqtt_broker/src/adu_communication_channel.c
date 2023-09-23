@@ -266,7 +266,10 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
         goto done;
     }
 
-    commMgrState->mqttClient = mosquitto_new(initData->session_id, commMgrState->mqttSettings.cleanSession, handle);
+    commMgrState->mqttClient = mosquitto_new(
+        initData->session_id,
+        commMgrState->mqttSettings.cleanSession,
+        handle /* Communication Channel Module Handle */);
     if (!commMgrState->mqttClient)
     {
         Log_Error("Failed to create Mosquitto client");
@@ -413,9 +416,9 @@ static time_t ADUC_SetCommunicationChannelState(
  *         The DU communication channel state is set to ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTED.
  */
 void ADUC_Communication_Channel_OnConnect(
-    struct mosquitto* mosq, void* obj, int reason_code, int flags, const mosquitto_property* props)
+    struct mosquitto* mosq, void* commModuleHandle, int reason_code, int flags, const mosquitto_property* props)
 {
-    ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)obj;
+    ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)commModuleHandle;
 
     if (interface == NULL)
     {
@@ -471,7 +474,7 @@ void ADUC_Communication_Channel_OnConnect(
 done:
     if (commMgrState->mqttCallbacks.on_connect_v5 != NULL)
     {
-        commMgrState->mqttCallbacks.on_connect_v5(mosq, obj, reason_code, flags, props);
+        commMgrState->mqttCallbacks.on_connect_v5(mosq, commMgrState->ownerModuleContext, reason_code, flags, props);
     }
     return;
 }
@@ -492,9 +495,12 @@ done:
  * @param props MQTT properties associated with the received message (may be NULL).
  */
 void ADUC_Communication_Channel_OnMessage(
-    struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
+    struct mosquitto* mosq,
+    void* commModuleHandle,
+    const struct mosquitto_message* msg,
+    const mosquitto_property* props)
 {
-    ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)obj;
+    ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)commModuleHandle;
 
     if (interface == NULL)
     {
@@ -514,9 +520,9 @@ void ADUC_Communication_Channel_OnMessage(
     Log_Info("Topic: %s; QOS: %d; mid: %d", msg->topic, msg->qos, msg->mid);
 
     // All parameters are required.
-    if (mosq == NULL || obj == NULL || msg == NULL)
+    if (mosq == NULL || commModuleHandle == NULL || msg == NULL)
     {
-        Log_Error("Null parameter (mosq=%p, obj=%p, msg=%p, props=%p)", mosq, obj, msg, props);
+        Log_Error("Null parameter (mosq=%p, obj=%p, msg=%p, props=%p)", mosq, commModuleHandle, msg, props);
         goto done;
     }
 
@@ -550,7 +556,7 @@ done:
     free(msg_type);
     if (commMgrState->mqttCallbacks.on_message_v5 != NULL)
     {
-        commMgrState->mqttCallbacks.on_message_v5(mosq, obj, msg, props);
+        commMgrState->mqttCallbacks.on_message_v5(mosq, commMgrState->ownerModuleContext, msg, props);
     }
 }
 
@@ -571,10 +577,10 @@ done:
  * @param props MQTT properties associated with the acknowledgment (may be NULL).
  */
 void ADUC_Communication_Channel_OnPublish(
-    struct mosquitto* mosq, void* obj, int mid, int reason_code, const mosquitto_property* props)
+    struct mosquitto* mosq, void* commModuleHandle, int mid, int reason_code, const mosquitto_property* props)
 {
     Log_Info("on_publish: Message with mid %d has been published.", mid);
-    ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)obj;
+    ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)commModuleHandle;
 
     if (interface == NULL)
     {
@@ -590,7 +596,7 @@ void ADUC_Communication_Channel_OnPublish(
     }
     if (commMgrState->mqttCallbacks.on_publish_v5 != NULL)
     {
-        commMgrState->mqttCallbacks.on_publish_v5(mosq, obj, mid, reason_code, props);
+        commMgrState->mqttCallbacks.on_publish_v5(mosq, commMgrState->ownerModuleContext, mid, reason_code, props);
     }
 }
 
@@ -612,10 +618,15 @@ void ADUC_Communication_Channel_OnPublish(
  * @param props MQTT properties associated with the acknowledgment (may be NULL).
  */
 void ADUC_Communication_Channel_OnSubscribe(
-    struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos, const mosquitto_property* props)
+    struct mosquitto* mosq,
+    void* commModuleHandle,
+    int mid,
+    int qos_count,
+    const int* granted_qos,
+    const mosquitto_property* props)
 {
     Log_Info("on_subscribe: Subscribed with mid %d; %d topics.", mid, qos_count);
-    ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)obj;
+    ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)commModuleHandle;
 
     if (interface == NULL)
     {
@@ -639,7 +650,8 @@ void ADUC_Communication_Channel_OnSubscribe(
 
     if (commMgrState->mqttCallbacks.on_subscribe_v5 != NULL)
     {
-        commMgrState->mqttCallbacks.on_subscribe_v5(mosq, obj, mid, qos_count, granted_qos, props);
+        commMgrState->mqttCallbacks.on_subscribe_v5(
+            mosq, commMgrState->ownerModuleContext, mid, qos_count, granted_qos, props);
     }
 }
 
@@ -654,9 +666,9 @@ void ADUC_Communication_Channel_OnSubscribe(
  * @param level The log message level indicating the severity of the message.
  * @param str The text of the log message.
  */
-void ADUC_Communication_Channel_OnLog(struct mosquitto* mosq, void* obj, int level, const char* str)
+void ADUC_Communication_Channel_OnLog(struct mosquitto* mosq, void* commModuleHandle, int level, const char* str)
 {
-    ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)obj;
+    ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)commModuleHandle;
 
     if (interface == NULL)
     {
@@ -705,7 +717,7 @@ void ADUC_Communication_Channel_OnLog(struct mosquitto* mosq, void* obj, int lev
 #endif
     if (commMgrState->mqttCallbacks.on_log != NULL)
     {
-        commMgrState->mqttCallbacks.on_log(mosq, obj, level, str);
+        commMgrState->mqttCallbacks.on_log(mosq, commMgrState->ownerModuleContext, level, str);
     }
 }
 

@@ -22,7 +22,8 @@
 #define ADPS_MQTT_TOPIC_REGISTRATIONS_RESULT_200 "$dps/registrations/res/200/#"
 #define ADPS_MQTT_TOPIC_REGISTRATIONS_RESULT_202 "$dps/registrations/res/202/#"
 
-#define ADPS_DEFAULT_REGISTER_REQUEST_DELAY_SECONDS 60
+#define ADPS_DEFAULT_REGISTER_REQUEST_DELAY_SECONDS 600
+#define ADPS_DEFAULT_REGISTER_STATUS_POLLING_INTERVAL_SECONDS 5
 
 /**
  * @brief Enumeration of registration states for Azure DPS device registration management.
@@ -54,34 +55,29 @@ enum ADPS_ERROR
  */
 typedef struct ADPS_MQTT_CLIENT_MODULE_STATE_TAG
 {
-    struct mosquitto* mqttClient; //!< Mosquitto client
     bool initialized; //!< Module is initialized
-
-    bool connected; //!< Device is connected to DPS
-    time_t lastConnectedTime; //!< Last time connected to DPS
-
     bool subscribed; //!< Device is subscribed to DPS topics
 
     ADPS_REGISTER_STATE registerState; //!< Registration state
     char* operationId; //!< Operation ID for registration
+    unsigned int requestId; //!< Request ID for registration
     time_t lastRegisterAttemptTime; //!< Last time a registration attempt was made
     time_t lastRegisterResponseTime; //!< Last time a registration response was received
     time_t nextRegisterAttemptTime; //!< Next time to attempt registration
+    time_t nextPollingAttemptTime; //!< Next time to attempt polling
     int registerRetries; //!< Number of registration retries
+    int pollingRetries; //!< Number of polling retries
 
     JSON_Value* registrationData; //!< Registration data
 
     time_t lastErrorTime; //!< Last time an error occurred
     ADUC_Result lastAducResult; //!< Last ADUC result
-    int lastError; //!< Last error code
     AZURE_DPS_2_MQTT_SETTINGS settings; //!< DPS settings
     time_t nextOperationTime; //!< Next time to perform an operation
 
-    ADUC_AGENT_MODULE_HANDLE commModule; //!< Communication module
+    ADUC_AGENT_MODULE_HANDLE commModule; //!< Communication channel module
 
 } ADPS_MQTT_CLIENT_MODULE_STATE;
-
-// static ADPS_MQTT_CLIENT_MODULE_STATE s_moduleState = { 0 };
 
 /**
  * @brief The contract info for the module.
@@ -265,8 +261,6 @@ ADUC_MQTT_CALLBACKS s_commChannelCallbacks = {
  *   }
  *
  * If the registration status is "assigned", then the device is registered
- *
- *
  */
 bool ProcessDeviceRegistrationResponse(
     ADPS_MQTT_CLIENT_MODULE_STATE* moduleState, const char* payload, size_t payload_len)
@@ -347,39 +341,40 @@ void ADPS_MQTT_Client_Module_OnMessage(
         int http_status_code = atoi(topics[3]);
         if (http_status_code == 200)
         {
-            Log_Info("Device is registered.");
+            Log_Info("Registration request completed successfully.");
             moduleState->lastRegisterResponseTime = nowTime;
             ProcessDeviceRegistrationResponse(moduleState, msg->payload, msg->payloadlen);
         }
         else if (http_status_code == 202)
         {
-            Log_Info("Sending status polling request.");
-            // const char* status = NULL;
-            JSON_Value* root_value = json_parse_string(msg->payload);
-            if (root_value != NULL)
+            // If we're polling, then we dont need to change operation id and request id.
+            if (moduleState->registerState == ADPS_REGISTER_STATE_REGISTERING)
             {
-                free(moduleState->operationId);
-                moduleState->operationId = NULL;
-                const char* optId = json_object_get_string(json_object(root_value), "operationId");
-                moduleState->operationId = strdup(optId);
-                json_value_free(root_value);
-                root_value = NULL;
-
-                //status = json_object_get_string(json_object(root_value), "status");
-
+                Log_Info("Preparing status polling request...");
+                JSON_Value* root_value = json_parse_string(msg->payload);
+                if (root_value != NULL)
+                {
+                    free(moduleState->operationId);
+                    moduleState->operationId = NULL;
+                    const char* optId = json_object_get_string(json_object(root_value), "operationId");
+                    moduleState->operationId = strdup(optId);
+                    json_value_free(root_value);
+                    root_value = NULL;
+                }
                 SetRegisterState(moduleState, ADPS_REGISTER_STATE_WAIT_TO_POLL, "received 202 response");
-                // TODO (nox-msft) parse next-retry time from the topic string.
-                moduleState->nextRegisterAttemptTime = nowTime + 3;
+                moduleState->nextPollingAttemptTime = nowTime + ADPS_DEFAULT_REGISTER_STATUS_POLLING_INTERVAL_SECONDS;
                 goto done;
             }
         }
         else if (http_status_code == 404)
         {
             // TODO (nox-msft) : determine whether to retry or bail
+            Log_Info("Unhandled http status code: %d", http_status_code);
         }
         else
         {
             // TODO (nox-msft) : determine whether to retry or bail
+            Log_Info("Unhandled http status code: %d", http_status_code);
         }
     }
 
@@ -433,7 +428,6 @@ int ADPS_MQTT_Client_Module_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* mo
     }
 
     ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
-    commInterface->deinitializeModule(moduleState->commModule);
 
     ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = { moduleState->settings.registrationId,
                                                           handle,
@@ -489,7 +483,8 @@ bool DeviceRegistration_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
 
     time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
 
-    if (moduleState->registerState == ADPS_REGISTER_STATE_REGISTERING)
+    if (moduleState->registerState == ADPS_REGISTER_STATE_REGISTERING
+        || moduleState->registerState == ADPS_REGISTER_STATE_POLLING)
     {
         if (nowTime > moduleState->nextRegisterAttemptTime)
         {
@@ -499,11 +494,19 @@ bool DeviceRegistration_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
 
     if (moduleState->registerState == ADPS_REGISTER_STATE_WAIT_TO_POLL)
     {
-        if (nowTime > moduleState->nextRegisterAttemptTime)
+        if (nowTime > moduleState->nextPollingAttemptTime)
         {
-            char* pollTopic = ADUC_StringFormat(
-                "$dps/registrations/GET/iotdps-get-operationstatus/?$rid=%s&operationId=%s",
-                moduleState->settings.registrationId,
+            char* pollTopic = NULL;
+            if (moduleState->pollingRetries > 10)
+            {
+                Log_Error("Exceeded maximum polling retries");
+                SetRegisterState(moduleState, ADPS_REGISTER_STATE_FAILED, "exceeded maximum polling retries");
+                goto done;
+            }
+
+            pollTopic = ADUC_StringFormat(
+                "$dps/registrations/GET/iotdps-get-operationstatus/?$rid=%ld&operationId=%s",
+                moduleState->requestId,
                 moduleState->operationId);
             if (pollTopic == NULL)
             {
@@ -530,8 +533,9 @@ bool DeviceRegistration_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
                 else
                 {
                     SetRegisterState(moduleState, ADPS_REGISTER_STATE_POLLING, "publishing message");
-                    moduleState->nextRegisterAttemptTime = nowTime + ADPS_DEFAULT_REGISTER_REQUEST_DELAY_SECONDS;
-                    moduleState->registerRetries++;
+                    moduleState->nextPollingAttemptTime =
+                        nowTime + ADPS_DEFAULT_REGISTER_STATUS_POLLING_INTERVAL_SECONDS;
+                    moduleState->pollingRetries++;
                 }
             }
             free(pollTopic);
@@ -552,9 +556,9 @@ bool DeviceRegistration_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
     {
         char topic_name[256];
         char device_registration_json[1024];
-        time_t request_id = nowTime;
+        moduleState->requestId = nowTime;
         snprintf(
-            topic_name, sizeof(topic_name), "$dps/registrations/PUT/iotdps-register/?$rid=adps_req_%ld", request_id);
+            topic_name, sizeof(topic_name), "$dps/registrations/PUT/iotdps-register/?$rid=%d", moduleState->requestId);
         snprintf(
             device_registration_json,
             sizeof(device_registration_json),
@@ -582,6 +586,7 @@ bool DeviceRegistration_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
             SetRegisterState(moduleState, ADPS_REGISTER_STATE_REGISTERING, "publishing message");
             moduleState->nextRegisterAttemptTime = nowTime + ADPS_DEFAULT_REGISTER_REQUEST_DELAY_SECONDS;
             moduleState->registerRetries++;
+            moduleState->pollingRetries = 0;
         }
     }
 
