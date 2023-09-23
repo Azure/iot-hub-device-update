@@ -40,11 +40,16 @@ class DuScenarioDefinitionManager:
 
     def ParseFromOsEnviron(self):
         distro_name = os.environ.get("DISTRONAME", "ubuntu-20.04-amd64")  # Default to "ubuntu-20.04-amd64" if not set
+        device_id = os.environ.get("DEVICEID", "")
+
+        if (device_id == "" or distro_name == ""):
+            print("DEVICEID or DISTRONAME is not set in the environment")
+            sys.exit(1)
 
         distro, version, architecture = distro_name.split('-')
         distro_version_name = distro.capitalize().replace('.', '') + version
 
-        self.test_device_id = f"{distro_name}-deployment-test-device"
+        self.test_device_id = device_id
         self.test_adu_group = f"{distro_version_name}{architecture.upper()}TestGroup"
         self.test_result_file_prefix = distro_name
         if distro_name == "debian-10-amd64":

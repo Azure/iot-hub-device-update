@@ -3,6 +3,8 @@
 parameters:
     - name: distroName
       type: string
+    - name: device_id_under_test
+      type: string
 
 steps:
     - script: |
@@ -38,6 +40,7 @@ steps:
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
 
     - task: PythonScript@0
       displayName: Run script to test apt-deployment
@@ -55,6 +58,7 @@ steps:
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
 
     - task: PythonScript@0
       displayName: Run script to test diagnostics
@@ -72,6 +76,7 @@ steps:
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
 
     - task: PythonScript@0
       displayName: Run script to test mcu
@@ -89,6 +94,7 @@ steps:
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
 
     - task: PythonScript@0
       displayName: Run script to test bundle-update
@@ -106,6 +112,7 @@ steps:
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
 
     - task: PythonScript@0
       displayName: Run script to clean up the device
@@ -123,6 +130,7 @@ steps:
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
 
     - script: |
           mkdir -p $(Build.ArtifactStagingDirectory)/testresults/
@@ -133,7 +141,7 @@ steps:
     - task: PublishPipelineArtifact@1
       inputs:
           targetPath: "$(Build.ArtifactStagingDirectory)/testresults/"
-          artifact: "TestResults_${{parameters.distroName}}"
+          artifact: "TestResults_${{parameters.device_id_under_test}}"
           publishLocation: "pipeline"
 
     - task: PublishTestResults@2
@@ -141,4 +149,4 @@ steps:
           testRunner: JUnit
           testResultsFiles: "$(E2E_WORKING_DIR)/testresults/*.xml"
           failTaskOnFailedTests: false
-          testRunTitle: ${{parameters.distroName}}
+          testRunTitle: ${{parameters.device_id_under_test}}
