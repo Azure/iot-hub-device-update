@@ -68,6 +68,7 @@ cmake_dir_symlink="/tmp/deviceupdate-cmake"
 
 openssl_dir_path="/usr/local/lib/deviceupdate-openssl"
 openssl_version="3.1.2"
+
 install_shellcheck=false
 supported_shellcheck_version='0.8.0'
 
