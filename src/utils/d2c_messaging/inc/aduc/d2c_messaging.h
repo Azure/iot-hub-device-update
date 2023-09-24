@@ -27,6 +27,9 @@ typedef enum _tagADUC_D2C_Message_Type
     ADUC_D2C_Message_Type_Diagnostics, /**< diagnostics interface reported property */
     ADUC_D2C_Message_Type_Diagnostics_ACK, /**< diagnostics interface ACK */
     ADUC_D2C_Message_Type_Device_Properties, /**< deviceUpdate interface reported property */
+    ADUC_D2C_Message_Type_Enrollment_Status_Request, /**< Request device enrollment status  */
+    ADUC_D2C_Message_Type_Agent_Info_Update_Request, /**< Publish agent information to the DU service */
+    ADUC_D2C_Message_Type_Device_Update_Data_Request, /**< Polling update data from the DU service */
     ADUC_D2C_Message_Type_Max
 } ADUC_D2C_Message_Type;
 
@@ -218,18 +221,14 @@ void ADUC_D2C_Messaging_Set_Transport(ADUC_D2C_Message_Type type, ADUC_D2C_MESSA
 void ADUC_D2C_Messaging_Set_Retry_Strategy(ADUC_D2C_Message_Type type, ADUC_D2C_RetryStrategy* strategy);
 
 /**
- * @brief The default message transport function.
+ * @brief Set the message status, then call the message.statusChangedCallback (if supplied).
  *
- *        IMPORTANT: The implementation of @p c2dResponseHandlerFunc MUST NOT call any ADUC_D2C_* functions.
- *        Otherwise, a dead-lock may occurs.
- *
- * @param cloudServiceHandle A pointer to the cloud service handle.
- * @param context The D2C messaging context.
- * @param c2dResponseHandlerFunc The D2C response handler.
- * @return int
+ * @param message The message object.
+ * @param status  Final message status
  */
-int ADUC_D2C_Default_Message_Transport_Function(
-    void* cloudServiceHandle, void* context, ADUC_C2D_RESPONSE_HANDLER_FUNCTION c2dResponseHandlerFunc);
+void ADUC_D2C_Messaging_SetMessageStatus(ADUC_D2C_Message* message, ADUC_D2C_Message_Status status);
+
+void ADUC_D2C_Messaging_OnMessageProcessingCompleted(ADUC_D2C_Message* message, ADUC_D2C_Message_Status status);
 
 EXTERN_C_END
 

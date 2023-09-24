@@ -17,8 +17,14 @@ target_include_directories (
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::communication_channel_mqtt_broker
-    PRIVATE aduc::adu_types aduc::config_utils aduc::logging aduc::mosquitto_utils
-            aduc::retry_utils Parson::parson)
+    PUBLIC aduc::agent_state_store
+           aduc::communication_channel_mqtt_broker
+
+    PRIVATE aduc::adu_types
+            aduc::config_utils
+            aduc::logging
+            aduc::mosquitto_utils
+            aduc::retry_utils
+            Parson::parson)
 
 add_subdirectory (tests)

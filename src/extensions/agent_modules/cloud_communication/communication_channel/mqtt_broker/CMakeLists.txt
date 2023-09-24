@@ -24,7 +24,11 @@ target_include_directories (
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils
-    PRIVATE aduc::adu_types aduc::config_utils aduc::logging aduc::mosquitto_utils
-            aduc::retry_utils Parson::parson)
-
-install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+           aduc::agent_state_store
+    PRIVATE aduc::adu_types
+            aduc::config_utils
+            aduc::logging
+            aduc::mosquitto_utils
+            aduc::d2c_messaging
+            aduc::retry_utils
+            Parson::parson)

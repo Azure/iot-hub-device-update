@@ -142,7 +142,7 @@ static void DestroyMessageData(ADUC_D2C_Message* message)
  * @param message The message object.
  * @param status  Final message status
  */
-void SetMessageStatus(ADUC_D2C_Message* message, ADUC_D2C_Message_Status status)
+void ADUC_D2C_Messaging_SetMessageStatus(ADUC_D2C_Message* message, ADUC_D2C_Message_Status status)
 {
     if (message == NULL)
     {
@@ -157,7 +157,7 @@ void SetMessageStatus(ADUC_D2C_Message* message, ADUC_D2C_Message_Status status)
 
 /**
  * @brief A helper function that is called when the message has reach it terminal state.
- *  This function calls SetMessageStatus() then DestroyMessage().
+ *  This function calls ADUC_D2C_Messaging_SetMessageStatus() then DestroyMessage().
  *
  * @param message The message object.
  * @param status  The message status
@@ -168,12 +168,24 @@ static void OnMessageProcessingCompleted(ADUC_D2C_Message* message, ADUC_D2C_Mes
     {
         return;
     }
-    SetMessageStatus(message, status);
+    ADUC_D2C_Messaging_SetMessageStatus(message, status);
     if (message->completedCallback != NULL)
     {
         message->completedCallback(message, status);
     }
     DestroyMessageData(message);
+}
+
+/**
+ * @brief A helper function that is called when the message has reach it terminal state.
+ *  This function calls ADUC_D2C_Messaging_SetMessageStatus() then DestroyMessage().
+ *
+ * @param message The message object.
+ * @param status  The message status
+ */
+void ADUC_D2C_Messaging_OnMessageProcessingCompleted(ADUC_D2C_Message* message, ADUC_D2C_Message_Status status)
+{
+    OnMessageProcessingCompleted(message, status);
 }
 
 /**
@@ -234,7 +246,7 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
     {
         // It's possible that the next retry time has been set by the responseCallback(),
         // we don't need to do anything here.
-        SetMessageStatus(&message_processing_context->message, ADUC_D2C_Message_Status_In_Progress);
+        ADUC_D2C_Messaging_SetMessageStatus(&message_processing_context->message, ADUC_D2C_Message_Status_In_Progress);
         goto done;
     }
 
@@ -285,7 +297,8 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
                 message_processing_context->retries,
                 message_processing_context->message.content);
             message_processing_context->nextRetryTimeStampEpoch = newTime;
-            SetMessageStatus(&message_processing_context->message, ADUC_D2C_Message_Status_In_Progress);
+            ADUC_D2C_Messaging_SetMessageStatus(
+                &message_processing_context->message, ADUC_D2C_Message_Status_In_Progress);
             goto done;
         }
     }
@@ -297,7 +310,7 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
         Log_Warn(
             "Failed to calculate the next retry timestamp. Next retry in %lu seconds.",
             message_processing_context->retryStrategy->fallbackWaitTimeSec);
-        SetMessageStatus(&message_processing_context->message, ADUC_D2C_Message_Status_In_Progress);
+        ADUC_D2C_Messaging_SetMessageStatus(&message_processing_context->message, ADUC_D2C_Message_Status_In_Progress);
     }
 
 done:
@@ -355,7 +368,7 @@ static void ProcessMessage(ADUC_D2C_Message_Processing_Context* message_processi
         memset(&s_pendingMessageStore[message_processing_context->type], 0, sizeof(ADUC_D2C_Message));
         shouldSend = message_processing_context->message.content != NULL;
 
-        SetMessageStatus(&message_processing_context->message, ADUC_D2C_Message_Status_In_Progress);
+        ADUC_D2C_Messaging_SetMessageStatus(&message_processing_context->message, ADUC_D2C_Message_Status_In_Progress);
     }
     else if (
         (message_processing_context->message.content != NULL)
@@ -419,7 +432,7 @@ bool ADUC_D2C_Messaging_Init()
         for (i = 0; i < ADUC_D2C_Message_Type_Max; i++)
         {
             s_messageProcessingContext[i].type = i;
-            s_messageProcessingContext[i].transportFunc = ADUC_D2C_Default_Message_Transport_Function;
+            s_messageProcessingContext[i].transportFunc = NULL; // ADUC_D2C_Default_Message_Transport_Function;
             s_messageProcessingContext[i].retryStrategy = &g_defaultRetryStrategy;
             int res = pthread_mutex_init(&s_messageProcessingContext[i].mutex, NULL);
             if (res != 0)
@@ -524,7 +537,7 @@ bool ADUC_D2C_Message_SendAsync(
     s_pendingMessageStore[type].statusChangedCallback = statusChangedCallback;
     s_pendingMessageStore[type].contentSubmitTime = ADUC_GetTimeSinceEpochInSeconds();
     s_pendingMessageStore[type].userData = userData;
-    SetMessageStatus(&s_pendingMessageStore[type], ADUC_D2C_Message_Status_Pending);
+    ADUC_D2C_Messaging_SetMessageStatus(&s_pendingMessageStore[type], ADUC_D2C_Message_Status_Pending);
     pthread_mutex_unlock(&s_pendingMessageStoreMutex);
     return true;
 }
@@ -540,55 +553,6 @@ void ADUC_D2C_Messaging_Set_Transport(ADUC_D2C_Message_Type type, ADUC_D2C_MESSA
     pthread_mutex_lock(&s_messageProcessingContext[type].mutex);
     s_messageProcessingContext[type].transportFunc = transportFunc;
     pthread_mutex_unlock(&s_messageProcessingContext[type].mutex);
-}
-
-/**
- * @brief The default function used for sending message content to the IoT Hub.
- *
- * @param cloudServiceHandle A pointer to ADUC_ClientHandle
- * @param context A pointer to the ADUC_D2C_Message_Processing_Context.
- * @param handleResponseMessageFunc A callback function to be called when the device received a response from the IoT Hub.
- * @return int Returns 0 if success. Otherwise, return implementation specific error code.
- *         For default fuction, this is equivalent to IOTHUB_CLIENT_RESULT.
- */
-int ADUC_D2C_Default_Message_Transport_Function(
-    void* cloudServiceHandle, void* context, ADUC_C2D_RESPONSE_HANDLER_FUNCTION c2dResponseHandlerFunc)
-{
-    UNREFERENCED_PARAMETER(cloudServiceHandle);
-
-    ADUC_D2C_Message_Processing_Context* message_processing_context = (ADUC_D2C_Message_Processing_Context*)context;
-    if (message_processing_context->message.cloudServiceHandle == NULL
-        || *((ADUC_ClientHandle*)message_processing_context->message.cloudServiceHandle) == NULL)
-    {
-        Log_Warn(
-            "Try to send D2C message but cloudServiceHandle is NULL. Skipped. (content:0x%x)",
-            message_processing_context->message.content);
-        return 1;
-    }
-    else
-    {
-        // Send content.
-        Log_Debug("Sending D2C message:\n%s", (const char*)message_processing_context->message.content);
-
-        IOTHUB_CLIENT_RESULT iotHubClientResult = (IOTHUB_CLIENT_RESULT)ClientHandle_SendReportedState(
-            *((ADUC_ClientHandle*)message_processing_context->message.cloudServiceHandle),
-            (const unsigned char*)message_processing_context->message.content,
-            strlen(message_processing_context->message.content),
-            c2dResponseHandlerFunc,
-            message_processing_context);
-
-        if (iotHubClientResult == IOTHUB_CLIENT_OK)
-        {
-            SetMessageStatus(&message_processing_context->message, ADUC_D2C_Message_Status_Waiting_For_Response);
-        }
-        else
-        {
-            Log_Error("ClientHandle_SendReportedState return %d. Stop processing the message.", iotHubClientResult);
-            OnMessageProcessingCompleted(&message_processing_context->message, ADUC_D2C_Message_Status_Failed);
-        }
-
-        return iotHubClientResult;
-    }
 }
 
 /**

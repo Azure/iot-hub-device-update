@@ -602,11 +602,19 @@ int ADUC_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
     }
 
     ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
+    if (commInterface == NULL)
+    {
+        Log_Error("commInterface is NULL");
+        moduleState->nextOperationTime = nowTime + DEFAULT_OPERATION_INTERVAL_SECONDS;
+        goto done;
+    }
+
     commInterface->doWork(moduleState->commModule);
+
     if (!ADUC_Communication_Channel_IsConnected(moduleState->commModule))
     {
         // TODO: (nox-msft) - use retry utils.
-        moduleState->nextOperationTime = nowTime + 5;
+        moduleState->nextOperationTime = nowTime + DEFAULT_OPERATION_INTERVAL_SECONDS;
         goto done;
     }
 

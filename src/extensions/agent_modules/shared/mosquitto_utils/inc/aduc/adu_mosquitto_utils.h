@@ -118,4 +118,12 @@ bool ADU_mosquitto_read_user_property_string(const mosquitto_property* props, co
  */
 bool ADU_mosquitto_has_user_property(const mosquitto_property* props, const char* key, const char* value);
 
+/**
+ * @brief Check if the correlation data in the MQTT properties matches the provided correlation ID.
+ * @param[in] props Pointer to the MQTT properties from which to retrieve the correlation data.
+ * @param[in] correlationId The correlation ID to check against.
+ * @return `true` if the correlation data matches the provided correlation ID; otherwise, `false`.
+ */
+bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* correlationId);
+
 #endif

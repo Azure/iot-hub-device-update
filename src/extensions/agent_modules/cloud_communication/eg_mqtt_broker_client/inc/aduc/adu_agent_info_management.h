@@ -10,25 +10,13 @@
 #define __ADUC_AGENT_INFO_MANAGEMENT_H__
 
 #include "aduc/c_utils.h" // EXTERN_C_* macros
+#include "du_agent_sdk/agent_module_interface.h"
 #include <mosquitto.h> // mosquitto related functions
 #include <mqtt_protocol.h> // mosquitto_property
 
 EXTERN_C_BEGIN
 
-/**
- * @brief Initialize the agent info management.
- */
-bool ADUC_Agent_Info_Management_Initialize();
-
-/**
- * @brief Deinitialize the agent info management.
- */
-void ADUC_Agent_Info_Management_Deinitialize();
-
-/**
- * @brief Ensure that the agent info is published to the Device Update service.
- */
-bool ADUC_Agent_Info_Management_DoWork();
+DECLARE_AGENT_MODULE_PUBLIC(ADUC_Agent_Info_Management)
 
 /**
  * @brief Callback should be called when the client receives an agent info response message from the Device Update service.

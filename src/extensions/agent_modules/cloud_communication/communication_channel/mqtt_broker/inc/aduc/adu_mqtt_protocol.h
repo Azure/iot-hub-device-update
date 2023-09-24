@@ -118,4 +118,43 @@ typedef enum ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_TAG
     ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_COMPLETED = 2, /**< Initialization has been successfully completed. */
 } ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE;
 
+#define ADU_AINFO_RESP_MESSAGE_RESULT_CODE_PROPERTY_NAME "resultCode"
+#define ADU_AINFO_RESP_MESSAGE_EXTENDED_RESULT_CODE_PROPERTY_NAME "extendedResultCode"
+#define ADU_AINFO_RESP_MESSAGE_RESULT_DESCRIPTION_PROPERTY_NAME "resultDescription"
+
+/**
+ * @brief Enumeration representing result codes for ADU response messages.
+ */
+typedef enum ADU_RESPONSE_MESSAGE_RESULT_CODE_TAG
+{
+    ADU_RESPONSE_MESSAGE_RESULT_CODE_SUCCESS = 0, /**< Operation was successful. */
+    ADU_RESPONSE_MESSAGE_RESULT_CODE_BAD_REQUEST = 1, /**< The request was invalid or cannot be served. */
+    ADU_RESPONSE_MESSAGE_RESULT_CODE_BUSY = 2, /**< The server is busy and cannot process the request. */
+    ADU_RESPONSE_MESSAGE_RESULT_CODE_CONFLICT = 3, /**< There is a conflict with the current state of the system. */
+    ADU_RESPONSE_MESSAGE_RESULT_CODE_SERVER_ERROR = 4, /**< The server encountered an internal error. */
+    ADU_RESPONSE_MESSAGE_RESULT_CODE_AGENT_NOT_ENROLLED = 5 /**< The agent is not enrolled. */
+} ADU_RESPONSE_MESSAGE_RESULT_CODE;
+
+/**
+ * @brief Enumeration representing extended result codes for ADU response messages.
+ */
+typedef enum ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_TAG
+{
+    ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_NONE = 0, /**< No extended error. */
+    ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_UNABLE_TO_PARSE_MESSAGE =
+        1, /**< Unable to parse the provided message. */
+    ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_MISSING_OR_INVALID_VALUE =
+        2, /**< A required value is missing or invalid. */
+    ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_MISSING_OR_INVALID_CORRELATION_ID =
+        3, /**< Missing or invalid correlation ID. */
+    ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_MISSING_OR_INVALID_MESSAGE_TYPE =
+        4, /**< Missing or invalid message type. */
+    ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_MISSING_OR_INVALID_PROTOCOL_VERSION =
+        5, /**< Missing or invalid protocol version. */
+    ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_PROTOCOL_VERSION_MISMATCH =
+        6, /**< Mismatch in protocol versions between client and server. */
+    ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_MISSING_OR_INVALID_CONTENT_TYPE =
+        7, /**< Missing or invalid content type. */
+} ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE;
+
 #endif /* __ADU_MQTT_PROTOCOL_H__ */

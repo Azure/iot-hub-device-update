@@ -71,6 +71,44 @@ bool ADU_mosquitto_get_correlation_data(const mosquitto_property* props, char** 
 }
 
 /**
+ * @brief Check if the correlation data in the MQTT properties matches the provided correlation ID.
+ * @param[in] props Pointer to the MQTT properties from which to retrieve the correlation data.
+ * @param[in] correlationId The correlation ID to check against.
+ * @return `true` if the correlation data matches the provided correlation ID; otherwise, `false`.
+ */
+bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* correlationId)
+{
+    char* cid = NULL;
+    uint16_t cidLen = 0;
+    size_t n = 0;
+    bool res = false;
+
+    if (props == NULL || correlationId == NULL)
+    {
+        goto done;
+    }
+
+    // Check if correlation data matches the latest enrollment message.
+    const mosquitto_property* p =
+        mosquitto_property_read_binary(props, MQTT_PROP_CORRELATION_DATA, (void**)&cid, &cidLen, false);
+    if (p == NULL || cid == NULL)
+    {
+        goto done;
+    }
+
+    n = (size_t)cidLen;
+    // Check if the correlation data matches the latest enrollment message.
+    if (cid == NULL || strncmp(cid, correlationId, n) != 0)
+    {
+        goto done;
+    }
+    res = true;
+done:
+    free(cid);
+    return res;
+}
+
+/**
  * @brief Check if a specific user property exists within a property list.
  *
  * This function iterates through an MQTT v5 property list searching for

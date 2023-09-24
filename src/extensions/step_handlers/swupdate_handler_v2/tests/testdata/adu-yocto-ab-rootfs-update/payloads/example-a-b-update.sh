@@ -559,7 +559,7 @@ CheckIsInstalledState() {
 #
 # Example implementation of 'DownloadUpdateArtifacts' function, for the reference Yocto Image.
 #
-# This fuction is no-op since no additional files are required for this update.
+# This function is no-op since no additional files are required for this update.
 #
 DownloadUpdateArtifacts() {
     log_info "DownloadUpdateArtifacts called"

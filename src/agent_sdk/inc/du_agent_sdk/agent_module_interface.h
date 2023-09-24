@@ -65,6 +65,19 @@ typedef struct ADUC_AGENT_MODULE_INTERFACE_TAG
     ADUC_AGENT_MODULE_SET_DATA setData;
 } ADUC_AGENT_MODULE_INTERFACE;
 
+#define DECLARE_AGENT_MODULE_PUBLIC(name)     \
+    ADUC_AGENT_MODULE_HANDLE name##_Create(); \
+    void name##_Destroy(ADUC_AGENT_MODULE_HANDLE moduleHandle);
+
+#define DECLARE_AGENT_MODULE_PRIVATE(name)                                                                      \
+    int name##_Initialize(ADUC_AGENT_MODULE_HANDLE moduleHandle, void* initData);                               \
+    void name##_Deinitialize(ADUC_AGENT_MODULE_HANDLE moduleHandle);                                            \
+    int name##_DoWork(ADUC_AGENT_MODULE_HANDLE moduleHandle);                                                   \
+    int name##_GetData(                                                                                         \
+        ADUC_AGENT_MODULE_HANDLE moduleHandle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int* size); \
+    int name##_SetData(                                                                                         \
+        ADUC_AGENT_MODULE_HANDLE moduleHandle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size);
+
 EXTERN_C_END
 
 #endif // __ADUC_AGENT_MODULE_INTERFACE_H__

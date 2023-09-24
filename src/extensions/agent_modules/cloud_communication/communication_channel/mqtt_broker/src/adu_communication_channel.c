@@ -11,6 +11,7 @@
 #include "aduc/adu_mosquitto_utils.h"
 #include "aduc/adu_mqtt_protocol.h" // ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE
 #include "aduc/config_utils.h"
+#include "aduc/d2c_messaging.h"
 #include "aduc/logging.h"
 #include "aduc/mqtt_client.h"
 #include "aduc/retry_utils.h" // ADUC_GetTimeSinceEpochInSeconds
@@ -640,9 +641,9 @@ void ADUC_Communication_Channel_OnSubscribe(
         Log_Error("commMgrState is NULL");
         return;
     }
-    /* In this example we only subscribe to a single topic at once, but a
-   * SUBSCRIBE can contain many topics at once, so this is one way to check
-   * them all. */
+
+    // In this example we only subscribe to a single topic at once, but a
+    // SUBSCRIBE can contain many topics at once, so this is one way to check them all.
     for (int i = 0; i < qos_count; i++)
     {
         Log_Info("\tQoS %d\n", granted_qos[i]);
@@ -754,6 +755,12 @@ bool IsDoWorkCallsSuppressed()
  */
 void PerformMosquittoDoWork(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState)
 {
+    if (commMgrState == NULL)
+    {
+        Log_Error("commMgrState is NULL");
+        return;
+    }
+
     int mqtt_ret = MOSQ_ERR_UNKNOWN;
 
     // Must call mosquitto_loop() to process network traffic, callbacks and connection maintenance as needed.
@@ -1050,6 +1057,42 @@ int ADUC_Communication_Channel_MQTT_Publish(
         props);
 }
 
+/**
+ * @brief
+*/
+int ADUC_Communication_Channel_MQTT_Subscribe(
+    ADUC_AGENT_MODULE_HANDLE commHandle,
+    const char* topic,
+
+    int* mid,
+    int qos,
+    int options,
+    const mosquitto_property* props)
+{
+    ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)commHandle;
+
+    if (interface == NULL)
+    {
+        Log_Error("Null parameter (interface=%p)", interface);
+        return -1;
+    }
+
+    ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = (ADU_MQTT_COMMUNICATION_MGR_STATE*)interface->moduleData;
+    if (commMgrState == NULL)
+    {
+        Log_Error("commMgrState is NULL");
+        return -1;
+    }
+
+    return mosquitto_subscribe_v5(
+        commMgrState->mqttClient,
+        mid,
+        topic,
+        qos,
+        options,
+        props);
+}
+
 /*
  * @brief Check if the communication channel is in connected state.
  */
@@ -1088,4 +1131,53 @@ static ADUC_AGENT_CONTRACT_INFO s_contractInfo = {
 const ADUC_AGENT_CONTRACT_INFO* ADUC_Communication_Channel_GetContractInfo(ADUC_AGENT_MODULE_HANDLE handle)
 {
     return &s_contractInfo;
+}
+
+/**
+ * @brief The default function used for sending message content to the IoT Hub.
+ *
+ * @param cloudServiceHandle A pointer to ADUC_ClientHandle
+ * @param context A pointer to the ADUC_D2C_Message_Processing_Context.
+ * @param handleResponseMessageFunc A callback function to be called when the device received a response from the IoT Hub.
+ * @return int Returns 0 if success. Otherwise, return implementation specific error code.
+ *         For default function, this is equivalent to IOTHUB_CLIENT_RESULT.
+ */
+int ADUC_MQTTBroker_D2C_Message_Transport_Function(
+    void* cloudServiceHandle, void* context, ADUC_C2D_RESPONSE_HANDLER_FUNCTION c2dResponseHandlerFunc)
+{
+    ADUC_AGENT_MODULE_HANDLE handle = (ADUC_AGENT_MODULE_HANDLE)cloudServiceHandle;
+    if (handle == NULL)
+    {
+        Log_Error("cloudServiceHandle is NULL");
+        return -1;
+    }
+
+    // ADUC_D2C_Message_Processing_Context* message_processing_context = (ADUC_D2C_Message_Processing_Context*)context;
+    // if (message_processing_context->message.cloudServiceHandle == NULL
+    //     || *((ADUC_AGENT_MODULE_HANDLE*)message_processing_context->message.cloudServiceHandle) == NULL)
+    // {
+    //     Log_Warn(
+    //         "Try to send D2C message but cloudServiceHandle is NULL. Skipped. (content:0x%x)",
+    //         message_processing_context->message.content);
+    //     return 1;
+    // }
+    // else
+    // {
+    //     // Send content.
+    //     Log_Debug("Sending D2C (MQTT) message:\n%s", (const char*)message_processing_context->message.content);
+
+    //     TODO: Publish message.
+    //     if (success)
+    //     {
+    //         ADUC_D2C_Messaging_SetMessageStatus(&message_processing_context->message, ADUC_D2C_Message_Status_Waiting_For_Response);
+    //     }
+    //     else
+    //     {
+    //         Log_Error("ClientHandle_SendReportedState return %d. Stop processing the message.", result);
+    //         ADUC_D2C_Messaging_OnMessageProcessingCompleted(&message_processing_context->message, ADUC_D2C_Message_Status_Failed);
+    //     }
+
+    //     return iotHubClientResult;
+    // }
+    return 0;
 }

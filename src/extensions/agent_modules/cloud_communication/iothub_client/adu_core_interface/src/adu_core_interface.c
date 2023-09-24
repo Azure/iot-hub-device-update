@@ -138,8 +138,16 @@ ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_val
         return false;
     }
 
-    STRING_HANDLE jsonToSend =
-        PnP_CreateReportedProperty(g_aduPnPComponentName, g_aduPnPComponentAgentPropertyName, json_value);
+    STRING_HANDLE jsonToSend = NULL;
+
+    if (workflowData->CommunicationChannel == ADUC_CommunicationChannelType_IoTHubPnP)
+    {
+        jsonToSend = PnP_CreateReportedProperty(g_aduPnPComponentName, g_aduPnPComponentAgentPropertyName, json_value);
+    }
+    else
+    {
+        jsonToSend = STRING_construct_sprintf("{\"%s\":%s}", g_aduPnPComponentAgentPropertyName, json_value);
+    }
 
     if (jsonToSend == NULL)
     {
@@ -298,6 +306,9 @@ void AzureDeviceUpdateCoreInterface_Connected(void* componentContext)
 void AzureDeviceUpdateCoreInterface_DoWork(void* componentContext)
 {
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)componentContext;
+
+    // TODO (nox-msft) - process any queued deployment data here.
+
     ADUC_Workflow_DoWork(workflowData);
 }
 

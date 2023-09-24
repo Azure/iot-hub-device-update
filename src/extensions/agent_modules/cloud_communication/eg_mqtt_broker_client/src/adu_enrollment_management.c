@@ -10,6 +10,7 @@
 #include "aduc/adu_mosquitto_utils.h"
 #include "aduc/adu_mqtt_protocol.h"
 #include "aduc/adu_types.h"
+#include "aduc/agent_state_store.h"
 #include "aduc/config_utils.h"
 #include "aduc/logging.h"
 #include "aduc/retry_utils.h" // ADUC_GetTimeSinceEpochInSeconds
@@ -96,20 +97,26 @@ static ADU_ENROLLMENT_DATA s_enrMgrState = { 0 }; //!< Enrollment state
 /**
  * @brief A helper function use for setting s_enrMgrState.enr_req_correlationId.
  */
-static void SetCorrelationId(const char* correlationId)
+static void SetCorrelationId(ADU_ENROLLMENT_DATA* enrollmentData, const char* correlationId)
 {
-    if (s_enrMgrState.enr_req_correlationId != NULL)
+    if (enrollmentData == NULL)
     {
-        free(s_enrMgrState.enr_req_correlationId);
+        Log_Error("enrollmentData is NULL");
+        return;
+    }
+
+    if (enrollmentData->enr_req_correlationId != NULL)
+    {
+        free(enrollmentData->enr_req_correlationId);
     }
 
     if (correlationId == NULL)
     {
-        s_enrMgrState.enr_req_correlationId = NULL;
+        enrollmentData->enr_req_correlationId = NULL;
     }
     else
     {
-        s_enrMgrState.enr_req_correlationId = strdup(correlationId);
+        enrollmentData->enr_req_correlationId = strdup(correlationId);
     }
 }
 
@@ -158,30 +165,16 @@ void OnMessage_enr_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
     //ADUC_MQTT_CLIENT_MODULE_STATE* state = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
-    char* correlationData = NULL;
 
-    // Check if correlation data matches the latest enrollment message.
-    const mosquitto_property* p =
-        mosquitto_property_read_string(props, MQTT_PROP_CORRELATION_DATA, &correlationData, NULL);
-    if (p == NULL)
+    if (!ADU_are_correlation_ids_matching(props, s_enrMgrState.enr_req_correlationId))
     {
-        Log_Error("Failed to read correlation data");
-        goto done;
-    }
-
-    // Check if the correlation data matches the latest enrollment message.
-    if (correlationData == NULL || strcmp(correlationData, s_enrMgrState.enr_req_correlationId) != 0)
-    {
-        Log_Warn(
-            "IGNORING MSG: mismatch CIDs (expected:%s, actual:%s)",
-            s_enrMgrState.enr_req_correlationId,
-            correlationData);
+        Log_Info("OnMessage_enr_resp: correlation data mismatch");
         goto done;
     }
 
     if (msg == NULL || msg->payload == NULL || msg->payloadlen == 0)
     {
-        Log_Error("Bad payload");
+        Log_Error("Bad payload. msg:%p, payload:%p, payloadlen:%d", msg, msg->payload, msg->payloadlen);
         goto done;
     }
 
@@ -226,7 +219,7 @@ void OnMessage_enr_resp(
     json_value_free(root_value);
 
 done:
-    free(correlationData);
+    return;
 }
 
 /**
@@ -349,7 +342,7 @@ bool ADUC_Enrollment_Management_DoWork()
         if ((s_enrMgrState.enr_req_lastAttemptTime + s_enrMgrState.enr_req_timeOutSeconds) < nowTime)
         {
             Log_Warn("Enrollment request timeout");
-            SetCorrelationId(NULL);
+            SetCorrelationId(&s_enrMgrState, NULL);
             SetEnrollmentState(ADU_ENROLLMENT_STATE_UNKNOWN, "enr_req timeout");
             s_enrMgrState.enr_req_lastErrorTime = nowTime;
             s_enrMgrState.enr_req_nextAttemptTime = nowTime + s_enrMgrState.enr_req_minRetryDelaySeconds;
@@ -368,7 +361,7 @@ bool ADUC_Enrollment_Management_DoWork()
             char* cid = GenerateCorrelationIdFromTime(messageTimestamp);
 
             // Discard older request by replacing the state's CID
-            SetCorrelationId(cid);
+            SetCorrelationId(&s_enrMgrState, cid);
 
             mosquitto_property_add_string_pair(
                 &props, MQTT_PROP_USER_PROPERTY, ADU_MQTT_PROTOCOL_VERSION_PROPERTY_NAME, ADU_MQTT_PROTOCOL_VERSION);

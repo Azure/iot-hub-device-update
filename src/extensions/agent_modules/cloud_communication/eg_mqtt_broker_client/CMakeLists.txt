@@ -23,6 +23,7 @@ target_include_directories (
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::communication_channel_mqtt_broker
+            aduc::agent_state_store
     PRIVATE aduc::adu_types
             aduc::config_utils
             aduc::logging

@@ -510,7 +510,7 @@ while [[ $1 != "" ]]; do
         ;;
 
     #
-    # Test or Demo fuctionality
+    # Test or Demo functionality
     #
     --pre-install-sim-success)
         log_info "Will simulate pre-install script success."

@@ -518,7 +518,7 @@ while [[ $1 != "" ]]; do
         ;;
 
     #
-    # Test or Demo fuctionality
+    # Test or Demo functionality
     #
     --reset-component)
         log_info "Will reset the specified component."

@@ -1,34 +1,44 @@
 cmake_minimum_required (VERSION 3.5)
 
-set (target_name iothub_communication_manager)
-add_library (${target_name} STATIC src/iothub_communication_manager.c)
+set (target_name device_update_workflow_module)
+
+add_library (${target_name} STATIC)
+
 add_library (aduc::${target_name} ALIAS ${target_name})
 
-target_include_directories (${target_name} PUBLIC ./inc ${ADUC_TYPES_INCLUDES}
-                                                  ${ADUC_EXPORT_INCLUDES})
-
-#
-# Turn -fPIC on, in order to use this library in another shared library.
-#
-set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
-
+# NOTE: the call to find_package for azure_c_shared_utility
+# must come before umqtt since their config.cmake files expect the aziotsharedutil target to already have been defined.
 find_package (azure_c_shared_utility REQUIRED)
+find_package (IotHubClient REQUIRED)
 find_package (umqtt REQUIRED)
+find_package (Parson REQUIRED)
+
+target_sources (${target_name} PRIVATE src/device_update_workflow_module.c)
+
+target_include_directories (
+    ${target_name}
+    PUBLIC inc
+    PRIVATE ${PROJECT_SOURCE_DIR}/inc ${ADU_AGENT_SDK_INCLUDES})
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::adu_types
-    PRIVATE aduc::adu_core_export_helpers
-            aduc::communication_abstraction
-            aduc::config_utils
+    PRIVATE aziotsharedutil
+            IotHubClient::iothub_client
+            umqtt
+            aduc::adu_core_interface
             aduc::c_utils
+            aduc::config_utils
+#            aduc::communication_abstraction
             aduc::d2c_messaging
-            aduc::eis_utils
-            aduc::https_proxy_utils
+            aduc::extension_manager
             aduc::logging
-            aduc::retry_utils)
+#            aduc::pnp_helper
+            Parson::parson
+)
 
-target_link_libraries (${target_name} PRIVATE libaducpal)
+if (NOT WIN32)
+    target_link_libraries (${target_name} PRIVATE aduc::command_helper)
+endif ()
 
 if (ADUC_IOT_HUB_PROTOCOL STREQUAL "MQTT")
     target_compile_definitions (${target_name} PRIVATE ADUC_ALLOW_MQTT=1)
@@ -52,8 +62,4 @@ else ()
     )
 endif ()
 
-target_compile_definitions (
-    ${target_name}
-    PRIVATE ADUC_AGENT_FILEPATH="${ADUC_AGENT_FILEPATH}"
-            ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
-)
+install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

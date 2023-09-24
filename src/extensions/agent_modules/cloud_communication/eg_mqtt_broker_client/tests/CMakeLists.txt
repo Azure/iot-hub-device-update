@@ -21,5 +21,9 @@ target_compile_definitions (${PROJECT_NAME}
                             PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
 target_link_libraries (
-    ${PROJECT_NAME} PRIVATE aduc::config_utils aduc::microsoft_du_mqttbroker_client;
-                            aduc::parser_utils aduc::system_utils)
+    ${PROJECT_NAME}
+    PUBLIC aduc::agent_state_store
+    PRIVATE aduc::config_utils
+            aduc::microsoft_du_mqttbroker_client;
+            aduc::parser_utils
+            aduc::system_utils)
