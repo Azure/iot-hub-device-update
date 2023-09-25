@@ -318,7 +318,7 @@ void ADUC_MQTT_Client_OnSubscribe(
 /**
  * @brief Callbacks for various event from the communication channel.
  */
-ADUC_MQTT_CALLBACKS s_commChannelCallbacks = {
+ADUC_MQTT_CALLBACKS s_duClientCommChannelCallbacks = {
     ADUC_MQTT_Client_OnConnect /*on_connect*/,
     NULL /*on_disconnect*/,
     ADUC_MQTT_Client_GetSubscriptionTopics /* get_subscription_topics */,
@@ -416,7 +416,7 @@ static int ADUC_MQTT_Client_Module_Initialize_DoWork(ADUC_MQTT_CLIENT_MODULE_STA
     ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
 
     ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = {
-        GetDeviceIdHelper(), moduleState, &moduleState->mqttSettings, &s_commChannelCallbacks, NULL
+        GetDeviceIdHelper(), moduleState, &moduleState->mqttSettings, &s_duClientCommChannelCallbacks, NULL
     };
 
     success = commInterface->initializeModule(moduleState->commModule, &commInitData) == 0;
@@ -617,18 +617,11 @@ int ADUC_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
         moduleState->nextOperationTime = nowTime + DEFAULT_OPERATION_INTERVAL_SECONDS;
         goto done;
     }
-
-    // if (moduleState->enrollmentState < ADU_ENROLLMENT_STATE_SUBSCRIBED)
-    // {
-    //     // Wait until we subscribed.
-    //     moduleState->nextOperationTime = nowTime + 5;
-    //     goto done;
-    // }
-
     ADUC_Enrollment_Management_DoWork();
 
     if (ADUC_Enrollment_Management_IsEnrolled())
     {
+        // TODO: Enable this when DU Service implemented support for these functionalities.
         // ADUC_Agent_Info_Management_DoWork();
         // ADUC_Updates_Management_DoWork();
     }

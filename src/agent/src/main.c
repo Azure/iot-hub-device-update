@@ -22,6 +22,10 @@
 #include "aduc/system_utils.h" // ADUC_SystemUtils_MkDirRecursiveDefault
 #include "aducpal/stdlib.h" // setenv
 #include "du_agent_sdk/agent_module_interface.h"
+
+#include "aduc/adps2_mqtt_client_module.h" // Device registration using Azure IoT DPS
+#include "aduc/adu_mqtt_client_module.h" // Device Update client using MQTT broker communication channel.
+
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
 #include <getopt.h>
@@ -321,11 +325,6 @@ done:
     return success;
 }
 
-// External symbol definition of Agent Modules interface.
-// TODO: Replace this with Agent Modules initialization code.
-extern ADUC_AGENT_MODULE_INTERFACE IoTHubClientModuleInterface;
-static ADUC_AGENT_MODULE_HANDLE g_iotHubClientModuleHandle = NULL;
-
 /**
  * @brief Main method.
  *
@@ -340,6 +339,8 @@ static ADUC_AGENT_MODULE_HANDLE g_iotHubClientModuleHandle = NULL;
 int main(int argc, char** argv)
 {
     ADUC_LaunchArguments launchArgs;
+    ADUC_AGENT_MODULE_INTERFACE* dpsClientModuleInterface = NULL;
+    ADUC_AGENT_MODULE_INTERFACE* duClientModuleInterface = NULL;
 
     int ret = ParseLaunchArguments(argc, argv, &launchArgs);
     if (ret < 0)
@@ -376,23 +377,6 @@ int main(int argc, char** argv)
             ret = 0;
         }
 
-        goto done;
-    }
-
-    // TODO: Replace this with Agent Modules initialization code.
-    // Currently, this support only (in-proc) IoTHub Client Module.
-    g_iotHubClientModuleHandle = IoTHubClientModuleInterface.create();
-    if (g_iotHubClientModuleHandle == NULL)
-    {
-        Log_Error("IoTHubClientModuleInterface.create failed.");
-        ret = -1;
-        goto done;
-    }
-
-    ret = IoTHubClientModuleInterface.initializeModule(g_iotHubClientModuleHandle, NULL);
-    if (ret != 0)
-    {
-        Log_Error("IoTHubClientModuleInterface.initialize failed. (ret:%d)", ret);
         goto done;
     }
 
@@ -518,6 +502,38 @@ int main(int argc, char** argv)
     signal(SIGINT, OnShutdownSignal);
     signal(SIGTERM, OnShutdownSignal);
 
+    // Initialize the agent modules.
+    // TODO (nox-msft) - replace with Agent Module manager code, once changed all modules to shared library.
+    dpsClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)ADPS_MQTT_Client_Module_Create();
+    if (dpsClientModuleInterface == NULL)
+    {
+        Log_Error("ADPS_MQTT_Client_Module_Create failed.");
+        ret = -1;
+        goto done;
+    }
+
+    ret = dpsClientModuleInterface->initializeModule(dpsClientModuleInterface->moduleData, NULL);
+    if (ret != 0)
+    {
+        Log_Error("ADPS_MQTT_Client_Module_Initialize failed.");
+        goto done;
+    }
+
+    duClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)ADUC_MQTT_Client_Module_Create();
+    if (duClientModuleInterface == NULL)
+    {
+        Log_Error("ADU_MQTT_Client_Module_Create failed.");
+        ret = -1;
+        goto done;
+    }
+
+    ret = duClientModuleInterface->initializeModule(duClientModuleInterface->moduleData, NULL);
+    if (ret != 0)
+    {
+        Log_Error("ADU_MQTT_Client_Module_Initialize failed.");
+        goto done;
+    }
+
     //
     // Main Loop
     //
@@ -525,8 +541,8 @@ int main(int argc, char** argv)
     Log_Info("Agent running.");
     while (ADUC_ShutdownService_ShouldKeepRunning())
     {
-        // Yield to the IoTHub Client Module.
-        IoTHubClientModuleInterface.doWork(g_iotHubClientModuleHandle);
+        dpsClientModuleInterface->doWork(dpsClientModuleInterface->moduleData);
+        duClientModuleInterface->doWork(duClientModuleInterface->moduleData);
 
         // Sleep for a bit to avoid busy-waiting.
         ThreadAPI_Sleep(100);
@@ -537,10 +553,19 @@ int main(int argc, char** argv)
 done:
     Log_Info("Agent exited with code %d", ret);
 
-    // TODO: Replace with Agent Module manager code.
-    IoTHubClientModuleInterface.deinitializeModule(g_iotHubClientModuleHandle);
-    IoTHubClientModuleInterface.destroy(g_iotHubClientModuleHandle);
-    g_iotHubClientModuleHandle = NULL;
+    if (dpsClientModuleInterface != NULL)
+    {
+        dpsClientModuleInterface->deinitializeModule(dpsClientModuleInterface->moduleData);
+        dpsClientModuleInterface->destroy(dpsClientModuleInterface->moduleData);
+        dpsClientModuleInterface = NULL;
+    }
+
+    if (duClientModuleInterface != NULL)
+    {
+        duClientModuleInterface->deinitializeModule(duClientModuleInterface->moduleData);
+        duClientModuleInterface->destroy(duClientModuleInterface->moduleData);
+        duClientModuleInterface = NULL;
+    }
 
     ADUC_ConfigInfo_ReleaseInstance(config);
     ADUC_Logging_Uninit();
