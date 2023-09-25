@@ -25,10 +25,10 @@ target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils
            aduc::agent_state_store
+           aduc::retry_utils
     PRIVATE aduc::adu_types
             aduc::config_utils
             aduc::logging
             aduc::mosquitto_utils
             aduc::d2c_messaging
-            aduc::retry_utils
             Parson::parson)

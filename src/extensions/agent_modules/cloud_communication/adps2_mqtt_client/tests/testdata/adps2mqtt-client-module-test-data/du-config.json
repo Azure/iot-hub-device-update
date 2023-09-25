@@ -14,30 +14,30 @@
           "connectionData": {
               "dps": {
                 "globalDeviceEndpoint" : "global.azure-devices-provisioning.net",
-                "idScope" : "0ne00ABF077",
-                "registrationId" : "contoso-blue-device03-devbox-wus3",
-                "apiVersion" : "2021-06-01",
+                "idScope" : "[id-scope]",
+                "registrationId" : "[device-id]",
+                "apiVersion" : "2023-02-01-preview",
                 "tcpPort" : 8883,
                 "useTLS": true,
                 "mqttVersion" : 4,
                 "cleanSession" : false,
                 "keepAliveInSeconds" : 3600,
-                "clientId" : "contoso-blue-device03-devbox-wus3",
-                "certFile" : "/home/contoso/aducerts/contoso-blue-device03-devbox-wus3.cer",
-                "keyFile" : "/home/contoso/aducerts/contoso-blue-device03-devbox-wus3.key",
+                "clientId" : "[device-id]",
+                "certFile" : "/[cert-path]/[device-id].cer",
+                "keyFile" : "/[cert-path]/[device-id].key",
                 "qos": 1
             },
             "mqttBroker" : {
-                "hostname" : "contoso-blue-devbox-wus3-eg.westus2-1.ts.eventgrid.azure.net",
+                "hostname" : "[eg-mqtt-broker-name-hostname]",
                 "tcpPort" : 8883,
                 "useTLS": true,
                 "mqttVersion" : 5,
                 "cleanSession" : false,
                 "keepAliveInSeconds" : 3600,
-                "username" : "contoso-blue-device03-devbox-wus3",
-                "clientId" : "contoso-blue-device03-devbox-wus3",
-                "certFile" : "/home/contoso/aducerts/contoso-blue-device03-devbox-wus3.cer",
-                "keyFile" : "/home/contoso/aducerts/contoso-blue-device03-devbox-wus3.key",
+                "username" : "[device-id]",
+                "clientId" : "[device-id]",
+                "certFile" : "/[cert-path]/[device-id].cer",
+                "keyFile" : "/[cert-path]/[device-id].key",
                 "qos": 1
             }
           }

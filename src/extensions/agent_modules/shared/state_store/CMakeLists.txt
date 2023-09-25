@@ -19,6 +19,12 @@ target_include_directories (${target_name} PUBLIC ./inc)
 target_sources (${target_name} PRIVATE src/agent_state_store.c)
 
 target_link_libraries (${target_name}
-    PRIVATE aduc::c_utils libaducpal
-            Parson::parson aduc::logging
+    PUBLIC Parson::parson
+    PRIVATE aduc::c_utils
+            aduc::logging
+            libaducpal
             )
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()
