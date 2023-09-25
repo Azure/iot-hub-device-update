@@ -314,7 +314,7 @@ stages:
                           chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
                           ./testsetup/sas_vm_setup.sh --distro debian-10 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
-                      device_id_under_test: "debian10-amd64-sas"
+                      device_id_under_test: "debian-10-amd64-sas"
 
     - stage: RunTestsAndPostResults
       displayName: Execute E2E Test
