@@ -84,7 +84,7 @@ typedef struct ADPS_MQTT_CLIENT_MODULE_STATE_TAG
  * @brief The contract info for the module.
  */
 ADUC_AGENT_CONTRACT_INFO g_adpsMqttClientContractInfo = {
-    "Microsoft", "Azure DPS2 MQTT Client  Module", 1, "Microsoft/AzureDPS2MQTTClientModule:1"
+    "Microsoft", "Azure DPS2 MQTT Client Module", 1, "Microsoft/AzureDPS2MQTTClientModule:1"
 };
 
 // Forward declarations
