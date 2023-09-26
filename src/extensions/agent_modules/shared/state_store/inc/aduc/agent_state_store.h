@@ -110,6 +110,18 @@ const char* ADUC_StateStore_GetDeviceId(void);
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetDeviceId(const char* deviceId);
 
 /**
+ * @brief Get the DU service instance name from the state store.
+ */
+const char* ADUC_StateStore_GetDeviceUpdateServiceInstance(void);
+
+/**
+ * @brief Set the DU service instance name in the state store.
+ * @param instanceName The value to set.
+ * @return ADUC_STATE_STORE_RESULT_OK on success, ADUC_STATE_STORE_RESULT_ERROR on failure.
+ */
+ADUC_STATE_STORE_RESULT ADUC_StateStore_SetDeviceUpdateServiceInstance(const char* instanceName);
+
+/**
  * @brief Get a boolean value indicating whether the device is enrolled with the Device Update service.
  * @return true if the device is enrolled, false otherwise.
  */

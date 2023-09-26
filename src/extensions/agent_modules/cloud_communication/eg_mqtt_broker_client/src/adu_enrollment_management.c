@@ -125,12 +125,20 @@ static void SetCorrelationId(ADU_ENROLLMENT_DATA* enrollmentData, const char* co
  */
 static void SetEnrollmentState(ADU_ENROLLMENT_STATE state, const char* reason)
 {
-    Log_Info(
-        "Enrollment state changed from %d to %d (reason:%s)",
-        s_enrMgrState.enrollmentState,
-        state,
-        IsNullOrEmpty(reason) ? "unknown" : reason);
-    s_enrMgrState.enrollmentState = state;
+    if (s_enrMgrState.enrollmentState != state)
+    {
+        Log_Info(
+            "Enrollment state changed from %d to %d (reason:%s)",
+            s_enrMgrState.enrollmentState,
+            state,
+            IsNullOrEmpty(reason) ? "unknown" : reason);
+        s_enrMgrState.enrollmentState = state;
+
+        if (ADUC_StateStore_SetIsDeviceEnrolled(state == ADU_ENROLLMENT_STATE_ENROLLED) != ADUC_STATE_STORE_RESULT_OK)
+        {
+            Log_Error("Failed to set enrollment state in state store");
+        }
+    }
 }
 
 /**
@@ -164,14 +172,23 @@ void Free_Enrollment_Data(ADU_ENROLLMENT_DATA* data)
 void OnMessage_enr_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
-    //ADUC_MQTT_CLIENT_MODULE_STATE* state = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
+    int isEnrolled = 0;
+    const char* duInstance = NULL;
 
-    if (!ADU_are_correlation_ids_matching(props, s_enrMgrState.enr_req_correlationId))
-    {
-        Log_Info("OnMessage_enr_resp: correlation data mismatch");
-        goto done;
-    }
+    /* TODO: Service doesn't return following field at the moment.
+    int resultCode = 0;
+    int extendedResultCode = 0;
+    const char* resultDescription = NULL;
+    */
 
+    ADUC_STATE_STORE_RESULT stateStoreResult = ADUC_STATE_STORE_RESULT_OK;
+
+    // BUG: Can't get correlation id from the message props`.
+    // if (!ADU_are_correlation_ids_matching(props, s_enrMgrState.enr_req_correlationId))
+    // {
+    //     Log_Info("OnMessage_enr_resp: correlation data mismatch");
+    //     goto done;
+    // }
     if (msg == NULL || msg->payload == NULL || msg->payloadlen == 0)
     {
         Log_Error("Bad payload. msg:%p, payload:%p, payloadlen:%d", msg, msg->payload, msg->payloadlen);
@@ -188,37 +205,51 @@ void OnMessage_enr_resp(
         goto done;
     }
 
-    int isEnrolled = json_object_dotget_boolean(root_object, "isEnrolled");
-    const char* duInstance = json_object_dotget_string(root_object, "duinstance");
-    int resultCode = (int)json_object_dotget_number(root_object, "resultcode");
-    int extendedResultCode = (int)json_object_dotget_number(root_object, "extendedResultcode");
-    const char* resultDescription = json_object_dotget_string(root_object, "resultDescription");
+    isEnrolled = json_object_dotget_boolean(root_object, "IsEnrolled");
+    duInstance = json_object_dotget_string(root_object, "ScopeId");
+
+    /* TODO: Service doesn't return following field at the moment.
+    resultCode = (int)json_object_dotget_number(root_object, "resultcode");
+    extendedResultCode = (int)json_object_dotget_number(root_object, "extendedResultcode");
+    resultDescription = json_object_dotget_string(root_object, "resultDescription");
+    */
 
     // Validate received data
     if (isEnrolled == -1) // json_object_dotget_boolean returns -1 on failure
     {
         Log_Error("Failed to retrieve or validate isEnrolled from JSON payload");
         json_value_free(root_value);
-        return;
+        goto done;
     }
 
     // Store the enrollment response data in the state.
-    time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
-    s_enrMgrState.enr_resp_lastReceivedTime = nowTime;
+    stateStoreResult = ADUC_StateStore_SetIsDeviceEnrolled(isEnrolled != 0);
+    if (stateStoreResult != ADUC_STATE_STORE_RESULT_OK)
+    {
+        Log_Error("Failed to set enrollment state in state store");
+        goto done;
+    }
 
-    free(s_enrMgrState.enr_resp_duInstance);
-    s_enrMgrState.enr_resp_duInstance = IsNullOrEmpty(duInstance) ? NULL : strdup(duInstance);
+    if (isEnrolled != 0)
+    {
+        Log_Info("Device is currently enrolled with '%s'", duInstance);
 
-    s_enrMgrState.enr_resp_resultCode = resultCode;
-    s_enrMgrState.enr_resp_extendedResultCode = extendedResultCode;
-
-    free(s_enrMgrState.enr_resp_resultDescription);
-    s_enrMgrState.enr_resp_resultDescription = IsNullOrEmpty(resultDescription) ? NULL : strdup(resultDescription);
-    SetEnrollmentState(isEnrolled ? ADU_ENROLLMENT_STATE_ENROLLED : ADU_ENROLLMENT_STATE_NOT_ENROLLED, "enr_resp");
-
-    json_value_free(root_value);
+        stateStoreResult = ADUC_StateStore_SetDeviceUpdateServiceInstance(duInstance);
+        if (stateStoreResult != ADUC_STATE_STORE_RESULT_OK)
+        {
+            Log_Error("Failed to set device update instance in state store");
+            // Reset the enrollment state. so we can retry again.
+            isEnrolled = 0;
+            goto done;
+        }
+    }
 
 done:
+    json_value_free(root_value);
+    if (isEnrolled == 0)
+    {
+        // Retry again after default retry delay.
+    }
     return;
 }
 
@@ -450,22 +481,12 @@ bool ADUC_Enrollment_Management_DoWork()
 }
 
 /**
- * @brief Retrieve the device enrollment state.
- * @return true if the device is enrolled with the Device Update service; otherwise, false.
- * @note This function will be replaced with the Inter-module communication (IMC) mechanism.
- */
-bool ADUC_Enrollment_Management_IsEnrolled()
-{
-    return s_enrMgrState.enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED;
-}
-
-/**
  * @brief Retrieve the Azure Device Update service instance.
  * @return The Azure Device Update service instance.
  */
 const char* ADUC_Enrollment_Management_GetDUInstance()
 {
-    if (ADUC_Enrollment_Management_IsEnrolled())
+    if (ADUC_StateStore_GetIsDeviceEnrolled())
     {
         return s_enrMgrState.enr_resp_duInstance;
     }

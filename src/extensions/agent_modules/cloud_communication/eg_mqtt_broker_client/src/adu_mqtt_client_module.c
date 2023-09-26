@@ -14,6 +14,7 @@
 #include "aduc/adu_mqtt_protocol.h"
 #include "aduc/adu_types.h"
 #include "aduc/adu_updates_management.h"
+#include "aduc/agent_state_store.h"
 #include "aduc/config_utils.h"
 #include "aduc/eg_mqtt_broker_client.h"
 #include "aduc/logging.h"
@@ -48,41 +49,6 @@ static ADUC_MQTT_CLIENT_MODULE_STATE* ModuleStateFromModuleHandle(ADUC_AGENT_MOD
 }
 
 /**
- * @brief Get the device ID to use for MQTT client identification.
- *
- * This function retrieves the device ID to be used as the MQTT client's identifier. It checks
- * various sources, including the client ID, username, and falls back to "unknown" if no
- * suitable device ID is found.
- *
- * @return A pointer to a null-terminated string representing the device ID.
- * @remark The caller is responsible for freeing the returned string by calling free().
- */
-static char* GetDeviceIdHelper()
-{
-    char* deviceId = NULL;
-
-    // Get device id setting from the du-config.json file.
-    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
-    if (config == NULL)
-    {
-        goto done;
-    }
-
-    const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(config, 0);
-    if (agent != NULL)
-    {
-        // NOTE - For MQTT broker, userName must match the device Id (usually the CN of the device's certificate)
-        if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent, "mqttBroker.username", &deviceId))
-        {
-            deviceId = NULL;
-        }
-    }
-
-done:
-    return deviceId;
-}
-
-/**
  * @brief Deinitialize the MQTT topics used for Azure Device Update communication.
  * @return `true` if MQTT topics were successfully de-initialized; otherwise, `false`.
 */
@@ -112,7 +78,7 @@ bool InitMqttTopics(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
         return true;
     }
 
-    deviceId = GetDeviceIdHelper();
+    deviceId = ADUC_StateStore_GetExternalDeviceId();
 
     if (IsNullOrEmpty(deviceId))
     {
@@ -380,12 +346,34 @@ static int ADUC_MQTT_Client_Module_Initialize_DoWork(ADUC_MQTT_CLIENT_MODULE_STA
         // Ensure that we have hostName.
         if (IsNullOrEmpty(moduleState->mqttSettings.hostname))
         {
-            Log_Info("MQTT broker hostname is empty. Retry in %d seconds", DEFAULT_OPERATION_INTERVAL_SECONDS);
-            moduleState->initializeState = ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL;
-            // TODO (nox-msft) : use retry_utils
-            moduleState->nextOperationTime = ADUC_GetTimeSinceEpochInSeconds() + DEFAULT_OPERATION_INTERVAL_SECONDS;
+            const char* hostNameFromDPS = ADUC_StateStore_GetMQTTBrokerHostname();
+            if (!IsNullOrEmpty(hostNameFromDPS))
+            {
+                Log_Info("Applying MQTT broker endpoint from DPS.'%s'", hostNameFromDPS);
+                moduleState->mqttSettings.hostname = strdup(hostNameFromDPS);
+                if (moduleState->mqttSettings.hostname == NULL)
+                {
+                    Log_Error("Failed to allocate memory for the MQTT broker hostname");
+                }
+            }
+
+            if (IsNullOrEmpty(moduleState->mqttSettings.hostname))
+            {
+                Log_Info("MQTT broker hostname is empty. Retry in %d seconds", DEFAULT_OPERATION_INTERVAL_SECONDS);
+                moduleState->initializeState = ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_PARTIAL;
+                moduleState->nextOperationTime =
+                    ADUC_GetTimeSinceEpochInSeconds() + DEFAULT_OPERATION_INTERVAL_SECONDS;
+            }
             goto done;
         }
+    }
+
+    const char* externalDeviceId = ADUC_StateStore_GetExternalDeviceId();
+    if (IsNullOrEmpty(externalDeviceId))
+    {
+        Log_Info("ExternalDeviceId is empty. Retry in %d seconds", DEFAULT_OPERATION_INTERVAL_SECONDS);
+        moduleState->nextOperationTime = ADUC_GetTimeSinceEpochInSeconds() + DEFAULT_OPERATION_INTERVAL_SECONDS;
+        goto done;
     }
 
     success = InitMqttTopics(moduleState);
@@ -407,16 +395,20 @@ static int ADUC_MQTT_Client_Module_Initialize_DoWork(ADUC_MQTT_CLIENT_MODULE_STA
         goto done;
     }
 
-    moduleState->commModule = ADUC_Communication_Channel_Create();
     if (moduleState->commModule == NULL)
     {
-        Log_Error("Failed to create the communication channel");
-        goto done;
+        moduleState->commModule = ADUC_Communication_Channel_Create();
+        if (moduleState->commModule == NULL)
+        {
+            Log_Error("Failed to create the communication channel");
+            goto done;
+        }
     }
+
     ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
 
     ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = {
-        GetDeviceIdHelper(),
+        externalDeviceId,
         moduleState,
         &moduleState->mqttSettings,
         &s_duClientCommChannelCallbacks,
@@ -447,6 +439,7 @@ static int ADUC_MQTT_Client_Module_Initialize_DoWork(ADUC_MQTT_CLIENT_MODULE_STA
         goto done;
     }
 
+    // TODO: Enable agent info reporting when DU service support it.
     // success = ADUC_Agent_Info_Management_Initialize();
     // if (!success)
     // {
@@ -454,13 +447,15 @@ static int ADUC_MQTT_Client_Module_Initialize_DoWork(ADUC_MQTT_CLIENT_MODULE_STA
     //     goto done;
     // }
 
-    success = ADUC_Updates_Management_Initialize();
-    if (!success)
-    {
-        Log_Error("Failed to initialize the updates management");
-        goto done;
-    }
+    // TODO: Enable update management when DU service support it.
+    // success = ADUC_Updates_Management_Initialize();
+    // if (!success)
+    // {
+    //     Log_Error("Failed to initialize the updates management");
+    //     goto done;
+    // }
 
+    moduleState->initializeState = ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_COMPLETED;
 done:
     return success ? 0 : -1;
 }
@@ -624,7 +619,7 @@ int ADUC_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
     }
     ADUC_Enrollment_Management_DoWork();
 
-    if (ADUC_Enrollment_Management_IsEnrolled())
+    if (ADUC_StateStore_GetIsDeviceEnrolled())
     {
         // TODO: Enable this when DU Service implemented support for these functionalities.
         // ADUC_Agent_Info_Management_DoWork();

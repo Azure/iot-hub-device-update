@@ -8,11 +8,9 @@
 #ifndef __ADU_MQTT_CLIENT_MODULE_INTERNAL_H__
 #    define __ADU_MQTT_CLIENT_MODULE_INTERNAL__
 
-#    include "aduc/agent_module_interface.h" // ADUC_AGENT_MODULE_HANDLE
+#    include "du_agent_sdk/agent_module_interface.h" // ADUC_AGENT_MODULE_HANDLE
 
-bool ADUC_MQTT_CLIENT_MODULE_IsDeviceEnrolled(ADUC_AGENT_MODULE_HANDLE handle);
-
-bool ADUC_MQTT_CLIENT_MODULE_SetMQTTBrokerEndpoint(ADUC_AGENT_MODULE_HANDLE handle, const char* mqttBrokerEndpoint);
+DECLARE_AGENT_MODULE_PRIVATE(ADUC_MQTT_CLIENT_MODULE)
 
 const char* ADUC_MQTT_CLIENT_MODULE_GetPublishTopic(ADUC_AGENT_MODULE_HANDLE handle);
 

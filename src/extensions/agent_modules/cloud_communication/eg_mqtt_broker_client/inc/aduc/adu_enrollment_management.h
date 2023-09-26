@@ -48,13 +48,6 @@ void OnMessage_enr_cn(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props);
 
 /**
- * @brief Retrieve the device enrollment state.
- * @return true if the device is enrolled with the Device Update service; otherwise, false.
- * @note This function will be replaced with the Inter-module communication (IMC) mechanism.
- */
-bool ADUC_Enrollment_Management_IsEnrolled();
-
-/**
  * @brief Retrieve the Azure Device Update service instance.
  * @return The Azure Device Update service instance.
  */

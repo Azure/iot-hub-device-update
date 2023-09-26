@@ -36,6 +36,8 @@
 
 #define DEFAULT_CONNECT_UNRECOVERABLE_ERROR_RETRY_DELAY_SECONDS (60 * 60) /* 1 hours */
 
+#define DEFAULT_MQTT_BROKER_HOSTNAME_QUERY_INTERVAL_SECONDS 5
+
 // Forward declarations
 ADUC_AGENT_MODULE_HANDLE ADUC_Communication_Channel_Create();
 void ADUC_Communication_Channel_Destroy(ADUC_AGENT_MODULE_HANDLE handle);
@@ -1041,6 +1043,34 @@ bool PerformChannelStateManagement(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrStat
     return false;
 }
 
+bool EnsureHostnameValid(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState)
+{
+    if (commMgrState == NULL)
+    {
+        Log_Error("commMgrState is NULL");
+        return false;
+    }
+
+    if (IsNullOrEmpty(commMgrState->mqttSettings.hostname))
+    {
+        if (commMgrState->mqttSettings.hostnameSource == ADUC_MQTT_HOSTNAME_SOURCE_DPS)
+        {
+            const char* hostName = ADUC_StateStore_GetMQTTBrokerHostname();
+            if (!IsNullOrEmpty(hostName))
+            {
+                Log_Info("Applying hostname from DPS: '%s'", hostName);
+                commMgrState->mqttSettings.hostname = strdup(hostName);
+            }
+        }
+        else
+        {
+            Log_Error("Host name is empty");
+        }
+    }
+
+    return !IsNullOrEmpty(commMgrState->mqttSettings.hostname);
+}
+
 /**
  * @brief Ensure that the communication channel to the DU service is valid.
  *
@@ -1069,9 +1099,16 @@ int ADUC_Communication_Channel_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
     // Always call PerformMosquittoDoWork() to process network traffic, callbacks and connection maintenance as needed.
     PerformMosquittoDoWork(commMgrState);
 
-    EnsureADUTopicsSubscriptionValid(commMgrState);
-
-    PerformChannelStateManagement(commMgrState);
+    if (EnsureHostnameValid(commMgrState))
+    {
+        EnsureADUTopicsSubscriptionValid(commMgrState);
+        PerformChannelStateManagement(commMgrState);
+    }
+    else
+    {
+        commMgrState->commNextRetryTime =
+            ADUC_GetTimeSinceEpochInSeconds() + DEFAULT_MQTT_BROKER_HOSTNAME_QUERY_INTERVAL_SECONDS;
+    }
 
     return true;
 }
