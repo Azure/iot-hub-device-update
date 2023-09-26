@@ -224,6 +224,15 @@ set (
     "${ADUC_DATA_FOLDER}/du-commands.fifo"
     CACHE STRING "The named-pipe for commands IPC.")
 
+set (
+    ADUC_STATE_STORE_FILE_NAME
+    "du-state-store.json"
+    CACHE STRING "The file for DU agent state store.")
+
+set (
+    ADUC_STATE_STORE_FILE_PATH
+    "${ADUC_DATA_FOLDER}/${ADUC_STATE_STORE_FILE_NAME}"
+    CACHE STRING "The file path for DU agent state store.")
 #
 # Starting from version 0.8.1, Device Update Agent must support only one version of the update manifest
 # based on the base dtmi model that the Agent announces when connecting to the IoT Hub.

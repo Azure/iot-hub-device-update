@@ -10,6 +10,7 @@
 #include "aduc/adu_communication_channel_internal.h"
 #include "aduc/adu_mosquitto_utils.h"
 #include "aduc/adu_mqtt_protocol.h" // ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE
+#include "aduc/agent_state_store.h"
 #include "aduc/config_utils.h"
 #include "aduc/d2c_messaging.h"
 #include "aduc/logging.h"
@@ -18,6 +19,7 @@
 #include "aduc/string_c_utils.h" // IsNullOrEmpty, ADUC_StringFormat
 
 #include "du_agent_sdk/agent_module_interface.h" // ADUC_AGENT_MODULE_INTERFACE and related functions
+#include <stdarg.h> // va_list, va_start, va_end
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,25 +35,6 @@
 #define DEFAULT_CONNECT_RETRY_DELAY_SECONDS (60 * 5) /* 5 seconds */
 
 #define DEFAULT_CONNECT_UNRECOVERABLE_ERROR_RETRY_DELAY_SECONDS (60 * 60) /* 1 hours */
-
-/**
- * @brief Structure to hold MQTT communication manager state.
- */
-typedef struct ADU_MQTT_COMMUNICATION_MGR_STATE_TAG
-{
-    bool initialized; /**< Indicates if the MQTT communication manager is initialized. */
-    bool topicsSubscribed; /**< Indicates if MQTT topics are subscribed. */
-    struct mosquitto* mqttClient; /**< Pointer to the MQTT client. */
-    ADUC_MQTT_SETTINGS mqttSettings; /**< MQTT settings. */
-    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE commState; /**< Communication channel state. */
-    time_t commStateUpdatedTime; /**< Time when the communication channel state was last updated. */
-    time_t commLastConnectedTime; /**< Time when the communication channel was last connected. */
-    time_t commLastAttemptTime; /**< Time when the last connection attempt was made. */
-    time_t commNextRetryTime; /**< Time when the next connection attempt should be made. */
-    ADUC_MQTT_CALLBACKS mqttCallbacks; /**< MQTT callback functions. */
-    ADUC_MQTT_KEYFILE_PASSWORD_CALLBACK keyFilePasswordCallback;
-    void* ownerModuleContext; /**< Pointer to the owner module context. */
-} ADU_MQTT_COMMUNICATION_MGR_STATE;
 
 // Forward declarations
 ADUC_AGENT_MODULE_HANDLE ADUC_Communication_Channel_Create();
@@ -84,6 +67,66 @@ void ADUC_Communication_Channel_OnSubscribe(
     const mosquitto_property* props);
 void ADUC_Communication_Channel_OnLog(struct mosquitto* mosq, void* obj, int level, const char* str);
 
+#define LOG_FREQUENCY_SECONDS_5 5
+#define LOG_FREQUENCY_SECONDS_10 10
+#define LOG_FREQUENCY_SECONDS_30 30
+#define LOG_FREQUENCY_SECONDS_60 60
+
+static const char* LOG_MESSAGE_MQTT_CLIENT_IS_NO_INITIALIZE = "MQTT client is not initialized";
+
+/* static const char* MQTT_SETTINGS_KEY_CONNECTION_RETRY_INTERVAL = "connection.retryInterval";
+static const char* MQTT_SETTINGS_KEY_CONNECTION_RETRY_DELAY = "connection.retryDelay";
+static const char* MQTT_SETTINGS_KEY_CONNECTION_RETRY_MAX_DELAY = "connection.retryMaxDelay";
+static const char* MQTT_SETTINGS_KEY_CONNECTION_RETRY_JITTER_PERCENT = "connection.maxJitterPercent";
+*/
+
+static ADUC_Retry_Params defaultConnectionRetryParams = {
+    UINT16_MAX /*maxRetries*/,
+    ADUC_RETRY_DEFAULT_INITIAL_DELAY_MS /*maxDelaySecs*/,
+    TIME_SPAN_ONE_MINUTE_IN_SECONDS /* fallbackWaitTimeSec */,
+    ADUC_RETRY_DEFAULT_INITIAL_DELAY_MS /* initialDelayUnitMilliSecs (Backoff factor) */,
+    ADUC_RETRY_DEFAULT_MAX_JITTER_PERCENT /* double maxJitterPercent - the maximum number of jitter percent (0 - 100) */
+};
+
+/**
+ * @brief Logs a message with a specified frequency.
+ * @param freqSeconds The frequency in seconds.
+ * @param format The format string.
+ * @param ... The format arguments.
+ * @return void
+*/
+static inline void Log_Debug_With_Frequency(int freqSeconds, const char* format, ...)
+{
+    static time_t lastLogTime = 0;
+    static int logCount = 0;
+    static int logFrequency = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
+
+    logFrequency = freqSeconds;
+
+    if (logFrequency <= 0)
+    {
+        return;
+    }
+
+    time_t now = time(NULL);
+    if (now != lastLogTime)
+    {
+        lastLogTime = now;
+        logCount = 0;
+    }
+
+    if (logCount < logFrequency)
+    {
+        logCount++;
+        return;
+    }
+
+    va_list args;
+    va_start(args, format);
+    Log_Debug(format, args);
+    va_end(args);
+}
+
 /**
  * @brief Create the communication channel module.
  */
@@ -97,6 +140,8 @@ ADUC_AGENT_MODULE_HANDLE ADUC_Communication_Channel_Create()
         goto done;
     }
     memset(state, 0, sizeof(ADU_MQTT_COMMUNICATION_MGR_STATE));
+
+    state->connectionRetryParams = defaultConnectionRetryParams;
 
     interface = malloc(sizeof(ADUC_AGENT_MODULE_INTERFACE));
     if (interface == NULL)
@@ -225,6 +270,14 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
     bool use_OS_cert = false;
     ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)handle;
 
+    // For
+    ADUC_STATE_STORE_RESULT storeRes = ADUC_StateStore_Initialize(NULL);
+    if (storeRes != ADUC_STATE_STORE_RESULT_OK)
+    {
+        Log_Error("Failed to initialize state store (%d)", storeRes);
+        return false;
+    }
+
     if (interface == NULL)
     {
         Log_Error("Null parameter (interface=%p)", interface);
@@ -245,6 +298,13 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
         return false;
     }
 
+    ADUC_STATE_STORE_RESULT stateRes = ADUC_StateStore_SetCommunicationChannelHandle(initData->session_id, handle);
+    if (stateRes != ADUC_STATE_STORE_RESULT_OK)
+    {
+        Log_Error("Failed to set communication channel handle in state store (%d)", stateRes);
+        return false;
+    }
+
     commMgrState->ownerModuleContext = initData->ownerModuleContext;
 
     if (commMgrState->initialized)
@@ -257,7 +317,24 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
 
     memcpy(&commMgrState->mqttSettings, initData->mqtt_settings, sizeof(commMgrState->mqttSettings));
 
+    commMgrState->sessionId = strdup(initData->session_id);
+
     commMgrState->keyFilePasswordCallback = initData->pw_callback;
+
+    if (initData->connectionRetryParams != NULL)
+    {
+        memcpy(
+            &commMgrState->connectionRetryParams,
+            initData->connectionRetryParams,
+            sizeof(commMgrState->connectionRetryParams));
+    }
+    else
+    {
+        memcpy(
+            &commMgrState->connectionRetryParams,
+            &defaultConnectionRetryParams,
+            sizeof(commMgrState->connectionRetryParams));
+    }
 
     Log_Info("Initialize Mosquitto library");
     mqtt_res = mosquitto_lib_init();
@@ -317,15 +394,9 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
             switch (mqtt_res)
             {
             case MOSQ_ERR_INVAL:
-                Log_Error("Invalid parameter");
-                break;
-
             case MOSQ_ERR_NOMEM:
-                Log_Error("Out of memory");
-                break;
-
             default:
-                Log_Error("Failed to set TLS settings (%d)", mqtt_res);
+                Log_Error("TLS setting failed. (%d:%s)", mqtt_res, mosquitto_strerror(mqtt_res));
                 break;
             }
 
@@ -877,7 +948,7 @@ bool PerformChannelStateManagement(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrStat
 
     if (!commMgrState->initialized || commMgrState->mqttClient == NULL)
     {
-        Log_Debug("MQTT client is not initialized");
+        Log_Debug_With_Frequency(LOG_FREQUENCY_SECONDS_10, LOG_MESSAGE_MQTT_CLIENT_IS_NO_INITIALIZE);
         return false;
     }
 
@@ -1084,13 +1155,7 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
         return -1;
     }
 
-    return mosquitto_subscribe_v5(
-        commMgrState->mqttClient,
-        mid,
-        topic,
-        qos,
-        options,
-        props);
+    return mosquitto_subscribe_v5(commMgrState->mqttClient, mid, topic, qos, options, props);
 }
 
 /*

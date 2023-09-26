@@ -9,8 +9,10 @@
 #ifndef __ADUC_COMMUNICATION_CHANNEL_H__
 #define __ADUC_COMMUNICATION_CHANNEL_H__
 
+#include "aduc/adu_mqtt_protocol.h" // ADUC_COMMUNICATION_*, ADUC_ENROLLMENT_*, ADUC_MQTT_MESSAGE_*, ADUC_MQTT_SETTINGS, ADUC_Result
 #include "aduc/c_utils.h" // EXTERN_C_* macros
 #include "aduc/mqtt_client.h" // ADUC_MQTT_SETTINGS
+#include "aduc/retry_utils.h" // ADUC_Retry_Params
 #include "du_agent_sdk/agent_module_interface.h" // ADUC_AGENT_MODULE_HANDLE
 #include "stdbool.h" // bool
 #include <mosquitto.h> // mosquitto related functions
@@ -195,7 +197,29 @@ typedef struct ADUC_COMMUNICATION_CHANNEL_INIT_DATA_TAG
     const ADUC_MQTT_SETTINGS* mqtt_settings;
     ADUC_MQTT_CALLBACKS* callbacks;
     ADUC_MQTT_KEYFILE_PASSWORD_CALLBACK pw_callback;
+    ADUC_Retry_Params* connectionRetryParams; //!< [optional] Retry parameters for connection attempts.
 } ADUC_COMMUNICATION_CHANNEL_INIT_DATA;
+
+/**
+ * @brief Structure to hold MQTT communication management state.
+ */
+typedef struct ADU_MQTT_COMMUNICATION_MGR_STATE_TAG
+{
+    char* sessionId; /**< Session ID. */
+    bool initialized; /**< Indicates if the MQTT communication manager is initialized. */
+    bool topicsSubscribed; /**< Indicates if MQTT topics are subscribed. */
+    struct mosquitto* mqttClient; /**< Pointer to the MQTT client. */
+    ADUC_MQTT_SETTINGS mqttSettings; /**< MQTT settings. */
+    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE commState; /**< Communication channel state. */
+    time_t commStateUpdatedTime; /**< Time when the communication channel state was last updated. */
+    time_t commLastConnectedTime; /**< Time when the communication channel was last connected. */
+    time_t commLastAttemptTime; /**< Time when the last connection attempt was made. */
+    time_t commNextRetryTime; /**< Time when the next connection attempt should be made. */
+    ADUC_MQTT_CALLBACKS mqttCallbacks; /**< MQTT callback functions. */
+    ADUC_MQTT_KEYFILE_PASSWORD_CALLBACK keyFilePasswordCallback;
+    void* ownerModuleContext; /**< Pointer to the owner module context. */
+    ADUC_Retry_Params connectionRetryParams;
+} ADU_MQTT_COMMUNICATION_MGR_STATE;
 
 /**
  * @brief Publishes a message to a the 'adu/oto/#/a' topic using version 5 of the MQTT protocol.

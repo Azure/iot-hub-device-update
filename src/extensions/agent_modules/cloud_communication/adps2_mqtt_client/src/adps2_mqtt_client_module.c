@@ -8,6 +8,7 @@
 #include "aduc/adps_gen2.h"
 #include "aduc/adu_communication_channel.h"
 #include "aduc/adu_types.h"
+#include "aduc/agent_state_store.h"
 #include "aduc/config_utils.h"
 #include "aduc/logging.h"
 #include "aduc/retry_utils.h" // ADUC_GetTimeSinceEpochInSeconds
@@ -182,6 +183,7 @@ static void SetRegisterState(ADPS_MQTT_CLIENT_MODULE_STATE* moduleState, ADPS_RE
         return;
     }
 
+    ADUC_StateStore_SetIsDeviceRegistered(state == ADPS_REGISTER_STATE_REGISTERED);
     Log_Info("Register state changed from %d to %d (%s)", moduleState->registerState, state, reason);
     moduleState->registerState = state;
 }
@@ -239,28 +241,36 @@ ADUC_MQTT_CALLBACKS s_commChannelCallbacks = {
 /**
  * @brief A helper function used for processing a device registration response payload.
  *
- * Example payload:
- *   {
- *      "operationId": "5.4501502c51dab402.6a8fa100-82f6-44fc-ae51-f90c2811abf5",
- *      "status": "assigned",
- *      "registrationState": {
- *      "x509": {
- *        "enrollmentGroupId": "contoso-blue-devbox-wus3"
- *      },
- *      "registrationId": "contoso-blue-device03-devbox-wus3",
- *      "createdDateTimeUtc": "2023-09-18T23:29:30.4838175Z",
- *      "assignedEndpoint": {
- *          "type": "mqttBroker",
- *          "hostName": "contoso-blue-devbox-wus3-eg.westus2-1.ts.eventgrid.azure.net"
- *      },
- *      "deviceId": "contoso-blue-device03-devbox-wus3",
- *      "status": "assigned",
- *      "substatus": "initialAssignment",
- *      "lastUpdatedDateTimeUtc": "2023-09-18T23:29:53.4296572Z",
- *      "etag": "IjJmMDBjNjEzLTAwMDAtNGQwMC0wMDAwLTY1MDhkZDcxMDAwMCI="
- *   }
+ * This function processes the given payload to determine the device's registration status.
+ * If the registration status is "assigned", then the device is considered registered.
  *
- * If the registration status is "assigned", then the device is registered
+ * Example payload:
+ * @code
+ * {
+ *     "operationId": "4.e38bd7086c69f038.a02a0838-a76c-4a21-89da-f776a58245ac",
+ *     "status": "assigned",
+ *     "registrationState": {
+ *         "x509": {
+ *             "enrollmentGroupId": "contoso-violet-devbox-cusc"
+ *         },
+ *         "registrationId": "contoso-violet-dev02-devbox-cusc",
+ *         "createdDateTimeUtc": "2023-09-26T01:48:19.1296493Z",
+ *         "assignedEndpoint": {
+ *             "type": "mqttBroker",
+ *             "hostName": "contosl-violet-devbox-cusc-eg.centraluseuap-1.ts.eventgrid.azure.net"
+ *         },
+ *         "deviceId": "contoso-violet-dev02-devbox-cusc",
+ *         "status": "assigned",
+ *         "substatus": "initialAssignment",
+ *         "lastUpdatedDateTimeUtc": "2023-09-26T01:48:19.3224804Z",
+ *         "etag": "IjA1MDA1Yjg5LTAwMDAtMzMwMC0wMDAwLTY1MTIzODYzMDAwMCI="
+ *     }
+ * }
+ * @endcode
+ * @param moduleState The module state.
+ * @param payload The payload to process.
+ * @param payload_len The length of the payload.
+ * @return true if the payload was processed successfully; false otherwise.
  */
 bool ProcessDeviceRegistrationResponse(
     ADPS_MQTT_CLIENT_MODULE_STATE* moduleState, const char* payload, size_t payload_len)
@@ -281,12 +291,51 @@ bool ProcessDeviceRegistrationResponse(
         goto done;
     }
 
-    if (strncmp(status, "assigned", 8) == 0)
+    if (strcmp(status, "assigned") == 0)
     {
+        bool errorOccurred = false;
         Log_Info("Device is registered.");
         SetRegisterState(moduleState, ADPS_REGISTER_STATE_REGISTERED, "received assigned status");
+        if (ADUC_StateStore_SetJsonValue(true, "dps.registrationData", root_value))
+        {
+            Log_Error("Failed to set registration data");
+            errorOccurred = true;
+        }
+        const char* deviceId = json_object_dotget_string(json_object(root_value), "registrationState.deviceId");
+        if (deviceId == NULL)
+        {
+            Log_Error("Failed to get deviceId from JSON payload:\n%s", payload);
+            errorOccurred = true;
+        }
+        else if (ADUC_StateStore_SetDeviceId(deviceId) != ADUC_STATE_STORE_RESULT_OK)
+        {
+            Log_Error("Failed to set deviceId");
+            errorOccurred = true;
+        }
+        const char* mqttBrokerHostname =
+            json_object_dotget_string(json_object(root_value), "registrationState.assignedEndpoint.hostName");
+        if (mqttBrokerHostname == NULL)
+        {
+            Log_Error("Failed to get MQTT broker hostname from JSON payload");
+            errorOccurred = true;
+        }
+        else
+        {
+            Log_Info("DPS->MQTTbroker: %s", mqttBrokerHostname);
+            if (ADUC_StateStore_SetMQTTBrokerHostname(mqttBrokerHostname) != ADUC_STATE_STORE_RESULT_OK)
+            {
+                Log_Error("Failed to set MQTT broker hostname");
+                errorOccurred = true;
+            }
+        }
+        if (errorOccurred)
+        {
+            // Set registration state to 'unknown' so that we can retry again.
+            SetRegisterState(moduleState, ADPS_REGISTER_STATE_UNKNOWN, "failed to set registration data");
+            goto done;
+        }
     }
-    else if (strncmp(status, "assigning", 9) == 0)
+    else if (strcmp(status, "assigning") == 0)
     {
         Log_Info("Device is registering.");
         SetRegisterState(moduleState, ADPS_REGISTER_STATE_REGISTERING, "received assigning status");
@@ -299,6 +348,7 @@ bool ProcessDeviceRegistrationResponse(
     }
 
 done:
+    json_value_free(root_value);
     return result;
 }
 
@@ -381,7 +431,7 @@ void ADPS_MQTT_Client_Module_OnMessage(
 done:
 
     free(topics);
-    Log_Info("\tPayload: %s\n", (char*)msg->payload);
+    Log_Debug("\tPayload: %s\n", (char*)msg->payload);
 }
 
 /* Callback called when the client knows to the best of its abilities that a
@@ -433,7 +483,8 @@ int ADPS_MQTT_Client_Module_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* mo
                                                           handle,
                                                           &moduleState->settings.mqttSettings,
                                                           &s_commChannelCallbacks,
-                                                          NULL };
+                                                          NULL /* key file password callback */,
+                                                          NULL /* connection retry param */ };
 
     ret = commInterface->initializeModule(moduleState->commModule, &commInitData);
 
@@ -695,18 +746,4 @@ int ADPS_MQTT_Client_Module_SetData(
     IGNORED_PARAMETER(size);
     int ret = 0;
     return ret;
-}
-
-bool ADPS_MQTT_CLIENT_MODULE_IsDeviceRegistered(ADUC_AGENT_MODULE_HANDLE handle)
-{
-    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(handle);
-    return (moduleState->registerState == ADPS_REGISTER_STATE_REGISTERED);
-}
-
-const char* ADPS_MQTT_CLIENT_MODULE_GetMQTTBrokerEndpoint(ADUC_AGENT_MODULE_HANDLE handle)
-{
-    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(handle);
-
-    return json_object_dotget_string(
-        json_value_get_object(moduleState->registrationData), "assignedEndpoint.hostName");
 }

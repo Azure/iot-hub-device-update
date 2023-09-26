@@ -7,6 +7,7 @@
  */
 
 #include "aduc/adu_types.h"
+#include "aduc/agent_state_store.h"
 #include "aduc/c_utils.h"
 #if !defined(WIN32)
 #    include "aduc/command_helper.h"
@@ -468,6 +469,8 @@ int main(int argc, char** argv)
         "Supported Update Manifest version: min: %d, max: %d",
         SUPPORTED_UPDATE_MANIFEST_VERSION_MIN,
         SUPPORTED_UPDATE_MANIFEST_VERSION_MAX);
+
+    ADUC_StateStore_Initialize(ADUC_STATE_STORE_FILE_PATH);
 
     bool healthy = HealthCheck(&launchArgs);
     if (launchArgs.healthCheckOnly || !healthy)

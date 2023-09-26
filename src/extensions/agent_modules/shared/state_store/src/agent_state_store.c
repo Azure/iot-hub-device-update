@@ -23,15 +23,26 @@ static JSON_Value* durable_state_data = NULL;
 static bool isInitialized = false;
 
 // TODO make this configurable.
-#define DEFAULT_STATE_STORE_PATH "/var/lib/adu/agent-state.json"
+//#define DEFAULT_STATE_STORE_PATH "/var/lib/adu/agent-state.json"
+#define DEFAULT_STATE_STORE_PATH "/tmp/adu/agent-state.json"
+
+#define STATE_FIELD_NAME_DEVICE_ID "deviceId"
+#define STATE_FIELD_NAME_EXTERNAL_DEVICE_ID "externalDeviceId"
+#define STATE_FIELD_NAME_MQTT_BROKER_HOSTNAME "mqttBrokerHostname"
+#define STATE_FIELD_NAME_IS_DEVICE_ENROLLED "isDeviceEnrolled"
+#define STATE_FIELD_NAME_IS_AGENT_INFO_REPORTED "isAgentInfoReported"
+#define STATE_FIELD_NAME_IS_DEVICE_REGISTERED "isDeviceRegistered"
 
 // Semaphore for process synchronization
 static sem_t state_semaphore;
 
 typedef struct
 {
-    char* externalDeviceId;
+    char* stateFilePath;
     char* deviceId;
+    char* externalDeviceId;
+    char* mqttBrokerHostname;
+    bool isDeviceRegistered;
     bool isDeviceEnrolled;
     bool isAgentInfoReported;
 } ADUC_StateData;
@@ -68,6 +79,12 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_Initialize(const char* state_file_path)
         return ADUC_STATE_STORE_RESULT_ERROR;
     }
 
+    state.stateFilePath = SafeStrdup(state_file_path);
+    if (IsNullOrEmpty(state.stateFilePath))
+    {
+        state.stateFilePath = SafeStrdup(DEFAULT_STATE_STORE_PATH);
+    }
+
     ADUC_STATE_STORE_RESULT res = ADUC_STATE_STORE_RESULT_ERROR;
     sem_wait(&state_semaphore);
 
@@ -86,11 +103,11 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_Initialize(const char* state_file_path)
     }
 
     // Loading from the file.
-    JSON_Value* durable_state_data = json_parse_file(state_file_path);
+    JSON_Value* durable_state_data = json_parse_file(state.stateFilePath);
 
     if (durable_state_data == NULL)
     {
-        Log_Warn("Failed to load state data from file %s. Creating...", state_file_path);
+        Log_Warn("Failed to load state data from file %s. Creating...", state.stateFilePath);
     }
 
     if (durable_state_data == NULL)
@@ -105,10 +122,13 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_Initialize(const char* state_file_path)
     }
 
     JSON_Object* state_data_obj = json_value_get_object(durable_state_data);
-    state.externalDeviceId = SafeStrdup(json_object_get_string(state_data_obj, "externalDeviceId"));
-    state.deviceId = SafeStrdup(json_object_get_string(state_data_obj, "deviceId"));
-    state.isDeviceEnrolled = json_object_get_boolean(state_data_obj, "isDeviceEnrolled");
-    state.isAgentInfoReported = json_object_get_boolean(state_data_obj, "isAgentInfoReported");
+    state.externalDeviceId = SafeStrdup(json_object_get_string(state_data_obj, STATE_FIELD_NAME_EXTERNAL_DEVICE_ID));
+    state.mqttBrokerHostname =
+        SafeStrdup(json_object_get_string(state_data_obj, STATE_FIELD_NAME_MQTT_BROKER_HOSTNAME));
+    state.deviceId = SafeStrdup(json_object_get_string(state_data_obj, STATE_FIELD_NAME_DEVICE_ID));
+    state.isDeviceEnrolled = json_object_get_boolean(state_data_obj, STATE_FIELD_NAME_IS_DEVICE_ENROLLED);
+    state.isAgentInfoReported = json_object_get_boolean(state_data_obj, STATE_FIELD_NAME_IS_AGENT_INFO_REPORTED);
+    state.isDeviceRegistered = json_object_get_boolean(state_data_obj, STATE_FIELD_NAME_IS_DEVICE_REGISTERED);
 
     Log_Info("State store initialized successfully.");
     isInitialized = true;
@@ -159,33 +179,89 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetData(bool durable, const char* key, J
     return 0;
 }
 
-ADUC_STATE_STORE_RESULT ADUC_StateStore_WriteToFile(const char* filename)
+/**
+ * @brief Save the state store to the file.
+ */
+void ADUC_StateStore_Save()
 {
-    sem_wait(&state_semaphore);
-    if (json_serialize_to_file(inmem_state_data, filename) != JSONSuccess)
+    if (!isInitialized)
     {
-        Log_Error("Failed to write state data to file %s.", filename);
-        sem_post(&state_semaphore);
-        return ADUC_STATE_STORE_RESULT_ERROR;
+        Log_Info("Nothing to save.");
+        return;
     }
-    sem_post(&state_semaphore);
-    Log_Info("Successfully wrote state data to file %s.", filename);
-    return ADUC_STATE_STORE_RESULT_OK;
-}
 
-void ADUC_StateStore_Deinitialize(const char* state_file_path)
-{
     sem_wait(&state_semaphore);
 
     // Saving to the file
     JSON_Object* root_object = GetRootObject(true /* durable */);
 
-    json_object_set_string(root_object, "externalDeviceId", state.externalDeviceId);
-    json_object_set_string(root_object, "deviceId", state.deviceId);
-    json_object_set_boolean(root_object, "isDeviceEnrolled", state.isDeviceEnrolled);
-    json_object_set_boolean(root_object, "isAgentInfoReported", state.isAgentInfoReported);
+    if (json_object_set_string(root_object, STATE_FIELD_NAME_DEVICE_ID, state.deviceId) != JSONSuccess)
+    {
+        Log_Warn("Failed to set deviceId.");
+    }
 
-    json_serialize_to_file(durable_state_data, state_file_path);
+    if (json_object_set_string(root_object, STATE_FIELD_NAME_EXTERNAL_DEVICE_ID, state.externalDeviceId)
+        != JSONSuccess)
+    {
+        Log_Warn("Failed to set externalDeviceId.");
+    }
+
+    if (json_object_set_string(root_object, STATE_FIELD_NAME_MQTT_BROKER_HOSTNAME, state.mqttBrokerHostname)
+        != JSONSuccess)
+    {
+        Log_Warn("Failed to set mqttBrokerHostname.");
+    }
+
+    if (json_object_set_boolean(root_object, STATE_FIELD_NAME_IS_DEVICE_ENROLLED, state.isDeviceEnrolled)
+        != JSONSuccess)
+    {
+        Log_Warn("Failed to set isDeviceEnrolled.");
+    }
+
+    if (json_object_set_boolean(root_object, STATE_FIELD_NAME_IS_AGENT_INFO_REPORTED, state.isAgentInfoReported)
+        != JSONSuccess)
+    {
+        Log_Warn("Failed to set isAgentInfoReported");
+    }
+
+    if (json_object_set_boolean(root_object, STATE_FIELD_NAME_IS_DEVICE_REGISTERED, state.isDeviceRegistered)
+        != JSONSuccess)
+    {
+        Log_Warn("Failed to set isDeviceRegistered.");
+    }
+
+    if (json_serialize_to_file(durable_state_data, state.stateFilePath) != JSONSuccess)
+    {
+        Log_Warn("Failed to save state data to file %s.", state.stateFilePath);
+    }
+
+    sem_post(&state_semaphore);
+}
+
+/**
+ * @brief Deinitialize the state store.
+ */
+void ADUC_StateStore_Deinitialize()
+{
+    if (!isInitialized)
+    {
+        Log_Info("Nothing to deinitialize.");
+        return;
+    }
+
+    sem_wait(&state_semaphore);
+
+    // Saving to the file
+    JSON_Object* root_object = GetRootObject(true /* durable */);
+
+    json_object_set_string(root_object, STATE_FIELD_NAME_DEVICE_ID, state.deviceId);
+    json_object_set_string(root_object, STATE_FIELD_NAME_EXTERNAL_DEVICE_ID, state.externalDeviceId);
+    json_object_set_string(root_object, STATE_FIELD_NAME_MQTT_BROKER_HOSTNAME, state.mqttBrokerHostname);
+    json_object_set_boolean(root_object, STATE_FIELD_NAME_IS_DEVICE_ENROLLED, state.isDeviceEnrolled);
+    json_object_set_boolean(root_object, STATE_FIELD_NAME_IS_AGENT_INFO_REPORTED, state.isAgentInfoReported);
+    json_object_set_boolean(root_object, STATE_FIELD_NAME_IS_DEVICE_REGISTERED, state.isDeviceRegistered);
+
+    json_serialize_to_file(durable_state_data, state.stateFilePath);
 
     json_value_free(durable_state_data);
     durable_state_data = NULL;
@@ -210,6 +286,7 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_GetInt(bool durable, const char* key, in
         return ADUC_STATE_STORE_RESULT_ERROR;
     }
 
+    ADUC_STATE_STORE_RESULT res = ADUC_STATE_STORE_RESULT_ERROR;
     sem_wait(&state_semaphore);
     JSON_Object* root_object = GetRootObject(durable);
     double result = json_object_dotget_number(root_object, key);
@@ -218,14 +295,15 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_GetInt(bool durable, const char* key, in
         || json_value_get_type(json_object_dotget_value(root_object, key)) != JSONNumber)
     {
         Log_Warn("Failed to retrieve int value for key %s.", key);
-        sem_post(&state_semaphore);
-        return ADUC_STATE_STORE_RESULT_ERROR;
+        goto done;
     }
 
     *out_value = (int)result;
+    res = ADUC_STATE_STORE_RESULT_OK;
+done:
     sem_post(&state_semaphore);
     Log_Info("Successfully retrieved int value for key %s.", key);
-    return ADUC_STATE_STORE_RESULT_OK;
+    return res;
 }
 
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetInt(bool durable, const char* key, int value)
@@ -238,7 +316,7 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_GetUnsignedInt(bool durable, const char*
 {
     int result;
     int status = ADUC_StateStore_GetInt(durable, key, &result);
-    if (status == 0 && result >= 0)
+    if (status == ADUC_STATE_STORE_RESULT_OK && result >= 0)
     {
         *out_value = (unsigned int)result;
         Log_Info("Successfully retrieved unsigned int value for key %s.", key);
@@ -253,7 +331,6 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetUnsignedInt(bool durable, const char*
     return ADUC_StateStore_SetInt(durable, key, (int)value); // Note: Assumes the value is within the range of 'int'
 }
 
-// String data retrieval and setting
 ADUC_STATE_STORE_RESULT ADUC_StateStore_GetString(bool durable, const char* key, char** out_value)
 {
     if (IsNullOrEmpty(key) || out_value == NULL)
@@ -262,21 +339,26 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_GetString(bool durable, const char* key,
         return ADUC_STATE_STORE_RESULT_ERROR;
     }
 
+    ADUC_STATE_STORE_RESULT res = ADUC_STATE_STORE_RESULT_ERROR;
     sem_wait(&state_semaphore);
     JSON_Object* root_object = GetRootObject(durable);
     const char* result = json_object_dotget_string(root_object, key);
-
-    if (!result)
+    if (result == NULL)
     {
         Log_Warn("Failed to retrieve string value for key %s.", key);
-        sem_post(&state_semaphore);
-        return ADUC_STATE_STORE_RESULT_ERROR;
+        goto done;
     }
 
     *out_value = SafeStrdup(result); // Callers are responsible for freeing this memory.
-    sem_post(&state_semaphore);
-    Log_Info("Successfully retrieved string value for key %s.", key);
-    return ADUC_STATE_STORE_RESULT_OK;
+    if (*out_value == NULL)
+    {
+        Log_Error("Failed to duplicate string value for key %s.", key);
+        goto done;
+    }
+
+    res = ADUC_STATE_STORE_RESULT_OK;
+done:
+    return res;
 }
 
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetString(bool durable, const char* key, const char* value)
@@ -293,6 +375,7 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_GetBool(bool durable, const char* key, i
         return ADUC_STATE_STORE_RESULT_ERROR;
     }
 
+    ADUC_STATE_STORE_RESULT res = ADUC_STATE_STORE_RESULT_ERROR;
     sem_wait(&state_semaphore);
     JSON_Object* root_object = GetRootObject(durable);
     int result = json_object_dotget_boolean(root_object, key);
@@ -301,14 +384,15 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_GetBool(bool durable, const char* key, i
         || json_value_get_type(json_object_dotget_value(root_object, key)) != JSONBoolean)
     {
         Log_Warn("Failed to retrieve bool value for key %s.", key);
-        sem_post(&state_semaphore);
-        return ADUC_STATE_STORE_RESULT_ERROR;
+        goto done;
     }
 
     *out_value = result;
+    res = ADUC_STATE_STORE_RESULT_OK;
+done:
     sem_post(&state_semaphore);
     Log_Info("Successfully retrieved bool value for key %s.", key);
-    return ADUC_STATE_STORE_RESULT_OK;
+    return res;
 }
 
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetBool(bool durable, const char* key, int value)
@@ -339,6 +423,36 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetExternalDeviceId(const char* external
     return ADUC_STATE_STORE_RESULT_OK;
 }
 
+/**
+ * @brief Set the 'IsDeviceRegistered' value in the state store.
+ * @param isDeviceRegistered The value to set.
+ * @return ADUC_STATE_STORE_RESULT_OK on success, ADUC_STATE_STORE_RESULT_ERROR on failure.
+ */
+ADUC_STATE_STORE_RESULT ADUC_StateStore_SetIsDeviceRegistered(bool isDeviceRegistered)
+{
+    sem_wait(&state_semaphore);
+    free(state.externalDeviceId);
+    state.isDeviceRegistered = isDeviceRegistered;
+    sem_post(&state_semaphore);
+    return ADUC_STATE_STORE_RESULT_OK;
+}
+
+/**
+ * @brief Get the 'IsDeviceRegistered' value in the state store.
+ * @return The value of 'IsDeviceRegistered' or false if not found.
+ */
+bool ADUC_StateStore_GetIsDeviceRegistered()
+{
+    sem_wait(&state_semaphore);
+    bool value = state.isDeviceRegistered;
+    sem_post(&state_semaphore);
+    return value;
+}
+
+/**
+ * @brief Get the Device Update service device ID.
+ * @return The device ID, or NULL if not found.
+ */
 const char* ADUC_StateStore_GetDeviceId(void)
 {
     sem_wait(&state_semaphore);
@@ -460,4 +574,122 @@ ADUC_StateStore_SetCommunicationChannelHandle(const char* sessionId, const void*
 done:
     sem_post(&state_semaphore);
     return res;
+}
+
+/**
+ * @brief Get the pointer to json value object for the specified key.
+ * @param durable Whether to retrieve the value from the durable store.
+ * @param key The key to retrieve.
+ * @param out_value The pointer to the json value object.
+ * @return ADUC_STATE_STORE_RESULT_OK on success, ADUC_STATE_STORE_RESULT_ERROR on failure.
+ */
+ADUC_STATE_STORE_RESULT ADUC_StateStore_GetJsonValue(bool durable, const char* key, void** out_value)
+{
+    if (IsNullOrEmpty(key) || out_value == NULL)
+    {
+        Log_Error("Invalid input (key=%p, out_value=%p).", key, out_value);
+        return ADUC_STATE_STORE_RESULT_ERROR;
+    }
+
+    *out_value = NULL;
+    ADUC_STATE_STORE_RESULT res = ADUC_STATE_STORE_RESULT_ERROR;
+    sem_wait(&state_semaphore);
+    JSON_Object* root_object = GetRootObject(durable);
+    JSON_Value* value = json_object_dotget_value(root_object, key);
+    if (value == NULL)
+    {
+        Log_Warn("Failed to retrieve value for key %s.", key);
+        goto done;
+    }
+
+    *out_value = json_value_deep_copy(value);
+    if (*out_value == NULL)
+    {
+        Log_Error("Failed to deep copy json value for key %s.", key);
+        goto done;
+    }
+    res = ADUC_STATE_STORE_RESULT_OK;
+
+done:
+    sem_post(&state_semaphore);
+    Log_Info("Successfully retrieved value for key %s.", key);
+    return res;
+}
+
+ADUC_STATE_STORE_RESULT ADUC_StateStore_SetJsonValue(bool durable, const char* key, void* value)
+{
+    if (IsNullOrEmpty(key) || value == NULL)
+    {
+        Log_Error("Invalid input (key=%p, value=%p).", key, value);
+        return ADUC_STATE_STORE_RESULT_ERROR;
+    }
+
+    ADUC_STATE_STORE_RESULT res = ADUC_STATE_STORE_RESULT_ERROR;
+    JSON_Value* jsonValue = NULL;
+
+    sem_wait(&state_semaphore);
+    JSON_Object* root_object = GetRootObject(durable);
+    if (value == NULL)
+    {
+        if (json_object_dotset_null(root_object, key) != JSONSuccess)
+        {
+            Log_Error("Failed to set null value for key %s.", key);
+            goto done;
+        }
+    }
+    else
+    {
+        jsonValue = json_value_deep_copy((const JSON_Value*)value);
+        if (jsonValue == NULL)
+        {
+            Log_Error("Failed to deep copy json value for key %s.", key);
+            goto done;
+        }
+
+        if (json_object_dotset_value(root_object, key, jsonValue) != JSONSuccess)
+        {
+            Log_Error("Failed to set json value for key %s.", key);
+            goto done;
+        }
+        // ownership of jsonValue is transferred to the root_object.
+        jsonValue = NULL;
+    }
+
+    res = ADUC_STATE_STORE_RESULT_OK;
+done:
+    json_value_free(jsonValue);
+    sem_post(&state_semaphore);
+    Log_Info("Successfully set value for key %s.", key);
+    return res;
+}
+
+/**
+ * @brief Get the Device Update service MQTT broker hostname.
+ */
+const char* ADUC_StateStore_GetMQTTBrokerHostname(void)
+{
+    sem_wait(&state_semaphore);
+    const char* value = state.mqttBrokerHostname;
+    sem_post(&state_semaphore);
+    return value;
+}
+
+/**
+ * @brief Set the Device Update service MQTT broker hostname.
+ * @param hostname The value to set.
+ * @return ADUC_STATE_STORE_RESULT_OK on success, ADUC_STATE_STORE_RESULT_ERROR on failure.
+ */
+ADUC_STATE_STORE_RESULT ADUC_StateStore_SetMQTTBrokerHostname(const char* hostname)
+{
+    if (!hostname)
+    {
+        Log_Error("Invalid input for hostname.");
+        return ADUC_STATE_STORE_RESULT_ERROR;
+    }
+
+    sem_wait(&state_semaphore);
+    free(state.mqttBrokerHostname);
+    state.mqttBrokerHostname = SafeStrdup(hostname);
+    sem_post(&state_semaphore);
+    return ADUC_STATE_STORE_RESULT_OK;
 }

@@ -416,7 +416,12 @@ static int ADUC_MQTT_Client_Module_Initialize_DoWork(ADUC_MQTT_CLIENT_MODULE_STA
     ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
 
     ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = {
-        GetDeviceIdHelper(), moduleState, &moduleState->mqttSettings, &s_duClientCommChannelCallbacks, NULL
+        GetDeviceIdHelper(),
+        moduleState,
+        &moduleState->mqttSettings,
+        &s_duClientCommChannelCallbacks,
+        NULL /* key file password callback */,
+        NULL /* connection retry callback */
     };
 
     success = commInterface->initializeModule(moduleState->commModule, &commInitData) == 0;

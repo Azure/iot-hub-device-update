@@ -48,16 +48,14 @@ JSON_Value* ADUC_StateStore_GetData(bool durable, const char* key);
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetData(bool durable, const char* key, JSON_Value* value);
 
 /**
- * Writes the current in-memory data store to a file.
- * @param filename The file to write to.
- * @return 0 on success, -1 on failure.
+ * @brief Save current state to the state file.
  */
-ADUC_STATE_STORE_RESULT ADUC_StateStore_WriteToFile(const char* filename);
+void ADUC_StateStore_Save(void);
 
 /**
- * @brief Deinitialize the state store.
+ * @brief Deinitialize the state store. This function also save the durable states to the state file.
  */
-void ADUC_StateStore_Deinitialize(const char* state_file_path);
+void ADUC_StateStore_Deinitialize(void);
 
 /**
  * @brief Get the 'ExternalDeviceId' value from the state store.
@@ -70,9 +68,34 @@ const char* ADUC_StateStore_GetExternalDeviceId(void);
 /**
  * @brief Set the 'ExternalDeviceId' value in the state store.
  * @param externalDeviceId The value to set.
- * @return 0 on success, -1 on failure.
+ * @return ADUC_STATE_STORE_RESULT_OK on success, ADUC_STATE_STORE_RESULT_ERROR on failure.
  */
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetExternalDeviceId(const char* externalDeviceId);
+
+/**
+ * @brief Set the 'IsDeviceRegistered' value in the state store.
+ * @param isDeviceRegistered The value to set.
+ * @return ADUC_STATE_STORE_RESULT_OK on success, ADUC_STATE_STORE_RESULT_ERROR on failure.
+ */
+ADUC_STATE_STORE_RESULT ADUC_StateStore_SetIsDeviceRegistered(bool isDeviceRegistered);
+
+/**
+ * @brief Get the 'IsDeviceRegistered' value in the state store.
+ * @return The value of 'IsDeviceRegistered' or false if not found.
+ */
+bool ADUC_StateStore_GetIsDeviceRegistered();
+
+/**
+ * @brief Get the Device Update service MQTT broker hostname.
+ */
+const char* ADUC_StateStore_GetMQTTBrokerHostname(void);
+
+/**
+ * @brief Set the Device Update service MQTT broker hostname.
+ * @param hostname The value to set.
+ * @return ADUC_STATE_STORE_RESULT_OK on success, ADUC_STATE_STORE_RESULT_ERROR on failure.
+ */
+ADUC_STATE_STORE_RESULT ADUC_StateStore_SetMQTTBrokerHostname(const char* hostname);
 
 /**
  * @brief Get the 'DeviceId' value from the state store.
@@ -138,6 +161,8 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_GetString(bool durable, const char* key,
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetString(bool durable, const char* key, const char* value);
 ADUC_STATE_STORE_RESULT ADUC_StateStore_GetBool(bool durable, const char* key, int* out_value);
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetBool(bool durable, const char* key, int value);
+ADUC_STATE_STORE_RESULT ADUC_StateStore_GetJsonValue(bool durable, const char* key, void** out_value);
+ADUC_STATE_STORE_RESULT ADUC_StateStore_SetJsonValue(bool durable, const char* key, void* value);
 
 EXTERN_C_END
 

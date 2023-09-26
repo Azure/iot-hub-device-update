@@ -16,7 +16,7 @@ TEST_CASE("communication handle")
 {
     SECTION("Valid handle")
     {
-        ADUC_STATE_STORE_RESULT result =  ADUC_StateStore_Initialize(TEST_STATE_FILE);
+        ADUC_STATE_STORE_RESULT result = ADUC_StateStore_Initialize(TEST_STATE_FILE);
         CHECK(result == ADUC_STATE_STORE_RESULT_OK);
 
         void* handle = (void*)reinterpret_cast<void*>(0x12345678);
@@ -26,6 +26,6 @@ TEST_CASE("communication handle")
         const void* readHandle = ADUC_StateStore_GetCommunicationChannelHandle("session_1");
         CHECK(readHandle == handle);
 
-        ADUC_StateStore_Deinitialize(TEST_STATE_FILE);
+        ADUC_StateStore_Deinitialize();
     }
 }
