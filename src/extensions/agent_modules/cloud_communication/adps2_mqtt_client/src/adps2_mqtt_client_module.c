@@ -312,6 +312,11 @@ bool ProcessDeviceRegistrationResponse(
             Log_Error("Failed to set deviceId");
             errorOccurred = true;
         }
+        else if (ADUC_StateStore_SetExternalDeviceId(deviceId) != ADUC_STATE_STORE_RESULT_OK)
+        {
+            Log_Error("Failed to set externalDeviceID");
+            errorOccurred = true;
+        }
         const char* mqttBrokerHostname =
             json_object_dotget_string(json_object(root_value), "registrationState.assignedEndpoint.hostName");
         if (mqttBrokerHostname == NULL)

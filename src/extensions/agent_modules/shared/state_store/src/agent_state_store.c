@@ -32,6 +32,7 @@ static bool isInitialized = false;
 #define STATE_FIELD_NAME_IS_DEVICE_ENROLLED "isDeviceEnrolled"
 #define STATE_FIELD_NAME_IS_AGENT_INFO_REPORTED "isAgentInfoReported"
 #define STATE_FIELD_NAME_IS_DEVICE_REGISTERED "isDeviceRegistered"
+#define STATE_FIELD_NAME_DU_SERVICE_INSTANCE "duServiceInstance"
 
 // Semaphore for process synchronization
 static sem_t state_semaphore;
@@ -42,6 +43,7 @@ typedef struct
     char* deviceId;
     char* externalDeviceId;
     char* mqttBrokerHostname;
+    char* deviceUpdateServiceInstance;
     bool isDeviceRegistered;
     bool isDeviceEnrolled;
     bool isAgentInfoReported;
@@ -125,6 +127,8 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_Initialize(const char* state_file_path)
     state.externalDeviceId = SafeStrdup(json_object_get_string(state_data_obj, STATE_FIELD_NAME_EXTERNAL_DEVICE_ID));
     state.mqttBrokerHostname =
         SafeStrdup(json_object_get_string(state_data_obj, STATE_FIELD_NAME_MQTT_BROKER_HOSTNAME));
+    state.deviceUpdateServiceInstance =
+        SafeStrdup(json_object_get_string(state_data_obj, STATE_FIELD_NAME_DU_SERVICE_INSTANCE));
     state.deviceId = SafeStrdup(json_object_get_string(state_data_obj, STATE_FIELD_NAME_DEVICE_ID));
     state.isDeviceEnrolled = json_object_get_boolean(state_data_obj, STATE_FIELD_NAME_IS_DEVICE_ENROLLED);
     state.isAgentInfoReported = json_object_get_boolean(state_data_obj, STATE_FIELD_NAME_IS_AGENT_INFO_REPORTED);
@@ -260,6 +264,7 @@ void ADUC_StateStore_Deinitialize()
     json_object_set_boolean(root_object, STATE_FIELD_NAME_IS_DEVICE_ENROLLED, state.isDeviceEnrolled);
     json_object_set_boolean(root_object, STATE_FIELD_NAME_IS_AGENT_INFO_REPORTED, state.isAgentInfoReported);
     json_object_set_boolean(root_object, STATE_FIELD_NAME_IS_DEVICE_REGISTERED, state.isDeviceRegistered);
+    json_object_set_string(root_object, STATE_FIELD_NAME_DU_SERVICE_INSTANCE, state.deviceUpdateServiceInstance);
 
     json_serialize_to_file(durable_state_data, state.stateFilePath);
 
@@ -472,6 +477,31 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetDeviceId(const char* deviceId)
     sem_wait(&state_semaphore);
     free(state.deviceId);
     state.deviceId = SafeStrdup(deviceId);
+    sem_post(&state_semaphore);
+    return ADUC_STATE_STORE_RESULT_OK;
+}
+
+/**
+ * @brief Get the DU service instance name from the state store.
+ */
+const char* ADUC_StateStore_GetDeviceUpdateServiceInstance(void)
+{
+    sem_wait(&state_semaphore);
+    const char* value = state.deviceUpdateServiceInstance;
+    sem_post(&state_semaphore);
+    return value;
+}
+
+/**
+ * @brief Set the DU service instance name in the state store.
+ * @param instanceName The value to set.
+ * @return ADUC_STATE_STORE_RESULT_OK on success, ADUC_STATE_STORE_RESULT_ERROR on failure.
+ */
+ADUC_STATE_STORE_RESULT ADUC_StateStore_SetDeviceUpdateServiceInstance(const char* instanceName)
+{
+    sem_wait(&state_semaphore);
+    free(state.deviceUpdateServiceInstance);
+    state.deviceUpdateServiceInstance = SafeStrdup(instanceName);
     sem_post(&state_semaphore);
     return ADUC_STATE_STORE_RESULT_OK;
 }

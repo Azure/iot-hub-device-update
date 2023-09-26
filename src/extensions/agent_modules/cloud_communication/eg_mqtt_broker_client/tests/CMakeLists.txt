@@ -25,5 +25,6 @@ target_link_libraries (
     PUBLIC aduc::agent_state_store
     PRIVATE aduc::config_utils
             aduc::microsoft_du_mqttbroker_client;
+            aduc::microsoft_adps2_mqtt_client;
             aduc::parser_utils
             aduc::system_utils)

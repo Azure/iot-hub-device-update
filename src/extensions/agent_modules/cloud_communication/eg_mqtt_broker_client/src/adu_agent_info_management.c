@@ -7,7 +7,6 @@
  */
 
 #include "aduc/adu_agent_info_management_internal.h"
-// #include "aduc/adu_enrollment_management.h"
 #include "aduc/adu_mosquitto_utils.h"
 #include "aduc/adu_mqtt_protocol.h"
 #include "aduc/adu_types.h"
@@ -496,7 +495,7 @@ void OnMessage_ainfo_resp(
                     goto done;
                 }
 
-                const char* externalDeviceId = GetDeviceIdHelper();
+                const char* externalDeviceId = ADUC_StateStore_GetExternalDeviceId();
                 s_agentInfoMgrState.subscribeTopic =
                     ADUC_StringFormat(SUBSCRIBE_TOPIC_TEMPLATE_ADU_OTO_WITH_DU_INSTANCE, externalDeviceId, duInstance);
 
@@ -508,10 +507,10 @@ void OnMessage_ainfo_resp(
                 }
             }
 
-            s_agentInfoMgrState.workflowState = ADUC_AGENT_INFO_WORKFLOW_STATE_SUBSCRIBING;
+            ADUC_StateStore_GetCommunicationChannelHandle(
+                &s_agentInfoMgrState.publishTopic, &s_agentInfoMgrState.publishTopic);
 
-            s_agentInfoMgrState.subscribeTopic = ADUC_StringFormat(, GetDeviceIdHelper(), ADUC_ADU_TYPES_H);
-            if (s_agentInfoMgrState.subscribeTopic == NULL)
+            if (ADUC_MQTT_Subscribe(s_agentInfoMgrState.subscribeTopic, OnMessage_ainfo_resp))
 
                 // TODO: subscribe to response topic.
                 // if (s_agentInfoMgrState.subscribeTopic, OnMessage_ainfo_resp))
@@ -550,7 +549,7 @@ void OnMessage_ainfo_resp(
     bool ADUC_Agent_Info_Management_DoWork()
     {
         time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
-        if (!ADUC_Enrollment_Management_IsEnrolled())
+        if (!ADUC_StateStore_GetIsDeviceEnrolled())
         {
             if (nowTime > s_agentInfoMgrState.ainfo_req_NextAttemptTime)
             {
