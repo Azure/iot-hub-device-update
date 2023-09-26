@@ -643,16 +643,37 @@ done:
  * @param handle agent module handle
  * @param dataType data type
  * @param key data key/name
- * @param buffer return buffer (call must free the memory of the return value once done with it)
+ * @param data return buffer
  * @param size return size of the return value
  * @return int 0 on success
 */
-int IoTHubClientModule_GetData(ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, const char* key, void** buffer, int* size)
+int IoTHubClientModule_GetData(ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int* size)
 {
     IGNORED_PARAMETER(handle);
     IGNORED_PARAMETER(dataType);
     IGNORED_PARAMETER(key);
-    IGNORED_PARAMETER(buffer);
+    IGNORED_PARAMETER(data);
+    IGNORED_PARAMETER(size);
+    int ret = 0;
+    return ret;
+}
+
+/**
+ * @brief Set the Data object for the specified key.
+ *
+ * @param handle agent module handle
+ * @param dataType data type
+ * @param key data key/name
+ * @param data data buffer
+ * @param size size of the data buffer
+ */
+int IoTHubClientModule_SetData(
+    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size)
+{
+    IGNORED_PARAMETER(handle);
+    IGNORED_PARAMETER(dataType);
+    IGNORED_PARAMETER(key);
+    IGNORED_PARAMETER(data);
     IGNORED_PARAMETER(size);
     int ret = 0;
     return ret;
@@ -667,4 +688,5 @@ ADUC_AGENT_MODULE_INTERFACE IoTHubClientModuleInterface = {
     IoTHubClientModule_Initialize,
     IoTHubClientModule_Deinitialize,
     IoTHubClientModule_GetData,
+    IoTHubClientModule_SetData
 };

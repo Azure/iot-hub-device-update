@@ -74,6 +74,7 @@ target_link_aziotsharedutil (${target_name} PRIVATE)
 target_link_libraries (
     ${target_name}
     PRIVATE aziotsharedutil
+            aduc::agent_state_store
             aduc::c_utils
             aduc::config_utils
             aduc::extension_utils
@@ -81,7 +82,8 @@ target_link_libraries (
             aduc::permission_utils
             aduc::shutdown_service
             aduc::system_utils
-            aduc::iothub_client_module)
+            aduc::microsoft_adps2_mqtt_client
+            aduc::microsoft_du_mqttbroker_client)
 
 if (NOT WIN32)
     target_link_libraries (${target_name} PRIVATE aduc::command_helper)
@@ -127,6 +129,7 @@ target_compile_definitions (
             ADUC_FILE_USER="${ADUC_FILE_USER}"
             ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_INSTALLEDCRITERIA_FILE_PATH}"
             ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
+            ADUC_STATE_STORE_FILE_PATH="${ADUC_STATE_STORE_FILE_PATH}"
             DO_FILE_GROUP="${DO_FILE_GROUP}"
             DO_FILE_USER="${DO_FILE_USER}"
             SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}")

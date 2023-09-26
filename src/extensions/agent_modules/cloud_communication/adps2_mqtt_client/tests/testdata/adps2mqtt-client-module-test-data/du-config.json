@@ -1,0 +1,69 @@
+{
+    "schemaVersion": "2.0",
+    "aduShellTrustedUsers": [
+      "adu"
+    ],
+    "manufacturer": "contoso",
+    "model": "espresso-v1",
+    "agents": [
+      {
+        "name": "main",
+        "runas": "adu",
+        "connectionSource": {
+          "connectionType": "ADPS2/MQTT",
+          "connectionData": {
+              "dps": {
+                "globalDeviceEndpoint" : "global.azure-devices-provisioning.net",
+                "idScope" : "[id-scope]",
+                "registrationId" : "[device-id]",
+                "apiVersion" : "2023-02-01-preview",
+                "tcpPort" : 8883,
+                "useTLS": true,
+                "mqttVersion" : 4,
+                "cleanSession" : false,
+                "keepAliveInSeconds" : 3600,
+                "clientId" : "[device-id]",
+                "certFile" : "/[cert-path]/[device-id].cer",
+                "keyFile" : "/[cert-path]/[device-id].key",
+                "qos": 1
+            },
+            "mqttBroker" : {
+                "hostname" : "[eg-mqtt-broker-name-hostname]",
+                "tcpPort" : 8883,
+                "useTLS": true,
+                "mqttVersion" : 5,
+                "cleanSession" : false,
+                "keepAliveInSeconds" : 3600,
+                "username" : "[device-id]",
+                "clientId" : "[device-id]",
+                "certFile" : "/[cert-path]/[device-id].cer",
+                "keyFile" : "/[cert-path]/[device-id].key",
+                "qos": 1
+            }
+          }
+        },
+        "manufacturer": "contoso",
+        "model": "espresso-v1",
+        "operationSettings" : {
+          "deviceRegistrationRequest" : {
+              "intervalSec" : 3600,
+              "retryStrategy" : [
+                  {
+                      "resultRange" : {
+                          "min" : 0,
+                          "max" : 1
+                      },
+                      "params" : {
+                          "maxRetries" : 10,
+                          "maxDelaySec" : 36000,
+                          "fallbackWaitTimeSec" : 3600,
+                          "initialDelayUnitMS" :3600000,
+                          "maxJitterPercentage" : 9
+                      }
+                  }
+              ]
+          }
+        }
+      }
+    ]
+  }

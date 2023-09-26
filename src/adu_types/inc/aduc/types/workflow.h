@@ -86,6 +86,12 @@ typedef bool (*ADUC_ReportStateAndResultAsyncCallback)(
     const ADUC_Result* result,
     const char* installedUpdateId);
 
+typedef enum tagADUC_CommunicationChannelType
+{
+    ADUC_CommunicationChannelType_IoTHubPnP = 0, /**< IoTHub communication channel. */
+    ADUC_CommunicationChannelType_MQTTBroker = 1, /**< MQTT Broker communication channel. */
+} ADUC_CommunicationChannelType;
+
 /**
  * @brief Data shared across the agent workflow.
  */
@@ -185,6 +191,7 @@ typedef struct tagADUC_WorkflowData
      *
      */
     JSON_Array* Results;
+    ADUC_CommunicationChannelType CommunicationChannel; /**< True if the workflow is for IoTHub. */
 
 } ADUC_WorkflowData;
 

@@ -42,6 +42,7 @@ adu_log_dir=""
 default_log_dir=/var/log/adu
 output_directory=$root_dir/out
 build_unittests=false
+result_code_generation=true
 declare -a static_analysis_tools=()
 log_lib="zlog"
 install_prefix=/usr/local
@@ -232,6 +233,9 @@ while [[ $1 != "" ]]; do
     -u | --build-unit-tests)
         build_unittests=true
         ;;
+    -u | --skip-result-code-gen)
+        result_code_generation=false
+        ;;
     --build-packages)
         build_packages=true
         ;;
@@ -411,6 +415,7 @@ fi
 CMAKE_OPTIONS=(
     "-DADUC_BUILD_DOCUMENTATION:BOOL=$build_documentation"
     "-DADUC_BUILD_UNIT_TESTS:BOOL=$build_unittests"
+    "-DADUC_RESULT_CODE_GENERATION:BOOL=$result_code_generation"
     "-DADUC_BUILD_PACKAGES:BOOL=$build_packages"
     "-DADUC_STEP_HANDLERS:STRING=$step_handlers"
     "-DADUC_LOG_FOLDER:STRING=$adu_log_dir"

@@ -22,6 +22,7 @@ target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils aduc::adu_types
     PRIVATE aduc::adu_types IotHubClient::iothub_client iothub_client_mqtt_transport umqtt uhttp
+            libaducpal
             aduc::logging)
 
 if (WIN32)

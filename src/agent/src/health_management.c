@@ -83,6 +83,8 @@ bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs, const ADUC_Co
         goto done;
     }
 
+#ifdef ENABLE_CONNECTION_INFO_HEALTH_CHECK
+    // TODO (nox-msft) - update the connection info check for Gen2
     const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(config, 0);
     if (agent == NULL)
     {
@@ -101,6 +103,7 @@ bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs, const ADUC_Co
     {
         Log_Error("The connection type %s is not supported", agent->connectionType);
     }
+#endif
 
 done:
     ADUC_ConnectionInfo_DeAlloc(&info);

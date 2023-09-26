@@ -10,13 +10,13 @@
 
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
+#include <aducpal/time.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <azure_c_shared_utility/strings.h>
 #include <math.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
 
 #include <aducpal/dirent.h>
 #include <aducpal/sys_stat.h>

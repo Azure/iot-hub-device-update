@@ -22,6 +22,7 @@ target_link_libraries (
             aduc::communication_abstraction
             aduc::config_utils
             aduc::c_utils
+            aduc::d2c_messaging
             aduc::eis_utils
             aduc::https_proxy_utils
             aduc::logging
