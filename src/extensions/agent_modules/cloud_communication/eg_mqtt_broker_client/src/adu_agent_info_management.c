@@ -55,7 +55,7 @@ static ADUC_AGENT_INFO_MANAGEMENT_STATE* StateFromModule()
     }
     memset(state, 0, sizeof(*state));
 
-    ADUC_AGENT_MODULE_INTERFACE* agentInfoModuleInterface = malloc(sizeof(*state));
+    ADUC_AGENT_MODULE_INTERFACE* agentInfoModuleInterface = malloc(sizeof(*agentInfoModuleInterface));
     if (agentInfoModuleInterface == NULL)
     {
         Log_Error("Failed to allocate memory for the agent info management module interface.");
