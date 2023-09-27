@@ -26,20 +26,6 @@ typedef struct ADUC_AGENT_CONTRACT_INFO_TAG
     const char* contractInfo;
 } ADUC_AGENT_CONTRACT_INFO;
 
-/**
- * @brief The module data types
- *
- */
-typedef enum ADUC_MODULE_DATA_TYPE_TAG
-{
-    ADUC_ModuleDataType_None = 0, /**< No module data*/
-    ADUC_ModuleDataType_String = 1, /**< String data */
-    ADUC_ModuleDataType_Json = 2, /**< JSON string data */
-    ADUC_ModuleDataType_Int64 = 3, /**< 64-bit integer data */
-    ADUC_ModuleDataType_Boolean = 4, /**< Boolean data */
-    ADUC_ModuleDataType_Binary = 5, /**< Binary data */
-} ADUC_MODULE_DATA_TYPE;
-
 typedef const ADUC_AGENT_CONTRACT_INFO* (*ADUC_AGENT_MODULE_GET_CONTRACT_INFO)(ADUC_AGENT_MODULE_HANDLE);
 typedef int (*ADUC_AGENT_MODULE_DO_WORK)(ADUC_AGENT_MODULE_HANDLE);
 typedef int (*ADUC_AGENT_MODULE_INITIALIZE)(ADUC_AGENT_MODULE_HANDLE, void*);
