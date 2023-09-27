@@ -10,7 +10,7 @@
 
 # This file should be included in an archive that is created at provisioning time
 # with the following structure:
-#       setup.sh (this file)
+#       x509_vm_setup.sh (this file)
 #       deviceupdate-package.deb (debian package under test)
 #       <other-supporting-files>
 # where the archive is named:
@@ -19,12 +19,12 @@
 #       ~/testsetup.tar.gz
 # Once the script has been extracted we'll be running from
 # ~ while the script itself is at
-#       ~/testsetup/setup.sh
+#       ~/testsetup/x509_vm_setup.sh
 # So we need to localize the path to that.
 #
 
 print_help() {
-    echo "Usage: setup.sh [OPTIONS]"
+    echo "Usage: x509_vm_setup.sh [OPTIONS]"
     echo "Options:"
     echo "  -d, --distro       Distribution and version (e.g. ubuntu-18.04, debian-10)"
     echo "  -a, --architecture Architecture (e.g. amd64, arm64)"
@@ -107,6 +107,23 @@ function configure_apt_repository() {
         echo "Unsupported distro or version"
         exit 1
     fi
+}
+
+#
+# Installs the certificates and private keys into /etc/prov_info
+#
+function install_certs_and_keys() {
+    if [ -d "/etc/prov_info" ]; then
+        sudo rm -rf /etc/prov_info
+    fi
+
+    sudo mkdir /etc/prov_info
+
+    sudo cp ./testsetup/*-primary.pem /etc/prov_info/
+    sudo cp ./testsetup/*-secondary.pem /etc/prov_info/
+
+    sudo cp ./testsetup/*-primary-key.pem /etc/prov_info/
+    sudo cp ./testsetup/*-secondary-key.pem /etc/prov_info/
 }
 
 #
@@ -270,6 +287,11 @@ function test_shutdown_service() {
 }
 
 configure_apt_repository "$distro" "$architecture"
+
+#
+# This MUST be run before we configure ais since AIS requires the keys and certs to be in their normal location
+#
+install_certs_and_keys
 
 install_and_configure_ais
 #
