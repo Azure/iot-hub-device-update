@@ -42,7 +42,6 @@ install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
-openssl_dir_path="/usr/local/lib/deviceupdate-openssl"
 
 print_help() {
     echo "Usage: build.sh [options...]"
@@ -302,10 +301,6 @@ while [[ $1 != "" ]]; do
         fi
         cmake_dir_path=$1
         ;;
-    --openssl-path)
-        shift
-        openssl_dir_path=$1
-        ;;
     --major-version)
         shift
         major_version=$1
@@ -377,12 +372,6 @@ else
 fi
 echo ''
 
-# Check if the directory exists
-if [ ! -d "$openssl_dir_path" ]; then
-    echo "OpenSSL directory not. Please run install-deps.sh with the OpenSSL installation option."
-    exit 1
-fi
-
 CMAKE_OPTIONS=(
     "-DADUC_BUILD_DOCUMENTATION:BOOL=$build_documentation"
     "-DADUC_BUILD_UNIT_TESTS:BOOL=$build_unittests"
@@ -397,7 +386,6 @@ CMAKE_OPTIONS=(
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
     "-DCMAKE_INSTALL_PREFIX=$install_prefix"
-    "-DOPENSSL_ROOT_DIR=$openssl_dir_path"
 )
 
 if [[ $major_version != "" ]]; then

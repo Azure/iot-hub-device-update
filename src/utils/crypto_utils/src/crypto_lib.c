@@ -205,6 +205,7 @@ bool IsValidSignature(
  */
 CryptoKeyHandle RSAKey_ObjFromBytes(uint8_t* N, size_t N_len, uint8_t* e, size_t e_len)
 {
+#if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
     int status = 0;
     EVP_PKEY* result = NULL;
     EVP_PKEY_CTX* ctx = NULL;
@@ -321,6 +322,61 @@ done:
     }
 
     return CryptoKeyHandleToEVP_PKEY(result);
+#else
+    EVP_PKEY* result = NULL;
+
+    BIGNUM* rsa_N = NULL;
+    BIGNUM* rsa_e = NULL;
+
+    RSA* rsa = RSA_new();
+
+    if (rsa == NULL)
+    {
+        goto done;
+    }
+
+    rsa_N = BN_bin2bn(N, N_len, NULL);
+
+    if (rsa_N == NULL)
+    {
+        goto done;
+    }
+
+    rsa_e = BN_bin2bn(e, e_len, NULL);
+
+    if (rsa_e == NULL)
+    {
+        goto done;
+    }
+
+    if (RSA_set0_key(rsa, rsa_N, rsa_e, NULL) == 0)
+    {
+        goto done;
+    }
+
+    EVP_PKEY* pkey = EVP_PKEY_new();
+
+    if (pkey == NULL)
+    {
+        goto done;
+    }
+
+    if (EVP_PKEY_assign_RSA(pkey, rsa) == 0)
+    {
+        goto done;
+    }
+
+    result = pkey;
+done:
+
+    if (result == NULL)
+    {
+        BN_free(rsa_N);
+        BN_free(rsa_e);
+    }
+
+    return CryptoKeyHandleToEVP_PKEY(result);
+#endif
 }
 
 /**
@@ -331,6 +387,7 @@ done:
  */
 CryptoKeyHandle RSAKey_ObjFromStrings(const char* N, const char* e)
 {
+#if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
     int status = 0;
     EVP_PKEY* result = NULL;
     EVP_PKEY_CTX* ctx = NULL;
@@ -444,6 +501,63 @@ done:
     }
 
     return CryptoKeyHandleToEVP_PKEY(result);
+#else
+    EVP_PKEY* result = NULL;
+    EVP_PKEY* pkey = NULL;
+    BIGNUM* M = NULL;
+    BIGNUM* E = NULL;
+
+    RSA* rsa = RSA_new();
+    if (rsa == NULL)
+    {
+        goto done;
+    }
+
+    M = BN_new();
+    if (M == NULL)
+    {
+        goto done;
+    }
+
+    E = BN_new();
+    if (E == NULL)
+    {
+        goto done;
+    }
+
+    if (BN_hex2bn(&M, N) == 0)
+    {
+        goto done;
+    }
+
+    if (BN_hex2bn(&E, e) == 0)
+    {
+        goto done;
+    }
+
+    if (RSA_set0_key(rsa, M, E, NULL) == 0)
+    {
+        goto done;
+    }
+
+    pkey = EVP_PKEY_new();
+    if (EVP_PKEY_assign_RSA(pkey, rsa) == 0)
+    {
+        goto done;
+    }
+
+    result = pkey;
+
+done:
+    if (result == NULL)
+    {
+        BN_free(M);
+        BN_free(E);
+        EVP_PKEY_free(pkey);
+    }
+
+    return CryptoKeyHandleToEVP_PKEY(result);
+#endif
 }
 
 /**

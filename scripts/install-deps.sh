@@ -66,9 +66,6 @@ cmake_prefix="$work_folder"
 cmake_installer_dir=""
 cmake_dir_symlink="/tmp/deviceupdate-cmake"
 
-openssl_dir_path="/usr/local/lib/deviceupdate-openssl"
-openssl_version="3.1.2"
-
 install_shellcheck=false
 supported_shellcheck_version='0.8.0'
 
@@ -146,8 +143,6 @@ print_help() {
     echo ""
     echo "--use-ssh                 Use ssh URLs to clone instead of https URLs."
     echo ""
-    echo "--openssl-dir-path        Specific path to install OpenSSL 1.1"
-    echo ""
     echo "--list-deps               List the states of the dependencies."
     echo "-h, --help                Show this help message."
     echo ""
@@ -168,53 +163,6 @@ do_install_githooks() {
         echo "Unable to symlink pre-commit. exit code: $?"
         $ret 1
     fi
-}
-
-do_install_openssl() {
-    local openssl_dir="$work_folder/openss$openssl_version"
-
-    if [[ -d $openssl_dir ]]; then
-        $SUDO rm -rf "$openssl_dir" || return
-    fi
-
-    echo "Installing OpenSSL ..."
-
-    $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
-    wget https://www.openssl.org/source/openssl-${openssl_version}.tar.gz || return
-    mkdir -p $openssl_dir || return
-    tar -xf openssl-${openssl_version}.tar.gz -C $openssl_dir --strip-components=1 || return
-    pushd $openssl_dir > /dev/null || return
-    ./config --prefix="$openssl_dir_path" --openssldir="$openssl_dir_path" shared zlib || return
-    make || return
-
-    $SUDO make install || return
-    export LD_LIBRARY_PATH="$openssl_dir_path/lib:$openssl_dir_path/lib64:$LD_LIBRARY_PATH" || return
-    echo "OpenSSL has been installed in $openssl_dir_path"
-
-    popd > /dev/null || return
-
-    echo "Creating legacy lib/libcrypto.so and lib/libssl.so symlink for backward compatibility"
-
-    $SUDO mkdir $openssl_dir_path/lib || return
-
-    # Create the symlinks for libcrypto
-    $SUDO ln -sf $openssl_dir_path/lib64/libcrypto.so.3 $openssl_dir_path/lib/libcrypto.so || return
-    $SUDO ln -sf $openssl_dir_path/lib64/libcrypto.so.3 $openssl_dir_path/lib/libcrypto.so.3 || return
-
-    # Create the symlinks for libssl
-    $SUDO ln -sf $openssl_dir_path/lib64/libssl.so.3 $openssl_dir_path/lib/libssl.so || return
-    $SUDO ln -sf $openssl_dir_path/lib64/libssl.so.3 $openssl_dir_path/lib/libssl.so.3 || return
-
-    # Create the symlinks for the packages
-    $SUDO ln -sf $openssl_dir_path/lib64/libcrypto.so.3 /usr/lib/libcrypto.so.3 || return
-    $SUDO ln -sf $openssl_dir_path/lib64/libssl.so.3 /usr/lib/libssl.so.3 || return
-
-    echo "Adding OpenSSL to ldconfig's configuration"
-    $SUDO ldconfig $openssl_dir_path/lib64/ || return
-    $SUDO ldconfig $openssl_dir_path/lib/ || return
-
-    $SUDO rm -r $openssl_dir || return
-    $SUDO rm openssl-${openssl_version}.tar.gz || return
 }
 
 do_install_aduc_packages() {
@@ -252,13 +200,6 @@ do_install_aduc_packages() {
 
     # Note that clang-tidy requires clang to be installed so that it can find clang headers.
     $SUDO apt-get install --yes "${static_analysis_packages[@]}" || return
-
-    # Check if the directory exists
-    if [ -d "$openssl_dir_path" ]; then
-        $SUDO rm -rf $openssl_dir_path || return
-    fi
-
-    do_install_openssl || $ret
 }
 
 do_install_azure_iot_sdk() {
@@ -294,8 +235,6 @@ do_install_azure_iot_sdk() {
         "-Dbuild_service_client:BOOL=OFF"
         "-Dbuild_provisioning_service_client:BOOL=OFF"
         "-Duse_prov_client:BOOL=OFF"
-        "-DOPENSSL_ROOT_DIR=$openssl_dir_path"
-        "-DOPENSSL_VERSION=$openssl_version"
     )
 
     if [[ $keep_source_code == "true" ]]; then
@@ -535,7 +474,6 @@ do_install_do() {
     local do_cmake_options=(
         "-DDO_BUILD_TESTS:BOOL=OFF"
         "-DDO_INCLUDE_SDK=ON"
-        "-DOPENSSL_ROOT_DIR=$openssl_dir_path"
     )
 
     if [[ $keep_source_code == "true" ]]; then
@@ -577,8 +515,7 @@ do_install_azure_storage_sdk() {
 
     git checkout tags/$azure_storage_sdk_tag_ref
 
-    local azure_storage_sdk_cmake_options=("-DOPENSSL_ROOT_DIR=$openssl_dir_path"
-        "-DOPENSSL_VERSION=$openssl_version")
+    local azure_storage_sdk_cmake_options=""
 
     if [[ $keep_source_code == "true" ]]; then
         # If source is wanted, presumably samples and symbols are useful as well.
@@ -913,10 +850,6 @@ while [[ $1 != "" ]]; do
         ;;
     --use-ssh)
         use_ssh=true
-        ;;
-    --openssl-dir-path)
-        shift
-        openssl_dir_path=$1
         ;;
     --list-deps)
         do_list_all_deps
