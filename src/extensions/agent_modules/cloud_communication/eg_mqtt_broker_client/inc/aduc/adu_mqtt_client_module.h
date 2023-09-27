@@ -53,16 +53,7 @@ ADUC_AGENT_MODULE_HANDLE ADUC_MQTT_Client_Module_Create();
  */
 void ADUC_MQTT_Client_Module_Destroy(ADUC_AGENT_MODULE_HANDLE handle);
 
-/**
- * @brief Sets the MQTT broker endpoint.
- */
-int ADUC_MQTT_CLIENT_MODULE_SetMQTTBrokerEndpoint(ADUC_AGENT_MODULE_HANDLE* handle, const char* mqttBrokerEndpoint);
 
-/**
- * @brief Free resources allocated for the module state.
- * @param state The module state to free.
- */
-void ADUC_MQTT_CLIENT_MODULE_STATE_Free(ADUC_MQTT_CLIENT_MODULE_STATE* state);
 
 EXTERN_C_END
 

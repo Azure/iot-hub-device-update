@@ -73,29 +73,4 @@ int ADPS_MQTT_Client_Module_Deinitialize(ADUC_AGENT_MODULE_HANDLE module);
  */
 int ADPS_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
 
-/**
- * @brief Get the Data object for the specified key.
- *
- * @param handle agent module handle
- * @param dataType data type
- * @param key data key/name
- * @param data output data
- * @param size return size of the return value
- * @return int 0 on success
-*/
-int ADPS_MQTT_Client_Module_GetData(
-    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int* size);
-
-/**
- * @brief Set the Data object for the specified key.
- *
- * @param handle agent module handle
- * @param dataType data type
- * @param key data key/name
- * @param data data buffer
- * @package size size of the data buffer
- */
-int ADPS_MQTT_Client_Module_SetData(
-    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size);
-
 #endif // __ADPS2_MQTT_CLIENT_MODULE_H__

@@ -98,49 +98,6 @@ int DeviceUpdateWorkflowModule_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
 }
 
 /**
- * @brief Get the Data object for the specified key.
- *
- * @param handle agent module handle
- * @param dataType data type
- * @param key data key/name
- * @param data return buffer
- * @param size return size of the return value
- * @return int 0 on success
-*/
-int DeviceUpdateWorkflowModule_GetData(ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int* size)
-{
-    IGNORED_PARAMETER(handle);
-    IGNORED_PARAMETER(dataType);
-    IGNORED_PARAMETER(key);
-    IGNORED_PARAMETER(data);
-    IGNORED_PARAMETER(size);
-    int ret = 0;
-    return ret;
-}
-
-/**
- * @brief Set the Data object for the specified key.
- *
- * @param handle agent module handle
- * @param dataType data type
- * @param key data key/name
- * @param data data buffer
- * @param size size of the data buffer
- */
-int DeviceUpdateWorkflowModule_SetData(
-    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size)
-{
-    IGNORED_PARAMETER(handle);
-    IGNORED_PARAMETER(dataType);
-    IGNORED_PARAMETER(key);
-    IGNORED_PARAMETER(data);
-    IGNORED_PARAMETER(size);
-    int ret = 0;
-    return ret;
-}
-
-
-/**
  * @brief Create a Device Update Agent Module for IoT Hub PnP Client.
  *
  * @return ADUC_AGENT_MODULE_HANDLE The handle to the module.
@@ -166,14 +123,11 @@ ADUC_AGENT_MODULE_HANDLE DeviceUpdateWorkflowModule_Create()
 
     workflowData->CommunicationChannel = ADUC_CommunicationChannelType_MQTTBroker;
     interface->moduleData = workflowData;
-    interface->create = DeviceUpdateWorkflowModule_Create;
     interface->destroy = DeviceUpdateWorkflowModule_Destroy;
     interface->getContractInfo = DeviceUpdateWorkflowModule_GetContractInfo;
     interface->doWork = DeviceUpdateWorkflowModule_DoWork;
     interface->initializeModule = DeviceUpdateWorkflowModule_Initialize;
     interface->deinitializeModule = DeviceUpdateWorkflowModule_Deinitialize;
-    interface->getData = DeviceUpdateWorkflowModule_GetData;
-    interface->setData = DeviceUpdateWorkflowModule_SetData;
 
     handle = (ADUC_AGENT_MODULE_HANDLE)interface;
 

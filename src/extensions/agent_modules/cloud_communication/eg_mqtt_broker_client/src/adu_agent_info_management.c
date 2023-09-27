@@ -98,35 +98,6 @@ void ADUC_Agent_Info_Management_Deinitialize(ADUC_AGENT_MODULE_HANDLE agentInfoM
 {
 }
 
-/**
- * @brief Get the agent info data.
- */
-int ADUC_Agent_Info_Management_GetData(
-    ADUC_AGENT_MODULE_HANDLE agentInfoModule, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int* size)
-{
-    IGNORED_PARAMETER(agentInfoModule);
-    IGNORED_PARAMETER(dataType);
-    IGNORED_PARAMETER(key);
-    IGNORED_PARAMETER(data);
-    IGNORED_PARAMETER(size);
-
-    return -1;
-}
-
-/**
- * @brief Set the agent info data.
- */
-int ADUC_Agent_Info_Management_SetData(
-    ADUC_AGENT_MODULE_HANDLE agentInfoModule, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size)
-{
-    IGNORED_PARAMETER(agentInfoModule);
-    IGNORED_PARAMETER(dataType);
-    IGNORED_PARAMETER(key);
-    IGNORED_PARAMETER(data);
-    IGNORED_PARAMETER(size);
-    return -1;
-}
-
 static ADUC_AGENT_INFO_MANAGEMENT_STATE s_agentInfoMgrState = { 0 };
 
 #define AGENT_INFO_FIELD_NAME_AIV "aiv"

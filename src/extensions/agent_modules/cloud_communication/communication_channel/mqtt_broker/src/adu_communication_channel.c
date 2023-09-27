@@ -45,10 +45,6 @@ const ADUC_AGENT_CONTRACT_INFO* ADUC_Communication_Channel_GetContractInfo(ADUC_
 int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* moduleInitData);
 int ADUC_Communication_Channel_Deinitialize(ADUC_AGENT_MODULE_HANDLE handle);
 int ADUC_Communication_Channel_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
-int ADUC_Communication_Channel_GetData(
-    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int dataCount, void* data, int* dataCopied);
-int ADUC_Communication_Channel_SetData(
-    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size);
 
 static time_t ADUC_SetCommunicationChannelState(
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState, ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE state);
@@ -157,9 +153,7 @@ ADUC_AGENT_MODULE_HANDLE ADUC_Communication_Channel_Create()
     interface->initializeModule = ADUC_Communication_Channel_Initialize;
     interface->deinitializeModule = ADUC_Communication_Channel_Deinitialize;
     interface->doWork = ADUC_Communication_Channel_DoWork;
-    interface->getData = ADUC_Communication_Channel_GetData;
-    interface->setData = ADUC_Communication_Channel_SetData;
-
+    interface->getContractInfo = ADUC_Communication_Channel_GetContractInfo;
 done:
     if (interface == NULL)
     {
@@ -182,29 +176,6 @@ void ADUC_Communication_Channel_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
     ADU_MQTT_COMMUNICATION_MGR_STATE* state = (ADU_MQTT_COMMUNICATION_MGR_STATE*)interface->moduleData;
     free(state);
     free(interface);
-}
-
-int ADUC_Communication_Channel_GetData(
-    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int* size)
-{
-    IGNORED_PARAMETER(handle);
-    IGNORED_PARAMETER(dataType);
-    IGNORED_PARAMETER(key);
-    IGNORED_PARAMETER(data);
-    IGNORED_PARAMETER(size);
-    int ret = 0;
-    return ret;
-}
-
-int ADUC_Communication_Channel_SetData(
-    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size)
-{
-    IGNORED_PARAMETER(handle);
-    IGNORED_PARAMETER(dataType);
-    IGNORED_PARAMETER(key);
-    IGNORED_PARAMETER(data);
-    IGNORED_PARAMETER(size);
-    return 0;
 }
 
 /* Callback called when the broker has received the DISCONNECT command and has disconnected the
