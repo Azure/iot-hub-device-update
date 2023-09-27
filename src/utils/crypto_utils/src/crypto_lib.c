@@ -13,7 +13,11 @@
 #include <ctype.h>
 #include <openssl/bn.h>
 #include <openssl/evp.h>
-#include <openssl/param_build.h>
+
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#    include <openssl/param_build.h>
+#endif
+
 #include <openssl/rsa.h>
 #include <stdio.h>
 #include <string.h>
