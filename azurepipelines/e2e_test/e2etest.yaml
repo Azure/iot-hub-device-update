@@ -270,6 +270,7 @@ stages:
                           ./testsetup/sas_vm_setup.sh --distro ubuntu-22.04 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
                       device_id_under_test: "ubuntu-22.04-amd64-sas"
+                      provisioning_type: "sas"
           - job: SetupUbuntu2204_ARM64_VM
             displayName: "Setting up VM for Ubuntu 22.04 ARM64 Test VM"
             timeoutInMinutes: 360
@@ -292,6 +293,7 @@ stages:
                           ./testsetup/sas_vm_setup.sh --distro ubuntu-22.04 --architecture arm64
                       image_working_directory: $(E2E_WORKING_DIR)
                       device_id_under_test: "ubuntu-22.04-arm64-sas"
+                      provisioning_type: "sas"
           - job: SetupDebian10_AMD64_VM
             displayName: "Setting up VM for Debain 10 AMD64 Test VM"
             timeoutInMinutes: 360
@@ -373,26 +375,26 @@ stages:
                   parameters:
                       distroName: ubuntu-20.04-arm64
                       device_id_under_test: "ubuntu-20.04-arm64-sas"
-          # - job: RunUbuntu_2204_Amd64VmE2ETests
-          #   displayName: "Running E2E Tests against Ubuntu 22.04 AMD64"
-          #   timeoutInMinutes: 360
-          #   cancelTimeoutInMinutes: 360
-          #   pool: aduc_1es_client_pool
-          #   steps:
-          #       - template: ./templates/e2e_test_run.yaml
-          #         parameters:
-          #             distroName: ubuntu-22.04-amd64
-          #             device_id_under_test: "ubuntu-22.04-amd64-sas"
-          # - job: RunUbuntu_2204_Arm64VmE2ETests
-            # displayName: "Running E2E Tests against Ubuntu 22.04 ARM64"
-            # timeoutInMinutes: 360
-            # cancelTimeoutInMinutes: 360
-            # pool: aduc_1es_client_pool
-            # steps:
-            #     - template: ./templates/e2e_test_run.yaml
-            #       parameters:
-            #           distroName: ubuntu-22.04-arm64
-            #           device_id_under_test: "ubuntu-22.04-arm64-sas"
+          - job: RunUbuntu_2204_Amd64VmE2ETests
+            displayName: "Running E2E Tests against Ubuntu 22.04 AMD64"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_test_run.yaml
+                  parameters:
+                      distroName: ubuntu-22.04-amd64
+                      device_id_under_test: "ubuntu-22.04-amd64-sas"
+          - job: RunUbuntu_2204_Arm64VmE2ETests
+            displayName: "Running E2E Tests against Ubuntu 22.04 ARM64"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_test_run.yaml
+                  parameters:
+                      distroName: ubuntu-22.04-arm64
+                      device_id_under_test: "ubuntu-22.04-arm64-sas"
           - job: RunDebian_10_Amd64VmE2ETests
             displayName: "Running E2E Tests against Debian 10 AMD64"
             timeoutInMinutes: 360
@@ -464,26 +466,26 @@ stages:
                   parameters:
                       device_id_under_test: ubuntu-20.04-arm64-sas
                       terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-          # - job: DeleteUbuntu_2204_Amd64Vms
-          #   displayName: "Deletes the VM for Ubuntu 22.04 AMD64"
-          #   timeoutInMinutes: 360
-          #   cancelTimeoutInMinutes: 360
-          #   pool: aduc_1es_client_pool
-          #   steps:
-          #       - template: ./templates/e2e_test_vm_cleanup.yaml
-          #         parameters:
-          #             device_id_under_test: ubuntu-22.04-amd64-sas
-          #             terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-          # - job: DeleteUbuntu_2204_Arm64Vms
-            # displayName: "Deletes the VM for Ubuntu 22.04 ARM64"
-            # timeoutInMinutes: 360
-            # cancelTimeoutInMinutes: 360
-            # pool: aduc_1es_client_pool
-            # steps:
-            #     - template: ./templates/e2e_test_vm_cleanup.yaml
-            #       parameters:
-            #           device_id_under_test: ubuntu-22.04-arm64-sas
-            #           terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
+          - job: DeleteUbuntu_2204_Amd64Vms
+            displayName: "Deletes the VM for Ubuntu 22.04 AMD64"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_test_vm_cleanup.yaml
+                  parameters:
+                      device_id_under_test: ubuntu-22.04-amd64-sas
+                      terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
+          - job: DeleteUbuntu_2204_Arm64Vms
+            displayName: "Deletes the VM for Ubuntu 22.04 ARM64"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_test_vm_cleanup.yaml
+                  parameters:
+                      device_id_under_test: ubuntu-22.04-arm64-sas
+                      terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
           - job: DeleteDebian_10_Amd64Vms
             displayName: "Deletes the VM for Debian 10 AMD64"
             timeoutInMinutes: 360
