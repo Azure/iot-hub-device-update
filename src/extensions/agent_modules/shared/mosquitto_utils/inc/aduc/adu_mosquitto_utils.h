@@ -12,6 +12,16 @@
 #include <mosquitto.h>
 
 /**
+ * @brief The length of a correlation ID. (including null terminator)
+ */
+#define CORRELATION_ID_LENGTH 37
+
+/**
+ * @brief The length of a correlation ID without hyphens. (including null terminator)
+ */
+#define CORRELATION_ID_LENGTH_WITHOUT_HYPHENS 33
+
+/**
  * @brief Enumeration representing MQTT disconnection categories.
  */
 typedef enum ADUC_MQTT_DISCONNECTION_CATEGORY_TAG
@@ -125,5 +135,15 @@ bool ADU_mosquitto_has_user_property(const mosquitto_property* props, const char
  * @return `true` if the correlation data matches the provided correlation ID; otherwise, `false`.
  */
 bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* correlationId);
+
+/**
+ * @brief Generate a GUID  7d28dcd5-175c-46ed-b3bb-a557d278da56
+ *
+ * @param with_hyphens Whether to include hyphens in the GUID.
+ * @param buffer Where to store identifier.
+ * @param buffer_cch Number of characters in @p buffer.
+ *
+ */
+bool ADUC_generate_correlation_id(bool with_hyphens, char* buffer, size_t buffer_cch);
 
 #endif
