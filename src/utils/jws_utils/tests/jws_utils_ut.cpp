@@ -24,10 +24,9 @@ bool CheckRSA_Key(
     CryptoKeyHandle key, BUFFER_HANDLE byteEBuff, const size_t e_len, BUFFER_HANDLE byteNBuff, const size_t N_len)
 {
     bool success = false;
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
     BIGNUM* key_N = nullptr;
     BIGNUM* key_e = nullptr;
-
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
 
     if (EVP_PKEY_get_bn_param(static_cast<EVP_PKEY*>(key), "n", &key_N) != 1)
     {
@@ -40,6 +39,8 @@ bool CheckRSA_Key(
     }
 
 #else
+    const BIGNUM* key_N = nullptr;
+    const BIGNUM* key_e = nullptr;
     RSA* rsa_key = EVP_PKEY_get0_RSA(static_cast<EVP_PKEY*>(key));
 
     if (rsa_key == nullptr)
@@ -89,8 +90,8 @@ bool CheckRSA_Key(
     }
 
     success = true;
-
 done:
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
     if (key_N != nullptr)
     {
         BN_free(key_N);
@@ -100,6 +101,8 @@ done:
     {
         BN_free(key_e);
     }
+#endif
+
     return success;
 }
 
