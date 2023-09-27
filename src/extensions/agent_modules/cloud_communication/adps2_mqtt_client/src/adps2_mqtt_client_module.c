@@ -94,10 +94,6 @@ const ADUC_AGENT_CONTRACT_INFO* ADPS_MQTT_Client_Module_GetContractInfo(ADUC_AGE
 int ADPS_MQTT_Client_Module_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* moduleInitData);
 int ADPS_MQTT_Client_Module_Deinitialize(ADUC_AGENT_MODULE_HANDLE handle);
 int ADPS_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
-int ADPS_MQTT_Client_Module_GetData(
-    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int dataCount, void* data, int* dataCopied);
-int ADPS_MQTT_Client_Module_SetData(
-    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size);
 
 static ADPS_MQTT_CLIENT_MODULE_STATE* ModuleStateFromModuleHandle(ADUC_AGENT_MODULE_HANDLE handle)
 {
@@ -133,14 +129,11 @@ ADUC_AGENT_MODULE_HANDLE ADPS_MQTT_Client_Module_Create()
     }
     memset(moduleInterface, 0, sizeof(ADUC_AGENT_MODULE_INTERFACE));
     moduleInterface->moduleData = moduleState;
-    moduleInterface->create = ADPS_MQTT_Client_Module_Create;
     moduleInterface->destroy = ADPS_MQTT_Client_Module_Destroy;
     moduleInterface->getContractInfo = ADPS_MQTT_Client_Module_GetContractInfo;
     moduleInterface->doWork = ADPS_MQTT_Client_Module_DoWork;
     moduleInterface->initializeModule = ADPS_MQTT_Client_Module_Initialize;
     moduleInterface->deinitializeModule = ADPS_MQTT_Client_Module_Deinitialize;
-    moduleInterface->getData = ADPS_MQTT_Client_Module_GetData;
-    moduleInterface->setData = ADPS_MQTT_Client_Module_SetData;
 
     handle = moduleInterface;
 
@@ -708,47 +701,4 @@ int ADPS_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
     }
 
     return 0;
-}
-
-/**
- * @brief Get the Data object for the specified key.
- *
- * @param handle agent module handle
- * @param dataType data type
- * @param key data key/name
- * @param data return data
- * @param size return size of the return value
- * @return int 0 on success
-*/
-int ADPS_MQTT_Client_Module_GetData(
-    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int* size)
-{
-    IGNORED_PARAMETER(handle);
-    IGNORED_PARAMETER(dataType);
-    IGNORED_PARAMETER(key);
-    IGNORED_PARAMETER(data);
-    IGNORED_PARAMETER(size);
-    int ret = 0;
-    return ret;
-}
-
-/**
- * @brief Set the Data object for the specified key.
- *
- * @param handle agent module handle
- * @param dataType data type
- * @param key data key/name
- * @param data data buffer
- * @package size size of the data buffer
- */
-int ADPS_MQTT_Client_Module_SetData(
-    ADUC_AGENT_MODULE_HANDLE handle, ADUC_MODULE_DATA_TYPE dataType, int key, void* data, int size)
-{
-    IGNORED_PARAMETER(handle);
-    IGNORED_PARAMETER(dataType);
-    IGNORED_PARAMETER(key);
-    IGNORED_PARAMETER(data);
-    IGNORED_PARAMETER(size);
-    int ret = 0;
-    return ret;
 }
