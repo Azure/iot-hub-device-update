@@ -31,12 +31,12 @@ bool CheckRSA_Key(
 
     if (EVP_PKEY_get_bn_param(static_cast<EVP_PKEY*>(key), "n", &key_N) != 1)
     {
-        goto done;
+        return false;
     }
 
     if (EVP_PKEY_get_bn_param(static_cast<EVP_PKEY*>(key), "e", &key_e) != 1)
     {
-        goto done;
+        return false;
     }
 
 #else
@@ -44,14 +44,14 @@ bool CheckRSA_Key(
 
     if (rsa_key == nullptr)
     {
-        goto done;
+        return false;
     }
 
     RSA_get0_key(rsa_key, &key_N, &key_e, nullptr);
 
     if (key_N == nullptr || key_e == nullptr)
     {
-        goto done;
+        return false;
     }
 
 #endif
@@ -60,18 +60,19 @@ bool CheckRSA_Key(
 
     int key_e_size = BN_num_bytes(key_e);
 
+    std::unique_ptr<uint8_t> key_N_bytes{ new uint8_t[key_N_size] };
+    std::unique_ptr<uint8_t> key_e_bytes{ new uint8_t[key_e_size] };
+
     if (key_N_size != N_len)
     {
-        goto done;
+        return false;
     }
 
     if (key_e_size != e_len)
     {
-        goto done;
+        return false;
     }
 
-    std::unique_ptr<uint8_t> key_N_bytes{ new uint8_t[key_N_size] };
-    std::unique_ptr<uint8_t> key_e_bytes{ new uint8_t[key_e_size] };
     BN_bn2bin(key_N, key_N_bytes.get());
     BN_bn2bin(key_e, key_e_bytes.get());
 
