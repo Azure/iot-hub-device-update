@@ -17,6 +17,7 @@
 
 EXTERN_C_BEGIN
 
+ADUC_Result RootKeyPackage_ParseIsTest(JSON_Object* protectedPropertiesObj, ADUC_RootKeyPackage* outPackage);
 ADUC_Result RootKeyPackage_ParseVersion(JSON_Object* protectedPropertiesObj, ADUC_RootKeyPackage* outPackage);
 ADUC_Result RootKeyPackage_ParsePublished(JSON_Object* protectedPropertiesObj, ADUC_RootKeyPackage* outPackage);
 ADUC_Result RootKeyPackage_ParseDisabledRootKeys(JSON_Object* protectedPropertiesObj, ADUC_RootKeyPackage* outPackage);
