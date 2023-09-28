@@ -46,7 +46,6 @@ print_help() {
     echo " *********************** THIS CAN BRICK YOUR SSH CONNECTION TO A REMOTE MACHINE ***********************"
     echo "-h, --help                Show this help message."
     echo ""
-    echo "Example: ${BASH_SOURCE[0]} --install-all-deps --work-folder ~/adu-linux-client-deps --keep-source-code"
 }
 
 do_install_openssl() {
