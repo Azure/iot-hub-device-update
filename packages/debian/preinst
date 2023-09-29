@@ -86,22 +86,6 @@ check_pre_ppr_agent_installed_or_unpurged () {
     fi
 }
 
-check_openssl_version(){
-
-    if ! ldconfig -p | grep -q libssl.so.3 || ! ldconfig -p | grep -q libcrypto.so.3 ; then
-        echo "Error: OpenSSL 3.0 is not availble to the linker." >&2
-        echo "Please use the install-openssl.sh script available in the iot-hub-device-update repo to make OpenSSL 3.0 available on this machine" >&2
-        exit 1
-    fi
-
-    # Note: this is only needed because DO and ADU are not yet using the same version of OpenSSL
-    if ! ldconfig -p | grep -q libssl.so.1.1 || ! ldconfig -p | grep -q libcrypto.so.1.1 ; then
-        echo "Error: OpenSSL 1.1.0 is not availble to the linker." >&2
-        echo "Please use the install-openssl.sh script available in the iot-hub-device-update repo to make OpenSSL 1.1.0 available on this machine" >&2
-        exit 1
-    fi
-}
-
 add_adu_user_and_group() {
     echo "Create the 'adu' group."
     if ! getent group "$adu_group" > /dev/null; then
@@ -136,7 +120,6 @@ case "$1" in
         # Disallow upgrade for non-purged pre-PPR agent.
         check_pre_ppr_agent_installed_or_unpurged
 
-        check_openssl_version
         # Try to add user during 'preinst install' step.
         # If fail, the 'adu' user and group will be removed at 'postrm abort-install' task.
         add_adu_user_and_group
