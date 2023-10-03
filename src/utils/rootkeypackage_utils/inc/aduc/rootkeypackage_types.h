@@ -77,6 +77,7 @@ typedef struct tagADUC_RootKey
  */
 typedef struct tagADUC_RootKeyPackage_ProtectedProperties
 {
+    bool isTest; /**< Whether the rootkey package is a test package. */
     unsigned long version; /**< The monotonic increasing version of the package. */
     time_t publishedTime; /**< The unix time of the root key. */
     VECTOR_HANDLE disabledRootKeys; /**< handle to vector of STRING_HANDLE KIDS(KeyIds) of disabled root keys. */

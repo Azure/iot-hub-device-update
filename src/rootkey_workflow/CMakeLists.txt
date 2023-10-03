@@ -24,6 +24,13 @@ target_compile_definitions (
             ADUC_DOWNLOADS_FOLDER="${ADUC_DOWNLOADS_FOLDER}"
             ADUC_ROOTKEY_PKG_URL_OVERRIDE="${ADUC_ROOTKEY_PKG_URL_OVERRIDE}")
 
+include(CMakePrintHelpers)
+cmake_print_variables(ADUC_ENABLE_E2E_TESTING)
+if (ADUC_ENABLE_E2E_TESTING)
+    cmake_print_variables(ADUC_ENABLE_E2E_TESTING)
+    target_compile_definitions (${target_name} PRIVATE ADUC_E2E_TESTING_ENABLED="true")
+endif ()
+
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils

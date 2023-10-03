@@ -37,6 +37,7 @@ adu_log_dir=""
 default_log_dir=/var/log/adu
 output_directory=$root_dir/out
 build_unittests=false
+enable_e2e_testing=false
 declare -a static_analysis_tools=()
 log_lib="zlog"
 install_prefix=/usr/local
@@ -51,6 +52,7 @@ print_help() {
     echo "                                      Options: Release Debug RelWithDebInfo MinSizeRel"
     echo "-d, --build-docs                      Builds the documentation."
     echo "-u, --build-unit-tests                Builds unit tests."
+    echo "--enable-e2e-testing                  Enables settings for the E2E test pipelines."
     echo "--build-packages                      Builds and packages the client in various package formats e.g debian."
     echo "-o, --out-dir <out_dir>               Sets the build output directory. Default is out."
     echo "-s, --static-analysis <tools...>      Runs static analysis as part of the build."
@@ -226,6 +228,9 @@ while [[ $1 != "" ]]; do
     -u | --build-unit-tests)
         build_unittests=true
         ;;
+    --enable-e2e-testing)
+        enable_e2e_testing=true
+        ;;
     --build-packages)
         build_packages=true
         ;;
@@ -364,6 +369,7 @@ bullet "Log directory: $adu_log_dir"
 bullet "Logging library: $log_lib"
 bullet "Output directory: $output_directory"
 bullet "Build unit tests: $build_unittests"
+bullet "Enable E2E testing: $enable_e2e_testing"
 bullet "Build packages: $build_packages"
 bullet "CMake: $cmake_bin"
 bullet "CMake version: $(${cmake_bin} --version | grep version | awk '{ print $3 }')"
@@ -382,6 +388,7 @@ CMAKE_OPTIONS=(
     "-DADUC_BUILD_UNIT_TESTS:BOOL=$build_unittests"
     "-DADUC_BUILD_PACKAGES:BOOL=$build_packages"
     "-DADUC_STEP_HANDLERS:STRING=$step_handlers"
+    "-DADUC_ENABLE_E2E_TESTING=$enable_e2e_testing"
     "-DADUC_LOG_FOLDER:STRING=$adu_log_dir"
     "-DADUC_LOGGING_LIBRARY:STRING=$log_lib"
     "-DADUC_PLATFORM_LAYER:STRING=$platform_layer"

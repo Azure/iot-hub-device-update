@@ -6,6 +6,9 @@
         "protected": {
             "type": "object",
             "properties": {
+                "isTest": {
+                    "type": "boolean"
+                },
                 "version": {
                     "type": "number"
                 },

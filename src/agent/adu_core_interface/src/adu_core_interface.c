@@ -325,10 +325,11 @@ void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext)
  * @param propertyValue The json value to use for reporting.
  * @param deploymentState The final deployment state to report.
  * @param workflowData The workflow data to receive the last reported state upon reporting success.
+ * @param result The result to be reported.
  * @return true on reporting success.
  */
 static bool ReportPreDeploymentProcessingState(
-    JSON_Value* propertyValue, ADUCITF_State deploymentState, ADUC_WorkflowData* workflowData)
+    JSON_Value* propertyValue, ADUCITF_State deploymentState, ADUC_WorkflowData* workflowData, ADUC_Result result)
 {
     JSON_Value* propertyValueCopy = NULL;
     bool reportingSuccess = false;
@@ -358,7 +359,7 @@ static bool ReportPreDeploymentProcessingState(
     }
 
     reportingSuccess = AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-        (ADUC_WorkflowDataToken)&tmpWorkflowData, deploymentState, NULL /* result */, NULL /* installedUpdateId */);
+        (ADUC_WorkflowDataToken)&tmpWorkflowData, deploymentState, &result, NULL /* installedUpdateId */);
     if (!reportingSuccess)
     {
         goto done;
@@ -443,7 +444,8 @@ void OrchestratorUpdateCallback(
     {
         Log_Debug("Processing deployment %s ...", workflowId);
 
-        if (!ReportPreDeploymentProcessingState(propertyValue, ADUCITF_State_DeploymentInProgress, workflowData))
+        ADUC_Result inProgressResult = { .ResultCode = ADUC_GeneralResult_Success, .ExtendedResultCode = 0 };
+        if (!ReportPreDeploymentProcessingState(propertyValue, ADUCITF_State_DeploymentInProgress, workflowData, inProgressResult))
         {
             Log_Warn("Reporting InProgress failed. Continuing processing deployment %s", workflowId);
         }
@@ -454,7 +456,7 @@ void OrchestratorUpdateCallback(
         {
             Log_Error("Update Rootkey failed, 0x%08x. Deployment cannot proceed.", tmpResult.ExtendedResultCode);
 
-            if (!ReportPreDeploymentProcessingState(propertyValue, ADUCITF_State_Failed, workflowData))
+            if (!ReportPreDeploymentProcessingState(propertyValue, ADUCITF_State_Failed, workflowData, tmpResult))
             {
                 Log_Warn("FAIL: report rootkey update 'Failed' State.");
             }
