@@ -243,6 +243,7 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         //
 
         // verify "version" and "published"
+        CHECK(pkg.protectedProperties.isTest == true);
         CHECK(pkg.protectedProperties.version == 2);
         CHECK(pkg.protectedProperties.publishedTime == 1667343602);
 
@@ -383,5 +384,7 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         ADUC_RootKeyPackage pkg{};
         ADUC_Result result = ADUC_RootKeyPackageUtils_Parse(rootkey_pkg_json.c_str(), &pkg);
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+
+        CHECK_FALSE(pkg.protectedProperties.isTest);
     }
 }

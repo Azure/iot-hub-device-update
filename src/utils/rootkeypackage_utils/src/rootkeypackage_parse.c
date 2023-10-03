@@ -100,6 +100,43 @@ void ADUC_RootKeyPackage_Signature_DeInit(ADUC_RootKeyPackage_Signature* node)
 }
 
 /**
+ * @brief Parses the isTest protected property in accordance with rootkeypackage.schema.json
+ *
+ * @param protectedPropertiesObj The root JSON object.
+ * @param[out] outPackage The root key package object to write parsed version data.
+ *
+ * @return The result.
+ */
+ADUC_Result RootKeyPackage_ParseIsTest(JSON_Object* protectedPropertiesObj, ADUC_RootKeyPackage* outPackage)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    int isTestValue = 0;
+
+    if (protectedPropertiesObj == NULL || outPackage == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
+        goto done;
+    }
+
+    isTestValue = json_object_get_boolean(protectedPropertiesObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_ISTEST);
+    if (isTestValue == -1)
+    {
+        isTestValue = 0; // assume non-test if missing
+    }
+
+    (outPackage->protectedProperties).isTest = (bool)isTestValue;
+    result.ResultCode = ADUC_GeneralResult_Success;
+done:
+
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error("ERC %d parsing '" ADUC_ROOTKEY_PACKAGE_PROPERTY_ISTEST "' property.", result.ResultCode);
+    }
+
+    return result;
+}
+
+/**
  * @brief Parses the version protected property in accordance with rootkeypackage.schema.json
  *
  * @param protectedPropertiesObj The root JSON object.
@@ -751,6 +788,12 @@ ADUC_Result RootKeyPackage_ParseProtectedProperties(JSON_Object* rootObj, ADUC_R
     if (protectedPropertiesObj == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_PROTECTED;
+        goto done;
+    }
+
+    result = RootKeyPackage_ParseIsTest(protectedPropertiesObj, outPackage);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
         goto done;
     }
 

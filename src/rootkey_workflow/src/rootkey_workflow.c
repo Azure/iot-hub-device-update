@@ -101,6 +101,20 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
         goto done;
     }
 
+#ifdef ADUC_E2E_TESTING_ENABLED
+    if (!rootKeyPackage.protectedProperties.isTest)
+    {
+        result.ExtendedResultCode = ADUC_ERC_ROOTKEY_PROD_PKG_ON_TEST_AGENT;
+        goto done;
+    }
+#else
+    if (rootKeyPackage.protectedProperties.isTest)
+    {
+        result.ExtendedResultCode = ADUC_ERC_ROOTKEY_TEST_PKG_ON_PROD_AGENT;
+        goto done;
+    }
+#endif
+
     if (!ADUC_SystemUtils_Exists(ADUC_ROOTKEY_STORE_PATH))
     {
         if (ADUC_SystemUtils_MkDirRecursiveDefault(ADUC_ROOTKEY_STORE_PATH) != 0)

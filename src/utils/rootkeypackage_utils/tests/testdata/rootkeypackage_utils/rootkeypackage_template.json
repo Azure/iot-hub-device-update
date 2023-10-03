@@ -1,5 +1,6 @@
 {
     "protected": {
+        "isTest": true,
         "version": 2,
         "published": 1667343602,
         "disabledRootKeys": ["rootkey1", "rootkey2"],

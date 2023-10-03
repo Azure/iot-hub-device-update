@@ -1297,6 +1297,14 @@
                             "value": 5
                         },
                         {
+                            "name": "ADUC_ERC_ROOTKEY_PROD_PKG_ON_TEST_AGENT",
+                            "value": 6
+                        },
+                        {
+                            "name": "ADUC_ERC_ROOTKEY_TEST_PKG_ON_PROD_AGENT",
+                            "value": 7
+                        },
+                        {
                             "name": "ADUC_ERC_ROOTKEY_PKG_UNCHANGED",
                             "value": 4095
                         }
