@@ -119,20 +119,6 @@ function install_and_configure_ais() {
     sudo aziotctl check
 }
 
-function install_openssl() {
-    local distro_full=$1
-    local distro
-    distro=$(echo "$distro_full" | cut -d'-' -f1)
-    local version
-    version=$(echo "$distro_full" | cut -d'-' -f2)
-
-    if [ "$distro" == "ubuntu" ]; then
-        if [ "$version" == "22.04" ]; then
-            sh ~/adu_srcs/tools/openssl_install_script/install-openssl.sh --openssl-version "1.1.1w"
-        fi
-    fi
-}
-
 #
 # Install Device Update Dependencies from APT
 #
@@ -298,7 +284,6 @@ configure_apt_repository "$distro" "$architecture"
 
 install_and_configure_ais
 
-install_openssl "$distro"
 #
 # Install the Device Update Artifact Under Test
 #

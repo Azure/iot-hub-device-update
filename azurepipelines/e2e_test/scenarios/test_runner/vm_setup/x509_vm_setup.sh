@@ -127,23 +127,6 @@ function install_certs_and_keys() {
 }
 
 #
-# Install legacy OpenSSL if needed on the system
-#
-function install_openssl() {
-    local distro_full=$1
-    local distro
-    distro=$(echo "$distro_full" | cut -d'-' -f1)
-    local version
-    version=$(echo "$distro_full" | cut -d'-' -f2)
-
-    if [ "$distro" == "ubuntu" ]; then
-        if [ "$version" == "22.04" ]; then
-            sh ~/adu_srcs/tools/openssl_install_script/install-openssl.sh --openssl-version "1.1.1w"
-        fi
-    fi
-}
-
-#
 # Installs and Configures AIS with the pre-generated config.toml
 #
 function install_and_configure_ais() {
@@ -322,7 +305,6 @@ install_certs_and_keys
 
 install_and_configure_ais
 
-install_openssl "$distro"
 #
 # Install the Device Update Artifact Under Test
 #

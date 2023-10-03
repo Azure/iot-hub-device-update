@@ -3,10 +3,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-# install-deps.sh makes it more convenient to install
-# dependencies for ADU Agent and Delivery Optimization.
-# Some dependencies are installed via packages and
-# others are installed from source code.
+# install-openssl.sh makes it more convenient to install openssl or for customers to upgrade
 
 # Ensure that getopt starts from first option if ". <script.sh>" was used.
 OPTIND=1
@@ -88,9 +85,6 @@ do_install_openssl() {
         error "Only installations of 1.1 and 3.x are supported"
         $ret 1
     fi
-
-    ## if the openssl version is 3.1 it's
-    echo "Creating legacy lib/libcrypto.so and lib/libssl.so symlink for backward compatibility"
 
     if [[ ! -d "$openssl_dir_path/lib" ]]; then
         # Handle missing /lib/ directory
