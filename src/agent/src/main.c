@@ -340,6 +340,8 @@ done:
 int main(int argc, char** argv)
 {
     ADUC_LaunchArguments launchArgs;
+    ADUC_AGENT_MODULE_HANDLE duClientModuleHandle = NULL;
+    ADUC_AGENT_MODULE_HANDLE dpsClientModuleHandle = NULL;
     ADUC_AGENT_MODULE_INTERFACE* dpsClientModuleInterface = NULL;
     ADUC_AGENT_MODULE_INTERFACE* duClientModuleInterface = NULL;
 
@@ -507,7 +509,8 @@ int main(int argc, char** argv)
 
     // Initialize the agent modules.
     // TODO (nox-msft) - replace with Agent Module manager code, once changed all modules to shared library.
-    dpsClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)ADPS_MQTT_Client_Module_Create();
+    dpsClientModuleHandle = ADPS_MQTT_Client_Module_Create();
+    dpsClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)dpsClientModuleHandle;
     if (dpsClientModuleInterface == NULL)
     {
         Log_Error("ADPS_MQTT_Client_Module_Create failed.");
@@ -515,14 +518,16 @@ int main(int argc, char** argv)
         goto done;
     }
 
-    ret = dpsClientModuleInterface->initializeModule(dpsClientModuleInterface->moduleData, NULL);
+
+    ret = dpsClientModuleInterface->initializeModule(dpsClientModuleHandle, NULL);
     if (ret != 0)
     {
         Log_Error("ADPS_MQTT_Client_Module_Initialize failed.");
         goto done;
     }
 
-    duClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)ADUC_MQTT_Client_Module_Create();
+    duClientModuleHandle = ADUC_MQTT_Client_Module_Create();
+    duClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)duClientModuleHandle;
     if (duClientModuleInterface == NULL)
     {
         Log_Error("ADU_MQTT_Client_Module_Create failed.");
@@ -530,7 +535,7 @@ int main(int argc, char** argv)
         goto done;
     }
 
-    ret = duClientModuleInterface->initializeModule(duClientModuleInterface->moduleData, NULL);
+    ret = duClientModuleInterface->initializeModule(duClientModuleInterface, NULL);
     if (ret != 0)
     {
         Log_Error("ADU_MQTT_Client_Module_Initialize failed.");
@@ -544,8 +549,8 @@ int main(int argc, char** argv)
     Log_Info("Agent running.");
     while (ADUC_ShutdownService_ShouldKeepRunning())
     {
-        dpsClientModuleInterface->doWork(dpsClientModuleInterface->moduleData);
-        duClientModuleInterface->doWork(duClientModuleInterface->moduleData);
+        dpsClientModuleInterface->doWork(dpsClientModuleHandle);
+        duClientModuleInterface->doWork(duClientModuleHandle);
 
         // Sleep for a bit to avoid busy-waiting.
         ThreadAPI_Sleep(100);
@@ -558,15 +563,15 @@ done:
 
     if (dpsClientModuleInterface != NULL)
     {
-        dpsClientModuleInterface->deinitializeModule(dpsClientModuleInterface->moduleData);
-        dpsClientModuleInterface->destroy(dpsClientModuleInterface->moduleData);
+        dpsClientModuleInterface->deinitializeModule(dpsClientModuleHandle);
+        dpsClientModuleInterface->destroy(dpsClientModuleHandle);
         dpsClientModuleInterface = NULL;
     }
 
     if (duClientModuleInterface != NULL)
     {
-        duClientModuleInterface->deinitializeModule(duClientModuleInterface->moduleData);
-        duClientModuleInterface->destroy(duClientModuleInterface->moduleData);
+        duClientModuleInterface->deinitializeModule(duClientModuleHandle);
+        duClientModuleInterface->destroy(duClientModuleHandle);
         duClientModuleInterface = NULL;
     }
 

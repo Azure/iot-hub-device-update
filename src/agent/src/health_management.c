@@ -618,11 +618,13 @@ bool HealthCheck(const ADUC_LaunchArguments* launchArgs)
         goto done;
     }
 
+#ifdef ADU_GEN_1
     if (!IsConnectionInfoValid(launchArgs, config))
     {
         Log_Error("Invalid connection info.");
         goto done;
     }
+#endif
 
     if (!AreDirAndFilePermissionsValid())
     {
