@@ -1,0 +1,30 @@
+{
+    version = "1.0.2-2";
+    raspberrypi3 = {
+        hardware-compatibility: ["1.0"];
+        stable = {
+            copy1 : {
+                images: (
+                    {
+                        filename = "<<file>>";
+                        sha256 = "<<hash>>";
+                        type = "raw";
+                        compressed = "gzip";
+                        device = "/dev/mmcblk0p2";
+                    }
+                );
+            };
+            copy2 : {
+                images: (
+                    {
+                        filename = "<<file>>";
+                        sha256 = "<<hash>>";
+                        type = "raw";
+                        compressed = "gzip";
+                        device = "/dev/mmcblk0p3";
+                    }
+                );
+            };
+        }
+    }
+}

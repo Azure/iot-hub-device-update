@@ -1,0 +1,42 @@
+export DIST_NAME=adu-image
+export DIST_VERSION=0.1.0
+
+# rpi-imager json generator settings
+export RPI_IMAGER_NAME="${DIST_NAME}"
+export RPI_IMAGER_DESCRIPTION="A Raspberry Pi distro built with CustomPiOS"
+export RPI_IMAGER_WEBSITE="https://github.com/guysoft/CustomPiOS"
+export RPI_IMAGER_ICON="https://raw.githubusercontent.com/guysoft/CustomPiOS/devel/media/rpi-imager-CustomPiOS.png"
+
+export MODULES="base(network,adu-image)"
+
+# Base distro information
+export BASE_DISTRO=ubuntu
+export BASE_ARCH=arm64
+
+# Add user
+# *** IMPORTANT *** change user and password before distributing the image.
+export BASE_ADD_USER=yes
+export BASE_USER=pi
+export BASE_USER_PASSWORD=adupi
+
+export BASE_IMAGE_ENLARGEROOT=2000
+
+# Don't resize root
+export BUILD_OPTION_DONOT_RESIZEROOT=yes
+
+# Explicitly specify the image path here
+export BASE_ZIP_IMG=${DIST_PATH}/image/ubuntu-20.04.5-preinstalled-server-arm64+raspi.img.xz
+
+# Create 2nd rootfs partition (for dual-copy update strategy)
+export BUILD_OPTION_DUAL_ROOTFS=yes
+
+# Create a persistent data partition for ADU configurations and data.
+export BUILD_OPTION_CREATE_DATA_PARTITION=yes
+export BUILD_OPTION_CREATE_DATA_PARTITION_SIZE_BYTES=2147483648
+export BUILD_OPTION_CREATE_DATA_PARTITION_FSTYPE=ext4
+
+# Create a root part for the Device Update configuration and data overlay folders.
+export ADU_OVERLAY_PATH=adu.o
+
+# Mount using actual bytes offset instead of calculating from block/sector size.
+export BUILD_OPTION_MOUNT_UNIT=bytes
