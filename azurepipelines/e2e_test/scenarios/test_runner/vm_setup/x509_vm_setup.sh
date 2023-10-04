@@ -167,6 +167,12 @@ function install_do() {
         elif [ "$version" == "20.04" ] && [ "$architecture" == "arm64" ]; then
             package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_arm64-packages.tar"
             package_filename="ubuntu20_arm64-packages.tar"
+        elif [ "$version" == "22.04" ] && [ "$architecture" == "amd64" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/ubuntu2204_x64-packages.tar"
+            package_filename="ubuntu2204_x64-packages.tar"
+        elif [ "$version" == "22.04" ] && [ "$architecture" == "arm64" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/ubuntu2204_arm64-packages.tar"
+            package_filename="ubuntu2204_arm64-packages.tar"
         fi
     elif [ "$distro" == "debian" ] && [ "$version" == "10" ] && [ "$architecture" == "amd64" ]; then
         package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/debian10_x64-packages.tar"
@@ -183,10 +189,12 @@ function install_do() {
     fi
 }
 
-function register_extensions() {
+function extract_adu_srcs() {
     mkdir ~/adu_srcs/
 
     tar -xf ./testsetup/adu_srcs_repo.tar.gz -C ~/adu_srcs/
+}
+function register_extensions() {
 
     sudo mkdir -p ~/demo/demo-devices/contoso-devices
 
@@ -286,6 +294,8 @@ function test_shutdown_service() {
     done
 }
 
+extract_adu_srcs
+
 configure_apt_repository "$distro" "$architecture"
 
 #
@@ -294,6 +304,7 @@ configure_apt_repository "$distro" "$architecture"
 install_certs_and_keys
 
 install_and_configure_ais
+
 #
 # Install the Device Update Artifact Under Test
 #

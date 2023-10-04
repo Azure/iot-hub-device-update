@@ -10,20 +10,14 @@ disablertti ()
 set (sources main.cpp file_info_utils_ut.cpp)
 
 find_package (Catch2 REQUIRED)
-find_package (OpenSSL REQUIRED)
 
 add_executable (${PROJECT_NAME} ${sources})
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (
-    ${PROJECT_NAME}
-    PRIVATE aduc::jws_utils
-            aduc::crypto_utils
-            aduc::string_utils
-            diagnostic_utils::file_info_utils
-            Catch2::Catch2
-            OpenSSL::Crypto)
+    ${PROJECT_NAME} PRIVATE aduc::jws_utils aduc::crypto_utils aduc::string_utils
+                            diagnostic_utils::file_info_utils Catch2::Catch2)
 
 include (CTest)
 include (Catch)
