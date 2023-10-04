@@ -66,8 +66,6 @@ cmake_prefix="$work_folder"
 cmake_installer_dir=""
 cmake_dir_symlink="/tmp/deviceupdate-cmake"
 
-openssl_dir_path="/usr/local/lib/deviceupdate-openssl"
-
 install_shellcheck=false
 supported_shellcheck_version='0.8.0'
 
@@ -145,8 +143,6 @@ print_help() {
     echo ""
     echo "--use-ssh                 Use ssh URLs to clone instead of https URLs."
     echo ""
-    echo "--openssl-dir-path        Specific path to install OpenSSL 1.1"
-    echo ""
     echo "--list-deps               List the states of the dependencies."
     echo "-h, --help                Show this help message."
     echo ""
@@ -167,25 +163,6 @@ do_install_githooks() {
         echo "Unable to symlink pre-commit. exit code: $?"
         $ret 1
     fi
-}
-
-do_install_openssl() {
-    local openssl_dir=$work_folder/openssl-1.1.1u
-    echo "Installing OpenSSL ..."
-
-    $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
-    wget https://www.openssl.org/source/openssl-1.1.1u.tar.gz || return
-    mkdir -p $openssl_dir || return
-    tar -xf openssl-1.1.1u.tar.gz -C $openssl_dir --strip-components=1 || return
-    pushd $openssl_dir > /dev/null || return
-    ./config --prefix="$openssl_dir_path" --openssldir="$openssl_dir_path" shared zlib || return
-    make || return
-
-    $SUDO make install || return
-    export LD_LIBRARY_PATH="$openssl_dir_path/lib:$LD_LIBRARY_PATH" || return
-    echo "OpenSSL has been installed in $openssl_dir_path"
-
-    popd > /dev/null || return
 }
 
 do_install_aduc_packages() {
@@ -223,12 +200,6 @@ do_install_aduc_packages() {
 
     # Note that clang-tidy requires clang to be installed so that it can find clang headers.
     $SUDO apt-get install --yes "${static_analysis_packages[@]}" || return
-
-    # Check if the directory exists
-    if [ ! -d "$openssl_dir_path" ]; then
-        echo "OpenSSL directory not found. Invoking installation..."
-        do_install_openssl || $ret
-    fi
 }
 
 do_install_azure_iot_sdk() {
@@ -264,7 +235,6 @@ do_install_azure_iot_sdk() {
         "-Dbuild_service_client:BOOL=OFF"
         "-Dbuild_provisioning_service_client:BOOL=OFF"
         "-Duse_prov_client:BOOL=OFF"
-        "-DOPENSSL_ROOT_DIR=$openssl_dir_path"
     )
 
     if [[ $keep_source_code == "true" ]]; then
@@ -504,7 +474,6 @@ do_install_do() {
     local do_cmake_options=(
         "-DDO_BUILD_TESTS:BOOL=OFF"
         "-DDO_INCLUDE_SDK=ON"
-        "-DOPENSSL_ROOT_DIR=$openssl_dir_path"
     )
 
     if [[ $keep_source_code == "true" ]]; then
@@ -546,15 +515,16 @@ do_install_azure_storage_sdk() {
 
     git checkout tags/$azure_storage_sdk_tag_ref
 
-    local azure_blob_storage_file_upload_utility_cmake_options
+    local azure_storage_sdk_cmake_options=""
+
     if [[ $keep_source_code == "true" ]]; then
         # If source is wanted, presumably samples and symbols are useful as well.
-        azure_blob_storage_file_upload_utility_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Debug")
+        azure_storage_sdk_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Debug")
     else
-        azure_blob_storage_file_upload_utility_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
+        azure_storage_sdk_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
     fi
 
-    cmake "${azure_blob_storage_file_upload_utility_cmake_options[@]}" . || return
+    cmake "${azure_storage_sdk_cmake_options[@]}" . || return
 
     cmake --build . || return
     $SUDO cmake --build . --target install || return
@@ -880,10 +850,6 @@ while [[ $1 != "" ]]; do
         ;;
     --use-ssh)
         use_ssh=true
-        ;;
-    --openssl-dir-path)
-        shift
-        openssl_dir_path=$1
         ;;
     --list-deps)
         do_list_all_deps
