@@ -210,7 +210,7 @@ $SUDO gzip "$out/update_image.img" || $ret 1
 swu_hash=$($SUDO openssl dgst -sha256 "$out/update_image.img.gz" | awk '{print $2}')
 
 # Now we need to create the sw-description file
-$SUDO $(cat "$script_dir/sw_descr_file" | sed "s/<<hash>>/${swu_hash}/" | sed "s/<<file>>/update_image.img.gz/") > "$out/sw-description" || $ret 1
+$SUDO "$("$script_dir/sw_descr_file" | sed "s/<<hash>>/${swu_hash}/" | sed "s/<<file>>/update_image.img.gz/")" > "$out/sw-description" || $ret 1
 
 $SUDO openssl dgst -sha256 -sign "$script_dir/keys/priv.pem" -out "$out/sw-description.sig" -passin "$script_dir/keys/priv.pass" "$out/sw-description"
 
