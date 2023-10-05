@@ -23,23 +23,14 @@
 #include <stdlib.h>
 
 /**
- * @brief The info for each rootkey package downloader.
- *
- */
-static ADUC_RootKeyPkgDownloaderInfo s_default_rootkey_downloader = {
-    .name = "DO", // DeliveryOptimization
-    .downloadFn = DownloadRootKeyPkg_DO,
-    .downloadBaseDir = ADUC_DOWNLOADS_FOLDER,
-};
-
-/**
  * @brief Downloads the root key package and updates local store with it if different from current.
  * @param[in] workflowId The workflow Id for use in loca dir path of the rootkey package download.
+ * @param[in] workFolder The working dir for downloaded update payloads.
  * @param[in] rootKeyPkgUrl The URL of the rootkey package from the deployment metadata.
  * @returns ADUC_Result the result.
  * @details If local storage is not being used then the contents of outLocalStoreChanged will always be true.
  */
-ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* rootKeyPkgUrl)
+ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* workFolder, const char* rootKeyPkgUrl)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
@@ -52,6 +43,12 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
 
     memset(&rootKeyPackage, 0, sizeof(ADUC_RootKeyPackage));
 
+    ADUC_RootKeyPkgDownloaderInfo rootkey_downloader_info = {
+        .name = "DO", // DeliveryOptimization
+        .downloadFn = DownloadRootKeyPkg_DO,
+        .downloadBaseDir = workFolder,
+    };
+
     if (workflowId == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_INVALIDARG;
@@ -61,7 +58,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* r
     RootKeyUtility_ClearReportingErc();
 
     tmpResult = ADUC_RootKeyPackageUtils_DownloadPackage(
-        rootKeyPkgUrl, workflowId, &s_default_rootkey_downloader, &downloadedFilePath);
+        rootKeyPkgUrl, workflowId, &rootkey_downloader_info, &downloadedFilePath);
 
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {

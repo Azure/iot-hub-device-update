@@ -408,6 +408,7 @@ void OrchestratorUpdateCallback(
     char* workflowId = NULL;
     char* rootKeyPkgUrl = NULL;
     STRING_HANDLE rootKeyPackageFilePath = NULL;
+    char* workFolder = NULL;
 
     // Reads out the json string so we can Log Out what we've got.
     // The value will be parsed and handled in ADUC_Workflow_HandlePropertyUpdate.
@@ -451,7 +452,14 @@ void OrchestratorUpdateCallback(
         }
 
         // Ensure update to latest rootkey pkg, which is required for validating the update metadata.
-        tmpResult = RootKeyWorkflow_UpdateRootKeys(workflowId, rootKeyPkgUrl);
+        workFolder = workflow_get_workfolder(workflowData->WorkflowHandle);
+        if (workFolder == NULL)
+        {
+            Log_Error("workflow_get_workfolder failed.");
+            goto done;
+        }
+
+        tmpResult = RootKeyWorkflow_UpdateRootKeys(workflowId, workFolder, rootKeyPkgUrl);
         if (IsAducResultCodeFailure(tmpResult.ResultCode))
         {
             Log_Error("Update Rootkey failed, 0x%08x. Deployment cannot proceed.", tmpResult.ExtendedResultCode);
@@ -501,8 +509,8 @@ done:
     STRING_delete(rootKeyPackageFilePath);
     workflow_free_string(rootKeyPkgUrl);
     workflow_free_string(workflowId);
+    workflow_free_string(workFolder);
     STRING_delete(jsonToSend);
-
     free(jsonString);
 
     Log_Info("OrchestratorPropertyUpdateCallback ended");

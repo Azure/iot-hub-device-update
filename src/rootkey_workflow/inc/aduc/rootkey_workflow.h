@@ -14,7 +14,7 @@
 
 EXTERN_C_BEGIN
 
-ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* rootKeyPkgUrl);
+ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* workFolder, const char* rootKeyPkgUrl);
 
 EXTERN_C_END
 

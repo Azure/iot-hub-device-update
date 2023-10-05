@@ -31,8 +31,7 @@ target_link_libraries (
             Microsoft::deliveryoptimization)
 
 target_compile_definitions (
-    ${target_name} PRIVATE ADUC_DOWNLOADS_FOLDER="${ADUC_DOWNLOADS_FOLDER}"
-                           ADUC_ROOTKEY_PKG_URL_OVERRIDE="${ADUC_ROOTKEY_PKG_URL_OVERRIDE}")
+    ${target_name} PRIVATE ADUC_ROOTKEY_PKG_URL_OVERRIDE="${ADUC_ROOTKEY_PKG_URL_OVERRIDE}")
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

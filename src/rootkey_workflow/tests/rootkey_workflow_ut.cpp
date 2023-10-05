@@ -18,7 +18,7 @@ TEST_CASE("RootKeyWorkflow_UpdateRootKeys")
 {
     SECTION("rootkeyutil reporting erc set on failure")
     {
-        ADUC_Result result = RootKeyWorkflow_UpdateRootKeys(nullptr /* workflowId */, nullptr /* rootKeyPkgUrl */);
+        ADUC_Result result = RootKeyWorkflow_UpdateRootKeys(nullptr /* workflowId */, nullptr /* workFolder */, nullptr /* rootKeyPkgUrl */);
         REQUIRE(IsAducResultCodeFailure(result.ResultCode));
         CHECK(result.ExtendedResultCode == ADUC_ERC_INVALIDARG);
 
