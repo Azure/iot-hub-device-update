@@ -35,7 +35,8 @@ void FreeMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
  * @brief Reads MQTT broker connection settings from the configuration file.
  *
  * This function reads the MQTT client settings for communicating with the Azure Device Update service
- * from the configuration file.
+ * from the configuration file. The settings are read from the `agent.connectionData.mqttBroker` section
+ * of the configuration file.
  *
  * @param settings A pointer to an `ADUC_MQTT_SETTINGS` structure to populate with the MQTT broker settings.
  *

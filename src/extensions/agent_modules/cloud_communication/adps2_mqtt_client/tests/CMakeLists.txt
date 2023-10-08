@@ -19,10 +19,13 @@ target_include_directories (
 target_compile_definitions (${PROJECT_NAME}
                             PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+
 target_link_libraries (
     ${PROJECT_NAME}
     PUBLIC aduc::agent_state_store
     PRIVATE aduc::config_utils
             aduc::microsoft_adps2_mqtt_client
             aduc::parser_utils
-            aduc::system_utils)
+            aduc::system_utils
+            aziotsharedutil)

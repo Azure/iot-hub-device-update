@@ -18,9 +18,15 @@
 #include <mosquitto.h> // mosquitto related functions
 #include <mqtt_protocol.h> // mosquitto_property
 
+#include "azure_c_shared_utility/map.h"
+#include "azure_c_shared_utility/strings.h"
+#include "azure_c_shared_utility/vector.h"
+
 #include <mqtt_protocol.h>
 
 EXTERN_C_BEGIN
+
+#define ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID "du_service_communication_channel"
 
 /**
  * @brief Typedef for the MQTT Keyfile Password Callback.
@@ -42,7 +48,8 @@ typedef int (*ADUC_MQTT_KEYFILE_PASSWORD_CALLBACK)(char* buf, int size, int rwfl
  * @param flags Flags indicating connection status.
  * @param props Pointer to MQTT properties associated with the connection.
  */
-typedef void (*MQTT_ON_CONNECT_V5_CALLBACK)(struct mosquitto*, void*, int, int, const mosquitto_property* props);
+typedef void (*MQTT_ON_CONNECT_V5_CALLBACK)(
+    struct mosquitto* mosq, void* userData, int rc, int flags, const mosquitto_property* props);
 
 /**
  * @brief Typedef for the MQTT On Disconnect V5 Callback.
@@ -192,21 +199,29 @@ typedef struct ADUC_MQTT_MQTT_CALLBACKS_TAG
 
 typedef struct ADUC_COMMUNICATION_CHANNEL_INIT_DATA_TAG
 {
-    const char* session_id;
+    const char* sessionId;
     void* ownerModuleContext;
-    const ADUC_MQTT_SETTINGS* mqtt_settings;
+    const ADUC_MQTT_SETTINGS* mqttSettings;
     ADUC_MQTT_CALLBACKS* callbacks;
-    ADUC_MQTT_KEYFILE_PASSWORD_CALLBACK pw_callback;
+    ADUC_MQTT_KEYFILE_PASSWORD_CALLBACK passwordCallback;
     ADUC_Retry_Params* connectionRetryParams; //!< [optional] Retry parameters for connection attempts.
 } ADUC_COMMUNICATION_CHANNEL_INIT_DATA;
+
+typedef struct ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO_TAG
+{
+    int messageId;
+    char* topic;
+    MQTT_ON_SUBSCRIBE_V5_CALLBACK callback;
+    void* userData;
+} ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO;
 
 /**
  * @brief Structure to hold MQTT communication management state.
  */
 typedef struct ADU_MQTT_COMMUNICATION_MGR_STATE_TAG
 {
-    char* sessionId; /**< Session ID. */
     bool initialized; /**< Indicates if the MQTT communication manager is initialized. */
+    STRING_HANDLE sessionId; /**< Session ID. */
     bool topicsSubscribed; /**< Indicates if MQTT topics are subscribed. */
     struct mosquitto* mqttClient; /**< Pointer to the MQTT client. */
     ADUC_MQTT_SETTINGS mqttSettings; /**< MQTT settings. */
@@ -219,10 +234,12 @@ typedef struct ADU_MQTT_COMMUNICATION_MGR_STATE_TAG
     ADUC_MQTT_KEYFILE_PASSWORD_CALLBACK keyFilePasswordCallback;
     void* ownerModuleContext; /**< Pointer to the owner module context. */
     ADUC_Retry_Params connectionRetryParams;
+    VECTOR_HANDLE pendingSubscriptions; /**< List of subscribing topics. */
+    MAP_HANDLE subscribedTopicsMap; /**< Map of the subscribed topics. */
 } ADU_MQTT_COMMUNICATION_MGR_STATE;
 
 /**
- * @brief Publishes a message to a the 'adu/oto/#/a' topic using version 5 of the MQTT protocol.
+ * @brief Publishes a message to the specified @p topic using version 5 of the MQTT protocol.
  *
  * This function is a wrapper around `mosquitto_publish_v5`, simplifying the process of
  * publishing messages to an MQTT broker.
@@ -239,7 +256,7 @@ typedef struct ADU_MQTT_COMMUNICATION_MGR_STATE_TAG
  *         For other return values, refer to the documentation of `mosquitto_publish_v5`.
  */
 int ADUC_Communication_Channel_MQTT_Publish(
-    ADUC_AGENT_MODULE_HANDLE commModule,
+    ADUC_AGENT_MODULE_HANDLE commChannelModule,
     const char* topic,
     int* mid,
     size_t payload_len,
@@ -247,6 +264,36 @@ int ADUC_Communication_Channel_MQTT_Publish(
     int qos,
     bool retain,
     const mosquitto_property* props);
+
+/**
+ * @brief Subscribe to a topic using version 5 of the MQTT protocol.
+ * @param[in] commHandle The communication channel handle.
+ * @param[in] topic The topic to subscribe to.
+ * @param[out] mid Pointer to an integer where the message ID will be stored. Can be NULL.
+ * @param[in] qos Quality of Service level for the message. Valid values are 0, 1, or 2.
+ * @param[in] options Subscription options.
+ * @param[in] props MQTT v5 properties to be included in the message. Can be NULL if no properties are to be sent.
+ * @param[in] userData Pointer to user-specific data.
+ * @param[in] callback Pointer to the callback function to be invoked when the subscription is complete.
+ * @return MOSQ_ERR_SUCCESS upon successful completion.
+ */
+int ADUC_Communication_Channel_MQTT_Subscribe(
+    ADUC_AGENT_MODULE_HANDLE commHandle,
+    const char* topic,
+    int* mid,
+    int qos,
+    int options,
+    const mosquitto_property* props,
+    void* userData,
+    MQTT_ON_SUBSCRIBE_V5_CALLBACK callback);
+
+/**
+ * @brief Check whether the specified @p topic is subscribed.
+ * @param[in] commHandle The communication channel handle.
+ * @param[in] topic The topic to check.
+ * @return true if the topic is subscribed, false otherwise.
+ */
+bool ADUC_Communication_Channel_MQTT_IsSubscribed(ADUC_AGENT_MODULE_HANDLE commHandle, const char* topic);
 
 /**
  * @brief Create a new communication channel management module instance.

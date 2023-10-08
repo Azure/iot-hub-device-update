@@ -857,27 +857,26 @@ done:
  * @param agent Pointer to ADUC_AgentInfo object.
  * @param fieldName The field name to get. This can be a nested field name, e.g. "tcpPort" or "options.maxRetry".
  * @param value Pointer to an unsigned int to receive the value.
+ * @param defaultValue Default value to return if field not found.
  * @return bool True if successful.
  */
-bool ADUC_AgentInfo_GetUnsignedIntegerField(const ADUC_AgentInfo* agent, const char* fieldName, unsigned int* value)
+bool ADUC_AgentInfo_GetUnsignedIntegerField(
+    const ADUC_AgentInfo* agent, const char* fieldName, unsigned int* value, unsigned int defaultValue)
 {
-    bool succeeded = false;
-
     if (agent == NULL || IsNullOrEmpty(fieldName) || value == NULL)
     {
         Log_Error("Null parameter");
         return false;
     }
 
-    *value = 0;
-
-    if (!ADUC_JSON_GetUnsignedIntegerField(agent->agentJsonValue, fieldName, value))
+    *value = defaultValue;
+    JSON_Object* object = json_value_get_object(agent->agentJsonValue);
+    if (json_object_dothas_value(object, fieldName))
     {
-        goto done;
+        if (!ADUC_JSON_GetUnsignedIntegerField(agent->agentJsonValue, fieldName, value))
+        {
+            *value = defaultValue;
+        }
     }
-
-    succeeded = true;
-
-done:
-    return succeeded;
+    return true;
 }

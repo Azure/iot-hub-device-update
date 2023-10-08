@@ -458,7 +458,7 @@ void OnMessage_ainfo_resp(
         {
             if (IsNullOrEmpty(s_agentInfoMgrState.subscribeTopic))
             {
-                const char* duInstance = ADUC_Enrollment_Management_GetDUInstance();
+                const char* duInstance = ADUC_StateStore_GetDeviceUpdateServiceInstance();
                 if (IsNullOrEmpty(duInstance))
                 {
                     Log_Error("Invalid state. DU instance is NULL.");

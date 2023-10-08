@@ -14,6 +14,8 @@
 
 EXTERN_C_BEGIN
 
+#define ADUC_DEFAULT_DEVICE_REGISTRATION_STATE_POLL_INTERVAL_SECONDS (10)
+
 /*
  * @brief Result codes for state store functions.
  */
@@ -84,6 +86,12 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetIsDeviceRegistered(bool isDeviceRegis
  * @return The value of 'IsDeviceRegistered' or false if not found.
  */
 bool ADUC_StateStore_GetIsDeviceRegistered();
+
+/**
+ * @brief Get the recommended polling interval for device registration state.
+ * @return The recommended polling interval in seconds.
+ */
+int ADUC_StateStore_GetDeviceRegistrationStatePollIntervalSeconds();
 
 /**
  * @brief Get the Device Update service MQTT broker hostname.

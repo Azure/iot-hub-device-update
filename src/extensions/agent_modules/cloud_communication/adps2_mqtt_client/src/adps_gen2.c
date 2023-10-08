@@ -74,8 +74,7 @@ bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
     }
 
     // For DPS connection, the clientId and registrationId fields are the same.
-    settings->mqttSettings.clientId = strdup(settings->registrationId);
-    if (settings->mqttSettings.clientId == NULL)
+    if (mallocAndStrcpy_s(&settings->mqttSettings.clientId, settings->registrationId) != 0)
     {
         Log_Error("Cannot allocate clientId field.");
         goto done;
