@@ -147,7 +147,7 @@ done:
 ADUC_Result RootKeyPackage_ParseVersion(JSON_Object* protectedPropertiesObj, ADUC_RootKeyPackage* outPackage)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-    unsigned long version = 0;
+    double versionNum = 0.0d;
 
     if (protectedPropertiesObj == NULL || outPackage == NULL)
     {
@@ -155,14 +155,14 @@ ADUC_Result RootKeyPackage_ParseVersion(JSON_Object* protectedPropertiesObj, ADU
         goto done;
     }
 
-    version = json_object_get_number(protectedPropertiesObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_VERSION);
-    if (version == 0)
+    versionNum = json_object_get_number(protectedPropertiesObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_VERSION);
+    if (versionNum == 0.0d)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_VERSION;
         goto done;
     }
 
-    (outPackage->protectedProperties).version = version;
+    (outPackage->protectedProperties).version = (unsigned long)versionNum;
     result.ResultCode = ADUC_GeneralResult_Success;
 done:
 

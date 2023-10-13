@@ -174,7 +174,7 @@ bool RootKeyUtility_GetSignatureForKey(
 
     size_t numKeys = VECTOR_size(rootKeyPackage->protectedProperties.rootKeys);
 
-    for (int i = 0; i < numKeys; ++i)
+    for (size_t i = 0; i < numKeys; ++i)
     {
         ADUC_RootKey* root_key = (ADUC_RootKey*)VECTOR_element(rootKeyPackage->protectedProperties.rootKeys, i);
 
