@@ -193,7 +193,7 @@ ADUC_Result RootKeyPackage_ParsePublished(JSON_Object* protectedPropertiesObj, A
         return result;
     }
 
-    published = json_object_get_number(protectedPropertiesObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_PUBLISHED);
+    published = (time_t)json_object_get_number(protectedPropertiesObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_PUBLISHED);
     if (published <= 0)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_PUBLISHED;
