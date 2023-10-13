@@ -64,7 +64,7 @@ ADUC_Result ADUC_UrlUtils_GetPathFileName(const char* url, STRING_HANDLE* outFil
         q++;
     }
 
-    filename_len = q - p;
+    filename_len = (size_t)(q - p);
 
     if (filename_len == 0)
     {
