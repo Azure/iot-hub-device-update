@@ -91,6 +91,8 @@ function configure_apt_repository() {
             package_url="https://packages.microsoft.com/config/ubuntu/18.04/multiarch/packages-microsoft-prod.deb"
         elif [ "$version" == "20.04" ]; then
             package_url="https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb"
+        elif [ "$version" == "22.04" ]; then
+            package_url="https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb"
         fi
     elif [ "$distro" == "debian" ] && [ "$version" == "10" ]; then
         package_url="https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb"
@@ -113,7 +115,7 @@ function configure_apt_repository() {
 # Installs and Configures AIS with the pre-generated config.toml
 #
 function install_and_configure_ais() {
-    sudo apt-get install aziot-identity-service
+    sudo apt-get install -y aziot-identity-service
     sudo cp ./testsetup/config.toml /etc/aziot/config.toml
     sudo aziotctl config apply -c /etc/aziot/config.toml
     sudo aziotctl check
