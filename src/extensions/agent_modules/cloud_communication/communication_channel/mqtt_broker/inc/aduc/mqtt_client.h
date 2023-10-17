@@ -21,6 +21,7 @@ EXTERN_C_BEGIN
 #define DEFAULT_ADPS_CLEAN_SESSION false
 #define DEFAULT_MQTT_BROKER_CLEAN_SESSION true
 #define DEFAULT_MQTT_BROKER_PROTOCOL_VERSION 5
+#define MIN_BROKER_MQTT_VERSION 4
 
 /**
  * @brief Enumeration for specifying the source of the MQTT hostname in the configuration.
@@ -74,7 +75,7 @@ typedef struct ADUC_MQTT_SETTINGS_TAG
         cleanSession; /*< MQTT Clean Session, might require setting the ClientId (existing sessions not supported now) */
     bool useTLS; /*< Disable TLS negotiation (not recommended for production) */
     unsigned int qos; /*< MQTT QoS */
-    unsigned int mqttVersion; /*< MQTT protocol version (3 = v3, 4 = v3.1.1, 5 = v5) */
+    int mqttVersion; /*< MQTT protocol version (3 = v3, 4 = v3.1.1, 5 = v5) */
 } ADUC_MQTT_SETTINGS;
 
 /**

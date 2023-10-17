@@ -15,6 +15,7 @@
 #define DEFAULT_DPS_GLOBAL_ENDPOINT "global.azure-devices-provisioning.net"
 // Default MQTT protocol version for Azure DPS Gen2 is v3.1.1 (4)
 #define DEFAULT_DPS_MQTT_PROTOCOL_VERSION 4
+#define MIN_DPS_MQTT_VERSION 4
 
 /**
  * @brief Read the Azure DPS Gen2 connection data from the config file.
@@ -27,6 +28,7 @@ bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
     bool result = false;
     const ADUC_ConfigInfo* config = NULL;
     const ADUC_AgentInfo* agent_info = NULL;
+    unsigned int tmp = -1;
 
     if (settings == NULL)
     {
@@ -114,10 +116,14 @@ bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
 
     // Common MQTT connection data fields.
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
-            agent_info, "dps.mqttVersion", &settings->mqttSettings.mqttVersion))
+            agent_info, "dps.mqttVersion", &tmp) || tmp < MIN_DPS_MQTT_VERSION)
     {
         Log_Info("Using default MQTT protocol version: %d", DEFAULT_DPS_MQTT_PROTOCOL_VERSION);
         settings->mqttSettings.mqttVersion = DEFAULT_DPS_MQTT_PROTOCOL_VERSION;
+    }
+    else
+    {
+        settings->mqttSettings.mqttVersion = (int)tmp;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(

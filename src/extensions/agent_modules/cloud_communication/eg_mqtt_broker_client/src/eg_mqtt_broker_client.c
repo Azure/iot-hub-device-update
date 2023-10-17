@@ -49,6 +49,7 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
     bool result = false;
     const ADUC_ConfigInfo* config = NULL;
     const ADUC_AgentInfo* agent_info = NULL;
+    unsigned int tmp = -1;
 
     if (settings == NULL)
     {
@@ -120,10 +121,14 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
 
     // Common MQTT connection data fields.
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
-            agent_info, "mqttBroker.mqttVersion", &settings->mqttVersion))
+            agent_info, "mqttBroker.mqttVersion", &tmp) || tmp < MIN_BROKER_MQTT_VERSION)
     {
         Log_Info("Using default MQTT protocol version: %d", DEFAULT_MQTT_BROKER_PROTOCOL_VERSION);
         settings->mqttVersion = DEFAULT_MQTT_BROKER_PROTOCOL_VERSION;
+    }
+    else
+    {
+        settings->mqttVersion = (int)tmp;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "mqttBroker.tcpPort", &settings->tcpPort))
