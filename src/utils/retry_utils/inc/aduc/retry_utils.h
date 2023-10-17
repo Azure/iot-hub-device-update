@@ -128,7 +128,7 @@ typedef struct ADUC_Retriable_Operation_Context_t
         // (<0 means no expiration)
 
     unsigned int attemptCount; // Number of attempts
-    time_t operationIntervalSecs; // Interval between operations (in seconds) ( <1 means no interval)
+    unsigned int operationIntervalSecs; // Interval between operations (in seconds) ( <1 means no interval)
 
     time_t lastExecutionTime; // Time when the operation was last executed
     time_t lastFailureTime; // Time when the operation last failed
