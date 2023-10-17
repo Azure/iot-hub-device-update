@@ -259,7 +259,7 @@ int ADUC_Communication_Channel_MQTT_Publish(
     ADUC_AGENT_MODULE_HANDLE commChannelModule,
     const char* topic,
     int* mid,
-    size_t payload_len,
+    int payload_len,
     const void* payload,
     int qos,
     bool retain,

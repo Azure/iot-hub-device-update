@@ -236,6 +236,17 @@ bool ADUC_AgentInfo_ConnectionData_GetStringField(const ADUC_AgentInfo* agent, c
 bool ADUC_AgentInfo_ConnectionData_GetBooleanField(const ADUC_AgentInfo* agent, const char* fieldName, bool* value);
 
 /**
+ * @brief Get DU Agent's connection data field of type int.
+ *
+ * @param agent Pointer to ADUC_AgentInfo object.
+ * @param fieldName The field name to get. This can be a nested field name, e.g. "tcpPort" or "options.maxRetry".
+ * @param value Pointer to an int to receive the value.
+ * @return bool True if successful.
+ */
+bool ADUC_AgentInfo_ConnectionData_GetIntegerField(
+    const ADUC_AgentInfo* agent, const char* fieldName, int* value);
+
+/**
  * @brief Get DU Agent's connection data field of type unsigned int.
  *
  * @param agent Pointer to ADUC_AgentInfo object.
@@ -245,18 +256,6 @@ bool ADUC_AgentInfo_ConnectionData_GetBooleanField(const ADUC_AgentInfo* agent, 
  */
 bool ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
     const ADUC_AgentInfo* agent, const char* fieldName, unsigned int* value);
-
-/**
- * @brief Get DU Agent's data field of type unsigned int.
- *
- * @param agent Pointer to ADUC_AgentInfo object.
- * @param fieldName The field name to get. This can be a nested field name, e.g. "tcpPort" or "options.maxRetry".
- * @param value Pointer to an unsigned int to receive the value.
- * @param defaultValue The default value to use if the field is not found.
- * @return bool True if successful.
- */
-bool ADUC_AgentInfo_GetUnsignedIntegerField(
-    const ADUC_AgentInfo* agent, const char* fieldName, unsigned int* value, unsigned int defaultValue);
 
 // clang-format off
 // NOLINTNEXTLINE: clang-tidy doesn't like UMock macro expansions

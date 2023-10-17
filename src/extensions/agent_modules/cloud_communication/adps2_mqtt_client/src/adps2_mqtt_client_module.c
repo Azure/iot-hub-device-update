@@ -266,7 +266,7 @@ ADUC_MQTT_CALLBACKS s_commChannelCallbacks = {
  * @return true if the payload was processed successfully; false otherwise.
  */
 bool ProcessDeviceRegistrationResponse(
-    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState, const char* payload, size_t payload_len)
+    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState, const char* payload, int payload_len)
 {
     bool result = false;
 

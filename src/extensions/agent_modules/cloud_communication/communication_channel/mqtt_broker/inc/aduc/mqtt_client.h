@@ -16,7 +16,7 @@ EXTERN_C_BEGIN
 #define DEFAULT_TCP_PORT 8883
 #define DEFAULT_KEEP_ALIVE_IN_SECONDS 30
 #define DEFAULT_USE_TLS true
-#define DEFAULT_QOS 0
+#define DEFAULT_QOS 1
 #define DEFAULT_CLEAN_SESSION true
 #define DEFAULT_ADPS_CLEAN_SESSION false
 #define DEFAULT_MQTT_BROKER_CLEAN_SESSION true
@@ -74,7 +74,7 @@ typedef struct ADUC_MQTT_SETTINGS_TAG
     bool
         cleanSession; /*< MQTT Clean Session, might require setting the ClientId (existing sessions not supported now) */
     bool useTLS; /*< Disable TLS negotiation (not recommended for production) */
-    unsigned int qos; /*< MQTT QoS */
+    int qos; /*< MQTT QoS */
     int mqttVersion; /*< MQTT protocol version (3 = v3, 4 = v3.1.1, 5 = v5) */
 } ADUC_MQTT_SETTINGS;
 

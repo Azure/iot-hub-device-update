@@ -714,7 +714,7 @@ void ADUC_Communication_Channel_OnSubscribe(
     }
 
     // Remove the subscription from the pending list.
-    for (int i = 0; i < VECTOR_size(commMgrState->pendingSubscriptions); i++)
+    for (size_t i = 0; i < VECTOR_size(commMgrState->pendingSubscriptions); i++)
     {
         ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* subInfo =
             (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)VECTOR_element(commMgrState->pendingSubscriptions, i);
@@ -1147,7 +1147,7 @@ int ADUC_Communication_Channel_MQTT_Publish(
     ADUC_AGENT_MODULE_HANDLE commHandle,
     const char* topic,
     int* mid,
-    size_t payload_len,
+    int payload_len,
     const void* payload,
     int qos,
     bool retain,
@@ -1211,42 +1211,41 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = CommunicationManagerStateFromModuleHandle(commHandle);
     ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* callbackInfo = NULL;
 
-    do
+    // Create a tracking data.
+    callbackInfo = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)malloc(sizeof(ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO));
+    if (callbackInfo == NULL)
     {
-        // Create a tracking data.
-        callbackInfo = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)malloc(sizeof(ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO));
-        if (callbackInfo == NULL)
-        {
-            Log_Error("No mem. can't verify the subscription. (topic%s)", topic);
-            mosqResult = MOSQ_ERR_NOMEM;
-            break;
-        }
+        mosqResult = MOSQ_ERR_NOMEM;
+        goto done;
+    }
 
-        callbackInfo->messageId = -1;
-        if (mallocAndStrcpy_s(&callbackInfo->topic, topic) != 0)
-        {
-            Log_Error("No mem. can't copy the topic (topic%s)", topic);
-            mosqResult = MOSQ_ERR_NOMEM;
-            break;
-        }
+    callbackInfo->messageId = -1;
+    if (mallocAndStrcpy_s(&callbackInfo->topic, topic) != 0)
+    {
+        mosqResult = MOSQ_ERR_NOMEM;
+        goto done;
+    }
 
-        callbackInfo->callback = callback;
-        callbackInfo->userData = userData;
+    callbackInfo->callback = callback;
+    callbackInfo->userData = userData;
 
-        // Add the tracking data to the list.
-        VECTOR_push_back(commMgrState->pendingSubscriptions, callbackInfo, 1);
+    // Add the tracking data to the list.
+    if (VECTOR_push_back(commMgrState->pendingSubscriptions, callbackInfo, 1) != 0)
+    {
+         goto done;
+    }
 
-        mosqResult =
-            mosquitto_subscribe_v5(commMgrState->mqttClient, &callbackInfo->messageId, topic, qos, options, props);
-        if (mosqResult != MOSQ_ERR_SUCCESS)
-        {
-            Log_Error("mosquitto_subscribe_v5 failed (mosqRes:%d)", mosqResult);
-            break;
-        }
+    mosqResult =
+        mosquitto_subscribe_v5(commMgrState->mqttClient, &callbackInfo->messageId, topic, qos, options, props);
+    if (mosqResult != MOSQ_ERR_SUCCESS)
+    {
+        Log_Error("mosquitto_subscribe_v5 failed (mosqRes:%d)", mosqResult);
+        goto done;
+    }
 
-        Log_Info("Subscribing to topic: %s, mid: %d", topic, callbackInfo->messageId);
-        mosqResult = MOSQ_ERR_SUCCESS;
-    } while (false);
+    Log_Info("Subscribing to topic: %s, mid: %d", topic, callbackInfo->messageId);
+    mosqResult = MOSQ_ERR_SUCCESS;
+done:
 
     if (mosqResult != MOSQ_ERR_SUCCESS)
     {

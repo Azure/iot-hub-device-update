@@ -51,7 +51,7 @@
 
 // Enrollment request message content, which is always an empty JSON object.
 static const char* s_enr_req_message_content = "{}";
-static const size_t s_enr_req_message_content_len = 2;
+static const int s_enr_req_message_content_len = 2;
 
 // Forward declarations
 const ADUC_AGENT_CONTRACT_INFO* ADUC_Enrollment_Management_GetContractInfo(ADUC_AGENT_MODULE_HANDLE handle);
@@ -422,209 +422,213 @@ bool EnrollmentStatusRequestOperation_DoWork(ADUC_Retriable_Operation_Context* c
     }
 
     time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
-    do
+
+    // Get enrollment operation data from the context.
+    ADUC_Enrollment_Request_Operation_Data* enrollmentData = EnrollmentData_FromOperationContext(context);
+    ADUC_MQTT_Message_Context* messageContext = &enrollmentData->enrReqMessageContext;
+    const char* externalDeviceId = NULL;
+    int messageId = 0;
+    int mqtt_res = 0;
+
+    // If the enrollment state received, stop the operation.
+    if (enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED
+        || enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_NOT_ENROLLED)
     {
-        // Get enrollment operation data from the context.
-        ADUC_Enrollment_Request_Operation_Data* enrollmentData = EnrollmentData_FromOperationContext(context);
-        ADUC_MQTT_Message_Context* messageContext = &enrollmentData->enrReqMessageContext;
+        // Enrollment is completed.
+        Log_Info("Enrollment completed");
+        ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_Completed);
 
-        // If the enrollment state received, stop the operation.
-        if (enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED
-            || enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_NOT_ENROLLED)
+        if (s_lastHeartBeatLogTime + CONST_TIME_30_SECONDS < nowTime)
         {
-            // Enrollment is completed.
-            Log_Info("Enrollment completed");
-            ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_Completed);
-
-            if (s_lastHeartBeatLogTime + CONST_TIME_30_SECONDS < nowTime)
-            {
-                Log_Debug("enr_state:%d", enrollmentData->enrollmentState);
-                s_lastHeartBeatLogTime = nowTime;
-            }
-
-            opSucceeded = true;
-            break;
-        }
-
-        // Heart beat while waiting for enrollment completion.
-        if (s_lastHeartBeatLogTime + CONST_TIME_5_SECONDS < nowTime)
-        {
-            Log_Info("enr_state :%d", enrollmentData->enrollmentState);
+            Log_Debug("enr_state:%d", enrollmentData->enrollmentState);
             s_lastHeartBeatLogTime = nowTime;
         }
 
-        // Are we querying the enrollment status?
-        if (enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_REQUESTING)
+        opSucceeded = true;
+        goto done;
+    }
+
+    // Heart beat while waiting for enrollment completion.
+    if (s_lastHeartBeatLogTime + CONST_TIME_5_SECONDS < nowTime)
+    {
+        Log_Info("enr_state :%d", enrollmentData->enrollmentState);
+        s_lastHeartBeatLogTime = nowTime;
+    }
+
+    // Are we querying the enrollment status?
+    if (enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_REQUESTING)
+    {
+        ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_InProgress);
+
+        // Is the current request timed-out?
+        if (context->lastExecutionTime + context->operationTimeoutSecs < nowTime)
         {
-            ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_InProgress);
+            context->cancelFunc(context);
 
-            // Is the current request timed-out?
-            if (context->lastExecutionTime + context->operationTimeoutSecs < nowTime)
-            {
-                context->cancelFunc(context);
-
-                // REVIEW: do we need this? CancelFunc should already took care of this.
-                Log_Info("Enrollment request timed-out");
-                EnrollmentData_SetCorrelationId(enrollmentData, "");
-                EnrollmentData_SetState(enrollmentData, ADU_ENROLLMENT_STATE_UNKNOWN, "timed out");
-                context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_SERVICE_TRANSIENT]);
-            }
-
-            // Exit and wait for next 'do work' call.
-            break;
+            // REVIEW: do we need this? CancelFunc should already took care of this.
+            Log_Info("Enrollment request timed-out");
+            EnrollmentData_SetCorrelationId(enrollmentData, "");
+            EnrollmentData_SetState(enrollmentData, ADU_ENROLLMENT_STATE_UNKNOWN, "timed out");
+            context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_SERVICE_TRANSIENT]);
         }
 
-        // At this point, we should send 'enr_req' message.
+        // Exit and wait for next 'do work' call.
+        goto done;
+    }
 
-        // Ensure that the device is registered with the IoT cloud service (e.g., DPS, Azure Device Registry)
-        if (!ADUC_StateStore_GetIsDeviceRegistered())
+    // At this point, we should send 'enr_req' message.
+
+    // Ensure that the device is registered with the IoT cloud service (e.g., DPS, Azure Device Registry)
+    if (!ADUC_StateStore_GetIsDeviceRegistered())
+    {
+        Log_Info("Device is not registered. Will retry");
+        context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT]);
+        goto done;
+    }
+
+    // This operation is depending on the "DUServiceCommunicationChannel".
+    // Note: by default, the DU Service communication already subscribed to the common service-to-device messaging topic.
+    if (context->commChannelHandle == NULL)
+    {
+        context->commChannelHandle =
+            ADUC_StateStore_GetCommunicationChannelHandle(ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID);
+    }
+
+    if (context->commChannelHandle == NULL)
+    {
+        Log_Info("Communication channel is not ready. Will retry");
+        context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT]);
+        goto done;
+    }
+
+    // And ensure that we have a valid external device id. This should usually provided by a DPS.
+    externalDeviceId = ADUC_StateStore_GetExternalDeviceId();
+    if (IsNullOrEmpty(externalDeviceId))
+    {
+        Log_Info("An external device id is not available. Will retry");
+        context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT]);
+        goto done;
+    }
+
+    // Prepare a topic for the enrollment status response.
+    if (IsNullOrEmpty(messageContext->publishTopic))
+    {
+        // Initialize the publish topic.
+        messageContext->publishTopic = ADUC_StringFormat(PUBLISH_TOPIC_TEMPLATE_ADU_OTO, externalDeviceId);
+        if (messageContext->publishTopic == NULL)
         {
-            Log_Info("Device is not registered. Will retry");
-            context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT]);
-            break;
+            Log_Error("Failed to allocate memory for publish topic. Cancelling the operation.");
+            context->cancelFunc(context);
+            goto done;
         }
+    }
 
-        // This operation is depending on the "DUServiceCommunicationChannel".
-        // Note: by default, the DU Service communication already subscribed to the common service-to-device messaging topic.
-        if (context->commChannelHandle == NULL)
+    // Prepare a topic for the response subscription.
+    if (IsNullOrEmpty(messageContext->responseTopic))
+    {
+        // Initialize the response topic.
+        messageContext->responseTopic = ADUC_StringFormat(SUBSCRIBE_TOPIC_TEMPLATE_ADU_OTO, externalDeviceId);
+        if (messageContext->responseTopic == NULL)
         {
-            context->commChannelHandle =
-                ADUC_StateStore_GetCommunicationChannelHandle(ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID);
+            Log_Error("Failed to allocate memory for response topic. Cancelling the operation.");
+            context->cancelFunc(context);
+            goto done;
         }
+    }
 
-        if (context->commChannelHandle == NULL)
-        {
-            Log_Info("Communication channel is not ready. Will retry");
-            context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT]);
-            break;
-        }
-
-        // And ensure that we have a valid external device id. This should usually provided by a DPS.
-        const char* externalDeviceId = ADUC_StateStore_GetExternalDeviceId();
-        if (IsNullOrEmpty(externalDeviceId))
-        {
-            Log_Info("An external device id is not available. Will retry");
-            context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT]);
-            break;
-        }
-
-        // Prepare a topic for the enrollment status response.
-        if (IsNullOrEmpty(messageContext->publishTopic))
-        {
-            // Initialize the publish topic.
-            messageContext->publishTopic = ADUC_StringFormat(PUBLISH_TOPIC_TEMPLATE_ADU_OTO, externalDeviceId);
-            if (messageContext->publishTopic == NULL)
-            {
-                Log_Error("Failed to allocate memory for publish topic. Cancelling the operation.");
-                context->cancelFunc(context);
-                break;
-            }
-        }
-
-        // Prepare a topic for the response subscription.
-        if (IsNullOrEmpty(messageContext->responseTopic))
-        {
-            // Initialize the response topic.
-            messageContext->responseTopic = ADUC_StringFormat(SUBSCRIBE_TOPIC_TEMPLATE_ADU_OTO, externalDeviceId);
-            if (messageContext->responseTopic == NULL)
-            {
-                Log_Error("Failed to allocate memory for response topic. Cancelling the operation.");
-                context->cancelFunc(context);
-                break;
-            }
-        }
-
-        // Ensure that we have subscribed for the response.
-        if (!ADUC_Communication_Channel_MQTT_IsSubscribed(
-                (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle, messageContext->responseTopic))
-        {
-            // Subscribe to the response topic.
-            int subscribeMessageId = 0;
-            int mqtt_res = ADUC_Communication_Channel_MQTT_Subscribe(
-                (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle,
-                messageContext->responseTopic,
-                &subscribeMessageId,
-                messageContext->qos,
-                0 /*options*/,
-                NULL /*props*/,
-                NULL /*userData*/,
-                NULL /*callback*/);
-            if (mqtt_res != MOSQ_ERR_SUCCESS)
-            {
-                Log_Error("Failed to subscribe to response topic. Cancelling the operation.");
-                context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
-                break;
-            }
-
-            Log_Info(
-                "Subscribing to response topic '%s', messageId:%d", messageContext->responseTopic, subscribeMessageId);
-        }
-
-        // Send enrollment status request message.
-        int messageId = 0;
-        int mqtt_res = ADUC_Communication_Channel_MQTT_Publish(
+    // Ensure that we have subscribed for the response.
+    if (!ADUC_Communication_Channel_MQTT_IsSubscribed(
+            (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle, messageContext->responseTopic))
+    {
+        // Subscribe to the response topic.
+        int subscribeMessageId = 0;
+        int mqtt_res = ADUC_Communication_Channel_MQTT_Subscribe(
             (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle,
-            messageContext->publishTopic,
-            &messageContext->messageId,
-            s_enr_req_message_content_len,
-            s_enr_req_message_content,
+            messageContext->responseTopic,
+            &subscribeMessageId,
             messageContext->qos,
-            false,
-            messageContext->properties);
-
-        if (mqtt_res == MOSQ_ERR_SUCCESS)
+            0 /*options*/,
+            NULL /*props*/,
+            NULL /*userData*/,
+            NULL /*callback*/);
+        if (mqtt_res != MOSQ_ERR_SUCCESS)
         {
-            EnrollmentData_SetState(
-                EnrollmentData_FromOperationContext(context), ADU_ENROLLMENT_STATE_REQUESTING, "enr_req submitted");
-            context->lastExecutionTime = nowTime;
-            Log_Info(
-                "Submitting 'enr_req' (mid:%d, cid:%s, t:%ld, timeout in:%ld)",
-                messageId,
-                messageContext->correlationId,
-                context->lastExecutionTime,
-                context->operationTimeoutSecs);
-            opSucceeded = true;
+            Log_Error("Failed to subscribe to response topic. Cancelling the operation.");
+            context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
+            goto done;
         }
-        else
+
+        Log_Info(
+            "Subscribing to response topic '%s', messageId:%d", messageContext->responseTopic, subscribeMessageId);
+    }
+
+    // Send enrollment status request message.
+    messageId = 0;
+    mqtt_res = ADUC_Communication_Channel_MQTT_Publish(
+        (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle,
+        messageContext->publishTopic,
+        &messageContext->messageId,
+        s_enr_req_message_content_len,
+        s_enr_req_message_content,
+        messageContext->qos,
+        false,
+        messageContext->properties);
+
+    if (mqtt_res != MOSQ_ERR_SUCCESS)
+    {
+        opSucceeded = false;
+        Log_Error(
+            "Failed to publish enrollment status request message. (mid:%d, cid:%s, err:%d - %s)",
+            messageId,
+            messageContext->correlationId,
+            mqtt_res,
+            mosquitto_strerror(mqtt_res));
+
+        switch (mqtt_res)
         {
-            opSucceeded = false;
+        case MOSQ_ERR_INVAL:
+        case MOSQ_ERR_NOMEM:
+        case MOSQ_ERR_PROTOCOL:
+        case MOSQ_ERR_PAYLOAD_SIZE:
+        case MOSQ_ERR_MALFORMED_UTF8:
+        case MOSQ_ERR_DUPLICATE_PROPERTY:
+        case MOSQ_ERR_QOS_NOT_SUPPORTED:
+        case MOSQ_ERR_OVERSIZE_PACKET:
+            // Following error is non-recoverable, so we'll bail out.
+            Log_Error("Failed to publish (non-recoverable). Err:%d", mqtt_res);
+            context->cancelFunc(context);
+            break;
+
+        case MOSQ_ERR_NO_CONN:
+
+            // Compute and apply the next execution time, based on the specified retry parameters.
+            context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
+
             Log_Error(
-                "Failed to publish enrollment status request message. (mid:%d, cid:%s, err:%d - %s)",
-                messageId,
-                messageContext->correlationId,
-                mqtt_res,
-                mosquitto_strerror(mqtt_res));
-            switch (mqtt_res)
-            {
-            case MOSQ_ERR_INVAL:
-            case MOSQ_ERR_NOMEM:
-            case MOSQ_ERR_PROTOCOL:
-            case MOSQ_ERR_PAYLOAD_SIZE:
-            case MOSQ_ERR_MALFORMED_UTF8:
-            case MOSQ_ERR_DUPLICATE_PROPERTY:
-            case MOSQ_ERR_QOS_NOT_SUPPORTED:
-            case MOSQ_ERR_OVERSIZE_PACKET:
-                // Following error is non-recoverable, so we'll bail out.
-                Log_Error("Failed to publish (non-recoverable). Err:%d", mqtt_res);
-                context->cancelFunc(context);
-                break;
+                "Failed to publish (retry-able after t:%ld). Err:%d", context->operationIntervalSecs, mqtt_res);
+            break;
 
-            case MOSQ_ERR_NO_CONN:
-
-                // Compute and apply the next execution time, based on the specified retry parameters.
-                context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
-
-                Log_Error(
-                    "Failed to publish (retry-able after t:%ld). Err:%d", context->operationIntervalSecs, mqtt_res);
-                break;
-            default:
-                Log_Error("Failed to publish (unknown error). Err:%d ", mqtt_res);
-                // Retry again after default retry delay.
-                context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT]);
-                break;
-            }
+        default:
+            Log_Error("Failed to publish (unknown error). Err:%d ", mqtt_res);
+            // Retry again after default retry delay.
+            context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT]);
+            break;
         }
-    } while (false);
+
+        goto done;
+    }
+
+    EnrollmentData_SetState(
+        EnrollmentData_FromOperationContext(context), ADU_ENROLLMENT_STATE_REQUESTING, "enr_req submitted");
+    context->lastExecutionTime = nowTime;
+    Log_Info(
+        "Submitting 'enr_req' (mid:%d, cid:%s, t:%ld, timeout in:%ld)",
+        messageId,
+        messageContext->correlationId,
+        context->lastExecutionTime,
+        context->operationTimeoutSecs);
+    opSucceeded = true;
+done:
 
     return opSucceeded;
 }
@@ -875,91 +879,89 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
 
     const ADUC_ConfigInfo* config = NULL;
     const ADUC_AgentInfo* agent_info = NULL;
+    unsigned int value = 0;
 
-    do
+    context = malloc(sizeof(ADUC_Retriable_Operation_Context));
+    if (context == NULL)
     {
-        context = malloc(sizeof(ADUC_Retriable_Operation_Context));
-        if (context == NULL)
-        {
-            Log_Error("Out of memory");
-            break;
-        }
+        goto done;
+    }
+    memset(context, 0, sizeof(ADUC_Retriable_Operation_Context));
 
-        if (memset(context, 0, sizeof(ADUC_Retriable_Operation_Context)) == NULL)
-        {
-            Log_Error("Failed to initialize context");
-            break;
-        }
+    messageContext = malloc(sizeof(*messageContext));
+    if (messageContext == NULL)
+    {
+        goto done;
+    }
+    memset(messageContext, 0, sizeof(*messageContext));
 
-        messageContext = malloc(sizeof(*messageContext));
-        if (memset(messageContext, 0, sizeof(*messageContext)) == NULL)
-        {
-            Log_Error("Failed to initialize messageContext");
-            break;
-        }
+    context->data = messageContext;
 
-        context->data = messageContext;
+    ADUC_Retriable_Operation_Init(context, false);
 
-        ADUC_Retriable_Operation_Init(context, false);
+    // Initialize custom functions
+    context->doWorkFunc = EnrollmentStatusRequestOperation_DoWork;
+    context->cancelFunc = EnrollmentRequestOperation_CancelOperation;
+    context->dataDestroyFunc = EnrollmentRequestOperation_DataDestroy;
+    context->operationDestroyFunc = EnrollmentRequestOperation_OperationDestroy;
+    context->retryFunc = EnrollmentRequestOperation_DoRetry;
+    context->completeFunc = EnrollmentRequestOperation_Complete;
+    context->retryParamsCount = s_retryParamsMapSize;
+    context->retryParams = malloc(sizeof(*context->retryParams) * context->retryParamsCount);
+    if (context->retryParams == NULL)
+    {
+        goto done;
+    }
 
-        // Initialize custom functions
-        context->doWorkFunc = EnrollmentStatusRequestOperation_DoWork;
-        context->cancelFunc = EnrollmentRequestOperation_CancelOperation;
-        context->dataDestroyFunc = EnrollmentRequestOperation_DataDestroy;
-        context->operationDestroyFunc = EnrollmentRequestOperation_OperationDestroy;
-        context->retryFunc = EnrollmentRequestOperation_DoRetry;
-        context->completeFunc = EnrollmentRequestOperation_Complete;
-        context->retryParamsCount = s_retryParamsMapSize;
-        context->retryParams = malloc(sizeof(*context->retryParams) * context->retryParamsCount);
+    // Initialize callbacks
+    context->onExpired = EnrollmentRequestOperation_OnExpired;
+    context->onSuccess = EnrollmentRequestOperation_OnSuccess;
+    context->onFailure = EnrollmentRequestOperation_OnFailure;
+    context->onRetry =
+        EnrollmentRequestOperation_OnRetry; // Read or retry strategy parameters from the agent's configuration file.
+    config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
+    {
+        Log_Error("Failed to get config instance");
+        goto done;
+    }
 
-        // Initialize callbacks
-        context->onExpired = EnrollmentRequestOperation_OnExpired;
-        context->onSuccess = EnrollmentRequestOperation_OnSuccess;
-        context->onFailure = EnrollmentRequestOperation_OnFailure;
-        context->onRetry =
-            EnrollmentRequestOperation_OnRetry; // Read or retry strategy parameters from the agent's configuration file.
-        config = ADUC_ConfigInfo_GetInstance();
-        if (config == NULL)
-        {
-            Log_Error("Failed to get config instance");
-            break;
-        }
+    agent_info = ADUC_ConfigInfo_GetAgent(config, 0);
+    if (agent_info == NULL)
+    {
+        Log_Error("Failed to get agent info");
+        goto done;
+    }
 
-        agent_info = ADUC_ConfigInfo_GetAgent(config, 0);
-        if (agent_info == NULL)
-        {
-            Log_Error("Failed to get agent info");
-            break;
-        }
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, SETTING_KEY_ENR_REQ_OP_INTERVAL_SECONDS, &value))
+    {
+        Log_Warn("Failed to get enrollment status request interval setting");
+        value = DEFAULT_ENR_REQ_OP_INTERVAL_SECONDS;
+    }
+    context->operationIntervalSecs = value;
 
-        unsigned int value = 0;
-        if (!ADUC_AgentInfo_GetUnsignedIntegerField(
-                agent_info, SETTING_KEY_ENR_REQ_OP_INTERVAL_SECONDS, &value, DEFAULT_ENR_REQ_OP_INTERVAL_SECONDS))
-        {
-            Log_Warn("Failed to get enrollment status request interval setting");
-        }
-        context->operationIntervalSecs = value;
+    value = 0;
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, SETTING_KEY_ENR_REQ_OP_TIMEOUT_SECONDS, &value))
+    {
+        Log_Warn("Failed to get enrollment status request timeout setting");
+        value = DEFAULT_ENR_REQ_OP_TIMEOUT_SECONDS;
+    }
+    context->operationTimeoutSecs = value;
 
-        if (!ADUC_AgentInfo_GetUnsignedIntegerField(
-                agent_info, SETTING_KEY_ENR_REQ_OP_TIMEOUT_SECONDS, &value, DEFAULT_ENR_REQ_OP_TIMEOUT_SECONDS))
-        {
-            Log_Warn("Failed to get enrollment status request timeout setting");
-        }
-        context->operationTimeoutSecs = value;
+    // Get retry parameters for transient client error.
+    JSON_Value* retrySettings = json_object_dotget_value(
+        json_value_get_object(agent_info->agentJsonValue), "operations.enrollment.statusRequest.retrySettings");
+    if (retrySettings == NULL)
+    {
+        Log_Error("Failed to get retry settings");
+        goto done;
+    }
 
-        // Get retry parameters for transient client error.
-        JSON_Value* retrySettings = json_object_dotget_value(
-            json_value_get_object(agent_info->agentJsonValue), "operations.enrollment.statusRequest.retrySettings");
-        if (retrySettings == NULL)
-        {
-            Log_Error("Failed to get retry settings");
-            break;
-        }
+    ReadRetryParamsArrayFromAgentConfigJson(context, retrySettings);
 
-        ReadRetryParamsArrayFromAgentConfigJson(context, retrySettings);
+    ret = context;
 
-        ret = context;
-    } while (false);
+done:
 
     if (ret == NULL)
     {
@@ -988,45 +990,40 @@ ADUC_AGENT_MODULE_HANDLE ADUC_Enrollment_Management_Create()
     ADUC_AGENT_MODULE_INTERFACE* interface = NULL;
     ADUC_Retriable_Operation_Context* operationContext = CreateAndInitializeEnrollmentRequestOperation();
     bool success = false;
-    do
+
+    if (operationContext == NULL)
     {
-        if (operationContext == NULL)
-        {
-            Log_Error("Failed to create enrollment request operation");
-            break;
-        }
+        Log_Error("Failed to create enrollment request operation");
+        goto done;
+    }
 
-        operationContext->data = malloc(sizeof(ADUC_Enrollment_Request_Operation_Data));
-        if (operationContext->data == NULL)
-        {
-            Log_Error("Failed to allocate memory for enrollment data");
-            break;
-        }
-        memset(operationContext->data, 0, sizeof(ADUC_Enrollment_Request_Operation_Data));
+    operationContext->data = malloc(sizeof(ADUC_Enrollment_Request_Operation_Data));
+    if (operationContext->data == NULL)
+    {
+        goto done;
+    }
+    memset(operationContext->data, 0, sizeof(ADUC_Enrollment_Request_Operation_Data));
 
-        interface = malloc(sizeof(ADUC_AGENT_MODULE_INTERFACE));
-        if (interface == NULL)
-        {
-            Log_Error("Out of memory");
-            break;
-        }
+    interface = malloc(sizeof(ADUC_AGENT_MODULE_INTERFACE));
+    if (interface == NULL)
+    {
+        goto done;
+    }
 
-        if (memset(interface, 0, sizeof(ADUC_AGENT_MODULE_INTERFACE)) == NULL)
-        {
-            Log_Error("Failed to initialize interface");
-            break;
-        }
+    if (memset(interface, 0, sizeof(ADUC_AGENT_MODULE_INTERFACE)) == NULL)
+    {
+        goto done;
+    }
 
-        interface->getContractInfo = ADUC_Enrollment_Management_GetContractInfo;
-        interface->initializeModule = ADUC_Enrollment_Management_Initialize;
-        interface->deinitializeModule = ADUC_Enrollment_Management_Deinitialize;
-        interface->doWork = ADUC_Enrollment_Management_DoWork;
-        interface->destroy = ADUC_Enrollment_Management_Destroy;
-        interface->moduleData = operationContext;
+    interface->getContractInfo = ADUC_Enrollment_Management_GetContractInfo;
+    interface->initializeModule = ADUC_Enrollment_Management_Initialize;
+    interface->deinitializeModule = ADUC_Enrollment_Management_Deinitialize;
+    interface->doWork = ADUC_Enrollment_Management_DoWork;
+    interface->destroy = ADUC_Enrollment_Management_Destroy;
+    interface->moduleData = operationContext;
 
-        // Success
-        success = true;
-    } while (0);
+    success = true;
+done:
 
     if (!success)
     {

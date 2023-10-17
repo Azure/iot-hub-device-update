@@ -49,7 +49,7 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
     bool result = false;
     const ADUC_ConfigInfo* config = NULL;
     const ADUC_AgentInfo* agent_info = NULL;
-    unsigned int tmp = -1;
+    int tmp = -1;
 
     if (settings == NULL)
     {
@@ -120,7 +120,7 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
     }
 
     // Common MQTT connection data fields.
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
+    if (!ADUC_AgentInfo_ConnectionData_GetIntegerField(
             agent_info, "mqttBroker.mqttVersion", &tmp) || tmp < MIN_BROKER_MQTT_VERSION)
     {
         Log_Info("Using default MQTT protocol version: %d", DEFAULT_MQTT_BROKER_PROTOCOL_VERSION);
@@ -128,7 +128,7 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
     }
     else
     {
-        settings->mqttVersion = (int)tmp;
+        settings->mqttVersion = tmp;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "mqttBroker.tcpPort", &settings->tcpPort))
@@ -143,10 +143,14 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
         settings->useTLS = DEFAULT_USE_TLS;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "mqttBroker.qos", &settings->qos))
+    if (!ADUC_AgentInfo_ConnectionData_GetIntegerField(agent_info, "mqttBroker.qos", &tmp) || tmp < 0 || tmp > 2)
     {
         Log_Info("QoS: %d", DEFAULT_QOS);
         settings->qos = DEFAULT_QOS;
+    }
+    else
+    {
+        settings->qos = tmp;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "mqttBroker.cleanSession", &settings->cleanSession))
