@@ -907,7 +907,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
     context->retryFunc = EnrollmentRequestOperation_DoRetry;
     context->completeFunc = EnrollmentRequestOperation_Complete;
     context->retryParamsCount = s_retryParamsMapSize;
-    context->retryParams = malloc(sizeof(*context->retryParams) * context->retryParamsCount);
+    context->retryParams = malloc(sizeof(*context->retryParams) * (size_t)context->retryParamsCount);
     if (context->retryParams == NULL)
     {
         goto done;

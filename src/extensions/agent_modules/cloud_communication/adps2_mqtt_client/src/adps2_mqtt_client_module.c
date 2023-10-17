@@ -61,7 +61,7 @@ typedef struct ADPS_MQTT_CLIENT_MODULE_STATE_TAG
 
     ADPS_REGISTER_STATE registerState; //!< Registration state
     char* operationId; //!< Operation ID for registration
-    unsigned int requestId; //!< Request ID for registration
+    long int requestId; //!< Request ID for registration
     time_t lastRegisterAttemptTime; //!< Last time a registration attempt was made
     time_t lastRegisterResponseTime; //!< Last time a registration response was received
     time_t nextRegisterAttemptTime; //!< Next time to attempt registration
@@ -607,7 +607,7 @@ bool DeviceRegistration_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
         char device_registration_json[1024];
         moduleState->requestId = nowTime;
         snprintf(
-            topic_name, sizeof(topic_name), "$dps/registrations/PUT/iotdps-register/?$rid=%d", moduleState->requestId);
+            topic_name, sizeof(topic_name), "$dps/registrations/PUT/iotdps-register/?$rid=%ld", moduleState->requestId);
         snprintf(
             device_registration_json,
             sizeof(device_registration_json),
@@ -618,7 +618,7 @@ bool DeviceRegistration_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
             moduleState->commChannelModule,
             topic_name,
             &mid,
-            strlen(device_registration_json),
+            (int)strlen(device_registration_json),
             device_registration_json,
             moduleState->settings.mqttSettings.qos,
             false /* retain */,

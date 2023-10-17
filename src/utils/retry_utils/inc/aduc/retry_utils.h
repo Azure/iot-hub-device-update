@@ -115,7 +115,7 @@ typedef struct ADUC_Retriable_Operation_Context_t
 
     // Configuration
     ADUC_Retry_Params* retryParams; // Array of retry parameters per class of errors.
-    size_t retryParamsCount; // Number of elements in the 'retryParams' array.
+    int retryParamsCount; // Number of elements in the 'retryParams' array.
 
     // Runtime data
     ADUC_Retriable_Operation_State state;
