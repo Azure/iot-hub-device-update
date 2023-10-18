@@ -293,10 +293,9 @@ void OnMessage_enr_resp(
     JSON_Value* root_value = NULL;
     JSON_Object* root_object = NULL;
 
-    // Get operation context from 'obj'.
     ADUC_Retriable_Operation_Context* context = (ADUC_Retriable_Operation_Context*)obj;
-    // Get message context from 'context'.
     ADUC_MQTT_Message_Context* messageContext = (ADUC_MQTT_Message_Context*)context->data;
+    ADUC_Enrollment_Request_Operation_Data* enrollmentData = EnrollmentData_FromOperationContext(context);
 
     ADUC_STATE_STORE_RESULT stateStoreResult = ADUC_STATE_STORE_RESULT_OK;
 
@@ -337,15 +336,15 @@ void OnMessage_enr_resp(
     }
 
     // Store the enrollment response data in the state.
-    stateStoreResult = ADUC_StateStore_SetIsDeviceEnrolled(isEnrolled != 0);
-    if (stateStoreResult != ADUC_STATE_STORE_RESULT_OK)
-    {
-        Log_Error("Failed to set enrollment state in state store");
-        goto done;
-    }
-
     if (isEnrolled != 0)
     {
+        EnrollmentData_SetState(enrollmentData, ADU_ENROLLMENT_STATE_ENROLLED, "successfully enrolled");
+        if (!ADUC_StateStore_GetIsDeviceEnrolled())
+        {
+            Log_Error("Failed to set enrollment state to enrolled.");
+            goto done;
+        }
+
         Log_Info("Device is currently enrolled with '%s'", duInstance);
 
         context->completeFunc(context);
@@ -431,8 +430,7 @@ bool EnrollmentStatusRequestOperation_DoWork(ADUC_Retriable_Operation_Context* c
     int mqtt_res = 0;
 
     // If the enrollment state received, stop the operation.
-    if (enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED
-        || enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_NOT_ENROLLED)
+    if (enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED || ADUC_StateStore_GetIsDeviceEnrolled())
     {
         // Enrollment is completed.
         Log_Info("Enrollment completed");
