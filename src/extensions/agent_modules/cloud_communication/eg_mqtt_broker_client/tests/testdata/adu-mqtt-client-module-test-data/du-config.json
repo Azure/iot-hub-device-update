@@ -40,32 +40,54 @@
           }
         }
       },
-      "enrollmentSettings": {
-        "enrollmentRequestTimeout": 15,
-        "minimumRetryDelay": 15
-      },
-      "manufacturer": "contoso",
-      "model": "espresso-v1",
-      "operationSettings": {
-        "deviceRegistrationRequest": {
-          "intervalSec": 3600,
-          "retryStrategy": [
-            {
-              "resultRange": {
-                "min": 0,
-                "max": 1
+      "operations": {
+        "enrollment": {
+          "statusRequest": {
+            "logLevel": 0,
+            "intervalSeconds": 10,
+            "timeoutSeconds": 10,
+            "retrySettings": {
+              "default": {
+                "maxRetries": 50000,
+                "maxDelaySeconds": 30,
+                "fallbackWaitTimeSeconds": 30,
+                "initialDelayUnitMS": 5000,
+                "maxJitterPercent": 9
               },
-              "params": {
-                "maxRetries": 10,
-                "maxDelaySec": 36000,
-                "fallbackWaitTimeSec": 3600,
-                "initialDelayUnitMS": 3600000,
-                "maxJitterPercentage": 9
+              "clientTransient": {
+                "maxRetries": 50000,
+                "maxDelaySeconds": 30,
+                "fallbackWaitTimeSeconds": 30,
+                "initialDelayUnitMS": 5000,
+                "maxJitterPercent": 9
+              },
+              "clientUnrecoverable": {
+                "maxRetries": 50000,
+                "maxDelaySeconds": 30,
+                "fallbackWaitTimeSeconds": 30,
+                "initialDelayUnitMS": 5000,
+                "maxJitterPercent": 9
+              },
+              "serviceTransient": {
+                "maxRetries": 50000,
+                "maxDelaySeconds": 30,
+                "fallbackWaitTimeSeconds": 30,
+                "initialDelayUnitMS": 5000,
+                "maxJitterPercent": 9
+              },
+              "serviceUnrecoverable": {
+                "maxRetries": 50000,
+                "maxDelaySeconds": 30,
+                "fallbackWaitTimeSeconds": 30,
+                "initialDelayUnitMS": 5000,
+                "maxJitterPercent": 9
               }
             }
-          ]
+          }
         }
-      }
+      },
+      "manufacturer": "contoso",
+      "model": "espresso-v1"
     }
   ]
 }

@@ -326,6 +326,35 @@ done:
     return success;
 }
 
+bool IsProvisioningWithDps()
+{
+    bool using_device_provisioning = false;
+
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
+    {
+        goto done;
+    }
+
+    {
+        const ADUC_AgentInfo* agent_info = ADUC_ConfigInfo_GetAgent(config, 0);
+        if (agent_info == NULL)
+        {
+            goto done;
+        }
+
+        if (strcmp(agent_info->connectionType, ADUC_CONNECTION_TYPE_ADPS2_MQTT) != 0)
+        {
+            goto done;
+        }
+    }
+
+    using_device_provisioning = true;
+
+done:
+    return using_device_provisioning;
+}
+
 /**
  * @brief Main method.
  *
@@ -344,6 +373,7 @@ int main(int argc, char** argv)
     ADUC_AGENT_MODULE_HANDLE dpsClientModuleHandle = NULL;
     ADUC_AGENT_MODULE_INTERFACE* dpsClientModuleInterface = NULL;
     ADUC_AGENT_MODULE_INTERFACE* duClientModuleInterface = NULL;
+    bool using_dps = false;
 
     int ret = ParseLaunchArguments(argc, argv, &launchArgs);
     if (ret < 0)
@@ -509,21 +539,25 @@ int main(int argc, char** argv)
 
     // Initialize the agent modules.
     // TODO (nox-msft) - replace with Agent Module manager code, once changed all modules to shared library.
-    dpsClientModuleHandle = ADPS_MQTT_Client_Module_Create();
-    dpsClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)dpsClientModuleHandle;
-    if (dpsClientModuleInterface == NULL)
-    {
-        Log_Error("ADPS_MQTT_Client_Module_Create failed.");
-        ret = -1;
-        goto done;
-    }
 
-
-    ret = dpsClientModuleInterface->initializeModule(dpsClientModuleHandle, NULL);
-    if (ret != 0)
+    using_dps = IsProvisioningWithDps();
+    if (using_dps)
     {
-        Log_Error("ADPS_MQTT_Client_Module_Initialize failed.");
-        goto done;
+        dpsClientModuleHandle = ADPS_MQTT_Client_Module_Create();
+        dpsClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)dpsClientModuleHandle;
+        if (dpsClientModuleInterface == NULL)
+        {
+            Log_Error("ADPS_MQTT_Client_Module_Create failed.");
+            ret = -1;
+            goto done;
+        }
+
+        ret = dpsClientModuleInterface->initializeModule(dpsClientModuleHandle, NULL);
+        if (ret != 0)
+        {
+            Log_Error("ADPS_MQTT_Client_Module_Initialize failed.");
+            goto done;
+        }
     }
 
     duClientModuleHandle = ADUC_MQTT_Client_Module_Create();
@@ -549,7 +583,11 @@ int main(int argc, char** argv)
     Log_Info("Agent running.");
     while (ADUC_ShutdownService_ShouldKeepRunning())
     {
-        dpsClientModuleInterface->doWork(dpsClientModuleHandle);
+        if (using_dps)
+        {
+            dpsClientModuleInterface->doWork(dpsClientModuleHandle);
+        }
+
         duClientModuleInterface->doWork(duClientModuleHandle);
 
         // Sleep for a bit to avoid busy-waiting.
@@ -561,7 +599,7 @@ int main(int argc, char** argv)
 done:
     Log_Info("Agent exited with code %d", ret);
 
-    if (dpsClientModuleInterface != NULL)
+    if (using_dps && dpsClientModuleInterface != NULL)
     {
         dpsClientModuleInterface->deinitializeModule(dpsClientModuleHandle);
         dpsClientModuleInterface->destroy(dpsClientModuleHandle);
