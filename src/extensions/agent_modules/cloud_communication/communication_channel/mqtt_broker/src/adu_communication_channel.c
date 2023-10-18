@@ -320,6 +320,11 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
     memcpy(&commMgrState->mqttSettings, initData->mqttSettings, sizeof(commMgrState->mqttSettings));
 
     commMgrState->sessionId = STRING_construct(initData->sessionId);
+    if (commMgrState->sessionId == NULL)
+    {
+        Log_Error("sessionId construct");
+        goto done;
+    }
 
     commMgrState->keyFilePasswordCallback = initData->passwordCallback;
 
