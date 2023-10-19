@@ -61,7 +61,7 @@ typedef struct ADPS_MQTT_CLIENT_MODULE_STATE_TAG
 
     ADPS_REGISTER_STATE registerState; //!< Registration state
     char* operationId; //!< Operation ID for registration
-    unsigned int requestId; //!< Request ID for registration
+    long int requestId; //!< Request ID for registration
     time_t lastRegisterAttemptTime; //!< Last time a registration attempt was made
     time_t lastRegisterResponseTime; //!< Last time a registration response was received
     time_t nextRegisterAttemptTime; //!< Next time to attempt registration
@@ -76,7 +76,7 @@ typedef struct ADPS_MQTT_CLIENT_MODULE_STATE_TAG
     AZURE_DPS_2_MQTT_SETTINGS settings; //!< DPS settings
     time_t nextOperationTime; //!< Next time to perform an operation
 
-    ADUC_AGENT_MODULE_HANDLE commModule; //!< Communication channel module
+    ADUC_AGENT_MODULE_HANDLE commChannelModule; //!< Communication channel module
 
 } ADPS_MQTT_CLIENT_MODULE_STATE;
 
@@ -266,7 +266,7 @@ ADUC_MQTT_CALLBACKS s_commChannelCallbacks = {
  * @return true if the payload was processed successfully; false otherwise.
  */
 bool ProcessDeviceRegistrationResponse(
-    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState, const char* payload, size_t payload_len)
+    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState, const char* payload, int payload_len)
 {
     bool result = false;
 
@@ -468,14 +468,14 @@ int ADPS_MQTT_Client_Module_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* mo
         goto done;
     }
 
-    moduleState->commModule = ADUC_Communication_Channel_Create();
-    if (moduleState->commModule == NULL)
+    moduleState->commChannelModule = ADUC_Communication_Channel_Create();
+    if (moduleState->commChannelModule == NULL)
     {
         Log_Error("Failed to create communication channel");
         goto done;
     }
 
-    ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
+    ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commChannelModule;
 
     ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = { moduleState->settings.registrationId,
                                                           handle,
@@ -484,7 +484,7 @@ int ADPS_MQTT_Client_Module_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* mo
                                                           NULL /* key file password callback */,
                                                           NULL /* connection retry param */ };
 
-    ret = commInterface->initializeModule(moduleState->commModule, &commInitData);
+    ret = commInterface->initializeModule(moduleState->commChannelModule, &commInitData);
 
     if (ret != 0)
     {
@@ -565,7 +565,7 @@ bool DeviceRegistration_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
             {
                 int mid = 0;
                 int mqtt_ret = ADUC_Communication_Channel_MQTT_Publish(
-                    moduleState->commModule,
+                    moduleState->commChannelModule,
                     pollTopic,
                     &mid,
                     0,
@@ -607,7 +607,7 @@ bool DeviceRegistration_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
         char device_registration_json[1024];
         moduleState->requestId = nowTime;
         snprintf(
-            topic_name, sizeof(topic_name), "$dps/registrations/PUT/iotdps-register/?$rid=%d", moduleState->requestId);
+            topic_name, sizeof(topic_name), "$dps/registrations/PUT/iotdps-register/?$rid=%ld", moduleState->requestId);
         snprintf(
             device_registration_json,
             sizeof(device_registration_json),
@@ -615,10 +615,10 @@ bool DeviceRegistration_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
             moduleState->settings.registrationId);
         int mid = 0;
         int mqtt_ret = ADUC_Communication_Channel_MQTT_Publish(
-            moduleState->commModule,
+            moduleState->commChannelModule,
             topic_name,
             &mid,
-            strlen(device_registration_json),
+            (int)strlen(device_registration_json),
             device_registration_json,
             moduleState->settings.mqttSettings.qos,
             false /* retain */,
@@ -663,8 +663,8 @@ int ADPS_MQTT_Client_Module_Deinitialize(ADUC_AGENT_MODULE_HANDLE module)
         return -1;
     }
 
-    ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
-    commInterface->deinitializeModule(moduleState->commModule);
+    ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commChannelModule;
+    commInterface->deinitializeModule(moduleState->commChannelModule);
 
     FreeAzureDPS2MqttSettings(&moduleState->settings);
     free(moduleState->operationId);
@@ -689,13 +689,13 @@ int ADPS_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
 {
     ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(handle);
 
-    ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commModule;
+    ADUC_AGENT_MODULE_INTERFACE* commInterface = (ADUC_AGENT_MODULE_INTERFACE*)moduleState->commChannelModule;
     if (commInterface != NULL)
     {
         commInterface->doWork(commInterface);
     }
 
-    if (ADUC_Communication_Channel_IsConnected(moduleState->commModule))
+    if (ADUC_Communication_Channel_IsConnected(moduleState->commChannelModule))
     {
         DeviceRegistration_DoWork(handle);
     }

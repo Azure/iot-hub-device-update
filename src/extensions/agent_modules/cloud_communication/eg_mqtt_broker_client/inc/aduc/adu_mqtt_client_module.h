@@ -29,7 +29,6 @@ typedef struct ADUC_MQTT_CLIENT_MODULE_STATE_TAG
     char* mqtt_topic_service2agent; // For v1, we're only subscribe to 1 topic.
     char* mqtt_topic_agent2service; // For v1, we're only publish to 1 topic.
 
-    ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE initializeState; //!< Module initialize status.
     ADU_ENROLLMENT_STATE enrollmentState; //!< Enrollment state
 
     ADU_MQTT_MESSAGE_INFO enrollmentMessageInfo; //!< Enrollment message info
@@ -39,7 +38,8 @@ typedef struct ADUC_MQTT_CLIENT_MODULE_STATE_TAG
     int lastError; //!< Last error code
     time_t nextOperationTime; //!< Next time to perform an operation
 
-    ADUC_AGENT_MODULE_HANDLE commModule; //!< The communication module handle
+    ADUC_AGENT_MODULE_INTERFACE* commChannelModule; //!< The communication module handle
+    ADUC_AGENT_MODULE_INTERFACE* enrollmentModule; //!< The enrollment module handle
 
 } ADUC_MQTT_CLIENT_MODULE_STATE;
 
@@ -52,8 +52,6 @@ ADUC_AGENT_MODULE_HANDLE ADUC_MQTT_Client_Module_Create();
  * @brief Destroy the MQTT client module instance.
  */
 void ADUC_MQTT_Client_Module_Destroy(ADUC_AGENT_MODULE_HANDLE handle);
-
-
 
 EXTERN_C_END
 

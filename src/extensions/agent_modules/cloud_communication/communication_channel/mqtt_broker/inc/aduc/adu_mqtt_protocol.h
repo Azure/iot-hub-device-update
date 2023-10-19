@@ -101,7 +101,7 @@ typedef enum ADU_ENROLLMENT_STATE_TAG
     ADU_ENROLLMENT_STATE_NOT_ENROLLED = -1, /**< The client is not enrolled. */
     ADU_ENROLLMENT_STATE_UNKNOWN = 0, /**< The enrollment state of the client is unknown. */
     ADU_ENROLLMENT_STATE_SUBSCRIBED = 1, /**< The client is subscribed. */
-    ADU_ENROLLMENT_STATE_ENROLLING = 2, /**< The client is currently in the process of enrolling. */
+    ADU_ENROLLMENT_STATE_REQUESTING = 2, /**< The client is requesting an enrollment status. */
     ADU_ENROLLMENT_STATE_ENROLLED = 3, /**< The client is successfully enrolled. */
 } ADU_ENROLLMENT_STATE;
 

@@ -12,6 +12,7 @@ add_library (${target_name} STATIC)
 
 add_library (aduc::${target_name} ALIAS ${target_name})
 
+find_package (azure_c_shared_utility REQUIRED)
 find_package (Parson REQUIRED)
 
 target_sources (${target_name} PRIVATE src/adu_communication_channel.c)
@@ -26,6 +27,8 @@ target_link_libraries (
     PUBLIC aduc::c_utils
            aduc::agent_state_store
            aduc::retry_utils
+           aziotsharedutil
+
     PRIVATE aduc::adu_types
             aduc::config_utils
             aduc::logging

@@ -6,7 +6,6 @@
  * Licensed under the MIT License.
  */
 
-#include "aduc/adps2_mqtt_client_module.h"
 #include "aduc/adu_mqtt_client_module.h"
 #include "aduc/agent_state_store.h"
 #include "aduc/config_utils.h"
@@ -47,14 +46,6 @@ int main()
 
     ADUC_StateStore_Initialize(path.c_str());
 
-    ADUC_AGENT_MODULE_HANDLE dpsHandle = ADPS_MQTT_Client_Module_Create();
-    if (dpsHandle == nullptr)
-    {
-        Log_Error("Failed to create module handle");
-        return -1;
-    }
-    ADUC_AGENT_MODULE_INTERFACE* dpsInterface = (ADUC_AGENT_MODULE_INTERFACE*)dpsHandle;
-
     ADUC_AGENT_MODULE_HANDLE duClientHandle = ADUC_MQTT_Client_Module_Create();
     if (duClientHandle == nullptr)
     {
@@ -68,14 +59,7 @@ int main()
     signal(SIGINT, _SignalHandler);
 
     // Initialize the module
-    int result = dpsInterface->initializeModule(dpsHandle, nullptr);
-    if (result != 0)
-    {
-        Log_Error("Failed to initialize DPS client module");
-        return -1;
-    }
-
-    result = duClientInterface->initializeModule(duClientHandle, nullptr);
+    int result = duClientInterface->initializeModule(duClientHandle, nullptr);
     if (result != 0)
     {
         Log_Error("Failed to initialize DU MQTT client module");
@@ -87,7 +71,6 @@ int main()
     while (keep_running_ft)
     {
         // Call do_work
-        dpsInterface->doWork(dpsHandle);
         duClientInterface->doWork(duClientHandle);
 
         usleep(100000);
@@ -101,16 +84,8 @@ int main()
         return -1;
     }
 
-    result = dpsInterface->deinitializeModule(dpsHandle);
-    if (raise != 0)
-    {
-        Log_Error("Failed to deinitialize DPS client module");
-        return -1;
-    }
-
     // Destroy the module
     ADUC_MQTT_Client_Module_Destroy(duClientHandle);
-    ADPS_MQTT_Client_Module_Destroy(dpsHandle);
 
     ADUC_Logging_Uninit();
     return 0;

@@ -50,10 +50,12 @@ typedef struct ADUC_AGENT_MODULE_INTERFACE_TAG
     ADUC_AGENT_MODULE_HANDLE name##_Create(); \
     void name##_Destroy(ADUC_AGENT_MODULE_HANDLE moduleHandle);
 
-#define DECLARE_AGENT_MODULE_PRIVATE(name)                                                                      \
-    int name##_Initialize(ADUC_AGENT_MODULE_HANDLE moduleHandle, void* initData);                               \
-    void name##_Deinitialize(ADUC_AGENT_MODULE_HANDLE moduleHandle);                                            \
-    int name##_DoWork(ADUC_AGENT_MODULE_HANDLE moduleHandle);                                                   \
+#define DECLARE_AGENT_MODULE_PRIVATE(name)                                        \
+    int name##_Initialize(ADUC_AGENT_MODULE_HANDLE moduleHandle, void* initData); \
+    void name##_Deinitialize(ADUC_AGENT_MODULE_HANDLE moduleHandle);              \
+    int name##_DoWork(ADUC_AGENT_MODULE_HANDLE moduleHandle);
+
+#define AgentModuleInterfaceFromHandle(handle) ((ADUC_AGENT_MODULE_INTERFACE*)(handle))
 
 EXTERN_C_END
 

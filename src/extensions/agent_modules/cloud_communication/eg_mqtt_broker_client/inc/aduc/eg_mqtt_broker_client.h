@@ -14,10 +14,17 @@
 EXTERN_C_BEGIN
 
 /**
- * @brief Read the MQTT broker connection data from the config file.
+ * @brief Reads MQTT broker connection settings from the configuration file.
  *
- * @
- * remark The caller is responsible for freeing the returned settings by calling FreeMqttBrokerSettings function.
+ * This function reads the MQTT client settings for communicating with the Azure Device Update service
+ * from the configuration file. The settings are read from the `agent.connectionData.mqttBroker` section
+ * of the configuration file.
+ *
+ * @param settings A pointer to an `ADUC_MQTT_SETTINGS` structure to populate with the MQTT broker settings.
+ *
+ * @return Returns `true` if the settings were successfully read and populated, otherwise `false`.
+ *
+ * @remark The caller is responsible for freeing the returned settings by calling `FreeMqttBrokerSettings` function.
  */
 bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings);
 
@@ -25,7 +32,6 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings);
  * @brief Frees the MQTT broker connection settings.
 */
 void FreeMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings);
-
 
 EXTERN_C_END
 

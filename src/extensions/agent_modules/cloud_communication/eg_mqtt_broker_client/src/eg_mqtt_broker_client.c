@@ -35,7 +35,8 @@ void FreeMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
  * @brief Reads MQTT broker connection settings from the configuration file.
  *
  * This function reads the MQTT client settings for communicating with the Azure Device Update service
- * from the configuration file.
+ * from the configuration file. The settings are read from the `agent.connectionData.mqttBroker` section
+ * of the configuration file.
  *
  * @param settings A pointer to an `ADUC_MQTT_SETTINGS` structure to populate with the MQTT broker settings.
  *
@@ -48,6 +49,7 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
     bool result = false;
     const ADUC_ConfigInfo* config = NULL;
     const ADUC_AgentInfo* agent_info = NULL;
+    int tmp = -1;
 
     if (settings == NULL)
     {
@@ -118,11 +120,15 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
     }
 
     // Common MQTT connection data fields.
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
-            agent_info, "mqttBroker.mqttVersion", &settings->mqttVersion))
+    if (!ADUC_AgentInfo_ConnectionData_GetIntegerField(
+            agent_info, "mqttBroker.mqttVersion", &tmp) || tmp < MIN_BROKER_MQTT_VERSION)
     {
         Log_Info("Using default MQTT protocol version: %d", DEFAULT_MQTT_BROKER_PROTOCOL_VERSION);
         settings->mqttVersion = DEFAULT_MQTT_BROKER_PROTOCOL_VERSION;
+    }
+    else
+    {
+        settings->mqttVersion = tmp;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "mqttBroker.tcpPort", &settings->tcpPort))
@@ -137,10 +143,14 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
         settings->useTLS = DEFAULT_USE_TLS;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, "mqttBroker.qos", &settings->qos))
+    if (!ADUC_AgentInfo_ConnectionData_GetIntegerField(agent_info, "mqttBroker.qos", &tmp) || tmp < 0 || tmp > 2)
     {
         Log_Info("QoS: %d", DEFAULT_QOS);
         settings->qos = DEFAULT_QOS;
+    }
+    else
+    {
+        settings->qos = tmp;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "mqttBroker.cleanSession", &settings->cleanSession))

@@ -159,6 +159,50 @@ bool ADUC_JSON_GetStringFieldFromObj(const JSON_Object* jsonObj, const char* jso
  * @param value the parameter to store @p jsonFieldName's value in
  * @returns true on success; false on failure
  */
+bool ADUC_JSON_GetIntegerField(const JSON_Value* jsonValue, const char* jsonFieldName, int* value)
+{
+    if (jsonValue == NULL || jsonFieldName == NULL)
+    {
+        return false;
+    }
+
+    bool succeeded = false;
+    double val = 0;
+    int castVal = 0;
+
+    JSON_Object* jsonObj = json_value_get_object(jsonValue);
+
+    if (jsonObj == NULL)
+    {
+        goto done;
+    }
+
+    // Note: cannot determine failure in this call as 0 is a valid return, always assume succeeded at this point
+    val = json_object_dotget_number(jsonObj, jsonFieldName);
+
+    if (((int)val) != val)
+    {
+        goto done;
+    }
+
+    castVal = (int)val;
+
+    succeeded = true;
+done:
+
+    *value = castVal;
+
+    return succeeded;
+}
+
+/**
+ * @brief Gets the integer representation of a the value of @p jsonFieldName from @p jsonValue and assigns it to @p value
+ *
+ * @details All values in json are doubles this function only returns true if the value read is a whole,
+ * @param jsonValue value to extract the @p jsonFieldName value from
+ * @param value the parameter to store @p jsonFieldName's value in
+ * @returns true on success; false on failure
+ */
 bool ADUC_JSON_GetUnsignedIntegerField(const JSON_Value* jsonValue, const char* jsonFieldName, unsigned int* value)
 {
     if (jsonValue == NULL || jsonFieldName == NULL)

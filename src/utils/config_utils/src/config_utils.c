@@ -852,14 +852,15 @@ done:
 }
 
 /**
- * @brief Get DU Agent's data field of type unsigned int.
+ * @brief Get DU Agent's connection data field of type int.
  *
  * @param agent Pointer to ADUC_AgentInfo object.
  * @param fieldName The field name to get. This can be a nested field name, e.g. "tcpPort" or "options.maxRetry".
- * @param value Pointer to an unsigned int to receive the value.
+ * @param value Pointer to an int to receive the value.
  * @return bool True if successful.
  */
-bool ADUC_AgentInfo_GetUnsignedIntegerField(const ADUC_AgentInfo* agent, const char* fieldName, unsigned int* value)
+bool ADUC_AgentInfo_ConnectionData_GetIntegerField(
+    const ADUC_AgentInfo* agent, const char* fieldName, int* value)
 {
     bool succeeded = false;
 
@@ -871,7 +872,8 @@ bool ADUC_AgentInfo_GetUnsignedIntegerField(const ADUC_AgentInfo* agent, const c
 
     *value = 0;
 
-    if (!ADUC_JSON_GetUnsignedIntegerField(agent->agentJsonValue, fieldName, value))
+    if (agent->connectionDataJson == NULL
+        || !ADUC_JSON_GetIntegerField(agent->connectionDataJson, fieldName, value))
     {
         goto done;
     }

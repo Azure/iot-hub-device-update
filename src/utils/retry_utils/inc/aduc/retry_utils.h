@@ -32,9 +32,9 @@ EXTERN_C_BEGIN
 typedef struct _tagADUC_Retry_Params
 {
     unsigned int maxRetries; /**< Maximum number of retries */
-    unsigned long maxDelaySecs; /**< Maximum wait time before retry (in seconds) */
-    unsigned long fallbackWaitTimeSec; /**< The fallback time when regular timestamp calculation failed. */
-    unsigned long initialDelayUnitMilliSecs; /**< Backoff factor (in milliseconds ) */
+    unsigned int maxDelaySecs; /**< Maximum wait time before retry (in seconds) */
+    unsigned int fallbackWaitTimeSec; /**< The fallback time when regular timestamp calculation failed. */
+    unsigned int initialDelayUnitMilliSecs; /**< Backoff factor (in milliseconds ) */
     double maxJitterPercent; /**< The maximum number of jitter percent (0 - 100)*/
 } ADUC_Retry_Params;
 
@@ -65,10 +65,84 @@ time_t ADUC_Retry_Delay_Calculator(
     unsigned long maxDelaySecs,
     double maxJitterPercent);
 
+typedef enum ADUC_Failure_Class_tag
+{
+    ADUC_Failure_Class_None,
+    ADUC_Failure_Class_Client_Transient,
+    ADUC_Failure_Class_Client_Unrecoverable,
+    ADUC_Failure_Class_Server_Transient,
+    ADUC_Failure_Class_Server_Unrecoverable,
+} ADUC_Failure_Class;
+
 /**
  * @brief Get current time since epoch in seconds.
  */
 time_t ADUC_GetTimeSinceEpochInSeconds();
+
+typedef enum ADUC_Retriable_Operation_State_tag
+{
+    ADUC_Retriable_Operation_State_Destroyed = -4,
+    ADUC_Retriable_Operation_State_Cancelled = -3,
+    ADUC_Retriable_Operation_State_Failure = -2,
+    ADUC_Retriable_Operation_State_Failure_Retriable = -1,
+    ADUC_Retriable_Operation_State_NotStarted = 0,
+    ADUC_Retriable_Operation_State_InProgress = 1,
+    ADUC_Retriable_Operation_State_TimedOut = 2,
+    ADUC_Retriable_Operation_State_Cancelling = 3,
+    ADUC_Retriable_Operation_State_Expired = 4,
+    ADUC_Retriable_Operation_State_Completed = 5,
+} ADUC_Retriable_Operation_State;
+
+typedef struct ADUC_Retriable_Operation_Context_t
+{
+    // Operation data
+    void* operationName;
+    void* data;
+
+    // Custom functions
+    void (*dataDestroyFunc)(struct ADUC_Retriable_Operation_Context_t* data);
+    void (*operationDestroyFunc)(struct ADUC_Retriable_Operation_Context_t* context);
+    bool (*doWorkFunc)(struct ADUC_Retriable_Operation_Context_t* context);
+    bool (*cancelFunc)(struct ADUC_Retriable_Operation_Context_t* context);
+    bool (*retryFunc)(struct ADUC_Retriable_Operation_Context_t* context, const ADUC_Retry_Params* retryParams);
+    bool (*completeFunc)(struct ADUC_Retriable_Operation_Context_t* context);
+
+    // Callbacks
+    void (*onExpired)(struct ADUC_Retriable_Operation_Context_t* context);
+    void (*onSuccess)(struct ADUC_Retriable_Operation_Context_t* context);
+    void (*onFailure)(struct ADUC_Retriable_Operation_Context_t* context);
+    void (*onRetry)(struct ADUC_Retriable_Operation_Context_t* context);
+
+    // Configuration
+    ADUC_Retry_Params* retryParams; // Array of retry parameters per class of errors.
+    int retryParamsCount; // Number of elements in the 'retryParams' array.
+
+    // Runtime data
+    ADUC_Retriable_Operation_State state;
+    ADUC_Failure_Class lastFailureClass;
+    time_t nextExecutionTime; // Time when the operation should be executed
+    time_t operationTimeoutSecs; // Timeout for the operation (in seconds) ( <1 means no timeout)
+
+    time_t expirationTime; // Time when the 'operation' expires,
+        // regardless of attempts or class of errors encountered.
+        // (<0 means no expiration)
+
+    unsigned int attemptCount; // Number of attempts
+    unsigned int operationIntervalSecs; // Interval between operations (in seconds) ( <1 means no interval)
+
+    time_t lastExecutionTime; // Time when the operation was last executed
+    time_t lastFailureTime; // Time when the operation last failed
+    time_t lastSuccessTime; // Time when the operation last succeeded
+
+    void* lastErrorContext; // Last error context
+
+    const void* commChannelHandle; // Handle to the communication channel used for the operation
+} ADUC_Retriable_Operation_Context;
+
+void ADUC_Retriable_Operation_Init(ADUC_Retriable_Operation_Context* context, bool startNow);
+bool ADUC_Retriable_Operation_DoWork(ADUC_Retriable_Operation_Context* context);
+bool ADUC_Retriable_Operation_Cancel(ADUC_Retriable_Operation_Context* context);
+bool ADUC_Retriable_Set_State(ADUC_Retriable_Operation_Context* context, ADUC_Retriable_Operation_State state);
 
 EXTERN_C_END
 

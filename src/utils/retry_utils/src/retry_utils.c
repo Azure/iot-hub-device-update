@@ -62,3 +62,116 @@ time_t ADUC_Retry_Delay_Calculator(
         ADUC_GetTimeSinceEpochInSeconds() + (time_t)additionalDelaySecs + (time_t)(delay * (1 + jitterPercent)));
     return retryTimestampSec;
 }
+
+void ADUC_Retriable_Operation_Init(ADUC_Retriable_Operation_Context* context, bool startNow)
+{
+    if (context == NULL)
+    {
+        return;
+    }
+
+    context->state = ADUC_Retriable_Operation_State_NotStarted;
+    context->nextExecutionTime = 0;
+    context->expirationTime = 0;
+    context->attemptCount = 0;
+
+    if (startNow)
+    {
+        context->nextExecutionTime = ADUC_GetTimeSinceEpochInSeconds();
+    }
+}
+
+/**
+ * @brief Perform a retriable operation.
+ */
+bool ADUC_Retriable_Operation_DoWork(ADUC_Retriable_Operation_Context* context)
+{
+    if (context == NULL)
+    {
+        return false;
+    }
+
+    time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
+
+    switch (context->state)
+    {
+    case ADUC_Retriable_Operation_State_Completed:
+    case ADUC_Retriable_Operation_State_Failure:
+    case ADUC_Retriable_Operation_State_Cancelled:
+    case ADUC_Retriable_Operation_State_Destroyed:
+        // Nothing to do.
+        return true;
+
+    case ADUC_Retriable_Operation_State_NotStarted:
+    case ADUC_Retriable_Operation_State_InProgress:
+    case ADUC_Retriable_Operation_State_Expired:
+    case ADUC_Retriable_Operation_State_Failure_Retriable:
+    case ADUC_Retriable_Operation_State_Cancelling:
+        // continue.
+        break;
+    case ADUC_Retriable_Operation_State_TimedOut:
+        // continue.
+        break;
+    }
+
+    bool jobResult = false;
+
+    // The job took too long? Expire it.
+    if (nowTime >= context->expirationTime)
+    {
+        context->state = ADUC_Retriable_Operation_State_Expired;
+        if (context->onExpired)
+        {
+            // NOTE: expecting the worker to handle the expired state.
+            // This including update the nextExecutionTime and related timestamps and state,
+            // if try is still allowed.
+            context->onExpired(context);
+        }
+    }
+
+    // If it's time to do work, do it.
+    if (nowTime >= context->nextExecutionTime)
+    {
+        // NOTE: perform the worker's job.
+        // The worker is responsible for updating the nextExecutionTime and related timestamps and state.
+        if (context->doWorkFunc != NULL)
+        {
+            jobResult = context->doWorkFunc(context);
+        }
+    }
+
+    return jobResult;
+}
+
+bool ADUC_Retriable_Set_State(ADUC_Retriable_Operation_Context* context, ADUC_Retriable_Operation_State state)
+{
+    if (context == NULL)
+    {
+        return false;
+    }
+
+    context->state = state;
+    return true;
+}
+
+bool ADUC_Retriable_Operation_Cancel(ADUC_Retriable_Operation_Context* context)
+{
+    if (context == NULL)
+    {
+        return false;
+    }
+
+    switch (context->state)
+    {
+    case ADUC_Retriable_Operation_State_NotStarted:
+    case ADUC_Retriable_Operation_State_InProgress:
+    case ADUC_Retriable_Operation_State_Expired:
+    case ADUC_Retriable_Operation_State_Failure_Retriable:
+        ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_Cancelling);
+        return true;
+    default:
+        return false;
+    }
+
+    return false;
+}

@@ -455,6 +455,15 @@ bool ADUC_StateStore_GetIsDeviceRegistered()
 }
 
 /**
+ * @brief Get the recommended polling interval for device registration state.
+ * @return The recommended polling interval in seconds.
+ */
+int ADUC_StateStore_GetDeviceRegistrationStatePollIntervalSeconds()
+{
+    return ADUC_DEFAULT_DEVICE_REGISTRATION_STATE_POLL_INTERVAL_SECONDS;
+}
+
+/**
  * @brief Get the Device Update service device ID.
  * @return The device ID, or NULL if not found.
  */

@@ -26,6 +26,8 @@ bool ADUC_JSON_GetStringField(const JSON_Value* jsonValue, const char* jsonField
 
 bool ADUC_JSON_GetBooleanField(const JSON_Value* jsonValue, const char* jsonFieldName, bool* value);
 
+bool ADUC_JSON_GetIntegerField(const JSON_Value* jsonValue, const char* jsonFieldName, int* value);
+
 bool ADUC_JSON_GetUnsignedIntegerField(const JSON_Value* jsonValue, const char* jsonFieldName, unsigned int* value);
 
 bool ADUC_JSON_GetLongLongField(const JSON_Value* jsonValue, const char* jsonFieldName, long long* value);
