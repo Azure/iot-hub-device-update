@@ -174,7 +174,6 @@ function install_do() {
         elif [ "$version" == "11" ] && [ "$architecture" == "arm64" ]; then
             package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/debian11_arm64-packages.tar"
             package_filename="debian11_arm64-packages.tar"
-        fi
         elif [ "$version" == "11" ] && [ "$architecture" == "arm32" ]; then
             package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/debian11_arm32-packages.tar"
             package_filename="debian11_arm32-packages.tar"
