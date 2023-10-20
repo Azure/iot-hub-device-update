@@ -377,6 +377,19 @@ do_install_do_release_tarball() {
             warn "unsupported arch for DO release asset on Debian10. Supported: amd64 arm64 arm32"
             return 1
         fi
+        elif [[ $os_lowercase == "debian" && $VER == "11" ]]; then
+        echo "evaluating debian11 for supported DO tarball ..."
+        dist='debian11'
+        if [[ $is_amd64 == "true" ]]; then
+            arch='x64'
+        elif [[ $is_arm64 == "true" ]]; then
+            arch='arm64'
+        elif [[ $is_arm32 == "true" ]]; then
+            arch='arm32'
+        else
+            warn "unsupported arch for DO release asset on Debian11. Supported: amd64 arm64 arm32"
+            return 1
+        fi
     elif [[ $os_lowercase == "ubuntu" ]]; then
         echo "evaluating ubuntu for supported DO tarball ..."
 

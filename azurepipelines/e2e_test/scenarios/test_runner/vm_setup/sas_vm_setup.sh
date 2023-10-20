@@ -94,9 +94,14 @@ function configure_apt_repository() {
         elif [ "$version" == "22.04" ]; then
             package_url="https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb"
         fi
-    elif [ "$distro" == "debian" ] && [ "$version" == "10" ]; then
-        package_url="https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb"
+    elif [ "$distro" == "debian" ]; then
+        if [ "$version" == "10" ]; then
+            package_url="https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb"
+        elif [ "$version" == "11" ]; then
+            package_url="https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb"
+        fi
     fi
+
 
     if [ -n "$package_url" ]; then
         wget "$package_url" -O packages-microsoft-prod.deb
@@ -159,9 +164,21 @@ function install_do() {
             package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/ubuntu2204_arm64-packages.tar"
             package_filename="ubuntu2204_arm64-packages.tar"
         fi
-    elif [ "$distro" == "debian" ] && [ "$version" == "10" ] && [ "$architecture" == "amd64" ]; then
-        package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/debian10_x64-packages.tar"
-        package_filename="debian10_x64-packages.tar"
+    elif [ "$distro" == "debian" ]; then
+        if [ "$version" == "10" ] && [ "$architecture" == "amd64" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/debian10_x64-packages.tar"
+            package_filename="debian10_x64-packages.tar"
+        elif [ "$version" == "11" ] && [ "$architecture" == "amd64" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/debian11_x64-packages.tar"
+            package_filename="debian11_x64-packages.tar"
+        elif [ "$version" == "11" ] && [ "$architecture" == "arm64" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/debian11_arm64-packages.tar"
+            package_filename="debian11_arm64-packages.tar"
+        fi
+        elif [ "$version" == "11" ] && [ "$architecture" == "arm32" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/debian11_arm32-packages.tar"
+            package_filename="debian11_arm32-packages.tar"
+        fi
     fi
 
     if [ -n "$package_url" ] && [ -n "$package_filename" ]; then

@@ -92,6 +92,24 @@ stages:
                   parameters:
                       targetOs: debian10
                       targetArch: amd64
+          - job: BuildDebian_11_AMD64
+            displayName: Building the Device Update Package for Debian 11 amd64
+            continueOnError: False
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ../build/templates/adu-docker-build-steps.yml
+                  parameters:
+                      targetOs: debian11
+                      targetArch: amd64
+          - job: BuildDebian_11_ARM64
+            displayName: Building the Device Update Package for Debian 11 arm64
+            continueOnError: False
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ../build/templates/adu-docker-build-steps.yml
+                  parameters:
+                      targetOs: debian11
+                      targetArch: arm64
 
     - stage: TerraformSetup
       displayName: Initializes and installs Terraform into the VM
@@ -317,6 +335,53 @@ stages:
                           ./testsetup/sas_vm_setup.sh --distro debian-10 --architecture amd64
                       image_working_directory: $(E2E_WORKING_DIR)
                       device_id_under_test: "debian-10-amd64-sas"
+          - job: SetupDebian11_AMD64_VM
+            displayName: "Setting up VM for Debain 11 AMD64 Test VM"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_vm_setup.yaml
+                  parameters:
+                      distroName: debian-11-amd64
+                      provisioning_type: "sas"
+                      vm_size: Standard_DS1_v2
+                      image_publisher: debian
+                      image_offer: debian-11
+                      image_sku: 10
+                      image_version: latest
+                      packagePattern: "*debian11-amd64*/*.deb"
+                      package_pipeline: "Azure.adu-private-preview.e2e-test"
+                      du_tarball_script: >-
+                          tar -xf /tmp/testsetup.tar.gz -C ./ &&
+                          chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
+                          ./testsetup/sas_vm_setup.sh --distro debian-11 --architecture amd64
+                      image_working_directory: $(E2E_WORKING_DIR)
+                      device_id_under_test: "debian-11-amd64-sas"
+          - job: SetupDebian11_ARM64_VM
+            displayName: "Setting up VM for Debian 11 ARM64 Test VM"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_vm_setup.yaml
+                  parameters:
+                      distroName: debian-11-arm64
+                      provisioning_type: "sas"
+                      vm_size: Standard_D2plds_v5  # May need to adjust
+                      image_publisher: debian
+                      image_offer: debian-11
+                      image_sku: 11
+                      image_version: latest
+                      packagePattern: "*debian11-arm64*/*.deb"
+                      package_pipeline: "Azure.adu-private-preview.e2e-test"
+                      du_tarball_script: >-
+                          tar -xf /tmp/testsetup.tar.gz -C ./ &&
+                          chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
+                          ./testsetup/sas_vm_setup.sh --distro debian-11 --architecture arm64
+                      image_working_directory: $(E2E_WORKING_DIR)
+                      device_id_under_test: "debian-11-arm64-sas"
+
 
     - stage: RunTestsAndPostResults
       displayName: Execute E2E Test
@@ -405,6 +470,26 @@ stages:
                   parameters:
                       distroName: debian-10-amd64
                       device_id_under_test: "debian-10-amd64-sas"
+          - job: RunDebian_11_Amd64VmE2ETests
+            displayName: "Running E2E Tests against Debian 11 AMD64"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_test_run.yaml
+                  parameters:
+                      distroName: debian-11-amd64
+                      device_id_under_test: "debian-11-amd64-sas"
+          - job: RunDebian_11_Arm64VmE2ETests
+            displayName: "Running E2E Tests against Debian 11 AMD64"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_test_run.yaml
+                  parameters:
+                      distroName: debian-11-arm64
+                      device_id_under_test: "debian-11-arm64-sas"
 
     - stage: TerraformDestroyVm
       displayName: Tear down cloud resources (VMs) and destroy the resource group
@@ -495,6 +580,26 @@ stages:
                 - template: ./templates/e2e_test_vm_cleanup.yaml
                   parameters:
                       device_id_under_test: debian-10-amd64-sas
+                      terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
+          - job: DeleteDebian_11_Amd64Vms
+            displayName: "Deletes the VM for Debian 11 AMD64"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_test_vm_cleanup.yaml
+                  parameters:
+                      device_id_under_test: debian-11-amd64-sas
+                      terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
+          - job: DeleteDebian_11_Arm64Vms
+            displayName: "Deletes the VM for Debian 11 ARM64"
+            timeoutInMinutes: 360
+            cancelTimeoutInMinutes: 360
+            pool: aduc_1es_client_pool
+            steps:
+                - template: ./templates/e2e_test_vm_cleanup.yaml
+                  parameters:
+                      device_id_under_test: debian-11-arm64-sas
                       terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
     - stage: RG_Destroy
       displayName: Destroys the Resource Group used for the End-To-End Test
