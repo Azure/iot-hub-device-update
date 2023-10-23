@@ -348,7 +348,7 @@ stages:
                       vm_size: Standard_DS1_v2
                       image_publisher: debian
                       image_offer: debian-11
-                      image_sku: 10
+                      image_sku: 11
                       image_version: latest
                       packagePattern: "*debian11-amd64*/*.deb"
                       package_pipeline: "Azure.adu-private-preview.e2e-test"
