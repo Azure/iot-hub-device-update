@@ -20,33 +20,6 @@
 // clang-format off
 static const RSARootKey HardcodedRSARootKeyList[] =
 {
-    {
-        "ADU.200702.R",
-        "ANVCLq8RVKNQZYeiTVu6GvupMt_pmV8FRcivvTUdiegnJ1ijqO7FxR5P95KmEgZ9"
-        "PX2wB_Ysf95tKvW8SbwV7_CByz-ITycdiHEoYAi2GdLSOdAFHzx2hnG7WVi8sYh7"
-        "q1YovzFzRDIQ_T3Tllz_Tlyza_-LhJuLgLhJ0H361kBYdk3Acid1y5ovm7SfDyXx"
-        "HMUbC1owfS-476cmWFOv1R1VAVEN6RuiDz_X6R0gQabmFAqu_vIcKtbkBHv2FH7s"
-        "D5eD-lj6gTYhuaMr-tlhCxqU98G-f0AUSsn6NX_vZnAAsf3b12ENO1h0Z5SJdXaW"
-        "fJGH0o4Rl-57h2yaL0XYZT9ScJgqy8gEY_XJR89w9O1kp3SlI4-27fcc07AcZFcS"
-        "WqmBhB-g51AZlrSCsaxI4-EygstAH6zEWbwQNFGC-SiNqB6b9XlFdbLcmhFDCL5h"
-        "zJrEy3c2_4PdqHFPUY4Oe036eZiNvvyCfkBIqRIBqNl-86Ub8fuQdz5AhxjJq9n3"
-        "eQ",
-        65537
-    },
-    {
-
-        "ADU.200703.R",
-        "ALKjsnQW-rsg-VJ25ic-gEHG_s8w-ciW9VkKqoHnUYOKxPUXOi8q5lfUcc6KPe-a"
-        "VXY-meLCrkzuLbh49aJOKPKcTjllvOzkDeXjOKhZqwikG7T0oFKjOLNGIRPMPGgG"
-        "3v4AppJu3kxHENYcnCT1zXDh9Wp8aBMd4cX2qE8hn4Z8RMWKmRzF0wabWnGdCRzD"
-        "ZDFqxReVHV0q8VXHZtTo9dmpW4yibGJgBTfXMrBzy_dLNickIYw4CrgY_vUVYDWL"
-        "Ne8eD4imE417fe-z57DJphxwe8zyKYuH972dtohvrHP_cvLvSCeWcoYGolzjfc6w"
-        "nuXC2U7E8394B0tliEUMEeWWVjSILRYOWULS99ntHe3JN3dEfuOENp9YE-9v5MNE"
-        "1HcGis9byIAcophlCzXcc8hp0F7oJUOe9tirBa9RKSNVQFgQ6rjizV15zOzftFuY"
-        "x_rj0mwmzi4sVuDPje79kxIvAEmNHII4VqZdeURKGvPcFhCzwS0nEf4bmAXko2Ax"
-        "mQ",
-        65537
-    },
 #if EMBED_TEST_ROOT_KEYS == 1
     {
         "ADU.200702.R.T",
@@ -75,6 +48,34 @@ static const RSARootKey HardcodedRSARootKeyList[] =
         "YihcFipX7qjrmVoiTJBUyvjQZqQygGgbcXR_-V4HN2QO0jMpslX8PvVJlr_qKCtR"
         "fQ",
 
+        65537
+    }
+#else
+    {
+        "ADU.200702.R",
+        "ANVCLq8RVKNQZYeiTVu6GvupMt_pmV8FRcivvTUdiegnJ1ijqO7FxR5P95KmEgZ9"
+        "PX2wB_Ysf95tKvW8SbwV7_CByz-ITycdiHEoYAi2GdLSOdAFHzx2hnG7WVi8sYh7"
+        "q1YovzFzRDIQ_T3Tllz_Tlyza_-LhJuLgLhJ0H361kBYdk3Acid1y5ovm7SfDyXx"
+        "HMUbC1owfS-476cmWFOv1R1VAVEN6RuiDz_X6R0gQabmFAqu_vIcKtbkBHv2FH7s"
+        "D5eD-lj6gTYhuaMr-tlhCxqU98G-f0AUSsn6NX_vZnAAsf3b12ENO1h0Z5SJdXaW"
+        "fJGH0o4Rl-57h2yaL0XYZT9ScJgqy8gEY_XJR89w9O1kp3SlI4-27fcc07AcZFcS"
+        "WqmBhB-g51AZlrSCsaxI4-EygstAH6zEWbwQNFGC-SiNqB6b9XlFdbLcmhFDCL5h"
+        "zJrEy3c2_4PdqHFPUY4Oe036eZiNvvyCfkBIqRIBqNl-86Ub8fuQdz5AhxjJq9n3"
+        "eQ",
+        65537
+    },
+    {
+
+        "ADU.200703.R",
+        "ALKjsnQW-rsg-VJ25ic-gEHG_s8w-ciW9VkKqoHnUYOKxPUXOi8q5lfUcc6KPe-a"
+        "VXY-meLCrkzuLbh49aJOKPKcTjllvOzkDeXjOKhZqwikG7T0oFKjOLNGIRPMPGgG"
+        "3v4AppJu3kxHENYcnCT1zXDh9Wp8aBMd4cX2qE8hn4Z8RMWKmRzF0wabWnGdCRzD"
+        "ZDFqxReVHV0q8VXHZtTo9dmpW4yibGJgBTfXMrBzy_dLNickIYw4CrgY_vUVYDWL"
+        "Ne8eD4imE417fe-z57DJphxwe8zyKYuH972dtohvrHP_cvLvSCeWcoYGolzjfc6w"
+        "nuXC2U7E8394B0tliEUMEeWWVjSILRYOWULS99ntHe3JN3dEfuOENp9YE-9v5MNE"
+        "1HcGis9byIAcophlCzXcc8hp0F7oJUOe9tirBa9RKSNVQFgQ6rjizV15zOzftFuY"
+        "x_rj0mwmzi4sVuDPje79kxIvAEmNHII4VqZdeURKGvPcFhCzwS0nEf4bmAXko2Ax"
+        "mQ",
         65537
     }
 #endif

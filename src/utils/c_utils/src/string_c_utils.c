@@ -482,7 +482,7 @@ bool MallocAndSubstr(char** target, char* source, size_t len)
  * @return char* The new string with characters mapped. Caller owns and must call free(). NULL is returned on failures.
  * @details returns NULL if string is null or empty. e.g. char* mapped = ADUC_StringUtils_Map(str, tolower);
  */
-char* ADUC_StringUtils_Map(const char* src, int (*mapFn)(int))
+char* ADUC_StringUtils_Map(const char* src, char (*mapFn)(int))
 {
     char* tgt = NULL;
     size_t len = strlen(src);
