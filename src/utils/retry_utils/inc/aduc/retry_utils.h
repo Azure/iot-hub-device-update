@@ -29,7 +29,7 @@ EXTERN_C_BEGIN
 /**
  * @brief The data structure that contains information about the retry strategy.
  */
-typedef struct _tagADUC_Retry_Params
+typedef struct tagADUC_Retry_Params
 {
     unsigned int maxRetries; /**< Maximum number of retries */
     unsigned int maxDelaySecs; /**< Maximum wait time before retry (in seconds) */
@@ -65,7 +65,7 @@ time_t ADUC_Retry_Delay_Calculator(
     unsigned long maxDelaySecs,
     double maxJitterPercent);
 
-typedef enum ADUC_Failure_Class_tag
+typedef enum tagADUC_Failure_Class
 {
     ADUC_Failure_Class_None,
     ADUC_Failure_Class_Client_Transient,
@@ -79,7 +79,7 @@ typedef enum ADUC_Failure_Class_tag
  */
 time_t ADUC_GetTimeSinceEpochInSeconds();
 
-typedef enum ADUC_Retriable_Operation_State_tag
+typedef enum tagADUC_Retriable_Operation_State
 {
     ADUC_Retriable_Operation_State_Destroyed = -4,
     ADUC_Retriable_Operation_State_Cancelled = -3,
@@ -93,25 +93,26 @@ typedef enum ADUC_Retriable_Operation_State_tag
     ADUC_Retriable_Operation_State_Completed = 5,
 } ADUC_Retriable_Operation_State;
 
-typedef struct ADUC_Retriable_Operation_Context_t
+typedef struct tagADUC_Retriable_Operation_Context ADUC_Retriable_Operation_Context;
+struct tagADUC_Retriable_Operation_Context
 {
     // Operation data
     void* operationName;
     void* data;
 
     // Custom functions
-    void (*dataDestroyFunc)(struct ADUC_Retriable_Operation_Context_t* data);
-    void (*operationDestroyFunc)(struct ADUC_Retriable_Operation_Context_t* context);
-    bool (*doWorkFunc)(struct ADUC_Retriable_Operation_Context_t* context);
-    bool (*cancelFunc)(struct ADUC_Retriable_Operation_Context_t* context);
-    bool (*retryFunc)(struct ADUC_Retriable_Operation_Context_t* context, const ADUC_Retry_Params* retryParams);
-    bool (*completeFunc)(struct ADUC_Retriable_Operation_Context_t* context);
+    void (*dataDestroyFunc)(ADUC_Retriable_Operation_Context* data);
+    void (*operationDestroyFunc)(ADUC_Retriable_Operation_Context* context);
+    bool (*doWorkFunc)(ADUC_Retriable_Operation_Context* context);
+    bool (*cancelFunc)(ADUC_Retriable_Operation_Context* context);
+    bool (*retryFunc)(ADUC_Retriable_Operation_Context* context, const ADUC_Retry_Params* retryParams);
+    bool (*completeFunc)(ADUC_Retriable_Operation_Context* context);
 
     // Callbacks
-    void (*onExpired)(struct ADUC_Retriable_Operation_Context_t* context);
-    void (*onSuccess)(struct ADUC_Retriable_Operation_Context_t* context);
-    void (*onFailure)(struct ADUC_Retriable_Operation_Context_t* context);
-    void (*onRetry)(struct ADUC_Retriable_Operation_Context_t* context);
+    void (*onExpired)(ADUC_Retriable_Operation_Context* context);
+    void (*onSuccess)(ADUC_Retriable_Operation_Context* context);
+    void (*onFailure)(ADUC_Retriable_Operation_Context* context);
+    void (*onRetry)(ADUC_Retriable_Operation_Context* context);
 
     // Configuration
     ADUC_Retry_Params* retryParams; // Array of retry parameters per class of errors.
@@ -137,7 +138,7 @@ typedef struct ADUC_Retriable_Operation_Context_t
     void* lastErrorContext; // Last error context
 
     const void* commChannelHandle; // Handle to the communication channel used for the operation
-} ADUC_Retriable_Operation_Context;
+};
 
 void ADUC_Retriable_Operation_Init(ADUC_Retriable_Operation_Context* context, bool startNow);
 bool ADUC_Retriable_Operation_DoWork(ADUC_Retriable_Operation_Context* context);

@@ -29,7 +29,7 @@
 /**
  * @brief Enumeration of registration states for Azure DPS device registration management.
  */
-typedef enum ADPS_REGISTER_STATE_TAG
+typedef enum tagADPS_REGISTER_STATE
 {
     ADPS_REGISTER_STATE_FAILED = -1, /**< Device registration failed. */
     ADPS_REGISTER_STATE_UNKNOWN = 0, /**< Registration state is unknown. */
@@ -54,7 +54,7 @@ enum ADPS_ERROR
 /**
  * @brief The module state.
  */
-typedef struct ADPS_MQTT_CLIENT_MODULE_STATE_TAG
+typedef struct tagADPS_MQTT_CLIENT_MODULE_STATE
 {
     bool initialized; //!< Module is initialized
     bool subscribed; //!< Device is subscribed to DPS topics

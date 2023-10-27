@@ -19,7 +19,7 @@ EXTERN_C_BEGIN
 /**
  * @brief The message types currently supported by the Device Update Agent.
  */
-typedef enum _tagADUC_D2C_Message_Type
+typedef enum tagADUC_D2C_Message_Type
 {
     ADUC_D2C_Message_Type_Device_Update_Result = 0, /**< deviceUpdate interface reported property */
     ADUC_D2C_Message_Type_Device_Update_ACK, /**< deviceUpdate interface ACK */
@@ -33,7 +33,7 @@ typedef enum _tagADUC_D2C_Message_Type
     ADUC_D2C_Message_Type_Max
 } ADUC_D2C_Message_Type;
 
-typedef enum _tagADUC_D2C_Message_Status
+typedef enum tagADUC_D2C_Message_Status
 {
     ADUC_D2C_Message_Status_Pending = 0, /**< Waiting to be processed */
     ADUC_D2C_Message_Status_In_Progress, /**< Being processed by the messages processor */
@@ -58,7 +58,7 @@ typedef time_t (*ADUC_D2C_NEXT_RETRY_TIMESTAMP_CALC_FUNC)(
 /**
  * @brief The data structure used for deciding how to handle the response from the cloud.
  */
-typedef struct _tagADUC_D2C_HttpStatus_Retry_Info
+typedef struct tagADUC_D2C_HttpStatus_Retry_Info
 {
     int httpStatusMin; /**< Indicates minimum boundary of the http status code */
     int httpStatusMax; /**< Indicates minimum boundary of the http status code */
@@ -71,7 +71,7 @@ typedef struct _tagADUC_D2C_HttpStatus_Retry_Info
 /**
  * @brief The data structure that contains information about the retry strategy for each message type.
  */
-typedef struct _tagADUC_D2C_RetryStrategy
+typedef struct tagADUC_D2C_RetryStrategy
 {
     ADUC_D2C_HttpStatus_Retry_Info*
         httpStatusRetryInfo; /**< A collection of retry info for each group of of http status codes */
@@ -117,7 +117,7 @@ typedef int (*ADUC_D2C_MESSAGE_TRANSPORT_FUNCTION)(
 /**
  * @brief A device to cloud message data structure.
  */
-typedef struct _tagADUC_D2C_Message
+typedef struct tagADUC_D2C_Message
 {
     void* cloudServiceHandle; /**< The cloud service handle. e.g. ADUC_ClientHandle */
     const char* originalContent; /**< The original content (message) */
@@ -138,7 +138,7 @@ typedef struct _tagADUC_D2C_Message
 /**
  * @brief A data structure that contains information about the message processing job.
  */
-typedef struct _tagADUC_D2C_Message_Processing_Context
+typedef struct tagADUC_D2C_Message_Processing_Context
 {
     ADUC_D2C_Message_Type type; /**< The property type */
 

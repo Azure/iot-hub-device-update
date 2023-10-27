@@ -85,7 +85,7 @@ enum ADUC_RETRY_PARAMS_INDEX
     ADUC_RETRY_PARAMS_INDEX_SERVICE_UNRECOVERABLE = 4
 };
 
-typedef struct ADUC_RETRY_PARAMS_MAP_tag
+typedef struct tagADUC_RETRY_PARAMS_MAP
 {
     const char* name;
     int index;
@@ -631,7 +631,7 @@ done:
     return opSucceeded;
 }
 
-bool EnrollmentRequestOperation_CancelOperation(struct ADUC_Retriable_Operation_Context_t* context)
+bool EnrollmentRequestOperation_CancelOperation(ADUC_Retriable_Operation_Context* context)
 {
     ADUC_Enrollment_Request_Operation_Data* enrollmentData = EnrollmentData_FromOperationContext(context);
     if (enrollmentData == NULL)
@@ -646,7 +646,7 @@ bool EnrollmentRequestOperation_CancelOperation(struct ADUC_Retriable_Operation_
     return true;
 }
 
-bool EnrollmentRequestOperation_Complete(struct ADUC_Retriable_Operation_Context_t* context)
+bool EnrollmentRequestOperation_Complete(ADUC_Retriable_Operation_Context* context)
 {
     if (context == NULL)
     {
@@ -673,7 +673,7 @@ bool EnrollmentRequestOperation_Complete(struct ADUC_Retriable_Operation_Context
  * @return true if the operation is successfully retried. false otherwise.
  */
 bool EnrollmentRequestOperation_DoRetry(
-    struct ADUC_Retriable_Operation_Context_t* context, const ADUC_Retry_Params* retryParams)
+    ADUC_Retriable_Operation_Context* context, const ADUC_Retry_Params* retryParams)
 {
     Log_Info("Will retry the enrollment request operation.");
     ADUC_Enrollment_Request_Operation_Data* data = EnrollmentData_FromOperationContext(context);
@@ -688,7 +688,7 @@ bool EnrollmentRequestOperation_DoRetry(
     return true;
 }
 
-const ADUC_Retry_Params* GetRetryParamsForLastErrorClass(struct ADUC_Retriable_Operation_Context_t* context)
+const ADUC_Retry_Params* GetRetryParamsForLastErrorClass(ADUC_Retriable_Operation_Context* context)
 {
     if (context == NULL)
     {
@@ -702,7 +702,7 @@ const ADUC_Retry_Params* GetRetryParamsForLastErrorClass(struct ADUC_Retriable_O
     return &context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT];
 }
 
-void EnrollmentRequestOperation_UpdateNextAttemptTime(struct ADUC_Retriable_Operation_Context_t* context)
+void EnrollmentRequestOperation_UpdateNextAttemptTime(ADUC_Retriable_Operation_Context* context)
 {
     if (context == NULL)
     {
@@ -735,7 +735,7 @@ void EnrollmentRequestOperation_UpdateNextAttemptTime(struct ADUC_Retriable_Oper
     context->attemptCount++;
 }
 
-void EnrollmentRequestOperation_DataDestroy(struct ADUC_Retriable_Operation_Context_t* context)
+void EnrollmentRequestOperation_DataDestroy(ADUC_Retriable_Operation_Context* context)
 {
     Log_Info("Destroying context data. (context:%p, data:%p)", context, context->data);
     if (context != NULL && context->data != NULL)
@@ -749,7 +749,7 @@ void EnrollmentRequestOperation_DataDestroy(struct ADUC_Retriable_Operation_Cont
     }
 }
 
-void EnrollmentRequestOperation_OperationDestroy(struct ADUC_Retriable_Operation_Context_t* context)
+void EnrollmentRequestOperation_OperationDestroy(ADUC_Retriable_Operation_Context* context)
 {
     Log_Info("Destroying operation context. (context:%p)", context);
     EnrollmentRequestOperation_DataDestroy(context);
@@ -762,23 +762,23 @@ void EnrollmentRequestOperation_OperationDestroy(struct ADUC_Retriable_Operation
  *
  * @param data The context for the operation.
 */
-void EnrollmentRequestOperation_OnExpired(struct ADUC_Retriable_Operation_Context_t* data)
+void EnrollmentRequestOperation_OnExpired(ADUC_Retriable_Operation_Context* data)
 {
     ADUC_Retriable_Set_State(data, ADUC_Retriable_Operation_State_Expired);
     ADUC_Retriable_Set_State(data, ADUC_Retriable_Operation_State_Cancelling);
 }
 
-void EnrollmentRequestOperation_OnSuccess(struct ADUC_Retriable_Operation_Context_t* data)
+void EnrollmentRequestOperation_OnSuccess(ADUC_Retriable_Operation_Context* data)
 {
     ADUC_Retriable_Set_State(data, ADUC_Retriable_Operation_State_Completed);
 }
 
-void EnrollmentRequestOperation_OnFailure(struct ADUC_Retriable_Operation_Context_t* data)
+void EnrollmentRequestOperation_OnFailure(ADUC_Retriable_Operation_Context* data)
 {
     ADUC_Retriable_Set_State(data, ADUC_Retriable_Operation_State_Failure);
 }
 
-void EnrollmentRequestOperation_OnRetry(struct ADUC_Retriable_Operation_Context_t* data)
+void EnrollmentRequestOperation_OnRetry(ADUC_Retriable_Operation_Context* data)
 {
     // Compute next attempt time.
 }
