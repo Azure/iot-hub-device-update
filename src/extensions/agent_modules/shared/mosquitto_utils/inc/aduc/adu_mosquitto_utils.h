@@ -66,14 +66,6 @@ ADUC_MQTT_DISCONNECTION_CATEGORY CategorizeMQTTDisconnection(int rc);
 char* GenerateCorrelationIdFromTime(time_t t);
 
 /**
- * @brief Generate a correlation ID from a time value with a prefix.
- * @param[in] t The time value to use.
- * @param[in] prefix The prefix to use.
- * @return A string containing the correlation ID. The caller is responsible for free()'ing the returned string.
- */
-char* GenerateCorrelationIdFromTimeWithPrefix(time_t t, const char* prefix);
-
-/**
  * @brief Retrieves the correlation data from MQTT properties.
  *
  * This function attempts to read the correlation data from the provided MQTT properties.
@@ -135,15 +127,5 @@ bool ADU_mosquitto_has_user_property(const mosquitto_property* props, const char
  * @return `true` if the correlation data matches the provided correlation ID; otherwise, `false`.
  */
 bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* correlationId);
-
-/**
- * @brief Generate a GUID  7d28dcd5-175c-46ed-b3bb-a557d278da56
- *
- * @param with_hyphens Whether to include hyphens in the GUID.
- * @param buffer Where to store identifier.
- * @param buffer_cch Number of characters in @p buffer.
- *
- */
-bool ADUC_generate_correlation_id(bool with_hyphens, char* buffer, size_t buffer_cch);
 
 #endif

@@ -39,18 +39,6 @@ typedef enum tagADPS_REGISTER_STATE
     ADPS_REGISTER_STATE_REGISTERED = 4 /**< Device registration is successful. */
 } ADPS_REGISTER_STATE;
 
-enum ADPS_ERROR
-{
-    ADPS_ERROR_NONE = 0,
-    ADPS_ERROR_INVALID_PARAMETER = 1,
-    ADPS_ERROR_INVALID_STATE = 2,
-    ADPS_ERROR_OUT_OF_MEMORY = 3,
-    ADPS_ERROR_MQTT_ERROR = 4,
-    ADPS_ERROR_DPS_ERROR = 5,
-    ADPS_ERROR_TIMEOUT = 6,
-    ADPS_ERROR_UNKNOWN = 7,
-};
-
 /**
  * @brief The module state.
  */
