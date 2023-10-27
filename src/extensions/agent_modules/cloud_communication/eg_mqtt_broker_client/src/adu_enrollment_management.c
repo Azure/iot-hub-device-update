@@ -199,7 +199,7 @@ void OnMessage_enr_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
     bool isEnrolled = false;
-    const char* duInstance = NULL;
+    const char* scopeId = NULL;
     JSON_Value* root_value = NULL;
 
     ADUC_Retriable_Operation_Context* context = (ADUC_Retriable_Operation_Context*)obj;
@@ -236,8 +236,8 @@ void OnMessage_enr_resp(
         goto done;
     }
 
-    duInstance = ADUC_JSON_GetStringFieldPtr(root_value, "ScopeId");
-    if (duInstance == NULL)
+    scopeId = ADUC_JSON_GetStringFieldPtr(root_value, "ScopeId");
+    if (scopeId == NULL)
     {
         Log_Error("Failed to get 'ScopeId' from payload");
         goto done;
@@ -248,7 +248,7 @@ void OnMessage_enr_resp(
     if (!handle_enrollment(
         enrollmentData,
         isEnrolled,
-        duInstance,
+        scopeId,
         context))
     {
         Log_Error("Failed handling enrollment side effects.");

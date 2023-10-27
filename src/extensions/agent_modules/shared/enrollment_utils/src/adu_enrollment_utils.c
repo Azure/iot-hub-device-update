@@ -74,20 +74,20 @@ void EnrollmentData_SetCorrelationId(ADUC_Enrollment_Request_Operation_Data* enr
  *
  * @param enrollmentData The enrollment data.
  * @param isEnrolled The boolean value of enrolled in the message.
- * @param duInstance The du instance.
+ * @param scopeId The du instance.
  * @param context The retriable operation context.
  * @return true on success.
  */
 bool handle_enrollment(
     ADUC_Enrollment_Request_Operation_Data* enrollmentData,
     bool isEnrolled,
-    const char* duInstance,
+    const char* scopeId,
     ADUC_Retriable_Operation_Context* context)
 {
     bool succeeded = false;
     ADUC_STATE_STORE_RESULT stateStoreResult = ADUC_STATE_STORE_RESULT_ERROR;
 
-    if (enrollmentData == NULL || duInstance == NULL || context == NULL)
+    if (enrollmentData == NULL || scopeId == NULL || context == NULL)
     {
         return false;
     }
@@ -111,14 +111,14 @@ bool handle_enrollment(
 
     if (isEnrolled)
     {
-        Log_Info("Device is currently enrolled with '%s'", duInstance);
+        Log_Info("Device is currently enrolled with scopeId '%s'", scopeId);
 
         context->completeFunc(context);
 
-        stateStoreResult = ADUC_StateStore_SetDeviceUpdateServiceInstance(duInstance);
+        stateStoreResult = ADUC_StateStore_SetDeviceUpdateServiceInstance(scopeId);
         if (stateStoreResult != ADUC_STATE_STORE_RESULT_OK)
         {
-            Log_Error("Failed set duinstance in store");
+            Log_Error("Failed set scopeId in store");
 
             // Reset the enrollment state. so we can retry again.
             EnrollmentData_SetState(enrollmentData, ADU_ENROLLMENT_STATE_UNKNOWN, "reset unknown enrollment state");
@@ -127,7 +127,7 @@ bool handle_enrollment(
     }
     else
     {
-        Log_Warn("Device is not currently enrolled with '%s'", duInstance);
+        Log_Warn("Device is not currently enrolled with '%s'", scopeId);
     }
 
     succeeded = true;
