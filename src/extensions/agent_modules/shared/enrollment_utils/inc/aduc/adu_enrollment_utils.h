@@ -3,6 +3,8 @@
 
 #include <aduc/adu_enrollment.h>
 
+EXTERN_C_BEGIN
+
 ADUC_Enrollment_Request_Operation_Data* EnrollmentData_FromOperationContext(ADUC_Retriable_Operation_Context* context);
 
 ADU_ENROLLMENT_STATE EnrollmentData_SetState(
@@ -10,10 +12,12 @@ ADU_ENROLLMENT_STATE EnrollmentData_SetState(
 
 void EnrollmentData_SetCorrelationId(ADUC_Enrollment_Request_Operation_Data* enrollmentData, const char* correlationId);
 
-bool handle_enrollment_side_effects(
+bool handle_enrollment(
     ADUC_Enrollment_Request_Operation_Data* enrollmentData,
     bool isEnrolled,
     const char* duInstance,
     ADUC_Retriable_Operation_Context* context);
+
+EXTERN_C_END
 
 #endif // ADU_ENROLLMENT_UTILS_H

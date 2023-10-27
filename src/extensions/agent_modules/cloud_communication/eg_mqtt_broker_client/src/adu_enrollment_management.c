@@ -245,7 +245,7 @@ void OnMessage_enr_resp(
 
     // TODO: Read 'resultcode', 'extendedresultcode' and 'resultdescription' from the response message properties.
 
-    if (!handle_enrollment_side_effects(
+    if (!handle_enrollment(
         enrollmentData,
         isEnrolled,
         duInstance,

@@ -78,7 +78,7 @@ void EnrollmentData_SetCorrelationId(ADUC_Enrollment_Request_Operation_Data* enr
  * @param context The retriable operation context.
  * @return true on success.
  */
-bool handle_enrollment_side_effects(
+bool handle_enrollment(
     ADUC_Enrollment_Request_Operation_Data* enrollmentData,
     bool isEnrolled,
     const char* duInstance,
@@ -87,18 +87,27 @@ bool handle_enrollment_side_effects(
     bool succeeded = false;
     ADUC_STATE_STORE_RESULT stateStoreResult = ADUC_STATE_STORE_RESULT_ERROR;
 
-    EnrollmentData_SetState(
+    if (enrollmentData == NULL || duInstance == NULL || context == NULL)
+    {
+        return false;
+    }
+
+    ADU_ENROLLMENT_STATE new_state = isEnrolled
+        ? ADU_ENROLLMENT_STATE_ENROLLED
+        : ADU_ENROLLMENT_STATE_NOT_ENROLLED;
+
+    ADU_ENROLLMENT_STATE old_state = EnrollmentData_SetState(
         enrollmentData,
-        isEnrolled
-            ? ADU_ENROLLMENT_STATE_ENROLLED
-            : ADU_ENROLLMENT_STATE_NOT_ENROLLED,
+        new_state,
         isEnrolled ? "enrolled" : "not enrolled");
 
     if (ADUC_StateStore_GetIsDeviceEnrolled() != isEnrolled)
     {
-        Log_Error("Failed to set enrollment state to '%s'", isEnrolled ? "true" : "false");
+        Log_Error("Failed set enrollment state - '%d' to '%d'", old_state, new_state);
         goto done;
     }
+
+    Log_Info("Enrollment state transitioned - '%d' to '%d'", old_state, new_state);
 
     if (isEnrolled)
     {
@@ -121,6 +130,7 @@ bool handle_enrollment_side_effects(
         Log_Warn("Device is not currently enrolled with '%s'", duInstance);
     }
 
+    succeeded = true;
 done:
     return succeeded;
 }
