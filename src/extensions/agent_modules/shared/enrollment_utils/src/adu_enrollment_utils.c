@@ -99,7 +99,7 @@ bool handle_enrollment(
     ADU_ENROLLMENT_STATE old_state = EnrollmentData_SetState(
         enrollmentData,
         new_state,
-        isEnrolled ? "enrolled" : "not enrolled");
+        NULL /* reason */);
 
     if (ADUC_StateStore_GetIsDeviceEnrolled() != isEnrolled)
     {
@@ -121,7 +121,7 @@ bool handle_enrollment(
             Log_Error("Failed set scopeId in store");
 
             // Reset the enrollment state. so we can retry again.
-            EnrollmentData_SetState(enrollmentData, ADU_ENROLLMENT_STATE_UNKNOWN, "reset unknown enrollment state");
+            EnrollmentData_SetState(enrollmentData, ADU_ENROLLMENT_STATE_UNKNOWN, "retry");
             goto done;
         }
     }
