@@ -12,16 +12,6 @@
 #include <mosquitto.h>
 
 /**
- * @brief The length of a correlation ID. (including null terminator)
- */
-#define CORRELATION_ID_LENGTH 37
-
-/**
- * @brief The length of a correlation ID without hyphens. (including null terminator)
- */
-#define CORRELATION_ID_LENGTH_WITHOUT_HYPHENS 33
-
-/**
  * @brief Enumeration representing MQTT disconnection categories.
  */
 typedef enum ADUC_MQTT_DISCONNECTION_CATEGORY_TAG

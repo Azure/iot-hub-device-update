@@ -7,11 +7,14 @@
  */
 
 #include "aduc/adu_communication_channel.h"
+#include "aduc/adu_enrollment_utils.h"
+#include "aduc/adu_enrollment_management.h"
 #include "aduc/adu_mosquitto_utils.h"
 #include "aduc/adu_mqtt_protocol.h"
 #include "aduc/adu_types.h"
 #include "aduc/agent_state_store.h"
 #include "aduc/config_utils.h"
+#include "aduc/adu_enrollment.h"
 #include "aduc/logging.h"
 #include "aduc/retry_utils.h" // ADUC_GetTimeSinceEpochInSeconds
 #include "aduc/string_c_utils.h" // IsNullOrEmpty
@@ -64,18 +67,6 @@ int ADUC_Enrollment_Management_Deinitialize(ADUC_AGENT_MODULE_HANDLE handle);
 
 time_t s_lastHeartBeatLogTime = 0;
 
-typedef struct ADUC_MQTT_Message_Context_t
-{
-    int messageId;
-    char correlationId[CORRELATION_ID_LENGTH];
-    char* publishTopic;
-    char* responseTopic;
-    char* payload;
-    size_t payloadLen;
-    mosquitto_property* properties;
-    int qos;
-} ADUC_MQTT_Message_Context;
-
 enum ADUC_RETRY_PARAMS_INDEX
 {
     ADUC_RETRY_PARAMS_INDEX_DEFAULT = 0,
@@ -102,93 +93,12 @@ static const ADUC_RETRY_PARAMS_MAP s_retryParamsMap[] = {
 static const int s_retryParamsMapSize = sizeof(s_retryParamsMap) / sizeof(s_retryParamsMap[0]);
 
 /**
- * @brief Struct to represent enrollment status request operation for an Azure Device Update service enrollment.
- */
-typedef struct ADUC_Enrollment_Request_Operation_Data_t
-{
-    /// Current enrollment state.
-    ADU_ENROLLMENT_STATE enrollmentState;
-
-    ADUC_MQTT_Message_Context enrReqMessageContext;
-
-    /// @brief A reference to the parent context of this enrollment status request operation.
-    ADUC_Retriable_Operation_Context* ownerContext;
-
-} ADUC_Enrollment_Request_Operation_Data;
-
-/**
  * @brief Free memory allocated for the enrollment data.
  */
 void EnrollmentData_Deinit(ADUC_Enrollment_Request_Operation_Data* data)
 {
     // Currently nothing to be freed. Implement this for completeness and future improvement.
     IGNORED_PARAMETER(data);
-}
-
-/**
- * @brief Gets the enrollment data object from the enrollment operation context.
- * @param context The enrollment operation context.
- * @return ADUC_Enrollment_Request_Operation_Data* The enrollment data object.
- */
-static ADUC_Enrollment_Request_Operation_Data*
-EnrollmentData_FromOperationContext(ADUC_Retriable_Operation_Context* context)
-{
-    if (context == NULL || context->data == NULL)
-    {
-        Log_Error("Null input (context:%p, data:%p)", context, context->data);
-        return NULL;
-    }
-
-    return (ADUC_Enrollment_Request_Operation_Data*)(context->data);
-}
-
-/**
- * @brief Sets the enrollment state and updates 'IsDeviceEnrolled' state in the DU agent state store.
- * @param data The enrollment data object.
- * @param state The enrollment state to set.
- * @return ADU_ENROLLMENT_STATE The old enrollment state.
- */
-static ADU_ENROLLMENT_STATE EnrollmentData_SetState(
-    ADUC_Enrollment_Request_Operation_Data* enrollmentData, ADU_ENROLLMENT_STATE state, const char* reason)
-{
-    ADU_ENROLLMENT_STATE oldState = enrollmentData->enrollmentState;
-    if (enrollmentData->enrollmentState != state)
-    {
-        Log_Info(
-            "Enrollment state changed from %d to %d (reason:%s)",
-            enrollmentData->enrollmentState,
-            state,
-            IsNullOrEmpty(reason) ? "unknown" : reason);
-        enrollmentData->enrollmentState = state;
-
-        if (ADUC_StateStore_SetIsDeviceEnrolled(state == ADU_ENROLLMENT_STATE_ENROLLED) != ADUC_STATE_STORE_RESULT_OK)
-        {
-            Log_Error("Failed to set enrollment state in state store");
-        }
-    }
-    return oldState;
-}
-
-/**
- * @brief Sets the correlation id for the enrollment request message.
- * @param enrollmentData The enrollment data object.
- * @param correlationId The correlation id to set.
- */
-static void
-EnrollmentData_SetCorrelationId(ADUC_Enrollment_Request_Operation_Data* enrollmentData, const char* correlationId)
-{
-    if (enrollmentData == NULL || correlationId == NULL)
-    {
-        Log_Error("Null input (enrollmentData:%p, correlationId:%p)", enrollmentData, correlationId);
-        return;
-    }
-
-    strncpy(
-        enrollmentData->enrReqMessageContext.correlationId,
-        correlationId,
-        sizeof(enrollmentData->enrReqMessageContext.correlationId) - 1);
-    enrollmentData->enrReqMessageContext
-        .correlationId[sizeof(enrollmentData->enrReqMessageContext.correlationId) - 1] = '\0';
 }
 
 static int json_print_properties(const mosquitto_property* properties)
@@ -288,16 +198,13 @@ const ADUC_AGENT_CONTRACT_INFO* ADUC_Enrollment_Management_GetContractInfo(ADUC_
 void OnMessage_enr_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
-    int isEnrolled = 0;
+    bool isEnrolled = false;
     const char* duInstance = NULL;
     JSON_Value* root_value = NULL;
-    JSON_Object* root_object = NULL;
 
     ADUC_Retriable_Operation_Context* context = (ADUC_Retriable_Operation_Context*)obj;
     ADUC_MQTT_Message_Context* messageContext = (ADUC_MQTT_Message_Context*)context->data;
     ADUC_Enrollment_Request_Operation_Data* enrollmentData = EnrollmentData_FromOperationContext(context);
-
-    ADUC_STATE_STORE_RESULT stateStoreResult = ADUC_STATE_STORE_RESULT_OK;
 
     json_print_properties(props);
 
@@ -307,6 +214,7 @@ void OnMessage_enr_resp(
         Log_Info("OnMessage_enr_resp: correlation data mismatch");
         goto done;
     }
+
     if (msg == NULL || msg->payload == NULL || msg->payloadlen == 0)
     {
         Log_Error("Bad payload. msg:%p, payload:%p, payloadlen:%d", msg, msg->payload, msg->payloadlen);
@@ -315,7 +223,6 @@ void OnMessage_enr_resp(
 
     // Parse the JSON payload using Parson
     root_value = json_parse_string(msg->payload);
-    root_object = json_value_get_object(root_value);
 
     if (root_value == NULL)
     {
@@ -323,49 +230,37 @@ void OnMessage_enr_resp(
         goto done;
     }
 
-    isEnrolled = json_object_dotget_boolean(root_object, "IsEnrolled");
-    duInstance = json_object_dotget_string(root_object, "ScopeId");
-
-    // Read 'resultcode', 'extendedresultcode' and 'resultdescription' from the response message properties.
-
-    // Validate received data
-    if (isEnrolled == -1) // json_object_dotget_boolean returns -1 on failure
+    if (!ADUC_JSON_GetBooleanField(root_value, "IsEnrolled", &isEnrolled))
     {
-        Log_Error("Failed to retrieve or validate isEnrolled from JSON payload");
+        Log_Error("Failed to get 'isEnrolled' from payload");
         goto done;
     }
 
-    // Store the enrollment response data in the state.
-    if (isEnrolled != 0)
+    duInstance = ADUC_JSON_GetStringFieldPtr(root_value, "ScopeId");
+    if (duInstance == NULL)
     {
-        EnrollmentData_SetState(enrollmentData, ADU_ENROLLMENT_STATE_ENROLLED, "successfully enrolled");
-        if (!ADUC_StateStore_GetIsDeviceEnrolled())
-        {
-            Log_Error("Failed to set enrollment state to enrolled.");
-            goto done;
-        }
+        Log_Error("Failed to get 'ScopeId' from payload");
+        goto done;
+    }
 
-        Log_Info("Device is currently enrolled with '%s'", duInstance);
+    // TODO: Read 'resultcode', 'extendedresultcode' and 'resultdescription' from the response message properties.
 
-        context->completeFunc(context);
-
-        stateStoreResult = ADUC_StateStore_SetDeviceUpdateServiceInstance(duInstance);
-        if (stateStoreResult != ADUC_STATE_STORE_RESULT_OK)
-        {
-            Log_Error("Failed to set device update instance in state store");
-            // Reset the enrollment state. so we can retry again.
-            isEnrolled = 0;
-            goto done;
-        }
+    if (!handle_enrollment_side_effects(
+        enrollmentData,
+        isEnrolled,
+        duInstance,
+        context))
+    {
+        Log_Error("Failed handling enrollment side effects.");
+        goto done;
     }
 
 done:
     json_value_free(root_value);
-    if (isEnrolled == 0)
+    if (!isEnrolled)
     {
         // Retry again after default retry delay.
     }
-    return;
 }
 
 /**
@@ -375,7 +270,7 @@ void OnMessage_enr_cn(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
     // NOTE: NOT SUPPORTED IN V1 PROTOCOL - MVP
-    Log_Info("OnMessage_enr_cn: NOT SUPPORTED IN V1 PROTOCOL - MVP");
+    Log_Error("OnMessage_enr_cn: NOT SUPPORTED IN V1 PROTOCOL - MVP");
 }
 
 /*

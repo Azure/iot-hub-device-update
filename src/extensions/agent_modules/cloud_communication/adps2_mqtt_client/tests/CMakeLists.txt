@@ -1,28 +1,23 @@
-cmake_minimum_required (VERSION 3.5)
-
-project (adps2mqtt_client_module_functional_test)
+set (target_name adps2mqtt_client_module_functional_test)
 
 include (agentRules)
-
 compileasc99 ()
 disablertti ()
 
-set (sources adps2mqtt_client_module_ft.cpp)
-
-add_executable (${PROJECT_NAME} ${sources})
+add_executable (${target_name} ${sources})
+target_sources (${target_name} PRIVATE adps2mqtt_client_module_ft.cpp)
 
 target_include_directories (
-    ${PROJECT_NAME}
-    PRIVATE ${ADUC_EXPORT_INCLUDES} ${ADU_EXTENSION_INCLUDES} ${ADU_AGENT_SDK_INCLUDES}
-            ${PROJECT_SOURCE_DIR}/inc ${PROJECT_SOURCE_DIR}/../inc)
+    ${target_name}
+    PRIVATE ${ADUC_EXPORT_INCLUDES} ${ADU_EXTENSION_INCLUDES})
 
-target_compile_definitions (${PROJECT_NAME}
+target_compile_definitions (${target_name}
                             PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
-target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+target_link_aziotsharedutil (${target_name} PRIVATE)
 
 target_link_libraries (
-    ${PROJECT_NAME}
+    ${target_name}
     PUBLIC aduc::agent_state_store
     PRIVATE aduc::config_utils
             aduc::microsoft_adps2_mqtt_client

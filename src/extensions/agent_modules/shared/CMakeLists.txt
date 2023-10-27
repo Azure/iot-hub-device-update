@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.5)
-
+add_subdirectory (common)
+add_subdirectory (enrollment_utils)
 add_subdirectory (mosquitto_utils)
 add_subdirectory (state_store)

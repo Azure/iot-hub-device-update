@@ -63,7 +63,6 @@ set (ADUC_EXPORT_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/inc ${CMAKE_CURRENT_SOURCE
 set (ADU_SHELL_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/adu-shell/inc)
 set (ADU_EXTENSION_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/extensions/inc
                             ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc)
-set (ADU_AGENT_SDK_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/agent_sdk/inc)
 
 add_subdirectory (libaducpal)
 add_subdirectory (adu-shell)
@@ -80,3 +79,4 @@ add_subdirectory (utils)
 add_subdirectory (extensions)
 add_subdirectory (agent)
 add_subdirectory (agent_orchestration)
+add_subdirectory (agent_sdk)
