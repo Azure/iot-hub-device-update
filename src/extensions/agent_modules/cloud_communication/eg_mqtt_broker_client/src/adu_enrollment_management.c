@@ -270,7 +270,7 @@ void OnMessage_enr_cn(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
     // NOTE: NOT SUPPORTED IN V1 PROTOCOL - MVP
-    Log_Error("OnMessage_enr_cn: NOT SUPPORTED IN V1 PROTOCOL - MVP");
+    Log_Error("%s: NOT SUPPORTED IN V1 PROTOCOL - MVP", __FUNCTION__);
 }
 
 /*
