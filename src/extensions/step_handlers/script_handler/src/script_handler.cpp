@@ -22,6 +22,9 @@
 #include <string>
 #include <vector>
 
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
+
 #define HANDLER_PROPERTIES_SCRIPT_FILENAME "scriptFileName"
 #define HANDLER_PROPERTIES_API_VERSION "apiVersion"
 #define HANDLER_ARG_ACTION "--action"

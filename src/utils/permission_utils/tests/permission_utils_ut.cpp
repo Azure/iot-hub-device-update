@@ -12,11 +12,16 @@
 #include <catch2/catch.hpp>
 #include <stdio.h>
 #include <string.h>
+#include <string>
 
 #include <fstream> // ofstream
 
 #include <aducpal/stdio.h> // remove
 #include <aducpal/sys_stat.h> // S_I*
+#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
+
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
 
 TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
 {
@@ -28,8 +33,9 @@ TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
 #endif
 
     // create temp file with all file permission bits set
-    char tmpfile_path[32];
-    strncpy(tmpfile_path, "/tmp/permissionUtilsUT_XXXXXX", sizeof(tmpfile_path));
+    char tmpfile_path[30];
+    std::string src_str{ "/tmp/permissionUtilsUT_XXXXXX" };
+    ADUC_Safe_StrCopyN(tmpfile_path, src_str.c_str(), sizeof(tmpfile_path), src_str.length());
     ADUC_SystemUtils_MkTemp(tmpfile_path);
     std::ofstream file{ tmpfile_path };
     file.close();
