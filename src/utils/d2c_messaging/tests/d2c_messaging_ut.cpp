@@ -91,7 +91,7 @@ static ADUC_D2C_RetryStrategy g_defaultRetryStrategy_no_calc_func = {
     /* .initialDelayUnitMilliSecs = */ 1000
 };
 
-typedef struct _tagMockCloudBehavior
+typedef struct tagMockCloudBehavior
 {
     unsigned long delayBeforeResponseMS; // in ms.
     int httpStatus;

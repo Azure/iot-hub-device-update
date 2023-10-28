@@ -10,10 +10,7 @@ find_package (Parson REQUIRED)
 
 target_sources (${target_name} PRIVATE src/adps_gen2.c src/adps2_mqtt_client_module.c)
 
-target_include_directories (
-    ${target_name}
-    PUBLIC inc
-    PRIVATE ${PROJECT_SOURCE_DIR}/inc ../inc ../../inc ${ADU_AGENT_SDK_INCLUDES})
+target_include_directories (${target_name} PUBLIC inc)
 
 target_link_libraries (
     ${target_name}

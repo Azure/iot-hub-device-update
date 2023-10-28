@@ -91,21 +91,6 @@ typedef enum ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_TAG
 } ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE;
 
 /**
- * @brief Describes the enrollment state of the ADU client.
- *
- * This enumeration provides different enrollment states for the ADU client
- * to better represent and track the enrollment status in the system.
- */
-typedef enum ADU_ENROLLMENT_STATE_TAG
-{
-    ADU_ENROLLMENT_STATE_NOT_ENROLLED = -1, /**< The client is not enrolled. */
-    ADU_ENROLLMENT_STATE_UNKNOWN = 0, /**< The enrollment state of the client is unknown. */
-    ADU_ENROLLMENT_STATE_SUBSCRIBED = 1, /**< The client is subscribed. */
-    ADU_ENROLLMENT_STATE_REQUESTING = 2, /**< The client is requesting an enrollment status. */
-    ADU_ENROLLMENT_STATE_ENROLLED = 3, /**< The client is successfully enrolled. */
-} ADU_ENROLLMENT_STATE;
-
-/**
  * @brief Enumeration representing the initialization states of the ADU MQTT client module.
  *
  * @note This enumeration is used to track the initialization progress of the ADU MQTT client module.

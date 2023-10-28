@@ -115,7 +115,7 @@ endif ()
 get_filename_component (ADUC_INSTALLEDCRITERIA_FILE_PATH
                         "${ADUC_DATA_FOLDER}/${ADUC_INSTALLEDCRITERIA_FILE}" ABSOLUTE "/")
 
-target_include_directories (${target_name} PRIVATE inc ${ADU_AGENT_SDK_INCLUDES})
+target_include_directories (${target_name} PRIVATE inc)
 
 target_compile_definitions (
     ${target_name}

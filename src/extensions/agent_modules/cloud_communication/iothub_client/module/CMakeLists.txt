@@ -18,7 +18,7 @@ target_sources (${target_name} PRIVATE src/iothub_client_module.c)
 target_include_directories (
     ${target_name}
     PUBLIC inc
-    PRIVATE ${PROJECT_SOURCE_DIR}/inc ${ADU_AGENT_SDK_INCLUDES})
+    PRIVATE ${PROJECT_SOURCE_DIR}/inc)
 
 target_link_libraries (
     ${target_name}
@@ -31,6 +31,7 @@ target_link_libraries (
             aduc::communication_abstraction
             aduc::d2c_messaging
             aduc::device_info_interface
+            aduc::du_agent_sdk
             aduc::extension_manager
             aduc::iothub_communication_manager
             aduc::logging

@@ -15,10 +15,7 @@ find_package (Parson REQUIRED)
 
 target_sources (${target_name} PRIVATE src/device_update_workflow_module.c)
 
-target_include_directories (
-    ${target_name}
-    PUBLIC inc
-    PRIVATE ${PROJECT_SOURCE_DIR}/inc ${ADU_AGENT_SDK_INCLUDES})
+target_include_directories (${target_name} PUBLIC inc)
 
 target_link_libraries (
     ${target_name}
@@ -30,6 +27,7 @@ target_link_libraries (
             aduc::config_utils
 #            aduc::communication_abstraction
             aduc::d2c_messaging
+            aduc::du_agent_sdk
             aduc::extension_manager
             aduc::logging
 #            aduc::pnp_helper

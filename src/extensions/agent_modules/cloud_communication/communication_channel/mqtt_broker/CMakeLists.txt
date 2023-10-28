@@ -17,15 +17,13 @@ find_package (Parson REQUIRED)
 
 target_sources (${target_name} PRIVATE src/adu_communication_channel.c)
 
-target_include_directories (
-    ${target_name}
-    PUBLIC inc ${ADU_AGENT_SDK_INCLUDES}
-    PRIVATE ${PROJECT_SOURCE_DIR}/inc ./inc ../inc ../../inc)
+target_include_directories (${target_name} PUBLIC inc)
 
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils
            aduc::agent_state_store
+           aduc::du_agent_sdk
            aduc::retry_utils
            aziotsharedutil
 

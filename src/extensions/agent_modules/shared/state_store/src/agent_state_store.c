@@ -6,13 +6,11 @@
  * Licensed under the MIT License.
  */
 #include "aduc/agent_state_store.h"
-#include "aduc/logging.h"
-#include "aduc/string_c_utils.h" // IsNuLLOrEmpty
-#include "parson.h"
+#include <aduc/logging.h>
+#include "aduc/string_c_utils.h" // IsNullOrEmpty
 #include <semaphore.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "stdbool.h" // bool
 
 // Internal state data

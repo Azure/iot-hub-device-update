@@ -22,7 +22,7 @@ typedef bool (*ADUC_CommandCallbackFunc)(const char* command, void* commandConte
 /**
  * @brief A struct containing a basic command information.
  */
-typedef struct _tagADUC_Command
+typedef struct tagADUC_Command
 {
     const char* commandText; /**< command text */
     ADUC_CommandCallbackFunc callback; /**< callback function for the command */

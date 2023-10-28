@@ -8,6 +8,7 @@
 #ifndef __ADU_MQTT_CLIENT_MODULE_H__
 #define __ADU_MQTT_CLIENT_MODULE_H__
 
+#include "aduc/adu_enrollment.h"
 #include "aduc/adu_mqtt_protocol.h" // for ADUC_COMMUNICATION_*, ADUC_ENROLLMENT_*, ADUC_MQTT_MESSAGE_*, ADUC_MQTT_SETTINGS, ADUC_Result
 #include "aduc/mqtt_client.h" // for ADUC_MQTT_SETTINGS
 #include "aduc/result.h" // for ADUC_Result
