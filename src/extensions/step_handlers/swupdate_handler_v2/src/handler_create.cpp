@@ -11,6 +11,9 @@
 #include <aduc/swupdate_handler_v2.hpp>
 #include <exception>
 
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
+
 EXTERN_C_BEGIN
 
 /////////////////////////////////////////////////////////////////////////////

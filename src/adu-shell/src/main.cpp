@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "aduc/aduc_banned.h"
 #include "aduc/c_utils.h"
 #include "aduc/config_utils.h"
 #include "aduc/logging.h"

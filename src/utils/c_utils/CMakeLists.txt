@@ -15,7 +15,7 @@ add_library (aduc::${target_name} ALIAS ${target_name})
 #
 set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-target_include_directories (${target_name} PUBLIC inc)
+target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
