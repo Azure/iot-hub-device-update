@@ -461,7 +461,7 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
         memset(dest, 0, sizeof(dest));
         const char* src = "12345678901234"; // 14 + 1
         const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 14);
-        ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 9);
+        CHECK(num_chars_copied == 9);
         REQUIRE(strcmp(dest, "123456789") == 0);
     }
 
