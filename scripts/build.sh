@@ -6,12 +6,6 @@
 # Ensure that getopt starts from first option if ". <script.sh>" was used.
 OPTIND=1
 
-# Use sudo if user is not root
-SUDO=""
-if [ "$(id -u)" != "0" ]; then
-    SUDO="sudo"
-fi
-
 ret='exit'
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
@@ -49,7 +43,6 @@ install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
-openssl_dir_path="/usr/local/lib/deviceupdate-openssl"
 
 print_help() {
     echo "Usage: build.sh [options...]"
@@ -104,7 +97,7 @@ copyfile_exit_if_failed() {
     ret_val=$?
     if [[ $ret_val != 0 ]]; then
         error "failed to copy $1 to $2 (exit code:$ret_val)"
-        return $ret_val
+        $ret $ret_val
     fi
 }
 
@@ -233,7 +226,7 @@ while [[ $1 != "" ]]; do
     -u | --build-unit-tests)
         build_unittests=true
         ;;
-    -u | --skip-result-code-gen)
+    --skip-result-code-gen)
         result_code_generation=false
         ;;
     --build-packages)
@@ -312,10 +305,6 @@ while [[ $1 != "" ]]; do
         fi
         cmake_dir_path=$1
         ;;
-    --openssl-path)
-        shift
-        openssl_dir_path=$1
-        ;;
     --major-version)
         shift
         major_version=$1
@@ -387,31 +376,6 @@ else
 fi
 echo ''
 
-do_install_openssl() {
-    local openssl_dir=$work_folder/openssl-1.1.1u
-    echo "Installing OpenSSL ..."
-
-    $SUDO apt-get install -y build-essential checkinstall zlib1g-dev -y || return
-    wget https://www.openssl.org/source/openssl-1.1.1u.tar.gz || return
-    mkdir -p $openssl_dir || return
-    tar -xf openssl-1.1.1u.tar.gz -C $openssl_dir --strip-components=1 || return
-    pushd $openssl_dir > /dev/null || return
-    ./config --prefix="$openssl_dir_path" --openssldir="$openssl_dir_path" shared zlib || return
-    make || return
-
-    $SUDO make install || return
-    export LD_LIBRARY_PATH="$openssl_dir_path/lib:$LD_LIBRARY_PATH" || return
-    echo "OpenSSL has been installed in $openssl_dir_path"
-
-    popd > /dev/null || return
-}
-
-# Check if the directory exists
-if [ ! -d "$openssl_dir_path" ]; then
-    echo "OpenSSL directory not found. Invoking installation..."
-    do_install_openssl || return
-fi
-
 CMAKE_OPTIONS=(
     "-DADUC_BUILD_DOCUMENTATION:BOOL=$build_documentation"
     "-DADUC_BUILD_UNIT_TESTS:BOOL=$build_unittests"
@@ -427,7 +391,6 @@ CMAKE_OPTIONS=(
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
     "-DCMAKE_INSTALL_PREFIX=$install_prefix"
-    "-DOPENSSL_ROOT_DIR=$openssl_dir_path"
 )
 
 if [[ $major_version != "" ]]; then
@@ -514,7 +477,7 @@ if [[ $build_clean == "true" ]]; then
 fi
 
 mkdir -p "$output_directory"
-pushd "$output_directory" > /dev/null || return
+pushd "$output_directory" > /dev/null || $ret
 
 # Generate build using cmake with options
 if [ ! -f "$cmake_bin" ]; then
@@ -538,7 +501,7 @@ if [[ $ret_val == 0 && $build_packages == "true" ]]; then
     ret_val=$?
 fi
 
-popd > /dev/null || return
+popd > /dev/null || $ret
 
 if [[ $ret_val == 0 && $install_adu == "true" ]]; then
     install_adu_components

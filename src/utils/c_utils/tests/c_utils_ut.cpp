@@ -53,56 +53,6 @@ private:
     char _filePath[ARRAY_SIZE("/tmp/tmpfileXXXXXX")] = "/tmp/tmpfileXXXXXX";
 };
 
-TEST_CASE("ReadDelimitedValueFromFile")
-{
-    const unsigned int valueLen = 20;
-    char value[valueLen];
-
-    SECTION("Valid file")
-    {
-        // clang-format off
-        const std::vector<std::string> content{
-            "Key1=Value1",
-            "NotAKeyValuePair",
-            "Key2=Value2",
-            "=DoesntHaveKey",
-            "TwentyCharacterValue=12345678901234567890",
-            "Key3=Value3",
-            "NineteenCharacterValue=1234567890123456789",
-        };
-        // clang-format on
-        TemporaryTestFile file{ content };
-
-        // Valid keys
-        CHECK(ReadDelimitedValueFromFile(file.Filename(), "Key1", value, valueLen));
-        CHECK(std::strcmp(value, "Value1") == 0);
-        CHECK(ReadDelimitedValueFromFile(file.Filename(), "Key2", value, valueLen));
-        CHECK(std::strcmp(value, "Value2") == 0);
-        CHECK(ReadDelimitedValueFromFile(file.Filename(), "Key3", value, valueLen));
-        CHECK(std::strcmp(value, "Value3") == 0);
-
-        // Long values (around valueLen in size)
-        CHECK(ReadDelimitedValueFromFile(file.Filename(), "NineteenCharacterValue", value, valueLen));
-        CHECK(std::strcmp(value, "1234567890123456789") == 0);
-        CHECK(!ReadDelimitedValueFromFile(file.Filename(), "TwentyCharacterValue", value, valueLen));
-
-        // Invalid key
-        CHECK(!ReadDelimitedValueFromFile(file.Filename(), "NotAKeyValuePair", value, valueLen));
-    }
-
-    SECTION("Missing or empty file")
-    {
-        const std::vector<std::string> content;
-        TemporaryTestFile file{ content };
-
-        // Missing file
-        CHECK(!ReadDelimitedValueFromFile("/tmp/__filenamedoesntexist__", "Key1", value, valueLen));
-
-        // Empty file
-        CHECK(!ReadDelimitedValueFromFile(file.Filename(), "Key1", value, valueLen));
-    }
-}
-
 TEST_CASE("ARRAY_SIZE")
 {
     SECTION("Inferred array size")
@@ -461,5 +411,85 @@ TEST_CASE("ADUC_StringFormat")
         const cstr_wrapper retval{ ADUC_StringFormat(fmt.c_str(), tooLongInput.c_str()) };
 
         CHECK(retval.get() == nullptr);
+    }
+}
+TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
+    char dest[10];
+
+    // Edge cases
+
+    SECTION("Handle NULL source") {
+        memset(dest, 0, sizeof(dest));
+        const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, NULL, sizeof(dest), 1);
+        CHECK(num_chars_copied == 0);
+    }
+
+    SECTION("Handle NULL destination") {
+        memset(dest, 0, sizeof(dest));
+        const char* src = "test";
+        const size_t num_chars_copied = ADUC_Safe_StrCopyN(NULL, src, sizeof(dest), 4);
+        CHECK(num_chars_copied == 0);
+    }
+
+    SECTION("Handle zero size") {
+        memset(dest, 0, sizeof(dest));
+        const char* src = "test";
+        const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, 0, 4);
+        CHECK(num_chars_copied == 0);
+    }
+
+    // mainline cases
+
+    SECTION("Copy a shorter string") {
+        memset(dest, 0, sizeof(dest));
+        const char* src = "short";
+        const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 5);
+        CHECK(num_chars_copied == 5);
+        CHECK(strcmp(dest, "short") == 0);
+
+    }
+
+    SECTION("Copy a string of exact length") {
+        memset(dest, 0, sizeof(dest));
+        const char* src = "123456789"; // 9 + 1 null-term
+        const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, sizeof(dest), strlen(src));
+        CHECK(num_chars_copied == 9);
+        REQUIRE(strcmp(dest, src) == 0);
+    }
+
+    SECTION("Handle longer source string by truncating") {
+        memset(dest, 0, sizeof(dest));
+        const char* src = "12345678901234"; // 14 + 1
+        const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 14);
+        CHECK(num_chars_copied == 9);
+        REQUIRE(strcmp(dest, "123456789") == 0);
+    }
+
+    SECTION("Handle subset of longer source string that is still longer than dest") {
+        memset(dest, 0, sizeof(dest));
+        const char* src = "12345678901234"; // 14 + 1
+        const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 11);
+        CHECK(num_chars_copied == 9);
+        REQUIRE(strcmp(dest, "123456789") == 0);
+
+        memset(dest, 0, sizeof(dest));
+        ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 9);
+        REQUIRE(strcmp(dest, "123456789") == 0);
+    }
+
+    SECTION("Handle subset of longer source string, exactly as long as dest buffer - 1") {
+        memset(dest, 0, sizeof(dest));
+        const char* src = "12345678901234"; // 14 + 1
+        const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 9);
+        CHECK(num_chars_copied == 9);
+        REQUIRE(strcmp(dest, "123456789") == 0);
+    }
+
+    SECTION("Handle subset of longer source string, that is less-than dest buffer - 1") {
+        memset(dest, 0, sizeof(dest));
+        const char* src = "12345678901234"; // 14 + 1
+        const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 8);
+        CHECK(num_chars_copied == 8);
+        REQUIRE(strcmp(dest, "12345678") == 0);
     }
 }

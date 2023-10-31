@@ -10,7 +10,7 @@
 
 # This file should be included in an archive that is created at provisioning time
 # with the following structure:
-#       setup.sh (this file)
+#       sas_vm_setup.sh (this file)
 #       deviceupdate-package.deb (debian package under test)
 #       <other-supporting-files>
 # where the archive is named:
@@ -19,12 +19,12 @@
 #       ~/testsetup.tar.gz
 # Once the script has been extracted we'll be running from
 # ~ while the script itself is at
-#       ~/testsetup/setup.sh
+#       ~/testsetup/sas_vm_setup.sh
 # So we need to localize the path to that.
 #
 
 print_help() {
-    echo "Usage: setup.sh [OPTIONS]"
+    echo "Usage: sas_vm_setup.sh [OPTIONS]"
     echo "Options:"
     echo "  -d, --distro       Distribution and version (e.g. ubuntu-18.04, debian-10)"
     echo "  -a, --architecture Architecture (e.g. amd64, arm64)"
@@ -91,6 +91,8 @@ function configure_apt_repository() {
             package_url="https://packages.microsoft.com/config/ubuntu/18.04/multiarch/packages-microsoft-prod.deb"
         elif [ "$version" == "20.04" ]; then
             package_url="https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb"
+        elif [ "$version" == "22.04" ]; then
+            package_url="https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb"
         fi
     elif [ "$distro" == "debian" ] && [ "$version" == "10" ]; then
         package_url="https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb"
@@ -113,7 +115,7 @@ function configure_apt_repository() {
 # Installs and Configures AIS with the pre-generated config.toml
 #
 function install_and_configure_ais() {
-    sudo apt-get install aziot-identity-service
+    sudo apt-get install -y aziot-identity-service
     sudo cp ./testsetup/config.toml /etc/aziot/config.toml
     sudo aziotctl config apply -c /etc/aziot/config.toml
     sudo aziotctl check
@@ -150,6 +152,12 @@ function install_do() {
         elif [ "$version" == "20.04" ] && [ "$architecture" == "arm64" ]; then
             package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_arm64-packages.tar"
             package_filename="ubuntu20_arm64-packages.tar"
+        elif [ "$version" == "22.04" ] && [ "$architecture" == "amd64" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/ubuntu2204_x64-packages.tar"
+            package_filename="ubuntu2204_x64-packages.tar"
+        elif [ "$version" == "22.04" ] && [ "$architecture" == "arm64" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/ubuntu2204_arm64-packages.tar"
+            package_filename="ubuntu2204_arm64-packages.tar"
         fi
     elif [ "$distro" == "debian" ] && [ "$version" == "10" ] && [ "$architecture" == "amd64" ]; then
         package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/debian10_x64-packages.tar"
@@ -166,10 +174,13 @@ function install_do() {
     fi
 }
 
-function register_extensions() {
+function extract_adu_srcs() {
     mkdir ~/adu_srcs/
 
     tar -xf ./testsetup/adu_srcs_repo.tar.gz -C ~/adu_srcs/
+}
+
+function register_extensions() {
 
     sudo mkdir -p ~/demo/demo-devices/contoso-devices
 
@@ -269,9 +280,12 @@ function test_shutdown_service() {
     done
 }
 
+extract_adu_srcs
+
 configure_apt_repository "$distro" "$architecture"
 
 install_and_configure_ais
+
 #
 # Install the Device Update Artifact Under Test
 #

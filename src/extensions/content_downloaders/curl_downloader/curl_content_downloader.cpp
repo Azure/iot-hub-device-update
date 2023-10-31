@@ -16,6 +16,9 @@
 #include <sys/stat.h> // for stat
 #include <vector>
 
+// keep this last to minimize chance to interfere with system header includes.
+#include "aduc/aduc_banned.h"
+
 ADUC_Result Download_curl(
     const ADUC_FileEntity* entity,
     const char* workflowId,

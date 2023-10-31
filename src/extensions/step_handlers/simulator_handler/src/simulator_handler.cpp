@@ -5,6 +5,7 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+
 #include "aduc/simulator_handler.hpp"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h" // ADUC_FileEntity_Uninit
@@ -12,6 +13,10 @@
 #include <stdarg.h> // for va_*
 #include <stdlib.h> // for getenv
 #include <string>
+
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
+
 
 #define SIMULATOR_DATA_FILE "du-simulator-data.json"
 
