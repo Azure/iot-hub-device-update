@@ -4,7 +4,6 @@ project (swupdate_handler_unit_tests)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources

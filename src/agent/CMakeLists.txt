@@ -14,7 +14,6 @@ include (agentRules)
 
 include (find_curl_and_import_libcurl)
 
-compileasc99 ()
 disablertti ()
 
 # Used to find and include the CURL::libcurl imported libary

@@ -4,7 +4,6 @@ set (target_name c_utils_unit_tests)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp c_utils_ut.cpp connection_string_utils_ut.cpp)

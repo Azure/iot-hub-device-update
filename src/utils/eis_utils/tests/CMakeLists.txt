@@ -4,7 +4,6 @@ project (eis_utils_unit_test)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp eis_utils_ut.cpp)

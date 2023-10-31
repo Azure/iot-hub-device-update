@@ -4,7 +4,6 @@ project (string_utils_unit_tests)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp string_utils_ut.cpp)

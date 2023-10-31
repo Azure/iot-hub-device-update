@@ -4,7 +4,6 @@ set (target_name adu_types)
 
 include (agentRules)
 
-compileasc99 ()
 
 add_library (${target_name} STATIC src/adu_types.c)
 

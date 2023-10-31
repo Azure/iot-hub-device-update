@@ -4,7 +4,6 @@ project (simulator_handler_unit_tests)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp simulator_handler_unit_tests.cpp ../src/simulator_handler.cpp)

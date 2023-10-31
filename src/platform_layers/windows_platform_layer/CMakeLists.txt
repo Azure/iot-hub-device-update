@@ -4,7 +4,6 @@ set (target_name windows_platform_layer)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 add_library (${target_name} STATIC)

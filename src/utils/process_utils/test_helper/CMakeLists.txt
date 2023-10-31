@@ -4,7 +4,6 @@ project (process_utils_tests_helper)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp)

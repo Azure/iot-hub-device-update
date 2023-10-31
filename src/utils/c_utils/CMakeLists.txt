@@ -3,7 +3,6 @@ cmake_minimum_required (VERSION 3.5)
 set (target_name c_utils)
 
 include (agentRules)
-compileasc99 ()
 
 add_library (${target_name} STATIC src/bit_ops.c src/connection_string_utils.c src/http_url.c
                                    src/string_c_utils.c)

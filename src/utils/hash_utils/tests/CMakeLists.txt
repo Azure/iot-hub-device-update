@@ -4,7 +4,6 @@ project (hash_utils_unit_test)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp hash_utils_ut.cpp)

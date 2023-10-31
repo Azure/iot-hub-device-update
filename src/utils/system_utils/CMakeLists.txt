@@ -3,7 +3,6 @@ cmake_minimum_required (VERSION 3.5)
 set (target_name system_utils)
 include (agentRules)
 
-compileasc99 ()
 
 add_library (${target_name} STATIC src/system_utils.c)
 add_library (aduc::${target_name} ALIAS ${target_name})

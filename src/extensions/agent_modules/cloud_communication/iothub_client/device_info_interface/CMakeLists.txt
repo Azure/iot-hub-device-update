@@ -2,7 +2,6 @@ set (target_name device_info_interface)
 
 include (agentRules)
 
-compileasc99 ()
 
 add_library (${target_name} STATIC src/device_info_interface.c)
 add_library (aduc::${target_name} ALIAS ${target_name})

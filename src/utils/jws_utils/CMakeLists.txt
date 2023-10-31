@@ -4,7 +4,6 @@ set (target_name jws_utils)
 
 include (agentRules)
 
-compileasc99 ()
 add_library (${target_name} STATIC src/jws_utils.c)
 add_library (aduc::${target_name} ALIAS ${target_name})
 

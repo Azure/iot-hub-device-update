@@ -4,7 +4,6 @@ set (target_name agent_state_store_unit_tests)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp agent_state_store_ut.cpp)

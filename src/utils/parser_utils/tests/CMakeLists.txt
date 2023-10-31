@@ -2,7 +2,6 @@ project (parser_utils_unit_test)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 find_package (Catch2 REQUIRED)

@@ -2,7 +2,6 @@ set (target_name microsoft_delta_download_handler)
 
 include (agentRules)
 
-compileasc99 ()
 
 add_library (${target_name} MODULE)
 

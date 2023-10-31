@@ -4,7 +4,6 @@ project (script_handler_unit_test)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (

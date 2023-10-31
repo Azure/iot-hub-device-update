@@ -2,7 +2,6 @@ set (target_name adu_core_interface)
 
 include (agentRules)
 
-compileasc99 ()
 
 find_package (IotHubClient REQUIRED)
 find_package (Parson REQUIRED)

@@ -4,7 +4,6 @@ set (target_name linux_platform_layer)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 add_library (${target_name} STATIC)

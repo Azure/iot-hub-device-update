@@ -8,7 +8,6 @@ endif ()
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp apt_parser_ut.cpp ../src/apt_handler.cpp ../src/apt_parser.cpp)

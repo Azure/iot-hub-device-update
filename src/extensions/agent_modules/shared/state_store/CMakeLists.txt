@@ -3,7 +3,6 @@ cmake_minimum_required (VERSION 3.5)
 set (target_name agent_state_store)
 
 include (agentRules)
-compileasc99 ()
 
 add_library (${target_name} STATIC "")
 add_library (aduc::${target_name} ALIAS ${target_name})

@@ -1,7 +1,6 @@
 set (target_name adps2mqtt_client_module_functional_test)
 
 include (agentRules)
-compileasc99 ()
 disablertti ()
 
 add_executable (${target_name} ${sources})
