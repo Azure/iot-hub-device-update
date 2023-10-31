@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (target_name parser_utils)
 add_library (${target_name} STATIC src/parser_utils.c)

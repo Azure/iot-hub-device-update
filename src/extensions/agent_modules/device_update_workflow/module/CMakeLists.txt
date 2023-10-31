@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (target_name device_update_workflow_module)
 

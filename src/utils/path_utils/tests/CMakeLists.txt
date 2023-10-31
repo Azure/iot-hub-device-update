@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 project (path_utils_unit_tests)
 

@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 project (script_handler_unit_test)
 

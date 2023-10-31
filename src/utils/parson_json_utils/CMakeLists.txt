@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (target_name parson_json_utils)
 add_library (${target_name} STATIC src/parson_json_utils.c)
