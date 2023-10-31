@@ -20,6 +20,92 @@
 #    define RSA_get0_e(x) ((x)->e)
 #endif
 
+bool CheckRSA_Key(
+    CryptoKeyHandle key, BUFFER_HANDLE byteEBuff, const size_t e_len, BUFFER_HANDLE byteNBuff, const size_t N_len)
+{
+    bool success = false;
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+    BIGNUM* key_N = nullptr;
+    BIGNUM* key_e = nullptr;
+
+    if (EVP_PKEY_get_bn_param(static_cast<EVP_PKEY*>(key), "n", &key_N) != 1)
+    {
+        return false;
+    }
+
+    if (EVP_PKEY_get_bn_param(static_cast<EVP_PKEY*>(key), "e", &key_e) != 1)
+    {
+        return false;
+    }
+
+#else
+    const BIGNUM* key_N = nullptr;
+    const BIGNUM* key_e = nullptr;
+    RSA* rsa_key = EVP_PKEY_get0_RSA(static_cast<EVP_PKEY*>(key));
+
+    if (rsa_key == nullptr)
+    {
+        return false;
+    }
+
+    RSA_get0_key(rsa_key, &key_N, &key_e, nullptr);
+
+    if (key_N == nullptr || key_e == nullptr)
+    {
+        return false;
+    }
+
+#endif
+
+    int key_N_size = BN_num_bytes(key_N);
+
+    int key_e_size = BN_num_bytes(key_e);
+
+    std::unique_ptr<uint8_t> key_N_bytes{ new uint8_t[key_N_size] };
+    std::unique_ptr<uint8_t> key_e_bytes{ new uint8_t[key_e_size] };
+
+    if (key_N_size != N_len)
+    {
+        return false;
+    }
+
+    if (key_e_size != e_len)
+    {
+        return false;
+    }
+
+    BN_bn2bin(key_N, key_N_bytes.get());
+    BN_bn2bin(key_e, key_e_bytes.get());
+
+    uint8_t* byteN = BUFFER_u_char(byteNBuff);
+    uint8_t* byteE = BUFFER_u_char(byteEBuff);
+    if (memcmp(key_N_bytes.get(), byteN, key_N_size) != 0)
+    {
+        goto done;
+    }
+
+    if (memcmp(key_e_bytes.get(), byteE, key_e_size) != 0)
+    {
+        goto done;
+    }
+
+    success = true;
+done:
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+    if (key_N != nullptr)
+    {
+        BN_free(key_N);
+    }
+
+    if (key_e != nullptr)
+    {
+        BN_free(key_e);
+    }
+#endif
+
+    return success;
+}
+
 TEST_CASE("VerifySJWK")
 {
     SECTION("Validate a Valid Signed JSON Web Key")
@@ -158,30 +244,7 @@ TEST_CASE("VerifySJWK")
         CryptoKeyHandle key = GetKeyFromBase64EncodedJWK(signedJSONWebKey.c_str());
 
         // Check the key
-        RSA* rsa_key = EVP_PKEY_get0_RSA(static_cast<EVP_PKEY*>(key));
-
-        CHECK(rsa_key != nullptr);
-
-        const BIGNUM* key_N = nullptr;
-        const BIGNUM* key_e = nullptr;
-
-        RSA_get0_key(rsa_key, &key_N, &key_e, nullptr);
-
-        int key_N_size = BN_num_bytes(key_N);
-        int key_e_size = BN_num_bytes(key_e);
-
-        CHECK(key_N_size == N_len);
-        CHECK(key_e_size == e_len);
-
-        std::unique_ptr<uint8_t> key_N_bytes{ new uint8_t[key_N_size] };
-        std::unique_ptr<uint8_t> key_e_bytes{ new uint8_t[key_e_size] };
-        BN_bn2bin(key_N, key_N_bytes.get());
-        BN_bn2bin(key_e, key_e_bytes.get());
-
-        uint8_t* byteN = BUFFER_u_char(byteNBuff);
-        uint8_t* byteE = BUFFER_u_char(byteEBuff);
-        CHECK(memcmp(key_N_bytes.get(), byteN, key_N_size) == 0);
-        CHECK(memcmp(key_e_bytes.get(), byteE, key_e_size) == 0);
+        CHECK(CheckRSA_Key(key, byteEBuff, e_len, byteNBuff, N_len) == true);
 
         BUFFER_delete(byteNBuff);
         BUFFER_delete(byteEBuff);

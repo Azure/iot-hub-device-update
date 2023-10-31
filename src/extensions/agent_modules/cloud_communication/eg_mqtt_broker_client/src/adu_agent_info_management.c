@@ -33,15 +33,15 @@ static JSON_Value* PrepareAgentInformation();
 static void UpdateNextAttemptTime(time_t time);
 static ADUC_AGENT_INFO_MANAGEMENT_STATE* StateFromModule()
 
-    // Declare the agent info management module functions.
-    DECLARE_AGENT_MODULE_PRIVATE(ADUC_Agent_Info_Management)
+// Declare the agent info management module functions.
+DECLARE_AGENT_MODULE_PRIVATE(ADUC_Agent_Info_Management)
 
-    // Implement all functions declared by DECLARE_AGENT_MODULE_PRIVATE macro above.
+// Implement all functions declared by DECLARE_AGENT_MODULE_PRIVATE macro above.
 
-    /**
+/**
  * @brief Create the agent info management module instance
  */
-    ADUC_AGENT_MODULE_HANDLE ADUC_Agent_Info_Management_Create()
+ADUC_AGENT_MODULE_HANDLE ADUC_Agent_Info_Management_Create()
 {
     ADUC_AGENT_MODULE_HANDLE handle = NULL;
 

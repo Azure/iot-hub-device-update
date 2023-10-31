@@ -37,6 +37,9 @@
 #include <stdlib.h> // strtol
 #include <sys/stat.h>
 
+// make this last so that it does not interfere when system headers are included after it
+#include "aduc/aduc_banned.h"
+
 /**
  * @brief Make getopt* stop parsing as soon as non-option argument is encountered.
  * @remark See GETOPT.3 man page for more details.

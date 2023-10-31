@@ -40,6 +40,9 @@
 
 #include <aducpal/dirent.h>
 
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
+
 namespace adushconst = Adu::Shell::Const;
 
 EXTERN_C_BEGIN
@@ -513,7 +516,7 @@ static ADUC_Result CancelApply(const char* logFolder)
         const std::vector<std::string> aduShellArgs{
             adushconst::config_folder_opt,     config->configFolder,
             adushconst::update_type_opt,       adushconst::update_type_microsoft_swupdate,
-            adushconst::update_action_opt,     adushconst::update_action_apply,
+            adushconst::update_action_opt,     adushconst::update_action_rollback,
             adushconst::target_log_folder_opt, logFolder
         };
 
