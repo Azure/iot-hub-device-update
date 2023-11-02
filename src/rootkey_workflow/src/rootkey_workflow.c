@@ -157,6 +157,8 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
     }
 
     result.ResultCode = ADUC_GeneralResult_Success;
+    result.ExtendedResultCode = ADUC_ERC_ROOTKEY_PACKAGE_CHANGED;
+
 done:
 
     if (IsAducResultCodeFailure(result.ResultCode) || result.ResultCode == ADUC_Result_RootKey_Continue)
@@ -169,13 +171,13 @@ done:
         {
             Log_Debug("No root key change.");
         }
-
-        RootKeyUtility_SetReportingErc(result.ExtendedResultCode);
     }
     else
     {
         Log_Info("Update RootKey, ResultCode %d, ERC 0x%08x", result.ResultCode, result.ExtendedResultCode);
     }
+
+    RootKeyUtility_SetReportingErc(result.ExtendedResultCode);
 
     STRING_delete(downloadedFilePath);
     STRING_delete(fileDest);

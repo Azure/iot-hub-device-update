@@ -1404,7 +1404,7 @@
                             "value": 7
                         },
                         {
-                            "name": "ADUC_ERC_ROOTKEY_PACKAGE_INSTALL",
+                            "name": "ADUC_ERC_ROOTKEY_PACKAGE_CHANGED",
                             "value": 8
                         },
                         {
