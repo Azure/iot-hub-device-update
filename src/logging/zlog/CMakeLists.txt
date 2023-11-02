@@ -2,7 +2,6 @@ set (target_name zlog)
 
 include (agentRules)
 
-compileasc99 ()
 
 add_library (${target_name} STATIC src/init.c src/zlog.c)
 

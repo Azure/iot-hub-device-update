@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (CPACK_PACKAGE_NAME "deviceupdate-agent")
 set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Device update agent")

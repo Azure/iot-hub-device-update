@@ -1,10 +1,8 @@
-cmake_minimum_required (VERSION 3.5)
 
 project (string_utils_unit_tests)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp string_utils_ut.cpp)

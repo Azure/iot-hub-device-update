@@ -2,7 +2,6 @@ set (target_name microsoft_delta_download_handler_utils)
 
 include (agentRules)
 
-compileasc99 ()
 
 add_library (${target_name} STATIC "")
 add_library (aduc::${target_name} ALIAS ${target_name})

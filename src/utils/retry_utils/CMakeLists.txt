@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (target_name retry_utils)
 add_library (${target_name} STATIC src/retry_utils.c)

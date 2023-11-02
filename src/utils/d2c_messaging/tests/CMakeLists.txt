@@ -2,7 +2,6 @@ project (d2c_messaging_unit_test)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 find_package (Catch2 REQUIRED)

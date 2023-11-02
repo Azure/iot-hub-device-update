@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 add_subdirectory (adu_core_export_helpers)
 add_subdirectory (adu_core_interface)

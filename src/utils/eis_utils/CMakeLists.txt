@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (target_name eis_utils)
 add_library (${target_name} STATIC src/eis_utils.c src/eis_coms.c src/eis_err.c)

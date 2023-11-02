@@ -2,7 +2,6 @@ project (source_update_cache_unit_tests)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 find_package (Catch2 REQUIRED)

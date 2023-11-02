@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 add_subdirectory (communication_channel)
 add_subdirectory (iothub_client)

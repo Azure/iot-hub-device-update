@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 include (agentRules)
 
@@ -61,6 +60,12 @@ else ()
 endif ()
 
 add_definitions (-DADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")
+
+find_package (OpenSSL REQUIRED)
+message(OPENSSL_CRYPTO_LIBRARY="${OPENSSL_CRYPTO_LIBRARY}")
+message(OPENSSL_VERSION="${OPENSSL_VERSION}")
+message(OPENSSL_INCLUDE_DIR="${OPENSSL_INCLUDE_DIR}")
+message(OPENSSL_SSL_LIBRARY="${OPENSSL_SSL_LIBRARY}")
 
 set (ADUC_TYPES_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc)
 set (ADUC_EXPORT_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/inc ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc)

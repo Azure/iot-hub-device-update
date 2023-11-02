@@ -1,7 +1,6 @@
 set (target_name shutdown_service)
 
 include (agentRules)
-compileasc99 ()
 disablertti ()
 
 add_library (${target_name} STATIC)

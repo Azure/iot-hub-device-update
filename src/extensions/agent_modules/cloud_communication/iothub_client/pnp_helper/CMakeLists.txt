@@ -1,7 +1,6 @@
 set (target_name pnp_helper)
 include (agentRules)
 
-compileasc99 ()
 
 add_library (${target_name} STATIC ./src/pnp_protocol.c)
 add_library (aduc::${target_name} ALIAS ${target_name})

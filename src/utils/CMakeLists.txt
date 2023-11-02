@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 add_subdirectory (c_utils)
 add_subdirectory (config_utils)

@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (target_name d2c_messaging)
 add_library (${target_name} STATIC src/d2c_messaging.c)
