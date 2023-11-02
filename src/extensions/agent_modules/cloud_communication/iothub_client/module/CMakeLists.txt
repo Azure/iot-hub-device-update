@@ -35,9 +35,7 @@ target_link_libraries (
             aduc::iothub_communication_manager
             aduc::logging
             aduc::pnp_helper
-            Parson::parson
-            diagnostics_component::diagnostics_interface
-            diagnostics_component::diagnostics_devicename)
+            Parson::parson)
 
 if (NOT WIN32)
     target_link_libraries (${target_name} PRIVATE aduc::command_helper)

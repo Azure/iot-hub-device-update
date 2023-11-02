@@ -316,21 +316,6 @@ set (
 cmake_path (SET ADUC_AGENT_FILEPATH NORMALIZE "${ADUC_AGENT_FOLDER}/${ADUC_AGENT_FILENAME}")
 
 set (
-    DIAGNOSTICS_CONFIG_FILE
-    "du-diagnostics-config.json"
-    CACHE STRING
-          "Path to the file that contains the configuration information for the diagnostics system")
-
-set (
-    DIAGNOSTICS_COMPLETED_OPERATION_FILE
-    "diagnosticsoperationids"
-    CACHE STRING "File that contains the last completed diagnostic operation's id")
-set (
-    DIAGNOSTICS_COMPLETED_OPERATION_FILE_PATH
-    "${ADUC_DATA_FOLDER}/${DIAGNOSTICS_COMPLETED_OPERATION_FILE}"
-    CACHE STRING "Path to the file that contains the completed diagnostic operation ids")
-
-set (
     ADUSHELL_FOLDER
     "/usr/bin"
     CACHE STRING "The directory of the adu-shell binary.")
@@ -482,15 +467,6 @@ set (
     ADUC_CONF_FILE_PATH
     "${ADUC_CONF_FILE_PATH}"
     CACHE STRING "Path to the ADU configuration file.")
-
-# Construct the absolute path to the adu diagnostics configuration file
-cmake_path (SET DIAGNOSTICS_CONFIG_FILE_PATH NORMALIZE
-            "${ADUC_CONF_FOLDER}/${DIAGNOSTICS_CONFIG_FILE}")
-
-set (
-    DIAGNOSTICS_CONFIG_FILE_PATH
-    "${DIAGNOSTICS_CONFIG_FILE_PATH}"
-    CACHE STRING "Path to the diagnostics configuration file.")
 
 # Generate the error code definition file
 find_package (

@@ -22,9 +22,6 @@
 #include "aduc/logging.h"
 #include "pnp_protocol.h"
 
-#include <diagnostics_devicename.h>
-#include <diagnostics_interface.h>
-
 // --- NOTE: Following block are codes ported from agent/src/main.c
 
 // Name of ADU Agent subcomponent that this device implements.
@@ -32,9 +29,6 @@ static const char g_aduPnPComponentName[] = "deviceUpdate";
 
 // Name of DeviceInformation subcomponent that this device implements.
 static const char g_deviceInfoPnPComponentName[] = "deviceInformation";
-
-// Name of the Diagnostics subcomponent that this device is using
-static const char g_diagnosticsPnPComponentName[] = "diagnosticInformation";
 
 /**
  * @brief Global IoT Hub client handle.
@@ -136,50 +130,7 @@ static PnPComponentEntry componentList[] = {
         DeviceInfoInterface_Destroy,
         NULL /* PropertyUpdateCallback - not used */
     },
-    {
-        g_diagnosticsPnPComponentName,
-        &g_iotHubClientHandleForDiagnosticsComponent,
-        DiagnosticsInterface_Create,
-        DiagnosticsInterface_Connected,
-        NULL /* DoWork method - not used */,
-        DiagnosticsInterface_Destroy,
-        DiagnosticsInterface_PropertyUpdateCallback
-    },
 };
-
-/**
- * @brief Sets the Diagnostic DeviceName for creating the device's diagnostic container
- * @param connectionString connectionString to extract the device-id and module-id from
- * @returns true on success; false on failure
- */
-bool ADUC_SetDiagnosticsDeviceNameFromConnectionString(const char* connectionString)
-{
-    bool succeeded = false;
-
-    char* deviceId = NULL;
-
-    char* moduleId = NULL;
-
-    if (!ConnectionStringUtils_GetDeviceIdFromConnectionString(connectionString, &deviceId))
-    {
-        goto done;
-    }
-
-    // Note: not all connection strings have a module-id
-    ConnectionStringUtils_GetModuleIdFromConnectionString(connectionString, &moduleId);
-
-    if (!DiagnosticsComponent_SetDeviceName(deviceId, moduleId))
-    {
-        goto done;
-    }
-
-    succeeded = true;
-
-done:
-    free(deviceId);
-    free(moduleId);
-    return succeeded;
-}
 
 /**
  * @brief Uninitialize all PnP components' handler.
@@ -494,12 +445,6 @@ int IoTHubClientModule_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* moduleI
         goto done;
     }
 
-    if (!ADUC_SetDiagnosticsDeviceNameFromConnectionString(info.connectionString))
-    {
-        Log_Error("Setting DiagnosticsDeviceName failed");
-        goto done;
-    }
-
     if (!IoTHub_CommunicationManager_Init(
             &g_iotHubClientHandle,
             ADUC_PnPDeviceTwin_Callback,
@@ -575,7 +520,6 @@ int IoTHubClientModule_Deinitialize(ADUC_AGENT_MODULE_HANDLE module)
 #endif
     ADUC_PnP_Components_Destroy();
     IoTHub_CommunicationManager_Deinit();
-    DiagnosticsComponent_DestroyDeviceName();
     ADUC_Logging_Uninit();
     // TODO: nox-msft Unload all extension
     return 0;
