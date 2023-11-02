@@ -2,7 +2,6 @@ set (target_name command_helper)
 
 include (agentRules)
 
-compileasc99 ()
 
 add_library (${target_name} STATIC ./src/command_helper.c)
 add_library (aduc::${target_name} ALIAS ${target_name})

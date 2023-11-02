@@ -1,10 +1,8 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (target_name adu-shell)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (agent_c_files ./src/adushell_action.cpp ./src/common_tasks.cpp ./src/main.cpp)

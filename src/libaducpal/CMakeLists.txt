@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (target_name libaducpal)
 # CMake Note:  We do not recommend using GLOB to collect a list of source files from your source tree.

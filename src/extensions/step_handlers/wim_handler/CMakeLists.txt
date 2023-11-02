@@ -1,9 +1,7 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (target_name microsoft_wim_1)
 
 include (agentRules)
-compileasc99 ()
 
 add_library (
     ${target_name} MODULE

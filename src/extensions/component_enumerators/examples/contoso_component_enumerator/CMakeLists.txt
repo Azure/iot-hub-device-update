@@ -2,7 +2,6 @@ set (target_name contoso_component_enumerator)
 
 include (agentRules)
 
-compileasc99 ()
 
 add_library (${target_name} MODULE contoso_component_enumerator.cpp)
 

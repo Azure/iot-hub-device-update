@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 project (apt_handler_unit_tests)
 
@@ -8,7 +7,6 @@ endif ()
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp apt_parser_ut.cpp ../src/apt_handler.cpp ../src/apt_parser.cpp)

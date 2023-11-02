@@ -1,10 +1,8 @@
-cmake_minimum_required (VERSION 3.5)
 
 project (linux_platform_layer_unit_tests)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp download_ut.cpp mock_do_download.cpp)

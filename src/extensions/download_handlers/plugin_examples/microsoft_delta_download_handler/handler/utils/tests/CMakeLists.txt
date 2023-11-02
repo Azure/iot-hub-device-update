@@ -2,7 +2,6 @@ project (microsoft_delta_download_handler_util_unit_tests)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 find_package (Catch2 REQUIRED)

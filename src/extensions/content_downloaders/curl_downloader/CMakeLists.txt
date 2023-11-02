@@ -1,7 +1,6 @@
 set (target_name curl_content_downloader)
 include (agentRules)
 
-compileasc99 ()
 
 add_library (${target_name} MODULE)
 add_library (aduc::${target_name} ALIAS ${target_name})

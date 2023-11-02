@@ -2,7 +2,6 @@ project (diagnostics_config_utils_ut)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp diagnostics_config_utils_ut.cpp)

@@ -2,7 +2,6 @@ set (target_name adu_core_export_helpers)
 
 include (agentRules)
 
-compileasc99 ()
 
 find_package (Parson REQUIRED)
 

@@ -2,7 +2,6 @@ set (target_name agent_workflow)
 
 include (agentRules)
 
-compileasc99 ()
 
 add_library (${target_name} STATIC "")
 

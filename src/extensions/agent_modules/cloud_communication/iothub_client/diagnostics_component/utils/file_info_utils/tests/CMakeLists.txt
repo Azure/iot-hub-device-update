@@ -1,10 +1,8 @@
-cmake_minimum_required (VERSION 3.5)
 
 project (file_info_utils_ut)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp file_info_utils_ut.cpp)

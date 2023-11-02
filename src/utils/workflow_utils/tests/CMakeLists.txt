@@ -1,10 +1,8 @@
-cmake_minimum_required (VERSION 3.5)
 
 project (workflow_utils_unit_test)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 find_package (Catch2 REQUIRED)

@@ -1,10 +1,8 @@
-cmake_minimum_required (VERSION 3.5)
 
 project (simulator_handler_unit_tests)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 set (sources main.cpp simulator_handler_unit_tests.cpp ../src/simulator_handler.cpp)

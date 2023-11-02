@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (target_name iothub_communication_manager)
 add_library (${target_name} STATIC src/iothub_communication_manager.c)

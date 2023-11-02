@@ -1,9 +1,7 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (target_name permission_utils)
 
 include (agentRules)
-compileasc99 ()
 
 add_library (${target_name} STATIC src/permission_utils.c)
 add_library (aduc::${target_name} ALIAS ${target_name})

@@ -1,7 +1,6 @@
 set (target_name extension_manager_tests)
 
 include (agentRules)
-compileasc99 ()
 disablertti ()
 
 find_package (Catch2 REQUIRED)

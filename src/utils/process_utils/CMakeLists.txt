@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (target_name process_utils)
 add_library (${target_name} STATIC src/process_utils.cpp)

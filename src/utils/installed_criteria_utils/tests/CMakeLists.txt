@@ -1,10 +1,8 @@
-cmake_minimum_required (VERSION 3.5)
 
 project (installed_criteria_utils_unit_tests)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 find_package (Catch2 REQUIRED)

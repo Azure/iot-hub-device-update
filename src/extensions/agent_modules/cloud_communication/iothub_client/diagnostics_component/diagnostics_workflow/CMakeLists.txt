@@ -1,10 +1,8 @@
-cmake_minimum_required (VERSION 3.5)
 
 set (target_name diagnostics_workflow)
 
 include (agentRules)
 
-compileasc99 ()
 
 add_library (${target_name} STATIC src/diagnostics_workflow.c src/diagnostics_result.c)
 add_library (diagnostics_component::${target_name} ALIAS ${target_name})

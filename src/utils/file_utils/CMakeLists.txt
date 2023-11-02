@@ -2,7 +2,6 @@ set (target_name file_utils)
 
 include (agentRules)
 
-compileasc99 ()
 disablertti ()
 
 add_library (${target_name} STATIC "")
