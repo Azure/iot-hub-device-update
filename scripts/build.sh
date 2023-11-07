@@ -360,7 +360,7 @@ library_dir=${output_directory}/lib
 cmake_bin="${cmake_dir_path}/bin/cmake"
 shellcheck_bin="${work_folder}/deviceupdate-shellcheck"
 
-if [[ $srvc_e2e_agent_build ]]; then
+if [[ $srvc_e2e_agent_build == "true" ]]; then
     warn "BUILDING SERVICE E2E AGENT NEVER USE FOR PRODUCTION"
     echo "Additionally implies: "
     echo " --enable-e2e-testing , --use-test-root-keys, --build-packages"
