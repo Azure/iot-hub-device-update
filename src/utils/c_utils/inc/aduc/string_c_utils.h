@@ -17,7 +17,7 @@
 EXTERN_C_BEGIN
 
 char* ADUC_StringUtils_Trim(char* str);
-char* ADUC_StringUtils_Map(const char* src, char (*mapFn)(int));
+char* ADUC_StringUtils_Map(const char* src, int (*mapFn)(int));
 
 bool ADUC_ParseUpdateType(const char* updateType, char** updateTypeName, unsigned int* updateTypeVersion);
 
