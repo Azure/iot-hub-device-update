@@ -22,6 +22,10 @@
 #include "aduc/workflow_data_utils.h" // ADUC_WorkflowData
 #include "aduc/workflow_utils.h" // workflow_get_*
 
+
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
+
 EXTERN_C_BEGIN
 
 extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Options;

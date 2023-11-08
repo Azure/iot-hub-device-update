@@ -23,9 +23,12 @@
 #include <limits.h> // for PATH_MAX
 #include <stdio.h>
 #include <stdlib.h> // for getenv
-#include <string.h> // for strncpy, strlen
+#include <string.h> // strlen
 #include <sys/stat.h>
 #include <sys/types.h>
+
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
 
 #ifndef ALL_PERMS
 /**
@@ -241,16 +244,9 @@ int ADUC_SystemUtils_MkDirRecursive(const char* path, uid_t userId, gid_t groupI
     }
 
     char mkdirPath[PATH_MAX + 1];
+    memset(mkdirPath, 0, sizeof(mkdirPath));
     const size_t mkdirPath_cch = ADUC_StrNLen(path, PATH_MAX);
-
-    // Create writable copy of path to iterate over.
-    if (mkdirPath_cch + 1 > ARRAY_SIZE(mkdirPath))
-    {
-        return ENAMETOOLONG;
-    }
-
-    strncpy(mkdirPath, path, mkdirPath_cch);
-    mkdirPath[mkdirPath_cch] = '\0';
+    ADUC_Safe_StrCopyN(mkdirPath, path, sizeof(mkdirPath), mkdirPath_cch);
 
     // Remove any trailing slash.
     if (mkdirPath[mkdirPath_cch - 1] == '/')

@@ -21,6 +21,9 @@
 #include <aduc/logging.h> // ADUC_Logging_*, Log_*
 #include <aduc/types/adu_core.h> // ADUC_Result_*
 
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
+
 /////////////////////////////////////////////////////////////////////////////
 // BEGIN Shared Library Export Functions
 //

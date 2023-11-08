@@ -11,6 +11,9 @@
 #include <parson.h>
 #include <string>
 
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
+
 struct JSONValueDeleter
 {
     void operator()(JSON_Value* value)
