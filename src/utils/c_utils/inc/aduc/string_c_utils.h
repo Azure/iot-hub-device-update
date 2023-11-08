@@ -21,8 +21,6 @@ char* ADUC_StringUtils_Map(const char* src, int (*mapFn)(int));
 
 bool ADUC_ParseUpdateType(const char* updateType, char** updateTypeName, unsigned int* updateTypeVersion);
 
-bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* value, unsigned int valueLen);
-
 bool LoadBufferWithFileContents(const char* filePath, char* strBuffer, const size_t strBuffSize);
 
 bool atoul(const char* str, unsigned long* converted);
@@ -36,6 +34,8 @@ char* ADUC_StringFormat(const char* fmt, ...);
 bool IsNullOrEmpty(const char* str);
 
 bool MallocAndSubstr(char** target, char* source, size_t len);
+
+size_t ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_t numSrcCharsToCopy);
 
 EXTERN_C_END
 
