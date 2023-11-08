@@ -335,7 +335,6 @@ done:
 
     return CryptoKeyHandleToEVP_PKEY(result);
 
-
 #else
     _Bool success = false;
     EVP_PKEY* pkey = NULL;
