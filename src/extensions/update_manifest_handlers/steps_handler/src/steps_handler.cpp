@@ -1240,7 +1240,7 @@ ADUC_Result StepsHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
  *        For example, 'microsoft/apt:1' handler type requires that the update creator specify the 'installedCriteria' value in the
  *        step's 'handlerProperties'. The APTHandler uses this 'installedCriteria' string to determine the step's 'IsInstalled' state.
  *
- *        Another example, 'microsoft/swupdate:1' handler type requires that the update creator specify the 'installedCriteria' value in the
+ *        Another example, 'microsoft/swupdate:2' handler type requires that the update creator specify the 'installedCriteria' value in the
  *        step's 'handlerProperties'. The step's is 'installed' if the 'installedCriteria' string matches the content of
  *        the ADU_VERSION file on the device.
  *

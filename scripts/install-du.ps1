@@ -155,14 +155,6 @@ function Register-Components {
         Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
     }
 
-    # microsoft/swupdate:1 not used on Windows.
-    # /var/lib/adu/extensions/update_content_handlers/microsoft_swupdate_1/content_handler.json
-    # $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_swupdate_1.dll"
-    # & $aduciotagent_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/swupdate:1'
-    # if ($LASTEXITCODE -ne 0) {
-    #     Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
-    # }
-
     # /var/lib/adu/extensions/update_content_handlers/microsoft_wim_1/content_handler.json
     $microsoft_wim_1_handler_file = "$adu_extensions_sources_dir/microsoft_wim_1.dll"
     & $aduciotagent_path --register-extension $microsoft_wim_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/wim:1'  --log-level 2
