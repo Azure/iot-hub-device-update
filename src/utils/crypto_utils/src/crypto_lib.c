@@ -371,10 +371,6 @@ done:
 #endif
 }
 
-CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N_len, const unsigned int e)
-{
-}
-
 /**
  * @brief Makes an RSA Key from the modulus (N) and exponent (e) provided in their byte format
  * @param N a buffer containing the bytes for the modulus
