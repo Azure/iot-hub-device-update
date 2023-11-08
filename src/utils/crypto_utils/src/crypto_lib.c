@@ -218,6 +218,90 @@ bool CryptoUtils_IsValidSignature(
 
 CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N_len, const unsigned int e)
 {
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+    int status = 0;
+    EVP_PKEY* result = NULL;
+    EVP_PKEY_CTX* ctx = NULL;
+    OSSL_PARAM_BLD* param_bld = NULL;
+    OSSL_PARAM* params = NULL;
+    BIGNUM* bn_N = NULL;
+    BIGNUM* bn_e = NULL;
+
+    ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
+
+    if (ctx == NULL)
+    {
+        goto done;
+    }
+
+    bn_N = BN_new();
+
+    if (bn_N == NULL)
+    {
+        goto done;
+    }
+
+    bn_e = BN_new();
+
+    if (bn_e == NULL)
+    {
+        goto done;
+    }
+
+    if (BN_bin2bn(N, (int)N_len, bn_N) == 0)
+    {
+        goto done;
+    }
+
+    if (BN_set_word(bn_e, e) == 0)
+    {
+        goto done;
+    }
+
+    param_bld = OSSL_PARAM_BLD_new();
+
+    if (param_bld == NULL)
+    {
+        goto done;
+    }
+
+    status = OSSL_PARAM_BLD_push_BN(param_bld, "n", bn_N);
+    if (status != 1)
+    {
+        goto done;
+    }
+
+    status = OSSL_PARAM_BLD_push_BN(param_bld, "e", bn_e);
+    if (status != 1)
+    {
+        goto done;
+    }
+
+    status = OSSL_PARAM_BLD_push_BN(param_bld, "d", NULL);
+    if (status != 1)
+    {
+        goto done;
+    }
+
+    params = OSSL_PARAM_BLD_to_param(param_bld);
+    if (params == NULL)
+    {
+        goto done;
+    }
+
+    status = EVP_PKEY_fromdata_init(ctx);
+    if (status != 1)
+    {
+        goto done;
+    }
+
+    status = EVP_PKEY_fromdata(ctx, &result, EVP_PKEY_PUBLIC_KEY, params);
+    if (status != 1)
+    {
+        goto done;
+    }
+
+#else
     _Bool success = false;
     EVP_PKEY* pkey = NULL;
 
@@ -231,7 +315,7 @@ CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N
         goto done;
     }
 
-    rsa_N = BN_bin2bn(N, N_len, NULL);
+    rsa_N = BN_bin2bn(N, (int)N_len, NULL);
 
     if (rsa_N == NULL)
     {
@@ -284,6 +368,11 @@ done:
     }
 
     return CryptoKeyHandleToEVP_PKEY(pkey);
+#endif
+}
+
+CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N_len, const unsigned int e)
+{
 }
 
 /**
@@ -475,7 +564,6 @@ done:
 
     return CryptoKeyHandleToEVP_PKEY(pkey);
 #endif // #if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
-
 }
 
 /**
@@ -775,13 +863,13 @@ CONSTBUFFER_HANDLE CryptoUtils_GeneratePublicKey(const char* modulus_b64url, con
     unsigned char* der_encoded_bytes = NULL;
     int der_length = 0;
 
-    modulus_length = Base64URLDecode(modulus_b64url, &modulus_bytes);
+    modulus_length = (int)Base64URLDecode(modulus_b64url, &modulus_bytes);
     if (modulus_length == 0)
     {
         goto done;
     }
 
-    exponent_length = Base64URLDecode(exponent_b64url, &exponent_bytes);
+    exponent_length = (int)Base64URLDecode(exponent_b64url, &exponent_bytes);
     if (exponent_length == 0)
     {
         goto done;
@@ -818,7 +906,7 @@ CONSTBUFFER_HANDLE CryptoUtils_GeneratePublicKey(const char* modulus_b64url, con
     }
 
     // copies bytes into new buffer, so let it free after done:
-    publicKeyData = CONSTBUFFER_Create(der_encoded_bytes, der_length);
+    publicKeyData = CONSTBUFFER_Create(der_encoded_bytes, (size_t)der_length);
 
 done:
 

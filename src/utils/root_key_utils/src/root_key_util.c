@@ -484,7 +484,8 @@ ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath, bool vali
         localStore = NULL;
     }
 
-    return RootKeyUtility_LoadPackageFromDisk(&localStore, filepath == NULL ? ADUC_ROOTKEY_STORE_PACKAGE_PATH : filepath, validateSignatures);
+    return RootKeyUtility_LoadPackageFromDisk(
+        &localStore, filepath == NULL ? ADUC_ROOTKEY_STORE_PACKAGE_PATH : filepath, validateSignatures);
 }
 
 /**
@@ -495,7 +496,8 @@ ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath, bool vali
  * @param validateSignatures whether to validate the package with hard-coded keys
  * @return a value of ADUC_Result
  */
-ADUC_Result RootKeyUtility_LoadPackageFromDisk(ADUC_RootKeyPackage** rootKeyPackage, const char* fileLocation, bool validateSignatures)
+ADUC_Result RootKeyUtility_LoadPackageFromDisk(
+    ADUC_RootKeyPackage** rootKeyPackage, const char* fileLocation, bool validateSignatures)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
@@ -669,7 +671,8 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
 #ifdef USE_LOCAL_STORE
     if (localStore == NULL)
     {
-        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(&localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH, true /* validateSignatures */);
+        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(
+            &localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH, true /* validateSignatures */);
 
         if (IsAducResultCodeFailure(loadResult.ResultCode))
         {
@@ -686,8 +689,8 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
 #endif
     const RSARootKey* hardcodedRsaRootKeys = RootKeyList_GetHardcodedRsaRootKeys();
 
-    const unsigned numberKeys = RootKeyList_numHardcodedKeys();
-    for (unsigned i = 0; i < numberKeys; ++i)
+    const size_t numberKeys = RootKeyList_numHardcodedKeys();
+    for (size_t i = 0; i < numberKeys; ++i)
     {
         if (strcmp(hardcodedRsaRootKeys[i].kid, kid) == 0)
         {
@@ -808,7 +811,8 @@ ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSign
     if (localStore == NULL)
     {
 #ifdef USE_LOCAL_STORE
-        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(&localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH, true /* validateSignatures */);
+        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(
+            &localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH, true /* validateSignatures */);
 
         if (IsAducResultCodeFailure(loadResult.ResultCode))
         {
@@ -829,9 +833,11 @@ ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSign
         goto done;
     }
 
-    for(size_t i=0; i<VECTOR_size(localStore->protectedProperties.disabledSigningKeys); ++i)
+    for (size_t i = 0; i < VECTOR_size(localStore->protectedProperties.disabledSigningKeys); ++i)
     {
-        if (VECTOR_push_back(disabledSigningKeyList, VECTOR_element(localStore->protectedProperties.disabledSigningKeys, i), 1) != 0)
+        if (VECTOR_push_back(
+                disabledSigningKeyList, VECTOR_element(localStore->protectedProperties.disabledSigningKeys, i), 1)
+            != 0)
         {
             result.ExtendedResultCode = ADUC_ERC_NOMEM;
             goto done;
