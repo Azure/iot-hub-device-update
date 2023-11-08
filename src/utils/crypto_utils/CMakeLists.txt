@@ -22,9 +22,10 @@ target_link_aziotsharedutil (${target_name} PRIVATE)
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::c_utils
-    PRIVATE aduc::root_key_utils OpenSSL::Crypto libaducpal)
+    PUBLIC aduc::c_utils aziotsharedutil
+    PRIVATE aduc::root_key_utils OpenSSL::Crypto)
 
+target_link_libraries (${target_name} PRIVATE libaducpal)
 
 target_compile_definitions (${target_name} PRIVATE EMBED_TEST_ROOT_KEYS=${EMBED_TEST_ROOT_KEYS})
 
