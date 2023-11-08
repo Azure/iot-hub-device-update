@@ -300,6 +300,41 @@ CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N
     {
         goto done;
     }
+done:
+
+    if (ctx != NULL)
+    {
+        EVP_PKEY_CTX_free(ctx);
+    }
+
+    if (param_bld != NULL)
+    {
+        OSSL_PARAM_BLD_free(param_bld);
+    }
+
+    if (params != NULL)
+    {
+        OSSL_PARAM_free(params);
+    }
+
+    if (bn_N != NULL)
+    {
+        BN_free(bn_N);
+    }
+
+    if (bn_e != NULL)
+    {
+        BN_free(bn_e);
+    }
+
+    if (status == 0 && result != NULL)
+    {
+        EVP_PKEY_free(result);
+        result = NULL;
+    }
+
+    return CryptoKeyHandleToEVP_PKEY(result);
+
 
 #else
     _Bool success = false;
