@@ -25,6 +25,9 @@
 #    include <objbase.h>
 #endif
 
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
+
 EXTERN_C_BEGIN
 
 /////////////////////////////////////////////////////////////////////////////

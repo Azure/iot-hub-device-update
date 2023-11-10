@@ -20,6 +20,10 @@
 #include <string.h> // strlen
 #include <sys/stat.h> // mkfifo
 #include <unistd.h> // sleep
+#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
+
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
 
 #define MAX_COMMAND_ARRAY_SIZE 1 // !< For version 1.0, we're supporting only 1 command.
 #define COMMAND_MAX_LEN 64 // !< Max command length including NULL
@@ -314,6 +318,9 @@ bool SendCommand(const char* command)
 {
     static char buffer[COMMAND_MAX_LEN];
     bool success = false;
+
+    const size_t cmdLen = strlen(command);
+
     int fd = -1;
     if (command == NULL || *command == '\0')
     {
@@ -321,7 +328,7 @@ bool SendCommand(const char* command)
         goto done;
     }
 
-    if (strlen(command) > COMMAND_MAX_LEN - 1)
+    if (cmdLen > COMMAND_MAX_LEN - 1)
     {
         Log_Error("Command is too long (63 characters max).");
         goto done;
@@ -341,7 +348,7 @@ bool SendCommand(const char* command)
     }
 
     // Copy command to buffer and fill the remaining buffer (if any) with additional null bytes.
-    strncpy(buffer, command, sizeof(buffer));
+    ADUC_Safe_StrCopyN(buffer, command, sizeof(buffer), cmdLen);
     ssize_t size = write(fd, buffer, sizeof(buffer));
     if (size != sizeof(buffer))
     {
