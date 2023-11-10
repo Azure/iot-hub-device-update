@@ -31,7 +31,8 @@ build_packages=false
 platform_layer="linux"
 trace_target_deps=false
 step_handlers="microsoft/apt,microsoft/script,microsoft/simulator,microsoft/swupdate,microsoft/swupdate_v2"
-include_test_root_keys=false
+use_test_root_keys=false
+srvc_e2e_agent_build=false
 build_type=Debug
 adu_log_dir=""
 default_log_dir=/var/log/adu
@@ -268,8 +269,11 @@ while [[ $1 != "" ]]; do
     --trace-target-deps)
         trace_target_deps=true
         ;;
-    --include-test-root-keys)
-        include_test_root_keys=true
+    --use-test-root-keys)
+        use_test_root_keys=true
+        ;;
+    --build-service-e2e-agent)
+        srvc_e2e_agent_build=true
         ;;
     --log-lib)
         shift
@@ -356,6 +360,15 @@ library_dir=${output_directory}/lib
 cmake_bin="${cmake_dir_path}/bin/cmake"
 shellcheck_bin="${work_folder}/deviceupdate-shellcheck"
 
+if [[ $srvc_e2e_agent_build == "true" ]]; then
+    warn "BUILDING SERVICE E2E AGENT NEVER USE FOR PRODUCTION"
+    echo "Additionally implies: "
+    echo " --enable-e2e-testing , --use-test-root-keys, --build-packages"
+    use_test_root_keys=true
+    enable_e2e_testing=true
+    build_packages=true
+fi
+
 # Output banner
 echo ''
 header "Building ADU Agent"
@@ -380,7 +393,7 @@ if [[ ${#static_analysis_tools[@]} -eq 0 ]]; then
 else
     bullet "Static analysis: " "${static_analysis_tools[@]}"
 fi
-bullet "Include Test Root Keys: $include_test_root_keys"
+bullet "Include Test Root Keys: $use_test_root_keys"
 echo ''
 
 CMAKE_OPTIONS=(
@@ -393,7 +406,7 @@ CMAKE_OPTIONS=(
     "-DADUC_LOGGING_LIBRARY:STRING=$log_lib"
     "-DADUC_PLATFORM_LAYER:STRING=$platform_layer"
     "-DADUC_TRACE_TARGET_DEPS=$trace_target_deps"
-    "-DADUC_INCLUDE_TEST_ROOT_KEYS=$include_test_root_keys"
+    "-DADUC_USE_TEST_ROOT_KEYS=$use_test_root_keys"
     "-DCMAKE_BUILD_TYPE:STRING=$build_type"
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"

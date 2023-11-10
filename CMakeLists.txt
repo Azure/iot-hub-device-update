@@ -477,8 +477,9 @@ option (ADUC_BUILD_PACKAGES "Build the ADU Agent packages" OFF)
 option (ADUC_INSTALL_DAEMON "Install the ADU Agent as a daemon" ON)
 option (ADUC_REGISTER_DAEMON "Register the ADU Agent daemon with the system" ON)
 option (ADUC_TRACE_TARGET_DEPS "Trace target dependencies" OFF)
-option (ADUC_INCLUDE_TEST_ROOT_KEYS "Include test root keys" OFF)
+option (ADUC_USE_TEST_ROOT_KEYS "Include test root keys" OFF)
 option (ADUC_ENABLE_E2E_TESTING "Enable e2e test pipeline settings" OFF)
+option (ADUC_ENABLE_SRVC_E2E_TESTING "Enable service side test agent settings" OFF)
 
 ### End CMake Options
 

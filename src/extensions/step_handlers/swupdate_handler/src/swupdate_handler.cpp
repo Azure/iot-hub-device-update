@@ -40,6 +40,9 @@
 
 #include <aducpal/dirent.h>
 
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
+
 namespace adushconst = Adu::Shell::Const;
 
 EXTERN_C_BEGIN

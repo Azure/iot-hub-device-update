@@ -1404,6 +1404,10 @@
                             "value": 7
                         },
                         {
+                            "name": "ADUC_ERC_ROOTKEY_PACKAGE_CHANGED",
+                            "value": 8
+                        },
+                        {
                             "name": "ADUC_ERC_ROOTKEY_PKG_UNCHANGED",
                             "value": 4095
                         }

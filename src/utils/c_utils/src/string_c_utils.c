@@ -19,75 +19,13 @@
 
 #include <aducpal/unistd.h> // open, read, close
 
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
+
 /**
  * @brief Maximum length for the output string of ADUC_StringFormat()
  */
 #define ADUC_STRING_FORMAT_MAX_LENGTH 512
-
-/**
- * @brief Read a value from a delimited file and return the value found.
- * The file is in form "key=value", and keys are case sensitive.
- * Value returned has whitespace trimmed from both ends.
- *
- * @param fileName Filename of delimited file
- * @param key Key to find
- * @param value Value found for @p Key
- * @param valueLen Size of buffer for @p value
- * @return true if value found, false otherwise.
- */
-bool ReadDelimitedValueFromFile(const char* fileName, const char* key, char* value, unsigned int valueLen)
-{
-    bool foundKey = false;
-    char buffer[1024];
-    const size_t bufferLen = ARRAY_SIZE(buffer);
-
-    if (valueLen < 2)
-    {
-        // Need space for at least a character and a null terminator.
-        return false;
-    }
-
-    FILE* fp = fopen(fileName, "r");
-    if (fp == NULL)
-    {
-        return false;
-    }
-
-    while (!foundKey && fgets(buffer, (int)bufferLen, fp) != NULL)
-    {
-        char* delimiter = strchr(buffer, '=');
-        if (delimiter == NULL)
-        {
-            // Ignore lines without delimiters.
-            continue;
-        }
-
-        // Change the delimiter character to a NULL for ease of parsing.
-        *delimiter = '\0';
-
-        ADUC_StringUtils_Trim(buffer);
-        foundKey = (strcmp(buffer, key) == 0);
-        if (!foundKey)
-        {
-            continue;
-        }
-
-        char* foundValue = delimiter + 1;
-        ADUC_StringUtils_Trim(foundValue);
-        strncpy(value, foundValue, valueLen);
-        if (value[valueLen - 1] != '\0')
-        {
-            // strncpy pads the buffer with NULL up to valueLen, so if
-            // that position doesn't have a NULL, the buffer provided was too small.
-            foundKey = false;
-            break;
-        }
-    }
-
-    fclose(fp);
-
-    return foundKey;
-}
 
 /**
  * @brief Function that sets @p strBuffers to the contents of the file at @p filePath if the contents are smaller in size than the buffer
@@ -464,11 +402,7 @@ bool MallocAndSubstr(char** target, char* source, size_t len)
         return false;
     }
     memset(t, 0, (len + 1) * sizeof(*t));
-    if (strncpy(t, source, len) != t)
-    {
-        free(t);
-        return false;
-    }
+    ADUC_Safe_StrCopyN(t, source, len + 1, len);
 
     *target = t;
     return true;
@@ -500,8 +434,46 @@ char* ADUC_StringUtils_Map(const char* src, int (*mapFn)(int))
 
     for (int i = 0; i <= len; ++i)
     {
-        tgt[i] = mapFn(src[i]);
+        int ret = mapFn(src[i]);
+
+        if (ret == EOF)
+        {
+            free(tgt);
+            return NULL;
+        }
+
+        tgt[i] = (char) ( ret & 0xFF);
     }
 
     return tgt;
+}
+
+/** @brief Safely copies a source string to a destination buffer.
+ *
+ * This function is a safer alternative to strncpy. It ensures that the
+ * destination buffer is always null-terminated and won't cause buffer
+ * overflow if src is large enough to cause truncation.
+ *
+ * @param dest The destination buffer.
+ * @param src The source string to be copied.
+ * @param destByteLen The size of the destination buffer in bytes.
+ * @param numSrcCharsToCopy The number of source chars to copy. It will be truncated and null-terminated if >= destByteLen.
+ * @return size_t The number of src chars copied. If < numSrcCharsToCopy, then it was truncated.
+ */
+size_t ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_t numSrcCharsToCopy)
+{
+    if (dest == NULL || src == NULL || destByteLen == 0)
+    {
+        return 0;
+    }
+
+    if(numSrcCharsToCopy >= destByteLen)
+    {
+        numSrcCharsToCopy = destByteLen - 1;
+    }
+
+    memcpy(dest, src, numSrcCharsToCopy);
+    dest[numSrcCharsToCopy] = '\0';
+
+    return numSrcCharsToCopy;
 }

@@ -98,6 +98,8 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
         goto done;
     }
 
+#ifndef ADUC_ENABLE_SRVC_E2E_TESTING
+
 #ifdef ADUC_E2E_TESTING_ENABLED
     if (!rootKeyPackage.protectedProperties.isTest)
     {
@@ -112,6 +114,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
     }
 #endif
 
+#endif
     if (!ADUC_SystemUtils_Exists(ADUC_ROOTKEY_STORE_PATH))
     {
         if (ADUC_SystemUtils_MkDirRecursiveDefault(ADUC_ROOTKEY_STORE_PATH) != 0)
@@ -154,6 +157,8 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
     }
 
     result.ResultCode = ADUC_GeneralResult_Success;
+    result.ExtendedResultCode = ADUC_ERC_ROOTKEY_PACKAGE_CHANGED;
+
 done:
 
     if (IsAducResultCodeFailure(result.ResultCode) || result.ResultCode == ADUC_Result_RootKey_Continue)
@@ -166,13 +171,13 @@ done:
         {
             Log_Debug("No root key change.");
         }
-
-        RootKeyUtility_SetReportingErc(result.ExtendedResultCode);
     }
     else
     {
         Log_Info("Update RootKey, ResultCode %d, ERC 0x%08x", result.ResultCode, result.ExtendedResultCode);
     }
+
+    RootKeyUtility_SetReportingErc(result.ExtendedResultCode);
 
     STRING_delete(downloadedFilePath);
     STRING_delete(fileDest);

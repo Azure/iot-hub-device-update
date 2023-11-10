@@ -24,6 +24,9 @@
 #include <sstream>
 #include <string>
 
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
+
 using ADUC::StringUtils::cstr_wrapper;
 
 #define DEFAULT_REF_STEP_HANDLER "microsoft/steps:1"

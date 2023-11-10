@@ -7,6 +7,7 @@
  */
 
 #include "jws_utils.h"
+#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
 #include "base64_utils.h"
 #include "crypto_lib.h"
 #include "root_key_util.h"
@@ -19,6 +20,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
+
 //
 // Internal Functions
 //
@@ -145,16 +150,11 @@ static bool ExtractJWSSections(const char* jws, char** header, char** payload, c
         goto done;
     }
 
-    strncpy(*header, jws, headerLen);
-    strncpy(*payload, (headerEnd + 1), payloadLen);
-    strncpy(*signature, (payloadEnd + 1), sigLen);
-
-    (*header)[headerLen] = '\0';
-    (*payload)[payloadLen] = '\0';
-    (*signature)[sigLen] = '\0';
+    ADUC_Safe_StrCopyN(*header, jws, headerLen + 1, headerLen);
+    ADUC_Safe_StrCopyN(*payload, (headerEnd + 1), payloadLen + 1, payloadLen);
+    ADUC_Safe_StrCopyN(*signature, (payloadEnd + 1), sigLen + 1, sigLen);
 
     success = true;
-
 done:
     if (!success)
     {
@@ -222,8 +222,8 @@ static bool ExtractJWSHeader(const char* jws, char** header)
         goto done;
     }
 
-    strncpy(tempHeader, jws, headerLen);
-    tempHeader[headerLen] = '\0';
+    ADUC_Safe_StrCopyN(tempHeader, jws, headerLen + 1, headerLen);
+
     success = true;
 
 done:
@@ -540,7 +540,7 @@ JWSResult IsSigningKeyDisallowed(const char* sjwkJsonStr, VECTOR_HANDLE disabled
         goto done;
     }
 
-    pubkey = CryptoUtils_GeneratePublicKey(N, e);
+    pubkey = CryptoUtils_GenerateRsaPublicKey(N, e);
     if (pubkey == NULL)
     {
         result = JWSResult_FailGenPubKey;
@@ -555,12 +555,13 @@ JWSResult IsSigningKeyDisallowed(const char* sjwkJsonStr, VECTOR_HANDLE disabled
     }
 
 #ifdef TRACE_DISABLED_SIGNING_KEY
-    char* base64urlSha256HashPubKey = Base64URLEncode(CONSTBUFFER_GetContent(sha256HashPubKey)->buffer, CONSTBUFFER_GetContent(sha256HashPubKey)->size);
+    char* base64urlSha256HashPubKey = Base64URLEncode(
+        CONSTBUFFER_GetContent(sha256HashPubKey)->buffer, CONSTBUFFER_GetContent(sha256HashPubKey)->size);
     printf("base64url encoding of sha256 hash of public key: %s\n", base64urlSha256HashPubKey);
 #endif
 
     // See if the hash of public key is on the Disallowed List.
-    for (int i = 0; i < VECTOR_size(disabledHashOfPubKeysList); ++i)
+    for (size_t i = 0; i < VECTOR_size(disabledHashOfPubKeysList); ++i)
     {
         const ADUC_RootKeyPackage_Hash* DisallowedEntry =
             (ADUC_RootKeyPackage_Hash*)VECTOR_element(disabledHashOfPubKeysList, i);
