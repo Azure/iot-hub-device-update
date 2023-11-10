@@ -7,6 +7,7 @@
  */
 
 #include "jws_utils.h"
+#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
 #include "base64_utils.h"
 #include "crypto_lib.h"
 #include "root_key_util.h"
@@ -19,7 +20,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
 
 // keep this last to avoid interfering with system headers
 #include "aduc/aduc_banned.h"
@@ -540,7 +540,7 @@ JWSResult IsSigningKeyDisallowed(const char* sjwkJsonStr, VECTOR_HANDLE disabled
         goto done;
     }
 
-    pubkey = CryptoUtils_GeneratePublicKey(N, e);
+    pubkey = CryptoUtils_GenerateRsaPublicKey(N, e);
     if (pubkey == NULL)
     {
         result = JWSResult_FailGenPubKey;
