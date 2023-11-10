@@ -922,7 +922,7 @@ CONSTBUFFER_HANDLE CryptoUtils_GenerateRsaPublicKey(const char* modulus_b64url, 
     unsigned char* der_encoded_bytes = NULL;
     size_t der_length = 0;
 
-    ctx = ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
+    ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
 
     modulus_length = (int)Base64URLDecode(modulus_b64url, &modulus_bytes);
     if (modulus_length == 0)
