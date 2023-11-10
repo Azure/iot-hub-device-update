@@ -13,8 +13,8 @@
 #include <ctype.h>
 #include <openssl/bn.h>
 #include <openssl/evp.h>
-
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#    include <openssl/encoder.h>
 #    include <openssl/param_build.h>
 #endif
 
@@ -953,13 +953,13 @@ CONSTBUFFER_HANDLE CryptoUtils_GeneratePublicKey(const char* modulus_b64url, con
         goto done;
     }
 
-    status = OSSL_PARAM_BLD_push_BN(param_bld, "n", bn_N);
+    status = OSSL_PARAM_BLD_push_BN(param_bld, "n", bn_modulus);
     if (status != 1)
     {
         goto done;
     }
 
-    status = OSSL_PARAM_BLD_push_BN(param_bld, "e", bn_e);
+    status = OSSL_PARAM_BLD_push_BN(param_bld, "e", bn_exponent);
     if (status != 1)
     {
         goto done;
@@ -996,7 +996,7 @@ CONSTBUFFER_HANDLE CryptoUtils_GeneratePublicKey(const char* modulus_b64url, con
         goto done;
     }
 
-    if (OSSL_ENCODER_to_data(pkey_encorder_ctx, &der_encoded_bytes, &der_length) != 1)
+    if (OSSL_ENCODER_to_data(pkey_encoder_ctx, &der_encoded_bytes, &der_length) != 1)
     {
         goto done;
     }
