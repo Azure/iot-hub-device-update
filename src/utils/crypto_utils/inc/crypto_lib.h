@@ -53,7 +53,7 @@ void CryptoUtils_FreeCryptoKeyHandle(CryptoKeyHandle key);
 
 CONSTBUFFER_HANDLE CryptoUtils_CreateSha256Hash(const CONSTBUFFER_HANDLE buf);
 
-CONSTBUFFER_HANDLE CryptoUtils_GeneratePublicKey(const char* modulus_b64url, const char* exponent_b64url);
+CONSTBUFFER_HANDLE CryptoUtils_GenerateRsaPublicKey(const char* modulus_b64url, const char* exponent_b64url);
 
 EXTERN_C_END
 

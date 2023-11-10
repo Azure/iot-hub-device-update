@@ -10,6 +10,7 @@
 #include "jws_utils.h"
 #include <aduc/calloc_wrapper.hpp>
 #include <aduc/result.h>
+#include <aduc/rootkeypackage_utils.h>
 #include <aduc/system_utils.h>
 #include <azure_c_shared_utility/azure_base64.h>
 #include <catch2/catch.hpp>
@@ -20,7 +21,6 @@
 #include <regex>
 #include <root_key_util.h>
 #include <stdio.h>
-#include <aduc/rootkeypackage_utils.h>
 
 #if OPENSSL_VERSION_NUMBER < 0x1010000fL
 #    define RSA_get0_n(x) ((x)->n)
@@ -130,7 +130,8 @@ public:
         REQUIRE(fputs(m_pkg.c_str(), outFile) > 0);
         fclose(outFile);
 
-        ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&m_rootKeyPackage, filePath.c_str(), true /* validateSignatures */);
+        ADUC_Result result =
+            RootKeyUtility_LoadPackageFromDisk(&m_rootKeyPackage, filePath.c_str(), true /* validateSignatures */);
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
         result = RootKeyUtility_ReloadPackageFromDisk(filePath.c_str(), true /* validateSignatures */);
@@ -155,7 +156,6 @@ public:
         return m_testPath.c_str();
     }
 
-
     /**
      * @brief provides the instance to this text fixture object for asserting
      * that the Context passed to the for-each callback matches the current
@@ -167,7 +167,6 @@ public:
     {
         return this;
     }
-
 
 private:
     TestCaseFixture(const TestCaseFixture&) = delete;
@@ -182,7 +181,6 @@ private:
     std::string m_testPath;
     ADUC_RootKeyPackage* m_rootKeyPackage;
 };
-
 
 TEST_CASE_METHOD(TestCaseFixture, "VerifySJWK")
 {
@@ -595,7 +593,7 @@ const char* DisallowedSigningKey =
 
 static CONSTBUFFER_HANDLE GetHashPubKey(const char* n)
 {
-    CONSTBUFFER_HANDLE pubkey = CryptoUtils_GeneratePublicKey(n, "AQAB");
+    CONSTBUFFER_HANDLE pubkey = CryptoUtils_GenerateRsaPublicKey(n, "AQAB");
     REQUIRE(pubkey != nullptr);
 
     CONSTBUFFER_HANDLE hashed = CryptoUtils_CreateSha256Hash(pubkey);
@@ -610,14 +608,14 @@ static VECTOR_HANDLE GetSigningKeyDisallowedList(const char* signing_key_N)
     VECTOR_HANDLE disallowedSigningPubKeyHashes = VECTOR_create(sizeof(ADUC_RootKeyPackage_Hash));
     REQUIRE(disallowedSigningPubKeyHashes != nullptr);
 
-    if(signing_key_N != nullptr)
+    if (signing_key_N != nullptr)
     {
         CONSTBUFFER_HANDLE hashPubKeyHandle = GetHashPubKey(signing_key_N);
         REQUIRE(hashPubKeyHandle != nullptr);
 
         ADUC_RootKeyPackage_Hash rootkeypkg_hash = {
             SHA256, /* alg */
-            hashPubKeyHandle/* hash */
+            hashPubKeyHandle /* hash */
         };
 
         VECTOR_push_back(disallowedSigningPubKeyHashes, &rootkeypkg_hash, 1);
@@ -628,16 +626,14 @@ static VECTOR_HANDLE GetSigningKeyDisallowedList(const char* signing_key_N)
 
 static std::string GetSJWKJson(const char* signing_key_N)
 {
-    const std::string sjwk_template {
-        R"( {                        )"
-        R"( "kty": "RSA",            )"
-        R"( "alg": "RS256",          )"
-        R"( "kid": "ADU.210609.R.S", )"
-        R"( "n": "<%MODULUS%>",      )"
-        R"( "e": "AQAB"              )"
-        R"( }                        )"
-    };
-    return std::regex_replace(sjwk_template, std::regex("<%MODULUS%>"), std::string{signing_key_N});
+    const std::string sjwk_template{ R"( {                        )"
+                                     R"( "kty": "RSA",            )"
+                                     R"( "alg": "RS256",          )"
+                                     R"( "kid": "ADU.210609.R.S", )"
+                                     R"( "n": "<%MODULUS%>",      )"
+                                     R"( "e": "AQAB"              )"
+                                     R"( }                        )" };
+    return std::regex_replace(sjwk_template, std::regex("<%MODULUS%>"), std::string{ signing_key_N });
 }
 
 TEST_CASE("IsSigningKeyDisallowed")

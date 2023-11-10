@@ -30,6 +30,11 @@ if (ADUC_ENABLE_E2E_TESTING)
     target_compile_definitions (${target_name} PRIVATE ADUC_E2E_TESTING_ENABLED="true")
 endif ()
 
+if ( ADUC_ENABLE_SRVC_E2E_TESTING )
+    cmake_print_variables(ADUC_ENABLE_SRVC_E2E_TESTING)
+    target_compile_definitions( ${target_name} PRIVATE ADUC_ENABLE_SRVC_E2E_TESTING="true")
+endif ()
+
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils

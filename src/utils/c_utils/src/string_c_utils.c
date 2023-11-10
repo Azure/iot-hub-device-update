@@ -441,10 +441,7 @@ char* ADUC_StringUtils_Map(const char* src, int (*mapFn)(int))
             free(tgt);
             return NULL;
         }
-        else
-        {
-            tgt[i] = (char)(0xFF & ret);
-        }
+        tgt[i] = (char) ( ret & 0xFF);
     }
 
     return tgt;
