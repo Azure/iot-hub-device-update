@@ -920,7 +920,7 @@ CONSTBUFFER_HANDLE CryptoUtils_GeneratePublicKey(const char* modulus_b64url, con
     BIGNUM* bn_modulus = NULL;
     BIGNUM* bn_exponent = NULL;
     unsigned char* der_encoded_bytes = NULL;
-    int der_length = 0;
+    size_t der_length = 0;
 
     modulus_length = (int)Base64URLDecode(modulus_b64url, &modulus_bytes);
     if (modulus_length == 0)
@@ -1002,7 +1002,7 @@ CONSTBUFFER_HANDLE CryptoUtils_GeneratePublicKey(const char* modulus_b64url, con
     }
 
     // copies bytes into new buffer, so let it free after done:
-    publicKeyData = CONSTBUFFER_Create(der_encoded_bytes, (size_t)der_length);
+    publicKeyData = CONSTBUFFER_Create(der_encoded_bytes, der_length);
 
 done:
 
