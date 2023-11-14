@@ -7,16 +7,14 @@
  */
 #include "aduc/retry_utils.h"
 
+#include <aduc/logging.h>
+#include "parson_json_utils.h" // ADUC_JSON_GetUnsignedIntegerField
+#include <aducpal/time.h> // clock_gettime, CLOCK_REALTIME
 #include <limits.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdlib.h> // rand
-
-#include <aducpal/time.h> // clock_gettime
-
-#ifndef MIN
-#    define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#endif
+#include <stdint.h> // INT32_MAX
 
 time_t ADUC_GetTimeSinceEpochInSeconds()
 {
@@ -24,6 +22,22 @@ time_t ADUC_GetTimeSinceEpochInSeconds()
     ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
     return timeSinceEpoch.tv_sec;
 }
+
+typedef struct tagADUC_RETRY_PARAMS_MAP
+{
+    const char* name;
+    int index;
+} ADUC_RETRY_PARAMS_MAP;
+
+static const ADUC_RETRY_PARAMS_MAP s_retryParamsMap[] = {
+    { "default", ADUC_RETRY_PARAMS_INDEX_DEFAULT },
+    { "clientTransient", ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT },
+    { "clientUnrecoverable", ADUC_RETRY_PARAMS_INDEX_CLIENT_UNRECOVERABLE },
+    { "serviceTransient", ADUC_RETRY_PARAMS_INDEX_SERVICE_TRANSIENT },
+    { "serviceUnrecoverable", ADUC_RETRY_PARAMS_INDEX_SERVICE_UNRECOVERABLE }
+};
+
+static const int s_RetryParamsMapSize = sizeof(s_retryParamsMap) / sizeof(s_retryParamsMap[0]);
 
 /**
  * @brief The default function for calculating the next retry timestamp based on current time (since epoch) and input parameters,
@@ -52,14 +66,22 @@ time_t ADUC_Retry_Delay_Calculator(
     unsigned long maxDelaySecs,
     double maxJitterPercent)
 {
-    double jitterPercent = (maxJitterPercent / 100.0) * (rand() / ((double)RAND_MAX));
-    double delay = (pow(2, MIN(retries, ADUC_RETRY_MAX_RETRY_EXPONENT)) * (double)initialDelayUnitMilliSecs) / 1000.0;
+    const double jitterPercent = (maxJitterPercent / 100.0) * (rand() / ((double)RAND_MAX));
+    const unsigned min = retries < ADUC_RETRY_MAX_RETRY_EXPONENT
+        ? retries
+        : ADUC_RETRY_MAX_RETRY_EXPONENT;
+
+    double delay = (pow(2, min) * (double)initialDelayUnitMilliSecs) / 1000.0;
+    time_t retryTimestampSec = 0;
+
     if ((unsigned long)delay > maxDelaySecs)
     {
         delay = (double)maxDelaySecs;
     }
-    time_t retryTimestampSec = (time_t)(
+
+    retryTimestampSec = (time_t)(
         ADUC_GetTimeSinceEpochInSeconds() + (time_t)additionalDelaySecs + (time_t)(delay * (1 + jitterPercent)));
+
     return retryTimestampSec;
 }
 
@@ -174,4 +196,85 @@ bool ADUC_Retriable_Operation_Cancel(ADUC_Retriable_Operation_Context* context)
     }
 
     return false;
+}
+
+int RetryUtils_GetRetryParamsMapSize()
+{
+    return s_RetryParamsMapSize;
+}
+
+void ReadRetryParamsArrayFromAgentConfigJson(ADUC_Retriable_Operation_Context* context, JSON_Value* agentJsonValue, int retryParamsMapSize)
+{
+    const char* infoFormatString = "Failed to read '%s.%s' from agent config. Using default value (%d)";
+
+    for (int i = 0; i < retryParamsMapSize; i++)
+    {
+        ADUC_Retry_Params* params = &context->retryParams[i];
+        JSON_Value* retryParams = json_object_dotget_value(json_object(agentJsonValue), s_retryParamsMap[i].name);
+        if (retryParams == NULL)
+        {
+            Log_Info("Retry params for '%s' is not specified. Using default values.", s_retryParamsMap[i].name);
+            params->maxRetries = DEFAULT_ENR_REQ_OP_MAX_RETRIES;
+            params->maxDelaySecs = context->operationIntervalSecs;
+            params->fallbackWaitTimeSec = context->operationIntervalSecs;
+            params->initialDelayUnitMilliSecs = DEFAULT_ENR_REQ_OP_INITIAL_DELAY_MILLISECONDS;
+            params->maxJitterPercent = DEFAULT_ENR_REQ_OP_MAX_JITTER_PERCENT;
+            continue;
+        }
+
+        if (!ADUC_JSON_GetUnsignedIntegerField(retryParams, SETTING_KEY_ENR_REQ_OP_MAX_RETRIES, &params->maxRetries))
+        {
+            Log_Info(
+                infoFormatString,
+                s_retryParamsMap[i].name,
+                SETTING_KEY_ENR_REQ_OP_MAX_RETRIES,
+                DEFAULT_ENR_REQ_OP_MAX_RETRIES);
+            params->maxRetries = DEFAULT_ENR_REQ_OP_MAX_RETRIES;
+        }
+
+        if (!ADUC_JSON_GetUnsignedIntegerField(
+                retryParams, SETTING_KEY_ENR_REQ_OP_MAX_WAIT_SECONDS, &params->maxDelaySecs))
+        {
+            Log_Info(
+                infoFormatString,
+                s_retryParamsMap[i].name,
+                SETTING_KEY_ENR_REQ_OP_MAX_WAIT_SECONDS,
+                context->operationIntervalSecs);
+            params->maxDelaySecs = context->operationIntervalSecs;
+        }
+
+        if (!ADUC_JSON_GetUnsignedIntegerField(
+                retryParams, SETTING_KEY_ENR_REQ_OP_FALLBACK_WAITTIME_SECONDS, &params->fallbackWaitTimeSec))
+        {
+            Log_Info(
+                infoFormatString,
+                s_retryParamsMap[i].name,
+                SETTING_KEY_ENR_REQ_OP_FALLBACK_WAITTIME_SECONDS,
+                context->operationIntervalSecs);
+            params->fallbackWaitTimeSec = context->operationIntervalSecs;
+        }
+
+        if (!ADUC_JSON_GetUnsignedIntegerField(
+                retryParams, SETTING_KEY_ENR_REQ_OP_INITIAL_DELAY_MILLISECONDS, &params->initialDelayUnitMilliSecs))
+        {
+            Log_Info(
+                infoFormatString,
+                s_retryParamsMap[i].name,
+                SETTING_KEY_ENR_REQ_OP_INITIAL_DELAY_MILLISECONDS,
+                DEFAULT_ENR_REQ_OP_INITIAL_DELAY_MILLISECONDS);
+            params->initialDelayUnitMilliSecs = DEFAULT_ENR_REQ_OP_INITIAL_DELAY_MILLISECONDS;
+        }
+
+        unsigned int value = 0;
+        if (!ADUC_JSON_GetUnsignedIntegerField(retryParams, SETTING_KEY_ENR_REQ_OP_MAX_JITTER_PERCENT, &value))
+        {
+            Log_Info(
+                infoFormatString,
+                s_retryParamsMap[i].name,
+                SETTING_KEY_ENR_REQ_OP_MAX_JITTER_PERCENT,
+                DEFAULT_ENR_REQ_OP_MAX_JITTER_PERCENT);
+            value = DEFAULT_ENR_REQ_OP_MAX_JITTER_PERCENT;
+        }
+        params->maxJitterPercent = (double)value;
+    }
 }

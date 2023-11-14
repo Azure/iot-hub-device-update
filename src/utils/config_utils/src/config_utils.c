@@ -249,11 +249,7 @@ bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentI
         goto done;
     }
 
-    *agents = calloc(agents_count, sizeof(ADUC_AgentInfo));
-    if (*agents == NULL)
-    {
-        goto done;
-    }
+    ADUC_ALLOC_BLOCK(*agents, agents_count, sizeof(ADUC_AgentInfo));
 
     *agentCount = agents_count;
 
@@ -690,6 +686,12 @@ done:
 int ADUC_ConfigInfo_ReleaseInstance(const ADUC_ConfigInfo* configInfo)
 {
     int ret = -1;
+
+    if (configInfo == NULL)
+    {
+        return 0;
+    }
+
     if (configInfo != &s_configInfo)
     {
         return ret;

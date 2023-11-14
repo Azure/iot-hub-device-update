@@ -137,13 +137,10 @@ static ADU_MQTT_COMMUNICATION_MGR_STATE* CommunicationManagerStateFromModuleHand
 ADUC_AGENT_MODULE_HANDLE ADUC_Communication_Channel_Create()
 {
     ADUC_AGENT_MODULE_INTERFACE* interface = NULL;
-    ADU_MQTT_COMMUNICATION_MGR_STATE* state = malloc(sizeof(ADU_MQTT_COMMUNICATION_MGR_STATE));
-    if (state == NULL)
-    {
-        Log_Error("Failed to allocate memory for communication channel state");
-        goto done;
-    }
-    memset(state, 0, sizeof(ADU_MQTT_COMMUNICATION_MGR_STATE));
+    ADU_MQTT_COMMUNICATION_MGR_STATE* state = NULL;
+
+    ADUC_ALLOC(state);
+
     state->pendingSubscriptions = VECTOR_create(sizeof(ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO));
     if (state->pendingSubscriptions == NULL)
     {
@@ -160,19 +157,16 @@ ADUC_AGENT_MODULE_HANDLE ADUC_Communication_Channel_Create()
 
     state->connectionRetryParams = defaultConnectionRetryParams;
 
-    interface = malloc(sizeof(ADUC_AGENT_MODULE_INTERFACE));
-    if (interface == NULL)
-    {
-        Log_Error("Failed to allocate memory for communication channel interface");
-        goto done;
-    }
-    memset(interface, 0, sizeof(ADUC_AGENT_MODULE_INTERFACE));
+    ADUC_ALLOC(interface);
 
     interface->moduleData = state;
+    state = NULL; // transfer ownership
+
     interface->initializeModule = ADUC_Communication_Channel_Initialize;
     interface->deinitializeModule = ADUC_Communication_Channel_Deinitialize;
     interface->doWork = ADUC_Communication_Channel_DoWork;
     interface->getContractInfo = ADUC_Communication_Channel_GetContractInfo;
+
 done:
     if (interface == NULL)
     {
@@ -186,6 +180,7 @@ done:
         }
         free(state);
     }
+
     return interface;
 }
 
@@ -1217,7 +1212,7 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
     ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* callbackInfo = NULL;
 
     // Create a tracking data.
-    callbackInfo = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)malloc(sizeof(ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO));
+    callbackInfo = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)calloc(1, sizeof(ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO));
     if (callbackInfo == NULL)
     {
         mosqResult = MOSQ_ERR_NOMEM;

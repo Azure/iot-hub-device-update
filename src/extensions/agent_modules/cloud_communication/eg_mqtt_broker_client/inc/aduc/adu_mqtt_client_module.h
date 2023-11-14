@@ -22,7 +22,7 @@ EXTERN_C_BEGIN
 /**
  * @brief The module state.
  */
-typedef struct ADUC_MQTT_CLIENT_MODULE_STATE_TAG
+typedef struct tagADUC_MQTT_CLIENT_MODULE_STATE
 {
     void* moduleInitData; //!< Module init data
     ADUC_MQTT_SETTINGS mqttSettings; //!< MQTT connection settings
@@ -41,7 +41,7 @@ typedef struct ADUC_MQTT_CLIENT_MODULE_STATE_TAG
 
     ADUC_AGENT_MODULE_INTERFACE* commChannelModule; //!< The communication module handle
     ADUC_AGENT_MODULE_INTERFACE* enrollmentModule; //!< The enrollment module handle
-
+    ADUC_AGENT_MODULE_INTERFACE* agentInfoModule; //!< The agent info module handle
 } ADUC_MQTT_CLIENT_MODULE_STATE;
 
 /**

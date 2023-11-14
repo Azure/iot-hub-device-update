@@ -17,6 +17,7 @@ target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types
     PRIVATE aduc::communication_abstraction
+            aduc::parson_json_utils
             aduc::logging)
 
 target_link_libraries (${target_name} PUBLIC libaducpal)

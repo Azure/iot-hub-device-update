@@ -7,13 +7,21 @@
  */
 
 #include "aduc/adu_mosquitto_utils.h"
-#include "aduc/string_c_utils.h" // ADUC_StringFormat
-#include "stddef.h"
-#include "stdlib.h"
-#include "string.h"
+
+#include <aduc/logging.h>
+#include <aduc/parse_num.h> // ADUC_parse_int32_t
+#include <aduc/string_c_utils.h> // ADUC_StringFormat
 #include <aducpal/time.h> // time_t, CLOCK_REALTIME
+#include <du_agent_sdk/agent_common.h> // IGNORED_PARAMETER
 #include <mosquitto.h> // mosquitto related functions
 #include <mqtt_protocol.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
+// clang-format:off
+#include <aduc/aduc_banned.h> // make sure this is last to avoid affecting system includes
+// clang-format:on
 
 /**
  * @brief Generate a correlation ID from a time value.
@@ -137,6 +145,56 @@ bool ADU_mosquitto_has_user_property(const mosquitto_property* props, const char
 }
 
 /**
+ * @brief Adds a user property name value pair to the props property list.
+ *
+ * @param props The props list. If it's the first time adding a user property, then ensure that *props is assigned NULL.
+ * @param name The name of the user property, e.g. "mt"
+ * @param value The value of the user property, e.g. "ainfo_req"
+ * @return true If succeeded in adding the user property utf-8 pair.
+ * @details if *props is NULL, then on success, *props will not be null. Caller will need to free by calling ADU_mosquitto_free_properties(&props)
+ */
+bool ADU_mosquitto_add_user_property(mosquitto_property** props, const char* name, const char* value)
+{
+    int err = mosquitto_property_add_string_pair(props, MQTT_PROP_USER_PROPERTY, name, value);
+
+    if (err == MOSQ_ERR_SUCCESS)
+    {
+        return true;
+    }
+
+    switch(err)
+    {
+    case MOSQ_ERR_INVAL: // - if identifier is invalid, if name or value is NULL, or if proplist is NULL
+        Log_Error("Fail MOSQ_ERR_INVAL(%d)", err);
+        break;
+
+  	case MOSQ_ERR_NOMEM: // - on out of memory
+        Log_Error("Fail MOSQ_ERR_NOMEM(%d)", err);
+        break;
+
+    case MOSQ_ERR_MALFORMED_UTF8: // - if name or value are not valid UTF-8.
+        Log_Error("Fail MOSQ_ERR_MALFORMED_UTF8(%d)", err);
+        break;
+
+    default:
+        Log_Error("Fail Unknown(%d)", err);
+        break;
+    }
+
+    return false;
+}
+
+/**
+ * @brief Frees the property list created using ADU_mosquitto_add_user_property()
+ *
+ * @param props The address of mosquitto_property pointer property list.
+ */
+void ADU_mosquitto_free_properties(mosquitto_property** props)
+{
+    mosquitto_property_free_all(props);
+}
+
+/**
  * @brief Retrieve the value of a specific user property from an MQTT v5 property list.
  *
  * This function searches the provided MQTT v5 property list for a user property with the
@@ -189,6 +247,31 @@ bool ADU_mosquitto_read_user_property_string(const mosquitto_property* props, co
         }
     }
     return found;
+}
+
+/**
+ * @brief Reads the user property utf-8 string value and attempts to parse it as an int32_t.
+ *
+ * @param props The props list.
+ * @param key The property name to search for.
+ * @param outValue The resultant int32 value.
+ * @return true When property name key is found and string value in its entirety is successfully parsed as int32 number.
+ * @details Will set contents of outValue pointer to parsed int32 when return success, and sets it to 0 when failed.
+ */
+bool ADU_mosquitto_read_user_property_as_int32(const mosquitto_property* props, const char* key, int32_t* outValue)
+{
+    bool succeeded = false;
+    char* val = NULL;
+    int32_t parsed = 0;
+
+    if (ADU_mosquitto_read_user_property_string(props, key, &val))
+    {
+        succeeded = ADUC_parse_int32_t(val, &parsed);
+        free(val);
+    }
+
+    *outValue = succeeded ? parsed : 0;
+    return succeeded;
 }
 
 /**
@@ -270,4 +353,138 @@ ADUC_MQTT_DISCONNECTION_CATEGORY CategorizeMQTTDisconnection(int rc)
     default:
         return ADUC_MQTT_DISCONNECTION_CATEGORY_OTHER;
     }
+}
+
+/**
+ * @brief Parses and validates the MQTT response topic user properties common to ADU responst topics.
+ *
+ * @param props The MQTT response property list.
+ * @param expectedMsgType The expected value for "mt" message type user property.
+ * @param outRespUserProps The common response user properties structure that will receive side-effects after parse and validation.
+ * @return true When parse and validation succeeds.
+ */
+bool ParseCommonResponseUserProperties(const mosquitto_property* props, const char* expectedMsgType, ADUC_Common_Response_User_Properties* outRespUserProps)
+{
+    bool success = false;
+
+    char* msg_type = NULL;
+    int32_t pid = 0;
+    int32_t resultcode = 0;
+    int32_t extendedresultcode = 0;
+
+    // Parse
+
+    if (!ADU_mosquitto_read_user_property_string(props, "mt", &msg_type))
+    {
+        Log_Error("Fail parse 'mt' from user props");
+        goto done;
+    }
+
+    if (!ADU_mosquitto_read_user_property_as_int32(props, "pid", &pid))
+    {
+        Log_Error("Fail parse 'pid' from user props");
+        goto done;
+    }
+
+    if (!ADU_mosquitto_read_user_property_as_int32(props, "resultcode", &resultcode))
+    {
+        Log_Error("Fail parse 'resultcode' from user props");
+        goto done;
+    }
+
+    if (!ADU_mosquitto_read_user_property_as_int32(props, "extendedresultcode", &extendedresultcode))
+    {
+        Log_Error("Fail parse 'extendedresultcode' from user props");
+        goto done;
+    }
+
+    // Validate
+
+    if (strcmp(msg_type, "ainfo_resp") != 0)
+    {
+        Log_Error("Invalid 'mt' user property: %s", "ainfo_resp");
+        goto done;
+    }
+
+    Log_Debug("enr_resp user properties - pid[%d] resultcode[%d] extendedresultcode[%d]", pid, resultcode, extendedresultcode);
+
+    // Now, assign to outRespUserProps post validation.
+    outRespUserProps->pid = pid;
+    outRespUserProps->resultcode = resultcode;
+    outRespUserProps->extendedresultcode = extendedresultcode;
+
+    success = true;
+done:
+    free(msg_type);
+
+    return success;
+}
+
+int json_print_properties(const mosquitto_property* properties)
+{
+#ifndef ADU_DBG_MQTT_PROPS
+    IGNORED_PARAMETER(properties);
+#else
+    int identifier;
+    uint8_t i8value = 0;
+    uint16_t i16value = 0;
+    uint32_t i32value = 0;
+    char *strname = NULL, *strvalue = NULL;
+    char* binvalue = NULL;
+    const mosquitto_property* prop = NULL;
+
+    for (prop = properties; prop != NULL; prop = mosquitto_property_next(prop))
+    {
+        identifier = mosquitto_property_identifier(prop);
+        switch (identifier)
+        {
+        case MQTT_PROP_PAYLOAD_FORMAT_INDICATOR:
+            mosquitto_property_read_byte(prop, MQTT_PROP_PAYLOAD_FORMAT_INDICATOR, &i8value, false);
+            break;
+
+        case MQTT_PROP_MESSAGE_EXPIRY_INTERVAL:
+            mosquitto_property_read_int32(prop, MQTT_PROP_MESSAGE_EXPIRY_INTERVAL, &i32value, false);
+            break;
+
+        case MQTT_PROP_CONTENT_TYPE:
+        case MQTT_PROP_RESPONSE_TOPIC:
+            mosquitto_property_read_string(prop, identifier, &strvalue, false);
+            if (strvalue == NULL)
+                return MOSQ_ERR_NOMEM;
+            free(strvalue);
+            strvalue = NULL;
+            break;
+
+        case MQTT_PROP_CORRELATION_DATA:
+            mosquitto_property_read_binary(prop, MQTT_PROP_CORRELATION_DATA, (void**)&binvalue, &i16value, false);
+            if (binvalue == NULL)
+                return MOSQ_ERR_NOMEM;
+            free(binvalue);
+            binvalue = NULL;
+            break;
+
+        case MQTT_PROP_SUBSCRIPTION_IDENTIFIER:
+            mosquitto_property_read_varint(prop, MQTT_PROP_SUBSCRIPTION_IDENTIFIER, &i32value, false);
+            break;
+
+        case MQTT_PROP_TOPIC_ALIAS:
+            mosquitto_property_read_int16(prop, MQTT_PROP_TOPIC_ALIAS, &i16value, false);
+            break;
+
+        case MQTT_PROP_USER_PROPERTY:
+            mosquitto_property_read_string_pair(prop, MQTT_PROP_USER_PROPERTY, &strname, &strvalue, false);
+            if (strname == NULL || strvalue == NULL)
+                return MOSQ_ERR_NOMEM;
+
+            free(strvalue);
+
+            free(strname);
+            strname = NULL;
+            strvalue = NULL;
+            break;
+        }
+    }
+#endif // ADU_DBG_MQTT_PROPS
+
+    return MOSQ_ERR_SUCCESS;
 }

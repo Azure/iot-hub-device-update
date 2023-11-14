@@ -25,19 +25,19 @@ bool test_operation_complete(ADUC_Retriable_Operation_Context* context)
     return true;
 }
 
-TEST_CASE("handle_enrollment - should return false for NULL enrollmentData")
+TEST_CASE("Handle_Enrollment_Response - should return false for NULL enrollmentData")
 {
     ADUC_Retriable_Operation_Context operation_context;
     memset(&operation_context, 0, sizeof(operation_context));
 
-    CHECK_FALSE(handle_enrollment(
+    CHECK_FALSE(Handle_Enrollment_Response(
         nullptr, // ADUC_Enrollment_Request_Operation_Data* enrollmentData,
         false, // bool isEnrolled,
         &fakeDuInstance[0], // const char* duInstance,
         &operation_context));
 }
 
-TEST_CASE("handle_enrollment - not enrolled should set state store")
+TEST_CASE("Handle_Enrollment_Response - not enrolled should set state store")
 {
     ADUC_Enrollment_Request_Operation_Data operation_data;
     memset(&operation_data, 0, sizeof(operation_data));
@@ -47,7 +47,7 @@ TEST_CASE("handle_enrollment - not enrolled should set state store")
 
     CHECK(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize("/tmp/adutest/test_state_store.json"));
 
-    bool success = handle_enrollment(
+    bool success = Handle_Enrollment_Response(
         &operation_data, // ADUC_Enrollment_Request_Operation_Data* enrollmentData,
         false, // bool isEnrolled,
         &fakeDuInstance[0], // const char* duInstance,
@@ -59,7 +59,7 @@ TEST_CASE("handle_enrollment - not enrolled should set state store")
     CHECK_FALSE(ADUC_StateStore_GetIsDeviceEnrolled());
 }
 
-TEST_CASE("handle_enrollment - enrolled should set state store")
+TEST_CASE("Handle_Enrollment_Response - enrolled should set state store")
 {
     ADUC_Enrollment_Request_Operation_Data operation_data;
     memset(&operation_data, 0, sizeof(operation_data));
@@ -72,7 +72,7 @@ TEST_CASE("handle_enrollment - enrolled should set state store")
 
     CHECK(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize("/tmp/adutest/test_state_store.json"));
 
-    bool success = handle_enrollment(
+    bool success = Handle_Enrollment_Response(
         &operation_data, // ADUC_Enrollment_Request_Operation_Data* enrollmentData,
         true, // bool isEnrolled,
         &fakeDuInstance[0], // const char* duInstance,

@@ -9,6 +9,7 @@
 #define __ADU_MOSQUITTO_UTILS_H__
 
 #include "aducpal/time.h"
+#include <aduc/mqtt_broker_common.h> // ADUC_Common_Response_User_Properties
 #include <mosquitto.h>
 
 /**
@@ -94,6 +95,17 @@ bool ADU_mosquitto_get_correlation_data(const mosquitto_property* props, char** 
 bool ADU_mosquitto_read_user_property_string(const mosquitto_property* props, const char* key, char** value);
 
 /**
+ * @brief Reads the user property utf-8 string value and attempts to parse it as an int32_t.
+ *
+ * @param props The props list.
+ * @param key The property name to search for.
+ * @param outValue The resultant int32 value.
+ * @return true When property name key is found and string value in its entirety is successfully parsed as int32 number.
+ * @details Will set contents of outValue pointer to parsed int32 when return success, and sets it to 0 when failed.
+ */
+bool ADU_mosquitto_read_user_property_as_int32(const mosquitto_property* props, const char* key, int32_t* outValue);
+
+/**
  * @brief Check if a specific user property exists within a property list.
  *
  * This function iterates through an MQTT v5 property list searching for
@@ -111,11 +123,47 @@ bool ADU_mosquitto_read_user_property_string(const mosquitto_property* props, co
 bool ADU_mosquitto_has_user_property(const mosquitto_property* props, const char* key, const char* value);
 
 /**
+ * @brief Adds a user property name value pair to the props property list.
+ *
+ * @param props The props list. If it's the first time adding a user property, then ensure that *props is assigned NULL.
+ * @param name The name of the user property, e.g. "mt"
+ * @param value The value of the user property, e.g. "ainfo_req"
+ * @return true If succeeded in adding the user property utf-8 pair.
+ * @details if *props is NULL, then on success, *props will not be null. Caller will need to free by calling ADU_mosquitto_free_properties(&props)
+ */
+bool ADU_mosquitto_add_user_property(mosquitto_property** props, const char* name, const char* value);
+
+/**
+ * @brief Frees the property list created using ADU_mosquitto_add_user_property()
+ *
+ * @param props The address of mosquitto_property pointer property list.
+ */
+void ADU_mosquitto_free_properties(mosquitto_property** props);
+
+/**
  * @brief Check if the correlation data in the MQTT properties matches the provided correlation ID.
  * @param[in] props Pointer to the MQTT properties from which to retrieve the correlation data.
  * @param[in] correlationId The correlation ID to check against.
  * @return `true` if the correlation data matches the provided correlation ID; otherwise, `false`.
  */
 bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* correlationId);
+
+/**
+ * @brief Parses and validates the MQTT response topic user properties common to ADU responst topics.
+ *
+ * @param props The MQTT response property list.
+ * @param expectedMsgType The expected value for "mt" message type user property.
+ * @param outRespUserProps The common response user properties structure that will receive side-effects after parse and validation.
+ * @return true When parse and validation succeeds.
+ */
+bool ParseCommonResponseUserProperties(const mosquitto_property* props, const char* expectedMsgType, ADUC_Common_Response_User_Properties* outRespUserProps);
+
+/**
+ * @brief prints mosquitto property for debugging.
+ *
+ * @param properties The mosquito properties
+ * @return int 0 on success.
+ */
+int json_print_properties(const mosquitto_property* properties);
 
 #endif

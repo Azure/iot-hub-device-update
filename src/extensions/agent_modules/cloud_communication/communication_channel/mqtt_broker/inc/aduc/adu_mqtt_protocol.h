@@ -66,7 +66,7 @@
 
 #define ADU_MQTT_PROTOCOL_MESSAGE_TYPE_UPDATE_RESULT_REPORT_ACK "updrslt_ack"
 
-typedef struct ADU_MQTT_MESSAGE_INFO_TAG
+typedef struct tagADU_MQTT_MESSAGE_INFO
 {
     char* correlationData; //!< Correlation data. This a epoch time in seconds.
     time_t sentTime; //!< Time the message was sent.
@@ -81,7 +81,7 @@ typedef struct ADU_MQTT_MESSAGE_INFO_TAG
  * This enumeration provides different connection states of the ADU communication channel
  * to better handle and track the state of the connection in the system.
  */
-typedef enum ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_TAG
+typedef enum tagADU_COMMUNICATION_CHANNEL_CONNECTION_STATE
 {
     ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_DISCONNECTED = -1, /**< The communication channel is disconnected. */
     ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_UNKNOWN = 0, /**< The communication channel state is unknown. */
@@ -95,7 +95,7 @@ typedef enum ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_TAG
  *
  * @note This enumeration is used to track the initialization progress of the ADU MQTT client module.
  */
-typedef enum ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_TAG
+typedef enum tagADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE
 {
     ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_FAILED = -1, /**< Initialization has failed. */
     ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_NONE = 0, /**< No initialization state. */
@@ -110,7 +110,7 @@ typedef enum ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_TAG
 /**
  * @brief Enumeration representing result codes for ADU response messages.
  */
-typedef enum ADU_RESPONSE_MESSAGE_RESULT_CODE_TAG
+typedef enum tagADU_RESPONSE_MESSAGE_RESULT_CODE
 {
     ADU_RESPONSE_MESSAGE_RESULT_CODE_SUCCESS = 0, /**< Operation was successful. */
     ADU_RESPONSE_MESSAGE_RESULT_CODE_BAD_REQUEST = 1, /**< The request was invalid or cannot be served. */
@@ -123,7 +123,7 @@ typedef enum ADU_RESPONSE_MESSAGE_RESULT_CODE_TAG
 /**
  * @brief Enumeration representing extended result codes for ADU response messages.
  */
-typedef enum ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_TAG
+typedef enum tagADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE
 {
     ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_NONE = 0, /**< No extended error. */
     ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_UNABLE_TO_PARSE_MESSAGE =

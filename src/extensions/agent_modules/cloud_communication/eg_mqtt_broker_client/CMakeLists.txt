@@ -8,10 +8,14 @@ add_library (aduc::${target_name} ALIAS ${target_name})
 find_package (azure_c_shared_utility REQUIRED)
 find_package (Parson REQUIRED)
 
-target_sources (${target_name} PRIVATE src/adu_enrollment_management.c
+target_sources (${target_name} PRIVATE src/adu_agent_info_management.c
+                                       src/adu_enrollment_management.c
                                        src/adu_mqtt_client_module.c
                                        src/adu_updates_management.c
-                                       src/eg_mqtt_broker_client.c)
+                                       src/agentinfo_request_operation.c
+                                       src/eg_mqtt_broker_client.c
+                                       src/enrollment_request_operation.c
+                                       src/topic_mgmt_lifecycle.c)
 
 target_include_directories (${target_name} PUBLIC inc)
 
@@ -27,6 +31,7 @@ target_link_libraries (
             aduc::config_utils
             aduc::logging
             aduc::parson_json_utils
+            aduc::agentinfo_utils
             Parson::parson
             aziotsharedutil)
 

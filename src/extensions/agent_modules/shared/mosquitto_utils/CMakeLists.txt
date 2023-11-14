@@ -17,4 +17,4 @@ target_include_directories (${target_name} PUBLIC ./inc ${MOSQUITTO_INCLUDE_DIRS
 
 target_sources (${target_name} PRIVATE src/adu_mosquitto_utils.c)
 
-target_link_libraries (${target_name} PRIVATE aduc::c_utils libaducpal ${MOSQUITTO_LIBRARIES})
+target_link_libraries (${target_name} PRIVATE aduc::c_utils aduc::du_agent_sdk libaducpal ${MOSQUITTO_LIBRARIES})

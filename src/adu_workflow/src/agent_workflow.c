@@ -805,6 +805,7 @@ void ADUC_Workflow_AutoTransitionWorkflow(ADUC_WorkflowData* workflowData, bool 
 void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData)
 {
     ADUC_Result result;
+    ADUC_MethodCall_Data* methodCallData = NULL;
     ADUCITF_WorkflowStep currentWorkflowStep = workflow_get_current_workflowstep(workflowData->WorkflowHandle);
 
     const ADUC_WorkflowHandlerMapEntry* entry = GetWorkflowHandlerMapEntryForAction(currentWorkflowStep);
@@ -817,11 +818,8 @@ void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData)
     Log_Debug("Processing '%s' step", ADUCITF_WorkflowStepToString(entry->WorkflowStep));
 
     // Alloc this object on heap so that it will be valid for the entire (possibly async) operation func.
-    ADUC_MethodCall_Data* methodCallData = calloc(1, sizeof(ADUC_MethodCall_Data));
-    if (methodCallData == NULL)
-    {
-        goto done;
-    }
+
+    ADUC_ALLOC(methodCallData);
 
     methodCallData->WorkflowData = workflowData;
 
