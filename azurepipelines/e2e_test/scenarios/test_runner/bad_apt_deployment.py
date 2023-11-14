@@ -26,15 +26,15 @@ from scenario_definitions import DuScenarioDefinitionManager
 #
 # Global Test Variables
 #
-apt_deployment_status_retries = 15
+bad_bad_apt_deployment_status_retries = 15
 test_result_file_prefix = ""
 
-class AptDeploymentTest(unittest.TestCase):
+class AptFailsDeployment(unittest.TestCase):
 
     #
     # Every test within a subclass of a unittest.TestCase to be run by unittest must have the prefix test_
     #
-    def test_AptDeployment(self):
+    def test_AptFailsDeployment(self):
 
         #
         # The first step to any test is to create the test helper that allows us to make calls to both the DU account and the
@@ -55,7 +55,7 @@ class AptDeploymentTest(unittest.TestCase):
         test_adu_group = self.aduScenarioDefinition.test_adu_group
         global test_result_file_prefix
         test_result_file_prefix = self.aduScenarioDefinition.test_result_file_prefix
-        test_apt_deployment_id = self.aduScenarioDefinition.test_apt_deployment_id
+        test_apt_fails_deployment_id = self.aduScenarioDefinition.test_apt_fails_deployment_id
         test_connection_timeout_tries = self.aduScenarioDefinition.test_connection_timeout_tries
         retry_wait_time_in_seconds = self.aduScenarioDefinition.retry_wait_time_in_seconds
         config_method = self.aduScenarioDefinition.config_method
@@ -65,10 +65,10 @@ class AptDeploymentTest(unittest.TestCase):
         # things like the deployment id, device-id, module-id, and other scenario level definitions that might effect other
         # tests in the scenario_definitions.py file.
         #
-        self.deploymentId = test_apt_deployment_id
+        self.deploymentId = test_apt_fails_deployment_id
 
         self.deploymentUpdateId = UpdateId(
-            provider="Contoso1", name="Virtual", version="1.0.2")
+            provider="Contoso1", name="Virtual", version="1.2.3")
 
         #
         # Before anything else we need to wait and check the device connection status
@@ -105,7 +105,7 @@ class AptDeploymentTest(unittest.TestCase):
         #
         deploymentStatus = None
 
-        for i in range(0, apt_deployment_status_retries):
+        for i in range(0, bad_apt_deployment_status_retries):
             deploymentStatus = self.duTestHelper.GetDeploymentStatusForGroup(
                 self.deploymentId, test_adu_group)
 
@@ -113,7 +113,7 @@ class AptDeploymentTest(unittest.TestCase):
             # If we see all the devices have completed the deployment then we can exit early
             #
             if (len(deploymentStatus.subgroupStatuses) != 0):
-                if (deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount == 1):
+                if (deploymentStatus.subgroupStatuses[0].devicesCompletedFailedCount == 1):
                     break
             time.sleep(retry_wait_time_in_seconds)
 
@@ -126,7 +126,7 @@ class AptDeploymentTest(unittest.TestCase):
         # Devices in the group should have succeeded
         #
         self.assertEqual(deploymentStatus.subgroupStatuses[0].totalDevices,
-                         deploymentStatus.subgroupStatuses[0].devicesCompletedSucceededCount)
+                         deploymentStatus.subgroupStatuses[0].devicesCompletedFailedCount)
 
         # Sleep to give time for changes to propagate and for DU to switch it's state back to idle
         time.sleep(retry_wait_time_in_seconds)
@@ -151,7 +151,6 @@ class AptDeploymentTest(unittest.TestCase):
         time.sleep(retry_wait_time_in_seconds)
 
         deviceClassId = deploymentStatus.subgroupStatuses[0].deviceClassId
-
 
         # Once stopped we can delete the deployment
         self.assertEqual(self.duTestHelper.DeleteDeployment(
@@ -178,5 +177,5 @@ if (__name__ == "__main__"):
     #
     # Finally transform the output unto the X/JUnit XML file format
     #
-    with open('./testresults/' + test_result_file_prefix + '-apt-deployment-test.xml', 'wb') as report:
+    with open('./testresults/' + test_result_file_prefix + 'bad-apt-deployment-test.xml', 'wb') as report:
         report.write(transform(out.getvalue()))

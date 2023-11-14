@@ -61,6 +61,24 @@ steps:
           DEVICEID: ${{ parameters.device_id_under_test }}
 
     - task: PythonScript@0
+      displayName: Run script to test apt-deployment fails
+      continueOnError: True
+      inputs:
+          scriptSource: "filePath"
+          scriptPath: "$(E2E_WORKING_DIR)/scenarios/test_runner/bad_apt_deployment.py"
+          workingDirectory: $(E2E_WORKING_DIR)
+      env:
+          IOTHUB_URL: $(IOTHUB_URL)
+          IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+          ADU_ENDPOINT: $(ADU_ENDPOINT)
+          ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+          AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+          AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+          AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+          DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
+
+    - task: PythonScript@0
       displayName: Run script to test diagnostics
       continueOnError: True
       inputs:
