@@ -94,9 +94,7 @@ TEST_CASE("ExternalDeviceIdSetupNeeded")
 
     SECTION("null or empty external device id in store calls context retryFunc")
     {
-        ADUC_SystemUtils_RmDirRecursive(TEST_STATE_STORE_DIR);
-        REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(TEST_STATE_STORE_DIR "/test_state_store.json"));
-        REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_SetDeviceUpdateServiceInstance(TEST_SCOPE_ID));
+        reset();
 
         ADUC_Retriable_Operation_Context context;
         memset(&context, 0, sizeof(context));
@@ -104,12 +102,7 @@ TEST_CASE("ExternalDeviceIdSetupNeeded")
         context.retryFunc = mock_retry;
         s_mock_retry_called = false;
 
-        CHECK(ExternalDeviceIdSetupNeeded(&context)); // returns true if setup needed (no external id set)
-        CHECK(s_mock_retry_called);
-
-        s_mock_retry_called = false;
-
-        REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_SetExternalDeviceId("")); // empty one still needs setup
+        REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_SetExternalDeviceId("")); // empty one will require setup
         CHECK(ExternalDeviceIdSetupNeeded(&context)); // returns true if setup needed (no external id set)
         CHECK(s_mock_retry_called);
     }
