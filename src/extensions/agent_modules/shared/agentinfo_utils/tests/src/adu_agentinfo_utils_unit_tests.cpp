@@ -10,19 +10,23 @@
 #include <aduc/adu_agentinfo_utils.h>
 #include <aduc/agent_state_store.h>
 #include <aduc/adu_mqtt_protocol.h> // ADU_RESPONSE_MESSAGE_RESULT_CODE_*
+#include <aduc/system_utils.h> // ADUC_SystemUtils_RmDirRecursive
 #include <cstring> // memset
 
-bool s_cancel_called = false;
+#define ADU_AGENTINFO_UTILS_UT_TEST_DIR "/tmp/adutest/adu_agentinfo_utils_unit_tests"
 
-bool Mock_AgentInfoRequestOperation_CancelOperation(ADUC_Retriable_Operation_Context* context)
+static bool s_cancel_called = false;
+
+static bool Mock_AgentInfoRequestOperation_CancelOperation(ADUC_Retriable_Operation_Context* context)
 {
     s_cancel_called = true;
     return true;
 }
 
-void reset()
+static void reset()
 {
-    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize("/tmp/adutest/adu_agentinfo_utils_unit_tests/test_state_store.h"));
+    ADUC_SystemUtils_RmDirRecursive(ADU_AGENTINFO_UTILS_UT_TEST_DIR);
+    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(ADU_AGENTINFO_UTILS_UT_TEST_DIR "/test_state_store.h"));
 
     s_cancel_called = false;
 }

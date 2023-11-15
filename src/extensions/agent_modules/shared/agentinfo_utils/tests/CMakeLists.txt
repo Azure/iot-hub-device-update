@@ -10,7 +10,8 @@ add_executable (${target_name} src/main.cpp src/adu_agentinfo_utils_unit_tests.c
 target_link_libraries (${target_name} PRIVATE Catch2::Catch2
                                               aduc::agentinfo_utils
                                               aduc::agent_state_store
-                                              aduc::mqtt_broker_common)
+                                              aduc::mqtt_broker_common
+                                              aduc::system_utils)
 include (CTest)
 include (Catch)
 catch_discover_tests (${target_name})

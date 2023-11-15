@@ -267,7 +267,6 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
     bool use_OS_cert = false;
     ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)handle;
 
-    // For
     ADUC_STATE_STORE_RESULT storeRes = ADUC_StateStore_Initialize(NULL);
     if (storeRes != ADUC_STATE_STORE_RESULT_OK)
     {
