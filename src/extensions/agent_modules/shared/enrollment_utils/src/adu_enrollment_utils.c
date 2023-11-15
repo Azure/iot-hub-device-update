@@ -71,7 +71,7 @@ void EnrollmentData_SetCorrelationId(ADUC_Enrollment_Request_Operation_Data* enr
     ADUC_Safe_StrCopyN(
         enrollmentData->enrReqMessageContext.correlationId,
         correlationId,
-        sizeof(enrollmentData->enrReqMessageContext.correlationId) - 1,
+        sizeof(enrollmentData->enrReqMessageContext.correlationId),
         strlen(correlationId));
 }
 

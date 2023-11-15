@@ -16,7 +16,7 @@
 typedef struct tagADUC_MQTT_Message_Context
 {
     int messageId;
-    char* correlationId;
+    char correlationId[CORRELATION_ID_LENGTH];
     char* publishTopic;
     char* responseTopic;
     char* payload;

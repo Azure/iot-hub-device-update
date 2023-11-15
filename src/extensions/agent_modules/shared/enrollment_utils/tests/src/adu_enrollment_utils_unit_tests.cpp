@@ -159,3 +159,12 @@ TEST_CASE("ParseEnrollmentMessagePayload")
         free(scopeId);
     }
 }
+
+TEST_CASE("EnrollmentData_SetCorrelationId")
+{
+    ADUC_Enrollment_Request_Operation_Data data;
+    memset(&data, 0, sizeof(data));
+
+    EnrollmentData_SetCorrelationId(&data, "b9c1c214-3d88-4db8-bd4e-6f19b0a79f82");
+    CHECK_THAT(data.enrReqMessageContext.correlationId, Equals("b9c1c214-3d88-4db8-bd4e-6f19b0a79f82"));
+}

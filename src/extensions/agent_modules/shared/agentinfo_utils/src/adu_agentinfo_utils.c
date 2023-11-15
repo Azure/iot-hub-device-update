@@ -46,7 +46,7 @@ void AgentInfoData_SetCorrelationId(ADUC_AgentInfo_Request_Operation_Data* agent
     ADUC_Safe_StrCopyN(
         agentInfoData->ainfoReqMessageContext.correlationId,
         correlationId,
-        sizeof(agentInfoData->ainfoReqMessageContext.correlationId) - 1,
+        sizeof(agentInfoData->ainfoReqMessageContext.correlationId),
         strlen(correlationId));
 }
 
