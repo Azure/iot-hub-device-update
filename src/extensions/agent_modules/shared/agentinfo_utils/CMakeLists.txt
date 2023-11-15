@@ -14,4 +14,6 @@ target_link_libraries (${target_name}
             aduc::logging
             aduc::mqtt_broker_common)
 
-add_subdirectory (tests)
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

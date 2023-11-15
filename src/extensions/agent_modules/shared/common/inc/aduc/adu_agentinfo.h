@@ -5,6 +5,8 @@
 #include "aduc/mqtt_broker_common.h" // ADUC_MQTT_Message_Context
 #include <aduc/retry_utils.h> // ADUC_Retriable_Operation_Context
 
+EXTERN_C_BEGIN
+
 /**
  * @brief Describes the agentInfo state of the ADU client.
  *
@@ -28,5 +30,7 @@ typedef struct tagADUC_AgentInfo_Request_Operation_Data
     ADU_AGENTINFO_STATE agentInfoState; /**< Current agentInfo acknowledgement state. */
     ADUC_MQTT_Message_Context ainfoReqMessageContext; /**< AgentInfo request message context. */
 } ADUC_AgentInfo_Request_Operation_Data;
+
+EXTERN_C_END
 
 #endif // ADU_AGENTINFO_H

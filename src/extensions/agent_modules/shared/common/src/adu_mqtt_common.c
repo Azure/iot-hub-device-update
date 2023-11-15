@@ -30,11 +30,16 @@ ADUC_Retriable_Operation_Context* OperationContextFromAgentModuleHandle(ADUC_AGE
  * @param context The operation context.
  * @param messageContext The message context.
  * @param isScoped Whether to include the scopeId in the publish and response topics.
- * @return false when no topic setup was needed.
- * @return true when failed to setup topics
+ * @return when when a cancel call was needed when publish/response topics cannot successfully be setup.
+ * @return false when no additional cancel call is needed and publish/response topics are setup correctly.
  */
-static bool MqttTopicSetupNeeded(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, bool isScoped)
+bool MqttTopicSetupNeeded(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, bool isScoped)
 {
+    if (context == NULL || messageContext == NULL)
+    {
+        return false;
+    }
+
     const char* scopeId = isScoped ? ADUC_StateStore_GetDeviceUpdateServiceInstance() : NULL;
 
     // prepare a topic for the request
@@ -95,8 +100,13 @@ static bool MqttTopicSetupNeeded(ADUC_Retriable_Operation_Context* context, ADUC
  * @return true if unable to setup the communication channel and retry was attempted.
  * @return false if communication channel is setup.
  */
-static bool CommunicationChannelNeededSetup(ADUC_Retriable_Operation_Context* context)
+bool CommunicationChannelNeededSetup(ADUC_Retriable_Operation_Context* context)
 {
+    if (context == NULL)
+    {
+        return false;
+    }
+
     // this operation is depending on the "duservicecommunicationchannel".
     // note: by default, the du service communication already subscribed to the common service-to-device messaging topic.
     if (context->commChannelHandle == NULL)
@@ -123,6 +133,11 @@ static bool CommunicationChannelNeededSetup(ADUC_Retriable_Operation_Context* co
  */
 bool ExternalDeviceIdSetupNeeded(ADUC_Retriable_Operation_Context* context)
 {
+    if (context == NULL)
+    {
+        return false;
+    }
+
     // and ensure that we have a valid external device id. this should usually provided by a dps.
     const char* externalDeviceId = ADUC_StateStore_GetExternalDeviceId();
     if (IsNullOrEmpty(externalDeviceId))
@@ -150,6 +165,11 @@ bool ExternalDeviceIdSetupNeeded(ADUC_Retriable_Operation_Context* context)
  */
 bool SettingUpAduMqttRequestPrerequisites(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, bool isScoped)
 {
+    if (context == NULL || messageContext == NULL)
+    {
+        return false;
+    }
+
     if (!ADUC_StateStore_GetIsDeviceRegistered())
     {
         Log_Info("device is not registered. will retry");
@@ -173,6 +193,11 @@ bool SettingUpAduMqttRequestPrerequisites(ADUC_Retriable_Operation_Context* cont
 bool ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(const ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext)
 {
     bool succeeded = false;
+
+    if (context == NULL || messageContext == NULL)
+    {
+        return false;
+    }
 
     if (!ADUC_Communication_Channel_MQTT_IsSubscribed(
             (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle, messageContext->responseTopic))

@@ -1,8 +1,11 @@
 #ifndef MQTT_BROKER_COMMON
 #define MQTT_BROKER_COMMON
 
+#include <aduc/c_utils.h> // EXTERN_C_*
 #include <stddef.h> // size_t
 #include <stdint.h> // int32_t
+
+EXTERN_C_BEGIN
 
 /**
  * @brief The length of a correlation ID. (including null terminator)
@@ -35,5 +38,7 @@ typedef struct tagADUC_Common_Response_User_Properties
     int32_t resultcode; /**< The result code of the enrollment response. */
     int32_t extendedresultcode; /**< The extended result code of the enrollment response. */
 } ADUC_Common_Response_User_Properties;
+
+EXTERN_C_END
 
 #endif // MQTT_BROKER_COMMON

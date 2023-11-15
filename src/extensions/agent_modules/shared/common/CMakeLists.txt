@@ -27,3 +27,7 @@ target_link_libraries(${target_name}
 target_link_libraries (${target_name}
     PRIVATE
         aduc::du_agent_sdk)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

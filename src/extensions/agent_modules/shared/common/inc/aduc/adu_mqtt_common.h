@@ -9,6 +9,9 @@
 EXTERN_C_BEGIN
 
 ADUC_Retriable_Operation_Context* OperationContextFromAgentModuleHandle(ADUC_AGENT_MODULE_HANDLE handle);
+bool MqttTopicSetupNeeded(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, bool isScoped);
+bool CommunicationChannelNeededSetup(ADUC_Retriable_Operation_Context* context);
+bool ExternalDeviceIdSetupNeeded(ADUC_Retriable_Operation_Context* context);
 bool SettingUpAduMqttRequestPrerequisites(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, bool isScoped);
 bool ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(const ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext);
 

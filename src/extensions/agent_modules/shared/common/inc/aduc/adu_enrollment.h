@@ -4,6 +4,8 @@
 #include "aduc/mqtt_broker_common.h" // ADUC_MQTT_Message_Context
 #include <aduc/retry_utils.h> // ADUC_Retriable_Operation_Context
 
+EXTERN_C_BEGIN
+
 /**
  * @brief Describes the enrollment state of the ADU client.
  *
@@ -28,5 +30,7 @@ typedef struct tagADUC_Enrollment_Request_Operation_Data
     ADU_ENROLLMENT_STATE enrollmentState; /**< Current enrollment state. */
     ADUC_MQTT_Message_Context enrReqMessageContext; /**< Enrollment request message context. */
 } ADUC_Enrollment_Request_Operation_Data;
+
+EXTERN_C_END
 
 #endif // ADU_ENROLLMENT_H
