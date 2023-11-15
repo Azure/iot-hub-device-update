@@ -1,6 +1,6 @@
 /**
  * @file adu_agent_info_management.c
- * @brief Implementation for Device Update agent info management functions.
+ * @brief Implementation for device agentinfo status management.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
@@ -8,98 +8,31 @@
 
 #include "aduc/adu_agent_info_management.h"
 
-#include <aduc/adu_agent_info_management_internal.h> // ADUC_AGENT_INFO_MANAGEMENT_STATE
-#include <aduc/adu_agentinfo.h> // ADUC_AgentInfo_Request_Operation_Data
+#include <aduc/adu_communication_channel.h>
+#include <aduc/adu_agentinfo.h>
 #include <aduc/adu_agentinfo_utils.h>
-#include <aduc/adu_mqtt_protocol.h> // SUBSCRIBE_TOPIC_TEMPLATE_ADU_OTO_WITH_DU_INSTANCE
-#include <aduc/agent_state_store.h> // ADUC_StateStore_*
-#include <aduc/config_utils.h> // ADUC_ConfigInfo
+#include <aduc/adu_mosquitto_utils.h>
+#include <aduc/adu_mqtt_common.h> // ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response
+#include <aduc/adu_mqtt_protocol.h>
+#include <aduc/adu_types.h>
+#include <aduc/agent_state_store.h>
+#include <aduc/config_utils.h>
+#include <aduc/agentinfo_request_operation.h>
 #include <aduc/logging.h>
-#include <aduc/mqtt_broker_common.h> // ADUC_MQTT_Message_Context
-#include <aduc/retry_utils.h> // ADUC_Retriable_Operation_Context
+#include <aduc/retry_utils.h> // ADUC_GetTimeSinceEpochInSeconds
 #include <aduc/string_c_utils.h> // IsNullOrEmpty
-#include <aduc/types/update_content.h> // ADUCITF_FIELDNAME_DEVICEPROPERTIES_*
-#include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_HANDLE
-#include <parson.h> // JSON_Value
+#include <aducpal/time.h> // time_t
 
-static ADUC_AGENT_INFO_MANAGEMENT_STATE s_agentInfoMgrState = { 0 };
+#include <parson.h> // JSON_Value, JSON_Object
+#include <parson_json_utils.h> // ADUC_JSON_Get*
 
-/**
- * @brief This function ensures that the 'ainfo_req' topic template is initialized and the topic is subscribed.
- * @return bool true on success.
- */
-static bool EnsureResponseTopicSubscribed()
-{
-    bool success = false;
-    if (s_agentInfoMgrState.workflowState >= ADUC_AGENT_INFO_WORKFLOW_STATE_SUBSCRIBED)
-    {
-        success = true;
-        goto done;
-    }
+#include <mosquitto.h> // mosquitto related functions
+#include <mqtt_protocol.h>
+#include <string.h>
 
-    time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
-    if (nowTime < s_agentInfoMgrState.ainfo_req_NextAttemptTime)
-    {
-        // Wait for the next attempt time.
-        goto done;
-    }
-
-    if (s_agentInfoMgrState.workflowState == ADUC_AGENT_INFO_WORKFLOW_STATE_INITIALIZED)
-    {
-        if (IsNullOrEmpty(s_agentInfoMgrState.subscribeTopic))
-        {
-            const char* duInstance = ADUC_StateStore_GetDeviceUpdateServiceInstance();
-            if (IsNullOrEmpty(duInstance))
-            {
-                Log_Error("Invalid state. DU instance is NULL.");
-                // UpdateNextAttemptTime(0 /* error code */);
-                goto done;
-            }
-
-            const char* externalDeviceId = ADUC_StateStore_GetExternalDeviceId();
-            s_agentInfoMgrState.subscribeTopic =
-                ADUC_StringFormat(SUBSCRIBE_TOPIC_TEMPLATE_ADU_OTO_WITH_DU_INSTANCE, externalDeviceId, duInstance);
-
-            if (IsNullOrEmpty(s_agentInfoMgrState.subscribeTopic))
-            {
-                Log_Error("Failed to format the subscribe topic.");
-                // UpdateNextAttemptTime(0 /* error code */);
-                goto done;
-            }
-        }
-
-        ADUC_StateStore_GetCommunicationChannelHandle(
-            &s_agentInfoMgrState.publishTopic, &s_agentInfoMgrState.publishTopic);
-
-        if (ADUC_MQTT_Subscribe(s_agentInfoMgrState.subscribeTopic, OnMessage_ainfo_resp))
-
-            // TODO: subscribe to response topic.
-            // if (s_agentInfoMgrState.subscribeTopic, OnMessage_ainfo_resp))
-            // {
-            //     Log_Error("Failed to subscribe to the topic: %s", s_agentInfoMgrState.subscribeTopic);
-            //     return false;
-            // }
-
-            s_agentInfoMgrState.workflowState = ADUC_AGENT_INFO_WORKFLOW_STATE_SUBSCRIBING;
-            goto done;
-    }
-
-    if (s_agentInfoMgrState.workflowState == ADUC_AGENT_INFO_WORKFLOW_STATE_SUBSCRIBING)
-    {
-    }
-
-done:
-    return success;
-}
-
-/**
- * @brief Ensures that the agent info request is published.
- * @return bool true on success.
- */
-static bool EnsureAgentInfoRequestPublished()
-{
-
-}
+// clang-format off
+#include <aduc/aduc_banned.h> // must be after other includes
+// clang-format on
 
 /**
  * @brief Gets the extension contract info.
@@ -109,16 +42,15 @@ static bool EnsureAgentInfoRequestPublished()
 const ADUC_AGENT_CONTRACT_INFO* ADUC_AgentInfo_Management_GetContractInfo(ADUC_AGENT_MODULE_HANDLE handle)
 {
     static ADUC_AGENT_CONTRACT_INFO s_moduleContractInfo = {
-        "Microsoft", "Device Update Agent Info Module", 1, "Microsoft/DUAgentInfoModule:1"
+        "Microsoft", "Device Update AgentInfo Module", 1, "Microsoft/DUAgentInfoModule:1"
     };
 
     IGNORED_PARAMETER(handle);
-
     return &s_moduleContractInfo;
 }
 
 /**
- * @brief Initialize the agent info management.
+ * @brief Initialize the agentinfo management.
  * @param handle The agent module handle.
  * @param initData The initialization data.
  * @return 0 on successful initialization; -1, otherwise.
@@ -137,11 +69,11 @@ int ADUC_AgentInfo_Management_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* 
 }
 
 /**
- * @brief Deinitializes the agent info management.
+ * @brief Deinitialize the agentinfo management.
  * @param handle The module handle.
  * @return int 0 on success.
  */
-void ADUC_AgentInfo_Management_Deinitialize(ADUC_AGENT_MODULE_HANDLE handle)
+int ADUC_AgentInfo_Management_Deinitialize(ADUC_AGENT_MODULE_HANDLE handle)
 {
     ADUC_Retriable_Operation_Context* context = OperationContextFromAgentModuleHandle(handle);
     if (context == NULL)
@@ -154,18 +86,13 @@ void ADUC_AgentInfo_Management_Deinitialize(ADUC_AGENT_MODULE_HANDLE handle)
 }
 
 /**
- * @brief This function requests
- * @detail Once the client is enrolled, it will publish an 'ainfo_req' message to the service.
- * Once the message is published, the function will wait for the ACK response of agent info ('ainfo_resp').
- * The agent info response will have an empty message, but the resultcode of success (0) will allow agent
- * to proceed to do the update request-response.
+ * @brief AgentInfo mangement do work function.
  *
- * @return int -1 on error. 0 on success.
- *
+ * @param handle The module handle.
+ * @return int 0 on success.
  */
-int ADUC_AgentInfo_Management_DoWork(ADUC_AGENT_MODULE_HANDLE moduleHandle)
+int ADUC_AgentInfo_Management_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
 {
-
     ADUC_Retriable_Operation_Context* context = OperationContextFromAgentModuleHandle(handle);
     if (context == NULL)
     {
@@ -184,8 +111,8 @@ int ADUC_AgentInfo_Management_DoWork(ADUC_AGENT_MODULE_HANDLE moduleHandle)
 //
 
 /**
- * @brief Create the agent info management module instance.
- * @return ADUC_AGENT_MODULE_HANDLE The module handle.
+ * @brief Creates agentinfo management module handle.
+ * @return ADUC_AGENT_MODULE_HANDLE The created module handle, or NULL on failure.
  */
 ADUC_AGENT_MODULE_HANDLE ADUC_AgentInfo_Management_Create()
 {
@@ -195,7 +122,7 @@ ADUC_AGENT_MODULE_HANDLE ADUC_AgentInfo_Management_Create()
     ADUC_Retriable_Operation_Context* operationContext = CreateAndInitializeAgentInfoRequestOperation();
     if (operationContext == NULL)
     {
-        Log_Error("Failed to create agent info request operation");
+        Log_Error("Failed to create agentinfo request operation");
         goto done;
     }
 
@@ -213,6 +140,7 @@ ADUC_AGENT_MODULE_HANDLE ADUC_AgentInfo_Management_Create()
     interface = NULL; // transfer ownership
 
 done:
+
     if (operationContext != NULL)
     {
         operationContext->dataDestroyFunc(operationContext);
@@ -222,11 +150,12 @@ done:
 
     free(interface);
 
-    return (ADUC_AGENT_MODULE_HANDLE) result;
+    return (ADUC_AGENT_MODULE_HANDLE)(result);
 }
 
 /**
- * @brief Destroy the agent info management module instance.
+ * @brief Destroy the module handle.
+ *
  * @param handle The module handle.
  */
 void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
@@ -243,46 +172,60 @@ void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 }
 
 /**
- * @brief On receive the "ainfo_resp" message type.
+ * @brief Callback should be called when the client receives an agentinfo status response message from the Device Update service.
+ *  For 'ainfo_resp' messages, if the Correlation Data matches the 'en,the client should parse the message and update the agentinfo state.
  *
- * @param mosq The mosquitto handle.
- * @param obj The context obj.
- * @param msg The mosquitto message.
- * @param props The mosquitto props.
+ * @param mosq The mosquitto instance making the callback.
+ * @param obj The user data provided in mosquitto_new. This is the module state
+ * @param msg The message data.
+ * @param props The MQTT v5 properties returned with the message.
+ *
+ * @remark This callback is called by the network thread. Usually by the same thread that calls mosquitto_loop function.
+ * IMPORTANT - Do not use blocking functions in this callback.
  */
 void OnMessage_ainfo_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
-    int resultCode = 0;
-
     ADUC_Retriable_Operation_Context* context = (ADUC_Retriable_Operation_Context*)obj;
     ADUC_MQTT_Message_Context* messageContext = (ADUC_MQTT_Message_Context*)context->data;
     ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoData_FromOperationContext(context);
-    char* msg_type = NULL;
+
+#ifdef ADU_DBG_MQTT_PROPS
+    json_print_properties(props);
+#endif
 
     if (!ADU_are_correlation_ids_matching(props, messageContext->correlationId))
     {
-        Log_Info("OnMessage_enr_resp: correlation data mismatch");
+        Log_Info("OnMessage_ainfo_resp: correlation data mismatch");
         goto done;
     }
 
-    // Note: omit parsing message payload json since it's should be empty per design.
+    if (msg == NULL || msg->payload == NULL || msg->payloadlen == 0)
+    {
+        Log_Error("Bad payload. msg:%p, payload:%p, payloadlen:%d", msg, msg->payload, msg->payloadlen);
+        goto done;
+    }
 
-    if (!ParseCommonResponseUserProperties(props, &agentInfoData->respUserProps, agentInfoData))
+    if (!ParseAndValidateCommonResponseUserProperties(props, "ainfo_resp" /* expectedMsgType */, &agentInfoData->respUserProps))
     {
         Log_Error("Fail parse of common user props");
         goto done;
     }
 
-    if (!Handle_AgentInfo_Response(context, true /* acknowledged */))
+    // NOTE: Do no parse ainfo_resp msg payload as it is empty.
+
+    if (!Handle_AgentInfo_Response(
+        agentInfoData,
+        context))
     {
-        Log_Error("Failed handle agent info resp");
+        Log_Error("Failed handling agentinfo response.");
         goto done;
     }
 
 done:
-    free(msg_type);
+    return;
 }
+
 
 //
 // END - ADU_AGENT_INFO_MANAGEMENT.H Public Interface

@@ -4,9 +4,9 @@
 #include <stdlib.h> // strtol
 #include <limits.h> // LONG_MIN, LONG_MAX
 
-// clang-format:off
+// clang-format off
 #include <aduc/aduc_banned.h> // must be after other includes
-// clang-format:on
+// clang-format on
 
 /**
  * @brief Parses an entire string as int32_t in base 10.
@@ -31,6 +31,6 @@ bool ADUC_parse_int32_t(const char* str, int32_t* out_parsed)
         return false;
     }
 
-    *out_parsed = val;
+    *out_parsed = (int32_t)val;
     return true;
 }

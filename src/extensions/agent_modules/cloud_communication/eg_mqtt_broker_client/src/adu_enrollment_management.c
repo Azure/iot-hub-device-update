@@ -30,9 +30,9 @@
 #include <mqtt_protocol.h>
 #include <string.h>
 
-// clang-format:off
+// clang-format off
 #include <aduc/aduc_banned.h> // must be after other includes
-// clang-format:on
+// clang-format on
 
 /**
  * @brief Gets the extension contract info.
@@ -209,7 +209,7 @@ void OnMessage_enr_resp(
         goto done;
     }
 
-    if (!ParseCommonResponseUserProperties(props, &enrollmentData->respUserProps, "enr_resp" /** expectedMsgType */))
+    if (!ParseAndValidateCommonResponseUserProperties(props, "enr_resp" /* expectedMsgType */, &enrollmentData->respUserProps))
     {
         Log_Error("Fail parse of common user props");
         goto done;

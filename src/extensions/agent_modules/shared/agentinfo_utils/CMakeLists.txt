@@ -10,7 +10,8 @@ find_package (Parson REQUIRED)
 target_link_libraries (${target_name}
     PUBLIC aduc::retry_utils Parson::parson
     PRIVATE aduc::agent_state_store
+            aduc::c_utils
             aduc::logging
-            aduc::c_utils)
+            aduc::mqtt_broker_common)
 
 add_subdirectory (tests)

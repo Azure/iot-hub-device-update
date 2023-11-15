@@ -156,7 +156,7 @@ bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const cha
  * @param outRespUserProps The common response user properties structure that will receive side-effects after parse and validation.
  * @return true When parse and validation succeeds.
  */
-bool ParseCommonResponseUserProperties(const mosquitto_property* props, const char* expectedMsgType, ADUC_Common_Response_User_Properties* outRespUserProps);
+bool ParseAndValidateCommonResponseUserProperties(const mosquitto_property* props, const char* expectedMsgType, ADUC_Common_Response_User_Properties* outRespUserProps);
 
 /**
  * @brief prints mosquitto property for debugging.

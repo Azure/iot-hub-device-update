@@ -19,9 +19,8 @@ void EnrollmentRequestOperation_OnSuccess(ADUC_Retriable_Operation_Context* data
 void EnrollmentRequestOperation_OnFailure(ADUC_Retriable_Operation_Context* data);
 void EnrollmentRequestOperation_OnRetry(ADUC_Retriable_Operation_Context* data);
 
-ADUC_Retriable_Operation_Context* OperationContextFromAgentModuleHandle(ADUC_AGENT_MODULE_HANDLE handle);
 bool IsEnrolled(const ADUC_Enrollment_Request_Operation_Data* enrollmentData);
-bool IsEnrollAlreadyHandled(ADUC_Retriable_Operation_Context* context, time_t nowTime, time_t* outLastHeartBeatLogTime);
+bool IsEnrollAlreadyHandled(ADUC_Retriable_Operation_Context* context, time_t nowTime);
 bool HandlingRequestEnrollment(ADUC_Retriable_Operation_Context* context, time_t nowTime);
 
 bool EnrollmentStatusRequestOperation_DoWork(ADUC_Retriable_Operation_Context* context);

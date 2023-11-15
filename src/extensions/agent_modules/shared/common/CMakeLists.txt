@@ -19,6 +19,7 @@ target_link_libraries(${target_name}
     PUBLIC
         aduc::c_utils
         aduc::communication_channel_mqtt_broker
+        aduc::agent_state_store
         aduc::logging
         aduc::retry_utils
         ${MOSQUITTO_LIBRARIES})

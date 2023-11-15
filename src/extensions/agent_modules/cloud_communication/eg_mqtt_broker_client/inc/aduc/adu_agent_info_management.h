@@ -22,13 +22,13 @@ DECLARE_AGENT_MODULE_PUBLIC(ADUC_Agent_Info_Management)
  * @brief Create the Agent Info management module.
  * @return ADUC_AGENT_MODULE_HANDLE The module handle.
  */
-ADUC_AGENT_MODULE_HANDLE ADUC_Agent_Info_Management_Create();
+ADUC_AGENT_MODULE_HANDLE ADUC_AgentInfo_Management_Create();
 
 /**
  * @brief Destroy the Agent Info management module.
  * @param module The module handle.
  */
-void ADUC_Agent_Info_Management_Destroy(ADUC_AGENT_MODULE_HANDLE module);
+void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE module);
 
 /**
  * @brief Callback should be called when the client receives an agent info response message from the Device Update service.

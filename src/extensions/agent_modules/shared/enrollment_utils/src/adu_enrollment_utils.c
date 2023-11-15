@@ -3,12 +3,13 @@
 #include <aduc/agent_state_store.h>
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
-#include <string.h> // strlen
+#include <parson_json_utils.h> // ADUC_JSON_*
+#include <string.h> // strlen, strdup
 
 
-// clang-format:off
+// clang-format off
 #include <aduc/aduc_banned.h> // make sure this is last to avoid affecting system includes
-// clang-format:on
+// clang-format on
 
 /**
  * @brief Gets the enrollment data object from the enrollment operation context.
@@ -199,7 +200,7 @@ bool ParseEnrollmentMessagePayload(const char* payload, bool* outIsEnrolled, cha
 
     JSON_Value* root_value = NULL;
     bool isEnrolled = false;
-    const char* scopeId = NULL;
+    const char* scopeId = NULL; // does not need free()
     char* allocScopeId = NULL;
 
     if (payload == NULL || outIsEnrolled == NULL || outScopeId == NULL)
@@ -226,13 +227,13 @@ bool ParseEnrollmentMessagePayload(const char* payload, bool* outIsEnrolled, cha
         goto done;
     }
 
-    if (!MallocAndStrcpy_s(&allocScopeId, scopeId))
+    if (NULL == (allocScopeId = strdup(scopeId)))
     {
         goto done;
     }
 
-    *outScopeId = scopeId;
-    scopeId = NULL; // transfer ownership
+    *outScopeId = allocScopeId;
+    allocScopeId = NULL; // transfer ownership
 
     *outIsEnrolled = isEnrolled;
 

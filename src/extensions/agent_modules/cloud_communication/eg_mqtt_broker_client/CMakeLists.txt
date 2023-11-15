@@ -21,19 +21,20 @@ target_include_directories (${target_name} PUBLIC inc)
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::c_utils
+    PUBLIC aduc::agent_state_store
+           aduc::c_utils
            aduc::communication_channel_mqtt_broker
-           aduc::agent_state_store
            aduc::enrollment_utils
            aduc::mosquitto_utils
+           aduc::mqtt_broker_common
            aduc::retry_utils
     PRIVATE aduc::adu_types
+            aduc::agentinfo_utils
             aduc::config_utils
             aduc::logging
             aduc::parson_json_utils
-            aduc::agentinfo_utils
-            Parson::parson
-            aziotsharedutil)
+            aziotsharedutil
+            Parson::parson)
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
 

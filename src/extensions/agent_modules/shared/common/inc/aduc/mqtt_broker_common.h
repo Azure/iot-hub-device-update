@@ -2,6 +2,7 @@
 #define MQTT_BROKER_COMMON
 
 #include <stddef.h> // size_t
+#include <stdint.h> // int32_t
 
 /**
  * @brief The length of a correlation ID. (including null terminator)
@@ -15,7 +16,7 @@
 typedef struct tagADUC_MQTT_Message_Context
 {
     int messageId;
-    char correlationId[CORRELATION_ID_LENGTH];
+    char* correlationId;
     char* publishTopic;
     char* responseTopic;
     char* payload;

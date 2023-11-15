@@ -4,6 +4,8 @@
 #include <aduc/adu_communication_channel.h> // ADUC_Communication_Channel_MQTT_Subscribe
 #include <aduc/logging.h>
 #include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_HANDLE
+#include <aduc/agent_state_store.h> // ADUC_StateStore_*
+#include <aduc/string_c_utils.h> // IsNullOrEmpty
 
 /**
  * @brief Gets operation context from module handle.
@@ -11,7 +13,7 @@
  * @param handle The module handle.
  * @return ADUC_Retriable_Operation_Context* The operation context.
  */
-ADUC_Retriable_Operation_Context* operationContextFromAgentModuleHandle(ADUC_AGENT_MODULE_HANDLE handle)
+ADUC_Retriable_Operation_Context* OperationContextFromAgentModuleHandle(ADUC_AGENT_MODULE_HANDLE handle)
 {
     ADUC_AGENT_MODULE_INTERFACE* moduleInterface = (ADUC_AGENT_MODULE_INTERFACE*)handle;
     if (moduleInterface == NULL || moduleInterface->moduleData == NULL)
@@ -31,7 +33,7 @@ ADUC_Retriable_Operation_Context* operationContextFromAgentModuleHandle(ADUC_AGE
  * @return false when no topic setup was needed.
  * @return true when failed to setup topics
  */
-bool MqttTopicSetupNeeded(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, bool isScoped)
+static bool MqttTopicSetupNeeded(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, bool isScoped)
 {
     const char* scopeId = isScoped ? ADUC_StateStore_GetDeviceUpdateServiceInstance() : NULL;
 
@@ -142,10 +144,11 @@ bool ExternalDeviceIdSetupNeeded(ADUC_Retriable_Operation_Context* context)
  *
  * @param context The retriable operation context.
  * @param messageContext The message context.
+ * @param isScoped Whether the topic appends scopeId.
  * @return true if any setup was needed.
  * @details May invoke the retry func if devices is not registered.
  */
-bool SettingUpAduMqttRequestPrerequisites(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext)
+bool SettingUpAduMqttRequestPrerequisites(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, bool isScoped)
 {
     if (!ADUC_StateStore_GetIsDeviceRegistered())
     {
@@ -156,7 +159,7 @@ bool SettingUpAduMqttRequestPrerequisites(ADUC_Retriable_Operation_Context* cont
 
     return CommunicationChannelNeededSetup(context)
         || ExternalDeviceIdSetupNeeded(context)
-        || MqttTopicSetupNeeded(context, messageContext)
+        || MqttTopicSetupNeeded(context, messageContext, isScoped)
         || (!ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(context, messageContext));
 }
 

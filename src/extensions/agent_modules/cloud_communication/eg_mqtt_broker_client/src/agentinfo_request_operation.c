@@ -2,7 +2,11 @@
 #include "aduc/agentinfo_request_operation.h"
 
 #include <aduc/adu_agentinfo.h> // ADUC_AgentInfo_Request_Operation_Data
+#include <aduc/adu_agentinfo_utils.h> // AgentInfoData_FromOperationContext, AgentInfoData_SetCorrelationId
+#include <aduc/adu_mosquitto_utils.h> // ADU_mosquitto_add_user_property
 #include <aduc/adu_communication_channel.h> // ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID
+#include <aduc/adu_mqtt_common.h> // SettingUpAduMqttRequestPrerequisites
+#include <aduc/agent_state_store.h> // ADUC_StateStore_GetIsAgentInfoReported
 #include <aduc/config_utils.h> // ADUC_ConfigInfo, ADUC_AgentInfo
 #include <aduc/logging.h>
 #include <du_agent_sdk/agent_module_interface.h>  // ADUC_AGENT_MODULE_HANDLE
@@ -32,7 +36,7 @@ bool AgentInfoRequestOperation_CancelOperation(ADUC_Retriable_Operation_Context*
 
     // Set the correlation id to NULL, so we can discard all inflight messages.
     AgentInfoData_SetCorrelationId(agentInfoData, "");
-    AgentInfoData_SetState(agentInfoData, ADU_AGENTINFO_STATE_UNKNOWN, "Cancel requested");
+    agentInfoData->agentInfoState = ADU_AGENTINFO_STATE_UNKNOWN;
     return true;
 }
 
@@ -79,7 +83,7 @@ bool AgentInfoRequestOperation_DoRetry(
         return false;
     }
 
-    AgentInfoData_SetState(data, ADU_AGENTINFO_STATE_UNKNOWN, "retrying");
+    data->agentInfoState = ADU_AGENTINFO_STATE_UNKNOWN;
     AgentInfoData_SetCorrelationId(data, "");
     return true;
 }
@@ -158,7 +162,7 @@ bool IsAgentInfoAlreadyHandled(ADUC_Retriable_Operation_Context* context, time_t
 {
     ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoData_FromOperationContext(context);
 
-    if (agentInfoData->agentInfoState == ADU_AGENTINFO_STATE_ACKNOWLEDGED || ADUC_StateStore_GetIsDeviceAgentInfoed())
+    if (agentInfoData->agentInfoState == ADU_AGENTINFO_STATE_ACKNOWLEDGED || ADUC_StateStore_GetIsAgentInfoReported())
     {
         // agentinfo is completed.
         Log_Info("agentinfo completed");
@@ -194,7 +198,7 @@ bool HandlingRequestAgentInfo(ADUC_Retriable_Operation_Context* context, time_t 
             // review: do we need this? cancelfunc should already took care of this.
             Log_Info("agentinfo request timed-out");
             AgentInfoData_SetCorrelationId(agentInfoData, "");
-            AgentInfoData_SetState(agentInfoData, ADU_AGENTINFO_STATE_UNKNOWN, "timed out");
+            agentInfoData->agentInfoState = ADU_AGENTINFO_STATE_UNKNOWN;
             context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_SERVICE_TRANSIENT]);
         }
 
@@ -215,15 +219,14 @@ static JSON_Value* Build_Compat_Properties_JSON_Value()
     JSON_Value* tmp = NULL;
     JSON_Value* compatProps_value = NULL;
 
-    ADU_ConfigInfo* config = NULL;
-    const ADUC_AgentInfo* = NULL;
+    const ADUC_AgentInfo* agent_cfg = NULL;
 
     if (JSONSuccess != (tmp = json_value_init_object()))
     {
         goto done;
     }
 
-    config = ADUC_ConfigInfo_GetInstance();
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
     if (config == NULL)
     {
         goto done;
@@ -278,7 +281,7 @@ static char* Build_AgentInfo_Request_Msg_Payload(time_t nowTime)
     char* tmp = NULL;
 
     JSON_Value* root = NULL;
-    JSON_Value* compatProp_value = NULL;
+    JSON_Value* compatProps_value = NULL;
 
     // Format:
     // {
@@ -289,9 +292,9 @@ static char* Build_AgentInfo_Request_Msg_Payload(time_t nowTime)
     //   }
     // }
 
-    char time_as_long[21]; // max positive value 9 223 372 036 854 775 807 + 1 (sign) + (term)
-    memset(&time_as_long, 0, sizeof(time_as_long));
-    sprintf("%ld", (long)nowTime);
+    char long_time[21]; // max positive value 9 223 372 036 854 775 807 + 1 (sign) + (term)
+    memset(&long_time, 0, sizeof(long_time));
+    sprintf(&long_time[0], "%ld", nowTime);
 
     root = json_value_init_object();
     if (root == NULL)
@@ -300,23 +303,23 @@ static char* Build_AgentInfo_Request_Msg_Payload(time_t nowTime)
     }
 
     compatProps_value = json_value_init_object();
-    if (compatProps == NULL)
+    if (compatProps_value == NULL)
     {
         goto done;
     }
 
-    if (JSONSuccess != json_object_set_string(json_object(root), "sn", &time_as_log[0]))
+    if (JSONSuccess != json_object_set_string(json_object(root), "sn", &long_time[0]))
     {
         goto done;
     }
 
-    compatProp_value = Build_Compat_Properties_JSON_Value();
-    if (compatProp_value == NULL)
+    compatProps_value = Build_Compat_Properties_JSON_Value();
+    if (compatProps_value == NULL)
     {
         goto done;
     }
 
-    if (JSONSuccess != json_object_set_value(json_object(root), "compatProperties", compatProp_value))
+    if (JSONSuccess != json_object_set_value(json_object(root), "compatProperties", compatProps_value))
     {
         goto done;
     }
@@ -334,7 +337,7 @@ static char* Build_AgentInfo_Request_Msg_Payload(time_t nowTime)
 
 done:
     free(tmp);
-    json_value_free(compatProp_value);
+    json_value_free(compatProps_value);
     json_value_free(root);
 
     return payload;
@@ -389,18 +392,18 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
         (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle,
         messageContext->publishTopic,
         &messageContext->messageId, // generated message id to save
-        strlen(message_payload),
-        message_payload,
+        (int)strlen(msg_payload),
+        msg_payload,
         messageContext->qos,
         false /* retain */,
-        messageContext->properties);
+        user_prop_list);
 
     if (mqtt_res != MOSQ_ERR_SUCCESS)
     {
         opSucceeded = false;
         Log_Error(
             "failed to publish agentinfo status request message. (mid:%d, cid:%s, err:%d - %s)",
-            messageId,
+            messageContext->messageId,
             messageContext->correlationId,
             mqtt_res,
             mosquitto_strerror(mqtt_res));
@@ -439,24 +442,27 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
         goto done;
     }
 
-    AgentInfoData_SetState(agentInfoData, ADU_AGENTINFO_STATE_REQUESTING, "ainfo_req submitted");
+    agentInfoData->agentInfoState = ADU_AGENTINFO_STATE_REQUESTING;
 
     context->lastExecutionTime = nowTime;
 
     Log_Info(
         "submitting 'ainfo_req' (mid:%d, cid:%s, t:%ld, timeout in:%ld)",
-        messageId,
+        messageContext->messageId,
         messageContext->correlationId,
         context->lastExecutionTime,
         context->operationTimeoutSecs);
 
     opSucceeded = true;
 done:
-    json_free_serialized_string(message_payload);
+    if (msg_payload != NULL)
+    {
+        json_free_serialized_string(msg_payload);
+    }
 
     if (user_prop_list != NULL)
     {
-        ADU_mosquitto_free_properties(user_prop_list);
+        ADU_mosquitto_free_properties(&user_prop_list);
     }
 
     return opSucceeded;
@@ -501,7 +507,7 @@ bool AgentInfoStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* co
     agentInfoData = AgentInfoData_FromOperationContext(context);
     messageContext = &agentInfoData->ainfoReqMessageContext;
 
-    if (SettingUpAduMqttRequestPrerequisites(context, messageContext))
+    if (SettingUpAduMqttRequestPrerequisites(context, messageContext, true /* isScoped */))
     {
         goto done;
     }

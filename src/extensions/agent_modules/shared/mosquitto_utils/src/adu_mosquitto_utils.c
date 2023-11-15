@@ -19,9 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-// clang-format:off
+// clang-format off
 #include <aduc/aduc_banned.h> // make sure this is last to avoid affecting system includes
-// clang-format:on
+// clang-format on
 
 /**
  * @brief Generate a correlation ID from a time value.
@@ -363,7 +363,7 @@ ADUC_MQTT_DISCONNECTION_CATEGORY CategorizeMQTTDisconnection(int rc)
  * @param outRespUserProps The common response user properties structure that will receive side-effects after parse and validation.
  * @return true When parse and validation succeeds.
  */
-bool ParseCommonResponseUserProperties(const mosquitto_property* props, const char* expectedMsgType, ADUC_Common_Response_User_Properties* outRespUserProps)
+bool ParseAndValidateCommonResponseUserProperties(const mosquitto_property* props, const char* expectedMsgType, ADUC_Common_Response_User_Properties* outRespUserProps)
 {
     bool success = false;
 
@@ -400,13 +400,24 @@ bool ParseCommonResponseUserProperties(const mosquitto_property* props, const ch
 
     // Validate
 
-    if (strcmp(msg_type, "ainfo_resp") != 0)
+    if (pid != 1)
     {
-        Log_Error("Invalid 'mt' user property: %s", "ainfo_resp");
+        char* pid_str = NULL;
+        ADU_mosquitto_read_user_property_string(props, "pid", &pid_str);
+
+        Log_Error("Invalid 'pid' user property: %s", pid_str);
+        free(pid_str);
+
         goto done;
     }
 
-    Log_Debug("enr_resp user properties - pid[%d] resultcode[%d] extendedresultcode[%d]", pid, resultcode, extendedresultcode);
+    if (strcmp(msg_type, expectedMsgType) != 0)
+    {
+        Log_Error("Invalid 'mt' user property: '%s' expected '%s'", msg_type, expectedMsgType);
+        goto done;
+    }
+
+    Log_Debug("Successful Parse + Validate: '%s' user properties - pid[%d] resultcode[%d] extendedresultcode[%d]", msg_type, pid, resultcode, extendedresultcode);
 
     // Now, assign to outRespUserProps post validation.
     outRespUserProps->pid = pid;

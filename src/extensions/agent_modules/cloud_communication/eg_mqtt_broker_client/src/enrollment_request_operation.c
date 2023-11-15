@@ -1,7 +1,11 @@
 #include "aduc/enrollment_request_operation.h"
 
+#include <aduc/adu_mqtt_common.h> // SettingUpAduMqttRequestPrerequisites
 #include <aduc/adu_enrollment.h> // ADUC_Enrollment_Request_Operation_Data
+#include <aduc/adu_enrollment_utils.h> // EnrollmentData_FromOperationContext
 #include <aduc/adu_communication_channel.h> // ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID
+#include <aduc/adu_mosquitto_utils.h> // ADU_mosquitto_add_user_property
+#include <aduc/agent_state_store.h> // ADUC_StateStore_GetIsDeviceEnrolled
 #include <aduc/config_utils.h> // ADUC_ConfigInfo, ADUC_AgentInfo
 #include <aduc/logging.h>
 #include <du_agent_sdk/agent_module_interface.h>  // ADUC_AGENT_MODULE_HANDLE
@@ -288,7 +292,7 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
 done:
     if (user_prop_list != NULL)
     {
-        ADU_mosquitto_free_properties(user_prop_list);
+        ADU_mosquitto_free_properties(&user_prop_list);
     }
 
     return opSucceeded;
@@ -333,7 +337,7 @@ bool EnrollmentStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* c
     enrollmentData = EnrollmentData_FromOperationContext(context);
     messageContext = &enrollmentData->enrReqMessageContext;
 
-    if (SettingUpAduMqttRequestPrerequisites(context, messageContext))
+    if (SettingUpAduMqttRequestPrerequisites(context, messageContext, false /* isScoped */))
     {
         goto done;
     }
