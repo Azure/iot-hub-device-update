@@ -597,7 +597,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
 
     // get retry parameters for transient client error.
     JSON_Value* retrySettings = json_object_dotget_value(
-        json_value_get_object(agent_info->agentJsonValue), "operations.agentinfo.statusrequest.retrysettings");
+        json_value_get_object(agent_info->agentJsonValue), SETTING_KEY_ENR_REQ_OP_RETRY_PARAMS);
     if (retrySettings == NULL)
     {
         Log_Error("failed to get retry settings");
