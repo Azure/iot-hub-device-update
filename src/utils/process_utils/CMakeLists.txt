@@ -21,6 +21,10 @@ target_link_libraries (
 target_link_aziotsharedutil (${target_name} PUBLIC)
 target_link_libraries (${target_name} PUBLIC libaducpal)
 
+if (WIN32)
+    target_compile_definitions (${target_name} PRIVATE WIN32="${WIN32}")
+endif()
+
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)
     add_subdirectory (test_helper)

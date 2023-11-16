@@ -233,7 +233,9 @@ ADUShellTaskResult Install(const ADUShell_LaunchArguments& launchArgs)
         return taskResult;
     }
 
-    taskResult.SetExitStatus(ADUC_LaunchChildProcess(aptget_command, aptArgs, taskResult.Output()));
+    int ret = ADUC_LaunchChildProcess(aptget_command, aptArgs, taskResult.Output());
+
+    taskResult.SetExitStatus(ret);
     return taskResult;
 }
 
