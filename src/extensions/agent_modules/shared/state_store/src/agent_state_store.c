@@ -7,11 +7,12 @@
  */
 #include "aduc/agent_state_store.h"
 #include <aduc/logging.h>
-#include "aduc/string_c_utils.h" // IsNullOrEmpty
+#include <aduc/string_c_utils.h> // IsNullOrEmpty
+#include <parson_json_utils.h>
 #include <semaphore.h>
 #include <stdlib.h>
 #include <string.h>
-#include "stdbool.h" // bool
+#include <stdbool.h> // bool
 
 // Internal state data
 static JSON_Value* inmem_state_data = NULL;
@@ -83,6 +84,10 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_Initialize(const char* state_file_path)
     if (IsNullOrEmpty(state.stateFilePath))
     {
         state.stateFilePath = SafeStrdup(DEFAULT_STATE_STORE_PATH);
+        if (state.stateFilePath == NULL)
+        {
+            goto done;
+        }
     }
 
     ADUC_STATE_STORE_RESULT res = ADUC_STATE_STORE_RESULT_ERROR;
@@ -121,16 +126,42 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_Initialize(const char* state_file_path)
         goto done;
     }
 
-    JSON_Object* state_data_obj = json_value_get_object(durable_state_data);
-    state.externalDeviceId = SafeStrdup(json_object_get_string(state_data_obj, STATE_FIELD_NAME_EXTERNAL_DEVICE_ID));
-    state.mqttBrokerHostname =
-        SafeStrdup(json_object_get_string(state_data_obj, STATE_FIELD_NAME_MQTT_BROKER_HOSTNAME));
-    state.deviceUpdateServiceInstance =
-        SafeStrdup(json_object_get_string(state_data_obj, STATE_FIELD_NAME_DU_SERVICE_INSTANCE));
-    state.deviceId = SafeStrdup(json_object_get_string(state_data_obj, STATE_FIELD_NAME_DEVICE_ID));
-    state.isDeviceEnrolled = json_object_get_boolean(state_data_obj, STATE_FIELD_NAME_IS_DEVICE_ENROLLED);
-    state.isAgentInfoReported = json_object_get_boolean(state_data_obj, STATE_FIELD_NAME_IS_AGENT_INFO_REPORTED);
-    state.isDeviceRegistered = json_object_get_boolean(state_data_obj, STATE_FIELD_NAME_IS_DEVICE_REGISTERED);
+    const JSON_Object* state_data_obj = json_object(durable_state_data);
+
+    if (!ADUC_JSON_GetStringFieldFromObj(state_data_obj, STATE_FIELD_NAME_DEVICE_ID, &state.deviceId))
+    {
+        state.deviceId = NULL;
+    }
+
+    if (!ADUC_JSON_GetStringFieldFromObj(state_data_obj, STATE_FIELD_NAME_EXTERNAL_DEVICE_ID, &state.externalDeviceId))
+    {
+        state.externalDeviceId = NULL;
+    }
+
+    if (!ADUC_JSON_GetStringFieldFromObj(state_data_obj, STATE_FIELD_NAME_MQTT_BROKER_HOSTNAME, &state.mqttBrokerHostname))
+    {
+        state.mqttBrokerHostname = NULL;
+    }
+
+    if (!ADUC_JSON_GetStringFieldFromObj(state_data_obj, STATE_FIELD_NAME_DU_SERVICE_INSTANCE, &state.deviceUpdateServiceInstance))
+    {
+        state.deviceUpdateServiceInstance = NULL;
+    }
+
+    if (!ADUC_JSON_GetBooleanField(durable_state_data, STATE_FIELD_NAME_IS_DEVICE_REGISTERED, &state.isDeviceRegistered))
+    {
+        state.isDeviceRegistered = false;
+    }
+
+    if (!ADUC_JSON_GetBooleanField(durable_state_data, STATE_FIELD_NAME_IS_DEVICE_ENROLLED, &state.isDeviceEnrolled))
+    {
+        state.isDeviceEnrolled = false;
+    }
+
+    if (!ADUC_JSON_GetBooleanField(durable_state_data, STATE_FIELD_NAME_IS_AGENT_INFO_REPORTED, &state.isAgentInfoReported))
+    {
+        state.isAgentInfoReported = false;
+    }
 
     Log_Info("State store initialized successfully.");
     isInitialized = true;

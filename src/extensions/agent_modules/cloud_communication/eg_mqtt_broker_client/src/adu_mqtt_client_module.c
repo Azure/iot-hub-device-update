@@ -591,6 +591,7 @@ done:
 
 static void ExecuteModuleWork(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState, const time_t nowTime)
 {
+    const size_t CommChannelIndex = 0;
 
     for (size_t i = 0; i < ARRAY_SIZE(s_Modules); ++i)
     {
@@ -607,11 +608,11 @@ static void ExecuteModuleWork(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState, const 
         }
         else
         {
-            ADUC_AGENT_MODULE_INTERFACE* mi = s_Modules[i].Interface;
-
             if (s_Modules[i].CheckIsConnectedBefore)
             {
-                if (!ADUC_Communication_Channel_IsConnected(mi))
+                // module at CommChannelIndex is the one with the updated commMgrState for connection state.
+                // TODO: move into agent state store for sharing by topic modules.
+                if (!ADUC_Communication_Channel_IsConnected(s_Modules[CommChannelIndex].Interface))
                 {
                     // TODO: (nox-msft) - use retry utils.
                     moduleState->nextOperationTime = nowTime + DEFAULT_OPERATION_INTERVAL_SECONDS;
@@ -621,7 +622,7 @@ static void ExecuteModuleWork(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState, const 
 
             Log_Debug("%s -> doWork", s_Modules[i].Name);
 
-            mi->doWork(mi);
+            s_Modules[i].Interface->doWork(s_Modules[i].Interface);
         }
     }
 

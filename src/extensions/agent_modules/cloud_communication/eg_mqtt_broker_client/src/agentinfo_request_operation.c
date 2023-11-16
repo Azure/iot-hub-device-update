@@ -160,18 +160,7 @@ void AgentInfoRequestOperation_OnRetry(ADUC_Retriable_Operation_Context* data)
  */
 bool IsAgentInfoAlreadyHandled(ADUC_Retriable_Operation_Context* context, time_t nowTime)
 {
-    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoData_FromOperationContext(context);
-
-    if (agentInfoData->agentInfoState == ADU_AGENTINFO_STATE_ACKNOWLEDGED || ADUC_StateStore_GetIsAgentInfoReported())
-    {
-        // agentinfo is completed.
-        Log_Info("agentinfo completed");
-        ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_Completed);
-
-        return true;
-    }
-
-    return false;
+    return ADUC_StateStore_GetIsAgentInfoReported();
 }
 
 /**
@@ -185,9 +174,10 @@ bool HandlingRequestAgentInfo(ADUC_Retriable_Operation_Context* context, time_t 
 {
     ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoData_FromOperationContext(context);
 
-    // are we querying the agentinfo status?
     if (agentInfoData->agentInfoState == ADU_AGENTINFO_STATE_REQUESTING)
     {
+        Log_Info("requesting");
+
         ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_InProgress);
 
         // is the current request timed-out?
@@ -381,6 +371,8 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
         goto done;
     }
 
+    Log_Info("sending 'ainfo_req'");
+
     // Set MQTT 5 user propertie as per ainfo req-res
     if (!ADU_mosquitto_add_user_property(&user_prop_list, "mt", "ainfo_req") ||
         !ADU_mosquitto_add_user_property(&user_prop_list, "pid", "1"))
@@ -447,7 +439,7 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
     context->lastExecutionTime = nowTime;
 
     Log_Info(
-        "submitting 'ainfo_req' (mid:%d, cid:%s, t:%ld, timeout in:%ld)",
+        "publishing 'ainfo_req' (mid:%d, cid:%s, t:%ld, timeout in:%ld)",
         messageContext->messageId,
         messageContext->correlationId,
         context->lastExecutionTime,
@@ -502,6 +494,8 @@ bool AgentInfoStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* co
     {
         goto done;
     }
+
+    Log_Info("work on send 'ainforeq' ...");
 
     // at this point, we should send 'ainfo_req' message.
     agentInfoData = AgentInfoData_FromOperationContext(context);

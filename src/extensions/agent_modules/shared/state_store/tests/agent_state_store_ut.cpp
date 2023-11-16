@@ -5,10 +5,14 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+
+#include "aduc/agent_state_store.h"
+#include <aduc/system_utils.h>
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
 
-#include "aduc/agent_state_store.h"
+
+#define TEST_STORE_DIR "/tmp/adutest/agent_state_store_ut"
 
 #define TEST_STATE_FILE "/tmp/__aduc_state_store_ut__"
 
@@ -27,5 +31,22 @@ TEST_CASE("communication handle")
         CHECK(readHandle == handle);
 
         ADUC_StateStore_Deinitialize();
+    }
+}
+
+TEST_CASE("ADUC_StateStore_Initialize")
+{
+    SECTION("state defaults correctly when no persisted files")
+    {
+        ADUC_SystemUtils_RmDirRecursive(TEST_STORE_DIR);
+        REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(TEST_STORE_DIR "/test_state_store.json"));
+
+        CHECK(nullptr == ADUC_StateStore_GetDeviceId());
+        CHECK(nullptr == ADUC_StateStore_GetExternalDeviceId());
+        CHECK(nullptr == ADUC_StateStore_GetMQTTBrokerHostname());
+        CHECK(nullptr == ADUC_StateStore_GetDeviceUpdateServiceInstance());
+        CHECK_FALSE(ADUC_StateStore_GetIsDeviceRegistered());
+        CHECK_FALSE(ADUC_StateStore_GetIsDeviceEnrolled());
+        CHECK_FALSE(ADUC_StateStore_GetIsAgentInfoReported());
     }
 }

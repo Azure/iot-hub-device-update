@@ -15,6 +15,7 @@ add_executable (${target_name} ${sources})
 
 target_link_libraries (${target_name} PRIVATE aduc::agent_state_store
                                               aduc::c_utils
+                                              aduc::system_utils
                                               Parson::parson
                                               Catch2::Catch2)
 

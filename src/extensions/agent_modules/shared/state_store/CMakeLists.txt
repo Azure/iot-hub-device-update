@@ -17,7 +17,7 @@ target_sources (${target_name} PRIVATE src/agent_state_store.c)
 
 target_link_libraries (${target_name}
     PUBLIC aduc::c_utils Parson::parson
-    PRIVATE aduc::logging)
+    PRIVATE aduc::logging aduc::parson_json_utils)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

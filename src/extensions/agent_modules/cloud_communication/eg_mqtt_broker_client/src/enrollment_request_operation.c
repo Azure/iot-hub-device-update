@@ -163,7 +163,6 @@ bool IsEnrollAlreadyHandled(ADUC_Retriable_Operation_Context* context, time_t no
     if (enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED || ADUC_StateStore_GetIsDeviceEnrolled())
     {
         // enrollment is completed.
-        Log_Info("enrollment completed");
         ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_Completed);
 
         return true;
@@ -215,6 +214,8 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
 
     ADUC_Enrollment_Request_Operation_Data* enrollmentData = EnrollmentData_FromOperationContext(context);
     ADUC_MQTT_Message_Context* messageContext = &enrollmentData->enrReqMessageContext;
+
+    Log_Info("sending 'enr_req'");
 
     // Set MQTT 5 user propertie as per ainfo req-res
     if (!ADU_mosquitto_add_user_property(&user_prop_list, "mt", "enr_req") ||
@@ -282,7 +283,7 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
     context->lastExecutionTime = nowTime;
 
     Log_Info(
-        "submitting 'enr_req' (mid:%d, cid:%s, t:%ld, timeout in:%ld)",
+        "publishing 'enr_req' (mid:%d, cid:%s, t:%ld, timeout in:%ld)",
         messageContext->messageId,
         messageContext->correlationId,
         context->lastExecutionTime,
