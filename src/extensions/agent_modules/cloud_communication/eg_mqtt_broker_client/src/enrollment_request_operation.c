@@ -1,6 +1,6 @@
 #include "aduc/enrollment_request_operation.h"
 
-#include <aduc/adu_mqtt_common.h> // SettingUpAduMqttRequestPrerequisites
+#include <aduc/adu_mqtt_common.h>
 #include <aduc/adu_enrollment.h> // ADUC_Enrollment_Request_Operation_Data
 #include <aduc/adu_enrollment_utils.h> // EnrollmentData_FromOperationContext
 #include <aduc/adu_communication_channel.h> // ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID
@@ -230,7 +230,7 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
         &messageContext->messageId,
         2,
         "{}", // enrollment request message content, which is always an empty json object.
-        messageContext->qos,
+        1, // qos 1 is required for adu gen2 protocol v1
         false,
         user_prop_list);
 
@@ -299,6 +299,18 @@ done:
     return opSucceeded;
 }
 
+static void Handle_Enrollment_Subscribing(void* arg)
+{
+    ADUC_Enrollment_Request_Operation_Data* enrollmentData = (ADUC_Enrollment_Request_Operation_Data*)arg;
+    enrollmentData->enrollmentState = ADU_ENROLLMENT_STATE_SUBSCRIBING;
+}
+
+static bool Can_Enrollment_Subscribe(void* arg)
+{
+    ADUC_Enrollment_Request_Operation_Data* enrollmentData = (ADUC_Enrollment_Request_Operation_Data*)arg;
+    return enrollmentData->enrollmentState < ADU_ENROLLMENT_STATE_SUBSCRIBING;
+}
+
 /**
  * @brief The main workflow for managing device enrollment status request operation.
  * @details The workflow is as follows:
@@ -316,6 +328,9 @@ bool EnrollmentStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* c
 
     ADUC_Enrollment_Request_Operation_Data* enrollmentData = NULL;
     ADUC_MQTT_Message_Context* messageContext = NULL;
+
+    Functor handleSubscribing = { 0 };
+    Functor canSubscribe = { 0 };
 
     if (context == NULL || context->data == NULL)
     {
@@ -338,7 +353,13 @@ bool EnrollmentStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* c
     enrollmentData = EnrollmentData_FromOperationContext(context);
     messageContext = &enrollmentData->enrReqMessageContext;
 
-    if (SettingUpAduMqttRequestPrerequisites(context, messageContext, false /* isScoped */))
+    handleSubscribing.fn = Handle_Enrollment_Subscribing;
+    handleSubscribing.arg = enrollmentData;
+
+    canSubscribe.fn_bool = Can_Enrollment_Subscribe;
+    canSubscribe.arg = enrollmentData;
+
+    if (SettingUpAduMqttRequestPrerequisites(context, messageContext, false /* isScoped */, handleSubscribing, canSubscribe))
     {
         goto done;
     }

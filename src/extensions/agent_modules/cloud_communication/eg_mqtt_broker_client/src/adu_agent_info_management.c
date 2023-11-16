@@ -12,7 +12,7 @@
 #include <aduc/adu_agentinfo.h>
 #include <aduc/adu_agentinfo_utils.h>
 #include <aduc/adu_mosquitto_utils.h>
-#include <aduc/adu_mqtt_common.h> // ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response
+#include <aduc/adu_mqtt_common.h>
 #include <aduc/adu_mqtt_protocol.h>
 #include <aduc/adu_types.h>
 #include <aduc/agent_state_store.h>

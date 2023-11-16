@@ -5,7 +5,7 @@
 #include <aduc/adu_agentinfo_utils.h> // AgentInfoData_FromOperationContext, AgentInfoData_SetCorrelationId
 #include <aduc/adu_mosquitto_utils.h> // ADU_mosquitto_add_user_property
 #include <aduc/adu_communication_channel.h> // ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID
-#include <aduc/adu_mqtt_common.h> // SettingUpAduMqttRequestPrerequisites
+#include <aduc/adu_mqtt_common.h>
 #include <aduc/agent_state_store.h> // ADUC_StateStore_GetIsAgentInfoReported
 #include <aduc/config_utils.h> // ADUC_ConfigInfo, ADUC_AgentInfo
 #include <aduc/logging.h>
@@ -170,7 +170,7 @@ bool IsAgentInfoAlreadyHandled(ADUC_Retriable_Operation_Context* context, time_t
  * @param nowTime The current time.
  * @return true if was in agentinfo requesting state.
  */
-bool HandlingRequestAgentInfo(ADUC_Retriable_Operation_Context* context, time_t nowTime)
+static bool HandlingRequestAgentInfo(ADUC_Retriable_Operation_Context* context, time_t nowTime)
 {
     ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoData_FromOperationContext(context);
 
@@ -386,7 +386,7 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
         &messageContext->messageId, // generated message id to save
         (int)strlen(msg_payload),
         msg_payload,
-        messageContext->qos,
+        1, // qos 1 is required for adu gen2 protocol v1
         false /* retain */,
         user_prop_list);
 
@@ -460,6 +460,18 @@ done:
     return opSucceeded;
 }
 
+static void Handle_AgentInfo_Subscribing(void* arg)
+{
+    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = (ADUC_AgentInfo_Request_Operation_Data*)arg;
+    agentInfoData->agentInfoState = ADU_AGENTINFO_STATE_SUBSCRIBING;
+}
+
+static bool Can_AgentInfo_Subscribe(void* arg)
+{
+    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = (ADUC_AgentInfo_Request_Operation_Data*)arg;
+    return agentInfoData->agentInfoState < ADU_AGENTINFO_STATE_SUBSCRIBING;
+}
+
 /**
  * @brief The main workflow for managing device agentinfo status request operation.
  * @details The workflow is as follows:
@@ -478,6 +490,9 @@ bool AgentInfoStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* co
     ADUC_AgentInfo_Request_Operation_Data* agentInfoData = NULL;
     ADUC_MQTT_Message_Context* messageContext = NULL;
 
+    Functor handleSubscribing = { 0 };
+    Functor canSubscribe = { 0 };
+
     if (context == NULL || context->data == NULL)
     {
         return opSucceeded;
@@ -486,6 +501,11 @@ bool AgentInfoStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* co
     const time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
 
     if (IsAgentInfoAlreadyHandled(context, nowTime))
+    {
+        goto done;
+    }
+
+    if (!ADUC_StateStore_GetIsDeviceEnrolled())
     {
         goto done;
     }
@@ -501,7 +521,13 @@ bool AgentInfoStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* co
     agentInfoData = AgentInfoData_FromOperationContext(context);
     messageContext = &agentInfoData->ainfoReqMessageContext;
 
-    if (SettingUpAduMqttRequestPrerequisites(context, messageContext, true /* isScoped */))
+    handleSubscribing.fn = Handle_AgentInfo_Subscribing;
+    handleSubscribing.arg = agentInfoData;
+
+    canSubscribe.fn_bool = Can_AgentInfo_Subscribe;
+    canSubscribe.arg = agentInfoData;
+
+    if (SettingUpAduMqttRequestPrerequisites(context, messageContext, true /* isScoped */, handleSubscribing, canSubscribe))
     {
         goto done;
     }

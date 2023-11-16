@@ -148,6 +148,8 @@ ADUC_AGENT_MODULE_HANDLE ADUC_Communication_Channel_Create()
         goto done;
     }
 
+    Log_Debug("pendingSubscriptions obj created @ %p", state->pendingSubscriptions);
+
     state->subscribedTopicsMap = Map_Create(NULL);
     if (state->subscribedTopicsMap == NULL)
     {
@@ -712,6 +714,13 @@ void ADUC_Communication_Channel_OnSubscribe(
         Log_Info("\tQoS %d\n", granted_qos[i]);
     }
 
+    Log_Debug("Before remove from pendingSubscriptions:");
+    for (size_t i = 0; i < VECTOR_size(commMgrState->pendingSubscriptions); ++i)
+    {
+        ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* cbInfo = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)VECTOR_element(commMgrState->pendingSubscriptions, i);
+        Log_Debug("    cbInfo[%lu]: messageId=%d topic=%s", i, cbInfo->messageId, cbInfo->topic);
+    }
+
     // Remove the subscription from the pending list.
     for (size_t i = 0; i < VECTOR_size(commMgrState->pendingSubscriptions); i++)
     {
@@ -1210,6 +1219,8 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = CommunicationManagerStateFromModuleHandle(commHandle);
     ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* callbackInfo = NULL;
 
+    Log_Debug("SUBSCRIBE call: commHandle=%p topic=%s qos=%d options=%d callback=%p", commHandle, topic, qos, options, callback);
+
     // Create a tracking data.
     callbackInfo = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)calloc(1, sizeof(ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO));
     if (callbackInfo == NULL)
@@ -1228,12 +1239,6 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
     callbackInfo->callback = callback;
     callbackInfo->userData = userData;
 
-    // Add the tracking data to the list.
-    if (VECTOR_push_back(commMgrState->pendingSubscriptions, callbackInfo, 1) != 0)
-    {
-         goto done;
-    }
-
     mosqResult =
         mosquitto_subscribe_v5(commMgrState->mqttClient, &callbackInfo->messageId, topic, qos, options, props);
     if (mosqResult != MOSQ_ERR_SUCCESS)
@@ -1242,7 +1247,20 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
         goto done;
     }
 
-    Log_Info("Subscribing to topic: %s, mid: %d", topic, callbackInfo->messageId);
+    // Only track once underlying subscribe successfully issued.
+    if (VECTOR_push_back(commMgrState->pendingSubscriptions, callbackInfo, 1) != 0)
+    {
+         goto done;
+    }
+
+    Log_Debug("After mosquitto_subscribe_v5 call:");
+    for (size_t i = 0; i < VECTOR_size(commMgrState->pendingSubscriptions); ++i)
+    {
+        ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* cbInfo = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)VECTOR_element(commMgrState->pendingSubscriptions, i);
+        Log_Debug("    cbInfo[%lu]: messageId=%d topic=%s callback=%p", i, cbInfo->messageId, cbInfo->topic, callback);
+    }
+
+    Log_Info("SUBSCRIBE issued for topic: %s, mid: %d", topic, callbackInfo->messageId);
     mosqResult = MOSQ_ERR_SUCCESS;
 done:
 
@@ -1279,7 +1297,8 @@ bool ADUC_Communication_Channel_MQTT_IsSubscribed(ADUC_AGENT_MODULE_HANDLE commH
         return false;
     }
 
-    ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = CommunicationManagerStateFromModuleHandle(commHandle);
+    const void* commHandleFromStore = ADUC_StateStore_GetCommunicationChannelHandle(ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID);
+    ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = CommunicationManagerStateFromModuleHandle((void*)commHandleFromStore);
     if (commMgrState == NULL)
     {
         Log_Error("commMgrState is NULL");
