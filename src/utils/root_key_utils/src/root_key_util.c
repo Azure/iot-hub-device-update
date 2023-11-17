@@ -13,6 +13,8 @@
 #include "aduc/rootkeypackage_parse.h"
 #include "aduc/rootkeypackage_types.h"
 #include "aduc/rootkeypackage_utils.h"
+#include "aducpal/stdio.h"
+#include "aducpal/strings.h"
 #include "base64_utils.h"
 #include "crypto_lib.h"
 #include "root_key_list.h"
@@ -28,9 +30,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 //
 // Root Key Validation Helper Functions
@@ -434,7 +433,8 @@ ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
         goto done;
     }
 
-    if (rename(STRING_c_str(tempFileName), STRING_c_str(fileDest)) != 0)
+    int ret = ADUCPAL_rename(STRING_c_str(tempFileName), STRING_c_str(fileDest));
+    if (ret != 0)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_RENAME_TO_STORE;
         goto done;

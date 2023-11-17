@@ -12,13 +12,12 @@ set (sources main.cpp jws_utils_ut.cpp)
 find_package (Catch2 REQUIRED)
 find_package (OpenSSL REQUIRED)
 
-message(OPENSSL_CRYPTO_LIBRARY="${OPENSSL_CRYPTO_LIBRARY}")
-message(OPENSSL_VERSION="${OPENSSL_VERSION}")
-message(OPENSSL_INCLUDE_DIR="${OPENSSL_INCLUDE_DIR}")
-message(OPENSSL_SSL_LIBRARY="${OPENSSL_SSL_LIBRARY}")
 add_executable (${PROJECT_NAME} ${sources})
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+
+target_compile_definitions (${PROJECT_NAME}
+                            PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
 target_link_libraries (
     ${PROJECT_NAME}

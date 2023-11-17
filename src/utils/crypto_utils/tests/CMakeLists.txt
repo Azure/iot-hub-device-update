@@ -14,12 +14,8 @@ find_package (OpenSSL REQUIRED)
 
 add_executable (${PROJECT_NAME} ${sources})
 
-message(OPENSSL_CRYPTO_LIBRARY="${OPENSSL_CRYPTO_LIBRARY}")
-message(OPENSSL_VERSION="${OPENSSL_VERSION}")
-message(OPENSSL_INCLUDE_DIR="${OPENSSL_INCLUDE_DIR}")
-message(OPENSSL_SSL_LIBRARY="${OPENSSL_SSL_LIBRARY}")
-
-target_link_libraries (${PROJECT_NAME} PRIVATE aduc::crypto_utils aduc::root_key_utils aduc::string_utils Catch2::Catch2 OpenSSL::Crypto)
+target_link_libraries (${PROJECT_NAME} PRIVATE aduc::crypto_utils aduc::root_key_utils
+                                               aduc::string_utils Catch2::Catch2 OpenSSL::Crypto)
 
 include (CTest)
 include (Catch)

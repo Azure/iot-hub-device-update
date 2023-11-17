@@ -23,7 +23,7 @@ set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils aduc::crypto_utils aduc::rootkeypackage_utils umock_c
-    PRIVATE aduc::logging aduc::system_utils)
+    PRIVATE aduc::logging aduc::system_utils libaducpal)
 
 target_compile_definitions (
     ${target_name} PRIVATE ADUC_ROOTKEY_STORE_PACKAGE_PATH="${ADUC_ROOTKEY_STORE_PACKAGE_PATH}"
