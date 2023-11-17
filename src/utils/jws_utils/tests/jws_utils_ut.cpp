@@ -16,6 +16,7 @@
 #include <catch2/catch.hpp>
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
 #include <regex>
@@ -138,7 +139,9 @@ public:
     {
         g_mockedRootKeyStorePath = get_valid_example_rootkey_package_json_path();
 
-        REGISTER_GLOBAL_MOCK_HOOK(RootKeyStore_GetRootKeyStorePath, MockRootKeyStore_GetRootKeyStorePath);
+        ADUC_Result result = RootKeyUtility_ReloadPackageFromDisk(g_mockedRootKeyStorePath.c_str(), true);
+        std::cout << g_mockedRootKeyStorePath << std::endl;
+        CHECK(IsAducResultCodeSuccess(result.ResultCode));
     }
 
     ~TestCaseFixture()
