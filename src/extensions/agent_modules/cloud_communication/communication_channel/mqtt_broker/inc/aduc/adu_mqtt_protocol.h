@@ -66,15 +66,6 @@
 
 #define ADU_MQTT_PROTOCOL_MESSAGE_TYPE_UPDATE_RESULT_REPORT_ACK "updrslt_ack"
 
-typedef struct tagADU_MQTT_MESSAGE_INFO
-{
-    char* correlationData; //!< Correlation data. This a epoch time in seconds.
-    time_t sentTime; //!< Time the message was sent.
-    int mid; //!< Message ID.
-    int qos; //!< QOS level.
-    int code; //!< Result code.
-} ADU_MQTT_MESSAGE_INFO;
-
 /**
  * @brief Describes the connection state of the ADU communication channel.
  *
