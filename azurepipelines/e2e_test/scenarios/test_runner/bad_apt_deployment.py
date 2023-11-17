@@ -142,7 +142,7 @@ class AptFailsDeployment(unittest.TestCase):
             twin = self.duTestHelper.GetDeviceTwinForDevice(test_device_id)
 
         self.assertEqual(
-            twin.properties.reported["deviceUpdate"]["agent"]["state"], 0)
+            twin.properties.reported["deviceUpdate"]["agent"]["state"], 255)
 
         #
         # In case of a succeeded deployment we need to clean up the resources we created.
