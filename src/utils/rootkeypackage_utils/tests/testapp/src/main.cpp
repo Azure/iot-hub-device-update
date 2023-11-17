@@ -5,7 +5,7 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-
+#include <aduc/c_utils.h>
 #include <aduc/file_test_utils.hpp>
 #include <aduc/rootkeypackage_do_download.h>
 #include <aduc/rootkeypackage_utils.h>
@@ -17,6 +17,9 @@
 
 int main(int argc, char** argv)
 {
+    UNREFERENCED_PARAMETER(argc); // kept for posterity and it's a main() function
+    UNREFERENCED_PARAMETER(argv);
+
     ADUC_Result result = { 0, 0 };
     int ret = 1;
     STRING_HANDLE downloadedFile = nullptr;
@@ -26,9 +29,9 @@ int main(int argc, char** argv)
     ADUC_RootKeyPackage rootKeyPackage{};
 
     ADUC_RootKeyPkgDownloaderInfo downloaderInfo{
-        .name = "DO",
-        .downloadFn = DownloadRootKeyPkg_DO,
-        .downloadBaseDir = "/tmp/deviceupdate/rootkey_download_test_app",
+        "DO",
+        DownloadRootKeyPkg_DO,
+        "/tmp/deviceupdate/rootkey_download_test_app",
     };
 
     result = ADUC_RootKeyPackageUtils_DownloadPackage(ROOTKEY_PKG_URL, WORKFLOW_ID, &downloaderInfo, &downloadedFile);

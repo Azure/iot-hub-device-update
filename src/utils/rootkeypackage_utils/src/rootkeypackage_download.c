@@ -13,7 +13,7 @@
 #include <aduc/string_c_utils.h>
 #include <aduc/system_utils.h>
 #include <aduc/url_utils.h>
-#include <unistd.h> // unlink
+#include <aducpal/unistd.h> // unlink
 
 EXTERN_C_BEGIN
 

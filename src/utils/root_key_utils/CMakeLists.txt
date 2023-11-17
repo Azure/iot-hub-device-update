@@ -12,7 +12,8 @@ target_sources (${target_name} PRIVATE src/root_key_util.c src/root_key_list.c)
 
 target_include_directories (${target_name} PUBLIC inc)
 
-find_package (azure_c_shared_utility REQUIRED)
+target_link_aziotsharedutil (${target_name} PUBLIC)
+find_package (umock_c REQUIRED CONFIG)
 
 #
 # Turn -fPIC on, in order to use this library in another shared library.
@@ -21,10 +22,7 @@ set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::c_utils
-           aduc::crypto_utils
-           aduc::rootkeypackage_utils
-           aziotsharedutil
+    PUBLIC aduc::c_utils aduc::crypto_utils aduc::rootkeypackage_utils umock_c
     PRIVATE aduc::logging aduc::system_utils)
 
 target_compile_definitions (
@@ -32,8 +30,5 @@ target_compile_definitions (
                            EMBED_TEST_ROOT_KEYS=${EMBED_TEST_ROOT_KEYS})
 
 if (ADUC_BUILD_UNIT_TESTS)
-    find_package (umock_c REQUIRED CONFIG)
-    target_link_libraries (${target_name} PRIVATE umock_c)
-
     add_subdirectory (tests)
 endif ()

@@ -10,10 +10,10 @@
 #define ROOTKEYPACKAGE_TYPES_H
 
 #include <aduc/hash_utils.h>
+#include <aducpal/time.h> // for struct timespec
 #include <azure_c_shared_utility/constbuffer.h>
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
-#include <sys/time.h> // for struct timespec
 
 /**
  * @brief The root key keyType.

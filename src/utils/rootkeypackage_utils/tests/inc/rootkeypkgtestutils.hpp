@@ -1,9 +1,9 @@
 #ifndef ROOTKEYPKGTESTUTILS_HPP
 #define ROOTKEYPKGTESTUTILS_HPP
 
+#include <aduc/c_utils.h>
 #include <string>
 #include <vector>
-
 namespace aduc
 {
 namespace rootkeypkgtestutils
@@ -256,6 +256,7 @@ public:
 
     std::string SignData(const std::string& data) const
     {
+        UNREFERENCED_PARAMETER(data);
         // TODO: Use OpenSSL to actually create the signature using private key and data.
         // For now, return hard-coded signatuers for now per root key.
         auto index = static_cast<typename std::underlying_type<aduc::rootkeypkgtestutils::rootkeys>::type>(m_rootkey);

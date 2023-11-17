@@ -30,7 +30,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 //
 // Root Key Validation Helper Functions
@@ -217,7 +216,13 @@ bool RootKeyUtility_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVec
     for (int i = 0; i < rsaKeyListSize; ++i)
     {
         RSARootKey key = rsaKeyList[i];
-        ADUC_RootKey rootKey = {};
+        /**
+         *  STRING_HANDLE kid; /**< The key id.
+         * ADUC_RootKey_KeyType keyType; /**< The key type.
+    ADUC_RSA_RootKeyParameters rsaParameters; /**< The RSA key parameters
+        */
+        ADUC_RootKey rootKey = { .kid = NULL, .keyType = ADUC_RootKey_KeyType_INVALID, .rsaParameters = 0 };
+
         if (!InitializeADUC_RootKey_From_RSARootKey(&rootKey, &key))
         {
             goto done;
@@ -649,6 +654,8 @@ ADUC_Result RootKeyUtility_GetKeyForKeyIdFromLocalStore(CryptoKeyHandle* key, co
         goto done;
     }
 
+    *key = tempKey;
+
     result.ResultCode = ADUC_GeneralResult_Success;
 
 done:
@@ -668,7 +675,6 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
     CryptoKeyHandle tempKey = NULL;
-#ifdef USE_LOCAL_STORE
     if (localStore == NULL)
     {
         ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(
@@ -686,7 +692,7 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_ROOTKEY_IS_DISABLED;
         goto done;
     }
-#endif
+
     const RSARootKey* hardcodedRsaRootKeys = RootKeyList_GetHardcodedRsaRootKeys();
 
     const size_t numberKeys = RootKeyList_numHardcodedKeys();
@@ -698,7 +704,6 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
         }
     }
 
-#ifdef USE_LOCAL_STORE
     if (tempKey == NULL)
     {
         ADUC_Result fetchResult = RootKeyUtility_GetKeyForKeyIdFromLocalStore(&tempKey, kid);
@@ -709,16 +714,6 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
             goto done;
         }
     }
-
-#else
-
-    if (tempKey == NULL)
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID;
-        goto done;
-    }
-
-#endif
 
     result.ResultCode = ADUC_GeneralResult_Success;
 done:
@@ -810,7 +805,6 @@ ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSign
 
     if (localStore == NULL)
     {
-#ifdef USE_LOCAL_STORE
         ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(
             &localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH, true /* validateSignatures */);
 
@@ -820,10 +814,6 @@ ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSign
             result = loadResult;
             goto done;
         }
-#else
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_LOCAL_STORE_UNINITIALIZED;
-        goto done;
-#endif
     }
 
     disabledSigningKeyList = VECTOR_create(sizeof(ADUC_RootKeyPackage_Signature));

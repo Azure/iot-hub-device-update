@@ -25,11 +25,11 @@ target_compile_definitions (
     PRIVATE SUPPORTED_UPDATE_MANIFEST_VERSION_MIN=${SUPPORTED_UPDATE_MANIFEST_VERSION_MIN}
             SUPPORTED_UPDATE_MANIFEST_VERSION_MAX=${SUPPORTED_UPDATE_MANIFEST_VERSION_MAX})
 
-target_link_aziotsharedutil (${target_name} PRIVATE)
+target_link_aziotsharedutil (${target_name} PUBLIC)
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::adu_types aziotsharedutil
+    PUBLIC aduc::adu_types
     PRIVATE aduc::c_utils
             aduc::config_utils
             aduc::extension_manager

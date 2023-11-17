@@ -15,7 +15,7 @@ find_package (IotHubClient REQUIRED)
 # NOTE: the call to find_package for azure_c_shared_utility
 # must come before umqtt since their config.cmake files expect
 # the aziotsharedutil target to already have been defined.
-find_package (azure_c_shared_utility REQUIRED)
+target_link_aziotsharedutil (${target_name} PRIVATE)
 
 find_package (umqtt REQUIRED)
 
@@ -33,9 +33,8 @@ target_link_libraries (
             aduc::exception_utils
             aduc::c_utils
             atomic
-            Catch2::Catch2)
-
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+            Catch2::Catch2
+            libaducpal)
 
 include (CTest)
 include (Catch)
