@@ -105,7 +105,7 @@ class AptFailsDeployment(unittest.TestCase):
         #
         deploymentStatus = None
 
-        for i in range(0, bad_apt_deployment_status_retries):
+        for i in range(0, test_connection_timeout_tries):
             deploymentStatus = self.duTestHelper.GetDeploymentStatusForGroup(
                 self.deploymentId, test_adu_group)
 
