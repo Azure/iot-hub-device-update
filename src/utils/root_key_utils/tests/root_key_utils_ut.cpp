@@ -10,6 +10,7 @@
 
 #define ENABLE_MOCKS
 #include "root_key_list.h"
+#include "root_key_store.h"
 #undef ENABLE_MOCKS
 
 #include "aduc/rootkeypackage_parse.h"
@@ -102,6 +103,12 @@ size_t MockRootKeyList_numHardcodedKeys()
     return ARRAY_SIZE(testHardcodedRootKeys);
 }
 
+std::string g_mockedRootKeyStorePath = "";
+
+const char* MockRootKeyStore_GetRootKeyStorePath()
+{
+    return g_mockedRootKeyStorePath.c_str();
+}
 
 class SignatureValidationMockHook
 {
@@ -127,6 +134,7 @@ public:
     {
         REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_GetHardcodedRsaRootKeys, MockRootKeyList_GetHardcodedRsaRootKeys);
         REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_numHardcodedKeys, MockRootKeyList_numHardcodedKeys);
+        REGISTER_GLOBAL_MOCK_HOOK(RootKeyStore_GetRootKeyStorePath, MockRootKeyStore_GetRootKeyStorePath);
     }
 
     ~GetRootKeyValidationMockHook() = default;
@@ -304,22 +312,77 @@ TEST_CASE("RootKeyUtility_GetDisabledSigningKeys")
     }
 }
 
-TEST_CASE("RootKeyUtility_GetKeyForKid")
+TEST_CASE_METHOD(GetRootKeyValidationMockHook, "RootKeyUtility_GetKeyForKid")
 {
     SECTION("Get hardcoded key")
     {
+         // set the store path to the valid package tht we know contains the hardcoded key
+        g_mockedRootKeyStorePath = get_valid_example_rootkey_package_json_path();
 
+        // make sure to reload the store
+        RootKeyUtility_ReloadPackageFromDisk(g_mockedRootKeyStorePath.c_str(), true /* validateSignatures */);
+        CryptoKeyHandle key = nullptr;
+        const char* keyId = "testrootkey1";
+
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, keyId);
+
+        CHECK(IsAducResultCodeSuccess(result.ResultCode));
+
+        CHECK(key != nullptr);
+
+        CryptoUtils_FreeCryptoKeyHandle(key);
     }
     SECTION("Get hardcoded key, disabled")
     {
+        // set the store path to the valid package tht we know contains the hardcoded key
+        g_mockedRootKeyStorePath = get_prod_disabled_rootkey_package_json_path();
+
+        // Make sure to reload the store
+        RootKeyUtility_ReloadPackageFromDisk(g_mockedRootKeyStorePath.c_str(), true /* validateSignatures */);
+
+        CryptoKeyHandle key = nullptr;
+        const char* keyId = "ADU.200702.R";
+
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, keyId);
+
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+
+        CHECK(key == nullptr);
+
+
     }
     SECTION("Get key from store")
     {
-    }
-    SECTION("Get key from store, disabled")
-    {
+        // set the store path to the valid package tht we know contains the hardcoded key
+        g_mockedRootKeyStorePath = get_valid_example_rootkey_package_json_path();
+
+        // make sure to reload the store
+        RootKeyUtility_ReloadPackageFromDisk(g_mockedRootKeyStorePath.c_str(), true /* validateSignatures */);
+        CryptoKeyHandle key = nullptr;
+        const char* keyId = "testrootkey1";
+
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, keyId);
+
+        CHECK(IsAducResultCodeSuccess(result.ResultCode));
+
+        CHECK(key != nullptr);
+
+        CryptoUtils_FreeCryptoKeyHandle(key);
     }
     SECTION("Get non-existent key")
     {
+        // set the store path to the valid package tht we know contains the hardcoded key
+        g_mockedRootKeyStorePath = get_nonexistent_example_rootkey_package_json_path();
+
+        // make sure to reload the store
+        RootKeyUtility_ReloadPackageFromDisk(g_mockedRootKeyStorePath.c_str(), true /* validateSignatures */);
+        CryptoKeyHandle key = nullptr;
+        const char* keyId = "testrootkey3";
+
+        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, keyId);
+
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+
+        CHECK(key == nullptr);
     }
 }

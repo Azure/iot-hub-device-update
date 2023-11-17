@@ -69,7 +69,7 @@ TEST_CASE("RSA Keys")
     {
         CryptoKeyHandle key = nullptr;
 
-        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, "foo");
+        ADUC_Result result = RootKeyUtility_GetKeyForKidFromHardcodedKeys(&key, "foo");
         CHECK(IsAducResultCodeFailure(result.ResultCode));
         CHECK(key == nullptr);
     }
@@ -105,7 +105,7 @@ TEST_CASE("Signature Verification")
 
         CryptoKeyHandle key = nullptr;
 
-        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, "ADU.200702.R");
+        ADUC_Result result = RootKeyUtility_GetKeyForKidFromHardcodedKeys(&key, "ADU.200702.R");
 
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
@@ -151,7 +151,7 @@ TEST_CASE("Signature Verification")
 
         CryptoKeyHandle key = NULL;
 
-        ADUC_Result result = RootKeyUtility_GetKeyForKid(&key, "ADU.200702.R");
+        ADUC_Result result = RootKeyUtility_GetKeyForKidFromHardcodedKeys(&key, "ADU.200702.R");
 
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
         REQUIRE(key != nullptr);

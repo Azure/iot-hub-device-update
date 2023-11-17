@@ -16,6 +16,7 @@
 #include "base64_utils.h"
 #include "crypto_lib.h"
 #include "root_key_list.h"
+#include "root_key_store.h"
 #include <aduc/logging.h>
 #include <aduc/result.h>
 #include <aduc/string_c_utils.h>
@@ -262,10 +263,10 @@ done:
 }
 
 /**
- * @brief Validates the @p rootKeyPackage using a hardcoded root key
- * @details Helper function for RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys()
+ * @brief Validates the @p rootKeyPackage using a RSARootKEy
+ * @details Helper function for RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(). It explicitly does not check for disabled root keys.
  * @param rootKeyPackage package to be validated
- * @param rootKey the key to use to validate the package
+ * @param rootKey the RSARootKey to be used for validation
  * @return a value of ADUC_Result
  */
 ADUC_Result RootKeyUtility_ValidatePackageWithKey(const ADUC_RootKeyPackage* rootKeyPackage, const RSARootKey rootKey)
@@ -295,11 +296,11 @@ ADUC_Result RootKeyUtility_ValidatePackageWithKey(const ADUC_RootKeyPackage* roo
         goto done;
     }
 
-    ADUC_Result kidResult = RootKeyUtility_GetKeyForKid(&rootKeyCryptoKey, rootKey.kid);
+    rootKeyCryptoKey = MakeCryptoKeyHandleFromRSARootkey(rootKey);
 
-    if (IsAducResultCodeFailure(kidResult.ResultCode))
+    if (rootKeyCryptoKey == NULL)
     {
-        result = kidResult;
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_UNEXPECTED;
         goto done;
     }
 
@@ -545,7 +546,7 @@ ADUC_Result RootKeyUtility_LoadPackageFromDisk(
     {
         ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(tempPkg);
 
-        if (IsAducResultCodeFailure(result.ResultCode))
+        if (IsAducResultCodeFailure(validationResult.ResultCode))
         {
             result = validationResult;
             goto done;
@@ -660,12 +661,51 @@ done:
 
     return result;
 }
+/**
+ * @brief Gets the key for @p kid from the hardcoded keys and allocates @p key
+ * @details this was made to expose root keys to the agent ONLY for very specific cases. Think carefully before you use this instead of RootKeyUtility_GetKeyForKid
+ * @param key the handle to allocate the CryptoKeyHandle for @p kid
+ * @param kid the key identifier associated with the key
+ * @return a value of ADUC_Result
+ */
+ADUC_Result RootKeyUtility_GetKeyForKidFromHardcodedKeys(CryptoKeyHandle* key, const char* kid)
+{
+    ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
+    CryptoKeyHandle tempKey = NULL;
+
+    const RSARootKey* hardcodedRsaRootKeys = RootKeyList_GetHardcodedRsaRootKeys();
+
+    const size_t numberKeys = RootKeyList_numHardcodedKeys();
+    for (size_t i = 0; i < numberKeys; ++i)
+    {
+        if (strcmp(hardcodedRsaRootKeys[i].kid, kid) == 0)
+        {
+            tempKey = MakeCryptoKeyHandleFromRSARootkey(hardcodedRsaRootKeys[i]);
+            break;
+        }
+    }
+
+    if (tempKey == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID;
+        goto done;
+    }
+
+    result.ResultCode = ADUC_GeneralResult_Success;
+
+done:
+
+    *key = tempKey;
+
+    return result;
+}
 
 /**
  * @brief Helper function that returns a CryptoKeyHandle associated with the kid
  * @details The caller must free the returned Key with the CryptoUtils_FreeCryptoKeyHandle() function
  * @param key the handle to allocate the CryptoKeyHandle for @p kid
  * @param kid the key identifier associated with the key
+ * @param useOnlyHardcodedKeys this is used when the caller explicitly only wants hardcoded keys. This ignores checks for disabled hardcoded keys.
  * @returns a value of ADUC_Result
  */
 ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
@@ -673,10 +713,14 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
     CryptoKeyHandle tempKey = NULL;
+
+    RootKeyUtility_GetKeyForKidFromHardcodedKeys(&tempKey, kid);
+
     if (localStore == NULL)
     {
-        ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(
-            &localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH, true /* validateSignatures */);
+        const char* rootKeyStorePath = RootKeyStore_GetRootKeyStorePath();
+        ADUC_Result loadResult =
+            RootKeyUtility_LoadPackageFromDisk(&localStore, rootKeyStorePath, true /* validateSignatures */);
 
         if (IsAducResultCodeFailure(loadResult.ResultCode))
         {
@@ -691,17 +735,6 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
         goto done;
     }
 
-    const RSARootKey* hardcodedRsaRootKeys = RootKeyList_GetHardcodedRsaRootKeys();
-
-    const size_t numberKeys = RootKeyList_numHardcodedKeys();
-    for (size_t i = 0; i < numberKeys; ++i)
-    {
-        if (strcmp(hardcodedRsaRootKeys[i].kid, kid) == 0)
-        {
-            tempKey = MakeCryptoKeyHandleFromRSARootkey(hardcodedRsaRootKeys[i]);
-        }
-    }
-
     if (tempKey == NULL)
     {
         ADUC_Result fetchResult = RootKeyUtility_GetKeyForKeyIdFromLocalStore(&tempKey, kid);
@@ -711,6 +744,12 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
             result = fetchResult;
             goto done;
         }
+    }
+
+    if (tempKey == NULL)
+    {
+        result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID;
+        goto done;
     }
 
     result.ResultCode = ADUC_GeneralResult_Success;
