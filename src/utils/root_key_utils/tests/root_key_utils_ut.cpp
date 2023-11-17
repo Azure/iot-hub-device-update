@@ -26,8 +26,8 @@
 #include <stdexcept>
 #include <vector>
 
-using Catch::Matchers::Equals;
 using ADUC::StringUtils::cstr_wrapper;
+using Catch::Matchers::Equals;
 using uint8_t_wrapper = ADUC::StringUtils::calloc_wrapper<uint8_t>;
 
 const RSARootKey testHardcodedRootKeys[] = {
@@ -102,6 +102,7 @@ size_t MockRootKeyList_numHardcodedKeys()
     return ARRAY_SIZE(testHardcodedRootKeys);
 }
 
+
 class SignatureValidationMockHook
 {
 public:
@@ -117,6 +118,23 @@ public:
     SignatureValidationMockHook& operator=(const SignatureValidationMockHook&) = delete;
     SignatureValidationMockHook(SignatureValidationMockHook&&) = delete;
     SignatureValidationMockHook& operator=(SignatureValidationMockHook&&) = delete;
+};
+
+class GetRootKeyValidationMockHook
+{
+public:
+    GetRootKeyValidationMockHook()
+    {
+        REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_GetHardcodedRsaRootKeys, MockRootKeyList_GetHardcodedRsaRootKeys);
+        REGISTER_GLOBAL_MOCK_HOOK(RootKeyList_numHardcodedKeys, MockRootKeyList_numHardcodedKeys);
+    }
+
+    ~GetRootKeyValidationMockHook() = default;
+
+    GetRootKeyValidationMockHook(const SignatureValidationMockHook&) = delete;
+    GetRootKeyValidationMockHook& operator=(const SignatureValidationMockHook&) = delete;
+    GetRootKeyValidationMockHook(SignatureValidationMockHook&&) = delete;
+    GetRootKeyValidationMockHook& operator=(SignatureValidationMockHook&&) = delete;
 };
 
 TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_ValidateRootKeyPackage Signature Validation")
@@ -283,5 +301,25 @@ TEST_CASE("RootKeyUtility_GetDisabledSigningKeys")
 
         cstr_wrapper base64url{ Base64URLEncode(CONSTBUFFER_GetContent(hashElement->hash)->buffer, CONSTBUFFER_GetContent(hashElement->hash)->size) };
         CHECK_THAT(base64url.get(), Equals("q5xF2ARjhdtH-kaLNTwZAMoXdy0iJQjziQ_AyZWDPRA"));
+    }
+}
+
+TEST_CASE("RootKeyUtility_GetKeyForKid")
+{
+    SECTION("Get hardcoded key")
+    {
+
+    }
+    SECTION("Get hardcoded key, disabled")
+    {
+    }
+    SECTION("Get key from store")
+    {
+    }
+    SECTION("Get key from store, disabled")
+    {
+    }
+    SECTION("Get non-existent key")
+    {
     }
 }

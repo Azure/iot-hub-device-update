@@ -100,7 +100,7 @@ done:
 }
 
 /**
- * @brief Initializes an aDUC_RootKey with the parameters in an RSARootKey
+ * @brief Initializes an ADUC_RootKey with the parameters in an RSARootKey
  * @details Caller must take care to de-init the rootKey using ADUC_RootKey_DeInit()
  * @param rootKey rootKey pointer to initialize with the data
  * @param rsaKey rsaKey to use for intiialization
@@ -216,12 +216,10 @@ bool RootKeyUtility_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVec
     for (int i = 0; i < rsaKeyListSize; ++i)
     {
         RSARootKey key = rsaKeyList[i];
-        /**
-         *  STRING_HANDLE kid; /**< The key id.
-         * ADUC_RootKey_KeyType keyType; /**< The key type.
-    ADUC_RSA_RootKeyParameters rsaParameters; /**< The RSA key parameters
-        */
-        ADUC_RootKey rootKey = { .kid = NULL, .keyType = ADUC_RootKey_KeyType_INVALID, .rsaParameters = 0 };
+
+        ADUC_RootKey rootKey = { .kid = NULL,
+                                 .keyType = ADUC_RootKey_KeyType_INVALID,
+                                 .rsaParameters = { .n = NULL, .e = 0 } };
 
         if (!InitializeADUC_RootKey_From_RSARootKey(&rootKey, &key))
         {
