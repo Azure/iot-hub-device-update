@@ -433,9 +433,6 @@ done:
 
 int json_print_properties(const mosquitto_property* properties)
 {
-#ifndef ADU_DBG_MQTT_PROPS
-    IGNORED_PARAMETER(properties);
-#else
     int identifier;
     uint8_t i8value = 0;
     uint16_t i16value = 0;
@@ -495,7 +492,6 @@ int json_print_properties(const mosquitto_property* properties)
             break;
         }
     }
-#endif // ADU_DBG_MQTT_PROPS
 
     return MOSQ_ERR_SUCCESS;
 }

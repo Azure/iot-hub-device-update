@@ -193,9 +193,7 @@ void OnMessage_enr_resp(
     ADUC_MQTT_Message_Context* messageContext = (ADUC_MQTT_Message_Context*)context->data;
     ADUC_Enrollment_Request_Operation_Data* enrollmentData = EnrollmentData_FromOperationContext(context);
 
-#ifdef ADU_DBG_MQTT_PROPS
     json_print_properties(props);
-#endif
 
     if (!ADU_are_correlation_ids_matching(props, messageContext->correlationId))
     {

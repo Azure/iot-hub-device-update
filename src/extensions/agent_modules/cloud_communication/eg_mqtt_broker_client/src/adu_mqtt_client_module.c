@@ -466,6 +466,32 @@ done:
     return succeeded;
 }
 
+static bool UpdateAgentStateStoreWithConfigFileProvisionining(ADUC_MQTT_SETTINGS* mqttSettings)
+{
+    // Use username from settings as ExternalDeviceId
+    if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetExternalDeviceId(mqttSettings->username))
+    {
+        return false;
+    }
+
+    if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetDeviceId(mqttSettings->username))
+    {
+        return false;
+    }
+
+    if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetIsDeviceRegistered(true /* isDeviceRegistered */))
+    {
+        return false;
+    }
+
+    if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetMQTTBrokerHostname(mqttSettings->hostname))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 /**
  * @brief Initialize the Device Update MQTT client module.
  */
@@ -489,11 +515,19 @@ int ADUC_MQTT_Client_Module_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* mo
     ADUC_Logging_Init(0, "du-mqtt-client-module");
 
     // Read DU Service MQTT client settings.
-    success = ReadMqttBrokerSettings(&moduleState->mqttSettings);
-    if (!success)
+    if (!ReadMqttBrokerSettings(&moduleState->mqttSettings))
     {
         Log_Error("Failed to read Device Update MQTT client settings");
         goto done;
+    }
+
+    if (moduleState->mqttSettings.hostnameSource == ADUC_MQTT_HOSTNAME_SOURCE_CONFIG_FILE)
+    {
+        if (!UpdateAgentStateStoreWithConfigFileProvisionining(&moduleState->mqttSettings))
+        {
+            Log_Error("Failed to update state store with provisioning from config file");
+            goto done;
+        }
     }
 
     if (!InitializeModuleInterfaces(moduleState))
