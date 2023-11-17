@@ -32,10 +32,10 @@
 #include <string>
 #ifndef WIN32 // Note: Only included when not in windows since a different wait signal is used.
 #    include <sys/wait.h>
+#    include <unistd.h>
 #endif
 #include <fcntl.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 /**
  * @brief Runs specified command in a new process and captures output, error messages, and exit code.
