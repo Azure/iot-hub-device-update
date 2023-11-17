@@ -614,8 +614,7 @@ static void ExecuteModuleWork(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState, const 
                 }
             }
 
-            Log_Debug("%s -> doWork", s_Modules[i].Name);
-
+            // Log_Debug("%s -> doWork", s_Modules[i].Name);
             s_Modules[i].Interface->doWork(s_Modules[i].Interface);
         }
     }

@@ -394,6 +394,11 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
 
     if (commMgrState->mqttSettings.useTLS)
     {
+        Log_Error("Setting up TLS for mqtt broker using caFile '%s', certFile '%s', keyFile '%s'",
+            commMgrState->mqttSettings.caFile,
+            commMgrState->mqttSettings.certFile,
+            commMgrState->mqttSettings.keyFile);
+
         use_OS_cert = IsNullOrEmpty(commMgrState->mqttSettings.caFile);
         if (use_OS_cert)
         {
@@ -492,7 +497,7 @@ static void ADUC_SetCommunicationChannelState(
     }
     else
     {
-        Log_Warn("Bug? Tried to transition to same as current state '%s'", comm_channel_state_str(commMgrState->commState));
+        Log_Warn("Tried to transition to same as current state '%s'", comm_channel_state_str(commMgrState->commState));
     }
 }
 
@@ -1031,6 +1036,8 @@ bool PerformChannelStateManagement(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrStat
 
     if (commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_UNKNOWN)
     {
+        Log_Info("Connecting to MQTT broker at hostname '%s', port: %d, keep-alive: %d", commMgrState->mqttSettings.hostname, (int)commMgrState->mqttSettings.tcpPort, (int)commMgrState->mqttSettings.keepAliveInSeconds);
+
         // Connect to an MQTT broker.
         // It is valid to use this function for clients using all MQTT protocol versions.
         //
