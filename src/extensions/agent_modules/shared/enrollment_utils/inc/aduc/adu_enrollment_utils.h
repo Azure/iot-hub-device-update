@@ -5,6 +5,8 @@
 
 EXTERN_C_BEGIN
 
+const char* enrollment_state_str(ADU_ENROLLMENT_STATE st);
+
 ADUC_Enrollment_Request_Operation_Data* EnrollmentData_FromOperationContext(ADUC_Retriable_Operation_Context* context);
 
 ADU_ENROLLMENT_STATE EnrollmentData_SetState(

@@ -12,6 +12,32 @@
 // clang-format on
 
 /**
+ * @brief Returns str representation of the enrollment state enum
+ * @param st The enrollment state.
+ * @return const char* State as a string.
+ */
+const char* enrollment_state_str(ADU_ENROLLMENT_STATE st)
+{
+    switch(st)
+    {
+        case ADU_ENROLLMENT_STATE_NOT_ENROLLED:
+            return "ADU_ENROLLMENT_STATE_NOT_ENROLLED";
+
+        case ADU_ENROLLMENT_STATE_UNKNOWN:
+            return "ADU_ENROLLMENT_STATE_UNKNOWN";
+
+        case ADU_ENROLLMENT_STATE_REQUESTING:
+            return "ADU_ENROLLMENT_STATE_REQUESTING";
+
+        case ADU_ENROLLMENT_STATE_ENROLLED:
+            return "ADU_ENROLLMENT_STATE_ENROLLED";
+
+        default:
+            return "???";
+    }
+}
+
+/**
  * @brief Gets the enrollment data object from the enrollment operation context.
  * @param context The enrollment operation context.
  * @return ADUC_Enrollment_Request_Operation_Data* The enrollment data object.
@@ -39,17 +65,21 @@ ADU_ENROLLMENT_STATE EnrollmentData_SetState(
     ADU_ENROLLMENT_STATE oldState = enrollmentData->enrollmentState;
     if (enrollmentData->enrollmentState != state)
     {
-        Log_Info(
-            "Enrollment state changed from %d to %d (reason:%s)",
-            enrollmentData->enrollmentState,
-            state,
-            IsNullOrEmpty(reason) ? "unknown" : reason);
-
-        enrollmentData->enrollmentState = state;
-
         if (ADUC_StateStore_SetIsDeviceEnrolled(state == ADU_ENROLLMENT_STATE_ENROLLED) != ADUC_STATE_STORE_RESULT_OK)
         {
             Log_Error("Failed to set enrollment state in state store");
+        }
+        else
+        {
+            Log_Info(
+                "Enrollment state changed from %s(%d) to %s(%d) (reason:%s)",
+                enrollment_state_str(enrollmentData->enrollmentState),
+                enrollmentData->enrollmentState,
+                enrollment_state_str(state),
+                state,
+                IsNullOrEmpty(reason) ? "unknown" : reason);
+
+            enrollmentData->enrollmentState = state;
         }
     }
     return oldState;

@@ -16,6 +16,32 @@
 #define AGENT_INFO_PROTOCOL_VERSION 1
 
 /**
+ * @brief Returns str representation of the agentinfo state enum
+ * @param st The agentinfo state.
+ * @return const char* State as a const string literal.
+ */
+const char* agentinfo_state_str(ADU_AGENTINFO_STATE st)
+{
+    switch(st)
+    {
+        case ADU_AGENTINFO_STATE_NOT_ACKNOWLEDGED:
+            return "ADU_AGENTINFO_STATE_NOT_ACKNOWLEDGED";
+
+        case ADU_AGENTINFO_STATE_UNKNOWN:
+            return "ADU_AGENTINFO_STATE_UNKNOWN";
+
+        case ADU_AGENTINFO_STATE_REQUESTING:
+            return "ADU_AGENTINFO_STATE_REQUESTING";
+
+        case ADU_AGENTINFO_STATE_ACKNOWLEDGED:
+            return "ADU_AGENTINFO_STATE_ACKNOWLEDGED";
+
+        default:
+            return "???";
+    }
+}
+
+/**
  * @brief Gets the agent info data object from the agent info operation context.
  * @param context The agent info operation context.
  * @return ADUC_AgentInfo_Request_Operation_Data* The agent info data object.
@@ -100,6 +126,7 @@ bool Handle_AgentInfo_Response(ADUC_AgentInfo_Request_Operation_Data* agentInfoD
         }
 
         Log_Info("enr_resp error. Retrying...");
+        Log_Info("Transition from '%s' to '%s'", agentinfo_state_str(agentInfoData->agentInfoState), agentinfo_state_str(ADU_AGENTINFO_STATE_UNKNOWN));
         agentInfoData->agentInfoState = ADU_AGENTINFO_STATE_UNKNOWN;
 
         if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetIsAgentInfoReported(false /* isAgentInfoReported */))
@@ -116,6 +143,7 @@ bool Handle_AgentInfo_Response(ADUC_AgentInfo_Request_Operation_Data* agentInfoD
         goto done;
     }
 
+    Log_Info("Transition from '%s' to '%s'", agentinfo_state_str(agentInfoData->agentInfoState), agentinfo_state_str(ADU_AGENTINFO_STATE_ACKNOWLEDGED));
     agentInfoData->agentInfoState = ADU_AGENTINFO_STATE_ACKNOWLEDGED;
     succeeded = true;
 done:

@@ -239,6 +239,13 @@ typedef struct ADU_MQTT_COMMUNICATION_MGR_STATE_TAG
 } ADU_MQTT_COMMUNICATION_MGR_STATE;
 
 /**
+ * @brief Convert ADUC_AGENT_MODULE_HANDLE to ADU_MQTT_COMMUNICATION_MGR_STATE pointer.
+ * @param commHandle The handle.
+ * @return ADU_MQTT_COMMUNICATION_MGR_STATE* The communication manager state.
+ */
+ADU_MQTT_COMMUNICATION_MGR_STATE* CommunicationManagerStateFromModuleHandle(ADUC_AGENT_MODULE_HANDLE commHandle);
+
+/**
  * @brief Publishes a message to the specified @p topic using version 5 of the MQTT protocol.
  *
  * This function is a wrapper around `mosquitto_publish_v5`, simplifying the process of

@@ -32,7 +32,7 @@ int ADUC_MQTT_Client_Module_Initialize_DoWork(ADUC_MQTT_CLIENT_MODULE_STATE* sta
 void ADUC_MQTT_Client_Module_Destroy(ADUC_AGENT_MODULE_HANDLE handle);
 int ADUC_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
 
-#define DEFAULT_OPERATION_INTERVAL_SECONDS (5)
+#define DEFAULT_OPERATION_INTERVAL_SECONDS (10)
 
 typedef void(*ResponseHandlerFn)(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props);
 
@@ -297,15 +297,9 @@ void ADUC_MQTT_Client_OnConnect(
 }
 
 /* Callback called when the broker sends a SUBACK in response to a SUBSCRIBE. */
-void ADUC_MQTT_Client_OnSubscribe(
-    struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos, const mosquitto_property* props)
+void ADUC_MQTT_Client_OnSubscribe(struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos, const mosquitto_property* props)
 {
-    ADUC_MQTT_CLIENT_MODULE_STATE* moduleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
-    if (moduleState->enrollmentState <= ADU_ENROLLMENT_STATE_UNKNOWN)
-    {
-        Log_Info("on_subscribe: Subscribing succeeded.");
-        moduleState->enrollmentState = ADU_ENROLLMENT_STATE_SUBSCRIBED;
-    }
+    Log_Info("on_subscribe: Subscribing succeeded.");
 }
 
 /**

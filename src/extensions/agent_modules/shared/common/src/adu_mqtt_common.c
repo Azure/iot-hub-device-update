@@ -160,12 +160,10 @@ bool ExternalDeviceIdSetupNeeded(ADUC_Retriable_Operation_Context* context)
  * @param context The retriable operation context.
  * @param messageContext The message context.
  * @param isScoped Whether the topic appends scopeId.
- * @param onSubscribing callback functor when transition to subscribing state.
- * @param canSubscribe predicate functor to query if can attempt to subscribe.
  * @return true if any setup was needed.
  * @details May invoke the retry func if devices is not registered.
  */
-bool SettingUpAduMqttRequestPrerequisites(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, bool isScoped, Functor onSubscribing, Functor canSubscribe)
+bool SettingUpAduMqttRequestPrerequisites(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, bool isScoped)
 {
     if (context == NULL || messageContext == NULL)
     {
@@ -194,7 +192,7 @@ bool SettingUpAduMqttRequestPrerequisites(ADUC_Retriable_Operation_Context* cont
         return true;
     }
 
-    if (!ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(context, messageContext, onSubscribing, canSubscribe))
+    if (!ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(context, messageContext))
     {
         return true;
     }
@@ -207,48 +205,51 @@ bool SettingUpAduMqttRequestPrerequisites(ADUC_Retriable_Operation_Context* cont
  *
  * @param context The operation context.
  * @param messageContext The message context.
- * @param onSubscribing The callback functor to invoke when successfully transitioned to on-subscribing state. It should outlive callee and should set per-module state to subscribing state.
- * @param canSubscribe predicate functor to query if can attempt to subscribe.
  * @return true On successful subscribe, or if already subscribed.
  */
-bool ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(const ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, Functor onSubscribing, Functor canSubscribe)
+bool ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(const ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext)
 {
     bool succeeded = false;
 
-    if (context == NULL || messageContext == NULL || onSubscribing.fn == NULL || onSubscribing.arg == NULL|| canSubscribe.fn_bool == NULL || canSubscribe.arg == NULL)
+    if (context == NULL || messageContext == NULL)
     {
+        Log_Error("bad args context[%p] messageContext[%p]", context, messageContext);
         return false;
     }
 
-    if (canSubscribe.fn_bool(canSubscribe.arg) && !ADUC_Communication_Channel_MQTT_IsSubscribed(
-        (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle, messageContext->responseTopic))
+    ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = CommunicationManagerStateFromModuleHandle((ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle);
+
+    if (commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING)
     {
-        // Subscribe to the response topic.
-        int subscribeMessageId = 0;
-        int mqtt_res = ADUC_Communication_Channel_MQTT_Subscribe(
-            (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle,
-            messageContext->responseTopic,
-            &subscribeMessageId,
-            1, // qos 1 is required for adu gen2 protocol v1,
-            0, // options
-            NULL, // props
-            NULL, // userData
-            NULL // callback
-        );
+        // This will lead to skipping Send Request of the topic
+        return false;
+    }
 
-        if (mqtt_res != MOSQ_ERR_SUCCESS)
-        {
-            Log_Error("Failed to subscribe to response topic. Cancelling the operation.");
-            context->retryFunc((ADUC_Retriable_Operation_Context*)context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
-            goto done;
-        }
-        else
-        {
-            onSubscribing.fn(onSubscribing.arg);
-        }
+    if (commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBED)
+    {
+        // This will lead to per topic request operation continuing to check
+        // on existing send of request or send a new request if not sending yet.
+        return true;
+    }
 
-        Log_Info(
-            "Subscribing to response topic '%s', messageId:%d", messageContext->responseTopic, subscribeMessageId);
+    // Subscribe to the response topic.
+    int subscribeMessageId = 0;
+    int mqtt_res = ADUC_Communication_Channel_MQTT_Subscribe(
+        (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle,
+        messageContext->responseTopic,
+        &subscribeMessageId,
+        1, // qos 1 is required for adu gen2 protocol v1,
+        0, // options
+        NULL, // props
+        NULL, // userData
+        NULL // callback
+    );
+
+    if (mqtt_res != MOSQ_ERR_SUCCESS)
+    {
+        Log_Error("Failed to subscribe to response topic. Cancelling the operation.");
+        context->retryFunc((ADUC_Retriable_Operation_Context*)context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
+        goto done;
     }
 
     succeeded = true;

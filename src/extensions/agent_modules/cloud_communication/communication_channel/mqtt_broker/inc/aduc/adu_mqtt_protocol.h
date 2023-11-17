@@ -85,9 +85,10 @@ typedef enum tagADU_COMMUNICATION_CHANNEL_CONNECTION_STATE
 {
     ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_DISCONNECTED = -1, /**< The communication channel is disconnected. */
     ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_UNKNOWN = 0, /**< The communication channel state is unknown. */
-    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTING =
-        1, /**< The communication channel is currently connecting. */
+    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTING = 1, /**< The communication channel is currently connecting. */
     ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTED = 2, /**< The communication channel is connected. */
+    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING = 3, /**< The communication channel is subscribing to the common response topic. */
+    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBED = 4, /**< The communication channel is subscribed to the common response topic. */
 } ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE;
 
 /**
@@ -117,7 +118,7 @@ typedef enum tagADU_RESPONSE_MESSAGE_RESULT_CODE
     ADU_RESPONSE_MESSAGE_RESULT_CODE_BUSY = 2, /**< The server is busy and cannot process the request. */
     ADU_RESPONSE_MESSAGE_RESULT_CODE_CONFLICT = 3, /**< There is a conflict with the current state of the system. */
     ADU_RESPONSE_MESSAGE_RESULT_CODE_SERVER_ERROR = 4, /**< The server encountered an internal error. */
-    ADU_RESPONSE_MESSAGE_RESULT_CODE_AGENT_NOT_ENROLLED = 5 /**< The agent is not enrolled. */
+    ADU_RESPONSE_MESSAGE_RESULT_CODE_AGENT_NOT_ENROLLED = 5, /**< The agent is not enrolled. */
 } ADU_RESPONSE_MESSAGE_RESULT_CODE;
 
 /**

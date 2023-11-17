@@ -20,6 +20,19 @@ static void AgentInfoData_Deinit(ADUC_AgentInfo_Request_Operation_Data* data)
     IGNORED_PARAMETER(data);
 }
 
+static void Set_Agent_State(ADUC_AgentInfo_Request_Operation_Data* agentInfoData, ADU_AGENTINFO_STATE newState)
+{
+    if (agentInfoData->agentInfoState != newState)
+    {
+        Log_Info("Transition from '%s' to '%s'", agentinfo_state_str(agentInfoData->agentInfoState), agentinfo_state_str(newState));
+        agentInfoData->agentInfoState = newState;
+    }
+    else
+    {
+        Log_Warn("Tried to transition to same state as current '%s'", agentinfo_state_str(agentInfoData->agentInfoState));
+    }
+}
+
 /**
  * @brief Cancel operation.
  *
@@ -36,7 +49,9 @@ bool AgentInfoRequestOperation_CancelOperation(ADUC_Retriable_Operation_Context*
 
     // Set the correlation id to NULL, so we can discard all inflight messages.
     AgentInfoData_SetCorrelationId(agentInfoData, "");
-    agentInfoData->agentInfoState = ADU_AGENTINFO_STATE_UNKNOWN;
+
+    Set_Agent_State(agentInfoData, ADU_AGENTINFO_STATE_UNKNOWN);
+
     return true;
 }
 
@@ -76,15 +91,16 @@ bool AgentInfoRequestOperation_DoRetry(
     ADUC_Retriable_Operation_Context* context, const ADUC_Retry_Params* retryParams)
 {
     Log_Info("Will retry the agentinfo request operation.");
-    ADUC_AgentInfo_Request_Operation_Data* data = AgentInfoData_FromOperationContext(context);
+    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoData_FromOperationContext(context);
 
-    if (data == NULL)
+    if (agentInfoData == NULL)
     {
         return false;
     }
 
-    data->agentInfoState = ADU_AGENTINFO_STATE_UNKNOWN;
-    AgentInfoData_SetCorrelationId(data, "");
+    Set_Agent_State(agentInfoData, ADU_AGENTINFO_STATE_UNKNOWN);
+
+    AgentInfoData_SetCorrelationId(agentInfoData, "");
     return true;
 }
 
@@ -188,7 +204,9 @@ static bool HandlingRequestAgentInfo(ADUC_Retriable_Operation_Context* context, 
             // review: do we need this? cancelfunc should already took care of this.
             Log_Info("agentinfo request timed-out");
             AgentInfoData_SetCorrelationId(agentInfoData, "");
-            agentInfoData->agentInfoState = ADU_AGENTINFO_STATE_UNKNOWN;
+
+            Set_Agent_State(agentInfoData, ADU_AGENTINFO_STATE_UNKNOWN);
+
             context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_SERVICE_TRANSIENT]);
         }
 
@@ -434,7 +452,7 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
         goto done;
     }
 
-    agentInfoData->agentInfoState = ADU_AGENTINFO_STATE_REQUESTING;
+    Set_Agent_State(agentInfoData, ADU_AGENTINFO_STATE_REQUESTING);
 
     context->lastExecutionTime = nowTime;
 
@@ -460,18 +478,6 @@ done:
     return opSucceeded;
 }
 
-static void Handle_AgentInfo_Subscribing(void* arg)
-{
-    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = (ADUC_AgentInfo_Request_Operation_Data*)arg;
-    agentInfoData->agentInfoState = ADU_AGENTINFO_STATE_SUBSCRIBING;
-}
-
-static bool Can_AgentInfo_Subscribe(void* arg)
-{
-    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = (ADUC_AgentInfo_Request_Operation_Data*)arg;
-    return agentInfoData->agentInfoState < ADU_AGENTINFO_STATE_SUBSCRIBING;
-}
-
 /**
  * @brief The main workflow for managing device agentinfo status request operation.
  * @details The workflow is as follows:
@@ -489,9 +495,6 @@ bool AgentInfoStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* co
 
     ADUC_AgentInfo_Request_Operation_Data* agentInfoData = NULL;
     ADUC_MQTT_Message_Context* messageContext = NULL;
-
-    Functor handleSubscribing = { 0 };
-    Functor canSubscribe = { 0 };
 
     if (context == NULL || context->data == NULL)
     {
@@ -521,13 +524,7 @@ bool AgentInfoStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* co
     agentInfoData = AgentInfoData_FromOperationContext(context);
     messageContext = &agentInfoData->ainfoReqMessageContext;
 
-    handleSubscribing.fn = Handle_AgentInfo_Subscribing;
-    handleSubscribing.arg = agentInfoData;
-
-    canSubscribe.fn_bool = Can_AgentInfo_Subscribe;
-    canSubscribe.arg = agentInfoData;
-
-    if (SettingUpAduMqttRequestPrerequisites(context, messageContext, true /* isScoped */, handleSubscribing, canSubscribe))
+    if (SettingUpAduMqttRequestPrerequisites(context, messageContext, true /* isScoped */))
     {
         goto done;
     }

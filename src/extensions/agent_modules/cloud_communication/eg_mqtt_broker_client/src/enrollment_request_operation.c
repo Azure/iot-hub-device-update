@@ -215,8 +215,6 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
     ADUC_Enrollment_Request_Operation_Data* enrollmentData = EnrollmentData_FromOperationContext(context);
     ADUC_MQTT_Message_Context* messageContext = &enrollmentData->enrReqMessageContext;
 
-    Log_Info("sending 'enr_req'");
-
     // Set MQTT 5 user propertie as per ainfo req-res
     if (!ADU_mosquitto_add_user_property(&user_prop_list, "mt", "enr_req") ||
         !ADU_mosquitto_add_user_property(&user_prop_list, "pid", "1"))
@@ -233,6 +231,8 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
         1, // qos 1 is required for adu gen2 protocol v1
         false,
         user_prop_list);
+
+    Log_Info("PUBLISH 'enr_req' to topic '%s', msgid: %d", messageContext->publishTopic, messageContext->messageId);
 
     if (mqtt_res != MOSQ_ERR_SUCCESS)
     {
@@ -283,7 +283,7 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
     context->lastExecutionTime = nowTime;
 
     Log_Info(
-        "publishing 'enr_req' (mid:%d, cid:%s, t:%ld, timeout in:%ld)",
+        "PUBLISHING 'enr_req' request (mid:%d, cid:%s, t:%ld, timeout in:%ld)",
         messageContext->messageId,
         messageContext->correlationId,
         context->lastExecutionTime,
@@ -297,18 +297,6 @@ done:
     }
 
     return opSucceeded;
-}
-
-static void Handle_Enrollment_Subscribing(void* arg)
-{
-    ADUC_Enrollment_Request_Operation_Data* enrollmentData = (ADUC_Enrollment_Request_Operation_Data*)arg;
-    enrollmentData->enrollmentState = ADU_ENROLLMENT_STATE_SUBSCRIBING;
-}
-
-static bool Can_Enrollment_Subscribe(void* arg)
-{
-    ADUC_Enrollment_Request_Operation_Data* enrollmentData = (ADUC_Enrollment_Request_Operation_Data*)arg;
-    return enrollmentData->enrollmentState < ADU_ENROLLMENT_STATE_SUBSCRIBING;
 }
 
 /**
@@ -328,9 +316,6 @@ bool EnrollmentStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* c
 
     ADUC_Enrollment_Request_Operation_Data* enrollmentData = NULL;
     ADUC_MQTT_Message_Context* messageContext = NULL;
-
-    Functor handleSubscribing = { 0 };
-    Functor canSubscribe = { 0 };
 
     if (context == NULL || context->data == NULL)
     {
@@ -353,13 +338,7 @@ bool EnrollmentStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* c
     enrollmentData = EnrollmentData_FromOperationContext(context);
     messageContext = &enrollmentData->enrReqMessageContext;
 
-    handleSubscribing.fn = Handle_Enrollment_Subscribing;
-    handleSubscribing.arg = enrollmentData;
-
-    canSubscribe.fn_bool = Can_Enrollment_Subscribe;
-    canSubscribe.arg = enrollmentData;
-
-    if (SettingUpAduMqttRequestPrerequisites(context, messageContext, false /* isScoped */, handleSubscribing, canSubscribe))
+    if (SettingUpAduMqttRequestPrerequisites(context, messageContext, false /* isScoped */))
     {
         goto done;
     }

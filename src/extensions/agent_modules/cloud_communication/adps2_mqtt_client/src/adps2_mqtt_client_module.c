@@ -418,7 +418,7 @@ done:
 void ADPS_MQTT_Client_Module_OnPublish(
     struct mosquitto* mosq, void* obj, int mid, int reason_code, const mosquitto_property* props)
 {
-    Log_Info("on_publish: Message with mid %d has been published.", mid);
+    Log_Info("ON_PUBLISH PUBACK (qos 1) from broker: Message with mid %d has been published, reason_code: %d", mid, reason_code);
 }
 
 /**

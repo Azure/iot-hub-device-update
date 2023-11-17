@@ -15,11 +15,10 @@ EXTERN_C_BEGIN
  */
 typedef enum tagADU_AGENTINFO_STATE
 {
+    ADU_AGENTINFO_STATE_NOT_ACKNOWLEDGED = -1, /**< The client agent info report is NOT acknowledged. */
     ADU_AGENTINFO_STATE_UNKNOWN = 0, /**< The agentInfo state of the client is unknown. */
-    ADU_AGENTINFO_STATE_SUBSCRIBING = 1, /**< The client is the process of subscribing. */
-    ADU_AGENTINFO_STATE_SUBSCRIBED = 2, /**< The client is subscribed. */
-    ADU_AGENTINFO_STATE_REQUESTING = 3, /**< The client is requesting an agentInfo status. */
-    ADU_AGENTINFO_STATE_ACKNOWLEDGED = 4, /**< The client agent info report is successfully acknowledged. */
+    ADU_AGENTINFO_STATE_REQUESTING = 1, /**< The client is requesting an agentInfo status. */
+    ADU_AGENTINFO_STATE_ACKNOWLEDGED = 2, /**< The client agent info report is successfully acknowledged. */
 } ADU_AGENTINFO_STATE;
 
 /**

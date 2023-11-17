@@ -16,10 +16,9 @@ typedef enum tagADU_ENROLLMENT_STATE
 {
     ADU_ENROLLMENT_STATE_NOT_ENROLLED = -1, /**< The client is not enrolled. */
     ADU_ENROLLMENT_STATE_UNKNOWN = 0, /**< The enrollment state of the client is unknown. */
-    ADU_ENROLLMENT_STATE_SUBSCRIBING = 1, /**< The client is waiting for OnSubscribe. */
-    ADU_ENROLLMENT_STATE_SUBSCRIBED = 2, /**< The client is subscribed. */
-    ADU_ENROLLMENT_STATE_REQUESTING = 3, /**< The client is requesting an enrollment status. */
-    ADU_ENROLLMENT_STATE_ENROLLED = 4, /**< The client is successfully enrolled. */
+    ADU_ENROLLMENT_STATE_REQUESTING = 1, /**< The client is requesting an enrollment status. */
+    ADU_ENROLLMENT_STATE_REQUESTED = 2, /**< The client has received an on_publish callback from the MQTT library and is awaiting a message on the subscribed response topic. */
+    ADU_ENROLLMENT_STATE_ENROLLED = 3, /**< The client is successfully enrolled. */
 } ADU_ENROLLMENT_STATE;
 
 /**
