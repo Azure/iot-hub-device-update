@@ -18,7 +18,7 @@
 #if defined(isnan) && defined(isinf)
 #    define ADUC_IS_NUMBER_INVALID(x) (isnan((x)) || isinf((x)))
 #else
-#    define ADUC_IS_NUMBER_INVALID(x) (((x)*0.0) != 0.0)
+#    define ADUC_IS_NUMBER_INVALID(x) (((x) * 0.0) != 0.0)
 #endif
 
 /*
@@ -147,7 +147,7 @@ done:
 ADUC_Result RootKeyPackage_ParseVersion(JSON_Object* protectedPropertiesObj, ADUC_RootKeyPackage* outPackage)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
-    double versionNum = 0.0d;
+    double versionNum = 0.0;
 
     if (protectedPropertiesObj == NULL || outPackage == NULL)
     {
@@ -156,7 +156,7 @@ ADUC_Result RootKeyPackage_ParseVersion(JSON_Object* protectedPropertiesObj, ADU
     }
 
     versionNum = json_object_get_number(protectedPropertiesObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_VERSION);
-    if (versionNum == 0.0d)
+    if (versionNum == 0.0)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_MISSING_REQUIRED_PROPERTY_VERSION;
         goto done;
@@ -975,8 +975,8 @@ done:
 
     if (signatures != NULL)
     {
-        size_t cnt = VECTOR_size(signatures);
-        for (size_t i = 0; i < cnt; ++i)
+        size_t sig_cnt = VECTOR_size(signatures);
+        for (size_t i = 0; i < sig_cnt; ++i)
         {
             ADUC_RootKeyPackage_Signature* node = (ADUC_RootKeyPackage_Signature*)VECTOR_element(signatures, i);
             ADUC_RootKeyPackage_Signature_DeInit(node);

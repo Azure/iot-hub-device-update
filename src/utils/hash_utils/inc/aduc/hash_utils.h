@@ -86,7 +86,7 @@ bool ADUC_HashUtils_VerifyWithStrongestHash(const char* filePath, const ADUC_Has
  * @param sha The SHA version.
  * @return _Bool true if valid.
  */
-_Bool ADUC_HashUtils_IsValidHashAlgorithm(SHAversion sha);
+bool ADUC_HashUtils_IsValidHashAlgorithm(SHAversion sha);
 
 EXTERN_C_END
 

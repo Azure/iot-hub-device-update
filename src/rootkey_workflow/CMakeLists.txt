@@ -9,7 +9,7 @@ add_library (aduc::${target_name} ALIAS ${target_name})
 
 target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
-find_package (azure_c_shared_utility REQUIRED)
+target_link_aziotsharedutil (${target_name} PRIVATE)
 find_package (Parson)
 
 #
@@ -23,26 +23,22 @@ target_compile_definitions (
             ADUC_ROOTKEY_STORE_PATH="${ADUC_ROOTKEY_STORE_PATH}"
             ADUC_ROOTKEY_PKG_URL_OVERRIDE="${ADUC_ROOTKEY_PKG_URL_OVERRIDE}")
 
-include(CMakePrintHelpers)
-cmake_print_variables(ADUC_ENABLE_E2E_TESTING)
+include (CMakePrintHelpers)
+cmake_print_variables (ADUC_ENABLE_E2E_TESTING)
 if (ADUC_ENABLE_E2E_TESTING)
-    cmake_print_variables(ADUC_ENABLE_E2E_TESTING)
+    cmake_print_variables (ADUC_ENABLE_E2E_TESTING)
     target_compile_definitions (${target_name} PRIVATE ADUC_E2E_TESTING_ENABLED="true")
 endif ()
 
-if ( ADUC_ENABLE_SRVC_E2E_TESTING )
-    cmake_print_variables(ADUC_ENABLE_SRVC_E2E_TESTING)
-    target_compile_definitions( ${target_name} PRIVATE ADUC_ENABLE_SRVC_E2E_TESTING="true")
+if (ADUC_ENABLE_SRVC_E2E_TESTING)
+    cmake_print_variables (ADUC_ENABLE_SRVC_E2E_TESTING)
+    target_compile_definitions (${target_name} PRIVATE ADUC_ENABLE_SRVC_E2E_TESTING="true")
 endif ()
 
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils
-    PRIVATE aduc::rootkeypackage_utils
-            aduc::root_key_utils
-            aduc::logging
-            aduc::system_utils
-            aziotsharedutil)
+    PRIVATE aduc::rootkeypackage_utils aduc::root_key_utils aduc::logging aduc::system_utils)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

@@ -16,11 +16,30 @@
 #include <catch2/catch.hpp>
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
 #include <regex>
 #include <root_key_util.h>
 #include <stdio.h>
+
+#define ENABLE_MOCKS
+#include "root_key_store.h"
+#undef ENABLE_MOCKS
+
+static std::string get_valid_example_rootkey_package_json_path()
+{
+    std::string path{ ADUC_TEST_DATA_FOLDER };
+    path += "/jws_utils/testrootkeypkg.json";
+    return path;
+};
+
+std::string g_mockedRootKeyStorePath = "";
+
+const char* MockRootKeyStore_GetRootKeyStorePath()
+{
+    return g_mockedRootKeyStorePath.c_str();
+}
 
 #if OPENSSL_VERSION_NUMBER < 0x1010000fL
 #    define RSA_get0_n(x) ((x)->n)
@@ -118,32 +137,15 @@ class TestCaseFixture
 public:
     TestCaseFixture() : m_testPath{ ADUC_SystemUtils_GetTemporaryPathName() }
     {
-        m_testPath += "/adu/jws_utils_ut";
-        (void)ADUC_SystemUtils_RmDirRecursive(m_testPath.c_str());
-        REQUIRE(ADUC_SystemUtils_MkDirRecursiveDefault(m_testPath.c_str()) == 0);
+        g_mockedRootKeyStorePath = get_valid_example_rootkey_package_json_path();
 
-        std::string filePath{ m_testPath };
-        filePath += "/testrootkeypkg.json";
-
-        FILE* outFile = fopen(filePath.c_str(), "w");
-        REQUIRE(outFile != nullptr);
-        REQUIRE(fputs(m_pkg.c_str(), outFile) > 0);
-        fclose(outFile);
-
-        ADUC_Result result =
-            RootKeyUtility_LoadPackageFromDisk(&m_rootKeyPackage, filePath.c_str(), true /* validateSignatures */);
-        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-
-        result = RootKeyUtility_ReloadPackageFromDisk(filePath.c_str(), true /* validateSignatures */);
-        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        ADUC_Result result = RootKeyUtility_ReloadPackageFromDisk(g_mockedRootKeyStorePath.c_str(), true);
+        std::cout << g_mockedRootKeyStorePath << std::endl;
+        CHECK(IsAducResultCodeSuccess(result.ResultCode));
     }
 
     ~TestCaseFixture()
     {
-        (void)ADUC_SystemUtils_RmDirRecursive(m_testPath.c_str());
-        ADUC_RootKeyPackageUtils_Destroy(m_rootKeyPackage);
-        free(m_rootKeyPackage);
-        m_rootKeyPackage = nullptr;
     }
 
     /**

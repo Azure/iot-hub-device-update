@@ -528,9 +528,9 @@ done:
 
     if (sigJsonValueVector != NULL)
     {
-        const size_t numSignatures = VECTOR_size(sigJsonValueVector);
+        const size_t sigJsonValueVectorSz = VECTOR_size(sigJsonValueVector);
 
-        for (size_t i = 0; i < numSignatures; ++i)
+        for (size_t i = 0; i < sigJsonValueVectorSz; ++i)
         {
             JSON_Value** sigValuePtr = (JSON_Value**)VECTOR_element(sigJsonValueVector, i);
 

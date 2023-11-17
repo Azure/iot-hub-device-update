@@ -120,8 +120,8 @@ static std::string convert_hexcolon_to_URLUIntBase64String(const std::string& he
     std::vector<std::uint8_t> bytes;
     for (const std::string& hexByte : hexBytes)
     {
-        uint8_t hi_nibble = hex2nibble(hexByte[0]);
-        uint8_t lo_nibble = hex2nibble(hexByte[1]);
+        uint8_t hi_nibble = (uint8_t)hex2nibble(hexByte[0]);
+        uint8_t lo_nibble = (uint8_t)hex2nibble(hexByte[1]);
         uint8_t byte = (hi_nibble << 4) | lo_nibble;
         bytes.push_back(byte);
     }
@@ -336,7 +336,7 @@ TEST_CASE("RootKeyPackageUtils_Parse")
 
         std::string protectedProperties = get_serialized_protectedProperties(pkgJson);
 
-        CHECK_THAT(STRING_c_str(pkg.protectedPropertiesJsonString),Equals(protectedProperties.c_str()));
+        CHECK_THAT(STRING_c_str(pkg.protectedPropertiesJsonString), Equals(protectedProperties.c_str()));
 
         json_value_free(pkgJson);
 

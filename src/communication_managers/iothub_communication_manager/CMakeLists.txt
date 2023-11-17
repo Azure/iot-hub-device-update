@@ -1,6 +1,9 @@
 cmake_minimum_required (VERSION 3.5)
 
+include (agentRules)
+
 set (target_name iothub_communication_manager)
+
 add_library (${target_name} STATIC src/iothub_communication_manager.c)
 add_library (aduc::${target_name} ALIAS ${target_name})
 
@@ -12,7 +15,8 @@ target_include_directories (${target_name} PUBLIC ./inc ${ADUC_TYPES_INCLUDES}
 #
 set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-find_package (azure_c_shared_utility REQUIRED)
+target_link_aziotsharedutil (${target_name} PRIVATE)
+
 find_package (umqtt REQUIRED)
 
 target_link_libraries (
@@ -51,8 +55,5 @@ else ()
     )
 endif ()
 
-target_compile_definitions (
-    ${target_name}
-    PRIVATE ADUC_AGENT_FILEPATH="${ADUC_AGENT_FILEPATH}"
-            ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}"
-)
+target_compile_definitions (${target_name} PRIVATE ADUC_AGENT_FILEPATH="${ADUC_AGENT_FILEPATH}"
+                                                   ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")

@@ -24,6 +24,7 @@
 
 #include <aducpal/strings.h> // strcasecmp
 
+#define SHA256NUMBYTES 32
 /**
  * @brief Algorithm_Id values and supported algorithms
  */
@@ -850,8 +851,7 @@ void CryptoUtils_FreeCryptoKeyHandle(CryptoKeyHandle key)
  */
 CONSTBUFFER_HANDLE CryptoUtils_CreateSha256Hash(const CONSTBUFFER_HANDLE buf)
 {
-    const size_t Sha256DigestNumBytes = 32;
-    unsigned char hashBuf[Sha256DigestNumBytes];
+    unsigned char hashBuf[SHA256NUMBYTES];
     memset(hashBuf, 0, sizeof(hashBuf));
     const CONSTBUFFER* constbuf = CONSTBUFFER_GetContent(buf);
 
@@ -1038,7 +1038,8 @@ done:
     // OpenSSL 3.0 took the guess work out of ownership so we can free the pkey in addition to the bn_modulus and bn_exponent
     EVP_PKEY_free(pkey);
 #else
-    unsigned char *modulus_bytes, *exponent_bytes;
+    unsigned char* modulus_bytes = NULL;
+    unsigned char* exponent_bytes = NULL;
     int modulus_length, exponent_length;
     BIGNUM* bn_modulus = NULL;
     BIGNUM* bn_exponent = NULL;

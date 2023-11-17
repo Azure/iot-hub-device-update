@@ -84,7 +84,7 @@ TEST_CASE("ADUC_ReportingUtils_StringHandleFromVectorInt32")
         VECTOR_push_back(extended_result_codes, &val2, 1);
 
         int32_t val3 = 0x00000003;
-        VECTOR_push_back(extended_result_codes, &val2, 1);
+        VECTOR_push_back(extended_result_codes, &val3, 1);
 
         STRING_HANDLE delimited_str = ADUC_ReportingUtils_StringHandleFromVectorInt32(extended_result_codes, 2);
         ADUC::StringUtils::STRING_HANDLE_wrapper wrapped{ delimited_str };
