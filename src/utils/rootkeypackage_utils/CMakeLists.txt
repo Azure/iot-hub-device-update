@@ -9,6 +9,9 @@ find_package (Parson REQUIRED)
 add_library (${target_name} STATIC)
 add_library (aduc::${target_name} ALIAS ${target_name})
 
+
+set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 target_sources (
     ${target_name} PRIVATE src/rootkeypackage_download.c src/rootkeypackage_parse.c
                            src/rootkeypackage_utils.c src/rootkeypackage_do_download.cpp)
