@@ -188,15 +188,14 @@ bool HandlingRequestEnrollment(ADUC_Retriable_Operation_Context* context, time_t
         ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_InProgress);
 
         // is the current request timed-out?
-        if (context->lastExecutionTime + context->operationTimeoutSecs < nowTime)
+        //
+        // TODO: figure out why context->operationTimeoutSecs is 0
+        // if (context->lastExecutionTime + context->operationTimeoutSecs < nowTime)
+        if (context->lastExecutionTime + 30 < nowTime) // timeout after 30 seconds for now
         {
-            context->cancelFunc(context);
+            Log_Debug("Timing out request enrollment: lastExecTime: %d, operationTimeoutSecs: %d, nowTime: %d", context->lastExecutionTime, context->operationTimeoutSecs, nowTime);
 
-            // review: do we need this? cancelfunc should already took care of this.
-            Log_Info("enrollment request timed-out");
-            EnrollmentData_SetCorrelationId(enrollmentData, "");
-            EnrollmentData_SetState(enrollmentData, ADU_ENROLLMENT_STATE_UNKNOWN, "timed out");
-            context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_SERVICE_TRANSIENT]);
+            context->cancelFunc(context);
         }
 
         // exit and wait for next 'do work' call.
@@ -436,6 +435,8 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
     }
 
     ReadRetryParamsArrayFromAgentConfigJson(context, retrySettings, RetryUtils_GetRetryParamsMapSize());
+
+    // ADUC_ALLOC(context->data);
 
     ret = context;
     context = NULL; // transfer ownership

@@ -623,7 +623,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
 
     ReadRetryParamsArrayFromAgentConfigJson(context, retrySettings, RetryUtils_GetRetryParamsMapSize());
 
-    ADUC_ALLOC(context->data);
+    // ADUC_ALLOC(context->data);
 
     ret = context;
     context = NULL; // transfer ownership
