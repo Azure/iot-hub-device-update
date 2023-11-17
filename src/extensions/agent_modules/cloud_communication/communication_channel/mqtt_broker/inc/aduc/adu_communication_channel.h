@@ -235,7 +235,7 @@ typedef struct ADU_MQTT_COMMUNICATION_MGR_STATE_TAG
     void* ownerModuleContext; /**< Pointer to the owner module context. */
     ADUC_Retry_Params connectionRetryParams;
     VECTOR_HANDLE pendingSubscriptions; /**< List of subscribing topics. */
-    MAP_HANDLE subscribedTopicsMap; /**< Map of the subscribed topics. */
+    ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO subscribeTopicInfo; /**< Subscribed topic info. There exists only 1 response topic in adu protocol v1. */
 } ADU_MQTT_COMMUNICATION_MGR_STATE;
 
 /**
