@@ -169,7 +169,7 @@ bool ADU_mosquitto_add_user_property(mosquitto_property** props, const char* nam
         Log_Error("Fail MOSQ_ERR_INVAL(%d)", err);
         break;
 
-  	case MOSQ_ERR_NOMEM: // - on out of memory
+    case MOSQ_ERR_NOMEM: // - on out of memory
         Log_Error("Fail MOSQ_ERR_NOMEM(%d)", err);
         break;
 
@@ -195,7 +195,33 @@ bool ADU_mosquitto_add_user_property(mosquitto_property** props, const char* nam
 bool ADU_mosquitto_set_correlation_data_property(mosquitto_property** props, const char* correlationData)
 {
     int err = mosquitto_property_add_string(props, MQTT_PROP_CORRELATION_DATA, correlationData);
-    return err == MOSQ_ERR_SUCCESS;
+
+    if ( err == MOSQ_ERR_SUCCESS)
+    {
+        return true;
+    }
+
+    switch(err)
+    {
+    case MOSQ_ERR_INVAL: // - if identifier is invalid, if name or value is NULL, or if proplist is NULL
+        Log_Error("Fail MOSQ_ERR_INVAL(%d)", err);
+        break;
+
+    case MOSQ_ERR_NOMEM: // - on out of memory
+        Log_Error("Fail MOSQ_ERR_NOMEM(%d)", err);
+        break;
+
+    case MOSQ_ERR_MALFORMED_UTF8: // - if name or value are not valid UTF-8.
+        Log_Error("Fail MOSQ_ERR_MALFORMED_UTF8(%d)", err);
+        break;
+
+    default:
+        Log_Error("Fail Unknown(%d)", err);
+        break;
+    }
+
+
+    return false;
 }
 
 /**
