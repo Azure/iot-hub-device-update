@@ -204,7 +204,7 @@ bool ADU_mosquitto_set_correlation_data_property(mosquitto_property** props, con
     switch(err)
     {
     case MOSQ_ERR_INVAL: // - if identifier is invalid, if name or value is NULL, or if proplist is NULL
-        Log_Error("Fail MOSQ_ERR_INVAL(%d)", err);
+        Log_Error("Fail MOSQ_ERR_INVAL(%d) - props[%p] correlationData[%p]", err, props, correlationData);
         break;
 
     case MOSQ_ERR_NOMEM: // - on out of memory
