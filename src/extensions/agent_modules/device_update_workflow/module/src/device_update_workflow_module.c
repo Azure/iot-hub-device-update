@@ -107,12 +107,9 @@ ADUC_AGENT_MODULE_HANDLE DeviceUpdateWorkflowModule_Create()
     bool ret = false;
     ADUC_WorkflowData *workflowData =  NULL;
     ADUC_AGENT_MODULE_HANDLE handle = NULL;
-    ADUC_AGENT_MODULE_INTERFACE* interface = malloc(sizeof(ADUC_AGENT_MODULE_INTERFACE));
-    if (interface == NULL)
-    {
-        Log_Error("Out of memory");
-        goto done;
-    }
+    ADUC_AGENT_MODULE_INTERFACE* interface = NULL;
+
+    ADUC_ALLOC(interface);
 
     // TODO (nox-msft) - pass in launchArgs
     ret = AzureDeviceUpdateCoreInterface_Create((void**)&workflowData, 0, NULL);

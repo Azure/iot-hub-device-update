@@ -181,12 +181,7 @@ ADUC_Property* ADUC_PropertiesArray_AllocAndInit(const JSON_Object* propertiesOb
         goto done;
     }
 
-    tempPropertyArray = calloc(tempPropertyCount, sizeof(*tempPropertyArray));
-
-    if (tempPropertyArray == NULL)
-    {
-        goto done;
-    }
+    ADUC_ALLOC_BLOCK(tempPropertyArray, tempPropertyCount, sizeof(*tempPropertyArray));
 
     for (size_t properties_index = 0; properties_index < tempPropertyCount; ++properties_index)
     {
@@ -249,6 +244,7 @@ static bool ADUC_RelatedFile_Init(
 {
     bool success = false;
     ADUC_Property* tempPropertiesArray = NULL;
+    ADUC_Hash* tempHashArray = NULL;
 
     if (relatedFile == NULL || fileId == NULL || downloadUri == NULL || fileName == NULL || hashes == NULL
         || properties == NULL)
@@ -257,11 +253,8 @@ static bool ADUC_RelatedFile_Init(
     }
 
     relatedFile->HashCount = hashCount;
-    ADUC_Hash* tempHashArray = calloc(hashCount, sizeof(*tempHashArray));
-    if (tempHashArray == NULL)
-    {
-        goto done;
-    }
+
+    ADUC_ALLOC_BLOCK(tempHashArray, hashCount, sizeof(*tempHashArray));
 
     for (int i = 0; i < hashCount; ++i)
     {
@@ -424,12 +417,7 @@ ADUC_RelatedFile* ADUC_RelatedFileArray_AllocAndInit(
         goto done;
     }
 
-    tempRelatedFileArray = calloc(tempRelatedFileCount, sizeof(*tempRelatedFileArray));
-
-    if (tempRelatedFileArray == NULL)
-    {
-        goto done;
-    }
+    ADUC_ALLOC_BLOCK(tempRelatedFileArray, tempRelatedFileCount, sizeof(*tempRelatedFileArray));
 
     for (size_t relatedFile_index = 0; relatedFile_index < tempRelatedFileCount; ++relatedFile_index)
     {

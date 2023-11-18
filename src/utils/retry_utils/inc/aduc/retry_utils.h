@@ -10,6 +10,7 @@
 
 #include "aduc/c_utils.h"
 #include <aducpal/sys_time.h> // time_t
+#include <parson.h>
 #include <pthread.h>
 #include <stdbool.h>
 
@@ -24,8 +25,36 @@ EXTERN_C_BEGIN
 #define ADUC_RETRY_DEFAULT_INITIAL_DELAY_MS 1000 // 1 second
 #define ADUC_RETRY_DEFAULT_MAX_BACKOFF_TIME_MS (60 * 1000) // 60 seconds
 #define ADUC_RETRY_DEFAULT_MAX_JITTER_PERCENT 5
-#define ADUC_RETRY_MAX_RETRY_EXPONENT 9
+#define ADUC_RETRY_MAX_RETRY_EXPONENT 9UL
 #define ADUC_RETRY_FALLBACK_WAIT_TIME_SEC 30
+
+/**
+ * @brief The interval in seconds between enrollment status request operations. Default is 1 hour.
+ *
+ */
+#define DEFAULT_ENR_REQ_OP_INTERVAL_SECONDS (60 * 60)
+#define SETTING_KEY_ENR_REQ_OP_INTERVAL_SECONDS "operations.enrollment.statusRequest.intervalSeconds"
+#define DEFAULT_ENR_REQ_OP_TIMEOUT_SECONDS (60 * 60 * 24)
+#define SETTING_KEY_ENR_REQ_OP_TIMEOUT_SECONDS "operations.enrollment.statusRequest.timeoutSeconds"
+
+#define SETTING_KEY_ENR_REQ_OP_RETRY_PARAMS "operations.enrollment.statusRequest.retrySettings"
+
+#define SETTING_KEY_ENR_REQ_OP_TRACE_LEVEL "operations.enrollment.traceLevel"
+
+#define DEFAULT_ENR_REQ_OP_MAX_RETRIES (INT32_MAX)
+#define SETTING_KEY_ENR_REQ_OP_MAX_RETRIES "maxRetries"
+
+#define SETTING_KEY_ENR_REQ_OP_MAX_WAIT_SECONDS "maxDelaySeconds"
+
+#define DEFAULT_ENR_REQ_OP_FALLBACK_WAITTIME_SECONDS (60)
+#define SETTING_KEY_ENR_REQ_OP_FALLBACK_WAITTIME_SECONDS "fallbackWaitTimeSeconds"
+
+#define DEFAULT_ENR_REQ_OP_INITIAL_DELAY_MILLISECONDS (0)
+#define SETTING_KEY_ENR_REQ_OP_INITIAL_DELAY_MILLISECONDS "initialDelayUnitMS"
+
+#define DEFAULT_ENR_REQ_OP_MAX_JITTER_PERCENT (60)
+#define SETTING_KEY_ENR_REQ_OP_MAX_JITTER_PERCENT "maxJitterPercent"
+
 /**
  * @brief The data structure that contains information about the retry strategy.
  */
@@ -93,6 +122,15 @@ typedef enum tagADUC_Retriable_Operation_State
     ADUC_Retriable_Operation_State_Completed = 5,
 } ADUC_Retriable_Operation_State;
 
+typedef enum tagADUC_RETRY_PARAMS_INDEX
+{
+    ADUC_RETRY_PARAMS_INDEX_DEFAULT = 0,
+    ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT = 1,
+    ADUC_RETRY_PARAMS_INDEX_CLIENT_UNRECOVERABLE = 2,
+    ADUC_RETRY_PARAMS_INDEX_SERVICE_TRANSIENT = 3,
+    ADUC_RETRY_PARAMS_INDEX_SERVICE_UNRECOVERABLE = 4
+} ADUC_RETRY_PARAMS_INDEX;
+
 typedef struct tagADUC_Retriable_Operation_Context ADUC_Retriable_Operation_Context;
 struct tagADUC_Retriable_Operation_Context
 {
@@ -144,6 +182,9 @@ void ADUC_Retriable_Operation_Init(ADUC_Retriable_Operation_Context* context, bo
 bool ADUC_Retriable_Operation_DoWork(ADUC_Retriable_Operation_Context* context);
 bool ADUC_Retriable_Operation_Cancel(ADUC_Retriable_Operation_Context* context);
 bool ADUC_Retriable_Set_State(ADUC_Retriable_Operation_Context* context, ADUC_Retriable_Operation_State state);
+
+int RetryUtils_GetRetryParamsMapSize();
+void ReadRetryParamsArrayFromAgentConfigJson(ADUC_Retriable_Operation_Context* context, JSON_Value* agentJsonValue, int retryParamsMapSize);
 
 EXTERN_C_END
 

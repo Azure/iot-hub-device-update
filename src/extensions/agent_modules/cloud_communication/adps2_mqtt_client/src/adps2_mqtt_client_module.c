@@ -100,22 +100,12 @@ static ADPS_MQTT_CLIENT_MODULE_STATE* ModuleStateFromModuleHandle(ADUC_AGENT_MOD
 ADUC_AGENT_MODULE_HANDLE ADPS_MQTT_Client_Module_Create()
 {
     ADUC_AGENT_MODULE_HANDLE handle = NULL;
+    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = NULL;
+    ADUC_AGENT_MODULE_INTERFACE* moduleInterface = NULL;
 
-    ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = malloc(sizeof(ADPS_MQTT_CLIENT_MODULE_STATE));
-    if (moduleState == NULL)
-    {
-        Log_Error("Failed to allocate memory for module state");
-        goto done;
-    }
-    memset(moduleState, 0, sizeof(ADPS_MQTT_CLIENT_MODULE_STATE));
+    ADUC_ALLOC(moduleState);
+    ADUC_ALLOC(moduleInterface);
 
-    ADUC_AGENT_MODULE_INTERFACE* moduleInterface = malloc(sizeof(ADUC_AGENT_MODULE_INTERFACE));
-    if (moduleInterface == NULL)
-    {
-        Log_Error("Failed to allocate memory for module interface");
-        goto done;
-    }
-    memset(moduleInterface, 0, sizeof(ADUC_AGENT_MODULE_INTERFACE));
     moduleInterface->moduleData = moduleState;
     moduleInterface->destroy = ADPS_MQTT_Client_Module_Destroy;
     moduleInterface->getContractInfo = ADPS_MQTT_Client_Module_GetContractInfo;
@@ -124,13 +114,13 @@ ADUC_AGENT_MODULE_HANDLE ADPS_MQTT_Client_Module_Create()
     moduleInterface->deinitializeModule = ADPS_MQTT_Client_Module_Deinitialize;
 
     handle = moduleInterface;
+    moduleState = NULL; // transfer ownership
+    moduleInterface = NULL; // transfer ownership
 
 done:
-    if (handle == NULL)
-    {
-        free(moduleState);
-        free(moduleInterface);
-    }
+    free(moduleState);
+    free(moduleInterface);
+
     return handle;
 }
 
@@ -428,7 +418,7 @@ done:
 void ADPS_MQTT_Client_Module_OnPublish(
     struct mosquitto* mosq, void* obj, int mid, int reason_code, const mosquitto_property* props)
 {
-    Log_Info("on_publish: Message with mid %d has been published.", mid);
+    Log_Info("ON_PUBLISH PUBACK (qos 1) from broker: Message with mid %d has been published, reason_code: %d", mid, reason_code);
 }
 
 /**

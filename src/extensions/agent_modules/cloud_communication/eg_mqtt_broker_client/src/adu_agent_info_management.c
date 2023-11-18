@@ -1,552 +1,231 @@
 /**
  * @file adu_agent_info_management.c
- * @brief Implementation for Device Update agent info management functions.
+ * @brief Implementation for device agentinfo status management.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
 
-#include "aduc/adu_agent_info_management_internal.h"
-#include "aduc/adu_mosquitto_utils.h"
-#include "aduc/adu_mqtt_protocol.h"
-#include "aduc/adu_types.h"
-#include "aduc/c_utils.h" // IsNullOrEmpty
-#include "aduc/config_utils.h"
-#include "aduc/logging.h"
-#include "aduc/retry_utils.h"
-#include "aduc/string_c_utils.h" // ADUC_StringFormat
-#include "aduc/types/update_content.h" // ADUCITF_FIELDNAME_DEVICEPROPERTIES_*
-#include "du_agent_sdk/agent_module_interface.h"
+#include "aduc/adu_agent_info_management.h"
 
+#include <aduc/adu_communication_channel.h>
+#include <aduc/adu_agentinfo.h>
+#include <aduc/adu_agentinfo_utils.h>
+#include <aduc/adu_mosquitto_utils.h>
+#include <aduc/adu_mqtt_common.h>
+#include <aduc/adu_mqtt_protocol.h>
+#include <aduc/adu_types.h>
+#include <aduc/agent_state_store.h>
+#include <aduc/config_utils.h>
+#include <aduc/agentinfo_request_operation.h>
+#include <aduc/logging.h>
+#include <aduc/retry_utils.h> // ADUC_GetTimeSinceEpochInSeconds
+#include <aduc/string_c_utils.h> // IsNullOrEmpty
 #include <aducpal/time.h> // time_t
 
-#include "parson.h" // JSON_Value, JSON_Object, etc.
-#include <aducpal/stdlib.h>
+#include <parson.h> // JSON_Value, JSON_Object
+#include <parson_json_utils.h> // ADUC_JSON_Get*
+
 #include <mosquitto.h> // mosquitto related functions
-#include <mqtt_protocol.h> // mosquitto_property
+#include <mqtt_protocol.h>
+#include <string.h>
 
-#define DEFAULT_AINFO_REQ_RETRY_INTERVAL_SECONDS 60
-#define SUBSCRIBE_TOPIC_TEMPLATE_AINFO_REQ ""
-
-// Forward declarations.
-static JSON_Value* PrepareAgentInformation();
-static void UpdateNextAttemptTime(time_t time);
-static ADUC_AGENT_INFO_MANAGEMENT_STATE* StateFromModule()
-
-// Declare the agent info management module functions.
-DECLARE_AGENT_MODULE_PRIVATE(ADUC_Agent_Info_Management)
-
-// Implement all functions declared by DECLARE_AGENT_MODULE_PRIVATE macro above.
+// clang-format off
+#include <aduc/aduc_banned.h> // must be after other includes
+// clang-format on
 
 /**
- * @brief Create the agent info management module instance
+ * @brief Gets the extension contract info.
+ * @param handle The handle to the module. This is the same handle that was returned by the Create function.
+ * @return ADUC_AGENT_CONTRACT_INFO The extension contract info.
  */
-ADUC_AGENT_MODULE_HANDLE ADUC_Agent_Info_Management_Create()
+const ADUC_AGENT_CONTRACT_INFO* ADUC_AgentInfo_Management_GetContractInfo(ADUC_AGENT_MODULE_HANDLE handle)
 {
-    ADUC_AGENT_MODULE_HANDLE handle = NULL;
+    static ADUC_AGENT_CONTRACT_INFO s_moduleContractInfo = {
+        "Microsoft", "Device Update AgentInfo Module", 1, "Microsoft/DUAgentInfoModule:1"
+    };
 
-    // Create the agent info management module state.
-    ADUC_AGENT_INFO_MANAGEMENT_STATE* state = malloc(sizeof(*state));
-    if (state == NULL)
+    IGNORED_PARAMETER(handle);
+    return &s_moduleContractInfo;
+}
+
+/**
+ * @brief Initialize the agentinfo management.
+ * @param handle The agent module handle.
+ * @param initData The initialization data.
+ * @return 0 on successful initialization; -1, otherwise.
+ */
+int ADUC_AgentInfo_Management_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* initData)
+{
+    IGNORED_PARAMETER(initData);
+    ADUC_Retriable_Operation_Context* context = OperationContextFromAgentModuleHandle(handle);
+    if (context == NULL)
     {
-        Log_Error("Failed to allocate memory for the agent info management state.");
-        return NULL;
+        Log_Error("Failed to get operation context");
+        return -1;
     }
-    memset(state, 0, sizeof(*state));
 
-    ADUC_AGENT_MODULE_INTERFACE* agentInfoModuleInterface = malloc(sizeof(*agentInfoModuleInterface));
-    if (agentInfoModuleInterface == NULL)
+    return 0;
+}
+
+/**
+ * @brief Deinitialize the agentinfo management.
+ * @param handle The module handle.
+ * @return int 0 on success.
+ */
+int ADUC_AgentInfo_Management_Deinitialize(ADUC_AGENT_MODULE_HANDLE handle)
+{
+    ADUC_Retriable_Operation_Context* context = OperationContextFromAgentModuleHandle(handle);
+    if (context == NULL)
     {
-        Log_Error("Failed to allocate memory for the agent info management module interface.");
-        free(state);
-        return NULL;
+        Log_Error("Failed to get operation context");
+        return false;
     }
-    memset(agentInfoModuleInterface, 0, sizeof(*agentInfoModuleInterface));
+    context->cancelFunc(context);
+    return 0;
+}
 
-    agentInfoModuleInterface->moduleHandle = state;
-    agentInfoModuleInterface->Initialize = ADUC_Agent_Info_Management_Initialize;
-    agentInfoModuleInterface->deinitializeModule = ADUC_Agent_Info_Management_Deinitialize;
-    agentInfoModuleInterface->doWork = ADUC_Agent_Info_Management_DoWork;
-    agentInfoModuleInterface->getData = ADUC_Agent_Info_Management_GetData;
-    agentInfoModuleInterface->setData = ADUC_Agent_Info_Management_SetData;
+/**
+ * @brief AgentInfo mangement do work function.
+ *
+ * @param handle The module handle.
+ * @return int 0 on success.
+ */
+int ADUC_AgentInfo_Management_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
+{
+    ADUC_Retriable_Operation_Context* context = OperationContextFromAgentModuleHandle(handle);
+    if (context == NULL)
+    {
+        Log_Error("Failed to get operation context");
+        return -1;
+    }
 
-    handle = agentInfoModuleInterface;
+    context->doWorkFunc(context);
+
+    return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// BEGIN - ADU_AGENT_INFO_MANAGEMENT.H Public Interface
+//
+
+/**
+ * @brief Creates agentinfo management module handle.
+ * @return ADUC_AGENT_MODULE_HANDLE The created module handle, or NULL on failure.
+ */
+ADUC_AGENT_MODULE_HANDLE ADUC_AgentInfo_Management_Create()
+{
+    ADUC_AGENT_MODULE_INTERFACE* result = NULL;
+    ADUC_AGENT_MODULE_INTERFACE* interface = NULL;
+
+    ADUC_Retriable_Operation_Context* operationContext = CreateAndInitializeAgentInfoRequestOperation();
+    if (operationContext == NULL)
+    {
+        Log_Error("Failed to create agentinfo request operation");
+        goto done;
+    }
+
+    ADUC_ALLOC(interface);
+
+    interface->getContractInfo = ADUC_AgentInfo_Management_GetContractInfo;
+    interface->initializeModule = ADUC_AgentInfo_Management_Initialize;
+    interface->deinitializeModule = ADUC_AgentInfo_Management_Deinitialize;
+    interface->doWork = ADUC_AgentInfo_Management_DoWork;
+    interface->destroy = ADUC_AgentInfo_Management_Destroy;
+    interface->moduleData = operationContext;
+    operationContext = NULL; // transfer ownership
+
+    result = interface;
+    interface = NULL; // transfer ownership
 
 done:
-    if (handle == NULL)
+
+    if (operationContext != NULL)
     {
-        free(state);
-        free(agentInfoModuleInterface);
+        operationContext->dataDestroyFunc(operationContext);
+        operationContext->operationDestroyFunc(operationContext);
+        free(operationContext);
     }
 
-    return handle;
+    free(interface);
+
+    return (ADUC_AGENT_MODULE_HANDLE)(result);
 }
 
 /**
- * @brief Initialize the agent info management.
+ * @brief Destroy the module handle.
+ *
+ * @param handle The module handle.
  */
-int ADUC_Agent_Info_Management_Initialize(
-    ADUC_AGENT_MODULE_HANDLE agentInfoModule, void* initData /* ADUC_AGENT_INFO_MANAGEMENT_INIT_DATA* */)
+void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 {
-    return -1;
+    ADUC_Retriable_Operation_Context* context = OperationContextFromAgentModuleHandle(handle);
+    if (context == NULL)
+    {
+        Log_Error("Failed to get operation context");
+        return;
+    }
+
+    context->operationDestroyFunc(context);
+    free(context);
 }
 
 /**
- * @brief Deinitialize the agent info management.
+ * @brief Callback should be called when the client receives an agentinfo status response message from the Device Update service.
+ *  For 'ainfo_resp' messages, if the Correlation Data matches the 'en,the client should parse the message and update the agentinfo state.
+ *
+ * @param mosq The mosquitto instance making the callback.
+ * @param obj The user data provided in mosquitto_new. This is the module state
+ * @param msg The message data.
+ * @param props The MQTT v5 properties returned with the message.
+ *
+ * @remark This callback is called by the network thread. Usually by the same thread that calls mosquitto_loop function.
+ * IMPORTANT - Do not use blocking functions in this callback.
  */
-void ADUC_Agent_Info_Management_Deinitialize(ADUC_AGENT_MODULE_HANDLE agentInfoModule)
-{
-}
-
-static ADUC_AGENT_INFO_MANAGEMENT_STATE s_agentInfoMgrState = { 0 };
-
-#define AGENT_INFO_FIELD_NAME_AIV "aiv"
-#define AGENT_INFO_FIELD_NAME_ADU_PROTOCOL "aduProtocol"
-#define AGENT_INFO_FIELD_NAME_ADU_PROTOCOL_NAME "name"
-#define AGENT_INFO_FIELD_NAME_ADU_PROTOCOL_VERSION "version"
-#define AGENT_INFO_FIELD_NAME_COMPAT_PROPERTIES "compatProperties"
-#define AGENT_INFO_PROTOCOL_NAME "adu"
-#define AGENT_INFO_PROTOCOL_VERSION 1
-
-/**
- * @brief This helper function will prepare a JSON data object for the 'ainfo_req' message.
-*/
-JSON_Value* PrepareAgentInformation()
-{
-    const ADUC_ConfigInfo* config = NULL;
-    const ADUC_AgentInfo* agent = NULL;
-    JSON_Value* agentInfoValue = NULL;
-    JSON_Object* agentInfoObj = NULL;
-    JSON_Value* aduProtocolValue = NULL;
-    JSON_Object* aduProtocolObj = NULL;
-    JSON_Value* compatPropertiesValue = NULL;
-    JSON_Object* compatPropertiesObj = NULL;
-    JSON_Object* additional_properties = NULL;
-
-    JSON_Status jsonStatus = JSONFailure;
-    bool success = false;
-
-    config = ADUC_ConfigInfo_GetInstance();
-    if (config == NULL)
-    {
-        Log_Error("Failed to get the configuration info.");
-        goto done;
-    }
-
-    agent = ADUC_ConfigInfo_GetAgent(config, 0);
-    if (agent == NULL)
-    {
-        Log_Error("Failed to get the agent info.");
-        goto done;
-    }
-
-    agentInfoValue = json_value_init_object();
-    agentInfoObj = json_value_get_object(agentInfoValue);
-    if (agentInfoObj == NULL)
-    {
-        Log_Error("Cannot allocate memory for agent information.");
-        goto done;
-    }
-
-    time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
-
-    // Add agent information version.
-    jsonStatus = json_object_set_number(agentInfoObj, AGENT_INFO_FIELD_NAME_AIV, nowTime);
-    if (jsonStatus != JSONSuccess)
-    {
-        Log_Error("Could not serialize JSON field: aiv, value: %d", AGENT_INFO_FIELD_NAME_AIV, nowTime);
-        goto done;
-    }
-
-    // Add ADU protocol name and version.
-    aduProtocolValue = json_value_init_object();
-    aduProtocolObj = json_value_get_object(aduProtocolValue);
-    if (aduProtocolObj == NULL)
-    {
-        Log_Error("Cannot allocate memory for aduProtocol.");
-        goto done;
-    }
-    jsonStatus = json_object_set_value(agentInfoObj, AGENT_INFO_FIELD_NAME_ADU_PROTOCOL, aduProtocolValue);
-    if (jsonStatus != JSONSuccess)
-    {
-        Log_Error(
-            "Could not serialize JSON field: %s value: %p", AGENT_INFO_FIELD_NAME_ADU_PROTOCOL, aduProtocolValue);
-        goto done;
-    }
-    aduProtocolValue = NULL; // Ownership transferred to agentInfoObj.
-
-    jsonStatus =
-        json_object_set_string(aduProtocolObj, AGENT_INFO_FIELD_NAME_ADU_PROTOCOL_NAME, AGENT_INFO_PROTOCOL_NAME);
-    if (jsonStatus != JSONSuccess)
-    {
-        Log_Error(
-            "Could not serialize JSON field: %s value: %s",
-            AGENT_INFO_FIELD_NAME_ADU_PROTOCOL_NAME,
-            AGENT_INFO_PROTOCOL_NAME);
-        goto done;
-    }
-
-    jsonStatus = json_object_set_number(
-        aduProtocolObj, AGENT_INFO_FIELD_NAME_ADU_PROTOCOL_VERSION, AGENT_INFO_PROTOCOL_VERSION);
-    if (jsonStatus != JSONSuccess)
-    {
-        Log_Error(
-            "Could not serialize JSON field: %s value: %d",
-            AGENT_INFO_FIELD_NAME_ADU_PROTOCOL_VERSION,
-            AGENT_INFO_PROTOCOL_VERSION);
-        goto done;
-    }
-
-    // Add 'compatProperties' object.
-    compatPropertiesValue = json_value_init_object();
-    compatPropertiesObj = json_value_get_object(compatPropertiesValue);
-    if (compatPropertiesObj == NULL)
-    {
-        Log_Error("Cannot allocate memory for compatProperties.");
-        goto done;
-    }
-
-    jsonStatus = json_object_set_value(agentInfoObj, AGENT_INFO_FIELD_NAME_COMPAT_PROPERTIES, compatPropertiesValue);
-    if (jsonStatus != JSONSuccess)
-    {
-        Log_Error(
-            "Could not serialize JSON field: %s value: %p",
-            AGENT_INFO_FIELD_NAME_COMPAT_PROPERTIES,
-            compatPropertiesValue);
-        goto done;
-    }
-    compatPropertiesValue = NULL; // Ownership transferred to agentInfoObj.
-
-    // Add manufacturer and model.
-    jsonStatus = json_object_set_string(
-        compatPropertiesObj, ADUCITF_FIELDNAME_DEVICEPROPERTIES_MANUFACTURER, agent->manufacturer);
-
-    if (jsonStatus != JSONSuccess)
-    {
-        Log_Error(
-            "Could not serialize JSON field: %s value: %s",
-            ADUCITF_FIELDNAME_DEVICEPROPERTIES_MANUFACTURER,
-            agent->manufacturer);
-        goto done;
-    }
-
-    jsonStatus = json_object_set_string(compatPropertiesObj, ADUCITF_FIELDNAME_DEVICEPROPERTIES_MODEL, agent->model);
-
-    if (jsonStatus != JSONSuccess)
-    {
-        Log_Error(
-            "Could not serialize JSON field: %s value: %s",
-            ADUCITF_FIELDNAME_DEVICEPROPERTIES_MODEL,
-            agent->manufacturer);
-        goto done;
-    }
-
-    // Add additional properties.
-    additional_properties = agent->additionalDeviceProperties;
-    if (additional_properties == NULL)
-    {
-        // No additional properties is set in the configuration file
-        success = true;
-        goto done;
-    }
-
-    size_t propertiesCount = json_object_get_count(additional_properties);
-    for (size_t i = 0; i < propertiesCount; i++)
-    {
-        const char* name = json_object_get_name(additional_properties, i);
-        const char* val = json_value_get_string(json_object_get_value_at(additional_properties, i));
-
-        if ((name == NULL) || (val == NULL))
-        {
-            Log_Error(
-                "Error retrieving the additional device properties name and/or value at element at index=%zu", i);
-            goto done;
-        }
-
-        jsonStatus = json_object_set_string(compatPropertiesObj, name, val);
-        if (jsonStatus != JSONSuccess)
-        {
-            Log_Error("Could not serialize JSON field: %s value: %s", name, val);
-            goto done;
-        }
-    }
-
-    success = true;
-
-done:
-    if (!success)
-    {
-        Log_Error("Failed to get prepare an agent information object.");
-        json_value_free(compatPropertiesValue) json_value_free(aduProtocolValue);
-        json_value_free(agentInfoValue);
-    }
-
-    return agentInfoValue;
-}
-
-const char* GetLastMessageCorrelationId()
-{
-    return s_agentInfoMgrState.ainfo_req_CorelationId;
-}
-
-/**
- * @brief This function handles the 'ainfo_resp' message from the broker. The function will create a copy of the
- * message and process in the net do_work cycle.
-*/
 void OnMessage_ainfo_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
-    Log_Info("RCV msg: id=%d, topic=%s, payload=%s", msg->mid, msg->topic, (char*)msg->payload);
-    JSON_Value* responseJson = NULL;
-    JSON_Object* responseObj = NULL;
-    int resultCode = 0;
+    ADUC_Retriable_Operation_Context* context = (ADUC_Retriable_Operation_Context*)obj;
+    ADUC_MQTT_Message_Context* messageContext = (ADUC_MQTT_Message_Context*)context->data;
+    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoData_FromOperationContext(context);
 
-    ADUC_AGENT_INFO_MANAGEMENT_STATE* state = (ADUC_AGENT_INFO_MANAGEMENT_STATE*)obj;
-    bool matched =
-        CheckMessageTypeAndCorrelationId(msg, props, ADUC_MQTT_MESSAGE_TYPE_AINFO_RESP, GetLastMessageCorrelationId());
-    if (!matched)
+    json_print_properties(props);
+
+    if (!ADU_are_correlation_ids_matching(props, messageContext->correlationId))
     {
-        Log_Info("Not interested in this message.");
+        Log_Info("OnMessage_ainfo_resp: correlation data mismatch");
         goto done;
     }
 
-    // Parse message payload.
-    responseJson = json_parse_string((char*)msg->payload);
-    if (responseJson == NULL)
+    if (msg == NULL || msg->payload == NULL || msg->payloadlen == 0)
     {
-        Log_Error("Failed to parse the response message payload.");
+        Log_Error("Bad payload. msg:%p, payload:%p, payloadlen:%d", msg, msg->payload, msg->payloadlen);
         goto done;
     }
 
-    responseObj = json_value_get_object(responseJson);
-    if (responseObj == NULL)
+    if (!ParseAndValidateCommonResponseUserProperties(props, "ainfo_resp" /* expectedMsgType */, &agentInfoData->respUserProps))
     {
-        Log_Error("Failed to get the response message object.");
+        Log_Error("Fail parse of common user props");
         goto done;
     }
 
-    json_object_dotget_number(responseObj, ADUC_AGENT_INFO_RESPONSE_FIELD_RESULT_CODE, &resultCode);
+    // NOTE: Do no parse ainfo_resp msg payload as it is empty.
 
-    // Handle ADU_RESPONSE_MESSAGE_RESULT_CODE
-    // Classify the result code in to success, transient, non-recoverable and other.
-    /*
-        ADU_RESPONSE_MESSAGE_RESULT_CODE_SUCCESS = 0,           /**< Operation was successful. */
-    ADU_RESPONSE_MESSAGE_RESULT_CODE_BAD_REQUEST = 1, /**< The request was invalid or cannot be served. */
-        ADU_RESPONSE_MESSAGE_RESULT_CODE_BUSY = 2, /**< The server is busy and cannot process the request. */
-        ADU_RESPONSE_MESSAGE_RESULT_CODE_CONFLICT =
-            3, /**< There is a conflict with the current state of the system. */
-        ADU_RESPONSE_MESSAGE_RESULT_CODE_SERVER_ERROR = 4, /**< The server encountered an internal error. */
-        ADU_RESPONSE_MESSAGE_RESULT_CODE_AGENT_NOT_ENROLLED =
-            5 * / Log_Info("Received ainfo_resp message with result code: %d", resultCode);
-    switch (resultCode)
+    if (!Handle_AgentInfo_Response(
+        agentInfoData,
+        context))
     {
-    case ADUC_AGENT_INFO_RESPONSE_RESULT_CODE_SUCCESS:
-        break;
-
-    case ADUC_AGENT_INFO_RESPONSE_RESULT_CODE_CONFLICT:
-        // The agent info is older than what the service has.
-        break;
-
-    case ADUC_AGENT_INFO_RESPONSE_RESULT_CODE_AGENT_NOT_ENROLLED:
-        // Need to update the enrollment state.
-        ADUC_SendAgentCommand(ADUC_AGENT_COMMAND_RESET_ENROLLMENT_STATE, NULL);
-        break;
-
-    case ADUC_AGENT_INFO_RESPONSE_RESULT_CODE_BAD_REQUEST:
-        Log_Info("Received ainfo_resp message with result code: %d", resultCode);
-        break;
-    case ADUC_AGENT_INFO_RESPONSE_RESULT_CODE_BUSY:
-        Log_Info("Received ainfo_resp message with result code: %d", resultCode);
-        break;
-    case ADUC_AGENT_INFO_RESPONSE_RESULT_CODE_SERVER_ERROR:
-        Log_Info("Received ainfo_resp message with result code: %d", resultCode);
-        break;
-
-        if (resultCode != 200 && resultCode != 204)
-        {
-            Log_Error("Failed to get the result code from the response message.");
-            goto done;
-        }
-        {
-            /
-        }
-
-        // Check that the message's correlation ID matches the one we sent.
-        char* correlationId = NULL;
-        if (ADUC_MQTT_GetCorrelationId(msg, &correlationId) != ADUC_MQTT_OK)
-        {
-            Log_Error("OnMessage_ainfo_resp: Failed to get the correlation ID.");
-            goto done;
-        }
-
-    done:
-        free(correlationId);
+        Log_Error("Failed handling agentinfo response.");
+        goto done;
     }
 
-    void OnPublished_ainfo_req(
-        struct mosquitto * mosq, void* obj, int mid, int reason_code, const mosquitto_property* props)
-    {
-        Log_Info("on_publish: Message with mid %d has been published.", mid);
-    }
+done:
+    return;
+}
 
-    /**
- * @brief Update the next attempt time based on the error code.
- */
-    static void UpdateNextAttemptTime(int errorCode)
-    {
-        // TODO: use retry_utils to update the next attempt time based on the given error code.
-        s_agentInfoMgrState.ainfo_req_NextAttemptTime += DEFAULT_AINFO_REQ_RETRY_INTERVAL_SECONDS;
-    }
 
-    /**
- * @brief Initializes the agent info management workflow.
- */
-    bool ADUC_Agent_Info_Management_Initialize()
-    {
-        s_agentInfoMgrState.agentInfoValue = PrepareAgentInformation();
-        if (s_agentInfoMgrState.agentInfoValue == NULL)
-        {
-            UpdateNextAttemptTime(0 /* error code */);
-            Log_Error("Failed to prepare the agent information.");
-            return false;
-        }
-
-        s_agentInfoMgrState.workflowState = ADUC_AGENT_INFO_WORKFLOW_STATE_INITIALIZED;
-        return true;
-    }
-
-    static void FreeAgentInfoManagementState()
-    {
-        free(s_agentInfoMgrState.publishTopic);
-        s_agentInfoMgrState.publishTopic = NULL;
-        free(s_agentInfoMgrState.subscribeTopic);
-        s_agentInfoMgrState.subscribeTopic = NULL;
-        free(s_agentInfoMgrState.ainfo_req_CorelationId);
-        s_agentInfoMgrState.ainfo_req_CorelationId = NULL;
-        free(s_agentInfoMgrState.ainfo_resp_Content);
-        s_agentInfoMgrState.ainfo_resp_Content = NULL;
-    }
-
-    /**
- * @brief Deinitializes the agent info management.
- */
-    void ADUC_Agent_Info_Management_Deinitialize()
-    {
-        FreeAgentInfoManagementState();
-    }
-
-    /**
- * @brief This function ensures that the 'ainfo_req' topic template is initialized and the topic is subscribed.
- */
-    static bool EnsureResponseTopicSubscribed()
-    {
-        bool success = false;
-        if (s_agentInfoMgrState.workflowState >= ADUC_AGENT_INFO_WORKFLOW_STATE_SUBSCRIBED)
-        {
-            success = true;
-            goto done;
-        }
-
-        time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
-        if (nowTime < s_agentInfoMgrState.ainfo_req_NextAttemptTime)
-        {
-            // Wait for the next attempt time.
-            goto done;
-        }
-
-        if (s_agentInfoMgrState.workflowState == ADUC_AGENT_INFO_WORKFLOW_STATE_INITIALIZED)
-        {
-            if (IsNullOrEmpty(s_agentInfoMgrState.subscribeTopic))
-            {
-                const char* duInstance = ADUC_StateStore_GetDeviceUpdateServiceInstance();
-                if (IsNullOrEmpty(duInstance))
-                {
-                    Log_Error("Invalid state. DU instance is NULL.");
-                    UpdateNextAttemptTime(0 /* error code */);
-                    goto done;
-                }
-
-                const char* externalDeviceId = ADUC_StateStore_GetExternalDeviceId();
-                s_agentInfoMgrState.subscribeTopic =
-                    ADUC_StringFormat(SUBSCRIBE_TOPIC_TEMPLATE_ADU_OTO_WITH_DU_INSTANCE, externalDeviceId, duInstance);
-
-                if (IsNullOrEmpty(s_agentInfoMgrState.subscribeTopic))
-                {
-                    Log_Error("Failed to format the subscribe topic.");
-                    UpdateNextAttemptTime(0 /* error code */);
-                    goto done;
-                }
-            }
-
-            ADUC_StateStore_GetCommunicationChannelHandle(
-                &s_agentInfoMgrState.publishTopic, &s_agentInfoMgrState.publishTopic);
-
-            if (ADUC_MQTT_Subscribe(s_agentInfoMgrState.subscribeTopic, OnMessage_ainfo_resp))
-
-                // TODO: subscribe to response topic.
-                // if (s_agentInfoMgrState.subscribeTopic, OnMessage_ainfo_resp))
-                // {
-                //     Log_Error("Failed to subscribe to the topic: %s", s_agentInfoMgrState.subscribeTopic);
-                //     return false;
-                // }
-
-                s_agentInfoMgrState.workflowState = ADUC_AGENT_INFO_WORKFLOW_STATE_SUBSCRIBING;
-        }
-
-        if (s_agentInfoMgrState.workflowState == ADUC_AGENT_INFO_WORKFLOW_STATE_SUBSCRIBING)
-        {
-        }
-
-    done:
-        return success;
-    }
-
-    /**
- * @brief This function waits for the client to verify that it is enrolled with the Device Update service.
- * Once the client is enrolled, it will publish an 'ainfo_req' message to the service.
- * The message will contains the following information:
- * - aiv: The agent information version. This is a timestamp in seconds.
- * - aduProtocolVersion: The ADU protocol version. This is a name and version number.
- * - compatProperties: A list of properties that the client supports.
- *
- * Once the message is published, the function will wait for the acknowledgement message ('ainfo_resp').
- * The acknowledgement message will contain the update information.
- *
- * This function will validate the update data and hand it off to the agent workflow util.
- *
- * @return true if the there's no error, false otherwise.
- *
- */
-    bool ADUC_Agent_Info_Management_DoWork()
-    {
-        time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
-        if (!ADUC_StateStore_GetIsDeviceEnrolled())
-        {
-            if (nowTime > s_agentInfoMgrState.ainfo_req_NextAttemptTime)
-            {
-                Log_Info("Device is not enrolled. Waiting for enrollment to complete.");
-                UpdateNextAttemptTime(0 /* error code */);
-            }
-            return false;
-        }
-
-        // TODO (nox-msft)
-        // if (!EnsureResponseTopicSubscribed())
-        //{
-        //    return false;
-        // }
-
-        // TODO (nox-msft)
-        //if (!EnsureAgentInfoMessagePublished())
-        //{
-        //    return false;
-        // }
-
-        // TODO (nox-msft)
-        // if (!EnsureAgentInfoAcknowledged())
-        // {
-        //     return false;
-        // }
-
-        return true;
-    }
+//
+// END - ADU_AGENT_INFO_MANAGEMENT.H Public Interface
+//
+/////////////////////////////////////////////////////////////////////////////

@@ -18,7 +18,7 @@ typedef void* ADUC_AGENT_MODULE_HANDLE;
 typedef ADUC_AGENT_MODULE_HANDLE (*ADUC_AGENT_MODULE_CREATE)(void);
 typedef void (*ADUC_AGENT_MODULE_DESTROY)(ADUC_AGENT_MODULE_HANDLE);
 
-typedef struct ADUC_AGENT_CONTRACT_INFO_TAG
+typedef struct tagADUC_AGENT_CONTRACT_INFO
 {
     const char* provider;
     const char* name;
@@ -27,16 +27,16 @@ typedef struct ADUC_AGENT_CONTRACT_INFO_TAG
 } ADUC_AGENT_CONTRACT_INFO;
 
 typedef const ADUC_AGENT_CONTRACT_INFO* (*ADUC_AGENT_MODULE_GET_CONTRACT_INFO)(ADUC_AGENT_MODULE_HANDLE);
-typedef int (*ADUC_AGENT_MODULE_DO_WORK)(ADUC_AGENT_MODULE_HANDLE);
 typedef int (*ADUC_AGENT_MODULE_INITIALIZE)(ADUC_AGENT_MODULE_HANDLE, void*);
 typedef int (*ADUC_AGENT_MODULE_DEINITIALIZE)(ADUC_AGENT_MODULE_HANDLE);
+typedef int (*ADUC_AGENT_MODULE_DO_WORK)(ADUC_AGENT_MODULE_HANDLE);
 
 /**
  * @brief The Device Update agent module interface contains the function pointers for
  * all the functions that a module must implement.
  *
  */
-typedef struct ADUC_AGENT_MODULE_INTERFACE_TAG
+typedef struct tagADUC_AGENT_MODULE_INTERFACE
 {
     void* moduleData;
     ADUC_AGENT_MODULE_DESTROY destroy;

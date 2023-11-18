@@ -110,7 +110,7 @@ bool ReadMqttBrokerSettings(ADUC_MQTT_SETTINGS* settings)
     {
         Log_Info("Using DPS module to retrieve MQTT broker endpoint data");
     }
-    else
+    else if (settings->hostnameSource == ADUC_MQTT_HOSTNAME_SOURCE_CONFIG_FILE)
     {
         // Expecting MQTT hostname to be specified in the config file.
         if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "mqttBroker.hostname", &settings->hostname))

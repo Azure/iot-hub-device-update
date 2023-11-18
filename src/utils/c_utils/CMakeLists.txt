@@ -3,10 +3,16 @@ set (target_name c_utils)
 
 include (agentRules)
 
-add_library (${target_name} STATIC src/bit_ops.c src/connection_string_utils.c src/http_url.c
-                                   src/string_c_utils.c)
+add_library (${target_name} STATIC )
 
 add_library (aduc::${target_name} ALIAS ${target_name})
+
+target_sources (${target_name} PRIVATE
+    src/bit_ops.c
+    src/connection_string_utils.c
+    src/http_url.c
+    src/parse_num.c
+    src/string_c_utils.c)
 
 #
 # Turn -fPIC on, in order to use this library in another shared library.

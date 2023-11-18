@@ -19,16 +19,26 @@ EXTERN_C_BEGIN
 DECLARE_AGENT_MODULE_PUBLIC(ADUC_Agent_Info_Management)
 
 /**
+ * @brief Create the Agent Info management module.
+ * @return ADUC_AGENT_MODULE_HANDLE The module handle.
+ */
+ADUC_AGENT_MODULE_HANDLE ADUC_AgentInfo_Management_Create();
+
+/**
+ * @brief Destroy the Agent Info management module.
+ * @param module The module handle.
+ */
+void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE module);
+
+/**
  * @brief Callback should be called when the client receives an agent info response message from the Device Update service.
+ * @param mosq The mosquitto instance making the callback.
+ * @param obj The user data provided in mosquitto_new. This is the module state
+ * @param msg The message data.
+ * @param props The MQTT v5 properties returned with the message.
  */
 void OnMessage_ainfo_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props);
-
-/**
- * @brief Callback that called when the client sent an agent info request message to the Device Update service.
-*/
-void OnPublished_ainfo_req(
-    struct mosquitto* mosq, void* obj, int mid, int reason_code, const mosquitto_property* props);
 
 EXTERN_C_END
 

@@ -66,28 +66,20 @@
 
 #define ADU_MQTT_PROTOCOL_MESSAGE_TYPE_UPDATE_RESULT_REPORT_ACK "updrslt_ack"
 
-typedef struct ADU_MQTT_MESSAGE_INFO_TAG
-{
-    char* correlationData; //!< Correlation data. This a epoch time in seconds.
-    time_t sentTime; //!< Time the message was sent.
-    int mid; //!< Message ID.
-    int qos; //!< QOS level.
-    int code; //!< Result code.
-} ADU_MQTT_MESSAGE_INFO;
-
 /**
  * @brief Describes the connection state of the ADU communication channel.
  *
  * This enumeration provides different connection states of the ADU communication channel
  * to better handle and track the state of the connection in the system.
  */
-typedef enum ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_TAG
+typedef enum tagADU_COMMUNICATION_CHANNEL_CONNECTION_STATE
 {
     ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_DISCONNECTED = -1, /**< The communication channel is disconnected. */
     ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_UNKNOWN = 0, /**< The communication channel state is unknown. */
-    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTING =
-        1, /**< The communication channel is currently connecting. */
+    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTING = 1, /**< The communication channel is currently connecting. */
     ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTED = 2, /**< The communication channel is connected. */
+    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING = 3, /**< The communication channel is subscribing to the common response topic. */
+    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBED = 4, /**< The communication channel is subscribed to the common response topic. */
 } ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE;
 
 /**
@@ -95,7 +87,7 @@ typedef enum ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_TAG
  *
  * @note This enumeration is used to track the initialization progress of the ADU MQTT client module.
  */
-typedef enum ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_TAG
+typedef enum tagADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE
 {
     ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_FAILED = -1, /**< Initialization has failed. */
     ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_NONE = 0, /**< No initialization state. */
@@ -110,20 +102,20 @@ typedef enum ADU_MQTT_CLIENT_MODULE_INITIALIZE_STATE_TAG
 /**
  * @brief Enumeration representing result codes for ADU response messages.
  */
-typedef enum ADU_RESPONSE_MESSAGE_RESULT_CODE_TAG
+typedef enum tagADU_RESPONSE_MESSAGE_RESULT_CODE
 {
     ADU_RESPONSE_MESSAGE_RESULT_CODE_SUCCESS = 0, /**< Operation was successful. */
     ADU_RESPONSE_MESSAGE_RESULT_CODE_BAD_REQUEST = 1, /**< The request was invalid or cannot be served. */
     ADU_RESPONSE_MESSAGE_RESULT_CODE_BUSY = 2, /**< The server is busy and cannot process the request. */
     ADU_RESPONSE_MESSAGE_RESULT_CODE_CONFLICT = 3, /**< There is a conflict with the current state of the system. */
     ADU_RESPONSE_MESSAGE_RESULT_CODE_SERVER_ERROR = 4, /**< The server encountered an internal error. */
-    ADU_RESPONSE_MESSAGE_RESULT_CODE_AGENT_NOT_ENROLLED = 5 /**< The agent is not enrolled. */
+    ADU_RESPONSE_MESSAGE_RESULT_CODE_AGENT_NOT_ENROLLED = 5, /**< The agent is not enrolled. */
 } ADU_RESPONSE_MESSAGE_RESULT_CODE;
 
 /**
  * @brief Enumeration representing extended result codes for ADU response messages.
  */
-typedef enum ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_TAG
+typedef enum tagADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE
 {
     ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_NONE = 0, /**< No extended error. */
     ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_UNABLE_TO_PARSE_MESSAGE =

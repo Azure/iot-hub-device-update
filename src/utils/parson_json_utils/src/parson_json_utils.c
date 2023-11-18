@@ -11,6 +11,7 @@
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/crt_abstractions.h> // For mallocAndStrcpy_s
 #include <azure_c_shared_utility/strings.h>
+#include <parson_json_utils.h>
 
 /**
  * @brief Returns the pointer to the @p jsonFieldName from the JSON_Value
@@ -22,7 +23,7 @@
  */
 const char* ADUC_JSON_GetStringFieldPtr(const JSON_Value* jsonValue, const char* jsonFieldName)
 {
-    JSON_Object* object = json_value_get_object(jsonValue);
+    JSON_Object* object = json_object(jsonValue);
 
     if (object == NULL)
     {
@@ -42,9 +43,14 @@ const char* ADUC_JSON_GetStringFieldPtr(const JSON_Value* jsonValue, const char*
  */
 bool ADUC_JSON_GetBooleanField(const JSON_Value* jsonValue, const char* jsonFieldName, bool* value)
 {
-    JSON_Object* object = json_value_get_object(jsonValue);
+    JSON_Object* object = json_object(jsonValue);
 
     if (object == NULL || value == NULL)
+    {
+        return false;
+    }
+
+    if (0 == json_object_dothas_value_of_type(object, jsonFieldName, JSONBoolean))
     {
         return false;
     }
@@ -70,7 +76,7 @@ bool ADUC_JSON_GetBooleanField(const JSON_Value* jsonValue, const char* jsonFiel
  */
 bool ADUC_JSON_SetStringField(const JSON_Value* jsonValue, const char* jsonFieldName, const char* value)
 {
-    JSON_Object* object = json_value_get_object(jsonValue);
+    JSON_Object* object = json_object(jsonValue);
 
     if (object == NULL)
     {
@@ -94,7 +100,7 @@ bool ADUC_JSON_GetStringField(const JSON_Value* jsonValue, const char* jsonField
 
     *value = NULL;
 
-    JSON_Object* root_object = json_value_get_object(jsonValue);
+    JSON_Object* root_object = json_object(jsonValue);
     if (root_object == NULL)
     {
         goto done;
@@ -141,6 +147,11 @@ bool ADUC_JSON_GetStringFieldFromObj(const JSON_Object* jsonObj, const char* jso
         return false;
     }
 
+    if (0 == json_object_dothas_value_of_type(jsonObj, jsonFieldName, JSONString))
+    {
+        return false;
+    }
+
     const char* fieldValue = json_object_dotget_string(jsonObj, jsonFieldName);
 
     if (mallocAndStrcpy_s(value, fieldValue) != 0)
@@ -170,7 +181,7 @@ bool ADUC_JSON_GetIntegerField(const JSON_Value* jsonValue, const char* jsonFiel
     double val = 0;
     int castVal = 0;
 
-    JSON_Object* jsonObj = json_value_get_object(jsonValue);
+    JSON_Object* jsonObj = json_object(jsonValue);
 
     if (jsonObj == NULL)
     {
@@ -214,7 +225,7 @@ bool ADUC_JSON_GetUnsignedIntegerField(const JSON_Value* jsonValue, const char* 
     double val = 0;
     unsigned int castVal = 0;
 
-    JSON_Object* jsonObj = json_value_get_object(jsonValue);
+    JSON_Object* jsonObj = json_object(jsonValue);
 
     if (jsonObj == NULL)
     {
@@ -259,7 +270,7 @@ bool ADUC_JSON_GetLongLongField(const JSON_Value* jsonValue, const char* jsonFie
     double val = 0;
     long long castVal = 0;
 
-    JSON_Object* jsonObj = json_value_get_object(jsonValue);
+    JSON_Object* jsonObj = json_object(jsonValue);
 
     if (jsonObj == NULL)
     {

@@ -235,8 +235,15 @@ typedef struct ADU_MQTT_COMMUNICATION_MGR_STATE_TAG
     void* ownerModuleContext; /**< Pointer to the owner module context. */
     ADUC_Retry_Params connectionRetryParams;
     VECTOR_HANDLE pendingSubscriptions; /**< List of subscribing topics. */
-    MAP_HANDLE subscribedTopicsMap; /**< Map of the subscribed topics. */
+    ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO subscribeTopicInfo; /**< Subscribed topic info. There exists only 1 response topic in adu protocol v1. */
 } ADU_MQTT_COMMUNICATION_MGR_STATE;
+
+/**
+ * @brief Convert ADUC_AGENT_MODULE_HANDLE to ADU_MQTT_COMMUNICATION_MGR_STATE pointer.
+ * @param commHandle The handle.
+ * @return ADU_MQTT_COMMUNICATION_MGR_STATE* The communication manager state.
+ */
+ADU_MQTT_COMMUNICATION_MGR_STATE* CommunicationManagerStateFromModuleHandle(ADUC_AGENT_MODULE_HANDLE commHandle);
 
 /**
  * @brief Publishes a message to the specified @p topic using version 5 of the MQTT protocol.

@@ -1,4 +1,5 @@
 add_subdirectory (common)
+add_subdirectory (agentinfo_utils)
 add_subdirectory (enrollment_utils)
 add_subdirectory (mosquitto_utils)
 add_subdirectory (state_store)

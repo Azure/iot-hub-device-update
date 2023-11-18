@@ -5,6 +5,8 @@
 
 EXTERN_C_BEGIN
 
+const char* enrollment_state_str(ADU_ENROLLMENT_STATE st);
+
 ADUC_Enrollment_Request_Operation_Data* EnrollmentData_FromOperationContext(ADUC_Retriable_Operation_Context* context);
 
 ADU_ENROLLMENT_STATE EnrollmentData_SetState(
@@ -12,11 +14,13 @@ ADU_ENROLLMENT_STATE EnrollmentData_SetState(
 
 void EnrollmentData_SetCorrelationId(ADUC_Enrollment_Request_Operation_Data* enrollmentData, const char* correlationId);
 
-bool handle_enrollment(
+bool Handle_Enrollment_Response(
     ADUC_Enrollment_Request_Operation_Data* enrollmentData,
     bool isEnrolled,
     const char* duInstance,
     ADUC_Retriable_Operation_Context* context);
+
+bool ParseEnrollmentMessagePayload(const char* payload, bool* outIsEnrolled, char** outScopeId);
 
 EXTERN_C_END
 
