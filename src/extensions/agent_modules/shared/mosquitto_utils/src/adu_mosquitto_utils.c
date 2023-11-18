@@ -16,6 +16,7 @@
 #include <mosquitto.h> // mosquitto related functions
 #include <mqtt_protocol.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <uuid/uuid.h>
@@ -194,7 +195,7 @@ bool ADU_mosquitto_add_user_property(mosquitto_property** props, const char* nam
  */
 bool ADU_mosquitto_set_correlation_data_property(mosquitto_property** props, const char* correlationData)
 {
-    int err = mosquitto_property_add_binary(props, MQTT_PROP_CORRELATION_DATA, (void*)correlationData, strlen(correlationData));
+    int err = mosquitto_property_add_binary(props, MQTT_PROP_CORRELATION_DATA, (void*)correlationData, (uint16_t)strlen(correlationData));
 
     if ( err == MOSQ_ERR_SUCCESS)
     {
