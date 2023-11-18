@@ -314,7 +314,6 @@ bool EnrollmentStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* c
     bool opSucceeded = false;
 
     ADUC_Enrollment_Request_Operation_Data* enrollmentData = NULL;
-    ADUC_MQTT_Message_Context* messageContext = NULL;
 
     if (context == NULL || context->data == NULL)
     {
@@ -335,9 +334,7 @@ bool EnrollmentStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* c
 
     // at this point, we should send 'enr_req' message.
     enrollmentData = EnrollmentData_FromOperationContext(context);
-    messageContext = &enrollmentData->enrReqMessageContext;
-
-    if (SettingUpAduMqttRequestPrerequisites(context, messageContext, false /* isScoped */))
+    if (SettingUpAduMqttRequestPrerequisites(context, &enrollmentData->enrReqMessageContext, false /* isScoped */))
     {
         goto done;
     }
@@ -362,7 +359,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
 {
     ADUC_Retriable_Operation_Context* ret = NULL;
     ADUC_Retriable_Operation_Context* context = NULL;
-    ADUC_MQTT_Message_Context* messageContext = NULL;
+    ADUC_Enrollment_Request_Operation_Data* messageContext = NULL;
 
     const ADUC_ConfigInfo* config = NULL;
     const ADUC_AgentInfo* agent_info = NULL;
@@ -435,8 +432,6 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
     }
 
     ReadRetryParamsArrayFromAgentConfigJson(context, retrySettings, RetryUtils_GetRetryParamsMapSize());
-
-    // ADUC_ALLOC(context->data);
 
     ret = context;
     context = NULL; // transfer ownership

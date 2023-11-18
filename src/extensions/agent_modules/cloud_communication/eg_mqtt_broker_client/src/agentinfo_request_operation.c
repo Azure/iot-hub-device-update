@@ -494,7 +494,6 @@ bool AgentInfoStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* co
     bool opSucceeded = false;
 
     ADUC_AgentInfo_Request_Operation_Data* agentInfoData = NULL;
-    ADUC_MQTT_Message_Context* messageContext = NULL;
 
     if (context == NULL || context->data == NULL)
     {
@@ -522,9 +521,8 @@ bool AgentInfoStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* co
 
     // at this point, we should send 'ainfo_req' message.
     agentInfoData = AgentInfoData_FromOperationContext(context);
-    messageContext = &agentInfoData->ainfoReqMessageContext;
 
-    if (SettingUpAduMqttRequestPrerequisites(context, messageContext, true /* isScoped */))
+    if (SettingUpAduMqttRequestPrerequisites(context, &agentInfoData->ainfoReqMessageContext, true /* isScoped */))
     {
         goto done;
     }
@@ -549,7 +547,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
 {
     ADUC_Retriable_Operation_Context* ret = NULL;
     ADUC_Retriable_Operation_Context* context = NULL;
-    ADUC_MQTT_Message_Context* messageContext = NULL;
+    ADUC_AgentInfo_Request_Operation_Data* messageContext = NULL;
 
     const ADUC_ConfigInfo* config = NULL;
     const ADUC_AgentInfo* agent_info = NULL;
