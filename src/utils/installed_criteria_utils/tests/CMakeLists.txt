@@ -15,6 +15,11 @@ target_include_directories (${PROJECT_NAME} PRIVATE ${ADUC_EXPORT_INCLUDES})
 
 target_sources (${PROJECT_NAME} PRIVATE main.cpp installed_criteria_utils_ut.cpp)
 
+# Windows needs all EXEs to have links to all potential libraries so this is included here
+if (WIN32)
+    target_link_dosdk (${PROJECT_NAME} PRIVATE)
+endif ()
+
 target_compile_definitions (
     ${PROJECT_NAME}
     PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="${ADUC_TMP_DIR_PATH}/adu-test-installedcriteria")

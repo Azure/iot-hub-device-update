@@ -81,7 +81,7 @@ static const OPTION_OPENSSL_KEY_TYPE x509_key_from_engine = KEY_TYPE_ENGINE;
  *
  * Customers should change this ID to match their device model ID.
  */
-static const char g_aduModelId[] = "dtmi:azure:iot:deviceUpdateModel;2";
+static const char g_aduModelId[] = "dtmi:azure:iot:deviceUpdateModel;3";
 
 /**
  * @brief Current connection status.

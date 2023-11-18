@@ -22,7 +22,8 @@ ADUCITF_WorkflowStep AgentOrchestration_GetWorkflowStep(const ADUCITF_UpdateActi
     switch (desiredUpdateAction)
     {
     case ADUCITF_UpdateAction_ProcessDeployment:
-        return ADUCITF_WorkflowStep_ProcessDeployment;
+        // DeploymentInProgress message already sent so start with download.
+        return ADUCITF_WorkflowStep_Download;
 
     case ADUCITF_UpdateAction_Cancel:
         // Should not get here as Cancel should have just signaled the cancel request

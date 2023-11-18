@@ -9,17 +9,17 @@ disablertti ()
 
 set (sources main.cpp download_ut.cpp mock_do_download.cpp)
 
+add_executable (${PROJECT_NAME} ${sources})
+
 find_package (Catch2 REQUIRED)
 find_package (IotHubClient REQUIRED)
 
 # NOTE: the call to find_package for azure_c_shared_utility
 # must come before umqtt since their config.cmake files expect
 # the aziotsharedutil target to already have been defined.
-find_package (azure_c_shared_utility REQUIRED)
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 find_package (umqtt REQUIRED)
-
-add_executable (${PROJECT_NAME} ${sources})
 
 target_include_directories (${PROJECT_NAME} PRIVATE ${ADUC_EXPORT_INCLUDES})
 
@@ -33,9 +33,8 @@ target_link_libraries (
             aduc::exception_utils
             aduc::c_utils
             atomic
-            Catch2::Catch2)
-
-target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
+            Catch2::Catch2
+            libaducpal)
 
 include (CTest)
 include (Catch)

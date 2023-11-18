@@ -26,11 +26,7 @@
 #include <azure_c_shared_utility/vector.h>
 
 #include <functional> // for std::function
-#include <iostream>
-#include <sstream>
 #include <string>
-
-#include <chrono>
 
 #include <fcntl.h>
 #include <sys/types.h>

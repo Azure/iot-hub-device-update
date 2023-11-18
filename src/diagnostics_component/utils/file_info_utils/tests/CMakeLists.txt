@@ -15,6 +15,11 @@ add_executable (${PROJECT_NAME} ${sources})
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
+# Windows needs all EXEs to have links to all potential libraries so this is included here
+if (WIN32)
+    target_link_dosdk (${PROJECT_NAME} PRIVATE)
+endif ()
+
 target_link_libraries (
     ${PROJECT_NAME} PRIVATE aduc::jws_utils aduc::crypto_utils aduc::string_utils
                             diagnostic_utils::file_info_utils Catch2::Catch2)

@@ -61,7 +61,7 @@ ADUC_Result ProcessDownloadHandlerExtensibility(
 
         result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_CREATE_FAILURE_CREATE;
 
-        workflow_set_success_erc(workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_CREATE_FAILURE_CREATE);
+        workflow_add_erc(workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_CREATE_FAILURE_CREATE);
 
         goto done;
     }
@@ -77,7 +77,7 @@ ADUC_Result ProcessDownloadHandlerExtensibility(
             result.ResultCode,
             result.ExtendedResultCode);
 
-        workflow_set_success_erc(workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSIBILITY_GET_CONTRACT);
+        workflow_add_erc(workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSIBILITY_GET_CONTRACT);
 
         goto done;
     }
@@ -95,7 +95,7 @@ ADUC_Result ProcessDownloadHandlerExtensibility(
         result.ResultCode = ADUC_GeneralResult_Failure;
         result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_UNSUPPORTED_CONTRACT_VERSION;
 
-        workflow_set_success_erc(
+        workflow_add_erc(
             workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_UNSUPPORTED_CONTRACT_VERSION);
 
         goto done;
@@ -106,7 +106,7 @@ ADUC_Result ProcessDownloadHandlerExtensibility(
     result = plugin->ProcessUpdate(workflowHandle, entity, targetUpdateFilePath);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
+        workflow_add_erc(workflowHandle, result.ExtendedResultCode);
         workflow_set_result_details(workflowHandle, "plugin err %d for ProcessUpdate", result.ExtendedResultCode);
         goto done;
     }
