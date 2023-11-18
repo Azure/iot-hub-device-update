@@ -194,7 +194,7 @@ bool ADU_mosquitto_add_user_property(mosquitto_property** props, const char* nam
  */
 bool ADU_mosquitto_set_correlation_data_property(mosquitto_property** props, const char* correlationData)
 {
-    int err = mosquitto_property_add_string(props, MQTT_PROP_CORRELATION_DATA, correlationData);
+    int err = mosquitto_property_add_binary(props, MQTT_PROP_CORRELATION_DATA, (void*)correlationData, strlen(correlationData));
 
     if ( err == MOSQ_ERR_SUCCESS)
     {
