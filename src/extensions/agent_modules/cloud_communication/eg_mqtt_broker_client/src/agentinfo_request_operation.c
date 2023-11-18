@@ -398,6 +398,12 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
         goto done;
     }
 
+    if (!ADU_mosquitto_set_correlation_data_property(&user_prop_list, &(agentInfoData->ainfoReqMessageContext.correlationId)[0]))
+    {
+        Log_Error("Failed set mqtt CorrelationData property");
+        goto done;
+    }
+
     mqtt_res = ADUC_Communication_Channel_MQTT_Publish(
         (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle,
         messageContext->publishTopic,
@@ -547,7 +553,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
 {
     ADUC_Retriable_Operation_Context* ret = NULL;
     ADUC_Retriable_Operation_Context* context = NULL;
-    ADUC_AgentInfo_Request_Operation_Data* messageContext = NULL;
+    ADUC_AgentInfo_Request_Operation_Data* operationDataContext = NULL;
 
     const ADUC_ConfigInfo* config = NULL;
     const ADUC_AgentInfo* agent_info = NULL;
@@ -555,10 +561,18 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
     bool incremented_config_refcount = false;
 
     ADUC_ALLOC(context);
-    ADUC_ALLOC(messageContext);
+    ADUC_ALLOC(operationDataContext);
 
-    context->data = messageContext;
-    messageContext = NULL; // transfer ownership
+    // For this request, generate correlation Id sent as CorrelationData property
+    // and used to match with response.
+    if (!ADUC_generate_correlation_id(false /* with_hyphens */, &(operationDataContext->ainfoReqMessageContext.correlationId)[0], ARRAY_SIZE(operationDataContext->ainfoReqMessageContext.correlationId)))
+    {
+        Log_Error("Faild generate correlation id");
+        goto done;
+    }
+
+    context->data = operationDataContext;
+    operationDataContext = NULL; // transfer ownership
 
     ADUC_Retriable_Operation_Init(context, false);
 
@@ -628,7 +642,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
 
 done:
 
-    free(messageContext);
+    free(operationDataContext);
     free(context);
 
     if (config != NULL && incremented_config_refcount)

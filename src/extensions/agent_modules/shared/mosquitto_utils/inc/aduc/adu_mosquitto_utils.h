@@ -134,6 +134,15 @@ bool ADU_mosquitto_has_user_property(const mosquitto_property* props, const char
 bool ADU_mosquitto_add_user_property(mosquitto_property** props, const char* name, const char* value);
 
 /**
+ * @brief Adds the correlation data property to the property list.
+ *
+ * @param props The address of the property list.
+ * @param correlationData The correlation data string.
+ * @return true on success.
+ */
+bool ADU_mosquitto_set_correlation_data_property(mosquitto_property** props, const char* correlationData);
+
+/**
  * @brief Frees the property list created using ADU_mosquitto_add_user_property()
  *
  * @param props The address of mosquitto_property pointer property list.
@@ -165,5 +174,15 @@ bool ParseAndValidateCommonResponseUserProperties(const mosquitto_property* prop
  * @return int 0 on success.
  */
 int json_print_properties(const mosquitto_property* properties);
+
+/**
+ * @brief Generate a GUID  7d28dcd5-175c-46ed-b3bb-a557d278da56
+ *
+ * @param with_hyphens Whether to include hyphens in the GUID.
+ * @param buffer Where to store identifier.
+ * @param buffer_cch Number of characters in @p buffer.
+ *
+ */
+bool ADUC_generate_correlation_id(bool with_hyphens, char* buffer, size_t buffer_cch);
 
 #endif

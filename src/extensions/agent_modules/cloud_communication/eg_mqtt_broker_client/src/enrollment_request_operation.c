@@ -210,16 +210,29 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
     bool opSucceeded = false;
     int mqtt_res = 0;
     mosquitto_property* user_prop_list = NULL;
-
+    ADUC_MQTT_Message_Context* messageContext = NULL;
     ADUC_Enrollment_Request_Operation_Data* enrollmentData = EnrollmentData_FromOperationContext(context);
-    ADUC_MQTT_Message_Context* messageContext = &enrollmentData->enrReqMessageContext;
 
-    // Set MQTT 5 user propertie as per ainfo req-res
+    if (enrollmentData == NULL)
+    {
+        Log_Error("null context req operation data");
+        goto done;
+    }
+
     if (!ADU_mosquitto_add_user_property(&user_prop_list, "mt", "enr_req") ||
         !ADU_mosquitto_add_user_property(&user_prop_list, "pid", "1"))
     {
+        Log_Error("Failed set mqtt User properties.");
         goto done;
     }
+
+    if (!ADU_mosquitto_set_correlation_data_property(&user_prop_list, &(enrollmentData->enrReqMessageContext.correlationId)[0]))
+    {
+        Log_Error("Failed set mqtt CorrelationData property");
+        goto done;
+    }
+
+    messageContext = &enrollmentData->enrReqMessageContext;
 
     mqtt_res = ADUC_Communication_Channel_MQTT_Publish(
         (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle,
@@ -359,7 +372,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
 {
     ADUC_Retriable_Operation_Context* ret = NULL;
     ADUC_Retriable_Operation_Context* context = NULL;
-    ADUC_Enrollment_Request_Operation_Data* messageContext = NULL;
+    ADUC_Enrollment_Request_Operation_Data* operationDataContext = NULL;
 
     const ADUC_ConfigInfo* config = NULL;
     const ADUC_AgentInfo* agent_info = NULL;
@@ -367,10 +380,18 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
     bool incremented_config_refcount = false;
 
     ADUC_ALLOC(context);
-    ADUC_ALLOC(messageContext);
+    ADUC_ALLOC(operationDataContext);
 
-    context->data = messageContext;
-    messageContext = NULL; // transfer ownership
+    // For this request, generate correlation Id sent as CorrelationData property
+    // and used to match with response.
+    if (!ADUC_generate_correlation_id(false /* with_hyphens */, &(operationDataContext->enrReqMessageContext.correlationId)[0], ARRAY_SIZE(operationDataContext->enrReqMessageContext.correlationId)))
+    {
+        Log_Error("Faild generate correlation id");
+        goto done;
+    }
+
+    context->data = operationDataContext;
+    operationDataContext = NULL; // transfer ownership
 
     ADUC_Retriable_Operation_Init(context, false);
 
@@ -438,7 +459,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
 
 done:
 
-    free(messageContext);
+    free(operationDataContext);
     free(context);
 
     if (config != NULL && incremented_config_refcount)

@@ -18,6 +18,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <uuid/uuid.h>
 
 // clang-format off
 #include <aduc/aduc_banned.h> // make sure this is last to avoid affecting system includes
@@ -182,6 +183,19 @@ bool ADU_mosquitto_add_user_property(mosquitto_property** props, const char* nam
     }
 
     return false;
+}
+
+/**
+ * @brief Adds the correlation data property to the property list.
+ *
+ * @param props The address of the property list.
+ * @param correlationData The correlation data string.
+ * @return true on success.
+ */
+bool ADU_mosquitto_set_correlation_data_property(mosquitto_property** props, const char* correlationData)
+{
+    int err = mosquitto_property_add_string(props, MQTT_PROP_CORRELATION_DATA, correlationData);
+    return err == MOSQ_ERR_SUCCESS;
 }
 
 /**
@@ -494,4 +508,50 @@ int json_print_properties(const mosquitto_property* properties)
     }
 
     return MOSQ_ERR_SUCCESS;
+}
+
+/**
+ * @brief Generate a GUID  7d28dcd5-175c-46ed-b3bb-a557d278da56
+ *
+ * @param with_hyphens Whether to include hyphens in the GUID.
+ * @param buffer Where to store identifier.
+ * @param buffer_cch Number of characters in @p buffer.
+ *
+ */
+bool ADUC_generate_correlation_id(bool with_hyphens, char* buffer, size_t buffer_cch)
+{
+    uuid_t bin_uuid;
+    char uuid_str[37];  // 36 bytes + NUL
+
+    if (buffer_cch < 33 || (with_hyphens && buffer_cch < 37))
+    {
+        return false;
+    }
+
+    // Generate a UUID
+    uuid_generate(bin_uuid);
+    // Convert the binary UUID to a string
+    uuid_unparse(bin_uuid, uuid_str);
+
+    if (with_hyphens)
+    {
+        if (strcpy(buffer, uuid_str) == NULL)
+        {
+            return false;
+        }
+    }
+    else
+    {
+        int j = 0;
+        for (int i = 0; i < 36; i++)
+        {
+            if (uuid_str[i] != '-')
+            {
+                buffer[j++] = uuid_str[i];
+            }
+        }
+        buffer[j] = '\0';
+    }
+
+    return true;
 }
