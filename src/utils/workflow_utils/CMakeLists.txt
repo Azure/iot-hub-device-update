@@ -25,7 +25,7 @@ target_compile_definitions (
     PRIVATE SUPPORTED_UPDATE_MANIFEST_VERSION_MIN=${SUPPORTED_UPDATE_MANIFEST_VERSION_MIN}
             SUPPORTED_UPDATE_MANIFEST_VERSION_MAX=${SUPPORTED_UPDATE_MANIFEST_VERSION_MAX})
 
-target_link_aziotsharedutil (${target_name} PRIVATE)
+target_link_aziotsharedutil (${target_name} PUBLIC)
 
 target_link_libraries (
     ${target_name}
@@ -36,8 +36,9 @@ target_link_libraries (
             aduc::hash_utils
             aduc::logging
             aduc::parser_utils
+            aduc::reporting_utils
+            aduc::root_key_utils
             aduc::system_utils
-            aduc::workflow_utils
             aduc::jws_utils
             Parson::parson)
 

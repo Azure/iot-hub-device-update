@@ -32,6 +32,9 @@ target_link_libraries (
             aduc::logging
             aduc::parser_utils
             aduc::pnp_helper
+            aduc::reporting_utils
+            aduc::rootkeypackage_utils
+            aduc::rootkey_workflow
             aduc::workflow_data_utils
             aduc::workflow_utils
             Parson::parson)

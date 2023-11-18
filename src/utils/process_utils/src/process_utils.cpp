@@ -27,8 +27,6 @@
 
 #include <chrono>
 #include <functional> // for std::function
-#include <iostream>
-#include <sstream>
 #include <string>
 #ifndef WIN32 // Note: Only included when not in windows since a different wait signal is used.
 #    include <sys/wait.h>

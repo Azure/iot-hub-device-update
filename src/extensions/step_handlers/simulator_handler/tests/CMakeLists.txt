@@ -17,12 +17,8 @@ add_executable (${PROJECT_NAME} ${sources})
 
 target_include_directories (
     ${PROJECT_NAME}
-    PRIVATE ${ADUC_EXPORT_INCLUDES}
-            ${ADU_EXTENSION_INCLUDES}
-            ${ADU_SHELL_INCLUDES}
-            ${PROJECT_SOURCE_DIR}/inc
-            ${PROJECT_SOURCE_DIR}/../inc
-            ${PROJECT_SOURCE_DIR}/../../inc)
+    PRIVATE ${ADUC_EXPORT_INCLUDES} ${ADU_EXTENSION_INCLUDES} ${ADU_SHELL_INCLUDES}
+            ${PROJECT_SOURCE_DIR}/inc ${PROJECT_SOURCE_DIR}/../inc ${PROJECT_SOURCE_DIR}/../../inc)
 
 target_link_libraries (
     ${PROJECT_NAME}
@@ -38,6 +34,11 @@ target_link_libraries (
             aduc::workflow_data_utils
             aduc::workflow_utils
             Parson::parson)
+
+# Windows needs all EXEs to have links to all potential libraries so this is included here
+if (WIN32)
+    target_link_dosdk (${PROJECT_NAME} PRIVATE)
+endif ()
 
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 

@@ -31,6 +31,7 @@
 #include "aduc/types/workflow.h"
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
+#include "root_key_util.h" // RootKeyUtility_GetReportingErc
 
 #include <pthread.h>
 
@@ -242,15 +243,6 @@ typedef struct tagADUC_WorkflowHandlerMapEntry
  *     AutoTransitionApplicableUpdateAction is equal to the current update action of the workflow data.
  */
 const ADUC_WorkflowHandlerMapEntry workflowHandlerMap[] = {
-    { ADUCITF_WorkflowStep_ProcessDeployment,
-        /* calls operation */                               ADUC_Workflow_MethodCall_ProcessDeployment,
-        /* and on completion calls */                       ADUC_Workflow_MethodCall_ProcessDeployment_Complete,
-        /* on success, transitions to state */              ADUCITF_State_DeploymentInProgress,
-        /* on success auto-transitions to workflow step */  ADUCITF_WorkflowStep_Download,
-        /* on failure, transitions to state */              ADUCITF_State_Failed,
-        /* on failure auto-transitions to workflow step */  ADUCITF_WorkflowStep_Undefined,
-    },
-
     { ADUCITF_WorkflowStep_Download,
         /* calls operation */                               ADUC_Workflow_MethodCall_Download,
         /* and on completion calls */                       ADUC_Workflow_MethodCall_Download_Complete,
@@ -407,10 +399,6 @@ void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowD
     }
 
     // There's a pending ProcessDeployment action in the twin.
-    // We need to make sure we don't report an 'idle' state, if we can resume or retry the action.
-    // In this case, we will set last reportedState to 'idle', so that we can continue.
-    ADUC_WorkflowData_SetLastReportedState(ADUCITF_State_Idle, currentWorkflowData);
-
     ADUC_Workflow_HandleUpdateAction(currentWorkflowData);
 
 done:
@@ -434,6 +422,12 @@ void ADUC_Workflow_HandlePropertyUpdate(
     ADUC_Result result = workflow_init((const char*)propertyUpdateValue, true /* shouldValidate */, &nextWorkflow);
 
     workflow_set_force_update(nextWorkflow, forceUpdate);
+
+    ADUC_Result_t rootkeyErc = RootKeyUtility_GetReportingErc();
+    if (rootkeyErc != 0)
+    {
+        workflow_add_erc(nextWorkflow, rootkeyErc);
+    }
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -1183,6 +1177,7 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
     {
         ADUC_Result result;
         memset(&result, 0, sizeof(result));
+
         ADUC_FileEntity fileEntity;
         memset(&fileEntity, 0, sizeof(fileEntity));
 
@@ -1199,11 +1194,8 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
 
         // NOTE: do not free the handle as it is owned by the DownloadHandlerFactory.
         DownloadHandlerHandle* handle = ADUC_DownloadHandlerFactory_LoadDownloadHandler(fileEntity.DownloadHandlerId);
-        if (handle == NULL)
-        {
-            Log_Error("Failed to load download handler.");
-        }
-        else
+        ADUC_FileEntity_Uninit(&fileEntity);
+        if (handle != NULL)
         {
             result = ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(handle, workflowHandle);
             if (IsAducResultCodeFailure(result.ResultCode))
@@ -1213,11 +1205,9 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
                     result.ResultCode,
                     result.ExtendedResultCode);
 
-                workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
+                workflow_add_erc(workflowHandle, result.ExtendedResultCode);
             }
         }
-
-        ADUC_FileEntity_Uninit(&fileEntity);
     }
 }
 
@@ -1334,27 +1324,6 @@ void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
 
     workflow_free(workflowData->WorkflowHandle);
     workflowData->WorkflowHandle = NULL;
-}
-
-/**
- * @brief Called to do ProcessDeployment.
- *
- * @param[in,out] methodCallData The metedata for the method call.
- * @return Result code.
- */
-ADUC_Result ADUC_Workflow_MethodCall_ProcessDeployment(ADUC_MethodCall_Data* methodCallData)
-{
-    UNREFERENCED_PARAMETER(methodCallData);
-    Log_Info("Workflow step: ProcessDeployment");
-
-    ADUC_Result result = { ADUC_Result_Success };
-    return result;
-}
-
-void ADUC_Workflow_MethodCall_ProcessDeployment_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
-{
-    UNREFERENCED_PARAMETER(methodCallData);
-    UNREFERENCED_PARAMETER(result);
 }
 
 /**

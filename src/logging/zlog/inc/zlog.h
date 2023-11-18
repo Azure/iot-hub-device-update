@@ -55,8 +55,6 @@ int zlog_init(
 void zlog_finish(void);
 // explicitly flush the buffer in memory
 void zlog_flush_buffer(void);
-// request to flush the buffer.
-void zlog_request_flush_buffer(void);
 // log an entry with the function scope and timestamp
 void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, unsigned int line, const char* fmt, ...);
 

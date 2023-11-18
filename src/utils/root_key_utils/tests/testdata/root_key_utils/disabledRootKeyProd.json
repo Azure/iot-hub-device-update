@@ -1,0 +1,30 @@
+{
+    "protected":
+    {
+        "version": 1,
+        "published": 1694725889,
+        "disabledRootKeys": [
+            "ADU.200702.R"
+        ],
+        "disabledSigningKeys": [],
+        "rootKeys": {
+            "ADU.200702.R": {
+                "keyType": "RSA",
+                "n": "1UIurxFUo1Blh6JNW7oa-6ky3-mZXwVFyK-9NR2J6CcnWKOo7sXFHk_3kqYSBn09fbAH9ix_3m0q9bxJvBXv8IHLP4hPJx2IcShgCLYZ0tI50AUfPHaGcbtZWLyxiHurVii_MXNEMhD9PdOWXP9OXLNr_4uEm4uAuEnQffrWQFh2TcByJ3XLmi-btJ8PJfEcxRsLWjB9L7jvpyZYU6_VHVUBUQ3pG6IPP9fpHSBBpuYUCq7-8hwq1uQEe_YUfuwPl4P6WPqBNiG5oyv62WELGpT3wb5_QBRKyfo1f-9mcACx_dvXYQ07WHRnlIl1dpZ8kYfSjhGX7nuHbJovRdhlP1JwmCrLyARj9clHz3D07WSndKUjj7bt9xzTsBxkVxJaqYGEH6DnUBmWtIKxrEjj4TKCy0AfrMRZvBA0UYL5KI2oHpv1eUV1styaEUMIvmHMmsTLdzb_g92ocU9Rjg57Tfp5mI2-_IJ-QEipEgGo2X7zpRvx-5B3PkCHGMmr2fd5",
+                "e": 65537
+            },
+            "ADU.200703.R": {
+                "keyType": "RSA",
+                "n": "sqOydBb6uyD5UnbmJz6AQcb-zzD5yJb1WQqqgedRg4rE9Rc6LyrmV9Rxzoo975pVdj6Z4sKuTO4tuHj1ok4o8pxOOWW87OQN5eM4qFmrCKQbtPSgUqM4s0YhE8w8aAbe_gCmkm7eTEcQ1hycJPXNcOH1anxoEx3hxfaoTyGfhnxExYqZHMXTBptacZ0JHMNkMWrFF5UdXSrxVcdm1Oj12albjKJsYmAFN9cysHPL90s2JyQhjDgKuBj-9RVgNYs17x4PiKYTjXt977PnsMmmHHB7zPIpi4f3vZ22iG-sc_9y8u9IJ5ZyhgaiXON9zrCe5cLZTsTzf3gHS2WIRQwR5ZZWNIgtFg5ZQtL32e0d7ck3d0R-44Q2n1gT72_kw0TUdwaKz1vIgByimGULNdxzyGnQXuglQ5722KsFr1EpI1VAWBDquOLNXXnM7N-0W5jH-uPSbCbOLixW4M-N7v2TEi8ASY0cgjhWpl15REoa89wWELPBLScR_huYBeSjYDGZ",
+                "e": 65537
+            }
+        }
+    },
+    "signatures":
+    [
+        {
+            "alg": "RS256",
+            "sig": "ToDo"
+        }
+    ]
+}
