@@ -40,7 +40,7 @@ class DuScenarioDefinitionManager:
         return newCls
 
     def ParseFromOsEnviron(self):
-        distro_name = os.environ.get("DISTRONAME", "ubuntu-20.04-amd64")  # Default to "ubuntu-20.04-amd64" if not set
+        distro_name = os.environ.get("DISTRONAME","")
         device_id = os.environ.get("DEVICEID", "")
 
         if (device_id == "" or distro_name == ""):
