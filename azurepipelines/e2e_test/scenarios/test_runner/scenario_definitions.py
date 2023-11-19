@@ -51,13 +51,13 @@ class DuScenarioDefinitionManager:
         distro_version_name = distro.capitalize().replace('.', '') + version
 
         self.test_device_id = device_id
-        self.test_adu_group = f"{distro_version_name}{architecture.upper()}TestGroup"
         self.test_result_file_prefix = distro_name
         if distro_name == "debian-10-amd64":
             self.config_method = "string"
         else:
             self.config_method = "AIS"
 
+        self.test_adu_group = f"{distro_version_name}{architecture.upper()}{self.config_method}TestGroup"
 
 #
 # Other variables that should be available to all tests in this scenario may be added here
