@@ -966,8 +966,8 @@ ADUC_Result ExtensionManager::Download(
             result.ResultCode = ADUC_Result_Failure;
             result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INVALID_FILE_HASH;
 
-            workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
             Log_Error("Successful download of '%s' failed hash check.", targetUpdateFilePath.c_str());
+            workflow_add_erc(workflowHandle, result.ExtendedResultCode);
 
             goto done;
         }

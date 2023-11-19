@@ -200,6 +200,31 @@ int ADUC_SystemUtils_MkDirRecursiveDefault(const char* path)
 }
 
 /**
+ * @brief Checks if the file or directory at @p path exists
+ *
+ * @param path the path to the directory or file
+ * @return true if path exists, false otherwise
+ */
+bool ADUC_SystemUtils_Exists(const char* path)
+{
+    if (path == NULL)
+    {
+        return false;
+    }
+
+    int result = 0;
+    struct stat buff;
+
+    result  = stat(path,&buff);
+
+    if (result != 0)
+    {
+        return false;
+    }
+
+    return true;
+}
+/**
  * @brief Create a directory tree.
  *
  * On error, none of the partially created tree is cleaned up.
@@ -532,7 +557,20 @@ done:
 }
 
 /**
- * @brief Writes @p buff to file at @p path using
+ * @brief Removes the file when caller knows the path refers to a file
+ * @remark On POSIX systems, it will remove a link to the name so it might not delete right away if there are other links
+ * or another process has it open.
+ *
+ * @param path The path to the file.
+ * @return int On success, 0 is returned. On error -1 is returned, and errno is set appropriately.
+ */
+int ADUC_SystemUtils_RemoveFile(const char* path)
+{
+    return unlink(path);
+}
+
+/**
+ * @brief Writes @p buff to file at @p path
  * @details This function overwrites the current data in @p path with @p buff
  *
  * @param path the path to the file to write data

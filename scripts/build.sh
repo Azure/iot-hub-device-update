@@ -31,11 +31,14 @@ build_packages=false
 platform_layer="linux"
 trace_target_deps=false
 step_handlers="microsoft/apt,microsoft/script,microsoft/simulator,microsoft/swupdate_v2"
+use_test_root_keys=false
+srvc_e2e_agent_build=false
 build_type=Debug
 adu_log_dir=""
 default_log_dir=/var/log/adu
 output_directory=$root_dir/out
 build_unittests=false
+enable_e2e_testing=false
 declare -a static_analysis_tools=()
 log_lib="zlog"
 install_prefix=/usr/local
@@ -50,6 +53,7 @@ print_help() {
     echo "                                      Options: Release Debug RelWithDebInfo MinSizeRel"
     echo "-d, --build-docs                      Builds the documentation."
     echo "-u, --build-unit-tests                Builds unit tests."
+    echo "--enable-e2e-testing                  Enables settings for the E2E test pipelines."
     echo "--build-packages                      Builds and packages the client in various package formats e.g debian."
     echo "-o, --out-dir <out_dir>               Sets the build output directory. Default is out."
     echo "-s, --static-analysis <tools...>      Runs static analysis as part of the build."
@@ -225,6 +229,9 @@ while [[ $1 != "" ]]; do
     -u | --build-unit-tests)
         build_unittests=true
         ;;
+    --enable-e2e-testing)
+        enable_e2e_testing=true
+        ;;
     --build-packages)
         build_packages=true
         ;;
@@ -261,6 +268,12 @@ while [[ $1 != "" ]]; do
         ;;
     --trace-target-deps)
         trace_target_deps=true
+        ;;
+    --use-test-root-keys)
+        use_test_root_keys=true
+        ;;
+    --build-service-e2e-agent)
+        srvc_e2e_agent_build=true
         ;;
     --log-lib)
         shift
@@ -347,6 +360,15 @@ library_dir=${output_directory}/lib
 cmake_bin="${cmake_dir_path}/bin/cmake"
 shellcheck_bin="${work_folder}/deviceupdate-shellcheck"
 
+if [[ $srvc_e2e_agent_build == "true" ]]; then
+    warn "BUILDING SERVICE E2E AGENT NEVER USE FOR PRODUCTION"
+    echo "Additionally implies: "
+    echo " --enable-e2e-testing , --use-test-root-keys, --build-packages"
+    use_test_root_keys=true
+    enable_e2e_testing=true
+    build_packages=true
+fi
+
 # Output banner
 echo ''
 header "Building ADU Agent"
@@ -360,6 +382,7 @@ bullet "Log directory: $adu_log_dir"
 bullet "Logging library: $log_lib"
 bullet "Output directory: $output_directory"
 bullet "Build unit tests: $build_unittests"
+bullet "Enable E2E testing: $enable_e2e_testing"
 bullet "Build packages: $build_packages"
 bullet "CMake: $cmake_bin"
 bullet "CMake version: $(${cmake_bin} --version | grep version | awk '{ print $3 }')"
@@ -370,6 +393,7 @@ if [[ ${#static_analysis_tools[@]} -eq 0 ]]; then
 else
     bullet "Static analysis: " "${static_analysis_tools[@]}"
 fi
+bullet "Include Test Root Keys: $use_test_root_keys"
 echo ''
 
 CMAKE_OPTIONS=(
@@ -377,10 +401,12 @@ CMAKE_OPTIONS=(
     "-DADUC_BUILD_UNIT_TESTS:BOOL=$build_unittests"
     "-DADUC_BUILD_PACKAGES:BOOL=$build_packages"
     "-DADUC_STEP_HANDLERS:STRING=$step_handlers"
+    "-DADUC_ENABLE_E2E_TESTING=$enable_e2e_testing"
     "-DADUC_LOG_FOLDER:STRING=$adu_log_dir"
     "-DADUC_LOGGING_LIBRARY:STRING=$log_lib"
     "-DADUC_PLATFORM_LAYER:STRING=$platform_layer"
     "-DADUC_TRACE_TARGET_DEPS=$trace_target_deps"
+    "-DADUC_USE_TEST_ROOT_KEYS=$use_test_root_keys"
     "-DCMAKE_BUILD_TYPE:STRING=$build_type"
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"

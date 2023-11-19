@@ -7,20 +7,20 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-set (
-    sources
-    main.cpp
-    script_handler_ut.cpp
-    ../src/script_handler.cpp
-    ../../../update_manifest_handlers/steps_handler/src/steps_handler.cpp)
+set (sources main.cpp script_handler_ut.cpp ../src/script_handler.cpp
+             ../../../update_manifest_handlers/steps_handler/src/steps_handler.cpp)
 
 add_executable (${PROJECT_NAME} ${sources})
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
+# Windows needs all EXEs to have links to all potential libraries so this is included here
+if (WIN32)
+    target_link_dosdk (${PROJECT_NAME} PRIVATE)
+endif ()
+
 find_package (Catch2 REQUIRED)
 find_package (IotHubClient REQUIRED)
 find_package (umqtt REQUIRED)
-
 
 target_include_directories (
     ${PROJECT_NAME}
@@ -49,7 +49,9 @@ target_link_libraries (
 
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
-target_compile_definitions (${PROJECT_NAME} PRIVATE ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}" ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
+target_compile_definitions (
+    ${PROJECT_NAME} PRIVATE ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}"
+                            ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
 include (CTest)
 include (Catch)

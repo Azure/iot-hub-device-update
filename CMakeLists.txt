@@ -212,23 +212,36 @@ else ()
         ADUC_STEP_HANDLERS
         "microsoft/swupdate_v2,microsoft/script,microsoft/apt,microsoft/simulator"
         CACHE STRING "The list of step handlers.")
-
-    set (
-        ADUC_STEP_HANDLERS
-        "microsoft/swupdate_v2,microsoft/script,microsoft/apt,microsoft/simulator"
-        CACHE STRING "The list of step handlers.")
 endif ()
+
+set (
+    ADUC_ROOTKEY_STORE_PATH
+    "${ADUC_DATA_FOLDER}/rootkeystore/"
+    CACHE STRING "Path to the folder containing the information for the local store of root keys")
+
+set (
+    ADUC_ROOTKEY_STORE_PACKAGE_PATH
+    "${ADUC_ROOTKEY_STORE_PATH}/rootkeys.json"
+    CACHE STRING "Path to the folder containing the local root keys")
 
 set (
     ADUC_COMMANDS_FIFO_NAME
     "${ADUC_DATA_FOLDER}/du-commands.fifo"
     CACHE STRING "The named-pipe for commands IPC.")
 
+set (
+    ADUC_ROOTKEY_PKG_URL_OVERRIDE
+    ""
+    CACHE
+        STRING
+        "An override URL to use for the public rootkey package. Leave empty to use the URL provided in the C2D message."
+)
+
 #
 # Starting from version 0.8.1, Device Update Agent must support only one version of the update manifest
 # based on the base dtmi model that the Agent announces when connecting to the IoT Hub.
 #
-# For this version, "dtmi:azure:iot:deviceUpdateModel;2" is using the manifest version verison 5.
+# For this version, "dtmi:azure:iot:deviceUpdateModel;3" is using the manifest version 5.
 #
 set (SUPPORTED_UPDATE_MANIFEST_VERSION_MIN 4)
 set (SUPPORTED_UPDATE_MANIFEST_VERSION_MAX 5)
@@ -464,6 +477,9 @@ option (ADUC_BUILD_PACKAGES "Build the ADU Agent packages" OFF)
 option (ADUC_INSTALL_DAEMON "Install the ADU Agent as a daemon" ON)
 option (ADUC_REGISTER_DAEMON "Register the ADU Agent daemon with the system" ON)
 option (ADUC_TRACE_TARGET_DEPS "Trace target dependencies" OFF)
+option (ADUC_USE_TEST_ROOT_KEYS "Include test root keys" OFF)
+option (ADUC_ENABLE_E2E_TESTING "Enable e2e test pipeline settings" OFF)
+option (ADUC_ENABLE_SRVC_E2E_TESTING "Enable service side test agent settings" OFF)
 
 ### End CMake Options
 

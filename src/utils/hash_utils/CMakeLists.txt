@@ -17,7 +17,7 @@ target_link_aziotsharedutil (${target_name} PUBLIC)
 
 target_link_libraries (
     ${target_name}
-    PUBLIC aduc::c_utils Parson::parson
+    PUBLIC aduc::c_utils aduc::adu_types Parson::parson
     PRIVATE aduc::logging aduc::string_utils)
 
 target_link_libraries (${target_name} PRIVATE libaducpal)

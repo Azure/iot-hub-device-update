@@ -16,13 +16,8 @@ endif ()
 
 include (agentRules)
 
-include (find_curl_and_import_libcurl)
-
 compileasc99 ()
 disablertti ()
-
-# Used to find and include the CURL::libcurl imported libary
-find_curl_and_import_libcurl ()
 
 set (agent_c_files ./src/main.c ./src/health_management.c)
 
@@ -68,17 +63,20 @@ target_compile_definitions (
 
 # NOTE: the call to find_package for azure_c_shared_utility
 # must come before umqtt since their config.cmake files expect the aziotsharedutil target to already have been defined.
-find_package (azure_c_shared_utility REQUIRED)
+target_link_aziotsharedutil (${target_name} PRIVATE)
+
 find_package (IotHubClient REQUIRED)
 find_package (umqtt REQUIRED)
 find_package (Parson REQUIRED)
 
-target_link_aziotsharedutil (${target_name} PRIVATE)
+# Windows needs all EXEs to have links to all potential libraries so this is included here
+if (WIN32)
+    target_link_dosdk (${target_name} PRIVATE)
+endif ()
 
 target_link_libraries (
     ${target_name}
-    PRIVATE aziotsharedutil
-            IotHubClient::iothub_client
+    PRIVATE IotHubClient::iothub_client
             umqtt
             aduc::adu_core_export_helpers
             aduc::adu_core_interface
@@ -92,13 +90,13 @@ target_link_libraries (
             aduc::eis_utils
             aduc::extension_manager
             aduc::extension_utils
-            aduc::https_proxy_utils
             aduc::iothub_communication_manager
             aduc::logging
             aduc::permission_utils
             aduc::pnp_helper
             aduc::shutdown_service
             aduc::system_utils
+            aduc::url_utils
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
 

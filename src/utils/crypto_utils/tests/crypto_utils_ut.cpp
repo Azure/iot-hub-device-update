@@ -5,8 +5,10 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+#include "aduc/result.h"
 #include "base64_utils.h"
 #include "crypto_lib.h"
+#include "root_key_util.h"
 #include <aduc/calloc_wrapper.hpp>
 #include <array>
 #include <catch2/catch.hpp>
@@ -60,21 +62,15 @@ TEST_CASE("RSA Keys")
 
         CHECK(key != nullptr);
 
-        FreeCryptoKeyHandle(key);
-    }
-
-    SECTION("Getting a Root Key ID")
-    {
-        CryptoKeyHandle key = GetRootKeyForKeyID("ADU.200702.R");
-
-        CHECK(key != nullptr);
-
-        FreeCryptoKeyHandle(key);
+        CryptoUtils_FreeCryptoKeyHandle(key);
     }
 
     SECTION("Failing to get a Root Key")
     {
-        CryptoKeyHandle key = GetRootKeyForKeyID("foo");
+        CryptoKeyHandle key = nullptr;
+
+        ADUC_Result result = RootKeyUtility_GetKeyForKidFromHardcodedKeys(&key, "foo");
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
         CHECK(key == nullptr);
     }
 }
@@ -107,13 +103,17 @@ TEST_CASE("Signature Verification")
                           "CV29BMDVyQ1oiLCJlIjoiQVFBQiIsImFsZyI6IlJTMjU2Iiwia2lkIjoiQURVL"
                           "jIwMDcwMi5SLlMifQ" };
 
-        CryptoKeyHandle key = GetRootKeyForKeyID("ADU.200702.R");
+        CryptoKeyHandle key = nullptr;
+
+        ADUC_Result result = RootKeyUtility_GetKeyForKidFromHardcodedKeys(&key, "ADU.200702.R");
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
         uint8_t* d_sig_handle = nullptr;
         size_t sig_len = Base64URLDecode(signature.c_str(), &d_sig_handle);
 
-        CHECK(IsValidSignature(
-            "RS256",
+        CHECK(CryptoUtils_IsValidSignature(
+            CRYPTO_UTILS_SIGNATURE_VALIDATION_ALG_RS256,
             d_sig_handle,
             sig_len,
             reinterpret_cast<const uint8_t*>(blob.c_str()), // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -149,13 +149,18 @@ TEST_CASE("Signature Verification")
                           "CV29BMDVyQ1oiLCJlIjoiQVFBQiIsImFsZyI6IlJTMjU2Iiwia2lkIjoiQURVL"
                           "jIwMDcwMi5SLlMifQ" };
 
-        CryptoKeyHandle key = GetRootKeyForKeyID("ADU.200702.R");
+        CryptoKeyHandle key = NULL;
+
+        ADUC_Result result = RootKeyUtility_GetKeyForKidFromHardcodedKeys(&key, "ADU.200702.R");
+
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        REQUIRE(key != nullptr);
 
         uint8_t* d_sig_handle = nullptr;
         size_t sig_len = Base64URLDecode(signature.c_str(), &d_sig_handle);
 
-        CHECK(!IsValidSignature(
-            "RS256",
+        CHECK(!CryptoUtils_IsValidSignature(
+            CRYPTO_UTILS_SIGNATURE_VALIDATION_ALG_RS256,
             d_sig_handle,
             sig_len,
             reinterpret_cast<const uint8_t*>(blob.c_str()), // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)

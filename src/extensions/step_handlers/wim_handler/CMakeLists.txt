@@ -22,6 +22,13 @@ target_include_directories (
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
+# Windows needs all DLLS to have links to all potential libraries so this is included here
+if (WIN32)
+
+    target_link_dosdk (${target_name} PRIVATE)
+
+endif ()
+
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::c_utils
