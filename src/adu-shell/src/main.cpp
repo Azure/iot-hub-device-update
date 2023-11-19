@@ -41,11 +41,6 @@ namespace AptGetTasks = Adu::Shell::Tasks::AptGet;
 namespace ScriptTasks = Adu::Shell::Tasks::Script;
 #endif
 
-#ifdef ADUSHELL_SWUPDATE
-#    include "swupdate_tasks.hpp"
-namespace SWUpdateTasks = Adu::Shell::Tasks::SWUpdate;
-#endif
-
 namespace adushconst = Adu::Shell::Const;
 
 /**
@@ -88,7 +83,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUShell_LaunchArguments* 
         // "--version"           |   Show adu-shell version number.
         //
         // "--update-type"       |   An ADU Update Type.
-        //                             e.g., "microsoft/apt", "microsoft/swupdate", "common".
+        //                             e.g., "microsoft/apt", "microsoft/script", "common".
         //
         // "--update-action"     |   An action to perform.
         //                             e.g., "initialize", "download", "install", "apply", "cancel", "rollback", "reboot".
@@ -254,8 +249,7 @@ int ADUShell_Dowork(const ADUShell_LaunchArguments& launchArgs)
         const std::unordered_map<std::string, ADUShellTaskFuncType> actionMap = {
             { adushconst::update_type_common, CommonTasks::DoCommonTask },
             { adushconst::update_type_microsoft_apt, AptGetTasks::DoAptGetTask },
-            { adushconst::update_type_microsoft_script, ScriptTasks::DoScriptTask },
-            { adushconst::update_type_microsoft_swupdate, SWUpdateTasks::DoSWUpdateTask }
+            { adushconst::update_type_microsoft_script, ScriptTasks::DoScriptTask }
         };
 
         ADUShellTaskFuncType task = actionMap.at(std::string(launchArgs.updateType));

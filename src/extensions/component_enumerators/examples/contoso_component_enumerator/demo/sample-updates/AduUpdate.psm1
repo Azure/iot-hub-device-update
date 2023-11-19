@@ -204,14 +204,14 @@ function New-AduInstallationStep
         Create a new ADU installation step.
 
     .EXAMPLE
-        PS > New-AduInstallationStep -Handler 'microsoft/swupdate:1' -Files '.\file1.json', '.\file2.zip'
+        PS > New-AduInstallationStep -Handler 'microsoft/swupdate:2' -Files '.\file1.json', '.\file2.zip'
 #>
     [CmdLetBinding()]
     Param(
         # Step handler type in form of "{provider}/{handlerType}:{handlerTypeVersion}".
         # This parameter is forwarded to client device during deployment.
         # For example, reference ADU agent uses the following:
-        # - "microsoft/swupdate:1" for SwUpdate image-based installation step.
+        # - "microsoft/swupdate:2" for SwUpdate image-based installation step.
         # - "microsoft/apt:1" for APT package-based installation step.
         [Parameter(ParameterSetName = 'inline', Mandatory=$true)]
         [ValidateLength(1, 32)]
@@ -286,7 +286,7 @@ function New-AduImportManifest
         PS > $updateId = New-AduUpdateId -Provider Fabrikam -Name Toaster -Version 2.0
         PS > $compatInfo1 = New-AduUpdateCompatibility -Manufacturer Fabrikam -Model Toaster
         PS > $compatInfo2 = New-AduUpdateCompatibility -Properties @{ OS = "Linux"; Manufacturer = "Fabrikam" }
-        PS > $step = New-AduInstallationStep -Handler 'microsoft/swupdate:1' -Files '.\file1.json', '.\file2.zip'
+        PS > $step = New-AduInstallationStep -Handler 'microsoft/swupdate:2' -Files '.\file1.json', '.\file2.zip'
         PS >
         PS > New-AduImportManifest -UpdateId $updateId -Compatibility $compatInfo1, $compatInfo2 -InstallationSteps $step
 #>

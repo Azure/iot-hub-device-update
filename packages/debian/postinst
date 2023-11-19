@@ -219,7 +219,6 @@ register_reference_extensions() {
     echo "Register all reference step handlers..."
 
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/apt:1" --register-extension $adu_extensions_sources_dir/$adu_apt_handler_file
-    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/swupdate:1" --register-extension $adu_extensions_sources_dir/$adu_swupdate_handler_file
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/swupdate:2" --register-extension $adu_extensions_sources_dir/$adu_swupdate_handler_2_file
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/script:1" --register-extension $adu_extensions_sources_dir/$adu_script_handler_file
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/steps:1" --register-extension $adu_extensions_sources_dir/$adu_steps_handler_file
