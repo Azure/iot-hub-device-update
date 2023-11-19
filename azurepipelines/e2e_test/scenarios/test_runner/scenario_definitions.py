@@ -57,7 +57,7 @@ class DuScenarioDefinitionManager:
         else:
             self.config_method = "AIS"
 
-        self.test_adu_group = f"{distro_version_name}{architecture.upper()}{self.config_method}TestGroup"
+        self.test_adu_group = f"{distro_version_name}{architecture.upper()}{self.test_device_id}TestGroup"
 
 #
 # Other variables that should be available to all tests in this scenario may be added here
