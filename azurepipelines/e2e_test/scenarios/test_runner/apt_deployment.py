@@ -172,7 +172,7 @@ if (__name__ == "__main__"):
     #
     # Exercise the TestCase and all the tests within it.
     #
-    unittest.main(testRunner=xmlrunner.XMLTestRunner(output=out),
+    result = unittest.main(testRunner=xmlrunner.XMLTestRunner(output=out),
                   failfast=False, buffer=False, catchbreak=False, exit=False)
 
     #
@@ -180,3 +180,6 @@ if (__name__ == "__main__"):
     #
     with open('./testresults/' + test_result_file_prefix + '-apt-deployment-test.xml', 'wb') as report:
         report.write(transform(out.getvalue()))
+
+    if (len(result.failures) > 0):
+        sys.exit(1)

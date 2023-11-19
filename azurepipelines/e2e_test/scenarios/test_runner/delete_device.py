@@ -49,8 +49,11 @@ class DeleteDeviceAndGroup(unittest.TestCase):
 if (__name__ == "__main__"):
     out = io.BytesIO()
 
-    unittest.main(testRunner=xmlrunner.XMLTestRunner(output=out),
+    result = unittest.main(testRunner=xmlrunner.XMLTestRunner(output=out),
                   failfast=False, buffer=False, catchbreak=False, exit=False)
 
     with open('./testresults/' + test_result_file_prefix + '-delete-device-test.xml', 'wb') as report:
         report.write(transform(out.getvalue()))
+
+    if (len(result.failures) > 0):
+        sys.exit(1)

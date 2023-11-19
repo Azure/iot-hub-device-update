@@ -26,7 +26,7 @@ steps:
 
     - task: PythonScript@0
       displayName: Run script to add the device to the ADU group
-      continueOnError: True
+      continueOnError: False
       inputs:
           scriptSource: "filePath"
           scriptPath: "$(E2E_WORKING_DIR)/scenarios/test_runner/add_device_to_adu_group.py"
@@ -44,7 +44,7 @@ steps:
 
     - task: PythonScript@0
       displayName: Run script to test apt-deployment
-      continueOnError: True
+      continueOnError: False
       inputs:
           scriptSource: "filePath"
           scriptPath: "$(E2E_WORKING_DIR)/scenarios/test_runner/apt_deployment.py"
@@ -62,7 +62,7 @@ steps:
 
     - task: PythonScript@0
       displayName: Run script to test apt-deployment fails
-      continueOnError: True
+      continueOnError: False
       inputs:
           scriptSource: "filePath"
           scriptPath: "$(E2E_WORKING_DIR)/scenarios/test_runner/bad_apt_deployment.py"
@@ -80,7 +80,7 @@ steps:
 
     - task: PythonScript@0
       displayName: Run script to test diagnostics
-      continueOnError: True
+      continueOnError: False
       inputs:
           scriptSource: "filePath"
           scriptPath: "$(E2E_WORKING_DIR)/scenarios/test_runner/diagnostics.py"
@@ -98,7 +98,7 @@ steps:
 
     - task: PythonScript@0
       displayName: Run script to test mcu
-      continueOnError: True
+      continueOnError: False
       inputs:
           scriptSource: "filePath"
           scriptPath: "$(E2E_WORKING_DIR)/scenarios/test_runner/Multi-Component-Update.py"
@@ -116,7 +116,7 @@ steps:
 
     - task: PythonScript@0
       displayName: Run script to test bundle-update
-      continueOnError: True
+      continueOnError: False
       inputs:
           scriptSource: "filePath"
           scriptPath: "$(E2E_WORKING_DIR)/scenarios/test_runner/Bundle-update.py"
@@ -134,7 +134,7 @@ steps:
 
     - task: PythonScript@0
       displayName: Run script to clean up the device
-      continueOnError: True
+      continueOnError: False
       inputs:
           scriptSource: "filePath"
           scriptPath: "$(E2E_WORKING_DIR)/scenarios/test_runner/delete_device.py"

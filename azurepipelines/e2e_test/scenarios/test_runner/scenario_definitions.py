@@ -51,7 +51,7 @@ class DuScenarioDefinitionManager:
         distro_version_name = distro.capitalize().replace('.', '') + version
 
         self.test_device_id = device_id
-        self.test_result_file_prefix = distro_name
+        self.test_result_file_prefix = f"{distro_name}-{architecture.upper()}-{self.config_method}"
         if distro_name == "debian-10-amd64":
             self.config_method = "string"
         else:
