@@ -81,5 +81,5 @@ if (__name__ == "__main__"):
     with open('./testresults/' + test_result_file_prefix + 'add-device-to-adu-group-test.xml', 'wb') as report:
         report.write(transform(out.getvalue()))
 
-    if (len(result.failures) > 0):
+    if (len(result.result.failures) > 0):
         sys.exit(1)
