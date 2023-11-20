@@ -38,7 +38,7 @@ class DiagnosticsTest(unittest.TestCase):
         test_device_id = self.aduScenarioDefinition.test_device_id
         global test_result_file_prefix
         test_result_file_prefix = self.aduScenarioDefinition.test_result_file_prefix
-        test_operation_id = self.aduScenarioDefinition.test_operation_id
+        test_diagnostics_operation_id = self.aduScenarioDefinition.test_diagnostics_operation_id
         test_connection_timeout_tries = self.aduScenarioDefinition.test_connection_timeout_tries
         retry_wait_time_in_seconds = self.aduScenarioDefinition.retry_wait_time_in_seconds
         config_method = self.aduScenarioDefinition.config_method
@@ -48,14 +48,14 @@ class DiagnosticsTest(unittest.TestCase):
         # things like the deployment id, device-id, module-id, and other scenario level definitions that might effect other
         # tests in the scenario_definitions.py file.
         #
-        self.operationId = test_operation_id
+        self.operationId = test_diagnostics_operation_id
 
         #
         # Before anything else we need to wait and check the device connection status
         # We expect the device to connect within the configured amount of time of setting up the device in the step previous
         #
         connectionStatus = ""
-        for i in range(0, 5):
+        for i in range(0, test_connection_timeout_tries):
             if config_method == "AIS":
                 connectionStatus = self.duTestHelper.GetConnectionStatusForModule(test_device_id, "IoTHubDeviceUpdate")
             else:
@@ -63,7 +63,7 @@ class DiagnosticsTest(unittest.TestCase):
 
             if (connectionStatus == "Connected"):
                 break
-            time.sleep(30)
+            time.sleep(retry_wait_time_in_seconds)
 
         self.assertEqual(connectionStatus, "Connected")
 

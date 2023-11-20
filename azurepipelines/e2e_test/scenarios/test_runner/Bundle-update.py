@@ -31,12 +31,12 @@ from scenario_definitions import DuScenarioDefinitionManager
 bundle_update_status_retries = 15
 test_result_file_prefix = ""
 
-class AptDeploymentTest(unittest.TestCase):
+class BundleUpdateDeploymentTest(unittest.TestCase):
 
     #
     # Every test within a subclass of a unittest.TestCase to be run by unittest must have the prefix test_
     #
-    def test_AptDeployment(self):
+    def test_BundleUpdateDeployment(self):
 
         #
         # The first step to any test is to create the test helper that allows us to make calls to both the DU account and the
@@ -157,9 +157,6 @@ class AptDeploymentTest(unittest.TestCase):
         # mainly the deletion of the deployment
         #
         time.sleep(retry_wait_time_in_seconds)
-
-        # self.assertEqual(self.duTestHelper.StopDeployment(self.deploymentId,test_adu_group),200)
-        # time.sleep(retry_wait_time_in_seconds)
 
         # Once stopped we can delete the deployment
         self.assertEqual(self.duTestHelper.DeleteDeployment(

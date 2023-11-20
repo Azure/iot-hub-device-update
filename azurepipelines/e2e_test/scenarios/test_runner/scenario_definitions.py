@@ -24,7 +24,7 @@ class DuScenarioDefinitionManager:
         self.test_adu_group = ""
         self.test_apt_deployment_id = str(uuid.uuid4())
         self.test_apt_fails_deployment_id = str(uuid.uuid4())
-        self.test_operation_id = str(uuid.uuid4()).replace('-', '')
+        self.test_diagnostics_operation_id = str(uuid.uuid4()).replace('-', '')
         self.test_mcu_deployment_id = str(uuid.uuid4())
         self.test_bundle_update_deployment_id = str(uuid.uuid4())
         self.test_result_file_prefix = ''
@@ -51,7 +51,7 @@ class DuScenarioDefinitionManager:
         distro_version_name = distro.capitalize().replace('.', '') + version
 
         self.test_device_id = device_id
-        self.test_adu_group = f"{distro_version_name}{architecture.upper()}TestGroup"
+        self.test_adu_group = f"{self.test_device_id}TestGroup"
         self.test_result_file_prefix = distro_name
         if distro_name == "debian-10-amd64":
             self.config_method = "string"
