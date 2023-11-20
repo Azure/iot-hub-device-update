@@ -23,6 +23,7 @@ class DuScenarioDefinitionManager:
         self.test_device_id = ""
         self.test_adu_group = ""
         self.test_apt_deployment_id = str(uuid.uuid4())
+        self.test_apt_fails_deployment_id = str(uuid.uuid4())
         self.test_operation_id = str(uuid.uuid4()).replace('-', '')
         self.test_mcu_deployment_id = str(uuid.uuid4())
         self.test_bundle_update_deployment_id = str(uuid.uuid4())
