@@ -22,7 +22,7 @@ public:
      */
     SharedLib(const std::string& libPath);
     /**
-     * @brief Default destructor for the SharedLib object 
+     * @brief Default destructor for the SharedLib object
      */
     ~SharedLib();
     /**
@@ -33,7 +33,7 @@ public:
     /**
      * @brief Gets the symbols from @p symbol and returns them in bin format
      * @param symbol the symbol to export
-     * @returns the bin version fo symbol
+     * @returns the bin version of symbol
      */
     void* GetSymbol(const std::string& symbol) const;
 

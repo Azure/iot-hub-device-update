@@ -11,8 +11,6 @@ set (agent_c_files ./src/adushell_action.cpp ./src/common_tasks.cpp ./src/main.c
 
 set (agent_apt_c_files ./src/aptget_tasks.cpp)
 
-set (agent_swupdate_c_files ./src/swupdate_tasks.cpp)
-
 set (agent_script_c_files ./src/script_tasks.cpp)
 
 list (LENGTH ADUC_STEP_HANDLERS num_step_handlers)
@@ -30,8 +28,7 @@ string (
             ${ADUC_STEP_HANDLERS})
 
 # Support all microsoft/* update types by default.
-set (source_files ${agent_c_files} ${agent_apt_c_files} ${agent_swupdate_c_files}
-                  ${agent_script_c_files})
+set (source_files ${agent_c_files} ${agent_apt_c_files} ${agent_script_c_files})
 
 set (adushell_def ADUSHELL_SWUPDATE="yes" ADUSHELL_APT="yes" ADUSHELL_SCRIPT="yes")
 
