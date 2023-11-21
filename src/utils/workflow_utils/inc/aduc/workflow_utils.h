@@ -204,6 +204,14 @@ bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* format, ...
 char* workflow_get_workfolder(const ADUC_WorkflowHandle handle);
 
 /**
+ * @brief Get the base directory for this workflow.
+ * @details The base directory is the parent directory of the work folder.
+ * @param handle A workflow data object handle.
+ * @return char* contains full path to work folder. Caller must call workflow_free_string() to free the memory once done.
+ */
+char* workflow_get_workflow_base_dir(const ADUC_WorkflowHandle handle);
+
+/**
  * @brief Sets selected-components (in a form of serialized json string) to be used in this workflow.
  *
  * @param handle A workflow data object handle.

@@ -8,8 +8,8 @@
 #include "aduc/workflow_utils.h"
 #include "aduc/adu_types.h"
 #include "aduc/aduc_inode.h" // ADUC_INODE_SENTINEL_VALUE
-#include "aduc/config_utils.h"
 #include "aduc/c_utils.h"
+#include "aduc/config_utils.h"
 #include "aduc/extension_manager.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
@@ -1804,14 +1804,58 @@ bool workflow_set_sandbox(ADUC_WorkflowHandle handle, const char* sandbox)
     return true;
 }
 
+// Returns the download base directory
+char* workflow_get_workflow_base_dir(const ADUC_WorkflowHandle handle)
+{
+    char dir[1024] = { 0 };
+    char* ret = NULL;
+    char* pwf = NULL;
+
+    ADUC_WorkflowHandle p = workflow_get_parent(handle);
+    if (p != NULL)
+    {
+        pwf = workflow_get_workfolder(p);
+        sprintf(dir, "%s/", pwf);
+
+        Log_Debug("Using parent workfolder: '%s/%s'", pwf);
+    }
+    else
+    {
+        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+        if (config != NULL)
+        {
+            Log_Info("No parent workfolder. Using default: '%s'", config->downloadsFolder);
+            sprintf(dir, "%s", config->downloadsFolder);
+            ADUC_ConfigInfo_ReleaseInstance(config);
+        }
+        else
+        {
+            Log_Warn("Config is null. Use default sandbox root path: '%s'", DEFAULT_SANDBOX_ROOT_PATH);
+            sprintf(dir, "%s", DEFAULT_SANDBOX_ROOT_PATH);
+        }
+    }
+
+    if (dir[0] != 0)
+    {
+        mallocAndStrcpy_s(&ret, dir);
+    }
+
+    return ret;
+}
+
 // Workfolder =  [root.sandboxfolder]  "/"  ( [parent.workfolder | parent.id]  "/" )+  [handle.workfolder | handle.id]
 char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
 {
     char dir[1024] = { 0 };
 
-    char* pwf = NULL;
+    char* bdir = NULL;
     char* ret = NULL;
     char* id = workflow_get_id(handle);
+
+    if (id == NULL)
+    {
+        return NULL;
+    }
 
     // If workfolder explicitly specified, use it.
     char* wf = workflow_get_string_property(handle, WORKFLOW_PROPERTY_FIELD_WORKFOLDER);
@@ -1822,38 +1866,23 @@ char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
         return wf;
     }
 
-    // Return ([parent's workfolder] or [default sandbox folder]) + "/" + [workflow id];
-    ADUC_WorkflowHandle p = workflow_get_parent(handle);
-    if (p != NULL)
-    {
-        pwf = workflow_get_workfolder(p);
-        sprintf(dir, "%s/%s", pwf, id);
+    bdir = workflow_get_workflow_base_dir(handle);
 
-        Log_Debug("Using parent workfolder: '%s/%s'", pwf, id);
-    }
-    else
+    if (bdir == NULL)
     {
-        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
-        if (config != NULL)
-        {
-            Log_Info("Sandbox root path not set. Use default: '%s'", config->downloadsFolder);
-            sprintf(dir, "%s/%s", config->downloadsFolder, id);
-            ADUC_ConfigInfo_ReleaseInstance(config);
-        }
-        else
-        {
-            Log_Warn("Config is null. Use default sandbox root path: '%s'", DEFAULT_SANDBOX_ROOT_PATH);
-            sprintf(dir, "%s/%s", DEFAULT_SANDBOX_ROOT_PATH, id);
-        }
+        free(id);
+        return NULL;
     }
 
-    free(pwf);
-    free(id);
+    sprintf(dir, "%s/%s", bdir, id);
 
     if (dir[0] != 0)
     {
         mallocAndStrcpy_s(&ret, dir);
     }
+
+    free(bdir);
+    free(id);
 
     return ret;
 }

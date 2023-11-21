@@ -13,6 +13,8 @@
 
 EXTERN_C_BEGIN
 
+#define MAX_TIME_TO_DOWNLOAD_IN_SECS 1 /* hour*/ * 60 /* min*/ * 60 /* sec*/
+
 ADUC_Result DownloadRootKeyPkg_DO(const char* url, const char* targetFilePath)
 {
     ADUC_Result result = { ADUC_GeneralResult_Failure, 0 };
@@ -21,7 +23,8 @@ ADUC_Result DownloadRootKeyPkg_DO(const char* url, const char* targetFilePath)
 
     try
     {
-        const std::error_code ret = microsoft::deliveryoptimization::download::download_url_to_path(url, targetFilePath);
+        const std::error_code ret = microsoft::deliveryoptimization::download::download_url_to_path(
+            url, targetFilePath, std::chrono::seconds(MAX_TIME_TO_DOWNLOAD_IN_SECS));
         if (ret.value() == 0)
         {
             result.ResultCode = ADUC_GeneralResult_Success;
@@ -44,7 +47,7 @@ ADUC_Result DownloadRootKeyPkg_DO(const char* url, const char* targetFilePath)
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_DOWNLOAD_EXCEPTION;
     }
- 
+
     Log_Info("Download rc: %d, erc: 0x%08x", result.ResultCode, result.ExtendedResultCode);
 
     return result;
