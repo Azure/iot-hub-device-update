@@ -216,7 +216,7 @@ endif ()
 
 set (
     ADUC_ROOTKEY_STORE_PATH
-    "${ADUC_DATA_FOLDER}/rootkeystore/"
+    "${ADUC_DATA_FOLDER}/rootkeystore"
     CACHE STRING "Path to the folder containing the information for the local store of root keys")
 
 set (

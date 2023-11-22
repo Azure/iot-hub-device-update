@@ -805,32 +805,40 @@ ADUC_Result_t RootKeyUtility_GetReportingErc()
     return s_rootKeyErc;
 }
 
-bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE storePath, const char* rootKeyPackageJsonString)
+/**
+ * @brief Checks if the local store needs to be updated with the package @p packageToTest
+ * @details This function will load the local store if it is not already loaded and then compare the local store with @p packageToTest
+ * if the localstore fails to load it will always recommend an update
+ * @param storePath the path to the store on disk
+ * @param packageToTest the package to test against the local store
+ * @return true if the local store needs to be updated; false if it doesn't
+*/
+bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE storePath, const ADUC_RootKeyPackage* packageToTest)
 {
     bool update_needed = true;
-    char* storePackageJsonString = NULL;
 
-    JSON_Value* storePkgJsonValue = json_parse_file(STRING_c_str(storePath));
-
-    if (storePkgJsonValue == NULL)
+    if (packageToTest == NULL)
     {
         goto done;
     }
 
-    storePackageJsonString = json_serialize_to_string(storePkgJsonValue);
-
-    if (storePackageJsonString == NULL)
+    if (localStore == NULL)
     {
-        goto done;
+        ADUC_Result temp = RootKeyUtility_ReloadPackageFromDisk(STRING_c_str(storePath), true);
+
+        if (IsAducResultCodeFailure(temp.ResultCode))
+        {
+            Log_Error("Failed to load RootKey Package from disk - recommending update to new package.");
+            return true;
+        }
     }
 
-    if (strcmp(storePackageJsonString, rootKeyPackageJsonString) == 0)
+    if (ADUC_RootKeyPackageUtils_AreEqual(localStore, packageToTest))
     {
         update_needed = false;
     }
 
 done:
-    free(storePackageJsonString);
 
     return update_needed;
 }
