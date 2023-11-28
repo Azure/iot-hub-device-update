@@ -378,7 +378,6 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
     const ADUC_ConfigInfo* config = NULL;
     const ADUC_AgentInfo* agent_info = NULL;
     unsigned int value = 0;
-    bool incremented_config_refcount = false;
 
     tmp = calloc(1, sizeof(*tmp));
     if (tmp == NULL)
@@ -433,7 +432,6 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
         Log_Error("failed to get config instance");
         goto done;
     }
-    incremented_config_refcount = true;
 
     agent_info = ADUC_ConfigInfo_GetAgent(config, 0);
     if (agent_info == NULL)
@@ -479,7 +477,7 @@ done:
 
     free(tmp);
 
-    if (config != NULL && incremented_config_refcount)
+    if (config != NULL)
     {
         ADUC_ConfigInfo_ReleaseInstance(config);
     }
