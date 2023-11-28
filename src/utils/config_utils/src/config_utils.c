@@ -249,7 +249,11 @@ bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentI
         goto done;
     }
 
-    ADUC_ALLOC_BLOCK(*agents, agents_count, sizeof(ADUC_AgentInfo));
+    *agents = calloc(agents_count, sizeof(ADUC_AgentInfo));
+    if (*agents == NULL)
+    {
+        goto done;
+    }
 
     *agentCount = agents_count;
 

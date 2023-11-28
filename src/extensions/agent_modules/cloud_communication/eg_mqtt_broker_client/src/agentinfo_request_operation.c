@@ -595,7 +595,11 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
     tmp->completeFunc = AgentInfoRequestOperation_Complete;
     tmp->retryParamsCount = RetryUtils_GetRetryParamsMapSize();
 
-    ADUC_ALLOC_BLOCK(tmp->retryParams, 1, sizeof(*tmp->retryParams) * (size_t)tmp->retryParamsCount);
+    tmp->retryParams = calloc((size_t)tmp->retryParamsCount, sizeof(*tmp->retryParams));
+    if (tmp->retryParams == NULL)
+    {
+        goto done;
+    }
 
     // initialize callbacks
     tmp->onExpired = AgentInfoRequestOperation_OnExpired;

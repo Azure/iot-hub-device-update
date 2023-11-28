@@ -57,17 +57,4 @@
 #    define STATIC_ASSERT(e) typedef char __STATIC_ASSERT__[(e) ? 1 : -1] __attribute__((unused))
 #endif
 
-/**
- * @brief Calls calloc with specified number of elements and element byte size and assigns to assignee.
- * If calloc returns NULL, it goes to done label.
- *
- */
-#define ADUC_ALLOC_BLOCK(assignee, num_elements, element_byte_size) \
-    (assignee) = calloc((num_elements), (element_byte_size)); \
-    if ((assignee) == NULL)       \
-    {                             \
-        goto done;                \
-    }
-
-
 #endif // ADUC_C_UTILS_H
