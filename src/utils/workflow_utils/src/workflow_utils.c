@@ -743,18 +743,17 @@ ADUC_Result workflow_parse_peek_unprotected_workflow_properties(
         }
     }
 
-    rootkeyPkgUrl = json_object_dotget_string(updateActionJsonObj, ADUCITF_FIELDNAME_ROOTKEY_PACKAGE_URL);
-    if (IsNullOrEmpty(rootkeyPkgUrl))
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_EMPTY_OR_MISSING_ROOTKEY_PKG_URL;
-        goto done;
-    }
-
-    workflowId = json_object_dotget_string(updateActionJsonObj, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID);
     // workflowId can be NULL in some cases.
 
-    if (outWorkflowId_optional != NULL && workflowId != NULL)
+    if (outWorkflowId_optional != NULL)
     {
+        workflowId = json_object_dotget_string(updateActionJsonObj, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID);
+        if (IsNullOrEmpty(workflowId))
+        {
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_UPDATE_MANIFEST;
+            goto done;
+        }
+
         tmpWorkflowId = workflow_copy_string(workflowId);
         if (tmpWorkflowId == NULL)
         {
@@ -765,6 +764,13 @@ ADUC_Result workflow_parse_peek_unprotected_workflow_properties(
 
     if (outRootKeyPkgUrl_optional != NULL)
     {
+        rootkeyPkgUrl = json_object_dotget_string(updateActionJsonObj, ADUCITF_FIELDNAME_ROOTKEY_PACKAGE_URL);
+        if (IsNullOrEmpty(rootkeyPkgUrl))
+        {
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_EMPTY_OR_MISSING_ROOTKEY_PKG_URL;
+            goto done;
+        }
+
         tmpRootKeyPkgUrl = workflow_copy_string(rootkeyPkgUrl);
         if (tmpRootKeyPkgUrl == NULL)
         {
