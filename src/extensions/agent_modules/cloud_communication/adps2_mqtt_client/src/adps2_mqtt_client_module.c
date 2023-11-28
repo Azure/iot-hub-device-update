@@ -100,6 +100,7 @@ static ADPS_MQTT_CLIENT_MODULE_STATE* ModuleStateFromModuleHandle(ADUC_AGENT_MOD
 ADUC_AGENT_MODULE_HANDLE ADPS_MQTT_Client_Module_Create()
 {
     ADUC_AGENT_MODULE_HANDLE handle = NULL;
+
     ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = NULL;
     ADUC_AGENT_MODULE_INTERFACE* moduleInterface = NULL;
 
@@ -115,18 +116,22 @@ ADUC_AGENT_MODULE_HANDLE ADPS_MQTT_Client_Module_Create()
         goto done;
     }
 
-    moduleInterface->moduleData = moduleState;
     moduleInterface->destroy = ADPS_MQTT_Client_Module_Destroy;
     moduleInterface->getContractInfo = ADPS_MQTT_Client_Module_GetContractInfo;
     moduleInterface->doWork = ADPS_MQTT_Client_Module_DoWork;
     moduleInterface->initializeModule = ADPS_MQTT_Client_Module_Initialize;
     moduleInterface->deinitializeModule = ADPS_MQTT_Client_Module_Deinitialize;
 
-    handle = moduleInterface;
+    moduleInterface->moduleData = moduleState;
     moduleState = NULL; // transfer ownership
+
+    // successful, so only now transfer moduleInterface to the output handle.
+    handle = moduleInterface;
     moduleInterface = NULL; // transfer ownership
 
 done:
+    // Always free. If successfully transferred to output handle, then these are NOOPs;
+    // otherwise, the output handle is NULL and these get freed if they were allocated.
     free(moduleState);
     free(moduleInterface);
 
