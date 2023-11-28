@@ -30,9 +30,8 @@
 #include <mqtt_protocol.h>
 #include <string.h>
 
-// clang-format off
-#include <aduc/aduc_banned.h> // must be after other includes
-// clang-format on
+// keep this last to avoid interfering with system headers
+#include <aduc/aduc_banned.h>
 
 /**
  * @brief Gets the extension contract info.

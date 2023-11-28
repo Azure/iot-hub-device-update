@@ -37,7 +37,7 @@
 #include <stdlib.h> // strtol
 #include <sys/stat.h>
 
-// make this last so that it does not interfere when system headers are included after it
+// keep this last to avoid interfering with system headers
 #include "aduc/aduc_banned.h"
 
 /**

@@ -6,10 +6,8 @@
 #include <parson_json_utils.h> // ADUC_JSON_*
 #include <string.h> // strlen, strdup
 
-
-// clang-format off
-#include <aduc/aduc_banned.h> // make sure this is last to avoid affecting system includes
-// clang-format on
+// keep this last to avoid interfering with system headers
+#include <aduc/aduc_banned.h>
 
 /**
  * @brief Returns str representation of the enrollment state enum

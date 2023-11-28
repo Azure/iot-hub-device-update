@@ -25,7 +25,7 @@
 #    include <algorithm> // std::replace
 #endif
 
-// keep this last to minimize chance to interfere with system header includes.
+// keep this last to avoid interfering with system headers
 #include "aduc/aduc_banned.h"
 
 namespace MSDO = microsoft::deliveryoptimization;

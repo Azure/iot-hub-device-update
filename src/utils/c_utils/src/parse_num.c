@@ -4,9 +4,8 @@
 #include <stdlib.h> // strtol
 #include <limits.h> // LONG_MIN, LONG_MAX
 
-// clang-format off
-#include <aduc/aduc_banned.h> // must be after other includes
-// clang-format on
+// keep this last to avoid interfering with system headers
+#include <aduc/aduc_banned.h>
 
 /**
  * @brief Parses an entire string as int32_t in base 10.

@@ -17,7 +17,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "aduc/aduc_banned.h"
 #include "aduc/c_utils.h"
 #include "aduc/config_utils.h"
 #include "aduc/logging.h"
@@ -28,6 +27,9 @@
 #include "adushell_const.hpp"
 #include "azure_c_shared_utility/vector.h"
 #include "common_tasks.hpp"
+
+// keep last to prevent interference with system includes
+#include "aduc/aduc_banned.h"
 
 namespace CommonTasks = Adu::Shell::Tasks::Common;
 

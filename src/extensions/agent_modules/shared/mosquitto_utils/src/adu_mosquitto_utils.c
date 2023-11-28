@@ -21,9 +21,8 @@
 #include <string.h>
 #include <uuid/uuid.h>
 
-// clang-format off
-#include <aduc/aduc_banned.h> // make sure this is last to avoid affecting system includes
-// clang-format on
+// keep this last to avoid interfering with system headers
+#include <aduc/aduc_banned.h>
 
 /**
  * @brief Generate a correlation ID from a time value.
