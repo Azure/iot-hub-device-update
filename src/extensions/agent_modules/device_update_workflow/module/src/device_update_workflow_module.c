@@ -16,6 +16,9 @@
 #include "du_agent_sdk/agent_module_interface.h"
 #include <stdlib.h>
 
+// forward declarations
+void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData);
+
 ADUC_AGENT_CONTRACT_INFO g_iotHubClientContractInfo = {
     "Microsoft",
     "Device Update Workflow Module",
@@ -104,10 +107,10 @@ int DeviceUpdateWorkflowModule_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
  */
 ADUC_AGENT_MODULE_HANDLE DeviceUpdateWorkflowModule_Create()
 {
-    ADUC_WorkflowData *workflowData =  NULL;
-
     ADUC_AGENT_MODULE_HANDLE handle = NULL;
+
     ADUC_AGENT_MODULE_INTERFACE* tmp = NULL;
+    ADUC_WorkflowData *workflowData =  NULL;
 
     tmp = calloc(1, sizeof(*tmp));
     if (tmp == NULL)
@@ -124,6 +127,8 @@ ADUC_AGENT_MODULE_HANDLE DeviceUpdateWorkflowModule_Create()
     workflowData->CommunicationChannel = ADUC_CommunicationChannelType_MQTTBroker;
 
     tmp->moduleData = workflowData;
+    workflowData = NULL;
+
     tmp->destroy = DeviceUpdateWorkflowModule_Destroy;
     tmp->getContractInfo = DeviceUpdateWorkflowModule_GetContractInfo;
     tmp->doWork = DeviceUpdateWorkflowModule_DoWork;
@@ -134,6 +139,8 @@ ADUC_AGENT_MODULE_HANDLE DeviceUpdateWorkflowModule_Create()
     tmp = NULL;
 
 done:
+    ADUC_WorkflowData_Uninit(workflowData);
+    free(workflowData);
     free(tmp);
 
     return handle;
