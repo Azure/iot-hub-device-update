@@ -170,11 +170,9 @@ ADUC_AGENT_MODULE_HANDLE ADUC_Communication_Channel_Create()
     state->pendingSubscriptions = VECTOR_create(sizeof(ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO));
     if (state->pendingSubscriptions == NULL)
     {
-        Log_Error("Failed to create pending subscriptions vector");
+        Log_Error("Fail create pendingSubscriptions");
         goto done;
     }
-
-    Log_Debug("pendingSubscriptions obj created @ %p", state->pendingSubscriptions);
 
     memset(&state->subscribeTopicInfo, 0, sizeof(state->subscribeTopicInfo));
     state->connectionRetryParams = defaultConnectionRetryParams;
@@ -233,20 +231,20 @@ void ADUC_Communication_Channel_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 void ADUC_Communication_Channel_OnDisconnect(
     struct mosquitto* mosq, void* obj, int rc, const mosquitto_property* props)
 {
-    Log_Info("on_disconnect: reason=%s", mosquitto_strerror(rc));
+    Log_Info("on_disconnect: '%s'", mosquitto_strerror(rc));
 
     ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)obj;
 
     if (interface == NULL)
     {
-        Log_Error("Null parameter (interface=%p)", interface);
+        Log_Error("Null arg (interface=%p)", interface);
         return;
     }
 
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = (ADU_MQTT_COMMUNICATION_MGR_STATE*)interface->moduleData;
     if (commMgrState == NULL)
     {
-        Log_Error("commMgrState is NULL");
+        Log_Error("NULL commMgrState");
         return;
     }
 
@@ -292,7 +290,7 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
     ADUC_STATE_STORE_RESULT storeRes = ADUC_StateStore_Initialize(NULL);
     if (storeRes != ADUC_STATE_STORE_RESULT_OK)
     {
-        Log_Error("Failed to initialize state store (%d)", storeRes);
+        Log_Error("Fail init StateStore: %d", storeRes);
         return false;
     }
 
@@ -300,28 +298,28 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
 
     if (interface == NULL)
     {
-        Log_Error("Null parameter (interface=%p)", interface);
+        Log_Error("Null arg (interface=%p)", interface);
         return false;
     }
 
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = (ADU_MQTT_COMMUNICATION_MGR_STATE*)interface->moduleData;
     if (commMgrState == NULL)
     {
-        Log_Error("commMgrState is NULL");
+        Log_Error("NULL commMgrState");
         return false;
     }
 
     ADUC_COMMUNICATION_CHANNEL_INIT_DATA* initData = (ADUC_COMMUNICATION_CHANNEL_INIT_DATA*)moduleInitData;
     if (initData == NULL)
     {
-        Log_Error("moduleInitData is NULL");
+        Log_Error("NULL initData");
         return false;
     }
 
     ADUC_STATE_STORE_RESULT stateRes = ADUC_StateStore_SetCommunicationChannelHandle(initData->sessionId, handle);
     if (stateRes != ADUC_STATE_STORE_RESULT_OK)
     {
-        Log_Error("Failed to set communication channel handle in state store (%d)", stateRes);
+        Log_Error("Fail StateStore SetCommunicationChannelHandle: %d", stateRes);
         return false;
     }
 
@@ -365,7 +363,7 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
     mqtt_res = mosquitto_lib_init();
     if (mqtt_res != MOSQ_ERR_SUCCESS)
     {
-        Log_Error("Failed to initialize Mosquitto library (%d)", mqtt_res);
+        Log_Error("Fail mosq init: %d", mqtt_res);
         goto done;
     }
 
@@ -375,7 +373,7 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
         handle /* Communication Channel Module Handle */);
     if (!commMgrState->mqttClient)
     {
-        Log_Error("Failed to create Mosquitto client");
+        Log_Error("Fail mosq new");
         goto done;
     }
 
@@ -383,7 +381,7 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
         commMgrState->mqttClient, MOSQ_OPT_PROTOCOL_VERSION, commMgrState->mqttSettings.mqttVersion);
     if (mqtt_res != MOSQ_ERR_SUCCESS)
     {
-        Log_Error("Failed to set MQTT protocol version (%d)", mqtt_res);
+        Log_Error("Fail mqttVersion (%d)", mqtt_res);
         goto done;
     }
 
@@ -394,7 +392,7 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
 
     if (commMgrState->mqttSettings.useTLS)
     {
-        Log_Error("Setting up TLS for mqtt broker using caFile '%s', certFile '%s', keyFile '%s'",
+        Log_Debug("setup TLS, caFile '%s' certFile '%s' keyFile '%s'",
             commMgrState->mqttSettings.caFile,
             commMgrState->mqttSettings.certFile,
             commMgrState->mqttSettings.keyFile);
@@ -405,7 +403,7 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
             mqtt_res = mosquitto_int_option(commMgrState->mqttClient, MOSQ_OPT_TLS_USE_OS_CERTS, true);
             if (mqtt_res != MOSQ_ERR_SUCCESS)
             {
-                Log_Error("Failed to set TLS use OS certs (%d - %s)", mosquitto_strerror(mqtt_res));
+                Log_Error("int_option OS certs (%d - %s)", mosquitto_strerror(mqtt_res));
                 goto done;
             }
         }
@@ -426,7 +424,7 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
             case MOSQ_ERR_INVAL:
             case MOSQ_ERR_NOMEM:
             default:
-                Log_Error("TLS setting failed. (%d:%s)", mqtt_res, mosquitto_strerror(mqtt_res));
+                Log_Error("tls_set %d, '%s'", mqtt_res, mosquitto_strerror(mqtt_res));
                 break;
             }
 
@@ -453,14 +451,14 @@ int ADUC_Communication_Channel_Deinitialize(ADUC_AGENT_MODULE_HANDLE handle)
 
     if (interface == NULL)
     {
-        Log_Error("Null parameter (interface=%p)", interface);
+        Log_Error("Null arg (interface=%p)", interface);
         return -1;
     }
 
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = (ADU_MQTT_COMMUNICATION_MGR_STATE*)interface->moduleData;
     if (commMgrState == NULL)
     {
-        Log_Error("commMgrState is NULL");
+        Log_Error("commMgrState NULL");
         return -1;
     }
 
@@ -468,10 +466,12 @@ int ADUC_Communication_Channel_Deinitialize(ADUC_AGENT_MODULE_HANDLE handle)
     {
         if (commMgrState->mqttClient != NULL)
         {
-            Log_Info("Disconnecting MQTT client");
+            Log_Debug("Disconnecting MQTT client");
             mosquitto_disconnect(commMgrState->mqttClient);
-            Log_Info("Destroying MQTT client");
+
+            Log_Debug("Destroying MQTT client");
             mosquitto_destroy(commMgrState->mqttClient);
+
             commMgrState->mqttClient = NULL;
         }
 
@@ -492,12 +492,12 @@ static void ADUC_SetCommunicationChannelState(
 {
     if (commMgrState->commState != newState)
     {
-        Log_Info("Transitioning from '%s' to '%s' state.", comm_channel_state_str(commMgrState->commState), comm_channel_state_str(newState));
+        Log_Info("Transition '%s' -> '%s'", comm_channel_state_str(commMgrState->commState), comm_channel_state_str(newState));
         commMgrState->commState = newState;
     }
     else
     {
-        Log_Warn("Tried to transition to same as current state '%s'", comm_channel_state_str(commMgrState->commState));
+        Log_Warn("'%s' -> '%s'", comm_channel_state_str(commMgrState->commState), comm_channel_state_str(commMgrState->commState));
     }
 }
 
@@ -525,14 +525,14 @@ void ADUC_Communication_Channel_OnConnect(
 
     if (interface == NULL)
     {
-        Log_Error("Null parameter (interface=%p)", interface);
+        Log_Error("Null arg (interface=%p)", interface);
         return;
     }
 
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = (ADU_MQTT_COMMUNICATION_MGR_STATE*)interface->moduleData;
     if (commMgrState == NULL)
     {
-        Log_Error("commMgrState is NULL");
+        Log_Error("commMgrState NULL");
         return;
     }
 
@@ -571,7 +571,7 @@ void ADUC_Communication_Channel_OnConnect(
     int rc;
     if ((rc = mosquitto_disconnect_v5(mosq, reason_code, NULL)) != MOSQ_ERR_SUCCESS)
     {
-        Log_Error("Failure on disconnect: %s", mosquitto_strerror(rc));
+        Log_Error("disconnect_v5: %s", mosquitto_strerror(rc));
     }
 
 done:
@@ -607,25 +607,25 @@ void ADUC_Communication_Channel_OnMessage(
 
     if (interface == NULL)
     {
-        Log_Error("Null parameter (interface=%p)", interface);
+        Log_Error("Null interface");
         return;
     }
 
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = (ADU_MQTT_COMMUNICATION_MGR_STATE*)interface->moduleData;
     if (commMgrState == NULL)
     {
-        Log_Error("commMgrState is NULL");
+        Log_Error("commMgrState NULL");
         return;
     }
 
     char* msg_type = NULL;
 
-    Log_Info("Received message, Topic: %s; QOS: %d; mid: %d", msg->topic, msg->qos, msg->mid);
+    Log_Debug("<-- msg %s qos:%d mid:%d", msg->topic, msg->qos, msg->mid);
 
     // All parameters are required.
     if (mosq == NULL || commChannelModuleHandle == NULL || msg == NULL)
     {
-        Log_Error("Null parameter (mosq=%p, obj=%p, msg=%p, props=%p)", mosq, commChannelModuleHandle, msg, props);
+        Log_Error("Null arg (mosq=%p, obj=%p, msg=%p, props=%p)", mosq, commChannelModuleHandle, msg, props);
         goto done;
     }
 
@@ -633,21 +633,21 @@ void ADUC_Communication_Channel_OnMessage(
     {
         if (props == NULL)
         {
-            Log_Error("Null parameter (props=%p)", props);
+            Log_Error("Null arg (props=%p)", props);
             goto done;
         }
 
         // Get the message type. (mt = message type)
         if (!ADU_mosquitto_read_user_property_string(props, "mt", &msg_type) || IsNullOrEmpty(msg_type))
         {
-            Log_Warn("Failed to read the message type. Ignore the message.");
+            Log_Warn("fail read 'mt', ignore");
             goto done;
         }
 
         // Only support protocol version 1
         if (!ADU_mosquitto_has_user_property(props, "pid", "1"))
         {
-            Log_Warn("Ignore the message. (pid != 1)");
+            Log_Warn("pid != 1");
             goto done;
         }
     }
@@ -682,20 +682,20 @@ done:
 void ADUC_Communication_Channel_OnPublish(
     struct mosquitto* mosq, void* commChannelModuleHandle, int mid, int reason_code, const mosquitto_property* props)
 {
-    Log_Info("on_publish: Message with mid %d has been published. reason_code: %d", mid, reason_code);
+    Log_Debug("on_publish, mid:%d reason_code:%d", mid, reason_code);
 
     ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)commChannelModuleHandle;
 
     if (interface == NULL)
     {
-        Log_Error("Null parameter (interface=%p)", interface);
+        Log_Error("Null interface");
         return;
     }
 
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = (ADU_MQTT_COMMUNICATION_MGR_STATE*)interface->moduleData;
     if (commMgrState == NULL)
     {
-        Log_Error("commMgrState is NULL");
+        Log_Error("commMgrState NULL");
         return;
     }
     if (commMgrState->mqttCallbacks.on_publish_v5 != NULL)
@@ -731,22 +731,23 @@ void ADUC_Communication_Channel_OnSubscribe(
 {
     ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* subInfo = NULL;
 
-    Log_Info("on_subscribe ACK: mid %d; %d topics.", mid, qos_count);
+    Log_Info("<-- SUBACK, mid:%d qos:%d", mid, qos_count);
 
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState =
         CommunicationManagerStateFromModuleHandle(commChannelModuleHandle);
     if (commMgrState == NULL)
     {
-        Log_Error("State is NULL. (handle=%p)", commChannelModuleHandle);
+        Log_Error("commMgrState NULL");
         return;
     }
 
     for (int i = 0; i < qos_count; i++)
     {
-        Log_Info("\tQoS %d\n", granted_qos[i]);
+        Log_Debug("\tQoS %d\n", granted_qos[i]);
     }
 
-    Log_Debug("Before remove from pendingSubscriptions:");
+    // TODO: remove verbose debug traces
+    Log_Debug("Before rmv from pendingSubscriptions:");
     for (size_t i = 0; i < VECTOR_size(commMgrState->pendingSubscriptions); ++i)
     {
         ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* cbInfo = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)VECTOR_element(commMgrState->pendingSubscriptions, i);
@@ -760,14 +761,14 @@ void ADUC_Communication_Channel_OnSubscribe(
 
         if (subInfo->messageId == mid)
         {
-            Log_Debug("Found pending subscription with msg id: %d", mid);
+            Log_Debug("Found pending sub, mid:%d", mid);
             break;
         }
     }
 
     if (subInfo != NULL)
     {
-        Log_Debug("Moving pending subscription to subscribed comm mgr state");
+        Log_Debug("move pending sub -> subscribed");
 
         commMgrState->subscribeTopicInfo = *subInfo; // transfer fields
         VECTOR_erase(commMgrState->pendingSubscriptions, subInfo, 1);
@@ -800,14 +801,14 @@ void ADUC_Communication_Channel_OnLog(
 
     if (interface == NULL)
     {
-        Log_Error("Null parameter (interface=%p)", interface);
+        Log_Error("Null arg (interface=%p)", interface);
         return;
     }
 
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = (ADU_MQTT_COMMUNICATION_MGR_STATE*)interface->moduleData;
     if (commMgrState == NULL)
     {
-        Log_Error("commMgrState is NULL");
+        Log_Error("commMgrState NULL");
         return;
     }
 
@@ -884,7 +885,7 @@ void PerformMosquittoDoWork(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState)
 {
     if (commMgrState == NULL)
     {
-        Log_Error("commMgrState is NULL");
+        Log_Error("commMgrState NULL");
         return;
     }
 
@@ -902,12 +903,12 @@ void PerformMosquittoDoWork(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState)
             case MOSQ_ERR_INVAL:
             case MOSQ_ERR_PROTOCOL:
                 // Unrecoverable errors. Agent configuration may be invalid.
-                Log_Error("Failed to execute mosquitto loop (%d - %s)", mqtt_ret, mosquitto_strerror(mqtt_ret));
+                Log_Error("mosq loop, unrecoverable(%d - %s)", mqtt_ret, mosquitto_strerror(mqtt_ret));
                 SuppressDoWorkCallsFor(60 /*seconds*/);
                 break;
             case MOSQ_ERR_ERRNO: {
                 int errno_copy = errno;
-                Log_Error("mosquitto_loop failed (%d) - %s", mqtt_ret, mosquitto_strerror(errno_copy));
+                Log_Error("mosq loop, errno: %d, '%s'", mqtt_ret, mosquitto_strerror(errno_copy));
                 SuppressDoWorkCallsFor(60 /*seconds*/);
                 break;
             }
@@ -919,7 +920,7 @@ void PerformMosquittoDoWork(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState)
             default:
                 // Unexpected error
                 Log_Error(
-                    "Failed to execute mosquitto loop (unexpected error) (%d - %s)",
+                    "mosq loop, unexpected error(%d - %s)",
                     mqtt_ret,
                     mosquitto_strerror(mqtt_ret));
                 break;
@@ -959,13 +960,13 @@ bool EnsureADUTopicsSubscriptionValid(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrS
         if (!commMgrState->mqttCallbacks.get_subscription_topics(
                 commMgrState->ownerModuleContext, &topic_count, &topics))
         {
-            Log_Info("GetTopics failed - no topics to subscribe to.");
+            Log_Info("get_subscription_topics");
         }
     }
 
     if (topic_count <= 0)
     {
-        Log_Warn("No topics to subscribe to.");
+        Log_Warn("No subscribe topics");
         goto done;
     }
 
@@ -973,7 +974,7 @@ bool EnsureADUTopicsSubscriptionValid(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrS
         commMgrState->mqttClient, &mid, topic_count, topics, commMgrState->mqttSettings.qos, 0, NULL /*props*/);
     if (mqtt_ret != MOSQ_ERR_SUCCESS)
     {
-        Log_Error("Failed to subscribe to topic. (err:%d)", mqtt_ret);
+        Log_Error("Fail subscribe_multiple: %d)", mqtt_ret);
         goto done;
     }
 
@@ -1057,7 +1058,7 @@ bool PerformChannelStateManagement(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrStat
             break;
         case MOSQ_ERR_INVAL:
             Log_Error(
-                "Invalid parameter (client: %d, host:%s, port:%d, keepalive:%d)",
+                "Invalid arg (client: %d, host:%s, port:%d, keepalive:%d)",
                 commMgrState->mqttClient,
                 commMgrState->mqttSettings.hostname,
                 commMgrState->mqttSettings.tcpPort,
@@ -1103,7 +1104,7 @@ bool EnsureHostnameValid(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState)
 {
     if (commMgrState == NULL)
     {
-        Log_Error("commMgrState is NULL");
+        Log_Error("commMgrState NULL");
         return false;
     }
 
@@ -1114,16 +1115,16 @@ bool EnsureHostnameValid(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState)
             const char* hostName = ADUC_StateStore_GetMQTTBrokerHostname();
             if (!IsNullOrEmpty(hostName))
             {
-                Log_Info("Applying hostname from DPS: '%s'", hostName);
+                Log_Info("use prov hostname: '%s'", hostName);
                 if (mallocAndStrcpy_s(&commMgrState->mqttSettings.hostname, hostName) != 0)
                 {
-                    Log_Error("Failed to allocate memory for hostname");
+                    Log_Error("copy hostname");
                 }
             }
         }
         else
         {
-            Log_Error("Host name is empty");
+            Log_Error("unknown hostname src");
         }
     }
 
@@ -1144,14 +1145,14 @@ int ADUC_Communication_Channel_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
 
     if (interface == NULL)
     {
-        Log_Error("Null parameter (interface=%p)", interface);
+        Log_Error("Null arg (interface=%p)", interface);
         return false;
     }
 
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = (ADU_MQTT_COMMUNICATION_MGR_STATE*)interface->moduleData;
     if (commMgrState == NULL)
     {
-        Log_Error("commMgrState is NULL");
+        Log_Error("commMgrState NULL");
         return false;
     }
 
@@ -1202,19 +1203,19 @@ int ADUC_Communication_Channel_MQTT_Publish(
 
     if (interface == NULL)
     {
-        Log_Error("Null parameter (interface=%p)", interface);
+        Log_Error("Null arg (interface=%p)", interface);
         return -1;
     }
 
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = (ADU_MQTT_COMMUNICATION_MGR_STATE*)interface->moduleData;
     if (commMgrState == NULL)
     {
-        Log_Error("commMgrState is NULL");
+        Log_Error("commMgrState NULL");
         return -1;
     }
 
-    Log_Info("MQTT Publish to topic '%s' at qos %d", topic, qos);
-    Log_Debug("    Payload len %d: '%s'", payload_len, payload);
+    Log_Info("PUB '%s' qos:%d len:%d", topic, qos, payload_len);
+    // Log_Debug("   payload:\n%s\n", payload);
 
     return mosquitto_publish_v5(
         commMgrState->mqttClient,
@@ -1259,8 +1260,6 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = CommunicationManagerStateFromModuleHandle(commHandle);
     ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO callbackInfo = { 0 };
 
-    Log_Info("Attempt invoke SUBSCRIBE call: commHandle=%p topic=%s qos=%d options=%d callback=%p", commHandle, topic, qos, options, callback);
-
     // Create a tracking data.
     callbackInfo.messageId = -1;
     if (mallocAndStrcpy_s(&callbackInfo.topic, topic) != 0)
@@ -1276,7 +1275,7 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
         mosquitto_subscribe_v5(commMgrState->mqttClient, &callbackInfo.messageId, topic, qos, options, props);
     if (mosqResult != MOSQ_ERR_SUCCESS)
     {
-        Log_Error("mosquitto_subscribe_v5 failed (mosqRes:%d)", mosqResult);
+        Log_Error("mosq subscribe_v5 fail: %d", mosqResult);
         goto done;
     }
 
@@ -1297,13 +1296,12 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
         Log_Debug("    cbInfo[%lu]: messageId=%d topic=%s callback=%p", i, cbInfo->messageId, cbInfo->topic, callback);
     }
 
-    Log_Info("SUBSCRIBE successfully issued for topic: %s, mid: %d", topic, callbackInfo.messageId);
-
     if (mid != NULL)
     {
         *mid = callbackInfo.messageId;
     }
 
+    Log_Debug("-> SUB %s mid[%d]", topic, callbackInfo.messageId);
     ADUC_SetCommunicationChannelState(commMgrState, ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING);
     mosqResult = MOSQ_ERR_SUCCESS;
 
@@ -1323,7 +1321,7 @@ bool ADUC_Communication_Channel_MQTT_IsSubscribed(ADUC_AGENT_MODULE_HANDLE commH
 {
     if (commHandle == NULL || topic == NULL)
     {
-        Log_Error("Null parameter (commHandle=%p, topic=%p)", commHandle, topic);
+        Log_Error("Null arg (commHandle=%p, topic=%p)", commHandle, topic);
         return false;
     }
 
@@ -1331,7 +1329,7 @@ bool ADUC_Communication_Channel_MQTT_IsSubscribed(ADUC_AGENT_MODULE_HANDLE commH
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = CommunicationManagerStateFromModuleHandle((void*)commHandleFromStore);
     if (commMgrState == NULL)
     {
-        Log_Error("commMgrState is NULL");
+        Log_Error("commMgrState NULL");
         return false;
     }
 
@@ -1343,7 +1341,7 @@ bool ADUC_Communication_Channel_MQTT_IsSubscribed(ADUC_AGENT_MODULE_HANDLE commH
 
     if (commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBED)
     {
-        Log_Debug("Already subscribed to topic '%s'.");
+        Log_Debug("Already subscribed to '%s'.");
         if (commMgrState->subscribeTopicInfo.topic != NULL && strcmp(commMgrState->subscribeTopicInfo.topic, topic) == 0)
         {
             Log_Debug("Subscribed topic '%s' matches '%s'", commMgrState->subscribeTopicInfo.topic, topic);
@@ -1413,7 +1411,7 @@ int ADUC_MQTTBroker_D2C_Message_Transport_Function(
     ADUC_AGENT_MODULE_HANDLE handle = (ADUC_AGENT_MODULE_HANDLE)cloudServiceHandle;
     if (handle == NULL)
     {
-        Log_Error("cloudServiceHandle is NULL");
+        Log_Error("cloudServiceHandle NULL");
         return -1;
     }
 

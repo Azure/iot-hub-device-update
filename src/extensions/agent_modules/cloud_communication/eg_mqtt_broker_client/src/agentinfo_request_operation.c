@@ -24,12 +24,12 @@ static void Set_Agent_State(ADUC_AgentInfo_Request_Operation_Data* agentInfoData
 {
     if (agentInfoData->agentInfoState != newState)
     {
-        Log_Info("Transition from '%s' to '%s'", agentinfo_state_str(agentInfoData->agentInfoState), agentinfo_state_str(newState));
+        Log_Info("Transition '%s' -> '%s'", agentinfo_state_str(agentInfoData->agentInfoState), agentinfo_state_str(newState));
         agentInfoData->agentInfoState = newState;
     }
     else
     {
-        Log_Warn("Tried to transition to same state as current '%s'", agentinfo_state_str(agentInfoData->agentInfoState));
+        Log_Warn("'%s' -> '%s'", agentinfo_state_str(agentInfoData->agentInfoState), agentinfo_state_str(agentInfoData->agentInfoState));
     }
 }
 
@@ -65,7 +65,7 @@ bool AgentInfoRequestOperation_Complete(ADUC_Retriable_Operation_Context* contex
 {
     if (context == NULL)
     {
-        Log_Error("context is NULL");
+        Log_Error("context NULL");
         return false;
     }
 
@@ -90,7 +90,7 @@ bool AgentInfoRequestOperation_Complete(ADUC_Retriable_Operation_Context* contex
 bool AgentInfoRequestOperation_DoRetry(
     ADUC_Retriable_Operation_Context* context, const ADUC_Retry_Params* retryParams)
 {
-    Log_Info("Will retry the agentinfo request operation.");
+    Log_Debug("retry");
     ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoData_FromOperationContext(context);
 
     if (agentInfoData == NULL)
@@ -106,7 +106,7 @@ bool AgentInfoRequestOperation_DoRetry(
 
 void AgentInfoRequestOperation_DataDestroy(ADUC_Retriable_Operation_Context* context)
 {
-    Log_Info("Destroying context data");
+    Log_Debug("Destroy context data");
     if (context != NULL && context->data != NULL)
     {
         // Deinitialize and destroy the associated
@@ -120,7 +120,7 @@ void AgentInfoRequestOperation_DataDestroy(ADUC_Retriable_Operation_Context* con
 
 void AgentInfoRequestOperation_OperationDestroy(ADUC_Retriable_Operation_Context* context)
 {
-    Log_Info("Destroying operation context");
+    Log_Debug("Destroy operation context");
     AgentInfoRequestOperation_DataDestroy(context);
 }
 
@@ -192,8 +192,6 @@ static bool HandlingRequestAgentInfo(ADUC_Retriable_Operation_Context* context, 
 
     if (agentInfoData->agentInfoState == ADU_AGENTINFO_STATE_REQUESTING)
     {
-        Log_Info("requesting");
-
         ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_InProgress);
 
         // is the current request timed-out?
@@ -385,11 +383,9 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
     char* msg_payload = Build_AgentInfo_Request_Msg_Payload(nowTime);
     if (msg_payload == NULL)
     {
-        Log_Error("Fail build ainfo_req msg payload");
+        Log_Error("msg_payload");
         goto done;
     }
-
-    Log_Info("sending 'ainfo_req'");
 
     // Set MQTT 5 user propertie as per ainfo req-res
     if (!ADU_mosquitto_add_user_property(&user_prop_list, "mt", "ainfo_req") ||
@@ -400,7 +396,7 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
 
     if (!ADU_mosquitto_set_correlation_data_property(&user_prop_list, &(agentInfoData->ainfoReqMessageContext.correlationId)[0]))
     {
-        Log_Error("Failed set mqtt CorrelationData property");
+        Log_Error("set correlationId");
         goto done;
     }
 
@@ -418,7 +414,7 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
     {
         opSucceeded = false;
         Log_Error(
-            "failed to publish agentinfo status request message. (mid:%d, cid:%s, err:%d - %s)",
+            "pub 'ainfo_req' mid:%d cid:%s err:%d, %s)",
             messageContext->messageId,
             messageContext->correlationId,
             mqtt_res,
@@ -435,7 +431,7 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
         case MOSQ_ERR_QOS_NOT_SUPPORTED:
         case MOSQ_ERR_OVERSIZE_PACKET:
             // following error is non-recoverable, so we'll bail out.
-            Log_Error("failed to publish (non-recoverable). err:%d", mqtt_res);
+            Log_Error("non-recoverable:%d", mqtt_res);
             context->cancelFunc(context);
             break;
 
@@ -445,11 +441,11 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
             context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
 
             Log_Error(
-                "failed publish (retry-able after t:%ld). err:%d", context->operationIntervalSecs, mqtt_res);
+                "retry-able after t[%ld]: %d", context->operationIntervalSecs, mqtt_res);
             break;
 
         default:
-            Log_Error("failed publish (unhandled error). err:%d ", mqtt_res);
+            Log_Error("unhandled:%d ", mqtt_res);
             // retry again after default retry delay.
             context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT]);
             break;
@@ -462,8 +458,8 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
 
     context->lastExecutionTime = nowTime;
 
-    Log_Info(
-        "publishing 'ainfo_req' (mid:%d, cid:%s, t:%ld, timeout in:%ld)",
+    Log_Debug(
+        "--> 'ainfo_req' (mid:%d, cid:%s, t:%ld, timeout in:%ld)",
         messageContext->messageId,
         messageContext->correlationId,
         context->lastExecutionTime,
@@ -523,8 +519,6 @@ bool AgentInfoStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* co
         goto done;
     }
 
-    Log_Info("work on send 'ainforeq' ...");
-
     // at this point, we should send 'ainfo_req' message.
     agentInfoData = AgentInfoData_FromOperationContext(context);
 
@@ -567,7 +561,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
     // and used to match with response.
     if (!ADUC_generate_correlation_id(false /* with_hyphens */, &(operationDataContext->ainfoReqMessageContext.correlationId)[0], ARRAY_SIZE(operationDataContext->ainfoReqMessageContext.correlationId)))
     {
-        Log_Error("Faild generate correlation id");
+        Log_Error("correlationid");
         goto done;
     }
 
@@ -597,7 +591,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
     config = ADUC_ConfigInfo_GetInstance();
     if (config == NULL)
     {
-        Log_Error("failed to get config instance");
+        Log_Error("configinfo");
         goto done;
     }
     incremented_config_refcount = true;
@@ -605,13 +599,13 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
     agent_info = ADUC_ConfigInfo_GetAgent(config, 0);
     if (agent_info == NULL)
     {
-        Log_Error("failed to get agent info");
+        Log_Error("agentinfo");
         goto done;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, SETTING_KEY_ENR_REQ_OP_INTERVAL_SECONDS, &value))
     {
-        log_warn("failed to get agentinfo status request interval setting");
+        log_warn("request interval");
         value = DEFAULT_ENR_REQ_OP_INTERVAL_SECONDS;
     }
     context->operationIntervalSecs = value;
@@ -619,7 +613,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
     value = 0;
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, SETTING_KEY_ENR_REQ_OP_TIMEOUT_SECONDS, &value))
     {
-        log_warn("failed to get agentinfo status request timeout setting");
+        log_warn("request timeout");
         value = DEFAULT_ENR_REQ_OP_TIMEOUT_SECONDS;
     }
     context->operationTimeoutSecs = value;
@@ -629,7 +623,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
         json_value_get_object(agent_info->agentJsonValue), SETTING_KEY_ENR_REQ_OP_RETRY_PARAMS);
     if (retrySettings == NULL)
     {
-        Log_Error("failed to get retry settings");
+        Log_Error("retry param");
         goto done;
     }
 
