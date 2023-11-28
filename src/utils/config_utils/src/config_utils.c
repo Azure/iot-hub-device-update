@@ -218,18 +218,18 @@ static void ADUC_AgentInfoArray_Free(size_t agentCount, ADUC_AgentInfo* agents)
 /**
  * @param root_value config JSON_Value to get agents from
  * @param agentCount Returned number of agents.
- * @param agents ADUC_AgentInfo (size agentCount). Array to be freed using free(), objects must also be freed.
+ * @param outAgents ADUC_AgentInfo (size agentCount). Array to be freed using free(), objects must also be freed.
  * @return bool Success state.
  */
-bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentInfo** agents)
+static bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentInfo** outAgents)
 {
     bool succeeded = false;
-    if ((agentCount == NULL) || (agents == NULL))
+    if ((agentCount == NULL) || (outAgents == NULL))
     {
         return false;
     }
     *agentCount = 0;
-    *agents = NULL;
+    *outAgents = NULL;
 
     const JSON_Object* root_object = json_value_get_object(root_value);
 
@@ -241,25 +241,25 @@ bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentI
         goto done;
     }
 
-    const size_t agents_count = json_array_get_count(agents_array);
+    const size_t json_array_agents_count = json_array_get_count(agents_array);
 
-    if (agents_count == 0)
+    if (json_array_agents_count == 0)
     {
         Log_Error("Invalid json - Agents count cannot be zero");
         goto done;
     }
 
-    *agents = calloc(agents_count, sizeof(ADUC_AgentInfo));
-    if (*agents == NULL)
+    *outAgents = calloc(json_array_agents_count, sizeof(ADUC_AgentInfo));
+    if (*outAgents == NULL)
     {
         goto done;
     }
 
-    *agentCount = agents_count;
+    *agentCount = json_array_agents_count;
 
-    for (size_t index = 0; index < agents_count; ++index)
+    for (size_t index = 0; index < json_array_agents_count; ++index)
     {
-        ADUC_AgentInfo* cur_agent = *agents + index;
+        ADUC_AgentInfo* cur_agent = *outAgents + index;
 
         const JSON_Object* cur_agent_obj = json_array_get_object(agents_array, index);
 
@@ -281,8 +281,8 @@ bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentI
 done:
     if (!succeeded)
     {
-        ADUC_AgentInfoArray_Free(*agentCount, *agents);
-        *agents = NULL;
+        ADUC_AgentInfoArray_Free(*agentCount, *outAgents);
+        *outAgents = NULL;
         *agentCount = 0;
     }
 
