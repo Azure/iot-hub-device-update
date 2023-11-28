@@ -265,6 +265,12 @@ static bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* outAgentCount, A
 
     json_array_agents_count = json_array_get_count(agents_array);
 
+    if (json_array_agents_count == 0)
+    {
+        Log_Error("Invalid json - Agents count cannot be zero");
+        goto done;
+    }
+
     if (json_array_agents_count != 1)
     {
         Log_Warn("only single agent supported--using first one.");
