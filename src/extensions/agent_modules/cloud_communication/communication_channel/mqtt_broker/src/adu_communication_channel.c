@@ -151,55 +151,107 @@ static inline void Log_Debug_With_Frequency(int freqSeconds, const char* format,
 ADU_MQTT_COMMUNICATION_MGR_STATE* CommunicationManagerStateFromModuleHandle(ADUC_AGENT_MODULE_HANDLE commHandle)
 {
     ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)commHandle;
-    if (!interface)
+    if (interface == NULL)
+    {
         return NULL;
-    ADU_MQTT_COMMUNICATION_MGR_STATE* state = (ADU_MQTT_COMMUNICATION_MGR_STATE*)interface->moduleData;
+    }
+
+    return (ADU_MQTT_COMMUNICATION_MGR_STATE*)interface->moduleData;
+}
+
+/**
+ * @brief Create and Init Communication Mgr State object
+ *
+ * @return ADU_MQTT_COMMUNICATION_MGR_STATE* The new communication manager state instance, or NULL on failure.
+ * @remark Caller is responsible for calling DestroyCommunicationMgrState on the returned state instance.
+ */
+static ADU_MQTT_COMMUNICATION_MGR_STATE* CreateCommunicationMgrState()
+{
+    ADU_MQTT_COMMUNICATION_MGR_STATE* state = NULL;
+
+    ADU_MQTT_COMMUNICATION_MGR_STATE* tmp = calloc(1, sizeof(*tmp));
+    if (tmp == NULL)
+    {
+        goto done;
+    }
+
+    tmp->pendingSubscriptions = VECTOR_create(sizeof(ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO));
+    if (tmp->pendingSubscriptions == NULL)
+    {
+        goto done;
+    }
+
+    tmp->connectionRetryParams = defaultConnectionRetryParams;
+
+    state = tmp;
+    tmp = NULL;
+
+done:
+    free(tmp);
+
     return state;
 }
 
 /**
+ * @brief Destroys the fields of communication manager state instance.
+ *
+ * @param state The state.
+ */
+static void DestroyCommunicationMgrState(ADU_MQTT_COMMUNICATION_MGR_STATE* state)
+{
+    if (state != NULL)
+    {
+        VECTOR_destroy(state->pendingSubscriptions);
+        state->pendingSubscriptions = NULL;
+
+        if (state->subscribeTopicInfo.topic != NULL)
+        {
+            free(state->subscribeTopicInfo.topic);
+            memset(&state->subscribeTopicInfo, 0, sizeof(state->subscribeTopicInfo));
+        }
+    }
+}
+
+/**
  * @brief Create the communication channel module.
+ * @returns ADUC_AGENT_MODULE_HANDLE The created module handle.
+ * @remark Caller is responsible for calling ADUC_Communication_Channel_Destroy on the handle.
  */
 ADUC_AGENT_MODULE_HANDLE ADUC_Communication_Channel_Create()
 {
-    ADUC_AGENT_MODULE_INTERFACE* interface = NULL;
+    ADUC_AGENT_MODULE_HANDLE handle = NULL;
     ADU_MQTT_COMMUNICATION_MGR_STATE* state = NULL;
+    ADUC_AGENT_MODULE_INTERFACE* interface = NULL;
 
-    ADUC_ALLOC(state);
-
-    state->pendingSubscriptions = VECTOR_create(sizeof(ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO));
-    if (state->pendingSubscriptions == NULL)
+    state = CreateCommunicationMgrState();
+    if (state == NULL)
     {
-        Log_Error("Failed to create pending subscriptions vector");
         goto done;
     }
 
-    Log_Debug("pendingSubscriptions obj created @ %p", state->pendingSubscriptions);
-
-    memset(&state->subscribeTopicInfo, 0, sizeof(state->subscribeTopicInfo));
-    state->connectionRetryParams = defaultConnectionRetryParams;
-
-    ADUC_ALLOC(interface);
+    interface = calloc(1, sizeof(*interface));
+    if (interface == NULL)
+    {
+        goto done;
+    }
 
     interface->moduleData = state;
-    state = NULL; // transfer ownership
+    state = NULL;
 
     interface->initializeModule = ADUC_Communication_Channel_Initialize;
     interface->deinitializeModule = ADUC_Communication_Channel_Deinitialize;
     interface->doWork = ADUC_Communication_Channel_DoWork;
     interface->getContractInfo = ADUC_Communication_Channel_GetContractInfo;
 
-done:
-    if (interface == NULL)
-    {
-        if (state->pendingSubscriptions != NULL)
-        {
-            VECTOR_destroy(state->pendingSubscriptions);
-        }
-        free(state);
-    }
+    handle = interface;
+    interface = NULL;
 
-    return interface;
+done:
+    DestroyCommunicationMgrState(state);
+    free(state);
+    free(interface);
+
+    return handle;
 }
 
 /**

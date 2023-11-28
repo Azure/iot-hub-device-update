@@ -103,8 +103,17 @@ ADUC_AGENT_MODULE_HANDLE ADPS_MQTT_Client_Module_Create()
     ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = NULL;
     ADUC_AGENT_MODULE_INTERFACE* moduleInterface = NULL;
 
-    ADUC_ALLOC(moduleState);
-    ADUC_ALLOC(moduleInterface);
+    moduleState = calloc(1, sizeof(*moduleState));
+    if (moduleState == NULL)
+    {
+        goto done;
+    }
+
+    moduleInterface = calloc(1, sizeof(*moduleInterface));
+    if (moduleInterface == NULL)
+    {
+        goto done;
+    }
 
     moduleInterface->moduleData = moduleState;
     moduleInterface->destroy = ADPS_MQTT_Client_Module_Destroy;

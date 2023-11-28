@@ -68,8 +68,9 @@ struct
  */
 ADUC_AGENT_MODULE_HANDLE TopicMgmtLifecycle_Create(TOPIC_MGMT_MODULE modTopic)
 {
-    ADUC_AGENT_MODULE_INTERFACE* result = NULL;
-    ADUC_AGENT_MODULE_INTERFACE* interface = NULL;
+    ADUC_AGENT_MODULE_HANDLE handle = NULL;
+
+    ADUC_AGENT_MODULE_INTERFACE* tmp = NULL;
 
     ADUC_CREATE_AND_INIT_REQUEST_OP_FUNC create_and_init_fn = LifeCycleDelegateSets[modTopic].createAndInitRequestOperationFn;
     ADUC_Retriable_Operation_Context* operationContext = create_and_init_fn();
@@ -78,31 +79,46 @@ ADUC_AGENT_MODULE_HANDLE TopicMgmtLifecycle_Create(TOPIC_MGMT_MODULE modTopic)
         goto done;
     }
 
-    ADUC_ALLOC(interface);
+    tmp = calloc(1, sizeof(*tmp));
+    if (tmp == NULL)
+    {
+        goto done;
+    }
 
-    interface->getContractInfo = LifeCycleDelegateSets[modTopic].contractInfoFn;
-    interface->initializeModule = LifeCycleDelegateSets[modTopic].initializeFn;
-    interface->deinitializeModule = LifeCycleDelegateSets[modTopic].deinitializeFn;
-    interface->doWork = LifeCycleDelegateSets[modTopic].doWorkFn;
-    interface->destroy = LifeCycleDelegateSets[modTopic].destroyFn;
-    interface->moduleData = operationContext;
-    operationContext = NULL; // transfer ownership
+    tmp->getContractInfo = LifeCycleDelegateSets[modTopic].contractInfoFn;
+    tmp->initializeModule = LifeCycleDelegateSets[modTopic].initializeFn;
+    tmp->deinitializeModule = LifeCycleDelegateSets[modTopic].deinitializeFn;
+    tmp->doWork = LifeCycleDelegateSets[modTopic].doWorkFn;
+    tmp->destroy = LifeCycleDelegateSets[modTopic].destroyFn;
 
-    result = interface;
-    interface = NULL; // transfer ownership
+    tmp->moduleData = operationContext;
+    operationContext = NULL;
+
+    handle = tmp;
+    tmp = NULL;
 
 done:
 
+    TopicMgmtLifecycle_UninitRetriableOperationContext(operationContext);
+    free(operationContext);
+
+    free(tmp);
+
+    return handle;
+}
+
+/**
+ * @brief  Uninitializes the retriable operation context for management of request operations.
+ *
+ * @param operationContext The operation context.
+ */
+void TopicMgmtLifecycle_UninitRetriableOperationContext(ADUC_Retriable_Operation_Context* operationContext)
+{
     if (operationContext != NULL)
     {
         operationContext->dataDestroyFunc(operationContext);
         operationContext->operationDestroyFunc(operationContext);
-        free(operationContext);
     }
-
-    free(interface);
-
-    return (ADUC_AGENT_MODULE_HANDLE)(result);
 }
 
 // TODO: Figure out where to call TopicMgmtLifecycle_Destroy

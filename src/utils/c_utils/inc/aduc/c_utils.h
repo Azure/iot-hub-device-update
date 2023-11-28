@@ -58,32 +58,6 @@
 #endif
 
 /**
- * @brief Calls calloc for a single element of type *(PTR) element_type and assigns to assignee.
- * If calloc returns NULL, it goes to done label.
- * @details Example Usage:
- * MyType* my_fn()
- * {
- *     MyType* ret = NULL;
- * ...
- *     MyType* my_var = NULL;
- * ...
- *     ADUC_ALLOC(my_Var)
- * ...
- *     ret = my_var;
- *     my_var = NULL; // transfer ownership
- * done:
- *     free(my_var);
- *     return ret;
- * }
- */
-#define ADUC_ALLOC(PTR) \
-    (PTR) = calloc(1, sizeof(*(PTR))); \
-    if ((PTR) == NULL)                 \
-    {                                  \
-        goto done;                     \
-    }
-
-/**
  * @brief Calls calloc with specified number of elements and element byte size and assigns to assignee.
  * If calloc returns NULL, it goes to done label.
  *

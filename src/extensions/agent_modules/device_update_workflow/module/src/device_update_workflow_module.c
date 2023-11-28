@@ -104,35 +104,38 @@ int DeviceUpdateWorkflowModule_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
  */
 ADUC_AGENT_MODULE_HANDLE DeviceUpdateWorkflowModule_Create()
 {
-    bool ret = false;
     ADUC_WorkflowData *workflowData =  NULL;
-    ADUC_AGENT_MODULE_HANDLE handle = NULL;
-    ADUC_AGENT_MODULE_INTERFACE* interface = NULL;
 
-    ADUC_ALLOC(interface);
+    ADUC_AGENT_MODULE_HANDLE handle = NULL;
+    ADUC_AGENT_MODULE_INTERFACE* tmp = NULL;
+
+    tmp = calloc(1, sizeof(*tmp));
+    if (tmp == NULL)
+    {
+        goto done;
+    }
 
     // TODO (nox-msft) - pass in launchArgs
-    ret = AzureDeviceUpdateCoreInterface_Create((void**)&workflowData, 0, NULL);
-    if (!ret)
+    if (!AzureDeviceUpdateCoreInterface_Create((void**)&workflowData, 0, NULL))
     {
         goto done;
     }
 
     workflowData->CommunicationChannel = ADUC_CommunicationChannelType_MQTTBroker;
-    interface->moduleData = workflowData;
-    interface->destroy = DeviceUpdateWorkflowModule_Destroy;
-    interface->getContractInfo = DeviceUpdateWorkflowModule_GetContractInfo;
-    interface->doWork = DeviceUpdateWorkflowModule_DoWork;
-    interface->initializeModule = DeviceUpdateWorkflowModule_Initialize;
-    interface->deinitializeModule = DeviceUpdateWorkflowModule_Deinitialize;
 
-    handle = (ADUC_AGENT_MODULE_HANDLE)interface;
+    tmp->moduleData = workflowData;
+    tmp->destroy = DeviceUpdateWorkflowModule_Destroy;
+    tmp->getContractInfo = DeviceUpdateWorkflowModule_GetContractInfo;
+    tmp->doWork = DeviceUpdateWorkflowModule_DoWork;
+    tmp->initializeModule = DeviceUpdateWorkflowModule_Initialize;
+    tmp->deinitializeModule = DeviceUpdateWorkflowModule_Deinitialize;
+
+    handle = tmp;
+    tmp = NULL;
 
 done:
-    if (handle == NULL)
-    {
-        free(interface);
-    }
+    free(tmp);
+
     return handle;
 }
 

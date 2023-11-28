@@ -586,33 +586,43 @@ void ADUC_MQTT_Client_Module_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 ADUC_AGENT_MODULE_HANDLE ADUC_MQTT_Client_Module_Create()
 {
     ADUC_AGENT_MODULE_HANDLE handle = NULL;
-    ADUC_MQTT_CLIENT_MODULE_STATE* moduleState = NULL;
-    ADUC_AGENT_MODULE_INTERFACE* moduleInterface = NULL;
 
-    ADUC_ALLOC(moduleState);
-    ADUC_ALLOC(moduleInterface);
+    ADUC_AGENT_MODULE_INTERFACE* tmp = NULL;
+    ADUC_MQTT_CLIENT_MODULE_STATE* state = NULL;
 
-    moduleInterface->getContractInfo = ADUC_MQTT_Client_Module_GetContractInfo;
-    moduleInterface->initializeModule = ADUC_MQTT_Client_Module_Initialize;
-    moduleInterface->doWork = ADUC_MQTT_Client_Module_DoWork;
-    moduleInterface->deinitializeModule = ADUC_MQTT_Client_Module_Deinitialize;
-    moduleInterface->destroy = ADUC_MQTT_Client_Module_Destroy;
-
-    if (!SetupModuleState(moduleState))
+    state = calloc(1, sizeof(*state));
+    if (state == NULL)
     {
-        Log_Error("Failed setup of mqtt module state");
         goto done;
     }
 
-    moduleInterface->moduleData = moduleState;
-    moduleState = NULL; // transfer ownership
+    tmp = calloc(1, sizeof(*tmp));
+    if (tmp == NULL)
+    {
+        goto done;
+    }
 
-    handle = moduleInterface;
-    moduleInterface = NULL; // transfer ownership
+    tmp->getContractInfo = ADUC_MQTT_Client_Module_GetContractInfo;
+    tmp->initializeModule = ADUC_MQTT_Client_Module_Initialize;
+    tmp->doWork = ADUC_MQTT_Client_Module_DoWork;
+    tmp->deinitializeModule = ADUC_MQTT_Client_Module_Deinitialize;
+    tmp->destroy = ADUC_MQTT_Client_Module_Destroy;
+
+    if (!SetupModuleState(state))
+    {
+        Log_Error("Fail state setup");
+        goto done;
+    }
+
+    tmp->moduleData = state;
+    state = NULL;
+
+    handle = tmp;
+    tmp = NULL;
 
 done:
-    free(moduleState);
-    free(moduleInterface);
+    free(state);
+    free(tmp);
 
     return handle;
 }
