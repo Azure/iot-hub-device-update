@@ -172,6 +172,11 @@ done:
  */
 static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent)
 {
+    if (agent == NULL)
+    {
+        return;
+    }
+
     free(agent->name);
     agent->name = NULL;
 
@@ -207,6 +212,11 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent)
  */
 static void ADUC_AgentInfoArray_Free(size_t agentCount, ADUC_AgentInfo* agents)
 {
+    if (agents == NULL)
+    {
+        return;
+    }
+
     for (size_t index = 0; index < agentCount; ++index)
     {
         ADUC_AgentInfo* agent = agents + index;
@@ -217,23 +227,35 @@ static void ADUC_AgentInfoArray_Free(size_t agentCount, ADUC_AgentInfo* agents)
 
 /**
  * @param root_value config JSON_Value to get agents from
- * @param agentCount Returned number of agents.
- * @param agents ADUC_AgentInfo (size agentCount). Array to be freed using free(), objects must also be freed.
+ * @param outAgentCount Returned number of agents.
+ * @param outAgents ADUC_AgentInfo (size outAgentCount). Array to be freed using free(), objects must also be freed.
  * @return bool Success state.
  */
-bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentInfo** agents)
+static bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* outAgentCount, ADUC_AgentInfo** outAgents)
 {
     bool succeeded = false;
-    if ((agentCount == NULL) || (agents == NULL))
+
+    ADUC_AgentInfo* tmp = NULL;
+
+    size_t json_array_agents_count = 0;
+    JSON_Object* root_object = NULL;
+    JSON_Array* agents_array = NULL;
+    JSON_Object* cur_agent_obj = NULL;
+
+    if (root_value == NULL || outAgentCount == NULL || outAgents == NULL)
     {
+        Log_Error("null arg: root_value=%p outAgentCount=%p outAgents=%p", root_value, outAgentCount, outAgents);
         return false;
     }
-    *agentCount = 0;
-    *agents = NULL;
 
-    const JSON_Object* root_object = json_value_get_object(root_value);
+    root_object = json_value_get_object(root_value);
+    if (root_object == NULL)
+    {
+        Log_Error("root_object");
+        goto done;
+    }
 
-    JSON_Array* agents_array = json_object_get_array(root_object, CONFIG_AGENTS);
+    agents_array = json_object_get_array(root_object, CONFIG_AGENTS);
 
     if (agents_array == NULL)
     {
@@ -241,46 +263,45 @@ bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentI
         goto done;
     }
 
-    const size_t agents_count = json_array_get_count(agents_array);
+    json_array_agents_count = json_array_get_count(agents_array);
 
-    if (agents_count == 0)
+    if (json_array_agents_count == 0)
     {
         Log_Error("Invalid json - Agents count cannot be zero");
         goto done;
     }
 
-    ADUC_ALLOC_BLOCK(*agents, agents_count, sizeof(ADUC_AgentInfo));
-
-    *agentCount = agents_count;
-
-    for (size_t index = 0; index < agents_count; ++index)
+    if (json_array_agents_count != 1)
     {
-        ADUC_AgentInfo* cur_agent = *agents + index;
+        Log_Warn("only single agent supported--using first one.");
+    }
 
-        const JSON_Object* cur_agent_obj = json_array_get_object(agents_array, index);
+    tmp = calloc(1, sizeof(*tmp));
+    if (tmp == NULL)
+    {
+        goto done;
+    }
 
-        if (cur_agent_obj == NULL)
-        {
-            Log_Error("No agent @ %zu", index);
-            goto done;
-        }
+    cur_agent_obj = json_array_get_object(agents_array, 0);
+    if (cur_agent_obj == NULL)
+    {
+        Log_Error("fail get json agents[0]");
+        goto done;
+    }
 
-        if (!ADUC_AgentInfo_Init(cur_agent, cur_agent_obj))
-        {
-            Log_Error("Invalid agent arguments");
-            goto done;
-        }
+    if (!ADUC_AgentInfo_Init(tmp, cur_agent_obj))
+    {
+        Log_Error("agent info init");
+        goto done;
     }
 
     succeeded = true;
+    *outAgentCount = 1;
+    *outAgents = tmp;
+    tmp = NULL;
 
 done:
-    if (!succeeded)
-    {
-        ADUC_AgentInfoArray_Free(*agentCount, *agents);
-        *agents = NULL;
-        *agentCount = 0;
-    }
+    ADUC_AgentInfoArray_Free(1, tmp);
 
     return succeeded;
 }

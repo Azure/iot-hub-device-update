@@ -21,6 +21,7 @@
 #include <aduc/logging.h>
 #include <aduc/retry_utils.h> // ADUC_GetTimeSinceEpochInSeconds
 #include <aduc/string_c_utils.h> // IsNullOrEmpty
+#include <aduc/topic_mgmt_lifecycle.h> // TopicMgmtLifecycle_UninitRetriableOperationContext
 #include <aducpal/time.h> // time_t
 
 #include <parson.h> // JSON_Value, JSON_Object
@@ -116,8 +117,9 @@ int ADUC_Enrollment_Management_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
  */
 ADUC_AGENT_MODULE_HANDLE ADUC_Enrollment_Management_Create()
 {
-    ADUC_AGENT_MODULE_INTERFACE* result = NULL;
-    ADUC_AGENT_MODULE_INTERFACE* interface = NULL;
+    ADUC_AGENT_MODULE_HANDLE interface = NULL;
+
+    ADUC_AGENT_MODULE_INTERFACE* tmp = NULL;
 
     ADUC_Retriable_Operation_Context* operationContext = CreateAndInitializeEnrollmentRequestOperation();
     if (operationContext == NULL)
@@ -126,31 +128,32 @@ ADUC_AGENT_MODULE_HANDLE ADUC_Enrollment_Management_Create()
         goto done;
     }
 
-    ADUC_ALLOC(interface);
+    tmp = calloc(1, sizeof(*tmp));
+    if (tmp == NULL)
+    {
+        goto done;
+    }
 
-    interface->getContractInfo = ADUC_Enrollment_Management_GetContractInfo;
-    interface->initializeModule = ADUC_Enrollment_Management_Initialize;
-    interface->deinitializeModule = ADUC_Enrollment_Management_Deinitialize;
-    interface->doWork = ADUC_Enrollment_Management_DoWork;
-    interface->destroy = ADUC_Enrollment_Management_Destroy;
-    interface->moduleData = operationContext;
-    operationContext = NULL; // transfer ownership
+    tmp->getContractInfo = ADUC_Enrollment_Management_GetContractInfo;
+    tmp->initializeModule = ADUC_Enrollment_Management_Initialize;
+    tmp->deinitializeModule = ADUC_Enrollment_Management_Deinitialize;
+    tmp->doWork = ADUC_Enrollment_Management_DoWork;
+    tmp->destroy = ADUC_Enrollment_Management_Destroy;
 
-    result = interface;
-    interface = NULL; // transfer ownership
+    tmp->moduleData = operationContext;
+    operationContext = NULL;
+
+    interface = tmp;
+    tmp = NULL;
 
 done:
 
-    if (operationContext != NULL)
-    {
-        operationContext->dataDestroyFunc(operationContext);
-        operationContext->operationDestroyFunc(operationContext);
-        free(operationContext);
-    }
+    TopicMgmtLifecycle_UninitRetriableOperationContext(operationContext);
+    free(operationContext);
 
-    free(interface);
+    free(tmp);
 
-    return (ADUC_AGENT_MODULE_HANDLE)(result);
+    return interface;
 }
 
 /**

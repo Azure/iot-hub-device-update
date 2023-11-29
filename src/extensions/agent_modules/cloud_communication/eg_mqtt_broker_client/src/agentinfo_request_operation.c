@@ -545,17 +545,26 @@ done:
  */
 ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
 {
-    ADUC_Retriable_Operation_Context* ret = NULL;
     ADUC_Retriable_Operation_Context* context = NULL;
+
+    ADUC_Retriable_Operation_Context* tmp = NULL;
     ADUC_AgentInfo_Request_Operation_Data* operationDataContext = NULL;
 
     const ADUC_ConfigInfo* config = NULL;
     const ADUC_AgentInfo* agent_info = NULL;
     unsigned int value = 0;
-    bool incremented_config_refcount = false;
 
-    ADUC_ALLOC(context);
-    ADUC_ALLOC(operationDataContext);
+    tmp = calloc(1, sizeof(*tmp));
+    if (tmp == NULL)
+    {
+        goto done;
+    }
+
+    operationDataContext = calloc(1, sizeof(*operationDataContext));
+    if (operationDataContext == NULL)
+    {
+        goto done;
+    }
 
     // For this request, generate correlation Id sent as CorrelationData property
     // and used to match with response.
@@ -565,58 +574,61 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
         goto done;
     }
 
-    context->data = operationDataContext;
-    operationDataContext = NULL; // transfer ownership
+    tmp->data = operationDataContext;
+    operationDataContext = NULL;
 
-    ADUC_Retriable_Operation_Init(context, false);
+    ADUC_Retriable_Operation_Init(tmp, false);
 
     // initialize custom functions
-    context->dataDestroyFunc = AgentInfoRequestOperation_DataDestroy;
-    context->operationDestroyFunc = AgentInfoRequestOperation_OperationDestroy;
-    context->doWorkFunc = AgentInfoStatusRequestOperation_doWork;
-    context->cancelFunc = AgentInfoRequestOperation_CancelOperation;
-    context->retryFunc = AgentInfoRequestOperation_DoRetry;
-    context->completeFunc = AgentInfoRequestOperation_Complete;
-    context->retryParamsCount = RetryUtils_GetRetryParamsMapSize();
+    tmp->dataDestroyFunc = AgentInfoRequestOperation_DataDestroy;
+    tmp->operationDestroyFunc = AgentInfoRequestOperation_OperationDestroy;
+    tmp->doWorkFunc = AgentInfoStatusRequestOperation_doWork;
+    tmp->cancelFunc = AgentInfoRequestOperation_CancelOperation;
+    tmp->retryFunc = AgentInfoRequestOperation_DoRetry;
+    tmp->completeFunc = AgentInfoRequestOperation_Complete;
+    tmp->retryParamsCount = RetryUtils_GetRetryParamsMapSize();
 
-    ADUC_ALLOC_BLOCK(context->retryParams, 1, sizeof(*context->retryParams) * (size_t)context->retryParamsCount);
+    tmp->retryParams = calloc((size_t)tmp->retryParamsCount, sizeof(*tmp->retryParams));
+    if (tmp->retryParams == NULL)
+    {
+        goto done;
+    }
 
     // initialize callbacks
-    context->onExpired = AgentInfoRequestOperation_OnExpired;
-    context->onSuccess = AgentInfoRequestOperation_OnSuccess;
-    context->onFailure = AgentInfoRequestOperation_OnFailure;
-    context->onRetry =
+    tmp->onExpired = AgentInfoRequestOperation_OnExpired;
+    tmp->onSuccess = AgentInfoRequestOperation_OnSuccess;
+    tmp->onFailure = AgentInfoRequestOperation_OnFailure;
+    tmp->onRetry =
         AgentInfoRequestOperation_OnRetry; // read or retry strategy parameters from the agent's configuration file.
 
     config = ADUC_ConfigInfo_GetInstance();
     if (config == NULL)
     {
-        Log_Error("configinfo");
+        Log_Error("fail get config instance");
         goto done;
     }
-    incremented_config_refcount = true;
 
     agent_info = ADUC_ConfigInfo_GetAgent(config, 0);
     if (agent_info == NULL)
     {
-        Log_Error("agentinfo");
+        Log_Error("fail get agentinfo");
         goto done;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, SETTING_KEY_ENR_REQ_OP_INTERVAL_SECONDS, &value))
     {
-        log_warn("request interval");
+        log_warn("using default request interval: %d", DEFAULT_ENR_REQ_OP_INTERVAL_SECONDS);
         value = DEFAULT_ENR_REQ_OP_INTERVAL_SECONDS;
     }
-    context->operationIntervalSecs = value;
+    tmp->operationIntervalSecs = value;
 
     value = 0;
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, SETTING_KEY_ENR_REQ_OP_TIMEOUT_SECONDS, &value))
     {
-        log_warn("request timeout");
+        log_warn("using default request timeout: %d", DEFAULT_ENR_REQ_OP_TIMEOUT_SECONDS);
         value = DEFAULT_ENR_REQ_OP_TIMEOUT_SECONDS;
     }
-    context->operationTimeoutSecs = value;
+    tmp->operationTimeoutSecs = value;
 
     // get retry parameters for transient client error.
     JSON_Value* retrySettings = json_object_dotget_value(
@@ -627,22 +639,22 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
         goto done;
     }
 
-    ReadRetryParamsArrayFromAgentConfigJson(context, retrySettings, RetryUtils_GetRetryParamsMapSize());
+    ReadRetryParamsArrayFromAgentConfigJson(tmp, retrySettings, RetryUtils_GetRetryParamsMapSize());
 
     // ADUC_ALLOC(context->data);
 
-    ret = context;
-    context = NULL; // transfer ownership
+    context = tmp;
+    tmp = NULL;
 
 done:
 
     free(operationDataContext);
-    free(context);
+    free(tmp);
 
-    if (config != NULL && incremented_config_refcount)
+    if (config != NULL)
     {
         ADUC_ConfigInfo_ReleaseInstance(config);
     }
 
-    return ret;
+    return context;
 }

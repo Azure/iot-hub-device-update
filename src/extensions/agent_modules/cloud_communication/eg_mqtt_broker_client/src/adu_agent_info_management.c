@@ -16,11 +16,12 @@
 #include <aduc/adu_mqtt_protocol.h>
 #include <aduc/adu_types.h>
 #include <aduc/agent_state_store.h>
-#include <aduc/config_utils.h>
 #include <aduc/agentinfo_request_operation.h>
+#include <aduc/config_utils.h>
 #include <aduc/logging.h>
 #include <aduc/retry_utils.h> // ADUC_GetTimeSinceEpochInSeconds
 #include <aduc/string_c_utils.h> // IsNullOrEmpty
+#include <aduc/topic_mgmt_lifecycle.h> // TopicMgmtLifecycle_UninitRetriableOperationContext
 #include <aducpal/time.h> // time_t
 
 #include <parson.h> // JSON_Value, JSON_Object
@@ -116,41 +117,43 @@ int ADUC_AgentInfo_Management_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
  */
 ADUC_AGENT_MODULE_HANDLE ADUC_AgentInfo_Management_Create()
 {
-    ADUC_AGENT_MODULE_INTERFACE* result = NULL;
-    ADUC_AGENT_MODULE_INTERFACE* interface = NULL;
+    ADUC_AGENT_MODULE_HANDLE handle = NULL;
 
-    ADUC_Retriable_Operation_Context* operationContext = CreateAndInitializeAgentInfoRequestOperation();
+    ADUC_AGENT_MODULE_INTERFACE* tmp = NULL;
+    ADUC_Retriable_Operation_Context* operationContext = NULL;
+
+    operationContext = CreateAndInitializeAgentInfoRequestOperation();
     if (operationContext == NULL)
     {
         Log_Error("Failed to create agentinfo request operation");
         goto done;
     }
 
-    ADUC_ALLOC(interface);
-
-    interface->getContractInfo = ADUC_AgentInfo_Management_GetContractInfo;
-    interface->initializeModule = ADUC_AgentInfo_Management_Initialize;
-    interface->deinitializeModule = ADUC_AgentInfo_Management_Deinitialize;
-    interface->doWork = ADUC_AgentInfo_Management_DoWork;
-    interface->destroy = ADUC_AgentInfo_Management_Destroy;
-    interface->moduleData = operationContext;
-    operationContext = NULL; // transfer ownership
-
-    result = interface;
-    interface = NULL; // transfer ownership
-
-done:
-
-    if (operationContext != NULL)
+    tmp = calloc(1, sizeof(*tmp));
+    if (tmp == NULL)
     {
-        operationContext->dataDestroyFunc(operationContext);
-        operationContext->operationDestroyFunc(operationContext);
-        free(operationContext);
+        goto done;
     }
 
-    free(interface);
+    tmp->getContractInfo = ADUC_AgentInfo_Management_GetContractInfo;
+    tmp->initializeModule = ADUC_AgentInfo_Management_Initialize;
+    tmp->deinitializeModule = ADUC_AgentInfo_Management_Deinitialize;
+    tmp->doWork = ADUC_AgentInfo_Management_DoWork;
+    tmp->destroy = ADUC_AgentInfo_Management_Destroy;
 
-    return (ADUC_AGENT_MODULE_HANDLE)(result);
+    tmp->moduleData = operationContext;
+    operationContext = NULL;
+
+    handle = tmp;
+    tmp = NULL;
+
+done:
+    TopicMgmtLifecycle_UninitRetriableOperationContext(operationContext);
+    free(operationContext);
+
+    free(tmp);
+
+    return handle;
 }
 
 /**
@@ -160,15 +163,16 @@ done:
  */
 void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 {
-    ADUC_Retriable_Operation_Context* context = OperationContextFromAgentModuleHandle(handle);
-    if (context == NULL)
+    ADUC_Retriable_Operation_Context* operationContext = OperationContextFromAgentModuleHandle(handle);
+
+    if (operationContext == NULL)
     {
         Log_Error("Failed to get operation context");
         return;
     }
 
-    context->operationDestroyFunc(context);
-    free(context);
+    TopicMgmtLifecycle_UninitRetriableOperationContext(operationContext);
+    free(operationContext);
 }
 
 /**

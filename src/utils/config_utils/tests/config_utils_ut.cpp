@@ -493,7 +493,8 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK_THAT(config.manufacturer, Equals("device_info_manufacturer"));
         CHECK_THAT(config.model, Equals("device_info_model"));
         CHECK_THAT(config.compatPropertyNames, Equals("manufacturer,model"));
-        CHECK(config.agentCount == 2);
+        CHECK(config.agentCount == 1);
+
         const ADUC_AgentInfo* first_agent_info = ADUC_ConfigInfo_GetAgent(&config, 0);
         CHECK_THAT(first_agent_info->name, Equals("host-update"));
         CHECK_THAT(first_agent_info->runas, Equals("adu"));
@@ -501,14 +502,6 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK_THAT(first_agent_info->model, Equals("Smart-Box"));
         CHECK_THAT(first_agent_info->connectionType, Equals("AIS"));
         CHECK_THAT(first_agent_info->connectionData, Equals("iotHubDeviceUpdate"));
-        const ADUC_AgentInfo* second_agent_info = ADUC_ConfigInfo_GetAgent(&config, 1);
-        CHECK_THAT(second_agent_info->name, Equals("leaf-update"));
-        CHECK_THAT(second_agent_info->runas, Equals("adu"));
-        CHECK_THAT(second_agent_info->manufacturer, Equals("Fabrikam"));
-        CHECK_THAT(second_agent_info->model, Equals("Camera"));
-        CHECK_THAT(second_agent_info->connectionType, Equals("string"));
-        CHECK_THAT(second_agent_info->connectionData, Equals("HOSTNAME=..."));
-        CHECK(first_agent_info->additionalDeviceProperties == nullptr);
 
         ADUC_ConfigInfo_UnInit(&config);
     }

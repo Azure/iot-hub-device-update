@@ -368,17 +368,26 @@ done:
  */
 ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation()
 {
-    ADUC_Retriable_Operation_Context* ret = NULL;
     ADUC_Retriable_Operation_Context* context = NULL;
+
+    ADUC_Retriable_Operation_Context* tmp = NULL;
     ADUC_Enrollment_Request_Operation_Data* operationDataContext = NULL;
 
     const ADUC_ConfigInfo* config = NULL;
     const ADUC_AgentInfo* agent_info = NULL;
     unsigned int value = 0;
-    bool incremented_config_refcount = false;
 
-    ADUC_ALLOC(context);
-    ADUC_ALLOC(operationDataContext);
+    tmp = calloc(1, sizeof(*tmp));
+    if (tmp == NULL)
+    {
+        goto done;
+    }
+
+    operationDataContext = calloc(1, sizeof(*operationDataContext));
+    if (operationDataContext == NULL)
+    {
+        goto done;
+    }
 
     // For this request, generate correlation Id sent as CorrelationData property
     // and used to match with response.
@@ -388,27 +397,31 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
         goto done;
     }
 
-    context->data = operationDataContext;
+    tmp->data = operationDataContext;
     operationDataContext = NULL; // transfer ownership
 
     ADUC_Retriable_Operation_Init(context, false);
 
     // initialize custom functions
-    context->dataDestroyFunc = EnrollmentRequestOperation_DataDestroy;
-    context->operationDestroyFunc = EnrollmentRequestOperation_OperationDestroy;
-    context->doWorkFunc = EnrollmentStatusRequestOperation_doWork;
-    context->cancelFunc = EnrollmentRequestOperation_CancelOperation;
-    context->retryFunc = EnrollmentRequestOperation_DoRetry;
-    context->completeFunc = EnrollmentRequestOperation_Complete;
-    context->retryParamsCount = RetryUtils_GetRetryParamsMapSize();
+    tmp->dataDestroyFunc = EnrollmentRequestOperation_DataDestroy;
+    tmp->operationDestroyFunc = EnrollmentRequestOperation_OperationDestroy;
+    tmp->doWorkFunc = EnrollmentStatusRequestOperation_doWork;
+    tmp->cancelFunc = EnrollmentRequestOperation_CancelOperation;
+    tmp->retryFunc = EnrollmentRequestOperation_DoRetry;
+    tmp->completeFunc = EnrollmentRequestOperation_Complete;
+    tmp->retryParamsCount = RetryUtils_GetRetryParamsMapSize();
 
-    ADUC_ALLOC_BLOCK(context->retryParams, 1, sizeof(*context->retryParams) * (size_t)context->retryParamsCount);
+    tmp->retryParams = calloc((size_t)tmp->retryParamsCount, sizeof(*tmp->retryParams));
+    if (tmp->retryParams == NULL)
+    {
+        goto done;
+    }
 
     // initialize callbacks
-    context->onExpired = EnrollmentRequestOperation_OnExpired;
-    context->onSuccess = EnrollmentRequestOperation_OnSuccess;
-    context->onFailure = EnrollmentRequestOperation_OnFailure;
-    context->onRetry =
+    tmp->onExpired = EnrollmentRequestOperation_OnExpired;
+    tmp->onSuccess = EnrollmentRequestOperation_OnSuccess;
+    tmp->onFailure = EnrollmentRequestOperation_OnFailure;
+    tmp->onRetry =
         EnrollmentRequestOperation_OnRetry; // read or retry strategy parameters from the agent's configuration file.
 
     config = ADUC_ConfigInfo_GetInstance();
@@ -417,7 +430,6 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
         Log_Error("failed to get config instance");
         goto done;
     }
-    incremented_config_refcount = true;
 
     agent_info = ADUC_ConfigInfo_GetAgent(config, 0);
     if (agent_info == NULL)
@@ -431,7 +443,8 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
         log_warn("failed to get enrollment status request interval setting");
         value = DEFAULT_ENR_REQ_OP_INTERVAL_SECONDS;
     }
-    context->operationIntervalSecs = value;
+
+    tmp->operationIntervalSecs = value;
 
     value = 0;
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, SETTING_KEY_ENR_REQ_OP_TIMEOUT_SECONDS, &value))
@@ -439,7 +452,8 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
         log_warn("failed to get enrollment status request timeout setting");
         value = DEFAULT_ENR_REQ_OP_TIMEOUT_SECONDS;
     }
-    context->operationTimeoutSecs = value;
+
+    tmp->operationTimeoutSecs = value;
 
     // get retry parameters for transient client error.
     JSON_Value* retrySettings = json_object_dotget_value(
@@ -450,20 +464,21 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
         goto done;
     }
 
-    ReadRetryParamsArrayFromAgentConfigJson(context, retrySettings, RetryUtils_GetRetryParamsMapSize());
+    ReadRetryParamsArrayFromAgentConfigJson(tmp, retrySettings, RetryUtils_GetRetryParamsMapSize());
 
-    ret = context;
-    context = NULL; // transfer ownership
+    context = tmp;
+    tmp = NULL;
 
 done:
 
     free(operationDataContext);
-    free(context);
 
-    if (config != NULL && incremented_config_refcount)
+    free(tmp);
+
+    if (config != NULL)
     {
         ADUC_ConfigInfo_ReleaseInstance(config);
     }
 
-    return ret;
+    return context;
 }

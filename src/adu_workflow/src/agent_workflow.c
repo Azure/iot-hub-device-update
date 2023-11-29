@@ -819,7 +819,11 @@ void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData)
 
     // Alloc this object on heap so that it will be valid for the entire (possibly async) operation func.
 
-    ADUC_ALLOC(methodCallData);
+    methodCallData = calloc(1, sizeof(*methodCallData));
+    if (methodCallData == NULL)
+    {
+        goto done;
+    }
 
     methodCallData->WorkflowData = workflowData;
 

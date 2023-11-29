@@ -2,6 +2,7 @@
 #define TOPIC_MGMT_MODULE_LIFECYCLE_H
 
 #include <aduc/c_utils.h> // EXTERN_C_BEGIN, EXTERN_C_END
+#include <aduc/retry_utils.h> // ADUC_Retriable_Operation_Context
 #include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_HANDLE
 
 EXTERN_C_BEGIN
@@ -24,6 +25,7 @@ typedef enum tagTOPIC_MGMT_MODULE
 
 ADUC_AGENT_MODULE_HANDLE TopicMgmtLifecycle_Create(TOPIC_MGMT_MODULE modTopic);
 void TopicMgmtLifecycle_Destroy(ADUC_AGENT_MODULE_HANDLE handle);
+void TopicMgmtLifecycle_UninitRetriableOperationContext(ADUC_Retriable_Operation_Context* operationContext);
 
 EXTERN_C_END
 
