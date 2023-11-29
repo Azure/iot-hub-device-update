@@ -257,7 +257,11 @@ bool AzureDeviceUpdateCoreInterface_Create(void** context, int argc, char** argv
     bool succeeded = false;
     ADUC_WorkflowData* workflowData = NULL;
 
-    ADUC_ALLOC(workflowData);
+    workflowData = calloc(1, sizeof(*workflowData));
+    if (workflowData == NULL)
+    {
+        goto done;
+    }
 
     Log_Info("ADUC agent started. Using IoT Hub Client SDK %s", IoTHubClient_GetVersionString());
 
