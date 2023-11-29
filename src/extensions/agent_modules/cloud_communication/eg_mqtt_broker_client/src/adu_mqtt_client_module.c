@@ -316,6 +316,12 @@ ADUC_MQTT_CALLBACKS s_duClientCommChannelCallbacks = {
     NULL /*on_log*/
 };
 
+/**
+ * @brief Some basic sanity checks for moduleState per-operation modules.
+ *
+ * @param moduleState The module state.
+ * @return true when checks pass.
+ */
 static bool CheckModuleInterfacesSetupCorrectly(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
 {
     bool success = false;
@@ -343,6 +349,12 @@ done:
     return success;
 }
 
+/**
+ * @brief Initializes the interface fields to their respective entries in the module state.
+ *
+ * @param moduleState The module state.
+ * @return true on success.
+ */
 static bool InitModuleInterfaceStateModule(const ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
 {
     for (size_t i = 0; i < ARRAY_SIZE(s_Modules); ++i)
@@ -379,6 +391,12 @@ static bool InitModuleInterfaceStateModule(const ADUC_MQTT_CLIENT_MODULE_STATE* 
     return true;
 }
 
+/**
+ * @brief Initializes the module interfaces in the module state.
+ *
+ * @param moduleState The modules state.
+ * @return true on success.
+ */
 static bool InitializeModuleInterfaces(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
 {
     bool success = false;
@@ -419,6 +437,12 @@ done:
     return success;
 }
 
+/**
+ * @brief Sets up the per-operation module state.
+ *
+ * @param moduleState The module state.
+ * @return true on success
+ */
 static bool SetupModuleState(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
 {
     bool succeeded = false;
