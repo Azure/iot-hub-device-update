@@ -7,14 +7,14 @@
  */
 #include "aduc/retry_utils.h"
 
-#include <aduc/logging.h>
 #include "parson_json_utils.h" // ADUC_JSON_GetUnsignedIntegerField
+#include <aduc/logging.h>
 #include <aducpal/time.h> // clock_gettime, CLOCK_REALTIME
 #include <limits.h>
 #include <math.h>
 #include <stdbool.h>
-#include <stdlib.h> // rand
 #include <stdint.h> // INT32_MAX
+#include <stdlib.h> // rand
 
 time_t ADUC_GetTimeSinceEpochInSeconds()
 {
@@ -67,9 +67,7 @@ time_t ADUC_Retry_Delay_Calculator(
     double maxJitterPercent)
 {
     const double jitterPercent = (maxJitterPercent / 100.0) * (rand() / ((double)RAND_MAX));
-    const unsigned min = retries < ADUC_RETRY_MAX_RETRY_EXPONENT
-        ? retries
-        : ADUC_RETRY_MAX_RETRY_EXPONENT;
+    const unsigned min = retries < ADUC_RETRY_MAX_RETRY_EXPONENT ? retries : ADUC_RETRY_MAX_RETRY_EXPONENT;
 
     double delay = (pow(2, min) * (double)initialDelayUnitMilliSecs) / 1000.0;
     time_t retryTimestampSec = 0;
@@ -211,7 +209,8 @@ int RetryUtils_GetRetryParamsMapSize()
     return s_RetryParamsMapSize;
 }
 
-void ReadRetryParamsArrayFromAgentConfigJson(ADUC_Retriable_Operation_Context* context, JSON_Value* agentJsonValue, int retryParamsMapSize)
+void ReadRetryParamsArrayFromAgentConfigJson(
+    ADUC_Retriable_Operation_Context* context, JSON_Value* agentJsonValue, int retryParamsMapSize)
 {
     const char* infoFormatString = "Failed to read '%s.%s' from agent config. Using default value (%d)";
 

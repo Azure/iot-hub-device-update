@@ -1,14 +1,14 @@
 #include "aduc/enrollment_request_operation.h"
 
-#include <aduc/adu_mqtt_common.h>
+#include <aduc/adu_communication_channel.h> // ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID
 #include <aduc/adu_enrollment.h> // ADUC_Enrollment_Request_Operation_Data
 #include <aduc/adu_enrollment_utils.h> // EnrollmentData_FromOperationContext
-#include <aduc/adu_communication_channel.h> // ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID
 #include <aduc/adu_mosquitto_utils.h> // ADU_mosquitto_add_user_property
+#include <aduc/adu_mqtt_common.h>
 #include <aduc/agent_state_store.h> // ADUC_StateStore_GetIsDeviceEnrolled
 #include <aduc/config_utils.h> // ADUC_ConfigInfo, ADUC_AgentInfo
 #include <aduc/logging.h>
-#include <du_agent_sdk/agent_module_interface.h>  // ADUC_AGENT_MODULE_HANDLE
+#include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_HANDLE
 
 /**
  * @brief Free memory allocated for the enrollment data.
@@ -193,7 +193,11 @@ bool HandlingRequestEnrollment(ADUC_Retriable_Operation_Context* context, time_t
         // if (context->lastExecutionTime + context->operationTimeoutSecs < nowTime)
         if (context->lastExecutionTime + 30 < nowTime) // timeout after 30 seconds for now
         {
-            Log_Debug("timeout 'enr_req' timeout:%d optimeout:%d t:%d", context->lastExecutionTime, context->operationTimeoutSecs, nowTime);
+            Log_Debug(
+                "timeout 'enr_req' timeout:%d optimeout:%d t:%d",
+                context->lastExecutionTime,
+                context->operationTimeoutSecs,
+                nowTime);
 
             context->cancelFunc(context);
         }
@@ -219,14 +223,15 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
         goto done;
     }
 
-    if (!ADU_mosquitto_add_user_property(&user_prop_list, "mt", "enr_req") ||
-        !ADU_mosquitto_add_user_property(&user_prop_list, "pid", "1"))
+    if (!ADU_mosquitto_add_user_property(&user_prop_list, "mt", "enr_req")
+        || !ADU_mosquitto_add_user_property(&user_prop_list, "pid", "1"))
     {
         Log_Error("fail add user props");
         goto done;
     }
 
-    if (!ADU_mosquitto_set_correlation_data_property(&user_prop_list, &(enrollmentData->enrReqMessageContext.correlationId)[0]))
+    if (!ADU_mosquitto_set_correlation_data_property(
+            &user_prop_list, &(enrollmentData->enrReqMessageContext.correlationId)[0]))
     {
         Log_Error("fail set corr id");
         goto done;
@@ -274,8 +279,7 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
             // compute and apply the next execution time, based on the specified retry parameters.
             context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
 
-            Log_Error(
-                "retry-able after t:%ld, err:%d", context->operationIntervalSecs, mqtt_res);
+            Log_Error("retry-able after t:%ld, err:%d", context->operationIntervalSecs, mqtt_res);
             break;
 
         default:
@@ -391,7 +395,10 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
 
     // For this request, generate correlation Id sent as CorrelationData property
     // and used to match with response.
-    if (!ADUC_generate_correlation_id(false /* with_hyphens */, &(operationDataContext->enrReqMessageContext.correlationId)[0], ARRAY_SIZE(operationDataContext->enrReqMessageContext.correlationId)))
+    if (!ADUC_generate_correlation_id(
+            false /* with_hyphens */,
+            &(operationDataContext->enrReqMessageContext.correlationId)[0],
+            ARRAY_SIZE(operationDataContext->enrReqMessageContext.correlationId)))
     {
         Log_Error("Faild generate correlation id");
         goto done;
@@ -432,7 +439,8 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
         goto done;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, SETTING_KEY_ENR_REQ_OP_INTERVAL_SECONDS, &value))
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
+            agent_info, SETTING_KEY_ENR_REQ_OP_INTERVAL_SECONDS, &value))
     {
         log_warn("failed to get enrollment status request interval setting");
         value = DEFAULT_ENR_REQ_OP_INTERVAL_SECONDS;
@@ -441,7 +449,8 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
     tmp->operationIntervalSecs = value;
 
     value = 0;
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, SETTING_KEY_ENR_REQ_OP_TIMEOUT_SECONDS, &value))
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
+            agent_info, SETTING_KEY_ENR_REQ_OP_TIMEOUT_SECONDS, &value))
     {
         log_warn("failed to get enrollment status request timeout setting");
         value = DEFAULT_ENR_REQ_OP_TIMEOUT_SECONDS;
