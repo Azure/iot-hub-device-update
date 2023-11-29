@@ -105,15 +105,12 @@ void ADUC_Enrollment_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 
 /**
  * @brief Callback should be called when the client receives an enrollment status response message from the Device Update service.
- *  For 'enr_resp' messages, if the Correlation Data matches the 'en,the client should parse the message and update the enrollment state.
+ *  For 'enr_resp' messages, if the Correlation Data matches, then the client should parse the message and update the enrollment state.
  *
  * @param mosq The mosquitto instance making the callback.
  * @param obj The user data provided in mosquitto_new. This is the module state
  * @param msg The message data.
  * @param props The MQTT v5 properties returned with the message.
- *
- * @remark This callback is called by the network thread. Usually by the same thread that calls mosquitto_loop function.
- * IMPORTANT - Do not use blocking functions in this callback.
  */
 void OnMessage_enr_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)

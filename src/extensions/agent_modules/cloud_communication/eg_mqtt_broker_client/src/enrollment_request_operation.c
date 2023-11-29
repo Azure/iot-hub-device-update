@@ -407,8 +407,6 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
     tmp->data = operationDataContext;
     operationDataContext = NULL; // transfer ownership
 
-    ADUC_Retriable_Operation_Init(context, false);
-
     // Initialize lifecycle functions
     tmp->dataDestroyFunc = EnrollmentRequestOperation_DataDestroy;
     tmp->operationDestroyFunc = EnrollmentRequestOperation_OperationDestroy;

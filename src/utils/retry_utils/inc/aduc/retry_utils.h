@@ -178,7 +178,6 @@ struct tagADUC_Retriable_Operation_Context
     const void* commChannelHandle; // Handle to the communication channel used for the operation
 };
 
-void ADUC_Retriable_Operation_Init(ADUC_Retriable_Operation_Context* context, bool startNow);
 bool ADUC_Retriable_Operation_DoWork(ADUC_Retriable_Operation_Context* context);
 bool ADUC_Retriable_Operation_Cancel(ADUC_Retriable_Operation_Context* context);
 bool ADUC_Retriable_Set_State(ADUC_Retriable_Operation_Context* context, ADUC_Retriable_Operation_State state);

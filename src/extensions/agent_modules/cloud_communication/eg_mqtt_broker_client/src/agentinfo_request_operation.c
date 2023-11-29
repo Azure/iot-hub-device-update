@@ -577,8 +577,6 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
     tmp->data = operationDataContext;
     operationDataContext = NULL;
 
-    ADUC_Retriable_Operation_Init(tmp, false);
-
     // initialize custom functions
     tmp->dataDestroyFunc = AgentInfoRequestOperation_DataDestroy;
     tmp->operationDestroyFunc = AgentInfoRequestOperation_OperationDestroy;
@@ -588,12 +586,6 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
     tmp->completeFunc = AgentInfoRequestOperation_Complete;
     tmp->retryParamsCount = RetryUtils_GetRetryParamsMapSize();
 
-    tmp->retryParams = calloc((size_t)tmp->retryParamsCount, sizeof(*tmp->retryParams));
-    if (tmp->retryParams == NULL)
-    {
-        goto done;
-    }
-
     // initialize callbacks
     tmp->onExpired = AgentInfoRequestOperation_OnExpired;
     tmp->onSuccess = AgentInfoRequestOperation_OnSuccess;
@@ -601,6 +593,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
     tmp->onRetry =
         AgentInfoRequestOperation_OnRetry; // read or retry strategy parameters from the agent's configuration file.
 
+    // initialize operation and retry settings
     config = ADUC_ConfigInfo_GetInstance();
     if (config == NULL)
     {
@@ -639,9 +632,14 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
         goto done;
     }
 
-    ReadRetryParamsArrayFromAgentConfigJson(tmp, retrySettings, RetryUtils_GetRetryParamsMapSize());
+    // Initialize retry parameters.
+    tmp->retryParams = calloc((size_t)tmp->retryParamsCount, sizeof(*tmp->retryParams));
+    if (tmp->retryParams == NULL)
+    {
+        goto done;
+    }
 
-    // ADUC_ALLOC(context->data);
+    ReadRetryParamsArrayFromAgentConfigJson(tmp, retrySettings, RetryUtils_GetRetryParamsMapSize());
 
     context = tmp;
     tmp = NULL;
