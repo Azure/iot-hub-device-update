@@ -402,7 +402,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
 
     ADUC_Retriable_Operation_Init(context, false);
 
-    // initialize custom functions
+    // Initialize lifecycle functions
     tmp->dataDestroyFunc = EnrollmentRequestOperation_DataDestroy;
     tmp->operationDestroyFunc = EnrollmentRequestOperation_OperationDestroy;
     tmp->doWorkFunc = EnrollmentStatusRequestOperation_doWork;
@@ -410,12 +410,6 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
     tmp->retryFunc = EnrollmentRequestOperation_DoRetry;
     tmp->completeFunc = EnrollmentRequestOperation_Complete;
     tmp->retryParamsCount = RetryUtils_GetRetryParamsMapSize();
-
-    tmp->retryParams = calloc((size_t)tmp->retryParamsCount, sizeof(*tmp->retryParams));
-    if (tmp->retryParams == NULL)
-    {
-        goto done;
-    }
 
     // initialize callbacks
     tmp->onExpired = EnrollmentRequestOperation_OnExpired;
@@ -461,6 +455,13 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
     if (retrySettings == NULL)
     {
         Log_Error("failed to get retry settings");
+        goto done;
+    }
+
+    // Initialize the retry parameters
+    tmp->retryParams = calloc((size_t)tmp->retryParamsCount, sizeof(*tmp->retryParams));
+    if (tmp->retryParams == NULL)
+    {
         goto done;
     }
 

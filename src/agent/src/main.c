@@ -550,7 +550,6 @@ int main(int argc, char** argv)
         dpsClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)dpsClientModuleHandle;
         if (dpsClientModuleInterface == NULL)
         {
-            Log_Error("ADPS_MQTT_Client_Module_Create failed.");
             ret = -1;
             goto done;
         }
@@ -558,7 +557,7 @@ int main(int argc, char** argv)
         ret = dpsClientModuleInterface->initializeModule(dpsClientModuleHandle, NULL);
         if (ret != 0)
         {
-            Log_Error("ADPS_MQTT_Client_Module_Initialize failed.");
+            Log_Error("DPS client module init failed");
             goto done;
         }
     }
@@ -567,7 +566,6 @@ int main(int argc, char** argv)
     duClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)duClientModuleHandle;
     if (duClientModuleInterface == NULL)
     {
-        Log_Error("ADU_MQTT_Client_Module_Create failed.");
         ret = -1;
         goto done;
     }
@@ -575,7 +573,7 @@ int main(int argc, char** argv)
     ret = duClientModuleInterface->initializeModule(duClientModuleInterface, NULL);
     if (ret != 0)
     {
-        Log_Error("ADU_MQTT_Client_Module_Initialize failed.");
+        Log_Error("DU client module init failed");
         goto done;
     }
 

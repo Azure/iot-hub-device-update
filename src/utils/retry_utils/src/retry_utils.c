@@ -85,6 +85,12 @@ time_t ADUC_Retry_Delay_Calculator(
     return retryTimestampSec;
 }
 
+/**
+ * @brief Initialize the Retriale operation context.
+ *
+ * @param context The context to be initialized.
+ * @param startNow Whether to set nextExecutionTime to now.
+ */
 void ADUC_Retriable_Operation_Init(ADUC_Retriable_Operation_Context* context, bool startNow)
 {
     if (context == NULL)
@@ -105,6 +111,8 @@ void ADUC_Retriable_Operation_Init(ADUC_Retriable_Operation_Context* context, bo
 
 /**
  * @brief Perform a retriable operation.
+ *
+ * @param context The retriable operation context.
  */
 bool ADUC_Retriable_Operation_DoWork(ADUC_Retriable_Operation_Context* context)
 {
