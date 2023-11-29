@@ -364,7 +364,6 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
 
     if (mallocAndStrcpy_s(&(config->configFolder), configFolder) != 0)
     {
-        Log_Error("Failed to allocate memory for config file folder");
         return false;
     }
 
@@ -775,7 +774,6 @@ bool ADUC_AgentInfo_ConnectionData_GetStringField(const ADUC_AgentInfo* agent, c
 
         if (mallocAndStrcpy_s(value, agent->connectionData) != 0)
         {
-            Log_Error("alloc");
             return false;
         }
     }
