@@ -16,7 +16,7 @@
 #include <sys/stat.h> // for stat
 #include <vector>
 
-// keep this last to minimize chance to interfere with system header includes.
+// keep this last to avoid interfering with system headers
 #include "aduc/aduc_banned.h"
 
 ADUC_Result Download_curl(

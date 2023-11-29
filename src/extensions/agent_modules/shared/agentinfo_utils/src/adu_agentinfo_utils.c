@@ -6,9 +6,8 @@
 #include <aduc/string_c_utils.h> // ADUC_Safe_StrCopyN
 #include <string.h> // strlen
 
-// clang-format off
-#include <aduc/aduc_banned.h> // make sure this is last to avoid affecting system includes
-// clang-format on
+// keep this last to avoid interfering with system headers
+#include <aduc/aduc_banned.h>
 
 #define AGENT_INFO_FIELD_NAME_SEQUENCE_NUMBER "sn"
 #define AGENT_INFO_FIELD_NAME_COMPAT_PROPERTIES "compatProperties"
