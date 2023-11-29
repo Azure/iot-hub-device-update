@@ -193,7 +193,7 @@ bool HandlingRequestEnrollment(ADUC_Retriable_Operation_Context* context, time_t
         // if (context->lastExecutionTime + context->operationTimeoutSecs < nowTime)
         if (context->lastExecutionTime + 30 < nowTime) // timeout after 30 seconds for now
         {
-            Log_Debug("Timing out request enrollment: lastExecTime: %d, operationTimeoutSecs: %d, nowTime: %d", context->lastExecutionTime, context->operationTimeoutSecs, nowTime);
+            Log_Debug("timeout 'enr_req' timeout:%d optimeout:%d t:%d", context->lastExecutionTime, context->operationTimeoutSecs, nowTime);
 
             context->cancelFunc(context);
         }
@@ -215,20 +215,20 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
 
     if (enrollmentData == NULL)
     {
-        Log_Error("null context req operation data");
+        Log_Error("NULL enrollmentData");
         goto done;
     }
 
     if (!ADU_mosquitto_add_user_property(&user_prop_list, "mt", "enr_req") ||
         !ADU_mosquitto_add_user_property(&user_prop_list, "pid", "1"))
     {
-        Log_Error("Failed set mqtt User properties.");
+        Log_Error("fail add user props");
         goto done;
     }
 
     if (!ADU_mosquitto_set_correlation_data_property(&user_prop_list, &(enrollmentData->enrReqMessageContext.correlationId)[0]))
     {
-        Log_Error("Failed set mqtt CorrelationData property");
+        Log_Error("fail set corr id");
         goto done;
     }
 
@@ -244,13 +244,11 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
         false,
         user_prop_list);
 
-    Log_Info("PUBLISH 'enr_req' to topic '%s', msgid: %d", messageContext->publishTopic, messageContext->messageId);
-
     if (mqtt_res != MOSQ_ERR_SUCCESS)
     {
         opSucceeded = false;
         Log_Error(
-            "failed to publish enrollment status request message. (mid:%d, cid:%s, err:%d - %s)",
+            "fail PUB 'enr_req' mid[%d] cid[%s] err[%d]: '%s')",
             messageContext->messageId,
             messageContext->correlationId,
             mqtt_res,
@@ -267,7 +265,7 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
         case MOSQ_ERR_QOS_NOT_SUPPORTED:
         case MOSQ_ERR_OVERSIZE_PACKET:
             // following error is non-recoverable, so we'll bail out.
-            Log_Error("failed to publish (non-recoverable). err:%d", mqtt_res);
+            Log_Error("non-recoverable:%d", mqtt_res);
             context->cancelFunc(context);
             break;
 
@@ -277,11 +275,11 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
             context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
 
             Log_Error(
-                "failed publish (retry-able after t:%ld). err:%d", context->operationIntervalSecs, mqtt_res);
+                "retry-able after t:%ld, err:%d", context->operationIntervalSecs, mqtt_res);
             break;
 
         default:
-            Log_Error("failed publish (unhandled error). err:%d ", mqtt_res);
+            Log_Error("unhandled err:%d", mqtt_res);
             // retry again after default retry delay.
             context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT]);
             break;
@@ -290,12 +288,12 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
         goto done;
     }
 
-    EnrollmentData_SetState(enrollmentData, ADU_ENROLLMENT_STATE_REQUESTING, "enr_req submitted");
+    EnrollmentData_SetState(enrollmentData, ADU_ENROLLMENT_STATE_REQUESTING, "enr_req submit");
 
     context->lastExecutionTime = nowTime;
 
     Log_Info(
-        "PUBLISHING 'enr_req' request (mid:%d, cid:%s, t:%ld, timeout in:%ld)",
+        "--> 'enr_req' mid:%d cid:%s t:%ld timeout:%ld)",
         messageContext->messageId,
         messageContext->correlationId,
         context->lastExecutionTime,

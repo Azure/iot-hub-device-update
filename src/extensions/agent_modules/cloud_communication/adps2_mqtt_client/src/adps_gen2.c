@@ -71,26 +71,25 @@ bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
     if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.registrationId", &settings->registrationId))
     {
         // TODO (nox-msft) : read common name from certificate.
-        Log_Error("Cannot read registrationId field.");
+        Log_Error("get registrationId");
         goto done;
     }
 
     // For DPS connection, the clientId and registrationId fields are the same.
     if (mallocAndStrcpy_s(&settings->mqttSettings.clientId, settings->registrationId) != 0)
     {
-        Log_Error("Cannot allocate clientId field.");
         goto done;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.idScope", &settings->idScope))
     {
-        Log_Error("Cannot read idScope field.");
+        Log_Error("get idScope");
         goto done;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetStringField(agent_info, "dps.apiVersion", &settings->dpsApiVersion))
     {
-        Log_Info("Using default DPS api version: %s", DEFAULT_DPS_API_VERSION);
+        Log_Info("using default apiVersion: %s", DEFAULT_DPS_API_VERSION);
         goto done;
     }
 
@@ -102,7 +101,7 @@ bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
 
     if (settings->mqttSettings.username == NULL)
     {
-        Log_Error("Cannot generate username field. (idScope:%s, registrationId:%s, apiVersion:%s)");
+        Log_Error("fail gen username(idScope:%s, registrationId:%s, apiVersion:%s)", settings->idScope, settings->registrationId, settings->dpsApiVersion);
         goto done;
     }
 
@@ -110,6 +109,7 @@ bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
     if (!ADUC_AgentInfo_ConnectionData_GetStringField(
             agent_info, "dps.globalDeviceEndpoint", &settings->mqttSettings.hostname))
     {
+        Log_Info("using default hostname: %s", DEFAULT_DPS_GLOBAL_ENDPOINT);
         settings->mqttSettings.hostname = strdup(DEFAULT_DPS_GLOBAL_ENDPOINT);
         goto done;
     }
@@ -118,7 +118,7 @@ bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
     if (!ADUC_AgentInfo_ConnectionData_GetIntegerField(
             agent_info, "dps.mqttVersion", &tmp) || tmp < MIN_DPS_MQTT_VERSION)
     {
-        Log_Info("Using default MQTT protocol version: %d", DEFAULT_DPS_MQTT_PROTOCOL_VERSION);
+        Log_Info("using default mqttVersion: %d", DEFAULT_DPS_MQTT_PROTOCOL_VERSION);
         settings->mqttSettings.mqttVersion = DEFAULT_DPS_MQTT_PROTOCOL_VERSION;
     }
     else
@@ -129,20 +129,20 @@ bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
             agent_info, "dps.tcpPort", &settings->mqttSettings.tcpPort))
     {
-        Log_Info("Using default TCP port: %d", DEFAULT_TCP_PORT);
+        Log_Info("using default tcpPort: %d", DEFAULT_TCP_PORT);
         settings->mqttSettings.tcpPort = DEFAULT_TCP_PORT;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(agent_info, "dps.useTLS", &settings->mqttSettings.useTLS))
     {
-        Log_Info("UseTLS: %d", DEFAULT_USE_TLS);
+        Log_Info("using default useTLS: %d", DEFAULT_USE_TLS);
         settings->mqttSettings.useTLS = DEFAULT_USE_TLS;
     }
 
     tmp = -1;
     if (!ADUC_AgentInfo_ConnectionData_GetIntegerField(agent_info, "dps.qos", &tmp) || tmp < 0 || tmp > 2)
     {
-        Log_Info("QoS: %d", DEFAULT_QOS);
+        Log_Info("using default qos: %d", DEFAULT_QOS);
         settings->mqttSettings.qos = DEFAULT_QOS;
     }
     else
@@ -153,14 +153,14 @@ bool ReadAzureDPS2MqttSettings(AZURE_DPS_2_MQTT_SETTINGS* settings)
     if (!ADUC_AgentInfo_ConnectionData_GetBooleanField(
             agent_info, "dps.cleanSession", &settings->mqttSettings.cleanSession))
     {
-        Log_Info("CleanSession: %d", DEFAULT_ADPS_CLEAN_SESSION);
+        Log_Info("using default CleanSession: %d", DEFAULT_ADPS_CLEAN_SESSION);
         settings->mqttSettings.cleanSession = DEFAULT_ADPS_CLEAN_SESSION;
     }
 
     if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
             agent_info, "dps.keepAliveInSeconds", &settings->mqttSettings.keepAliveInSeconds))
     {
-        Log_Info("Keep alive: %d sec.", DEFAULT_KEEP_ALIVE_IN_SECONDS);
+        Log_Info("using default KeepAliveInSeconds: %d", DEFAULT_KEEP_ALIVE_IN_SECONDS);
         settings->mqttSettings.keepAliveInSeconds = DEFAULT_KEEP_ALIVE_IN_SECONDS;
     }
 

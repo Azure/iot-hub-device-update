@@ -350,7 +350,7 @@ void ADPS_MQTT_Client_Module_OnMessage(
     char** topics = NULL;
     int count = 0;
 
-    Log_Info("on_message: Topic: %s; QOS: %d; mid: %d", msg->topic, msg->qos, msg->mid);
+    Log_Debug("<-- msg %s qos:%d mid:%d", msg->topic, msg->qos, msg->mid);
 
     ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(obj);
     if (moduleState == NULL)

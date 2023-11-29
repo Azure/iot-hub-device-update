@@ -364,7 +364,6 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
 
     if (mallocAndStrcpy_s(&(config->configFolder), configFolder) != 0)
     {
-        Log_Error("Failed to allocate memory for config file folder");
         return false;
     }
 
@@ -753,13 +752,13 @@ bool ADUC_AgentInfo_ConnectionData_GetStringField(const ADUC_AgentInfo* agent, c
 
     if (agent == NULL)
     {
-        Log_Error("AgentInfo is NULL.");
+        Log_Error("agent NULL");
         return false;
     }
 
     if (value == NULL)
     {
-        Log_Error("Value is NULL.");
+        Log_Error("value NULL");
         return false;
     }
 
@@ -769,13 +768,12 @@ bool ADUC_AgentInfo_ConnectionData_GetStringField(const ADUC_AgentInfo* agent, c
     {
         if (agent->connectionData == NULL)
         {
-            Log_Error("Connection data is not a string.");
+            Log_Error("connectionData not a string.");
             return false;
         }
 
         if (mallocAndStrcpy_s(value, agent->connectionData) != 0)
         {
-            Log_Error("Failed to allocate memory for connectionData return value.");
             return false;
         }
     }
@@ -784,6 +782,7 @@ bool ADUC_AgentInfo_ConnectionData_GetStringField(const ADUC_AgentInfo* agent, c
         if (agent->connectionDataJson == NULL
             || !ADUC_JSON_GetStringField(agent->connectionDataJson, fieldName, value))
         {
+            Log_Error("GetStringField");
             goto done;
         }
     }
@@ -871,6 +870,8 @@ bool ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
     succeeded = true;
 
 done:
+    Log_Debug("get '%s' suc(%d): %u", fieldName, succeeded, value == NULL ? -1 : *value);
+
     return succeeded;
 }
 
@@ -904,5 +905,7 @@ bool ADUC_AgentInfo_ConnectionData_GetIntegerField(
     succeeded = true;
 
 done:
+
+    Log_Debug("get '%s' suc(%d): %d", fieldName, succeeded, value == NULL ? -1 : *value);
     return succeeded;
 }
