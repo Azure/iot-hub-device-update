@@ -466,7 +466,13 @@ done:
     return succeeded;
 }
 
-static bool UpdateAgentStateStoreWithConfigFileProvisionining(ADUC_MQTT_SETTINGS* mqttSettings)
+/**
+ * @brief Updates state store provisioning records from MQTT settings device registration info.
+ *
+ * @param mqttSettings The MQTT settings.
+ * @return true on success
+ */
+static bool UpdateAgentStateStoreWithConfigFileProvisioning(ADUC_MQTT_SETTINGS* mqttSettings)
 {
     // Use username from settings as ExternalDeviceId
     if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetExternalDeviceId(mqttSettings->username))
@@ -523,9 +529,9 @@ int ADUC_MQTT_Client_Module_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* mo
 
     if (moduleState->mqttSettings.hostnameSource == ADUC_MQTT_HOSTNAME_SOURCE_CONFIG_FILE)
     {
-        if (!UpdateAgentStateStoreWithConfigFileProvisionining(&moduleState->mqttSettings))
+        if (!UpdateAgentStateStoreWithConfigFileProvisioning(&moduleState->mqttSettings))
         {
-            Log_Error("Failed to update state store with provisioning from config file");
+            Log_Error("Failed to update state store with provisioning info");
             goto done;
         }
     }
@@ -627,6 +633,12 @@ done:
     return handle;
 }
 
+/**
+ * @brief Executes the module work.
+ *
+ * @param moduleState The module state.
+ * @param nowTime The time.
+ */
 static void ExecuteModuleWork(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState, const time_t nowTime)
 {
     const size_t CommChannelIndex = 0;
@@ -658,7 +670,6 @@ static void ExecuteModuleWork(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState, const 
                 }
             }
 
-            // Log_Debug("%s -> doWork", s_Modules[i].Name);
             s_Modules[i].Interface->doWork(s_Modules[i].Interface);
         }
     }
