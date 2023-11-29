@@ -4,10 +4,10 @@
 #include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_CONTRACT_INFO
 
 //
-// The per topic module interface declaration expansions
+// The per operation module interface declaration expansions
 //
 
-// Enrollment topic
+// Enrollment request and response management
 
 const ADUC_AGENT_CONTRACT_INFO* ADUC_Enrollment_Management_GetContractInfo(ADUC_AGENT_MODULE_HANDLE handle);
 int ADUC_Enrollment_Management_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* initData);
@@ -15,7 +15,7 @@ int ADUC_Enrollment_Management_Deinitialize(ADUC_AGENT_MODULE_HANDLE handle);
 int ADUC_Enrollment_Management_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
 void ADUC_Enrollment_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle);
 
-// AgentInfo topic
+// AgentInfo request and response management
 
 const ADUC_AGENT_CONTRACT_INFO* ADUC_AgentInfo_Management_GetContractInfo(ADUC_AGENT_MODULE_HANDLE handle);
 int ADUC_AgentInfo_Management_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* initData);
@@ -23,7 +23,7 @@ int ADUC_AgentInfo_Management_Deinitialize(ADUC_AGENT_MODULE_HANDLE handle);
 int ADUC_AgentInfo_Management_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
 void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle);
 
-// Update topic
+// Update request and response management
 
 // const ADUC_AGENT_CONTRACT_INFO* ADUC_Update_Management_GetContractInfo(ADUC_AGENT_MODULE_HANDLE handle);
 // int ADUC_Update_Management_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* initData);
@@ -31,7 +31,7 @@ void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle);
 // int ADUC_Update_Management_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
 // void ADUC_Update_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle);
 
-// UpdateResults topic
+// UpdateResults request and response management
 
 // const ADUC_AGENT_CONTRACT_INFO* ADUC_UpdateResults_Management_GetContractInfo(ADUC_AGENT_MODULE_HANDLE handle);
 // int ADUC_UpdateResults_Management_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* initData);
