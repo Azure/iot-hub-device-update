@@ -91,7 +91,7 @@ extends:
               name: Azure-Pipelines-1ESPT-ExDShared
               vmImage: ubuntu-latest
             steps:
-              - template: /azure-pipelines/build/templates/adu-docker-build-steps.yml
+              - template: /azure-pipelines/build/templates/adu-docker-build-steps.yml@self
                 parameters:
                   targetOs: "ubuntu2204"
                   targetArch: "amd64"
@@ -104,7 +104,7 @@ extends:
               name: Azure-Pipelines-1ESPT-ExDShared
               vmImage: ubuntu-latest
             steps:
-              - template: /azure-pipelines/build/templates/adu-docker-build-steps.yml
+              - template: /azure-pipelines/build/templates/adu-docker-build-steps.yml@self
                 parameters:
                   targetOs: "ubuntu1804"
                   targetArch: "amd64"
@@ -117,7 +117,7 @@ extends:
               name: Azure-Pipelines-1ESPT-ExDShared
               vmImage: ubuntu-latest
             steps:
-              - template: /azure-pipelines/build/templates/adu-docker-build-steps.yml
+              - template: /azure-pipelines/build/templates/adu-docker-build-steps.yml@self
                 parameters:
                   targetOs: "ubuntu2004"
                   targetArch: "amd64"
