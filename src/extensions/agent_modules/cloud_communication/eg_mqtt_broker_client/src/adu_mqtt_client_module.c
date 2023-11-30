@@ -10,6 +10,7 @@
 #include "aduc/adu_agent_info_management.h"
 #include "aduc/adu_communication_channel.h"
 #include "aduc/adu_enrollment_management.h"
+#include "aduc/adu_module_state.h" // ADUC_MQTT_CLIENT_MODULE_STATE
 #include "aduc/adu_mosquitto_utils.h"
 #include "aduc/adu_mqtt_protocol.h"
 #include "aduc/adu_types.h"
@@ -402,12 +403,12 @@ static bool InitializeModuleInterfaces(ADUC_MQTT_CLIENT_MODULE_STATE* moduleStat
     bool success = false;
 
     ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = {
-        ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID,
-        moduleState,
-        &moduleState->mqttSettings,
-        &s_duClientCommChannelCallbacks,
-        NULL /* key file password callback */,
-        NULL /* connection retry callback */
+        .sessionId = ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID,
+        .ownerModuleContext = moduleState,
+        .mqttSettings = &moduleState->mqttSettings,
+        .callbacks = &s_duClientCommChannelCallbacks,
+        .passwordCallback = NULL,
+        .connectionRetryParams = NULL
     };
 
     if (!CheckModuleInterfacesSetupCorrectly(moduleState))

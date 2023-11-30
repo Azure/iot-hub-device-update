@@ -1,5 +1,3 @@
-#ifndef __ADUC_ADUC_MQTT_Client_CLIENT_H__
-#define __ADUC_ADUC_MQTT_Client_CLIENT_H__
 
 /**
  * @file ADUC_MQTT_Client_client.h
@@ -8,8 +6,12 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-#include "aduc/mqtt_client.h"
-#include "stdbool.h"
+
+#ifndef __ADUC_ADUC_MQTT_Client_CLIENT_H__
+#define __ADUC_ADUC_MQTT_Client_CLIENT_H__
+
+#include <du_agent_sdk/mqtt_client_settings.h>
+#include <stdbool.h>
 
 EXTERN_C_BEGIN
 

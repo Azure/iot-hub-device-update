@@ -2,6 +2,7 @@
 #define ADU_ENROLLMENT_UTILS_H
 
 #include <aduc/adu_enrollment.h>
+#include <aduc/retry_utils.h> // ADUC_Retriable_Operation_Context
 
 EXTERN_C_BEGIN
 

@@ -8,7 +8,7 @@
 #include "aduc/eg_mqtt_broker_client.h"
 #include "aduc/config_utils.h"
 #include "aduc/logging.h"
-#include "aduc/mqtt_client.h"
+#include "du_agent_sdk/mqtt_client_settings.h" // for ADUC_MQTT_SETTINGS
 #include "aduc/string_c_utils.h" // ADUC_StringFormat
 #include "aducpal/stdlib.h" // memset
 

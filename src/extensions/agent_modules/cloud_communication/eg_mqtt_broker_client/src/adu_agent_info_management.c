@@ -11,6 +11,7 @@
 #include <aduc/adu_communication_channel.h>
 #include <aduc/adu_agentinfo.h>
 #include <aduc/adu_agentinfo_utils.h>
+#include <aduc/adu_module_state.h>
 #include <aduc/adu_mosquitto_utils.h>
 #include <aduc/adu_mqtt_common.h>
 #include <aduc/adu_mqtt_protocol.h>
@@ -39,51 +40,6 @@
 //
 // BEGIN - ADU_AGENT_INFO_MANAGEMENT.H Public Interface
 //
-
-/**
- * @brief Creates agentinfo management module handle.
- * @return ADUC_AGENT_MODULE_HANDLE The created module handle, or NULL on failure.
- */
-ADUC_AGENT_MODULE_HANDLE ADUC_AgentInfo_Management_Create()
-{
-    ADUC_AGENT_MODULE_HANDLE handle = NULL;
-
-    ADUC_AGENT_MODULE_INTERFACE* tmp = NULL;
-    ADUC_Retriable_Operation_Context* operationContext = NULL;
-
-    operationContext = CreateAndInitializeAgentInfoRequestOperation();
-    if (operationContext == NULL)
-    {
-        Log_Error("Failed to create agentinfo request operation");
-        goto done;
-    }
-
-    tmp = calloc(1, sizeof(*tmp));
-    if (tmp == NULL)
-    {
-        goto done;
-    }
-
-    tmp->getContractInfo = ADUC_AgentInfo_Management_GetContractInfo;
-    tmp->initializeModule = ADUC_AgentInfo_Management_Initialize;
-    tmp->deinitializeModule = ADUC_AgentInfo_Management_Deinitialize;
-    tmp->doWork = ADUC_AgentInfo_Management_DoWork;
-    tmp->destroy = ADUC_AgentInfo_Management_Destroy;
-
-    tmp->moduleData = operationContext;
-    operationContext = NULL;
-
-    handle = tmp;
-    tmp = NULL;
-
-done:
-    TopicMgmtLifecycle_UninitRetriableOperationContext(operationContext);
-    free(operationContext);
-
-    free(tmp);
-
-    return handle;
-}
 
 /**
  * @brief Destroy the module handle.
@@ -119,9 +75,12 @@ void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 void OnMessage_ainfo_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
-    ADUC_Retriable_Operation_Context* context = (ADUC_Retriable_Operation_Context*)obj;
-    ADUC_MQTT_Message_Context* messageContext = (ADUC_MQTT_Message_Context*)context->data;
-    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoData_FromOperationContext(context);
+    ADUC_MQTT_CLIENT_MODULE_STATE* ownerModuleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
+    ADUC_AGENT_MODULE_INTERFACE* agentInfoModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)ownerModuleState->agentInfoModule;
+    ADUC_Retriable_Operation_Context* retriableOperationContext = (ADUC_Retriable_Operation_Context*)(agentInfoModuleInterface->moduleData);
+    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = (ADUC_AgentInfo_Request_Operation_Data*)(retriableOperationContext->data);
+
+    ADUC_MQTT_Message_Context* messageContext = &agentInfoData->ainfoReqMessageContext;
 
     json_print_properties(props);
 
@@ -143,13 +102,11 @@ void OnMessage_ainfo_resp(
         goto done;
     }
 
-    // NOTE: Do no parse ainfo_resp msg payload as it is empty.
+    // NOTE: Do no parse ainfo_resp msg payload as it is empty as per client/server protocol design.
 
-    if (!Handle_AgentInfo_Response(
-        agentInfoData,
-        context))
+    if (!Handle_AgentInfo_Response(agentInfoData, retriableOperationContext))
     {
-        Log_Error("Failed handling agentinfo response.");
+        Log_Error("Failed handling agentinfo response: correlationId '%s'", messageContext->correlationId);
         goto done;
     }
 

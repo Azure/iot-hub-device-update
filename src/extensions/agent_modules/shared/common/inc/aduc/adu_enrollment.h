@@ -2,7 +2,6 @@
 #define ADU_ENROLLMENT_H
 
 #include "aduc/mqtt_broker_common.h" // ADUC_MQTT_Message_Context
-#include <aduc/retry_utils.h> // ADUC_Retriable_Operation_Context
 
 EXTERN_C_BEGIN
 

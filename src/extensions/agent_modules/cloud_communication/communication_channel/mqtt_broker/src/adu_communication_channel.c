@@ -7,30 +7,29 @@
  */
 
 #include "aduc/adu_communication_channel.h" // ADUC_EnsureValidCommunicationChannel
-#include "aduc/adu_communication_channel_internal.h"
-#include "aduc/adu_mosquitto_utils.h"
-#include "aduc/adu_mqtt_protocol.h" // ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE
-#include "aduc/agent_state_store.h"
-#include "aduc/config_utils.h"
-#include "aduc/d2c_messaging.h"
-#include "aduc/logging.h"
-#include "aduc/mqtt_client.h"
-#include "aduc/retry_utils.h" // ADUC_GetTimeSinceEpochInSeconds
-#include "aduc/string_c_utils.h" // IsNullOrEmpty, ADUC_StringFormat
 
-#include "du_agent_sdk/agent_module_interface.h" // ADUC_AGENT_MODULE_INTERFACE and related functions
+#include <aduc/adu_communication_channel_internal.h>
+#include <aduc/adu_mosquitto_utils.h>
+#include <aduc/adu_mqtt_protocol.h> // ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE
+#include <aduc/agent_state_store.h>
+#include <aduc/config_utils.h>
+#include <aduc/d2c_messaging.h>
+#include <aduc/logging.h>
+#include <aduc/retry_utils.h> // ADUC_GetTimeSinceEpochInSeconds
+#include <aduc/string_c_utils.h> // IsNullOrEmpty, ADUC_StringFormat
+#include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_INTERFACE and related functions
+#include <du_agent_sdk/mqtt_client_settings.h> // ADUC_MQTT_SETTINGS
+#include <azure_c_shared_utility/strings.h>
+#include <azure_c_shared_utility/vector.h>
+#include <aducpal/time.h> // time_t
+#include <errno.h> // errno
+#include <mosquitto.h> // mosquitto related functions
+#include <mqtt_protocol.h> // mosquitto_property
 #include <stdarg.h> // va_list, va_start, va_end
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "azure_c_shared_utility/strings.h"
-#include "azure_c_shared_utility/vector.h"
-#include <aducpal/time.h> // time_t
-#include <errno.h> // errno
-#include <mosquitto.h> // mosquitto related functions
-#include <mqtt_protocol.h> // mosquitto_property
 
 #define REQUIRED_TLS_SET_CERT_PATH "L"
 
@@ -424,7 +423,7 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
     commMgrState->mqttClient = mosquitto_new(
         initData->sessionId,
         commMgrState->mqttSettings.cleanSession,
-        handle /* Communication Channel Module Handle */);
+        handle /* DU MQTT Agent Module Handle */);
     if (!commMgrState->mqttClient)
     {
         Log_Error("Fail mosq new");

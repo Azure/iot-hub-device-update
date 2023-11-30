@@ -60,7 +60,6 @@ typedef struct tagADPS_MQTT_CLIENT_MODULE_STATE
     JSON_Value* registrationData; //!< Registration data
 
     time_t lastErrorTime; //!< Last time an error occurred
-    ADUC_Result lastAducResult; //!< Last ADUC result
     AZURE_DPS_2_MQTT_SETTINGS settings; //!< DPS settings
     time_t nextOperationTime; //!< Next time to perform an operation
 

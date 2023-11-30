@@ -19,12 +19,6 @@ EXTERN_C_BEGIN
 DECLARE_AGENT_MODULE_PUBLIC(ADUC_Agent_Info_Management)
 
 /**
- * @brief Create the Agent Info management module.
- * @return ADUC_AGENT_MODULE_HANDLE The module handle.
- */
-ADUC_AGENT_MODULE_HANDLE ADUC_AgentInfo_Management_Create();
-
-/**
  * @brief Destroy the Agent Info management module.
  * @param module The module handle.
  */

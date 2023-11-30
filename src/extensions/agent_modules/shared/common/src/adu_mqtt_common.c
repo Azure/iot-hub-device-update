@@ -2,10 +2,10 @@
 #include "aduc/adu_mqtt_common.h"
 
 #include <aduc/adu_communication_channel.h> // ADUC_Communication_Channel_MQTT_Subscribe
-#include <aduc/logging.h>
-#include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_HANDLE
 #include <aduc/agent_state_store.h> // ADUC_StateStore_*
+#include <aduc/logging.h>
 #include <aduc/string_c_utils.h> // IsNullOrEmpty
+#include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_HANDLE
 
 /**
  * @brief Gets operation context from module handle.

@@ -11,9 +11,9 @@
 
 #include "aduc/adu_mqtt_protocol.h" // ADUC_COMMUNICATION_*, ADUC_ENROLLMENT_*, ADUC_MQTT_MESSAGE_*, ADUC_MQTT_SETTINGS, ADUC_Result
 #include "aduc/c_utils.h" // EXTERN_C_* macros
-#include "aduc/mqtt_client.h" // ADUC_MQTT_SETTINGS
 #include "aduc/retry_utils.h" // ADUC_Retry_Params
 #include "du_agent_sdk/agent_module_interface.h" // ADUC_AGENT_MODULE_HANDLE
+#include "du_agent_sdk/mqtt_client_settings.h" // ADUC_MQTT_SETTINGS
 #include "stdbool.h" // bool
 #include <mosquitto.h> // mosquitto related functions
 #include <mqtt_protocol.h> // mosquitto_property

@@ -230,8 +230,7 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
         goto done;
     }
 
-    if (!ADU_mosquitto_set_correlation_data_property(
-            &user_prop_list, &(enrollmentData->enrReqMessageContext.correlationId)[0]))
+    if (!ADU_mosquitto_set_correlation_data_property(&user_prop_list, &(enrollmentData->enrReqMessageContext.correlationId)[0]))
     {
         Log_Error("fail set corr id");
         goto done;
@@ -400,7 +399,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
             &(operationDataContext->enrReqMessageContext.correlationId)[0],
             ARRAY_SIZE(operationDataContext->enrReqMessageContext.correlationId)))
     {
-        Log_Error("Faild generate correlation id");
+        Log_Error("Fail to generate correlation id");
         goto done;
     }
 

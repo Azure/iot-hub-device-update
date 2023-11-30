@@ -11,6 +11,9 @@
 #include <aduc/logging.h>
 #include <du_agent_sdk/agent_module_interface.h>  // ADUC_AGENT_MODULE_HANDLE
 
+#define AGENT_INFO_FIELD_NAME_SEQUENCE_NUMBER "sn"
+#define AGENT_INFO_FIELD_NAME_COMPAT_PROPERTIES "compatProperties"
+
 /**
  * @brief Free memory allocated for the agentinfo data.
  */
@@ -314,7 +317,7 @@ static char* Build_AgentInfo_Request_Msg_Payload(time_t nowTime)
         goto done;
     }
 
-    if (JSONSuccess != json_object_set_string(json_object(root), "sn", &long_time[0]))
+    if (JSONSuccess != json_object_set_string(json_object(root), AGENT_INFO_FIELD_NAME_SEQUENCE_NUMBER, &long_time[0]))
     {
         goto done;
     }
@@ -325,7 +328,7 @@ static char* Build_AgentInfo_Request_Msg_Payload(time_t nowTime)
         goto done;
     }
 
-    if (JSONSuccess != json_object_set_value(json_object(root), "compatProperties", compatProps_value))
+    if (JSONSuccess != json_object_set_value(json_object(root), AGENT_INFO_FIELD_NAME_COMPAT_PROPERTIES, compatProps_value))
     {
         goto done;
     }
@@ -568,9 +571,12 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
 
     // For this request, generate correlation Id sent as CorrelationData property
     // and used to match with response.
-    if (!ADUC_generate_correlation_id(false /* with_hyphens */, &(operationDataContext->ainfoReqMessageContext.correlationId)[0], ARRAY_SIZE(operationDataContext->ainfoReqMessageContext.correlationId)))
+    if (!ADUC_generate_correlation_id(
+        false /* with_hyphens */,
+        &(operationDataContext->ainfoReqMessageContext.correlationId)[0],
+        ARRAY_SIZE(operationDataContext->ainfoReqMessageContext.correlationId)))
     {
-        Log_Error("correlationid");
+        Log_Error("Fail to generate correlationid");
         goto done;
     }
 

@@ -16,11 +16,6 @@
 EXTERN_C_BEGIN
 
 /**
- * @brief Create the enrollment management module instance.
- */
-ADUC_AGENT_MODULE_HANDLE ADUC_Enrollment_Management_Create();
-
-/**
  * @brief Destroy the enrollment management module instance.
  * @param module The module handle.
  */

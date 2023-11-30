@@ -9,8 +9,6 @@
 // keep this last to avoid interfering with system headers
 #include <aduc/aduc_banned.h>
 
-#define AGENT_INFO_FIELD_NAME_SEQUENCE_NUMBER "sn"
-#define AGENT_INFO_FIELD_NAME_COMPAT_PROPERTIES "compatProperties"
 #define AGENT_INFO_PROTOCOL_NAME "adu"
 #define AGENT_INFO_PROTOCOL_VERSION 1
 
