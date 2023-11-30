@@ -105,7 +105,7 @@ stages:
           name: Azure-Pipelines-1ESPT-ExDShared
           vmImage: ubuntu-latest
         steps:
-        - template: ../templates/adu-docker-build-steps.yml
+          - template: ../templates/adu-docker-build-steps.yml
             parameters:
               targetOs: "ubuntu1804"
               targetArch: "amd64"
@@ -118,7 +118,7 @@ stages:
           name: Azure-Pipelines-1ESPT-ExDShared
           vmImage: ubuntu-latest
         steps:
-        - template: ../templates/adu-docker-build-steps.yml
+          - template: ../templates/adu-docker-build-steps.yml
             parameters:
               targetOs: "ubuntu2004"
               targetArch: "amd64"
