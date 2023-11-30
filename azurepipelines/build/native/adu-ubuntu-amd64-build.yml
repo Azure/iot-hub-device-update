@@ -24,7 +24,30 @@ variables:
 name: $(version.major).$(version.minor).$(version.patch)-$(version.pre-release)+$(version.build)
 
 resources:
-    - repo: self
+  repositories:
+  - repository: 1ESPipelineTemplates
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+
+
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    pool:
+      name: Azure-Pipelines-1ESPT-ExDShared
+      image: ubuntu-latest
+      os: linux
+    sdl:
+      sourceAnalysisPool:
+        name: Azure-Pipelines-1ESPT-ExDShared
+        image: windows-latest
+        os: windows
+      suppression:
+        suppressionFile: $(Build.SourcesDirectory)\guardian\SDL\.gdnsuppress
+    customBuildTags:
+    - ES365AIMigrationTooling
+
 
 trigger:
     branches:
@@ -66,6 +89,8 @@ jobs:
     cancelTimeoutInMinutes: 120
     pool:
       name: Azure-Pipelines-1ESPT-ExDShared
+      image: ubuntu-latest
+      os: linux
     steps:
       - template: ../templates/adu-docker-build-steps.yml
         parameters:
@@ -78,6 +103,8 @@ jobs:
     cancelTimeoutInMinutes: 120
     pool:
       name: Azure-Pipelines-1ESPT-ExDShared
+      image: ubuntu-latest
+      os: linux
     steps:
       - template: ../templates/adu-docker-build-steps.yml
         parameters:
@@ -90,6 +117,8 @@ jobs:
     cancelTimeoutInMinutes: 120
     pool:
       name: Azure-Pipelines-1ESPT-ExDShared
+      image: ubuntu-latest
+      os: linux
     steps:
       - template: ../templates/adu-docker-build-steps.yml
         parameters:
