@@ -70,15 +70,13 @@ extends:
     pool:
       name: aduc_1es_client_pool
       os: linux
-    #   image: ubuntu-latest
-    #   os: linux
-    # sdl:
-    #   sourceAnalysisPool:
-    #     name: Azure-Pipelines-1ESPT-ExDShared
-    #     image: windows-latest
-    #     os: windows
-    #   suppression:
-    #     suppressionFile: $(Build.SourcesDirectory)\guardian\SDL\.gdnsuppress
+
+    sdl:
+      sourceAnalysisPool:
+        name: aduc_1es_client_pool
+        os: windows
+      suppression:
+        suppressionFile: $(Build.SourcesDirectory)\guardian\SDL\.gdnsuppress
     customBuildTags:
     - ES365AIMigrationTooling
     stages:
