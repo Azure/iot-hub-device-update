@@ -46,7 +46,7 @@ TEST_CASE("ADUC_StateStore_Initialize")
         CHECK(nullptr == ADUC_StateStore_GetMQTTBrokerHostname());
         CHECK(nullptr == ADUC_StateStore_GetDeviceUpdateServiceInstance());
         CHECK_FALSE(ADUC_StateStore_GetIsDeviceRegistered());
-        CHECK_FALSE(ADUC_StateStore_GetIsDeviceEnrolled());
-        CHECK_FALSE(ADUC_StateStore_GetIsAgentInfoReported());
+        CHECK_FALSE(ADUC_StateStore_IsDeviceEnrolled());
+        CHECK_FALSE(ADUC_StateStore_IsAgentInfoReported());
     }
 }

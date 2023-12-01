@@ -673,7 +673,7 @@ void ADUC_Communication_Channel_OnMessage(
 
     char* msg_type = NULL;
 
-    Log_Debug("<-- msg %s qos:%d mid:%d", msg->topic, msg->qos, msg->mid);
+    Log_Debug("<-- MSG RECV topic: '%s' qos: %d msgid: %d", msg->topic, msg->qos, msg->mid);
 
     // All parameters are required.
     if (mosq == NULL || commChannelModuleHandle == NULL || msg == NULL)
@@ -735,7 +735,7 @@ done:
 void ADUC_Communication_Channel_OnPublish(
     struct mosquitto* mosq, void* commChannelModuleHandle, int mid, int reason_code, const mosquitto_property* props)
 {
-    Log_Debug("on_publish, mid:%d reason_code:%d", mid, reason_code);
+    Log_Debug("PUBLISH ACK by broker, msgid: %d reason_code:%d", mid, reason_code);
 
     ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)commChannelModuleHandle;
 
@@ -1267,7 +1267,7 @@ int ADUC_Communication_Channel_MQTT_Publish(
         return -1;
     }
 
-    Log_Info("PUB '%s' qos:%d len:%d", topic, qos, payload_len);
+    Log_Info("PUBLISH '%s' qos:%d len:%d", topic, qos, payload_len);
     // Log_Debug("   payload:\n%s\n", payload);
 
     return mosquitto_publish_v5(
@@ -1346,7 +1346,7 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
     for (size_t i = 0; i < VECTOR_size(commMgrState->pendingSubscriptions); ++i)
     {
         ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* cbInfo = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)VECTOR_element(commMgrState->pendingSubscriptions, i);
-        Log_Debug("    cbInfo[%lu]: messageId=%d topic=%s callback=%p", i, cbInfo->messageId, cbInfo->topic, callback);
+        Log_Debug("    cbInfo[%lu]: msgid: %d topic: '%s' callback=%p", i, cbInfo->messageId, cbInfo->topic, callback);
     }
 
     if (mid != NULL)
@@ -1354,7 +1354,8 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
         *mid = callbackInfo.messageId;
     }
 
-    Log_Debug("-> SUB %s mid[%d]", topic, callbackInfo.messageId);
+    Log_Debug("-> SUBSCRIBE topic: '%s', msgid: %d", topic, callbackInfo.messageId);
+
     ADUC_SetCommunicationChannelState(commMgrState, ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING);
     mosqResult = MOSQ_ERR_SUCCESS;
 

@@ -86,7 +86,7 @@ void OnMessage_ainfo_resp(
 
     if (!ADU_are_correlation_ids_matching(props, messageContext->correlationId))
     {
-        Log_Info("OnMessage_ainfo_resp: correlation data mismatch");
+        Log_Info("OnMessage_ainfo_resp: correlation data mismatch. ignoring.");
         goto done;
     }
 

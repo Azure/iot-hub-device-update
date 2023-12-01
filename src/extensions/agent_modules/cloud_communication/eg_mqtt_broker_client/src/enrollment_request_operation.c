@@ -5,7 +5,7 @@
 #include <aduc/adu_enrollment_utils.h> // EnrollmentData_FromOperationContext
 #include <aduc/adu_mosquitto_utils.h> // ADU_mosquitto_add_user_property
 #include <aduc/adu_mqtt_common.h>
-#include <aduc/agent_state_store.h> // ADUC_StateStore_GetIsDeviceEnrolled
+#include <aduc/agent_state_store.h> // ADUC_StateStore_IsDeviceEnrolled
 #include <aduc/config_utils.h> // ADUC_ConfigInfo, ADUC_AgentInfo
 #include <aduc/logging.h>
 #include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_HANDLE
@@ -160,7 +160,7 @@ bool IsEnrollAlreadyHandled(ADUC_Retriable_Operation_Context* context, time_t no
 {
     ADUC_Enrollment_Request_Operation_Data* enrollmentData = EnrollmentData_FromOperationContext(context);
 
-    if (enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED || ADUC_StateStore_GetIsDeviceEnrolled())
+    if (enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED || ADUC_StateStore_IsDeviceEnrolled())
     {
         // enrollment is completed.
         ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_Completed);
@@ -230,6 +230,19 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
         goto done;
     }
 
+    if (strlen(enrollmentData->enrReqMessageContext.correlationId) == 0)
+    {
+        // The DU service can handle with or without hyphens, but reducing data transferred by omitting them.
+        if (!ADUC_generate_correlation_id(
+            false /* with_hyphens */,
+            &(enrollmentData->enrReqMessageContext.correlationId)[0],
+            ARRAY_SIZE(enrollmentData->enrReqMessageContext.correlationId)))
+        {
+            Log_Error("Fail to generate correlationid");
+            goto done;
+        }
+    }
+
     if (!ADU_mosquitto_set_correlation_data_property(&user_prop_list, &(enrollmentData->enrReqMessageContext.correlationId)[0]))
     {
         Log_Error("fail set corr id");
@@ -252,7 +265,7 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
     {
         opSucceeded = false;
         Log_Error(
-            "fail PUB 'enr_req' mid[%d] cid[%s] err[%d]: '%s')",
+            "fail PUBLISH 'enr_req' msgid: %d, correlationid: %s, err: %d, errmsg: '%s')",
             messageContext->messageId,
             messageContext->correlationId,
             mqtt_res,
@@ -296,7 +309,7 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
     context->lastExecutionTime = nowTime;
 
     Log_Info(
-        "--> 'enr_req' mid:%d cid:%s t:%ld timeout:%ld)",
+        "--> PUBLISH 'enr_req' msgid: %d correlationid: '%s' lastExecTime: %ld timeoutSecs: %ld)",
         messageContext->messageId,
         messageContext->correlationId,
         context->lastExecutionTime,

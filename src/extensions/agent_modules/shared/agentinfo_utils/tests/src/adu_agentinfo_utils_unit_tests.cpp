@@ -51,7 +51,7 @@ TEST_CASE("Handle_AgentInfo_Response")
         REQUIRE_FALSE(Handle_AgentInfo_Response(&agentInfoData, &context));
 
         CHECK(agentInfoData.agentInfoState == ADU_AGENTINFO_STATE_UNKNOWN);
-        CHECK_FALSE(ADUC_StateStore_GetIsAgentInfoReported());
+        CHECK_FALSE(ADUC_StateStore_IsAgentInfoReported());
     }
 
     SECTION("Bad request calls retriable context cancelFunc")
@@ -71,7 +71,7 @@ TEST_CASE("Handle_AgentInfo_Response")
         REQUIRE_FALSE(Handle_AgentInfo_Response(&agentInfoData, &context));
 
         CHECK(agentInfoData.agentInfoState == ADU_AGENTINFO_STATE_UNKNOWN);
-        CHECK_FALSE(ADUC_StateStore_GetIsAgentInfoReported());
+        CHECK_FALSE(ADUC_StateStore_IsAgentInfoReported());
 
         CHECK(s_cancel_called);
     }
@@ -91,7 +91,7 @@ TEST_CASE("Handle_AgentInfo_Response")
 
         REQUIRE(Handle_AgentInfo_Response(&agentInfoData, &context));
 
-        CHECK(ADUC_StateStore_GetIsAgentInfoReported());
+        CHECK(ADUC_StateStore_IsAgentInfoReported());
         CHECK(agentInfoData.agentInfoState == ADU_AGENTINFO_STATE_ACKNOWLEDGED);
     }
 }

@@ -349,7 +349,7 @@ void ADPS_MQTT_Client_Module_OnMessage(
     char** topics = NULL;
     int count = 0;
 
-    Log_Debug("<-- msg %s qos:%d mid:%d", msg->topic, msg->qos, msg->mid);
+    Log_Debug("<-- MSG RECV topic: '%s' qos: %d msgid: %d", msg->topic, msg->qos, msg->mid);
 
     ADPS_MQTT_CLIENT_MODULE_STATE* moduleState = ModuleStateFromModuleHandle(obj);
     if (moduleState == NULL)
@@ -431,7 +431,7 @@ done:
 void ADPS_MQTT_Client_Module_OnPublish(
     struct mosquitto* mosq, void* obj, int mid, int reason_code, const mosquitto_property* props)
 {
-    Log_Info("ON_PUBLISH PUBACK (qos 1) from broker: Message with mid %d has been published, reason_code: %d", mid, reason_code);
+    Log_Info("<-- PUBACK (qos 1) msgid: %d, reason_code: %d", mid, reason_code);
 }
 
 /**

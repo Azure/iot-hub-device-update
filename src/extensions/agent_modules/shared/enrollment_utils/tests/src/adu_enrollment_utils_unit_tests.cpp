@@ -75,7 +75,7 @@ TEST_CASE("Handle_Enrollment_Response")
 
         CHECK(operation_data.enrollmentState == ADU_ENROLLMENT_STATE_NOT_ENROLLED);
 
-        CHECK_FALSE(ADUC_StateStore_GetIsDeviceEnrolled());
+        CHECK_FALSE(ADUC_StateStore_IsDeviceEnrolled());
     }
 
     SECTION("Handle_Enrollment_Response - enrolled should set state store")
@@ -104,7 +104,7 @@ TEST_CASE("Handle_Enrollment_Response")
         CHECK(test_operation_complete_called);
         CHECK(operation_data.enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED);
 
-        CHECK(ADUC_StateStore_GetIsDeviceEnrolled());
+        CHECK(ADUC_StateStore_IsDeviceEnrolled());
     }
 }
 

@@ -180,7 +180,7 @@ bool Handle_Enrollment_Response(
         new_state,
         NULL /* reason */);
 
-    if (ADUC_StateStore_GetIsDeviceEnrolled() != isEnrolled)
+    if (ADUC_StateStore_IsDeviceEnrolled() != isEnrolled)
     {
         Log_Error("Failed set enrollment state - '%d' to '%d'", old_state, new_state);
         goto done;

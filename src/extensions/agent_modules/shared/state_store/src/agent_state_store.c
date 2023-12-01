@@ -544,7 +544,7 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetDeviceUpdateServiceInstance(const cha
     return ADUC_STATE_STORE_RESULT_OK;
 }
 
-bool ADUC_StateStore_GetIsDeviceEnrolled(void)
+bool ADUC_StateStore_IsDeviceEnrolled(void)
 {
     sem_wait(&state_semaphore);
     bool value = state.isDeviceEnrolled;
@@ -560,12 +560,14 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetIsDeviceEnrolled(bool isDeviceEnrolle
     return ADUC_STATE_STORE_RESULT_OK;
 }
 
-bool ADUC_StateStore_GetIsAgentInfoReported(void)
+bool ADUC_StateStore_IsAgentInfoReported()
 {
+    bool reported = false;
+
     sem_wait(&state_semaphore);
-    bool value = state.isAgentInfoReported;
+    reported = state.isAgentInfoReported;
     sem_post(&state_semaphore);
-    return value;
+    return reported;
 }
 
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetIsAgentInfoReported(bool isAgentInfoReported)

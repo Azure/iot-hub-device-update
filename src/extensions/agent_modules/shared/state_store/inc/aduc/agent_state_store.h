@@ -133,7 +133,7 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetDeviceUpdateServiceInstance(const cha
  * @brief Get a boolean value indicating whether the device is enrolled with the Device Update service.
  * @return true if the device is enrolled, false otherwise.
  */
-bool ADUC_StateStore_GetIsDeviceEnrolled(void);
+bool ADUC_StateStore_IsDeviceEnrolled(void);
 
 /**
  * @brief Set a boolean value indicating whether the device is enrolled with the Device Update service.
@@ -147,7 +147,7 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetIsDeviceEnrolled(bool isDeviceEnrolle
  * @brief Get a boolean value indicating whether the DU agent information has been reported to, and acknowledged by the Device Update service.
  * @return true if the agent information has been reported, false otherwise.
  */
-bool ADUC_StateStore_GetIsAgentInfoReported(void);
+bool ADUC_StateStore_IsAgentInfoReported(void);
 
 /**
  * @brief Set a boolean value indicating whether the DU agent information has been reported to, and acknowledged by the Device Update service.

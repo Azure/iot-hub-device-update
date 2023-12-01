@@ -283,7 +283,14 @@ void ADUC_MQTT_Client_OnPublish(
     struct mosquitto* mosq, void* obj, int mid, int reason_code, const mosquitto_property* props)
 {
     // TODO (nox-msft) - route the message to the appropriate component.
-    Log_Info("on_publish: Message with mid %d has been published.", mid);
+    if (reason_code == 0)
+    {
+        Log_Info("<-- PUBACK success, msgid: %d", mid);
+    }
+    else
+    {
+        Log_Warn("<-- PUBACK fail, msgid: %d, reason_code: %d", mid, reason_code);
+    }
 }
 
 /* Callback called when the broker sends a CONNACK message in response to a
@@ -293,14 +300,18 @@ void ADUC_MQTT_Client_OnConnect(
 {
     if (reason_code == 0)
     {
-        Log_Info("on_connect: Connection succeeded.");
+        Log_Info("<-- CONNECT success");
+    }
+    else
+    {
+        Log_Warn("<-- CONNECT fail, reason_code: %d", reason_code);
     }
 }
 
 /* Callback called when the broker sends a SUBACK in response to a SUBSCRIBE. */
 void ADUC_MQTT_Client_OnSubscribe(struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos, const mosquitto_property* props)
 {
-    Log_Info("on_subscribe: Subscribing succeeded.");
+    Log_Info("<-- SUBACK mid: %d", mid);
 }
 
 /**
