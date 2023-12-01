@@ -68,9 +68,9 @@ extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
     pool:
-      name: Azure-Pipelines-1ESPT-ExDShared
-      image: ubuntu-latest
-      os: linux
+      name: aduc_1es_client_pool
+    #   image: ubuntu-latest
+    #   os: linux
     sdl:
       sourceAnalysisPool:
         name: Azure-Pipelines-1ESPT-ExDShared
@@ -88,8 +88,7 @@ extends:
             timeoutInMinutes: 120
             cancelTimeoutInMinutes: 120
             pool:
-              name: Azure-Pipelines-1ESPT-ExDShared
-              vmImage: ubuntu-latest
+              name: aduc_1es_client_pool
             steps:
               - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
                 parameters:
@@ -101,8 +100,7 @@ extends:
             timeoutInMinutes: 120
             cancelTimeoutInMinutes: 120
             pool:
-              name: Azure-Pipelines-1ESPT-ExDShared
-              vmImage: ubuntu-latest
+              name: aduc_1es_client_pool
             steps:
               - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
                 parameters:
@@ -114,8 +112,7 @@ extends:
             timeoutInMinutes: 120
             cancelTimeoutInMinutes: 120
             pool:
-              name: Azure-Pipelines-1ESPT-ExDShared
-              vmImage: ubuntu-latest
+              name: aduc_1es_client_pool
             steps:
               - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
                 parameters:
