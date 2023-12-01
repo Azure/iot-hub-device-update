@@ -1232,7 +1232,7 @@ done:
  * @param handle An output workflow object handle.
  * @return ADUC_Result The result.
  */
-ADUC_Result _workflow_parse(JSON_Value* updateActionJson, bool validateManifest, ADUC_WorkflowHandle* handle)
+ADUC_Result _workflow_parse(const JSON_Value* updateActionJson, bool validateManifest, ADUC_WorkflowHandle* handle)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
@@ -1264,6 +1264,7 @@ ADUC_Result _workflow_parse(JSON_Value* updateActionJson, bool validateManifest,
     // commit ownership of cloned JSON_Value to the workflow's UpdateActionObject.
     updateActionObject = json_value_get_object(updateActionJsonClone);
     wf->UpdateActionObject = updateActionObject;
+    updateActionObject = NULL;
     updateActionJsonClone = NULL;
 
     // At this point, we have had a side-effect of committing to the
@@ -1279,7 +1280,10 @@ ADUC_Result _workflow_parse(JSON_Value* updateActionJson, bool validateManifest,
     // 'cancel' action doesn't contains UpdateManifest and UpdateSignature.
     // Skip this part.
     workflow_parse_peek_unprotected_workflow_properties(
-        updateActionObject, &updateAction, NULL /* outRootKeyPkgUrl_optional */, NULL /* outWorkflowId_optional */);
+        wf->UpdateActionObject,
+        &updateAction,
+        NULL /* outRootKeyPkgUrl_optional */,
+        NULL /* outWorkflowId_optional */);
     if (updateAction != ADUCITF_UpdateAction_Cancel)
     {
         ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
@@ -1290,7 +1294,7 @@ ADUC_Result _workflow_parse(JSON_Value* updateActionJson, bool validateManifest,
         // We will skip the validation for these cases.
         if (updateAction != ADUCITF_UpdateAction_Undefined && validateManifest)
         {
-            tmpResult = workflow_validate_update_manifest_signature(updateActionObject);
+            tmpResult = workflow_validate_update_manifest_signature(wf->UpdateActionObject);
             if (IsAducResultCodeFailure(tmpResult.ResultCode))
             {
                 result = tmpResult;
@@ -2458,11 +2462,11 @@ const char* workflow_peek_update_type(ADUC_WorkflowHandle handle)
     return workflow_peek_update_manifest_string(handle, ADUCITF_FIELDNAME_UPDATETYPE);
 }
 
-ADUC_Result _workflow_init_helper(ADUC_WorkflowHandle* handle)
+ADUC_Result _workflow_init_helper(ADUC_WorkflowHandle handle)
 {
     ADUC_Result result = { ADUC_GeneralResult_Failure };
 
-    ADUC_Workflow* wf = workflow_from_handle(*handle);
+    ADUC_Workflow* wf = workflow_from_handle(handle);
     wf->Parent = NULL;
     wf->ChildCount = 0;
     wf->ChildrenMax = 0;
@@ -2505,8 +2509,8 @@ done:
             "Failed to init workflow handle. result:%d (erc:0x%X)", result.ResultCode, result.ExtendedResultCode);
         if (handle != NULL)
         {
-            workflow_free(*handle);
-            *handle = NULL;
+            // workflow_free(handle);
+            // *handle = NULL;
         }
     }
 
@@ -2542,6 +2546,8 @@ workflow_init_from_file(const char* updateManifestFile, bool validateManifest, A
         goto done;
     }
 
+    // address of rootJsonValue = 0x5555558 debb0
+    // address of workflowHandle = 0x5555558 db350
     result = _workflow_init_helper(workflowHandle);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
