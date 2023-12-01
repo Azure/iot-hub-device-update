@@ -1854,18 +1854,14 @@ char* workflow_get_workflow_base_dir(const ADUC_WorkflowHandle handle)
 }
 
 // Workfolder =  [root.sandboxfolder]  "/"  ( [parent.workfolder | parent.id]  "/" )+  [handle.workfolder | handle.id]
+// Workfolder =  [root.sandboxfolder]  "/"  ( [parent.workfolder | parent.id]  "/" )+  [handle.workfolder | handle.id]
 char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
 {
     char dir[1024] = { 0 };
 
-    char* bdir = NULL;
+    char* pwf = NULL;
     char* ret = NULL;
     char* id = workflow_get_id(handle);
-
-    if (id == NULL)
-    {
-        return NULL;
-    }
 
     // If workfolder explicitly specified, use it.
     char* wf = workflow_get_string_property(handle, WORKFLOW_PROPERTY_FIELD_WORKFOLDER);
@@ -1876,23 +1872,38 @@ char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
         return wf;
     }
 
-    bdir = workflow_get_workflow_base_dir(handle);
-
-    if (bdir == NULL)
+    // Return ([parent's workfolder] or [default sandbox folder]) + "/" + [workflow id];
+    ADUC_WorkflowHandle p = workflow_get_parent(handle);
+    if (p != NULL)
     {
-        free(id);
-        return NULL;
+        pwf = workflow_get_workfolder(p);
+        sprintf(dir, "%s/%s", pwf, id);
+
+        Log_Debug("Using parent workfolder: '%s/%s'", pwf, id);
+    }
+    else
+    {
+        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+        if (config != NULL)
+        {
+            Log_Info("Sandbox root path not set. Use default: '%s'", config->downloadsFolder);
+            sprintf(dir, "%s/%s", config->downloadsFolder, id);
+            ADUC_ConfigInfo_ReleaseInstance(config);
+        }
+        else
+        {
+            Log_Warn("Config is null. Use default sandbox root path: '%s'", DEFAULT_SANDBOX_ROOT_PATH);
+            sprintf(dir, "%s/%s", DEFAULT_SANDBOX_ROOT_PATH, id);
+        }
     }
 
-    sprintf(dir, "%s/%s", bdir, id);
+    free(pwf);
+    free(id);
 
     if (dir[0] != 0)
     {
         mallocAndStrcpy_s(&ret, dir);
     }
-
-    free(bdir);
-    free(id);
 
     return ret;
 }
