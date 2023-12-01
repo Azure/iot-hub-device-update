@@ -69,6 +69,7 @@ extends:
   parameters:
     pool:
       name: aduc_1es_client_pool
+      os: linux
     #   image: ubuntu-latest
     #   os: linux
     # sdl:
@@ -89,6 +90,7 @@ extends:
             cancelTimeoutInMinutes: 120
             pool:
               name: aduc_1es_client_pool
+              os: linux
             steps:
               - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
                 parameters:
@@ -101,6 +103,7 @@ extends:
             cancelTimeoutInMinutes: 120
             pool:
               name: aduc_1es_client_pool
+              os: linux
             steps:
               - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
                 parameters:
@@ -113,6 +116,7 @@ extends:
             cancelTimeoutInMinutes: 120
             pool:
               name: aduc_1es_client_pool
+              os: linux
             steps:
               - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
                 parameters:
