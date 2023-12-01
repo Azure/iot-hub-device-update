@@ -73,7 +73,7 @@ extends:
 
     sdl:
       sourceAnalysisPool:
-        name: aduc_1es_client_pool
+        name: 1es_hosted_pool_windows
         os: windows
       suppression:
         suppressionFile: $(Build.SourcesDirectory)\guardian\SDL\.gdnsuppress
