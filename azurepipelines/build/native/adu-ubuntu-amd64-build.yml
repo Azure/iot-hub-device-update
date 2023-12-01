@@ -79,6 +79,7 @@ extends:
         suppressionFile: $(Build.SourcesDirectory)\guardian\SDL\.gdnsuppress
     customBuildTags:
     - ES365AIMigrationTooling
+
     stages:
       - stage: Build
         jobs:
