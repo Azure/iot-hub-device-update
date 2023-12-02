@@ -1361,51 +1361,6 @@ done:
     return mosqResult;
 }
 
-/**
- * @brief Check whether the specified @p topic is subscribed.
- * @param[in] commHandle The communication channel handle.
- * @param[in] topic The topic to check.
- * @return true if the topic is subscribed, false otherwise.
- */
-bool ADUC_Communication_Channel_MQTT_IsSubscribed(ADUC_AGENT_MODULE_HANDLE commHandle, const char* topic)
-{
-    if (commHandle == NULL || topic == NULL)
-    {
-        Log_Error("Null arg (commHandle=%p, topic=%p)", commHandle, topic);
-        return false;
-    }
-
-    const void* commHandleFromStore = ADUC_StateStore_GetCommunicationChannelHandle(ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID);
-    ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = CommunicationManagerStateFromModuleHandle((void*)commHandleFromStore);
-    if (commMgrState == NULL)
-    {
-        Log_Error("commMgrState NULL");
-        return false;
-    }
-
-    if (commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING)
-    {
-        Log_Debug("Still subscribing");
-        return false;
-    }
-
-    if (commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBED)
-    {
-        Log_Debug("Already subscribed to '%s'.");
-        if (commMgrState->subscribeTopicInfo.topic != NULL && strcmp(commMgrState->subscribeTopicInfo.topic, topic) == 0)
-        {
-            Log_Debug("Subscribed topic '%s' matches '%s'", commMgrState->subscribeTopicInfo.topic, topic);
-            return true;
-        }
-        else
-        {
-            Log_Warn("Subscribed topic '%s' does NOT match '%s'", commMgrState->subscribeTopicInfo.topic, topic);
-        }
-    }
-
-    return false;
-}
-
 /*
  * @brief Check if the communication channel is in connected state.
  */
