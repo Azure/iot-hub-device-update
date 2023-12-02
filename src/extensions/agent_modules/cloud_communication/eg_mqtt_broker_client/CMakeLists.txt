@@ -40,4 +40,3 @@ target_link_libraries (
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
 
-add_subdirectory (tests)
