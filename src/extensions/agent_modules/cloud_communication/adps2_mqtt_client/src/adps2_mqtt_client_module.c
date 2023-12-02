@@ -280,11 +280,7 @@ bool ProcessDeviceRegistrationResponse(
         bool errorOccurred = false;
         Log_Info("Device is registered.");
         SetRegisterState(moduleState, ADPS_REGISTER_STATE_REGISTERED, "received assigned status");
-        if (ADUC_StateStore_SetJsonValue(true, "dps.registrationData", root_value))
-        {
-            Log_Error("Failed to set registration data");
-            errorOccurred = true;
-        }
+
         const char* deviceId = json_object_dotget_string(json_object(root_value), "registrationState.deviceId");
         if (deviceId == NULL)
         {
