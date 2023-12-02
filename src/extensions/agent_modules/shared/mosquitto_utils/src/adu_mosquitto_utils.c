@@ -73,26 +73,40 @@ bool ADU_mosquitto_get_correlation_data(const mosquitto_property* props, char** 
  * @brief Check if the correlation data in the MQTT properties matches the provided correlation ID.
  * @param[in] props Pointer to the MQTT properties from which to retrieve the correlation data.
  * @param[in] correlationId The correlation ID to check against.
+ * @param[out] outCorrelationData Optional. If not NULL, will set to a string with the value of mqtt correlation-data property.
+ * @param[out] outCorrelationDataByteLen Optional. If not NULL, will set to byte length of the mqtt correlation-data property.
  * @return `true` if the correlation data matches the provided correlation ID; otherwise, `false`.
  */
-bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* correlationId)
+bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* correlationId, char** outCorrelationData, uint16_t* outCorrelationDataByteLen)
 {
     char* cid = NULL;
     uint16_t cidLen = 0;
     size_t n = 0;
     bool res = false;
 
-    if (props == NULL)
+    if (props == NULL || IsNullOrEmpty(correlationId))
     {
         goto done;
     }
 
     // Check if correlation data matches the latest enrollment message.
-    const mosquitto_property* p =
-        mosquitto_property_read_binary(props, MQTT_PROP_CORRELATION_DATA, (void**)&cid, &cidLen, false);
+    const mosquitto_property* p = mosquitto_property_read_binary(props, MQTT_PROP_CORRELATION_DATA, (void**)&cid, &cidLen, false);
     if (p == NULL || cid == NULL)
     {
         goto done;
+    }
+
+    if (outCorrelationData != NULL)
+    {
+        if (ADUC_AllocAndStrCopyN(outCorrelationData, cid, cidLen) != 0)
+        {
+            goto done;
+        }
+    }
+
+    if (outCorrelationDataByteLen != NULL)
+    {
+        *outCorrelationDataByteLen = cidLen;
     }
 
     n = (size_t)cidLen;

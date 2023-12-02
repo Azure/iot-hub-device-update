@@ -75,6 +75,8 @@ void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 void OnMessage_ainfo_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
+    char* correlationData = NULL;
+    uint16_t correlationDataByteLen = 0;
     ADUC_Retriable_Operation_Context* retriableOperationContext = RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(obj);
     ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoDataFromRetriableOperationContext(retriableOperationContext);
 
@@ -88,9 +90,9 @@ void OnMessage_ainfo_resp(
 
     json_print_properties(props);
 
-    if (!ADU_are_correlation_ids_matching(props, messageContext->correlationId))
+    if (!ADU_are_correlation_ids_matching(props, messageContext->correlationId, &correlationData, &correlationDataByteLen))
     {
-        Log_Info("OnMessage_ainfo_resp: correlation data mismatch. ignoring.");
+        Log_Info("correlation data mismatch. expected: '%s', actual: '%s' %u bytes", correlationData, correlationDataByteLen);
         goto done;
     }
 
@@ -110,11 +112,12 @@ void OnMessage_ainfo_resp(
 
     if (!Handle_AgentInfo_Response(agentInfoData, retriableOperationContext))
     {
-        Log_Error("Failed handling agentinfo response: correlationId '%s'", messageContext->correlationId);
+        Log_Error("Fail handling agentinfo response: correlationId '%s'", messageContext->correlationId);
         goto done;
     }
 
 done:
+    free(correlationData);
     return;
 }
 

@@ -73,6 +73,8 @@ void OnMessage_enr_resp(
 {
     bool isEnrolled = false;
     char* scopeId = NULL;
+    char* correlationData = NULL;
+    uint16_t correlationDataByteLen = 0;
 
     ADUC_Retriable_Operation_Context* retriableOperationContext = RetriableOperationContextFromEnrollmentMqttLibCallbackUserObj(obj);
     ADUC_Enrollment_Request_Operation_Data* enrollmentData = retriableOperationContext == NULL ? NULL : EnrollmentDataFromRetriableOperationContext(retriableOperationContext);
@@ -85,9 +87,9 @@ void OnMessage_enr_resp(
 
     json_print_properties(props);
 
-    if (!ADU_are_correlation_ids_matching(props, enrollmentData->enrReqMessageContext.correlationId))
+    if (!ADU_are_correlation_ids_matching(props, enrollmentData->enrReqMessageContext.correlationId, &correlationData, &correlationDataByteLen))
     {
-        Log_Info("OnMessage_enr_resp: correlation data mismatch");
+        Log_Info("correlation data mismatch. expected: '%s', actual: '%s' %u bytes", correlationData, correlationDataByteLen);
         goto done;
     }
 
@@ -105,7 +107,7 @@ void OnMessage_enr_resp(
 
     if (!ParseEnrollmentMessagePayload(msg->payload, &isEnrolled, &scopeId))
     {
-        Log_Error("Failed parse of msg payload: %s", (char*)msg->payload);
+        Log_Error("Fail parse of msg payload: %s", (char*)msg->payload);
         goto done;
     }
 
@@ -115,12 +117,13 @@ void OnMessage_enr_resp(
         scopeId,
         retriableOperationContext))
     {
-        Log_Error("Failed handling enrollment response.");
+        Log_Error("Fail handling enrollment response.");
         goto done;
     }
 
 done:
     free(scopeId);
+    free(correlationData);
 }
 
 void OnPublish_enr_resp(struct mosquitto* mosq, void* obj, const mosquitto_property* props, int reason_code)
