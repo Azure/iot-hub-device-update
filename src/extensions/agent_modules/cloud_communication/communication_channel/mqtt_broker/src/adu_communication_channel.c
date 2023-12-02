@@ -735,7 +735,7 @@ done:
 void ADUC_Communication_Channel_OnPublish(
     struct mosquitto* mosq, void* commChannelModuleHandle, int mid, int reason_code, const mosquitto_property* props)
 {
-    Log_Debug("PUBLISH ACK by broker, msgid: %d reason_code:%d", mid, reason_code);
+    Log_Debug("PUBLISH ACK by broker - msgid: %d, rc: (%d) => '%s' ", mid, reason_code, mosquitto_reason_string(reason_code));
 
     ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)commChannelModuleHandle;
 
@@ -751,6 +751,7 @@ void ADUC_Communication_Channel_OnPublish(
         Log_Error("commMgrState NULL");
         return;
     }
+
     if (commMgrState->mqttCallbacks.on_publish_v5 != NULL)
     {
         commMgrState->mqttCallbacks.on_publish_v5(mosq, commMgrState->ownerModuleContext, mid, reason_code, props);
@@ -835,6 +836,8 @@ void ADUC_Communication_Channel_OnSubscribe(
         }
     }
 }
+
+#define LOG_ALL_MOSQUITTO 1
 
 /**
  * @brief Callback function to handle MQTT log messages.
@@ -1268,7 +1271,7 @@ int ADUC_Communication_Channel_MQTT_Publish(
     }
 
     Log_Info("PUBLISH '%s' qos:%d len:%d", topic, qos, payload_len);
-    // Log_Debug("   payload:\n%s\n", payload);
+    Log_Debug("   payload:\n%s\n", payload);
 
     return mosquitto_publish_v5(
         commMgrState->mqttClient,

@@ -35,7 +35,8 @@ int ADUC_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
 
 #define DEFAULT_OPERATION_INTERVAL_SECONDS (10)
 
-typedef void(*ResponseHandlerFn)(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props);
+typedef void(*OnMessageResponseHandlerFn)(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props);
+typedef void(*OnPublishResponseHandlerFn)(struct mosquitto* mosq, void* obj, const mosquitto_property* props, int reason_code);
 
 typedef enum tagModuleKey
 {
@@ -85,7 +86,7 @@ static void DeinitMqttTopics(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
     moduleState->mqtt_topic_agent2service = NULL;
 }
 
-static ResponseHandlerFn GetComponentResponseHandlerRoute(const char* msg_type)
+static OnMessageResponseHandlerFn GetComponentOnMessageResponseHandler(const char* msg_type)
 {
     if (strcmp(msg_type, "enr_resp") == 0)
     {
@@ -95,6 +96,33 @@ static ResponseHandlerFn GetComponentResponseHandlerRoute(const char* msg_type)
     if (strcmp(msg_type, "ainfo_resp") == 0)
     {
         return OnMessage_ainfo_resp;
+    }
+
+    // TODO: enable upd_resp and updrslt_resp
+
+    // if (strcmp(msg_type, "upd_resp") == 0)
+    // {
+    //     return OnMessage_upd_resp;
+    // }
+
+    // if (strcmp(msg_type, "updrslt_resp") == 0)
+    // {
+    //     return OnMessage_updrslt_resp;
+    // }
+
+    return NULL;
+}
+
+static OnPublishResponseHandlerFn GetComponentOnPublishResponseHandler(const char* msg_type)
+{
+    if (strcmp(msg_type, "enr_resp") == 0)
+    {
+        return OnPublish_enr_resp;
+    }
+
+    if (strcmp(msg_type, "ainfo_resp") == 0)
+    {
+        return OnPublish_ainfo_resp;
     }
 
     // TODO: enable upd_resp and updrslt_resp
@@ -221,10 +249,10 @@ void ADUC_MQTT_Client_OnMessage(
         goto done;
     }
 
-    ResponseHandlerFn response_handler = GetComponentResponseHandlerRoute(msg_type);
+    OnMessageResponseHandlerFn response_handler = GetComponentOnMessageResponseHandler(msg_type);
     if (response_handler == NULL)
     {
-        Log_Error("Unsupported resp msg type: %s", msg_type);
+        Log_Warn("cannot route OnMessage - Unknown resp msg type: '%s'", msg_type);
         goto done;
     }
 
@@ -282,15 +310,33 @@ bool ADUC_MQTT_Client_GetSubscriptionTopics(void* obj, int* count, char*** topic
 void ADUC_MQTT_Client_OnPublish(
     struct mosquitto* mosq, void* obj, int mid, int reason_code, const mosquitto_property* props)
 {
-    // TODO (nox-msft) - route the message to the appropriate component.
-    if (reason_code == 0)
+    char* msg_type = NULL;
+
+    // All parameters are required.
+    if (mosq == NULL || obj == NULL || props == NULL)
     {
-        Log_Info("<-- PUBACK success, msgid: %d", mid);
+        goto done;
     }
-    else
+
+    Log_Info("MQTT Broker responded to PUBLISH, mid: %d, rc: %d => '%s'", mid, reason_code, mosquitto_reason_string(reason_code));
+
+    if (!ADU_mosquitto_read_user_property_string(props, "mt", &msg_type) || IsNullOrEmpty(msg_type))
     {
-        Log_Warn("<-- PUBACK fail, msgid: %d, reason_code: %d", mid, reason_code);
+        Log_Warn("Failed to read the message type. Ignoring");
+        goto done;
     }
+
+    OnPublishResponseHandlerFn response_handler = GetComponentOnPublishResponseHandler(msg_type);
+    if (response_handler == NULL)
+    {
+        Log_Warn("cannot route OnPublish - Unknown resp msg type: '%s'", msg_type);
+        goto done;
+    }
+
+    response_handler(mosq, obj, props, reason_code);
+
+done:
+    free(msg_type);
 }
 
 /* Callback called when the broker sends a CONNACK message in response to a

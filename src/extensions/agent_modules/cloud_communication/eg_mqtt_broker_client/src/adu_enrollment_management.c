@@ -123,6 +123,48 @@ done:
     free(scopeId);
 }
 
+void OnPublish_enr_resp(struct mosquitto* mosq, void* obj, const mosquitto_property* props, int reason_code)
+{
+    UNREFERENCED_PARAMETER(mosq);
+    UNREFERENCED_PARAMETER(props);
+
+    ADUC_Retriable_Operation_Context* retriable_operation_context = RetriableOperationContextFromEnrollmentMqttLibCallbackUserObj(obj);
+
+    switch (reason_code)
+    {
+    case MQTT_RC_NO_MATCHING_SUBSCRIBERS:
+        // No Subscribers were subscribed to the topic we tried to publish to (as per mqtt 5 spec).
+        // This is unexpected since at least the ADU service should be subscribed to receive the
+        // agent topic's publish. Set timer and try again later in hopes that the service will be
+        // subscribed, but fail and restart after max retries.
+        if (retriable_operation_context != NULL)
+        {
+            retriable_operation_context->retryFunc(retriable_operation_context, retriable_operation_context->retryParams);
+        }
+        break;
+
+    case MQTT_RC_UNSPECIFIED: // fall-through
+    case MQTT_RC_IMPLEMENTATION_SPECIFIC: // fall-through
+    case MQTT_RC_NOT_AUTHORIZED:
+        // Not authorized at the moment but maybe it can auto-recover with retry if it is corrected.
+        if (retriable_operation_context != NULL)
+        {
+            retriable_operation_context->retryFunc(retriable_operation_context, retriable_operation_context->retryParams);
+        }
+        break;
+
+    case MQTT_RC_TOPIC_NAME_INVALID: // fall-through
+    case MQTT_RC_PACKET_ID_IN_USE: // fall-through
+    case MQTT_RC_PACKET_TOO_LARGE: // fall-through
+    case MQTT_RC_QUOTA_EXCEEDED:
+        if (retriable_operation_context != NULL)
+        {
+            retriable_operation_context->cancelFunc(retriable_operation_context);
+        }
+        break;
+    }
+}
+
 //
 // END - ADU_ENROLLMENT_MANAGEMENT.H Public Interface
 //

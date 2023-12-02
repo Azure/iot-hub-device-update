@@ -431,7 +431,7 @@ done:
 void ADPS_MQTT_Client_Module_OnPublish(
     struct mosquitto* mosq, void* obj, int mid, int reason_code, const mosquitto_property* props)
 {
-    Log_Info("<-- PUBACK (qos 1) msgid: %d, reason_code: %d", mid, reason_code);
+    Log_Info("<-- PUBACK (qos 1) msgid: %d, reason_code: %d => '%s'", mid, reason_code, mosquitto_reason_string(reason_code));
 }
 
 /**
