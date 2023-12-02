@@ -75,12 +75,16 @@ void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 void OnMessage_ainfo_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
-    ADUC_MQTT_CLIENT_MODULE_STATE* ownerModuleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
-    ADUC_AGENT_MODULE_INTERFACE* agentInfoModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)ownerModuleState->agentInfoModule;
-    ADUC_Retriable_Operation_Context* retriableOperationContext = (ADUC_Retriable_Operation_Context*)(agentInfoModuleInterface->moduleData);
-    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = (ADUC_AgentInfo_Request_Operation_Data*)(retriableOperationContext->data);
+    ADUC_Retriable_Operation_Context* retriableOperationContext = RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(obj);
+    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoDataFromRetriableOperationContext(retriableOperationContext);
 
-    ADUC_MQTT_Message_Context* messageContext = &agentInfoData->ainfoReqMessageContext;
+    ADUC_MQTT_Message_Context* messageContext = agentInfoData == NULL ? NULL : &agentInfoData->ainfoReqMessageContext;
+
+    if (retriableOperationContext == NULL || agentInfoData == NULL || messageContext == NULL)
+    {
+        Log_Error("Invalid callback obj");
+        goto done;
+    }
 
     json_print_properties(props);
 

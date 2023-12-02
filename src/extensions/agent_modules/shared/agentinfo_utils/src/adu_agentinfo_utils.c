@@ -1,4 +1,5 @@
 #include "aduc/adu_agentinfo_utils.h"
+#include <aduc/adu_module_state.h> // ADUC_MQTT_CLIENT_MODULE_STATE
 #include <aduc/adu_mqtt_protocol.h> // ADU_RESPONSE_MESSAGE_RESULT_CODE_*
 #include <aduc/agent_state_store.h>
 #include <aduc/logging.h>
@@ -52,6 +53,33 @@ ADUC_AgentInfo_Request_Operation_Data* AgentInfoData_FromOperationContext(ADUC_R
     }
 
     return (ADUC_AgentInfo_Request_Operation_Data*)(context->data);
+}
+
+/**
+ * @brief Gets the retriable operation context from the AgentInfo mqtt callback user object.
+ * @param obj The callback's user object.
+ * @return ADUC_Retriable_Operation_Context* The retriable operation context.
+ */
+ADUC_Retriable_Operation_Context* RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(void* obj)
+{
+    ADUC_MQTT_CLIENT_MODULE_STATE* ownerModuleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
+    ADUC_AGENT_MODULE_INTERFACE* agentInfoModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)ownerModuleState->agentInfoModule;
+    return (ADUC_Retriable_Operation_Context*)(agentInfoModuleInterface->moduleData);
+}
+
+/**
+ * @brief Gets the AgentInfo Request Operation Data from RetriableOperatioContext.
+ * @param retriableOperationContext The retriable operation context.
+ * @return ADUC_Enrollment_Request_Operation_Data* The agent info request operation data.
+ */
+ADUC_AgentInfo_Request_Operation_Data* AgentInfoDataFromRetriableOperationContext(ADUC_Retriable_Operation_Context* retriableOperationContext)
+{
+    if (retriableOperationContext == NULL)
+    {
+        return NULL;
+    }
+
+    return (ADUC_AgentInfo_Request_Operation_Data*)(retriableOperationContext->data);
 }
 
 /**

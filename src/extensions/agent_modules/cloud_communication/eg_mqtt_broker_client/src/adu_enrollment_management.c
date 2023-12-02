@@ -74,14 +74,12 @@ void OnMessage_enr_resp(
     bool isEnrolled = false;
     char* scopeId = NULL;
 
-    ADUC_MQTT_CLIENT_MODULE_STATE* ownerModuleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
-    ADUC_AGENT_MODULE_INTERFACE* enrollmentModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)ownerModuleState->enrollmentModule;
-    ADUC_Retriable_Operation_Context* retriableOperationContext = (ADUC_Retriable_Operation_Context*)(enrollmentModuleInterface->moduleData);
-    ADUC_Enrollment_Request_Operation_Data* enrollmentData = (ADUC_Enrollment_Request_Operation_Data*)(retriableOperationContext->data);
+    ADUC_Retriable_Operation_Context* retriableOperationContext = RetriableOperationContextFromEnrollmentMqttLibCallbackUserObj(obj);
+    ADUC_Enrollment_Request_Operation_Data* enrollmentData = retriableOperationContext == NULL ? NULL : EnrollmentDataFromRetriableOperationContext(retriableOperationContext);
 
-    if (enrollmentData == NULL)
+    if (retriableOperationContext == NULL || enrollmentData == NULL)
     {
-        Log_Error("Enrollment Data was NULL in operation context");
+        Log_Error("invalid user obj from mqtt lib callback");
         goto done;
     }
 

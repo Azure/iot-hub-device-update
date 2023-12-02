@@ -1,4 +1,5 @@
 #include "aduc/adu_enrollment_utils.h"
+#include <aduc/adu_module_state.h> // ADUC_MQTT_CLIENT_MODULE_STATE
 #include <aduc/adu_mqtt_protocol.h> // ADU_RESPONSE_MESSAGE_RESULT_CODE_*
 #include <aduc/agent_state_store.h>
 #include <aduc/logging.h>
@@ -49,6 +50,32 @@ ADUC_Enrollment_Request_Operation_Data* EnrollmentData_FromOperationContext(ADUC
     }
 
     return (ADUC_Enrollment_Request_Operation_Data*)(context->data);
+}
+
+/**
+ * @brief Gets the ADUC_Retriable_Operation_Context from the enrollment mqtt library callback's user object.
+ * @return ADUC_Retriable_Operation_Context* The retriable operation context.
+ */
+ADUC_Retriable_Operation_Context* RetriableOperationContextFromEnrollmentMqttLibCallbackUserObj(void* obj)
+{
+    ADUC_MQTT_CLIENT_MODULE_STATE* ownerModuleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
+    ADUC_AGENT_MODULE_INTERFACE* enrollmentModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)ownerModuleState->enrollmentModule;
+    return (ADUC_Retriable_Operation_Context*)(enrollmentModuleInterface->moduleData);
+}
+
+/**
+ * @brief Gets the Enrollment Request Operation Data from the mqtt library callback's user object.
+ * @param retriableOperationContext The retriable operation context.
+ * @return ADUC_Enrollment_Request_Operation_Data* The enrollment request operation data.
+ */
+ADUC_Enrollment_Request_Operation_Data* EnrollmentDataFromRetriableOperationContext(ADUC_Retriable_Operation_Context* retriableOperationContext)
+{
+    if (retriableOperationContext == NULL)
+    {
+        return NULL;
+    }
+
+    return (ADUC_Enrollment_Request_Operation_Data*)(retriableOperationContext->data);
 }
 
 /**

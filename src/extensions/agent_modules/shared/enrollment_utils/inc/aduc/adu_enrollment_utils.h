@@ -10,6 +10,9 @@ const char* enrollment_state_str(ADU_ENROLLMENT_STATE st);
 
 ADUC_Enrollment_Request_Operation_Data* EnrollmentData_FromOperationContext(ADUC_Retriable_Operation_Context* context);
 
+ADUC_Retriable_Operation_Context* RetriableOperationContextFromEnrollmentMqttLibCallbackUserObj(void* obj);
+ADUC_Enrollment_Request_Operation_Data* EnrollmentDataFromRetriableOperationContext(ADUC_Retriable_Operation_Context* retriableOperationContext);
+
 ADU_ENROLLMENT_STATE EnrollmentData_SetState(
     ADUC_Enrollment_Request_Operation_Data* enrollmentData, ADU_ENROLLMENT_STATE state, const char* reason);
 
