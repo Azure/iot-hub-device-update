@@ -530,13 +530,13 @@ bool AgentInfoStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* co
     bool opSucceeded = false;
 
     ADUC_AgentInfo_Request_Operation_Data* agentInfoData = NULL;
+    const time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
+    bool moreSetupNeeded = false;
 
     if (context == NULL || context->data == NULL)
     {
         return opSucceeded;
     }
-
-    const time_t nowTime = ADUC_GetTimeSinceEpochInSeconds();
 
     if (ADUC_StateStore_IsAgentInfoReported())
     {
@@ -553,10 +553,14 @@ bool AgentInfoStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* co
         goto done;
     }
 
-    // at this point, we should send 'ainfo_req' message.
     agentInfoData = AgentInfoData_FromOperationContext(context);
+    if (agentInfoData == NULL)
+    {
+        goto done;
+    }
 
-    if (SettingUpAduMqttRequestPrerequisites(context, &agentInfoData->ainfoReqMessageContext, true /* isScoped */))
+    moreSetupNeeded = SettingUpAduMqttRequestPrerequisites(context, &agentInfoData->ainfoReqMessageContext, true /* isScoped */);
+    if (moreSetupNeeded)
     {
         goto done;
     }

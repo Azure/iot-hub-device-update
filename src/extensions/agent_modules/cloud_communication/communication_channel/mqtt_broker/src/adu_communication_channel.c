@@ -1308,6 +1308,8 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = CommunicationManagerStateFromModuleHandle(commHandle);
     ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO callbackInfo = { 0 };
 
+    Log_Debug("Subscribing to topic '%s', mid: %d", topic, mid);
+
     // Create a tracking data.
     callbackInfo.messageId = -1;
     if (mallocAndStrcpy_s(&callbackInfo.topic, topic) != 0)

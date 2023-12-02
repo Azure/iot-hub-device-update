@@ -359,8 +359,12 @@ bool EnrollmentStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* c
         goto done;
     }
 
-    // at this point, we should send 'enr_req' message.
     enrollmentData = EnrollmentData_FromOperationContext(context);
+    if (enrollmentData == NULL)
+    {
+        goto done;
+    }
+
     if (SettingUpAduMqttRequestPrerequisites(context, &enrollmentData->enrReqMessageContext, false /* isScoped */))
     {
         goto done;

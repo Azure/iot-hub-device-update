@@ -30,7 +30,7 @@ ADUC_Retriable_Operation_Context* OperationContextFromAgentModuleHandle(ADUC_AGE
  * @param context The operation context.
  * @param messageContext The message context.
  * @param isScoped Whether to include the scopeId in the publish and response topics.
- * @return when when a cancel call was needed when publish/response topics cannot successfully be setup.
+ * @return true when publish/response topics cannot successfully be setup.
  * @return false when no additional cancel call is needed and publish/response topics are setup correctly.
  */
 bool MqttTopicSetupNeeded(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, bool isScoped)
@@ -41,6 +41,11 @@ bool MqttTopicSetupNeeded(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_M
     }
 
     const char* scopeId = isScoped ? ADUC_StateStore_GetScopeId() : NULL;
+    if (isScoped && IsNullOrEmpty(scopeId))
+    {
+        Log_Error("invalid scopeId");
+        return false;
+    }
 
     // prepare a topic for the request
     if (IsNullOrEmpty(messageContext->publishTopic))
@@ -204,12 +209,11 @@ bool SettingUpAduMqttRequestPrerequisites(ADUC_Retriable_Operation_Context* cont
  *
  * @param context The operation context.
  * @param messageContext The message context.
- * @return true On successful subscribe, or if already subscribed.
+ * @return true If already subscribed and no need to subscribe to scoped topic.
+ * @return false if still subscribing or just kicked one off, or on fatal error
  */
 bool ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(const ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext)
 {
-    bool succeeded = false;
-
     if (context == NULL || messageContext == NULL)
     {
         Log_Error("bad args context[%p] messageContext[%p]", context, messageContext);
@@ -220,8 +224,7 @@ bool ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(const ADUC_Retriable_Operat
 
     if (commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING)
     {
-        // This will lead to skipping Send Request of the topic
-        return false;
+        return false; // skip send request, since haven't subscribed to response topic yet.
     }
 
     if (commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBED)
@@ -248,12 +251,8 @@ bool ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(const ADUC_Retriable_Operat
     {
         Log_Error("Failed to subscribe to response topic. Cancelling the operation.");
         context->retryFunc((ADUC_Retriable_Operation_Context*)context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
-        goto done;
     }
 
-    succeeded = true;
-
-done:
-    return succeeded;
-
+    // skip send request regardless of successful issuing of subscribe, since not subscribed to response topic yet.
+    return false;
 }
