@@ -505,8 +505,6 @@ int main(int argc, char** argv)
         SUPPORTED_UPDATE_MANIFEST_VERSION_MIN,
         SUPPORTED_UPDATE_MANIFEST_VERSION_MAX);
 
-    ADUC_StateStore_Initialize(ADUC_STATE_STORE_FILE_PATH);
-
     bool healthy = HealthCheck(&launchArgs);
     if (launchArgs.healthCheckOnly || !healthy)
     {
@@ -544,6 +542,9 @@ int main(int argc, char** argv)
     // TODO (nox-msft) - replace with Agent Module manager code, once changed all modules to shared library.
 
     using_dps = IsProvisioningWithDps();
+
+    ADUC_StateStore_Initialize(ADUC_STATE_STORE_FILE_PATH, using_dps);
+
     if (using_dps)
     {
         dpsClientModuleHandle = ADPS_MQTT_Client_Module_Create();

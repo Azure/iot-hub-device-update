@@ -36,7 +36,7 @@ static bool test_operation_complete(ADUC_Retriable_Operation_Context* context)
 static void reset()
 {
     ADUC_SystemUtils_RmDirRecursive(ADU_ENROLLMENT_UTILS_UT_TEST_DIR);
-    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(ADU_ENROLLMENT_UTILS_UT_TEST_DIR "/test_state_store.json"));
+    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(ADU_ENROLLMENT_UTILS_UT_TEST_DIR "/test_state_store.json", false /* isUsingProvisioningService */));
 }
 
 TEST_CASE("Handle_Enrollment_Response")

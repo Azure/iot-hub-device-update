@@ -28,7 +28,7 @@ static bool Mock_AgentInfoRequestOperation_CancelOperation(ADUC_Retriable_Operat
 static void reset()
 {
     ADUC_SystemUtils_RmDirRecursive(ADU_AGENTINFO_UTILS_UT_TEST_DIR);
-    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(ADU_AGENTINFO_UTILS_UT_TEST_DIR "/test_state_store.h"));
+    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(ADU_AGENTINFO_UTILS_UT_TEST_DIR "/test_state_store.h", false /* IsUsingProvisioningService */ ));
 
     s_cancel_called = false;
 }

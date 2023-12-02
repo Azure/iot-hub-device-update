@@ -221,7 +221,7 @@ bool Handle_Enrollment_Response(
 
         context->completeFunc(context);
 
-        stateStoreResult = ADUC_StateStore_SetDeviceUpdateServiceInstance(scopeId);
+        stateStoreResult = ADUC_StateStore_SetScopeId(scopeId);
         if (stateStoreResult != ADUC_STATE_STORE_RESULT_OK)
         {
             Log_Error("Failed set scopeId in store");

@@ -40,7 +40,7 @@ bool MqttTopicSetupNeeded(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_M
         return false;
     }
 
-    const char* scopeId = isScoped ? ADUC_StateStore_GetDeviceUpdateServiceInstance() : NULL;
+    const char* scopeId = isScoped ? ADUC_StateStore_GetScopeId() : NULL;
 
     // prepare a topic for the request
     if (IsNullOrEmpty(messageContext->publishTopic))
@@ -111,8 +111,7 @@ bool CommunicationChannelNeededSetup(ADUC_Retriable_Operation_Context* context)
     // note: by default, the du service communication already subscribed to the common service-to-device messaging topic.
     if (context->commChannelHandle == NULL)
     {
-        context->commChannelHandle =
-            ADUC_StateStore_GetCommunicationChannelHandle(ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID);
+        context->commChannelHandle = ADUC_StateStore_GetCommunicationChannelHandle();
     }
 
     if (context->commChannelHandle == NULL)
