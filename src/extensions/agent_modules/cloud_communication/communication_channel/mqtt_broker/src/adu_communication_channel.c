@@ -147,6 +147,12 @@ static inline void Log_Debug_With_Frequency(int freqSeconds, const char* format,
     va_end(args);
 }
 
+/**
+ * @brief Gets the communication manager state from the communication module handle.
+ *
+ * @param commHandle The communication module handle.
+ * @return ADU_MQTT_COMMUNICATION_MGR_STATE* The communication manager state.
+ */
 ADU_MQTT_COMMUNICATION_MGR_STATE* CommunicationManagerStateFromModuleHandle(ADUC_AGENT_MODULE_HANDLE commHandle)
 {
     ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)commHandle;
@@ -362,7 +368,7 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
         return false;
     }
 
-    ADUC_STATE_STORE_RESULT stateRes = ADUC_StateStore_SetCommunicationChannelHandle(initData->sessionId, handle);
+    ADUC_STATE_STORE_RESULT stateRes = ADUC_StateStore_SetCommunicationChannelHandle(handle);
     if (stateRes != ADUC_STATE_STORE_RESULT_OK)
     {
         Log_Error("Fail StateStore SetCommunicationChannelHandle: %d", stateRes);
@@ -380,13 +386,6 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
     memcpy(&commMgrState->mqttCallbacks, initData->callbacks, sizeof(ADUC_MQTT_CALLBACKS));
 
     memcpy(&commMgrState->mqttSettings, initData->mqttSettings, sizeof(commMgrState->mqttSettings));
-
-    commMgrState->sessionId = STRING_construct(initData->sessionId);
-    if (commMgrState->sessionId == NULL)
-    {
-        Log_Error("sessionId construct");
-        goto done;
-    }
 
     commMgrState->keyFilePasswordCallback = initData->passwordCallback;
 
@@ -414,7 +413,7 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
     }
 
     commMgrState->mqttClient = mosquitto_new(
-        initData->sessionId,
+        "adumqtt",
         commMgrState->mqttSettings.cleanSession,
         handle /* DU MQTT Agent Module Handle */);
     if (!commMgrState->mqttClient)
