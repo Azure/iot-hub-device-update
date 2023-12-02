@@ -56,7 +56,7 @@ const char* ADUC_StateStore_GetScopeId();
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetScopeId(const char* scopeId);
 
 bool ADUC_StateStore_GetTopicSubscribedStatus(const char* topic, bool isScoped);
-ADUC_STATE_STORE_RESULT ADUC_StateStore_SetTopicSubscribed(const char* topic, bool isScoped, bool subscribed);
+ADUC_STATE_STORE_RESULT ADUC_StateStore_SetTopicSubscribedStatus(const char* topic, bool isScoped, bool subscribed);
 
 bool ADUC_StateStore_IsDeviceEnrolled();
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetIsDeviceEnrolled(bool isDeviceEnrolled);

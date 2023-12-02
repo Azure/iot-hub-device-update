@@ -776,6 +776,8 @@ void ADUC_Communication_Channel_OnSubscribe(
     const mosquitto_property* props)
 {
     ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* subInfo = NULL;
+    const char* topic = NULL;
+    ADUC_STATE_STORE_RESULT storeResult = ADUC_STATE_STORE_RESULT_ERROR;
 
     Log_Info("<-- SUBACK, mid:%d qos:%d", mid, qos_count);
 
@@ -792,40 +794,50 @@ void ADUC_Communication_Channel_OnSubscribe(
         Log_Debug("\tQoS %d\n", granted_qos[i]);
     }
 
-    // TODO: remove verbose debug traces
-    Log_Debug("Before rmv from pendingSubscriptions:");
+    // Remove subscription callback info with matching message id from the pending list.
     for (size_t i = 0; i < VECTOR_size(commMgrState->pendingSubscriptions); ++i)
     {
-        ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* cbInfo = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)VECTOR_element(commMgrState->pendingSubscriptions, i);
-        Log_Debug("    cbInfo[%lu]: messageId=%d topic=%s", i, cbInfo->messageId, cbInfo->topic);
-    }
+        ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* it = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)VECTOR_element(commMgrState->pendingSubscriptions, i);
 
-    // Remove the subscription from the pending list.
-    for (size_t i = 0; i < VECTOR_size(commMgrState->pendingSubscriptions); ++i)
-    {
-        subInfo = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)VECTOR_element(commMgrState->pendingSubscriptions, i);
+        Log_Debug("    it[%lu]: messageId=%d topic=%s, isScopedTopic=%d", i, it->messageId, it->topic, it->isScopedTopic);
 
-        if (subInfo->messageId == mid)
+        if (it->messageId == mid)
         {
-            Log_Debug("Found pending sub, mid:%d", mid);
+            Log_Debug(" *~~> found matching msg id in pendingSubscriptions topic '%s', isScoped: %d", it->topic, it->isScopedTopic);
+            subInfo = it;
+            topic = it->topic;
             break;
         }
     }
 
     if (subInfo != NULL)
     {
-        Log_Debug("move pending sub -> subscribed");
+        Log_Debug("move pending topic '%s' -> subscribed", topic);
+
+        ADUC_SetCommunicationChannelState(commMgrState, ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBED);
+        storeResult = ADUC_StateStore_SetTopicSubscribedStatus(subInfo->topic, subInfo->isScopedTopic, true /* isSubscribed */);
+        if (storeResult == ADUC_STATE_STORE_RESULT_OK)
+        {
+            Log_Info("Set store subscribed topic status to true");
+        }
+        else
+        {
+            Log_Error("Fail set store subscribe status, err: %d", storeResult);
+        }
 
         commMgrState->subscribeTopicInfo = *subInfo; // transfer fields
         VECTOR_erase(commMgrState->pendingSubscriptions, subInfo, 1);
-
-        ADUC_SetCommunicationChannelState(commMgrState, ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBED);
+        subInfo = NULL;
 
         if (commMgrState->mqttCallbacks.on_subscribe_v5 != NULL)
         {
             commMgrState->mqttCallbacks.on_subscribe_v5(
                 mosq, commMgrState->ownerModuleContext, mid, qos_count, granted_qos, props);
         }
+    }
+    else
+    {
+        Log_Debug("No pending sub found with mid: %d", mid);
     }
 }
 
@@ -1280,27 +1292,29 @@ int ADUC_Communication_Channel_MQTT_Publish(
  * @brief Subscribes to a topic using version 5 of the MQTT protocol.
  * @param[in] commHandle The handle to the communication channel.
  * @param[in] topic The topic to subscribe to.
- * @param[out] mid Pointer to an integer where the message ID will be stored. Can be NULL.
+ * @param[in] isTopicScoped Whether the topic is scoped.
  * @param[in] qos Quality of Service level for the message. Valid values are 0, 1, or 2.
  * @param[in] options Subscription options. Valid values are 0 or 1.
  * @param[in] props MQTT v5 properties to be included in the message. Can be NULL if no properties are to be sent.
  * @param[in] userData Pointer to user-specific data.
  * @param[in] callback Pointer to the callback function to be invoked when the subscription is complete.
+ * @param[out] outMessageId Pointer to an integer where the message ID will be stored.
  * @return MOSQ_ERR_SUCCESS upon successful completion.
  */
 int ADUC_Communication_Channel_MQTT_Subscribe(
     ADUC_AGENT_MODULE_HANDLE commHandle,
     const char* topic,
-    int* mid,
+    bool isTopicScoped,
     int qos,
     int options,
     const mosquitto_property* props,
     void* userData,
-    MQTT_ON_SUBSCRIBE_V5_CALLBACK callback)
+    MQTT_ON_SUBSCRIBE_V5_CALLBACK callback,
+    int* outMessageId)
 {
-    if (commHandle == NULL || topic == NULL)
+    if (commHandle == NULL || topic == NULL || outMessageId == NULL)
     {
-        Log_Error("Null parameter (commHandle=%p, topic=%p)", commHandle, topic);
+        Log_Error("Null parameter (commHandle=%p, topic=%p, outMessageID=%p)", commHandle, topic, outMessageId);
         return MOSQ_ERR_INVAL;
     }
 
@@ -1308,9 +1322,7 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = CommunicationManagerStateFromModuleHandle(commHandle);
     ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO callbackInfo = { 0 };
 
-    Log_Debug("Subscribing to topic '%s', mid: %d", topic, mid);
-
-    // Create a tracking data.
+    // Create tracking data.
     callbackInfo.messageId = -1;
     if (mallocAndStrcpy_s(&callbackInfo.topic, topic) != 0)
     {
@@ -1320,6 +1332,7 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
 
     callbackInfo.callback = callback;
     callbackInfo.userData = userData;
+    callbackInfo.isScopedTopic = isTopicScoped;
 
     mosqResult =
         mosquitto_subscribe_v5(commMgrState->mqttClient, &callbackInfo.messageId, topic, qos, options, props);
@@ -1335,26 +1348,16 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
          goto done;
     }
 
-    // Release ownership of fields in the callbackInfo Element as those were wholesale copied into the VECTOR_HANDLE's block
-    // When element is erased from vector, the fields will need freeing at that time.
-    memset(&callbackInfo, 0, sizeof(callbackInfo));
-
-    Log_Debug("After mosquitto_subscribe_v5 call:");
-    for (size_t i = 0; i < VECTOR_size(commMgrState->pendingSubscriptions); ++i)
-    {
-        ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* cbInfo = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)VECTOR_element(commMgrState->pendingSubscriptions, i);
-        Log_Debug("    cbInfo[%lu]: msgid: %d topic: '%s' callback=%p", i, cbInfo->messageId, cbInfo->topic, callback);
-    }
-
-    if (mid != NULL)
-    {
-        *mid = callbackInfo.messageId;
-    }
-
-    Log_Debug("-> SUBSCRIBE topic: '%s', msgid: %d", topic, callbackInfo.messageId);
-
     ADUC_SetCommunicationChannelState(commMgrState, ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING);
     mosqResult = MOSQ_ERR_SUCCESS;
+
+    Log_Debug("-> SUBSCRIBE topic '%s', msgid: %d, isScoped: %d", topic, callbackInfo.messageId, callbackInfo.isScopedTopic);
+
+    *outMessageId = callbackInfo.messageId;
+
+    // Release ownership of fields in the callbackInfo Element.
+    // When element is erased from vector, the fields will need freeing at that time.
+    memset(&callbackInfo, 0, sizeof(callbackInfo));
 
 done:
     free(callbackInfo.topic);

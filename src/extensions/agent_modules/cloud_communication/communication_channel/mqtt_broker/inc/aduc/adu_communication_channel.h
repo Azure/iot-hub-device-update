@@ -209,10 +209,11 @@ typedef struct ADUC_COMMUNICATION_CHANNEL_INIT_DATA_TAG
 
 typedef struct ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO_TAG
 {
-    int messageId;
     char* topic;
     MQTT_ON_SUBSCRIBE_V5_CALLBACK callback;
     void* userData;
+    int messageId;
+    bool isScopedTopic;
 } ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO;
 
 /**
@@ -253,12 +254,13 @@ int ADUC_Communication_Channel_MQTT_Publish(
 int ADUC_Communication_Channel_MQTT_Subscribe(
     ADUC_AGENT_MODULE_HANDLE commHandle,
     const char* topic,
-    int* mid,
+    bool isTopicScoped,
     int qos,
     int options,
     const mosquitto_property* props,
     void* userData,
-    MQTT_ON_SUBSCRIBE_V5_CALLBACK callback);
+    MQTT_ON_SUBSCRIBE_V5_CALLBACK callback,
+    int* outMessageId);
 
 ADUC_AGENT_MODULE_HANDLE ADUC_Communication_Channel_Create();
 void ADUC_Communication_Channel_Destroy();

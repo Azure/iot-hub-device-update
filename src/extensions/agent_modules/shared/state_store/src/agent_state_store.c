@@ -296,7 +296,7 @@ bool ADUC_StateStore_GetTopicSubscribedStatus(const char* topic, bool isScoped)
  * @return ADUC_STATE_STORE_RESULT_UNKNOWN_TOPIC when trying to unsubscribe from the scoped or non-scoped topic that is not currently subscribed.
  * @return ADUC_STATE_STORE_RESULT_ERROR when failed subscribe/unsubscribe an existing topic for some other reason.
  */
-ADUC_STATE_STORE_RESULT ADUC_StateStore_SetTopicSubscribed(const char* topic, bool isScoped, bool subscribed)
+ADUC_STATE_STORE_RESULT ADUC_StateStore_SetTopicSubscribedStatus(const char* topic, bool isScoped, bool subscribed)
 {
     ADUC_STATE_STORE_RESULT result = ADUC_STATE_STORE_RESULT_UNKNOWN_TOPIC;
     size_t topic_len = 0;

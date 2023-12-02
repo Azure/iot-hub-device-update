@@ -196,7 +196,7 @@ bool SettingUpAduMqttRequestPrerequisites(ADUC_Retriable_Operation_Context* cont
         return true;
     }
 
-    if (!ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(context, messageContext))
+    if (!ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(context, messageContext, isScoped))
     {
         return true;
     }
@@ -209,11 +209,14 @@ bool SettingUpAduMqttRequestPrerequisites(ADUC_Retriable_Operation_Context* cont
  *
  * @param context The operation context.
  * @param messageContext The message context.
+ * @param isScoped Whether the response topic scoped.
  * @return true If already subscribed and no need to subscribe to scoped topic.
  * @return false if still subscribing or just kicked one off, or on fatal error
  */
-bool ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(const ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext)
+bool ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(const ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, bool isScoped)
 {
+    bool isTopicSubscribed = false;
+
     if (context == NULL || messageContext == NULL)
     {
         Log_Error("bad args context[%p] messageContext[%p]", context, messageContext);
@@ -222,12 +225,14 @@ bool ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(const ADUC_Retriable_Operat
 
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState = CommunicationManagerStateFromModuleHandle((ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle);
 
-    if (commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING)
+    isTopicSubscribed = ADUC_StateStore_GetTopicSubscribedStatus(messageContext->responseTopic, isScoped);
+
+    if (!isTopicSubscribed && commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING)
     {
-        return false; // skip send request, since haven't subscribed to response topic yet.
+        return false; // skip send request, since we are in the process of subscribing to response topic.
     }
 
-    if (commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBED)
+    if (isTopicSubscribed)
     {
         // This will lead to per topic request operation continuing to check
         // on existing send of request or send a new request if not sending yet.
@@ -239,13 +244,13 @@ bool ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(const ADUC_Retriable_Operat
     int mqtt_res = ADUC_Communication_Channel_MQTT_Subscribe(
         (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle,
         messageContext->responseTopic,
-        &subscribeMessageId,
+        isScoped,
         1, // qos 1 is required for adu gen2 protocol v1,
         0, // options
         NULL, // props
         NULL, // userData
-        NULL // callback
-    );
+        NULL, // callback
+        &subscribeMessageId);
 
     if (mqtt_res != MOSQ_ERR_SUCCESS)
     {
@@ -253,6 +258,7 @@ bool ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(const ADUC_Retriable_Operat
         context->retryFunc((ADUC_Retriable_Operation_Context*)context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
     }
 
-    // skip send request regardless of successful issuing of subscribe, since not subscribed to response topic yet.
+    // Regardless of return status Subscribe, return false here to indicate that the caller should NOT continue to send
+    // the PUBLISH of request, since we won't know if actually subscribed until SUBACK received.
     return false;
 }
