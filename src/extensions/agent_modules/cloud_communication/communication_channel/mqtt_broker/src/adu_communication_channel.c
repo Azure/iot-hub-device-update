@@ -340,13 +340,6 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
     bool use_OS_cert = false;
     ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)handle;
 
-    ADUC_STATE_STORE_RESULT storeRes = ADUC_StateStore_Initialize(NULL);
-    if (storeRes != ADUC_STATE_STORE_RESULT_OK)
-    {
-        Log_Error("Fail init StateStore: %d", storeRes);
-        return false;
-    }
-
     Log_Debug("Comm Channel Initializing...");
 
     if (interface == NULL)
