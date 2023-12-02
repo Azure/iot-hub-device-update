@@ -438,3 +438,43 @@ size_t ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_
 
     return numSrcCharsToCopy;
 }
+
+/**
+* @brief Allocate a new str that is a copy of the src string with given max number of char.
+* @param dest The addr of ptr that will point to newly allocated string copy.
+* @param src The source string.
+* @param srcLen The char length of source string (not including null terminator)
+* @return 0 on success, -2 on invalid argument, and -1 for other errors.
+*/
+int ADUC_AllocAndStrCopyN(char** dest, const char* src, size_t srcLen)
+{
+    int res = -1;
+
+    size_t num_copied = -1;
+    char* tmpDest = NULL;
+
+    if (dest == NULL || srcLen == 0)
+    {
+        return -2;
+    }
+
+    tmpDest = calloc(srcLen + 1, sizeof(char)); // incl. null term
+    if (tmpDest == NULL)
+    {
+        goto done;
+    }
+
+    num_copied = ADUC_Safe_StrCopyN(tmpDest, src, (srcLen + 1) * sizeof(char) /* destByteLen */, srcLen /* numSrcCharsToCopy */);
+    if (num_copied < srcLen)
+    {
+        goto done;
+    }
+
+    *dest = tmpDest;
+    tmpDest = NULL;
+    res = 0;
+done:
+    free(tmpDest);
+
+    return res;
+}

@@ -493,3 +493,39 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
         REQUIRE(strcmp(dest, "12345678") == 0);
     }
 }
+
+TEST_CASE("ADUC_AllocAndStrCopyN")
+{
+    SECTION("returns -2 for invalid arg")
+    {
+        CHECK(-2 == ADUC_AllocAndStrCopyN(NULL /* dest */, "foo", 3));
+
+        char* target = NULL;
+        CHECK(-2 == ADUC_AllocAndStrCopyN(&target, "foo", 0));
+    }
+
+    SECTION("returns 0 on success")
+    {
+        char* target = NULL;
+
+        CHECK(0 == ADUC_AllocAndStrCopyN(&target, "foo", 3));
+        CHECK_THAT(target, Equals("foo"));
+        free(target);
+        target = NULL;
+
+        CHECK(0 == ADUC_AllocAndStrCopyN(&target, "foo", 2));
+        CHECK_THAT(target, Equals("fo"));
+        free(target);
+        target = NULL;
+
+        CHECK(0 == ADUC_AllocAndStrCopyN(&target, "foo", 1));
+        CHECK_THAT(target, Equals("f"));
+        free(target);
+        target = NULL;
+
+        CHECK(0 == ADUC_AllocAndStrCopyN(&target, "", 1));
+        CHECK_THAT(target, Equals(""));
+        free(target);
+        target = NULL;
+    }
+}
