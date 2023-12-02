@@ -238,30 +238,8 @@ typedef struct ADU_MQTT_COMMUNICATION_MGR_STATE_TAG
     ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO subscribeTopicInfo; /**< Subscribed topic info. There exists only 1 response topic in adu protocol v1. */
 } ADU_MQTT_COMMUNICATION_MGR_STATE;
 
-/**
- * @brief Convert ADUC_AGENT_MODULE_HANDLE to ADU_MQTT_COMMUNICATION_MGR_STATE pointer.
- * @param commHandle The handle.
- * @return ADU_MQTT_COMMUNICATION_MGR_STATE* The communication manager state.
- */
 ADU_MQTT_COMMUNICATION_MGR_STATE* CommunicationManagerStateFromModuleHandle(ADUC_AGENT_MODULE_HANDLE commHandle);
 
-/**
- * @brief Publishes a message to the specified @p topic using version 5 of the MQTT protocol.
- *
- * This function is a wrapper around `mosquitto_publish_v5`, simplifying the process of
- * publishing messages to an MQTT broker.
- *
- * @param[in]  topic The topic to which the message will be published.
- * @param[out] mid Pointer to an integer where the message ID will be stored. Can be NULL.
- * @param[in]  payload_len Length of the payload to be published.
- * @param[in]  payload Pointer to the data payload to be published.
- * @param[in]  qos Quality of Service level for the message. Valid values are 0, 1, or 2.
- * @param[in]  retain If set to `true`, the message will be retained by the broker. Otherwise, it won't be retained.
- * @param[in]  props MQTT v5 properties to be included in the message. Can be NULL if no properties are to be sent.
- *
- * @return MOSQ_ERR_SUCCESS upon successful completion.
- *         For other return values, refer to the documentation of `mosquitto_publish_v5`.
- */
 int ADUC_Communication_Channel_MQTT_Publish(
     ADUC_AGENT_MODULE_HANDLE commChannelModule,
     const char* topic,
@@ -272,18 +250,6 @@ int ADUC_Communication_Channel_MQTT_Publish(
     bool retain,
     const mosquitto_property* props);
 
-/**
- * @brief Subscribe to a topic using version 5 of the MQTT protocol.
- * @param[in] commHandle The communication channel handle.
- * @param[in] topic The topic to subscribe to.
- * @param[out] mid Pointer to an integer where the message ID will be stored. Can be NULL.
- * @param[in] qos Quality of Service level for the message. Valid values are 0, 1, or 2.
- * @param[in] options Subscription options.
- * @param[in] props MQTT v5 properties to be included in the message. Can be NULL if no properties are to be sent.
- * @param[in] userData Pointer to user-specific data.
- * @param[in] callback Pointer to the callback function to be invoked when the subscription is complete.
- * @return MOSQ_ERR_SUCCESS upon successful completion.
- */
 int ADUC_Communication_Channel_MQTT_Subscribe(
     ADUC_AGENT_MODULE_HANDLE commHandle,
     const char* topic,
@@ -294,27 +260,8 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
     void* userData,
     MQTT_ON_SUBSCRIBE_V5_CALLBACK callback);
 
-/**
- * @brief Check whether the specified @p topic is subscribed.
- * @param[in] commHandle The communication channel handle.
- * @param[in] topic The topic to check.
- * @return true if the topic is subscribed, false otherwise.
- */
-bool ADUC_Communication_Channel_MQTT_IsSubscribed(ADUC_AGENT_MODULE_HANDLE commHandle, const char* topic);
-
-/**
- * @brief Create a new communication channel management module instance.
- */
 ADUC_AGENT_MODULE_HANDLE ADUC_Communication_Channel_Create();
-
-/**
- * @brief Create a new communication channel management module instance.
- */
 void ADUC_Communication_Channel_Destroy();
-
-/*
- * @brief Check if the communication channel is in connected state.
- */
 bool ADUC_Communication_Channel_IsConnected(ADUC_AGENT_MODULE_HANDLE handle);
 
 EXTERN_C_END

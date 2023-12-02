@@ -50,7 +50,7 @@ int ADUC_Communication_Channel_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
 static void ADUC_SetCommunicationChannelState(
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState, ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE state);
 
-void ADUC_MQTT_CLient_OnDisconnect(struct mosquitto* mosq, void* obj, int rc, const mosquitto_property* props);
+void ADUC_Communication_Channel_OnDisconnect(struct mosquitto* mosq, void* obj, int rc, const mosquitto_property* props);
 void ADUC_Communication_Channel_OnConnect(
     struct mosquitto* mosq, void* obj, int reason_code, int flags, const mosquitto_property* props);
 void ADUC_Communication_Channel_OnMessage(
@@ -284,7 +284,7 @@ void ADUC_Communication_Channel_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 void ADUC_Communication_Channel_OnDisconnect(
     struct mosquitto* mosq, void* obj, int rc, const mosquitto_property* props)
 {
-    Log_Info("on_disconnect: '%s'", mosquitto_strerror(rc));
+    Log_Info("on_disconnect: '%s'", mosquitto_reason_string(rc));
 
     ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)obj;
 
