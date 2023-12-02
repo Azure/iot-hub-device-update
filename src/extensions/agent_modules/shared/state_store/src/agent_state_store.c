@@ -267,14 +267,14 @@ bool ADUC_StateStore_GetTopicSubscribedStatus(const char* topic, bool isScoped)
 
     if (isScoped)
     {
-        if (strncmp(state.scopedTopic, topic, MAX_ADU_MQTT_TOPIC_BYTE_LEN) == 0)
+        if (state.scopedTopic != NULL && strncmp(state.scopedTopic, topic, MAX_ADU_MQTT_TOPIC_BYTE_LEN) == 0)
         {
             result = true;
         }
     }
     else
     {
-        if (strncmp(state.nonscopedTopic, topic, MAX_ADU_MQTT_TOPIC_BYTE_LEN) == 0)
+        if (state.nonscopedTopic != NULL && strncmp(state.nonscopedTopic, topic, MAX_ADU_MQTT_TOPIC_BYTE_LEN) == 0)
         {
             result = true;
         }
