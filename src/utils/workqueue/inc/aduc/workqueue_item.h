@@ -10,6 +10,7 @@ EXTERN_C_BEGIN
 
 time_t WorkQueueItem_GetTimeAdded(WorkQueueItemHandle handle);
 char* WorkQueueItem_GetJsonPayload(WorkQueueItemHandle handle);
+void WorkQueueItem_Free(WorkQueueItemHandle handle);
 
 EXTERN_C_END
 
