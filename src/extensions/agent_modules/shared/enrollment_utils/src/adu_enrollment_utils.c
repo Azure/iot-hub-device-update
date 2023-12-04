@@ -17,22 +17,22 @@
  */
 const char* enrollment_state_str(ADU_ENROLLMENT_STATE st)
 {
-    switch(st)
+    switch (st)
     {
-        case ADU_ENROLLMENT_STATE_NOT_ENROLLED:
-            return "ADU_ENROLLMENT_STATE_NOT_ENROLLED";
+    case ADU_ENROLLMENT_STATE_NOT_ENROLLED:
+        return "ADU_ENROLLMENT_STATE_NOT_ENROLLED";
 
-        case ADU_ENROLLMENT_STATE_UNKNOWN:
-            return "ADU_ENROLLMENT_STATE_UNKNOWN";
+    case ADU_ENROLLMENT_STATE_UNKNOWN:
+        return "ADU_ENROLLMENT_STATE_UNKNOWN";
 
-        case ADU_ENROLLMENT_STATE_REQUESTING:
-            return "ADU_ENROLLMENT_STATE_REQUESTING";
+    case ADU_ENROLLMENT_STATE_REQUESTING:
+        return "ADU_ENROLLMENT_STATE_REQUESTING";
 
-        case ADU_ENROLLMENT_STATE_ENROLLED:
-            return "ADU_ENROLLMENT_STATE_ENROLLED";
+    case ADU_ENROLLMENT_STATE_ENROLLED:
+        return "ADU_ENROLLMENT_STATE_ENROLLED";
 
-        default:
-            return "???";
+    default:
+        return "???";
     }
 }
 
@@ -59,7 +59,8 @@ ADUC_Enrollment_Request_Operation_Data* EnrollmentData_FromOperationContext(ADUC
 ADUC_Retriable_Operation_Context* RetriableOperationContextFromEnrollmentMqttLibCallbackUserObj(void* obj)
 {
     ADUC_MQTT_CLIENT_MODULE_STATE* ownerModuleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
-    ADUC_AGENT_MODULE_INTERFACE* enrollmentModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)ownerModuleState->enrollmentModule;
+    ADUC_AGENT_MODULE_INTERFACE* enrollmentModuleInterface =
+        (ADUC_AGENT_MODULE_INTERFACE*)ownerModuleState->enrollmentModule;
     return (ADUC_Retriable_Operation_Context*)(enrollmentModuleInterface->moduleData);
 }
 
@@ -68,7 +69,8 @@ ADUC_Retriable_Operation_Context* RetriableOperationContextFromEnrollmentMqttLib
  * @param retriableOperationContext The retriable operation context.
  * @return ADUC_Enrollment_Request_Operation_Data* The enrollment request operation data.
  */
-ADUC_Enrollment_Request_Operation_Data* EnrollmentDataFromRetriableOperationContext(ADUC_Retriable_Operation_Context* retriableOperationContext)
+ADUC_Enrollment_Request_Operation_Data*
+EnrollmentDataFromRetriableOperationContext(ADUC_Retriable_Operation_Context* retriableOperationContext)
 {
     if (retriableOperationContext == NULL)
     {
@@ -126,7 +128,7 @@ void EnrollmentData_SetCorrelationId(ADUC_Enrollment_Request_Operation_Data* enr
     ADUC_Safe_StrCopyN(
         enrollmentData->enrReqMessageContext.correlationId,
         correlationId,
-        sizeof(enrollmentData->enrReqMessageContext.correlationId),
+        ARRAY_SIZE(enrollmentData->enrReqMessageContext.correlationId),
         strlen(correlationId));
 }
 
@@ -189,7 +191,8 @@ bool Handle_Enrollment_Response(
             break;
 
         default:
-            Log_Error("enr_resp - Unknown Error: %d, erc: 0x%08x", user_props->resultcode, user_props->extendedresultcode);
+            Log_Error(
+                "enr_resp - Unknown Error: %d, erc: 0x%08x", user_props->resultcode, user_props->extendedresultcode);
             break;
         }
 
@@ -198,14 +201,9 @@ bool Handle_Enrollment_Response(
         goto done;
     }
 
-    ADU_ENROLLMENT_STATE new_state = isEnrolled
-        ? ADU_ENROLLMENT_STATE_ENROLLED
-        : ADU_ENROLLMENT_STATE_NOT_ENROLLED;
+    ADU_ENROLLMENT_STATE new_state = isEnrolled ? ADU_ENROLLMENT_STATE_ENROLLED : ADU_ENROLLMENT_STATE_NOT_ENROLLED;
 
-    ADU_ENROLLMENT_STATE old_state = EnrollmentData_SetState(
-        enrollmentData,
-        new_state,
-        NULL /* reason */);
+    ADU_ENROLLMENT_STATE old_state = EnrollmentData_SetState(enrollmentData, new_state, NULL /* reason */);
 
     if (ADUC_StateStore_IsDeviceEnrolled() != isEnrolled)
     {

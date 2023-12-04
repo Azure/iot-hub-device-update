@@ -24,9 +24,9 @@
 #include "aduc/topic_mgmt_lifecycle.h" // TopicMgmtLifecycle_Create, TOPIC_MGMT_MODULE_*
 #include "aducpal/time.h" // time_t
 #include "du_agent_sdk/agent_module_interface.h"
-#include <string.h> // strcmp
 #include <mosquitto.h> // mosquitto related functions
 #include <mqtt_protocol.h> // mosquitto_property
+#include <string.h> // strcmp
 
 // Forward declarations
 int ADUC_MQTT_Client_Module_Initialize_DoWork(ADUC_MQTT_CLIENT_MODULE_STATE* state);
@@ -35,8 +35,10 @@ int ADUC_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
 
 #define DEFAULT_OPERATION_INTERVAL_SECONDS (10)
 
-typedef void(*OnMessageResponseHandlerFn)(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props);
-typedef void(*OnPublishResponseHandlerFn)(struct mosquitto* mosq, void* obj, const mosquitto_property* props, int reason_code);
+typedef void (*OnMessageResponseHandlerFn)(
+    struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props);
+typedef void (*OnPublishResponseHandlerFn)(
+    struct mosquitto* mosq, void* obj, const mosquitto_property* props, int reason_code);
 
 typedef enum tagModuleKey
 {
@@ -318,7 +320,11 @@ void ADUC_MQTT_Client_OnPublish(
         goto done;
     }
 
-    Log_Info("MQTT Broker responded to PUBLISH, mid: %d, rc: %d => '%s'", mid, reason_code, mosquitto_reason_string(reason_code));
+    Log_Info(
+        "MQTT Broker responded to PUBLISH, mid: %d, rc: %d => '%s'",
+        mid,
+        reason_code,
+        mosquitto_reason_string(reason_code));
 
     if (!ADU_mosquitto_read_user_property_string(props, "mt", &msg_type) || IsNullOrEmpty(msg_type))
     {
@@ -355,7 +361,8 @@ void ADUC_MQTT_Client_OnConnect(
 }
 
 /* Callback called when the broker sends a SUBACK in response to a SUBSCRIBE. */
-void ADUC_MQTT_Client_OnSubscribe(struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos, const mosquitto_property* props)
+void ADUC_MQTT_Client_OnSubscribe(
+    struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos, const mosquitto_property* props)
 {
     Log_Info("<-- SUBACK mid: %d", mid);
 }
@@ -459,13 +466,11 @@ static bool InitializeModuleInterfaces(ADUC_MQTT_CLIENT_MODULE_STATE* moduleStat
 {
     bool success = false;
 
-    ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = {
-        .ownerModuleContext = moduleState,
-        .mqttSettings = &moduleState->mqttSettings,
-        .callbacks = &s_duClientCommChannelCallbacks,
-        .passwordCallback = NULL,
-        .connectionRetryParams = NULL
-    };
+    ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = { .ownerModuleContext = moduleState,
+                                                          .mqttSettings = &moduleState->mqttSettings,
+                                                          .callbacks = &s_duClientCommChannelCallbacks,
+                                                          .passwordCallback = NULL,
+                                                          .connectionRetryParams = NULL };
 
     if (!CheckModuleInterfacesSetupCorrectly(moduleState))
     {

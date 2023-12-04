@@ -20,22 +20,22 @@
  */
 const char* agentinfo_state_str(ADU_AGENTINFO_STATE st)
 {
-    switch(st)
+    switch (st)
     {
-        case ADU_AGENTINFO_STATE_NOT_ACKNOWLEDGED:
-            return "ADU_AGENTINFO_STATE_NOT_ACKNOWLEDGED";
+    case ADU_AGENTINFO_STATE_NOT_ACKNOWLEDGED:
+        return "ADU_AGENTINFO_STATE_NOT_ACKNOWLEDGED";
 
-        case ADU_AGENTINFO_STATE_UNKNOWN:
-            return "ADU_AGENTINFO_STATE_UNKNOWN";
+    case ADU_AGENTINFO_STATE_UNKNOWN:
+        return "ADU_AGENTINFO_STATE_UNKNOWN";
 
-        case ADU_AGENTINFO_STATE_REQUESTING:
-            return "ADU_AGENTINFO_STATE_REQUESTING";
+    case ADU_AGENTINFO_STATE_REQUESTING:
+        return "ADU_AGENTINFO_STATE_REQUESTING";
 
-        case ADU_AGENTINFO_STATE_ACKNOWLEDGED:
-            return "ADU_AGENTINFO_STATE_ACKNOWLEDGED";
+    case ADU_AGENTINFO_STATE_ACKNOWLEDGED:
+        return "ADU_AGENTINFO_STATE_ACKNOWLEDGED";
 
-        default:
-            return "???";
+    default:
+        return "???";
     }
 }
 
@@ -63,7 +63,8 @@ ADUC_AgentInfo_Request_Operation_Data* AgentInfoData_FromOperationContext(ADUC_R
 ADUC_Retriable_Operation_Context* RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(void* obj)
 {
     ADUC_MQTT_CLIENT_MODULE_STATE* ownerModuleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
-    ADUC_AGENT_MODULE_INTERFACE* agentInfoModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)ownerModuleState->agentInfoModule;
+    ADUC_AGENT_MODULE_INTERFACE* agentInfoModuleInterface =
+        (ADUC_AGENT_MODULE_INTERFACE*)ownerModuleState->agentInfoModule;
     return (ADUC_Retriable_Operation_Context*)(agentInfoModuleInterface->moduleData);
 }
 
@@ -72,7 +73,8 @@ ADUC_Retriable_Operation_Context* RetriableOperationContextFromAgentInfoMqttLibC
  * @param retriableOperationContext The retriable operation context.
  * @return ADUC_Enrollment_Request_Operation_Data* The agent info request operation data.
  */
-ADUC_AgentInfo_Request_Operation_Data* AgentInfoDataFromRetriableOperationContext(ADUC_Retriable_Operation_Context* retriableOperationContext)
+ADUC_AgentInfo_Request_Operation_Data*
+AgentInfoDataFromRetriableOperationContext(ADUC_Retriable_Operation_Context* retriableOperationContext)
 {
     if (retriableOperationContext == NULL)
     {
@@ -97,7 +99,7 @@ void AgentInfoData_SetCorrelationId(ADUC_AgentInfo_Request_Operation_Data* agent
     ADUC_Safe_StrCopyN(
         agentInfoData->ainfoReqMessageContext.correlationId,
         correlationId,
-        sizeof(agentInfoData->ainfoReqMessageContext.correlationId),
+        ARRAY_SIZE(agentInfoData->ainfoReqMessageContext.correlationId),
         strlen(correlationId));
 }
 
@@ -108,7 +110,8 @@ void AgentInfoData_SetCorrelationId(ADUC_AgentInfo_Request_Operation_Data* agent
  * @return true on success.
  */
 
-bool Handle_AgentInfo_Response(ADUC_AgentInfo_Request_Operation_Data* agentInfoData, ADUC_Retriable_Operation_Context* context)
+bool Handle_AgentInfo_Response(
+    ADUC_AgentInfo_Request_Operation_Data* agentInfoData, ADUC_Retriable_Operation_Context* context)
 {
     bool succeeded = false;
     const char Fail_Save_StateStore_StrFmt[] = "Fail saving isAgentInfoReported '%s' in state store";
@@ -124,34 +127,38 @@ bool Handle_AgentInfo_Response(ADUC_AgentInfo_Request_Operation_Data* agentInfoD
         switch (user_props->resultcode)
         {
         case ADU_RESPONSE_MESSAGE_RESULT_CODE_BAD_REQUEST:
-            Log_Error("enr_resp - Bad Request(1), erc: 0x%08x", user_props->extendedresultcode);
-            Log_Info("enr_resp bad request from agent. Cancelling...");
+            Log_Error("ainfo_resp - Bad Request(1), erc: 0x%08x", user_props->extendedresultcode);
+            Log_Info("ainfo_resp bad request from agent. Cancelling...");
             context->cancelFunc(context);
             break;
 
         case ADU_RESPONSE_MESSAGE_RESULT_CODE_BUSY:
-            Log_Error("enr_resp - Busy(2), erc: 0x%08x", user_props->extendedresultcode);
+            Log_Error("ainfo_resp - Busy(2), erc: 0x%08x", user_props->extendedresultcode);
             break;
 
         case ADU_RESPONSE_MESSAGE_RESULT_CODE_CONFLICT:
-            Log_Error("enr_resp - Conflict(3), erc: 0x%08x", user_props->extendedresultcode);
+            Log_Error("ainfo_resp - Conflict(3), erc: 0x%08x", user_props->extendedresultcode);
             break;
 
         case ADU_RESPONSE_MESSAGE_RESULT_CODE_SERVER_ERROR:
-            Log_Error("enr_resp - Server Error(4), erc: 0x%08x", user_props->extendedresultcode);
+            Log_Error("ainfo_resp - Server Error(4), erc: 0x%08x", user_props->extendedresultcode);
             break;
 
         case ADU_RESPONSE_MESSAGE_RESULT_CODE_AGENT_NOT_ENROLLED:
-            Log_Error("enr_resp - Agent Not Enrolled(5), erc: 0x%08x", user_props->extendedresultcode);
+            Log_Error("ainfo_resp - Agent Not Enrolled(5), erc: 0x%08x", user_props->extendedresultcode);
             break;
 
         default:
-            Log_Error("enr_resp - Unknown Error: %d, erc: 0x%08x", user_props->resultcode, user_props->extendedresultcode);
+            Log_Error(
+                "ainfo_resp - Unknown Error: %d, erc: 0x%08x", user_props->resultcode, user_props->extendedresultcode);
             break;
         }
 
-        Log_Info("enr_resp error. Retrying...");
-        Log_Info("Transition from '%s' to '%s'", agentinfo_state_str(agentInfoData->agentInfoState), agentinfo_state_str(ADU_AGENTINFO_STATE_UNKNOWN));
+        Log_Info("ainfo_resp error. Retrying...");
+        Log_Info(
+            "Transition from '%s' to '%s'",
+            agentinfo_state_str(agentInfoData->agentInfoState),
+            agentinfo_state_str(ADU_AGENTINFO_STATE_UNKNOWN));
         agentInfoData->agentInfoState = ADU_AGENTINFO_STATE_UNKNOWN;
 
         if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetIsAgentInfoReported(false /* isAgentInfoReported */))
@@ -168,7 +175,10 @@ bool Handle_AgentInfo_Response(ADUC_AgentInfo_Request_Operation_Data* agentInfoD
         goto done;
     }
 
-    Log_Info("Transition from '%s' to '%s'", agentinfo_state_str(agentInfoData->agentInfoState), agentinfo_state_str(ADU_AGENTINFO_STATE_ACKNOWLEDGED));
+    Log_Info(
+        "Transition from '%s' to '%s'",
+        agentinfo_state_str(agentInfoData->agentInfoState),
+        agentinfo_state_str(ADU_AGENTINFO_STATE_ACKNOWLEDGED));
     agentInfoData->agentInfoState = ADU_AGENTINFO_STATE_ACKNOWLEDGED;
     succeeded = true;
 done:

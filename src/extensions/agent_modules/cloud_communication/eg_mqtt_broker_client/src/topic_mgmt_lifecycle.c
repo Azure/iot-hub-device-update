@@ -1,5 +1,6 @@
 #include "aduc/topic_mgmt_lifecycle.h"
 #include "aduc/adu_enrollment_management.h"
+#include "aduc/agent_module_interface_internal.h" // Module interface function declarations for every per-topic module
 #include "aduc/agentinfo_request_operation.h" // CreateAndInitializeAgentInfoRequestOperation
 #include "aduc/enrollment_request_operation.h" // CreateAndInitializeEnrollmentRequestOperation
 #include "aduc/agent_module_interface_internal.h" // Module interface function declarations for every per-topic module
@@ -72,7 +73,8 @@ ADUC_AGENT_MODULE_HANDLE TopicMgmtLifecycle_Create(TOPIC_MGMT_MODULE modTopic)
 
     ADUC_AGENT_MODULE_INTERFACE* tmp = NULL;
 
-    ADUC_CREATE_AND_INIT_REQUEST_OP_FUNC create_and_init_fn = LifeCycleDelegateSets[modTopic].createAndInitRequestOperationFn;
+    ADUC_CREATE_AND_INIT_REQUEST_OP_FUNC create_and_init_fn =
+        LifeCycleDelegateSets[modTopic].createAndInitRequestOperationFn;
     ADUC_Retriable_Operation_Context* operationContext = create_and_init_fn();
     if (operationContext == NULL)
     {
