@@ -21,6 +21,7 @@
 #include "aduc/shutdown_service.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h" // ADUC_SystemUtils_MkDirRecursiveDefault
+#include "aduc/workqueue.h" // WorkQueue_Create
 #include "aducpal/stdlib.h" // setenv
 #include "du_agent_sdk/agent_module_interface.h"
 
@@ -372,6 +373,8 @@ done:
 int main(int argc, char** argv)
 {
     ADUC_LaunchArguments launchArgs;
+    ADUC_WorkQueues workQueues = { 0 };
+
     ADUC_AGENT_MODULE_HANDLE duClientModuleHandle = NULL;
     ADUC_AGENT_MODULE_HANDLE dpsClientModuleHandle = NULL;
     ADUC_AGENT_MODULE_INTERFACE* dpsClientModuleInterface = NULL;
@@ -571,7 +574,19 @@ int main(int argc, char** argv)
         goto done;
     }
 
-    ret = duClientModuleInterface->initializeModule(duClientModuleInterface, NULL);
+    if (NULL == (workQueues.updateWorkQueue = WorkQueue_Create()))
+    {
+        ret = -2;
+        goto done;
+    }
+
+    if (NULL == (workQueues.reportingWorkQueue = WorkQueue_Create()))
+    {
+        ret = -2;
+        goto done;
+    }
+
+    ret = duClientModuleInterface->initializeModule(duClientModuleInterface, &workQueues);
     if (ret != 0)
     {
         Log_Error("DU client module init failed");
