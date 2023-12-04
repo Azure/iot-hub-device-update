@@ -23,6 +23,7 @@ add_subdirectory (system_utils)
 add_subdirectory (workflow_data_utils)
 add_subdirectory (workflow_utils)
 add_subdirectory (workqueue)
+add_subdirectory (workqueue_workers)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (test_utils)
