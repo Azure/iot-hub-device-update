@@ -14,7 +14,7 @@
 #include "aduc/adu_mosquitto_utils.h"
 #include "aduc/adu_mqtt_protocol.h"
 #include "aduc/adu_types.h"
-#include "aduc/adu_updates_management.h"
+#include "aduc/adu_update_management.h"
 #include "aduc/agent_state_store.h"
 #include "aduc/config_utils.h"
 #include "aduc/eg_mqtt_broker_client.h"
@@ -60,8 +60,8 @@ struct
     { MODULE_KEY_COMM_CHANNEL, "commChannel", NULL, false },
     {   MODULE_KEY_ENROLLMENT,  "enrollment", NULL, true  },
     {   MODULE_KEY_AGENT_INFO,   "agentInfo", NULL, true  },
-    // TODO: Enable update and update reults topic management
-    // { MODULE_KEY_UPDATE, "update", NULL, true     },
+    {       MODULE_KEY_UPDATE,      "update", NULL, true  },
+    // TODO: Enable update reults topic management
     // { MODULE_KEY_UPDATE_RESULT, "updateResults", NULL, true     },
 };
 // clang-format on
@@ -100,12 +100,12 @@ static OnMessageResponseHandlerFn GetComponentOnMessageResponseHandler(const cha
         return OnMessage_ainfo_resp;
     }
 
-    // TODO: enable upd_resp and updrslt_resp
+    if (strcmp(msg_type, "upd_resp") == 0)
+    {
+        return OnMessage_upd_resp;
+    }
 
-    // if (strcmp(msg_type, "upd_resp") == 0)
-    // {
-    //     return OnMessage_upd_resp;
-    // }
+    // TODO: enable upd_resp and updrslt_resp
 
     // if (strcmp(msg_type, "updrslt_resp") == 0)
     // {
@@ -127,16 +127,16 @@ static OnPublishResponseHandlerFn GetComponentOnPublishResponseHandler(const cha
         return OnPublish_ainfo_resp;
     }
 
-    // TODO: enable upd_resp and updrslt_resp
+    if (strcmp(msg_type, "upd_resp") == 0)
+    {
+        return OnPublish_upd_resp;
+    }
 
-    // if (strcmp(msg_type, "upd_resp") == 0)
-    // {
-    //     return OnMessage_upd_resp;
-    // }
+    // TODO: enable upd_resp and updrslt_resp
 
     // if (strcmp(msg_type, "updrslt_resp") == 0)
     // {
-    //     return OnMessage_updrslt_resp;
+    //     return OnPublish_updrslt_resp;
     // }
 
     return NULL;
@@ -439,9 +439,8 @@ static bool InitModuleInterfaceStateModule(const ADUC_MQTT_CLIENT_MODULE_STATE* 
             break;
 
         case MODULE_KEY_UPDATE:
-            // TODO:
-            // s_Modules[i].Interface = moduleState->updateModule;
-            // break;
+            s_Modules[i].Interface = moduleState->updateModule;
+            break;
 
         case MODULE_KEY_UPDATE_RESULT:
             // TODO:
@@ -530,14 +529,14 @@ static bool SetupModuleState(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
         goto done;
     }
 
-    // TODO: update and updateResults module setup
+    moduleState->updateModule = TopicMgmtLifecycle_Create(TOPIC_MGMT_MODULE_Update);
+    if (moduleState->updateModule == NULL)
+    {
+        Log_Error("Failed to create update mgmt module");
+        goto done;
+    }
 
-    // moduleState->updateModule = TopicMgmtLifecycle_Create(TOPIC_MGMT_MODULE_Update);
-    // if (moduleState->updateModule == NULL)
-    // {
-    //     Log_Error("Failed to create update mgmt module");
-    //     goto done;
-    // }
+    // TODO: updateResults module setup
 
     // moduleState->updateResultModule = TopicMgmtLifecycle_Create(TOPIC_MGMT_MODULE_UpdateResult);
     // if (moduleState->updateResultModule == NULL)

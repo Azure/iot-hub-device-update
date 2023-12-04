@@ -6,7 +6,6 @@
 #include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_INTERFACE
 #include <du_agent_sdk/mqtt_client_settings.h> // for ADUC_MQTT_SETTINGS
 
-
 /**
  * @brief The module state.
  */
@@ -25,6 +24,7 @@ typedef struct tagADUC_MQTT_CLIENT_MODULE_STATE
     ADUC_AGENT_MODULE_INTERFACE* commChannelModule; //!< The communication module handle
     ADUC_AGENT_MODULE_INTERFACE* enrollmentModule; //!< The enrollment module handle
     ADUC_AGENT_MODULE_INTERFACE* agentInfoModule; //!< The agent info module handle
+    ADUC_AGENT_MODULE_INTERFACE* updateModule; //!< The update module handle
 } ADUC_MQTT_CLIENT_MODULE_STATE;
 
 #endif // ADU_MODULE_STATE_H

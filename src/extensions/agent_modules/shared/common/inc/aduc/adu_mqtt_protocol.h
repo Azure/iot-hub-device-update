@@ -76,10 +76,13 @@ typedef enum tagADU_COMMUNICATION_CHANNEL_CONNECTION_STATE
 {
     ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_DISCONNECTED = -1, /**< The communication channel is disconnected. */
     ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_UNKNOWN = 0, /**< The communication channel state is unknown. */
-    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTING = 1, /**< The communication channel is currently connecting. */
+    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTING =
+        1, /**< The communication channel is currently connecting. */
     ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTED = 2, /**< The communication channel is connected. */
-    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING = 3, /**< The communication channel is subscribing to the common response topic. */
-    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBED = 4, /**< The communication channel is subscribed to the common response topic. */
+    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING =
+        3, /**< The communication channel is subscribing to the common response topic. */
+    ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBED =
+        4, /**< The communication channel is subscribed to the common response topic. */
 } ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE;
 
 /**
@@ -133,5 +136,8 @@ typedef enum tagADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE
     ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE_MISSING_OR_INVALID_CONTENT_TYPE =
         7, /**< Missing or invalid content type. */
 } ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE;
+
+const char* adu_mqtt_protocol_result_code_str(ADU_RESPONSE_MESSAGE_RESULT_CODE rc);
+const char* adu_mqtt_protocol_erc_str(ADU_RESPONSE_MESSAGE_EXTENDED_RESULT_CODE erc);
 
 #endif /* __ADU_MQTT_PROTOCOL_H__ */

@@ -180,6 +180,7 @@ bool Handle_AgentInfo_Response(
         agentinfo_state_str(agentInfoData->agentInfoState),
         agentinfo_state_str(ADU_AGENTINFO_STATE_ACKNOWLEDGED));
     agentInfoData->agentInfoState = ADU_AGENTINFO_STATE_ACKNOWLEDGED;
+    ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_Completed);
     succeeded = true;
 done:
 

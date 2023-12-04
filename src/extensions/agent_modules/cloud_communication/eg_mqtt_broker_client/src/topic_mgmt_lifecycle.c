@@ -3,7 +3,7 @@
 #include "aduc/agent_module_interface_internal.h" // Module interface function declarations for every per-topic module
 #include "aduc/agentinfo_request_operation.h" // CreateAndInitializeAgentInfoRequestOperation
 #include "aduc/enrollment_request_operation.h" // CreateAndInitializeEnrollmentRequestOperation
-#include "aduc/agent_module_interface_internal.h" // Module interface function declarations for every per-topic module
+#include "aduc/upd_request_operation.h" // CreateAndInitializeUpdateRequestOperation
 #include <aduc/retry_utils.h> // ADUC_Retriable_Operation_Context
 
 typedef ADUC_Retriable_Operation_Context* (*ADUC_CREATE_AND_INIT_REQUEST_OP_FUNC)();
@@ -37,14 +37,14 @@ struct
         ADUC_AgentInfo_Management_DoWork,
         ADUC_AgentInfo_Management_Destroy,
     },
-    // {
-    //     CreateAndInitializeUpdateRequestOperation,
-    //     ADUC_Enrollment_Management_GetContractInfo,
-    //     ADUC_Update_Management_Initialize,
-    //     ADUC_Update_Management_Deinitialize,
-    //     ADUC_Update_Management_DoWork,
-    //     ADUC_Update_Management_Destroy,
-    // },
+    {
+        CreateAndInitializeUpdateRequestOperation,
+        ADUC_Update_Management_GetContractInfo,
+        ADUC_Update_Management_Initialize,
+        ADUC_Update_Management_Deinitialize,
+        ADUC_Update_Management_DoWork,
+        ADUC_Update_Management_Destroy,
+    },
     // {
     //     CreateAndInitializeUpdateResultsRequestOperation,
     //     ADUC_UpdateResults_Management_GetContractInfo,
@@ -129,8 +129,7 @@ void TopicMgmtLifecycle_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
     ADUC_AGENT_MODULE_INTERFACE* mod_handle = (ADUC_AGENT_MODULE_INTERFACE*)handle;
     if (mod_handle != NULL)
     {
-        // TODO: free moduleData
-        // free(mod_handle->moduleData);
+        free(mod_handle->moduleData);
         free(mod_handle);
     }
 }
