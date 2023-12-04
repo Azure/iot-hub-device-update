@@ -1,4 +1,3 @@
-
 add_subdirectory (c_utils)
 add_subdirectory (config_utils)
 add_subdirectory (contract_utils)
@@ -23,6 +22,7 @@ add_subdirectory (string_utils)
 add_subdirectory (system_utils)
 add_subdirectory (workflow_data_utils)
 add_subdirectory (workflow_utils)
+add_subdirectory (workqueue)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (test_utils)
