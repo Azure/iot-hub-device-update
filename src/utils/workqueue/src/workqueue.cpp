@@ -128,7 +128,7 @@ time_t WorkQueueItem_GetTimeAdded(WorkQueueItemHandle handle)
     return item->time_added;
 }
 
-char* WorkQueueItem_GetUpdateResultMessageJson(WorkQueueItemHandle handle)
+char* WorkQueueItem_GetJsonPayload(WorkQueueItemHandle handle)
 {
     char* json_str = nullptr;
 
