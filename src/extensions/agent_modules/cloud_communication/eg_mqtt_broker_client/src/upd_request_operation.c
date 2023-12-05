@@ -217,18 +217,6 @@ static bool SendUpdateRequest(ADUC_Retriable_Operation_Context* context, time_t 
         goto done;
     }
 
-    if (strlen(updData->updReqMessageContext.correlationId) == 0)
-    {
-        // The DU service can handle with or without hyphens, but omit to save bytes transferred.
-        if (!ADUC_generate_correlation_id(
-                false /* with_hyphens */,
-                &(updData->updReqMessageContext.correlationId)[0],
-                ARRAY_SIZE(updData->updReqMessageContext.correlationId)))
-        {
-            goto done;
-        }
-    }
-
     // Set the Correlation Data MQTT property
     if (strlen(updData->updReqMessageContext.correlationId) == 0)
     {
