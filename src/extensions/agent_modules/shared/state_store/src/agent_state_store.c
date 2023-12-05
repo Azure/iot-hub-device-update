@@ -54,6 +54,7 @@ typedef struct
     bool isDeviceEnrolled;
     bool isAgentInfoReported;
     bool isDeviceProvisionedByService;
+    bool isUpdateResultsAck;
 } ADUC_StateData;
 
 static ADUC_StateData state = { 0 }; // Initialize to zero.
@@ -469,4 +470,14 @@ void* ADUC_StateStore_GetReportingWorkQueueHandle()
 void ADUC_StateStore_SetReportingWorkQueueHandle(void* handle)
 {
     state.reportingWorkqueueHandle = handle;
+}
+
+bool ADUC_StateStore_IsReportResultsAck()
+{
+    return state.isUpdateResultsAck;
+}
+
+void ADUC_StateStore_SetReportResultsAck(bool isAck)
+{
+    state.isUpdateResultsAck = isAck;
 }

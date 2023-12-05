@@ -83,6 +83,9 @@ void ADUC_StateStore_SetUpdateWorkQueueHandle(void* handle);
 void* ADUC_StateStore_GetReportingWorkQueueHandle();
 void ADUC_StateStore_SetReportingWorkQueueHandle(void* handle);
 
+bool ADUC_StateStore_IsReportResultsAck();
+void ADUC_StateStore_SetReportResultsAck(bool isAck);
+
 EXTERN_C_END
 
 #endif // ADUC_MQTT_STATE_STORE_H
