@@ -315,6 +315,197 @@ done:
     return opSucceeded;
 }
 
+static bool SendUpdateResultsRequest(ADUC_Retriable_Operation_Context* context, ADUC_Update_Request_Operation_Data* updData, time_t nowTime)
+{
+    bool opSucceeded = false;
+    int mqtt_res = 0;
+    mosquitto_property* user_prop_list = NULL;
+    ADUC_MQTT_Message_Context* messageContext = NULL;
+
+    if (updData == NULL)
+    {
+        Log_Error("NULL updData");
+        goto done;
+    }
+
+    if (!ADU_mosquitto_add_user_property(&user_prop_list, "mt", "updrslt_req")
+        || !ADU_mosquitto_add_user_property(&user_prop_list, "pid", "1"))
+    {
+        Log_Error("fail add user props");
+        goto done;
+    }
+
+    // Set the Correlation Data MQTT property
+    if (strlen(updData->updReqMessageContext.correlationId) == 0)
+    {
+        // The DU service can handle with or without hyphens, but reducing data transferred by omitting them.
+        if (!ADUC_generate_correlation_id(
+                false /* with_hyphens */,
+                &(updData->updReqMessageContext.correlationId)[0],
+                ARRAY_SIZE(updData->updReqMessageContext.correlationId)))
+        {
+            Log_Error("Fail to generate correlationid");
+            goto done;
+        }
+    }
+
+    if (!ADU_mosquitto_set_correlation_data_property(
+            &user_prop_list, &(updData->updReqMessageContext.correlationId)[0]))
+    {
+        Log_Error("set correlationId");
+        goto done;
+    }
+
+    messageContext = &updData->updReqMessageContext;
+
+    mqtt_res = ADUC_Communication_Channel_MQTT_Publish(
+        (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle,
+        messageContext->publishTopic,
+        &messageContext->messageId,
+        (int)strlen(updData->reportingJson),
+        updData->reportingJson,
+        1, // qos 1 is required for adu gen2 protocol v1
+        false,
+        user_prop_list);
+
+    if (mqtt_res != MOSQ_ERR_SUCCESS)
+    {
+        opSucceeded = false;
+        Log_Error(
+            "fail PUBLISH 'upd_req' msgid: %d, correlationid: %s, err: %d, errmsg: '%s')",
+            messageContext->messageId,
+            messageContext->correlationId,
+            mqtt_res,
+            mosquitto_strerror(mqtt_res));
+
+        switch (mqtt_res)
+        {
+        case MOSQ_ERR_INVAL:
+        case MOSQ_ERR_NOMEM:
+        case MOSQ_ERR_PROTOCOL:
+        case MOSQ_ERR_PAYLOAD_SIZE:
+        case MOSQ_ERR_MALFORMED_UTF8:
+        case MOSQ_ERR_DUPLICATE_PROPERTY:
+        case MOSQ_ERR_QOS_NOT_SUPPORTED:
+        case MOSQ_ERR_OVERSIZE_PACKET:
+            // following error is non-recoverable, so we'll bail out.
+            Log_Error("non-recoverable:%d", mqtt_res);
+            context->cancelFunc(context);
+            break;
+
+        case MOSQ_ERR_NO_CONN:
+
+            // compute and apply the next execution time, based on the specified retry parameters.
+            context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
+
+            Log_Error("retry-able after t:%ld, err:%d", context->operationIntervalSecs, mqtt_res);
+            break;
+
+        default:
+            Log_Error("unhandled err:%d", mqtt_res);
+            // retry again after default retry delay.
+            context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT]);
+            break;
+        }
+
+        goto done;
+    }
+
+    AduUpdUtils_TransitionState(ADU_UPD_STATE_REQUESTING, updData);
+    ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_InProgress);
+
+    context->lastExecutionTime = nowTime;
+
+    Log_Info(
+        "--> PUBLISH 'updrslt_req' msgid: %d correlationid: '%s' lastExecTime: %ld timeoutSecs: %ld)",
+        messageContext->messageId,
+        messageContext->correlationId,
+        context->lastExecutionTime,
+        context->operationTimeoutSecs);
+
+    opSucceeded = true;
+done:
+    if (user_prop_list != NULL)
+    {
+        ADU_mosquitto_free_properties(&user_prop_list);
+    }
+
+    return opSucceeded;
+}
+
+static void HandleReportResults(ADUC_Retriable_Operation_Context* context, ADUC_Update_Request_Operation_Data* updData, time_t nowTime)
+{
+    if (nowTime > context->nextExecutionTime)
+    {
+        const unsigned int max_retries = 60;
+        // const unsigned int max_retries = context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT].maxRetries;
+        if (context->attemptCount > max_retries)
+        {
+            Log_Error("attempt %u exceeded %u max_retries. Going to Idle wait.", context->attemptCount, max_retries);
+            memset(updData, 0, sizeof(*updData));
+            context->attemptCount = 0;
+            context->lastFailureTime = nowTime;
+            context->nextExecutionTime = nowTime + 60; // TODO: add random jitter and use retry configuration.
+            AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updData);
+        }
+        else
+        {
+            if (!SendUpdateResultsRequest(context, updData, nowTime))
+            {
+                Log_Error("Could not send update results.");
+                context->lastFailureTime = nowTime;
+                context->nextExecutionTime = nowTime + 60;
+                context->attemptCount += 1;
+            }
+            else
+            {
+                Log_Info("Success publishing update results. Waiting for ACK of results.");
+                context->nextExecutionTime = nowTime; // Start checking for acknowledgement immediately.
+                context->expirationTime = nowTime + context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT].maxDelaySecs;
+                context->attemptCount = 0;
+                free(updData->reportingJson);
+                updData->reportingJson = NULL;
+                ADUC_StateStore_SetReportResultsAck(false);
+                AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS_ACK, updData);
+            }
+        }
+    }
+}
+
+static void HandleReportResultsAck(ADUC_Retriable_Operation_Context* context, ADUC_Update_Request_Operation_Data* updData, time_t nowTime)
+{
+    if (nowTime > context->nextExecutionTime)
+    {
+        if (nowTime > context->expirationTime)
+        {
+            context->lastFailureTime = nowTime;
+            Log_Error("time %lu exceeded expiration time %lu. Going to IDLEWAIT");
+            memset(updData, 0, sizeof(*updData));
+            context->attemptCount = 0;
+            context->lastFailureTime = nowTime;
+            context->nextExecutionTime = nowTime + 60; // TODO: add random jitter and use retry configuration.
+            AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updData);
+        }
+        else
+        {
+            if (ADUC_StateStore_IsReportResultsAck())
+            {
+                Log_Info("Report was ACK'ed by the service. Transitioning to IDLEWAIT");
+                memset(updData, 0, sizeof(*updData));
+                context->attemptCount = 0;
+                context->lastSuccessTime = nowTime;
+                context->nextExecutionTime = nowTime + 60; // TODO: add random jitter and use retry configuration.
+                ADUC_StateStore_SetReportResultsAck(false);
+                AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updData);
+            }
+            else
+            {
+                context->attemptCount++;
+                context->nextExecutionTime = nowTime + 3; // TODO: make configurable or determine removal
+            }
+        }
+    }
+}
 
 /**
  * @brief The main workflow for managing device upd status request operation.
@@ -410,6 +601,14 @@ bool UpdateRequestOperation_DoWork(ADUC_Retriable_Operation_Context* context)
 
     case ADU_UPD_STATE_PROCESSING_UPDATE:
         Adu_ProcessUpdate(updData, context);
+        break;
+
+    case ADU_UPD_STATE_REPORT_RESULTS:
+        HandleReportResults(context, updData, nowTime);
+        break;
+
+    case ADU_UPD_STATE_REPORT_RESULTS_ACK:
+        HandleReportResultsAck(context, updData, nowTime);
         break;
 
     default:
