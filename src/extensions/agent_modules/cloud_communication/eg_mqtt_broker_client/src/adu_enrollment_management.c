@@ -89,7 +89,7 @@ void OnMessage_enr_resp(
 
     if (!ADU_are_correlation_ids_matching(props, enrollmentData->enrReqMessageContext.correlationId, &correlationData, &correlationDataByteLen))
     {
-        Log_Info("correlation data mismatch. expected: '%s', actual: '%s' %u bytes", correlationData, correlationDataByteLen);
+        Log_Info("correlation data mismatch. expected: '%s', actual: '%s' %u bytes", enrollmentData->enrReqMessageContext.correlationId, correlationData, correlationDataByteLen);
         goto done;
     }
 

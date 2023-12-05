@@ -92,7 +92,7 @@ void OnMessage_ainfo_resp(
 
     if (!ADU_are_correlation_ids_matching(props, messageContext->correlationId, &correlationData, &correlationDataByteLen))
     {
-        Log_Info("correlation data mismatch. expected: '%s', actual: '%s' %u bytes", correlationData, correlationDataByteLen);
+        Log_Info("correlation data mismatch. expected: '%s', actual: '%s' %u bytes", agentInfoData->ainfoReqMessageContext.correlationId, correlationData, correlationDataByteLen);
         goto done;
     }
 
