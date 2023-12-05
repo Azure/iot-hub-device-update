@@ -110,7 +110,42 @@ void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retr
         AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS, updateData);
         goto done;
     }
+    else if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error("Failed IsInstalled, erc: %d", result.ExtendedResultCode);
+        reportFailureFn(result.ExtendedResultCode);
+        goto done;
+    }
 
+    result = contentHandler->Download(&workflowData);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error("Failed Download, erc: %d", result.ExtendedResultCode);
+        reportFailureFn(result.ExtendedResultCode);
+        goto done;
+    }
+
+    result = contentHandler->Install(&workflowData);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error("Failed Install, erc: %d", result.ExtendedResultCode);
+        reportFailureFn(result.ExtendedResultCode);
+        goto done;
+    }
+
+    result = contentHandler->Apply(&workflowData);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error("Failed Apply, erc: %d", result.ExtendedResultCode);
+        reportFailureFn(result.ExtendedResultCode);
+        goto done;
+    }
+
+    Log_Info("Apply Succeeded. Reporting results, resultCode: %d", result.ResultCode);
+
+    updateData->resultCode = result.ResultCode;
+    updateData->extendedResultCode = result.ExtendedResultCode;
+    AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS, updateData);
 
 done:
     return;
