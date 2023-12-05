@@ -3,5 +3,4 @@
 void ReportingWorkQueueItemProcessor(WorkQueueItemHandle handle)
 {
     // TODO: implement to hand off to D2C messaging module
-    WorkQueueItem_Free(handle);
 }

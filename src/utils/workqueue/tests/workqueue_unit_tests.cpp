@@ -1,5 +1,3 @@
-#define CATCH_CONFIG_MAIN
-
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
 
@@ -10,11 +8,11 @@ using ADUC::StringUtils::cstr_wrapper;
 
 TEST_CASE("WorkQueue API Tests", "[workqueue]")
 {
-    WorkQueueHandle queue_handle = WorkQueue_Create();
+    WorkQueueHandle queue_handle = WorkQueue_Create("test case queue");
 
     SECTION("Create and Destroy Queue")
     {
-        WorkQueueHandle h = WorkQueue_Create();
+        WorkQueueHandle h = WorkQueue_Create("section queue");
         CHECK(h != nullptr);
         WorkQueue_Destroy(h);
     }

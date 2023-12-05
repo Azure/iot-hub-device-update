@@ -5,20 +5,24 @@
 #include <memory>
 #include <string>
 
+#include <condition_variable>
+#include <mutex>
+#include <queue>
+
+struct WorkQueueItem
+{
+    std::string json;
+    std::time_t time_added;
+};
+
 class WorkQueue
 {
 public:
-    struct WorkQueueItem
-    {
-        std::string json;
-        std::time_t time_added;
-    };
-
-    WorkQueue();
+    WorkQueue(const std::string& name);
     ~WorkQueue();
 
     void EnqueueWork(const std::string& json);
-    std::unique_ptr<WorkQueueItem> GetNextWorkQueueItem();
+    WorkQueueItem* GetNextWorkQueueItem();
 
     // noncopyable and nonmovable
     WorkQueue(const WorkQueue&) = delete;
@@ -27,8 +31,10 @@ public:
     WorkQueue& operator=(WorkQueue&&) = delete;
 
 private:
-    struct Impl;
-    std::unique_ptr<Impl> pImpl;
+    std::queue<WorkQueueItem> m_queue;
+    std::mutex m_mutex;
+    std::condition_variable m_workAvailable;
+    std::string m_name;
 };
 
 #endif // WORK_QUEUE_HPP

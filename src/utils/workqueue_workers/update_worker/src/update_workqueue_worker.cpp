@@ -3,5 +3,5 @@
 
 void UpdateWorkQueueItemProcessor(WorkQueueItemHandle handle)
 {
-    WorkQueueItem_Free(handle);
+    // TODO
 }

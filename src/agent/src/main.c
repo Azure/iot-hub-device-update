@@ -21,12 +21,16 @@
 #include "aduc/shutdown_service.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h" // ADUC_SystemUtils_MkDirRecursiveDefault
-#include "aduc/workqueue.h" // WorkQueue_Create
 #include "aducpal/stdlib.h" // setenv
 #include "du_agent_sdk/agent_module_interface.h"
 
 #include "aduc/adps2_mqtt_client_module.h" // Device registration using Azure IoT DPS
 #include "aduc/adu_mqtt_client_module.h" // Device Update client using MQTT broker communication channel.
+
+#include "aduc/reporting_workqueue_worker.h" // ReportingWorkQueueItemProcessor
+#include "aduc/update_workqueue_worker.h" // UpdateWorkQueueItemProcessor
+#include "aduc/workqueue_worker.h" // StartWorkQueueWorkerThread, StopAllWorkQueueWorkerThreads
+#include "aduc/workqueue.h" // WorkQueue_Create
 
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
@@ -574,13 +578,14 @@ int main(int argc, char** argv)
         goto done;
     }
 
-    if (NULL == (workQueues.updateWorkQueue = WorkQueue_Create()))
+    // Create the work queues and pass them to DU Client Module interface as init data.
+    if (NULL == (workQueues.updateWorkQueue = WorkQueue_Create("update workqueue")))
     {
         ret = -2;
         goto done;
     }
 
-    if (NULL == (workQueues.reportingWorkQueue = WorkQueue_Create()))
+    if (NULL == (workQueues.reportingWorkQueue = WorkQueue_Create("reporting workqueue")))
     {
         ret = -2;
         goto done;
@@ -592,6 +597,19 @@ int main(int argc, char** argv)
         Log_Error("DU client module init failed");
         goto done;
     }
+
+    // Start the worker thread on each work queue
+
+    // The duClientModuleInterface will push update workflow json onto the update work queue and, if all goes well,
+    // the worker thread there will use the UpdateWorkItemProcessor to process the item on the queue and push
+    // reporting JSON onto the reporting work queue where the reporting worker will process to send the update results
+    // to the request topic and wait for acknowledgement.
+    //
+    // Note: These worker threads make use of condition variable to sleep until their respective queues are non-empty.
+    // They use wait_for overload to also timeout after a certain number of seconds so they can responsively check
+    // if the exit flag is true and exit the thread loops.
+    StartWorkQueueWorkerThread(&workQueues.updateWorkQueue, UpdateWorkQueueItemProcessor, "update workqueue");
+    StartWorkQueueWorkerThread(&workQueues.reportingWorkQueue, ReportingWorkQueueItemProcessor, "reporting workqueue");
 
     //
     // Main Loop
@@ -610,6 +628,8 @@ int main(int argc, char** argv)
         // Sleep for a bit to avoid busy-waiting.
         ThreadAPI_Sleep(100);
     };
+
+    StopAllWorkQueueWorkerThreads();
 
     ret = 0; // Success.
 

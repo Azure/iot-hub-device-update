@@ -13,6 +13,7 @@ include (agentRules)
 
 include (find_curl_and_import_libcurl)
 
+compileAsC99 ()
 disablertti ()
 
 # Used to find and include the CURL::libcurl imported libary
@@ -82,6 +83,8 @@ target_link_libraries (
             aduc::system_utils
             aduc::microsoft_adps2_mqtt_client
             aduc::microsoft_du_mqttbroker_client
+            aduc::reporting_workqueue_worker
+            aduc::update_workqueue_worker
             aduc::workqueue)
 
 if (NOT WIN32)

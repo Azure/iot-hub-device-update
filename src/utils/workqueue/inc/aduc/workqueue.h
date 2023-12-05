@@ -16,7 +16,7 @@ typedef struct tagADUC_WorkQueues
     WorkQueueHandle reportingWorkQueue;
 } ADUC_WorkQueues;
 
-WorkQueueHandle WorkQueue_Create();
+WorkQueueHandle WorkQueue_Create(const char* name);
 void WorkQueue_Destroy(WorkQueueHandle queue);
 bool WorkQueue_EnqueueWork(WorkQueueHandle queue, const char* json);
 WorkQueueItemHandle WorkQueue_GetNextWork(WorkQueueHandle queue);
