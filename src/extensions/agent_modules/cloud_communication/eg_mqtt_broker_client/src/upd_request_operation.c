@@ -372,7 +372,7 @@ bool UpdateRequestOperation_DoWork(ADUC_Retriable_Operation_Context* context)
 
     case ADU_UPD_STATE_REQUESTING:
         // TODO: determine why context->operationTimeoutSecs is 0
-        if (nowTime > context->lastExecutionTime + 30) // timeout after 30 seconds for now
+        if (nowTime > context->lastExecutionTime + 120) // timeout after 120 seconds for now
         {
             Log_Debug(
                 "timeout 'upd_req' timeout:%d optimeout:%d t:%d",
