@@ -11,13 +11,14 @@ EXTERN_C_BEGIN
  */
 typedef enum tagADU_UPD_STATE
 {
-    ADU_UPD_STATE_READY             =  0, /**< The update module is ready to start requesting in the next frame of execution. */
-    ADU_UPD_STATE_IDLEWAIT          =  1, /**< The upd state is waiting for wait timer timeout to poll for updates. */
-    ADU_UPD_STATE_REQUESTING        =  2, /**< In the process of requesting for updates. */
-    ADU_UPD_STATE_RETRYWAIT         =  3, /**< The upd state is waiting for wait timer timeout to poll for updates. */
-    ADU_UPD_STATE_REQUEST_ACK       =  4, /**< Received PUBACK from the MQTT broker and is awaiting a response message. */
-    ADU_UPD_STATE_PROCESSING_UPDATE =  6, /**< In the process of processing the update for instation on the device. */
-    ADU_UPD_STATE_REPORT_RESULTS    =  7, /**< In the process of reporting the update results. */
+    ADU_UPD_STATE_READY              =  0, /**< The update module is ready to start requesting in the next frame of execution. */
+    ADU_UPD_STATE_IDLEWAIT           =  1, /**< The upd state is waiting for wait timer timeout to poll for updates. */
+    ADU_UPD_STATE_REQUESTING         =  2, /**< In the process of requesting for updates. */
+    ADU_UPD_STATE_RETRYWAIT          =  3, /**< The upd state is waiting for wait timer timeout to poll for updates. */
+    ADU_UPD_STATE_REQUEST_ACK        =  4, /**< Received PUBACK from the MQTT broker and is awaiting a response message. */
+    ADU_UPD_STATE_PROCESSING_UPDATE  =  6, /**< In the process of processing the update for instation on the device. */
+    ADU_UPD_STATE_REPORT_RESULTS     =  7, /**< In the process of reporting the update results. */
+    ADU_UPD_STATE_REPORT_RESULTS_ACK =  8, /**< Reporting of the update results has been published, and waiting for ACK response. */
 } ADU_UPD_STATE;
 // clang-format on
 
@@ -32,6 +33,7 @@ typedef struct tagADUC_Update_Request_Operation_Data
     int32_t resultCode;
     int32_t extendedResultCode;
     void* curWorkflow;
+    char* reportingJson;
 } ADUC_Update_Request_Operation_Data;
 
 const char* AduUpdState_str(ADU_UPD_STATE updateModuleState);

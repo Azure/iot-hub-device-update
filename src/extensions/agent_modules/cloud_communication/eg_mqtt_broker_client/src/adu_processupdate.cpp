@@ -36,20 +36,42 @@ void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retr
     char* jsonPayload = WorkQueueItem_GetUpdateResultMessageJson(itemHandle);
     int updateManifestVersion = 0;
     ContentHandler* contentHandler = nullptr;
+    char* updateId = nullptr;
+    ADUC_WorkflowHandle nextWorkflow = nullptr;
+    ADUC_Result result;
+    memset(&result, 0, sizeof(result));
     ADUC_WorkflowData workflowData;
     memset(&workflowData, 0, sizeof(workflowData));
 
-    const auto reportFailureFn = [retriableOperationContext, updateData](int32_t erc)
+    const auto reportFailureFn = [retriableOperationContext, updateData, &updateId, &workflowData, &result](int32_t erc)
     {
         retriableOperationContext->lastFailureTime = ADUC_GetTimeSinceEpochInSeconds();
         updateData->resultCode = ADUC_Result_Failure;
         updateData->extendedResultCode = erc;
+
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = erc;
+        updateId = workflow_get_expected_update_id_string(workflowData.WorkflowHandle);
+        updateData->reportingJson = ADU_Integration_GetReportingJson(
+            &workflowData,
+            ADUCITF_State_Idle,
+            &result,
+            updateId);
+        free(updateId);
+
         AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS, updateData);
     };
 
+    if (std::string{jsonPayload} == "{}")
+    {
+        Log_Info("        *** ADU service had no applicable updates.");
+        AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updateData);
+        goto done;
+    }
+
     // Note: Most of this logic was ported over from agent_workflow.c
-    ADUC_WorkflowHandle nextWorkflow = {0};
-    ADUC_Result result = workflow_init(jsonPayload, true /* shouldValidate */, &nextWorkflow);
+    nextWorkflow = nullptr;
+    result = workflow_init(jsonPayload, true /* shouldValidate */, &nextWorkflow);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         Log_Error("workflow_init failed, rc:%d, erc:%d", result.ResultCode, result.ExtendedResultCode);
@@ -70,6 +92,8 @@ void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retr
     {
         workflow_free(updateData->curWorkflow);
     }
+
+    workflowData.CommunicationChannel = ADUC_CommunicationChannelType_MQTTBroker;
 
     workflowData.WorkflowHandle = nextWorkflow;
     updateData->curWorkflow = nextWorkflow;
@@ -100,13 +124,22 @@ void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retr
     result = contentHandler->IsInstalled(&workflowData);
     if (result.ResultCode == ADUC_Result_IsInstalled_Installed)
     {
-        char* updateId = workflow_get_expected_update_id_string(workflowData.WorkflowHandle);
-        ADU_Integration_SetInstalledUpdateIdAndGoToIdle(&workflowData, updateId);
+        Log_Info("update already installed. Ignoring. workflowId: '%s'", workflow_peek_id(nextWorkflow));
+        updateData->resultCode = result.ResultCode;
+        updateData->extendedResultCode = result.ExtendedResultCode;
+        retriableOperationContext->lastSuccessTime = ADUC_GetTimeSinceEpochInSeconds();
+
+        result.ResultCode = result.ResultCode;
+        result.ExtendedResultCode = result.ExtendedResultCode;
+
+        updateId = workflow_get_expected_update_id_string(workflowData.WorkflowHandle);
+        updateData->reportingJson = ADU_Integration_GetReportingJson(
+            &workflowData,
+            ADUCITF_State_Idle,
+            &result,
+            updateId);
         free(updateId);
 
-        Log_Info("update already installed. Ignoring. workflowId: '%s'", workflow_peek_id(nextWorkflow));
-        updateData->resultCode = 0;
-        updateData->extendedResultCode = 0;
         AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS, updateData);
         goto done;
     }
@@ -145,6 +178,29 @@ void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retr
 
     updateData->resultCode = result.ResultCode;
     updateData->extendedResultCode = result.ExtendedResultCode;
+
+
+    // TODO: push onto reporting work queue instead of in operation data.
+    updateId = workflow_get_expected_update_id_string(workflowData.WorkflowHandle);
+    updateData->reportingJson = ADU_Integration_GetReportingJson(
+        &workflowData,
+        ADUCITF_State_Idle,
+        &result,
+        updateId);
+    free(updateId);
+
+    if (IsNullOrEmpty(updateData->reportingJson))
+    {
+        Log_Error("Failed generating reporting json");
+        reportFailureFn(ADUC_ERC_NOMEM);
+        goto done;
+    }
+
+    // The reporting json is set in the update operation data, so now we transition
+    // to the report results state where it will publish it to the broker.
+    retriableOperationContext->attemptCount = 0;
+    retriableOperationContext->nextExecutionTime = ADUC_GetTimeSinceEpochInSeconds() + 5;
+    retriableOperationContext->expirationTime = retriableOperationContext->nextExecutionTime + 60 * 60; // TODO: make configurable
     AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS, updateData);
 
 done:

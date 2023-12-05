@@ -31,6 +31,9 @@ const char* AduUpdState_str(ADU_UPD_STATE updateModuleState)
     case ADU_UPD_STATE_REPORT_RESULTS:
         return "ADU_UPD_STATE_REPORT_RESULTS";
 
+    case ADU_UPD_STATE_REPORT_RESULTS_ACK:
+        return "ADU_UPD_STATE_REPORT_RESULTS_ACK";
+
     default:
         return "???";
     }
