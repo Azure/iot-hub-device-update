@@ -17,6 +17,7 @@ typedef enum tagADU_UPD_STATE
     ADU_UPD_STATE_RETRYWAIT         =  3, /**< The upd state is waiting for wait timer timeout to poll for updates. */
     ADU_UPD_STATE_REQUEST_ACK       =  4, /**< Received PUBACK from the MQTT broker and is awaiting a response message. */
     ADU_UPD_STATE_PROCESSING_UPDATE =  6, /**< In the process of processing the update for instation on the device. */
+    ADU_UPD_STATE_REPORT_RESULTS    =  7, /**< In the process of reporting the update results. */
 } ADU_UPD_STATE;
 // clang-format on
 
@@ -28,6 +29,9 @@ typedef struct tagADUC_Update_Request_Operation_Data
     ADUC_Common_Response_User_Properties respUserProps; /**< Common Response User Properties. */
     ADU_UPD_STATE updState; /**< Current upd state. */
     ADUC_MQTT_Message_Context updReqMessageContext; /**< upd request message context. */
+    int32_t resultCode;
+    int32_t extendedResultCode;
+    void* curWorkflow;
 } ADUC_Update_Request_Operation_Data;
 
 const char* AduUpdState_str(ADU_UPD_STATE updateModuleState);

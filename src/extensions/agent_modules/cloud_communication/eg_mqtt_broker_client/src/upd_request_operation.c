@@ -11,6 +11,7 @@
 #include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_HANDLE
 
 // Forward declarations
+void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retriable_Operation_Context* retriableOperationContext);
 time_t ADUC_Retry_Delay_Calculator(
     int additionalDelaySecs,
     unsigned int retries,
@@ -326,6 +327,7 @@ done:
     return opSucceeded;
 }
 
+
 /**
  * @brief The main workflow for managing device upd status request operation.
  * @return true on operation succeeded.
@@ -419,6 +421,7 @@ bool UpdateRequestOperation_DoWork(ADUC_Retriable_Operation_Context* context)
         break;
 
     case ADU_UPD_STATE_PROCESSING_UPDATE:
+        Adu_ProcessUpdate(updData, context);
         break;
 
     default:
@@ -446,14 +449,15 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeUpdateRequestOperation()
     const ADUC_ConfigInfo* config = NULL;
     const ADUC_AgentInfo* agent_info = NULL;
     unsigned int value = 0;
+    JSON_Value* retrySettings = NULL;
 
-    tmp = calloc(1, sizeof(*tmp));
+    tmp = (ADUC_Retriable_Operation_Context*)calloc(1, sizeof(*tmp));
     if (tmp == NULL)
     {
         goto done;
     }
 
-    operationDataContext = calloc(1, sizeof(*operationDataContext));
+    operationDataContext = (ADUC_Update_Request_Operation_Data*)calloc(1, sizeof(*operationDataContext));
     if (operationDataContext == NULL)
     {
         goto done;
@@ -522,7 +526,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeUpdateRequestOperation()
     tmp->operationTimeoutSecs = value;
 
     // get retry parameters for transient client error.
-    JSON_Value* retrySettings = json_object_dotget_value(
+    retrySettings = json_object_dotget_value(
         json_value_get_object(agent_info->agentJsonValue), SETTING_KEY_ENR_REQ_OP_RETRY_PARAMS);
     if (retrySettings == NULL)
     {
@@ -531,7 +535,7 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeUpdateRequestOperation()
     }
 
     // Initialize the retry parameters
-    tmp->retryParams = calloc((size_t)tmp->retryParamsCount, sizeof(*tmp->retryParams));
+    tmp->retryParams = (ADUC_Retry_Params*)calloc((size_t)tmp->retryParamsCount, sizeof(*tmp->retryParams));
     if (tmp->retryParams == NULL)
     {
         goto done;

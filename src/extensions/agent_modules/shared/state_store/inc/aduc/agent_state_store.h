@@ -78,6 +78,11 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetIsAgentInfoReported(bool isAgentInfoR
 const void* ADUC_StateStore_GetCommunicationChannelHandle();
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetCommunicationChannelHandle(void* communicationChannelHandler);
 
+void* ADUC_StateStore_GetUpdateWorkQueueHandle();
+void ADUC_StateStore_SetUpdateWorkQueueHandle(void* handle);
+void* ADUC_StateStore_GetReportingWorkQueueHandle();
+void ADUC_StateStore_SetReportingWorkQueueHandle(void* handle);
+
 EXTERN_C_END
 
 #endif // ADUC_MQTT_STATE_STORE_H

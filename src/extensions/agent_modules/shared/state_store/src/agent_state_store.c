@@ -41,6 +41,8 @@ static sem_t state_semaphore;
 typedef struct
 {
     void* communicationChannelHandle;
+    void* updateWorkqueueHandle;
+    void* reportingWorkqueueHandle;
     char* stateFilePath;
     char* deviceId;
     char* externalDeviceId;
@@ -447,4 +449,24 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetMQTTBrokerHostname(const char* hostna
 
     sem_post(&state_semaphore);
     return result;
+}
+
+void* ADUC_StateStore_GetUpdateWorkQueueHandle()
+{
+    return state.updateWorkqueueHandle;
+}
+
+void ADUC_StateStore_SetUpdateWorkQueueHandle(void* handle)
+{
+    state.updateWorkqueueHandle = handle;
+}
+
+void* ADUC_StateStore_GetReportingWorkQueueHandle()
+{
+    return state.reportingWorkqueueHandle;
+}
+
+void ADUC_StateStore_SetReportingWorkQueueHandle(void* handle)
+{
+    state.reportingWorkqueueHandle = handle;
 }

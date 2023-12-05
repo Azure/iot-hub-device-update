@@ -9,8 +9,11 @@
 #define __ADU_MOSQUITTO_UTILS_H__
 
 #include "aducpal/time.h"
+#include <aduc/c_utils.h>
 #include <aduc/mqtt_broker_common.h> // ADUC_Common_Response_User_Properties
 #include <mosquitto.h>
+
+EXTERN_C_BEGIN
 
 /**
  * @brief Enumeration representing MQTT disconnection categories.
@@ -187,5 +190,7 @@ int json_print_properties(const mosquitto_property* properties);
  *
  */
 bool ADUC_generate_correlation_id(bool with_hyphens, char* buffer, size_t buffer_cch);
+
+EXTERN_C_END
 
 #endif
