@@ -20,8 +20,8 @@
 #include <aduc/string_c_utils.h>
 #include <aduc/download_handler_plugin.h>
 #include <aduc/calloc_wrapper.hpp>
-#include "aduc/download_handler_factory.h" // ADUC_DownloadHandlerFactory_LoadDownloadHandler
-#include "aduc/download_handler_plugin.h" // ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted
+#include <aduc/download_handler_factory.h> // ADUC_DownloadHandlerFactory_LoadDownloadHandler
+#include <aduc/download_handler_plugin.h> // ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted
 
 #include <parson.h>
 
