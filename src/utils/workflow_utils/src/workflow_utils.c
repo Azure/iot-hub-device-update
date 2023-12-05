@@ -2520,8 +2520,7 @@ done:
             "Failed to init workflow handle. result:%d (erc:0x%X)", result.ResultCode, result.ExtendedResultCode);
         if (handle != NULL)
         {
-            // workflow_free(handle);
-            // *handle = NULL;
+            workflow_uninit(handle);
         }
     }
 
@@ -2568,6 +2567,7 @@ workflow_init_from_file(const char* updateManifestFile, bool validateManifest, A
     *outWorkflowHandle = workflowHandle;
     workflowHandle = NULL;
 
+    result.ResultCode = ADUC_GeneralResult_Success;
 done:
 
     json_value_free(rootJsonValue);
@@ -2577,7 +2577,6 @@ done:
         workflow_free(workflowHandle);
         workflowHandle = NULL;
     }
-
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         Log_Error(
@@ -2851,8 +2850,14 @@ ADUC_Result workflow_init(const char* updateManifestJsonStr, bool validateManife
         goto done;
     }
 
-    result = _workflow_init_helper(handle);
+    result = _workflow_init_helper(*handle);
 
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        goto done;
+    }
+
+    result.ResultCode = ADUC_GeneralResult_Success;
 done:
 
     json_value_free(rootJsonValue);
