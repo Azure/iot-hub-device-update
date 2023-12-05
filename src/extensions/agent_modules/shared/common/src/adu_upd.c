@@ -28,6 +28,9 @@ const char* AduUpdState_str(ADU_UPD_STATE updateModuleState)
     case ADU_UPD_STATE_PROCESSING_UPDATE:
         return "Processing Update";
 
+    case ADU_UPD_STATE_REPORT_RESULTS:
+        return "ADU_UPD_STATE_REPORT_RESULTS";
+
     default:
         return "???";
     }
