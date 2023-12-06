@@ -466,9 +466,10 @@ size_t ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_
         return 0;
     }
 
-    if(numSrcCharsToCopy >= destByteLen)
+    // Ensure we don't overflow the destination buffer
+    if (numSrcCharsToCopy >= destByteLen)
     {
-        numSrcCharsToCopy = destByteLen - 1;
+        numSrcCharsToCopy = destByteLen - 1; // Truncate to prevent buffer overflow
     }
 
     memcpy(dest, src, numSrcCharsToCopy);
