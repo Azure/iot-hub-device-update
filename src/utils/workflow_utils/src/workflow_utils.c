@@ -26,6 +26,7 @@
 #include "jws_utils.h"
 #include "root_key_util.h"
 
+#include <limits.h> // for PATH_MAX
 #include <parson.h>
 #include <stdarg.h> // for va_*
 #include <stdlib.h> // for malloc, atoi
@@ -34,7 +35,6 @@
 #include <aducpal/strings.h> // strcasecmp
 
 #define DEFAULT_SANDBOX_ROOT_PATH "/var/lib/adu/downloads"
-
 #define WORKFLOW_PROPERTY_FIELD_ID "_id"
 #define WORKFLOW_PROPERTY_FIELD_RETRYTIMESTAMP "_retryTimestamp"
 #define WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID "workflow.id"
@@ -61,6 +61,8 @@
 
 #define WORKFLOW_CHILDREN_BLOCK_SIZE 10
 #define WORKFLOW_MAX_SUCCESS_ERC 8
+
+#define WORKFLOW_DIR_PATH_MAX_SIZE PATH_MAX
 
 /**
  * @brief Maximum length for the 'resultDetails' string.
@@ -1814,41 +1816,102 @@ bool workflow_set_sandbox(ADUC_WorkflowHandle handle, const char* sandbox)
     return true;
 }
 
+bool _workflow_cpy_config_download_folder(char* dest, const size_t dest_size)
+{
+    bool success = false;
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
+    {
+        goto done; // could not get
+    }
+
+    size_t download_folder_len = ADUC_StrNLen(config->downloadsFolder, dest_size);
+
+    if (download_folder_len == 0 || download_folder_len == dest_size)
+    {
+        Log_Error("Invalid download folder length for config");
+        goto done;
+    }
+
+    if (ADUC_Safe_StrCopyN(dest, config->downloadsFolder, dest_size, download_folder_len) != download_folder_len)
+    {
+        Log_Error("Failed copy config download folder");
+        goto done;
+    }
+
+    success = true;
+done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
+
+    return success;
+}
+
 // Returns the download base directory
 char* workflow_get_workflow_base_dir(const ADUC_WorkflowHandle handle)
 {
-    char dir[1024] = { 0 };
+    char dir[WORKFLOW_DIR_PATH_MAX_SIZE] = { 0 };
     char* ret = NULL;
+    char* tempRet = NULL;
     char* pwf = NULL;
 
     ADUC_WorkflowHandle p = workflow_get_parent(handle);
     if (p != NULL)
     {
         pwf = workflow_get_workfolder(p);
-        sprintf(dir, "%s/", pwf);
+        size_t pwf_len = ADUC_StrNLen(pwf, WORKFLOW_DIR_PATH_MAX_SIZE);
 
-        Log_Debug("Using parent workfolder: '%s/%s'", pwf);
+        if (pwf_len == 0 || pwf_len == WORKFLOW_DIR_PATH_MAX_SIZE)
+        {
+            Log_Error("Invalid parent workfolder: '%s'", pwf);
+            goto done;
+        }
+
+        if (ADUC_Safe_StrCopyN(dir, pwf, WORKFLOW_DIR_PATH_MAX_SIZE, pwf_len) != pwf_len)
+        {
+            Log_Error("Failed to copy workflow dir path");
+            goto done;
+        }
+
+        Log_Debug("Using parent workfolder: '%s'", pwf);
     }
     else
     {
-        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
-        if (config != NULL)
+        if (!_workflow_cpy_config_download_folder(dir, WORKFLOW_DIR_PATH_MAX_SIZE))
         {
-            Log_Info("No parent workfolder. Using default: '%s'", config->downloadsFolder);
-            sprintf(dir, "%s", config->downloadsFolder);
-            ADUC_ConfigInfo_ReleaseInstance(config);
+            size_t default_sandbox_root_path_len = ADUC_StrNLen(DEFAULT_SANDBOX_ROOT_PATH, WORKFLOW_DIR_PATH_MAX_SIZE);
+
+            if (default_sandbox_root_path_len == 0 || default_sandbox_root_path_len == WORKFLOW_DIR_PATH_MAX_SIZE)
+            {
+                Log_Error("Invalid download folder: '%s'", DEFAULT_SANDBOX_ROOT_PATH);
+                goto done;
+            }
+
+            if (ADUC_Safe_StrCopyN(
+                    dir, DEFAULT_SANDBOX_ROOT_PATH, WORKFLOW_DIR_PATH_MAX_SIZE, default_sandbox_root_path_len)
+                != default_sandbox_root_path_len)
+            {
+                Log_Error("Failed to copy default sandbox root path");
+                goto done;
+            }
         }
         else
         {
-            Log_Warn("Config is null. Use default sandbox root path: '%s'", DEFAULT_SANDBOX_ROOT_PATH);
-            sprintf(dir, "%s", DEFAULT_SANDBOX_ROOT_PATH);
+            Log_Info("Using configurations default folder: '%s'", dir);
         }
     }
 
-    if (dir[0] != 0)
+    if (mallocAndStrcpy_s(&tempRet, dir) != 0)
     {
-        mallocAndStrcpy_s(&ret, dir);
+        Log_Error("Failed to allocate memory for workflow base dir");
+        tempRet = NULL;
+        goto done;
     }
+
+done:
+
+    free(pwf);
+
+    ret = tempRet;
 
     return ret;
 }
