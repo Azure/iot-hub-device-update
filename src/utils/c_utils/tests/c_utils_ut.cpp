@@ -502,6 +502,8 @@ TEST_CASE("ADUC_AllocAndStrCopyN")
 
         char* target = NULL;
         CHECK(-2 == ADUC_AllocAndStrCopyN(&target, "foo", 0));
+
+        CHECK(-2 == ADUC_AllocAndStrCopyN(&target, nullptr, 3));
     }
 
     SECTION("returns 0 on success")

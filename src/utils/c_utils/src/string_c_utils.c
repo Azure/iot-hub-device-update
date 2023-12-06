@@ -453,7 +453,7 @@ int ADUC_AllocAndStrCopyN(char** dest, const char* src, size_t srcLen)
     size_t num_copied = 0;
     char* tmpDest = NULL;
 
-    if (dest == NULL || srcLen == 0)
+    if (dest == NULL || src == NULL || srcLen == 0)
     {
         return -2;
     }
@@ -464,10 +464,13 @@ int ADUC_AllocAndStrCopyN(char** dest, const char* src, size_t srcLen)
         goto done;
     }
 
+    // Uses ADUC_Safe_StrCopyN to prevent buffer overflows and ensure null termination.
     num_copied = ADUC_Safe_StrCopyN(
         tmpDest, src, (srcLen + 1) * sizeof(char) /* destByteLen */, srcLen /* numSrcCharsToCopy */);
+
     if (num_copied < srcLen)
     {
+        // it was truncated!
         goto done;
     }
 
