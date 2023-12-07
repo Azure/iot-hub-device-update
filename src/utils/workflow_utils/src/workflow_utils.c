@@ -26,7 +26,7 @@
 #include "jws_utils.h"
 #include "root_key_util.h"
 
-#include <limits.h> // for PATH_MAX
+#include <aducpal/limits.h> // for PATH_MAX
 #include <parson.h>
 #include <stdarg.h> // for va_*
 #include <stdlib.h> // for malloc, atoi
