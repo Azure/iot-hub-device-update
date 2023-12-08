@@ -13,7 +13,7 @@
 
 EXTERN_C_BEGIN
 
-#define MAX_TIME_TO_DOWNLOAD_IN_HOURS 1 /* hour*/
+std::chrono::hours max_time_to_download = std::chrono::hours(1);
 
 ADUC_Result DownloadRootKeyPkg_DO(const char* url, const char* targetFilePath)
 {
@@ -23,8 +23,8 @@ ADUC_Result DownloadRootKeyPkg_DO(const char* url, const char* targetFilePath)
 
     try
     {
-        const std::error_code ret = microsoft::deliveryoptimization::download::download_url_to_path(
-            url, targetFilePath, std::chrono::hours(MAX_TIME_TO_DOWNLOAD_IN_HOURS));
+        const std::error_code ret =
+            microsoft::deliveryoptimization::download::download_url_to_path(url, targetFilePath, max_time_to_download);
         if (ret.value() == 0)
         {
             result.ResultCode = ADUC_GeneralResult_Success;

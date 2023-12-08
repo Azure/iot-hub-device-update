@@ -10,7 +10,7 @@
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h"
-#include "aduc/path_utils.h" // SanitizePathSegment
+#include "aduc/path_utils.h" // PathUtils_SanitizePathSegment
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
 
@@ -122,7 +122,7 @@ static bool GetHandlerExtensionFileEntity(
 
     memset(fileEntity, 0, sizeof(*fileEntity));
 
-    STRING_HANDLE folderName = SanitizePathSegment(handlerId);
+    STRING_HANDLE folderName = PathUtils_SanitizePathSegment(handlerId);
 
     STRING_HANDLE path = STRING_construct_sprintf("%s/%s/%s", extensionDir, STRING_c_str(folderName), regFileName);
 
@@ -214,7 +214,7 @@ static bool RegisterHandlerExtension(
         goto done;
     }
 
-    folderName = SanitizePathSegment(handlerId);
+    folderName = PathUtils_SanitizePathSegment(handlerId);
     if (folderName == NULL)
     {
         Log_Error("Cannot generate a folder name from an Update Type.");

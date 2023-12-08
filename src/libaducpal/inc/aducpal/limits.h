@@ -1,22 +1,23 @@
-#ifndef ADUC_AL_LIMITS_H
-#define ADUC_AL_LIMITS_H
+#ifndef ADUC_PAL_LIMITS_H
+#define ADUC_PAL_LIMITS_H
 
 #ifdef ADUCPAL_USE_PAL
-
-#    ifdef __cplusplus
-extern "C"
-{
+#    ifndef MAX_PATH
+#        define MAX_PATH 260
 #    endif
-
-#    define PATH_MAX 4096 // Maximum size of a filepath
-#    ifdef __cplusplus
-}
-#    endif
-
-#else
 
 #    include <limits.h>
 
-#endif // #ifdef ADUCPAL_USE_PAL
+#    ifndef PATH_MAX
+#        define PATH_MAX MAX_PATH
+#    endif
+#else
+#    include <limits.h>
 
+#    ifndef MAX_PATH
+
+#        define MAX_PATH PATH_MAX
+
+#    endif
+#endif
 #endif // ADUCPAL_GRP_H

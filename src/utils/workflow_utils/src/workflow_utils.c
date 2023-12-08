@@ -14,6 +14,7 @@
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h"
+#include "aduc/path_utils.h"
 #include "aduc/reporting_utils.h"
 #include "aduc/result.h"
 #include "aduc/string_c_utils.h"
@@ -26,15 +27,14 @@
 #include "jws_utils.h"
 #include "root_key_util.h"
 
-#include <aducpal/limits.h> // for PATH_MAX
 #include <parson.h>
 #include <stdarg.h> // for va_*
 #include <stdlib.h> // for malloc, atoi
 #include <string.h>
 
+#include <aducpal/limits.h> // for PATH_MAX
 #include <aducpal/strings.h> // strcasecmp
 
-#define DEFAULT_SANDBOX_ROOT_PATH "/var/lib/adu/downloads"
 #define WORKFLOW_PROPERTY_FIELD_ID "_id"
 #define WORKFLOW_PROPERTY_FIELD_RETRYTIMESTAMP "_retryTimestamp"
 #define WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID "workflow.id"
@@ -1240,7 +1240,6 @@ ADUC_Result _workflow_parse(const JSON_Value* updateActionJson, bool validateMan
 
     ADUC_Workflow* wf = NULL;
     JSON_Value* updateActionJsonClone = NULL;
-    JSON_Object* updateActionObject = NULL;
     ADUCITF_UpdateAction updateAction = ADUCITF_UpdateAction_Undefined;
 
     if (handle == NULL)
@@ -1264,9 +1263,7 @@ ADUC_Result _workflow_parse(const JSON_Value* updateActionJson, bool validateMan
     updateActionJson = NULL;
 
     // commit ownership of cloned JSON_Value to the workflow's UpdateActionObject.
-    updateActionObject = json_value_get_object(updateActionJsonClone);
-    wf->UpdateActionObject = updateActionObject;
-    updateActionObject = NULL;
+    wf->UpdateActionObject = json_value_get_object(updateActionJsonClone);
     updateActionJsonClone = NULL;
 
     // At this point, we have had a side-effect of committing to the
@@ -1816,20 +1813,20 @@ bool workflow_set_sandbox(ADUC_WorkflowHandle handle, const char* sandbox)
     return true;
 }
 
-bool _workflow_cpy_config_download_folder(char* dest, const size_t dest_size)
+bool _workflow_copy_config_download_folder(char* dest, const size_t dest_size)
 {
     bool success = false;
     const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
     if (config == NULL)
     {
-        goto done; // could not get
+        goto done; /* Config is unitialized or we could not get a reference */
     }
 
     size_t download_folder_len = ADUC_StrNLen(config->downloadsFolder, dest_size);
 
     if (download_folder_len == 0 || download_folder_len == dest_size)
     {
-        Log_Error("Invalid download folder length for config");
+        Log_Error("Invalid base sandbox dir: '%s'", config->downloadsFolder);
         goto done;
     }
 
@@ -1847,7 +1844,7 @@ done:
 }
 
 // Returns the download base directory
-char* workflow_get_workflow_base_dir(const ADUC_WorkflowHandle handle)
+char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle)
 {
     char dir[WORKFLOW_DIR_PATH_MAX_SIZE] = { 0 };
     char* ret = NULL;
@@ -1876,27 +1873,10 @@ char* workflow_get_workflow_base_dir(const ADUC_WorkflowHandle handle)
     }
     else
     {
-        if (!_workflow_cpy_config_download_folder(dir, WORKFLOW_DIR_PATH_MAX_SIZE))
+        if (!_workflow_copy_config_download_folder(dir, WORKFLOW_DIR_PATH_MAX_SIZE))
         {
-            size_t default_sandbox_root_path_len = ADUC_StrNLen(DEFAULT_SANDBOX_ROOT_PATH, WORKFLOW_DIR_PATH_MAX_SIZE);
-
-            if (default_sandbox_root_path_len == 0 || default_sandbox_root_path_len == WORKFLOW_DIR_PATH_MAX_SIZE)
-            {
-                Log_Error("Invalid download folder: '%s'", DEFAULT_SANDBOX_ROOT_PATH);
-                goto done;
-            }
-
-            if (ADUC_Safe_StrCopyN(
-                    dir, DEFAULT_SANDBOX_ROOT_PATH, WORKFLOW_DIR_PATH_MAX_SIZE, default_sandbox_root_path_len)
-                != default_sandbox_root_path_len)
-            {
-                Log_Error("Failed to copy default sandbox root path");
-                goto done;
-            }
-        }
-        else
-        {
-            Log_Info("Using configurations default folder: '%s'", dir);
+            Log_Error("Copying config download folder failed");
+            goto done;
         }
     }
 
@@ -1920,53 +1900,48 @@ done:
 // Workfolder =  [root.sandboxfolder]  "/"  ( [parent.workfolder | parent.id]  "/" )+  [handle.workfolder | handle.id]
 char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
 {
-    char dir[1024] = { 0 };
-
-    char* pwf = NULL;
     char* ret = NULL;
+    char* tempRet = NULL;
+    char* base_sandbox_dir = NULL;
     char* id = workflow_get_id(handle);
+    size_t id_len = ADUC_StrNLen(id, WORKFLOW_DIR_PATH_MAX_SIZE);
+
+    if (id_len == 0 || id_len == WORKFLOW_DIR_PATH_MAX_SIZE)
+    {
+        Log_Error("Workflow id is too long to be in a path: '%s'", id);
+        goto done;
+    }
 
     // If workfolder explicitly specified, use it.
     char* wf = workflow_get_string_property(handle, WORKFLOW_PROPERTY_FIELD_WORKFOLDER);
     if (wf != NULL)
     {
         Log_Debug("Property '%s' not NULL - returning cached workfolder '%s'", WORKFLOW_PROPERTY_FIELD_WORKFOLDER, wf);
-        free(id);
-        return wf;
+        tempRet = wf;
+        goto done;
     }
 
     // Return ([parent's workfolder] or [default sandbox folder]) + "/" + [workflow id];
-    ADUC_WorkflowHandle p = workflow_get_parent(handle);
-    if (p != NULL)
-    {
-        pwf = workflow_get_workfolder(p);
-        sprintf(dir, "%s/%s", pwf, id);
+    base_sandbox_dir = workflow_get_root_sandbox_dir(handle);
 
-        Log_Debug("Using parent workfolder: '%s/%s'", pwf, id);
-    }
-    else
+    if (base_sandbox_dir == NULL)
     {
-        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
-        if (config != NULL)
-        {
-            Log_Info("Sandbox root path not set. Use default: '%s'", config->downloadsFolder);
-            sprintf(dir, "%s/%s", config->downloadsFolder, id);
-            ADUC_ConfigInfo_ReleaseInstance(config);
-        }
-        else
-        {
-            Log_Warn("Config is null. Use default sandbox root path: '%s'", DEFAULT_SANDBOX_ROOT_PATH);
-            sprintf(dir, "%s/%s", DEFAULT_SANDBOX_ROOT_PATH, id);
-        }
+        goto done;
     }
 
-    free(pwf);
+    tempRet = PathUtils_ConcatenateDirAndFolderPaths(base_sandbox_dir, id);
+    if (tempRet == NULL)
+    {
+        Log_Error("Failed to concatenate dir and folder paths");
+        goto done;
+    }
+
+done:
+
     free(id);
+    free(base_sandbox_dir);
 
-    if (dir[0] != 0)
-    {
-        mallocAndStrcpy_s(&ret, dir);
-    }
+    ret = tempRet;
 
     return ret;
 }
@@ -2619,8 +2594,6 @@ workflow_init_from_file(const char* updateManifestFile, bool validateManifest, A
         goto done;
     }
 
-    // address of rootJsonValue = 0x5555558 debb0
-    // address of workflowHandle = 0x5555558 db350
     result = _workflow_init_helper(workflowHandle);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
