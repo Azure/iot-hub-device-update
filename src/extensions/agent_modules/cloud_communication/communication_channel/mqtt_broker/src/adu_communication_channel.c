@@ -413,7 +413,7 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
     }
 
     commMgrState->mqttClient = mosquitto_new(
-        "adumqtt",
+        initData->sessionId,
         commMgrState->mqttSettings.cleanSession,
         handle /* DU MQTT Agent Module Handle */);
     if (!commMgrState->mqttClient)
