@@ -380,6 +380,7 @@ int main(int argc, char** argv)
     ADUC_AGENT_MODULE_INTERFACE* dpsClientModuleInterface = NULL;
     ADUC_AGENT_MODULE_INTERFACE* duClientModuleInterface = NULL;
     bool using_dps = false;
+    bool initialized_duclient_module = false;
 
     int ret = ParseLaunchArguments(argc, argv, &launchArgs);
     if (ret < 0)
@@ -586,13 +587,6 @@ int main(int argc, char** argv)
         goto done;
     }
 
-    ret = duClientModuleInterface->initializeModule(duClientModuleInterface, &workQueues);
-    if (ret != 0)
-    {
-        Log_Error("DU client module init failed");
-        goto done;
-    }
-
     //
     // Main Loop
     //
@@ -603,9 +597,26 @@ int main(int argc, char** argv)
         if (using_dps)
         {
             dpsClientModuleInterface->doWork(dpsClientModuleHandle);
-        }
+            if (ADUC_StateStore_GetIsDeviceRegistered())
+            {
+                if (using_dps && !initialized_duclient_module)
+                {
+                    ret = duClientModuleInterface->initializeModule(duClientModuleInterface, &workQueues);
+                    if (ret != 0)
+                    {
+                        Log_Error("DU client module init failed");
+                        goto done;
+                    }
+                    initialized_duclient_module = true;
+                }
 
-        duClientModuleInterface->doWork(duClientModuleHandle);
+                duClientModuleInterface->doWork(duClientModuleHandle);
+            }
+        }
+        else
+        {
+            duClientModuleInterface->doWork(duClientModuleHandle);
+        }
 
         // Sleep for a bit to avoid busy-waiting.
         ThreadAPI_Sleep(100);

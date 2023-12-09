@@ -465,7 +465,8 @@ static bool InitializeModuleInterfaces(ADUC_MQTT_CLIENT_MODULE_STATE* moduleStat
 {
     bool success = false;
 
-    ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = { .ownerModuleContext = moduleState,
+    ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = { .sessionId = "adumqttclient",
+                                                          .ownerModuleContext = moduleState,
                                                           .mqttSettings = &moduleState->mqttSettings,
                                                           .callbacks = &s_duClientCommChannelCallbacks,
                                                           .passwordCallback = NULL,
