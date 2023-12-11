@@ -5,6 +5,11 @@ resources:
     containers:
         - container: ubuntu
           image: ubuntu:18.04
+    repositories:
+        - repository: 1ESPipelineTemplates
+          type: git
+          name: 1ESPipelineTemplates/1ESPipelineTemplates
+          ref: refs/tags/release
 
 parameters:
     - name: SKIP_TEARDOWN
@@ -17,13 +22,6 @@ variables:
     E2E_WORKING_DIR: $(Build.SourcesDirectory)/azurepipelines/e2e_test
 
 name: "E2E Automated Test Run"
-
-resources:
-  repositories:
-  - repository: 1ESPipelineTemplates
-    type: git
-    name: 1ESPipelineTemplates/1ESPipelineTemplates
-    ref: refs/tags/release
 
 stages:
     - stage: PerformNativeBuilds
