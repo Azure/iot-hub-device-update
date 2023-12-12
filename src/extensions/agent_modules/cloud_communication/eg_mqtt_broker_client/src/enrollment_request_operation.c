@@ -249,6 +249,12 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
         goto done;
     }
 
+    if (!ADU_mosquitto_set_content_type_property(&user_prop_list, "json"))
+    {
+        Log_Error("fail set content type user property");
+        goto done;
+    }
+
     messageContext = &enrollmentData->enrReqMessageContext;
 
     mqtt_res = ADUC_Communication_Channel_MQTT_Publish(

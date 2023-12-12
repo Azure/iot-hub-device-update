@@ -432,7 +432,11 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
         goto done;
     }
 
-    // TODO: Set the Content Type MQTT property
+    if (!ADU_mosquitto_set_content_type_property(&user_prop_list, "json"))
+    {
+        Log_Error("fail set content type user property");
+        goto done;
+    }
 
     mqtt_res = ADUC_Communication_Channel_MQTT_Publish(
         (ADUC_AGENT_MODULE_HANDLE)context->commChannelHandle,

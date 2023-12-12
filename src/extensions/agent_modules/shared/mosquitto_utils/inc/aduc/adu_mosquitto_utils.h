@@ -53,11 +53,13 @@ typedef enum ADUC_MQTT_DISCONNECTION_CATEGORY_TAG
 ADUC_MQTT_DISCONNECTION_CATEGORY CategorizeMQTTDisconnection(int rc);
 
 /**
- * @brief Generate a correlation ID from a time value.
- * @param[in] t The time value to use.
- * @return A string containing the correlation ID. The caller is responsible for free()'ing the returned string.
+ * @brief Adds the content type mqtt 5 property to the property list.
+ *
+ * @param props The address of the property list.
+ * @param contentType The content type data string.
+ * @return true on success.
  */
-char* GenerateCorrelationIdFromTime(time_t t);
+bool ADU_mosquitto_set_content_type_property(mosquitto_property** props, const char* contentType);
 
 /**
  * @brief Retrieves the correlation data from MQTT properties.

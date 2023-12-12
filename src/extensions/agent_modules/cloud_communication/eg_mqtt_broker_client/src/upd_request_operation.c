@@ -238,6 +238,12 @@ static bool SendUpdateRequest(ADUC_Retriable_Operation_Context* context, time_t 
         goto done;
     }
 
+    if (!ADU_mosquitto_set_content_type_property(&user_prop_list, "json"))
+    {
+        Log_Error("fail set content type user property");
+        goto done;
+    }
+
     messageContext = &updData->updReqMessageContext;
 
     mqtt_res = ADUC_Communication_Channel_MQTT_Publish(
@@ -353,6 +359,12 @@ static bool SendUpdateResultsRequest(ADUC_Retriable_Operation_Context* context, 
             &user_prop_list, &(updData->updReqMessageContext.correlationId)[0]))
     {
         Log_Error("set correlationId");
+        goto done;
+    }
+
+    if (!ADU_mosquitto_set_content_type_property(&user_prop_list, "json"))
+    {
+        Log_Error("fail set content type user property");
         goto done;
     }
 

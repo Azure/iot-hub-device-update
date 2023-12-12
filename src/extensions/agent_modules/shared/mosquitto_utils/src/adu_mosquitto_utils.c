@@ -25,15 +25,49 @@
 #include <aduc/aduc_banned.h>
 
 /**
- * @brief Generate a correlation ID from a time value.
- * @param[in] t The time value to use.
- * @return A string containing the correlation ID. The caller is responsible for free()'ing the returned string.
+ * @brief Adds the content type mqtt 5 property to the property list.
+ *
+ * @param props The address of the property list.
+ * @param contentType The content type data string.
+ * @return true on success.
  */
-char* GenerateCorrelationIdFromTime(time_t t)
+bool ADU_mosquitto_set_content_type_property(mosquitto_property** props, const char* contentType)
 {
-    return ADUC_StringFormat("%ld", t);
-}
+    int err = 0;
 
+    if (props == NULL || contentType == NULL)
+    {
+        return false;
+    }
+
+    err = mosquitto_property_add_string(props, MQTT_PROP_CONTENT_TYPE, contentType);
+
+    if ( err == MOSQ_ERR_SUCCESS)
+    {
+        return true;
+    }
+
+    switch(err)
+    {
+    case MOSQ_ERR_INVAL: // - if identifier is invalid, if name or value is NULL, or if proplist is NULL
+        Log_Error("Fail MOSQ_ERR_INVAL(%d) - props[%p] contentType[%p]", err, props, contentType);
+        break;
+
+    case MOSQ_ERR_NOMEM: // - on out of memory
+        //
+        break;
+
+    case MOSQ_ERR_MALFORMED_UTF8: // - if name or value are not valid UTF-8.
+        Log_Error("Fail MOSQ_ERR_MALFORMED_UTF8(%d)", err);
+        break;
+
+    default:
+        Log_Error("Fail Unknown(%d)", err);
+        break;
+    }
+
+    return false;
+}
 
 /**
  * @brief Retrieves the correlation data from MQTT properties.
@@ -184,7 +218,6 @@ bool ADU_mosquitto_add_user_property(mosquitto_property** props, const char* nam
         break;
 
     case MOSQ_ERR_NOMEM: // - on out of memory
-        Log_Error("Fail MOSQ_ERR_NOMEM(%d)", err);
         break;
 
     case MOSQ_ERR_MALFORMED_UTF8: // - if name or value are not valid UTF-8.
@@ -222,7 +255,6 @@ bool ADU_mosquitto_set_correlation_data_property(mosquitto_property** props, con
         break;
 
     case MOSQ_ERR_NOMEM: // - on out of memory
-        Log_Error("Fail MOSQ_ERR_NOMEM(%d)", err);
         break;
 
     case MOSQ_ERR_MALFORMED_UTF8: // - if name or value are not valid UTF-8.
