@@ -575,6 +575,17 @@ int main(int argc, char** argv)
         goto done;
     }
 
+    if (!using_dps)
+    {
+        ret = duClientModuleInterface->initializeModule(duClientModuleInterface, &workQueues);
+        if (ret != 0)
+        {
+            Log_Error("DU client module init failed");
+            goto done;
+        }
+        initialized_duclient_module = true;
+    }
+
     if (NULL == (workQueues.updateWorkQueue = WorkQueue_Create()))
     {
         ret = -2;
