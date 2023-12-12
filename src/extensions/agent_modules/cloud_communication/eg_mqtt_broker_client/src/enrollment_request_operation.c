@@ -191,7 +191,7 @@ bool HandlingRequestEnrollment(ADUC_Retriable_Operation_Context* context, time_t
         //
         // TODO: figure out why context->operationTimeoutSecs is 0
         // if (context->lastExecutionTime + context->operationTimeoutSecs < nowTime)
-        if (context->lastExecutionTime + 30 < nowTime) // timeout after 30 seconds for now
+        if (context->lastExecutionTime + 180 < nowTime) // timeout after 180 seconds for now
         {
             Log_Debug(
                 "timeout 'enr_req' timeout:%d optimeout:%d t:%d",

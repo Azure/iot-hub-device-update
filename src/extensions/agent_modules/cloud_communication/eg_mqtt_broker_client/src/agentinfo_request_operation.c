@@ -219,8 +219,8 @@ static bool HandlingRequestAgentInfo(ADUC_Retriable_Operation_Context* context, 
         ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_InProgress);
 
         // is the current request timed-out?
-        // TODO: use context->operationTimeoutSecs instead of 30 once operationTimeoutSecs set correctly to non-zero.
-        if (context->lastExecutionTime + 30 < nowTime)
+        // TODO: use context->operationTimeoutSecs instead of hard-coded once operationTimeoutSecs set correctly to non-zero.
+        if (context->lastExecutionTime + 180 < nowTime)
         {
             context->cancelFunc(context);
 
