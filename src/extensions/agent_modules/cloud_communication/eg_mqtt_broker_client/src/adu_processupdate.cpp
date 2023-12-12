@@ -166,6 +166,9 @@ void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retr
         goto done;
     }
 
+    ADU_Integration_Install_Complete(&workflowData); // handle agent restart and reboot
+    Log_Info("Install Succeeded without need for agent restart or reboot, resultCode: %d", result.ResultCode);
+
     result = contentHandler->Apply(&workflowData);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -174,11 +177,13 @@ void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retr
         goto done;
     }
 
-    Log_Info("Apply Succeeded. Reporting results, resultCode: %d", result.ResultCode);
+    ADU_Integration_Apply_Complete(&workflowData, result); // handle agent restart and reboot
+    Log_Info("Apply Succeeded without need for agent restart or reboot, resultCode: %d", result.ResultCode);
 
     updateData->resultCode = result.ResultCode;
     updateData->extendedResultCode = result.ExtendedResultCode;
 
+    Log_Debug("Generating update results JSON");
 
     // TODO: push onto reporting work queue instead of in operation data.
     updateId = workflow_get_expected_update_id_string(workflowData.WorkflowHandle);

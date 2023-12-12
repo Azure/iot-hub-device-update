@@ -614,3 +614,88 @@ void ADU_Integration_SandboxDestroy(const char* workflowId, const char* workFold
         Log_Info("Can not access folder '%s', or doesn't exist. Ignored...", workFolder);
     }
 }
+
+void ADU_Integration_Install_Complete(ADUC_WorkflowData* workflowData)
+{
+    if (workflow_is_immediate_reboot_requested(workflowData->WorkflowHandle)
+        || workflow_is_reboot_requested(workflowData->WorkflowHandle))
+    {
+        // If 'install' indicated a reboot required result from apply, go ahead and reboot.
+        Log_Info("Install indicated success with RebootRequired - rebooting system now");
+        workflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+
+        Log_Info("Calling ADUC_RebootSystem");
+        if (ADUC_RebootSystem() == 0)
+        {
+            workflowData->SystemRebootState = ADUC_SystemRebootState_InProgress;
+        }
+        else
+        {
+            Log_Error("Reboot attempt failed.");
+            workflow_set_operation_in_progress(workflowData->WorkflowHandle, false);
+        }
+    }
+    else if (
+        workflow_is_immediate_agent_restart_requested(workflowData->WorkflowHandle)
+        || workflow_is_agent_restart_requested(workflowData->WorkflowHandle))
+    {
+        // If 'install' indicated a restart is required, go ahead and restart the agent.
+        Log_Info("Install indicated success with AgentRestartRequired - restarting the agent now");
+        workflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+
+        Log_Info("Calling ADUC_RestartAgent");
+        if (ADUC_RestartAgent() == 0)
+        {
+            workflowData->AgentRestartState = ADUC_AgentRestartState_InProgress;
+        }
+        else
+        {
+            Log_Error("Agent restart attempt failed.");
+            workflow_set_operation_in_progress(workflowData->WorkflowHandle, false);
+        }
+    }
+}
+
+void ADU_Integration_Apply_Complete(ADUC_WorkflowData* workflowData, ADUC_Result result)
+{
+    if (workflow_is_immediate_reboot_requested(workflowData->WorkflowHandle)
+        || workflow_is_reboot_requested(workflowData->WorkflowHandle))
+    {
+        // If apply indicated a reboot required result from apply, go ahead and reboot.
+        Log_Info("Apply indicated success with RebootRequired - rebooting system now");
+        workflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+
+        if (ADUC_RebootSystem() == 0)
+        {
+            workflowData->SystemRebootState = ADUC_SystemRebootState_InProgress;
+        }
+        else
+        {
+            Log_Error("Reboot attempt failed.");
+            workflow_set_operation_in_progress(workflowData->WorkflowHandle, false);
+        }
+    }
+    else if (
+        workflow_is_immediate_agent_restart_requested(workflowData->WorkflowHandle)
+        || workflow_is_agent_restart_requested(workflowData->WorkflowHandle))
+    {
+        // If apply indicated a restart is required, go ahead and restart the agent.
+        Log_Info("Apply indicated success with AgentRestartRequired - restarting the agent now");
+        workflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+
+        if (ADUC_RestartAgent() == 0)
+        {
+            workflowData->AgentRestartState = ADUC_AgentRestartState_InProgress;
+        }
+        else
+        {
+            Log_Error("Agent restart attempt failed.");
+            workflow_set_operation_in_progress(workflowData->WorkflowHandle, false);
+        }
+    }
+    else if (result.ResultCode == ADUC_Result_Apply_Success)
+    {
+        // An Apply action completed successfully. Continue to the next step.
+        workflow_set_operation_in_progress(workflowData->WorkflowHandle, false);
+    }
+}
