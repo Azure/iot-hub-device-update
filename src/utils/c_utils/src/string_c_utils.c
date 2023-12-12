@@ -420,12 +420,14 @@ bool MallocAndSubstr(char** target, char* source, size_t len)
  *
  * @param dest The destination buffer.
  * @param src The source string to be copied.
- * @param destByteLen The size of the destination buffer in bytes.
+ * @param destByteLen The size of the destination buffer in bytes, including plus 1 for the null terminator.
  * @param numSrcCharsToCopy The number of source chars to copy. It will be truncated and null-terminated if >= destByteLen.
  * @return int zero on success, or a negative number if there was an error.
  */
 int ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_t numSrcCharsToCopy)
 {
+    size_t srcLen = 0;
+
     if (dest == NULL || src == NULL || destByteLen == 0)
     {
         return -1;
@@ -435,6 +437,12 @@ int ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_t n
     if (numSrcCharsToCopy >= destByteLen)
     {
         return -2;
+    }
+
+    srcLen = ADUC_StrNLen(src, numSrcCharsToCopy);
+    if (numSrcCharsToCopy > srcLen)
+    {
+        return -3;
     }
 
     memcpy(dest, src, numSrcCharsToCopy);

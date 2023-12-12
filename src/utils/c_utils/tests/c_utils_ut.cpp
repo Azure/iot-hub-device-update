@@ -373,7 +373,6 @@ TEST_CASE("ADUC_StrNLen")
     SECTION("Check empty string")
     {
         const char* testStr = "";
-        ;
 
         CHECK(ADUC_StrNLen(testStr, 10) == 0);
     }
@@ -384,7 +383,18 @@ TEST_CASE("ADUC_StrNLen")
 
         CHECK(ADUC_StrNLen(testStr.c_str(), max) == max);
     }
+    SECTION("Check duck emoji codepoint")
+    {
+        // The "duck" emoji is unicode codepoint: U+1F986
+        // which falls in the range of U+10000 - U+10FFFF, so in utf-8 it is encoded in the 4-byte form:
+        // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+        CHECK(2 == ADUC_StrNLen("🦆", 2));
+        CHECK(3 == ADUC_StrNLen("🦆", 3));
+        CHECK(4 == ADUC_StrNLen("🦆", 4));
+        CHECK(4 == ADUC_StrNLen("🦆", 5));
+    }
 }
+
 TEST_CASE("ADUC_StringFormat")
 {
     SECTION("Create Formatted String")
@@ -413,6 +423,7 @@ TEST_CASE("ADUC_StringFormat")
         CHECK(retval.get() == nullptr);
     }
 }
+
 TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
     char dest[10] = "foo";
 
@@ -445,18 +456,11 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
 
     // mainline cases
 
-    SECTION("Copy a shorter string") {
+    SECTION("src chars to cpy < dest capacity should succeed") {
         reset_dest();
         const char* src = "short";
         REQUIRE(0 == ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 5));
         CHECK_THAT(dest, Equals("short"));
-    }
-
-    SECTION("Copy a string of exact length") {
-        reset_dest();
-        const char* src = "123456789"; // 9 + 1 null-term
-        REQUIRE(0 == ADUC_Safe_StrCopyN(dest, src, sizeof(dest), strlen(src)));
-        CHECK_THAT(dest, Equals(src));
     }
 
     SECTION("Error when truncation would be needed") {
@@ -489,6 +493,34 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
         const char* src = "12345678901234"; // 14 + 1
         REQUIRE(0 == ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 8));
         CHECK_THAT(dest, Equals("12345678"));
+    }
+
+    SECTION("numSrcCharsToCopy > len of src str")
+    {
+        reset_dest();
+        const char* src = "123";
+        REQUIRE_FALSE(0 == ADUC_Safe_StrCopyN(dest, src, sizeof(dest), strlen(src) + 1));
+        CHECK_THAT(dest, Equals(""));
+    }
+
+    SECTION("Can copy a duck (ADUC) emoji")
+    {
+        char target[5];
+        memset(&target[0], 0, 4);
+
+        const char* src = "🦆"; // 4-byte utf-8 sequence, so target must be size 5 for nul-term.
+        REQUIRE(0 == ADUC_Safe_StrCopyN(target, src, sizeof(target), strlen(src)));
+        CHECK_THAT(target, Equals("🦆"));
+    }
+
+    SECTION("dest has insufficient space for src + nul-term should fail")
+    {
+        char target[4];
+        memset(target, 0, 4);
+
+        const char* src = "1234";
+        REQUIRE_FALSE(0 == ADUC_Safe_StrCopyN(target, src, sizeof(target), strlen(src)));
+        CHECK_THAT(target, Equals(""));
     }
 }
 
