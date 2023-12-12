@@ -24,7 +24,7 @@ variables:
 name: "E2E Automated Test Run"
 
 extends:
-  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  template: v1/1ES.Unofficial.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
     pool:
       name: aduc_1es_client_pool
@@ -48,7 +48,7 @@ extends:
                 continueOnError: False
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: ../build/templates/adu-docker-build-steps.yml
+                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
                       parameters:
                           targetOs: ubuntu1804
                           targetArch: amd64
@@ -59,28 +59,28 @@ extends:
                 continueOnError: False
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: ../build/templates/adu-docker-build-steps.yml
+                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
                       parameters:
                           targetOs: ubuntu1804
                           targetArch: arm64
-    
+
               - job: BuildUbuntu_2004_AMD64
                 displayName: Building the Device Update Package for Ubuntu 20.04 AMD64
                 continueOnError: False
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: ../build/templates/adu-docker-build-steps.yml
+                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
                       parameters:
                           targetOs: ubuntu2004
                           targetArch: amd64
-    
+
               - job: BuildUbuntu_2004_ARM64
                 timeoutInMinutes: 360
                 displayName: Building the Device Update Package for Ubuntu 20.04 ARM64
                 continueOnError: False
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: ../build/templates/adu-docker-build-steps.yml
+                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
                       parameters:
                           targetOs: ubuntu2004
                           targetArch: arm64
@@ -89,7 +89,7 @@ extends:
                 continueOnError: False
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: ../build/templates/adu-docker-build-steps.yml
+                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
                       parameters:
                           targetOs: ubuntu2204
                           targetArch: amd64
@@ -99,21 +99,21 @@ extends:
                 continueOnError: False
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: ../build/templates/adu-docker-build-steps.yml
+                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
                       parameters:
                           targetOs: ubuntu2204
                           targetArch: arm64
-    
+
               - job: BuildDebian_10_AMD64
                 displayName: Building the Device Update Package for Debian 10 amd64
                 continueOnError: False
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: ../build/templates/adu-docker-build-steps.yml
+                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
                       parameters:
                           targetOs: debian10
                           targetArch: amd64
-    
+
         - stage: TerraformSetup
           displayName: Initializes and installs Terraform into the VM
           pool: aduc_1es_client_pool
@@ -144,7 +144,7 @@ extends:
                       displayName: Retrieve Resource Group Name
                       continueOnError: true
                       workingDirectory: $(E2E_WORKING_DIR)/terraform/resource_group/
-    
+
         - stage: TerraformVMInitialization
           displayName: Initializes the Terraform VMs for the Automated Tests
           dependsOn:
@@ -338,7 +338,7 @@ extends:
                               ./testsetup/sas_vm_setup.sh --distro debian-10 --architecture amd64
                           image_working_directory: $(E2E_WORKING_DIR)
                           device_id_under_test: "debian-10-amd64-sas"
-    
+
         - stage: RunTestsAndPostResults
           displayName: Execute E2E Test
           dependsOn:
@@ -354,7 +354,7 @@ extends:
                       parameters:
                           distroName: ubuntu-18.04-amd64
                           device_id_under_test: "ubuntu-18.04-amd64-sas"
-    
+
               - job: RunUbuntu_1804_Amd64VmE2ETests_x509
                 displayName: "Running E2E Tests against Ubuntu 18.04 AMD64"
                 timeoutInMinutes: 360
@@ -365,7 +365,7 @@ extends:
                       parameters:
                           distroName: ubuntu-18.04-amd64
                           device_id_under_test: "ubuntu-18.04-amd64-x509"
-    
+
               - job: RunUbuntu_1804_Arm64VmE2ETests
                 displayName: "Running E2E Tests against Ubuntu 18.04 ARM64"
                 timeoutInMinutes: 360
@@ -426,7 +426,7 @@ extends:
                       parameters:
                           distroName: debian-10-amd64
                           device_id_under_test: "debian-10-amd64-sas"
-    
+
         - stage: TerraformDestroyVm
           displayName: Tear down cloud resources (VMs) and destroy the resource group
           dependsOn:
