@@ -34,7 +34,7 @@ bool IsNullOrEmpty(const char* str);
 
 bool MallocAndSubstr(char** target, char* source, size_t len);
 
-size_t ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_t numSrcCharsToCopy);
+int ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_t numSrcCharsToCopy);
 
 int ADUC_AllocAndStrCopyN(char** dest, const char* src, size_t srcLen);
 

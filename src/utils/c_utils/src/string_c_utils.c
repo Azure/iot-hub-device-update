@@ -402,7 +402,10 @@ bool MallocAndSubstr(char** target, char* source, size_t len)
         return false;
     }
     memset(t, 0, (len + 1) * sizeof(*t));
-    ADUC_Safe_StrCopyN(t, source, len + 1, len);
+    if (ADUC_Safe_StrCopyN(t, source, len + 1, len) != 0)
+    {
+        return false;
+    }
 
     *target = t;
     return true;
@@ -419,24 +422,25 @@ bool MallocAndSubstr(char** target, char* source, size_t len)
  * @param src The source string to be copied.
  * @param destByteLen The size of the destination buffer in bytes.
  * @param numSrcCharsToCopy The number of source chars to copy. It will be truncated and null-terminated if >= destByteLen.
- * @return size_t The number of src chars copied. If < numSrcCharsToCopy, then it was truncated.
+ * @return int zero on success, or a negative number if there was an error.
  */
-size_t ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_t numSrcCharsToCopy)
+int ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_t numSrcCharsToCopy)
 {
     if (dest == NULL || src == NULL || destByteLen == 0)
     {
-        return 0;
+        return -1;
     }
+    *dest = '\0';
 
     if (numSrcCharsToCopy >= destByteLen)
     {
-        numSrcCharsToCopy = destByteLen - 1;
+        return -2;
     }
 
     memcpy(dest, src, numSrcCharsToCopy);
     dest[numSrcCharsToCopy] = '\0';
 
-    return numSrcCharsToCopy;
+    return 0;
 }
 
 /**
@@ -449,8 +453,6 @@ size_t ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_
 int ADUC_AllocAndStrCopyN(char** dest, const char* src, size_t srcLen)
 {
     int res = -1;
-
-    size_t num_copied = 0;
     char* tmpDest = NULL;
 
     if (dest == NULL || src == NULL || srcLen == 0)
@@ -465,12 +467,8 @@ int ADUC_AllocAndStrCopyN(char** dest, const char* src, size_t srcLen)
     }
 
     // Uses ADUC_Safe_StrCopyN to prevent buffer overflows and ensure null termination.
-    num_copied = ADUC_Safe_StrCopyN(
-        tmpDest, src, (srcLen + 1) * sizeof(char) /* destByteLen */, srcLen /* numSrcCharsToCopy */);
-
-    if (num_copied < srcLen)
+    if (ADUC_Safe_StrCopyN(tmpDest, src, (srcLen + 1) * sizeof(char) /* destByteLen */, srcLen /* numSrcCharsToCopy */) != 0)
     {
-        // it was truncated!
         goto done;
     }
 

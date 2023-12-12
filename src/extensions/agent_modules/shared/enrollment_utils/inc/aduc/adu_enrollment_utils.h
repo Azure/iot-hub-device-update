@@ -16,7 +16,7 @@ ADUC_Enrollment_Request_Operation_Data* EnrollmentDataFromRetriableOperationCont
 ADU_ENROLLMENT_STATE EnrollmentData_SetState(
     ADUC_Enrollment_Request_Operation_Data* enrollmentData, ADU_ENROLLMENT_STATE state, const char* reason);
 
-void EnrollmentData_SetCorrelationId(ADUC_Enrollment_Request_Operation_Data* enrollmentData, const char* correlationId);
+bool EnrollmentData_SetCorrelationId(ADUC_Enrollment_Request_Operation_Data* enrollmentData, const char* correlationId);
 
 bool Handle_Enrollment_Response(
     ADUC_Enrollment_Request_Operation_Data* enrollmentData,

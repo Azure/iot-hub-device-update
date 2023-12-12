@@ -33,7 +33,11 @@ bool EnrollmentRequestOperation_CancelOperation(ADUC_Retriable_Operation_Context
     }
 
     // Set the correlation id to NULL, so we can discard all inflight messages.
-    EnrollmentData_SetCorrelationId(enrollmentData, "");
+    if (!EnrollmentData_SetCorrelationId(enrollmentData, ""))
+    {
+        return false;
+    }
+
     EnrollmentData_SetState(enrollmentData, ADU_ENROLLMENT_STATE_UNKNOWN, "Cancel requested");
     return true;
 }
@@ -82,7 +86,11 @@ bool EnrollmentRequestOperation_DoRetry(
     }
 
     EnrollmentData_SetState(data, ADU_ENROLLMENT_STATE_UNKNOWN, "retrying");
-    EnrollmentData_SetCorrelationId(data, "");
+    if (!EnrollmentData_SetCorrelationId(data, ""))
+    {
+        return false;
+    }
+
     return true;
 }
 
