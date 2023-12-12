@@ -443,7 +443,7 @@ extends:
                 cancelTimeoutInMinutes: 360
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup@self
+                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup.yaml@self
                       parameters:
                           device_id_under_test: ubuntu-18.04-amd64-sas
                           terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
@@ -453,7 +453,7 @@ extends:
                 cancelTimeoutInMinutes: 360
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup@self
+                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup.yaml@self
                       parameters:
                           device_id_under_test: ubuntu-18.04-amd64-x509
                           terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
@@ -463,7 +463,7 @@ extends:
                 cancelTimeoutInMinutes: 360
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup@self
+                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup.yaml@self
                       parameters:
                           device_id_under_test: ubuntu-18.04-arm64-sas
                           terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
@@ -473,7 +473,7 @@ extends:
                 cancelTimeoutInMinutes: 360
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup@self
+                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup.yaml@self
                       parameters:
                           device_id_under_test: ubuntu-20.04-amd64-sas
                           terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
@@ -483,7 +483,7 @@ extends:
                 cancelTimeoutInMinutes: 360
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup@self
+                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup.yaml@self
                       parameters:
                           device_id_under_test: ubuntu-20.04-arm64-sas
                           terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
@@ -493,7 +493,7 @@ extends:
                 cancelTimeoutInMinutes: 360
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup@self
+                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup.yaml@self
                       parameters:
                           device_id_under_test: ubuntu-22.04-amd64-sas
                           terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
@@ -503,7 +503,7 @@ extends:
                 cancelTimeoutInMinutes: 360
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup@self
+                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup.yaml@self
                       parameters:
                           device_id_under_test: ubuntu-22.04-arm64-sas
                           terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
@@ -513,7 +513,7 @@ extends:
                 cancelTimeoutInMinutes: 360
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup@self
+                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup.yaml@self
                       parameters:
                           device_id_under_test: debian-10-amd64-sas
                           terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
