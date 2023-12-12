@@ -1813,40 +1813,40 @@ bool workflow_set_sandbox(ADUC_WorkflowHandle handle, const char* sandbox)
     return true;
 }
 
-bool _workflow_copy_config_download_folder(char* dest, const size_t dest_size)
+char* _workflow_copy_config_downloads_folder(const size_t max_size)
 {
-    bool success = false;
+    char* downloads_folder_path = NULL;
+
     const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
     if (config == NULL)
     {
         goto done; /* Config is unitialized or we could not get a reference */
     }
 
-    size_t download_folder_len = ADUC_StrNLen(config->downloadsFolder, dest_size);
+    size_t download_folder_len = ADUC_StrNLen(config->downloadsFolder, max_size);
 
-    if (download_folder_len == 0 || download_folder_len == dest_size)
+    if (download_folder_len == 0 || download_folder_len == max_size)
     {
         Log_Error("Invalid base sandbox dir: '%s'", config->downloadsFolder);
         goto done;
     }
 
-    if (ADUC_Safe_StrCopyN(dest, config->downloadsFolder, dest_size, download_folder_len) != download_folder_len)
+    if (!mallocAndStrcpy_s(&downloads_folder_path, config->downloadsFolder))
     {
-        Log_Error("Failed copy config download folder");
+        Log_Error("Failed to allocate memory for downloads folder path");
         goto done;
     }
 
-    success = true;
 done:
+
     ADUC_ConfigInfo_ReleaseInstance(config);
 
-    return success;
+    return downloads_folder_path;
 }
 
 // Returns the download base directory
 char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle)
 {
-    char dir[WORKFLOW_DIR_PATH_MAX_SIZE] = { 0 };
     char* ret = NULL;
     char* tempRet = NULL;
     char* pwf = NULL;
@@ -1855,6 +1855,13 @@ char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle)
     if (p != NULL)
     {
         pwf = workflow_get_workfolder(p);
+
+        if (pwf == NULL)
+        {
+            Log_Error("Failed to get parent workfolder");
+            goto done;
+        }
+
         size_t pwf_len = ADUC_StrNLen(pwf, WORKFLOW_DIR_PATH_MAX_SIZE);
 
         if (pwf_len == 0 || pwf_len == WORKFLOW_DIR_PATH_MAX_SIZE)
@@ -1863,61 +1870,46 @@ char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle)
             goto done;
         }
 
-        if (ADUC_Safe_StrCopyN(dir, pwf, WORKFLOW_DIR_PATH_MAX_SIZE, pwf_len) != pwf_len)
-        {
-            Log_Error("Failed to copy workflow dir path");
-            goto done;
-        }
-
+        tempRet = pwf;
         Log_Debug("Using parent workfolder: '%s'", pwf);
     }
     else
     {
-        if (!_workflow_copy_config_download_folder(dir, WORKFLOW_DIR_PATH_MAX_SIZE))
+        tempRet = _workflow_copy_config_downloads_folder(WORKFLOW_DIR_PATH_MAX_SIZE);
+        if (tempRet == NULL)
         {
             Log_Error("Copying config download folder failed");
             goto done;
         }
     }
 
-    if (mallocAndStrcpy_s(&tempRet, dir) != 0)
+    if (mallocAndStrcpy_s(&ret, tempRet) != 0)
     {
-        Log_Error("Failed to allocate memory for workflow base dir");
-        tempRet = NULL;
+        Log_Error("Failed allocate the root sandbox dir");
         goto done;
     }
 
 done:
 
+    free(tempRet);
     free(pwf);
-
-    ret = tempRet;
 
     return ret;
 }
 
 // Workfolder =  [root.sandboxfolder]  "/"  ( [parent.workfolder | parent.id]  "/" )+  [handle.workfolder | handle.id]
-// Workfolder =  [root.sandboxfolder]  "/"  ( [parent.workfolder | parent.id]  "/" )+  [handle.workfolder | handle.id]
 char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
 {
     char* ret = NULL;
-    char* tempRet = NULL;
     char* base_sandbox_dir = NULL;
-    char* id = workflow_get_id(handle);
-    size_t id_len = ADUC_StrNLen(id, WORKFLOW_DIR_PATH_MAX_SIZE);
-
-    if (id_len == 0 || id_len == WORKFLOW_DIR_PATH_MAX_SIZE)
-    {
-        Log_Error("Workflow id is too long to be in a path: '%s'", id);
-        goto done;
-    }
+    char* id = NULL;
 
     // If workfolder explicitly specified, use it.
     char* wf = workflow_get_string_property(handle, WORKFLOW_PROPERTY_FIELD_WORKFOLDER);
     if (wf != NULL)
     {
         Log_Debug("Property '%s' not NULL - returning cached workfolder '%s'", WORKFLOW_PROPERTY_FIELD_WORKFOLDER, wf);
-        tempRet = wf;
+        ret = wf;
         goto done;
     }
 
@@ -1929,8 +1921,17 @@ char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
         goto done;
     }
 
-    tempRet = PathUtils_ConcatenateDirAndFolderPaths(base_sandbox_dir, id);
-    if (tempRet == NULL)
+    id = workflow_get_id(handle);
+    size_t id_len = ADUC_StrNLen(id, WORKFLOW_DIR_PATH_MAX_SIZE);
+
+    if (id_len == 0 || id_len == WORKFLOW_DIR_PATH_MAX_SIZE)
+    {
+        Log_Error("Workflow id is too long to be in a path: '%s'", id);
+        goto done;
+    }
+
+    ret = PathUtils_ConcatenateDirAndFolderPaths(base_sandbox_dir, id);
+    if (ret == NULL)
     {
         Log_Error("Failed to concatenate dir and folder paths");
         goto done;
@@ -1940,8 +1941,6 @@ done:
 
     free(id);
     free(base_sandbox_dir);
-
-    ret = tempRet;
 
     return ret;
 }
