@@ -1833,7 +1833,6 @@ char* _workflow_copy_config_downloads_folder(const size_t max_size)
 
     if (!mallocAndStrcpy_s(&downloads_folder_path, config->downloadsFolder))
     {
-        Log_Error("Failed to allocate memory for downloads folder path");
         goto done;
     }
 
@@ -1885,7 +1884,6 @@ char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle)
 
     if (mallocAndStrcpy_s(&ret, tempRet) != 0)
     {
-        Log_Error("Failed allocate the root sandbox dir");
         goto done;
     }
 
