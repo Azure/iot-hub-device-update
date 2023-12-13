@@ -19,10 +19,10 @@
         PS >
         PS > $token = Get-MsalToken -ClientId $clientId -TenantId $tenantId -Scopes 'https://api.adu.microsoft.com/user_impersonation' -Authority https://login.microsoftonline.com/$tenantId/v2.0 -Interactive -DeviceCode
         PS >
-        PS > ImportSampleComplexUpdate.ps1 -AccountEndpoint sampleaccount.api.adu.microsoft.com -InstanceId sampleinstance `
-                                           -Container $BlobContainer `
-                                           -AuthorizationToken $token `
-                                           -UpdateVersion 1.0
+        PS > Import-ComplexUpdate.ps1 -AccountEndpoint sampleaccount.api.adu.microsoft.com -InstanceId sampleinstance `
+                                      -Container $BlobContainer `
+                                      -AuthorizationToken $token `
+                                      -UpdateVersion 1.0
 #>
 [CmdletBinding()]
 Param(
@@ -52,8 +52,8 @@ Param(
     [string] $UpdateVersion
 )
 
-Import-Module $PSScriptRoot\AduImportUpdate.psm1 -ErrorAction Stop
-Import-Module $PSScriptRoot\AduRestApi.psm1 -ErrorAction Stop
+Import-Module $PSScriptRoot\..\AduImportUpdate.psm1 -Force -Scope Local -ErrorAction Stop
+Import-Module $PSScriptRoot\..\AduRestApi.psm1 -Force -Scope Local -ErrorAction Stop
 
 # We will use arbitrary files as update payload files.
 $childFile = "$env:TEMP/childFile.bin.txt"

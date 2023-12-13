@@ -11,7 +11,7 @@
         Create a sample update with mix of inline and reference install steps. This sample update contain fake files and cannot be actually installed onto a device.
 
     .EXAMPLE
-        PS > CreateSampleComplexUpdate.ps1 -Path ./test -UpdateVersion 1.2
+        PS > New-ComplexUpdate.ps1 -Path ./test -UpdateVersion 1.2
 #>
 [CmdletBinding()]
 Param(
@@ -26,7 +26,7 @@ Param(
     [string] $UpdateVersion
 )
 
-Import-Module $PSScriptRoot/AduUpdate.psm1 -ErrorAction Stop
+Import-Module $PSScriptRoot/../AduUpdate.psm1 -ErrorAction Stop
 
 # We will use arbitrary files as update payload files.
 $childFile = "$env:TEMP/childFile.bin.txt"

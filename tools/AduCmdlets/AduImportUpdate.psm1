@@ -6,7 +6,7 @@
 
 #Requires -Version 5.0
 using module .\AduUpdate.psm1 # to import classes
-Import-Module $PSScriptRoot\AduAzStorageBlobHelper.psm1 -ErrorAction Stop
+Import-Module $PSScriptRoot\AduAzStorageBlobHelper.psm1 -Force -ErrorAction Stop
 
 function New-AduImportUpdateInput
 {
