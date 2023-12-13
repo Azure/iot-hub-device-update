@@ -96,12 +96,6 @@ void OnMessage_ainfo_resp(
         goto done;
     }
 
-    if (msg == NULL || msg->payload == NULL || msg->payloadlen == 0)
-    {
-        Log_Error("Bad payload. msg:%p, payload:%p, payloadlen:%d", msg, msg->payload, msg->payloadlen);
-        goto done;
-    }
-
     if (!ParseAndValidateCommonResponseUserProperties(props, "ainfo_resp" /* expectedMsgType */, &agentInfoData->respUserProps))
     {
         Log_Error("Fail parse of common user props");
