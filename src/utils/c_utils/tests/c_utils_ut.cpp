@@ -513,6 +513,16 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
         CHECK_THAT(target, Equals("🦆"));
     }
 
+    SECTION("Not enough space for a duck")
+    {
+        char target[4]; // needs to be 5 for nul-term
+        memset(&target[0], 0, 4);
+
+        const char* src = "🦆"; // 4-byte utf-8 sequence, so target must be size 5 for nul-term.
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(target, src, sizeof(target), strlen(src)));
+        CHECK_THAT(target, Equals(""));
+    }
+
     SECTION("dest has insufficient space for src + nul-term should fail")
     {
         char target[4];
