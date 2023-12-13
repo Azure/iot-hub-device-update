@@ -92,17 +92,20 @@ AgentInfoDataFromRetriableOperationContext(ADUC_Retriable_Operation_Context* ret
  */
 bool AgentInfoData_SetCorrelationId(ADUC_AgentInfo_Request_Operation_Data* agentInfoData, const char* correlationId)
 {
+    int ret = -1;
     if (agentInfoData == NULL || correlationId == NULL)
     {
         return false;
     }
 
-    if (ADUC_Safe_StrCopyN(
+    ret = ADUC_Safe_StrCopyN(
         agentInfoData->ainfoReqMessageContext.correlationId,
         correlationId,
         ARRAY_SIZE(agentInfoData->ainfoReqMessageContext.correlationId),
-        strlen(correlationId)) != 0)
+        strlen(correlationId));
+    if (ret != 0)
     {
+        Log_Error("copy failed: %d", ret);
         return false;
     }
 
