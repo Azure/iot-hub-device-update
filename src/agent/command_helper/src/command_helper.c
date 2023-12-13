@@ -353,7 +353,7 @@ bool SendCommand(const char* command)
     }
 
     // Copy command to buffer and fill the remaining buffer (if any) with additional null bytes.
-    if (ADUC_Safe_StrCopyN(buffer, command, sizeof(buffer), cmdLen) != 0)
+    if (!ADUC_Safe_StrCopyN(buffer, command, sizeof(buffer), cmdLen))
     {
         goto done;
     }

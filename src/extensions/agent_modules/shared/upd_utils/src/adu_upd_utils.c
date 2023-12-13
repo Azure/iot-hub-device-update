@@ -85,20 +85,18 @@ ADUC_Update_Request_Operation_Data* UpdateDataFromRetriableOperationContext(ADUC
  */
 bool UpdateData_SetCorrelationId(ADUC_Update_Request_Operation_Data* updateData, const char* correlationId)
 {
-    int ret = -1;
     if (updateData == NULL || correlationId == NULL)
     {
         return false;
     }
 
-    ret = ADUC_Safe_StrCopyN(
+    if (!ADUC_Safe_StrCopyN(
         updateData->updReqMessageContext.correlationId,
         correlationId,
         ARRAY_SIZE(updateData->updReqMessageContext.correlationId),
-        strlen(correlationId));
-    if (ret != 0)
+        strlen(correlationId)))
     {
-        Log_Error("copy failed: %d", ret);
+        Log_Error("copy failed");
         return false;
     }
 

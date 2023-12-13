@@ -331,7 +331,7 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetTopicSubscribedStatus(const char* top
     if (subscribed)
     {
         *state_topic_target = (char*)calloc(topic_len + 1, sizeof(char));
-        if (ADUC_Safe_StrCopyN(*state_topic_target, topic, topic_len + 1, topic_len) != 0)
+        if (!ADUC_Safe_StrCopyN(*state_topic_target, topic, topic_len + 1, topic_len))
         {
             result = ADUC_STATE_STORE_RESULT_ERROR_MAX_TOPIC_BYTE_LENGTH_EXCEEDED;
             goto done;

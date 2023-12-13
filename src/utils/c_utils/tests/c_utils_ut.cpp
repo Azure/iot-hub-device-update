@@ -436,21 +436,21 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
 
     SECTION("Handle NULL source") {
         reset_dest();
-        REQUIRE_FALSE(0 == ADUC_Safe_StrCopyN(dest, NULL, sizeof(dest), 0));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, NULL, sizeof(dest), 0));
         CHECK_THAT(dest, Equals("f")); // did not write to dest when NULL arg
     }
 
     SECTION("Handle NULL destination") {
         reset_dest();
         const char* src = "test";
-        REQUIRE_FALSE(0 == ADUC_Safe_StrCopyN(NULL, src, sizeof(dest), 4));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(NULL, src, sizeof(dest), 4));
         CHECK_THAT(dest, Equals("f")); // did not write to dest when NULL arg
     }
 
     SECTION("Handle zero size") {
         reset_dest();
         const char* src = "test";
-        REQUIRE(ADUC_Safe_StrCopyN(dest, src, 0 /* destByteLen */, 4 /* numSrcCharsToCopy */));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, src, 0 /* destByteLen */, 4 /* numSrcCharsToCopy */));
         CHECK_THAT(dest, Equals("f")); // did not write to dest when told dest len is 0
     }
 
@@ -459,39 +459,39 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
     SECTION("src chars to cpy < dest capacity should succeed") {
         reset_dest();
         const char* src = "short";
-        REQUIRE(0 == ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 5));
+        REQUIRE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 5));
         CHECK_THAT(dest, Equals("short"));
     }
 
     SECTION("Error when truncation would be needed") {
         reset_dest();
         const char* src = "12345678901234"; // 14 + 1
-        REQUIRE_FALSE(0 == ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 14));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 14));
         CHECK_THAT(dest, Equals(""));
     }
 
     SECTION("Handle subset of longer source string that is still longer than dest") {
         reset_dest();
         const char* src = "12345678901234"; // 14 + 1
-        REQUIRE_FALSE(0 == ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 11));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 11));
         CHECK_THAT(dest, Equals(""));
 
         reset_dest();
-        REQUIRE(0 == ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 9));
+        REQUIRE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 9));
         CHECK_THAT(dest, Equals("123456789"));
     }
 
     SECTION("Handle subset of longer source string, exactly as long as dest buffer - 1") {
         reset_dest();
         const char* src = "12345678901234"; // 14 + 1
-        REQUIRE(0 == ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 9));
+        REQUIRE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 9));
         CHECK_THAT(dest, Equals("123456789"));
     }
 
     SECTION("Handle subset of longer source string, that is less-than dest buffer - 1") {
         reset_dest();
         const char* src = "12345678901234"; // 14 + 1
-        REQUIRE(0 == ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 8));
+        REQUIRE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 8));
         CHECK_THAT(dest, Equals("12345678"));
     }
 
@@ -499,7 +499,7 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
     {
         reset_dest();
         const char* src = "123";
-        REQUIRE_FALSE(0 == ADUC_Safe_StrCopyN(dest, src, sizeof(dest), strlen(src) + 1));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), strlen(src) + 1));
         CHECK_THAT(dest, Equals(""));
     }
 
@@ -509,7 +509,7 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
         memset(&target[0], 0, 4);
 
         const char* src = "🦆"; // 4-byte utf-8 sequence, so target must be size 5 for nul-term.
-        REQUIRE(0 == ADUC_Safe_StrCopyN(target, src, sizeof(target), strlen(src)));
+        REQUIRE(ADUC_Safe_StrCopyN(target, src, sizeof(target), strlen(src)));
         CHECK_THAT(target, Equals("🦆"));
     }
 
@@ -519,40 +519,40 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
         memset(target, 0, 4);
 
         const char* src = "1234";
-        REQUIRE_FALSE(0 == ADUC_Safe_StrCopyN(target, src, sizeof(target), strlen(src)));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(target, src, sizeof(target), strlen(src)));
         CHECK_THAT(target, Equals(""));
     }
 }
 
 TEST_CASE("ADUC_AllocAndStrCopyN")
 {
-    SECTION("returns negative for invalid arg")
+    SECTION("returns false for invalid arg")
     {
-        CHECK(0 > ADUC_AllocAndStrCopyN(NULL /* dest */, "foo", 3));
+        CHECK_FALSE(ADUC_AllocAndStrCopyN(NULL /* dest */, "foo", 3));
 
         char* target = NULL;
-        CHECK(0 > ADUC_AllocAndStrCopyN(&target, "foo", 0));
+        CHECK_FALSE(ADUC_AllocAndStrCopyN(&target, "foo", 0));
 
-        CHECK(0 > ADUC_AllocAndStrCopyN(&target, nullptr, 3));
+        CHECK_FALSE(ADUC_AllocAndStrCopyN(&target, nullptr, 3));
     }
 
-    SECTION("returns 0 on success")
+    SECTION("returns true on success")
     {
         {
             ADUC::StringUtils::cstr_wrapper target;
-            REQUIRE(0 == ADUC_AllocAndStrCopyN(target.address_of(), "foo", 3));
+            REQUIRE(ADUC_AllocAndStrCopyN(target.address_of(), "foo", 3));
             CHECK_THAT(target.get(), Equals("foo"));
         }
 
         {
             ADUC::StringUtils::cstr_wrapper target;
-            REQUIRE(0 == ADUC_AllocAndStrCopyN(target.address_of(), "foo", 2));
+            REQUIRE(ADUC_AllocAndStrCopyN(target.address_of(), "foo", 2));
             CHECK_THAT(target.get(), Equals("fo"));
         }
 
         {
             ADUC::StringUtils::cstr_wrapper target;
-            REQUIRE(0 == ADUC_AllocAndStrCopyN(target.address_of(), "foo", 1));
+            REQUIRE(ADUC_AllocAndStrCopyN(target.address_of(), "foo", 1));
             CHECK_THAT(target.get(), Equals("f"));
         }
     }

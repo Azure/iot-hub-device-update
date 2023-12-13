@@ -119,21 +119,19 @@ ADU_ENROLLMENT_STATE EnrollmentData_SetState(
  */
 bool EnrollmentData_SetCorrelationId(ADUC_Enrollment_Request_Operation_Data* enrollmentData, const char* correlationId)
 {
-    int ret = -1;
     if (enrollmentData == NULL || correlationId == NULL)
     {
         Log_Error("Null input (enrollmentData:%p, correlationId:%p)", enrollmentData, correlationId);
         return false;
     }
 
-    ret = ADUC_Safe_StrCopyN(
+    if (!ADUC_Safe_StrCopyN(
         enrollmentData->enrReqMessageContext.correlationId,
         correlationId,
         ARRAY_SIZE(enrollmentData->enrReqMessageContext.correlationId),
-        strlen(correlationId));
-    if (ret != 0)
+        strlen(correlationId)))
     {
-        Log_Error("copy failed: %d", ret);
+        Log_Error("copy failed");
         return false;
     }
 
