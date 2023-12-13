@@ -436,7 +436,7 @@ bool ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_t 
 
     if (numSrcCharsToCopy >= destByteLen)
     {
-        return -false;
+        return false;
     }
 
     srcLen = ADUC_StrNLen(src, numSrcCharsToCopy);
