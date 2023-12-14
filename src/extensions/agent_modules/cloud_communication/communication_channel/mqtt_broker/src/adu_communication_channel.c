@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define LOG_ALL_MOSQUITTO 1
+
 #define REQUIRED_TLS_SET_CERT_PATH "L"
 
 #define DEFAULT_CONNECT_RETRY_DELAY_SECONDS (60 * 5) /* 5 seconds */
@@ -840,8 +842,6 @@ void ADUC_Communication_Channel_OnSubscribe(
         Log_Debug("No pending sub found with mid: %d", mid);
     }
 }
-
-#define LOG_ALL_MOSQUITTO 1
 
 /**
  * @brief Callback function to handle MQTT log messages.
