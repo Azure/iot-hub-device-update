@@ -130,50 +130,9 @@ done:
 
 void OnPublish_ainfo_resp(struct mosquitto* mosq, void* obj, const mosquitto_property* props, int reason_code)
 {
-    UNREFERENCED_PARAMETER(mosq);
-    UNREFERENCED_PARAMETER(props);
-
-    const char* AInfoPubAckTraceFormat = "ainfo_req puback rc %d, '%s', correlationId: '%s'. %s";
-
-    ADUC_Retriable_Operation_Context* operationContext =
-        RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(obj);
-    ADUC_AgentInfo_Request_Operation_Data* agentInfoData =
-        AgentInfoDataFromRetriableOperationContext(operationContext);
-
-    switch (reason_code)
-    {
-    case MQTT_RC_NO_MATCHING_SUBSCRIBERS:
-        // No Subscribers were subscribed to the topic we tried to publish to (as per mqtt 5 spec).
-        // This is unexpected since at least the ADU service should be subscribed to receive the
-        // agent topic's publish. Set timer and try again later in hopes that the service will be
-        // subscribed, but fail and restart after max retries.
-        // *** fall-through ***
-    case MQTT_RC_UNSPECIFIED: // fall-through
-    case MQTT_RC_IMPLEMENTATION_SPECIFIC: // fall-through
-    case MQTT_RC_NOT_AUTHORIZED:
-        // Not authorized at the moment but maybe it can auto-recover with retry if it is corrected.
-        Log_Warn(
-            AInfoPubAckTraceFormat,
-            reason_code,
-            agentInfoData->ainfoReqMessageContext.correlationId,
-            mosquitto_reason_string(reason_code),
-            "Retrying");
-        operationContext->retryFunc(operationContext, operationContext->retryParams);
-        break;
-
-    case MQTT_RC_TOPIC_NAME_INVALID: // fall-through
-    case MQTT_RC_PACKET_ID_IN_USE: // fall-through
-    case MQTT_RC_PACKET_TOO_LARGE: // fall-through
-    case MQTT_RC_QUOTA_EXCEEDED:
-        Log_Error(
-            AInfoPubAckTraceFormat,
-            reason_code,
-            agentInfoData->ainfoReqMessageContext.correlationId,
-            mosquitto_reason_string(reason_code),
-            "Canceling");
-        operationContext->cancelFunc(operationContext);
-        break;
-    }
+    ADUC_Retriable_Operation_Context* operationContext = RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(obj);
+    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoDataFromRetriableOperationContext(operationContext);
+    ADUC_MQTT_Common_HandlePublishAck(mosq, obj, props, reason_code, operationContext, agentInfoData->ainfoReqMessageContext.correlationId);
 }
 
 //

@@ -4,7 +4,9 @@
 #include <aduc/adu_communication_channel.h> // ADUC_Communication_Channel_MQTT_Subscribe
 #include <aduc/agent_state_store.h> // ADUC_StateStore_*
 #include <aduc/logging.h>
+#include <aduc/retry_utils.h>
 #include <aduc/string_c_utils.h> // IsNullOrEmpty
+#include <aduc/adu_agentinfo.h> // IsNullOrEmpty
 #include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_HANDLE
 
 /**
@@ -261,4 +263,48 @@ bool ADUC_MQTT_COMMON_Ensure_Subscribed_for_Response(const ADUC_Retriable_Operat
     // Regardless of return status Subscribe, return false here to indicate that the caller should NOT continue to send
     // the PUBLISH of request, since we won't know if actually subscribed until SUBACK received.
     return false;
+}
+
+void ADUC_MQTT_Common_HandlePublishAck(struct mosquitto* mosq, void* obj, const mosquitto_property* props, int reason_code, ADUC_Retriable_Operation_Context* operationContext, const char* correlationId)
+{
+    UNREFERENCED_PARAMETER(mosq);
+    UNREFERENCED_PARAMETER(props);
+
+    const char* PubAckTraceFormat = "puback rc %d, '%s', correlationId: '%s'. %s";
+
+
+    switch (reason_code)
+    {
+    case MQTT_RC_NO_MATCHING_SUBSCRIBERS:
+        // No Subscribers were subscribed to the topic we tried to publish to (as per mqtt 5 spec).
+        // This is unexpected since at least the ADU service should be subscribed to receive the
+        // agent topic's publish. Set timer and try again later in hopes that the service will be
+        // subscribed, but fail and restart after max retries.
+        // *** fall-through ***
+    case MQTT_RC_UNSPECIFIED: // fall-through
+    case MQTT_RC_IMPLEMENTATION_SPECIFIC: // fall-through
+    case MQTT_RC_NOT_AUTHORIZED:
+        // Not authorized at the moment but maybe it can auto-recover with retry if it is corrected.
+        Log_Warn(
+            PubAckTraceFormat,
+            reason_code,
+            correlationId,
+            mosquitto_reason_string(reason_code),
+            "Retrying");
+        operationContext->retryFunc(operationContext, operationContext->retryParams);
+        break;
+
+    case MQTT_RC_TOPIC_NAME_INVALID: // fall-through
+    case MQTT_RC_PACKET_ID_IN_USE: // fall-through
+    case MQTT_RC_PACKET_TOO_LARGE: // fall-through
+    case MQTT_RC_QUOTA_EXCEEDED:
+        Log_Error(
+            PubAckTraceFormat,
+            reason_code,
+            correlationId,
+            mosquitto_reason_string(reason_code),
+            "Canceling");
+        operationContext->cancelFunc(operationContext);
+        break;
+    }
 }
