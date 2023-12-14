@@ -181,7 +181,10 @@ steps:
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}
 
-    - publish: "$(Build.ArtifactStagingDirectory)/terraform/host"
-      displayName: "Publish Terraform state for destroy stage (vm)"
+    - task: 1ES.PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)/terraform/host'
+        artifactName: 'terraformStateVM_${{parameters.device_id_under_test}}'
+        publishLocation: 'pipeline'
+      displayName: 'Publish Terraform state for destroy stage (vm)'
       continueOnError: False
-      artifact: terraformStateVM_${{parameters.device_id_under_test}}
