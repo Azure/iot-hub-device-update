@@ -23,11 +23,6 @@
 #include "aduc/aduc_banned.h"
 
 /**
- * @brief Maximum length for the output string of ADUC_StringFormat()
- */
-#define ADUC_STRING_FORMAT_MAX_LENGTH 512
-
-/**
  * @brief Function that sets @p strBuffers to the contents of the file at @p filePath if the contents are smaller in size than the buffer
  * @param filePath path to the file who's contents will be read
  * @param strBuffer buffer which will be loaded with the contents of @p filePath
@@ -441,7 +436,7 @@ char* ADUC_StringUtils_Map(const char* src, int (*mapFn)(int))
             free(tgt);
             return NULL;
         }
-        tgt[i] = (char) ( ret & 0xFF);
+        tgt[i] = (char)(ret & 0xFF);
     }
 
     return tgt;
@@ -466,7 +461,7 @@ size_t ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_
         return 0;
     }
 
-    if(numSrcCharsToCopy >= destByteLen)
+    if (numSrcCharsToCopy >= destByteLen)
     {
         numSrcCharsToCopy = destByteLen - 1;
     }

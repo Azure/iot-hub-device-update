@@ -12,6 +12,8 @@
 #include <ctype.h> // for isalnum
 
 #include <aducpal/limits.h> // for PATH_MAX
+
+#define STR_PATH_MAX PATH_MAX - 1
 /**
  * @brief Replaces non-alphunumeric chars with _ (underscore) char for use in path segments of a file path.
  * @param unsanitized The string to be sanitized
@@ -71,18 +73,17 @@ char* PathUtils_ConcatenateDirAndFolderPaths(const char* dirPath, const char* fo
 {
     char* ret = NULL;
     char* tempRet = NULL;
-    char dir[PATH_MAX + 1] = { 0 }; // Plus one for null terminator
     const char* file_delimeter = "/";
-    size_t file_delimeter_len = strlen(file_delimeter); /* can use strlen since this is a known good string */
+    size_t file_delimeter_len = 1; /* can use strlen since this is a known good string */
 
     if (IsNullOrEmpty(dirPath) || IsNullOrEmpty(folderName))
     {
         goto done;
     }
 
-    size_t dirPathLen = ADUC_StrNLen(dirPath, PATH_MAX);
+    size_t dirPathLen = ADUC_StrNLen(dirPath, STR_PATH_MAX);
 
-    if (dirPathLen == 0 || dirPathLen == PATH_MAX)
+    if (dirPathLen == 0 || dirPathLen == STR_PATH_MAX)
     {
         goto done;
     }
@@ -92,46 +93,25 @@ char* PathUtils_ConcatenateDirAndFolderPaths(const char* dirPath, const char* fo
         file_delimeter_len = 0;
     }
 
-    const size_t folderPathLen = ADUC_StrNLen(folderName, PATH_MAX);
+    const size_t folderPathLen = ADUC_StrNLen(folderName, STR_PATH_MAX);
 
-    if (folderPathLen == 0 || folderPathLen == PATH_MAX)
+    if (folderPathLen == 0 || folderPathLen == STR_PATH_MAX)
     {
         goto done;
     }
 
-    if (dirPathLen + folderPathLen + file_delimeter_len > PATH_MAX)
-    {
-        goto done;
-    }
-
-    if (ADUC_Safe_StrCopyN(dir, dirPath, PATH_MAX, dirPathLen) != dirPathLen)
+    if (dirPathLen + folderPathLen + file_delimeter_len > STR_PATH_MAX)
     {
         goto done;
     }
 
     if (file_delimeter_len)
     {
-        if (ADUC_Safe_StrCopyN((dir + dirPathLen), file_delimeter, PATH_MAX - dirPathLen, file_delimeter_len)
-            != file_delimeter_len)
-        {
-            goto done;
-        }
+        tempRet = ADUC_StringFormat("%s%s%s", dirPath, file_delimeter, folderName);
     }
-
-    if (ADUC_Safe_StrCopyN(
-            (dir + dirPathLen + file_delimeter_len),
-            folderName,
-            PATH_MAX - dirPathLen - file_delimeter_len,
-            folderPathLen)
-        != folderPathLen)
+    else
     {
-        goto done;
-    }
-
-    if (mallocAndStrcpy_s(&tempRet, dir) != 0)
-    {
-        tempRet = NULL;
-        goto done;
+        tempRet = ADUC_StringFormat("%s%s", dirPath, folderName);
     }
 
 done:

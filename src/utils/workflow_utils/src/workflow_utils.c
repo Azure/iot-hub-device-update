@@ -62,8 +62,6 @@
 #define WORKFLOW_CHILDREN_BLOCK_SIZE 10
 #define WORKFLOW_MAX_SUCCESS_ERC 8
 
-#define WORKFLOW_DIR_PATH_MAX_SIZE PATH_MAX
-
 /**
  * @brief Maximum length for the 'resultDetails' string.
  */
@@ -1861,9 +1859,9 @@ char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle)
             goto done;
         }
 
-        size_t pwf_len = ADUC_StrNLen(pwf, WORKFLOW_DIR_PATH_MAX_SIZE);
+        size_t pwf_len = ADUC_StrNLen(pwf, PATH_MAX);
 
-        if (pwf_len == 0 || pwf_len == WORKFLOW_DIR_PATH_MAX_SIZE)
+        if (pwf_len == 0 || pwf_len == PATH_MAX)
         {
             Log_Error("Invalid parent workfolder: '%s'", pwf);
             goto done;
@@ -1874,7 +1872,7 @@ char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle)
     }
     else
     {
-        tempRet = _workflow_copy_config_downloads_folder(WORKFLOW_DIR_PATH_MAX_SIZE);
+        tempRet = _workflow_copy_config_downloads_folder(PATH_MAX);
         if (tempRet == NULL)
         {
             Log_Error("Copying config download folder failed");
@@ -1920,9 +1918,9 @@ char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
     }
 
     id = workflow_get_id(handle);
-    size_t id_len = ADUC_StrNLen(id, WORKFLOW_DIR_PATH_MAX_SIZE);
+    size_t id_len = ADUC_StrNLen(id, PATH_MAX);
 
-    if (id_len == 0 || id_len == WORKFLOW_DIR_PATH_MAX_SIZE)
+    if (id_len == 0 || id_len == PATH_MAX)
     {
         Log_Error("Workflow id is too long to be in a path: '%s'", id);
         goto done;

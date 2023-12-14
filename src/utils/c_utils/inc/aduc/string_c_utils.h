@@ -16,6 +16,11 @@
 
 EXTERN_C_BEGIN
 
+/**
+ * @brief Maximum length for the output string of ADUC_StringFormat()
+ */
+#define ADUC_STRING_FORMAT_MAX_LENGTH 512
+
 char* ADUC_StringUtils_Trim(char* str);
 char* ADUC_StringUtils_Map(const char* src, int (*mapFn)(int));
 
