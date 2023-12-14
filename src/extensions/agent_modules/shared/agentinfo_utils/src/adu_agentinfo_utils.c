@@ -98,10 +98,10 @@ bool AgentInfoData_SetCorrelationId(ADUC_AgentInfo_Request_Operation_Data* agent
     }
 
     if (!ADUC_Safe_StrCopyN(
-        agentInfoData->ainfoReqMessageContext.correlationId,
-        ARRAY_SIZE(agentInfoData->ainfoReqMessageContext.correlationId),
-        correlationId,
-        strlen(correlationId)))
+            agentInfoData->ainfoReqMessageContext.correlationId,
+            ARRAY_SIZE(agentInfoData->ainfoReqMessageContext.correlationId),
+            correlationId,
+            strlen(correlationId)))
     {
         Log_Error("copy failed");
         return false;

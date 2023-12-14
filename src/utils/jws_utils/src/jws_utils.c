@@ -7,6 +7,7 @@
  */
 
 #include "jws_utils.h"
+#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
 #include "base64_utils.h"
 #include "crypto_lib.h"
 #include <azure_c_shared_utility/azure_base64.h>
@@ -15,7 +16,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
 
 // keep this last to avoid interfering with system headers
 #include "aduc/aduc_banned.h"
@@ -137,7 +137,7 @@ static bool ExtractJWSSections(const char* jws, char** header, char** payload, c
 
     size_t sigLen = jwsLen - payloadLen - headerLen - 2; // 2 is for the periods
 
-     // target buffer capacities in bytes
+    // target buffer capacities in bytes
     const size_t HdrCapBytes = headerLen + 1;
     const size_t PayloadCapBytes = payloadLen + 1;
     const size_t SigCapBytes = sigLen + 1;
@@ -151,17 +151,23 @@ static bool ExtractJWSSections(const char* jws, char** header, char** payload, c
         goto done;
     }
 
-    if (!ADUC_Safe_StrCopyN(*header /* dest */, HdrCapBytes /* destByteLen */, jws /* src */, headerLen /* srcByteLen */))
+    if (!ADUC_Safe_StrCopyN(
+            *header /* dest */, HdrCapBytes /* destByteLen */, jws /* src */, headerLen /* srcByteLen */))
     {
         goto done;
     }
 
-    if (!ADUC_Safe_StrCopyN(*payload /* dest */, PayloadCapBytes /* destByteLen */, (headerEnd + 1) /* src */, payloadLen /* srcByteLen */))
+    if (!ADUC_Safe_StrCopyN(
+            *payload /* dest */,
+            PayloadCapBytes /* destByteLen */,
+            (headerEnd + 1) /* src */,
+            payloadLen /* srcByteLen */))
     {
         goto done;
     }
 
-    if (!ADUC_Safe_StrCopyN(*signature /* dest */, SigCapBytes /* destByteLen */, (payloadEnd + 1) /* src */, sigLen /* srcByteLen */))
+    if (!ADUC_Safe_StrCopyN(
+            *signature /* dest */, SigCapBytes /* destByteLen */, (payloadEnd + 1) /* src */, sigLen /* srcByteLen */))
     {
         goto done;
     }
@@ -234,7 +240,8 @@ static bool ExtractJWSHeader(const char* jws, char** header)
         goto done;
     }
 
-    if (!ADUC_Safe_StrCopyN(tempHeader /* dest */, headerLen + 1 /* destByteLen */, jws /* src */, headerLen /* srcByteLen */))
+    if (!ADUC_Safe_StrCopyN(
+            tempHeader /* dest */, headerLen + 1 /* destByteLen */, jws /* src */, headerLen /* srcByteLen */))
     {
         goto done;
     }

@@ -16,9 +16,9 @@
 
 #include <fstream> // ofstream
 
+#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
 #include <aducpal/stdio.h> // remove
 #include <aducpal/sys_stat.h> // S_I*
-#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
 
 // keep this last to avoid interfering with system headers
 #include "aduc/aduc_banned.h"

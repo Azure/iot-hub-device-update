@@ -320,9 +320,7 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetTopicSubscribedStatus(const char* top
         goto done;
     }
 
-    char** state_topic_target = isScoped
-        ? &state.scopedTopic
-        : &state.nonscopedTopic;
+    char** state_topic_target = isScoped ? &state.scopedTopic : &state.nonscopedTopic;
 
     // Need to free and null-out regardless of subscribed value.
     free(*state_topic_target);
@@ -332,7 +330,11 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetTopicSubscribedStatus(const char* top
     {
         const size_t TopicByteLenPlusNullTerm = topic_len + 1;
         *state_topic_target = (char*)calloc(TopicByteLenPlusNullTerm, sizeof(char));
-        if (!ADUC_Safe_StrCopyN(*state_topic_target /* dest */, TopicByteLenPlusNullTerm /* destByteLen */, topic /* src */, topic_len /* srcByteLen */))
+        if (!ADUC_Safe_StrCopyN(
+                *state_topic_target /* dest */,
+                TopicByteLenPlusNullTerm /* destByteLen */,
+                topic /* src */,
+                topic_len /* srcByteLen */))
         {
             result = ADUC_STATE_STORE_RESULT_ERROR_MAX_TOPIC_BYTE_LENGTH_EXCEEDED;
             goto done;
