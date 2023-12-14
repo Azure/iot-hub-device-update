@@ -126,10 +126,10 @@ bool EnrollmentData_SetCorrelationId(ADUC_Enrollment_Request_Operation_Data* enr
     }
 
     if (!ADUC_Safe_StrCopyN(
-        enrollmentData->enrReqMessageContext.correlationId,
-        ARRAY_SIZE(enrollmentData->enrReqMessageContext.correlationId),
-        correlationId,
-        strlen(correlationId)))
+            enrollmentData->enrReqMessageContext.correlationId,
+            ARRAY_SIZE(enrollmentData->enrReqMessageContext.correlationId),
+            correlationId,
+            strlen(correlationId)))
     {
         Log_Error("copy failed");
         return false;

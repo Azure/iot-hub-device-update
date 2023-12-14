@@ -476,7 +476,8 @@ bool ADUC_AllocAndStrCopyN(char** dest, const char* src, size_t srcByteLen)
         goto done;
     }
 
-    if (!ADUC_Safe_StrCopyN(tmpDest, SrcByteLenNullTerm * sizeof(char) /* destByteLen */, src, srcByteLen /* srcByteLen */))
+    if (!ADUC_Safe_StrCopyN(
+            tmpDest, SrcByteLenNullTerm * sizeof(char) /* destByteLen */, src, srcByteLen /* srcByteLen */))
     {
         goto done;
     }
