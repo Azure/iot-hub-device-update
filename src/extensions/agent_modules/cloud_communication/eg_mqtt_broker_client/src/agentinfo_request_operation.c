@@ -84,7 +84,10 @@ bool AgentInfoRequestOperation_CancelOperation(ADUC_Retriable_Operation_Context*
     }
 
     // Set the correlation id to NULL, so we can discard all inflight messages.
-    AgentInfoData_SetCorrelationId(agentInfoData, "");
+    if (!AgentInfoData_SetCorrelationId(agentInfoData, ""))
+    {
+        return false;
+    }
 
     Set_Agent_State(agentInfoData, ADU_AGENTINFO_STATE_UNKNOWN);
 
@@ -136,7 +139,11 @@ bool AgentInfoRequestOperation_DoRetry(
 
     Set_Agent_State(agentInfoData, ADU_AGENTINFO_STATE_UNKNOWN);
 
-    AgentInfoData_SetCorrelationId(agentInfoData, "");
+    if (!AgentInfoData_SetCorrelationId(agentInfoData, ""))
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -226,7 +233,10 @@ static bool HandlingRequestAgentInfo(ADUC_Retriable_Operation_Context* context, 
 
             // review: do we need this? cancelfunc should already took care of this.
             Log_Info("agentinfo request timed-out");
-            AgentInfoData_SetCorrelationId(agentInfoData, "");
+            if (!AgentInfoData_SetCorrelationId(agentInfoData, ""))
+            {
+                return false;
+            }
 
             Set_Agent_State(agentInfoData, ADU_AGENTINFO_STATE_UNKNOWN);
 

@@ -88,19 +88,26 @@ AgentInfoDataFromRetriableOperationContext(ADUC_Retriable_Operation_Context* ret
  * @brief Sets the correlation id for the agent info request message.
  * @param agentInfoData The agent info data object.
  * @param correlationId The correlation id to set.
+ * @return true on success.
  */
-void AgentInfoData_SetCorrelationId(ADUC_AgentInfo_Request_Operation_Data* agentInfoData, const char* correlationId)
+bool AgentInfoData_SetCorrelationId(ADUC_AgentInfo_Request_Operation_Data* agentInfoData, const char* correlationId)
 {
     if (agentInfoData == NULL || correlationId == NULL)
     {
-        return;
+        return false;
     }
 
-    ADUC_Safe_StrCopyN(
+    if (!ADUC_Safe_StrCopyN(
         agentInfoData->ainfoReqMessageContext.correlationId,
         correlationId,
         ARRAY_SIZE(agentInfoData->ainfoReqMessageContext.correlationId),
-        strlen(correlationId));
+        strlen(correlationId)))
+    {
+        Log_Error("copy failed");
+        return false;
+    }
+
+    return true;
 }
 
 /**

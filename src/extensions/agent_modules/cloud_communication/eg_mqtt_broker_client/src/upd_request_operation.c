@@ -101,7 +101,10 @@ bool UpdateRequestOperation_DoRetry(ADUC_Retriable_Operation_Context* context, c
     }
 
     // reset so it's regenerated with new request.
-    UpdateData_SetCorrelationId(data, "");
+    if (!UpdateData_SetCorrelationId(data, ""))
+    {
+        return false;
+    }
 
     now = ADUC_GetTimeSinceEpochInSeconds();
 

@@ -83,18 +83,24 @@ ADUC_Update_Request_Operation_Data* UpdateDataFromRetriableOperationContext(ADUC
  * @param updateData The update data object.
  * @param correlationId The correlation id to set.
  */
-void UpdateData_SetCorrelationId(ADUC_Update_Request_Operation_Data* updateData, const char* correlationId)
+bool UpdateData_SetCorrelationId(ADUC_Update_Request_Operation_Data* updateData, const char* correlationId)
 {
     if (updateData == NULL || correlationId == NULL)
     {
-        return;
+        return false;
     }
 
-    ADUC_Safe_StrCopyN(
+    if (!ADUC_Safe_StrCopyN(
         updateData->updReqMessageContext.correlationId,
         correlationId,
         ARRAY_SIZE(updateData->updReqMessageContext.correlationId),
-        strlen(correlationId));
+        strlen(correlationId)))
+    {
+        Log_Error("copy failed");
+        return false;
+    }
+
+    return true;
 }
 
 void AduUpdUtils_TransitionState(ADU_UPD_STATE newState, ADUC_Update_Request_Operation_Data* updateData)

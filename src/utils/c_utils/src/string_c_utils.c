@@ -402,7 +402,10 @@ bool MallocAndSubstr(char** target, char* source, size_t len)
         return false;
     }
     memset(t, 0, (len + 1) * sizeof(*t));
-    ADUC_Safe_StrCopyN(t, source, len + 1, len);
+    if (!ADUC_Safe_StrCopyN(t, source, len + 1, len))
+    {
+        return false;
+    }
 
     *target = t;
     return true;
@@ -417,26 +420,35 @@ bool MallocAndSubstr(char** target, char* source, size_t len)
  *
  * @param dest The destination buffer.
  * @param src The source string to be copied.
- * @param destByteLen The size of the destination buffer in bytes.
+ * @param destByteLen The size of the destination buffer in bytes, including plus 1 for the null terminator.
  * @param numSrcCharsToCopy The number of source chars to copy. It will be truncated and null-terminated if >= destByteLen.
- * @return size_t The number of src chars copied. If < numSrcCharsToCopy, then it was truncated.
+ * @return true on success.
  */
-size_t ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_t numSrcCharsToCopy)
+bool ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_t numSrcCharsToCopy)
 {
+    size_t srcLen = 0;
+
     if (dest == NULL || src == NULL || destByteLen == 0)
     {
-        return 0;
+        return false;
     }
+    *dest = '\0';
 
     if (numSrcCharsToCopy >= destByteLen)
     {
-        numSrcCharsToCopy = destByteLen - 1;
+        return false;
+    }
+
+    srcLen = ADUC_StrNLen(src, numSrcCharsToCopy);
+    if (numSrcCharsToCopy > srcLen)
+    {
+        return false;
     }
 
     memcpy(dest, src, numSrcCharsToCopy);
     dest[numSrcCharsToCopy] = '\0';
 
-    return numSrcCharsToCopy;
+    return true;
 }
 
 /**
@@ -444,18 +456,16 @@ size_t ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_
 * @param dest The addr of ptr that will point to newly allocated string copy.
 * @param src The source string.
 * @param srcLen The char length of source string (not including null terminator)
-* @return 0 on success, -2 on invalid argument, and -1 for other errors.
+* @return true on success
 */
-int ADUC_AllocAndStrCopyN(char** dest, const char* src, size_t srcLen)
+bool ADUC_AllocAndStrCopyN(char** dest, const char* src, size_t srcLen)
 {
-    int res = -1;
-
-    size_t num_copied = 0;
+    bool res = false;
     char* tmpDest = NULL;
 
-    if (dest == NULL || srcLen == 0)
+    if (dest == NULL || src == NULL || srcLen == 0)
     {
-        return -2;
+        return false;
     }
 
     tmpDest = calloc(srcLen + 1, sizeof(char)); // incl. null term
@@ -464,16 +474,14 @@ int ADUC_AllocAndStrCopyN(char** dest, const char* src, size_t srcLen)
         goto done;
     }
 
-    num_copied = ADUC_Safe_StrCopyN(
-        tmpDest, src, (srcLen + 1) * sizeof(char) /* destByteLen */, srcLen /* numSrcCharsToCopy */);
-    if (num_copied < srcLen)
+    if (!ADUC_Safe_StrCopyN(tmpDest, src, (srcLen + 1) * sizeof(char) /* destByteLen */, srcLen /* numSrcCharsToCopy */))
     {
         goto done;
     }
 
     *dest = tmpDest;
     tmpDest = NULL;
-    res = 0;
+    res = true;
 done:
     free(tmpDest);
 

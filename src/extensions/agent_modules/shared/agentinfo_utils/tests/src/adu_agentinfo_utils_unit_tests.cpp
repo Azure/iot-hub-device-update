@@ -101,6 +101,6 @@ TEST_CASE("AgentInfoData_SetCorrelationId")
     ADUC_AgentInfo_Request_Operation_Data data;
     memset(&data, 0, sizeof(data));
 
-    AgentInfoData_SetCorrelationId(&data, "b9c1c214-3d88-4db8-bd4e-6f19b0a79f82");
+    CHECK(AgentInfoData_SetCorrelationId(&data, "b9c1c214-3d88-4db8-bd4e-6f19b0a79f82"));
     CHECK_THAT(data.ainfoReqMessageContext.correlationId, Equals("b9c1c214-3d88-4db8-bd4e-6f19b0a79f82"));
 }
