@@ -17,11 +17,11 @@
 #include <aduc/logging.h>
 #include <aduc/retry_utils.h> // ADUC_GetTimeSinceEpochInSeconds
 #include <aduc/string_c_utils.h> // IsNullOrEmpty, ADUC_StringFormat
-#include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_INTERFACE and related functions
-#include <du_agent_sdk/mqtt_client_settings.h> // ADUC_MQTT_SETTINGS
+#include <aducpal/time.h> // time_t
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
-#include <aducpal/time.h> // time_t
+#include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_INTERFACE and related functions
+#include <du_agent_sdk/mqtt_client_settings.h> // ADUC_MQTT_SETTINGS
 #include <errno.h> // errno
 #include <mosquitto.h> // mosquitto related functions
 #include <mqtt_protocol.h> // mosquitto_property
@@ -52,7 +52,8 @@ int ADUC_Communication_Channel_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
 static void ADUC_SetCommunicationChannelState(
     ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState, ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE state);
 
-void ADUC_Communication_Channel_OnDisconnect(struct mosquitto* mosq, void* obj, int rc, const mosquitto_property* props);
+void ADUC_Communication_Channel_OnDisconnect(
+    struct mosquitto* mosq, void* obj, int rc, const mosquitto_property* props);
 void ADUC_Communication_Channel_OnConnect(
     struct mosquitto* mosq, void* obj, int reason_code, int flags, const mosquitto_property* props);
 void ADUC_Communication_Channel_OnMessage(
@@ -414,10 +415,8 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
         goto done;
     }
 
-    commMgrState->mqttClient = mosquitto_new(
-        "adumqtt",
-        commMgrState->mqttSettings.cleanSession,
-        handle /* DU MQTT Agent Module Handle */);
+    commMgrState->mqttClient =
+        mosquitto_new("adumqtt", commMgrState->mqttSettings.cleanSession, handle /* DU MQTT Agent Module Handle */);
     if (!commMgrState->mqttClient)
     {
         Log_Error("Fail mosq new");
@@ -439,7 +438,8 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
 
     if (commMgrState->mqttSettings.useTLS)
     {
-        Log_Debug("setup TLS, caFile '%s' certFile '%s' keyFile '%s'",
+        Log_Debug(
+            "setup TLS, caFile '%s' certFile '%s' keyFile '%s'",
             commMgrState->mqttSettings.caFile,
             commMgrState->mqttSettings.certFile,
             commMgrState->mqttSettings.keyFile);
@@ -539,12 +539,18 @@ static void ADUC_SetCommunicationChannelState(
 {
     if (commMgrState->commState != newState)
     {
-        Log_Info("Transition '%s' -> '%s'", comm_channel_state_str(commMgrState->commState), comm_channel_state_str(newState));
+        Log_Info(
+            "Transition '%s' -> '%s'",
+            comm_channel_state_str(commMgrState->commState),
+            comm_channel_state_str(newState));
         commMgrState->commState = newState;
     }
     else
     {
-        Log_Warn("'%s' -> '%s'", comm_channel_state_str(commMgrState->commState), comm_channel_state_str(commMgrState->commState));
+        Log_Warn(
+            "'%s' -> '%s'",
+            comm_channel_state_str(commMgrState->commState),
+            comm_channel_state_str(commMgrState->commState));
     }
 }
 
@@ -729,7 +735,11 @@ done:
 void ADUC_Communication_Channel_OnPublish(
     struct mosquitto* mosq, void* commChannelModuleHandle, int mid, int reason_code, const mosquitto_property* props)
 {
-    Log_Debug("PUBLISH ACK by broker - msgid: %d, rc: (%d) => '%s' ", mid, reason_code, mosquitto_reason_string(reason_code));
+    Log_Debug(
+        "PUBLISH ACK by broker - msgid: %d, rc: (%d) => '%s' ",
+        mid,
+        reason_code,
+        mosquitto_reason_string(reason_code));
 
     ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)commChannelModuleHandle;
 
@@ -799,13 +809,18 @@ void ADUC_Communication_Channel_OnSubscribe(
     // Remove subscription callback info with matching message id from the pending list.
     for (size_t i = 0; i < VECTOR_size(commMgrState->pendingSubscriptions); ++i)
     {
-        ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* it = (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)VECTOR_element(commMgrState->pendingSubscriptions, i);
+        ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO* it =
+            (ADUC_MQTT_SUBSCRIBE_CALLBACK_INFO*)VECTOR_element(commMgrState->pendingSubscriptions, i);
 
-        Log_Debug("    it[%lu]: messageId=%d topic=%s, isScopedTopic=%d", i, it->messageId, it->topic, it->isScopedTopic);
+        Log_Debug(
+            "    it[%lu]: messageId=%d topic=%s, isScopedTopic=%d", i, it->messageId, it->topic, it->isScopedTopic);
 
         if (it->messageId == mid)
         {
-            Log_Debug(" *~~> found matching msg id in pendingSubscriptions topic '%s', isScoped: %d", it->topic, it->isScopedTopic);
+            Log_Debug(
+                " *~~> found matching msg id in pendingSubscriptions topic '%s', isScoped: %d",
+                it->topic,
+                it->isScopedTopic);
             subInfo = it;
             topic = it->topic;
             break;
@@ -817,7 +832,8 @@ void ADUC_Communication_Channel_OnSubscribe(
         Log_Debug("move pending topic '%s' -> subscribed", topic);
 
         ADUC_SetCommunicationChannelState(commMgrState, ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBED);
-        storeResult = ADUC_StateStore_SetTopicSubscribedStatus(subInfo->topic, subInfo->isScopedTopic, true /* isSubscribed */);
+        storeResult =
+            ADUC_StateStore_SetTopicSubscribedStatus(subInfo->topic, subInfo->isScopedTopic, true /* isSubscribed */);
         if (storeResult == ADUC_STATE_STORE_RESULT_OK)
         {
             Log_Info("Set store subscribed topic status to true");
@@ -979,10 +995,7 @@ void PerformMosquittoDoWork(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState)
                 break;
             default:
                 // Unexpected error
-                Log_Error(
-                    "mosq loop, unexpected error(%d - %s)",
-                    mqtt_ret,
-                    mosquitto_strerror(mqtt_ret));
+                Log_Error("mosq loop, unexpected error(%d - %s)", mqtt_ret, mosquitto_strerror(mqtt_ret));
                 break;
             }
         }
@@ -1097,7 +1110,11 @@ bool PerformChannelStateManagement(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrStat
 
     if (commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_UNKNOWN)
     {
-        Log_Info("Connecting to MQTT broker at hostname '%s', port: %d, keep-alive: %d", commMgrState->mqttSettings.hostname, (int)commMgrState->mqttSettings.tcpPort, (int)commMgrState->mqttSettings.keepAliveInSeconds);
+        Log_Info(
+            "Connecting to MQTT broker at hostname '%s', port: %d, keep-alive: %d",
+            commMgrState->mqttSettings.hostname,
+            (int)commMgrState->mqttSettings.tcpPort,
+            (int)commMgrState->mqttSettings.keepAliveInSeconds);
 
         // Connect to an MQTT broker.
         // It is valid to use this function for clients using all MQTT protocol versions.
@@ -1334,8 +1351,7 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
     callbackInfo.userData = userData;
     callbackInfo.isScopedTopic = isTopicScoped;
 
-    mosqResult =
-        mosquitto_subscribe_v5(commMgrState->mqttClient, &callbackInfo.messageId, topic, qos, options, props);
+    mosqResult = mosquitto_subscribe_v5(commMgrState->mqttClient, &callbackInfo.messageId, topic, qos, options, props);
     if (mosqResult != MOSQ_ERR_SUCCESS)
     {
         Log_Error("mosq subscribe_v5 fail: %d", mosqResult);
@@ -1345,12 +1361,13 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
     // Only track once underlying subscribe successfully issued.
     if (VECTOR_push_back(commMgrState->pendingSubscriptions, &callbackInfo, 1) != 0)
     {
-         goto done;
+        goto done;
     }
 
     ADUC_SetCommunicationChannelState(commMgrState, ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING);
 
-    Log_Debug("-> SUBSCRIBE topic '%s', msgid: %d, isScoped: %d", topic, callbackInfo.messageId, callbackInfo.isScopedTopic);
+    Log_Debug(
+        "-> SUBSCRIBE topic '%s', msgid: %d, isScoped: %d", topic, callbackInfo.messageId, callbackInfo.isScopedTopic);
 
     *outMessageId = callbackInfo.messageId;
 
