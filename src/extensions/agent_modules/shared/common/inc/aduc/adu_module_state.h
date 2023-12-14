@@ -15,8 +15,8 @@ typedef struct tagADUC_MQTT_CLIENT_MODULE_STATE
     void* moduleInitData; //!< Module init data
     ADUC_MQTT_SETTINGS mqttSettings; //!< MQTT connection settings
 
-    char* mqtt_topic_service2agent; // For v1, we're only subscribe to 1 topic.
-    char* mqtt_topic_agent2service; // For v1, we're only publish to 1 topic.
+    char* mqtt_topic_service2agent; // For v1, we only subscribe to 1 topic.
+    char* mqtt_topic_agent2service; // For v1, we only publish to 1 topic.
 
     time_t lastErrorTime; //!< Last time an error occurred
     int lastError; //!< Last error code
