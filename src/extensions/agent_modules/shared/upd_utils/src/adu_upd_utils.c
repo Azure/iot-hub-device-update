@@ -92,8 +92,8 @@ bool UpdateData_SetCorrelationId(ADUC_Update_Request_Operation_Data* updateData,
 
     if (!ADUC_Safe_StrCopyN(
         updateData->updReqMessageContext.correlationId,
-        correlationId,
         ARRAY_SIZE(updateData->updReqMessageContext.correlationId),
+        correlationId,
         strlen(correlationId)))
     {
         Log_Error("copy failed");
