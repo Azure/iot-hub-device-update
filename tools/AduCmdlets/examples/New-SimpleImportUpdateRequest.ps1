@@ -32,7 +32,7 @@ Param(
 
     # Azure Storage Blob container for staging update artifacts.
     [Parameter(Mandatory=$true)]
-    [ValidateNotNull()]
+    [ValidateNotNullOrWhiteSpace()]
     [Microsoft.WindowsAzure.Commands.Common.Storage.ResourceModel.AzureStorageContainer] $BlobContainer
 )
 
