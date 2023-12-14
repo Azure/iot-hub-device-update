@@ -137,26 +137,31 @@ static bool ExtractJWSSections(const char* jws, char** header, char** payload, c
 
     size_t sigLen = jwsLen - payloadLen - headerLen - 2; // 2 is for the periods
 
-    *header = (char*)malloc(headerLen + 1);
-    *payload = (char*)malloc(payloadLen + 1);
-    *signature = (char*)malloc(sigLen + 1);
+     // target buffer capacities in bytes
+    const size_t HdrCapBytes = headerLen + 1;
+    const size_t PayloadCapBytes = payloadLen + 1;
+    const size_t SigCapBytes = sigLen + 1;
+
+    *header = (char*)malloc(HdrCapBytes);
+    *payload = (char*)malloc(PayloadCapBytes);
+    *signature = (char*)malloc(SigCapBytes);
 
     if (*header == NULL || *payload == NULL || *signature == NULL)
     {
         goto done;
     }
 
-    if (!ADUC_Safe_StrCopyN(*header, jws, headerLen + 1, headerLen))
+    if (!ADUC_Safe_StrCopyN(*header /* dest */, HdrCapBytes /* destByteLen */, jws /* src */, headerLen /* srcByteLen */))
     {
         goto done;
     }
 
-    if (!ADUC_Safe_StrCopyN(*payload, (headerEnd + 1), payloadLen + 1, payloadLen))
+    if (!ADUC_Safe_StrCopyN(*payload /* dest */, PayloadCapBytes /* destByteLen */, (headerEnd + 1) /* src */, payloadLen /* srcByteLen */))
     {
         goto done;
     }
 
-    if (!ADUC_Safe_StrCopyN(*signature, (payloadEnd + 1), sigLen + 1, sigLen))
+    if (!ADUC_Safe_StrCopyN(*signature /* dest */, SigCapBytes /* destByteLen */, (payloadEnd + 1) /* src */, sigLen /* srcByteLen */))
     {
         goto done;
     }
@@ -229,7 +234,7 @@ static bool ExtractJWSHeader(const char* jws, char** header)
         goto done;
     }
 
-    if (!ADUC_Safe_StrCopyN(tempHeader, jws, headerLen + 1, headerLen))
+    if (!ADUC_Safe_StrCopyN(tempHeader /* dest */, headerLen + 1 /* destByteLen */, jws /* src */, headerLen /* srcByteLen */))
     {
         goto done;
     }
