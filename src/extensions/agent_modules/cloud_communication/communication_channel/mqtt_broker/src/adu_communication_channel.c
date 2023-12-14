@@ -1189,15 +1189,14 @@ bool EnsureHostnameValid(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState)
     {
         if (commMgrState->mqttSettings.hostnameSource == ADUC_MQTT_HOSTNAME_SOURCE_DPS)
         {
-            const char* hostName = ADUC_StateStore_GetMQTTBrokerHostname();
+            char* hostName = ADUC_StateStore_GetMQTTBrokerHostname();
             if (!IsNullOrEmpty(hostName))
             {
                 Log_Info("use prov hostname: '%s'", hostName);
-                if (mallocAndStrcpy_s(&commMgrState->mqttSettings.hostname, hostName) != 0)
-                {
-                    Log_Error("copy hostname");
-                }
+                commMgrState->mqttSettings.hostname = hostName;
+                hostName = NULL;
             }
+            free(hostName);
         }
         else
         {

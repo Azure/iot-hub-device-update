@@ -287,11 +287,6 @@ bool ProcessDeviceRegistrationResponse(
             Log_Error("Failed to get deviceId from JSON payload:\n%s", payload);
             errorOccurred = true;
         }
-        else if (ADUC_StateStore_SetDeviceId(deviceId) != ADUC_STATE_STORE_RESULT_OK)
-        {
-            Log_Error("Failed to set deviceId");
-            errorOccurred = true;
-        }
         else if (ADUC_StateStore_SetExternalDeviceId(deviceId) != ADUC_STATE_STORE_RESULT_OK)
         {
             Log_Error("Failed to set externalDeviceID");

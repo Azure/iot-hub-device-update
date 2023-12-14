@@ -41,7 +41,6 @@ TEST_CASE("ADUC_StateStore_Initialize")
         ADUC_SystemUtils_RmDirRecursive(TEST_STORE_DIR);
         REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(TEST_STORE_DIR "/test_state_store.json", false /* isUsingProvisioningService */));
 
-        CHECK(nullptr == ADUC_StateStore_GetDeviceId());
         CHECK(nullptr == ADUC_StateStore_GetExternalDeviceId());
         CHECK(nullptr == ADUC_StateStore_GetMQTTBrokerHostname());
         CHECK(nullptr == ADUC_StateStore_GetScopeId());

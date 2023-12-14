@@ -12,6 +12,7 @@
 #include <stdbool.h> // bool
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h> // HOST_NAME_MAX
 
 #define ADUC_DEFAULT_DEVICE_REGISTRATION_STATE_POLL_INTERVAL_SECONDS (10)
 
@@ -22,6 +23,12 @@ static bool isInitialized = false;
 //
 // TODO: Figure out a lower, tighter maximum based on topic template path segment maximums, or if this maximum is not sufficient.
 #define MAX_ADU_MQTT_TOPIC_BYTE_LEN 2048
+
+// TODO: determine the real max. reasonable placeholder for now.
+#define MAX_ADU_DEVICE_ID_BYTE_LEN 256
+
+// TODO: determine the real max. reasonable placeholder for now.
+#define MAX_ADU_SCOPE_ID_BYTE_LEN 256
 
 // TODO make this configurable.
 //#define DEFAULT_STATE_STORE_PATH "/var/lib/adu/agent-state.json"
@@ -126,12 +133,19 @@ void ADUC_StateStore_Deinitialize()
     }
 }
 
-const char* ADUC_StateStore_GetExternalDeviceId()
+char* ADUC_StateStore_GetExternalDeviceId()
 {
+    char* copy = NULL;
     sem_wait(&state_semaphore);
-    const char* value = state.externalDeviceId;
+
+    const size_t externalDeviceIdByteLen = ADUC_StrNLen(state.externalDeviceId, MAX_ADU_DEVICE_ID_BYTE_LEN);
+    if (externalDeviceIdByteLen != 0 && externalDeviceIdByteLen != MAX_ADU_DEVICE_ID_BYTE_LEN)
+    {
+        MallocAndSubstr(&copy, state.externalDeviceId, externalDeviceIdByteLen);
+    }
+
     sem_post(&state_semaphore);
-    return value;
+    return copy;
 }
 
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetExternalDeviceId(const char* externalDeviceId)
@@ -185,50 +199,22 @@ int ADUC_StateStore_GetDeviceRegistrationStatePollIntervalSeconds()
 }
 
 /**
- * @brief Get the Device Update service device ID.
- * @return The device ID, or NULL if not found.
- */
-const char* ADUC_StateStore_GetDeviceId()
-{
-    sem_wait(&state_semaphore);
-
-    const char* value = state.deviceId;
-
-    sem_post(&state_semaphore);
-    return value;
-}
-
-ADUC_STATE_STORE_RESULT ADUC_StateStore_SetDeviceId(const char* deviceId)
-{
-    if (!deviceId)
-    {
-        Log_Error("Invalid input for SetDeviceId.");
-        return ADUC_STATE_STORE_RESULT_ERROR;
-    }
-
-    sem_wait(&state_semaphore);
-
-    free(state.deviceId);
-    state.deviceId = SafeStrdup(deviceId);
-
-    sem_post(&state_semaphore);
-    return ADUC_STATE_STORE_RESULT_OK;
-}
-
-/**
  * @brief Get the scope identifier.
  * @return NULL if never set; else, the current scope id.
  */
-const char* ADUC_StateStore_GetScopeId()
+char* ADUC_StateStore_GetScopeId()
 {
-    const char* value = NULL;
-
+    char* copy = NULL;
     sem_wait(&state_semaphore);
 
-    value = state.scopeId;
+    const size_t scopeIdByteLen = ADUC_StrNLen(state.scopeId, MAX_ADU_SCOPE_ID_BYTE_LEN);
+    if (scopeIdByteLen != 0 && scopeIdByteLen != MAX_ADU_SCOPE_ID_BYTE_LEN)
+    {
+        MallocAndSubstr(&copy, state.scopeId, scopeIdByteLen);
+    }
 
     sem_post(&state_semaphore);
-    return value;
+    return copy;
 }
 
 /**
@@ -414,17 +400,21 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetCommunicationChannelHandle(void* comm
 
 /**
  * @brief Get the MQTT broker hostname.
+ * @returns
  */
-const char* ADUC_StateStore_GetMQTTBrokerHostname()
+char* ADUC_StateStore_GetMQTTBrokerHostname()
 {
-    const char* value = NULL;
-
+    char* copy = NULL;
     sem_wait(&state_semaphore);
 
-    value = state.mqttBrokerHostname;
+    const size_t hostnameByteLen = ADUC_StrNLen(state.mqttBrokerHostname, HOST_NAME_MAX);
+    if (hostnameByteLen != 0 && hostnameByteLen != HOST_NAME_MAX)
+    {
+        MallocAndSubstr(&copy, state.mqttBrokerHostname, hostnameByteLen);
+    }
 
     sem_post(&state_semaphore);
-    return value;
+    return copy;
 }
 
 /**
@@ -437,12 +427,22 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetMQTTBrokerHostname(const char* hostna
     ADUC_STATE_STORE_RESULT result = ADUC_STATE_STORE_RESULT_ERROR;
     sem_wait(&state_semaphore);
 
-    free(state.mqttBrokerHostname);
-
-    state.mqttBrokerHostname = SafeStrdup(hostname);
-    if (state.mqttBrokerHostname != NULL)
+    const size_t hostnameByteLen = ADUC_StrNLen(hostname, HOST_NAME_MAX);
+    if (hostnameByteLen != 0 && hostnameByteLen != HOST_NAME_MAX)
     {
-        result = ADUC_STATE_STORE_RESULT_OK;
+        char* prevHostname = state.mqttBrokerHostname;
+
+        if (MallocAndSubstr(&state.mqttBrokerHostname, hostname, hostnameByteLen))
+        {
+            free(prevHostname);
+            prevHostname = NULL;
+            result = ADUC_STATE_STORE_RESULT_OK;
+        }
+        else
+        {
+            state.mqttBrokerHostname = prevHostname;
+            prevHostname = NULL;
+        }
     }
 
     sem_post(&state_semaphore);

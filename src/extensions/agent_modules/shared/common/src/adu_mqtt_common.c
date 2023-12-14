@@ -37,22 +37,24 @@ ADUC_Retriable_Operation_Context* OperationContextFromAgentModuleHandle(ADUC_AGE
  */
 bool MqttTopicSetupNeeded(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_Message_Context* messageContext, bool isScoped)
 {
+    bool ret = false;
+
     if (context == NULL || messageContext == NULL)
     {
         return false;
     }
 
-    const char* scopeId = isScoped ? ADUC_StateStore_GetScopeId() : NULL;
+    char* scopeId = isScoped ? ADUC_StateStore_GetScopeId() : NULL;
     if (isScoped && IsNullOrEmpty(scopeId))
     {
         Log_Error("invalid scopeId");
-        return false;
+        goto done;
     }
 
     // prepare a topic for the request
     if (IsNullOrEmpty(messageContext->publishTopic))
     {
-        const char* externalDeviceId = ADUC_StateStore_GetExternalDeviceId();
+        char* externalDeviceId = ADUC_StateStore_GetExternalDeviceId();
 
         if (isScoped)
         {
@@ -63,11 +65,14 @@ bool MqttTopicSetupNeeded(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_M
             messageContext->publishTopic = ADUC_StringFormat(PUBLISH_TOPIC_TEMPLATE_ADU_OTO, externalDeviceId);
         }
 
+        free(externalDeviceId);
+
         if (messageContext->publishTopic == NULL)
         {
             Log_Error("Failed alloc for publish topic. Cancelling operation");
             context->cancelFunc(context);
-            return true;
+            ret = true;
+            goto done;
         }
 
         Log_Info("Set publish topic (scoped: %d): %s", isScoped, messageContext->publishTopic);
@@ -76,7 +81,7 @@ bool MqttTopicSetupNeeded(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_M
     // prepare a topic for the response subscription.
     if (IsNullOrEmpty(messageContext->responseTopic))
     {
-        const char* externalDeviceId = ADUC_StateStore_GetExternalDeviceId();
+        char* externalDeviceId = ADUC_StateStore_GetExternalDeviceId();
 
         if (isScoped)
         {
@@ -87,17 +92,23 @@ bool MqttTopicSetupNeeded(ADUC_Retriable_Operation_Context* context, ADUC_MQTT_M
             messageContext->responseTopic = ADUC_StringFormat(SUBSCRIBE_TOPIC_TEMPLATE_ADU_OTO, externalDeviceId);
         }
 
+        free(externalDeviceId);
+
         if (messageContext->responseTopic == NULL)
         {
             Log_Error("failed to allocate memory for response topic. cancelling the operation.");
             context->cancelFunc(context);
-            return true;
+            ret = true;
+            goto done;
         }
 
         Log_Info("Set response topic (scoped: %d): %s", isScoped, messageContext->responseTopic);
     }
 
-    return false;
+done:
+    free(scopeId);
+
+    return ret;
 }
 
 /**
@@ -139,21 +150,25 @@ bool CommunicationChannelNeededSetup(ADUC_Retriable_Operation_Context* context)
  */
 bool ExternalDeviceIdSetupNeeded(ADUC_Retriable_Operation_Context* context)
 {
+    bool ret = false;
+
     if (context == NULL)
     {
         return false;
     }
 
     // and ensure that we have a valid external device id. this should usually provided by a dps.
-    const char* externalDeviceId = ADUC_StateStore_GetExternalDeviceId();
+    char* externalDeviceId = ADUC_StateStore_GetExternalDeviceId();
     if (IsNullOrEmpty(externalDeviceId))
     {
         Log_Info("an external device id is not available. will retry");
         context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_DEFAULT]);
-        return true;
+        ret = true;
     }
 
-    return false;
+    free(externalDeviceId);
+
+    return ret;
 }
 
 //
