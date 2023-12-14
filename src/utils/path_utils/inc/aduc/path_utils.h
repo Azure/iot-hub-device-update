@@ -13,7 +13,9 @@
 
 EXTERN_C_BEGIN
 
-STRING_HANDLE SanitizePathSegment(const char* unsanitized);
+STRING_HANDLE PathUtils_SanitizePathSegment(const char* unsanitized);
+
+char* PathUtils_ConcatenateDirAndFolderPaths(const char* dirPath, const char* folderName);
 
 EXTERN_C_END
 

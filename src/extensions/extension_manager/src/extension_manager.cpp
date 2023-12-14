@@ -23,7 +23,7 @@
 #include <aduc/hash_utils.h> // for SHAversion
 #include <aduc/logging.h>
 #include <aduc/parser_utils.h>
-#include <aduc/path_utils.h> // SanitizePathSegment
+#include <aduc/path_utils.h> // PathUtils_SanitizePathSegment
 #include <aduc/plugin_exception.hpp>
 #include <aduc/result.h>
 #include <aduc/string_c_utils.h>
@@ -215,7 +215,7 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
         return result;
     }
 
-    ADUC::StringUtils::STRING_HANDLE_wrapper folderName{ SanitizePathSegment(updateType.c_str()) };
+    ADUC::StringUtils::STRING_HANDLE_wrapper folderName{ PathUtils_SanitizePathSegment(updateType.c_str()) };
     if (folderName.is_null())
     {
         result.ExtendedResultCode = ADUC_ERC_NOMEM;

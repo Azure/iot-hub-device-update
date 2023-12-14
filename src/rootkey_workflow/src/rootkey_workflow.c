@@ -100,19 +100,19 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
 
 #ifndef ADUC_ENABLE_SRVC_E2E_TESTING
 
-#ifdef ADUC_E2E_TESTING_ENABLED
+#    ifdef ADUC_E2E_TESTING_ENABLED
     if (!rootKeyPackage.protectedProperties.isTest)
     {
         result.ExtendedResultCode = ADUC_ERC_ROOTKEY_PROD_PKG_ON_TEST_AGENT;
         goto done;
     }
-#else
+#    else
     if (rootKeyPackage.protectedProperties.isTest)
     {
         result.ExtendedResultCode = ADUC_ERC_ROOTKEY_TEST_PKG_ON_PROD_AGENT;
         goto done;
     }
-#endif
+#    endif
 
 #endif
     if (!ADUC_SystemUtils_Exists(ADUC_ROOTKEY_STORE_PATH))
@@ -132,7 +132,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
         goto done;
     }
 
-    if (!ADUC_RootKeyUtility_IsUpdateStoreNeeded(fileDest, rootKeyPackageJsonString))
+    if (!ADUC_RootKeyUtility_IsUpdateStoreNeeded(fileDest, &rootKeyPackage))
     {
         // This is a success, but skips writing to local store and includes informational ERC.
         result.ResultCode = ADUC_Result_RootKey_Continue;

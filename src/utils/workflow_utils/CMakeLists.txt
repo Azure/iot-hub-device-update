@@ -34,15 +34,15 @@ target_link_libraries (
             aduc::config_utils
             aduc::extension_manager
             aduc::hash_utils
+            aduc::jws_utils
             aduc::logging
             aduc::parser_utils
+            aduc::path_utils
             aduc::reporting_utils
             aduc::root_key_utils
             aduc::system_utils
-            aduc::jws_utils
+            libaducpal
             Parson::parson)
-
-target_link_libraries (${target_name} PRIVATE libaducpal)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

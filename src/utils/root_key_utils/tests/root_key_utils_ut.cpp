@@ -139,10 +139,10 @@ public:
 
     ~GetRootKeyValidationMockHook() = default;
 
-    GetRootKeyValidationMockHook(const SignatureValidationMockHook&) = delete;
-    GetRootKeyValidationMockHook& operator=(const SignatureValidationMockHook&) = delete;
-    GetRootKeyValidationMockHook(SignatureValidationMockHook&&) = delete;
-    GetRootKeyValidationMockHook& operator=(SignatureValidationMockHook&&) = delete;
+    GetRootKeyValidationMockHook(const GetRootKeyValidationMockHook&) = delete;
+    GetRootKeyValidationMockHook& operator=(const GetRootKeyValidationMockHook&) = delete;
+    GetRootKeyValidationMockHook(GetRootKeyValidationMockHook&&) = delete;
+    GetRootKeyValidationMockHook& operator=(GetRootKeyValidationMockHook&&) = delete;
 };
 
 TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_ValidateRootKeyPackage Signature Validation")

@@ -35,7 +35,7 @@
 // Root Key Validation Helper Functions
 //
 
-static ADUC_RootKeyPackage* localStore = NULL;
+static ADUC_RootKeyPackage* s_localStore = NULL;
 ADUC_Result_t s_rootKeyErc = 0;
 
 /**
@@ -481,15 +481,15 @@ done:
  */
 ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath, bool validateSignatures)
 {
-    if (localStore != NULL)
+    if (s_localStore != NULL)
     {
-        ADUC_RootKeyPackageUtils_Destroy(localStore);
-        free(localStore);
-        localStore = NULL;
+        ADUC_RootKeyPackageUtils_Destroy(s_localStore);
+        free(s_localStore);
+        s_localStore = NULL;
     }
 
     return RootKeyUtility_LoadPackageFromDisk(
-        &localStore, filepath == NULL ? ADUC_ROOTKEY_STORE_PACKAGE_PATH : filepath, validateSignatures);
+        &s_localStore, filepath == NULL ? ADUC_ROOTKEY_STORE_PACKAGE_PATH : filepath, validateSignatures);
 }
 
 /**
@@ -613,18 +613,18 @@ CryptoKeyHandle RootKeyUtility_SearchLocalStoreForKey(const char* keyId)
 {
     CryptoKeyHandle key = NULL;
 
-    if (localStore == NULL)
+    if (s_localStore == NULL)
     {
         return key;
     }
 
-    const size_t numStoreRootKeys = VECTOR_size(localStore->protectedProperties.rootKeys);
+    const size_t numStoreRootKeys = VECTOR_size(s_localStore->protectedProperties.rootKeys);
 
     for (size_t i = 0; i < numStoreRootKeys; ++i)
     {
-        ADUC_RootKey* rootKey = VECTOR_element(localStore->protectedProperties.rootKeys, i);
+        ADUC_RootKey* rootKey = VECTOR_element(s_localStore->protectedProperties.rootKeys, i);
 
-        if (strcmp(STRING_c_str(rootKey->kid), keyId) == 0 && !RootKeyUtility_RootKeyIsDisabled(localStore, keyId))
+        if (strcmp(STRING_c_str(rootKey->kid), keyId) == 0 && !RootKeyUtility_RootKeyIsDisabled(s_localStore, keyId))
         {
             key = MakeCryptoKeyHandleFromADUC_RootKey(rootKey);
         }
@@ -716,11 +716,11 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
 
     RootKeyUtility_GetKeyForKidFromHardcodedKeys(&tempKey, kid);
 
-    if (localStore == NULL)
+    if (s_localStore == NULL)
     {
         const char* rootKeyStorePath = RootKeyStore_GetRootKeyStorePath();
         ADUC_Result loadResult =
-            RootKeyUtility_LoadPackageFromDisk(&localStore, rootKeyStorePath, true /* validateSignatures */);
+            RootKeyUtility_LoadPackageFromDisk(&s_localStore, rootKeyStorePath, true /* validateSignatures */);
 
         if (IsAducResultCodeFailure(loadResult.ResultCode))
         {
@@ -729,7 +729,7 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
         }
     }
 
-    if (RootKeyUtility_RootKeyIsDisabled(localStore, kid))
+    if (RootKeyUtility_RootKeyIsDisabled(s_localStore, kid))
     {
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_ROOTKEY_IS_DISABLED;
         goto done;
@@ -805,32 +805,42 @@ ADUC_Result_t RootKeyUtility_GetReportingErc()
     return s_rootKeyErc;
 }
 
-bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE storePath, const char* rootKeyPackageJsonString)
+/**
+ * @brief Checks if the local store needs to be updated with the package @p packageToTest
+ * @details This function will load the local store if it is not already loaded and then compare the local store with @p packageToTest
+ * if the s_localStore fails to load it will always recommend an update
+ * @param storePath the path to the store on disk
+ * @param packageToTest the package to test against the local store
+ * @return true if the local store needs to be updated; false if it doesn't
+*/
+bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE storePath, const ADUC_RootKeyPackage* packageToTest)
 {
     bool update_needed = true;
-    char* storePackageJsonString = NULL;
 
-    JSON_Value* storePkgJsonValue = json_parse_file(STRING_c_str(storePath));
-
-    if (storePkgJsonValue == NULL)
+    if (packageToTest == NULL)
     {
         goto done;
     }
 
-    storePackageJsonString = json_serialize_to_string(storePkgJsonValue);
-
-    if (storePackageJsonString == NULL)
+    if (s_localStore == NULL)
     {
-        goto done;
+        ADUC_Result temp =
+            RootKeyUtility_ReloadPackageFromDisk(STRING_c_str(storePath), true /* validate the package signatures */);
+
+        if (IsAducResultCodeFailure(temp.ResultCode))
+        {
+            Log_Error("Package load failed");
+            return true;
+        }
     }
 
-    if (strcmp(storePackageJsonString, rootKeyPackageJsonString) == 0)
+    if (ADUC_RootKeyPackageUtils_AreEqual(s_localStore, packageToTest))
     {
         update_needed = false;
+        goto done;
     }
 
 done:
-    free(storePackageJsonString);
 
     return update_needed;
 }
@@ -840,10 +850,10 @@ ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSign
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     VECTOR_HANDLE disabledSigningKeyList = NULL;
 
-    if (localStore == NULL)
+    if (s_localStore == NULL)
     {
         ADUC_Result loadResult = RootKeyUtility_LoadPackageFromDisk(
-            &localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH, true /* validateSignatures */);
+            &s_localStore, ADUC_ROOTKEY_STORE_PACKAGE_PATH, true /* validateSignatures */);
 
         if (IsAducResultCodeFailure(loadResult.ResultCode))
         {
@@ -860,10 +870,10 @@ ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSign
         goto done;
     }
 
-    for (size_t i = 0; i < VECTOR_size(localStore->protectedProperties.disabledSigningKeys); ++i)
+    for (size_t i = 0; i < VECTOR_size(s_localStore->protectedProperties.disabledSigningKeys); ++i)
     {
         if (VECTOR_push_back(
-                disabledSigningKeyList, VECTOR_element(localStore->protectedProperties.disabledSigningKeys, i), 1)
+                disabledSigningKeyList, VECTOR_element(s_localStore->protectedProperties.disabledSigningKeys, i), 1)
             != 0)
         {
             result.ExtendedResultCode = ADUC_ERC_NOMEM;

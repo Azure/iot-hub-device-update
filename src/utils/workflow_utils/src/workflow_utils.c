@@ -8,12 +8,13 @@
 #include "aduc/workflow_utils.h"
 #include "aduc/adu_types.h"
 #include "aduc/aduc_inode.h" // ADUC_INODE_SENTINEL_VALUE
-#include "aduc/config_utils.h"
 #include "aduc/c_utils.h"
+#include "aduc/config_utils.h"
 #include "aduc/extension_manager.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
 #include "aduc/parser_utils.h"
+#include "aduc/path_utils.h"
 #include "aduc/reporting_utils.h"
 #include "aduc/result.h"
 #include "aduc/string_c_utils.h"
@@ -31,9 +32,8 @@
 #include <stdlib.h> // for malloc, atoi
 #include <string.h>
 
+#include <aducpal/limits.h> // for PATH_MAX
 #include <aducpal/strings.h> // strcasecmp
-
-#define DEFAULT_SANDBOX_ROOT_PATH "/var/lib/adu/downloads"
 
 #define WORKFLOW_PROPERTY_FIELD_ID "_id"
 #define WORKFLOW_PROPERTY_FIELD_RETRYTIMESTAMP "_retryTimestamp"
@@ -743,18 +743,17 @@ ADUC_Result workflow_parse_peek_unprotected_workflow_properties(
         }
     }
 
-    rootkeyPkgUrl = json_object_dotget_string(updateActionJsonObj, ADUCITF_FIELDNAME_ROOTKEY_PACKAGE_URL);
-    if (IsNullOrEmpty(rootkeyPkgUrl))
-    {
-        result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_EMPTY_OR_MISSING_ROOTKEY_PKG_URL;
-        goto done;
-    }
-
-    workflowId = json_object_dotget_string(updateActionJsonObj, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID);
     // workflowId can be NULL in some cases.
 
-    if (outWorkflowId_optional != NULL && workflowId != NULL)
+    if (outWorkflowId_optional != NULL)
     {
+        workflowId = json_object_dotget_string(updateActionJsonObj, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID);
+        if (IsNullOrEmpty(workflowId))
+        {
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_BAD_UPDATE_MANIFEST;
+            goto done;
+        }
+
         tmpWorkflowId = workflow_copy_string(workflowId);
         if (tmpWorkflowId == NULL)
         {
@@ -765,6 +764,13 @@ ADUC_Result workflow_parse_peek_unprotected_workflow_properties(
 
     if (outRootKeyPkgUrl_optional != NULL)
     {
+        rootkeyPkgUrl = json_object_dotget_string(updateActionJsonObj, ADUCITF_FIELDNAME_ROOTKEY_PACKAGE_URL);
+        if (IsNullOrEmpty(rootkeyPkgUrl))
+        {
+            result.ExtendedResultCode = ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_EMPTY_OR_MISSING_ROOTKEY_PKG_URL;
+            goto done;
+        }
+
         tmpRootKeyPkgUrl = workflow_copy_string(rootkeyPkgUrl);
         if (tmpRootKeyPkgUrl == NULL)
         {
@@ -1226,13 +1232,12 @@ done:
  * @param handle An output workflow object handle.
  * @return ADUC_Result The result.
  */
-ADUC_Result _workflow_parse(JSON_Value* updateActionJson, bool validateManifest, ADUC_WorkflowHandle* handle)
+ADUC_Result _workflow_parse(const JSON_Value* updateActionJson, bool validateManifest, ADUC_WorkflowHandle* handle)
 {
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
     ADUC_Workflow* wf = NULL;
     JSON_Value* updateActionJsonClone = NULL;
-    JSON_Object* updateActionObject = NULL;
     ADUCITF_UpdateAction updateAction = ADUCITF_UpdateAction_Undefined;
 
     if (handle == NULL)
@@ -1256,8 +1261,7 @@ ADUC_Result _workflow_parse(JSON_Value* updateActionJson, bool validateManifest,
     updateActionJson = NULL;
 
     // commit ownership of cloned JSON_Value to the workflow's UpdateActionObject.
-    updateActionObject = json_value_get_object(updateActionJsonClone);
-    wf->UpdateActionObject = updateActionObject;
+    wf->UpdateActionObject = json_value_get_object(updateActionJsonClone);
     updateActionJsonClone = NULL;
 
     // At this point, we have had a side-effect of committing to the
@@ -1273,7 +1277,10 @@ ADUC_Result _workflow_parse(JSON_Value* updateActionJson, bool validateManifest,
     // 'cancel' action doesn't contains UpdateManifest and UpdateSignature.
     // Skip this part.
     workflow_parse_peek_unprotected_workflow_properties(
-        updateActionObject, &updateAction, NULL /* outRootKeyPkgUrl_optional */, NULL /* outWorkflowId_optional */);
+        wf->UpdateActionObject,
+        &updateAction,
+        NULL /* outRootKeyPkgUrl_optional */,
+        NULL /* outWorkflowId_optional */);
     if (updateAction != ADUCITF_UpdateAction_Cancel)
     {
         ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
@@ -1284,7 +1291,7 @@ ADUC_Result _workflow_parse(JSON_Value* updateActionJson, bool validateManifest,
         // We will skip the validation for these cases.
         if (updateAction != ADUCITF_UpdateAction_Undefined && validateManifest)
         {
-            tmpResult = workflow_validate_update_manifest_signature(updateActionObject);
+            tmpResult = workflow_validate_update_manifest_signature(wf->UpdateActionObject);
             if (IsAducResultCodeFailure(tmpResult.ResultCode))
             {
                 result = tmpResult;
@@ -1804,56 +1811,132 @@ bool workflow_set_sandbox(ADUC_WorkflowHandle handle, const char* sandbox)
     return true;
 }
 
+char* _workflow_copy_config_downloads_folder(const size_t max_size)
+{
+    char* downloads_folder_path = NULL;
+
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
+    {
+        goto done; /* Config is unitialized or we could not get a reference */
+    }
+
+    size_t download_folder_len = ADUC_StrNLen(config->downloadsFolder, max_size);
+
+    if (download_folder_len == 0 || download_folder_len == max_size)
+    {
+        Log_Error("Invalid base sandbox dir: '%s'", config->downloadsFolder);
+        goto done;
+    }
+
+    if (!mallocAndStrcpy_s(&downloads_folder_path, config->downloadsFolder))
+    {
+        goto done;
+    }
+
+done:
+
+    ADUC_ConfigInfo_ReleaseInstance(config);
+
+    return downloads_folder_path;
+}
+
+// Returns the download base directory
+char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle)
+{
+    char* ret = NULL;
+    char* tempRet = NULL;
+    char* pwf = NULL;
+
+    ADUC_WorkflowHandle p = workflow_get_parent(handle);
+    if (p != NULL)
+    {
+        pwf = workflow_get_workfolder(p);
+
+        if (pwf == NULL)
+        {
+            Log_Error("Failed to get parent workfolder");
+            goto done;
+        }
+
+        size_t pwf_len = ADUC_StrNLen(pwf, PATH_MAX);
+
+        if (pwf_len == 0 || pwf_len == PATH_MAX)
+        {
+            Log_Error("Invalid parent workfolder: '%s'", pwf);
+            goto done;
+        }
+
+        tempRet = pwf;
+        Log_Debug("Using parent workfolder: '%s'", pwf);
+    }
+    else
+    {
+        tempRet = _workflow_copy_config_downloads_folder(PATH_MAX);
+        if (tempRet == NULL)
+        {
+            Log_Error("Copying config download folder failed");
+            goto done;
+        }
+    }
+
+    if (mallocAndStrcpy_s(&ret, tempRet) != 0)
+    {
+        goto done;
+    }
+
+done:
+
+    free(tempRet);
+    free(pwf);
+
+    return ret;
+}
+
 // Workfolder =  [root.sandboxfolder]  "/"  ( [parent.workfolder | parent.id]  "/" )+  [handle.workfolder | handle.id]
 char* workflow_get_workfolder(const ADUC_WorkflowHandle handle)
 {
-    char dir[1024] = { 0 };
-
-    char* pwf = NULL;
     char* ret = NULL;
-    char* id = workflow_get_id(handle);
+    char* base_sandbox_dir = NULL;
+    char* id = NULL;
 
     // If workfolder explicitly specified, use it.
     char* wf = workflow_get_string_property(handle, WORKFLOW_PROPERTY_FIELD_WORKFOLDER);
     if (wf != NULL)
     {
         Log_Debug("Property '%s' not NULL - returning cached workfolder '%s'", WORKFLOW_PROPERTY_FIELD_WORKFOLDER, wf);
-        free(id);
-        return wf;
+        ret = wf;
+        goto done;
     }
 
     // Return ([parent's workfolder] or [default sandbox folder]) + "/" + [workflow id];
-    ADUC_WorkflowHandle p = workflow_get_parent(handle);
-    if (p != NULL)
-    {
-        pwf = workflow_get_workfolder(p);
-        sprintf(dir, "%s/%s", pwf, id);
+    base_sandbox_dir = workflow_get_root_sandbox_dir(handle);
 
-        Log_Debug("Using parent workfolder: '%s/%s'", pwf, id);
-    }
-    else
+    if (base_sandbox_dir == NULL)
     {
-        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
-        if (config != NULL)
-        {
-            Log_Info("Sandbox root path not set. Use default: '%s'", config->downloadsFolder);
-            sprintf(dir, "%s/%s", config->downloadsFolder, id);
-            ADUC_ConfigInfo_ReleaseInstance(config);
-        }
-        else
-        {
-            Log_Warn("Config is null. Use default sandbox root path: '%s'", DEFAULT_SANDBOX_ROOT_PATH);
-            sprintf(dir, "%s/%s", DEFAULT_SANDBOX_ROOT_PATH, id);
-        }
+        goto done;
     }
 
-    free(pwf);
+    id = workflow_get_id(handle);
+    size_t id_len = ADUC_StrNLen(id, PATH_MAX);
+
+    if (id_len == 0 || id_len == PATH_MAX)
+    {
+        Log_Error("Workflow id is too long to be in a path: '%s'", id);
+        goto done;
+    }
+
+    ret = PathUtils_ConcatenateDirAndFolderPaths(base_sandbox_dir, id);
+    if (ret == NULL)
+    {
+        Log_Error("Failed to concatenate dir and folder paths");
+        goto done;
+    }
+
+done:
+
     free(id);
-
-    if (dir[0] != 0)
-    {
-        mallocAndStrcpy_s(&ret, dir);
-    }
+    free(base_sandbox_dir);
 
     return ret;
 }
@@ -2423,11 +2506,11 @@ const char* workflow_peek_update_type(ADUC_WorkflowHandle handle)
     return workflow_peek_update_manifest_string(handle, ADUCITF_FIELDNAME_UPDATETYPE);
 }
 
-ADUC_Result _workflow_init_helper(ADUC_WorkflowHandle* handle)
+ADUC_Result _workflow_init_helper(ADUC_WorkflowHandle handle)
 {
     ADUC_Result result = { ADUC_GeneralResult_Failure };
 
-    ADUC_Workflow* wf = workflow_from_handle(*handle);
+    ADUC_Workflow* wf = workflow_from_handle(handle);
     wf->Parent = NULL;
     wf->ChildCount = 0;
     wf->ChildrenMax = 0;
@@ -2470,8 +2553,7 @@ done:
             "Failed to init workflow handle. result:%d (erc:0x%X)", result.ResultCode, result.ExtendedResultCode);
         if (handle != NULL)
         {
-            workflow_free(*handle);
-            *handle = NULL;
+            workflow_uninit(handle);
         }
     }
 
@@ -2516,6 +2598,7 @@ workflow_init_from_file(const char* updateManifestFile, bool validateManifest, A
     *outWorkflowHandle = workflowHandle;
     workflowHandle = NULL;
 
+    result.ResultCode = ADUC_GeneralResult_Success;
 done:
 
     json_value_free(rootJsonValue);
@@ -2525,7 +2608,6 @@ done:
         workflow_free(workflowHandle);
         workflowHandle = NULL;
     }
-
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         Log_Error(
@@ -2799,8 +2881,14 @@ ADUC_Result workflow_init(const char* updateManifestJsonStr, bool validateManife
         goto done;
     }
 
-    result = _workflow_init_helper(handle);
+    result = _workflow_init_helper(*handle);
 
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        goto done;
+    }
+
+    result.ResultCode = ADUC_GeneralResult_Success;
 done:
 
     json_value_free(rootJsonValue);

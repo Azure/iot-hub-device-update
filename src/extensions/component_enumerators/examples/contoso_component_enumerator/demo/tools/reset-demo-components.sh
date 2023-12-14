@@ -16,4 +16,3 @@ sudo chmod 555 -R "$target_devices_dir"
 
 printf "#\n# Reset installed-criteria data..."
 sudo rm -f -r /var/lib/adu/installedcriteria
-
