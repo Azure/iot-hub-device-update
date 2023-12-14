@@ -62,7 +62,7 @@ void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 
 /**
  * @brief Callback should be called when the client receives an agentinfo status response message from the Device Update service.
- *  For 'ainfo_resp' messages, if the Correlation Data matches the 'en,the client should parse the message and update the agentinfo state.
+ *  For 'ainfo_resp' messages, if the Correlation Data matches, then the client should parse the message and update the agentinfo state.
  *
  * @param mosq The mosquitto instance making the callback.
  * @param obj The user data provided in mosquitto_new. This is the module state
