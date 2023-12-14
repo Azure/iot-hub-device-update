@@ -1349,7 +1349,6 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
     }
 
     ADUC_SetCommunicationChannelState(commMgrState, ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_SUBSCRIBING);
-    mosqResult = MOSQ_ERR_SUCCESS;
 
     Log_Debug("-> SUBSCRIBE topic '%s', msgid: %d, isScoped: %d", topic, callbackInfo.messageId, callbackInfo.isScopedTopic);
 
@@ -1359,6 +1358,7 @@ int ADUC_Communication_Channel_MQTT_Subscribe(
     // When element is erased from vector, the fields will need freeing at that time.
     memset(&callbackInfo, 0, sizeof(callbackInfo));
 
+    mosqResult = MOSQ_ERR_SUCCESS;
 done:
     free(callbackInfo.topic);
 
