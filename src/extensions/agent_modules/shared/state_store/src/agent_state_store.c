@@ -127,10 +127,6 @@ void ADUC_StateStore_Deinitialize()
 
         sem_destroy(&state_semaphore);
     }
-    else
-    {
-        Log_Info("Nothing to deinitialize.");
-    }
 }
 
 char* ADUC_StateStore_GetExternalDeviceId()
