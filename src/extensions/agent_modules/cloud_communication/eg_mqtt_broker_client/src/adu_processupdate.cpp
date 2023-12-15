@@ -62,7 +62,7 @@ void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retr
         AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS, updateData);
     };
 
-    if (std::string{jsonPayload} == "{}")
+    if (jsonPayload == nullptr || std::string{jsonPayload} == "{}")
     {
         Log_Info("        *** ADU service had no applicable updates.");
         AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updateData);
