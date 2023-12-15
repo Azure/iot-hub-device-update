@@ -8,11 +8,11 @@
 #include "aduc/agent_state_store.h"
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h> // IsNullOrEmpty
+#include <limits.h> // HOST_NAME_MAX
 #include <semaphore.h>
 #include <stdbool.h> // bool
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h> // HOST_NAME_MAX
 
 #define ADUC_DEFAULT_DEVICE_REGISTRATION_STATE_POLL_INTERVAL_SECONDS (10)
 
@@ -226,13 +226,24 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetScopeId(const char* scopeId)
 {
     ADUC_STATE_STORE_RESULT result = ADUC_STATE_STORE_RESULT_ERROR;
 
+    const size_t newScopeIdByteLen = ADUC_StrNLen(scopeId, MAX_ADU_SCOPE_ID_BYTE_LEN);
+    if (newScopeIdByteLen == 0 || newScopeIdByteLen == MAX_ADU_SCOPE_ID_BYTE_LEN)
+    {
+        return result;
+    }
+
     sem_wait(&state_semaphore);
 
-    free(state.scopeId);
-    state.scopeId = SafeStrdup(scopeId);
-    if (state.scopeId != NULL)
+    char* prevScopeId = state.scopeId;
+
+    if (MallocAndSubstr(&state.scopeId, scopeId, newScopeIdByteLen))
     {
+        free(prevScopeId);
         result = ADUC_STATE_STORE_RESULT_OK;
+    }
+    else
+    {
+        state.scopeId = prevScopeId;
     }
 
     sem_post(&state_semaphore);
@@ -304,9 +315,7 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetTopicSubscribedStatus(const char* top
         goto done;
     }
 
-    char** state_topic_target = isScoped
-        ? &state.scopedTopic
-        : &state.nonscopedTopic;
+    char** state_topic_target = isScoped ? &state.scopedTopic : &state.nonscopedTopic;
 
     // Need to free and null-out regardless of subscribed value.
     free(*state_topic_target);
