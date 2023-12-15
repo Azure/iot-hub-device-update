@@ -74,7 +74,7 @@ void OnMessage_enr_resp(
     bool isEnrolled = false;
     char* scopeId = NULL;
     char* correlationData = NULL;
-    uint16_t correlationDataByteLen = 0;
+    size_t correlationDataByteLen = 0;
 
     ADUC_Retriable_Operation_Context* retriableOperationContext = RetriableOperationContextFromEnrollmentMqttLibCallbackUserObj(obj);
     ADUC_Enrollment_Request_Operation_Data* enrollmentData = retriableOperationContext == NULL ? NULL : EnrollmentDataFromRetriableOperationContext(retriableOperationContext);

@@ -77,7 +77,7 @@ bool ADU_mosquitto_get_correlation_data(const mosquitto_property* props, char** 
  * @param[out] outCorrelationDataByteLen Optional. If not NULL, will set to byte length of the mqtt correlation-data property.
  * @return `true` if the correlation data matches the provided correlation ID; otherwise, `false`.
  */
-bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* correlationId, char** outCorrelationData, uint16_t* outCorrelationDataByteLen)
+bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* correlationId, char** outCorrelationData, size_t* outCorrelationDataByteLen)
 {
     char* cid = NULL;
     uint16_t cidLen = 0;
@@ -106,7 +106,7 @@ bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const cha
 
     if (outCorrelationDataByteLen != NULL)
     {
-        *outCorrelationDataByteLen = cidLen;
+        *outCorrelationDataByteLen = (size_t)cidLen;
     }
 
     n = (size_t)cidLen;

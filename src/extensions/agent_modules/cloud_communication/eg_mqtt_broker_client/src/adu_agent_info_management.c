@@ -76,7 +76,7 @@ void OnMessage_ainfo_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
     char* correlationData = NULL;
-    uint16_t correlationDataByteLen = 0;
+    size_t correlationDataByteLen = 0;
     ADUC_Retriable_Operation_Context* retriableOperationContext =
         RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(obj);
     ADUC_AgentInfo_Request_Operation_Data* agentInfoData =
