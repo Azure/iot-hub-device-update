@@ -52,7 +52,6 @@ void ADUC_StateStore_Deinitialize();
 char* ADUC_StateStore_GetExternalDeviceId();
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetExternalDeviceId(const char* externalDeviceId);
 
-ADUC_STATE_STORE_RESULT ADUC_StateStore_SetIsDeviceRegistered(bool isDeviceRegistered);
 bool ADUC_StateStore_GetIsDeviceRegistered();
 
 int ADUC_StateStore_GetDeviceRegistrationStatePollIntervalSeconds();

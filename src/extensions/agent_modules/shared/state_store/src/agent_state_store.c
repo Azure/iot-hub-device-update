@@ -61,7 +61,6 @@ typedef struct
     char* scopeId;
     char* nonscopedTopic;
     char* scopedTopic;
-    bool isDeviceRegistered;
     bool isDeviceEnrolled;
     bool isAgentInfoReported;
     bool isDeviceProvisionedByService;
@@ -163,30 +162,16 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetExternalDeviceId(const char* external
 }
 
 /**
- * @brief Set the 'IsDeviceRegistered' value in the state store.
- * @param isDeviceRegistered The value to set.
- * @return ADUC_STATE_STORE_RESULT_OK on success, ADUC_STATE_STORE_RESULT_ERROR on failure.
- */
-ADUC_STATE_STORE_RESULT ADUC_StateStore_SetIsDeviceRegistered(bool isDeviceRegistered)
-{
-    sem_wait(&state_semaphore);
-
-    free(state.externalDeviceId);
-    state.isDeviceRegistered = isDeviceRegistered;
-
-    sem_post(&state_semaphore);
-    return ADUC_STATE_STORE_RESULT_OK;
-}
-
-/**
  * @brief Get the 'IsDeviceRegistered' value in the state store.
  * @return The value of 'IsDeviceRegistered' or false if not found.
  */
 bool ADUC_StateStore_GetIsDeviceRegistered()
 {
+    bool value;
+
     sem_wait(&state_semaphore);
 
-    bool value = state.isDeviceRegistered;
+    value = !IsNullOrEmpty(state.externalDeviceId) && !IsNullOrEmpty(state.mqttBrokerHostname);
 
     sem_post(&state_semaphore);
     return value;

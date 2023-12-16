@@ -568,11 +568,6 @@ static bool UpdateAgentStateStoreWithConfigFileProvisioning(ADUC_MQTT_SETTINGS* 
         return false;
     }
 
-    if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetIsDeviceRegistered(true /* isDeviceRegistered */))
-    {
-        return false;
-    }
-
     if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetMQTTBrokerHostname(mqttSettings->hostname))
     {
         return false;

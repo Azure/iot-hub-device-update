@@ -167,7 +167,6 @@ static void SetRegisterState(ADPS_MQTT_CLIENT_MODULE_STATE* moduleState, ADPS_RE
         return;
     }
 
-    ADUC_StateStore_SetIsDeviceRegistered(state == ADPS_REGISTER_STATE_REGISTERED);
     Log_Info("Register state changed from %d to %d (%s)", moduleState->registerState, state, reason);
     moduleState->registerState = state;
 }
