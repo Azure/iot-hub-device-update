@@ -92,6 +92,12 @@ void OnMessage_ainfo_resp(
 
     json_print_properties(props);
 
+    if (msg == NULL || msg->payload == NULL || msg->payloadlen == 0)
+    {
+        Log_Error("Bad payload. msg:%p, payload:%p, payloadlen:%d", msg, msg->payload, msg->payloadlen);
+        goto done;
+    }
+
     if (!ADU_are_correlation_ids_matching(
             props, messageContext->correlationId, &correlationData, &correlationDataByteLen))
     {
@@ -99,12 +105,6 @@ void OnMessage_ainfo_resp(
             "correlation data mismatch. expected: '%s', actual: '%s' %u bytes",
             correlationData,
             correlationDataByteLen);
-        goto done;
-    }
-
-    if (msg == NULL || msg->payload == NULL || msg->payloadlen == 0)
-    {
-        Log_Error("Bad payload. msg:%p, payload:%p, payloadlen:%d", msg, msg->payload, msg->payloadlen);
         goto done;
     }
 
