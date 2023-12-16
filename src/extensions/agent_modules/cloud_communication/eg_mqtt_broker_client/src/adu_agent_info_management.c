@@ -8,9 +8,9 @@
 
 #include "aduc/adu_agent_info_management.h"
 
-#include <aduc/adu_communication_channel.h>
 #include <aduc/adu_agentinfo.h>
 #include <aduc/adu_agentinfo_utils.h>
+#include <aduc/adu_communication_channel.h>
 #include <aduc/adu_module_state.h>
 #include <aduc/adu_mosquitto_utils.h>
 #include <aduc/adu_mqtt_common.h>
@@ -62,7 +62,7 @@ void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 
 /**
  * @brief Callback should be called when the client receives an agentinfo status response message from the Device Update service.
- *  For 'ainfo_resp' messages, if the Correlation Data matches the 'en,the client should parse the message and update the agentinfo state.
+ *  For 'ainfo_resp' messages, if the Correlation Data matches, then the client should parse the message and update the agentinfo state.
  *
  * @param mosq The mosquitto instance making the callback.
  * @param obj The user data provided in mosquitto_new. This is the module state
@@ -76,9 +76,11 @@ void OnMessage_ainfo_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
     char* correlationData = NULL;
-    uint16_t correlationDataByteLen = 0;
-    ADUC_Retriable_Operation_Context* retriableOperationContext = RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(obj);
-    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoDataFromRetriableOperationContext(retriableOperationContext);
+    size_t correlationDataByteLen = 0;
+    ADUC_Retriable_Operation_Context* retriableOperationContext =
+        RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(obj);
+    ADUC_AgentInfo_Request_Operation_Data* agentInfoData =
+        AgentInfoDataFromRetriableOperationContext(retriableOperationContext);
 
     ADUC_MQTT_Message_Context* messageContext = agentInfoData == NULL ? NULL : &agentInfoData->ainfoReqMessageContext;
 
@@ -90,19 +92,24 @@ void OnMessage_ainfo_resp(
 
     json_print_properties(props);
 
-    if (!ADU_are_correlation_ids_matching(props, messageContext->correlationId, &correlationData, &correlationDataByteLen))
-    {
-        Log_Info("correlation data mismatch. expected: '%s', actual: '%s' %u bytes", correlationData, correlationDataByteLen);
-        goto done;
-    }
-
     if (msg == NULL || msg->payload == NULL || msg->payloadlen == 0)
     {
         Log_Error("Bad payload. msg:%p, payload:%p, payloadlen:%d", msg, msg->payload, msg->payloadlen);
         goto done;
     }
 
-    if (!ParseAndValidateCommonResponseUserProperties(props, "ainfo_resp" /* expectedMsgType */, &agentInfoData->respUserProps))
+    if (!ADU_are_correlation_ids_matching(
+            props, messageContext->correlationId, &correlationData, &correlationDataByteLen))
+    {
+        Log_Info(
+            "correlation data mismatch. expected: '%s', actual: '%s' %u bytes",
+            correlationData,
+            correlationDataByteLen);
+        goto done;
+    }
+
+    if (!ADU_MosquittoUtils_ParseAndValidateCommonResponseUserProperties(
+            props, "ainfo_resp" /* expectedMsgType */, &agentInfoData->respUserProps))
     {
         Log_Error("Fail parse of common user props");
         goto done;
@@ -123,46 +130,13 @@ done:
 
 void OnPublish_ainfo_resp(struct mosquitto* mosq, void* obj, const mosquitto_property* props, int reason_code)
 {
-    UNREFERENCED_PARAMETER(mosq);
-    UNREFERENCED_PARAMETER(props);
-
-    ADUC_Retriable_Operation_Context* retriable_operation_context = RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(obj);
-
-    switch (reason_code)
-    {
-    case MQTT_RC_NO_MATCHING_SUBSCRIBERS:
-        // No Subscribers were subscribed to the topic we tried to publish to (as per mqtt 5 spec).
-        // This is unexpected since at least the ADU service should be subscribed to receive the
-        // agent topic's publish. Set timer and try again later in hopes that the service will be
-        // subscribed, but fail and restart after max retries.
-        if (retriable_operation_context != NULL)
-        {
-            retriable_operation_context->retryFunc(retriable_operation_context, retriable_operation_context->retryParams);
-        }
-        break;
-
-    case MQTT_RC_UNSPECIFIED: // fall-through
-    case MQTT_RC_IMPLEMENTATION_SPECIFIC: // fall-through
-    case MQTT_RC_NOT_AUTHORIZED:
-        // Not authorized at the moment but maybe it can auto-recover with retry if it is corrected.
-        if (retriable_operation_context != NULL)
-        {
-            retriable_operation_context->retryFunc(retriable_operation_context, retriable_operation_context->retryParams);
-        }
-        break;
-
-    case MQTT_RC_TOPIC_NAME_INVALID: // fall-through
-    case MQTT_RC_PACKET_ID_IN_USE: // fall-through
-    case MQTT_RC_PACKET_TOO_LARGE: // fall-through
-    case MQTT_RC_QUOTA_EXCEEDED:
-        if (retriable_operation_context != NULL)
-        {
-            retriable_operation_context->cancelFunc(retriable_operation_context);
-        }
-        break;
-    }
+    ADUC_Retriable_Operation_Context* operationContext =
+        RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(obj);
+    ADUC_AgentInfo_Request_Operation_Data* agentInfoData =
+        AgentInfoDataFromRetriableOperationContext(operationContext);
+    ADUC_MQTT_Common_HandlePublishAck(
+        mosq, obj, props, reason_code, operationContext, agentInfoData->ainfoReqMessageContext.correlationId);
 }
-
 
 //
 // END - ADU_AGENT_INFO_MANAGEMENT.H Public Interface

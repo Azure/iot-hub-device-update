@@ -62,9 +62,22 @@ ADUC_AgentInfo_Request_Operation_Data* AgentInfoData_FromOperationContext(ADUC_R
  */
 ADUC_Retriable_Operation_Context* RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(void* obj)
 {
+    if (obj == NULL)
+    {
+        Log_Error("Null obj");
+        return NULL;
+    }
+
     ADUC_MQTT_CLIENT_MODULE_STATE* ownerModuleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
     ADUC_AGENT_MODULE_INTERFACE* agentInfoModuleInterface =
         (ADUC_AGENT_MODULE_INTERFACE*)ownerModuleState->agentInfoModule;
+
+    if (agentInfoModuleInterface == NULL)
+    {
+        Log_Error("Null obj");
+        return NULL;
+    }
+
     return (ADUC_Retriable_Operation_Context*)(agentInfoModuleInterface->moduleData);
 }
 

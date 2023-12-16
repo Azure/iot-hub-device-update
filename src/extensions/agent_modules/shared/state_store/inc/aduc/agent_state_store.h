@@ -49,7 +49,7 @@ typedef enum tagADUC_STATE_STORE_TOPIC_SUBSCRIBE_STATUS
 ADUC_STATE_STORE_RESULT ADUC_StateStore_Initialize(const char* state_file_path, bool isUsingProvisioningService);
 void ADUC_StateStore_Deinitialize();
 
-const char* ADUC_StateStore_GetExternalDeviceId();
+char* ADUC_StateStore_GetExternalDeviceId();
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetExternalDeviceId(const char* externalDeviceId);
 
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetIsDeviceRegistered(bool isDeviceRegistered);
@@ -57,13 +57,10 @@ bool ADUC_StateStore_GetIsDeviceRegistered();
 
 int ADUC_StateStore_GetDeviceRegistrationStatePollIntervalSeconds();
 
-const char* ADUC_StateStore_GetMQTTBrokerHostname();
+char* ADUC_StateStore_GetMQTTBrokerHostname();
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetMQTTBrokerHostname(const char* hostname);
 
-const char* ADUC_StateStore_GetDeviceId();
-ADUC_STATE_STORE_RESULT ADUC_StateStore_SetDeviceId(const char* deviceId);
-
-const char* ADUC_StateStore_GetScopeId();
+char* ADUC_StateStore_GetScopeId();
 ADUC_STATE_STORE_RESULT ADUC_StateStore_SetScopeId(const char* scopeId);
 
 bool ADUC_StateStore_GetTopicSubscribedStatus(const char* topic, bool isScoped);

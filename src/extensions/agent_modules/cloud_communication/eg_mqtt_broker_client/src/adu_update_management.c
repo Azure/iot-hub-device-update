@@ -72,7 +72,7 @@ void OnMessage_upd_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
     char* correlationData = NULL;
-    uint16_t correlationDataByteLen = 0;
+    size_t correlationDataByteLen = 0;
 
     WorkQueueHandle updateWorkQueueHandle = WorkQueueHandleFromCallbackUserObj(obj);
     ADUC_Retriable_Operation_Context* retriableOperationContext = RetriableOperationContextFromCallbackUserObj(obj);
@@ -118,7 +118,7 @@ void OnMessage_upd_resp(
         goto done;
     }
 
-    if (!ParseAndValidateCommonResponseUserProperties(
+    if (!ADU_MosquittoUtils_ParseAndValidateCommonResponseUserProperties(
             props, "upd_resp" /* expectedMsgType */, &updateData->respUserProps))
     {
         Log_Error("Fail parse of common user props");

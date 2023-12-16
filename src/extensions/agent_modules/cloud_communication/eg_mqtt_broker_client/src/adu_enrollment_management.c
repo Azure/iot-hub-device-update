@@ -74,10 +74,13 @@ void OnMessage_enr_resp(
     bool isEnrolled = false;
     char* scopeId = NULL;
     char* correlationData = NULL;
-    uint16_t correlationDataByteLen = 0;
+    size_t correlationDataByteLen = 0;
 
-    ADUC_Retriable_Operation_Context* retriableOperationContext = RetriableOperationContextFromEnrollmentMqttLibCallbackUserObj(obj);
-    ADUC_Enrollment_Request_Operation_Data* enrollmentData = retriableOperationContext == NULL ? NULL : EnrollmentDataFromRetriableOperationContext(retriableOperationContext);
+    ADUC_Retriable_Operation_Context* retriableOperationContext =
+        RetriableOperationContextFromEnrollmentMqttLibCallbackUserObj(obj);
+    ADUC_Enrollment_Request_Operation_Data* enrollmentData = retriableOperationContext == NULL
+        ? NULL
+        : EnrollmentDataFromRetriableOperationContext(retriableOperationContext);
 
     if (retriableOperationContext == NULL || enrollmentData == NULL)
     {
@@ -87,9 +90,13 @@ void OnMessage_enr_resp(
 
     json_print_properties(props);
 
-    if (!ADU_are_correlation_ids_matching(props, enrollmentData->enrReqMessageContext.correlationId, &correlationData, &correlationDataByteLen))
+    if (!ADU_are_correlation_ids_matching(
+            props, enrollmentData->enrReqMessageContext.correlationId, &correlationData, &correlationDataByteLen))
     {
-        Log_Info("correlation data mismatch. expected: '%s', actual: '%s' %u bytes", correlationData, correlationDataByteLen);
+        Log_Info(
+            "correlation data mismatch. expected: '%s', actual: '%s' %u bytes",
+            correlationData,
+            correlationDataByteLen);
         goto done;
     }
 
@@ -99,7 +106,8 @@ void OnMessage_enr_resp(
         goto done;
     }
 
-    if (!ParseAndValidateCommonResponseUserProperties(props, "enr_resp" /* expectedMsgType */, &enrollmentData->respUserProps))
+    if (!ADU_MosquittoUtils_ParseAndValidateCommonResponseUserProperties(
+            props, "enr_resp" /* expectedMsgType */, &enrollmentData->respUserProps))
     {
         Log_Error("Fail parse of common user props");
         goto done;
@@ -111,11 +119,7 @@ void OnMessage_enr_resp(
         goto done;
     }
 
-    if (!Handle_Enrollment_Response(
-        enrollmentData,
-        isEnrolled,
-        scopeId,
-        retriableOperationContext))
+    if (!Handle_Enrollment_Response(enrollmentData, isEnrolled, scopeId, retriableOperationContext))
     {
         Log_Error("Fail handling enrollment response.");
         goto done;
@@ -128,44 +132,12 @@ done:
 
 void OnPublish_enr_resp(struct mosquitto* mosq, void* obj, const mosquitto_property* props, int reason_code)
 {
-    UNREFERENCED_PARAMETER(mosq);
-    UNREFERENCED_PARAMETER(props);
-
-    ADUC_Retriable_Operation_Context* retriable_operation_context = RetriableOperationContextFromEnrollmentMqttLibCallbackUserObj(obj);
-
-    switch (reason_code)
-    {
-    case MQTT_RC_NO_MATCHING_SUBSCRIBERS:
-        // No Subscribers were subscribed to the topic we tried to publish to (as per mqtt 5 spec).
-        // This is unexpected since at least the ADU service should be subscribed to receive the
-        // agent topic's publish. Set timer and try again later in hopes that the service will be
-        // subscribed, but fail and restart after max retries.
-        if (retriable_operation_context != NULL)
-        {
-            retriable_operation_context->retryFunc(retriable_operation_context, retriable_operation_context->retryParams);
-        }
-        break;
-
-    case MQTT_RC_UNSPECIFIED: // fall-through
-    case MQTT_RC_IMPLEMENTATION_SPECIFIC: // fall-through
-    case MQTT_RC_NOT_AUTHORIZED:
-        // Not authorized at the moment but maybe it can auto-recover with retry if it is corrected.
-        if (retriable_operation_context != NULL)
-        {
-            retriable_operation_context->retryFunc(retriable_operation_context, retriable_operation_context->retryParams);
-        }
-        break;
-
-    case MQTT_RC_TOPIC_NAME_INVALID: // fall-through
-    case MQTT_RC_PACKET_ID_IN_USE: // fall-through
-    case MQTT_RC_PACKET_TOO_LARGE: // fall-through
-    case MQTT_RC_QUOTA_EXCEEDED:
-        if (retriable_operation_context != NULL)
-        {
-            retriable_operation_context->cancelFunc(retriable_operation_context);
-        }
-        break;
-    }
+    ADUC_Retriable_Operation_Context* operationContext =
+        RetriableOperationContextFromEnrollmentMqttLibCallbackUserObj(obj);
+    ADUC_Enrollment_Request_Operation_Data* enrollmentData =
+        EnrollmentDataFromRetriableOperationContext(operationContext);
+    ADUC_MQTT_Common_HandlePublishAck(
+        mosq, obj, props, reason_code, operationContext, enrollmentData->enrReqMessageContext.correlationId);
 }
 
 //

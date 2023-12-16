@@ -153,7 +153,7 @@ static OnPublishResponseHandlerFn GetComponentOnPublishResponseHandler(const cha
 bool InitMqttTopics(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
 {
     bool result = false;
-    const char* deviceId;
+    char* deviceId = NULL;
 
     if (!IsNullOrEmpty(moduleState->mqtt_topic_service2agent) && !IsNullOrEmpty(moduleState->mqtt_topic_agent2service))
     {
@@ -185,6 +185,8 @@ bool InitMqttTopics(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
     result = true;
 
 done:
+    free(deviceId);
+
     if (!result)
     {
         DeinitMqttTopics(moduleState);
@@ -561,11 +563,6 @@ static bool UpdateAgentStateStoreWithConfigFileProvisioning(ADUC_MQTT_SETTINGS* 
 {
     // Use username from settings as ExternalDeviceId
     if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetExternalDeviceId(mqttSettings->username))
-    {
-        return false;
-    }
-
-    if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetDeviceId(mqttSettings->username))
     {
         return false;
     }

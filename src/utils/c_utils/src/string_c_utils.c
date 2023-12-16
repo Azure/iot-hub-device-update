@@ -388,7 +388,7 @@ bool IsNullOrEmpty(const char* str)
  * @param len Length of string to copy.
  * @return bool Returns true is success.
  */
-bool MallocAndSubstr(char** target, char* source, size_t len)
+bool MallocAndSubstr(char** target, const char* source, size_t len)
 {
     if (target == NULL || source == NULL)
     {
@@ -402,7 +402,12 @@ bool MallocAndSubstr(char** target, char* source, size_t len)
         return false;
     }
     memset(t, 0, (len + 1) * sizeof(*t));
-    ADUC_Safe_StrCopyN(t, source, len + 1, len);
+
+    if (len > ADUC_Safe_StrCopyN(t, source, len + 1, len))
+    {
+        free(t);
+        return false;
+    }
 
     *target = t;
     return true;

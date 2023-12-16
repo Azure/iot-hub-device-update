@@ -158,7 +158,11 @@ void ADU_mosquitto_free_properties(mosquitto_property** props);
  * @return true if the correlation data matches the provided correlation ID; otherwise, false.
  * @remark
  */
-bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* correlationId, char** outCorrelationData, uint16_t* outCorrelationDataByteLen);
+bool ADU_are_correlation_ids_matching(
+    const mosquitto_property* props,
+    const char* correlationId,
+    char** outCorrelationData,
+    size_t* outCorrelationDataByteLen);
 
 /**
  * @brief Parses and validates the MQTT response topic user properties common to ADU responst topics.
@@ -168,7 +172,10 @@ bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const cha
  * @param outRespUserProps The common response user properties structure that will receive side-effects after parse and validation.
  * @return true When parse and validation succeeds.
  */
-bool ParseAndValidateCommonResponseUserProperties(const mosquitto_property* props, const char* expectedMsgType, ADUC_Common_Response_User_Properties* outRespUserProps);
+bool ADU_MosquittoUtils_ParseAndValidateCommonResponseUserProperties(
+    const mosquitto_property* props,
+    const char* expectedMsgType,
+    ADUC_Common_Response_User_Properties* outRespUserProps);
 
 /**
  * @brief prints mosquitto property for debugging.
