@@ -90,6 +90,9 @@ bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const cha
     }
 
     // Check if correlation data matches the latest enrollment message.
+    // NOTE: the void** is due to the API signature and compiler not allowing char** instead--the mosquitto fn impl uses calloc and memcpy
+    // that return and take void* so the author of API signature just went with that and avoided casting to something like char* for the
+    // binary data so callers have to cast.
     const mosquitto_property* p = mosquitto_property_read_binary(props, MQTT_PROP_CORRELATION_DATA, (void**)&cid, &cidLen, false);
     if (p == NULL || cid == NULL)
     {
