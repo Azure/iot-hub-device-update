@@ -98,7 +98,7 @@ bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const cha
 
     if (outCorrelationData != NULL)
     {
-        if (ADUC_AllocAndStrCopyN(outCorrelationData, cid, cidLen) != 0)
+        if (ADUC_AllocAndStrCopyN(outCorrelationData, cid, (size_t)cidLen) != 0)
         {
             goto done;
         }
