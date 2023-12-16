@@ -33,7 +33,7 @@ void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retr
 
     ADUC_WorkflowHandle workqueueHandle = ADUC_StateStore_GetUpdateWorkQueueHandle();
     WorkQueueItemHandle itemHandle = WorkQueue_GetNextWork(workqueueHandle);
-    char* jsonPayload = WorkQueueItem_GetUpdateResultMessageJson(itemHandle);
+    char* jsonPayload = WorkQueueItem_GetData(itemHandle);
     int updateManifestVersion = 0;
     ContentHandler* contentHandler = nullptr;
     char* updateId = nullptr;
