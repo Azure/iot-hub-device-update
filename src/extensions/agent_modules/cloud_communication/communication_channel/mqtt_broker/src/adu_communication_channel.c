@@ -416,9 +416,7 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
     }
 
     commMgrState->mqttClient = mosquitto_new(
-        initData->sessionId,
-        commMgrState->mqttSettings.cleanSession,
-        handle /* DU MQTT Agent Module Handle */);
+        initData->sessionId, commMgrState->mqttSettings.cleanSession, handle /* DU MQTT Agent Module Handle */);
     if (!commMgrState->mqttClient)
     {
         Log_Error("Fail mosq new");

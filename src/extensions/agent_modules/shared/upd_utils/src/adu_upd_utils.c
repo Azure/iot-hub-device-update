@@ -72,7 +72,8 @@ WorkQueueHandle ReportingWorkQueueHandleFromCallbackUserObj(void* obj)
 ADUC_Retriable_Operation_Context* RetriableOperationContextFromCallbackUserObj(void* obj)
 {
     ADUC_MQTT_CLIENT_MODULE_STATE* ownerModuleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
-    ADUC_AGENT_MODULE_INTERFACE* updateModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)(ownerModuleState->updateModule);
+    ADUC_AGENT_MODULE_INTERFACE* updateModuleInterface =
+        (ADUC_AGENT_MODULE_INTERFACE*)(ownerModuleState->updateModule);
     return (ADUC_Retriable_Operation_Context*)(updateModuleInterface->moduleData);
 }
 
@@ -81,7 +82,8 @@ ADUC_Retriable_Operation_Context* RetriableOperationContextFromCallbackUserObj(v
  * @param retriableOperationContext The retriable operation context.
  * @return ADUC_Enrollment_Request_Operation_Data* The update request operation data.
  */
-ADUC_Update_Request_Operation_Data* UpdateDataFromRetriableOperationContext(ADUC_Retriable_Operation_Context* retriableOperationContext)
+ADUC_Update_Request_Operation_Data*
+UpdateDataFromRetriableOperationContext(ADUC_Retriable_Operation_Context* retriableOperationContext)
 {
     if (retriableOperationContext == NULL)
     {
@@ -104,10 +106,10 @@ bool UpdateData_SetCorrelationId(ADUC_Update_Request_Operation_Data* updateData,
     }
 
     if (!ADUC_Safe_StrCopyN(
-        updateData->updReqMessageContext.correlationId,
-        correlationId,
-        ARRAY_SIZE(updateData->updReqMessageContext.correlationId),
-        strlen(correlationId)))
+            updateData->updReqMessageContext.correlationId,
+            correlationId,
+            ARRAY_SIZE(updateData->updReqMessageContext.correlationId),
+            strlen(correlationId)))
     {
         Log_Error("copy failed");
         return false;
@@ -118,6 +120,11 @@ bool UpdateData_SetCorrelationId(ADUC_Update_Request_Operation_Data* updateData,
 
 void AduUpdUtils_TransitionState(ADU_UPD_STATE newState, ADUC_Update_Request_Operation_Data* updateData)
 {
-    Log_Info("Transition from %d ('%s') to %d ('%s')", updateData->updState, AduUpdState_str(updateData->updState), newState, AduUpdState_str(newState));
+    Log_Info(
+        "Transition from %d ('%s') to %d ('%s')",
+        updateData->updState,
+        AduUpdState_str(updateData->updState),
+        newState,
+        AduUpdState_str(newState));
     updateData->updState = newState;
 }

@@ -42,12 +42,12 @@ bool ADU_mosquitto_set_content_type_property(mosquitto_property** props, const c
 
     err = mosquitto_property_add_string(props, MQTT_PROP_CONTENT_TYPE, contentType);
 
-    if ( err == MOSQ_ERR_SUCCESS)
+    if (err == MOSQ_ERR_SUCCESS)
     {
         return true;
     }
 
-    switch(err)
+    switch (err)
     {
     case MOSQ_ERR_INVAL: // - if identifier is invalid, if name or value is NULL, or if proplist is NULL
         Log_Error("Fail MOSQ_ERR_INVAL(%d) - props[%p] contentType[%p]", err, props, contentType);
@@ -111,7 +111,11 @@ bool ADU_mosquitto_get_correlation_data(const mosquitto_property* props, char** 
  * @param[out] outCorrelationDataByteLen Optional. If not NULL, will set to byte length of the mqtt correlation-data property.
  * @return `true` if the correlation data matches the provided correlation ID; otherwise, `false`.
  */
-bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* expectedCorrelationId, char** outCorrelationData, size_t* outCorrelationDataByteLen)
+bool ADU_are_correlation_ids_matching(
+    const mosquitto_property* props,
+    const char* expectedCorrelationId,
+    char** outCorrelationData,
+    size_t* outCorrelationDataByteLen)
 {
     char* responseCorrelationId = NULL;
     uint16_t responseCorrelationIdLen = 0;
@@ -127,7 +131,8 @@ bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const cha
     // NOTE: the void** is due to the API signature and compiler not allowing char** instead--the mosquitto fn impl uses calloc and memcpy
     // that return and take void* so the author of API signature just went with that and avoided casting to something like char* for the
     // binary data so callers have to cast.
-    const mosquitto_property* p = mosquitto_property_read_binary(props, MQTT_PROP_CORRELATION_DATA, (void**)&responseCorrelationId, &responseCorrelationIdLen, false);
+    const mosquitto_property* p = mosquitto_property_read_binary(
+        props, MQTT_PROP_CORRELATION_DATA, (void**)&responseCorrelationId, &responseCorrelationIdLen, false);
     if (p == NULL || responseCorrelationId == NULL)
     {
         goto done;
