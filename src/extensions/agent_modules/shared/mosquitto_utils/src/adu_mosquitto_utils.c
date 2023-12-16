@@ -420,7 +420,7 @@ ADUC_MQTT_DISCONNECTION_CATEGORY CategorizeMQTTDisconnection(int rc)
  * @param outRespUserProps The common response user properties structure that will receive side-effects after parse and validation.
  * @return true When parse and validation succeeds.
  */
-bool ParseAndValidateCommonResponseUserProperties(const mosquitto_property* props, const char* expectedMsgType, ADUC_Common_Response_User_Properties* outRespUserProps)
+bool ADU_MosquittoUtils_ParseAndValidateCommonResponseUserProperties(const mosquitto_property* props, const char* expectedMsgType, ADUC_Common_Response_User_Properties* outRespUserProps)
 {
     bool success = false;
 

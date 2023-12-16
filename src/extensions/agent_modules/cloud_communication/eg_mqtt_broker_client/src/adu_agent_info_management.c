@@ -108,7 +108,7 @@ void OnMessage_ainfo_resp(
         goto done;
     }
 
-    if (!ParseAndValidateCommonResponseUserProperties(
+    if (!ADU_MosquittoUtils_ParseAndValidateCommonResponseUserProperties(
             props, "ainfo_resp" /* expectedMsgType */, &agentInfoData->respUserProps))
     {
         Log_Error("Fail parse of common user props");

@@ -99,7 +99,7 @@ void OnMessage_enr_resp(
         goto done;
     }
 
-    if (!ParseAndValidateCommonResponseUserProperties(props, "enr_resp" /* expectedMsgType */, &enrollmentData->respUserProps))
+    if (!ADU_MosquittoUtils_ParseAndValidateCommonResponseUserProperties(props, "enr_resp" /* expectedMsgType */, &enrollmentData->respUserProps))
     {
         Log_Error("Fail parse of common user props");
         goto done;
