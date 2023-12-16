@@ -76,8 +76,7 @@ void OnMessage_upd_resp(
 
     WorkQueueHandle updateWorkQueueHandle = WorkQueueHandleFromCallbackUserObj(obj);
     ADUC_Retriable_Operation_Context* retriableOperationContext = RetriableOperationContextFromCallbackUserObj(obj);
-    ADUC_Update_Request_Operation_Data* updateData =
-        retriableOperationContext == NULL ? NULL : UpdateDataFromRetriableOperationContext(retriableOperationContext);
+    ADUC_Update_Request_Operation_Data* updateData = UpdateDataFromRetriableOperationContext(retriableOperationContext);
 
     if (updateWorkQueueHandle == NULL || retriableOperationContext == NULL || updateData == NULL)
     {
