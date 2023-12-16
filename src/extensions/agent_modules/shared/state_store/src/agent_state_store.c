@@ -20,15 +20,19 @@
 static bool isInitialized = false;
 
 // MQTT SPEC says topics can have max len of 65536 utf-8 encoded bytes.
-//
-// TODO: Figure out a lower, tighter maximum based on topic template path segment maximums, or if this maximum is not sufficient.
-#define MAX_ADU_MQTT_TOPIC_BYTE_LEN 2048
+// Using the max mqtt topic byte length (can be lower in characters
+// since utf-8 char can be encoded with up to 4 bytes)
+#define MAX_ADU_MQTT_TOPIC_BYTE_LEN 65536
 
-// TODO: determine the real max. reasonable placeholder for now.
-#define MAX_ADU_DEVICE_ID_BYTE_LEN 256
+// The maximum [external] device ID provided by DPS is currently 1016 utf-8 characters.
+// The charset is currently not restricted so allowing for any unicode codepoint where
+// the utf-8 encoding could be up to 4 bytes for a single character.
+#define MAX_ADU_DEVICE_ID_BYTE_LEN 1016 * 4
 
-// TODO: determine the real max. reasonable placeholder for now.
-#define MAX_ADU_SCOPE_ID_BYTE_LEN 256
+// scopeId, or adu account name, is 24 utf-8 chars. Multiplying by max utf-8 byte
+// encoding size (4) to avoid precluding future scenarios.
+// https://learn.microsoft.com/en-us/azure/iot-hub-device-update/device-update-limits
+#define MAX_ADU_SCOPE_ID_BYTE_LEN 24 * 4
 
 // TODO make this configurable.
 //#define DEFAULT_STATE_STORE_PATH "/var/lib/adu/agent-state.json"
