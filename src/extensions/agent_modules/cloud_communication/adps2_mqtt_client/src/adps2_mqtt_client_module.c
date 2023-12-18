@@ -124,6 +124,8 @@ ADUC_AGENT_MODULE_HANDLE ADPS_MQTT_Client_Module_Create()
     moduleInterface->moduleData = moduleState;
     moduleState = NULL; // transfer ownership
 
+    moduleInterface->initialized = true;
+
     // successful, so only now transfer moduleInterface to the output handle.
     handle = moduleInterface;
     moduleInterface = NULL; // transfer ownership
@@ -167,7 +169,6 @@ static void SetRegisterState(ADPS_MQTT_CLIENT_MODULE_STATE* moduleState, ADPS_RE
         return;
     }
 
-    ADUC_StateStore_SetIsDeviceRegistered(state == ADPS_REGISTER_STATE_REGISTERED);
     Log_Info("Register state changed from %d to %d (%s)", moduleState->registerState, state, reason);
     moduleState->registerState = state;
 }
@@ -279,17 +280,14 @@ bool ProcessDeviceRegistrationResponse(
     {
         bool errorOccurred = false;
         Log_Info("Device is registered.");
+
         SetRegisterState(moduleState, ADPS_REGISTER_STATE_REGISTERED, "received assigned status");
 
         const char* deviceId = json_object_dotget_string(json_object(root_value), "registrationState.deviceId");
+
         if (deviceId == NULL)
         {
             Log_Error("Failed to get deviceId from JSON payload:\n%s", payload);
-            errorOccurred = true;
-        }
-        else if (ADUC_StateStore_SetDeviceId(deviceId) != ADUC_STATE_STORE_RESULT_OK)
-        {
-            Log_Error("Failed to set deviceId");
             errorOccurred = true;
         }
         else if (ADUC_StateStore_SetExternalDeviceId(deviceId) != ADUC_STATE_STORE_RESULT_OK)
@@ -297,8 +295,10 @@ bool ProcessDeviceRegistrationResponse(
             Log_Error("Failed to set externalDeviceID");
             errorOccurred = true;
         }
+
         const char* mqttBrokerHostname =
             json_object_dotget_string(json_object(root_value), "registrationState.assignedEndpoint.hostName");
+
         if (mqttBrokerHostname == NULL)
         {
             Log_Error("Failed to get MQTT broker hostname from JSON payload");
@@ -313,6 +313,7 @@ bool ProcessDeviceRegistrationResponse(
                 errorOccurred = true;
             }
         }
+
         if (errorOccurred)
         {
             // Set registration state to 'unknown' so that we can retry again.
@@ -427,7 +428,11 @@ done:
 void ADPS_MQTT_Client_Module_OnPublish(
     struct mosquitto* mosq, void* obj, int mid, int reason_code, const mosquitto_property* props)
 {
-    Log_Info("<-- PUBACK (qos 1) msgid: %d, reason_code: %d => '%s'", mid, reason_code, mosquitto_reason_string(reason_code));
+    Log_Info(
+        "<-- PUBACK (qos 1) msgid: %d, reason_code: %d => '%s'",
+        mid,
+        reason_code,
+        mosquitto_reason_string(reason_code));
 }
 
 /**
@@ -594,7 +599,10 @@ bool DeviceRegistration_DoWork(ADUC_AGENT_MODULE_HANDLE handle)
         char device_registration_json[1024];
         moduleState->requestId = nowTime;
         snprintf(
-            topic_name, sizeof(topic_name), "$dps/registrations/PUT/iotdps-register/?$rid=%ld", moduleState->requestId);
+            topic_name,
+            sizeof(topic_name),
+            "$dps/registrations/PUT/iotdps-register/?$rid=%ld",
+            moduleState->requestId);
         snprintf(
             device_registration_json,
             sizeof(device_registration_json),

@@ -34,8 +34,21 @@ ADUC_Update_Request_Operation_Data* UpdateData_FromOperationContext(ADUC_Retriab
  */
 WorkQueueHandle WorkQueueHandleFromCallbackUserObj(void* obj)
 {
-    ADUC_MQTT_CLIENT_MODULE_STATE* ownerModuleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
-    ADUC_WorkQueues* workQueues = (ADUC_WorkQueues*)(ownerModuleState->moduleInitData);
+    ADUC_MQTT_CLIENT_MODULE_STATE* ownerModuleState = NULL;
+    ADUC_WorkQueues* workQueues = NULL;
+
+    ownerModuleState = (ADUC_MQTT_CLIENT_MODULE_STATE*)obj;
+    if (ownerModuleState == NULL)
+    {
+        return NULL;
+    }
+
+    workQueues = (ADUC_WorkQueues*)(ownerModuleState->moduleInitData);
+    if (workQueues == NULL)
+    {
+        return NULL;
+    }
+
     return workQueues->updateWorkQueue;
 }
 

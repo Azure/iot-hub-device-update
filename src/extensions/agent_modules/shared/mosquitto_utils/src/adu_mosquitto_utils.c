@@ -42,12 +42,12 @@ bool ADU_mosquitto_set_content_type_property(mosquitto_property** props, const c
 
     err = mosquitto_property_add_string(props, MQTT_PROP_CONTENT_TYPE, contentType);
 
-    if ( err == MOSQ_ERR_SUCCESS)
+    if (err == MOSQ_ERR_SUCCESS)
     {
         return true;
     }
 
-    switch(err)
+    switch (err)
     {
     case MOSQ_ERR_INVAL: // - if identifier is invalid, if name or value is NULL, or if proplist is NULL
         Log_Error("Fail MOSQ_ERR_INVAL(%d) - props[%p] contentType[%p]", err, props, contentType);
@@ -111,7 +111,11 @@ bool ADU_mosquitto_get_correlation_data(const mosquitto_property* props, char** 
  * @param[out] outCorrelationDataByteLen Optional. If not NULL, will set to byte length of the mqtt correlation-data property.
  * @return `true` if the correlation data matches the provided correlation ID; otherwise, `false`.
  */
-bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* expectedCorrelationId, char** outCorrelationData, uint16_t* outCorrelationDataByteLen)
+bool ADU_are_correlation_ids_matching(
+    const mosquitto_property* props,
+    const char* expectedCorrelationId,
+    char** outCorrelationData,
+    size_t* outCorrelationDataByteLen)
 {
     char* responseCorrelationId = NULL;
     uint16_t responseCorrelationIdLen = 0;
@@ -124,7 +128,11 @@ bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const cha
     }
 
     // Check if correlation data matches the latest enrollment message.
-    const mosquitto_property* p = mosquitto_property_read_binary(props, MQTT_PROP_CORRELATION_DATA, (void**)&responseCorrelationId, &responseCorrelationIdLen, false);
+    // NOTE: the void** is due to the API signature and compiler not allowing char** instead--the mosquitto fn impl uses calloc and memcpy
+    // that return and take void* so the author of API signature just went with that and avoided casting to something like char* for the
+    // binary data so callers have to cast.
+    const mosquitto_property* p = mosquitto_property_read_binary(
+        props, MQTT_PROP_CORRELATION_DATA, (void**)&responseCorrelationId, &responseCorrelationIdLen, false);
     if (p == NULL || responseCorrelationId == NULL)
     {
         goto done;
@@ -132,7 +140,7 @@ bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const cha
 
     if (outCorrelationData != NULL)
     {
-        if (ADUC_AllocAndStrCopyN(outCorrelationData, responseCorrelationId, responseCorrelationIdLen) != 0)
+        if (ADUC_AllocAndStrCopyN(outCorrelationData, responseCorrelationId, (size_t)responseCorrelationIdLen) != 0)
         {
             goto done;
         }
@@ -140,7 +148,7 @@ bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const cha
 
     if (outCorrelationDataByteLen != NULL)
     {
-        *outCorrelationDataByteLen = responseCorrelationIdLen;
+        *outCorrelationDataByteLen = (size_t)responseCorrelationIdLen;
     }
 
     n = (size_t)responseCorrelationIdLen;
@@ -211,7 +219,7 @@ bool ADU_mosquitto_add_user_property(mosquitto_property** props, const char* nam
         return true;
     }
 
-    switch(err)
+    switch (err)
     {
     case MOSQ_ERR_INVAL: // - if identifier is invalid, if name or value is NULL, or if proplist is NULL
         Log_Error("Fail MOSQ_ERR_INVAL(%d)", err);
@@ -241,14 +249,15 @@ bool ADU_mosquitto_add_user_property(mosquitto_property** props, const char* nam
  */
 bool ADU_mosquitto_set_correlation_data_property(mosquitto_property** props, const char* correlationData)
 {
-    int err = mosquitto_property_add_binary(props, MQTT_PROP_CORRELATION_DATA, (void*)correlationData, (uint16_t)strlen(correlationData));
+    int err = mosquitto_property_add_binary(
+        props, MQTT_PROP_CORRELATION_DATA, (void*)correlationData, (uint16_t)strlen(correlationData));
 
-    if ( err == MOSQ_ERR_SUCCESS)
+    if (err == MOSQ_ERR_SUCCESS)
     {
         return true;
     }
 
-    switch(err)
+    switch (err)
     {
     case MOSQ_ERR_INVAL: // - if identifier is invalid, if name or value is NULL, or if proplist is NULL
         Log_Error("Fail MOSQ_ERR_INVAL(%d) - props[%p] correlationData[%p]", err, props, correlationData);
@@ -265,7 +274,6 @@ bool ADU_mosquitto_set_correlation_data_property(mosquitto_property** props, con
         Log_Error("Fail Unknown(%d)", err);
         break;
     }
-
 
     return false;
 }
@@ -449,7 +457,10 @@ ADUC_MQTT_DISCONNECTION_CATEGORY CategorizeMQTTDisconnection(int rc)
  * @param outRespUserProps The common response user properties structure that will receive side-effects after parse and validation.
  * @return true When parse and validation succeeds.
  */
-bool ParseAndValidateCommonResponseUserProperties(const mosquitto_property* props, const char* expectedMsgType, ADUC_Common_Response_User_Properties* outRespUserProps)
+bool ADU_MosquittoUtils_ParseAndValidateCommonResponseUserProperties(
+    const mosquitto_property* props,
+    const char* expectedMsgType,
+    ADUC_Common_Response_User_Properties* outRespUserProps)
 {
     bool success = false;
 
@@ -503,7 +514,12 @@ bool ParseAndValidateCommonResponseUserProperties(const mosquitto_property* prop
         goto done;
     }
 
-    Log_Debug("Successful Parse + Validate: '%s' user properties - pid[%d] resultcode[%d] extendedresultcode[%d]", msg_type, pid, resultcode, extendedresultcode);
+    Log_Debug(
+        "Successful Parse + Validate: '%s' user properties - pid[%d] resultcode[%d] extendedresultcode[%d]",
+        msg_type,
+        pid,
+        resultcode,
+        extendedresultcode);
 
     // Now, assign to outRespUserProps post validation.
     outRespUserProps->pid = pid;
@@ -593,7 +609,7 @@ int json_print_properties(const mosquitto_property* properties)
 bool ADUC_generate_correlation_id(bool with_hyphens, char* buffer, size_t buffer_cch)
 {
     uuid_t bin_uuid;
-    char uuid_str[37];  // 36 bytes + NUL
+    char uuid_str[37]; // 36 bytes + NUL
 
     if (buffer_cch < 33 || (with_hyphens && buffer_cch < 37))
     {

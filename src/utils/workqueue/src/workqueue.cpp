@@ -35,7 +35,7 @@ std::unique_ptr<WorkQueue::WorkQueueItem> WorkQueue::GetNextWorkQueueItem()
 
     auto workItem = std::make_unique<WorkQueueItem>(pImpl->queue.front());
     pImpl->queue.pop();
-    return workItem;
+    return std::move(workItem);
 }
 
 /////////////////////
@@ -128,7 +128,7 @@ time_t WorkQueueItem_GetTimeAdded(WorkQueueItemHandle handle)
     return item->time_added;
 }
 
-char* WorkQueueItem_GetUpdateResultMessageJson(WorkQueueItemHandle handle)
+char* WorkQueueItem_GetData(WorkQueueItemHandle handle)
 {
     char* json_str = nullptr;
 
@@ -138,7 +138,7 @@ char* WorkQueueItem_GetUpdateResultMessageJson(WorkQueueItemHandle handle)
     }
 
     const WorkQueue::WorkQueueItem* item = reinterpret_cast<WorkQueue::WorkQueueItem*>(handle);
-    if (ADUC_AllocAndStrCopyN(&json_str, item->json.c_str(), item->json.length()) != 0)
+    if (!ADUC_AllocAndStrCopyN(&json_str, item->json.c_str(), item->json.length()) != 0)
     {
         return nullptr;
     }

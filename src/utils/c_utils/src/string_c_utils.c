@@ -388,7 +388,7 @@ bool IsNullOrEmpty(const char* str)
  * @param source Source string
  * @return bool Returns true is success.
  */
-bool MallocAndSubstr(char** target, char* source, size_t len)
+bool MallocAndSubstr(char** target, const char* source, size_t len)
 {
     if (target == NULL || source == NULL)
     {
@@ -406,6 +406,7 @@ bool MallocAndSubstr(char** target, char* source, size_t len)
 
     if (!ADUC_Safe_StrCopyN(t, LenPlusNullTerm, source, len /* srcByteLen */))
     {
+        free(t);
         return false;
     }
 

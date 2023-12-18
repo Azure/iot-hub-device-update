@@ -33,7 +33,7 @@ TEST_CASE("WorkQueue API Tests", "[workqueue]")
 
         CHECK(WorkQueueItem_GetTimeAdded(item) > 0);
 
-        ADUC::StringUtils::cstr_wrapper wrapper{ WorkQueueItem_GetUpdateResultMessageJson(item) };
+        ADUC::StringUtils::cstr_wrapper wrapper{ WorkQueueItem_GetData(item) };
         CHECK_THAT(wrapper.get(), Equals("{}"));
     }
 
