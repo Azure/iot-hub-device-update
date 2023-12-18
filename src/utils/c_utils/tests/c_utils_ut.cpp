@@ -472,7 +472,7 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings")
     {
         reset_dest();
         const char* src = "12345678901234"; // 14 + 1
-        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, sizeof(dest), src, 15));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, sizeof(dest), src, strlen(src) + 1));
         CHECK_THAT(dest, Equals(""));
     }
 
