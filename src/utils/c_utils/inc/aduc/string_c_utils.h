@@ -38,6 +38,14 @@ bool ADUC_Safe_StrCopyN(char* dest, size_t destByteLen, const char* src, size_t 
 
 bool ADUC_AllocAndStrCopyN(char** dest, const char* src, size_t srcByteLen);
 
+bool ADUC_CopyIf(
+    char* dest,
+    const size_t destByteLen,
+    const char* src,
+    const size_t srcByteLen,
+    bool (*copyPred)(char c),
+    char** outDestEnd);
+
 EXTERN_C_END
 
 #endif // ADUC_STRING_C_UTILS_H

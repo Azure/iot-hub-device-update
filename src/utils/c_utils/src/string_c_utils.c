@@ -496,3 +496,58 @@ done:
 
     return res;
 }
+
+/**
+* @brief Copies the characters of the src string to the dest for each character for which copyPred predicate returns true.
+* @param[out] dest The destination buffer that will be overwritten with a subset of the characters of src.
+* @param destByteLen The length in bytes of the destination buffer's capacity that also includes space for the null terminator.
+* @param src The source string.
+* @param srcByteLen The length in bytes of the source string NOT including the null terminator.
+* @param copyPred The predicate function that return true whene the char c passed to it should be appended to the dest buffer.
+* @param[out] outDestEnd The optional output ptr to c_str that will point to the null terminator of dest buffer to facilitate e.g. appending.
+* @return true on success.
+* @remark unicode code points that require more than a single byte to encode via UTF-8 or other character encoding are not currently supported.
+*/
+bool ADUC_CopyIf(
+    char* dest,
+    const size_t destByteLen,
+    const char* src,
+    const size_t srcByteLen,
+    bool (*copyPred)(char c),
+    char** outDestEnd)
+{
+    size_t srcIndex = 0;
+
+    if (dest == NULL || copyPred == NULL || destByteLen == 0 || destByteLen < srcByteLen + 1)
+    {
+        return false;
+    }
+
+    if (IsNullOrEmpty(src))
+    {
+        *dest = '\0';
+        return true;
+    }
+
+    for (srcIndex = 0; (srcIndex < srcByteLen) && (src[srcIndex] != '\0'); ++srcIndex)
+    {
+        if (copyPred(src[srcIndex]))
+        {
+            *dest++ = src[srcIndex];
+        }
+    }
+    *dest = '\0';
+
+    if (outDestEnd != NULL)
+    {
+        *outDestEnd = dest;
+    }
+
+    if ((srcIndex < srcByteLen) && (src[srcIndex] == '\0'))
+    {
+        // hit end of src str before consuming all srcByteLen
+        return false;
+    }
+
+    return true;
+}

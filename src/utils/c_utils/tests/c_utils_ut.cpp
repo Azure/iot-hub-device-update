@@ -576,3 +576,89 @@ TEST_CASE("ADUC_AllocAndStrCopyN")
         }
     }
 }
+
+static bool is_not_whitespace(char c)
+{
+    return !(c == ' ' || c == '\t' || c == '\r' || c == '\n');
+}
+
+static bool tautology(char)
+{
+    return true;
+}
+
+TEST_CASE("ADUC_CopyIf")
+{
+    char dest[20];
+    memset(&dest, 0, sizeof(dest));
+    char* outDestEnd = nullptr;
+
+    const auto reset_dest = [&dest, &outDestEnd]() {
+        memset(&dest, 0xFF, sizeof(dest));
+        dest[sizeof(dest) - 1] = '\0';
+        outDestEnd = nullptr;
+    };
+
+    SECTION("It should copy only non-whitespace for is_not_whitespace predicate")
+    {
+        reset_dest();
+
+        const std::string src{ "a\tb c\r\nd\r" };
+        REQUIRE(ADUC_CopyIf(dest, sizeof(dest), src.c_str(), src.length(), is_not_whitespace, &outDestEnd));
+        CHECK_THAT(dest, Equals("abcd"));
+    }
+
+    SECTION("It should fail if actual src length > passed-in srcByteLen")
+    {
+        reset_dest();
+
+        REQUIRE_FALSE(ADUC_CopyIf(dest, sizeof(dest), "", 37 /* srcByteLen */, is_not_whitespace, &outDestEnd));
+    }
+
+    SECTION("It should make dest empty string on NULL src")
+    {
+        reset_dest();
+
+        REQUIRE(ADUC_CopyIf(dest, sizeof(dest), NULL, 0, is_not_whitespace, &outDestEnd));
+        CHECK_THAT(dest, Equals(""));
+    }
+
+    SECTION("It should copy empty source string to dest")
+    {
+        reset_dest();
+
+        REQUIRE(ADUC_CopyIf(dest, sizeof(dest), "", 0, is_not_whitespace, &outDestEnd));
+        CHECK_THAT(dest, Equals(""));
+    }
+
+    SECTION("It should be a full copy for tautological predicate")
+    {
+        reset_dest();
+
+        const char* src = "foobar";
+        size_t srcLen = strlen(src);
+
+        REQUIRE(ADUC_CopyIf(dest, sizeof(dest), src, srcLen, tautology, &outDestEnd));
+        CHECK_THAT(dest, Equals("foobar"));
+    }
+
+    SECTION("It should return false for destination without sufficient capacity")
+    {
+        reset_dest();
+
+        const char* src = "this is a test";
+        size_t srcLen = strlen(src);
+        REQUIRE_FALSE(ADUC_CopyIf(dest, 7, src, srcLen, is_not_whitespace, &outDestEnd));
+    }
+
+    SECTION("Null terminator is correctly placed")
+    {
+        reset_dest();
+
+        const char src[] = "foobar";
+
+        REQUIRE(ADUC_CopyIf(dest, sizeof(dest), src, strlen(src), is_not_whitespace, &outDestEnd));
+        CHECK(*outDestEnd == '\0');
+        CHECK(outDestEnd - dest == strlen(src));
+    }
+}
