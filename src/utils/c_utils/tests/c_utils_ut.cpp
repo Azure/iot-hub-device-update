@@ -504,12 +504,12 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings")
         CHECK_THAT(dest, Equals("12345678"));
     }
 
-    SECTION("numSrcCharsToCopy > len of src str")
+    SECTION("It should fail when srcByteLen > len of src str")
     {
         reset_dest();
         const char* src = "123";
         REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, sizeof(dest), src, strlen(src) + 1));
-        CHECK_THAT(dest, Equals(""));
+        CHECK_THAT(dest, Equals("123"));
     }
 
     SECTION("Can copy a duck (ADUC) emoji")

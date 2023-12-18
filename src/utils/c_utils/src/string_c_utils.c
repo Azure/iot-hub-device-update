@@ -428,6 +428,8 @@ bool MallocAndSubstr(char** target, char* source, size_t len)
  */
 bool ADUC_Safe_StrCopyN(char* dest, size_t destByteLen, const char* src, size_t srcByteLen)
 {
+    size_t srcIndex = 0;
+
     if (dest == NULL || src == NULL || destByteLen == 0)
     {
         return false;
@@ -439,13 +441,17 @@ bool ADUC_Safe_StrCopyN(char* dest, size_t destByteLen, const char* src, size_t 
         return false;
     }
 
-    if (srcByteLen > ADUC_StrNLen(src, srcByteLen))
+    for (srcIndex = 0; (srcIndex < srcByteLen) && (src[srcIndex] != '\0'); ++srcIndex)
     {
+        *dest++ = src[srcIndex];
+    }
+    *dest = '\0';
+
+    if ((srcIndex < srcByteLen) && (src[srcIndex] == '\0'))
+    {
+        // the srcByteLen given was more than the actual length of the string
         return false;
     }
-
-    memcpy(dest, src, srcByteLen);
-    dest[srcByteLen] = '\0';
 
     return true;
 }
