@@ -414,6 +414,12 @@ bool MallocAndSubstr(char** target, const char* source, size_t len)
     return true;
 }
 
+static bool aduc_always_true(char _c)
+{
+    UNREFERENCED_PARAMETER(_c);
+    return true;
+}
+
 /**
  * @brief Safely copies a source string to a destination buffer.
  *
@@ -429,8 +435,6 @@ bool MallocAndSubstr(char** target, const char* source, size_t len)
  */
 bool ADUC_Safe_StrCopyN(char* dest, size_t destByteLen, const char* src, size_t srcByteLen)
 {
-    size_t srcIndex = 0;
-
     if (dest == NULL || src == NULL || destByteLen == 0)
     {
         return false;
@@ -442,19 +446,7 @@ bool ADUC_Safe_StrCopyN(char* dest, size_t destByteLen, const char* src, size_t 
         return false;
     }
 
-    for (srcIndex = 0; (srcIndex < srcByteLen) && (src[srcIndex] != '\0'); ++srcIndex)
-    {
-        *dest++ = src[srcIndex];
-    }
-    *dest = '\0';
-
-    if ((srcIndex < srcByteLen) && (src[srcIndex] == '\0'))
-    {
-        // the srcByteLen given was more than the actual length of the string
-        return false;
-    }
-
-    return true;
+    return ADUC_CopyIf(dest, destByteLen, src, srcByteLen, aduc_always_true, NULL /* outDestEnd */);
 }
 
 /**
