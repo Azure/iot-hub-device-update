@@ -495,7 +495,7 @@ done:
 * @param destByteLen The length in bytes of the destination buffer's capacity that also includes space for the null terminator.
 * @param src The source string.
 * @param srcByteLen The length in bytes of the source string NOT including the null terminator.
-* @param copyPred The predicate function that return true whene the char c passed to it should be appended to the dest buffer.
+* @param copyPred The predicate function that return true when the char c passed to it should be appended to the dest buffer.
 * @param[out] outDestEnd The optional output ptr to c_str that will point to the null terminator of dest buffer to facilitate e.g. appending.
 * @return true on success.
 * @remark unicode code points that require more than a single byte to encode via UTF-8 or other character encoding are not currently supported.
