@@ -24,6 +24,11 @@
 // keep this last to avoid interfering with system headers
 #include <aduc/aduc_banned.h>
 
+static bool not_a_dash(char c)
+{
+    return c != '-';
+}
+
 /**
  * @brief Adds the content type mqtt 5 property to the property list.
  *
@@ -121,6 +126,7 @@ bool ADU_are_correlation_ids_matching(
     uint16_t responseCorrelationIdLen = 0;
     size_t n = 0;
     bool res = false;
+    size_t byteLenNoDashes = 0;
 
     if (props == NULL || IsNullOrEmpty(expectedCorrelationId))
     {
@@ -140,7 +146,25 @@ bool ADU_are_correlation_ids_matching(
 
     if (outCorrelationData != NULL)
     {
-        if (ADUC_AllocAndStrCopyN(outCorrelationData, responseCorrelationId, (size_t)responseCorrelationIdLen) != 0)
+        // TODO: Remove this workaround once adu service deploys fix that ensures exact correlation id string agent sent is
+        // in the response message. Currently, it parses the UUID without dashes and then introduces dashes in the response
+        // message.
+        char correlation_id_no_dash[37] = "";
+        char* destEnd = NULL;
+        if (!ADUC_CopyIf(
+            correlation_id_no_dash /* dest */,
+            sizeof(correlation_id_no_dash) /* destByteLen */,
+            responseCorrelationId /* src */,
+            (size_t)responseCorrelationIdLen /* srcByteLen */,
+            not_a_dash /* copyPred */,
+            &destEnd /* outDestEnd */))
+        {
+            goto done;
+        }
+
+        byteLenNoDashes = (size_t)(destEnd - correlation_id_no_dash);
+
+        if (!ADUC_AllocAndStrCopyN(outCorrelationData, correlation_id_no_dash, byteLenNoDashes))
         {
             goto done;
         }
