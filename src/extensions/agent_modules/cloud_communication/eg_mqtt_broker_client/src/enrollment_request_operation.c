@@ -1,14 +1,14 @@
 #include "aduc/enrollment_request_operation.h"
 
-#include <aduc/adu_mqtt_common.h>
+#include <aduc/adu_communication_channel.h> // ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID
 #include <aduc/adu_enrollment.h> // ADUC_Enrollment_Request_Operation_Data
 #include <aduc/adu_enrollment_utils.h> // EnrollmentData_FromOperationContext
-#include <aduc/adu_communication_channel.h> // ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID
 #include <aduc/adu_mosquitto_utils.h> // ADU_mosquitto_add_user_property
-#include <aduc/agent_state_store.h> // ADUC_StateStore_GetIsDeviceEnrolled
+#include <aduc/adu_mqtt_common.h>
+#include <aduc/agent_state_store.h> // ADUC_StateStore_IsDeviceEnrolled
 #include <aduc/config_utils.h> // ADUC_ConfigInfo, ADUC_AgentInfo
 #include <aduc/logging.h>
-#include <du_agent_sdk/agent_module_interface.h>  // ADUC_AGENT_MODULE_HANDLE
+#include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_HANDLE
 
 /**
  * @brief Free memory allocated for the enrollment data.
@@ -33,7 +33,11 @@ bool EnrollmentRequestOperation_CancelOperation(ADUC_Retriable_Operation_Context
     }
 
     // Set the correlation id to NULL, so we can discard all inflight messages.
-    EnrollmentData_SetCorrelationId(enrollmentData, "");
+    if (!EnrollmentData_SetCorrelationId(enrollmentData, ""))
+    {
+        return false;
+    }
+
     EnrollmentData_SetState(enrollmentData, ADU_ENROLLMENT_STATE_UNKNOWN, "Cancel requested");
     return true;
 }
@@ -82,7 +86,11 @@ bool EnrollmentRequestOperation_DoRetry(
     }
 
     EnrollmentData_SetState(data, ADU_ENROLLMENT_STATE_UNKNOWN, "retrying");
-    EnrollmentData_SetCorrelationId(data, "");
+    if (!EnrollmentData_SetCorrelationId(data, ""))
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -160,7 +168,7 @@ bool IsEnrollAlreadyHandled(ADUC_Retriable_Operation_Context* context, time_t no
 {
     ADUC_Enrollment_Request_Operation_Data* enrollmentData = EnrollmentData_FromOperationContext(context);
 
-    if (enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED || ADUC_StateStore_GetIsDeviceEnrolled())
+    if (enrollmentData->enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED || ADUC_StateStore_IsDeviceEnrolled())
     {
         // enrollment is completed.
         ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_Completed);
@@ -191,9 +199,13 @@ bool HandlingRequestEnrollment(ADUC_Retriable_Operation_Context* context, time_t
         //
         // TODO: figure out why context->operationTimeoutSecs is 0
         // if (context->lastExecutionTime + context->operationTimeoutSecs < nowTime)
-        if (context->lastExecutionTime + 30 < nowTime) // timeout after 30 seconds for now
+        if (context->lastExecutionTime + 180 < nowTime) // timeout after 180 seconds for now
         {
-            Log_Debug("timeout 'enr_req' timeout:%d optimeout:%d t:%d", context->lastExecutionTime, context->operationTimeoutSecs, nowTime);
+            Log_Debug(
+                "timeout 'enr_req' timeout:%d optimeout:%d t:%d",
+                context->lastExecutionTime,
+                context->operationTimeoutSecs,
+                nowTime);
 
             context->cancelFunc(context);
         }
@@ -219,16 +231,35 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
         goto done;
     }
 
-    if (!ADU_mosquitto_add_user_property(&user_prop_list, "mt", "enr_req") ||
-        !ADU_mosquitto_add_user_property(&user_prop_list, "pid", "1"))
+    if (!ADU_mosquitto_add_user_property(&user_prop_list, "mt", "enr_req")
+        || !ADU_mosquitto_add_user_property(&user_prop_list, "pid", "1"))
     {
         Log_Error("fail add user props");
         goto done;
     }
 
+    if (strlen(enrollmentData->enrReqMessageContext.correlationId) == 0)
+    {
+        // The DU service can handle with or without hyphens, but reducing data transferred by omitting them.
+        if (!ADUC_generate_correlation_id(
+            false /* with_hyphens */,
+            &(enrollmentData->enrReqMessageContext.correlationId)[0],
+            ARRAY_SIZE(enrollmentData->enrReqMessageContext.correlationId)))
+        {
+            Log_Error("Fail to generate correlationid");
+            goto done;
+        }
+    }
+
     if (!ADU_mosquitto_set_correlation_data_property(&user_prop_list, &(enrollmentData->enrReqMessageContext.correlationId)[0]))
     {
         Log_Error("fail set corr id");
+        goto done;
+    }
+
+    if (!ADU_mosquitto_set_content_type_property(&user_prop_list, "json"))
+    {
+        Log_Error("fail set content type user property");
         goto done;
     }
 
@@ -248,7 +279,7 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
     {
         opSucceeded = false;
         Log_Error(
-            "fail PUB 'enr_req' mid[%d] cid[%s] err[%d]: '%s')",
+            "fail PUBLISH 'enr_req' msgid: %d, correlationid: %s, err: %d, errmsg: '%s')",
             messageContext->messageId,
             messageContext->correlationId,
             mqtt_res,
@@ -274,8 +305,7 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
             // compute and apply the next execution time, based on the specified retry parameters.
             context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
 
-            Log_Error(
-                "retry-able after t:%ld, err:%d", context->operationIntervalSecs, mqtt_res);
+            Log_Error("retry-able after t:%ld, err:%d", context->operationIntervalSecs, mqtt_res);
             break;
 
         default:
@@ -293,7 +323,7 @@ static bool SendEnrollmentStatusRequest(ADUC_Retriable_Operation_Context* contex
     context->lastExecutionTime = nowTime;
 
     Log_Info(
-        "--> 'enr_req' mid:%d cid:%s t:%ld timeout:%ld)",
+        "--> PUBLISH 'enr_req' msgid: %d correlationid: '%s' lastExecTime: %ld timeoutSecs: %ld)",
         messageContext->messageId,
         messageContext->correlationId,
         context->lastExecutionTime,
@@ -343,8 +373,12 @@ bool EnrollmentStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* c
         goto done;
     }
 
-    // at this point, we should send 'enr_req' message.
     enrollmentData = EnrollmentData_FromOperationContext(context);
+    if (enrollmentData == NULL)
+    {
+        goto done;
+    }
+
     if (SettingUpAduMqttRequestPrerequisites(context, &enrollmentData->enrReqMessageContext, false /* isScoped */))
     {
         goto done;
@@ -391,18 +425,19 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
 
     // For this request, generate correlation Id sent as CorrelationData property
     // and used to match with response.
-    if (!ADUC_generate_correlation_id(false /* with_hyphens */, &(operationDataContext->enrReqMessageContext.correlationId)[0], ARRAY_SIZE(operationDataContext->enrReqMessageContext.correlationId)))
+    if (!ADUC_generate_correlation_id(
+            false /* with_hyphens */,
+            &(operationDataContext->enrReqMessageContext.correlationId)[0],
+            ARRAY_SIZE(operationDataContext->enrReqMessageContext.correlationId)))
     {
-        Log_Error("Faild generate correlation id");
+        Log_Error("Fail to generate correlation id");
         goto done;
     }
 
     tmp->data = operationDataContext;
     operationDataContext = NULL; // transfer ownership
 
-    ADUC_Retriable_Operation_Init(context, false);
-
-    // initialize custom functions
+    // Initialize lifecycle functions
     tmp->dataDestroyFunc = EnrollmentRequestOperation_DataDestroy;
     tmp->operationDestroyFunc = EnrollmentRequestOperation_OperationDestroy;
     tmp->doWorkFunc = EnrollmentStatusRequestOperation_doWork;
@@ -410,12 +445,6 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
     tmp->retryFunc = EnrollmentRequestOperation_DoRetry;
     tmp->completeFunc = EnrollmentRequestOperation_Complete;
     tmp->retryParamsCount = RetryUtils_GetRetryParamsMapSize();
-
-    tmp->retryParams = calloc((size_t)tmp->retryParamsCount, sizeof(*tmp->retryParams));
-    if (tmp->retryParams == NULL)
-    {
-        goto done;
-    }
 
     // initialize callbacks
     tmp->onExpired = EnrollmentRequestOperation_OnExpired;
@@ -438,7 +467,8 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
         goto done;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, SETTING_KEY_ENR_REQ_OP_INTERVAL_SECONDS, &value))
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
+            agent_info, SETTING_KEY_ENR_REQ_OP_INTERVAL_SECONDS, &value))
     {
         log_warn("failed to get enrollment status request interval setting");
         value = DEFAULT_ENR_REQ_OP_INTERVAL_SECONDS;
@@ -447,7 +477,8 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
     tmp->operationIntervalSecs = value;
 
     value = 0;
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, SETTING_KEY_ENR_REQ_OP_TIMEOUT_SECONDS, &value))
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
+            agent_info, SETTING_KEY_ENR_REQ_OP_TIMEOUT_SECONDS, &value))
     {
         log_warn("failed to get enrollment status request timeout setting");
         value = DEFAULT_ENR_REQ_OP_TIMEOUT_SECONDS;
@@ -461,6 +492,13 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeEnrollmentRequestOperation(
     if (retrySettings == NULL)
     {
         Log_Error("failed to get retry settings");
+        goto done;
+    }
+
+    // Initialize the retry parameters
+    tmp->retryParams = calloc((size_t)tmp->retryParamsCount, sizeof(*tmp->retryParams));
+    if (tmp->retryParams == NULL)
+    {
         goto done;
     }
 

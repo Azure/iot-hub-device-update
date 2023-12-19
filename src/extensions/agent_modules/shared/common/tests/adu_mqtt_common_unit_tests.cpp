@@ -31,9 +31,9 @@ static void reset()
 {
     s_mock_retry_called = false;
     ADUC_SystemUtils_RmDirRecursive(TEST_STATE_STORE_DIR);
-    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(TEST_STATE_STORE_DIR "/test_state_store.json"));
+    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(TEST_STATE_STORE_DIR "/test_state_store.json", false /* isUsingProvisioningService */ ));
     REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_SetExternalDeviceId(TEST_EXTERNAL_DEVICE_ID));
-    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_SetDeviceUpdateServiceInstance(TEST_SCOPE_ID));
+    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_SetScopeId(TEST_SCOPE_ID));
 }
 
 static bool mock_retry(ADUC_Retriable_Operation_Context* context, const ADUC_Retry_Params* retryParams)
@@ -84,7 +84,6 @@ TEST_CASE("MqttTopicSetupNeeded")
     }
 }
 
-// bool ExternalDeviceIdSetupNeeded(ADUC_Retriable_Operation_Context* context);
 TEST_CASE("ExternalDeviceIdSetupNeeded")
 {
     SECTION("bad arg")

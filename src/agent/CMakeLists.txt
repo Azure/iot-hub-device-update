@@ -81,7 +81,8 @@ target_link_libraries (
             aduc::shutdown_service
             aduc::system_utils
             aduc::microsoft_adps2_mqtt_client
-            aduc::microsoft_du_mqttbroker_client)
+            aduc::microsoft_du_mqttbroker_client
+            aduc::workqueue)
 
 if (NOT WIN32)
     target_link_libraries (${target_name} PRIVATE aduc::command_helper)

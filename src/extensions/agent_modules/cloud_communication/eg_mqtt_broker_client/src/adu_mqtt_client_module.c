@@ -10,10 +10,11 @@
 #include "aduc/adu_agent_info_management.h"
 #include "aduc/adu_communication_channel.h"
 #include "aduc/adu_enrollment_management.h"
+#include "aduc/adu_module_state.h" // ADUC_MQTT_CLIENT_MODULE_STATE
 #include "aduc/adu_mosquitto_utils.h"
 #include "aduc/adu_mqtt_protocol.h"
 #include "aduc/adu_types.h"
-#include "aduc/adu_updates_management.h"
+#include "aduc/adu_update_management.h"
 #include "aduc/agent_state_store.h"
 #include "aduc/config_utils.h"
 #include "aduc/eg_mqtt_broker_client.h"
@@ -23,9 +24,9 @@
 #include "aduc/topic_mgmt_lifecycle.h" // TopicMgmtLifecycle_Create, TOPIC_MGMT_MODULE_*
 #include "aducpal/time.h" // time_t
 #include "du_agent_sdk/agent_module_interface.h"
-#include <string.h> // strcmp
 #include <mosquitto.h> // mosquitto related functions
 #include <mqtt_protocol.h> // mosquitto_property
+#include <string.h> // strcmp
 
 // Forward declarations
 int ADUC_MQTT_Client_Module_Initialize_DoWork(ADUC_MQTT_CLIENT_MODULE_STATE* state);
@@ -34,7 +35,10 @@ int ADUC_MQTT_Client_Module_DoWork(ADUC_AGENT_MODULE_HANDLE handle);
 
 #define DEFAULT_OPERATION_INTERVAL_SECONDS (10)
 
-typedef void(*ResponseHandlerFn)(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props);
+typedef void (*OnMessageResponseHandlerFn)(
+    struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props);
+typedef void (*OnPublishResponseHandlerFn)(
+    struct mosquitto* mosq, void* obj, const mosquitto_property* props, int reason_code);
 
 typedef enum tagModuleKey
 {
@@ -56,8 +60,8 @@ struct
     { MODULE_KEY_COMM_CHANNEL, "commChannel", NULL, false },
     {   MODULE_KEY_ENROLLMENT,  "enrollment", NULL, true  },
     {   MODULE_KEY_AGENT_INFO,   "agentInfo", NULL, true  },
-    // TODO: Enable update and update reults topic management
-    // { MODULE_KEY_UPDATE, "update", NULL, true     },
+    {       MODULE_KEY_UPDATE,      "update", NULL, true  },
+    // TODO: Enable update reults topic management
     // { MODULE_KEY_UPDATE_RESULT, "updateResults", NULL, true     },
 };
 // clang-format on
@@ -84,7 +88,7 @@ static void DeinitMqttTopics(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
     moduleState->mqtt_topic_agent2service = NULL;
 }
 
-static ResponseHandlerFn GetComponentResponseHandlerRoute(const char* msg_type)
+static OnMessageResponseHandlerFn GetComponentOnMessageResponseHandler(const char* msg_type)
 {
     if (strcmp(msg_type, "enr_resp") == 0)
     {
@@ -96,16 +100,43 @@ static ResponseHandlerFn GetComponentResponseHandlerRoute(const char* msg_type)
         return OnMessage_ainfo_resp;
     }
 
-    // TODO: enable upd_resp and updrslt_resp
+    if (strcmp(msg_type, "upd_resp") == 0)
+    {
+        return OnMessage_upd_resp;
+    }
 
-    // if (strcmp(msg_type, "upd_resp") == 0)
-    // {
-    //     return OnMessage_upd_resp;
-    // }
+    // TODO: enable upd_resp and updrslt_resp
 
     // if (strcmp(msg_type, "updrslt_resp") == 0)
     // {
     //     return OnMessage_updrslt_resp;
+    // }
+
+    return NULL;
+}
+
+static OnPublishResponseHandlerFn GetComponentOnPublishResponseHandler(const char* msg_type)
+{
+    if (strcmp(msg_type, "enr_resp") == 0)
+    {
+        return OnPublish_enr_resp;
+    }
+
+    if (strcmp(msg_type, "ainfo_resp") == 0)
+    {
+        return OnPublish_ainfo_resp;
+    }
+
+    if (strcmp(msg_type, "upd_resp") == 0)
+    {
+        return OnPublish_upd_resp;
+    }
+
+    // TODO: enable upd_resp and updrslt_resp
+
+    // if (strcmp(msg_type, "updrslt_resp") == 0)
+    // {
+    //     return OnPublish_updrslt_resp;
     // }
 
     return NULL;
@@ -122,7 +153,7 @@ static ResponseHandlerFn GetComponentResponseHandlerRoute(const char* msg_type)
 bool InitMqttTopics(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
 {
     bool result = false;
-    const char* deviceId;
+    char* deviceId = NULL;
 
     if (!IsNullOrEmpty(moduleState->mqtt_topic_service2agent) && !IsNullOrEmpty(moduleState->mqtt_topic_agent2service))
     {
@@ -154,6 +185,8 @@ bool InitMqttTopics(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
     result = true;
 
 done:
+    free(deviceId);
+
     if (!result)
     {
         DeinitMqttTopics(moduleState);
@@ -220,10 +253,10 @@ void ADUC_MQTT_Client_OnMessage(
         goto done;
     }
 
-    ResponseHandlerFn response_handler = GetComponentResponseHandlerRoute(msg_type);
+    OnMessageResponseHandlerFn response_handler = GetComponentOnMessageResponseHandler(msg_type);
     if (response_handler == NULL)
     {
-        Log_Error("Unsupported resp msg type: %s", msg_type);
+        Log_Warn("cannot route OnMessage - Unknown resp msg type: '%s'", msg_type);
         goto done;
     }
 
@@ -281,8 +314,37 @@ bool ADUC_MQTT_Client_GetSubscriptionTopics(void* obj, int* count, char*** topic
 void ADUC_MQTT_Client_OnPublish(
     struct mosquitto* mosq, void* obj, int mid, int reason_code, const mosquitto_property* props)
 {
-    // TODO (nox-msft) - route the message to the appropriate component.
-    Log_Info("on_publish: Message with mid %d has been published.", mid);
+    char* msg_type = NULL;
+
+    // All parameters are required.
+    if (mosq == NULL || obj == NULL || props == NULL)
+    {
+        goto done;
+    }
+
+    Log_Info(
+        "MQTT Broker responded to PUBLISH, mid: %d, rc: %d => '%s'",
+        mid,
+        reason_code,
+        mosquitto_reason_string(reason_code));
+
+    if (!ADU_mosquitto_read_user_property_string(props, "mt", &msg_type) || IsNullOrEmpty(msg_type))
+    {
+        Log_Warn("Failed to read the message type. Ignoring");
+        goto done;
+    }
+
+    OnPublishResponseHandlerFn response_handler = GetComponentOnPublishResponseHandler(msg_type);
+    if (response_handler == NULL)
+    {
+        Log_Warn("cannot route OnPublish - Unknown resp msg type: '%s'", msg_type);
+        goto done;
+    }
+
+    response_handler(mosq, obj, props, reason_code);
+
+done:
+    free(msg_type);
 }
 
 /* Callback called when the broker sends a CONNACK message in response to a
@@ -292,14 +354,19 @@ void ADUC_MQTT_Client_OnConnect(
 {
     if (reason_code == 0)
     {
-        Log_Info("on_connect: Connection succeeded.");
+        Log_Info("<-- CONNECT success");
+    }
+    else
+    {
+        Log_Warn("<-- CONNECT fail, reason_code: %d", reason_code);
     }
 }
 
 /* Callback called when the broker sends a SUBACK in response to a SUBSCRIBE. */
-void ADUC_MQTT_Client_OnSubscribe(struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos, const mosquitto_property* props)
+void ADUC_MQTT_Client_OnSubscribe(
+    struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos, const mosquitto_property* props)
 {
-    Log_Info("on_subscribe: Subscribing succeeded.");
+    Log_Info("<-- SUBACK mid: %d", mid);
 }
 
 /**
@@ -316,6 +383,12 @@ ADUC_MQTT_CALLBACKS s_duClientCommChannelCallbacks = {
     NULL /*on_log*/
 };
 
+/**
+ * @brief Some basic sanity checks for moduleState per-operation modules.
+ *
+ * @param moduleState The module state.
+ * @return true when checks pass.
+ */
 static bool CheckModuleInterfacesSetupCorrectly(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
 {
     bool success = false;
@@ -343,6 +416,12 @@ done:
     return success;
 }
 
+/**
+ * @brief Initializes the interface fields to their respective entries in the module state.
+ *
+ * @param moduleState The module state.
+ * @return true on success.
+ */
 static bool InitModuleInterfaceStateModule(const ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
 {
     for (size_t i = 0; i < ARRAY_SIZE(s_Modules); ++i)
@@ -362,9 +441,8 @@ static bool InitModuleInterfaceStateModule(const ADUC_MQTT_CLIENT_MODULE_STATE* 
             break;
 
         case MODULE_KEY_UPDATE:
-            // TODO:
-            // s_Modules[i].Interface = moduleState->updateModule;
-            // break;
+            s_Modules[i].Interface = moduleState->updateModule;
+            break;
 
         case MODULE_KEY_UPDATE_RESULT:
             // TODO:
@@ -379,18 +457,22 @@ static bool InitModuleInterfaceStateModule(const ADUC_MQTT_CLIENT_MODULE_STATE* 
     return true;
 }
 
+/**
+ * @brief Initializes the module interfaces in the module state.
+ *
+ * @param moduleState The modules state.
+ * @return true on success.
+ */
 static bool InitializeModuleInterfaces(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
 {
     bool success = false;
 
-    ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = {
-        ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID,
-        moduleState,
-        &moduleState->mqttSettings,
-        &s_duClientCommChannelCallbacks,
-        NULL /* key file password callback */,
-        NULL /* connection retry callback */
-    };
+    ADUC_COMMUNICATION_CHANNEL_INIT_DATA commInitData = { .sessionId = "adumqttclient",
+                                                          .ownerModuleContext = moduleState,
+                                                          .mqttSettings = &moduleState->mqttSettings,
+                                                          .callbacks = &s_duClientCommChannelCallbacks,
+                                                          .passwordCallback = NULL,
+                                                          .connectionRetryParams = NULL };
 
     if (!CheckModuleInterfacesSetupCorrectly(moduleState))
     {
@@ -419,6 +501,12 @@ done:
     return success;
 }
 
+/**
+ * @brief Sets up the per-operation module state.
+ *
+ * @param moduleState The module state.
+ * @return true on success
+ */
 static bool SetupModuleState(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
 {
     bool succeeded = false;
@@ -444,14 +532,14 @@ static bool SetupModuleState(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState)
         goto done;
     }
 
-    // TODO: update and updateResults module setup
+    moduleState->updateModule = TopicMgmtLifecycle_Create(TOPIC_MGMT_MODULE_Update);
+    if (moduleState->updateModule == NULL)
+    {
+        Log_Error("Failed to create update mgmt module");
+        goto done;
+    }
 
-    // moduleState->updateModule = TopicMgmtLifecycle_Create(TOPIC_MGMT_MODULE_Update);
-    // if (moduleState->updateModule == NULL)
-    // {
-    //     Log_Error("Failed to create update mgmt module");
-    //     goto done;
-    // }
+    // TODO: updateResults module setup
 
     // moduleState->updateResultModule = TopicMgmtLifecycle_Create(TOPIC_MGMT_MODULE_UpdateResult);
     // if (moduleState->updateResultModule == NULL)
@@ -466,20 +554,16 @@ done:
     return succeeded;
 }
 
-static bool UpdateAgentStateStoreWithConfigFileProvisionining(ADUC_MQTT_SETTINGS* mqttSettings)
+/**
+ * @brief Updates state store provisioning records from MQTT settings device registration info.
+ *
+ * @param mqttSettings The MQTT settings.
+ * @return true on success
+ */
+static bool UpdateAgentStateStoreWithConfigFileProvisioning(ADUC_MQTT_SETTINGS* mqttSettings)
 {
     // Use username from settings as ExternalDeviceId
     if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetExternalDeviceId(mqttSettings->username))
-    {
-        return false;
-    }
-
-    if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetDeviceId(mqttSettings->username))
-    {
-        return false;
-    }
-
-    if (ADUC_STATE_STORE_RESULT_OK != ADUC_StateStore_SetIsDeviceRegistered(true /* isDeviceRegistered */))
     {
         return false;
     }
@@ -523,9 +607,9 @@ int ADUC_MQTT_Client_Module_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void* mo
 
     if (moduleState->mqttSettings.hostnameSource == ADUC_MQTT_HOSTNAME_SOURCE_CONFIG_FILE)
     {
-        if (!UpdateAgentStateStoreWithConfigFileProvisionining(&moduleState->mqttSettings))
+        if (!UpdateAgentStateStoreWithConfigFileProvisioning(&moduleState->mqttSettings))
         {
-            Log_Error("Failed to update state store with provisioning from config file");
+            Log_Error("Failed to update state store with provisioning info");
             goto done;
         }
     }
@@ -627,40 +711,31 @@ done:
     return handle;
 }
 
+/**
+ * @brief Executes the module work.
+ *
+ * @param moduleState The module state.
+ * @param nowTime The time.
+ */
 static void ExecuteModuleWork(ADUC_MQTT_CLIENT_MODULE_STATE* moduleState, const time_t nowTime)
 {
     const size_t CommChannelIndex = 0;
 
     for (size_t i = 0; i < ARRAY_SIZE(s_Modules); ++i)
     {
-        const bool retryWhenModuleInterfaceNull = ! s_Modules[i].CheckIsConnectedBefore;
-
-        if (s_Modules[i].Interface == NULL)
+        if (s_Modules[i].CheckIsConnectedBefore)
         {
-            if (retryWhenModuleInterfaceNull)
+            // module at CommChannelIndex is the one with the updated commMgrState for connection state.
+            // TODO: move into agent state store for sharing by topic modules.
+            if (!ADUC_Communication_Channel_IsConnected(s_Modules[CommChannelIndex].Interface))
             {
-                Log_Error("%s interface is NULL. incrementing moduleState nextOperationTime", s_Modules[i].Name);
+                // TODO: (nox-msft) - use retry utils.
                 moduleState->nextOperationTime = nowTime + DEFAULT_OPERATION_INTERVAL_SECONDS;
                 goto done;
             }
         }
-        else
-        {
-            if (s_Modules[i].CheckIsConnectedBefore)
-            {
-                // module at CommChannelIndex is the one with the updated commMgrState for connection state.
-                // TODO: move into agent state store for sharing by topic modules.
-                if (!ADUC_Communication_Channel_IsConnected(s_Modules[CommChannelIndex].Interface))
-                {
-                    // TODO: (nox-msft) - use retry utils.
-                    moduleState->nextOperationTime = nowTime + DEFAULT_OPERATION_INTERVAL_SECONDS;
-                    goto done;
-                }
-            }
 
-            // Log_Debug("%s -> doWork", s_Modules[i].Name);
-            s_Modules[i].Interface->doWork(s_Modules[i].Interface);
-        }
+        s_Modules[i].Interface->doWork(s_Modules[i].Interface);
     }
 
 done:

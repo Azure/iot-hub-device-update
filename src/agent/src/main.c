@@ -21,6 +21,7 @@
 #include "aduc/shutdown_service.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h" // ADUC_SystemUtils_MkDirRecursiveDefault
+#include "aduc/workqueue.h" // WorkQueue_Create
 #include "aducpal/stdlib.h" // setenv
 #include "du_agent_sdk/agent_module_interface.h"
 
@@ -372,11 +373,14 @@ done:
 int main(int argc, char** argv)
 {
     ADUC_LaunchArguments launchArgs;
+    ADUC_WorkQueues workQueues = { 0 };
+
     ADUC_AGENT_MODULE_HANDLE duClientModuleHandle = NULL;
     ADUC_AGENT_MODULE_HANDLE dpsClientModuleHandle = NULL;
     ADUC_AGENT_MODULE_INTERFACE* dpsClientModuleInterface = NULL;
     ADUC_AGENT_MODULE_INTERFACE* duClientModuleInterface = NULL;
     bool using_dps = false;
+    bool initialized_duclient_module = false;
 
     int ret = ParseLaunchArguments(argc, argv, &launchArgs);
     if (ret < 0)
@@ -505,8 +509,6 @@ int main(int argc, char** argv)
         SUPPORTED_UPDATE_MANIFEST_VERSION_MIN,
         SUPPORTED_UPDATE_MANIFEST_VERSION_MAX);
 
-    ADUC_StateStore_Initialize(ADUC_STATE_STORE_FILE_PATH);
-
     bool healthy = HealthCheck(&launchArgs);
     if (launchArgs.healthCheckOnly || !healthy)
     {
@@ -544,13 +546,15 @@ int main(int argc, char** argv)
     // TODO (nox-msft) - replace with Agent Module manager code, once changed all modules to shared library.
 
     using_dps = IsProvisioningWithDps();
+
+    ADUC_StateStore_Initialize(ADUC_STATE_STORE_FILE_PATH, using_dps);
+
     if (using_dps)
     {
         dpsClientModuleHandle = ADPS_MQTT_Client_Module_Create();
         dpsClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)dpsClientModuleHandle;
         if (dpsClientModuleInterface == NULL)
         {
-            Log_Error("ADPS_MQTT_Client_Module_Create failed.");
             ret = -1;
             goto done;
         }
@@ -558,7 +562,7 @@ int main(int argc, char** argv)
         ret = dpsClientModuleInterface->initializeModule(dpsClientModuleHandle, NULL);
         if (ret != 0)
         {
-            Log_Error("ADPS_MQTT_Client_Module_Initialize failed.");
+            Log_Error("DPS client module init failed");
             goto done;
         }
     }
@@ -567,15 +571,30 @@ int main(int argc, char** argv)
     duClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)duClientModuleHandle;
     if (duClientModuleInterface == NULL)
     {
-        Log_Error("ADU_MQTT_Client_Module_Create failed.");
         ret = -1;
         goto done;
     }
 
-    ret = duClientModuleInterface->initializeModule(duClientModuleInterface, NULL);
-    if (ret != 0)
+    if (!using_dps)
     {
-        Log_Error("ADU_MQTT_Client_Module_Initialize failed.");
+        ret = duClientModuleInterface->initializeModule(duClientModuleInterface, &workQueues);
+        if (ret != 0)
+        {
+            Log_Error("DU client module init failed");
+            goto done;
+        }
+        initialized_duclient_module = true;
+    }
+
+    if (NULL == (workQueues.updateWorkQueue = WorkQueue_Create()))
+    {
+        ret = -2;
+        goto done;
+    }
+
+    if (NULL == (workQueues.reportingWorkQueue = WorkQueue_Create()))
+    {
+        ret = -2;
         goto done;
     }
 
@@ -589,9 +608,26 @@ int main(int argc, char** argv)
         if (using_dps)
         {
             dpsClientModuleInterface->doWork(dpsClientModuleHandle);
-        }
+            if (ADUC_StateStore_GetIsDeviceRegistered())
+            {
+                if (using_dps && !initialized_duclient_module)
+                {
+                    ret = duClientModuleInterface->initializeModule(duClientModuleInterface, &workQueues);
+                    if (ret != 0)
+                    {
+                        Log_Error("DU client module init failed");
+                        goto done;
+                    }
+                    initialized_duclient_module = true;
+                }
 
-        duClientModuleInterface->doWork(duClientModuleHandle);
+                duClientModuleInterface->doWork(duClientModuleHandle);
+            }
+        }
+        else
+        {
+            duClientModuleInterface->doWork(duClientModuleHandle);
+        }
 
         // Sleep for a bit to avoid busy-waiting.
         ThreadAPI_Sleep(100);

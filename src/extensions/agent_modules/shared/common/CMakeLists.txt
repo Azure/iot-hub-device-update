@@ -8,7 +8,7 @@ add_library (aduc::${target_name} ALIAS ${target_name})
 find_package (PkgConfig REQUIRED)
 pkg_search_module (MOSQUITTO REQUIRED libmosquitto)
 
-target_sources (${target_name} PRIVATE src/adu_mqtt_common.c)
+target_sources (${target_name} PRIVATE src/adu_mqtt_common.c src/adu_mqtt_protocol.c src/adu_upd.c)
 
 target_include_directories (${target_name}
     PUBLIC

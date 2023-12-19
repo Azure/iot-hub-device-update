@@ -870,7 +870,7 @@ bool ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
     succeeded = true;
 
 done:
-    Log_Debug("get '%s' suc(%d): %u", fieldName, succeeded, value == NULL ? -1 : *value);
+    Log_Debug("get '%s' suc(%d): %u", fieldName, succeeded, value == NULL ? 0 : *value);
 
     return succeeded;
 }
@@ -883,8 +883,7 @@ done:
  * @param value Pointer to an int to receive the value.
  * @return bool True if successful.
  */
-bool ADUC_AgentInfo_ConnectionData_GetIntegerField(
-    const ADUC_AgentInfo* agent, const char* fieldName, int* value)
+bool ADUC_AgentInfo_ConnectionData_GetIntegerField(const ADUC_AgentInfo* agent, const char* fieldName, int* value)
 {
     bool succeeded = false;
 
@@ -896,8 +895,7 @@ bool ADUC_AgentInfo_ConnectionData_GetIntegerField(
 
     *value = 0;
 
-    if (agent->connectionDataJson == NULL
-        || !ADUC_JSON_GetIntegerField(agent->connectionDataJson, fieldName, value))
+    if (agent->connectionDataJson == NULL || !ADUC_JSON_GetIntegerField(agent->connectionDataJson, fieldName, value))
     {
         goto done;
     }

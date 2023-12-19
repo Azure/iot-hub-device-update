@@ -36,7 +36,7 @@ static bool test_operation_complete(ADUC_Retriable_Operation_Context* context)
 static void reset()
 {
     ADUC_SystemUtils_RmDirRecursive(ADU_ENROLLMENT_UTILS_UT_TEST_DIR);
-    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(ADU_ENROLLMENT_UTILS_UT_TEST_DIR "/test_state_store.json"));
+    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(ADU_ENROLLMENT_UTILS_UT_TEST_DIR "/test_state_store.json", false /* isUsingProvisioningService */));
 }
 
 TEST_CASE("Handle_Enrollment_Response")
@@ -75,7 +75,7 @@ TEST_CASE("Handle_Enrollment_Response")
 
         CHECK(operation_data.enrollmentState == ADU_ENROLLMENT_STATE_NOT_ENROLLED);
 
-        CHECK_FALSE(ADUC_StateStore_GetIsDeviceEnrolled());
+        CHECK_FALSE(ADUC_StateStore_IsDeviceEnrolled());
     }
 
     SECTION("Handle_Enrollment_Response - enrolled should set state store")
@@ -104,7 +104,7 @@ TEST_CASE("Handle_Enrollment_Response")
         CHECK(test_operation_complete_called);
         CHECK(operation_data.enrollmentState == ADU_ENROLLMENT_STATE_ENROLLED);
 
-        CHECK(ADUC_StateStore_GetIsDeviceEnrolled());
+        CHECK(ADUC_StateStore_IsDeviceEnrolled());
     }
 }
 
@@ -165,6 +165,6 @@ TEST_CASE("EnrollmentData_SetCorrelationId")
     ADUC_Enrollment_Request_Operation_Data data;
     memset(&data, 0, sizeof(data));
 
-    EnrollmentData_SetCorrelationId(&data, "b9c1c214-3d88-4db8-bd4e-6f19b0a79f82");
+    CHECK(EnrollmentData_SetCorrelationId(&data, "b9c1c214-3d88-4db8-bd4e-6f19b0a79f82"));
     CHECK_THAT(data.enrReqMessageContext.correlationId, Equals("b9c1c214-3d88-4db8-bd4e-6f19b0a79f82"));
 }

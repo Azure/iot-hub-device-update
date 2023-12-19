@@ -388,7 +388,7 @@ bool IsNullOrEmpty(const char* str)
  * @param len Length of string to copy.
  * @return bool Returns true is success.
  */
-bool MallocAndSubstr(char** target, char* source, size_t len)
+bool MallocAndSubstr(char** target, const char* source, size_t len)
 {
     if (target == NULL || source == NULL)
     {
@@ -397,12 +397,19 @@ bool MallocAndSubstr(char** target, char* source, size_t len)
     *target = NULL;
 
     char* t = malloc((len + 1) * sizeof(*t));
+
     if (t == NULL)
     {
         return false;
     }
+
     memset(t, 0, (len + 1) * sizeof(*t));
-    ADUC_Safe_StrCopyN(t, source, len + 1, len);
+
+    if (!ADUC_Safe_StrCopyN(t, source, len + 1, len))
+    {
+        free(t);
+        return false;
+    }
 
     *target = t;
     return true;
@@ -417,24 +424,71 @@ bool MallocAndSubstr(char** target, char* source, size_t len)
  *
  * @param dest The destination buffer.
  * @param src The source string to be copied.
- * @param destByteLen The size of the destination buffer in bytes.
+ * @param destByteLen The size of the destination buffer in bytes, including plus 1 for the null terminator.
  * @param numSrcCharsToCopy The number of source chars to copy. It will be truncated and null-terminated if >= destByteLen.
- * @return size_t The number of src chars copied. If < numSrcCharsToCopy, then it was truncated.
+ * @return true on success.
  */
-size_t ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_t numSrcCharsToCopy)
+bool ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_t numSrcCharsToCopy)
 {
+    size_t srcLen = 0;
+
     if (dest == NULL || src == NULL || destByteLen == 0)
     {
-        return 0;
+        return false;
+    }
+    *dest = '\0';
+
+    if (numSrcCharsToCopy >= destByteLen)
+    {
+        return false;
     }
 
-    if(numSrcCharsToCopy >= destByteLen)
+    srcLen = ADUC_StrNLen(src, numSrcCharsToCopy);
+    if (numSrcCharsToCopy > srcLen)
     {
-        numSrcCharsToCopy = destByteLen - 1;
+        return false;
     }
 
     memcpy(dest, src, numSrcCharsToCopy);
     dest[numSrcCharsToCopy] = '\0';
 
-    return numSrcCharsToCopy;
+    return true;
+}
+
+/**
+* @brief Allocate a new str that is a copy of the src string with given max number of char.
+* @param dest The addr of ptr that will point to newly allocated string copy.
+* @param src The source string.
+* @param srcLen The char length of source string (not including null terminator)
+* @return true on success
+*/
+bool ADUC_AllocAndStrCopyN(char** dest, const char* src, size_t srcLen)
+{
+    bool res = false;
+    char* tmpDest = NULL;
+
+    if (dest == NULL || src == NULL || srcLen == 0)
+    {
+        return false;
+    }
+
+    tmpDest = calloc(srcLen + 1, sizeof(char)); // incl. null term
+    if (tmpDest == NULL)
+    {
+        goto done;
+    }
+
+    if (!ADUC_Safe_StrCopyN(
+            tmpDest, src, (srcLen + 1) * sizeof(char) /* destByteLen */, srcLen /* numSrcCharsToCopy */))
+    {
+        goto done;
+    }
+
+    *dest = tmpDest;
+    tmpDest = NULL;
+    res = true;
+done:
+    free(tmpDest);
+
+    return res;
 }

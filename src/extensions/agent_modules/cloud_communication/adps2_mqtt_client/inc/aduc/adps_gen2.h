@@ -8,7 +8,7 @@
 #ifndef ADPS_GEN2_H
 #define ADPS_GEN2_H
 
-#include "aduc/mqtt_client.h"
+#include "du_agent_sdk/mqtt_client_settings.h" // ADUC_MQTT_SETTINGS
 #include "du_agent_sdk/agent_common.h"
 #include "stdbool.h"
 

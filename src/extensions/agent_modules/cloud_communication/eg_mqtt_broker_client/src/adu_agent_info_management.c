@@ -8,9 +8,10 @@
 
 #include "aduc/adu_agent_info_management.h"
 
-#include <aduc/adu_communication_channel.h>
 #include <aduc/adu_agentinfo.h>
 #include <aduc/adu_agentinfo_utils.h>
+#include <aduc/adu_communication_channel.h>
+#include <aduc/adu_module_state.h>
 #include <aduc/adu_mosquitto_utils.h>
 #include <aduc/adu_mqtt_common.h>
 #include <aduc/adu_mqtt_protocol.h>
@@ -41,51 +42,6 @@
 //
 
 /**
- * @brief Creates agentinfo management module handle.
- * @return ADUC_AGENT_MODULE_HANDLE The created module handle, or NULL on failure.
- */
-ADUC_AGENT_MODULE_HANDLE ADUC_AgentInfo_Management_Create()
-{
-    ADUC_AGENT_MODULE_HANDLE handle = NULL;
-
-    ADUC_AGENT_MODULE_INTERFACE* tmp = NULL;
-    ADUC_Retriable_Operation_Context* operationContext = NULL;
-
-    operationContext = CreateAndInitializeAgentInfoRequestOperation();
-    if (operationContext == NULL)
-    {
-        Log_Error("Failed to create agentinfo request operation");
-        goto done;
-    }
-
-    tmp = calloc(1, sizeof(*tmp));
-    if (tmp == NULL)
-    {
-        goto done;
-    }
-
-    tmp->getContractInfo = ADUC_AgentInfo_Management_GetContractInfo;
-    tmp->initializeModule = ADUC_AgentInfo_Management_Initialize;
-    tmp->deinitializeModule = ADUC_AgentInfo_Management_Deinitialize;
-    tmp->doWork = ADUC_AgentInfo_Management_DoWork;
-    tmp->destroy = ADUC_AgentInfo_Management_Destroy;
-
-    tmp->moduleData = operationContext;
-    operationContext = NULL;
-
-    handle = tmp;
-    tmp = NULL;
-
-done:
-    TopicMgmtLifecycle_UninitRetriableOperationContext(operationContext);
-    free(operationContext);
-
-    free(tmp);
-
-    return handle;
-}
-
-/**
  * @brief Destroy the module handle.
  *
  * @param handle The module handle.
@@ -106,7 +62,7 @@ void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 
 /**
  * @brief Callback should be called when the client receives an agentinfo status response message from the Device Update service.
- *  For 'ainfo_resp' messages, if the Correlation Data matches the 'en,the client should parse the message and update the agentinfo state.
+ *  For 'ainfo_resp' messages, if the Correlation Data matches, then the client should parse the message and update the agentinfo state.
  *
  * @param mosq The mosquitto instance making the callback.
  * @param obj The user data provided in mosquitto_new. This is the module state
@@ -119,17 +75,22 @@ void ADUC_AgentInfo_Management_Destroy(ADUC_AGENT_MODULE_HANDLE handle)
 void OnMessage_ainfo_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
-    ADUC_Retriable_Operation_Context* context = (ADUC_Retriable_Operation_Context*)obj;
-    ADUC_MQTT_Message_Context* messageContext = (ADUC_MQTT_Message_Context*)context->data;
-    ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoData_FromOperationContext(context);
+    char* correlationData = NULL;
+    size_t correlationDataByteLen = 0;
+    ADUC_Retriable_Operation_Context* retriableOperationContext =
+        RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(obj);
+    ADUC_AgentInfo_Request_Operation_Data* agentInfoData =
+        AgentInfoDataFromRetriableOperationContext(retriableOperationContext);
 
-    json_print_properties(props);
+    ADUC_MQTT_Message_Context* messageContext = agentInfoData == NULL ? NULL : &agentInfoData->ainfoReqMessageContext;
 
-    if (!ADU_are_correlation_ids_matching(props, messageContext->correlationId))
+    if (retriableOperationContext == NULL || agentInfoData == NULL || messageContext == NULL)
     {
-        Log_Info("OnMessage_ainfo_resp: correlation data mismatch");
+        Log_Error("Invalid callback obj");
         goto done;
     }
+
+    json_print_properties(props);
 
     if (msg == NULL || msg->payload == NULL || msg->payloadlen == 0)
     {
@@ -137,26 +98,45 @@ void OnMessage_ainfo_resp(
         goto done;
     }
 
-    if (!ParseAndValidateCommonResponseUserProperties(props, "ainfo_resp" /* expectedMsgType */, &agentInfoData->respUserProps))
+    if (!ADU_are_correlation_ids_matching(
+            props, messageContext->correlationId, &correlationData, &correlationDataByteLen))
+    {
+        Log_Info(
+            "correlation data mismatch. expected: '%s', actual: '%s' %u bytes",
+            correlationData,
+            correlationDataByteLen);
+        goto done;
+    }
+
+    if (!ADU_MosquittoUtils_ParseAndValidateCommonResponseUserProperties(
+            props, "ainfo_resp" /* expectedMsgType */, &agentInfoData->respUserProps))
     {
         Log_Error("Fail parse of common user props");
         goto done;
     }
 
-    // NOTE: Do no parse ainfo_resp msg payload as it is empty.
+    // NOTE: Do no parse ainfo_resp msg payload as it is empty as per client/server protocol design.
 
-    if (!Handle_AgentInfo_Response(
-        agentInfoData,
-        context))
+    if (!Handle_AgentInfo_Response(agentInfoData, retriableOperationContext))
     {
-        Log_Error("Failed handling agentinfo response.");
+        Log_Error("Fail handling agentinfo response: correlationId '%s'", messageContext->correlationId);
         goto done;
     }
 
 done:
+    free(correlationData);
     return;
 }
 
+void OnPublish_ainfo_resp(struct mosquitto* mosq, void* obj, const mosquitto_property* props, int reason_code)
+{
+    ADUC_Retriable_Operation_Context* operationContext =
+        RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(obj);
+    ADUC_AgentInfo_Request_Operation_Data* agentInfoData =
+        AgentInfoDataFromRetriableOperationContext(operationContext);
+    ADUC_MQTT_Common_HandlePublishAck(
+        mosq, obj, props, reason_code, operationContext, agentInfoData->ainfoReqMessageContext.correlationId);
+}
 
 //
 // END - ADU_AGENT_INFO_MANAGEMENT.H Public Interface

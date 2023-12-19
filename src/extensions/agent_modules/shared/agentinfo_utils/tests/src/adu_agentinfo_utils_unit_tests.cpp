@@ -28,7 +28,7 @@ static bool Mock_AgentInfoRequestOperation_CancelOperation(ADUC_Retriable_Operat
 static void reset()
 {
     ADUC_SystemUtils_RmDirRecursive(ADU_AGENTINFO_UTILS_UT_TEST_DIR);
-    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(ADU_AGENTINFO_UTILS_UT_TEST_DIR "/test_state_store.h"));
+    REQUIRE(ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_Initialize(ADU_AGENTINFO_UTILS_UT_TEST_DIR "/test_state_store.h", false /* IsUsingProvisioningService */ ));
 
     s_cancel_called = false;
 }
@@ -51,7 +51,7 @@ TEST_CASE("Handle_AgentInfo_Response")
         REQUIRE_FALSE(Handle_AgentInfo_Response(&agentInfoData, &context));
 
         CHECK(agentInfoData.agentInfoState == ADU_AGENTINFO_STATE_UNKNOWN);
-        CHECK_FALSE(ADUC_StateStore_GetIsAgentInfoReported());
+        CHECK_FALSE(ADUC_StateStore_IsAgentInfoReported());
     }
 
     SECTION("Bad request calls retriable context cancelFunc")
@@ -71,7 +71,7 @@ TEST_CASE("Handle_AgentInfo_Response")
         REQUIRE_FALSE(Handle_AgentInfo_Response(&agentInfoData, &context));
 
         CHECK(agentInfoData.agentInfoState == ADU_AGENTINFO_STATE_UNKNOWN);
-        CHECK_FALSE(ADUC_StateStore_GetIsAgentInfoReported());
+        CHECK_FALSE(ADUC_StateStore_IsAgentInfoReported());
 
         CHECK(s_cancel_called);
     }
@@ -91,7 +91,7 @@ TEST_CASE("Handle_AgentInfo_Response")
 
         REQUIRE(Handle_AgentInfo_Response(&agentInfoData, &context));
 
-        CHECK(ADUC_StateStore_GetIsAgentInfoReported());
+        CHECK(ADUC_StateStore_IsAgentInfoReported());
         CHECK(agentInfoData.agentInfoState == ADU_AGENTINFO_STATE_ACKNOWLEDGED);
     }
 }
@@ -101,6 +101,6 @@ TEST_CASE("AgentInfoData_SetCorrelationId")
     ADUC_AgentInfo_Request_Operation_Data data;
     memset(&data, 0, sizeof(data));
 
-    AgentInfoData_SetCorrelationId(&data, "b9c1c214-3d88-4db8-bd4e-6f19b0a79f82");
+    CHECK(AgentInfoData_SetCorrelationId(&data, "b9c1c214-3d88-4db8-bd4e-6f19b0a79f82"));
     CHECK_THAT(data.ainfoReqMessageContext.correlationId, Equals("b9c1c214-3d88-4db8-bd4e-6f19b0a79f82"));
 }

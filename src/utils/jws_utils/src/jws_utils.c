@@ -146,9 +146,20 @@ static bool ExtractJWSSections(const char* jws, char** header, char** payload, c
         goto done;
     }
 
-    ADUC_Safe_StrCopyN(*header, jws, headerLen + 1, headerLen);
-    ADUC_Safe_StrCopyN(*payload, (headerEnd + 1), payloadLen + 1, payloadLen);
-    ADUC_Safe_StrCopyN(*signature, (payloadEnd + 1), sigLen + 1, sigLen);
+    if (!ADUC_Safe_StrCopyN(*header, jws, headerLen + 1, headerLen))
+    {
+        goto done;
+    }
+
+    if (!ADUC_Safe_StrCopyN(*payload, (headerEnd + 1), payloadLen + 1, payloadLen))
+    {
+        goto done;
+    }
+
+    if (!ADUC_Safe_StrCopyN(*signature, (payloadEnd + 1), sigLen + 1, sigLen))
+    {
+        goto done;
+    }
 
     success = true;
 done:
@@ -218,7 +229,10 @@ static bool ExtractJWSHeader(const char* jws, char** header)
         goto done;
     }
 
-    ADUC_Safe_StrCopyN(tempHeader, jws, headerLen + 1, headerLen);
+    if (!ADUC_Safe_StrCopyN(tempHeader, jws, headerLen + 1, headerLen))
+    {
+        goto done;
+    }
 
     success = true;
 

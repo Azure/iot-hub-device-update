@@ -9,8 +9,11 @@
 #define __ADU_MOSQUITTO_UTILS_H__
 
 #include "aducpal/time.h"
+#include <aduc/c_utils.h>
 #include <aduc/mqtt_broker_common.h> // ADUC_Common_Response_User_Properties
 #include <mosquitto.h>
+
+EXTERN_C_BEGIN
 
 /**
  * @brief Enumeration representing MQTT disconnection categories.
@@ -50,11 +53,13 @@ typedef enum ADUC_MQTT_DISCONNECTION_CATEGORY_TAG
 ADUC_MQTT_DISCONNECTION_CATEGORY CategorizeMQTTDisconnection(int rc);
 
 /**
- * @brief Generate a correlation ID from a time value.
- * @param[in] t The time value to use.
- * @return A string containing the correlation ID. The caller is responsible for free()'ing the returned string.
+ * @brief Adds the content type mqtt 5 property to the property list.
+ *
+ * @param props The address of the property list.
+ * @param contentType The content type data string.
+ * @return true on success.
  */
-char* GenerateCorrelationIdFromTime(time_t t);
+bool ADU_mosquitto_set_content_type_property(mosquitto_property** props, const char* contentType);
 
 /**
  * @brief Retrieves the correlation data from MQTT properties.
@@ -152,10 +157,17 @@ void ADU_mosquitto_free_properties(mosquitto_property** props);
 /**
  * @brief Check if the correlation data in the MQTT properties matches the provided correlation ID.
  * @param[in] props Pointer to the MQTT properties from which to retrieve the correlation data.
- * @param[in] correlationId The correlation ID to check against.
- * @return `true` if the correlation data matches the provided correlation ID; otherwise, `false`.
+ * @param[in] expectedCorrelationId The correlation ID to check against.
+ * @param[out] outCorrelationData Optional. If not NULL, will set to a string with the value of mqtt correlation-data property.
+ * @param[out] outCorrelationDataByteLen Optional. If not NULL, will set to byte length of the mqtt correlation-data property.
+ * @return true if the correlation data matches the provided correlation ID; otherwise, false.
+ * @remark
  */
-bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* correlationId);
+bool ADU_are_correlation_ids_matching(
+    const mosquitto_property* props,
+    const char* expectedCorrelationId,
+    char** outCorrelationData,
+    size_t* outCorrelationDataByteLen);
 
 /**
  * @brief Parses and validates the MQTT response topic user properties common to ADU responst topics.
@@ -165,7 +177,10 @@ bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const cha
  * @param outRespUserProps The common response user properties structure that will receive side-effects after parse and validation.
  * @return true When parse and validation succeeds.
  */
-bool ParseAndValidateCommonResponseUserProperties(const mosquitto_property* props, const char* expectedMsgType, ADUC_Common_Response_User_Properties* outRespUserProps);
+bool ADU_MosquittoUtils_ParseAndValidateCommonResponseUserProperties(
+    const mosquitto_property* props,
+    const char* expectedMsgType,
+    ADUC_Common_Response_User_Properties* outRespUserProps);
 
 /**
  * @brief prints mosquitto property for debugging.
@@ -184,5 +199,7 @@ int json_print_properties(const mosquitto_property* properties);
  *
  */
 bool ADUC_generate_correlation_id(bool with_hyphens, char* buffer, size_t buffer_cch);
+
+EXTERN_C_END
 
 #endif
