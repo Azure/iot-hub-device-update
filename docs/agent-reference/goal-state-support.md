@@ -66,7 +66,7 @@ Here is each workflow step and what it does at a high-level:
     - On failure, it sets the state to `ADUCITF_State_Failed` and reports the failure.
 - `ADUCITF_WorkflowStep_Backup`
     - Sets current state to `ADUCITF_WorkflowStep_Backup`
-    - Kicks off Backup worker thread, which will call the step handler's `Backup()` method to backup the content needed to 
+    - Kicks off Backup worker thread, which will call the step handler's `Backup()` method to backup the content needed to
     be backed up
     - On success, it will set the state to `ADUCITF_State_BackupCompleted` and auto-transitions to `ADUCITF_WorkflowStep_InstallStarted`
     - On failure, it sets the state to `ADUCITF_State_Failed` and reports the failure.
@@ -114,9 +114,9 @@ The states of the state machine are defined in the `ADUCITF_State` enum in [upda
 
 ### State Transitions
 
-A state transition is describe by the `ADUC_WorkflowHandlerMapEntry` struct in [agent_workflow.c](../../src/agent/adu_core_interface/src/agent_workflow.c).
+A state transition is describe by the `ADUC_WorkflowHandlerMapEntry` struct in [agent_workflow.c](../../src/adu_workflow/src/agent_workflow.c).
 
-The state transitions are defined in the `workflowHandlerMap` array in [agent_workflow.c](../../src/agent/adu_core_interface/src/agent_workflow.c).
+The state transitions are defined in the `workflowHandlerMap` array in [agent_workflow.c](../../src/adu_workflow/src/agent_workflow.c).
 
 ### State Machine Diagram
 ![State Machine Diagram](images/goalstate-state-diagram.png)

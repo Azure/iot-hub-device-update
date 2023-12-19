@@ -61,6 +61,8 @@ The SWUpdate Handler support following handler properties (`handlerProperties`) 
 
 #### List of SWUpdate runtime options
 
+> NOTE | As part of the update workflow, the underlying script will receive these options. So, there is no need to include them in the `handlerProperties.arguments` section of the step in the import manifest.
+
 | Name | Type | Description |
 |---|---|---|
 |--work-folder| string | Full path to a work (sandbox) folder used by an Agent when performing update-related tasks. |

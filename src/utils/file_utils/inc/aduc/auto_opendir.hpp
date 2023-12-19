@@ -18,7 +18,7 @@ namespace aduc
 /**
  * @brief AutoOpenDir class wraps handling the openning / closing of a directory
  */
-class AutoOpenDir 
+class AutoOpenDir
 {
 public:
     /**
@@ -30,7 +30,7 @@ public:
      */
     ~AutoOpenDir();
 
-    /** 
+    /**
     * @brief Returns the directory in stream handle form
     * @returns a value of dirEntry in the form of a DIR*
     */

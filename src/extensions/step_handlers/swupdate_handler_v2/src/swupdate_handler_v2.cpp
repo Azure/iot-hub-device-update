@@ -552,7 +552,7 @@ std::string SWUpdateHandlerImpl::ReadValueFromFile(const std::string& filePath)
  *   - Device builder defines the how to evaluate wither the current step can be considered 'completed'.
  *     Note that the term 'IsInstalled' was carried over from the original design where the agent would
  *     ask the handler that "Is an 'update' is currently installed on the device.".
- * @param workflowData workflowData to perform the IsInstalled check on 
+ * @param workflowData workflowData to perform the IsInstalled check on
  * @return ADUC_Result The result based on evaluating the workflow data.
  */
 ADUC_Result SWUpdateHandlerImpl::IsInstalled(const tagADUC_WorkflowData* workflowData)

@@ -527,7 +527,7 @@ do_install_azure_storage_sdk() {
 
     cmake "${azure_storage_sdk_cmake_options[@]}" . || return
 
-    cmake --build . || return
+    cmake --build . || return 1
     $SUDO cmake --build . --target install || return
 
     popd > /dev/null || return
