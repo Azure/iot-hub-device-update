@@ -124,8 +124,6 @@ ADUC_AGENT_MODULE_HANDLE ADPS_MQTT_Client_Module_Create()
     moduleInterface->moduleData = moduleState;
     moduleState = NULL; // transfer ownership
 
-    moduleInterface->initialized = true;
-
     // successful, so only now transfer moduleInterface to the output handle.
     handle = moduleInterface;
     moduleInterface = NULL; // transfer ownership
@@ -280,11 +278,9 @@ bool ProcessDeviceRegistrationResponse(
     {
         bool errorOccurred = false;
         Log_Info("Device is registered.");
-
         SetRegisterState(moduleState, ADPS_REGISTER_STATE_REGISTERED, "received assigned status");
 
         const char* deviceId = json_object_dotget_string(json_object(root_value), "registrationState.deviceId");
-
         if (deviceId == NULL)
         {
             Log_Error("Failed to get deviceId from JSON payload:\n%s", payload);
@@ -295,10 +291,8 @@ bool ProcessDeviceRegistrationResponse(
             Log_Error("Failed to set externalDeviceID");
             errorOccurred = true;
         }
-
         const char* mqttBrokerHostname =
             json_object_dotget_string(json_object(root_value), "registrationState.assignedEndpoint.hostName");
-
         if (mqttBrokerHostname == NULL)
         {
             Log_Error("Failed to get MQTT broker hostname from JSON payload");
@@ -313,7 +307,6 @@ bool ProcessDeviceRegistrationResponse(
                 errorOccurred = true;
             }
         }
-
         if (errorOccurred)
         {
             // Set registration state to 'unknown' so that we can retry again.

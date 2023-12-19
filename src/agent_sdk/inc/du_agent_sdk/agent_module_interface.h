@@ -44,7 +44,6 @@ typedef struct tagADUC_AGENT_MODULE_INTERFACE
     ADUC_AGENT_MODULE_DO_WORK doWork;
     ADUC_AGENT_MODULE_INITIALIZE initializeModule;
     ADUC_AGENT_MODULE_DEINITIALIZE deinitializeModule;
-    bool initialized;
 } ADUC_AGENT_MODULE_INTERFACE;
 
 #define DECLARE_AGENT_MODULE_PUBLIC(name)     \
