@@ -530,15 +530,15 @@ bool ADUC_CopyIf(
     }
     *dest = '\0';
 
-    if (outDestEnd != NULL)
-    {
-        *outDestEnd = dest;
-    }
-
     if ((srcIndex < srcByteLen) && (src[srcIndex] == '\0'))
     {
         // hit end of src str before consuming all srcByteLen
         return false;
+    }
+
+    if (outDestEnd != NULL)
+    {
+        *outDestEnd = dest;
     }
 
     return true;
