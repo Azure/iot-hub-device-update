@@ -16,6 +16,7 @@ using Catch::Matchers::Equals;
 using ADUC::StringUtils::cstr_wrapper;
 
 #include <cstring>
+#include <ctype.h> // iswspace
 #include <fstream>
 
 class TemporaryTestFile
@@ -579,7 +580,7 @@ TEST_CASE("ADUC_AllocAndStrCopyN")
 
 static bool is_not_whitespace(char c)
 {
-    return !(c == ' ' || c == '\t' || c == '\r' || c == '\n');
+    return ! ::iswspace(c);
 }
 
 static bool tautology(char)
