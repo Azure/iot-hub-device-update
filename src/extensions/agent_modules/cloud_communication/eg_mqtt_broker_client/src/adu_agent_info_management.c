@@ -76,7 +76,6 @@ void OnMessage_ainfo_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
     char* correlationData = NULL;
-    size_t correlationDataByteLen = 0;
     ADUC_Retriable_Operation_Context* retriableOperationContext =
         RetriableOperationContextFromAgentInfoMqttLibCallbackUserObj(obj);
     ADUC_AgentInfo_Request_Operation_Data* agentInfoData =
@@ -98,13 +97,8 @@ void OnMessage_ainfo_resp(
         goto done;
     }
 
-    if (!ADU_are_correlation_ids_matching(
-            props, messageContext->correlationId, &correlationData, &correlationDataByteLen))
+    if (!ADU_are_correlation_ids_matching(props, messageContext->correlationId))
     {
-        Log_Info(
-            "correlation data mismatch. expected: '%s', actual: '%s' %u bytes",
-            correlationData,
-            correlationDataByteLen);
         goto done;
     }
 

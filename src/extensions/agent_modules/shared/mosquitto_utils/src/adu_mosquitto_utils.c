@@ -24,9 +24,19 @@
 // keep this last to avoid interfering with system headers
 #include <aduc/aduc_banned.h>
 
+#define GUID_STR_LEN_WITH_DASHES_PLUS_NULL_TERM 37
+#define GUID_STR_LEN_NO_DASHES_PLUS_NULL_TERM (GUID_STR_LEN_WITH_DASHES_PLUS_NULL_TERM - 4)
+
+typedef char ADU_OCTET;
+
 static bool not_a_dash(char c)
 {
     return c != '-';
+}
+
+static inline size_t min_size_t(size_t x, size_t y)
+{
+    return x < y ? x : y;
 }
 
 /**
@@ -112,78 +122,83 @@ bool ADU_mosquitto_get_correlation_data(const mosquitto_property* props, char** 
  * @brief Check if the correlation data in the MQTT properties matches the provided correlation ID.
  * @param[in] props Pointer to the MQTT properties from which to retrieve the correlation data.
  * @param[in] expectedCorrelationId The correlation ID to check against.
- * @param[out] outCorrelationData Optional. If not NULL, will set to a string with the value of mqtt correlation-data property.
- * @param[out] outCorrelationDataByteLen Optional. If not NULL, will set to byte length of the mqtt correlation-data property.
- * @return `true` if the correlation data matches the provided correlation ID; otherwise, `false`.
+ * @return `true` if the expected correlation data matches the bytes of provided correlation ID
+ * (not including the null-terminator of the former).
  */
-bool ADU_are_correlation_ids_matching(
-    const mosquitto_property* props,
-    const char* expectedCorrelationId,
-    char** outCorrelationData,
-    size_t* outCorrelationDataByteLen)
+bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* expectedCorrelationId)
 {
-    char* responseCorrelationId = NULL;
-    uint16_t responseCorrelationIdLen = 0;
-    size_t n = 0;
+    STATIC_ASSERT(sizeof(ADU_OCTET) == 1);
+
     bool res = false;
-    size_t byteLenNoDashes = 0;
+
+    ADU_OCTET* responseCorrelationDataOctets = NULL;
+    uint16_t responseCorrelationDataOctetsLen = 0;
+    const mosquitto_property* p = NULL;
 
     if (props == NULL || IsNullOrEmpty(expectedCorrelationId))
     {
         goto done;
     }
 
-    // Check if correlation data matches the latest enrollment message.
+    // Check if correlation data from the response matches the correlationId from the request (expectedCorrelationId)
+    //
     // NOTE: the void** is due to the API signature and compiler not allowing char** instead--the mosquitto fn impl uses calloc and memcpy
     // that return and take void* so the author of API signature just went with that and avoided casting to something like char* for the
     // binary data so callers have to cast.
-    const mosquitto_property* p = mosquitto_property_read_binary(
-        props, MQTT_PROP_CORRELATION_DATA, (void**)&responseCorrelationId, &responseCorrelationIdLen, false);
-    if (p == NULL || responseCorrelationId == NULL)
+    p = mosquitto_property_read_binary(
+        props, MQTT_PROP_CORRELATION_DATA, (void**)&responseCorrelationDataOctets, &responseCorrelationDataOctetsLen, false /* skip_first */);
+
+    if (p == NULL || responseCorrelationDataOctets == NULL)
     {
         goto done;
     }
 
-    if (outCorrelationData != NULL)
     {
         // TODO: Remove this workaround once adu service deploys fix that ensures exact correlation id string agent sent is
         // in the response message. Currently, it parses the UUID without dashes and then introduces dashes in the response
         // message.
-        char correlation_id_no_dash[37] = "";
-        char* destEnd = NULL;
+        //
+        // Internal tracking bug -- Bug 48216724: [gen2] service returns modified correlation id in the response
+        //
+        // NOTE: this is copying raw, untrusted bytes into the octet destination array
+        // (as long as it's not a dash/hyphen character, 0x2D in ascii/utf-8).
+        //
+        // If the length of the correlation-data binary octets exceeds the dest array,
+        // then ADUC_CopyIf will fail. Also, ADUC_CopyIf will ensure it null-terminates
+        // the sequence of bytes as though it were an encoded character string (as long.
+        // as the number correlation-data does not exceed the dest buffer.
+        size_t max_octets = 0;
+        ADU_OCTET* outDestEnd = NULL;
+        ADU_OCTET correlation_data_octets_no_dashes[GUID_STR_LEN_WITH_DASHES_PLUS_NULL_TERM];
+        memset(&correlation_data_octets_no_dashes, 0, sizeof(correlation_data_octets_no_dashes));
+
         if (!ADUC_CopyIf(
-            correlation_id_no_dash /* dest */,
-            sizeof(correlation_id_no_dash) /* destByteLen */,
-            responseCorrelationId /* src */,
-            (size_t)responseCorrelationIdLen /* srcByteLen */,
+            correlation_data_octets_no_dashes /* dest */,
+            sizeof(correlation_data_octets_no_dashes) /* destByteLen */,
+            responseCorrelationDataOctets /* src */,
+            (size_t)responseCorrelationDataOctetsLen /* srcByteLen */,
             not_a_dash /* copyPred */,
-            &destEnd /* outDestEnd */))
+            &outDestEnd /* outDestEnd */))
         {
+            Log_Error("Fail copy of non-dash (0x2D) octets");
             goto done;
         }
 
-        byteLenNoDashes = (size_t)(destEnd - correlation_id_no_dash);
+        max_octets = min_size_t((size_t)(outDestEnd - correlation_data_octets_no_dashes), ADUC_StrNLen(expectedCorrelationId, GUID_STR_LEN_NO_DASHES_PLUS_NULL_TERM));
 
-        if (!ADUC_AllocAndStrCopyN(outCorrelationData, correlation_id_no_dash, byteLenNoDashes))
+        if (strncmp(correlation_data_octets_no_dashes, expectedCorrelationId, max_octets) != 0)
         {
+            Log_Warn("resp correlation-data octets not matching. expected: '%s'", expectedCorrelationId);
             goto done;
         }
     }
 
-    if (outCorrelationDataByteLen != NULL)
-    {
-        *outCorrelationDataByteLen = (size_t)responseCorrelationIdLen;
-    }
+    Log_Debug("resp correlation-data matched that of req");
 
-    n = (size_t)responseCorrelationIdLen;
-    if (responseCorrelationId == NULL || strncmp(responseCorrelationId, expectedCorrelationId, n) != 0)
-    {
-        goto done;
-    }
     res = true;
 
 done:
-    free(responseCorrelationId);
+    free(responseCorrelationDataOctets);
     return res;
 }
 

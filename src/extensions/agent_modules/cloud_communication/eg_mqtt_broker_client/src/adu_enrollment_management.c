@@ -74,7 +74,6 @@ void OnMessage_enr_resp(
     bool isEnrolled = false;
     char* scopeId = NULL;
     char* correlationData = NULL;
-    size_t correlationDataByteLen = 0;
 
     ADUC_Retriable_Operation_Context* retriableOperationContext =
         RetriableOperationContextFromEnrollmentMqttLibCallbackUserObj(obj);
@@ -90,13 +89,8 @@ void OnMessage_enr_resp(
 
     json_print_properties(props);
 
-    if (!ADU_are_correlation_ids_matching(
-            props, enrollmentData->enrReqMessageContext.correlationId, &correlationData, &correlationDataByteLen))
+    if (!ADU_are_correlation_ids_matching(props, enrollmentData->enrReqMessageContext.correlationId))
     {
-        Log_Info(
-            "correlation data mismatch. expected: '%s', actual: '%s' %u bytes",
-            correlationData,
-            correlationDataByteLen);
         goto done;
     }
 

@@ -72,7 +72,6 @@ void OnMessage_upd_resp(
     struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg, const mosquitto_property* props)
 {
     char* correlationData = NULL;
-    size_t correlationDataByteLen = 0;
 
     WorkQueueHandle updateWorkQueueHandle = WorkQueueHandleFromCallbackUserObj(obj);
     ADUC_Retriable_Operation_Context* retriableOperationContext = RetriableOperationContextFromCallbackUserObj(obj);
@@ -87,13 +86,8 @@ void OnMessage_upd_resp(
 
     json_print_properties(props);
 
-    if (!ADU_are_correlation_ids_matching(
-            props, updateData->updReqMessageContext.correlationId, &correlationData, &correlationDataByteLen))
+    if (!ADU_are_correlation_ids_matching(props, updateData->updReqMessageContext.correlationId))
     {
-        Log_Info(
-            "correlation data mismatch. expected: '%s', actual: '%s' %u bytes",
-            correlationData,
-            correlationDataByteLen);
         goto done;
     }
 

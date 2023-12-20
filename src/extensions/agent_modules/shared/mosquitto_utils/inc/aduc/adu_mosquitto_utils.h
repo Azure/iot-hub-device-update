@@ -158,16 +158,10 @@ void ADU_mosquitto_free_properties(mosquitto_property** props);
  * @brief Check if the correlation data in the MQTT properties matches the provided correlation ID.
  * @param[in] props Pointer to the MQTT properties from which to retrieve the correlation data.
  * @param[in] expectedCorrelationId The correlation ID to check against.
- * @param[out] outCorrelationData Optional. If not NULL, will set to a string with the value of mqtt correlation-data property.
- * @param[out] outCorrelationDataByteLen Optional. If not NULL, will set to byte length of the mqtt correlation-data property.
- * @return true if the correlation data matches the provided correlation ID; otherwise, false.
- * @remark
+ * @return `true` if the expected correlation data matches the bytes of provided correlation ID
+ * (not including the null-terminator of the former).
  */
-bool ADU_are_correlation_ids_matching(
-    const mosquitto_property* props,
-    const char* expectedCorrelationId,
-    char** outCorrelationData,
-    size_t* outCorrelationDataByteLen);
+bool ADU_are_correlation_ids_matching(const mosquitto_property* props, const char* expectedCorrelationId);
 
 /**
  * @brief Parses and validates the MQTT response topic user properties common to ADU responst topics.
