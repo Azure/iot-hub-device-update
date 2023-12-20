@@ -19,7 +19,7 @@
 
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/strings.h>
-#include <dirent.h>
+#include <aducpal/dirent.h>
 #include <errno.h>
 #include <limits.h> // for PATH_MAX
 #include <stdio.h>
