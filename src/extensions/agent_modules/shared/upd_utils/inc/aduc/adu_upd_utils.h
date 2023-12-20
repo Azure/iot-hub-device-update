@@ -12,10 +12,15 @@ ADUC_Update_Request_Operation_Data* UpdateData_FromOperationContext(ADUC_Retriab
 WorkQueueHandle WorkQueueHandleFromCallbackUserObj(void* obj);
 WorkQueueHandle ReportingWorkQueueHandleFromCallbackUserObj(void* obj);
 ADUC_Retriable_Operation_Context* RetriableOperationContextFromCallbackUserObj(void* obj);
-ADUC_Update_Request_Operation_Data* UpdateDataFromRetriableOperationContext(ADUC_Retriable_Operation_Context* retriableOperationContext);
+ADUC_Update_Request_Operation_Data*
+UpdateDataFromRetriableOperationContext(ADUC_Retriable_Operation_Context* retriableOperationContext);
 bool UpdateData_SetCorrelationId(ADUC_Update_Request_Operation_Data* updateData, const char* correlationId);
-void AduUpdUtils_TransitionState(ADU_UPD_STATE newState, ADUC_Update_Request_Operation_Data* updateData);
-void AduUpdUtils_HandleProcessing(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retriable_Operation_Context* retriableOperationContext);
+void AduUpdUtils_TransitionState(
+    ADU_UPD_STATE newState,
+    ADUC_Update_Request_Operation_Data* updateData,
+    ADUC_Retriable_Operation_Context* retriableOperationContext);
+void AduUpdUtils_HandleProcessing(
+    ADUC_Update_Request_Operation_Data* updateData, ADUC_Retriable_Operation_Context* retriableOperationContext);
 
 EXTERN_C_END
 

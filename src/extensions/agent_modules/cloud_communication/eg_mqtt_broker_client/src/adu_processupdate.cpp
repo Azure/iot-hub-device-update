@@ -57,13 +57,13 @@ void Adu_ProcessUpdate(
                 ADU_Integration_GetReportingJson(&workflowData, ADUCITF_State_Idle, &result, updateId);
             free(updateId);
 
-            AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS, updateData);
+            AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS, updateData, retriableOperationContext);
         };
 
     if (jsonPayload == nullptr || std::string{ jsonPayload } == "{}")
     {
         Log_Info("        *** ADU service had no applicable updates.");
-        AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updateData);
+        AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updateData, retriableOperationContext);
         goto done;
     }
 
@@ -81,7 +81,7 @@ void Adu_ProcessUpdate(
     {
         // same workflow. TODO: consider support of retry, ignore for now.
         Log_Debug("new workflow id matches '%s'. Ignoring.", workflow_peek_id(nextWorkflow));
-        AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updateData);
+        AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updateData, retriableOperationContext);
         goto done;
     }
 
@@ -136,7 +136,7 @@ void Adu_ProcessUpdate(
             ADU_Integration_GetReportingJson(&workflowData, ADUCITF_State_Idle, &result, updateId);
         free(updateId);
 
-        AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS, updateData);
+        AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS, updateData, retriableOperationContext);
         goto done;
     }
     else if (IsAducResultCodeFailure(result.ResultCode))
@@ -199,7 +199,7 @@ void Adu_ProcessUpdate(
     retriableOperationContext->nextExecutionTime = ADUC_GetTimeSinceEpochInSeconds() + 5;
     retriableOperationContext->expirationTime =
         retriableOperationContext->nextExecutionTime + 60 * 60; // TODO: make configurable
-    AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS, updateData);
+    AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS, updateData, retriableOperationContext);
 
 done:
     return;

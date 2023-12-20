@@ -236,7 +236,7 @@ bool ADUC_JSON_GetUnsignedIntegerField(const JSON_Value* jsonValue, const char* 
     val = json_object_dotget_number(jsonObj, jsonFieldName);
 
     // Note: check value is not negative and is a whole number for safe casting to an unsigned int
-    if (val < 0 || ((int)val) != val)
+    if (val <= 0 || ((int)val) != val)
     {
         goto done;
     }

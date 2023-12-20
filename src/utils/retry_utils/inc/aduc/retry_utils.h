@@ -55,6 +55,9 @@ EXTERN_C_BEGIN
 #define DEFAULT_ENR_REQ_OP_MAX_JITTER_PERCENT (60)
 #define SETTING_KEY_ENR_REQ_OP_MAX_JITTER_PERCENT "maxJitterPercent"
 
+#define SETTING_KEY_POLLING_INTERVAL_SECONDS "pollingIntervalInSeconds"
+#define ADUC_DEFAULT_POLLING_INTERVAL_SECONDS (5 * 60)
+
 /**
  * @brief The data structure that contains information about the retry strategy.
  */
@@ -176,6 +179,8 @@ struct tagADUC_Retriable_Operation_Context
     void* lastErrorContext; // Last error context
 
     const void* commChannelHandle; // Handle to the communication channel used for the operation
+
+    unsigned int pollingIntervalInSeconds; // The time to wait between polling for updates.
 };
 
 bool ADUC_Retriable_Operation_DoWork(ADUC_Retriable_Operation_Context* context);
@@ -183,7 +188,8 @@ bool ADUC_Retriable_Operation_Cancel(ADUC_Retriable_Operation_Context* context);
 bool ADUC_Retriable_Set_State(ADUC_Retriable_Operation_Context* context, ADUC_Retriable_Operation_State state);
 
 int RetryUtils_GetRetryParamsMapSize();
-void ReadRetryParamsArrayFromAgentConfigJson(ADUC_Retriable_Operation_Context* context, JSON_Value* agentJsonValue, int retryParamsMapSize);
+void ReadRetryParamsArrayFromAgentConfigJson(
+    ADUC_Retriable_Operation_Context* context, JSON_Value* agentJsonValue, int retryParamsMapSize);
 
 EXTERN_C_END
 
