@@ -401,6 +401,8 @@ class DeviceUpdateTestHelper:
 
         updatedTwin = self._hubRegistryManager.update_module_twin(deviceId, moduleId, newTagForTwin)
 
+        print ("Updated Twin:: " + updatedTwin.tags["ADUGroup"])
+
         if (updatedTwin.tags["ADUGroup"] != groupName):
             return False
 
