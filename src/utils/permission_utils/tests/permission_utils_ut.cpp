@@ -16,9 +16,9 @@
 
 #include <fstream> // ofstream
 
+#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
 #include <aducpal/stdio.h> // remove
 #include <aducpal/sys_stat.h> // S_I*
-#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
 
 // keep this last to avoid interfering with system headers
 #include "aduc/aduc_banned.h"
@@ -35,7 +35,7 @@ TEST_CASE("PermissionUtils_VerifyFilemodeBit*")
     // create temp file with all file permission bits set
     char tmpfile_path[30];
     std::string src_str{ "/tmp/permissionUtilsUT_XXXXXX" };
-    REQUIRE(ADUC_Safe_StrCopyN(tmpfile_path, src_str.c_str(), sizeof(tmpfile_path), src_str.length()));
+    REQUIRE(ADUC_Safe_StrCopyN(tmpfile_path, sizeof(tmpfile_path), src_str.c_str(), src_str.length()));
     ADUC_SystemUtils_MkTemp(tmpfile_path);
     std::ofstream file{ tmpfile_path };
     file.close();

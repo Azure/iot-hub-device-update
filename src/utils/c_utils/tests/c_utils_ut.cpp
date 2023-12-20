@@ -424,7 +424,8 @@ TEST_CASE("ADUC_StringFormat")
     }
 }
 
-TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
+TEST_CASE("ADUC_Safe_StrCopyN properly copies strings")
+{
     char dest[10] = "foo";
 
     const auto reset_dest = [&dest] {
@@ -434,73 +435,81 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
 
     // Edge cases
 
-    SECTION("Handle NULL source") {
+    SECTION("Handle NULL source")
+    {
         reset_dest();
-        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, NULL, sizeof(dest), 0));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, sizeof(dest), NULL, 0));
         CHECK_THAT(dest, Equals("f")); // did not write to dest when NULL arg
     }
 
-    SECTION("Handle NULL destination") {
+    SECTION("Handle NULL destination")
+    {
         reset_dest();
         const char* src = "test";
-        REQUIRE_FALSE(ADUC_Safe_StrCopyN(NULL, src, sizeof(dest), 4));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(NULL, sizeof(dest), src, 4));
         CHECK_THAT(dest, Equals("f")); // did not write to dest when NULL arg
     }
 
-    SECTION("Handle zero size") {
+    SECTION("Handle zero size")
+    {
         reset_dest();
         const char* src = "test";
-        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, src, 0 /* destByteLen */, 4 /* numSrcCharsToCopy */));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, 0 /* destByteLen */, src, 4 /* srcByteLen */));
         CHECK_THAT(dest, Equals("f")); // did not write to dest when told dest len is 0
     }
 
     // mainline cases
 
-    SECTION("src chars to cpy < dest capacity should succeed") {
+    SECTION("src chars to cpy < dest capacity should succeed")
+    {
         reset_dest();
         const char* src = "short";
-        REQUIRE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 5));
+        REQUIRE(ADUC_Safe_StrCopyN(dest, sizeof(dest), src, 5));
         CHECK_THAT(dest, Equals("short"));
     }
 
-    SECTION("Error when truncation would be needed") {
+    SECTION("Error when truncation would be needed")
+    {
         reset_dest();
         const char* src = "12345678901234"; // 14 + 1
-        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 14));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, sizeof(dest), src, 15));
         CHECK_THAT(dest, Equals(""));
     }
 
-    SECTION("Handle subset of longer source string that is still longer than dest") {
+    SECTION("Handle subset of longer source string that is still longer than dest")
+    {
         reset_dest();
         const char* src = "12345678901234"; // 14 + 1
-        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 11));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, sizeof(dest), src, 11));
         CHECK_THAT(dest, Equals(""));
 
         reset_dest();
-        REQUIRE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 9));
+        REQUIRE(ADUC_Safe_StrCopyN(dest, sizeof(dest), src, 9));
         CHECK_THAT(dest, Equals("123456789"));
     }
 
-    SECTION("Handle subset of longer source string, exactly as long as dest buffer - 1") {
+    SECTION("Handle subset of longer source string, exactly as long as dest buffer - 1")
+    {
         reset_dest();
         const char* src = "12345678901234"; // 14 + 1
-        REQUIRE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 9));
+        REQUIRE(ADUC_Safe_StrCopyN(dest, sizeof(dest), src, 9));
         CHECK_THAT(dest, Equals("123456789"));
     }
 
-    SECTION("Handle subset of longer source string, that is less-than dest buffer - 1") {
+    SECTION("Handle subset of longer source string, that is less-than dest buffer - 1")
+    {
         reset_dest();
         const char* src = "12345678901234"; // 14 + 1
-        REQUIRE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 8));
+        REQUIRE(ADUC_Safe_StrCopyN(dest, sizeof(dest), src, 8));
         CHECK_THAT(dest, Equals("12345678"));
     }
 
-    SECTION("numSrcCharsToCopy > len of src str")
+    SECTION("It should fail when srcByteLen > len of src str")
     {
         reset_dest();
         const char* src = "123";
-        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, src, sizeof(dest), strlen(src) + 1));
-        CHECK_THAT(dest, Equals(""));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(dest, sizeof(dest), src, strlen(src) + 1));
+        CHECK_THAT(dest, Equals("123"));
     }
 
     SECTION("Can copy a duck (ADUC) emoji")
@@ -509,7 +518,7 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
         memset(&target[0], 0, 4);
 
         const char* src = "🦆"; // 4-byte utf-8 sequence, so target must be size 5 for nul-term.
-        REQUIRE(ADUC_Safe_StrCopyN(target, src, sizeof(target), strlen(src)));
+        REQUIRE(ADUC_Safe_StrCopyN(target, sizeof(target), src, strlen(src)));
         CHECK_THAT(target, Equals("🦆"));
     }
 
@@ -519,7 +528,7 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
         memset(&target[0], 0, 4);
 
         const char* src = "🦆"; // 4-byte utf-8 sequence, so target must be size 5 for nul-term.
-        REQUIRE_FALSE(ADUC_Safe_StrCopyN(target, src, sizeof(target), strlen(src)));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(target, sizeof(target), src, strlen(src)));
         CHECK_THAT(target, Equals(""));
     }
 
@@ -529,7 +538,7 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
         memset(target, 0, 4);
 
         const char* src = "1234";
-        REQUIRE_FALSE(ADUC_Safe_StrCopyN(target, src, sizeof(target), strlen(src)));
+        REQUIRE_FALSE(ADUC_Safe_StrCopyN(target, sizeof(target), src, strlen(src)));
         CHECK_THAT(target, Equals(""));
     }
 }
@@ -565,5 +574,91 @@ TEST_CASE("ADUC_AllocAndStrCopyN")
             REQUIRE(ADUC_AllocAndStrCopyN(target.address_of(), "foo", 1));
             CHECK_THAT(target.get(), Equals("f"));
         }
+    }
+}
+
+static bool is_not_whitespace(char c)
+{
+    return !(c == ' ' || c == '\t' || c == '\r' || c == '\n');
+}
+
+static bool tautology(char)
+{
+    return true;
+}
+
+TEST_CASE("ADUC_CopyIf")
+{
+    char dest[20];
+    memset(&dest, 0, sizeof(dest));
+    char* outDestEnd = nullptr;
+
+    const auto reset_dest = [&dest, &outDestEnd]() {
+        memset(&dest, 0xFF, sizeof(dest));
+        dest[sizeof(dest) - 1] = '\0';
+        outDestEnd = nullptr;
+    };
+
+    SECTION("It should copy only non-whitespace for is_not_whitespace predicate")
+    {
+        reset_dest();
+
+        const std::string src{ "a\tb c\r\nd\r" };
+        REQUIRE(ADUC_CopyIf(dest, sizeof(dest), src.c_str(), src.length(), is_not_whitespace, &outDestEnd));
+        CHECK_THAT(dest, Equals("abcd"));
+    }
+
+    SECTION("It should fail if actual src length > passed-in srcByteLen")
+    {
+        reset_dest();
+
+        REQUIRE_FALSE(ADUC_CopyIf(dest, sizeof(dest), "", 37 /* srcByteLen */, is_not_whitespace, &outDestEnd));
+    }
+
+    SECTION("It should make dest empty string on NULL src")
+    {
+        reset_dest();
+
+        REQUIRE(ADUC_CopyIf(dest, sizeof(dest), NULL, 0, is_not_whitespace, &outDestEnd));
+        CHECK_THAT(dest, Equals(""));
+    }
+
+    SECTION("It should copy empty source string to dest")
+    {
+        reset_dest();
+
+        REQUIRE(ADUC_CopyIf(dest, sizeof(dest), "", 0, is_not_whitespace, &outDestEnd));
+        CHECK_THAT(dest, Equals(""));
+    }
+
+    SECTION("It should be a full copy for tautological predicate")
+    {
+        reset_dest();
+
+        const char* src = "foobar";
+        size_t srcLen = strlen(src);
+
+        REQUIRE(ADUC_CopyIf(dest, sizeof(dest), src, srcLen, tautology, &outDestEnd));
+        CHECK_THAT(dest, Equals("foobar"));
+    }
+
+    SECTION("It should return false for destination without sufficient capacity")
+    {
+        reset_dest();
+
+        const char* src = "this is a test";
+        size_t srcLen = strlen(src);
+        REQUIRE_FALSE(ADUC_CopyIf(dest, 7, src, srcLen, is_not_whitespace, &outDestEnd));
+    }
+
+    SECTION("Null terminator is correctly placed")
+    {
+        reset_dest();
+
+        const char src[] = "foobar";
+
+        REQUIRE(ADUC_CopyIf(dest, sizeof(dest), src, strlen(src), is_not_whitespace, &outDestEnd));
+        CHECK(*outDestEnd == '\0');
+        CHECK(outDestEnd - dest == strlen(src));
     }
 }

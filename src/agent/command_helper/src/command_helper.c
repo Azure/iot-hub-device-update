@@ -10,6 +10,7 @@
 #include "aduc/logging.h"
 #include "aduc/permission_utils.h"
 
+#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
 #include <aducpal/unistd.h> // sleep
 #include <errno.h>
 #include <fcntl.h>
@@ -20,7 +21,6 @@
 #include <stdlib.h> // free
 #include <string.h> // strlen
 #include <sys/stat.h> // mkfifo
-#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
 
 // keep this last to avoid interfering with system headers
 #include "aduc/aduc_banned.h"
@@ -353,7 +353,7 @@ bool SendCommand(const char* command)
     }
 
     // Copy command to buffer and fill the remaining buffer (if any) with additional null bytes.
-    if (!ADUC_Safe_StrCopyN(buffer, command, sizeof(buffer), cmdLen))
+    if (!ADUC_Safe_StrCopyN(buffer, sizeof(buffer), command, cmdLen))
     {
         goto done;
     }

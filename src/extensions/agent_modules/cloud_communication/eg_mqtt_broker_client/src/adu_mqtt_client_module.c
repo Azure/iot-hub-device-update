@@ -701,6 +701,8 @@ ADUC_AGENT_MODULE_HANDLE ADUC_MQTT_Client_Module_Create()
     tmp->moduleData = state;
     state = NULL;
 
+    tmp->initialized = true;
+
     handle = tmp;
     tmp = NULL;
 

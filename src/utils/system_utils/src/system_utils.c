@@ -221,7 +221,8 @@ int ADUC_SystemUtils_MkDirRecursive(const char* path, uid_t userId, gid_t groupI
     char mkdirPath[PATH_MAX + 1];
     memset(mkdirPath, 0, sizeof(mkdirPath));
     const size_t mkdirPath_cch = ADUC_StrNLen(path, PATH_MAX);
-    if (!ADUC_Safe_StrCopyN(mkdirPath, path, sizeof(mkdirPath), mkdirPath_cch))
+    if (!ADUC_Safe_StrCopyN(
+            mkdirPath /* dest */, sizeof(mkdirPath) /* destByteLen */, path /* src */, mkdirPath_cch /* srcByteLen */))
     {
         return EINVAL;
     }
