@@ -25,10 +25,10 @@ public:
         std::runtime_error{ msg }, export_symbol{ symbol }
     {
     }
-    
+
     /**
      * @brief Getter for the export_symbol member variable
-     * @returns the string representation of the export_symbol 
+     * @returns the string representation of the export_symbol
      */
     const std::string& Symbol() const
     {

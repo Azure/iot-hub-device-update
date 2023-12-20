@@ -971,6 +971,7 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
                     // Reset workflow state to process deployment and transfer
                     // the deferred workflow to current.
                     workflow_update_for_replacement(workflowData->WorkflowHandle);
+
                 }
                 else
                 {

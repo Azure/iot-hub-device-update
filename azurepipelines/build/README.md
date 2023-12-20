@@ -34,6 +34,6 @@ Below is a matrix of currently supported pipeline builds
 | Ubuntu 20.04 | amd64 | docker/adu-ubuntu-amd64-build.yml |
 | Ubuntu 18.04 | arm64 | docker/adu-ubuntu-arm64-build.yml |
 | Ubuntu 20.04 | arm64 | docker/adu-ubuntu-arm64-build.yml |
-| Debian 9 | arm32 | docker/adu-debian-arm32-build.yml |
+| Debian 10 | arm32 | docker/adu-debian-arm32-build.yml |
 | Debian 10 | arm64 | docker/adu-debian-arm64-build.yml |
 | Debian 10 | amd64 | docker/adu-debian-amd64-build.yml |

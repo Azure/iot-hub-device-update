@@ -43,14 +43,14 @@ public:
     ADUC_Result Cancel(const tagADUC_WorkflowData* workflowData) override;
     ADUC_Result Restore(const tagADUC_WorkflowData* workflowData) override;
     ADUC_Result IsInstalled(const tagADUC_WorkflowData* workflowData) override;
-    
+
     /**
      * @brief Reads a value from the file and returns it in string format
      * @param filePath the file to read from
      * @returns a string representation of the value
      */
     static std::string ReadValueFromFile(const std::string& filePath);
-    
+
     /**
      * @brief Reads the configuration from the @p configFile into @p values
      * @param configFile the path to the config file
@@ -88,7 +88,7 @@ protected:
     SWUpdateHandlerImpl()
     {
     }
-    
+
     /**
      * @brief Performs @p action for workflow @p workflowData
      * @param action action to perform

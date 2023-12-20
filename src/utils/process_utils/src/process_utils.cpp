@@ -140,7 +140,7 @@ static int ADUC_LaunchChildProcessHelper(
     {
         char buffer[1024];
         ssize_t count;
-        count = read(filedes[READ_END], buffer, sizeof(buffer));
+        count = read(filedes[READ_END], buffer, sizeof(buffer) - 1);
 
         if (count == -1)
         {
