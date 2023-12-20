@@ -41,11 +41,6 @@
 // keep this last to avoid interfering with system headers
 #include "aduc/aduc_banned.h"
 
-// forward declarations
-static bool CreateAndInitializeDpsClientModule(ADUC_AGENT_MODULE_HANDLE* dpsClientModuleHandle, ADUC_AGENT_MODULE_INTERFACE** dpsClientModuleInterface);
-static bool CreateAndInitDuClientModule(ADUC_AGENT_MODULE_HANDLE* duClientModuleHandle, ADUC_AGENT_MODULE_INTERFACE** duClientModuleInterface, ADUC_WorkQueues* workQueues);
-static bool CreateWorkQueues(ADUC_WorkQueues* workQueues);
-
 /**
  * @brief Make getopt* stop parsing as soon as non-option argument is encountered.
  * @remark See GETOPT.3 man page for more details.
@@ -385,6 +380,7 @@ int main(int argc, char** argv)
     ADUC_AGENT_MODULE_INTERFACE* dpsClientModuleInterface = NULL;
     ADUC_AGENT_MODULE_INTERFACE* duClientModuleInterface = NULL;
     bool using_dps = false;
+    bool initialized_duclient_module = false;
 
     int ret = ParseLaunchArguments(argc, argv, &launchArgs);
     if (ret < 0)
@@ -550,23 +546,55 @@ int main(int argc, char** argv)
     // TODO (nox-msft) - replace with Agent Module manager code, once changed all modules to shared library.
 
     using_dps = IsProvisioningWithDps();
+
     ADUC_StateStore_Initialize(ADUC_STATE_STORE_FILE_PATH, using_dps);
 
-    if (using_dps && !CreateAndInitializeDpsClientModule(&dpsClientModuleHandle, &dpsClientModuleInterface))
+    if (using_dps)
+    {
+        dpsClientModuleHandle = ADPS_MQTT_Client_Module_Create();
+        dpsClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)dpsClientModuleHandle;
+        if (dpsClientModuleInterface == NULL)
+        {
+            ret = -1;
+            goto done;
+        }
+
+        ret = dpsClientModuleInterface->initializeModule(dpsClientModuleHandle, NULL);
+        if (ret != 0)
+        {
+            Log_Error("DPS client module init failed");
+            goto done;
+        }
+    }
+
+    duClientModuleHandle = ADUC_MQTT_Client_Module_Create();
+    duClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)duClientModuleHandle;
+    if (duClientModuleInterface == NULL)
     {
         ret = -1;
         goto done;
     }
 
-    if (!CreateWorkQueues(&workQueues))
+    if (!using_dps)
+    {
+        ret = duClientModuleInterface->initializeModule(duClientModuleInterface, &workQueues);
+        if (ret != 0)
+        {
+            Log_Error("DU client module init failed");
+            goto done;
+        }
+        initialized_duclient_module = true;
+    }
+
+    if (NULL == (workQueues.updateWorkQueue = WorkQueue_Create()))
     {
         ret = -2;
         goto done;
     }
 
-    if (!CreateAndInitDuClientModule(&duClientModuleHandle, &duClientModuleInterface, &workQueues))
+    if (NULL == (workQueues.reportingWorkQueue = WorkQueue_Create()))
     {
-        ret = -1;
+        ret = -2;
         goto done;
     }
 
@@ -577,12 +605,29 @@ int main(int argc, char** argv)
     Log_Info("Agent running.");
     while (ADUC_ShutdownService_ShouldKeepRunning())
     {
-        if (using_dps && !ADUC_StateStore_GetIsDeviceRegistered())
+        if (using_dps)
         {
             dpsClientModuleInterface->doWork(dpsClientModuleHandle);
-        }
+            if (ADUC_StateStore_GetIsDeviceRegistered())
+            {
+                if (using_dps && !initialized_duclient_module)
+                {
+                    ret = duClientModuleInterface->initializeModule(duClientModuleInterface, &workQueues);
+                    if (ret != 0)
+                    {
+                        Log_Error("DU client module init failed");
+                        goto done;
+                    }
+                    initialized_duclient_module = true;
+                }
 
-        duClientModuleInterface->doWork(duClientModuleHandle);
+                duClientModuleInterface->doWork(duClientModuleHandle);
+            }
+        }
+        else
+        {
+            duClientModuleInterface->doWork(duClientModuleHandle);
+        }
 
         // Sleep for a bit to avoid busy-waiting.
         ThreadAPI_Sleep(100);
@@ -593,70 +638,21 @@ int main(int argc, char** argv)
 done:
     Log_Info("Agent exited with code %d", ret);
 
-    if (using_dps && dpsClientModuleInterface->initialized)
+    if (using_dps && dpsClientModuleInterface != NULL)
     {
         dpsClientModuleInterface->deinitializeModule(dpsClientModuleHandle);
         dpsClientModuleInterface->destroy(dpsClientModuleHandle);
+        dpsClientModuleInterface = NULL;
     }
 
-    if (duClientModuleInterface->initialized)
+    if (duClientModuleInterface != NULL)
     {
         duClientModuleInterface->deinitializeModule(duClientModuleHandle);
         duClientModuleInterface->destroy(duClientModuleHandle);
+        duClientModuleInterface = NULL;
     }
 
     ADUC_ConfigInfo_ReleaseInstance(config);
     ADUC_Logging_Uninit();
     return ret;
-}
-
-static bool CreateAndInitializeDpsClientModule(ADUC_AGENT_MODULE_HANDLE* dpsClientModuleHandle, ADUC_AGENT_MODULE_INTERFACE** dpsClientModuleInterface)
-{
-    if (NULL == (*dpsClientModuleHandle = ADPS_MQTT_Client_Module_Create()))
-    {
-        return false;
-    }
-
-    *dpsClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)(*dpsClientModuleHandle);
-
-    if (0 != (*dpsClientModuleInterface)->initializeModule(*dpsClientModuleHandle, NULL))
-    {
-        Log_Error("DPS client module init failed");
-        return false;
-    }
-
-    return true;
-}
-
-static bool CreateAndInitDuClientModule(ADUC_AGENT_MODULE_HANDLE* duClientModuleHandle, ADUC_AGENT_MODULE_INTERFACE** duClientModuleInterface, ADUC_WorkQueues* workQueues)
-{
-    if (NULL == (*duClientModuleHandle = ADUC_MQTT_Client_Module_Create()))
-    {
-        return false;
-    }
-
-    *duClientModuleInterface = (ADUC_AGENT_MODULE_INTERFACE*)(*duClientModuleHandle);
-
-    if (0 != (*duClientModuleInterface)->initializeModule(*duClientModuleInterface, workQueues))
-    {
-        Log_Error("DU client module init failed");
-        return false;
-    }
-
-    return true;
-}
-
-static bool CreateWorkQueues(ADUC_WorkQueues* workQueues)
-{
-    if (NULL == (workQueues->updateWorkQueue = WorkQueue_Create()))
-    {
-        return false;
-    }
-
-    if (NULL == (workQueues->reportingWorkQueue = WorkQueue_Create()))
-    {
-        return false;
-    }
-
-    return true;
 }
