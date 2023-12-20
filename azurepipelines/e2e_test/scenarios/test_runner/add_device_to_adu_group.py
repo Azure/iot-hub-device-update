@@ -56,6 +56,7 @@ class AddDeviceToGroupTest(unittest.TestCase):
 
         self.assertEqual(connectionStatus, "Connected")
 
+        print("ADU Group for device:: " + test_device_id + " Group:: " + test_adu_group)
         #
         # Before we can run the deployment we need to add the ADUGroup test_adu_group tag to the
         # the device before we make the ADUGroup which we can then use to target the deployment
