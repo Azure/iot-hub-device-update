@@ -91,9 +91,9 @@ void OnMessage_ainfo_resp(
 
     json_print_properties(props);
 
-    if (msg == NULL || msg->payload == NULL || msg->payloadlen == 0)
+    if (msg == NULL)
     {
-        Log_Error("Bad payload. msg:%p, payload:%p, payloadlen:%d", msg, msg->payload, msg->payloadlen);
+        Log_Error("null msg");
         goto done;
     }
 
