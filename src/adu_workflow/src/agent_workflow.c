@@ -1209,8 +1209,6 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
                 workflow_add_erc(workflowHandle, result.ExtendedResultCode);
             }
         }
-
-        ADUC_FileEntity_Uninit(&fileEntity);
     }
 }
 
