@@ -27,11 +27,10 @@ class DuScenarioDefinitionManager:
         self.test_operation_id = str(uuid.uuid4()).replace('-', '')
         self.test_mcu_deployment_id = str(uuid.uuid4())
         self.test_bundle_update_deployment_id = str(uuid.uuid4())
-        self.test_group_name = str(uuid.uuid4()).replace('-', '')
         self.test_result_file_prefix = ''
         self.test_connection_timeout_tries = 10
         # For all retries this is the total amount of time we wait for all operations
-        self.retry_wait_time_in_seconds = 200
+        self.retry_wait_time_in_seconds = 400 # 400 seconds = 6 minutes 40 seconds which is longer than the worst timeout the service has
         self.config_method = ''
 
     @classmethod
@@ -51,7 +50,12 @@ class DuScenarioDefinitionManager:
         distro, version, architecture = distro_name.split('-')
 
         self.test_device_id = device_id
-        self.test_adu_group = self.test_group_name
+
+        # Construct the group name using the build-id, the distro, the version, and the architecture
+        buildId = os.environ.get("BUILD_BUILDID", "0").replace(".","") # Take the build id and remove the . from it
+
+        self.test_adu_group = "test-adu-group-" + self.test_device_id + "-" + buildId
+
         self.test_result_file_prefix = distro_name
         if distro_name == "debian-10-amd64":
             self.config_method = "string"

@@ -6,7 +6,7 @@
 # Changes may cause incorrect behavior and will be lost if the code is regenerated.
 # --------------------------------------------------------------------------
 
-from ._adu_test_toolkit import DeviceUpdateTestHelper,DeploymentStatusResponse,UpdateId, DuAutomatedTestConfigurationManager,DiagnosticLogCollectionStatusResponse,DiagnosticsDeviceStatus,DeploymentSubGroupStatus
+from ._adu_test_toolkit import DeviceUpdateTestHelper,DeploymentStatusResponse,UpdateId, DuAutomatedTestConfigurationManager,DiagnosticLogCollectionStatusResponse,DiagnosticsDeviceStatus,DeploymentSubGroupStatus,ADUGroupInfo
 from ._version import VERSION
 
 __version__ = VERSION

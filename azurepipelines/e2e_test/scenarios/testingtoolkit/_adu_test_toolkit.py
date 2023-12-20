@@ -156,6 +156,24 @@ class DeploymentStatusResponse():
         for status in subgroupStatus:
             self.subgroupStatuses.append(DeploymentSubGroupStatus(status))
 
+class ADUGroupInfo():
+    def __init__(self,groupInfoJson=None) -> None:
+        """
+        Convenience wrapper object for the ADU Group Info response. Converts the JSON returned by
+        the service request into a Python object that makes it easier to access.
+
+        You can see the types and potential values of each of the variables here: https://learn.microsoft.com/en-us/rest/api/deviceupdate/dataplane/device-management/get-group?view=rest-deviceupdate-dataplane-2022-10-01&tabs=HTTP#group
+        """
+        self.deviceCount = 0
+        self.groupId = ""
+        self.deployments = []
+        if (groupInfoJson != None):
+            self.ParseResponseJson(groupInfoJson)
+
+    def ParseResponseJson(self, groupInfoJson):
+        self.deviceCount = groupInfoJson["deviceCount"]
+        self.groupId = groupInfoJson["groupId"]
+        self.deployments = groupInfoJson["deployments"]
 
 class DiagnosticsDeviceStatus:
     def __init__(self,deviceStatusJson):
@@ -585,6 +603,25 @@ class DeviceUpdateTestHelper:
         logCollectionStatusResponseJson = DiagnosticLogCollectionStatusResponse().ParseResponseJson(logCollectionStatusResponse.json())
 
         return logCollectionStatusResponseJson
+
+    def GetADUGroupInfo(self,aduGroupId):
+        """
+        Returns the ADU Group information for the given aduGroupId
+
+        :param str aduGroupId: the ADU Group to get information for
+        :returns: An object of type ADUGroupInfo, this will be empty on failure
+        """
+        requestString = '/deviceUpdate/' + self._aduInstanceId + '/management/groups/' + aduGroupId + self._aduApiVersion
+
+        getAduGroupRequest = HttpRequest("GET", requestString)
+
+        getAduGroupResponse = self._aduAcnt.send_request(getAduGroupRequest)
+
+        if (getAduGroupResponse.status_code != 200):
+            return None
+
+        adu_group_info = ADUGroupInfo(getAduGroupResponse.json())
+        return adu_group_info
 
     def DeleteADUGroup(self, aduGroupId):
         """

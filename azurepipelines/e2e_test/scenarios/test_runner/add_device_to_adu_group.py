@@ -14,8 +14,9 @@ from testingtoolkit import DuAutomatedTestConfigurationManager
 from testingtoolkit import DeploymentStatusResponse
 from testingtoolkit import UpdateId
 from testingtoolkit import DeviceUpdateTestHelper
-
+from testingtoolkit import ADUGroupInfo
 import io
+import random
 import time
 import unittest
 import xmlrunner
@@ -70,7 +71,23 @@ class AddDeviceToGroupTest(unittest.TestCase):
 
 
         self.assertTrue(success)
-        time.sleep(retry_wait_time_in_seconds)
+
+        # Creating the group is an async operation with throttling so we want to wait between 2 and 5 minutes so
+        # we're not overloading the service.
+        random.seed()
+        delay_minutes = random.randint(2, 5) # the service has a limit of 6 per 1 minute so we stay between 2 and 5 minutes past that time
+        time.sleep(delay_minutes*60)
+
+        for i in range(0, test_connection_timeout_tries):
+            adu_group_info = self.duTestHelper.GetAduGroupInfo(test_adu_group)
+
+            if (adu_group_info is not None):
+                self.assertEqual(adu_group_info.deviceCount, 1)
+                self.assertEqual(adu_group_info.groupId, test_adu_group)
+                break
+
+            time.sleep(retry_wait_time_in_seconds)
+            continue
 
 
 if (__name__ == "__main__"):

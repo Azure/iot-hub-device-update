@@ -177,6 +177,7 @@ extends:
                               ./testsetup/sas_vm_setup.sh --distro ubuntu-18.04 --architecture amd64
                           image_working_directory: $(E2E_WORKING_DIR)
                           device_id_under_test: "ubuntu-18.04-amd64-sas"
+                          build_buildid: $(Build.BuildId)
               - job: SetupUbuntu1804_AMD64_VM_x509
                 displayName: "Setting up VM for Ubuntu 18.04 AMD64 Test VM"
                 timeoutInMinutes: 360
@@ -200,6 +201,7 @@ extends:
                               ./testsetup/x509_vm_setup.sh --distro ubuntu-18.04 --architecture amd64
                           image_working_directory: $(E2E_WORKING_DIR)
                           device_id_under_test: "ubuntu-18.04-amd64-x509"
+                          build_buildid: $(Build.BuildId)
               - job: SetupUbuntu1804_ARM64_VM
                 displayName: "Setting up VM for Ubuntu 18.04 ARM64 Test VM"
                 timeoutInMinutes: 360
@@ -223,6 +225,7 @@ extends:
                               ./testsetup/sas_vm_setup.sh --distro ubuntu-18.04 --architecture arm64
                           image_working_directory: $(E2E_WORKING_DIR)
                           device_id_under_test: "ubuntu-18.04-arm64-sas"
+                          build_buildid: $(Build.BuildId)
               - job: SetupUbuntu2004_AMD64_VM
                 displayName: "Setting up VM for Ubuntu 20.04 AMD64 Test VM"
                 timeoutInMinutes: 360
@@ -246,6 +249,7 @@ extends:
                               ./testsetup/sas_vm_setup.sh --distro ubuntu-20.04 --architecture amd64
                           image_working_directory: $(E2E_WORKING_DIR)
                           device_id_under_test: "ubuntu-20.04-amd64-sas"
+                          build_buildid: $(Build.BuildId)
               - job: SetupUbuntu2004_ARM64_VM
                 displayName: "Setting up VM for Ubuntu 20.04 ARM64 Test VM"
                 timeoutInMinutes: 360
@@ -269,6 +273,7 @@ extends:
                               ./testsetup/sas_vm_setup.sh --distro ubuntu-20.04 --architecture arm64
                           image_working_directory: $(E2E_WORKING_DIR)
                           device_id_under_test: "ubuntu-20.04-arm64-sas"
+                          build_buildid: $(Build.BuildId)
               - job: SetupUbuntu2204_AMD64_VM
                 displayName: "Setting up VM for Ubuntu 22.04 AMD64 Test VM"
                 timeoutInMinutes: 360
@@ -292,6 +297,7 @@ extends:
                           image_working_directory: $(E2E_WORKING_DIR)
                           device_id_under_test: "ubuntu-22.04-amd64-sas"
                           provisioning_type: "sas"
+                          build_buildid: $(Build.BuildId)
               - job: SetupUbuntu2204_ARM64_VM
                 displayName: "Setting up VM for Ubuntu 22.04 ARM64 Test VM"
                 timeoutInMinutes: 360
@@ -315,6 +321,7 @@ extends:
                           image_working_directory: $(E2E_WORKING_DIR)
                           device_id_under_test: "ubuntu-22.04-arm64-sas"
                           provisioning_type: "sas"
+                          build_buildid: $(Build.BuildId)
               - job: SetupDebian10_AMD64_VM
                 displayName: "Setting up VM for Debain 10 AMD64 Test VM"
                 timeoutInMinutes: 360
@@ -338,6 +345,7 @@ extends:
                               ./testsetup/sas_vm_setup.sh --distro debian-10 --architecture amd64
                           image_working_directory: $(E2E_WORKING_DIR)
                           device_id_under_test: "debian-10-amd64-sas"
+                          build_buildid: $(Build.BuildId)
 
         - stage: RunTestsAndPostResults
           displayName: Execute E2E Test
@@ -354,6 +362,7 @@ extends:
                       parameters:
                           distroName: ubuntu-18.04-amd64
                           device_id_under_test: "ubuntu-18.04-amd64-sas"
+                          build_buildid: $(Build.BuildId)
 
               - job: RunUbuntu_1804_Amd64VmE2ETests_x509
                 displayName: "Running E2E Tests against Ubuntu 18.04 AMD64"
@@ -365,6 +374,7 @@ extends:
                       parameters:
                           distroName: ubuntu-18.04-amd64
                           device_id_under_test: "ubuntu-18.04-amd64-x509"
+                          build_buildid: $(Build.BuildId)
 
               - job: RunUbuntu_1804_Arm64VmE2ETests
                 displayName: "Running E2E Tests against Ubuntu 18.04 ARM64"
@@ -376,6 +386,7 @@ extends:
                       parameters:
                           distroName: ubuntu-18.04-arm64
                           device_id_under_test: "ubuntu-18.04-arm64-sas"
+                          build_buildid: $(Build.BuildId)
               - job: RunUbuntu_2004_Amd64VmE2ETests
                 displayName: "Running E2E Tests against Ubuntu 20.04 AMD64"
                 timeoutInMinutes: 360
@@ -386,6 +397,7 @@ extends:
                       parameters:
                           distroName: ubuntu-20.04-amd64
                           device_id_under_test: "ubuntu-20.04-amd64-sas"
+                          build_buildid: $(Build.BuildId)
               - job: RunUbuntu_2004_Arm64VmE2ETests
                 displayName: "Running E2E Tests against Ubuntu 20.04 ARM64"
                 timeoutInMinutes: 360
@@ -396,6 +408,7 @@ extends:
                       parameters:
                           distroName: ubuntu-20.04-arm64
                           device_id_under_test: "ubuntu-20.04-arm64-sas"
+                          build_buildid: $(Build.BuildId)
               - job: RunUbuntu_2204_Amd64VmE2ETests
                 displayName: "Running E2E Tests against Ubuntu 22.04 AMD64"
                 timeoutInMinutes: 360
@@ -406,6 +419,7 @@ extends:
                       parameters:
                           distroName: ubuntu-22.04-amd64
                           device_id_under_test: "ubuntu-22.04-amd64-sas"
+                          build_buildid: $(Build.BuildId)
               - job: RunUbuntu_2204_Arm64VmE2ETests
                 displayName: "Running E2E Tests against Ubuntu 22.04 ARM64"
                 timeoutInMinutes: 360
@@ -416,6 +430,7 @@ extends:
                       parameters:
                           distroName: ubuntu-22.04-arm64
                           device_id_under_test: "ubuntu-22.04-arm64-sas"
+                          build_buildid: $(Build.BuildId)
               - job: RunDebian_10_Amd64VmE2ETests
                 displayName: "Running E2E Tests against Debian 10 AMD64"
                 timeoutInMinutes: 360
@@ -426,6 +441,7 @@ extends:
                       parameters:
                           distroName: debian-10-amd64
                           device_id_under_test: "debian-10-amd64-sas"
+                          build_buildid: $(Build.BuildId)
 
         - stage: TerraformDestroyVm
           displayName: Tear down cloud resources (VMs) and destroy the resource group

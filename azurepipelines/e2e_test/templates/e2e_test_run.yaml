@@ -5,7 +5,8 @@ parameters:
       type: string
     - name: device_id_under_test
       type: string
-
+    - name: build_buildid
+      type: string
 steps:
     - script: |
           mkdir testresults
@@ -41,7 +42,7 @@ steps:
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
           DEVICEID: ${{ parameters.device_id_under_test }}
-
+          BUILD_BUILDID: ${{ parameters.build_buildid }}
     - task: PythonScript@0
       displayName: Run script to test apt-deployment
       continueOnError: True
@@ -59,6 +60,7 @@ steps:
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
           DEVICEID: ${{ parameters.device_id_under_test }}
+          BUILD_BUILDID: ${{ parameters.build_buildid }}
 
     - task: PythonScript@0
       displayName: Run script to test apt-deployment fails
@@ -77,6 +79,7 @@ steps:
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
           DEVICEID: ${{ parameters.device_id_under_test }}
+          BUILD_BUILDID: ${{ parameters.build_buildid }}
 
     - task: PythonScript@0
       displayName: Run script to test diagnostics
@@ -95,6 +98,7 @@ steps:
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
           DEVICEID: ${{ parameters.device_id_under_test }}
+          BUILD_BUILDID: ${{ parameters.build_buildid }}
 
     - task: PythonScript@0
       displayName: Run script to test mcu
@@ -113,6 +117,7 @@ steps:
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
           DEVICEID: ${{ parameters.device_id_under_test }}
+          BUILD_BUILDID: ${{ parameters.build_buildid }}
 
     - task: PythonScript@0
       displayName: Run script to test bundle-update
@@ -131,6 +136,7 @@ steps:
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
           DEVICEID: ${{ parameters.device_id_under_test }}
+          BUILD_BUILDID: ${{ parameters.build_buildid }}
 
     - task: PythonScript@0
       displayName: Run script to clean up the device
@@ -149,6 +155,7 @@ steps:
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
           DEVICEID: ${{ parameters.device_id_under_test }}
+          BUILD_BUILDID: ${{ parameters.build_buildid }}
 
     - script: |
           mkdir -p $(Build.ArtifactStagingDirectory)/testresults/
