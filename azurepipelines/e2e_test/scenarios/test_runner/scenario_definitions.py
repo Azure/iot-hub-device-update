@@ -27,11 +27,11 @@ class DuScenarioDefinitionManager:
         self.test_operation_id = str(uuid.uuid4()).replace('-', '')
         self.test_mcu_deployment_id = str(uuid.uuid4())
         self.test_bundle_update_deployment_id = str(uuid.uuid4())
-        self.test_group_name = str(uuid.uuid4())
+        self.test_group_name = str(uuid.uuid4()).replace('-', '')
         self.test_result_file_prefix = ''
         self.test_connection_timeout_tries = 10
-# For all retries this is the total amount of time we wait for all operations
-        self.retry_wait_time_in_seconds = 60
+        # For all retries this is the total amount of time we wait for all operations
+        self.retry_wait_time_in_seconds = 200
         self.config_method = ''
 
     @classmethod
