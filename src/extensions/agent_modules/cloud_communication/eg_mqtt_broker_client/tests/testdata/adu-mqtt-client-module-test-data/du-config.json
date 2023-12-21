@@ -47,6 +47,7 @@
             "intervalSeconds": 10,
             "timeoutSeconds": 10,
             "retrySettings": {
+              "pollingIntervalInSeconds": 300,
               "default": {
                 "maxRetries": 50000,
                 "maxDelaySeconds": 30,

@@ -143,7 +143,7 @@ void OnMessage_upd_resp(
         else
         {
             Log_Info("Success queuing 'upd_resp' payload to work queue");
-            AduUpdUtils_TransitionState(ADU_UPD_STATE_PROCESSING_UPDATE, updateData);
+            AduUpdUtils_TransitionState(ADU_UPD_STATE_PROCESSING_UPDATE, updateData, retriableOperationContext);
         }
 
         break;
@@ -154,7 +154,7 @@ void OnMessage_upd_resp(
             ADU_MQTT_PROTOCOL_MESSAGE_TYPE_UPDATE_SYNC_REQUEST);
 
         retriableOperationContext->nextExecutionTime = ADUC_GetTimeSinceEpochInSeconds() + 300;
-        AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updateData);
+        AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updateData, retriableOperationContext);
         break;
 
     case ADU_RESPONSE_MESSAGE_RESULT_CODE_BUSY:
@@ -214,7 +214,7 @@ void OnPublish_upd_resp(struct mosquitto* mosq, void* obj, const mosquitto_prope
     case MQTT_RC_SUCCESS:
         // TODO: match on message id
         retriable_operation_context->lastExecutionTime = ADUC_GetTimeSinceEpochInSeconds();
-        AduUpdUtils_TransitionState(ADU_UPD_STATE_REQUEST_ACK, updData);
+        AduUpdUtils_TransitionState(ADU_UPD_STATE_REQUEST_ACK, updData, retriable_operation_context);
         break;
 
     case MQTT_RC_NO_MATCHING_SUBSCRIBERS:

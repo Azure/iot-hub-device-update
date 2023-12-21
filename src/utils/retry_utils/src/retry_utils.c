@@ -186,14 +186,15 @@ int RetryUtils_GetRetryParamsMapSize()
 }
 
 void ReadRetryParamsArrayFromAgentConfigJson(
-    ADUC_Retriable_Operation_Context* context, JSON_Value* agentJsonValue, int retryParamsMapSize)
+    ADUC_Retriable_Operation_Context* context, JSON_Value* agentRetrySettingsJsonValue, int retryParamsMapSize)
 {
     const char* infoFormatString = "Failed to read '%s.%s' from agent config. Using default value (%d)";
 
     for (int i = 0; i < retryParamsMapSize; i++)
     {
         ADUC_Retry_Params* params = &context->retryParams[i];
-        JSON_Value* retryParams = json_object_dotget_value(json_object(agentJsonValue), s_retryParamsMap[i].name);
+        JSON_Value* retryParams =
+            json_object_dotget_value(json_object(agentRetrySettingsJsonValue), s_retryParamsMap[i].name);
         if (retryParams == NULL)
         {
             Log_Info("Retry params for '%s' is not specified. Using default values.", s_retryParamsMap[i].name);
@@ -259,5 +260,18 @@ void ReadRetryParamsArrayFromAgentConfigJson(
             value = DEFAULT_ENR_REQ_OP_MAX_JITTER_PERCENT;
         }
         params->maxJitterPercent = (double)value;
+
+        //
+        // Get the update polling interval retry setting, or default.
+        //
+        if (!ADUC_JSON_GetUnsignedIntegerField(
+                agentRetrySettingsJsonValue, SETTING_KEY_POLLING_INTERVAL_SECONDS, &context->pollingIntervalInSeconds))
+        {
+            Log_Warn(
+                infoFormatString, "", SETTING_KEY_POLLING_INTERVAL_SECONDS, ADUC_DEFAULT_POLLING_INTERVAL_SECONDS);
+
+            context->pollingIntervalInSeconds = ADUC_DEFAULT_POLLING_INTERVAL_SECONDS;
+        }
+        Log_Info("Read Update Polling Interval of %u from config", context->pollingIntervalInSeconds);
     }
 }

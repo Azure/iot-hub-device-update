@@ -35,7 +35,7 @@
 
 #define REQUIRED_TLS_SET_CERT_PATH "L"
 
-#define DEFAULT_CONNECT_RETRY_DELAY_SECONDS (60 * 5) /* 5 seconds */
+#define DEFAULT_CONNECT_RETRY_DELAY_SECONDS (60 * 2) /* 2 minutes */
 
 #define DEFAULT_CONNECT_UNRECOVERABLE_ERROR_RETRY_DELAY_SECONDS (60 * 60) /* 1 hours */
 
@@ -297,6 +297,8 @@ void ADUC_Communication_Channel_OnDisconnect(
 
     ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)obj;
 
+    time_t now = ADUC_GetTimeSinceEpochInSeconds();
+
     if (interface == NULL)
     {
         Log_Error("Null arg (interface=%p)", interface);
@@ -328,7 +330,8 @@ void ADUC_Communication_Channel_OnDisconnect(
     // }
     //
     // For now, wait 30 seconds before retrying.
-    commMgrState->commNextRetryTime = ADUC_GetTimeSinceEpochInSeconds() + DEFAULT_CONNECT_RETRY_DELAY_SECONDS;
+    commMgrState->commNextRetryTime = now + DEFAULT_CONNECT_RETRY_DELAY_SECONDS;
+    Log_Info("Setting next connect retry time to %lu, %u secs from now[%lu]", commMgrState->commNextRetryTime, DEFAULT_CONNECT_RETRY_DELAY_SECONDS, now);
 
     ADUC_SetCommunicationChannelState(commMgrState, ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_DISCONNECTED);
 
@@ -1071,6 +1074,7 @@ done:
 bool PerformChannelStateManagement(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrState)
 {
     int mqtt_res = MOSQ_ERR_UNKNOWN;
+    time_t now = ADUC_GetTimeSinceEpochInSeconds();
     if (commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_CONNECTED)
     {
         return true;
@@ -1097,8 +1101,7 @@ bool PerformChannelStateManagement(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrStat
         //
         //   If the error is recoverable, set state to UNKNOWN and try again when the nextRetryTimestamp is reached.
         //
-        // For now, let's try to reconnect after 15 seconds.
-        if (commMgrState->commStateUpdatedTime + 15 > ADUC_GetTimeSinceEpochInSeconds())
+        if (now > commMgrState->commNextRetryTime)
         {
             return false;
         }
@@ -1108,7 +1111,7 @@ bool PerformChannelStateManagement(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrStat
         }
     }
 
-    if (commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_UNKNOWN)
+    if ((commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_UNKNOWN) && (now > commMgrState->commNextRetryTime))
     {
         Log_Info(
             "Connecting to MQTT broker at hostname '%s', port: %d, keep-alive: %d",

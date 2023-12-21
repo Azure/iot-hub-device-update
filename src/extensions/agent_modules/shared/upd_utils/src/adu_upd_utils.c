@@ -118,7 +118,8 @@ bool UpdateData_SetCorrelationId(ADUC_Update_Request_Operation_Data* updateData,
     return true;
 }
 
-void AduUpdUtils_TransitionState(ADU_UPD_STATE newState, ADUC_Update_Request_Operation_Data* updateData)
+void AduUpdUtils_TransitionState(
+    ADU_UPD_STATE newState, ADUC_Update_Request_Operation_Data* updateData, ADUC_Retriable_Operation_Context* context)
 {
     Log_Info(
         "Transition from %d ('%s') to %d ('%s')",
@@ -127,4 +128,18 @@ void AduUpdUtils_TransitionState(ADU_UPD_STATE newState, ADUC_Update_Request_Ope
         newState,
         AduUpdState_str(newState));
     updateData->updState = newState;
+
+    if (newState == ADU_UPD_STATE_IDLEWAIT)
+    {
+        srand(time(NULL));
+        int jitter_seconds = (rand() % 121) + 60; // between 1 and 3 minutes of jitter
+        time_t now = ADUC_GetTimeSinceEpochInSeconds();
+        context->nextExecutionTime = now + context->pollingIntervalInSeconds + jitter_seconds;
+        Log_Debug(
+            "** Next Poll for updates: curTime[%lu] nextExecutionTime[%lu], poll_interval[%u], jitter_secs[%d]",
+            now,
+            context->nextExecutionTime,
+            context->pollingIntervalInSeconds,
+            jitter_seconds);
+    }
 }

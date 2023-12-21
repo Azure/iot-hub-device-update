@@ -11,7 +11,8 @@
 #include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_HANDLE
 
 // Forward declarations
-void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retriable_Operation_Context* retriableOperationContext);
+void Adu_ProcessUpdate(
+    ADUC_Update_Request_Operation_Data* updateData, ADUC_Retriable_Operation_Context* retriableOperationContext);
 time_t ADUC_Retry_Delay_Calculator(
     int additionalDelaySecs,
     unsigned int retries,
@@ -44,7 +45,7 @@ bool UpdateRequestOperation_CancelOperation(ADUC_Retriable_Operation_Context* co
 
     context->lastFailureTime = now;
     context->nextExecutionTime = now + 180; // TODO: use retryParams.
-    AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updData);
+    AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updData, context);
     return true;
 }
 
@@ -69,7 +70,7 @@ bool UpdateRequestOperation_Complete(ADUC_Retriable_Operation_Context* context)
 
     context->nextExecutionTime = ADUC_GetTimeSinceEpochInSeconds() + 30;
 
-    AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updData);
+    AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updData, context);
     return true;
 }
 
@@ -115,7 +116,7 @@ bool UpdateRequestOperation_DoRetry(ADUC_Retriable_Operation_Context* context, c
         Log_Debug("Max retry of %d exceeded. Failing.", retryCfg->maxRetries);
 
         context->lastFailureTime = now;
-        AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, data);
+        AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, data, context);
     }
     else
     {
@@ -131,7 +132,7 @@ bool UpdateRequestOperation_DoRetry(ADUC_Retriable_Operation_Context* context, c
 
         context->nextExecutionTime = newTime;
 
-        AduUpdUtils_TransitionState(ADU_UPD_STATE_RETRYWAIT, data);
+        AduUpdUtils_TransitionState(ADU_UPD_STATE_RETRYWAIT, data, context);
     }
 
     return true;
@@ -302,7 +303,7 @@ static bool SendUpdateRequest(ADUC_Retriable_Operation_Context* context, time_t 
         goto done;
     }
 
-    AduUpdUtils_TransitionState(ADU_UPD_STATE_REQUESTING, updData);
+    AduUpdUtils_TransitionState(ADU_UPD_STATE_REQUESTING, updData, context);
     ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_InProgress);
 
     context->lastExecutionTime = nowTime;
@@ -324,7 +325,8 @@ done:
     return opSucceeded;
 }
 
-static bool SendUpdateResultsRequest(ADUC_Retriable_Operation_Context* context, ADUC_Update_Request_Operation_Data* updData, time_t nowTime)
+static bool SendUpdateResultsRequest(
+    ADUC_Retriable_Operation_Context* context, ADUC_Update_Request_Operation_Data* updData, time_t nowTime)
 {
     bool opSucceeded = false;
     int mqtt_res = 0;
@@ -426,7 +428,7 @@ static bool SendUpdateResultsRequest(ADUC_Retriable_Operation_Context* context, 
         goto done;
     }
 
-    AduUpdUtils_TransitionState(ADU_UPD_STATE_REQUESTING, updData);
+    AduUpdUtils_TransitionState(ADU_UPD_STATE_REQUESTING, updData, context);
     ADUC_Retriable_Set_State(context, ADUC_Retriable_Operation_State_InProgress);
 
     context->lastExecutionTime = nowTime;
@@ -448,7 +450,8 @@ done:
     return opSucceeded;
 }
 
-static void HandleReportResults(ADUC_Retriable_Operation_Context* context, ADUC_Update_Request_Operation_Data* updData, time_t nowTime)
+static void HandleReportResults(
+    ADUC_Retriable_Operation_Context* context, ADUC_Update_Request_Operation_Data* updData, time_t nowTime)
 {
     if (nowTime > context->nextExecutionTime)
     {
@@ -461,7 +464,7 @@ static void HandleReportResults(ADUC_Retriable_Operation_Context* context, ADUC_
             context->attemptCount = 0;
             context->lastFailureTime = nowTime;
             context->nextExecutionTime = nowTime + 60; // TODO: add random jitter and use retry configuration.
-            AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updData);
+            AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updData, context);
         }
         else
         {
@@ -481,13 +484,14 @@ static void HandleReportResults(ADUC_Retriable_Operation_Context* context, ADUC_
                 free(updData->reportingJson);
                 updData->reportingJson = NULL;
                 ADUC_StateStore_SetReportResultsAck(false);
-                AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS_ACK, updData);
+                AduUpdUtils_TransitionState(ADU_UPD_STATE_REPORT_RESULTS_ACK, updData, context);
             }
         }
     }
 }
 
-static void HandleReportResultsAck(ADUC_Retriable_Operation_Context* context, ADUC_Update_Request_Operation_Data* updData, time_t nowTime)
+static void HandleReportResultsAck(
+    ADUC_Retriable_Operation_Context* context, ADUC_Update_Request_Operation_Data* updData, time_t nowTime)
 {
     if (nowTime > context->nextExecutionTime)
     {
@@ -499,7 +503,7 @@ static void HandleReportResultsAck(ADUC_Retriable_Operation_Context* context, AD
             context->attemptCount = 0;
             context->lastFailureTime = nowTime;
             context->nextExecutionTime = nowTime + 60; // TODO: add random jitter and use retry configuration.
-            AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updData);
+            AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updData, context);
         }
         else
         {
@@ -511,7 +515,7 @@ static void HandleReportResultsAck(ADUC_Retriable_Operation_Context* context, AD
                 context->lastSuccessTime = nowTime;
                 context->nextExecutionTime = nowTime + 60; // TODO: add random jitter and use retry configuration.
                 ADUC_StateStore_SetReportResultsAck(false);
-                AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updData);
+                AduUpdUtils_TransitionState(ADU_UPD_STATE_IDLEWAIT, updData, context);
             }
             else
             {
@@ -572,7 +576,7 @@ bool UpdateRequestOperation_DoWork(ADUC_Retriable_Operation_Context* context)
         {
             Log_Debug("exiting IDLEWAIT state: %lu > %lu", nowTime, context->nextExecutionTime);
 
-            AduUpdUtils_TransitionState(ADU_UPD_STATE_READY, updData);
+            AduUpdUtils_TransitionState(ADU_UPD_STATE_READY, updData, context);
         }
         break;
 
