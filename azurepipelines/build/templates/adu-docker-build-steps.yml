@@ -70,8 +70,8 @@ steps:
           publishRunAttachments: false # Attachments are not supported for CTest
 
     - task: EsrpCodeSigning@3
-        displayName: Sign
-        inputs:
+      displayName: Sign
+      inputs:
           ConnectedServiceName: 'ADU-ESRP-Agent-Packages'
           FolderPath: '$(Build.SourcesDirectory)/'
           Pattern: '*.deb'
