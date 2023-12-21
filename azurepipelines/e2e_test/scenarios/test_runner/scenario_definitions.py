@@ -30,7 +30,7 @@ class DuScenarioDefinitionManager:
         self.test_result_file_prefix = ''
         self.test_connection_timeout_tries = 10
         # For all retries this is the total amount of time we wait for all operations
-        self.retry_wait_time_in_seconds = 400 # 400 seconds = 6 minutes 40 seconds which is longer than the worst timeout the service has
+        self.retry_wait_time_in_seconds = 180 # 180 seconds, 3 minutes to give time for the service to respond
         self.config_method = ''
 
     @classmethod

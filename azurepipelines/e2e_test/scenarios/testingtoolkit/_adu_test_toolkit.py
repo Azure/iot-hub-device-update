@@ -265,7 +265,7 @@ class DeviceUpdateTestHelper:
 
         self._base_url = f'https://{self._aduEndpoint}/deviceUpdate/{self._aduInstanceId}/'
         self._iotHubApiVersion = "?api-version=2021-06-01-preview"
-        self._aduApiVersion= "?api-version=2022-07-01-preview"
+        self._aduApiVersion= "?api-version=2022-10-01"
 
     def CreateSaSDevice(self, deviceId, isIotEdge=False):
         """
