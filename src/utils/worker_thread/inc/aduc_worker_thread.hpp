@@ -1,21 +1,23 @@
-#ifndef ADU_WORKERTHREADS_HPP
-#define ADU_WORKERTHREADS_HPP
+#pragma once
 
 #include <atomic>
 #include <functional>
 #include <thread>
 
+using WorkQueueHandle = void*;
+
 namespace ADUC
 {
 
 using TShouldStopPredicate = std::function<bool()>;
-using TWorkerFunc = std::function<void(TShouldStopPredicate shouldStop)>;
+using TWorkerFunc = std::function<void(WorkQueueHandle workQueueHandle, TShouldStopPredicate shouldStop)>;
 
 class WorkerThread
 {
 public:
-    WorkerThread(TWorkerFunc&& threadFunc)
-        : m_thread_fn{ std::forward<TWorkerFunc>(threadFunc) } // forward preserves L/R-Value-ness
+    WorkerThread(TWorkerFunc&& threadFunc, WorkQueueHandle workQueueHandle)
+        : m_thread_fn{ std::forward<TWorkerFunc>(threadFunc) }
+        , m_workQueueHandle{ workQueueHandle }
         , m_was_started{ false }
         , m_was_stopped{ false }
     {
@@ -26,11 +28,10 @@ public:
 
 private:
     TWorkerFunc m_thread_fn;
+    WorkQueueHandle m_workQueueHandle;
     std::atomic<bool> m_stop_flag;
     bool m_was_started;
     bool m_was_stopped;
 };
 
 } // namespace ADUC
-
-#endif // ADU_WORKERTHREADS_HPP

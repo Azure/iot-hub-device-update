@@ -5,10 +5,11 @@
 #include "aduc/adu_upd.h"
 
 #include <aduc/retry_utils.h>
+#include <string>
 
 EXTERN_C_BEGIN
 
-void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retriable_Operation_Context* retriableOperationContext);
+void Adu_ProcessUpdate(const std::string& jsonPayload, ADUC_Update_Request_Operation_Data* updateData, ADUC_Retriable_Operation_Context* retriableOperationContext);
 
 EXTERN_C_END
 

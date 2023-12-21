@@ -80,8 +80,12 @@ ADUC_STATE_STORE_RESULT ADUC_StateStore_SetCommunicationChannelHandle(void* comm
 
 void* ADUC_StateStore_GetUpdateWorkQueueHandle();
 void ADUC_StateStore_SetUpdateWorkQueueHandle(void* handle);
+
 void* ADUC_StateStore_GetReportingWorkQueueHandle();
 void ADUC_StateStore_SetReportingWorkQueueHandle(void* handle);
+
+void* ADUC_StateStore_GetUpdateOperationContext();
+void ADUC_StateStore_SetUpdateOperationContext(void* handle);
 
 bool ADUC_StateStore_IsReportResultsAck();
 void ADUC_StateStore_SetReportResultsAck(bool isAck);

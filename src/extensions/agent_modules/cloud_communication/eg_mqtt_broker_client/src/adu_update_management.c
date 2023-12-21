@@ -140,7 +140,10 @@ void OnMessage_upd_resp(
         Log_Info("\nProcessing msgtype 'upd_resp', msgid: %d, topic: '%s'", msg->mid, msg->topic);
         Log_Debug("  payload_len: %d, payload: '%s'\n", msg->payloadlen, msg->payload);
 
+        ADUC_StateStore_SetUpdateRequestOperationData(updateData);
+        ADUC_StateStore_SetUpdateOperationContext(retriableOperationContext);
         ADUC_StateStore_SetUpdateWorkQueueHandle(updateWorkQueueHandle);
+
         if (!WorkQueue_EnqueueWork(updateWorkQueueHandle, msg->payload))
         {
             Log_Error("Failed enqueuing work to update deployment work queue!");

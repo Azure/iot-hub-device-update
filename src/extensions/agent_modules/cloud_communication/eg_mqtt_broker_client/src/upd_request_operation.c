@@ -542,7 +542,6 @@ bool UpdateRequestOperation_DoWork(ADUC_Retriable_Operation_Context* context)
     case ADU_UPD_STATE_READY:
         // Do the normal pre-requisite checks and send the update request to ask the service if there
         // are is a new update available.
-        updData = UpdateData_FromOperationContext(context);
         if (updData == NULL)
         {
             goto done;

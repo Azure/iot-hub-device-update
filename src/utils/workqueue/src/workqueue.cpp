@@ -19,10 +19,10 @@ WorkQueue::WorkQueue() : pImpl(std::make_unique<Impl>())
 }
 WorkQueue::~WorkQueue() = default;
 
-void WorkQueue::EnqueueWork(const std::string& json)
+void WorkQueue::EnqueueWork(const std::string& json, void* context)
 {
     std::lock_guard<std::mutex> lock(pImpl->mutex);
-    pImpl->queue.emplace(WorkQueueItem{ json, std::time(nullptr) });
+    pImpl->queue.emplace(WorkQueueItem{ json, std::time(nullptr), context });
 }
 
 std::unique_ptr<WorkQueue::WorkQueueItem> WorkQueue::GetNextWorkQueueItem()
@@ -38,32 +38,36 @@ std::unique_ptr<WorkQueue::WorkQueueItem> WorkQueue::GetNextWorkQueueItem()
     return workItem;
 }
 
+size_t WorkQueue::GetSize() const
+{
+    std::lock_guard<std::mutex> lock(pImpl->mutex);
+    return pImpl->queue.size();
+}
+
 /////////////////////
 // BEGIN C API impl
 
 // BEGIN WorkQueue API
+// Note: All C-facing WorkQueue_* API below must not throw.
 
 WorkQueueHandle WorkQueue_Create()
 {
-    WorkQueue* queue = nullptr;
-
     try
     {
-        queue = new WorkQueue;
+        std::unique_ptr<WorkQueue> queue = std::make_unique<WorkQueue>();
+        return reinterpret_cast<WorkQueueHandle>(queue.release());
     }
     catch (...)
     {
     }
-
-    return reinterpret_cast<WorkQueueHandle>(queue);
+    return nullptr;
 }
 
 void WorkQueue_Destroy(WorkQueueHandle handle)
 {
-    WorkQueue* queue = reinterpret_cast<WorkQueue*>(handle);
-
     try
     {
+        WorkQueue* queue = reinterpret_cast<WorkQueue*>(handle);
         delete queue;
     }
     catch (...)
@@ -71,18 +75,17 @@ void WorkQueue_Destroy(WorkQueueHandle handle)
     }
 }
 
-bool WorkQueue_EnqueueWork(WorkQueueHandle handle, const char* json)
+bool WorkQueue_EnqueueWork(WorkQueueHandle handle, const char* json, void* context)
 {
-    WorkQueue* queue = reinterpret_cast<WorkQueue*>(handle);
-
-    if (queue == nullptr)
-    {
-        return false;
-    }
-
     try
     {
-        queue->EnqueueWork(std::string{ json });
+        WorkQueue* queue = reinterpret_cast<WorkQueue*>(handle);
+        if (queue == nullptr)
+        {
+            return false;
+        }
+
+        queue->EnqueueWork(std::string{ json }, context);
     }
     catch (...)
     {
@@ -94,20 +97,49 @@ bool WorkQueue_EnqueueWork(WorkQueueHandle handle, const char* json)
 
 WorkQueueItemHandle WorkQueue_GetNextWork(WorkQueueHandle handle)
 {
-    WorkQueue* queue = reinterpret_cast<WorkQueue*>(handle);
-
-    if (queue == nullptr)
+    try
     {
-        return nullptr;
+        WorkQueue* queue = reinterpret_cast<WorkQueue*>(handle);
+
+        if (queue == nullptr)
+        {
+            return nullptr;
+        }
+
+        std::unique_ptr<WorkQueue::WorkQueueItem> item = queue->GetNextWorkQueueItem();
+        if (item == nullptr)
+        {
+            return nullptr; // No work available
+        }
+
+        return item.release();
+    }
+    catch(const std::exception& e)
+    {
+    }
+    catch(...)
+    {
     }
 
-    std::unique_ptr<WorkQueue::WorkQueueItem> item = queue->GetNextWorkQueueItem();
-    if (item == nullptr)
+    return nullptr;
+}
+
+bool WorkQueue_GetSize(WorkQueueHandle handle, size_t& outSize)
+{
+    try
     {
-        return nullptr; // No work available
+        WorkQueue* queue = reinterpret_cast<WorkQueue*>(handle);
+        outSize = queue->GetSize();
+        return true;
+    }
+    catch(const std::exception& e)
+    {
+    }
+    catch(...)
+    {
     }
 
-    return item.release();
+    return false;
 }
 
 // END WorkQueue API
@@ -145,6 +177,18 @@ char* WorkQueueItem_GetUpdateResultMessageJson(WorkQueueItemHandle handle)
 
     return json_str;
 }
+
+void* WorkQueueItem_GetContext(WorkQueueItemHandle handle)
+{
+    if (handle == nullptr)
+    {
+        return nullptr;
+    }
+
+    const WorkQueue::WorkQueueItem* item = reinterpret_cast<WorkQueue::WorkQueueItem*>(handle);
+    return item->context;
+}
+
 
 // END WorkQueueItem API
 

@@ -20,7 +20,7 @@ void WorkerThread::Start()
     // guarantee and the assumption is that this is not performance critical
     // code. If that assumption changes later, then it can be changed to use
     // memory_order_release for setting and memory_order_acquire for checking.
-    auto thrd = std::thread(m_thread_fn, [this]() -> bool
+    auto thrd = std::thread(m_thread_fn, m_workQueueHandle, [this]() -> bool
     {
         return m_stop_flag.load(std::memory_order_seq_cst);
     });

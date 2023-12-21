@@ -27,13 +27,10 @@
 #include <aduc/calloc_wrapper.hpp>
 #include <aduc/string_c_utils.h>
 
-void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retriable_Operation_Context* retriableOperationContext)
+void Adu_ProcessUpdate(const std::string& jsonPayload, ADUC_Update_Request_Operation_Data* updateData, ADUC_Retriable_Operation_Context* retriableOperationContext)
 {
     Log_Debug("Handle Processing");
 
-    ADUC_WorkflowHandle workqueueHandle = ADUC_StateStore_GetUpdateWorkQueueHandle();
-    WorkQueueItemHandle itemHandle = WorkQueue_GetNextWork(workqueueHandle);
-    char* jsonPayload = WorkQueueItem_GetUpdateResultMessageJson(itemHandle);
     int updateManifestVersion = 0;
     ContentHandler* contentHandler = nullptr;
     char* updateId = nullptr;
@@ -71,7 +68,7 @@ void Adu_ProcessUpdate(ADUC_Update_Request_Operation_Data* updateData, ADUC_Retr
 
     // Note: Most of this logic was ported over from agent_workflow.c
     nextWorkflow = nullptr;
-    result = workflow_init(jsonPayload, true /* shouldValidate */, &nextWorkflow);
+    result = workflow_init(jsonPayload.c_str(), true /* shouldValidate */, &nextWorkflow);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         Log_Error("workflow_init failed, rc:%d, erc:%d", result.ResultCode, result.ExtendedResultCode);

@@ -22,6 +22,8 @@
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h" // ADUC_SystemUtils_MkDirRecursiveDefault
 #include "aduc/workqueue.h" // WorkQueue_Create
+#include "aduc/workqueue.h" // WorkQueue_Create
+#include "agent_worker_threads.h"
 #include "aducpal/stdlib.h" // setenv
 #include "du_agent_sdk/agent_module_interface.h"
 
@@ -374,6 +376,7 @@ int main(int argc, char** argv)
 {
     ADUC_LaunchArguments launchArgs;
     ADUC_WorkQueues workQueues = { 0 };
+    WorkerThreadsHandle workerThreadsHandle = NULL;
 
     ADUC_AGENT_MODULE_HANDLE duClientModuleHandle = NULL;
     ADUC_AGENT_MODULE_HANDLE dpsClientModuleHandle = NULL;
@@ -572,6 +575,7 @@ int main(int argc, char** argv)
     if (duClientModuleInterface == NULL)
     {
         ret = -1;
+        Log_Error("Failed to create ADUC MQTT Client Module");
         goto done;
     }
 
@@ -586,17 +590,27 @@ int main(int argc, char** argv)
         initialized_duclient_module = true;
     }
 
+    // Create update and reporting work queues and start workers.
     if (NULL == (workQueues.updateWorkQueue = WorkQueue_Create()))
     {
         ret = -2;
+        Log_Error("Failed to create Update WorkQueue");
         goto done;
     }
 
     if (NULL == (workQueues.reportingWorkQueue = WorkQueue_Create()))
     {
         ret = -2;
+        Log_Error("Failed to create Reporting WorkQueue");
         goto done;
     }
+
+    workerThreadsHandle = StartAgentWorkerThreads(&workQueues);
+    if (workerThreadsHandle == NULL)
+    {
+        Log_Error("Failed to Start Agent Worker Threads");
+    }
+
 
     //
     // Main Loop
@@ -651,6 +665,10 @@ done:
         duClientModuleInterface->destroy(duClientModuleHandle);
         duClientModuleInterface = NULL;
     }
+
+    StopAgentWorkerThreads(&workQueues);
+    WorkQueue_Destroy(&workQueues.updateWorkQueue);
+    WorkQueue_Destroy(&workQueues.reportingWorkQueue);
 
     ADUC_ConfigInfo_ReleaseInstance(config);
     ADUC_Logging_Uninit();

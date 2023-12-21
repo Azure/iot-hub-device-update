@@ -18,8 +18,9 @@ typedef struct tagADUC_WorkQueues
 
 WorkQueueHandle WorkQueue_Create();
 void WorkQueue_Destroy(WorkQueueHandle queue);
-bool WorkQueue_EnqueueWork(WorkQueueHandle queue, const char* json);
+bool WorkQueue_EnqueueWork(WorkQueueHandle queue, const char* json, void* context);
 WorkQueueItemHandle WorkQueue_GetNextWork(WorkQueueHandle queue);
+size_t WorkQueue_GetSize(WorkQueueHandle queue);
 
 EXTERN_C_END
 

@@ -8,7 +8,7 @@ find_package (Catch2 REQUIRED)
 
 add_executable (${target_name})
 target_sources (${target_name} PRIVATE aduc_worker_thread_unit_tests.cpp)
-target_link_libraries (${target_name} PRIVATE aduc::worker_thread Catch2::Catch2)
+target_link_libraries (${target_name} PRIVATE aduc::worker_thread aduc::workqueue Catch2::Catch2)
 
 include (CTest)
 include (Catch)

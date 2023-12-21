@@ -12,13 +12,15 @@ public:
     {
         std::string json;
         std::time_t time_added;
+        void* context;
     };
 
     WorkQueue();
     ~WorkQueue();
 
-    void EnqueueWork(const std::string& json);
+    void EnqueueWork(const std::string& json, void* context);
     std::unique_ptr<WorkQueueItem> GetNextWorkQueueItem();
+    size_t GetSize() const;
 
     // noncopyable and nonmovable
     WorkQueue(const WorkQueue&) = delete;

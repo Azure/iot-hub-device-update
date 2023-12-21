@@ -10,17 +10,23 @@ if (NOT WIN32)
 endif ()
 
 include (agentRules)
-
-include (find_curl_and_import_libcurl)
-
+compileasc99 ()
 disablertti ()
 
 # Used to find and include the CURL::libcurl imported libary
+include (find_curl_and_import_libcurl)
 find_curl_and_import_libcurl ()
 
-set (agent_c_files ./src/main.c ./src/health_management.c)
+add_executable (${target_name})
 
-add_executable (${target_name} ${agent_c_files})
+target_sources (${target_name}
+    PRIVATE
+        src/main.c
+        src/health_management.c
+        src/agent_worker_threads.h
+        src/agent_worker_threads.cpp
+        src/update_worker_thread_proc.cpp
+        src/reporting_worker_thread_proc.cpp)
 
 set_target_properties (${target_name} PROPERTIES COMPILE_DEFINITIONS _DEFAULT_SOURCE)
 
@@ -69,8 +75,7 @@ find_package (Parson REQUIRED)
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
-target_link_libraries (
-    ${target_name}
+target_link_libraries(${target_name}
     PRIVATE aziotsharedutil
             aduc::agent_state_store
             aduc::c_utils
@@ -82,7 +87,9 @@ target_link_libraries (
             aduc::system_utils
             aduc::microsoft_adps2_mqtt_client
             aduc::microsoft_du_mqttbroker_client
-            aduc::workqueue)
+            aduc::upd_utils
+            aduc::workqueue
+            aduc::worker_thread)
 
 if (NOT WIN32)
     target_link_libraries (${target_name} PRIVATE aduc::command_helper)
