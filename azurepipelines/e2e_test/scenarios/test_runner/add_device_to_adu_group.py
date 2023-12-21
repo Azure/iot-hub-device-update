@@ -79,7 +79,7 @@ class AddDeviceToGroupTest(unittest.TestCase):
         time.sleep(delay_minutes*60)
 
         for i in range(0, test_connection_timeout_tries):
-            adu_group_info = self.duTestHelper.GetAduGroupInfo(test_adu_group)
+            adu_group_info = self.duTestHelper.GetADUGroupInfo(test_adu_group)
 
             if (adu_group_info is not None):
                 self.assertEqual(adu_group_info.deviceCount, 1)
