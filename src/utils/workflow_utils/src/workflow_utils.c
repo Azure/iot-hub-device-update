@@ -1887,8 +1887,15 @@ char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle)
 
 done:
 
-    free(tempRet);
-    free(pwf);
+    if (tempRet == pwf)
+    {
+        free(tempRet);
+    }
+    else
+    {
+        free(tempRet);
+        free(pwf);
+    }
 
     return ret;
 }
