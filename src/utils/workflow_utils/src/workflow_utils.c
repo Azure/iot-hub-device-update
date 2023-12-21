@@ -1868,6 +1868,7 @@ char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle)
         }
 
         tempRet = pwf;
+        pwf = NULL;
         Log_Debug("Using parent workfolder: '%s'", pwf);
     }
     else
@@ -1887,15 +1888,8 @@ char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle)
 
 done:
 
-    if (tempRet == pwf)
-    {
-        free(tempRet);
-    }
-    else
-    {
-        free(tempRet);
-        free(pwf);
-    }
+    free(tempRet);
+    free(pwf);
 
     return ret;
 }
