@@ -69,6 +69,27 @@ steps:
           failTaskOnFailedTests: true
           publishRunAttachments: false # Attachments are not supported for CTest
 
+    - task: EsrpCodeSigning@3
+        displayName: Sign
+        inputs:
+          ConnectedServiceName: 'ADU-ESRP-Agent-Packages'
+          FolderPath: '$(Build.SourcesDirectory)/'
+          Pattern: '*.deb'
+          signConfigType: 'inlineSignParams'
+          inlineOperation: |
+            [
+              {
+                "keyCode": "CP-450779-Pgp",
+                "operationSetCode": "LinuxSign",
+                "parameters": [],
+                "toolName": "signtool.exe",
+                "toolVersion": "1.0"
+              }
+            ]
+            SessionTimeout: '60'
+            MaxConcurrency: '50'
+            MaxRetryAttempts: '5'
+
     - task: 1ES.PublishPipelineArtifact@1
       displayName: "Publish Pipeline Artifacts"
       inputs:
