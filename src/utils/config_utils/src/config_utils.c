@@ -45,7 +45,7 @@ static const char* DOWNLOADS_PATH_SEGMENT = "downloads";
 static const char* EXTENSIONS_PATH_SEGMENT = "extensions";
 
 static const char* CONFIG_IOT_HUB_PROTOCOL = "iotHubProtocol";
-static const char* CONFIG_COMPAT_PROPERTY_NAMES = "compatPropertyNames";
+static const char* CONFIG_COMPAT_PROPERTIES = "compatProperties";
 static const char* CONFIG_ADU_SHELL_TRUSTED_USERS = "aduShellTrustedUsers";
 static const char* CONFIG_EDGE_GATEWAY_CERT_PATH = "edgegatewayCertPath";
 static const char* CONFIG_MANUFACTURER = "manufacturer";
@@ -434,8 +434,7 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
         goto done;
     }
 
-    // Note: compat property names are optional.
-    config->compatPropertyNames = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_COMPAT_PROPERTY_NAMES);
+    config->compatProperties = json_object_get_value(root_object, CONFIG_COMPAT_PROPERTIES);
 
     // Note: IoT Hub protocol is is optional.
     config->iotHubProtocol = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_IOT_HUB_PROTOCOL);

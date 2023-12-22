@@ -30,7 +30,10 @@ static const char* validConfigContentStr =
         R"("aduShellTrustedUsers": ["adu","do"],)"
         R"("manufacturer": "device_info_manufacturer",)"
         R"("model": "device_info_model",)"
-        R"("compatPropertyNames": "manufacturer,model",)"
+        R"("compatProperties": { )"
+        R"(   "deviceManufacturer": "contoso", )"
+        R"(   "deviceModel": "camera", )"
+        R"(}, )"
         R"("agents": [)"
             R"({ )"
             R"("name": "host-update",)"
@@ -211,7 +214,10 @@ static const char* invalidConfigContentNoDevicePropertiesStr =
         R"("aduShellTrustedUsers": ["adu","do"],)"
         R"("manufacturer": "device_info_manufacturer",)"
         R"("model": "device_info_model",)"
-        R"("compatPropertyNames": "manufacturer,model",)"
+        R"("compatProperties": { )"
+        R"(   "deviceManufacturer": "contoso", )"
+        R"(   "deviceModel": "camera", )"
+        R"(}, )"
         R"("agents": [)"
             R"({ )"
             R"("name": "host-update",)"
@@ -282,7 +288,10 @@ static const char* validConfigContentDownloadTimeout =
         R"("manufacturer": "device_info_manufacturer",)"
         R"("model": "device_info_model",)"
         R"("downloadTimeoutInMinutes": 1440,)"
-        R"("compatPropertyNames": "manufacturer,model",)"
+        R"("compatProperties": { )"
+        R"(   "deviceManufacturer": "contoso", )"
+        R"(   "deviceModel": "camera", )"
+        R"(}, )"
         R"("agents": [)"
             R"({ )"
             R"("name": "host-update",)"
@@ -317,7 +326,10 @@ static const char* validConfigWithOverrideFolder =
         R"("aduShellFolder": "/usr/mybin",)"
         R"("dataFolder": "/var/lib/adu/mydata",)"
         R"("extensionsFolder": "/var/lib/adu/myextensions",)"
-        R"("compatPropertyNames": "manufacturer,model",)"
+        R"("compatProperties": { )"
+        R"(   "deviceManufacturer": "contoso", )"
+        R"(   "deviceModel": "camera", )"
+        R"(}, )"
         R"("agents": [)"
             R"({ )"
             R"("name": "host-update",)"
@@ -349,7 +361,10 @@ static const char* invalidConfigContentDownloadTimeout =
         R"("manufacturer": "device_info_manufacturer",)"
         R"("model": "device_info_model",)"
         R"("downloadTimeoutInMinutes": -1,)"
-        R"("compatPropertyNames": "manufacturer,model",)"
+        R"("compatProperties": { )"
+        R"(   "deviceManufacturer": "contoso", )"
+        R"(   "deviceModel": "camera", )"
+        R"(}, )"
         R"("agents": [)"
             R"({ )"
             R"("name": "host-update",)"
@@ -492,7 +507,12 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK_THAT(config.schemaVersion, Equals("1.1"));
         CHECK_THAT(config.manufacturer, Equals("device_info_manufacturer"));
         CHECK_THAT(config.model, Equals("device_info_model"));
-        CHECK_THAT(config.compatPropertyNames, Equals("manufacturer,model"));
+
+        REQUIRE(config.compatProperties != nullptr);
+        ADUC::StringUtils::cstr_wrapper compatPropertiesSerialized{ json_serialize_to_string( config.compatProperties ) };
+        const char* expectedCompatPropertiesSerializedValue = "{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"camera\"}";
+        CHECK_THAT(compatPropertiesSerialized.get(), Equals(expectedCompatPropertiesSerializedValue));
+
         CHECK(config.agentCount == 1);
 
         const ADUC_AgentInfo* first_agent_info = ADUC_ConfigInfo_GetAgent(&config, 0);
@@ -502,19 +522,6 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK_THAT(first_agent_info->model, Equals("Smart-Box"));
         CHECK_THAT(first_agent_info->connectionType, Equals("AIS"));
         CHECK_THAT(first_agent_info->connectionData, Equals("iotHubDeviceUpdate"));
-
-        ADUC_ConfigInfo_UnInit(&config);
-    }
-
-    SECTION("Valid config content without compatPropertyNames, Success Test")
-    {
-        REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentNoCompatPropertyNames) == 0);
-        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
-
-        ADUC_ConfigInfo config = {};
-
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
-        CHECK(config.compatPropertyNames == nullptr);
 
         ADUC_ConfigInfo_UnInit(&config);
     }

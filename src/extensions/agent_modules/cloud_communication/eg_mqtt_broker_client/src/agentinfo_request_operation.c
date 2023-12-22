@@ -3,13 +3,13 @@
 
 #include <aduc/adu_agentinfo.h> // ADUC_AgentInfo_Request_Operation_Data
 #include <aduc/adu_agentinfo_utils.h> // AgentInfoData_FromOperationContext, AgentInfoData_SetCorrelationId
-#include <aduc/adu_mosquitto_utils.h> // ADU_mosquitto_add_user_property
 #include <aduc/adu_communication_channel.h> // ADUC_DU_SERVICE_COMMUNICATION_CHANNEL_ID
+#include <aduc/adu_mosquitto_utils.h> // ADU_mosquitto_add_user_property
 #include <aduc/adu_mqtt_common.h>
 #include <aduc/agent_state_store.h> // ADUC_StateStore_IsAgentInfoReported
 #include <aduc/config_utils.h> // ADUC_ConfigInfo, ADUC_AgentInfo
 #include <aduc/logging.h>
-#include <du_agent_sdk/agent_module_interface.h>  // ADUC_AGENT_MODULE_HANDLE
+#include <du_agent_sdk/agent_module_interface.h> // ADUC_AGENT_MODULE_HANDLE
 
 #define AGENT_INFO_FIELD_NAME_SEQUENCE_NUMBER "sn"
 #define AGENT_INFO_FIELD_NAME_COMPAT_PROPERTIES "compatProperties"
@@ -39,9 +39,7 @@ static bool Set_Agent_State(ADUC_AgentInfo_Request_Operation_Data* agentInfoData
 
     if (agentInfoData->agentInfoState != newState)
     {
-        bool was_agentinfo_reported = newState == ADU_AGENTINFO_STATE_ACKNOWLEDGED
-            ? true
-            : false;
+        bool was_agentinfo_reported = newState == ADU_AGENTINFO_STATE_ACKNOWLEDGED ? true : false;
 
         if (ADUC_STATE_STORE_RESULT_OK == ADUC_StateStore_SetIsAgentInfoReported(was_agentinfo_reported))
         {
@@ -126,8 +124,7 @@ bool AgentInfoRequestOperation_Complete(ADUC_Retriable_Operation_Context* contex
  *
  * @return true if the operation is successfully retried. false otherwise.
  */
-bool AgentInfoRequestOperation_DoRetry(
-    ADUC_Retriable_Operation_Context* context, const ADUC_Retry_Params* retryParams)
+bool AgentInfoRequestOperation_DoRetry(ADUC_Retriable_Operation_Context* context, const ADUC_Retry_Params* retryParams)
 {
     Log_Debug("retry");
     ADUC_AgentInfo_Request_Operation_Data* agentInfoData = AgentInfoData_FromOperationContext(context);
@@ -260,8 +257,6 @@ static JSON_Value* Build_Compat_Properties_JSON_Value()
     JSON_Value* tmp = NULL;
     JSON_Value* compatProps_value = NULL;
 
-    const ADUC_AgentInfo* agent_cfg = NULL;
-
     tmp = json_value_init_object();
     if (tmp == NULL)
     {
@@ -274,26 +269,17 @@ static JSON_Value* Build_Compat_Properties_JSON_Value()
         goto done;
     }
 
-    agent_cfg = ADUC_ConfigInfo_GetAgent(config, 0);
-
-    // TODO: model compat properties differently in duconfig.json perhaps with a "compatProperties" JSON object.
-    // TOOD: remove top-level manufacturer and model and remove agents array.
-    //
-    //   {
-    //     "compatProp1": "compatPropValue1",
-    //     "compatProp2": "compatPropValue2"
-    //   }
-
-    // TODO: get manufacturer, model, and additional properties properly.
-    // For now, ignore compatPropertyNames and just add "model" and "manufacturer" from agents[0]
-
-    if (JSONSuccess != json_object_set_string(json_object(tmp), "manufacturer", agent_cfg->manufacturer))
+    if (config->compatProperties == NULL)
     {
+        Log_Error("NULL config compatProperties");
         goto done;
     }
 
-    if (JSONSuccess != json_object_set_string(json_object(tmp), "model", agent_cfg->model))
+    tmp = json_value_deep_copy(config->compatProperties);
+
+    if (tmp == NULL)
     {
+        Log_Error("Cannot copy compatProperties json from config");
         goto done;
     }
 
@@ -344,7 +330,8 @@ static char* Build_AgentInfo_Request_Msg_Payload(time_t nowTime)
         goto done;
     }
 
-    if (JSONSuccess != json_object_set_string(json_object(root_value), AGENT_INFO_FIELD_NAME_SEQUENCE_NUMBER, &long_time[0]))
+    if (JSONSuccess
+        != json_object_set_string(json_object(root_value), AGENT_INFO_FIELD_NAME_SEQUENCE_NUMBER, &long_time[0]))
     {
         goto done;
     }
@@ -355,7 +342,8 @@ static char* Build_AgentInfo_Request_Msg_Payload(time_t nowTime)
         goto done;
     }
 
-    if (JSONSuccess != json_object_set_value(json_object(root_value), AGENT_INFO_FIELD_NAME_COMPAT_PROPERTIES, compatProps_value))
+    if (JSONSuccess
+        != json_object_set_value(json_object(root_value), AGENT_INFO_FIELD_NAME_COMPAT_PROPERTIES, compatProps_value))
     {
         goto done;
     }
@@ -416,8 +404,8 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
     }
 
     // Set MQTT 5 user propertie as per ainfo req-res
-    if (!ADU_mosquitto_add_user_property(&user_prop_list, "mt", "ainfo_req") ||
-        !ADU_mosquitto_add_user_property(&user_prop_list, "pid", "1"))
+    if (!ADU_mosquitto_add_user_property(&user_prop_list, "mt", "ainfo_req")
+        || !ADU_mosquitto_add_user_property(&user_prop_list, "pid", "1"))
     {
         goto done;
     }
@@ -427,16 +415,17 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
     {
         // The DU service can handle with or without hyphens, but reducing data transferred by omitting them.
         if (!ADUC_generate_correlation_id(
-            false /* with_hyphens */,
-            &(agentInfoData->ainfoReqMessageContext.correlationId)[0],
-            ARRAY_SIZE(agentInfoData->ainfoReqMessageContext.correlationId)))
+                false /* with_hyphens */,
+                &(agentInfoData->ainfoReqMessageContext.correlationId)[0],
+                ARRAY_SIZE(agentInfoData->ainfoReqMessageContext.correlationId)))
         {
             Log_Error("Fail to generate correlationid");
             goto done;
         }
     }
 
-    if (!ADU_mosquitto_set_correlation_data_property(&user_prop_list, &(agentInfoData->ainfoReqMessageContext.correlationId)[0]))
+    if (!ADU_mosquitto_set_correlation_data_property(
+            &user_prop_list, &(agentInfoData->ainfoReqMessageContext.correlationId)[0]))
     {
         Log_Error("set correlationId");
         goto done;
@@ -488,8 +477,7 @@ static bool SendAgentInfoStatusRequest(ADUC_Retriable_Operation_Context* context
             // compute and apply the next execution time, based on the specified retry parameters.
             context->retryFunc(context, &context->retryParams[ADUC_RETRY_PARAMS_INDEX_CLIENT_TRANSIENT]);
 
-            Log_Error(
-                "retry-able after t[%ld]: %d", context->operationIntervalSecs, mqtt_res);
+            Log_Error("retry-able after t[%ld]: %d", context->operationIntervalSecs, mqtt_res);
             break;
 
         default:
@@ -573,7 +561,8 @@ bool AgentInfoStatusRequestOperation_doWork(ADUC_Retriable_Operation_Context* co
         goto done;
     }
 
-    moreSetupNeeded = SettingUpAduMqttRequestPrerequisites(context, &agentInfoData->ainfoReqMessageContext, true /* isScoped */);
+    moreSetupNeeded =
+        SettingUpAduMqttRequestPrerequisites(context, &agentInfoData->ainfoReqMessageContext, true /* isScoped */);
     if (moreSetupNeeded)
     {
         goto done;
@@ -621,9 +610,9 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
     // For this request, generate correlation Id sent as CorrelationData property
     // and used to match with response.
     if (!ADUC_generate_correlation_id(
-        false /* with_hyphens */,
-        &(operationDataContext->ainfoReqMessageContext.correlationId)[0],
-        ARRAY_SIZE(operationDataContext->ainfoReqMessageContext.correlationId)))
+            false /* with_hyphens */,
+            &(operationDataContext->ainfoReqMessageContext.correlationId)[0],
+            ARRAY_SIZE(operationDataContext->ainfoReqMessageContext.correlationId)))
     {
         Log_Error("Fail to generate correlationid");
         goto done;
@@ -663,7 +652,8 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
         goto done;
     }
 
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, SETTING_KEY_ENR_REQ_OP_INTERVAL_SECONDS, &value))
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
+            agent_info, SETTING_KEY_ENR_REQ_OP_INTERVAL_SECONDS, &value))
     {
         log_warn("using default request interval: %d", DEFAULT_ENR_REQ_OP_INTERVAL_SECONDS);
         value = DEFAULT_ENR_REQ_OP_INTERVAL_SECONDS;
@@ -671,7 +661,8 @@ ADUC_Retriable_Operation_Context* CreateAndInitializeAgentInfoRequestOperation()
     tmp->operationIntervalSecs = value;
 
     value = 0;
-    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(agent_info, SETTING_KEY_ENR_REQ_OP_TIMEOUT_SECONDS, &value))
+    if (!ADUC_AgentInfo_ConnectionData_GetUnsignedIntegerField(
+            agent_info, SETTING_KEY_ENR_REQ_OP_TIMEOUT_SECONDS, &value))
     {
         log_warn("using default request timeout: %d", DEFAULT_ENR_REQ_OP_TIMEOUT_SECONDS);
         value = DEFAULT_ENR_REQ_OP_TIMEOUT_SECONDS;
