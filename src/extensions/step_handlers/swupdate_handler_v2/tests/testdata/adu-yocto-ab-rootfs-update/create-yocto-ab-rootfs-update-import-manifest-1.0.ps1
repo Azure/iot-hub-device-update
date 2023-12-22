@@ -103,14 +103,14 @@ Write-Host "#    $parentFile1"
     #
     #   scriptFile        - Name of the primary script file that implements download, install, apply, cancel and isInstalled logic.
     #                       This update uses 'example-a-b-update.sh' script.
-    #                       The script supports following actions:
+    #                       The script must support following actions:
     #                            --action-download     : No-op. (No additional payloads)
     #                            --action-install      : Invokes swupdate to install the specified 'swuFile'
     #                            --action-apply        : Sets uboot environment variable to switch to the desired rootfs partition after rebooted.
     #                                                    Returns a special (ADUC_Result) result code to instruct DU Agent to reboot the device.
     #                            --action-cancel       : Restore uboot environment variable to the value before '--action-apply' is performed.
     #                            --action-is-installed : Returns (ADUC_Result) result code that indicates whether the current rootfs contains
-    #                                                    software (image) version that match specified 'installCriteria' string.
+    #                                                    software (image) version that match specified 'installedCriteria' string.
     #
     #   installedCriteria - String used to evaluate whether the software is installed on the target.
     #                       When performing '--action-apply', the primary script file compare this value against content of the
