@@ -131,7 +131,7 @@ typedef struct tagADUC_ConfigInfo
 
     size_t agentCount; /**< Total number of agents configured. */
 
-    const char* compatPropertyNames; /**< Compat property names. */
+    JSON_Value* compatProperties; /**< Compat properties sent up with agent info request. */
 
     const char* iotHubProtocol; /**< The IotHub transport protocol to use. */
 
@@ -243,8 +243,7 @@ bool ADUC_AgentInfo_ConnectionData_GetBooleanField(const ADUC_AgentInfo* agent, 
  * @param value Pointer to an int to receive the value.
  * @return bool True if successful.
  */
-bool ADUC_AgentInfo_ConnectionData_GetIntegerField(
-    const ADUC_AgentInfo* agent, const char* fieldName, int* value);
+bool ADUC_AgentInfo_ConnectionData_GetIntegerField(const ADUC_AgentInfo* agent, const char* fieldName, int* value);
 
 /**
  * @brief Get DU Agent's connection data field of type unsigned int.

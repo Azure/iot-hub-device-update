@@ -112,10 +112,7 @@ bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj)
     bool success = false;
 
     JSON_Status jsonStatus = json_object_set_string(
-        startupObj,
-        ADUCITF_FIELDNAME_COMPAT_PROPERTY_NAMES,
-        IsNullOrEmpty(config->compatPropertyNames) ? DEFAULT_COMPAT_PROPERTY_NAMES_VALUE
-                                                   : config->compatPropertyNames);
+        startupObj, ADUCITF_FIELDNAME_COMPAT_PROPERTY_NAMES, DEFAULT_COMPAT_PROPERTY_NAMES_VALUE);
 
     if (jsonStatus != JSONSuccess)
     {
