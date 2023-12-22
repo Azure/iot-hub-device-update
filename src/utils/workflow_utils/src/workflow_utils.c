@@ -1868,7 +1868,8 @@ char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle)
         }
 
         tempRet = pwf;
-        Log_Debug("Using parent workfolder: '%s'", pwf);
+        pwf = NULL;
+        Log_Debug("Using parent workfolder: '%s'", tempRet);
     }
     else
     {
