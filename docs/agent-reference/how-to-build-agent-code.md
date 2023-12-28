@@ -58,6 +58,19 @@ dependencies. To see the usage info:
 ./scripts/install-deps.sh -h
 ```
 
+### Install Optional Development Tools
+
+- Install the clang-format package (required for running `scripts/clang-format.sh`):
+```shell
+sudo apt install clang-format
+```
+
+- Install pip3 and cmake-format (required for running `scripts/cmake-format.sh`):
+```shell
+sudo apt install python3-pip
+sudo --set-home pip3 install cmake-format
+```
+
 ### Device Update Linux Build System
 
 The Device Update for IoT Hub reference agent code utilizes CMake for building. An example build script is provided at [scripts/build.sh](../../scripts/build.sh).
