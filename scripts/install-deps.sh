@@ -53,7 +53,7 @@ install_azure_storage_sdk=false
 # ADUC Test Deps
 
 install_catch2=false
-default_catch2_ref=v2.13.9
+default_catch2_ref=v2.x
 catch2_ref=$default_catch2_ref
 install_swupdate=false
 default_swupdate_ref=2021.11
