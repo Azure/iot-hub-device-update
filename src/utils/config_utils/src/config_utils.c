@@ -781,7 +781,7 @@ bool ADUC_AgentInfo_ConnectionData_GetStringField(const ADUC_AgentInfo* agent, c
         if (agent->connectionDataJson == NULL
             || !ADUC_JSON_GetStringField(agent->connectionDataJson, fieldName, value))
         {
-            Log_Error("GetStringField");
+            Log_Error("GetStringField: '%s'", fieldName);
             goto done;
         }
     }

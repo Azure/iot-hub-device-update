@@ -21,6 +21,6 @@ target_link_libraries (
             aduc::logging
             aduc::mosquitto_utils
             aduc::retry_utils
-            Parson::parson)
+            Parson::parson
+            libaducpal)
 
-add_subdirectory (tests)

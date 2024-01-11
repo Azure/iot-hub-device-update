@@ -11,13 +11,14 @@
 #include "aduc/logging.h"
 #include "aduc/system_utils.h"
 #include "du_agent_sdk/agent_module_interface.h"
+#include <aducpal/stdlib.h> // ADUCPAL_setenv
 
 #include <aducpal/unistd.h>
 #include <signal.h>
 
 static void set_test_config_folder()
 {
-    setenv(ADUC_CONFIG_FOLDER_ENV, "/tmp/adu/testdata/adps2mqtt-client-module-test-data", 1);
+    ADUCPAL_setenv(ADUC_CONFIG_FOLDER_ENV, "/tmp/adu/testdata/adps2mqtt-client-module-test-data", 1);
 }
 
 bool keep_running_ft = true;
