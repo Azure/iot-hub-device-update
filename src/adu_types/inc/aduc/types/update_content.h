@@ -20,16 +20,6 @@ EXTERN_C_BEGIN
 #define ADUCITF_FIELDNAME_STATE "state"
 
 /**
- * @brief JSON field name for Action property
- */
-#define ADUCITF_FIELDNAME_ACTION "action"
-
-/**
- * @brief JSON field name for Id property
- */
-#define ADUCITF_FIELDNAME_ID "id"
-
-/**
  * @brief JSON field name for RetryTimestamp property
  */
 #define ADUCITF_FIELDNAME_RETRYTIMESTAMP "retryTimestamp"
@@ -80,12 +70,12 @@ EXTERN_C_BEGIN
 #define ADUCITF_FIELDNAME_INSTALLEDCRITERIA "installedCriteria"
 
 /**
- * @brief JSON field name for workflow property.
+ * @brief JSON field name for workflowId reporting property.
  */
-#define ADUCITF_FIELDNAME_WORKFLOW "workflow"
+#define ADUCITF_FIELDNAME_WORKFLOWID "workflowId"
 
 /**
- * @brief JSON field name for installedUpdateId property.
+ * @brief JSON field name for installedUpdateId reporting property.
  */
 #define ADUCITF_FIELDNAME_INSTALLEDUPDATEID "installedUpdateId"
 

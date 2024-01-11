@@ -9,19 +9,19 @@
 
 #include "aduc/adu_integration.h"
 
-#include <aduc/logging.h>
-#include <aduc/workflow_utils.h>
+#include <aduc/calloc_wrapper.hpp>
 #include <aduc/content_handler.hpp>
+#include <aduc/download_handler_factory.h> // ADUC_DownloadHandlerFactory_LoadDownloadHandler
+#include <aduc/download_handler_plugin.h>
+#include <aduc/download_handler_plugin.h> // ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted
 #include <aduc/extension_manager.hpp>
-#include <aduc/workflow_data_utils.h>
-#include <aduc/system_utils.h>
-#include <aduc/types/update_content.h>
+#include <aduc/logging.h>
 #include <aduc/parser_utils.h>
 #include <aduc/string_c_utils.h>
-#include <aduc/download_handler_plugin.h>
-#include <aduc/calloc_wrapper.hpp>
-#include <aduc/download_handler_factory.h> // ADUC_DownloadHandlerFactory_LoadDownloadHandler
-#include <aduc/download_handler_plugin.h> // ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted
+#include <aduc/system_utils.h>
+#include <aduc/types/update_content.h>
+#include <aduc/workflow_data_utils.h>
+#include <aduc/workflow_utils.h>
 
 #include <parson.h>
 
@@ -119,8 +119,6 @@ void ADU_Integration_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
     //
     // Notify callback that we're now back to idle.
     //
-
-
 
     workflow_free_string(workflowId);
     workflow_free_string(workFolder);
@@ -249,50 +247,6 @@ done:
     return status;
 }
 
-
-/**
- * @brief Sets workflow properties on the workflow json value.
- *
- * @param[in,out] workflowValue The workflow json value to set properties on.
- * @param[in] updateAction The updateAction for the action field.
- * @param[in] workflowId The workflow id of the update deployment.
- * @param[in] retryTimestamp optional. The retry timestamp that's present for service-initiated retries.
- * @return true if all properties were set successfully; false, otherwise.
- */
-static bool set_workflow_properties(
-    JSON_Value* workflowValue, ADUCITF_UpdateAction updateAction, const char* workflowId, const char* retryTimestamp)
-{
-    bool succeeded = false;
-
-    JSON_Object* workflowObject = json_value_get_object(workflowValue);
-    if (json_object_set_number(workflowObject, ADUCITF_FIELDNAME_ACTION, updateAction) != JSONSuccess)
-    {
-        Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_ACTION);
-        goto done;
-    }
-
-    if (json_object_set_string(workflowObject, ADUCITF_FIELDNAME_ID, workflowId) != JSONSuccess)
-    {
-        Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_ID);
-        goto done;
-    }
-
-    if (!IsNullOrEmpty(retryTimestamp))
-    {
-        if (json_object_set_string(workflowObject, ADUCITF_FIELDNAME_RETRYTIMESTAMP, retryTimestamp) != JSONSuccess)
-        {
-            Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_RETRYTIMESTAMP);
-            goto done;
-        }
-    }
-
-    succeeded = true;
-
-done:
-
-    return succeeded;
-}
-
 /**
  * @brief Get the Reporting Json Value object
  *
@@ -302,7 +256,7 @@ done:
  * @param installedUpdateId The installed Update ID string.
  * @return JSON_Value* The resultant json value object. Caller must free using json_value_free().
  */
-static JSON_Value* ADU_Integration_GetReportingJsonValue(
+JSON_Value* ADU_Integration_GetReportingJsonValue(
     ADUC_WorkflowData* workflowData,
     ADUCITF_State updateState,
     const ADUC_Result* result,
@@ -349,10 +303,7 @@ static JSON_Value* ADU_Integration_GetReportingJsonValue(
     //
     // {
     //     "state" : ###,
-    //     "workflow": {
-    //         "action": 3,
-    //         "id": "..."
-    //     },
+    //     "workflowId": "...",
     //     "installedUpdateId" : "...",
     //
     //     "lastInstallResult" : {
@@ -381,17 +332,15 @@ static JSON_Value* ADU_Integration_GetReportingJsonValue(
     JSON_Value* stepResultsValue = json_value_init_object();
     JSON_Object* stepResultsObject = json_object(stepResultsValue);
 
-    JSON_Value* workflowValue = json_value_init_object();
     JSON_Status jsonStatus;
 
-    if (lastInstallResultValue == NULL || stepResultsValue == NULL || workflowValue == NULL)
+    if (lastInstallResultValue == NULL || stepResultsValue == NULL)
     {
         Log_Error("Failed to init object for json value");
         goto done;
     }
 
-    jsonStatus =
-        json_object_set_value(rootObject, ADUCITF_FIELDNAME_LASTINSTALLRESULT, lastInstallResultValue);
+    jsonStatus = json_object_set_value(rootObject, ADUCITF_FIELDNAME_LASTINSTALLRESULT, lastInstallResultValue);
     if (jsonStatus != JSONSuccess)
     {
         Log_Error("Could not add JSON field: %s", ADUCITF_FIELDNAME_LASTINSTALLRESULT);
@@ -411,28 +360,15 @@ static JSON_Value* ADU_Integration_GetReportingJsonValue(
     }
 
     //
-    // Workflow
+    // WorkflowId top-level property
     //
     if (!IsNullOrEmpty(workflow_peek_id(handle)))
     {
-        bool success = set_workflow_properties(
-            workflowValue,
-            ADUC_WorkflowData_GetCurrentAction(workflowData),
-            workflow_peek_id(handle),
-            workflow_peek_retryTimestamp(handle));
-
-        if (!success)
+        if (json_object_set_string(rootObject, ADUCITF_FIELDNAME_WORKFLOWID, workflow_peek_id(handle)) != JSONSuccess)
         {
+            Log_Error("Could not add JSON : %s", ADUCITF_FIELDNAME_WORKFLOWID);
             goto done;
         }
-
-        if (json_object_set_value(rootObject, ADUCITF_FIELDNAME_WORKFLOW, workflowValue) != JSONSuccess)
-        {
-            Log_Error("Could not add JSON : %s", ADUCITF_FIELDNAME_WORKFLOW);
-            goto done;
-        }
-
-        workflowValue = NULL; // rootObject owns the value now.
     }
 
     //
@@ -557,7 +493,6 @@ done:
     json_value_free(rootValue);
     json_value_free(lastInstallResultValue);
     json_value_free(stepResultsValue);
-    json_value_free(workflowValue);
 
     return resultValue;
 }
@@ -569,7 +504,8 @@ char* ADU_Integration_GetReportingJson(
     const char* installedUpdateId)
 {
     char* jsonString = NULL;
-    JSON_Value* rootValue = ADU_Integration_GetReportingJsonValue(workflowData, updateState, result, installedUpdateId);
+    JSON_Value* rootValue =
+        ADU_Integration_GetReportingJsonValue(workflowData, updateState, result, installedUpdateId);
     if (rootValue == NULL)
     {
         Log_Error("Failed to get reporting json value");
