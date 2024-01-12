@@ -131,7 +131,7 @@ void AduUpdUtils_TransitionState(
 
     if (newState == ADU_UPD_STATE_IDLEWAIT)
     {
-        srand(time(NULL));
+        srand((unsigned int)time(NULL));
         int jitter_seconds = (rand() % 121) + 60; // between 1 and 3 minutes of jitter
         time_t now = ADUC_GetTimeSinceEpochInSeconds();
         context->nextExecutionTime = now + context->pollingIntervalInSeconds + jitter_seconds;

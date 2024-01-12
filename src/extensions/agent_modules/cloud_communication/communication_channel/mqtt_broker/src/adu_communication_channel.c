@@ -331,7 +331,11 @@ void ADUC_Communication_Channel_OnDisconnect(
     //
     // For now, wait 30 seconds before retrying.
     commMgrState->commNextRetryTime = now + DEFAULT_CONNECT_RETRY_DELAY_SECONDS;
-    Log_Info("Setting next connect retry time to %lu, %u secs from now[%lu]", commMgrState->commNextRetryTime, DEFAULT_CONNECT_RETRY_DELAY_SECONDS, now);
+    Log_Info(
+        "Setting next connect retry time to %lu, %u secs from now[%lu]",
+        commMgrState->commNextRetryTime,
+        DEFAULT_CONNECT_RETRY_DELAY_SECONDS,
+        now);
 
     ADUC_SetCommunicationChannelState(commMgrState, ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_DISCONNECTED);
 
@@ -351,6 +355,7 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
     int mqtt_res = 0;
     bool use_OS_cert = false;
     ADUC_AGENT_MODULE_INTERFACE* interface = (ADUC_AGENT_MODULE_INTERFACE*)handle;
+    const char* mqttClientId;
 
     Log_Debug("Comm Channel Initializing...");
 
@@ -418,8 +423,15 @@ int ADUC_Communication_Channel_Initialize(ADUC_AGENT_MODULE_HANDLE handle, void*
         goto done;
     }
 
-    commMgrState->mqttClient = mosquitto_new(
-        initData->sessionId, commMgrState->mqttSettings.cleanSession, handle /* DU MQTT Agent Module Handle */);
+    // For MQTT Broker, the external device id will be populated in the state store.
+    // For DPS, it would be NULL but the device id will be in the initData sessionId.
+    mqttClientId = IsNullOrEmpty(ADUC_StateStore_GetExternalDeviceId()) ? initData->sessionId
+                                                                        : ADUC_StateStore_GetExternalDeviceId();
+
+    Log_Info("Using MQTT clientId '%s'", mqttClientId);
+
+    commMgrState->mqttClient =
+        mosquitto_new(mqttClientId, commMgrState->mqttSettings.cleanSession, handle /* DU MQTT Agent Module Handle */);
     if (!commMgrState->mqttClient)
     {
         Log_Error("Fail mosq new");
@@ -1111,7 +1123,8 @@ bool PerformChannelStateManagement(ADU_MQTT_COMMUNICATION_MGR_STATE* commMgrStat
         }
     }
 
-    if ((commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_UNKNOWN) && (now > commMgrState->commNextRetryTime))
+    if ((commMgrState->commState == ADU_COMMUNICATION_CHANNEL_CONNECTION_STATE_UNKNOWN)
+        && (now > commMgrState->commNextRetryTime))
     {
         Log_Info(
             "Connecting to MQTT broker at hostname '%s', port: %d, keep-alive: %d",

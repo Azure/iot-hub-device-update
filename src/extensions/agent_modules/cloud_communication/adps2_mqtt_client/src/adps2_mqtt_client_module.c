@@ -272,7 +272,7 @@ bool ProcessDeviceRegistrationResponse(
     const char* status = json_object_get_string(json_object(root_value), "status");
     if (status == NULL)
     {
-        Log_Error("Failed to get status from JSON payload");
+        Log_Error("Failed to get 'status' from DPS payload");
         goto done;
     }
 
@@ -287,7 +287,7 @@ bool ProcessDeviceRegistrationResponse(
 
         if (deviceId == NULL)
         {
-            Log_Error("Failed to get deviceId from JSON payload:\n%s", payload);
+            Log_Error("Failed to get 'registrationState.deviceId' from DPS payload:\n%s", payload);
             errorOccurred = true;
         }
         else if (ADUC_StateStore_SetExternalDeviceId(deviceId) != ADUC_STATE_STORE_RESULT_OK)
@@ -301,7 +301,7 @@ bool ProcessDeviceRegistrationResponse(
 
         if (mqttBrokerHostname == NULL)
         {
-            Log_Error("Failed to get MQTT broker hostname from JSON payload");
+            Log_Error("Failed to get 'registrationState.assignedEndpoint.hostName' from DPS payload");
             errorOccurred = true;
         }
         else
