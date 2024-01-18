@@ -35,7 +35,7 @@
 
 #define WORKFLOW_PROPERTY_FIELD_ID "_id"
 #define WORKFLOW_PROPERTY_FIELD_RETRYTIMESTAMP "_retryTimestamp"
-#define WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID "workflow.id"
+#define WORKFLOW_PROPERTY_FIELD_WORKFLOW_ID "workflowId"
 #define WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_RETRYTIMESTAMP "workflow.retryTimestamp"
 #define WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ACTION "workflow.action"
 #define WORKFLOW_PROPERTY_FIELD_SANDBOX_ROOTPATH "_sandboxRootPath"
@@ -1241,7 +1241,7 @@ int workflow_get_step_index(ADUC_WorkflowHandle handle)
  * @param handle A workflow object handle.
  * @return Workflow id string.
  */
-const char* _workflow_peek_workflow_dot_id(ADUC_WorkflowHandle handle)
+const char* _workflow_peek_workflow_id(ADUC_WorkflowHandle handle)
 {
     if (handle == NULL)
     {
@@ -1250,9 +1250,9 @@ const char* _workflow_peek_workflow_dot_id(ADUC_WorkflowHandle handle)
 
     ADUC_Workflow* wf = workflow_from_handle(handle);
     if (wf->UpdateActionObject != NULL
-        && json_object_dothas_value(wf->UpdateActionObject, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID))
+        && json_object_has_value(wf->UpdateActionObject, WORKFLOW_PROPERTY_FIELD_WORKFLOW_ID))
     {
-        return json_object_dotget_string(wf->UpdateActionObject, WORKFLOW_PROPERTY_FIELD_WORKFLOW_DOT_ID);
+        return json_object_get_string(wf->UpdateActionObject, WORKFLOW_PROPERTY_FIELD_WORKFLOW_ID);
     }
 
     return NULL;
@@ -2508,7 +2508,7 @@ const char* workflow_peek_id(ADUC_WorkflowHandle handle)
     if (id == NULL)
     {
         // Return 'workflow.id' from Action json data.
-        id = _workflow_peek_workflow_dot_id(handle);
+        id = _workflow_peek_workflow_id(handle);
     }
 
     return id;
