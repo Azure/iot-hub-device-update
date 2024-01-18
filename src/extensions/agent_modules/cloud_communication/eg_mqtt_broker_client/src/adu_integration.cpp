@@ -362,7 +362,11 @@ JSON_Value* ADU_Integration_GetReportingJsonValue(
     //
     // WorkflowId top-level property
     //
-    if (!IsNullOrEmpty(workflow_peek_id(handle)))
+    if (IsNullOrEmpty(workflow_peek_id(handle)))
+    {
+        Log_Warn("null or empty workflow id");
+    }
+    else
     {
         if (json_object_set_string(rootObject, ADUCITF_FIELDNAME_WORKFLOWID, workflow_peek_id(handle)) != JSONSuccess)
         {

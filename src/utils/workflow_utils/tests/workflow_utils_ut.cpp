@@ -19,10 +19,7 @@ using Catch::Matchers::Equals;
 
 const char* action_parent_update =
     R"( {                       )"
-    R"(     "workflow": {       )"
-    R"(            "action": 3, )"
-    R"(            "id": "dcb112da-bfc9-47b7-b7ed-617feba1e6c4" )"
-    R"(        },   )"
+    R"(        "workflowId": "dcb112da-bfc9-47b7-b7ed-617feba1e6c4", )"
     R"(        "updateManifest": "{\"manifestVersion\":\"5\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"Virtual-Vacuum\",\"version\":\"20.0\"},\"compatibility\":[{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"virtual-vacuum-v1\"}],\"instructions\":{\"steps\":[{\"handler\":\"microsoft/apt:1\",\"files\":[\"f483750ebb885d32c\"],\"handlerProperties\":{\"installedCriteria\":\"apt-update-tree-1.0\"}},{\"type\":\"reference\",\"detachedManifestFileId\":\"f222b9ffefaaac577\"}]},\"files\":{\"f483750ebb885d32c\":{\"fileName\":\"apt-manifest-tree-1.0.json\",\"sizeInBytes\":136,\"hashes\":{\"sha256\":\"Uk1vsEL/nT4btMngo0YSJjheOL2aqm6/EAFhzPb0rXs=\"}},\"f222b9ffefaaac577\":{\"fileName\":\"contoso.contoso-virtual-motors.1.1.updatemanifest.json\",\"sizeInBytes\":1031,\"hashes\":{\"sha256\":\"9Rnjw7ThZhGacOGn3uvvVq0ccQTHc/UFSL9khR2oKsc=\"}}},\"createdDateTime\":\"2022-01-27T13:45:05.8993329Z\"}",  )"
     R"(        "updateManifestSignature": "eyJhbGciOiJSUzI1NiIsInNqd2siOiJleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SWtGRVZTNHlNREEzTURJdVVpSjkuZXlKcmRIa2lPaUpTVTBFaUxDSnVJam9pYkV4bWMwdHZPRmwwWW1Oak1sRXpUalV3VlhSTVNXWlhVVXhXVTBGRlltTm9LMFl2WTJVM1V6Rlpja3BvV0U5VGNucFRaa051VEhCVmFYRlFWSGMwZWxndmRHbEJja0ZGZFhrM1JFRmxWVzVGU0VWamVEZE9hM2QzZVRVdk9IcExaV3AyWTBWWWNFRktMMlV6UWt0SE5FVTBiMjVtU0ZGRmNFOXplSGRQUzBWbFJ6QkhkamwzVjB3emVsUmpUblprUzFoUFJGaEdNMVZRWlVveGIwZGlVRkZ0Y3pKNmJVTktlRUppZEZOSldVbDBiWFpwWTNneVpXdGtWbnBYUm5jdmRrdFVUblZMYXpob2NVczNTRkptYWs5VlMzVkxXSGxqSzNsSVVVa3dZVVpDY2pKNmEyc3plR2d4ZEVWUFN6azRWMHBtZUdKamFsQnpSRTgyWjNwWmVtdFlla05OZW1Fd1R6QkhhV0pDWjB4QlZGUTVUV1k0V1ZCd1dVY3lhblpQWVVSVmIwTlJiakpWWTFWU1RtUnNPR2hLWW5scWJscHZNa3B5SzFVNE5IbDFjVTlyTjBZMFdubFRiMEoyTkdKWVNrZ3lXbEpTV2tab0wzVlRiSE5XT1hkU2JWbG9XWEoyT1RGRVdtbHhhemhJVWpaRVUyeHVabTVsZFRJNFJsUm9SVzF0YjNOVlRUTnJNbGxNYzBKak5FSnZkWEIwTTNsaFNEaFpia3BVTnpSMU16TjFlakU1TDAxNlZIVnFTMmMzVkdGcE1USXJXR0owYmxwRU9XcFVSMkY1U25Sc2FFWmxWeXRJUXpVM1FYUkJSbHBvY1ZsM2VVZHJXQ3M0TTBGaFVGaGFOR0V4VHpoMU1qTk9WVWQxTWtGd04yOU5NVTR3ZVVKS0swbHNUM29pTENKbElqb2lRVkZCUWlJc0ltRnNaeUk2SWxKVE1qVTJJaXdpYTJsa0lqb2lRVVJWTGpJeE1EWXdPUzVTTGxNaWZRLlJLS2VBZE02dGFjdWZpSVU3eTV2S3dsNFpQLURMNnEteHlrTndEdkljZFpIaTBIa2RIZ1V2WnoyZzZCTmpLS21WTU92dXp6TjhEczhybXo1dnMwT1RJN2tYUG1YeDZFLUYyUXVoUXNxT3J5LS1aN2J3TW5LYTNkZk1sbkthWU9PdURtV252RWMyR0hWdVVTSzREbmw0TE9vTTQxOVlMNThWTDAtSEthU18xYmNOUDhXYjVZR08xZXh1RmpiVGtIZkNIU0duVThJeUFjczlGTjhUT3JETHZpVEtwcWtvM3RiSUwxZE1TN3NhLWJkZExUVWp6TnVLTmFpNnpIWTdSanZGbjhjUDN6R2xjQnN1aVQ0XzVVaDZ0M05rZW1UdV9tZjdtZUFLLTBTMTAzMFpSNnNTR281azgtTE1sX0ZaUmh4djNFZFNtR2RBUTNlMDVMRzNnVVAyNzhTQWVzWHhNQUlHWmcxUFE3aEpoZGZHdmVGanJNdkdTSVFEM09wRnEtZHREcEFXbUo2Zm5sZFA1UWxYek5tQkJTMlZRQUtXZU9BYjh0Yjl5aVhsemhtT1dLRjF4SzlseHpYUG9GNmllOFRUWlJ4T0hxTjNiSkVISkVoQmVLclh6YkViV2tFNm4zTEoxbkd5M1htUlVFcER0Umdpa0tBUzZybFhFT0VneXNjIn0.eyJzaGEyNTYiOiJqSW12eGpsc2pqZ29JeUJuYThuZTk2d0RYYlVsU3N6eGFoM0NibkF6STFJPSJ9.PzpvU13h6VhN8VHXUTYKAlpDW5t3JaQ-gs895_Q10XshKPYpeZUtViXGHGC-aQSQAYPhhYV-lLia9niXzZz4Qs4ehwFLHJfkmKR8eRwWvoOgJtAY0IIUA_8SeShmoOc9cdpC35N3OeaM4hV9shxvvrphDib5sLpkrv3LQrt3DHvK_L2n0HsybC-pwS7MzaSUIYoU-fXwZo6x3z7IbSaSNwS0P-50qeV99Mc0AUSIvB26GjmjZ2gEH5R3YD9kp0DOrYvE5tIymVHPTqkmunv2OrjKu2UOhNj8Om3RoVzxIkVM89cVGb1u1yB2kxEmXogXPz64cKqQWm22tV-jalS4dAc_1p9A9sKzZ632HxnlavOBjTKDGFgM95gg8M5npXBP3QIvkwW3yervCukViRUKIm-ljpDmnBJsZTMx0uzTaAk5XgoCUCADuLLol8EXB-0V4m2w-6tV6kAzRiwkqw1PRrGqplf-gmfU7TuFlQ142-EZLU5rK_dAiQRXx-f7LxNH",  )"
     R"(        "fileUrls": {    )"
@@ -36,21 +33,6 @@ const char* action_parent_update =
 const char* action_child_update_0 =
     R"( { "updateManifest":"{\"manifestVersion\":\"4\",\"updateId\":{\"provider\":\"contoso\",\"name\":\"contoso-virtual-motors\",\"version\":\"1.1\"},\"compatibility\":[{\"group\":\"motors\"}],\"instructions\":{\"steps\":[{\"handler\":\"microsoft/script:1\",\"files\":[\"f13b5435aab7c18da\",\"f2c5d1f3b0295db0f\"],\"handlerProperties\":{\"scriptFileName\":\"contoso-motor-installscript.sh\",\"arguments\":\"--firmware-file motor-firmware-1.1.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path\",\"installedCriteria\":\"contoso-contoso-virtual-motors-1.1-step-1\"}}]},\"files\":{\"f13b5435aab7c18da\":{\"fileName\":\"contoso-motor-installscript.sh\",\"sizeInBytes\":27030,\"hashes\":{\"sha256\":\"DYb4/+P3mq2yjq6n987msufTo3GUb5tpMtk+f7IeHx0=\"}},\"f2c5d1f3b0295db0f\":{\"fileName\":\"motor-firmware-1.1.json\",\"sizeInBytes\":123,\"hashes\":{\"sha256\":\"b8CC9E/93hUuMT19VjGVLDWGShq4GzpMYBO8vzlej74=\"}}},\"createdDateTime\":\"2022-01-27T13:45:05.8836909Z\"}"} )";
 
-const char* action_no_update_action_data =
-    R"( {                       )"
-    R"(     "workflow": {       )"
-    R"(            "id": "aaaaaaaa-bfc9-47b7-b7ed-617feba1e6c4" )"
-    R"(        },   )"
-    R"(        "updateManifest": "{\"manifestVersion\":\"4\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"Virtual-Vacuum\",\"version\":\"20.0\"},\"compatibility\":[{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"virtual-vacuum-v1\"}],\"instructions\":{\"steps\":[{\"handler\":\"microsoft/apt:1\",\"files\":[\"f483750ebb885d32c\"],\"handlerProperties\":{\"installedCriteria\":\"apt-update-tree-1.0\"}},{\"type\":\"reference\",\"detachedManifestFileId\":\"f222b9ffefaaac577\"}]},\"files\":{\"f483750ebb885d32c\":{\"fileName\":\"apt-manifest-tree-1.0.json\",\"sizeInBytes\":136,\"hashes\":{\"sha256\":\"Uk1vsEL/nT4btMngo0YSJjheOL2aqm6/EAFhzPb0rXs=\"}},\"f222b9ffefaaac577\":{\"fileName\":\"contoso.contoso-virtual-motors.1.1.updatemanifest.json\",\"sizeInBytes\":1031,\"hashes\":{\"sha256\":\"9Rnjw7ThZhGacOGn3uvvVq0ccQTHc/UFSL9khR2oKsc=\"}}},\"createdDateTime\":\"2022-01-27T13:45:05.8993329Z\"}",  )"
-    R"(        "updateManifestSignature": "eyJhbGciOiJSUzI1NiIsInNqd2siOiJleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SWtGRVZTNHlNREEzTURJdVVpSjkuZXlKcmRIa2lPaUpTVTBFaUxDSnVJam9pYkV4bWMwdHZPRmwwWW1Oak1sRXpUalV3VlhSTVNXWlhVVXhXVTBGRlltTm9LMFl2WTJVM1V6Rlpja3BvV0U5VGNucFRaa051VEhCVmFYRlFWSGMwZWxndmRHbEJja0ZGZFhrM1JFRmxWVzVGU0VWamVEZE9hM2QzZVRVdk9IcExaV3AyWTBWWWNFRktMMlV6UWt0SE5FVTBiMjVtU0ZGRmNFOXplSGRQUzBWbFJ6QkhkamwzVjB3emVsUmpUblprUzFoUFJGaEdNMVZRWlVveGIwZGlVRkZ0Y3pKNmJVTktlRUppZEZOSldVbDBiWFpwWTNneVpXdGtWbnBYUm5jdmRrdFVUblZMYXpob2NVczNTRkptYWs5VlMzVkxXSGxqSzNsSVVVa3dZVVpDY2pKNmEyc3plR2d4ZEVWUFN6azRWMHBtZUdKamFsQnpSRTgyWjNwWmVtdFlla05OZW1Fd1R6QkhhV0pDWjB4QlZGUTVUV1k0V1ZCd1dVY3lhblpQWVVSVmIwTlJiakpWWTFWU1RtUnNPR2hLWW5scWJscHZNa3B5SzFVNE5IbDFjVTlyTjBZMFdubFRiMEoyTkdKWVNrZ3lXbEpTV2tab0wzVlRiSE5XT1hkU2JWbG9XWEoyT1RGRVdtbHhhemhJVWpaRVUyeHVabTVsZFRJNFJsUm9SVzF0YjNOVlRUTnJNbGxNYzBKak5FSnZkWEIwTTNsaFNEaFpia3BVTnpSMU16TjFlakU1TDAxNlZIVnFTMmMzVkdGcE1USXJXR0owYmxwRU9XcFVSMkY1U25Sc2FFWmxWeXRJUXpVM1FYUkJSbHBvY1ZsM2VVZHJXQ3M0TTBGaFVGaGFOR0V4VHpoMU1qTk9WVWQxTWtGd04yOU5NVTR3ZVVKS0swbHNUM29pTENKbElqb2lRVkZCUWlJc0ltRnNaeUk2SWxKVE1qVTJJaXdpYTJsa0lqb2lRVVJWTGpJeE1EWXdPUzVTTGxNaWZRLlJLS2VBZE02dGFjdWZpSVU3eTV2S3dsNFpQLURMNnEteHlrTndEdkljZFpIaTBIa2RIZ1V2WnoyZzZCTmpLS21WTU92dXp6TjhEczhybXo1dnMwT1RJN2tYUG1YeDZFLUYyUXVoUXNxT3J5LS1aN2J3TW5LYTNkZk1sbkthWU9PdURtV252RWMyR0hWdVVTSzREbmw0TE9vTTQxOVlMNThWTDAtSEthU18xYmNOUDhXYjVZR08xZXh1RmpiVGtIZkNIU0duVThJeUFjczlGTjhUT3JETHZpVEtwcWtvM3RiSUwxZE1TN3NhLWJkZExUVWp6TnVLTmFpNnpIWTdSanZGbjhjUDN6R2xjQnN1aVQ0XzVVaDZ0M05rZW1UdV9tZjdtZUFLLTBTMTAzMFpSNnNTR281azgtTE1sX0ZaUmh4djNFZFNtR2RBUTNlMDVMRzNnVVAyNzhTQWVzWHhNQUlHWmcxUFE3aEpoZGZHdmVGanJNdkdTSVFEM09wRnEtZHREcEFXbUo2Zm5sZFA1UWxYek5tQkJTMlZRQUtXZU9BYjh0Yjl5aVhsemhtT1dLRjF4SzlseHpYUG9GNmllOFRUWlJ4T0hxTjNiSkVISkVoQmVLclh6YkViV2tFNm4zTEoxbkd5M1htUlVFcER0Umdpa0tBUzZybFhFT0VneXNjIn0.eyJzaGEyNTYiOiJqSW12eGpsc2pqZ29JeUJuYThuZTk2d0RYYlVsU3N6eGFoM0NibkF6STFJPSJ9.PzpvU13h6VhN8VHXUTYKAlpDW5t3JaQ-gs895_Q10XshKPYpeZUtViXGHGC-aQSQAYPhhYV-lLia9niXzZz4Qs4ehwFLHJfkmKR8eRwWvoOgJtAY0IIUA_8SeShmoOc9cdpC35N3OeaM4hV9shxvvrphDib5sLpkrv3LQrt3DHvK_L2n0HsybC-pwS7MzaSUIYoU-fXwZo6x3z7IbSaSNwS0P-50qeV99Mc0AUSIvB26GjmjZ2gEH5R3YD9kp0DOrYvE5tIymVHPTqkmunv2OrjKu2UOhNj8Om3RoVzxIkVM89cVGb1u1yB2kxEmXogXPz64cKqQWm22tV-jalS4dAc_1p9A9sKzZ632HxnlavOBjTKDGFgM95gg8M5npXBP3QIvkwW3yervCukViRUKIm-ljpDmnBJsZTMx0uzTaAk5XgoCUCADuLLol8EXB-0V4m2w-6tV6kAzRiwkqw1PRrGqplf-gmfU7TuFlQ142-EZLU5rK_dAiQRXx-f7LxNH",  )"
-    R"(        "fileUrls": {    )"
-    R"(            "f483750ebb885d32c": "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/e5cc19d5e9174c93ada35cc315f1fb1d/apt-manifest-tree-1.0.json",      )"
-    R"(            "f222b9ffefaaac577": "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/31c38c3340a84e38ae8d30ce340f4a49/contoso.contoso-virtual-motors.1.1.updatemanifest.json",  )"
-    R"(            "f2c5d1f3b0295db0f": "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/9ff068f7c2bf43eb9561da14a7cbcecd/motor-firmware-1.1.json",         )"
-    R"(            "f13b5435aab7c18da": "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/c02058a476a242d7bc0e3c576c180051/contoso-motor-installscript.sh"   )"
-    R"(        }    )"
-    R"( } )";
-
 // clang-format on
 
 TEST_CASE("Initialization test")
@@ -60,9 +42,6 @@ TEST_CASE("Initialization test")
 
     CHECK(result.ResultCode != 0);
     CHECK(result.ExtendedResultCode == 0);
-
-    auto action = workflow_get_action(handle);
-    REQUIRE(action == ADUCITF_UpdateAction_ProcessDeployment);
 
     // Get and set id.
     char* id = workflow_get_id(handle);
@@ -100,24 +79,6 @@ TEST_CASE("Initialization test")
     workflow_free_string(updateId);
 
     workflow_uninit(handle);
-
-    // After free, 'action' should no longer valid.
-    action = workflow_get_action(handle);
-    CHECK(action < 0);
-
-    workflow_free(handle);
-}
-
-TEST_CASE("Undefined update action")
-{
-    ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result result = workflow_init(action_no_update_action_data, false /* validateManifest */, &handle);
-
-    CHECK(result.ResultCode != 0);
-    CHECK(result.ExtendedResultCode == 0);
-
-    auto action = workflow_get_action(handle);
-    REQUIRE(action == ADUCITF_UpdateAction_Undefined);
 
     workflow_free(handle);
 }
@@ -547,10 +508,7 @@ TEST_CASE("Mininum update manifest version check - 1")
 #define WORKFLOW_ID_COMPARE_0_UUID "aaaaaaaa-bfc9-47b7-b7ed-617feba1e6c4"
 const char* manifest_workflow_id_compare_0 =
     R"( {                       )"
-    R"(     "workflow": {       )"
-    R"(            "action": 3, )"
-    R"(            "id": "aaaaaaaa-bfc9-47b7-b7ed-617feba1e6c4" )"
-    R"(        },   )"
+    R"(        "workflowId": "aaaaaaaa-bfc9-47b7-b7ed-617feba1e6c4", )"
     R"(        "updateManifest": "{\"manifestVersion\":\"4\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"Virtual-Vacuum\",\"version\":\"20.0\"},\"compatibility\":[{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"virtual-vacuum-v1\"}],\"instructions\":{\"steps\":[{\"handler\":\"microsoft/apt:1\",\"files\":[\"f483750ebb885d32c\"],\"handlerProperties\":{\"installedCriteria\":\"apt-update-tree-1.0\"}},{\"type\":\"reference\",\"detachedManifestFileId\":\"f222b9ffefaaac577\"}]},\"files\":{\"f483750ebb885d32c\":{\"fileName\":\"apt-manifest-tree-1.0.json\",\"sizeInBytes\":136,\"hashes\":{\"sha256\":\"Uk1vsEL/nT4btMngo0YSJjheOL2aqm6/EAFhzPb0rXs=\"}},\"f222b9ffefaaac577\":{\"fileName\":\"contoso.contoso-virtual-motors.1.1.updatemanifest.json\",\"sizeInBytes\":1031,\"hashes\":{\"sha256\":\"9Rnjw7ThZhGacOGn3uvvVq0ccQTHc/UFSL9khR2oKsc=\"}}},\"createdDateTime\":\"2022-01-27T13:45:05.8993329Z\"}",  )"
     R"(        "updateManifestSignature": "eyJhbGciOiJSUzI1NiIsInNqd2siOiJleUpoYkdjaU9pSlNVekkxTmlJc0ltdHBaQ0k2SWtGRVZTNHlNREEzTURJdVVpSjkuZXlKcmRIa2lPaUpTVTBFaUxDSnVJam9pYkV4bWMwdHZPRmwwWW1Oak1sRXpUalV3VlhSTVNXWlhVVXhXVTBGRlltTm9LMFl2WTJVM1V6Rlpja3BvV0U5VGNucFRaa051VEhCVmFYRlFWSGMwZWxndmRHbEJja0ZGZFhrM1JFRmxWVzVGU0VWamVEZE9hM2QzZVRVdk9IcExaV3AyWTBWWWNFRktMMlV6UWt0SE5FVTBiMjVtU0ZGRmNFOXplSGRQUzBWbFJ6QkhkamwzVjB3emVsUmpUblprUzFoUFJGaEdNMVZRWlVveGIwZGlVRkZ0Y3pKNmJVTktlRUppZEZOSldVbDBiWFpwWTNneVpXdGtWbnBYUm5jdmRrdFVUblZMYXpob2NVczNTRkptYWs5VlMzVkxXSGxqSzNsSVVVa3dZVVpDY2pKNmEyc3plR2d4ZEVWUFN6azRWMHBtZUdKamFsQnpSRTgyWjNwWmVtdFlla05OZW1Fd1R6QkhhV0pDWjB4QlZGUTVUV1k0V1ZCd1dVY3lhblpQWVVSVmIwTlJiakpWWTFWU1RtUnNPR2hLWW5scWJscHZNa3B5SzFVNE5IbDFjVTlyTjBZMFdubFRiMEoyTkdKWVNrZ3lXbEpTV2tab0wzVlRiSE5XT1hkU2JWbG9XWEoyT1RGRVdtbHhhemhJVWpaRVUyeHVabTVsZFRJNFJsUm9SVzF0YjNOVlRUTnJNbGxNYzBKak5FSnZkWEIwTTNsaFNEaFpia3BVTnpSMU16TjFlakU1TDAxNlZIVnFTMmMzVkdGcE1USXJXR0owYmxwRU9XcFVSMkY1U25Sc2FFWmxWeXRJUXpVM1FYUkJSbHBvY1ZsM2VVZHJXQ3M0TTBGaFVGaGFOR0V4VHpoMU1qTk9WVWQxTWtGd04yOU5NVTR3ZVVKS0swbHNUM29pTENKbElqb2lRVkZCUWlJc0ltRnNaeUk2SWxKVE1qVTJJaXdpYTJsa0lqb2lRVVJWTGpJeE1EWXdPUzVTTGxNaWZRLlJLS2VBZE02dGFjdWZpSVU3eTV2S3dsNFpQLURMNnEteHlrTndEdkljZFpIaTBIa2RIZ1V2WnoyZzZCTmpLS21WTU92dXp6TjhEczhybXo1dnMwT1RJN2tYUG1YeDZFLUYyUXVoUXNxT3J5LS1aN2J3TW5LYTNkZk1sbkthWU9PdURtV252RWMyR0hWdVVTSzREbmw0TE9vTTQxOVlMNThWTDAtSEthU18xYmNOUDhXYjVZR08xZXh1RmpiVGtIZkNIU0duVThJeUFjczlGTjhUT3JETHZpVEtwcWtvM3RiSUwxZE1TN3NhLWJkZExUVWp6TnVLTmFpNnpIWTdSanZGbjhjUDN6R2xjQnN1aVQ0XzVVaDZ0M05rZW1UdV9tZjdtZUFLLTBTMTAzMFpSNnNTR281azgtTE1sX0ZaUmh4djNFZFNtR2RBUTNlMDVMRzNnVVAyNzhTQWVzWHhNQUlHWmcxUFE3aEpoZGZHdmVGanJNdkdTSVFEM09wRnEtZHREcEFXbUo2Zm5sZFA1UWxYek5tQkJTMlZRQUtXZU9BYjh0Yjl5aVhsemhtT1dLRjF4SzlseHpYUG9GNmllOFRUWlJ4T0hxTjNiSkVISkVoQmVLclh6YkViV2tFNm4zTEoxbkd5M1htUlVFcER0Umdpa0tBUzZybFhFT0VneXNjIn0.eyJzaGEyNTYiOiJqSW12eGpsc2pqZ29JeUJuYThuZTk2d0RYYlVsU3N6eGFoM0NibkF6STFJPSJ9.PzpvU13h6VhN8VHXUTYKAlpDW5t3JaQ-gs895_Q10XshKPYpeZUtViXGHGC-aQSQAYPhhYV-lLia9niXzZz4Qs4ehwFLHJfkmKR8eRwWvoOgJtAY0IIUA_8SeShmoOc9cdpC35N3OeaM4hV9shxvvrphDib5sLpkrv3LQrt3DHvK_L2n0HsybC-pwS7MzaSUIYoU-fXwZo6x3z7IbSaSNwS0P-50qeV99Mc0AUSIvB26GjmjZ2gEH5R3YD9kp0DOrYvE5tIymVHPTqkmunv2OrjKu2UOhNj8Om3RoVzxIkVM89cVGb1u1yB2kxEmXogXPz64cKqQWm22tV-jalS4dAc_1p9A9sKzZ632HxnlavOBjTKDGFgM95gg8M5npXBP3QIvkwW3yervCukViRUKIm-ljpDmnBJsZTMx0uzTaAk5XgoCUCADuLLol8EXB-0V4m2w-6tV6kAzRiwkqw1PRrGqplf-gmfU7TuFlQ142-EZLU5rK_dAiQRXx-f7LxNH",  )"
     R"(        "fileUrls": {    )"
@@ -564,10 +522,7 @@ const char* manifest_workflow_id_compare_0 =
 #define WORKFLOW_ID_COMPARE_1_UUID "dcb112da-bfc9-47b7-b7ed-617feba1e6c4"
 const char* manifest_workflow_id_compare_1 =
     R"( {                       )"
-    R"(     "workflow": {       )"
-    R"(            "action": 3, )"
-    R"(            "id": "dcb112da-bfc9-47b7-b7ed-617feba1e6c4" )"
-    R"(        },   )"
+    R"(        "workflowId": "dcb112da-bfc9-47b7-b7ed-617feba1e6c4", )"
     R"(        "updateManifest": "{\"manifestVersion\":\"5\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"Virtual-Vacuum\",\"version\":\"20.0\"},\"compatibility\":[{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"virtual-vacuum-v1\"}],\"instructions\":{\"steps\":[{\"handler\":\"microsoft/apt:1\",\"files\":[\"f483750ebb885d32c\"],\"handlerProperties\":{\"installedCriteria\":\"apt-update-tree-1.0\"}},{\"type\":\"reference\",\"detachedManifestFileId\":\"f222b9ffefaaac577\"}]},\"files\":{\"f483750ebb885d32c\":{\"fileName\":\"apt-manifest-tree-1.0.json\",\"sizeInBytes\":136,\"hashes\":{\"sha256\":\"Uk1vsEL/nT4btMngo0YSJjheOL2aqm6/EAFhzPb0rXs=\"}},\"f222b9ffefaaac577\":{\"fileName\":\"contoso.contoso-virtual-motors.1.1.updatemanifest.json\",\"sizeInBytes\":1031,\"hashes\":{\"sha256\":\"9Rnjw7ThZhGacOGn3uvvVq0ccQTHc/UFSL9khR2oKsc=\"}}},\"createdDateTime\":\"2022-01-27T13:45:05.8993329Z\"}",  )"
     R"(        "updateManifestSignature": "somesignature",  )"
     R"(        "fileUrls": {    )"
