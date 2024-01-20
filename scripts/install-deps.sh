@@ -87,7 +87,7 @@ catch2_cxx=""
 
 # Dependencies packages
 # For libmosquitto-dev
-sudo apt-add-repository ppa:mosquitto-dev/mosquitto-ppa -y
+$SUDO apt-add-repository ppa:mosquitto-dev/mosquitto-ppa -y
 aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'libxml2-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config' 'libmosquitto-dev')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=('gcc' 'g++')
