@@ -26,7 +26,7 @@
 print_help() {
     echo "Usage: sas_vm_setup.sh [OPTIONS]"
     echo "Options:"
-    echo "  -d, --distro       Distribution and version (e.g. ubuntu-18.04, debian-10)"
+    echo "  -d, --distro       Distribution and version (e.g. ubuntu-20.04, debian-10)"
     echo "  -a, --architecture Architecture (e.g. amd64, arm64)"
     echo "  -s, --self-upgrade Testing the self upgrade scenario, setup is different."
     echo "  -h, --help         Show this help message."
@@ -87,9 +87,7 @@ function configure_apt_repository() {
     version=$(echo "$distro_full" | cut -d'-' -f2)
 
     if [ "$distro" == "ubuntu" ]; then
-        if [ "$version" == "18.04" ]; then
-            package_url="https://packages.microsoft.com/config/ubuntu/18.04/multiarch/packages-microsoft-prod.deb"
-        elif [ "$version" == "20.04" ]; then
+        if [ "$version" == "20.04" ]; then
             package_url="https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb"
         elif [ "$version" == "22.04" ]; then
             package_url="https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb"
@@ -140,17 +138,11 @@ function install_do() {
     version=$(echo "$distro_full" | cut -d'-' -f2)
 
     if [ "$distro" == "ubuntu" ]; then
-        if [ "$version" == "18.04" ] && [ "$architecture" == "amd64" ]; then
-            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu1804_x64-packages.tar"
-            package_filename="ubuntu18_x64-packages.tar"
-        elif [ "$version" == "18.04" ] && [ "$architecture" == "arm64" ]; then
-            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu1804_arm64-packages.tar"
-            package_filename="ubuntu1804_arm64-packages.tar"
-        elif [ "$version" == "20.04" ] && [ "$architecture" == "amd64" ]; then
-            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_x64-packages.tar"
+        if [ "$version" == "20.04" ] && [ "$architecture" == "amd64" ]; then
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/ubuntu2004_x64-packages.tar"
             package_filename="ubuntu20_x64-packages.tar"
         elif [ "$version" == "20.04" ] && [ "$architecture" == "arm64" ]; then
-            package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/ubuntu2004_arm64-packages.tar"
+            package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/ubuntu2004_arm64-packages.tar"
             package_filename="ubuntu20_arm64-packages.tar"
         elif [ "$version" == "22.04" ] && [ "$architecture" == "amd64" ]; then
             package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/ubuntu2204_x64-packages.tar"
@@ -160,14 +152,14 @@ function install_do() {
             package_filename="ubuntu2204_arm64-packages.tar"
         fi
     elif [ "$distro" == "debian" ] && [ "$version" == "10" ] && [ "$architecture" == "amd64" ]; then
-        package_url="https://github.com/microsoft/do-client/releases/download/v1.0.0/debian10_x64-packages.tar"
+        package_url="https://github.com/microsoft/do-client/releases/download/v1.1.0/debian10_x64-packages.tar"
         package_filename="debian10_x64-packages.tar"
     fi
 
     if [ -n "$package_url" ] && [ -n "$package_filename" ]; then
         wget "$package_url" -O "$package_filename"
         tar -xf "$package_filename"
-        sudo apt-get install -y ./deliveryoptimization-agent_1.0.0_"$architecture".deb ./deliveryoptimization-plugin-apt_0.5.1_"$architecture".deb ./libdeliveryoptimization_1.0.0_"$architecture".deb
+        sudo apt-get install -y ./deliveryoptimization-agent_1.1.0_"$architecture".deb ./deliveryoptimization-plugin-apt_0.5.1_"$architecture".deb ./libdeliveryoptimization_1.1.0_"$architecture".deb
     else
         echo "Unsupported distro, version or architecture"
         exit 1
