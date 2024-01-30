@@ -2,7 +2,7 @@
 # Consume this steps template in one or more jobs by passing in parameter values.
 
 parameters:
-    - name: targetOs # example: ubuntu1804
+    - name: targetOs # example: ubuntu2204
       type: string
     - name: targetArch # example: amd64
       type: string
