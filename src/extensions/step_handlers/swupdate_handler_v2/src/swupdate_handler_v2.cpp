@@ -332,10 +332,41 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
     memset(&fileEntity, 0, sizeof(fileEntity));
     size_t fileCount = workflow_get_update_files_count(workflowHandle);
     ADUC_Result result = SWUpdate_Handler_DownloadScriptFile(workflowHandle);
+    bool retry = false;
+    std::ifstream omnectValidateUpdateFailedFilePath("/run/omnect-device-service/omnect_validate_update_failed");
+    const char* runtimeDir = std::getenv("RUNTIME_DIRECTORY");
+    std::string omnectUpdateRetryFileName("/omnect_update_retry");
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         goto done;
+    }
+
+    if (NULL == runtimeDir)
+    {
+        Log_Error("Update validation on new boot part failed. Rebooted to old boot part.");
+    }
+    else
+    {
+        std::ifstream omnectUpdateRetryFilePath(std::string(runtimeDir) + omnectUpdateRetryFileName);
+        retry = omnectUpdateRetryFilePath.good();
+    }
+
+    // We return with an error in case we just booted into here after an update validation
+    // failed on the new partition. We do this in order to step into update failed state
+    // which also shows up in ADU cloud and offers triggering an update retry.
+    // If the cloud triggered a retry we ignore omnect_validate_update_failed flag.
+    if (omnectValidateUpdateFailedFilePath.good())
+    {
+        if (!retry)
+        {
+            result = { ADUC_Result_Failure };
+            Log_Error("Update validation on new boot part failed. Rebooted to old boot part.");
+            result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_VALIDATION;
+            goto done;
+        }
+
+        Log_Info("Retry update after failed update vailidation.");
     }
 
     // Determine whether to continue downloading the rest.

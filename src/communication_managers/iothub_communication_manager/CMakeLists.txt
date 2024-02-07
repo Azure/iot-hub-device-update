@@ -29,7 +29,8 @@ target_link_libraries (
             aduc::eis_utils
             aduc::logging
             aduc::retry_utils
-            aduc::url_utils)
+            aduc::url_utils
+            systemd)
 
 target_link_libraries (${target_name} PRIVATE libaducpal)
 

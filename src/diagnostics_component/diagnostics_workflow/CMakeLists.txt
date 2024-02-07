@@ -16,7 +16,7 @@ find_package (Parson REQUIRED)
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
 if (NOT WIN32)
-    target_link_libraries (${target_name} PRIVATE diagnostic_utils::file_upload_utility)
+#     target_link_libraries (${target_name} PRIVATE diagnostic_utils::file_upload_utility)
 endif ()
 
 target_link_libraries (

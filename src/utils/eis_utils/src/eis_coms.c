@@ -140,7 +140,7 @@ typedef struct tagEIS_HTTP_WORKLOAD_CONTEXT
 /**
  * @brief Maximum amount of bytes for any EIS response
  */
-#define EIS_RESP_SIZE_MAX 4096
+#define EIS_RESP_SIZE_MAX 16384
 
 //
 // HTTP Functions

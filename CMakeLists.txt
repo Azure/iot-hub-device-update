@@ -200,7 +200,7 @@ set (
     ADUC_STEP_HANDLER_NAME_TO_DIRECOTRY_MAP
     "microsoft/apt,apt_handler" "microsoft/script,script_handler"
     "microsoft/simulator,simulator_handler" "microsoft/swupdate_v2,swupdate_handler_v2"
-    "microsoft/wim,wim_handler")
+    "microsoft/wim,wim_handler" "omnect/swupdate_consent_v1,swupdate_consent_handler")
 
 if (WIN32)
     set (
@@ -380,6 +380,11 @@ set (
     SYSLOG_FILE_GROUP
     "syslog"
     CACHE STRING "The syslog group.")
+
+set (
+    ADUC_STORAGE_PATH
+    "/"
+    CACHE STRING "Path to mounted storage which will be considered to compute total storage")
 
 set (
     ADUC_IOT_HUB_PROTOCOL

@@ -14,7 +14,9 @@
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h> // PRIu64
+#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <time.h>
 
@@ -418,8 +420,30 @@ void ADUC_Workflow_HandlePropertyUpdate(
     ADUC_WorkflowData* currentWorkflowData, const unsigned char* propertyUpdateValue, bool forceUpdate)
 {
     ADUC_WorkflowHandle nextWorkflow;
+    const char omnectValidateUpdateFailedFilePath[FILENAME_MAX] =
+        "/run/omnect-device-service/omnect_validate_update_failed";
+    const char* serviceRuntimeDir = getenv("RUNTIME_DIRECTORY"); // created by deviceupdate-agent.service
+    const char* omnectUpdateRetryFileName = "/omnect_update_retry";
+    char* omnectUpdateRetryFilePath = NULL;
 
     ADUC_Result result = workflow_init((const char*)propertyUpdateValue, true /* shouldValidate */, &nextWorkflow);
+
+    if (NULL == serviceRuntimeDir)
+    {
+        Log_Error("RUNTIME_DIRECTORY was not found.");
+        return;
+    }
+
+    if (NULL
+        != (omnectUpdateRetryFilePath = malloc(strlen(serviceRuntimeDir) + strlen(omnectUpdateRetryFileName) + 1)))
+    {
+        strcpy(omnectUpdateRetryFilePath, serviceRuntimeDir);
+        strcat(omnectUpdateRetryFilePath, omnectUpdateRetryFileName);
+    }
+    else
+    {
+        Log_Error("Cannot allocate omnectUpdateRetryFilePath.");
+    }
 
     workflow_set_force_update(nextWorkflow, forceUpdate);
 
@@ -490,6 +514,21 @@ void ADUC_Workflow_HandlePropertyUpdate(
                 }
 
                 Log_Debug("Retry %s is applicable", newRetryToken);
+
+                // If omnect_validate_update_failed file barrier is present and an update retry was
+                // triggered by cloud, we create omnect_update_retry file in order to try to install
+                // the update again.
+                FILE* fp;
+
+                Log_Debug("Retry: '%s' detected.", omnectValidateUpdateFailedFilePath);
+                if ((NULL == omnectUpdateRetryFilePath) || (NULL == (fp = fopen(omnectUpdateRetryFilePath, "w"))))
+                {
+                    Log_Error("Cannot create '%s'", omnectUpdateRetryFilePath);
+                }
+                else
+                {
+                    fclose(fp);
+                }
 
                 // Sets both cancellation type to Retry and updates the current retry token
                 workflow_update_retry_deployment(currentWorkflowData->WorkflowHandle, newRetryToken);
@@ -971,7 +1010,6 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
                     // Reset workflow state to process deployment and transfer
                     // the deferred workflow to current.
                     workflow_update_for_replacement(workflowData->WorkflowHandle);
-
                 }
                 else
                 {

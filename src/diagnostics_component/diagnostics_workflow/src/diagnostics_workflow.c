@@ -11,7 +11,7 @@
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
 
-#if defined(_WIN32)
+// #if defined(_WIN32)
 typedef struct tagBlobStorageInfo
 {
     STRING_HANDLE virtualDirectoryPath; //!< Virtual hierarchy for the blobs
@@ -27,9 +27,9 @@ static bool FileUploadUtility_UploadFilesToContainer(
 
     return false;
 }
-#else
-#    include <file_upload_utility.h>
-#endif
+// #else
+// #    include <file_upload_utility.h>
+// #endif
 
 #include <diagnostics_config_utils.h>
 #include <diagnostics_devicename.h>

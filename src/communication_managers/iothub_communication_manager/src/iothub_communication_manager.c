@@ -39,6 +39,8 @@
 #include <stdlib.h> // strtol
 #include <sys/stat.h>
 
+#include <systemd/sd-daemon.h>
+
 /**
  * @brief A pointer to ADUC_ClientHandle data. This must be initialize by the component that creates the IoT Hub connection.
  */
@@ -58,6 +60,11 @@ static IOTHUB_CLIENT_DEVICE_TWIN_CALLBACK g_device_twin_callback = NULL;
  * @brief A boolean indicates whether the IoT Hub client has been initialized.
  */
 static bool g_iothub_client_initialized = false;
+
+/**
+ * @brief A boolean indicates whether the IoT Hub client was once authenticated to iothub.
+ */
+static bool g_iothub_client_authenticated_once = false;
 
 /**
  * @brief An additional data context used the caller.
@@ -215,6 +222,11 @@ void IoTHub_CommunicationManager_ConnectionStatus_Callback(
     case IOTHUB_CLIENT_CONNECTION_AUTHENTICATED:
         g_last_authenticated_time = now_time;
         g_authentication_retries = 0;
+        if (false == g_iothub_client_authenticated_once)
+        {
+            sd_notify(0, "READY=1");
+            g_iothub_client_authenticated_once = true;
+        }
         break;
     case IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED:
         if (g_last_authenticated_time >= g_first_unauthenticated_time)

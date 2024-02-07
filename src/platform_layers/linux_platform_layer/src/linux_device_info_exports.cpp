@@ -449,7 +449,7 @@ static char* DeviceInfo_GetTotalStorage()
     {
     };
 
-    if (statvfs("/", &buf) == -1)
+    if (statvfs(ADUC_STORAGE_PATH, &buf) == -1)
     {
         Log_Error("statvfs failed, error: %d", errno);
         return nullptr;

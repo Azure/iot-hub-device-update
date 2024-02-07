@@ -370,6 +370,10 @@
                             "value": 769
                         },
                         {
+                            "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_VALIDATION",
+                            "value": 800
+                        },
+                        {
                             "name": "ADUC_ERC_SWUPDATE_HANDLER_CANCEL_FAILURE",
                             "value": 1024
                         },
