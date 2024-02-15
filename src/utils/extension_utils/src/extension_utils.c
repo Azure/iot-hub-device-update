@@ -265,7 +265,7 @@ static bool RegisterHandlerExtension(
         goto done;
     }
 
-    long fileSize = bS.st_size;
+    long long fileSize = bS.st_size;
     if (!ADUC_HashUtils_GetFileHash(handlerFilePath, SHA256, &hash))
     {
         goto done;
@@ -483,7 +483,7 @@ bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
         goto done;
     }
 
-    long fileSize = bS.st_size;
+    long long fileSize = bS.st_size;
 
     if (!ADUC_HashUtils_GetFileHash(extensionFilePath, SHA256, &hash))
     {
