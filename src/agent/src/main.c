@@ -812,7 +812,7 @@ done:
  */
 void ShutdownAgent()
 {
-    Log_Warn("Agent is shutting down.");
+    Log_Info("Agent is shutting down.");
     ADUC_D2C_Messaging_Uninit();
 #ifdef ADUC_COMMAND_HELPER_H
     UninitializeCommandListenerThread();
@@ -831,7 +831,7 @@ void ShutdownAgent()
  */
 void OnShutdownSignal(int sig)
 {
-    Log_Warn("Shutdown signal detected: %s", sig);
+    Log_Warn("Shutdown signal detected: %d", sig);
     ADUC_ShutdownService_RequestShutdown();
 }
 
