@@ -106,7 +106,7 @@ For example:
 
 ```
 
-In this [example update script](./tests/testdata/adu-yocto-ab-rootfs-update/example-a-b-update-2.1.sh), it simply compares the given 'installedCriteria' value (8.0.1.0001) to a content of `adu-version` file (located at /etc/adu-version folder).
+In this [example update script](./tests/testdata/adu-yocto-ab-rootfs-update/payloads/example-a-b-update.sh), it simply compares the given 'installedCriteria' value (8.0.1.0001) to a content of `adu-version` file (located at /etc/adu-version folder).
 
 The algorithm for evaluating `installedCriteria` can be 100% customized to fit your device design and requirements.
 
