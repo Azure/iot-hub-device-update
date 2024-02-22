@@ -7,7 +7,6 @@
  */
 
 #include "aduc/url_utils.h"
-#include "aduc/http_url.h"
 #include "aduc/string_c_utils.h"
 #include <string.h>
 
