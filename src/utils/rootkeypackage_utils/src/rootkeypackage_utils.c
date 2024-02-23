@@ -8,7 +8,7 @@
 #include "aduc/rootkeypackage_utils.h"
 #include "aduc/rootkeypackage_json_properties.h"
 #include "aduc/rootkeypackage_parse.h"
-#include <aduc/c_utils.h> // for EXTERN_C_BEGIN, EXTERN_C_END, HTTP_URL_HANDLE
+#include <aduc/c_utils.h> // for EXTERN_C_BEGIN, EXTERN_C_END
 #include <aduc/string_c_utils.h> // for IsNullOrEmpty
 #include <azure_c_shared_utility/string_token.h>
 #include <azure_c_shared_utility/strings.h>
