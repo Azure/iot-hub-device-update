@@ -379,6 +379,16 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
         goto done;
     }
 
+    // we return with an error in case downgrade or equal software version
+    result = PerformAction("is-installable", workflowData);
+    if (result.ResultCode == ADUC_Result_Failure)
+    {
+        result = { ADUC_Result_Failure };
+        Log_Error("Downgrade not allowed!");
+        result.ExtendedResultCode = ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_WRONG_UPDATE_VERSION;
+        goto done;
+    }
+
     result = { ADUC_Result_Download_Success };
 
     for (int i = 0; i < fileCount; i++)

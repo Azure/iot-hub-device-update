@@ -577,11 +577,17 @@ void ADUC_Workflow_HandlePropertyUpdate(
 
                     Log_Debug("deferral not needed. Processing '%s' now", workflow_peek_id(nextWorkflow));
 
-                    workflow_transfer_data(
-                        currentWorkflowData->WorkflowHandle /* wfTarget */, nextWorkflow /* wfSource */);
+                    // We don't use reuse currentWorkflowData.
+                    // currentWorkflow is current resp. **old** workflow before cloud updated with nextWorkflow (**current** incoming).
+                    // workflow_transfer_data only works if version to update is equal in currentWorkflow and nextWorkflow.
+                    // Thus we disable copying transfer data between workflows and don't use currentWorkflow (**old**).
+                    // Thus we use nextWorkflow (**current** incoming).
 
-                    ADUC_Workflow_HandleUpdateAction(currentWorkflowData);
-                    goto done;
+                    // workflow_transfer_data(
+                    //     currentWorkflowData->WorkflowHandle /* wfTarget */, nextWorkflow /* wfSource */);
+
+                    // ADUC_Workflow_HandleUpdateAction(currentWorkflowData);
+                    // goto done;
                 }
 
                 // Fall through to handle new workflow
