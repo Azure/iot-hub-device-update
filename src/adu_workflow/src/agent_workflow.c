@@ -672,7 +672,10 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
     if (workflow_isequal_id(workflowData->WorkflowHandle, workflowData->LastCompletedWorkflowId)
         && !workflow_get_force_update(workflowData->WorkflowHandle))
     {
+        char* updateId = workflow_get_expected_update_id_string(workflowData->WorkflowHandle);
         Log_Debug("Ignoring duplicate deployment %s, action %d", workflowData->LastCompletedWorkflowId, desiredAction);
+        ADUC_Workflow_SetInstalledUpdateIdAndGoToIdle(workflowData, updateId);
+        free(updateId);
         goto done;
     }
 
