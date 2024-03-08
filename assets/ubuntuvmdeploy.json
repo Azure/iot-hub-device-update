@@ -48,10 +48,8 @@
     },
     "ubuntuOSVersion": {
       "type": "string",
-      "defaultValue": "Ubuntu-2004",
+      "defaultValue": "Ubuntu-2204",
       "allowedValues": [
-        "Ubuntu-1804",
-        "Ubuntu-2004",
         "Ubuntu-2204"
       ],
       "metadata": {
