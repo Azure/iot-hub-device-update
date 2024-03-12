@@ -14,9 +14,7 @@
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h> // PRIu64
-#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include <time.h>
 
@@ -420,30 +418,8 @@ void ADUC_Workflow_HandlePropertyUpdate(
     ADUC_WorkflowData* currentWorkflowData, const unsigned char* propertyUpdateValue, bool forceUpdate)
 {
     ADUC_WorkflowHandle nextWorkflow;
-    const char omnectValidateUpdateFailedFilePath[FILENAME_MAX] =
-        "/run/omnect-device-service/omnect_validate_update_failed";
-    const char* serviceRuntimeDir = getenv("RUNTIME_DIRECTORY"); // created by deviceupdate-agent.service
-    const char* omnectUpdateRetryFileName = "/omnect_update_retry";
-    char* omnectUpdateRetryFilePath = NULL;
 
     ADUC_Result result = workflow_init((const char*)propertyUpdateValue, true /* shouldValidate */, &nextWorkflow);
-
-    if (NULL == serviceRuntimeDir)
-    {
-        Log_Error("RUNTIME_DIRECTORY was not found.");
-        return;
-    }
-
-    if (NULL
-        != (omnectUpdateRetryFilePath = malloc(strlen(serviceRuntimeDir) + strlen(omnectUpdateRetryFileName) + 1)))
-    {
-        strcpy(omnectUpdateRetryFilePath, serviceRuntimeDir);
-        strcat(omnectUpdateRetryFilePath, omnectUpdateRetryFileName);
-    }
-    else
-    {
-        Log_Error("Cannot allocate omnectUpdateRetryFilePath.");
-    }
 
     workflow_set_force_update(nextWorkflow, forceUpdate);
 
@@ -514,21 +490,6 @@ void ADUC_Workflow_HandlePropertyUpdate(
                 }
 
                 Log_Debug("Retry %s is applicable", newRetryToken);
-
-                // If omnect_validate_update_failed file barrier is present and an update retry was
-                // triggered by cloud, we create omnect_update_retry file in order to try to install
-                // the update again.
-                FILE* fp;
-
-                Log_Debug("Retry: '%s' detected.", omnectValidateUpdateFailedFilePath);
-                if ((NULL == omnectUpdateRetryFilePath) || (NULL == (fp = fopen(omnectUpdateRetryFilePath, "w"))))
-                {
-                    Log_Error("Cannot create '%s'", omnectUpdateRetryFilePath);
-                }
-                else
-                {
-                    fclose(fp);
-                }
 
                 // Sets both cancellation type to Retry and updates the current retry token
                 workflow_update_retry_deployment(currentWorkflowData->WorkflowHandle, newRetryToken);
@@ -717,7 +678,17 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
     if (workflow_isequal_id(workflowData->WorkflowHandle, workflowData->LastCompletedWorkflowId)
         && !workflow_get_force_update(workflowData->WorkflowHandle))
     {
+        char* updateId = workflow_get_expected_update_id_string(workflowData->WorkflowHandle);
         Log_Debug("Ignoring duplicate deployment %s, action %d", workflowData->LastCompletedWorkflowId, desiredAction);
+
+        // Use Case:
+        // An update was successfully installed on the device. The update itself is already present and active.
+        // In case token expiry connection refresh handling (after about 40 minutes), the device agent will automatically change the operation state
+        // in the module twin to state "6" -> "in Progress" in the background.
+        // Via this ignore duplicate handling, this state won't change later by the agent and we have to manually set the state
+        // back to idle.
+        ADUC_Workflow_SetInstalledUpdateIdAndGoToIdle(workflowData, updateId);
+        free(updateId);
         goto done;
     }
 
