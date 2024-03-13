@@ -1,3 +1,3 @@
-project (plugin_examples)
-
-add_subdirectory (microsoft_delta_download_handler)
+if (NOT WIN32)
+    add_subdirectory (microsoft_delta_download_handler)
+endif ()

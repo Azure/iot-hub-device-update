@@ -61,7 +61,7 @@ ADUC_Result ProcessDownloadHandlerExtensibility(
 
         result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_CREATE_FAILURE_CREATE;
 
-        workflow_set_success_erc(workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_CREATE_FAILURE_CREATE);
+        workflow_add_erc(workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_CREATE_FAILURE_CREATE);
 
         goto done;
     }
@@ -77,7 +77,7 @@ ADUC_Result ProcessDownloadHandlerExtensibility(
             result.ResultCode,
             result.ExtendedResultCode);
 
-        workflow_set_success_erc(workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSIBILITY_GET_CONTRACT);
+        workflow_add_erc(workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSIBILITY_GET_CONTRACT);
 
         goto done;
     }
@@ -95,7 +95,7 @@ ADUC_Result ProcessDownloadHandlerExtensibility(
         result.ResultCode = ADUC_GeneralResult_Failure;
         result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_UNSUPPORTED_CONTRACT_VERSION;
 
-        workflow_set_success_erc(
+        workflow_add_erc(
             workflowHandle, ADUC_ERC_DOWNLOAD_HANDLER_EXTENSION_MANAGER_UNSUPPORTED_CONTRACT_VERSION);
 
         goto done;
@@ -106,7 +106,7 @@ ADUC_Result ProcessDownloadHandlerExtensibility(
     result = plugin->ProcessUpdate(workflowHandle, entity, targetUpdateFilePath);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        workflow_set_success_erc(workflowHandle, result.ExtendedResultCode);
+        workflow_add_erc(workflowHandle, result.ExtendedResultCode);
         workflow_set_result_details(workflowHandle, "plugin err %d for ProcessUpdate", result.ExtendedResultCode);
         goto done;
     }
@@ -120,19 +120,30 @@ done:
 
 /**
  * @brief Get the download timeout in minutes from compile-time download options, or the override from config file.
- *
+ * @remark This function requires that the ADUC_ConfigInfo singleton has been initialized.
  * @param downloadOptions The download options.
  * @return unsigned int The download timeout that should be used.
  */
 unsigned int GetDownloadTimeoutInMinutes(const ExtensionManager_Download_Options* downloadOptions) noexcept
 {
-    ADUC_ConfigInfo config{};
-    if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH) || (config.downloadTimeoutInMinutes == 0))
+    unsigned int ret = CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT;
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == nullptr)
     {
-        return (downloadOptions == nullptr) ? CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT
-                                            : downloadOptions->timeoutInMinutes;
+        Log_Error("ADUC_ConfigInfo singleton hasn't been initialized.");
+        goto done;
     }
 
-    Log_Info("downloadTimeoutInMinutes override from config: %u", config.downloadTimeoutInMinutes);
-    return config.downloadTimeoutInMinutes;
+    if (config == nullptr || (config->downloadTimeoutInMinutes == 0))
+    {
+        ret = (downloadOptions == nullptr) ? CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT
+                                           : downloadOptions->timeoutInMinutes;
+    }
+    else
+    {
+        Log_Info("downloadTimeoutInMinutes override from config: %u", config->downloadTimeoutInMinutes);
+        ret = config->downloadTimeoutInMinutes;
+    }
+done:
+    return ret;
 }

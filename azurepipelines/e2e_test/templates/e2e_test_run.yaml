@@ -3,6 +3,8 @@
 parameters:
     - name: distroName
       type: string
+    - name: device_id_under_test
+      type: string
 
 steps:
     - script: |
@@ -38,6 +40,7 @@ steps:
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
 
     - task: PythonScript@0
       displayName: Run script to test apt-deployment
@@ -55,6 +58,25 @@ steps:
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
+
+    - task: PythonScript@0
+      displayName: Run script to test apt-deployment fails
+      continueOnError: True
+      inputs:
+          scriptSource: "filePath"
+          scriptPath: "$(E2E_WORKING_DIR)/scenarios/test_runner/bad_apt_deployment.py"
+          workingDirectory: $(E2E_WORKING_DIR)
+      env:
+          IOTHUB_URL: $(IOTHUB_URL)
+          IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+          ADU_ENDPOINT: $(ADU_ENDPOINT)
+          ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+          AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+          AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+          AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+          DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
 
     - task: PythonScript@0
       displayName: Run script to test diagnostics
@@ -72,6 +94,7 @@ steps:
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
 
     - task: PythonScript@0
       displayName: Run script to test mcu
@@ -89,6 +112,7 @@ steps:
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
 
     - task: PythonScript@0
       displayName: Run script to test bundle-update
@@ -106,6 +130,7 @@ steps:
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
 
     - task: PythonScript@0
       displayName: Run script to clean up the device
@@ -123,6 +148,7 @@ steps:
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
 
     - script: |
           mkdir -p $(Build.ArtifactStagingDirectory)/testresults/
@@ -130,10 +156,10 @@ steps:
       displayName: Copy terraform state (vm)
       workingDirectory: $(E2E_WORKING_DIR)
 
-    - task: PublishPipelineArtifact@1
+    - task: 1ES.PublishPipelineArtifact@1
       inputs:
           targetPath: "$(Build.ArtifactStagingDirectory)/testresults/"
-          artifact: "TestResults_${{parameters.distroName}}"
+          artifactName: "TestResults_${{parameters.device_id_under_test}}"
           publishLocation: "pipeline"
 
     - task: PublishTestResults@2
@@ -141,4 +167,4 @@ steps:
           testRunner: JUnit
           testResultsFiles: "$(E2E_WORKING_DIR)/testresults/*.xml"
           failTaskOnFailedTests: false
-          testRunTitle: ${{parameters.distroName}}
+          testRunTitle: ${{parameters.device_id_under_test}}

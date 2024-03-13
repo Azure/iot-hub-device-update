@@ -8,27 +8,42 @@
 #ifndef ADUC_PROCESS_UTILS_HPP
 #define ADUC_PROCESS_UTILS_HPP
 
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/pwd.h> // getpwnam
+#include <aducpal/unistd.h> // getegid, geteuid
+
 #include <azure_c_shared_utility/vector.h>
 #include <functional>
-#include <grp.h>
-#include <pwd.h>
+
 #include <string>
 #include <sys/types.h>
-#include <unistd.h>
+
 #include <vector>
 
 /**
  * @brief Runs specified command in a new process and captures output, error messages, and exit code.
- *        The captured output and error messages will be written to ADUC_LOG_FILE.
  *
- * @param comman Name of a command to run. If command doesn't contain '/', this function will
+ * @param command Name of a command to run. If command doesn't contain '/', this function will
  *               search for the specified command in PATH.
  * @param args List of arguments for the command.
- * @param output A standard output from the command.
+ * @param output A standard output from the command, combined with linefeeds into a string.
  *
  * @return An exit code from the command.
  */
 int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string> args, std::string& output);
+
+/**
+ * @brief Runs specified command in a new process and captures output, error messages, and exit code.
+ *
+ * @param command Name of a command to run. If command doesn't contain '/', this function will
+ *               search for the specified command in PATH.
+ * @param args List of arguments for the command.
+ * @param output A standard output from the command, returned as a vector of strings.
+ *
+ * @return An exit code from the command.
+ */
+int ADUC_LaunchChildProcess(
+    const std::string& command, std::vector<std::string> args, std::vector<std::string>& output);
 
 /**
  * @brief Ensure that the effective group of the process is the given group (or is root).
@@ -40,8 +55,8 @@ int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string>
  */
 bool VerifyProcessEffectiveGroup(
     const char* groupName,
-    const std::function<gid_t()>& getegidFunc = getegid,
-    const std::function<struct group*(const char*)>& getgrnamFunc = getgrnam);
+    const std::function<gid_t()>& getegidFunc = ADUCPAL_getegid,
+    const std::function<struct group*(const char*)>& getgrnamFunc = ADUCPAL_getgrnam);
 
 /**
  * @brief Ensure that the effective user of the process is one of the ADU Shell Trusted Users.
@@ -53,7 +68,6 @@ bool VerifyProcessEffectiveGroup(
  */
 bool VerifyProcessEffectiveUser(
     VECTOR_HANDLE trustedUsersArray,
-    const std::function<uid_t()>& geteuidFunc = geteuid,
-    const std::function<struct passwd*(const char*)>& getpwnamFunc = getpwnam);
-
+    const std::function<uid_t()>& geteuidFunc = ADUCPAL_geteuid,
+    const std::function<struct passwd*(const char*)>& getpwnamFunc = ADUCPAL_getpwnam);
 #endif // ADUC_PROCESS_UTILS_HPP

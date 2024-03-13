@@ -25,10 +25,10 @@ enum ZLOG_SEVERITY
 
 // Start API
 // clang-format off
-#define log_debug(...) zlog_log(ZLOG_DEBUG, __FUNCTION__, __VA_ARGS__) // NOLINT(misc-lambda-function-name)
-#define log_info(...)  zlog_log(ZLOG_INFO, __FUNCTION__, __VA_ARGS__) // NOLINT(misc-lambda-function-name)
-#define log_warn(...)  zlog_log(ZLOG_WARN, __FUNCTION__, __VA_ARGS__) // NOLINT(misc-lambda-function-name)
-#define log_error(...) zlog_log(ZLOG_ERROR, __FUNCTION__, __VA_ARGS__) // NOLINT(misc-lambda-function-name)
+#define log_debug(...) zlog_log(ZLOG_DEBUG, __FUNCTION__, __LINE__, __VA_ARGS__) // NOLINT(misc-lambda-function-name)
+#define log_info(...)  zlog_log(ZLOG_INFO, __FUNCTION__, __LINE__, __VA_ARGS__) // NOLINT(misc-lambda-function-name)
+#define log_warn(...)  zlog_log(ZLOG_WARN, __FUNCTION__, __LINE__, __VA_ARGS__) // NOLINT(misc-lambda-function-name)
+#define log_error(...) zlog_log(ZLOG_ERROR, __FUNCTION__, __LINE__, __VA_ARGS__) // NOLINT(misc-lambda-function-name)
 // clang-format on
 
 #ifdef __cplusplus
@@ -55,10 +55,8 @@ int zlog_init(
 void zlog_finish(void);
 // explicitly flush the buffer in memory
 void zlog_flush_buffer(void);
-// request to flush the buffer.
-void zlog_request_flush_buffer(void);
 // log an entry with the function scope and timestamp
-void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, const char* fmt, ...);
+void zlog_log(enum ZLOG_SEVERITY msg_level, const char* func, unsigned int line, const char* fmt, ...);
 
 // End API
 

@@ -1,5 +1,5 @@
 /**
- * @file apt_handler.h
+ * @file apt_handler.hpp
  * @brief Defines types and methods for APT handler plug-in for APT (Advanced Package Tool)
  *
  * @copyright Copyright (c) Microsoft Corporation.
@@ -21,7 +21,7 @@ EXTERN_C_BEGIN
  * @brief Instantiates a Step Handler for 'microsoft/apt:1' update type.
  * @return A pointer to an instantiated Step Handler object.
  */
-ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
+EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
 
 /**
  * @brief Gets the extension contract info.

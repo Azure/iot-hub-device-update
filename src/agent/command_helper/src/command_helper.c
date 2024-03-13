@@ -20,21 +20,29 @@
 #include <string.h> // strlen
 #include <sys/stat.h> // mkfifo
 #include <unistd.h> // sleep
+#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
 
-// For version 1.0, we're supporting only 1 command.
-#define MAX_COMMAND_ARRAY_SIZE 1
-// Max command length including null.
-#define COMMAND_MAX_LEN 64
-#define DELAY_BETWEEN_FAILED_OPERATION_SECONDS 10
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
 
-static pthread_mutex_t g_commandQueueMutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_t g_commandListenerThread;
-static bool g_commandListenerThreadCreated = false;
-static bool g_terminate_thread_request = false;
+#define MAX_COMMAND_ARRAY_SIZE 1 // !< For version 1.0, we're supporting only 1 command.
+#define COMMAND_MAX_LEN 64 // !< Max command length including NULL
+#define DELAY_BETWEEN_FAILED_OPERATION_SECONDS 10 // !< delay allowed between failed operations
 
+static pthread_mutex_t g_commandQueueMutex = PTHREAD_MUTEX_INITIALIZER; // !< Static defintion for the mutex to be used for communciating with the command threads
+static pthread_t g_commandListenerThread; // !<  Static handle for the listener thread for routing info back from the child process
+static bool g_commandListenerThreadCreated = false; // !< Static boolean switch to tell if the listener thread has been created
+static bool g_terminate_thread_request = false; // !< Static boolean switch to tell if the thread needs to be terminated
+
+/**
+ * @brief Callback for reprocessing updates as they come in
+ * @param command the command to be reprocessed / executed
+ * @param context the context to be used for calling back into / accessing ADUC member values
+ * @returns true on success; false otherwise
+*/
 bool ADUC_OnReprocessUpdate(const char* command, void* context);
 
-static ADUC_Command* g_commands[MAX_COMMAND_ARRAY_SIZE] = {};
+static ADUC_Command* g_commands[MAX_COMMAND_ARRAY_SIZE] = {}; // !< Static list of commands being exectued of MAX_COMMAND_ARRAY_SIZE
 
 /**
  * @brief Register command.
@@ -191,10 +199,12 @@ static bool SecurityChecks()
  *
  * @return void*
  */
-static void* ADUC_CommandListenerThread()
+static void* ADUC_CommandListenerThread(void* unused)
 {
     bool threadCreated = false;
     int fileDescriptor = 0;
+
+    (void)unused; // avoid unused parameter warning
 
     if (!TryCreateFIFOPipe() || !SecurityChecks())
     {
@@ -308,6 +318,9 @@ bool SendCommand(const char* command)
 {
     static char buffer[COMMAND_MAX_LEN];
     bool success = false;
+
+    const size_t cmdLen = strlen(command);
+
     int fd = -1;
     if (command == NULL || *command == '\0')
     {
@@ -315,7 +328,7 @@ bool SendCommand(const char* command)
         goto done;
     }
 
-    if (strlen(command) > COMMAND_MAX_LEN - 1)
+    if (cmdLen > COMMAND_MAX_LEN - 1)
     {
         Log_Error("Command is too long (63 characters max).");
         goto done;
@@ -335,7 +348,7 @@ bool SendCommand(const char* command)
     }
 
     // Copy command to buffer and fill the remaining buffer (if any) with additional null bytes.
-    strncpy(buffer, command, sizeof(buffer));
+    ADUC_Safe_StrCopyN(buffer, command, sizeof(buffer), cmdLen);
     ssize_t size = write(fd, buffer, sizeof(buffer));
     if (size != sizeof(buffer))
     {

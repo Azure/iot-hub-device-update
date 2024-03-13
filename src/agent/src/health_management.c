@@ -16,7 +16,8 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
-#include <sys/stat.h>
+
+#include <aducpal/sys_stat.h> // S_I*
 
 /**
  * @brief The users that must exist on the system.
@@ -41,7 +42,7 @@ static const char* aduc_optional_groups[] = { DO_FILE_GROUP };
 /**
  * @brief The supplementary groups for ADUC_FILE_USER
  */
-static const char* aduc_required_group_memberships[] = {};
+static const char* aduc_required_group_memberships[] = { NULL };
 
 /**
  * @brief The supplementary groups for ADUC_FILE_USER
@@ -69,11 +70,12 @@ bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char
  *
  * @return true if connection string can be obtained.
  */
-bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs, ADUC_ConfigInfo* config)
+bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs, const ADUC_ConfigInfo* config)
 {
     bool validInfo = false;
 
-    ADUC_ConnectionInfo info = {};
+    ADUC_ConnectionInfo info;
+    memset(&info, 0, sizeof(info));
 
     if (launchArgs->connectionString != NULL)
     {
@@ -179,6 +181,11 @@ static bool ReportMissingGroupMemberships()
     // ADUC group memberships
     for (int i = 0; i < ARRAY_SIZE(aduc_required_group_memberships); ++i)
     {
+        if (aduc_required_group_memberships[i] == NULL)
+        {
+            continue;
+        }
+
         if (!PermissionUtils_UserInSupplementaryGroup(ADUC_FILE_USER, aduc_required_group_memberships[i]))
         {
             Log_Error("User '%s' is not a member of '%s' group.", ADUC_FILE_USER, aduc_required_group_memberships[i]);
@@ -416,10 +423,17 @@ static bool CheckDataDir()
  */
 static bool CheckDownloadsDir()
 {
+    bool ret = false;
     // Note: "Other" bits are cleared to align with ADUC_SystemUtils_MkDirRecursiveDefault and packaging.
     const mode_t expected_permissions = S_IRWXU | S_IRWXG;
-    return CheckDirOwnershipAndVerifyFilemodeExact(
-        ADUC_DOWNLOADS_FOLDER, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL)
+    {
+        ret = CheckDirOwnershipAndVerifyFilemodeExact(
+            config->downloadsFolder, ADUC_FILE_USER, ADUC_FILE_GROUP, expected_permissions);
+        ADUC_ConfigInfo_ReleaseInstance(config);
+    }
+    return ret;
 }
 
 /**
@@ -445,7 +459,12 @@ static bool CheckAgentBinary()
             goto done;
         }
 
-        const mode_t expected_permissions = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+        // clang-format off
+        const mode_t expected_permissions =
+            S_IRWXU |           // RWX user
+            S_IROTH | S_IXOTH | // R-X other
+            S_IRGRP | S_IXGRP;  // R-X group
+        // clang-format on
 
         if (!PermissionUtils_VerifyFilemodeExact(path, expected_permissions))
         {
@@ -469,35 +488,49 @@ static bool CheckShellBinary()
 {
     bool result = false;
 
-    const char* path = ADUSHELL_FILE_PATH;
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
 
-    if (SystemUtils_IsFile(path, NULL))
+    if (config == NULL)
     {
-        if (!PermissionUtils_CheckOwnerUid(path, 0 /* root */))
+        Log_Error("ADUC_ConfigInfo singleton hasn't been initialized.");
+        goto done;
+    }
+
+    if (SystemUtils_IsFile(config->aduShellFilePath, NULL))
+    {
+        if (!PermissionUtils_CheckOwnerUid(config->aduShellFilePath, 0 /* root */))
         {
-            Log_Error("'%s' has incorrect UID.", path);
+            Log_Error("'%s' has incorrect UID.", config->aduShellFilePath);
             goto done;
         }
 
-        if (!PermissionUtils_CheckOwnership(path, NULL /* user */, ADUC_FILE_GROUP))
+        if (!PermissionUtils_CheckOwnership(config->aduShellFilePath, NULL /* user */, ADUC_FILE_GROUP))
         {
-            Log_Error("'%s' has incorrect group owner.", path);
+            Log_Error("'%s' has incorrect group owner.", config->aduShellFilePath);
             goto done;
         }
 
+        // clang-format off
         // Needs set-uid, user read, and group read + execute.
         // Note: other has no permission bits set.
-        const mode_t expected_permissions = S_ISUID | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP;
+        const mode_t expected_permissions =
+            S_ISUID |           // set-uid
+            S_IRUSR | S_IXUSR | // R-X user
+            S_IRGRP | S_IXGRP;  // R-X group
+        // clang-format on
 
-        if (!PermissionUtils_VerifyFilemodeExact(path, expected_permissions))
+        if (!PermissionUtils_VerifyFilemodeExact(config->aduShellFilePath, expected_permissions))
         {
-            Log_Error("Lookup failed or '%s' has incorrect permissions (expected: 0%o)", path, expected_permissions);
+            Log_Error(
+                "Lookup failed or '%s' has incorrect permissions (expected: 0%o)",
+                config->aduShellFilePath,
+                expected_permissions);
             goto done;
         }
     }
     else
     {
-        Log_Error("'%s' does not exist or not a file", ADUSHELL_FILE_PATH);
+        Log_Error("'%s' does not exist or not a file", config->aduShellFilePath);
         goto done;
     }
 
@@ -505,6 +538,7 @@ static bool CheckShellBinary()
 
 done:
 
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return result;
 }
 
@@ -566,20 +600,22 @@ static bool AreDirAndFilePermissionsValid()
  *     - Implicitly check that agent process launched successfully.
  *     - Check that we can obtain the connection info.
  *
+ * @remark This function requires that the ADUC_ConfigInfo singleton has been initialized.
+ *
  * @return true if all checks passed.
  */
 bool HealthCheck(const ADUC_LaunchArguments* launchArgs)
 {
     bool isHealthy = false;
 
-    ADUC_ConfigInfo config = {};
-    if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
     {
-        Log_Error("Failed to initialize from config file: %s", ADUC_CONF_FILE_PATH);
+        Log_Error("ADUC_ConfigInfo singleton hasn't been initialized.");
         goto done;
     }
 
-    if (!IsConnectionInfoValid(launchArgs, &config))
+    if (!IsConnectionInfoValid(launchArgs, config))
     {
         Log_Error("Invalid connection info.");
         goto done;
@@ -594,7 +630,7 @@ bool HealthCheck(const ADUC_LaunchArguments* launchArgs)
 
 done:
     Log_Info("Health check %s.", isHealthy ? "passed" : "failed");
-    ADUC_ConfigInfo_UnInit(&config);
+    ADUC_ConfigInfo_ReleaseInstance(config);
 
     return isHealthy;
 }

@@ -1,6 +1,7 @@
 set (target_name download_handler_factory)
 
 include (agentRules)
+
 compileasc99 ()
 
 add_library (${target_name} STATIC "")
@@ -18,6 +19,7 @@ target_link_libraries (
     PRIVATE aduc::adu_types
             aduc::c_utils
             aduc::download_handler_plugin
+            aduc::entity_utils
             aduc::extension_utils
             aduc::hash_utils
             aduc::logging
@@ -26,5 +28,4 @@ target_link_libraries (
 
 target_compile_definitions (
     ${target_name}
-    PRIVATE ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR="${ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR}"
-            ADUC_DOWNLOAD_HANDLER_REG_FILENAME="${ADUC_DOWNLOAD_HANDLER_REG_FILENAME}")
+    PRIVATE ADUC_DOWNLOAD_HANDLER_REG_FILENAME="${ADUC_DOWNLOAD_HANDLER_REG_FILENAME}")

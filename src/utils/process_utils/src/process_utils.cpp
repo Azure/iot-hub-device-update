@@ -6,47 +6,94 @@
  * Licensed under the MIT License.
  */
 #include <errno.h>
-#include <grp.h> // for getgrnam, struct group
-#include <pwd.h> // for getpwnam
+
+#include <aducpal/grp.h> // getgrnam
+#include <aducpal/pwd.h> // getpwnam
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #include <aduc/c_utils.h>
 #include <aduc/config_utils.h>
 #include <aduc/logging.h>
 #include <aduc/string_utils.hpp>
+
+#include <aducpal/stdio.h> // popen,pclose
+
 #include <azure_c_shared_utility/strings.h>
 #include <azure_c_shared_utility/vector.h>
 
-#include <functional> // for std::function
-#include <iostream>
-#include <sstream>
-#include <string>
-
 #include <chrono>
-
+#include <functional> // for std::function
+#include <string>
+#ifndef WIN32 // Note: Only included when not in windows since a different wait signal is used.
+#    include <sys/wait.h>
+#    include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 
 /**
  * @brief Runs specified command in a new process and captures output, error messages, and exit code.
- *        The captured output and error messages will be written to ADUC_LOG_FILE.
- *
- * @param comman Name of a command to run. If command doesn't contain '/', this function will
+  *@details This function is ifdeffed to prevent the use of popen/pclose on Linux because of dubious operations causing bugs
+ * @param command Name of a command to run. If command doesn't contain '/', this function will
  *               search for the specified command in PATH.
  * @param args List of arguments for the command.
- * @param output A standard output from the command.
+ * @param func Callback function for each line of output.
  *
- * @return An exit code from the command.
+ * @return 0 on success.
  */
-int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string> args, std::string& output) // NOLINT(google-runtime-references)
+#ifdef WIN32
+static int ADUC_LaunchChildProcessHelper(
+    const std::string& command, std::vector<std::string> args, std::function<void(const char*)> func)
 {
-#define READ_END 0
-#define WRITE_END 1
+    int ret = 0;
+
+    std::string redirected_command{ command };
+    redirected_command += " ";
+
+    for (const std::string& arg : args)
+    {
+        redirected_command += arg;
+        redirected_command += " ";
+    }
+
+    // We want to capture stderr as well, so we need to append "2>&1"
+    redirected_command += "2>&1";
+
+    FILE* fp = ADUCPAL_popen(redirected_command.c_str(), "r");
+    if (fp == NULL)
+    {
+        return errno;
+    }
+
+    char buffer[1024];
+
+    // fgets includes the newline character.
+    while (fgets(buffer, sizeof(buffer), fp) != nullptr)
+    {
+        func(buffer);
+    }
+
+    // Returns 0 if no error occurred.
+    ret = ferror(fp);
+    if (ret != 0)
+    {
+        ADUCPAL_pclose(fp);
+        return ret;
+    }
+
+    return ADUCPAL_pclose(fp);
+}
+#else
+
+static int ADUC_LaunchChildProcessHelper(
+    const std::string& command, std::vector<std::string> args, std::function<void(const char*)> func)
+{
+#    define READ_END 0
+#    define WRITE_END 1
 
     int filedes[2];
     const int ret = pipe(filedes);
@@ -93,7 +140,7 @@ int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string>
     {
         char buffer[1024];
         ssize_t count;
-        count = read(filedes[READ_END], buffer, sizeof(buffer));
+        count = read(filedes[READ_END], buffer, sizeof(buffer) - 1);
 
         if (count == -1)
         {
@@ -108,7 +155,7 @@ int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string>
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
         buffer[count] = 0;
-        output += buffer;
+        func(buffer); // Make call to the recording function to put in log data
     }
 
     int wstatus;
@@ -149,6 +196,49 @@ int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string>
     return childExitStatus;
 }
 
+#endif
+
+/**
+ * @brief Runs specified command in a new process and captures output, error messages, and exit code.
+ *
+ * @param command Name of a command to run. If command doesn't contain '/', this function will
+ *               search for the specified command in PATH.
+ * @param args List of arguments for the command.
+ * @param output A standard output from the command, combined with linefeeds into a string.
+ *
+ * @return An exit code from the command.
+ */
+int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string> args, std::string& output)
+{
+    output.clear();
+
+    return ADUC_LaunchChildProcessHelper(command, args, [&output](const char* line) -> void {
+        // fgets includes the newline character.
+        output += line;
+    });
+}
+
+/**
+ * @brief Runs specified command in a new process and captures output, error messages, and exit code.
+ *
+ * @param command Name of a command to run. If command doesn't contain '/', this function will
+ *               search for the specified command in PATH.
+ * @param args List of arguments for the command.
+ * @param output A standard output from the command, returned as a vector of strings.
+ *
+ * @return An exit code from the command.
+ */
+int ADUC_LaunchChildProcess(
+    const std::string& command, std::vector<std::string> args, std::vector<std::string>& output)
+{
+    output.clear();
+
+    return ADUC_LaunchChildProcessHelper(command, args, [&output](const char* line) -> void {
+        // fgets includes the newline character.
+        std::string str{ line };
+        output.push_back(str.substr(0, str.size() - 1));
+    });
+}
 /**
  * @brief Ensure that the effective group of the process is the given group (or is root).
  * @remark This function is not thread-safe if called with the defaults for the optional args.

@@ -11,7 +11,6 @@
 #include <parson.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <sys/wait.h> // for waitpid
 
 //
 // ADUC_UpdateActionCallbacks helpers.
@@ -58,8 +57,7 @@ static bool ADUC_UpdateActionCallbacks_VerifyData(const ADUC_UpdateActionCallbac
  * @param argv Arguments to pass to ADUC_RegisterPlatformLayer().
  * @return ADUC_Result Result code.
  */
-ADUC_Result
-ADUC_MethodCall_Register(ADUC_UpdateActionCallbacks* updateActionCallbacks, unsigned int argc, const char** argv)
+ADUC_Result ADUC_MethodCall_Register(ADUC_UpdateActionCallbacks* updateActionCallbacks, int argc, const char** argv)
 {
     Log_Info("Calling ADUC_RegisterPlatformLayer");
 

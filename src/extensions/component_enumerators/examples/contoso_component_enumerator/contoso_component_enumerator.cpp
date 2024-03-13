@@ -173,7 +173,7 @@ EXTERN_C_BEGIN
  * @return Returns a serialized json data containing components information.
  * Caller must call FreeString function when done with the returned string.
  */
-char* SelectComponents(const char* selectorJson)
+EXPORTED_METHOD char* SelectComponents(const char* selectorJson)
 {
     char* outputString = nullptr;
 
@@ -197,10 +197,10 @@ char* SelectComponents(const char* selectorJson)
     }
 
     // Keep only components that contain all properties (name & value) specified in the selector.
-    for (int i = json_array_get_count(componentsArray) - 1; i >= 0; i--)
+    for (int i = static_cast<int>(json_array_get_count(componentsArray)) - 1; i >= 0; i--)
     {
         JSON_Object* component = json_array_get_object(componentsArray, i);
-        for (int s = json_object_get_count(selector) - 1; s >= 0; s--)
+        for (int s = static_cast<int>(json_object_get_count(selector)) - 1; s >= 0; s--)
         {
             bool matched = _json_object_contains_named_value(
                 component, json_object_get_name(selector, s), json_string(json_object_get_value_at(selector, s)));
@@ -226,7 +226,7 @@ done:
  * @return Returns a serialized json data contains components information. Caller must call FreeComponentsDataString function
  * when done with the returned string.
  */
-char* GetAllComponents()
+EXPORTED_METHOD char* GetAllComponents()
 {
     JSON_Value* val = _GetAllComponentsFromFile(g_contosoComponentInventoryFilePath);
     char* returnString = json_serialize_to_string_pretty(val);
@@ -239,7 +239,7 @@ char* GetAllComponents()
  *
  * @param string The string previously returned by GetAllComponents.
  */
-void FreeComponentsDataString(char* string)
+EXPORTED_METHOD void FreeComponentsDataString(char* string)
 {
     json_free_serialized_string(string);
 }
@@ -250,7 +250,7 @@ void FreeComponentsDataString(char* string)
  * @param[out] contractInfo The extension contract info.
  * @return ADUC_Result The result.
  */
-ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
+EXPORTED_METHOD ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
 {
     contractInfo->majorVer = ADUC_V1_CONTRACT_MAJOR_VER;
     contractInfo->minorVer = ADUC_V1_CONTRACT_MINOR_VER;

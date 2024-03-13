@@ -1,20 +1,62 @@
 cmake_minimum_required (VERSION 3.5)
 
+if (WIN32)
+    #
+    # Configure vcpkg
+    #
+
+    include (cmake/automate-vcpkg.cmake)
+
+    # Default is ${CMAKE_BINARY_DIR}/vcpkg
+    cmake_path (SET VCPKG_ROOT NORMALIZE "${CMAKE_SOURCE_DIR}/.vcpkg")
+    # Default is ${CMAKE_BINARY_DIR}/vcpkg_installed
+    cmake_path (SET VCPKG_INSTALLED_DIR NORMALIZE "${CMAKE_SOURCE_DIR}/.vcpkg-installed")
+
+    # clone the official Vcpkg repository and bootstrap it.
+    vcpkg_bootstrap ()
+
+    # Include vcpkg installed lib folder in library path
+    # for packages that dont have a CMake find_package.
+    # Release: .vcpkg-installed\x64-windows\lib\
+    # Debug:   .vcpkg-installed\x64-windows\debug\lib\
+    cmake_path (SET VCPKG_LIBRARY_DIR NORMALIZE "${VCPKG_INSTALLED_DIR}")
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "DEBUG")
+        cmake_path (APPEND VCPKG_LIBRARY_DIR "${VCPKG_TARGET_TRIPLET}" "${CMAKE_BUILD_TYPE}" "lib")
+    else ()
+        cmake_path (APPEND VCPKG_LIBRARY_DIR "${VCPKG_TARGET_TRIPLET}" "lib")
+    endif ()
+    link_directories (${VCPKG_LIBRARY_DIR})
+endif ()
+
 project (azure_device_update_client)
 
-# Print out CMake build variables.
+if (WIN32)
+    message (STATUS)
+    message (STATUS "VCPKG_INSTALLED_DIR: ${VCPKG_INSTALLED_DIR}")
+    message (STATUS "VCPKG_LIBRARY_DIR: ${VCPKG_LIBRARY_DIR}")
+    message (STATUS "VCPKG_TARGET_TRIPLET: ${VCPKG_TARGET_TRIPLET}")
+
+    # CMAKE_SYSTEM_PROCESSOR is broken on Windows.
+    # See https://gitlab.kitware.com/cmake/cmake/-/issues/15170
+    # if "-A ARM64" is specified, CMAKE_SYSTEM_PROCESSOR will still have
+    # the host (e.g. AMD64) value.
+    if (MSVC AND NOT CMAKE_GENERATOR_PLATFORM STREQUAL "")
+        set (CMAKE_SYSTEM_PROCESSOR ${CMAKE_GENERATOR_PLATFORM})
+    endif ()
+endif ()
+
 message (STATUS)
-message (STATUS CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME})
-message (STATUS CMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION})
-message (STATUS CMAKE_HOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME})
-message (STATUS CMAKE_GENERATOR=${CMAKE_GENERATOR})
-message (STATUS CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
-message (STATUS CMAKE_C_COMPILER=${CMAKE_C_COMPILER})
-message (STATUS CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
-message (STATUS CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR})
-message (STATUS CMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR})
-message (STATUS CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
-message (STATUS CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME})
+message (STATUS "CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")
+message (STATUS "CMAKE_SYSTEM_VERSION: ${CMAKE_SYSTEM_VERSION}")
+message (STATUS "CMAKE_SYSTEM_PROCESSOR: ${CMAKE_SYSTEM_PROCESSOR}")
+message (STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
+message (STATUS "CMAKE_GENERATOR_PLATFORM: ${CMAKE_GENERATOR_PLATFORM}")
+message (STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message (STATUS "CMAKE_C_COMPILER: ${CMAKE_C_COMPILER}")
+message (STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
+message (STATUS "CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
+message (STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
+message (STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 message (STATUS)
 
 # Tell CMake where to find our custom CMake module files.
@@ -33,47 +75,26 @@ include (aduc_helpers)
 
 # ADU Agent follows Semantic Versioning 2.0.0
 # https://semver.org/spec/v2.0.0.html
-set_cache_with_env_or_default (
-    ADUC_VERSION_MAJOR
-    "1"
-    STRING
-    "The major part of the semantic version")
+set_cache_with_env_or_default (ADUC_VERSION_MAJOR "1" STRING
+                               "The major part of the semantic version")
 
-set_cache_with_env_or_default (
-    ADUC_VERSION_MINOR
-    "0"
-    STRING
-    "The minor part of the semantic version")
+set_cache_with_env_or_default (ADUC_VERSION_MINOR "1" STRING
+                               "The minor part of the semantic version")
 
-set_cache_with_env_or_default (
-    ADUC_VERSION_PATCH
-    "2"
-    STRING
-    "The patch part of the semantic version")
+set_cache_with_env_or_default (ADUC_VERSION_PATCH "0" STRING
+                               "The patch part of the semantic version")
 
-set_cache_with_env_or_default (
-    ADUC_VERSION_PRERELEASE
-    ""
-    STRING
-    "The pre-release part of the semantic version")
+set_cache_with_env_or_default (ADUC_VERSION_PRERELEASE "" STRING
+                               "The pre-release part of the semantic version")
 
-set_cache_with_env_or_default (
-    ADUC_VERSION_BUILD
-    ""
-    STRING
-    "The build ID part of the semantic version")
+set_cache_with_env_or_default (ADUC_VERSION_BUILD "" STRING
+                               "The build ID part of the semantic version")
 
-set_cache_with_env_or_default (
-    ENABLE_ADU_TELEMETRY_REPORTING
-    ON
-    BOOL
-    "The flag to turn on/off reporting versions to telemetry")
+set_cache_with_env_or_default (ENABLE_ADU_TELEMETRY_REPORTING ON BOOL
+                               "The flag to turn on/off reporting versions to telemetry")
 
-set_cache_with_env_or_default (
-    ADUC_BUILDER_IDENTIFIER
-    "DU"
-    STRING
-    "The ADUC builder name: ADUC-sourced builder will be called DU")
+set_cache_with_env_or_default (ADUC_BUILDER_IDENTIFIER "DU" STRING
+                               "The ADUC builder name: ADUC-sourced builder will be called DU")
 
 set (ADUC_VERSION "${ADUC_VERSION_MAJOR}.${ADUC_VERSION_MINOR}.${ADUC_VERSION_PATCH}")
 
@@ -114,8 +135,13 @@ set (
           "The path segment in source tree where testdata for various test folders will be found.")
 
 set (
+    ADUC_TMP_DIR_PATH
+    "/tmp"
+    CACHE STRING "Path to the temporary directory")
+
+set (
     ADUC_TEST_DATA_FOLDER
-    "/tmp/adu/${ADUC_TEST_DATA_PATH_SEGMENT}"
+    "${ADUC_TMP_DIR_PATH}/adu/${ADUC_TEST_DATA_PATH_SEGMENT}"
     CACHE
         STRING
         "Path to the folder containing test data file(s) copied from tests/testdata/<testname> folders in the source tree."
@@ -129,7 +155,10 @@ set (
 set (
     ADUC_EXTENSIONS_INSTALL_FOLDER
     "${ADUC_EXTENSIONS_FOLDER}/sources"
-    CACHE STRING "Path to the folder containing extensions .so file(s).")
+    CACHE
+        STRING
+        "Path to the folder containing extensions .so file(s). This value can not be overridden by du-config.json."
+)
 
 set (
     ADUC_UPDATE_CONTENT_HANDLER_REG_FILENAME
@@ -159,21 +188,6 @@ set (
 set (
     ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS
     "update_content_handlers"
-    CACHE STRING "Sub folder for update step handler extensions.")
-
-set (
-    ADUC_COMPONENT_ENUMERATOR_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR}"
-    CACHE STRING "Path for component enumerator extension.")
-
-set (
-    ADUC_CONTENT_DOWNLOADER_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER}"
-    CACHE STRING "Path for content downloader extension.")
-
-set (
-    ADUC_UPDATE_CONTENT_HANDLER_EXTENSION_DIR
-    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS}"
     CACHE STRING "Sub folder for update step handler extensions.")
 
 set (
@@ -220,29 +234,52 @@ else()
 endif()
 
 # Define the mapping from step handler names to subdirectory names
-set(ADUC_STEP_HANDLER_NAME_TO_DIRECOTRY_MAP
-    "microsoft/apt,apt_handler"
-    "microsoft/script,script_handler"
-    "microsoft/simulator,simulator_handler"
-    "microsoft/swupdate,swupdate_handler"
-    "microsoft/swupdate_v2,swupdate_handler_v2"
-)
+set (
+    ADUC_STEP_HANDLER_NAME_TO_DIRECOTRY_MAP
+    "microsoft/apt,apt_handler" "microsoft/script,script_handler"
+    "microsoft/simulator,simulator_handler" "microsoft/swupdate_v2,swupdate_handler_v2"
+    "microsoft/wim,wim_handler")
+
+if (WIN32)
+    set (
+        ADUC_STEP_HANDLERS
+        "microsoft/script,microsoft/simulator,microsoft/wim"
+        CACHE STRING "The list of step handlers.")
+else ()
+    set (
+        ADUC_STEP_HANDLERS
+        "microsoft/swupdate_v2,microsoft/script,microsoft/apt,microsoft/simulator"
+        CACHE STRING "The list of step handlers.")
+endif ()
 
 set (
-    ADUC_STEP_HANDLERS
-    "microsoft/swupdate_v2,microsoft/swupdate,microsoft/script,microsoft/apt,microsoft/simulator"
-    CACHE STRING "The list of step handlers.")
+    ADUC_ROOTKEY_STORE_PATH
+    "${ADUC_DATA_FOLDER}/rootkeystore"
+    CACHE STRING "Path to the folder containing the information for the local store of root keys")
+
+set (
+    ADUC_ROOTKEY_STORE_PACKAGE_PATH
+    "${ADUC_ROOTKEY_STORE_PATH}/rootkeys.json"
+    CACHE STRING "Path to the folder containing the local root keys")
 
 set (
     ADUC_COMMANDS_FIFO_NAME
     "${ADUC_DATA_FOLDER}/du-commands.fifo"
     CACHE STRING "The named-pipe for commands IPC.")
 
+set (
+    ADUC_ROOTKEY_PKG_URL_OVERRIDE
+    ""
+    CACHE
+        STRING
+        "An override URL to use for the public rootkey package. Leave empty to use the URL provided in the C2D message."
+)
+
 #
 # Starting from version 0.8.1, Device Update Agent must support only one version of the update manifest
 # based on the base dtmi model that the Agent announces when connecting to the IoT Hub.
 #
-# For this version, "dtmi:azure:iot:deviceUpdateModel;2" is using the manifest version verison 5.
+# For this version, "dtmi:azure:iot:deviceUpdateModel;3" is using the manifest version 5.
 #
 set (SUPPORTED_UPDATE_MANIFEST_VERSION_MIN 4)
 set (SUPPORTED_UPDATE_MANIFEST_VERSION_MAX 5)
@@ -279,7 +316,14 @@ set (
 set (
     ADUC_PLATFORM_LAYER
     "linux"
-    CACHE STRING "The platform layer to use. Options: linux")
+    CACHE STRING "The platform layer to use. Options: linux windows")
+
+# By default ADU Agent daemon runs as root.
+# root user home directory should be /root.
+set (
+    ADUC_HOME_FOLDER
+    "/root"
+    CACHE STRING "Path to the ADU Agent home folder.")
 
 set (
     ADUC_INSTALLEDCRITERIA_FILE
@@ -308,14 +352,10 @@ set (
 
 set (
     ADUC_AGENT_FILENAME
-    "AducIotAgent"
+    "AducIotAgent${CMAKE_EXECUTABLE_SUFFIX}"
     CACHE STRING "The filename of the ADU Agent binary.")
 
-get_filename_component (
-    ADUC_AGENT_FILEPATH
-    "${ADUC_AGENT_FOLDER}/${ADUC_AGENT_FILENAME}"
-    ABSOLUTE
-    "/")
+cmake_path (SET ADUC_AGENT_FILEPATH NORMALIZE "${ADUC_AGENT_FOLDER}/${ADUC_AGENT_FILENAME}")
 
 set (
     DIAGNOSTICS_CONFIG_FILE
@@ -334,19 +374,15 @@ set (
 
 set (
     ADUSHELL_FOLDER
-    "/usr/lib/adu"
+    "/usr/bin"
     CACHE STRING "The directory of the adu-shell binary.")
 
 set (
     ADUSHELL_FILENAME
-    "adu-shell"
+    "adu-shell${CMAKE_EXECUTABLE_SUFFIX}"
     CACHE STRING "Filename of adu-shell.")
 
-get_filename_component (
-    ADUSHELL_FILE_PATH
-    "${ADUSHELL_FOLDER}/${ADUSHELL_FILENAME}"
-    ABSOLUTE
-    "/")
+cmake_path (SET ADUSHELL_FILE_PATH NORMALIZE "${ADUSHELL_FOLDER}/${ADUSHELL_FILENAME}")
 
 set (
     ADUSHELL_FILE_PATH
@@ -425,12 +461,6 @@ set (
     "${PROJECT_SOURCE_DIR}/${ADUC_SCRIPTS_FOLDER}"
     CACHE STRING "Path to the scripts folder within the Device Update project")
 
-# Error Code Generator Script Name
-set (
-    ADUC_ERROR_CODE_GENERATOR_SCRIPT_FILENAME
-    "generate_error_code_defs.sh"
-    CACHE STRING "The script file that generates the error code definitions")
-
 # Error Code Definition Folder and Filename
 set (
     ADUC_ERROR_CODE_DEFS_FOLDER
@@ -465,23 +495,15 @@ set (
 
 # Paths for the Folders
 
-get_filename_component (
-    ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT
-    "${ADUC_SCRIPTS_FOLDER_PATH}/${ADUC_ERROR_CODE_GENERATOR_SCRIPT_FILENAME}"
-    ABSOLUTE
-    "/")
+# Error Code Generator Script
+cmake_path (SET ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT NORMALIZE
+            "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/error_code_defs_generator.py")
 
-get_filename_component (
-    ADUC_PATH_TO_ERROR_CODE_JSON_FILE
-    "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/${ADUC_ERROR_CODE_JSON_FILENAME}"
-    ABSOLUTE
-    "/")
+cmake_path (SET ADUC_PATH_TO_ERROR_CODE_JSON_FILE NORMALIZE
+            "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/${ADUC_ERROR_CODE_JSON_FILENAME}")
 
-get_filename_component (
-    ADUC_GENERATED_ERROR_CODE_FILE_PATH
-    "${ADUC_GENERATED_ERROR_CODE_FOLDER_PATH}/${ADUC_ERROR_CODE_DEFS_FILENAME}"
-    ABSOLUTE
-    "/")
+cmake_path (SET ADUC_GENERATED_ERROR_CODE_FILE_PATH NORMALIZE
+            "${ADUC_GENERATED_ERROR_CODE_FOLDER_PATH}/${ADUC_ERROR_CODE_DEFS_FILENAME}")
 
 #######
 # BEGIN Delta Downloader Handler Source Update Cache Configurations
@@ -515,26 +537,22 @@ option (ADUC_BUILD_PACKAGES "Build the ADU Agent packages" OFF)
 option (ADUC_INSTALL_DAEMON "Install the ADU Agent as a daemon" ON)
 option (ADUC_REGISTER_DAEMON "Register the ADU Agent daemon with the system" ON)
 option (ADUC_TRACE_TARGET_DEPS "Trace target dependencies" OFF)
+option (ADUC_USE_TEST_ROOT_KEYS "Include test root keys" OFF)
+option (ADUC_ENABLE_E2E_TESTING "Enable e2e test pipeline settings" OFF)
+option (ADUC_ENABLE_SRVC_E2E_TESTING "Enable service side test agent settings" OFF)
 
 ### End CMake Options
 
 # Construct the absolute path to the adu configuration file.
-get_filename_component (
-    ADUC_CONF_FILE_PATH
-    "${ADUC_CONF_FOLDER}/${ADUC_CONF_FILE}"
-    ABSOLUTE
-    "/")
+cmake_path (SET ADUC_CONF_FILE_PATH NORMALIZE "${ADUC_CONF_FOLDER}/${ADUC_CONF_FILE}")
 set (
     ADUC_CONF_FILE_PATH
     "${ADUC_CONF_FILE_PATH}"
     CACHE STRING "Path to the ADU configuration file.")
 
 # Construct the absolute path to the adu diagnostics configuration file
-get_filename_component (
-    DIAGNOSTICS_CONFIG_FILE_PATH
-    "${ADUC_CONF_FOLDER}/${DIAGNOSTICS_CONFIG_FILE}"
-    ABSOLUTE
-    "/")
+cmake_path (SET DIAGNOSTICS_CONFIG_FILE_PATH NORMALIZE
+            "${ADUC_CONF_FOLDER}/${DIAGNOSTICS_CONFIG_FILE}")
 
 set (
     DIAGNOSTICS_CONFIG_FILE_PATH
@@ -542,21 +560,24 @@ set (
     CACHE STRING "Path to the diagnostics configuration file.")
 
 # Generate the error code definition file
+find_package (
+    Python3
+    COMPONENTS Interpreter
+    REQUIRED)
+
+set (ERROR_CODE_GENERATOR_ARGS "--json-file-path" "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}"
+                               "--result-file-path" "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}")
+
 execute_process (
-    COMMAND
-        ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT} --json-file-path
-        "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}" --result-file-path
-        "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}" -s
+    COMMAND ${Python3_EXECUTABLE} ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}
+            ${ERROR_CODE_GENERATOR_ARGS}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     RESULT_VARIABLE GENERATE_ERROR_CODE_DEFS_RESULT)
 
-if (NOT
-    GENERATE_ERROR_CODE_DEFS_RESULT
-    EQUAL
-    "0")
+if (NOT GENERATE_ERROR_CODE_DEFS_RESULT EQUAL "0")
     message (
         FATAL_ERROR
-            "Failed to generate error code definition from json file ${ADUC_PATH_TO_ERROR_CODE_JSON_FILE} to ${ADUC_GENERATED_ERROR_CODE_FILE_PATH} with error code ${GENERATE_ERROR_CODE_DEFS_RESULT}"
+            "Failed to generate error code definition file using ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}"
     )
 endif ()
 
@@ -565,12 +586,14 @@ if (ADUC_BUILD_UNIT_TESTS)
     # of output folder.
     enable_testing ()
 
-    copy_test_data ("${CMAKE_SOURCE_DIR}" "${ADUC_TEST_DATA_PATH_SEGMENT}"
+    copy_test_data ("${CMAKE_SOURCE_DIR}/src" "${ADUC_TEST_DATA_PATH_SEGMENT}"
                     "${ADUC_TEST_DATA_FOLDER}")
 endif ()
 
 if (ADUC_INSTALL_DAEMON)
-    add_subdirectory (daemon)
+    if (NOT WIN32)
+        add_subdirectory (daemon)
+    endif ()
 endif ()
 
 add_subdirectory (src)

@@ -21,6 +21,10 @@ parameters:
       type: string
     - name: image_working_directory
       type: string
+    - name: device_id_under_test
+      type: string
+    - name: provisioning_type
+      type: string
 steps:
     - task: DownloadPipelineArtifact@2
       displayName: "Download DeviceUpdate Package from pipeline"
@@ -30,6 +34,7 @@ steps:
           pipeline: ${{parameters.package_pipeline}}
           itemPattern: "${{parameters.packagePattern}}"
           path: ${{parameters.image_working_directory}}/
+
     - script: |
           mkdir -p ./scenarios/test_runner/vm_setup/testsetup/
       displayName: "Create the test setup directory that will contain all of the values needed for the setup tarball"
@@ -42,6 +47,14 @@ steps:
       continueOnError: false
       workingDirectory: ${{parameters.image_working_directory}}/
 
+    - script: |
+          chmod u=rwx,g=rwx,o=rx ./scenarios/test_runner/vm_setup/create_x509_certificates.sh
+          ./scenarios/test_runner/vm_setup/create_x509_certificates.sh -d ${{parameters.device_id_under_test}} -p ${{parameters.image_working_directory}}/scenarios/test_runner/vm_setup/testsetup/
+      workingDirectory: ${{parameters.image_working_directory}}/
+      displayName: Creating x509 device certificates for device under test
+      condition: eq('${{ parameters.provisioning_type }}', 'x509')
+
+
     - task: UsePythonVersion@0
       displayName: Using Python version 3.10
       inputs:
@@ -51,11 +64,13 @@ steps:
       workingDirectory: ${{parameters.image_working_directory}}/
       displayName: Installing the toolkits requirements
 
+    # SAS Device Setup
     - task: PythonScript@0
-      displayName: "Run the script to create the device and output a configuration file"
+      displayName: "Run the script to create a sas device and output a configuration file"
+      condition: eq('${{ parameters.provisioning_type }}', 'sas')
       inputs:
           scriptSource: "filePath"
-          scriptPath: "${{parameters.image_working_directory}}/scenarios/test_runner/vm_setup/devicesetup.py"
+          scriptPath: "${{parameters.image_working_directory}}/scenarios/test_runner/vm_setup/sas_devicesetup.py"
           workingDirectory: ${{parameters.image_working_directory}}/
       env:
           IOTHUB_URL: $(IOTHUB_URL)
@@ -66,6 +81,27 @@ steps:
           AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
           AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
           DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
+
+    # X509 Device Setup
+    - task: PythonScript@0
+      displayName: "Run the script to create a x509 device and output a configuration file"
+      condition: eq('${{ parameters.provisioning_type }}', 'x509')
+      inputs:
+          scriptSource: "filePath"
+          scriptPath: "${{parameters.image_working_directory}}/scenarios/test_runner/vm_setup/x509_devicesetup.py"
+          workingDirectory: ${{parameters.image_working_directory}}/
+          arguments: "-p ${{parameters.image_working_directory}}/scenarios/test_runner/vm_setup/testsetup/${{parameters.device_id_under_test}}-primary-thumbprint.txt -s ${{parameters.image_working_directory}}/scenarios/test_runner/vm_setup/testsetup/${{parameters.device_id_under_test}}-secondary-thumbprint.txt -d ${{parameters.device_id_under_test}} -k /etc/prov_info/${{parameters.device_id_under_test}}-primary-key.pem -c /etc/prov_info/${{parameters.device_id_under_test}}-primary.pem"
+      env:
+          IOTHUB_URL: $(IOTHUB_URL)
+          IOTHUB_CONNECTION_STRING: $(IOTHUB_CONNECTION_STRING)
+          ADU_ENDPOINT: $(ADU_ENDPOINT)
+          ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+          AAD_REGISTRAR_CLIENT_ID: $(AAD_REGISTRAR_CLIENT_ID)
+          AAD_REGISTRAR_TENANT_ID: $(AAD_REGISTRAR_TENANT_ID)
+          AAD_CLIENT_SECRET: $(AAD_CLIENT_SECRET)
+          DISTRONAME: ${{ parameters.distroName }}
+          DEVICEID: ${{ parameters.device_id_under_test }}
 
     - script: |
           if [ "${{ parameters.distroName }}" = "debian-10-amd64" ]; then
@@ -76,16 +112,26 @@ steps:
       displayName: Copy the DU configuration file to the same location as the artifact
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}/
+
     - script: |
           mv config.toml ./scenarios/test_runner/vm_setup/testsetup/
       displayName: Copy the AIS configuration file to the same location as the artifact if it exists
       continueOnError: True
       workingDirectory: ${{parameters.image_working_directory}}/
+
     - script: |
-          cp ./scenarios/test_runner/vm_setup/setup.sh ./scenarios/test_runner/vm_setup/testsetup/
+          cp ./scenarios/test_runner/vm_setup/sas_vm_setup.sh ./scenarios/test_runner/vm_setup/testsetup/
       displayName: Copy the setup script to the same location as the artifact
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}/
+      condition: eq('${{ parameters.provisioning_type }}', 'sas')
+
+    - script: |
+          cp ./scenarios/test_runner/vm_setup/x509_vm_setup.sh ./scenarios/test_runner/vm_setup/testsetup/
+      displayName: Copy the setup script to the same location as the artifact
+      continueOnError: False
+      workingDirectory: ${{parameters.image_working_directory}}/
+      condition: eq('${{ parameters.provisioning_type }}', 'x509')
 
     - script: |
           tar -czvf ./scenarios/test_runner/vm_setup/testsetup/adu_srcs_repo.tar.gz -C $(Build.SourcesDirectory) ./src ./scripts ./tools
@@ -112,7 +158,7 @@ steps:
       displayName: "Copying tarball over to the terraform host"
 
     - script: |
-          sudo apt update && sudo apt install curl
+          while pgrep apt > /dev/null; do sleep 1; done; sudo apt update && sudo apt install curl
           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
           sudo apt-add-repository "deb [arch=$(dpkg --print-architecture)] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
           sudo apt install terraform
@@ -123,7 +169,7 @@ steps:
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}/terraform/host/
 
-    - script: terraform apply -var subscription_id="$(SUBSCRIPTION_ID)" -var tenant_id="$(TERRAFORM_TENANT_ID)" -var client_id="$(TERRAFORM_CLIENT_ID)" -var client_secret="$(TERRAFORM_CLIENT_SECRET)" -var key_vault_id="$(Azure_Key_Vault_ID)" -var resource_group_name=$(TERRAFORM_RESOURCE_GROUP_NAME) -var vm_name=${{parameters.distroName}} -var vm_size=${{parameters.vm_size}} -var image_offer=${{parameters.image_offer}} -var image_publisher=${{parameters.image_publisher}} -var image_sku=${{parameters.image_sku}} -var image_version=${{parameters.image_version}} -var test_setup_tarball="./testsetup.tar.gz" -var vm_du_tarball_script="${{parameters.du_tarball_script}}" -auto-approve
+    - script: terraform apply -var subscription_id="$(SUBSCRIPTION_ID)" -var tenant_id="$(TERRAFORM_TENANT_ID)" -var client_id="$(TERRAFORM_CLIENT_ID)" -var client_secret="$(TERRAFORM_CLIENT_SECRET)" -var key_vault_id="$(Azure_Key_Vault_ID)" -var resource_group_name=$(TERRAFORM_RESOURCE_GROUP_NAME) -var vm_name=${{parameters.device_id_under_test}} -var vm_size=${{parameters.vm_size}} -var image_offer=${{parameters.image_offer}} -var image_publisher=${{parameters.image_publisher}} -var image_sku=${{parameters.image_sku}} -var image_version=${{parameters.image_version}} -var test_setup_tarball="./testsetup.tar.gz" -var vm_du_tarball_script="${{parameters.du_tarball_script}}" -auto-approve
       displayName: Creating the Virtual Machines
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}/terraform/host/
@@ -135,7 +181,10 @@ steps:
       continueOnError: False
       workingDirectory: ${{parameters.image_working_directory}}
 
-    - publish: "$(Build.ArtifactStagingDirectory)/terraform/host"
-      displayName: "Publish Terraform state for destroy stage (vm)"
+    - task: 1ES.PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)/terraform/host'
+        artifactName: 'terraformStateVM_${{parameters.device_id_under_test}}'
+        publishLocation: 'pipeline'
+      displayName: 'Publish Terraform state for destroy stage (vm)'
       continueOnError: False
-      artifact: terraformStateVM_${{parameters.distroName}}

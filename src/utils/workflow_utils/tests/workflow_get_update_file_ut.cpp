@@ -11,7 +11,12 @@
 #include <catch2/catch.hpp>
 using Catch::Matchers::Equals;
 
-#include <aduc/parser_utils.h> // ADUC_FileEntity_Uninit
+#define ENABLE_MOCKS
+#include "root_key_store.h"
+#undef ENABLE_MOCKS
+
+#include <aduc/file_test_utils.hpp>
+#include <aduc/parser_utils.h>
 #include <aduc/workflow_utils.h>
 #include <fstream>
 #include <parson.h>
@@ -33,13 +38,33 @@ static std::string get_twin_desired_json_path()
     return path;
 }
 
-static std::string slurp(const std::string& path)
+static std::string get_prod_rootkey_store()
 {
-    std::ifstream f(path);
-    std::stringstream stream;
-    stream << f.rdbuf();
-    return stream.str();
+    std::string path{ ADUC_TEST_DATA_FOLDER };
+    path += "/workflow_get_update_file/prod-rootkeys.json";
+    return path;
 }
+
+std::string g_mockedRootKeyStorePath = "";
+const char* MockRootKeyStore_GetRootKeyStorePath()
+{
+    return g_mockedRootKeyStorePath.c_str();
+}
+class GetRootKeyValidationMockHook
+{
+public:
+    GetRootKeyValidationMockHook()
+    {
+        REGISTER_GLOBAL_MOCK_HOOK(RootKeyStore_GetRootKeyStorePath, MockRootKeyStore_GetRootKeyStorePath);
+    }
+
+    ~GetRootKeyValidationMockHook() = default;
+
+    GetRootKeyValidationMockHook(const GetRootKeyValidationMockHook&) = delete;
+    GetRootKeyValidationMockHook& operator=(const GetRootKeyValidationMockHook&) = delete;
+    GetRootKeyValidationMockHook(GetRootKeyValidationMockHook&&) = delete;
+    GetRootKeyValidationMockHook& operator=(GetRootKeyValidationMockHook&&) = delete;
+};
 
 TEST_CASE("workflow_get_update_file with download handler")
 {
@@ -64,7 +89,7 @@ TEST_CASE("workflow_get_update_file with download handler")
         std::regex_replace(serializedUpdateManifest, std::regex("DELTA_UPDATE_FILE_ID"), deltaUpdateFileId);
     serializedUpdateManifest = std::regex_replace(serializedUpdateManifest, std::regex("\""), "\\\"");
 
-    std::string desired = slurp(get_twin_desired_json_path());
+    std::string desired = aduc::FileTestUtils_slurpFile(get_twin_desired_json_path());
     desired = std::regex_replace(desired, std::regex("UPDATE_MANIFEST_SIGNATURE"), "foo");
     desired = std::regex_replace(desired, std::regex("TARGET_UPDATE_FILE_ID"), targetUpdateFileId);
     desired = std::regex_replace(desired, std::regex("DELTA_UPDATE_FILE_ID"), deltaUpdateFileId);
@@ -124,12 +149,13 @@ const char* manifest_missing_related_file_file_url =
     R"( } )";
 // clang-format on
 
-TEST_CASE("workflow_get_update_file - upd metadata missing relatedFile URL")
+TEST_CASE_METHOD(GetRootKeyValidationMockHook, "workflow_get_update_file - upd metadata missing relatedFile URL")
 {
     SECTION("Fail missing url for fileId")
     {
         ADUC_WorkflowHandle handle = nullptr;
 
+        g_mockedRootKeyStorePath = get_prod_rootkey_store();
         ADUC_Result result =
             workflow_init(manifest_missing_related_file_file_url, true /* validateManifest */, &handle);
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));

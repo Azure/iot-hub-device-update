@@ -11,7 +11,9 @@
 #include "aduc/agent_workflow.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
-#include "aduc/command_helper.h"
+#if !defined(WIN32)
+#    include "aduc/command_helper.h"
+#endif
 #include "aduc/config_utils.h"
 #include "aduc/connection_string_utils.h"
 #include "aduc/d2c_messaging.h"
@@ -23,8 +25,10 @@
 #include "aduc/iothub_communication_manager.h"
 #include "aduc/logging.h"
 #include "aduc/permission_utils.h"
+#include "aduc/shutdown_service.h"
 #include "aduc/string_c_utils.h"
-#include "aduc/system_utils.h"
+#include "aduc/system_utils.h" // ADUC_SystemUtils_MkDirRecursiveDefault
+#include "aducpal/stdlib.h" // setenv
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
@@ -46,16 +50,18 @@
 #endif
 
 #include <limits.h>
-#include <signal.h>
+#include <signal.h> // signal
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h> // strtol
 #include <sys/stat.h>
-#include <unistd.h>
 
 #include "pnp_protocol.h"
 
 #include "eis_utils.h"
+
+// make this last so that it does not interfere when system headers are included after it
+#include "aduc/aduc_banned.h"
 
 /**
  * @brief Make getopt* stop parsing as soon as non-option argument is encountered.
@@ -80,21 +86,10 @@ static const char g_deviceInfoPnPComponentName[] = "deviceInformation";
 // Name of the Diagnostics subcomponent that this device is using
 static const char g_diagnosticsPnPComponentName[] = "diagnosticInformation";
 
-ADUC_LaunchArguments launchArgs;
-
 /**
  * @brief Global IoT Hub client handle.
  */
 ADUC_ClientHandle g_iotHubClientHandle = NULL;
-
-/**
- * @brief Determines if we're shutting down.
- *
- * Value indicates the shutdown signal if shutdown requested.
- *
- * Do not shutdown = 0; SIGINT = 2; SIGTERM = 15;
- */
-static int g_shutdownSignal = 0;
 
 //
 // Components that this agent supports.
@@ -249,6 +244,8 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
     launchArgs->logLevel = ADUC_LOG_INFO;
 #endif
 
+    launchArgs->configFolder = ADUC_CONF_FOLDER;
+
     launchArgs->argc = argc;
     launchArgs->argv = argv;
 
@@ -266,7 +263,10 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             { "extension-type",                required_argument, 0, 't' },
             { "extension-id",                  required_argument, 0, 'i' },
             { "run-as-owner",                  no_argument,       0, 'a' },
+#ifdef ADUC_COMMAND_HELPER_H
             { "command",                       required_argument, 0, 'C' },
+#endif // #ifdef ADUC_COMMAND_HELPER_H
+            { "config-folder",                 required_argument, 0, 'F' },
             { 0, 0, 0, 0 }
         };
         // clang-format on
@@ -277,7 +277,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
         int option = getopt_long(
             argc,
             argv,
-            STOP_PARSE_ON_NONOPTION_ARG RET_COLON_FOR_MISSING_OPTIONARG "avehcu:l:d:n:E:t:i:C:",
+            STOP_PARSE_ON_NONOPTION_ARG RET_COLON_FOR_MISSING_OPTIONARG "avehcu:l:d:n:E:t:i:C:F:",
             long_options,
             &option_index);
 
@@ -297,8 +297,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             launchArgs->iotHubTracingEnabled = true;
             break;
 
-        case 'l':
-        {
+        case 'l': {
             unsigned int logLevel = 0;
             bool ret = atoui(optarg, &logLevel);
             if (!ret || logLevel < ADUC_LOG_DEBUG || logLevel > ADUC_LOG_ERROR)
@@ -322,9 +321,11 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             launchArgs->connectionString = optarg;
             break;
 
+#ifdef ADUC_COMMAND_HELPER_H
         case 'C':
             launchArgs->ipcCommand = optarg;
             break;
+#endif // #ifdef ADUC_COMMAND_HELPER_H
 
         case 'E':
             launchArgs->extensionFilePath = optarg;
@@ -338,6 +339,10 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
             launchArgs->extensionId = optarg;
             break;
 
+        case 'F':
+            launchArgs->configFolder = optarg;
+            break;
+
         case ':':
             switch (optopt)
             {
@@ -346,6 +351,9 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
                 break;
             case 'l':
                 puts("Invalid log level after '--log-level' or '-l' option. Expected value: 0-3.");
+                break;
+            case 'F':
+                puts("Missing folder path after '--config-folder' or '-F' option.");
                 break;
             default:
                 printf("Missing an option value after -%c.\n", optopt);
@@ -654,6 +662,8 @@ static void ADUC_PnPDeviceTwin_Callback(
     }
 }
 
+#ifdef ADUC_COMMAND_HELPER_H
+
 /**
  * @brief Invokes PnPHandleCommandCallback on every PnPComponentEntry.
  *
@@ -676,6 +686,8 @@ static bool RetryUpdateCommandHandler(const char* command, void* commandContext)
 // This command can be use by other process, to tell a DU agent to retry the current update, if exist.
 ADUC_Command redoUpdateCommand = { "retry-update", RetryUpdateCommandHandler };
 
+#endif // #ifdef ADUC_COMMAND_HELPER_H
+
 /**
  * @brief Handles the startup of the agent
  * @details Provisions the connection string with the CLI or either
@@ -687,7 +699,8 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 {
     bool succeeded = false;
 
-    ADUC_ConnectionInfo info = {};
+    ADUC_ConnectionInfo info;
+    memset(&info, 0, sizeof(info));
 
     if (!ADUC_D2C_Messaging_Init())
     {
@@ -781,6 +794,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 
 
 #ifndef ADUC_BUILD_SNAP
+#ifdef ADUC_COMMAND_HELPER_H
     if (InitializeCommandListenerThread())
     {
         RegisterCommand(&redoUpdateCommand);
@@ -792,7 +806,8 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         // Note: even though we can't create command listener here, we need to ensure that
         // the agent stay alive and connected to the IoT hub.
     }
-#endif
+#endif // #ifdef ADUC_COMMAND_HELPER_H
+#endif // #ifndef ADUC_BUILD_SNAP
 
 
     succeeded = true;
@@ -808,10 +823,12 @@ done:
  */
 void ShutdownAgent()
 {
-    Log_Info("Agent is shutting down with signal %d.", g_shutdownSignal);
+    Log_Warn("Agent is shutting down.");
     ADUC_D2C_Messaging_Uninit();
 #ifndef ADUC_BUILD_SNAP
+    #ifdef ADUC_COMMAND_HELPER_H
     UninitializeCommandListenerThread();
+    #endif
 #endif
     ADUC_PnP_Components_Destroy();
     IoTHub_CommunicationManager_Deinit();
@@ -827,21 +844,17 @@ void ShutdownAgent()
  */
 void OnShutdownSignal(int sig)
 {
-    // Main loop will break once this becomes true.
-    g_shutdownSignal = sig;
+    Log_Warn("Shutdown signal detected: %s", sig);
+    ADUC_ShutdownService_RequestShutdown();
 }
 
 /**
- * @brief Called when a restart (SIGUSR1) signal is detected.
- *
- * @param sig Signal value.
+ * @brief Called when a restart signal is issued.
  */
-void OnRestartSignal(int sig)
+void OnRestartSignal()
 {
-    // Note: Main loop will break once this becomes true. We rely on the 'Restart' setting in
-    // deviceupdate-agent.service file to instruct systemd to restart the agent.
-    Log_Info("Restart signal detect.");
-    g_shutdownSignal = sig;
+    Log_Warn("Restart signal detected.");
+    ADUC_ShutdownService_RequestShutdown();
 }
 
 /**
@@ -851,15 +864,17 @@ void OnRestartSignal(int sig)
  * This to ensure that the agent process is run with the intended privileges, and the resource that
  * created by the agent has the correct ownership.
  *
+ * @remark This function requires that the ADUC_ConfigInfo singleton has been initialized.
+ *
  * @return bool true on success.
  */
 bool RunAsDesiredUser()
 {
     bool success = false;
-    ADUC_ConfigInfo config = {};
-    if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
     {
-        Log_Error("Cannot read configuration file.");
+        Log_Error("ADUC_ConfigInfo_GetInstance failed.");
         return false;
     }
 
@@ -869,15 +884,16 @@ bool RunAsDesiredUser()
         goto done;
     }
 
-    if (!PermissionUtils_SetProcessEffectiveUID(config.agents[0].runas))
+    if (!PermissionUtils_SetProcessEffectiveUID(config->agents[0].runas))
     {
-        Log_Error("Failed to set process effective user to '%s'. (errno:%d)", config.agents[0].runas, errno);
+        Log_Error("Failed to set process effective user to '%s'. (errno:%d)", config->agents[0].runas, errno);
         goto done;
     }
 
     success = true;
 done:
-    ADUC_ConfigInfo_UnInit(&config);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+
     return success;
 }
 
@@ -898,6 +914,8 @@ done:
  */
 int main(int argc, char** argv)
 {
+    ADUC_LaunchArguments launchArgs;
+
     InitializeModeledComponents();
 
     int ret = ParseLaunchArguments(argc, argv, &launchArgs);
@@ -914,6 +932,15 @@ int main(int argc, char** argv)
 
     // Need to set ret and goto done after this to ensure proper shutdown and deinitialization.
     ADUC_Logging_Init(launchArgs.logLevel, "du-agent");
+
+    ADUCPAL_setenv(ADUC_CONFIG_FOLDER_ENV, launchArgs.configFolder, 1);
+
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == NULL)
+    {
+        Log_Error("Cannot initialize config info.");
+        return -1;
+    }
 
     // default to failure
     ret = 1;
@@ -986,6 +1013,7 @@ int main(int argc, char** argv)
         }
     }
 
+#ifdef ADUC_COMMAND_HELPER_H
     // This instance of an agent is launched for sending command to the main agent process.
     if (launchArgs.ipcCommand != NULL)
     {
@@ -996,6 +1024,7 @@ int main(int argc, char** argv)
 
         goto done;
     }
+#endif // #ifdef ADUC_COMMAND_HELPER_H
 
 #ifndef ADUC_BUILD_SNAP
     // Switch to specified agent.runas user.
@@ -1051,11 +1080,6 @@ int main(int argc, char** argv)
     signal(SIGINT, OnShutdownSignal);
     signal(SIGTERM, OnShutdownSignal);
 
-    //
-    // Catch restart (SIGUSR1) signal raised by a workflow.
-    //
-    signal(SIGUSR1, OnRestartSignal);
-
     if (!StartupAgent(&launchArgs))
     {
         goto done;
@@ -1066,7 +1090,7 @@ int main(int argc, char** argv)
     //
 
     Log_Info("Agent running.");
-    while (g_shutdownSignal == 0)
+    while (ADUC_ShutdownService_ShouldKeepRunning())
     {
         // If any components have requested a DoWork callback, regularly call it.
         for (unsigned index = 0; index < ARRAY_SIZE(componentList); ++index)
@@ -1097,6 +1121,8 @@ done:
     Log_Info("Agent exited with code %d", ret);
 
     ShutdownAgent();
+
+    ADUC_ConfigInfo_ReleaseInstance(config);
 
     return ret;
 }

@@ -1,5 +1,5 @@
 /**
- * @file string_handle_wrapper.h
+ * @file string_handle_wrapper.hpp
  * @brief Defines STRING_HANDLE_wrapper class
  *
  * @copyright Copyright (c) Microsoft Corporation.

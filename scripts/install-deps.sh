@@ -11,6 +11,7 @@
 # Ensure that getopt starts from first option if ". <script.sh>" was used.
 OPTIND=1
 
+ret=""
 # Ensure we dont end the user's terminal session if invoked from source (".").
 if [[ $0 != "${BASH_SOURCE[0]}" ]]; then
     ret='return'
@@ -43,19 +44,20 @@ use_ssh=false
 
 install_aduc_deps=false
 install_azure_iot_sdk=false
-azure_sdk_ref=LTS_07_2021_Ref01
+azure_sdk_ref=LTS_08_2023
 
+# ADUC Diagnostics Deps
+azure_storage_sdk_branch_ref=main
+azure_storage_sdk_tag_ref=azure-core_1.6.0
+install_azure_storage_sdk=false
 # ADUC Test Deps
 
 install_catch2=false
-default_catch2_ref=v2.11.0
+default_catch2_ref=v2.x
 catch2_ref=$default_catch2_ref
 install_swupdate=false
 default_swupdate_ref=2021.11
 swupdate_ref=$default_swupdate_ref
-
-install_azure_blob_storage_file_upload_utility=false
-azure_blob_storage_file_upload_utility_ref=main
 
 install_cmake=false
 supported_cmake_version='3.23.2'
@@ -81,11 +83,18 @@ do_cmake_options=(
         "-DDO_INCLUDE_SDK=ON"
     )
 
+# catch2 build
+#
+# used for dependencies like catch2 that will find system default
+# (e.g. g++-9) despite g++-10 installed, so use CC and CXX env
+# vars that CMake will honor.
+catch2_cc=""
+catch2_cxx=""
 
 # Dependencies packages
-aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config')
+aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config' 'libxml2-dev')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
-compiler_packages=("gcc-[68]")
+compiler_packages=('gcc' 'g++')
 
 # Distro and arch info
 OS=""
@@ -105,10 +114,9 @@ print_help() {
     echo "                          Implies --install-azure-iot-sdk and --install-catch2."
     echo "                          When used with --install-packages will also install the package dependencies."
     echo "--install-azure-iot-sdk   Install the Azure IoT C SDK from source."
+    echo "--install-azure-storage-sdk Install the Azure SDK for CPP from source."
     echo "--azure-iot-sdk-ref <ref> Install the Azure IoT C SDK from a specific branch or tag."
     echo "                           Default is public-preview."
-    echo "--install-abs-file-upload-utility   Install the Azure Blob Storage File Upload Utility from source."
-    echo "--abs-file-upload-utility-ref <ref> Install the Azure Blob Storage File Upload Utility from a specific branch or tag."
     echo "--install-catch2          Install Catch2 from source."
     echo "--install-cmake           Installs supported version of cmake from installer if on ubuntu, else installs it from source."
     echo "--install-shellcheck      Installs supported version of shellcheck."
@@ -145,6 +153,7 @@ print_help() {
     echo "-k, --keep-source-code            Indicates that source code should not be deleted after install from work_folder."
     echo ""
     echo "--use-ssh                 Use ssh URLs to clone instead of https URLs."
+    echo ""
     echo "--list-deps               List the states of the dependencies."
     echo "-h, --help                Show this help message."
     echo ""
@@ -175,12 +184,21 @@ do_install_aduc_packages() {
     # The latest version of gcc available on Debian is gcc-6. We install that version if we are
     # building for Debian, otherwise we install gcc-8 for Ubuntu.
     OS=$(lsb_release --short --id)
-    if [[ $OS == "debian" && $VER == "9" ]]; then
+    if [[ $OS == "Debian" && $VER == "9" ]]; then
         $SUDO apt-get install --yes gcc-6 g++-6 || return
-    elif [[ $OS == "Debian" && $VER == "11" ]]; then
+        catch2_cc=/usr/bin/gcc-6
+        catch2_cxx=/usr/bin/g++-6
+    elif [[ ($OS == "Debian" && $VER == "11") || (\
+        $OS == "Ubuntu" && $VER == "20.04") || (\
+        $OS == "Ubuntu" && $VER == "22.04") ]] \
+            ; then
         $SUDO apt-get install --yes gcc-10 g++-10 || return
+        catch2_cc=/usr/bin/gcc-10
+        catch2_cxx=/usr/bin/g++-10
     else
         $SUDO apt-get install --yes gcc-8 g++-8 || return
+        catch2_cc=/usr/bin/gcc-8
+        catch2_cxx=/usr/bin/g++-8
     fi
 
     echo "Installing packages required for static analysis..."
@@ -227,6 +245,7 @@ do_install_azure_iot_sdk() {
         "-Dskip_samples:BOOL=ON"
         "-Dbuild_service_client:BOOL=OFF"
         "-Dbuild_provisioning_service_client:BOOL=OFF"
+        "-Duse_prov_client:BOOL=OFF"
     )
 
     if [[ $keep_source_code == "true" ]]; then
@@ -270,8 +289,9 @@ do_install_catch2() {
 
     mkdir cmake || return
     pushd cmake > /dev/null || return
-    cmake .. || return
-    cmake --build . || return
+
+    CC="$catch2_cc" CXX="$catch2_cxx" cmake .. || return
+    CC="$catch2_cc" CXX="$catch2_cxx" cmake --build . || return
     $SUDO cmake --build . --target install || return
     popd > /dev/null || return
     popd > /dev/null || return
@@ -455,8 +475,6 @@ do_install_do() {
 
     git clone --recursive --single-branch --branch $do_ref --depth 1 $do_url . || return
 
-    #TODO: Remove the sepecif commit once DO publishs a new tag
-    git checkout 02c9ae2c7484182903c66ad986a834762fc569e6
     bootstrap_file=$do_dir/build/scripts/bootstrap.sh
     chmod +x $bootstrap_file || return
     $SUDO $bootstrap_file --install build || return
@@ -481,56 +499,46 @@ do_install_do() {
     fi
 }
 
-do_install_azure_blob_storage_file_upload_utility() {
-    echo "Installing azure-blob-storage-file-upload-utility from source."
-    local abs_fuu_dir=$work_folder/azure_blob_storage_file_upload_utility
+do_install_azure_storage_sdk() {
+    echo "Installing azure-storage-sdk"
+    local azure_storage_sdk_dir=$work_folder/azure_storage_sdk_dir
 
-    if [[ -d $abs_fuu_dir ]]; then
-        $SUDO rm -rf $abs_fuu_dir || return 1
+    if [[ -d $azure_storage_sdk_dir ]]; then
+        $SUDO rm -rf $azure_storage_sdk_dir || return
     fi
 
-    local azure_storage_cpplite_url
+    local azure_storage_sdk_url
     if [[ $use_ssh == "true" ]]; then
-        azure_storage_cpplite_url=git@github.com:Azure/azure-blob-storage-file-upload-utility.git
+        azure_storage_sdk_url=git@github.com:Azure/azure-sdk-for-cpp.git
     else
-        azure_storage_cpplite_url=https://github.com/Azure/azure-blob-storage-file-upload-utility.git
+        azure_storage_sdk_url=https://github.com/Azure/azure-sdk-for-cpp.git
     fi
 
-    echo -e "Cloning Azure Blob Storage File Upload Uility ...\n\tBranch: $azure_blob_storage_file_upload_utility_ref\n\t Folder: $abs_fuu_dir"
-    mkdir -p $abs_fuu_dir || return
-    pushd $abs_fuu_dir > /dev/null || return
-    git clone --recursive --single-branch --branch $azure_blob_storage_file_upload_utility_ref --depth 1 $azure_storage_cpplite_url . || return
+    echo -e "Building Azure Storage SDK ...\n\tBranch: $azure_storage_sdk_branch_ref\n\t Folder: $azure_storage_sdk_dir"
+    mkdir -p $azure_storage_sdk_dir || return
+    pushd $azure_storage_sdk_dir > /dev/null || return
+    git clone --recursive --single-branch --branch $azure_storage_sdk_branch_ref $azure_storage_sdk_url . || return
 
-    echo -e "Installing Azure Blob Storage File Upload Utiltiy dependencies..."
+    git checkout tags/$azure_storage_sdk_tag_ref
 
-    # Note added to make sure that install-deps.sh is executable
-    chmod u+x ./scripts/install-deps.sh
+    local azure_storage_sdk_cmake_options=""
 
-    # Note we can skip the azure iot sdk installation because it is guaranteed that it will already be installed.
-    ./scripts/install-deps.sh -a --skip-azure-iot-sdk-install
-
-    mkdir cmake || return
-    pushd cmake > /dev/null || return
-
-    local azure_blob_storage_file_upload_utility_cmake_options
     if [[ $keep_source_code == "true" ]]; then
         # If source is wanted, presumably samples and symbols are useful as well.
-        azure_blob_storage_file_upload_utility_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Debug")
+        azure_storage_sdk_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Debug")
     else
-        azure_blob_storage_file_upload_utility_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
+        azure_storage_sdk_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
     fi
 
-    echo -e "Building Azure Blob Storage File Upload Uility ...\n\tBranch: $azure_blob_storage_file_upload_utility_ref\n\t"
-    cmake "${azure_blob_storage_file_upload_utility_cmake_options[@]}" .. || return
+    cmake "${azure_storage_sdk_cmake_options[@]}" . || return
 
-    cmake --build . || return 1
+    cmake --build . || return
     $SUDO cmake --build . --target install || return
 
     popd > /dev/null || return
-    popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $abs_fuu_dir || return 1
+        $SUDO rm -rf $azure_storage_sdk_dir || return
     fi
 }
 
@@ -785,17 +793,12 @@ while [[ $1 != "" ]]; do
     --install-azure-iot-sdk)
         install_azure_iot_sdk=true
         ;;
+    --install-azure-storage-sdk)
+        install_azure_storage_sdk=true
+        ;;
     --azure-iot-sdk-ref)
         shift
         azure_sdk_ref=$1
-        ;;
-    --install-abs-file-upload-utility)
-        shift
-        install_azure_blob_storage_file_upload_utility=true
-        ;;
-    --abs-file-upload-utility-ref)
-        shift
-        azure_blob_storage_file_upload_utility_ref=$1
         ;;
     --install-catch2)
         install_catch2=true
@@ -914,7 +917,7 @@ if [[ $install_aduc_deps == "true" ]]; then
     install_cmake=true
     install_azure_iot_sdk=true
     install_catch2=true
-    install_azure_blob_storage_file_upload_utility=true
+    install_azure_storage_sdk=true
 fi
 
 # Set implied options for packages only.
@@ -1005,8 +1008,8 @@ if [[ $install_packages_only == "false" ]]; then
         do_install_do || $ret
     fi
 
-    if [[ $install_azure_blob_storage_file_upload_utility == "true" ]]; then
-        do_install_azure_blob_storage_file_upload_utility || $ret
+    if [[ $install_azure_storage_sdk == "true" ]]; then
+        do_install_azure_storage_sdk || $ret
     fi
 fi
 

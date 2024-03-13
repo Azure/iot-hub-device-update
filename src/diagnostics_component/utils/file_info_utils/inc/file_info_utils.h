@@ -23,19 +23,19 @@ EXTERN_C_BEGIN
  */
 typedef struct tagFileInfo
 {
-    unsigned long fileSize; //!< size of the file in bytes
+    long long fileSize; //!< size of the file in bytes
     char* fileName; //!< the name of the file
     time_t lastWrite; //!< the last time the file was modified
 } FileInfo;
 
 bool FileInfoUtils_GetNewestFilesInDirUnderSize(
-    VECTOR_HANDLE* fileNameVector, const char* directoryPath, const unsigned int maxFileSize);
+    VECTOR_HANDLE* fileNameVector, const char* directoryPath, const long long maxFileSize);
 
 bool FileInfoUtils_InsertFileInfoIntoArray(
     FileInfo* sortedLogFiles,
     size_t sortedLogFileLength,
     const char* candidateFileName,
-    unsigned long sizeOfCandidateFile,
+    long long sizeOfCandidateFile,
     time_t candidateLastWrite);
 
 EXTERN_C_END

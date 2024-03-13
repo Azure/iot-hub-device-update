@@ -23,6 +23,8 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <time.h> // time_t
+
 //
 // IdentityService Response FieldNames
 //
@@ -164,10 +166,10 @@ EISUtilityResult BuildSharedAccessSignature(
         goto done;
     }
 
-    // Note: 12 is the maximum amount of characters needed to represent a time_t in string format
-    char expiryStr[ARRAY_SIZE("2147483647")];
+    // time_t is 64-bit on Windows, so use 64-bit value.
+    char expiryStr[ARRAY_SIZE("9223372036854775807")];
 
-    if (snprintf(expiryStr, ARRAY_SIZE(expiryStr), "%ld", expirySecsSinceEpoch) == 0)
+    if (snprintf(expiryStr, ARRAY_SIZE(expiryStr), "%llu", (unsigned long long)expirySecsSinceEpoch) == 0)
     {
         goto done;
     }
@@ -475,7 +477,7 @@ done:
 
 /**
  * @brief Reads EIS Identities information from a EIS data file
- * @details Reads EIS Identity from a file, first line being the identity response, 
+ * @details Reads EIS Identity from a file, first line being the identity response,
  * and the second line being the EIS Error Code.
  * @param[in,out] identityResponseBuffer the pointer to Identity response string
  * @returns a value of EISErr

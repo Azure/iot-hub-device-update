@@ -57,7 +57,7 @@ workflow_init_from_file(const char* updateManifestFile, bool validateManifest, A
  * @param handle A workflow object handle with information about the workflow.
  * @return ADUC_Result
  */
-ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, int stepIndex, ADUC_WorkflowHandle* handle);
+ADUC_Result workflow_create_from_inline_step(ADUC_WorkflowHandle base, size_t stepIndex, ADUC_WorkflowHandle* handle);
 
 /**
  * @brief Transfer action data from @p sourceHandle to @p targetHandle.
@@ -202,6 +202,14 @@ bool workflow_set_workfolder(ADUC_WorkflowHandle handle, const char* format, ...
  * @return char* contains full path to work folder. Caller must call workflow_free_string() to free the memory once done.
  */
 char* workflow_get_workfolder(const ADUC_WorkflowHandle handle);
+
+/**
+ * @brief Get the base directory for this workflow.
+ * @details The base directory is the parent directory of the work folder.
+ * @param handle A workflow data object handle.
+ * @return char* contains full path to work folder. Caller must call workflow_free_string() to free the memory once done.
+ */
+char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle);
 
 /**
  * @brief Sets selected-components (in a form of serialized json string) to be used in this workflow.
@@ -408,7 +416,7 @@ ADUC_WorkflowHandle workflow_get_parent(ADUC_WorkflowHandle handle);
  * @param handle A workflow data object handle.
  * @return A total count of child workflows.
  */
-int workflow_get_children_count(ADUC_WorkflowHandle handle);
+size_t workflow_get_children_count(ADUC_WorkflowHandle handle);
 
 /**
  * @brief Get child workflow at specified @p index.
@@ -418,7 +426,7 @@ int workflow_get_children_count(ADUC_WorkflowHandle handle);
  * @param index Index of child to get.
  * @return ADUC_WorkflowHandle A child workflow object handle.
  */
-ADUC_WorkflowHandle workflow_get_child(ADUC_WorkflowHandle handle, int index);
+ADUC_WorkflowHandle workflow_get_child(ADUC_WorkflowHandle handle, size_t index);
 
 /**
  * @brief Insert @p childHandle into @p handle children list.
@@ -449,8 +457,9 @@ ADUCITF_State workflow_get_state(ADUC_WorkflowHandle handle);
 
 ADUC_Result workflow_get_result(ADUC_WorkflowHandle handle);
 void workflow_set_result(ADUC_WorkflowHandle handle, ADUC_Result result);
-ADUC_Result_t workflow_get_success_erc(ADUC_WorkflowHandle handle);
-void workflow_set_success_erc(ADUC_WorkflowHandle handle, ADUC_Result_t erc);
+
+void workflow_add_erc(ADUC_WorkflowHandle handle, ADUC_Result_t erc);
+STRING_HANDLE workflow_get_extra_ercs(ADUC_WorkflowHandle handle);
 
 /**
  * @brief Set workflow resultDetails string.
@@ -640,7 +649,7 @@ void workflow_set_level(ADUC_WorkflowHandle handle, int level);
  * @param handle A workflow object handle.
  * @param stepIndex A workflow step index.
  */
-void workflow_set_step_index(ADUC_WorkflowHandle handle, int stepIndex);
+void workflow_set_step_index(ADUC_WorkflowHandle handle, size_t stepIndex);
 
 /**
  * @brief Get workflow level.
@@ -754,6 +763,40 @@ bool workflow_get_force_update(ADUC_WorkflowHandle workflowHandle);
  * @param forceUpdate Set to true to bypass duplicate workflow check.
  */
 void workflow_set_force_update(ADUC_WorkflowHandle handle, bool forceUpdate);
+
+/**
+ * @brief peeks at the properties under the "workflow" unprotected property
+ *
+ * @param updateActionJsonObj The JSON object of the update action JSON.
+ * @param outWorkflowUpdateAction The output parameter for receiving the value of "action" under "workflow". May be set to NULL if there was none in the JSON.
+ * @param outRootKeyPkgUrl_optional The output parameter for receiving the value of "rootkeyPkgUrl" unprotected property from the updateAction json. Will not be set when error result is returned or NULL is passed.
+ * @param outWorkflowId_optional The output parameter for receiving the value of "id" under "workflow". May be set to NULL if there was none in the JSON.
+ *
+ * @details Caller must never free workflowId.
+ * @returns ADUC_Result The result.
+ */
+ADUC_Result workflow_parse_peek_unprotected_workflow_properties(
+    JSON_Object* updateActionJsonObj,
+    ADUCITF_UpdateAction* outWorkflowUpdateAction,
+    char** outRootkeyPkgUrl_optional,
+    char** outWorkflowId_optional);
+
+/**
+ * @brief Allocate and initialize a workflow handle onto the workflow Data.
+ *
+ * @param workflowData The workflow data on which to set the new workflow handle.
+ * @return true on success.
+ */
+bool workflow_init_workflow_handle(ADUC_WorkflowData* workflowData);
+
+/**
+ * @brief Sets the update action json on the workflow handle
+ *
+ * @param handle The workflow handle on which to set the update action json object.
+ * @param jsonObj The update action json object.
+ * @return true on success.
+ */
+bool workflow_set_update_action_object(ADUC_WorkflowHandle handle, JSON_Object* jsonObj);
 
 EXTERN_C_END
 

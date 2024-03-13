@@ -1,0 +1,45 @@
+{
+    "protected": {
+        "isTest": true,
+        "version": 2,
+        "published": 1667343602,
+        "disabledRootKeys": ["rootkey1", "rootkey2"],
+        "disabledSigningKeys": [
+            {
+                "alg": "SHA256",
+                "hash": "{{disabledHashPublicSigningKey}}"
+            }
+        ],
+        "rootKeys": {
+            "rootkey1": {
+                "keyType": "RSA",
+                "n": "{{modulus_1}}",
+                "e": {{exponent_1}}
+            },
+            "rootkey2": {
+                "keyType": "RSA",
+                "n": "{{modulus_2}}",
+                "e": {{exponent_2}}
+            },
+            "rootkey3": {
+                "keyType": "RSA",
+                "n": "{{modulus_3}}",
+                "e": {{exponent_3}}
+            }
+        }
+    },
+    "signatures": [
+        {
+            "alg": "RS256",
+            "sig": "{{rootkeysig_1}}"
+        },
+        {
+            "alg": "RS256",
+            "sig": "{{rootkeysig_2}}"
+        },
+        {
+            "alg": "RS256",
+            "sig": "{{rootkeysig_3}}"
+        }
+    ]
+}

@@ -61,7 +61,8 @@ ADUC_Result MicrosoftDeltaDownloadHandler_ProcessUpdate(
     // will cause the agent to not fail and download the original, full update.
     for (int index = 0; index < fileEntity->RelatedFileCount; ++index)
     {
-        ADUC_Result relatedFileResult = {};
+        ADUC_Result relatedFileResult;
+        memset(&relatedFileResult, 0, sizeof(relatedFileResult));
         ADUC_RelatedFile* relatedFile = &fileEntity->RelatedFiles[index];
 
         if (relatedFile->Properties == NULL || relatedFile->PropertiesCount < 1)
@@ -81,7 +82,7 @@ ADUC_Result MicrosoftDeltaDownloadHandler_ProcessUpdate(
         if (relatedFileResult.ResultCode == ADUC_Result_Success_Cache_Miss)
         {
             Log_Warn("src update cache miss for Delta %d", index);
-            workflow_set_success_erc(workflowHandle, ADUC_ERC_DDH_SOURCE_UPDATE_CACHE_MISS);
+            workflow_add_erc(workflowHandle, ADUC_ERC_DDH_SOURCE_UPDATE_CACHE_MISS);
             continue;
         }
 
@@ -93,7 +94,7 @@ ADUC_Result MicrosoftDeltaDownloadHandler_ProcessUpdate(
         }
 
         Log_Warn("Delta %d failed, ERC: 0x%08x.", index, relatedFileResult.ExtendedResultCode);
-        workflow_set_success_erc(workflowHandle, relatedFileResult.ExtendedResultCode);
+        workflow_add_erc(workflowHandle, relatedFileResult.ExtendedResultCode);
         // continue processing the next relatedFile
     }
 

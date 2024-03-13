@@ -1,32 +1,32 @@
 # Template: Template for deleting the
 parameters:
-    - name: distroName
-      type: string
     - name: terraformResourceGroupName
+      type: string
+    - name: device_id_under_test
       type: string
 steps:
     - script: |
-          sudo apt update && sudo apt install curl
+          while pgrep apt > /dev/null; do sleep 1; done; sudo apt update && sudo apt install curl
           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
           sudo apt-add-repository "deb [arch=$(dpkg --print-architecture)] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
           sudo apt install terraform
       displayName: Installing Terraform
     - script: |
-          mkdir $(Pipeline.Workspace)/terraformStateVM_${{parameters.distroName}}
+          mkdir $(Pipeline.Workspace)/terraformStateVM_${{parameters.device_id_under_test}}
       displayName: Create the artifact directory
       workingDirectory: $(Pipeline.Workspace)
 
     - task: DownloadPipelineArtifact@2
       inputs:
           buildType: "current"
-          artifactName: "terraformStateVM_${{parameters.distroName}}"
-          targetPath: "$(Pipeline.Workspace)/terraformStateVM_${{parameters.distroName}}"
+          artifactName: "terraformStateVM_${{parameters.device_id_under_test}}"
+          targetPath: "$(Pipeline.Workspace)/terraformStateVM_${{parameters.device_id_under_test}}"
       displayName: Downloading the terraform artifacts
       continueOnError: false
 
     - script: |
           terraform init
           terraform destroy -var client_id="$(TERRAFORM_CLIENT_ID)" -var client_secret="$(TERRAFORM_CLIENT_SECRET)" -var subscription_id="$(SUBSCRIPTION_ID)" -var tenant_id="$(TERRAFORM_TENANT_ID)" -var key_vault_id="$(Azure_Key_Vault_ID)" -var resource_group_name=${{parameters.terraformResourceGroupName}} -auto-approve || true
-      workingDirectory: $(Pipeline.Workspace)/terraformStateVM_${{parameters.distroName}}
+      workingDirectory: $(Pipeline.Workspace)/terraformStateVM_${{parameters.device_id_under_test}}
       displayName: Destroy cloud resources (VM)
       continueOnError: true

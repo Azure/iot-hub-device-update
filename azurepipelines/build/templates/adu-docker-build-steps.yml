@@ -2,7 +2,7 @@
 # Consume this steps template in one or more jobs by passing in parameter values.
 
 parameters:
-    - name: targetOs # example: ubuntu1804
+    - name: targetOs # example: ubuntu2204
       type: string
     - name: targetArch # example: amd64
       type: string
@@ -69,7 +69,7 @@ steps:
           failTaskOnFailedTests: true
           publishRunAttachments: false # Attachments are not supported for CTest
 
-    - task: PublishPipelineArtifact@0
+    - task: 1ES.PublishPipelineArtifact@1
       displayName: "Publish Pipeline Artifacts"
       inputs:
           artifactName: "adu-client-${{parameters.targetOs}}-${{parameters.targetArch}}"

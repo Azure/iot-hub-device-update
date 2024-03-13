@@ -1,6 +1,7 @@
 project (source_update_cache_unit_tests)
 
 include (agentRules)
+
 compileasc99 ()
 disablertti ()
 
@@ -22,6 +23,8 @@ target_link_libraries (
             aduc::workflow_utils
             Catch2::Catch2
             Parson::parson)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
 target_compile_definitions (
     ${PROJECT_NAME}

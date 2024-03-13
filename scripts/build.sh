@@ -31,12 +31,15 @@ build_packages=false
 build_snap=false;
 platform_layer="linux"
 trace_target_deps=false
-step_handlers="microsoft/apt,microsoft/script,microsoft/simulator,microsoft/swupdate,microsoft/swupdate_v2"
+step_handlers="microsoft/apt,microsoft/script,microsoft/simulator,microsoft/swupdate_v2"
+use_test_root_keys=false
+srvc_e2e_agent_build=false
 build_type=Debug
 adu_log_dir=""
 default_log_dir=/var/log/adu
 output_directory=$root_dir/out
 build_unittests=false
+enable_e2e_testing=false
 declare -a static_analysis_tools=()
 log_lib="zlog"
 install_prefix=/usr/local
@@ -51,6 +54,7 @@ print_help() {
     echo "                                      Options: Release Debug RelWithDebInfo MinSizeRel"
     echo "-d, --build-docs                      Builds the documentation."
     echo "-u, --build-unit-tests                Builds unit tests."
+    echo "--enable-e2e-testing                  Enables settings for the E2E test pipelines."
     echo "--build-packages                      Builds and packages the client in various package formats e.g debian."
     echo "-o, --out-dir <out_dir>               Sets the build output directory. Default is out."
     echo "-s, --static-analysis <tools...>      Runs static analysis as part of the build."
@@ -80,6 +84,8 @@ print_help() {
     echo ""
     echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
     echo ""
+    echo "--openssl-path                        Override the openssl path"
+    echo ""
     echo "--major-version                       Major version of ADU"
     echo ""
     echo "--minor-version                       Minor version of ADU"
@@ -99,7 +105,7 @@ copyfile_exit_if_failed() {
     ret_val=$?
     if [[ $ret_val != 0 ]]; then
         error "failed to copy $1 to $2 (exit code:$ret_val)"
-        return $ret_val
+        $ret $ret_val
     fi
 }
 
@@ -228,6 +234,9 @@ while [[ $1 != "" ]]; do
     -u | --build-unit-tests)
         build_unittests=true
         ;;
+    --enable-e2e-testing)
+        enable_e2e_testing=true
+        ;;
     --build-packages)
         build_packages=true
         ;;
@@ -265,6 +274,12 @@ while [[ $1 != "" ]]; do
     --trace-target-deps)
         trace_target_deps=true
         ;;
+    --use-test-root-keys)
+        use_test_root_keys=true
+        ;;
+    --build-service-e2e-agent)
+        srvc_e2e_agent_build=true
+        ;;
     --log-lib)
         shift
         if [[ -z $1 || $1 == -* ]]; then
@@ -298,6 +313,10 @@ while [[ $1 != "" ]]; do
         ;;
     --cmake-path)
         shift
+        if [[ -z $1 || $1 == -* ]]; then
+            error "--cmake-path parameter is mandatory."
+            $ret 1
+        fi
         cmake_dir_path=$1
         ;;
     --major-version)
@@ -364,6 +383,15 @@ fi
 cmake_bin="${cmake_dir_path}/bin/cmake"
 shellcheck_bin="${work_folder}/deviceupdate-shellcheck"
 
+if [[ $srvc_e2e_agent_build == "true" ]]; then
+    warn "BUILDING SERVICE E2E AGENT NEVER USE FOR PRODUCTION"
+    echo "Additionally implies: "
+    echo " --enable-e2e-testing , --use-test-root-keys, --build-packages"
+    use_test_root_keys=true
+    enable_e2e_testing=true
+    build_packages=true
+fi
+
 # Output banner
 echo ''
 header "Building ADU Agent"
@@ -377,6 +405,7 @@ bullet "Log directory: $adu_log_dir"
 bullet "Logging library: $log_lib"
 bullet "Output directory: $output_directory"
 bullet "Build unit tests: $build_unittests"
+bullet "Enable E2E testing: $enable_e2e_testing"
 bullet "Build packages: $build_packages"
 bullet "Build Ubuntu Core Snap package: $build_snap"
 bullet "CMake: $cmake_bin"
@@ -388,18 +417,20 @@ if [[ ${#static_analysis_tools[@]} -eq 0 ]]; then
 else
     bullet "Static analysis: " "${static_analysis_tools[@]}"
 fi
+bullet "Include Test Root Keys: $use_test_root_keys"
 echo ''
 
-# Store options for CMAKE in an array
 CMAKE_OPTIONS=(
     "-DADUC_BUILD_DOCUMENTATION:BOOL=$build_documentation"
     "-DADUC_BUILD_UNIT_TESTS:BOOL=$build_unittests"
     "-DADUC_BUILD_PACKAGES:BOOL=$build_packages"
     "-DADUC_STEP_HANDLERS:STRING=$step_handlers"
+    "-DADUC_ENABLE_E2E_TESTING=$enable_e2e_testing"
     "-DADUC_LOG_FOLDER:STRING=$adu_log_dir"
     "-DADUC_LOGGING_LIBRARY:STRING=$log_lib"
     "-DADUC_PLATFORM_LAYER:STRING=$platform_layer"
     "-DADUC_TRACE_TARGET_DEPS=$trace_target_deps"
+    "-DADUC_USE_TEST_ROOT_KEYS=$use_test_root_keys"
     "-DCMAKE_BUILD_TYPE:STRING=$build_type"
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
@@ -492,7 +523,7 @@ if [[ $build_clean == "true" ]]; then
 fi
 
 mkdir -p "$output_directory"
-pushd "$output_directory" > /dev/null || return
+pushd "$output_directory" > /dev/null || $ret
 
 # Generate build using cmake with options
 if [ ! -f "$cmake_bin" ]; then
@@ -516,7 +547,7 @@ if [[ $ret_val == 0 && $build_packages == "true" ]]; then
     ret_val=$?
 fi
 
-popd > /dev/null || return
+popd > /dev/null || $ret
 
 if [[ $ret_val == 0 && $install_adu == "true" ]]; then
     install_adu_components

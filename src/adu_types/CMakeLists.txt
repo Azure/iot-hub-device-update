@@ -2,6 +2,10 @@ cmake_minimum_required (VERSION 3.5)
 
 set (target_name adu_types)
 
+include (agentRules)
+
+compileasc99 ()
+
 add_library (${target_name} STATIC src/adu_types.c)
 
 add_library (aduc::${target_name} ALIAS ${target_name})

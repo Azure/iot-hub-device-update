@@ -152,8 +152,6 @@ class AptDeploymentTest(unittest.TestCase):
 
         deviceClassId = deploymentStatus.subgroupStatuses[0].deviceClassId
 
-        # self.assertEqual(self.duTestHelper.StopDeployment(self.deploymentId,test_adu_group,deviceClassId),200)
-        # time.sleep(retry_wait_time_in_seconds)
 
         # Once stopped we can delete the deployment
         self.assertEqual(self.duTestHelper.DeleteDeployment(

@@ -20,7 +20,7 @@ adu_diagnostics_conf_file=du-diagnostics-config.json
 adu_log_dir=/var/log/adu
 adu_data_dir=/var/lib/adu
 adu_downloads_dir="$adu_data_dir/downloads"
-adu_shell_dir=/usr/lib/adu
+adu_shell_dir=/usr/bin
 adu_shell_file=adu-shell
 
 adu_bin_path=/usr/bin/AducIotAgent
@@ -66,18 +66,18 @@ sample_du_config=$(
     "do"
   ],
   "iotHubProtocol": "mqtt",
-  "manufacturer": <Place your device info manufacturer here>,
-  "model": <Place your device info model here>,
+  "manufacturer": "<Place your device info manufacturer here>",
+  "model": "<Place your device info model here>",
   "agents": [
     {
-      "name": <Place your agent name here>,
+      "name": "main",
       "runas": "adu",
       "connectionSource": {
         "connectionType": "string",
-        "connectionData": <Place your Azure IoT device connection string here>
+        "connectionData": "<Place your Azure IoT device connection string here>"
       },
-      "manufacturer": <Place your device property manufacturer here>,
-      "model": <Place your device property model here>
+      "manufacturer": "<Place your device property manufacturer here>",
+      "model": "<Place your device property model here>"
     }
   ]
 }
@@ -219,7 +219,6 @@ register_reference_extensions() {
     echo "Register all reference step handlers..."
 
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/apt:1" --register-extension $adu_extensions_sources_dir/$adu_apt_handler_file
-    $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/swupdate:1" --register-extension $adu_extensions_sources_dir/$adu_swupdate_handler_file
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/swupdate:2" --register-extension $adu_extensions_sources_dir/$adu_swupdate_handler_2_file
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/script:1" --register-extension $adu_extensions_sources_dir/$adu_script_handler_file
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/steps:1" --register-extension $adu_extensions_sources_dir/$adu_steps_handler_file

@@ -75,7 +75,7 @@ steps:
           failTaskOnFailedTests: true
           publishRunAttachments: false # Attachments are not supported for CTest
 
-    - task: PublishPipelineArtifact@0
+    - task: 1ES.PublishPipelineArtifact@1
       displayName: "Publish Pipeline Artifacts"
       inputs:
           artifactName: "adu-client-${{parameters.targetOs}}-${{parameters.targetArch}}"

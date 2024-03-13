@@ -15,6 +15,8 @@
 #include <sstream>
 #include <sys/stat.h> // for stat
 #include <vector>
+// keep this last to minimize chance to interfere with system header includes.
+#include "aduc/aduc_banned.h"
 
 #ifdef ADUC_BUILD_SNAP
 #    define CURL_PATH "/usr/bin/curl-downloader"
@@ -124,8 +126,8 @@ ADUC_Result Download_curl(
     }
     else
     {
-        result = { .ResultCode = ADUC_Result_Failure,
-                   .ExtendedResultCode = ADUC_ERROR_CURL_DOWNLOADER_EXTERNAL_FAILURE(exitCode) };
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERROR_CURL_DOWNLOADER_EXTERNAL_FAILURE(exitCode);
         reportProgress = true;
         goto done;
     }
@@ -159,8 +161,8 @@ ADUC_Result Download_curl(
         {
             Log_Error("Hash for %s is not valid", entity->TargetFilename);
 
-            result = { .ResultCode = ADUC_Result_Failure,
-                       .ExtendedResultCode = ADUC_ERC_VALIDATION_FILE_HASH_INVALID_HASH };
+            result.ResultCode = ADUC_Result_Failure;
+            result.ExtendedResultCode = ADUC_ERC_VALIDATION_FILE_HASH_INVALID_HASH;
             reportProgress = true;
             goto done;
         }
@@ -172,9 +174,7 @@ done:
     {
         if (IsAducResultCodeSuccess(result.ResultCode))
         {
-            struct stat st
-            {
-            };
+            struct stat st;
             const off_t fileSize{ (stat(fullFilePath.str().c_str(), &st) == 0) ? st.st_size : 0 };
             downloadProgressCallback(
                 workflowId, entity->FileId, ADUC_DownloadProgressState_Completed, fileSize, entity->SizeInBytes);

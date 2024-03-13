@@ -33,6 +33,7 @@
 
 #include "crypto_key.h"
 #include <aduc/c_utils.h>
+#include <azure_c_shared_utility/vector.h>
 #include <stdbool.h>
 
 #ifndef JWS_UTILS_H
@@ -42,18 +43,30 @@ EXTERN_C_BEGIN
 
 /**
  * @brief Return Value for JWS Verification Calls
+ * @details NOTE: Needs to be kept in sync with jws_result_to_str() function.
  */
 typedef enum tagJWSResult
 {
-    JWSResult_Failed = 0, /**< Failed*/
-    JWSResult_Success, /**< Succeeded */
-    JWSResult_BadStructure, /**< JWS structure is not correct*/
-    JWSResult_UnsupportedAlg, /**< Algorithm used to sign the JWS is not supported */
-    JWSResult_InvalidSignature, /**<Signature of the JWS is invalid */
-    JWSResult_InvalidKid /**< Key Identifier invalid */
+    JWSResult_Failed = 0, /**< Failed */
+    JWSResult_Success = 1, /**< Succeeded */
+    JWSResult_BadStructure = 2, /**< JWS structure is not correct */
+    JWSResult_InvalidSignature = 4, /**<Signature of the JWS is invalid */
+    JWSResult_DisallowedRootKid = 5, /**< Root Key Identifier disallowed */
+    JWSResult_MissingRootKid = 6, /**< Root Key Identifier missing */
+    JWSResult_InvalidRootKid = 7, /**< Root Key Identifier invalid */
+    JWSResult_InvalidEncodingJWSHeader = 8, /**< Invalid encoding of JWS Header */
+    JWSResult_InvalidSJWKPayload = 9, /**< Invalid SJWK Payload */
+    JWSResult_DisallowedSigningKey = 10, /**< Disallowed signing key */
+    JWSResult_FailedGetDisabledSigningKeys = 11, /**< Failed getting disabled signing keys from rootkey pkg. */
+    JWSResult_FailGenPubKey = 12, /**< Failed during generate public key from N and e. */
+    JWSResult_HashPubKeyFailed = 13, /**< Failed during hash of public key. */
 } JWSResult;
 
+const char* jws_result_to_str(JWSResult r);
+
 JWSResult VerifySJWK(const char* sjwk);
+
+JWSResult IsSigningKeyDisallowed(const char* sjwkJsonStr, VECTOR_HANDLE disabledHashOfPubKeysList);
 
 JWSResult VerifyJWSWithKey(const char* blob, CryptoKeyHandle key);
 

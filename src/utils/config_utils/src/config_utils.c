@@ -11,14 +11,56 @@
 #include <aduc/c_utils.h>
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
+#include <aducpal/stdlib.h> // setenv
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <azure_c_shared_utility/strings_types.h>
 #include <parson.h>
 #include <parson_json_utils.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+
+static pthread_mutex_t s_config_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static ADUC_ConfigInfo s_configInfo = { 0 };
+
+static inline void s_config_lock(void)
+{
+    pthread_mutex_lock(&s_config_mutex);
+}
+
+static inline void s_config_unlock(void)
+{
+    pthread_mutex_unlock(&s_config_mutex);
+}
+
+static const char* CONFIG_ADU_SHELL_FOLDER = "aduShellFolder";
+static const char* CONFIG_ADU_DATA_FOLDER = "dataFolder";
+static const char* CONFIG_ADU_EXTENSIONS_FOLDER = "extensionsFolder";
+static const char* CONFIG_ADU_DOWNLOADS_FOLDER = "downloadsFolder";
+
+static const char* DOWNLOADS_PATH_SEGMENT = "downloads";
+static const char* EXTENSIONS_PATH_SEGMENT = "extensions";
+
+static const char* CONFIG_IOT_HUB_PROTOCOL = "iotHubProtocol";
+static const char* CONFIG_COMPAT_PROPERTY_NAMES = "compatPropertyNames";
+static const char* CONFIG_ADU_SHELL_TRUSTED_USERS = "aduShellTrustedUsers";
+static const char* CONFIG_EDGE_GATEWAY_CERT_PATH = "edgegatewayCertPath";
+static const char* CONFIG_MANUFACTURER = "manufacturer";
+static const char* CONFIG_MODEL = "model";
+static const char* CONFIG_SCHEMA_VERSION = "schemaVersion";
+static const char* CONFIG_DOWNLOAD_TIMEOUT_IN_MINUTES = "downloadTimeoutInMinutes";
+
+static const char* CONFIG_NAME = "name";
+static const char* CONFIG_RUN_AS = "runas";
+static const char* CONFIG_CONNECTION_SOURCE = "connectionSource";
+static const char* CONFIG_CONNECTION_TYPE = "connectionType";
+static const char* CONFIG_CONNECTION_DATA = "connectionData";
+static const char* CONFIG_ADDITIONAL_DEVICE_PROPERTIES = "additionalDeviceProperties";
+static const char* CONFIG_AGENTS = "agents";
+
+static const char* INVALID_OR_MISSING_FIELD_ERROR_FMT = "Invalid json - '%s' missing or incorrect";
 
 static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent);
 
@@ -44,12 +86,12 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
 
     memset(agent, 0, sizeof(*agent));
 
-    const char* name = json_object_get_string(agent_obj, "name");
-    const char* runas = json_object_get_string(agent_obj, "runas");
-    const char* manufacturer = json_object_get_string(agent_obj, "manufacturer");
-    const char* model = json_object_get_string(agent_obj, "model");
+    const char* name = json_object_get_string(agent_obj, CONFIG_NAME);
+    const char* runas = json_object_get_string(agent_obj, CONFIG_RUN_AS);
+    const char* manufacturer = json_object_get_string(agent_obj, CONFIG_MANUFACTURER);
+    const char* model = json_object_get_string(agent_obj, CONFIG_MODEL);
 
-    JSON_Object* connection_source = json_object_get_object(agent_obj, "connectionSource");
+    JSON_Object* connection_source = json_object_get_object(agent_obj, CONFIG_CONNECTION_SOURCE);
     const char* connection_type = NULL;
     const char* connection_data = NULL;
 
@@ -58,8 +100,8 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
         return false;
     }
 
-    connection_type = json_object_get_string(connection_source, "connectionType");
-    connection_data = json_object_get_string(connection_source, "connectionData");
+    connection_type = json_object_get_string(connection_source, CONFIG_CONNECTION_TYPE);
+    connection_data = json_object_get_string(connection_source, CONFIG_CONNECTION_DATA);
 
     // As these fields are mandatory, if any of the fields doesn't exist, the agent will fail to be constructed.
     if (name == NULL || runas == NULL || connection_type == NULL || connection_data == NULL || manufacturer == NULL
@@ -98,7 +140,7 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
         goto done;
     }
 
-    agent->additionalDeviceProperties = json_object_get_object(agent_obj, "additionalDeviceProperties");
+    agent->additionalDeviceProperties = json_object_get_object(agent_obj, CONFIG_ADDITIONAL_DEVICE_PROPERTIES);
 
     success = true;
 done:
@@ -148,11 +190,11 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent)
  * @param agentCount Count of objects in agents.
  * @param agents Array of ADUC_AgentInfo objects to free.
  */
-static void ADUC_AgentInfoArray_Free(unsigned int agentCount, ADUC_AgentInfo* agents)
+static void ADUC_AgentInfoArray_Free(size_t agentCount, ADUC_AgentInfo* agents)
 {
-    for (unsigned int index = 0; index < agentCount; ++index)
+    for (size_t index = 0; index < agentCount; ++index)
     {
-        ADUC_AgentInfo* agent = agents + index;
+        ADUC_AgentInfo* agent = (ADUC_AgentInfo*)(agents + index);
         ADUC_AgentInfo_Free(agent);
     }
     free(agents);
@@ -164,7 +206,7 @@ static void ADUC_AgentInfoArray_Free(unsigned int agentCount, ADUC_AgentInfo* ag
  * @param agents ADUC_AgentInfo (size agentCount). Array to be freed using free(), objects must also be freed.
  * @return bool Success state.
  */
-bool ADUC_Json_GetAgents(JSON_Value* root_value, unsigned int* agentCount, ADUC_AgentInfo** agents)
+bool ADUC_Json_GetAgents(JSON_Value* root_value, size_t* agentCount, ADUC_AgentInfo** agents)
 {
     bool succeeded = false;
     if ((agentCount == NULL) || (agents == NULL))
@@ -176,11 +218,11 @@ bool ADUC_Json_GetAgents(JSON_Value* root_value, unsigned int* agentCount, ADUC_
 
     const JSON_Object* root_object = json_value_get_object(root_value);
 
-    JSON_Array* agents_array = json_object_get_array(root_object, "agents");
+    JSON_Array* agents_array = json_object_get_array(root_object, CONFIG_AGENTS);
 
     if (agents_array == NULL)
     {
-        Log_Error("Invalid json - '%s' missing or incorrect", "agents");
+        Log_Error(INVALID_OR_MISSING_FIELD_ERROR_FMT, CONFIG_AGENTS);
         goto done;
     }
 
@@ -198,7 +240,7 @@ bool ADUC_Json_GetAgents(JSON_Value* root_value, unsigned int* agentCount, ADUC_
         goto done;
     }
 
-    *agentCount = agents_count;
+    *agentCount = (unsigned int)agents_count;
 
     for (size_t index = 0; index < agents_count; ++index)
     {
@@ -232,107 +274,240 @@ done:
     return succeeded;
 }
 
+bool EnsureDataSubFolderSpecifiedOrSetDefaultValue(
+    const JSON_Value* rootValue,
+    const char* fieldName,
+    const char** folder,
+    const char* dataFolder,
+    const char* defaultSubFolderValue)
+{
+    if (rootValue == NULL || fieldName == NULL || folder == NULL || dataFolder == NULL)
+    {
+        return false;
+    }
+
+    // If the folder is already specified, we're done.
+    *folder = ADUC_JSON_GetStringFieldPtr(rootValue, fieldName);
+    if (*folder != NULL)
+    {
+        return true;
+    }
+
+    char* subFolder = ADUC_StringFormat("%s/%s", dataFolder, defaultSubFolderValue);
+    if (subFolder == NULL)
+    {
+        Log_Error("Failed to allocate memory for %s folder", defaultSubFolderValue);
+        return false;
+    }
+
+    bool setOk = ADUC_JSON_SetStringField(rootValue, fieldName, subFolder);
+    free(subFolder);
+    if (!setOk)
+    {
+        Log_Error("Failed to set %s field.", fieldName);
+        return false;
+    }
+
+    *folder = ADUC_JSON_GetStringFieldPtr(rootValue, fieldName);
+    if (*folder == NULL)
+    {
+        Log_Error("Failed to get %s field.", fieldName);
+        return false;
+    }
+    return true;
+}
+
 /**
  * @brief Allocates the memory for the ADUC_ConfigInfo struct member values
  * @param config A pointer to an ADUC_ConfigInfo struct whose member values will be allocated
- * @param configFilePath The path of configuration file
+ * @param configFolder The folder of configuration files. If NULL, the default folder (ADUC_CONF_FOLDER) will be used.
  * @returns True if successfully allocated, False if failure
  */
-bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFilePath)
+bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
 {
     bool succeeded = false;
 
     // Initialize out parameter.
     memset(config, 0, sizeof(*config));
 
-    JSON_Value* root_value = Parse_JSON_File(configFilePath);
-
-    if (root_value == NULL)
+    if (mallocAndStrcpy_s(&(config->configFolder), configFolder) != 0)
     {
-        Log_Error("Failed parse of JSON file: %s", ADUC_CONF_FILE_PATH);
-        goto done;
+        Log_Error("Failed to allocate memory for config file folder");
+        return false;
     }
 
-    if (!ADUC_Json_GetAgents(root_value, &(config->agentCount), &(config->agents)))
-    {
-        goto done;
-    }
+    char* configFilePath = NULL;
 
-    const char* schema_version = ADUC_JSON_GetStringFieldPtr(root_value, "schemaVersion");
-
-    if (schema_version == NULL)
+    if (IsNullOrEmpty(configFolder))
     {
-        goto done;
+        configFilePath = ADUC_StringFormat("%s/%s", ADUC_CONF_FOLDER, ADUC_CONF_FILE);
     }
     else
     {
-        if (mallocAndStrcpy_s(&(config->schemaVersion), schema_version) != 0)
-        {
-            goto done;
-        }
+        configFilePath = ADUC_StringFormat("%s/%s", configFolder, ADUC_CONF_FILE);
     }
 
-    const char* manufacturer = ADUC_JSON_GetStringFieldPtr(root_value, "manufacturer");
-    const char* model = ADUC_JSON_GetStringFieldPtr(root_value, "model");
+    if (IsNullOrEmpty(configFilePath))
+    {
+        Log_Error("Failed to allocate memory for config file path");
+        goto done;
+    }
 
-    if (manufacturer == NULL || model == NULL)
+    config->rootJsonValue = Parse_JSON_File(configFilePath);
+
+    if (config->rootJsonValue == NULL)
+    {
+        Log_Error("Failed parse of JSON file: %s", configFilePath);
+        goto done;
+    }
+
+    if (!ADUC_Json_GetAgents(config->rootJsonValue, &(config->agentCount), &(config->agents)))
     {
         goto done;
     }
 
-    if (mallocAndStrcpy_s(&(config->manufacturer), manufacturer) != 0
-        || mallocAndStrcpy_s(&(config->model), model) != 0)
+    config->schemaVersion = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_SCHEMA_VERSION);
+
+    if (IsNullOrEmpty(config->schemaVersion))
     {
+        Log_Error(INVALID_OR_MISSING_FIELD_ERROR_FMT, CONFIG_SCHEMA_VERSION);
         goto done;
     }
 
-    const char* edgegateway_cert_path = ADUC_JSON_GetStringFieldPtr(root_value, "edgegatewayCertPath");
+    config->manufacturer = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_MANUFACTURER);
 
-    if (edgegateway_cert_path != NULL)
+    if (IsNullOrEmpty(config->manufacturer))
     {
-        if (mallocAndStrcpy_s(&(config->edgegatewayCertPath), edgegateway_cert_path) != 0)
-        {
-            goto done;
-        }
+        Log_Error(INVALID_OR_MISSING_FIELD_ERROR_FMT, CONFIG_MANUFACTURER);
+        goto done;
     }
 
-    const JSON_Object* root_object = json_value_get_object(root_value);
+    config->model = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_MODEL);
 
-    config->aduShellTrustedUsers = json_object_get_array(root_object, "aduShellTrustedUsers");
+    if (IsNullOrEmpty(config->model))
+    {
+        Log_Error(INVALID_OR_MISSING_FIELD_ERROR_FMT, CONFIG_MODEL);
+        goto done;
+    }
+
+    // Edge gateway certification path is optional.
+    config->edgegatewayCertPath = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_EDGE_GATEWAY_CERT_PATH);
+
+    const JSON_Object* root_object = json_value_get_object(config->rootJsonValue);
+
+    config->aduShellTrustedUsers = json_object_get_array(root_object, CONFIG_ADU_SHELL_TRUSTED_USERS);
+
     if (config->aduShellTrustedUsers == NULL)
     {
+        Log_Error(INVALID_OR_MISSING_FIELD_ERROR_FMT, CONFIG_ADU_SHELL_TRUSTED_USERS);
         goto done;
     }
 
-    const char* compatPropertyNames = ADUC_JSON_GetStringFieldPtr(root_value, "compatPropertyNames");
+    // Note: compat property names are optional.
+    config->compatPropertyNames = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_COMPAT_PROPERTY_NAMES);
 
-    if (compatPropertyNames != NULL)
+    // Note: IoT Hub protocol is is optional.
+    config->iotHubProtocol = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_IOT_HUB_PROTOCOL);
+
+    // Note: download timeout is optional.
+    ADUC_JSON_GetUnsignedIntegerField(
+        config->rootJsonValue, CONFIG_DOWNLOAD_TIMEOUT_IN_MINUTES, &(config->downloadTimeoutInMinutes));
+
+    // Ensure that adu-shell folder is valid.
+    config->aduShellFolder = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_ADU_SHELL_FOLDER);
+
+    if (config->aduShellFolder == NULL)
     {
-        if (mallocAndStrcpy_s(&(config->compatPropertyNames), compatPropertyNames) != 0)
+        if (!ADUC_JSON_SetStringField(config->rootJsonValue, CONFIG_ADU_SHELL_FOLDER, ADUSHELL_FOLDER))
         {
+            Log_Error("Failed to set adu-shell folder.");
             goto done;
         }
+        config->aduShellFolder = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_ADU_SHELL_FOLDER);
     }
 
-    const char* iotHubProtocol = ADUC_JSON_GetStringFieldPtr(root_value, "iotHubProtocol");
-
-    if (iotHubProtocol != NULL)
+    config->aduShellFilePath = ADUC_StringFormat("%s/%s", config->aduShellFolder, ADUSHELL_FILENAME);
+    if (config->aduShellFilePath == NULL)
     {
-        if (mallocAndStrcpy_s(&(config->iotHubProtocol), iotHubProtocol) != 0)
+        Log_Error("Failed to allocate memory for adu-shell file path");
+        goto done;
+    }
+
+    config->dataFolder = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_ADU_DATA_FOLDER);
+
+    if (config->dataFolder == NULL)
+    {
+        if (!ADUC_JSON_SetStringField(config->rootJsonValue, CONFIG_ADU_DATA_FOLDER, ADUC_DATA_FOLDER))
         {
+            Log_Error("Failed to set data folder.");
             goto done;
         }
+        config->dataFolder = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_ADU_DATA_FOLDER);
     }
 
-    if (!ADUC_JSON_GetUnsignedIntegerField(
-            root_value, "downloadTimeoutInMinutes", &(config->downloadTimeoutInMinutes)))
+    if (!EnsureDataSubFolderSpecifiedOrSetDefaultValue(
+            config->rootJsonValue,
+            CONFIG_ADU_DOWNLOADS_FOLDER,
+            &config->downloadsFolder,
+            config->dataFolder,
+            DOWNLOADS_PATH_SEGMENT))
     {
+        goto done;
+    }
+
+    if (!EnsureDataSubFolderSpecifiedOrSetDefaultValue(
+            config->rootJsonValue,
+            CONFIG_ADU_EXTENSIONS_FOLDER,
+            &config->extensionsFolder,
+            config->dataFolder,
+            EXTENSIONS_PATH_SEGMENT))
+    {
+        goto done;
+    }
+
+    // Since we're only allow overriding of 'extensions' folder, let's populate all extensions sub-folders.
+    config->extensionsComponentEnumeratorFolder =
+        ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_COMPONENT_ENUMERATOR);
+
+    if (config->extensionsComponentEnumeratorFolder == NULL)
+    {
+        Log_Error("Failed to allocate memory for component enumerator extension folder");
+        goto done;
+    }
+
+    config->extensionsContentDownloaderFolder =
+        ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_CONTENT_DOWNLOADER);
+    if (config->extensionsContentDownloaderFolder == NULL)
+    {
+        Log_Error("Failed to allocate memory for content downloader extension folder");
+        goto done;
+    }
+
+    config->extensionsStepHandlerFolder =
+        ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_UPDATE_CONTENT_HANDLERS);
+    if (config->extensionsStepHandlerFolder == NULL)
+    {
+        Log_Error("Failed to allocate memory for step handler extension folder");
+        goto done;
+    }
+
+    config->extensionsDownloadHandlerFolder =
+        ADUC_StringFormat("%s/%s", config->extensionsFolder, ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS);
+    if (config->extensionsDownloadHandlerFolder == NULL)
+    {
+        Log_Error("Failed to allocate memory for download handler extension folder");
         goto done;
     }
 
     succeeded = true;
 
 done:
+
+    if (configFilePath != NULL)
+    {
+        free(configFilePath);
+    }
+
     if (!succeeded)
     {
         ADUC_ConfigInfo_UnInit(config);
@@ -347,16 +522,24 @@ done:
  */
 void ADUC_ConfigInfo_UnInit(ADUC_ConfigInfo* config)
 {
+    Log_Info("Uninitializing config info.");
+
     if (config == NULL)
     {
         return;
     }
 
-    free(config->manufacturer);
-    free(config->model);
-    free(config->iotHubProtocol);
-    ADUC_AgentInfoArray_Free(config->agentCount, config->agents);
+    config->refCount = 0;
 
+    // Free all computed value those cached outside of the config->rootJsonValue.
+    free(config->configFolder);
+    free(config->aduShellFilePath);
+    free(config->extensionsComponentEnumeratorFolder);
+    free(config->extensionsContentDownloaderFolder);
+    free(config->extensionsStepHandlerFolder);
+    free(config->extensionsDownloadHandlerFolder);
+
+    json_value_free(config->rootJsonValue);
     memset(config, 0, sizeof(*config));
 }
 
@@ -367,7 +550,7 @@ void ADUC_ConfigInfo_UnInit(ADUC_ConfigInfo* config)
  * @param index the index of the Agent array in config that we want to access
  * @return const ADUC_AgentInfo*, NULL if failure
  */
-const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(ADUC_ConfigInfo* config, unsigned int index)
+const ADUC_AgentInfo* ADUC_ConfigInfo_GetAgent(const ADUC_ConfigInfo* config, unsigned int index)
 {
     if (config == NULL)
     {
@@ -447,4 +630,72 @@ void ADUC_ConfigInfo_FreeAduShellTrustedUsers(VECTOR_HANDLE users)
     }
 
     VECTOR_clear(users);
+}
+
+/**
+ * @brief Get the existing ADUC_ConfigInfo object, or create one if it doesn't exist.
+ *
+ * @return const ADUC_ConfigInfo* a pointer to ADUC_ConfigInfo object. NULL if failure.
+ * Caller must call ADUC_ConfigInfo_Release to free the object.
+ */
+const ADUC_ConfigInfo* ADUC_ConfigInfo_GetInstance()
+{
+    const ADUC_ConfigInfo* config = NULL;
+
+    s_config_lock();
+    if (s_configInfo.refCount == 0)
+    {
+        char* configFolder = getenv(ADUC_CONFIG_FOLDER_ENV);
+        if (configFolder == NULL)
+        {
+            Log_Info(
+                "%s environment variable not set, fallback to the default value %s.",
+                ADUC_CONFIG_FOLDER_ENV,
+                ADUC_CONF_FOLDER);
+            ADUCPAL_setenv(ADUC_CONFIG_FOLDER_ENV, configFolder = ADUC_CONF_FOLDER, 1);
+        }
+        if (!ADUC_ConfigInfo_Init(&s_configInfo, configFolder))
+        {
+            goto done;
+        }
+    }
+    s_configInfo.refCount++;
+    config = &s_configInfo;
+done:
+    s_config_unlock();
+    return config;
+}
+
+/**
+ * @brief Release the ADUC_ConfigInfo object.
+ *
+ * @param configInfo a pointer to ADUC_ConfigInfo object
+ * @return int The reference count of the ADUC_ConfigInfo object after released. -1 if failure.
+ */
+int ADUC_ConfigInfo_ReleaseInstance(const ADUC_ConfigInfo* configInfo)
+{
+    int ret = -1;
+    if (configInfo != &s_configInfo)
+    {
+        return ret;
+    }
+
+    s_config_lock();
+
+    if (s_configInfo.refCount == 0)
+    {
+        goto done;
+    }
+
+    s_configInfo.refCount--;
+    if (s_configInfo.refCount == 0)
+    {
+        ADUC_ConfigInfo_UnInit(&s_configInfo);
+    }
+
+    ret = s_configInfo.refCount;
+
+done:
+    s_config_unlock();
+    return ret;
 }

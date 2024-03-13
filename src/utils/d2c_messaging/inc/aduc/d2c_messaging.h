@@ -11,7 +11,8 @@
 #include "aduc/c_utils.h"
 #include <pthread.h>
 #include <stdbool.h>
-#include <sys/time.h>
+
+#include <aducpal/time.h> // time_t
 
 EXTERN_C_BEGIN
 
@@ -21,11 +22,11 @@ EXTERN_C_BEGIN
 typedef enum _tagADUC_D2C_Message_Type
 {
     ADUC_D2C_Message_Type_Device_Update_Result = 0, /**< deviceUpdate interface reported property */
-    ADUC_D2C_Message_Type_Device_Update_ACK,        /**< deviceUpdate interface ACK */
-    ADUC_D2C_Message_Type_Device_Information,       /**< deviceInformation interface reported property */
-    ADUC_D2C_Message_Type_Diagnostics,              /**< diagnostics interface reported property */
-    ADUC_D2C_Message_Type_Diagnostics_ACK,          /**< diagnostics interface ACK */
-    ADUC_D2C_Message_Type_Device_Properties,        /**< deviceUpdate interface reported property */
+    ADUC_D2C_Message_Type_Device_Update_ACK, /**< deviceUpdate interface ACK */
+    ADUC_D2C_Message_Type_Device_Information, /**< deviceInformation interface reported property */
+    ADUC_D2C_Message_Type_Diagnostics, /**< diagnostics interface reported property */
+    ADUC_D2C_Message_Type_Diagnostics_ACK, /**< diagnostics interface ACK */
+    ADUC_D2C_Message_Type_Device_Properties, /**< deviceUpdate interface reported property */
     ADUC_D2C_Message_Type_Max
 } ADUC_D2C_Message_Type;
 
@@ -47,8 +48,8 @@ typedef enum _tagADUC_D2C_Message_Status
 typedef time_t (*ADUC_D2C_NEXT_RETRY_TIMESTAMP_CALC_FUNC)(
     int additionalDelaySecs,
     unsigned int retries,
-    long initialDelayUnitMilliSecs,
-    long maxDelaySecs,
+    unsigned long initialDelayUnitMilliSecs,
+    unsigned long maxDelaySecs,
     double maxJitterPercent);
 
 /**

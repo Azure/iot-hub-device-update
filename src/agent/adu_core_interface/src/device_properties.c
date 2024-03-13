@@ -16,12 +16,12 @@
 
 #include <stdlib.h>
 
-/*
+/**
  * @brief The ADU contract model id associated with the modelId for agent-orchestrated updates.
  */
-#define ADUC_DEVICEPROPERTIES_DEVICEUPDATE_CONTRACT_MODEL_ID "dtmi:azure:iot:deviceUpdateContractModel;2"
+#define ADUC_DEVICEPROPERTIES_DEVICEUPDATE_CONTRACT_MODEL_ID "dtmi:azure:iot:deviceUpdateContractModel;3"
 
-/* @brief The adu client builder and version.
+/** @brief The adu client builder and version.
  * Consisting of BUILDER; component and ADUC_VERSION
  * e.g. DU;agent/0.3.0-private-preview
  */
@@ -111,15 +111,11 @@ bool DeviceProperties_ClearInterfaceId(JSON_Object* devicePropsObj)
 {
     bool success = false;
 
-    JSON_Status jsonStatus = json_object_set_null(
-        devicePropsObj,
-        ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
+    JSON_Status jsonStatus = json_object_set_null(devicePropsObj, ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
 
     if (jsonStatus != JSONSuccess)
     {
-        Log_Error(
-            "Could not set JSON field '%s' to null",
-            ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
+        Log_Error("Could not set JSON field '%s' to null", ADUCITF_FIELDNAME_DEVICEPROPERTIES_INTERFACEID);
         goto done;
     }
 

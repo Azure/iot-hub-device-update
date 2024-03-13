@@ -26,10 +26,10 @@ bool StartupMsg_AddDeviceProperties(JSON_Object* startupObj, const ADUC_AgentInf
 /**
  * @brief Adds the compatPropertyNames to the @p startupObj
  * @param startupObj the JSON Object which will have the compatPropertyNames from config added to it
- * @param config the ADUC_ConfigInfo that contains the config info
+ * @remark This function requires that the ADUC_ConfigInfo singleton has been initialized.
  * @returns true on successful addition, false on failure
  */
-bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj, ADUC_ConfigInfo* config);
+bool StartupMsg_AddCompatPropertyNames(JSON_Object* startupObj);
 
 EXTERN_C_END
 #endif // STARTUP_MSG_HELPER_H

@@ -6,7 +6,7 @@
 
 ## What is SWUpdate Handler?
 
-SWUpdate Handler is a Device Update Agent extension that provides a local software update capability on an embedded device with payloads delivered over the air via Device Update for IoT Hub.  
+SWUpdate Handler is a Device Update Agent extension that provides a local software update capability on an embedded device with payloads delivered over the air via Device Update for IoT Hub.
 
 See [How To Implement A Custom Step Handler Extension](../../../../docs/agent-reference/how-to-implement-custom-update-handler.md) for more information.
 
@@ -37,12 +37,12 @@ Note that this version of SWUpdate Handler is different from the previous versio
 Following command can be run manually on the device:
 
 ```sh
-sudo /usr/bin/AducIotAgent --update-type 'microsoft/swupdate:2' --register-content-handler <full path to the handler file> 
+sudo /usr/bin/AducIotAgent --update-type 'microsoft/swupdate:2' --register-content-handler <full path to the handler file>
 ```
 
 ### Setting SWUpdate Handler Properties
 
-Using [Multi Step Ordered Exeuction (MSOE)](), you can create a step that perform various swupdate tasks on the embedded device.  
+Using [Multi Step Ordered Exeuction (MSOE)](), you can create a step that perform various swupdate tasks on the embedded device.
 
 The SWUpdate Handler support following handler properties (`handlerProperties`) :
 
@@ -51,6 +51,7 @@ The SWUpdate Handler support following handler properties (`handlerProperties`) 
 | scriptFileName | string | Name of a script file that perform additional logics related to A/B system update. This property should be specified only when performing A/B System Update.<br/><br/> See [A/B Update Script](#ab-update-script) below for more information. |
 | arguments | string | A space delimited options and arguments that will be passed directly to SWUpdate command.
 | installedCriteria | string | String interpreted by the specified `scriptFileName` to determine if the update completed successfully. <br/> This value will be passed to the underlying update script in this format: `--installed-criteria <value>` |
+| apiVersion | string | An API version. Default value is <*empty*> which implies "1.0". Current supported value is 1.0" and "1.1". |
 
 #### List of Supported handlerProperties.arguments
 
@@ -60,13 +61,15 @@ The SWUpdate Handler support following handler properties (`handlerProperties`) 
 
 #### List of SWUpdate runtime options
 
+> NOTE | As part of the update workflow, the underlying script will receive these options. So, there is no need to include them in the `handlerProperties.arguments` section of the step in the import manifest.
+
 | Name | Type | Description |
 |---|---|---|
 |--work-folder| string | Full path to a work (sandbox) folder used by an Agent when performing update-related tasks. |
 |--output-file|string|Full path to an output file that swupdate script should write to|
 |--log-file|string| Full path to a log file that swupdate script should write to. (This is different that Agent's log file)|
 |--result-file|string|Full path to an ADUC_Result file that swupdate script must write the end result of the update tasks to. If this file does not exist or cannot be parsed, the task will be considered failed.|
-|--action-download,<br/>--action-install,<br/>--action-apply,<br/>--action-cancel,<br/>--action-is-installed| (no arguments)| An option indicates the current update task.
+|--action-download,<br/>--action-install,<br/>--action-apply,<br/>--action-cancel,<br/>--action-is-installed| (no arguments)| An option indicates the current update task.<br/><br/>**NOTE:** If **"apiVersion"** set to **"1.1"**, the handler will pass following arguments instead:<br/>"--action **download**", "--action **install**", "--action **apply**", "--action **cancel**", "--action **is-installed**"
 
 ### Example: A/B Update Script
 
@@ -93,17 +96,17 @@ In [./tests/testdata](./tests/testdata/) folder you will find an example script 
 
 #### Evaluating 'installedCriteria'
 
-For this example, to determine whether the new image has been installed on the device successfully, the SWUpdate Handler will run the specified `scriptFileName` with `--action-is-installed '<installedCriteria>'` option.
+For this example, to determine whether the new image has been installed on the device successfully, the SWUpdate Handler will run the specified `scriptFileName` with `--action is-installed '<installedCriteria>'` option.
 
 For example:
 
 ```sh
 
-/adu/downloads/workflow-01234567/example-a-b-update.sh --action-is-installed --installed-criteria '8.0.1.0001'
+/adu/downloads/workflow-01234567/example-a-b-update.sh --action is-installed --installed-criteria '8.0.1.0001'
 
 ```
 
-In this [example update script](./tests/testdata/adu-yocto-ab-rootfs-update/example-a-b-update.sh), it simply compares the given 'installedCriteria' value (8.0.1.0001) to a content of `adu-version` file (located at /etc/adu-version folder).
+In this [example update script](./tests/testdata/adu-yocto-ab-rootfs-update/payloads/example-a-b-update.sh), it simply compares the given 'installedCriteria' value (8.0.1.0001) to a content of `adu-version` file (located at /etc/adu-version folder).
 
 The algorithm for evaluating `installedCriteria` can be 100% customized to fit your device design and requirements.
 

@@ -11,6 +11,9 @@
 #include <aduc/swupdate_handler_v2.hpp>
 #include <exception>
 
+// keep this last to avoid interfering with system headers
+#include "aduc/aduc_banned.h"
+
 EXTERN_C_BEGIN
 
 /////////////////////////////////////////////////////////////////////////////
@@ -24,7 +27,7 @@ EXTERN_C_BEGIN
  * @brief Instantiates a Step Handler for 'microsoft/swupdate:2' update type.
  * @return ContentHandler* The created instance.
  */
-ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
+EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
     ADUC_Logging_Init(logLevel, "swupdate-handler-v2");
     Log_Info("Instantiating a Step Handler for 'microsoft/swupdate:2'");
@@ -51,7 +54,7 @@ ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
  * @param[out] contractInfo The extension contract info.
  * @return ADUC_Result The result.
  */
-ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
+EXPORTED_METHOD ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
 {
     contractInfo->majorVer = ADUC_V1_CONTRACT_MAJOR_VER;
     contractInfo->minorVer = ADUC_V1_CONTRACT_MINOR_VER;

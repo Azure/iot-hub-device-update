@@ -9,9 +9,9 @@
 #define RETRY_UTILS_H
 
 #include "aduc/c_utils.h"
+#include <aducpal/sys_time.h> // time_t
 #include <pthread.h>
 #include <stdbool.h>
-#include <sys/time.h>
 
 EXTERN_C_BEGIN
 
@@ -21,9 +21,7 @@ EXTERN_C_BEGIN
 #define TIME_SPAN_ONE_HOUR_IN_SECONDS (60 * 60)
 #define TIME_SPAN_ONE_DAY_IN_SECONDS (24 * 60 * 60)
 
-#define MILLISECONDS_TO_NANOSECONDS(ms) ((ms) * 1000000)
-
-#define ADUC_RETRY_DEFAULT_INITIAL_DELAY_MS 1000                    // 1 second
+#define ADUC_RETRY_DEFAULT_INITIAL_DELAY_MS 1000 // 1 second
 #define ADUC_RETRY_DEFAULT_MAX_BACKOFF_TIME_MS (60 * 1000) // 60 seconds
 #define ADUC_RETRY_DEFAULT_MAX_JITTER_PERCENT 5
 #define ADUC_RETRY_MAX_RETRY_EXPONENT 9
@@ -33,18 +31,22 @@ EXTERN_C_BEGIN
  */
 typedef struct _tagADUC_Retry_Params
 {
-    unsigned int maxRetries;            /**< Maximum number of retries */
-    unsigned long maxDelaySecs;         /**< Maximum wait time before retry (in seconds) */
-    unsigned long fallbackWaitTimeSec;  /**< The fallback time when regular timestamp calculation failed. */
-    unsigned long initialDelayUnitMilliSecs;       /**< Backoff factor (in milliseconds ) */
-    double maxJitterPercent;            /**< The maximum number of jitter percent (0 - 100)*/
+    unsigned int maxRetries; /**< Maximum number of retries */
+    unsigned long maxDelaySecs; /**< Maximum wait time before retry (in seconds) */
+    unsigned long fallbackWaitTimeSec; /**< The fallback time when regular timestamp calculation failed. */
+    unsigned long initialDelayUnitMilliSecs; /**< Backoff factor (in milliseconds ) */
+    double maxJitterPercent; /**< The maximum number of jitter percent (0 - 100)*/
 } ADUC_Retry_Params;
 
 /**
  * A function used for calculating a delay time before the next retry.
  */
 typedef time_t (*ADUC_NEXT_RETRY_TIMESTAMP_CALC_FUNC)(
-    int additionalDelaySecs, unsigned int retries, long initialDelayUnitMilliSecs, long maxDelaySecs, double maxJitterPercent);
+    int additionalDelaySecs,
+    unsigned int retries,
+    unsigned long initialDelayUnitMilliSecs,
+    unsigned long maxDelaySecs,
+    double maxJitterPercent);
 
 /**
  * @brief A default retry delay calculator function.
@@ -56,7 +58,12 @@ typedef time_t (*ADUC_NEXT_RETRY_TIMESTAMP_CALC_FUNC)(
  * @param maxJitterPercent A maximum jitter percentage.
  * @return time_t Return a timestamp (since epoch) for the next retry.
  */
-time_t ADUC_Retry_Delay_Calculator(int additionalDelaySecs, unsigned int retries, long initialDelayUnitMilliSecs, long maxDelaySecs, double maxJitterPercent);
+time_t ADUC_Retry_Delay_Calculator(
+    int additionalDelaySecs,
+    unsigned int retries,
+    unsigned long initialDelayUnitMilliSecs,
+    unsigned long maxDelaySecs,
+    double maxJitterPercent);
 
 EXTERN_C_END
 

@@ -16,7 +16,13 @@
 #include "aduc/d2c_messaging.h"
 #include "aduc/hash_utils.h"
 #include "aduc/logging.h"
+#include "aduc/reporting_utils.h"
+#include "aduc/rootkey_workflow.h"
+#include "aduc/rootkeypackage_do_download.h"
+#include "aduc/rootkeypackage_types.h"
+#include "aduc/rootkeypackage_utils.h"
 #include "aduc/string_c_utils.h"
+#include "aduc/types/adu_core.h"
 #include "aduc/types/update_content.h"
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
@@ -125,8 +131,11 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
  * @param workflowData The workflow data.
  * @return bool true if call succeeded.
  */
-static bool ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_value, ADUC_WorkflowData* workflowData)
+static bool
+ReportClientJsonProperty(ADUC_D2C_Message_Type messageType, const char* json_value, ADUC_WorkflowData* workflowData)
 {
+    UNREFERENCED_PARAMETER(workflowData);
+
     bool success = false;
 
     if (g_iotHubClientHandleForADUComponent == NULL)
@@ -181,7 +190,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
     }
 
     bool success = false;
-
+    const ADUC_ConfigInfo* config = NULL;
     char* jsonString = NULL;
 
     JSON_Value* startupMsgValue = json_value_init_object();
@@ -198,14 +207,14 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    ADUC_ConfigInfo config = {};
+    config = ADUC_ConfigInfo_GetInstance();
 
-    if (!ADUC_ConfigInfo_Init(&config, ADUC_CONF_FILE_PATH))
+    if (config == NULL)
     {
         goto done;
     }
 
-    const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(&config, 0);
+    const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(config, 0);
 
     if (!StartupMsg_AddDeviceProperties(startupMsgObj, agent))
     {
@@ -213,7 +222,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
         goto done;
     }
 
-    if (!StartupMsg_AddCompatPropertyNames(startupMsgObj, &config))
+    if (!StartupMsg_AddCompatPropertyNames(startupMsgObj))
     {
         Log_Error("Could not add compatPropertyNames to the startup message");
         goto done;
@@ -233,8 +242,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
 done:
     json_value_free(startupMsgValue);
     json_free_serialized_string(jsonString);
-
-    ADUC_ConfigInfo_UnInit(&config);
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return success;
 }
 
@@ -311,6 +319,75 @@ void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext)
     *componentContext = NULL;
 }
 
+/**
+ * @brief Update twin to report state transition before workflow processing has started.
+ *
+ * @param propertyValue The json value to use for reporting.
+ * @param deploymentState The final deployment state to report.
+ * @param workflowData The workflow data to receive the last reported state upon reporting success.
+ * @param result The result to be reported.
+ * @return true on reporting success.
+ */
+static bool ReportPreDeploymentProcessingState(
+    JSON_Value* propertyValue, ADUCITF_State deploymentState, ADUC_WorkflowData* workflowData, ADUC_Result result)
+{
+    JSON_Value* propertyValueCopy = NULL;
+    bool reportingSuccess = false;
+
+    // Temp workflowData and workflow handle for reporting
+    ADUC_WorkflowData tmpWorkflowData;
+    memset(&tmpWorkflowData, 0, sizeof(tmpWorkflowData));
+
+    if (!ADUC_WorkflowData_InitWorkflowHandle(&tmpWorkflowData))
+    {
+        goto done;
+    }
+
+    // Synthesize workflowData current action and set a copy of the
+    // propertyValue to workflow UpdateActionObject, both of which are
+    // needed to generate the reporting json.
+    tmpWorkflowData.CurrentAction = ADUCITF_UpdateAction_ProcessDeployment;
+    propertyValueCopy = json_value_deep_copy(propertyValue);
+    if (propertyValueCopy == NULL)
+    {
+        goto done;
+    }
+
+    if (!workflow_set_update_action_object(tmpWorkflowData.WorkflowHandle, json_object(propertyValueCopy)))
+    {
+        goto done;
+    }
+
+    reportingSuccess = AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
+        (ADUC_WorkflowDataToken)&tmpWorkflowData, deploymentState, &result, NULL /* installedUpdateId */);
+    if (!reportingSuccess)
+    {
+        goto done;
+    }
+
+    // Set the last deployment state on the actual workflow data for correct handling of update action.
+    ADUC_WorkflowData_SetLastReportedState(deploymentState, workflowData);
+
+    reportingSuccess = true;
+done:
+
+    if (tmpWorkflowData.WorkflowHandle != NULL)
+    {
+        // propertyValueCopy will get freed by workflow_free
+        workflow_free(tmpWorkflowData.WorkflowHandle);
+    }
+
+    return reportingSuccess;
+}
+
+/**
+ * @brief Callback for the orchestrator that allows the new patches coming down from the cloud to be organized
+ * @param clientHandle the client handle being used for the connection
+ * @param propertyValue the value of the property being routed
+ * @param propertyVersion the version of the property being routed
+ * @param sourceContext the context of the origination point for the callback
+ * @param context context for re-entering upon completion of the function
+ */
 void OrchestratorUpdateCallback(
     ADUC_ClientHandle clientHandle,
     JSON_Value* propertyValue,
@@ -318,8 +395,20 @@ void OrchestratorUpdateCallback(
     ADUC_PnPComponentClient_PropertyUpdate_Context* sourceContext,
     void* context)
 {
+    UNREFERENCED_PARAMETER(clientHandle);
+
+    ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)context;
+
     STRING_HANDLE jsonToSend = NULL;
+    char* ackString = NULL;
+    JSON_Object* signatureObj = NULL;
+
+    ADUCITF_UpdateAction updateAction = ADUCITF_UpdateAction_Undefined;
+    char* workflowId = NULL;
+    char* rootKeyPkgUrl = NULL;
+    STRING_HANDLE rootKeyPackageFilePath = NULL;
+    char* workFolder = NULL;
 
     // Reads out the json string so we can Log Out what we've got.
     // The value will be parsed and handled in ADUC_Workflow_HandlePropertyUpdate.
@@ -333,8 +422,7 @@ void OrchestratorUpdateCallback(
     }
 
     // To reduce TWIN size, remove UpdateManifestSignature and fileUrls before ACK.
-    char* ackString = NULL;
-    JSON_Object* signatureObj = json_value_get_object(propertyValue);
+    signatureObj = json_value_get_object(propertyValue);
     if (signatureObj != NULL)
     {
         json_object_set_null(signatureObj, "updateManifestSignature");
@@ -343,6 +431,48 @@ void OrchestratorUpdateCallback(
     }
 
     Log_Debug("Update Action info string (%s), property version (%d)", ackString, propertyVersion);
+
+    tmpResult = workflow_parse_peek_unprotected_workflow_properties(
+        json_object(propertyValue), &updateAction, &rootKeyPkgUrl, &workflowId);
+    if (IsAducResultCodeFailure(tmpResult.ResultCode))
+    {
+        Log_Error("Parse failed for unprotected properties, erc: 0x%08x", tmpResult.ExtendedResultCode);
+        // Note, cannot report failure here since workflowId from unprotected properties is needed for that.
+        goto done;
+    }
+
+    if (updateAction == ADUCITF_UpdateAction_ProcessDeployment && !IsNullOrEmpty(workflowId))
+    {
+        Log_Debug("Processing deployment %s ...", workflowId);
+
+        ADUC_Result inProgressResult = { .ResultCode = ADUC_GeneralResult_Success, .ExtendedResultCode = 0 };
+        if (!ReportPreDeploymentProcessingState(
+                propertyValue, ADUCITF_State_DeploymentInProgress, workflowData, inProgressResult))
+        {
+            Log_Warn("Reporting InProgress failed. Continuing processing deployment %s", workflowId);
+        }
+
+        // Ensure update to latest rootkey pkg, which is required for validating the update metadata.
+        workFolder = workflow_get_root_sandbox_dir(workflowData->WorkflowHandle);
+        if (workFolder == NULL)
+        {
+            Log_Error("workflow_get_root_sandbox_dir failed");
+            goto done;
+        }
+
+        tmpResult = RootKeyWorkflow_UpdateRootKeys(workflowId, workFolder, rootKeyPkgUrl);
+        if (IsAducResultCodeFailure(tmpResult.ResultCode))
+        {
+            Log_Error("Update Rootkey failed, 0x%08x. Deployment cannot proceed.", tmpResult.ExtendedResultCode);
+
+            if (!ReportPreDeploymentProcessingState(propertyValue, ADUCITF_State_Failed, workflowData, tmpResult))
+            {
+                Log_Warn("FAIL: report rootkey update 'Failed' State.");
+            }
+
+            goto done;
+        }
+    }
 
     ADUC_Workflow_HandlePropertyUpdate(workflowData, (const unsigned char*)jsonString, sourceContext->forceUpdate);
     free(jsonString);
@@ -377,8 +507,11 @@ void OrchestratorUpdateCallback(
     }
 
 done:
+    STRING_delete(rootKeyPackageFilePath);
+    workflow_free_string(rootKeyPkgUrl);
+    workflow_free_string(workflowId);
+    workflow_free_string(workFolder);
     STRING_delete(jsonToSend);
-
     free(jsonString);
 
     Log_Info("OrchestratorPropertyUpdateCallback ended");
@@ -416,7 +549,7 @@ void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
 // Reporting
 //
 static JSON_Status _json_object_set_update_result(
-    JSON_Object* object, int32_t resultCode, int32_t extendedResultCode, const char* resultDetails)
+    JSON_Object* object, int32_t resultCode, STRING_HANDLE extendedResultCodes, const char* resultDetails)
 {
     JSON_Status status = json_object_set_number(object, ADUCITF_FIELDNAME_RESULTCODE, resultCode);
     if (status != JSONSuccess)
@@ -425,10 +558,10 @@ static JSON_Status _json_object_set_update_result(
         goto done;
     }
 
-    status = json_object_set_number(object, ADUCITF_FIELDNAME_EXTENDEDRESULTCODE, extendedResultCode);
+    status = json_object_set_string(object, ADUCITF_FIELDNAME_EXTENDEDRESULTCODES, STRING_c_str(extendedResultCodes));
     if (status != JSONSuccess)
     {
-        Log_Error("Could not set value for field: %s", ADUCITF_FIELDNAME_EXTENDEDRESULTCODE);
+        Log_Error("Could not set value for field: %s", ADUCITF_FIELDNAME_EXTENDEDRESULTCODES);
         goto done;
     }
 
@@ -496,6 +629,21 @@ done:
     return succeeded;
 }
 
+static STRING_HANDLE construct_extended_result_codes_str(ADUC_WorkflowHandle handle, ADUC_Result rootResult)
+{
+    STRING_HANDLE root_result_erc_str =
+        ADUC_ReportingUtils_CreateReportingErcHexStr(rootResult.ExtendedResultCode, true /* is_first */);
+    STRING_HANDLE extra_ercs_str = workflow_get_extra_ercs(handle);
+    if (extra_ercs_str != NULL && STRING_length(extra_ercs_str) > 0 && root_result_erc_str != NULL
+        && STRING_length(root_result_erc_str) > 0)
+    {
+        STRING_concat_with_STRING(root_result_erc_str, extra_ercs_str);
+    }
+
+    STRING_delete(extra_ercs_str);
+    return root_result_erc_str;
+}
+
 /**
  * @brief Get the Reporting Json Value object
  *
@@ -513,6 +661,13 @@ JSON_Value* GetReportingJsonValue(
 {
     JSON_Value* resultValue = NULL;
 
+    // Declare and init here to avoid maybe-uninitialized static analysis errors
+    JSON_Value* rootValue = NULL;
+    JSON_Value* lastInstallResultValue = NULL;
+    JSON_Value* stepResultsValue = NULL;
+    JSON_Value* workflowValue = NULL;
+    STRING_HANDLE rootResultERCs = NULL;
+
     //
     // Get result from current workflow if exists.
     // (Note: on startup, update workflow is not started, unless there is an existing Update Action in the twin.)
@@ -523,7 +678,6 @@ JSON_Value* GetReportingJsonValue(
     //
     ADUC_Result rootResult;
     ADUC_WorkflowHandle handle = workflowData->WorkflowHandle;
-    ADUC_Result_t successErc = workflow_get_success_erc(handle);
 
     if (result != NULL)
     {
@@ -534,16 +688,18 @@ JSON_Value* GetReportingJsonValue(
         rootResult = workflow_get_result(handle);
     }
 
-    // Allow reporting of extended result code of soft-failing mechanisms, such as download handler, that have a
-    // fallback mechanism (e.g. full content download) that can ultimately become an overall success.
-    if (IsAducResultCodeSuccess(rootResult.ResultCode) && successErc != 0)
+    // The "extendedResultCodes" reported property is a JSON string, where the first ERC (8 hex digits) is always
+    // from the rootResult. Extra ERC can be appended for soft-failing mechanisms with fallback mechanisms
+    // e.g. download handler or update metadata rootkey management.
+    rootResultERCs = construct_extended_result_codes_str(handle, rootResult);
+    if (rootResultERCs == NULL)
     {
-        rootResult.ExtendedResultCode = successErc;
+        goto done;
     }
 
-    JSON_Value* rootValue = json_value_init_object();
+    rootValue = json_value_init_object();
     JSON_Object* rootObject = json_value_get_object(rootValue);
-    int stepsCount = workflow_get_children_count(handle);
+    size_t stepsCount = workflow_get_children_count(handle);
 
     //
     // Prepare 'lastInstallResult', 'stepResults' data.
@@ -560,31 +716,31 @@ JSON_Value* GetReportingJsonValue(
     //
     //     "lastInstallResult" : {
     //         "resultCode" : ####,
-    //         "extendedResultCode" : ####,
+    //         "extendedResultCodes" : "########,########",
     //         "resultDetails" : "...",
     //         "stepResults" : {
     //             "step_0" : {
     //                 "resultCode" : ####,
-    //                 "extendedResultCode" : ####,
+    //                 "extendedResultCodes" : "########",
     //                 "resultDetails" : "..."
     //             },
     //             ...
     //             "step_N" : {
     //                 "resultCode" : ####,
-    //                 "extendedResultCode" : ####,
+    //                 "extendedResultCodes" : "########",
     //                 "resultDetails" : "..."
     //             }
     //         }
     //     }
     // }
 
-    JSON_Value* lastInstallResultValue = json_value_init_object();
+    lastInstallResultValue = json_value_init_object();
     JSON_Object* lastInstallResultObject = json_object(lastInstallResultValue);
 
-    JSON_Value* stepResultsValue = json_value_init_object();
+    stepResultsValue = json_value_init_object();
     JSON_Object* stepResultsObject = json_object(stepResultsValue);
 
-    JSON_Value* workflowValue = json_value_init_object();
+    workflowValue = json_value_init_object();
 
     if (lastInstallResultValue == NULL || stepResultsValue == NULL || workflowValue == NULL)
     {
@@ -678,10 +834,7 @@ JSON_Value* GetReportingJsonValue(
 
     // Set top-level update state and result.
     jsonStatus = _json_object_set_update_result(
-        lastInstallResultObject,
-        rootResult.ResultCode,
-        rootResult.ExtendedResultCode,
-        workflow_peek_result_details(handle));
+        lastInstallResultObject, rootResult.ResultCode, rootResultERCs, workflow_peek_result_details(handle));
 
     if (jsonStatus != JSONSuccess)
     {
@@ -692,13 +845,14 @@ JSON_Value* GetReportingJsonValue(
     if (updateState != ADUCITF_State_DownloadStarted)
     {
         stepsCount = workflow_get_children_count(handle);
-        for (int i = 0; i < stepsCount; i++)
+        for (size_t i = 0; i < stepsCount; i++)
         {
             ADUC_WorkflowHandle childHandle = workflow_get_child(handle, i);
             ADUC_Result childResult;
             JSON_Value* childResultValue = NULL;
             JSON_Object* childResultObject = NULL;
             STRING_HANDLE childUpdateId = NULL;
+            STRING_HANDLE childExtendedResultCodes = NULL;
 
             if (childHandle == NULL)
             {
@@ -733,10 +887,12 @@ JSON_Value* GetReportingJsonValue(
             }
             childResultValue = NULL; // stepResultsValue owns it now.
 
+            childExtendedResultCodes =
+                ADUC_ReportingUtils_CreateReportingErcHexStr(childResult.ExtendedResultCode, true /* is_first */);
             jsonStatus = _json_object_set_update_result(
                 childResultObject,
                 childResult.ResultCode,
-                childResult.ExtendedResultCode,
+                childExtendedResultCodes,
                 workflow_peek_result_details(childHandle));
 
             if (jsonStatus != JSONSuccess)
@@ -746,6 +902,7 @@ JSON_Value* GetReportingJsonValue(
 
         childDone:
             STRING_delete(childUpdateId);
+            STRING_delete(childExtendedResultCodes);
             childUpdateId = NULL;
             json_value_free(childResultValue);
             childResultValue = NULL;
@@ -760,6 +917,7 @@ done:
     json_value_free(lastInstallResultValue);
     json_value_free(stepResultsValue);
     json_value_free(workflowValue);
+    STRING_delete(rootResultERCs);
 
     return resultValue;
 }

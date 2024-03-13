@@ -10,14 +10,18 @@
 #include <limits.h>
 #include <math.h>
 #include <stdbool.h>
-#include <stdlib.h>     // rand
-#include <sys/param.h>  // MIN/MAX
-#include <unistd.h>
+#include <stdlib.h> // rand
+
+#include <aducpal/time.h> // clock_gettime
+
+#ifndef MIN
+#    define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
 
 static time_t GetTimeSinceEpochInSeconds()
 {
     struct timespec timeSinceEpoch;
-    clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
+    ADUCPAL_clock_gettime(CLOCK_REALTIME, &timeSinceEpoch);
     return timeSinceEpoch.tv_sec;
 }
 
@@ -41,14 +45,20 @@ static time_t GetTimeSinceEpochInSeconds()
  *
  * @return time_t Returns the next retry timestamp in seconds (since epoch).
  */
-time_t ADUC_Retry_Delay_Calculator(int additionalDelaySecs, unsigned int retries, long initialDelayUnitMilliSecs, long maxDelaySecs, double maxJitterPercent)
+time_t ADUC_Retry_Delay_Calculator(
+    int additionalDelaySecs,
+    unsigned int retries,
+    unsigned long initialDelayUnitMilliSecs,
+    unsigned long maxDelaySecs,
+    double maxJitterPercent)
 {
     double jitterPercent = (maxJitterPercent / 100.0) * (rand() / ((double)RAND_MAX));
     double delay = (pow(2, MIN(retries, ADUC_RETRY_MAX_RETRY_EXPONENT)) * (double)initialDelayUnitMilliSecs) / 1000.0;
-    if (delay > maxDelaySecs)
+    if ((unsigned long)delay > maxDelaySecs)
     {
-        delay = maxDelaySecs;
+        delay = (double)maxDelaySecs;
     }
-    time_t retryTimestampSec = GetTimeSinceEpochInSeconds() + additionalDelaySecs + (unsigned long)(delay * (1 + jitterPercent));
+    time_t retryTimestampSec =
+        (time_t)(GetTimeSinceEpochInSeconds() + (time_t)additionalDelaySecs + (time_t)(delay * (1 + jitterPercent)));
     return retryTimestampSec;
 }

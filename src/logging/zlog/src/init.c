@@ -8,7 +8,7 @@
 #include "aduc/logging.h"
 #include "aduc/system_utils.h"
 #include <stdio.h> // printf
-#include <sys/stat.h> // mkdir
+#include <sys/stat.h> // stat
 
 /**
  * @brief Convert ADUC_LOG_SEVERITY to ZLOG_SEVERITY
@@ -73,7 +73,7 @@ void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
     {
         // NOTE: permissions must match those in CheckLogDir in health_management.c
         if (ADUC_SystemUtils_MkDirRecursive(
-                ADUC_LOG_FOLDER, -1 /*userId*/, -1 /*groupId*/, S_IRWXU | S_IRGRP | S_IXGRP)
+                ADUC_LOG_FOLDER, (uid_t)-1 /*userId*/, (gid_t)-1 /*groupId*/, (mode_t)S_IRWXU | S_IRGRP | S_IXGRP)
             != 0)
         {
             printf("WARNING: Cannot create a folder for logging file. ('%s')", ADUC_LOG_FOLDER);

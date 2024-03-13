@@ -249,7 +249,7 @@ class DeviceUpdateTestHelper:
         self._iotHubApiVersion = "?api-version=2021-06-01-preview"
         self._aduApiVersion= "?api-version=2022-07-01-preview"
 
-    def CreateDevice(self, deviceId, isIotEdge=False):
+    def CreateSaSDevice(self, deviceId, isIotEdge=False):
         """
         Use the IotHubRegistryManager to create the device using the passed deviceId and isIotEdge parameters using the IotHubRegistryManager
 
@@ -262,6 +262,37 @@ class DeviceUpdateTestHelper:
         device_status = "enabled"
 
         self._hubRegistryManager.create_device_with_sas(deviceId, primary_key, secondary_key, device_status, isIotEdge)
+
+        # Should always be of type Device
+        device = self._hubRegistryManager.get_device(deviceId)
+
+        if (type(device) != Device):
+            print(
+                "Return type for retrieving the device state is not Device. Requested Raw response?")
+
+        # Can't guarantee that the device will be connected but the generation-id should work
+        if (device.generation_id == ""):
+            return ""
+
+        # Once we can confirm that the device has been created we can make the connection string
+        connectionString = "HostName=" + self._iotHubUrl + ";DeviceId=" + deviceId + ";SharedAccessKey=" + primary_key
+
+        return connectionString
+    def Createx509Device(self, deviceId, primaryX509Thumbprint , secondaryX509Thumbprint, isIotEdge=False):
+        """
+        Use the IotHubRegistryManager to create the device using the passed deviceId and isIotEdge parameters using the IotHubRegistryManager
+
+        :param str deviceId: The device-id to create the device with
+        :param bool isIotEdge: Flag that determines whether the device should be created as an IotEdge device or an IotDevice
+        :param primaryX509Thumbprint : The primary thumbprint for the device
+        "param secondaryX509Thumbprint : The secondary thumbprint for the device
+        :returns: A connection string on success; An empty string on failure
+        """
+        primary_key = primaryX509Thumbprint
+        secondary_key = secondaryX509Thumbprint
+        device_status = "enabled"
+
+        self._hubRegistryManager.create_device_with_x509(deviceId, primary_key, secondary_key, device_status, isIotEdge)
 
         # Should always be of type Device
         device = self._hubRegistryManager.get_device(deviceId)

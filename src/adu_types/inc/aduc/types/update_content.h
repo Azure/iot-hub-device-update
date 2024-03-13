@@ -65,9 +65,9 @@ EXTERN_C_BEGIN
 #define ADUCITF_FIELDNAME_RESULTCODE "resultCode"
 
 /**
- * @brief JSON field name for ExtendedResultCode property.
+ * @brief JSON field name for ExtendedResultCodes property.
  */
-#define ADUCITF_FIELDNAME_EXTENDEDRESULTCODE "extendedResultCode"
+#define ADUCITF_FIELDNAME_EXTENDEDRESULTCODES "extendedResultCodes"
 
 /**
  * @brief JSON field name for ResultDetails property.
@@ -137,6 +137,11 @@ EXTERN_C_BEGIN
  * @brief JSON field name for File Urls
  */
 #define ADUCITF_FIELDNAME_FILE_URLS "fileUrls"
+
+/**
+ * @brief JSON field name for Root Key Package URL
+ */
+#define ADUCITF_FIELDNAME_ROOTKEY_PACKAGE_URL "rootKeyPackageUrl"
 
 //
 // Update Manifest Field Values
@@ -328,7 +333,7 @@ typedef struct tagADUC_FileEntity
     ADUC_Hash* Hash; /**< Array of ADUC_Hashes containing the hash options for the file*/
     size_t HashCount; /**< Total number of hashes in the array of hashes */
     char* TargetFilename; /**< File name to store content in DownloadUri to. */
-    char* Arguments; //**< Arguments associate with this file. */
+    char* Arguments; /**< Arguments associate with this file. */
     size_t SizeInBytes; /**< File size. */
     ADUC_RelatedFile* RelatedFiles; /**< The related files for this update payload. */
     size_t RelatedFileCount; /**< The count of related files. */

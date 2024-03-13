@@ -1,5 +1,5 @@
 /**
- * @file Diagnostics_Result.h
+ * @file diagnostics_result.h
  * @brief Defines result values for the Diagnostics Interface
  *
  * @copyright Copyright (c) Microsoft Corporation.

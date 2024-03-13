@@ -11,7 +11,9 @@
 #include <aduc/c_utils.h>
 #include <azure_c_shared_utility/strings.h>
 #include <stdbool.h>
-#include <sys/types.h>
+
+#include <aducpal/sys_stat.h> // mode_t
+#include <aducpal/unistd.h> // uid_t, gid_t
 
 EXTERN_C_BEGIN
 
@@ -29,7 +31,7 @@ typedef struct tagADUC_SystemUtils_ForEachDirFunctor
 
 const char* ADUC_SystemUtils_GetTemporaryPathName();
 
-int ADUC_SystemUtils_ExecuteShellCommand(const char* command);
+char* ADUC_SystemUtils_MkTemp(char* tmpl);
 
 int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t mode);
 
@@ -43,11 +45,11 @@ int ADUC_SystemUtils_MkSandboxDirRecursive(const char* path);
 
 int ADUC_SystemUtils_MkDirRecursiveAduUser(const char* path);
 
+bool ADUC_SystemUtils_Exists(const char* path);
+
 int ADUC_SystemUtils_RmDirRecursive(const char* path);
 
 int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, bool overwriteExistingFile);
-
-int ADUC_SystemUtils_RemoveFile(const char* path);
 
 int ADUC_SystemUtils_WriteStringToFile(const char* path, const char* buff);
 

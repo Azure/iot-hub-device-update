@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 /**
  * @brief Returns the pointer to the @p jsonFieldName from the JSON_Value
@@ -60,6 +59,26 @@ bool ADUC_JSON_GetBooleanField(const JSON_Value* jsonValue, const char* jsonFiel
         return false;
     }
     return result;
+}
+
+/**
+ * @brief Sets a string field to the a JSON Value.
+ *
+ * @param jsonValue The JSON Value.
+ * @param jsonFieldName The name of the JSON field to set.
+ * @param value The value fo the JSON field.
+ * @return bool true if call succeeded. false otherwise.
+ */
+bool ADUC_JSON_SetStringField(const JSON_Value* jsonValue, const char* jsonFieldName, const char* value)
+{
+    JSON_Object* object = json_value_get_object(jsonValue);
+
+    if (object == NULL)
+    {
+        return false;
+    }
+
+    return json_object_set_string(object, jsonFieldName, value) == JSONSuccess;
 }
 
 /**
@@ -169,6 +188,51 @@ bool ADUC_JSON_GetUnsignedIntegerField(const JSON_Value* jsonValue, const char* 
     }
 
     castVal = (unsigned int)val;
+
+    succeeded = true;
+done:
+
+    *value = castVal;
+
+    return succeeded;
+}
+
+/**
+ * @brief Gets the long long int representation of a the value of @p jsonFieldName from @p jsonValue and assigns it to @p value
+ *
+ * @details All values in json are doubles this function only returns true if the value read is a whole,
+ * @param jsonValue value to extract the @p jsonFieldName value from
+ * @param value the parameter to store @p jsonFieldName's value in
+ * @returns true on success; false on failure
+ */
+bool ADUC_JSON_GetLongLongField(const JSON_Value* jsonValue, const char* jsonFieldName, long long* value)
+{
+    if (jsonValue == NULL || jsonFieldName == NULL)
+    {
+        return false;
+    }
+
+    bool succeeded = false;
+    double val = 0;
+    long long castVal = 0;
+
+    JSON_Object* jsonObj = json_value_get_object(jsonValue);
+
+    if (jsonObj == NULL)
+    {
+        goto done;
+    }
+
+    // Note: cannot determine failure in this call as 0 is a valid return, always assume succeeded at this point
+    val = json_object_get_number(jsonObj, jsonFieldName);
+
+    // Note: check value is a whole number for safe casting to an unsigned int
+    if (((long long)val) != val)
+    {
+        goto done;
+    }
+
+    castVal = (long long)val;
 
     succeeded = true;
 done:

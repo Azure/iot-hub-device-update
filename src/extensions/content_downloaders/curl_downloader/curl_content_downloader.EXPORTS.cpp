@@ -21,7 +21,7 @@ EXTERN_C_BEGIN
 // lookup and call.
 //
 
-ADUC_Result Download(
+EXPORTED_METHOD ADUC_Result Download(
     const ADUC_FileEntity* entity,
     const char* workflowId,
     const char* workFolder,
@@ -31,7 +31,7 @@ ADUC_Result Download(
     return Download_curl(entity, workflowId, workFolder, timeoutInSeconds, downloadProgressCallback);
 }
 
-ADUC_Result Initialize(const char* initializeData)
+EXPORTED_METHOD ADUC_Result Initialize(const char* initializeData)
 {
     UNREFERENCED_PARAMETER(initializeData);
     return { ADUC_GeneralResult_Success };
@@ -43,7 +43,7 @@ ADUC_Result Initialize(const char* initializeData)
  * @param[out] contractInfo The extension contract info.
  * @return ADUC_Result The result.
  */
-ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
+EXPORTED_METHOD ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
 {
     contractInfo->majorVer = ADUC_V1_CONTRACT_MAJOR_VER;
     contractInfo->minorVer = ADUC_V1_CONTRACT_MINOR_VER;

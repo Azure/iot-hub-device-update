@@ -11,18 +11,24 @@ set (sources main.cpp jws_utils_ut.cpp)
 
 find_package (Catch2 REQUIRED)
 find_package (OpenSSL REQUIRED)
-find_package (azure_c_shared_utility REQUIRED)
 
 add_executable (${PROJECT_NAME} ${sources})
+
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
+
+target_compile_definitions (${PROJECT_NAME}
+                            PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
 target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::jws_utils
             aduc::crypto_utils
+            aduc::root_key_utils
+            aduc::rootkeypackage_utils
             aduc::string_utils
+            aduc::system_utils
             Catch2::Catch2
-            OpenSSL::Crypto
-            aziotsharedutil)
+            OpenSSL::Crypto)
 
 include (CTest)
 include (Catch)
