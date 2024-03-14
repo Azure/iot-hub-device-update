@@ -9,11 +9,6 @@
 #include "device_properties.h"
 #include <aduc/logging.h>
 #include <aduc/types/update_content.h>
-
-#ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
-#    include <do_config.h>
-#endif
-
 #include <stdlib.h>
 
 /**
@@ -174,27 +169,6 @@ bool DeviceProperties_AddVersions(JSON_Object* devicePropsObj)
             ADUC_BUILDER_VERSION);
         goto done;
     }
-
-#ifndef ADUC_BUILD_SNAP
-#ifndef ADUC_PLATFORM_SIMULATOR
-    do_version = deliveryoptimization_get_components_version();
-
-    if (do_version == NULL)
-    {
-        Log_Warn("Could not get do_version");
-        goto done;
-    }
-
-    jsonStatus = json_object_set_string(devicePropsObj, ADUCITF_FIELDNAME_DEVICEPROPERTIES_DO_VERSION, do_version);
-
-    if (jsonStatus != JSONSuccess)
-    {
-        Log_Warn(
-            "Could not serialize JSON field: %s value: %s", ADUCITF_FIELDNAME_DEVICEPROPERTIES_DO_VERSION, do_version);
-        goto done;
-    }
-#endif
-#endif
 
     success = true;
 

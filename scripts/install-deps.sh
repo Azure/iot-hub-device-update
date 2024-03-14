@@ -79,9 +79,9 @@ install_do=false
 do_ref=$default_do_ref
 
 do_cmake_options=(
-        "-DDO_BUILD_TESTS:BOOL=OFF"
-        "-DDO_INCLUDE_SDK=ON"
-    )
+    "-DDO_BUILD_TESTS:BOOL=OFF"
+    "-DDO_INCLUDE_SDK=ON"
+)
 
 # catch2 build
 #
@@ -843,7 +843,7 @@ while [[ $1 != "" ]]; do
         ;;
     --do-cmake-option)
         shift
-        do_cmake_options+=($1)
+        do_cmake_options+=("$1")
         ;;
     -p | --install-packages)
         install_packages=true
@@ -897,7 +897,6 @@ if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && \
     $install_do != "true" && $install_azure_iot_sdk != "true" && \
     $install_catch2 != "true" && $install_swupdate != "true" && \
     $install_cmake != "true" && $install_shellcheck != "true" && \
-    $install_azure_blob_storage_file_upload_utility != "true" && \
     $install_githooks != "true" ]]; then
     install_all_deps=true
 fi

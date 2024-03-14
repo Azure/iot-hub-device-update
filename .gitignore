@@ -41,12 +41,9 @@ cscope.po.out
 out/
 build/
 Testing/
-<<<<<<< HEAD
 squashfs-root/
 *.snap
-=======
 
 ### VCPKG
 .vcpkg/
 .vcpkg-installed/
->>>>>>> 10791ac6bd98eaf4e87ea54350d3e9c8a2cec1da

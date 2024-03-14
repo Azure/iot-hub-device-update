@@ -32,9 +32,6 @@
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
-#ifndef ADUC_PLATFORM_SIMULATOR // DO is not used in sim mode
-#    include "aduc/connection_string_utils.h"
-#endif
 #include <diagnostics_devicename.h>
 #include <diagnostics_interface.h>
 #include <getopt.h>
@@ -774,24 +771,11 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     if (ConnectionStringUtils_IsNestedEdge(info.connectionString))
     {
         result = ExtensionManager_InitializeContentDownloader(info.connectionString);
-        if (IsAducResultCodeFailure(result.ResultCode))
-        {
-            // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
-            // fail the startup.
-            Log_Error("Failed to set DO connection string in Nested Edge scenario, result: 0x%08x", result.ResultCode);
-            goto done;
-        }
     }
     else
     {
         result = ExtensionManager_InitializeContentDownloader(NULL /*initializeData*/);
-        if (IsAducResultCodeFailure(result.ResultCode))
-        {
-            Log_Error("Failed to initialize Content Downloader. (erc:%d)", result.ExtendedResultCode);
-        }
     }
-
-
 
 #ifndef ADUC_BUILD_SNAP
 #ifdef ADUC_COMMAND_HELPER_H
@@ -809,6 +793,13 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 #endif // #ifdef ADUC_COMMAND_HELPER_H
 #endif // #ifndef ADUC_BUILD_SNAP
 
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
+        // fail the startup.
+        Log_Error("Failed to set DO connection string in Nested Edge scenario, result: 0x%08x", result.ResultCode);
+        goto done;
+    }
 
     succeeded = true;
 

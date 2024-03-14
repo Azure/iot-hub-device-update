@@ -14,13 +14,13 @@ target_link_libraries (
     ${target_name}
     PUBLIC aduc::c_utils
     PRIVATE aduc::adu_types
-            aduc::logging
             aduc::permission_utils
+            aduc::logging
             Parson::parson
             uhttp)
 
 target_compile_definitions (
-    ${PROJECT_NAME}
+    ${target_name}
     PRIVATE ADUC_BUILD_SNAP="${ADUC_BUILD_SNAP}"
             EIS_DATA_PATH="${EIS_DATA_PATH}"
             EIS_USER="${EIS_USER}"

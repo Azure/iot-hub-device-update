@@ -147,9 +147,6 @@ target_compile_definitions (
             ADUC_BUILD_SNAP="${ADUC_BUILD_SNAP}"
             SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}")
 
-if (ADUC_PLATFORM_LAYER STREQUAL "simulator")
-    target_compile_definitions (${target_name} PRIVATE ADUC_PLATFORM_SIMULATOR)
-
 if (WIN32)
     find_package (unofficial-getopt-win32 REQUIRED)
     target_link_libraries (${target_name} PRIVATE unofficial::getopt-win32::getopt)
