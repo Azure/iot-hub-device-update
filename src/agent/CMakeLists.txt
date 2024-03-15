@@ -144,6 +144,7 @@ target_compile_definitions (
             ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
             DO_FILE_GROUP="${DO_FILE_GROUP}"
             DO_FILE_USER="${DO_FILE_USER}"
+            ADUC_BUILD_SNAP="${ADUC_BUILD_SNAP}"
             SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}")
 
 if (WIN32)

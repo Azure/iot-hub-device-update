@@ -9,7 +9,6 @@
 #include "device_properties.h"
 #include <aduc/logging.h>
 #include <aduc/types/update_content.h>
-
 #include <stdlib.h>
 
 /**

@@ -233,7 +233,7 @@ static bool RegisterHandlerExtension(
     struct passwd* pwd = ADUCPAL_getpwnam(ADUC_FILE_USER);
     if (pwd == NULL)
     {
-        Log_Error("Cannot verify credential of 'adu' user.");
+        Log_Error("Cannot verify credential of '%s' user.", ADUC_FILE_USER);
         goto done;
     }
     uid_t aduUserId = pwd->pw_uid;
@@ -245,17 +245,22 @@ static bool RegisterHandlerExtension(
     struct group* grp = ADUCPAL_getgrnam(ADUC_FILE_GROUP);
     if (grp == NULL)
     {
-        Log_Error("Cannot get 'adu' group info.");
+        Log_Error("Cannot get '%s' group info.", ADUC_FILE_GROUP);
         goto done;
     }
     gid_t aduGroupId = grp->gr_gid;
     grp = NULL;
 
     Log_Debug("Creating the extension folder ('%s'), uid:%d, gid:%d", STRING_c_str(dir), aduUserId, aduGroupId);
+#ifndef ADUC_BUILD_SNAP
     int dir_result = ADUC_SystemUtils_MkDirRecursive(STRING_c_str(dir), aduUserId, aduGroupId, S_IRWXU | S_IRWXG);
+#else
+    // Note: for Ubuntu Core, always use default user and group.
+    int dir_result = ADUC_SystemUtils_MkDirRecursive(STRING_c_str(dir), (uid_t)-1, (gid_t)-1, S_IRWXU | S_IRWXG);
+#endif
     if (dir_result != 0)
     {
-        Log_Error("Cannot create a folder for registration file. ('%s')", STRING_c_str(dir));
+        Log_Error("Cannot create a folder for handler registration file. ('%s')", STRING_c_str(dir));
         goto done;
     }
 
@@ -449,7 +454,7 @@ bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
     pwd = ADUCPAL_getpwnam(ADUC_FILE_USER);
     if (pwd == NULL)
     {
-        Log_Error("Cannot verify credential of 'adu' user.");
+        Log_Error("Cannot verify credential of '%s' user.", ADUC_FILE_USER);
         goto done;
     }
 
@@ -462,15 +467,21 @@ bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
     grp = ADUCPAL_getgrnam(ADUC_FILE_GROUP);
     if (grp == NULL)
     {
-        Log_Error("Cannot get 'adu' group info.");
+        Log_Error("Cannot get '%s' group info.", ADUC_FILE_GROUP);
         goto done;
     }
     gid_t aduGroupId = grp->gr_gid;
     grp = NULL;
 
     Log_Debug("Creating the extension folder ('%s'), uid:%d, gid:%d", extensionDir, aduUserId, aduGroupId);
+#ifndef ADUC_BUILD_SNAP
     int dir_result =
         ADUC_SystemUtils_MkDirRecursive(extensionDir, aduUserId, aduGroupId, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP);
+#else
+    // Note: for Ubuntu Core, always use default user and group.
+    int dir_result =
+        ADUC_SystemUtils_MkDirRecursive(extensionDir, (uid_t)-1, (gid_t)-1, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP);
+#endif
     if (dir_result != 0)
     {
         Log_Error("Cannot create a folder for registration file. ('%s')", extensionDir);

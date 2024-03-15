@@ -195,6 +195,44 @@ set (
     "download_handlers"
     CACHE STRING "Sub folder for download handler extensions.")
 
+set (
+    ADUC_DOWNLOAD_HANDLER_EXTENSION_DIR
+    "${ADUC_EXTENSIONS_FOLDER}/${ADUC_EXTENSIONS_SUBDIR_DOWNLOAD_HANDLERS}"
+    CACHE STRING "Path for the download handler extensions")
+
+if (ADUC_BUILD_UNIT_TESTS)
+    set (
+        EIS_DATA_PATH
+        "/tmp/eis_conn_info.txt"
+        CACHE STRING "The file for eis identities.")
+else()
+    set (
+        EIS_DATA_PATH
+        "/var/lib/adu/eis_conn_info.txt"
+        CACHE STRING "The file for eis identities.")
+endif()
+
+if (ADUC_BUILD_SNAP)
+    set (
+        ADUC_DOWNLOADS_FOLDER
+        /var/lib/deviceupdate-agent-downloads
+        CACHE STRING "Path to the folder containing downloaded update artifacts.")
+    set (
+        EIS_USER
+        "snap_aziotdu"
+        CACHE STRING "The uid to call eis service.")
+
+else()
+    set (
+        ADUC_DOWNLOADS_FOLDER
+        "${ADUC_DATA_FOLDER}/downloads"
+        CACHE STRING "Path to the folder containing downloaded update artifacts.")
+    set (
+        EIS_USER
+        "adu"
+        CACHE STRING "The uid to call eis service.")
+endif()
+
 # Define the mapping from step handler names to subdirectory names
 set (
     ADUC_STEP_HANDLER_NAME_TO_DIRECOTRY_MAP
@@ -356,25 +394,47 @@ set (
     "adu"
     CACHE STRING "The effective group name for adu-shell process.")
 
-set (
-    ADUC_FILE_USER
-    "adu"
-    CACHE STRING "The user for adu file ownership.")
+if (ADUC_BUILD_SNAP)
+    set (
+        ADUC_FILE_USER
+        "root"
+        CACHE STRING "The user for adu file ownership.")
 
-set (
-    ADUC_FILE_GROUP
-    "adu"
-    CACHE STRING "The group for adu file ownership.")
+    set (
+        ADUC_FILE_GROUP
+        "snap_aziotdu"
+        CACHE STRING "The group for adu file ownership.")
 
-set (
-    DO_FILE_USER
-    "do"
-    CACHE STRING "The user for do file ownership.")
+    set (
+        DO_FILE_USER
+        "snap_aziotdo"
+        CACHE STRING "The user for do file ownership.")
 
-set (
-    DO_FILE_GROUP
-    "do"
-    CACHE STRING "The group for do file ownership.")
+    set (
+        DO_FILE_GROUP
+        "snap_aziotdo"
+        CACHE STRING "The group for do file ownership.")
+else ()
+    set (
+        ADUC_FILE_USER
+        "adu"
+        CACHE STRING "The user for adu file ownership.")
+
+    set (
+        ADUC_FILE_GROUP
+        "adu"
+        CACHE STRING "The group for adu file ownership.")
+
+    set (
+        DO_FILE_USER
+        "do"
+        CACHE STRING "The user for do file ownership.")
+
+    set (
+        DO_FILE_GROUP
+        "do"
+        CACHE STRING "The group for do file ownership.")
+endif ()
 
 set (
     SYSLOG_FILE_GROUP

@@ -777,6 +777,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         result = ExtensionManager_InitializeContentDownloader(NULL /*initializeData*/);
     }
 
+#ifndef ADUC_BUILD_SNAP
 #ifdef ADUC_COMMAND_HELPER_H
     if (InitializeCommandListenerThread())
     {
@@ -790,6 +791,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         // the agent stay alive and connected to the IoT hub.
     }
 #endif // #ifdef ADUC_COMMAND_HELPER_H
+#endif // #ifndef ADUC_BUILD_SNAP
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -814,8 +816,10 @@ void ShutdownAgent()
 {
     Log_Warn("Agent is shutting down.");
     ADUC_D2C_Messaging_Uninit();
-#ifdef ADUC_COMMAND_HELPER_H
+#ifndef ADUC_BUILD_SNAP
+    #ifdef ADUC_COMMAND_HELPER_H
     UninitializeCommandListenerThread();
+    #endif
 #endif
     ADUC_PnP_Components_Destroy();
     IoTHub_CommunicationManager_Deinit();
@@ -1013,6 +1017,7 @@ int main(int argc, char** argv)
     }
 #endif // #ifdef ADUC_COMMAND_HELPER_H
 
+#ifndef ADUC_BUILD_SNAP
     // Switch to specified agent.runas user.
     // Note: it's important that we do this only when we're not performing any
     // high-privileged tasks, such as, registering agent's extension(s).
@@ -1020,6 +1025,7 @@ int main(int argc, char** argv)
     {
         goto done;
     }
+#endif
 
     Log_Info("Agent (%s; %s) starting.", ADUC_PLATFORM_LAYER, ADUC_VERSION);
 #ifdef ADUC_GIT_INFO
@@ -1030,7 +1036,8 @@ int main(int argc, char** argv)
         SUPPORTED_UPDATE_MANIFEST_VERSION_MIN,
         SUPPORTED_UPDATE_MANIFEST_VERSION_MAX);
 
-    bool healthy = HealthCheck(&launchArgs);
+#ifndef ADUC_BUILD_SNAP
+    _Bool healthy = HealthCheck(&launchArgs);
     if (launchArgs.healthCheckOnly || !healthy)
     {
         if (healthy)
@@ -1045,6 +1052,7 @@ int main(int argc, char** argv)
 
         goto done;
     }
+#endif
 
     // Ensure that the ADU data folder exists.
     // Normally, ADUC_DATA_FOLDER is created by install script.
