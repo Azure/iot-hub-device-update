@@ -76,7 +76,6 @@ parts:
   azure-storage-sdk:
     after:
       - azure-iot-hub-client-csdk
-    plugin: nil
     source: https://github.com/Azure/azure-sdk-for-cpp.git
     source-type: git
     source-tag: azure-core_1.6.0
