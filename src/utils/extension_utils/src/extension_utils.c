@@ -256,7 +256,7 @@ static bool RegisterHandlerExtension(
     int dir_result = ADUC_SystemUtils_MkDirRecursive(STRING_c_str(dir), aduUserId, aduGroupId, S_IRWXU | S_IRWXG);
 #else
     // Note: for Ubuntu Core, always use default user and group.
-    int dir_result = ADUC_SystemUtils_MkDirRecursive(STRING_c_str(dir), -1, -1, S_IRWXU | S_IRWXG);
+    int dir_result = ADUC_SystemUtils_MkDirRecursive(STRING_c_str(dir), (uid_t)-1, (gid_t)-1, S_IRWXU | S_IRWXG);
 #endif
     if (dir_result != 0)
     {
@@ -480,7 +480,7 @@ bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
 #else
     // Note: for Ubuntu Core, always use default user and group.
     int dir_result =
-        ADUC_SystemUtils_MkDirRecursive(extensionDir, -1, -1, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP);
+        ADUC_SystemUtils_MkDirRecursive(extensionDir, (uid_t)-1, (gid_t)-1, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP);
 #endif
     if (dir_result != 0)
     {

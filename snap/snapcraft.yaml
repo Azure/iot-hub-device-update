@@ -73,15 +73,58 @@ parts:
       cmake --build .
       cmake --build . --target install
 
-  azure-blob-stroage-file-upload-utility:
+  azure-storage-sdk:
     after:
       - azure-iot-hub-client-csdk
     plugin: nil
-    source: ./scripts
+    source: https://github.com/Azure/azure-sdk-for-cpp.git
+    source-type: git
+    source-tag: azure-core_1.6.0
+    plugin: cmake
+    source-depth: 1
     build-packages:
       - git
+      - cmake
+      - g++
+      - libcurl4-openssl-dev
+      - libssl-dev
     override-build: |
-      ./install-deps.sh --work-folder $SNAPCRAFT_STAGE/du-workfolder --install-abs-file-upload-utility 6969d0fc9d222a5c132d0b8fb4305697a6017383
+      # Define work folder and SDK directory
+      work_folder="$SNAPCRAFT_PART_BUILD"
+      azure_storage_sdk_dir="$work_folder/azure_storage_sdk"
+
+      # Ensure the directory is clean
+      if [ -d "$azure_storage_sdk_dir" ]; then
+        sudo rm -rf "$azure_storage_sdk_dir"
+      fi
+
+      # Determine the repository URL
+      azure_storage_sdk_url="https://github.com/Azure/azure-sdk-for-cpp.git"
+
+      # Branch and tag references
+      azure_storage_sdk_branch_ref="main"
+      azure_storage_sdk_tag_ref="azure-core_1.6.0"
+
+      echo "Building Azure Storage SDK in $azure_storage_sdk_dir from branch $azure_storage_sdk_branch_ref, tag $azure_storage_sdk_tag_ref"
+
+      # Clone the repository
+      mkdir -p "$azure_storage_sdk_dir"
+      pushd "$azure_storage_sdk_dir"
+      git clone --recursive --single-branch --branch "$azure_storage_sdk_branch_ref" "$azure_storage_sdk_url" .
+      git checkout tags/"$azure_storage_sdk_tag_ref"
+
+      # Configure build options
+      azure_storage_sdk_cmake_options=()
+      azure_storage_sdk_cmake_options+=("-DCMAKE_BUILD_TYPE=Release")
+
+      # Run CMake to configure and build the project
+      cmake "${azure_storage_sdk_cmake_options[@]}" .
+      cmake --build .
+
+      # Install the SDK
+      sudo cmake --build . --target install
+      popd
+
 
   deliveryoptimization-sdk:
     after:
@@ -118,8 +161,8 @@ parts:
     after:
      - installdeps
      - azure-iot-hub-client-csdk
+     - azure-storage-sdk
      - deliveryoptimization-sdk
-     - azure-blob-stroage-file-upload-utility
 
     stage:
       - usr/bin/*
@@ -224,9 +267,9 @@ slots:
   #
   #    Delivery Optimization : writes downloaded file to this folder and/or sub-folders.
   #
-  downloads-folder:
+  deviceupdate-agent-downloads:
     interface: content
-    content: downloads-folder
+    content: deviceupdate-agent-downloads
     write:
         - $SNAP_DATA/data/downloads
 

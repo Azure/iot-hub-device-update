@@ -390,7 +390,7 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* work
     // The Sandbox folder, which is shared through the Content Interface,
     // allows the Delivery Optimization snap to utilize it as a storage location for downloaded files.
     dir_result =
-        ADUC_SystemUtils_MkDirRecursive(workFolder, -1, -1, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP);
+        ADUC_SystemUtils_MkDirRecursive(workFolder, (uid_t)-1, (gid_t)-1, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP);
 #endif
 
     if (dir_result != 0)

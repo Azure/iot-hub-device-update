@@ -161,9 +161,9 @@ slots:
   #
   #    Delivery Optimization : writes downloaded file to this folder and/or sub-folders.
   #
-  downloads-folder:
+  deviceupdate-agent-downloads:
     interface: content
-    content: downloads-folder
+    content: deviceupdate-agent-downloads
     write:
         - $SNAP_DATA/data/downloads
 
