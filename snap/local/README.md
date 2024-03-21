@@ -161,9 +161,9 @@ slots:
   #
   #    Delivery Optimization : writes downloaded file to this folder and/or sub-folders.
   #
-  downloads-folder:
+  deviceupdate-agent-downloads:
     interface: content
-    content: downloads-folder
+    content: deviceupdate-agent-downloads
     write:
         - $SNAP_DATA/data/downloads
 
@@ -190,7 +190,7 @@ layout:
 
 ```
 
-> Note that above DU's `_plug_name_:downloads-folder` identifier must match DO's `_slot_name_:deviceupdate-agent-downloads` identifier 
+> Note that above DU's `_plug_name_:deviceupdate-agent-downloads` identifier must match DO's `_slot_name_:deviceupdate-agent-downloads` identifier 
 
 To connect, use following commands:
 
@@ -200,7 +200,7 @@ sudo snap connect deviceupdate-agent:do-port-numbers deliveryoptimization-client
 
 sudo snap connect deviceupdate-agent:do-configs deliveryoptimization-client:do-configs
 
-sudo snap connect deliveryoptimization-client:deviceupdate-agent-downloads deviceupdate-agent:downloads-folder
+sudo snap connect deliveryoptimization-client:deviceupdate-agent-downloads deviceupdate-agent:deviceupdate-agent-downloads
 
 # Required interface for Snapd RestFul requests. 
 sudo snap connect deviceupdate-agent:snapd-control
@@ -247,7 +247,7 @@ Verify that connections are ok:
 $ snap connections deviceupdate-agent 
 
 Interface                              Plug                                                      Slot                                         Notes
-content[deviceupdate-agent-downloads]  deliveryoptimization-client:deviceupdate-agent-downloads  deviceupdate-agent:downloads-folder          manual
+content[deviceupdate-agent-downloads]  deliveryoptimization-client:deviceupdate-agent-downloads  deviceupdate-agent:deviceupdate-agent-downloads          manual
 content[do-configs]                    deviceupdate-agent:do-configs                             deliveryoptimization-client:do-configs       manual
 content[do-port-numbers]               deviceupdate-agent:do-port-numbers                        deliveryoptimization-client:do-port-numbers  manual
 content[aziot-identity-service]        deviceupdate-agent:identity-service                       azure-iot-identity:identity-service          manual
