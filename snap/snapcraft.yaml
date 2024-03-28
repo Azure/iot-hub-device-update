@@ -73,31 +73,6 @@ parts:
       cmake --build .
       cmake --build . --target install
 
-  azure-storage-sdk:
-    after:
-      - azure-iot-hub-client-csdk
-    source: https://github.com/Azure/azure-sdk-for-cpp.git
-    source-type: git
-    source-tag: azure-core_1.6.0
-    plugin: cmake
-    source-depth: 1
-    build-packages:
-      - git
-      - cmake
-      - g++
-      - libcurl4-openssl-dev
-      - libssl-dev
-      - libxml2-dev
-    override-build: |
-      git submodule update --init --recursive
-
-      mkdir -p build && cd build
-      cmake -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=$SNAPCRAFT_PART_INSTALL \
-            ..
-      cmake --build . -- -j$(nproc)
-      cmake --build . --target install
-
   deliveryoptimization-sdk:
     after:
       - installdeps
@@ -133,7 +108,6 @@ parts:
     after:
      - installdeps
      - azure-iot-hub-client-csdk
-     - azure-storage-sdk
      - deliveryoptimization-sdk
 
     stage:

@@ -96,9 +96,7 @@ target_link_libraries (
             aduc::pnp_helper
             aduc::shutdown_service
             aduc::system_utils
-            aduc::url_utils
-            diagnostics_component::diagnostics_interface
-            diagnostics_component::diagnostics_devicename)
+            aduc::url_utils)
 
 if (NOT WIN32)
     target_link_libraries (${target_name} PRIVATE aduc::command_helper)
@@ -151,6 +149,10 @@ if (WIN32)
     find_package (unofficial-getopt-win32 REQUIRED)
     target_link_libraries (${target_name} PRIVATE unofficial::getopt-win32::getopt)
 endif ()
+
+if(NOT ADUC_BUILD_SNAP)
+    target_link_libraries(${target_name} PRIVATE diagnostics_component::diagnostics_interface diagnostics_component::diagnostics_devicename)
+endif()
 
 target_link_libraries (${target_name} PRIVATE aduc::platform_layer)
 
