@@ -87,43 +87,16 @@ parts:
       - g++
       - libcurl4-openssl-dev
       - libssl-dev
+      - libxml2-dev
     override-build: |
-      # Define work folder and SDK directory
-      work_folder="$SNAPCRAFT_PART_BUILD"
-      azure_storage_sdk_dir="$work_folder/azure_storage_sdk"
+      git submodule update --init --recursive
 
-      # Ensure the directory is clean
-      if [ -d "$azure_storage_sdk_dir" ]; then
-        sudo rm -rf "$azure_storage_sdk_dir"
-      fi
-
-      # Determine the repository URL
-      azure_storage_sdk_url="https://github.com/Azure/azure-sdk-for-cpp.git"
-
-      # Branch and tag references
-      azure_storage_sdk_branch_ref="main"
-      azure_storage_sdk_tag_ref="azure-core_1.6.0"
-
-      echo "Building Azure Storage SDK in $azure_storage_sdk_dir from branch $azure_storage_sdk_branch_ref, tag $azure_storage_sdk_tag_ref"
-
-      # Clone the repository
-      mkdir -p "$azure_storage_sdk_dir"
-      pushd "$azure_storage_sdk_dir"
-      git clone --recursive --single-branch --branch "$azure_storage_sdk_branch_ref" "$azure_storage_sdk_url" .
-      git checkout tags/"$azure_storage_sdk_tag_ref"
-
-      # Configure build options
-      azure_storage_sdk_cmake_options=()
-      azure_storage_sdk_cmake_options+=("-DCMAKE_BUILD_TYPE=Release")
-
-      # Run CMake to configure and build the project
-      cmake "${azure_storage_sdk_cmake_options[@]}" .
-      cmake --build .
-
-      # Install the SDK
-      sudo cmake --build . --target install
-      popd
-
+      mkdir -p build && cd build
+      cmake -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=$SNAPCRAFT_PART_INSTALL \
+            ..
+      cmake --build . -- -j$(nproc)
+      cmake --build . --target install
 
   deliveryoptimization-sdk:
     after:
