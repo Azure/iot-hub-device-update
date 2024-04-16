@@ -35,6 +35,10 @@
 
 #include <pthread.h>
 
+#include <sys/inotify.h>
+#define INOTIFY_EVENT_SIZE      ( sizeof (struct inotify_event) )
+#define INOTIFY_EVENT_BUF_LEN   ( 1024 * ( INOTIFY_EVENT_SIZE + 16 ) )
+
 // fwd decl
 void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, bool isAsync);
 
@@ -340,6 +344,45 @@ void ADUC_Workflow_DoWork(ADUC_WorkflowData* workflowData)
 
 void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowData)
 {
+    char buffer[INOTIFY_EVENT_BUF_LEN];
+    const char omnectValidateUpdateCompleteBarrier[FILENAME_MAX] = "/run/omnect-device-service/omnect_validate_update_complete_barrier\0";
+    if (access(omnectValidateUpdateCompleteBarrier, F_OK) == 0) {
+        Log_Info("Startup during update validation. Stalling workflow until \"%s\" gets deleted.", omnectValidateUpdateCompleteBarrier);
+
+        int fd = inotify_init();
+        if ( fd >= 0 ) {
+            int wd = inotify_add_watch(fd, omnectValidateUpdateCompleteBarrier, IN_DELETE_SELF);
+            if ( wd >= 0)
+            {
+                // blocking read until file gets deleted
+                ssize_t length = read( fd, buffer, INOTIFY_EVENT_BUF_LEN );
+                if (length >= 0)
+                {
+                    Log_Info("Update validation succeeded, continuing workflow.");
+                }
+                else
+                {
+                    Log_Error("Read inotify event failed");
+                    exit(1);
+                }
+
+                inotify_rm_watch(fd,wd);
+            }
+            else
+            {
+                Log_Error("inotify_add_watch() failed");
+                exit(1);
+            }
+
+            close(fd);
+        }
+        else
+        {
+            Log_Error("inotify_init() failed");
+            exit(1);
+        }
+    }
+
     if (currentWorkflowData == NULL)
     {
         Log_Info("No update content. Ignoring.");
