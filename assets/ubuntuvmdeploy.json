@@ -196,12 +196,12 @@
             "properties": {
               "priority": 1000,
               "protocol": "Tcp",
-              "access": "Deny",
+              "access": "Allow",
               "direction": "Inbound",
-              "sourceAddressPrefix": "*",
+              "sourceAddressPrefix": "CorpNetPublic",
               "sourcePortRange": "*",
               "destinationAddressPrefix": "*",
-              "destinationPortRange": "22"
+              "destinationPortRange": "22-22"
             }
           }
         ]
