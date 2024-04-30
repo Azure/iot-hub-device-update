@@ -60,6 +60,11 @@ extends:
               name: 1es_hosted_pool_windows
               os: windows
             steps:
+              - task: PipAuthenticate@1
+                displayName: 'Pip Authenticate'
+                inputs:
+                  artifactFeeds: 'adu-linux-client/ADUTestFeed'
+                  onlyExtraIndex: true
               - task: PowerShell@2
                 displayName: "Build Client + UTs - amd64_debug"
                 inputs:

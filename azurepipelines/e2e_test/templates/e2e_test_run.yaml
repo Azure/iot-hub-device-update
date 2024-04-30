@@ -7,6 +7,12 @@ parameters:
       type: string
 
 steps:
+    - task: PipAuthenticate@1
+      displayName: 'Pip Authenticate'
+      inputs:
+          artifactFeeds: 'adu-linux-client/ADUTestFeed'
+          onlyExtraIndex: true
+
     - script: |
           mkdir testresults
       displayName: Creating the test results directory
