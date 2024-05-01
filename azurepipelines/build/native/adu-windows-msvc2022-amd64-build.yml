@@ -64,7 +64,6 @@ extends:
                 displayName: 'Pip Authenticate'
                 inputs:
                   artifactFeeds: 'adu-linux-client/ADUTestFeed'
-                  onlyExtraIndex: true
               - task: PowerShell@2
                 displayName: "Build Client + UTs - amd64_debug"
                 inputs:

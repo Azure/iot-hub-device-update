@@ -30,7 +30,6 @@ steps:
       displayName: 'Pip Authenticate'
       inputs:
           artifactFeeds: 'adu-linux-client/ADUTestFeed'
-          onlyExtraIndex: true
 
     - task: DownloadPipelineArtifact@2
       displayName: "Download DeviceUpdate Package from pipeline"
