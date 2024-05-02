@@ -917,6 +917,7 @@ if [[ $install_packages_only == "true" ]]; then
     install_catch2=false
 fi
 
+export CC=/usr/bin/gcc
 if [[ $install_packages == "true" ]]; then
     # Check if we need to install any packages
     # before we call apt update.

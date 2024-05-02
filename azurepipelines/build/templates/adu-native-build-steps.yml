@@ -13,7 +13,9 @@ steps:
             displayName: "Component Detection"
             inputs:
                 sourceScanPath: src
-
+    - bash: |
+          sudo apt-get install gcc-8
+      displayName: "Adding gcc-8 maybe."
     - task: Bash@3
       displayName: "Install ADUC dependencies"
       inputs:
