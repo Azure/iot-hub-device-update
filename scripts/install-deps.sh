@@ -918,6 +918,7 @@ if [[ $install_packages_only == "true" ]]; then
 fi
 
 export CC=/usr/bin/gcc
+export CXX=/usr/bin/g++
 if [[ $install_packages == "true" ]]; then
     # Check if we need to install any packages
     # before we call apt update.
