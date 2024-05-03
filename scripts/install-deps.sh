@@ -488,10 +488,6 @@ do_install_do() {
     $SUDO cmake --build . --target install || return
     popd > /dev/null || return
     popd > /dev/null || return
-
-    if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $do_dir
-    fi
 }
 
 do_install_azure_storage_sdk() {
@@ -531,10 +527,6 @@ do_install_azure_storage_sdk() {
     $SUDO cmake --build . --target install || return
 
     popd > /dev/null || return
-
-    if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $azure_storage_sdk_dir || return
-    fi
 }
 
 do_install_cmake_from_source() {
