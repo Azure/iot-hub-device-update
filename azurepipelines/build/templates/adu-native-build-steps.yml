@@ -13,15 +13,22 @@ steps:
             displayName: "Component Detection"
             inputs:
                 sourceScanPath: src
+      # Ignore SC2164: Use 'cd ... || exit' or 'cd ... || return' in case cd fails.
+      #   We usually want to return an error code from a specific, previous command
+      #   even if popd, pushd, or cd fails.
+      # Ignore SC2209: Use var=$(command) to assign output (or quote to assign string).
+      #   We use 'ret=return' or 'ret=exit' to support dot sourcing.
+    - ${{ if eq(parameters.targetArch, 'amd64') }}:
+          - bash: |
+                /tmp/deviceupdate-shellcheck --shell=bash $(find -name "*.sh" | grep -v -e '^\.\/out')
+                exit $?
+            displayName: "Run ShellCheck"
     - task: Bash@3
       displayName: "Install ADUC dependencies"
       inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
           arguments: --install-all-deps -f $(Build.SourcesDirectory)/adu-deps/
-    - bash: |
-            ls -la $(Build.SourcesDirectory)/adu-deps/
-      displayName: "Checking deps"
     - task: Bash@3
       displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
       inputs:
@@ -57,17 +64,6 @@ steps:
       inputs:
           artifactName: "adu-client-${{parameters.targetOs}}-${{parameters.targetArch}}"
           targetPath: "$(Build.ArtifactStagingDirectory)"
-
-      # Ignore SC2164: Use 'cd ... || exit' or 'cd ... || return' in case cd fails.
-      #   We usually want to return an error code from a specific, previous command
-      #   even if popd, pushd, or cd fails.
-      # Ignore SC2209: Use var=$(command) to assign output (or quote to assign string).
-      #   We use 'ret=return' or 'ret=exit' to support dot sourcing.
-    - ${{ if eq(parameters.targetArch, 'amd64') }}:
-          - bash: |
-                /tmp/deviceupdate-shellcheck --shell=bash $(find -name "*.sh" | grep -v -e '^\.\/out')
-                exit $?
-            displayName: "Run ShellCheck"
 
     - ${{ if eq(parameters.targetArch, 'amd64') }}:
           - task: ComponentGovernanceComponentDetection@0
