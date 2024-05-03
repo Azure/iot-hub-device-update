@@ -21,7 +21,7 @@ steps:
           arguments: --install-all-deps -f $(Build.SourcesDirectory)/adu-deps/
     - bash: |
             ls -la $(Build.SourcesDirectory)/adu-deps/
-        displayName: "Checking deps"
+      displayName: "Checking deps"
     - task: Bash@3
       displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
       inputs:
