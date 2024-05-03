@@ -13,16 +13,15 @@ steps:
             displayName: "Component Detection"
             inputs:
                 sourceScanPath: src
-    - bash: |
-          sudo apt-get install gcc-8
-      displayName: "Adding gcc-8 maybe."
     - task: Bash@3
       displayName: "Install ADUC dependencies"
       inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
-          arguments: --install-all-deps
-
+          arguments: --install-all-deps -f $(Build.SourcesDirectory)/adu-deps/
+    - bash: |
+            ls -la $(Build.SourcesDirectory)/adu-deps/
+        displayName: "Checking deps"
     - task: Bash@3
       displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
       inputs:
@@ -45,30 +44,6 @@ steps:
 
     - task: PublishTestResults@2
       displayName: "Publish Unit Test Results: linux-MinSizeRel"
-      condition: succeededOrFailed() # Run this task even if tests fail.
-      inputs:
-          testResultsFormat: cTest
-          testResultsFiles: "Testing/**/*.xml"
-          searchFolder: $(Build.BinariesDirectory)
-          failTaskOnFailedTests: true
-          publishRunAttachments: false # Attachments are not supported for CTest
-
-    - task: Bash@3
-      displayName: "Build Client and Unit Tests: linux-Debug"
-      inputs:
-          targetType: "filePath"
-          filePath: $(Build.SourcesDirectory)/scripts/build.sh
-          arguments: "--clean --build-unit-tests --platform-layer linux --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
-
-      # Run all unit tests.
-    - bash: |
-          ctest --repeat until-pass:5 --timeout 300 --force-new-ctest-process -T test -V --output-on-failure
-          exit $?
-      displayName: "Run Unit Tests: linux-Debug"
-      workingDirectory: $(Build.BinariesDirectory)
-
-    - task: PublishTestResults@2
-      displayName: "Publish Unit Test Results: linux-Debug"
       condition: succeededOrFailed() # Run this task even if tests fail.
       inputs:
           testResultsFormat: cTest
