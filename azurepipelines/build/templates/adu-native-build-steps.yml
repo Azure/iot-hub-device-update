@@ -13,6 +13,13 @@ steps:
             displayName: "Component Detection"
             inputs:
                 sourceScanPath: src
+
+    - task: Bash@3
+      displayName: "Install ADUC dependencies"
+      inputs:
+          targetType: "filePath"
+          filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
+          arguments: --install-all-deps -f $(Agent.TempDirectory)/adu-deps/
       # Ignore SC2164: Use 'cd ... || exit' or 'cd ... || return' in case cd fails.
       #   We usually want to return an error code from a specific, previous command
       #   even if popd, pushd, or cd fails.
@@ -20,15 +27,9 @@ steps:
       #   We use 'ret=return' or 'ret=exit' to support dot sourcing.
     - ${{ if eq(parameters.targetArch, 'amd64') }}:
           - bash: |
-                /tmp/deviceupdate-shellcheck --shell=bash $(find -name "*.sh" | grep -v -e '^\.\/out')
+                /tmp/deviceupdate-shellcheck --shell=bash $(find $(Build.SourcesDirectory) -name "*.sh" | grep -v -e '^\.\/out')
                 exit $?
             displayName: "Run ShellCheck"
-    - task: Bash@3
-      displayName: "Install ADUC dependencies"
-      inputs:
-          targetType: "filePath"
-          filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
-          arguments: --install-all-deps -f $(Build.SourcesDirectory)/adu-deps/
     - task: Bash@3
       displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
       inputs:
