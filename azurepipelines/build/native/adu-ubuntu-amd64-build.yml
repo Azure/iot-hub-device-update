@@ -85,8 +85,8 @@ extends:
         jobs:
           - job: BuildAduAgent_ubuntu2004
             displayName: "Build ADU Agent - Ubuntu 20.04 (amd64)"
-            timeoutInMinutes: 120
-            cancelTimeoutInMinutes: 120
+            timeoutInMinutes: 30
+            cancelTimeoutInMinutes: 30
             pool:
               name: aduc_1es_client_pool
               os: linux
@@ -98,8 +98,8 @@ extends:
 
           - job: BuildAduAgent_ubuntu2204
             displayName: "Build ADU Agent - Ubuntu 22.04 (amd64)"
-            timeoutInMinutes: 120
-            cancelTimeoutInMinutes: 120
+            timeoutInMinutes: 30
+            cancelTimeoutInMinutes: 30
             pool:
               name: aduc_1es_client_pool
               os: linux
