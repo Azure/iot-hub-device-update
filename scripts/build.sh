@@ -46,6 +46,12 @@ install_adu=false
 work_folder=/tmp
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
 
+#
+# Export the compiler settings in case VM is wonky
+#
+export CC=/usr/bin/gcc
+export CXX=/usr/bin/g++
+
 print_help() {
     echo "Usage: build.sh [options...]"
     echo "-c, --clean                           Does a clean build."

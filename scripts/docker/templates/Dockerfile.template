@@ -1,5 +1,6 @@
-
-FROM %%CONTAINER_IMAGE_BASE_IMAGE%%
+# Hardcode the base image to ubuntu:18.04 to avoid the supply chain attack.
+# FROM %%CONTAINER_IMAGE_BASE_IMAGE%%
+FROM "mcr.microsoft.com/mirror/docker/library/ubuntu:18.04"
 
 ADD ./app.tar.gz /
 

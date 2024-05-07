@@ -19,8 +19,17 @@ steps:
       inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
-          arguments: --install-all-deps
-
+          arguments: --install-all-deps -f $(Agent.TempDirectory)/adu-deps/
+      # Ignore SC2164: Use 'cd ... || exit' or 'cd ... || return' in case cd fails.
+      #   We usually want to return an error code from a specific, previous command
+      #   even if popd, pushd, or cd fails.
+      # Ignore SC2209: Use var=$(command) to assign output (or quote to assign string).
+      #   We use 'ret=return' or 'ret=exit' to support dot sourcing.
+    - ${{ if eq(parameters.targetArch, 'amd64') }}:
+          - bash: |
+                /tmp/deviceupdate-shellcheck --shell=bash $(find $(Build.SourcesDirectory) -name "*.sh" | grep -v -e '^\.\/out')
+                exit $?
+            displayName: "Run ShellCheck"
     - task: Bash@3
       displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
       inputs:
@@ -51,46 +60,11 @@ steps:
           failTaskOnFailedTests: true
           publishRunAttachments: false # Attachments are not supported for CTest
 
-    - task: Bash@3
-      displayName: "Build Client and Unit Tests: linux-Debug"
-      inputs:
-          targetType: "filePath"
-          filePath: $(Build.SourcesDirectory)/scripts/build.sh
-          arguments: "--clean --build-unit-tests --platform-layer linux --log-lib zlog --static-analysis clang-tidy,cppcheck --out-dir $(Build.BinariesDirectory)"
-
-      # Run all unit tests.
-    - bash: |
-          ctest --repeat until-pass:5 --timeout 300 --force-new-ctest-process -T test -V --output-on-failure
-          exit $?
-      displayName: "Run Unit Tests: linux-Debug"
-      workingDirectory: $(Build.BinariesDirectory)
-
-    - task: PublishTestResults@2
-      displayName: "Publish Unit Test Results: linux-Debug"
-      condition: succeededOrFailed() # Run this task even if tests fail.
-      inputs:
-          testResultsFormat: cTest
-          testResultsFiles: "Testing/**/*.xml"
-          searchFolder: $(Build.BinariesDirectory)
-          failTaskOnFailedTests: true
-          publishRunAttachments: false # Attachments are not supported for CTest
-
     - task: 1ES.PublishPipelineArtifact@1
       displayName: "Publish Pipeline Artifacts"
       inputs:
           artifactName: "adu-client-${{parameters.targetOs}}-${{parameters.targetArch}}"
           targetPath: "$(Build.ArtifactStagingDirectory)"
-
-      # Ignore SC2164: Use 'cd ... || exit' or 'cd ... || return' in case cd fails.
-      #   We usually want to return an error code from a specific, previous command
-      #   even if popd, pushd, or cd fails.
-      # Ignore SC2209: Use var=$(command) to assign output (or quote to assign string).
-      #   We use 'ret=return' or 'ret=exit' to support dot sourcing.
-    - ${{ if eq(parameters.targetArch, 'amd64') }}:
-          - bash: |
-                /tmp/deviceupdate-shellcheck --shell=bash $(find -name "*.sh" | grep -v -e '^\.\/out')
-                exit $?
-            displayName: "Run ShellCheck"
 
     - ${{ if eq(parameters.targetArch, 'amd64') }}:
           - task: ComponentGovernanceComponentDetection@0
