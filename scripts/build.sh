@@ -473,6 +473,7 @@ for i in "${static_analysis_tools[@]}"; do
 
         if ! [ -x "$(command -v cpplint)" ]; then
             error "Can't run static analysis - cpplint is not installed. Try: pip install --system cpplint"
+            error "If you are running a build on the pipelines you MUST use PipAuthenticate@1 with the proper config"
             $ret 1
         fi
 

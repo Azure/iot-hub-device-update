@@ -26,6 +26,11 @@ parameters:
     - name: provisioning_type
       type: string
 steps:
+    - task: PipAuthenticate@1
+      displayName: 'Pip Authenticate'
+      inputs:
+          artifactFeeds: 'adu-linux-client/ADUTestFeed'
+
     - task: DownloadPipelineArtifact@2
       displayName: "Download DeviceUpdate Package from pipeline"
       inputs:
