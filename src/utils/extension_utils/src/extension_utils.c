@@ -274,7 +274,7 @@ static bool RegisterHandlerExtension(
     content = STRING_construct_sprintf(
         "{\n"
         "   \"fileName\":\"%s\",\n"
-        "   \"sizeInBytes\":%d,\n"
+        "   \"sizeInBytes\":%lld,\n"
         "   \"hashes\": {\n"
         "        \"sha256\":\"%s\"\n"
         "   },\n"
@@ -493,7 +493,7 @@ bool RegisterExtension(const char* extensionDir, const char* extensionFilePath)
     content = STRING_construct_sprintf(
         "{\n"
         "   \"fileName\":\"%s\",\n"
-        "   \"sizeInBytes\":%d,\n"
+        "   \"sizeInBytes\":%lld,\n"
         "   \"hashes\": {\n"
         "        \"sha256\":\"%s\"\n"
         "   }\n"
