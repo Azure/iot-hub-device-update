@@ -1,5 +1,5 @@
 azure-core==1.23.0
-azure-identity==1.8.0
+azure-identity==1.16.1
 azure-iot-deviceupdate==1.0.0b2
 azure-iot-hub==2.6.0
 msrest==0.6.21
