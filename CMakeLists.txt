@@ -480,7 +480,7 @@ option (ADUC_TRACE_TARGET_DEPS "Trace target dependencies" OFF)
 option (ADUC_USE_TEST_ROOT_KEYS "Include test root keys" OFF)
 option (ADUC_ENABLE_E2E_TESTING "Enable e2e test pipeline settings" OFF)
 option (ADUC_ENABLE_SRVC_E2E_TESTING "Enable service side test agent settings" OFF)
-
+option (ADUC_ADD_COVERAGE_SYMBOLS "Add coverage symbols to the build" OFF)
 ### End CMake Options
 
 # Construct the absolute path to the adu configuration file.
@@ -520,6 +520,14 @@ if (NOT GENERATE_ERROR_CODE_DEFS_RESULT EQUAL "0")
             "Failed to generate error code definition file using ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}"
     )
 endif ()
+
+if (ADUC_ADD_COVERAGE_SYMBOLS)
+
+    message(STATUS "Adding coverage symbols to the project.")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
+
+endif()
 
 if (ADUC_BUILD_UNIT_TESTS)
     # Need to be in the root directory to place CTestTestfile.cmake in root
