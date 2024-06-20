@@ -94,8 +94,9 @@ extends:
 
                     - bash: |
                         key_contents=$(cat $(public_vm_key.secureFilePath))
-                        ##vso[task.setvariable variable=Test_Vm_Ssh_PublicKey;isSecret=true]$key_contents
+                        ##vso[task.setvariable variable=Test_Vm_Ssh_PublicKey;isSecret=true;isOutput=true;]$key_contents
                       displayName: "Set the VM SSH Key variable for reading into the Azure VM Template"
+                      name: set_ssh_key
                       workingDirectory: $(Agent.TempDirectory)
                     - bash: |
                         echo "The SSH Public Key is $(Test_Vm_Ssh_PublicKey)"
@@ -127,7 +128,7 @@ extends:
                           scriptLocation: inlineScript
                           inlineScript: |
                               echo "Creating the RG for Test Infrastructure"
-                              az group deployment  create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminPasswordOrKey="$(Test_Vm_Ssh_PublicKey)" authenticationType="sshPublicKey" -VmName="$(Test_VmName)" -VmSize=Standard_DS1_v2 -Location=$(Test_Location)
+                              az group deployment  create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminPasswordOrKey=$(set_ssh_key.Test_Vm_Ssh_PublicKey) authenticationType="sshPublicKey" VmName="$(Test_VmName)" VmSize=Standard_DS1_v2 Location=$(Test_Location)
                           failOnStandardError: true
                     - task: AzureCLI@2
                       displayName: "Get the Public Hostname of the VM"
