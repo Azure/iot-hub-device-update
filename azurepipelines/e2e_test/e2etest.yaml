@@ -92,6 +92,8 @@ extends:
                       displayName: "Set the Deployment Name for the Infra Deployment"
                     - script: |
                         ssh-keygen -f $(Test_Vm_Ssh_PrivateKeyFile)" -t ed25519 -N ""
+                        eval $(ssh-agent)
+                        ssh-add $(Test_Vm_Ssh_PrivateKeyFile)
                         echo "Generated SSH Key for VM"
                       displayName: "Generate SSH Key for VM"
                       workingDirectory: $(E2E_WORKING_DIR)
@@ -131,16 +133,7 @@ extends:
                         failOnStandardError: true
 
                     # Install SSH Key to simplify the login process
-                    - task: InstallSSHKey@0
-                      displayName: "Install SSH Key"
-                      inputs:
-                          knownHostsEntry: $(Test_VmHostname)
-                          sshKeySecureFile : $(Test_Vm_Ssh_PrivateKeyFile)
-                          sshPassphrase: ""
-                          addEntryToConfig: true
-                          configHostname: $(Test_VmHostname)
-                          configUser: "$(Test_VmAdmin)"
-                          configPort: 22
+                    # InstallSSHKey works by verifying from pre-uploaded keys not existing ones
 
                     - task: SSH@0
                       displayName: "Attempt a login"
