@@ -151,7 +151,7 @@ extends:
                       workingDirectory: $(Agent.TempDirectory)
 
                     - bash: |
-                        ssh $(Test_VmAdmin)@$(Test_VmHostname) -i $(private_vm_key.secureFilePath)
+                        ssh -tt $(Test_VmAdmin)@$(Test_VmHostname) -i $(private_vm_key.secureFilePath)
                         echo "it worked!"
                         exit
                       displayName: "SSH into the VM to verify connectivity"
