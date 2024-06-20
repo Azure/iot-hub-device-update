@@ -26,9 +26,9 @@ variables:
     Test_Vm_Ssh_PrivateKeyFile: "e2e_vm_key"
     Test_Vm_Ssh_PublicKeyFile: "e2e_vm_key.pub"
     Test_VmAdmin: "azureuser"
-    Test_ResourceGroupname: "" # Composed of e2e-rg-$(Build.BuildId)
-    Test_VmName: ""            # Composed of e2e-vm-$(Build.BuildId)
-    Test_InfraDeploymentName: "" #Composed of e2e-deployment-$(Build.BuildId)
+    Test_ResourceGroupname: "e2e-rg-$(Build.BuildId)" # Composed of e2e-rg-$(Build.BuildId)
+    Test_VmName: "e2e-vm-$(Build.BuildId)"            # Composed of e2e-vm-$(Build.BuildId)
+    Test_InfraDeploymentName: "e2e-deployment-$(Build.BuildId)" #Composed of e2e-deployment-$(Build.BuildId)
     Test_VmHostname: "" # Set after the VM is created
     Test_Location: "westus3"
 
@@ -77,21 +77,6 @@ extends:
                 pool: aduc_1es_client_pool
                 steps:
 
-                    - bash: |
-                        ##vso[task.setvariable variable=Test_ResourceGroupname]e2e-rg-$(Build.BuildId)
-                        echo "Setting the Resource Group Name for the E2E Test Infrastructure to $(Test_ResourceGroupname)"
-                      displayName: "Set the Resource Group Name for the E2E Test Infrastructure"
-
-                    - bash: |
-                        ##vso[task.setvariable variable=Test_VmName]e2e-vm-$(Build.BuildId)
-                        echo "Setting the VM Name for the E2E Test Infrastructure to $(Test_VmName)"
-                      displayName: "Set the VM Name for the E2E Test"
-
-                    - bash: |
-                        ##vso[task.setvariable variable=Test_InfraDeploymentName]e2e-deployment-$(Build.BuildId)
-                        echo "Setting the Deployment Name for the E2E Test Infrastructure to $(Test_InfraDeploymentName)"
-                      displayName: "Set the Deployment Name for the Infra Deployment"
-
                     - task: DownloadSecureFile@1
                       displayName: "Download the SSH Key for the VM"
                       name: public_vm_key
@@ -106,10 +91,24 @@ extends:
                           secureFile: $(Test_Vm_Ssh_PrivateKeyFile)
                           retryCount: 3
                           retryIntervalInSeconds: 5
+
                     - bash: |
-                        ##vso[task.setvariable variable=Test_Vm_Ssh_PublicKey;isSecret=true]$(cat $(public_vm_key.secureFilePath))
+                        key_contents=$(cat $(public_vm_key.secureFilePath))
+                        ##vso[task.setvariable variable=Test_Vm_Ssh_PublicKey;isSecret=true]$key_contents
                       displayName: "Set the VM SSH Key variable for reading into the Azure VM Template"
                       workingDirectory: $(Agent.TempDirectory)
+                    - bash: |
+                        echo "The SSH Public Key is $(Test_Vm_Ssh_PublicKey)"
+                      displayName: "Display the SSH Public Key"
+                    - bash: |
+                        echo "The Test_ResourceGroupname is $(Test_ResourceGroupname)"
+                      displayName: "Display the SSH Public Key"
+                    - bash: |
+                        echo "The Test_VmName is $(Test_VmName)"
+                      displayName: "Display the SSH Public Key"
+                    - bash: |
+                        echo "The Test_InfraDeploymentName is $(Test_InfraDeploymentName)"
+                      displayName: "Display the SSH Public Key"
                     - task: AzureCLI@2
                       displayName: "Create the RG for the E2E Test Infrastructure"
                       inputs:
@@ -133,13 +132,18 @@ extends:
                     - task: AzureCLI@2
                       displayName: "Get the Public Hostname of the VM"
                       inputs:
-                        azureSubscription: $(SERVICE_CONNECTION_NAME)
+                        azureSubscription: $(Adu_Arm_Service_Connection)
                         scriptType: bash
                         scriptLocation: inlineScript
                         inlineScript: |
                             echo "Getting the Public IP Address of the VM"
-                            ##vso[task.setvariable variable=Test_VmHostname]$(az group deployment show -g $(Test_ResourceGroupname) -n $(Test_InfraDeploymentName) --query properties.outputs.hostname.value)
+                            hostname=$(az group deployment show -g $(Test_ResourceGroupname) -n $(Test_InfraDeploymentName) --query properties.outputs.hostname.value)
+                            ##vso[task.setvariable variable=Test_VmHostname]$hostname
                         failOnStandardError: true
+                    - bash: |
+                        echo "The VM Hostname is $(Test_VmHostname)"
+                      displayName: "Display the VM Hostname"
+                      workingDirectory: $(Agent.TempDirectory)
 
                     - bash: |
                         eval(ssh-agent)
