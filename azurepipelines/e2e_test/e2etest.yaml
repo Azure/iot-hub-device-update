@@ -103,7 +103,7 @@ extends:
                       workingDirectory: $(Agent.TempDirectory)
 
                     - bash: |
-                        echo "The SSH Public Key is $set_ssh_key.Test_Vm_Ssh_PublicKey"
+                        echo "The SSH Public Key is $(set_ssh_key.Test_Vm_Ssh_PublicKey)"
                       displayName: "Display the SSH Public Key"
                     - bash: |
                         echo "The Test_ResourceGroupname is $(Test_ResourceGroupname)"
