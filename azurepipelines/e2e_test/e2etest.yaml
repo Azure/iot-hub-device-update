@@ -21,6 +21,16 @@ variables:
     SKIP_TEARDOWN: ${{ parameters.SKIP_TEARDOWN }}
     E2E_WORKING_DIR: $(Build.SourcesDirectory)/azurepipelines/e2e_test
 
+    VM_SSH_KEY: ""
+    Test_Vm_Ssh_PublicKey: ""
+    Test_Vm_Ssh_PrivateKeyFile: "./test_vm_ssh_key"
+    Test_VmAdmin: "azureuser"
+    Test_ResourceGroupname: "" # Composed of e2e-rg-$(Build.BuildId)
+    Test_VmName: ""            # Composed of e2e-vm-$(Build.BuildId)
+    Test_InfraDeploymentName: "" #Composed of e2e-deployment-$(Build.BuildId)
+    Test_VmHostname: "" # Set after the VM is created
+    Test_Location: "westus3"
+
 name: "E2E Automated Test Run"
 
 extends:
@@ -40,94 +50,22 @@ extends:
     - ES365AIMigrationTooling
 
     stages:
-        - stage: PerformNativeBuilds
-          displayName: Builds all the native architecture builds
-          jobs:
-              - job: BuildUbuntu_2004_AMD64
-                displayName: Building the Device Update Package for Ubuntu 20.04 AMD64
-                continueOnError: False
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
-                      parameters:
-                          targetOs: ubuntu2004
-                          targetArch: amd64
+        # - stage: PerformNativeBuilds
+        #   displayName: Builds all the native architecture builds
+        #   jobs:
+        #       - job: BuildUbuntu_2004_AMD64
+        #         displayName: Building the Device Update Package for Ubuntu 20.04 AMD64
+        #         continueOnError: False
+        #         pool: aduc_1es_client_pool
+        #         steps:
+        #             - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
+        #               parameters:
+        #                   targetOs: ubuntu2004
+        #                   targetArch: amd64
 
-              - job: BuildUbuntu_2004_ARM64
-                timeoutInMinutes: 360
-                displayName: Building the Device Update Package for Ubuntu 20.04 ARM64
-                continueOnError: False
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
-                      parameters:
-                          targetOs: ubuntu2004
-                          targetArch: arm64
-              - job: BuildUbuntu_2204_AMD64
-                displayName: Building the Device Update Package for Ubuntu 22.04 AMD64
-                continueOnError: False
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
-                      parameters:
-                          targetOs: ubuntu2204
-                          targetArch: amd64
-              - job: BuildUbuntu_2204_ARM64
-                timeoutInMinutes: 360
-                displayName: Building the Device Update Package for Ubuntu 22.04 ARM64
-                continueOnError: False
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
-                      parameters:
-                          targetOs: ubuntu2204
-                          targetArch: arm64
-
-              - job: BuildDebian_10_AMD64
-                displayName: Building the Device Update Package for Debian 10 amd64
-                continueOnError: False
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
-                      parameters:
-                          targetOs: debian10
-                          targetArch: amd64
-
-        - stage: TerraformSetup
-          displayName: Initializes and installs Terraform into the VM
-          pool: aduc_1es_client_pool
-          jobs:
-              - job: TerraformInstall
-                displayName: "Install Terraform Into the VM and Create the Resource Group"
-                continueOnError: False
-                steps:
-                    - script: |
-                          while pgrep apt > /dev/null; do sleep 1; done; sudo apt update && sudo apt install curl
-                          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-                          sudo apt-add-repository "deb [arch=$(dpkg --print-architecture)] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-                          sudo apt install terraform
-                      displayName: "Installing Terraform"
-                    - script: "terraform init"
-                      displayName: terraform init (VM)
-                      continueOnError: true
-                      workingDirectory: $(E2E_WORKING_DIR)/terraform/resource_group/
-                    - script: 'terraform apply -var subscription_id="$(SUBSCRIPTION_ID)" -var tenant_id="$(TERRAFORM_TENANT_ID)" -var client_id="$(TERRAFORM_CLIENT_ID)" -var client_secret="$(TERRAFORM_CLIENT_SECRET)" -auto-approve'
-                      displayName: Creating the resource group for the testing environment
-                      continueOnError: true
-                      workingDirectory: $(E2E_WORKING_DIR)/terraform/resource_group/
-                    - script: |
-                          RESOURCE_GROUP_NAME=`terraform output du_resource_group_name`
-                          echo "$RESOURCE_GROUP_NAME"
-                          echo "##vso[task.setvariable variable=TERRAFORM_RESOURCE_GROUP_NAME;isOutput=true]$RESOURCE_GROUP_NAME"
-                      name: resource_group_name_step
-                      displayName: Retrieve Resource Group Name
-                      continueOnError: true
-                      workingDirectory: $(E2E_WORKING_DIR)/terraform/resource_group/
-
-        - stage: TerraformVMInitialization
+        - stage: InitializeTestInfra
           displayName: Initializes the Terraform VMs for the Automated Tests
           dependsOn:
-              - TerraformSetup
               - PerformNativeBuilds
           variables:
               TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
@@ -139,252 +77,85 @@ extends:
                 cancelTimeoutInMinutes: 360
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_vm_setup.yaml@self
-                      parameters:
-                          distroName: ubuntu-20.04-amd64
-                          provisioning_type: "sas"
-                          vm_size: Standard_DS1_v2
-                          image_publisher: canonical
-                          image_offer: 0001-com-ubuntu-server-focal
-                          image_sku: 20_04-lts
-                          image_version: latest
-                          packagePattern: "*ubuntu2004-amd64*/*.deb"
-                          package_pipeline: "Azure.adu-private-preview.e2e-test"
-                          du_tarball_script: >-
-                              tar -xf /tmp/testsetup.tar.gz -C ./ &&
-                              chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
-                              ./testsetup/sas_vm_setup.sh --distro ubuntu-20.04 --architecture amd64
-                          image_working_directory: $(E2E_WORKING_DIR)
-                          device_id_under_test: "ubuntu-20.04-amd64-sas"
-              - job: SetupUbuntu2004_ARM64_VM
-                displayName: "Setting up VM for Ubuntu 20.04 ARM64 Test VM"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_vm_setup.yaml@self
-                      parameters:
-                          distroName: ubuntu-20.04-arm64
-                          provisioning_type: "sas"
-                          vm_size: Standard_D2plds_v5
-                          image_publisher: canonical
-                          image_offer: 0001-com-ubuntu-server-focal
-                          image_sku: 20_04-lts-arm64
-                          image_version: latest
-                          packagePattern: "*ubuntu2004-arm64*/*.deb"
-                          package_pipeline: "Azure.adu-private-preview.e2e-test"
-                          du_tarball_script: >-
-                              tar -xf /tmp/testsetup.tar.gz -C ./ &&
-                              chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
-                              ./testsetup/sas_vm_setup.sh --distro ubuntu-20.04 --architecture arm64
-                          image_working_directory: $(E2E_WORKING_DIR)
-                          device_id_under_test: "ubuntu-20.04-arm64-sas"
-              - job: SetupUbuntu2204_AMD64_VM
-                displayName: "Setting up VM for Ubuntu 22.04 AMD64 Test VM"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_vm_setup.yaml@self
-                      parameters:
-                          distroName: ubuntu-22.04-amd64
-                          vm_size: Standard_DS1_v2
-                          image_publisher: canonical
-                          image_offer: 0001-com-ubuntu-server-jammy
-                          image_sku: 22_04-lts-gen2
-                          image_version: latest
-                          packagePattern: "*ubuntu2204-amd64*/*.deb"
-                          package_pipeline: "Azure.adu-private-preview.e2e-test"
-                          du_tarball_script: >-
-                              tar -xf /tmp/testsetup.tar.gz -C ./ &&
-                              chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
-                              ./testsetup/sas_vm_setup.sh --distro ubuntu-22.04 --architecture amd64
-                          image_working_directory: $(E2E_WORKING_DIR)
-                          device_id_under_test: "ubuntu-22.04-amd64-sas"
-                          provisioning_type: "sas"
-              - job: SetupUbuntu2204_ARM64_VM
-                displayName: "Setting up VM for Ubuntu 22.04 ARM64 Test VM"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_vm_setup.yaml@self
-                      parameters:
-                          distroName: ubuntu-22.04-arm64
-                          vm_size: Standard_D2plds_v5
-                          image_publisher: canonical
-                          image_offer: 0001-com-ubuntu-server-jammy
-                          image_sku: 22_04-lts-arm64
-                          image_version: latest
-                          packagePattern: "*ubuntu2204-arm64*/*.deb"
-                          package_pipeline: "Azure.adu-private-preview.e2e-test"
-                          du_tarball_script: >-
-                              tar -xf /tmp/testsetup.tar.gz -C ./ &&
-                              chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
-                              ./testsetup/sas_vm_setup.sh --distro ubuntu-22.04 --architecture arm64
-                          image_working_directory: $(E2E_WORKING_DIR)
-                          device_id_under_test: "ubuntu-22.04-arm64-sas"
-                          provisioning_type: "sas"
-              - job: SetupDebian10_AMD64_VM
-                displayName: "Setting up VM for Debain 10 AMD64 Test VM"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_vm_setup.yaml@self
-                      parameters:
-                          distroName: debian-10-amd64
-                          provisioning_type: "sas"
-                          vm_size: Standard_DS1_v2
-                          image_publisher: debian
-                          image_offer: debian-10
-                          image_sku: 10
-                          image_version: latest
-                          packagePattern: "*debian10-amd64*/*.deb"
-                          package_pipeline: "Azure.adu-private-preview.e2e-test"
-                          du_tarball_script: >-
-                              tar -xf /tmp/testsetup.tar.gz -C ./ &&
-                              chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
-                              ./testsetup/sas_vm_setup.sh --distro debian-10 --architecture amd64
-                          image_working_directory: $(E2E_WORKING_DIR)
-                          device_id_under_test: "debian-10-amd64-sas"
 
-        - stage: RunTestsAndPostResults
-          displayName: Execute E2E Test
-          dependsOn:
-              - TerraformVMInitialization
-          jobs:
-              - job: RunUbuntu_2004_Amd64VmE2ETests
-                displayName: "Running E2E Tests against Ubuntu 20.04 AMD64"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_run.yaml@self
-                      parameters:
-                          distroName: ubuntu-20.04-amd64
-                          device_id_under_test: "ubuntu-20.04-amd64-sas"
-              - job: RunUbuntu_2004_Arm64VmE2ETests
-                displayName: "Running E2E Tests against Ubuntu 20.04 ARM64"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_run.yaml@self
-                      parameters:
-                          distroName: ubuntu-20.04-arm64
-                          device_id_under_test: "ubuntu-20.04-arm64-sas"
-              - job: RunUbuntu_2204_Amd64VmE2ETests
-                displayName: "Running E2E Tests against Ubuntu 22.04 AMD64"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_run.yaml@self
-                      parameters:
-                          distroName: ubuntu-22.04-amd64
-                          device_id_under_test: "ubuntu-22.04-amd64-sas"
-              - job: RunUbuntu_2204_Arm64VmE2ETests
-                displayName: "Running E2E Tests against Ubuntu 22.04 ARM64"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_run.yaml@self
-                      parameters:
-                          distroName: ubuntu-22.04-arm64
-                          device_id_under_test: "ubuntu-22.04-arm64-sas"
-              - job: RunDebian_10_Amd64VmE2ETests
-                displayName: "Running E2E Tests against Debian 10 AMD64"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_run.yaml@self
-                      parameters:
-                          distroName: debian-10-amd64
-                          device_id_under_test: "debian-10-amd64-sas"
+                    - bash: |
+                        ##vso[task.setvariable variable=Test_ResourceGroupname]e2e-rg-$(Build.BuildId)
+                        echo "Setting the Resource Group Name for the E2E Test Infrastructure to $(Test_ResourceGroupname)"
+                      displayName: "Set the Resource Group Name for the E2E Test Infrastructure"
 
-        - stage: TerraformDestroyVm
-          displayName: Tear down cloud resources (VMs) and destroy the resource group
-          dependsOn:
-              - TerraformSetup
-              - TerraformVMInitialization
-              - RunTestsAndPostResults
-          pool: aduc_1es_client_pool
-          variables:
-              TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
-          jobs:
-              - job: DeleteUbuntu_2004_Amd64Vms
-                displayName: "Deletes the VM for Ubuntu 20.04 AMD64"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup.yaml@self
-                      parameters:
-                          device_id_under_test: ubuntu-20.04-amd64-sas
-                          terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-              - job: DeleteUbuntu_2004_Arm64Vms
-                displayName: "Deletes the VM for Ubuntu 20.04 ARM64"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup.yaml@self
-                      parameters:
-                          device_id_under_test: ubuntu-20.04-arm64-sas
-                          terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-              - job: DeleteUbuntu_2204_Amd64Vms
-                displayName: "Deletes the VM for Ubuntu 22.04 AMD64"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup.yaml@self
-                      parameters:
-                          device_id_under_test: ubuntu-22.04-amd64-sas
-                          terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-              - job: DeleteUbuntu_2204_Arm64Vms
-                displayName: "Deletes the VM for Ubuntu 22.04 ARM64"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup.yaml@self
-                      parameters:
-                          device_id_under_test: ubuntu-22.04-arm64-sas
-                          terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-              - job: DeleteDebian_10_Amd64Vms
-                displayName: "Deletes the VM for Debian 10 AMD64"
-                timeoutInMinutes: 360
-                cancelTimeoutInMinutes: 360
-                pool: aduc_1es_client_pool
-                steps:
-                    - template: /azurepipelines/e2e_test/templates/e2e_test_vm_cleanup.yaml@self
-                      parameters:
-                          device_id_under_test: debian-10-amd64-sas
-                          terraformResourceGroupName: $(TERRAFORM_RESOURCE_GROUP_NAME)
-        - stage: RG_Destroy
-          displayName: Destroys the Resource Group used for the End-To-End Test
-          dependsOn:
-              - TerraformSetup
-              - TerraformVMInitialization
-              - RunTestsAndPostResults
-              - TerraformDestroyVm
-          pool: aduc_1es_client_pool
-          variables:
-              TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
-          jobs:
-              - job: ResourceGroupDestroy
-                steps:
-                    - task: AzureCLI@2
-                      displayName: Cleanup All Test Infrastructure
-                      condition: eq(variables['SKIP_TEARDOWN'], 'false')
+                    - bash: |
+                        ##vso[task.setvariable variable=Test_VmName]e2e-vm-$(Build.BuildId)
+                        echo "Setting the VM Name for the E2E Test Infrastructure to $(Test_VmName)"
+                      displayName: "Set the VM Name for the E2E Test"
+
+                    - bash: |
+                        ##vso[task.setvariable variable=Test_InfraDeploymentName]e2e-deployment-$(Build.BuildId)
+                        echo "Setting the Deployment Name for the E2E Test Infrastructure to $(Test_InfraDeploymentName)"
+                      displayName: "Set the Deployment Name for the Infra Deployment"
+                    - script: |
+                        ssh-keygen -f $(Test_Vm_Ssh_PrivateKeyFile)" -t ed25519 -N ""
+                        echo "Generated SSH Key for VM"
+                      displayName: "Generate SSH Key for VM"
+                      workingDirectory: $(E2E_WORKING_DIR)
+                    - bash: |
+                        ##vso[task.setvariable variable=Test_Vm_Ssh_PublicKey;isSecret=true]$(cat $(Test_Vm_Ssh_PrivateKeyFile).pub)
+                      displayName: "Set the VM SSH Key variable for reading into the Azure VM Template"
+
+                    - AzureCLI@2:
+                        displayName: "Create the RG for the E2E Test Infrastructure"
+                        inputs:
+                            azureSubscription: $(SERVICE_CONNECTION_NAME) # This needs to be changed to MSI?
+                            scriptType: bash
+                            scriptLocation: inlineScript
+                            inlineScript: |
+                                echo "Creating the RG for Test Infrastructure"
+                                az group create --name $(Test_ResourceGroupname) --location $(Test_Location)
+                            failOnStandardError: true
+                    - AzureCLI@2:
+                        displayName: "Create the Ubuntu 20.04 VM for the E2E Test"
+                        inputs:
+                            azureSubscription: $(SERVICE_CONNECTION_NAME) # This needs to be changed to MSI?
+                            scriptType: bash
+                            scriptLocation: inlineScript
+                            inlineScript: |
+                                echo "Creating the RG for Test Infrastructure"
+                                az group deployment  create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminPasswordOrKey="$(Test_Vm_Ssh_PublicKey)" authenticationType="sshPublicKey" -VmName="$(Test_VmName)" -VmSize=Standard_DS1_v2 -Location=$(Test_Location)
+                            failOnStandardError: true
+                    - AzureCLI@2:
+                      displayName: "Get the Public Hostname of the VM"
+                        inputs:
+                            azureSubscription: $(SERVICE_CONNECTION_NAME)
+                            scriptType: bash
+                            scriptLocation: inlineScript
+                            inlineScript: |
+                                echo "Getting the Public IP Address of the VM"
+                                ##vso[task.setvariable variable=Test_VmHostname]$(az group deployment show -g $(Test_ResourceGroupname) -n $(Test_InfraDeploymentName) --query properties.outputs.hostname.value)
+                            failOnStandardError: true
+
+                    # Install SSH Key to simplify the login process
+                    - task: InstallSSHKey@0
+                      displayName: "Install SSH Key"
                       inputs:
-                          azureSubscription: $(SERVICE_CONNECTION_NAME)
-                          scriptType: bash
-                          scriptLocation: inlineScript
-                          inlineScript: |
-                              echo "Starting to delete the resource group"
-                              az group delete -n $(TERRAFORM_RESOURCE_GROUP_NAME) --yes --no-wait
+                          knownHostsEntry: $(Test_VmHostname)
+                          sshKeySecureFile : $(Test_Vm_Ssh_PrivateKeyFile)
+                          sshPassphrase: ""
+                          addEntryToConfig: true
+                          configHostname: $(Test_VmHostname)
+                          configUser: "$(Test_VmAdmin)"
+                          configPort: 22
+
+                    - SSH@0:
+                        displayName: "Attempt a login"
+                        inputs:
+                            sshEndpoint: $(Test_VmHostname)
+                            runOptions: "inline"
+                            inline: |
+                                echo "Logged in"
+                            failOnStdErr: true
+
+#   du_tarball_script: >-
+#       tar -xf /tmp/testsetup.tar.gz -C ./ &&
+#       chmod u=rwx,g=rwx,o=rx ./testsetup/sas_vm_setup.sh &&
+#       ./testsetup/sas_vm_setup.sh --distro ubuntu-20.04 --architecture amd64
+#   image_working_directory: $(E2E_WORKING_DIR)
+#   device_id_under_test: "ubuntu-20.04-amd64-sas"
