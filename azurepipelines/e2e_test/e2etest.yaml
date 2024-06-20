@@ -123,14 +123,14 @@ extends:
                             failOnStandardError: true
                     - AzureCLI@2:
                       displayName: "Get the Public Hostname of the VM"
-                        inputs:
-                            azureSubscription: $(SERVICE_CONNECTION_NAME)
-                            scriptType: bash
-                            scriptLocation: inlineScript
-                            inlineScript: |
-                                echo "Getting the Public IP Address of the VM"
-                                ##vso[task.setvariable variable=Test_VmHostname]$(az group deployment show -g $(Test_ResourceGroupname) -n $(Test_InfraDeploymentName) --query properties.outputs.hostname.value)
-                            failOnStandardError: true
+                      inputs:
+                        azureSubscription: $(SERVICE_CONNECTION_NAME)
+                        scriptType: bash
+                        scriptLocation: inlineScript
+                        inlineScript: |
+                            echo "Getting the Public IP Address of the VM"
+                            ##vso[task.setvariable variable=Test_VmHostname]$(az group deployment show -g $(Test_ResourceGroupname) -n $(Test_InfraDeploymentName) --query properties.outputs.hostname.value)
+                        failOnStandardError: true
 
                     # Install SSH Key to simplify the login process
                     - task: InstallSSHKey@0
