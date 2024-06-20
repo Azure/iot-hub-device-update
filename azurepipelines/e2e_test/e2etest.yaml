@@ -139,6 +139,7 @@ extends:
                     - task: InstallSSHKey@0
                       displayName: "Install the SSH Key for the VM"
                       inputs:
+                          knownHostsEntry: $(Test_VmHostname)
                           sshPublicKey: $(Test_Vm_Ssh_PublicKey)
                           sshKeySecureFile: $(Test_Vm_Ssh_PrivateKeyFile)
                           addEntryToConfig: true
