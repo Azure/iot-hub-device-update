@@ -92,7 +92,7 @@ extends:
                         echo "Setting the Deployment Name for the E2E Test Infrastructure to $(Test_InfraDeploymentName)"
                       displayName: "Set the Deployment Name for the Infra Deployment"
 
-                    -task: DownloadSecureFile@1
+                    - task: DownloadSecureFile@1
                       displayName: "Download the SSH Key for the VM"
                       name: public_vm_key
                       inputs:
