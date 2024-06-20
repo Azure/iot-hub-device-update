@@ -151,11 +151,6 @@ extends:
                       workingDirectory: $(Agent.TempDirectory)
 
                     - bash: |
-                        eval $(ssh-agent)
-                        ssh-add $(private_vm_key.secureFilePath)
-                      displayName: "Add the SSH Key to the Agent so we can connect"
-
-                    - bash: |
                         ssh $(Test_VmAdmin)@$(Test_VmHostname) -i $(private_vm_key.secureFilePath)
                         echo "it worked!"
                         exit
