@@ -210,7 +210,39 @@
                             "sourceAddressPrefix": "1ESResourceManager",
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
-                            "priority": 205,
+                            "priority": 201,
+                            "direction": "Inbound",
+                            "destinationPortRanges": [
+                                "22"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "Allow-AzureDevOps",
+                        "properties": {
+                            "description": "DO NOT DELETE - Will result in failure of e2e connection",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "AzureDevOps",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 202,
+                            "direction": "Inbound",
+                            "destinationPortRanges": [
+                                "22"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "Allow-CorpNetSaw",
+                        "properties": {
+                            "description": "DO NOT DELETE - Will result in failure of e2e connection",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "CorpNetSaw",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 203,
                             "direction": "Inbound",
                             "destinationPortRanges": [
                                 "22"
