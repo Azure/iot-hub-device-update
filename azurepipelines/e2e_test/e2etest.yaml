@@ -97,7 +97,7 @@ extends:
                         echo "Key exists at: $(public_vm_key.secureFilePath)"
                         cat $(public_vm_key.secureFilePath)
                         echo "KeyContents $key_contents"
-                        ##vso[task.setvariable variable=FooBarKey;isOutput=true;]$key_contents
+                        echo"##vso[task.setvariable variable=FooBarKey;isOutput=true;]$key_contents"
                       displayName: "Set the VM SSH Key variable for reading into the Azure VM Template"
                       name: set_ssh_key
                       workingDirectory: $(Agent.TempDirectory)
