@@ -65,8 +65,6 @@ extends:
 
         - stage: InitializeTestInfra
           displayName: Initializes the Terraform VMs for the Automated Tests
-          dependsOn:
-              - PerformNativeBuilds
           variables:
               TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
           pool: aduc_1es_client_pool
