@@ -142,7 +142,7 @@ extends:
                         scriptLocation: inlineScript
                         inlineScript: |
                             echo "Getting the Public IP Address of the VM"
-                            hostname=$(az group deployment show -g $(Test_ResourceGroupname) -n $(Test_InfraDeploymentName) --query properties.outputs.hostname.value)
+                            hostname=$(az deployment group show -g $(Test_ResourceGroupname) -n $(Test_InfraDeploymentName) --query properties.outputs.hostname.value)
                             echo "##vso[task.setvariable variable=Test_VmHostname]$hostname"
                         failOnStandardError: true
                     - bash: |
@@ -155,14 +155,11 @@ extends:
                         ssh-add $(private_vm_key.secureFilePath)
                       displayName: "Add the SSH Key to the Agent so we can connect"
 
-                    - task: SSH@0
-                      displayName: "Attempt a login"
-                      inputs:
-                          sshEndpoint: $(Test_VmHostname)
-                          runOptions: "inline"
-                          inline: |
-                              echo "Logged in"
-                          failOnStdErr: true
+                    - bash: |
+                        ssh $(Test_VmAdmin)@$(Test_VmHostname) -i $(private_vm_key.secureFilePath)
+                        echo "it worked!"
+                        exit
+                      displayName: "SSH into the VM to verify connectivity"
 
 #   du_tarball_script: >-
 #       tar -xf /tmp/testsetup.tar.gz -C ./ &&
