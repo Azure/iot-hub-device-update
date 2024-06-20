@@ -94,12 +94,16 @@ extends:
 
                     - bash: |
                         key_contents=$(cat $(public_vm_key.secureFilePath))
-                        ##vso[task.setvariable variable=Test_Vm_Ssh_PublicKey;isSecret=true;isOutput=true;]$key_contents
+                        echo "Key exists at: $(public_vm_key.secureFilePath)"
+                        cat $(public_vm_key.secureFilePath)
+                        echo "KeyContents $keycontents"
+                        ##vso[task.setvariable variable=Test_Vm_Ssh_PublicKey;isOutput=true;]$key_contents
                       displayName: "Set the VM SSH Key variable for reading into the Azure VM Template"
                       name: set_ssh_key
                       workingDirectory: $(Agent.TempDirectory)
+
                     - bash: |
-                        echo "The SSH Public Key is $(Test_Vm_Ssh_PublicKey)"
+                        echo "The SSH Public Key is $(set_ssh_key.Test_Vm_Ssh_PublicKey)"
                       displayName: "Display the SSH Public Key"
                     - bash: |
                         echo "The Test_ResourceGroupname is $(Test_ResourceGroupname)"
@@ -110,6 +114,7 @@ extends:
                     - bash: |
                         echo "The Test_InfraDeploymentName is $(Test_InfraDeploymentName)"
                       displayName: "Display the SSH Public Key"
+
                     - task: AzureCLI@2
                       displayName: "Create the RG for the E2E Test Infrastructure"
                       inputs:
@@ -120,6 +125,7 @@ extends:
                               echo "Creating the RG for Test Infrastructure"
                               az group create --name $(Test_ResourceGroupname) --location $(Test_Location)
                           failOnStandardError: true
+
                     - task: AzureCLI@2
                       displayName: "Create the Ubuntu 20.04 VM for the E2E Test"
                       inputs:
