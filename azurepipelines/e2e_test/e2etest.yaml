@@ -132,7 +132,7 @@ extends:
                           inlineScript: |
                               echo "Creating the RG for Test Infrastructure"
                               echo 'az group deployment  create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminPasswordOrKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" authenticationType="sshPublicKey" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location)'
-                              az group deployment  create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminPasswordOrKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" authenticationType="sshPublicKey" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location)
+                              az deployment group create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminPasswordOrKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" authenticationType="sshPublicKey" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location)
                           failOnStandardError: true
                     - task: AzureCLI@2
                       displayName: "Get the Public Hostname of the VM"
