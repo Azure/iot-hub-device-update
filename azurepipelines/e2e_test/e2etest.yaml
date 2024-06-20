@@ -24,7 +24,7 @@ variables:
     VM_SSH_KEY: ""
     Test_Vm_Ssh_PublicKey: ""
     Test_Vm_Ssh_PrivateKeyFile: "e2e_vm_key"
-    Test_Vm_Ssh_PublicKeyFile: "e2e_vm_key.pun"
+    Test_Vm_Ssh_PublicKeyFile: "e2e_vm_key.pub"
     Test_VmAdmin: "azureuser"
     Test_ResourceGroupname: "" # Composed of e2e-rg-$(Build.BuildId)
     Test_VmName: ""            # Composed of e2e-vm-$(Build.BuildId)
