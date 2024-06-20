@@ -21,7 +21,7 @@ variables:
     SKIP_TEARDOWN: ${{ parameters.SKIP_TEARDOWN }}
     E2E_WORKING_DIR: $(Build.SourcesDirectory)/azurepipelines/e2e_test
 
-    VM_SSH_KEY: ""
+    Adu_Arm_Service_Connection: "adu_subscr_servc_connection"
     Test_Vm_Ssh_PublicKey: ""
     Test_Vm_Ssh_PrivateKeyFile: "e2e_vm_key"
     Test_Vm_Ssh_PublicKeyFile: "e2e_vm_key.pub"
@@ -113,7 +113,7 @@ extends:
                     - task: AzureCLI@2
                       displayName: "Create the RG for the E2E Test Infrastructure"
                       inputs:
-                          azureSubscription: $(SERVICE_CONNECTION_NAME) # This needs to be changed to MSI?
+                          azureSubscription: $(Adu_Arm_Service_Connection)
                           scriptType: bash
                           scriptLocation: inlineScript
                           inlineScript: |
@@ -123,7 +123,7 @@ extends:
                     - task: AzureCLI@2
                       displayName: "Create the Ubuntu 20.04 VM for the E2E Test"
                       inputs:
-                          azureSubscription: $(SERVICE_CONNECTION_NAME) # This needs to be changed to MSI?
+                          azureSubscription: $(Adu_Arm_Service_Connection)
                           scriptType: bash
                           scriptLocation: inlineScript
                           inlineScript: |
