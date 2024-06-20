@@ -102,25 +102,25 @@ extends:
                       displayName: "Set the VM SSH Key variable for reading into the Azure VM Template"
 
                     - task: AzureCLI@2
-                        displayName: "Create the RG for the E2E Test Infrastructure"
-                        inputs:
-                            azureSubscription: $(SERVICE_CONNECTION_NAME) # This needs to be changed to MSI?
-                            scriptType: bash
-                            scriptLocation: inlineScript
-                            inlineScript: |
-                                echo "Creating the RG for Test Infrastructure"
-                                az group create --name $(Test_ResourceGroupname) --location $(Test_Location)
-                            failOnStandardError: true
+                      displayName: "Create the RG for the E2E Test Infrastructure"
+                      inputs:
+                          azureSubscription: $(SERVICE_CONNECTION_NAME) # This needs to be changed to MSI?
+                          scriptType: bash
+                          scriptLocation: inlineScript
+                          inlineScript: |
+                              echo "Creating the RG for Test Infrastructure"
+                              az group create --name $(Test_ResourceGroupname) --location $(Test_Location)
+                          failOnStandardError: true
                     - task: AzureCLI@2
-                        displayName: "Create the Ubuntu 20.04 VM for the E2E Test"
-                        inputs:
-                            azureSubscription: $(SERVICE_CONNECTION_NAME) # This needs to be changed to MSI?
-                            scriptType: bash
-                            scriptLocation: inlineScript
-                            inlineScript: |
-                                echo "Creating the RG for Test Infrastructure"
-                                az group deployment  create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminPasswordOrKey="$(Test_Vm_Ssh_PublicKey)" authenticationType="sshPublicKey" -VmName="$(Test_VmName)" -VmSize=Standard_DS1_v2 -Location=$(Test_Location)
-                            failOnStandardError: true
+                      displayName: "Create the Ubuntu 20.04 VM for the E2E Test"
+                      inputs:
+                          azureSubscription: $(SERVICE_CONNECTION_NAME) # This needs to be changed to MSI?
+                          scriptType: bash
+                          scriptLocation: inlineScript
+                          inlineScript: |
+                              echo "Creating the RG for Test Infrastructure"
+                              az group deployment  create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminPasswordOrKey="$(Test_Vm_Ssh_PublicKey)" authenticationType="sshPublicKey" -VmName="$(Test_VmName)" -VmSize=Standard_DS1_v2 -Location=$(Test_Location)
+                          failOnStandardError: true
                     - task: AzureCLI@2
                       displayName: "Get the Public Hostname of the VM"
                       inputs:
@@ -145,13 +145,13 @@ extends:
                           configPort: 22
 
                     - task: SSH@0
-                        displayName: "Attempt a login"
-                        inputs:
-                            sshEndpoint: $(Test_VmHostname)
-                            runOptions: "inline"
-                            inline: |
-                                echo "Logged in"
-                            failOnStdErr: true
+                      displayName: "Attempt a login"
+                      inputs:
+                          sshEndpoint: $(Test_VmHostname)
+                          runOptions: "inline"
+                          inline: |
+                              echo "Logged in"
+                          failOnStdErr: true
 
 #   du_tarball_script: >-
 #       tar -xf /tmp/testsetup.tar.gz -C ./ &&
