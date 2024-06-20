@@ -99,7 +99,13 @@ extends:
                           secureFile: $(Test_Vm_Ssh_PublicKeyFile)
                           retryCount: 3
                           retryIntervalInSeconds: 5
-
+                    - task: DownloadSecureFile@1
+                      displayName: "Download the SSH Key for the VM"
+                      name: private_vm_key
+                      inputs:
+                          secureFile: $(Test_Vm_Ssh_PrivateKeyFile)
+                          retryCount: 3
+                          retryIntervalInSeconds: 5
                     - bash: |
                         ##vso[task.setvariable variable=Test_Vm_Ssh_PublicKey;isSecret=true]$(cat $(public_vm_key.secureFilePath))
                       displayName: "Set the VM SSH Key variable for reading into the Azure VM Template"
@@ -135,18 +141,10 @@ extends:
                             ##vso[task.setvariable variable=Test_VmHostname]$(az group deployment show -g $(Test_ResourceGroupname) -n $(Test_InfraDeploymentName) --query properties.outputs.hostname.value)
                         failOnStandardError: true
 
-                    # Install SSH Key to simplify the login process
-                    - task: InstallSSHKey@0
-                      displayName: "Install the SSH Key for the VM"
-                      inputs:
-                          hostname: $(Test_VmHostname)
-                          sshPublicKey: $(Test_Vm_Ssh_PublicKey)
-                          sshKeySecureFile: $(Test_Vm_Ssh_PrivateKeyFile)
-                          addEntryToConfig: true
-                          configHostname: $(Test_VmHostname)
-                          configUser: $(Test_VmAdmin)
-                          failOnStdErr: true
-                    # InstallSSHKey works by verifying from pre-uploaded keys not existing ones
+                    - bash: |
+                        eval(ssh-agent)
+                        ssh-add $(private_vm_key.secureFilePath)
+                      displayName: "Add the SSH Key to the Agent so we can connect"
 
                     - task: SSH@0
                       displayName: "Attempt a login"
