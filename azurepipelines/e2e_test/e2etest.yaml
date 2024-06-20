@@ -23,7 +23,8 @@ variables:
 
     VM_SSH_KEY: ""
     Test_Vm_Ssh_PublicKey: ""
-    Test_Vm_Ssh_PrivateKeyFile: "./test_vm_ssh_key"
+    Test_Vm_Ssh_PrivateKeyFile: "e2e_vm_key"
+    Test_Vm_Ssh_PublicKeyFile: "e2e_vm_key.pun"
     Test_VmAdmin: "azureuser"
     Test_ResourceGroupname: "" # Composed of e2e-rg-$(Build.BuildId)
     Test_VmName: ""            # Composed of e2e-vm-$(Build.BuildId)
@@ -90,17 +91,19 @@ extends:
                         ##vso[task.setvariable variable=Test_InfraDeploymentName]e2e-deployment-$(Build.BuildId)
                         echo "Setting the Deployment Name for the E2E Test Infrastructure to $(Test_InfraDeploymentName)"
                       displayName: "Set the Deployment Name for the Infra Deployment"
-                    - script: |
-                        ssh-keygen -f $(Test_Vm_Ssh_PrivateKeyFile)" -t ed25519 -N ""
-                        eval $(ssh-agent)
-                        ssh-add $(Test_Vm_Ssh_PrivateKeyFile)
-                        echo "Generated SSH Key for VM"
-                      displayName: "Generate SSH Key for VM"
-                      workingDirectory: $(E2E_WORKING_DIR)
-                    - bash: |
-                        ##vso[task.setvariable variable=Test_Vm_Ssh_PublicKey;isSecret=true]$(cat $(Test_Vm_Ssh_PrivateKeyFile).pub)
-                      displayName: "Set the VM SSH Key variable for reading into the Azure VM Template"
 
+                    -task: DownloadSecureFile@1
+                      displayName: "Download the SSH Key for the VM"
+                      name: public_vm_key
+                      inputs:
+                          secureFile: $(Test_Vm_Ssh_PublicKeyFile)
+                          retryCount: 3
+                          retryIntervalInSeconds: 5
+
+                    - bash: |
+                        ##vso[task.setvariable variable=Test_Vm_Ssh_PublicKey;isSecret=true]$(cat $(public_vm_key.secureFilePath))
+                      displayName: "Set the VM SSH Key variable for reading into the Azure VM Template"
+                      workingDirectory: $(Agent.TempDirectory)
                     - task: AzureCLI@2
                       displayName: "Create the RG for the E2E Test Infrastructure"
                       inputs:
@@ -133,6 +136,15 @@ extends:
                         failOnStandardError: true
 
                     # Install SSH Key to simplify the login process
+                    - task: InstallSSHKey@0
+                      displayName: "Install the SSH Key for the VM"
+                      inputs:
+                          sshPublicKey: $(Test_Vm_Ssh_PublicKey)
+                          sshKeySecureFile: $(Test_Vm_Ssh_PrivateKeyFile)
+                          addEntryToConfig: true
+                          configHostname: $(Test_VmHostname)
+                          configUser: $(Test_VmAdmin)
+                          failOnStdErr: true
                     # InstallSSHKey works by verifying from pre-uploaded keys not existing ones
 
                     - task: SSH@0
