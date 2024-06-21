@@ -34,7 +34,7 @@ variables:
     Test_Location: "westus3"
 
 name: "E2E Automated Test Run"
-
+# environment: 'ADU E2E Test Env'
 extends:
   template: v1/1ES.Unofficial.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
@@ -71,6 +71,7 @@ extends:
               TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
           pool: aduc_1es_client_pool
           jobs:
+
               - job: SetupUbuntu2004_AMD64_VM
                 displayName: "Setting up VM for Ubuntu 20.04 AMD64 Test VM"
                 timeoutInMinutes: 360
@@ -92,7 +93,9 @@ extends:
                           secureFile: $(Test_Vm_Ssh_PrivateKeyFile)
                           retryCount: 3
                           retryIntervalInSeconds: 5
-
+                    - bash: |
+                         curl -s http://ipinfo.io/json | jq '.ip'
+                      displayName: "Get the Public IP Address of the Agent"
                     - bash: |
                         key_contents=$(cat $(public_vm_key.secureFilePath))
                         echo "##vso[task.setvariable variable=Test_Vm_Ssh_PublicKey;isOutput=true;]$key_contents"
