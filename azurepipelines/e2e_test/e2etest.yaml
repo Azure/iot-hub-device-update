@@ -149,11 +149,37 @@ extends:
                       displayName: "Display the VM Hostname"
                       workingDirectory: $(Agent.TempDirectory)
 
+                    # Alternate ideas: use run command to boot up the sshd service and make sure it's running
+                    - bash: |
+                        echo "Waiting for 20 minutes to give the VM time to boot up"
+                        sleep 1200
+                      displayName: "This is a quick fix that gives the VM time to get it's ssh stuff setup. No idea why it works, but it does."
+
                     - bash: |
                         ssh -tt -i $(private_vm_key.secureFilePath) $(Test_VmAdmin)@$(Test_VmHostname)
+                        echo "foo" > /home/azureuser/test.txt
                         echo "it worked!"
                         exit
                       displayName: "SSH into the VM to verify connectivity"
+                      retry:
+                        maxAttempts: 3
+                        delay: 120
+                    # - template: /azurepipelines/e2e_test/templates/e2e_vm_setup.yaml@self
+                    #   parameters:
+                    #       image_working_directory: $(E2E_WORKING_DIR)
+                    #       device_id_under_test: "ubuntu-20.04-amd64-x509"
+                    #       package_pipeline: "Azure.adu-private-preview.e2e-test"
+                    #       packagePattern: "*ubuntu2004-amd64*/*.deb"
+                    #       distroName: ubuntu-20.04-amd64
+                    # Now we have the option to upload to a blob storage container or we can try and  use scp
+                    # to copy the files to the VM
+                    # would prefer scp
+                    # but depends.
+                    # - template: /azurepipelines/e2e_test/templates/e2e_test_run.yaml@self
+                    #   parameters:
+                    #       distroName: ubuntu-20.04-amd64
+                    #       device_id_under_test: "ubuntu-20.04-amd64-x509"
+
 
 #   du_tarball_script: >-
 #       tar -xf /tmp/testsetup.tar.gz -C ./ &&
