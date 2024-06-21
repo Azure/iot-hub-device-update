@@ -104,6 +104,27 @@
             "metadata": {
                 "description": "Name of the MSI for the VM."
             }
+        },
+        "duSetupScriptFileUri" : {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "The DU setup script uri"
+            }
+        },
+        "duSetupScriptFileName" : {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "The DU setup script file name"
+            }
+        },
+        "duSetupScriptFileArgs" : {
+            "defaultValue": "-h",
+            "type": "String",
+            "metadata": {
+                "description": "Arguments for the DU setup script"
+            }
         }
     },
     "variables": {
@@ -368,7 +389,28 @@
                 }
             },
             "condition": "[and(and(equals(parameters('securityType'), 'TrustedLaunch'), variables('securityProfileJson').uefiSettings.secureBootEnabled), variables('securityProfileJson').uefiSettings.vTpmEnabled)]"
-        }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(parameters('vmName'),'/customScript')]",
+            "apiVersion": "2019-07-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+              "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]"
+            ],
+            "properties": {
+              "publisher": "Microsoft.Azure.Extensions",
+              "type": "CustomScript",
+              "typeHandlerVersion": "2.0",
+              "autoUpgradeMinorVersion": true,
+              "settings": {
+                "fileUris": ["[parameters('duSetupScriptFileUri')]"]
+              },
+              "protectedSettings": {
+                "commandToExecute": "[concat('bash ', parameters('duSetupScriptFileName'), ' ', parameters('duSetupScriptFileArgs'))]",
+              }
+            }
+          }
     ],
     "outputs": {
         "adminUsername": {
