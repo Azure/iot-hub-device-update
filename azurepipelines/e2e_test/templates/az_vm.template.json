@@ -52,6 +52,13 @@
                 "description": "Location for all resources."
             }
         },
+        "msi_resource_id": {
+            "defaultValue": "",
+            "type":"array",
+            "metadata": {
+                "description": "Location for all resources."
+            }
+        },
         "vmSize": {
             "defaultValue": "Standard_D4as_v4",
             "type": "String",
@@ -305,7 +312,7 @@
             "identity": {
                 "type": "UserAssigned",
                 "userAssignedIdentities": {
-                    "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('msi_name'))]": {}
+                    "[parameters('msi_resource_id')]": {}
                 }
             },
             "properties": {
