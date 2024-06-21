@@ -134,8 +134,8 @@ extends:
                           scriptType: bash
                           scriptLocation: inlineScript
                           inlineScript: |
-                              echo "Creating the RG for Test Infrastructure"
-                              az deployment group create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminPasswordOrKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" authenticationType="sshPublicKey" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location)
+                              echo "Creating the VM for Test"
+                              az deployment group create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" adminPassword= "$(VM_ADMIN_PASS)" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location)
                           failOnStandardError: true
                     - task: AzureCLI@2
                       displayName: "Get the Public Hostname of the VM"
@@ -152,19 +152,23 @@ extends:
                         echo "The VM Hostname is $(Test_VmHostname)"
                       displayName: "Display the VM Hostname"
                       workingDirectory: $(Agent.TempDirectory)
-
-                    # Alternate ideas: use run command to boot up the sshd service and make sure it's running
                     - bash: |
-                        echo "Waiting for 20 minutes to give the VM time to boot up"
-                        sleep 1200
-                      displayName: "This is a quick fix that gives the VM time to get it's ssh stuff setup. No idea why it works, but it does."
-
-                    - bash: |
-                        ssh -tt -i $(private_vm_key.secureFilePath) $(Test_VmAdmin)@$(Test_VmHostname)
-                        echo "foo" > /home/azureuser/test.txt
-                        echo "it worked!"
-                        exit
-                      displayName: "SSH into the VM to verify connectivity"
+                        echo "foofoofoo" > ./testsetup.txt
+                      displayName: "Test Content Generation"
+                      workingDirectory: $(Agent.TempDirectory)
+                    # Trying to copy some stuff over to the file
+                    - task: AzureFileCopy@6
+                      inputs:
+                          SourcePath: $(Agent.TempDirectory)/testsetup.txt # string. Required. Source Path.
+                          azureSubscription: $(Adu_Arm_Service_Connection) # string. Alias: ConnectedServiceNameARM. Required. Azure Subscription.
+                          storage: $(AZURE_STORAGE_ENDPOINT) # string. Required. Azure Storage Account.
+                          Destination: "AzureVMs" # 'AzureBlob' | 'AzureVMs'. Required. Destination Type.
+                          resourceGroup: $(Test_ResourceGroupname)  # string. Alias: EnvironmentNameRM. Required when Destination = AzureVMs. Resource Group.
+                          ResourceFilteringMethod: 'machineNames' # 'machineNames' | 'tags'. Optional. Use when Destination = AzureVMs. Select Machines By. Default: machineNames.
+                          MachineNames: $(Test_VmName) # string. Optional. Use when Destination = AzureVMs. Filter Criteria.
+                          vmsAdminUserName: $(Test_VmAdmin) # string. Required when Destination = AzureVMs. Admin Login.
+                          vmsAdminPassword: $(VM_ADMIN_PASS) # string. Required when Destination = AzureVMs. Password.
+                          TargetPath: "/home/$(Test_VmAdmin)/testsetup.tar" # string. Required when Destination = AzureVMs. Destination Folder.
 
                     # - template: /azurepipelines/e2e_test/templates/e2e_vm_setup.yaml@self
                     #   parameters:

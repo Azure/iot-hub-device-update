@@ -15,21 +15,16 @@
                 "description": "Username for the Virtual Machine."
             }
         },
-        "authenticationType": {
-            "defaultValue": "password",
-            "allowedValues": [
-                "sshPublicKey",
-                "password"
-            ],
-            "type": "String",
-            "metadata": {
-                "description": "Type of authentication to use on the Virtual Machine. SSH key is recommended."
-            }
-        },
-        "adminPasswordOrKey": {
+        "adminKey": {
             "type": "SecureString",
             "metadata": {
-                "description": "SSH Key or password for the Virtual Machine. SSH key is recommended."
+                "description": "SSH Key for the Virtual Machine. SSH key is recommended."
+            }
+        },
+        "adminPassword": {
+            "type": "SecureString",
+            "metadata": {
+                "description": "Password for the Virtual Machine. SSH key is recommended."
             }
         },
         "dnsLabelPrefix": {
@@ -95,6 +90,13 @@
             "metadata": {
                 "description": "Security Type of the Virtual Machine."
             }
+        },
+        "msi_name": {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the MSI for the VM."
+            }
         }
     },
     "variables": {
@@ -118,12 +120,12 @@
         "subnetAddressPrefix": "10.1.0.0/24",
         "addressPrefix": "10.1.0.0/16",
         "linuxConfiguration": {
-            "disablePasswordAuthentication": true,
+            "disablePasswordAuthentication": false,
             "ssh": {
                 "publicKeys": [
                     {
                         "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
-                        "keyData": "[parameters('adminPasswordOrKey')]"
+                        "keyData": "[parameters('adminKey')]"
                     }
                 ]
             }
@@ -300,6 +302,12 @@
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
             ],
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('msi_name'))]": {}
+                }
+            },
             "properties": {
                 "hardwareProfile": {
                     "vmSize": "[parameters('vmSize')]"
@@ -323,8 +331,8 @@
                 "osProfile": {
                     "computerName": "[parameters('vmName')]",
                     "adminUsername": "[parameters('adminUsername')]",
-                    "adminPassword": "[parameters('adminPasswordOrKey')]",
-                    "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), null(), variables('linuxConfiguration'))]"
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "linuxConfiguration": "[variables('linuxConfiguration'))]"
                 },
                 "securityProfile": "[if(equals(parameters('securityType'), 'TrustedLaunch'), variables('securityProfileJson'), null())]"
             }
