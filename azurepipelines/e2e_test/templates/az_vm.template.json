@@ -332,7 +332,7 @@
                     "computerName": "[parameters('vmName')]",
                     "adminUsername": "[parameters('adminUsername')]",
                     "adminPassword": "[parameters('adminPassword')]",
-                    "linuxConfiguration": "[variables('linuxConfiguration'))]"
+                    "linuxConfiguration": "[variables('linuxConfiguration')]"
                 },
                 "securityProfile": "[if(equals(parameters('securityType'), 'TrustedLaunch'), variables('securityProfileJson'), null())]"
             }
