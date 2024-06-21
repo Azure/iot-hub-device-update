@@ -21,6 +21,7 @@ variables:
     SKIP_TEARDOWN: ${{ parameters.SKIP_TEARDOWN }}
     E2E_WORKING_DIR: $(Build.SourcesDirectory)/azurepipelines/e2e_test
 
+    Adu_Test_Msi: "adu-client-1es-msi"
     Adu_Arm_Service_Connection: "adu_subscr_servc_connection"
     Test_Vm_Ssh_PublicKey: ""
     Test_Vm_Ssh_PrivateKeyFile: "adu_e2e_test_ssh_key"
@@ -161,9 +162,7 @@ extends:
                         echo "it worked!"
                         exit
                       displayName: "SSH into the VM to verify connectivity"
-                      retry:
-                        maxAttempts: 3
-                        delay: 120
+
                     # - template: /azurepipelines/e2e_test/templates/e2e_vm_setup.yaml@self
                     #   parameters:
                     #       image_working_directory: $(E2E_WORKING_DIR)
