@@ -59,6 +59,13 @@
                 "description": "resource id for all resources."
             }
         },
+        "msi_client_id":{
+            "defaultValue": "",
+            "type":"String",
+            "metadata": {
+                "description": "client id for msi."
+            }
+        },
         "vmSize": {
             "defaultValue": "Standard_D4as_v4",
             "type": "String",
@@ -407,14 +414,9 @@
                 "fileUris": ["[parameters('duSetupScriptFileUri')]"]
               },
               "protectedSettings": {
-                "commandToExecute": "[concat('bash ', parameters('duSetupScriptFileName'), ' ', parameters('duSetupScriptFileArgs'))]"
-              },
-            "identity": {
-                "type": "UserAssigned",
-                "userAssignedIdentities": {
-                    "[parameters('msi_resource_id')]": {}
-                }
-            }
+                "commandToExecute": "[concat('bash ', parameters('duSetupScriptFileName'), ' ', parameters('duSetupScriptFileArgs'))]",
+                "managedIdentity":{ "client_id": "[parameters('msi_client_id')]"}
+              }
             }
           }
     ],

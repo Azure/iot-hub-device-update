@@ -135,7 +135,7 @@ extends:
                           scriptLocation: inlineScript
                           inlineScript: |
                               echo "Creating the VM for Test"
-                              az deployment group create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" adminPassword="$(VM_ADMIN_PASS)" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location) msi_resource_id="$(MSI_RESOURCE_ID)" duSetupScriptFileUri="$(VM_SETUP_SCRIPT_URI)" duSetupScriptFileName="$(VM_SETUP_SCRIPT_FILE_NAME)" duSetupScriptFileArgs="--distro ubuntu-20.04 --architecture amd64 -s $(AZURE_STORAGE_ACCOUNT_NAME) -p deviceupdate-agent-1-563.deb"
+                              az deployment group create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" adminPassword="$(VM_ADMIN_PASS)" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location) msi_resource_id="$(MSI_RESOURCE_ID)" msi_client_id="$(MSI_CLIENT_ID)" duSetupScriptFileUri="$(VM_SETUP_SCRIPT_URI)" duSetupScriptFileName="$(VM_SETUP_SCRIPT_FILE_NAME)" duSetupScriptFileArgs="--distro ubuntu-20.04 --architecture amd64 -s $(AZURE_STORAGE_ACCOUNT_NAME) -p deviceupdate-agent-1-563.deb"
                           failOnStandardError: true
                     - task: AzureCLI@2
                       displayName: "Get the Public Hostname of the VM"
