@@ -135,7 +135,7 @@ extends:
                           scriptLocation: inlineScript
                           inlineScript: |
                               echo "Creating the VM for Test"
-                              az deployment group create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" adminPassword= "$(VM_ADMIN_PASS)" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location)
+                              az deployment group create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" adminPassword="$(VM_ADMIN_PASS)" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location)
                           failOnStandardError: true
                     - task: AzureCLI@2
                       displayName: "Get the Public Hostname of the VM"
@@ -169,7 +169,15 @@ extends:
                           vmsAdminUserName: $(Test_VmAdmin) # string. Required when Destination = AzureVMs. Admin Login.
                           vmsAdminPassword: $(VM_ADMIN_PASS) # string. Required when Destination = AzureVMs. Password.
                           TargetPath: "/home/$(Test_VmAdmin)/testsetup.tar" # string. Required when Destination = AzureVMs. Destination Folder.
-
+                    - task: AzureCLI@2
+                      displayName: "Attempt to remotely execute a script on the virtual machine"
+                      inputs:
+                        azureSubscription: $(Adu_Arm_Service_Connection)
+                        scriptType: bash
+                        scriptLocation: inlineScript
+                        inlineScript: |
+                            az vm run-command invoke -g $(Test_ResourceGroupname) -n $(Test_VmName) --command-id RunShellScript --scripts "ls /home/$(Test_VmAdmin)/"
+                        failOnStandardError: true
                     # - template: /azurepipelines/e2e_test/templates/e2e_vm_setup.yaml@self
                     #   parameters:
                     #       image_working_directory: $(E2E_WORKING_DIR)
