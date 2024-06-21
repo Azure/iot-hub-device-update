@@ -408,7 +408,13 @@
               },
               "protectedSettings": {
                 "commandToExecute": "[concat('bash ', parameters('duSetupScriptFileName'), ' ', parameters('duSetupScriptFileArgs'))]"
-              }
+              },
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "[parameters('msi_resource_id')]": {}
+                }
+            }
             }
           }
     ],
