@@ -407,7 +407,7 @@
                 "fileUris": ["[parameters('duSetupScriptFileUri')]"]
               },
               "protectedSettings": {
-                "commandToExecute": "[concat('bash ', parameters('duSetupScriptFileName'), ' ', parameters('duSetupScriptFileArgs'))]",
+                "commandToExecute": "[concat('bash ', parameters('duSetupScriptFileName'), ' ', parameters('duSetupScriptFileArgs'))]"
               }
             }
           }
