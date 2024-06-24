@@ -17,6 +17,11 @@ parameters:
       type: boolean
       default: false
 
+    - name: TEST_ARTIFACTS_UPLOADCONTAINER
+      displayName: "The name of the container to upload the test artifacts"
+      type: string
+      default: "gen1-test-artifacts"
+
 variables:
     SKIP_TEARDOWN: ${{ parameters.SKIP_TEARDOWN }}
     E2E_WORKING_DIR: $(Build.SourcesDirectory)/azurepipelines/e2e_test
@@ -32,9 +37,12 @@ variables:
     Test_InfraDeploymentName: "e2e-deployment-$(Build.BuildId)" #Composed of e2e-deployment-$(Build.BuildId)
     Test_VmHostname: "" # Set after the VM is created
     Test_Location: "westus3"
+    Test_DeviceName: "ubuntu-2004-x509-test-device"
+    Test_Distro: "ubuntu-20.04"
+    Test_Arch: "amd64"
 
 name: "E2E Automated Test Run"
-# environment: 'ADU E2E Test Env'
+environment: 'ADU E2E Test Env'
 extends:
   template: v1/1ES.Unofficial.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
@@ -52,21 +60,43 @@ extends:
     - ES365AIMigrationTooling
 
     stages:
-        # - stage: PerformNativeBuilds
-        #   displayName: Builds all the native architecture builds
-        #   jobs:
-        #       - job: BuildUbuntu_2004_AMD64
-        #         displayName: Building the Device Update Package for Ubuntu 20.04 AMD64
-        #         continueOnError: False
-        #         pool: aduc_1es_client_pool
-        #         steps:
-        #             - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
-        #               parameters:
-        #                   targetOs: ubuntu2004
-        #                   targetArch: amd64
-
+        - stage: PerformNativeBuilds
+          displayName: Builds all the native architecture builds
+          jobs:
+              - job: BuildUbuntu_2004_AMD64
+                displayName: Building the Device Update Package for Ubuntu 20.04 AMD64
+                continueOnError: False
+                pool: aduc_1es_client_pool
+                steps:
+                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
+                      parameters:
+                          targetOs: ubuntu2004
+                          targetArch: amd64
+        - stage: PublishPackageUnderTest
+          displatName: Publish the Package under Test to the Storage
+          jobs:
+              - job: PublishUbuntu2004_AMD64_Package
+                displayName: Publish the Ubuntu 20.04 AMD64 Package to the Storage
+                continueOnError: False
+                pool: aduc_1es_client_pool
+                steps:
+                    - task: AzureCLI@2
+                      displayName: "Publish the Ubuntu 20.04 AMD64 Package to the Storage"
+                      inputs:
+                          azureSubscription: $(Adu_Arm_Service_Connection)
+                          scriptType: bash
+                          scriptLocation: inlineScript
+                          inlineScript: |
+                              echo "Publishing the Ubuntu 20.04 AMD64 Package to the Storage"
+                              az storage blob upload --auth-mode login --account-name $(AZURE_STORAGE_ACCOUNT_NAME) --container-name $(TEST_ARTIFACTS_UPLOADCONTAINER) --file $(Build.ArtifactStagingDirectory)/*.deb --name deviceupdate-$(Build.BuildId).deb
+                          failOnStandardError: true
+                    - bash: |
+                        echo "The Package under Test is deviceupdate-$(Build.BuildId).deb"
+                        echo "##vso[task.setvariable variable=packageUnderTest;isOutput=true]deviceupdate-$(Build.BuildId).deb"
+                      displayName: "Display the Package under Test"
+                      name: package_under_test_publisher
         - stage: InitializeTestInfra
-          displayName: Initializes the Terraform VMs for the Automated Tests
+          displayName: Initializes the Infrastructure for the Automated Tests
           variables:
               TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
           pool: aduc_1es_client_pool
@@ -102,19 +132,9 @@ extends:
                       displayName: "Set the VM SSH Key variable for reading into the Azure VM Template"
                       name: set_ssh_key
                       workingDirectory: $(Agent.TempDirectory)
-
-                    - bash: |
-                        echo "The SSH Public Key is $(set_ssh_key.Test_Vm_Ssh_PublicKey)"
-                      displayName: "Display the SSH Public Key"
-                    - bash: |
-                        echo "The Test_ResourceGroupname is $(Test_ResourceGroupname)"
-                      displayName: "Display the SSH Public Key"
-                    - bash: |
-                        echo "The Test_VmName is $(Test_VmName)"
-                      displayName: "Display the SSH Public Key"
                     - bash: |
                         echo "The Test_InfraDeploymentName is $(Test_InfraDeploymentName)"
-                      displayName: "Display the SSH Public Key"
+                      displayName: "Display the Infra Deployment's Name"
 
                     - task: AzureCLI@2
                       displayName: "Create the RG for the E2E Test Infrastructure"
@@ -135,7 +155,7 @@ extends:
                           scriptLocation: inlineScript
                           inlineScript: |
                               echo "Creating the VM for Test"
-                              az deployment group create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" adminPassword="$(VM_ADMIN_PASS)" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location) msi_resource_id="$(MSI_RESOURCE_ID)" msi_client_id="$(MSI_CLIENT_ID)" duSetupScriptFileUri="$(VM_SETUP_SCRIPT_URI)" duSetupScriptFileName="$(VM_SETUP_SCRIPT_FILE_NAME)" duSetupScriptFileArgs="--distro ubuntu-20.04 --architecture amd64 -s $(AZURE_STORAGE_ACCOUNT_NAME) -p deviceupdate-agent-1-563.deb"
+                              az deployment group create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" adminPassword="$(VM_ADMIN_PASS)" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location) msi_resource_id="$(MSI_RESOURCE_ID)" msi_client_id="$(MSI_CLIENT_ID)" duSetupScriptFileUri="$(VM_SETUP_SCRIPT_URI)" duSetupScriptFileName="$(VM_SETUP_SCRIPT_FILE_NAME)" duSetupScriptFileArgs="--distro $(Test_Distro) --architecture $("Test_Arch") -s $(AZURE_STORAGE_ACCOUNT_NAME) -p $(package_under_test_publisher.packageUnderTest)"
                           failOnStandardError: true
                     - task: AzureCLI@2
                       displayName: "Get the Public Hostname of the VM"
@@ -149,12 +169,52 @@ extends:
                             echo "##vso[task.setvariable variable=Test_VmHostname]$hostname"
                         failOnStandardError: true
                     # Trying to copy some stuff over to the file
+                    - bash: |
+                        echo "Waiting to give device the opportunity to connect"
+                        sleep 600 # 10 minutes
+                      displayName: "Wait a bit so the device can connect"
+
+                    - task: PythonScript@0
+                      displayName: Run script to test a deployment
+                      continueOnError: True
+                      inputs:
+                          scriptSource: "filePath"
+                          scriptPath: "$(E2E_WORKING_DIR)/scenarios/test_runner/apt_deployment.py"
+                          workingDirectory: $(E2E_WORKING_DIR)
+                      env:
+                          IOTHUB_URL: $(IOTHUB_URL)
+                          ADU_ENDPOINT: $(ADU_ENDPOINT)
+                          ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+                          AZURE_CLIENT_ID: $(MSI_CLIENT_ID)
+                          AZURE_TENANT_ID: $(MSI_TENANT_ID)
+                          AZURE_RESOURCE_ID: $(MSI_RESOURCE_ID)
+                          DISTRONAME: "$(Test_Distro)"
+                          DEVICEID: "$(Test_DeviceName)"
+
+                    - script: |
+                        mkdir -p $(Build.ArtifactStagingDirectory)/testresults/
+                        cp -R ./testresults/* $(Build.ArtifactStagingDirectory)/testresults/
+                      displayName: Copy terraform state (vm)
+                      workingDirectory: $(E2E_WORKING_DIR)
+
+                    - task: 1ES.PublishPipelineArtifact@1
+                      inputs:
+                          targetPath: "$(Build.ArtifactStagingDirectory)/testresults/"
+                          artifactName: "TestResults_"$(Test_DeviceName)""
+                          publishLocation: "pipeline"
+
+                    - task: PublishTestResults@2
+                      inputs:
+                          testRunner: JUnit
+                          testResultsFiles: "$(E2E_WORKING_DIR)/testresults/*.xml"
+                          failTaskOnFailedTests: false
+                          testRunTitle: "$(Test_DeviceName)"
                     - task: AzureCLI@2
-                      displayName: "Attempt to remotely execute a script on the virtual machine"
+                      displayName: "Cleanup the Test Infrastructure"
                       inputs:
                         azureSubscription: $(Adu_Arm_Service_Connection)
                         scriptType: bash
                         scriptLocation: inlineScript
                         inlineScript: |
-                            az vm run-command invoke -g $(Test_ResourceGroupname) -n $(Test_VmName) --command-id RunShellScript --scripts "ls /home/"
+                            az group delete --name $(Test_ResourceGroupname) --yes
                         failOnStandardError: true

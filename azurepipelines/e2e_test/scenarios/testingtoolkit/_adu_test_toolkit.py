@@ -3,7 +3,7 @@
 # Licensed under the MIT License. See License.txt in the project root for
 # license information.
 # --------------------------------------------------------------------------
-from azure.identity import ClientSecretCredential
+from azure.identity import ManagedIdentityCredential
 from azure.iot.deviceupdate import DeviceUpdateClient
 from azure.iot.hub import IoTHubRegistryManager
 from azure.core.rest import HttpRequest, HttpResponse
@@ -53,11 +53,9 @@ class DuAutomatedTestConfigurationManager():
         self._aduEndpoint = os.environ['ADU_ENDPOINT']
         self._aduInstanceId = os.environ['ADU_INSTANCE_ID']
         self._iotHubUrl = os.environ['IOTHUB_URL']
-        self._iotHubConnectionString = os.environ['IOTHUB_CONNECTION_STRING']
-        self._aadRegistrarClientId = os.environ['AAD_REGISTRAR_CLIENT_ID']
-        self._aadRegistrarTenantId = os.environ['AAD_REGISTRAR_TENANT_ID']
-        self._aadRegistrarClientSecret = os.environ['AAD_CLIENT_SECRET']
-
+        self._msiTenantId = os.environ['AZURE_TENANT_ID']
+        self._msiClientId = os.environ['AZURE_CLIENT_ID']
+        self._msiResourceId = os.environ['AZURE_RESOURCE_ID']
         self._configured = True
 
     def ParseFromCLI(self):
@@ -67,12 +65,12 @@ class DuAutomatedTestConfigurationManager():
         # (-i)--adu-instance-id
         # (-u)--iothub-url
         # (-c)--iothub-connection-string
-        # (-r)--aad-registrar-client-id
-        # (-t)--aad-registrar-tenant-id
-        # (-p)--aad-registrar-client-secret
+        # (-r)--msi-client-id
+        # (-t)--msi-tenant-id
+        # (-p)--msi-resource-id
         shortopts = "a:i:u:c:r:t:p:"
-        longopts = ['adu-endpoint=', 'adu-instance-id=', 'iothub-url=', 'iothub-connection-string=',
-                    'aad-registrar-client-id=', 'aad-registrar-tenant-id=', 'aad-registrar-client-secret=', ]
+        longopts = ['adu-endpoint=', 'adu-instance-id=', 'iothub-url=',
+                    'msi-client-id=', 'msi-tenant-id=', 'msi-resource-id=', ]
         optlist, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
 
         #
@@ -89,14 +87,12 @@ class DuAutomatedTestConfigurationManager():
                 self._aduInstanceId = val
             elif (opt == "-u" or opt == "--" + longopts[2]):
                 self._iotHubUrl = val
-            elif (opt == "-c" or opt == "--" + longopts[3]):
-                self._iotHubConnectionString = val
             elif (opt == "-r" or opt == "--" + longopts[4]):
-                self._aadRegistrarClientId = val
+                self._msiClientId = val
             elif (opt == "-t" or opt == "--" + longopts[5]):
-                self._aadRegistrarTenantId = val
+                self._msiTenantId = val
             elif (opt == "-p" or opt == "--" + longopts[6]):
-                self._aadRegistrarClientSecret = val
+                self._msiResourceId = val
 
         self._configured = True
 
@@ -105,8 +101,7 @@ class DuAutomatedTestConfigurationManager():
         if (not self._configured):
             print("Calling CreateClientSecretCredential without configuring first")
             return None
-
-        return ClientSecretCredential(tenant_id=self._aadRegistrarTenantId, client_id=self._aadRegistrarClientId, client_secret=self._aadRegistrarClientSecret)
+        return ManagedIdentityCredential()
 
     def CreateDeviceUpdateTestHelper(self, credential=None):
 
@@ -117,7 +112,7 @@ class DuAutomatedTestConfigurationManager():
         if (self.credential == None):
             self.credential = self.CreateClientSecretCredential()
 
-        return DeviceUpdateTestHelper(self._aduInstanceId, self._iotHubUrl, self._iotHubConnectionString, self.credential, self._aduEndpoint)
+        return DeviceUpdateTestHelper(self._aduInstanceId, self._iotHubUrl, self.credential, self._aduEndpoint)
 
 
 class DeploymentSubGroupStatus():
@@ -218,7 +213,7 @@ class UpdateId():
         return '{ "provider":"' + str(self.provider) + '", "name": "' + str(self.name) + '", "version": "' + str(self.version) + '"}'
 
 class DeviceUpdateTestHelper:
-    def __init__(self, aduInstanceId, iothubUrl, iothub_connection_string, adu_credential, endpoint="") -> None:
+    def __init__(self, aduInstanceId, iothubUrl, adu_credential, endpoint="") -> None:
         """
         Test Helper for the Device Update Test Automation work. The object wraps different parts of the required functions
         and works with the azure.iot.deviceupdate.DeviceUpdateClient and azure.iot.hub.IotHubRegistryManager objects to
@@ -238,12 +233,11 @@ class DeviceUpdateTestHelper:
         # Internal Values for managing the connection to DU and the IotHub
         self._aduInstanceId = aduInstanceId
         self._aduEndpoint = endpoint
-        self._iothub_connection_string = iothub_connection_string
         self._aduCredential = adu_credential
         self._iotHubUrl = iothubUrl
-        self._aduAcnt = DeviceUpdateClient(endpoint, aduInstanceId, adu_credential)
+        self._aduAcnt = DeviceUpdateClient(endpoint=endpoint, instance_id=aduInstanceId, credential=adu_credential)
 
-        self._hubRegistryManager = IoTHubRegistryManager.from_connection_string(iothub_connection_string)
+        self._hubRegistryManager = IoTHubRegistryManager(token_credential=adu_credential,host=iothubUrl)
 
         self._base_url = f'https://{self._aduEndpoint}/deviceUpdate/{self._aduInstanceId}/'
         self._iotHubApiVersion = "?api-version=2021-06-01-preview"

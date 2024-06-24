@@ -52,13 +52,12 @@ class AptDeploymentTest(unittest.TestCase):
         self.aduScenarioDefinition = DuScenarioDefinitionManager.FromOSEnvironment()
 
         test_device_id = self.aduScenarioDefinition.test_device_id
-        test_adu_group = self.aduScenarioDefinition.test_adu_group
+        test_adu_group = "gen1-test-device"
         global test_result_file_prefix
         test_result_file_prefix = self.aduScenarioDefinition.test_result_file_prefix
         test_apt_deployment_id = self.aduScenarioDefinition.test_apt_deployment_id
         test_connection_timeout_tries = self.aduScenarioDefinition.test_connection_timeout_tries
         retry_wait_time_in_seconds = self.aduScenarioDefinition.retry_wait_time_in_seconds
-        config_method = self.aduScenarioDefinition.config_method
 
         #
         # We retrieve the apt deployment id to be used by the script from the scenario definitions file. It's important to keep
@@ -76,10 +75,7 @@ class AptDeploymentTest(unittest.TestCase):
         #
         connectionStatus = ""
         for i in range(0, test_connection_timeout_tries):
-            if config_method == "AIS":
-                connectionStatus = self.duTestHelper.GetConnectionStatusForModule(test_device_id, "IoTHubDeviceUpdate")
-            else:
-                connectionStatus = self.duTestHelper.GetConnectionStatusForDevice(test_device_id)
+            connectionStatus = self.duTestHelper.GetConnectionStatusForModule(test_device_id, "IoTHubDeviceUpdate")
 
             if connectionStatus == "Connected":
                 break
@@ -136,10 +132,7 @@ class AptDeploymentTest(unittest.TestCase):
         # deployment we need to check that the device itself has reported it
         # is back in the idle state.
         #
-        if config_method == "AIS":
-            twin = self.duTestHelper.GetModuleTwinForModule(test_device_id, "IoTHubDeviceUpdate")
-        else:
-            twin = self.duTestHelper.GetDeviceTwinForDevice(test_device_id)
+        twin = self.duTestHelper.GetModuleTwinForModule(test_device_id, "IoTHubDeviceUpdate")
 
         self.assertEqual(
             twin.properties.reported["deviceUpdate"]["agent"]["state"], 0)
