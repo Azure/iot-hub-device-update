@@ -187,7 +187,7 @@ extends:
                     # Trying to copy some stuff over to the file
                     - bash: |
                         echo "Waiting to give device the opportunity to connect"
-                        sleep 600 # 10 minutes
+                        sleep 301 # 5 minutes
                       displayName: "Wait a bit so the device can connect"
 
                     - task: UsePythonVersion@0
