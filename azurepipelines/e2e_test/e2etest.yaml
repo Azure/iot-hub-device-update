@@ -67,7 +67,7 @@ extends:
                 continueOnError: False
                 pool: aduc_1es_client_pool
                 steps:
-                    - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
+                    - template: /azurepipelines/build/templates/adu-native-build-steps.yml@self
                       parameters:
                           targetOs: ubuntu2004
                           targetArch: amd64
