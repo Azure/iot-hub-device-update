@@ -199,7 +199,7 @@ extends:
                     - task: 1ES.PublishPipelineArtifact@1
                       inputs:
                         targetPath: "$(Build.ArtifactStagingDirectory)/testresults/"
-                        artifactName: "TestResults_"$(Test_DeviceName)""
+                        artifactName: "TestResults_$(Test_DeviceName)"
                         publishLocation: "pipeline"
 
                     - task: PublishTestResults@2
