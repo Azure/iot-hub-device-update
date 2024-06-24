@@ -81,40 +81,40 @@ extends:
                 continueOnError: False
                 pool: aduc_1es_client_pool
                 steps:
-                    - task: DownloadPipelineArtifact@2
-                      displayName: "Download DeviceUpdate Package from pipeline"
-                      inputs:
-                          source: "current"
-                          project: "adu-linux-client"
-                          pipeline: "Azure.adu-private-preview.e2e-test"
-                          itemPattern: "*ubuntu2004-amd64*/*.deb"
-                          path: $(Build.ArtifactStagingDirectory)
-                    - bash: |
-                        ls -al $(Build.ArtifactStagingDirectory)
-                        pPath=$(find $(Build.ArtifactStagingDirectory) -type f -name '*.deb')
-                        echo "##vso[task.setvariable variable=packagePath;isOutput=true]$pPath"
-                        echo "Path to package is $pPath"
-                      displayName: "Get the path to the package under test"
-                      name: pathToPackageUnderTest
-                    - task: AzureCLI@2
-                      displayName: "Publish the Ubuntu 20.04 AMD64 Package to the Storage"
-                      inputs:
-                          azureSubscription: $(Adu_Arm_Service_Connection)
-                          scriptType: bash
-                          scriptLocation: inlineScript
-                          inlineScript: |
-                              echo "Publishing the Ubuntu 20.04 AMD64 Package to the Storage"
-                              az storage blob upload --auth-mode login --account-name $(AZURE_STORAGE_ACCOUNT_NAME) --container-name $(Test_ArtifactUploadContainer) --file $(pathToPackageUnderTest.packagePath) --name deviceupdate-$(Build.BuildId).deb --no-progress
-                          failOnStandardError: true
+                    # - task: DownloadPipelineArtifact@2
+                    #   displayName: "Download DeviceUpdate Package from pipeline"
+                    #   inputs:
+                    #       source: "current"
+                    #       project: "adu-linux-client"
+                    #       pipeline: "Azure.adu-private-preview.e2e-test"
+                    #       itemPattern: "*ubuntu2004-amd64*/*.deb"
+                    #       path: $(Build.ArtifactStagingDirectory)
+                    # - bash: |
+                    #     ls -al $(Build.ArtifactStagingDirectory)
+                    #     pPath=$(find $(Build.ArtifactStagingDirectory) -type f -name '*.deb')
+                    #     echo "##vso[task.setvariable variable=packagePath;isOutput=true]$pPath"
+                    #     echo "Path to package is $pPath"
+                    #   displayName: "Get the path to the package under test"
+                    #   name: pathToPackageUnderTest
+                    # - task: AzureCLI@2
+                    #   displayName: "Publish the Ubuntu 20.04 AMD64 Package to the Storage"
+                    #   inputs:
+                    #       azureSubscription: $(Adu_Arm_Service_Connection)
+                    #       scriptType: bash
+                    #       scriptLocation: inlineScript
+                    #       inlineScript: |
+                    #           echo "Publishing the Ubuntu 20.04 AMD64 Package to the Storage"
+                    #           az storage blob upload --auth-mode login --account-name $(AZURE_STORAGE_ACCOUNT_NAME) --container-name $(Test_ArtifactUploadContainer) --file $(pathToPackageUnderTest.packagePath) --name deviceupdate-$(Build.BuildId).deb --no-progress
+                    #       failOnStandardError: true
                     - bash: |
                         echo "The Package under Test is deviceupdate-$(Build.BuildId).deb"
-                        echo "##vso[task.setvariable variable=packageUnderTest;isOutput=true]deviceupdate-$(Build.BuildId).deb"
+                        echo "##vso[task.setvariable variable=packageUnderTest;isOutput=true]deviceupdate-15392.deb"
                       displayName: "Display the Package under Test"
                       name: package_under_test_publisher
         - stage: InitializeTestInfra
           displayName: Initializes the Infrastructure for the Automated Tests
           variables:
-              TERRAFORM_RESOURCE_GROUP_NAME: $[ stageDependencies.TerraformSetup.TerraformInstall.outputs['resource_group_name_step.TERRAFORM_RESOURCE_GROUP_NAME'] ]
+              Test_PackageUnderTestName: $[ stageDependencies.PublishPackageUnderTest.PublishUbuntu2004_AMD64_Package.outputs['package_under_test_publisher.packageUnderTest'] ]
           pool: aduc_1es_client_pool
           jobs:
 
@@ -171,7 +171,7 @@ extends:
                           scriptLocation: inlineScript
                           inlineScript: |
                               echo "Creating the VM for Test"
-                              az deployment group create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" adminPassword="$(VM_ADMIN_PASS)" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location) msi_resource_id="$(MSI_RESOURCE_ID)" msi_client_id="$(MSI_CLIENT_ID)" duSetupScriptFileUri="$(VM_SETUP_SCRIPT_URI)" duSetupScriptFileName="$(VM_SETUP_SCRIPT_FILE_NAME)" duSetupScriptFileArgs="--distro $(Test_Distro) --architecture $("Test_Arch") -s $(AZURE_STORAGE_ACCOUNT_NAME) -p $(package_under_test_publisher.packageUnderTest)"
+                              az deployment group create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" adminPassword="$(VM_ADMIN_PASS)" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location) msi_resource_id="$(MSI_RESOURCE_ID)" msi_client_id="$(MSI_CLIENT_ID)" duSetupScriptFileUri="$(VM_SETUP_SCRIPT_URI)" duSetupScriptFileName="$(VM_SETUP_SCRIPT_FILE_NAME)" duSetupScriptFileArgs="--distro $(Test_Distro) --architecture $(Test_Arch) -s $(AZURE_STORAGE_ACCOUNT_NAME) -p $(Test_PackageUnderTestName)"
                           failOnStandardError: true
                     - task: AzureCLI@2
                       displayName: "Get the Public Hostname of the VM"
