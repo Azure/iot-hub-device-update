@@ -202,7 +202,7 @@ extends:
 
                     - script: |
                           python3 -m pip install -r scenarios/testingtoolkit/requirements.txt
-                      workingDirectory: ${{parameters.image_working_directory}}/
+                      workingDirectory: $(E2E_WORKING_DIR)
                       displayName: Installing the toolkits requirements
 
                     - task: PythonScript@0
