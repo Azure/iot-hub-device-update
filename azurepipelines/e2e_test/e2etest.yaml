@@ -104,7 +104,7 @@ extends:
                           scriptLocation: inlineScript
                           inlineScript: |
                               echo "Publishing the Ubuntu 20.04 AMD64 Package to the Storage"
-                              az storage blob upload --auth-mode login --account-name $(AZURE_STORAGE_ACCOUNT_NAME) --container-name $(Test_ArtifactUploadContainer) --file $(pathToPackageUnderTest.packagePath) --name deviceupdate-$(Build.BuildId).deb
+                              az storage blob upload --auth-mode login --account-name $(AZURE_STORAGE_ACCOUNT_NAME) --container-name $(Test_ArtifactUploadContainer) --file $(pathToPackageUnderTest.packagePath) --name deviceupdate-$(Build.BuildId).deb --no-progress
                           failOnStandardError: true
                     - bash: |
                         echo "The Package under Test is deviceupdate-$(Build.BuildId).deb"
