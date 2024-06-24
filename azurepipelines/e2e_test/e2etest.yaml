@@ -26,8 +26,8 @@ variables:
     SKIP_TEARDOWN: ${{ parameters.SKIP_TEARDOWN }}
     E2E_WORKING_DIR: $(Build.SourcesDirectory)/azurepipelines/e2e_test
 
-    Adu_Test_Msi: "adu-client-1es-msi"
     Adu_Arm_Service_Connection: "adu_subscr_servc_connection"
+
     Test_Vm_Ssh_PublicKey: ""
     Test_Vm_Ssh_PrivateKeyFile: "adu_e2e_test_ssh_key"
     Test_Vm_Ssh_PublicKeyFile: "adu_e2e_test_ssh_key.pub"
@@ -40,6 +40,7 @@ variables:
     Test_DeviceName: "ubuntu-2004-x509-test-device"
     Test_Distro: "ubuntu-20.04"
     Test_Arch: "amd64"
+    Test_ArtifactUploadContainer: "gen1-debian-packages"
 
 name: "E2E Automated Test Run"
 extends:
@@ -79,6 +80,11 @@ extends:
                 continueOnError: False
                 pool: aduc_1es_client_pool
                 steps:
+                    - bash: |
+                        echo "##vso[task.setvariable variable=packagePath;isOutput=true]find $(Build.ArtifactStagingDirectory) -maxdepth 1 -type f -name '*.deb'"
+                        echo "Path to package is $(packagePath)"
+                      displayName: "Get the path to the package under test"
+                      name: pathToPackageUnderTest
                     - task: AzureCLI@2
                       displayName: "Publish the Ubuntu 20.04 AMD64 Package to the Storage"
                       inputs:
@@ -87,7 +93,7 @@ extends:
                           scriptLocation: inlineScript
                           inlineScript: |
                               echo "Publishing the Ubuntu 20.04 AMD64 Package to the Storage"
-                              az storage blob upload --auth-mode login --account-name $(AZURE_STORAGE_ACCOUNT_NAME) --container-name $(TEST_ARTIFACTS_UPLOADCONTAINER) --file $(Build.ArtifactStagingDirectory)/*.deb --name deviceupdate-$(Build.BuildId).deb
+                              az storage blob upload --auth-mode login --account-name $(AZURE_STORAGE_ACCOUNT_NAME) --container-name $(Test_ArtifactUploadContainer) --file $(pathToPackageUnderTest.packagePath) --name deviceupdate-$(Build.BuildId).deb
                           failOnStandardError: true
                     - bash: |
                         echo "The Package under Test is deviceupdate-$(Build.BuildId).deb"
