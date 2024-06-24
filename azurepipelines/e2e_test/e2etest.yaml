@@ -72,7 +72,7 @@ extends:
                           targetOs: ubuntu2004
                           targetArch: amd64
         - stage: PublishPackageUnderTest
-          displatName: Publish the Package under Test to the Storage
+          displayName: Publish the Package under Test to the Storage
           jobs:
               - job: PublishUbuntu2004_AMD64_Package
                 displayName: Publish the Ubuntu 20.04 AMD64 Package to the Storage
