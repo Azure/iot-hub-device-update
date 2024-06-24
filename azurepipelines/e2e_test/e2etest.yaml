@@ -42,7 +42,6 @@ variables:
     Test_Arch: "amd64"
 
 name: "E2E Automated Test Run"
-environment: 'ADU E2E Test Env'
 extends:
   template: v1/1ES.Unofficial.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
@@ -178,18 +177,18 @@ extends:
                       displayName: Run script to test a deployment
                       continueOnError: True
                       inputs:
-                          scriptSource: "filePath"
-                          scriptPath: "$(E2E_WORKING_DIR)/scenarios/test_runner/apt_deployment.py"
-                          workingDirectory: $(E2E_WORKING_DIR)
+                        scriptSource: "filePath"
+                        scriptPath: "$(E2E_WORKING_DIR)/scenarios/test_runner/apt_deployment.py"
+                        workingDirectory: $(E2E_WORKING_DIR)
                       env:
-                          IOTHUB_URL: $(IOTHUB_URL)
-                          ADU_ENDPOINT: $(ADU_ENDPOINT)
-                          ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
-                          AZURE_CLIENT_ID: $(MSI_CLIENT_ID)
-                          AZURE_TENANT_ID: $(MSI_TENANT_ID)
-                          AZURE_RESOURCE_ID: $(MSI_RESOURCE_ID)
-                          DISTRONAME: "$(Test_Distro)"
-                          DEVICEID: "$(Test_DeviceName)"
+                        IOTHUB_URL: $(IOTHUB_URL)
+                        ADU_ENDPOINT: $(ADU_ENDPOINT)
+                        ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
+                        AZURE_CLIENT_ID: $(MSI_CLIENT_ID)
+                        AZURE_TENANT_ID: $(MSI_TENANT_ID)
+                        AZURE_RESOURCE_ID: $(MSI_RESOURCE_ID)
+                        DISTRONAME: "$(Test_Distro)"
+                        DEVICEID: "$(Test_DeviceName)"
 
                     - script: |
                         mkdir -p $(Build.ArtifactStagingDirectory)/testresults/
@@ -199,16 +198,17 @@ extends:
 
                     - task: 1ES.PublishPipelineArtifact@1
                       inputs:
-                          targetPath: "$(Build.ArtifactStagingDirectory)/testresults/"
-                          artifactName: "TestResults_"$(Test_DeviceName)""
-                          publishLocation: "pipeline"
+                        targetPath: "$(Build.ArtifactStagingDirectory)/testresults/"
+                        artifactName: "TestResults_"$(Test_DeviceName)""
+                        publishLocation: "pipeline"
 
                     - task: PublishTestResults@2
                       inputs:
-                          testRunner: JUnit
-                          testResultsFiles: "$(E2E_WORKING_DIR)/testresults/*.xml"
-                          failTaskOnFailedTests: false
-                          testRunTitle: "$(Test_DeviceName)"
+                        testRunner: JUnit
+                        testResultsFiles: "$(E2E_WORKING_DIR)/testresults/*.xml"
+                        failTaskOnFailedTests: false
+                        testRunTitle: "$(Test_DeviceName)"
+
                     - task: AzureCLI@2
                       displayName: "Cleanup the Test Infrastructure"
                       inputs:
