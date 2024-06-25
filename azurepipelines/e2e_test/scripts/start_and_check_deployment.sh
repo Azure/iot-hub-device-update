@@ -70,6 +70,12 @@ if [[ -z $update_name || -z $update_provider || -z $update_version ]]; then
     exit 1
 fi
 
+function add_module_twin_tag() {
+
+    az iot hub module-twin update --device-id "ubuntu-2004-x509-test-device" --module-id "IoTHubDeviceUpdate" --hub-name "test-automation-iothub" --set "tags.ADUGroup=$group_id" 2> /dev/null || exit 1
+
+}
+
 function start_and_query_deployment() {
     # Attempt to create the deployment
 
@@ -109,8 +115,10 @@ function start_and_query_deployment() {
 
     echo "Deployment did not complete in time"
 
-    return 0
+    return 1
 }
+
+add_module_twin_tag
 
 status=1
 start_and_query_deployment
