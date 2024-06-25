@@ -7,6 +7,7 @@
 # The script will attempt to start a deployment and check the status of the deployment
 # The script will return 0 if the deployment is successful and 1 if the deployment fails
 
+az config set extension.use_dynamic_install=yes_without_prompt
 sudo apt-get install -y jq
 
 account_name=""
