@@ -6,8 +6,10 @@
 # This script is intended to be run in an Azure DevOps pipeline
 # The script will attempt to start a deployment and check the status of the deployment
 # The script will return 0 if the deployment is successful and 1 if the deployment fails
+export AZURE_CORE_NO_WARN=true
 
-az config set extension.use_dynamic_install=yes_without_prompt
+az config set extension.use_dynamic_install=yes_without_prompt --only-show-errors
+
 sudo apt-get install -y jq
 
 account_name=""
