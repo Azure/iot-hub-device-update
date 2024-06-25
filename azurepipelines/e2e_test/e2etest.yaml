@@ -87,34 +87,34 @@ extends:
                 continueOnError: False
                 pool: aduc_1es_client_pool
                 steps:
-                    # - task: DownloadPipelineArtifact@2
-                    #   displayName: "Download DeviceUpdate Package from pipeline"
-                    #   inputs:
-                    #       source: "current"
-                    #       project: "adu-linux-client"
-                    #       pipeline: "Azure.adu-private-preview.e2e-test"
-                    #       itemPattern: "*ubuntu2004-amd64*/*.deb"
-                    #       path: $(Build.ArtifactStagingDirectory)
-                    # - bash: |
-                    #     ls -al $(Build.ArtifactStagingDirectory)
-                    #     pPath=$(find $(Build.ArtifactStagingDirectory) -type f -name '*.deb')
-                    #     echo "##vso[task.setvariable variable=packagePath;isOutput=true]$pPath"
-                    #     echo "Path to package is $pPath"
-                    #   displayName: "Get the path to the package under test"
-                    #   name: pathToPackageUnderTest
-                    # - task: AzureCLI@2
-                    #   displayName: "Publish the Ubuntu 20.04 AMD64 Package to the Storage"
-                    #   inputs:
-                    #       azureSubscription: $(Adu_Arm_Service_Connection)
-                    #       scriptType: bash
-                    #       scriptLocation: inlineScript
-                    #       inlineScript: |
-                    #           echo "Publishing the Ubuntu 20.04 AMD64 Package to the Storage"
-                    #           az storage blob upload --auth-mode login --account-name $(AZURE_STORAGE_ACCOUNT_NAME) --container-name $(Test_ArtifactUploadContainer) --file $(pathToPackageUnderTest.packagePath) --name deviceupdate-$(Build.BuildId).deb --no-progress
-                    #       failOnStandardError: true
+                    - task: DownloadPipelineArtifact@2
+                      displayName: "Download DeviceUpdate Package from pipeline"
+                      inputs:
+                          source: "current"
+                          project: "adu-linux-client"
+                          pipeline: "Azure.adu-private-preview.e2e-test"
+                          itemPattern: "*ubuntu2004-amd64*/*.deb"
+                          path: $(Build.ArtifactStagingDirectory)
                     - bash: |
-                        echo "The Package under Test is deviceupdate-$(Build.BuildId).deb"
-                        echo "##vso[task.setvariable variable=packageUnderTest;isOutput=true]deviceupdate-15392.deb"
+                        ls -al $(Build.ArtifactStagingDirectory)
+                        pPath=$(find $(Build.ArtifactStagingDirectory) -type f -name '*.deb')
+                        echo "##vso[task.setvariable variable=packagePath;isOutput=true]$pPath"
+                        echo "Path to package is $pPath"
+                      displayName: "Get the path to the package under test"
+                      name: pathToPackageUnderTest
+                    - task: AzureCLI@2
+                      displayName: "Publish the Ubuntu 20.04 AMD64 Package to the Storage"
+                      inputs:
+                          azureSubscription: $(Adu_Arm_Service_Connection)
+                          scriptType: bash
+                          scriptLocation: inlineScript
+                          inlineScript: |
+                              echo "Publishing the Ubuntu 20.04 AMD64 Package to the Storage"
+                              az storage blob upload --auth-mode login --account-name $(AZURE_STORAGE_ACCOUNT_NAME) --container-name $(Test_ArtifactUploadContainer) --file $(pathToPackageUnderTest.packagePath) --name deviceupdate-$(Build.BuildId).deb --no-progress
+                          failOnStandardError: true
+                    - bash: |
+                        echo "The Package under Test is $(pathToPackageUnderTest.packagePath)"
+                        echo "##vso[task.setvariable variable=packageUnderTest;isOutput=true]$(pathToPackageUnderTest.packagePath)"
                       displayName: "Display the Package under Test"
                       name: package_under_test_publisher
         - stage: InitializeTestInfra
