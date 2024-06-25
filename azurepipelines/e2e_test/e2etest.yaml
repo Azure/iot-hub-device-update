@@ -67,18 +67,18 @@ extends:
     - ES365AIMigrationTooling
 
     stages:
-        # - stage: PerformNativeBuilds
-        #   displayName: Builds all the native architecture builds
-        #   jobs:
-        #       - job: BuildUbuntu_2004_AMD64
-        #         displayName: Building the Device Update Package for Ubuntu 20.04 AMD64
-        #         continueOnError: False
-        #         pool: aduc_1es_client_pool
-        #         steps:
-        #             - template: /azurepipelines/build/templates/adu-native-build-steps.yml@self
-        #               parameters:
-        #                   targetOs: ubuntu2004
-        #                   targetArch: amd64
+        - stage: PerformNativeBuilds
+          displayName: Builds all the native architecture builds
+          jobs:
+              - job: BuildUbuntu_2004_AMD64
+                displayName: Building the Device Update Package for Ubuntu 20.04 AMD64
+                continueOnError: False
+                pool: aduc_1es_client_pool
+                steps:
+                    - template: /azurepipelines/build/templates/adu-native-build-steps.yml@self
+                      parameters:
+                          targetOs: ubuntu2004
+                          targetArch: amd64
         - stage: PublishPackageUnderTest
           displayName: Publish the Package under Test to the Storage
           jobs:
