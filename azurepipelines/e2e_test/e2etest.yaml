@@ -196,7 +196,8 @@ extends:
                       inputs:
                         azureSubscription: $(Adu_Arm_Service_Connection)
                         scriptType: bash
-                        scriptLocation: $(E2E_WORKING_DIR)/scripts/start_and_check_deployment.sh
+                        scriptLocation: scriptPath
+                        scriptLocation: "$(E2E_WORKING_DIR)/scripts/start_and_check_deployment.sh"
                         arguments: -g "$(Test_DeviceGroup)" -d "$(Test_DeploymentId)" -a "$(ADU_ACCOUNT_NAME)" -i "$(ADU_INSTANCE_ID)" -n "$(Test_UpdateName)" -p "$(Test_UpdateProvider)" -v "$(Test_UpdateVersion)"
                         failOnStandardError: true
 
