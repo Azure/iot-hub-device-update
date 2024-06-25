@@ -8,7 +8,7 @@
 # The script will return 0 if the deployment is successful and 1 if the deployment fails
 export AZURE_CORE_NO_WARN=true
 
-az config set extension.use_dynamic_install=yes_without_prompt --only-show-errors
+az config set extension.use_dynamic_install=yes_without_prompt --only-show-errors 2> /dev/null
 
 sudo apt-get install -y jq
 
@@ -74,7 +74,7 @@ function start_and_query_deployment() {
     # Attempt to create the deployment
 
     echo "Starting deployment"
-    az iot du device deployment create --account "$account_name" --instance "$instance_name" --deployment-id "$deployment_id" --group-id "$group_id" --update-name "$update_name" --update-provider "$update_provider" --update-version "$update_version" || exit 1
+    az iot du device deployment create --account "$account_name" --instance "$instance_name" --deployment-id "$deployment_id" --group-id "$group_id" --update-name "$update_name" --update-provider "$update_provider" --update-version "$update_version" 2> /dev/null || exit 1
 
     echo "Deployment started. Sleeping for 301 seconds to allow application"
     # Wait for 301 seconds to allow the message to propogate
@@ -117,7 +117,7 @@ start_and_query_deployment
 status=$?
 
 echo "Deleting the deployment to clean up..."
-az iot du device deployment delete --account "$account_name" --instance "$instance_name" --deployment-id "$deployment_id" --group-id "$group_id" --yes || exit 1
+az iot du device deployment delete --account "$account_name" --instance "$instance_name" --deployment-id "$deployment_id" --group-id "$group_id" --yes 2> /dev/null || exit 1
 
 if [[ $status -eq 0 ]]; then
     echo "Success!"
