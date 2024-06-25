@@ -43,6 +43,12 @@ variables:
     Test_ArtifactUploadContainer: "gen1-debian-packages"
     Test_Artifacts_Folder: "adu-client-ubuntu-2004-amd64"
 
+    Test_DeviceGroup: "gen1-test-devices"
+    Test_DeploymentId: "aptdeployment-$(Build.BuildId)"
+    Test_UpdateName: "Virtual"
+    Test_UpdateProvider: "Contoso1"
+    Test_UpdateVersion: "1.0.2"
+
 name: "E2E Automated Test Run"
 extends:
   template: v1/1ES.Unofficial.PipelineTemplate.yml@1ESPipelineTemplates
@@ -184,62 +190,15 @@ extends:
                             hostname=$(az deployment group show -g $(Test_ResourceGroupname) -n $(Test_InfraDeploymentName) --query properties.outputs.hostname.value)
                             echo "##vso[task.setvariable variable=Test_VmHostname]$hostname"
                         failOnStandardError: true
-                    # Trying to copy some stuff over to the file
-                    - bash: |
-                        echo "Waiting to give device the opportunity to connect"
-                        sleep 301 # 5 minutes
-                      displayName: "Wait a bit so the device can connect"
 
-                    - task: UsePythonVersion@0
-                      displayName: Using Python version 3.10
+                    - task: AzureCLI@2
+                      displayName: "Attempt an update to the VM"
                       inputs:
-                          versionSpec: 3.10
-
-                    - task: PipAuthenticate@1
-                      displayName: 'Pip Authenticate'
-                      inputs:
-                          artifactFeeds: 'adu-linux-client/ADUTestFeed'
-
-                    - script: |
-                          python3 -m pip install -r scenarios/testingtoolkit/requirements.txt
-                      workingDirectory: $(E2E_WORKING_DIR)
-                      displayName: Installing the toolkits requirements
-
-                    - task: PythonScript@0
-                      displayName: Run script to test a deployment
-                      continueOnError: True
-                      inputs:
-                        scriptSource: "filePath"
-                        scriptPath: "$(E2E_WORKING_DIR)/scenarios/test_runner/apt_deployment.py"
-                        workingDirectory: $(E2E_WORKING_DIR)
-                      env:
-                        IOTHUB_URL: $(IOTHUB_URL)
-                        ADU_ENDPOINT: $(ADU_ENDPOINT)
-                        ADU_INSTANCE_ID: $(ADU_INSTANCE_ID)
-                        AZURE_CLIENT_ID: $(MSI_CLIENT_ID)
-                        AZURE_TENANT_ID: $(MSI_TENANT_ID)
-                        AZURE_RESOURCE_ID: $(MSI_RESOURCE_ID)
-                        DISTRONAME: "$(Test_Distro)"
-                        DEVICEID: "$(Test_DeviceName)"
-
-                    - script: |
-                        mkdir -p $(Build.ArtifactStagingDirectory)/testresults/
-                        cp -R ./testresults/* $(Build.ArtifactStagingDirectory)/testresults/
-                      displayName: Copy terraform state (vm)
-                      workingDirectory: $(E2E_WORKING_DIR)
-
-                    - task: 1ES.PublishPipelineArtifact@1
-                      inputs:
-                        targetPath: "$(Build.ArtifactStagingDirectory)/testresults/"
-                        artifactName: "TestResults_$(Test_DeviceName)"
-                        publishLocation: "pipeline"
-
-                    - task: PublishTestResults@2
-                      inputs:
-                        testRunner: JUnit
-                        testResultsFiles: "$(E2E_WORKING_DIR)/testresults/*.xml"
-                        failTaskOnFailedTests: false
-                        testRunTitle: "$(Test_DeviceName)"
+                        azureSubscription: $(Adu_Arm_Service_Connection)
+                        scriptType: bash
+                        scriptLocation: $(E2E_WORKING_DIR)/scripts/start_and_check_deployment.sh
+                        arguments: -g "$(Test_DeviceGroup)" -d "$(Test_DeploymentId)" -a "$(ADU_ACCOUNT_NAME)" -i "$(ADU_INSTANCE_ID)" -n "$(Test_UpdateName)" -p "$(Test_UpdateProvider)" -v "$(Test_UpdateVersion)"
+                        failOnStandardError: true
 
                     - task: AzureCLI@2
                       displayName: "Cleanup the Test Infrastructure"
