@@ -71,9 +71,8 @@ if [[ -z $update_name || -z $update_provider || -z $update_version ]]; then
 fi
 
 function add_module_twin_tag() {
-
-    az iot hub module-twin update --device-id "ubuntu-2004-x509-test-device" --module-id "IoTHubDeviceUpdate" --hub-name "test-automation-iothub" --set "tags.ADUGroup=$group_id" 2> /dev/null || exit 1
-
+    echo "Adding tag to module twin"
+    az iot hub module-twin update --device-id "ubuntu-2004-x509-test-device" --module-id "IoTHubDeviceUpdate" --hub-name "test-automation-iothub" --tags "{'ADUGroup': '$group_id'}"
 }
 
 function start_and_query_deployment() {
