@@ -72,7 +72,7 @@ fi
 
 function add_module_twin_tag() {
     echo "Adding tag to module twin"
-    az iot hub module-twin update --device-id "ubuntu-2004-x509-test-device" --module-id "IoTHubDeviceUpdate" --hub-name "test-automation-iothub" --tags "{'ADUGroup': '$group_id'}"
+    az iot hub module-twin update --device-id "ubuntu-2004-x509-test-device" --module-id "IoTHubDeviceUpdate" --hub-name "test-automation-iothub" --tags "{'ADUGroup': '$group_id'}" 2> /dev/null || exit 1
 }
 
 function start_and_query_deployment() {
@@ -90,7 +90,7 @@ function start_and_query_deployment() {
     # Loop ten times checking the status every minute
     n=0
     while [[ $n != "10" ]]; do
-        deployment_json=$(az iot du device deployment show --account "$account_name" --instance "$instance_name" --deployment-id "$deployment_id" --group-id "$group_id" --status)
+        deployment_json=$(az iot du device deployment show --account "$account_name" --instance "$instance_name" --deployment-id "$deployment_id" --group-id "$group_id" --status 2> /dev/null)
 
         total_devices=$(echo "$deployment_json" | jq '.subgroupStatus[].totalDevices')
         succeeded_devices=$(echo "$deployment_json" | jq '.subgroupStatus[].devicesCompletedSucceededCount')
@@ -124,6 +124,7 @@ start_and_query_deployment
 status=$?
 
 echo "Deleting the deployment to clean up..."
+
 az iot du device deployment delete --account "$account_name" --instance "$instance_name" --deployment-id "$deployment_id" --group-id "$group_id" --yes 2> /dev/null || exit 1
 
 if [[ $status -eq 0 ]]; then
