@@ -82,11 +82,11 @@ extends:
         - stage: PublishPackageUnderTest
           displayName: Publish the Package under Test to the Storage
           jobs:
-            #   - job: PublishUbuntu2004_AMD64_Package
-            #     displayName: Publish the Ubuntu 20.04 AMD64 Package to the Storage
-            #     continueOnError: False
-            #     pool: aduc_1es_client_pool
-            #     steps:
+              - job: PublishUbuntu2004_AMD64_Package
+                displayName: Publish the Ubuntu 20.04 AMD64 Package to the Storage
+                continueOnError: False
+                pool: aduc_1es_client_pool
+                steps:
             #         - task: DownloadPipelineArtifact@2
             #           displayName: "Download DeviceUpdate Package from pipeline"
             #           inputs:
