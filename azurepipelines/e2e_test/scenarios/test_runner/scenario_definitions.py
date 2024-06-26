@@ -21,7 +21,6 @@ from testingtoolkit import UpdateId
 class DuScenarioDefinitionManager:
     def __init__(self):
         self.test_device_id = ""
-        self.test_adu_group = ""
         self.test_apt_deployment_id = str(uuid.uuid4())
         self.test_apt_fails_deployment_id = str(uuid.uuid4())
         self.test_operation_id = str(uuid.uuid4()).replace('-', '')
@@ -30,7 +29,7 @@ class DuScenarioDefinitionManager:
         self.test_result_file_prefix = ''
         self.test_connection_timeout_tries = 10
 # For all retries this is the total amount of time we wait for all operations
-        self.retry_wait_time_in_seconds = 60
+        self.retry_wait_time_in_seconds = 301 # Minimum of 5 minute update time for all IotHub Deployments and connections
         self.config_method = ''
 
     @classmethod
@@ -47,16 +46,8 @@ class DuScenarioDefinitionManager:
             print("DEVICEID or DISTRONAME is not set in the environment")
             sys.exit(1)
 
-        distro, version, architecture = distro_name.split('-')
-        distro_version_name = distro.capitalize().replace('.', '') + version
-
         self.test_device_id = device_id
-        self.test_adu_group = f"{distro_version_name}{architecture.upper()}TestGroup"
         self.test_result_file_prefix = distro_name
-        if distro_name == "debian-10-amd64":
-            self.config_method = "string"
-        else:
-            self.config_method = "AIS"
 
 
 #

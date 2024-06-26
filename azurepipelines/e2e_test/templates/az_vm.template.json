@@ -1,0 +1,443 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "vmName": {
+            "defaultValue": "simpleLinuxVM",
+            "type": "String",
+            "metadata": {
+                "description": "The name of your Virtual Machine."
+            }
+        },
+        "adminUsername": {
+            "type": "String",
+            "metadata": {
+                "description": "Username for the Virtual Machine."
+            }
+        },
+        "adminKey": {
+            "type": "SecureString",
+            "metadata": {
+                "description": "SSH Key for the Virtual Machine. SSH key is recommended."
+            }
+        },
+        "adminPassword": {
+            "type": "SecureString",
+            "metadata": {
+                "description": "Password for the Virtual Machine. SSH key is recommended."
+            }
+        },
+        "dnsLabelPrefix": {
+            "defaultValue": "[toLower(format('{0}-{1}', parameters('vmName'), uniqueString(resourceGroup().id)))]",
+            "type": "String",
+            "metadata": {
+                "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
+            }
+        },
+        "ubuntuOSVersion": {
+            "defaultValue": "Ubuntu-2004",
+            "allowedValues": [
+                "Ubuntu-2004",
+                "Ubuntu-2204"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "The Ubuntu version for the VM. This will pick a fully patched image of this given Ubuntu version."
+            }
+        },
+        "location": {
+            "defaultValue": "[resourceGroup().location]",
+            "type": "String",
+            "metadata": {
+                "description": "Location for all resources."
+            }
+        },
+        "msi_resource_id": {
+            "defaultValue": "",
+            "type":"String",
+            "metadata": {
+                "description": "resource id for all resources."
+            }
+        },
+        "msi_client_id":{
+            "defaultValue": "",
+            "type":"String",
+            "metadata": {
+                "description": "client id for msi."
+            }
+        },
+        "vmSize": {
+            "defaultValue": "Standard_D4as_v4",
+            "type": "String",
+            "metadata": {
+                "description": "The size of the VM"
+            }
+        },
+        "virtualNetworkName": {
+            "defaultValue": "vNet",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the VNET"
+            }
+        },
+        "subnetName": {
+            "defaultValue": "Subnet",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the subnet in the virtual network"
+            }
+        },
+        "networkSecurityGroupName": {
+            "defaultValue": "SecGroupNet",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the Network Security Group"
+            }
+        },
+        "securityType": {
+            "defaultValue": "TrustedLaunch",
+            "allowedValues": [
+                "Standard",
+                "TrustedLaunch"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "Security Type of the Virtual Machine."
+            }
+        },
+        "msi_name": {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the MSI for the VM."
+            }
+        },
+        "duSetupScriptFileUri" : {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "The DU setup script uri"
+            }
+        },
+        "duSetupScriptFileName" : {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "The DU setup script file name"
+            }
+        },
+        "duSetupScriptFileArgs" : {
+            "defaultValue": "-h",
+            "type": "String",
+            "metadata": {
+                "description": "Arguments for the DU setup script"
+            }
+        }
+    },
+    "variables": {
+        "imageReference": {
+            "Ubuntu-2004": {
+                "publisher": "Canonical",
+                "offer": "0001-com-ubuntu-server-focal",
+                "sku": "20_04-lts-gen2",
+                "version": "latest"
+            },
+            "Ubuntu-2204": {
+                "publisher": "Canonical",
+                "offer": "0001-com-ubuntu-server-jammy",
+                "sku": "22_04-lts-gen2",
+                "version": "latest"
+            }
+        },
+        "publicIPAddressName": "[format('{0}PublicIP', parameters('vmName'))]",
+        "networkInterfaceName": "[format('{0}NetInt', parameters('vmName'))]",
+        "osDiskType": "Standard_LRS",
+        "subnetAddressPrefix": "10.1.0.0/24",
+        "addressPrefix": "10.1.0.0/16",
+        "linuxConfiguration": {
+            "disablePasswordAuthentication": false,
+            "ssh": {
+                "publicKeys": [
+                    {
+                        "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                        "keyData": "[parameters('adminKey')]"
+                    }
+                ]
+            }
+        },
+        "securityProfileJson": {
+            "uefiSettings": {
+                "secureBootEnabled": true,
+                "vTpmEnabled": true
+            },
+            "securityType": "[parameters('securityType')]"
+        },
+        "extensionName": "GuestAttestation",
+        "extensionPublisher": "Microsoft.Azure.Security.LinuxAttestation",
+        "extensionVersion": "1.0",
+        "maaTenantName": "GuestAttestation",
+        "maaEndpoint": "[substring('emptystring', 0, 0)]",
+        "demo_vnetPrefix": "10.0.0.0/16",
+        "demo_vnetSubnet1Name": "Subnet-1",
+        "demo_vnetSubnet1Prefix": "10.0.0.0/24",
+        "demo_vnetSubnet2Name": "Subnet-2",
+        "demo_vnetSubnet2Prefix": "10.0.1.0/24"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-09-01",
+            "name": "[variables('networkInterfaceName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]",
+                "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName')), '2023-09-01').subnets[0].id]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
+                            }
+                        }
+                    }
+                ],
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2023-09-01",
+            "name": "[parameters('networkSecurityGroupName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "NRMS-Rule-106",
+                        "properties": {
+                            "description": "DO NOT DELETE - Will result in ICM Sev 2 - Azure Core Security, see aka.ms/cainsgpolicy",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "Internet",
+                            "destinationAddressPrefix": "*",
+                            "access": "Deny",
+                            "priority": 106,
+                            "direction": "Inbound",
+                            "destinationPortRanges": [
+                                "22",
+                                "3389"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "Allow-1ES-ResourceManager",
+                        "properties": {
+                            "description": "DO NOT DELETE - Will result in failure of e2e connection",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "1ESResourceManager",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 201,
+                            "direction": "Inbound",
+                            "destinationPortRanges": [
+                                "22"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "Allow-AzureDevOps",
+                        "properties": {
+                            "description": "DO NOT DELETE - Will result in failure of e2e connection",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "AzureDevOps",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 202,
+                            "direction": "Inbound",
+                            "destinationPortRanges": [
+                                "22"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "Allow-CorpNetSaw",
+                        "properties": {
+                            "description": "DO NOT DELETE - Will result in failure of e2e connection",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "CorpNetSaw",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 203,
+                            "direction": "Inbound",
+                            "destinationPortRanges": [
+                                "22"
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2023-09-01",
+            "name": "[parameters('virtualNetworkName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('addressPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('subnetName')]",
+                        "properties": {
+                            "addressPrefix": "[variables('subnetAddressPrefix')]",
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-09-01",
+            "name": "[variables('publicIPAddressName')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Basic"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "publicIPAddressVersion": "IPv4",
+                "dnsSettings": {
+                    "domainNameLabel": "[parameters('dnsLabelPrefix')]"
+                },
+                "idleTimeoutInMinutes": 4
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-09-01",
+            "name": "[parameters('vmName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+            ],
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "[parameters('msi_resource_id')]": {}
+                }
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "FromImage",
+                        "managedDisk": {
+                            "storageAccountType": "[variables('osDiskType')]"
+                        }
+                    },
+                    "imageReference": "[variables('imageReference')[parameters('ubuntuOSVersion')]]"
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "[parameters('vmName')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "linuxConfiguration": "[variables('linuxConfiguration')]"
+                },
+                "securityProfile": "[if(equals(parameters('securityType'), 'TrustedLaunch'), variables('securityProfileJson'), null())]"
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "2023-09-01",
+            "name": "[format('{0}/{1}', parameters('vmName'), variables('extensionName'))]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]"
+            ],
+            "properties": {
+                "publisher": "[variables('extensionPublisher')]",
+                "type": "[variables('extensionName')]",
+                "typeHandlerVersion": "[variables('extensionVersion')]",
+                "autoUpgradeMinorVersion": true,
+                "enableAutomaticUpgrade": true,
+                "settings": {
+                    "AttestationConfig": {
+                        "MaaSettings": {
+                            "maaEndpoint": "[variables('maaEndpoint')]",
+                            "maaTenantName": "[variables('maaTenantName')]"
+                        }
+                    }
+                }
+            },
+            "condition": "[and(and(equals(parameters('securityType'), 'TrustedLaunch'), variables('securityProfileJson').uefiSettings.secureBootEnabled), variables('securityProfileJson').uefiSettings.vTpmEnabled)]"
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(parameters('vmName'),'/customScript')]",
+            "apiVersion": "2019-07-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+              "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]"
+            ],
+            "properties": {
+              "publisher": "Microsoft.Azure.Extensions",
+              "type": "CustomScript",
+              "typeHandlerVersion": "2.0",
+              "autoUpgradeMinorVersion": true,
+              "settings": {
+                "fileUris": ["[parameters('duSetupScriptFileUri')]"]
+              },
+              "protectedSettings": {
+                "commandToExecute": "[concat('bash ', parameters('duSetupScriptFileName'), ' ', parameters('duSetupScriptFileArgs'))]",
+                "managedIdentity":{ "client_id": "[parameters('msi_client_id')]"}
+              }
+            }
+          }
+    ],
+    "outputs": {
+        "adminUsername": {
+            "type": "String",
+            "value": "[parameters('adminUsername')]"
+        },
+        "hostname": {
+            "type": "String",
+            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName')), '2023-09-01').dnsSettings.fqdn]"
+        },
+        "sshCommand": {
+            "type": "String",
+            "value": "[format('ssh {0}@{1}', parameters('adminUsername'), reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName')), '2023-09-01').dnsSettings.fqdn)]"
+        }
+    }
+}
