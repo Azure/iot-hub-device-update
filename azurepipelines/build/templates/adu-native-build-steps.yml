@@ -17,20 +17,20 @@ parameters:
       default: false
 steps:
 
-- {{ if eq(parameters.buildWithCoverageSymbols, 'true') }}:
     - task: Bash@3
       displayName: "Build Client, Unit Tests and Packages: linux-${{parameters.buildType}}"
       inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)/scripts/build.sh
           arguments: "--clean --type ${{parameters.buildType}} --platform-layer linux --log-lib zlog --build-packages --build-unit-tests --add-coverage-symbols --out-dir $(Build.BinariesDirectory)"
-- {{else}}:
+      condition: eq(parameters['buildWithCoverageSymbols'],true)
     - task: Bash@3
       displayName: "Build Client and Packages: linux-${{parameters.buildType}}"
       inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)/scripts/build.sh
           arguments: "--clean --type ${{parameters.buildType}} --platform-layer linux --log-lib zlog --build-packages --out-dir $(Build.BinariesDirectory)"
+      condition: eq(parameters['buildWithCoverageSymbols'],false)
 # End of if-else branch
     - bash: |
           cp $(Build.BinariesDirectory)/*.deb $(Build.ArtifactStagingDirectory)
@@ -38,12 +38,12 @@ steps:
       displayName: "Stage build artifacts (Deb package, agent and docs)"
       condition: ne(variables['Build.Reason'], 'PullRequest')
 
-- {{ if eq(parameters.buildWithCoverageSymbols, 'true') }}:
     # Create the base coverage items
     - script: |
             mkdir -p $(Build.BinariesDirectory)/coverage
             lcov -c -i -d $(Build.BinariesDirectory) -o $(Build.BinariesDirectory)/coverage/base.info
         displayName: "Prepare coverage script"
+      condition: eq(parameters['buildWithCoverageSymbols'],true)
 # End of baseline generation if else
 
 
@@ -54,7 +54,6 @@ steps:
       displayName: "Run Unit Tests: linux-${{parameters.buildType}}"
       workingDirectory: $(Build.BinariesDirectory)
 
-- {{if eq(parameters.buildWithCoverageSymbols, 'true') }}:
     - script: |
           lcov -c -d $(Build.BinariesDirectory) -o $(Build.BinariesDirectory)/coverage/test.info
           lcov -a $(Build.BinariesDirectory)/coverage/base.info -a $(Build.BinariesDirectory)/coverage/test.info -o $(Build.BinariesDirectory)/coverage/coverage.info
@@ -63,6 +62,7 @@ steps:
           lcov -r $(Build.BinariesDirectory)/coverage/coverage.info '*/tests/*' -o $(Build.BinariesDirectory)/coverage/coverage.info
           genhtml $(Build.BinariesDirectory)/coverage/coverage.info --output-directory $(Build.BinariesDirectory)/coverage
       displayName: "Generate Coverage Report"
+      condition: eq(parameters['buildWithCoverageSymbols'],true)
 
     - task: PublishTestResults@2
       displayName: "Publish Unit Test Results: linux-${{parameters.buildType}}"
