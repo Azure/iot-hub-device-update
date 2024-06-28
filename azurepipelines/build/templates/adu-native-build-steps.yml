@@ -42,7 +42,7 @@ steps:
     - script: |
             mkdir -p $(Build.BinariesDirectory)/coverage
             lcov -c -i -d $(Build.BinariesDirectory) -o $(Build.BinariesDirectory)/coverage/base.info
-        displayName: "Prepare coverage script"
+      displayName: "Prepare coverage script"
       condition: eq(parameters['buildWithCoverageSymbols'],true)
 # End of baseline generation if else
 
