@@ -168,13 +168,11 @@ done:
 
     if (!succeeded)
     {
+        // Free all the file names, if allocated.
         for (int i = 0; i < logFileSize; ++i)
         {
-            FileInfo logFileEntry = logFiles[i];
-
-            free(logFileEntry.fileName);
-
-            memset(&logFileEntry, 0, sizeof(FileInfo));
+            free(logFiles[i].fileName);
+            memset(&logFiles[i], 0, sizeof(FileInfo));
         }
     }
 
