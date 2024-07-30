@@ -36,7 +36,7 @@ variables:
     Test_VmName: "e2e-vm-$(Build.BuildId)"            # Composed of e2e-vm-$(Build.BuildId)
     Test_InfraDeploymentName: "e2e-deployment-$(Build.BuildId)" #Composed of e2e-deployment-$(Build.BuildId)
     Test_VmHostname: "" # Set after the VM is created
-    Test_Location: "westus3"
+    Test_Location: "westus2"
     Test_DeviceName: "ubuntu-2004-x509-test-device"
     Test_Distro: "ubuntu-20.04"
     Test_Arch: "amd64"
@@ -212,3 +212,4 @@ extends:
                         inlineScript: |
                             az group delete --name $(Test_ResourceGroupname) --yes
                         failOnStandardError: true
+                      continueOnError: true
