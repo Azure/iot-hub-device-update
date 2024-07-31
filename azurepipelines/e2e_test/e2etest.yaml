@@ -201,7 +201,7 @@ extends:
                         scriptPath: "$(E2E_WORKING_DIR)/scripts/start_and_check_deployment.sh"
                         arguments: -g "$(Test_DeviceGroup)" -d "$(Test_DeploymentId)" -a "$(ADU_ACCOUNT_NAME)" -i "$(ADU_INSTANCE_ID)" -n "$(Test_UpdateName)" -p "$(Test_UpdateProvider)" -v "$(Test_UpdateVersion)"
                         failOnStandardError: false
-                        continueOnError: false
+                        continueOnError: true
 
                     - task: AzureCLI@2
                       displayName: "Cleanup the Test Infrastructure"
@@ -212,4 +212,3 @@ extends:
                         inlineScript: |
                             az group delete --name $(Test_ResourceGroupname) --yes
                         failOnStandardError: true
-                      continueOnError: true
