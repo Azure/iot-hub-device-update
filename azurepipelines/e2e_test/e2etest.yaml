@@ -205,6 +205,7 @@ extends:
 
                     - task: AzureCLI@2
                       displayName: "Cleanup the Test Infrastructure"
+                      condition: succeededOrFailed()
                       inputs:
                         azureSubscription: $(Adu_Arm_Service_Connection)
                         scriptType: bash
