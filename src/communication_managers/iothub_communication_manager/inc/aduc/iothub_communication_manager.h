@@ -30,7 +30,9 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString);
  *
  * @return true if connection info can be obtained
  */
-bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString);
+bool GetConnectionInfoFromConnectionString(
+		ADUC_ConnectionInfo* info, const char* connectionString,
+		const char* const x509Cert, const char* const x509PrivateKey);
 
 /**
  * @brief Get the Connection Info from Identity Service

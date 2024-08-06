@@ -41,6 +41,10 @@ typedef struct tagADUC_AgentInfo
 
     char* connectionData; /**< the name in AIS principal (AIS); or the connectionString (connectionType string). */
 
+    char* x509Cert; // client certificate
+
+    char* x509PrivateKey; // private key to be used with the client certificate
+
     char* manufacturer; /**< Device property manufacturer. */
 
     char* model; /**< Device property model. */
