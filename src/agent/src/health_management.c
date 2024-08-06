@@ -63,7 +63,9 @@ bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info);
  *
  * @return true if connection info can be obtained
  */
-bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString);
+bool GetConnectionInfoFromConnectionString(
+    ADUC_ConnectionInfo* info, const char* connectionString,
+    const char* const x509Cert, const char* const x509PrivateKey);
 
 /**
  * @brief Checks whether we can obtain a device or module connection string.
@@ -95,7 +97,11 @@ bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs, const ADUC_Co
     }
     else if (strcmp(agent->connectionType, "string") == 0)
     {
-        validInfo = GetConnectionInfoFromConnectionString(&info, agent->connectionData);
+        validInfo = GetConnectionInfoFromConnectionString(&info, agent->connectionData, NULL, NULL);
+    }
+    else if (strcmp(agent->connectionType, "X509") == 0)
+    {
+        validInfo = GetConnectionInfoFromConnectionString(&info, agent->connectionData, agent->x509Cert, agent->x509PrivateKey);
     }
     else
     {

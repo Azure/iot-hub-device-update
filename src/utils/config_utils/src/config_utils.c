@@ -57,12 +57,62 @@ static const char* CONFIG_RUN_AS = "runas";
 static const char* CONFIG_CONNECTION_SOURCE = "connectionSource";
 static const char* CONFIG_CONNECTION_TYPE = "connectionType";
 static const char* CONFIG_CONNECTION_DATA = "connectionData";
+static const char* CONFIG_CONNECTION_X509_CERT_FILE_PATH = "connectionX509CertFilePath";
+static const char* CONFIG_CONNECTION_X509_PRIVATE_KEY_FILE_PATH = "connectionX509PrivateKeyFilePath";
 static const char* CONFIG_ADDITIONAL_DEVICE_PROPERTIES = "additionalDeviceProperties";
 static const char* CONFIG_AGENTS = "agents";
 
 static const char* INVALID_OR_MISSING_FIELD_ERROR_FMT = "Invalid json - '%s' missing or incorrect";
 
 static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent);
+
+
+static char* ADUC_AgentInfo_Read_X509_File(const char* const x509_file_path) {
+    char* buffer = NULL;
+    size_t bufferLength = 0;
+    size_t bytesRead = 0;
+    FILE* x509File = NULL;
+    
+    x509File = fopen(x509_file_path, "rb");
+    if (x509File)
+    {
+        if (fseek(x509File, 0, SEEK_END) == 0) {
+            bufferLength = (size_t)ftell(x509File);
+            if (fseek(x509File, 0, SEEK_SET) == 0)
+            {
+                buffer = malloc(bufferLength);
+                if (buffer)
+                {
+                    bytesRead = fread(buffer, 1, bufferLength, x509File);
+                    if (bytesRead < bufferLength)
+                    {
+                        Log_Error("Failed to read '%s'!", x509_file_path);
+                        free(buffer);
+                        buffer = NULL;
+                    }
+                }
+            }
+            else
+            {
+                Log_Error("Failed to seek begin of '%s'!", x509_file_path);
+            }
+        }
+        else
+        {
+            Log_Error("Failed to seek end of '%s'!", x509_file_path);
+        }
+
+        if(fclose (x509File) != 0) {
+            Log_Warn("Failed to close '%s'!", x509_file_path);
+        }
+    }
+    else
+    {
+        Log_Error("Failed to open '%s'!", x509_file_path);
+    }
+
+    return(buffer);
+}
 
 /**
  * @brief Initializes an ADUC_AgentInfo object
@@ -94,6 +144,8 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
     JSON_Object* connection_source = json_object_get_object(agent_obj, CONFIG_CONNECTION_SOURCE);
     const char* connection_type = NULL;
     const char* connection_data = NULL;
+    const char* connection_x509_cert_file_path = NULL;
+    const char* connection_x509_private_key_file_path = NULL;
 
     if (connection_source == NULL)
     {
@@ -102,6 +154,8 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
 
     connection_type = json_object_get_string(connection_source, CONFIG_CONNECTION_TYPE);
     connection_data = json_object_get_string(connection_source, CONFIG_CONNECTION_DATA);
+    connection_x509_cert_file_path = json_object_get_string(connection_source, CONFIG_CONNECTION_X509_CERT_FILE_PATH);
+    connection_x509_private_key_file_path = json_object_get_string(connection_source, CONFIG_CONNECTION_X509_PRIVATE_KEY_FILE_PATH);
 
     // As these fields are mandatory, if any of the fields doesn't exist, the agent will fail to be constructed.
     if (name == NULL || runas == NULL || connection_type == NULL || connection_data == NULL || manufacturer == NULL
@@ -128,6 +182,23 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
     if (mallocAndStrcpy_s(&(agent->connectionData), connection_data) != 0)
     {
         goto done;
+    }
+
+    if (connection_x509_cert_file_path || connection_x509_private_key_file_path) {
+        if(connection_x509_cert_file_path && connection_x509_private_key_file_path) {
+            agent->x509Cert = ADUC_AgentInfo_Read_X509_File(connection_x509_cert_file_path);
+            if (!agent->x509Cert)
+            {
+                goto done;
+            }
+            agent->x509PrivateKey = ADUC_AgentInfo_Read_X509_File(connection_x509_private_key_file_path);
+            if (!agent->x509PrivateKey)
+            {
+                goto done;
+            }
+        } else {
+            Log_Error("Incomplete X509 client certificate configuration! Cert file path or private key file path is missing.");
+        }
     }
 
     if (mallocAndStrcpy_s(&(agent->manufacturer), manufacturer) != 0)
@@ -172,6 +243,12 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent)
 
     free(agent->connectionData);
     agent->connectionData = NULL;
+
+    free(agent->x509Cert);
+    agent->x509Cert = NULL;
+
+    free(agent->x509PrivateKey);
+    agent->x509PrivateKey = NULL;
 
     free(agent->manufacturer);
     agent->manufacturer = NULL;
