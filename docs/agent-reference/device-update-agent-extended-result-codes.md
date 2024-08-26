@@ -29,7 +29,7 @@ The followings are Result Code that visible in the Device or Module Twin:
 | 1101        | ADUC_Result_Restore_Success_Unsupported             |
 | 1102        | ADUC_Result_Restore_InProgress                      |
 
-See [adu_core.h](../../src/adu/types/adu_core.h) for more detail.
+See [adu_core.h](../../src/adu_types/inc/aduc/types/adu_core.h) for more detail.
 
 ## Extended Result Code Structure (32 bits)
 
