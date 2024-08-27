@@ -95,6 +95,7 @@ extends:
                 parameters:
                   targetOs: "ubuntu2004"
                   targetArch: "arm64"
+                  buildType: "Debug"
 
           - job: BuildAduAgent_ubuntu2204
             displayName: "Build ADU Agent - Ubuntu 22.04 (arm64)"
@@ -108,3 +109,4 @@ extends:
                 parameters:
                   targetOs: "ubuntu2204"
                   targetArch: "arm64"
+                  buildType: "Debug"

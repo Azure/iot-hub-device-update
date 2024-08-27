@@ -45,6 +45,7 @@ install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
+add_coverage_symbols=false
 
 #
 # Export the compiler settings in case VM is wonky
@@ -89,6 +90,8 @@ print_help() {
     echo ""
     echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
     echo ""
+    echo "--add-coverage-symbols                Includes the gcov coverage data within gcov for the build. Will increase the executable size."
+    echo "                                      You can run the ADU agent or any of the unit tests (if built with -u) to generate the coverage data with gcov."
     echo "--openssl-path                        Override the openssl path"
     echo ""
     echo "--major-version                       Major version of ADU"
@@ -289,6 +292,9 @@ while [[ $1 != "" ]]; do
         fi
         log_lib=$1
         ;;
+    --add-coverage-symbols)
+        add_coverage_symbols=true
+        ;;
     -l | --log-dir)
         shift
         if [[ -z $1 || $1 == -* ]]; then
@@ -423,11 +429,17 @@ CMAKE_OPTIONS=(
 if [[ $major_version != "" ]]; then
     CMAKE_OPTIONS+=("-DADUC_VERSION_MAJOR=$major_version")
 fi
+
 if [[ $minor_version != "" ]]; then
     CMAKE_OPTIONS+=("-DADUC_VERSION_MINOR=$minor_version")
 fi
+
 if [[ $patch_version != "" ]]; then
     CMAKE_OPTIONS+=("-DADUC_VERSION_PATCH=$patch_version")
+fi
+
+if [[ $add_coverage_symbols == "true" ]]; then
+    CMAKE_OPTIONS+=("-DADUC_ADD_COVERAGE_SYMBOLS=ON")
 fi
 
 for i in "${static_analysis_tools[@]}"; do

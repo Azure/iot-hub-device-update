@@ -95,7 +95,7 @@ extends:
                 parameters:
                   targetOs: "ubuntu2004"
                   targetArch: "amd64"
-
+                  buildType: "Debug"
           - job: BuildAduAgent_ubuntu2204
             displayName: "Build ADU Agent - Ubuntu 22.04 (amd64)"
             timeoutInMinutes: 30
@@ -108,3 +108,4 @@ extends:
                 parameters:
                   targetOs: "ubuntu2204"
                   targetArch: "amd64"
+                  buildType: "Debug"

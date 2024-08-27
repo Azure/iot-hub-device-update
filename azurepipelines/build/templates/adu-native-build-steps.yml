@@ -1,57 +1,71 @@
 # Template: Steps to build ADU Agent targeting x86-64 architecture.
 # Consume this steps template in one or more jobs by passing in parameter values.
 
+# Template Functionality
+# Depending on build there are different sections taht will be run and used.
+# If the build type is set to debug the unit tests will be built and the coverage symbols will be
+# added to the build.
 parameters:
     - name: targetOs # example: ubuntu1804
       type: string
     - name: targetArch # example: amd64
       type: string
-
+    - name: buildType # example: Debug, Release, MinSizeRel
+      type: string
+    - name: buildWithCoverageSymbols
+      type: boolean
+      default: false
 steps:
-    - ${{ if eq(parameters.targetArch, 'amd64') }}:
-          - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
-            displayName: "Component Detection"
-            inputs:
-                sourceScanPath: src
 
     - task: Bash@3
-      displayName: "Install ADUC dependencies"
-      inputs:
-          targetType: "filePath"
-          filePath: $(Build.SourcesDirectory)/scripts/install-deps.sh
-          arguments: --install-all-deps -f $(Agent.TempDirectory)/adu-deps/
-      # Ignore SC2164: Use 'cd ... || exit' or 'cd ... || return' in case cd fails.
-      #   We usually want to return an error code from a specific, previous command
-      #   even if popd, pushd, or cd fails.
-      # Ignore SC2209: Use var=$(command) to assign output (or quote to assign string).
-      #   We use 'ret=return' or 'ret=exit' to support dot sourcing.
-    - ${{ if eq(parameters.targetArch, 'amd64') }}:
-          - bash: |
-                /tmp/deviceupdate-shellcheck --shell=bash $(find $(Build.SourcesDirectory) -name "*.sh" | grep -v -e '^\.\/out')
-                exit $?
-            displayName: "Run ShellCheck"
-    - task: Bash@3
-      displayName: "Build Client, Unit Tests and Packages: linux-MinSizeRel"
+      displayName: "Build Client, Unit Tests and Packages: linux-${{parameters.buildType}}"
       inputs:
           targetType: "filePath"
           filePath: $(Build.SourcesDirectory)/scripts/build.sh
-          arguments: "--clean --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --build-unit-tests --out-dir $(Build.BinariesDirectory)"
-
+          arguments: "--clean --type ${{parameters.buildType}} --platform-layer linux --log-lib zlog --build-packages --build-unit-tests --add-coverage-symbols --out-dir $(Build.BinariesDirectory)"
+      condition: eq(parameters['buildWithCoverageSymbols'],true)
+    - task: Bash@3
+      displayName: "Build Client and Packages: linux-${{parameters.buildType}}"
+      inputs:
+          targetType: "filePath"
+          filePath: $(Build.SourcesDirectory)/scripts/build.sh
+          arguments: "--clean --type ${{parameters.buildType}} --platform-layer linux --log-lib zlog --build-packages --out-dir $(Build.BinariesDirectory)"
+      condition: eq(parameters['buildWithCoverageSymbols'],false)
+# End of if-else branch
     - bash: |
           cp $(Build.BinariesDirectory)/*.deb $(Build.ArtifactStagingDirectory)
           cp $(Build.BinariesDirectory)/bin/AducIotAgent $(Build.ArtifactStagingDirectory)/AducIotAgent
       displayName: "Stage build artifacts (Deb package, agent and docs)"
       condition: ne(variables['Build.Reason'], 'PullRequest')
 
+    # Create the base coverage items
+    - script: |
+            mkdir -p $(Build.BinariesDirectory)/coverage
+            lcov -c -i -d $(Build.BinariesDirectory) -o $(Build.BinariesDirectory)/coverage/base.info
+      displayName: "Prepare coverage script"
+      condition: eq(parameters['buildWithCoverageSymbols'],true)
+# End of baseline generation if else
+
+
       # Run all unit tests.
     - bash: |
           ctest --repeat until-pass:5 --timeout 300 --force-new-ctest-process -T test -V --output-on-failure
           exit $?
-      displayName: "Run Unit Tests: linux-MinSizeRel"
+      displayName: "Run Unit Tests: linux-${{parameters.buildType}}"
       workingDirectory: $(Build.BinariesDirectory)
 
+    - script: |
+          lcov -c -d $(Build.BinariesDirectory) -o $(Build.BinariesDirectory)/coverage/test.info
+          lcov -a $(Build.BinariesDirectory)/coverage/base.info -a $(Build.BinariesDirectory)/coverage/test.info -o $(Build.BinariesDirectory)/coverage/coverage.info
+          lcov -r $(Build.BinariesDirectory)/coverage/coverage.info '/usr/*' -o $(Build.BinariesDirectory)/coverage/coverage.info
+          lcov -r $(Build.BinariesDirectory)/coverage/coverage.info '/opt/*' -o $(Build.BinariesDirectory)/coverage/coverage.info
+          lcov -r $(Build.BinariesDirectory)/coverage/coverage.info '*/tests/*' -o $(Build.BinariesDirectory)/coverage/coverage.info
+          genhtml $(Build.BinariesDirectory)/coverage/coverage.info --output-directory $(Build.BinariesDirectory)/coverage
+      displayName: "Generate Coverage Report"
+      condition: eq(parameters['buildWithCoverageSymbols'],true)
+
     - task: PublishTestResults@2
-      displayName: "Publish Unit Test Results: linux-MinSizeRel"
+      displayName: "Publish Unit Test Results: linux-${{parameters.buildType}}"
       condition: succeededOrFailed() # Run this task even if tests fail.
       inputs:
           testResultsFormat: cTest
