@@ -78,4 +78,5 @@ The unsigned hex representation of `-536870781` is `FFFFFFFF E0000083`.
 |-----------|----------------|--------------|
 | FFFFFFFF  | E              | 0000083      |
 
-`0x83` in hex is `131` in decimal which is the errno value for `ENOLCK`.
+`0x83` in hex is `131` in decimal which is the errno value for [`ENOTRECOVERABLE`](https://github.com/torvalds/linux/blob/5be63fc19fcaa4c236b307420483578a56986a37/include/uapi/asm-generic/errno.h#L117).
+
