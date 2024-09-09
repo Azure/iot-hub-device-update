@@ -176,6 +176,7 @@ resource "azurerm_linux_virtual_machine" "deviceupdatevm" {
 
     tags = {
         environment = var.environment_tag
+        AMA_Tenant_ADULinuxIaaS = "/etc/adulinuxiaas.conf" 
     }
 }
 
