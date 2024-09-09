@@ -1337,6 +1337,27 @@ void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
 }
 
 /**
+ * @brief Called to do ProcessDeployment.
+ *
+ * @param[in,out] methodCallData The metedata for the method call.
+ * @return Result code.
+ */
+ADUC_Result ADUC_Workflow_MethodCall_ProcessDeployment(ADUC_MethodCall_Data* methodCallData)
+{
+    UNREFERENCED_PARAMETER(methodCallData);
+    Log_Info("Workflow step: ProcessDeployment");
+
+    ADUC_Result result = { ADUC_Result_Success };
+    return result;
+}
+
+void ADUC_Workflow_MethodCall_ProcessDeployment_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
+{
+    UNREFERENCED_PARAMETER(methodCallData);
+    UNREFERENCED_PARAMETER(result);
+}
+
+/**
  * @brief Called to do download.
  *
  * @param[in,out] methodCallData The metedata for the method call.
