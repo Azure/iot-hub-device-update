@@ -203,7 +203,10 @@ resource "azurerm_virtual_machine_extension" "AzureMonitorLinuxAgent" {
   virtual_machine_id = azurerm_linux_virtual_machine.deviceupdatevm.id
   settings = <<SETTINGS
   {
-      "commandToExecute": "hostname && uptime"
+    "genevaConfiguration":
+    {
+      "enable":true
+    }
   }
 SETTINGS
 
