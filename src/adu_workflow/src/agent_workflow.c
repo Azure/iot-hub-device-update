@@ -243,6 +243,15 @@ typedef struct tagADUC_WorkflowHandlerMapEntry
  *     AutoTransitionApplicableUpdateAction is equal to the current update action of the workflow data.
  */
 const ADUC_WorkflowHandlerMapEntry workflowHandlerMap[] = {
+    { 
+        ADUCITF_WorkflowStep_ProcessDeployment,
+        /* calls operation */                               ADUC_Workflow_MethodCall_ProcessDeployment,
+        /* and on completion calls */                       ADUC_Workflow_MethodCall_ProcessDeployment_Complete,
+        /* on success, transitions to state */              ADUCITF_State_DeploymentInProgress,
+        /* on success auto-transitions to workflow step */  ADUCITF_WorkflowStep_Download,
+        /* on failure, transitions to state */              ADUCITF_State_Failed,
+        /* on failure auto-transitions to workflow step */  ADUCITF_WorkflowStep_Undefined,
+    },
     { ADUCITF_WorkflowStep_Download,
         /* calls operation */                               ADUC_Workflow_MethodCall_Download,
         /* and on completion calls */                       ADUC_Workflow_MethodCall_Download_Complete,
