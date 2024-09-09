@@ -220,6 +220,13 @@ Here is the process of configuring AIS using a `config.toml` file and creating a
 
 Use the following commands:
 
+example: config.toml:
+```shell
+[provisioning]
+source = "manual"
+connection_string = "Your_connection_string"
+```
+
 ```shell
 sudo snap set azure-iot-identity raw-config="$(cat /path/to/config.toml)"
 ```
