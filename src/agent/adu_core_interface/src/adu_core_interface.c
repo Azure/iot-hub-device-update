@@ -445,13 +445,6 @@ void OrchestratorUpdateCallback(
     {
         Log_Debug("Processing deployment %s ...", workflowId);
 
-        ADUC_Result inProgressResult = { .ResultCode = ADUC_GeneralResult_Success, .ExtendedResultCode = 0 };
-        if (!ReportPreDeploymentProcessingState(
-                propertyValue, ADUCITF_State_DeploymentInProgress, workflowData, inProgressResult))
-        {
-            Log_Warn("Reporting InProgress failed. Continuing processing deployment %s", workflowId);
-        }
-
         // Ensure update to latest rootkey pkg, which is required for validating the update metadata.
         workFolder = workflow_get_root_sandbox_dir(workflowData->WorkflowHandle);
         if (workFolder == NULL)
