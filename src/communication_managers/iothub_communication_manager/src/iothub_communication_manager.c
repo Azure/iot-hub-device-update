@@ -22,6 +22,8 @@
 #include <iothub.h>
 #include <iothub_client_options.h>
 
+#include <assert.h>
+
 #ifdef ADUC_ALLOW_MQTT
 #    include <iothubtransportmqtt.h>
 #endif
@@ -343,6 +345,14 @@ static bool ADUC_DeviceClient_Create(
         result = false;
     }
     else if (
+        connInfo->clientCertificateString != NULL && connInfo->authType == ADUC_AuthType_X509
+        && (iothubResult = ClientHandle_SetOption(*outClientHandle, SU_OPTION_X509_CERT, connInfo->clientCertificateString))
+            != IOTHUB_CLIENT_OK)
+    {
+        Log_Error("Unable to set client certificate, error=%d", iothubResult);
+        result = false;
+    }
+    else if (
         shouldSetProxyOptions
         && ((iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_HTTP_PROXY, &proxyOptions))
             != IOTHUB_CLIENT_OK))
@@ -351,7 +361,7 @@ static bool ADUC_DeviceClient_Create(
         result = false;
     }
     else if (
-        connInfo->certificateString != NULL && connInfo->authType == ADUC_AuthType_NestedEdgeCert
+        connInfo->certificateString != NULL && (connInfo->authType == ADUC_AuthType_NestedEdgeCert || connInfo->authType == ADUC_AuthType_X509)
         && (iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_TRUSTED_CERT, connInfo->certificateString))
             != IOTHUB_CLIENT_OK)
     {
@@ -367,7 +377,7 @@ static bool ADUC_DeviceClient_Create(
         result = false;
     }
     else if (
-        connInfo->opensslPrivateKey != NULL && connInfo->authType == ADUC_AuthType_SASCert
+        connInfo->opensslPrivateKey != NULL && ( connInfo->authType == ADUC_AuthType_SASCert || connInfo->authType == ADUC_AuthType_X509 )
         && (iothubResult =
                 ClientHandle_SetOption(*outClientHandle, SU_OPTION_X509_PRIVATE_KEY, connInfo->opensslPrivateKey))
             != IOTHUB_CLIENT_OK)
@@ -479,7 +489,9 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
  *
  * @return true if connection info can be obtained
  */
-bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char* connectionString)
+bool GetConnectionInfoFromConnectionString(
+    ADUC_ConnectionInfo* info, const char* connectionString,
+    const char* const x509Cert, const char* const x509PrivateKey, const char* const x509CaCert)
 {
     bool succeeded = false;
     const ADUC_ConfigInfo* config = NULL;
@@ -509,7 +521,28 @@ bool GetConnectionInfoFromConnectionString(ADUC_ConnectionInfo* info, const char
         goto done;
     }
 
-    info->authType = ADUC_AuthType_SASToken;
+    if (x509Cert)
+    {
+        assert(x509PrivateKey);
+        assert(x509CaCert);
+        info->authType = ADUC_AuthType_X509;
+        if (mallocAndStrcpy_s(&info->clientCertificateString, x509Cert) != 0)
+        {
+            goto done;
+        }
+        if (mallocAndStrcpy_s(&info->opensslPrivateKey, x509PrivateKey) != 0)
+        {
+            goto done;
+        }
+        if (mallocAndStrcpy_s(&info->certificateString, x509CaCert) != 0)
+        {
+            goto done;
+        }
+    }
+    else
+    {
+        info->authType = ADUC_AuthType_SASToken;
+    }
 
     // Optional: The certificate string is needed for Edge Gateway connection.
     config = ADUC_ConfigInfo_GetInstance();
@@ -609,7 +642,14 @@ bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
     }
     else if (strcmp(agent->connectionType, "string") == 0)
     {
-        if (!GetConnectionInfoFromConnectionString(info, agent->connectionData))
+        if (!GetConnectionInfoFromConnectionString(info, agent->connectionData, NULL, NULL, NULL))
+        {
+            goto done;
+        }
+    }
+    else if (strcmp(agent->connectionType, "X509") == 0)
+    {
+        if (!GetConnectionInfoFromConnectionString(info, agent->connectionData, agent->x509Cert, agent->x509PrivateKey, agent->x509CaCert))
         {
             goto done;
         }
