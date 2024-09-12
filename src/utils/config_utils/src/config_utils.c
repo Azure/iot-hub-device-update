@@ -59,6 +59,7 @@ static const char* CONFIG_CONNECTION_TYPE = "connectionType";
 static const char* CONFIG_CONNECTION_DATA = "connectionData";
 static const char* CONFIG_CONNECTION_X509_CERT_FILE_PATH = "connectionX509CertFilePath";
 static const char* CONFIG_CONNECTION_X509_PRIVATE_KEY_FILE_PATH = "connectionX509PrivateKeyFilePath";
+static const char* CONFIG_CONNECTION_X509_CA_CERT_FILE_PATH = "connectionX509CaCertFilePath";
 static const char* CONFIG_ADDITIONAL_DEVICE_PROPERTIES = "additionalDeviceProperties";
 static const char* CONFIG_AGENTS = "agents";
 
@@ -146,6 +147,7 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
     const char* connection_data = NULL;
     const char* connection_x509_cert_file_path = NULL;
     const char* connection_x509_private_key_file_path = NULL;
+    const char* connection_x509_ca_cert_file_path = NULL;
 
     if (connection_source == NULL)
     {
@@ -156,6 +158,7 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
     connection_data = json_object_get_string(connection_source, CONFIG_CONNECTION_DATA);
     connection_x509_cert_file_path = json_object_get_string(connection_source, CONFIG_CONNECTION_X509_CERT_FILE_PATH);
     connection_x509_private_key_file_path = json_object_get_string(connection_source, CONFIG_CONNECTION_X509_PRIVATE_KEY_FILE_PATH);
+    connection_x509_ca_cert_file_path = json_object_get_string(connection_source, CONFIG_CONNECTION_X509_CA_CERT_FILE_PATH);
 
     // As these fields are mandatory, if any of the fields doesn't exist, the agent will fail to be constructed.
     if (name == NULL || runas == NULL || connection_type == NULL || connection_data == NULL || manufacturer == NULL
@@ -184,8 +187,8 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
         goto done;
     }
 
-    if (connection_x509_cert_file_path || connection_x509_private_key_file_path) {
-        if(connection_x509_cert_file_path && connection_x509_private_key_file_path) {
+    if (connection_x509_cert_file_path || connection_x509_private_key_file_path || connection_x509_ca_cert_file_path) {
+        if(connection_x509_cert_file_path && connection_x509_private_key_file_path && connection_x509_ca_cert_file_path) {
             agent->x509Cert = ADUC_AgentInfo_Read_X509_File(connection_x509_cert_file_path);
             if (!agent->x509Cert)
             {
@@ -193,6 +196,11 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
             }
             agent->x509PrivateKey = ADUC_AgentInfo_Read_X509_File(connection_x509_private_key_file_path);
             if (!agent->x509PrivateKey)
+            {
+                goto done;
+            }
+            agent->x509CaCert = ADUC_AgentInfo_Read_X509_File(connection_x509_ca_cert_file_path);
+            if (!agent->x509CaCert)
             {
                 goto done;
             }
@@ -249,6 +257,9 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent)
 
     free(agent->x509PrivateKey);
     agent->x509PrivateKey = NULL;
+
+    free(agent->x509CaCert);
+    agent->x509CaCert = NULL;
 
     free(agent->manufacturer);
     agent->manufacturer = NULL;

@@ -45,6 +45,8 @@ typedef struct tagADUC_AgentInfo
 
     char* x509PrivateKey; // private key to be used with the client certificate
 
+    char* x509CaCert; // ca certificate
+
     char* manufacturer; /**< Device property manufacturer. */
 
     char* model; /**< Device property model. */
