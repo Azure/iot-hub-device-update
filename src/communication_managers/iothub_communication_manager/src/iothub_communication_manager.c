@@ -337,11 +337,19 @@ static bool ADUC_DeviceClient_Create(
         result = false;
     }
     else if (
-        connInfo->certificateString != NULL && ( connInfo->authType == ADUC_AuthType_SASCert || connInfo->authType == ADUC_AuthType_X509 )
+        connInfo->certificateString != NULL && connInfo->authType == ADUC_AuthType_SASCert
         && (iothubResult = ClientHandle_SetOption(*outClientHandle, SU_OPTION_X509_CERT, connInfo->certificateString))
             != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set IotHub certificate, error=%d", iothubResult);
+        result = false;
+    }
+    else if (
+        connInfo->clientCertificateString != NULL && connInfo->authType == ADUC_AuthType_X509
+        && (iothubResult = ClientHandle_SetOption(*outClientHandle, SU_OPTION_X509_CERT, connInfo->clientCertificateString))
+            != IOTHUB_CLIENT_OK)
+    {
+        Log_Error("Unable to set client certificate, error=%d", iothubResult);
         result = false;
     }
     else if (
@@ -353,7 +361,7 @@ static bool ADUC_DeviceClient_Create(
         result = false;
     }
     else if (
-        connInfo->certificateString != NULL && connInfo->authType == ADUC_AuthType_NestedEdgeCert
+        connInfo->certificateString != NULL && (connInfo->authType == ADUC_AuthType_NestedEdgeCert || connInfo->authType == ADUC_AuthType_X509)
         && (iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_TRUSTED_CERT, connInfo->certificateString))
             != IOTHUB_CLIENT_OK)
     {
@@ -483,7 +491,7 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
  */
 bool GetConnectionInfoFromConnectionString(
     ADUC_ConnectionInfo* info, const char* connectionString,
-    const char* const x509Cert, const char* const x509PrivateKey)
+    const char* const x509Cert, const char* const x509PrivateKey, const char* const x509CaCert)
 {
     bool succeeded = false;
     const ADUC_ConfigInfo* config = NULL;
@@ -516,8 +524,9 @@ bool GetConnectionInfoFromConnectionString(
     if (x509Cert)
     {
         assert(x509PrivateKey);
+        assert(x509CaCert);
         info->authType = ADUC_AuthType_X509;
-        if (mallocAndStrcpy_s(&info->certificateString, x509Cert) != 0)
+        if (mallocAndStrcpy_s(&info->clientCertificateString, x509Cert) != 0)
         {
             goto done;
         }
@@ -525,10 +534,14 @@ bool GetConnectionInfoFromConnectionString(
         {
             goto done;
         }
+        if (mallocAndStrcpy_s(&info->certificateString, x509CaCert) != 0)
+        {
+            goto done;
+        }
     }
     else
     {
-    	info->authType = ADUC_AuthType_SASToken;
+        info->authType = ADUC_AuthType_SASToken;
     }
 
     // Optional: The certificate string is needed for Edge Gateway connection.
@@ -629,14 +642,14 @@ bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
     }
     else if (strcmp(agent->connectionType, "string") == 0)
     {
-        if (!GetConnectionInfoFromConnectionString(info, agent->connectionData, NULL, NULL))
+        if (!GetConnectionInfoFromConnectionString(info, agent->connectionData, NULL, NULL, NULL))
         {
             goto done;
         }
     }
     else if (strcmp(agent->connectionType, "X509") == 0)
     {
-        if (!GetConnectionInfoFromConnectionString(info, agent->connectionData, agent->x509Cert, agent->x509PrivateKey))
+        if (!GetConnectionInfoFromConnectionString(info, agent->connectionData, agent->x509Cert, agent->x509PrivateKey, agent->x509CaCert))
         {
             goto done;
         }

@@ -53,6 +53,9 @@ void ADUC_ConnectionInfo_DeAlloc(ADUC_ConnectionInfo* info)
     free(info->opensslPrivateKey);
     info->opensslPrivateKey = NULL;
 
+    free(info->clientCertificateString);
+    info->clientCertificateString = NULL;
+
     info->authType = ADUC_AuthType_NotSet;
     info->connType = ADUC_ConnType_NotSet;
 }
