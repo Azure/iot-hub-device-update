@@ -6,7 +6,9 @@
 
 #Requires -Version 5.0
 
-$API_VERSION = "api-version=2022-10-01"
+using module .\AduUpdate.psm1 # to import classes
+
+$API_VERSION = "api-version=2024-07-01-draft"
 
 # --------------------------------------------------------------------------------------------------------------------------------
 # INTERNAL METHODS
@@ -70,25 +72,94 @@ function Start-AduImportUpdate
         [ValidateCount(1, 11)]
         [psobject[]] $ImportUpdateInput,
 
+        # Enable anti-malware scanning. Defaults to true.
+        [Parameter(ParameterSetName="Default")]
+        [bool] $EnableAntiMalwareScan = $true,
+
         # Raw API request body in JSON string format.
         [Parameter(ParameterSetName="Advanced", Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
         [string] $RequestBody
     )
 
-    $url = "https://$AccountEndpoint/deviceupdate/$InstanceId/updates?$API_VERSION&action=import"
+    $url = "https://$AccountEndpoint/deviceupdate/$InstanceId/updates:import?$API_VERSION"
 
     $headers = Get-AuthorizationHeaders -AccessToken $AuthorizationToken
     $headers.Add('Content-Type', 'application/json')
 
     if ($ImportUpdateInput)
     {
-        $RequestBody = ConvertTo-Json -InputObject $ImportUpdateInput -Depth 50
+        $request = [PSCustomObject]@{
+            importUpdateInput = $ImportUpdateInput
+            enableScan = $EnableAntiMalwareScan
+        }
+
+        $RequestBody = ConvertTo-Json -InputObject $request -Depth 50
     }
 
     Write-Verbose $RequestBody
 
     $response = Invoke-WebRequest -Uri $url -Method POST -Headers $headers -Body $RequestBody -UseBasicParsing -Verbose:$VerbosePreference
+
+    if ($response.StatusCode -ne 202)
+    {
+        Write-Error $response
+    }
+
+    # .../updates/operations/86b1c73c-e041-4eea-bc7b-918248ae66da?api-version=2021-06-01-draft
+    $operationId = $response.Headers["Operation-Location"].Split('/')[-1].Split('?')[0]
+    return $operationId
+}
+
+function Start-AduDeleteUpdate
+{
+<#
+    .SYNOPSIS
+        Start importing an update to Device Update for IoT Hub. Method returns an operationId to be used for
+        polling the operation status.
+
+    .EXAMPLE
+        PS > $updateId = New-AduUpdateId -Provider Fabrikam -Name Toaster -Version 2.0
+        PS > $compatInfo = New-AduUpdateCompatibility -Manufacturer Fabrikam -Model Toaster
+        PS >
+        PS > $input = New-AduImportUpdateInput -UpdateId $updateId `
+                                               -UpdateType microsoft/swupdate:1 -InstalledCriteria 5 `
+                                               -Compatibility $compatInfo`
+                                               -Files '.\file1.json', '.\file2.zip'
+        PS >
+        PS > Start-AduImportUpdate -AccountEndpoint sampleaccount.api.adu.microsoft.com -InstanceId sampleinstance `
+                                   -AuthorizationToken 'sample token' `
+                                   -ImportUpdateInput $input
+#>
+    [CmdletBinding()]
+    Param(
+        # ADU account endpoint, e.g. sampleaccount.api.adu.microsoft.com
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $AccountEndpoint,
+
+        # ADU Instance Id.
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $InstanceId,
+
+        # Azure Active Directory OAuth Authorization Token.
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $AuthorizationToken,
+
+        # ADU Import Update API input(s).
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [UpdateId] $UpdateId
+    )
+
+    $url = "https://$AccountEndpoint/deviceupdate/$InstanceId/updates/providers/$($UpdateId.Provider)/names/$($UpdateId.Name)/versions/$($UpdateId.Version)?$API_VERSION"
+
+    $headers = Get-AuthorizationHeaders -AccessToken $AuthorizationToken
+    $headers.Add('Content-Type', 'application/json')
+
+    $response = Invoke-WebRequest -Uri $url -Method DELETE -Headers $headers -UseBasicParsing -Verbose:$VerbosePreference
 
     if ($response.StatusCode -ne 202)
     {
@@ -237,4 +308,4 @@ function Wait-AduUpdateOperation
     }
 }
 
-Export-ModuleMember -Function Start-AduImportUpdate, Get-AduUpdateOperation, Wait-AduUpdateOperation
+Export-ModuleMember -Function Start-AduImportUpdate, Start-AduDeleteUpdate, Get-AduUpdateOperation, Wait-AduUpdateOperation

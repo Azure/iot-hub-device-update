@@ -12,7 +12,7 @@
         Create import update API request body from a simple import manifest (no reference steps).
 
     .EXAMPLE
-        PS > Import-Module AduImportUpdate.psm1
+        PS > Import-Module AduImportUpdate.psm1 -Force
         PS >
         PS > $BlobContainer = Get-AduAzBlobContainer -SubscriptionId $subscriptionId -ResourceGroupName $resourceGroupName -StorageAccountName $storageAccount -ContainerName $BlobContainerName
         PS >

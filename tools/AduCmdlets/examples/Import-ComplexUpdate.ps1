@@ -13,14 +13,14 @@
         through REST API. This sample update contain fake files and cannot be actually installed onto a device.
 
     .EXAMPLE
-        PS > Import-Module AduImportUpdate.psm1
+        PS > Import-Module AduImportUpdate.psm1 -Force
         PS >
         PS > $BlobContainer = Get-AduAzBlobContainer -SubscriptionId $subscriptionId -ResourceGroupName $resourceGroupName -StorageAccountName $storageAccount -ContainerName $BlobContainerName
         PS >
         PS > $token = Get-MsalToken -ClientId $clientId -TenantId $tenantId -Scopes 'https://api.adu.microsoft.com/user_impersonation' -Authority https://login.microsoftonline.com/$tenantId/v2.0 -Interactive -DeviceCode
         PS >
         PS > Import-ComplexUpdate.ps1 -AccountEndpoint sampleaccount.api.adu.microsoft.com -InstanceId sampleinstance `
-                                      -Container $BlobContainer `
+                                      -BlobContainer $BlobContainer `
                                       -AuthorizationToken $token `
                                       -UpdateVersion 1.0
 #>

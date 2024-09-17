@@ -46,9 +46,12 @@ function Get-AduAzBlobContainer
         Set-AzContext $subscription -ErrorAction Stop | Out-Null
     }
 
-    $account = Get-AzStorageAccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
-    New-AzStorageContainer -Name $ContainerName -Context $account.Context -ErrorAction SilentlyContinue | Out-Null
-    $container = Get-AzStorageContainer -Name $ContainerName -Context $account.Context -ErrorAction Stop
+    # $account = Get-AzStorageAccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
+
+    $storageContext = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount -ErrorAction Stop
+
+    New-AzStorageContainer -Name $ContainerName -Context $storageContext -ErrorAction SilentlyContinue | Out-Null
+    $container = Get-AzStorageContainer -Name $ContainerName -Context $storageContext -ErrorAction Stop
     return $container
 }
 
@@ -77,6 +80,7 @@ function Copy-AduFileToAzBlobContainer
     )
 
     $blob = Set-AzStorageBlobContent -File $FilePath -Blob $BlobName -Container $BlobContainer.Name -Context $BlobContainer.Context -Force -ErrorAction Stop
+
     $uri = New-AzStorageBlobSASToken -Container $BlobContainer.Name -Blob $blob.Name -Permission r `
                                      -StartTime (Get-Date).AddMinutes(-30) -ExpiryTime (Get-Date).AddHours(6) -Context $blob.Context -FullUri -ErrorAction Stop
     return $uri

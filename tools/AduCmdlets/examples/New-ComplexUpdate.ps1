@@ -26,7 +26,7 @@ Param(
     [string] $UpdateVersion
 )
 
-Import-Module $PSScriptRoot/../AduUpdate.psm1 -ErrorAction Stop
+Import-Module $PSScriptRoot/../AduUpdate.psm1 -Force -Scope Local -ErrorAction Stop
 
 # We will use arbitrary files as update payload files.
 $childFile = "$env:TEMP/childFile.bin.txt"
