@@ -15,9 +15,14 @@
 #include <sstream>
 #include <sys/stat.h> // for stat
 #include <vector>
-
 // keep this last to minimize chance to interfere with system header includes.
 #include "aduc/aduc_banned.h"
+
+#ifdef ADUC_BUILD_SNAP
+#    define CURL_PATH "/usr/bin/curl-downloader"
+#else
+#    define CURL_PATH "/usr/bin/curl"
+#endif
 
 ADUC_Result Download_curl(
     const ADUC_FileEntity* entity,
@@ -113,7 +118,7 @@ ADUC_Result Download_curl(
     args.emplace_back("-O");
     args.emplace_back(entity->DownloadUri);
 
-    exitCode = ADUC_LaunchChildProcess("/usr/bin/curl", args, output);
+    exitCode = ADUC_LaunchChildProcess(CURL_PATH, args, output);
 
     if (exitCode == 0)
     {
@@ -125,6 +130,16 @@ ADUC_Result Download_curl(
         result.ExtendedResultCode = ADUC_ERROR_CURL_DOWNLOADER_EXTERNAL_FAILURE(exitCode);
         reportProgress = true;
         goto done;
+    }
+
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error(
+            "Download job end. exit code: %d, resultCode: %d, extendedCode: %d (0x%X)",
+            exitCode,
+            result.ResultCode,
+            result.ExtendedResultCode,
+            result.ExtendedResultCode);
     }
 
     Log_Info("Download output:: \n%s", output.c_str());
@@ -176,10 +191,13 @@ done:
         }
     }
 
-    Log_Info(
-        "Download task end. resultCode: %d, extendedCode: %d (0x%X)",
-        result.ResultCode,
-        result.ExtendedResultCode,
-        result.ExtendedResultCode);
+    if (IsAducResultCodeSuccess(result.ResultCode))
+    {
+        Log_Info(
+            "Download job end. resultCode: %d, extendedCode: %d (0x%X)\n",
+            result.ResultCode,
+            result.ExtendedResultCode,
+            result.ExtendedResultCode);
+    }
     return result;
 }

@@ -32,8 +32,10 @@
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
 #include <ctype.h>
-#include <diagnostics_devicename.h>
-#include <diagnostics_interface.h>
+#ifndef ADUC_BUILD_SNAP
+    #include <diagnostics_devicename.h>
+    #include <diagnostics_interface.h>
+#endif
 #include <getopt.h>
 #include <iothub_client_options.h>
 #include <pnp_protocol.h>
@@ -81,8 +83,9 @@ static const char g_aduPnPComponentName[] = "deviceUpdate";
 static const char g_deviceInfoPnPComponentName[] = "deviceInformation";
 
 // Name of the Diagnostics subcomponent that this device is using
+#ifndef ADUC_BUILD_SNAP
 static const char g_diagnosticsPnPComponentName[] = "diagnosticInformation";
-
+#endif
 /**
  * @brief Global IoT Hub client handle.
  */
@@ -183,6 +186,7 @@ static PnPComponentEntry componentList[] = {
         DeviceInfoInterface_Destroy,
         NULL /* PropertyUpdateCallback - not used */
     },
+#ifndef ADUC_BUILD_SNAP
     {
         g_diagnosticsPnPComponentName,
         &g_iotHubClientHandleForDiagnosticsComponent,
@@ -192,6 +196,7 @@ static PnPComponentEntry componentList[] = {
         DiagnosticsInterface_Destroy,
         DiagnosticsInterface_PropertyUpdateCallback
     },
+#endif // ADUC_BUILD_SNAP
 };
 
 // clang-format on
@@ -414,6 +419,7 @@ int ParseLaunchArguments(const int argc, char** argv, ADUC_LaunchArguments* laun
  * @param connectionString connectionString to extract the device-id and module-id from
  * @returns true on success; false on failure
  */
+#ifndef ADUC_BUILD_SNAP
 bool ADUC_SetDiagnosticsDeviceNameFromConnectionString(const char* connectionString)
 {
     bool succeeded = false;
@@ -434,7 +440,6 @@ bool ADUC_SetDiagnosticsDeviceNameFromConnectionString(const char* connectionStr
     {
         goto done;
     }
-
     succeeded = true;
 
 done:
@@ -443,6 +448,7 @@ done:
     free(moduleId);
     return succeeded;
 }
+#endif
 
 //
 // IotHub methods.
@@ -714,6 +720,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
             goto done;
         }
 
+#ifndef ADUC_BUILD_SNAP
         ADUC_ConnectionInfo connInfo = {
             ADUC_AuthType_NotSet, connType, launchArgs->connectionString, NULL, NULL, NULL
         };
@@ -723,6 +730,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
             Log_Error("Setting DiagnosticsDeviceName failed");
             goto done;
         }
+#endif
 
         if (!IoTHub_CommunicationManager_Init(
                 &g_iotHubClientHandle,
@@ -741,11 +749,13 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
             goto done;
         }
 
+#ifndef ADUC_BUILD_SNAP
         if (!ADUC_SetDiagnosticsDeviceNameFromConnectionString(info.connectionString))
         {
             Log_Error("Setting DiagnosticsDeviceName failed");
             goto done;
         }
+#endif
 
         if (!IoTHub_CommunicationManager_Init(
                 &g_iotHubClientHandle,
@@ -777,6 +787,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         result = ExtensionManager_InitializeContentDownloader(NULL /*initializeData*/);
     }
 
+#ifndef ADUC_BUILD_SNAP
 #ifdef ADUC_COMMAND_HELPER_H
     if (InitializeCommandListenerThread())
     {
@@ -790,6 +801,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         // the agent stay alive and connected to the IoT hub.
     }
 #endif // #ifdef ADUC_COMMAND_HELPER_H
+#endif // #ifndef ADUC_BUILD_SNAP
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
@@ -814,12 +826,14 @@ void ShutdownAgent()
 {
     Log_Warn("Agent is shutting down.");
     ADUC_D2C_Messaging_Uninit();
-#ifdef ADUC_COMMAND_HELPER_H
+#ifndef ADUC_BUILD_SNAP
+    #ifdef ADUC_COMMAND_HELPER_H
     UninitializeCommandListenerThread();
+    #endif
+    DiagnosticsComponent_DestroyDeviceName();
 #endif
     ADUC_PnP_Components_Destroy();
     IoTHub_CommunicationManager_Deinit();
-    DiagnosticsComponent_DestroyDeviceName();
     ADUC_Logging_Uninit();
     ExtensionManager_Uninit();
 }
@@ -1013,6 +1027,7 @@ int main(int argc, char** argv)
     }
 #endif // #ifdef ADUC_COMMAND_HELPER_H
 
+#ifndef ADUC_BUILD_SNAP
     // Switch to specified agent.runas user.
     // Note: it's important that we do this only when we're not performing any
     // high-privileged tasks, such as, registering agent's extension(s).
@@ -1020,6 +1035,7 @@ int main(int argc, char** argv)
     {
         goto done;
     }
+#endif
 
     Log_Info("Agent (%s; %s) starting.", ADUC_PLATFORM_LAYER, ADUC_VERSION);
 #ifdef ADUC_GIT_INFO
@@ -1030,7 +1046,8 @@ int main(int argc, char** argv)
         SUPPORTED_UPDATE_MANIFEST_VERSION_MIN,
         SUPPORTED_UPDATE_MANIFEST_VERSION_MAX);
 
-    bool healthy = HealthCheck(&launchArgs);
+#ifndef ADUC_BUILD_SNAP
+    _Bool healthy = HealthCheck(&launchArgs);
     if (launchArgs.healthCheckOnly || !healthy)
     {
         if (healthy)
@@ -1045,6 +1062,7 @@ int main(int argc, char** argv)
 
         goto done;
     }
+#endif
 
     // Ensure that the ADU data folder exists.
     // Normally, ADUC_DATA_FOLDER is created by install script.

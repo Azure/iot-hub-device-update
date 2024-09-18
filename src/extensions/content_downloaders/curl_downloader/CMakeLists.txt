@@ -12,6 +12,10 @@ target_sources (
 
 target_include_directories (${target_name} PUBLIC ${ADU_EXTENSION_INCLUDES} ${ADU_EXPORT_INCLUDES})
 
+target_compile_definitions (
+    ${target_name}
+    PRIVATE ADUC_BUILD_SNAP="${ADUC_BUILD_SNAP}")
+
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::contract_utils

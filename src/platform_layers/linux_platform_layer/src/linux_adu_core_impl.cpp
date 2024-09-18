@@ -377,11 +377,22 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* work
     gid_t aduGroupId = grp->gr_gid;
     grp = nullptr;
 
+#ifndef ADUC_BUILD_SNAP
     // Create the sandbox folder with adu:adu ownership.
     // Permissions are set to u=rwx,g=rwx. We grant read/write/execute to group owner so that partner
     // processes like the DO daemon can download files to our sandbox.
     dir_result =
         ADUC_SystemUtils_MkDirRecursive(workFolder, aduUserId, aduGroupId, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP);
+#else
+    // As SNAP operates within a tightly restricted environment,
+    // it is unnecessary to alter the ownership of the downloaded folder.
+    //
+    // The Sandbox folder, which is shared through the Content Interface,
+    // allows the Delivery Optimization snap to utilize it as a storage location for downloaded files.
+    dir_result =
+        ADUC_SystemUtils_MkDirRecursive(workFolder, (uid_t)-1, (gid_t)-1, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP);
+#endif
+
     if (dir_result != 0)
     {
         Log_Error("Unable to create folder %s, error %d", workFolder, dir_result);

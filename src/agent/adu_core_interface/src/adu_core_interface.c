@@ -454,6 +454,9 @@ void OrchestratorUpdateCallback(
 
         // Ensure update to latest rootkey pkg, which is required for validating the update metadata.
         workFolder = workflow_get_root_sandbox_dir(workflowData->WorkflowHandle);
+    #ifdef ADUC_BUILD_SNAP
+        workFolder = ADUC_DOWNLOADS_FOLDER;
+    #endif
         if (workFolder == NULL)
         {
             Log_Error("workflow_get_root_sandbox_dir failed");
@@ -510,7 +513,9 @@ done:
     STRING_delete(rootKeyPackageFilePath);
     workflow_free_string(rootKeyPkgUrl);
     workflow_free_string(workflowId);
+#ifndef ADUC_BUILD_SNAP
     workflow_free_string(workFolder);
+#endif
     STRING_delete(jsonToSend);
     free(jsonString);
 
