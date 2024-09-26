@@ -438,7 +438,7 @@ void ADUC_Workflow_HandlePropertyUpdate(
         workflow_add_erc(nextWorkflow, rootkeyErc);
     }
 
-    if (IsAducResultCodeFailure(result.ResultCode))
+    if (IsAducResultCodeFailure(result.ResultCode) || IsAducResultCodeFailure(rootkeyErc))
     {
         Log_Error("Invalid desired update action data. Update data: (%s)", propertyUpdateValue);
 
