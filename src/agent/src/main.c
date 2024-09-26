@@ -831,7 +831,7 @@ void ShutdownAgent()
  */
 void OnShutdownSignal(int sig)
 {
-    Log_Warn("Shutdown signal detected: %d", sig);
+    Log_Warn("Shutdown signal detected: %s", sig);
     ADUC_ShutdownService_RequestShutdown();
 }
 

@@ -320,67 +320,6 @@ void AzureDeviceUpdateCoreInterface_Destroy(void** componentContext)
 }
 
 /**
- * @brief Update twin to report state transition before workflow processing has started.
- *
- * @param propertyValue The json value to use for reporting.
- * @param deploymentState The final deployment state to report.
- * @param workflowData The workflow data to receive the last reported state upon reporting success.
- * @param result The result to be reported.
- * @return true on reporting success.
- */
-static bool ReportPreDeploymentProcessingState(
-    JSON_Value* propertyValue, ADUCITF_State deploymentState, ADUC_WorkflowData* workflowData, ADUC_Result result)
-{
-    JSON_Value* propertyValueCopy = NULL;
-    bool reportingSuccess = false;
-
-    // Temp workflowData and workflow handle for reporting
-    ADUC_WorkflowData tmpWorkflowData;
-    memset(&tmpWorkflowData, 0, sizeof(tmpWorkflowData));
-
-    if (!ADUC_WorkflowData_InitWorkflowHandle(&tmpWorkflowData))
-    {
-        goto done;
-    }
-
-    // Synthesize workflowData current action and set a copy of the
-    // propertyValue to workflow UpdateActionObject, both of which are
-    // needed to generate the reporting json.
-    tmpWorkflowData.CurrentAction = ADUCITF_UpdateAction_ProcessDeployment;
-    propertyValueCopy = json_value_deep_copy(propertyValue);
-    if (propertyValueCopy == NULL)
-    {
-        goto done;
-    }
-
-    if (!workflow_set_update_action_object(tmpWorkflowData.WorkflowHandle, json_object(propertyValueCopy)))
-    {
-        goto done;
-    }
-
-    reportingSuccess = AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
-        (ADUC_WorkflowDataToken)&tmpWorkflowData, deploymentState, &result, NULL /* installedUpdateId */);
-    if (!reportingSuccess)
-    {
-        goto done;
-    }
-
-    // Set the last deployment state on the actual workflow data for correct handling of update action.
-    ADUC_WorkflowData_SetLastReportedState(deploymentState, workflowData);
-
-    reportingSuccess = true;
-done:
-
-    if (tmpWorkflowData.WorkflowHandle != NULL)
-    {
-        // propertyValueCopy will get freed by workflow_free
-        workflow_free(tmpWorkflowData.WorkflowHandle);
-    }
-
-    return reportingSuccess;
-}
-
-/**
  * @brief Callback for the orchestrator that allows the new patches coming down from the cloud to be organized
  * @param clientHandle the client handle being used for the connection
  * @param propertyValue the value of the property being routed
@@ -445,13 +384,6 @@ void OrchestratorUpdateCallback(
     {
         Log_Debug("Processing deployment %s ...", workflowId);
 
-        ADUC_Result inProgressResult = { .ResultCode = ADUC_GeneralResult_Success, .ExtendedResultCode = 0 };
-        if (!ReportPreDeploymentProcessingState(
-                propertyValue, ADUCITF_State_DeploymentInProgress, workflowData, inProgressResult))
-        {
-            Log_Warn("Reporting InProgress failed. Continuing processing deployment %s", workflowId);
-        }
-
         // Ensure update to latest rootkey pkg, which is required for validating the update metadata.
         workFolder = workflow_get_root_sandbox_dir(workflowData->WorkflowHandle);
         if (workFolder == NULL)
@@ -464,12 +396,6 @@ void OrchestratorUpdateCallback(
         if (IsAducResultCodeFailure(tmpResult.ResultCode))
         {
             Log_Error("Update Rootkey failed, 0x%08x. Deployment cannot proceed.", tmpResult.ExtendedResultCode);
-
-            if (!ReportPreDeploymentProcessingState(propertyValue, ADUCITF_State_Failed, workflowData, tmpResult))
-            {
-                Log_Warn("FAIL: report rootkey update 'Failed' State.");
-            }
-
             goto done;
         }
     }
