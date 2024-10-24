@@ -243,6 +243,15 @@ typedef struct tagADUC_WorkflowHandlerMapEntry
  *     AutoTransitionApplicableUpdateAction is equal to the current update action of the workflow data.
  */
 const ADUC_WorkflowHandlerMapEntry workflowHandlerMap[] = {
+    {
+        ADUCITF_WorkflowStep_ProcessDeployment,
+        /* calls operation */                               ADUC_Workflow_MethodCall_ProcessDeployment,
+        /* and on completion calls */                       ADUC_Workflow_MethodCall_ProcessDeployment_Complete,
+        /* on success, transitions to state */              ADUCITF_State_DeploymentInProgress,
+        /* on success auto-transitions to workflow step */  ADUCITF_WorkflowStep_Download,
+        /* on failure, transitions to state */              ADUCITF_State_Failed,
+        /* on failure auto-transitions to workflow step */  ADUCITF_WorkflowStep_Undefined,
+    },
     { ADUCITF_WorkflowStep_Download,
         /* calls operation */                               ADUC_Workflow_MethodCall_Download,
         /* and on completion calls */                       ADUC_Workflow_MethodCall_Download_Complete,
@@ -426,9 +435,12 @@ void ADUC_Workflow_HandlePropertyUpdate(
     ADUC_Result_t rootkeyErc = RootKeyUtility_GetReportingErc();
     if (rootkeyErc != 0)
     {
+        // Save this rootkeyErc for later informational purposes, since getting this far
+        // means processing of rootkey package actually succeeded.
         workflow_add_erc(nextWorkflow, rootkeyErc);
     }
 
+    // N.B. Do NOT do IsAducResultCodeFailure() check on rootkeyErc.
     if (IsAducResultCodeFailure(result.ResultCode))
     {
         Log_Error("Invalid desired update action data. Update data: (%s)", propertyUpdateValue);
@@ -1326,6 +1338,36 @@ void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
     workflow_free(workflowData->WorkflowHandle);
     workflowData->WorkflowHandle = NULL;
 }
+
+/**
+ * @brief Called to do ProcessDeployment.
+ *
+ * @param[in,out] methodCallData The metedata for the method call.
+ * @return Result code.
+ */
+ADUC_Result ADUC_Workflow_MethodCall_ProcessDeployment(ADUC_MethodCall_Data* methodCallData)
+{
+    ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
+
+    ADUC_Result result = { .ResultCode = ADUC_Result_Success , .ExtendedResultCode = 0 };
+    Log_Info("Workflow step: ProcessDeployment");
+
+    //
+    // Shouldn't have to handle anything else here. WorkflowData already made?
+    //
+
+
+    ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_DeploymentInProgress);
+
+    return result;
+}
+
+void ADUC_Workflow_MethodCall_ProcessDeployment_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
+{
+    UNREFERENCED_PARAMETER(methodCallData);
+    UNREFERENCED_PARAMETER(result);
+}
+
 
 /**
  * @brief Called to do download.
