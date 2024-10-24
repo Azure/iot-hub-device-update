@@ -435,10 +435,13 @@ void ADUC_Workflow_HandlePropertyUpdate(
     ADUC_Result_t rootkeyErc = RootKeyUtility_GetReportingErc();
     if (rootkeyErc != 0)
     {
+        // Save this rootkeyErc for later informational purposes, since getting this far
+        // means processing of rootkey package actually succeeded.
         workflow_add_erc(nextWorkflow, rootkeyErc);
     }
 
-    if (IsAducResultCodeFailure(result.ResultCode) || IsAducResultCodeFailure(rootkeyErc))
+    // N.B. Do NOT do IsAducResultCodeFailure() check on rootkeyErc.
+    if (IsAducResultCodeFailure(result.ResultCode))
     {
         Log_Error("Invalid desired update action data. Update data: (%s)", propertyUpdateValue);
 
