@@ -20,6 +20,8 @@ variables:
     # gcc-8 matches what is built with poky warrior.
     CC: gcc-8
     CXX: g++-8
+    # Temporality run CodeQL
+    Codeql.Cadence: 1
 
 name: $(version.major).$(version.minor).$(version.patch)-$(version.pre-release)+$(version.build)
 
