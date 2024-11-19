@@ -40,6 +40,14 @@ trigger:
             - docker/*
             - scripts/*
 
+schedules:
+  - cron: "0 0 */14 * *"  # This cron expression schedules the pipeline to run every 14 days
+    displayName: "Every 2 weeks"
+    branches:
+      include:
+        - develop
+    always: true
+    
 pr:
     branches:
         include:
