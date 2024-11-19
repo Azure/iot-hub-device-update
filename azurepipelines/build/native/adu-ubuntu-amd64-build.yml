@@ -1,7 +1,6 @@
 parameters:
   - name: codeqlCadence
-    type: int
-    default: 1
+    default: 72
     displayName: "CodeQL Cadence"
     
 variables:
