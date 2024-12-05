@@ -398,7 +398,7 @@ To configure the DU Agent, you can use `deviceupdate-agent.set-config` command.
 
   > NOTE | Only two config file names are allowed: `du-config.json` and `du-diagnostics-config.json`.
 
-  > IMPORTANT | In order to communicate with deliveryoptimization-agent snap, the downloadsFolder must be pointed to '/var/lib/deviceupdate-agent-downloads'. This can be accomplished by setting "downloadsFolder" value in du-config.json to "/var/lib/deviceupdate-agent-downloads". See example below...
+  > IMPORTANT | In order to communicate with deliveryoptimization-agent snap, the downloadsFolder must point to '/var/lib/deviceupdate-agent-downloads'. This can be accomplished by setting "downloadsFolder" value in du-config.json to "/var/lib/deviceupdate-agent-downloads". See example below...
   ```json
 {
     "schemaVersion": "1.1",
