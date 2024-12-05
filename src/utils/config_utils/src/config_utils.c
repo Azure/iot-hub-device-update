@@ -445,24 +445,33 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
         config->dataFolder = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_ADU_DATA_FOLDER);
     }
 
-    if (!EnsureDataSubFolderSpecifiedOrSetDefaultValue(
-            config->rootJsonValue,
-            CONFIG_ADU_DOWNLOADS_FOLDER,
-            &config->downloadsFolder,
-            config->dataFolder,
-            DOWNLOADS_PATH_SEGMENT))
+    config->downloadsFolder = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_ADU_DOWNLOADS_FOLDER);
+
+    if (config->downloadsFolder == NULL)
     {
-        goto done;
+        if (!EnsureDataSubFolderSpecifiedOrSetDefaultValue(
+                config->rootJsonValue,
+                CONFIG_ADU_DOWNLOADS_FOLDER,
+                &config->downloadsFolder,
+                config->dataFolder,
+                DOWNLOADS_PATH_SEGMENT))
+        {
+            goto done;
+        }
     }
 
-    if (!EnsureDataSubFolderSpecifiedOrSetDefaultValue(
+    config->extensionsFolder = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_ADU_EXTENSIONS_FOLDER);
+    if (config->extensionsFolder == NULL)
+    {
+        if (!EnsureDataSubFolderSpecifiedOrSetDefaultValue(
             config->rootJsonValue,
             CONFIG_ADU_EXTENSIONS_FOLDER,
             &config->extensionsFolder,
             config->dataFolder,
             EXTENSIONS_PATH_SEGMENT))
-    {
-        goto done;
+        {
+            goto done;
+        }
     }
 
     // Since we're only allow overriding of 'extensions' folder, let's populate all extensions sub-folders.
