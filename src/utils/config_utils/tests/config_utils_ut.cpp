@@ -350,7 +350,7 @@ static const char* validConfigWithUbuntuCoreDownloadsFolder =
         R"("downloadTimeoutInMinutes": 1440,)"
         R"("aduShellFolder": "/usr/mybin",)"
         R"("dataFolder": "/var/lib/adu/mydata",)"
-        R"("downloadFolder": "/var/lib/deviceupdate-agent-downloads",)"
+        R"("downloadsFolder": "/var/lib/deviceupdate-agent-downloads",)"
         R"("extensionsFolder": "/var/lib/adu/myextensions",)"
         R"("compatPropertyNames": "manufacturer,model",)"
         R"("agents": [)"
@@ -678,9 +678,10 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK(config->refCount == 0);
     }
 
+
     // NOTE: Ensure that the downloadsFolder is set correctly, if specified in du-configjson.
     // (Instead of a 'downloads' sub-folder of the dataFolder )
-    SECTION("Specify Ubunto Core agent downloads folder in du-config file")
+    SECTION("Ubunto Core DO downlad.")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigWithUbuntuCoreDownloadsFolder) == 0);
         ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
@@ -704,3 +705,4 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK(config->refCount == 0);
     }
 }
+
