@@ -16,7 +16,7 @@ Visit [Ubuntu Core Official Page](https://ubuntu.com/core) for more information.
 
 ## Inside Ubuntu Core
 
-The Ubuntu Core architecture overview diagram below depicts the delivery of the kernel, boot assets, runtime environment, applications, and device enablement capabilities as snaps. These snaps are managed by the snap daemon (snapd) and the daemon itself is packaged as a snap.  
+The Ubuntu Core architecture overview diagram below depicts the delivery of the kernel, boot assets, runtime environment, applications, and device enablement capabilities as snaps. These snaps are managed by the snap daemon (snapd) and the daemon itself is packaged as a snap.
 Visit [Ubuntu Core](https://ubuntu.com/core/docs/uc20/inside) page for more details.
 
 ![Inside Ubuntu Core - Diagram](./assets/du-agent-snap-inside-ubuntu-core.svg)
@@ -24,7 +24,7 @@ Visit [Ubuntu Core](https://ubuntu.com/core/docs/uc20/inside) page for more deta
 > Credit: the diagram above is adapted from [Inside Ubuntu Core](https://ubuntu.com/core/docs/uc20/inside) diagram.
 ## Device Update Agent Snap for Ubuntu Core
 
-The Device Update Agent, also known as the DU Agent, is a crucial `application` snap  specifically designed for Ubuntu Core. Its primary purpose is to manage updates and ensure the security and reliability of devices that run on this operating system. 
+The Device Update Agent, also known as the DU Agent, is a crucial `application` snap  specifically designed for Ubuntu Core. Its primary purpose is to manage updates and ensure the security and reliability of devices that run on this operating system.
 
 ### Device Update Agent and Dependencies
 
@@ -48,14 +48,14 @@ In a nutshell, `snaps` are isolated from other snaps and the rest of the system 
 
 Overall, the snap user and group security model in Ubuntu Core provides a high degree of isolation and security for individual applications, while still allowing them to access the resources they need to function properly.
 
-For more information, see [Security Policy and Sandboxing of Snapcraft](https://snapcraft.io/docs/security-policy-and-sandboxing), a snap is run inside a isolated sandbox, so the user accessing Device Update Agent will always be `root`. 
+For more information, see [Security Policy and Sandboxing of Snapcraft](https://snapcraft.io/docs/security-policy-and-sandboxing), a snap is run inside a isolated sandbox, so the user accessing Device Update Agent will always be `root`.
 
 #### DU Agent Snap User and Group
 Key differences between Device Update Agent and Device Update Agent Snap:
 
 | | Device Upate Agent | Device Update Agent Snap |
 |---|---|---|
-| user id| adu | snap_aziotdu | 
+| user id| adu | snap_aziotdu |
 | group id| adu | snap_aziotdu |
 
 ### How DU Agent Acquire the IoT Hub Connection Information
@@ -80,7 +80,7 @@ This specifies the principal information for the DU Agent Module, including its 
 When connecting snaps with interfaces, the snaps are typically connected with the default user or "system" user. However, it is possible to connect snaps with a specific user ID by using the `--classic` and `--username` options with the snap connect command.
 
 For example, to connect to Azure Identity Service with a specific user ID called "snap_aziotdu", you would use the following command:
-`snap connect --classic --username=snap_aziotdu deviceupdate-agent:AIS-interface azureIdentityService-snap:AIS-interface`  
+`snap connect --classic --username=snap_aziotdu deviceupdate-agent:AIS-interface azureIdentityService-snap:AIS-interface`
 This will connect the two snaps using the "snap_aziotdu" user ID, allowing the snaps to communicate with each other as that user.
 
 It is important to note that using the `--classic` and `--username` options with the snap connect command can have security implications, as it allows the connected snaps to access each other's data and resources as the specified user. Therefore, it should only be used if necessary and with caution.
@@ -190,19 +190,19 @@ layout:
 
 ```
 
-> Note that above DU's `_plug_name_:deviceupdate-agent-downloads` identifier must match DO's `_slot_name_:deviceupdate-agent-downloads` identifier 
+> Note that above DU's `_plug_name_:deviceupdate-agent-downloads` identifier must match DO's `_slot_name_:deviceupdate-agent-downloads` identifier
 
 To connect, use following commands:
 
 ```shell
 # Required connections for content downloading using Delivery Optimization snap.
-sudo snap connect deviceupdate-agent:do-port-numbers deliveryoptimization-client:do-port-numbers
+sudo snap connect deviceupdate-agent:do-port-numbers deliveryoptimization-agent:do-port-numbers
 
-sudo snap connect deviceupdate-agent:do-configs deliveryoptimization-client:do-configs
+sudo snap connect deviceupdate-agent:do-configs deliveryoptimization-agent:do-configs
 
-sudo snap connect deliveryoptimization-client:deviceupdate-agent-downloads deviceupdate-agent:deviceupdate-agent-downloads
+sudo snap connect deliveryoptimization-agent:deviceupdate-agent-downloads deviceupdate-agent:deviceupdate-agent-downloads
 
-# Required interface for Snapd RestFul requests. 
+# Required interface for Snapd RestFul requests.
 sudo snap connect deviceupdate-agent:snapd-control
 
 ```
@@ -210,13 +210,13 @@ sudo snap connect deviceupdate-agent:snapd-control
 ### Azure Identity Service Integration
 To connect to Azure Identity Service, install AIS with this command `sudo snap install --edge azure-iot-identity`, wiring it up with the following command,
 ```shell
-sudo snap connect azure-iot-identity:log-observe 
+sudo snap connect azure-iot-identity:log-observe
 
-sudo snap connect azure-iot-identity:system-observe 
+sudo snap connect azure-iot-identity:system-observe
 
-sudo snap connect azure-iot-identity:tpm 
+sudo snap connect azure-iot-identity:tpm
 ```
-Here is the process of configuring AIS using a `config.toml` file and creating a `testing.toml` file for cloud identity creation. 
+Here is the process of configuring AIS using a `config.toml` file and creating a `testing.toml` file for cloud identity creation.
 
 Use the following commands:
 
@@ -224,16 +224,16 @@ Use the following commands:
 sudo snap set azure-iot-identity raw-config="$(cat /path/to/config.toml)"
 ```
 ```shell
-$ sudo cat testing.toml 
-[[principal]] 
-uid = <REPLACE WITH uid> 
-name = "testing" 
-idtype = ["module"] 
+$ sudo cat testing.toml
+[[principal]]
+uid = <REPLACE WITH uid>
+name = "testing"
+idtype = ["module"]
 
-sudo chown root:root testing.toml 
-sudo chmod 0600 testing.toml 
+sudo chown root:root testing.toml
+sudo chmod 0600 testing.toml
 
-sudo mv testing.toml /var/snap/azure-iot-identity/current/shared/config/aziot/identityd/config.d/testing.toml 
+sudo mv testing.toml /var/snap/azure-iot-identity/current/shared/config/aziot/identityd/config.d/testing.toml
 ```
 then use the following command to connect Device Update and AIS:
 
@@ -244,7 +244,7 @@ sudo snap connect deviceupdate-agent:identity-service azure-iot-identity:identit
 Verify that connections are ok:
 
 ```shell
-$ snap connections deviceupdate-agent 
+$ snap connections deviceupdate-agent
 
 Interface                              Plug                                                      Slot                                         Notes
 content[deviceupdate-agent-downloads]  deliveryoptimization-client:deviceupdate-agent-downloads  deviceupdate-agent:deviceupdate-agent-downloads          manual
@@ -392,11 +392,31 @@ $ sudo systemctl restart  snap.deviceupdate-agent.deviceupdate-agent
 
 To configure the DU Agent, you can use `deviceupdate-agent.set-config` command.
 
-  This command decodes and saves base64 encoded configuration data to a file with the given name in the `\$SNAP_DATA/config` directory.  
+  This command decodes and saves base64 encoded configuration data to a file with the given name in the `\$SNAP_DATA/config` directory.
 
-  The script takes two required options - the name of the config file and the base64 encoded data - and saves the data to the specified file.  
+  The script takes two required options - the name of the config file and the base64 encoded data - and saves the data to the specified file.
 
   > NOTE | Only two config file names are allowed: `du-config.json` and `du-diagnostics-config.json`.
+
+  > IMPORTANT | In order to communicate with deliveryoptimization-agent snap, the downloadsFolder must be pointed to '/var/lib/deviceupdate-agent-downloads'. This can be accomplished by setting "downloadsFolder" value in du-config.json to "/var/lib/deviceupdate-agent-downloads". See example below...
+  ```json
+{
+    "schemaVersion": "1.1",
+    "aduShellTrustedUsers": [
+      "snap_aziotdu",
+      "snap_aziotdo"
+    ],
+    "iotHubProtocol": "mqtt",
+    "manufacturer": "Contoso",
+    "model": "Virtual-Vacuum",
+    "downloadsFolder": "/var/lib/deviceupdate-agent-downloads",
+    "agents": [
+      {
+        ...
+      }
+  ]
+
+  ```
 
 | Options | Arguments | Description |
 |---|---|---|
@@ -426,8 +446,8 @@ Key differences between Device Update Agent and Device Update Agent Snap:
 
 | | Device Upate Agent | Device Update Agent Snap |
 |---|---|---|
-| user id| adu | snap_aziotdu | 
+| user id| adu | snap_aziotdu |
 | group id| adu | snap_aziotdu |
 | downloads folder | /var/lib/adu/downloads | $SNAP_DATA/data/downloads |
 | configs file | /etc/adu/du-config.json | $SNAP_DATA/configs/du-config.json|
-| logs folder | /var/log/adu | $SNAP_DATA/log 
+| logs folder | /var/log/adu | $SNAP_DATA/log
