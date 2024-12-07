@@ -45,6 +45,7 @@ ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
         || IsNullOrEmpty(downloaderInfo->name) || IsNullOrEmpty(downloaderInfo->downloadBaseDir)
         || downloaderInfo->downloadFn == NULL || outRootKeyPackageDownloadedFile == NULL)
     {
+        Log_Error("bad arg");
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_DOWNLOAD_BADARG;
         goto done;
     }
@@ -57,6 +58,7 @@ ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
 
     if (ADUC_SystemUtils_MkDirRecursiveDefault(STRING_c_str(targetDir)) != 0)
     {
+        Log_Error("Failed creation of dir '%s'", targetDir);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_DOWNLOAD_MKDIR_DWNLD_FOLDER;
         goto done;
     }
@@ -70,6 +72,8 @@ ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
         targetUrl = STRING_construct(ADUC_ROOTKEY_PKG_URL_OVERRIDE);
     }
 
+    Log_Debug("targetUrl: '%s'", targetUrl);
+
     if (targetUrl == NULL)
     {
         result.ExtendedResultCode = ADUC_ERC_NOMEM;
@@ -79,6 +83,7 @@ ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
     result = ADUC_UrlUtils_GetPathFileName(STRING_c_str(targetUrl), &targetFileName);
     if (IsAducResultCodeFailure(result.ResultCode) || IsNullOrEmpty(STRING_c_str(targetFileName)))
     {
+        Log_Error("failed get path, or empty targetFileName['%s'], result: 0x%08x", targetFileName, result.ExtendedResultCode);
         result.ResultCode = ADUC_GeneralResult_Failure;
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_DOWNLOAD_URL_BAD_PATH;
         goto done;

@@ -973,6 +973,11 @@ ADUC_Result RootKeyPackage_ParseSignatures(JSON_Object* rootObj, ADUC_RootKeyPac
     result.ResultCode = ADUC_GeneralResult_Success;
 done:
 
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error("ERC %d parsing signatures", result.ExtendedResultCode);
+    }
+
     if (signatures != NULL)
     {
         size_t sig_cnt = VECTOR_size(signatures);

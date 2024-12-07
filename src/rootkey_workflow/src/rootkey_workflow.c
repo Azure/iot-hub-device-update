@@ -51,6 +51,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
 
     if (workflowId == NULL)
     {
+        Log_Error("NULL workflowId");
         result.ExtendedResultCode = ADUC_ERC_INVALIDARG;
         goto done;
     }
@@ -62,6 +63,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
 
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
+        Log_Error("Failed download of rootkey package, ERC: 0x%08x", tmpResult.ExtendedResultCode);
         result = tmpResult;
         goto done;
     }
@@ -70,6 +72,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
 
     if (rootKeyPackageJsonValue == NULL)
     {
+        Log_Error("Failed to parse JSON at '%s'", downloadedFilePath);
         result.ExtendedResultCode = ADUC_ERC_ROOTKEY_PKG_FAIL_JSON_PARSE;
         goto done;
     }
@@ -78,6 +81,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
 
     if (rootKeyPackageJsonString == NULL)
     {
+        Log_Error("Failed serialization of '%s'", rootKeyPackageJsonValue);
         result.ExtendedResultCode = ADUC_ERC_ROOTKEY_PKG_FAIL_JSON_SERIALIZE;
         goto done;
     }
@@ -86,6 +90,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
 
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
+        Log_Error("Failed rootkeypkg parse of '%s'", rootKeyPackageJsonString);
         result = tmpResult;
         goto done;
     }
@@ -94,6 +99,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
 
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
+        Log_Error("Failed validation of root key pkg with hardcoded keys");
         result = tmpResult;
         goto done;
     }
@@ -119,6 +125,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
     {
         if (ADUC_SystemUtils_MkDirRecursiveDefault(ADUC_ROOTKEY_STORE_PATH) != 0)
         {
+            Log_Error("Failed creation of rootkey store path: '%s', ADUC_ROOTKEY_STORE_PATH");
             result.ExtendedResultCode = ADUC_ERC_ROOTKEY_STORE_PATH_CREATE;
             goto done;
         }
@@ -135,6 +142,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
     if (!ADUC_RootKeyUtility_IsUpdateStoreNeeded(fileDest, &rootKeyPackage))
     {
         // This is a success, but skips writing to local store and includes informational ERC.
+        Log_Debug("RootKey pkg unchanged, continuing...");
         result.ResultCode = ADUC_Result_RootKey_Continue;
         result.ExtendedResultCode = ADUC_ERC_ROOTKEY_PKG_UNCHANGED;
         goto done;
@@ -144,6 +152,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
 
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
+        Log_Error("Failed persist of rootkey pkg to '%s'", STRING_c_str(fileDest));
         result = tmpResult;
         goto done;
     }
@@ -152,6 +161,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
 
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
+        Log_Error("Failed reload of pkg from '%s'", STRING_c_str(fileDest));
         result = tmpResult;
         goto done;
     }

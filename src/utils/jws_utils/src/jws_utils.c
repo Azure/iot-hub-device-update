@@ -7,12 +7,14 @@
  */
 
 #include "jws_utils.h"
-#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
-#include "base64_utils.h"
-#include "crypto_lib.h"
-#include "root_key_util.h"
+
+#include <aduc/logging.h>
 #include <aduc/result.h>
-#include <aduc/string_c_utils.h>
+#include <aduc/string_c_utils.h> // ADUC_Safe_StrCopyN
+#include <base64_utils.h>
+#include <crypto_lib.h>
+#include <root_key_util.h>
+
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/constbuffer.h>
 #include <azure_c_shared_utility/crt_abstractions.h>
@@ -20,7 +22,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "aduc/string_c_utils.h" // ADUC_Safe_StrCopyN
 
 // keep this last to avoid interfering with system headers
 #include "aduc/aduc_banned.h"
@@ -32,7 +33,7 @@
 // Find the position of the period and return the next character
 
 /**
- * @brief Returns the string value of the fieldName iwthin the jsonString
+ * @brief Returns the string value of the fieldName within the jsonString
  * @details Caller is expected to free the returned string using free()
  * @param jsonString a string containing a JSON object
  * @param fieldName the name of the field within jsonString to get the value from
@@ -46,6 +47,7 @@ static char* GetStringValueFromJSON(const char* jsonString, const char* fieldNam
 
     if (json_value_get_type(root_value) != JSONObject)
     {
+        Log_Error("root value not JSON obj");
         goto done;
     }
 
@@ -54,11 +56,13 @@ static char* GetStringValueFromJSON(const char* jsonString, const char* fieldNam
 
     if (fieldValue == NULL)
     {
+        Log_Error("missing fieldValue '%s'", fieldName);
         goto done;
     }
 
     if (mallocAndStrcpy_s(&returnStr, fieldValue) != 0)
     {
+        Log_Error("malloc strcpy failed", fieldName);
         returnStr = NULL;
         goto done;
     }
@@ -119,6 +123,7 @@ static bool ExtractJWSSections(const char* jws, char** header, char** payload, c
     const size_t jwsLen = strlen(jws);
     if (jwsLen == 0)
     {
+        Log_Error("JWS zero len");
         goto done;
     }
 
@@ -127,6 +132,7 @@ static bool ExtractJWSSections(const char* jws, char** header, char** payload, c
 
     if (headerLen == 0 || headerLen + 1 >= jwsLen)
     {
+        Log_Error("Invalid header len");
         goto done;
     }
 
@@ -135,6 +141,7 @@ static bool ExtractJWSSections(const char* jws, char** header, char** payload, c
 
     if (payloadLen == 0 || (headerLen + payloadLen + 2 >= jwsLen))
     {
+        Log_Error("Invalid payload len");
         goto done;
     }
 
@@ -148,6 +155,7 @@ static bool ExtractJWSSections(const char* jws, char** header, char** payload, c
 
     if (*header == NULL || *payload == NULL || *signature == NULL)
     {
+        Log_Error("NULL hdr, payload, or sig");
         goto done;
     }
 
@@ -204,6 +212,7 @@ static bool ExtractJWSHeader(const char* jws, char** header)
     const size_t jwsLen = strlen(jws);
     if (jwsLen == 0)
     {
+        Log_Error("zero len jws");
         goto done;
     }
 
@@ -213,6 +222,7 @@ static bool ExtractJWSHeader(const char* jws, char** header)
 
     if (headerLen == 0 || headerLen + 1 >= jwsLen)
     {
+        Log_Error("invalid hdr len");
         goto done;
     }
 
@@ -323,6 +333,7 @@ JWSResult VerifySJWK(const char* sjwk)
 
     if (!ExtractJWSSections(sjwk, &header, &payload, &signature))
     {
+        Log_Error("bad jws section structure");
         retval = JWSResult_BadStructure;
         goto done;
     }
@@ -331,6 +342,7 @@ JWSResult VerifySJWK(const char* sjwk)
 
     if (jsonHeader == NULL)
     {
+        Log_Error("base64url decode failed");
         retval = JWSResult_Failed;
         goto done;
     }
@@ -339,6 +351,7 @@ JWSResult VerifySJWK(const char* sjwk)
 
     if (kid == NULL)
     {
+        Log_Error("NULL 'kid'");
         retval = JWSResult_Failed;
         goto done;
     }
@@ -349,14 +362,17 @@ JWSResult VerifySJWK(const char* sjwk)
     {
         if (result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_ROOTKEY_IS_DISABLED)
         {
+            Log_Error("disallowed root kid: '%s'", kid);
             retval = JWSResult_DisallowedRootKid;
         }
         else if (result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID)
         {
+            Log_Error("missing root kid: '%s'", kid);
             retval = JWSResult_MissingRootKid;
         }
         else
         {
+            Log_Error("invalid or unknown error for root kid: '%s'", kid);
             retval = JWSResult_InvalidRootKid;
         }
         goto done;
@@ -366,6 +382,7 @@ JWSResult VerifySJWK(const char* sjwk)
     jwsResultVerifyJwtSignature = VerifyJWSWithKey(sjwk, rootKey);
     if (jwsResultVerifyJwtSignature != JWSResult_Success)
     {
+        Log_Error("sjwk failed verification for rootKey");
         retval = jwsResultVerifyJwtSignature;
         goto done;
     }
@@ -374,6 +391,7 @@ JWSResult VerifySJWK(const char* sjwk)
     resultGetDisabledSigningKeys = RootKeyUtility_GetDisabledSigningKeys(&signingKeyDisallowed);
     if (IsAducResultCodeFailure(resultGetDisabledSigningKeys.ResultCode))
     {
+        Log_Error("sjwk failed to get disabled signing keys");
         retval = JWSResult_FailedGetDisabledSigningKeys;
         goto done;
     }
@@ -382,6 +400,7 @@ JWSResult VerifySJWK(const char* sjwk)
 
     if (jsonPayload == NULL)
     {
+        Log_Error("failed base64url decode");
         retval = JWSResult_Failed;
         goto done;
     }
@@ -389,6 +408,7 @@ JWSResult VerifySJWK(const char* sjwk)
     jwsResultIsSigningKeyDisallowed = IsSigningKeyDisallowed(jsonPayload, signingKeyDisallowed);
     if (jwsResultIsSigningKeyDisallowed != JWSResult_Success)
     {
+        Log_Error("failed disallowed");
         retval = jwsResultIsSigningKeyDisallowed;
         goto done;
     }
@@ -456,6 +476,7 @@ JWSResult VerifyJWSWithSJWK(const char* jws)
 
     if (!ExtractJWSHeader(jws, &header))
     {
+        Log_Error("bad token structure for hdr");
         result = JWSResult_BadStructure;
         goto done;
     }
@@ -464,6 +485,7 @@ JWSResult VerifyJWSWithSJWK(const char* jws)
 
     if (jsonHeader == NULL)
     {
+        Log_Error("bad base64url hdr encoding");
         result = JWSResult_InvalidEncodingJWSHeader;
         goto done;
     }
@@ -472,6 +494,7 @@ JWSResult VerifyJWSWithSJWK(const char* jws)
 
     if (sjwk == NULL || *sjwk == '\0')
     {
+        Log_Error("bad token structure for sjwk");
         result = JWSResult_BadStructure;
         goto done;
     }
@@ -479,12 +502,14 @@ JWSResult VerifyJWSWithSJWK(const char* jws)
     result = VerifySJWK(sjwk);
     if (result != JWSResult_Success)
     {
+        Log_Error("Failed SJWK verification");
         goto done;
     }
 
     key = GetKeyFromBase64EncodedJWK(sjwk);
     if (key == NULL)
     {
+        Log_Error("bad structure for key from base64encoded JWK");
         result = JWSResult_BadStructure;
         goto done;
     }
@@ -493,6 +518,7 @@ JWSResult VerifyJWSWithSJWK(const char* jws)
 
     if (result != JWSResult_Success)
     {
+        Log_Error("Failed verification for JWS with key");
         goto done;
     }
 
@@ -537,6 +563,7 @@ JWSResult IsSigningKeyDisallowed(const char* sjwkJsonStr, VECTOR_HANDLE disabled
     if (IsNullOrEmpty(N) || IsNullOrEmpty(e)
         || strcmp(e, "AQAB") != 0) // AQAB is 65337 or 0x010001, the ubiquitous RSA exponent.
     {
+        Log_Error("Unsupported exponent: '%s'. Expected 'AQAB'", e);
         result = JWSResult_InvalidSJWKPayload;
         goto done;
     }
@@ -544,6 +571,7 @@ JWSResult IsSigningKeyDisallowed(const char* sjwkJsonStr, VECTOR_HANDLE disabled
     pubkey = CryptoUtils_GenerateRsaPublicKey(N, e);
     if (pubkey == NULL)
     {
+        Log_Error("Failed to generate RSA Public Key from modulus '%s' and exponent '%s'", N, e);
         result = JWSResult_FailGenPubKey;
         goto done;
     }
@@ -551,6 +579,7 @@ JWSResult IsSigningKeyDisallowed(const char* sjwkJsonStr, VECTOR_HANDLE disabled
     sha256HashPubKey = CryptoUtils_CreateSha256Hash(pubkey);
     if (pubkey == NULL)
     {
+        Log_Error("Failed sha256 hash of public key");
         result = JWSResult_HashPubKeyFailed;
         goto done;
     }
@@ -570,6 +599,7 @@ JWSResult IsSigningKeyDisallowed(const char* sjwkJsonStr, VECTOR_HANDLE disabled
         if ((DisallowedEntry->alg == SHA256)
             && CONSTBUFFER_HANDLE_contain_same(sha256HashPubKey, DisallowedEntry->hash))
         {
+            Log_Error("Found hash of public key on Disallow list");
             result = JWSResult_DisallowedSigningKey;
             goto done;
         }
@@ -615,6 +645,7 @@ JWSResult VerifyJWSWithKey(const char* blob, CryptoKeyHandle key)
 
     if (!ExtractJWSSections(blob, &header, &payload, &signature))
     {
+        Log_Error("bad structure extracting JWS sections");
         result = JWSResult_BadStructure;
         goto done;
     }
@@ -623,6 +654,7 @@ JWSResult VerifyJWSWithKey(const char* blob, CryptoKeyHandle key)
 
     if (headerJson == NULL)
     {
+        Log_Error("failed base64 url decode for hdr");
         result = JWSResult_Failed;
         goto done;
     }
@@ -631,6 +663,7 @@ JWSResult VerifyJWSWithKey(const char* blob, CryptoKeyHandle key)
 
     if (alg == NULL)
     {
+        Log_Error("failed to get 'alg' value from hdr");
         result = JWSResult_BadStructure;
         goto done;
     }
@@ -658,6 +691,7 @@ JWSResult VerifyJWSWithKey(const char* blob, CryptoKeyHandle key)
     if (!CryptoUtils_IsValidSignature(
             alg, decodedSignature, decodedSignatureLen, (uint8_t*)headerPlusPayload, strlen(headerPlusPayload), key))
     {
+        Log_Error("Signature is invalid");
         result = JWSResult_InvalidSignature;
     }
     else
@@ -723,6 +757,7 @@ bool GetPayloadFromJWT(const char* blob, char** destBuff)
 
     if (!ExtractJWSSections(blob, &header, &payload, &signature))
     {
+        Log_Error("Failed extracting JWS Sections");
         goto done;
     }
 
@@ -730,6 +765,7 @@ bool GetPayloadFromJWT(const char* blob, char** destBuff)
 
     if (tempStr == NULL)
     {
+        Log_Error("Failed to base64url decode payload");
         goto done;
     }
 
@@ -765,6 +801,7 @@ void* GetKeyFromBase64EncodedJWK(const char* blob)
 
     if (!ExtractJWSSections(blob, &header, &payload, &signature))
     {
+        Log_Error("Failed extracting JWS Sections");
         goto done;
     }
 
@@ -772,6 +809,7 @@ void* GetKeyFromBase64EncodedJWK(const char* blob)
 
     if (payloadJson == NULL)
     {
+        Log_Error("Failed base64url decode of payload");
         goto done;
     }
 
@@ -780,6 +818,7 @@ void* GetKeyFromBase64EncodedJWK(const char* blob)
 
     if (strN == NULL || stre == NULL)
     {
+        Log_Error("NULL modulus/exponent");
         goto done;
     }
 

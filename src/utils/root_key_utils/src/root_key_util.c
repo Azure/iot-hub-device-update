@@ -62,10 +62,9 @@ CryptoKeyHandle MakeCryptoKeyHandleFromADUC_RootKey(const ADUC_RootKey* rootKey)
         key = RSAKey_ObjFromModulusBytesExponentInt(modulus->buffer, modulus->size, rootKey->rsaParameters.e);
         break;
 
-    case ADUC_RootKey_KeyType_INVALID:
-        break;
-
+    case ADUC_RootKey_KeyType_INVALID: // fallthrough
     default:
+        Log_Error("Unsupported keyType %d", rootKey->keyType);
         break;
     }
 
@@ -87,6 +86,7 @@ CryptoKeyHandle MakeCryptoKeyHandleFromRSARootkey(const RSARootKey rootKey)
 
     if (modulusSize == 0)
     {
+        Log_Error("zero len modulus");
         goto done;
     }
 
@@ -132,6 +132,7 @@ static bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const 
 
     if (modulusSize == 0)
     {
+        Log_Error("zero len modulus after base64url decode");
         goto done;
     }
 
@@ -168,6 +169,7 @@ bool RootKeyUtility_GetSignatureForKey(
 {
     if (foundIndex == NULL || rootKeyPackage == NULL || seekKid == NULL)
     {
+        Log_Error("invalid arg");
         return false;
     }
 
@@ -184,11 +186,13 @@ bool RootKeyUtility_GetSignatureForKey(
 
         if (strcmp(STRING_c_str(root_key->kid), seekKid) == 0)
         {
+            Log_Info("found signature for key '%s' at idx %lu", seekKid, i);
             *foundIndex = i;
             return true;
         }
     }
 
+    Log_Info("signature for key '%s' not found", seekKid);
     return false;
 }
 
@@ -223,6 +227,7 @@ bool RootKeyUtility_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVec
 
         if (!InitializeADUC_RootKey_From_RSARootKey(&rootKey, &key))
         {
+            Log_Error("failed init rootkey from RSA root key");
             goto done;
         }
         VECTOR_push_back(tempHandle, &rootKey, 1);
@@ -230,6 +235,7 @@ bool RootKeyUtility_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVec
 
     if (VECTOR_size(tempHandle) == 0)
     {
+        Log_Error("Empty vector of hardcoded root keys");
         goto done;
     }
 
@@ -281,6 +287,7 @@ ADUC_Result RootKeyUtility_ValidatePackageWithKey(const ADUC_RootKeyPackage* roo
     size_t signatureIndex = 0;
     if (!RootKeyUtility_GetSignatureForKey(&signatureIndex, rootKeyPackage, rootKey.kid))
     {
+        Log_Error("Signature for key not found");
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_FOR_KEY_NOT_FOUND;
         goto done;
     }
@@ -291,6 +298,7 @@ ADUC_Result RootKeyUtility_ValidatePackageWithKey(const ADUC_RootKeyPackage* roo
 
     if (signature == NULL)
     {
+        Log_Error("signature hash not found in pkg signatures, idx %lu", signatureIndex);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_UNEXPECTED;
         goto done;
     }
@@ -299,6 +307,7 @@ ADUC_Result RootKeyUtility_ValidatePackageWithKey(const ADUC_RootKeyPackage* roo
 
     if (rootKeyCryptoKey == NULL)
     {
+        Log_Error("Failed create crypt key handle from RSA Root key");
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_UNEXPECTED;
         goto done;
     }
@@ -316,6 +325,7 @@ ADUC_Result RootKeyUtility_ValidatePackageWithKey(const ADUC_RootKeyPackage* roo
             protectedPropertiesLength,
             rootKeyCryptoKey))
     {
+        Log_Error("Signature not valid");
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_VALIDATION_FAILED;
         goto done;
     }
@@ -348,6 +358,7 @@ ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_Ro
     const size_t numHardcodedKeys = RootKeyList_numHardcodedKeys();
     if (hardcodedRsaKeys == NULL || numHardcodedKeys == 0)
     {
+        Log_Error("Failed to load hardcoded rootkey");
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_HARDCODED_ROOTKEY_LOAD_FAILED;
         goto done;
     }
@@ -360,11 +371,13 @@ ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_Ro
 
         if (IsAducResultCodeFailure(validationResult.ResultCode))
         {
+            Log_Error("Failed validate pkg with key, ERC: ", validationResult.ExtendedResultCode);
             result = validationResult;
             goto done;
         }
     }
 
+    Log_Debug("validation success");
     result.ResultCode = ADUC_GeneralResult_Success;
 
 done:
@@ -410,6 +423,7 @@ ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
 
     if (rootKeyPackageSerializedString == NULL)
     {
+        Log_Error("serialize pkg failed");
         goto done;
     }
 
@@ -417,6 +431,7 @@ ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
 
     if (rootKeyPackageValue == NULL)
     {
+        Log_Error("failed parse of serialized pkg");
         goto done;
     }
 
@@ -429,6 +444,7 @@ ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
 
     if (json_serialize_to_file(rootKeyPackageValue, STRING_c_str(tempFileName)) != JSONSuccess)
     {
+        Log_Error("failed serialize to store");
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANNOT_WRITE_PACKAGE_TO_STORE;
         goto done;
     }
@@ -436,10 +452,12 @@ ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
     int ret = ADUCPAL_rename(STRING_c_str(tempFileName), STRING_c_str(fileDest));
     if (ret != 0)
     {
+        Log_Error("failed rename of '%s' to '%s'", STRING_c_str(tempFileName), STRING_c_str(fileDest));
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_RENAME_TO_STORE;
         goto done;
     }
 
+    Log_Debug("success write rootkey pkg to file '%s'", STRING_c_str(fileDest));
     result.ResultCode = ADUC_GeneralResult_Success;
 
 done:
@@ -483,6 +501,7 @@ ADUC_Result RootKeyUtility_ReloadPackageFromDisk(const char* filepath, bool vali
 {
     if (s_localStore != NULL)
     {
+        Log_Debug("recycling in-memory store");
         ADUC_RootKeyPackageUtils_Destroy(s_localStore);
         free(s_localStore);
         s_localStore = NULL;
@@ -513,6 +532,7 @@ ADUC_Result RootKeyUtility_LoadPackageFromDisk(
 
     if (fileLocation == NULL || rootKeyPackage == NULL)
     {
+        Log_Error("bad args");
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_BAD_ARGS;
         goto done;
     }
@@ -520,6 +540,7 @@ ADUC_Result RootKeyUtility_LoadPackageFromDisk(
     tmpResult = RootKeyUtility_LoadSerializedPackage(fileLocation, &rootKeyPackageJsonString);
     if (IsAducResultCodeFailure(tmpResult.ResultCode))
     {
+        Log_Error("failed load of serialized pkg at '%s'", fileLocation);
         result = tmpResult;
         goto done;
     }
@@ -538,6 +559,7 @@ ADUC_Result RootKeyUtility_LoadPackageFromDisk(
 
     if (IsAducResultCodeFailure(parseResult.ResultCode))
     {
+        Log_Error("failed parse of '%s'", rootKeyPackageJsonString);
         result = parseResult;
         goto done;
     }
@@ -548,6 +570,7 @@ ADUC_Result RootKeyUtility_LoadPackageFromDisk(
 
         if (IsAducResultCodeFailure(validationResult.ResultCode))
         {
+            Log_Error("failed validation of rootkey pkg, ERC 0x%08x", validationResult.ExtendedResultCode);
             result = validationResult;
             goto done;
         }
@@ -627,6 +650,7 @@ CryptoKeyHandle RootKeyUtility_SearchLocalStoreForKey(const char* keyId)
         if (strcmp(STRING_c_str(rootKey->kid), keyId) == 0 && !RootKeyUtility_RootKeyIsDisabled(s_localStore, keyId))
         {
             key = MakeCryptoKeyHandleFromADUC_RootKey(rootKey);
+            break;
         }
     }
 
@@ -649,6 +673,7 @@ ADUC_Result RootKeyUtility_GetKeyForKeyIdFromLocalStore(CryptoKeyHandle* key, co
 
     if (tempKey == NULL)
     {
+        Log_Error("key '%s' not found in local store", keyId);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID;
         goto done;
     }
@@ -687,6 +712,7 @@ ADUC_Result RootKeyUtility_GetKeyForKidFromHardcodedKeys(CryptoKeyHandle* key, c
 
     if (tempKey == NULL)
     {
+        Log_Error("kid '%s' not found", kid);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID;
         goto done;
     }
@@ -724,6 +750,7 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
 
         if (IsAducResultCodeFailure(loadResult.ResultCode))
         {
+            Log_Error("failed load pkg from disk, ERC: 0x%08x", loadResult.ExtendedResultCode);
             result = loadResult;
             goto done;
         }
@@ -731,6 +758,7 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
 
     if (RootKeyUtility_RootKeyIsDisabled(s_localStore, kid))
     {
+        Log_Error("rootkey '%s' is disabled", kid);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNING_ROOTKEY_IS_DISABLED;
         goto done;
     }
@@ -741,6 +769,7 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
 
         if (IsAducResultCodeFailure(fetchResult.ResultCode))
         {
+            Log_Error("failed getting key for KeyId '%s'", kid);
             result = fetchResult;
             goto done;
         }
@@ -768,6 +797,7 @@ ADUC_Result RootKeyUtility_LoadSerializedPackage(const char* fileLocation, char*
 
     if (rootKeyPackageValue == NULL)
     {
+        Log_Error("failed parse of '%s'", fileLocation);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_LOAD_FROM_STORE;
         goto done;
     }
@@ -776,6 +806,7 @@ ADUC_Result RootKeyUtility_LoadSerializedPackage(const char* fileLocation, char*
 
     if (rootKeyPackageJsonString == NULL)
     {
+        Log_Error("failed serialize");
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_FAILED_SERIALIZE_TO_STRING;
         goto done;
     }

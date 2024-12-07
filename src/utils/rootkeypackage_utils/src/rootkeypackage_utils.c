@@ -5,6 +5,8 @@
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+
+#include "aduc/logging.h"
 #include "aduc/rootkeypackage_utils.h"
 #include "aduc/rootkeypackage_json_properties.h"
 #include "aduc/rootkeypackage_parse.h"
@@ -86,6 +88,7 @@ done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
+        Log_Error("ERC 0x%08x parsing rootkey pkg", result.ExtendedResultCode);
         ADUC_RootKeyPackageUtils_Destroy(&pkg);
     }
 
@@ -336,7 +339,7 @@ STRING_HANDLE RootKeyPackage_SigningAlgToString(const ADUC_RootKeySigningAlgorit
 
 JSON_Value* ADUC_RootKeyPackageUtils_SignatureToJsonValue(const ADUC_RootKeyPackage_Signature* signature)
 {
-    _Bool success = true;
+    _Bool success = false;
     JSON_Value* sigJsonValue = NULL;
     char* encodedSignature = NULL;
     STRING_HANDLE algString = NULL;
@@ -354,6 +357,7 @@ JSON_Value* ADUC_RootKeyPackageUtils_SignatureToJsonValue(const ADUC_RootKeyPack
 
     if (decodedSig == NULL || decodedSig->size == 0)
     {
+        Log_Error("No content in const buffer");
         goto done;
     }
 
@@ -361,6 +365,7 @@ JSON_Value* ADUC_RootKeyPackageUtils_SignatureToJsonValue(const ADUC_RootKeyPack
 
     if (encodedSignature == NULL)
     {
+        Log_Error("Failed base64 url encoding");
         goto done;
     }
 
@@ -368,6 +373,7 @@ JSON_Value* ADUC_RootKeyPackageUtils_SignatureToJsonValue(const ADUC_RootKeyPack
 
     if (jsonStatus != JSONSuccess)
     {
+        Log_Error("Failed to set '%s' for '%s'", encodedSignature, ADUC_ROOTKEY_PACKAGE_PROPERTY_SIG);
         goto done;
     }
 
@@ -375,11 +381,19 @@ JSON_Value* ADUC_RootKeyPackageUtils_SignatureToJsonValue(const ADUC_RootKeyPack
 
     if (algString == NULL)
     {
+        Log_Error("Failed to map signing alg to string");
         goto done;
     }
 
     jsonStatus = json_object_set_string(sigJsonObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_ALG, STRING_c_str(algString));
 
+    if (jsonStatus != JSONSuccess)
+    {
+        Log_Error("set alg string '%s' for '%s' failed", algString, ADUC_ROOTKEY_PACKAGE_PROPERTY_ALG);
+        goto done;
+    }
+
+    success = true;
 done:
 
     if (!success)
@@ -435,6 +449,7 @@ char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPa
     if (rootKeyPackage->protectedPropertiesJsonString == NULL
         || STRING_length(rootKeyPackage->protectedPropertiesJsonString) == 0)
     {
+        Log_Error("null or empty protectedPropertiesJsonString");
         goto done;
     }
 
@@ -442,6 +457,7 @@ char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPa
 
     if (protectedPropertiesJsonValue == NULL)
     {
+        Log_Error("Fail parse of protectedPropertiesJsonString");
         goto done;
     }
 
@@ -449,6 +465,7 @@ char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPa
             rootKeyPackageJsonObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_PROTECTED, protectedPropertiesJsonValue)
         != JSONSuccess)
     {
+        Log_Error("Failed to set protected property");
         goto done;
     }
 
@@ -467,6 +484,7 @@ char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPa
 
     if (signatureArray == NULL)
     {
+        Log_Error("Failed to get rootkey signatures array");
         goto done;
     }
 
@@ -479,6 +497,7 @@ char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPa
 
         if (signature == NULL)
         {
+            Log_Error("null signature in array at idx %lu", i);
             goto done;
         }
 
@@ -486,6 +505,7 @@ char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPa
 
         if (json_array_append_value(signatureArray, sigJsonValue) != JSONSuccess)
         {
+            Log_Error("fail append value '%s' to signature array at idx %lu", sigJsonValue, i);
             goto done;
         }
     }
@@ -494,6 +514,7 @@ char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPa
             rootKeyPackageJsonObj, ADUC_ROOTKEY_PACKAGE_PROPERTY_SIGNATURES, rootKeySignatureArrayValue)
         != JSONSuccess)
     {
+        Log_Error("fail set signatures array value");
         goto done;
     }
 
@@ -506,6 +527,7 @@ char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPa
 
     if (retString == NULL)
     {
+        Log_Error("fail serialize");
         goto done;
     }
 
