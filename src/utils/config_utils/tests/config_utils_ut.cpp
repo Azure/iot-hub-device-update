@@ -681,7 +681,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
     // NOTE: Ensure that the downloadsFolder is set correctly, if specified in du-configjson.
     // (Instead of a 'downloads' sub-folder of the dataFolder )
-    SECTION("Ubunto Core DO downlad.")
+    SECTION("Ubuntu Core DO download")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigWithUbuntuCoreDownloadsFolder) == 0);
         ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
