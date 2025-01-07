@@ -145,25 +145,6 @@ make_aduc_result_json() {
 # Returns:
 #   None.
 
-# Example usage:
-#   prepare_and_save_aduc_result 0 0 "Operation succeeded"
-#   This will wrap up the operation with result code 0, extended result code 0, and result details "Operation succeeded".
-prepare_and_save_aduc_result() {
-    result_code=$1
-    extended_result_code=$2
-    result_details=$3
-    aduc_result=""
-
-    # Prepare ADUC_Result json.
-    make_aduc_result_json "$resultCode" "$extendedResultCode" "$resultDetails" aduc_result
-
-    # Show output.
-    output "Result:" "$aduc_result"
-
-    # Write ADUC_Result to result file.
-    result "$aduc_result"
-}
-
 #
 # Print usage message.
 #
@@ -428,7 +409,7 @@ function is_installed {
             result_details=""
         else
             result_code=901
-            result_details="Package $snap_name, version: $snap_verison, channel: $snap_channel is not installed"
+            result_details="Package $snap_name, version: $snap_version, channel: $snap_channel is not installed"
         fi
     elif [ "$status_code" == "404" ]; then
         result_code=901
@@ -552,7 +533,7 @@ InstallUpdate() {
         resultCode=0
         # ADUC_ERC_SCRIPT_HANDLER_MISSING_INSTALLED_CRITERIA (0x30500002)
         extendedResultCode=$((0x30500002))
-        prepare_and_save_aduc_result $resultCode $extended_result_code $resultDetails
+        prepare_and_save_aduc_result $resultCode $extendedResultCode $resultDetails
         $ret $ret_val
     fi
 
@@ -643,7 +624,7 @@ InstallUpdate() {
                 resultCode=0
                 # ADUC_ERC_SCRIPT_HANDLER_INSTALL_INSTALLITEM_BAD_DATA, ERC Value: 810549762 (0x30500202)
                 extendedResultCode=$((0x30500202))
-                ret_val=
+                ret_val=0
             fi
             prepare_and_save_aduc_result $resultCode $extendedResultCode "$resultDetails"
             $ret $ret_val
