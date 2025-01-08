@@ -238,7 +238,7 @@ int MockMessageTransportFunc(
     void* cloudServiceHandle, void* context, ADUC_C2D_RESPONSE_HANDLER_FUNCTION c2dResponseHandlerFunc)
 {
     UNREFERENCED_PARAMETER(cloudServiceHandle);
-    INFO("Message transport function called.")
+    INFO("Message transport function called.");
     g_c2dResponseHandlerFunc = c2dResponseHandlerFunc;
     CAPTURE(g_c2dResponseHandlerFunc);
     auto message_processing_context = static_cast<ADUC_D2C_Message_Processing_Context*>(context);
