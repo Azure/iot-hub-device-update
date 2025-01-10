@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 static pthread_mutex_t s_config_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -70,6 +71,7 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent);
 
 static char* ADUC_AgentInfo_Read_X509_File(const char* const x509_file_path) {
     char* buffer = NULL;
+    long ftellResult = 0;
     size_t bufferLength = 0;
     size_t bytesRead = 0;
     FILE* x509File = NULL;
@@ -78,24 +80,46 @@ static char* ADUC_AgentInfo_Read_X509_File(const char* const x509_file_path) {
     if (x509File)
     {
         if (fseek(x509File, 0, SEEK_END) == 0) {
-            bufferLength = (size_t)ftell(x509File);
-            if (fseek(x509File, 0, SEEK_SET) == 0)
+            ftellResult = ftell(x509File);
+            if (ftellResult != -1)
             {
-                buffer = malloc(bufferLength);
-                if (buffer)
+                bufferLength = (size_t)ftellResult;
+                if (fseek(x509File, 0, SEEK_SET) == 0)
                 {
-                    bytesRead = fread(buffer, 1, bufferLength, x509File);
-                    if (bytesRead < bufferLength)
+                    buffer = malloc(bufferLength);
+                    if (buffer)
                     {
-                        Log_Error("Failed to read '%s'!", x509_file_path);
-                        free(buffer);
-                        buffer = NULL;
+                        bytesRead = fread(buffer, 1, bufferLength, x509File);
+                        if (bytesRead < bufferLength)
+                        {
+                            if (feof(x509File))
+                            {
+                                Log_Error("Unexpected end of file while reading '%s' (bytesRead: %zu)!", x509_file_path, bytesRead);
+                            }
+                            else if (ferror(x509File)) {
+                                Log_Error("Error occurred while reading '%s' (bytesRead: %zu)!", x509_file_path, bytesRead);
+                            }
+                            else
+                            {
+                                Log_Error("Failed to read '%s' (bytesRead: %zu)!", x509_file_path, bytesRead);
+                            }
+                            free(buffer);
+                            buffer = NULL;
+                        }
                     }
+                    else
+                    {
+                        Log_Error("Failed to get memory for buffer!");
+                    }
+                }
+                else
+                {
+                    Log_Error("Failed to seek begin of '%s'!", x509_file_path);
                 }
             }
             else
             {
-                Log_Error("Failed to seek begin of '%s'!", x509_file_path);
+                Log_Error("Failed to get file position ('%d')!", errno);
             }
         }
         else
