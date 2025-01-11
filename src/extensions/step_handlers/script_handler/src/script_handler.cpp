@@ -21,6 +21,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <sys/stat.h> // for chmod
 
 // keep this last to avoid interfering with system headers
 #include "aduc/aduc_banned.h"
@@ -155,6 +156,12 @@ static ADUC_Result Script_Handler_DownloadPrimaryScriptFile(ADUC_WorkflowHandle 
     try
     {
         result = ExtensionManager::Download(&entity, handle, &Default_ExtensionManager_Download_Options, nullptr);
+        if (IsAducResultCodeSuccess(result.ResultCode))
+        {
+            // Set execute permissions on the downloaded script file
+            std::string scriptPath = std::string(workFolder) + "/" + scriptFileName;
+            chmod(scriptPath.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+        }
     }
     catch (...)
     {
