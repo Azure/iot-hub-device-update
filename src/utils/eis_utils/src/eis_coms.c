@@ -8,6 +8,7 @@
 
 #include "eis_coms.h"
 
+#include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/buffer_.h>
@@ -152,7 +153,7 @@ typedef struct tagEIS_HTTP_WORKLOAD_CONTEXT
 /**
  * @brief Maximum amount of bytes for any EIS response
  */
-#define EIS_RESP_SIZE_MAX 4096
+#define EIS_RESP_SIZE_MAX 8192
 
 //
 // HTTP Functions
@@ -209,6 +210,7 @@ static void on_eis_http_recv(
 
     if (contentSize < EIS_RESP_SIZE_MIN || contentSize > EIS_RESP_SIZE_MAX)
     {
+        Log_Error("contentSize out of limits (%ld) (min:%d, max:%d)", contentSize, EIS_RESP_SIZE_MIN, EIS_RESP_SIZE_MAX);
         workloadCtx->status = EISErr_RecvRespOutOfLimitsErr;
         goto done;
     }
@@ -326,6 +328,7 @@ EISErr SendEISRequest(
 
     if (uhttp_client_open(clientHandle, udsSocketPath, 0, on_eis_http_connected, &workloadCtx) != HTTP_CLIENT_OK)
     {
+        Log_Error("uhttp_client_open failed (status:%d)", workloadCtx.status);
         result = workloadCtx.status;
         goto done;
     }
@@ -361,6 +364,7 @@ EISErr SendEISRequest(
 
     if (clientResult != HTTP_CLIENT_OK)
     {
+        Log_Error("uhttp_client_execute_request failed (clientResult: %d)", clientResult);
         goto done;
     }
 
@@ -377,11 +381,13 @@ EISErr SendEISRequest(
     if (timedOut)
     {
         result = EISErr_TimeoutErr;
+        Log_Error("uttp_client_dowork timed out (timeoutMS: %d)", timeoutMS);
         goto done;
     }
 
     if (workloadCtx.status != EISErr_Ok)
     {
+        Log_Error("Bad workloadCtx.status (%d)", workloadCtx.status);
         result = workloadCtx.status;
         goto done;
     }
@@ -394,6 +400,7 @@ EISErr SendEISRequest(
 
     if (responseLen > EIS_RESP_SIZE_MAX || responseLen < EIS_RESP_SIZE_MIN)
     {
+        Log_Error("workloadCtx.http_response out of limits (%ld, min:%d, max:%d)", responseLen, EIS_RESP_SIZE_MIN, EIS_RESP_SIZE_MAX);
         result = EISErr_RecvRespOutOfLimitsErr;
         goto done;
     }
