@@ -398,7 +398,11 @@ To configure the DU Agent, you can use `deviceupdate-agent.set-config` command.
 
   > NOTE | Only two config file names are allowed: `du-config.json` and `du-diagnostics-config.json`.
 
+  > IMPORTANT | The "aduShellFolder" setting must point to "/snap/deviceupdate-agent/current/usr/lib/adu" in the du-config.json file. This is required for proper operation of the Device Update Agent snap. Note that using $SNAP in the path will not work - you must use the full absolute path as shown.
+
   > IMPORTANT | In order to communicate with deliveryoptimization-agent snap, the downloadsFolder must point to '/var/lib/deviceupdate-agent-downloads'. This can be accomplished by setting "downloadsFolder" value in du-config.json to "/var/lib/deviceupdate-agent-downloads". See example below...
+
+  > NOTE | The "extensionsFolder" setting can be customized in the du-config.json file. For example, you can set it to "/var/lib/adu/extensions". See example below...
   ```json
 {
     "schemaVersion": "1.1",
@@ -406,10 +410,12 @@ To configure the DU Agent, you can use `deviceupdate-agent.set-config` command.
       "snap_aziotdu",
       "snap_aziotdo"
     ],
+    "aduShellFolder": "/snap/deviceupdate-agent/current/usr/lib/adu",
     "iotHubProtocol": "mqtt",
     "manufacturer": "Contoso",
     "model": "Virtual-Vacuum",
     "downloadsFolder": "/var/lib/deviceupdate-agent-downloads",
+    "extensionsFolder": "/var/lib/adu/extensions",
     "agents": [
       {
         ...

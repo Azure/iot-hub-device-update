@@ -34,6 +34,7 @@ sample_du_config=$(
     cat << END_OF_JSON
 {
   "schemaVersion": "1.1",
+  "aduShellFolder": "/snap/deviceupdate-agent/current/usr/lib/adu",
   "aduShellTrustedUsers": [
     "snap_aziotdu",
     "snap_aziotdo"
@@ -41,6 +42,8 @@ sample_du_config=$(
   "iotHubProtocol": "mqtt",
   "manufacturer": "<Place your device info manufacturer here>",
   "model": "<Place your device info model here>",
+  "downloadsFolder": "/var/lib/deviceupdate-agent-downloads",
+  "extensionsFolder": "/var/lib/adu/extensions",
   "agents": [
     {
       "name": "main",
