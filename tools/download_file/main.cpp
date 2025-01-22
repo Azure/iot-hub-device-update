@@ -28,6 +28,13 @@ char* g_arg_out_filepath = NULL;
 bool parse_args(int argc, char** argv)
 {
     bool parsed = false;
+
+    printf("\nargc: %d\n", argc);
+    if (argc != 4 && argc != 5)
+    {
+        return false;
+    }
+
     // argv[0] (--rootkeypkg-download|--payload-download) [--simulate-bad-hash] <URL> <FILEPATH>
     int non_switch_cnt = 0;
     for (int i = 1; i < argc; ++i)

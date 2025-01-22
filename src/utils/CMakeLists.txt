@@ -31,5 +31,3 @@ add_subdirectory (workflow_utils)
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (test_utils)
 endif ()
-
-add_subdirectory (download_file)

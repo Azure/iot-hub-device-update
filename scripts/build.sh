@@ -28,6 +28,7 @@ root_dir=$script_dir/..
 build_clean=false
 build_documentation=false
 build_packages=false
+verbose_build=false
 platform_layer="linux"
 trace_target_deps=false
 step_handlers="microsoft/apt,microsoft/script,microsoft/simulator,microsoft/swupdate_v2"
@@ -62,6 +63,7 @@ print_help() {
     echo "--enable-e2e-testing                  Enables settings for the E2E test pipelines."
     echo "--build-packages                      Builds and packages the client in various package formats e.g debian."
     echo "-o, --out-dir <out_dir>               Sets the build output directory. Default is out."
+    echo "-v, --verbose                         Enables verbose compilation and linking output."
     echo "-s, --static-analysis <tools...>      Runs static analysis as part of the build."
     echo "                                      Tools is a comma delimited list of static analysis tools to run at build time."
     echo "                                      Tools: clang-tidy cppcheck cpplint iwyu lwyu (or all)"
@@ -96,6 +98,8 @@ print_help() {
     echo "--minor-version                       Minor version of ADU"
     echo ""
     echo "--patch-version                       Patch version of ADU"
+    echo ""
+    echo ""
     echo ""
     echo "-h, --help                            Show this help message."
 }
@@ -249,6 +253,9 @@ while [[ $1 != "" ]]; do
         fi
         output_directory=$1
 
+        ;;
+    -v | --verbose)
+        verbose_build=true
         ;;
     -s | --static-analysis)
         shift
@@ -498,6 +505,17 @@ for i in "${static_analysis_tools[@]}"; do
         ;;
     esac
 done
+
+if [[ $verbose_build == "true" ]]; then
+    # Verbose output (very verbose, but useful!):
+    CMAKE_OPTIONS+=('--trace-expand')
+
+    # See cmake dependencies (very verbose):
+    CMAKE_OPTIONS+=('--debug-output')
+
+    # See library search output:
+    CMAKE_OPTIONS+=('-DCMAKE_EXE_LINKER_FLAGS=--enable-extra-pep-debug')
+fi
 
 if [[ $build_clean == "true" ]]; then
     rm -rf "$output_directory"

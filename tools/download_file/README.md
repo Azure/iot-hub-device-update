@@ -1,23 +1,25 @@
 # Usage
 
-Usage: ./out/bin/download_file (--rootkeypkg-download|--payload-download) [--simulate-bad-hash] <URL> <FILEPATH>
+Usage: ./download_file (--rootkeypkg-download|--payload-download) [--simulate-bad-hash] <URL> <FILEPATH>
 
 Example:
 
 ```sh
-sudo -u adu ./out/bin/download_file --rootkeypkg-download <MY URL> <
+sudo -u adu ./download_file --rootkeypkg-download <MY URL> <
 ```
 
 # Build
 
-./src/build.sh -c
+mkdir build; cd build
+rm -f CMakeCache.txt
+cmake .. -G Ninja -DCMAKE_BUILD_TYPE=DEBUG && ninja
 
 # Run
 
 ## Simulate DO 404 Not Found for rootkey package
 
 ```
-sudo -u adu ./out/bin/download_file --rootkeypkg-download http://catchpoint.b.nlu.dl.adu.microsoft.com/westeurope/rootkeypackages/rootkeypackage-1.json.DOESNOTEXIST /tmp/rootkeypackage-1.json
+sudo -u adu ./download_file --rootkeypkg-download http://catchpoint.b.nlu.dl.adu.microsoft.com/westeurope/rootkeypackages/rootkeypackage-1.json.DOESNOTEXIST /tmp/rootkeypackage-1.json
 ```
 
 Output:
@@ -49,5 +51,5 @@ total: 0, down: 0]
 
 ```sh
 rm -f /tmp/rootkeypackage*.json
-sudo -u adu ./out/bin/download_file --rootkeypkg-download http://catchpoint.b.nlu.dl.adu.microsoft.com/westeurope/rootkeypackages/rootkeypackage-1.json /tmp/rootkeypackage-1.json
+sudo -u adu ./download_file --rootkeypkg-download http://catchpoint.b.nlu.dl.adu.microsoft.com/westeurope/rootkeypackages/rootkeypackage-1.json /tmp/rootkeypackage-1.json
 ```
