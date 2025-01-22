@@ -29,7 +29,6 @@ bool parse_args(int argc, char** argv)
 {
     bool parsed = false;
 
-    printf("\nargc: %d\n", argc);
     if (argc != 4 && argc != 5)
     {
         return false;
