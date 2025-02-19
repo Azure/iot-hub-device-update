@@ -205,6 +205,19 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
     Log_Debug("context:0x%x", context);
     ADUC_D2C_Message_Processing_Context* message_processing_context = (ADUC_D2C_Message_Processing_Context*)context;
     int computed = false;
+
+    if (message_processing_context == NULL)
+    {
+        Log_Error("context is NULL");
+        return;
+    }
+
+    if (!message_processing_context->initialized)
+    {
+        Log_Warn("Message processing context (0x%x) is not initialized.", message_processing_context);
+        return;
+    }
+
     pthread_mutex_lock(&message_processing_context->mutex);
     message_processing_context->message.lastHttpStatus = http_status_code;
 
@@ -328,10 +341,30 @@ void ADUC_D2C_Messaging_DoWork()
     }
 }
 
+/**
+ * @brief Processes the message.
+ * @param message_processing_context The message processing context.
+ * @return Returns true if the message is sent.
+ * @remark This function must be called every 100ms - 200ms to ensure that the Device to Cloud messages
+ *        are processed in timely manner but also yield the CPU to other tasks.
+ */
 static void ProcessMessage(ADUC_D2C_Message_Processing_Context* message_processing_context)
 {
     bool shouldSend = false;
     time_t now = GetTimeSinceEpochInSeconds();
+
+    if (message_processing_context == NULL)
+    {
+        Log_Error("context is NULL");
+        return;
+    }
+
+    if (!message_processing_context->initialized)
+    {
+        Log_Warn("Message processing context (0x%x) is not initialized.", message_processing_context);
+        return;
+    }
+
     pthread_mutex_lock(&s_pendingMessageStoreMutex);
     pthread_mutex_lock(&message_processing_context->mutex);
 
@@ -427,15 +460,17 @@ bool ADUC_D2C_Messaging_Init()
         memset(&s_pendingMessageStore, 0, sizeof(s_pendingMessageStore));
         for (i = 0; i < ADUC_D2C_Message_Type_Max; i++)
         {
-            s_messageProcessingContext[i].type = i;
-            s_messageProcessingContext[i].transportFunc = ADUC_D2C_Default_Message_Transport_Function;
-            s_messageProcessingContext[i].retryStrategy = &g_defaultRetryStrategy;
-            int res = pthread_mutex_init(&s_messageProcessingContext[i].mutex, NULL);
+             int res = pthread_mutex_init(&s_messageProcessingContext[i].mutex, NULL);
             if (res != 0)
             {
                 Log_Error("Can't init mutex for type %d. (err:%d)", i, res);
                 goto done;
             }
+            s_messageProcessingContext[i].type = i;
+            s_messageProcessingContext[i].transportFunc = ADUC_D2C_Default_Message_Transport_Function;
+            s_messageProcessingContext[i].retryStrategy = &g_defaultRetryStrategy;
+            s_messageProcessingContext[i].initialized = true;
+            Log_Debug("Message processing context initialized. (t:%d)", i);
         }
         s_core_initialized = true;
     }
@@ -456,7 +491,7 @@ void ADUC_D2C_Messaging_Uninit()
     if (s_core_initialized)
     {
         // Cancel pending messages
-        for (int i = 0; i < ADUC_D2C_Message_Type_Max; i++)
+        for (int i = 0; i < ADUC_D2C_Message_Type_Max && s_messageProcessingContext[i].initialized; i++)
         {
             pthread_mutex_lock(&s_messageProcessingContext[i].mutex);
             if (s_pendingMessageStore[i].content != NULL)
@@ -546,6 +581,11 @@ bool ADUC_D2C_Message_SendAsync(
  */
 void ADUC_D2C_Messaging_Set_Transport(ADUC_D2C_Message_Type type, ADUC_D2C_MESSAGE_TRANSPORT_FUNCTION transportFunc)
 {
+    if (!s_messageProcessingContext[type].initialized)
+    {
+        Log_Error("Message processing context (0x%x) is not initialized.", &s_messageProcessingContext[type]);
+        return;
+    }
     pthread_mutex_lock(&s_messageProcessingContext[type].mutex);
     s_messageProcessingContext[type].transportFunc = transportFunc;
     pthread_mutex_unlock(&s_messageProcessingContext[type].mutex);
