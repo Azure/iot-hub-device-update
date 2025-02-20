@@ -7,6 +7,6 @@ install (
 
 if (ADUC_REGISTER_DAEMON)
     install (
-        CODE "execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/install.sh ${ADUC_CONF_FOLDER} ${ADUC_CONF_FILE} ${ADUC_LOG_FOLDER} ${ADUC_DATA_FOLDER})"
+        CODE "execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/install.sh ${ADUC_CONF_FOLDER} ${ADUC_CONF_FILE} ${ADUC_HOME_FOLDER} ${ADUC_LOG_FOLDER} ${ADUC_DATA_FOLDER})"
     )
 endif ()
