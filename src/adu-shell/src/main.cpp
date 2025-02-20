@@ -6,7 +6,7 @@
  * Licensed under the MIT License.
  */
 #include <getopt.h>
-
+#include <signal.h> // signal
 #include <string.h>
 
 #include <aducpal/grp.h> // getgrnam
@@ -42,6 +42,11 @@ namespace ScriptTasks = Adu::Shell::Tasks::Script;
 #endif
 
 namespace adushconst = Adu::Shell::Const;
+
+/**
+ * @brief Indicates whether a task is in progress or not. SIGTERM/SIGINT signal handling should not exit process if true.
+ */
+static bool s_task_in_progress = false;
 
 /**
  * @brief Parse command-line arguments.
@@ -302,6 +307,24 @@ bool ADUShell_PermissionCheck()
 }
 
 /**
+ * @brief Called when a terminate (SIGINT, SIGTERM) signal is detected.
+ *
+ * @param sig Signal value.
+ */
+void OnSignal(int sig)
+{
+    if (s_task_in_progress)
+    {
+        Log_Warn("Task already in progress. Ignoring SIG: %d", sig);
+        return;
+    }
+
+    // Assume handling SIGINT or SIGTERM at this point.
+    Log_Warn("Exit process for SIG: %d", sig);
+    exit(ADUSHELL_EXIT_SIGNAL_HANDLING);
+}
+
+/**
  * @brief Main method.
  *
  * @param argc Count of arguments in @p argv.
@@ -332,6 +355,9 @@ int main(int argc, char** argv)
         ret = 0;
         goto done;
     }
+
+    signal(SIGINT, OnSignal);
+    signal(SIGTERM, OnSignal);
 
     ADUCPAL_setenv(ADUC_CONFIG_FOLDER_ENV, launchArgs.configFolder, 1);
     config = ADUC_ConfigInfo_GetInstance();
@@ -371,6 +397,7 @@ int main(int argc, char** argv)
             effectiveUserId,
             ADUCPAL_getegid());
 
+        s_task_in_progress = true;
         ret = ADUShell_Dowork(launchArgs);
 
         ADUC_Logging_Uninit();

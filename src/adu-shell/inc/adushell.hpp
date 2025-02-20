@@ -33,10 +33,15 @@ typedef struct tagADUShell_LaunchArguments
 } ADUShell_LaunchArguments;
 
 /**
- * @brief A exit code from an ADUShell child process.
+ * @brief An exit code from an ADUShell child process.
  * We're using EXIT_SUCCESS (0) for success case and EXIT_FAILURE (1) for general errors.
  */
 #define ADUSHELL_EXIT_UNSUPPORTED 3
+
+/**
+ * @brief An exit code for early exit of adu-shell process due to SIGTERM/SIGINT signal handling.
+ */
+#define ADUSHELL_EXIT_SIGNAL_HANDLING 4
 
 /**
  * @brief A result from ADUShell task.
