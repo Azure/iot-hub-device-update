@@ -1,0 +1,345 @@
+{
+  "properties": {
+    "helpUri": "https://eng.ms/docs/microsoft-security/security/azure-security/cloudai-security-fundamentals-engineering/security-integration/guardian-wiki/microsoft-guardian/general/baselines"
+  },
+  "version": "1.0.0",
+  "baselines": {
+    "default": {
+      "name": "default",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "lastUpdatedDate": "2025-02-20 19:51:30Z"
+    }
+  },
+  "results": {
+    "b4011c5aa960587ce23fcc13e8b1e5bb3962694c59a677952d262334028d29c7": {
+      "signature": "b4011c5aa960587ce23fcc13e8b1e5bb3962694c59a677952d262334028d29c7",
+      "alternativeSignatures": [
+        "10d20aeec4ac6caa801a87379c5c8a385f0e888ac169a09eb9aa606f5418db00"
+      ],
+      "target": "out/Debug/bin/Debug/adu-shell.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "6f803c62cdd5dc53cac7e447cd822887973d72b9ec8cc03b6dd2a5eda97d49a1": {
+      "signature": "6f803c62cdd5dc53cac7e447cd822887973d72b9ec8cc03b6dd2a5eda97d49a1",
+      "alternativeSignatures": [
+        "07b707fca69e7135d680e713e695e49c3a826fff79a31d5db992d71fc42a235a"
+      ],
+      "target": "out/Debug/bin/Debug/AducIotAgent.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "4fb83d511478ba321b98dc600dd29307ac77e45c5aba57943db79adaa6ddad46": {
+      "signature": "4fb83d511478ba321b98dc600dd29307ac77e45c5aba57943db79adaa6ddad46",
+      "alternativeSignatures": [
+        "b141835fc31c53a497e18b6f01ed86b8f3819f3a16a1ca833c7460753b6b4665"
+      ],
+      "target": "out/Debug/bin/Debug/config_utils_unit_test.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "8d9d0fe93b89285f22b80e4053a6edc192e97874048c614e29d57260be22a3ec": {
+      "signature": "8d9d0fe93b89285f22b80e4053a6edc192e97874048c614e29d57260be22a3ec",
+      "alternativeSignatures": [
+        "86695b5bfc2cc816b899f7fe64730b79c9dfe67310a567d19f51abde93bede2a"
+      ],
+      "target": "out/Debug/bin/Debug/crypto_utils_unit_test.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "deb44571049894d5960497fe958c3c1a24911126ca9c830b9021038a9d955d71": {
+      "signature": "deb44571049894d5960497fe958c3c1a24911126ca9c830b9021038a9d955d71",
+      "alternativeSignatures": [
+        "a4b1cddb09e34e191bb7e401cc70c77699f8c64b0015a2a764cbe1972154ed2e"
+      ],
+      "target": "out/Debug/bin/Debug/d2c_messaging_unit_test.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "ed22a933fb6232a62678c9c63a3829dd0a1196a707adc49bf6a8dabeeb77b41f": {
+      "signature": "ed22a933fb6232a62678c9c63a3829dd0a1196a707adc49bf6a8dabeeb77b41f",
+      "alternativeSignatures": [
+        "400612fd5abce4f3b7b21ed8709e19495d07f5e53457b10f3345e5521a459307"
+      ],
+      "target": "out/Debug/bin/Debug/diagnostics_config_utils_ut.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "3782230b92d9ae48cdddab7ec8bec3ac3fc29d0a9c405f717e36ba80e50a024d": {
+      "signature": "3782230b92d9ae48cdddab7ec8bec3ac3fc29d0a9c405f717e36ba80e50a024d",
+      "alternativeSignatures": [
+        "cdd3afd518be908e9b82e46cdd6b13b99a48397e9414a82aee292d18ec382186"
+      ],
+      "target": "out/Debug/bin/Debug/eis_utils_unit_test.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "078905d8615800abab86111a2ea9b9bd4e306a9ec31207ffdd6d44db05dda6de": {
+      "signature": "078905d8615800abab86111a2ea9b9bd4e306a9ec31207ffdd6d44db05dda6de",
+      "alternativeSignatures": [
+        "9b3abe0defb4ede41a57240787cdd12daff3bbeee594e0e49d79ed76c12d4bc4"
+      ],
+      "target": "out/Debug/bin/Debug/extension_manager_tests.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "5046ab1674fabf82c1ae30d338165ab4a1ca1db10869ee17843318ee84595736": {
+      "signature": "5046ab1674fabf82c1ae30d338165ab4a1ca1db10869ee17843318ee84595736",
+      "alternativeSignatures": [
+        "f18688922e6e41f1140b35b8d2e0af1e8973b4c070e48c9384dd7ce2af9f5332"
+      ],
+      "target": "out/Debug/bin/Debug/installed_criteria_utils_unit_tests.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "e598152a28cb9865111697c542818ac25ebe711f1eb4d4a4f538827f57d48b96": {
+      "signature": "e598152a28cb9865111697c542818ac25ebe711f1eb4d4a4f538827f57d48b96",
+      "alternativeSignatures": [
+        "09fa6151c33b32e014159750f3b53201e68b1aa26d29879b5dea4be8f5854adf"
+      ],
+      "target": "out/Debug/bin/Debug/jws_utils_unit_test.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "5bcfd821fec696bf351c79293fe26193d18a196445b4807ff7ab831e3393a65e": {
+      "signature": "5bcfd821fec696bf351c79293fe26193d18a196445b4807ff7ab831e3393a65e",
+      "alternativeSignatures": [
+        "de6f565c51b9e9cce1b9532b33ca6888e05cfe2444ba5da28677ee1ab02c217e"
+      ],
+      "target": "out/Debug/bin/Debug/parser_utils_unit_test.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "bf6837072509bc9eaff0ecd1251c41e1631341707892a1c6322750ae96258d88": {
+      "signature": "bf6837072509bc9eaff0ecd1251c41e1631341707892a1c6322750ae96258d88",
+      "alternativeSignatures": [
+        "de3d335aec66edae298073868fde2535155870250f0a58b896e03012084c94ae"
+      ],
+      "target": "out/Debug/bin/Debug/rootkeypackage_test_app.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "e58d0949f0bb1d6b2c9f63a776b57db4219fb616dd1d8d55e75dfbfb77d6cff6": {
+      "signature": "e58d0949f0bb1d6b2c9f63a776b57db4219fb616dd1d8d55e75dfbfb77d6cff6",
+      "alternativeSignatures": [
+        "fe1494e0065167ae33e71792dd8957b3df9620636eac09dd6dab3c462364919c"
+      ],
+      "target": "out/Debug/bin/Debug/rootkeypackage_utils_unit_test.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "2e2e8c5afb09c5c5568fb41b1066490850106f9301bfafce93bf2a6b892cc285": {
+      "signature": "2e2e8c5afb09c5c5568fb41b1066490850106f9301bfafce93bf2a6b892cc285",
+      "alternativeSignatures": [
+        "d5be1f8008a7e5614f64b25bc94fbb1a448951f2ff929ed5e2a824fcd3d84b06"
+      ],
+      "target": "out/Debug/bin/Debug/rootkey_workflow_unit_test.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "86d54c52fe369bc27f36efc451d47c556a7259ea1ebbd2eb126028d80afd0173": {
+      "signature": "86d54c52fe369bc27f36efc451d47c556a7259ea1ebbd2eb126028d80afd0173",
+      "alternativeSignatures": [
+        "84039cd07ec830d3f302952d564d711ff9399755797d7e2c0988c2583e5bd8ab"
+      ],
+      "target": "out/Debug/bin/Debug/root_key_utils_ut.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "8c4600e5e052f4b222655ff52bcca254c4f3f08852ff0363b9a93dd2cb0c418a": {
+      "signature": "8c4600e5e052f4b222655ff52bcca254c4f3f08852ff0363b9a93dd2cb0c418a",
+      "alternativeSignatures": [
+        "b026c358867423ace8c7664df8558f92798be0ddae0260aba88bdfc12af635b1"
+      ],
+      "target": "out/Debug/bin/Debug/script_handler_unit_test.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "32c590055a3eaea94a1c404b7be853ac32174c2d5ec3fcc46a85c6ac0d158ca4": {
+      "signature": "32c590055a3eaea94a1c404b7be853ac32174c2d5ec3fcc46a85c6ac0d158ca4",
+      "alternativeSignatures": [
+        "60fec08d8733fa8482f70d4aef80907f897c59dda29f23a014440595e423f7e5"
+      ],
+      "target": "out/Debug/bin/Debug/simulator_handler_unit_tests.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "c454b7d800c3d4b3dbdc5bed194392e4fc63bb5d70c2447b99d1dd06ee1f226c": {
+      "signature": "c454b7d800c3d4b3dbdc5bed194392e4fc63bb5d70c2447b99d1dd06ee1f226c",
+      "alternativeSignatures": [
+        "e28c9f6deff8d24f42ece74a8b1ac3fa6e596be0ccd9148d9472ca1c805a2f35"
+      ],
+      "target": "out/Debug/bin/Debug/workflow_utils_unit_test.exe",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:51:30Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "7280a9ef779b686f1cc968c1fb7722a025071488daecdd35e195864d352da29f": {
+      "signature": "7280a9ef779b686f1cc968c1fb7722a025071488daecdd35e195864d352da29f",
+      "alternativeSignatures": [
+        "4fbd8cf457d1165e3ac79fbca4ca6f226f91d585a2b986e4ff673d48e7f40c75"
+      ],
+      "target": "out/Debug/lib/Debug/microsoft_script_1.dll",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:52:57Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "468cf9571e6309867a674f6c6b74e0ba4f1c1fc467b59fbb756c7e187e7bd42d": {
+      "signature": "468cf9571e6309867a674f6c6b74e0ba4f1c1fc467b59fbb756c7e187e7bd42d",
+      "alternativeSignatures": [
+        "98060dbd3a10f6efd0aba1d4731c76c16e66610781c7a61e9d7bc7f125432339"
+      ],
+      "target": "out/Debug/lib/Debug/microsoft_simulator_1.dll",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:52:57Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "e98866ebdf70a42b3da205e95dc54d8abd5c011d984d1c3b33d1d9e113c98efc": {
+      "signature": "e98866ebdf70a42b3da205e95dc54d8abd5c011d984d1c3b33d1d9e113c98efc",
+      "alternativeSignatures": [
+        "74d9573db88cd356c562afffbf23fd7afb0e188487f966b3b0e8fdd520ba27cb"
+      ],
+      "target": "out/Debug/lib/Debug/microsoft_steps_1.dll",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:52:57Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    },
+    "f3394bec791ea0885c564e97529b6f34ac54f75ce258ab08bb95c8df531b9d20": {
+      "signature": "f3394bec791ea0885c564e97529b6f34ac54f75ce258ab08bb95c8df531b9d20",
+      "alternativeSignatures": [
+        "0ec883d796946218dcc94500ca5eb05cc1c0bb6ae8ba18bf712524db1fb706f7"
+      ],
+      "target": "out/Debug/lib/Debug/microsoft_wim_1.dll",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2007",
+      "createdDate": "2025-02-20 19:52:57Z",
+      "expirationDate": "2025-08-09 19:58:42Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-02-20 19:58:42Z"
+    }
+  }
+}
