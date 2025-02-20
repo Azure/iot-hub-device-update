@@ -28,7 +28,7 @@ adu_home_dir=/home/adu
 
 mkdir -p "$adu_conf_dir"
 chown "$adu_user:$adu_group" "$adu_conf_dir"
-chmod u=rwx,g=rx,o=rx "$adu_conf_dir"
+chmod u=rwx,g=rx,o= "$adu_conf_dir"
 chmod u=rw,g=r,o=r "$adu_conf_dir/$adu_conf_file"
 
 chown "$adu_user:$adu_group" "$adu_conf_dir/$adu_diagnostics_conf_file"
@@ -91,7 +91,7 @@ chmod u=rwx,g=rwx,o= "$adu_extensions_sources_dir"
 
 # Set deviceupdate-agent owner and permission
 chown "root:$adu_group" "$adu_shell_dir/$adu_shell_file"
-chmod u=rxs "$adu_shell_dir/$adu_shell_file"
+chmod u=rxs,g=rx "$adu_shell_dir/$adu_shell_file"
 
 #
 # misc for healthcheck
