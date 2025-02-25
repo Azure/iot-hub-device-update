@@ -48,7 +48,12 @@ ADUShellTaskResult Execute(const ADUShell_LaunchArguments& launchArgs)
     struct stat st = {};
     bool filePermissionsChanged = false;
     bool statOk = stat(path, &st) == 0;
-    int mode = S_IRWXU | S_IRGRP | S_IXGRP;
+
+        // Note: delivery optimization will create the file with do:do ownership
+    // Here, we must allow the read access by the owner group and others (S_IRGRP) users (S_IROTH).
+    // Otherwise, the script handler will fail to calculate the hash of the script.
+    int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH;
+
     if (statOk)
     {
         int perms = st.st_mode & ~S_IFMT;
