@@ -49,7 +49,7 @@ ADUShellTaskResult Execute(const ADUShell_LaunchArguments& launchArgs)
     bool filePermissionsChanged = false;
     bool statOk = stat(path, &st) == 0;
 
-        // Note: delivery optimization will create the file with do:do ownership
+    // Note: delivery optimization will create the file with do:do ownership
     // Here, we must allow the read access by the owner group and others (S_IRGRP) users (S_IROTH).
     // Otherwise, the script handler will fail to calculate the hash of the script.
     int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH;
