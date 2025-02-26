@@ -16,7 +16,6 @@ jobs:
       - name: Install prereqs
         run: |
           apt-get update
-          # Same fix as azurepipelines/e2e_test/packer/deltagen/scripts/install-prereqs.sh for tzdata
           DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
           dpkg-reconfigure -f noninteractive tzdata
       - name: Install dependencies
