@@ -66,6 +66,7 @@ cmake_force_source=false
 cmake_prefix="$work_folder"
 cmake_installer_dir=""
 cmake_dir_symlink="/tmp/deviceupdate-cmake"
+cmake_bin="cmake"
 
 install_shellcheck=false
 supported_shellcheck_version='0.8.0'
@@ -280,9 +281,9 @@ do_install_catch2() {
     mkdir cmake || return
     pushd cmake > /dev/null || return
 
-    CC="$catch2_cc" CXX="$catch2_cxx" cmake .. || return
-    CC="$catch2_cc" CXX="$catch2_cxx" cmake --build . || return
-    $SUDO cmake --build . --target install || return
+    CC="$catch2_cc" CXX="$catch2_cxx" "$cmake_bin" .. || return
+    CC="$catch2_cc" CXX="$catch2_cxx" "$cmake_bin" --build . || return
+    $SUDO "$cmake_bin" --build . --target install || return
     popd > /dev/null || return
     popd > /dev/null || return
 
@@ -958,6 +959,7 @@ if [[ $install_cmake == "true" ]]; then
             fi
         fi
     fi
+    cmake_bin="${cmake_dir_symlink}/bin/cmake"
 fi
 
 # Install git hooks if requested.
