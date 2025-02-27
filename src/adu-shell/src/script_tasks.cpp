@@ -59,8 +59,21 @@ ADUShellTaskResult Execute(const ADUShell_LaunchArguments& launchArgs)
             {
                 filePermissionsChanged = true;
                 stat(path, &st);
-                Log_Warn(
+                Log_Error(
                     "Failed to set '%s' file permissions (expected:%d, actual: %d)", path, mode, st.st_mode & ~S_IFMT);
+            }
+        }
+
+        // Ensure that the script has the correct ownership.
+        struct group* grp = ADUCPAL_getgrnam(ADUC_FILE_GROUP);
+        struct passwd* p = ADUCPAL_getpwnam(ADUC_FILE_USER);
+
+        if (p != NULL && grp != NULL)
+        {
+            // Fix the ownership.
+            if (0 != ADUCPAL_chown(path, p->pw_uid, grp->gr_gid))
+            {
+                Log_Error("Failed to set '%s' file ownership to %d:%d", path, p->pw_uid, grp->gr_gid);
             }
         }
     }

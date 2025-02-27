@@ -45,6 +45,8 @@ target_compile_definitions (
             ADUC_CONF_FOLDER="${ADUC_CONF_FOLDER}"
             ADUC_STEP_HANDLERS="${ADUC_STEP_HANDLERS}"
             ADUSHELL_EFFECTIVE_GROUP_NAME="${ADUSHELL_EFFECTIVE_GROUP_NAME}"
+            ADUC_FILE_USER="${ADUC_FILE_USER}"
+            ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
             ${adushell_def})
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
