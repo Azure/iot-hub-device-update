@@ -639,7 +639,7 @@ do_install_shellcheck() {
     fi
 
     if [[ $shellcheck_version == "$supported_shellcheck_version" ]]; then
-        echo "${work_folder}/deviceupdate-shellcheck at version ${supported_cmake_version} already exists. Skipping install..."
+        echo "${work_folder}/deviceupdate-shellcheck at version ${shellcheck_version} already exists. Skipping install..."
         return 0
     fi
 
