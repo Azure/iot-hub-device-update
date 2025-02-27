@@ -37,6 +37,8 @@ typedef struct tagADUShell_LaunchArguments
  * We're using EXIT_SUCCESS (0) for success case and EXIT_FAILURE (1) for general errors.
  */
 #define ADUSHELL_EXIT_UNSUPPORTED 3
+#define ADUSHELL_EXIT_BAD_FILE_PERMS 4
+#define ADUSHELL_EXIT_BAD_FILE_OWNERSHIP 5
 
 /**
  * @brief A result from ADUShell task.
