@@ -35,20 +35,30 @@ deregister_eis()
 {
     rm -f "$eis_idservice_dir/$adu_eis_conf_file"
 
-    echo "Remove 'adu' user from 'aziotid' group."
-    gpasswd -d $adu_user aziotid > /dev/null
+    if getent group "aziotid" > /dev/null; then
+        echo "Remove 'adu' user from 'aziotid' group."
+        gpasswd -d $adu_user aziotid > /dev/null
+    fi
 
-    echo "Remove 'adu' user from 'aziotcs' group."
-    gpasswd -d $adu_user aziotcs > /dev/null
+    if getent group "aziotcs" > /dev/null; then
+        echo "Remove 'adu' user from 'aziotcs' group."
+        gpasswd -d $adu_user aziotcs > /dev/null
 
-    echo "Remove 'adu' user from 'aziotks' group."
-    gpasswd -d $adu_user aziotks > /dev/null
+    fi
 
-    echo "Restart IoT Identity Services"
-    systemctl restart aziot-certd
-    systemctl restart aziot-tpmd
-    systemctl restart aziot-keyd
-    systemctl restart aziot-identityd
+    if getent group "aziotks" > /dev/null; then
+        echo "Remove 'adu' user from 'aziotks' group."
+        gpasswd -d $adu_user aziotks > /dev/null
+    fi
+
+    # Deregister our process with EIS
+    if [ -d "$eis_idservice_dir" ]; then
+        echo "Restart IoT Identity Services"
+        systemctl restart aziot-certd
+        systemctl restart aziot-tpmd
+        systemctl restart aziot-keyd
+        systemctl restart aziot-identityd
+    fi
 }
 
 do_remove_tasks() {
