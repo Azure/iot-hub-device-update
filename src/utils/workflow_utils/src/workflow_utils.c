@@ -733,6 +733,8 @@ ADUC_Result workflow_parse_peek_unprotected_workflow_properties(
     char* tmpWorkflowId = NULL;
     char* tmpRootKeyPkgUrl = NULL;
 
+    bool is_nodeployment_delay_period = false;
+
     if (json_object_dothas_value(updateActionJsonObj, ADUCITF_FIELDNAME_WORKFLOW_DOT_ACTION))
     {
         updateAction = json_object_dotget_number(updateActionJsonObj, ADUCITF_FIELDNAME_WORKFLOW_DOT_ACTION);
@@ -754,6 +756,11 @@ ADUC_Result workflow_parse_peek_unprotected_workflow_properties(
             goto done;
         }
 
+        if (0 == strcmp(workflowId, "nodeployment"))
+        {
+            is_nodeployment_delay_period = true;
+        }
+
         tmpWorkflowId = workflow_copy_string(workflowId);
         if (tmpWorkflowId == NULL)
         {
@@ -762,7 +769,7 @@ ADUC_Result workflow_parse_peek_unprotected_workflow_properties(
         }
     }
 
-    if (outRootKeyPkgUrl_optional != NULL)
+    if (outRootKeyPkgUrl_optional != NULL && !is_nodeployment_delay_period)
     {
         rootkeyPkgUrl = json_object_dotget_string(updateActionJsonObj, ADUCITF_FIELDNAME_ROOTKEY_PACKAGE_URL);
         if (IsNullOrEmpty(rootkeyPkgUrl))
@@ -785,7 +792,7 @@ ADUC_Result workflow_parse_peek_unprotected_workflow_properties(
         *outWorkflowUpdateAction = updateAction;
     }
 
-    if (outWorkflowId_optional != NULL && workflowId != NULL)
+    if (outWorkflowId_optional != NULL && tmpWorkflowId != NULL)
     {
         *outWorkflowId_optional = tmpWorkflowId;
         tmpWorkflowId = NULL;

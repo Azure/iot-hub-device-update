@@ -10,9 +10,12 @@
 #include "aduc/string_handle_wrapper.hpp"
 #include "aduc/workflow_utils.h"
 
+#include <aduc/defer.hpp>
+
 #include <catch2/catch_all.hpp>
 using Catch::Matchers::Equals;
 
+#include <parson.h>
 #include <sstream>
 #include <string>
 
@@ -727,4 +730,39 @@ TEST_CASE("Request workflow cancellation")
     }
 
     workflow_free(handle);
+}
+
+TEST_CASE("workflow_parse_peek_unprotected_workflow_properties")
+{
+    SECTION("It should set out workflow id to NULL for nodeployment workflowId and action 255")
+    {
+        const std::string c2d_msg_nodeployment{ "{\"workflow\":{\"action\":255,\"id\":\"nodeployment\"}}" };
+
+        JSON_Value* root_val = json_parse_string(c2d_msg_nodeployment.c_str());
+        REQUIRE(root_val != nullptr);
+        aduc::Defer defer_json_value_free([&root_val] {
+            json_value_free(root_val);
+        });
+
+        JSON_Object* json_obj = json_object(root_val);
+        REQUIRE(json_obj != nullptr);
+
+        ADUCITF_UpdateAction upd_action = ADUCITF_UpdateAction_Undefined;
+        char* rootkey_pkg_url = nullptr;
+        char* workflow_id = nullptr;
+
+        ADUC_Result res = workflow_parse_peek_unprotected_workflow_properties(json_obj, &upd_action, &rootkey_pkg_url, &workflow_id);
+
+        aduc::Defer defer_free_parse_output([&] {
+            workflow_free_string(rootkey_pkg_url);
+            workflow_free_string(workflow_id);
+        });
+
+        REQUIRE(IsAducResultCodeSuccess(res.ResultCode));
+
+        CHECK(upd_action == ADUCITF_UpdateAction_Cancel);
+        CHECK(rootkey_pkg_url == nullptr);
+        REQUIRE(workflow_id != nullptr);
+        CHECK_THAT(workflow_id, Equals("nodeployment"));
+    }
 }

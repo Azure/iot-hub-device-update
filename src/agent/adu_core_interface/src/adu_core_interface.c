@@ -380,6 +380,23 @@ void OrchestratorUpdateCallback(
         goto done;
     }
 
+    // If there is no deployment for the device group or the device connected
+    // within an interval before the update was deployed, then a C2D message
+    // with update action of cancel and an internal workflowId of
+    // "nodeployment" will be sent.
+    //
+    // It is an indicator that no deployment exists for the device group or
+    // that a new deployment has been deployed recently and should be flowing
+    // down the pipe soon.
+    //
+    // Instead of processing a cancel, just ignore this and wait for normal
+    // cancellation to occur once a "process deployment" action flows down.
+    if (updateAction == ADUCITF_UpdateAction_Cancel && (0 == strcmp(workflowId, "nodeployment")))
+    {
+        Log_Info("Received deployment delay period NOOP cancel. Will wait for update deployment to be pushed...");
+        goto done;
+    }
+
     if (updateAction == ADUCITF_UpdateAction_ProcessDeployment && !IsNullOrEmpty(workflowId))
     {
         Log_Debug("Processing deployment %s ...", workflowId);

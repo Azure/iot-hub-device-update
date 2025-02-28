@@ -10,7 +10,7 @@ disablertti ()
 find_package (Catch2 REQUIRED)
 find_package (Parson REQUIRED)
 
-add_executable (${PROJECT_NAME} ${sources} "")
+add_executable (${PROJECT_NAME} ${sources})
 
 target_sources (${PROJECT_NAME} PRIVATE main.cpp workflow_utils_ut.cpp
                                         workflow_get_update_file_ut.cpp)
@@ -19,6 +19,8 @@ target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
 target_link_libraries (${PROJECT_NAME} PRIVATE Catch2::Catch2WithMain aduc::parser_utils aduc::string_utils
                                                aduc::test_utils aduc::workflow_utils Catch2::Catch2 aduc::root_key_utils umock_c)
+
+target_link_libraries (${PROJECT_NAME} PRIVATE aduc::auto_utils)
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
