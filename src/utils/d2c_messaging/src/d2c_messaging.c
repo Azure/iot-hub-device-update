@@ -214,7 +214,7 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
 
     if (!message_processing_context->initialized)
     {
-        Log_Warn("Message processing context (0x%x) is not initialized.", message_processing_context);
+        Log_Error("Message processing context (0x%x) is not initialized.", message_processing_context);
         return;
     }
 
@@ -460,7 +460,7 @@ bool ADUC_D2C_Messaging_Init()
         memset(&s_pendingMessageStore, 0, sizeof(s_pendingMessageStore));
         for (i = 0; i < ADUC_D2C_Message_Type_Max; i++)
         {
-             int res = pthread_mutex_init(&s_messageProcessingContext[i].mutex, NULL);
+            int res = pthread_mutex_init(&s_messageProcessingContext[i].mutex, NULL);
             if (res != 0)
             {
                 Log_Error("Can't init mutex for type %d. (err:%d)", i, res);
@@ -491,21 +491,25 @@ void ADUC_D2C_Messaging_Uninit()
     if (s_core_initialized)
     {
         // Cancel pending messages
-        for (int i = 0; i < ADUC_D2C_Message_Type_Max && s_messageProcessingContext[i].initialized; i++)
+        for (int i = 0; i < ADUC_D2C_Message_Type_Max; i++)
         {
-            pthread_mutex_lock(&s_messageProcessingContext[i].mutex);
-            if (s_pendingMessageStore[i].content != NULL)
+            if (s_messageProcessingContext[i].initialized)
             {
-                OnMessageProcessingCompleted(&s_pendingMessageStore[i], ADUC_D2C_Message_Status_Canceled);
-            }
+                Log_Debug("Canceling pending message. (t:%d)", i);
+                pthread_mutex_lock(&s_messageProcessingContext[i].mutex);
+                if (s_pendingMessageStore[i].content != NULL)
+                {
+                    OnMessageProcessingCompleted(&s_pendingMessageStore[i], ADUC_D2C_Message_Status_Canceled);
+                }
 
-            if (s_messageProcessingContext[i].message.content != NULL)
-            {
-                OnMessageProcessingCompleted(&s_messageProcessingContext[i].message, ADUC_D2C_Message_Status_Canceled);
+                if (s_messageProcessingContext[i].message.content != NULL)
+                {
+                    OnMessageProcessingCompleted(&s_messageProcessingContext[i].message, ADUC_D2C_Message_Status_Canceled);
+                }
+                pthread_mutex_unlock(&s_messageProcessingContext[i].mutex);
+                pthread_mutex_destroy(&s_messageProcessingContext[i].mutex);
+                s_messageProcessingContext[i].initialized = false;
             }
-            pthread_mutex_unlock(&s_messageProcessingContext[i].mutex);
-            pthread_mutex_destroy(&s_messageProcessingContext[i].mutex);
-            s_messageProcessingContext[i].initialized = false;
         }
         s_core_initialized = false;
     }
@@ -581,6 +585,11 @@ bool ADUC_D2C_Message_SendAsync(
  */
 void ADUC_D2C_Messaging_Set_Transport(ADUC_D2C_Message_Type type, ADUC_D2C_MESSAGE_TRANSPORT_FUNCTION transportFunc)
 {
+    if (type < 0 || type >= ADUC_D2C_Message_Type_Max)
+    {
+        Log_Error("Invalid message type %d", type);
+        return;
+    }
     if (!s_messageProcessingContext[type].initialized)
     {
         Log_Error("Message processing context (0x%x) is not initialized.", &s_messageProcessingContext[type]);

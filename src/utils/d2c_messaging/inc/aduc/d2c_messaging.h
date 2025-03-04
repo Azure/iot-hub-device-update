@@ -37,7 +37,7 @@ typedef enum _tagADUC_D2C_Message_Status
     ADUC_D2C_Message_Status_Waiting_For_Response, /**< Sent to the cloud, waiting for response */
     ADUC_D2C_Message_Status_Success, /**< Message has been processed successfully */
     ADUC_D2C_Message_Status_Failed, /**< A failure occurred. No longer process */
-    ADUC_D2C_Message_Status_Replaced, /**< Message was replaced by a new one */
+    ADUC_D2C_Message_Status_Replaced, /**< Message was replaced by a new one of the same message type */
     ADUC_D2C_Message_Status_Canceled, /**< Message was canceled */
     ADUC_D2C_Message_Status_Max_Retries_Reached, /**< Maximum number of retries reached */
 } ADUC_D2C_Message_Status;
