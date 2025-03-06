@@ -20,14 +20,14 @@ steps:
       displayName: Login to ACR
       inputs:
           command: login
-          containerRegistry: aduccontainerregistry
+          containerRegistry: adu_docker_container_registry
           repository: ${{parameters.targetOs}}-${{parameters.targetArch}}
 
     - task: Docker@2
       displayName: Pull latest build image
       inputs:
           command: pull
-          containerRegistry: aduccontainerregistry
+          containerRegistry: adu_docker_container_registry
           arguments: "aduccontainerregistry.azurecr.io/${{parameters.targetOs}}-${{parameters.targetArch}}:latest"
 
     - bash: |
