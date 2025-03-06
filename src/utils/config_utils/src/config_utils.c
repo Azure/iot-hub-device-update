@@ -75,68 +75,78 @@ static char* ADUC_AgentInfo_Read_X509_File(const char* const x509_file_path) {
     size_t bufferLength = 0;
     size_t bytesRead = 0;
     FILE* x509File = NULL;
-    
+    bool success = false;
+
     x509File = fopen(x509_file_path, "rb");
-    if (x509File)
+    if (x509File == NULL)
     {
-        if (fseek(x509File, 0, SEEK_END) == 0) {
-            ftellResult = ftell(x509File);
-            if (ftellResult != -1)
-            {
-                bufferLength = (size_t)ftellResult;
-                if (fseek(x509File, 0, SEEK_SET) == 0)
-                {
-                    buffer = malloc(bufferLength);
-                    if (buffer)
-                    {
-                        bytesRead = fread(buffer, 1, bufferLength, x509File);
-                        if (bytesRead < bufferLength)
-                        {
-                            if (feof(x509File))
-                            {
-                                Log_Error("Unexpected end of file while reading '%s' (bytesRead: %zu)!", x509_file_path, bytesRead);
-                            }
-                            else if (ferror(x509File)) {
-                                Log_Error("Error occurred while reading '%s' (bytesRead: %zu)!", x509_file_path, bytesRead);
-                            }
-                            else
-                            {
-                                Log_Error("Failed to read '%s' (bytesRead: %zu)!", x509_file_path, bytesRead);
-                            }
-                            free(buffer);
-                            buffer = NULL;
-                        }
-                    }
-                    else
-                    {
-                        Log_Error("Failed to get memory for buffer!");
-                    }
-                }
-                else
-                {
-                    Log_Error("Failed to seek begin of '%s'!", x509_file_path);
-                }
-            }
-            else
-            {
-                Log_Error("Failed to get file position ('%d')!", errno);
-            }
+        Log_Error("Failed to open '%s'!", x509_file_path);
+        goto done;
+    }
+
+    if (fseek(x509File, 0, SEEK_END) != 0)
+    {
+        Log_Error("Failed to seek end of '%s'!", x509_file_path);
+        goto done;
+    }
+
+    ftellResult = ftell(x509File);
+    if (ftellResult == -1)
+    {
+        Log_Error("Failed to get file position ('%d')!", errno);
+        goto done;
+    }
+
+    bufferLength = (size_t)ftellResult;
+    if (fseek(x509File, 0, SEEK_SET) != 0)
+    {
+        Log_Error("Failed to seek begin of '%s'!", x509_file_path);
+        goto done;
+    }
+
+    buffer = malloc(bufferLength);
+    if (buffer == NULL)
+    {
+        Log_Error("Failed to get memory for buffer!");
+        goto done;
+    }
+
+    bytesRead = fread(buffer, 1, bufferLength, x509File);
+    if (bytesRead < bufferLength)
+    {
+        if (feof(x509File))
+        {
+            Log_Error("Unexpected end of file while reading '%s' (bytesRead: %zu)!", x509_file_path, bytesRead);
+        }
+        else if (ferror(x509File)) {
+            Log_Error("Error occurred while reading '%s' (bytesRead: %zu)!", x509_file_path, bytesRead);
         }
         else
         {
-            Log_Error("Failed to seek end of '%s'!", x509_file_path);
+            Log_Error("Failed to read '%s' (bytesRead: %zu)!", x509_file_path, bytesRead);
         }
 
-        if(fclose (x509File) != 0) {
+        goto done;
+    }
+
+    success = true;
+
+done:
+    if (!success)
+    {
+        free(buffer);
+        buffer = NULL;
+    }
+
+    if (x509File != NULL)
+    {
+        if (fclose(x509File) != 0)
+        {
             Log_Warn("Failed to close '%s'!", x509_file_path);
         }
     }
-    else
-    {
-        Log_Error("Failed to open '%s'!", x509_file_path);
-    }
 
-    return(buffer);
+    return buffer;
 }
 
 /**
