@@ -31,8 +31,11 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString);
  * @return true if connection info can be obtained
  */
 bool GetConnectionInfoFromConnectionString(
-		ADUC_ConnectionInfo* info, const char* connectionString,
-		const char* const x509Cert, const char* const x509PrivateKey, const char* const x509CaCert);
+    ADUC_ConnectionInfo* info,
+    const char* connectionString,
+    const char* const x509Cert,
+    const char* const x509PrivateKey,
+    const char* const x509CaCert);
 
 /**
  * @brief Get the Connection Info from Identity Service
@@ -66,11 +69,11 @@ typedef void (*ADUC_COMMUNICATION_MANAGER_CLIENT_HANDLE_UPDATED_CALLBACK)(ADUC_C
  *
  * @return 'true' if success.
  */
-bool IoTHub_CommunicationManager_Init(ADUC_ClientHandle* handle_address,
-                                   IOTHUB_CLIENT_DEVICE_TWIN_CALLBACK device_twin_callback,
-                                   ADUC_COMMUNICATION_MANAGER_CLIENT_HANDLE_UPDATED_CALLBACK client_handle_updated_callback,
-                                   ADUC_PnPComponentClient_PropertyUpdate_Context *property_update_context
-                                   );
+bool IoTHub_CommunicationManager_Init(
+    ADUC_ClientHandle* handle_address,
+    IOTHUB_CLIENT_DEVICE_TWIN_CALLBACK device_twin_callback,
+    ADUC_COMMUNICATION_MANAGER_CLIENT_HANDLE_UPDATED_CALLBACK client_handle_updated_callback,
+    ADUC_PnPComponentClient_PropertyUpdate_Context* property_update_context);
 
 /**
  * @brief De-initialize the IoT Hub connection manager.

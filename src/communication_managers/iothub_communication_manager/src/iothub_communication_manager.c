@@ -346,7 +346,8 @@ static bool ADUC_DeviceClient_Create(
     }
     else if (
         connInfo->clientCertificateString != NULL && connInfo->authType == ADUC_AuthType_X509
-        && (iothubResult = ClientHandle_SetOption(*outClientHandle, SU_OPTION_X509_CERT, connInfo->clientCertificateString))
+        && (iothubResult =
+                ClientHandle_SetOption(*outClientHandle, SU_OPTION_X509_CERT, connInfo->clientCertificateString))
             != IOTHUB_CLIENT_OK)
     {
         Log_Error("Unable to set client certificate, error=%d", iothubResult);
@@ -361,7 +362,8 @@ static bool ADUC_DeviceClient_Create(
         result = false;
     }
     else if (
-        connInfo->certificateString != NULL && (connInfo->authType == ADUC_AuthType_NestedEdgeCert || connInfo->authType == ADUC_AuthType_X509)
+        connInfo->certificateString != NULL
+        && (connInfo->authType == ADUC_AuthType_NestedEdgeCert || connInfo->authType == ADUC_AuthType_X509)
         && (iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_TRUSTED_CERT, connInfo->certificateString))
             != IOTHUB_CLIENT_OK)
     {
@@ -377,7 +379,8 @@ static bool ADUC_DeviceClient_Create(
         result = false;
     }
     else if (
-        connInfo->opensslPrivateKey != NULL && ( connInfo->authType == ADUC_AuthType_SASCert || connInfo->authType == ADUC_AuthType_X509 )
+        connInfo->opensslPrivateKey != NULL
+        && (connInfo->authType == ADUC_AuthType_SASCert || connInfo->authType == ADUC_AuthType_X509)
         && (iothubResult =
                 ClientHandle_SetOption(*outClientHandle, SU_OPTION_X509_PRIVATE_KEY, connInfo->opensslPrivateKey))
             != IOTHUB_CLIENT_OK)
@@ -490,8 +493,11 @@ ADUC_ConnType GetConnTypeFromConnectionString(const char* connectionString)
  * @return true if connection info can be obtained
  */
 bool GetConnectionInfoFromConnectionString(
-    ADUC_ConnectionInfo* info, const char* connectionString,
-    const char* const x509Cert, const char* const x509PrivateKey, const char* const x509CaCert)
+    ADUC_ConnectionInfo* info,
+    const char* connectionString,
+    const char* const x509Cert,
+    const char* const x509PrivateKey,
+    const char* const x509CaCert)
 {
     bool succeeded = false;
     const ADUC_ConfigInfo* config = NULL;
@@ -649,7 +655,8 @@ bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
     }
     else if (strcmp(agent->connectionType, "X509") == 0)
     {
-        if (!GetConnectionInfoFromConnectionString(info, agent->connectionData, agent->x509Cert, agent->x509PrivateKey, agent->x509CaCert))
+        if (!GetConnectionInfoFromConnectionString(
+                info, agent->connectionData, agent->x509Cert, agent->x509PrivateKey, agent->x509CaCert))
         {
             goto done;
         }

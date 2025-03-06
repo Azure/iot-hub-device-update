@@ -14,13 +14,13 @@
 #include <aducpal/stdlib.h> // setenv
 #include <azure_c_shared_utility/crt_abstractions.h>
 #include <azure_c_shared_utility/strings_types.h>
+#include <errno.h>
 #include <parson.h>
 #include <parson_json_utils.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 static pthread_mutex_t s_config_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -68,8 +68,8 @@ static const char* INVALID_OR_MISSING_FIELD_ERROR_FMT = "Invalid json - '%s' mis
 
 static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent);
 
-
-static char* ADUC_AgentInfo_Read_X509_File(const char* const x509_file_path) {
+static char* ADUC_AgentInfo_Read_X509_File(const char* const x509_file_path)
+{
     char* buffer = NULL;
     long ftellResult = 0;
     size_t bufferLength = 0;
@@ -118,7 +118,8 @@ static char* ADUC_AgentInfo_Read_X509_File(const char* const x509_file_path) {
         {
             Log_Error("Unexpected end of file while reading '%s' (bytesRead: %zu)!", x509_file_path, bytesRead);
         }
-        else if (ferror(x509File)) {
+        else if (ferror(x509File))
+        {
             Log_Error("Error occurred while reading '%s' (bytesRead: %zu)!", x509_file_path, bytesRead);
         }
         else
@@ -191,8 +192,10 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
     connection_type = json_object_get_string(connection_source, CONFIG_CONNECTION_TYPE);
     connection_data = json_object_get_string(connection_source, CONFIG_CONNECTION_DATA);
     connection_x509_cert_file_path = json_object_get_string(connection_source, CONFIG_CONNECTION_X509_CERT_FILE_PATH);
-    connection_x509_private_key_file_path = json_object_get_string(connection_source, CONFIG_CONNECTION_X509_PRIVATE_KEY_FILE_PATH);
-    connection_x509_ca_cert_file_path = json_object_get_string(connection_source, CONFIG_CONNECTION_X509_CA_CERT_FILE_PATH);
+    connection_x509_private_key_file_path =
+        json_object_get_string(connection_source, CONFIG_CONNECTION_X509_PRIVATE_KEY_FILE_PATH);
+    connection_x509_ca_cert_file_path =
+        json_object_get_string(connection_source, CONFIG_CONNECTION_X509_CA_CERT_FILE_PATH);
 
     // As these fields are mandatory, if any of the fields doesn't exist, the agent will fail to be constructed.
     if (name == NULL || runas == NULL || connection_type == NULL || connection_data == NULL || manufacturer == NULL
@@ -221,8 +224,11 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
         goto done;
     }
 
-    if (connection_x509_cert_file_path || connection_x509_private_key_file_path || connection_x509_ca_cert_file_path) {
-        if(connection_x509_cert_file_path && connection_x509_private_key_file_path && connection_x509_ca_cert_file_path) {
+    if (connection_x509_cert_file_path || connection_x509_private_key_file_path || connection_x509_ca_cert_file_path)
+    {
+        if (connection_x509_cert_file_path && connection_x509_private_key_file_path
+            && connection_x509_ca_cert_file_path)
+        {
             agent->x509Cert = ADUC_AgentInfo_Read_X509_File(connection_x509_cert_file_path);
             if (!agent->x509Cert)
             {
@@ -238,8 +244,11 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
             {
                 goto done;
             }
-        } else {
-            Log_Error("Incomplete X509 client certificate configuration! Cert file path or private key file path is missing.");
+        }
+        else
+        {
+            Log_Error(
+                "Incomplete X509 client certificate configuration! Cert file path or private key file path is missing.");
         }
     }
 
