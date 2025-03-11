@@ -52,7 +52,7 @@ steps:
             sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/install-deps.sh ${{parameters.additionalDependencies}}
       displayName: "Install additional dependencies"
       condition: # only run if additional dependencies are provided
-            ne(${{parameters.additionalDependencies}}, '')
+            ne("${{parameters.additionalDependencies}}"", "")
     - bash: |
           if [ -n "${{parameters.patchVersion}}" ]; then
             sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/build.sh --clean --build-unit-tests --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --patch-version ${{parameters.patchVersion}} --out-dir out-${{parameters.targetOs}}-${{parameters.targetArch}}
