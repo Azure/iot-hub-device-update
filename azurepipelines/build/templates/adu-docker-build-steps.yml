@@ -45,10 +45,10 @@ steps:
           sudo docker run -d -t --rm -v $(Build.SourcesDirectory):/iot-hub-device-update -v ~/.gitconfig:/etc/.gitconfig --name ARMcontainer aduccontainerregistry.azurecr.io/${{parameters.targetOs}}-${{parameters.targetArch}}:latest bash
       displayName: "Run docker container"
     - bash: |
-            sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/install-cmake.sh --install-catch2
+            sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/install-deps.sh --install-cmake
       displayName: "Install CMake"
     - bash: |
-            sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/install-deps.sh --install-cmake
+            sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/install-deps.sh --install-catch2
       displayName: "Install and Build Catch2"
     - bash: |
           if [ -n "${{parameters.patchVersion}}" ]; then
