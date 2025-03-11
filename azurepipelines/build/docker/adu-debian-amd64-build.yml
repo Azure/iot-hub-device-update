@@ -95,6 +95,7 @@ extends:
                 parameters:
                   targetOs: "debian11"
                   targetArch: "amd64"
+                  additionalDependencies: "--install-cmake --install-catch2"
 
           - job: BuildAduAgent_debian10
             displayName: "Build ADU Agent - Debian 10 (amd64)"
@@ -108,3 +109,4 @@ extends:
                 parameters:
                   targetOs: "debian10"
                   targetArch: "amd64"
+                  additionalDependencies: "--install-cmake --install-catch2"
