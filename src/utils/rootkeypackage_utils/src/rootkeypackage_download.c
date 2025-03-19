@@ -81,9 +81,9 @@ ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
     }
 
     result = ADUC_UrlUtils_GetPathFileName(STRING_c_str(targetUrl), &targetFileName);
-    if (IsAducResultCodeFailure(result.ResultCode) || IsNullOrEmpty(STRING_c_str(targetFileName)))
+    if (IsAducResultCodeFailure(result.ResultCode) || (0 == STRING_length(targetFileName)))
     {
-        Log_Error("failed get path, or empty targetFileName['%s'], result: 0x%08x", STRING_c_str(targetFileName), result.ExtendedResultCode);
+        Log_Error("failed get path, or null/empty targetFileName['%s'], result: 0x%08x", STRING_c_str(targetFileName), result.ExtendedResultCode);
         result.ResultCode = ADUC_GeneralResult_Failure;
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_DOWNLOAD_URL_BAD_PATH;
         goto done;
