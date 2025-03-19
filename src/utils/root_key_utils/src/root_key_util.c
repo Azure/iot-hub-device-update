@@ -860,7 +860,7 @@ bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE storePath, cons
 
         if (IsAducResultCodeFailure(temp.ResultCode))
         {
-            Log_Error("Package load failed");
+            Log_Warn("Package load failed");
             return true;
         }
     }
