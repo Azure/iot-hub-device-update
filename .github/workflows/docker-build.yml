@@ -6,7 +6,7 @@ jobs:
   container-job:
     strategy:
       matrix:
-        os: ["debian:11", "debian:10", "ubuntu:22.04", "ubuntu:20.04"]
+        os: ["debian:12", "debian:11", "debian:10", "ubuntu:22.04", "ubuntu:20.04"]
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.os }}
