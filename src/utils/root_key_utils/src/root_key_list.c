@@ -81,7 +81,14 @@ static const RSARootKey HardcodedRSARootKeyList[] =
         "x_rj0mwmzi4sVuDPje79kxIvAEmNHII4VqZdeURKGvPcFhCzwS0nEf4bmAXko2Ax"
         "mQ",
         65537
+    },
+    {
+
+        "ADU.241112.R",
+        "i4Gp6j1NB2lEHh0qWu0B5LBxUvGqF49gbvqTitaZ06XzUufZIwP0dFzULl_tPTlKc8veju3JCK6EtWaCsAXVtBj6DV8kkTXvh2nB340U3sedBGo5fZWj_rNH3HB8rQ6TBiTvFRAnGaxCqQirYb38X7SBBp4jljnt9uzcJAB2i727qi48havWWLhlWxBQfTGuU5ah79KsnK16g_eGnGRh9tnJ8aCAG-cp-3EX4f9zQXe3yHAmrGYmMH3M6COeMTn2diqn5CZXqsM5ugv1kISxJeL7F4ftiGCBe1i3PNZkd6olWFLnVfJR9mEeTdC9Sx78AedZsfBK43Vn7R6MlVt78_ZU5kvVCmFJwtvkkmIJxWm13e6F5514a0UQb2K0Q5jOmAuyUvZXwoVEY3JAnSVOPYJtrDaOLi8VVAJIF-tFeqwZpWFwN4hO-Uix3dhBc8uVqVFBKUKoa6gcwblrwLyfdd31hZgAYb8gB6MbM2rU6m_37QPRgmktK1QK2VZCKdJt",
+        65537
     }
+
 #endif
 };
 // clang-format on
