@@ -39,7 +39,7 @@ enabled, use a personal access token (PAT) as the password.
 
 To install all dependencies run:
 
-```shell
+```sh
 ./scripts/install-deps.sh -a
 ```
 
@@ -47,26 +47,28 @@ To install all dependencies run:
 
 To install only the dependencies necessary for the agent:
 
-```shell
+```sh
 ./scripts/install-deps.sh --install-aduc-deps --install-packages --install-do
 ```
 
 `install-deps.sh` also provides several options for installing individual
 dependencies. To see the usage info:
 
-```shell
+```sh
 ./scripts/install-deps.sh -h
 ```
 
 ### Install Optional Development Tools
 
 - Install the clang-format package (required for running `scripts/clang-format.sh`):
-```shell
+
+```sh
 sudo apt install clang-format
 ```
 
 - Install pip3 and cmake-format (required for running `scripts/cmake-format.sh`):
-```shell
+
+```sh
 sudo apt install python3-pip
 sudo --set-home pip3 install cmake-format
 ```
@@ -79,13 +81,13 @@ The Device Update for IoT Hub reference agent code utilizes CMake for building. 
 
 To build the reference agent with the default parameters:
 
-```shell
+```sh
 ./scripts/build.sh -c
 ```
 
 To see additional build options with build.sh:
 
-```shell
+```sh
 build.sh -h
 ```
 
@@ -93,7 +95,7 @@ build.sh -h
 
 To build and run the unit tests:
 
-```shell
+```sh
 ./scripts/build.sh -c -u
 pushd out
 ctest # or ninja test
@@ -101,7 +103,7 @@ ctest # or ninja test
 
 For more test run options:
 
-```shell
+```sh
 ctest -h
 ```
 
@@ -127,7 +129,7 @@ No suppression file is currently used, so the goal is for all the unit tests to 
 
 To build the debian package (will be output to the `out` directory):
 
-```shell
+```sh
 ./scripts/build.sh --build-packages
 ```
 
@@ -137,7 +139,7 @@ Alternatively, you can build using CMake directly. Set the required product valu
 for ADUC_DEVICEINFO_MANUFACTURER and ADUC_DEVICEINFO_MODEL in the top-level
 [CMakeLists.txt](../../CMakeLists.txt) before building. Optional CMake values can be found there as well.
 
-```shell
+```sh
 mkdir -p build && pushd build
 cmake ..
 cmake --build .
@@ -146,7 +148,7 @@ popd > /dev/null
 
 or using Ninja
 
-```shell
+```sh
 mkdir -p build && pushd build
 cmake -G Ninja ..
 ninja
@@ -155,10 +157,28 @@ popd > /dev/null
 
 You can do incremental builds with Ninja:
 
-```shell
+```sh
 pushd out && ninja
 popd
 ```
+
+### Use Curl for RootKey Package Download instead of Delivery Optimization Agent (DO)
+
+One can already configure the agent to use curl to download update payload content (by registering curl content downloader extension, `/var/lib/adu/extensions/sources/libcurl_content_downloader.so`).
+
+However, to switch to curl for downloading the RootKey Package (infrastructure file for update signature verification), one must currently rebuild the agent from sources by providing the `--rootkeypkg-curl` parameter to [build.sh](../../scripts/build.sh).
+
+For example:
+
+```sh
+./scripts/build.sh -c --rootkeypkg-curl
+```
+
+Notes:
+
+- Just as with update payload downloads, using curl for downloads will require `/usr/bin/curl` to be available on the device that has the AducIotAgent binary.
+
+- curl will be invoked with the following cmd-line: `/usr/bin/curl -L -C - -o /path/to/output/file`
 
 ### Build Options for MQTT and MQTT over WebSockets IotHub Transport Providers
 
@@ -168,7 +188,7 @@ By Default, both mqtt and mqtt/WebSockets will be linked into the AducIotAgent b
 
 Here is the default in top-level `CMakeLists.txt`:
 
-```shell
+```sh
 set (
     ADUC_IOT_HUB_PROTOCOL
     "IotHub_Protocol_from_Config"
@@ -201,7 +221,7 @@ If using only `MQTT`, then choosing `MQTT` for `ADUC_IOT_HUB_PROTOCOL` in the to
 
 To link in only MQTT transport provider, set this in the top-level `CMakeLists.txt`:
 
-```shell
+```sh
 set (
     ADUC_IOT_HUB_PROTOCOL
     "MQTT"
@@ -214,7 +234,7 @@ set (
 
 After enabling WebSockets above using install-deps.sh so that it builds libiothub_client_mqtt_ws_transport.a static library, modify the top-level CMakeLists.txt to use MQTT_over_WebSockets:
 
-```shell
+```sh
 set (
     ADUC_IOT_HUB_PROTOCOL
     "MQTT_over_WebSockets"
@@ -228,14 +248,14 @@ Using `"MQTT"` will use SecureMQTT over port `8883`.
 
 Please note that, by default, both MQTT (`libiothub_client_mqtt_transport.a`) and MQTT over WebSockets(`libiothub_client_mqtt_ws_transport.a`) static libraries are built by `install-deps.sh` via the `use_mqtt` and `use_wsio` -D configs.
 
-```shell
+```sh
 # Verify mqtt transport static lib exists
 $ locate libiothub_client_mqtt_transport.a | \
     grep '/usr/local/lib/'
 /usr/local/lib/libiothub_client_mqtt_transport.a
 ```
 
-```shell
+```sh
 # Verify mqtt over websockets static lib exists
 $ locate libiothub_client_mqtt_ws_transport.a | \
     grep '/usr/local/lib/'
@@ -246,13 +266,13 @@ $ locate libiothub_client_mqtt_ws_transport.a | \
 
 ### Install the Device Update Agent after building
 
-```shell
+```sh
 sudo cmake --build out --target install
 ```
 
 or using Ninja
 
-```shell
+```sh
 pushd out > /dev/null
 sudo ninja install
 popd > /dev/null
@@ -264,7 +284,7 @@ popd > /dev/null
 
 After building the Debian package using `build.sh --build-packages`, do:
 
-```shell
+```sh
 sudo apt install ./out/{PKG_NAME}.deb
 ```
 
@@ -276,7 +296,7 @@ Run Device Update Agent by following these [instructions](./how-to-run-agent.md)
 
 If using MQTT, run the following netstat command to verify that it is connecting to the remote MQTT port of 8883:
 
-```shell
+```sh
 $ sudo ./out/bin/AducIotClient -l0 -e > /dev/null 2>&1 &
 $ sudo netstat -pantu | grep Adu
 tcp        0      0 <LOCAL IP ADDR>:<LOCAL PORT>       <REMOTE IP ADDR>:8883         ESTABLISHED <PID>/./out/bin/Aduc
@@ -288,7 +308,7 @@ $ fg
 
 If using MQTT over WebSockets, run the following netstat command to verify that it is connecting to the remote WebSockets port of 443:
 
-```shell
+```sh
 $ sudo ./out/bin/AducIotClient -l0 -e > /dev/null 2>&1 &
 $ sudo netstat -pantu | grep Adu
 tcp        0      0 <LOCAL IP ADDR>:<LOCAL PORT>       <REMOTE IP ADDR>:443         ESTABLISHED <PID>/./out/bin/Aduc
