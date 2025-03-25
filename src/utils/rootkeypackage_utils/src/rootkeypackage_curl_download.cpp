@@ -49,7 +49,7 @@ ADUC_Result DownloadRootKeyPkg_Curl(const char* url, const char* targetFilePath)
             }
             joined_args += arg;
         }
-        Log_Info("Using cmdline: /usr/bin/curl '%s' ...", joined_args.c_str());
+        Log_Info("Using cmdline: /usr/bin/curl %s", joined_args.c_str());
 
         std::string output;
         int exitCode = ADUC_LaunchChildProcess("/usr/bin/curl", args, output);
