@@ -111,8 +111,9 @@ ADUC_Result Download_curl(
     // -L (or --location). Handle 3xx redirects. See https://curl.se/docs/manpage.html#-L
     args.emplace_back("-L");
 
-    // -C (or --continue-at). The ' -' after allows auto-resuming the transfer. See https://curl.se/docs/manpage.html#-C
-    args.emplace_back("-C -");
+    // -C (or --continue-at). The hyphen after, i.e. '-C -', allows auto-resuming the transfer. See https://curl.se/docs/manpage.html#-C
+    args.emplace_back("-C");
+    args.emplace_back("-");
 
     // -o (or --output). Output to file instead of stdout. See https://curl.se/docs/manpage.html#-o
     // NOTE: -O (or --remote-name) is not needed as we already have an /absolute/ file path.
