@@ -8,6 +8,7 @@
 
 #include "eis_coms.h"
 
+#include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/buffer_.h>
@@ -32,17 +33,29 @@
 /**
  * @brief Unix Domain Socket (UDS) for the Identity Service API
  */
-#define EIS_UDS_IDENTITY_SOCKET_PATH "/run/aziot/identityd.sock"
+#ifdef ADUC_BUILD_SNAP
+#    define EIS_UDS_IDENTITY_SOCKET_PATH "/var/sockets/aziot/identityd.sock"
+#else
+#    define EIS_UDS_IDENTITY_SOCKET_PATH "/run/aziot/identityd.sock"
+#endif
 
 /**
  * @brief Unix Domain Socket (UDS) for the KeyServices API
  */
-#define EIS_UDS_SIGN_SOCKET_PATH "/run/aziot/keyd.sock"
+#ifdef ADUC_BUILD_SNAP
+#    define EIS_UDS_SIGN_SOCKET_PATH "/var/sockets/aziot/keyd.sock"
+#else
+#    define EIS_UDS_SIGN_SOCKET_PATH "/run/aziot/keyd.sock"
+#endif
 
 /**
  * @brief Unix Domain Socket (UDS) for the Certificate API
  */
-#define EIS_UDS_CERT_SOCKET_PATH "/run/aziot/certd.sock"
+#ifdef ADUC_BUILD_SNAP
+#    define EIS_UDS_CERT_SOCKET_PATH "/var/sockets/aziot/certd.sock"
+#else
+#    define EIS_UDS_CERT_SOCKET_PATH "/run/aziot/certd.sock"
+#endif
 
 /**
  * @brief EIS API version for all calls to EIS
@@ -140,7 +153,7 @@ typedef struct tagEIS_HTTP_WORKLOAD_CONTEXT
 /**
  * @brief Maximum amount of bytes for any EIS response
  */
-#define EIS_RESP_SIZE_MAX 4096
+#define EIS_RESP_SIZE_MAX 8192
 
 //
 // HTTP Functions
@@ -197,6 +210,7 @@ static void on_eis_http_recv(
 
     if (contentSize < EIS_RESP_SIZE_MIN || contentSize > EIS_RESP_SIZE_MAX)
     {
+        Log_Error("contentSize out of limits (%ld) (min:%d, max:%d)", contentSize, EIS_RESP_SIZE_MIN, EIS_RESP_SIZE_MAX);
         workloadCtx->status = EISErr_RecvRespOutOfLimitsErr;
         goto done;
     }
@@ -314,6 +328,7 @@ EISErr SendEISRequest(
 
     if (uhttp_client_open(clientHandle, udsSocketPath, 0, on_eis_http_connected, &workloadCtx) != HTTP_CLIENT_OK)
     {
+        Log_Error("uhttp_client_open failed (status:%d)", workloadCtx.status);
         result = workloadCtx.status;
         goto done;
     }
@@ -349,6 +364,7 @@ EISErr SendEISRequest(
 
     if (clientResult != HTTP_CLIENT_OK)
     {
+        Log_Error("uhttp_client_execute_request failed (clientResult: %d)", clientResult);
         goto done;
     }
 
@@ -365,11 +381,13 @@ EISErr SendEISRequest(
     if (timedOut)
     {
         result = EISErr_TimeoutErr;
+        Log_Error("uttp_client_dowork timed out (timeoutMS: %d)", timeoutMS);
         goto done;
     }
 
     if (workloadCtx.status != EISErr_Ok)
     {
+        Log_Error("Bad workloadCtx.status (%d)", workloadCtx.status);
         result = workloadCtx.status;
         goto done;
     }
@@ -382,6 +400,7 @@ EISErr SendEISRequest(
 
     if (responseLen > EIS_RESP_SIZE_MAX || responseLen < EIS_RESP_SIZE_MIN)
     {
+        Log_Error("workloadCtx.http_response out of limits (%ld, min:%d, max:%d)", responseLen, EIS_RESP_SIZE_MIN, EIS_RESP_SIZE_MAX);
         result = EISErr_RecvRespOutOfLimitsErr;
         goto done;
     }

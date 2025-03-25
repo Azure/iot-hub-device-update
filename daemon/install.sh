@@ -10,16 +10,15 @@
 # See https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html#The-Set-Builtin
 set -e
 
-if [ "$#" -ne 5 ]; then
-    echo "Expected 5 command line args, but got $#" >&2
+if [ "$#" -ne 4 ]; then
+    echo "Expected 4 command line args, but got $#" >&2
     echo "Usage: install.sh configuration_dir configuration_file home_dir log_dir data_dir"
 fi
 
 adu_conf_dir=$1
 adu_conf_file=$2
-adu_home_dir=$3
-adu_log_dir=$4
-adu_data_dir=$5
+adu_log_dir=$3
+adu_data_dir=$4
 
 # adu_user is the user that the ADU Agent daemon will run as.
 # ADU Agent daemon needs to run as 'adu' to be able to perform high-privilege tasks via adu-shell.
@@ -132,13 +131,6 @@ setup_dirs_and_files() {
         if [ ! -f "$adu_conf_dir/$adu_conf_file" ]; then
             cp -a "$adu_conf_dir/${adu_conf_file}.template" "$adu_conf_dir/$adu_conf_file"
             chmod u=rw "$adu_conf_dir/$adu_conf_file"
-        fi
-
-        # Create home dir
-        if [ ! -d "$adu_home_dir" ]; then
-            mkdir -p "$adu_home_dir"
-            chown "$adu_user:$adu_group" "$adu_home_dir"
-            chmod u=rwx,g=rx "$adu_home_dir"
         fi
 
         # Create log dir

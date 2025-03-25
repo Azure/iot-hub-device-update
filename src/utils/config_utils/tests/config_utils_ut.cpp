@@ -341,6 +341,42 @@ static const char* validConfigWithOverrideFolder =
         R"(])"
     R"(})";
 
+static const char* validConfigWithUbuntuCoreDownloadsFolder =
+    R"({)"
+        R"("schemaVersion": "1.1",)"
+        R"("aduShellTrustedUsers": ["adu","do"],)"
+        R"("manufacturer": "device_info_manufacturer",)"
+        R"("model": "device_info_model",)"
+        R"("downloadTimeoutInMinutes": 1440,)"
+        R"("aduShellFolder": "/usr/mybin",)"
+        R"("dataFolder": "/var/lib/adu/mydata",)"
+        R"("downloadsFolder": "/var/lib/deviceupdate-agent-downloads",)"
+        R"("extensionsFolder": "/var/lib/adu/myextensions",)"
+        R"("compatPropertyNames": "manufacturer,model",)"
+        R"("agents": [)"
+            R"({ )"
+            R"("name": "host-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "AIS",)"
+                R"("connectionData": "iotHubDeviceUpdate")"
+            R"(},)"
+            R"("manufacturer": "Contoso",)"
+            R"("model": "Smart-Box")"
+            R"(},)"
+            R"({)"
+            R"("name": "leaf-update",)"
+            R"("runas": "adu",)"
+            R"("connectionSource": {)"
+                R"("connectionType": "string",)"
+                R"("connectionData": "HOSTNAME=...")"
+            R"(},)"
+            R"("manufacturer": "Fabrikam",)"
+            R"("model": "Camera")"
+            R"(})"
+        R"(])"
+    R"(})";
+
 static const char* invalidConfigContentDownloadTimeout =
     R"({)"
         R"("schemaVersion": "1.1",)"
@@ -618,7 +654,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK(config->refCount == 0);
     }
 
-    SECTION("User folders from du-config file")
+    SECTION("Uses folders from du-config file")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigWithOverrideFolder) == 0);
         ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
@@ -641,4 +677,32 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         ADUC_ConfigInfo_ReleaseInstance(config);
         CHECK(config->refCount == 0);
     }
+
+
+    // NOTE: Ensure that the downloadsFolder is set correctly, if specified in du-configjson.
+    // (Instead of a 'downloads' sub-folder of the dataFolder )
+    SECTION("Ubuntu Core DO download")
+    {
+        REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigWithUbuntuCoreDownloadsFolder) == 0);
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
+        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+        CHECK_THAT(config->aduShellFolder, Equals("/usr/mybin"));
+
+#if defined(WIN32)
+        CHECK_THAT(config->aduShellFilePath, Equals("/usr/mybin/adu-shell.exe"));
+#else
+        CHECK_THAT(config->aduShellFilePath, Equals("/usr/mybin/adu-shell"));
+#endif
+
+        CHECK_THAT(config->dataFolder, Equals("/var/lib/adu/mydata"));
+        CHECK_THAT(config->extensionsFolder, Equals("/var/lib/adu/myextensions"));
+        CHECK_THAT(config->extensionsComponentEnumeratorFolder, Equals("/var/lib/adu/myextensions/component_enumerator"));
+        CHECK_THAT(config->extensionsContentDownloaderFolder, Equals("/var/lib/adu/myextensions/content_downloader"));
+        CHECK_THAT(config->extensionsStepHandlerFolder, Equals("/var/lib/adu/myextensions/update_content_handlers"));
+        CHECK_THAT(config->extensionsDownloadHandlerFolder, Equals("/var/lib/adu/myextensions/download_handlers"));
+        CHECK_THAT(config->downloadsFolder, Equals("/var/lib/deviceupdate-agent-downloads"));
+        ADUC_ConfigInfo_ReleaseInstance(config);
+        CHECK(config->refCount == 0);
+    }
 }
+

@@ -10,7 +10,13 @@ add_subdirectory (device_info_interface)
 add_subdirectory (pnp_helper)
 add_subdirectory (shutdown_service)
 
-if (NOT WIN32)
+
+if (ADUC_BUILD_SNAP)
+    message(STATUS "skipping command_helper for Ubuntu Core Snap build")
+elseif (WIN32)
+    message(STATUS "Skipping command_helper for non-Windows build")
+else ()
+    message(STATUS "Building with command_helper component")
     add_subdirectory (command_helper)
 endif ()
 
@@ -97,10 +103,22 @@ target_link_libraries (
             aduc::shutdown_service
             aduc::system_utils
             aduc::url_utils
+            )
+
+if (NOT ADUC_BUILD_SNAP)
+    target_link_libraries (
+        ${target_name}
+        PRIVATE
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
+endif()
 
-if (NOT WIN32)
+if (ADUC_BUILD_SNAP)
+    message (STATUS "Skipping command_helper component for Ubuntu Core Snap build")
+elseif (WIN32)
+    message (STATUS "Skipping command_helper component for non-Windows build")
+else ()
+    message (STATUS "Building with command_helper component")
     target_link_libraries (${target_name} PRIVATE aduc::command_helper)
 endif ()
 
@@ -144,6 +162,7 @@ target_compile_definitions (
             ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
             DO_FILE_GROUP="${DO_FILE_GROUP}"
             DO_FILE_USER="${DO_FILE_USER}"
+            ADUC_BUILD_SNAP="${ADUC_BUILD_SNAP}"
             SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}")
 
 if (WIN32)

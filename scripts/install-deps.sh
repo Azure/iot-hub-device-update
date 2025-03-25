@@ -78,6 +78,10 @@ du_test_data_dir_path="/tmp/adu/"
 default_do_ref=develop
 install_do=false
 do_ref=$default_do_ref
+do_cmake_options=(
+    "-DDO_BUILD_TESTS:BOOL=OFF"
+    "-DDO_INCLUDE_SDK=ON"
+)
 
 # catch2 build
 #
@@ -88,7 +92,7 @@ catch2_cc=""
 catch2_cxx=""
 
 # Dependencies packages
-aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'lsb-release' 'curl' 'wget' 'pkg-config' 'libxml2-dev')
+aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'python2.7' 'lsb-release' 'curl' 'wget' 'pkg-config' 'libxml2-dev')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=('gcc' 'g++')
 
@@ -135,6 +139,11 @@ print_help() {
     echo "                          Default is $default_do_ref."
     echo "--do-commit <commit_sha>  Specific commit to fetch."
     echo "                          Default is the latest commit in that branch."
+    echo ""
+    echo "--do-cmake-option <option>    Additional CMake build option for Delivery Optimiztion."
+    echo "                              This option can be specified multiple times."
+    echo "                              For example:"
+    echo "                                 --do-cmake-option '-DDO_BUILD_FOR_SNAP=1' --do-cmake-options '-DDO_BUILD_TESTS'"
     echo ""
     echo "-p, --install-packages    Indicates that packages should be installed."
     echo "--install-packages-only   Indicates that only packages should be installed and that dependencies should not be installed from source."
@@ -477,11 +486,6 @@ do_install_do() {
     mkdir cmake || return
     pushd cmake > /dev/null || return
 
-    local do_cmake_options=(
-        "-DDO_BUILD_TESTS:BOOL=OFF"
-        "-DDO_INCLUDE_SDK=ON"
-    )
-
     if [[ $keep_source_code == "true" ]]; then
         do_cmake_options+=("-DCMAKE_BUILD_TYPE=Debug")
     else
@@ -493,6 +497,10 @@ do_install_do() {
     $SUDO cmake --build . --target install || return
     popd > /dev/null || return
     popd > /dev/null || return
+
+    if [[ $keep_source_code != "true" ]]; then
+        $SUDO rm -rf $do_dir
+    fi
 }
 
 do_install_azure_storage_sdk() {
@@ -532,6 +540,10 @@ do_install_azure_storage_sdk() {
     $SUDO cmake --build . --target install || return
 
     popd > /dev/null || return
+
+    if [[ $keep_source_code != "true" ]]; then
+        $SUDO rm -rf $azure_storage_sdk_dir || return
+    fi
 }
 
 do_install_cmake_from_source() {
@@ -832,6 +844,10 @@ while [[ $1 != "" ]]; do
     --do-ref)
         shift
         do_ref=$1
+        ;;
+    --do-cmake-option)
+        shift
+        do_cmake_options+=("$1")
         ;;
     -p | --install-packages)
         install_packages=true

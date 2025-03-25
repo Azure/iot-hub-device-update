@@ -1,5 +1,5 @@
 add_subdirectory (content_downloaders)
-if (NOT WIN32)
+if (NOT ADUC_BUILD_SNAP OR NOT WIN32)
     add_subdirectory (component_enumerators/examples/contoso_component_enumerator)
 endif ()
 add_subdirectory (download_handlers)

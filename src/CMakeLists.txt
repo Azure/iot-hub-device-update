@@ -82,7 +82,12 @@ add_subdirectory (adu_types)
 add_subdirectory (adu_workflow)
 add_subdirectory (communication_abstraction)
 add_subdirectory (communication_managers)
-add_subdirectory (diagnostics_component)
+
+if (ADUC_BUILD_SNAP)
+    message(STATUS "Skipping diagnostics_component build for Ubuntu Core Snap.")
+else()
+    add_subdirectory (diagnostics_component)
+endif()
 
 if (ADUC_BUILD_DOCUMENTATION)
     add_subdirectory (docs)

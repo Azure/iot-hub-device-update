@@ -58,6 +58,10 @@ const char* EISErr_ErrToString(EISErr eisErr)
         return "EISErr_ContentAllocErr";
     case EISErr_InvalidJsonRespErr:
         return "EISErr_InvalidJsonRespErr";
+    case EISErr_RespNamedPipeInitErr:
+        return "EISErr_RespNamedPipeInitErr";
+    case EISErr_RespNamedFileReaderWriteErr:
+        return "EISErr_RespNamedFileReaderWriteErr";
     }
     return "<Unknown>";
 }
