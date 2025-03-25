@@ -47,7 +47,11 @@ static const RSARootKey HardcodedRSARootKeyList[] =
         "ufkMWdDp3ykE2G0MHgPxnoZCjz75LvZsyvp9D8X7GkDC0tfiX14IlTUOHq4bv-tu"
         "YihcFipX7qjrmVoiTJBUyvjQZqQygGgbcXR_-V4HN2QO0jMpslX8PvVJlr_qKCtR"
         "fQ",
-
+        65537
+    },
+    {
+        "ADU.240117.R.T",
+        "l0SApL3qao8gI_OjAagGCyK7LDasp5Tq0Uzjs7FYRt8Gv7gHpBOEFA94KDb2kRC8Ko_kE3DqBh93KM2jh-NljqvrjASho4PIKyUzUNgtB2LnfJ5M8me5oZrPedeoDR49Nhd5WIpspOyW03mviMsKdaBl4AMD4SDQl1vOHjOx2hSeiSRuPolQh1oQY5RlwIEWXvtGDx2GbbPzNEiegppM5vQ31ZWnNTVg9poI-FASd2pcBJiqMiuWrx1BDwzV-GYGgpUF-0RKUwIUL8jUqABv7YoEMQvjkBc0lnISuoC8Hul38hfDDvB2JaYhjLwQnzakRLImnBJFs72vhhfOljb8k35F54OWDr44nY61AF88bk0X_YtTYhsCBMDBnbamxiKE-u2a6X_V8JE5Gylk49izFiBCJMM3103acji0CXnylmED6Wkqa6Bhp1fnmiJBvGYovpbIqnWYW50TDInuxIRlrCz1rXXtOYZAuif3rg0lkNt5lHfhRWbUK0-EZh_ka7zN",
         65537
     }
 #else
@@ -77,7 +81,14 @@ static const RSARootKey HardcodedRSARootKeyList[] =
         "x_rj0mwmzi4sVuDPje79kxIvAEmNHII4VqZdeURKGvPcFhCzwS0nEf4bmAXko2Ax"
         "mQ",
         65537
+    },
+    {
+
+        "ADU.241112.R",
+        "i4Gp6j1NB2lEHh0qWu0B5LBxUvGqF49gbvqTitaZ06XzUufZIwP0dFzULl_tPTlKc8veju3JCK6EtWaCsAXVtBj6DV8kkTXvh2nB340U3sedBGo5fZWj_rNH3HB8rQ6TBiTvFRAnGaxCqQirYb38X7SBBp4jljnt9uzcJAB2i727qi48havWWLhlWxBQfTGuU5ah79KsnK16g_eGnGRh9tnJ8aCAG-cp-3EX4f9zQXe3yHAmrGYmMH3M6COeMTn2diqn5CZXqsM5ugv1kISxJeL7F4ftiGCBe1i3PNZkd6olWFLnVfJR9mEeTdC9Sx78AedZsfBK43Vn7R6MlVt78_ZU5kvVCmFJwtvkkmIJxWm13e6F5514a0UQb2K0Q5jOmAuyUvZXwoVEY3JAnSVOPYJtrDaOLi8VVAJIF-tFeqwZpWFwN4hO-Uix3dhBc8uVqVFBKUKoa6gcwblrwLyfdd31hZgAYb8gB6MbM2rU6m_37QPRgmktK1QK2VZCKdJt",
+        65537
     }
+
 #endif
 };
 // clang-format on
