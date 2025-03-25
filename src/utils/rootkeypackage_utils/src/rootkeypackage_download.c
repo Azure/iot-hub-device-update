@@ -7,7 +7,6 @@
  */
 
 #include "aduc/rootkeypackage_download.h"
-#include "aduc/rootkeypackage_do_download.h"
 #include "aduc/rootkeypackage_utils.h"
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>

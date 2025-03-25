@@ -46,6 +46,7 @@ install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
+rootkeypkg_curl=false
 
 #
 # Export the compiler settings in case VM is wonky
@@ -54,54 +55,59 @@ export CC=/usr/bin/gcc
 export CXX=/usr/bin/g++
 
 print_help() {
-    echo "Usage: build.sh [options...]"
-    echo "-c, --clean                           Does a clean build."
-    echo "-t, --type <build_type>               The type of build to produce. Passed to CMAKE_BUILD_TYPE. Default is Debug."
-    echo "                                      Options: Release Debug RelWithDebInfo MinSizeRel"
-    echo "-d, --build-docs                      Builds the documentation."
-    echo "-u, --build-unit-tests                Builds unit tests."
-    echo "--enable-e2e-testing                  Enables settings for the E2E test pipelines."
-    echo "--build-packages                      Builds and packages the client in various package formats e.g debian."
-    echo "-o, --out-dir <out_dir>               Sets the build output directory. Default is out."
-    echo "-v, --verbose                         Enables verbose compilation and linking output."
-    echo "-s, --static-analysis <tools...>      Runs static analysis as part of the build."
-    echo "                                      Tools is a comma delimited list of static analysis tools to run at build time."
-    echo "                                      Tools: clang-tidy cppcheck cpplint iwyu lwyu (or all)"
-    echo ""
-    echo "-p, --platform-layer <layer>          Specify the platform layer to build/use. Default is linux."
-    echo "                                      Option: linux"
-    echo ""
-    echo "--trace-target-deps                   Traces dependencies of CMake targets debug info."
-    echo ""
-    echo "--log-lib <log_lib>                   Specify the logging library to build/use. Default is zlog."
-    echo "                                      Options: zlog xlog"
-    echo ""
-    echo "-l, --log-dir <log_dir>               Specify the directory where the ADU Agent will write logs."
-    echo "                                      Only valid for logging libraries that support file logging."
-    echo ""
-    echo "--install-prefix <prefix>             Install prefix to pass to CMake."
-    echo ""
-    echo "--install                             Install the following ADU components."
-    echo "                                          From source: deviceupdate-agent.service & adu-swupdate.sh."
-    echo "                                          From build output directory: AducIotAgent & adu-shell."
-    echo ""
-    echo "--content-handlers <handlers>         [Deprecated] use '--step-handlers' option instead."
-    echo "--step-handlers <handlers>            Specify a comma-delimited list of the step handlers to build."
-    echo "                                          Default is \"${step_handlers}\"."
-    echo ""
-    echo "--cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake"
-    echo ""
-    echo "--openssl-path                        Override the openssl path"
-    echo ""
-    echo "--major-version                       Major version of ADU"
-    echo ""
-    echo "--minor-version                       Minor version of ADU"
-    echo ""
-    echo "--patch-version                       Patch version of ADU"
-    echo ""
-    echo ""
-    echo ""
-    echo "-h, --help                            Show this help message."
+    cat << EOS
+
+Usage: build.sh [options...]
+
+    -c, --clean                           Does a clean build.
+    -t, --type <build_type>               The type of build to produce. Passed to CMAKE_BUILD_TYPE. Default is Debug.
+                                        Options: Release Debug RelWithDebInfo MinSizeRel
+    -d, --build-docs                      Builds the documentation.
+    -u, --build-unit-tests                Builds unit tests.
+    --enable-e2e-testing                  Enables settings for the E2E test pipelines.
+    --build-packages                      Builds and packages the client in various package formats e.g debian.
+    -o, --out-dir <out_dir>               Sets the build output directory. Default is out.
+    -v, --verbose                         Enables verbose compilation and linking output.
+    -s, --static-analysis <tools...>      Runs static analysis as part of the build.
+                                        Tools is a comma delimited list of static analysis tools to run at build time.
+                                        Tools: clang-tidy cppcheck cpplint iwyu lwyu (or all)
+
+    -p, --platform-layer <layer>          Specify the platform layer to build/use. Default is linux.
+                                        Option: linux
+
+    --trace-target-deps                   Traces dependencies of CMake targets debug info.
+
+    --log-lib <log_lib>                   Specify the logging library to build/use. Default is zlog.
+                                        Options: zlog xlog
+
+    -l, --log-dir <log_dir>               Specify the directory where the ADU Agent will write logs.
+                                        Only valid for logging libraries that support file logging.
+
+    --install-prefix <prefix>             Install prefix to pass to CMake.
+
+    --install                             Install the following ADU components.
+                                            From source: deviceupdate-agent.service & adu-swupdate.sh.
+                                            From build output directory: AducIotAgent & adu-shell.
+
+    --content-handlers <handlers>         [Deprecated] use '--step-handlers' option instead.
+    --step-handlers <handlers>            Specify a comma-delimited list of the step handlers to build.
+                                            Default is '${step_handlers}'.
+
+    --cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake
+
+    --openssl-path                        Override the openssl path
+
+    --major-version                       Major version of ADU
+
+    --minor-version                       Minor version of ADU
+
+    --patch-version                       Patch version of ADU
+
+    --rootkeypkg-curl                     Download the RootKey Package with curl instead of delivery optimization agent.
+
+    -h, --help                            Show this help message.
+
+EOS
 }
 
 copyfile_exit_if_failed() {
@@ -339,6 +345,9 @@ while [[ $1 != "" ]]; do
         shift
         patch_version=$1
         ;;
+    --rootkeypkg-curl)
+        rootkeypkg_curl="true"
+        ;;
     -h | --help)
         print_help
         $ret 0
@@ -407,6 +416,7 @@ else
     bullet "Static analysis: " "${static_analysis_tools[@]}"
 fi
 bullet "Include Test Root Keys: $use_test_root_keys"
+bullet "Use Curl, not DO, for RootKey Package Download? $rootkeypkg_curl"
 echo ''
 
 CMAKE_OPTIONS=(
@@ -420,6 +430,7 @@ CMAKE_OPTIONS=(
     "-DADUC_PLATFORM_LAYER:STRING=$platform_layer"
     "-DADUC_TRACE_TARGET_DEPS=$trace_target_deps"
     "-DADUC_USE_TEST_ROOT_KEYS=$use_test_root_keys"
+    "-DADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL=$rootkeypkg_curl"
     "-DCMAKE_BUILD_TYPE:STRING=$build_type"
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
