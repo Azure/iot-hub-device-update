@@ -1,14 +1,21 @@
 cmake_minimum_required (VERSION 3.5)
 
-if(NOT DEFINED CMAKE_SYSTEM_PROCESSOR)
-    execute_process(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE SYS_ARCH)
-    set(CMAKE_SYSTEM_PROCESSOR ${SYS_ARCH} CACHE STRING "System processor architecture")
-endif()
+if (NOT WIN32)
+    if (NOT DEFINED CMAKE_SYSTEM_PROCESSOR)
+        execute_process (COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE SYS_ARCH)
+        set (CMAKE_SYSTEM_PROCESSOR ${SYS_ARCH} CACHE STRING "System processor architecture")
+    endif ()
 
-message(STATUS "System processor: ${CMAKE_SYSTEM_PROCESSOR}")
+    message (STATUS "System processor: ${CMAKE_SYSTEM_PROCESSOR}")
 
-set(IS_ARM64 ${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64|arm64")
-message(STATUS "Building for ARM64: ${IS_ARM64}")
+    if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+        set (IS_ARM64 TRUE)
+    else ()
+        set (IS_ARM64 FALSE)
+    endif ()
+
+    message (STATUS "Building for ARM64: ${IS_ARM64}")
+endif ()
 
 if (WIN32)
     #
