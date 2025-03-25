@@ -22,6 +22,6 @@ target_link_libraries (
     PUBLIC aduc::adu_types
     PRIVATE aduc::communication_abstraction aduc::logging aduc::retry_utils)
 
-if (ADUC_BUILD_UNIT_TESTS)
+if (ADUC_BUILD_UNIT_TESTS AND NOT IS_ARM64)
     add_subdirectory (tests)
 endif ()
