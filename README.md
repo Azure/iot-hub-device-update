@@ -27,6 +27,7 @@ Device Update for IoT Hub features provide a powerful and flexible experience, i
 
 * [Device Update for IoT Hub](https://aka.ms/iot-hub-device-update-docs)
 * [Getting Started with Device Update Agent](./docs/agent-reference)
+* More details on building the agent here: [How to build agent code](./docs/agent-reference/how-to-build-agent-code.md)
 
 ## Quick Start
 

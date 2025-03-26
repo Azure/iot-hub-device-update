@@ -9,7 +9,6 @@
 #include "aduc/rootkey_workflow.h"
 
 #include <aduc/logging.h>
-#include <aduc/rootkeypackage_do_download.h>
 #include <aduc/rootkeypackage_download.h>
 #include <aduc/rootkeypackage_parse.h>
 #include <aduc/rootkeypackage_utils.h>
@@ -19,6 +18,12 @@
 #include <azure_c_shared_utility/strings.h>
 #include <parson.h>
 #include <root_key_util.h>
+
+#if ROOTKEY_PKG_DOWNLOAD_USE_CURL == 1
+#    include <aduc/rootkeypackage_curl_download.h>
+#else
+#    include <aduc/rootkeypackage_do_download.h>
+#endif
 
 #include <stdlib.h>
 
@@ -44,8 +49,13 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
     memset(&rootKeyPackage, 0, sizeof(ADUC_RootKeyPackage));
 
     ADUC_RootKeyPkgDownloaderInfo rootkey_downloader_info = {
-        .name = "DO", // DeliveryOptimization
+#if ROOTKEY_PKG_DOWNLOAD_USE_CURL == 1
+        .name = "Curl",
+        .downloadFn = DownloadRootKeyPkg_Curl,
+#else
+        .name = "DO",
         .downloadFn = DownloadRootKeyPkg_DO,
+#endif
         .downloadBaseDir = workFolder,
     };
 

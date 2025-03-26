@@ -7,10 +7,15 @@
  */
 #include <aduc/c_utils.h>
 #include <aduc/file_test_utils.hpp>
-#include <aduc/rootkeypackage_do_download.h>
 #include <aduc/rootkeypackage_utils.h>
 #include <azure_c_shared_utility/strings.h>
 #include <string>
+
+#if ROOTKEY_PKG_DOWNLOAD_USE_CURL == 1
+#    include <aduc/rootkeypackage_curl_download.h>
+#else
+#    include <aduc/rootkeypackage_do_download.h>
+#endif
 
 #define ROOTKEY_PKG_URL "http://localhost:8083/rootkey.json"
 #define WORKFLOW_ID "7cf7241f-9ede-3e37-ca72-a7593bd7fc0f"
@@ -29,8 +34,13 @@ int main(int argc, char** argv)
     ADUC_RootKeyPackage rootKeyPackage{};
 
     ADUC_RootKeyPkgDownloaderInfo downloaderInfo{
+#if ROOTKEY_PKG_DOWNLOAD_USE_CURL == 1
+        "Curl",
+        DownloadRootKeyPkg_Curl,
+#else
         "DO",
         DownloadRootKeyPkg_DO,
+#endif
         "/tmp/deviceupdate/rootkey_download_test_app",
     };
 
