@@ -88,6 +88,7 @@ ADUC_Result ADUC_UrlUtils_GetPathFileName(const char* url, STRING_HANDLE* outFil
     result.ResultCode = ADUC_GeneralResult_Success;
 
 done:
+    free(filename);
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {

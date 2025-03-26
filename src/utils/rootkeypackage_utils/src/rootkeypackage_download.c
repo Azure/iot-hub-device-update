@@ -7,7 +7,6 @@
  */
 
 #include "aduc/rootkeypackage_download.h"
-#include "aduc/rootkeypackage_do_download.h"
 #include "aduc/rootkeypackage_utils.h"
 #include <aduc/logging.h>
 #include <aduc/string_c_utils.h>
@@ -72,7 +71,7 @@ ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
         targetUrl = STRING_construct(ADUC_ROOTKEY_PKG_URL_OVERRIDE);
     }
 
-    Log_Debug("targetUrl: '%s'", targetUrl);
+    Log_Debug("targetUrl: '%s'", STRING_c_str(targetUrl));
 
     if (targetUrl == NULL)
     {
@@ -81,9 +80,9 @@ ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
     }
 
     result = ADUC_UrlUtils_GetPathFileName(STRING_c_str(targetUrl), &targetFileName);
-    if (IsAducResultCodeFailure(result.ResultCode) || IsNullOrEmpty(STRING_c_str(targetFileName)))
+    if (IsAducResultCodeFailure(result.ResultCode) || (0 == STRING_length(targetFileName)))
     {
-        Log_Error("failed get path, or empty targetFileName['%s'], result: 0x%08x", targetFileName, result.ExtendedResultCode);
+        Log_Error("failed get path, or null/empty targetFileName['%s'], result: 0x%08x", STRING_c_str(targetFileName), result.ExtendedResultCode);
         result.ResultCode = ADUC_GeneralResult_Failure;
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_DOWNLOAD_URL_BAD_PATH;
         goto done;

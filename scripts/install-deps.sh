@@ -186,6 +186,10 @@ do_install_aduc_packages() {
         $SUDO apt-get install --yes gcc-10 g++-10 || return
         catch2_cc=/usr/bin/gcc-10
         catch2_cxx=/usr/bin/g++-10
+    elif [[ $OS == "Debian" && $VER == "12" ]]; then
+        $SUDO apt-get install --yes gcc-12 g++-12 || return
+        catch2_cc=/usr/bin/gcc-12
+        catch2_cxx=/usr/bin/g++-12
     else
         $SUDO apt-get install --yes gcc-8 g++-8 || return
         catch2_cc=/usr/bin/gcc-8

@@ -18,7 +18,6 @@
 #include "aduc/logging.h"
 #include "aduc/reporting_utils.h"
 #include "aduc/rootkey_workflow.h"
-#include "aduc/rootkeypackage_do_download.h"
 #include "aduc/rootkeypackage_types.h"
 #include "aduc/rootkeypackage_utils.h"
 #include "aduc/string_c_utils.h"

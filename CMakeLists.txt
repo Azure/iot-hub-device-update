@@ -1,5 +1,28 @@
 cmake_minimum_required (VERSION 3.5)
 
+if (NOT WIN32)
+    if (NOT DEFINED CMAKE_SYSTEM_PROCESSOR)
+        execute_process (
+            COMMAND uname -m
+            COMMAND tr -d '\n'
+            OUTPUT_VARIABLE SYS_ARCH)
+        set (
+            CMAKE_SYSTEM_PROCESSOR
+            ${SYS_ARCH}
+            CACHE STRING "System processor architecture")
+    endif ()
+
+    message (STATUS "System processor: ${CMAKE_SYSTEM_PROCESSOR}")
+
+    if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+        set (IS_ARM64 TRUE)
+    else ()
+        set (IS_ARM64 FALSE)
+    endif ()
+
+    message (STATUS "Building for ARM64: ${IS_ARM64}")
+endif ()
+
 if (WIN32)
     #
     # Configure vcpkg
@@ -236,6 +259,10 @@ set (
         STRING
         "An override URL to use for the public rootkey package. Leave empty to use the URL provided in the C2D message."
 )
+
+if (ADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL)
+    set (ROOTKEY_PKG_DOWNLOAD_USE_CURL 1)
+endif ()
 
 #
 # Starting from version 0.8.1, Device Update Agent must support only one version of the update manifest
@@ -480,6 +507,8 @@ option (ADUC_TRACE_TARGET_DEPS "Trace target dependencies" OFF)
 option (ADUC_USE_TEST_ROOT_KEYS "Include test root keys" OFF)
 option (ADUC_ENABLE_E2E_TESTING "Enable e2e test pipeline settings" OFF)
 option (ADUC_ENABLE_SRVC_E2E_TESTING "Enable service side test agent settings" OFF)
+option (ADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL
+        "Use Curl to download the Rootkey Package instead of DeliveryOptimization agent" OFF)
 
 ### End CMake Options
 
