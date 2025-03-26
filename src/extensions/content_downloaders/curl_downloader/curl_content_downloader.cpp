@@ -108,9 +108,19 @@ ADUC_Result Download_curl(
         entity->DownloadUri,
         fullFilePath.str().c_str());
 
+    // -L (or --location). Handle 3xx redirects. See https://curl.se/docs/manpage.html#-L
+    args.emplace_back("-L");
+
+    // -C (or --continue-at). The hyphen after, i.e. '-C -', allows auto-resuming the transfer. See https://curl.se/docs/manpage.html#-C
+    args.emplace_back("-C");
+    args.emplace_back("-");
+
+    // -o (or --output). Output to file instead of stdout. See https://curl.se/docs/manpage.html#-o
+    // NOTE: -O (or --remote-name) is not needed as we already have an /absolute/ file path.
     args.emplace_back("-o");
     args.emplace_back(fullFilePath.str().c_str());
-    args.emplace_back("-O");
+
+    // Finally, tack the url onto the end
     args.emplace_back(entity->DownloadUri);
 
     exitCode = ADUC_LaunchChildProcess("/usr/bin/curl", args, output);
