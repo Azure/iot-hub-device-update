@@ -28,9 +28,9 @@
   "builtin-baseline": "43f56137beabcd470ac2650cdf3954761f65b70e",
   "overrides": [
     {
-      "$explanation": "Linux client is built with catch2 v2",
+      "$explanation": "Linux client is built with catch2 v3",
       "name": "catch2",
-      "version": "2.13.9"
+      "version": "3.8.0"
     },
     {
       "$explanation": "Linux client is build with openssl v1",

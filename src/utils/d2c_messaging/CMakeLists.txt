@@ -21,7 +21,7 @@ target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types
     PRIVATE aduc::communication_abstraction aduc::logging aduc::retry_utils)
-
+    
 if (ADUC_BUILD_UNIT_TESTS)
     if (${IS_ARM64})
         message (STATUS "Skipping tests for utils/d2c_messaging because IS_ARM64 == ${IS_ARM64}...")

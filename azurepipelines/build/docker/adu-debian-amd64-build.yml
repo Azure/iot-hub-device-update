@@ -95,16 +95,5 @@ extends:
                 parameters:
                   targetOs: "debian11"
                   targetArch: "amd64"
+                  additionalDependencies: "--install-cmake --install-catch2"
 
-          - job: BuildAduAgent_debian10
-            displayName: "Build ADU Agent - Debian 10 (amd64)"
-            timeoutInMinutes: 120
-            cancelTimeoutInMinutes: 120
-            pool:
-              name: aduc_1es_client_pool
-              os: linux
-            steps:
-              - template: /azurepipelines/build/templates/adu-docker-build-steps.yml@self
-                parameters:
-                  targetOs: "debian10"
-                  targetArch: "amd64"
