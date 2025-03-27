@@ -13,14 +13,22 @@ if (NOT WIN32)
     endif ()
 
     message (STATUS "System processor: ${CMAKE_SYSTEM_PROCESSOR}")
+    set (IS_ARM FALSE)
+    set (IS_ARM64 FALSE)
+    set (IS_ARM32 FALSE)
 
     if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
         set (IS_ARM64 TRUE)
-    else ()
-        set (IS_ARM64 FALSE)
+        set (IS_ARM TRUE)
+        message (STATUS "Building for ARM64")
     endif ()
 
-    message (STATUS "Building for ARM64: ${IS_ARM64}")
+    # check if we are building for arm32
+    if (CMAKE_SYSTEM_PROCESSOR MATCHES "arm|armv7l")
+        set (IS_ARM32 TRUE)
+        set (IS_ARM TRUE)
+        message (STATUS "Building for ARM32")
+    endif ()
 endif ()
 
 if (WIN32)
