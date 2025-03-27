@@ -16,10 +16,8 @@ variables:
     ENABLE_ADU_TELEMETRY_REPORTING: true
     # ADUC_BUILDER_IDENTIFIER will be set to "DU" short for Device Update by default, for Device Update-sourced builder
     ADUC_BUILDER_IDENTIFIER: DU
-    # DO requires gcc greater than 6 for c++17 support.
-    # gcc-8 matches what is built with poky warrior.
-    CC: gcc-8
-    CXX: g++-8
+    CC: gcc-10
+    CXX: g++-10
 
 name: $(version.major).$(version.minor).$(version.patch)-$(version.pre-release)+$(version.build)
 
