@@ -45,7 +45,7 @@ steps:
       displayName: "Prebuild"
       condition: always()
     - bash: |
-          sudo docker run -d -t --rm -v $(Build.SourcesDirectory):/iot-hub-device-update -v ~/.gitconfig:/etc/.gitconfig --name ARMcontainer aduccontainerregistry.azurecr.io/${{parameters.targetOs}}-${{parameters.targetArch}}:latest bash
+          sudo docker run -d -t --rm --platform linux/arm64 -v $(Build.SourcesDirectory):/iot-hub-device-update -v ~/.gitconfig:/etc/.gitconfig --name ARMcontainer aduccontainerregistry.azurecr.io/${{parameters.targetOs}}-${{parameters.targetArch}}:latest bash
       displayName: "Run docker container"
     - bash: |
             if [ -n "${{parameters.additionalDependencies}}" ]; then
