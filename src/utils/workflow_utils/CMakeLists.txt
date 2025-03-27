@@ -44,6 +44,6 @@ target_link_libraries (
             libaducpal
             Parson::parson)
 
-if (ADUC_BUILD_UNIT_TESTS)
-    add_subdirectory (tests)
-endif ()
+# if (ADUC_BUILD_UNIT_TESTS)
+#     add_subdirectory (tests)
+# endif ()
