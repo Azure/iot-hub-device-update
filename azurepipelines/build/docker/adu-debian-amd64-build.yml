@@ -95,5 +95,4 @@ extends:
                 parameters:
                   targetOs: "debian11"
                   targetArch: "amd64"
-                  additionalDependencies: "--install-cmake --install-catch2"
 
