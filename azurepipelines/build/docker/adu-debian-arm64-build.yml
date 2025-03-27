@@ -93,5 +93,4 @@ extends:
                 parameters:
                   targetOs: "debian11"
                   targetArch: "arm64"
-                  additionalDependencies: "--install-catch2"
 
