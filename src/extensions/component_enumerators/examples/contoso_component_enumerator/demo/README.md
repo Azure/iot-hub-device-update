@@ -347,29 +347,25 @@ See [Steps Handler](../../../../../extensions/step_handlers/steps_handler/) and 
 
 Prerequisites
 
-- A test device with Ubuntu 18.04 LTS (or Virtual Machine)
+- A test device with Ubuntu 22.04 LTS (or Virtual Machine)
 - Connection to the internet
 #### Install the Device Update Agent and Dependencies
 
 - Register packages.microsoft.com in APT package repository
 
     ```sh
-    curl https://packages.microsoft.com/config/ubuntu/18.04/multiarch/prod.list > ~/microsoft-prod.list
+    curl https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb > ~/packages-microsoft-prod.deb
 
-    sudo cp ~/microsoft-prod.list /etc/apt/sources.list.d/
-
-    curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > ~/microsoft.gpg
-
-    sudo cp ~/microsoft.gpg /etc/apt/trusted.gpg.d/
+    sudo apt-get install ~/packages-microsoft-prod.deb
 
     sudo apt-get update
     ```
 
-- Install test **deviceupdate-agent-[version].deb** package on the test device.
+- Install **deviceupdate-agent** package on the test device.
 e.g.
 
   ```sh
-  sudo apt-get install ./deviceupdate-agent-0.8.0-public-preview-refresh.deb
+  sudo apt-get install deviceupdate-agent
   ```
 
 Note: this will automatically install the delivery-optimization-agent package from packages.microsoft.com
@@ -384,7 +380,7 @@ Note: this will automatically install the delivery-optimization-agent package fr
 sudo systemctl restart deviceupdate-agent
 ```
 
-### Optional Steps
+### Required Steps for Multi Component Update Example
 
 The following optional steps are required for Multi Component Update (a.k.a. Proxy Update).
 
@@ -393,7 +389,7 @@ The following optional steps are required for Multi Component Update (a.k.a. Pro
 Run following command on your test device
 
 ```sh
-sudo /usr/bin/AducIotAgent -E /var/lib/adu/extensions/sources/libcontoso_component_enumerator.so
+sudo /usr/bin/AducIotAgent -E /var/lib/adu/extensions/sources/libcontoso_component_enumerator.so -t componentEnumerator
 ```
 
 #### Setup Mock Components
@@ -408,7 +404,7 @@ For testing and demonstration purposes, we'll be creating following mock compone
 **IMPORTANT**
 This components configuration depends on the implementation of an example Component Enumerator extension called libcontoso_component_enumerator.so, which required a mock component inventory data file `/usr/local/contoso-devices/components-inventory.json`
 
-> Tip: you can copy [demo](../demo) folder to your home directory on the test VM and run `sudo ~/demo/tools/reset-demo-components.sh` to copy required files to the right locations.
+> Tip: you can copy [demo](../demo) folder to `/usr/local` directory on the test VM and run `sudo /usr/local/demo/tools/reset-demo-components.sh` to copy required files to the right locations.
 
 #### Add /usr/local/contoso-devices/components-inventory.json
 

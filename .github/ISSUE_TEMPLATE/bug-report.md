@@ -16,7 +16,7 @@ Note: please use your Azure subscription if you need to share any information fr
 
 Need Support?
 * Have a feature request? Please post it on [Ideas](https://github.com/Azure/iot-hub-device-update/discussions/categories/ideas) to help us prioritize.
-* Have a technical question? Ask on [Q & A](https://github.com/Azure/iot-hub-device-update/discussions/categories/q-a) 
+* Have a technical question? Ask on [Q & A](https://github.com/Azure/iot-hub-device-update/discussions/categories/q-a)
 * Need support? Azure customers with support plans have access to priority technical support directly from the Azure Portal. Support plan details are at: https://azure.microsoft.com/en-us/support/plans/
 
 Provide a general summary of the issue in the Title above
@@ -35,8 +35,8 @@ Provide a detailed set of steps to reproduce the bug.
 4.
 
 ### Device Information
-* Host OS [e.g. Ubuntu 18.04, Windows Server IoT 2019]: 
-* Architecture [e.g. amd64, arm32, arm64]: 
+* Host OS [e.g. Ubuntu 22.04]:
+* Architecture [e.g. amd64, arm32, arm64]:
 * Provisioning Method:
 *DU Agent Version (run 'sudo -u adu /usr/bin/AducIotAgent -v'):
 
