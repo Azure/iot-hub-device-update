@@ -38,6 +38,9 @@ ADUC_Result DownloadRootKeyPkg_Curl(const char* url, const char* targetFilePath)
         args.emplace_back("-o");
         args.emplace_back(targetFilePath);
 
+        args.emplace_back("-m"); // -m, --max-time <seconds>
+        args.emplace_back("3600"); // 1 hour
+
         // Finally, tack the url onto the end
         args.emplace_back(url);
 
