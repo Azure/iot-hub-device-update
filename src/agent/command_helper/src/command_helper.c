@@ -280,7 +280,7 @@ static void* ADUC_CommandListenerThread(void* unused)
                     memcpy(safeCommandLine, commandLine, readSize);
                     safeCommandLine[readSize] = '\0';
 
-                    if (strcmp(safeCommandLine, g_commands[i]->commandText) == 0)
+                    if (strncmp(safeCommandLine, g_commands[i]->commandText, readSize) == 0)
                     {
                         matchedCommand = g_commands[i];
                         free(safeCommandLine);
