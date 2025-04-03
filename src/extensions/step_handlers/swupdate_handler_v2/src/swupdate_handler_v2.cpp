@@ -738,7 +738,7 @@ ADUC_Result SWUpdateHandlerImpl::PrepareCommandArguments(
 
     Log_Info("Parsing handlerProperties.arguments: %s", arguments);
     argumentList = ADUC::StringUtils::Split(fileArgs, ' ');
-    for (int i = 0; i < argumentList.size(); i++)
+    for (size_t i = 0; i < argumentList.size(); i++)
     {
         const std::string argument = argumentList[i];
         if (!argument.empty())
