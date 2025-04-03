@@ -260,7 +260,7 @@ ADUC_Result SWUpdateHandler_PerformAction(
 
     if (!scriptOutput.empty())
     {
-        Log_Info(scriptOutput.c_str());
+        Log_Info("%s\n", scriptOutput.c_str());
     }
 
     // Parse result file.
