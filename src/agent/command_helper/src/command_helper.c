@@ -278,6 +278,7 @@ static void* ADUC_CommandListenerThread(void* unused)
                 if (safeCommandLine != NULL)
                 {
                     memcpy(safeCommandLine, commandLine, readSize);
+                    safeCommandLine[readSize] = '\0';
 
                     if (strcmp(safeCommandLine, g_commands[i]->commandText) == 0)
                     {
