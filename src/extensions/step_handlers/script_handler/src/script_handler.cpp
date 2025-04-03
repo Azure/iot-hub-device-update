@@ -652,7 +652,7 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
 
     if (!results.scriptOutput.empty())
     {
-        Log_Info(results.scriptOutput.c_str());
+        Log_Info("%s\n", results.scriptOutput.c_str());
     }
 
     if (exitCode != 0)
