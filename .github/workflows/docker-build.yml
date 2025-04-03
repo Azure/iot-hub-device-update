@@ -18,6 +18,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Remove colon from matrix.os so artifact name is valid
+        id: make-artifact-name-valid
+        run: |
+          OS_NAME=$(echo "${{ matrix.os }}" | tr ':' '-')
+          echo "os_name=$OS_NAME" >> $GITHUB_OUTPUT
       - name: Install prereqs
         run: |
           apt-get update
@@ -35,6 +40,6 @@ jobs:
       - name: Upload Debian packages
         uses: actions/upload-artifact@v4
         with:
-          name: deb-packages-${{ matrix.os }}-${{ matrix.arch }}
+          name: deb-packages-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}
           path: out/*.deb
-          retention-days: 7
+          retention-days: 3
