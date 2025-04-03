@@ -281,7 +281,7 @@ static bool ADUC_RelatedFile_Init(
         goto done;
     }
 
-    for (int i = 0; i < propertiesCount; ++i)
+    for (size_t i = 0; i < propertiesCount; ++i)
     {
         if (!ADUC_Property_Init(&tempPropertiesArray[i], properties[i].Name, properties[i].Value))
         {
