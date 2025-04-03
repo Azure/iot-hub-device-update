@@ -350,7 +350,7 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
 
     result = { ADUC_Result_Download_Success };
 
-    for (int i = 0; i < fileCount; i++)
+    for (size_t i = 0; i < fileCount; i++)
     {
         Log_Info("Downloading file #%d", i);
 
