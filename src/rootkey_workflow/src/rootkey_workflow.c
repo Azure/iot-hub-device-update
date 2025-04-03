@@ -135,7 +135,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
     {
         if (ADUC_SystemUtils_MkDirRecursiveDefault(ADUC_ROOTKEY_STORE_PATH) != 0)
         {
-            Log_Error("Failed creation of rootkey store path: '%s', ADUC_ROOTKEY_STORE_PATH");
+            Log_Error("Failed creation of rootkey store path: '%s'", ADUC_ROOTKEY_STORE_PATH);
             result.ExtendedResultCode = ADUC_ERC_ROOTKEY_STORE_PATH_CREATE;
             goto done;
         }
