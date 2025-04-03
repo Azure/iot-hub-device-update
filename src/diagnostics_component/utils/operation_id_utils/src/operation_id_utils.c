@@ -32,6 +32,7 @@ bool OperationIdUtils_OperationIsComplete(const char* serviceMsg)
     bool alreadyCompleted = false;
 
     char completedOperationId[MAX_OPERATION_ID_CHARS + 1]; // +1 for the null terminator
+    memset(completedOperationId, 0, sizeof(completedOperationId)); // Init buffer to ensure null termination
 
     JSON_Value* serviceMsgJsonValue = NULL;
 
@@ -69,7 +70,8 @@ bool OperationIdUtils_OperationIsComplete(const char* serviceMsg)
         goto done;
     }
 
-    if (strcmp(requestOperationId, completedOperationId) == 0)
+    // use strncmp instead of strcmp to ensure no buffer overrun
+    if (strncmp(requestOperationId, completedOperationId, MAX_OPERATION_ID_CHARS) == 0)
     {
         alreadyCompleted = true;
     }

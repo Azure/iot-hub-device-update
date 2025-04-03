@@ -274,10 +274,19 @@ static void* ADUC_CommandListenerThread(void* unused)
                     continue;
                 }
 
-                if (strcmp(commandLine, g_commands[i]->commandText) == 0)
+                char* safeCommandLine = (char*)malloc(readSize + 1);
+                if (safeCommandLine != NULL)
                 {
-                    matchedCommand = g_commands[i];
-                    break;
+                    memcpy(safeCommandLine, commandLine, readSize);
+                    safeCommandLine[readSize] = '\0';
+
+                    if (strncmp(safeCommandLine, g_commands[i]->commandText, readSize) == 0)
+                    {
+                        matchedCommand = g_commands[i];
+                        free(safeCommandLine);
+                        break;
+                    }
+                    free(safeCommandLine);
                 }
             }
         }
