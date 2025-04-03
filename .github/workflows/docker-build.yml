@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Remove colon from matrix.os so artifact name is valid
+      - name: Make artifact name valid
         id: make-artifact-name-valid
         run: |
           OS_NAME=$(echo "${{ matrix.os }}" | tr ':' '-')
