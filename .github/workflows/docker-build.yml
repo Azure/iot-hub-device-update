@@ -7,9 +7,14 @@ jobs:
     strategy:
       matrix:
         os: ["debian:12", "debian:11", "debian:10", "ubuntu:22.04", "ubuntu:20.04"]
-    runs-on: ubuntu-latest
+        arch: [amd64, arm64]
+        exclude:
+          - os: "debian:10"
+            arch: arm64
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-latest' }}
     container:
       image: ${{ matrix.os }}
+      options: --platform linux/${{ matrix.arch }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,9 +26,15 @@ jobs:
       - name: Install dependencies
         run: |
           scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck
-      - name: Build tests
-        run: scripts/build.sh --clean --build-unit-tests
+      - name: Build packages and tests
+        run: scripts/build.sh --clean --build-unit-tests --build-packages
       - name: Run tests
         run: |
           cd out
           ctest
+      - name: Upload Debian packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-packages-${{ matrix.os }}-${{ matrix.arch }}
+          path: out/*.deb
+          retention-days: 7
