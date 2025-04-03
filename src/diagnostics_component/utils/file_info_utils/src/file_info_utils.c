@@ -169,7 +169,7 @@ done:
     if (!succeeded)
     {
         // Free all the file names, if allocated.
-        for (int i = 0; i < logFileSize; ++i)
+        for (size_t i = 0; i < logFileSize; ++i)
         {
             free(logFiles[i].fileName);
             memset(&logFiles[i], 0, sizeof(FileInfo));
