@@ -217,7 +217,7 @@ bool RootKeyUtility_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVec
 
     const size_t rsaKeyListSize = RootKeyList_numHardcodedKeys();
 
-    for (int i = 0; i < rsaKeyListSize; ++i)
+    for (size_t i = 0; i < rsaKeyListSize; ++i)
     {
         RSARootKey key = rsaKeyList[i];
 
