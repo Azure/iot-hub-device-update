@@ -62,6 +62,7 @@ ADUC_Result DownloadRootKeyPkg_Curl(const char* url, const char* targetFilePath)
         {
             result.ResultCode = ADUC_Result_Failure;
             result.ExtendedResultCode = ADUC_ERROR_CURL_DOWNLOADER_EXTERNAL_FAILURE(exitCode);
+            Log_Error("Curl process error, exitCode: %d\nDownload output: \n%s\n", exitCode, output.c_str());
         }
     }
     catch (...)
