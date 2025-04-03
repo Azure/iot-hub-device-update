@@ -271,7 +271,7 @@ static void DefaultIoTHubSendReportedStateCompletedCallback(int http_status_code
         goto done;
     }
 
-    for (int i = 0; i < message_processing_context->retryStrategy->httpStatusRetryInfoSize; i++)
+    for (size_t i = 0; i < message_processing_context->retryStrategy->httpStatusRetryInfoSize; i++)
     {
         ADUC_D2C_HttpStatus_Retry_Info* info = &message_processing_context->retryStrategy->httpStatusRetryInfo[i];
 
