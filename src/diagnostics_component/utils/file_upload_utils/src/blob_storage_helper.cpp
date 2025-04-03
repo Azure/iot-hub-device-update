@@ -76,7 +76,7 @@ bool AzureBlobStorageHelper::UploadFilesToContainer(
     }
 
     size_t fileNameSize = VECTOR_size(fileNames);
-    for (unsigned int i = 0; i < fileNameSize; ++i)
+    for (size_t i = 0; i < fileNameSize; ++i)
     {
         auto fileNameHandle = static_cast<const STRING_HANDLE*>(VECTOR_element(fileNames, i));
         const char* fileName = STRING_c_str(*fileNameHandle);
