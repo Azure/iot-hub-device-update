@@ -266,7 +266,7 @@ static bool ADUC_RelatedFile_Init(
         goto done;
     }
 
-    for (int i = 0; i < hashCount; ++i)
+    for (size_t i = 0; i < hashCount; ++i)
     {
         if (!ADUC_Hash_Init(&tempHashArray[i], hashes[i].value, hashes[i].type))
         {
