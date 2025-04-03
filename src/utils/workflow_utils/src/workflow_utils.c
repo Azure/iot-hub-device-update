@@ -365,7 +365,7 @@ static bool workflow_init_update_file_inodes(ADUC_Workflow* wf)
         return false;
     }
 
-    for (int i = 0; i < count; ++i)
+    for (size_t i = 0; i < count; ++i)
     {
         wf->UpdateFileInodes[i] = ADUC_INODE_SENTINEL_VALUE;
     }
