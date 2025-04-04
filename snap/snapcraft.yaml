@@ -1,7 +1,7 @@
 name: deviceupdate-agent # you probably want to 'snapcraft register <name>'
 base: core20 # the base snap is the execution environment for this snap
 license: MIT
-version: '0.2' # just for humans, typically '1.2+git' or '1.3.2'
+version: '1.2.0' # just for humans, typically '1.2+git' or '1.3.2'
 summary: IoT Hub Device Update Agent for Ubuntu Core # 79 char long summary
 description: |
   The IoT Hub Device Update Agent snap for Ubuntu Core.
@@ -22,7 +22,7 @@ confinement: strict
 
 # Use passthrough for the moment, until the appropriate snapcraft release lands
 # system-usernames:
-#   snap_aziotedge: shared
+#   snap_aziotdu: shared
 passthrough:
   system-usernames:
     snap_aziotdu: shared
@@ -46,7 +46,7 @@ parts:
     plugin: nil
     source: ./scripts
     override-build: |
-      ./install-deps.sh --install-cmake --work-folder $SNAPCRAFT_STAGE/du-workfolder  --install-shellcheck --install-catch2 --for-adu-agent-snap
+      ./install-deps.sh --install-cmake --work-folder $SNAPCRAFT_STAGE/du-workfolder  --install-shellcheck --install-catch2 --do-cmake-option '-DDO_BUILD_FOR_SNAP=1'
     build-packages:
       - wget
     stage-packages:

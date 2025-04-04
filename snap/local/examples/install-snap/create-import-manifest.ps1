@@ -18,7 +18,7 @@
         PS > create-import-manifest.ps1
 #>
 
-$updVersion = '1.0'
+$updVersion = '1.2.0'
 $updMeta = @{ Provider="Contoso"; Name="Jukebox"; Version="$updVersion"}
 
 $updCompat = @{ manufacturer = 'contoso'; model = 'jukebox-v1' }

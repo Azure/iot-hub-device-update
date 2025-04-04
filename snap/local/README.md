@@ -413,7 +413,7 @@ To configure the DU Agent, you can use `deviceupdate-agent.set-config` command.
     "aduShellFolder": "/snap/deviceupdate-agent/current/usr/lib/adu",
     "iotHubProtocol": "mqtt",
     "manufacturer": "Contoso",
-    "model": "Virtual-Vacuum",
+    "model": "Jukebox-v1",
     "downloadsFolder": "/var/lib/deviceupdate-agent-downloads",
     "extensionsFolder": "/var/lib/adu/extensions",
     "agents": [
