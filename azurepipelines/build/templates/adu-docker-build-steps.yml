@@ -9,6 +9,9 @@ parameters:
     - name: patchVersion # exmaple: 3
       default: ''
       type: string
+    - name: additionalDependencies # example: --install-cmake --install-catch2
+      default: ''
+      type: string
 
 steps:
     - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
@@ -20,14 +23,14 @@ steps:
       displayName: Login to ACR
       inputs:
           command: login
-          containerRegistry: aduccontainerregistry
+          containerRegistry: adu_docker_container_registry
           repository: ${{parameters.targetOs}}-${{parameters.targetArch}}
 
     - task: Docker@2
       displayName: Pull latest build image
       inputs:
           command: pull
-          containerRegistry: aduccontainerregistry
+          containerRegistry: adu_docker_container_registry
           arguments: "aduccontainerregistry.azurecr.io/${{parameters.targetOs}}-${{parameters.targetArch}}:latest"
 
     - bash: |
@@ -44,6 +47,14 @@ steps:
     - bash: |
           sudo docker run -d -t --rm -v $(Build.SourcesDirectory):/iot-hub-device-update -v ~/.gitconfig:/etc/.gitconfig --name ARMcontainer aduccontainerregistry.azurecr.io/${{parameters.targetOs}}-${{parameters.targetArch}}:latest bash
       displayName: "Run docker container"
+    - bash: |
+            if [ -n "${{parameters.additionalDependencies}}" ]; then
+                echo "Installing additional dependencies: ${{parameters.targetOs}}-${{parameters.targetArch}}"
+                sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/install-deps.sh ${{parameters.additionalDependencies}}
+            else
+                echo "No additional dependencies to install"
+            fi
+      displayName: "Install additional dependencies"
     - bash: |
           if [ -n "${{parameters.patchVersion}}" ]; then
             sudo docker exec -w /iot-hub-device-update ARMcontainer scripts/build.sh --clean --build-unit-tests --type MinSizeRel --platform-layer linux --log-lib zlog --build-packages --patch-version ${{parameters.patchVersion}} --out-dir out-${{parameters.targetOs}}-${{parameters.targetArch}}

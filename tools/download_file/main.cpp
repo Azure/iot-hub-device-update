@@ -9,7 +9,7 @@
 #include <string.h>
 
 //fwd-decl
-ADUC_Result DownloadRootKeyPkg_DO(const char* url, const char* targetFilePath);
+ADUC_Result DownloadRootKeyPkg_Test_DO(const char* url, const char* targetFilePath);
 
 //decls
 typedef int32_t ADUC_Result_t;
@@ -105,7 +105,7 @@ int main(int argc, char** argv)
 
     if (g_SimMode == SimMode_DOWNLOAD_ROOTKEY_PKG)
     {
-        result = DownloadRootKeyPkg_DO(g_arg_url, g_arg_out_filepath);
+        result = DownloadRootKeyPkg_Test_DO(g_arg_url, g_arg_out_filepath);
     }
     else if (g_SimMode == SimMode_DOWNLOAD_UPDATE_PAYLOAD)
     {
@@ -132,7 +132,7 @@ int main(int argc, char** argv)
 }
 
 // Ported from src/utils/rootkeypackage_utils/src/rootkeypackage_do_download.cpp
-ADUC_Result DownloadRootKeyPkg_DO(const char* url, const char* targetFilePath)
+ADUC_Result DownloadRootKeyPkg_Test_DO(const char* url, const char* targetFilePath)
 {
     ADUC_Result result = {};
 

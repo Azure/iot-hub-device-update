@@ -23,6 +23,12 @@ target_compile_definitions (
             ADUC_ROOTKEY_STORE_PATH="${ADUC_ROOTKEY_STORE_PATH}"
             ADUC_ROOTKEY_PKG_URL_OVERRIDE="${ADUC_ROOTKEY_PKG_URL_OVERRIDE}")
 
+if (ROOTKEY_PKG_DOWNLOAD_USE_CURL)
+    target_compile_definitions (${target_name} PRIVATE ROOTKEY_PKG_DOWNLOAD_USE_CURL=1)
+else ()
+    target_compile_definitions (${target_name} PRIVATE ROOTKEY_PKG_DOWNLOAD_USE_CURL=0)
+endif ()
+
 include (CMakePrintHelpers)
 cmake_print_variables (ADUC_ENABLE_E2E_TESTING)
 if (ADUC_ENABLE_E2E_TESTING)

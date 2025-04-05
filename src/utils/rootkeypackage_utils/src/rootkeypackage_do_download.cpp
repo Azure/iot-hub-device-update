@@ -1,6 +1,6 @@
 /**
  * @file rootkeypackage_do_download.cpp
- * @brief Implements delivery optimization download.
+ * @brief Implements delivery optimization download of rootkey packages.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
@@ -48,7 +48,7 @@ ADUC_Result DownloadRootKeyPkg_DO(const char* url, const char* targetFilePath)
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_DOWNLOAD_EXCEPTION;
     }
 
-    Log_Info("Download rc: %d, erc: 0x%08x", result.ResultCode, result.ExtendedResultCode);
+    Log_Info("RootKey Package Download with DO - rc: %d, erc: 0x%08x", result.ResultCode, result.ExtendedResultCode);
 
     return result;
 }

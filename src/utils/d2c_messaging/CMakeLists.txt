@@ -23,8 +23,8 @@ target_link_libraries (
     PRIVATE aduc::communication_abstraction aduc::logging aduc::retry_utils)
 
 if (ADUC_BUILD_UNIT_TESTS)
-    if (${IS_ARM64})
-        message (STATUS "Skipping tests for utils/d2c_messaging because IS_ARM64 == ${IS_ARM64}...")
+    if (${IS_ARM})
+        message (STATUS "Skipping tests for utils/d2c_messaging for ARM processor...")
     else ()
     add_subdirectory (tests)
     endif ()
