@@ -19,7 +19,6 @@ if [ ! -d "$demo_devices_dir" ]; then
     exit 1
 fi
 
-
 target_devices_dir=/usr/local/contoso-devices
 # Ensure the target devices directory exists
 if [ ! -d "$target_devices_dir" ]; then
@@ -28,9 +27,9 @@ if [ ! -d "$target_devices_dir" ]; then
 fi
 
 # Show demo_dir, demo_devices_dir, and target_devices_dir
-printf "Demoo root dir: $demo_dir\n"
-printf "Virtual devices root dir: $demo_devices_dir\n"
-printf "Target devices dir: $target_devices_dir\n"
+printf "Demo root dir: %s\n" $demo_dir
+printf "Virtual devices root dir: %s\n" $demo_devices_dir
+printf "Target devices dir: %s\n" $target_devices_dir
 
 
 printf "\n - Create a virtual device 'contoso vacuum-1' for testing purposes..."
