@@ -32,7 +32,7 @@ jobs:
         run: |
           scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck
       - name: Build packages and tests
-        run: scripts/build.sh --clean --build-unit-tests --build-packages
+        run: scripts/build.sh --clean --build-unit-tests --build-packages --type MinSizeRel
       - name: Run tests
         run: |
           cd out
