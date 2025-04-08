@@ -366,7 +366,7 @@ ADUC_Result ScriptHandlerImpl::PrepareScriptArguments(
 
     Log_Info("Parsing script arguments: %s", arguments);
     argumentList = ADUC::StringUtils::Split(fileArgs, ' ');
-    for (int i = 0; i < argumentList.size(); i++)
+    for (size_t i = 0; i < argumentList.size(); i++)
     {
         const std::string argument = argumentList[i];
         if (!argument.empty())
@@ -652,7 +652,7 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
 
     if (!results.scriptOutput.empty())
     {
-        Log_Info(results.scriptOutput.c_str());
+        Log_Info("%s\n", results.scriptOutput.c_str());
     }
 
     if (exitCode != 0)

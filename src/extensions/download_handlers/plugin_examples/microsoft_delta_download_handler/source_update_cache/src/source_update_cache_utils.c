@@ -46,7 +46,7 @@ static STRING_HANDLE encodeBase64ForFilePath(const char* unencoded)
     // For '+', '/', and '=', encode using '_' followed by 2-digit hex ascii code.
 
     lengthUnencoded = strlen(unencoded);
-    for (int index = 0; index < lengthUnencoded; ++index)
+    for (size_t index = 0; index < lengthUnencoded; ++index)
     {
         switch (unencoded[index])
         {

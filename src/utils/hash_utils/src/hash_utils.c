@@ -104,7 +104,7 @@ static bool ADUC_HashUtils_GetIndexStrongestValidHash(
     int strongestIndex = -1; // Assume hashes array is not sorted by strength ordering.
     SHAversion curBestAlg = SHA1;
 
-    for (int i = 0; i < hashCount; ++i)
+    for (size_t i = 0; i < hashCount; ++i)
     {
         SHAversion algVersion = SHA1;
         char* hashType = ADUC_HashUtils_GetHashType(hashes, hashCount, (size_t)i);

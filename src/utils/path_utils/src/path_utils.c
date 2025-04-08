@@ -35,7 +35,7 @@ STRING_HANDLE PathUtils_SanitizePathSegment(const char* unsanitized)
         return NULL;
     }
 
-    for (int i = 0; i < strlen(unsanitized); ++i)
+    for (size_t i = 0; i < strlen(unsanitized); ++i)
     {
         char c = unsanitized[i];
 

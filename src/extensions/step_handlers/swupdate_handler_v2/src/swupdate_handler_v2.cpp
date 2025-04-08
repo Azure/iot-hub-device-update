@@ -260,7 +260,7 @@ ADUC_Result SWUpdateHandler_PerformAction(
 
     if (!scriptOutput.empty())
     {
-        Log_Info(scriptOutput.c_str());
+        Log_Info("%s\n", scriptOutput.c_str());
     }
 
     // Parse result file.
@@ -350,7 +350,7 @@ ADUC_Result SWUpdateHandlerImpl::Download(const tagADUC_WorkflowData* workflowDa
 
     result = { ADUC_Result_Download_Success };
 
-    for (int i = 0; i < fileCount; i++)
+    for (size_t i = 0; i < fileCount; i++)
     {
         Log_Info("Downloading file #%d", i);
 
@@ -738,7 +738,7 @@ ADUC_Result SWUpdateHandlerImpl::PrepareCommandArguments(
 
     Log_Info("Parsing handlerProperties.arguments: %s", arguments);
     argumentList = ADUC::StringUtils::Split(fileArgs, ' ');
-    for (int i = 0; i < argumentList.size(); i++)
+    for (size_t i = 0; i < argumentList.size(); i++)
     {
         const std::string argument = argumentList[i];
         if (!argument.empty())

@@ -266,7 +266,7 @@ static bool ADUC_RelatedFile_Init(
         goto done;
     }
 
-    for (int i = 0; i < hashCount; ++i)
+    for (size_t i = 0; i < hashCount; ++i)
     {
         if (!ADUC_Hash_Init(&tempHashArray[i], hashes[i].value, hashes[i].type))
         {
@@ -281,7 +281,7 @@ static bool ADUC_RelatedFile_Init(
         goto done;
     }
 
-    for (int i = 0; i < propertiesCount; ++i)
+    for (size_t i = 0; i < propertiesCount; ++i)
     {
         if (!ADUC_Property_Init(&tempPropertiesArray[i], properties[i].Name, properties[i].Value))
         {
@@ -365,7 +365,7 @@ static bool workflow_init_update_file_inodes(ADUC_Workflow* wf)
         return false;
     }
 
-    for (int i = 0; i < count; ++i)
+    for (size_t i = 0; i < count; ++i)
     {
         wf->UpdateFileInodes[i] = ADUC_INODE_SENTINEL_VALUE;
     }

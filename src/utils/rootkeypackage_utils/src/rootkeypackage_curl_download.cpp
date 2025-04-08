@@ -38,6 +38,9 @@ ADUC_Result DownloadRootKeyPkg_Curl(const char* url, const char* targetFilePath)
         args.emplace_back("-o");
         args.emplace_back(targetFilePath);
 
+        args.emplace_back("-m"); // -m, --max-time <seconds>
+        args.emplace_back("3600"); // 1 hour
+
         // Finally, tack the url onto the end
         args.emplace_back(url);
 
@@ -62,6 +65,7 @@ ADUC_Result DownloadRootKeyPkg_Curl(const char* url, const char* targetFilePath)
         {
             result.ResultCode = ADUC_Result_Failure;
             result.ExtendedResultCode = ADUC_ERROR_CURL_DOWNLOADER_EXTERNAL_FAILURE(exitCode);
+            Log_Error("Curl process error, exitCode: %d\nDownload output: \n%s\n", exitCode, output.c_str());
         }
     }
     catch (...)
