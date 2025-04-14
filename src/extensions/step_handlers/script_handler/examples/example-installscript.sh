@@ -372,7 +372,7 @@ while [[ $1 != "" ]]; do
         do_apply_action=yes
         ;;
 
-    --action_cancel)
+    --action-cancel)
         shift
         do_cancel_action=yes
         ;;

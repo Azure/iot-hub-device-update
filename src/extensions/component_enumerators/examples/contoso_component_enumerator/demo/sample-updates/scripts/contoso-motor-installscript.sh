@@ -381,7 +381,7 @@ while [[ $1 != "" ]]; do
         restart_agent_to_apply=yes
         ;;
 
-    --action_cancel)
+    --action-cancel)
         shift
         do_cancel_action=yes
         ;;
