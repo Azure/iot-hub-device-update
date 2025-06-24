@@ -371,7 +371,8 @@ static bool ADUC_DeviceClient_Create(
         result = false;
     }
     else if (
-        connInfo->opensslEngine != NULL && connInfo->authType == ADUC_AuthType_SASCert
+        connInfo->opensslEngine != NULL
+        && (connInfo->authType == ADUC_AuthType_SASCert || connInfo->authType == ADUC_AuthType_X509)
         && (iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_OPENSSL_ENGINE, connInfo->opensslEngine))
             != IOTHUB_CLIENT_OK)
     {
@@ -390,7 +391,7 @@ static bool ADUC_DeviceClient_Create(
     }
     else if (
         connInfo->opensslEngine != NULL && connInfo->opensslPrivateKey != NULL
-        && connInfo->authType == ADUC_AuthType_SASCert
+        && (connInfo->authType == ADUC_AuthType_SASCert || connInfo->authType == ADUC_AuthType_X509)
         && (iothubResult =
                 ClientHandle_SetOption(*outClientHandle, OPTION_OPENSSL_PRIVATE_KEY_TYPE, &x509_key_from_engine))
             != IOTHUB_CLIENT_OK)
@@ -497,6 +498,7 @@ bool GetConnectionInfoFromConnectionString(
     const char* connectionString,
     const char* const x509Cert,
     const char* const x509PrivateKey,
+    const char* const opensslEngine,
     const char* const x509CaCert)
 {
     bool succeeded = false;
@@ -543,6 +545,12 @@ bool GetConnectionInfoFromConnectionString(
         if (mallocAndStrcpy_s(&info->certificateString, x509CaCert) != 0)
         {
             goto done;
+        }
+        if(opensslEngine) {
+            if (mallocAndStrcpy_s(&info->opensslEngine, opensslEngine) != 0)
+            {
+                goto done;
+            }
         }
     }
     else
@@ -648,7 +656,7 @@ bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
     }
     else if (strcmp(agent->connectionType, "string") == 0)
     {
-        if (!GetConnectionInfoFromConnectionString(info, agent->connectionData, NULL, NULL, NULL))
+        if (!GetConnectionInfoFromConnectionString(info, agent->connectionData, NULL, NULL, NULL, NULL))
         {
             goto done;
         }
@@ -656,7 +664,7 @@ bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
     else if (strcmp(agent->connectionType, "X509") == 0)
     {
         if (!GetConnectionInfoFromConnectionString(
-                info, agent->connectionData, agent->x509Cert, agent->x509PrivateKey, agent->x509CaCert))
+                info, agent->connectionData, agent->x509Cert, agent->x509PrivateKey, agent->opensslEngine, agent->x509CaCert))
         {
             goto done;
         }

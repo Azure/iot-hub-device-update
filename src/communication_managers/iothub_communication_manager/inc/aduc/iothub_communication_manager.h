@@ -35,6 +35,7 @@ bool GetConnectionInfoFromConnectionString(
     const char* connectionString,
     const char* const x509Cert,
     const char* const x509PrivateKey,
+    const char* const opensslEngine,
     const char* const x509CaCert);
 
 /**

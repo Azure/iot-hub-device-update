@@ -60,6 +60,7 @@ static const char* CONFIG_CONNECTION_TYPE = "connectionType";
 static const char* CONFIG_CONNECTION_DATA = "connectionData";
 static const char* CONFIG_CONNECTION_X509_CERT_FILE_PATH = "connectionX509CertFilePath";
 static const char* CONFIG_CONNECTION_X509_PRIVATE_KEY_FILE_PATH = "connectionX509PrivateKeyFilePath";
+static const char* CONFIG_CONNECTION_OPENSSL_ENGINE = "opensslEngine";
 static const char* CONFIG_CONNECTION_X509_CA_CERT_FILE_PATH = "connectionX509CaCertFilePath";
 static const char* CONFIG_ADDITIONAL_DEVICE_PROPERTIES = "additionalDeviceProperties";
 static const char* CONFIG_AGENTS = "agents";
@@ -182,6 +183,7 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
     const char* connection_data = NULL;
     const char* connection_x509_cert_file_path = NULL;
     const char* connection_x509_private_key_file_path = NULL;
+    const char* openssl_engine = NULL;
     const char* connection_x509_ca_cert_file_path = NULL;
 
     if (connection_source == NULL)
@@ -194,6 +196,7 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
     connection_x509_cert_file_path = json_object_get_string(connection_source, CONFIG_CONNECTION_X509_CERT_FILE_PATH);
     connection_x509_private_key_file_path =
         json_object_get_string(connection_source, CONFIG_CONNECTION_X509_PRIVATE_KEY_FILE_PATH);
+    openssl_engine = json_object_get_string(connection_source, CONFIG_CONNECTION_OPENSSL_ENGINE);
     connection_x509_ca_cert_file_path =
         json_object_get_string(connection_source, CONFIG_CONNECTION_X509_CA_CERT_FILE_PATH);
 
@@ -234,10 +237,24 @@ static bool ADUC_AgentInfo_Init(ADUC_AgentInfo* agent, const JSON_Object* agent_
             {
                 goto done;
             }
-            agent->x509PrivateKey = ADUC_AgentInfo_Read_X509_File(connection_x509_private_key_file_path);
-            if (!agent->x509PrivateKey)
+            if(openssl_engine)
             {
-                goto done;
+                if (mallocAndStrcpy_s(&(agent->opensslEngine), openssl_engine) != 0)
+                {
+                    goto done;
+                }
+                if (mallocAndStrcpy_s(&(agent->x509PrivateKey), connection_x509_private_key_file_path) != 0)
+                {
+                    goto done;
+                }
+            }
+            else
+            {
+                agent->x509PrivateKey = ADUC_AgentInfo_Read_X509_File(connection_x509_private_key_file_path);
+                if (!agent->x509PrivateKey)
+                {
+                    goto done;
+                }
             }
             agent->x509CaCert = ADUC_AgentInfo_Read_X509_File(connection_x509_ca_cert_file_path);
             if (!agent->x509CaCert)
@@ -300,6 +317,9 @@ static void ADUC_AgentInfo_Free(ADUC_AgentInfo* agent)
 
     free(agent->x509PrivateKey);
     agent->x509PrivateKey = NULL;
+
+    free(agent->opensslEngine);
+    agent->opensslEngine = NULL;
 
     free(agent->x509CaCert);
     agent->x509CaCert = NULL;

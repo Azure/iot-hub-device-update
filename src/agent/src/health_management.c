@@ -68,6 +68,7 @@ bool GetConnectionInfoFromConnectionString(
     const char* connectionString,
     const char* const x509Cert,
     const char* const x509PrivateKey,
+    const char* const opensslEngine,
     const char* const x509CaCert);
 
 /**
@@ -100,12 +101,12 @@ bool IsConnectionInfoValid(const ADUC_LaunchArguments* launchArgs, const ADUC_Co
     }
     else if (strcmp(agent->connectionType, "string") == 0)
     {
-        validInfo = GetConnectionInfoFromConnectionString(&info, agent->connectionData, NULL, NULL, NULL);
+        validInfo = GetConnectionInfoFromConnectionString(&info, agent->connectionData, NULL, NULL, NULL, NULL);
     }
     else if (strcmp(agent->connectionType, "X509") == 0)
     {
         validInfo = GetConnectionInfoFromConnectionString(
-            &info, agent->connectionData, agent->x509Cert, agent->x509PrivateKey, agent->x509CaCert);
+            &info, agent->connectionData, agent->x509Cert, agent->x509PrivateKey, agent->opensslEngine, agent->x509CaCert);
     }
     else
     {

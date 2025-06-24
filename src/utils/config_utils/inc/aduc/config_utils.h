@@ -45,6 +45,9 @@ typedef struct tagADUC_AgentInfo
 
     char* x509PrivateKey; // private key to be used with the client certificate
 
+    char* opensslEngine; // Engine to load private key from. If this value is null then x509PrivateKey contains the PEM of the key
+                         // else it's the engine's path to the key (e.g. a PKCS11 URI).
+
     char* x509CaCert; // ca certificate
 
     char* manufacturer; /**< Device property manufacturer. */
