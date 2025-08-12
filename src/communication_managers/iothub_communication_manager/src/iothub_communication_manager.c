@@ -191,7 +191,7 @@ bool IoTHub_CommunicationManager_IsAuthenticated()
  */
 ADUC_ClientHandle IoTHub_CommunicationManager_GetHandle()
 {
-    return (g_aduc_client_handle_address != NULL ? g_aduc_client_handle_address : NULL);
+    return (g_aduc_client_handle_address != NULL ? *g_aduc_client_handle_address : NULL);
 }
 
 /**
