@@ -5,6 +5,7 @@ on:
 jobs:
   container-job:
     strategy:
+      fail-fast: false
       matrix:
         os: ["debian:12", "debian:11", "debian:10", "ubuntu:22.04", "ubuntu:20.04"]
         arch: [amd64, arm64]
