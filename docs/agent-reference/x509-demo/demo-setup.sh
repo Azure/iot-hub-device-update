@@ -537,8 +537,8 @@ if [ "$files_installed" = true ]; then
     echo "   ✅ All certificates installed successfully in $dest_dir"
     echo ""
     echo "   📁 Actual installed file structure:"
-    if sudo ls -la "$dest_dir" > /dev/null 2>&1; then
-        sudo ls -la "$dest_dir" | sed 's/^/      /'
+    if sudo test -d "$dest_dir" 2> /dev/null; then
+        sudo find "$dest_dir" -type f -exec ls -la {} \; | sed 's/^/      /'
     else
         echo "      • ca-$device_id.pem (CA Certificate)"
         echo "      • client-$device_id.pem (Client Certificate)"
@@ -585,8 +585,8 @@ else
 fi
 echo ""
 echo "   📁 Installed certificates in: /etc/adu/certs/"
-if sudo ls -la "/etc/adu/certs/" > /dev/null 2>&1; then
-    sudo ls -la "/etc/adu/certs/" | grep -E "(ca-$device_id|client-$device_id)" | sed 's/^/      /'
+if sudo test -d "/etc/adu/certs/" 2> /dev/null; then
+    sudo find "/etc/adu/certs/" -name "*$device_id*" -type f -exec ls -la {} \; | sed 's/^/      /'
 else
     echo "      • ca-$device_id.pem"
     echo "      • client-$device_id.pem"
