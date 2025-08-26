@@ -31,11 +31,28 @@
 
 set -e
 
+# Determine repository root using git
+if ! repo_root="$(git rev-parse --show-toplevel 2> /dev/null)"; then
+    echo "❌ Error: This script must be run from within a git repository"
+    echo "💡 Make sure you're running this from the Device Update repository"
+    exit 1
+fi
+
 # Default device ID
 device_id="contoso-vacuum-4"
+# Default module ID (optional)
+module_id=""
 # Connection test option
 test_connection=""
 iot_hub_hostname=""
+# Agent test option
+test_agent=""
+# Build agent option
+build_agent=""
+# Custom agent path option
+custom_agent_path=""
+# Force dependency reinstallation
+force_deps=""
 
 # Function to display help
 show_help() {
@@ -43,17 +60,28 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  --device-id DEVICE_ID              Device ID to use for certificate generation (default: contoso-vacuum-4)"
+    echo "  --module-id MODULE_ID              Module ID for IoT Hub module authentication (optional)"
     echo "  --test-connection IOTHUB_HOSTNAME  Test connection to IoT Hub using generated certificates"
+    echo "  --test-agent                       Test AducIotAgent with generated configuration (15 second run)"
+    echo "  --build-agent                      Build and install AducIotAgent from source before testing"
+    echo "  --force-deps                       Force reinstallation of build dependencies (use with --build-agent)"
+    echo "  --agent-path PATH                  Specify custom path to AducIotAgent binary or .deb package"
     echo "  -h, --help                         Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0 --device-id my-iot-device"
+    echo "  $0 --device-id my-device --module-id my-module"
     echo "  $0 --device-id my-device --test-connection my-hub.azure-devices.net"
+    echo "  $0 --device-id my-device --module-id my-module --test-connection my-hub.azure-devices.net"
+    echo "  $0 --device-id my-device --module-id my-module --test-agent"
+    echo "  $0 --device-id my-device --build-agent --test-agent"
+    echo "  $0 --device-id my-device --agent-path /path/to/AducIotAgent --test-agent"
+    echo "  $0 --device-id my-device --agent-path /path/to/package.deb --test-agent"
     echo "  $0 --test-connection nox-v120-test-hub.azure-devices.net"
     echo ""
     echo "Generated files:"
-    echo "  • Certificate files: ~/x509-demo-temp/certs-<device_id>/"
-    echo "  • DU config file: ~/x509-demo-temp/du-config.<device_id>.json"
+    echo "  • Certificate files: ~/x509-demo-temp/certs-<device_id>[-<module_id>]/"
+    echo "  • DU config file: ~/x509-demo-temp/du-config.<device_id>[.<module_id>].json"
     echo "  • Installed certs: /etc/adu/certs/ (with device ID in filenames)"
     echo ""
     echo "For testing purposes, you can use: nox-v120-test-hub.azure-devices.net"
@@ -71,6 +99,15 @@ while [[ $# -gt 0 ]]; do
         fi
         shift 2
         ;;
+    --module-id)
+        module_id="$2"
+        if [[ -z $module_id ]]; then
+            echo "Error: --module-id requires a string argument"
+            show_help
+            exit 1
+        fi
+        shift 2
+        ;;
     --test-connection)
         iot_hub_hostname="$2"
         if [[ -z $iot_hub_hostname ]]; then
@@ -79,6 +116,27 @@ while [[ $# -gt 0 ]]; do
             exit 1
         fi
         test_connection="true"
+        shift 2
+        ;;
+    --test-agent)
+        test_agent="true"
+        shift 1
+        ;;
+    --build-agent)
+        build_agent="true"
+        shift 1
+        ;;
+    --force-deps)
+        force_deps="true"
+        shift 1
+        ;;
+    --agent-path)
+        if [ -z "$2" ] || [[ $2 == -* ]]; then
+            echo "Error: --agent-path requires a path argument"
+            show_help
+            exit 1
+        fi
+        custom_agent_path="$2"
         shift 2
         ;;
     -h | --help)
@@ -94,6 +152,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "Using device ID: $device_id"
+if [ -n "$module_id" ]; then
+    echo "Using module ID: $module_id"
+fi
 
 # Function to ensure system has necessary root certificates for Azure IoT Hub
 ensure_system_root_certificates() {
@@ -124,7 +185,7 @@ test_iot_hub_connection() {
     echo "🔌 Testing connection to IoT Hub: $iot_hub_hostname"
 
     # Check if certificates exist
-    if [ ! -f "$demo_gen_certs_folder/client-$device_id.pem" ] || [ ! -f "$demo_gen_certs_folder/client-$device_id.key" ] || [ ! -f "$demo_gen_certs_folder/ca-$device_id.pem" ]; then
+    if [ ! -f "$demo_gen_certs_folder/client-$cert_suffix.pem" ] || [ ! -f "$demo_gen_certs_folder/client-$cert_suffix.key" ] || [ ! -f "$demo_gen_certs_folder/ca-$cert_suffix.pem" ]; then
         echo "❌ Certificates not found. Please ensure certificates are generated first."
         exit 1
     fi
@@ -135,7 +196,7 @@ test_iot_hub_connection() {
     # Step 1: Certificate file integrity checks
     echo "📋 Step 1: Certificate File Integrity Checks"
     echo "   🔍 Checking CA certificate format..."
-    if openssl x509 -in "$demo_gen_certs_folder/ca-$device_id.pem" -noout -text > /dev/null 2>&1; then
+    if openssl x509 -in "$demo_gen_certs_folder/ca-$cert_suffix.pem" -noout -text > /dev/null 2>&1; then
         echo "   ✅ CA certificate format is valid"
     else
         echo "   ❌ CA certificate format is invalid"
@@ -143,7 +204,7 @@ test_iot_hub_connection() {
     fi
 
     echo "   🔍 Checking client certificate format..."
-    if openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout -text > /dev/null 2>&1; then
+    if openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout -text > /dev/null 2>&1; then
         echo "   ✅ Client certificate format is valid"
     else
         echo "   ❌ Client certificate format is invalid"
@@ -151,7 +212,7 @@ test_iot_hub_connection() {
     fi
 
     echo "   🔍 Checking private key format..."
-    if openssl rsa -in "$demo_gen_certs_folder/client-$device_id.key" -check -noout > /dev/null 2>&1; then
+    if openssl rsa -in "$demo_gen_certs_folder/client-$cert_suffix.key" -check -noout > /dev/null 2>&1; then
         echo "   ✅ Private key format is valid"
     else
         echo "   ❌ Private key format is invalid"
@@ -162,8 +223,8 @@ test_iot_hub_connection() {
     echo ""
     echo "📋 Step 2: Certificate-Key Pair Validation"
     echo "   🔍 Verifying private key matches certificate..."
-    cert_modulus=$(openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout -modulus 2> /dev/null)
-    key_modulus=$(openssl rsa -in "$demo_gen_certs_folder/client-$device_id.key" -noout -modulus 2> /dev/null)
+    cert_modulus=$(openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout -modulus 2> /dev/null)
+    key_modulus=$(openssl rsa -in "$demo_gen_certs_folder/client-$cert_suffix.key" -noout -modulus 2> /dev/null)
 
     if [ "$cert_modulus" = "$key_modulus" ]; then
         echo "   ✅ Private key matches certificate (modulus verified)"
@@ -176,7 +237,7 @@ test_iot_hub_connection() {
     echo ""
     echo "📋 Step 3: Certificate Chain Validation"
     echo "   🔍 Verifying certificate chain..."
-    chain_result=$(openssl verify -CAfile "$demo_gen_certs_folder/ca-$device_id.pem" "$demo_gen_certs_folder/client-$device_id.pem" 2>&1)
+    chain_result=$(openssl verify -CAfile "$demo_gen_certs_folder/ca-$cert_suffix.pem" "$demo_gen_certs_folder/client-$cert_suffix.pem" 2>&1)
     if echo "$chain_result" | grep -q "OK"; then
         echo "   ✅ Certificate chain is valid"
         echo "   📝 Chain validation: $chain_result"
@@ -189,7 +250,7 @@ test_iot_hub_connection() {
     # Step 4: Certificate details verification
     echo ""
     echo "📋 Step 4: Certificate Details Verification"
-    device_id_from_cert=$(openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout -subject | sed 's/.*CN = \([^,]*\).*/\1/')
+    device_id_from_cert=$(openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout -subject | sed 's/.*CN = \([^,]*\).*/\1/')
     echo "   📱 Device ID from certificate: $device_id_from_cert"
 
     if [ "$device_id_from_cert" = "$device_id" ]; then
@@ -199,10 +260,10 @@ test_iot_hub_connection() {
     fi
 
     echo "   📅 Certificate validity period:"
-    openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout -dates | sed 's/^/      /'
+    openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout -dates | sed 's/^/      /'
 
     # Check if certificate is currently valid
-    if openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -checkend 0 > /dev/null 2>&1; then
+    if openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -checkend 0 > /dev/null 2>&1; then
         echo "   ✅ Certificate is currently valid (not expired)"
     else
         echo "   ❌ Certificate has expired"
@@ -212,8 +273,8 @@ test_iot_hub_connection() {
     # Step 5: Certificate thumbprints
     echo ""
     echo "📋 Step 5: Certificate Thumbprints for IoT Hub"
-    primary_thumbprint=$(openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout -sha1 -fingerprint | sed 's/[:]//g' | sed 's/SHA1 Fingerprint=//')
-    secondary_thumbprint=$(openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout -sha256 -fingerprint | sed 's/[:]//g' | sed 's/SHA256 Fingerprint=//')
+    primary_thumbprint=$(openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout -sha1 -fingerprint | sed 's/[:]//g' | sed 's/SHA1 Fingerprint=//')
+    secondary_thumbprint=$(openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout -sha256 -fingerprint | sed 's/[:]//g' | sed 's/SHA256 Fingerprint=//')
 
     echo "   🔑 Primary Thumbprint (SHA1): $primary_thumbprint"
     echo "   🔑 Secondary Thumbprint (SHA256): $secondary_thumbprint"
@@ -225,8 +286,8 @@ test_iot_hub_connection() {
 
     # Test 1: Basic TLS connection without CA verification
     basic_tls_test=$(timeout 10s openssl s_client -connect "$iot_hub_hostname:8883" \
-        -cert "$demo_gen_certs_folder/client-$device_id.pem" \
-        -key "$demo_gen_certs_folder/client-$device_id.key" \
+        -cert "$demo_gen_certs_folder/client-$cert_suffix.pem" \
+        -key "$demo_gen_certs_folder/client-$cert_suffix.key" \
         -servername "$iot_hub_hostname" \
         -quiet 2>&1 <<< "QUIT" || true)
 
@@ -256,8 +317,8 @@ test_iot_hub_connection() {
             -i "$device_id_from_cert" \
             -t "devices/$device_id_from_cert/messages/events/" \
             -m "test message" \
-            --cert "$demo_gen_certs_folder/client-$device_id.pem" \
-            --key "$demo_gen_certs_folder/client-$device_id.key" \
+            --cert "$demo_gen_certs_folder/client-$cert_suffix.pem" \
+            --key "$demo_gen_certs_folder/client-$cert_suffix.key" \
             --insecure -d 2>&1 || true)
 
         if echo "$mqtt_test" | grep -q "received CONNACK"; then
@@ -283,10 +344,11 @@ test_iot_hub_connection() {
     echo "
 📋 Step 8: Connection Test Summary
    🎯 Target IoT Hub: $iot_hub_hostname
-   📱 Device ID: $device_id_from_cert
-   🔑 Certificate Authentication: ✅ Working
+   📱 Device ID: $device_id_from_cert$([ -n "$module_id" ] && echo "
+   � Module ID: $module_id")
+   �🔑 Certificate Authentication: ✅ Working
    🔐 TLS Connection: ✅ Established
-   📝 Next steps: Ensure device is registered in IoT Hub with thumbprint
+   📝 Next steps: Ensure device$([ -n "$module_id" ] && echo " and module") is registered in IoT Hub with thumbprint
 
 🔧 For self-signed certificates, register the device in IoT Hub:
    1. In Azure Portal, go to your IoT Hub → Device management → Devices
@@ -295,38 +357,427 @@ test_iot_hub_connection() {
    4. Set Authentication type to: 'X.509 Self-Signed'
    5. Set Primary Thumbprint to: $primary_thumbprint
    6. Set Secondary Thumbprint to: $secondary_thumbprint
-   7. Click 'Save'
+   7. Click 'Save'$([ -n "$module_id" ] && echo "
+
+🔧 If using a module, after creating the device, add the module:
+   1. Go to the device details page for: $device_id_from_cert
+   2. Click 'Module Identities' tab
+   3. Click '+ Add Module Identity'
+   4. Set Module Identity Name to: $module_id
+   5. Set Authentication type to: 'X.509 Self-Signed'
+   6. Set Primary Thumbprint to: $primary_thumbprint
+   7. Set Secondary Thumbprint to: $secondary_thumbprint
+   8. Click 'Save'")
 
    Or use Azure CLI:
+   # Create device
    az iot hub device-identity create \\
      --hub-name YOUR_IOT_HUB_NAME \\
      --device-id $device_id_from_cert \\
      --auth-method x509_thumbprint \\
      --primary-thumbprint $primary_thumbprint \\
-     --secondary-thumbprint $secondary_thumbprint"
+     --secondary-thumbprint $secondary_thumbprint$([ -n "$module_id" ] && echo "
+
+   # Create module (if using module authentication)
+   az iot hub module-identity create \\
+     --hub-name YOUR_IOT_HUB_NAME \\
+     --device-id $device_id_from_cert \\
+     --module-id $module_id \\
+     --auth-method x509_thumbprint \\
+     --primary-thumbprint $primary_thumbprint \\
+     --secondary-thumbprint $secondary_thumbprint")"
+}
+
+# Function to test AducIotAgent with generated configuration
+test_adu_agent() {
+    echo "🔧 Testing AducIotAgent with X.509 configuration..."
+
+    # Stop the deviceupdate-agent service to run in standalone mode
+    echo "🛑 Stopping deviceupdate-agent service for standalone testing..."
+    if systemctl is-active --quiet deviceupdate-agent; then
+        echo "   📋 Service is currently running, stopping it..."
+        if sudo systemctl stop deviceupdate-agent; then
+            echo "   ✅ Service stopped successfully"
+        else
+            echo "   ⚠️  Failed to stop service, continuing anyway"
+        fi
+    else
+        echo "   ✅ Service is already stopped"
+    fi
+    echo ""
+
+    agent_path=""
+    run_as_adu=""
+
+    # Check if custom agent path is provided
+    if [ -n "$custom_agent_path" ]; then
+        if [[ $custom_agent_path == *.deb ]]; then
+            # Handle .deb package
+            if [ -f "$custom_agent_path" ]; then
+                echo "📦 Custom .deb package specified: $custom_agent_path"
+                echo "💡 Would you like to install this package? (y/N)"
+                read -r install_response
+                if [[ $install_response =~ ^[Yy]$ ]]; then
+                    echo "🔧 Installing package: $custom_agent_path"
+                    if sudo dpkg -i "$custom_agent_path"; then
+                        echo "✅ Package installed successfully!"
+                        sudo apt-get install -f -y 2> /dev/null || true
+                        # After installation, look for the agent in standard locations
+                        for path in "/usr/bin/AducIotAgent" "/usr/local/bin/AducIotAgent"; do
+                            if [ -f "$path" ] && [ -x "$path" ]; then
+                                agent_path="$path"
+                                run_as_adu="yes"
+                                break
+                            fi
+                        done
+                    else
+                        echo "❌ Package installation failed"
+                        return 1
+                    fi
+                else
+                    echo "❌ Package installation declined"
+                    return 1
+                fi
+            else
+                echo "❌ Custom .deb package not found: $custom_agent_path"
+                return 1
+            fi
+        else
+            # Handle direct binary path
+            if [ -f "$custom_agent_path" ] && [ -x "$custom_agent_path" ]; then
+                agent_path="$custom_agent_path"
+                run_as_adu="yes"
+                echo "✅ Using custom AducIotAgent: $agent_path"
+            else
+                echo "❌ Custom AducIotAgent binary not found or not executable: $custom_agent_path"
+                return 1
+            fi
+        fi
+    else
+        # Check if AducIotAgent exists in common locations
+        for path in "/usr/bin/AducIotAgent" "/usr/local/bin/AducIotAgent" "$(which AducIotAgent 2> /dev/null)"; do
+            if [ -f "$path" ] && [ -x "$path" ]; then
+                agent_path="$path"
+                run_as_adu="yes"
+                break
+            fi
+        done
+    fi
+
+    # If not found in standard locations, check build output folders
+    if [ -z "$agent_path" ]; then
+        echo "❌ AducIotAgent not found in standard locations"
+        echo "   Searched: /usr/bin/AducIotAgent, /usr/local/bin/AducIotAgent, PATH"
+        echo ""
+
+        # Look for agent in common build output locations
+        build_locations=(
+            "$repo_root/out/bin/AducIotAgent"
+            "$repo_root/build/bin/AducIotAgent"
+            "$repo_root/_build/bin/AducIotAgent"
+            "$repo_root/build/src/agent/AducIotAgent"
+            "$repo_root/out/src/agent/AducIotAgent"
+        )
+
+        echo "� Checking build output locations..."
+        for build_path in "${build_locations[@]}"; do
+            if [ -f "$build_path" ] && [ -x "$build_path" ]; then
+                echo "✅ Found agent in build output: $build_path"
+                echo ""
+                echo "⚠️  This agent was built from source and may need to run as 'adu' user."
+                echo "    Do you want to proceed with testing? (y/N)"
+                read -r response
+                if [[ $response =~ ^[Yy]$ ]]; then
+                    agent_path="$build_path"
+                    run_as_adu="yes"
+                    echo "✅ Will run agent from build output"
+                    break
+                else
+                    echo "❌ User declined to run build output agent"
+                    return 1
+                fi
+            fi
+        done
+
+        if [ -z "$agent_path" ]; then
+            echo "❌ AducIotAgent not found in build output either"
+            echo ""
+            echo "�💡 Installation options:"
+            echo "   • Install from package: sudo apt install deviceupdate-agent"
+            echo "   • Build from source in this repository:"
+            echo "     cd $repo_root"
+            echo "     ./scripts/build.sh"
+            echo "     # Agent will be in build output directory"
+            echo ""
+            echo "   • Then re-run this script with --test-agent"
+            return 1
+        fi
+    fi
+
+    echo "✅ Found AducIotAgent at: $agent_path"
+
+    # Check if configuration file exists
+    if [ ! -f "$du_config_file" ]; then
+        echo "❌ Configuration file not found: $du_config_file"
+        echo "💡 Please run certificate generation first"
+        return 1
+    fi
+
+    # Create a temporary copy of the configuration with proper IoT Hub hostname
+    temp_config="/tmp/du-config-test.json"
+    if [ -n "$iot_hub_hostname" ]; then
+        sed "s/YOUR_IOT_HUB_HOSTNAME/$iot_hub_hostname/g" "$du_config_file" > "$temp_config"
+        config_to_use="$temp_config"
+        echo "✅ Using IoT Hub hostname: $iot_hub_hostname"
+    else
+        config_to_use="$du_config_file"
+        echo "⚠️  Using placeholder hostname (YOUR_IOT_HUB_HOSTNAME)"
+        echo "   💡 Use --test-connection option to specify IoT Hub hostname"
+    fi
+
+    echo ""
+    echo "📋 Agent Test Configuration:"
+    echo "   📄 Config file: $config_to_use"
+    echo "   📱 Device ID: $device_id"
+    if [ -n "$module_id" ]; then
+        echo "   🔧 Module ID: $module_id"
+    fi
+    if [ -n "$iot_hub_hostname" ]; then
+        echo "   🎯 IoT Hub: $iot_hub_hostname"
+    fi
+    echo ""
+
+    echo "🚀 Starting AducIotAgent test (will run for 15 seconds)..."
+    if [ "$run_as_adu" = "yes" ]; then
+        echo "   👤 Running as 'adu' user for proper permissions"
+        echo "   Command: sudo -u adu $agent_path -l 0 -c $config_to_use -e"
+    else
+        echo "   Command: $agent_path -l 0 -c $config_to_use -e"
+    fi
+    echo "   Monitoring connection and authentication status..."
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━ AGENT OUTPUT START ━━━━━━━━━━━━━━━━━━━━━━━"
+
+    # Run AducIotAgent in background and capture its output
+    if [ "$run_as_adu" = "yes" ]; then
+        # Check if adu user exists
+        if ! id adu > /dev/null 2>&1; then
+            echo "⚠️  User 'adu' not found, running as current user"
+            timeout 15s "$agent_path" -l 0 -c "$config_to_use" -e 2>&1 | while IFS= read -r line; do
+                echo "$line"
+                # Highlight important connection messages
+                case "$line" in
+                *[Cc]onnected* | *[Aa]uthentication* | *[Cc]ertificate* | *[Mm]odule* | *[Dd]evice* | *[Ee]rror* | *[Ff]ailed* | *[Ss]uccess*)
+                    echo "🔍 Key message: $line" >&2
+                    ;;
+                esac
+            done
+        else
+            timeout 15s sudo -u adu "$agent_path" -l 0 -c "$config_to_use" -e 2>&1 | while IFS= read -r line; do
+                echo "$line"
+                # Highlight important connection messages
+                case "$line" in
+                *[Cc]onnected* | *[Aa]uthentication* | *[Cc]ertificate* | *[Mm]odule* | *[Dd]evice* | *[Ee]rror* | *[Ff]ailed* | *[Ss]uccess*)
+                    echo "🔍 Key message: $line" >&2
+                    ;;
+                esac
+            done
+        fi
+    else
+        timeout 15s "$agent_path" -l 0 -c "$config_to_use" -e 2>&1 | while IFS= read -r line; do
+            echo "$line"
+            # Highlight important connection messages
+            case "$line" in
+            *[Cc]onnected* | *[Aa]uthentication* | *[Cc]ertificate* | *[Mm]odule* | *[Dd]evice* | *[Ee]rror* | *[Ff]ailed* | *[Ss]uccess*)
+                echo "🔍 Key message: $line" >&2
+                ;;
+            esac
+        done
+    fi
+
+    agent_exit_code=${PIPESTATUS[0]}
+
+    echo "━━━━━━━━━━━━━━━━━━━━━━━ AGENT OUTPUT END ━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+
+    # Cleanup temp config
+    [ -f "$temp_config" ] && rm -f "$temp_config"
+
+    echo "📊 Agent Test Summary:"
+    if [ "$agent_exit_code" -eq 124 ]; then
+        echo "   ✅ Agent ran for 15 seconds and was terminated (expected)"
+        echo "   📝 Check the output above for connection and authentication status"
+    elif [ "$agent_exit_code" -eq 0 ]; then
+        echo "   ✅ Agent completed successfully"
+    else
+        echo "   ⚠️  Agent exited with code: $agent_exit_code"
+        echo "   📝 Check the output above for error details"
+    fi
+
+    echo ""
+    echo "💡 Analysis Tips:"
+    echo "   • Look for 'Connected' or 'Authentication successful' messages"
+    echo "   • Check for any certificate or TLS errors"
+    echo "   • Module authentication requires both device and module to be registered"
+    echo "   • connection errors may indicate IoT Hub registration issues"
+    if [ "$run_as_adu" = "yes" ]; then
+        echo "   • Agent ran as 'adu' user for proper certificate permissions"
+    fi
+
+    echo ""
+    echo "🔄 Service Management:"
+    echo "   📝 The deviceupdate-agent service was stopped for standalone testing"
+    echo "   🚀 To restart the service after testing: sudo systemctl start deviceupdate-agent"
+    echo "   📊 To check service status: sudo systemctl status deviceupdate-agent"
+}
+
+# Function to build and install AducIotAgent with packages
+build_adu_agent() {
+    echo "🏗️ Building and installing AducIotAgent with packages..."
+
+    echo "📁 Repository root: $repo_root"
+
+    # Change to repository root
+    cd "$repo_root"
+
+    # Check if dependencies need to be installed/updated
+    deps_marker_file="$repo_root/.demo_deps_installed"
+    install_deps_script="$repo_root/scripts/install-deps.sh"
+    need_deps_install=false
+
+    if [ "$force_deps" = "true" ]; then
+        # Force reinstall requested
+        need_deps_install=true
+        echo "🔧 Force reinstalling dependencies (--force-deps specified)..."
+        # Remove marker to ensure fresh install
+        rm -f "$deps_marker_file"
+    elif [ ! -f "$deps_marker_file" ]; then
+        # Never installed dependencies
+        need_deps_install=true
+        echo "🔧 Installing dependencies (first time setup)..."
+    elif [ "$install_deps_script" -nt "$deps_marker_file" ]; then
+        # install-deps.sh has been updated since last install
+        need_deps_install=true
+        echo "🔧 Installing dependencies (install-deps.sh has been updated)..."
+    else
+        echo "✅ Dependencies are up-to-date (skipping installation)"
+        echo "💡 Use --force-deps to force reinstallation if needed"
+    fi
+
+    if [ "$need_deps_install" = true ]; then
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━ DEPENDENCY INSTALL START ━━━━━━━━━━━━━━━━━━━━━━━"
+        if ./scripts/install-deps.sh -a; then
+            echo "━━━━━━━━━━━━━━━━━━━━━━━ DEPENDENCY INSTALL END ━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "✅ Dependencies installed successfully!"
+            # Create/update the marker file
+            touch "$deps_marker_file"
+        else
+            echo "━━━━━━━━━━━━━━━━━━━━━━━ DEPENDENCY INSTALL END ━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "❌ Dependency installation failed!"
+            echo "💡 Continuing with build attempt anyway..."
+        fi
+    fi
+
+    echo ""
+    echo "🔧 Running build with packages..."
+    echo ""
+
+    echo "━━━━━━━━━━━━━━━━━━━━━━━ BUILD OUTPUT START ━━━━━━━━━━━━━━━━━━━━━━━"
+
+    # Run the build script with packages
+    if ./scripts/build.sh --build-packages --type Release; then
+        echo "━━━━━━━━━━━━━━━━━━━━━━━ BUILD OUTPUT END ━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "✅ Build completed successfully!"
+
+        # Check for built agent
+        built_agents=(
+            "$repo_root/out/bin/AducIotAgent"
+            "$repo_root/build/bin/AducIotAgent"
+            "$repo_root/_build/bin/AducIotAgent"
+            "$repo_root/build/src/agent/AducIotAgent"
+            "$repo_root/out/src/agent/AducIotAgent"
+        )
+
+        for agent_path in "${built_agents[@]}"; do
+            if [ -f "$agent_path" ] && [ -x "$agent_path" ]; then
+                echo "✅ Agent binary found: $agent_path"
+                break
+            fi
+        done
+
+        # Check for .deb packages
+        echo ""
+        echo "📦 Checking for generated packages..."
+        deb_files=$(find "$repo_root/out" -name "deviceupdate-agent_*.deb" -type f 2> /dev/null)
+        if [ -n "$deb_files" ]; then
+            echo "✅ .deb packages generated:"
+            echo "$deb_files" | while read -r pkg; do
+                echo "   📄 $(basename "$pkg")"
+            done
+            echo ""
+            deb_file=$(echo "$deb_files" | head -1)
+
+            # Auto-install since --build-agent was specified
+            echo "🔧 Installing package automatically (--build-agent specified): $deb_file"
+            if sudo dpkg -i "$deb_file"; then
+                echo "✅ Package installed successfully!"
+                # Fix any dependency issues
+                sudo apt-get install -f -y 2> /dev/null || true
+                echo "✅ Agent ready for testing at /usr/bin/AducIotAgent"
+            else
+                echo "❌ Package installation failed"
+                echo "💡 You may need to run: sudo apt-get install -f"
+                echo "💡 Manual install: sudo dpkg -i \"$deb_file\""
+                return 1
+            fi
+        else
+            echo "⚠️  No .deb packages found in out/ directory"
+            echo "💡 The build may not have completed successfully"
+            return 1
+        fi
+
+    else
+        echo "━━━━━━━━━━━━━━━━━━━━━━━ BUILD OUTPUT END ━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "❌ Build failed!"
+        echo "💡 Check the build output above for error details"
+        return 1
+    fi
 }
 
 # Create demo working folder
 demo_working_folder=~/x509-demo-temp
 mkdir -p "$demo_working_folder"
 
-# Create directory for test certificates with device ID in path
-demo_gen_certs_folder="$demo_working_folder/certs-$device_id"
+# Create directory for test certificates with device ID and optional module ID in path
+if [ -n "$module_id" ]; then
+    demo_gen_certs_folder="$demo_working_folder/certs-$device_id-$module_id"
+    cert_suffix="$device_id-$module_id"
+else
+    demo_gen_certs_folder="$demo_working_folder/certs-$device_id"
+    cert_suffix="$device_id"
+fi
 mkdir -p "$demo_gen_certs_folder"
 
 echo "🔧 Setting up X.509 test environment..."
 
-# Check if certificates already exist (with device ID in filename)
-if [ -f "$demo_gen_certs_folder/client-$device_id.pem" ] && [ -f "$demo_gen_certs_folder/client-$device_id.key" ] && [ -f "$demo_gen_certs_folder/ca-$device_id.pem" ]; then
+# Check if certificates already exist (with device ID and optional module ID in filename)
+if [ -f "$demo_gen_certs_folder/client-$cert_suffix.pem" ] && [ -f "$demo_gen_certs_folder/client-$cert_suffix.key" ] && [ -f "$demo_gen_certs_folder/ca-$cert_suffix.pem" ]; then
     echo "✅ Certificates ready"
 else
-    echo "📜 Generating enhanced test certificates for IoT device authentication..."
+    if [ -n "$module_id" ]; then
+        echo "📜 Generating enhanced test certificates for IoT module authentication..."
+    else
+        echo "📜 Generating enhanced test certificates for IoT device authentication..."
+    fi
 
     # Generate CA private key
-    openssl genrsa -out "$demo_gen_certs_folder/ca-$device_id.key" 2048
+    openssl genrsa -out "$demo_gen_certs_folder/ca-$cert_suffix.key" 2048
 
     # Generate CA certificate with proper extensions (self-signed, valid for 10 years)
-    openssl req -new -x509 -days 3650 -key "$demo_gen_certs_folder/ca-$device_id.key" -out "$demo_gen_certs_folder/ca-$device_id.pem" \
+    openssl req -new -x509 -days 3650 -key "$demo_gen_certs_folder/ca-$cert_suffix.key" -out "$demo_gen_certs_folder/ca-$cert_suffix.pem" \
         -subj "/C=US/ST=WA/O=Contoso/CN=Contoso-CA-$device_id" \
         -extensions v3_ca \
         -config <(
@@ -340,16 +791,17 @@ else
         )
 
     # Generate client private key
-    openssl genrsa -out "$demo_gen_certs_folder/client-$device_id.key" 2048
+    openssl genrsa -out "$demo_gen_certs_folder/client-$cert_suffix.key" 2048
 
     # Generate client certificate signing request with proper subject
-    openssl req -new -key "$demo_gen_certs_folder/client-$device_id.key" -out "$demo_gen_certs_folder/client-$device_id.csr" \
+    # For modules, the CN should still be the device ID, not the module ID
+    openssl req -new -key "$demo_gen_certs_folder/client-$cert_suffix.key" -out "$demo_gen_certs_folder/client-$cert_suffix.csr" \
         -subj "/C=US/ST=WA/O=Contoso/CN=$device_id"
 
     # Generate client certificate signed by CA with IoT device extensions (valid for 1 year)
-    openssl x509 -req -days 365 -in "$demo_gen_certs_folder/client-$device_id.csr" \
-        -CA "$demo_gen_certs_folder/ca-$device_id.pem" -CAkey "$demo_gen_certs_folder/ca-$device_id.key" -CAcreateserial \
-        -out "$demo_gen_certs_folder/client-$device_id.pem" \
+    openssl x509 -req -days 365 -in "$demo_gen_certs_folder/client-$cert_suffix.csr" \
+        -CA "$demo_gen_certs_folder/ca-$cert_suffix.pem" -CAkey "$demo_gen_certs_folder/ca-$cert_suffix.key" -CAcreateserial \
+        -out "$demo_gen_certs_folder/client-$cert_suffix.pem" \
         -extensions v3_client \
         -extfile <(
             echo '[v3_client]'
@@ -361,7 +813,7 @@ else
         )
 
     # Clean up CSR file
-    rm "$demo_gen_certs_folder/client-$device_id.csr"
+    rm "$demo_gen_certs_folder/client-$cert_suffix.csr"
 
     # Ensure system has necessary root certificates for Azure IoT Hub
     ensure_system_root_certificates
@@ -371,7 +823,11 @@ fi
 
 # Generate DU configuration file
 echo "📝 Generating Device Update configuration file..."
-du_config_file="$demo_working_folder/du-config.$device_id.json"
+if [ -n "$module_id" ]; then
+    du_config_file="$demo_working_folder/du-config.$device_id.$module_id.json"
+else
+    du_config_file="$demo_working_folder/du-config.$device_id.json"
+fi
 
 cat > "$du_config_file" << EOF
 {
@@ -391,9 +847,10 @@ cat > "$du_config_file" << EOF
         "connectionType": "x509",
         "connectionData": {
           "iotHubHostname": "${iot_hub_hostname:-YOUR_IOT_HUB_HOSTNAME}",
-          "deviceId": "$device_id",
-          "certificateFile": "/etc/adu/certs/client-$device_id.pem",
-          "privateKeyFile": "/etc/adu/certs/client-$device_id.key"
+          "deviceId": "$device_id",$([ -n "$module_id" ] && echo "
+          \"moduleId\": \"$module_id\",")
+          "certificateFile": "/etc/adu/certs/client-$cert_suffix.pem",
+          "privateKeyFile": "/etc/adu/certs/client-$cert_suffix.key"
         }
       },
       "manufacturer": "Contoso",
@@ -411,35 +868,35 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 # Display CA certificate details
 echo "🔐 CA Certificate Details:"
-echo "   Subject: $(openssl x509 -in "$demo_gen_certs_folder/ca-$device_id.pem" -noout -subject | sed 's/subject=//')"
-echo "   Issuer:  $(openssl x509 -in "$demo_gen_certs_folder/ca-$device_id.pem" -noout -issuer | sed 's/issuer=//')"
-echo "   Valid from: $(openssl x509 -in "$demo_gen_certs_folder/ca-$device_id.pem" -noout -startdate | sed 's/notBefore=//')"
-echo "   Valid to:   $(openssl x509 -in "$demo_gen_certs_folder/ca-$device_id.pem" -noout -enddate | sed 's/notAfter=//')"
-echo "   SHA1 Fingerprint: $(openssl x509 -in "$demo_gen_certs_folder/ca-$device_id.pem" -noout -sha1 -fingerprint | sed 's/SHA1 Fingerprint=//')"
+echo "   Subject: $(openssl x509 -in "$demo_gen_certs_folder/ca-$cert_suffix.pem" -noout -subject | sed 's/subject=//')"
+echo "   Issuer:  $(openssl x509 -in "$demo_gen_certs_folder/ca-$cert_suffix.pem" -noout -issuer | sed 's/issuer=//')"
+echo "   Valid from: $(openssl x509 -in "$demo_gen_certs_folder/ca-$cert_suffix.pem" -noout -startdate | sed 's/notBefore=//')"
+echo "   Valid to:   $(openssl x509 -in "$demo_gen_certs_folder/ca-$cert_suffix.pem" -noout -enddate | sed 's/notAfter=//')"
+echo "   SHA1 Fingerprint: $(openssl x509 -in "$demo_gen_certs_folder/ca-$cert_suffix.pem" -noout -sha1 -fingerprint | sed 's/SHA1 Fingerprint=//')"
 
 echo ""
 
 # Display client certificate details
 echo "📱 Client Certificate Details:"
-echo "   Subject: $(openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout -subject | sed 's/subject=//')"
-echo "   Issuer:  $(openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout -issuer | sed 's/issuer=//')"
-echo "   Valid from: $(openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout -startdate | sed 's/notBefore=//')"
-echo "   Valid to:   $(openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout -enddate | sed 's/notAfter=//')"
-device_id_from_cert=$(openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout -subject | sed 's/.*CN = \([^,]*\).*/\1/')
+echo "   Subject: $(openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout -subject | sed 's/subject=//')"
+echo "   Issuer:  $(openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout -issuer | sed 's/issuer=//')"
+echo "   Valid from: $(openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout -startdate | sed 's/notBefore=//')"
+echo "   Valid to:   $(openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout -enddate | sed 's/notAfter=//')"
+device_id_from_cert=$(openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout -subject | sed 's/.*CN = \([^,]*\).*/\1/')
 echo "   Device ID (CN): $device_id_from_cert"
 
 echo ""
 
 # Display certificate thumbprints
 echo "🔑 Certificate Thumbprints for IoT Hub:"
-echo "   Primary (SHA1):   $(openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout -sha1 -fingerprint | sed 's/SHA1 Fingerprint=//')"
-echo "   Secondary (SHA256): $(openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout -sha256 -fingerprint | sed 's/SHA256 Fingerprint=//')"
+echo "   Primary (SHA1):   $(openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout -sha1 -fingerprint | sed 's/SHA1 Fingerprint=//')"
+echo "   Secondary (SHA256): $(openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout -sha256 -fingerprint | sed 's/SHA256 Fingerprint=//')"
 
 echo ""
 
 # Validate certificate chain
 echo "🔍 Certificate Chain Validation:"
-if openssl verify -CAfile "$demo_gen_certs_folder/ca-$device_id.pem" "$demo_gen_certs_folder/client-$device_id.pem" > /dev/null 2>&1; then
+if openssl verify -CAfile "$demo_gen_certs_folder/ca-$cert_suffix.pem" "$demo_gen_certs_folder/client-$cert_suffix.pem" > /dev/null 2>&1; then
     echo "   ✅ Certificate chain is valid"
 else
     echo "   ❌ Certificate chain validation failed"
@@ -471,9 +928,9 @@ echo "   ═══════════════════════�
 
 # Install CA certificate
 echo "   🔐 Installing CA Certificate..."
-echo "      📂 Source: $demo_gen_certs_folder/ca-$device_id.pem"
-echo "      📁 Destination: $dest_dir/ca-$device_id.pem"
-if sudo cp "$demo_gen_certs_folder/ca-$device_id.pem" "$dest_dir/ca-$device_id.pem" 2> /dev/null; then
+echo "      📂 Source: $demo_gen_certs_folder/ca-$cert_suffix.pem"
+echo "      📁 Destination: $dest_dir/ca-$cert_suffix.pem"
+if sudo cp "$demo_gen_certs_folder/ca-$cert_suffix.pem" "$dest_dir/ca-$cert_suffix.pem" 2> /dev/null; then
     echo "      ✅ CA Certificate installed successfully"
 else
     echo "      ❌ Failed to install CA Certificate"
@@ -483,9 +940,9 @@ fi
 # Install client certificate
 echo ""
 echo "   📱 Installing Client Certificate..."
-echo "      📂 Source: $demo_gen_certs_folder/client-$device_id.pem"
-echo "      📁 Destination: $dest_dir/client-$device_id.pem"
-if sudo cp "$demo_gen_certs_folder/client-$device_id.pem" "$dest_dir/client-$device_id.pem" 2> /dev/null; then
+echo "      📂 Source: $demo_gen_certs_folder/client-$cert_suffix.pem"
+echo "      📁 Destination: $dest_dir/client-$cert_suffix.pem"
+if sudo cp "$demo_gen_certs_folder/client-$cert_suffix.pem" "$dest_dir/client-$cert_suffix.pem" 2> /dev/null; then
     echo "      ✅ Client Certificate installed successfully"
 else
     echo "      ❌ Failed to install Client Certificate"
@@ -495,11 +952,11 @@ fi
 # Install client private key
 echo ""
 echo "   🔑 Installing Client Private Key..."
-echo "      📂 Source: $demo_gen_certs_folder/client-$device_id.key"
-echo "      📁 Destination: $dest_dir/client-$device_id.key"
-if sudo cp "$demo_gen_certs_folder/client-$device_id.key" "$dest_dir/client-$device_id.key" 2> /dev/null; then
+echo "      📂 Source: $demo_gen_certs_folder/client-$cert_suffix.key"
+echo "      📁 Destination: $dest_dir/client-$cert_suffix.key"
+if sudo cp "$demo_gen_certs_folder/client-$cert_suffix.key" "$dest_dir/client-$cert_suffix.key" 2> /dev/null; then
     # Set appropriate permissions for private key (readable only by owner)
-    if sudo chmod 600 "$dest_dir/client-$device_id.key" 2> /dev/null; then
+    if sudo chmod 600 "$dest_dir/client-$cert_suffix.key" 2> /dev/null; then
         echo "      ✅ Client Private Key installed successfully (permissions: 600)"
     else
         echo "      ⚠️  Client Private Key installed but failed to set permissions"
@@ -529,7 +986,7 @@ echo "   📋 Final installation summary:"
 
 # Verify all files were installed correctly
 files_installed=true
-if ! sudo test -f "$dest_dir/ca-$device_id.pem" || ! sudo test -f "$dest_dir/client-$device_id.pem" || ! sudo test -f "$dest_dir/client-$device_id.key"; then
+if ! sudo test -f "$dest_dir/ca-$cert_suffix.pem" || ! sudo test -f "$dest_dir/client-$cert_suffix.pem" || ! sudo test -f "$dest_dir/client-$cert_suffix.key"; then
     files_installed=false
 fi
 
@@ -540,9 +997,9 @@ if [ "$files_installed" = true ]; then
     if sudo test -d "$dest_dir" 2> /dev/null; then
         sudo find "$dest_dir" -type f -exec ls -la {} \; | sed 's/^/      /'
     else
-        echo "      • ca-$device_id.pem (CA Certificate)"
-        echo "      • client-$device_id.pem (Client Certificate)"
-        echo "      • client-$device_id.key (Client Private Key)"
+        echo "      • ca-$cert_suffix.pem (CA Certificate)"
+        echo "      • client-$cert_suffix.pem (Client Certificate)"
+        echo "      • client-$cert_suffix.key (Client Private Key)"
     fi
 else
     echo "   ❌ Certificate installation incomplete"
@@ -555,8 +1012,8 @@ echo ""
 echo "🧪 Running unit tests..."
 
 echo "🔍 Validating certificates..."
-if openssl x509 -in "$demo_gen_certs_folder/client-$device_id.pem" -noout > /dev/null 2>&1; then
-    echo "openssl verify -CAfile \"$demo_gen_certs_folder/ca-$device_id.pem\" \"$demo_gen_certs_folder/client-$device_id.pem\""
+if openssl x509 -in "$demo_gen_certs_folder/client-$cert_suffix.pem" -noout > /dev/null 2>&1; then
+    echo "openssl verify -CAfile \"$demo_gen_certs_folder/ca-$cert_suffix.pem\" \"$demo_gen_certs_folder/client-$cert_suffix.pem\""
     echo "✅ Certificate chain valid"
 else
     echo "❌ Certificate validation failed"
@@ -570,6 +1027,16 @@ if [ "$test_connection" = "true" ]; then
     test_iot_hub_connection
 fi
 
+# If build agent was requested, build it first
+if [ "$build_agent" = "true" ]; then
+    build_adu_agent
+fi
+
+# If agent test was requested, run it
+if [ "$test_agent" = "true" ]; then
+    test_adu_agent
+fi
+
 echo ""
 echo "🎉 All X.509 tests completed successfully!"
 echo ""
@@ -578,19 +1045,19 @@ echo "   📁 Certificate files in: $demo_gen_certs_folder/"
 if [ -d "$demo_gen_certs_folder" ]; then
     find "$demo_gen_certs_folder" -type f -exec ls -la {} \; | sed 's/^/      /'
 else
-    echo "      • ca-$device_id.pem (CA Certificate)"
-    echo "      • ca-$device_id.key (CA Private Key)"
-    echo "      • client-$device_id.pem (Client Certificate)"
-    echo "      • client-$device_id.key (Client Private Key)"
+    echo "      • ca-$cert_suffix.pem (CA Certificate)"
+    echo "      • ca-$cert_suffix.key (CA Private Key)"
+    echo "      • client-$cert_suffix.pem (Client Certificate)"
+    echo "      • client-$cert_suffix.key (Client Private Key)"
 fi
 echo ""
 echo "   📁 Installed certificates in: /etc/adu/certs/"
 if sudo test -d "/etc/adu/certs/" 2> /dev/null; then
     sudo find "/etc/adu/certs/" -name "*$device_id*" -type f -exec ls -la {} \; | sed 's/^/      /'
 else
-    echo "      • ca-$device_id.pem"
-    echo "      • client-$device_id.pem"
-    echo "      • client-$device_id.key"
+    echo "      • ca-$cert_suffix.pem"
+    echo "      • client-$cert_suffix.pem"
+    echo "      • client-$cert_suffix.key"
 fi
 echo ""
 echo "   📄 Device Update configuration: $du_config_file"

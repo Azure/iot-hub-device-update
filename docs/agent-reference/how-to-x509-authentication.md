@@ -182,7 +182,7 @@ openssl x509 -in client.pem -noout -text | grep -A 10 "X509v3 extensions"
 
 # Required extensions for IoT devices:
 # - Basic Constraints: CA:FALSE
-# - Key Usage: Digital Signature, Key Encipherment  
+# - Key Usage: Digital Signature, Key Encipherment
 # - Extended Key Usage: TLS Web Client Authentication
 # - Subject Key Identifier and Authority Key Identifier
 ```
@@ -240,18 +240,72 @@ sudo ls -la /etc/adu/certs/
 Use the comprehensive demo script located in `docs/agent-reference/x509-demo/demo-setup.sh`:
 
 ```bash
-# Run complete X.509 test with device registration and IoT Hub connectivity
+# Basic X.509 certificate generation and validation
+./demo-setup.sh --device-id your-device-id
+
+# Complete test with IoT Hub connectivity verification
 ./demo-setup.sh --device-id your-device-id --test-connection your-hub.azure-devices.net
 
-# The script performs 8 comprehensive verification steps:
-# 1. Certificate File Integrity Checks
-# 2. Certificate-Key Pair Validation  
-# 3. Certificate Chain Validation
-# 4. Certificate Details Verification
-# 5. Certificate Thumbprints Generation
-# 6. TLS Connection Tests
-# 7. MQTT Protocol Tests
-# 8. Connection Summary with troubleshooting guidance
+# Module identity testing (for IoT Edge scenarios)
+./demo-setup.sh --device-id your-device-id --module-id your-module-id --test-connection your-hub.azure-devices.net
+
+# Build and test agent with X.509 authentication (includes dependency management)
+./demo-setup.sh --device-id your-device-id --build-agent --test-agent --test-connection your-hub.azure-devices.net
+
+# Force rebuild dependencies if needed
+./demo-setup.sh --device-id your-device-id --build-agent --force-deps
+```
+
+#### Enhanced Script Features
+
+The demo script now includes several advanced features:
+
+**Smart Dependency Management:**
+- ✅ Dependencies are cached and only rebuilt when needed
+- ✅ Automatic detection of `install-deps.sh` changes
+- ✅ `--force-deps` option to force dependency reinstallation
+- ✅ Significant time savings on subsequent runs
+
+**Service-Aware Testing:**
+- ✅ Automatically stops `deviceupdate-agent` service for standalone testing
+- ✅ Provides clear console logs for debugging
+- ✅ Instructions for restarting service after testing
+- ✅ Prevents port conflicts and service interference
+
+**Comprehensive Validation (8-step verification process):**
+1. **Certificate File Integrity Checks** - Validates certificate and key formats
+2. **Certificate-Key Pair Validation** - Ensures private key matches certificate
+3. **Certificate Chain Validation** - Verifies CA certificate trust chain
+4. **Certificate Details Verification** - Validates device ID, expiration, extensions
+5. **Certificate Thumbprints Generation** - Provides SHA1/SHA256 thumbprints for IoT Hub
+6. **TLS Connection Tests** - Tests actual TLS handshake to IoT Hub
+7. **MQTT Protocol Tests** - Validates X.509 authentication over MQTT
+8. **Connection Summary** - Provides troubleshooting guidance and next steps
+
+**Agent Testing and Building:**
+- ✅ Automatic detection and installation of build dependencies
+- ✅ Compilation fixes for common build issues
+- ✅ Standalone agent testing with real-time log output
+- ✅ Support for custom agent paths and .deb packages
+- ✅ Proper `adu` user execution for certificate permissions
+
+### Example Usage Scenarios
+
+```bash
+# Development workflow - build agent and test with dependencies
+./demo-setup.sh --device-id contoso-vacuum-5 --build-agent --test-agent \
+    --test-connection nox-v120-test-hub.azure-devices.net
+
+# Production testing - use existing installed agent
+./demo-setup.sh --device-id production-device-001 --test-agent \
+    --test-connection production-hub.azure-devices.net
+
+# Module development - test IoT Edge module identity
+./demo-setup.sh --device-id edge-device-001 --module-id adu-module \
+    --test-connection edge-hub.azure-devices.net --test-agent
+
+# Certificate validation only
+./demo-setup.sh --device-id test-device --test-connection your-hub.azure-devices.net
 ```
 
 ### Device Twin Communication Testing
@@ -264,7 +318,7 @@ Test Device Twin specific functionality:
 
 # Tests:
 # - Device Twin GET requests
-# - Device Twin PATCH requests  
+# - Device Twin PATCH requests
 # - HTTPS connection validation
 # - Certificate requirements validation
 ```
@@ -347,7 +401,7 @@ cd /path/to/adu-agent
 # Run communication manager tests
 ./build/src/communication_managers/iothub_communication_manager/tests/iothub_communication_manager_ut
 
-# Run EIS utility tests  
+# Run EIS utility tests
 ./build/src/utils/eis_utils/tests/eis_utils_ut
 ```
 
@@ -524,6 +578,65 @@ sudo ufw status
 # Check certificate validity
 openssl x509 -in /etc/adu/certs/client.pem -noout -dates
 
+# Check if certificate is expired
+openssl x509 -in /etc/adu/certs/client.pem -noout -checkend 86400
+```
+
+**8. Service Management Issues**
+
+**Problem**: Port conflicts during standalone testing  
+**Cause**: `deviceupdate-agent` service is running while testing standalone agent  
+**Solution**:
+```bash
+# Stop the systemd service before standalone testing
+sudo systemctl stop deviceupdate-agent.service
+
+# Verify service is stopped
+sudo systemctl status deviceupdate-agent.service
+
+# Run standalone agent for testing
+sudo ./build/src/agent/deviceupdate-agent -c /etc/adu/du-config.json
+
+# Restart service after testing
+sudo systemctl start deviceupdate-agent.service
+```
+
+**Problem**: Service fails to start after configuration changes  
+**Cause**: Configuration file syntax errors or certificate permission issues  
+**Solution**:
+```bash
+# Check service logs for errors
+sudo journalctl -u deviceupdate-agent.service --since "5 minutes ago"
+
+# Validate configuration file
+sudo /usr/local/bin/deviceupdate-agent --validate-config /etc/adu/du-config.json
+
+# Check certificate permissions
+sudo ls -la /etc/adu/certs/
+sudo chown -R adu:adu /etc/adu/certs/
+sudo chmod 600 /etc/adu/certs/*.key
+sudo chmod 644 /etc/adu/certs/*.pem
+
+# Restart service
+sudo systemctl restart deviceupdate-agent.service
+```
+
+**Problem**: Cannot determine if service or standalone agent is causing issues  
+**Solution**:
+```bash
+# Clear distinction between service and standalone testing
+# Service mode (production):
+sudo systemctl status deviceupdate-agent.service
+sudo journalctl -u deviceupdate-agent.service -f
+
+# Standalone mode (development/testing):
+sudo systemctl stop deviceupdate-agent.service
+sudo ./build/src/agent/deviceupdate-agent -c /etc/adu/du-config.json -l 4
+```
+```bash
+# Check certificate validity
+openssl x509 -in /etc/adu/certs/client.pem -noout -dates
+
 # Check if certificate is currently valid
 openssl x509 -in /etc/adu/certs/client.pem -checkend 0
 ```
@@ -617,7 +730,7 @@ sudo -u adu ls -la /etc/adu/certs/
 ## Related Documentation
 
 - [How to Build Agent Code](how-to-build-agent-code.md)
-- [How to Run Agent](how-to-run-agent.md) 
+- [How to Run Agent](how-to-run-agent.md)
 - [Device Update Agent Extensibility Points](device-update-agent-extensibility-points.md)
 - [Troubleshooting Guide](how-to-troubleshoot-guide.md)
 
