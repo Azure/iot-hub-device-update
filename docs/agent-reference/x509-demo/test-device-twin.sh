@@ -6,7 +6,7 @@ set -e
 # Check if required parameters are provided
 if [ $# -lt 2 ]; then
     echo "Usage: $0 <device-id> <iot-hub-hostname>"
-    echo "Example: $0 contoso-vacuum-4 nox-v120-test-hub.azure-devices.net"
+    echo "Example: $0 contoso-vacuum-4 example-test-hub.azure-devices.net"
     exit 1
 fi
 

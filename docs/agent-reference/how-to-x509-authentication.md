@@ -294,7 +294,7 @@ The demo script now includes several advanced features:
 ```bash
 # Development workflow - build agent and test with dependencies
 ./demo-setup.sh --device-id contoso-vacuum-5 --build-agent --test-agent \
-    --test-connection nox-v120-test-hub.azure-devices.net
+    --test-connection example-test-hub.azure-devices.net
 
 # Production testing - use existing installed agent
 ./demo-setup.sh --device-id production-device-001 --test-agent \
@@ -584,8 +584,8 @@ openssl x509 -in /etc/adu/certs/client.pem -noout -checkend 86400
 
 **8. Service Management Issues**
 
-**Problem**: Port conflicts during standalone testing  
-**Cause**: `deviceupdate-agent` service is running while testing standalone agent  
+**Problem**: Port conflicts during standalone testing
+**Cause**: `deviceupdate-agent` service is running while testing standalone agent
 **Solution**:
 ```bash
 # Stop the systemd service before standalone testing
@@ -601,8 +601,8 @@ sudo ./build/src/agent/deviceupdate-agent -c /etc/adu/du-config.json
 sudo systemctl start deviceupdate-agent.service
 ```
 
-**Problem**: Service fails to start after configuration changes  
-**Cause**: Configuration file syntax errors or certificate permission issues  
+**Problem**: Service fails to start after configuration changes
+**Cause**: Configuration file syntax errors or certificate permission issues
 **Solution**:
 ```bash
 # Check service logs for errors
@@ -621,7 +621,7 @@ sudo chmod 644 /etc/adu/certs/*.pem
 sudo systemctl restart deviceupdate-agent.service
 ```
 
-**Problem**: Cannot determine if service or standalone agent is causing issues  
+**Problem**: Cannot determine if service or standalone agent is causing issues
 **Solution**:
 ```bash
 # Clear distinction between service and standalone testing
