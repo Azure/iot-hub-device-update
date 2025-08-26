@@ -27,7 +27,26 @@ X.509 client certificate authentication provides a more secure alternative to SA
 - X.509 authentication method configured
 - Certificate thumbprint registered in device identity
 
+## Agent Version Compatibility
+
+| ADU Agent Version | X.509 Support | Required Schema Version | Notes |
+|------------------|---------------|------------------------|-------|
+| **1.2.1+** | ✅ Full support | `"schemaVersion": "1.2"` | Recommended - supports connectionType: "X509" |
+| **1.1.x - 1.2.0** | ⚠️ Limited | `"schemaVersion": "1.1"` | Connection string format only* |
+| **< 1.1.0** | ❌ Not supported | N/A | Upgrade required |
+
+> **\*Connection String Format**: Older agents require embedding X.509 parameters directly in the connection string rather than using the dedicated connectionType: "X509" format.
+
 ## Configuration
+
+> **⚠️ CRITICAL COMPATIBILITY NOTICE**
+> 
+> X.509 authentication with the `connectionType: "X509"` format **requires schema version 1.2 or higher** in your `du-config.json` file. 
+>
+> - **ADU Agent 1.2.1+**: Use `"schemaVersion": "1.2"` 
+> - **ADU Agent < 1.2.1**: X.509 connectionType not supported (use connection string format instead)
+>
+> **If you use schema version 1.1 with X.509 connectionType, the agent will fail to parse the configuration.**
 
 ### Basic X.509 Configuration
 
@@ -35,7 +54,7 @@ Configure the ADU agent to use X.509 authentication by updating your `du-config.
 
 ```json
 {
-    "schemaVersion": "1.1",
+    "schemaVersion": "1.2",
     "aduShellTrustedUsers": ["adu", "do"],
     "manufacturer": "device_info_manufacturer",
     "model": "device_info_model",
@@ -63,7 +82,7 @@ For IoT Edge scenarios where the ADU agent runs as a module, configure module id
 
 ```json
 {
-    "schemaVersion": "1.1",
+    "schemaVersion": "1.2",
     "aduShellTrustedUsers": ["adu", "do"],
     "manufacturer": "device_info_manufacturer",
     "model": "device_info_model",
@@ -119,7 +138,7 @@ For Hardware Security Module support, configure PKCS#11:
 
 ## Enhanced Certificate Generation
 
-### Generate Production-Ready Test Certificates
+### Generate  Test Certificates
 
 For comprehensive testing with proper IoT device extensions:
 
@@ -237,23 +256,23 @@ sudo ls -la /etc/adu/certs/
 
 ### Automated Demo Script
 
-Use the comprehensive demo script located in `docs/agent-reference/x509-demo/demo-setup.sh`:
+Use the comprehensive demo script located in `docs/agent-reference/x509-demo/x509-demo.sh`:
 
 ```bash
 # Basic X.509 certificate generation and validation
-./demo-setup.sh --device-id your-device-id
+./x509-demo.sh --device-id your-device-id
 
 # Complete test with IoT Hub connectivity verification
-./demo-setup.sh --device-id your-device-id --test-connection your-hub.azure-devices.net
+./x509-demo.sh --device-id your-device-id --test-connection your-hub.azure-devices.net
 
 # Module identity testing (for IoT Edge scenarios)
-./demo-setup.sh --device-id your-device-id --module-id your-module-id --test-connection your-hub.azure-devices.net
+./x509-demo.sh --device-id your-device-id --module-id your-module-id --test-connection your-hub.azure-devices.net
 
 # Build and test agent with X.509 authentication (includes dependency management)
-./demo-setup.sh --device-id your-device-id --build-agent --test-agent --test-connection your-hub.azure-devices.net
+./x509-demo.sh --device-id your-device-id --build-agent --test-agent --test-connection your-hub.azure-devices.net
 
 # Force rebuild dependencies if needed
-./demo-setup.sh --device-id your-device-id --build-agent --force-deps
+./x509-demo.sh --device-id your-device-id --build-agent --force-deps
 ```
 
 #### Enhanced Script Features
@@ -293,34 +312,19 @@ The demo script now includes several advanced features:
 
 ```bash
 # Development workflow - build agent and test with dependencies
-./demo-setup.sh --device-id contoso-vacuum-5 --build-agent --test-agent \
+./x509-demo.sh --device-id contoso-vacuum-5 --build-agent --test-agent \
     --test-connection example-test-hub.azure-devices.net
 
 # Production testing - use existing installed agent
-./demo-setup.sh --device-id production-device-001 --test-agent \
+./x509-demo.sh --device-id production-device-001 --test-agent \
     --test-connection production-hub.azure-devices.net
 
 # Module development - test IoT Edge module identity
-./demo-setup.sh --device-id edge-device-001 --module-id adu-module \
+./x509-demo.sh --device-id edge-device-001 --module-id adu-module \
     --test-connection edge-hub.azure-devices.net --test-agent
 
 # Certificate validation only
-./demo-setup.sh --device-id test-device --test-connection your-hub.azure-devices.net
-```
-
-### Device Twin Communication Testing
-
-Test Device Twin specific functionality:
-
-```bash
-# Use the device twin test script
-./test-device-twin.sh your-device-id your-hub.azure-devices.net
-
-# Tests:
-# - Device Twin GET requests
-# - Device Twin PATCH requests
-# - HTTPS connection validation
-# - Certificate requirements validation
+./x509-demo.sh --device-id test-device --test-connection your-hub.azure-devices.net
 ```
 
 ### Manual Testing Steps
@@ -491,6 +495,39 @@ openssl x509 -in client.pem -noout -sha256 -fingerprint | sed 's/[:]//g' | sed '
 ```
 
 ## Troubleshooting
+
+### Configuration Schema Compatibility Issues
+
+**❌ CRITICAL: Agent fails to start with X.509 connectionType**
+
+**Problem**: Agent fails to parse configuration or doesn't recognize X.509 connectionType
+**Root Cause**: Using schema version 1.1 or older with X.509 connectionType (requires 1.2+)
+
+```bash
+# Check your current schema version
+grep -A2 "schemaVersion" /etc/adu/du-config.json
+
+# Expected output for X.509 support:
+# "schemaVersion": "1.2",
+```
+
+**Solution**: Update schema version to 1.2 in your `du-config.json`:
+```bash
+# Edit configuration file
+sudo nano /etc/adu/du-config.json
+
+# Change this line:
+# "schemaVersion": "1.1",
+# To:
+# "schemaVersion": "1.2",
+
+# Restart agent
+sudo systemctl restart deviceupdate-agent
+```
+
+**Agent Version Compatibility**:
+- ✅ **ADU Agent 1.2.1+**: Supports X.509 connectionType with schema 1.2
+- ❌ **ADU Agent < 1.2.1**: X.509 connectionType not supported (use connection string format)
 
 ### Certificate Authentication Issues
 
@@ -738,7 +775,6 @@ sudo -u adu ls -la /etc/adu/certs/
 
 Complete testing scripts are available in the `x509-demo` directory:
 
-- **`demo-setup.sh`**: Comprehensive X.509 setup and testing script
-- **`test-device-twin.sh`**: Device Twin communication testing script
+- **`x509-demo.sh`**: Comprehensive X.509 setup and testing script
 
-These scripts provide production-ready certificate generation, installation, and validation workflows for X.509 authentication testing.
+This script provides production-ready certificate generation, installation, and validation workflows for X.509 authentication testing.

@@ -22,7 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# demo-setup.sh - X.509 Certificate Demo and Testing Script
+# x509-demo.sh - X.509 Certificate Demo and Testing Script
 #
 # DISCLAIMER: This script is provided AS-IS for demonstration and testing purposes only.
 # It has been tested on Ubuntu 20.04 and may not work on other operating systems.
