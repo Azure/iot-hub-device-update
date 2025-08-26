@@ -202,7 +202,7 @@ sequenceDiagram
 
 ```
 
-## Sequence Diagram for Pause/Quiet period after entering Idle state
+## Sequence Diagram for Pause/Quiet period before entering Idle state
 
 ```mermaid
 
@@ -223,13 +223,13 @@ sequenceDiagram
         
         Client->>SDK: GetAduServiceStatus()
         SDK->>ADU: GET_STATE request
-        ADU-->>SDK: ADUC_ServiceStatus_Idle
-        SDK-->>Client: Return Idle
+        ADU-->>SDK: ADUC_ServiceStatus_Paused
+        SDK-->>Client: Return Paused
         
         Note over Client: Device enters<br/>low-power mode
     end
     
-    ADU->>ADU: Quiet Period Timer Expires
+    ADU->>ADU: Quiet Period Timer Expires, Enter Idle state
     
     rect rgba(200, 255, 200, 0.3)
         Note over ADU,IoTHub: Ready for Updates
@@ -288,12 +288,12 @@ stateDiagram-v2
         Processing --> CheckingInstalled: Check IsInstalled
     }
     
-    state Idle {
+    state Paused {
         [*] --> QuietPeriod: Start Quiet Period<br/>(Ignoring C2D messages)
         QuietPeriod --> Active: Timer Expired<br/>(Ready for updates)
     }
-    
-    Initializing --> Idle: Update Already Installed
+
+    Initializing --> Paused: Update Already Installed or no update deployment
     Initializing --> Downloading: Update Needs Install
     
     Downloading --> Installing: Download Complete
@@ -306,15 +306,24 @@ stateDiagram-v2
     Rebooting --> Installing: Apply Pending
     Rebooting --> Reporting: Apply Complete
     
-    Reporting --> Idle: Report Sent
+    Reporting --> Paused: Report Sent
+
     
     Idle --> Initializing: New Update Received<br/>(After Quiet Period)
+    Paused --> Idle: Able to process new updates
     
-    note right of Idle
+    note right of Paused
         During QuietPeriod:
         - C2D messages silently dropped
-        - GetAduServiceStatus() returns Idle
+        - GetAduServiceStatus() returns Paused
         - Device can enter low-power mode
+    end note
+
+    note right of Idle
+        During Idle:
+        - New updates coming from cloud can be processed
+        - GetAduServiceStatus() returns Idle
+        - Device should NOT enter low-power mode
     end note
 
 ```
