@@ -66,8 +66,8 @@ show_help() {
     echo "Options:"
     echo "  --device-id DEVICE_ID              Device ID to use for certificate generation (default: contoso-vacuum-4)"
     echo "  --module-id MODULE_ID              Module ID for IoT Hub module authentication (optional)"
-    echo "  --iot-hub-hostname HOSTNAME        IoT Hub hostname (REQUIRED for --test-agent)"
-    echo "  --test-connection IOTHUB_HOSTNAME  Test connection to IoT Hub using generated certificates"
+    echo "  --iot-hub-hostname HOSTNAME        IoT Hub hostname (REQUIRED for --test-connection and --test-agent)"
+    echo "  --test-connection                  Test connection to IoT Hub using generated certificates (requires --iot-hub-hostname)"
     echo "  --test-agent                       Test AducIotAgent with generated configuration (runs for 60s, requires --iot-hub-hostname)"
     echo "  --build-agent                      Build and install AducIotAgent from source before testing"
     echo "  --force-deps                       Force reinstallation of build dependencies (use with --build-agent)"
@@ -85,7 +85,7 @@ show_help() {
     echo "  $0 --device-id my-device --iot-hub-hostname my-hub.azure-devices.net --build-agent --test-agent"
     echo "  $0 --device-id my-device --iot-hub-hostname my-hub.azure-devices.net --agent-path /path/to/AducIotAgent --test-agent"
     echo "  $0 --device-id my-device --iot-hub-hostname my-hub.azure-devices.net --agent-path /path/to/package.deb --test-agent"
-    echo "  $0 --test-connection example-test-hub.azure-devices.net"
+    echo "  $0 --device-id my-device --iot-hub-hostname example-test-hub.azure-devices.net --test-connection"
     echo ""
     echo "Generated files:"
     echo "  • Certificate files: ~/x509-demo-temp/certs-<device_id>[-<module_id>]/"
@@ -203,6 +203,124 @@ prompt_after_connection_failure() {
     done
 }
 
+# Function to save current run parameters for tracking
+save_run_parameters() {
+    local params_file="$demo_working_folder/.last_run_params"
+    mkdir -p "$demo_working_folder"
+
+    cat > "$params_file" << EOF
+DEVICE_ID="$device_id"
+MODULE_ID="$module_id"
+IOT_HUB_HOSTNAME="$iot_hub_hostname"
+TIMESTAMP=$(date +%s)
+READABLE_TIME="$(date)"
+EOF
+
+    echo "   💾 Saved run parameters to: $params_file"
+}
+
+# Function to check if parameters have changed from last run
+check_parameter_changes() {
+    local params_file="$demo_working_folder/.last_run_params"
+    local should_prompt_connection_test=false
+
+    if [ ! -f "$params_file" ]; then
+        echo "   ℹ️  First run detected - no previous parameters to compare"
+        return 0
+    fi
+
+    # Load previous parameters safely
+    local prev_device_id=""
+    local prev_module_id=""
+    local prev_iot_hub_hostname=""
+    local prev_readable_time=""
+
+    # Use grep to safely extract values without sourcing
+    prev_device_id=$(grep "^DEVICE_ID=" "$params_file" | cut -d'=' -f2- | tr -d '"')
+    prev_module_id=$(grep "^MODULE_ID=" "$params_file" | cut -d'=' -f2- | tr -d '"')
+    prev_iot_hub_hostname=$(grep "^IOT_HUB_HOSTNAME=" "$params_file" | cut -d'=' -f2- | tr -d '"')
+    prev_readable_time=$(grep "^READABLE_TIME=" "$params_file" | cut -d'=' -f2- | tr -d '"')
+
+    echo ""
+    echo "🔍 Parameter Change Detection:"
+    echo "   📅 Previous run: $prev_readable_time"
+    echo "   📋 Comparing current parameters with last run..."
+
+    local changes_detected=false
+
+    # Check for parameter changes
+    if [ "$device_id" != "$prev_device_id" ]; then
+        echo "   🔄 Device ID changed: '$prev_device_id' → '$device_id'"
+        changes_detected=true
+    fi
+
+    if [ "$module_id" != "$prev_module_id" ]; then
+        echo "   🔄 Module ID changed: '$prev_module_id' → '$module_id'"
+        changes_detected=true
+    fi
+
+    if [ "$iot_hub_hostname" != "$prev_iot_hub_hostname" ]; then
+        echo "   🔄 IoT Hub hostname changed: '$prev_iot_hub_hostname' → '$iot_hub_hostname'"
+        changes_detected=true
+    fi
+
+    if [ "$changes_detected" = false ]; then
+        echo "   ✅ No parameter changes detected since last run"
+        return 0
+    fi
+
+    echo ""
+    echo "⚠️  Parameter changes detected! This may cause connection issues if:"
+    echo "   • The device/module is not registered in the new IoT Hub"
+    echo "   • The existing certificates were generated for different parameters"
+    echo "   • The Azure CLI commands need to be re-run with new thumbprints"
+    echo ""
+
+    # If --test-connection was not specified, prompt user
+    if [ "$test_connection" != "true" ]; then
+        echo "💡 Recommendation: Test the connection before proceeding with agent testing"
+        echo ""
+
+        if [ "$test_agent" != "true" ]; then
+            # Not testing agent, just inform user
+            echo "ℹ️  Consider running with --test-connection flag to verify connectivity"
+            echo "   Example: $0 --device-id \"$device_id\" --module-id \"$module_id\" --iot-hub-hostname \"$iot_hub_hostname\" --test-connection"
+            return 0
+        fi
+
+        # Testing agent but no connection test requested - prompt user
+        echo "🤔 Would you like to test the IoT Hub connection first? This will:"
+        echo "   • Validate certificates work with the new parameters"
+        echo "   • Check if device/module registration is required"
+        echo "   • Display Azure CLI commands with correct thumbprints if needed"
+        echo ""
+        echo "Test connection before proceeding? (Y/n): "
+        read -r response
+
+        case "$response" in
+        [Nn] | [Nn][Oo])
+            echo "   ⏭️  Skipping connection test as requested"
+            ;;
+        *)
+            echo "   🔌 Enabling connection test..."
+            test_connection="true"
+            should_prompt_connection_test=true
+            ;;
+        esac
+    else
+        echo "   ✅ Connection test is already enabled"
+    fi
+
+    echo ""
+
+    # Return 1 if we enabled connection test due to parameter changes
+    if [ "$should_prompt_connection_test" = true ]; then
+        return 1
+    fi
+
+    return 0
+}
+
 # Function to setup Microsoft package repository
 setup_microsoft_repository() {
     echo "🔧 Setting up Microsoft package repository..."
@@ -318,14 +436,8 @@ while [[ $# -gt 0 ]]; do
         shift 2
         ;;
     --test-connection)
-        iot_hub_hostname="$2"
-        if [[ -z $iot_hub_hostname ]]; then
-            echo "Error: --test-connection requires an IoT Hub hostname"
-            show_help
-            exit 1
-        fi
         test_connection="true"
-        shift 2
+        shift 1
         ;;
     --iot-hub-hostname)
         iot_hub_hostname="$2"
@@ -382,6 +494,15 @@ fi
 if [ "$test_agent" = "true" ] && [ -z "$iot_hub_hostname" ]; then
     echo "❌ Error: --test-agent requires --iot-hub-hostname to be specified"
     echo "💡 Example: $0 --device-id \"$device_id\" --iot-hub-hostname \"your-hub.azure-devices.net\" --test-agent"
+    echo ""
+    show_help
+    exit 1
+fi
+
+# Validate that IoT Hub hostname is provided when --test-connection is used
+if [ "$test_connection" = "true" ] && [ -z "$iot_hub_hostname" ]; then
+    echo "❌ Error: --test-connection requires --iot-hub-hostname to be specified"
+    echo "💡 Example: $0 --device-id \"$device_id\" --iot-hub-hostname \"your-hub.azure-devices.net\" --test-connection"
     echo ""
     show_help
     exit 1
@@ -694,7 +815,7 @@ test_iot_hub_connection() {
    Or use Azure CLI:
    # Create device
    az iot hub device-identity create \\
-     --hub-name YOUR_IOT_HUB_NAME \\
+     --hub-name ${iot_hub_hostname%%.azure-devices.net} \\
      --device-id $device_id_from_cert \\
      --auth-method x509_thumbprint \\
      --primary-thumbprint $primary_thumbprint \\
@@ -702,7 +823,7 @@ test_iot_hub_connection() {
 
    # Create module (if using module authentication)
    az iot hub module-identity create \\
-     --hub-name YOUR_IOT_HUB_NAME \\
+     --hub-name ${iot_hub_hostname%%.azure-devices.net} \\
      --device-id $device_id_from_cert \\
      --module-id $module_id \\
      --auth-method x509_thumbprint \\
@@ -1161,7 +1282,7 @@ test_adu_agent() {
     fi
     echo ""
 
-    echo "🚀 Starting AducIotAgent test (will run for 15 seconds)..."
+    echo "🚀 Starting AducIotAgent test (will run for 60 seconds)..."
     echo "   📝 Agent will use default configuration: $system_config"
     if [ "$run_as_adu" = "yes" ]; then
         echo "   👤 Running as 'adu' user for proper permissions"
@@ -1378,6 +1499,9 @@ else
     cert_suffix="$device_id"
 fi
 mkdir -p "$demo_gen_certs_folder"
+
+# Check for parameter changes from previous run
+check_parameter_changes
 
 echo "🔧 Setting up X.509 test environment..."
 
@@ -1868,13 +1992,62 @@ if [ "$test_agent" = "true" ] || [ "$interactive_mode" = "true" ] || [ $original
     esac
 fi
 
-# If agent test was requested, run it
+# If agent test was requested, show device registration and run it
 if [ "$test_agent" = "true" ]; then
+    echo ""
+    echo "📱 Azure IoT Hub Device Registration Commands:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "💡 Run these commands to register your device and module in Azure IoT Hub:"
+    echo ""
+
+    # Extract thumbprints for registration commands
+    if [ -f "$demo_gen_certs_folder/client-primary-$cert_suffix.pem" ] && [ -f "$demo_gen_certs_folder/client-secondary-$cert_suffix.pem" ]; then
+        local_primary_thumbprint=$(openssl x509 -in "$demo_gen_certs_folder/client-primary-$cert_suffix.pem" -noout -sha1 -fingerprint | sed 's/[:]//g' | sed 's/SHA1 Fingerprint=//')
+        local_secondary_thumbprint=$(openssl x509 -in "$demo_gen_certs_folder/client-secondary-$cert_suffix.pem" -noout -sha1 -fingerprint | sed 's/[:]//g' | sed 's/SHA1 Fingerprint=//')
+    else
+        local_primary_thumbprint="THUMBPRINT_NOT_FOUND"
+        local_secondary_thumbprint="THUMBPRINT_NOT_FOUND"
+    fi
+
+    echo "🏗️ Create the device with X.509 certificate authentication:"
+    cat << EOF
+az iot hub device-identity create \\
+  --device-id "$device_id" \\
+  --hub-name "${iot_hub_hostname%.azure-devices.net}" \\
+  --auth-method x509_thumbprint \\
+  --primary-thumbprint "$local_primary_thumbprint" \\
+  --secondary-thumbprint "$local_secondary_thumbprint"
+EOF
+    echo ""
+    echo "🔧 Create the module for Device Update:"
+    cat << EOF
+az iot hub module-identity create \\
+  --device-id "$device_id" \\
+  --module-id "$module_id" \\
+  --hub-name "${iot_hub_hostname%.azure-devices.net}" \\
+  --auth-method x509_thumbprint \\
+  --primary-thumbprint "$local_primary_thumbprint" \\
+  --secondary-thumbprint "$local_secondary_thumbprint"
+EOF
+    echo ""
+    echo "📋 Device Details:"
+    echo "   🆔 Device ID: $device_id"
+    echo "   🔧 Module ID: $module_id"
+    echo "   🌐 IoT Hub: $iot_hub_hostname"
+    echo "   🔑 Primary Thumbprint: $local_primary_thumbprint"
+    echo "   🔑 Secondary Thumbprint: $local_secondary_thumbprint"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+
     test_adu_agent
 fi
 
 echo ""
 echo "🎉 All X.509 tests completed successfully!"
+
+# Save current run parameters for future change detection
+save_run_parameters
+
 echo ""
 echo "📋 Generated Files Summary:"
 echo "   📁 Certificate files in: $demo_gen_certs_folder/"
