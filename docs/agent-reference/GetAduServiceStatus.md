@@ -29,8 +29,7 @@ This would allow another process to determine if it's safe to power-down (i.e. n
 The in-proc wrapper API will communicate to the AducIotAgent daemon process via IPC. Currently, it is a name-pipe FIFO request for ADU requests.
 
 Internally, the CommandHandler will read the request. In the case of GET_STATE it also reads in the path to the response FIFO for writing the response status code.
-
-The view states are managed by the ViewStateManager:
+Key points in the code will call an internal API to set these "view state" statuses on a ViewStateManager component and the CommandHandler will get the status from it.  
 
 ## Pause State
 
