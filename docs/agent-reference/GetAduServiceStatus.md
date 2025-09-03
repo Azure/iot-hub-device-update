@@ -248,7 +248,7 @@ sequenceDiagram
 graph TB
     subgraph "Client Process"
         CA[Client Application]
-        IW[In-Proc Wrapper API<br/>libadu_status_sdk.so]
+        IW[In-Proc Wrapper API<br/>libaducsdk.so]
         CA --> IW
     end
     
