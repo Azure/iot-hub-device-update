@@ -333,40 +333,6 @@ static bool HandleGetVersionCommand(const ParsedCommand* parsed_cmd)
 
 static ADUC_Command* g_commands[MAX_COMMAND_ARRAY_SIZE] = {}; // !< Static list of commands being exectued of MAX_COMMAND_ARRAY_SIZE
 
-//
-// Placeholder ViewStateManager functions (to be moved later)
-//
-
-/**
- * @brief Get SDK version (placeholder)
- * @return SDK version as uint32_t
- */
-static uint32_t ViewStateManager_GetSdkVersion(void)
-{
-    // Placeholder implementation - return version 1
-    return 1;
-}
-
-/**
- * @brief Get service API version (placeholder)
- * @return Service API version as uint32_t
- */
-static uint32_t ViewStateManager_GetServiceApiVersion(void)
-{
-    // Placeholder implementation - return version 1
-    return 1;
-}
-
-/**
- * @brief Get current service status (placeholder)
- * @return Service status code as uint32_t
- */
-static uint32_t ViewStateManager_GetServiceStatus(void)
-{
-    // Placeholder implementation - return idle status (6)
-    return 6; // ADUC_ServiceStatus_Idle
-}
-
 /**
  * @brief Register command.
  *
