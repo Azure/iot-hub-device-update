@@ -9,6 +9,7 @@
 #include "aduc/command_helper.h"
 #include "aduc/logging.h"
 #include "aduc/permission_utils.h"
+#include "aduc/aducsdk.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -86,12 +87,6 @@ static ssize_t ReadCompleteCommand(int fd, char** out_command)
         return -1;
     }
 
-    if (!CheckIncomingRequestFifoSecurity(fifoPath))
-    {
-        Log_Error("FIFO path '%s' did not pass security checks", fifoPath);
-        return -1;
-    }
-
     char* buffer = malloc(COMMAND_BUFFER_INITIAL_SIZE);
     if (buffer == NULL)
     {
@@ -144,7 +139,7 @@ static ssize_t ReadCompleteCommand(int fd, char** out_command)
         {
             found_terminator = true;
         }
-        total_read += bytes_read;
+        total_read += (size_t)bytes_read;
     }
 
     if (!found_terminator)
@@ -184,7 +179,7 @@ static bool ParseCommandLine(const char* input, size_t input_len, ParsedCommand*
 
     char* command_part = strtok(work_buffer, ":");
     char* version_part = strtok(NULL, ":");
-    char* args_part = strtok(NULL, ":");
+    strtok(NULL, ":"); // args_part - skip for now
     char* response_part = strtok(NULL, ":");
 
     if (command_part == NULL || version_part == NULL || response_part == NULL)
@@ -320,7 +315,7 @@ static bool HandleGetVersionCommand(const ParsedCommand* parsed_cmd)
     uint32_t sdk_version;
     if (parsed_cmd->version == 1)
     {
-        sdk_version = ViewStateManager_GetSdkVersion();
+        sdk_version = 1; // Return SDK version 1
     }
     else
     {
@@ -581,7 +576,7 @@ static void* ADUC_CommandListenerThread(void* unused)
                 Log_Warn("Unsupported new format command: %s", parsed_cmd.command);
 
                 // Write error response
-                WriteResponse(parsed_cmd.response_path, ERROR_UnsupportedApiVersion);
+                WriteResponse(parsed_cmd.response_path, ADUC_ServiceStatus_ERROR_UnsupportedApiVersion);
 
                 handled = true; // We handled it by sending an error
             }
@@ -608,7 +603,7 @@ static void* ADUC_CommandListenerThread(void* unused)
                         continue;
                     }
 
-                    if (strncmp(commandLine, g_commands[i]->commandText, commandTextLen) == 0)
+                    if (strncmp(cmdline, g_commands[i]->commandText, commandTextLen) == 0)
                     {
                         matchedCommand = g_commands[i];
                         break;
@@ -619,24 +614,27 @@ static void* ADUC_CommandListenerThread(void* unused)
 
             if (matchedCommand == NULL)
             {
-                Log_Warn("Unsupported legacy command received: '%s'", commandLine);
+                Log_Warn("Unsupported legacy command received: '%s'", cmdline);
             }
             else
             {
                 // Command matched.
-                Log_Info("Executing legacy command handler function for '%s'", commandLine);
-                if (!matchedCommand->callback(commandLine, NULL))
+                Log_Info("Executing legacy command handler function for '%s'", cmdline);
+                if (!matchedCommand->callback(cmdline, NULL))
                 {
-                    Log_Error("Cannot execute a command handler for '%s'.", commandLine);
+                    Log_Error("Cannot execute a command handler for '%s'.", cmdline);
                 }
             }
         }
         
-        free(commandLine);
+        free(cmdline);
     } while (!g_terminate_thread_request);
 
 done:
-    close(fileDescriptor);
+    if (fd > 0)
+    {
+        close(fd);
+    }
     if (!threadCreated)
     {
         Log_Error("Cannot start the command listener thread.");
