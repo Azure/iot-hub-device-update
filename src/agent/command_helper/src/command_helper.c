@@ -108,7 +108,7 @@ static ssize_t ReadCompleteCommand(int fd, char** out_command)
             {
                 new_size = COMMAND_BUFFER_MAX_SIZE;
             }
-            
+
             char* new_buffer = realloc(buffer, new_size);
             if (new_buffer == NULL)
             {
@@ -274,6 +274,12 @@ static bool WriteResponse(const char* response_path, uint32_t response_code)
 {
     if (response_path == NULL)
     {
+        return false;
+    }
+
+    if (!CheckIncomingRequestFifoSecurity(response_path))
+    {
+        Log_Error("Security check failed for response FIFO: %s", response_path);
         return false;
     }
 
@@ -530,7 +536,7 @@ static void* ADUC_CommandListenerThread(void* unused)
         }
 
         Log_Info("Wait for cmd...");
-        
+
         char* cmdline = NULL;
         ssize_t readSize = ReadCompleteCommand(fd, &cmdline);
 
@@ -561,7 +567,16 @@ static void* ADUC_CommandListenerThread(void* unused)
         if (ParseCommandLine(cmdline, (size_t)readSize - 1, &parsed_cmd)) // -1 to exclude null terminator
         {
             Log_Info("Processing new format command: %s (version %u)", parsed_cmd.command, parsed_cmd.version);
-            
+
+            // Validate security of the response FIFO path from the incoming request
+            if (!CheckIncomingRequestFifoSecurity(parsed_cmd.response_path))
+            {
+                Log_Error("Security validation failed for response FIFO: %s", parsed_cmd.response_path);
+                FreeParsedCommand(&parsed_cmd);
+                free(cmdline);
+                continue;
+            }
+
             bool handled = false;
             if (strncmp(parsed_cmd.command, "GET_VERSION", MAX_CMD_LEN) == 0)
             {
@@ -580,9 +595,9 @@ static void* ADUC_CommandListenerThread(void* unused)
 
                 handled = true; // We handled it by sending an error
             }
-            
+
             FreeParsedCommand(&parsed_cmd);
-            
+
             if (!handled)
             {
                 Log_Error("Failed to handle command: %s", parsed_cmd.command);
@@ -626,7 +641,7 @@ static void* ADUC_CommandListenerThread(void* unused)
                 }
             }
         }
-        
+
         free(cmdline);
     } while (!g_terminate_thread_request);
 
