@@ -11,6 +11,7 @@ add_subdirectory (pnp_helper)
 add_subdirectory (shutdown_service)
 
 if (NOT WIN32)
+    add_subdirectory (api)
     add_subdirectory (command_helper)
 endif ()
 

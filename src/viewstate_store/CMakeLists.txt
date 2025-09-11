@@ -20,6 +20,10 @@ target_link_libraries (
     ${target_name}
     PRIVATE Parson::parson)
 
+target_compile_definitions (
+    ${target_name}
+    PRIVATE ADUC_DATASTORE_FILE_PATH="${ADUC_DATASTORE_FILE_PATH}")
+
 # if (ADUC_BUILD_UNIT_TESTS)
 #     add_subdirectory (tests)
 # endif ()

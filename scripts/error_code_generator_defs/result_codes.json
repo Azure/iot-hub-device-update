@@ -1431,10 +1431,30 @@
             "name": "ADUC_FACILITY_INFRA_MGMT"
         },
         {
-            "components": [],
+            "components": [
+                {
+                    "code": 0,
+                    "doc_string": "indicates extended result codes for viewstate store.",
+                    "name": "ADUC_COMPONENT_DATASTORE_VIEWSTATE",
+                    "results": [
+                        {
+                            "name": "ADUC_ERC_DATASTORE_VIEWSTATE_INTERNAL_ERROR",
+                            "value": 1
+                        },
+                        {
+                            "name": "ADUC_ERC_DATASTORE_VIEWSTATE_INVALID_SCHEMA_VERSION",
+                            "value": 2
+                        },
+                        {
+                            "name": "ADUC_ERC_DATASTORE_VIEWSTATE_STORE_NOT_FOUND",
+                            "value": 3
+                        }
+                    ]
+                }
+            ],
             "code": 11,
-            "doc_string": "unused",
-            "name": "ADUC_FACILITY_UNUSED_B"
+            "doc_string": "ADUC Datastore facility",
+            "name": "ADUC_FACILITY_DATASTORE"
         },
         {
             "components": [],
