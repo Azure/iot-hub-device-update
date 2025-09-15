@@ -12,13 +12,22 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 
-#define MAX_CMD_QUEUE_LEN 32
 #define g_AducApiVersion 1
+#define CALL_BUF_LEN (3 * sizeof(uint16_t) + PATH_MAX) // version(2) + req_type(2) + resp_path_len(2) + resp_path(PATH_MAX)
 
 pthread_mutex_t g_mutex_api_call_queue = PTHREAD_MUTEX_INITIALIZER; // !< Mutex for synchronizing the API call queue
 pthread_t g_api_svc_thread; // !< The threads servicing incoming API calls
 bool g_api_svc_thread_created = false; // !< Indicates if the API service thread has been created
 bool g_api_svc_thread_running = false; // !< flag for the thread to keep running
+
+const unsigned int DelaySecsBetwenFailedOperation = 10u; // !< delay allowed between failed operations
+
+typedef struct tagAducApiCallWireState
+{
+    int fd;
+    unsigned char call_buf[CALL_BUF_LEN];
+    ssize_t tot_bytes_read;
+} AducApiCallWireState;
 
 static void _free_aduc_api_call(AducApiCall* call)
 {
@@ -35,12 +44,6 @@ static void _free_aduc_api_call(AducApiCall* call)
                 break;
         }
     }
-}
-
-static AducApiCall* _parse_incoming_call(int fd_stream)
-{
-    AducApiCall call = {0};
-    return NULL;
 }
 
 static bool _check_resp_fifo_security(const char* fifoPath)
@@ -98,8 +101,86 @@ static bool _write_apisvc_response(const char* response_path, ADUC_GetStateApiRe
     return true;
 }
 
-ApiServiceThreadProc ()
+static _reset_with_delay(int* fd, unsigned char* buf, size_t buf_len, ssize_t* tot_bytes_read)
 {
+    if (*fd > 0)
+    {
+        close(*fd);
+        *fd = -1;
+    }
+
+    if (buf != NULL && buf_len > 0 && buf_len <= CALL_BUF_LEN)
+    {
+        memset(buf, 0, buf_len);
+    }
+
+    *tot_bytes_read = 0;
+
+    sleep(DelaySecsBetwenFailedOperation);
+}
+
+static void ApiServiceThreadProc (void*)
+{
+    AducApiCallWireState wire_state = {0};
+    while (!g_api_svc_thread_running)
+    {
+        if (wire_state.fd <= 0)
+        {
+            wire_state.fd = open(ADUC_API_FIFO_PATH, O_RDONLY);
+            if (wire_state.fd <= 0)
+            {
+                Log_Error("Cannot open FIFO '%s' for read.", ADUC_API_FIFO_PATH);
+                _reset_with_delay(&wire_state, &parse_state);
+                continue;
+            }
+        }
+
+        Log_Info("Wait for API Call ...");
+
+        ssize_t bytes_read = read(wire_state.fd, &wire_state.call_buf, sizeof(wire_state.call_buf));
+        if (bytes_read < 0)
+        {
+            Log_Warn("Read error (error:%d).", errno);
+            _reset_with_delay(&wire_state, &parse_state);
+            continue;
+        }
+
+        ssize_t tmp_read = tot_bytes_read + num_bytes_read;
+        if (tmp_read > CALL_BUF_LEN) // overflow
+        {
+            Log_Warn("overflow ingress detected. Resetting.");
+            _reset_with_delay(&wire_state, &parse_state);
+            continue;
+        }
+
+        if (num_bytes_read == 0)
+        {
+            // EOF, in this case, no more data written to the pipe.
+            _reset_with_delay(&wire_state, &parse_state);
+            continue;
+        }
+
+        memcpy(&wire_state.call_buf[tot_bytes_read], &wire_state.call_buf, bytes_read);
+        wire_state.tot_bytes_read += bytes_read;
+
+        ssize_t new_byte_start_pos = wire_state.tot_bytes_read - bytes_read;
+        AducApiParseStatus parse_status = _parse_call(wire_state.call_buf, new_byte_start_pos, wire_state.tot_bytes_read, &parse_state);
+        switch (parse_status)
+        {
+        case AducApiParseStatus_Complete:
+            _evaluate_parsed_call(&parse_state);
+            _reset_with_delay(&fd, call_buf, sizeof(call_buf));
+            break;
+        case AducApiParseStatus_Continue:
+            // need more bytes to reach a complete parse.
+            sleep(100); // avoid tight loop
+            break;
+        case AducApiParseStatus_Fail:
+            _reset_with_delay(&fd, call_buf, sizeof(call_buf));
+            tot_bytes_read = 0;
+            break;
+        }
+    }
 }
 
 /////////////////////////////////////////////////
