@@ -10,7 +10,6 @@
 // https://github.com/Azure/umock-c/blob/master/doc/umock_c.md
 #include <umock_c/umock_c.h>
 
-#include <ostream>
 #include <iostream>
 
 int main(int argc, char* argv[])
