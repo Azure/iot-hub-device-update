@@ -306,3 +306,41 @@ TEST_CASE("ADUC_HashUtils_GetFileHash - LargeFile")
         CHECK_THAT(hash.get(), Equals(testFile.GetDataHashBase64(version)));
     }
 }
+
+TEST_CASE("ADUC_HashUtils_GetIndexStrongestValidHash")
+{
+    SECTION("Invalid index")
+    {
+        size_t indexStrongestAlgorithm;
+        SHAversion bestShaVersion = SHA256;
+        ADUC_Hash hashes[] = { };
+        size_t hashCount = 0;
+        REQUIRE_FALSE(ADUC_HashUtils_GetIndexStrongestValidHash(hashes, hashCount, &indexStrongestAlgorithm, &bestShaVersion));
+    }
+
+    SECTION("SHA256 is stronger than SHA1")
+    {
+        size_t indexStrongestAlgorithm = 0;
+        SHAversion bestShaVersion;
+
+        ADUC_Hash hashes[] = {
+            {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+            const_cast<char*>(""), // hash --
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+            const_cast<char*>("sha1"), // type
+            },
+            {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+            const_cast<char*>(""), // hash --
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+            const_cast<char*>("sha256"), // type
+            }
+        };
+        size_t hashCount = 2;
+        REQUIRE(ADUC_HashUtils_GetIndexStrongestValidHash(hashes, hashCount, &indexStrongestAlgorithm, &bestShaVersion));
+
+        CHECK(indexStrongestAlgorithm == 1);
+        CHECK(bestShaVersion == SHAversion::SHA256);
+    }
+}
