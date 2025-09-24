@@ -98,6 +98,7 @@ target_link_libraries (
             aduc::shutdown_service
             aduc::system_utils
             aduc::url_utils
+            aduc::viewstatemgr
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
 

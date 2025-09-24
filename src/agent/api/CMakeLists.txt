@@ -3,8 +3,10 @@ set (target_name apisvc)
 include (agentRules)
 compileasc99 ()
 
-add_library (${target_name} STATIC ./src/apisvc.c)
+add_library (${target_name} STATIC)
 add_library (aduc::${target_name} ALIAS ${target_name})
+
+target_sources(${target_name} PRIVATE src/apiproto.c src/apisvc.c )
 
 target_compile_definitions (
     ${target_name} PRIVATE ADUC_API_FIFO_PATH="${ADUC_API_FIFO_PATH}"
@@ -13,6 +15,8 @@ if (WIN32)
     find_package (PThreads4W REQUIRED)
     target_link_libraries (${target_name} PRIVATE PThreads4W::PThreads4W)
 endif ()
+
+target_link_libraries (${target_name} PRIVATE aduc::viewstatemgr)
 
 target_include_directories (
     ${target_name}

@@ -28,6 +28,7 @@
 #include "aduc/shutdown_service.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h" // ADUC_SystemUtils_MkDirRecursiveDefault
+#include "aduc/viewstatemgr.h"
 #include "aducpal/stdlib.h" // setenv
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
@@ -87,6 +88,11 @@ static const char g_diagnosticsPnPComponentName[] = "diagnosticInformation";
  * @brief Global IoT Hub client handle.
  */
 ADUC_ClientHandle g_iotHubClientHandle = NULL;
+
+/**
+ * @brief The viewstate manager handle.
+ */
+ViewStateMgrHandle g_viewstatemgr_handle = NULL;
 
 //
 // Components that this agent supports.
@@ -704,6 +710,11 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         goto done;
     }
 
+    if (NULL == (g_viewstatemgr_handle = viewstatemgr_create()))
+    {
+        goto done;
+    }
+
     if (launchArgs->connectionString != NULL)
     {
         ADUC_ConnType connType = GetConnTypeFromConnectionString(launchArgs->connectionString);
@@ -813,6 +824,11 @@ done:
 void ShutdownAgent()
 {
     Log_Warn("Agent is shutting down.");
+    if (g_viewstatemgr_handle != NULL)
+    {
+        viewstatemgr_destroy(g_viewstatemgr_handle);
+        g_viewstatemgr_handle = NULL;
+    }
     ADUC_D2C_Messaging_Uninit();
 #ifdef ADUC_COMMAND_HELPER_H
     UninitializeCommandListenerThread();

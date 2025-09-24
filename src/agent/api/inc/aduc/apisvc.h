@@ -11,7 +11,7 @@
 
 #include <stdbool.h>
 
-bool InitializeApiService();
-void UninitializeApiService();
+bool init_api_svc();
+void unint_api_svc();
 
 #endif // ADUC_APISVC_H_

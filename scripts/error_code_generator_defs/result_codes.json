@@ -1442,12 +1442,8 @@
                             "value": 1
                         },
                         {
-                            "name": "ADUC_ERC_DATASTORE_VIEWSTATE_INVALID_SCHEMA_VERSION",
+                            "name": "ADUC_ERC_DATASTORE_VIEWSTATE_UNINITIALIZED",
                             "value": 2
-                        },
-                        {
-                            "name": "ADUC_ERC_DATASTORE_VIEWSTATE_STORE_NOT_FOUND",
-                            "value": 3
                         }
                     ]
                 }
