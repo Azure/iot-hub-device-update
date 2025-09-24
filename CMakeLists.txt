@@ -270,8 +270,8 @@ set (
 
 set (
     ADUC_API_FIFO_PATH
-    "${ADUC_DATA_FOLDER}/api/aducapi.fifo"
-    CACHE STRING "The named-pipe for version 1 Cross Process API.")
+    "${ADUC_DATA_FOLDER}/api/apireq.fifo"
+    CACHE STRING "The named-pipe for incoming version 1 Cross Process API request.")
 
 set (
     ADUC_ROOTKEY_PKG_URL_OVERRIDE
