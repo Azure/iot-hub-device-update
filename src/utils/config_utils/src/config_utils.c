@@ -52,6 +52,7 @@ static const char* CONFIG_MANUFACTURER = "manufacturer";
 static const char* CONFIG_MODEL = "model";
 static const char* CONFIG_SCHEMA_VERSION = "schemaVersion";
 static const char* CONFIG_DOWNLOAD_TIMEOUT_IN_MINUTES = "downloadTimeoutInMinutes";
+static const char* CONFIG_API_REQUEST_FIFO_PATH = "apiRequestFifoPath";
 
 static const char* CONFIG_NAME = "name";
 static const char* CONFIG_RUN_AS = "runas";
@@ -563,6 +564,9 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
     // Note: download timeout is optional.
     ADUC_JSON_GetUnsignedIntegerField(
         config->rootJsonValue, CONFIG_DOWNLOAD_TIMEOUT_IN_MINUTES, &(config->downloadTimeoutInMinutes));
+
+    // Note: API request FIFO path is optional.
+    config->apiRequestFifoPath = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_API_REQUEST_FIFO_PATH);
 
     // Ensure that adu-shell folder is valid.
     config->aduShellFolder = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_ADU_SHELL_FOLDER);

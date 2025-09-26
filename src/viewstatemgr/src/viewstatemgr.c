@@ -41,7 +41,7 @@ ADUC_Result viewstatemgr_svcstatus_get(ViewStateMgrHandle h, ADUC_ServiceStatus*
     }
     if (!g_viewstatemgr_state.initialized)
     {
-        result.ExtendedResultCode = ADUC_ERC_DATASTORE_VIEWSTATE_UNINITIALIZED;
+        result.ExtendedResultCode = ADUC_ERC_VIEWSTATEMGR_UNINITIALIZED;
         return result;
     }
 

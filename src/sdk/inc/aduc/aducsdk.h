@@ -18,7 +18,7 @@ typedef enum tagADUC_ServiceStatus {
    ADUC_ServiceStatus_ERROR_AgentServiceBrokenPipe = 10002,
    ADUC_ServiceStatus_ERROR_AgentServicePermission = 10003,
    ADUC_ServiceStatus_ERROR_AgentServiceTimeout    = 10004,
-   ADUC_ServiceStatus_ERROR_OutOfMemory            = 10005,
+   ADUC_ServiceStatus_ERROR_AgentServiceInternal   = 10005,
    ADUC_ServiceStatus_ERROR_Unknown                = 99999,
 } ADUC_ServiceStatus;
 

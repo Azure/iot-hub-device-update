@@ -9,9 +9,15 @@
 #ifndef ADUC_APISVC_H_
 #define ADUC_APISVC_H_
 
+#include "aduc/c_utils.h"
+
 #include <stdbool.h>
 
-bool init_api_svc();
-void unint_api_svc();
+EXTERN_C_BEGIN
+
+bool init_api_svc(const char* fifoPath);
+void uninit_api_svc();
+
+EXTERN_C_END
 
 #endif // ADUC_APISVC_H_

@@ -10,6 +10,7 @@
 
 #include "aduc/aducsdk.h"
 #include "aduc/apiproto.h"
+#include "aduc/config_utils.h"
 #include "aduc/logging.h"
 #include "aduc/result.h"
 #include "aduc/viewstatemgr.h"
@@ -19,6 +20,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #define _XOPEN_SOURCE 700
 #include <sys/types.h>
@@ -27,18 +29,43 @@
 #define g_AducApiVersion 1
 #define FIFO_FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP) // rw-rw----
 
-static const unsigned OnErrorDelayMs = 250;
+static const unsigned OnErrorDelayMicrosecs = 2500;
 
-pthread_t g_api_svc_thread;
+pthread_t g_api_svc_thread = {0};
 bool g_api_svc_thread_running = false;
+
+typedef struct tagFifoThreadRetVal
+{
+    ADUC_Result result;
+} FifoThreadRetVal;
 
 // fwd-decl
 static void* aduc_apisvc_thread_proc (void*);
 
+// /**
+//  * @brief Get the API request FIFO path from configuration, falling back to default if not configured
+//  * @return const char* The FIFO path to use
+//  */
+// static const char* get_api_request_fifo_path()
+// {
+//     const char* path = ADUC_API_DEFAULT_FIFO_PATH;
+//     const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+//     if (config != NULL)
+//     {
+//         if (config->apiRequestFifoPath != NULL)
+//         {
+//             path = config->apiRequestFifoPath;
+//         }
+//         ADUC_ConfigInfo_ReleaseInstance(config);
+//     }
+
+//     return path;
+// }
+
 /////////////////////////////////////////////////
 // BEGIN: Public API
 //
-bool init_api_svc()
+bool init_api_svc(const char* fifoPath)
 {
     if (g_api_svc_thread_running)
     {
@@ -47,7 +74,21 @@ bool init_api_svc()
 
     Log_Info("Initializing API Service thread");
 
-    int ret = pthread_create(&g_api_svc_thread, NULL, aduc_apisvc_thread_proc, NULL);
+    if (fifoPath == NULL)
+    {
+        fifoPath = ADUC_API_DEFAULT_FIFO_PATH;
+    }
+
+    // NOTE: This thread will remain joinable and will be joined during uninit.
+    char* arg = NULL;
+    if (0 != mallocAndStrcpy_s(&arg, fifoPath == NULL
+        ? (void*)ADUC_API_DEFAULT_FIFO_PATH
+        : (void*)fifoPath))
+    {
+        Log_Error("Failed to copy fifo path");
+        return false;
+    }
+    int ret = pthread_create(&g_api_svc_thread, NULL, aduc_apisvc_thread_proc, (void*)arg);
     if (ret != 0)
     {
         Log_Error("Failed to create command listener thread: %d", ret);
@@ -61,7 +102,37 @@ bool init_api_svc()
 void uninit_api_svc()
 {
     Log_Info("Uninitializing api service thread");
+
+    void* threadRet = NULL;
+    FifoThreadRetVal* retVal = NULL;
+
     g_api_svc_thread_running = false;
+    int res = pthread_join(g_api_svc_thread, (void**)&retVal);
+    if (res != 0)
+    {
+        Log_Warn("pthread join error: %d\n", res);
+    }
+    else
+    {
+        retVal = (FifoThreadRetVal*)threadRet;
+    }
+    usleep(3 * OnErrorDelayMicrosecs); // give it a moment to exit if it was in a delay loop
+    memset(&g_api_svc_thread, 0, sizeof(pthread_t));
+
+    if (retVal == NULL)
+    {
+        Log_Warn("Fifo thread failed, NULL retval\n");
+    }
+    else if (IsAducResultCodeFailure((retVal->result).ResultCode))
+    {
+        Log_Warn("Fifo thread failed with: 0x%08x\n", (retVal->result).ExtendedResultCode);
+        free(retVal);
+    }
+    else
+    {
+        Log_Info("Fifo thread uninited and had no failure.");
+        free(retVal);
+    }
 }
 //
 // END: Public API
@@ -69,10 +140,14 @@ void uninit_api_svc()
 
 static bool verify_fifo_security(const char* fifoPath)
 {
+    if (fifoPath == NULL || fifoPath[0] == '\0')
+    {
+        return false;
+    }
     struct stat st = {0};
     if (stat(fifoPath, &st) < 0)
     {
-        Log_Error("Failed to stat fifo '%s': %d", fifoPath, errno);
+        Log_Warn("Failed to stat fifo '%s': %d", fifoPath, errno);
         return false;
     }
 
@@ -102,81 +177,115 @@ static bool verify_fifo_security(const char* fifoPath)
     return true;
 }
 
-static int create_and_verify_request_fifo()
+static int create_and_verify_request_fifo(const char* fifoPath)
 {
-    if(mkfifo(ADUC_API_FIFO_PATH, FIFO_FILE_MODE) < 0 && errno != EEXIST)
+    if(mkfifo(fifoPath, FIFO_FILE_MODE) < 0 && errno != EEXIST)
     {
-        Log_Error("Failed to create fifo '%s': %d", ADUC_API_FIFO_PATH, errno);
+        Log_Error("Failed to create fifo '%s': %d", fifoPath, errno);
         return -1;
     }
 
-    if (!verify_fifo_security(ADUC_API_FIFO_PATH))
+    if (!verify_fifo_security(fifoPath))
     {
-        Log_Error("Failed to verify fifo '%s' security", ADUC_API_FIFO_PATH);
+        Log_Error("Failed to verify fifo '%s' security", fifoPath);
         return -2;
     }
 
     return 0;
 }
 
-static void* aduc_apisvc_thread_proc (void*)
+
+
+static void* aduc_apisvc_thread_proc (void* arg)
 {
-    if (create_and_verify_request_fifo() < 0)
+    char* fifo_path = (char*)arg;
+
+    // The returned value from the implicit call to pthread_exit is from the following heap obj
+    // that is freed by the main thread joining it.
+    FifoThreadRetVal* retval = (FifoThreadRetVal*)calloc(1, sizeof(FifoThreadRetVal));
+    if (retval == NULL)
     {
-        Log_Error("Failed to create/verify request fifo");
         return NULL;
     }
 
-    int rdfifo = open(ADUC_API_FIFO_PATH, O_RDONLY, 0);
-    (void)open(ADUC_API_FIFO_PATH, O_WRONLY, 0); // NOTE(jewelden) - never used, avoids EOF on read side
+    if (create_and_verify_request_fifo(fifo_path) < 0)
+    {
+        Log_Error("Failed to create/verify request fifo");
+        (retval->result).ExtendedResultCode = ADUC_ERC_APISVC_CREATE_FIFO_FAILED;
+        return retval;
+    }
 
-    while (!g_api_svc_thread_running)
+    int rdfifo = open(fifo_path, O_RDONLY, 0);
+    if (rdfifo == -1)
+    {
+        Log_Error("Failed to open'%s'. errno: %d", fifo_path, errno);
+        (retval->result).ExtendedResultCode = ADUC_ERC_APISVC_OPEN_FIFO_FAILED;
+        return retval;
+    }
+    (void)open(fifo_path, O_WRONLY, 0); // NOTE: never used, avoids EOF return on read
+
+    while (g_api_svc_thread_running)
     {
         ssize_t n;
         ApiWireRequestMsg msg = {0};
-        if ((n = msg_recv(rdfifo, &msg)) <= 0)
+        if ((n = msg_recv(rdfifo, &msg)) < 0)
         {
-            Log_Error("msg_recv failed: %zd", n);
-            sleep(OnErrorDelayMs);
+            if (n == MSGREV_AGAIN)
+            {
+                // allow it to be interrupted and try again, checking for running flag
+                continue;
+            }
+            Log_Error("msg_recv: %zd", n);
+            usleep(OnErrorDelayMicrosecs);
             continue;
         }
-        msg.data[n] = '\0';
+        if (n != 0)
+        {
+            msg.data[n] = '\0';
+        }
+
+        if (msg.data == NULL || msg.data[0] == '\0')
+        {
+            usleep(OnErrorDelayMicrosecs);
+            continue;
+        }
 
         if (!verify_fifo_security(msg.data))
         {
-            Log_Error("security verification failed for response fifo '%s'", msg.data);
-            sleep(OnErrorDelayMs);
+            usleep(OnErrorDelayMicrosecs);
             continue;
         }
 
         int writefifo = open(msg.data, O_WRONLY, 0);
         if (writefifo < 0)
         {
-            Log_Error("Failed to open response fifo '%s': %d", msg.data, errno);
-            sleep(OnErrorDelayMs);
+            Log_Error("open resp fifo '%s': %d", msg.data, errno);
+            usleep(OnErrorDelayMicrosecs);
             continue;
         }
 
         ApiWireResponseMsg resp = {0};
         if (ApiRequestType_NONE == msg.type)
         {
-            resp.code = 1;
-            Log_Error("bad msg type: %zd", n);
-            sleep(OnErrorDelayMs);
+            Log_Error("bad msg type 0");
+            usleep(OnErrorDelayMicrosecs);
             continue;
         }
         else if (ApiRequestType_GETSTATE == msg.type)
         {
-            Log_Info("Received GETSTATE request");
+            Log_Info("recv GETSTATE request: %d", msg.type);
             ADUC_ServiceStatus status = ADUC_ServiceStatus_None;
             ADUC_Result res = viewstatemgr_svcstatus_get(g_viewstatemgr_handle, &status);
             if (IsAducResultCodeFailure(res.ResultCode))
             {
-                Log_Error("viewstatemgr_svcstatus_get failed, erc: %d", res.ExtendedResultCode);
-                status = ADUC_ServiceStatus_ERROR_Unknown;
+                Log_Error("failed get viewstate, erc: %d", res.ExtendedResultCode);
+                (retval->result).ExtendedResultCode = res.ExtendedResultCode;
+                status = ADUC_ServiceStatus_ERROR_AgentServiceInternal;
             }
-            resp.ret_val = htonl(status);
-            Log_Info("GETSTATE returning %d", status);
+
+            Log_Info("GETSTATE returning code %d ret_val %d", 1, status);
+            resp.code = htons(1);
+            resp.ret_val = htons(status);
 
             ssize_t sent = msg_send(writefifo, &resp);
             if (sent < 0)
@@ -189,5 +298,7 @@ static void* aduc_apisvc_thread_proc (void*)
             }
         }
     }
-    return NULL;
+
+    free(fifo_path);
+    return retval;
 }

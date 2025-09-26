@@ -269,9 +269,9 @@ set (
     CACHE STRING "The named-pipe for commands IPC for legacy, pre-versioned api.")
 
 set (
-    ADUC_API_FIFO_PATH
+    ADUC_API_DEFAULT_FIFO_PATH
     "${ADUC_DATA_FOLDER}/api/apireq.fifo"
-    CACHE STRING "The named-pipe for incoming version 1 Cross Process API request.")
+    CACHE STRING "The default named-pipe for incoming version 1 Cross Process API request.")
 
 set (
     ADUC_ROOTKEY_PKG_URL_OVERRIDE

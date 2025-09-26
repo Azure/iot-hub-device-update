@@ -1434,23 +1434,38 @@
             "components": [
                 {
                     "code": 0,
-                    "doc_string": "indicates extended result codes for viewstate store.",
-                    "name": "ADUC_COMPONENT_DATASTORE_VIEWSTATE",
+                    "doc_string": "indicates extended result codes for viewstate management.",
+                    "name": "ADUC_COMPONENT_VIEWSTATE",
                     "results": [
                         {
-                            "name": "ADUC_ERC_DATASTORE_VIEWSTATE_INTERNAL_ERROR",
+                            "name": "ADUC_ERC_VIEWSTATEMGR_UNINITIALIZED",
+                            "value": 1
+                        }
+                    ]
+                },
+                {
+                    "code": 1,
+                    "doc_string": "indicates extended result codes for the api service.",
+                    "name": "ADUC_COMPONENT_APISVC",
+                    "results": [
+                        {
+                            "name": "ADUC_ERC_APISVC_CREATE_FIFO_FAILED",
                             "value": 1
                         },
                         {
-                            "name": "ADUC_ERC_DATASTORE_VIEWSTATE_UNINITIALIZED",
+                            "name": "ADUC_ERC_APISVC_OPEN_FIFO_FAILED",
                             "value": 2
+                        },
+                        {
+                            "name": "ADUC_ERC_APISVC_GET_FIFO_PATH_FAILED",
+                            "value": 3
                         }
                     ]
                 }
             ],
             "code": 11,
-            "doc_string": "ADUC Datastore facility",
-            "name": "ADUC_FACILITY_DATASTORE"
+            "doc_string": "ADUC API facility",
+            "name": "ADUC_FACILITY_API"
         },
         {
             "components": [],

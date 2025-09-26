@@ -108,6 +108,8 @@ typedef struct tagADUC_ConfigInfo
     char* extensionsStepHandlerFolder; /**< The folder where ADU stores its step handler extensions. */
 
     char* extensionsDownloadHandlerFolder; /**< The folder where ADU stores its downloader handler extensions. */
+
+    const char* apiRequestFifoPath; /**< The path to the API request FIFO. */
 } ADUC_ConfigInfo;
 
 /**
