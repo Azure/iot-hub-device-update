@@ -59,6 +59,7 @@ typedef enum tagADUC_ServiceStatus
     ADUC_ServiceStatus_ERROR_AgentServiceBrokenPipe = 10002,
     ADUC_ServiceStatus_ERROR_AgentServicePermission = 10003,
     ADUC_ServiceStatus_ERROR_AgentServiceTimeout = 10004,
+    ADUC_ServiceStatus_ERROR_AgentServiceInternal = 10005,
     ADUC_ServiceStatus_ERROR_Unknown = 99999,
 } ADUC_ServiceStatus;
 
@@ -105,12 +106,12 @@ The in-proc wrapper API will communicate to the AducIotAgent daemon process via 
 
 Internally, the CommandHandler will read the request. In the case of GET_STATE it also reads in the path to the response FIFO for writing the response status code.
 
-Key points in the code will call an internal API to set these "view state" statuses on a ViewStateManager component and the CommandHandler will get the status from it.  
+Key points in the code will call an internal API to set these "view state" statuses on a ViewStateManager component and the CommandHandler will get the status from it.
 
 ## Pause State
 
 The `ADUC_ServiceStatus_Paused` state will be returned from the `GetAduServiceStatus()` API before the agent enters `Idle` state.
- 
+
 The pause period is controlled by the `IdlePausePeriodSeconds` configuration in `du-config.json` for setting a pause period (in seconds).
 During this pause period, the agent will ignore any incoming C2D messages. Therefore, no cancel, replacement, or new update deployment can begin during this interval.
 
@@ -181,20 +182,20 @@ sequenceDiagram
     participant CmdHandler as Command Handler
     participant ViewState as ViewState Manager
     participant RespFIFO as Response FIFO
-    
+
     Note over Client,SDK: Client Process
     Note over ReqFIFO,ViewState: ADU Service Process
-    
+
     Client->>SDK: GetAduServiceStatus()
     SDK->>SDK: Create temp response FIFO
     SDK->>ReqFIFO: Write "GET_STATE:/tmp/adu_status_12345"
-    
+
     ReqFIFO->>CmdListener: Read command
     CmdListener->>CmdHandler: Process GET_STATE command
     CmdHandler->>ViewState: Get current state
     ViewState-->>CmdHandler: Return ADUC_ServiceStatus
     CmdHandler->>RespFIFO: Write status code
-    
+
     RespFIFO->>SDK: Read status code
     SDK->>SDK: Cleanup temp FIFO
     SDK-->>Client: Return ADUC_ServiceStatus
@@ -211,29 +212,29 @@ sequenceDiagram
     participant SDK as Status SDK
     participant ADU as ADU Service
     participant IoTHub as IoT Hub
-    
+
     Note over ADU: Update Complete, Entering Idle
     ADU->>ADU: Start Quiet Period Timer
-    
+
     rect rgba(255, 200, 200, 0.3)
         Note over ADU,IoTHub: Quiet Period Active
-        
+
         IoTHub->>ADU: C2D Update Message
         ADU->>ADU: Drop message (quiet period)
-        
+
         Client->>SDK: GetAduServiceStatus()
         SDK->>ADU: GET_STATE request
         ADU-->>SDK: ADUC_ServiceStatus_Paused
         SDK-->>Client: Return Paused
-        
+
         Note over Client: Device enters<br/>low-power mode
     end
-    
+
     ADU->>ADU: Quiet Period Timer Expires, Enter Idle state
-    
+
     rect rgba(200, 255, 200, 0.3)
         Note over ADU,IoTHub: Ready for Updates
-        
+
         IoTHub->>ADU: C2D Update Message
         ADU->>ADU: Process update
         ADU->>ADU: Set status to Initializing
@@ -251,23 +252,23 @@ graph TB
         IW[In-Proc Wrapper API<br/>libaducsdk.so]
         CA --> IW
     end
-    
+
     subgraph "ADU Service Process"
         CL[Command Listener Thread<br/>ADUC_CommandListenerThread]
         VSM[ViewState Manager<br/>Global State Store]
         WF[Workflow Processing]
         CH[Command Handler]
-        
+
         WF --> VSM
         CL --> CH
         CH --> VSM
     end
-    
+
     subgraph "IPC Layer"
         RF[Request FIFO<br/>/var/lib/adu/commands]
         RSF[Response FIFO<br/>/tmp/adu_status_XXXXX]
     end
-    
+
     IW -.->|"GET_STATE:/path/to/response/fifo"| RF
     RF --> CL
     CH -.->|"Status Code"| RSF
@@ -281,13 +282,13 @@ graph TB
 
 stateDiagram-v2
     [*] --> Initializing: Service Start
-    
+
     state Initializing {
         [*] --> Connecting: Connect to IoTHub
         Connecting --> Processing: Process C2D Message
         Processing --> CheckingInstalled: Check IsInstalled
     }
-    
+
     state Paused {
         [*] --> QuietPeriod: Start Quiet Period<br/>(Ignoring C2D messages)
         QuietPeriod --> Active: Timer Expired<br/>(Ready for updates)
@@ -295,23 +296,23 @@ stateDiagram-v2
 
     Initializing --> Paused: Update Already Installed or no update deployment
     Initializing --> Downloading: Update Needs Install
-    
+
     Downloading --> Installing: Download Complete
     Downloading --> Reporting: Download Failed
-    
+
     Installing --> Rebooting: Reboot Required
     Installing --> Reporting: Install Complete<br/>(No Reboot)
     Installing --> Reporting: Install Failed
-    
+
     Rebooting --> Installing: Apply Pending
     Rebooting --> Reporting: Apply Complete
-    
+
     Reporting --> Paused: Report Sent
 
-    
+
     Idle --> Initializing: New Update Received<br/>(After Quiet Period)
     Paused --> Idle: Able to process new updates
-    
+
     note right of Paused
         During QuietPeriod:
         - C2D messages silently dropped

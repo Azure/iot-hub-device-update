@@ -11,6 +11,7 @@ add_subdirectory (pnp_helper)
 add_subdirectory (shutdown_service)
 
 if (NOT WIN32)
+    add_subdirectory (api)
     add_subdirectory (command_helper)
 endif ()
 
@@ -97,6 +98,7 @@ target_link_libraries (
             aduc::shutdown_service
             aduc::system_utils
             aduc::url_utils
+            aduc::viewstatemgr
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
 
