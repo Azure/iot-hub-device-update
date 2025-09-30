@@ -28,14 +28,19 @@
 #include "aduc/result.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
+#include "aduc/timer.h"
 #include "aduc/types/workflow.h"
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 #include "root_key_util.h" // RootKeyUtility_GetReportingErc
 
 #include <pthread.h>
+#include <stdbool.h>
 
 // fwd decl
+static void s_onPauseTimerStart();
+static void s_onPauseTimerStop();
+static void s_onPauseTimerTimeout();
 void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, bool isAsync);
 
 // This lock is used for critical sections where main and worker thread could read/write to ADUC_workflowData
@@ -44,6 +49,14 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
 //     * (main thread and worker thread) ADUC_Workflow_WorkCompletionCallback
 //         - when asynchronously called (worker thread) it takes the lock
 static pthread_mutex_t s_workflow_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+AducTimer g_idle_pause_timer = { .startTime = { 0, 0 },
+                                 .waitTimeMs = 0,
+                                 .signals = {
+                                     .onStart = s_onPauseTimerStart,
+                                     .onStop = s_onPauseTimerStop,
+                                     .onTimeout = s_onPauseTimerTimeout,
+                                 } };
 
 static inline void s_workflow_lock(void)
 {
@@ -340,10 +353,14 @@ const ADUC_WorkflowHandlerMapEntry* GetWorkflowHandlerMapEntryForAction(ADUCITF_
  */
 void ADUC_Workflow_DoWork(ADUC_WorkflowData* workflowData)
 {
+    if (!AducTimer_IsTimedOut(&g_idle_pause_timer))
+    {
+        AducTimer_Update(&g_idle_pause_timer);
+    }
+
     // As this method will be called many times, rather than call into adu_core_export_helpers to call into upper-layer,
     // just call directly into upper-layer here.
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
-
     updateActionCallbacks->DoWorkCallback(updateActionCallbacks->PlatformLayerHandle, workflowData);
 }
 
@@ -983,7 +1000,6 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
                     // Reset workflow state to process deployment and transfer
                     // the deferred workflow to current.
                     workflow_update_for_replacement(workflowData->WorkflowHandle);
-
                 }
                 else
                 {
@@ -1324,6 +1340,13 @@ void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
         Log_Info("UpdateAction: Idle. WorkFolder is not valid. Nothing to destroy.");
     }
 
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL && config->idlePauseMilliseconds > 0)
+    {
+        Log_Info("Starting idle pause timer with %d ms timeout ...", config->idlePauseMilliseconds);
+        AducTimer_Start(&g_idle_pause_timer, config->idlePauseMilliseconds);
+    }
+
     //
     // Notify callback that we're now back to idle.
     //
@@ -1348,17 +1371,9 @@ void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
 ADUC_Result ADUC_Workflow_MethodCall_ProcessDeployment(ADUC_MethodCall_Data* methodCallData)
 {
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
-
-    ADUC_Result result = { .ResultCode = ADUC_Result_Success , .ExtendedResultCode = 0 };
+    ADUC_Result result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
     Log_Info("Workflow step: ProcessDeployment");
-
-    //
-    // Shouldn't have to handle anything else here. WorkflowData already made?
-    //
-
-
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_DeploymentInProgress);
-
     return result;
 }
 
@@ -1367,7 +1382,6 @@ void ADUC_Workflow_MethodCall_ProcessDeployment_Complete(ADUC_MethodCall_Data* m
     UNREFERENCED_PARAMETER(methodCallData);
     UNREFERENCED_PARAMETER(result);
 }
-
 
 /**
  * @brief Called to do download.
@@ -1763,4 +1777,19 @@ ADUC_Result ADUC_Workflow_MethodCall_IsInstalled(const ADUC_WorkflowData* workfl
     Log_Info("Calling IsInstalledCallback to check if content is installed.");
     return updateActionCallbacks->IsInstalledCallback(
         updateActionCallbacks->PlatformLayerHandle, (ADUC_WorkflowDataToken)workflowData);
+}
+
+static void s_onPauseTimerStart()
+{
+    Log_Info("Idle pause timer START. Ignoring new workflow processing...");
+}
+
+static void s_onPauseTimerStop()
+{
+    Log_Info("Idle pause timer STOP. Ready to process new workflows.");
+}
+
+static void s_onPauseTimerTimeout()
+{
+    Log_Info("Idle pause timer TIMEOUT. Ready to process new workflows.");
 }
