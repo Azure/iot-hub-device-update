@@ -471,3 +471,56 @@ size_t ADUC_Safe_StrCopyN(char* dest, const char* src, size_t destByteLen, size_
 
     return numSrcCharsToCopy;
 }
+
+/**
+ * @brief Removes any characters after the last occurrence of a given delimiter character.
+ *
+ * @param str The input string to process.
+ * @param delim The delimiter character to search for.
+ * @return char* A newly allocated string containing the portion of str up to and including
+ *               the last occurrence of delim. If delim is not found, returns a copy of the entire string.
+ *               Returns NULL on error (e.g., NULL input, memory allocation failure).
+ *               Caller must call free() on the returned pointer.
+ *
+ * @details This function is useful for extracting directory paths from file paths.
+ *          For example, RmvAfterLastChar("/path/to/some/file.txt", '/') returns "/path/to/some/".
+ *          For RmvAfterLastChar("/foo.txt", '/') it returns "/".
+ */
+char* RmvAfterLastChar(const char* str, char delim)
+{
+    if (str == NULL)
+    {
+        return NULL;
+    }
+
+    // Find the last occurrence of the delimiter
+    const char* lastDelim = strrchr(str, delim);
+
+    size_t copyLen;
+    if (lastDelim == NULL)
+    {
+        // Delimiter not found, copy the entire string
+        copyLen = strlen(str);
+    }
+    else
+    {
+        // Calculate length up to and including the last delimiter
+        copyLen = (size_t)(lastDelim - str) + 1;
+    }
+
+    // Allocate memory for the result string (including null terminator)
+    char* result = (char*)calloc(copyLen + 1, sizeof(char));
+    if (result == NULL)
+    {
+        return NULL;
+    }
+
+    // Copy the substring using safe copy function
+    if (copyLen > 0)
+    {
+        memcpy(result, str, copyLen);
+    }
+    // calloc already zero-initialized the memory, so null terminator is already in place
+
+    return result;
+}

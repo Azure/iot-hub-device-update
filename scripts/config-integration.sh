@@ -55,7 +55,8 @@ json_content=$(
         "connectionData": "$connection_string"
       }<% ADUC_MANUFACTURER %><% ADUC_MODEL %>
     }
-  ]
+  ],
+  "idlePauseMilliseconds": 30000
 }
 END_OF_JSON
 )

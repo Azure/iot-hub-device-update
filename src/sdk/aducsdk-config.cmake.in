@@ -1,0 +1,19 @@
+# ADU SDK CMake configuration file
+
+@PACKAGE_INIT@
+
+find_dependency(PkgConfig REQUIRED)
+include("${CMAKE_CURRENT_LIST_DIR}/aducsdk-targets.cmake")
+
+if(NOT TARGET aduc::aducsdk)
+    set(aducsdk_FOUND FALSE)
+    return()
+endif()
+
+set(aducsdk_LIBRARIES aduc::aducsdk)
+set(aducsdk_INCLUDE_DIRS "@CMAKE_INSTALL_FULL_INCLUDEDIR@")
+set(aducsdk_FOUND TRUE)
+
+set(sdk_LIBRARIES ${aducsdk_LIBRARIES})
+set(sdk_INCLUDE_DIRS ${aducsdk_INCLUDE_DIRS})
+set(sdk_FOUND ${aducsdk_FOUND})

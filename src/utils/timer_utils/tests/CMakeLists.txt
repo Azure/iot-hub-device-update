@@ -12,6 +12,8 @@ target_link_libraries (
     ${target_name}
     PRIVATE Catch2::Catch2WithMain
             aduc::c_utils
+            aduc::auto_utils
+            aduc::logging
             aduc::timer_utils)
 
 include (CTest)

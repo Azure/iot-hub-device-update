@@ -112,7 +112,8 @@ static const char* validConfigContentMqttIotHubProtocol =
             R"("manufacturer": "Fabrikam",)"
             R"("model": "Camera")"
             R"(})"
-        R"(])"
+        R"(],)"
+        R"("idlePauseMilliseconds": 30000)"
     R"(})";
 
 static const char* validConfigContentMqttWebSocketsIotHubProtocol =

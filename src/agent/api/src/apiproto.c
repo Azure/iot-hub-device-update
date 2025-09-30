@@ -59,9 +59,24 @@ ssize_t msg_recv(int fd, ApiWireRequestMsg* out_msg)
         return MSGREV_AGAIN;
     }
 
-    if ((bytes_read = read(fd, p, MSG_HDR_LEN)) == 0)
+    bytes_read = read(fd, p, MSG_HDR_LEN);
+    if (bytes_read == 0)
     {
         return 0; // EOF
+    }
+    if (bytes_read < 0)
+    {
+        // Handle read errors
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            return MSGREV_AGAIN;
+        }
+        if (errno == EINTR)
+        {
+            return MSGREV_AGAIN;
+        }
+        Log_Error("msg hdr: read error: %d (%s)", errno, strerror(errno));
+        return -1;
     }
     if (bytes_read != MSG_HDR_LEN)
     {
@@ -76,11 +91,35 @@ ssize_t msg_recv(int fd, ApiWireRequestMsg* out_msg)
     uint16_t t = READ_UINT16(buf + sizeof(uint16_t));
     uint16_t l = READ_UINT16(buf + 2 * sizeof(uint16_t));
 
+    // Validate length is within bounds
+    if (l > MAX_BUF_LEN)
+    {
+        Log_Error("msg data: invalid length %u exceeds MAX_BUF_LEN %zu", l, (size_t)MAX_BUF_LEN);
+        return -1;
+    }
+
     if (l > 0)
     {
-        if ((bytes_read = read(fd, p, l)) != (ssize_t)l)
+        bytes_read = read(fd, p, l);
+        if (bytes_read < 0)
         {
-            Log_Error("msg data: read only %zd of %zu bytes", bytes_read, l);
+            // Handle read errors
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                Log_Warn("msg data: read would block (EAGAIN/EWOULDBLOCK)");
+                return MSGREV_AGAIN;
+            }
+            if (errno == EINTR)
+            {
+                Log_Warn("msg data: read interrupted (EINTR)");
+                return MSGREV_AGAIN;
+            }
+            Log_Error("msg data: read error: %d (%s)", errno, strerror(errno));
+            return -1;
+        }
+        if (bytes_read != (ssize_t)l)
+        {
+            Log_Error("msg data: read only %zd of %u bytes (expected)", bytes_read, l);
             return -1;
         }
         memcpy(out_msg->data, p, l);

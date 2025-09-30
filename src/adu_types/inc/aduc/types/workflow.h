@@ -16,7 +16,6 @@
 #include "aduc/types/download.h"
 #include "aduc/types/hash.h"
 #include "aduc/types/update_content.h"
-#include "aduc/types/workflow.h"
 
 #include "parson.h"
 
@@ -187,6 +186,8 @@ typedef struct tagADUC_WorkflowData
     JSON_Array* Results;
 
     char* rootKeyPkgUrl; /**< The root key package URL. */
+    void* vsm; /**< The viewstate manager handle. */
+    bool receivedC2DMsg; /** Whether have received C2D message. */
 } ADUC_WorkflowData;
 
 #endif // ADUC_TYPES_WORKFLOW_H

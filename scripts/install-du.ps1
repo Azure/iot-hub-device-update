@@ -348,7 +348,8 @@ function Create-DataFiles {
             "manufacturer": "[NOT_SPECIFIED]",
             "model": "[NOT_SPECIFIED]"
         }
-    ]
+    ],
+    "idlePauseMilliseconds": 30000
 }
 '@ | Out-File -Encoding ASCII $dest
     }

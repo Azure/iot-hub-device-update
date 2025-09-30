@@ -93,6 +93,19 @@ char* ADUC_WorkflowData_GetInstalledCriteria(const ADUC_WorkflowData* workflowDa
  */
 bool ADUC_WorkflowData_InitWorkflowHandle(ADUC_WorkflowData* workflowData);
 
+/**
+ * @brief Sets flag when c2d msg has been received.
+ * @param workflowData The workflow data for which WorkflowHandle will be initialized.
+ */
+void ADUC_WorkflowData_SetReceivedC2D(ADUC_WorkflowData* workflowData);
+
+/**
+ * @brief Gets flag indicating if received C2D message.
+ * @param workflowData The workflow data for which WorkflowHandle will be initialized.
+ * @return bool true when it has received C2D message.
+ */
+bool ADUC_WorkflowData_GetReceivedC2D(ADUC_WorkflowData* workflowData);
+
 EXTERN_C_END
 
 #endif // ADUC_DATA_WORKFLOW_UTILS_H

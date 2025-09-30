@@ -6,55 +6,66 @@
 #include <pthread.h>
 #include <string.h>
 
-pthread_mutex_t g_viewstatemgr_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-typedef struct tagViewStateMgrStore
+int viewstatemgr_create(ViewStateManager* vsm)
 {
-    bool initialized;
-    ADUC_ServiceStatus viewState;
-} ViewStateMgr;
-
-ViewStateMgr g_viewstatemgr_state = { 0 };
-
-ViewStateMgrHandle viewstatemgr_create()
-{
-    g_viewstatemgr_state.initialized = true;
-    g_viewstatemgr_state.viewState = ADUC_ServiceStatus_None;
-    return &g_viewstatemgr_state;
-}
-
-void viewstatemgr_destroy(ViewStateMgrHandle h)
-{
-    pthread_mutex_lock(&g_viewstatemgr_mutex);
-    memset(h, 0, sizeof(ViewStateMgr));
-    pthread_mutex_unlock(&g_viewstatemgr_mutex);
-}
-
-ADUC_Result viewstatemgr_svcstatus_get(ViewStateMgrHandle h, ADUC_ServiceStatus* out_status)
-{
-    ADUC_Result result = { 0 };
-    if (h == NULL || out_status == NULL)
+    Log_Debug("viewstatemgr_create called");
+    if (vsm == NULL)
     {
-        result.ExtendedResultCode = ADUC_ERC_INVALIDARG;
-        return result;
-    }
-    if (!g_viewstatemgr_state.initialized)
-    {
-        result.ExtendedResultCode = ADUC_ERC_VIEWSTATEMGR_UNINITIALIZED;
-        return result;
+        return -1;
     }
 
-    pthread_mutex_lock(&g_viewstatemgr_mutex);
-    *out_status = g_viewstatemgr_state.viewState;
-    pthread_mutex_unlock(&g_viewstatemgr_mutex);
-    result.ResultCode = ADUC_Result_Success;
-    return result;
+    if (pthread_mutex_init(&vsm->mut, NULL) != 0)
+    {
+        return -2;
+    }
+
+    vsm->svc_stat = ADUC_ServiceStatus_Initializing;
+    vsm->initialized = true;
+
+    Log_Info("Successfully created ViewStateManager instance.");
+    return 0;
 }
 
-ADUC_Result viewstatemgr_svcstatus_set(ViewStateMgrHandle h, ADUC_ServiceStatus new_status)
+void viewstatemgr_destroy(ViewStateManager* vsm)
 {
-    pthread_mutex_lock(&g_viewstatemgr_mutex);
-    g_viewstatemgr_state.viewState = new_status;
-    pthread_mutex_unlock(&g_viewstatemgr_mutex);
-    return (ADUC_Result){ .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
+    Log_Debug("viewstatemgr_destroy called");
+    if (vsm != NULL && vsm->initialized)
+    {
+        Log_Info("Destroying ViewStateManager instance.");
+        pthread_mutex_destroy(&vsm->mut);
+        memset(vsm, 0, sizeof(ViewStateManager));
+    }
+}
+
+bool viewstatemgr_svcstatus_get(ViewStateManager* vsm, ADUC_ServiceStatus* out_status)
+{
+    Log_Debug("viewstatemgr_get called");
+    if (out_status == NULL)
+    {
+        return false;
+    }
+
+    if (!vsm->initialized)
+    {
+        return false;
+    }
+
+    pthread_mutex_lock(&vsm->mut);
+    *out_status = vsm->svc_stat;
+    pthread_mutex_unlock(&vsm->mut);
+    Log_Debug("svcstatus_get returning status %d", *out_status);
+    return true;
+}
+
+bool viewstatemgr_svcstatus_set(ViewStateManager* vsm, ADUC_ServiceStatus new_status)
+{
+    if (vsm == NULL)
+    {
+        return false;
+    }
+    pthread_mutex_lock(&vsm->mut);
+    vsm->svc_stat = new_status;
+    pthread_mutex_unlock(&vsm->mut);
+    Log_Debug("svcstatus_set set new status to %d", new_status);
+    return true;
 }

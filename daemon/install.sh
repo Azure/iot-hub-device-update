@@ -59,7 +59,8 @@ sample_du_config=$(
       "manufacturer": <Place your device property manufacturer here>,
       "model": <Place your device property model here>
     }
-  ]
+  ],
+  "idlePauseMilliseconds": 30000
 }
 END_OF_JSON
 )

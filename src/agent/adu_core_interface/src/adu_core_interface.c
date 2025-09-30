@@ -23,6 +23,7 @@
 #include "aduc/string_c_utils.h"
 #include "aduc/types/adu_core.h"
 #include "aduc/types/update_content.h"
+#include "aduc/viewstatemgr.h"
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 
@@ -51,6 +52,8 @@ static const char g_aduPnPComponentServicePropertyName[] = "service";
  */
 ADUC_ClientHandle g_iotHubClientHandleForADUComponent;
 
+extern ViewStateManager g_vsm;
+
 /**
  * @brief This function is called when the message is no longer being process.
  *
@@ -61,6 +64,13 @@ static void OnUpdateResultD2CMessageCompleted(void* context, ADUC_D2C_Message_St
 {
     UNREFERENCED_PARAMETER(context);
     Log_Debug("Send message completed (status:%d)", status);
+
+    // When D2C reporting message is completed, update view state appropriately
+    if (status == ADUC_D2C_Message_Status_Success || status == ADUC_D2C_Message_Status_Failed
+        || status == ADUC_D2C_Message_Status_Canceled)
+    {
+        ADUC_Workflow_HandleReportingCompleted();
+    }
 }
 
 /**
@@ -69,6 +79,7 @@ static void OnUpdateResultD2CMessageCompleted(void* context, ADUC_D2C_Message_St
  * @param[out] workflowData Workflow metadata.
  * @param argc Count of arguments in @p argv
  * @param argv Command line parameters.
+ * @param vsmHandle The viewstate manager handle.
  * @return bool True on success.
  */
 bool ADUC_WorkflowData_Init(ADUC_WorkflowData* workflowData, int argc, char** argv)
@@ -258,6 +269,7 @@ bool AzureDeviceUpdateCoreInterface_Create(void** context, int argc, char** argv
     {
         goto done;
     }
+    workflowData->vsm = &g_vsm;
 
     Log_Info("ADUC agent started. Using IoT Hub Client SDK %s", IoTHubClient_GetVersionString());
 
@@ -916,6 +928,8 @@ bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
         Log_Error("Serializing JSON to string failed");
         goto done;
     }
+
+    viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Reporting);
 
     if (!ReportClientJsonProperty(ADUC_D2C_Message_Type_Device_Update_Result, jsonString, workflowData))
     {

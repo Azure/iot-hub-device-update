@@ -41,6 +41,7 @@ target_link_libraries (
             aduc::reporting_utils
             aduc::root_key_utils
             aduc::system_utils
+            aduc::viewstatemgr
             libaducpal
             Parson::parson)
 

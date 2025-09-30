@@ -16,7 +16,7 @@
 EXTERN_C_BEGIN
 
 bool init_api_svc(const char* fifoPath);
-void uninit_api_svc();
+bool uninit_api_svc();
 
 EXTERN_C_END
 
