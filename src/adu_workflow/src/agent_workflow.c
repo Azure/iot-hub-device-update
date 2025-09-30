@@ -30,6 +30,7 @@
 #include "aduc/system_utils.h"
 #include "aduc/timer.h"
 #include "aduc/types/workflow.h"
+#include "aduc/viewstatemgr.h"
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 #include "root_key_util.h" // RootKeyUtility_GetReportingErc
@@ -1345,6 +1346,20 @@ void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
     {
         Log_Info("Starting idle pause timer with %d ms timeout ...", config->idlePauseMilliseconds);
         AducTimer_Start(&g_idle_pause_timer, config->idlePauseMilliseconds);
+
+        // Set view state manager to Paused when idle pause timer starts
+        if (g_viewstatemgr_handle != NULL)
+        {
+            viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Paused);
+        }
+    }
+    else
+    {
+        // No pause timer configured, set directly to Idle
+        if (g_viewstatemgr_handle != NULL)
+        {
+            viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Idle);
+        }
     }
 
     //
@@ -1374,6 +1389,13 @@ ADUC_Result ADUC_Workflow_MethodCall_ProcessDeployment(ADUC_MethodCall_Data* met
     ADUC_Result result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
     Log_Info("Workflow step: ProcessDeployment");
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_DeploymentInProgress);
+
+    // Set view state manager to Initializing when deployment starts
+    if (g_viewstatemgr_handle != NULL)
+    {
+        viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Initializing);
+    }
+
     return result;
 }
 
@@ -1427,6 +1449,12 @@ ADUC_Result ADUC_Workflow_MethodCall_Download(ADUC_MethodCall_Data* methodCallDa
 
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_DownloadStarted);
 
+    // Set view state manager to Downloading when download starts
+    if (g_viewstatemgr_handle != NULL)
+    {
+        viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Downloading);
+    }
+
     result = updateActionCallbacks->DownloadCallback(
         updateActionCallbacks->PlatformLayerHandle, &(methodCallData->WorkCompletionData), workflowData);
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -1472,6 +1500,12 @@ ADUC_Result ADUC_Workflow_MethodCall_Install(ADUC_MethodCall_Data* methodCallDat
 
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_InstallStarted);
 
+    // Set view state manager to Installing when install starts
+    if (g_viewstatemgr_handle != NULL)
+    {
+        viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Installing);
+    }
+
     Log_Info("Calling InstallCallback");
 
     result = updateActionCallbacks->InstallCallback(
@@ -1491,6 +1525,12 @@ void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallD
         // If 'install' indicated a reboot required result from apply, go ahead and reboot.
         Log_Info("Install indicated success with RebootRequired - rebooting system now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+
+        // Set view state manager to Rebooting when reboot is required
+        if (g_viewstatemgr_handle != NULL)
+        {
+            viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Rebooting);
+        }
 
         int success = ADUC_MethodCall_RebootSystem();
         if (success == 0)
@@ -1550,6 +1590,12 @@ ADUC_Result ADUC_Workflow_MethodCall_Backup(ADUC_MethodCall_Data* methodCallData
 
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_BackupStarted);
 
+    // Set view state manager to Installing when backup starts
+    if (g_viewstatemgr_handle != NULL)
+    {
+        viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Installing);
+    }
+
     Log_Info("Calling BackupCallback");
 
     result = updateActionCallbacks->BackupCallback(
@@ -1591,6 +1637,12 @@ ADUC_Result ADUC_Workflow_MethodCall_Apply(ADUC_MethodCall_Data* methodCallData)
 
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_ApplyStarted);
 
+    // Set view state manager to Installing when apply starts
+    if (g_viewstatemgr_handle != NULL)
+    {
+        viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Installing);
+    }
+
     Log_Info("Calling ApplyCallback");
 
     result = updateActionCallbacks->ApplyCallback(
@@ -1608,6 +1660,12 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
         // If apply indicated a reboot required result from apply, go ahead and reboot.
         Log_Info("Apply indicated success with RebootRequired - rebooting system now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+
+        // Set view state manager to Rebooting when reboot is required
+        if (g_viewstatemgr_handle != NULL)
+        {
+            viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Rebooting);
+        }
 
         int success = ADUC_MethodCall_RebootSystem();
         if (success == 0)
@@ -1674,6 +1732,12 @@ ADUC_Result ADUC_Workflow_MethodCall_Restore(ADUC_MethodCall_Data* methodCallDat
 
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_RestoreStarted);
 
+    // Set view state manager to Installing when restore starts
+    if (g_viewstatemgr_handle != NULL)
+    {
+        viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Installing);
+    }
+
     Log_Info("Calling RestoreCallback");
 
     result = updateActionCallbacks->RestoreCallback(
@@ -1691,6 +1755,12 @@ void ADUC_Workflow_MethodCall_Restore_Complete(ADUC_MethodCall_Data* methodCallD
         // If restore indicated a reboot required result from restore, go ahead and reboot.
         Log_Info("Restore indicated success with RebootRequired - rebooting system now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+
+        // Set view state manager to Rebooting when reboot is required
+        if (g_viewstatemgr_handle != NULL)
+        {
+            viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Rebooting);
+        }
 
         int success = ADUC_MethodCall_RebootSystem();
         if (success == 0)
@@ -1792,4 +1862,37 @@ static void s_onPauseTimerStop()
 static void s_onPauseTimerTimeout()
 {
     Log_Info("Idle pause timer TIMEOUT. Ready to process new workflows.");
+
+    // Set view state manager to Idle when pause timer expires
+    // Only set to Idle if not currently in Reporting state
+    if (g_viewstatemgr_handle != NULL)
+    {
+        ADUC_ServiceStatus currentStatus;
+        ADUC_Result res = viewstatemgr_svcstatus_get(g_viewstatemgr_handle, &currentStatus);
+        if (IsAducResultCodeFailure(res.ResultCode) || currentStatus != ADUC_ServiceStatus_Reporting)
+        {
+            viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Idle);
+        }
+        // If currently Reporting, leave it as is - the completion callback will handle the transition
+    }
+}
+
+/**
+ * @brief Called when D2C reporting message is completed to handle proper state transitions
+ */
+void ADUC_Workflow_HandleReportingCompleted(void)
+{
+    if (g_viewstatemgr_handle != NULL)
+    {
+        if (AducTimer_IsTimedOut(&g_idle_pause_timer))
+        {
+            // Pause timer has expired, set to Idle
+            viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Idle);
+        }
+        else
+        {
+            // Pause timer is still running, set to Paused
+            viewstatemgr_svcstatus_set(g_viewstatemgr_handle, ADUC_ServiceStatus_Paused);
+        }
+    }
 }

@@ -76,7 +76,7 @@ TEST_CASE("apisvc crossproc tests")
         aduc::Defer defer_close_req_fifo([reqFifo]() -> void { close(reqFifo); });
 
         // Write GET_STATE request
-        int slen = strlen(respFifoPath);
+        size_t slen = strlen(respFifoPath);
         ApiWireRequestMsg req = { .ver = htons(1),
                                   .type = htons(ApiRequestType_GETSTATE),
                                   .len = htons((uint16_t)slen) };
