@@ -47,7 +47,7 @@ typedef struct tagADUC_AgentInfo
 
     char*
         opensslEngine; // Engine to load private key from. If this value is null then x509PrivateKey contains the PEM of the key
-        // else it's the engine's path to the key (e.g. a PKCS11 URI).
+    // else it's the engine's path to the key (e.g. a PKCS11 URI).
 
     char* x509CaCert; // ca certificate
 
@@ -111,6 +111,8 @@ typedef struct tagADUC_ConfigInfo
     char* extensionsDownloadHandlerFolder; /**< The folder where ADU stores its downloader handler extensions. */
 
     const char* apiRequestFifoPath; /**< The path to the API request FIFO. */
+
+    unsigned int idlePauseMilliseconds; /**< The pause period on enter Idle where new workflows are not processed. */
 } ADUC_ConfigInfo;
 
 /**

@@ -53,6 +53,7 @@ static const char* CONFIG_MODEL = "model";
 static const char* CONFIG_SCHEMA_VERSION = "schemaVersion";
 static const char* CONFIG_DOWNLOAD_TIMEOUT_IN_MINUTES = "downloadTimeoutInMinutes";
 static const char* CONFIG_API_REQUEST_FIFO_PATH = "apiRequestFifoPath";
+static const char* CONFIG_IDLE_PAUSE_MILLISECONDS = "idlePauseMilliseconds";
 
 static const char* CONFIG_NAME = "name";
 static const char* CONFIG_RUN_AS = "runas";
@@ -567,6 +568,11 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
 
     // Note: API request FIFO path is optional.
     config->apiRequestFifoPath = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_API_REQUEST_FIFO_PATH);
+
+    // Note: pause between updates is optional. If missing, it wil be 0, which means no pause.
+    ADUC_JSON_GetUnsignedIntegerField(
+        config->rootJsonValue, CONFIG_IDLE_PAUSE_MILLISECONDS, &(config->idlePauseMilliseconds));
+    Log_Info("Using idlePauseMilliseconds=%u", config->idlePauseMilliseconds);
 
     // Ensure that adu-shell folder is valid.
     config->aduShellFolder = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_ADU_SHELL_FOLDER);
