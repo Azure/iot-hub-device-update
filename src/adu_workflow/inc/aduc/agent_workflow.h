@@ -13,6 +13,10 @@
 
 EXTERN_C_BEGIN
 
+int ADUC_Workflow_Init();
+
+void ADUC_Workflow_Uninit();
+
 void ADUC_Workflow_DoWork(ADUC_WorkflowData* workflowData);
 
 void ADUC_Workflow_HandlePropertyUpdate(
@@ -34,7 +38,6 @@ typedef struct tagADUC_MethodCall_Data
     ADUC_WorkCompletionData WorkCompletionData; //!< data for the work completion
     ADUC_WorkflowData* WorkflowData; //!< The data for the workflow
 } ADUC_MethodCall_Data;
-
 
 void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData);
 
@@ -63,7 +66,6 @@ ADUC_Result ADUC_Workflow_MethodCall_IsInstalled(const ADUC_WorkflowData* workfl
 //
 // State transition
 //
-
 void ADUC_Workflow_SetUpdateState(ADUC_WorkflowData* workflowData, ADUCITF_State updateState);
 void ADUC_Workflow_SetUpdateStateWithResult(
     ADUC_WorkflowData* workflowData, ADUCITF_State updateState, ADUC_Result result);
@@ -75,6 +77,11 @@ void ADUC_Workflow_DefaultDownloadProgressCallback(
     ADUC_DownloadProgressState state,
     uint64_t bytesTransferred,
     uint64_t bytesTotal);
+
+//
+// ViewState management helpers
+//
+void ADUC_Workflow_HandleReportingCompleted(void);
 
 EXTERN_C_END
 

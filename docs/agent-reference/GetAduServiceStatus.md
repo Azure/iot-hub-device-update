@@ -1,106 +1,72 @@
 # SDK - GetAduServiceStatus
 
-The SDK is a static library only development package that consists of the following development files:
+The SDK is a static library only devpkg consisting of the following files:
 * aducsdk.h header
-* aducsdk.a static library
+* libaducsdk.a static library
 * aducsdk.pc pkgconfig
+* aducsdk-config.cmake
 
-The .a static library will take care of all interprocess communication between the calling client process and the AducIotAgent service process.
+The .a static library will take care of all interprocess communication between the calling client process and the AducIotAgent service process and the .h has the supported API.
 
-It will be packaged as both a .deb Debian package as well as a tarball (.tgz) with the following structure:
+## Building the SDK
+
+### Prerequisites
+
+Install pkg-config for library discovery:
+
+**Ubuntu/Debian:**
+```sh
+sudo apt update && sudo apt install pkgconfig
 ```
-# AMD64(x64) tarball
-deviceupdateagent-dev-{ARCH}-1.0.0.tgz
-├── /usr/include/aduc/
-│   └── aducsdk.h
-├── /usr/lib/
-│   └── libaducsdk.a
-└── /usr/lib/pkgconfig/
-    └── aducsdk.pc
 
-deviceupdateagent-dev-{ARCH}-1.0.0.deb
-├── /usr/include/aduc/
-│   └── aducsdk.h
-├── /usr/lib/
-│   └── libaducsdk.a
-└── /usr/lib/pkgconfig/
-    └── aducsdk.pc
+**CentOS/RHEL/Fedora:**
+```sh
+sudo yum install pkgconfig  # CentOS/RHEL 7
+sudo dnf install pkgconfig  # Fedora/RHEL 8+
+```
 
-where ARCH is x86_64, arm64, etc.
+### Build and Install
+
+```sh
+# Build the entire project (includes SDK)
+./scripts/build.sh -c
+
+# Or build just the SDK
+cmake --build out --target aducsdk
+
+# Install system-wide
+sudo cmake --build out --target install
+```
+
+### Build Configuration Options
+
+The SDK supports several build-time configuration options:
+
+#### Request Timeout Configuration
+```sh
+# Set 30-second API cross-proc request timeout (default: 30 seconds)
+cmake -DADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS=15 ..
+./scripts/build.sh -c
+```
+
+#### FIFO Path Configuration
+```sh
+# Custom FIFO path (default: /var/lib/adu/api/apireq.fifo)
+cmake -DADUC_API_DEFAULT_FIFO_PATH="/custom/path/to/api/apireq.fifo" ..
+./scripts/build.sh -c
 ```
 
 ## The aducsdk.h development header
 
-```c
-#ifndef ADUC_SDK_H_
-#define ADUC_SDK_H_
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/////////////////////
-// BEGIN: V1.0 API
-
-typedef enum tagADUC_ServiceStatus
-{
-    // V1.0 states
-    ADUC_ServiceStatus_Initializing = 0,
-    ADUC_ServiceStatus_Downloading  = 1,
-    ADUC_ServiceStatus_Installing   = 2,
-    ADUC_ServiceStatus_Rebooting    = 3,
-    ADUC_ServiceStatus_Reporting    = 4,
-    ADUC_ServiceStatus_Paused       = 5,
-    ADUC_ServiceStatus_Idle         = 6,
-
-    // V1.0 Error codes (10000+)
-    ADUC_ServiceStatus_ERROR_UnsupportedApiVersion = 10000,
-    ADUC_ServiceStatus_ERROR_AgentServiceNotRunning = 10001,
-    ADUC_ServiceStatus_ERROR_AgentServiceBrokenPipe = 10002,
-    ADUC_ServiceStatus_ERROR_AgentServicePermission = 10003,
-    ADUC_ServiceStatus_ERROR_AgentServiceTimeout = 10004,
-    ADUC_ServiceStatus_ERROR_AgentServiceInternal = 10005,
-    ADUC_ServiceStatus_ERROR_Unknown = 99999,
-} ADUC_ServiceStatus;
-
-/**
- * @brief Gets the version for the ADU Client SDK
- * @return The API version
- */
-ADUC_ApiVersion ADUC_GetSdkVersion(void);
-
-/**
- * @brief Gets the highest version that the AducIotAgent daemon process supports.
- * @return Current service status or error code
- */
-ADUC_ApiVersion ADUC_GetServiceApiVersion(void);
-
-/**
- * @brief Gets the ADU IoT Agent service daemon's current status
- * @return Current service status or error code
- */
-ADUC_ServiceStatus GetAduServiceStatus(void);
-
-/**
- * @brief Gets human-readable string for status code
- * @param status The status code
- * @return The string representation (do not free the string)
- */
-const char* ADUC_ServiceStatusToString(ADUC_ServiceStatus status);
-
-// END: V1.0 API
-/////////////////////
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif // ADU_SDK_H_
-```
+The SDK header is at [src/sdk/inc/aduc/aducsdk.h](../../src/sdk/inc/aduc/aducsdk.h)
+It consists of the ADUC_ServiceStatus enum, the integer values of which are returned from SDK API:
+`ADUC_ServiceStatus GetAduServiceStatus(void);`
+You can get a human-readable string for it with:
+`const char* ADUC_ServiceStatusToString(ADUC_ServiceStatus status);`
 
 The states in ADUC_ServiceStatus enum are "view states", a simplified high-level view of the AducIotAgent state.
 It is designed for allowing the calling client process to determine if the agent is busy (with a bit more detail) or Idle.
-This would allow another process to determine if it's safe to power-down (i.e. not currently installing an update or determining if an update is needed) to a low-power state to save battery, but at the same time ensure that any updates available are applied first.
+This would allow another process to determine if it's safe to, e.g. power-down (i.e. not currently installing an update or determining if an update is needed) to a low-power state to save battery, but at the same time ensure that any updates available are applied first.
 
 The in-proc wrapper API will communicate to the AducIotAgent daemon process via IPC. Currently, it is a name-pipe FIFO request for ADU requests.
 
@@ -112,62 +78,113 @@ Key points in the code will call an internal API to set these "view state" statu
 
 The `ADUC_ServiceStatus_Paused` state will be returned from the `GetAduServiceStatus()` API before the agent enters `Idle` state.
 
-The pause period is controlled by the `IdlePausePeriodSeconds` configuration in `du-config.json` for setting a pause period (in seconds).
+The pause period is controlled by the `IdlePauseMilliseconds` configuration in `du-config.json`.
 During this pause period, the agent will ignore any incoming C2D messages. Therefore, no cancel, replacement, or new update deployment can begin during this interval.
 
-Once the pause period timer has timed out, the API will then return `ADUC_ServiceStatus_Idle` and the agent would then be able to start processing any incoming push requests from IoTHub.
+Once the pause period timer has timed out and any queued reporting of results in C2D messaging have been sent, the API will then return `ADUC_ServiceStatus_Idle` and the agent would then be able to start processing any incoming push requests from IoTHub.
 
-## Underlying Inter-Process Communication
+## The Cross-Proc wire protocol
 
-The SDK .a static lib will write requests to the ADUC request FIFO and read responsese from the response FIFO that it sets up.
-```c
-// Command format with version
-// "COMMAND:VERSION:ARGS:RESPONSEPATH"
-// ARGS can be empty if no arguments
-// Examples:
-// "GET_VERSION:1.0::/tmp/response_fifo_1234" -> Int32
-// "GET_STATE:1.0::/tmp/response_fifo_2345" -> Int32
-// "PAUSE:1.1:wait_ms=33:/tmp/response_fifo_4567" -> Int32 (example future API with arguments)
+The SDK libaducsdk.a static lib will write requests to the ADUC request FIFO and read responsese from the response FIFO that it sets up.  See more details in [apiproto.h](../../src/agent/api/inc/aduc/apiproto.h)
 
-// Response format:
-// status code as int32_t, 10000+ are error codes.
-```
+### Request Format
+The request format is: `<ver><type><len><str>`
+where ver, type, len are 16-bit values and str is a non-null-terminated utf-8 encoded string of length len (can be 0)
+e.g. 0x01 0x01 0x13 '/data/resp1234.fifo' (note: the nibbles are in network order)
+
+### Response Format
+The Response consists of `<code><ret_val>`, both of which are a double word. e.g. 0x01 0x02 would indicate code 1 (response to query status) and ret_val 2 ([Downloading](../../src/sdk/inc/aduc/aducsdk.h))
 
 ## Package Config
+
 pkg-config is a tool used during compilation to provide info about installed libraries that finds the correct compiler and linker flags for the library so developers can avoid having to know to manually specify include paths (-I/usr/include/somelibrary), library paths (-L/usr/lib/x86_64-linux-gnu), library names (-llibsomelib), library dependencies (-lcrypto -lz), and version requirements.
 
-The `aducsdk.pc` pkgconfig file will be installed into /usr/lib/pkgconfig/ and will contain metadata, e.g.:
+The `aducsdk.pc` pkgconfig file will be installed into `/usr/local/lib/pkgconfig/` (or `/usr/lib/pkgconfig/` for system packages) and contains metadata:
 
 ```sh
-# Example: libadusdk.pc
-prefix=/usr
+# Example: aducsdk.pc
+prefix=/usr/local
 exec_prefix=${prefix}
-libdir=${exec_prefix}/lib/aduc
-includedir=${prefix}/include/aduc
+libdir=/usr/local/lib
+includedir=/usr/local/include
 
-Name: ADU Client SDK
-Description: Azure Device Update SDK for external processes to interact directly with the ADU Client Service Daemon
-Version 1.0.0
-Libs: -L${libdir} -ladusdk
+Name: aducsdk
+Description: Azure Device Update SDK for communicating with the ADU agent service
+Version: 1.2.0
+URL: https://github.com/Azure/iot-hub-device-update
+Requires:
+Libs: -L${libdir} -laducsdk
 Cflags: -I${includedir}
 ```
 
-The pkgcfg can be used in cmdline and CMake:
+### Using pkg-config
 
+#### Command Line Usage
 ```sh
-# command-line
-gcc myapp.c $(pkg-config --cflags --libs libaducsdk)
+# Check if SDK is available
+pkg-config --exists aducsdk && echo "SDK found!" || echo "SDK not found"
 
-# CMake CMakeLists.txt
-find_package(PkgConfig)
-pkg_check_modules(ADUCSDK REQUIRED libaducsdk)
-target_link_libraries(myapp ${ADUCSDK_LIBRARIES})
+# Get compilation flags
+pkg-config --cflags aducsdk
+# Output: -I/usr/local/include
 
-# version checking
-pkg-config --atleast-version=1.0 libaducsdk && echo "OK"
-pkg-config --modversion libaducsdk  # prints 1.0.0
+# Get linker flags
+pkg-config --libs aducsdk
+# Output: -L/usr/local/lib -laducsdk
+
+# Get both together
+pkg-config --cflags --libs aducsdk
+# Output: -I/usr/local/include -L/usr/local/lib -laducsdk
+
+# Check version
+pkg-config --modversion aducsdk
+# Output: 1.2.0
+
+# Version checking
+pkg-config --atleast-version=1.0 aducsdk && echo "Version OK"
 ```
 
+#### Compile Applications
+```sh
+# Simple compilation
+gcc myapp.c $(pkg-config --cflags --libs aducsdk) -o myapp
+
+# With additional flags
+gcc -Wall -g myapp.c $(pkg-config --cflags --libs aducsdk) -o myapp
+
+# Cross-compilation (use PKG_CONFIG_PATH)
+PKG_CONFIG_PATH=/path/to/cross/lib/pkgconfig \
+  arm-linux-gnueabihf-gcc myapp.c $(pkg-config --cflags --libs aducsdk) -o myapp
+```
+
+#### CMake Integration
+```cmake
+# In your CMakeLists.txt
+cmake_minimum_required(VERSION 3.5)
+project(MyApp)
+
+# Find pkg-config
+find_package(PkgConfig REQUIRED)
+
+# Find the ADU SDK
+pkg_check_modules(ADUCSDK REQUIRED aducsdk)
+
+# Create executable
+add_executable(myapp main.c)
+
+# Link with SDK
+target_include_directories(myapp PRIVATE ${ADUCSDK_INCLUDE_DIRS})
+target_link_libraries(myapp ${ADUCSDK_LIBRARIES})
+target_compile_options(myapp PRIVATE ${ADUCSDK_CFLAGS_OTHER})
+
+# Optional: Check version
+if(ADUCSDK_VERSION VERSION_LESS "1.0")
+    message(FATAL_ERROR "ADU SDK version 1.0 or higher required")
+endif()
+```
+
+### Yocto Integration
+For Yocto integration see [README-Yocto-Integration.md](../../src/sdk/README-Yocto-Integration.md)
 
 ## Sequence Diagram for in-proc Wrapper API and GET_STATE cross-proc
 

@@ -16,12 +16,13 @@ using Catch::Matchers::Equals;
 
 TEST_CASE("viewstatemgr get set")
 {
-    ViewStateMgrHandle handle = viewstatemgr_create();
-    aduc::Defer defer_destroy([handle]() { viewstatemgr_destroy(handle); });
+    ViewStateManager m = { 0 };
+    REQUIRE(0 == viewstatemgr_create(&m));
+    aduc::Defer defer_destroy([&]() { viewstatemgr_destroy(&m); });
     ADUC_ServiceStatus status = ADUC_ServiceStatus_None;
-    ADUC_Result result = viewstatemgr_svcstatus_get(handle, &status);
-    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-    REQUIRE(IsAducResultCodeSuccess(viewstatemgr_svcstatus_set(handle, ADUC_ServiceStatus_Installing).ResultCode));
-    REQUIRE(IsAducResultCodeSuccess(viewstatemgr_svcstatus_get(handle, &status).ResultCode));
+    REQUIRE(viewstatemgr_svcstatus_get(&m, &status));
+    CHECK(status == ADUC_ServiceStatus_Initializing);
+    viewstatemgr_svcstatus_set(&m, ADUC_ServiceStatus_Installing);
+    CHECK(viewstatemgr_svcstatus_get(&m, &status));
     CHECK(status == ADUC_ServiceStatus_Installing);
 }

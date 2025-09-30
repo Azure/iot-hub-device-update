@@ -5,16 +5,23 @@
 #include <aduc/c_utils.h>
 #include <aduc/result.h>
 
+#include <pthread.h>
+#include <stdbool.h>
+
 EXTERN_C_BEGIN
 
-typedef void* ViewStateMgrHandle;
-ViewStateMgrHandle viewstatemgr_create();
-void viewstatemgr_destroy(ViewStateMgrHandle h);
+typedef struct tagViewStateManager
+{
+    bool initialized;
+    ADUC_ServiceStatus svc_stat;
+    pthread_mutex_t mut;
+} ViewStateManager;
 
-ADUC_Result viewstatemgr_svcstatus_get(ViewStateMgrHandle h, ADUC_ServiceStatus* out_status);
-ADUC_Result viewstatemgr_svcstatus_set(ViewStateMgrHandle h, ADUC_ServiceStatus status);
+int viewstatemgr_create(ViewStateManager* vsm);
+void viewstatemgr_destroy(ViewStateManager* vsm);
 
-extern ViewStateMgrHandle g_viewstatemgr_handle; // located in agent/main.c
+bool viewstatemgr_svcstatus_get(ViewStateManager* vsm, ADUC_ServiceStatus* out_status);
+bool viewstatemgr_svcstatus_set(ViewStateManager* vsm, ADUC_ServiceStatus status);
 
 EXTERN_C_END
 

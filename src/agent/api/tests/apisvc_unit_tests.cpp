@@ -29,27 +29,19 @@
 
 using Catch::Matchers::Equals;
 
-// Mock the global viewstatemgr handle used by apisvc.c
-ViewStateMgrHandle g_viewstatemgr_handle = NULL;
+ViewStateManager g_vsm = { 0 };
 
 TEST_CASE("apisvc crossproc tests")
 {
-    ViewStateMgrHandle handle = viewstatemgr_create();
-    aduc::Defer defer_destroy([handle]() { viewstatemgr_destroy(handle); });
-
-    g_viewstatemgr_handle = handle;
-    aduc::Defer defer_reset_global([]() { g_viewstatemgr_handle = NULL; });
+    REQUIRE(0 == viewstatemgr_create(&g_vsm));
+    aduc::Defer defer_destroy([&]() { viewstatemgr_destroy(&g_vsm); });
 
     ADUC_Logging_Init(ADUC_LOG_DEBUG, "apisvc_unit_tests");
     aduc::Defer defer_logging([]() { ADUC_Logging_Uninit(); });
 
-    SECTION("GET_STATE")
+    SECTION("GETSTATE")
     {
-        ADUC_ServiceStatus status = ADUC_ServiceStatus_None;
-        ADUC_Result result = viewstatemgr_svcstatus_set(handle, status);
-        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
-
-        REQUIRE(IsAducResultCodeSuccess(viewstatemgr_svcstatus_set(handle, ADUC_ServiceStatus_Installing).ResultCode));
+        REQUIRE(viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Installing));
 
         const char* fifoPath = "/tmp/test_req_fifo";
         REQUIRE(init_api_svc(fifoPath));
@@ -76,7 +68,7 @@ TEST_CASE("apisvc crossproc tests")
         aduc::Defer defer_close_req_fifo([reqFifo]() -> void { close(reqFifo); });
 
         // Write GET_STATE request
-        int slen = strlen(respFifoPath);
+        size_t slen = strlen(respFifoPath);
         ApiWireRequestMsg req = { .ver = htons(1),
                                   .type = htons(ApiRequestType_GETSTATE),
                                   .len = htons((uint16_t)slen) };
@@ -97,6 +89,6 @@ TEST_CASE("apisvc crossproc tests")
         CHECK(ntohs(resp.code) == (uint16_t)ApiRequestType_GETSTATE);
         CHECK(ntohs(resp.ret_val) == (uint16_t)ADUC_ServiceStatus_Installing);
 
-        uninit_api_svc();
+        CHECK(uninit_api_svc());
     }
 }

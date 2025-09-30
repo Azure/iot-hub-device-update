@@ -26,10 +26,17 @@ typedef struct tagAducTimer
     struct timespec startTime;
     time_t waitTimeMs;
     AducTimerSignals signals;
+    unsigned int updateIntervalMs;
+    pthread_t timerThread;
+    pthread_mutex_t mut;
+    bool timerThreadRunning;
+    bool initialized;
 } AducTimer;
 
-bool AducTimer_IsTimedOut(const AducTimer* t);
-void AducTimer_Start(AducTimer* t, unsigned w);
+int AducTimer_init(AducTimer* t, AducTimerSignals s, unsigned update_interval_ms);
+void AducTimer_uninit(AducTimer* t);
+bool AducTimer_IsTimedOut(AducTimer* t);
+int AducTimer_Start(AducTimer* t, unsigned w);
 void AducTimer_Update(AducTimer* t);
 void AducTimer_Stop(AducTimer* t);
 

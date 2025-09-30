@@ -1,12 +1,45 @@
 
-set (target_name sdk)
+set (target_name aducsdk)
 
-add_library (${target_name} INTERFACE)
+include (agentRules)
+compileasc99 ()
+
+add_library (${target_name} STATIC)
 add_library (aduc::${target_name} ALIAS ${target_name})
+add_library (aduc::sdk ALIAS ${target_name})
 
-target_include_directories (${target_name} INTERFACE inc)
+target_sources(${target_name} PRIVATE src/aducsdk.c)
 
-#
-# Turn -fPIC on, in order to use this library in another shared library.
-#
-set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_include_directories (${target_name}
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>
+        $<INSTALL_INTERFACE:include>
+)
+
+target_compile_definitions (
+    ${target_name} PRIVATE ADUC_API_DEFAULT_FIFO_PATH="${ADUC_API_DEFAULT_FIFO_PATH}"
+                           ADUC_DATA_FOLDER="${ADUC_DATA_FOLDER}"
+                           ADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS=${ADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS})
+
+include(GNUInstallDirs)
+
+install(TARGETS ${target_name}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(DIRECTORY inc/aduc
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h"
+)
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/aducsdk.pc.in
+    ${CMAKE_CURRENT_BINARY_DIR}/aducsdk.pc
+    @ONLY
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/aducsdk.pc
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+)

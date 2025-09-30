@@ -1,4 +1,7 @@
+#include "aduc/defer.hpp"
+#include "aduc/logging.h"
 #include "aduc/timer.h"
+
 #include <catch2/catch_all.hpp>
 #include <stdbool.h>
 #include <unistd.h>
@@ -31,45 +34,59 @@ static void s_on_timeout()
 
 TEST_CASE("AducTimer callback on timeout", "[timer]")
 {
+    ADUC_Logging_Init(ADUC_LOG_DEBUG, "timer_ut");
+    aduc::Defer deferUninitLogging([]() { ADUC_Logging_Uninit(); });
+
     s_reset_test_metrics();
-    AducTimer t = (AducTimer){ .startTime = { 0, 0 },
-                               .waitTimeMs = 0,
-                               .signals = {
-                                   .onStart = s_on_start,
-                                   .onStop = s_on_stop,
-                                   .onTimeout = s_on_timeout,
-                               } };
+
+    AducTimerSignals signals = (AducTimerSignals){
+        .onStart = s_on_start,
+        .onStop = s_on_stop,
+        .onTimeout = s_on_timeout,
+    };
+    AducTimer t = { 0 };
+    REQUIRE(AducTimer_init(&t, signals, 50) == 0);
+    REQUIRE(t.initialized);
+    aduc::Defer deferUninitTimer([&t]() {
+        AducTimer_Stop(&t);
+        AducTimer_uninit(&t);
+        CHECK_FALSE(t.initialized);
+    });
 
     AducTimer_Start(&t, 200);
-    CHECK(_g_start_called);
-
     usleep(250 * 1000);
-
-    AducTimer_Update(&t);
-
+    CHECK(_g_start_called);
     CHECK(_g_timeout_called);
 
     AducTimer_Stop(&t);
+    usleep(100 * 1000);
     CHECK(_g_stop_called);
 }
 
 TEST_CASE("AducTimer reuse", "[timer]")
 {
+    ADUC_Logging_Init(ADUC_LOG_DEBUG, "timer_ut");
+    aduc::Defer deferUninitLogging([]() { ADUC_Logging_Uninit(); });
+
     s_reset_test_metrics();
-    AducTimer t = (AducTimer){ .startTime = { 0, 0 },
-                               .waitTimeMs = 0,
-                               .signals = {
-                                   .onStart = s_on_start,
-                                   .onStop = s_on_stop,
-                                   .onTimeout = s_on_timeout,
-                               } };
+    AducTimerSignals signals = (AducTimerSignals){
+        .onStart = s_on_start,
+        .onStop = s_on_stop,
+        .onTimeout = s_on_timeout,
+    };
+    AducTimer t = { 0 };
+    REQUIRE(AducTimer_init(&t, signals, 50) == 0);
+    REQUIRE(t.initialized);
+    aduc::Defer deferUninitTimer([&t]() {
+        AducTimer_Stop(&t);
+        AducTimer_uninit(&t);
+        CHECK_FALSE(t.initialized);
+    });
 
     AducTimer_Start(&t, 100);
     CHECK(_g_start_called);
 
     usleep(125 * 1000);
-
-    AducTimer_Update(&t);
     CHECK(_g_timeout_called);
 
     AducTimer_Stop(&t);
@@ -84,33 +101,5 @@ TEST_CASE("AducTimer reuse", "[timer]")
     AducTimer_Start(&t, 25);
     CHECK(_g_start_called);
     usleep(30 * 1000);
-    AducTimer_Update(&t);
-    CHECK(_g_timeout_called);
-}
-
-TEST_CASE("AducTimer mult ticks", "[timer]")
-{
-    s_reset_test_metrics();
-    AducTimer t = (AducTimer){ .startTime = { 0, 0 },
-                               .waitTimeMs = 0,
-                               .signals = {
-                                   .onStart = s_on_start,
-                                   .onStop = s_on_stop,
-                                   .onTimeout = s_on_timeout,
-                               } };
-
-    AducTimer_Start(&t, 500);
-    CHECK(_g_start_called);
-
-    AducTimer_Update(&t);
-    CHECK_FALSE(_g_timeout_called);
-    AducTimer_Update(&t);
-    CHECK_FALSE(_g_timeout_called);
-    AducTimer_Update(&t);
-    CHECK_FALSE(_g_timeout_called);
-
-    usleep(500 * 1000);
-    AducTimer_Update(&t);
-    CHECK_FALSE(_g_stop_called);
     CHECK(_g_timeout_called);
 }

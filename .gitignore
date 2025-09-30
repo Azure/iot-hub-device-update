@@ -45,3 +45,7 @@ Testing/
 ### VCPKG
 .vcpkg/
 .vcpkg-installed/
+
+## SDK Examples binaries
+simple_status_check
+status_monitor
