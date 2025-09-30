@@ -16,7 +16,6 @@
 #include "aduc/types/download.h"
 #include "aduc/types/hash.h"
 #include "aduc/types/update_content.h"
-#include "aduc/types/workflow.h"
 
 #include "parson.h"
 
