@@ -64,18 +64,6 @@ typedef enum tagADUC_ServiceStatus
 } ADUC_ServiceStatus;
 
 /**
- * @brief Gets the version for the ADU Client SDK
- * @return The API version
- */
-ADUC_ApiVersion ADUC_GetSdkVersion(void);
-
-/**
- * @brief Gets the highest version that the AducIotAgent daemon process supports.
- * @return Current service status or error code
- */
-ADUC_ApiVersion ADUC_GetServiceApiVersion(void);
-
-/**
  * @brief Gets the ADU IoT Agent service daemon's current status
  * @return Current service status or error code
  */
@@ -125,9 +113,8 @@ The SDK .a static lib will write requests to the ADUC request FIFO and read resp
 // "COMMAND:VERSION:ARGS:RESPONSEPATH"
 // ARGS can be empty if no arguments
 // Examples:
-// "GET_VERSION:1.0::/tmp/response_fifo_1234" -> Int32
 // "GET_STATE:1.0::/tmp/response_fifo_2345" -> Int32
-// "PAUSE:1.1:wait_ms=33:/tmp/response_fifo_4567" -> Int32 (example future API with arguments)
+// "SET_PAUSE:1.1:wait_ms=33:/tmp/response_fifo_4567" -> Int32 (example future API with arguments)
 
 // Response format:
 // status code as int32_t, 10000+ are error codes.

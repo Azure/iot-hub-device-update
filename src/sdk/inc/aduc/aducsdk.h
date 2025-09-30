@@ -1,6 +1,10 @@
 #ifndef ADUC_SDK_H
 #define ADUC_SDK_H
 
+#include <aduc/c_utils.h>
+
+EXTERN_C_BEGIN
+
 typedef enum tagADUC_ServiceStatus
 {
     // V1.0 states
@@ -22,5 +26,20 @@ typedef enum tagADUC_ServiceStatus
     ADUC_ServiceStatus_ERROR_AgentServiceInternal = 10005,
     ADUC_ServiceStatus_ERROR_Unknown = 99999,
 } ADUC_ServiceStatus;
+
+/**
+ * @brief Gets the ADU IoT Agent service daemon's current status
+ * @return Current service status or error code
+ */
+ADUC_ServiceStatus GetAduServiceStatus(void);
+
+/**
+ * @brief Gets human-readable string for status code
+ * @param status The status code
+ * @return The string representation (do not free the string)
+ */
+const char* ADUC_ServiceStatusToString(ADUC_ServiceStatus status);
+
+EXTERN_C_END
 
 #endif // ADUC_SDK_H
