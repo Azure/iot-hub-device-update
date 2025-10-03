@@ -710,7 +710,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 
         if (connType == ADUC_ConnType_NotSet)
         {
-            Log_Error("Connection string is invalid");
+            Log_Error("Connection type is invalid");
             goto done;
         }
 
