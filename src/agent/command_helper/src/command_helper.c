@@ -280,8 +280,8 @@ static void* ADUC_CommandListenerThread(void* unused)
                     char* safeCommandLine = (char*)malloc(safeReadSize + 1);
                     if (safeCommandLine != NULL)
                     {
-                        memcpy(safeCommandLine, commandLine, readSize);
-                        safeCommandLine[readSize] = '\0';
+                        memcpy(safeCommandLine, commandLine, safeReadSize);
+                        safeCommandLine[safeReadSize] = '\0';
 
                         if (strncmp(safeCommandLine, g_commands[i]->commandText, safeReadSize) == 0)
                         {
