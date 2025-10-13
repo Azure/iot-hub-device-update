@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 3.5)
 
+add_subdirectory (apiproto_utils)
 add_subdirectory (auto_utils)
 add_subdirectory (c_utils)
 add_subdirectory (config_utils)

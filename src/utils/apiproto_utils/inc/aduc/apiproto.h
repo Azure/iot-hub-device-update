@@ -1,10 +1,13 @@
 #ifndef ADUC_APIPROTO_H_
 #define ADUC_APIPROTO_H_
 
+#include "aduc/c_utils.h"
 #include <stdint.h>
 #define _XOPEN_SOURCE 700
 #include <sys/types.h>
 #include <unistd.h>
+
+EXTERN_C_BEGIN
 
 #define PIPE_BUF \
     4096 // could properly use fcntl and F_GETPIPE_SZ and malloc, but this is simpler and good enough for now
@@ -29,7 +32,11 @@ typedef struct tagApiWireResponseMsg
     uint16_t ret_val;
 } ApiWireResponseMsg;
 
-ssize_t msg_send(int fd, const ApiWireResponseMsg* msg);
-ssize_t msg_recv(int fd, ApiWireRequestMsg* out_msg);
+ssize_t msg_send_req(int fd, const ApiWireRequestMsg* msg);
+ssize_t msg_recv_req(int fd, ApiWireRequestMsg* out_msg);
+ssize_t msg_send_resp(int fd, const ApiWireResponseMsg* msg);
+ssize_t msg_recv_resp(int fd, ApiWireResponseMsg* out_msg);
+
+EXTERN_C_END
 
 #endif // ADUC_APIPROTO_H_

@@ -250,14 +250,14 @@ static void* aduc_apisvc_thread_proc(void* arg)
 
         open_write_retries = 0;
 
-        if ((n = msg_recv(rdfifo, &msg)) < 0)
+        if ((n = msg_recv_req(rdfifo, &msg)) < 0)
         {
             if (n == MSGREV_AGAIN)
             {
                 // allow it to be interrupted and try again, checking for running flag
                 continue;
             }
-            Log_Error("msg_recv error: %zd", n);
+            Log_Error("msg_recv_req error: %zd", n);
             usleep(OnErrorDelayMicrosecs);
             continue;
         }
@@ -341,19 +341,19 @@ static void* aduc_apisvc_thread_proc(void* arg)
             viewstatemgr_svcstatus_get(&g_vsm, &status);
 
             Log_Info("GETSTATE returning code %d ret_val %d", 1, status);
-            resp.code = htons(1);
-            resp.ret_val = htons(status);
+            resp.code = 1;
+            resp.ret_val = status;
 
-            ssize_t sent = msg_send(writefifo, &resp);
+            ssize_t sent = msg_send_resp(writefifo, &resp);
             if (sent < 0)
             {
                 if (errno == EPIPE)
                 {
-                    Log_Warn("msg_send failed: client closed connection (EPIPE)");
+                    Log_Warn("msg_send_resp failed: client closed connection (EPIPE)");
                 }
                 else
                 {
-                    Log_Error("msg_send failed, sent %zd bytes, errno: %d", sent, errno);
+                    Log_Error("msg_send_resp failed, sent %zd bytes, errno: %d", sent, errno);
                 }
             }
             else

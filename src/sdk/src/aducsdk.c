@@ -7,6 +7,7 @@
  */
 
 #include <aduc/aducsdk.h>
+#include <aduc/apiproto.h>
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -26,20 +27,6 @@
 
 #define ApiRequestType_NONE 0x00
 #define ApiRequestType_GETSTATE 0x01
-
-typedef struct __attribute__((packed)) tagApiWireRequestMsg
-{
-    uint16_t ver;
-    uint16_t type;
-    uint16_t len;
-    char data[MAX_BUF_LEN];
-} ApiWireRequestMsg;
-
-typedef struct tagApiWireResponseMsg
-{
-    uint16_t code;
-    uint16_t ret_val;
-} ApiWireResponseMsg;
 
 #ifndef ADUC_API_DEFAULT_FIFO_PATH
 #    define ADUC_API_DEFAULT_FIFO_PATH "/var/lib/adu/api/apireq.fifo"
@@ -119,6 +106,13 @@ static bool verify_fifo_security(const char* fifoPath)
 ADUC_ServiceStatus GetAduServiceStatus(void)
 {
     const char* reqFifoPath = ADUC_API_DEFAULT_FIFO_PATH;
+    char randomSuffix[13] = { 0 }; // 12 chars + null terminator
+    char respFifoPath[512] = { 0 };
+    int reqFifo = -1, respFifo = -1;
+    size_t respPathLen = -1;
+    ssize_t n = -1;
+    ApiWireRequestMsg req = { 0 };
+    ApiWireResponseMsg resp = { 0 };
 
     if (!verify_fifo_security(reqFifoPath))
     {
@@ -130,10 +124,8 @@ ADUC_ServiceStatus GetAduServiceStatus(void)
         return ADUC_ServiceStatus_ERROR_AgentServicePermission;
     }
 
-    char randomSuffix[13]; // 12 chars + null terminator
     get_rnd_suffix(randomSuffix, 12);
 
-    char respFifoPath[512];
     snprintf(respFifoPath, sizeof(respFifoPath), ADUC_DATA_FOLDER "/api/resp_%s.fifo", randomSuffix);
 
     if (mkfifo(respFifoPath, FIFO_FILE_MODE) < 0)
@@ -145,9 +137,8 @@ ADUC_ServiceStatus GetAduServiceStatus(void)
     }
 
     ADUC_ServiceStatus result = ADUC_ServiceStatus_ERROR_AgentServiceInternal;
-    bool cleanup_fifo = true;
 
-    int reqFifo = open(reqFifoPath, O_WRONLY | O_NONBLOCK);
+    reqFifo = open(reqFifoPath, O_WRONLY | O_NONBLOCK);
     if (reqFifo == -1)
     {
         if (errno == ENXIO)
@@ -165,94 +156,58 @@ ADUC_ServiceStatus GetAduServiceStatus(void)
         goto cleanup;
     }
 
-    size_t respPathLen = strlen(respFifoPath);
+    respPathLen = strlen(respFifoPath);
     if (respPathLen >= MAX_BUF_LEN)
     {
         result = ADUC_ServiceStatus_ERROR_AgentServiceInternal;
-        close(reqFifo);
         goto cleanup;
     }
 
-    // Build message manually to avoid any struct padding issues
-    uint16_t header[3];
-    header[0] = htons(1); // version
-    header[1] = htons(ApiRequestType_GETSTATE); // type
-    header[2] = htons((uint16_t)respPathLen); // length
+    req = (ApiWireRequestMsg){ .ver = 1, .type = ApiRequestType_GETSTATE, .len = (uint16_t)respPathLen };
 
-    // Write header first
-    ssize_t n = write(reqFifo, header, sizeof(header));
-    if (n == sizeof(header) && respPathLen > 0)
-    {
-        // Write data payload
-        ssize_t data_written = write(reqFifo, respFifoPath, respPathLen);
-        if (data_written != (ssize_t)respPathLen)
-        {
-            n = -1; // Indicate failure
-        }
-        else
-        {
-            n += data_written; // Total bytes written
-        }
-    }
-
-    size_t msg_size = sizeof(header) + respPathLen;
-    close(reqFifo);
-
-    if (n != (ssize_t)msg_size)
+    n = msg_send_req(reqFifo, &req);
+    if (n != (ssize_t)(3 * sizeof(uint16_t) + respPathLen))
     {
         result = ADUC_ServiceStatus_ERROR_AgentServiceBrokenPipe;
         goto cleanup;
     }
 
-    int respFifo = open(respFifoPath, O_RDONLY | O_NONBLOCK);
+    close(reqFifo);
+    reqFifo = -1;
+
+    respFifo = open(respFifoPath, O_RDONLY | O_NONBLOCK);
     if (respFifo == -1)
     {
         result = ADUC_ServiceStatus_ERROR_AgentServiceInternal;
         goto cleanup;
     }
 
-    // Wait for response with timeout
-    fd_set read_fds;
-    struct timeval timeout;
-    FD_ZERO(&read_fds);
-    FD_SET(respFifo, &read_fds);
-    timeout.tv_sec = ADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS;
-    timeout.tv_usec = 0;
-
-    int select_result = select(respFifo + 1, &read_fds, NULL, NULL, &timeout);
-    if (select_result <= 0)
-    {
-        close(respFifo);
-        result = (select_result == 0) ? ADUC_ServiceStatus_ERROR_AgentServiceTimeout
-                                      : ADUC_ServiceStatus_ERROR_AgentServiceInternal;
-        goto cleanup;
-    }
-
-    ApiWireResponseMsg resp = { 0 };
-    n = read(respFifo, &resp, sizeof(resp));
-    close(respFifo);
-
+    n = msg_recv_resp(respFifo, &resp);
     if (n != sizeof(resp))
     {
-        result = ADUC_ServiceStatus_ERROR_AgentServiceBrokenPipe;
+        if (n == -1)
+        {
+            result = ADUC_ServiceStatus_ERROR_AgentServiceInternal;
+        }
+        else
+        {
+            result = ADUC_ServiceStatus_ERROR_AgentServiceTimeout;
+        }
         goto cleanup;
     }
 
-    const uint16_t code = ntohs(resp.code);
-    const uint16_t ret_val = ntohs(resp.ret_val);
-
-    if (code != ApiRequestType_GETSTATE)
-    {
-        result = ADUC_ServiceStatus_ERROR_AgentServiceInternal;
-        goto cleanup;
-    }
-
-    result = (ADUC_ServiceStatus)ret_val;
-    cleanup_fifo = true;
+    result = (ADUC_ServiceStatus)(resp.ret_val);
 
 cleanup:
-    if (cleanup_fifo)
+    if (reqFifo != -1)
     {
+        close(reqFifo);
+        reqFifo = -1;
+    }
+    if (respFifo != -1)
+    {
+        close(respFifo);
+        respFifo = -1;
         unlink(respFifoPath);
     }
 

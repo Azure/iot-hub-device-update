@@ -69,12 +69,12 @@ TEST_CASE("apisvc crossproc tests")
 
         // Write GET_STATE request
         size_t slen = strlen(respFifoPath);
-        ApiWireRequestMsg req = { .ver = htons(1),
-                                  .type = htons(ApiRequestType_GETSTATE),
-                                  .len = htons((uint16_t)slen) };
+        REQUIRE(slen <= MAX_BUF_LEN);
+        ApiWireRequestMsg req = { .ver = 1, .type = ApiRequestType_GETSTATE, .len = (uint16_t)slen };
         strncpy(req.data, respFifoPath, slen);
-        ssize_t n = write(reqFifo, &req, sizeof(req));
-        REQUIRE(n == sizeof(req));
+
+        ssize_t n = msg_send_req(reqFifo, &req);
+        REQUIRE(n == 3 * sizeof(uint16_t) + slen);
 
         // open response fifo for reading--open will block until data is available in fifo queue
         int respFifo = open(respFifoPath, O_RDONLY);
@@ -84,10 +84,10 @@ TEST_CASE("apisvc crossproc tests")
 
         // Read response
         ApiWireResponseMsg resp = { 0 };
-        n = read(respFifo, &resp, sizeof(resp));
+        n = msg_recv_resp(respFifo, (ApiWireResponseMsg*)&resp);
         REQUIRE(n == sizeof(resp));
-        CHECK(ntohs(resp.code) == (uint16_t)ApiRequestType_GETSTATE);
-        CHECK(ntohs(resp.ret_val) == (uint16_t)ADUC_ServiceStatus_Installing);
+        CHECK(resp.code == (uint16_t)ApiRequestType_GETSTATE);
+        CHECK(resp.ret_val == (uint16_t)ADUC_ServiceStatus_Installing);
 
         CHECK(uninit_api_svc());
     }

@@ -17,6 +17,7 @@ target_compile_definitions (
 target_link_libraries (
     ${target_name}
     PRIVATE Catch2::Catch2WithMain
+            aduc::apiproto_utils
             aduc::apisvc
             aduc::auto_utils
             aduc::config_utils

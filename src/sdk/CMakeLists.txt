@@ -16,6 +16,8 @@ target_include_directories (${target_name}
         $<INSTALL_INTERFACE:include>
 )
 
+target_link_libraries(${target_name} PRIVATE aduc::apiproto_utils)
+
 target_compile_definitions (
     ${target_name} PRIVATE ADUC_API_DEFAULT_FIFO_PATH="${ADUC_API_DEFAULT_FIFO_PATH}"
                            ADUC_DATA_FOLDER="${ADUC_DATA_FOLDER}"
