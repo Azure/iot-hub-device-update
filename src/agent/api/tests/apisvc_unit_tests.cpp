@@ -85,7 +85,7 @@ TEST_CASE("apisvc crossproc tests")
         // Read response
         ApiWireResponseMsg resp = { 0 };
         n = msg_recv_resp(respFifo, (ApiWireResponseMsg*)&resp);
-        REQUIRE(n == sizeof(resp));
+        REQUIRE(n == 2 * sizeof(uint16_t));
         CHECK(resp.code == (uint16_t)ApiRequestType_GETSTATE);
         CHECK(resp.ret_val == (uint16_t)ADUC_ServiceStatus_Installing);
 

@@ -362,7 +362,7 @@ static void* aduc_apisvc_thread_proc(void* arg)
             }
         }
 
-        // Close the response FIFO after handling the request
+        // Close this side of the response FIFO after handling the request
         if (writefifo != -1)
         {
             close(writefifo);

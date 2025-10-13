@@ -132,18 +132,25 @@ ADUC_ServiceStatus GetAduServiceStatus(void)
     {
         if (errno != EEXIST)
         {
-            return ADUC_ServiceStatus_ERROR_AgentServiceInternal;
+            return ADUC_ServiceStatus_ERROR_AgentServiceMkFifoFailed;
         }
     }
 
-    ADUC_ServiceStatus result = ADUC_ServiceStatus_ERROR_AgentServiceInternal;
+    // mkfifo uses umask (typically 022) which creates a fifo with incorrect permissions, so fix it here
+    if (fchmodat(AT_FDCWD, respFifoPath, 0660, 0) < 0)
+    {
+        unlink(respFifoPath);
+        return ADUC_ServiceStatus_ERROR_AgentServiceChmodFailed;
+    }
+
+    ADUC_ServiceStatus result = ADUC_ServiceStatus_ERROR_Unknown;
 
     reqFifo = open(reqFifoPath, O_WRONLY | O_NONBLOCK);
     if (reqFifo == -1)
     {
         if (errno == ENXIO)
         {
-            result = ADUC_ServiceStatus_ERROR_AgentServiceNotRunning;
+            result = ADUC_ServiceStatus_ERROR_AgentServiceReqFifoSvcEndNotOpenedYet;
         }
         else if (errno == EACCES)
         {
@@ -164,6 +171,14 @@ ADUC_ServiceStatus GetAduServiceStatus(void)
     }
 
     req = (ApiWireRequestMsg){ .ver = 1, .type = ApiRequestType_GETSTATE, .len = (uint16_t)respPathLen };
+    memcpy(req.data, respFifoPath, respPathLen);
+
+    respFifo = open(respFifoPath, O_RDONLY | O_NONBLOCK); // open resp fifo first for read
+    if (respFifo == -1)
+    {
+        result = ADUC_ServiceStatus_ERROR_AgentServiceSdkOpenRespFifoFailed;
+        goto cleanup;
+    }
 
     n = msg_send_req(reqFifo, &req);
     if (n != (ssize_t)(3 * sizeof(uint16_t) + respPathLen))
@@ -172,22 +187,12 @@ ADUC_ServiceStatus GetAduServiceStatus(void)
         goto cleanup;
     }
 
-    close(reqFifo);
-    reqFifo = -1;
-
-    respFifo = open(respFifoPath, O_RDONLY | O_NONBLOCK);
-    if (respFifo == -1)
-    {
-        result = ADUC_ServiceStatus_ERROR_AgentServiceInternal;
-        goto cleanup;
-    }
-
     n = msg_recv_resp(respFifo, &resp);
     if (n != sizeof(resp))
     {
         if (n == -1)
         {
-            result = ADUC_ServiceStatus_ERROR_AgentServiceInternal;
+            result = ADUC_ServiceStatus_ERROR_RecvMsgFailed;
         }
         else
         {
@@ -240,12 +245,22 @@ const char* ADUC_ServiceStatusToString(ADUC_ServiceStatus status)
         return "Error: Agent Service Not Running";
     case ADUC_ServiceStatus_ERROR_AgentServiceBrokenPipe:
         return "Error: Agent Service Broken Pipe";
+    case ADUC_ServiceStatus_ERROR_AgentServiceSdkOpenRespFifoFailed:
+        return "Error: Agent Service SDK Open Response FIFO Failed";
+    case ADUC_ServiceStatus_ERROR_AgentServiceReqFifoSvcEndNotOpenedYet:
+        return "Error: Agent Service Request FIFO Service End Not Opened Yet";
     case ADUC_ServiceStatus_ERROR_AgentServicePermission:
         return "Error: Agent Service Permission";
+    case ADUC_ServiceStatus_ERROR_RecvMsgFailed:
+        return "Error: Receive Message Failed";
     case ADUC_ServiceStatus_ERROR_AgentServiceTimeout:
         return "Error: Agent Service Timeout";
     case ADUC_ServiceStatus_ERROR_AgentServiceInternal:
         return "Error: Agent Service Internal";
+    case ADUC_ServiceStatus_ERROR_AgentServiceMkFifoFailed:
+        return "Error: Agent Service MkFifo Failed";
+    case ADUC_ServiceStatus_ERROR_AgentServiceChmodFailed:
+        return "Error: Agent Service Chmod Failed";
     case ADUC_ServiceStatus_ERROR_Unknown:
         return "Error: Unknown";
     default:

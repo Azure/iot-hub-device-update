@@ -27,6 +27,11 @@ extern "C"
         ADUC_ServiceStatus_ERROR_AgentServicePermission = 10003,
         ADUC_ServiceStatus_ERROR_AgentServiceTimeout = 10004,
         ADUC_ServiceStatus_ERROR_AgentServiceInternal = 10005,
+        ADUC_ServiceStatus_ERROR_AgentServiceReqFifoSvcEndNotOpenedYet = 10006,
+        ADUC_ServiceStatus_ERROR_AgentServiceMkFifoFailed = 10007,
+        ADUC_ServiceStatus_ERROR_AgentServiceChmodFailed = 10008,
+        ADUC_ServiceStatus_ERROR_AgentServiceSdkOpenRespFifoFailed = 10009,
+        ADUC_ServiceStatus_ERROR_RecvMsgFailed = 10010,
         ADUC_ServiceStatus_ERROR_Unknown = 99999,
     } ADUC_ServiceStatus;
 
