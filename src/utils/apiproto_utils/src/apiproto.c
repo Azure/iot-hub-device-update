@@ -1,5 +1,6 @@
 
 #include "aduc/apiproto.h"
+#include "aduc/c_utils.h"
 #include "aduc/logging.h"
 
 #include <arpa/inet.h>
@@ -14,7 +15,8 @@
 
 ssize_t msg_send_req(int fd, const ApiWireRequestMsg* msg)
 {
-    char hdr_buf[3 * sizeof(uint16_t)];
+    STATIC_ASSERT(MSG_HDR_LEN == 3 * sizeof(uint16_t));
+    char hdr_buf[MSG_HDR_LEN];
     uint16_t net_val = 0;
     net_val = htons(msg->ver);
     hdr_buf[0] = ((char*)&net_val)[0];
@@ -33,9 +35,9 @@ ssize_t msg_send_req(int fd, const ApiWireRequestMsg* msg)
     {
         return -1;
     }
-    if (bytes_written != (ssize_t)(3 * sizeof(uint16_t)))
+    if (bytes_written != (ssize_t)(MSG_HDR_LEN))
     {
-        Log_Error("msg header: wrote %zd instead of %zu bytes", bytes_written, 3 * sizeof(uint16_t));
+        Log_Error("msg header: wrote %zd instead of %zu bytes", bytes_written, MSG_HDR_LEN);
         return -1;
     }
     Log_Debug("msg_send_req: wrote %zd bytes of header", bytes_written);
@@ -108,7 +110,7 @@ static ssize_t _wait_until_bytes_avail_for_read(int fd)
 ssize_t msg_recv_req(int fd, ApiWireRequestMsg* out_msg)
 {
     ssize_t bytes_read;
-    uint16_t header_buf[3 * sizeof(uint16_t)] = { 0 };
+    uint16_t header_buf[MSG_HDR_LEN] = { 0 };
     uint16_t msg_ver = 0, msg_type = 0, msg_len = 0;
     ssize_t bytes_read_total = 0;
     ssize_t br = 0;
@@ -117,14 +119,14 @@ ssize_t msg_recv_req(int fd, ApiWireRequestMsg* out_msg)
 
     char msg_data[MAX_BUF_LEN] = { 0 };
 
-    while (bytes_read_total < (ssize_t)(3 * sizeof(uint16_t)))
+    while (bytes_read_total < (ssize_t)(MSG_HDR_LEN))
     {
         if ((wait_res = _wait_until_bytes_avail_for_read(fd)) < 0)
         {
             return wait_res;
         }
 
-        br = read(fd, ((char*)header_buf) + bytes_read_total, (3 * sizeof(uint16_t)) - bytes_read_total);
+        br = read(fd, ((char*)header_buf) + bytes_read_total, (MSG_HDR_LEN) - bytes_read_total);
         if (br < 0)
         {
             if (errno == EINTR)
