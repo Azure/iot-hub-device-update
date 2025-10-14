@@ -36,10 +36,6 @@
 #    define ADUC_DATA_FOLDER "/var/lib/adu"
 #endif
 
-#ifndef ADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS
-#    define ADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS 10
-#endif
-
 #define FIFO_FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP) // rw-rw----
 #define RESPONSE_FIFO_NAME_LEN 32
 static const char ALPHANUMERIC_CHARS[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

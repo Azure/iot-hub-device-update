@@ -87,9 +87,6 @@ sudo cmake --build out --target install
 Configure the SDK at build time:
 
 ```bash
-# Set request timeout (default: 10 seconds)
-cmake -DADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS=15 ..
-
 # Set custom FIFO path (default: /var/lib/adu/api/apireq.fifo)
 cmake -DADUC_API_DEFAULT_FIFO_PATH="/custom/path/api/request.fifo" ..
 ```

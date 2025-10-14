@@ -274,11 +274,6 @@ set (
     CACHE STRING "The default named-pipe for incoming version 1 Cross Process API request.")
 
 set (
-    ADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS
-    "10"
-    CACHE STRING "Timeout in seconds for SDK API requests to the ADU Agent service.")
-
-set (
     ADUC_ROOTKEY_PKG_URL_OVERRIDE
     ""
     CACHE

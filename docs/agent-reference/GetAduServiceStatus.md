@@ -19,12 +19,6 @@ Install pkg-config for library discovery:
 sudo apt update && sudo apt install pkgconfig
 ```
 
-**CentOS/RHEL/Fedora:**
-```sh
-sudo yum install pkgconfig  # CentOS/RHEL 7
-sudo dnf install pkgconfig  # Fedora/RHEL 8+
-```
-
 ### Build and Install
 
 ```sh
@@ -42,16 +36,10 @@ sudo cmake --build out --target install
 
 The SDK supports several build-time configuration options:
 
-#### Request Timeout Configuration
-```sh
-# Set 30-second API cross-proc request timeout (default: 30 seconds)
-cmake -DADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS=15 ..
-./scripts/build.sh -c
-```
-
 #### FIFO Path Configuration
 ```sh
 # Custom FIFO path (default: /var/lib/adu/api/apireq.fifo)
+# This is the underlying request FIFO to which SDK requests are written.
 cmake -DADUC_API_DEFAULT_FIFO_PATH="/custom/path/to/api/apireq.fifo" ..
 ./scripts/build.sh -c
 ```
@@ -61,7 +49,9 @@ cmake -DADUC_API_DEFAULT_FIFO_PATH="/custom/path/to/api/apireq.fifo" ..
 The SDK header is at [src/sdk/inc/aduc/aducsdk.h](../../src/sdk/inc/aduc/aducsdk.h)
 It consists of the ADUC_ServiceStatus enum, the integer values of which are returned from SDK API:
 `ADUC_ServiceStatus GetAduServiceStatus(void);`
+
 You can get a human-readable string for it with:
+
 `const char* ADUC_ServiceStatusToString(ADUC_ServiceStatus status);`
 
 The states in ADUC_ServiceStatus enum are "view states", a simplified high-level view of the AducIotAgent state.
@@ -90,10 +80,11 @@ The SDK libaducsdk.a static lib will write requests to the ADUC request FIFO and
 ### Request Format
 The request format is: `<ver><type><len><str>`
 where ver, type, len are 16-bit values and str is a non-null-terminated utf-8 encoded string of length len (can be 0)
-e.g. 0x01 0x01 0x13 '/data/resp1234.fifo' (note: the nibbles are in network order)
+e.g. 00 01 00 01 00 13 '/data/resp1234.fifo' (note: the nibbles on the wire are in network order, i.e. big-endian).
+In the uint16_t local variables on a little-endian host, these will be 01 00 01 00 13 00
 
 ### Response Format
-The Response consists of `<code><ret_val>`, both of which are a double word. e.g. 0x01 0x02 would indicate code 1 (response to query status) and ret_val 2 ([Downloading](../../src/sdk/inc/aduc/aducsdk.h))
+The Response consists of `<code><ret_val>`, both of which are a double word. e.g. 00 01 00 02 on the wire (01 00 02 00 on LE host) would indicate code 1 (response to query status) and ret_val 2 ([Downloading](../../src/sdk/inc/aduc/aducsdk.h))
 
 ## Package Config
 
@@ -195,8 +186,8 @@ sequenceDiagram
     participant Client as Client App
     participant SDK as Status SDK
     participant ReqFIFO as Request FIFO
-    participant CmdListener as Command Listener
-    participant CmdHandler as Command Handler
+    participant ApiSvcThread as ApiSvcThread
+    participant ApiSvcReqHandler as ApiSvcReqHandler
     participant ViewState as ViewState Manager
     participant RespFIFO as Response FIFO
 
@@ -207,11 +198,11 @@ sequenceDiagram
     SDK->>SDK: Create temp response FIFO
     SDK->>ReqFIFO: Write "GET_STATE:/tmp/adu_status_12345"
 
-    ReqFIFO->>CmdListener: Read command
-    CmdListener->>CmdHandler: Process GET_STATE command
-    CmdHandler->>ViewState: Get current state
-    ViewState-->>CmdHandler: Return ADUC_ServiceStatus
-    CmdHandler->>RespFIFO: Write status code
+    ReqFIFO->>ApiSvcReqHandler: Read request
+    ApiSvcThread->>ApiSvcReqHandler: Process GET_STATE command
+    ApiSvcReqHandler->>ViewState: Get current state
+    ViewState-->>ApiSvcReqHandler: Return ADUC_ServiceStatus
+    ApiSvcReqHandler->>RespFIFO: Write status code
 
     RespFIFO->>SDK: Read status code
     SDK->>SDK: Cleanup temp FIFO
@@ -271,10 +262,10 @@ graph TB
     end
 
     subgraph "ADU Service Process"
-        CL[Command Listener Thread<br/>ADUC_CommandListenerThread]
+        CL[ApiSvcThread<br/>ApiSvcThread]
         VSM[ViewState Manager<br/>Global State Store]
         WF[Workflow Processing]
-        CH[Command Handler]
+        CH[ApiSvcReqHandler]
 
         WF --> VSM
         CL --> CH
@@ -282,11 +273,11 @@ graph TB
     end
 
     subgraph "IPC Layer"
-        RF[Request FIFO<br/>/var/lib/adu/commands]
-        RSF[Response FIFO<br/>/tmp/adu_status_XXXXX]
+        RF[Request FIFO<br/>/var/lib/adu/api/req.fifo]
+        RSF[Response FIFO<br/>/var/lib/adu/api/resp_XXXXX.fifo]
     end
 
-    IW -.->|"GET_STATE:/path/to/response/fifo"| RF
+    IW -.->|"GET_STATE:/var/lib/adu/api/resp_XXXXX.fifo"| RF
     RF --> CL
     CH -.->|"Status Code"| RSF
     RSF --> IW

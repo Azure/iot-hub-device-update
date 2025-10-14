@@ -114,15 +114,12 @@ FILES_${PN} = "${bindir}/myapp"
 #### Custom SDK Configuration in Yocto
 ```bitbake
 # In local.conf or machine configuration
-# Set custom timeout (30 seconds instead of default 10)
-EXTRA_OECMAKE_pn-iot-hub-device-update_append = " -DADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS=30"
 
 # Set custom FIFO path
 EXTRA_OECMAKE_pn-iot-hub-device-update_append = " -DADUC_API_DEFAULT_FIFO_PATH='/opt/adu/api/request.fifo'"
 
 # Multiple options together
 EXTRA_OECMAKE_pn-iot-hub-device-update_append = " \
-    -DADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS=15 \
     -DADUC_API_DEFAULT_FIFO_PATH='/mnt/data/adu_api/apireq.fifo' \
 "
 ```

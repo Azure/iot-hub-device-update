@@ -193,16 +193,6 @@ This installs:
 
 ### Configuring SDK Build Options
 
-#### Timeout Configuration
-
-Configure the SDK request timeout (default: 10 seconds):
-
-```sh
-# Set 15-second timeout
-cmake -DADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS=15 ..
-./scripts/build.sh -c
-```
-
 #### FIFO Path Configuration
 
 Configure the default FIFO path for communication with the agent:
@@ -301,22 +291,18 @@ do_install() {
 To customize SDK build parameters in Yocto, add to your recipe or `local.conf`:
 
 ```bitbake
-# Set custom timeout (15 seconds instead of default 10)
-EXTRA_OECMAKE_append = " -DADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS=15"
-
 # Set custom FIFO path
 EXTRA_OECMAKE_append = " -DADUC_API_DEFAULT_FIFO_PATH='/custom/adu/api/apireq.fifo'"
 
 # Both together
-EXTRA_OECMAKE_append = " -DADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS=30 -DADUC_API_DEFAULT_FIFO_PATH='/opt/adu/api/request.fifo'"
+EXTRA_OECMAKE_append = " -DADUC_API_DEFAULT_FIFO_PATH='/opt/adu/api/request.fifo'"
 ```
 
 Or in your device-specific configuration:
 
 ```bitbake
 # In your machine configuration (.conf file)
-ADUC_SDK_REQUEST_FIFO_TIMEOUT_SECS = "20"
-ADUC_API_DEFAULT_FIFO_PATH = "/var/lib/custom-adu/api/apireq.fifo"
+ADUC_API_DEFAULT_FIFO_PATH = "/custom/path/apireq.fifo"
 ```
 
 ### Build the agent using CMake
