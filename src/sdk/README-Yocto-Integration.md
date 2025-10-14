@@ -5,6 +5,16 @@ The `aducsdk` library provides a C ABI for external apps to query the Azure Devi
 This allows querying of high-level status of the adu agent service to know if it's in the middle of processing
 update deployments with some additional details as to the sub-status if busy.
 
+## Sample of Yocto integration
+
+### Do the quick steps for Gen1 here
+https://github.com/Azure/iot-hub-device-update-yocto/blob/scarthgap/README.md#quick-steps---gen-1
+
+### Build and Run the status_monitor example using the Yocto toolchain here by following these steps:
+https://github.com/Azure/iot-hub-device-update-yocto/blob/scarthgap/README.md#build-and-run-status-monitor-for-arm64-using-yocto-toolchain
+
+The status monitor exercises the GetServiceStatus API from the SDK.
+
 ## Yocto Recipe Integration
 
 ### 1. In your application's Yocto recipe (`myapp_1.0.bb`):
