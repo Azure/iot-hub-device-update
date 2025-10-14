@@ -19,6 +19,7 @@ extern "C"
         ADUC_ServiceStatus_Rebooting = 7,
         ADUC_ServiceStatus_Paused = 8,
         ADUC_ServiceStatus_Idle = 9,
+        ADUC_ServiceStatus_Failed = 10,
 
         // V1.0 Error codes (10000+)
         ADUC_ServiceStatus_ERROR_UnsupportedApiVersion = 10000,

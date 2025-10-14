@@ -942,5 +942,10 @@ done:
     json_free_serialized_string(jsonString);
     // Don't free the persistenceData as that will be done by the startup logic that owns it.
 
+    if (!success)
+    {
+        viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Failed);
+    }
+
     return success;
 }
