@@ -36,16 +36,16 @@ extern "C"
     } ADUC_ServiceStatus;
 
     /**
- * @brief Gets the ADU IoT Agent service daemon's current status
- * @return Current service status or error code
- */
+     * @brief Gets the ADU IoT Agent service daemon's current status
+     * @return Current service status or error code
+     */
     ADUC_ServiceStatus GetAduServiceStatus(void);
 
     /**
- * @brief Gets human-readable string for status code
- * @param status The status code
- * @return The string representation (do not free the string)
- */
+     * @brief Gets human-readable string for status code
+     * @param status The status code
+     * @return The string representation (do not free the string)
+     */
     const char* ADUC_ServiceStatusToString(ADUC_ServiceStatus status);
 
 #ifdef __cplusplus
