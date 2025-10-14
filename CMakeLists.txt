@@ -160,6 +160,14 @@ set (
 )
 
 set (
+    ADUC_DATASTORE_DIRECTORY
+    "/var/lib/adu/datastore"
+    CACHE
+        STRING
+        "Directory path to the datastore file."
+)
+
+set (
     ADUC_TEST_DATA_PATH_SEGMENT
     "testdata"
     CACHE STRING
@@ -258,7 +266,12 @@ set (
 set (
     ADUC_COMMANDS_FIFO_NAME
     "${ADUC_DATA_FOLDER}/du-commands.fifo"
-    CACHE STRING "The named-pipe for commands IPC.")
+    CACHE STRING "The named-pipe for commands IPC for legacy, pre-versioned api.")
+
+set (
+    ADUC_API_DEFAULT_FIFO_PATH
+    "${ADUC_DATA_FOLDER}/api/apireq.fifo"
+    CACHE STRING "The default named-pipe for incoming version 1 Cross Process API request.")
 
 set (
     ADUC_ROOTKEY_PKG_URL_OVERRIDE

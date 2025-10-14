@@ -23,6 +23,7 @@
 #include "aduc/string_c_utils.h"
 #include "aduc/types/adu_core.h"
 #include "aduc/types/update_content.h"
+#include "aduc/viewstatemgr.h"
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 
@@ -61,6 +62,13 @@ static void OnUpdateResultD2CMessageCompleted(void* context, ADUC_D2C_Message_St
 {
     UNREFERENCED_PARAMETER(context);
     Log_Debug("Send message completed (status:%d)", status);
+
+    // When D2C reporting message is completed, update view state appropriately
+    if (status == ADUC_D2C_Message_Status_Success || status == ADUC_D2C_Message_Status_Failed
+        || status == ADUC_D2C_Message_Status_Canceled)
+    {
+        ADUC_Workflow_HandleReportingCompleted();
+    }
 }
 
 /**
@@ -258,6 +266,7 @@ bool AzureDeviceUpdateCoreInterface_Create(void** context, int argc, char** argv
     {
         goto done;
     }
+    workflowData->vsm = &g_vsm;
 
     Log_Info("ADUC agent started. Using IoT Hub Client SDK %s", IoTHubClient_GetVersionString());
 
@@ -917,6 +926,8 @@ bool AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync(
         goto done;
     }
 
+    viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Reporting);
+
     if (!ReportClientJsonProperty(ADUC_D2C_Message_Type_Device_Update_Result, jsonString, workflowData))
     {
         goto done;
@@ -928,6 +939,11 @@ done:
     json_value_free(rootValue);
     json_free_serialized_string(jsonString);
     // Don't free the persistenceData as that will be done by the startup logic that owns it.
+
+    if (!success)
+    {
+        viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Failed);
+    }
 
     return success;
 }

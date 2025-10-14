@@ -9,6 +9,7 @@
 #include "aduc/adu_core_interface.h"
 #include "aduc/adu_types.h"
 #include "aduc/agent_workflow.h"
+#include "aduc/apisvc.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
 #if !defined(WIN32)
@@ -28,6 +29,8 @@
 #include "aduc/shutdown_service.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h" // ADUC_SystemUtils_MkDirRecursiveDefault
+#include "aduc/timer.h"
+#include "aduc/viewstatemgr.h"
 #include "aducpal/stdlib.h" // setenv
 #include <azure_c_shared_utility/shared_util_options.h>
 #include <azure_c_shared_utility/threadapi.h> // ThreadAPI_Sleep
@@ -83,10 +86,21 @@ static const char g_deviceInfoPnPComponentName[] = "deviceInformation";
 // Name of the Diagnostics subcomponent that this device is using
 static const char g_diagnosticsPnPComponentName[] = "diagnosticInformation";
 
+extern AducTimer g_idle_pause_timer;
+
+// fwd decls
+int ADUC_Workflow_Init();
+void ADUC_Workflow_Uninit();
+
 /**
  * @brief Global IoT Hub client handle.
  */
 ADUC_ClientHandle g_iotHubClientHandle = NULL;
+
+/**
+ * @brief The viewstate manager handle.
+ */
+ViewStateManager g_vsm = { 0 };
 
 //
 // Components that this agent supports.
@@ -685,6 +699,22 @@ ADUC_Command redoUpdateCommand = { "retry-update", RetryUpdateCommandHandler };
 
 #endif // #ifdef ADUC_COMMAND_HELPER_H
 
+static const char* get_api_request_fifo_path()
+{
+    const char* path = ADUC_API_DEFAULT_FIFO_PATH;
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config != NULL)
+    {
+        if (config->apiRequestFifoPath != NULL)
+        {
+            path = config->apiRequestFifoPath;
+        }
+    }
+    ADUC_ConfigInfo_ReleaseInstance(config);
+
+    return path;
+}
+
 /**
  * @brief Handles the startup of the agent
  * @details Provisions the connection string with the CLI or either
@@ -700,6 +730,31 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     memset(&info, 0, sizeof(info));
 
     if (!ADUC_D2C_Messaging_Init())
+    {
+        goto done;
+    }
+
+    if (viewstatemgr_create(&g_vsm) != 0)
+    {
+        goto done;
+    }
+
+    if (ADUC_Workflow_Init() != 0)
+    {
+        goto done;
+    }
+
+    const char* req_fifo = get_api_request_fifo_path();
+    char* basedir = RmvAfterLastChar(req_fifo, '/');
+    if (basedir == NULL)
+    {
+        goto done;
+    }
+    if (ADUC_SystemUtils_MkDirRecursiveDefault(basedir) != 0)
+    {
+        goto done;
+    }
+    if (!init_api_svc(req_fifo))
     {
         goto done;
     }
@@ -813,6 +868,19 @@ done:
 void ShutdownAgent()
 {
     Log_Warn("Agent is shutting down.");
+
+    AducTimer_Stop(&g_idle_pause_timer);
+
+    if (g_vsm.initialized)
+    {
+        viewstatemgr_destroy(&g_vsm);
+    }
+    ADUC_Workflow_Uninit();
+
+    if (!uninit_api_svc())
+    {
+        Log_Warn("Failed uninit of API service\n");
+    }
     ADUC_D2C_Messaging_Uninit();
 #ifdef ADUC_COMMAND_HELPER_H
     UninitializeCommandListenerThread();
@@ -931,6 +999,9 @@ int main(int argc, char** argv)
 
     // default to failure
     ret = 1;
+
+    const bool is_cli_mode =
+        (launchArgs.healthCheckOnly) || (launchArgs.extensionFilePath != NULL) || (launchArgs.ipcCommand != NULL);
 
     if (launchArgs.healthCheckOnly)
     {
@@ -1103,7 +1174,10 @@ int main(int argc, char** argv)
 done:
     Log_Info("Agent exited with code %d", ret);
 
-    ShutdownAgent();
+    if (!is_cli_mode)
+    {
+        ShutdownAgent();
+    }
 
     ADUC_ConfigInfo_ReleaseInstance(config);
 

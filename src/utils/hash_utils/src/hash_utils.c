@@ -101,7 +101,7 @@ static bool ADUC_HashUtils_GetIndexStrongestValidHash(
         return false;
     }
 
-    int strongestIndex = -1; // Assume hashes array is not sorted by strength ordering.
+    size_t strongestIndex = SIZE_MAX; // Assume hashes array is not sorted by strength ordering.
     SHAversion curBestAlg = SHA1;
 
     for (size_t i = 0; i < hashCount; ++i)
@@ -129,9 +129,9 @@ static bool ADUC_HashUtils_GetIndexStrongestValidHash(
         }
     }
 
-    if (strongestIndex != (size_t)-1)
+    if (strongestIndex != SIZE_MAX)
     {
-        *outIndexStrongestAlgorithm = (size_t)strongestIndex;
+        *outIndexStrongestAlgorithm = strongestIndex;
         *outBestShaVersion = curBestAlg;
         return true;
     }

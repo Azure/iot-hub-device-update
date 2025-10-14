@@ -28,6 +28,28 @@ provides a robust way for the client to download an update.
 
 ## Building the Device Update Agent for Linux
 
+### Installing pkg-config (Required for SDK Usage)
+
+If you plan to use the ADU SDK in external applications, you'll need pkg-config:
+
+**Ubuntu/Debian:**
+```sh
+sudo apt update
+sudo apt install pkgconfig
+```
+
+**CentOS/RHEL/Fedora:**
+```sh
+sudo yum install pkgconfig  # CentOS/RHEL 7
+sudo dnf install pkgconfig  # Fedora/RHEL 8+
+```
+
+**Yocto:**
+Add to your image recipe:
+```bitbake
+IMAGE_INSTALL_append = " pkgconfig"
+```
+
 ### Installing Dependencies
 
 Use the [scripts/install-deps.sh](../../scripts/install-deps.sh) Linux shell
@@ -131,6 +153,156 @@ To build the debian package (will be output to the `out` directory):
 
 ```sh
 ./scripts/build.sh --build-packages
+```
+
+## Building the ADU SDK Library
+
+The ADU SDK provides a C API for external applications to query the Azure Device Update agent service status. This is particularly useful for IoT devices that need to:
+
+- Determine if the agent is actively processing updates
+- Safely power down during idle periods to conserve battery
+- Monitor update deployment workflow status
+
+### Build the SDK Library
+
+The SDK is built as part of the main build process and produces:
+- **Library**: `libaducsdk.a` (static library)
+- **Header**: `aducsdk.h` (C/C++ header file)
+- **pkg-config**: `aducsdk.pc` (package configuration for discovery)
+
+To build just the SDK:
+
+```sh
+./scripts/build.sh -c
+# or build only the SDK target
+cmake --build out --target aducsdk
+```
+
+### Install the SDK
+
+To install the SDK for system-wide use:
+
+```sh
+sudo cmake --build out --target install
+```
+
+This installs:
+- Library: `/usr/local/lib/libaducsdk.a`
+- Header: `/usr/local/include/aduc/aducsdk.h`
+- pkg-config: `/usr/local/lib/pkgconfig/aducsdk.pc`
+
+### Configuring SDK Build Options
+
+#### FIFO Path Configuration
+
+Configure the default FIFO path for communication with the agent:
+
+```sh
+# Custom FIFO path
+cmake -DADUC_API_DEFAULT_FIFO_PATH="/custom/path/to/api/apireq.fifo" ..
+./scripts/build.sh -c
+```
+
+### Using the SDK in External Applications
+
+#### Using pkg-config (Recommended)
+
+```sh
+# Check if SDK is installed
+pkg-config --exists aducsdk && echo "SDK found!"
+
+# Get compilation flags
+gcc myapp.c $(pkg-config --cflags --libs aducsdk) -o myapp
+
+# Check version
+pkg-config --modversion aducsdk
+```
+
+#### Example Application
+
+```c
+#include <stdio.h>
+#include <aduc/aducsdk.h>
+
+int main() {
+    printf("Checking ADU Agent status...\n");
+
+    ADUC_ServiceStatus status = GetAduServiceStatus();
+    const char* statusStr = ADUC_ServiceStatusToString(status);
+
+    printf("Status: %s (%d)\n", statusStr, status);
+
+    // Power management logic for IoT device
+    if (status == ADUC_ServiceStatus_Idle || status == ADUC_ServiceStatus_Paused) {
+        printf("Agent is idle/paused - safe to power down to conserve battery\n");
+        // system("poweroff");  // Uncomment for actual power management
+    } else if (status >= ADUC_ServiceStatus_ERROR_UnsupportedApiVersion) {
+        printf("Error communicating with agent: %s\n", statusStr);
+        return 1;
+    } else {
+        printf("Agent is active - staying online\n");
+    }
+
+    return 0;
+}
+```
+
+#### Using CMake
+
+In your `CMakeLists.txt`:
+
+```cmake
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(ADUCSDK REQUIRED aducsdk)
+
+target_include_directories(myapp PRIVATE ${ADUCSDK_INCLUDE_DIRS})
+target_link_libraries(myapp ${ADUCSDK_LIBRARIES})
+target_compile_options(myapp PRIVATE ${ADUCSDK_CFLAGS_OTHER})
+```
+
+### Yocto Integration
+
+#### In your Yocto recipe (e.g., `myapp_1.0.bb`):
+
+```bitbake
+DESCRIPTION = "IoT Power Management Application"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=..."
+
+# Add dependency on the ADU SDK
+DEPENDS += "aducsdk"
+
+# Use pkg-config to get compilation flags
+inherit pkgconfig
+
+do_compile() {
+    # pkg-config automatically provides the right flags
+    ${CC} ${CFLAGS} $(pkg-config --cflags aducsdk) -o myapp main.c $(pkg-config --libs aducsdk)
+}
+
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 myapp ${D}${bindir}/
+}
+```
+
+#### Overriding SDK Configuration in Yocto
+
+To customize SDK build parameters in Yocto, add to your recipe or `local.conf`:
+
+```bitbake
+# Set custom FIFO path
+EXTRA_OECMAKE_append = " -DADUC_API_DEFAULT_FIFO_PATH='/custom/adu/api/apireq.fifo'"
+
+# Both together
+EXTRA_OECMAKE_append = " -DADUC_API_DEFAULT_FIFO_PATH='/opt/adu/api/request.fifo'"
+```
+
+Or in your device-specific configuration:
+
+```bitbake
+# In your machine configuration (.conf file)
+ADUC_API_DEFAULT_FIFO_PATH = "/custom/path/apireq.fifo"
 ```
 
 ### Build the agent using CMake
