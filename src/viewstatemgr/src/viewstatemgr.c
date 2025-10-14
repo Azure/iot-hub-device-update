@@ -1,3 +1,11 @@
+/**
+ * @file viewstatemgr.c
+ * @brief The implementation for view state manager.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #include "aduc/viewstatemgr.h"
 #include "aduc/logging.h"
 #include "aduc/result.h"

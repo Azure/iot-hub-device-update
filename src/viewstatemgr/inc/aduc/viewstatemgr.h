@@ -1,3 +1,11 @@
+/**
+ * @file viewstatemgr.h
+ * @brief The header for view state manager.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #ifndef ADUC_VIEWSTATEMGR_H
 #define ADUC_VIEWSTATEMGR_H
 
