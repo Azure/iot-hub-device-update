@@ -327,7 +327,7 @@ function Create-DataFiles {
         "Creating $dest"
         @'
 {
-    "schemaVersion": "1.1",
+    "schemaVersion": "1.2",
     "aduShellTrustedUsers": [
         "adu",
         "do"
@@ -348,7 +348,8 @@ function Create-DataFiles {
             "manufacturer": "[NOT_SPECIFIED]",
             "model": "[NOT_SPECIFIED]"
         }
-    ]
+    ],
+    "idlePauseMilliseconds": 30000
 }
 '@ | Out-File -Encoding ASCII $dest
     }

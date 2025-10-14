@@ -135,4 +135,14 @@ bool ADUC_WorkflowData_InitWorkflowHandle(ADUC_WorkflowData* workflowData)
     return workflow_init_workflow_handle(workflowData);
 }
 
+void ADUC_WorkflowData_SetReceivedC2D(ADUC_WorkflowData* workflowData)
+{
+    workflowData->receivedC2DMsg = true;
+}
+
+bool ADUC_WorkflowData_GetReceivedC2D(ADUC_WorkflowData* workflowData)
+{
+    return workflowData->receivedC2DMsg;
+}
+
 EXTERN_C_END
