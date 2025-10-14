@@ -327,7 +327,7 @@ function Create-DataFiles {
         "Creating $dest"
         @'
 {
-    "schemaVersion": "1.1",
+    "schemaVersion": "1.2",
     "aduShellTrustedUsers": [
         "adu",
         "do"
