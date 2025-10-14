@@ -55,6 +55,7 @@ bool viewstatemgr_svcstatus_get(ViewStateManager* vsm, ADUC_ServiceStatus* out_s
 
     if (!vsm->initialized)
     {
+        Log_Warn("viewstatemgr_svcstatus_get: vsm not initialized");
         return false;
     }
 
