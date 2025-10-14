@@ -212,7 +212,7 @@ ssize_t msg_recv_req(int fd, ApiWireRequestMsg* out_msg)
 
 ssize_t msg_send_resp(int fd, const ApiWireResponseMsg* msg)
 {
-    char write_buf[2 * sizeof(uint16_t)] = { 0 };
+    char write_buf[RESP_MSG_READ_BUF_SIZE] = { 0 };
     ssize_t bytes_written = -1;
 
     uint16_t v = htons(msg->code);
@@ -234,16 +234,16 @@ ssize_t msg_recv_resp(int fd, ApiWireResponseMsg* out_msg)
 {
     ssize_t total_bytes_read = 0, bytes_read = -1, wait_res = -1;
     uint16_t msg_code = 0, msg_ret_val = 0;
-    char read_buf[2 * sizeof(uint16_t)] = { 0 };
+    char read_buf[RESP_MSG_READ_BUF_SIZE] = { 0 };
 
-    while (total_bytes_read < (ssize_t)(2 * sizeof(uint16_t)))
+    while (total_bytes_read < (ssize_t)(RESP_MSG_READ_BUF_SIZE))
     {
         if ((wait_res = _wait_until_bytes_avail_for_read(fd)) < 0)
         {
             return wait_res;
         }
 
-        bytes_read = read(fd, read_buf + total_bytes_read, (2 * sizeof(uint16_t)) - total_bytes_read);
+        bytes_read = read(fd, read_buf + total_bytes_read, RESP_MSG_READ_BUF_SIZE - total_bytes_read);
         if (bytes_read < 0)
         {
             if (errno == EINTR)

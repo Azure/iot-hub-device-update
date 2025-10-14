@@ -27,6 +27,9 @@ EXTERN_C_BEGIN
 // and calculate the header length and "manually" write those many bytes.
 #define MAX_BUF_LEN (PIPE_BUF - 3 * sizeof(uint16_t))
 
+// Keep in sync with ApiWireResponseMsg declaration below
+#define RESP_MSG_READ_BUF_SIZE (2 * sizeof(uint16_t))
+
 #define MSG_HDR_LEN (sizeof(ApiWireRequestMsg) - MAX_BUF_LEN * sizeof(char))
 #define MSGREV_AGAIN -37
 
