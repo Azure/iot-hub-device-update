@@ -75,7 +75,7 @@ Once the pause period timer has timed out and any queued reporting of results in
 
 ## The Cross-Proc wire protocol
 
-The SDK libaducsdk.a static lib will write requests to the ADUC request FIFO and read responsese from the response FIFO that it sets up.  See more details in [apiproto.h](../../src/agent/api/inc/aduc/apiproto.h)
+The SDK libaducsdk.a static lib will write requests to the ADUC request FIFO and read responses from the response FIFO that it sets up.  See more details in [apiproto.h](../../src/utils/apiproto_utils/inc/aduc/apiproto.h)
 
 ### Request Format
 The request format is: `<ver><type><len><str>`
