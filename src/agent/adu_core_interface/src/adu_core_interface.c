@@ -79,7 +79,6 @@ static void OnUpdateResultD2CMessageCompleted(void* context, ADUC_D2C_Message_St
  * @param[out] workflowData Workflow metadata.
  * @param argc Count of arguments in @p argv
  * @param argv Command line parameters.
- * @param vsmHandle The viewstate manager handle.
  * @return bool True on success.
  */
 bool ADUC_WorkflowData_Init(ADUC_WorkflowData* workflowData, int argc, char** argv)
