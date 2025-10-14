@@ -52,8 +52,6 @@ static const char g_aduPnPComponentServicePropertyName[] = "service";
  */
 ADUC_ClientHandle g_iotHubClientHandleForADUComponent;
 
-extern ViewStateManager g_vsm;
-
 /**
  * @brief This function is called when the message is no longer being process.
  *

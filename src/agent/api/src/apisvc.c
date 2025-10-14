@@ -34,7 +34,6 @@ static const unsigned OnErrorDelayMicrosecs = 150000;
 
 pthread_t g_api_svc_thread = { 0 };
 bool g_api_svc_thread_running = false;
-extern ViewStateManager g_vsm;
 
 typedef struct tagFifoThreadRetVal
 {

@@ -17,6 +17,8 @@ typedef struct tagViewStateManager
     pthread_mutex_t mut;
 } ViewStateManager;
 
+extern ViewStateManager g_vsm;
+
 int viewstatemgr_create(ViewStateManager* vsm);
 void viewstatemgr_destroy(ViewStateManager* vsm);
 

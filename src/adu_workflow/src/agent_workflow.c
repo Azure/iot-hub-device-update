@@ -38,8 +38,6 @@
 #include <pthread.h>
 #include <stdbool.h>
 
-extern ViewStateManager g_vsm;
-
 // fwd decl
 static void s_onPauseTimerStart();
 static void s_onPauseTimerStop();
