@@ -124,7 +124,7 @@ static bool ADUC_HashUtils_GetIndexStrongestValidHash(
 
         if (algVersion > curBestAlg)
         {
-            strongestIndex = i;
+            strongestIndex = (int)i;
             curBestAlg = algVersion;
         }
     }

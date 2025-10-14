@@ -112,10 +112,10 @@ set_cache_with_env_or_default (ADUC_VERSION_MAJOR "1" STRING
 set_cache_with_env_or_default (ADUC_VERSION_MINOR "2" STRING
                                "The minor part of the semantic version")
 
-set_cache_with_env_or_default (ADUC_VERSION_PATCH "0" STRING
+set_cache_with_env_or_default (ADUC_VERSION_PATCH "1" STRING
                                "The patch part of the semantic version")
 
-set_cache_with_env_or_default (ADUC_VERSION_PRERELEASE "" STRING
+set_cache_with_env_or_default (ADUC_VERSION_PRERELEASE "private-preview" STRING
                                "The pre-release part of the semantic version")
 
 set_cache_with_env_or_default (ADUC_VERSION_BUILD "" STRING
