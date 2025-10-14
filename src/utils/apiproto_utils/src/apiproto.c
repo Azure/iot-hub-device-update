@@ -1,3 +1,10 @@
+/**
+ * @file apiproto.c
+ * @brief The implementation for SDK API wire protocol.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
 
 #include "aduc/apiproto.h"
 #include "aduc/c_utils.h"

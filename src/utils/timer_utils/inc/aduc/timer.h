@@ -1,3 +1,11 @@
+/**
+ * @file timer.h
+ * @brief The header for timer utilities.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #ifndef ADUC_TIMER_H
 #define ADUC_TIMER_H
 #include "aduc/c_utils.h"

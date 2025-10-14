@@ -1,3 +1,11 @@
+/**
+ * @file apiproto.h
+ * @brief The header for
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #ifndef ADUC_APIPROTO_H_
 #define ADUC_APIPROTO_H_
 

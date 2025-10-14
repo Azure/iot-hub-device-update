@@ -1,3 +1,11 @@
+/**
+ * @file timer_ut.cpp
+ * @brief The unit tests for timer utilities.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 #include "aduc/defer.hpp"
 #include "aduc/logging.h"
 #include "aduc/timer.h"

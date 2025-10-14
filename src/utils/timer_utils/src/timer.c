@@ -1,3 +1,10 @@
+/**
+ * @file timer.c
+ * @brief The impl for timer utilities.
+ *
+ * @copyright Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
 
 #include "aduc/timer.h"
 #include "aduc/logging.h"
