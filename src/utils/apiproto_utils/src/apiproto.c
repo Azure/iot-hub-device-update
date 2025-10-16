@@ -8,7 +8,16 @@
 
 #include "aduc/apiproto.h"
 #include "aduc/c_utils.h"
-#include "aduc/logging.h"
+
+#ifndef ADUC_APIPROTO_NO_LOGGING
+#    include "aduc/logging.h"
+#else
+// Define no-op logging macros when logging is disabled
+#    define Log_Error(...)
+#    define Log_Warn(...)
+#    define Log_Info(...)
+#    define Log_Debug(...)
+#endif
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -133,7 +142,7 @@ ssize_t msg_recv_req(int fd, ApiWireRequestMsg* out_msg)
             return wait_res;
         }
 
-        br = read(fd, ((char*)header_buf) + bytes_read_total, (MSG_HDR_LEN) - bytes_read_total);
+        br = read(fd, ((char*)header_buf) + bytes_read_total, (MSG_HDR_LEN)-bytes_read_total);
         if (br < 0)
         {
             if (errno == EINTR)
@@ -258,7 +267,7 @@ ssize_t msg_recv_resp(int fd, ApiWireResponseMsg* out_msg)
     struct timeval timeout;
     FD_ZERO(&read_fds);
     FD_SET(fd, &read_fds);
-    timeout.tv_sec = 3;  // 3 second timeout
+    timeout.tv_sec = 3; // 3 second timeout
     timeout.tv_usec = 0;
 
     int rdy = select(fd + 1, &read_fds, NULL, NULL, &timeout);
