@@ -10,17 +10,26 @@ add_library (aduc::sdk ALIAS ${target_name})
 
 target_sources(${target_name} PRIVATE src/aducsdk.c)
 
+# Include apiproto source directly to avoid logging dependency
+# We compile it with ADUC_APIPROTO_NO_LOGGING to disable logging
+target_sources(${target_name} PRIVATE ${CMAKE_SOURCE_DIR}/src/utils/apiproto_utils/src/apiproto.c)
+
 target_include_directories (${target_name}
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>
         $<INSTALL_INTERFACE:include>
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/utils/apiproto_utils/inc
+        ${CMAKE_SOURCE_DIR}/src/utils/c_utils/inc
 )
 
-target_link_libraries(${target_name} PRIVATE aduc::apiproto_utils)
+# Link only c_utils, not apiproto_utils (we compile apiproto.c directly)
+target_link_libraries(${target_name} PRIVATE aduc::c_utils)
 
 target_compile_definitions (
     ${target_name} PRIVATE ADUC_API_DEFAULT_FIFO_PATH="${ADUC_API_DEFAULT_FIFO_PATH}"
-                           ADUC_DATA_FOLDER="${ADUC_DATA_FOLDER}")
+                           ADUC_DATA_FOLDER="${ADUC_DATA_FOLDER}"
+                           ADUC_APIPROTO_NO_LOGGING=1)
 
 include(GNUInstallDirs)
 
