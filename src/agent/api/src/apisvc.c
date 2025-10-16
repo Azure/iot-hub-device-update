@@ -198,6 +198,7 @@ static void* aduc_apisvc_thread_proc(void* arg)
     int rdfifo = -1;
     int writefifo = -1;
     int open_read_retries = 0, open_write_retries = 0;
+    ssize_t sent = 0;
 
     ADUC_Logging_Init(ADUC_LOG_DEBUG, "aducapi");
 
@@ -244,7 +245,7 @@ static void* aduc_apisvc_thread_proc(void* arg)
 
     while (g_api_svc_thread_running)
     {
-        ssize_t n;
+        ssize_t n = 0;
         ApiWireRequestMsg msg = { 0 };
 
         open_write_retries = 0;
@@ -359,6 +360,12 @@ static void* aduc_apisvc_thread_proc(void* arg)
             {
                 Log_Info("Sent %d bytes for GETSTATE response status: %d", sent, status);
             }
+        }
+
+        if (sent > 0)
+        {
+            fsync(writefifo); // attempt to flush to the pipe before closing
+            usleep(50000); // 50 msec delay to allow client to read before closing the fifo
         }
 
         // Close this side of the response FIFO after handling the request
