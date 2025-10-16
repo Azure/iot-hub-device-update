@@ -247,6 +247,7 @@ static void* aduc_apisvc_thread_proc(void* arg)
     {
         ssize_t n = 0;
         ApiWireRequestMsg msg = { 0 };
+        int resp_fifo_keepalive = -1;
 
         open_write_retries = 0;
 
@@ -295,6 +296,18 @@ static void* aduc_apisvc_thread_proc(void* arg)
         while (writefifo == -1 && g_api_svc_thread_running && open_write_retries < 30)
         {
             ++open_write_retries;
+
+            // First, open for read to prevent EOF on client side (keep-alive descriptor)
+            if (resp_fifo_keepalive == -1)
+            {
+                resp_fifo_keepalive = open(msg.data, O_RDONLY | O_NONBLOCK);
+                if (resp_fifo_keepalive < 0)
+                {
+                    Log_Debug("Failed to open resp fifo '%s' for keep-alive read: %d", msg.data, errno);
+                }
+            }
+
+            // Now open for write
             writefifo = open(msg.data, O_WRONLY | O_NONBLOCK);
             if (writefifo < 0)
             {
@@ -309,13 +322,24 @@ static void* aduc_apisvc_thread_proc(void* arg)
         }
         if (!g_api_svc_thread_running)
         {
+            // Cleanup before breaking
+            if (resp_fifo_keepalive != -1)
+            {
+                close(resp_fifo_keepalive);
+                resp_fifo_keepalive = -1;
+            }
             break;
         }
 
         if (writefifo == -1)
         {
             Log_Error("Failed to open response fifo for write after %d retries", open_write_retries);
-            // Don't set extended result code here - just skip this request and continue
+            // Cleanup and skip this request
+            if (resp_fifo_keepalive != -1)
+            {
+                close(resp_fifo_keepalive);
+                resp_fifo_keepalive = -1;
+            }
             usleep(OnErrorDelayMicrosecs);
             continue;
         }
@@ -330,6 +354,11 @@ static void* aduc_apisvc_thread_proc(void* arg)
             {
                 close(writefifo);
                 writefifo = -1;
+            }
+            if (resp_fifo_keepalive != -1)
+            {
+                close(resp_fifo_keepalive);
+                resp_fifo_keepalive = -1;
             }
             usleep(OnErrorDelayMicrosecs);
             continue;
@@ -373,6 +402,13 @@ static void* aduc_apisvc_thread_proc(void* arg)
         {
             close(writefifo);
             writefifo = -1;
+        }
+
+        // Close keep-alive descriptor last to prevent EOF
+        if (resp_fifo_keepalive != -1)
+        {
+            close(resp_fifo_keepalive);
+            resp_fifo_keepalive = -1;
         }
     }
 

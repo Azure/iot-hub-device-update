@@ -81,7 +81,7 @@ static ssize_t _wait_until_bytes_avail_for_read(int fd)
         FD_ZERO(&read_fds);
         FD_SET(fd, &read_fds);
         sel_timeout.tv_sec = 0;
-        sel_timeout.tv_usec = 150000; // 150 ms in microseconds
+        sel_timeout.tv_usec = 500000; // 500 ms in microseconds (increased for ARM systems)
 
         rdy = select(fd + 1, &read_fds, NULL, NULL, &sel_timeout);
         if (rdy > 0 && FD_ISSET(fd, &read_fds))
@@ -214,13 +214,28 @@ ssize_t msg_send_resp(int fd, const ApiWireResponseMsg* msg)
 {
     char write_buf[RESP_MSG_READ_BUF_SIZE] = { 0 };
     ssize_t bytes_written = -1;
+    int retries = 0;
+    const int MAX_WRITE_RETRIES = 10;
 
     uint16_t v = htons(msg->code);
     memcpy(write_buf, &v, sizeof(uint16_t));
     v = htons(msg->ret_val);
     memcpy(write_buf + sizeof(uint16_t), &v, sizeof(uint16_t));
 
+retry_write:
     bytes_written = write(fd, write_buf, sizeof(write_buf));
+    if (bytes_written < 0)
+    {
+        if ((errno == EAGAIN || errno == EWOULDBLOCK) && retries < MAX_WRITE_RETRIES)
+        {
+            retries++;
+            usleep(10000); // 10ms
+            goto retry_write;
+        }
+        Log_Error("msg_send_resp: write error: %d (%s)", errno, strerror(errno));
+        return -1;
+    }
+
     if (bytes_written != sizeof(write_buf))
     {
         Log_Error("msg_send_resp: wrote %zd, expected %zu", bytes_written, sizeof(write_buf));
@@ -232,22 +247,42 @@ ssize_t msg_send_resp(int fd, const ApiWireResponseMsg* msg)
 
 ssize_t msg_recv_resp(int fd, ApiWireResponseMsg* out_msg)
 {
-    ssize_t total_bytes_read = 0, bytes_read = -1, wait_res = -1;
+    ssize_t total_bytes_read = 0, bytes_read = -1;
     uint16_t msg_code = 0, msg_ret_val = 0;
     char read_buf[RESP_MSG_READ_BUF_SIZE] = { 0 };
+    int retries = 0;
+    const int MAX_RETRIES = 20; // ~3 seconds total with 150ms sleeps
 
-    while (total_bytes_read < (ssize_t)(RESP_MSG_READ_BUF_SIZE))
+    // Single select call with longer timeout for entire message
+    fd_set read_fds;
+    struct timeval timeout;
+    FD_ZERO(&read_fds);
+    FD_SET(fd, &read_fds);
+    timeout.tv_sec = 3;  // 3 second timeout
+    timeout.tv_usec = 0;
+
+    int rdy = select(fd + 1, &read_fds, NULL, NULL, &timeout);
+    if (rdy <= 0)
     {
-        if ((wait_res = _wait_until_bytes_avail_for_read(fd)) < 0)
+        if (rdy == 0)
         {
-            return wait_res;
+            Log_Warn("msg_recv_resp: timeout waiting for response");
+            return MSGREV_AGAIN;
         }
+        Log_Error("msg_recv_resp: select error: %d (%s)", errno, strerror(errno));
+        return -1;
+    }
 
+    // Now read without select in loop - data is available
+    while (total_bytes_read < (ssize_t)(RESP_MSG_READ_BUF_SIZE) && retries < MAX_RETRIES)
+    {
         bytes_read = read(fd, read_buf + total_bytes_read, RESP_MSG_READ_BUF_SIZE - total_bytes_read);
         if (bytes_read < 0)
         {
-            if (errno == EINTR)
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
             {
+                retries++;
+                usleep(150000); // 150ms
                 continue;
             }
             Log_Error("msg_recv_resp: read error: %d (%s)", errno, strerror(errno));
@@ -255,9 +290,23 @@ ssize_t msg_recv_resp(int fd, ApiWireResponseMsg* out_msg)
         }
         if (bytes_read == 0)
         {
-            break; // EOF
+            // EOF - writer closed before we got all data
+            if (total_bytes_read == 0)
+            {
+                // No data yet, retry a few times for slow ARM systems
+                retries++;
+                usleep(150000); // 150ms
+                continue;
+            }
+            break;
         }
         total_bytes_read += bytes_read;
+    }
+
+    if (total_bytes_read < RESP_MSG_READ_BUF_SIZE)
+    {
+        Log_Error("msg_recv_resp: incomplete message: %zd/%zu bytes", total_bytes_read, RESP_MSG_READ_BUF_SIZE);
+        return -1;
     }
 
     memcpy(&msg_code, read_buf, sizeof(uint16_t));
