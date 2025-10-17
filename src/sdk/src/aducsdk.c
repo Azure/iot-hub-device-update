@@ -6,6 +6,11 @@
  * Licensed under the MIT License.
  */
 
+// Define _GNU_SOURCE before any includes to get secure_getenv() on glibc systems
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <aduc/aducsdk.h>
 #include <aduc/apiproto.h>
 
@@ -110,6 +115,11 @@ ADUC_ServiceStatus GetAduServiceStatus(void)
     ApiWireRequestMsg req = { 0 };
     ApiWireResponseMsg resp = { 0 };
 
+    // Use secure_getenv() to prevent privilege escalation attacks when running with elevated privileges
+    // secure_getenv() returns NULL if the program is setuid/setgid, preventing environment tampering
+    const char* debug_env = secure_getenv("ADUC_SDK_DEBUG");
+    const bool debug_enabled = (debug_env != NULL && debug_env[0] != '\0');
+
     if (!verify_fifo_security(reqFifoPath))
     {
         return ADUC_ServiceStatus_ERROR_AgentServiceNotRunning;
@@ -169,23 +179,76 @@ ADUC_ServiceStatus GetAduServiceStatus(void)
     req = (ApiWireRequestMsg){ .ver = 1, .type = ApiRequestType_GETSTATE, .len = (uint16_t)respPathLen };
     memcpy(req.data, respFifoPath, respPathLen);
 
-    respFifo = open(respFifoPath, O_RDONLY | O_NONBLOCK); // open resp fifo first for read
+    // Open response FIFO for read first (before sending request)
+    // This must be done BEFORE sending the request to avoid deadlock and EOF issues
+    int open_retries = 0;
+    const int MAX_OPEN_RETRIES = 3;
+    while (respFifo == -1 && open_retries < MAX_OPEN_RETRIES)
+    {
+        respFifo = open(respFifoPath, O_RDONLY | O_NONBLOCK);
+        if (respFifo == -1)
+        {
+            if (debug_enabled)
+            {
+                fprintf(stderr, "[ADUC SDK] Failed to open response FIFO '%s' for read (attempt %d/%d): errno=%d (%s)\n",
+                        respFifoPath, open_retries + 1, MAX_OPEN_RETRIES, errno, strerror(errno));
+            }
+            open_retries++;
+            if (open_retries < MAX_OPEN_RETRIES)
+            {
+                usleep(50000); // 50ms retry delay
+            }
+        }
+    }
+
     if (respFifo == -1)
     {
+        // This is semi-catastrophic - we just created this FIFO and can't open it
+        if (debug_enabled)
+        {
+            fprintf(stderr, "[ADUC SDK] CRITICAL: Cannot open response FIFO after %d attempts\n", MAX_OPEN_RETRIES);
+        }
         result = ADUC_ServiceStatus_ERROR_AgentServiceSdkOpenRespFifoFailed;
         goto cleanup;
+    }
+
+    if (debug_enabled)
+    {
+        fprintf(stderr, "[ADUC SDK] Response FIFO opened successfully: fd=%d\n", respFifo);
+    }
+
+    // Send request to service
+    if (debug_enabled)
+    {
+        fprintf(stderr, "[ADUC SDK] Sending GETSTATE request to service...\n");
     }
 
     n = msg_send_req(reqFifo, &req);
     if (n != (ssize_t)(3 * sizeof(uint16_t) + respPathLen))
     {
+        if (debug_enabled)
+        {
+            fprintf(stderr, "[ADUC SDK] Failed to send request: sent %zd bytes, expected %zu\n",
+                    n, (size_t)(3 * sizeof(uint16_t) + respPathLen));
+        }
         result = ADUC_ServiceStatus_ERROR_AgentServiceBrokenPipe;
         goto cleanup;
     }
 
+    if (debug_enabled)
+    {
+        fprintf(stderr, "[ADUC SDK] Request sent successfully (%zd bytes), waiting for response...\n", n);
+    }
+
+    // Wait for response from service
     n = msg_recv_resp(respFifo, &resp);
     if (n != sizeof(resp))
     {
+        if (debug_enabled)
+        {
+            fprintf(stderr, "[ADUC SDK] Failed to receive response: got %zd bytes, expected %zu\n",
+                    n, sizeof(resp));
+        }
         if (n == -1)
         {
             result = ADUC_ServiceStatus_ERROR_RecvMsgFailed;
@@ -198,6 +261,12 @@ ADUC_ServiceStatus GetAduServiceStatus(void)
     }
 
     result = (ADUC_ServiceStatus)(resp.ret_val);
+
+    if (debug_enabled)
+    {
+        fprintf(stderr, "[ADUC SDK] Response received successfully: code=%u, ret_val=%u (%s)\n",
+                resp.code, resp.ret_val, ADUC_ServiceStatusToString(result));
+    }
 
 cleanup:
     if (reqFifo != -1)
