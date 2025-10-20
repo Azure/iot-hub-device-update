@@ -23,9 +23,6 @@ target_include_directories (${target_name}
         ${CMAKE_SOURCE_DIR}/src/utils/c_utils/inc
 )
 
-# Link only c_utils, not apiproto_utils (we compile apiproto.c directly)
-target_link_libraries(${target_name} PRIVATE aduc::c_utils)
-
 target_compile_definitions (
     ${target_name} PRIVATE ADUC_API_DEFAULT_FIFO_PATH="${ADUC_API_DEFAULT_FIFO_PATH}"
                            ADUC_DATA_FOLDER="${ADUC_DATA_FOLDER}"
