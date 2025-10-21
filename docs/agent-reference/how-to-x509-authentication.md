@@ -70,7 +70,8 @@ Configure the ADU agent to use X.509 authentication by updating your `du-config.
                 "connectionX509CaCertFilePath": "/etc/adu/certs/ca.pem"
             },
             "manufacturer": "Contoso",
-            "model": "Smart-Box"
+            "model": "Smart-Box",
+            "IdlePauseMilliseconds" = "300000" 
         }
     ]
 }
