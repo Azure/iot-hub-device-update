@@ -1,7 +1,7 @@
 /**
  * @file step_handler_interface.c
  * @brief Implementation of Step Handler Interface SDK
- * 
+ *
  * @copyright Copyright (C) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
@@ -20,7 +20,7 @@ ADUC_StepHandler* ADUC_StepHandler_Create(void)
     {
         return NULL;
     }
-    
+
     // Initialize all function pointers to NULL
     handler->Initialize = NULL;
     handler->Download = NULL;
@@ -32,7 +32,7 @@ ADUC_StepHandler* ADUC_StepHandler_Create(void)
     handler->IsInstalled = NULL;
     handler->Cleanup = NULL;
     handler->context = NULL;
-    
+
     return handler;
 }
 
@@ -48,7 +48,7 @@ void ADUC_StepHandler_Free(ADUC_StepHandler* handler)
         {
             handler->Cleanup(handler);
         }
-        
+
         free(handler->context);
         free(handler);
     }

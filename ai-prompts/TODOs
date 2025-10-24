@@ -1,0 +1,21 @@
+- Verify that the connectiondata is really needed for this case:
+
+3. Azure Identity Service (AIS)
+Use Case: IoT Edge scenarios, managed identity
+
+{
+  "connectionSource": {
+    "connectionType": "AIS",
+    "connectionData": "HostName=hub.azure-devices.net;DeviceId=device01;ModuleId=AzureDeviceUpdateAgent"
+  }
+}
+
+
+- Verify this against codes
+
+Logging Configuration
+{
+  "schemaVersion": "1.2",
+  "logLevel": "debug",
+  "agents": [...]
+}

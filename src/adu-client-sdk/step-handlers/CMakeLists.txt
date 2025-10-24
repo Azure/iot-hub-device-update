@@ -8,7 +8,7 @@ if(NOT DEFINED ADUC_CLIENT_SDK_BUILD)
             VERSION 1.0.0
             DESCRIPTION "Azure Device Update Step Handler SDK"
             LANGUAGES C CXX)
-    
+
     # Standalone build configuration
     set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -67,29 +67,29 @@ set(ADUC_STEP_HANDLER_SDK_HEADERS
 # Build shared library
 if(ADUC_STEP_HANDLER_SDK_BUILD_SHARED)
     add_library(adu-step-handler-sdk SHARED ${ADUC_STEP_HANDLER_SDK_SOURCES})
-    
-    target_include_directories(adu-step-handler-sdk 
-        PUBLIC 
+
+    target_include_directories(adu-step-handler-sdk
+        PUBLIC
             $<BUILD_INTERFACE:${ADUC_STEP_HANDLER_SDK_INCLUDE_DIR}>
             $<INSTALL_INTERFACE:include>
         PRIVATE
             ${ADUC_CORE_SDK_INCLUDE_DIRS}
     )
-    
-    target_link_libraries(adu-step-handler-sdk 
-        PUBLIC 
+
+    target_link_libraries(adu-step-handler-sdk
+        PUBLIC
             ${ADUC_CORE_SDK_LIBRARIES}
     )
-    
+
     target_compile_definitions(adu-step-handler-sdk PRIVATE ADUC_SDK_EXPORTS)
-    
+
     # Set library properties
     set_target_properties(adu-step-handler-sdk PROPERTIES
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
         PUBLIC_HEADER "${ADUC_STEP_HANDLER_SDK_HEADERS}"
     )
-    
+
     # Install targets
     install(TARGETS adu-step-handler-sdk
         EXPORT adu-step-handler-sdk-targets
@@ -103,25 +103,25 @@ endif()
 # Build static library
 if(ADUC_STEP_HANDLER_SDK_BUILD_STATIC)
     add_library(adu-step-handler-sdk-static STATIC ${ADUC_STEP_HANDLER_SDK_SOURCES})
-    
-    target_include_directories(adu-step-handler-sdk-static 
-        PUBLIC 
+
+    target_include_directories(adu-step-handler-sdk-static
+        PUBLIC
             $<BUILD_INTERFACE:${ADUC_STEP_HANDLER_SDK_INCLUDE_DIR}>
             $<INSTALL_INTERFACE:include>
         PRIVATE
             ${ADUC_CORE_SDK_INCLUDE_DIRS}
     )
-    
-    target_link_libraries(adu-step-handler-sdk-static 
-        PUBLIC 
+
+    target_link_libraries(adu-step-handler-sdk-static
+        PUBLIC
             ${ADUC_CORE_SDK_LIBRARIES}
     )
-    
+
     set_target_properties(adu-step-handler-sdk-static PROPERTIES
         OUTPUT_NAME adu-step-handler-sdk
         PUBLIC_HEADER "${ADUC_STEP_HANDLER_SDK_HEADERS}"
     )
-    
+
     # Install targets
     install(TARGETS adu-step-handler-sdk-static
         EXPORT adu-step-handler-sdk-static-targets

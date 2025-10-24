@@ -1,7 +1,7 @@
 /**
  * @file workflow_data_utils.c
  * @brief Utility functions for working with ADUC_WorkflowData
- * 
+ *
  * @copyright Copyright (C) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
@@ -20,7 +20,7 @@ ADUC_WorkflowData* ADUC_WorkflowData_Create(void)
     {
         return NULL;
     }
-    
+
     // Initialize all fields to default values
     workflowData->updateId = NULL;
     workflowData->workFolder = NULL;
@@ -32,7 +32,7 @@ ADUC_WorkflowData* ADUC_WorkflowData_Create(void)
     workflowData->logContext = NULL;
     workflowData->statusCallback = NULL;
     workflowData->statusContext = NULL;
-    
+
     return workflowData;
 }
 
@@ -47,7 +47,7 @@ void ADUC_WorkflowData_Free(ADUC_WorkflowData* workflowData)
         free(workflowData->workFolder);
         free(workflowData->updateManifest);
         free(workflowData->handlerProperties);
-        
+
         // Free file entities
         if (workflowData->files)
         {
@@ -60,7 +60,7 @@ void ADUC_WorkflowData_Free(ADUC_WorkflowData* workflowData)
             }
             free(workflowData->files);
         }
-        
+
         free(workflowData);
     }
 }
@@ -74,10 +74,10 @@ ADUC_Result_t ADUC_WorkflowData_SetUpdateId(ADUC_WorkflowData* workflowData, con
     {
         return ADUC_Result_Failure_InvalidArgument;
     }
-    
+
     free(workflowData->updateId);
     workflowData->updateId = strdup(updateId);
-    
+
     return workflowData->updateId ? ADUC_Result_Success : ADUC_Result_Failure_OutOfMemory;
 }
 
@@ -90,10 +90,10 @@ ADUC_Result_t ADUC_WorkflowData_SetWorkFolder(ADUC_WorkflowData* workflowData, c
     {
         return ADUC_Result_Failure_InvalidArgument;
     }
-    
+
     free(workflowData->workFolder);
     workflowData->workFolder = strdup(workFolder);
-    
+
     return workflowData->workFolder ? ADUC_Result_Success : ADUC_Result_Failure_OutOfMemory;
 }
 
@@ -106,24 +106,24 @@ ADUC_Result_t ADUC_WorkflowData_AddFile(ADUC_WorkflowData* workflowData, const A
     {
         return ADUC_Result_Failure_InvalidArgument;
     }
-    
+
     // Reallocate files array
     ADUC_FileEntity* newFiles = (ADUC_FileEntity*)realloc(
-        workflowData->files, 
+        workflowData->files,
         (workflowData->fileCount + 1) * sizeof(ADUC_FileEntity)
     );
-    
+
     if (!newFiles)
     {
         return ADUC_Result_Failure_OutOfMemory;
     }
-    
+
     workflowData->files = newFiles;
-    
+
     // Copy the file entity
     ADUC_FileEntity* targetFile = &workflowData->files[workflowData->fileCount];
     memset(targetFile, 0, sizeof(ADUC_FileEntity));
-    
+
     if (file->fileName)
     {
         targetFile->fileName = strdup(file->fileName);
@@ -132,7 +132,7 @@ ADUC_Result_t ADUC_WorkflowData_AddFile(ADUC_WorkflowData* workflowData, const A
             return ADUC_Result_Failure_OutOfMemory;
         }
     }
-    
+
     if (file->downloadUri)
     {
         targetFile->downloadUri = strdup(file->downloadUri);
@@ -142,7 +142,7 @@ ADUC_Result_t ADUC_WorkflowData_AddFile(ADUC_WorkflowData* workflowData, const A
             return ADUC_Result_Failure_OutOfMemory;
         }
     }
-    
+
     if (file->targetFilePath)
     {
         targetFile->targetFilePath = strdup(file->targetFilePath);
@@ -153,7 +153,7 @@ ADUC_Result_t ADUC_WorkflowData_AddFile(ADUC_WorkflowData* workflowData, const A
             return ADUC_Result_Failure_OutOfMemory;
         }
     }
-    
+
     if (file->fileHash)
     {
         targetFile->fileHash = strdup(file->fileHash);
@@ -165,9 +165,9 @@ ADUC_Result_t ADUC_WorkflowData_AddFile(ADUC_WorkflowData* workflowData, const A
             return ADUC_Result_Failure_OutOfMemory;
         }
     }
-    
+
     targetFile->sizeInBytes = file->sizeInBytes;
-    
+
     workflowData->fileCount++;
     return ADUC_Result_Success;
 }
@@ -189,6 +189,6 @@ const ADUC_FileEntity* ADUC_WorkflowData_GetFile(const ADUC_WorkflowData* workfl
     {
         return NULL;
     }
-    
+
     return &workflowData->files[index];
 }

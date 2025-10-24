@@ -16,6 +16,6 @@ void ADUC_Log(ADUC_LogLevel level, const char* message)
         case ADUC_LOG_INFO: levelStr = "INFO"; break;
         case ADUC_LOG_DEBUG: levelStr = "DEBUG"; break;
     }
-    
+
     printf("[%s] %s\n", levelStr, message ? message : "");
 }

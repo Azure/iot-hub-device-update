@@ -28,13 +28,13 @@ target_include_directories(script_handler_v3 PRIVATE
 )
 
 # Link with required libraries
-target_link_libraries(script_handler_v3 
+target_link_libraries(script_handler_v3
     ${ADUC_CORE_SDK_LIBRARIES}
     ${CURL_LIBRARIES}
 )
 
 # Compiler flags
-target_compile_options(script_handler_v3 PRIVATE 
+target_compile_options(script_handler_v3 PRIVATE
     ${ADUC_CORE_SDK_CFLAGS_OTHER}
     ${CURL_CFLAGS_OTHER}
 )
@@ -64,12 +64,12 @@ target_include_directories(test_script_handler_v3 PRIVATE
     ${CURL_INCLUDE_DIRS}
 )
 
-target_link_libraries(test_script_handler_v3 
+target_link_libraries(test_script_handler_v3
     ${ADUC_CORE_SDK_LIBRARIES}
     ${CURL_LIBRARIES}
 )
 
-target_compile_options(test_script_handler_v3 PRIVATE 
+target_compile_options(test_script_handler_v3 PRIVATE
     ${ADUC_CORE_SDK_CFLAGS_OTHER}
     ${CURL_CFLAGS_OTHER}
 )

@@ -1,7 +1,7 @@
 /**
  * @file content_handler.c
  * @brief Implementation of ADUC Content Handler SDK
- * 
+ *
  * @copyright Copyright (C) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
@@ -20,7 +20,7 @@ ADUC_ContentHandler* ADUC_ContentHandler_Create(void)
     {
         return NULL;
     }
-    
+
     // Initialize all function pointers to NULL
     handler->Download = NULL;
     handler->Backup = NULL;
@@ -31,7 +31,7 @@ ADUC_ContentHandler* ADUC_ContentHandler_Create(void)
     handler->IsInstalled = NULL;
     handler->Free = NULL;
     handler->context = NULL;
-    
+
     return handler;
 }
 

@@ -8,7 +8,7 @@ if(NOT DEFINED ADUC_CLIENT_SDK_BUILD)
             VERSION 1.0.0
             DESCRIPTION "Azure Device Update Core SDK"
             LANGUAGES C CXX)
-    
+
     # Standalone build configuration
     set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -61,22 +61,22 @@ set(ADUC_CORE_SDK_HEADERS
 # Build shared library
 if(ADUC_CORE_SDK_BUILD_SHARED)
     add_library(aduc-core-sdk SHARED ${ADUC_CORE_SDK_SOURCES})
-    
-    target_include_directories(aduc-core-sdk 
-        PUBLIC 
+
+    target_include_directories(aduc-core-sdk
+        PUBLIC
             $<BUILD_INTERFACE:${ADUC_CORE_SDK_INCLUDE_DIR}>
             $<INSTALL_INTERFACE:include>
     )
-    
+
     target_compile_definitions(aduc-core-sdk PRIVATE ADUC_SDK_EXPORTS)
-    
+
     # Set library properties
     set_target_properties(aduc-core-sdk PROPERTIES
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
         PUBLIC_HEADER "${ADUC_CORE_SDK_HEADERS}"
     )
-    
+
     # Install targets
     install(TARGETS aduc-core-sdk
         EXPORT aduc-core-sdk-targets
@@ -90,18 +90,18 @@ endif()
 # Build static library
 if(ADUC_CORE_SDK_BUILD_STATIC)
     add_library(aduc-core-sdk-static STATIC ${ADUC_CORE_SDK_SOURCES})
-    
-    target_include_directories(aduc-core-sdk-static 
-        PUBLIC 
+
+    target_include_directories(aduc-core-sdk-static
+        PUBLIC
             $<BUILD_INTERFACE:${ADUC_CORE_SDK_INCLUDE_DIR}>
             $<INSTALL_INTERFACE:include>
     )
-    
+
     set_target_properties(aduc-core-sdk-static PROPERTIES
         OUTPUT_NAME aduc-core-sdk
         PUBLIC_HEADER "${ADUC_CORE_SDK_HEADERS}"
     )
-    
+
     # Install targets
     install(TARGETS aduc-core-sdk-static
         EXPORT aduc-core-sdk-static-targets

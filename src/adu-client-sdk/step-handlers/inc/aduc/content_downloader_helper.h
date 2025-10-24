@@ -1,7 +1,7 @@
 /**
  * @file content_downloader_helper.h
  * @brief Helper functions for content download operations
- * 
+ *
  * @copyright Copyright (C) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */

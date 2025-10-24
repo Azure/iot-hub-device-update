@@ -1,9 +1,9 @@
 /**
  * @file exports.h
  * @brief Azure Device Update Core SDK Export Definitions
- * 
+ *
  * Platform-specific export/import macros for building shared libraries.
- * 
+ *
  * @copyright Copyright (C) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */

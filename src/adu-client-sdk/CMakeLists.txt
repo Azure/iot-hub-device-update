@@ -33,75 +33,75 @@ if(ADUC_BUILD_EXTENSION_SDK_SUITE)
 endif()
 
 # Check if any SDK component is enabled
-if(ADUC_BUILD_EXTENSION_SDK_SUITE OR 
-   ADUC_BUILD_STEP_HANDLER_SDK OR 
+if(ADUC_BUILD_EXTENSION_SDK_SUITE OR
+   ADUC_BUILD_STEP_HANDLER_SDK OR
    ADUC_BUILD_MANIFEST_HANDLER_SDK OR
    ADUC_BUILD_COMMUNICATION_SDK OR
    ADUC_BUILD_CONTENT_DOWNLOADER_SDK OR
    ADUC_BUILD_DOWNLOAD_HANDLER_SDK OR
    ADUC_BUILD_LOGGING_SDK OR
    ADUC_BUILD_CONFIGURATION_SDK)
-   
+
     message(STATUS "Building ADU Extension SDK components...")
-    
+
     # Add core SDK (always built when any SDK is enabled)
     add_subdirectory(core)
-    
+
     # Add individual SDK components as requested
     if(ADUC_BUILD_STEP_HANDLER_SDK OR ADUC_BUILD_EXTENSION_SDK_SUITE)
         message(STATUS "  - Step Handler SDK")
         add_subdirectory(step-handlers)
     endif()
-    
+
     if(ADUC_BUILD_MANIFEST_HANDLER_SDK OR ADUC_BUILD_EXTENSION_SDK_SUITE)
         message(STATUS "  - Update Manifest Handler SDK")
         add_subdirectory(update-manifest-handlers)
     endif()
-    
+
     if(ADUC_BUILD_COMMUNICATION_SDK OR ADUC_BUILD_EXTENSION_SDK_SUITE)
         message(STATUS "  - Communication Extension SDK")
         add_subdirectory(communication)
     endif()
-    
+
     if(ADUC_BUILD_CONTENT_DOWNLOADER_SDK OR ADUC_BUILD_EXTENSION_SDK_SUITE)
         message(STATUS "  - Content Downloader SDK")
         add_subdirectory(content-downloaders)
     endif()
-    
+
     if(ADUC_BUILD_DOWNLOAD_HANDLER_SDK OR ADUC_BUILD_EXTENSION_SDK_SUITE)
         message(STATUS "  - Download Handler SDK")
         add_subdirectory(download-handlers)
     endif()
-    
+
     if(ADUC_BUILD_LOGGING_SDK OR ADUC_BUILD_EXTENSION_SDK_SUITE)
         message(STATUS "  - Logging Extension SDK")
         add_subdirectory(logging)
     endif()
-    
+
     if(ADUC_BUILD_CONFIGURATION_SDK OR ADUC_BUILD_EXTENSION_SDK_SUITE)
         message(STATUS "  - Configuration Extension SDK")
         add_subdirectory(configuration)
     endif()
-    
+
     # Add development tools if requested
     if(ADUC_SDK_BUILD_TOOLS)
         message(STATUS "  - SDK Development Tools")
         add_subdirectory(tools)
     endif()
-    
+
     # Add SDK suite package if building the full suite
     if(ADUC_BUILD_EXTENSION_SDK_SUITE)
         message(STATUS "  - SDK Suite Package")
         add_subdirectory(suite)
     endif()
-    
+
 else()
     message(STATUS "ADU Extension SDK components disabled")
 endif()
 
 # Create top-level SDK documentation target
-if(ADUC_BUILD_EXTENSION_SDK_SUITE OR 
-   ADUC_BUILD_STEP_HANDLER_SDK OR 
+if(ADUC_BUILD_EXTENSION_SDK_SUITE OR
+   ADUC_BUILD_STEP_HANDLER_SDK OR
    ADUC_BUILD_MANIFEST_HANDLER_SDK OR
    ADUC_BUILD_COMMUNICATION_SDK OR
    ADUC_BUILD_CONTENT_DOWNLOADER_SDK OR
@@ -115,5 +115,5 @@ if(ADUC_BUILD_EXTENSION_SDK_SUITE OR
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Generate ADU Extension SDK documentation"
     )
-    
+
 endif()

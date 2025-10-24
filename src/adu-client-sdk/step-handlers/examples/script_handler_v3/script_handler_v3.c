@@ -1,14 +1,14 @@
 /**
  * @file script_handler_v3.c
  * @brief Script Handler v3 - Azure Device Update Step Handler SDK Example
- * 
+ *
  * This demonstrates a real, functioning content handler built using the SDK.
  * It's a simplified version of the existing script handler that shows:
  * - How to implement the ContentHandler interface
  * - How to use SDK result types and utilities
  * - How to process workflow data and files
  * - How to execute scripts for each update phase
- * 
+ *
  * @copyright Copyright (C) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
@@ -72,38 +72,38 @@ static ADUC_Result_t ExecuteScript(const ADUC_WorkflowData* workflowData, const 
     char logMessage[256];
     char command[512];
     int exitCode;
-    
+
     if (!workflowData || !action || !result)
     {
         ADUC_Result_SetFailure(result, ADUC_Result_Failure_InvalidArgument, "Invalid arguments");
         return ADUC_Result_Failure_InvalidArgument;
     }
-    
+
     const char* scriptPath = GetScriptFilePath(workflowData);
     if (!scriptPath)
     {
         ADUC_Result_SetFailure(result, ADUC_Result_Failure_FileNotFound, "Script file not found");
         return ADUC_Result_Failure_FileNotFound;
     }
-    
+
     // Log the action we're performing
     snprintf(logMessage, sizeof(logMessage), "Executing script action: %s", action);
     LogMessage(workflowData, ADUC_LOG_INFO, logMessage);
-    
+
     // Build the command
     snprintf(command, sizeof(command), "\"%s\" %s", scriptPath, action);
-    
+
     // Report status
     if (workflowData->statusCallback)
     {
         snprintf(logMessage, sizeof(logMessage), "Running %s action", action);
         workflowData->statusCallback(workflowData->statusContext, ADUC_UpdateState_InstallStarted, logMessage);
     }
-    
+
     // Execute the command
     LogMessage(workflowData, ADUC_LOG_DEBUG, command);
     exitCode = system(command);
-    
+
     if (exitCode == 0)
     {
         snprintf(logMessage, sizeof(logMessage), "Script action %s completed successfully", action);
@@ -126,17 +126,17 @@ static ADUC_Result_t ExecuteScript(const ADUC_WorkflowData* workflowData, const 
 static ADUC_Result_t ScriptHandler_Download(const ADUC_WorkflowData* workflowData, ADUC_ResultDetails* result)
 {
     LogMessage(workflowData, ADUC_LOG_INFO, "Starting Download phase");
-    
+
     // For script handler, download typically means:
     // 1. Download script files to work folder
     // 2. Make them executable
-    
+
     ADUC_Result_t downloadResult = DownloadScriptFiles(workflowData, result);
     if (downloadResult != ADUC_Result_Success)
     {
         return downloadResult;
     }
-    
+
     // Execute script download action if available
     return ExecuteScript(workflowData, "download", result);
 }
@@ -204,7 +204,7 @@ ADUC_Result_t ScriptHandlerV3_ProcessAction(const ADUC_WorkflowData* workflowDat
     {
         return ADUC_Result_Failure_InvalidArgument;
     }
-    
+
     if (strcmp(action, "download") == 0)
     {
         return ScriptHandler_Download(workflowData, result);

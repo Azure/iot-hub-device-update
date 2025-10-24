@@ -1,7 +1,7 @@
 /**
  * @file aduc_string_utils.c
  * @brief String utility functions for Azure Device Update Core SDK
- * 
+ *
  * @copyright Copyright (C) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
@@ -20,7 +20,7 @@ char* ADUC_String_Clone(const char* source)
     {
         return NULL;
     }
-    
+
     return strdup(source);
 }
 
@@ -33,17 +33,17 @@ int ADUC_String_Compare(const char* str1, const char* str2)
     {
         return 0;
     }
-    
+
     if (str1 == NULL)
     {
         return -1;
     }
-    
+
     if (str2 == NULL)
     {
         return 1;
     }
-    
+
     return strcmp(str1, str2);
 }
 
@@ -56,17 +56,17 @@ int ADUC_String_CompareIgnoreCase(const char* str1, const char* str2)
     {
         return 0;
     }
-    
+
     if (str1 == NULL)
     {
         return -1;
     }
-    
+
     if (str2 == NULL)
     {
         return 1;
     }
-    
+
     return strcasecmp(str1, str2);
 }
 

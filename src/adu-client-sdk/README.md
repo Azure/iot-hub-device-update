@@ -38,12 +38,12 @@ public:
         // Custom download logic
         return Result::Success();
     }
-    
+
     Result Install(const WorkflowData* workflow) override {
         // Custom install logic
         return Result::Success();
     }
-    
+
     // ... implement other required methods
 };
 

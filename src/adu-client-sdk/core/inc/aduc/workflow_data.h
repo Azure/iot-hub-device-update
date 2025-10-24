@@ -1,7 +1,7 @@
 /**
  * @file workflow_data.h
  * @brief Step Handler SDK Workflow Data Interface
- * 
+ *
  * @copyright Copyright (C) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
@@ -19,7 +19,7 @@ extern "C"
 
 /**
  * @brief Workflow data structure
- * 
+ *
  * Contains all the information needed by content handlers to process updates.
  */
 typedef struct tagADUC_WorkflowData
@@ -28,72 +28,72 @@ typedef struct tagADUC_WorkflowData
      * @brief Update identifier
      */
     ADUC_UpdateId updateId;
-    
+
     /**
      * @brief Workflow identifier
      */
     const char* workflowId;
-    
+
     /**
      * @brief Work folder path for this update
      */
     const char* workFolder;
-    
+
     /**
      * @brief Update manifest as JSON string
      */
     const char* updateManifest;
-    
+
     /**
      * @brief Handler properties as JSON string
      */
     const char* handlerProperties;
-    
+
     /**
      * @brief Array of files included in this update
      */
     ADUC_FileInfo* files;
-    
+
     /**
      * @brief Number of files in the files array
      */
     size_t fileCount;
-    
+
     /**
      * @brief Progress callback function
      */
     ADUC_ProgressCallback progressCallback;
-    
+
     /**
      * @brief Progress callback context
      */
     void* progressContext;
-    
+
     /**
      * @brief Status callback function
      */
     ADUC_StatusCallback statusCallback;
-    
+
     /**
      * @brief Status callback context
      */
     void* statusContext;
-    
+
     /**
      * @brief Log callback function
      */
     ADUC_LogCallback logCallback;
-    
+
     /**
      * @brief Log callback context
      */
     void* logContext;
-    
+
 } ADUC_WorkflowData;
 
 /**
  * @brief Get the work folder path from workflow data
- * 
+ *
  * @param workflowData The workflow data
  * @return const char* The work folder path, or NULL if not available
  */
@@ -101,7 +101,7 @@ ADUC_SDK_EXPORT const char* ADUC_WorkflowData_GetWorkFolder(const ADUC_WorkflowD
 
 /**
  * @brief Get the update manifest from workflow data
- * 
+ *
  * @param workflowData The workflow data
  * @return const char* The update manifest as JSON, or NULL if not available
  */
@@ -109,7 +109,7 @@ ADUC_SDK_EXPORT const char* ADUC_WorkflowData_GetUpdateManifest(const ADUC_Workf
 
 /**
  * @brief Get handler properties from workflow data
- * 
+ *
  * @param workflowData The workflow data
  * @return const char* The handler properties as JSON, or NULL if not available
  */
@@ -117,7 +117,7 @@ ADUC_SDK_EXPORT const char* ADUC_WorkflowData_GetHandlerProperties(const ADUC_Wo
 
 /**
  * @brief Get file count from workflow data
- * 
+ *
  * @param workflowData The workflow data
  * @return size_t Number of files in the update
  */
@@ -125,7 +125,7 @@ ADUC_SDK_EXPORT size_t ADUC_WorkflowData_GetFileCount(const ADUC_WorkflowData* w
 
 /**
  * @brief Get file info by index from workflow data
- * 
+ *
  * @param workflowData The workflow data
  * @param index File index (0-based)
  * @return const ADUC_FileInfo* File information, or NULL if index is invalid
@@ -134,7 +134,7 @@ ADUC_SDK_EXPORT const ADUC_FileInfo* ADUC_WorkflowData_GetFile(const ADUC_Workfl
 
 /**
  * @brief Report progress to the update agent
- * 
+ *
  * @param workflowData The workflow data
  * @param bytesTransferred Number of bytes transferred
  * @param totalBytes Total number of bytes to transfer
@@ -148,7 +148,7 @@ ADUC_SDK_EXPORT void ADUC_WorkflowData_ReportProgress(
 
 /**
  * @brief Report status to the update agent
- * 
+ *
  * @param workflowData The workflow data
  * @param state Current update state
  * @param message Status message (optional)
@@ -160,7 +160,7 @@ ADUC_SDK_EXPORT void ADUC_WorkflowData_ReportStatus(
 
 /**
  * @brief Log a message through the update agent
- * 
+ *
  * @param workflowData The workflow data
  * @param level Log level
  * @param message Log message

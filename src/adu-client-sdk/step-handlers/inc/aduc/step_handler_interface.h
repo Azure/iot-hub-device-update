@@ -1,7 +1,7 @@
 /**
  * @file step_handler_interface.h
  * @brief Step Handler Interface API for Azure Device Update
- * 
+ *
  * @copyright Copyright (C) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */

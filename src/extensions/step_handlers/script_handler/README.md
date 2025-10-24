@@ -1,14 +1,420 @@
-# Script Handler Extension
-
-Script Handler Extension (or, in short, **Script Handler**) handler can be used to prepare and execute a script on the IoT Device.
+# Script Handler Extension - Azure Device Update
 
 ## Overview
+
+Script Handler Extension (or, in short, **Script Handler**) handler can be used to prepare and execute a script on the IoT Device.
 
 For some update scenarios, you may want to run additional set of commands before, during, or after, installing a software update on your device. This can be achieved using an **Inline Step** with `microsoft/script:1` handler type.
 
 By default, Device Update Agent workflow invokes **Script Handler** to process `microsoft/script:/1` steps.
 
 > For more information about **Inline Step**, see [Update Manifest V4 Schema](../../../docs/agent-reference/update-manifest-v4-schema.md)
+
+## Architecture & Code Analysis
+
+### Class Structure
+
+```cpp
+class ScriptHandlerImpl : public ContentHandler
+{
+public:
+    static ContentHandler* CreateContentHandler();
+    
+    // Standard ContentHandler interface
+    ADUC_Result Download(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result Backup(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result Install(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result Apply(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result Restore(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result Cancel(const tagADUC_WorkflowData* workflowData) override;
+    ADUC_Result IsInstalled(const tagADUC_WorkflowData* workflowData) override;
+
+private:
+    static ADUC_Result PerformAction(const std::string& action, const tagADUC_WorkflowData* workflowData);
+    static ADUC_Result PrepareScriptArguments(...);
+};
+```
+
+### Dependencies Analysis
+
+#### Core Dependencies
+```cmake
+target_link_libraries (${target_name}
+    PRIVATE 
+        aduc::adu_core_export_helpers    # Core ADU utilities
+        aduc::c_utils                    # C utility functions
+        aduc::config_utils               # Configuration management
+        aduc::contract_utils             # Extension contract handling
+        aduc::exception_utils            # Exception handling utilities
+        aduc::extension_utils            # Extension management utilities
+        aduc::extension_manager          # Downloads and extension management
+        aduc::logging                    # Logging system
+        aduc::parser_utils               # JSON parsing utilities
+        aduc::process_utils              # Child process execution (ADUC_LaunchChildProcess)
+        aduc::string_utils               # String manipulation utilities
+        aduc::system_utils               # System utilities (directory creation, etc.)
+        aduc::workflow_data_utils        # Workflow data access functions
+        aduc::workflow_utils             # Workflow management utilities
+    PUBLIC 
+        libaducpal                       # Platform abstraction layer
+)
+```
+
+#### Key External Dependencies
+- **adu-shell**: Core process execution handler (`config->aduShellFilePath`)
+- **JSON parsing**: Uses `json_parse_file`, `json_object_get_number`, etc.
+- **System libraries**: File I/O, process management, string handling
+
+### Script Execution Flow
+
+#### 1. Argument Preparation (`PrepareScriptArguments`)
+```cpp
+// Parse component information from workflow data
+selectedComponentsJson = workflow_peek_selected_components(workflowHandle);
+
+// Process custom arguments from manifest
+arguments = workflow_peek_update_manifest_handler_properties_string(workflowHandle, "arguments");
+argumentList = ADUC::StringUtils::Split(fileArgs, ' ');
+
+// Replace component placeholders (--component-name-val, --component-id-val, etc.)
+// Add default workflow arguments (--work-folder, --result-file, --installed-criteria)
+```
+
+#### 2. Script Invocation (`ScriptHandler_PerformAction`)
+```cpp
+// Construct adu-shell command
+std::vector<std::string> aduShellArgs = { 
+    adushconst::config_folder_opt, config->configFolder,
+    adushconst::update_type_opt,   adushconst::update_type_microsoft_script,
+    adushconst::update_action_opt, adushconst::update_action_execute,
+    adushconst::target_data_opt,   scriptFilePath
+};
+
+// Add action argument based on API version
+if (apiVer == nullptr || strcmp(apiVer, "1.0") == 0) {
+    // Legacy format: --action-install, --action-apply, etc.
+    std::string backcompatAction = "--action-" + action;
+    aduShellArgs.emplace_back(adushconst::target_options_opt);
+    aduShellArgs.emplace_back(backcompatAction.c_str());
+} else if (strcmp(apiVer, "1.1") == 0) {
+    // New format: --action install, --action apply, etc.
+    aduShellArgs.emplace_back(adushconst::target_options_opt);
+    aduShellArgs.emplace_back("--action");
+    aduShellArgs.emplace_back(action.c_str());
+}
+
+// Execute via adu-shell
+exitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, aduShellArgs, scriptOutput);
+```
+
+#### 3. Result Processing
+```cpp
+// Parse result file written by script
+actionResultValue = json_parse_file(scriptResultFile.c_str());
+actionResultObject = json_object(actionResultValue);
+
+// Extract result data
+results.result.ResultCode = static_cast<int32_t>(json_object_get_number(actionResultObject, "resultCode"));
+results.result.ExtendedResultCode = static_cast<int32_t>(json_object_get_number(actionResultObject, "extendedResultCode"));
+
+// Handle special cases
+if (IsAducResultCodeFailure(results.result.ResultCode) && results.result.ExtendedResultCode == 0) {
+    results.result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_SCRIPT_RESULT_EXTENDEDRESULTCODE_ZERO;
+}
+```
+
+## Script Interface Specification
+
+### Command Line Interface
+
+#### API Version 1.0 (Legacy)
+```bash
+script.sh --action-download --work-folder "/path" --result-file "/path/result.json" [custom-args...]
+script.sh --action-install --work-folder "/path" --result-file "/path/result.json" [custom-args...]
+script.sh --action-apply --work-folder "/path" --result-file "/path/result.json" [custom-args...]
+```
+
+#### API Version 1.1 (Current)
+```bash
+script.sh --action download --work-folder "/path" --result-file "/path/result.json" [custom-args...]
+script.sh --action install --work-folder "/path" --result-file "/path/result.json" [custom-args...]
+script.sh --action apply --work-folder "/path" --result-file "/path/result.json" [custom-args...]
+```
+
+### Argument Flow Diagram
+
+```
+Update Manifest 
+    ↓
+handlerProperties.arguments: "--firmware-file motor.json --component-name-val --custom-arg value"
+    ↓
+Script Handler Processing:
+1. Parse and replace component placeholders
+2. Add workflow arguments
+    ↓
+Final Command:
+script.sh --firmware-file motor.json "left-motor" --custom-arg value \
+          --action install \
+          --work-folder "/var/lib/adu/downloads/workflow_123/" \
+          --result-file "/var/lib/adu/downloads/workflow_123/action_install_aduc_result.json" \
+          --installed-criteria "1.2"
+```
+
+### Result Communication Protocol
+
+#### Script Must Write JSON Result File
+```json
+{
+    "resultCode": 600,           // ADUC_Result_Install_Success
+    "extendedResultCode": 0,     // 0 for success, non-zero for specific error codes
+    "resultDetails": "Installation completed successfully"
+}
+```
+
+#### Result Code Mappings
+```cpp
+// Success codes
+ADUC_Result_Download_Success = 200
+ADUC_Result_Install_Success = 600  
+ADUC_Result_Apply_Success = 700
+ADUC_Result_IsInstalled_Installed = 900
+ADUC_Result_IsInstalled_NotInstalled = 901
+
+// Failure codes  
+ADUC_Result_Failure = 0
+// Custom extended codes for specific failure reasons
+```
+
+> **Note**: For a complete list of all result codes, see [`adu_core.h`](../../../adu_types/inc/aduc/types/adu_core.h)
+
+
+#### Special Result Handling
+```cpp
+// Agent behavior based on result codes
+switch (results.result.ResultCode) {
+    case ADUC_Result_Install_RequiredImmediateReboot:
+    case ADUC_Result_Apply_RequiredImmediateReboot:
+        workflow_request_immediate_reboot(workflowData->WorkflowHandle);
+        break;
+    case ADUC_Result_Install_RequiredReboot:
+    case ADUC_Result_Apply_RequiredReboot:
+        workflow_request_reboot(workflowData->WorkflowHandle);
+        break;
+    case ADUC_Result_Install_RequiredImmediateAgentRestart:
+    case ADUC_Result_Apply_RequiredImmediateAgentRestart:
+        workflow_request_immediate_agent_restart(workflowData->WorkflowHandle);
+        break;
+}
+```
+
+## Component Runtime Variables
+
+The Script Handler supports multi-component updates through runtime variable substitution:
+
+### Component Placeholder Arguments
+| Placeholder Argument | Runtime Value | Description |
+|---------------------|---------------|-------------|
+| `--component-id-val` | `"contoso-motor-serial-00000"` | Component identifier |
+| `--component-name-val` | `"left-motor"` | Component name |
+| `--component-manufacturer-val` | `"contoso"` | Component manufacturer |
+| `--component-model-val` | `"virtual-motor"` | Component model |
+| `--component-version-val` | `"1.2"` | Component version |
+| `--component-group-val` | `"motors"` | Component group |
+| `--component-prop-val <prop>` | `"/usr/local/path"` | Component property value |
+
+### Component Data Processing
+```cpp
+// Extract component information from workflow
+selectedComponentsJson = workflow_peek_selected_components(workflowHandle);
+selectedComponentsValue = json_parse_string(selectedComponentsJson);
+component = json_array_get_object(componentsArray, 0);
+
+// Replace placeholders in arguments
+if (argument == "--component-name-val") {
+    const char* val = json_object_get_string(component, "name");
+    args.emplace_back(val != nullptr ? val : "n/a");
+}
+```
+
+## Error Codes & Diagnostics
+
+### Script Handler Specific Error Codes
+```cpp
+#define ADUC_ERC_SCRIPT_HANDLER_DOWNLOAD_FAILURE_GET_PAYLOAD_FILE_ENTITY    0x80510001
+#define ADUC_ERC_SCRIPT_HANDLER_MISSING_SCRIPTFILENAME_PROPERTY             0x80510002
+#define ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE           0x80510003
+#define ADUC_ERC_SCRIPT_HANDLER_CHILD_PROCESS_FAILURE_EXITCODE(exitCode)    (0x80510000 | (exitCode & 0xFFFF))
+#define ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_SCRIPT_RESULT_EXTENDEDRESULTCODE_ZERO  0x80510004
+```
+
+> **Note**: For a complete list of all extended result codes, see [`result.h`](../../../../inc/aduc/result.h)
+
+### Debugging Support
+
+The Script Handler provides enhanced debugging capabilities to help troubleshoot script execution issues. This is particularly useful for:
+
+- **Script Invocation Inspection**: View the exact command-line arguments passed to your script
+- **Component Variable Resolution**: Verify that component placeholders are correctly replaced with runtime values
+- **Workflow Argument Analysis**: Inspect how the Script Handler constructs the final argument list
+- **Integration Troubleshooting**: Debug issues between the Script Handler and adu-shell execution
+
+```cpp
+// Enable extra debug logging
+export DU_AGENT_ENABLE_SCRIPT_HANDLER_EXTRA_DEBUG_LOGS=1
+
+// Debug output includes full adu-shell command
+if (IsExtraDebugLogEnabled()) {
+    Log_Debug("ADU-SHELL ARGS: %s", ss.str().c_str());
+}
+```
+
+## Gaps & Improvement Opportunities
+
+### 1. **Critical Gaps Between Code and Documentation**
+
+#### Documentation Gaps
+- **Missing API Version Documentation**: Code supports `apiVersion` 1.0 and 1.1 with different argument formats, but documentation doesn't clearly explain this
+- **Incomplete Error Code Reference**: Documentation doesn't list all possible error codes and their meanings
+- **Limited Component Handling Explanation**: Documentation shows examples but doesn't explain single-component limitation
+- **Missing adu-shell Interaction**: Documentation doesn't explain that scripts are executed via adu-shell, not directly
+
+#### Code-Documentation Mismatches
+- **Result File Naming**: Code uses `action_<action>_aduc_result.json`, documentation suggests `aduc_result.json`
+- **Component Processing**: Code only supports single component (logs error for multiple), documentation implies multi-component support
+- **Extended Result Code Handling**: Code automatically replaces `extendedResultCode: 0` with specific error, not documented
+
+### 2. **Security & Robustness Gaps**
+
+#### Security Issues
+```cpp
+// CRITICAL: No input validation on script execution
+exitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, aduShellArgs, scriptOutput);
+// Should validate script path, sanitize arguments, check permissions
+```
+
+#### Process Management
+```cpp
+// Missing: Script timeout handling, resource limits, process monitoring
+// Current: Basic exit code checking only
+if (exitCode != 0) {
+    // Simple failure handling - no distinction between timeout, crash, etc.
+}
+```
+
+### 3. **Error Handling Improvements**
+
+#### Current Limitations
+```cpp
+// Limited error context in result parsing
+if (actionResultValue == nullptr) {
+    result.ResultCode = ADUC_Result_Failure;
+    result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE;
+    // Missing: What specifically failed? File not found? Invalid JSON? Permission denied?
+}
+```
+
+#### Proposed Enhancements
+```cpp
+// Enhanced error reporting with context
+typedef struct {
+    ADUC_Result result;
+    char* errorContext;          // Detailed error description
+    char* scriptOutput;          // Last N lines of script output
+    int scriptExitSignal;        // Signal that terminated script (if applicable)
+    long executionTimeMs;        // Script execution duration
+} Enhanced_ScriptResult;
+```
+
+### 4. **Performance & Monitoring Gaps**
+
+#### Missing Metrics
+- Script execution duration
+- Memory usage during execution
+- Script output size limitations
+- Concurrent script execution handling
+
+#### Proposed Monitoring
+```cpp
+// Add performance tracking
+typedef struct {
+    long downloadDurationMs;
+    long installDurationMs;
+    long applyDurationMs;
+    size_t scriptOutputBytes;
+    size_t workfolderSizeBytes;
+} ScriptHandler_Metrics;
+```
+
+## Improvement Roadmap
+
+### Phase 1: Documentation & Validation (Immediate)
+- [ ] **Complete API Documentation**: Document both API versions 1.0 and 1.1
+- [ ] **Error Code Reference**: Complete reference of all error codes with descriptions
+- [ ] **Component Limitation Documentation**: Clearly state single-component limitation
+- [ ] **adu-shell Interaction Guide**: Explain script execution via adu-shell
+
+### Phase 2: Security & Robustness (Near-term)
+- [ ] **Input Validation**: Validate all script paths and arguments
+- [ ] **Script Timeout Support**: Configurable timeouts per action
+- [ ] **Resource Limits**: CPU, memory, and disk usage limits
+- [ ] **Enhanced Error Context**: Detailed error reporting with context
+
+### Phase 3: Advanced Features (Medium-term)
+- [ ] **Multi-Component Support**: Remove single-component limitation
+- [ ] **Parallel Execution**: Support concurrent script execution for multiple components
+- [ ] **Advanced Monitoring**: Performance metrics and health monitoring
+- [ ] **Script Validation**: Checksum verification and signature validation
+
+### Phase 4: Enterprise Features (Long-term)
+- [ ] **Containerized Execution**: Docker-based script isolation
+- [ ] **Advanced Security**: Sandboxing and privilege separation
+- [ ] **Telemetry Integration**: Azure Monitor integration for script execution metrics
+- [ ] **Intelligent Retry**: Smart retry logic with exponential backoff
+
+## Test Coverage Analysis
+
+### Current Test Gaps
+Based on the code analysis, the following areas need enhanced testing:
+
+#### Unit Tests Needed
+- [ ] Component placeholder replacement logic
+- [ ] API version handling (1.0 vs 1.1)
+- [ ] Result file parsing edge cases
+- [ ] Error code generation and mapping
+- [ ] Multi-component scenario error handling
+
+#### Integration Tests Needed
+- [ ] End-to-end workflow with real scripts
+- [ ] adu-shell integration testing
+- [ ] File permission and security testing
+- [ ] Resource limit and timeout testing
+- [ ] Error recovery and cleanup testing
+
+#### Performance Tests Needed
+- [ ] Large script execution performance
+- [ ] Memory usage during script execution
+- [ ] Concurrent script execution testing
+- [ ] Resource cleanup validation
+
+## Migration Considerations
+
+### From Script Handler v2 to v3
+- **API Compatibility**: Maintain support for both API versions
+- **Result Format**: Preserve existing result file format
+- **Component Interface**: Maintain component variable substitution
+- **Error Codes**: Preserve existing error code mappings
+
+### Breaking Changes to Avoid
+- Changes to command-line argument format
+- Modifications to result file structure
+- Component placeholder argument names
+- Core workflow integration points
+
+This analysis reveals that while the Script Handler v2 is functional, there are significant opportunities for improvement in security, error handling, documentation, and feature completeness. The proposed roadmap addresses these systematically while maintaining backward compatibility.
+
+### High-Level Update Flow
+
+![Script Handler Overview Diagram](./images/script-handler-overview.svg)
 
 **Script Handler** key concepts include:
 
@@ -18,10 +424,6 @@ By default, Device Update Agent workflow invokes **Script Handler** to process `
 - gather result (ADUC_Result data) of the script execution then report back to the Device Update Agent workflow.
 - communicate the Script's desired action (e.g., restart the Agent process, reboot the device) back to the Device Update Agent workflow.
 - gather error and informational logs generated from the script execution then report back to the Device Update Agent workflow.
-
-### High-Level Update Flow
-
-![Script Handler Overview Diagram](./images/script-handler-overview.svg)
 
 ## Understanding How Script Handler Communicates with the Script
 

@@ -1,7 +1,7 @@
 /**
  * @file workflow_data_utils.h
  * @brief Utility functions for working with ADUC_WorkflowData
- * 
+ *
  * @copyright Copyright (C) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */

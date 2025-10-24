@@ -1,9 +1,9 @@
 /**
  * @file types.h
  * @brief Azure Device Update Core SDK Common Types
- * 
+ *
  * Common data types and structures used across all ADU extensions.
- * 
+ *
  * @copyright Copyright (C) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
@@ -133,7 +133,7 @@ typedef struct tagADUC_DeviceInfo
 
 /**
  * @brief Progress callback function type.
- * 
+ *
  * @param context User-provided context pointer
  * @param bytesTransferred Number of bytes transferred
  * @param totalBytes Total number of bytes to transfer
@@ -147,7 +147,7 @@ typedef void (*ADUC_ProgressCallback)(
 
 /**
  * @brief Status callback function type.
- * 
+ *
  * @param context User-provided context pointer
  * @param state Current update state
  * @param message Status message (optional)
@@ -159,7 +159,7 @@ typedef void (*ADUC_StatusCallback)(
 
 /**
  * @brief Log callback function type.
- * 
+ *
  * @param context User-provided context pointer
  * @param level Log level
  * @param message Log message

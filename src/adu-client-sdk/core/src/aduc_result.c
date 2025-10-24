@@ -1,7 +1,7 @@
 /**
  * @file aduc_result.c
  * @brief Implementation of Azure Device Update Core SDK Result utilities
- * 
+ *
  * @copyright Copyright (C) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
@@ -28,12 +28,12 @@ void ADUC_Result_Init(
     memset(details, 0, sizeof(ADUC_ResultDetails));
     details->resultCode = resultCode;
     details->extendedResultCode = extendedResultCode;
-    
+
     if (resultDetails != NULL)
     {
         details->resultDetails = strdup(resultDetails);
     }
-    
+
     if (stepId != NULL)
     {
         details->stepId = strdup(stepId);
@@ -52,8 +52,8 @@ void ADUC_Result_SetSuccess(ADUC_ResultDetails* details, const char* description
  * @brief Create a failure result.
  */
 void ADUC_Result_SetFailure(
-    ADUC_ResultDetails* details, 
-    ADUC_Result_t resultCode, 
+    ADUC_ResultDetails* details,
+    ADUC_Result_t resultCode,
     const char* description)
 {
     ADUC_Result_Init(details, resultCode, 0, description, NULL);
@@ -139,7 +139,7 @@ void ADUC_Result_Copy(ADUC_ResultDetails* dest, const ADUC_ResultDetails* src)
 
     dest->resultCode = src->resultCode;
     dest->extendedResultCode = src->extendedResultCode;
-    
+
     if (src->resultDetails != NULL)
     {
         dest->resultDetails = strdup(src->resultDetails);
@@ -148,7 +148,7 @@ void ADUC_Result_Copy(ADUC_ResultDetails* dest, const ADUC_ResultDetails* src)
     {
         dest->resultDetails = NULL;
     }
-    
+
     if (src->stepId != NULL)
     {
         dest->stepId = strdup(src->stepId);
@@ -174,13 +174,13 @@ void ADUC_Result_Free(ADUC_ResultDetails* details)
         free((void*)details->resultDetails);
         details->resultDetails = NULL;
     }
-    
+
     if (details->stepId != NULL)
     {
         free((void*)details->stepId);
         details->stepId = NULL;
     }
-    
+
     details->resultCode = 0;
     details->extendedResultCode = 0;
 }
