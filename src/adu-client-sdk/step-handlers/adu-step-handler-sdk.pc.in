@@ -1,0 +1,11 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: adu-step-handler-sdk
+Description: @PROJECT_DESCRIPTION@
+Version: @PROJECT_VERSION@
+Requires: adu-core-sdk
+Libs: -L${libdir} -ladu-step-handler-sdk
+Cflags: -I${includedir}

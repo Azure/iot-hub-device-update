@@ -93,8 +93,9 @@ This documentation is organized to take you from concepts to implementation:
 
 1. **[Agent Workflow](agent-workflow.md)** - How updates are processed end-to-end
 2. **[Communication Model](communication-model.md)** - IoT Hub integration and protocols
-3. **[Security Model](security-model.md)** - Cryptographic validation and trust chains
-4. **[Extensibility Framework](extensibility-framework.md)** - Plugin architecture deep dive
+3. **[IoT Hub Communication Architecture](iothub-communication-architecture.md)** - Detailed SDK, protocols, and API reference
+4. **[Security Model](security-model.md)** - Cryptographic validation and trust chains
+5. **[Extensibility Framework](extensibility-framework.md)** - Plugin architecture deep dive
 
 ### 🔧 **Implementation**
 
@@ -131,6 +132,7 @@ This documentation is organized to take you from concepts to implementation:
 - **🔧 Device Integrator**: [Building the Agent](how-to-build-agent-code.md) → [Authentication Setup](authentication-setup.md)
 - **🏗️ Extension Developer**: [Extensibility Framework](extensibility-framework.md) → [Extension Development](extension-development.md)
 - **🛠️ DevOps Engineer**: [Running the Agent](how-to-run-agent.md) → [Monitoring & Diagnostics](monitoring-diagnostics.md)
+- **💻 Platform Developer**: [IoT Hub Communication Architecture](iothub-communication-architecture.md) → [API Reference](api-reference.md)
 
 ### By Scenario
 
@@ -139,6 +141,7 @@ This documentation is organized to take you from concepts to implementation:
 - **🔋 Battery-Powered Devices**: [Power Management](power-management.md) → [SDK Integration](sdk-integration.md)
 - **🌐 Edge Computing**: [IoT Edge Integration](iot-edge-integration.md)
 - **🔧 Custom Update Types**: [Extension Development](extension-development.md)
+- **📡 Communication Integration**: [IoT Hub Communication Architecture](iothub-communication-architecture.md) → [Configuration Guide](configuration-guide.md)
 
 ## Key Features by Version
 

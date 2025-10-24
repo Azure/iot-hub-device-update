@@ -1,0 +1,16 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Find required dependencies
+# find_dependency() calls find_package() and forwards the required/quiet flags
+
+if(NOT TARGET ADUC::aduc-core-sdk)
+    include("${CMAKE_CURRENT_LIST_DIR}/aduc-core-sdk-targets.cmake")
+endif()
+
+if(NOT TARGET ADUC::aduc-core-sdk-static)
+    include("${CMAKE_CURRENT_LIST_DIR}/aduc-core-sdk-static-targets.cmake")
+endif()
+
+check_required_components(aduc-core-sdk)

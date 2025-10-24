@@ -1,0 +1,17 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Find dependencies
+find_dependency(PkgConfig REQUIRED)
+
+# Include the target exports
+if(@ADUC_STEP_HANDLER_SDK_BUILD_SHARED@)
+    include("${CMAKE_CURRENT_LIST_DIR}/adu-step-handler-sdk-targets.cmake")
+endif()
+
+if(@ADUC_STEP_HANDLER_SDK_BUILD_STATIC@)
+    include("${CMAKE_CURRENT_LIST_DIR}/adu-step-handler-sdk-static-targets.cmake")
+endif()
+
+check_required_components(adu-step-handler-sdk)
