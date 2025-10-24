@@ -71,7 +71,7 @@ Configure the ADU agent to use X.509 authentication by updating your `du-config.
             },
             "manufacturer": "Contoso",
             "model": "Smart-Box",
-            "IdlePauseMilliseconds" : "300000" 
+            "IdlePauseMilliseconds": "300000" 
         }
     ]
 }
