@@ -70,7 +70,8 @@ Configure the ADU agent to use X.509 authentication by updating your `du-config.
                 "connectionX509CaCertFilePath": "/etc/adu/certs/ca.pem"
             },
             "manufacturer": "Contoso",
-            "model": "Smart-Box"
+            "model": "Smart-Box",
+            "IdlePauseMilliseconds": "300000" 
         }
     ]
 }
@@ -97,8 +98,8 @@ For IoT Edge scenarios where the ADU agent runs as a module, configure module id
                 "connectionX509PrivateKeyFilePath": "/etc/adu/certs/module-client.key",
                 "connectionX509CaCertFilePath": "/etc/adu/certs/ca.pem"
             },
-            "manufacturer": "Contoso",
-            "model": "Smart-Box"
+            "manufacturer": "device_info_manufacturer",
+            "model": "device_info_model"
         }
     ]
 }
