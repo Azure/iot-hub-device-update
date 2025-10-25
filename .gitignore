@@ -49,3 +49,6 @@ Testing/
 ## SDK Examples binaries
 simple_status_check
 status_monitor
+
+### dependency sources and builds directories
+depts_tmp/
