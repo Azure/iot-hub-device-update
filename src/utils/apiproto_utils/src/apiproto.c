@@ -31,6 +31,13 @@
 
 ssize_t msg_send_req(int fd, const ApiWireRequestMsg* msg)
 {
+    // Validate input parameters
+    if (msg == NULL)
+    {
+        Log_Error("msg_send_req: msg parameter is NULL");
+        return -1;
+    }
+
     STATIC_ASSERT(MSG_HDR_LEN == 3 * sizeof(uint16_t));
     char hdr_buf[MSG_HDR_LEN];
     uint16_t net_val = 0;
@@ -73,10 +80,14 @@ ssize_t msg_send_req(int fd, const ApiWireRequestMsg* msg)
             return -1;
         }
         Log_Debug("msg_send_req: wrote %zd bytes of data", nbw);
-        return sizeof(uint16_t) * 3 + nbw;
+        // Safe conversion: ensure nbw is non-negative before adding to sizeof result
+        if (nbw < 0) {
+            return -1;
+        }
+        return (ssize_t)(sizeof(uint16_t) * 3) + nbw;
     }
     Log_Debug("msg_send_req: wrote %zd bytes of data", bytes_written);
-    return sizeof(uint16_t) * 3;
+    return (ssize_t)(sizeof(uint16_t) * 3);
 }
 
 static ssize_t _wait_until_bytes_avail_for_read(int fd)
@@ -125,6 +136,13 @@ static ssize_t _wait_until_bytes_avail_for_read(int fd)
 
 ssize_t msg_recv_req(int fd, ApiWireRequestMsg* out_msg)
 {
+    // Validate input parameters
+    if (out_msg == NULL)
+    {
+        Log_Error("msg_recv_req: out_msg parameter is NULL");
+        return -1;
+    }
+
     ssize_t bytes_read;
     uint16_t header_buf[MSG_HDR_LEN] = { 0 };
     uint16_t msg_ver = 0, msg_type = 0, msg_len = 0;
@@ -142,7 +160,13 @@ ssize_t msg_recv_req(int fd, ApiWireRequestMsg* out_msg)
             return wait_res;
         }
 
-        br = read(fd, ((char*)header_buf) + bytes_read_total, (MSG_HDR_LEN)-bytes_read_total);
+        // Safe conversion: calculate remaining bytes and ensure it's positive
+        if (bytes_read_total >= (ssize_t)MSG_HDR_LEN) {
+            Log_Error("msg_recv_req: bytes_read_total exceeds MSG_HDR_LEN");
+            return -1;
+        }
+        size_t bytes_to_read = MSG_HDR_LEN - (size_t)bytes_read_total;
+        br = read(fd, ((char*)header_buf) + bytes_read_total, bytes_to_read);
         if (br < 0)
         {
             if (errno == EINTR)
@@ -221,6 +245,13 @@ ssize_t msg_recv_req(int fd, ApiWireRequestMsg* out_msg)
 
 ssize_t msg_send_resp(int fd, const ApiWireResponseMsg* msg)
 {
+    // Validate input parameters
+    if (msg == NULL)
+    {
+        Log_Error("msg_send_resp: msg parameter is NULL");
+        return -1;
+    }
+
     char write_buf[RESP_MSG_READ_BUF_SIZE] = { 0 };
     ssize_t bytes_written = -1;
     int retries = 0;
@@ -256,6 +287,13 @@ retry_write:
 
 ssize_t msg_recv_resp(int fd, ApiWireResponseMsg* out_msg)
 {
+    // Validate input parameters
+    if (out_msg == NULL)
+    {
+        Log_Error("msg_recv_resp: out_msg parameter is NULL");
+        return -1;
+    }
+
     ssize_t total_bytes_read = 0, bytes_read = -1;
     uint16_t msg_code = 0, msg_ret_val = 0;
     char read_buf[RESP_MSG_READ_BUF_SIZE] = { 0 };
@@ -285,7 +323,13 @@ ssize_t msg_recv_resp(int fd, ApiWireResponseMsg* out_msg)
     // Now read without select in loop - data is available
     while (total_bytes_read < (ssize_t)(RESP_MSG_READ_BUF_SIZE) && retries < MAX_RETRIES)
     {
-        bytes_read = read(fd, read_buf + total_bytes_read, RESP_MSG_READ_BUF_SIZE - total_bytes_read);
+        // Safe conversion: calculate remaining bytes and ensure it's positive
+        if (total_bytes_read >= (ssize_t)RESP_MSG_READ_BUF_SIZE) {
+            Log_Error("msg_recv_resp: total_bytes_read exceeds RESP_MSG_READ_BUF_SIZE");
+            return -1;
+        }
+        size_t bytes_to_read = RESP_MSG_READ_BUF_SIZE - (size_t)total_bytes_read;
+        bytes_read = read(fd, read_buf + total_bytes_read, bytes_to_read);
         if (bytes_read < 0)
         {
             if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)

@@ -110,7 +110,7 @@ ADUC_ServiceStatus GetAduServiceStatus(void)
     char randomSuffix[13] = { 0 }; // 12 chars + null terminator
     char respFifoPath[512] = { 0 };
     int reqFifo = -1, respFifo = -1;
-    size_t respPathLen = -1;
+    size_t respPathLen = 0; // Initialize to 0 instead of -1 for unsigned type
     ssize_t n = -1;
     ApiWireRequestMsg req = { 0 };
     ApiWireResponseMsg resp = { 0 };
