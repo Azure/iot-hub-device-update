@@ -7,6 +7,10 @@
 # dependencies for ADU Agent and Delivery Optimization.
 # Some dependencies are installed via packages and
 # others are installed from source code.
+#
+# Key build and development tools installed include:
+# - lcov: Code coverage analysis tool for unit testing
+# - clang-format: Code formatting tool for consistent style
 
 # Ensure that getopt starts from first option if ". <script.sh>" was used.
 OPTIND=1
@@ -37,7 +41,7 @@ install_packages_only=false
 # for building and installing from source.
 # Dynamically resolve to script_directory/../deps_tmp/
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEFAULT_WORKFOLDER="$SCRIPT_DIR/../deps_tmp"
+DEFAULT_WORKFOLDER="$(realpath "$SCRIPT_DIR/../deps_tmp")"
 work_folder=$DEFAULT_WORKFOLDER
 keep_source_code=true
 use_ssh=false
@@ -90,8 +94,8 @@ catch2_cc=""
 catch2_cxx=""
 
 # Dependencies packages
-aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'lsb-release' 'curl' 'wget' 'pkg-config' 'libxml2-dev')
-static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
+aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'lsb-release' 'curl' 'wget' 'pkg-config' 'libxml2-dev' 'lcov')
+static_analysis_packages=('clang' 'clang-tidy' 'cppcheck' 'clang-format')
 compiler_packages=('gcc' 'g++')
 
 # Distro and arch info
@@ -148,7 +152,12 @@ print_help() {
     echo ""
     echo "--use-ssh                 Use ssh URLs to clone instead of https URLs."
     echo ""
-    echo "--list-deps               List the states of the dependencies."
+    echo "--list-deps               Show comprehensive dependency analysis report:"
+    echo "                          • System package installation status"
+    echo "                          • Built-from-source dependency details"
+    echo "                          • Version/branch information"
+    echo "                          • Build directory status"
+    echo "                          • Installation plan based on current options"
     echo "-h, --help                Show this help message."
     echo ""
     echo "Examples:"
@@ -181,6 +190,8 @@ do_install_githooks() {
 do_install_aduc_packages() {
     echo "Installing dependency packages for ADU Agent..."
 
+    # ADUC packages include build tools, development libraries, and coverage tools:
+    #   - lcov: Code coverage analysis tool (works with gcov for test coverage reports)
     $SUDO apt-get install --yes "${aduc_packages[@]}" || return
 
     # The latest version of gcc available on Debian is gcc-6. We install that version if we are
@@ -216,6 +227,11 @@ do_install_aduc_packages() {
     $SUDO mkdir --parents /usr/local/inc /usr/local/pal/linux
 
     # Note that clang-tidy requires clang to be installed so that it can find clang headers.
+    # Static analysis packages include:
+    #   - clang: C language family frontend for LLVM
+    #   - clang-tidy: Clang-based C++ linter tool
+    #   - cppcheck: Tool for static analysis of C/C++ code
+    #   - clang-format: Tool for formatting C/C++ code (used for generated result.h)
     $SUDO apt-get install --yes "${static_analysis_packages[@]}" || return
 }
 
@@ -686,9 +702,10 @@ do_install_shellcheck() {
             return $ret_val
         fi
 
-        $SUDO rm "work_folder/$tarball_filename" || return 1
+        $SUDO rm "$work_folder/$tarball_filename" || return 1
 
-        ln -sf "${HOME}/.cabal/bin/shellcheck" "/tmp/deviceupdate-shellcheck" || return 1
+        # Copy the built binary to work folder
+        cp "${HOME}/.cabal/bin/shellcheck" "${work_folder}/deviceupdate-shellcheck" || return 1
     else
         echo "Installing shellcheck ${scver} from pre-built binaries..."
         local tar_filename="shellcheck-v${scver}.linux.${arch}.tar.xz"
@@ -702,7 +719,8 @@ do_install_shellcheck() {
 
         $SUDO rm "$work_folder/$tar_filename" || return 1
 
-        ln -sf "${work_folder}/shellcheck-v0.8.0/shellcheck" "/tmp/deviceupdate-shellcheck" || return 1
+        # Copy the extracted binary to standardized location
+        cp "${work_folder}/shellcheck-v${scver}/shellcheck" "${work_folder}/deviceupdate-shellcheck" || return 1
     fi
 }
 
@@ -759,20 +777,235 @@ determine_distro_and_arch() {
 }
 
 do_list_all_deps() {
+    echo "=================================================================="
+    echo "    ADU Dependencies Analysis Report"
+    echo "=================================================================="
+    echo ""
+
+    # Configuration Summary
+    echo "📋 Configuration:"
+    echo "  Work Folder: $work_folder"
+    echo "  Keep Source Code: $keep_source_code"
+    echo "  Install Packages: $install_packages"
+    echo "  Install Packages Only: $install_packages_only"
+    echo "  Use SSH: $use_ssh"
+    echo ""
+
+    # System Packages
+    echo "📦 System Packages:"
+    echo "------------------------------------------------------------------"
     declare -a deps_set=()
     deps_set+=("${aduc_packages[@]}")
     deps_set+=("${compiler_packages[@]}")
     deps_set+=("${static_analysis_packages[@]}")
-    echo "Listing the state of dependencies:"
-    dpkg-query -W -f='${binary:Package} ${Version} (${Architecture})\n' "${deps_set[@]}"
-    ret_val=$?
-    if [ $ret_val -eq 1 ]; then
-        warn "dpkg-query failed"
-        return 0
-    elif [ $ret_val -ge 2 ]; then
-        error "dpkg-query failed with status $ret_val"
-        return $ret_val
+
+    echo "ADU Core Packages:"
+    for pkg in "${aduc_packages[@]}"; do
+        if dpkg-query -W "$pkg" > /dev/null 2>&1; then
+            version=$(dpkg-query -W -f='${Version}' "$pkg" 2> /dev/null)
+            echo "  ✅ $pkg ($version)"
+        else
+            echo "  ❌ $pkg (not installed)"
+        fi
+    done
+
+    echo ""
+    echo "Compiler Packages:"
+    for pkg in "${compiler_packages[@]}"; do
+        if dpkg-query -W "$pkg" > /dev/null 2>&1; then
+            version=$(dpkg-query -W -f='${Version}' "$pkg" 2> /dev/null)
+            echo "  ✅ $pkg ($version)"
+        else
+            echo "  ❌ $pkg (not installed)"
+        fi
+    done
+
+    echo ""
+    echo "Static Analysis Packages:"
+    for pkg in "${static_analysis_packages[@]}"; do
+        if dpkg-query -W "$pkg" > /dev/null 2>&1; then
+            version=$(dpkg-query -W -f='${Version}' "$pkg" 2> /dev/null)
+            echo "  ✅ $pkg ($version)"
+        else
+            echo "  ❌ $pkg (not installed)"
+        fi
+    done
+    echo ""
+
+    # Built-from-Source Dependencies
+    echo "🔧 Built-from-Source Dependencies:"
+    echo "------------------------------------------------------------------"
+
+    # Azure IoT SDK
+    echo "Azure IoT C SDK:"
+    echo "  📋 Branch/Tag: $azure_sdk_ref"
+    echo "  📂 Build Dir: $work_folder/azure-iot-sdk-c"
+    echo "  🌐 Repository: https://github.com/Azure/azure-iot-sdk-c.git"
+    if [[ -d "$work_folder/azure-iot-sdk-c" ]]; then
+        echo "  ✅ Source code present"
+        if [[ -f "$work_folder/azure-iot-sdk-c/cmake/CMakeCache.txt" ]]; then
+            echo "  ✅ Build configured"
+        else
+            echo "  ⚠️  Build not configured"
+        fi
+    else
+        echo "  ❌ Source code not present"
     fi
+    echo ""
+
+    # Catch2
+    echo "Catch2 Testing Framework:"
+    echo "  📋 Branch/Tag: $catch2_ref"
+    echo "  📂 Build Dir: $work_folder/catch2"
+    echo "  🌐 Repository: https://github.com/catchorg/Catch2.git"
+    if [[ -d "$work_folder/catch2" ]]; then
+        echo "  ✅ Source code present"
+        if [[ -f "$work_folder/catch2/cmake/CMakeCache.txt" ]]; then
+            echo "  ✅ Build configured"
+        else
+            echo "  ⚠️  Build not configured"
+        fi
+    else
+        echo "  ❌ Source code not present"
+    fi
+    echo ""
+
+    # SWUpdate (Ubuntu specific)
+    echo "SWUpdate (Ubuntu 18.04/20.04 only):"
+    echo "  📋 Branch/Tag: $swupdate_ref"
+    echo "  📂 Build Dir: $work_folder/swupdate"
+    echo "  🌐 Repository: https://github.com/sbabic/swupdate.git"
+    if lsb_release -a 2> /dev/null | grep -q -e 'Ubuntu 18.04' -e 'Ubuntu 20.04'; then
+        echo "  ✅ OS supported for SWUpdate"
+        if [[ -d "$work_folder/swupdate" ]]; then
+            echo "  ✅ Source code present"
+            if [[ -f "$work_folder/swupdate/swupdate" ]]; then
+                echo "  ✅ Built binary present"
+            else
+                echo "  ⚠️  Binary not built"
+            fi
+        else
+            echo "  ❌ Source code not present"
+        fi
+    else
+        echo "  ⏭️  OS not supported (skipped)"
+    fi
+    echo ""
+
+    # Delivery Optimization
+    echo "Delivery Optimization (DO):"
+    echo "  📋 Branch/Tag: $do_ref"
+    echo "  📂 Build Dir: $work_folder/do"
+    echo "  🌐 Repository: https://github.com/Microsoft/do-client.git"
+    if [[ -d "$work_folder/do" ]]; then
+        echo "  ✅ Source code present"
+        if [[ -f "$work_folder/do/cmake/CMakeCache.txt" ]]; then
+            echo "  ✅ Build configured"
+        else
+            echo "  ⚠️  Build not configured"
+        fi
+    else
+        echo "  ❌ Source code not present"
+    fi
+    echo ""
+
+    # Azure Storage SDK
+    echo "Azure Storage SDK for C++:"
+    echo "  📋 Branch: $azure_storage_sdk_branch_ref"
+    echo "  📋 Tag: $azure_storage_sdk_tag_ref"
+    echo "  📂 Build Dir: $work_folder/azure_storage_sdk_dir"
+    echo "  🌐 Repository: https://github.com/Azure/azure-sdk-for-cpp.git"
+    if [[ -d "$work_folder/azure_storage_sdk_dir" ]]; then
+        echo "  ✅ Source code present"
+        if [[ -f "$work_folder/azure_storage_sdk_dir/cmake/CMakeCache.txt" ]]; then
+            echo "  ✅ Build configured"
+        else
+            echo "  ⚠️  Build not configured"
+        fi
+    else
+        echo "  ❌ Source code not present"
+    fi
+    echo ""
+
+    # CMake
+    echo "CMake (if building from source):"
+    echo "  📋 Version: $install_cmake_version"
+    echo "  📂 Build Dir: $work_folder/cmake-$install_cmake_version"
+    echo "  🌐 Source: https://cmake.org/files/"
+    current_cmake_version=$(cmake --version 2> /dev/null | head -n1 | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "not installed")
+    echo "  📋 Current Installed: $current_cmake_version"
+    if [[ -d "$work_folder/cmake-$install_cmake_version" ]]; then
+        echo "  ✅ Source code present"
+        if [[ -f "$work_folder/cmake-$install_cmake_version/bin/cmake" ]]; then
+            echo "  ✅ Built binary present"
+        else
+            echo "  ⚠️  Binary not built"
+        fi
+    else
+        echo "  ❌ Source code not present"
+    fi
+    echo ""
+
+    # Shellcheck
+    echo "Shellcheck:"
+    echo "  📋 Version: $supported_shellcheck_version"
+    echo "  📂 Binary Path: $work_folder/deviceupdate-shellcheck"
+    if [[ -f "$work_folder/deviceupdate-shellcheck" ]]; then
+        installed_version=$("$work_folder/deviceupdate-shellcheck" --version 2> /dev/null | grep -i -e '^version:' | awk '{ print $2 }' || echo "unknown")
+        echo "  ✅ Binary present (v$installed_version)"
+    else
+        echo "  ❌ Binary not present"
+    fi
+    echo ""
+
+    # Installation Plan
+    echo "🚀 Installation Plan Based on Current Options:"
+    echo "------------------------------------------------------------------"
+    if [[ $install_all_deps == "true" ]]; then
+        echo "  • Install ALL dependencies (system packages + build from source)"
+    elif [[ $install_aduc_deps == "true" ]]; then
+        echo "  • Install ADU Core dependencies only"
+    elif [[ $install_packages_only == "true" ]]; then
+        echo "  • Install system packages only (no building from source)"
+    elif [[ $install_packages == "true" ]]; then
+        echo "  • Install system packages + build from source"
+    else
+        echo "  • No installation options specified"
+    fi
+
+    if [[ $install_cmake == "true" ]]; then
+        echo "  • Build CMake from source"
+    fi
+
+    if [[ $install_catch2 == "true" ]]; then
+        echo "  • Build Catch2 testing framework"
+    fi
+
+    if [[ $install_swupdate == "true" ]]; then
+        echo "  • Build SWUpdate"
+    fi
+
+    if [[ $install_do == "true" ]]; then
+        echo "  • Build Delivery Optimization"
+    fi
+
+    if [[ $install_azure_storage_sdk == "true" ]]; then
+        echo "  • Build Azure Storage SDK"
+    fi
+
+    if [[ $install_shellcheck == "true" ]]; then
+        echo "  • Install Shellcheck"
+    fi
+
+    echo ""
+    echo "=================================================================="
+    echo "For troubleshooting build failures, check:"
+    echo "  • Build logs in respective build directories"
+    echo "  • CMakeCache.txt files for configuration issues"
+    echo "  • Ensure all system packages are installed"
+    echo "  • Verify network connectivity for git clones"
+    echo "=================================================================="
+
     return 0
 }
 
@@ -888,9 +1121,10 @@ while [[ $1 != "" ]]; do
     shift
 done
 
-# setup workfolder if different from default
+# Setup workfolder - ensure it exists and has proper permissions
+mkdir -pv "$work_folder" || $ret
 if [[ $work_folder != "$DEFAULT_WORKFOLDER" ]]; then
-    mkdir -pv "$work_folder" || $ret
+    # Only change ownership/permissions for custom work folders
     $SUDO chown "$(id -un)":"$(id -gn)" "$work_folder" || $ret
     chmod ug+rwx,o= "$work_folder" || $ret
 fi
