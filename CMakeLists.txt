@@ -571,6 +571,26 @@ if (NOT GENERATE_ERROR_CODE_DEFS_RESULT EQUAL "0")
     )
 endif ()
 
+# Format the generated result.h file with clang-format
+find_program (CLANG_FORMAT_EXECUTABLE NAMES clang-format)
+if (CLANG_FORMAT_EXECUTABLE)
+    execute_process (
+        COMMAND ${CLANG_FORMAT_EXECUTABLE} -style=file -i "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        RESULT_VARIABLE FORMAT_ERROR_CODE_DEFS_RESULT)
+
+    if (NOT FORMAT_ERROR_CODE_DEFS_RESULT EQUAL "0")
+        message (
+            WARNING
+                "Failed to format generated error code definition file using clang-format. File generation succeeded but formatting failed."
+        )
+    else ()
+        message (STATUS "Successfully formatted generated result.h file with clang-format")
+    endif ()
+else ()
+    message (STATUS "clang-format not found. Generated result.h file will not be formatted automatically.")
+endif ()
+
 if (ADUC_BUILD_UNIT_TESTS)
     # Need to be in the root directory to place CTestTestfile.cmake in root
     # of output folder.
