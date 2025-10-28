@@ -25,6 +25,15 @@ bullet() { echo -e "\e[1;34m*\e[0m $*"; }
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
 root_dir=$script_dir/..
 
+# Load cached environment from install-deps.sh if available
+ENV_CACHE_FILE="$root_dir/.adu-dev/build.env"
+if [[ -f $ENV_CACHE_FILE ]]; then
+    echo "Loading cached build environment from $ENV_CACHE_FILE..."
+    # shellcheck disable=SC1090
+    source "$ENV_CACHE_FILE"
+    echo "Cached environment loaded successfully."
+fi
+
 build_clean=false
 build_documentation=false
 build_packages=false
@@ -44,15 +53,19 @@ declare -a static_analysis_tools=()
 log_lib="zlog"
 install_prefix=/usr/local
 install_adu=false
-work_folder=/tmp
-cmake_dir_path="${work_folder}/deviceupdate-cmake"
+# Use cached work folder if available, otherwise default to /tmp
+work_folder=${ADUC_WORK_FOLDER:-/tmp}
+# Use cached cmake path if available, otherwise construct default
+cmake_dir_path="${ADUC_CMAKE_DIR_PATH:-${work_folder}/deviceupdate-cmake}"
 rootkeypkg_curl=false
+enable_delta=false
 
 #
 # Export the compiler settings in case VM is wonky
+# Use cached compiler settings if available
 #
-export CC=/usr/bin/gcc
-export CXX=/usr/bin/g++
+export CC=${CC:-/usr/bin/gcc}
+export CXX=${CXX:-/usr/bin/g++}
 
 print_help() {
     cat << EOS
@@ -105,7 +118,15 @@ Usage: build.sh [options...]
 
     --rootkeypkg-curl                     Download the RootKey Package with curl instead of delivery optimization agent.
 
+    --enable-delta                        Build with delta update support using iot-hub-device-update-delta.
+
     -h, --help                            Show this help message.
+
+Environment Integration:
+    This script automatically loads cached environment variables from .adu-dev/build.env
+    if available (created by install-deps.sh). This ensures consistent compiler paths,
+    work directories, and SDK versions between dependency installation and building.
+    Command-line options override cached values.
 
 EOS
 }
@@ -348,6 +369,9 @@ while [[ $1 != "" ]]; do
     --rootkeypkg-curl)
         rootkeypkg_curl="true"
         ;;
+    --enable-delta)
+        enable_delta="true"
+        ;;
     -h | --help)
         print_help
         $ret 0
@@ -379,7 +403,8 @@ fi
 
 runtime_dir=${output_directory}/bin
 library_dir=${output_directory}/lib
-cmake_bin="${cmake_dir_path}/bin/cmake"
+# Use cached cmake binary if available, otherwise construct default path
+cmake_bin="${CMAKE_BIN:-${cmake_dir_path}/bin/cmake}"
 shellcheck_bin="${work_folder}/deviceupdate-shellcheck"
 
 if [[ $srvc_e2e_agent_build == "true" ]]; then
@@ -431,6 +456,7 @@ CMAKE_OPTIONS=(
     "-DADUC_TRACE_TARGET_DEPS=$trace_target_deps"
     "-DADUC_USE_TEST_ROOT_KEYS=$use_test_root_keys"
     "-DADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL=$rootkeypkg_curl"
+    "-DADUC_BUILD_WITH_DELTA=$enable_delta"
     "-DCMAKE_BUILD_TYPE:STRING=$build_type"
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
