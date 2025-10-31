@@ -26,6 +26,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #define MAX_SEL_ATTEMPTS 5
 
@@ -92,6 +95,13 @@ ssize_t msg_send_req(int fd, const ApiWireRequestMsg* msg)
 
 static ssize_t _wait_until_bytes_avail_for_read(int fd)
 {
+    // Validate file descriptor
+    if (fd < 0)
+    {
+        Log_Error("_wait_until_bytes_avail_for_read: invalid file descriptor %d", fd);
+        return -1;
+    }
+
     fd_set read_fds;
     struct timeval sel_timeout;
     int rdy;
@@ -140,6 +150,13 @@ ssize_t msg_recv_req(int fd, ApiWireRequestMsg* out_msg)
     if (out_msg == NULL)
     {
         Log_Error("msg_recv_req: out_msg parameter is NULL");
+        return -1;
+    }
+
+    // Validate file descriptor
+    if (fd < 0)
+    {
+        Log_Error("msg_recv_req: invalid file descriptor %d", fd);
         return -1;
     }
 
@@ -291,6 +308,13 @@ ssize_t msg_recv_resp(int fd, ApiWireResponseMsg* out_msg)
     if (out_msg == NULL)
     {
         Log_Error("msg_recv_resp: out_msg parameter is NULL");
+        return -1;
+    }
+
+    // Validate file descriptor
+    if (fd < 0)
+    {
+        Log_Error("msg_recv_resp: invalid file descriptor %d", fd);
         return -1;
     }
 
