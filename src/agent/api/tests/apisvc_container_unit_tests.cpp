@@ -34,8 +34,8 @@
 
 using Catch::Matchers::Equals;
 
-// External global view state manager
-extern ViewStateManager g_vsm;
+// Define global view state manager (not extern)
+ViewStateManager g_vsm = { 0 };
 
 namespace
 {
