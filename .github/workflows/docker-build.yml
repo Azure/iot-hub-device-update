@@ -34,7 +34,69 @@ jobs:
       - name: Run tests
         run: |
           cd out
-          ctest
+
+          # Set container debugging environment
+          export CONTAINER=true
+          export DEBIAN_FRONTEND=noninteractive
+
+          # Show environment info for debugging
+          echo "=== Container Test Environment ==="
+          echo "Container: $CONTAINER"
+          echo "OS: $(cat /etc/os-release | grep PRETTY_NAME || echo 'Unknown')"
+          echo "Architecture: $(uname -m)"
+          echo "Available memory: $(free -h | grep Mem || echo 'Unknown')"
+          echo "Disk space: $(df -h / | tail -1 || echo 'Unknown')"
+          echo "Tmp filesystem: $(df -h /tmp | tail -1 || echo 'Unknown')"
+          echo "User: $(whoami) (UID: $(id -u), GID: $(id -g))"
+          echo "=================================="
+
+          # Run container-specific apisvc tests first
+          if [ -f "../scripts/run-container-tests.sh" ]; then
+            echo "=== Running container-specific apisvc tests ==="
+            ../scripts/run-container-tests.sh --timeout 120 --build-dir "$(pwd)" || {
+              container_test_result=$?
+              echo "Container-specific apisvc tests failed with exit code: $container_test_result"
+              echo "This indicates container environment issues with FIFO operations"
+
+              # Run fallback debugging
+              echo "=== Fallback: Running standard apisvc tests with debugging ==="
+              if [ -f "../scripts/test-apisvc-debug.sh" ]; then
+                ../scripts/test-apisvc-debug.sh container-debug || echo "Standard apisvc tests also failed"
+              fi
+            }
+          else
+            echo "Container test runner not found, using fallback method"
+            # Test apisvc specifically with enhanced debugging
+            if [ -f "../scripts/test-apisvc-debug.sh" ]; then
+              echo "=== Running apisvc tests with debugging ==="
+              ../scripts/test-apisvc-debug.sh container-debug
+              apisvc_result=$?
+              echo "apisvc test result: $apisvc_result"
+
+              if [ $apisvc_result -ne 0 ]; then
+                echo "WARNING: apisvc tests failed, but continuing with other tests"
+                echo "This may indicate container-specific issues with FIFO operations"
+              fi
+            else
+              echo "Enhanced apisvc debugging script not found, running basic test"
+              timeout 30s ./bin/apisvc_unit_tests --reporter=verbose || {
+                echo "apisvc test failed or timed out"
+                echo "Investigating..."
+                ps aux | grep apisvc || echo "No apisvc processes"
+                find /tmp -name "*fifo*" -type p 2>/dev/null || echo "No FIFO files"
+              }
+            fi
+          fi
+
+          # Run all other tests with timeout protection
+          echo "=== Running full test suite ==="
+          timeout 600s ctest --output-on-failure --timeout 30 || {
+            echo "Some tests failed or timed out"
+            echo "=== Test Summary ==="
+            ctest --output-on-failure --timeout 30 || true
+            echo "=== End Test Summary ==="
+            exit 1
+          }
       - name: Upload Debian packages
         uses: actions/upload-artifact@v4
         with:
