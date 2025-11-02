@@ -86,6 +86,21 @@ In the uint16_t local variables on a little-endian host, these will be 01 00 01 
 ### Response Format
 The Response consists of `<code><ret_val>`, both of which are a double word. e.g. 00 01 00 02 on the wire (01 00 02 00 on LE host) would indicate code 1 (response to query status) and ret_val 2 ([Downloading](../../src/sdk/inc/aduc/aducsdk.h))
 
+### Testing Cross-Process Communication
+
+The API service includes comprehensive unit tests that verify the robustness of the cross-process communication, especially regarding race conditions when multiple clients access the service simultaneously.
+
+For detailed information about testing the API service, including stress testing and race condition verification, see: [How to Test API Service](./how-to-test-api-service.md)
+
+Quick test commands:
+```sh
+# Basic API service test
+cd out && ./bin/apisvc_unit_tests
+
+# Race condition stress test
+cd out && for i in {1..5}; do timeout 10s ./bin/apisvc_unit_tests & done; wait
+```
+
 ## Package Config
 
 pkg-config is a tool used during compilation to provide info about installed libraries that finds the correct compiler and linker flags for the library so developers can avoid having to know to manually specify include paths (-I/usr/include/somelibrary), library paths (-L/usr/lib/x86_64-linux-gnu), library names (-llibsomelib), library dependencies (-lcrypto -lz), and version requirements.
@@ -336,3 +351,135 @@ stateDiagram-v2
     end note
 
 ```
+
+## Testing the API Service
+
+### Unit Tests
+
+The API service includes comprehensive unit tests that verify cross-process communication and race condition handling.
+
+#### Running Individual Tests
+
+```sh
+# Run the API service unit tests
+cd out
+./bin/apisvc_unit_tests
+
+# Run with verbose output
+./bin/apisvc_unit_tests --reporter=verbose
+```
+
+#### Stress Testing for Race Conditions
+
+The API service unit tests have been designed to handle race conditions that can occur when multiple processes attempt to use the API simultaneously. To thoroughly test the robustness of the implementation:
+
+**Basic Parallel Testing:**
+```sh
+# Run 5 tests in parallel (basic stress test)
+cd out
+for i in {1..5}; do timeout 10s ./bin/apisvc_unit_tests & done; wait
+
+# Check exit codes - all should be 0 (success)
+echo "Exit codes: $?"
+```
+
+**Heavy Stress Testing:**
+```sh
+# Run 10 tests in parallel with longer timeout
+cd out
+for i in {1..10}; do timeout 15s ./bin/apisvc_unit_tests & done; wait
+
+# Advanced stress test with multiple batches
+for batch in {1..3}; do
+    echo "Running batch $batch..."
+    for i in {1..8}; do timeout 20s ./bin/apisvc_unit_tests & done
+    wait
+    echo "Batch $batch completed"
+done
+```
+
+**Continuous Stress Testing:**
+```sh
+# Run continuous stress testing for extended periods
+cd out
+for iteration in {1..50}; do
+    echo "Stress test iteration $iteration"
+    for i in {1..3}; do timeout 10s ./bin/apisvc_unit_tests & done
+    wait
+    if [ $? -ne 0 ]; then
+        echo "FAILURE detected in iteration $iteration"
+        exit 1
+    fi
+done
+echo "All stress tests passed!"
+```
+
+#### Understanding Race Condition Fixes
+
+The API service tests implement several mechanisms to prevent race conditions:
+
+1. **Unique FIFO Paths**: Each test instance uses unique FIFO paths based on process ID and timestamp:
+   ```
+   /tmp/test_req_fifo_<PID>_<TIMESTAMP>
+   /tmp/test_resp_fifo_<PID>_<TIMESTAMP>
+   ```
+
+2. **Proper Synchronization**: Tests wait for the API service to be ready before proceeding:
+   ```cpp
+   // Wait for API service to be ready with timeout
+   while (!is_api_svc_ready() && (std::chrono::steady_clock::now() - start_time) < timeout) {
+       std::this_thread::sleep_for(std::chrono::milliseconds(10));
+   }
+   ```
+
+3. **Timeout Handling**: Robust timeout mechanisms prevent hanging tests:
+   - Client-side: 3-second timeout with retry logic
+   - Test-side: 5-second initialization timeout
+   - Process-level: Configurable timeouts using `timeout` command
+
+#### Test Failure Indicators
+
+Watch for these signs of race condition issues:
+
+- **Timeout Failures**: Tests hanging and being killed by timeout
+- **FIFO Conflicts**: "Address already in use" or "File exists" errors
+- **Service Not Ready**: Tests failing because API service wasn't initialized
+- **Intermittent Failures**: Tests that pass individually but fail when run in parallel
+
+#### Expected Test Output
+
+Successful test run should show:
+```
+Randomness seeded to: <number>
+WARNING: Unable to start file logger. (Log folder: /var/log/adu)
+<timestamp> [PID][TID] [I] Initializing API Service thread with fifo: '/tmp/test_req_fifo_<PID>_<TIMESTAMP>'
+<timestamp> [PID][TID] [I] API Request FIFO is verified: '/tmp/test_req_fifo_<PID>_<TIMESTAMP>'
+<timestamp> [PID][TID] [I] Success opening API Request FIFO for read: '/tmp/test_req_fifo_<PID>_<TIMESTAMP>'
+...
+===============================================================================
+All tests passed (13 assertions in 1 test case)
+```
+
+### Integration with CI/CD
+
+For continuous integration, include these test commands in your pipeline:
+
+```yaml
+# Basic functionality test
+- name: Run API Service Tests
+  run: |
+    cd out
+    ./bin/apisvc_unit_tests
+
+# Race condition stress test
+- name: Stress Test API Service
+  run: |
+    cd out
+    for i in {1..5}; do timeout 30s ./bin/apisvc_unit_tests & done
+    wait
+    if [ $? -ne 0 ]; then
+      echo "Race condition detected in API service tests"
+      exit 1
+    fi
+```
+

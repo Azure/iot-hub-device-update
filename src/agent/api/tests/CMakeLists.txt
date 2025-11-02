@@ -1,7 +1,15 @@
 set (target_name apisvc_unit_tests)
 
 include (agentRules)
-compileasc99 ()
+# Do not specify C99 for test code because Catch2 uses C++ features.
+# compile_as_c99 () includes set (CMAKE_C_STARTDARD 99) which may cause
+# issues with C++ 17 features in come build configurations.
+
+# compileasc99 ()
+
+set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD_REQUIRED ON)
+
 disablertti ()
 
 find_package (Catch2 REQUIRED)

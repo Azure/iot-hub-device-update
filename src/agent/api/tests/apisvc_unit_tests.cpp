@@ -2,6 +2,18 @@
  * @file apisvc_unit_tests.cpp
  * @brief Unit Tests for apisvc library
  *
+ * These tests verify cross-process communication between API clients and the
+ * Device Update agent service. The tests have been designed to handle race
+ * conditions that can occur when multiple test instances run simultaneously.
+ *
+ * Race condition fixes implemented:
+ * 1. Unique FIFO paths using PID + timestamp to prevent conflicts
+ * 2. Proper synchronization waiting for service readiness
+ * 3. Robust timeout handling with multiple protection layers
+ *
+ * To verify race condition fixes, run parallel tests:
+ *   for i in {1..5}; do timeout 10s ./bin/apisvc_unit_tests & done; wait
+ *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
@@ -43,11 +55,24 @@ TEST_CASE("apisvc crossproc tests")
     {
         REQUIRE(viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Installing));
 
-        const char* fifoPath = "/tmp/test_req_fifo";
+        // Use unique FIFO paths to avoid conflicts when tests run in parallel
+        std::string fifoPathStr = "/tmp/test_req_fifo_" + std::to_string(getpid()) + "_"
+            + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
+        const char* fifoPath = fifoPathStr.c_str();
         REQUIRE(init_api_svc(fifoPath));
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        const char* respFifoPath = "/tmp/test_resp_fifo";
+        // Wait for API service to be ready with timeout
+        auto start_time = std::chrono::steady_clock::now();
+        const auto timeout = std::chrono::seconds(5);
+        while (!is_api_svc_ready() && (std::chrono::steady_clock::now() - start_time) < timeout)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        REQUIRE(is_api_svc_ready()); // Ensure the service is actually ready
+
+        std::string respFifoPathStr = "/tmp/test_resp_fifo_" + std::to_string(getpid()) + "_"
+            + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
+        const char* respFifoPath = respFifoPathStr.c_str();
         {
             std::filesystem::path p{ respFifoPath };
             if (std::filesystem::exists(p))

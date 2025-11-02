@@ -34,6 +34,7 @@ static const unsigned OnErrorDelayMicrosecs = 150000;
 
 pthread_t g_api_svc_thread = { 0 };
 bool g_api_svc_thread_running = false;
+bool g_api_svc_ready = false;
 
 typedef struct tagFifoThreadRetVal
 {
@@ -88,6 +89,7 @@ bool uninit_api_svc()
     FifoThreadRetVal* retVal = NULL;
 
     g_api_svc_thread_running = false;
+    g_api_svc_ready = false;
     int res = pthread_join(g_api_svc_thread, (void**)&threadRet);
     if (res != 0)
     {
@@ -117,6 +119,11 @@ bool uninit_api_svc()
 
     free(retVal);
     return success;
+}
+
+bool is_api_svc_ready(void)
+{
+    return g_api_svc_ready;
 }
 
 //
@@ -242,6 +249,7 @@ static void* aduc_apisvc_thread_proc(void* arg)
     }
 
     Log_Info("Success opening API Request FIFO for read: '%s'", fifo_path);
+    g_api_svc_ready = true;
 
     while (g_api_svc_thread_running)
     {

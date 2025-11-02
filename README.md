@@ -28,6 +28,7 @@ Device Update for IoT Hub features provide a powerful and flexible experience, i
 * [Device Update for IoT Hub](https://aka.ms/iot-hub-device-update-docs)
 * [Getting Started with Device Update Agent](./docs/agent-reference)
 * More details on building the agent here: [How to build agent code](./docs/agent-reference/how-to-build-agent-code.md)
+* API service testing and race condition verification: [How to test API service](./docs/agent-reference/how-to-test-api-service.md)
 
 ## Quick Start
 
@@ -58,6 +59,17 @@ or, alternatively:
 
 ```sh
 ninja test
+```
+
+#### Run Specific Test Suites
+
+```sh
+# Run only API service tests (includes race condition testing)
+cd out
+./bin/apisvc_unit_tests
+
+# Run API service stress test (parallel execution)
+for i in {1..5}; do timeout 10s ./bin/apisvc_unit_tests & done; wait
 ```
 
 ### Run tests under valgrind memcheck
