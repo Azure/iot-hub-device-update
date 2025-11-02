@@ -31,7 +31,6 @@
 #include "aduc/logging.h"
 #include "aduc/result.h"
 #include "aduc/viewstatemgr.h"
-#include "apisvc.h"
 
 using Catch::Matchers::Equals;
 
@@ -229,12 +228,12 @@ TEST_CASE("API Service Container Tests", "[apisvc_container]")
         // Wait for API service to be ready with extended timeout
         REQUIRE(wait_for_api_svc_ready(15));
 
-        // Create message with extra debugging  
+        // Create message with extra debugging
         std::cout << "Creating GETSTATE message..." << std::endl;
         std::string respFifoPathStr = fifo_dir + "/test_resp_fifo_container_" + std::to_string(getpid()) + "_"
             + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
         const char* respFifoPath = respFifoPathStr.c_str();
-        
+
         {
             std::filesystem::path p{ respFifoPath };
             if (std::filesystem::exists(p))
@@ -251,7 +250,7 @@ TEST_CASE("API Service Container Tests", "[apisvc_container]")
         // Send message with timeout protection
         std::cout << "Sending message to API service..." << std::endl;
         auto send_start = std::chrono::steady_clock::now();
-        
+
         // open request fifo for writing
         int reqFifo = open(fifoPath, O_WRONLY);
         REQUIRE(reqFifo != -1);
@@ -273,7 +272,7 @@ TEST_CASE("API Service Container Tests", "[apisvc_container]")
 
         // Wait for response with extended timeout
         std::cout << "Waiting for response..." << std::endl;
-        
+
         // open response fifo for reading--open will block until data is available in fifo queue
         int respFifo = open(respFifoPath, O_RDONLY);
         REQUIRE(respFifo != -1);
@@ -284,10 +283,10 @@ TEST_CASE("API Service Container Tests", "[apisvc_container]")
         ApiWireResponseMsg resp = { 0 };
         ssize_t resp_n = msg_recv_resp(respFifo, (ApiWireResponseMsg*)&resp);
         REQUIRE(resp_n == 2 * sizeof(uint16_t));
-        
+
         std::cout << "Response received successfully" << std::endl;
         std::cout << "Response code: " << resp.code << ", return value: " << resp.ret_val << std::endl;
-        
+
         REQUIRE(resp.code == (uint16_t)ApiRequestType_GETSTATE);
         REQUIRE(resp.ret_val == (uint16_t)ADUC_ServiceStatus_Installing);
 
@@ -324,10 +323,10 @@ TEST_CASE("API Service Container Tests", "[apisvc_container]")
             REQUIRE(wait_for_api_svc_ready(10));
 
             // Quick message exchange
-            std::string respFifoPathStr = fifo_dir + "/stress_resp_fifo_" + std::to_string(getpid()) + "_" 
+            std::string respFifoPathStr = fifo_dir + "/stress_resp_fifo_" + std::to_string(getpid()) + "_"
                 + std::to_string(i) + "_" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
             const char* respFifoPath = respFifoPathStr.c_str();
-            
+
             REQUIRE(mkfifo(respFifoPath, 0666) == 0);
             aduc::Defer defer_rm_resp_fifo([respFifoPath]() { unlink(respFifoPath); });
 
@@ -347,7 +346,7 @@ TEST_CASE("API Service Container Tests", "[apisvc_container]")
             int respFifo = open(respFifoPath, O_RDONLY);
             REQUIRE(respFifo != -1);
             aduc::Defer defer_close_resp([respFifo]() -> void { close(respFifo); });
-            
+
             ApiWireResponseMsg resp = { 0 };
             REQUIRE(msg_recv_resp(respFifo, &resp) == 2 * sizeof(uint16_t));
             REQUIRE(resp.code == (uint16_t)ApiRequestType_GETSTATE);
