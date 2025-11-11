@@ -556,12 +556,23 @@ mkdir -p "$output_directory"
 pushd "$output_directory" > /dev/null || $ret
 
 # Generate build using cmake with options
+# Only reconfigure if:
+# - Clean build requested
+# - CMakeCache.txt doesn't exist (first-time build)
 if [ ! -f "$cmake_bin" ]; then
     error "No '${cmake_bin}' file."
     ret_val=1
-else
+elif [[ $build_clean == "true" ]] || [[ ! -f "$output_directory/CMakeCache.txt" ]]; then
+    if [[ $build_clean == "true" ]]; then
+        echo "Configuring build (clean build requested)..."
+    else
+        echo "Configuring build (first-time configuration)..."
+    fi
     "$cmake_bin" -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
     ret_val=$?
+else
+    echo "Skipping CMake reconfiguration (build already configured, use -c to force)"
+    ret_val=0
 fi
 
 if [ $ret_val -ne 0 ]; then

@@ -52,3 +52,5 @@ status_monitor
 
 ### Temporary files
 .tmp
+out_test_cache/
+**/.result_h_generation_cache

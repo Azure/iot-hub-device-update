@@ -162,10 +162,7 @@ set (
 set (
     ADUC_DATASTORE_DIRECTORY
     "/var/lib/adu/datastore"
-    CACHE
-        STRING
-        "Directory path to the datastore file."
-)
+    CACHE STRING "Directory path to the datastore file.")
 
 set (
     ADUC_TEST_DATA_PATH_SEGMENT
@@ -530,8 +527,10 @@ option (ADUC_ENABLE_E2E_TESTING "Enable e2e test pipeline settings" OFF)
 option (ADUC_ENABLE_SRVC_E2E_TESTING "Enable service side test agent settings" OFF)
 option (ADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL
         "Use Curl to download the Rootkey Package instead of DeliveryOptimization agent" OFF)
-option (ADUC_BUILD_DELTA_HANDLER
-        "Build the Microsoft Delta Download Handler with iot-hub-device-update-delta library support" OFF)
+option (
+    ADUC_BUILD_DELTA_HANDLER
+    "Build the Microsoft Delta Download Handler with iot-hub-device-update-delta library support"
+    OFF)
 
 ### End CMake Options
 
@@ -553,7 +552,7 @@ set (
     "${DIAGNOSTICS_CONFIG_FILE_PATH}"
     CACHE STRING "Path to the diagnostics configuration file.")
 
-# Generate the error code definition file
+# Generate the error code definition file with hash-based caching
 find_package (
     Python3
     COMPONENTS Interpreter
@@ -562,33 +561,78 @@ find_package (
 set (ERROR_CODE_GENERATOR_ARGS "--json-file-path" "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}"
                                "--result-file-path" "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}")
 
-execute_process (
-    COMMAND ${Python3_EXECUTABLE} ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}
-            ${ERROR_CODE_GENERATOR_ARGS}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    RESULT_VARIABLE GENERATE_ERROR_CODE_DEFS_RESULT)
+# Cache file to track source file changes
+set (RESULT_H_CACHE_FILE "${CMAKE_BINARY_DIR}/.result_h_generation_cache")
 
-if (NOT GENERATE_ERROR_CODE_DEFS_RESULT EQUAL "0")
-    message (
-        FATAL_ERROR
-            "Failed to generate error code definition file using ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}"
-    )
-endif ()
+# Option to force regeneration
+option (ADUC_FORCE_REGENERATE_RESULT_H
+        "Force regeneration of result.h even if sources haven't changed" OFF)
 
-# Format the generated result.h file with clang-format if available
-find_program (CLANG_FORMAT_EXECUTABLE NAMES clang-format)
-if (CLANG_FORMAT_EXECUTABLE)
-    message (STATUS "Running clang-format on generated result.h")
-    execute_process (
-        COMMAND ${CLANG_FORMAT_EXECUTABLE} -i "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        RESULT_VARIABLE CLANG_FORMAT_RESULT)
+# Calculate SHA256 hashes of source files
+file (SHA256 "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}" JSON_FILE_HASH)
+file (SHA256 "${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}" SCRIPT_FILE_HASH)
+set (SOURCE_FILES_HASH "${JSON_FILE_HASH}|${SCRIPT_FILE_HASH}")
 
-    if (NOT CLANG_FORMAT_RESULT EQUAL "0")
-        message (WARNING "clang-format failed on result.h, but continuing build")
+# Determine if result.h needs to be regenerated
+set (NEED_REGENERATE_RESULT_H TRUE)
+set (REGENERATE_REASON "result.h does not exist")
+
+if (NOT ADUC_FORCE_REGENERATE_RESULT_H)
+    if (EXISTS "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}")
+        if (EXISTS "${RESULT_H_CACHE_FILE}")
+            file (READ "${RESULT_H_CACHE_FILE}" CACHED_HASH)
+            if (CACHED_HASH STREQUAL SOURCE_FILES_HASH)
+                set (NEED_REGENERATE_RESULT_H FALSE)
+                message (STATUS "result.h is up-to-date (sources unchanged)")
+            else ()
+                set (REGENERATE_REASON "source files changed (hash mismatch)")
+            endif ()
+        else ()
+            set (REGENERATE_REASON "cache file missing")
+        endif ()
     endif ()
 else ()
-    message (STATUS "clang-format not found, skipping formatting of result.h")
+    set (REGENERATE_REASON "forced regeneration (-DADUC_FORCE_REGENERATE_RESULT_H=ON)")
+endif ()
+
+if (NEED_REGENERATE_RESULT_H)
+    message (STATUS "Generating result.h from result_codes.json (reason: ${REGENERATE_REASON})...")
+
+    execute_process (
+        COMMAND ${Python3_EXECUTABLE} ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}
+                ${ERROR_CODE_GENERATOR_ARGS}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        RESULT_VARIABLE GENERATE_ERROR_CODE_DEFS_RESULT)
+
+    if (NOT GENERATE_ERROR_CODE_DEFS_RESULT EQUAL "0")
+        message (
+            FATAL_ERROR
+                "Failed to generate error code definition file using ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}"
+        )
+    endif ()
+
+    # Format the generated result.h file with clang-format if available
+    find_program (CLANG_FORMAT_EXECUTABLE NAMES clang-format)
+    if (CLANG_FORMAT_EXECUTABLE)
+        message (STATUS "Running clang-format on generated result.h")
+        execute_process (
+            COMMAND ${CLANG_FORMAT_EXECUTABLE} -i "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            RESULT_VARIABLE CLANG_FORMAT_RESULT)
+
+        if (NOT CLANG_FORMAT_RESULT EQUAL "0")
+            message (WARNING "clang-format failed on result.h, but continuing build")
+        endif ()
+    else ()
+        message (STATUS "clang-format not found, skipping formatting of result.h")
+    endif ()
+
+    # Save the hash to cache file after successful generation
+    file (WRITE "${RESULT_H_CACHE_FILE}" "${SOURCE_FILES_HASH}")
+    message (STATUS "result.h generated successfully and cache updated")
+else ()
+    message (
+        STATUS "Skipping result.h regeneration (use -DADUC_FORCE_REGENERATE_RESULT_H=ON to force)")
 endif ()
 
 if (ADUC_BUILD_UNIT_TESTS)
