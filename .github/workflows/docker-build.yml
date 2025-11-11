@@ -30,9 +30,9 @@ jobs:
           dpkg-reconfigure -f noninteractive tzdata
       - name: Install dependencies
         run: |
-          scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck
+          scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --install-delta
       - name: Build packages and tests
-        run: scripts/build.sh --clean --build-unit-tests --build-packages --type MinSizeRel
+        run: scripts/build.sh --clean --build-unit-tests --build-packages --type MinSizeRel --delta-handler
       - name: Run tests
         run: |
           cd out
