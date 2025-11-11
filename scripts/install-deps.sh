@@ -29,13 +29,21 @@ warn() { echo -e "\033[1;33mWarning:\033[0m $*" >&2; }
 
 error() { echo -e "\033[1;31mError:\033[0m $*" >&2; }
 
+# Determine the git root directory
+GITROOT="$(git rev-parse --show-toplevel 2> /dev/null)"
+if [ -z "$GITROOT" ]; then
+    # If not in a git repo, use the script's parent directory
+    GITROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fi
+
 # Setup defaults
 install_all_deps=false
 install_packages=false
 install_packages_only=false
 # The folder where source code will be placed
 # for building and installing from source.
-DEFAULT_WORKFOLDER=/tmp
+# Use parent directory of git root to avoid vcpkg manifest conflicts
+DEFAULT_WORKFOLDER="$(dirname "${GITROOT}")/.adu-tmp"
 work_folder=$DEFAULT_WORKFOLDER
 keep_source_code=false
 use_ssh=false
@@ -65,7 +73,7 @@ install_cmake_version="$supported_cmake_version"
 cmake_force_source=false
 cmake_prefix="$work_folder"
 cmake_installer_dir=""
-cmake_dir_symlink="/tmp/deviceupdate-cmake"
+cmake_dir_symlink=""  # Will be set after work_folder is determined
 cmake_bin="cmake"
 
 install_shellcheck=false
@@ -78,6 +86,11 @@ du_test_data_dir_path="/tmp/adu/"
 default_do_ref=develop
 install_do=false
 do_ref=$default_do_ref
+
+# Delta Handler Deps
+default_delta_ref=main
+install_delta=false
+delta_ref=$default_delta_ref
 
 # catch2 build
 #
@@ -116,7 +129,7 @@ print_help() {
     echo "--install-catch2          Install Catch2 from source."
     echo "--install-cmake           Installs supported version of cmake from installer if on ubuntu, else installs it from source."
     echo "--install-shellcheck      Installs supported version of shellcheck."
-    echo "--cmake-prefix            Set the install path prefix when --install-cmake is used. Default is /tmp."
+    echo "--cmake-prefix            Set the install path prefix when --install-cmake is used. Default is [git-root]/.tmp."
     echo "--cmake-version           Override the version of CMake. e.g. 3.23.2 that will be installed if --install-cmake is used."
     echo "--cmake-force-source      Force building cmake from source when --install-cmake is used."
     echo "--install-githooks        Install githooks required by the repository."
@@ -136,11 +149,16 @@ print_help() {
     echo "--do-commit <commit_sha>  Specific commit to fetch."
     echo "                          Default is the latest commit in that branch."
     echo ""
+    echo "--install-delta           Install iot-hub-device-update-delta library from source."
+    echo "--delta-ref <ref>         Install the delta library from this branch or tag."
+    echo "                          This value is passed to git clone as the --branch argument."
+    echo "                          Default is $default_delta_ref."
+    echo ""
     echo "-p, --install-packages    Indicates that packages should be installed."
     echo "--install-packages-only   Indicates that only packages should be installed and that dependencies should not be installed from source."
     echo ""
     echo "-f, --work-folder <work_folder>   Specifies the folder where source code will be cloned or downloaded."
-    echo "                                  Default is /tmp."
+    echo "                                  Default is [git-root]/.tmp."
     echo "-k, --keep-source-code            Indicates that source code should not be deleted after install from work_folder."
     echo ""
     echo "--use-ssh                 Use ssh URLs to clone instead of https URLs."
@@ -534,6 +552,133 @@ do_install_azure_storage_sdk() {
     popd > /dev/null || return
 }
 
+do_install_delta() {
+    echo "Installing iot-hub-device-update-delta library ..."
+    local delta_dir=$work_folder/iot-hub-device-update-delta
+    if [[ -d $delta_dir ]]; then
+        $SUDO rm -rf $delta_dir || return
+    fi
+
+    local delta_url
+    if [[ $use_ssh == "true" ]]; then
+        delta_url=git@github.com:Azure/iot-hub-device-update-delta.git
+    else
+        delta_url=https://github.com/Azure/iot-hub-device-update-delta.git
+    fi
+
+    echo -e "Building iot-hub-device-update-delta library ...\n\tBranch: $delta_ref\n\tFolder: $delta_dir"
+    mkdir -p $delta_dir || return
+    pushd $delta_dir > /dev/null || return
+    git clone --recursive --single-branch --branch $delta_ref --depth 1 $delta_url . || return
+
+    # Install system dependencies required by delta library
+    echo "Installing delta library system dependencies..."
+    local delta_deps="curl zip unzip tar gcc gcc-10 g++ g++-10 autoconf autopoint ninja-build pkg-config build-essential libtool cmake zlib1g-dev"
+    $SUDO apt-get update || return
+    $SUDO apt-get install --yes $delta_deps || return
+
+    # Setup gcc/g++ alternatives
+    echo "Setting up gcc/g++ alternatives..."
+    $SUDO update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 20 || true
+    $SUDO update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 20 || true
+
+    # Setup VCPKG for delta library dependencies
+    echo "Setting up VCPKG for delta library..."
+    local vcpkg_root=$work_folder/vcpkg
+    local vcpkg_triplet="x64-linux"
+    local build_type="Release"
+
+    if [[ $keep_source_code == "true" ]]; then
+        build_type="Debug"
+    fi
+
+    # Run VCPKG setup with classic mode
+    chmod +x "$delta_dir/vcpkg/setup_vcpkg.sh" || return
+
+    # Set environment variables to force classic mode and avoid conflicts
+    export VCPKG_ROOT="$vcpkg_root"
+    export VCPKG_FEATURE_FLAGS="-manifests"
+
+    "$delta_dir/vcpkg/setup_vcpkg.sh" "$vcpkg_root" "$delta_dir/vcpkg/ports" "$vcpkg_triplet" || return
+
+    # Unset the flag after vcpkg setup
+    unset VCPKG_FEATURE_FLAGS
+
+    # Build using the delta library's build script
+    echo "Building delta library (triplet: $vcpkg_triplet, build type: $build_type)..."
+    pushd "$delta_dir/src/native" > /dev/null || return
+
+    chmod +x build.sh || return
+
+    # Set environment variables for build
+    export VCPKG_ROOT="$vcpkg_root"
+    export VCPKG_FEATURE_FLAGS="-manifests"
+
+    # Run vcpkg stage
+    ./build.sh "$vcpkg_triplet" "$build_type" vcpkg || return
+
+    # Run cmake stage
+    ./build.sh "$vcpkg_triplet" "$build_type" cmake || return
+
+    # Run build stage
+    ./build.sh "$vcpkg_triplet" "$build_type" build || return
+
+    popd > /dev/null || return
+
+    # Install the built library
+    echo "Installing delta library to system..."
+    local delta_build_dir="$delta_dir/src/out/native/${vcpkg_triplet}/${build_type}"
+
+    # Install the .deb package if it exists
+    if [ -f "$delta_build_dir/_packages"/*.deb ]; then
+        echo "Installing from .deb package..."
+        $SUDO dpkg -i "$delta_build_dir/_packages"/*.deb || return
+
+        # The .deb package doesn't include the header file, so we need to install it manually
+        echo "Installing header file..."
+        if [ -f "$delta_dir/src/native/diffs/api/adudiffapi.h" ]; then
+            $SUDO cp "$delta_dir/src/native/diffs/api/adudiffapi.h" /usr/include/ || return
+            echo "Installed adudiffapi.h to /usr/include/"
+        else
+            error "Could not find adudiffapi.h in $delta_dir/src/native/diffs/api/"
+            return 1
+        fi
+    else
+        # Fallback: manually copy files
+        echo "Manually installing library and headers..."
+
+        # Copy the shared library
+        if [ -f "$delta_build_dir/bin/libadudiffapi.so" ]; then
+            $SUDO cp "$delta_build_dir/bin/libadudiffapi.so"* /usr/local/lib/ || return
+            echo "Installed libadudiffapi.so to /usr/local/lib/"
+        else
+            error "Could not find libadudiffapi.so in $delta_build_dir/bin/"
+            return 1
+        fi
+
+        # Copy the header file
+        if [ -f "$delta_dir/src/native/diffs/api/adudiffapi.h" ]; then
+            $SUDO mkdir -p /usr/local/include || return
+            $SUDO cp "$delta_dir/src/native/diffs/api/adudiffapi.h" /usr/local/include/ || return
+            echo "Installed adudiffapi.h to /usr/local/include/"
+        else
+            error "Could not find adudiffapi.h in $delta_dir/src/native/diffs/api/"
+            return 1
+        fi
+
+        # Update library cache
+        $SUDO ldconfig || return
+        echo "Updated library cache"
+    fi
+
+    popd > /dev/null || return
+
+    if [[ $keep_source_code != "true" ]]; then
+        $SUDO rm -rf $delta_dir || return
+        $SUDO rm -rf $vcpkg_root || return
+    fi
+}
+
 do_install_cmake_from_source() {
     local ret_value
     local cmake_src_url
@@ -677,7 +822,7 @@ do_install_shellcheck() {
 
         $SUDO rm "work_folder/$tarball_filename" || return 1
 
-        ln -sf "${HOME}/.cabal/bin/shellcheck" "/tmp/deviceupdate-shellcheck" || return 1
+        ln -sf "${HOME}/.cabal/bin/shellcheck" "${work_folder}/deviceupdate-shellcheck" || return 1
     else
         echo "Installing shellcheck ${scver} from pre-built binaries..."
         local tar_filename="shellcheck-v${scver}.linux.${arch}.tar.xz"
@@ -691,7 +836,7 @@ do_install_shellcheck() {
 
         $SUDO rm "$work_folder/$tar_filename" || return 1
 
-        ln -sf "${work_folder}/shellcheck-v0.8.0/shellcheck" "/tmp/deviceupdate-shellcheck" || return 1
+        ln -sf "${work_folder}/shellcheck-v0.8.0/shellcheck" "${work_folder}/deviceupdate-shellcheck" || return 1
     fi
 }
 
@@ -833,6 +978,13 @@ while [[ $1 != "" ]]; do
         shift
         do_ref=$1
         ;;
+    --install-delta)
+        install_delta=true
+        ;;
+    --delta-ref)
+        shift
+        delta_ref=$1
+        ;;
     -p | --install-packages)
         install_packages=true
         ;;
@@ -865,12 +1017,24 @@ while [[ $1 != "" ]]; do
     shift
 done
 
-# setup workfolder if different from default
-if [[ $work_folder != "$DEFAULT_WORKFOLDER" ]]; then
-    mkdir -pv "$work_folder" || $ret
-    $SUDO chown "$(id -un)":"$(id -gn)" "$work_folder" || $ret
-    chmod ug+rwx,o= "$work_folder" || $ret
+# Ensure workfolder exists with proper permissions
+if [[ ! -d "$work_folder" ]]; then
+    echo "Creating work folder: $work_folder"
+    mkdir -p "$work_folder" || $ret
 fi
+
+# Ensure the work folder has proper ownership
+current_user="$(id -un)"
+work_folder_owner="$(stat -c '%U' "$work_folder" 2>/dev/null || echo 'unknown')"
+if [[ "$work_folder_owner" != "$current_user" && "$work_folder_owner" != "unknown" ]]; then
+    echo "Changing ownership of $work_folder to $current_user"
+    $SUDO chown -R "$current_user":"$(id -gn)" "$work_folder" || $ret
+fi
+chmod -R u+rwx "$work_folder" || $ret
+
+# Set cmake_prefix and cmake_dir_symlink based on work_folder location
+cmake_prefix="$work_folder"
+cmake_dir_symlink="${work_folder}/deviceupdate-cmake"
 
 if [[ -d $du_test_data_dir_path ]]; then
     $SUDO rm -r $du_test_data_dir_path
@@ -885,7 +1049,7 @@ if [[ $install_all_deps != "true" && $install_aduc_deps != "true" && \
     $install_do != "true" && $install_azure_iot_sdk != "true" && \
     $install_catch2 != "true" && $install_swupdate != "true" && \
     $install_cmake != "true" && $install_shellcheck != "true" && \
-    $install_githooks != "true" ]]; then
+    $install_githooks != "true" && $install_delta != "true" ]]; then
     install_all_deps=true
 fi
 
@@ -894,6 +1058,7 @@ fi
 if [[ $install_all_deps == "true" ]]; then
     install_aduc_deps=true
     install_do=true
+    install_delta=true
     install_cmake=true
     install_shellcheck=true
     install_githooks=true
@@ -905,6 +1070,7 @@ if [[ $install_aduc_deps == "true" ]]; then
     install_azure_iot_sdk=true
     install_catch2=true
     install_azure_storage_sdk=true
+    install_delta=true
 fi
 
 # Set implied options for packages only.
@@ -1000,6 +1166,10 @@ if [[ $install_packages_only == "false" ]]; then
 
     if [[ $install_azure_storage_sdk == "true" ]]; then
         do_install_azure_storage_sdk || $ret
+    fi
+
+    if [[ $install_delta == "true" ]]; then
+        do_install_delta || $ret
     fi
 fi
 

@@ -25,8 +25,16 @@ bullet() { echo -e "\e[1;34m*\e[0m $*"; }
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
 root_dir=$script_dir/..
 
+# Determine the git root directory
+GITROOT="$(git rev-parse --show-toplevel 2> /dev/null)"
+if [ -z "$GITROOT" ]; then
+    # If not in a git repo, use root_dir
+    GITROOT="$root_dir"
+fi
+
 build_clean=false
 build_documentation=false
+build_delta_handler=false
 build_packages=false
 verbose_build=false
 platform_layer="linux"
@@ -44,7 +52,7 @@ declare -a static_analysis_tools=()
 log_lib="zlog"
 install_prefix=/usr/local
 install_adu=false
-work_folder=/tmp
+work_folder="$(dirname "${GITROOT}")/.adu-tmp"
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
 rootkeypkg_curl=false
 
@@ -63,6 +71,7 @@ Usage: build.sh [options...]
     -t, --type <build_type>               The type of build to produce. Passed to CMAKE_BUILD_TYPE. Default is Debug.
                                         Options: Release Debug RelWithDebInfo MinSizeRel
     -d, --build-docs                      Builds the documentation.
+    --delta-handler                       Builds the delta download handler.
     -u, --build-unit-tests                Builds unit tests.
     --enable-e2e-testing                  Enables settings for the E2E test pipelines.
     --build-packages                      Builds and packages the client in various package formats e.g debian.
@@ -210,6 +219,12 @@ determine_distro() {
 
 determine_distro
 
+# Ensure work folder exists
+if [[ ! -d "$work_folder" ]]; then
+    echo "Creating work folder: $work_folder"
+    mkdir -p "$work_folder" || $ret 1
+fi
+
 while [[ $1 != "" ]]; do
     case $1 in
     -c | --clean)
@@ -241,6 +256,9 @@ while [[ $1 != "" ]]; do
         ;;
     -d | --build-docs)
         build_documentation=true
+        ;;
+    --delta-handler)
+        build_delta_handler=true
         ;;
     -u | --build-unit-tests)
         build_unittests=true
@@ -436,6 +454,7 @@ CMAKE_OPTIONS=(
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
     "-DCMAKE_INSTALL_PREFIX=$install_prefix"
+    "-DADUC_BUILD_DELTA_HANDLER:BOOL=$build_delta_handler"
 )
 
 if [[ $major_version != "" ]]; then

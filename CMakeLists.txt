@@ -530,8 +530,12 @@ option (ADUC_ENABLE_E2E_TESTING "Enable e2e test pipeline settings" OFF)
 option (ADUC_ENABLE_SRVC_E2E_TESTING "Enable service side test agent settings" OFF)
 option (ADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL
         "Use Curl to download the Rootkey Package instead of DeliveryOptimization agent" OFF)
+option (ADUC_BUILD_DELTA_HANDLER
+        "Build the Microsoft Delta Download Handler with iot-hub-device-update-delta library support" OFF)
 
 ### End CMake Options
+
+### End External Dependencies
 
 # Construct the absolute path to the adu configuration file.
 cmake_path (SET ADUC_CONF_FILE_PATH NORMALIZE "${ADUC_CONF_FOLDER}/${ADUC_CONF_FILE}")
@@ -569,6 +573,22 @@ if (NOT GENERATE_ERROR_CODE_DEFS_RESULT EQUAL "0")
         FATAL_ERROR
             "Failed to generate error code definition file using ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}"
     )
+endif ()
+
+# Format the generated result.h file with clang-format if available
+find_program (CLANG_FORMAT_EXECUTABLE NAMES clang-format)
+if (CLANG_FORMAT_EXECUTABLE)
+    message (STATUS "Running clang-format on generated result.h")
+    execute_process (
+        COMMAND ${CLANG_FORMAT_EXECUTABLE} -i "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        RESULT_VARIABLE CLANG_FORMAT_RESULT)
+
+    if (NOT CLANG_FORMAT_RESULT EQUAL "0")
+        message (WARNING "clang-format failed on result.h, but continuing build")
+    endif ()
+else ()
+    message (STATUS "clang-format not found, skipping formatting of result.h")
 endif ()
 
 if (ADUC_BUILD_UNIT_TESTS)

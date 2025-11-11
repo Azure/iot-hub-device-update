@@ -4,6 +4,9 @@ include (agentRules)
 
 compileasc99 ()
 
+# Find the delta library installed by install-deps.sh
+find_package (AzureIotHubDeviceUpdateDelta REQUIRED)
+
 add_library (${target_name} STATIC)
 add_library (aduc::${target_name} ALIAS ${target_name})
 
@@ -21,4 +24,5 @@ target_link_libraries (
             aduc::microsoft_delta_download_handler_utils
             aduc::logging
             aduc::source_update_cache
-            aduc::workflow_utils)
+            aduc::workflow_utils
+            AzureIotHubDeviceUpdateDelta::delta)

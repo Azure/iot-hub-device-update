@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# postrm
+# post-remove script for deviceupdate-agent-delta-handler debian package.
+# Cleans up after package removal.
+# See https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+
+echo "******************** Running $0 $1 ***********************"
+
+set -e
+
+adu_delta_lib_dir=/usr/lib/adu-delta
+ld_conf_file=/etc/ld.so.conf.d/adu-delta.conf
+
+cleanup_delta_library_path()
+{
+    if [ -f "$ld_conf_file" ]; then
+        echo "Removing delta library configuration..."
+        rm -f "$ld_conf_file"
+        ldconfig
+    fi
+}
+
+case "$1" in
+    remove|purge)
+        cleanup_delta_library_path
+        echo "Delta download handler cleanup completed."
+    ;;
+
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

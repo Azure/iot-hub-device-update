@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# prerm
+# pre-remove script for deviceupdate-agent-delta-handler debian package.
+# Unregisters the delta download handler extension before removal.
+# See https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+
+echo "******************** Running $0 $1 ***********************"
+
+set -e
+
+adu_bin_path=/usr/bin/AducIotAgent
+adu_extensions_dir=/var/lib/adu/extensions
+adu_delta_download_handler_id="microsoft/delta:1"
+
+unregister_delta_download_handler()
+{
+    echo "Unregister delta download handler..."
+    if [ -x "$adu_bin_path" ]; then
+        $adu_bin_path -l 2 --extension-type downloadHandler --extension-id "$adu_delta_download_handler_id" --unregister-extension
+        echo "Delta download handler unregistered successfully."
+    else
+        echo "WARNING: $adu_bin_path not found or not executable." >&2
+    fi
+}
+
+case "$1" in
+    remove|deconfigure)
+        unregister_delta_download_handler
+    ;;
+
+    upgrade)
+        # Don't unregister on upgrade
+    ;;
+
+    failed-upgrade)
+    ;;
+
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0
