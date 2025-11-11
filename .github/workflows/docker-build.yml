@@ -37,6 +37,32 @@ jobs:
         run: |
           cd out
           ctest
+      - name: Test package installation
+        run: |
+          echo "=== Testing Package Installation ==="
+          ls -lh out/*.deb
+
+          # Install the main agent package
+          apt-get install -y ./out/deviceupdate-agent_*.deb
+
+          # Verify installation
+          echo "=== Verifying Installed Files ==="
+          which AducIotAgent && echo "✓ AducIotAgent binary found" || echo "✗ AducIotAgent binary NOT found"
+          which adu-shell && echo "✓ adu-shell binary found" || echo "✗ adu-shell binary NOT found"
+          test -f /usr/lib/adu/libadushconst_exports.so && echo "✓ Core libraries installed" || echo "✗ Core libraries NOT installed"
+          test -f /etc/adu/du-config.json && echo "✓ Configuration file installed" || echo "✗ Configuration file NOT installed"
+
+          # If delta handler package exists, test it
+          if ls out/deviceupdate-agent-delta-handler_*.deb 1> /dev/null 2>&1; then
+            echo "=== Installing Delta Handler Package ==="
+            apt-get install -y ./out/deviceupdate-agent-delta-handler_*.deb
+            test -f /usr/lib/adu/extensions/sources/libmicrosoft_delta_download_handler.so && \
+              echo "✓ Delta handler installed" || echo "✗ Delta handler NOT installed"
+          else
+            echo "Note: Delta handler package not found (expected if --delta-handler not used)"
+          fi
+
+          echo "=== Package Installation Test Complete ==="
       - name: Upload Debian packages
         uses: actions/upload-artifact@v4
         with:

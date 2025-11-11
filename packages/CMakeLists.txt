@@ -13,6 +13,13 @@ set (CPACK_PACKAGE_VERSION_MINOR "${ADUC_VERSION_MINOR}")
 set (CPACK_PACKAGE_VERSION_PATCH "${ADUC_VERSION_PATCH}")
 set (CPACK_PACKAGE_VERSION "${ADUC_VERSION}")
 
+# DEB-DEFAULT automatically generates architecture-specific file names
+# Format: <package-name>_<version>_<architecture>.deb
+# Examples:
+#   deviceupdate-agent_1.0.0_amd64.deb
+#   deviceupdate-agent_1.0.0_arm64.deb
+#   deviceupdate-agent-delta-handler_1.0.0_amd64.deb
+#   deviceupdate-agent-delta-handler_1.0.0_arm64.deb
 set (CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 
 # Debian

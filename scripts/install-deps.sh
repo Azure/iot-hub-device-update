@@ -92,6 +92,9 @@ default_delta_ref=main
 install_delta=false
 delta_ref=$default_delta_ref
 
+# Cross-compilation build tools (Packer, Docker, etc.)
+install_xcompile_build_tools=false
+
 # catch2 build
 #
 # used for dependencies like catch2 that will find system default
@@ -153,6 +156,9 @@ print_help() {
     echo "--delta-ref <ref>         Install the delta library from this branch or tag."
     echo "                          This value is passed to git clone as the --branch argument."
     echo "                          Default is $default_delta_ref."
+    echo ""
+    echo "--xcompile-build-tools    Install cross-compilation build tools (Docker, Packer) and configure Docker permissions."
+    echo "                          Sets up the complete toolchain for multi-architecture builds."
     echo ""
     echo "-p, --install-packages    Indicates that packages should be installed."
     echo "--install-packages-only   Indicates that only packages should be installed and that dependencies should not be installed from source."
@@ -228,6 +234,13 @@ do_install_aduc_packages() {
 
 do_install_azure_iot_sdk() {
     echo "Installing Azure IoT C SDK ..."
+
+    # Check if already installed by looking for key library and headers
+    if [[ -f /usr/local/lib/libiothub_client.a ]] && [[ -f /usr/local/include/azureiot/iothub_client.h ]]; then
+        echo "✓ Azure IoT C SDK already installed. Skipping..."
+        return 0
+    fi
+
     local azure_sdk_dir=$work_folder/azure-iot-sdk-c
     if [[ -d $azure_sdk_dir ]]; then
         $SUDO rm -rf $azure_sdk_dir || return
@@ -279,10 +292,19 @@ do_install_azure_iot_sdk() {
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf $azure_sdk_dir || return
     fi
+
+    echo "✓ Azure IoT C SDK installed successfully"
 }
 
 do_install_catch2() {
     echo "Installing Catch2 ..."
+
+    # Check if already installed by looking for CMake config
+    if [[ -f /usr/local/lib/cmake/Catch2/Catch2Config.cmake ]]; then
+        echo "✓ Catch2 already installed. Skipping..."
+        return 0
+    fi
+
     local catch2_dir=$work_folder/catch2
     if [[ -d $catch2_dir ]]; then
         $SUDO rm -rf $catch2_dir || return
@@ -312,6 +334,8 @@ do_install_catch2() {
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf $catch2_dir || return
     fi
+
+    echo "✓ Catch2 installed successfully"
 }
 
 do_install_swupdate() {
@@ -456,6 +480,16 @@ do_install_do_release_tarball() {
 
 do_install_do() {
     echo "Installing DO ..."
+
+    # Check if already installed by looking for key library and CMake config
+    if [[ -f /usr/local/lib/libdeliveryoptimization.so ]] || [[ -f /usr/lib/libdeliveryoptimization.so ]]; then
+        if [[ -f /usr/local/lib/cmake/deliveryoptimization_sdk/deliveryoptimization_sdkConfig.cmake ]] || \
+           [[ -f /usr/lib/cmake/deliveryoptimization_sdk/deliveryoptimization_sdkConfig.cmake ]]; then
+            echo "✓ Delivery Optimization SDK already installed. Skipping..."
+            return 0
+        fi
+    fi
+
     local do_dir=$work_folder/do
     if [[ -d $do_dir ]]; then
         $SUDO rm -rf $do_dir || return
@@ -511,10 +545,20 @@ do_install_do() {
     $SUDO cmake --build . --target install || return
     popd > /dev/null || return
     popd > /dev/null || return
+
+    echo "✓ Delivery Optimization SDK installed successfully"
 }
 
 do_install_azure_storage_sdk() {
     echo "Installing azure-storage-sdk"
+
+    # Check if already installed by looking for key library and headers
+    if [[ -d /usr/local/include/azure/storage ]] && \
+       [[ -f /usr/local/lib/libazure-storage-blobs.a || -f /usr/local/lib/libazure-storage-blobs.so ]]; then
+        echo "✓ Azure Storage SDK already installed. Skipping..."
+        return 0
+    fi
+
     local azure_storage_sdk_dir=$work_folder/azure_storage_sdk_dir
 
     if [[ -d $azure_storage_sdk_dir ]]; then
@@ -550,10 +594,20 @@ do_install_azure_storage_sdk() {
     $SUDO cmake --build . --target install || return
 
     popd > /dev/null || return
+
+    echo "✓ Azure Storage SDK installed successfully"
 }
 
 do_install_delta() {
-    echo "Installing iot-hub-device-update-delta library ..."
+    echo "Installing iot-hub-device-update-delta library  (WITH GCC 12 PATCH)..."
+
+    # Check if already installed by looking for key library and CMake config
+    if [[ -f /usr/local/lib/libazure_iot_delta.a ]] && \
+       [[ -f /usr/local/lib/cmake/AzureIotHubDeviceUpdateDelta/AzureIotHubDeviceUpdateDeltaConfig.cmake ]]; then
+        echo "✓ IoT Hub Device Update Delta library already installed. Skipping..."
+        return 0
+    fi
+
     local delta_dir=$work_folder/iot-hub-device-update-delta
     if [[ -d $delta_dir ]]; then
         $SUDO rm -rf $delta_dir || return
@@ -571,16 +625,108 @@ do_install_delta() {
     pushd $delta_dir > /dev/null || return
     git clone --recursive --single-branch --branch $delta_ref --depth 1 $delta_url . || return
 
+    # Debug: Show detected OS and version
+    echo "DEBUG: Detected OS='$OS' VER='$VER'"
+
+    # Patch delta repository to use appropriate GCC version for the distribution
+    # The delta repo's vcpkg/setup_vcpkg.sh may hardcode gcc-10 which doesn't exist on Debian 12
+    echo "Patching delta repository for distribution-specific compiler..."
+
+    local needs_patch=false
+    local target_gcc=""
+    local target_gxx=""
+
+    if [[ "$OS" == "debian" && "$VER" == "12" ]]; then
+        needs_patch=true
+        target_gcc="gcc-12"
+        target_gxx="g++-12"
+        echo "  Detected Debian 12: Will replace gcc-10 with gcc-12"
+    elif [[ "$OS" == "ubuntu" && "$VER" == "22.04" ]]; then
+        needs_patch=true
+        target_gcc="gcc-11"
+        target_gxx="g++-11"
+        echo "  Detected Ubuntu 22.04: Will replace gcc-10 with gcc-11"
+    else
+        echo "  OS/Version does not require patching (using gcc-10)"
+    fi
+
+    if [[ "$needs_patch" == "true" ]]; then
+        echo "  Searching for files to patch..."
+        # Patch shell scripts
+        find . -type f -name "*.sh" -print0 | while IFS= read -r -d '' file; do
+            if grep -q "gcc-10\|g++-10" "$file" 2>/dev/null; then
+                echo "    Patching: $file"
+                sed -i "s/gcc-10/$target_gcc/g" "$file"
+                sed -i "s/g++-10/$target_gxx/g" "$file"
+            fi
+        done
+
+        # Patch CMake files
+        find . -type f \( -name "*.cmake" -o -name "CMakeLists.txt" \) -print0 | while IFS= read -r -d '' file; do
+            if grep -q "gcc-10\|g++-10" "$file" 2>/dev/null; then
+                echo "    Patching: $file"
+                sed -i "s/gcc-10/$target_gcc/g" "$file"
+                sed -i "s/g++-10/$target_gxx/g" "$file"
+            fi
+        done
+
+        echo "  Patching complete."
+    fi
+
     # Install system dependencies required by delta library
     echo "Installing delta library system dependencies..."
-    local delta_deps="curl zip unzip tar gcc gcc-10 g++ g++-10 autoconf autopoint ninja-build pkg-config build-essential libtool cmake zlib1g-dev"
+
+    # Determine appropriate GCC version based on distribution
+    local gcc_version=""
+    local gxx_version=""
+
+    if [[ "$OS" == "debian" ]]; then
+        if [[ "$VER" == "12" ]]; then
+            # Debian 12 (Bookworm) - use GCC 12
+            gcc_version="gcc-12"
+            gxx_version="g++-12"
+        elif [[ "$VER" == "11" ]]; then
+            # Debian 11 (Bullseye) - use GCC 10
+            gcc_version="gcc-10"
+            gxx_version="g++-10"
+        else
+            # Default to system gcc/g++
+            gcc_version=""
+            gxx_version=""
+        fi
+    elif [[ "$OS" == "ubuntu" ]]; then
+        if [[ "$VER" == "22.04" || "$VER" == "24.04" ]]; then
+            # Ubuntu 22.04+ - use GCC 11 or 12
+            gcc_version="gcc-11"
+            gxx_version="g++-11"
+        elif [[ "$VER" == "20.04" ]]; then
+            # Ubuntu 20.04 - use GCC 10
+            gcc_version="gcc-10"
+            gxx_version="g++-10"
+        else
+            gcc_version=""
+            gxx_version=""
+        fi
+    fi
+
+    # Build package list
+    local delta_deps="curl zip unzip tar gcc g++ autoconf autopoint ninja-build pkg-config build-essential libtool cmake zlib1g-dev"
+    if [[ -n "$gcc_version" ]]; then
+        delta_deps="$delta_deps $gcc_version $gxx_version"
+        echo "Using compiler version: $gcc_version / $gxx_version for $OS $VER"
+    else
+        echo "Using system default gcc/g++ for $OS $VER"
+    fi
+
     $SUDO apt-get update || return
     $SUDO apt-get install --yes $delta_deps || return
 
-    # Setup gcc/g++ alternatives
-    echo "Setting up gcc/g++ alternatives..."
-    $SUDO update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 20 || true
-    $SUDO update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 20 || true
+    # Setup gcc/g++ alternatives if specific version was installed
+    if [[ -n "$gcc_version" ]]; then
+        echo "Setting up gcc/g++ alternatives..."
+        $SUDO update-alternatives --install /usr/bin/gcc gcc /usr/bin/$gcc_version 20 || true
+        $SUDO update-alternatives --install /usr/bin/g++ g++ /usr/bin/$gxx_version 20 || true
+    fi
 
     # Setup VCPKG for delta library dependencies
     echo "Setting up VCPKG for delta library..."
@@ -677,6 +823,8 @@ do_install_delta() {
         $SUDO rm -rf $delta_dir || return
         $SUDO rm -rf $vcpkg_root || return
     fi
+
+    echo "✓ IoT Hub Device Update Delta library installed successfully"
 }
 
 do_install_cmake_from_source() {
@@ -840,6 +988,128 @@ do_install_shellcheck() {
     fi
 }
 
+do_install_xcompile_build_tools() {
+    echo "Installing cross-compilation build tools (Docker, Packer)..."
+
+    local needs_newgrp=false
+    local current_user=$(id -un)
+
+    # 1. Install Docker if not present
+    if ! command -v docker &> /dev/null; then
+        echo "Installing Docker..."
+
+        # Install prerequisites
+        $SUDO apt-get update -qq || return 1
+        $SUDO apt-get install -y ca-certificates curl gnupg || return 1
+
+        # Add Docker's official GPG key
+        $SUDO install -m 0755 -d /etc/apt/keyrings
+        if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+                $SUDO gpg --dearmor -o /etc/apt/keyrings/docker.gpg || return 1
+            $SUDO chmod a+r /etc/apt/keyrings/docker.gpg
+        fi
+
+        # Add Docker repository
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+            $SUDO tee /etc/apt/sources.list.d/docker.list > /dev/null || return 1
+
+        # Install Docker
+        $SUDO apt-get update -qq || return 1
+        $SUDO apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || return 1
+
+        echo "✓ Docker installed successfully"
+    else
+        local docker_version=$(docker --version)
+        echo "Docker already installed: ${docker_version}"
+    fi
+
+    # 2. Configure Docker permissions
+    echo "Configuring Docker permissions for user '${current_user}'..."
+
+    # Check if docker group exists, create if not
+    if ! getent group docker > /dev/null; then
+        echo "Creating docker group..."
+        $SUDO groupadd docker || return 1
+    fi
+
+    # Check if user is in docker group
+    if ! id -nG "$current_user" | grep -qw docker; then
+        echo "Adding user '${current_user}' to docker group..."
+        $SUDO usermod -aG docker "$current_user" || return 1
+        needs_newgrp=true
+        echo "✓ User added to docker group"
+    else
+        echo "User '${current_user}' is already in docker group"
+    fi
+
+    # 3. Install Packer if not present
+    if ! command -v packer &> /dev/null; then
+        echo "Installing HashiCorp Packer..."
+
+        # Add HashiCorp GPG key and repository
+        wget -O- https://apt.releases.hashicorp.com/gpg 2>/dev/null | \
+            $SUDO gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg || return 1
+
+        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
+https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+            $SUDO tee /etc/apt/sources.list.d/hashicorp.list > /dev/null || return 1
+
+        $SUDO apt-get update -qq || return 1
+        $SUDO apt-get install -y packer || return 1
+
+        echo "✓ Packer installed successfully: $(packer version | head -n1)"
+    else
+        local packer_version=$(packer version | head -n1 | awk '{print $2}')
+        echo "Packer ${packer_version} already installed"
+    fi
+
+    # 4. Setup QEMU for multi-arch support
+    echo "Setting up QEMU for multi-architecture support..."
+    if docker run --rm --privileged tonistiigi/binfmt --install all > /dev/null 2>&1; then
+        echo "✓ QEMU multi-arch support configured"
+    else
+        warn "Failed to configure QEMU. ARM64 builds on AMD64 hosts may not work."
+    fi
+
+    # 5. Verify Docker access
+    echo ""
+    echo "Verifying Docker access..."
+    if docker ps > /dev/null 2>&1; then
+        echo "✓ Docker is accessible"
+    else
+        if [ "$needs_newgrp" = true ]; then
+            echo ""
+            echo "⚠ Docker group membership updated but not yet active in this shell."
+            echo "  To use Docker without sudo, run one of:"
+            echo "    1. newgrp docker        # Start new shell with updated groups"
+            echo "    2. Log out and log back in"
+            echo "    3. In WSL: exit, then 'wsl --shutdown' from PowerShell, restart WSL"
+            echo ""
+            echo "  Or use 'sudo docker' commands until you restart your session."
+        else
+            warn "Cannot access Docker daemon. You may need to restart the Docker service."
+        fi
+    fi
+
+    echo ""
+    echo "✓ Cross-compilation build tools installation complete!"
+    echo ""
+    echo "Available commands:"
+    echo "  docker --version"
+    echo "  packer version"
+    echo "  docker buildx version"
+    echo ""
+    echo "Quick start:"
+    echo "  cd tools/packer"
+    echo "  packer init ."
+    echo "  packer build -only='adu-delta-agent.docker.debian12_amd64' ."
+    echo ""
+
+    return 0
+}
+
 determine_machine_architecture() {
     local arch=''
     arch="$(uname -m)"
@@ -850,14 +1120,24 @@ determine_machine_architecture() {
     else
         if [[ $arch == aarch64* || $arch == armv8* ]]; then
             is_arm64=true
+            export ARCH=arm64
+            export IS_ARM64=true
+            export IS_ARM=true
         elif [[ $arch == armv7* || $arch == 'arm' ]]; then
             is_arm32=true
+            export ARCH=arm32
+            export IS_ARM32=true
+            export IS_ARM=true
         elif [[ $arch == 'x86_64' || $arch == 'amd64' ]]; then
             is_amd64=true
+            export ARCH=amd64
+            export IS_ARM64=false
+            export IS_ARM=false
         else
             error "Machine architecture '$arch' is not supported."
             return 1
         fi
+        echo "Detected architecture: $ARCH (raw: $arch)"
     fi
 }
 
@@ -956,6 +1236,9 @@ while [[ $1 != "" ]]; do
         ;;
     --install-shellcheck)
         install_shellcheck=true
+        ;;
+    --xcompile-build-tools)
+        install_xcompile_build_tools=true
         ;;
     --install-githooks)
         install_githooks=true
@@ -1146,8 +1429,21 @@ if [[ $install_shellcheck == "true" ]]; then
     fi
 fi
 
+# Install cross-compilation build tools if requested.
+if [[ $install_xcompile_build_tools == "true" ]]; then
+    if ! do_install_xcompile_build_tools; then
+        error "Failed to install cross-compilation build tools."
+        $ret 1
+    fi
+fi
+
 # Install dependencies from source
 if [[ $install_packages_only == "false" ]]; then
+
+    if [[ $install_delta == "true" ]]; then
+        do_install_delta || $ret
+    fi
+
     if [[ $install_azure_iot_sdk == "true" ]]; then
         do_install_azure_iot_sdk || $ret
     fi
@@ -1166,10 +1462,6 @@ if [[ $install_packages_only == "false" ]]; then
 
     if [[ $install_azure_storage_sdk == "true" ]]; then
         do_install_azure_storage_sdk || $ret
-    fi
-
-    if [[ $install_delta == "true" ]]; then
-        do_install_delta || $ret
     fi
 fi
 
