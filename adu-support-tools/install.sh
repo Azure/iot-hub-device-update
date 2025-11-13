@@ -18,10 +18,13 @@ echo -e "${BLUE}========================================${NC}"
 echo ""
 
 # Check if already in adu-support-tools directory
-if [ -f "${PWD}/.adu-support-tools-marker" ] || [ -f "${PWD}/../.adu-support-tools-marker" ]; then
-    echo -e "${RED}Error: You are already in an ADU Support Tools directory!${NC}"
-    echo -e "${YELLOW}Please run this installer from a different location.${NC}"
-    exit 1
+if [ -f "${PWD}/VERSION" ] || [ -f "${PWD}/../VERSION" ]; then
+    # Check if it's the ADU support tools VERSION file
+    if grep -q "^[0-9]\+\.[0-9]\+\.[0-9]\+$" "${PWD}/VERSION" 2>/dev/null || grep -q "^[0-9]\+\.[0-9]\+\.[0-9]\+$" "${PWD}/../VERSION" 2>/dev/null; then
+        echo -e "${RED}Error: You are already in an ADU Support Tools directory!${NC}"
+        echo -e "${YELLOW}Please run this installer from a different location.${NC}"
+        exit 1
+    fi
 fi
 
 # Repository information
@@ -56,7 +59,7 @@ echo ""
 echo ""
 
 if [[ $OPTION == "1" ]]; then
-    INSTALL_DIR="${PWD}/iot-hub-device-update"
+    INSTALL_DIR="${PWD}/adu-support-tools"
     echo -e "${GREEN}Installing to:${NC} ${INSTALL_DIR}"
 elif [[ $OPTION == "2" ]]; then
     read -p "Enter target directory path: " -r CUSTOM_PATH
@@ -67,7 +70,7 @@ elif [[ $OPTION == "2" ]]; then
         CUSTOM_PATH="${PWD}/${CUSTOM_PATH}"
     fi
     
-    INSTALL_DIR="${CUSTOM_PATH}/iot-hub-device-update"
+    INSTALL_DIR="${CUSTOM_PATH}/adu-support-tools"
     echo -e "${GREEN}Installing to:${NC} ${INSTALL_DIR}"
 else
     echo -e "${RED}Invalid option. Exiting.${NC}"
@@ -91,8 +94,11 @@ if [ -d "$INSTALL_DIR" ]; then
 fi
 
 echo ""
+# Use temporary directory for git clone
+TEMP_CLONE_DIR="/tmp/adu-support-tools-install-$$"
+
 echo -e "${BLUE}Step 1: Cloning repository (sparse checkout)...${NC}"
-git clone --filter=blob:none --no-checkout --branch "${BRANCH}" "${REPO_URL}" "${INSTALL_DIR}"
+git clone --filter=blob:none --no-checkout --branch "${BRANCH}" "${REPO_URL}" "${TEMP_CLONE_DIR}"
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}✗ Failed to clone repository${NC}"
@@ -102,13 +108,14 @@ echo -e "${GREEN}✓ Repository cloned${NC}"
 
 echo ""
 echo -e "${BLUE}Step 2: Configuring sparse checkout...${NC}"
-cd "${INSTALL_DIR}"
+cd "${TEMP_CLONE_DIR}"
 
 # Initialize sparse checkout
 git sparse-checkout init --cone
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}✗ Failed to initialize sparse checkout${NC}"
+    rm -rf "${TEMP_CLONE_DIR}"
     exit 1
 fi
 
@@ -117,6 +124,7 @@ git sparse-checkout set "${SPARSE_PATH}"
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}✗ Failed to set sparse checkout path${NC}"
+    rm -rf "${TEMP_CLONE_DIR}"
     exit 1
 fi
 echo -e "${GREEN}✓ Sparse checkout configured${NC}"
@@ -127,35 +135,54 @@ git checkout "${BRANCH}"
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}✗ Failed to checkout branch${NC}"
+    rm -rf "${TEMP_CLONE_DIR}"
     exit 1
 fi
 echo -e "${GREEN}✓ Files checked out${NC}"
 
 echo ""
-echo -e "${BLUE}Step 4: Making scripts executable...${NC}"
-find "${INSTALL_DIR}/${SPARSE_PATH}" -type f -name "*.sh" -exec chmod +x {} \;
+echo -e "${BLUE}Step 4: Copying files to target directory...${NC}"
+# Create target directory
+mkdir -p "${INSTALL_DIR}"
+
+# Copy only the contents of adu-support-tools folder
+cp -r "${TEMP_CLONE_DIR}/${SPARSE_PATH}"/* "${INSTALL_DIR}/"
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}✗ Failed to copy files${NC}"
+    rm -rf "${TEMP_CLONE_DIR}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Files copied${NC}"
+
+echo ""
+echo -e "${BLUE}Step 5: Making scripts executable...${NC}"
+find "${INSTALL_DIR}" -type f -name "*.sh" -exec chmod +x {} \;
 echo -e "${GREEN}✓ Scripts are now executable${NC}"
 
 echo ""
-echo -e "${BLUE}Step 5: Creating marker file...${NC}"
-touch "${INSTALL_DIR}/.adu-support-tools-marker"
-echo -e "${GREEN}✓ Marker file created${NC}"
+echo -e "${BLUE}Step 6: Cleaning up temporary files...${NC}"
+rm -rf "${TEMP_CLONE_DIR}"
+echo -e "${GREEN}✓ Cleanup complete${NC}"
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}✓ Installation Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
+
+# Display installed version
+if [ -f "${INSTALL_DIR}/VERSION" ]; then
+    INSTALLED_VERSION=$(cat "${INSTALL_DIR}/VERSION")
+    echo -e "${BLUE}Version:${NC} ${INSTALLED_VERSION}"
+fi
+
 echo -e "${BLUE}Tools installed at:${NC}"
-echo -e "  ${INSTALL_DIR}/${SPARSE_PATH}"
+echo -e "  ${INSTALL_DIR}"
 echo ""
 echo -e "${BLUE}Available scripts:${NC}"
-find "${INSTALL_DIR}/${SPARSE_PATH}" -type f -name "*.sh" -exec basename {} \; | sed 's/^/  - /'
+find "${INSTALL_DIR}" -type f -name "*.sh" ! -name "install.sh" -exec basename {} \; | sed 's/^/  - /'
 echo ""
 echo -e "${YELLOW}To access the tools:${NC}"
-echo -e "  cd ${INSTALL_DIR}/${SPARSE_PATH}"
-echo ""
-echo -e "${YELLOW}To update later:${NC}"
 echo -e "  cd ${INSTALL_DIR}"
-echo -e "  git pull"
 echo ""
