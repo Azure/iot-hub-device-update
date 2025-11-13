@@ -1,0 +1,3 @@
+# ADU Support Tools Marker File
+# This file indicates that this directory contains ADU Support Tools
+# It prevents the installer from running inside this directory
