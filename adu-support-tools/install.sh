@@ -49,14 +49,31 @@ GIT_VERSION=$(git --version | awk '{print $3}')
 echo -e "${BLUE}Git version:${NC} ${GIT_VERSION}"
 echo ""
 
+# Check if running interactively
+if [ -t 0 ]; then
+    # Interactive mode
+    INTERACTIVE=true
+else
+    # Non-interactive mode (piped from curl)
+    INTERACTIVE=false
+    echo -e "${YELLOW}Note: Running in non-interactive mode${NC}"
+    echo -e "${YELLOW}Installing to default location: ./adu-support-tools${NC}"
+    echo ""
+fi
+
 # Ask for installation directory
-echo -e "${YELLOW}Installation Options:${NC}"
-echo -e "  1. Current directory: ${PWD}"
-echo -e "  2. Specify custom path"
-echo ""
-read -p "Choose option (1/2): " -n 1 -r OPTION
-echo ""
-echo ""
+if [ "$INTERACTIVE" = true ]; then
+    echo -e "${YELLOW}Installation Options:${NC}"
+    echo -e "  1. Current directory: ${PWD}"
+    echo -e "  2. Specify custom path"
+    echo ""
+    read -p "Choose option (1/2): " -n 1 -r OPTION
+    echo ""
+    echo ""
+else
+    # Default to option 1 in non-interactive mode
+    OPTION="1"
+fi
 
 if [[ $OPTION == "1" ]]; then
     INSTALL_DIR="${PWD}/adu-support-tools"
@@ -81,15 +98,21 @@ echo ""
 
 # Check if directory already exists
 if [ -d "$INSTALL_DIR" ]; then
-    echo -e "${YELLOW}Warning: Directory already exists: ${INSTALL_DIR}${NC}"
-    read -p "Do you want to remove it and continue? (y/n): " -n 1 -r
-    echo ""
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo -e "${YELLOW}Removing existing directory...${NC}"
-        rm -rf "$INSTALL_DIR"
+    if [ "$INTERACTIVE" = true ]; then
+        echo -e "${YELLOW}Warning: Directory already exists: ${INSTALL_DIR}${NC}"
+        read -p "Do you want to remove it and continue? (y/n): " -n 1 -r
+        echo ""
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo -e "${YELLOW}Removing existing directory...${NC}"
+            rm -rf "$INSTALL_DIR"
+        else
+            echo -e "${YELLOW}Installation cancelled.${NC}"
+            exit 0
+        fi
     else
-        echo -e "${YELLOW}Installation cancelled.${NC}"
-        exit 0
+        echo -e "${RED}Error: Directory already exists: ${INSTALL_DIR}${NC}"
+        echo -e "${YELLOW}Please remove it first or run the script interactively.${NC}"
+        exit 1
     fi
 fi
 
