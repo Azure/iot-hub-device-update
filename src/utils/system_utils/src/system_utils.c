@@ -731,7 +731,6 @@ bool SystemUtils_IsFile(const char* path, int* err)
     if (stat(path, &st) != 0)
     {
         err_ret = errno;
-        Log_Error("stat path '%s' failed: %d", path, err_ret);
         is_file = false;
         goto done;
     }
