@@ -117,6 +117,7 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                     workflowLevel,
                     i,
                     selectedComponents);
+                free(const_cast<char*>(selectedComponents));
 
                 // Create child workflow using inline step data.
                 result = workflow_create_from_inline_step(handle, i, &childHandle);
