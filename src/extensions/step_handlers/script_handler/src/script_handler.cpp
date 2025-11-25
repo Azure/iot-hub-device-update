@@ -67,6 +67,14 @@ EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEV
 }
 
 /**
+ * @brief Destructor for the Script Handler Impl class.
+ */
+ScriptHandlerImpl::~ScriptHandlerImpl() // override
+{
+    ADUC_Logging_Uninit();
+}
+
+/**
  * @brief Gets the extension contract info.
  *
  * @param[out] contractInfo The extension contract info.
