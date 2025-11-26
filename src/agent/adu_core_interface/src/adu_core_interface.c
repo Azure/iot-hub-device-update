@@ -119,6 +119,7 @@ void ADUC_WorkflowData_Uninit(ADUC_WorkflowData* workflowData)
     }
 
     workflow_free_string(workflowData->LastCompletedWorkflowId);
+    workflow_free(workflowData->WorkflowHandle);
     memset(workflowData, 0, sizeof(*workflowData));
 }
 
