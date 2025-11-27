@@ -817,7 +817,7 @@ ADUC_Result RootKeyUtility_LoadSerializedPackage(const char* fileLocation, char*
 done:
 
     free(rootKeyPackageJsonString);
-
+    json_value_free(rootKeyPackageValue);
     return result;
 }
 
