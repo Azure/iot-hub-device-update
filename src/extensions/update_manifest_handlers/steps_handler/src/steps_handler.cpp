@@ -366,6 +366,7 @@ static ADUC_Result GetSelectedComponentsArray(ADUC_WorkflowHandle handle, JSON_A
 
 done:
     json_value_free(rootValue);
+    free(const_cast<char*>(selectedComponents));
     return result;
 }
 
