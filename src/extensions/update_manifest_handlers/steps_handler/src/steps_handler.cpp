@@ -320,6 +320,7 @@ static ADUC_Result GetSelectedComponentsArray(ADUC_WorkflowHandle handle, JSON_A
     ADUC_Result result = { ADUC_Result_Failure };
     JSON_Value* rootValue = nullptr;
     JSON_Object* rootObject = nullptr;
+    JSON_Array* componentsArrayLocal = nullptr;
 
     if (componentsArray == nullptr)
     {
@@ -346,7 +347,14 @@ static ADUC_Result GetSelectedComponentsArray(ADUC_WorkflowHandle handle, JSON_A
     }
 
     rootObject = json_object(rootValue);
-    *componentsArray = json_object_get_array(rootObject, "components");
+    componentsArrayLocal = json_object_get_array(rootObject, "components");
+    if (componentsArrayLocal == nullptr)
+    {
+        result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INVALID_COMPONENTS_DATA;
+        goto done;
+    }
+
+    *componentsArray = json_value_get_array(json_value_deep_copy(json_array_get_wrapping_value(componentsArrayLocal)));
     if (*componentsArray == nullptr)
     {
         result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INVALID_COMPONENTS_DATA;
@@ -357,6 +365,7 @@ static ADUC_Result GetSelectedComponentsArray(ADUC_WorkflowHandle handle, JSON_A
     result.ExtendedResultCode = 0;
 
 done:
+    json_value_free(rootValue);
     return result;
 }
 
@@ -476,6 +485,7 @@ static ADUC_Result HandleComponents(
                 workflow_set_result_details(handle, msg);
             }
         }
+    json_value_free(json_array_get_wrapping_value(selectedComponentsArray));
     }
 
     result.ResultCode = ADUC_Result_Success;
@@ -1124,6 +1134,7 @@ done:
         workflow_set_state(handle, ADUCITF_State_Failed);
     }
 
+    json_value_free(json_array_get_wrapping_value(selectedComponentsArray));
     json_free_serialized_string(serializedComponentString);
     workflow_free_string(workFolder);
 
@@ -1459,6 +1470,7 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
 
 done:
 
+    json_value_free(json_array_get_wrapping_value(selectedComponentsArray));
     json_free_serialized_string(serializedComponentString);
     workflow_free_string(workFolder);
 
