@@ -504,6 +504,10 @@ done:
     {
         json_value_free(selectedComponentsValue);
     }
+    if (selectedComponentsJson != nullptr)
+    {
+        free(const_cast<char*>(selectedComponentsJson));
+    }
 
     workflow_free_string(installedCriteria);
     return result;
