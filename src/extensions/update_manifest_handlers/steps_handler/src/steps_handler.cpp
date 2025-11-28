@@ -221,9 +221,11 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                             result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_SET_SELECTED_COMPONENTS_FAILURE;
                         }
 
+                        const char* selected_components = workflow_peek_selected_components(childHandle);
                         Log_Debug(
                             "Set child handle's selected components: %s",
-                            workflow_peek_selected_components(childHandle));
+                            selected_components);
+                        free(const_cast<char*>(selected_components));
                     }
                 }
             }
