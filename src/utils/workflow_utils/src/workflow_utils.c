@@ -2372,11 +2372,11 @@ done:
     {
         entity->Hash = NULL; // will be freed with tempHash below
         ADUC_FileEntity_Uninit(entity);
+    }
 
-        if (tempHash != NULL)
-        {
-            ADUC_Hash_FreeArray(tempHashCount, tempHash);
-        }
+    if (tempHash != NULL)
+    {
+        ADUC_Hash_FreeArray(tempHashCount, tempHash);
     }
 
     return succeeded;
@@ -4059,6 +4059,10 @@ done:
     if (!succeeded && fileEntityInited)
     {
         ADUC_FileEntity_Uninit(entity);
+    }
+    if (tempHash != NULL)
+    {
+        ADUC_Hash_FreeArray(tempHashCount, tempHash);
     }
 
     return succeeded;
