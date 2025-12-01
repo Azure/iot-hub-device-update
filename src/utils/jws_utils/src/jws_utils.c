@@ -619,6 +619,9 @@ done:
         CONSTBUFFER_DecRef(sha256HashPubKey);
     }
 
+    free(N);
+    free(e);
+
     return result;
 }
 
