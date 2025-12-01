@@ -6,7 +6,7 @@ jobs:
   container-job:
     strategy:
       matrix:
-        os: ["debian:12", "debian:11", "ubuntu:22.04", "ubuntu:20.04"]
+        os: ["debian:11", "ubuntu:22.04", "ubuntu:20.04"]
         arch: [amd64, arm64]
         exclude:
           - os: "debian:10"
