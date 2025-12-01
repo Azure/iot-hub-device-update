@@ -417,14 +417,12 @@ void OrchestratorUpdateCallback(
     }
 
     ADUC_Workflow_HandlePropertyUpdate(workflowData, (const unsigned char*)jsonString, sourceContext->forceUpdate);
-    free(jsonString);
-    jsonString = ackString;
 
     // ACK the request.
     jsonToSend = PnP_CreateReportedPropertyWithStatus(
         g_aduPnPComponentName,
         g_aduPnPComponentServicePropertyName,
-        jsonString,
+        ackString,
         PNP_STATUS_SUCCESS,
         "", // Description for this acknowledgement.
         propertyVersion);
@@ -455,6 +453,7 @@ done:
     workflow_free_string(workFolder);
     STRING_delete(jsonToSend);
     free(jsonString);
+    free(ackString);
 
     Log_Info("OrchestratorPropertyUpdateCallback ended");
 }

@@ -408,4 +408,10 @@ void UninitializeCommandListenerThread()
 {
     Log_Info("De-initializing command listener thread");
     g_terminate_thread_request = true;
+    if (g_commandListenerThreadCreated)
+    {
+        pthread_cancel(g_commandListenerThread);
+        pthread_join(g_commandListenerThread, NULL);
+        g_commandListenerThreadCreated = false;
+    }
 }
