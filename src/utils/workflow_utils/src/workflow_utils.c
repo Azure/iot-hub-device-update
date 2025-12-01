@@ -3062,6 +3062,8 @@ void workflow_uninit(ADUC_WorkflowHandle handle)
             VECTOR_destroy(wf->ResultExtraExtendedResultCodes);
             wf->ResultExtraExtendedResultCodes = NULL;
         }
+
+        free(wf->Children);
     }
 
     _workflow_free_updateaction(handle);
@@ -3270,7 +3272,6 @@ ADUC_WorkflowHandle workflow_remove_child(ADUC_WorkflowHandle handle, int index)
         size_t bytes = sizeof(ADUC_Workflow*) * wf->ChildCount - (size_t)(index + 1);
         memmove(wf->Children + index, wf->Children + (index + 1), bytes);
     }
-
     wf->ChildCount--;
 
     workflow_set_parent(child, NULL);
