@@ -2370,7 +2370,6 @@ bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fi
 done:
     if (!succeeded)
     {
-        entity->Hash = NULL; // will be freed with tempHash below
         ADUC_FileEntity_Uninit(entity);
     }
 
