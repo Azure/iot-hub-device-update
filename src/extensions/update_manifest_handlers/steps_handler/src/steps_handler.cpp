@@ -127,7 +127,9 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                     workflow_set_step_index(childHandle, i);
 
                     // Inherit parent's selected components.
-                    workflow_set_selected_components(childHandle, workflow_peek_selected_components(handle));
+                    const char* selectedComponents = workflow_peek_selected_components(handle);
+                    workflow_set_selected_components(childHandle, selectedComponents);
+                    free(const_cast<char*>(selectedComponents));
                 }
             }
             else
@@ -305,7 +307,10 @@ static char* CreateComponentSerializedString(JSON_Array* components, size_t inde
     JSON_Array* array = json_array(json_value_init_array());
     json_array_append_value(array, componentClone);
     json_object_set_value(json_object(root), "components", json_array_get_wrapping_value(array));
-    return json_serialize_to_string_pretty(root);
+
+    char* result = json_serialize_to_string_pretty(root);
+    json_value_free(root);
+    return result;
 }
 
 /**
