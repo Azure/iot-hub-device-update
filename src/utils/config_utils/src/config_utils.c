@@ -690,6 +690,7 @@ void ADUC_ConfigInfo_UnInit(ADUC_ConfigInfo* config)
     free(config->extensionsStepHandlerFolder);
     free(config->extensionsDownloadHandlerFolder);
 
+    ADUC_AgentInfoArray_Free(config->agentCount, config->agents);
     json_value_free(config->rootJsonValue);
     memset(config, 0, sizeof(*config));
 }

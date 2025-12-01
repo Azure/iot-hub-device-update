@@ -87,6 +87,8 @@ bool DeviceProperties_AddManufacturerAndModel(JSON_Object* devicePropsObj, const
     success = true;
 
 done:
+    free(manufacturer);
+    free(model);
     if (!success)
     {
         Log_Error("Failed to get manufacturer and model device properties");
