@@ -2370,13 +2370,12 @@ bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fi
 done:
     if (!succeeded)
     {
-        entity->Hash = NULL; // will be freed with tempHash below
         ADUC_FileEntity_Uninit(entity);
+    }
 
-        if (tempHash != NULL)
-        {
-            ADUC_Hash_FreeArray(tempHashCount, tempHash);
-        }
+    if (tempHash != NULL)
+    {
+        ADUC_Hash_FreeArray(tempHashCount, tempHash);
     }
 
     return succeeded;
@@ -3063,6 +3062,8 @@ void workflow_uninit(ADUC_WorkflowHandle handle)
             VECTOR_destroy(wf->ResultExtraExtendedResultCodes);
             wf->ResultExtraExtendedResultCodes = NULL;
         }
+
+        free(wf->Children);
     }
 
     _workflow_free_updateaction(handle);
@@ -3271,7 +3272,6 @@ ADUC_WorkflowHandle workflow_remove_child(ADUC_WorkflowHandle handle, int index)
         size_t bytes = sizeof(ADUC_Workflow*) * wf->ChildCount - (size_t)(index + 1);
         memmove(wf->Children + index, wf->Children + (index + 1), bytes);
     }
-
     wf->ChildCount--;
 
     workflow_set_parent(child, NULL);
@@ -4059,6 +4059,10 @@ done:
     if (!succeeded && fileEntityInited)
     {
         ADUC_FileEntity_Uninit(entity);
+    }
+    if (tempHash != NULL)
+    {
+        ADUC_Hash_FreeArray(tempHashCount, tempHash);
     }
 
     return succeeded;
