@@ -28,9 +28,33 @@ packer build -only='adu-delta-agent.docker.debian12_amd64' .
 packer build -only='adu-delta-agent.docker.*_arm64' .
 ```
 
+## Build with Local Source (No Git Required)
+
+**Perfect for rapid development** - test your changes without committing/pushing to GitHub!
+
+```bash
+# Make script executable (first time only)
+chmod +x packer-build-local.sh
+
+# Build using your local workspace
+./packer-build-local.sh amd64 debian12
+
+# Test on different distributions
+./packer-build-local.sh amd64 ubuntu2204
+./packer-build-local.sh arm64 debian12
+```
+
+**When to use:**
+- ✅ Testing uncommitted changes
+- ✅ Rapid iteration during development  
+- ✅ Debugging install-deps.sh or build scripts
+- ✅ No need to commit/push every change
+
+**Note:** This does a full build each time (no stage caching). For cached/staged builds after committing, use the staged approach below.
+
 ## Resume Builds (Incremental/Staged Building)
 
-For faster iteration and resumable builds, use the **staged build approach**:
+For faster iteration and resumable builds with **committed code**, use the **staged build approach**:
 
 ### Option 1: Using the Helper Script (Recommended)
 

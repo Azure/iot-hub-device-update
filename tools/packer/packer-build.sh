@@ -54,20 +54,27 @@ After running 'deps' stage once, you can iterate quickly with:
 EOF
 }
 
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+if [[ $1 == "-h" || $1 == "--help" ]]; then
     show_help
     exit 0
 fi
 
 # Validate inputs
 case "$STAGE" in
-    deps|build|test|all) ;;
-    *) echo "Error: Invalid stage '$STAGE'. Use: deps, build, test, or all" >&2; show_help; exit 1 ;;
+deps | build | test | all) ;;
+*)
+    echo "Error: Invalid stage '$STAGE'. Use: deps, build, test, or all" >&2
+    show_help
+    exit 1
+    ;;
 esac
 
 case "$ARCH" in
-    amd64|arm64) ;;
-    *) echo "Error: Invalid arch '$ARCH'. Use: amd64 or arm64" >&2; exit 1 ;;
+amd64 | arm64) ;;
+*)
+    echo "Error: Invalid arch '$ARCH'. Use: amd64 or arm64" >&2
+    exit 1
+    ;;
 esac
 
 TARGET="${DISTRO}_${ARCH}"
@@ -86,52 +93,52 @@ if [[ -f "build-staged.pkr.hcl" ]]; then
     echo "Using staged build configuration: $CONFIG_FILE"
 
     case "$STAGE" in
-        deps)
-            echo "Building dependencies image..."
-            packer build -only="adu-deps.docker.${TARGET}_deps" "$CONFIG_FILE"
-            echo
-            echo "✓ Dependencies image created: adu-delta-agent-deps:${TARGET}_deps"
-            echo "  You can now run: $(basename "$0") build $ARCH $DISTRO"
-            ;;
-        build)
-            # Check if deps image exists
-            if ! docker image inspect "adu-delta-agent-deps:${TARGET}_deps" >/dev/null 2>&1; then
-                echo "Error: Dependencies image not found!"
-                echo "Run first: $(basename "$0") deps $ARCH $DISTRO"
-                exit 1
-            fi
-            echo "Building project (using cached dependencies)..."
-            packer build -only="adu-build.docker.${TARGET}_build" "$CONFIG_FILE"
-            echo
-            echo "✓ Build image created: adu-delta-agent-build:${TARGET}_build"
-            echo "  You can now run: $(basename "$0") test $ARCH $DISTRO"
-            ;;
-        test)
-            # Check if build image exists
-            if ! docker image inspect "adu-delta-agent-build:${TARGET}_build" >/dev/null 2>&1; then
-                echo "Error: Build image not found!"
-                echo "Run first: $(basename "$0") build $ARCH $DISTRO"
-                exit 1
-            fi
-            echo "Running tests (using cached build)..."
-            packer build -only="adu-final.docker.${TARGET}_final" "$CONFIG_FILE"
-            echo
-            echo "✓ Final image created: adu-delta-agent:${TARGET}_final"
-            ;;
-        all)
-            echo "Running all stages..."
-            echo
-            echo "Stage 1/3: Dependencies..."
-            $(basename "$0") deps "$ARCH" "$DISTRO"
-            echo
-            echo "Stage 2/3: Build..."
-            $(basename "$0") build "$ARCH" "$DISTRO"
-            echo
-            echo "Stage 3/3: Test..."
-            $(basename "$0") test "$ARCH" "$DISTRO"
-            echo
-            echo "✓ Complete build finished!"
-            ;;
+    deps)
+        echo "Building dependencies image..."
+        packer build -only="adu-deps.docker.${TARGET}_deps" "$CONFIG_FILE"
+        echo
+        echo "✓ Dependencies image created: adu-delta-agent-deps:${TARGET}_deps"
+        echo "  You can now run: $(basename "$0") build $ARCH $DISTRO"
+        ;;
+    build)
+        # Check if deps image exists
+        if ! docker image inspect "adu-delta-agent-deps:${TARGET}_deps" > /dev/null 2>&1; then
+            echo "Error: Dependencies image not found!"
+            echo "Run first: $(basename "$0") deps $ARCH $DISTRO"
+            exit 1
+        fi
+        echo "Building project (using cached dependencies)..."
+        packer build -only="adu-build.docker.${TARGET}_build" "$CONFIG_FILE"
+        echo
+        echo "✓ Build image created: adu-delta-agent-build:${TARGET}_build"
+        echo "  You can now run: $(basename "$0") test $ARCH $DISTRO"
+        ;;
+    test)
+        # Check if build image exists
+        if ! docker image inspect "adu-delta-agent-build:${TARGET}_build" > /dev/null 2>&1; then
+            echo "Error: Build image not found!"
+            echo "Run first: $(basename "$0") build $ARCH $DISTRO"
+            exit 1
+        fi
+        echo "Running tests (using cached build)..."
+        packer build -only="adu-final.docker.${TARGET}_final" "$CONFIG_FILE"
+        echo
+        echo "✓ Final image created: adu-delta-agent:${TARGET}_final"
+        ;;
+    all)
+        echo "Running all stages..."
+        echo
+        echo "Stage 1/3: Dependencies..."
+        $(basename "$0") deps "$ARCH" "$DISTRO"
+        echo
+        echo "Stage 2/3: Build..."
+        $(basename "$0") build "$ARCH" "$DISTRO"
+        echo
+        echo "Stage 3/3: Test..."
+        $(basename "$0") test "$ARCH" "$DISTRO"
+        echo
+        echo "✓ Complete build finished!"
+        ;;
     esac
 else
     # Fallback to original single-stage build
@@ -147,8 +154,8 @@ echo "======================================================================"
 echo
 echo "To extract packages from the image:"
 echo "  CONTAINER=\$(docker create adu-delta-agent:${TARGET}_final)"
-echo "  docker cp \$CONTAINER:/iot-hub-device-update/out/. ./packages/"
-echo "  docker rm \$CONTAINER"
+echo '  docker cp $CONTAINER:/iot-hub-device-update/out/. ./packages/'
+echo '  docker rm $CONTAINER'
 echo
 echo "To list available images:"
 echo "  docker images | grep adu-delta-agent"

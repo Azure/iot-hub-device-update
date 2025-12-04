@@ -73,7 +73,7 @@ install_cmake_version="$supported_cmake_version"
 cmake_force_source=false
 cmake_prefix="$work_folder"
 cmake_installer_dir=""
-cmake_dir_symlink=""  # Will be set after work_folder is determined
+cmake_dir_symlink="" # Will be set after work_folder is determined
 cmake_bin="cmake"
 
 install_shellcheck=false
@@ -483,8 +483,8 @@ do_install_do() {
 
     # Check if already installed by looking for key library and CMake config
     if [[ -f /usr/local/lib/libdeliveryoptimization.so ]] || [[ -f /usr/lib/libdeliveryoptimization.so ]]; then
-        if [[ -f /usr/local/lib/cmake/deliveryoptimization_sdk/deliveryoptimization_sdkConfig.cmake ]] || \
-           [[ -f /usr/lib/cmake/deliveryoptimization_sdk/deliveryoptimization_sdkConfig.cmake ]]; then
+        if [[ -f /usr/local/lib/cmake/deliveryoptimization_sdk/deliveryoptimization_sdkConfig.cmake ]] \
+            || [[ -f /usr/lib/cmake/deliveryoptimization_sdk/deliveryoptimization_sdkConfig.cmake ]]; then
             echo "✓ Delivery Optimization SDK already installed. Skipping..."
             return 0
         fi
@@ -553,8 +553,8 @@ do_install_azure_storage_sdk() {
     echo "Installing azure-storage-sdk"
 
     # Check if already installed by looking for key library and headers
-    if [[ -d /usr/local/include/azure/storage ]] && \
-       [[ -f /usr/local/lib/libazure-storage-blobs.a || -f /usr/local/lib/libazure-storage-blobs.so ]]; then
+    if [[ -d /usr/local/include/azure/storage ]] \
+        && [[ -f /usr/local/lib/libazure-storage-blobs.a || -f /usr/local/lib/libazure-storage-blobs.so ]]; then
         echo "✓ Azure Storage SDK already installed. Skipping..."
         return 0
     fi
@@ -602,8 +602,8 @@ do_install_delta() {
     echo "Installing iot-hub-device-update-delta library  (WITH GCC 12 PATCH)..."
 
     # Check if already installed by looking for key library and CMake config
-    if [[ -f /usr/local/lib/libazure_iot_delta.a ]] && \
-       [[ -f /usr/local/lib/cmake/AzureIotHubDeviceUpdateDelta/AzureIotHubDeviceUpdateDeltaConfig.cmake ]]; then
+    if [[ -f /usr/local/lib/libazure_iot_delta.a ]] \
+        && [[ -f /usr/local/lib/cmake/AzureIotHubDeviceUpdateDelta/AzureIotHubDeviceUpdateDeltaConfig.cmake ]]; then
         echo "✓ IoT Hub Device Update Delta library already installed. Skipping..."
         return 0
     fi
@@ -636,12 +636,12 @@ do_install_delta() {
     local target_gcc=""
     local target_gxx=""
 
-    if [[ "$OS" == "debian" && "$VER" == "12" ]]; then
+    if [[ $OS == "debian" && $VER == "12" ]]; then
         needs_patch=true
         target_gcc="gcc-12"
         target_gxx="g++-12"
         echo "  Detected Debian 12: Will replace gcc-10 with gcc-12"
-    elif [[ "$OS" == "ubuntu" && "$VER" == "22.04" ]]; then
+    elif [[ $OS == "ubuntu" && $VER == "22.04" ]]; then
         needs_patch=true
         target_gcc="gcc-11"
         target_gxx="g++-11"
@@ -650,11 +650,11 @@ do_install_delta() {
         echo "  OS/Version does not require patching (using gcc-10)"
     fi
 
-    if [[ "$needs_patch" == "true" ]]; then
+    if [[ $needs_patch == "true" ]]; then
         echo "  Searching for files to patch..."
         # Patch shell scripts
         find . -type f -name "*.sh" -print0 | while IFS= read -r -d '' file; do
-            if grep -q "gcc-10\|g++-10" "$file" 2>/dev/null; then
+            if grep -q "gcc-10\|g++-10" "$file" 2> /dev/null; then
                 echo "    Patching: $file"
                 sed -i "s/gcc-10/$target_gcc/g" "$file"
                 sed -i "s/g++-10/$target_gxx/g" "$file"
@@ -663,7 +663,7 @@ do_install_delta() {
 
         # Patch CMake files
         find . -type f \( -name "*.cmake" -o -name "CMakeLists.txt" \) -print0 | while IFS= read -r -d '' file; do
-            if grep -q "gcc-10\|g++-10" "$file" 2>/dev/null; then
+            if grep -q "gcc-10\|g++-10" "$file" 2> /dev/null; then
                 echo "    Patching: $file"
                 sed -i "s/gcc-10/$target_gcc/g" "$file"
                 sed -i "s/g++-10/$target_gxx/g" "$file"
@@ -680,12 +680,12 @@ do_install_delta() {
     local gcc_version=""
     local gxx_version=""
 
-    if [[ "$OS" == "debian" ]]; then
-        if [[ "$VER" == "12" ]]; then
+    if [[ $OS == "debian" ]]; then
+        if [[ $VER == "12" ]]; then
             # Debian 12 (Bookworm) - use GCC 12
             gcc_version="gcc-12"
             gxx_version="g++-12"
-        elif [[ "$VER" == "11" ]]; then
+        elif [[ $VER == "11" ]]; then
             # Debian 11 (Bullseye) - use GCC 10
             gcc_version="gcc-10"
             gxx_version="g++-10"
@@ -694,12 +694,12 @@ do_install_delta() {
             gcc_version=""
             gxx_version=""
         fi
-    elif [[ "$OS" == "ubuntu" ]]; then
-        if [[ "$VER" == "22.04" || "$VER" == "24.04" ]]; then
+    elif [[ $OS == "ubuntu" ]]; then
+        if [[ $VER == "22.04" || $VER == "24.04" ]]; then
             # Ubuntu 22.04+ - use GCC 11 or 12
             gcc_version="gcc-11"
             gxx_version="g++-11"
-        elif [[ "$VER" == "20.04" ]]; then
+        elif [[ $VER == "20.04" ]]; then
             # Ubuntu 20.04 - use GCC 10
             gcc_version="gcc-10"
             gxx_version="g++-10"
@@ -711,7 +711,7 @@ do_install_delta() {
 
     # Build package list
     local delta_deps="curl zip unzip tar gcc g++ autoconf autopoint ninja-build pkg-config build-essential libtool cmake zlib1g-dev"
-    if [[ -n "$gcc_version" ]]; then
+    if [[ -n $gcc_version ]]; then
         delta_deps="$delta_deps $gcc_version $gxx_version"
         echo "Using compiler version: $gcc_version / $gxx_version for $OS $VER"
     else
@@ -722,7 +722,7 @@ do_install_delta() {
     $SUDO apt-get install --yes $delta_deps || return
 
     # Setup gcc/g++ alternatives if specific version was installed
-    if [[ -n "$gcc_version" ]]; then
+    if [[ -n $gcc_version ]]; then
         echo "Setting up gcc/g++ alternatives..."
         $SUDO update-alternatives --install /usr/bin/gcc gcc /usr/bin/$gcc_version 20 || true
         $SUDO update-alternatives --install /usr/bin/g++ g++ /usr/bin/$gxx_version 20 || true
@@ -1005,15 +1005,15 @@ do_install_xcompile_build_tools() {
         # Add Docker's official GPG key
         $SUDO install -m 0755 -d /etc/apt/keyrings
         if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
-                $SUDO gpg --dearmor -o /etc/apt/keyrings/docker.gpg || return 1
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+                | $SUDO gpg --dearmor -o /etc/apt/keyrings/docker.gpg || return 1
             $SUDO chmod a+r /etc/apt/keyrings/docker.gpg
         fi
 
         # Add Docker repository
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-            $SUDO tee /etc/apt/sources.list.d/docker.list > /dev/null || return 1
+https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+            | $SUDO tee /etc/apt/sources.list.d/docker.list > /dev/null || return 1
 
         # Install Docker
         $SUDO apt-get update -qq || return 1
@@ -1049,12 +1049,12 @@ https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_C
         echo "Installing HashiCorp Packer..."
 
         # Add HashiCorp GPG key and repository
-        wget -O- https://apt.releases.hashicorp.com/gpg 2>/dev/null | \
-            $SUDO gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg || return 1
+        wget -O- https://apt.releases.hashicorp.com/gpg 2> /dev/null \
+            | $SUDO gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg || return 1
 
         echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
-https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
-            $SUDO tee /etc/apt/sources.list.d/hashicorp.list > /dev/null || return 1
+https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
+            | $SUDO tee /etc/apt/sources.list.d/hashicorp.list > /dev/null || return 1
 
         $SUDO apt-get update -qq || return 1
         $SUDO apt-get install -y packer || return 1
@@ -1301,15 +1301,15 @@ while [[ $1 != "" ]]; do
 done
 
 # Ensure workfolder exists with proper permissions
-if [[ ! -d "$work_folder" ]]; then
+if [[ ! -d $work_folder ]]; then
     echo "Creating work folder: $work_folder"
     mkdir -p "$work_folder" || $ret
 fi
 
 # Ensure the work folder has proper ownership
 current_user="$(id -un)"
-work_folder_owner="$(stat -c '%U' "$work_folder" 2>/dev/null || echo 'unknown')"
-if [[ "$work_folder_owner" != "$current_user" && "$work_folder_owner" != "unknown" ]]; then
+work_folder_owner="$(stat -c '%U' "$work_folder" 2> /dev/null || echo 'unknown')"
+if [[ $work_folder_owner != "$current_user" && $work_folder_owner != "unknown" ]]; then
     echo "Changing ownership of $work_folder to $current_user"
     $SUDO chown -R "$current_user":"$(id -gn)" "$work_folder" || $ret
 fi
