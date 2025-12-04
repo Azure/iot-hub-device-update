@@ -35,7 +35,9 @@ install_packages=false
 install_packages_only=false
 # The folder where source code will be placed
 # for building and installing from source.
-DEFAULT_WORKFOLDER=/tmp
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
+repo_root="$(cd "$script_dir/.." > /dev/null 2>&1 && pwd)"
+DEFAULT_WORKFOLDER="$repo_root/.workspace"
 work_folder=$DEFAULT_WORKFOLDER
 keep_source_code=false
 use_ssh=false
@@ -65,7 +67,6 @@ install_cmake_version="$supported_cmake_version"
 cmake_force_source=false
 cmake_prefix="$work_folder"
 cmake_installer_dir=""
-cmake_dir_symlink="/tmp/deviceupdate-cmake"
 cmake_bin="cmake"
 
 install_shellcheck=false
@@ -78,6 +79,9 @@ du_test_data_dir_path="/tmp/adu/"
 default_do_ref=develop
 install_do=false
 do_ref=$default_do_ref
+
+# CMake symlink location
+cmake_dir_symlink="$repo_root/.workspace/deviceupdate-cmake"
 
 # catch2 build
 #
@@ -140,7 +144,7 @@ print_help() {
     echo "--install-packages-only   Indicates that only packages should be installed and that dependencies should not be installed from source."
     echo ""
     echo "-f, --work-folder <work_folder>   Specifies the folder where source code will be cloned or downloaded."
-    echo "                                  Default is /tmp."
+    echo "                                  Default is [repo-root]/.workspace/."
     echo "-k, --keep-source-code            Indicates that source code should not be deleted after install from work_folder."
     echo ""
     echo "--use-ssh                 Use ssh URLs to clone instead of https URLs."
@@ -190,6 +194,11 @@ do_install_aduc_packages() {
         $SUDO apt-get install --yes gcc-12 g++-12 || return
         catch2_cc=/usr/bin/gcc-12
         catch2_cxx=/usr/bin/g++-12
+    elif [[ $OS == "Ubuntu" && $VER == "24.04" ]]; then
+        # Ubuntu 24.04 and newer have a recent enough default gcc, so we don't need to install a specific version
+        echo "Using system default gcc for Ubuntu 24.04+"
+        catch2_cc=/usr/bin/gcc
+        catch2_cxx=/usr/bin/g++
     else
         $SUDO apt-get install --yes gcc-8 g++-8 || return
         catch2_cc=/usr/bin/gcc-8
@@ -438,6 +447,13 @@ do_install_do_release_tarball() {
 
 do_install_do() {
     echo "Installing DO ..."
+
+    # Skip DO installation on Ubuntu 24.04 and newer
+    if [[ $OS == "Ubuntu" && $VER == "24.04" ]]; then
+        echo "Skipping DO installation on Ubuntu 24.04 (not supported)"
+        return 0
+    fi
+
     local do_dir=$work_folder/do
     if [[ -d $do_dir ]]; then
         $SUDO rm -rf $do_dir || return
@@ -516,6 +532,25 @@ do_install_azure_storage_sdk() {
     git clone --recursive --single-branch --branch $azure_storage_sdk_branch_ref $azure_storage_sdk_url . || return
 
     git checkout tags/$azure_storage_sdk_tag_ref
+
+    # Apply patch to fix missing cstdint include for GCC 12+ (Ubuntu 24.04, Debian 12)
+    # Check GCC version and apply patch only if GCC >= 12
+    local gcc_version
+    gcc_version=$(gcc -dumpversion | cut -d. -f1)
+
+    if [[ $gcc_version -ge 12 ]]; then
+        local patch_file="$script_dir/patches/azure-storage-sdk-base64-cstdint.patch"
+        if [[ -f $patch_file ]]; then
+            echo "Detected GCC $gcc_version (>= 12), applying patch to fix base64.cpp compilation issue..."
+            git apply "$patch_file" || {
+                warn "Failed to apply patch, build may fail on GCC $gcc_version"
+            }
+        else
+            warn "Patch file not found at $patch_file, build may fail on GCC $gcc_version"
+        fi
+    else
+        echo "GCC $gcc_version detected, patch not needed (only required for GCC >= 12)"
+    fi
 
     local azure_storage_sdk_cmake_options=""
 
@@ -865,12 +900,13 @@ while [[ $1 != "" ]]; do
     shift
 done
 
-# setup workfolder if different from default
-if [[ $work_folder != "$DEFAULT_WORKFOLDER" ]]; then
+# Always setup workfolder with proper ownership, especially for .workspace in repo
+if [[ ! -d $work_folder ]]; then
     mkdir -pv "$work_folder" || $ret
-    $SUDO chown "$(id -un)":"$(id -gn)" "$work_folder" || $ret
-    chmod ug+rwx,o= "$work_folder" || $ret
 fi
+# Ensure the work folder has the correct owner (the user running the script, not root)
+$SUDO chown "$(id -un)":"$(id -gn)" "$work_folder" || $ret
+$SUDO chmod ug+rwx,o= "$work_folder" || $ret
 
 if [[ -d $du_test_data_dir_path ]]; then
     $SUDO rm -r $du_test_data_dir_path

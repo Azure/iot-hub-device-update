@@ -1,73 +1,60 @@
-# What is Device Update for IoT Hub?
+# Device Update for IoT Hub
 
-Device Update for IoT Hub is a service that enables you to deploy over-the-air updates (OTA) for your IoT devices.
+Device Update for IoT Hub is an end-to-end platform for deploying over-the-air updates (OTA) to your IoT devices—from tiny sensors to gateway-level devices.
 
-Device Update for IoT Hub is an end-to-end platform that customers can use to publish, distribute, and manage over-the-air updates for everything from tiny sensors to gateway-level devices.
+## Key Features
 
-Device Update for IoT Hub also provides controls on how to manage the deployment updates so you are always in control of when and how devices are updated. Device Update for IoT Hub also provides reporting capabilities so you are always up to date on the state of your devices via integration with IoT Hub.
+* **Integrated Management** - Update management UX integrated with Azure IoT Hub
+* **Controlled Rollout** - Gradual update deployment through device grouping and scheduling
+* **Flexible APIs** - Programmatic APIs for automation and custom portal experiences
+* **Fleet Visibility** - At-a-glance compliance and status views across heterogeneous device fleets
+* **Resilient Updates** - Support for A/B updates with seamless rollback
+* **Access Control** - Subscription and role-based access controls via Azure portal
+* **Offline Support** - On-premise content cache and Nested Edge support for disconnected devices
+* **Comprehensive Reporting** - Detailed update management and reporting tools
 
-Device Update for IoT Hub features provide a powerful and flexible experience, including:
+## Supported Platforms
 
-* Update management UX integrated with Azure IoT Hub
-* Gradual update rollout through device grouping and update scheduling controls
-* Programmatic APIs to enable automation and custom portal experiences
-* At-a-glance update compliance and status views across heterogenous device fleets
-* Support for resilient device updates (A/B) to deliver seamless rollback
-* Subscription and role-based access controls available through the Azure.com portal
-* On-premise content cache and Nested Edge support to enable updating cloud disconnected devices
-* Detailed update management and reporting tools
-
-## Reference agent
-
-| Build              | Status |
-|------------------- |--------|
-| Ubuntu 22.04 AMD64 | [![Ubuntu 22.04 Build Status](https://dev.azure.com/azure-device-update/adu-linux-client/_apis/build/status/Azure.iot-hub-device-update?branchName=main)](https://dev.azure.com/azure-device-update/adu-linux-client/_build/latest?definitionId=27&branchName=main)|
-
-## Getting started
-
-* [Device Update for IoT Hub](https://aka.ms/iot-hub-device-update-docs)
-* [Getting Started with Device Update Agent](./docs/agent-reference)
-* More details on building the agent here: [How to build agent code](./docs/agent-reference/how-to-build-agent-code.md)
+| Platform           | Status | Notes |
+|------------------- |--------|-------|
+| Ubuntu 20.04 AMD64 | ✓ Supported | With Delivery Optimization |
+| Ubuntu 22.04 AMD64 | [![Ubuntu 22.04 Build Status](https://dev.azure.com/azure-device-update/adu-linux-client/_apis/build/status/Azure.iot-hub-device-update?branchName=main)](https://dev.azure.com/azure-device-update/adu-linux-client/_build/latest?definitionId=27&branchName=main)| Primary development platform |
+| Ubuntu 24.04 AMD64 | ✓ Supported | curl downloader only (DO not available) |
+| Debian 11 (Bullseye) AMD64 | ✓ Supported | With Delivery Optimization |
+| Debian 12 (Bookworm) AMD64 | ✓ Supported | With Delivery Optimization |
 
 ## Quick Start
 
-### Build and Install
+For users familiar with the build process:
 
 ```sh
 ./scripts/install-deps.sh -a
 ./scripts/build.sh -c -u --build-packages
-cd out
-sudo cmake --build . --target install
+sudo apt install ./out/deviceupdate-agent_*.deb
 ```
 
-### Incremental Build
+> **Note**: For detailed build instructions, troubleshooting, and advanced options, see [How to Build the Agent](./docs/agent-reference/how-to-build-agent-code.md)
 
-```sh
-cd out
-ninja
-```
+## Documentation
 
-### Run Tests
+* **[Device Update for IoT Hub Documentation](https://aka.ms/iot-hub-device-update-docs)** - Official service documentation
+* **[Getting Started with the Agent](./docs/agent-reference)** - Agent overview and reference
+* **[Building the Agent](./docs/agent-reference/how-to-build-agent-code.md)** - Detailed build instructions
+* **[Running the Agent](./docs/agent-reference/how-to-run-agent.md)** - Deployment and configuration
+* **[Troubleshooting Guide](./docs/how-to-troubleshoot-guide.md)** - Common issues and solutions
 
-```sh
-cd out
-ctest
-```
+## Contributing
 
-or, alternatively:
+This project welcomes contributions and suggestions. See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
-```sh
-ninja test
-```
+## Security
 
-### Run tests under valgrind memcheck
+See [SECURITY.md](./SECURITY.md) for information on reporting security issues.
 
-Ensure /usr/bin/valgrind is a valid symlink
-e.g. `sudo ln -s /opt/valgrind.3.19.0/bin/valgrind /usr/bin/valgrind`
+## License
 
-```sh
-cd out
-ctest -T memcheck
-```
+This project is licensed under the MIT License - see [LICENSE](./LICENSE) for details.
 
-Results will be in `out/Testing/Temporary/MemoryChecker.*.log`
+## Support
+
+For support options, see [SUPPORT.md](./SUPPORT.md).
