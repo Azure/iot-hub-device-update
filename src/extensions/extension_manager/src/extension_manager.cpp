@@ -240,8 +240,9 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
         }
     }
 
-    if (IsAducResultCodeSuccess(result.ResultCode) && *handler != nullptr)
+    if (*handler != nullptr)
     {
+        result = { ADUC_Result_Success };
         goto done;
     }
 
@@ -343,10 +344,9 @@ ExtensionManager::LoadUpdateContentHandlerExtension(const std::string& updateTyp
     result = { ADUC_GeneralResult_Success };
 
 done:
-
     ADUC_ConfigInfo_ReleaseInstance(config);
 
-    if (result.ResultCode == 0)
+    if (IsAducResultCodeFailure(result.ResultCode))
     {
         if (libHandle != nullptr)
         {
@@ -393,6 +393,7 @@ void ExtensionManager::UnloadAllUpdateContentHandlers()
 {
     for (auto& contentHandler : _contentHandlers)
     {
+        Log_Debug("Deleting handler for '%s'.", contentHandler.first.c_str());
         delete (contentHandler.second); // NOLINT(cppcoreguidelines-owning-memory)
     }
 
