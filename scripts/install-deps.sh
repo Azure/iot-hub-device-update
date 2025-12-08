@@ -71,6 +71,11 @@ cmake_bin="cmake"
 install_shellcheck=false
 supported_shellcheck_version='0.8.0'
 
+install_valgrind=false
+valgrind_install_method="auto" # auto, apt, source, skip
+supported_valgrind_version='3.23.0'
+valgrind_ref="VALGRIND_3_23_0"
+
 install_githooks=false
 
 du_test_data_dir_path="/tmp/adu/"
@@ -116,6 +121,12 @@ print_help() {
     echo "--install-catch2          Install Catch2 from source."
     echo "--install-cmake           Installs supported version of cmake from installer if on ubuntu, else installs it from source."
     echo "--install-shellcheck      Installs supported version of shellcheck."
+    echo "--install-valgrind [method] Install Valgrind for memory leak detection."
+    echo "                          method can be: auto (default), apt, source, or skip."
+    echo "                          'auto' installs from apt on Ubuntu 20.04+, otherwise from source."
+    echo "                          'apt' forces installation from package manager."
+    echo "                          'source' forces building from source (version $supported_valgrind_version)."
+    echo "                          'skip' skips installation."
     echo "--cmake-prefix            Set the install path prefix when --install-cmake is used. Default is /tmp."
     echo "--cmake-version           Override the version of CMake. e.g. 3.23.2 that will be installed if --install-cmake is used."
     echo "--cmake-force-source      Force building cmake from source when --install-cmake is used."
@@ -149,6 +160,51 @@ print_help() {
     echo "-h, --help                Show this help message."
     echo ""
     echo "Example: ${BASH_SOURCE[0]} --install-all-deps --work-folder ~/adu-linux-client-deps --keep-source-code"
+}
+
+do_install_valgrind_from_apt() {
+    echo "Installing Valgrind from apt..."
+    $SUDO apt-get install --yes valgrind || return
+    echo "Valgrind installed from apt successfully."
+}
+
+do_install_valgrind_from_source() {
+    echo "Installing Valgrind from source..."
+    local valgrind_dir=$work_folder/valgrind
+    if [[ -d $valgrind_dir ]]; then
+        $SUDO rm -rf $valgrind_dir || return
+    fi
+
+    local valgrind_url
+    if [[ $use_ssh == "true" ]]; then
+        valgrind_url=git@github.com:valgrind/valgrind.git
+    else
+        valgrind_url=https://github.com/valgrind/valgrind.git
+    fi
+
+    echo -e "Building Valgrind from source...\n\tTag: $valgrind_ref\n\tFolder: $valgrind_dir"
+    mkdir -p $valgrind_dir || return
+    pushd $valgrind_dir > /dev/null || return
+    git clone --branch $valgrind_ref --depth 1 $valgrind_url . || return
+
+    ./autogen.sh || return
+    ./configure --prefix=/usr/local || return
+    make -j"$(nproc)" || return
+    $SUDO make install || return
+
+    popd > /dev/null || return
+
+    if [[ $keep_source_code != "true" ]]; then
+        echo "Removing Valgrind source code..."
+        $SUDO rm -rf $valgrind_dir
+    fi
+
+    # Create symlink if not already exists
+    if [[ ! -L /usr/bin/valgrind ]]; then
+        $SUDO ln -sf /usr/local/bin/valgrind /usr/bin/valgrind || return
+    fi
+
+    echo "Valgrind installed from source successfully."
 }
 
 do_install_githooks() {
@@ -812,6 +868,18 @@ while [[ $1 != "" ]]; do
     --install-shellcheck)
         install_shellcheck=true
         ;;
+    --install-valgrind)
+        install_valgrind=true
+        # Check if next argument is a method
+        if [[ $2 != "" && $2 != -* ]]; then
+            shift
+            valgrind_install_method=$1
+            if [[ ! $valgrind_install_method =~ ^(auto|apt|source|skip)$ ]]; then
+                error "Invalid --install-valgrind method '$valgrind_install_method'. Valid options: auto, apt, source, skip"
+                $ret 1
+            fi
+        fi
+        ;;
     --install-githooks)
         install_githooks=true
         ;;
@@ -977,6 +1045,43 @@ fi
 if [[ $install_shellcheck == "true" ]]; then
     if ! do_install_shellcheck; then
         warn "Failed to install shellcheck."
+    fi
+fi
+
+# Install Valgrind if requested.
+if [[ $install_valgrind == "true" ]]; then
+    if [[ $valgrind_install_method == "skip" ]]; then
+        echo "Skipping Valgrind installation as requested."
+    elif [[ $valgrind_install_method == "apt" ]]; then
+        if ! do_install_valgrind_from_apt; then
+            error "Failed to install Valgrind from apt."
+            $ret 1
+        fi
+    elif [[ $valgrind_install_method == "source" ]]; then
+        if ! do_install_valgrind_from_source; then
+            error "Failed to install Valgrind from source."
+            $ret 1
+        fi
+    elif [[ $valgrind_install_method == "auto" ]]; then
+        # Auto mode: use apt on Ubuntu 20.04+, otherwise build from source
+        OS=$(lsb_release --short --id)
+        VER=$(lsb_release --short --release)
+        if [[ $OS == "Ubuntu" && $(echo "$VER >= 20.04" | bc -l) -eq 1 ]] || [[ $OS == "Debian" && $(echo "$VER >= 11" | bc -l) -eq 1 ]]; then
+            echo "Detected $OS $VER - installing Valgrind from apt..."
+            if ! do_install_valgrind_from_apt; then
+                warn "Failed to install Valgrind from apt. Trying source build..."
+                if ! do_install_valgrind_from_source; then
+                    error "Failed to install Valgrind from source."
+                    $ret 1
+                fi
+            fi
+        else
+            echo "Detected $OS $VER - building Valgrind from source..."
+            if ! do_install_valgrind_from_source; then
+                error "Failed to install Valgrind from source."
+                $ret 1
+            fi
+        fi
     fi
 fi
 
