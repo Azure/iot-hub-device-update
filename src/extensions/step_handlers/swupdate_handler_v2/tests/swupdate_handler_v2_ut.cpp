@@ -205,6 +205,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test")
             R"( --config-folder "/tmp/adu/testdata/swupdate_handler_v2_test_config" --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script.sh" --target-options --action-is-installed --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test version 1.0$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
+    workflow_free(handle);
     ExtensionManager::Uninit();
     ADUC_ConfigInfo_ReleaseInstance(config);
 }
@@ -298,6 +299,7 @@ TEST_CASE("SWUpdate Prepare Arguments Test v2.1")
             R"( --config-folder "/tmp/adu/testdata/swupdate_handler_v2_test_config" --update-type "microsoft/script" --update-action "execute" --target-data "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/example-du-swupdate-script-2.1.sh" --target-options --action --target-options "is-installed" --target-options --swu-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/du-agent-swupdate-filecopy-test-1_1.0.swu" --target-options --work-folder --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8" --target-options --result-file --target-options "/var/lib/adu/downloads/d19de7fb-11d8-45f7-88e0-03872a591de8/aduc_result.json" --target-options --installed-criteria --target-options "grep '^This is swupdate filecopy test api version 2.1$' /usr/local/du/tests/swupdate-filecopy-test/mock-update-for-file-copy-test-1.txt")"));
     args.clear();
 
+    workflow_free(handle);
     ADUC_ConfigInfo_ReleaseInstance(config);
     ExtensionManager::Uninit();
 }
@@ -357,6 +359,7 @@ TEST_CASE("SWUpdate sample script --action-is-installed")
     CHECK(result.ResultCode == 901);
     CHECK(result.ExtendedResultCode == 806359140); // (0x30101064)
 
+    workflow_free(handle);
     ExtensionManager::Uninit();
     ADUC_ConfigInfo_ReleaseInstance(config);
 }
@@ -414,6 +417,7 @@ TEST_CASE("SWUpdate sample script --action-download")
     CHECK(result.ResultCode == 500);
     CHECK(result.ExtendedResultCode == 0);
 
+    workflow_free(handle);
     ExtensionManager::Uninit();
     ADUC_ConfigInfo_ReleaseInstance(config);
 }
@@ -473,6 +477,7 @@ TEST_CASE("SWUpdate sample script --action-install", "[.hide][functional_test]")
     CHECK(result.ResultCode == 600);
     CHECK(result.ExtendedResultCode == 0);
 
+    workflow_free(handle);
     ExtensionManager::Uninit();
     ADUC_ConfigInfo_ReleaseInstance(config);
 }
@@ -527,6 +532,7 @@ TEST_CASE("SWUpdate sample script --action-apply")
     CHECK(result.ResultCode == 700);
     CHECK(result.ExtendedResultCode == 0);
 
+    workflow_free(handle);
     ExtensionManager::Uninit();
     ADUC_ConfigInfo_ReleaseInstance(config);
 }
@@ -581,6 +587,7 @@ TEST_CASE("SWUpdate sample script --action-cancel")
     CHECK(result.ResultCode == 801);
     CHECK(result.ExtendedResultCode == 0);
 
+    workflow_free(handle);
     ExtensionManager::Uninit();
     ADUC_ConfigInfo_ReleaseInstance(config);
 }

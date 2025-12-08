@@ -119,6 +119,9 @@ TEST_CASE("Signature Verification")
             reinterpret_cast<const uint8_t*>(blob.c_str()), // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
             blob.length(),
             key));
+
+        free(d_sig_handle);
+        CryptoUtils_FreeCryptoKeyHandle(key);
     }
 
     SECTION("Validating an Invalid Signature")
@@ -166,5 +169,8 @@ TEST_CASE("Signature Verification")
             reinterpret_cast<const uint8_t*>(blob.c_str()), // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
             blob.length(),
             key));
+
+        free(d_sig_handle);
+        CryptoUtils_FreeCryptoKeyHandle(key);
     }
 }

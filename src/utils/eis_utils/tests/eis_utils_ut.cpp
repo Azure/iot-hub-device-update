@@ -256,6 +256,8 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         CHECK(outInfo.connType == ADUC_ConnType_Device);
 
         ADUC_ConnectionInfo_DeAlloc(&outInfo);
+        free(g_identityResp);
+        free(g_certificateResp);
     }
 
     SECTION("RequestConnectionStringFromEISWithExpiry ModuleId , SAS Token Success Test")
@@ -337,6 +339,8 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         CHECK(outInfo.connType == ADUC_ConnType_Module);
 
         ADUC_ConnectionInfo_DeAlloc(&outInfo);
+        free(g_identityResp);
+        free(g_certificateResp);
     }
 
     SECTION("RequestConnectionStringFromEISWithExpiry with malformed identityResponse")
@@ -362,6 +366,9 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
 
         CHECK(outInfo.authType == ADUC_AuthType_NotSet);
         CHECK(outInfo.connType == ADUC_ConnType_NotSet);
+
+        free(g_identityResp);
+        free(g_signatureResp);
     }
 
     SECTION("RequestConnectionStringFromEISWithExpiry with malformed signature response")

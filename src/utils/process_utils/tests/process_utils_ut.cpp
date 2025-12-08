@@ -229,4 +229,6 @@ TEST_CASE("VerifyProcessEffectiveUser")
 
     VECTOR_clear(user_list);
     VECTOR_clear(empty_user_list);
+    VECTOR_destroy(user_list);
+    VECTOR_destroy(empty_user_list);
 }
