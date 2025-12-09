@@ -30,6 +30,7 @@ class LinuxPlatformLayer
 {
 public:
     static std::unique_ptr<LinuxPlatformLayer> Create();
+    ~LinuxPlatformLayer();
 
     ADUC_Result SetUpdateActionCallbacks(ADUC_UpdateActionCallbacks* data);
 
