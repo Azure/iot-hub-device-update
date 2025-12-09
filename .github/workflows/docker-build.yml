@@ -28,13 +28,26 @@ jobs:
           dpkg-reconfigure -f noninteractive tzdata
       - name: Install dependencies
         run: |
-          scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck
+          scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --install-valgrind auto
       - name: Build packages and tests
         run: scripts/build.sh --clean --build-unit-tests --build-packages --type MinSizeRel
       - name: Run tests
         run: |
           cd out
           ctest
+      - name: Run tests with Valgrind (memory leak check)
+        run: |
+          cd out
+          ctest -T memcheck --output-on-failure
+        continue-on-error: true
+      - name: Upload Valgrind results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: valgrind-results-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}
+          path: out/Testing/Temporary/MemoryChecker.*.log
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Upload Debian packages
         uses: actions/upload-artifact@v4
         with:
