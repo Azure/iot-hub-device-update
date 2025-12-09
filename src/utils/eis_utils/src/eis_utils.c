@@ -674,12 +674,14 @@ EISUtilityResult RequestConnectionStringFromEISWithExpiry(
 done:
 
     json_value_free(identityResponseJson);
+    json_value_free(certResponseJson);
 
     free(resourceUri);
 
     free(sharedSignatureStr);
 
     free(identityResponseStr);
+    free(certResponseStr);
 
     provisioningInfo->connectionString = connectionStr;
     provisioningInfo->certificateString = certString;

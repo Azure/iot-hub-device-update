@@ -256,8 +256,6 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         CHECK(outInfo.connType == ADUC_ConnType_Device);
 
         ADUC_ConnectionInfo_DeAlloc(&outInfo);
-        free(g_identityResp);
-        free(g_certificateResp);
     }
 
     SECTION("RequestConnectionStringFromEISWithExpiry ModuleId , SAS Token Success Test")
@@ -339,8 +337,6 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         CHECK(outInfo.connType == ADUC_ConnType_Module);
 
         ADUC_ConnectionInfo_DeAlloc(&outInfo);
-        free(g_identityResp);
-        free(g_certificateResp);
     }
 
     SECTION("RequestConnectionStringFromEISWithExpiry with malformed identityResponse")
@@ -348,8 +344,8 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         const auto expiry = static_cast<time_t>(time(nullptr) + 86400); // Expiry is one day after the unit test is run
         uint32_t timeout = 5000;
 
-        // Note: These do not need to be freed! They are returned by the RequestSignature/IdentityFromEIS
-        // functions. They are freed within the code block
+        // Note: identityResp is freed by production code, but signatureResp is never
+        // passed to production code because the function fails early on invalid identity.
         REQUIRE(mallocAndStrcpy_s(&g_identityResp, invalidIdentityResponseStr) == 0);
         REQUIRE(mallocAndStrcpy_s(&g_signatureResp, validSignatureResponseStr) == 0);
 
@@ -367,7 +363,8 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
         CHECK(outInfo.authType == ADUC_AuthType_NotSet);
         CHECK(outInfo.connType == ADUC_ConnType_NotSet);
 
-        free(g_identityResp);
+        // Production code never called RequestSignatureFromEIS due to early failure,
+        // so g_signatureResp was never passed to production code and must be freed here.
         free(g_signatureResp);
     }
 
