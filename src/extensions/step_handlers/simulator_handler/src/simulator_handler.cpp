@@ -282,6 +282,7 @@ ADUC_Result SimulatorHandlerImpl::Download(const tagADUC_WorkflowData* workflowD
     }
 
 done:
+    workflow_free_file_entity(&fileEntity);
     ADUC_FileEntity_Uninit(&fileEntity);
 
     if (data != nullptr)

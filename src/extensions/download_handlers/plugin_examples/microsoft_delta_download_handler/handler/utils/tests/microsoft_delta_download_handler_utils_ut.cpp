@@ -147,5 +147,8 @@ TEST_CASE("MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile Cache Miss")
 
     CHECK(result.ResultCode == ADUC_Result_Success_Cache_Miss);
 
+    workflow_free_file_entity(&fileEntity);
     ADUC_FileEntity_Uninit(&fileEntity);
+    workflow_free(handle);
+    json_value_free(updateManifestTemplate);
 }

@@ -280,7 +280,7 @@ ADUC_Result ScriptHandlerImpl::PrepareScriptArguments(
 {
     ADUC_Result result = { ADUC_GeneralResult_Failure };
 
-    const char* selectedComponentsJson = nullptr;
+    char* selectedComponentsJson = nullptr;
     JSON_Value* selectedComponentsValue = nullptr;
     JSON_Object* selectedComponentsObject = nullptr;
     JSON_Array* componentsArray = nullptr;
@@ -305,7 +305,7 @@ ADUC_Result ScriptHandlerImpl::PrepareScriptArguments(
     installedCriteria = workflow_get_installed_criteria(workflowHandle);
 
     // Parse components list. If the list is empty, nothing to download.
-    selectedComponentsJson = workflow_peek_selected_components(workflowHandle);
+    selectedComponentsJson = workflow_get_selected_components(workflowHandle);
 
     if (!IsNullOrEmpty(selectedComponentsJson))
     {
@@ -504,11 +504,8 @@ done:
     {
         json_value_free(selectedComponentsValue);
     }
-    if (selectedComponentsJson != nullptr)
-    {
-        free(const_cast<char*>(selectedComponentsJson));
-    }
 
+    workflow_free_string(selectedComponentsJson);
     workflow_free_string(installedCriteria);
     return result;
 }
