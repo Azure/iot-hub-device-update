@@ -72,7 +72,7 @@ install_shellcheck=false
 supported_shellcheck_version='0.8.0'
 
 install_valgrind=false
-valgrind_install_method="auto" # auto, apt, source, skip
+valgrind_install_method="apt" # apt or source
 supported_valgrind_version='3.23.0'
 valgrind_ref="VALGRIND_3_23_0"
 
@@ -122,11 +122,9 @@ print_help() {
     echo "--install-cmake           Installs supported version of cmake from installer if on ubuntu, else installs it from source."
     echo "--install-shellcheck      Installs supported version of shellcheck."
     echo "--install-valgrind [method] Install Valgrind for memory leak detection."
-    echo "                          method can be: auto (default), apt, source, or skip."
-    echo "                          'auto' installs from apt on Ubuntu 22.04+, skips on older versions."
-    echo "                          'apt' forces installation from package manager."
-    echo "                          'source' forces building from source (version $supported_valgrind_version)."
-    echo "                          'skip' skips installation."
+    echo "                          method can be: apt or source."
+    echo "                          'apt' installs from package manager."
+    echo "                          'source' builds from source (version $supported_valgrind_version)."
     echo "--cmake-prefix            Set the install path prefix when --install-cmake is used. Default is /tmp."
     echo "--cmake-version           Override the version of CMake. e.g. 3.23.2 that will be installed if --install-cmake is used."
     echo "--cmake-force-source      Force building cmake from source when --install-cmake is used."
@@ -874,8 +872,8 @@ while [[ $1 != "" ]]; do
         if [[ $2 != "" && $2 != -* ]]; then
             shift
             valgrind_install_method=$1
-            if [[ ! $valgrind_install_method =~ ^(auto|apt|source|skip)$ ]]; then
-                error "Invalid --install-valgrind method '$valgrind_install_method'. Valid options: auto, apt, source, skip"
+            if [[ ! $valgrind_install_method =~ ^(apt|source)$ ]]; then
+                error "Invalid --install-valgrind method '$valgrind_install_method'. Valid options: apt, source"
                 $ret 1
             fi
         fi
@@ -1050,9 +1048,7 @@ fi
 
 # Install Valgrind if requested.
 if [[ $install_valgrind == "true" ]]; then
-    if [[ $valgrind_install_method == "skip" ]]; then
-        echo "Skipping Valgrind installation as requested."
-    elif [[ $valgrind_install_method == "apt" ]]; then
+    if [[ $valgrind_install_method == "apt" ]]; then
         if ! do_install_valgrind_from_apt; then
             error "Failed to install Valgrind from apt."
             $ret 1
@@ -1061,19 +1057,6 @@ if [[ $install_valgrind == "true" ]]; then
         if ! do_install_valgrind_from_source; then
             error "Failed to install Valgrind from source."
             $ret 1
-        fi
-    elif [[ $valgrind_install_method == "auto" ]]; then
-        # Auto mode: use apt on Ubuntu 22.04+, otherwise skip installation
-        OS=$(lsb_release --short --id)
-        VER=$(lsb_release --short --release)
-        if [[ $OS == "Ubuntu" && $(echo "$VER >= 22.04" | bc -l) -eq 1 ]]; then
-            echo "Detected $OS $VER - installing Valgrind from apt..."
-            if ! do_install_valgrind_from_apt; then
-                error "Failed to install Valgrind from apt."
-                $ret 1
-            fi
-        else
-            echo "Detected $OS $VER - skipping Valgrind installation (auto mode only installs on Ubuntu 22.04+)"
         fi
     fi
 fi

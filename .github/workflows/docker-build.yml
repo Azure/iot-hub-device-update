@@ -26,13 +26,16 @@ jobs:
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
           dpkg-reconfigure -f noninteractive tzdata
-      - name: Install dependencies
+      - name: Install dependencies (with ValGrind)
+        if: matrix.os == 'ubuntu:22.04' || startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04'
+        shell: bash
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu:22.04" ]] || [[ "${{ matrix.os }}" > "ubuntu:22.04" && "${{ matrix.os }}" == ubuntu:* ]]; then
-            scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --install-valgrind auto
-          else
+            scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --install-valgrind apt
+      - name: Install dependencies (without ValGrind)
+        if: matrix.os != 'ubuntu:22.04' && !(startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04')
+        shell: bash
+        run: |
             scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck
-          fi
       - name: Build packages and tests
         run: scripts/build.sh --clean --build-unit-tests --build-packages --type MinSizeRel
       - name: Run tests
@@ -41,7 +44,11 @@ jobs:
           ctest
       - name: Run tests with Valgrind (memory leak check)
         if: matrix.os == 'ubuntu:22.04' || startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04'
+        shell: bash
         run: |
+          echo "Checking for Valgrind..."
+          which valgrind || (echo "Valgrind not found in PATH" && exit 1)
+          valgrind --version
           cd out
           ctest -T memcheck --output-on-failure
         continue-on-error: true

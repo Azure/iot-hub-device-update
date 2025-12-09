@@ -62,17 +62,12 @@ ninja test
 
 ### Run tests under valgrind memcheck
 
-Valgrind is automatically installed on Ubuntu 20.04+ when using `install-deps.sh` with the `--install-valgrind` option.
-
-To install Valgrind manually:
+To install Valgrind:
 ```sh
-# Ubuntu 20.04 or newer (recommended)
+# Install from apt (Ubuntu 22.04 or newer recommended)
 sudo apt-get install valgrind
 
-# Or use install-deps.sh with auto-detection
-./scripts/install-deps.sh --install-valgrind auto
-
-# Force install from apt
+# Or use install-deps.sh
 ./scripts/install-deps.sh --install-valgrind apt
 
 # Build from source (version 3.23.0)
