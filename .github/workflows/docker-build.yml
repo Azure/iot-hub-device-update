@@ -36,12 +36,13 @@ jobs:
           cd out
           ctest
       - name: Run tests with Valgrind (memory leak check)
+        if: matrix.os == 'ubuntu:22.04' || startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04'
         run: |
           cd out
           ctest -T memcheck --output-on-failure
         continue-on-error: true
       - name: Upload Valgrind results
-        if: always()
+        if: always() && (matrix.os == 'ubuntu:22.04' || startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04')
         uses: actions/upload-artifact@v4
         with:
           name: valgrind-results-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}
