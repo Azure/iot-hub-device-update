@@ -10,6 +10,18 @@
 #include <stdio.h> // printf
 #include <sys/stat.h> // stat
 
+#if ADUC_ENABLE_CONSOLE_LOG
+#    define ZLOG_ENABLE_CONSOLE_LOG ZLOG_ENABLED
+#else
+#    define ZLOG_ENABLE_CONSOLE_LOG ZLOG_DISABLED
+#endif
+
+#if ADUC_ENABLE_FILE_LOG
+#    define ZLOG_ENABLE_FILE_LOG ZLOG_ENABLED
+#else
+#    define ZLOG_ENABLE_FILE_LOG ZLOG_DISABLED
+#endif
+
 /**
  * @brief Convert ADUC_LOG_SEVERITY to ZLOG_SEVERITY
  * @param logLevel An ADUC log level
@@ -83,8 +95,8 @@ void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
     if (zlog_init(
             ADUC_LOG_FOLDER,
             filePrefix == NULL ? "aduc" : filePrefix,
-            ZLOG_ENABLED /* enable console logging*/,
-            ZLOG_ENABLED /* enable file logging*/,
+            ZLOG_ENABLE_CONSOLE_LOG /* enable console logging*/,
+            ZLOG_ENABLE_FILE_LOG /* enable file logging*/,
             AducLogSeverityToZLogLevel(logLevel) /* set console log level*/,
             AducLogSeverityToZLogLevel(logLevel) /* set file log level*/
             )
