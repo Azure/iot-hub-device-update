@@ -123,7 +123,7 @@ print_help() {
     echo "--install-shellcheck      Installs supported version of shellcheck."
     echo "--install-valgrind [method] Install Valgrind for memory leak detection."
     echo "                          method can be: auto (default), apt, source, or skip."
-    echo "                          'auto' installs from apt on Ubuntu 20.04+, otherwise from source."
+    echo "                          'auto' installs from apt on Ubuntu 22.04+, skips on older versions."
     echo "                          'apt' forces installation from package manager."
     echo "                          'source' forces building from source (version $supported_valgrind_version)."
     echo "                          'skip' skips installation."
@@ -1063,24 +1063,17 @@ if [[ $install_valgrind == "true" ]]; then
             $ret 1
         fi
     elif [[ $valgrind_install_method == "auto" ]]; then
-        # Auto mode: use apt on Ubuntu 20.04+, otherwise build from source
+        # Auto mode: use apt on Ubuntu 22.04+, otherwise skip installation
         OS=$(lsb_release --short --id)
         VER=$(lsb_release --short --release)
-        if [[ $OS == "Ubuntu" && $(echo "$VER >= 20.04" | bc -l) -eq 1 ]] || [[ $OS == "Debian" && $(echo "$VER >= 11" | bc -l) -eq 1 ]]; then
+        if [[ $OS == "Ubuntu" && $(echo "$VER >= 22.04" | bc -l) -eq 1 ]]; then
             echo "Detected $OS $VER - installing Valgrind from apt..."
             if ! do_install_valgrind_from_apt; then
-                warn "Failed to install Valgrind from apt. Trying source build..."
-                if ! do_install_valgrind_from_source; then
-                    error "Failed to install Valgrind from source."
-                    $ret 1
-                fi
-            fi
-        else
-            echo "Detected $OS $VER - building Valgrind from source..."
-            if ! do_install_valgrind_from_source; then
-                error "Failed to install Valgrind from source."
+                error "Failed to install Valgrind from apt."
                 $ret 1
             fi
+        else
+            echo "Detected $OS $VER - skipping Valgrind installation (auto mode only installs on Ubuntu 22.04+)"
         fi
     fi
 fi
