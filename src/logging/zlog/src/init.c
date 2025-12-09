@@ -76,7 +76,7 @@ ADUC_LOG_SEVERITY g_logLevel = ADUC_LOG_INFO;
  */
 void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
 {
-    g_logLevel = ADUC_LOG_INFO;
+    g_logLevel = logLevel;
 
     // zlog_init doesn't create the log path, so attempt to create it here if it does not exist.
     // If it can't be created, zlogging will send output to console.
