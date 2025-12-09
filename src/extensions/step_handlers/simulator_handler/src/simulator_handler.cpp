@@ -279,9 +279,15 @@ ADUC_Result SimulatorHandlerImpl::Download(const tagADUC_WorkflowData* workflowD
         {
             goto done;
         }
+
+        // Clean up before next iteration - workflow_get_update_file allocates new memory each time
+        workflow_free_file_entity(&fileEntity);
+        ADUC_FileEntity_Uninit(&fileEntity);
+        memset(&fileEntity, 0, sizeof(fileEntity));
     }
 
 done:
+    // Clean up in case we exited early via goto
     workflow_free_file_entity(&fileEntity);
     ADUC_FileEntity_Uninit(&fileEntity);
 
