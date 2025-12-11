@@ -394,6 +394,26 @@ void ADUC_RelatedFile_FreeArray(size_t relatedFileCount, ADUC_RelatedFile* relat
 }
 
 /**
+ * @brief Frees workflow-specific fields of a file entity (DownloadHandlerId and RelatedFiles).
+ *
+ * @param entity The file entity to free workflow-specific fields from.
+ */
+void workflow_free_file_entity(ADUC_FileEntity* entity)
+{
+    if (entity == NULL)
+    {
+        return;
+    }
+
+    free(entity->DownloadHandlerId);
+    entity->DownloadHandlerId = NULL;
+
+    ADUC_RelatedFile_FreeArray(entity->RelatedFileCount, entity->RelatedFiles);
+    entity->RelatedFiles = NULL;
+    entity->RelatedFileCount = 0;
+}
+
+/**
  * @brief Allocates memory and populate with ADUC_RelatedFile object from a Parson JSON_Object.
  *
  * Caller MUST assume that this method allocates the memory for the returned ADUC_RelatedFile pointer.
@@ -516,7 +536,29 @@ ADUC_RelatedFile* ADUC_RelatedFileArray_AllocAndInit(
         if (!ADUC_RelatedFile_Init(
                 currentRelatedFile, fileId, uri, fileName, hashCount, tempHashes, propertiesCount, tempProperties))
         {
+            // Free the temp arrays before going to done
+            if (tempHashes != NULL)
+            {
+                ADUC_Hash_FreeArray(hashCount, tempHashes);
+            }
+            if (tempProperties != NULL)
+            {
+                ADUC_Properties_FreeArray(propertiesCount, tempProperties);
+            }
             goto done;
+        }
+
+        // ADUC_RelatedFile_Init makes its own copies of the arrays, so we must free the temps
+        if (tempHashes != NULL)
+        {
+            ADUC_Hash_FreeArray(hashCount, tempHashes);
+            tempHashes = NULL;
+        }
+
+        if (tempProperties != NULL)
+        {
+            ADUC_Properties_FreeArray(propertiesCount, tempProperties);
+            tempProperties = NULL;
         }
     }
 
@@ -626,6 +668,15 @@ ParseFileEntityDownloadHandler(ADUC_WorkflowHandle handle, const JSON_Object* fi
 
     success = true;
 done:
+    if (!success)
+    {
+        // Clean up any partially allocated resources
+        free(entity->DownloadHandlerId);
+        entity->DownloadHandlerId = NULL;
+        ADUC_RelatedFile_FreeArray(entity->RelatedFileCount, entity->RelatedFiles);
+        entity->RelatedFiles = NULL;
+        entity->RelatedFileCount = 0;
+    }
 
     return success;
 }
@@ -1356,8 +1407,22 @@ done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        free(wf);
-        wf = NULL;
+        if (wf != NULL)
+        {
+            // Cleanup any JSON objects that were allocated
+            if (wf->UpdateManifestObject != NULL)
+            {
+                json_value_free(json_object_get_wrapping_value(wf->UpdateManifestObject));
+                wf->UpdateManifestObject = NULL;
+            }
+            if (wf->UpdateActionObject != NULL)
+            {
+                json_value_free(json_object_get_wrapping_value(wf->UpdateActionObject));
+                wf->UpdateActionObject = NULL;
+            }
+            free(wf);
+            wf = NULL;
+        }
     }
 
     return result;
@@ -1795,7 +1860,7 @@ bool workflow_set_selected_components(ADUC_WorkflowHandle handle, const char* se
     return workflow_set_string_property(handle, WORKFLOW_PROPERTY_FIELD_SELECTED_COMPONENTS, selectedComponents);
 }
 
-const char* workflow_peek_selected_components(ADUC_WorkflowHandle handle)
+char* workflow_get_selected_components(ADUC_WorkflowHandle handle)
 {
     return workflow_get_string_property(handle, WORKFLOW_PROPERTY_FIELD_SELECTED_COMPONENTS);
 }
@@ -2262,7 +2327,10 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
 done:
     if (!succeeded)
     {
-        entity->Hash = NULL; // Manually free hash array below that is pointed to by tempHash...
+        // If ADUC_FileEntity_Init succeeded, entity->Hash points to a separate allocation from tempHash
+        // and will be freed by ADUC_FileEntity_Uninit. If ADUC_FileEntity_Init failed, entity->Hash
+        // is NULL and tempHash (if not NULL) will be freed below.
+        workflow_free_file_entity(entity);
         ADUC_FileEntity_Uninit(entity);
     }
 

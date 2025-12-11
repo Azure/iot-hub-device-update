@@ -52,3 +52,7 @@ target_compile_definitions (
 if (ENABLE_ADU_TELEMETRY_REPORTING)
     target_compile_definitions (${target_name} PRIVATE ENABLE_ADU_TELEMETRY_REPORTING)
 endif ()
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests/device_properties_tests)
+endif ()

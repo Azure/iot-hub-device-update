@@ -87,8 +87,10 @@ bool CheckRSA_Key(
 
     int key_e_size = BN_num_bytes(key_e);
 
-    std::unique_ptr<uint8_t> key_N_bytes{ new uint8_t[key_N_size] };
-    std::unique_ptr<uint8_t> key_e_bytes{ new uint8_t[key_e_size] };
+    // Use array deleter [] for arrays allocated with new[].
+    // std::unique_ptr<T[]> automatically uses delete[] instead of delete.
+    std::unique_ptr<uint8_t[]> key_N_bytes{ new uint8_t[key_N_size] };
+    std::unique_ptr<uint8_t[]> key_e_bytes{ new uint8_t[key_e_size] };
 
     if (key_N_size != N_len)
     {
@@ -584,6 +586,7 @@ TEST_CASE_METHOD(TestCaseFixture, "VerifyJWSWithKey")
         CHECK(payload_len == expected_payload_len);
 
         CHECK(strcmp(payload.get(), expectedDecodedPayloadString) == 0);
+        free(expectedDecodedPayloadString);
         CryptoUtils_FreeCryptoKeyHandle(key);
     }
 }
@@ -661,6 +664,11 @@ TEST_CASE("IsSigningKeyDisallowed")
 
         CHECK(jwsResult == JWSResult_Success); // Allowed is not Disallowed that is in the disallow list.
 
+        for (size_t i = 0; i < VECTOR_size(disallowedSigningKeys); i++)
+        {
+            auto hash = static_cast<ADUC_RootKeyPackage_Hash*>(VECTOR_element(disallowedSigningKeys, i));
+            CONSTBUFFER_DecRef(hash->hash);
+        }
         VECTOR_destroy(disallowedSigningKeys);
     }
 
@@ -673,6 +681,11 @@ TEST_CASE("IsSigningKeyDisallowed")
 
         CHECK(jwsResult == JWSResult_DisallowedSigningKey); // Disallowed signing key is enforced.
 
+        for (size_t i = 0; i < VECTOR_size(disallowedSigningKeys); i++)
+        {
+            auto hash = static_cast<ADUC_RootKeyPackage_Hash*>(VECTOR_element(disallowedSigningKeys, i));
+            CONSTBUFFER_DecRef(hash->hash);
+        }
         VECTOR_destroy(disallowedSigningKeys);
     }
 }

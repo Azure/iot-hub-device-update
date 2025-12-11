@@ -140,6 +140,7 @@ TEST_CASE("Get Compatibility")
 
     char* compats = workflow_get_compatibility(handle);
     CHECK_THAT(compats, Equals(expectedValue));
+    free(compats);
 
     workflow_free(handle);
 }
@@ -640,6 +641,8 @@ TEST_CASE("result additonal erc")
 
         ADUC::StringUtils::STRING_HANDLE_wrapper extra_erc{ extra_erc_handle };
         CHECK_THAT(STRING_c_str(extra_erc.get()), Equals(""));
+
+        workflow_free(h);
     }
 
     SECTION("add and get")
@@ -656,6 +659,8 @@ TEST_CASE("result additonal erc")
 
         ADUC::StringUtils::STRING_HANDLE_wrapper extra_erc{ extra_erc_handle };
         CHECK_THAT(STRING_c_str(extra_erc_handle), Equals(",0000000C"));
+
+        workflow_free(h);
     }
 
     SECTION("add 2 and get")
@@ -673,6 +678,8 @@ TEST_CASE("result additonal erc")
 
         ADUC::StringUtils::STRING_HANDLE_wrapper extra_erc{ extra_erc_handle };
         CHECK_THAT(STRING_c_str(extra_erc_handle), Equals(",0000000C,8050001F"));
+
+        workflow_free(h);
     }
 }
 

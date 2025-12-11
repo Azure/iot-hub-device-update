@@ -131,7 +131,10 @@ TEST_CASE("workflow_get_update_file with download handler")
     CHECK_THAT(relatedFile.Properties[1].Name, Equals("microsoft.sourceFileHashAlgorithm"));
     CHECK_THAT(relatedFile.Properties[1].Value, Equals("sha256"));
 
+    workflow_free_file_entity(&fileEntity);
     ADUC_FileEntity_Uninit(&fileEntity);
+    workflow_free(handle);
+    json_value_free(updateManifestJson);
 }
 
 // clang-format off
@@ -164,5 +167,6 @@ TEST_CASE_METHOD(GetRootKeyValidationMockHook, "workflow_get_update_file - upd m
         memset(&fileEntity, 0, sizeof(fileEntity));
         CHECK_FALSE(workflow_get_update_file(handle, 0, &fileEntity));
         ADUC_FileEntity_Uninit(&fileEntity);
+        workflow_free(handle);
     }
 }

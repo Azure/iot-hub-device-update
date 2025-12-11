@@ -64,7 +64,7 @@ When implementing a handler that handles an update intended for connected-compon
 
 |Function| Purpose|
 |---|---|
-|workflow_peek_selected_components|Get a serialized JSON string containing a collection of components that the update should be installed.|
+|workflow_get_selected_components|Get a serialized JSON string containing a collection of components that the update should be installed. Caller must free with workflow_free_string().|
 
 The component data is provided by Component Enumerator Extension, which usually implemented by Device Builder and registered on the Host Device.
 
