@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["debian:12", "debian:11", "ubuntu:22.04", "ubuntu:20.04", "ubuntu:22.04"]
+        os: ["debian:12", "debian:11", "ubuntu:22.04", "ubuntu:20.04", "ubuntu:24.04"]
         arch: [amd64, arm64]
     runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-latest' }}
     container:
