@@ -519,6 +519,8 @@ option (ADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL
         "Use Curl to download the Rootkey Package instead of DeliveryOptimization agent" OFF)
 option (ADUC_BUILD_WITH_DELIVERY_OPTIMIZATION
         "Build with Delivery Optimization support" ON)
+option (ADUC_ENABLE_CONSOLE_LOG "Enable console logging" ON)
+option (ADUC_ENABLE_FILE_LOG "Enable file logging" ON)
 
 ### End CMake Options
 

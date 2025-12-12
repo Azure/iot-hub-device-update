@@ -37,6 +37,8 @@ srvc_e2e_agent_build=false
 build_type=Debug
 adu_log_dir=""
 default_log_dir=/var/log/adu
+console_log=true
+file_log=true
 output_directory=$root_dir/out
 build_unittests=false
 enable_e2e_testing=false
@@ -310,6 +312,12 @@ while [[ $1 != "" ]]; do
         fi
         adu_log_dir=$1
         ;;
+    --disable-console-log)
+        console_log=false
+        ;;
+    --disable-file-log)
+        file_log=false
+        ;;
     --install-prefix)
         shift
         if [[ -z $1 || $1 == -* ]]; then
@@ -401,6 +409,8 @@ bullet "Trace target deps: $trace_target_deps"
 bullet "Step handlers: $step_handlers"
 bullet "Build type: $build_type"
 bullet "Log directory: $adu_log_dir"
+bullet "Enable console log: $console_log"
+bullet "Enable file log: $file_log"
 bullet "Logging library: $log_lib"
 bullet "Output directory: $output_directory"
 bullet "Build unit tests: $build_unittests"
@@ -426,6 +436,8 @@ CMAKE_OPTIONS=(
     "-DADUC_STEP_HANDLERS:STRING=$step_handlers"
     "-DADUC_ENABLE_E2E_TESTING=$enable_e2e_testing"
     "-DADUC_LOG_FOLDER:STRING=$adu_log_dir"
+    "-DADUC_ENABLE_CONSOLE_LOG:BOOL=$console_log"
+    "-DADUC_ENABLE_FILE_LOG:BOOL=$file_log"
     "-DADUC_LOGGING_LIBRARY:STRING=$log_lib"
     "-DADUC_PLATFORM_LAYER:STRING=$platform_layer"
     "-DADUC_TRACE_TARGET_DEPS=$trace_target_deps"

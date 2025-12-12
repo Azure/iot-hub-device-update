@@ -343,11 +343,25 @@ ctest -h
 
 ### Run the Unit Tests under Valgrind
 
-The current supported valgrind is 3.19.0 and can be built from sources via:
+The current supported valgrind versions are 3.15+ (Ubuntu 20.04), 3.18+ (Ubuntu 22.04), or 3.23.0 from source.
+
+**Installing Valgrind:**
 
 ```sh
+# Automatic installation (recommended) - uses apt on Ubuntu 20.04+
+./scripts/install-deps.sh --install-valgrind auto
 
+# Install from apt package manager
+./scripts/install-deps.sh --install-valgrind apt
+
+# Build from source (version 3.23.0)
+./scripts/install-deps.sh --install-valgrind source
+
+# Skip installation
+./scripts/install-deps.sh --install-valgrind skip
 ```
+
+**Running Tests:**
 
 There is a top-level `DartConfiguration.tcl` in the source tree that contains valgrind path and arguments.
 Running memcheck with following command will result in CTest generating a `DartConfiguration.tcl` under the `out` dir and running all the tests using valgrind:
@@ -358,6 +372,66 @@ ctest -T memcheck
 ```
 
 No suppression file is currently used, so the goal is for all the unit tests to run valgrind-clean and to fix even the false-positives.
+
+#### Advanced Valgrind Usage
+
+**Run specific tests:**
+```sh
+cd out
+# Run a single test
+ctest -R device_properties_ut -T memcheck
+
+# Run tests matching a pattern with verbose output
+ctest -R ".*config_utils.*" -T memcheck -V
+
+# Run tests and continue on failure
+ctest -T memcheck --output-on-failure
+```
+
+**View detailed results:**
+```sh
+# View the most recent memcheck log
+cat out/Testing/Temporary/MemoryChecker.*.log
+
+# List all memcheck logs
+ls -lt out/Testing/Temporary/MemoryChecker.*.log
+
+# Search for leaks in logs
+grep -i "definitely lost\|indirectly lost" out/Testing/Temporary/MemoryChecker.*.log
+```
+
+**Run test binaries directly with Valgrind:**
+```sh
+# Full leak check with origins
+valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes \
+  --verbose --log-file=valgrind-mytest.log \
+  ./src/agent/adu_core_interface/tests/device_properties_ut
+
+# With child process tracking (useful for tests that spawn processes)
+valgrind --leak-check=full --trace-children=yes \
+  --child-silent-after-fork=yes \
+  ./path/to/test_binary
+
+# Generate detailed XML reports
+valgrind --leak-check=full --xml=yes --xml-file=valgrind-report.xml \
+  ./path/to/test_binary
+```
+
+**Common Valgrind options:**
+- `--leak-check=full` - Show detailed information about each leak
+- `--show-leak-kinds=all` - Show all types of leaks (definite, indirect, possible, reachable)
+- `--track-origins=yes` - Track origins of uninitialized values
+- `--verbose` - More detailed output
+- `--log-file=<file>` - Save output to file
+- `--suppressions=<file>` - Use suppression file for known false positives
+- `--gen-suppressions=all` - Generate suppression entries for reported errors
+
+**Tips for memory leak testing:**
+1. Always run tests in a clean build to ensure accurate results
+2. Use `--track-origins=yes` to find where uninitialized values come from
+3. Save logs to files for easier analysis: `--log-file=valgrind-%p.log` (where %p is process ID)
+4. For CI/CD integration, use `--error-exitcode=1` to fail on errors
+5. Create suppression files for external library false positives
 
 ### Build the Debian package
 

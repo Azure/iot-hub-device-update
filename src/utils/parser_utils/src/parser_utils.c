@@ -116,6 +116,8 @@ void ADUC_FileEntity_Uninit(ADUC_FileEntity* entity)
     free(entity->FileId);
     free(entity->Arguments);
     ADUC_Hash_FreeArray(entity->HashCount, entity->Hash);
+    // Note: DownloadHandlerId and RelatedFiles are workflow-specific and must be
+    // freed separately by the caller using workflow_free_file_entity() if applicable
     memset(entity, 0, sizeof(*entity));
 }
 

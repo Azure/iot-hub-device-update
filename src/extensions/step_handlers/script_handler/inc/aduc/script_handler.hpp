@@ -44,7 +44,7 @@ public:
     ScriptHandlerImpl(ScriptHandlerImpl&&) = delete;
     ScriptHandlerImpl& operator=(ScriptHandlerImpl&&) = delete;
 
-    ~ScriptHandlerImpl() override = default;
+    ~ScriptHandlerImpl() override;
 
     ADUC_Result Download(const tagADUC_WorkflowData* workflowData) override;
     ADUC_Result Backup(const tagADUC_WorkflowData* workflowData) override;

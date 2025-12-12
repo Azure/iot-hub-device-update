@@ -26,15 +26,40 @@ jobs:
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
           dpkg-reconfigure -f noninteractive tzdata
-      - name: Install dependencies
+      - name: Install dependencies (with ValGrind)
+        if: matrix.os == 'ubuntu:22.04' || startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04'
+        shell: bash
         run: |
-          scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck
+            scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --install-valgrind apt
+      - name: Install dependencies (without ValGrind)
+        if: matrix.os != 'ubuntu:22.04' && !(startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04')
+        shell: bash
+        run: |
+            scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck
       - name: Build packages and tests
         run: scripts/build.sh --clean --build-unit-tests --build-packages --type MinSizeRel
       - name: Run tests
         run: |
           cd out
           ctest
+      - name: Run tests with Valgrind (memory leak check)
+        if: matrix.os == 'ubuntu:22.04' || startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04'
+        shell: bash
+        run: |
+          echo "Checking for Valgrind..."
+          which valgrind || (echo "Valgrind not found in PATH" && exit 1)
+          valgrind --version
+          cd out
+          ctest -T memcheck --output-on-failure
+        continue-on-error: true
+      - name: Upload Valgrind results
+        if: always() && (matrix.os == 'ubuntu:22.04' || startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04')
+        uses: actions/upload-artifact@v4
+        with:
+          name: valgrind-results-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}
+          path: out/Testing/Temporary/MemoryChecker.*.log
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Upload Debian packages
         uses: actions/upload-artifact@v4
         with:

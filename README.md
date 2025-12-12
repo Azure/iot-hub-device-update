@@ -58,3 +58,4 @@ This project is licensed under the MIT License - see [LICENSE](./LICENSE) for de
 ## Support
 
 For support options, see [SUPPORT.md](./SUPPORT.md).
+
