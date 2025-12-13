@@ -48,6 +48,7 @@ install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
 cmake_dir_path=""
+cmake_bin="cmake"
 rootkeypkg_curl=false
 
 #
@@ -392,6 +393,16 @@ if [[ -z $cmake_dir_path ]]; then
     cmake_dir_path="${work_folder}/deviceupdate-cmake"
 fi
 
+# Source build environment from install-deps.sh if it exists
+if [[ -f "$work_folder/.build-env" ]]; then
+    # shellcheck source=/dev/null
+    source "$work_folder/.build-env"
+    if [[ -n $ADU_CMAKE_BIN ]]; then
+        cmake_bin="$ADU_CMAKE_BIN"
+        bullet "Using cmake from build environment: $cmake_bin"
+    fi
+fi
+
 if [[ $build_documentation == "true" ]]; then
     if ! [ -x "$(command -v doxygen)" ]; then
         error "Can't build documentation - doxygen is not installed. Try: apt install doxygen"
@@ -411,7 +422,10 @@ fi
 
 runtime_dir=${output_directory}/bin
 library_dir=${output_directory}/lib
-cmake_bin="${cmake_dir_path}/bin/cmake"
+# Only set hardcoded cmake path if ADU_CMAKE_BIN wasn't set from .build-env
+if [[ -z $ADU_CMAKE_BIN ]]; then
+    cmake_bin="${cmake_dir_path}/bin/cmake"
+fi
 shellcheck_bin="${work_folder}/deviceupdate-shellcheck"
 
 if [[ $srvc_e2e_agent_build == "true" ]]; then

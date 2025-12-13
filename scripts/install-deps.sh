@@ -1019,10 +1019,12 @@ fi
 
 # First off, install cmake if requested.
 if [[ $install_cmake == "true" ]]; then
+    cmake_installed=false
     if [[ $is_amd64 == "false" && $is_arm64 == "false" || $cmake_force_source == "true" ]]; then
-        if ! do_install_cmake_from_source; then
-            error "Failed to install cmake from source."
-            $ret 1
+        if do_install_cmake_from_source; then
+            cmake_installed=true
+        else
+            warn "Failed to install cmake from source. Falling back to system cmake."
         fi
     else
         arch=''
@@ -1038,14 +1040,28 @@ if [[ $install_cmake == "true" ]]; then
 
         if [[ -d $cmake_installer_dir && -x "${cmake_dir_symlink}/bin/cmake" ]]; then
             echo "${cmake_installer_dir} already exists. Skipping install of cmake..."
+            cmake_installed=true
         else
-            if ! do_install_cmake_from_installer "$arch"; then
-                error "Failed to install cmake using installer."
-                $ret 1
+            if do_install_cmake_from_installer "$arch"; then
+                cmake_installed=true
+            else
+                warn "Failed to install cmake using installer. Falling back to system cmake."
             fi
         fi
     fi
-    cmake_bin="${cmake_dir_symlink}/bin/cmake"
+    if [[ $cmake_installed == "true" ]]; then
+        cmake_bin="${cmake_dir_symlink}/bin/cmake"
+    else
+        echo "Using system cmake..."
+        cmake_bin="cmake"
+    fi
+fi
+
+# Write build environment to file for build.sh to source
+if [[ $install_cmake == "true" ]]; then
+    mkdir -p "$work_folder"
+    echo "ADU_CMAKE_BIN=$cmake_bin" > "$work_folder/.build-env"
+    echo "Build environment written to $work_folder/.build-env"
 fi
 
 # Install git hooks if requested.
