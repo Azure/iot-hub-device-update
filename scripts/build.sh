@@ -47,7 +47,7 @@ log_lib="zlog"
 install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
-cmake_dir_path="${work_folder}/deviceupdate-cmake"
+cmake_dir_path=""
 rootkeypkg_curl=false
 
 #
@@ -94,6 +94,11 @@ Usage: build.sh [options...]
     --content-handlers <handlers>         [Deprecated] use '--step-handlers' option instead.
     --step-handlers <handlers>            Specify a comma-delimited list of the step handlers to build.
                                             Default is '${step_handlers}'.
+
+    -f, --work-folder <work_folder>       Specifies the folder where temp artifacts will be stored.
+                                            This folder contains temporary build artifacts for dependencies,
+                                            CMake/shellcheck installations, and test data.
+                                            Default is /tmp.
 
     --cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake
 
@@ -333,6 +338,18 @@ while [[ $1 != "" ]]; do
         fi
         install_adu="true"
         ;;
+    -f | --work-folder)
+        shift
+        if [[ -z $1 || $1 == -* ]]; then
+            error "-f work folder parameter is mandatory."
+            $ret 1
+        fi
+        work_folder=$(realpath "$1" 2> /dev/null)
+        if [[ -z $work_folder ]]; then
+            error "Invalid or inaccessible work folder path: $1"
+            $ret 1
+        fi
+        ;;
     --cmake-path)
         shift
         if [[ -z $1 || $1 == -* ]]; then
@@ -367,6 +384,13 @@ while [[ $1 != "" ]]; do
     esac
     shift
 done
+
+# Set cmake_dir_path if not explicitly provided via --cmake-path.
+# Note: This must be done after argument parsing is complete so that
+# work_folder has been set if --work-folder was specified.
+if [[ -z $cmake_dir_path ]]; then
+    cmake_dir_path="${work_folder}/deviceupdate-cmake"
+fi
 
 if [[ $build_documentation == "true" ]]; then
     if ! [ -x "$(command -v doxygen)" ]; then
@@ -443,6 +467,7 @@ CMAKE_OPTIONS=(
     "-DADUC_TRACE_TARGET_DEPS=$trace_target_deps"
     "-DADUC_USE_TEST_ROOT_KEYS=$use_test_root_keys"
     "-DADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL=$rootkeypkg_curl"
+    "-DADUC_TMP_DIR_PATH:STRING=$work_folder"
     "-DCMAKE_BUILD_TYPE:STRING=$build_type"
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
@@ -542,7 +567,7 @@ fi
 
 if [[ $build_clean == "true" ]]; then
     rm -rf "$output_directory"
-    rm -rf "/tmp/adu/testdata"
+    rm -rf "${work_folder}/adu/testdata"
 fi
 
 mkdir -p "$output_directory"
