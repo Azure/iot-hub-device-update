@@ -652,6 +652,11 @@ do_install_cmake_from_source() {
     popd > /dev/null || return
 
     $SUDO ln -sf "${cmake_prefix}/${tarball_name}" "$cmake_dir_symlink"
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "Failed to create cmake symlink at $cmake_dir_symlink"
+        return $ret_value
+    fi
 }
 
 do_install_cmake_from_installer() {
@@ -691,6 +696,11 @@ do_install_cmake_from_installer() {
     $SUDO rm "$fullpath_cmake_installer_sh" || return 1
 
     ln -sf "$cmake_installer_dir" "$cmake_dir_symlink"
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "Failed to create cmake symlink at $cmake_dir_symlink"
+        return $ret_value
+    fi
 }
 
 do_install_shellcheck() {
