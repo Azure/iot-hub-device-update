@@ -97,7 +97,7 @@ catch2_cc=""
 catch2_cxx=""
 
 # Dependencies packages
-aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'lsb-release' 'curl' 'wget' 'pkg-config' 'libxml2-dev')
+aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'lsb-release' 'curl' 'wget' 'pkg-config' 'libxml2-dev' 'file')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=('gcc' 'g++')
 
@@ -230,9 +230,20 @@ do_install_aduc_packages() {
 
     $SUDO apt-get install --yes "${aduc_packages[@]}" || return
 
+    # For Ubuntu 24.04+, ensure the 'file' utility is installed (may be needed by CPack)
+    OS=$(lsb_release --short --id)
+    if [[ $OS == "Ubuntu" ]]; then
+        # Parse version to check if 24.04 or later
+        VER_MAJOR=$(echo $VER | cut -d. -f1)
+        VER_MINOR=$(echo $VER | cut -d. -f2)
+        if [[ $VER_MAJOR -gt 24 ]] || [[ $VER_MAJOR -eq 24 && $VER_MINOR -ge 4 ]]; then
+            echo "Ensuring 'file' utility is available for Ubuntu 24.04+"
+            $SUDO apt-get install --yes file || echo "Warning: Could not install 'file' package"
+        fi
+    fi
+
     # The latest version of gcc available on Debian is gcc-6. We install that version if we are
     # building for Debian, otherwise we install gcc-8 for Ubuntu.
-    OS=$(lsb_release --short --id)
     if [[ $OS == "Debian" && $VER == "9" ]]; then
         $SUDO apt-get install --yes gcc-6 g++-6 || return
         catch2_cc=/usr/bin/gcc-6
