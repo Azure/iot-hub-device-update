@@ -47,7 +47,8 @@ log_lib="zlog"
 install_prefix=/usr/local
 install_adu=false
 work_folder=/tmp
-cmake_dir_path="${work_folder}/deviceupdate-cmake"
+cmake_dir_path=""
+cmake_bin="cmake"
 rootkeypkg_curl=false
 
 #
@@ -94,6 +95,11 @@ Usage: build.sh [options...]
     --content-handlers <handlers>         [Deprecated] use '--step-handlers' option instead.
     --step-handlers <handlers>            Specify a comma-delimited list of the step handlers to build.
                                             Default is '${step_handlers}'.
+
+    -f, --work-folder <work_folder>       Specifies the folder where temp artifacts will be stored.
+                                            This folder contains temporary build artifacts for dependencies,
+                                            CMake/shellcheck installations, and test data.
+                                            Default is /tmp.
 
     --cmake-path                          Override the cmake path such that CMake binary is at <cmake-path>/bin/cmake
 
@@ -333,6 +339,18 @@ while [[ $1 != "" ]]; do
         fi
         install_adu="true"
         ;;
+    -f | --work-folder)
+        shift
+        if [[ -z $1 || $1 == -* ]]; then
+            error "-f work folder parameter is mandatory."
+            $ret 1
+        fi
+        work_folder=$(realpath "$1" 2> /dev/null)
+        if [[ -z $work_folder ]]; then
+            error "Invalid or inaccessible work folder path: $1"
+            $ret 1
+        fi
+        ;;
     --cmake-path)
         shift
         if [[ -z $1 || $1 == -* ]]; then
@@ -368,6 +386,23 @@ while [[ $1 != "" ]]; do
     shift
 done
 
+# Set cmake_dir_path if not explicitly provided via --cmake-path.
+# Note: This must be done after argument parsing is complete so that
+# work_folder has been set if --work-folder was specified.
+if [[ -z $cmake_dir_path ]]; then
+    cmake_dir_path="${work_folder}/deviceupdate-cmake"
+fi
+
+# Source build environment from install-deps.sh if it exists
+if [[ -f "$work_folder/.build-env" ]]; then
+    # shellcheck source=/dev/null
+    source "$work_folder/.build-env"
+    if [[ -n $ADU_CMAKE_BIN ]]; then
+        cmake_bin="$ADU_CMAKE_BIN"
+        bullet "Using cmake from build environment: $cmake_bin"
+    fi
+fi
+
 if [[ $build_documentation == "true" ]]; then
     if ! [ -x "$(command -v doxygen)" ]; then
         error "Can't build documentation - doxygen is not installed. Try: apt install doxygen"
@@ -387,7 +422,10 @@ fi
 
 runtime_dir=${output_directory}/bin
 library_dir=${output_directory}/lib
-cmake_bin="${cmake_dir_path}/bin/cmake"
+# Only set hardcoded cmake path if ADU_CMAKE_BIN wasn't set from .build-env
+if [[ -z $ADU_CMAKE_BIN ]]; then
+    cmake_bin="${cmake_dir_path}/bin/cmake"
+fi
 shellcheck_bin="${work_folder}/deviceupdate-shellcheck"
 
 if [[ $srvc_e2e_agent_build == "true" ]]; then
@@ -443,6 +481,7 @@ CMAKE_OPTIONS=(
     "-DADUC_TRACE_TARGET_DEPS=$trace_target_deps"
     "-DADUC_USE_TEST_ROOT_KEYS=$use_test_root_keys"
     "-DADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL=$rootkeypkg_curl"
+    "-DADUC_TMP_DIR_PATH:STRING=$work_folder"
     "-DCMAKE_BUILD_TYPE:STRING=$build_type"
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
@@ -542,7 +581,7 @@ fi
 
 if [[ $build_clean == "true" ]]; then
     rm -rf "$output_directory"
-    rm -rf "/tmp/adu/testdata"
+    rm -rf "${work_folder}/adu/testdata"
 fi
 
 mkdir -p "$output_directory"

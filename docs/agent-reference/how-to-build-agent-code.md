@@ -58,6 +58,25 @@ dependencies. To see the usage info:
 ./scripts/install-deps.sh -h
 ```
 
+#### Customizing Dependency Build Location
+
+By default, dependencies are downloaded and built in `/tmp`. You can specify a custom location using the `--work-folder` option:
+
+```sh
+./scripts/install-deps.sh --install-all-deps --work-folder /path/to/your/workspace
+```
+
+This is useful when:
+- `/tmp` is mounted as `noexec` or has size constraints
+- You want to preserve downloaded source code using `--keep-source-code` option
+- Working in a containerized or restricted environment
+
+Example with preserved source code:
+
+```sh
+./scripts/install-deps.sh --install-all-deps --work-folder ~/adu-deps --keep-source-code
+```
+
 ### Install Optional Development Tools
 
 - Install the clang-format package (required for running `scripts/clang-format.sh`):
@@ -90,6 +109,19 @@ To see additional build options with build.sh:
 ```sh
 build.sh -h
 ```
+
+##### Customizing Build Artifact Location
+
+By default, temporary build artifacts (CMake, shellcheck, test data) are stored in `/tmp`. You can specify a custom location using the `--work-folder` option:
+
+```sh
+./scripts/build.sh --work-folder /path/to/your/workspace -c
+```
+
+This is useful when:
+- `/tmp` is mounted as `noexec` or has size constraints
+- You want to preserve build artifacts between system reboots
+- Working in a containerized or restricted environment
 
 ### Build and Run the unit tests
 

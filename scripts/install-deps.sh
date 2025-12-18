@@ -65,7 +65,7 @@ install_cmake_version="$supported_cmake_version"
 cmake_force_source=false
 cmake_prefix="$work_folder"
 cmake_installer_dir=""
-cmake_dir_symlink="/tmp/deviceupdate-cmake"
+cmake_dir_symlink="${work_folder}/deviceupdate-cmake"
 cmake_bin="cmake"
 
 install_shellcheck=false
@@ -148,7 +148,9 @@ print_help() {
     echo "-p, --install-packages    Indicates that packages should be installed."
     echo "--install-packages-only   Indicates that only packages should be installed and that dependencies should not be installed from source."
     echo ""
-    echo "-f, --work-folder <work_folder>   Specifies the folder where source code will be cloned or downloaded."
+    echo "-f, --work-folder <work_folder>   Specifies the folder where temp artifacts will be stored."
+    echo "                                  This folder contains temporary build artifacts for dependencies,"
+    echo "                                  CMake/shellcheck installations, and test data."
     echo "                                  Default is /tmp."
     echo "-k, --keep-source-code            Indicates that source code should not be deleted after install from work_folder."
     echo ""
@@ -650,6 +652,11 @@ do_install_cmake_from_source() {
     popd > /dev/null || return
 
     $SUDO ln -sf "${cmake_prefix}/${tarball_name}" "$cmake_dir_symlink"
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "Failed to create cmake symlink at $cmake_dir_symlink"
+        return $ret_value
+    fi
 }
 
 do_install_cmake_from_installer() {
@@ -689,6 +696,11 @@ do_install_cmake_from_installer() {
     $SUDO rm "$fullpath_cmake_installer_sh" || return 1
 
     ln -sf "$cmake_installer_dir" "$cmake_dir_symlink"
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "Failed to create cmake symlink at $cmake_dir_symlink"
+        return $ret_value
+    fi
 }
 
 do_install_shellcheck() {
@@ -731,7 +743,7 @@ do_install_shellcheck() {
 
         $SUDO rm "work_folder/$tarball_filename" || return 1
 
-        ln -sf "${HOME}/.cabal/bin/shellcheck" "/tmp/deviceupdate-shellcheck" || return 1
+        ln -sf "${HOME}/.cabal/bin/shellcheck" "${work_folder}/deviceupdate-shellcheck" || return 1
     else
         echo "Installing shellcheck ${scver} from pre-built binaries..."
         local tar_filename="shellcheck-v${scver}.linux.${arch}.tar.xz"
@@ -745,7 +757,7 @@ do_install_shellcheck() {
 
         $SUDO rm "$work_folder/$tar_filename" || return 1
 
-        ln -sf "${work_folder}/shellcheck-v0.8.0/shellcheck" "/tmp/deviceupdate-shellcheck" || return 1
+        ln -sf "${work_folder}/shellcheck-v0.8.0/shellcheck" "${work_folder}/deviceupdate-shellcheck" || return 1
     fi
 }
 
@@ -907,7 +919,11 @@ while [[ $1 != "" ]]; do
         ;;
     -f | --work-folder)
         shift
-        work_folder=$(realpath "$1")
+        work_folder=$(realpath "$1" 2> /dev/null)
+        if [[ -z $work_folder ]]; then
+            error "Invalid or inaccessible work folder path: $1"
+            $ret 1
+        fi
         ;;
     -k | --keep-source-code)
         keep_source_code=true
@@ -1003,10 +1019,12 @@ fi
 
 # First off, install cmake if requested.
 if [[ $install_cmake == "true" ]]; then
+    cmake_installed=false
     if [[ $is_amd64 == "false" && $is_arm64 == "false" || $cmake_force_source == "true" ]]; then
-        if ! do_install_cmake_from_source; then
-            error "Failed to install cmake from source."
-            $ret 1
+        if do_install_cmake_from_source; then
+            cmake_installed=true
+        else
+            warn "Failed to install cmake from source. Falling back to system cmake."
         fi
     else
         arch=''
@@ -1022,14 +1040,28 @@ if [[ $install_cmake == "true" ]]; then
 
         if [[ -d $cmake_installer_dir && -x "${cmake_dir_symlink}/bin/cmake" ]]; then
             echo "${cmake_installer_dir} already exists. Skipping install of cmake..."
+            cmake_installed=true
         else
-            if ! do_install_cmake_from_installer "$arch"; then
-                error "Failed to install cmake using installer."
-                $ret 1
+            if do_install_cmake_from_installer "$arch"; then
+                cmake_installed=true
+            else
+                warn "Failed to install cmake using installer. Falling back to system cmake."
             fi
         fi
     fi
-    cmake_bin="${cmake_dir_symlink}/bin/cmake"
+    if [[ $cmake_installed == "true" ]]; then
+        cmake_bin="${cmake_dir_symlink}/bin/cmake"
+    else
+        echo "Using system cmake..."
+        cmake_bin="cmake"
+    fi
+fi
+
+# Write build environment to file for build.sh to source
+if [[ $install_cmake == "true" ]]; then
+    mkdir -p "$work_folder"
+    echo "ADU_CMAKE_BIN=$cmake_bin" > "$work_folder/.build-env"
+    echo "Build environment written to $work_folder/.build-env"
 fi
 
 # Install git hooks if requested.
