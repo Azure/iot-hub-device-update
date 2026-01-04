@@ -1,0 +1,20 @@
+software=
+{
+    version="0.1.0";
+    description="Install /tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt";
+    hardware-compatibility: ["1.0"];
+
+    files: (
+            {
+                filename="mock-update-for-file-copy-test-1.txt";
+                path="/tmp/adu/testdata/test-device/vacuum-1/data/mock-update-for-file-copy-test-1.txt";
+            }
+    );
+
+    scripts : (
+        {
+            filename = "preinst.sh";
+            type = "preinstall";
+        }
+    );
+};

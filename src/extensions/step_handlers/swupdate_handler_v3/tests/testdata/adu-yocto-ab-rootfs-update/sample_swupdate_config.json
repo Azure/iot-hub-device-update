@@ -1,0 +1,5 @@
+{
+    "--log-file" : "/adu/logs/swupdate.log",
+    "--public-key-file" : "/adukey/pubic.pem",
+    "--software-version-file" : "/etc/adu/adu-version"
+}
