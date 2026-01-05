@@ -236,6 +236,7 @@ set (
     ADUC_STEP_HANDLER_NAME_TO_DIRECOTRY_MAP
     "microsoft/apt,apt_handler" "microsoft/script,script_handler"
     "microsoft/simulator,simulator_handler" "microsoft/swupdate_v2,swupdate_handler_v2"
+    "microsoft/swupdate_v3,swupdate_handler_v3"
     "microsoft/wim,wim_handler")
 
 if (WIN32)
@@ -246,7 +247,7 @@ if (WIN32)
 else ()
     set (
         ADUC_STEP_HANDLERS
-        "microsoft/swupdate_v2,microsoft/script,microsoft/apt,microsoft/simulator"
+        "microsoft/swupdate_v2,microsoft/swupdate_v3,microsoft/script,microsoft/apt,microsoft/simulator"
         CACHE STRING "The list of step handlers.")
 endif ()
 

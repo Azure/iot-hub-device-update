@@ -1,53 +1,218 @@
-# SWUpdate Handler
+# SWUpdate Handler V3
 
-## What is SWUpdate?
+## Overview
 
-[SWUpdate](https://github.com/sbabic/swupdate) is a Linux Update agent with the goal to provide an efficient and safe way to update an embedded Linux system in field. SWUpdate supports local and OTA updates, multiple update strategies and it is designed with security in mind.
+SWUpdate Handler V3 is an enhanced version of the SWUpdate handler that provides:
 
-## What is SWUpdate Handler?
+- **Standard U-Boot Integration**: Uses generic U-Boot environment variables instead of platform-specific solutions
+- **Boot Health Checking**: Automatic post-reboot health verification with rollback capability
+- **Fail-Safe Updates**: Automatic rollback to previous working partition if health check fails
+- **Handler-Specific Error Codes**: Detailed error reporting for troubleshooting
 
-SWUpdate Handler is a Device Update Agent extension that provides a local software update capability on an embedded device with payloads delivered over the air via Device Update for IoT Hub.
+## Key Differences from V2
 
-See [How To Implement A Custom Step Handler Extension](../../../../docs/agent-reference/how-to-implement-custom-update-handler.md) for more information.
+| Feature | V2 | V3 |
+|---------|----|----|
+| Update Type | `microsoft/swupdate:2` | `microsoft/swupdate:3` |
+| Bootloader | Raspberry Pi specific (rpipart) | Generic U-Boot variables |
+| Health Check | None | Automatic with rollback |
+| Error Codes | Agent error codes | Handler-specific |
+| Recovery | Manual | Automatic |
 
-## SWUpdate Handler Goals
+## U-Boot Environment Variables
 
-While SWUpdate supports many features (see [SWUpdate feature list](https://github.com/sbabic/swupdate#features) ), the main goals of this SWUpdate Handler are to demonstrate:
+V3 uses the following U-Boot variables (matching boot.cmd.in):
 
-- how to perform A/B system update on an embedded linux device.
-- how to execute SWUpdate command, with pass-through options, on an embedded linux device.
-- how to deliver multiple .swu files to a device, then install those files onto multiple peripherals.
+- `boot_partition`: Currently active boot partition ("rootA" or "rootB")
+- `upgrade_available`: Flag indicating pending upgrade ("0" or "1")
+- `boot_attempts`: Number of boot attempts since upgrade
+- `boot_result`: Current boot result ("unknown", "success", or "failed")
+- `boot_attempts_A`: Total boot attempts for rootA partition
+- `boot_attempts_B`: Total boot attempts for rootB partition
+- `boot_result_A`: Last result for rootA partition
+- `boot_result_B`: Last result for rootB partition
+- `boot_timestamp_A`: Last boot timestamp for rootA
+- `boot_timestamp_B`: Last boot timestamp for rootB
 
-> NOTE | for A/B system update, most of the example scripts and update artifacts in this document will used to demonstrate how to deliver an update to a Raspberry Pi device that running a sample reference Yocto (warrior) image with built-in Device Update Agent service.
+**Note:** Boot limit is hardcoded to 3 in boot.cmd.in
 
-## Architecture
+## Update Flow
 
-### High-level Overview of Device Update Agent Workflow
+### Installation Phase
 
-![SWUpdate Handler Overview Diagram](./images/highlevel-overview-swupdate-handler-workflow.svg)
+1. Download update files
+2. Install update to inactive partition using swupdate
+3. Set U-Boot environment:
+   - `boot_partition` = target partition ("rootA" or "rootB")
+   - `upgrade_available` = "1"
+   - `boot_attempts` = "0"
+   - `boot_result` = "unknown"
+4. Reboot system
 
-## How To Use SWUpdate Handler
+### Post-Reboot Verification
 
-### Registering SWUpdate Handler extension
+1. System boots from new partition
+2. U-Boot increments `boot_attempts` (if upgrade_available="1")
+3. U-Boot checks if `boot_attempts` >= 3:
+   - If yes: marks `boot_result` = "failed", switches partition, reboots
+4. Handler checks `upgrade_available` flag
+5. If `boot_attempts` < 3: Run health check
+6. If health check passes:
+   - Set `boot_result` = "success"
+   - Set `boot_result_A` or `boot_result_B` = "success"
+   - Set `upgrade_available` = "0"
+   - Reset `boot_attempts` = "0"
+   - Report success to Azure
+7. If health check fails:
+   - Set `boot_result` = "failed"
+   - Reboot and retry (U-Boot handles rollback after 3 attempts)
 
-To enable SWUpdate on the device, the handler must be registered to support **'microsoft/swupdate:2'**.
+## Configuration
 
-Note that this version of SWUpdate Handler is different from the previous version published as part of the 2022 Public Preview Refresh release. The new handler is not backward compatible with previous versions. Hence, we recommend using a new update-type (**'microsoft/swupdate:2'**)
+Create `/etc/adu/swupdate-handler-v3-config.json`:
 
-Following command can be run manually on the device:
-
-```sh
-sudo /usr/bin/AducIotAgent --update-type 'microsoft/swupdate:2' --register-content-handler <full path to the handler file>
+```json
+{
+    "description": "SWUpdate Handler V3 Configuration",
+    "version": "3.0",
+    "uboot": {
+        "boot_partition_var": "boot_partition",
+        "upgrade_available_var": "upgrade_available",
+        "boot_attempts_var": "boot_attempts",
+        "boot_result_var": "boot_result",
+        "boot_limit": 3
+    },
+    "health_check": {
+        "enabled": true,
+        "script_path": "/usr/lib/adu/scripts/boot-health-check.sh",
+        "timeout_seconds": 120
+    },
+    "swupdate": {
+        "binary_path": "/usr/bin/swupdate",
+        "default_args": ["-v"]
+    }
+}
 ```
 
-### Setting SWUpdate Handler Properties
+## Requirements
 
-Using [Multi Step Ordered Exeuction (MSOE)](), you can create a step that perform various swupdate tasks on the embedded device.
+### Build Requirements
+- CMake >= 3.5
+- C++ compiler with C++14 support
+- Azure Device Update Agent SDK
 
-The SWUpdate Handler support following handler properties (`handlerProperties`) :
+### Runtime Requirements
+- `swupdate` binary
+- `u-boot-fw-utils` (fw_setenv, fw_printenv)
+- Dual A/B partition setup
+- U-Boot bootloader with environment variable support
 
-| Name | Type | Description |
-|---|---|---|
+## Registration
+
+Register the handler with the ADU agent:
+
+```bash
+sudo /usr/bin/AducIotAgent --update-type 'microsoft/swupdate:3' \
+    --register-content-handler /var/lib/adu/extensions/sources/libmicrosoft_swupdate_3.so
+```
+
+## Update Manifest Example
+
+```json
+{
+    "updateManifest": "5.0",
+    "updateId": {
+        "provider": "Contoso",
+        "name": "System-Update",
+        "version": "1.0.0"
+    },
+    "updateType": "microsoft/swupdate:3",
+    "installedCriteria": "1.0.0",
+    "files": [
+        {
+            "fileName": "system-update.swu",
+            "sizeInBytes": 52428800,
+            "hashes": {
+                "sha256": "abc123..."
+            }
+        }
+    ],
+    "handlerProperties": {
+        "swuFileName": "system-update.swu",
+        "apiVersion": "3.0"
+    }
+}
+```
+
+## Error Codes
+
+V3 uses handler-specific extended error codes in the format:
+- Facility: 10
+- Component: 3
+- Error Code: Specific to error type
+
+Common error codes:
+- 10 (0x0A): U-Boot environment read failed
+- 11 (0x0B): U-Boot environment write failed
+- 20 (0x14): Boot health check failed
+- 30 (0x1E): Boot limit exceeded, rollback initiated
+- 100 (0x64): SWUpdate execution failed
+
+## Troubleshooting
+
+### Check U-Boot Variables
+
+```bash
+fw_printenv boot_partition
+fw_printenv upgrade_available
+fw_printenv boot_attempts
+fw_printenv boot_result
+fw_printenv boot_result_A
+fw_printenv boot_result_B
+```
+
+### Check Handler Logs
+
+```bash
+journalctl -u deviceupdate-agent | grep swupdate-handler-v3
+```
+
+### Manual Rollback
+
+If automatic rollback fails:
+
+```bash
+# Switch to the other partition
+CURRENT=$(fw_printenv -n boot_partition)
+if [ "$CURRENT" = "rootA" ]; then
+    fw_setenv boot_partition rootB
+else
+    fw_setenv boot_partition rootA
+fi
+
+fw_setenv upgrade_available 0
+fw_setenv boot_attempts 0
+fw_setenv boot_result unknown
+reboot
+```
+
+## Development Status
+
+This is an initial implementation that demonstrates:
+- ✅ U-Boot environment variable management
+- ✅ Post-reboot state detection
+- ✅ Boot counter and limit checking
+- 🚧 Actual swupdate execution (simulated)
+- 🚧 Health check script execution
+- 🚧 Automatic rollback implementation
+
+Future enhancements will include complete health check and rollback logic.
+
+## See Also
+
+- [ADU Agent SDK Design](../../../../docs/agent-reference/aduagent-sdk-design.md)
+- [SWUpdate Handler V3 Design](./DESIGN.md)
+- [Implementation Roadmap](../../../../docs/agent-reference/aduagent-sdk-implementation-roadmap.md)
 | scriptFileName | string | Name of a script file that perform additional logics related to A/B system update. This property should be specified only when performing A/B System Update.<br/><br/> See [A/B Update Script](#ab-update-script) below for more information. |
 | arguments | string | A space delimited options and arguments that will be passed directly to SWUpdate command.
 | installedCriteria | string | String interpreted by the specified `scriptFileName` to determine if the update completed successfully. <br/> This value will be passed to the underlying update script in this format: `--installed-criteria <value>` |

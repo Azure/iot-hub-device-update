@@ -1,13 +1,13 @@
 cmake_minimum_required (VERSION 3.5)
 
-set (target_name microsoft_swupdate_2)
+set (target_name microsoft_swupdate_3)
 
-set (SWUPDATE_HANDLER_CONF_FILE "swupdate-handler-config.json")
+set (SWUPDATE_HANDLER_CONF_FILE "swupdate-handler-v3-config.json")
 
 set (
-    ADUC_SWUPDATE_HANDLER_CONF_FILE_PATH
+    ADUC_SWUPDATE_HANDLER_V3_CONF_FILE_PATH
     "${ADUC_CONF_FOLDER}/${SWUPDATE_HANDLER_CONF_FILE}"
-    CACHE STRING "Path to the SWUpdate handler configuration file.")
+    CACHE STRING "Path to the SWUpdate handler V3 configuration file.")
 
 add_library (${target_name} MODULE)
 
@@ -15,7 +15,7 @@ add_library (aduc::${target_name} ALIAS ${target_name})
 
 find_package (Parson REQUIRED)
 
-target_sources (${target_name} PRIVATE src/handler_create.cpp src/swupdate_handler_v2.cpp)
+target_sources (${target_name} PRIVATE src/handler_create.cpp src/swupdate_handler_v3.cpp)
 
 target_include_directories (
     ${target_name}
@@ -44,7 +44,7 @@ target_link_libraries (${target_name} PRIVATE libaducpal)
 target_compile_definitions (
     ${target_name}
     PRIVATE ADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}"
-            ADUC_SWUPDATE_HANDLER_CONF_FILE_PATH="${ADUC_SWUPDATE_HANDLER_CONF_FILE_PATH}"
+            ADUC_SWUPDATE_HANDLER_V3_CONF_FILE_PATH="${ADUC_SWUPDATE_HANDLER_V3_CONF_FILE_PATH}"
             ADUC_VERSION_FILE="${ADUC_VERSION_FILE}")
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})

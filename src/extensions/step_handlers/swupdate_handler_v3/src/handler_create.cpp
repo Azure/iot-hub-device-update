@@ -8,7 +8,7 @@
 
 #include <aduc/c_utils.h>
 #include <aduc/logging.h>
-#include <aduc/swupdate_handler_v2.hpp>
+#include <aduc/swupdate_handler_v3.hpp>
 #include <exception>
 
 // keep this last to avoid interfering with system headers
@@ -24,16 +24,16 @@ EXTERN_C_BEGIN
 //
 
 /**
- * @brief Instantiates a Step Handler for 'microsoft/swupdate:2' update type.
+ * @brief Instantiates a Step Handler for 'microsoft/swupdate:3' update type.
  * @return ContentHandler* The created instance.
  */
 EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel)
 {
-    ADUC_Logging_Init(logLevel, "swupdate-handler-v2");
-    Log_Info("Instantiating a Step Handler for 'microsoft/swupdate:2'");
+    ADUC_Logging_Init(logLevel, "swupdate-handler-v3");
+    Log_Info("Instantiating a Step Handler for 'microsoft/swupdate:3'");
     try
     {
-        return SWUpdateHandlerImpl::CreateContentHandler();
+        return SWUpdateHandlerV3Impl::CreateContentHandler();
     }
     catch (const std::exception& e)
     {
