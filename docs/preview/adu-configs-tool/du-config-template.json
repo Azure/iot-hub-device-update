@@ -1,0 +1,22 @@
+{
+    "schemaVersion": "1.2",
+    "aduShellTrustedUsers": ["adu", "do"],
+    "manufacturer": "device_info_manufacturer",
+    "model": "device_info_model",
+    "agents": [
+        {
+            "name": "host-update",
+            "runas": "adu",
+            "connectionSource": {
+                "connectionType": "X509",
+                "connectionData": "HostName=adu-bugbash-01062026-iothub.azure-devices.netDeviceId=[your-device-id];x509=true",
+                "connectionX509CertFilePath": "/etc/adu/certs/[leaf-cert].pem",
+                "connectionX509PrivateKeyFilePath": "/etc/adu/certs/[leaf-key].key",
+                "connectionX509CaCertFilePath": "/etc/adu/certs/[ca-cert].pem"
+            },
+            "manufacturer": "Contoso",
+            "model": "Smart-Box",
+            "IdlePauseMilliseconds": "300000" 
+        }
+    ]
+}

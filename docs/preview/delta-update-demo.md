@@ -67,6 +67,31 @@ This bug bash tests Azure Device Update (ADU) agent with A/B Root File System up
 - Configure ADU configuration file (`du-config`)
 - Verify device connection to IoT Hub endpoint
 
+#### Using adu-configs-tool for Automated Setup
+You can use the `adu-configs-tool` to automatically create an `adu-configs-pkg` that simplifies device configuration. For detailed information, see the [adu-configs-tool README](adu-configs-tool/README.md).
+
+1. **Prepare Certificates**
+   - Navigate to the `adu-configs-tool` directory
+   - Place your certificates in the `certs` folder:
+     - CA certificate (root certificate)
+     - Intermediate certificate
+     - Leaf device certificate
+     - Private key
+
+2. **Create Config Package**
+   - Run the tool to generate `adu-configs-pkg`
+
+3. **Deploy to Device**
+   - Copy the `adu-configs-pkg` to the SD card's `/boot` partition
+   - Insert the SD card into the Raspberry Pi and boot
+
+4. **Run Setup Script**
+   - Once booted, run: `sudo /boot/adu-device-setup.sh`
+   - This script will:
+     - Configure `du-config.json` with proper settings
+     - Copy certificate files to required locations
+     - Set correct permissions
+
 **Note:** Personalize the following to avoid conflicts:
 - Update Provider, Name, and Compatibility properties
 - Device Manufacturer and Model in `du-config`
