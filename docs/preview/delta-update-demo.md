@@ -37,9 +37,9 @@ This bug bash tests Azure Device Update (ADU) agent with A/B Root File System up
 3. **Flash the SD Card**
    - Insert the microSD card into your card reader
    - Open Raspberry Pi Imager
-   - Click **"Choose OS"** → **"Use custom"** → Select `adu-base-image.wic.gz`
-   - Click **"Choose Storage"** → Select your microSD card
-   - Click **"Write"** to begin flashing
+   - Click **"Choose OS"** → **"Use custom"** → Select `adu-base-image.wic.gz`![alt text](flash-step-1.png)
+   - Click **"Choose Storage"** → Select your microSD card![alt text](flash-step-3.png)
+   - Click **"Next"** , then **"WRITE"** , then confirm to begin flashing
    - Wait for the process to complete (5-10 minutes)
    - Eject the SD card when done
 
@@ -206,7 +206,7 @@ The delta test package (`adu-delta-test-package.tar.gz`) contains all necessary 
 ### Images Directory
 **Original Update Images** (SWU format):
 - `adu-update-image-v1.swu` (~240MB) - Version 1.0.0
-- `adu-update-image-v2.swu` (~240MB) - Version 2.0.0  
+- `adu-update-image-v2.swu` (~240MB) - Version 2.0.0
 - `adu-update-image-v3.swu` (~240MB) - Version 3.0.0
 
 **Recompressed Update Images** (optimized for delta):
@@ -237,7 +237,7 @@ The delta test package (`adu-delta-test-package.tar.gz`) contains all necessary 
   - Lookup cached versions by provider and version
   - List all cached files with metadata
   - Show cache statistics
-  
+
 - `delta_operations.py` - Python script for delta file operations
   - Calculate SHA256 hashes
   - Verify file integrity
