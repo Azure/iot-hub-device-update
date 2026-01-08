@@ -137,11 +137,16 @@ When using the provided import manifest files, you **must** customize the follow
 - `contoso.adu-yocto-rpi4-poc-1.3.0.1.importmanifest.json`
 
 ### 2. Import and Deploy Updates
+- How to import an update: https://learn.microsoft.com/en-us/azure/iot-hub-device-update/import-update?tabs=portal
 - Import 3 sequential updates to IoT Hub using provided import manifests
 - Staged for deployment (older → newer versions)
 - Deploy updates individually in version order
 - ⚠️ **Important**: Deploy updates sequentially - complete each deployment and verify successful installation before proceeding to the next version.
 - Monitor deployment progression
+
+**Manage Device Group:**:
+
+Make sure that you add 'ADUGroup' tag to your device. See https://learn.microsoft.com/en-us/azure/iot-hub-device-update/create-update-group?tabs=portal
 
 **Import Order**:
 1. v1.0.1 (full base update)
@@ -149,6 +154,7 @@ When using the provided import manifest files, you **must** customize the follow
 3. v3.0.1 (delta from v2.0.1 or v1.0.1)
 
 ### 3. Deploy Updates
+How To: https://learn.microsoft.com/en-us/azure/iot-hub-device-update/deploy-update?tabs=portal
 
 **Deployment Scenarios**:
 - **Full Update**: Deploy v1.0.1 → v2.0.1 using full SWU (240MB)
