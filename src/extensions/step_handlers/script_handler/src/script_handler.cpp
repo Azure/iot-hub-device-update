@@ -264,7 +264,7 @@ done:
 /**
  * @brief A helper function that return a script file path, and arguments list.
  *
- * @param workflowHandle An 'Install' phase workflow data containing script information and selected component.
+ * @param workflowData An 'Install' phase workflow data containing script information and selected component.
  * @param resultFilePath A full path of the file containing serialized ADUC_Result value returned by the script.
  * @param workFolder A working folder for the current workflow.
  * @param[out] scriptFilePath A output script file path.
@@ -272,12 +272,13 @@ done:
  * @return ADUC_Result
  */
 ADUC_Result ScriptHandlerImpl::PrepareScriptArguments(
-    ADUC_WorkflowHandle workflowHandle,
+    const tagADUC_WorkflowData *workflowData,
     std::string resultFilePath,
     std::string workFolder,
     std::string& scriptFilePath,
     std::vector<std::string>& args)
 {
+    ADUC_WorkflowHandle workflowHandle = workflowData->WorkflowHandle;
     ADUC_Result result = { ADUC_GeneralResult_Failure };
 
     char* selectedComponentsJson = nullptr;
@@ -569,7 +570,7 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
                                               adushconst::update_action_opt, adushconst::update_action_execute };
 
     results.result = ScriptHandlerImpl::PrepareScriptArguments(
-        workflowData->WorkflowHandle, scriptResultFile, scriptWorkfolder, results.scriptFilePath, results.args);
+        workflowData, scriptResultFile, scriptWorkfolder, results.scriptFilePath, results.args);
     if (IsAducResultCodeFailure(results.result.ResultCode))
     {
         goto done;
