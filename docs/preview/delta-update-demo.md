@@ -54,7 +54,7 @@ This bug bash tests Azure Device Update (ADU) agent with A/B Root File System up
    - Default credentials (if applicable): Check the base image documentation
    - Verify network connectivity: `ping -c 3 google.com`
    - Check disk partitions: `lsblk` (should show A/B partitions)
-   - Verify ADU agent is installed: `systemctl status adu-agent`
+   - Verify ADU agent is installed: `systemctl status deviceupdate-agent`
 
 **Note**: The base image includes:
 - Raspberry Pi OS with A/B partition layout
@@ -64,7 +64,7 @@ This bug bash tests Azure Device Update (ADU) agent with A/B Root File System up
 
 ### 1. Configure ADU Agent
 - Acquire device identity certificates and authentication files for IoT Hub
-- Configure ADU configuration file (`du-config`)
+- Configure ADU configuration file (`du-config.json`)
 - Verify device connection to IoT Hub endpoint
 
 #### Using adu-configs-tool for Automated Setup
@@ -86,42 +86,89 @@ You can use the `adu-configs-tool` to automatically create an `adu-configs-pkg` 
    - Insert the SD card into the Raspberry Pi and boot
 
 4. **Run Setup Script**
-   - Once booted, run: `sudo /boot/adu-device-setup.sh`
+   - Once booted, run: `sudo /boot/adu-configs-pkg/adu-device-setup.sh`
    - This script will:
      - Configure `du-config.json` with proper settings
      - Copy certificate files to required locations
      - Set correct permissions
 
-**Note:** Personalize the following to avoid conflicts:
-- Update Provider, Name, and Compatibility properties
-- Device Manufacturer and Model in `du-config`
+#### ⚠️ Critical Configuration Requirements
 
-### 2. Import Updates
+**Import Manifest Customization:**
+When using the provided import manifest files, you **must** customize the following fields to avoid conflicts with other deployments:
+
+1. **Update Identity (Provider & Name)** - Make these unique to your organization:
+   ```json
+   "updateId": {
+     "provider": "YourOrganization",    // Change this!
+     "name": "YourProductName",         // Change this!
+     "version": "1.0.0"
+   }
+   ```
+   - These identify your update and prevent collisions with other organizations' products
+   - Use your company/team name for Provider (e.g., "Contoso", "Fabrikam-IoT")
+   - Use a descriptive product name (e.g., "SmartSensor-Firmware", "EdgeGateway-OS")
+
+2. **🔴 Most Important: Compatibility Properties Must Match**
+
+   The `compatibility` section in your import manifests **must exactly match** the `manufacturer` and `model` in your device's `du-config.json`:
+
+   **Import Manifest:**
+   ```json
+   "compatibility": [
+     {
+       "deviceManufacturer": "Contoso",
+       "deviceModel": "SmartEdge-1000"
+     }
+   ]
+   ```
+
+   **du-config.json (on device):**
+   ```json
+   "manufacturer": "Contoso",
+   "model": "SmartEdge-1000"
+   ```
+
+   ⚠️ If these don't match exactly, the device will not recognize the update as applicable and deployment will fail silently.
+
+**Files to Modify:**
+- `contoso.adu-yocto-rpi4-poc-1.1.0.1.importmanifest.json`
+- `contoso.adu-yocto-rpi4-poc-1.2.0.1.importmanifest.json`
+- `contoso.adu-yocto-rpi4-poc-1.3.0.1.importmanifest.json`
+
+### 2. Import and Deploy Updates
 - Import 3 sequential updates to IoT Hub using provided import manifests
 - Staged for deployment (older → newer versions)
-
-**Import Order**:
-1. v1.0.0 (full base update)
-2. v2.0.0 (delta from v1.0.0)
-3. v3.0.0 (delta from v2.0.0 or v1.0.0)
-
-### 3. Deploy Updates
-- Import all updates simultaneously
 - Deploy updates individually in version order
+- ⚠️ **Important**: Deploy updates sequentially - complete each deployment and verify successful installation before proceeding to the next version.
 - Monitor deployment progression
 
+**Import Order**:
+1. v1.0.1 (full base update)
+2. v2.0.1(delta from v1.0.1)
+3. v3.0.1 (delta from v2.0.1 or v1.0.1)
+
+### 3. Deploy Updates
+
 **Deployment Scenarios**:
-- **Full Update**: Deploy v1.0.0 → v2.0.0 using full SWU (240MB)
-- **Delta Update**: Deploy v1.0.0 → v2.0.0 using delta diff (~600 bytes)
-- **Multi-hop Delta**: Deploy v1.0.0 → v3.0.0 using delta diff (~600 bytes)
+- **Full Update**: Deploy v1.0.1 → v2.0.1 using full SWU (240MB)
+- **Delta Update**: Deploy v1.0.1 → v2.0.1 using delta diff (~600 bytes)
+- **Multi-hop Delta**: Deploy v1.0.1 → v3.0.1 using delta diff (~600 bytes)
 
 ### 4. Monitor Progress
 - Monitor real-time updates via `journalctl` on device
+```shell
+    journalctl -f -u deviceupdate-agent --no-tail
+```
 - Review log files for results and status
-- Verify delta download and reconstruction
+```shell
+    \var\log\adu or \adu\log
+```
+- Verify delta download and reconstruction (in log files)
+
 
 **Key Log Messages to Watch**:
-- Delta download progress
+- Delta download progress (we don't have a real time progress report, please observe the wait time.)
 - Delta reconstruction/patching
 - Update installation status
 - Reboot and activation
@@ -205,7 +252,7 @@ python3 delta_operations.py info <file>
 ### Delta Download Issues
 - Check network connectivity
 - Verify IoT Hub endpoint accessibility
-- Review ADU agent logs: `journalctl -u adu-agent`
+- Review ADU agent logs: `journalctl -u deviceupdate-agent`
 
 ### Delta Reconstruction Failures
 - Verify source image version matches delta requirement
