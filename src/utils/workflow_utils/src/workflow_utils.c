@@ -3253,7 +3253,7 @@ size_t workflow_get_children_count(ADUC_WorkflowHandle handle)
  * @brief Get child workflow at specified @p index.
  *
  * @param handle A workflow object handle.
- * @param index Index of a child workflow to get. -1 indicates getting the handle at the end of the list
+ * @param index Index of a child workflow to get.
  * @return A child workflow object handle, or NULL if index out of range.
  */
 ADUC_WorkflowHandle workflow_get_child(ADUC_WorkflowHandle handle, size_t index)
