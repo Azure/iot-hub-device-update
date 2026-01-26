@@ -22,6 +22,8 @@
 #    define ZLOG_ENABLE_FILE_LOG ZLOG_DISABLED
 #endif
 
+static int ref_count = 0;
+
 /**
  * @brief Convert ADUC_LOG_SEVERITY to ZLOG_SEVERITY
  * @param logLevel An ADUC log level
@@ -76,6 +78,11 @@ ADUC_LOG_SEVERITY g_logLevel = ADUC_LOG_INFO;
  */
 void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
 {
+    if (ref_count++ > 0)
+    {
+        return;
+    }
+
     g_logLevel = logLevel;
 
     // zlog_init doesn't create the log path, so attempt to create it here if it does not exist.
@@ -111,6 +118,11 @@ void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
  */
 void ADUC_Logging_Uninit()
 {
+    if (--ref_count > 0)
+    {
+        return;
+    }
+
     zlog_finish();
 }
 
