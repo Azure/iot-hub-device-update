@@ -1065,7 +1065,7 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
             // Reset so that a Retry/Replacement avoids cancel and instead properly starts processing.
             workflow_set_operation_in_progress(workflowData->WorkflowHandle, false);
 
-            ADUC_Workflow_SetUpdateState(workflowData, nextUpdateStateOnFailure);
+            ADUC_Workflow_SetUpdateStateWithResult(workflowData, nextUpdateStateOnFailure, result);
 
             ADUC_Workflow_AutoTransitionWorkflow(workflowData, false);
         }
