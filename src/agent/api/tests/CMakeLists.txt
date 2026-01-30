@@ -27,4 +27,8 @@ target_link_libraries (
 
 include (CTest)
 include (Catch)
-catch_discover_tests (${target_name})
+if (NOT CMAKE_CROSSCOMPILING)
+    catch_discover_tests (${target_name})
+else ()
+    add_test (NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
+endif ()

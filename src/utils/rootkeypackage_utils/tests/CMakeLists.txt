@@ -30,6 +30,9 @@ target_compile_definitions (${target_name} PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC
 
 include (CTest)
 include (Catch)
-catch_discover_tests (${target_name})
-
+if (NOT CMAKE_CROSSCOMPILING)
+    catch_discover_tests (${target_name})
+else ()
+    add_test (NAME ${target_name} COMMAND ${target_name})
+endif ()
 add_subdirectory (testapp)
