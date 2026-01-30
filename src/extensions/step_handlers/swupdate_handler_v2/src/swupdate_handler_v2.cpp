@@ -37,6 +37,7 @@
 #define HANDLER_PROPERTIES_SWU_FILENAME "swuFileName"
 #define HANDLER_PROPERTIES_API_VERSION "apiVersion"
 #define HANDLER_ARG_ACTION "--action"
+#define HANDLER_ARG_WORKFLOW_ID "--workflow-id"
 
 namespace adushconst = Adu::Shell::Const;
 
@@ -165,6 +166,29 @@ ADUC_Result SWUpdateHandler_PerformAction(
     JSON_Value* actionResultValue = nullptr;
     std::vector<std::string> aduShellArgs;
 
+    // Convert apiVer to decimal number for easier comparison.
+    double apiVerNum = 1.0;
+    if (apiVer != nullptr)
+    {
+        try
+        {
+            apiVerNum = std::stod(std::string(apiVer));
+        }
+        catch (...)
+        {
+            // Default to 1.0 if parsing fails
+            apiVerNum = 1.0;
+        }
+    }
+
+    Log_Info("Using API version: %.2f (%s)", apiVerNum, apiVer != nullptr ? apiVer : "null");
+
+    // Declare variables at the beginning to avoid crossing initialization with goto
+    const char* rootWorkflowId = nullptr;
+    const char* currentWorkflowId = nullptr;
+    std::string fullWorkflowId;
+    ADUC_WorkflowHandle rootHandle = nullptr;
+
     config = ADUC_ConfigInfo_GetInstance();
     if (config == nullptr)
     {
@@ -200,15 +224,61 @@ ADUC_Result SWUpdateHandler_PerformAction(
     aduShellArgs.emplace_back(scriptFilePath);
     commandLineArgs.emplace_back(scriptFilePath);
 
+    // Pass step-specific workflow ID to the script
+    // Construct full workflow ID as "parentId/currentId" for step workflows
+    rootHandle = workflow_get_root(workflowData->WorkflowHandle);
+    if (rootHandle != nullptr)
+    {
+        // This is a child workflow (step), get root deployment ID
+        rootWorkflowId = workflow_peek_id(rootHandle);
+    }
+    else
+    {
+        // This is the root workflow itself
+        rootHandle = workflowData->WorkflowHandle;
+        rootWorkflowId = workflow_peek_id(rootHandle);
+    }
+
+    currentWorkflowId = workflow_peek_id(workflowData->WorkflowHandle);
+
+    if (rootWorkflowId != nullptr && currentWorkflowId != nullptr)
+    {
+        if (rootWorkflowId == currentWorkflowId)
+        {
+            // Root workflow, use as-is
+            fullWorkflowId = rootWorkflowId;
+        }
+        else
+        {
+            // Child workflow, construct hierarchical ID
+            fullWorkflowId = std::string(rootWorkflowId) + "-" + std::string(currentWorkflowId);
+        }
+
+        Log_Info("Passing workflow ID: %s", fullWorkflowId.c_str());
+        aduShellArgs.emplace_back(adushconst::target_options_opt);
+        aduShellArgs.emplace_back(HANDLER_ARG_WORKFLOW_ID);
+        commandLineArgs.emplace_back(HANDLER_ARG_WORKFLOW_ID);
+
+        aduShellArgs.emplace_back(adushconst::target_options_opt);
+        aduShellArgs.emplace_back(fullWorkflowId);
+        commandLineArgs.emplace_back(fullWorkflowId);
+    }
+    else
+    {
+        Log_Warn("Workflow ID is null (root: %s, current: %s).",
+                 rootWorkflowId ? rootWorkflowId : "null",
+                 currentWorkflowId ? currentWorkflowId : "null");
+    }
+
     // Prepare arguments based on specified api version.
-    if (apiVer == nullptr || strcmp(apiVer, "1.0") == 0)
+    if (apiVerNum <= 1.0)
     {
         std::string backcompatAction = "--action-" + action;
         aduShellArgs.emplace_back(adushconst::target_options_opt);
         aduShellArgs.emplace_back(backcompatAction.c_str());
         commandLineArgs.emplace_back(backcompatAction.c_str());
     }
-    else if (strcmp(apiVer, "1.1") == 0)
+    else if (apiVerNum >= 1.1)
     {
         aduShellArgs.emplace_back(adushconst::target_options_opt);
         aduShellArgs.emplace_back(HANDLER_ARG_ACTION);
@@ -249,6 +319,18 @@ ADUC_Result SWUpdateHandler_PerformAction(
         goto done;
     }
 
+#if ADU_ENHANCED_DEBUG
+    // Debug: Log aduShellArgs details
+    Log_Debug("=== DEBUG: aduShellArgs Details ===");
+    Log_Debug("aduShellArgs.size() = %zu", aduShellArgs.size());
+    Log_Debug("aduShellFilePath = %s", config->aduShellFilePath);
+    for (size_t i = 0; i < aduShellArgs.size(); i++)
+    {
+        Log_Debug("aduShellArgs[%zu] = '%s'", i, aduShellArgs[i].c_str());
+    }
+    Log_Debug("=== END DEBUG ===");
+#endif
+
     exitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, aduShellArgs, scriptOutput);
     if (exitCode != 0)
     {
@@ -286,7 +368,7 @@ ADUC_Result SWUpdateHandler_PerformAction(
     }
 
     Log_Info(
-        "Action (%s) done - returning rc:%d, erc:0x%X, rd:%s",
+        "Action (%s) end - returning rc:%d, erc:0x%X, rd:%s",
         action.c_str(),
         result.ResultCode,
         result.ExtendedResultCode,
