@@ -25,11 +25,26 @@ namespace Common
  */
 ADUShellTaskResult Reboot(const ADUShell_LaunchArguments& /*launchArgs*/)
 {
-    Log_Info("Launching child process to reboot the device.");
+    Log_Info("Calling reboot wrapper to synchronize with agent cleanup.");
     ADUShellTaskResult taskResult;
-    std::vector<std::string> args{ "--reboot", "--no-wall" };
+    // Use adu-reboot-wrapper.sh which waits for lock file removal
+    // The agent creates /var/run/adu-agent-reboot.lock before calling this
+    // and removes it after caching and reporting status to cloud
+    std::vector<std::string> args{};
     std::string output;
-    taskResult.SetExitStatus(ADUC_LaunchChildProcess("/sbin/reboot", args, output));
+    int exitCode = ADUC_LaunchChildProcess("/usr/lib/adu/adu-reboot-wrapper.sh", args, output);
+
+    if (exitCode == 0)
+    {
+        Log_Info("Reboot wrapper completed successfully.");
+    }
+    else
+    {
+        Log_Error("Reboot wrapper failed, exit code: %d", exitCode);
+    }
+
+    taskResult.SetExitStatus(exitCode);
+
     if (!output.empty())
     {
         Log_Info(output.c_str());

@@ -1257,6 +1257,58 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
 }
 
 /**
+ * @brief For each update payload that has a DownloadHandlerId, load the handler and call CacheSourceUpdate.
+ * This is called BEFORE reboot/restart to ensure source files are cached while sandbox still exists.
+ *
+ * @param workflowHandle The workflow handle.
+ * @details This function will not fail but if a download handler's CacheSourceUpdate fails, side effects include logging the error result codes.
+ */
+static void CallDownloadHandlerCacheSourceUpdate(const ADUC_WorkflowHandle workflowHandle)
+{
+    size_t payloadCount = workflow_get_update_files_count(workflowHandle);
+    for (size_t i = 0; i < payloadCount; ++i)
+    {
+        ADUC_Result result;
+        memset(&result, 0, sizeof(result));
+
+        ADUC_FileEntity fileEntity;
+        memset(&fileEntity, 0, sizeof(fileEntity));
+
+        if (!workflow_get_update_file(workflowHandle, i, &fileEntity))
+        {
+            continue;
+        }
+
+        if (IsNullOrEmpty(fileEntity.DownloadHandlerId))
+        {
+            ADUC_FileEntity_Uninit(&fileEntity);
+            continue;
+        }
+
+        // NOTE: do not free the handle as it is owned by the DownloadHandlerFactory.
+        DownloadHandlerHandle* handle = ADUC_DownloadHandlerFactory_LoadDownloadHandler(fileEntity.DownloadHandlerId);
+        ADUC_FileEntity_Uninit(&fileEntity);
+        if (handle != NULL)
+        {
+            result = ADUC_DownloadHandlerPlugin_CacheSourceUpdate(handle, workflowHandle);
+            if (IsAducResultCodeFailure(result.ResultCode))
+            {
+                Log_Warn(
+                    "CacheSourceUpdate, result 0x%08x, erc 0x%08x",
+                    result.ResultCode,
+                    result.ExtendedResultCode);
+
+                workflow_add_erc(workflowHandle, result.ExtendedResultCode);
+            }
+            else
+            {
+                Log_Info("CacheSourceUpdate succeeded before reboot");
+            }
+        }
+    }
+}
+
+/**
  * @brief Set a new update state.
  *
  * @param[in,out] workflowData Workflow data object.
@@ -1661,7 +1713,38 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
         || workflow_is_reboot_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
         // If apply indicated a reboot required result from apply, go ahead and reboot.
-        Log_Info("Apply indicated success with RebootRequired - rebooting system now");
+        Log_Info("Apply indicated success with RebootRequired - creating reboot lock file");
+
+        // Create lock file with agent PID to signal reboot wrapper
+        FILE* lockFile = fopen("/var/run/adu-agent-reboot.lock", "w");
+        if (lockFile != NULL)
+        {
+            fprintf(lockFile, "%d\n", getpid());
+            fclose(lockFile);
+            Log_Info("Created reboot lock file with PID %d", getpid());
+        }
+        else
+        {
+            Log_Warn("Failed to create reboot lock file, proceeding anyway");
+        }
+
+        // Cache source updates BEFORE rebooting while sandbox still exists
+        Log_Info("Caching source updates before reboot");
+        CallDownloadHandlerCacheSourceUpdate(methodCallData->WorkflowData->WorkflowHandle);
+
+        // Report reboot pending status to cloud
+        Log_Info("Reporting reboot pending status to cloud");
+        ADUC_Result rebootPendingResult = { ADUC_Result_Apply_RebootPending, 0 };
+        ADUC_Workflow_WorkCompletionCallback(methodCallData, rebootPendingResult, false);
+
+        // Remove lock file to signal reboot wrapper it can proceed
+        Log_Info("Removing reboot lock file to signal wrapper");
+        if (remove("/var/run/adu-agent-reboot.lock") != 0)
+        {
+            Log_Warn("Failed to remove reboot lock file");
+        }
+
+        Log_Info("Initiating system reboot");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
 
         // Set view state manager to Rebooting when reboot is required
@@ -1671,6 +1754,15 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
         if (success == 0)
         {
             methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_InProgress;
+            Log_Info("Reboot initiated successfully - waiting for SIGTERM from system shutdown");
+
+            // Wait for SIGTERM from shutdown process
+            // Timeout is handled by reboot wrapper (60 seconds default)
+            // During this period, agent is idle and will be terminated by system
+            sleep(120); // Sleep longer than wrapper timeout to ensure we're terminated by SIGTERM
+
+            // If we reach here, SIGTERM didn't arrive - log and continue
+            Log_Warn("Reboot timeout expired without SIGTERM - system may not have rebooted");
         }
         else
         {
@@ -1683,7 +1775,12 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
         || workflow_is_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
         // If apply indicated a restart is required, go ahead and restart the agent.
-        Log_Info("Apply indicated success with AgentRestartRequired - restarting the agent now");
+        Log_Info("Apply indicated success with AgentRestartRequired - caching source updates before restart");
+
+        // Cache source updates BEFORE restarting agent
+        CallDownloadHandlerCacheSourceUpdate(methodCallData->WorkflowData->WorkflowHandle);
+
+        Log_Info("Restarting the agent now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
 
         int success = ADUC_MethodCall_RestartAgent();
