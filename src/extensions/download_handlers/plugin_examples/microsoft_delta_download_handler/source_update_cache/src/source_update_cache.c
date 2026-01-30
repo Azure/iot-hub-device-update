@@ -93,7 +93,7 @@ ADUC_Result ADUC_SourceUpdateCache_Move(const ADUC_WorkflowHandle workflowHandle
     res = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(workflowHandle, spaceRequired, updateCacheBasePath);
     if (res != 0)
     {
-        Log_Error("pre-purge failed, res %d", res);
+        Log_Error("[DELTA] Pre-purge failed, res %d", res);
         result.ExtendedResultCode = ADUC_ERC_MOVE_PREPURGE;
         goto done;
     }
@@ -102,7 +102,7 @@ ADUC_Result ADUC_SourceUpdateCache_Move(const ADUC_WorkflowHandle workflowHandle
     result = ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(workflowHandle, updateCacheBasePath);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("Failed to move sandbox payloads to update cache. erc: %d", result.ExtendedResultCode);
+        Log_Error("[DELTA] Failed to move sandbox payloads to update cache, erc: 0x%08x", result.ExtendedResultCode);
         result.ExtendedResultCode = ADUC_ERC_MOVE_PAYLOAD;
         goto done;
     }
@@ -112,7 +112,7 @@ ADUC_Result ADUC_SourceUpdateCache_Move(const ADUC_WorkflowHandle workflowHandle
     res = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(workflowHandle, spaceRequired, updateCacheBasePath);
     if (res != 0)
     {
-        Log_Error("post-purge failed, res %d", res);
+        Log_Error("[DELTA] Post-purge failed, res %d", res);
         result.ExtendedResultCode = ADUC_ERC_MOVE_POSTPURGE;
         goto done;
     }

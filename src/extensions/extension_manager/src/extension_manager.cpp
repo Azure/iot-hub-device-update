@@ -929,6 +929,15 @@ ADUC_Result ExtensionManager::Download(
     if (!IsNullOrEmpty(entity->DownloadHandlerId))
     {
         result = ProcessDownloadHandlerExtensibility(workflowHandle, entity, targetUpdateFilePath.c_str());
+
+        if (IsAducResultCodeSuccess(result.ResultCode)
+            && result.ResultCode != ADUC_Result_Download_Handler_RequiredFullDownload)
+        {
+            Log_Info(
+                "Successfully reconstructed target file '%s' from delta and cached source update",
+                targetUpdateFilePath.c_str());
+        }
+
         // continue on to fallback to full content download if necessary
     }
 

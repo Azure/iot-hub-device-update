@@ -40,11 +40,11 @@ EXTERN_C_BEGIN
 ADUC_Result MicrosoftDeltaDownloadHandlerUtils_ProcessDeltaUpdate(
     const char* sourceUpdateFilePath, const char* deltaUpdateFilePath, const char* targetUpdateFilePath)
 {
-    Log_Debug(
-        "Making '%s' from src '%s' and delta '%s'",
-        targetUpdateFilePath,
+    Log_Info(
+        "[DELTA] Starting reconstruction: source='%s', delta='%s', target='%s'",
         sourceUpdateFilePath,
-        deltaUpdateFilePath);
+        deltaUpdateFilePath,
+        targetUpdateFilePath);
 
     ADUC_Result result = { ADUC_Result_Failure };
 
@@ -91,7 +91,7 @@ ADUC_Result MicrosoftDeltaDownloadHandlerUtils_ProcessDeltaUpdate(
         session = createSessionFn();
         if (session == nullptr)
         {
-            Log_Error("create diffapply session failed");
+            Log_Error("[DELTA] Create diffapply session failed");
             result.ExtendedResultCode = ADUC_ERC_DDH_PROCESSOR_CREATE_SESSION;
         }
         else
@@ -102,11 +102,12 @@ ADUC_Result MicrosoftDeltaDownloadHandlerUtils_ProcessDeltaUpdate(
 
             if (res == 0)
             {
+                Log_Info("[DELTA] libadudiffapi apply succeeded - target file created at '%s'", targetUpdateFilePath);
                 result.ResultCode = ADUC_Result_Success;
             }
             else
             {
-                Log_Error("diff apply - overall err: %d", res);
+                Log_Error("[DELTA] libadudiffapi apply FAILED with error code: %d", res);
                 result.ExtendedResultCode = MAKE_DELTA_PROCESSOR_EXTENDEDRESULTCODE(res);
 
                 size_t errorCount = getErrorCountFn(session);
@@ -115,7 +116,7 @@ ADUC_Result MicrosoftDeltaDownloadHandlerUtils_ProcessDeltaUpdate(
                     int error_code = getErrorCodeFn(session, errIndex);
                     const char* error_text = getErrorTextFn(session, errIndex); // do not free
                         //
-                    Log_Error("diff apply - errcode %d: '%s'", error_code, error_text);
+                    Log_Error("[DELTA] Diff apply error %d: '%s'", error_code, error_text);
 
                     result.ExtendedResultCode = MAKE_DELTA_PROCESSOR_EXTENDEDRESULTCODE(error_code);
                 }
@@ -124,11 +125,11 @@ ADUC_Result MicrosoftDeltaDownloadHandlerUtils_ProcessDeltaUpdate(
     }
     catch (const std::exception& e)
     {
-        Log_Error("Unhandled std exception: %s", e.what());
+        Log_Error("[DELTA] Unhandled std exception: %s", e.what());
     }
     catch (...)
     {
-        Log_Error("Unhandled exception");
+        Log_Error("[DELTA] Unhandled exception");
     }
 
     if (session != nullptr && closeSessionFn != nullptr)

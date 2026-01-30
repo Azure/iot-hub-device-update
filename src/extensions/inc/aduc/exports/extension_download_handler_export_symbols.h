@@ -59,4 +59,17 @@
  */
 #define DOWNLOAD_HANDLER__OnUpdateWorkflowCompleted__EXPORT_SYMBOL "OnUpdateWorkflowCompleted"
 
+/**
+ * @brief Called to immediately cache source updates before system reboot/restart.
+ * This callback is invoked by the workflow before initiating a reboot to ensure that
+ * source update files are cached while the sandbox is still available. Unlike
+ * OnUpdateWorkflowCompleted which handles conditional caching and cleanup after restart,
+ * this callback performs immediate unconditional caching of source updates.
+ *
+ * @param[in] workflowHandle The workflow handle.
+ * @return ADUC_Result The result.
+ * @details ADUC_Result CacheSourceUpdate(const ADUC_WorkflowHandle workflowHandle)
+ */
+#define DOWNLOAD_HANDLER__CacheSourceUpdate__EXPORT_SYMBOL "CacheSourceUpdate"
+
 #endif // EXTENSION_DOWNLOAD_HANDLER_EXPORT_SYMBOLS_H

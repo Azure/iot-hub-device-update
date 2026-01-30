@@ -4,14 +4,134 @@
 
 The Microsoft Delta Download Handler is an extension for the Azure Device Update (ADU) agent that enables efficient delta-based firmware and software updates. Instead of downloading complete update files, this handler processes delta patches that contain only the differences between the current and target versions, significantly reducing bandwidth usage and update time.
 
+Delta updates can reduce download sizes by 90-95% compared to full updates, making them ideal for devices with limited bandwidth, metered connections, or cellular networks. For example, a 800MB full update can be reduced to just 50-80MB with delta updates.
+
 ## Purpose
 
 This download handler:
 - Downloads and processes delta update files from Azure Device Update service
-- Applies binary delta patches to existing files on the device
-- Validates downloaded content and applied patches
+- Applies binary delta patches using `libadudiffapi` library (which implements bsdiff/bspatch algorithms)
+- Validates downloaded content and applied patches using cryptographic hashes
 - Integrates seamlessly with the ADU agent's update workflow
-- Supports various compression and delta algorithms through the `libadudiffapi` library
+- Supports various compression (zstd, gzip) and delta algorithms through the `libadudiffapi` abstraction
+- Manages source update cache for delta reconstruction
+- Falls back to full download if delta application fails
+
+## How Delta Updates Work
+
+### High-Level Workflow
+
+```
+1. Device has Current Version (v1.0) installed
+   └─> Cached in source update cache: /var/lib/adu/cache/v1.0.swu
+
+2. Azure ADU Service has Target Version (v2.0)
+   └─> Pre-generated delta file: v1.0-to-v2.0.diff (50MB)
+   └─> Full update file available as fallback: v2.0.swu (800MB)
+
+3. Download Handler Process:
+   ├─> Check if source v1.0 exists in cache
+   ├─> Download small delta file (50MB vs 800MB)
+   ├─> Reconstruct target v2.0 from: source + delta
+   ├─> Verify reconstructed file hash matches manifest
+   └─> If success: skip full download | If fail: fallback to full download
+
+4. Install Handler:
+   └─> Install reconstructed v2.0.swu via SWUpdate
+
+5. Post-Install:
+   └─> Cache v2.0.swu for future delta updates (v2.0 → v3.0)
+```
+
+### Delta Reconstruction Process
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              Delta Download & Reconstruction                │
+└─────────────────────────────────────────────────────────────┘
+
+Source Cache: /var/lib/adu/cache/
+  └─> v1.0-recompressed.swu (800MB, zstd compressed ext4)
+
+Download: /var/lib/adu/downloads/
+  └─> v1.0-to-v2.0.diff (50MB, binary delta)
+
+Reconstruction (via libadudiffapi):
+  Input:  v1.0-recompressed.swu + v1.0-to-v2.0.diff
+  Output: v2.0-recompressed.swu (800MB)
+
+  // Conceptually equivalent to: bspatch old.swu new.swu delta.diff
+  // Actual call: libadudiffapi->apply_diff(source, delta, target)
+         │         │         └─> Downloaded diff file
+         │         └─> Reconstructed target
+         └─> Cached source
+
+  Note: libadudiffapi is a higher-level library that wraps bsdiff/bspatch
+  algorithms and handles SWU-specific archive processing and compression.
+
+Verification:
+  Compute SHA256 of v2.0-recompressed.swu
+  Compare with hash from update manifest
+  If match: Success, proceed to install
+  If mismatch: Fail, fallback to full download
+```
+
+## Key Concepts
+
+### Source Update Cache
+
+The source update cache (`/var/lib/adu/cache/` or `/var/lib/adu/downloads/delta-cache/`) stores previously installed update files for use in future delta updates. When a full update is installed, the recompressed version is automatically cached for delta reconstruction.
+
+**Cache Management:**
+- Source updates must be recompressed with zstd compression
+- Cache location: `/var/lib/adu/cache/` (default) or `/var/lib/adu/downloads/delta-cache/`
+- Each cached file includes metadata for version matching
+- Cache cleanup happens automatically based on available disk space
+
+### Recompressed SWU Files
+
+Delta updates require the source SWU file to be recompressed with zstd compression. This ensures:
+- Consistent compression across source and target
+- Efficient binary diff generation
+- Reliable delta reconstruction
+
+**Requirements:**
+- SWUpdate must be built with `CONFIG_ZSTD=y`
+- ext3/ext4 filesystems in SWU must use zstd compression
+- Both source and target use identical compression settings
+
+### Related Files in Update Manifest
+
+The update manifest includes "relatedFiles" that specify delta files associated with different source versions:
+
+```json
+{
+  "files": [
+    {
+      "filename": "v2.0.swu",
+      "relatedFiles": [
+        {
+          "filename": "v1.0-to-v2.0.diff",
+          "properties": {
+            "microsoft.sourceFileHashAlgorithm": "sha256",
+            "microsoft.sourceFileHash": "abc123...",
+            "microsoft.sourceVersion": "1.0"
+          }
+        },
+        {
+          "filename": "v0.9-to-v2.0.diff",
+          "properties": {
+            "microsoft.sourceFileHash": "def456...",
+            "microsoft.sourceVersion": "0.9"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+The handler iterates through relatedFiles and attempts delta reconstruction with each one until it finds a matching source in the cache.
 
 ## Architecture
 
@@ -457,7 +577,7 @@ sudo journalctl -u deviceupdate-agent | grep -i "load.*handler\|extension"
 3. Check ADU agent configuration for extension paths
 4. Restart ADU agent: `sudo systemctl restart deviceupdate-agent`
 
-### Delta Download Fails
+### Issue: Delta Download Fails
 
 **Symptoms:**
 - Update fails during download phase
@@ -479,10 +599,11 @@ curl -I https://du.azurefd.net
 ```
 
 **Solutions:**
-1. Ensure sufficient disk space for download and processing
+1. Ensure sufficient disk space for download and processing (at least 3x the rootfs size)
 2. Check network connectivity and firewall rules
 3. Verify ADU service credentials in configuration
 4. Check delta file integrity on the service side
+5. Review extended result codes in agent logs for specific failures
 
 ### Delta Application Fails
 
@@ -497,6 +618,112 @@ ls -l /var/crash/
 
 # Check agent logs for specific error codes
 sudo journalctl -u deviceupdate-agent | grep -i "error\|fail"
+
+# Check source cache
+ls -l /var/lib/adu/cache/
+ls -l /var/lib/adu/downloads/delta-cache/
+
+# Verify bspatch is available
+which bspatch
+bspatch --version
+
+# Check reconstruction space
+df -h /var/lib/adu/
+```
+
+**Solutions:**
+1. Verify source file in cache matches expected hash
+2. Check delta file wasn't corrupted during download
+3. Ensure sufficient disk space for reconstruction (need space for: source + delta + target)
+4. Verify delta library installation: `dpkg -l | grep ms-adu_diffs`
+5. Check that source and target use same compression (zstd)
+6. Verify SWUpdate was built with CONFIG_ZSTD=y
+
+### Source Not Found in Cache
+
+**Symptoms:**
+- Handler reports "source update not found"
+- Falls back to full download even though device has correct version
+
+**Diagnosis:**
+```bash
+# Check cache directories
+ls -lR /var/lib/adu/cache/
+ls -lR /var/lib/adu/downloads/delta-cache/
+
+# Check if source files exist but hash doesn't match
+cat /var/lib/adu/cache/*/metadata.json
+
+# Verify current installed version
+cat /etc/adu-version
+```
+
+**Solutions:**
+1. Ensure previous update properly cached the source:
+   - Use `microsoft-delta-source-caching.sh` script handler
+   - Or use swupdate handler v2 with proper caching configuration
+2. Manually populate cache with recompressed source files
+3. Redeploy the source version update to populate cache
+4. Check that file hashes in cache match manifest expectations
+5. Verify cache permissions allow ADU agent to read files
+
+### Hash Mismatch After Reconstruction
+
+**Symptoms:**
+- Delta application completes but hash verification fails
+- Error code indicates validation failure
+
+**Diagnosis:**
+```bash
+# Check reconstructed file
+ls -l /var/lib/adu/downloads/work-folder/
+
+# Compute hash manually
+sha256sum /var/lib/adu/downloads/work-folder/*.swu
+
+# Compare with manifest hash
+sudo journalctl -u deviceupdate-agent | grep -i "hash\|manifest"
+
+# Check for compression mismatches
+file /var/lib/adu/cache/*.swu
+file /var/lib/adu/downloads/work-folder/*.swu
+```
+
+**Solutions:**
+1. Verify source and delta files were generated correctly on build server
+2. Ensure source file in cache is the recompressed version
+3. Check that delta generation tool used matching source
+4. Verify no corruption during download (check file sizes)
+5. Regenerate delta files with correct parameters
+
+### Performance Issues
+
+**Symptoms:**
+- Delta reconstruction takes very long time
+- System becomes unresponsive during update
+
+**Diagnosis:**
+```bash
+# Check memory usage
+free -h
+cat /proc/meminfo
+
+# Check swap usage
+swapon --show
+
+# Monitor bspatch process
+top -p $(pgrep bspatch)
+
+# Check disk I/O
+iostat -x 2 10
+```
+
+**Solutions:**
+1. Ensure adequate RAM or swap space (recommend 2GB+ for large updates)
+2. Use faster storage for /var/lib/adu/ (e.g., eMMC vs SD card)
+3. Monitor and clean up old cached files to free space
+4. Consider splitting large updates into smaller components
+5. Adjust delta generation parameters for better performance
 
 # Verify source files exist and are readable
 ls -l /path/to/source/files
@@ -568,6 +795,444 @@ The handler uses the ADU agent's standard extension mechanism. No additional con
 2. **Update Manifest**
    - Server-side configuration specifying delta update type
    - Handler selection criteria in update metadata
+
+## End-to-End Integration Guide
+
+### Prerequisites
+
+1. **SWUpdate Configuration**
+   - Build SWUpdate with zstd support: `CONFIG_ZSTD=y`
+   - Verify with: `swupdate --help | grep -i zstd`
+
+2. **ADU Agent Installation**
+   - Install base agent: `deviceupdate-agent-*.deb`
+   - Install delta handler: `deviceupdate-agent-delta-*.deb`
+   - Install delta library: `ms-adu_diffs_*.deb`
+
+3. **System Requirements**
+   - Disk space: At least 3x rootfs size for reconstruction
+   - RAM/Swap: 2GB+ recommended for large images
+   - Filesystem: ext4 with journaling for update cache
+
+### Step 1: Build and Generate Delta Files
+
+**On Build Server:**
+
+```bash
+# Build base image (v1.0)
+bitbake adu-base-image
+
+# Build update image (v2.0) with recompression
+bitbake adu-update-image-v2
+
+# Generate delta files
+bitbake adu-delta-image
+
+# Output:
+#   - v1.0.swu (base, 800MB)
+#   - v1.0-recompressed.swu (zstd compressed)
+#   - v2.0.swu (target, 800MB)
+#   - v2.0-recompressed.swu (zstd compressed)
+#   - v1.0-to-v2.0.diff (delta, 50MB)
+```
+
+**Delta Generation Recipe:**
+
+Yocto recipe automatically:
+1. Extracts ext4 filesystems from both SWU files
+2. Generates binary diff using bsdiff
+3. Creates recompressed SWU files with zstd compression
+4. Verifies round-trip reconstruction
+5. Packages files for distribution
+
+### Step 2: Create Update Manifests
+
+**Import Manifest for v1.0 (Full Update with Caching):**
+
+```json
+{
+  "updateId": {
+    "provider": "Contoso",
+    "name": "RaspberryPi",
+    "version": "1.0.0"
+  },
+  "instructions": {
+    "steps": [
+      {
+        "handler": "microsoft/script:1",
+        "files": ["v1.0.swu", "v1.0-recompressed.swu"],
+        "handlerProperties": {
+          "scriptFileName": "microsoft-delta-source-caching.sh",
+          "installedCriteria": "1.0.0",
+          "arguments": "--image-file v1.0.swu"
+        }
+      }
+    ]
+  },
+  "files": {
+    "v1.0.swu": {
+      "filename": "v1.0.swu",
+      "sizeInBytes": 838860800,
+      "hashes": {
+        "sha256": "abc123..."
+      }
+    },
+    "v1.0-recompressed.swu": {
+      "filename": "v1.0-recompressed.swu",
+      "sizeInBytes": 838860800,
+      "hashes": {
+        "sha256": "def456..."
+      }
+    }
+  }
+}
+```
+
+**Import Manifest for v2.0 (Delta Update):**
+
+```json
+{
+  "updateId": {
+    "provider": "Contoso",
+    "name": "RaspberryPi",
+    "version": "2.0.0"
+  },
+  "instructions": {
+    "steps": [
+      {
+        "handler": "microsoft/swupdate:2",
+        "files": ["v2.0.swu"],
+        "handlerProperties": {
+          "swuFileName": "v2.0-recompressed.swu",
+          "scriptFileName": "microsoft-delta-source-caching.sh",
+          "installedCriteria": "2.0.0",
+          "arguments": "--image-file v2.0-recompressed.swu"
+        }
+      }
+    ]
+  },
+  "files": {
+    "v2.0.swu": {
+      "filename": "v2.0-recompressed.swu",
+      "sizeInBytes": 838860800,
+      "hashes": {
+        "sha256": "ghi789..."
+      },
+      "downloadHandlerId": "microsoft/delta:1",
+      "relatedFiles": [
+        {
+          "filename": "v1.0-to-v2.0.diff",
+          "sizeInBytes": 52428800,
+          "hashes": {
+            "sha256": "jkl012..."
+          },
+          "properties": {
+            "microsoft.sourceFileHashAlgorithm": "sha256",
+            "microsoft.sourceFileHash": "def456...",
+            "microsoft.sourceVersion": "1.0.0"
+          }
+        }
+      ]
+    },
+    "v1.0-to-v2.0.diff": {
+      "filename": "v1.0-to-v2.0.diff",
+      "sizeInBytes": 52428800,
+      "hashes": {
+        "sha256": "jkl012..."
+      }
+    }
+  }
+}
+```
+
+### Step 3: Deploy Updates
+
+**First Update (v0 → v1.0):**
+
+```bash
+# Device starts with v0 (factory image)
+# Deploy v1.0 full update
+az iot device-update deployments create \
+  --account-name <account> \
+  --instance-name <instance> \
+  --deployment-id v1-deployment \
+  --update-provider Contoso \
+  --update-name RaspberryPi \
+  --update-version 1.0.0
+
+# What happens:
+# 1. Download v1.0.swu (800MB)
+# 2. Download v1.0-recompressed.swu (800MB)
+# 3. Install v1.0.swu via SWUpdate
+# 4. Cache v1.0-recompressed.swu to /var/lib/adu/downloads/delta-cache/
+# 5. Reboot to new partition
+```
+
+**Second Update (v1.0 → v2.0 via Delta):**
+
+```bash
+# Deploy v2.0 delta update
+az iot device-update deployments create \
+  --account-name <account> \
+  --instance-name <instance> \
+  --deployment-id v2-deployment \
+  --update-provider Contoso \
+  --update-name RaspberryPi \
+  --update-version 2.0.0
+
+# What happens:
+# 1. Delta handler checks cache for v1.0-recompressed.swu ✓
+# 2. Download v1.0-to-v2.0.diff (50MB) - 93% bandwidth savings!
+# 3. Reconstruct v2.0-recompressed.swu from cache + diff
+# 4. Verify hash matches manifest
+# 5. Skip downloading full v2.0.swu (saved 750MB!)
+# 6. Install v2.0-recompressed.swu via SWUpdate
+# 7. Cache v2.0-recompressed.swu for future deltas
+# 8. Reboot to new partition
+```
+
+### Step 4: Monitor and Verify
+
+**Check Delta Handler Activity:**
+
+```bash
+# Watch agent logs
+sudo journalctl -u deviceupdate-agent -f | grep -i delta
+
+# Check cache status
+ls -lh /var/lib/adu/downloads/delta-cache/
+
+# Verify current version
+cat /etc/adu-version
+
+# Check download statistics
+sudo journalctl -u deviceupdate-agent | grep -i "download.*complete\|bytes"
+```
+
+**Expected Log Sequence for Delta Update:**
+
+```
+[INFO] Update manifest contains downloadHandlerId: microsoft/delta:1
+[INFO] Loading download handler: libmicrosoft_delta_download_handler.so
+[INFO] Delta handler: Processing update with 1 related files
+[INFO] Delta handler: Checking cache for source version 1.0.0
+[INFO] Delta handler: Source found in cache: /var/lib/adu/downloads/delta-cache/v1.0-recompressed.swu
+[INFO] Delta handler: Downloading delta file: v1.0-to-v2.0.diff (50MB)
+[INFO] Download complete: v1.0-to-v2.0.diff
+[INFO] Delta handler: Reconstructing target from source + delta
+[INFO] Executing: bspatch <source> <target> <delta>
+[INFO] Reconstruction complete: v2.0-recompressed.swu
+[INFO] Delta handler: Verifying reconstructed file hash
+[INFO] Hash verification passed: sha256:ghi789...
+[INFO] Delta handler: Returning SuccessSkipDownload (will not download full file)
+[INFO] Install phase: Installing v2.0-recompressed.swu
+```
+
+### Step 5: Troubleshooting Integration
+
+**Verify Delta Pipeline:**
+
+```bash
+# 1. Check handler is installed
+ls -l /var/lib/adu/extensions/sources/libmicrosoft_delta_download_handler.so
+
+# 2. Check delta library
+ls -l /usr/lib/libadudiffapi.so
+ldd /var/lib/adu/extensions/sources/libmicrosoft_delta_download_handler.so
+
+# 3. Check SWUpdate has zstd support
+swupdate --help | grep -i zstd
+
+# 4. Verify cache directory exists and is writable
+test -w /var/lib/adu/downloads/delta-cache/ && echo "OK" || echo "FAIL"
+
+# 5. Check disk space
+df -h /var/lib/adu/
+
+# 6. Test bspatch manually
+bspatch /var/lib/adu/downloads/delta-cache/v1.0-recompressed.swu \
+        /tmp/test-output.swu \
+        /var/lib/adu/downloads/v1.0-to-v2.0.diff
+
+sha256sum /tmp/test-output.swu  # Should match manifest
+```
+
+## Observability and Logging
+
+The delta download handler provides detailed logging with specific prefixes and patterns to help operators monitor delta update operations, diagnose issues, and measure bandwidth savings.
+
+### Log Prefixes and Their Meanings
+
+| Prefix | Purpose | When to Look For |
+|--------|---------|------------------|
+| `[DELTA]` | Delta-specific operations | All delta reconstruction events |
+| `[TIMING]` | Performance metrics | Diagnosing slow operations |
+
+### Success Indicators
+
+**Successful Delta Reconstruction:**
+
+Look for these log entries to confirm delta updates are working and saving bandwidth:
+
+```
+[DELTA] Source update found in cache at '/var/lib/adu/cache/...' - proceeding with delta reconstruction
+[DELTA] Starting reconstruction: source='...', delta='...', target='...'
+[DELTA] libadudiffapi apply succeeded - target file created at '/path/to/target'
+[DELTA] Reconstruction SUCCESS - Downloaded 52428800 bytes (delta) instead of 838860800 bytes (full), saved 786432000 bytes (93%)
+```
+
+**Key Success Log Patterns:**
+```bash
+# Check for successful delta reconstructions with bandwidth savings
+journalctl -u deviceupdate-agent | grep "\[DELTA\] Reconstruction SUCCESS"
+
+# Example output:
+# [DELTA] Reconstruction SUCCESS - Downloaded 50MB (delta) instead of 800MB (full), saved 750MB (93%)
+```
+
+**Successful Cache Operations:**
+
+```
+[TIMING] CacheSourceUpdate: Starting pre-reboot cache operation
+[TIMING] CacheSourceUpdate: Cache operation completed in 1234 ms
+[TIMING] CacheSourceUpdate: SUCCESS - Source update cached in 1234 ms before reboot
+```
+
+### Failure Indicators
+
+**Source Cache Miss (Expected for first update):**
+
+```
+[DELTA] Source update not found in cache - cannot perform delta reconstruction
+src update cache miss for Delta 0
+```
+
+This is expected when the device doesn't have a cached source file. The handler will either try the next relatedFile or fall back to full download.
+
+**Delta Reconstruction Failed:**
+
+```
+[DELTA] libadudiffapi apply FAILED with error code: 123
+diff apply - errcode 123: 'Error description from library'
+[DELTA] Reconstruction FAILED for all 2 delta(s) - falling back to full download (838860800 bytes)
+```
+
+**Cache Operation Failed:**
+
+```
+[TIMING] CacheSourceUpdate: FAILED after 5000 ms - rc: 0, erc: 0x12345678
+```
+
+### Timing Metrics
+
+The handler logs timing information to help diagnose performance issues:
+
+**Cache Operations:**
+```
+[TIMING] MoveToUpdateCache: Processing 1 payload(s)
+[TIMING] MoveToUpdateCache: File 0 cached in 2500 ms
+[TIMING] MoveToUpdateCache: Completed 1 file(s) in 3000 ms total (copy time: 2500 ms)
+```
+
+**Pre-reboot Caching:**
+```
+[TIMING] CacheSourceUpdate: Starting pre-reboot cache operation
+[TIMING] CacheSourceUpdate: Cache operation completed in 1500 ms
+```
+
+**Post-install Caching:**
+```
+[TIMING] OnUpdateWorkflowCompleted: Starting cache operation
+[TIMING] OnUpdateWorkflowCompleted: Cache operation completed in 2000 ms (rc: 1, erc: 0x00000000)
+```
+
+### Monitoring Commands
+
+**Real-time Delta Update Monitoring:**
+```bash
+# Watch all delta-related logs in real-time
+journalctl -u deviceupdate-agent -f | grep -E "\[DELTA\]|\[TIMING\]"
+
+# Watch for reconstruction events only
+journalctl -u deviceupdate-agent -f | grep "\[DELTA\]"
+```
+
+**Check Delta Update Success Rate:**
+```bash
+# Count successful reconstructions
+journalctl -u deviceupdate-agent | grep -c "\[DELTA\] Reconstruction SUCCESS"
+
+# Count failed reconstructions (fell back to full download)
+journalctl -u deviceupdate-agent | grep -c "\[DELTA\] Reconstruction FAILED"
+
+# Count cache misses
+journalctl -u deviceupdate-agent | grep -c "Source update not found in cache"
+```
+
+**Calculate Bandwidth Savings:**
+```bash
+# Extract bandwidth savings from logs
+journalctl -u deviceupdate-agent | grep "\[DELTA\] Reconstruction SUCCESS" | \
+  grep -oP "saved \K[0-9]+ bytes \([0-9]+%\)"
+```
+
+**Check Cache Health:**
+```bash
+# List cached source updates
+ls -lh /var/lib/adu/cache/ /var/lib/adu/downloads/delta-cache/ 2>/dev/null
+
+# Check cache metadata files
+cat /var/lib/adu/cache/*/*.info 2>/dev/null
+```
+
+### Extended Result Codes (ERCs)
+
+When delta operations fail, the logs include Extended Result Codes (ERCs) in hexadecimal format. Common ERCs:
+
+| ERC Pattern | Meaning |
+|-------------|---------|
+| `ADUC_ERC_DDH_*` | Delta Download Handler errors |
+| `ADUC_ERC_DDH_BAD_ARGS` | Invalid parameters passed to handler |
+| `ADUC_ERC_DDH_SOURCE_UPDATE_CACHE_MISS` | Source file not in cache |
+| `ADUC_ERC_DDH_PROCESSOR_*` | libadudiffapi processing errors |
+| `ADUC_ERC_MOVE_COPYFALLBACK` | File copy failed during caching |
+| `ADUC_ERC_MOVE_HASH_VERIFICATION_FAILED` | Cached file hash mismatch |
+
+### Log Analysis Examples
+
+**Successful Delta Update Flow:**
+```
+INFO  Update manifest contains downloadHandlerId: microsoft/delta:1
+INFO  Loading download handler: libmicrosoft_delta_download_handler.so
+INFO  [DELTA] Source update found in cache at '/var/lib/adu/cache/Contoso/sha256-abc123'
+INFO  [DELTA] Starting reconstruction: source='/var/lib/adu/cache/...', delta='/var/lib/adu/downloads/...', target='/var/lib/adu/downloads/sandbox/...'
+INFO  [DELTA] libadudiffapi apply succeeded - target file created at '/var/lib/adu/downloads/sandbox/v2.swu'
+INFO  Processing Delta 0 succeeded
+INFO  [DELTA] Reconstruction SUCCESS - Downloaded 52428800 bytes (delta) instead of 838860800 bytes (full), saved 786432000 bytes (93%)
+INFO  DownloadHandlerPlugin ProcessUpdate result - rc: 700, erc: 0x00000000
+INFO  Successfully reconstructed target file from delta and cached source update
+```
+
+**Failed Delta Update with Fallback:**
+```
+INFO  [DELTA] Source update not found in cache - cannot perform delta reconstruction
+WARN  src update cache miss for Delta 0
+WARN  [DELTA] Reconstruction FAILED for all 1 delta(s) - falling back to full download (838860800 bytes)
+INFO  DownloadHandlerPlugin ProcessUpdate result - rc: 702, erc: 0x00000000
+INFO  Starting full content download for: v2.swu
+```
+
+**Pre-reboot Caching Success:**
+```
+INFO  [TIMING] CacheSourceUpdate: Starting pre-reboot cache operation
+INFO  updateCacheBasePath = NULL (will use default)
+INFO  Calling ADUC_SourceUpdateCache_Move...
+INFO  [TIMING] MoveToUpdateCache: Processing 1 payload(s)
+INFO  File already cached at '/var/lib/adu/cache/...' with valid hash - skipping
+INFO  [TIMING] MoveToUpdateCache: Completed 1 file(s) in 50 ms total (copy time: 0 ms)
+INFO  [TIMING] CacheSourceUpdate: Cache operation completed in 55 ms
+INFO  [TIMING] CacheSourceUpdate: SUCCESS - Source update cached in 55 ms before reboot
+```
 
 ## Performance Considerations
 
