@@ -485,3 +485,161 @@ TEST_CASE("ADUC_SystemUtils_FormatFilePathHelper")
         CHECK_THAT(STRING_c_str(newFilePath.get()), Equals("/path/to/folder/file.ext"));
     }
 }
+
+/**
+ * @brief Regression test for feof() bug in ADUC_SystemUtils_CopyFileToDir
+ *
+ * Bug: Original had `feof(sourceFile) != 0` - impossible condition, loop never executed.
+ * Fix: Changed to `feof(sourceFile) == 0` - correct "while not at EOF" condition.
+ */
+TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_CopyFileToDir")
+{
+    // Create test subdirectory (auto-cleaned by TestCaseFixture destructor)
+    std::string copyTestDir = std::string(TestPath()) + "/copy_file_test";
+    REQUIRE(ADUC_SystemUtils_MkDirRecursiveDefault(copyTestDir.c_str()) == 0);
+
+    // Create a source file with known content
+    std::string sourceFilePath = copyTestDir + "/source_file.txt";
+    const char* testContent = "This is test content to verify file copying works correctly.\n"
+                              "The bug caused files to be created with 0 bytes.\n"
+                              "This content should be fully copied to the destination.\n"
+                              "Multiple lines ensure we test the loop iterates properly.\n";
+    size_t contentLength = strlen(testContent);
+
+    // Write test content to source file
+    FILE* sourceFile = fopen(sourceFilePath.c_str(), "wb");
+    REQUIRE(sourceFile != nullptr);
+    REQUIRE(fwrite(testContent, 1, contentLength, sourceFile) == contentLength);
+    fclose(sourceFile);
+
+    // Verify source file size
+    struct stat sourceStat;
+    REQUIRE(stat(sourceFilePath.c_str(), &sourceStat) == 0);
+    REQUIRE(sourceStat.st_size == static_cast<off_t>(contentLength));
+
+    SECTION("Copy file to directory - normal case with permissions check")
+    {
+        std::string destDir = copyTestDir + "/dest";
+        REQUIRE(ADUC_SystemUtils_MkDirRecursiveDefault(destDir.c_str()) == 0);
+
+        // Perform the copy
+        int result = ADUC_SystemUtils_CopyFileToDir(sourceFilePath.c_str(), destDir.c_str(), false);
+        REQUIRE(result == 0);
+
+        // Verify destination file exists
+        std::string destFilePath = destDir + "/source_file.txt";
+        struct stat destStat;
+        REQUIRE(stat(destFilePath.c_str(), &destStat) == 0);
+
+        // Critical: Verify destination file is NOT 0 bytes (the bug symptom)
+        REQUIRE(destStat.st_size > 0);
+        CHECK(destStat.st_size == sourceStat.st_size);
+
+        // Verify permissions are preserved
+        CHECK((destStat.st_mode & 0777) == (sourceStat.st_mode & 0777));
+
+        // Verify content matches
+        FILE* destFile = fopen(destFilePath.c_str(), "rb");
+        REQUIRE(destFile != nullptr);
+
+        std::vector<char> destContent(contentLength + 1);
+        size_t bytesRead = fread(destContent.data(), 1, contentLength, destFile);
+        fclose(destFile);
+
+        REQUIRE(bytesRead == contentLength);
+        destContent[contentLength] = '\0';
+        CHECK_THAT(destContent.data(), Equals(testContent));
+    }
+
+    SECTION("Copy empty file - edge case")
+    {
+        // Create an empty source file
+        std::string emptySourcePath = copyTestDir + "/empty_file.txt";
+        FILE* emptySource = fopen(emptySourcePath.c_str(), "wb");
+        REQUIRE(emptySource != nullptr);
+        fclose(emptySource);
+
+        struct stat emptySourceStat;
+        REQUIRE(stat(emptySourcePath.c_str(), &emptySourceStat) == 0);
+        REQUIRE(emptySourceStat.st_size == 0);
+
+        std::string emptyDestDir = copyTestDir + "/empty_dest";
+        REQUIRE(ADUC_SystemUtils_MkDirRecursiveDefault(emptyDestDir.c_str()) == 0);
+
+        // Copy the empty file
+        int result = ADUC_SystemUtils_CopyFileToDir(emptySourcePath.c_str(), emptyDestDir.c_str(), false);
+        REQUIRE(result == 0);
+
+        // Verify empty file was created
+        std::string emptyDestPath = emptyDestDir + "/empty_file.txt";
+        struct stat emptyDestStat;
+        REQUIRE(stat(emptyDestPath.c_str(), &emptyDestStat) == 0);
+        CHECK(emptyDestStat.st_size == 0);
+    }
+
+    SECTION("Copy large file - stress test for loop iteration")
+    {
+        std::string largeSourcePath = copyTestDir + "/large_source.bin";
+        FILE* largeSource = fopen(largeSourcePath.c_str(), "wb");
+        REQUIRE(largeSource != nullptr);
+
+        // Write 1MB of data (should iterate copy loop multiple times)
+        const size_t largeSize = 1024 * 1024; // 1 MB
+        std::vector<char> largeData(largeSize);
+        for (size_t i = 0; i < largeSize; i++)
+        {
+            largeData[i] = static_cast<char>(i % 256);
+        }
+        REQUIRE(fwrite(largeData.data(), 1, largeSize, largeSource) == largeSize);
+        fclose(largeSource);
+
+        std::string largeDestDir = copyTestDir + "/large_dest";
+        REQUIRE(ADUC_SystemUtils_MkDirRecursiveDefault(largeDestDir.c_str()) == 0);
+
+        int result = ADUC_SystemUtils_CopyFileToDir(largeSourcePath.c_str(), largeDestDir.c_str(), false);
+        REQUIRE(result == 0);
+
+        std::string largeDestPath = largeDestDir + "/large_source.bin";
+        struct stat largeStat;
+        REQUIRE(stat(largeDestPath.c_str(), &largeStat) == 0);
+
+        // Verify NOT 0 bytes (bug symptom)
+        REQUIRE(largeStat.st_size > 0);
+        CHECK(largeStat.st_size == static_cast<off_t>(largeSize));
+    }
+
+    SECTION("Copy file - overwrite existing file")
+    {
+        std::string overwriteDir = copyTestDir + "/overwrite";
+        REQUIRE(ADUC_SystemUtils_MkDirRecursiveDefault(overwriteDir.c_str()) == 0);
+
+        // Create existing file with different content
+        std::string existingFilePath = overwriteDir + "/source_file.txt";
+        FILE* existingFile = fopen(existingFilePath.c_str(), "wb");
+        REQUIRE(existingFile != nullptr);
+        const char* oldContent = "Old content";
+        fwrite(oldContent, 1, strlen(oldContent), existingFile);
+        fclose(existingFile);
+
+        // Copy with overwrite enabled
+        int result = ADUC_SystemUtils_CopyFileToDir(sourceFilePath.c_str(), overwriteDir.c_str(), true);
+        REQUIRE(result == 0);
+
+        // Verify file was overwritten with new content
+        struct stat overwriteStat;
+        REQUIRE(stat(existingFilePath.c_str(), &overwriteStat) == 0);
+        REQUIRE(overwriteStat.st_size > 0);
+        CHECK(overwriteStat.st_size == static_cast<off_t>(contentLength));
+
+        // Verify new content
+        FILE* verifyFile = fopen(existingFilePath.c_str(), "rb");
+        REQUIRE(verifyFile != nullptr);
+        std::vector<char> verifyContent(contentLength + 1);
+        size_t bytesRead = fread(verifyContent.data(), 1, contentLength, verifyFile);
+        fclose(verifyFile);
+
+        REQUIRE(bytesRead == contentLength);
+        verifyContent[contentLength] = '\0';
+        CHECK_THAT(verifyContent.data(), Equals(testContent));
+    }
+}
